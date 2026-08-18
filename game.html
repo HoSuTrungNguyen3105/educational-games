@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lớp Học Vui — Hội Chợ Trò Chơi Học Tập</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['"Fredoka"', 'sans-serif'],
+          body: ['"Be Vietnam Pro"', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+        colors: {
+          ink: '#1D2E4A',
+          ink2: '#16233A',
+          paper: '#FFF6E7',
+          paper2: '#FFFBF2',
+          ticket: '#E4572E',
+          gold: '#F4B942',
+          teal: '#1B998B',
+          pink: '#FF6F91',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  :root{
+    --line:#E7D9BE;
+    --muted:#8A7C63;
+    --text-dark:#20283A;
+  }
+  *{ -webkit-tap-highlight-color: transparent; }
+  html,body{ height:100%; }
+  body{ background:#FFF6E7; color:var(--text-dark); font-family:'Be Vietnam Pro', sans-serif; }
+  #root{ min-height:100vh; }
+
+  .dash-rule{ border:none; border-top:2px dashed rgba(29,46,74,0.18); }
+  .dash-rule-light{ border:none; border-top:2px dashed rgba(255,246,231,0.28); }
+
+  /* stamp badge — circular dashed "postmark" token used for icons/ranks */
+  .stamp-token{
+    display:flex; align-items:center; justify-content:center;
+    border-radius:9999px;
+    border:3px dashed var(--ring, #F4B942);
+    background:#FFFBF2;
+    box-shadow: 0 2px 0 rgba(29,46,74,0.06);
+  }
+
+  .note-card{ background:#FFFBF2; border:1px solid var(--line); border-radius:18px; }
+
+  .marquee-panel{
+    background: radial-gradient(120% 140% at 10% 0%, #2A4770 0%, #1D2E4A 45%, #16233A 100%);
+    position:relative;
+  }
+  .marquee-lights{
+    height:10px;
+    background-image: radial-gradient(circle, #F4B942 2.5px, transparent 2.6px);
+    background-size: 22px 10px;
+    background-position: center;
+    opacity:.85;
+    animation: bulb-flicker 1.6s steps(2) infinite;
+  }
+  @keyframes bulb-flicker{ 50%{ opacity:.35; } }
+
+  /* signature ticket-stub: perforated join/share code */
+  .ticket-stub{
+    position:relative;
+    display:flex;
+    align-items:stretch;
+    background:#FFFBF2;
+    border:2px dashed rgba(29,46,74,0.35);
+    border-radius:18px;
+    overflow:hidden;
+  }
+  .ticket-stub::before, .ticket-stub::after{
+    content:"";
+    position:absolute;
+    top:50%; transform:translateY(-50%);
+    width:26px; height:26px;
+    border-radius:9999px;
+    background: var(--notch-bg, #FFF6E7);
+    z-index:2;
+  }
+  .ticket-stub::before{ left:-13px; }
+  .ticket-stub::after{ right:-13px; }
+  .ticket-stub-tab{
+    flex-shrink:0;
+    width:64px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px;
+    border-right:2px dashed rgba(29,46,74,0.3);
+    background: rgba(244,185,66,0.16);
+  }
+  .ticket-stub-body{ flex:1; padding:14px 18px; }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:#E7D9BE; border-radius:8px; }
+
+  @keyframes pop-in{ 0%{ transform:scale(.92); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
+  .anim-pop{ animation: pop-in .28s cubic-bezier(.2,.9,.3,1.3) both; }
+
+  @keyframes float-slow{ 0%,100%{ transform: translateY(0px) rotate(-1deg); } 50%{ transform: translateY(-6px) rotate(1deg); } }
+  .float-slow{ animation: float-slow 3.6s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce){ .anim-pop, .float-slow, .marquee-lights{ animation:none !important; } }
+
+  input:focus, button:focus, select:focus, textarea:focus{ outline: 3px solid #FF6F9155; outline-offset: 2px; }
+
+  .badge-status{ font-family:'JetBrains Mono', monospace; letter-spacing:.02em; }
+
+  .clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+/* =========================================================================
+   MOCK DATA
+   ========================================================================= */
+
+const mockGameTemplates = [
+  { id: "snail-race", name: "Đường Đua Ốc Sên", description: "Trả lời đúng để ốc sên tiến về đích", category: "quiz", categoryLabel: "Trắc nghiệm", icon: "🐌", ring: "#E4572E" },
+  { id: "whack-a-mole", name: "Đập Chuột Nhanh Tay", description: "Phản xạ nhanh trước khi hết giờ", category: "reflex", categoryLabel: "Phản xạ", icon: "🔨", ring: "#F4B942" },
+  { id: "space-ship", name: "Phi Thuyền Vũ Trụ", description: "Mỗi câu đúng đẩy phi thuyền bay xa hơn", category: "science", categoryLabel: "Khoa học", icon: "🚀", ring: "#1B998B" },
+  { id: "sailing-boat", name: "Thuyền Buồm Ra Khơi", description: "Cả đội cùng chèo thuyền về đích", category: "group", categoryLabel: "Theo nhóm", icon: "⛵", ring: "#1B998B" },
+  { id: "moon-lantern", name: "Rước Đèn Trung Thu", description: "Trò chơi ôn tập theo mùa lễ hội", category: "seasonal", categoryLabel: "Lễ hội", icon: "🏮", ring: "#F4B942" },
+  { id: "memory-match", name: "Lật Thẻ Trí Nhớ", description: "Ghép cặp thẻ giống nhau trong thời gian ngắn nhất", category: "memory", categoryLabel: "Trí nhớ", icon: "🃏", ring: "#FF6F91" },
+  { id: "lucky-wheel", name: "Vòng Quay May Mắn", description: "Quay vòng để nhận câu hỏi và phần thưởng ngẫu nhiên", category: "quiz", categoryLabel: "Trắc nghiệm", icon: "🎡", ring: "#E4572E" },
+  { id: "treasure-map", name: "Bản Đồ Kho Báu", description: "Giải đố để mở khóa từng chặng trên bản đồ", category: "logic", categoryLabel: "Tư duy", icon: "🗺️", ring: "#F4B942" },
+  { id: "dart-throw", name: "Ném Phi Tiêu Trúng Đích", description: "Chọn đáp án đúng để ném trúng tâm bia", category: "reflex", categoryLabel: "Phản xạ", icon: "🎯", ring: "#E4572E" },
+  { id: "word-scramble", name: "Xếp Chữ Kỳ Diệu", description: "Sắp xếp chữ cái thành từ đúng nghĩa", category: "language", categoryLabel: "Ngôn ngữ", icon: "🔤", ring: "#FF6F91" },
+  { id: "balloon-pop", name: "Bóng Bay Tri Thức", description: "Chọn đáp án đúng để thổi bóng bay lên trời", category: "reflex", categoryLabel: "Phản xạ", icon: "🎈", ring: "#1B998B" },
+  { id: "sorting-game", name: "Phân Loại Đúng Chỗ", description: "Sắp xếp kiến thức vào đúng nhóm", category: "logic", categoryLabel: "Tư duy", icon: "🗂️", ring: "#F4B942" },
+];
+
+const CATEGORIES = [
+  { id: "all", label: "Tất cả" },
+  { id: "quiz", label: "Trắc nghiệm" },
+  { id: "reflex", label: "Phản xạ" },
+  { id: "science", label: "Khoa học" },
+  { id: "group", label: "Theo nhóm" },
+  { id: "seasonal", label: "Lễ hội" },
+  { id: "memory", label: "Trí nhớ" },
+  { id: "language", label: "Ngôn ngữ" },
+  { id: "logic", label: "Tư duy" },
+];
+
+const initialGames = [
+  { id: "game-001", title: "Ôn tập Toán lớp 3", description: "Trò chơi ôn tập phép cộng và phép trừ", subject: "Toán", topic: "Phép cộng và phép trừ", language: "vi", template: "snail-race", status: "published", questionsCount: 3, playersCount: 24, code: "TOAN101", createdAt: "2026-08-01T08:00:00Z", updatedAt: "2026-08-15T10:30:00Z" },
+  { id: "game-002", title: "Khám phá vũ trụ", description: "Cùng khám phá những kiến thức thú vị về vũ trụ", subject: "Khoa học", topic: "Vũ trụ", language: "vi", template: "space-ship", status: "published", questionsCount: 3, playersCount: 18, code: "VUTRU22", createdAt: "2026-08-02T09:00:00Z", updatedAt: "2026-08-16T14:20:00Z" },
+  { id: "game-003", title: "Ôn tập kiến thức tổng hợp", description: "Trò chơi kiểm tra nhanh kiến thức tổng hợp", subject: "Tổng hợp", topic: "Kiến thức chung", language: "vi", template: "whack-a-mole", status: "draft", questionsCount: 2, playersCount: 0, code: "TONGHOP9", createdAt: "2026-08-03T07:30:00Z", updatedAt: "2026-08-17T11:00:00Z" },
+  { id: "game-004", title: "Từ vựng tiếng Anh: Gia đình", description: "Sắp xếp chữ cái để ôn từ vựng chủ đề gia đình", subject: "Tiếng Anh", topic: "Family vocabulary", language: "vi", template: "word-scramble", status: "published", questionsCount: 2, playersCount: 15, code: "FAMILY07", createdAt: "2026-08-04T08:20:00Z", updatedAt: "2026-08-14T09:10:00Z" },
+  { id: "game-005", title: "Trung Thu Vui Vẻ", description: "Rước đèn ôn tập kiến thức nhân dịp Tết Trung Thu", subject: "Tổng hợp", topic: "Tết Trung Thu", language: "vi", template: "moon-lantern", status: "published", questionsCount: 2, playersCount: 31, code: "TRUNGTHU5", createdAt: "2026-08-05T10:00:00Z", updatedAt: "2026-08-13T16:45:00Z" },
+  { id: "game-006", title: "Địa lý Việt Nam", description: "Giải đố mở khóa bản đồ các vùng miền", subject: "Địa lý", topic: "Các vùng miền Việt Nam", language: "vi", template: "treasure-map", status: "draft", questionsCount: 2, playersCount: 0, code: "DIALY88", createdAt: "2026-08-06T07:00:00Z", updatedAt: "2026-08-12T13:00:00Z" },
+  { id: "game-007", title: "Bảng chữ cái tiếng Việt", description: "Lật thẻ ghi nhớ để ôn bảng chữ cái", subject: "Tiếng Việt", topic: "Bảng chữ cái", language: "vi", template: "memory-match", status: "published", questionsCount: 2, playersCount: 27, code: "CHUCAI3", createdAt: "2026-08-07T08:00:00Z", updatedAt: "2026-08-11T10:00:00Z" },
+  { id: "game-008", title: "Vòng quay kiến thức lớp 4", description: "Quay vòng để nhận câu hỏi ôn tập ngẫu nhiên", subject: "Tổng hợp", topic: "Ôn tập cuối kỳ", language: "vi", template: "lucky-wheel", status: "published", questionsCount: 2, playersCount: 12, code: "QUAYSO4", createdAt: "2026-08-08T08:00:00Z", updatedAt: "2026-08-10T10:00:00Z" },
+  { id: "game-009", title: "Luật giao thông an toàn", description: "Ném phi tiêu vào đáp án đúng về an toàn giao thông", subject: "Kỹ năng sống", topic: "An toàn giao thông", language: "vi", template: "dart-throw", status: "draft", questionsCount: 2, playersCount: 0, code: "ATGT202", createdAt: "2026-08-09T08:00:00Z", updatedAt: "2026-08-09T08:00:00Z" },
+  { id: "game-010", title: "Động vật hoang dã", description: "Thổi bóng bay tri thức về thế giới động vật", subject: "Khoa học", topic: "Động vật hoang dã", language: "vi", template: "balloon-pop", status: "published", questionsCount: 2, playersCount: 9, code: "DONGVAT6", createdAt: "2026-08-10T08:00:00Z", updatedAt: "2026-08-10T08:00:00Z" },
+  { id: "game-011", title: "Đua thuyền: Lịch sử Việt Nam", description: "Cả đội cùng chèo thuyền qua các mốc lịch sử", subject: "Lịch sử", topic: "Các triều đại Việt Nam", language: "vi", template: "sailing-boat", status: "published", questionsCount: 2, playersCount: 20, code: "LICHSU19", createdAt: "2026-08-11T08:00:00Z", updatedAt: "2026-08-11T08:00:00Z" },
+  { id: "game-012", title: "Phân loại rác thải", description: "Sắp xếp rác đúng nhóm tái chế, hữu cơ, vô cơ", subject: "Khoa học", topic: "Bảo vệ môi trường", language: "vi", template: "sorting-game", status: "draft", questionsCount: 2, playersCount: 0, code: "MOITRUONG4", createdAt: "2026-08-12T08:00:00Z", updatedAt: "2026-08-12T08:00:00Z" },
+];
+
+const initialQuestions = [
+  { id: "question-001", gameId: "game-001", content: "Trong vườn có 45 cây cam và 28 cây táo. Hỏi trong vườn có tất cả bao nhiêu cây?", options: [{ id: "answer-001", content: "63 cây" }, { id: "answer-002", content: "73 cây" }, { id: "answer-003", content: "83 cây" }], correctAnswer: "answer-002", timeLimit: 20, points: 100 },
+  { id: "question-002", gameId: "game-001", content: "56 + 24 bằng bao nhiêu?", options: [{ id: "answer-004", content: "70" }, { id: "answer-005", content: "80" }, { id: "answer-006", content: "90" }], correctAnswer: "answer-005", timeLimit: 15, points: 100 },
+  { id: "question-003", gameId: "game-001", content: "Một lớp có 32 học sinh, đã có 19 bạn nộp bài. Hỏi còn bao nhiêu bạn chưa nộp?", options: [{ id: "answer-007", content: "11 bạn" }, { id: "answer-008", content: "12 bạn" }, { id: "answer-009", content: "13 bạn" }], correctAnswer: "answer-008", timeLimit: 20, points: 100 },
+  { id: "question-004", gameId: "game-002", content: "Hành tinh nào được gọi là \"Hành tinh Đỏ\"?", options: [{ id: "answer-010", content: "Sao Kim" }, { id: "answer-011", content: "Sao Hỏa" }, { id: "answer-012", content: "Sao Thổ" }], correctAnswer: "answer-011", timeLimit: 15, points: 100 },
+  { id: "question-005", gameId: "game-002", content: "Hệ Mặt Trời có tất cả bao nhiêu hành tinh?", options: [{ id: "answer-013", content: "7" }, { id: "answer-014", content: "8" }, { id: "answer-015", content: "9" }], correctAnswer: "answer-014", timeLimit: 15, points: 100 },
+  { id: "question-006", gameId: "game-002", content: "Ngôi sao nào gần Trái Đất nhất?", options: [{ id: "answer-016", content: "Mặt Trời" }, { id: "answer-017", content: "Sao Bắc Cực" }, { id: "answer-018", content: "Sao Hôm" }], correctAnswer: "answer-016", timeLimit: 20, points: 100 },
+  { id: "question-007", gameId: "game-003", content: "Thủ đô của Việt Nam là gì?", options: [{ id: "answer-019", content: "Hà Nội" }, { id: "answer-020", content: "Đà Nẵng" }, { id: "answer-021", content: "TP. Hồ Chí Minh" }], correctAnswer: "answer-019", timeLimit: 15, points: 100 },
+  { id: "question-008", gameId: "game-003", content: "1 giờ có bao nhiêu phút?", options: [{ id: "answer-022", content: "50" }, { id: "answer-023", content: "60" }, { id: "answer-024", content: "70" }], correctAnswer: "answer-023", timeLimit: 10, points: 100 },
+  { id: "question-009", gameId: "game-004", content: "Từ nào sau đây nghĩa là \"mẹ\" trong tiếng Anh?", options: [{ id: "answer-025", content: "Mother" }, { id: "answer-026", content: "Brother" }, { id: "answer-027", content: "Father" }], correctAnswer: "answer-025", timeLimit: 15, points: 100 },
+  { id: "question-010", gameId: "game-004", content: "\"Anh trai\" trong tiếng Anh là gì?", options: [{ id: "answer-028", content: "Sister" }, { id: "answer-029", content: "Brother" }, { id: "answer-030", content: "Uncle" }], correctAnswer: "answer-029", timeLimit: 15, points: 100 },
+  { id: "question-011", gameId: "game-005", content: "Tết Trung Thu diễn ra vào ngày nào theo âm lịch?", options: [{ id: "answer-031", content: "Rằm tháng Tám" }, { id: "answer-032", content: "Mùng Một Tết" }, { id: "answer-033", content: "Rằm tháng Giêng" }], correctAnswer: "answer-031", timeLimit: 15, points: 100 },
+  { id: "question-012", gameId: "game-005", content: "Loại bánh nào thường được ăn trong dịp Trung Thu?", options: [{ id: "answer-034", content: "Bánh chưng" }, { id: "answer-035", content: "Bánh trung thu" }, { id: "answer-036", content: "Bánh tét" }], correctAnswer: "answer-035", timeLimit: 15, points: 100 },
+  { id: "question-013", gameId: "game-006", content: "Vùng nào sau đây thuộc miền Bắc Việt Nam?", options: [{ id: "answer-037", content: "Đồng bằng sông Hồng" }, { id: "answer-038", content: "Đồng bằng sông Cửu Long" }, { id: "answer-039", content: "Tây Nguyên" }], correctAnswer: "answer-037", timeLimit: 20, points: 100 },
+  { id: "question-014", gameId: "game-006", content: "Dãy núi nào dài nhất Việt Nam?", options: [{ id: "answer-040", content: "Trường Sơn" }, { id: "answer-041", content: "Hoàng Liên Sơn" }, { id: "answer-042", content: "Con Voi" }], correctAnswer: "answer-040", timeLimit: 20, points: 100 },
+  { id: "question-015", gameId: "game-007", content: "Chữ cái nào đứng đầu bảng chữ cái tiếng Việt?", options: [{ id: "answer-043", content: "A" }, { id: "answer-044", content: "B" }, { id: "answer-045", content: "Ă" }], correctAnswer: "answer-043", timeLimit: 10, points: 100 },
+  { id: "question-016", gameId: "game-007", content: "Bảng chữ cái tiếng Việt có bao nhiêu chữ cái?", options: [{ id: "answer-046", content: "26" }, { id: "answer-047", content: "29" }, { id: "answer-048", content: "24" }], correctAnswer: "answer-047", timeLimit: 15, points: 100 },
+  { id: "question-017", gameId: "game-008", content: "7 x 8 bằng bao nhiêu?", options: [{ id: "answer-049", content: "54" }, { id: "answer-050", content: "56" }, { id: "answer-051", content: "58" }], correctAnswer: "answer-050", timeLimit: 15, points: 100 },
+  { id: "question-018", gameId: "game-008", content: "Số nào lớn nhất trong các số: 4/5, 3/4, 2/3?", options: [{ id: "answer-052", content: "4/5" }, { id: "answer-053", content: "3/4" }, { id: "answer-054", content: "2/3" }], correctAnswer: "answer-052", timeLimit: 20, points: 100 },
+  { id: "question-019", gameId: "game-009", content: "Khi đèn giao thông chuyển sang màu đỏ, người đi bộ nên làm gì?", options: [{ id: "answer-055", content: "Dừng lại chờ đèn xanh" }, { id: "answer-056", content: "Chạy nhanh qua đường" }, { id: "answer-057", content: "Không quan tâm" }], correctAnswer: "answer-055", timeLimit: 15, points: 100 },
+  { id: "question-020", gameId: "game-009", content: "Trước khi qua đường, em cần làm gì?", options: [{ id: "answer-058", content: "Quan sát hai bên" }, { id: "answer-059", content: "Nhắm mắt chạy" }, { id: "answer-060", content: "Đi thật nhanh" }], correctAnswer: "answer-058", timeLimit: 15, points: 100 },
+  { id: "question-021", gameId: "game-010", content: "Loài động vật nào có cổ dài nhất?", options: [{ id: "answer-061", content: "Voi" }, { id: "answer-062", content: "Hươu cao cổ" }, { id: "answer-063", content: "Ngựa vằn" }], correctAnswer: "answer-062", timeLimit: 15, points: 100 },
+  { id: "question-022", gameId: "game-010", content: "Loài chim nào không biết bay nhưng bơi giỏi?", options: [{ id: "answer-064", content: "Chim cánh cụt" }, { id: "answer-065", content: "Đại bàng" }, { id: "answer-066", content: "Chim sẻ" }], correctAnswer: "answer-064", timeLimit: 15, points: 100 },
+  { id: "question-023", gameId: "game-011", content: "Kinh đô đầu tiên của nhà Lý là ở đâu?", options: [{ id: "answer-067", content: "Thăng Long" }, { id: "answer-068", content: "Huế" }, { id: "answer-069", content: "Hoa Lư" }], correctAnswer: "answer-067", timeLimit: 20, points: 100 },
+  { id: "question-024", gameId: "game-011", content: "Vị vua nào dời đô về Thăng Long?", options: [{ id: "answer-070", content: "Lý Thái Tổ" }, { id: "answer-071", content: "Trần Nhân Tông" }, { id: "answer-072", content: "Lê Lợi" }], correctAnswer: "answer-070", timeLimit: 20, points: 100 },
+  { id: "question-025", gameId: "game-012", content: "Vỏ chai nhựa nên bỏ vào nhóm rác nào?", options: [{ id: "answer-073", content: "Rác tái chế" }, { id: "answer-074", content: "Rác hữu cơ" }, { id: "answer-075", content: "Rác nguy hại" }], correctAnswer: "answer-073", timeLimit: 15, points: 100 },
+  { id: "question-026", gameId: "game-012", content: "Vỏ trái cây thuộc nhóm rác nào?", options: [{ id: "answer-076", content: "Rác hữu cơ" }, { id: "answer-077", content: "Rác tái chế" }, { id: "answer-078", content: "Rác điện tử" }], correctAnswer: "answer-076", timeLimit: 15, points: 100 },
+];
+
+const mockPlayersPool = [
+  { name: "Nguyễn Minh Anh" }, { name: "Trần Gia Huy" }, { name: "Lê Khánh Linh" },
+  { name: "Phạm Bảo Ngọc" }, { name: "Đỗ Quang Vinh" }, { name: "Vũ Thảo My" },
+  { name: "Hoàng Nhật Nam" }, { name: "Bùi Thu Trang" },
+];
+
+const initialResults = [
+  { id: "result-001", gameId: "game-001", playerId: "player-001", playerName: "Nguyễn Minh Anh", score: 850, correctAnswers: 3, totalQuestions: 3, accuracy: 100, completionTime: 42 },
+  { id: "result-002", gameId: "game-001", playerId: "player-002", playerName: "Trần Gia Huy", score: 780, correctAnswers: 3, totalQuestions: 3, accuracy: 100, completionTime: 51 },
+  { id: "result-003", gameId: "game-001", playerId: "player-003", playerName: "Lê Khánh Linh", score: 620, correctAnswers: 2, totalQuestions: 3, accuracy: 67, completionTime: 48 },
+  { id: "result-004", gameId: "game-001", playerId: "player-004", playerName: "Phạm Bảo Ngọc", score: 590, correctAnswers: 2, totalQuestions: 3, accuracy: 67, completionTime: 55 },
+  { id: "result-005", gameId: "game-001", playerId: "player-005", playerName: "Đỗ Quang Vinh", score: 410, correctAnswers: 1, totalQuestions: 3, accuracy: 33, completionTime: 60 },
+  { id: "result-006", gameId: "game-001", playerId: "player-006", playerName: "Vũ Thảo My", score: 900, correctAnswers: 3, totalQuestions: 3, accuracy: 100, completionTime: 38 },
+  { id: "result-007", gameId: "game-002", playerId: "player-007", playerName: "Hoàng Nhật Nam", score: 720, correctAnswers: 3, totalQuestions: 3, accuracy: 100, completionTime: 44 },
+  { id: "result-008", gameId: "game-002", playerId: "player-008", playerName: "Bùi Thu Trang", score: 680, correctAnswers: 2, totalQuestions: 3, accuracy: 67, completionTime: 49 },
+  { id: "result-009", gameId: "game-002", playerId: "player-001", playerName: "Nguyễn Minh Anh", score: 810, correctAnswers: 3, totalQuestions: 3, accuracy: 100, completionTime: 40 },
+  { id: "result-010", gameId: "game-005", playerId: "player-002", playerName: "Trần Gia Huy", score: 500, correctAnswers: 2, totalQuestions: 2, accuracy: 100, completionTime: 30 },
+  { id: "result-011", gameId: "game-005", playerId: "player-003", playerName: "Lê Khánh Linh", score: 480, correctAnswers: 2, totalQuestions: 2, accuracy: 100, completionTime: 33 },
+  { id: "result-012", gameId: "game-005", playerId: "player-004", playerName: "Phạm Bảo Ngọc", score: 260, correctAnswers: 1, totalQuestions: 2, accuracy: 50, completionTime: 35 },
+];
+
+const mockCurrentUser = { id: "user-001", name: "Nguyễn Minh Anh", role: "teacher" };
+
+const SUBJECTS = ["Toán", "Khoa học", "Tiếng Việt", "Tiếng Anh", "Địa lý", "Lịch sử", "Kỹ năng sống", "Tổng hợp"];
+
+/* =========================================================================
+   MOCK PERSISTENCE (in-memory — artifact-safe, no browser storage APIs)
+   ========================================================================= */
+
+const memoryStore = { games: null, questions: null, results: null };
+
+function loadStore(key, fallback) {
+  if (!memoryStore[key]) memoryStore[key] = JSON.parse(JSON.stringify(fallback));
+  return memoryStore[key];
+}
+function saveStore(key, data) { memoryStore[key] = data; }
+
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+
+const gameService = {
+  async list(filters = {}) {
+    await delay(450);
+    let games = loadStore("games", initialGames);
+    if (filters.query) {
+      const q = filters.query.trim().toLowerCase();
+      games = games.filter(g => g.title.toLowerCase().includes(q) || g.topic.toLowerCase().includes(q));
+    }
+    if (filters.status && filters.status !== "all") games = games.filter(g => g.status === filters.status);
+    if (filters.subject && filters.subject !== "all") games = games.filter(g => g.subject === filters.subject);
+    if (filters.category && filters.category !== "all") {
+      games = games.filter(g => {
+        const tpl = mockGameTemplates.find(t => t.id === g.template);
+        return tpl && tpl.category === filters.category;
+      });
+    }
+    return games.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  },
+  async get(id) {
+    await delay(300);
+    return loadStore("games", initialGames).find(g => g.id === id) || null;
+  },
+  async getByCode(code) {
+    await delay(550);
+    const games = loadStore("games", initialGames);
+    return games.find(g => g.code.toLowerCase() === code.trim().toLowerCase() && g.status === "published") || null;
+  },
+  async create(data) {
+    await delay(400);
+    const games = loadStore("games", initialGames);
+    const now = new Date().toISOString();
+    const game = { id: uid("game"), status: "draft", playersCount: 0, questionsCount: 0, code: uid("code").slice(0, 8).toUpperCase(), createdAt: now, updatedAt: now, ...data };
+    games.push(game);
+    saveStore("games", games);
+    return game;
+  },
+  async update(id, data) {
+    await delay(400);
+    const games = loadStore("games", initialGames);
+    const idx = games.findIndex(g => g.id === id);
+    if (idx === -1) throw new Error("Không tìm thấy trò chơi");
+    games[idx] = { ...games[idx], ...data, updatedAt: new Date().toISOString() };
+    saveStore("games", games);
+    return games[idx];
+  },
+  async remove(id) {
+    await delay(350);
+    let games = loadStore("games", initialGames);
+    games = games.filter(g => g.id !== id);
+    saveStore("games", games);
+    let qs = loadStore("questions", initialQuestions);
+    qs = qs.filter(q => q.gameId !== id);
+    saveStore("questions", qs);
+    return true;
+  },
+  async duplicate(id) {
+    await delay(450);
+    const games = loadStore("games", initialGames);
+    const src = games.find(g => g.id === id);
+    if (!src) throw new Error("Không tìm thấy trò chơi");
+    const now = new Date().toISOString();
+    const copy = { ...src, id: uid("game"), title: `${src.title} (Bản sao)`, status: "draft", playersCount: 0, code: uid("code").slice(0, 8).toUpperCase(), createdAt: now, updatedAt: now };
+    games.push(copy);
+    saveStore("games", games);
+    const qs = loadStore("questions", initialQuestions).filter(q => q.gameId === id);
+    const allQs = loadStore("questions", initialQuestions);
+    qs.forEach(q => allQs.push({ ...q, id: uid("question"), gameId: copy.id }));
+    saveStore("questions", allQs);
+    return copy;
+  },
+};
+
+const questionService = {
+  async listByGame(gameId) {
+    await delay(300);
+    return loadStore("questions", initialQuestions).filter(q => q.gameId === gameId);
+  },
+  async save(gameId, questions) {
+    await delay(300);
+    let all = loadStore("questions", initialQuestions);
+    all = all.filter(q => q.gameId !== gameId);
+    all = all.concat(questions.map(q => ({ ...q, gameId })));
+    saveStore("questions", all);
+    const games = loadStore("games", initialGames);
+    const idx = games.findIndex(g => g.id === gameId);
+    if (idx !== -1) { games[idx].questionsCount = questions.length; saveStore("games", games); }
+    return questions;
+  },
+};
+
+const resultService = {
+  async listByGame(gameId) {
+    await delay(400);
+    return loadStore("results", initialResults).filter(r => r.gameId === gameId).sort((a, b) => b.score - a.score);
+  },
+  async submit(result) {
+    await delay(300);
+    const all = loadStore("results", initialResults);
+    const entry = { id: uid("result"), ...result };
+    all.push(entry);
+    saveStore("results", all);
+    return entry;
+  },
+};
+
+/* =========================================================================
+   SMALL UI PRIMITIVES
+   ========================================================================= */
+
+function StampToken({ icon, ring = "#F4B942", size = 56, fontSize = 24, className = "" }) {
+  return (
+    <div className={`stamp-token ${className}`} style={{ "--ring": ring, width: size, height: size, fontSize: fontSize }}>
+      <span>{icon}</span>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const map = {
+    published: { label: "Đã xuất bản", cls: "bg-teal/15 text-teal border-teal/30" },
+    draft: { label: "Bản nháp", cls: "bg-gold/15 text-[#8a6a10] border-gold/40" },
+  };
+  const s = map[status] || map.draft;
+  return <span className={`badge-status text-[11px] uppercase px-2.5 py-1 rounded-full border ${s.cls}`}>{s.label}</span>;
+}
+
+function PrimaryButton({ children, onClick, className = "", disabled, type = "button" }) {
+  return (
+    <button type={type} onClick={onClick} disabled={disabled}
+      className={`font-display font-semibold rounded-2xl px-5 py-3 bg-ink text-paper hover:bg-ink2 active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_3px_0_rgba(0,0,0,0.18)] ${className}`}>
+      {children}
+    </button>
+  );
+}
+function GhostButton({ children, onClick, className = "", disabled }) {
+  return (
+    <button onClick={onClick} disabled={disabled}
+      className={`font-display font-semibold rounded-2xl px-5 py-3 border-2 border-ink/20 text-ink hover:bg-ink/5 active:scale-[0.98] transition disabled:opacity-40 ${className}`}>
+      {children}
+    </button>
+  );
+}
+function IconButton({ children, onClick, title, className = "" }) {
+  return (
+    <button onClick={onClick} title={title}
+      className={`w-9 h-9 rounded-full flex items-center justify-center border border-ink/15 text-ink hover:bg-ink/5 transition ${className}`}>
+      {children}
+    </button>
+  );
+}
+
+function Loader({ label = "Đang tải..." }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 gap-4 text-ink/70">
+      <div className="relative w-14 h-14">
+        <div className="absolute inset-0 rounded-full border-4 border-ink/10"></div>
+        <div className="absolute inset-0 rounded-full border-4 border-ticket border-t-transparent animate-spin"></div>
+      </div>
+      <p className="font-body text-sm">{label}</p>
+    </div>
+  );
+}
+
+function EmptyState({ icon = "🎟️", title, subtitle, action }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-16 px-6 gap-3">
+      <div className="text-5xl float-slow">{icon}</div>
+      <h3 className="font-display text-lg text-ink">{title}</h3>
+      {subtitle && <p className="text-sm text-[#8A7C63] max-w-sm">{subtitle}</p>}
+      {action}
+    </div>
+  );
+}
+
+function ErrorState({ title = "Đã có lỗi xảy ra", subtitle, onRetry }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-16 px-6 gap-3">
+      <div className="text-5xl">🎪</div>
+      <h3 className="font-display text-lg text-ticket">{title}</h3>
+      {subtitle && <p className="text-sm text-[#8A7C63] max-w-sm">{subtitle}</p>}
+      {onRetry && <PrimaryButton onClick={onRetry}>Thử lại</PrimaryButton>}
+    </div>
+  );
+}
+
+function Toast({ toast }) {
+  if (!toast) return null;
+  const cls = toast.type === "error" ? "bg-ticket text-white" : toast.type === "success" ? "bg-teal text-white" : "bg-ink text-paper";
+  return <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-2xl shadow-lg font-body text-sm anim-pop ${cls}`}>{toast.message}</div>;
+}
+
+/* ticket-stub: signature component for join/share codes */
+function TicketStub({ icon, code, notchBg = "#FFF6E7" }) {
+  return (
+    <div className="ticket-stub" style={{ "--notch-bg": notchBg }}>
+      <div className="ticket-stub-tab">{icon}</div>
+      <div className="ticket-stub-body flex items-center justify-center">
+        <span className="font-mono text-2xl sm:text-3xl tracking-[0.3em] text-ink font-bold">{code}</span>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   APP SHELL
+   ========================================================================= */
+
+function useToast() {
+  const [toast, setToast] = useState(null);
+  const show = useCallback((message, type = "info") => {
+    setToast({ message, type });
+    window.clearTimeout(show._t);
+    show._t = window.setTimeout(() => setToast(null), 2600);
+  }, []);
+  return [toast, show];
+}
+
+function App() {
+  const [role, setRole] = useState(null);
+  const [toast, showToast] = useToast();
+  if (!role) return <HomeScreen onSelectRole={setRole} />;
+  if (role === "teacher") return <TeacherApp onExit={() => setRole(null)} showToast={showToast} toast={toast} />;
+  return <StudentApp onExit={() => setRole(null)} showToast={showToast} toast={toast} />;
+}
+
+/* =========================================================================
+   HOME SCREEN
+   ========================================================================= */
+
+function HomeScreen({ onSelectRole }) {
+  return (
+    <div className="min-h-screen marquee-panel flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
+      <div className="marquee-lights w-full absolute top-0 left-0"></div>
+      <div className="marquee-lights w-full absolute bottom-0 left-0"></div>
+      <div className="absolute -top-8 -left-8 text-[130px] opacity-10 select-none">🎡</div>
+      <div className="absolute -bottom-12 -right-6 text-[150px] opacity-10 select-none">🎈</div>
+      <div className="max-w-3xl w-full text-center">
+        <span className="inline-flex items-center gap-2 bg-gold text-ink font-mono text-xs uppercase tracking-wide px-4 py-1.5 rounded-full -rotate-2 mb-6 shadow-[0_2px_0_rgba(0,0,0,0.15)]">
+          🎟️ Hội chợ trò chơi học tập
+        </span>
+        <h1 className="font-display text-5xl md:text-6xl text-paper leading-tight mb-4">
+          Lớp Học <span className="text-gold">Vui</span>
+        </h1>
+        <p className="font-body text-paper/70 text-lg max-w-xl mx-auto mb-12">
+          Giáo viên dựng gian trò chơi ôn tập, học sinh mua vé bằng một mã số và cùng nhau leo lên bảng xếp hạng.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-5 text-left">
+          <button onClick={() => onSelectRole("teacher")}
+            className="anim-pop note-card p-6 text-left hover:-translate-y-1 transition shadow-[0_4px_0_rgba(0,0,0,0.12)] group">
+            <StampToken icon="🧑‍🏫" ring="#E4572E" size={52} fontSize={22} />
+            <h3 className="font-display text-xl mt-4 text-ink">Tôi là giáo viên</h3>
+            <p className="text-sm text-[#8A7C63] mt-1">Dựng gian trò chơi, quản lý câu hỏi và theo dõi kết quả lớp học.</p>
+            <span className="inline-block mt-4 text-sm font-semibold text-ticket group-hover:translate-x-1 transition">Vào Dashboard →</span>
+          </button>
+          <button onClick={() => onSelectRole("student")}
+            className="anim-pop note-card p-6 text-left hover:-translate-y-1 transition shadow-[0_4px_0_rgba(0,0,0,0.12)] group" style={{ animationDelay: ".05s" }}>
+            <StampToken icon="🎒" ring="#1B998B" size={52} fontSize={22} />
+            <h3 className="font-display text-xl mt-4 text-ink">Tôi là học sinh</h3>
+            <p className="text-sm text-[#8A7C63] mt-1">Nhập mã vé trò chơi để tham gia cùng cả lớp và ghi điểm.</p>
+            <span className="inline-block mt-4 text-sm font-semibold text-teal group-hover:translate-x-1 transition">Tham gia ngay →</span>
+          </button>
+        </div>
+        <p className="text-paper/40 text-xs mt-10 font-mono">Frontend Prototype · Dữ liệu mô phỏng (Mock Data)</p>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   TEACHER APP
+   ========================================================================= */
+
+function TeacherApp({ onExit, showToast, toast }) {
+  const [screen, setScreen] = useState("dashboard");
+  const [activeGameId, setActiveGameId] = useState(null);
+  const [refreshFlag, setRefreshFlag] = useState(0);
+  const bump = () => setRefreshFlag(f => f + 1);
+
+  const goResults = (id) => { setActiveGameId(id); setScreen("results"); };
+  const goEdit = (id) => { setActiveGameId(id); setScreen("create"); };
+  const goCreateNew = () => { setActiveGameId(null); setScreen("create"); };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-paper">
+      <TeacherNav screen={screen} setScreen={setScreen} onExit={onExit} onCreate={goCreateNew} />
+      <main className="flex-1 max-w-6xl w-full mx-auto px-5 md:px-8 py-8">
+        {screen === "dashboard" && <TeacherDashboard key={refreshFlag} onOpenLibrary={() => setScreen("library")} onCreate={goCreateNew} onEdit={goEdit} onResults={goResults} />}
+        {screen === "library" && <GameLibrary key={refreshFlag} onCreate={goCreateNew} onEdit={goEdit} onResults={goResults} showToast={showToast} onChanged={bump} />}
+        {screen === "create" && <CreateGameFlow gameId={activeGameId} showToast={showToast} onDone={() => { bump(); setScreen("library"); }} onCancel={() => setScreen("library")} />}
+        {screen === "results" && <TeacherResults gameId={activeGameId} onBack={() => setScreen("library")} />}
+      </main>
+      <Toast toast={toast} />
+    </div>
+  );
+}
+
+function TeacherNav({ screen, setScreen, onExit, onCreate }) {
+  const tabs = [{ id: "dashboard", label: "Dashboard" }, { id: "library", label: "Thư viện trò chơi" }];
+  return (
+    <header className="marquee-panel sticky top-0 z-20">
+      <div className="marquee-lights w-full"></div>
+      <div className="max-w-6xl mx-auto px-5 md:px-8 py-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🎪</span>
+          <span className="font-display text-paper text-lg">Lớp Học Vui</span>
+        </div>
+        <nav className="hidden sm:flex items-center gap-1 bg-paper/10 rounded-full p-1">
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setScreen(t.id)}
+              className={`px-4 py-2 rounded-full text-sm font-body transition ${screen === t.id ? "bg-gold text-ink font-semibold" : "text-paper/70 hover:text-paper"}`}>
+              {t.label}
+            </button>
+          ))}
+        </nav>
+        <div className="flex items-center gap-3">
+          <PrimaryButton onClick={onCreate} className="!bg-ticket !text-white !shadow-none px-4 py-2 text-sm">+ Tạo trò chơi</PrimaryButton>
+          <button onClick={onExit} className="flex items-center gap-2 text-paper/70 hover:text-paper text-sm">
+            <span className="w-8 h-8 rounded-full bg-paper/15 flex items-center justify-center font-display">{mockCurrentUser.name[0]}</span>
+            <span className="hidden md:inline">Thoát</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function TeacherDashboard({ onOpenLibrary, onCreate, onEdit, onResults }) {
+  const [games, setGames] = useState(null);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(() => { setGames(null); setError(null); gameService.list().then(setGames).catch(e => setError(e.message)); }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const stats = useMemo(() => {
+    if (!games) return null;
+    const published = games.filter(g => g.status === "published").length;
+    const drafts = games.filter(g => g.status === "draft").length;
+    const players = games.reduce((s, g) => s + g.playersCount, 0);
+    return { total: games.length, published, drafts, players };
+  }, [games]);
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <p className="text-[#8A7C63] text-sm font-mono">Xin chào,</p>
+        <h1 className="font-display text-3xl text-ink">{mockCurrentUser.name} 👋</h1>
+      </div>
+
+      {error && <ErrorState subtitle="Không thể tải dữ liệu Dashboard." onRetry={load} />}
+      {!error && !games && <Loader label="Đang tải dashboard..." />}
+
+      {!error && games && (
+        <React.Fragment>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Tổng trò chơi", value: stats.total, icon: "🎟️", ring: "#1D2E4A" },
+              { label: "Đã xuất bản", value: stats.published, icon: "✅", ring: "#1B998B" },
+              { label: "Bản nháp", value: stats.drafts, icon: "✏️", ring: "#F4B942" },
+              { label: "Lượt chơi", value: stats.players, icon: "🎮", ring: "#FF6F91" },
+            ].map(s => (
+              <div key={s.label} className="note-card p-5">
+                <StampToken icon={s.icon} ring={s.ring} size={40} fontSize={18} />
+                <div className="font-display text-2xl text-ink mt-3">{s.value}</div>
+                <div className="text-xs text-[#8A7C63] font-mono uppercase mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-xl text-ink">Trò chơi gần đây</h2>
+              <button onClick={onOpenLibrary} className="text-sm text-ticket font-semibold hover:underline">Xem tất cả →</button>
+            </div>
+            {games.length === 0 ? (
+              <EmptyState icon="🎲" title="Chưa có trò chơi nào" subtitle="Tạo trò chơi đầu tiên để bắt đầu ôn tập cùng học sinh."
+                action={<PrimaryButton onClick={onCreate} className="mt-2">+ Tạo trò chơi</PrimaryButton>} />
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {games.slice(0, 3).map(g => <GameCard key={g.id} game={g} onEdit={() => onEdit(g.id)} onResults={() => onResults(g.id)} />)}
+              </div>
+            )}
+          </div>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onShare }) {
+  const tpl = mockGameTemplates.find(t => t.id === game.template);
+  return (
+    <div className="note-card p-5 flex flex-col gap-3 anim-pop hover:-translate-y-0.5 transition shadow-[0_2px_0_rgba(0,0,0,0.06)]">
+      <div className="flex items-start justify-between">
+        <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#1D2E4A"} size={44} fontSize={20} />
+        <StatusBadge status={game.status} />
+      </div>
+      <div>
+        <h3 className="font-display text-lg text-ink leading-snug clamp-2">{game.title}</h3>
+        <p className="text-sm text-[#8A7C63] mt-1 clamp-2">{game.description}</p>
+      </div>
+      <div className="flex items-center gap-3 text-xs text-[#8A7C63] font-mono flex-wrap">
+        <span>{game.subject}</span><span>·</span><span>{tpl ? tpl.categoryLabel : ""}</span><span>·</span><span>{game.questionsCount} câu hỏi</span><span>·</span><span>{game.playersCount} lượt chơi</span>
+      </div>
+      <hr className="dash-rule my-1" />
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <IconButton title="Chỉnh sửa" onClick={onEdit}>✏️</IconButton>
+          {onDuplicate && <IconButton title="Sao chép" onClick={onDuplicate}>📄</IconButton>}
+          {onShare && game.status === "published" && <IconButton title="Chia sẻ" onClick={onShare}>🎟️</IconButton>}
+          {onDelete && <IconButton title="Xóa" onClick={onDelete}>🗑️</IconButton>}
+        </div>
+        <button onClick={onResults} className="text-sm font-semibold text-ticket hover:underline">Kết quả →</button>
+      </div>
+    </div>
+  );
+}
+
+function GameLibrary({ onCreate, onEdit, onResults, showToast, onChanged }) {
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [subject, setSubject] = useState("all");
+  const [category, setCategory] = useState("all");
+  const [games, setGames] = useState(null);
+  const [error, setError] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [shareGame, setShareGame] = useState(null);
+
+  const load = useCallback(() => {
+    setGames(null); setError(null);
+    gameService.list({ query, status, subject, category }).then(setGames).catch(e => setError(e.message || "Lỗi tải dữ liệu"));
+  }, [query, status, subject, category]);
+
+  useEffect(() => { const t = setTimeout(load, 250); return () => clearTimeout(t); }, [load]);
+
+  const handleDelete = async (id) => { await gameService.remove(id); showToast("Đã xóa trò chơi", "success"); setConfirmDelete(null); onChanged(); load(); };
+  const handleDuplicate = async (id) => { await gameService.duplicate(id); showToast("Đã sao chép trò chơi vào Bản nháp", "success"); onChanged(); load(); };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h1 className="font-display text-3xl text-ink">Thư viện trò chơi</h1>
+        <PrimaryButton onClick={onCreate}>+ Tạo trò chơi mới</PrimaryButton>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Tìm theo tên hoặc chủ đề..."
+          className="flex-1 note-card px-4 py-2.5 text-sm placeholder:text-[#B7A987]" />
+        <select value={status} onChange={e => setStatus(e.target.value)} className="note-card px-4 py-2.5 text-sm">
+          <option value="all">Tất cả trạng thái</option>
+          <option value="published">Đã xuất bản</option>
+          <option value="draft">Bản nháp</option>
+        </select>
+        <select value={subject} onChange={e => setSubject(e.target.value)} className="note-card px-4 py-2.5 text-sm">
+          <option value="all">Tất cả môn học</option>
+          {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {CATEGORIES.map(c => (
+          <button key={c.id} onClick={() => setCategory(c.id)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-body border transition ${category === c.id ? "bg-ink text-paper border-ink" : "border-ink/15 text-ink/70 hover:border-ink/35"}`}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {error && <ErrorState subtitle="Không thể tải thư viện trò chơi." onRetry={load} />}
+      {!error && !games && <Loader label="Đang tìm trò chơi..." />}
+      {!error && games && games.length === 0 && (
+        <EmptyState icon="🔍" title="Không tìm thấy trò chơi phù hợp" subtitle="Thử đổi từ khóa tìm kiếm hoặc bộ lọc, hoặc tạo một trò chơi mới."
+          action={<PrimaryButton onClick={onCreate} className="mt-2">+ Tạo trò chơi</PrimaryButton>} />
+      )}
+      {!error && games && games.length > 0 && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {games.map(g => (
+            <GameCard key={g.id} game={g} onEdit={() => onEdit(g.id)} onResults={() => onResults(g.id)}
+              onDuplicate={() => handleDuplicate(g.id)} onDelete={() => setConfirmDelete(g)} onShare={() => setShareGame(g)} />
+          ))}
+        </div>
+      )}
+
+      {confirmDelete && (
+        <Modal onClose={() => setConfirmDelete(null)}>
+          <h3 className="font-display text-xl text-ink mb-2">Xóa "{confirmDelete.title}"?</h3>
+          <p className="text-sm text-[#8A7C63] mb-6">Thao tác này không thể hoàn tác. Toàn bộ câu hỏi và kết quả liên quan sẽ bị xóa.</p>
+          <div className="flex justify-end gap-3">
+            <GhostButton onClick={() => setConfirmDelete(null)}>Hủy</GhostButton>
+            <PrimaryButton onClick={() => handleDelete(confirmDelete.id)} className="!bg-ticket">Xóa trò chơi</PrimaryButton>
+          </div>
+        </Modal>
+      )}
+      {shareGame && (
+        <Modal onClose={() => setShareGame(null)}>
+          <h3 className="font-display text-xl text-ink mb-2">Vé mời "{shareGame.title}"</h3>
+          <p className="text-sm text-[#8A7C63] mb-4">Học sinh nhập mã vé sau tại màn hình "Tham gia trò chơi":</p>
+          <TicketStub icon="🎟️" code={shareGame.code} notchBg="#FFFBF2" />
+          <div className="flex justify-end mt-6">
+            <PrimaryButton onClick={() => setShareGame(null)}>Đã hiểu</PrimaryButton>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function Modal({ children, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-ink/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="note-card max-w-md w-full p-6 anim-pop" onClick={e => e.stopPropagation()}>{children}</div>
+    </div>
+  );
+}
+
+/* ---------------------- CREATE / EDIT GAME FLOW ---------------------- */
+
+const STEPS = [
+  { id: "template", label: "Chọn mẫu" },
+  { id: "info", label: "Nhập thông tin" },
+  { id: "questions", label: "Câu hỏi" },
+  { id: "customize", label: "Tùy chỉnh" },
+  { id: "preview", label: "Xem trước" },
+];
+
+function emptyQuestion() {
+  return {
+    id: uid("question"), content: "",
+    options: [{ id: uid("answer"), content: "" }, { id: uid("answer"), content: "" }, { id: uid("answer"), content: "" }],
+    correctAnswer: null, timeLimit: 20, points: 100,
+  };
+}
+
+function CreateGameFlow({ gameId, onDone, onCancel, showToast }) {
+  const [loading, setLoading] = useState(!!gameId);
+  const [stepIdx, setStepIdx] = useState(0);
+  const [form, setForm] = useState({ title: "", description: "", subject: SUBJECTS[0], topic: "", template: null, theme: "gold" });
+  const [questions, setQuestions] = useState([]);
+  const [savingStatus, setSavingStatus] = useState(null);
+
+  useEffect(() => {
+    if (!gameId) return;
+    (async () => {
+      const g = await gameService.get(gameId);
+      if (g) { setForm({ title: g.title, description: g.description, subject: g.subject, topic: g.topic, template: g.template, theme: g.theme || "gold" }); setStepIdx(1); }
+      const qs = await questionService.listByGame(gameId);
+      setQuestions(qs.length ? qs : [emptyQuestion()]);
+      setLoading(false);
+    })();
+  }, [gameId]);
+
+  useEffect(() => { if (!gameId && questions.length === 0) setQuestions([emptyQuestion()]); }, []);
+
+  const step = STEPS[stepIdx];
+  const canNext = useMemo(() => {
+    if (step.id === "template") return !!form.template;
+    if (step.id === "info") return form.title.trim().length > 2 && form.topic.trim().length > 1;
+    if (step.id === "questions") return questions.length > 0 && questions.every(q => q.content.trim() && q.correctAnswer && q.options.every(o => o.content.trim()));
+    return true;
+  }, [step, form, questions]);
+
+  const persist = async (status) => {
+    setSavingStatus(status);
+    let id = gameId;
+    const payload = { ...form, status, questionsCount: questions.length };
+    if (id) await gameService.update(id, payload);
+    else { const created = await gameService.create(payload); id = created.id; }
+    await questionService.save(id, questions);
+    setSavingStatus(null);
+    showToast(status === "published" ? "Đã xuất bản trò chơi 🎉" : "Đã lưu bản nháp", "success");
+    onDone();
+  };
+
+  if (loading) return <Loader label="Đang tải trò chơi..." />;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-3xl text-ink">{gameId ? "Chỉnh sửa trò chơi" : "Tạo trò chơi mới"}</h1>
+        <button onClick={onCancel} className="text-sm text-[#8A7C63] hover:text-ink">Hủy ✕</button>
+      </div>
+
+      <Stepper steps={STEPS} activeIdx={stepIdx} onJump={(i) => i < stepIdx && setStepIdx(i)} />
+
+      <div className="note-card p-6 md:p-8 min-h-[380px]">
+        {step.id === "template" && <StepTemplate form={form} setForm={setForm} />}
+        {step.id === "info" && <StepInfo form={form} setForm={setForm} />}
+        {step.id === "questions" && <StepQuestions questions={questions} setQuestions={setQuestions} />}
+        {step.id === "customize" && <StepCustomize form={form} setForm={setForm} />}
+        {step.id === "preview" && <StepPreview form={form} questions={questions} />}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <GhostButton onClick={() => setStepIdx(i => Math.max(0, i - 1))} disabled={stepIdx === 0}>← Quay lại</GhostButton>
+        <div className="flex gap-3">
+          {step.id === "preview" ? (
+            <React.Fragment>
+              <GhostButton onClick={() => persist("draft")} disabled={savingStatus !== null}>{savingStatus === "draft" ? "Đang lưu..." : "Lưu bản nháp"}</GhostButton>
+              <PrimaryButton onClick={() => persist("published")} disabled={savingStatus !== null}>{savingStatus === "published" ? "Đang xuất bản..." : "Xuất bản 🚀"}</PrimaryButton>
+            </React.Fragment>
+          ) : (
+            <PrimaryButton onClick={() => setStepIdx(i => Math.min(STEPS.length - 1, i + 1))} disabled={!canNext}>Tiếp tục →</PrimaryButton>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stepper({ steps, activeIdx, onJump }) {
+  return (
+    <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-1">
+      {steps.map((s, i) => (
+        <React.Fragment key={s.id}>
+          <button onClick={() => onJump(i)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs sm:text-sm whitespace-nowrap font-body transition
+              ${i === activeIdx ? "bg-ink text-paper font-semibold" : i < activeIdx ? "bg-teal/15 text-teal" : "bg-ink/5 text-[#8A7C63]"}`}>
+            <span className="font-mono">{i + 1}</span>{s.label}
+          </button>
+          {i < steps.length - 1 && <div className="w-4 sm:w-8 h-px dash-rule flex-shrink-0"></div>}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+function StepTemplate({ form, setForm }) {
+  const [filter, setFilter] = useState("all");
+  const list = filter === "all" ? mockGameTemplates : mockGameTemplates.filter(t => t.category === filter);
+  return (
+    <div>
+      <h2 className="font-display text-xl text-ink mb-1">Chọn mẫu trò chơi</h2>
+      <p className="text-sm text-[#8A7C63] mb-4">Mỗi mẫu mang một cách chơi khác nhau — chọn mẫu phù hợp với nội dung ôn tập của bạn.</p>
+      <div className="flex flex-wrap gap-2 mb-6">
+        {CATEGORIES.map(c => (
+          <button key={c.id} onClick={() => setFilter(c.id)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-body border transition ${filter === c.id ? "bg-ink text-paper border-ink" : "border-ink/15 text-ink/70 hover:border-ink/35"}`}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid sm:grid-cols-2 gap-4">
+        {list.map(t => (
+          <button key={t.id} onClick={() => setForm(f => ({ ...f, template: t.id }))}
+            className={`text-left p-5 rounded-2xl border-2 transition flex gap-4 items-start
+              ${form.template === t.id ? "border-ticket bg-ticket/5" : "border-ink/10 hover:border-ink/25"}`}>
+            <StampToken icon={t.icon} ring={t.ring} size={48} fontSize={22} />
+            <div>
+              <h3 className="font-display text-base text-ink">{t.name}</h3>
+              <p className="text-sm text-[#8A7C63] mt-1">{t.description}</p>
+              <span className="inline-block mt-2 text-[10px] font-mono uppercase text-[#B7A987]">{t.categoryLabel}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children, hint }) {
+  return (
+    <label className="block mb-5">
+      <span className="block text-sm font-semibold text-ink mb-1.5">{label}</span>
+      {children}
+      {hint && <span className="block text-xs text-[#B7A987] mt-1">{hint}</span>}
+    </label>
+  );
+}
+const inputCls = "w-full note-card px-4 py-2.5 text-sm border-ink/10 focus:border-ticket";
+
+function StepInfo({ form, setForm }) {
+  return (
+    <div>
+      <h2 className="font-display text-xl text-ink mb-6">Nhập thông tin trò chơi</h2>
+      <div className="grid sm:grid-cols-2 gap-x-6">
+        <Field label="Tên trò chơi">
+          <input className={inputCls} value={form.title} maxLength={80} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Ví dụ: Ôn tập Toán lớp 3" />
+        </Field>
+        <Field label="Môn học">
+          <select className={inputCls} value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}>
+            {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </Field>
+        <Field label="Chủ đề" hint="Chủ đề cụ thể của bài ôn tập">
+          <input className={inputCls} value={form.topic} onChange={e => setForm(f => ({ ...f, topic: e.target.value }))} placeholder="Ví dụ: Phép cộng và phép trừ" />
+        </Field>
+        <Field label="Ngôn ngữ">
+          <select className={inputCls} value={form.language || "vi"} onChange={e => setForm(f => ({ ...f, language: e.target.value }))}>
+            <option value="vi">Tiếng Việt</option>
+            <option value="en">Tiếng Anh</option>
+          </select>
+        </Field>
+      </div>
+      <Field label="Mô tả">
+        <textarea className={inputCls + " min-h-[90px]"} value={form.description} maxLength={200} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Mô tả ngắn gọn nội dung trò chơi..." />
+      </Field>
+    </div>
+  );
+}
+
+function StepQuestions({ questions, setQuestions }) {
+  const [openIdx, setOpenIdx] = useState(0);
+  const update = (idx, patch) => setQuestions(qs => qs.map((q, i) => i === idx ? { ...q, ...patch } : q));
+  const updateOption = (idx, optId, content) => setQuestions(qs => qs.map((q, i) => i !== idx ? q : { ...q, options: q.options.map(o => o.id === optId ? { ...o, content } : o) }));
+  const addOption = (idx) => setQuestions(qs => qs.map((q, i) => i !== idx ? q : (q.options.length >= 4 ? q : { ...q, options: [...q.options, { id: uid("answer"), content: "" }] })));
+  const removeOption = (idx, optId) => setQuestions(qs => qs.map((q, i) => {
+    if (i !== idx || q.options.length <= 2) return q;
+    const opts = q.options.filter(o => o.id !== optId);
+    return { ...q, options: opts, correctAnswer: q.correctAnswer === optId ? null : q.correctAnswer };
+  }));
+  const addQuestion = () => { setQuestions(qs => [...qs, emptyQuestion()]); setOpenIdx(questions.length); };
+  const removeQuestion = (idx) => { setQuestions(qs => qs.filter((_, i) => i !== idx)); setOpenIdx(0); };
+  const move = (idx, dir) => setQuestions(qs => {
+    const next = [...qs]; const target = idx + dir;
+    if (target < 0 || target >= next.length) return qs;
+    [next[idx], next[target]] = [next[target], next[idx]];
+    return next;
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-display text-xl text-ink">Quản lý câu hỏi</h2>
+        <span className="text-xs font-mono text-[#8A7C63]">{questions.length} câu hỏi</span>
+      </div>
+      <div className="space-y-3">
+        {questions.map((q, idx) => (
+          <div key={q.id} className="border border-ink/10 rounded-2xl overflow-hidden">
+            <button onClick={() => setOpenIdx(openIdx === idx ? -1 : idx)} className="w-full flex items-center justify-between px-4 py-3 bg-ink/[0.03] text-left">
+              <span className="flex items-center gap-3 min-w-0">
+                <span className="w-7 h-7 rounded-full bg-ink text-paper text-xs flex items-center justify-center font-mono flex-shrink-0">{idx + 1}</span>
+                <span className="font-body text-sm text-ink truncate">{q.content || "Câu hỏi mới — nhấn để chỉnh sửa"}</span>
+              </span>
+              <span className="text-[#8A7C63] text-xs flex-shrink-0 ml-2">{openIdx === idx ? "▲" : "▼"}</span>
+            </button>
+            {openIdx === idx && (
+              <div className="p-4 sm:p-5 border-t border-ink/10 space-y-4">
+                <Field label="Nội dung câu hỏi">
+                  <textarea className={inputCls} value={q.content} onChange={e => update(idx, { content: e.target.value })} placeholder="Nhập câu hỏi..." />
+                </Field>
+                <div>
+                  <span className="block text-sm font-semibold text-ink mb-2">Phương án trả lời (chọn ô tròn cho đáp án đúng)</span>
+                  <div className="space-y-2">
+                    {q.options.map(o => (
+                      <div key={o.id} className="flex items-center gap-2">
+                        <button onClick={() => update(idx, { correctAnswer: o.id })}
+                          className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition ${q.correctAnswer === o.id ? "bg-teal border-teal text-white" : "border-ink/25"}`}>
+                          {q.correctAnswer === o.id && "✓"}
+                        </button>
+                        <input className={inputCls} value={o.content} onChange={e => updateOption(idx, o.id, e.target.value)} placeholder="Nội dung đáp án" />
+                        {q.options.length > 2 && <button onClick={() => removeOption(idx, o.id)} className="text-[#B7A987] hover:text-ticket px-1">✕</button>}
+                      </div>
+                    ))}
+                  </div>
+                  {q.options.length < 4 && <button onClick={() => addOption(idx)} className="text-sm text-ticket font-semibold mt-2 hover:underline">+ Thêm đáp án</button>}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Thời gian trả lời (giây)">
+                    <input type="number" min={5} max={120} className={inputCls} value={q.timeLimit} onChange={e => update(idx, { timeLimit: Number(e.target.value) || 5 })} />
+                  </Field>
+                  <Field label="Điểm số">
+                    <input type="number" min={10} step={10} className={inputCls} value={q.points} onChange={e => update(idx, { points: Number(e.target.value) || 10 })} />
+                  </Field>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex gap-2">
+                    <IconButton title="Di chuyển lên" onClick={() => move(idx, -1)}>↑</IconButton>
+                    <IconButton title="Di chuyển xuống" onClick={() => move(idx, 1)}>↓</IconButton>
+                  </div>
+                  {questions.length > 1 && <button onClick={() => removeQuestion(idx)} className="text-sm text-ticket font-semibold hover:underline">Xóa câu hỏi</button>}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <GhostButton onClick={addQuestion} className="mt-4 w-full">+ Thêm câu hỏi</GhostButton>
+    </div>
+  );
+}
+
+const THEMES = [
+  { id: "gold", label: "Vé Vàng", color: "#F4B942" },
+  { id: "teal", label: "Vé Xanh Ngọc", color: "#1B998B" },
+  { id: "ticket", label: "Vé Đỏ", color: "#E4572E" },
+  { id: "pink", label: "Vé Hồng", color: "#FF6F91" },
+];
+
+function StepCustomize({ form, setForm }) {
+  return (
+    <div>
+      <h2 className="font-display text-xl text-ink mb-1">Tùy chỉnh giao diện</h2>
+      <p className="text-sm text-[#8A7C63] mb-6">Chọn tông màu vé sẽ hiển thị cho học sinh khi chơi.</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {THEMES.map(t => (
+          <button key={t.id} onClick={() => setForm(f => ({ ...f, theme: t.id }))}
+            className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-3 transition ${form.theme === t.id ? "border-ink" : "border-ink/10 hover:border-ink/25"}`}>
+            <div className="w-12 h-12 rounded-full stamp-token" style={{ "--ring": t.color, background: t.color + "22" }}></div>
+            <span className="text-sm font-body">{t.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepPreview({ form, questions }) {
+  const tpl = mockGameTemplates.find(t => t.id === form.template);
+  const themeColor = (THEMES.find(t => t.id === form.theme) || THEMES[0]).color;
+  return (
+    <div>
+      <h2 className="font-display text-xl text-ink mb-6">Xem trước</h2>
+      <div className="rounded-3xl p-6 sm:p-8" style={{ background: `${themeColor}14` }}>
+        <div className="flex items-center gap-4 mb-6">
+          <StampToken icon={tpl ? tpl.icon : "🎲"} ring={themeColor} size={56} fontSize={26} />
+          <div>
+            <h3 className="font-display text-2xl text-ink">{form.title || "Tên trò chơi"}</h3>
+            <p className="text-sm text-[#8A7C63]">{form.subject} · {form.topic || "Chủ đề"}</p>
+          </div>
+        </div>
+        <p className="text-sm text-[#8A7C63] mb-6">{form.description || "Chưa có mô tả."}</p>
+        {questions[0] && (
+          <div className="note-card p-6 max-w-lg">
+            <div className="flex justify-between items-center mb-4 text-xs font-mono text-[#8A7C63]">
+              <span>Câu 1/{questions.length}</span><span>⏱ {questions[0].timeLimit}s</span>
+            </div>
+            <p className="font-display text-lg text-ink mb-4">{questions[0].content || "Nội dung câu hỏi..."}</p>
+            <div className="grid gap-2">
+              {questions[0].options.map((o, i) => (
+                <div key={o.id} className="px-4 py-2.5 rounded-xl border-2" style={{ borderColor: o.id === questions[0].correctAnswer ? "#1B998B" : "#E7D9BE" }}>
+                  {String.fromCharCode(65 + i)}. {o.content || "..."}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- TEACHER RESULTS ---------------------- */
+
+function TeacherResults({ gameId, onBack }) {
+  const [game, setGame] = useState(null);
+  const [results, setResults] = useState(null);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(() => {
+    setResults(null); setError(null);
+    Promise.all([gameService.get(gameId), resultService.listByGame(gameId)]).then(([g, r]) => { setGame(g); setResults(r); }).catch(e => setError(e.message || "Lỗi tải kết quả"));
+  }, [gameId]);
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div className="space-y-6">
+      <button onClick={onBack} className="text-sm text-[#8A7C63] hover:text-ink">← Thư viện trò chơi</button>
+      {error && <ErrorState onRetry={load} subtitle="Không thể tải kết quả trò chơi." />}
+      {!error && !results && <Loader label="Đang tải kết quả..." />}
+      {!error && results && (
+        <React.Fragment>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <h1 className="font-display text-3xl text-ink">{game ? game.title : "Kết quả"}</h1>
+            <StatusBadge status={game ? game.status : "draft"} />
+          </div>
+          {results.length === 0 ? (
+            <EmptyState icon="📊" title="Chưa có lượt chơi nào" subtitle="Chia sẻ mã vé trò chơi để học sinh tham gia và bạn sẽ thấy kết quả tại đây." />
+          ) : (
+            <LeaderboardTable results={results} />
+          )}
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+function rankMedal(rank) {
+  if (rank === 1) return { icon: "🥇", ring: "#F4B942" };
+  if (rank === 2) return { icon: "🥈", ring: "#9CA3AF" };
+  if (rank === 3) return { icon: "🥉", ring: "#B5651D" };
+  return { icon: rank, ring: "#E7D9BE" };
+}
+
+function LeaderboardTable({ results }) {
+  return (
+    <div className="note-card overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">
+            <th className="px-5 py-3">Hạng</th><th className="px-5 py-3">Học sinh</th><th className="px-5 py-3">Điểm</th>
+            <th className="px-5 py-3">Độ chính xác</th><th className="px-5 py-3 hidden sm:table-cell">Thời gian hoàn thành</th>
+          </tr>
+        </thead>
+        <tbody>
+          {results.map((r, i) => {
+            const medal = rankMedal(i + 1);
+            return (
+              <tr key={r.id} className="border-b border-ink/5 last:border-0">
+                <td className="px-5 py-3"><StampToken icon={medal.icon} ring={medal.ring} size={34} fontSize={i < 3 ? 16 : 13} /></td>
+                <td className="px-5 py-3 font-body text-ink">{r.playerName}</td>
+                <td className="px-5 py-3 font-display text-ink">{r.score}</td>
+                <td className="px-5 py-3 text-[#8A7C63]">{r.correctAnswers}/{r.totalQuestions} ({r.accuracy}%)</td>
+                <td className="px-5 py-3 hidden sm:table-cell text-[#8A7C63] font-mono">{r.completionTime}s</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* =========================================================================
+   STUDENT APP
+   ========================================================================= */
+
+function StudentApp({ onExit, showToast, toast }) {
+  const [screen, setScreen] = useState("join");
+  const [game, setGame] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [playerName, setPlayerName] = useState("");
+  const [finalResult, setFinalResult] = useState(null);
+  const [leaderboard, setLeaderboard] = useState(null);
+
+  const restart = () => { setScreen("join"); setGame(null); setQuestions([]); setPlayerName(""); setFinalResult(null); setLeaderboard(null); };
+
+  return (
+    <div className="min-h-screen bg-paper flex flex-col">
+      <StudentTopBar onExit={onExit} />
+      <main className="flex-1 flex flex-col">
+        {screen === "join" && <JoinGameScreen onFound={(g) => { setGame(g); setScreen("name"); }} />}
+        {screen === "name" && game && <EnterNameScreen game={game} onBack={() => setScreen("join")} onSubmit={(name) => { setPlayerName(name); setScreen("waiting"); }} />}
+        {screen === "waiting" && game && (
+          <WaitingRoomScreen game={game} playerName={playerName}
+            onStart={async () => { const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play"); }} />
+        )}
+        {screen === "play" && game && questions.length > 0 && (
+          game.template === "snail-race" ? (
+            <SnailRacePlayScreen game={game} questions={questions} playerName={playerName}
+              onQuit={restart}
+              onFinish={async (sessionResult) => {
+                const entry = await resultService.submit({
+                  gameId: game.id, playerId: uid("player"), playerName,
+                  score: sessionResult.score, correctAnswers: sessionResult.correct,
+                  totalQuestions: questions.length, accuracy: Math.round((sessionResult.correct / questions.length) * 100),
+                  completionTime: sessionResult.timeUsed,
+                });
+                setFinalResult(entry);
+                setScreen("result");
+              }} />
+          ) : (
+            <PlayGameScreen game={game} questions={questions}
+              onFinish={async (sessionResult) => {
+                const entry = await resultService.submit({
+                  gameId: game.id, playerId: uid("player"), playerName,
+                  score: sessionResult.score, correctAnswers: sessionResult.correct,
+                  totalQuestions: questions.length, accuracy: Math.round((sessionResult.correct / questions.length) * 100),
+                  completionTime: sessionResult.timeUsed,
+                });
+                setFinalResult(entry);
+                setScreen("result");
+              }} />
+          )
+        )}
+        {screen === "result" && finalResult && (
+          <ResultScreen result={finalResult} onSeeLeaderboard={async () => { const r = await resultService.listByGame(game.id); setLeaderboard(r); setScreen("leaderboard"); }} />
+        )}
+        {screen === "leaderboard" && leaderboard && <LeaderboardScreen results={leaderboard} playerName={playerName} onPlayAgain={restart} />}
+      </main>
+      <Toast toast={toast} />
+    </div>
+  );
+}
+
+function StudentTopBar({ onExit }) {
+  return (
+    <div className="flex items-center justify-between px-5 md:px-8 py-4">
+      <div className="flex items-center gap-2"><span className="text-xl">🎪</span><span className="font-display text-ink">Lớp Học Vui</span></div>
+      <button onClick={onExit} className="text-sm text-[#8A7C63] hover:text-ink">Thoát</button>
+    </div>
+  );
+}
+
+function JoinGameScreen({ onFound }) {
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setLoading(true); setError(null);
+    const game = await gameService.getByCode(code);
+    setLoading(false);
+    if (!game) { setError("Không tìm thấy trò chơi với mã vé này. Kiểm tra lại và thử lần nữa nhé!"); return; }
+    onFound(game);
+  };
+
+  return (
+    <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <form onSubmit={submit} className="max-w-sm w-full text-center anim-pop">
+        <div className="text-6xl mb-4 float-slow">🎟️</div>
+        <h1 className="font-display text-2xl text-ink mb-1">Tham gia trò chơi</h1>
+        <p className="text-sm text-[#8A7C63] mb-6">Nhập mã vé giáo viên đã cung cấp</p>
+        <TicketStub icon="🔑" code={code || "______"} />
+        <input value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
+          placeholder="VD: TOAN101" maxLength={10}
+          className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase" />
+        {error && <p className="text-ticket text-sm mt-3">{error}</p>}
+        <PrimaryButton type="submit" className="w-full mt-5" disabled={loading || !code.trim()}>{loading ? "Đang kiểm tra..." : "Tham gia →"}</PrimaryButton>
+        <p className="text-xs text-[#B7A987] mt-4 font-mono">Thử mã mẫu: TOAN101, VUTRU22, FAMILY07...</p>
+      </form>
+    </div>
+  );
+}
+
+function EnterNameScreen({ game, onBack, onSubmit }) {
+  const [name, setName] = useState("");
+  const tpl = mockGameTemplates.find(t => t.id === game.template);
+  return (
+    <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <form onSubmit={e => { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); }} className="max-w-sm w-full text-center anim-pop">
+        <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={72} fontSize={32} className="mx-auto mb-4" />
+        <h1 className="font-display text-2xl text-ink mb-1">{game.title}</h1>
+        <p className="text-sm text-[#8A7C63] mb-6">{game.subject} · {game.topic}</p>
+        <input value={name} onChange={e => setName(e.target.value)} maxLength={24} autoFocus placeholder="Nhập tên của bạn"
+          className="w-full text-center note-card px-4 py-3 text-lg border-ink/10 focus:border-ticket" />
+        <div className="flex gap-3 mt-5">
+          <GhostButton onClick={onBack} className="flex-1">← Quay lại</GhostButton>
+          <PrimaryButton type="submit" className="flex-1" disabled={!name.trim()}>Vào phòng chờ →</PrimaryButton>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function WaitingRoomScreen({ game, playerName, onStart }) {
+  const [others, setOthers] = useState([]);
+  const tpl = mockGameTemplates.find(t => t.id === game.template);
+
+  useEffect(() => {
+    const timers = mockPlayersPool.slice(0, 4).map((p, i) => setTimeout(() => setOthers(prev => [...prev, p.name]), 500 + i * 500));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <div className="max-w-md w-full text-center anim-pop">
+        <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={80} fontSize={36} className="mx-auto mb-5 float-slow" />
+        <h1 className="font-display text-2xl text-ink mb-1">Phòng chờ</h1>
+        <p className="text-sm text-[#8A7C63] mb-6">Chờ giáo viên bắt đầu trò chơi "{game.title}"</p>
+        <div className="note-card p-5 mb-6">
+          <p className="text-xs font-mono text-[#8A7C63] uppercase mb-3">{others.length + 1} người đã tham gia</p>
+          <div className="flex flex-wrap gap-2 justify-center">
+            <span className="px-3 py-1.5 rounded-full bg-ticket/10 text-ticket text-sm font-semibold">{playerName} (bạn)</span>
+            {others.map(n => <span key={n} className="px-3 py-1.5 rounded-full bg-ink/5 text-ink text-sm anim-pop">{n}</span>)}
+          </div>
+        </div>
+        <PrimaryButton onClick={onStart} className="w-full">Bắt đầu chơi 🚀</PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
+function PlayGameScreen({ game, questions, onFinish }) {
+  const [idx, setIdx] = useState(0);
+  const q = questions[idx];
+  const [timeLeft, setTimeLeft] = useState(q.timeLimit);
+  const [selected, setSelected] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+  const [score, setScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const startRef = useRef(Date.now());
+  const tpl = mockGameTemplates.find(t => t.id === game.template);
+
+  useEffect(() => { setTimeLeft(q.timeLimit); setSelected(null); setRevealed(false); }, [idx]);
+
+  useEffect(() => {
+    if (revealed) return;
+    if (timeLeft <= 0) { handleAnswer(null); return; }
+    const t = setTimeout(() => setTimeLeft(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timeLeft, revealed]);
+
+  function handleAnswer(optionId) {
+    if (revealed) return;
+    const isCorrect = optionId === q.correctAnswer;
+    setSelected(optionId);
+    setRevealed(true);
+    if (isCorrect) {
+      const bonus = Math.round((timeLeft / q.timeLimit) * 40);
+      setScore(s => s + q.points + bonus);
+      setCorrectCount(c => c + 1);
+    }
+    setTimeout(() => {
+      if (idx + 1 < questions.length) { setIdx(i => i + 1); }
+      else {
+        const timeUsed = Math.round((Date.now() - startRef.current) / 1000);
+        onFinish({ score: score + (isCorrect ? q.points + Math.round((timeLeft / q.timeLimit) * 40) : 0), correct: correctCount + (isCorrect ? 1 : 0), timeUsed });
+      }
+    }, 1300);
+  }
+
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const progressColor = pct > 50 ? "#1B998B" : pct > 20 ? "#F4B942" : "#E4572E";
+
+  return (
+    <div className="flex-1 flex flex-col px-5 md:px-8 py-6 max-w-2xl mx-auto w-full">
+      <div className="flex items-center justify-between mb-6">
+        <span className="font-mono text-xs text-[#8A7C63]">Câu {idx + 1}/{questions.length}</span>
+        <span className="flex items-center gap-2">
+          <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={30} fontSize={14} />
+          <span className="font-display text-ink">{score} điểm</span>
+        </span>
+      </div>
+
+      <div className="w-full h-2 bg-ink/10 rounded-full mb-2 overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-1000 ease-linear" style={{ width: `${pct}%`, background: progressColor }}></div>
+      </div>
+      <div className="text-right text-xs font-mono text-[#8A7C63] mb-6">⏱ {timeLeft}s</div>
+
+      <div key={q.id} className="note-card p-6 sm:p-8 flex-1 flex flex-col anim-pop">
+        <h2 className="font-display text-xl sm:text-2xl text-ink mb-8 text-center">{q.content}</h2>
+        <div className="grid gap-3 mt-auto">
+          {q.options.map((o, i) => {
+            let stateCls = "border-ink/12 hover:border-ticket/50";
+            if (revealed) {
+              if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+              else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+              else stateCls = "border-ink/10 opacity-50";
+            } else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+            return (
+              <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                className={`text-left px-5 py-4 rounded-2xl border-2 transition font-body text-base flex items-center gap-3 ${stateCls}`}>
+                <span className="w-7 h-7 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                <span className="flex-1">{o.content}</span>
+                {revealed && o.id === q.correctAnswer && <span>✅</span>}
+                {revealed && o.id === selected && o.id !== q.correctAnswer && <span>❌</span>}
+              </button>
+            );
+          })}
+        </div>
+        {revealed && (
+          <p className={`text-center mt-5 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+            {selected === q.correctAnswer ? "Chính xác! 🎉" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng rồi 😅"}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- SNAIL RACE — TEMPLATE-SPECIFIC PLAY SCREEN ---------------------- */
+
+const SNAIL_LANE_COLORS = ["#FF6F91", "#4C8DFF", "#F4B942", "#4CAF7D", "#8B6FF1"];
+
+function shortName(full) {
+  const parts = full.trim().split(/\s+/);
+  return parts.length > 1 ? parts.slice(-2).join(" ") : full;
+}
+
+function SnailIcon({ color = "#FF6F91", size = 46 }) {
+  return (
+    <svg width={size} height={size * 0.78} viewBox="0 0 64 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="30" cy="44" rx="22" ry="4" fill="rgba(29,46,74,0.10)" />
+      <path d="M10 36 Q5 28 14 24 Q9 17 16 13 Q23 7 30 13 Q34 7 41 12" stroke={color} strokeWidth="6" fill="none" strokeLinecap="round" />
+      <circle cx="22" cy="21" r="15" fill={color} />
+      <circle cx="22" cy="21" r="10" fill="rgba(255,255,255,0.32)" />
+      <circle cx="22" cy="21" r="5" fill="rgba(255,255,255,0.45)" />
+      <line x1="41" y1="12" x2="46" y2="2" stroke={color} strokeWidth="3" strokeLinecap="round" />
+      <line x1="34" y1="14" x2="37" y2="5" stroke={color} strokeWidth="3" strokeLinecap="round" />
+      <circle cx="46" cy="2" r="3.2" fill="white" stroke={color} strokeWidth="1.5" />
+      <circle cx="37" cy="5" r="3.2" fill="white" stroke={color} strokeWidth="1.5" />
+      <circle cx="47" cy="1.4" r="1.1" fill={color} />
+      <circle cx="38" cy="4.4" r="1.1" fill={color} />
+    </svg>
+  );
+}
+
+function SnailRacePlayScreen({ game, questions, playerName, onFinish, onQuit }) {
+  const [idx, setIdx] = useState(0);
+  const q = questions[idx];
+  const [timeLeft, setTimeLeft] = useState(q.timeLimit);
+  const [selected, setSelected] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const startRef = useRef(Date.now());
+
+  const opponentNames = mockPlayersPool.slice(0, 4).map(p => shortName(p.name));
+  const racers = useMemo(() => ["Bạn", ...opponentNames].map((name, i) => ({ name, color: SNAIL_LANE_COLORS[i] })), []);
+  const [scores, setScores] = useState(() => racers.map(() => 0));
+  const [myScore, setMyScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const totalPoints = useMemo(() => questions.reduce((s, qq) => s + qq.points, 0), [questions]);
+
+  useEffect(() => { setTimeLeft(q.timeLimit); setSelected(null); setRevealed(false); }, [idx]);
+
+  useEffect(() => {
+    if (revealed) return;
+    if (timeLeft <= 0) { handleAnswer(null); return; }
+    const t = setTimeout(() => setTimeLeft(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timeLeft, revealed]);
+
+  function handleAnswer(optionId) {
+    if (revealed) return;
+    const isCorrect = optionId === q.correctAnswer;
+    const earned = isCorrect ? q.points + Math.round((timeLeft / q.timeLimit) * 40) : 0;
+    setSelected(optionId);
+    setRevealed(true);
+
+    const nextScores = scores.map((s, i) => {
+      if (i === 0) return s + earned;
+      return Math.random() > 0.35 ? s + Math.round(q.points * (0.5 + Math.random() * 0.6)) : s;
+    });
+    setScores(nextScores);
+    const nextMyScore = myScore + earned;
+    const nextCorrect = correctCount + (isCorrect ? 1 : 0);
+    setMyScore(nextMyScore);
+    setCorrectCount(nextCorrect);
+
+    setTimeout(() => {
+      if (idx + 1 < questions.length) { setIdx(i => i + 1); }
+      else {
+        const timeUsed = Math.round((Date.now() - startRef.current) / 1000);
+        onFinish({ score: nextMyScore, correct: nextCorrect, timeUsed });
+      }
+    }, 1300);
+  }
+
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+
+  return (
+    <div className="flex-1 flex flex-col bg-paper">
+      <div className="flex items-center justify-between gap-4 px-5 md:px-8 py-3 bg-white border-b border-ink/10 flex-wrap">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">🐌</span>
+          <h1 className="font-display text-xl">
+            <span className="text-teal">ĐƯỜNG ĐUA</span> <span className="text-ticket">ỐC SÊN</span>
+          </h1>
+        </div>
+        <div className="flex items-center gap-5 text-sm text-ink/70 font-body flex-wrap">
+          <span>Phòng: <b className="text-ink font-mono">{game.code}</b></span>
+          <span className="hidden sm:inline">·</span>
+          <span>📋 Câu hỏi: {idx + 1}/{questions.length}</span>
+          <span className="hidden sm:inline">·</span>
+          <span style={{ color: timerColor }}>⏱ Thời gian: {timeLeft}s</span>
+          <span className="hidden sm:inline">·</span>
+          <span>⭐ Điểm: {myScore}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <IconButton title={muted ? "Bật âm thanh" : "Tắt âm thanh"} onClick={() => setMuted(m => !m)}>{muted ? "🔇" : "🔊"}</IconButton>
+          <IconButton title="Toàn màn hình">⛶</IconButton>
+          <button onClick={onQuit} className="font-display text-sm text-ticket border border-ticket/40 rounded-2xl px-4 py-2 hover:bg-ticket/5 transition">Thoát</button>
+        </div>
+      </div>
+
+      <div className="flex-1 grid lg:grid-cols-[1.6fr_1fr] gap-5 p-5 md:p-8">
+        {/* TRACK */}
+        <div className="rounded-3xl overflow-hidden border border-ink/10 bg-gradient-to-b from-[#EAF6E4] to-[#D9EECC] flex flex-col">
+          <div className="flex items-center justify-between px-5 py-3 bg-teal text-white">
+            <span className="font-display font-semibold flex items-center gap-2">🏆 ĐƯỜNG ĐUA</span>
+            <span className="font-display font-semibold flex items-center gap-2">🏁 ĐÍCH ĐẾN</span>
+          </div>
+          <div className="flex-1 relative">
+            <div className="absolute right-0 top-0 bottom-0 w-5 sm:w-7" style={{ backgroundImage: "repeating-conic-gradient(#1D2E4A 0% 25%, #FFFBF2 0% 50%)", backgroundSize: "10px 10px" }}></div>
+            <div className="divide-y divide-dashed divide-white/70 pr-5 sm:pr-7">
+              {racers.map((r, i) => {
+                const progress = Math.min(92, (scores[i] / Math.max(totalPoints, 1)) * 92);
+                return (
+                  <div key={r.name} className="relative h-16 sm:h-[68px] flex items-center px-4">
+                    <div className="absolute transition-all duration-700 ease-out" style={{ left: `calc(${progress}% )` }}>
+                      <SnailIcon color={r.color} size={44} />
+                    </div>
+                    <span className="absolute bottom-1 left-4 text-[10px] font-mono uppercase tracking-wide text-ink/45">Ốc Sên {i + 1}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="h-6 bg-[#BFE3A3] flex items-center justify-around text-[10px] opacity-70">
+            {["🌼","🌿","🌸","🌿","🌼","🌿","🌸"].map((e, i) => <span key={i}>{e}</span>)}
+          </div>
+        </div>
+
+        {/* QUESTION PANEL */}
+        <div className="flex flex-col gap-4">
+          <span className="inline-flex items-center gap-2 self-start bg-gold text-ink font-display text-xs font-semibold uppercase px-4 py-2 rounded-full shadow-[0_2px_0_rgba(0,0,0,0.1)]">
+            ⭐ Câu hỏi thử thách
+          </span>
+          <div className="note-card p-6 flex-1">
+            <p className="font-display text-lg sm:text-xl text-ink leading-snug mb-6">{q.content}</p>
+            <div className="space-y-3">
+              {q.options.map((o, i) => {
+                let stateCls = "border-ink/12 hover:border-ticket/40";
+                let badgeCls = "border-ink/25 text-ink/70";
+                if (revealed) {
+                  if (o.id === q.correctAnswer) { stateCls = "border-teal bg-teal/10"; badgeCls = "bg-teal border-teal text-white"; }
+                  else if (o.id === selected) { stateCls = "border-ticket bg-ticket/10"; badgeCls = "bg-ticket border-ticket text-white"; }
+                  else { stateCls = "border-ink/10 opacity-50"; }
+                } else if (o.id === selected) { stateCls = "border-ticket bg-ticket/5"; badgeCls = "bg-ticket border-ticket text-white"; }
+                return (
+                  <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                    className={`w-full text-left flex items-center gap-4 px-5 py-4 rounded-2xl border-2 transition font-body text-base ${stateCls}`}>
+                    <span className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm font-mono font-semibold flex-shrink-0 transition ${badgeCls}`}>
+                      {String.fromCharCode(65 + i)}
+                    </span>
+                    <span className="flex-1">{o.content}</span>
+                    {revealed && o.id === q.correctAnswer && <span className="text-teal text-lg">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex items-center gap-3 bg-gold/15 border border-gold/40 rounded-2xl px-5 py-3">
+            <span className="text-xl">💡</span>
+            <p className="text-sm text-ink/80">Trả lời nhanh và chính xác để ốc sên về đích nhé!</p>
+          </div>
+        </div>
+      </div>
+
+      {/* PLAYERS BAR */}
+      <div className="px-5 md:px-8 pb-6">
+        <div className="note-card p-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-5 flex-wrap">
+            {racers.map((r, i) => (
+              <div key={r.name} className="flex items-center gap-2.5">
+                <span className="w-9 h-9 rounded-full flex items-center justify-center text-white" style={{ background: r.color }}>
+                  {i === 0 ? "🙂" : "👤"}
+                </span>
+                <div className="leading-tight">
+                  <div className="text-sm font-semibold text-ink">{r.name}{i === 0 && <span className="text-ticket"> (bạn)</span>}</div>
+                  <div className="text-xs text-[#8A7C63] font-mono">{scores[i]} điểm</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <span className="inline-flex items-center gap-2 text-ticket border border-ticket/40 rounded-2xl px-4 py-2 font-display text-sm">
+            🏆 Bảng xếp hạng
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ResultScreen({ result, onSeeLeaderboard }) {
+  const isGreat = result.accuracy >= 80;
+  return (
+    <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <div className="max-w-md w-full text-center anim-pop">
+        <div className="text-7xl mb-4 float-slow">{isGreat ? "🏆" : result.accuracy >= 50 ? "🌟" : "💪"}</div>
+        <h1 className="font-display text-3xl text-ink mb-1">{result.score} điểm</h1>
+        <p className="text-[#8A7C63] mb-8">{result.correctAnswers}/{result.totalQuestions} câu đúng · độ chính xác {result.accuracy}%</p>
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="note-card p-4"><div className="font-display text-2xl text-teal">{result.correctAnswers}</div><div className="text-xs text-[#8A7C63] font-mono uppercase mt-1">Câu đúng</div></div>
+          <div className="note-card p-4"><div className="font-display text-2xl text-ticket">{result.completionTime}s</div><div className="text-xs text-[#8A7C63] font-mono uppercase mt-1">Thời gian</div></div>
+        </div>
+        <PrimaryButton onClick={onSeeLeaderboard} className="w-full">Xem bảng xếp hạng →</PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
+function LeaderboardScreen({ results, playerName, onPlayAgain }) {
+  return (
+    <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <div className="max-w-md w-full anim-pop">
+        <h1 className="font-display text-2xl text-ink text-center mb-6">🏅 Bảng xếp hạng</h1>
+        <div className="note-card divide-y divide-ink/5 overflow-hidden mb-6">
+          {results.map((r, i) => {
+            const medal = rankMedal(i + 1);
+            const isMe = r.playerName === playerName;
+            return (
+              <div key={r.id} className={`flex items-center gap-3 px-4 py-3 ${isMe ? "bg-ticket/5" : ""}`}>
+                <StampToken icon={medal.icon} ring={medal.ring} size={34} fontSize={i < 3 ? 16 : 13} />
+                <span className={`flex-1 font-body ${isMe ? "font-semibold text-ticket" : "text-ink"}`}>{r.playerName}{isMe && " (bạn)"}</span>
+                <span className="font-display text-ink">{r.score}</span>
+              </div>
+            );
+          })}
+        </div>
+        <PrimaryButton onClick={onPlayAgain} className="w-full">Chơi trò chơi khác</PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   MOUNT
+   ========================================================================= */
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
