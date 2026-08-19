@@ -115,12 +115,21 @@ export default function SnailRacePlayScreen({ game, questions, playerName, onFin
             <div className="divide-y divide-dashed divide-white/70 pr-5 sm:pr-7">
               {racers.map((r, i) => {
                 const progress = Math.min(92, (scores[i] / Math.max(totalPoints, 1)) * 92);
+                const isMe = i === 0;
                 return (
-                  <div key={r.name} className="relative h-16 sm:h-[68px] flex items-center px-4">
+                  <div key={r.name} className={`relative h-16 sm:h-[68px] flex items-center px-4 ${isMe ? "bg-white/20" : ""}`}>
+                    {isMe && <div className="absolute inset-y-1 left-[2px] w-1 rounded-full bg-ticket"></div>}
                     <div className="absolute transition-all duration-700 ease-out" style={{ left: `calc(${progress}% )` }}>
-                      <SnailIcon color={r.color} size={44} />
+                      <div className="relative">
+                        <SnailIcon color={r.color} size={44} />
+                        {isMe && (
+                          <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-ticket text-white rounded-full px-1.5 py-0.5 shadow-md leading-none">BẠN</span>
+                        )}
+                      </div>
                     </div>
-                    <span className="absolute bottom-1 left-4 text-[10px] font-mono uppercase tracking-wide text-ink/45">Ốc Sên {i + 1}</span>
+                    <span className={`absolute bottom-1 left-4 text-[10px] font-mono uppercase tracking-wide ${isMe ? "text-ticket font-bold" : "text-ink/45"}`}>
+                      {isMe ? "🐌 Bạn (Tôi)" : `Ốc sên ${i + 1}`}
+                    </span>
                   </div>
                 );
               })}

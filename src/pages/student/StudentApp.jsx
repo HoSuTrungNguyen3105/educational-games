@@ -17,8 +17,10 @@ export default function StudentApp({ initialGame, onExit, showToast, toast }) {
   const [finalResult, setFinalResult] = useState(null);
   const [leaderboard, setLeaderboard] = useState(null);
 
-  const restart = () => { setScreen(initialGame ? "name" : "join"); setGame(initialGame || null); setQuestions([]); setPlayerName(""); setFinalResult(null); setLeaderboard(null); };
-  const goHome = () => { setGame(null); setQuestions([]); setFinalResult(null); setLeaderboard(null); onExit(); };
+  const resetStore = () => useGameStore.getState().resetGame();
+
+  const restart = () => { resetStore(); setScreen(initialGame ? "name" : "join"); setGame(initialGame || null); setQuestions([]); setPlayerName(""); setFinalResult(null); setLeaderboard(null); };
+  const goHome = () => { resetStore(); setGame(null); setQuestions([]); setFinalResult(null); setLeaderboard(null); onExit(); };
 
   const handleFinish = async (sessionResult) => {
     const entry = await resultService.submit({
@@ -177,10 +179,12 @@ function WaitingRoomScreen({ game, playerName, onStart }) {
   const tpl = mockGameTemplates.find(t => t.id === game.template);
   const connected = useSocketConnected();
   const players = useGameStore(s => s.players);
+  const gameStatus = useGameStore(s => s.gameStatus);
   const joined = players.length > 0 && connected;
   const others = joined
     ? players.filter(p => p.name !== playerName).map(p => p.name).slice(0, 6)
     : mockOthers;
+  const started = gameStatus === "playing";
 
   // Tham gia trò chơi qua socket khi vào phòng chờ
   useEffect(() => {
@@ -217,8 +221,8 @@ function WaitingRoomScreen({ game, playerName, onStart }) {
             {others.map(n => <span key={n} className="px-3 py-1.5 rounded-full bg-ink/5 text-ink text-sm anim-pop">{n}</span>)}
           </div>
         </div>
-        {!connected && <PrimaryButton onClick={onStart} className="w-full">Bắt đầu chơi 🚀</PrimaryButton>}
-        {connected && <p className="text-xs text-[#8A7C63] font-mono">Đã kết nối — giáo viên sẽ bắt đầu trò chơi 🎬</p>}
+        {!started && <PrimaryButton onClick={onStart} className="w-full">Vào chơi 🚀</PrimaryButton>}
+        {started && <p className="text-xs text-[#8A7C63] font-mono">Giáo viên đã bắt đầu — đang vào trò chơi... 🎬</p>}
       </div>
     </div>
   );

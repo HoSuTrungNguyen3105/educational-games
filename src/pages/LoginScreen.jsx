@@ -46,8 +46,10 @@ export default function LoginScreen({ onBack, onLogin, showToast }) {
             </div>
             <div>
               <label className="text-xs font-mono uppercase text-[#8A7C63]">Mật khẩu</label>
-              <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(null); }}
-                className="w-full note-card px-4 py-3 mt-1 border-ink/10 focus:border-ticket" autoComplete="current-password" />
+              {/* <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(null); }}
+                className="w-full note-card px-4 py-3 mt-1 border-ink/10 focus:border-ticket" autoComplete="current-password" /> */}
+              <PasswordInput value={password} onChange={e => { setPassword(e.target.value); setError(null); }} autoComplete="password" />
+
             </div>
             {error && <p className="text-ticket text-sm">{error}</p>}
             <PrimaryButton type="submit" className="w-full" disabled={loading}>{loading ? "Đang đăng nhập..." : "Đăng nhập →"}</PrimaryButton>
