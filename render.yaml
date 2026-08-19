@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: SOCKET_CORS_ORIGINS
+        value: https://ho-nguyen.github.io
       - key: MONGODB_DB
         value: educational_games
       - key: JWT_SECRET

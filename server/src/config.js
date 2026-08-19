@@ -8,4 +8,10 @@ export const config = {
   dbName: process.env.MONGODB_DB || "educational_games",
   jwtSecret: process.env.JWT_SECRET || "edu-games-dev-secret-change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  // Danh sách origin cho phép kết nối Socket.IO (phân tách bằng dấu phẩy).
+  // Mặc định bật CORS mọi origin — hạn chế bằng SOCKET_CORS_ORIGINS khi deploy.
+  socketCorsOrigins: (process.env.SOCKET_CORS_ORIGINS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
 };

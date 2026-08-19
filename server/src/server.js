@@ -1,5 +1,7 @@
+import { createServer } from "node:http";
 import app from "./app.js";
 import { config } from "./config.js";
+import { initSocket } from "./socket.js";
 import { initDatabase, close } from "./db.js";
 
 async function main() {
@@ -11,8 +13,12 @@ async function main() {
     process.exit(1);
   }
 
-  app.listen(config.port, () => {
+  const httpServer = createServer(app);
+  initSocket(httpServer);
+
+  httpServer.listen(config.port, () => {
     console.log(`[server] API chạy tại http://localhost:${config.port}/api`);
+    console.log(`[server] Socket.IO sẵn sàng tại ws://localhost:${config.port}`);
   });
 }
 
