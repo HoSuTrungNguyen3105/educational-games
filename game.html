@@ -351,122 +351,115 @@ const mockCurrentUser = { id: "user-001",  name: "Hồ Sử Trung Nguyên" , rol
 const SUBJECTS = ["Toán", "Khoa học", "Tiếng Việt", "Tiếng Anh", "Địa lý", "Lịch sử", "Kỹ năng sống", "Tổng hợp"];
 
 /* =========================================================================
-   MOCK PERSISTENCE (in-memory — artifact-safe, no browser storage APIs)
+   BACKEND SERVICES (call MongoDB-backed REST API in /server)
    ========================================================================= */
 
-const memoryStore = { games: null, questions: null, results: null };
-
-function loadStore(key, fallback) {
-  if (!memoryStore[key]) memoryStore[key] = JSON.parse(JSON.stringify(fallback));
-  return memoryStore[key];
-}
-function saveStore(key, data) { memoryStore[key] = data; }
-
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+const API_BASE = window.API_BASE_URL || "http://localhost:5000/api";
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+
+const AUTH_KEY = "edu_games_auth";
+function loadAuth() { try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (_) { return null; } }
+function saveAuth(auth) { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); }
+function clearAuth() { localStorage.removeItem(AUTH_KEY); }
+
+async function apiFetch(path, options = {}) {
+  const auth = loadAuth();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(auth && auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
+      ...(options.headers || {}),
+    },
+    ...options,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  if (res.status === 401 && !path.startsWith("/auth/")) {
+    clearAuth();
+    window.dispatchEvent(new Event("edu-auth-expired"));
+  }
+  if (res.status === 404) return null;
+  if (res.status === 204) return true;
+  if (!res.ok) {
+    let message = `Lỗi ${res.status}`;
+    try {
+      const err = await res.json();
+      if (err && err.message) message = err.message;
+    } catch (_) { /* ignore */ }
+    throw new Error(message);
+  }
+  return res.json();
+}
 
 const gameService = {
   async list(filters = {}) {
-    await delay(450);
-    let games = loadStore("games", initialGames);
-    if (filters.query) {
-      const q = filters.query.trim().toLowerCase();
-      games = games.filter(g => g.title.toLowerCase().includes(q) || g.topic.toLowerCase().includes(q));
-    }
-    if (filters.status && filters.status !== "all") games = games.filter(g => g.status === filters.status);
-    if (filters.subject && filters.subject !== "all") games = games.filter(g => g.subject === filters.subject);
-    if (filters.category && filters.category !== "all") {
-      games = games.filter(g => {
-        const tpl = mockGameTemplates.find(t => t.id === g.template);
-        return tpl && tpl.category === filters.category;
-      });
-    }
-    return games.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    const params = new URLSearchParams();
+    if (filters.query) params.set("query", filters.query);
+    if (filters.status && filters.status !== "all") params.set("status", filters.status);
+    if (filters.subject && filters.subject !== "all") params.set("subject", filters.subject);
+    if (filters.category && filters.category !== "all") params.set("category", filters.category);
+    const qs = params.toString();
+    return apiFetch(`/games${qs ? `?${qs}` : ""}`) || [];
   },
   async get(id) {
-    await delay(300);
-    return loadStore("games", initialGames).find(g => g.id === id) || null;
+    return apiFetch(`/games/${id}`);
   },
   async getByCode(code) {
-    await delay(550);
-    const games = loadStore("games", initialGames);
-    return games.find(g => g.code.toLowerCase() === code.trim().toLowerCase() && g.status === "published") || null;
+    return apiFetch(`/games/code/${encodeURIComponent(code.trim())}`);
   },
   async create(data) {
-    await delay(400);
-    const games = loadStore("games", initialGames);
-    const now = new Date().toISOString();
-    const game = { id: uid("game"), status: "draft", playersCount: 0, questionsCount: 0, code: uid("code").slice(0, 8).toUpperCase(), createdAt: now, updatedAt: now, ...data };
-    games.push(game);
-    saveStore("games", games);
-    return game;
+    return apiFetch("/games", { method: "POST", body: data });
   },
   async update(id, data) {
-    await delay(400);
-    const games = loadStore("games", initialGames);
-    const idx = games.findIndex(g => g.id === id);
-    if (idx === -1) throw new Error("Không tìm thấy trò chơi");
-    games[idx] = { ...games[idx], ...data, updatedAt: new Date().toISOString() };
-    saveStore("games", games);
-    return games[idx];
+    return apiFetch(`/games/${id}`, { method: "PUT", body: data });
   },
   async remove(id) {
-    await delay(350);
-    let games = loadStore("games", initialGames);
-    games = games.filter(g => g.id !== id);
-    saveStore("games", games);
-    let qs = loadStore("questions", initialQuestions);
-    qs = qs.filter(q => q.gameId !== id);
-    saveStore("questions", qs);
-    return true;
+    return apiFetch(`/games/${id}`, { method: "DELETE" });
   },
   async duplicate(id) {
-    await delay(450);
-    const games = loadStore("games", initialGames);
-    const src = games.find(g => g.id === id);
-    if (!src) throw new Error("Không tìm thấy trò chơi");
-    const now = new Date().toISOString();
-    const copy = { ...src, id: uid("game"), title: `${src.title} (Bản sao)`, status: "draft", playersCount: 0, code: uid("code").slice(0, 8).toUpperCase(), createdAt: now, updatedAt: now };
-    games.push(copy);
-    saveStore("games", games);
-    const qs = loadStore("questions", initialQuestions).filter(q => q.gameId === id);
-    const allQs = loadStore("questions", initialQuestions);
-    qs.forEach(q => allQs.push({ ...q, id: uid("question"), gameId: copy.id }));
-    saveStore("questions", allQs);
-    return copy;
+    return apiFetch(`/games/${id}/duplicate`, { method: "POST" });
   },
 };
 
 const questionService = {
   async listByGame(gameId) {
-    await delay(300);
-    return loadStore("questions", initialQuestions).filter(q => q.gameId === gameId);
+    return apiFetch(`/questions/game/${gameId}`) || [];
   },
   async save(gameId, questions) {
-    await delay(300);
-    let all = loadStore("questions", initialQuestions);
-    all = all.filter(q => q.gameId !== gameId);
-    all = all.concat(questions.map(q => ({ ...q, gameId })));
-    saveStore("questions", all);
-    const games = loadStore("games", initialGames);
-    const idx = games.findIndex(g => g.id === gameId);
-    if (idx !== -1) { games[idx].questionsCount = questions.length; saveStore("games", games); }
-    return questions;
+    return apiFetch(`/questions/game/${gameId}`, { method: "PUT", body: questions });
   },
 };
 
 const resultService = {
   async listByGame(gameId) {
-    await delay(400);
-    return loadStore("results", initialResults).filter(r => r.gameId === gameId).sort((a, b) => b.score - a.score);
+    return apiFetch(`/results/game/${gameId}`) || [];
   },
   async submit(result) {
-    await delay(300);
-    const all = loadStore("results", initialResults);
-    const entry = { id: uid("result"), ...result };
-    all.push(entry);
-    saveStore("results", all);
-    return entry;
+    return apiFetch("/results", { method: "POST", body: result });
+  },
+};
+
+const authService = {
+  async login(username, password) {
+    return apiFetch("/auth/login", { method: "POST", body: { username, password } });
+  },
+  async me() {
+    return apiFetch("/auth/me");
+  },
+  logout() {
+    clearAuth();
+    window.dispatchEvent(new Event("edu-auth-expired"));
+  },
+};
+
+const userService = {
+  async list() {
+    return apiFetch("/users") || [];
+  },
+  async create(data) {
+    return apiFetch("/users", { method: "POST", body: data });
+  },
+  async remove(id) {
+    return apiFetch(`/users/${id}`, { method: "DELETE" });
   },
 };
 
@@ -582,19 +575,133 @@ function useToast() {
   return [toast, show];
 }
 
+function getRoute() {
+  const p = (window.location.pathname || "").toLowerCase().replace(/\/+$/, "");
+  const h = (window.location.hash || "").toLowerCase();
+  return p.endsWith("/admin") || h.includes("/admin") ? "admin" : "home";
+}
+
+function navigate(route) {
+  if (route === "admin") {
+    if (window.location.hash !== "/admin") window.location.hash = "/admin";
+  } else if (window.location.hash) {
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+}
+
 function App() {
-  const [role, setRole] = useState(null);
+  const [route, setRoute] = useState(getRoute);
+  const [user, setUser] = useState(null);
+  const [playGame, setPlayGame] = useState(null);
   const [toast, showToast] = useToast();
-  if (!role) return <HomeScreen onSelectRole={setRole} />;
-  if (role === "teacher") return <TeacherApp onExit={() => setRole(null)} showToast={showToast} toast={toast} />;
-  return <StudentApp onExit={() => setRole(null)} showToast={showToast} toast={toast} />;
+
+  useEffect(() => {
+    const onRoute = () => setRoute(getRoute());
+    window.addEventListener("hashchange", onRoute);
+    window.addEventListener("popstate", onRoute);
+    return () => {
+      window.removeEventListener("hashchange", onRoute);
+      window.removeEventListener("popstate", onRoute);
+    };
+  }, []);
+
+  useEffect(() => {
+    const auth = loadAuth();
+    if (auth && auth.token && auth.user && (auth.user.role === "teacher" || auth.user.role === "admin")) {
+      setUser(auth.user);
+    }
+    const onExpired = () => setUser(null);
+    window.addEventListener("edu-auth-expired", onExpired);
+    return () => window.removeEventListener("edu-auth-expired", onExpired);
+  }, []);
+
+  const handleLogin = (u) => setUser(u);
+  const handleLogout = () => { authService.logout(); setUser(null); navigate("home"); };
+
+  if (route === "admin") {
+    if (!user) return <LoginScreen onBack={() => navigate("home")} onLogin={handleLogin} showToast={showToast} />;
+    return <TeacherApp user={user} onExit={handleLogout} showToast={showToast} toast={toast} />;
+  }
+
+  if (playGame) {
+    return <StudentApp initialGame={playGame} onExit={() => setPlayGame(null)} showToast={showToast} toast={toast} />;
+  }
+
+  return <HomeScreen onSelectGame={setPlayGame} />;
+}
+
+/* =========================================================================
+   LOGIN SCREEN
+   ========================================================================= */
+
+function LoginScreen({ onBack, onLogin, showToast }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!username.trim() || !password) { setError("Vui lòng nhập tên đăng nhập và mật khẩu"); return; }
+    setLoading(true); setError(null);
+    try {
+      const { token, user } = await authService.login(username.trim(), password);
+      if (user.role !== "teacher" && user.role !== "admin") {
+        setError("Tài khoản này không có quyền vào dashboard giáo viên");
+        setLoading(false);
+        return;
+      }
+      saveAuth({ token, user });
+      showToast(`Xin chào, ${user.name}! 👋`);
+      onLogin();
+    } catch (err) {
+      setError(err.message || "Đăng nhập thất bại");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-paper flex items-center justify-center px-6 py-10">
+      <div className="w-full max-w-md anim-pop">
+        <div className="note-card p-8 formbg bg-paper2">
+          <button onClick={onBack} className="text-sm text-[#8A7C63] hover:text-ink transition inline-flex items-center gap-1">← Về trang chủ</button>
+          <div className="text-center">
+            <div className="text-6xl mb-3 float-slow">🧑‍🏫</div>
+            <h1 className="font-display text-2xl text-ink">Đăng nhập giáo viên</h1>
+            <p className="text-sm text-[#8A7C63] mt-1">Vào dashboard quản lý trò chơi của bạn</p>
+          </div>
+          <form onSubmit={submit} className="mt-6 space-y-4">
+            <div>
+              <label className="text-xs font-mono uppercase text-[#8A7C63]">Tên đăng nhập</label>
+              <input value={username} onChange={e => { setUsername(e.target.value); setError(null); }}
+                className="w-full note-card px-4 py-3 mt-1 border-ink/10 focus:border-ticket" autoComplete="username" />
+            </div>
+            <div>
+              <label className="text-xs font-mono uppercase text-[#8A7C63]">Mật khẩu</label>
+              <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(null); }}
+                className="w-full note-card px-4 py-3 mt-1 border-ink/10 focus:border-ticket" autoComplete="current-password" />
+            </div>
+            {error && <p className="text-ticket text-sm">{error}</p>}
+            <PrimaryButton type="submit" className="w-full" disabled={loading}>{loading ? "Đang đăng nhập..." : "Đăng nhập →"}</PrimaryButton>
+            <p className="text-xs text-[#B7A987] text-center font-mono">Tài khoản mẫu: teacher / 123456 — admin / admin123</p>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* =========================================================================
    HOME SCREEN
    ========================================================================= */
 
-function HomeScreen({ onSelectRole }) {
+function HomeScreen({ onSelectGame }) {
+  const [games, setGames] = useState(null);
+  const [error, setError] = useState(null);
+  const [mode, setMode] = useState("list"); // "list" | "code"
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const floaters = [
     { icon: "🎡", cls: "top-16 left-6 text-5xl", delay: 0 },
     { icon: "🧠", cls: "top-24 right-8 text-4xl", delay: 0.6 },
@@ -605,75 +712,113 @@ function HomeScreen({ onSelectRole }) {
     { icon: "🚀", cls: "top-40 left-1/4 text-3xl", delay: 1.4 },
     { icon: "⛵", cls: "bottom-40 right-1/4 text-3xl", delay: 0.5 },
   ];
-  const gameIcons = ["🐌", "🚀", "🔨", "🎡", "🎯", "⛵", "🏮", "🗺️", "🎈", "🃏", "🧩", "🥷"];
+
+  const loadGames = async () => {
+    setGames(null); setError(null);
+    try {
+      setGames(await gameService.list({ status: "published" }));
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+  useEffect(() => { loadGames(); }, []);
+
+  const submitCode = async (e) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setLoading(true); setError(null);
+    const game = await gameService.getByCode(code);
+    setLoading(false);
+    if (!game) { setError("Không tìm thấy trò chơi với mã này. Kiểm tra lại hoặc chọn trò chơi trong danh sách nhé!"); return; }
+    onSelectGame(game);
+  };
+
   return (
-    <div className="min-h-screen marquee-panel flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
-      <div className="marquee-lights w-full absolute top-0 left-0"></div>
-      <div className="marquee-lights w-full absolute bottom-0 left-0"></div>
-
-      {/* floating decorations */}
-      {floaters.map((f, i) => (
-        <span key={i} className={`absolute ${f.cls} opacity-15 float-slow select-none`} style={{ animationDelay: `${f.delay}s` }}>{f.icon}</span>
-      ))}
-
-      <div className="max-w-3xl w-full text-center">
-        <span className="inline-flex items-center gap-2 bg-gold text-ink font-mono text-xs uppercase tracking-wide px-4 py-1.5 rounded-full -rotate-2 mb-6 shadow-[0_2px_0_rgba(0,0,0,0.15)]">
-          🎟️ Hội chợ trò chơi học tập
-        </span>
-
-        <h1 className="font-display text-5xl md:text-7xl text-paper leading-tight mb-3 drop-shadow-[0_4px_24px_rgba(244,185,66,0.35)]">
-          Lớp Học <span className="text-gold">Vui</span>
-        </h1>
-        <p className="font-body text-paper/70 text-lg md:text-xl max-w-xl mx-auto mb-8">
-          Giáo viên dựng gian trò chơi ôn tập, học sinh mua vé bằng một mã số và cùng nhau leo lên bảng xếp hạng.
-        </p>
-
-        {/* stat chips */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-10 font-mono text-xs text-paper/70">
-          <span className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">🎮 15+ trò chơi</span>
-          <span className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">📚 84 câu hỏi</span>
-          <span className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">🏅 Bảng xếp hạng</span>
+    <div className="min-h-screen bg-paper flex flex-col">
+      {/* hero */}
+      <div className="marquee-panel relative overflow-hidden">
+        <div className="marquee-lights w-full absolute top-0 left-0"></div>
+        {floaters.map((f, i) => (
+          <span key={i} className={`absolute ${f.cls} opacity-15 float-slow select-none`} style={{ animationDelay: `${f.delay}s` }}>{f.icon}</span>
+        ))}
+        <div className="max-w-4xl w-full mx-auto px-6 py-12 text-center relative">
+          <span className="inline-flex items-center gap-2 bg-gold text-ink font-mono text-xs uppercase tracking-wide px-4 py-1.5 rounded-full -rotate-2 mb-5 shadow-[0_2px_0_rgba(0,0,0,0.15)]">
+            🎟️ Hội chợ trò chơi học tập
+          </span>
+          <h1 className="font-display text-4xl md:text-6xl text-paper leading-tight mb-3 drop-shadow-[0_4px_24px_rgba(244,185,66,0.35)]">
+            Lớp Học <span className="text-gold">Vui</span>
+          </h1>
+          <p className="font-body text-paper/70 text-base md:text-lg max-w-xl mx-auto mb-6">
+            Chọn một trò chơi để bắt đầu, hoặc nhập mã vé giáo viên đưa nếu bạn quên trò chơi ở đâu 😉
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3 font-mono text-xs text-paper/70">
+            <span className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">🎮 {games ? `${games.length} trò chơi` : "..."}</span>
+            <span className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">🏅 Bảng xếp hạng</span>
+          </div>
         </div>
-
-        {/* role cards */}
-        <div className="grid sm:grid-cols-2 gap-5 text-left">
-          <button onClick={() => onSelectRole("teacher")}
-            className="anim-pop note-card p-6 text-left hover:-translate-y-1.5 hover:shadow-[0_8px_0_rgba(0,0,0,0.15)] transition shadow-[0_4px_0_rgba(0,0,0,0.12)] group bg-paper2">
-            <div className="flex items-center justify-between">
-              <StampToken icon="🧑‍🏫" ring="#E4572E" size={54} fontSize={24} />
-              <span className="text-2xl opacity-0 group-hover:opacity-100 transition -rotate-12">📝</span>
-            </div>
-            <h3 className="font-display text-xl mt-4 text-ink">Tôi là giáo viên</h3>
-            <p className="text-sm text-[#8A7C63] mt-1">Dựng gian trò chơi, quản lý câu hỏi và theo dõi kết quả lớp học.</p>
-            <div className="mt-5 h-10 flex items-center gap-2">
-              <span className="inline-block text-sm font-semibold text-ticket group-hover:translate-x-1 transition">Vào Dashboard</span>
-              <span className="group-hover:translate-x-2 transition">→</span>
-            </div>
-          </button>
-          <button onClick={() => onSelectRole("student")}
-            className="anim-pop note-card p-6 text-left hover:-translate-y-1.5 hover:shadow-[0_8px_0_rgba(0,0,0,0.15)] transition shadow-[0_4px_0_rgba(0,0,0,0.12)] group bg-paper2" style={{ animationDelay: ".05s" }}>
-            <div className="flex items-center justify-between">
-              <StampToken icon="🎒" ring="#1B998B" size={54} fontSize={24} />
-              <span className="text-2xl opacity-0 group-hover:opacity-100 transition rotate-12">🎮</span>
-            </div>
-            <h3 className="font-display text-xl mt-4 text-ink">Tôi là học sinh</h3>
-            <p className="text-sm text-[#8A7C63] mt-1">Nhập mã vé trò chơi để tham gia cùng cả lớp và ghi điểm.</p>
-            <div className="mt-5 h-10 flex items-center gap-2">
-              <span className="inline-block text-sm font-semibold text-teal group-hover:translate-x-1 transition">Tham gia ngay</span>
-              <span className="group-hover:translate-x-2 transition">→</span>
-            </div>
-          </button>
-        </div>
-
-        {/* game icons marquee */}
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-2 max-w-xl mx-auto">
-          {gameIcons.map((ic, i) => (
-            <span key={i} className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg hover:bg-gold/20 hover:-translate-y-1 transition">{ic}</span>
-          ))}
-        </div>
-
-        <p className="text-paper/40 text-xs mt-8 font-mono">Frontend Prototype · Dữ liệu mô phỏng (Mock Data)</p>
       </div>
+
+      {/* body */}
+      <main className="flex-1 w-full max-w-4xl mx-auto px-6 py-8">
+        <div className="flex items-start justify-between gap-3 mb-6">
+          <div>
+            <h2 className="font-display text-2xl text-ink">Chọn trò chơi</h2>
+            <p className="text-sm text-[#8A7C63] mt-1">Bấm vào trò chơi để tham gia ngay.</p>
+          </div>
+          <button onClick={() => setMode(mode === "list" ? "code" : "list")}
+            className="shrink-0 note-card px-4 py-2.5 text-sm font-semibold text-ink flex items-center gap-2 hover:bg-ink/5 transition">
+            {mode === "list" ? "🔑 Nhập mã vé" : "← Về danh sách"}
+          </button>
+        </div>
+
+        {mode === "code" ? (
+          <form onSubmit={submitCode} className="max-w-md mx-auto text-center pb-10">
+            <div className="text-6xl mb-4 float-slow">🎟️</div>
+            <p className="text-sm text-[#8A7C63] mb-4">Nhập mã vé giáo viên đã cung cấp</p>
+            <TicketStub icon="🔑" code={code || "______"} />
+            <input value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
+              placeholder="VD: TOAN101" maxLength={10}
+              className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase" />
+            {error && <p className="text-ticket text-sm mt-3">{error}</p>}
+            <PrimaryButton type="submit" className="w-full mt-5" disabled={loading || !code.trim()}>{loading ? "Đang kiểm tra..." : "Tham gia →"}</PrimaryButton>
+          </form>
+        ) : games === null ? (
+          <Loader label="Đang tải danh sách trò chơi..." />
+        ) : error ? (
+          <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
+        ) : games.length === 0 ? (
+          <EmptyState icon="🕹️" title="Chưa có trò chơi nào" subtitle="Giáo viên chưa xuất bản trò chơi nào. Hãy thử nhập mã vé hoặc quay lại sau nhé!" />
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {games.map(g => {
+              const tpl = mockGameTemplates.find(t => t.id === g.template);
+              return (
+                <button key={g.id} onClick={() => onSelectGame(g)}
+                  className="note-card p-5 text-left flex flex-col gap-3 hover:-translate-y-1 hover:shadow-[0_8px_0_rgba(0,0,0,0.1)] transition shadow-[0_3px_0_rgba(0,0,0,0.09)] group anim-pop bg-paper2">
+                  <div className="flex items-center justify-between">
+                    <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#1D2E4A"} size={46} fontSize={22} />
+                    <span className="font-mono text-[11px] text-[#8A7C63] bg-ink/5 rounded-full px-2.5 py-1">{g.code}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg text-ink leading-snug clamp-2">{g.title}</h3>
+                    <p className="text-sm text-[#8A7C63] mt-1 clamp-2">{g.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-[#8A7C63] font-mono flex-wrap">
+                    <span>{g.subject}</span><span>·</span><span>{g.questionsCount} câu hỏi</span><span>·</span><span>{g.playersCount} lượt chơi</span>
+                  </div>
+                  <div className="mt-auto pt-2">
+                    <span className="inline-block text-sm font-semibold text-teal group-hover:translate-x-1 transition">Chơi ngay →</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </main>
+
+      <footer className="border-t border-ink/10 py-5 text-center">
+        <a href="#/admin" className="text-xs text-[#B7A987] font-mono hover:text-ticket transition">Giáo viên? Đăng nhập quản trị →</a>
+      </footer>
     </div>
   );
 }
@@ -682,7 +827,7 @@ function HomeScreen({ onSelectRole }) {
    TEACHER APP
    ========================================================================= */
 
-function TeacherApp({ onExit, showToast, toast }) {
+function TeacherApp({ user, onExit, showToast, toast }) {
   const [screen, setScreen] = useState("dashboard");
   const [activeGameId, setActiveGameId] = useState(null);
   const [refreshFlag, setRefreshFlag] = useState(0);
@@ -694,20 +839,25 @@ function TeacherApp({ onExit, showToast, toast }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-paper">
-      <TeacherNav screen={screen} setScreen={setScreen} onExit={onExit} onCreate={goCreateNew} />
+      <TeacherNav screen={screen} setScreen={setScreen} onExit={onExit} onCreate={goCreateNew} user={user} />
       <main className="flex-1 max-w-6xl w-full mx-auto px-5 md:px-8 py-8">
-        {screen === "dashboard" && <TeacherDashboard key={refreshFlag} onOpenLibrary={() => setScreen("library")} onCreate={goCreateNew} onEdit={goEdit} onResults={goResults} />}
+        {screen === "dashboard" && <TeacherDashboard key={refreshFlag} user={user} onOpenLibrary={() => setScreen("library")} onCreate={goCreateNew} onEdit={goEdit} onResults={goResults} />}
         {screen === "library" && <GameLibrary key={refreshFlag} onCreate={goCreateNew} onEdit={goEdit} onResults={goResults} showToast={showToast} onChanged={bump} />}
         {screen === "create" && <CreateGameFlow gameId={activeGameId} showToast={showToast} onDone={() => { bump(); setScreen("library"); }} onCancel={() => setScreen("library")} />}
         {screen === "results" && <TeacherResults gameId={activeGameId} onBack={() => setScreen("library")} />}
+        {screen === "users" && <UserManagement user={user} showToast={showToast} />}
       </main>
       <Toast toast={toast} />
     </div>
   );
 }
 
-function TeacherNav({ screen, setScreen, onExit, onCreate }) {
-  const tabs = [{ id: "dashboard", label: "Dashboard" }, { id: "library", label: "Thư viện trò chơi" }];
+function TeacherNav({ screen, setScreen, onExit, onCreate, user }) {
+  const tabs = [
+    { id: "dashboard", label: "Dashboard" },
+    { id: "library", label: "Thư viện trò chơi" },
+    { id: "users", label: "Quản lý người dùng" },
+  ];
   return (
     <header className="marquee-panel sticky top-0 z-20">
       <div className="marquee-lights w-full"></div>
@@ -727,7 +877,7 @@ function TeacherNav({ screen, setScreen, onExit, onCreate }) {
         <div className="flex items-center gap-3">
           <PrimaryButton onClick={onCreate} className="!bg-ticket !text-white !shadow-none px-4 py-2 text-sm">+ Tạo trò chơi</PrimaryButton>
           <button onClick={onExit} className="flex items-center gap-2 text-paper/70 hover:text-paper text-sm">
-            <span className="w-8 h-8 rounded-full bg-paper/15 flex items-center justify-center font-display">{mockCurrentUser.name[0]}</span>
+            <span className="w-8 h-8 rounded-full bg-paper/15 flex items-center justify-center font-display">{(user ? user.name : "G")[0]}</span>
             <span className="hidden md:inline">Thoát</span>
           </button>
         </div>
@@ -736,7 +886,7 @@ function TeacherNav({ screen, setScreen, onExit, onCreate }) {
   );
 }
 
-function TeacherDashboard({ onOpenLibrary, onCreate, onEdit, onResults }) {
+function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit, onResults }) {
   const [games, setGames] = useState(null);
   const [error, setError] = useState(null);
 
@@ -755,7 +905,7 @@ function TeacherDashboard({ onOpenLibrary, onCreate, onEdit, onResults }) {
     <div className="space-y-8">
       <div>
         <p className="text-[#8A7C63] text-sm font-mono">Xin chào,</p>
-        <h1 className="font-display text-3xl text-ink">{mockCurrentUser.name} 👋</h1>
+        <h1 className="font-display text-3xl text-ink">{user ? user.name : "Giáo viên"} 👋</h1>
       </div>
 
       {error && <ErrorState subtitle="Không thể tải dữ liệu Dashboard." onRetry={load} />}
@@ -1322,18 +1472,152 @@ function LeaderboardTable({ results }) {
 }
 
 /* =========================================================================
+   USER MANAGEMENT (tạo user — chỉ giáo viên/admin)
+   ========================================================================= */
+
+function UserManagement({ user, showToast }) {
+  const [users, setUsers] = useState(null);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({ username: "", password: "", name: "", role: "student" });
+  const [saving, setSaving] = useState(false);
+  const isAdmin = user && user.role === "admin";
+
+  const load = useCallback(() => {
+    setUsers(null); setError(null);
+    userService.list().then(setUsers).catch(e => setError(e.message));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.username.trim() || !form.password || !form.name.trim()) {
+      setError("Vui lòng điền đầy đủ tên đăng nhập, mật khẩu và họ tên");
+      return;
+    }
+    setSaving(true); setError(null);
+    try {
+      await userService.create(form);
+      showToast("Đã tạo tài khoản mới ✅");
+      setForm({ username: "", password: "", name: "", role: "student" });
+      load();
+    } catch (err) {
+      setError(err.message || "Không thể tạo tài khoản");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeUser = async (u) => {
+    if (!confirm(`Xóa tài khoản "${u.name}" (${u.username})?`)) return;
+    try {
+      await userService.remove(u.id);
+      showToast("Đã xóa tài khoản 🗑️");
+      load();
+    } catch (err) {
+      setError(err.message || "Không thể xóa tài khoản");
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <p className="text-[#8A7C63] text-sm font-mono">Quản lý tài khoản</p>
+        <h1 className="font-display text-3xl text-ink">Người dùng</h1>
+      </div>
+
+      {/* form tạo user */}
+      <form onSubmit={submit} className="note-card p-6 bg-paper2">
+        <h2 className="font-display text-lg text-ink mb-4">➕ Tạo tài khoản mới</h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-mono uppercase text-[#8A7C63]">Tên đăng nhập</label>
+            <input value={form.username} onChange={e => { setForm({ ...form, username: e.target.value }); setError(null); }}
+              className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket" autoComplete="off" />
+          </div>
+          <div>
+            <label className="text-xs font-mono uppercase text-[#8A7C63]">Mật khẩu (≥ 6 ký tự)</label>
+            <input type="password" value={form.password} onChange={e => { setForm({ ...form, password: e.target.value }); setError(null); }}
+              className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket" autoComplete="new-password" />
+          </div>
+          <div>
+            <label className="text-xs font-mono uppercase text-[#8A7C63]">Họ tên</label>
+            <input value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); setError(null); }}
+              className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket" autoComplete="off" />
+          </div>
+          <div>
+            <label className="text-xs font-mono uppercase text-[#8A7C63]">Vai trò</label>
+            <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}
+              className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket bg-paper2">
+              <option value="student">Học sinh</option>
+              <option value="teacher">Giáo viên</option>
+              {isAdmin && <option value="admin">Quản trị</option>}
+            </select>
+          </div>
+        </div>
+        {error && <p className="text-ticket text-sm mt-3">{error}</p>}
+        <div className="mt-4 flex items-center gap-3">
+          <PrimaryButton type="submit" disabled={saving}>{saving ? "Đang tạo..." : "Tạo tài khoản"}</PrimaryButton>
+        </div>
+      </form>
+
+      {/* danh sách user */}
+      <div>
+        <h2 className="font-display text-lg text-ink mb-3">Danh sách tài khoản</h2>
+        {error && <ErrorState subtitle={error} onRetry={load} />}
+        {!error && !users && <Loader label="Đang tải người dùng..." />}
+        {!error && users && (
+          <div className="note-card overflow-x-auto">
+            <table className="w-full min-w-[480px]">
+              <thead>
+                <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">
+                  <th className="px-5 py-3">Họ tên</th><th className="px-5 py-3">Tên đăng nhập</th>
+                  <th className="px-5 py-3">Vai trò</th><th className="px-5 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.id} className="border-b border-ink/5 last:border-0">
+                    <td className="px-5 py-3 font-body text-ink">{u.name}</td>
+                    <td className="px-5 py-3 font-mono text-[#8A7C63]">{u.username}</td>
+                    <td className="px-5 py-3">
+                      <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${
+                        u.role === "admin" ? "bg-pink/15 text-pink border-pink/30"
+                        : u.role === "teacher" ? "bg-ticket/15 text-ticket border-ticket/30"
+                        : "bg-teal/15 text-teal border-teal/30"
+                      }`}>
+                        {u.role === "admin" ? "Quản trị" : u.role === "teacher" ? "Giáo viên" : "Học sinh"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      {(isAdmin || u.role !== "admin") && u.username !== (user && user.username) && (
+                        <IconButton title="Xóa tài khoản" onClick={() => removeUser(u)}>🗑️</IconButton>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
    STUDENT APP
    ========================================================================= */
 
-function StudentApp({ onExit, showToast, toast }) {
-  const [screen, setScreen] = useState("join");
-  const [game, setGame] = useState(null);
+function StudentApp({ initialGame, onExit, showToast, toast }) {
+  const [screen, setScreen] = useState(initialGame ? "name" : "join");
+  const [game, setGame] = useState(initialGame || null);
   const [questions, setQuestions] = useState([]);
   const [playerName, setPlayerName] = useState("");
   const [finalResult, setFinalResult] = useState(null);
   const [leaderboard, setLeaderboard] = useState(null);
 
-  const restart = () => { setScreen("join"); setGame(null); setQuestions([]); setPlayerName(""); setFinalResult(null); setLeaderboard(null); };
+  const restart = () => { setScreen(initialGame ? "name" : "join"); setGame(initialGame || null); setQuestions([]); setPlayerName(""); setFinalResult(null); setLeaderboard(null); };
+  const goHome = () => { setGame(null); setQuestions([]); setFinalResult(null); setLeaderboard(null); onExit(); };
 
   const handleFinish = async (sessionResult) => {
     const entry = await resultService.submit({
@@ -1348,10 +1632,10 @@ function StudentApp({ onExit, showToast, toast }) {
 
   return (
     <div className="min-h-screen bg-paper flex flex-col">
-      <StudentTopBar onExit={onExit} />
+      <StudentTopBar onExit={goHome} />
       <main className="flex-1 flex flex-col">
         {screen === "join" && <JoinGameScreen onFound={(g) => { setGame(g); setScreen("name"); }} />}
-        {screen === "name" && game && <EnterNameScreen game={game} onBack={() => setScreen("join")} onSubmit={(name) => { setPlayerName(name); setScreen("waiting"); }} />}
+        {screen === "name" && game && <EnterNameScreen game={game} onBack={initialGame ? goHome : restart} onSubmit={(name) => { setPlayerName(name); setScreen("waiting"); }} />}
         {screen === "waiting" && game && (
           <WaitingRoomScreen game={game} playerName={playerName}
             onStart={async () => { const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play"); }} />
@@ -2583,40 +2867,90 @@ function LuckyWheelPlayScreen({ game, questions, playerName, onFinish, onQuit })
 }
 
 function JoinGameScreen({ onFound }) {
+  const [games, setGames] = useState(null);
+  const [error, setError] = useState(null);
+  const [mode, setMode] = useState("list"); // "list" | "code"
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  const submit = async (e) => {
+  const loadGames = async () => {
+    setGames(null); setError(null);
+    try {
+      setGames(await gameService.list({ status: "published" }));
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+  useEffect(() => { loadGames(); }, []);
+
+  const submitCode = async (e) => {
     e.preventDefault();
     if (!code.trim()) return;
     setLoading(true); setError(null);
     const game = await gameService.getByCode(code);
     setLoading(false);
-    if (!game) { setError("Không tìm thấy trò chơi với mã vé này. Kiểm tra lại và thử lần nữa nhé!"); return; }
+    if (!game) { setError("Không tìm thấy trò chơi với mã này. Kiểm tra lại hoặc chọn trò chơi trong danh sách nhé!"); return; }
     onFound(game);
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center px-6 py-10">
-      <form onSubmit={submit} className="max-w-sm w-full text-center anim-pop">
-        <div className="text-6xl mb-4 float-slow">🎟️</div>
-        <h1 className="font-display text-2xl text-ink mb-1">Tham gia trò chơi</h1>
-        <p className="text-sm text-[#8A7C63] mb-6">Nhập mã vé giáo viên đã cung cấp</p>
-        <TicketStub icon="🔑" code={code || "______"} />
-        <input value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
-          placeholder="VD: TOAN101" maxLength={10}
-          className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase" />
-        {error && <p className="text-ticket text-sm mt-3">{error}</p>}
-        <PrimaryButton type="submit" className="w-full mt-5" disabled={loading || !code.trim()}>{loading ? "Đang kiểm tra..." : "Tham gia →"}</PrimaryButton>
-       <p className="text-xs text-[#B7A987] mt-4 font-mono leading-5">
-        Thử mã mẫu: TOAN101 (đua ốc sên), VUTRU22 (phi thuyền), TONGHOP9 (đập chuột),
-        FAMILY07 (xếp chữ), TRUNGTHU5 (đèn lồng), DIALY88 (bản đồ), CHUCAI3 (lật thẻ),
-        QUAYSO4 (vòng quay), ATGT202 (phi tiêu), DONGVAT6 (bóng bay),
-        LICHSU19 (thuyền buồm), MOITRUONG4 (phân loại), PHIEUL9 (phiêu lưu),
-        HAMNGUC3 (hầm ngục), NINJA77 (ninja vượt ải)
-      </p>
-      </form>
+    <div className="flex-1 px-6 py-10">
+      <div className="max-w-4xl mx-auto anim-pop">
+        <div className="flex items-start justify-between gap-3 mb-6">
+          <div>
+            <h1 className="font-display text-2xl md:text-3xl text-ink">Chọn trò chơi</h1>
+            <p className="text-sm text-[#8A7C63] mt-1">Chọn một trò chơi để tham gia, hoặc nhập mã vé nếu bạn quên trò chơi ở đâu 😉</p>
+          </div>
+          <button onClick={() => setMode(mode === "list" ? "code" : "list")}
+            className="shrink-0 note-card px-4 py-2.5 text-sm font-semibold text-ink flex items-center gap-2 hover:bg-ink/5 transition">
+            {mode === "list" ? "🔑 Nhập mã vé" : "← Về danh sách"}
+          </button>
+        </div>
+
+        {mode === "code" ? (
+          <form onSubmit={submitCode} className="max-w-md mx-auto text-center pb-10">
+            <div className="text-6xl mb-4 float-slow">🎟️</div>
+            <p className="text-sm text-[#8A7C63] mb-4">Nhập mã vé giáo viên đã cung cấp</p>
+            <TicketStub icon="🔑" code={code || "______"} />
+            <input value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
+              placeholder="VD: TOAN101" maxLength={10}
+              className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase" />
+            {error && <p className="text-ticket text-sm mt-3">{error}</p>}
+            <PrimaryButton type="submit" className="w-full mt-5" disabled={loading || !code.trim()}>{loading ? "Đang kiểm tra..." : "Tham gia →"}</PrimaryButton>
+          </form>
+        ) : games === null ? (
+          <Loader label="Đang tải danh sách trò chơi..." />
+        ) : error ? (
+          <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
+        ) : games.length === 0 ? (
+          <EmptyState icon="🕹️" title="Chưa có trò chơi nào" subtitle="Giáo viên chưa xuất bản trò chơi nào. Hãy thử nhập mã vé hoặc quay lại sau nhé!" />
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {games.map(g => {
+              const tpl = mockGameTemplates.find(t => t.id === g.template);
+              return (
+                <button key={g.id} onClick={() => onFound(g)}
+                  className="note-card p-5 text-left flex flex-col gap-3 hover:-translate-y-1 hover:shadow-[0_8px_0_rgba(0,0,0,0.1)] transition shadow-[0_3px_0_rgba(0,0,0,0.09)] group anim-pop bg-paper2">
+                  <div className="flex items-center justify-between">
+                    <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#1D2E4A"} size={46} fontSize={22} />
+                    <span className="font-mono text-[11px] text-[#8A7C63] bg-ink/5 rounded-full px-2.5 py-1">{g.code}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg text-ink leading-snug clamp-2">{g.title}</h3>
+                    <p className="text-sm text-[#8A7C63] mt-1 clamp-2">{g.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-[#8A7C63] font-mono flex-wrap">
+                    <span>{g.subject}</span><span>·</span><span>{g.questionsCount} câu hỏi</span><span>·</span><span>{g.playersCount} lượt chơi</span>
+                  </div>
+                  <div className="mt-auto pt-2">
+                    <span className="inline-block text-sm font-semibold text-teal group-hover:translate-x-1 transition">Chơi ngay →</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
