@@ -1888,9 +1888,18 @@ function LuckyWheelPlayScreen({ game, questions, playerName, onFinish, onQuit })
   const segmentCount = questions.length;
   const segmentAngle = 360 / segmentCount;
 
+  const wheelNames = useMemo(() => {
+    const pool = mockPlayersPool.map(p => p.name);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return Array.from({ length: segmentCount }, (_, i) => shortName(pool[i % pool.length]));
+  }, [segmentCount]);
+
   const segments = useMemo(
-    () => questions.map((q, i) => ({ ...q, color: WHEEL_COLORS[i % WHEEL_COLORS.length] })),
-    [questions]
+    () => questions.map((q, i) => ({ ...q, name: wheelNames[i % wheelNames.length], color: WHEEL_COLORS[i % WHEEL_COLORS.length] })),
+    [questions, wheelNames]
   );
 
   const allDone = answeredIds.length >= segmentCount;
@@ -2037,7 +2046,7 @@ function LuckyWheelPlayScreen({ game, questions, playerName, onFinish, onQuit })
                         transform={`rotate(${startAngle + segmentAngle / 2}, ${labelPos.x}, ${labelPos.y})`}
                         opacity={isDone ? 0.5 : 1}
                       >
-                        {isDone ? "✓" : i + 1}
+                        {isDone ? "✓" : segment.name}
                       </text>
                     </g>
                   );
@@ -2068,7 +2077,7 @@ function LuckyWheelPlayScreen({ game, questions, playerName, onFinish, onQuit })
               <div className="absolute -right-6 -top-6 text-7xl opacity-10 rotate-12 select-none">🎡</div>
               <div className="flex justify-between items-center mb-4">
                 <span className="inline-flex items-center gap-1.5 bg-gold/20 text-[#8a6a10] font-mono text-xs uppercase px-3 py-1 rounded-full">
-                  🎟️ Ô số {segments.findIndex(s => s.id === currentQuestion.id) + 1}
+                  🎟️ {currentQuestion.name}
                 </span>
                 <span className={`font-mono text-sm font-semibold ${timeLeft <= 5 ? "text-ticket" : "text-ink/70"}`}>⏱ {timeLeft}s</span>
               </div>
