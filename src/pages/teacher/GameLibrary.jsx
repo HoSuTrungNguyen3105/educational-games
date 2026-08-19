@@ -3,6 +3,8 @@ import { gameService } from '../../services/api.js'
 import { CATEGORIES, SUBJECTS } from '../../data/mockData.js'
 import { PrimaryButton, GhostButton, Modal, TicketStub, Loader, ErrorState, EmptyState } from '../../components/ui.jsx'
 import { GameCard } from './TeacherDashboard.jsx'
+import { socket } from '../../socket/socket.js'
+import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 
 export default function GameLibrary({ onCreate, onEdit, onResults, showToast, onChanged }) {
   const [query, setQuery] = useState("");
@@ -23,6 +25,16 @@ export default function GameLibrary({ onCreate, onEdit, onResults, showToast, on
 
   const handleDelete = async (id) => { await gameService.remove(id); showToast("Đã xóa trò chơi", "success"); setConfirmDelete(null); onChanged(); load(); };
   const handleDuplicate = async (id) => { await gameService.duplicate(id); showToast("Đã sao chép trò chơi vào Bản nháp", "success"); onChanged(); load(); };
+
+  const handleLive = async (g) => {
+    if (!socket.connected) {
+      showToast("Chưa kết nối realtime. Kiểm tra VITE_SOCKET_URL hoặc backend Socket.IO.", "error");
+      return;
+    }
+    socket.emit(SOCKET_EVENTS.JOIN_CLASSROOM, { gameId: g.id });
+    socket.emit(SOCKET_EVENTS.START_GAME, { gameId: g.id });
+    showToast(`Đã phát trực tiếp "${g.title}" — học sinh nhập mã ${g.code}`, "success");
+  };
 
   return (
     <div className="space-y-6">
@@ -64,7 +76,7 @@ export default function GameLibrary({ onCreate, onEdit, onResults, showToast, on
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {games.map(g => (
             <GameCard key={g.id} game={g} onEdit={() => onEdit(g.id)} onResults={() => onResults(g.id)}
-              onDuplicate={() => handleDuplicate(g.id)} onDelete={() => setConfirmDelete(g)} onShare={() => setShareGame(g)} />
+              onDuplicate={() => handleDuplicate(g.id)} onDelete={() => setConfirmDelete(g)} onShare={() => setShareGame(g)} onLive={() => handleLive(g)} />
           ))}
         </div>
       )}

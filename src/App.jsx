@@ -4,6 +4,8 @@ import { authService } from './services/api.js'
 import { getRoute, navigate } from './lib/utils.js'
 import { useToast } from './lib/hooks.js'
 import { Toast } from './components/ui.jsx'
+import { socket } from './socket/socket.js'
+import { registerSocketListeners } from './socket/socket.listeners.js'
 import HomeScreen from './pages/HomeScreen.jsx'
 import LoginScreen from './pages/LoginScreen.jsx'
 import TeacherApp from './pages/teacher/TeacherApp.jsx'
@@ -14,6 +16,11 @@ function App() {
   const [user, setUser] = useState(null);
   const [playGame, setPlayGame] = useState(null);
   const [toast, showToast] = useToast();
+
+  const connectSocket = (token) => {
+    socket.auth = { token };
+    socket.connect();
+  };
 
   useEffect(() => {
     const onRoute = () => setRoute(getRoute());
@@ -26,17 +33,31 @@ function App() {
   }, []);
 
   useEffect(() => {
+    return registerSocketListeners();
+  }, []);
+
+  useEffect(() => {
     const auth = loadAuth();
     if (auth && auth.token && auth.user && (auth.user.role === "teacher" || auth.user.role === "admin")) {
       setUser(auth.user);
+      connectSocket(auth.token);
     }
-    const onExpired = () => setUser(null);
+    const onExpired = () => { setUser(null); socket.disconnect(); };
     window.addEventListener("edu-auth-expired", onExpired);
     return () => window.removeEventListener("edu-auth-expired", onExpired);
   }, []);
 
-  const handleLogin = (u) => setUser(u);
-  const handleLogout = () => { authService.logout(); setUser(null); navigate("home"); };
+  const handleLogin = (u) => {
+    const auth = loadAuth();
+    setUser(u);
+    if (auth && auth.token) connectSocket(auth.token);
+  };
+  const handleLogout = () => {
+    authService.logout();
+    socket.disconnect();
+    setUser(null);
+    navigate("home");
+  };
 
   if (route === "admin") {
     if (!user) return <LoginScreen onBack={() => navigate("home")} onLogin={handleLogin} showToast={showToast} />;

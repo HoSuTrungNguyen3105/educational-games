@@ -4,6 +4,10 @@ import { mockGameTemplates, mockPlayersPool } from '../../data/mockData.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, TicketStub, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
 import { GamePlayRouter } from '../../games/GamePlayRouter.jsx'
+import { socket } from '../../socket/socket.js'
+import { SOCKET_EVENTS } from '../../socket/socket.events.js'
+import { useSocketEvent, useSocketConnected } from '../../socket/socket.listeners.js'
+import { useGameStore } from '../../stores/game.store.js'
 
 export default function StudentApp({ initialGame, onExit, showToast, toast }) {
   const [screen, setScreen] = useState(initialGame ? "name" : "join");
@@ -169,13 +173,36 @@ function EnterNameScreen({ game, onBack, onSubmit }) {
 }
 
 function WaitingRoomScreen({ game, playerName, onStart }) {
-  const [others, setOthers] = useState([]);
+  const [mockOthers, setMockOthers] = useState([]);
   const tpl = mockGameTemplates.find(t => t.id === game.template);
+  const connected = useSocketConnected();
+  const players = useGameStore(s => s.players);
+  const joined = players.length > 0 && connected;
+  const others = joined
+    ? players.filter(p => p.name !== playerName).map(p => p.name).slice(0, 6)
+    : mockOthers;
 
+  // Tham gia trò chơi qua socket khi vào phòng chờ
   useEffect(() => {
-    const timers = mockPlayersPool.slice(0, 4).map((p, i) => setTimeout(() => setOthers(prev => [...prev, p.name]), 500 + i * 500));
+    if (!connected) {
+      socket.auth = {};
+      socket.connect();
+    }
+    socket.emit(SOCKET_EVENTS.JOIN_GAME, { gameId: game.id, playerName });
+    return () => {
+      socket.emit(SOCKET_EVENTS.LEAVE_CLASSROOM, { gameId: game.id });
+    };
+  }, [connected, game.id, playerName]);
+
+  // Backend gửi game:started → tự động vào chơi
+  useSocketEvent(SOCKET_EVENTS.GAME_STARTED, () => onStart());
+
+  // Fallback dữ liệu minh hoạ khi chưa có socket backend
+  useEffect(() => {
+    if (joined) return;
+    const timers = mockPlayersPool.slice(0, 4).map((p, i) => setTimeout(() => setMockOthers(prev => [...prev, p.name]), 500 + i * 500));
     return () => timers.forEach(clearTimeout);
-  }, []);
+  }, [joined]);
 
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-10">
@@ -184,13 +211,14 @@ function WaitingRoomScreen({ game, playerName, onStart }) {
         <h1 className="font-display text-2xl text-ink mb-1">Phòng chờ</h1>
         <p className="text-sm text-[#8A7C63] mb-6">Chờ giáo viên bắt đầu trò chơi "{game.title}"</p>
         <div className="note-card p-5 mb-6">
-          <p className="text-xs font-mono text-[#8A7C63] uppercase mb-3">{others.length + 1} người đã tham gia</p>
+          <p className="text-xs font-mono text-[#8A7C63] uppercase mb-3">{others.length + 1} người đã tham gia{connected && <span className="ml-2 text-teal">● realtime</span>}</p>
           <div className="flex flex-wrap gap-2 justify-center">
             <span className="px-3 py-1.5 rounded-full bg-ticket/10 text-ticket text-sm font-semibold">{playerName} (bạn)</span>
             {others.map(n => <span key={n} className="px-3 py-1.5 rounded-full bg-ink/5 text-ink text-sm anim-pop">{n}</span>)}
           </div>
         </div>
-        <PrimaryButton onClick={onStart} className="w-full">Bắt đầu chơi 🚀</PrimaryButton>
+        {!connected && <PrimaryButton onClick={onStart} className="w-full">Bắt đầu chơi 🚀</PrimaryButton>}
+        {connected && <p className="text-xs text-[#8A7C63] font-mono">Đã kết nối — giáo viên sẽ bắt đầu trò chơi 🎬</p>}
       </div>
     </div>
   );

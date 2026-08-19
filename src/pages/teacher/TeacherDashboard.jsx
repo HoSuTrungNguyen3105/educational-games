@@ -3,7 +3,7 @@ import { gameService } from '../../services/api.js'
 import { mockGameTemplates } from '../../data/mockData.js'
 import { StampToken, StatusBadge, IconButton, Loader, ErrorState, EmptyState, PrimaryButton } from '../../components/ui.jsx'
 
-export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onShare }) {
+export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onShare, onLive }) {
   const tpl = mockGameTemplates.find(t => t.id === game.template);
   return (
     <div className="note-card p-5 flex flex-col gap-3 anim-pop hover:-translate-y-0.5 transition shadow-[0_2px_0_rgba(0,0,0,0.06)]">
@@ -26,7 +26,14 @@ export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onSha
           {onShare && game.status === "published" && <IconButton title="Chia sẻ" onClick={onShare}>🎟️</IconButton>}
           {onDelete && <IconButton title="Xóa" onClick={onDelete}>🗑️</IconButton>}
         </div>
-        <button onClick={onResults} className="text-sm font-semibold text-ticket hover:underline">Kết quả →</button>
+        <div className="flex items-center gap-2">
+          {onLive && game.status === "published" && (
+            <button onClick={onLive} className="text-sm font-semibold text-teal hover:underline" title="Phát trực tiếp cho học sinh">
+              Phát trực tiếp ▶
+            </button>
+          )}
+          <button onClick={onResults} className="text-sm font-semibold text-ticket hover:underline">Kết quả →</button>
+        </div>
       </div>
     </div>
   );
