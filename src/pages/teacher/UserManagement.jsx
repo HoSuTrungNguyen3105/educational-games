@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { userService } from '../../services/api.js'
-import { PrimaryButton, IconButton, Loader, ErrorState } from '../../components/ui.jsx'
+import { PrimaryButton, IconButton, Loader, ErrorState, PasswordInput } from '../../components/ui.jsx'
 
 export default function UserManagement({ user, showToast }) {
   const [users, setUsers] = useState(null);
@@ -63,8 +63,7 @@ export default function UserManagement({ user, showToast }) {
           </div>
           <div>
             <label className="text-xs font-mono uppercase text-[#8A7C63]">Mật khẩu (≥ 6 ký tự)</label>
-            <input type="password" value={form.password} onChange={e => { setForm({ ...form, password: e.target.value }); setError(null); }}
-              className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket" autoComplete="new-password" />
+            <PasswordInput value={form.password} onChange={e => { setForm({ ...form, password: e.target.value }); setError(null); }} autoComplete="new-password" />
           </div>
           <div>
             <label className="text-xs font-mono uppercase text-[#8A7C63]">Họ tên</label>

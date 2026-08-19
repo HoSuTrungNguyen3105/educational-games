@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 export function StampToken({ icon, ring = "#F4B942", size = 56, fontSize = 24, className = "" }) {
   return (
     <div className={`stamp-token ${className}`} style={{ "--ring": ring, width: size, height: size, fontSize: fontSize }}>
@@ -95,6 +97,23 @@ export function Modal({ children, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-ink/40 backdrop-blur-sm" onClick={onClose}>
       <div className="note-card max-w-md w-full p-6 anim-pop" onClick={e => e.stopPropagation()}>{children}</div>
+    </div>
+  );
+}
+
+export function PasswordInput({ value, onChange, fieldClass = "w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket", className = "", ...rest }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className={`relative ${className}`}>
+      <input type={visible ? "text" : "password"} value={value} onChange={onChange} className={`${fieldClass} pr-11`} {...rest} />
+      <button
+        type="button"
+        onClick={() => setVisible(v => !v)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-lg leading-none opacity-60 hover:opacity-100 transition cursor-pointer"
+        title={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+      >
+        {visible ? "🙈" : "👁️"}
+      </button>
     </div>
   );
 }
