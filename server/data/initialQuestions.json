@@ -1,0 +1,1891 @@
+[
+  {
+    "id": "question-001",
+    "gameId": "game-001",
+    "content": "Trong vườn có 45 cây cam và 28 cây táo. Hỏi trong vườn có tất cả bao nhiêu cây?",
+    "options": [
+      {
+        "id": "answer-001",
+        "content": "63 cây"
+      },
+      {
+        "id": "answer-002",
+        "content": "73 cây"
+      },
+      {
+        "id": "answer-003",
+        "content": "83 cây"
+      }
+    ],
+    "correctAnswer": "answer-002",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-002",
+    "gameId": "game-001",
+    "content": "56 + 24 bằng bao nhiêu?",
+    "options": [
+      {
+        "id": "answer-004",
+        "content": "70"
+      },
+      {
+        "id": "answer-005",
+        "content": "80"
+      },
+      {
+        "id": "answer-006",
+        "content": "90"
+      }
+    ],
+    "correctAnswer": "answer-005",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-003",
+    "gameId": "game-001",
+    "content": "Một lớp có 32 học sinh, đã có 19 bạn nộp bài. Hỏi còn bao nhiêu bạn chưa nộp?",
+    "options": [
+      {
+        "id": "answer-007",
+        "content": "11 bạn"
+      },
+      {
+        "id": "answer-008",
+        "content": "12 bạn"
+      },
+      {
+        "id": "answer-009",
+        "content": "13 bạn"
+      }
+    ],
+    "correctAnswer": "answer-008",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-004",
+    "gameId": "game-002",
+    "content": "Hành tinh nào được gọi là \"Hành tinh Đỏ\"?",
+    "options": [
+      {
+        "id": "answer-010",
+        "content": "Sao Kim"
+      },
+      {
+        "id": "answer-011",
+        "content": "Sao Hỏa"
+      },
+      {
+        "id": "answer-012",
+        "content": "Sao Thổ"
+      }
+    ],
+    "correctAnswer": "answer-011",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-005",
+    "gameId": "game-002",
+    "content": "Hệ Mặt Trời có tất cả bao nhiêu hành tinh?",
+    "options": [
+      {
+        "id": "answer-013",
+        "content": "7"
+      },
+      {
+        "id": "answer-014",
+        "content": "8"
+      },
+      {
+        "id": "answer-015",
+        "content": "9"
+      }
+    ],
+    "correctAnswer": "answer-014",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-006",
+    "gameId": "game-002",
+    "content": "Ngôi sao nào gần Trái Đất nhất?",
+    "options": [
+      {
+        "id": "answer-016",
+        "content": "Mặt Trời"
+      },
+      {
+        "id": "answer-017",
+        "content": "Sao Bắc Cực"
+      },
+      {
+        "id": "answer-018",
+        "content": "Sao Hôm"
+      }
+    ],
+    "correctAnswer": "answer-016",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-007",
+    "gameId": "game-003",
+    "content": "Thủ đô của Việt Nam là gì?",
+    "options": [
+      {
+        "id": "answer-019",
+        "content": "Hà Nội"
+      },
+      {
+        "id": "answer-020",
+        "content": "Đà Nẵng"
+      },
+      {
+        "id": "answer-021",
+        "content": "TP. Hồ Chí Minh"
+      }
+    ],
+    "correctAnswer": "answer-019",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-008",
+    "gameId": "game-003",
+    "content": "1 giờ có bao nhiêu phút?",
+    "options": [
+      {
+        "id": "answer-022",
+        "content": "50"
+      },
+      {
+        "id": "answer-023",
+        "content": "60"
+      },
+      {
+        "id": "answer-024",
+        "content": "70"
+      }
+    ],
+    "correctAnswer": "answer-023",
+    "timeLimit": 10,
+    "points": 100
+  },
+  {
+    "id": "question-009",
+    "gameId": "game-004",
+    "content": "Từ nào sau đây nghĩa là \"mẹ\" trong tiếng Anh?",
+    "options": [
+      {
+        "id": "answer-025",
+        "content": "Mother"
+      },
+      {
+        "id": "answer-026",
+        "content": "Brother"
+      },
+      {
+        "id": "answer-027",
+        "content": "Father"
+      }
+    ],
+    "correctAnswer": "answer-025",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-010",
+    "gameId": "game-004",
+    "content": "\"Anh trai\" trong tiếng Anh là gì?",
+    "options": [
+      {
+        "id": "answer-028",
+        "content": "Sister"
+      },
+      {
+        "id": "answer-029",
+        "content": "Brother"
+      },
+      {
+        "id": "answer-030",
+        "content": "Uncle"
+      }
+    ],
+    "correctAnswer": "answer-029",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-011",
+    "gameId": "game-005",
+    "content": "Tết Trung Thu diễn ra vào ngày nào theo âm lịch?",
+    "options": [
+      {
+        "id": "answer-031",
+        "content": "Rằm tháng Tám"
+      },
+      {
+        "id": "answer-032",
+        "content": "Mùng Một Tết"
+      },
+      {
+        "id": "answer-033",
+        "content": "Rằm tháng Giêng"
+      }
+    ],
+    "correctAnswer": "answer-031",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-012",
+    "gameId": "game-005",
+    "content": "Loại bánh nào thường được ăn trong dịp Trung Thu?",
+    "options": [
+      {
+        "id": "answer-034",
+        "content": "Bánh chưng"
+      },
+      {
+        "id": "answer-035",
+        "content": "Bánh trung thu"
+      },
+      {
+        "id": "answer-036",
+        "content": "Bánh tét"
+      }
+    ],
+    "correctAnswer": "answer-035",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-013",
+    "gameId": "game-006",
+    "content": "Vùng nào sau đây thuộc miền Bắc Việt Nam?",
+    "options": [
+      {
+        "id": "answer-037",
+        "content": "Đồng bằng sông Hồng"
+      },
+      {
+        "id": "answer-038",
+        "content": "Đồng bằng sông Cửu Long"
+      },
+      {
+        "id": "answer-039",
+        "content": "Tây Nguyên"
+      }
+    ],
+    "correctAnswer": "answer-037",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-014",
+    "gameId": "game-006",
+    "content": "Dãy núi nào dài nhất Việt Nam?",
+    "options": [
+      {
+        "id": "answer-040",
+        "content": "Trường Sơn"
+      },
+      {
+        "id": "answer-041",
+        "content": "Hoàng Liên Sơn"
+      },
+      {
+        "id": "answer-042",
+        "content": "Con Voi"
+      }
+    ],
+    "correctAnswer": "answer-040",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-015",
+    "gameId": "game-007",
+    "content": "Chữ cái nào đứng đầu bảng chữ cái tiếng Việt?",
+    "options": [
+      {
+        "id": "answer-043",
+        "content": "A"
+      },
+      {
+        "id": "answer-044",
+        "content": "B"
+      },
+      {
+        "id": "answer-045",
+        "content": "Ă"
+      }
+    ],
+    "correctAnswer": "answer-043",
+    "timeLimit": 10,
+    "points": 100
+  },
+  {
+    "id": "question-016",
+    "gameId": "game-007",
+    "content": "Bảng chữ cái tiếng Việt có bao nhiêu chữ cái?",
+    "options": [
+      {
+        "id": "answer-046",
+        "content": "26"
+      },
+      {
+        "id": "answer-047",
+        "content": "29"
+      },
+      {
+        "id": "answer-048",
+        "content": "24"
+      }
+    ],
+    "correctAnswer": "answer-047",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-017",
+    "gameId": "game-008",
+    "content": "7 x 8 bằng bao nhiêu?",
+    "options": [
+      {
+        "id": "answer-049",
+        "content": "54"
+      },
+      {
+        "id": "answer-050",
+        "content": "56"
+      },
+      {
+        "id": "answer-051",
+        "content": "58"
+      }
+    ],
+    "correctAnswer": "answer-050",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-018",
+    "gameId": "game-008",
+    "content": "Số nào lớn nhất trong các số: 4/5, 3/4, 2/3?",
+    "options": [
+      {
+        "id": "answer-052",
+        "content": "4/5"
+      },
+      {
+        "id": "answer-053",
+        "content": "3/4"
+      },
+      {
+        "id": "answer-054",
+        "content": "2/3"
+      }
+    ],
+    "correctAnswer": "answer-052",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-101",
+    "gameId": "game-008",
+    "content": "9 x 6 bằng bao nhiêu?",
+    "options": [
+      {
+        "id": "answer-101",
+        "content": "45"
+      },
+      {
+        "id": "answer-102",
+        "content": "54"
+      },
+      {
+        "id": "answer-103",
+        "content": "56"
+      }
+    ],
+    "correctAnswer": "answer-102",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-102",
+    "gameId": "game-008",
+    "content": "1 năm có bao nhiêu tháng?",
+    "options": [
+      {
+        "id": "answer-104",
+        "content": "10"
+      },
+      {
+        "id": "answer-105",
+        "content": "12"
+      },
+      {
+        "id": "answer-106",
+        "content": "13"
+      }
+    ],
+    "correctAnswer": "answer-105",
+    "timeLimit": 10,
+    "points": 100
+  },
+  {
+    "id": "question-103",
+    "gameId": "game-008",
+    "content": "Con vật nào được mệnh danh là \"chúa sơn lâm\"?",
+    "options": [
+      {
+        "id": "answer-107",
+        "content": "Sư tử"
+      },
+      {
+        "id": "answer-108",
+        "content": "Hổ"
+      },
+      {
+        "id": "answer-109",
+        "content": "Voi"
+      }
+    ],
+    "correctAnswer": "answer-108",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-104",
+    "gameId": "game-008",
+    "content": "Nước nào có diện tích lớn nhất thế giới?",
+    "options": [
+      {
+        "id": "answer-110",
+        "content": "Trung Quốc"
+      },
+      {
+        "id": "answer-111",
+        "content": "Canada"
+      },
+      {
+        "id": "answer-112",
+        "content": "Nga"
+      }
+    ],
+    "correctAnswer": "answer-112",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-105",
+    "gameId": "game-008",
+    "content": "5 + 7 x 2 bằng bao nhiêu?",
+    "options": [
+      {
+        "id": "answer-113",
+        "content": "24"
+      },
+      {
+        "id": "answer-114",
+        "content": "19"
+      },
+      {
+        "id": "answer-115",
+        "content": "17"
+      }
+    ],
+    "correctAnswer": "answer-114",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-106",
+    "gameId": "game-008",
+    "content": "Loại quả nào có nhiều vitamin C nổi bật nhất trong các loại sau?",
+    "options": [
+      {
+        "id": "answer-116",
+        "content": "Cam"
+      },
+      {
+        "id": "answer-117",
+        "content": "Chuối"
+      },
+      {
+        "id": "answer-118",
+        "content": "Dưa hấu"
+      }
+    ],
+    "correctAnswer": "answer-116",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-019",
+    "gameId": "game-009",
+    "content": "Khi đèn giao thông chuyển sang màu đỏ, người đi bộ nên làm gì?",
+    "options": [
+      {
+        "id": "answer-055",
+        "content": "Dừng lại chờ đèn xanh"
+      },
+      {
+        "id": "answer-056",
+        "content": "Chạy nhanh qua đường"
+      },
+      {
+        "id": "answer-057",
+        "content": "Không quan tâm"
+      }
+    ],
+    "correctAnswer": "answer-055",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-020",
+    "gameId": "game-009",
+    "content": "Trước khi qua đường, em cần làm gì?",
+    "options": [
+      {
+        "id": "answer-058",
+        "content": "Quan sát hai bên"
+      },
+      {
+        "id": "answer-059",
+        "content": "Nhắm mắt chạy"
+      },
+      {
+        "id": "answer-060",
+        "content": "Đi thật nhanh"
+      }
+    ],
+    "correctAnswer": "answer-058",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-021",
+    "gameId": "game-010",
+    "content": "Loài động vật nào có cổ dài nhất?",
+    "options": [
+      {
+        "id": "answer-061",
+        "content": "Voi"
+      },
+      {
+        "id": "answer-062",
+        "content": "Hươu cao cổ"
+      },
+      {
+        "id": "answer-063",
+        "content": "Ngựa vằn"
+      }
+    ],
+    "correctAnswer": "answer-062",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-022",
+    "gameId": "game-010",
+    "content": "Loài chim nào không biết bay nhưng bơi giỏi?",
+    "options": [
+      {
+        "id": "answer-064",
+        "content": "Chim cánh cụt"
+      },
+      {
+        "id": "answer-065",
+        "content": "Đại bàng"
+      },
+      {
+        "id": "answer-066",
+        "content": "Chim sẻ"
+      }
+    ],
+    "correctAnswer": "answer-064",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-023",
+    "gameId": "game-011",
+    "content": "Kinh đô đầu tiên của nhà Lý là ở đâu?",
+    "options": [
+      {
+        "id": "answer-067",
+        "content": "Thăng Long"
+      },
+      {
+        "id": "answer-068",
+        "content": "Huế"
+      },
+      {
+        "id": "answer-069",
+        "content": "Hoa Lư"
+      }
+    ],
+    "correctAnswer": "answer-067",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-024",
+    "gameId": "game-011",
+    "content": "Vị vua nào dời đô về Thăng Long?",
+    "options": [
+      {
+        "id": "answer-070",
+        "content": "Lý Thái Tổ"
+      },
+      {
+        "id": "answer-071",
+        "content": "Trần Nhân Tông"
+      },
+      {
+        "id": "answer-072",
+        "content": "Lê Lợi"
+      }
+    ],
+    "correctAnswer": "answer-070",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-025",
+    "gameId": "game-012",
+    "content": "Vỏ chai nhựa nên bỏ vào nhóm rác nào?",
+    "options": [
+      {
+        "id": "answer-073",
+        "content": "Rác tái chế"
+      },
+      {
+        "id": "answer-074",
+        "content": "Rác hữu cơ"
+      },
+      {
+        "id": "answer-075",
+        "content": "Rác nguy hại"
+      }
+    ],
+    "correctAnswer": "answer-073",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-026",
+    "gameId": "game-012",
+    "content": "Vỏ trái cây thuộc nhóm rác nào?",
+    "options": [
+      {
+        "id": "answer-076",
+        "content": "Rác hữu cơ"
+      },
+      {
+        "id": "answer-077",
+        "content": "Rác tái chế"
+      },
+      {
+        "id": "answer-078",
+        "content": "Rác điện tử"
+      }
+    ],
+    "correctAnswer": "answer-076",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-201",
+    "gameId": "game-013",
+    "content": "12 x 4 bằng bao nhiêu?",
+    "options": [
+      {
+        "id": "answer-201",
+        "content": "46"
+      },
+      {
+        "id": "answer-202",
+        "content": "48"
+      },
+      {
+        "id": "answer-203",
+        "content": "52"
+      }
+    ],
+    "correctAnswer": "answer-202",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-202",
+    "gameId": "game-013",
+    "content": "100 - 37 bằng bao nhiêu?",
+    "options": [
+      {
+        "id": "answer-204",
+        "content": "63"
+      },
+      {
+        "id": "answer-205",
+        "content": "67"
+      },
+      {
+        "id": "answer-206",
+        "content": "73"
+      }
+    ],
+    "correctAnswer": "answer-204",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-203",
+    "gameId": "game-013",
+    "content": "Một hình vuông có cạnh 5cm. Chu vi hình vuông đó là bao nhiêu?",
+    "options": [
+      {
+        "id": "answer-207",
+        "content": "15cm"
+      },
+      {
+        "id": "answer-208",
+        "content": "20cm"
+      },
+      {
+        "id": "answer-209",
+        "content": "25cm"
+      }
+    ],
+    "correctAnswer": "answer-208",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-204",
+    "gameId": "game-013",
+    "content": "81 chia 9 bằng bao nhiêu?",
+    "options": [
+      {
+        "id": "answer-210",
+        "content": "7"
+      },
+      {
+        "id": "answer-211",
+        "content": "8"
+      },
+      {
+        "id": "answer-212",
+        "content": "9"
+      }
+    ],
+    "correctAnswer": "answer-212",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-211",
+    "gameId": "game-014",
+    "content": "Núi nào cao nhất thế giới?",
+    "options": [
+      {
+        "id": "answer-221",
+        "content": "Everest"
+      },
+      {
+        "id": "answer-222",
+        "content": "Fansipan"
+      },
+      {
+        "id": "answer-223",
+        "content": "Kilimanjaro"
+      }
+    ],
+    "correctAnswer": "answer-221",
+    "timeLimit": 20,
+    "points": 120
+  },
+  {
+    "id": "question-212",
+    "gameId": "game-014",
+    "content": "Cơ quan nào trong cơ thể người bơm máu đi khắp cơ thể?",
+    "options": [
+      {
+        "id": "answer-224",
+        "content": "Phổi"
+      },
+      {
+        "id": "answer-225",
+        "content": "Tim"
+      },
+      {
+        "id": "answer-226",
+        "content": "Gan"
+      }
+    ],
+    "correctAnswer": "answer-225",
+    "timeLimit": 15,
+    "points": 120
+  },
+  {
+    "id": "question-213",
+    "gameId": "game-014",
+    "content": "Ai là tác giả của bài thơ \"Lượm\"?",
+    "options": [
+      {
+        "id": "answer-227",
+        "content": "Tố Hữu"
+      },
+      {
+        "id": "answer-228",
+        "content": "Xuân Diệu"
+      },
+      {
+        "id": "answer-229",
+        "content": "Nguyễn Du"
+      }
+    ],
+    "correctAnswer": "answer-227",
+    "timeLimit": 20,
+    "points": 120
+  },
+  {
+    "id": "question-214",
+    "gameId": "game-014",
+    "content": "Đại dương nào lớn nhất thế giới?",
+    "options": [
+      {
+        "id": "answer-230",
+        "content": "Đại Tây Dương"
+      },
+      {
+        "id": "answer-231",
+        "content": "Thái Bình Dương"
+      },
+      {
+        "id": "answer-232",
+        "content": "Ấn Độ Dương"
+      }
+    ],
+    "correctAnswer": "answer-231",
+    "timeLimit": 20,
+    "points": 120
+  },
+  {
+    "id": "question-221",
+    "gameId": "game-015",
+    "content": "\"Con mèo\" trong tiếng Anh là gì?",
+    "options": [
+      {
+        "id": "answer-241",
+        "content": "Dog"
+      },
+      {
+        "id": "answer-242",
+        "content": "Cat"
+      },
+      {
+        "id": "answer-243",
+        "content": "Bird"
+      }
+    ],
+    "correctAnswer": "answer-242",
+    "timeLimit": 12,
+    "points": 100
+  },
+  {
+    "id": "question-222",
+    "gameId": "game-015",
+    "content": "\"Quyển sách\" trong tiếng Anh là gì?",
+    "options": [
+      {
+        "id": "answer-244",
+        "content": "Book"
+      },
+      {
+        "id": "answer-245",
+        "content": "Pen"
+      },
+      {
+        "id": "answer-246",
+        "content": "Bag"
+      }
+    ],
+    "correctAnswer": "answer-244",
+    "timeLimit": 12,
+    "points": 100
+  },
+  {
+    "id": "question-223",
+    "gameId": "game-015",
+    "content": "\"Chạy\" trong tiếng Anh là gì?",
+    "options": [
+      {
+        "id": "answer-247",
+        "content": "Jump"
+      },
+      {
+        "id": "answer-248",
+        "content": "Run"
+      },
+      {
+        "id": "answer-249",
+        "content": "Walk"
+      }
+    ],
+    "correctAnswer": "answer-248",
+    "timeLimit": 12,
+    "points": 100
+  },
+  {
+    "id": "question-301",
+    "gameId": "game-001",
+    "content": "Lan có 24 viên bi, cho bạn 7 viên rồi được mẹ cho thêm 10 viên. Hỏi Lan có bao nhiêu viên bi?",
+    "options": [
+      {
+        "id": "answer-301",
+        "content": "27 viên"
+      },
+      {
+        "id": "answer-302",
+        "content": "17 viên"
+      },
+      {
+        "id": "answer-303",
+        "content": "31 viên"
+      }
+    ],
+    "correctAnswer": "answer-301",
+    "explanation": "24 - 7 + 10 = 27 viên bi.",
+    "timeLimit": 25,
+    "points": 100
+  },
+  {
+    "id": "question-302",
+    "gameId": "game-001",
+    "content": "Số nào thích hợp điền vào chỗ trống: 5, 10, 15, 20, ...?",
+    "options": [
+      {
+        "id": "answer-304",
+        "content": "24"
+      },
+      {
+        "id": "answer-305",
+        "content": "25"
+      },
+      {
+        "id": "answer-306",
+        "content": "30"
+      }
+    ],
+    "correctAnswer": "answer-305",
+    "explanation": "Dãy số cách đều 5 đơn vị: 20 + 5 = 25.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-303",
+    "gameId": "game-001",
+    "content": "Một cửa hàng có 5 hộp bút, mỗi hộp có 8 chiếc. Cửa hàng có tất cả bao nhiêu chiếc bút?",
+    "options": [
+      {
+        "id": "answer-307",
+        "content": "35 chiếc"
+      },
+      {
+        "id": "answer-308",
+        "content": "40 chiếc"
+      },
+      {
+        "id": "answer-309",
+        "content": "45 chiếc"
+      }
+    ],
+    "correctAnswer": "answer-308",
+    "explanation": "5 x 8 = 40 chiếc bút.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-304",
+    "gameId": "game-001",
+    "content": "Một chiếc bánh được chia thành 8 phần bằng nhau. Mai ăn 3 phần. Mai đã ăn bao nhiêu phần chiếc bánh?",
+    "options": [
+      {
+        "id": "answer-310",
+        "content": "3/8"
+      },
+      {
+        "id": "answer-311",
+        "content": "5/8"
+      },
+      {
+        "id": "answer-312",
+        "content": "3/5"
+      }
+    ],
+    "correctAnswer": "answer-310",
+    "explanation": "Mai ăn 3 trong 8 phần bằng nhau nên là 3/8 chiếc bánh.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-305",
+    "gameId": "game-002",
+    "content": "Hành tinh nào nổi tiếng với hệ thống vành đai lớn?",
+    "options": [
+      {
+        "id": "answer-313",
+        "content": "Sao Thổ"
+      },
+      {
+        "id": "answer-314",
+        "content": "Sao Thủy"
+      },
+      {
+        "id": "answer-315",
+        "content": "Trái Đất"
+      }
+    ],
+    "correctAnswer": "answer-313",
+    "explanation": "Sao Thổ nổi tiếng với hệ thống vành đai băng và đá lớn nhất.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-306",
+    "gameId": "game-002",
+    "content": "Con người sống trên hành tinh nào?",
+    "options": [
+      {
+        "id": "answer-316",
+        "content": "Sao Hỏa"
+      },
+      {
+        "id": "answer-317",
+        "content": "Trái Đất"
+      },
+      {
+        "id": "answer-318",
+        "content": "Sao Kim"
+      }
+    ],
+    "correctAnswer": "answer-317",
+    "explanation": "Trái Đất là hành tinh duy nhất được biết đến có sự sống.",
+    "timeLimit": 10,
+    "points": 100
+  },
+  {
+    "id": "question-307",
+    "gameId": "game-002",
+    "content": "Ánh sáng từ Mặt Trời giúp Trái Đất có điều gì?",
+    "options": [
+      {
+        "id": "answer-319",
+        "content": "Ánh sáng và nhiệt"
+      },
+      {
+        "id": "answer-320",
+        "content": "Chỉ có gió"
+      },
+      {
+        "id": "answer-321",
+        "content": "Chỉ có mưa"
+      }
+    ],
+    "correctAnswer": "answer-319",
+    "explanation": "Mặt Trời cung cấp ánh sáng và nhiệt cho Trái Đất.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-308",
+    "gameId": "game-003",
+    "content": "Thành phố nào được gọi là thành phố ngàn hoa?",
+    "options": [
+      {
+        "id": "answer-322",
+        "content": "Đà Lạt"
+      },
+      {
+        "id": "answer-323",
+        "content": "Huế"
+      },
+      {
+        "id": "answer-324",
+        "content": "Hạ Long"
+      }
+    ],
+    "correctAnswer": "answer-322",
+    "explanation": "Đà Lạt được mệnh danh là thành phố ngàn hoa vì có rất nhiều hoa.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-309",
+    "gameId": "game-003",
+    "content": "Vịnh Hạ Long thuộc tỉnh nào?",
+    "options": [
+      {
+        "id": "answer-325",
+        "content": "Quảng Ninh"
+      },
+      {
+        "id": "answer-326",
+        "content": "Khánh Hòa"
+      },
+      {
+        "id": "answer-327",
+        "content": "Quảng Nam"
+      }
+    ],
+    "correctAnswer": "answer-325",
+    "explanation": "Vịnh Hạ Long nằm ở tỉnh Quảng Ninh, miền Bắc Việt Nam.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-310",
+    "gameId": "game-003",
+    "content": "Sông nào chảy qua Hà Nội?",
+    "options": [
+      {
+        "id": "answer-328",
+        "content": "Sông Hồng"
+      },
+      {
+        "id": "answer-329",
+        "content": "Sông Tiền"
+      },
+      {
+        "id": "answer-330",
+        "content": "Sông Hàn"
+      }
+    ],
+    "correctAnswer": "answer-328",
+    "explanation": "Sông Hồng chảy qua thủ đô Hà Nội.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-311",
+    "gameId": "game-004",
+    "content": "Từ nào có nghĩa là \"con gái\" trong tiếng Anh?",
+    "options": [
+      {
+        "id": "answer-331",
+        "content": "Daughter"
+      },
+      {
+        "id": "answer-332",
+        "content": "Son"
+      },
+      {
+        "id": "answer-333",
+        "content": "Father"
+      }
+    ],
+    "correctAnswer": "answer-331",
+    "explanation": "'Daughter' nghĩa là con gái, còn 'son' là con trai.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-312",
+    "gameId": "game-004",
+    "content": "Chọn từ thích hợp: \"My ___ is a doctor.\" Nếu muốn nói \"Mẹ tôi là bác sĩ\".",
+    "options": [
+      {
+        "id": "answer-334",
+        "content": "mother"
+      },
+      {
+        "id": "answer-335",
+        "content": "brother"
+      },
+      {
+        "id": "answer-336",
+        "content": "uncle"
+      }
+    ],
+    "correctAnswer": "answer-334",
+    "explanation": "'Mother' nghĩa là mẹ, phù hợp với nghĩa 'mẹ tôi là bác sĩ'.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-313",
+    "gameId": "game-004",
+    "content": "Từ nào có nghĩa là \"chị/em gái\"?",
+    "options": [
+      {
+        "id": "answer-337",
+        "content": "Sister"
+      },
+      {
+        "id": "answer-338",
+        "content": "Brother"
+      },
+      {
+        "id": "answer-339",
+        "content": "Grandfather"
+      }
+    ],
+    "correctAnswer": "answer-337",
+    "explanation": "'Sister' nghĩa là chị/em gái.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-314",
+    "gameId": "game-005",
+    "content": "Trong đêm Trung Thu, trẻ em thường tham gia hoạt động nào?",
+    "options": [
+      {
+        "id": "answer-340",
+        "content": "Rước đèn"
+      },
+      {
+        "id": "answer-341",
+        "content": "Gói bánh chưng"
+      },
+      {
+        "id": "answer-342",
+        "content": "Hái hoa đào"
+      }
+    ],
+    "correctAnswer": "answer-340",
+    "explanation": "Trong đêm Trung Thu, trẻ em thường rước đèn ông sao.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-315",
+    "gameId": "game-005",
+    "content": "Nhân vật thường xuất hiện trong các câu chuyện Trung Thu là ai?",
+    "options": [
+      {
+        "id": "answer-343",
+        "content": "Chú Cuội"
+      },
+      {
+        "id": "answer-344",
+        "content": "Thánh Gióng"
+      },
+      {
+        "id": "answer-345",
+        "content": "Sơn Tinh"
+      }
+    ],
+    "correctAnswer": "answer-343",
+    "explanation": "Chú Cuội và chị Hằng là nhân vật quen thuộc trong dịp Trung Thu.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-316",
+    "gameId": "game-006",
+    "content": "Địa danh nào nổi tiếng với phố cổ và đèn lồng ở miền Trung?",
+    "options": [
+      {
+        "id": "answer-346",
+        "content": "Hội An"
+      },
+      {
+        "id": "answer-347",
+        "content": "Sa Pa"
+      },
+      {
+        "id": "answer-348",
+        "content": "Hà Giang"
+      }
+    ],
+    "correctAnswer": "answer-346",
+    "explanation": "Hội An nổi tiếng với phố cổ và đèn lồng rực rỡ.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-317",
+    "gameId": "game-006",
+    "content": "Đồng bằng sông Cửu Long nằm chủ yếu ở khu vực nào của Việt Nam?",
+    "options": [
+      {
+        "id": "answer-349",
+        "content": "Nam Bộ"
+      },
+      {
+        "id": "answer-350",
+        "content": "Bắc Bộ"
+      },
+      {
+        "id": "answer-351",
+        "content": "Tây Bắc"
+      }
+    ],
+    "correctAnswer": "answer-349",
+    "explanation": "Đồng bằng sông Cửu Long nằm chủ yếu ở khu vực Nam Bộ.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-318",
+    "gameId": "game-006",
+    "content": "Biển Đông nằm ở phía nào của Việt Nam?",
+    "options": [
+      {
+        "id": "answer-352",
+        "content": "Phía Đông"
+      },
+      {
+        "id": "answer-353",
+        "content": "Phía Tây"
+      },
+      {
+        "id": "answer-354",
+        "content": "Phía Bắc"
+      }
+    ],
+    "correctAnswer": "answer-352",
+    "explanation": "Biển Đông nằm ở phía Đông của Việt Nam.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-319",
+    "gameId": "game-007",
+    "content": "Từ nào sau đây bắt đầu bằng chữ \"B\"?",
+    "options": [
+      {
+        "id": "answer-355",
+        "content": "Bóng"
+      },
+      {
+        "id": "answer-356",
+        "content": "Cá"
+      },
+      {
+        "id": "answer-357",
+        "content": "Mèo"
+      }
+    ],
+    "correctAnswer": "answer-355",
+    "explanation": "Từ 'bóng' bắt đầu bằng chữ B, còn 'cá' bắt đầu bằng C và 'mèo' bằng M.",
+    "timeLimit": 10,
+    "points": 100
+  },
+  {
+    "id": "question-320",
+    "gameId": "game-007",
+    "content": "Từ \"mẹ\" có chữ cái đầu tiên là chữ nào?",
+    "options": [
+      {
+        "id": "answer-358",
+        "content": "M"
+      },
+      {
+        "id": "answer-359",
+        "content": "N"
+      },
+      {
+        "id": "answer-360",
+        "content": "L"
+      }
+    ],
+    "correctAnswer": "answer-358",
+    "explanation": "Từ 'mẹ' bắt đầu bằng chữ cái M.",
+    "timeLimit": 10,
+    "points": 100
+  },
+  {
+    "id": "question-321",
+    "gameId": "game-009",
+    "content": "Khi đi xe máy cùng người lớn, trẻ em nên làm gì?",
+    "options": [
+      {
+        "id": "answer-361",
+        "content": "Đội mũ bảo hiểm đúng cách"
+      },
+      {
+        "id": "answer-362",
+        "content": "Đứng trên xe"
+      },
+      {
+        "id": "answer-363",
+        "content": "Không cần đội mũ"
+      }
+    ],
+    "correctAnswer": "answer-361",
+    "explanation": "Đội mũ bảo hiểm đúng cách giúp bảo vệ đầu khi tham gia giao thông.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-322",
+    "gameId": "game-009",
+    "content": "Đèn giao thông màu xanh báo hiệu điều gì?",
+    "options": [
+      {
+        "id": "answer-364",
+        "content": "Được phép đi khi an toàn"
+      },
+      {
+        "id": "answer-365",
+        "content": "Phải dừng lại"
+      },
+      {
+        "id": "answer-366",
+        "content": "Phải quay đầu"
+      }
+    ],
+    "correctAnswer": "answer-364",
+    "explanation": "Đèn xanh cho phép đi nhưng vẫn cần quan sát để đảm bảo an toàn.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-323",
+    "gameId": "game-009",
+    "content": "Khi đi bộ trên đường, em nên đi ở đâu?",
+    "options": [
+      {
+        "id": "answer-367",
+        "content": "Vỉa hè hoặc phần đường dành cho người đi bộ"
+      },
+      {
+        "id": "answer-368",
+        "content": "Giữa lòng đường"
+      },
+      {
+        "id": "answer-369",
+        "content": "Trên làn xe chạy"
+      }
+    ],
+    "correctAnswer": "answer-367",
+    "explanation": "Người đi bộ nên đi trên vỉa hè hoặc phần đường dành riêng cho người đi bộ.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-324",
+    "gameId": "game-010",
+    "content": "Con vật nào có vòi dài?",
+    "options": [
+      {
+        "id": "answer-370",
+        "content": "Voi"
+      },
+      {
+        "id": "answer-371",
+        "content": "Hổ"
+      },
+      {
+        "id": "answer-372",
+        "content": "Khỉ"
+      }
+    ],
+    "correctAnswer": "answer-370",
+    "explanation": "Voi là loài vật có vòi dài.",
+    "timeLimit": 10,
+    "points": 100
+  },
+  {
+    "id": "question-325",
+    "gameId": "game-010",
+    "content": "Động vật nào thường được biết đến với khả năng đổi màu để ngụy trang?",
+    "options": [
+      {
+        "id": "answer-373",
+        "content": "Tắc kè hoa"
+      },
+      {
+        "id": "answer-374",
+        "content": "Voi"
+      },
+      {
+        "id": "answer-375",
+        "content": "Ngựa vằn"
+      }
+    ],
+    "correctAnswer": "answer-373",
+    "explanation": "Tắc kè hoa có khả năng đổi màu để ngụy trang.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-326",
+    "gameId": "game-010",
+    "content": "Con vật nào là động vật có vú?",
+    "options": [
+      {
+        "id": "answer-376",
+        "content": "Cá heo"
+      },
+      {
+        "id": "answer-377",
+        "content": "Cá vàng"
+      },
+      {
+        "id": "answer-378",
+        "content": "Cá mập"
+      }
+    ],
+    "correctAnswer": "answer-376",
+    "explanation": "Cá heo là động vật có vú, còn cá vàng và cá mập là cá.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-327",
+    "gameId": "game-011",
+    "content": "Chiến thắng Bạch Đằng năm 938 gắn với vị anh hùng nào?",
+    "options": [
+      {
+        "id": "answer-379",
+        "content": "Ngô Quyền"
+      },
+      {
+        "id": "answer-380",
+        "content": "Trần Hưng Đạo"
+      },
+      {
+        "id": "answer-381",
+        "content": "Lê Lợi"
+      }
+    ],
+    "correctAnswer": "answer-379",
+    "explanation": "Ngô Quyền lãnh đạo chiến thắng trên sông Bạch Đằng năm 938.",
+    "timeLimit": 20,
+    "points": 120
+  },
+  {
+    "id": "question-328",
+    "gameId": "game-011",
+    "content": "Hai Bà Trưng khởi nghĩa chống lại quân nào?",
+    "options": [
+      {
+        "id": "answer-382",
+        "content": "Nhà Hán"
+      },
+      {
+        "id": "answer-383",
+        "content": "Nhà Tống"
+      },
+      {
+        "id": "answer-384",
+        "content": "Nhà Minh"
+      }
+    ],
+    "correctAnswer": "answer-382",
+    "explanation": "Hai Bà Trưng khởi nghĩa chống lại ách đô hộ của nhà Hán.",
+    "timeLimit": 20,
+    "points": 120
+  },
+  {
+    "id": "question-329",
+    "gameId": "game-011",
+    "content": "Ai là người lãnh đạo nghĩa quân Lam Sơn?",
+    "options": [
+      {
+        "id": "answer-385",
+        "content": "Lê Lợi"
+      },
+      {
+        "id": "answer-386",
+        "content": "Ngô Quyền"
+      },
+      {
+        "id": "answer-387",
+        "content": "Quang Trung"
+      }
+    ],
+    "correctAnswer": "answer-385",
+    "explanation": "Lê Lợi là người lãnh đạo nghĩa quân Lam Sơn đánh đuổi quân Minh.",
+    "timeLimit": 20,
+    "points": 120
+  },
+  {
+    "id": "question-330",
+    "gameId": "game-012",
+    "content": "Lon nhôm đã dùng xong nên được xử lý như thế nào?",
+    "options": [
+      {
+        "id": "answer-388",
+        "content": "Bỏ vào nhóm rác tái chế"
+      },
+      {
+        "id": "answer-389",
+        "content": "Vứt xuống sông"
+      },
+      {
+        "id": "answer-390",
+        "content": "Đốt ngoài trời"
+      }
+    ],
+    "correctAnswer": "answer-388",
+    "explanation": "Lon nhôm có thể tái chế nên cần bỏ vào nhóm rác tái chế.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-331",
+    "gameId": "game-012",
+    "content": "Hành động nào giúp tiết kiệm nước?",
+    "options": [
+      {
+        "id": "answer-391",
+        "content": "Khóa vòi khi không sử dụng"
+      },
+      {
+        "id": "answer-392",
+        "content": "Để vòi nước chảy liên tục"
+      },
+      {
+        "id": "answer-393",
+        "content": "Chơi nước trong sân"
+      }
+    ],
+    "correctAnswer": "answer-391",
+    "explanation": "Khóa vòi nước khi không dùng giúp tiết kiệm nước.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-332",
+    "gameId": "game-012",
+    "content": "Việc nào giúp giảm lượng rác thải nhựa?",
+    "options": [
+      {
+        "id": "answer-394",
+        "content": "Dùng túi vải nhiều lần"
+      },
+      {
+        "id": "answer-395",
+        "content": "Dùng nhiều túi nilon"
+      },
+      {
+        "id": "answer-396",
+        "content": "Vứt chai nhựa ra đường"
+      }
+    ],
+    "correctAnswer": "answer-394",
+    "explanation": "Dùng túi vải thay túi nilon giúp giảm rác thải nhựa.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-333",
+    "gameId": "game-013",
+    "content": "Một cửa hàng có 36 quả táo, chia đều vào 4 giỏ. Mỗi giỏ có bao nhiêu quả?",
+    "options": [
+      {
+        "id": "answer-397",
+        "content": "8 quả"
+      },
+      {
+        "id": "answer-398",
+        "content": "9 quả"
+      },
+      {
+        "id": "answer-399",
+        "content": "10 quả"
+      }
+    ],
+    "correctAnswer": "answer-398",
+    "explanation": "36 : 4 = 9 quả táo mỗi giỏ.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-334",
+    "gameId": "game-013",
+    "content": "Nếu hôm nay là thứ Hai thì 3 ngày sau là thứ mấy?",
+    "options": [
+      {
+        "id": "answer-400",
+        "content": "Thứ Tư"
+      },
+      {
+        "id": "answer-401",
+        "content": "Thứ Năm"
+      },
+      {
+        "id": "answer-402",
+        "content": "Thứ Sáu"
+      }
+    ],
+    "correctAnswer": "answer-401",
+    "explanation": "Thứ Hai thêm 3 ngày là thứ Ba, thứ Tư, thứ Năm.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-335",
+    "gameId": "game-013",
+    "content": "Một hình chữ nhật dài 8cm và rộng 3cm. Chu vi hình chữ nhật là bao nhiêu?",
+    "options": [
+      {
+        "id": "answer-403",
+        "content": "22cm"
+      },
+      {
+        "id": "answer-404",
+        "content": "24cm"
+      },
+      {
+        "id": "answer-405",
+        "content": "26cm"
+      }
+    ],
+    "correctAnswer": "answer-403",
+    "explanation": "Chu vi = (8 + 3) x 2 = 22cm.",
+    "timeLimit": 20,
+    "points": 100
+  },
+  {
+    "id": "question-336",
+    "gameId": "game-014",
+    "content": "Loài cây nào thường được gọi là \"vua của các loài cây\" trong rừng nhiệt đới?",
+    "options": [
+      {
+        "id": "answer-406",
+        "content": "Cây cổ thụ"
+      },
+      {
+        "id": "answer-407",
+        "content": "Cây xương rồng"
+      },
+      {
+        "id": "answer-408",
+        "content": "Cây lúa"
+      }
+    ],
+    "correctAnswer": "answer-406",
+    "explanation": "Cây cổ thụ được ví là vua của các loài cây trong rừng nhiệt đới.",
+    "timeLimit": 20,
+    "points": 120
+  },
+  {
+    "id": "question-337",
+    "gameId": "game-014",
+    "content": "Hiện tượng nước biến thành hơi nước khi được đun nóng gọi là gì?",
+    "options": [
+      {
+        "id": "answer-409",
+        "content": "Bay hơi"
+      },
+      {
+        "id": "answer-410",
+        "content": "Đông đặc"
+      },
+      {
+        "id": "answer-411",
+        "content": "Ngưng tụ"
+      }
+    ],
+    "correctAnswer": "answer-409",
+    "explanation": "Nước khi đun nóng biến thành hơi nước, gọi là hiện tượng bay hơi.",
+    "timeLimit": 20,
+    "points": 120
+  },
+  {
+    "id": "question-338",
+    "gameId": "game-014",
+    "content": "Mặt Trăng quay quanh thiên thể nào?",
+    "options": [
+      {
+        "id": "answer-412",
+        "content": "Trái Đất"
+      },
+      {
+        "id": "answer-413",
+        "content": "Sao Hỏa"
+      },
+      {
+        "id": "answer-414",
+        "content": "Mặt Trời"
+      }
+    ],
+    "correctAnswer": "answer-412",
+    "explanation": "Mặt Trăng là vệ tinh quay quanh Trái Đất.",
+    "timeLimit": 15,
+    "points": 120
+  },
+  {
+    "id": "question-339",
+    "gameId": "game-015",
+    "content": "Chọn câu đúng: \"Tôi thích màu xanh.\" trong tiếng Anh.",
+    "options": [
+      {
+        "id": "answer-415",
+        "content": "I like blue."
+      },
+      {
+        "id": "answer-416",
+        "content": "I am blue."
+      },
+      {
+        "id": "answer-417",
+        "content": "I play blue."
+      }
+    ],
+    "correctAnswer": "answer-415",
+    "explanation": "'I like blue' nghĩa là 'Tôi thích màu xanh'.",
+    "timeLimit": 15,
+    "points": 100
+  },
+  {
+    "id": "question-340",
+    "gameId": "game-015",
+    "content": "Từ nào có nghĩa là \"mặt trời\"?",
+    "options": [
+      {
+        "id": "answer-418",
+        "content": "Moon"
+      },
+      {
+        "id": "answer-419",
+        "content": "Sun"
+      },
+      {
+        "id": "answer-420",
+        "content": "Star"
+      }
+    ],
+    "correctAnswer": "answer-419",
+    "explanation": "'Sun' nghĩa là mặt trời, còn 'moon' là mặt trăng.",
+    "timeLimit": 12,
+    "points": 100
+  },
+  {
+    "id": "question-341",
+    "gameId": "game-015",
+    "content": "Chọn từ thích hợp: \"I ___ a student.\"",
+    "options": [
+      {
+        "id": "answer-421",
+        "content": "am"
+      },
+      {
+        "id": "answer-422",
+        "content": "is"
+      },
+      {
+        "id": "answer-423",
+        "content": "are"
+      }
+    ],
+    "correctAnswer": "answer-421",
+    "explanation": "Dùng 'am' với chủ ngữ 'I': I am a student.",
+    "timeLimit": 15,
+    "points": 100
+  }
+]

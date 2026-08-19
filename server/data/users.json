@@ -1,0 +1,4 @@
+[
+  { "id": "user-001", "username": "teacher", "name": "Hồ Sử Trung Nguyên", "role": "teacher", "password": "123456" },
+  { "id": "user-002", "username": "admin", "name": "Quản trị hệ thống", "role": "admin", "password": "admin123" }
+]

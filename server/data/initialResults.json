@@ -1,0 +1,134 @@
+[
+  {
+    "id": "result-001",
+    "gameId": "game-001",
+    "playerId": "player-001",
+    "playerName": "Nguyễn Minh Anh",
+    "score": 850,
+    "correctAnswers": 3,
+    "totalQuestions": 3,
+    "accuracy": 100,
+    "completionTime": 42
+  },
+  {
+    "id": "result-002",
+    "gameId": "game-001",
+    "playerId": "player-002",
+    "playerName": "Trần Gia Huy",
+    "score": 780,
+    "correctAnswers": 3,
+    "totalQuestions": 3,
+    "accuracy": 100,
+    "completionTime": 51
+  },
+  {
+    "id": "result-003",
+    "gameId": "game-001",
+    "playerId": "player-003",
+    "playerName": "Lê Khánh Linh",
+    "score": 620,
+    "correctAnswers": 2,
+    "totalQuestions": 3,
+    "accuracy": 67,
+    "completionTime": 48
+  },
+  {
+    "id": "result-004",
+    "gameId": "game-001",
+    "playerId": "player-004",
+    "playerName": "Phạm Bảo Ngọc",
+    "score": 590,
+    "correctAnswers": 2,
+    "totalQuestions": 3,
+    "accuracy": 67,
+    "completionTime": 55
+  },
+  {
+    "id": "result-005",
+    "gameId": "game-001",
+    "playerId": "player-005",
+    "playerName": "Đỗ Quang Vinh",
+    "score": 410,
+    "correctAnswers": 1,
+    "totalQuestions": 3,
+    "accuracy": 33,
+    "completionTime": 60
+  },
+  {
+    "id": "result-006",
+    "gameId": "game-001",
+    "playerId": "player-006",
+    "playerName": "Vũ Thảo My",
+    "score": 900,
+    "correctAnswers": 3,
+    "totalQuestions": 3,
+    "accuracy": 100,
+    "completionTime": 38
+  },
+  {
+    "id": "result-007",
+    "gameId": "game-002",
+    "playerId": "player-007",
+    "playerName": "Hoàng Nhật Nam",
+    "score": 720,
+    "correctAnswers": 3,
+    "totalQuestions": 3,
+    "accuracy": 100,
+    "completionTime": 44
+  },
+  {
+    "id": "result-008",
+    "gameId": "game-002",
+    "playerId": "player-008",
+    "playerName": "Bùi Thu Trang",
+    "score": 680,
+    "correctAnswers": 2,
+    "totalQuestions": 3,
+    "accuracy": 67,
+    "completionTime": 49
+  },
+  {
+    "id": "result-009",
+    "gameId": "game-002",
+    "playerId": "player-001",
+    "playerName": "Nguyễn Minh Anh",
+    "score": 810,
+    "correctAnswers": 3,
+    "totalQuestions": 3,
+    "accuracy": 100,
+    "completionTime": 40
+  },
+  {
+    "id": "result-010",
+    "gameId": "game-005",
+    "playerId": "player-002",
+    "playerName": "Trần Gia Huy",
+    "score": 500,
+    "correctAnswers": 2,
+    "totalQuestions": 2,
+    "accuracy": 100,
+    "completionTime": 30
+  },
+  {
+    "id": "result-011",
+    "gameId": "game-005",
+    "playerId": "player-003",
+    "playerName": "Lê Khánh Linh",
+    "score": 480,
+    "correctAnswers": 2,
+    "totalQuestions": 2,
+    "accuracy": 100,
+    "completionTime": 33
+  },
+  {
+    "id": "result-012",
+    "gameId": "game-005",
+    "playerId": "player-004",
+    "playerName": "Phạm Bảo Ngọc",
+    "score": 260,
+    "correctAnswers": 1,
+    "totalQuestions": 2,
+    "accuracy": 50,
+    "completionTime": 35
+  }
+]

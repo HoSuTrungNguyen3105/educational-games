@@ -1,0 +1,42 @@
+[
+  {
+    "id": "all",
+    "label": "Tất cả"
+  },
+  {
+    "id": "quiz",
+    "label": "Trắc nghiệm"
+  },
+  {
+    "id": "reflex",
+    "label": "Phản xạ"
+  },
+  {
+    "id": "science",
+    "label": "Khoa học"
+  },
+  {
+    "id": "group",
+    "label": "Theo nhóm"
+  },
+  {
+    "id": "seasonal",
+    "label": "Lễ hội"
+  },
+  {
+    "id": "memory",
+    "label": "Trí nhớ"
+  },
+  {
+    "id": "language",
+    "label": "Ngôn ngữ"
+  },
+  {
+    "id": "logic",
+    "label": "Tư duy"
+  },
+  {
+    "id": "adventure",
+    "label": "Phiêu lưu"
+  }
+]
