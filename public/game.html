@@ -116,7 +116,16 @@
   }
   .wheel-spinning { animation: spin-wheel 4s cubic-bezier(0.17, 0.67, 0.12, 0.99) forwards; }
 
-  @media (prefers-reduced-motion: reduce){ .anim-pop, .float-slow, .marquee-lights, .wheel-spinning{ animation:none !important; } }
+  @keyframes bob-hero{ 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-10px); } }
+  .bob-hero{ animation: bob-hero .9s ease-in-out infinite; }
+
+  @keyframes run-cycle{ 0%,100%{ transform: translateY(0) rotate(0deg); } 50%{ transform: translateY(-4px) rotate(-4deg); } }
+  .run-cycle{ animation: run-cycle .4s ease-in-out infinite; }
+
+  @keyframes shake-hit{ 0%,100%{ transform: translateX(0); } 25%{ transform: translateX(-6px); } 75%{ transform: translateX(6px); } }
+  .shake-hit{ animation: shake-hit .35s ease-in-out; }
+
+  @media (prefers-reduced-motion: reduce){ .anim-pop, .float-slow, .marquee-lights, .wheel-spinning, .bob-hero, .run-cycle, .shake-hit{ animation:none !important; } }
 
   input:focus, button:focus, select:focus, textarea:focus{ outline: 3px solid #FF6F9155; outline-offset: 2px; }
 
@@ -156,6 +165,9 @@ const mockGameTemplates = [
   { id: "word-scramble", name: "Xếp Chữ Kỳ Diệu", description: "Sắp xếp chữ cái thành từ đúng nghĩa", category: "language", categoryLabel: "Ngôn ngữ", icon: "🔤", ring: "#FF6F91" },
   { id: "balloon-pop", name: "Bóng Bay Tri Thức", description: "Chọn đáp án đúng để thổi bóng bay lên trời", category: "reflex", categoryLabel: "Phản xạ", icon: "🎈", ring: "#1B998B" },
   { id: "sorting-game", name: "Phân Loại Đúng Chỗ", description: "Sắp xếp kiến thức vào đúng nhóm", category: "logic", categoryLabel: "Tư duy", icon: "🗂️", ring: "#F4B942" },
+  { id: "hero-adventure", name: "Anh Hùng Phiêu Lưu", description: "Chạy, nhảy qua từng chặng và thu thập xu trên hành trình phiêu lưu", category: "adventure", categoryLabel: "Phiêu lưu", icon: "🦸", ring: "#E4572E" },
+  { id: "dungeon-quest", name: "Hầm Ngục Bí Ẩn", description: "Trả lời đúng để hạ gục quái vật và phiêu lưu qua từng hầm ngục", category: "adventure", categoryLabel: "Phiêu lưu", icon: "🗡️", ring: "#8B6FF1" },
+  { id: "ninja-dash", name: "Ninja Vượt Chướng Ngại", description: "Bật nhảy thật nhanh qua chướng ngại vật bằng câu trả lời đúng", category: "reflex", categoryLabel: "Phản xạ", icon: "🥷", ring: "#1D2E4A" },
 ];
 
 const CATEGORIES = [
@@ -168,21 +180,25 @@ const CATEGORIES = [
   { id: "memory", label: "Trí nhớ" },
   { id: "language", label: "Ngôn ngữ" },
   { id: "logic", label: "Tư duy" },
+  { id: "adventure", label: "Phiêu lưu" },
 ];
 
 const initialGames = [
-  { id: "game-001", title: "Ôn tập Toán lớp 3", description: "Trò chơi ôn tập phép cộng và phép trừ", subject: "Toán", topic: "Phép cộng và phép trừ", language: "vi", template: "snail-race", status: "published", questionsCount: 3, playersCount: 24, code: "TOAN101", createdAt: "2026-08-01T08:00:00Z", updatedAt: "2026-08-15T10:30:00Z" },
-  { id: "game-002", title: "Khám phá vũ trụ", description: "Cùng khám phá những kiến thức thú vị về vũ trụ", subject: "Khoa học", topic: "Vũ trụ", language: "vi", template: "space-ship", status: "published", questionsCount: 3, playersCount: 18, code: "VUTRU22", createdAt: "2026-08-02T09:00:00Z", updatedAt: "2026-08-16T14:20:00Z" },
-  { id: "game-003", title: "Ôn tập kiến thức tổng hợp", description: "Trò chơi kiểm tra nhanh kiến thức tổng hợp", subject: "Tổng hợp", topic: "Kiến thức chung", language: "vi", template: "whack-a-mole", status: "published", questionsCount: 2, playersCount: 7, code: "TONGHOP9", createdAt: "2026-08-03T07:30:00Z", updatedAt: "2026-08-17T11:00:00Z" },
-  { id: "game-004", title: "Từ vựng tiếng Anh: Gia đình", description: "Sắp xếp chữ cái để ôn từ vựng chủ đề gia đình", subject: "Tiếng Anh", topic: "Family vocabulary", language: "vi", template: "word-scramble", status: "published", questionsCount: 2, playersCount: 15, code: "FAMILY07", createdAt: "2026-08-04T08:20:00Z", updatedAt: "2026-08-14T09:10:00Z" },
-  { id: "game-005", title: "Trung Thu Vui Vẻ", description: "Rước đèn ôn tập kiến thức nhân dịp Tết Trung Thu", subject: "Tổng hợp", topic: "Tết Trung Thu", language: "vi", template: "moon-lantern", status: "published", questionsCount: 2, playersCount: 31, code: "TRUNGTHU5", createdAt: "2026-08-05T10:00:00Z", updatedAt: "2026-08-13T16:45:00Z" },
-  { id: "game-006", title: "Địa lý Việt Nam", description: "Giải đố mở khóa bản đồ các vùng miền", subject: "Địa lý", topic: "Các vùng miền Việt Nam", language: "vi", template: "treasure-map", status: "published", questionsCount: 2, playersCount: 11, code: "DIALY88", createdAt: "2026-08-06T07:00:00Z", updatedAt: "2026-08-12T13:00:00Z" },
-  { id: "game-007", title: "Bảng chữ cái tiếng Việt", description: "Lật thẻ ghi nhớ để ôn bảng chữ cái", subject: "Tiếng Việt", topic: "Bảng chữ cái", language: "vi", template: "memory-match", status: "published", questionsCount: 2, playersCount: 27, code: "CHUCAI3", createdAt: "2026-08-07T08:00:00Z", updatedAt: "2026-08-11T10:00:00Z" },
-  { id: "game-008", title: "Vòng quay kiến thức lớp 4", description: "Quay vòng để nhận câu hỏi ôn tập ngẫu nhiên", subject: "Tổng hợp", topic: "Ôn tập cuối kỳ", language: "vi", template: "lucky-wheel", status: "published", questionsCount: 2, playersCount: 12, code: "QUAYSO4", createdAt: "2026-08-08T08:00:00Z", updatedAt: "2026-08-10T10:00:00Z" },
-  { id: "game-009", title: "Luật giao thông an toàn", description: "Ném phi tiêu vào đáp án đúng về an toàn giao thông", subject: "Kỹ năng sống", topic: "An toàn giao thông", language: "vi", template: "dart-throw", status: "published", questionsCount: 2, playersCount: 14, code: "ATGT202", createdAt: "2026-08-09T08:00:00Z", updatedAt: "2026-08-09T08:00:00Z" },
-  { id: "game-010", title: "Động vật hoang dã", description: "Thổi bóng bay tri thức về thế giới động vật", subject: "Khoa học", topic: "Động vật hoang dã", language: "vi", template: "balloon-pop", status: "published", questionsCount: 2, playersCount: 9, code: "DONGVAT6", createdAt: "2026-08-10T08:00:00Z", updatedAt: "2026-08-10T08:00:00Z" },
-  { id: "game-011", title: "Đua thuyền: Lịch sử Việt Nam", description: "Cả đội cùng chèo thuyền qua các mốc lịch sử", subject: "Lịch sử", topic: "Các triều đại Việt Nam", language: "vi", template: "sailing-boat", status: "published", questionsCount: 2, playersCount: 20, code: "LICHSU19", createdAt: "2026-08-11T08:00:00Z", updatedAt: "2026-08-11T08:00:00Z" },
-  { id: "game-012", title: "Phân loại rác thải", description: "Sắp xếp rác đúng nhóm tái chế, hữu cơ, vô cơ", subject: "Khoa học", topic: "Bảo vệ môi trường", language: "vi", template: "sorting-game", status: "published", questionsCount: 2, playersCount: 8, code: "MOITRUONG4", createdAt: "2026-08-12T08:00:00Z", updatedAt: "2026-08-12T08:00:00Z" },
+  { id: "game-001", title: "Ôn tập Toán lớp 3", description: "Trò chơi ôn tập phép cộng và phép trừ", subject: "Toán", topic: "Phép cộng và phép trừ", language: "vi", template: "snail-race", status: "published", questionsCount: 7, playersCount: 24, code: "TOAN101", createdAt: "2026-08-01T08:00:00Z", updatedAt: "2026-08-15T10:30:00Z" },
+  { id: "game-002", title: "Khám phá vũ trụ", description: "Cùng khám phá những kiến thức thú vị về vũ trụ", subject: "Khoa học", topic: "Vũ trụ", language: "vi", template: "space-ship", status: "published", questionsCount: 6, playersCount: 18, code: "VUTRU22", createdAt: "2026-08-02T09:00:00Z", updatedAt: "2026-08-16T14:20:00Z" },
+  { id: "game-003", title: "Ôn tập kiến thức tổng hợp", description: "Trò chơi kiểm tra nhanh kiến thức tổng hợp", subject: "Tổng hợp", topic: "Kiến thức chung", language: "vi", template: "whack-a-mole", status: "published", questionsCount: 5, playersCount: 7, code: "TONGHOP9", createdAt: "2026-08-03T07:30:00Z", updatedAt: "2026-08-17T11:00:00Z" },
+  { id: "game-004", title: "Từ vựng tiếng Anh: Gia đình", description: "Sắp xếp chữ cái để ôn từ vựng chủ đề gia đình", subject: "Tiếng Anh", topic: "Family vocabulary", language: "vi", template: "word-scramble", status: "published", questionsCount: 5, playersCount: 15, code: "FAMILY07", createdAt: "2026-08-04T08:20:00Z", updatedAt: "2026-08-14T09:10:00Z" },
+  { id: "game-005", title: "Trung Thu Vui Vẻ", description: "Rước đèn ôn tập kiến thức nhân dịp Tết Trung Thu", subject: "Tổng hợp", topic: "Tết Trung Thu", language: "vi", template: "moon-lantern", status: "published", questionsCount: 4, playersCount: 31, code: "TRUNGTHU5", createdAt: "2026-08-05T10:00:00Z", updatedAt: "2026-08-13T16:45:00Z" },
+  { id: "game-006", title: "Địa lý Việt Nam", description: "Giải đố mở khóa bản đồ các vùng miền", subject: "Địa lý", topic: "Các vùng miền Việt Nam", language: "vi", template: "treasure-map", status: "published", questionsCount: 5, playersCount: 11, code: "DIALY88", createdAt: "2026-08-06T07:00:00Z", updatedAt: "2026-08-12T13:00:00Z" },
+  { id: "game-007", title: "Bảng chữ cái tiếng Việt", description: "Lật thẻ ghi nhớ để ôn bảng chữ cái", subject: "Tiếng Việt", topic: "Bảng chữ cái", language: "vi", template: "memory-match", status: "published", questionsCount: 4, playersCount: 27, code: "CHUCAI3", createdAt: "2026-08-07T08:00:00Z", updatedAt: "2026-08-11T10:00:00Z" },
+  { id: "game-008", title: "Vòng quay kiến thức lớp 4", description: "Quay vòng để nhận câu hỏi ôn tập ngẫu nhiên", subject: "Tổng hợp", topic: "Ôn tập cuối kỳ", language: "vi", template: "lucky-wheel", status: "published", questionsCount: 8, playersCount: 12, code: "QUAYSO4", createdAt: "2026-08-08T08:00:00Z", updatedAt: "2026-08-10T10:00:00Z" },
+  { id: "game-009", title: "Luật giao thông an toàn", description: "Ném phi tiêu vào đáp án đúng về an toàn giao thông", subject: "Kỹ năng sống", topic: "An toàn giao thông", language: "vi", template: "dart-throw", status: "published", questionsCount: 5, playersCount: 14, code: "ATGT202", createdAt: "2026-08-09T08:00:00Z", updatedAt: "2026-08-09T08:00:00Z" },
+  { id: "game-010", title: "Động vật hoang dã", description: "Thổi bóng bay tri thức về thế giới động vật", subject: "Khoa học", topic: "Động vật hoang dã", language: "vi", template: "balloon-pop", status: "published", questionsCount: 5, playersCount: 9, code: "DONGVAT6", createdAt: "2026-08-10T08:00:00Z", updatedAt: "2026-08-10T08:00:00Z" },
+  { id: "game-011", title: "Đua thuyền: Lịch sử Việt Nam", description: "Cả đội cùng chèo thuyền qua các mốc lịch sử", subject: "Lịch sử", topic: "Các triều đại Việt Nam", language: "vi", template: "sailing-boat", status: "published", questionsCount: 5, playersCount: 20, code: "LICHSU19", createdAt: "2026-08-11T08:00:00Z", updatedAt: "2026-08-11T08:00:00Z" },
+  { id: "game-012", title: "Phân loại rác thải", description: "Sắp xếp rác đúng nhóm tái chế, hữu cơ, vô cơ", subject: "Khoa học", topic: "Bảo vệ môi trường", language: "vi", template: "sorting-game", status: "published", questionsCount: 5, playersCount: 8, code: "MOITRUONG4", createdAt: "2026-08-12T08:00:00Z", updatedAt: "2026-08-12T08:00:00Z" },
+  { id: "game-013", title: "Đại Phiêu Lưu Toán Học", description: "Chạy nhảy qua từng chặng, trả lời đúng để vượt chướng ngại vật và gom xu", subject: "Toán", topic: "Ôn tập phép tính", language: "vi", template: "hero-adventure", status: "published", questionsCount: 7, playersCount: 16, code: "PHIEUL9", createdAt: "2026-08-13T08:00:00Z", updatedAt: "2026-08-13T08:00:00Z" },
+  { id: "game-014", title: "Hầm Ngục Kiến Thức", description: "Đánh bại quái vật bằng câu trả lời đúng để phiêu lưu qua hầm ngục", subject: "Tổng hợp", topic: "Ôn tập tổng hợp", language: "vi", template: "dungeon-quest", status: "published", questionsCount: 7, playersCount: 10, code: "HAMNGUC3", createdAt: "2026-08-14T08:00:00Z", updatedAt: "2026-08-14T08:00:00Z" },
+  { id: "game-015", title: "Ninja Vượt Ải Từ Vựng", description: "Bật nhảy thật nhanh qua chướng ngại vật bằng câu trả lời đúng", subject: "Tiếng Anh", topic: "Từ vựng cơ bản", language: "vi", template: "ninja-dash", status: "published", questionsCount: 6, playersCount: 13, code: "NINJA77", createdAt: "2026-08-15T08:00:00Z", updatedAt: "2026-08-15T08:00:00Z" },
 ];
 
 const initialQuestions = [
@@ -204,6 +220,12 @@ const initialQuestions = [
   { id: "question-016", gameId: "game-007", content: "Bảng chữ cái tiếng Việt có bao nhiêu chữ cái?", options: [{ id: "answer-046", content: "26" }, { id: "answer-047", content: "29" }, { id: "answer-048", content: "24" }], correctAnswer: "answer-047", timeLimit: 15, points: 100 },
   { id: "question-017", gameId: "game-008", content: "7 x 8 bằng bao nhiêu?", options: [{ id: "answer-049", content: "54" }, { id: "answer-050", content: "56" }, { id: "answer-051", content: "58" }], correctAnswer: "answer-050", timeLimit: 15, points: 100 },
   { id: "question-018", gameId: "game-008", content: "Số nào lớn nhất trong các số: 4/5, 3/4, 2/3?", options: [{ id: "answer-052", content: "4/5" }, { id: "answer-053", content: "3/4" }, { id: "answer-054", content: "2/3" }], correctAnswer: "answer-052", timeLimit: 20, points: 100 },
+  { id: "question-101", gameId: "game-008", content: "9 x 6 bằng bao nhiêu?", options: [{ id: "answer-101", content: "45" }, { id: "answer-102", content: "54" }, { id: "answer-103", content: "56" }], correctAnswer: "answer-102", timeLimit: 15, points: 100 },
+  { id: "question-102", gameId: "game-008", content: "1 năm có bao nhiêu tháng?", options: [{ id: "answer-104", content: "10" }, { id: "answer-105", content: "12" }, { id: "answer-106", content: "13" }], correctAnswer: "answer-105", timeLimit: 10, points: 100 },
+  { id: "question-103", gameId: "game-008", content: "Con vật nào được mệnh danh là \"chúa sơn lâm\"?", options: [{ id: "answer-107", content: "Sư tử" }, { id: "answer-108", content: "Hổ" }, { id: "answer-109", content: "Voi" }], correctAnswer: "answer-108", timeLimit: 15, points: 100 },
+  { id: "question-104", gameId: "game-008", content: "Nước nào có diện tích lớn nhất thế giới?", options: [{ id: "answer-110", content: "Trung Quốc" }, { id: "answer-111", content: "Canada" }, { id: "answer-112", content: "Nga" }], correctAnswer: "answer-112", timeLimit: 20, points: 100 },
+  { id: "question-105", gameId: "game-008", content: "5 + 7 x 2 bằng bao nhiêu?", options: [{ id: "answer-113", content: "24" }, { id: "answer-114", content: "19" }, { id: "answer-115", content: "17" }], correctAnswer: "answer-114", timeLimit: 20, points: 100 },
+  { id: "question-106", gameId: "game-008", content: "Loại quả nào có nhiều vitamin C nổi bật nhất trong các loại sau?", options: [{ id: "answer-116", content: "Cam" }, { id: "answer-117", content: "Chuối" }, { id: "answer-118", content: "Dưa hấu" }], correctAnswer: "answer-116", timeLimit: 15, points: 100 },
   { id: "question-019", gameId: "game-009", content: "Khi đèn giao thông chuyển sang màu đỏ, người đi bộ nên làm gì?", options: [{ id: "answer-055", content: "Dừng lại chờ đèn xanh" }, { id: "answer-056", content: "Chạy nhanh qua đường" }, { id: "answer-057", content: "Không quan tâm" }], correctAnswer: "answer-055", timeLimit: 15, points: 100 },
   { id: "question-020", gameId: "game-009", content: "Trước khi qua đường, em cần làm gì?", options: [{ id: "answer-058", content: "Quan sát hai bên" }, { id: "answer-059", content: "Nhắm mắt chạy" }, { id: "answer-060", content: "Đi thật nhanh" }], correctAnswer: "answer-058", timeLimit: 15, points: 100 },
   { id: "question-021", gameId: "game-010", content: "Loài động vật nào có cổ dài nhất?", options: [{ id: "answer-061", content: "Voi" }, { id: "answer-062", content: "Hươu cao cổ" }, { id: "answer-063", content: "Ngựa vằn" }], correctAnswer: "answer-062", timeLimit: 15, points: 100 },
@@ -212,6 +234,95 @@ const initialQuestions = [
   { id: "question-024", gameId: "game-011", content: "Vị vua nào dời đô về Thăng Long?", options: [{ id: "answer-070", content: "Lý Thái Tổ" }, { id: "answer-071", content: "Trần Nhân Tông" }, { id: "answer-072", content: "Lê Lợi" }], correctAnswer: "answer-070", timeLimit: 20, points: 100 },
   { id: "question-025", gameId: "game-012", content: "Vỏ chai nhựa nên bỏ vào nhóm rác nào?", options: [{ id: "answer-073", content: "Rác tái chế" }, { id: "answer-074", content: "Rác hữu cơ" }, { id: "answer-075", content: "Rác nguy hại" }], correctAnswer: "answer-073", timeLimit: 15, points: 100 },
   { id: "question-026", gameId: "game-012", content: "Vỏ trái cây thuộc nhóm rác nào?", options: [{ id: "answer-076", content: "Rác hữu cơ" }, { id: "answer-077", content: "Rác tái chế" }, { id: "answer-078", content: "Rác điện tử" }], correctAnswer: "answer-076", timeLimit: 15, points: 100 },
+  { id: "question-201", gameId: "game-013", content: "12 x 4 bằng bao nhiêu?", options: [{ id: "answer-201", content: "46" }, { id: "answer-202", content: "48" }, { id: "answer-203", content: "52" }], correctAnswer: "answer-202", timeLimit: 15, points: 100 },
+  { id: "question-202", gameId: "game-013", content: "100 - 37 bằng bao nhiêu?", options: [{ id: "answer-204", content: "63" }, { id: "answer-205", content: "67" }, { id: "answer-206", content: "73" }], correctAnswer: "answer-204", timeLimit: 15, points: 100 },
+  { id: "question-203", gameId: "game-013", content: "Một hình vuông có cạnh 5cm. Chu vi hình vuông đó là bao nhiêu?", options: [{ id: "answer-207", content: "15cm" }, { id: "answer-208", content: "20cm" }, { id: "answer-209", content: "25cm" }], correctAnswer: "answer-208", timeLimit: 20, points: 100 },
+  { id: "question-204", gameId: "game-013", content: "81 chia 9 bằng bao nhiêu?", options: [{ id: "answer-210", content: "7" }, { id: "answer-211", content: "8" }, { id: "answer-212", content: "9" }], correctAnswer: "answer-212", timeLimit: 15, points: 100 },
+  { id: "question-211", gameId: "game-014", content: "Núi nào cao nhất thế giới?", options: [{ id: "answer-221", content: "Everest" }, { id: "answer-222", content: "Fansipan" }, { id: "answer-223", content: "Kilimanjaro" }], correctAnswer: "answer-221", timeLimit: 20, points: 120 },
+  { id: "question-212", gameId: "game-014", content: "Cơ quan nào trong cơ thể người bơm máu đi khắp cơ thể?", options: [{ id: "answer-224", content: "Phổi" }, { id: "answer-225", content: "Tim" }, { id: "answer-226", content: "Gan" }], correctAnswer: "answer-225", timeLimit: 15, points: 120 },
+  { id: "question-213", gameId: "game-014", content: "Ai là tác giả của bài thơ \"Lượm\"?", options: [{ id: "answer-227", content: "Tố Hữu" }, { id: "answer-228", content: "Xuân Diệu" }, { id: "answer-229", content: "Nguyễn Du" }], correctAnswer: "answer-227", timeLimit: 20, points: 120 },
+  { id: "question-214", gameId: "game-014", content: "Đại dương nào lớn nhất thế giới?", options: [{ id: "answer-230", content: "Đại Tây Dương" }, { id: "answer-231", content: "Thái Bình Dương" }, { id: "answer-232", content: "Ấn Độ Dương" }], correctAnswer: "answer-231", timeLimit: 20, points: 120 },
+  { id: "question-221", gameId: "game-015", content: "\"Con mèo\" trong tiếng Anh là gì?", options: [{ id: "answer-241", content: "Dog" }, { id: "answer-242", content: "Cat" }, { id: "answer-243", content: "Bird" }], correctAnswer: "answer-242", timeLimit: 12, points: 100 },
+  { id: "question-222", gameId: "game-015", content: "\"Quyển sách\" trong tiếng Anh là gì?", options: [{ id: "answer-244", content: "Book" }, { id: "answer-245", content: "Pen" }, { id: "answer-246", content: "Bag" }], correctAnswer: "answer-244", timeLimit: 12, points: 100 },
+  { id: "question-223", gameId: "game-015", content: "\"Chạy\" trong tiếng Anh là gì?", options: [{ id: "answer-247", content: "Jump" }, { id: "answer-248", content: "Run" }, { id: "answer-249", content: "Walk" }], correctAnswer: "answer-248", timeLimit: 12, points: 100 },
+  { id: "question-301", gameId: "game-001", content: "Lan có 24 viên bi, cho bạn 7 viên rồi được mẹ cho thêm 10 viên. Hỏi Lan có bao nhiêu viên bi?", options: [{ id: "answer-301", content: "27 viên" }, { id: "answer-302", content: "17 viên" }, { id: "answer-303", content: "31 viên" }], correctAnswer: "answer-301", explanation: "24 - 7 + 10 = 27 viên bi.", timeLimit: 25, points: 100 },
+
+{ id: "question-302", gameId: "game-001", content: "Số nào thích hợp điền vào chỗ trống: 5, 10, 15, 20, ...?", options: [{ id: "answer-304", content: "24" }, { id: "answer-305", content: "25" }, { id: "answer-306", content: "30" }], correctAnswer: "answer-305", explanation: "Dãy số cách đều 5 đơn vị: 20 + 5 = 25.", timeLimit: 15, points: 100 },
+
+{ id: "question-303", gameId: "game-001", content: "Một cửa hàng có 5 hộp bút, mỗi hộp có 8 chiếc. Cửa hàng có tất cả bao nhiêu chiếc bút?", options: [{ id: "answer-307", content: "35 chiếc" }, { id: "answer-308", content: "40 chiếc" }, { id: "answer-309", content: "45 chiếc" }], correctAnswer: "answer-308", explanation: "5 x 8 = 40 chiếc bút.", timeLimit: 20, points: 100 },
+
+{ id: "question-304", gameId: "game-001", content: "Một chiếc bánh được chia thành 8 phần bằng nhau. Mai ăn 3 phần. Mai đã ăn bao nhiêu phần chiếc bánh?", options: [{ id: "answer-310", content: "3/8" }, { id: "answer-311", content: "5/8" }, { id: "answer-312", content: "3/5" }], correctAnswer: "answer-310", explanation: "Mai ăn 3 trong 8 phần bằng nhau nên là 3/8 chiếc bánh.", timeLimit: 20, points: 100 },
+
+
+{ id: "question-305", gameId: "game-002", content: "Hành tinh nào nổi tiếng với hệ thống vành đai lớn?", options: [{ id: "answer-313", content: "Sao Thổ" }, { id: "answer-314", content: "Sao Thủy" }, { id: "answer-315", content: "Trái Đất" }], correctAnswer: "answer-313", explanation: "Sao Thổ nổi tiếng với hệ thống vành đai băng và đá lớn nhất.", timeLimit: 15, points: 100 },
+
+{ id: "question-306", gameId: "game-002", content: "Con người sống trên hành tinh nào?", options: [{ id: "answer-316", content: "Sao Hỏa" }, { id: "answer-317", content: "Trái Đất" }, { id: "answer-318", content: "Sao Kim" }], correctAnswer: "answer-317", explanation: "Trái Đất là hành tinh duy nhất được biết đến có sự sống.", timeLimit: 10, points: 100 },
+
+{ id: "question-307", gameId: "game-002", content: "Ánh sáng từ Mặt Trời giúp Trái Đất có điều gì?", options: [{ id: "answer-319", content: "Ánh sáng và nhiệt" }, { id: "answer-320", content: "Chỉ có gió" }, { id: "answer-321", content: "Chỉ có mưa" }], correctAnswer: "answer-319", explanation: "Mặt Trời cung cấp ánh sáng và nhiệt cho Trái Đất.", timeLimit: 15, points: 100 },
+
+
+{ id: "question-308", gameId: "game-003", content: "Thành phố nào được gọi là thành phố ngàn hoa?", options: [{ id: "answer-322", content: "Đà Lạt" }, { id: "answer-323", content: "Huế" }, { id: "answer-324", content: "Hạ Long" }], correctAnswer: "answer-322", explanation: "Đà Lạt được mệnh danh là thành phố ngàn hoa vì có rất nhiều hoa.", timeLimit: 20, points: 100 },
+
+{ id: "question-309", gameId: "game-003", content: "Vịnh Hạ Long thuộc tỉnh nào?", options: [{ id: "answer-325", content: "Quảng Ninh" }, { id: "answer-326", content: "Khánh Hòa" }, { id: "answer-327", content: "Quảng Nam" }], correctAnswer: "answer-325", explanation: "Vịnh Hạ Long nằm ở tỉnh Quảng Ninh, miền Bắc Việt Nam.", timeLimit: 20, points: 100 },
+
+{ id: "question-310", gameId: "game-003", content: "Sông nào chảy qua Hà Nội?", options: [{ id: "answer-328", content: "Sông Hồng" }, { id: "answer-329", content: "Sông Tiền" }, { id: "answer-330", content: "Sông Hàn" }], correctAnswer: "answer-328", explanation: "Sông Hồng chảy qua thủ đô Hà Nội.", timeLimit: 15, points: 100 },
+
+
+{ id: "question-311", gameId: "game-004", content: "Từ nào có nghĩa là \"con gái\" trong tiếng Anh?", options: [{ id: "answer-331", content: "Daughter" }, { id: "answer-332", content: "Son" }, { id: "answer-333", content: "Father" }], correctAnswer: "answer-331", explanation: "'Daughter' nghĩa là con gái, còn 'son' là con trai.", timeLimit: 15, points: 100 },
+
+{ id: "question-312", gameId: "game-004", content: "Chọn từ thích hợp: \"My ___ is a doctor.\" Nếu muốn nói \"Mẹ tôi là bác sĩ\".", options: [{ id: "answer-334", content: "mother" }, { id: "answer-335", content: "brother" }, { id: "answer-336", content: "uncle" }], correctAnswer: "answer-334", explanation: "'Mother' nghĩa là mẹ, phù hợp với nghĩa 'mẹ tôi là bác sĩ'.", timeLimit: 20, points: 100 },
+
+{ id: "question-313", gameId: "game-004", content: "Từ nào có nghĩa là \"chị/em gái\"?", options: [{ id: "answer-337", content: "Sister" }, { id: "answer-338", content: "Brother" }, { id: "answer-339", content: "Grandfather" }], correctAnswer: "answer-337", explanation: "'Sister' nghĩa là chị/em gái.", timeLimit: 15, points: 100 },
+
+
+{ id: "question-314", gameId: "game-005", content: "Trong đêm Trung Thu, trẻ em thường tham gia hoạt động nào?", options: [{ id: "answer-340", content: "Rước đèn" }, { id: "answer-341", content: "Gói bánh chưng" }, { id: "answer-342", content: "Hái hoa đào" }], correctAnswer: "answer-340", explanation: "Trong đêm Trung Thu, trẻ em thường rước đèn ông sao.", timeLimit: 15, points: 100 },
+
+{ id: "question-315", gameId: "game-005", content: "Nhân vật thường xuất hiện trong các câu chuyện Trung Thu là ai?", options: [{ id: "answer-343", content: "Chú Cuội" }, { id: "answer-344", content: "Thánh Gióng" }, { id: "answer-345", content: "Sơn Tinh" }], correctAnswer: "answer-343", explanation: "Chú Cuội và chị Hằng là nhân vật quen thuộc trong dịp Trung Thu.", timeLimit: 15, points: 100 },
+
+
+{ id: "question-316", gameId: "game-006", content: "Địa danh nào nổi tiếng với phố cổ và đèn lồng ở miền Trung?", options: [{ id: "answer-346", content: "Hội An" }, { id: "answer-347", content: "Sa Pa" }, { id: "answer-348", content: "Hà Giang" }], correctAnswer: "answer-346", explanation: "Hội An nổi tiếng với phố cổ và đèn lồng rực rỡ.", timeLimit: 20, points: 100 },
+
+{ id: "question-317", gameId: "game-006", content: "Đồng bằng sông Cửu Long nằm chủ yếu ở khu vực nào của Việt Nam?", options: [{ id: "answer-349", content: "Nam Bộ" }, { id: "answer-350", content: "Bắc Bộ" }, { id: "answer-351", content: "Tây Bắc" }], correctAnswer: "answer-349", explanation: "Đồng bằng sông Cửu Long nằm chủ yếu ở khu vực Nam Bộ.", timeLimit: 20, points: 100 },
+
+{ id: "question-318", gameId: "game-006", content: "Biển Đông nằm ở phía nào của Việt Nam?", options: [{ id: "answer-352", content: "Phía Đông" }, { id: "answer-353", content: "Phía Tây" }, { id: "answer-354", content: "Phía Bắc" }], correctAnswer: "answer-352", explanation: "Biển Đông nằm ở phía Đông của Việt Nam.", timeLimit: 15, points: 100 },
+
+
+{ id: "question-319", gameId: "game-007", content: "Từ nào sau đây bắt đầu bằng chữ \"B\"?", options: [{ id: "answer-355", content: "Bóng" }, { id: "answer-356", content: "Cá" }, { id: "answer-357", content: "Mèo" }], correctAnswer: "answer-355", explanation: "Từ 'bóng' bắt đầu bằng chữ B, còn 'cá' bắt đầu bằng C và 'mèo' bằng M.", timeLimit: 10, points: 100 },
+
+{ id: "question-320", gameId: "game-007", content: "Từ \"mẹ\" có chữ cái đầu tiên là chữ nào?", options: [{ id: "answer-358", content: "M" }, { id: "answer-359", content: "N" }, { id: "answer-360", content: "L" }], correctAnswer: "answer-358", explanation: "Từ 'mẹ' bắt đầu bằng chữ cái M.", timeLimit: 10, points: 100 },
+
+
+{ id: "question-321", gameId: "game-009", content: "Khi đi xe máy cùng người lớn, trẻ em nên làm gì?", options: [{ id: "answer-361", content: "Đội mũ bảo hiểm đúng cách" }, { id: "answer-362", content: "Đứng trên xe" }, { id: "answer-363", content: "Không cần đội mũ" }], correctAnswer: "answer-361", explanation: "Đội mũ bảo hiểm đúng cách giúp bảo vệ đầu khi tham gia giao thông.", timeLimit: 15, points: 100 },
+
+{ id: "question-322", gameId: "game-009", content: "Đèn giao thông màu xanh báo hiệu điều gì?", options: [{ id: "answer-364", content: "Được phép đi khi an toàn" }, { id: "answer-365", content: "Phải dừng lại" }, { id: "answer-366", content: "Phải quay đầu" }], correctAnswer: "answer-364", explanation: "Đèn xanh cho phép đi nhưng vẫn cần quan sát để đảm bảo an toàn.", timeLimit: 15, points: 100 },
+
+{ id: "question-323", gameId: "game-009", content: "Khi đi bộ trên đường, em nên đi ở đâu?", options: [{ id: "answer-367", content: "Vỉa hè hoặc phần đường dành cho người đi bộ" }, { id: "answer-368", content: "Giữa lòng đường" }, { id: "answer-369", content: "Trên làn xe chạy" }], correctAnswer: "answer-367", explanation: "Người đi bộ nên đi trên vỉa hè hoặc phần đường dành riêng cho người đi bộ.", timeLimit: 20, points: 100 },
+
+
+{ id: "question-324", gameId: "game-010", content: "Con vật nào có vòi dài?", options: [{ id: "answer-370", content: "Voi" }, { id: "answer-371", content: "Hổ" }, { id: "answer-372", content: "Khỉ" }], correctAnswer: "answer-370", explanation: "Voi là loài vật có vòi dài.", timeLimit: 10, points: 100 },
+
+{ id: "question-325", gameId: "game-010", content: "Động vật nào thường được biết đến với khả năng đổi màu để ngụy trang?", options: [{ id: "answer-373", content: "Tắc kè hoa" }, { id: "answer-374", content: "Voi" }, { id: "answer-375", content: "Ngựa vằn" }], correctAnswer: "answer-373", explanation: "Tắc kè hoa có khả năng đổi màu để ngụy trang.", timeLimit: 20, points: 100 },
+
+{ id: "question-326", gameId: "game-010", content: "Con vật nào là động vật có vú?", options: [{ id: "answer-376", content: "Cá heo" }, { id: "answer-377", content: "Cá vàng" }, { id: "answer-378", content: "Cá mập" }], correctAnswer: "answer-376", explanation: "Cá heo là động vật có vú, còn cá vàng và cá mập là cá.", timeLimit: 20, points: 100 },
+
+
+{ id: "question-327", gameId: "game-011", content: "Chiến thắng Bạch Đằng năm 938 gắn với vị anh hùng nào?", options: [{ id: "answer-379", content: "Ngô Quyền" }, { id: "answer-380", content: "Trần Hưng Đạo" }, { id: "answer-381", content: "Lê Lợi" }], correctAnswer: "answer-379", explanation: "Ngô Quyền lãnh đạo chiến thắng trên sông Bạch Đằng năm 938.", timeLimit: 20, points: 120 },
+
+{ id: "question-328", gameId: "game-011", content: "Hai Bà Trưng khởi nghĩa chống lại quân nào?", options: [{ id: "answer-382", content: "Nhà Hán" }, { id: "answer-383", content: "Nhà Tống" }, { id: "answer-384", content: "Nhà Minh" }], correctAnswer: "answer-382", explanation: "Hai Bà Trưng khởi nghĩa chống lại ách đô hộ của nhà Hán.", timeLimit: 20, points: 120 },
+
+{ id: "question-329", gameId: "game-011", content: "Ai là người lãnh đạo nghĩa quân Lam Sơn?", options: [{ id: "answer-385", content: "Lê Lợi" }, { id: "answer-386", content: "Ngô Quyền" }, { id: "answer-387", content: "Quang Trung" }], correctAnswer: "answer-385", explanation: "Lê Lợi là người lãnh đạo nghĩa quân Lam Sơn đánh đuổi quân Minh.", timeLimit: 20, points: 120 },
+{ id: "question-330", gameId: "game-012", content: "Lon nhôm đã dùng xong nên được xử lý như thế nào?", options: [{ id: "answer-388", content: "Bỏ vào nhóm rác tái chế" }, { id: "answer-389", content: "Vứt xuống sông" }, { id: "answer-390", content: "Đốt ngoài trời" }], correctAnswer: "answer-388", explanation: "Lon nhôm có thể tái chế nên cần bỏ vào nhóm rác tái chế.", timeLimit: 15, points: 100 },
+{ id: "question-331", gameId: "game-012", content: "Hành động nào giúp tiết kiệm nước?", options: [{ id: "answer-391", content: "Khóa vòi khi không sử dụng" }, { id: "answer-392", content: "Để vòi nước chảy liên tục" }, { id: "answer-393", content: "Chơi nước trong sân" }], correctAnswer: "answer-391", explanation: "Khóa vòi nước khi không dùng giúp tiết kiệm nước.", timeLimit: 15, points: 100 },
+{ id: "question-332", gameId: "game-012", content: "Việc nào giúp giảm lượng rác thải nhựa?", options: [{ id: "answer-394", content: "Dùng túi vải nhiều lần" }, { id: "answer-395", content: "Dùng nhiều túi nilon" }, { id: "answer-396", content: "Vứt chai nhựa ra đường" }], correctAnswer: "answer-394", explanation: "Dùng túi vải thay túi nilon giúp giảm rác thải nhựa.", timeLimit: 15, points: 100 },
+{ id: "question-333", gameId: "game-013", content: "Một cửa hàng có 36 quả táo, chia đều vào 4 giỏ. Mỗi giỏ có bao nhiêu quả?", options: [{ id: "answer-397", content: "8 quả" }, { id: "answer-398", content: "9 quả" }, { id: "answer-399", content: "10 quả" }], correctAnswer: "answer-398", explanation: "36 : 4 = 9 quả táo mỗi giỏ.", timeLimit: 20, points: 100 },
+{ id: "question-334", gameId: "game-013", content: "Nếu hôm nay là thứ Hai thì 3 ngày sau là thứ mấy?", options: [{ id: "answer-400", content: "Thứ Tư" }, { id: "answer-401", content: "Thứ Năm" }, { id: "answer-402", content: "Thứ Sáu" }], correctAnswer: "answer-401", explanation: "Thứ Hai thêm 3 ngày là thứ Ba, thứ Tư, thứ Năm.", timeLimit: 15, points: 100 },
+{ id: "question-335", gameId: "game-013", content: "Một hình chữ nhật dài 8cm và rộng 3cm. Chu vi hình chữ nhật là bao nhiêu?", options: [{ id: "answer-403", content: "22cm" }, { id: "answer-404", content: "24cm" }, { id: "answer-405", content: "26cm" }], correctAnswer: "answer-403", explanation: "Chu vi = (8 + 3) x 2 = 22cm.", timeLimit: 20, points: 100 },
+{ id: "question-336", gameId: "game-014", content: "Loài cây nào thường được gọi là \"vua của các loài cây\" trong rừng nhiệt đới?", options: [{ id: "answer-406", content: "Cây cổ thụ" }, { id: "answer-407", content: "Cây xương rồng" }, { id: "answer-408", content: "Cây lúa" }], correctAnswer: "answer-406", explanation: "Cây cổ thụ được ví là vua của các loài cây trong rừng nhiệt đới.", timeLimit: 20, points: 120 },
+{ id: "question-337", gameId: "game-014", content: "Hiện tượng nước biến thành hơi nước khi được đun nóng gọi là gì?", options: [{ id: "answer-409", content: "Bay hơi" }, { id: "answer-410", content: "Đông đặc" }, { id: "answer-411", content: "Ngưng tụ" }], correctAnswer: "answer-409", explanation: "Nước khi đun nóng biến thành hơi nước, gọi là hiện tượng bay hơi.", timeLimit: 20, points: 120 },
+{ id: "question-338", gameId: "game-014", content: "Mặt Trăng quay quanh thiên thể nào?", options: [{ id: "answer-412", content: "Trái Đất" }, { id: "answer-413", content: "Sao Hỏa" }, { id: "answer-414", content: "Mặt Trời" }], correctAnswer: "answer-412", explanation: "Mặt Trăng là vệ tinh quay quanh Trái Đất.", timeLimit: 15, points: 120 },
+{ id: "question-339", gameId: "game-015", content: "Chọn câu đúng: \"Tôi thích màu xanh.\" trong tiếng Anh.", options: [{ id: "answer-415", content: "I like blue." }, { id: "answer-416", content: "I am blue." }, { id: "answer-417", content: "I play blue." }], correctAnswer: "answer-415", explanation: "'I like blue' nghĩa là 'Tôi thích màu xanh'.", timeLimit: 15, points: 100 },
+{ id: "question-340", gameId: "game-015", content: "Từ nào có nghĩa là \"mặt trời\"?", options: [{ id: "answer-418", content: "Moon" }, { id: "answer-419", content: "Sun" }, { id: "answer-420", content: "Star" }], correctAnswer: "answer-419", explanation: "'Sun' nghĩa là mặt trời, còn 'moon' là mặt trăng.", timeLimit: 12, points: 100 },
+{ id: "question-341", gameId: "game-015", content: "Chọn từ thích hợp: \"I ___ a student.\"", options: [{ id: "answer-421", content: "am" }, { id: "answer-422", content: "is" }, { id: "answer-423", content: "are" }], correctAnswer: "answer-421", explanation: "Dùng 'am' với chủ ngữ 'I': I am a student.", timeLimit: 15, points: 100 },
 ];
 
 const mockPlayersPool = [
@@ -235,7 +346,7 @@ const initialResults = [
   { id: "result-012", gameId: "game-005", playerId: "player-004", playerName: "Phạm Bảo Ngọc", score: 260, correctAnswers: 1, totalQuestions: 2, accuracy: 50, completionTime: 35 },
 ];
 
-const mockCurrentUser = { id: "user-001", name: "Nguyễn Minh Anh", role: "teacher" };
+const mockCurrentUser = { id: "user-001",  name: "Hồ Sử Trung Nguyên" , role: "teacher" };
 
 const SUBJECTS = ["Toán", "Khoa học", "Tiếng Việt", "Tiếng Anh", "Địa lý", "Lịch sử", "Kỹ năng sống", "Tổng hợp"];
 
@@ -484,39 +595,84 @@ function App() {
    ========================================================================= */
 
 function HomeScreen({ onSelectRole }) {
+  const floaters = [
+    { icon: "🎡", cls: "top-16 left-6 text-5xl", delay: 0 },
+    { icon: "🧠", cls: "top-24 right-8 text-4xl", delay: 0.6 },
+    { icon: "🎈", cls: "bottom-24 left-12 text-5xl", delay: 1.1 },
+    { icon: "⭐", cls: "bottom-16 right-14 text-4xl", delay: 0.3 },
+    { icon: "🎟️", cls: "top-1/2 -left-10 text-6xl -rotate-12", delay: 0.9 },
+    { icon: "🏆", cls: "top-1/2 -right-10 text-6xl rotate-12", delay: 0.15 },
+    { icon: "🚀", cls: "top-40 left-1/4 text-3xl", delay: 1.4 },
+    { icon: "⛵", cls: "bottom-40 right-1/4 text-3xl", delay: 0.5 },
+  ];
+  const gameIcons = ["🐌", "🚀", "🔨", "🎡", "🎯", "⛵", "🏮", "🗺️", "🎈", "🃏", "🧩", "🥷"];
   return (
     <div className="min-h-screen marquee-panel flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
       <div className="marquee-lights w-full absolute top-0 left-0"></div>
       <div className="marquee-lights w-full absolute bottom-0 left-0"></div>
-      <div className="absolute -top-8 -left-8 text-[130px] opacity-10 select-none">🎡</div>
-      <div className="absolute -bottom-12 -right-6 text-[150px] opacity-10 select-none">🎈</div>
+
+      {/* floating decorations */}
+      {floaters.map((f, i) => (
+        <span key={i} className={`absolute ${f.cls} opacity-15 float-slow select-none`} style={{ animationDelay: `${f.delay}s` }}>{f.icon}</span>
+      ))}
+
       <div className="max-w-3xl w-full text-center">
         <span className="inline-flex items-center gap-2 bg-gold text-ink font-mono text-xs uppercase tracking-wide px-4 py-1.5 rounded-full -rotate-2 mb-6 shadow-[0_2px_0_rgba(0,0,0,0.15)]">
           🎟️ Hội chợ trò chơi học tập
         </span>
-        <h1 className="font-display text-5xl md:text-6xl text-paper leading-tight mb-4">
+
+        <h1 className="font-display text-5xl md:text-7xl text-paper leading-tight mb-3 drop-shadow-[0_4px_24px_rgba(244,185,66,0.35)]">
           Lớp Học <span className="text-gold">Vui</span>
         </h1>
-        <p className="font-body text-paper/70 text-lg max-w-xl mx-auto mb-12">
+        <p className="font-body text-paper/70 text-lg md:text-xl max-w-xl mx-auto mb-8">
           Giáo viên dựng gian trò chơi ôn tập, học sinh mua vé bằng một mã số và cùng nhau leo lên bảng xếp hạng.
         </p>
+
+        {/* stat chips */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-10 font-mono text-xs text-paper/70">
+          <span className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">🎮 15+ trò chơi</span>
+          <span className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">📚 84 câu hỏi</span>
+          <span className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">🏅 Bảng xếp hạng</span>
+        </div>
+
+        {/* role cards */}
         <div className="grid sm:grid-cols-2 gap-5 text-left">
           <button onClick={() => onSelectRole("teacher")}
-            className="anim-pop note-card p-6 text-left hover:-translate-y-1 transition shadow-[0_4px_0_rgba(0,0,0,0.12)] group">
-            <StampToken icon="🧑‍🏫" ring="#E4572E" size={52} fontSize={22} />
+            className="anim-pop note-card p-6 text-left hover:-translate-y-1.5 hover:shadow-[0_8px_0_rgba(0,0,0,0.15)] transition shadow-[0_4px_0_rgba(0,0,0,0.12)] group bg-paper2">
+            <div className="flex items-center justify-between">
+              <StampToken icon="🧑‍🏫" ring="#E4572E" size={54} fontSize={24} />
+              <span className="text-2xl opacity-0 group-hover:opacity-100 transition -rotate-12">📝</span>
+            </div>
             <h3 className="font-display text-xl mt-4 text-ink">Tôi là giáo viên</h3>
             <p className="text-sm text-[#8A7C63] mt-1">Dựng gian trò chơi, quản lý câu hỏi và theo dõi kết quả lớp học.</p>
-            <span className="inline-block mt-4 text-sm font-semibold text-ticket group-hover:translate-x-1 transition">Vào Dashboard →</span>
+            <div className="mt-5 h-10 flex items-center gap-2">
+              <span className="inline-block text-sm font-semibold text-ticket group-hover:translate-x-1 transition">Vào Dashboard</span>
+              <span className="group-hover:translate-x-2 transition">→</span>
+            </div>
           </button>
           <button onClick={() => onSelectRole("student")}
-            className="anim-pop note-card p-6 text-left hover:-translate-y-1 transition shadow-[0_4px_0_rgba(0,0,0,0.12)] group" style={{ animationDelay: ".05s" }}>
-            <StampToken icon="🎒" ring="#1B998B" size={52} fontSize={22} />
+            className="anim-pop note-card p-6 text-left hover:-translate-y-1.5 hover:shadow-[0_8px_0_rgba(0,0,0,0.15)] transition shadow-[0_4px_0_rgba(0,0,0,0.12)] group bg-paper2" style={{ animationDelay: ".05s" }}>
+            <div className="flex items-center justify-between">
+              <StampToken icon="🎒" ring="#1B998B" size={54} fontSize={24} />
+              <span className="text-2xl opacity-0 group-hover:opacity-100 transition rotate-12">🎮</span>
+            </div>
             <h3 className="font-display text-xl mt-4 text-ink">Tôi là học sinh</h3>
             <p className="text-sm text-[#8A7C63] mt-1">Nhập mã vé trò chơi để tham gia cùng cả lớp và ghi điểm.</p>
-            <span className="inline-block mt-4 text-sm font-semibold text-teal group-hover:translate-x-1 transition">Tham gia ngay →</span>
+            <div className="mt-5 h-10 flex items-center gap-2">
+              <span className="inline-block text-sm font-semibold text-teal group-hover:translate-x-1 transition">Tham gia ngay</span>
+              <span className="group-hover:translate-x-2 transition">→</span>
+            </div>
           </button>
         </div>
-        <p className="text-paper/40 text-xs mt-10 font-mono">Frontend Prototype · Dữ liệu mô phỏng (Mock Data)</p>
+
+        {/* game icons marquee */}
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-2 max-w-xl mx-auto">
+          {gameIcons.map((ic, i) => (
+            <span key={i} className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg hover:bg-gold/20 hover:-translate-y-1 transition">{ic}</span>
+          ))}
+        </div>
+
+        <p className="text-paper/40 text-xs mt-8 font-mono">Frontend Prototype · Dữ liệu mô phỏng (Mock Data)</p>
       </div>
     </div>
   );
@@ -1237,6 +1393,9 @@ function GamePlayRouter({ game, questions, playerName, onFinish, onQuit }) {
     case "sorting-game": return <SortingGamePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
     case "word-scramble": return <WordScramblePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
     case "memory-match": return <MemoryMatchPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "hero-adventure": return <HeroAdventurePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "dungeon-quest": return <DungeonQuestPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "ninja-dash": return <NinjaDashPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
     default: return <PlayGameScreen game={game} questions={questions} onFinish={onFinish} />;
   }
 }
@@ -1257,6 +1416,16 @@ function PlayHeader({ icon, title, accent, code, progressLabel, timeLeft, timeCo
         {extra}
       </div>
       <button onClick={onQuit} className="font-display text-sm border rounded-2xl px-4 py-2 hover:opacity-80 transition" style={{ color: accent, borderColor: accent + "66" }}>Thoát</button>
+    </div>
+  );
+}
+
+/* Small box that shows the explanation of the correct answer after reveal */
+function AnswerExplain({ q }) {
+  if (!q || !q.explanation) return null;
+  return (
+    <div className="mt-4 text-sm text-ink/80 bg-gold/15 border border-gold/40 rounded-2xl px-4 py-3">
+      <span className="font-semibold text-[#8a6a10]">💡 Giải thích:</span> {q.explanation}
     </div>
   );
 }
@@ -1350,9 +1519,12 @@ function WhackAMolePlayScreen({ game, questions, onFinish, onQuit }) {
           })}
         </div>
         {revealed && (
+          <>
           <p className={`text-center mt-6 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
             {selected === q.correctAnswer ? "Đập trúng rồi! 🎉" : selected === null ? "Hết giờ! ⏰" : "Trật rồi 😅"}
           </p>
+          <AnswerExplain q={q} />
+          </>
         )}
       </div>
     </div>
@@ -1410,9 +1582,12 @@ function SpaceShipPlayScreen({ game, questions, onFinish, onQuit }) {
             })}
           </div>
           {revealed && (
+            <>
             <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
               {selected === q.correctAnswer ? "Đẩy phi thuyền bay xa hơn! 🚀" : "Phi thuyền khựng lại một chút..."}
             </p>
+            <AnswerExplain q={q} />
+            </>
           )}
         </div>
       </div>
@@ -1466,9 +1641,12 @@ function BalloonPopPlayScreen({ game, questions, onFinish, onQuit }) {
           })}
         </div>
         {revealed && (
+          <>
           <p className={`text-center mt-6 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
             {selected === q.correctAnswer ? "Bóng bay lên trời rồi! 🎈" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng, thử câu sau nhé!"}
           </p>
+          <AnswerExplain q={q} />
+          </>
         )}
       </div>
     </div>
@@ -1520,9 +1698,12 @@ function DartThrowPlayScreen({ game, questions, onFinish, onQuit }) {
             })}
           </div>
           {revealed && (
+            <>
             <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
               {selected === q.correctAnswer ? "Trúng hồng tâm! 🎯" : "Lệch mục tiêu rồi!"}
             </p>
+            <AnswerExplain q={q} />
+            </>
           )}
         </div>
       </div>
@@ -1586,9 +1767,12 @@ function SailingBoatPlayScreen({ game, questions, playerName, onFinish, onQuit }
               ))}
             </div>
             {revealed && (
+              <>
               <p className={`text-center mt-auto pt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
                 {selected === q.correctAnswer ? "Thuyền lướt nhanh về phía trước! ⛵" : "Sóng cản một chút, cố lên!"}
               </p>
+              <AnswerExplain q={q} />
+              </>
             )}
           </div>
         </div>
@@ -1637,9 +1821,12 @@ function MoonLanternPlayScreen({ game, questions, onFinish, onQuit }) {
             })}
           </div>
           {revealed && (
+            <>
             <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
               {selected === q.correctAnswer ? "Thắp sáng thêm một chiếc đèn! 🏮" : "Đèn chưa sáng, cố lên nào!"}
             </p>
+            <AnswerExplain q={q} />
+            </>
           )}
         </div>
       </div>
@@ -1693,9 +1880,12 @@ function TreasureMapPlayScreen({ game, questions, onFinish, onQuit }) {
             })}
           </div>
           {revealed && (
+            <>
             <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
               {selected === q.correctAnswer ? "Mở khóa chặng tiếp theo! 🗝️" : "Ổ khóa chưa mở, thử chặng sau nhé!"}
             </p>
+            <AnswerExplain q={q} />
+            </>
           )}
         </div>
       </div>
@@ -1741,9 +1931,12 @@ function SortingGamePlayScreen({ game, questions, onFinish, onQuit }) {
           })}
         </div>
         {revealed && (
+          <>
           <p className={`text-center mt-6 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
             {selected === q.correctAnswer ? "Đúng ngăn rồi! 🗂️" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng ngăn, thử lại ở câu sau!"}
           </p>
+          <AnswerExplain q={q} />
+          </>
         )}
       </div>
     </div>
@@ -1796,9 +1989,12 @@ function WordScramblePlayScreen({ game, questions, onFinish, onQuit }) {
           })}
         </div>
         {revealed && (
+          <>
           <p className={`text-center mt-6 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
             {selected === q.correctAnswer ? "Xếp đúng chữ rồi! 🔤" : "Chưa đúng thứ tự, thử câu sau nhé!"}
           </p>
+          <AnswerExplain q={q} />
+          </>
         )}
       </div>
     </div>
@@ -1853,242 +2049,530 @@ function MemoryMatchPlayScreen({ game, questions, onFinish, onQuit }) {
           })}
         </div>
         {revealed && (
+          <>
           <p className={`text-center mt-6 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
             {selected === q.correctAnswer ? "Lật đúng thẻ rồi! 🃏" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng, thử câu sau nhé!"}
           </p>
+          <AnswerExplain q={q} />
+          </>
         )}
       </div>
     </div>
   );
 }
 
-// Thêm component Lucky Wheel Game
-function LuckyWheelPlayScreen({ game, questions, playerName, onFinish, onQuit }) {
-  const [spinning, setSpinning] = useState(false);
-  const [selectedQuestion, setSelectedQuestion] = useState(null);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [answeredQuestions, setAnsweredQuestions] = useState([]);
+/* ---------------------- HERO ADVENTURE (platformer-style) ---------------------- */
+
+function HeroAdventurePlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const [coins, setCoins] = useState(0);
+  const [stumble, setStumble] = useState(false);
+  const prevRevealed = useRef(false);
+
+  useEffect(() => {
+    if (revealed && !prevRevealed.current) {
+      if (selected === q.correctAnswer) setCoins(c => c + 1);
+      else { setStumble(true); setTimeout(() => setStumble(false), 400); }
+    }
+    prevRevealed.current = revealed;
+  }, [revealed]);
+
+  const progress = ((idx + (revealed ? 1 : 0)) / total) * 88;
+  const platforms = useMemo(() => Array.from({ length: 6 }, (_, i) => 10 + i * 16), []);
+
+  return (
+    <div className="flex-1 flex flex-col bg-gradient-to-b from-[#9FD8F5] to-[#EAF6FF]">
+      <PlayHeader icon="🦸" title="ANH HÙNG PHIÊU LƯU" accent="#E4572E" code={game.code}
+        progressLabel={`Chặng: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit}
+        extra={<span>🪙 {coins}</span>} />
+      <div className="flex-1 grid lg:grid-cols-[1.3fr_1fr] gap-5 p-5 md:p-8">
+        <div className={`relative rounded-3xl overflow-hidden border border-white/40 h-56 sm:h-64 ${stumble ? "shake-hit" : ""}`}
+          style={{ background: "linear-gradient(180deg, #BFE8FF 0%, #EAF6FF 70%, #C9E9A6 100%)" }}>
+          <div className="absolute top-4 left-6 text-3xl opacity-70">☁️</div>
+          <div className="absolute top-10 right-10 text-2xl opacity-60">☁️</div>
+          <div className="absolute right-6 bottom-8 text-4xl">🏁</div>
+          {platforms.map((p, i) => (
+            <div key={i} className="absolute bottom-4 w-10 h-3 rounded-full bg-[#8B6339]/50" style={{ left: `${p}%` }}></div>
+          ))}
+          <div className="absolute bottom-6 transition-all duration-700 ease-out" style={{ left: `calc(4% + ${progress}%)` }}>
+            <span className={`text-5xl inline-block ${revealed && selected === q.correctAnswer ? "run-cycle" : ""} ${revealed && selected !== q.correctAnswer && selected !== undefined ? "" : "bob-hero"}`}>🦸</span>
+          </div>
+          <div className="absolute left-6 right-6 bottom-2 h-1.5 rounded-full bg-white/40 overflow-hidden">
+            <div className="h-full rounded-full bg-gradient-to-r from-gold to-ticket transition-all duration-700" style={{ width: `${progress + 6}%` }}></div>
+          </div>
+          <div className="absolute top-4 right-6 text-ink/70 font-mono text-xs bg-white/60 rounded-full px-3 py-1">Hành trình: {Math.round(progress)}%</div>
+        </div>
+
+        <div className="note-card p-6 flex flex-col">
+          <span className="inline-flex items-center gap-2 self-start bg-ticket/15 text-ticket font-display text-xs font-semibold uppercase px-4 py-2 rounded-full mb-4">
+            🚧 Thử thách vượt chướng ngại vật
+          </span>
+          <p className="font-display text-lg sm:text-xl text-ink mb-6">{q.content}</p>
+          <div className="space-y-3 mt-auto">
+            {q.options.map((o, i) => {
+              let stateCls = "border-ink/12 hover:border-ticket/40";
+              if (revealed) {
+                if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                else stateCls = "border-ink/10 opacity-50";
+              } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+              return (
+                <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                  className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                  <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                  <span className="flex-1">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>🪙</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <>
+            <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+              {selected === q.correctAnswer ? "Nhảy qua chướng ngại vật, +1 xu! 🪙" : "Vấp phải chướng ngại vật, cố lên nào!"}
+            </p>
+            <AnswerExplain q={q} />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- DUNGEON QUEST (RPG battle-style) ---------------------- */
+
+const DUNGEON_MONSTERS = ["🐉", "👹", "🧟", "🦂", "🦇", "🐍", "👻", "🕷️"];
+
+function DungeonQuestPlayScreen({ game, questions, onFinish, onQuit }) {
+  const [idx, setIdx] = useState(0);
+  const q = questions[idx];
+  const [timeLeft, setTimeLeft] = useState(q.timeLimit);
+  const [selected, setSelected] = useState(null);
+  const [revealed, setRevealed] = useState(false);
   const [score, setScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [heroHp, setHeroHp] = useState(100);
+  const [monsterHp, setMonsterHp] = useState(100);
+  const [flash, setFlash] = useState(null); // "hero" | "monster" | null
+  const startRef = useRef(Date.now());
+  const monster = DUNGEON_MONSTERS[idx % DUNGEON_MONSTERS.length];
+
+  useEffect(() => { setTimeLeft(q.timeLimit); setSelected(null); setRevealed(false); setMonsterHp(100); }, [idx]);
+
+  useEffect(() => {
+    if (revealed) return;
+    if (timeLeft <= 0) { handleAnswer(null); return; }
+    const t = setTimeout(() => setTimeLeft(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timeLeft, revealed]);
+
+  function handleAnswer(optionId) {
+    if (revealed) return;
+    const isCorrect = optionId === q.correctAnswer;
+    const earned = isCorrect ? q.points + Math.round((timeLeft / q.timeLimit) * 40) : 0;
+    setSelected(optionId);
+    setRevealed(true);
+    if (isCorrect) { setMonsterHp(0); setFlash("monster"); }
+    else { setHeroHp(h => Math.max(0, h - 20)); setFlash("hero"); }
+    setTimeout(() => setFlash(null), 400);
+
+    const nextScore = score + earned;
+    const nextCorrect = correctCount + (isCorrect ? 1 : 0);
+    setScore(nextScore);
+    setCorrectCount(nextCorrect);
+
+    setTimeout(() => {
+      if (idx + 1 < questions.length) { setIdx(i => i + 1); }
+      else {
+        const timeUsed = Math.round((Date.now() - startRef.current) / 1000);
+        onFinish({ score: nextScore, correct: nextCorrect, timeUsed });
+      }
+    }, 1400);
+  }
+
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+
+  return (
+    <div className="flex-1 flex flex-col" style={{ background: "radial-gradient(120% 140% at 50% 0%, #2E1F4A 0%, #170F28 60%)" }}>
+      <PlayHeader icon="🗡️" title="HẦM NGỤC BÍ ẨN" accent="#B58AFF" code={game.code}
+        progressLabel={`Chặng: ${idx + 1}/${questions.length}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center p-5 md:p-8 gap-6">
+        <div className={`w-full max-w-2xl flex items-center justify-between gap-4 ${flash === "hero" ? "shake-hit" : ""}`}>
+          <div className="flex-1 note-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">🛡️</span>
+              <span className="font-display text-sm text-ink">Anh hùng</span>
+            </div>
+            <div className="w-full h-3 bg-ink/10 rounded-full overflow-hidden">
+              <div className="h-full bg-teal transition-all duration-500" style={{ width: `${heroHp}%` }}></div>
+            </div>
+          </div>
+          <span className="text-3xl text-white/60">⚔️</span>
+          <div className={`flex-1 note-card p-4 ${flash === "monster" ? "shake-hit" : ""}`}>
+            <div className="flex items-center gap-2 mb-2 justify-end">
+              <span className="font-display text-sm text-ink">Quái vật</span>
+              <span className="text-2xl">{monster}</span>
+            </div>
+            <div className="w-full h-3 bg-ink/10 rounded-full overflow-hidden">
+              <div className="h-full bg-ticket transition-all duration-500 ml-auto" style={{ width: `${monsterHp}%` }}></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-7xl anim-pop" key={idx}>{monster}</div>
+
+        <div className="note-card p-6 max-w-lg w-full">
+          <span className="text-xs font-mono text-[#8A7C63] uppercase">Trả lời đúng để tung đòn chí mạng</span>
+          <p className="font-display text-lg sm:text-xl text-ink mt-2 mb-6">{q.content}</p>
+          <div className="grid gap-3">
+            {q.options.map((o, i) => {
+              let stateCls = "border-ink/12 hover:border-[#8B6FF1]/50";
+              if (revealed) {
+                if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                else stateCls = "border-ink/10 opacity-50";
+              } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+              return (
+                <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                  className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                  <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                  <span className="flex-1">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>⚔️</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <>
+            <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+              {selected === q.correctAnswer ? "Hạ gục quái vật! 🎉" : "Quái vật phản đòn, mất máu rồi!"}
+            </p>
+            <AnswerExplain q={q} />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- NINJA DASH (endless-runner-style) ---------------------- */
+
+function NinjaDashPlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const [jumping, setJumping] = useState(false);
+  const prevRevealed = useRef(false);
+
+  useEffect(() => {
+    if (revealed && !prevRevealed.current && selected === q.correctAnswer) {
+      setJumping(true);
+      setTimeout(() => setJumping(false), 500);
+    }
+    prevRevealed.current = revealed;
+  }, [revealed]);
+
+  const obstacleIcons = ["🌵", "🪨", "🔥", "🧱"];
+
+  return (
+    <div className="flex-1 flex flex-col" style={{ background: "linear-gradient(180deg, #1D2E4A 0%, #16233A 60%, #0F172A 100%)" }}>
+      <PlayHeader icon="🥷" title="NINJA VƯỢT CHƯỚNG NGẠI" accent="#F4B942" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center p-5 md:p-8 gap-6">
+        <div className="relative w-full max-w-2xl h-32 rounded-3xl overflow-hidden border border-white/10" style={{ background: "linear-gradient(180deg, #223154 0%, #16233A 100%)" }}>
+          <div className="absolute inset-x-0 bottom-0 h-6" style={{ backgroundImage: "repeating-linear-gradient(90deg, rgba(244,185,66,0.35) 0 18px, transparent 18px 36px)" }}></div>
+          <div className="absolute bottom-6 left-10">
+            <span className={`text-5xl inline-block transition-transform duration-500 ${jumping ? "-translate-y-8" : ""}`}>🥷</span>
+          </div>
+          {obstacleIcons.map((ic, i) => (
+            <span key={i} className="absolute bottom-6 text-2xl opacity-70" style={{ right: `${10 + i * 22}%` }}>{ic}</span>
+          ))}
+          <div className="absolute top-3 left-4 text-white/60 font-mono text-xs">Câu {idx + 1}/{total}</div>
+        </div>
+
+        <div className="note-card p-6 max-w-xl w-full">
+          <p className="font-display text-lg sm:text-xl text-ink mb-6 text-center">{q.content}</p>
+          <div className="grid gap-3">
+            {q.options.map((o, i) => {
+              let stateCls = "border-ink/12 hover:border-gold/60";
+              if (revealed) {
+                if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                else stateCls = "border-ink/10 opacity-50";
+              } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+              return (
+                <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                  className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                  <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                  <span className="flex-1">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>🥷</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <>
+            <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+              {selected === q.correctAnswer ? "Bật nhảy qua chướng ngại vật! 🥷" : selected === null ? "Hết giờ, va phải chướng ngại vật! ⏰" : "Va phải chướng ngại vật rồi!"}
+            </p>
+            <AnswerExplain q={q} />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- LUCKY WHEEL ---------------------- */
+
+const WHEEL_COLORS = ["#E4572E", "#F4B942", "#1B998B", "#FF6F91", "#4C8DFF", "#8B6FF1", "#4CAF7D", "#FF9F5A", "#31B0C9", "#D96CD9"];
+
+function LuckyWheelPlayScreen({ game, questions, playerName, onFinish, onQuit }) {
   const [rotation, setRotation] = useState(0);
+  const [spinning, setSpinning] = useState(false);
+  const [answeredIds, setAnsweredIds] = useState([]);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [gamePhase, setGamePhase] = useState("wheel"); // wheel | question
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [revealed, setRevealed] = useState(false);
-  const [gamePhase, setGamePhase] = useState('wheel'); // wheel, question, result
-  const wheelRef = useRef(null);
+  const [score, setScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const startTimeRef = useRef(Date.now());
 
-  // Wheel configuration
-  const segments = useMemo(() => {
-    const colors = ['#E4572E', '#F4B942', '#1B998B', '#FF6F91', '#4C8DFF', '#4CAF7D', '#8B6FF1', '#FF9800'];
-    return questions.map((q, i) => ({
-      ...q,
-      color: colors[i % colors.length],
-      angle: (360 / questions.length) * i
-    }));
-  }, [questions]);
+  const segmentCount = questions.length;
+  const segmentAngle = 360 / segmentCount;
+
+  const wheelNames = useMemo(() => {
+    const pool = mockPlayersPool.map(p => p.name);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return Array.from({ length: segmentCount }, (_, i) => shortName(pool[i % pool.length]));
+  }, [segmentCount]);
+
+  const segments = useMemo(
+    () => questions.map((q, i) => ({ ...q, name: wheelNames[i % wheelNames.length], color: WHEEL_COLORS[i % WHEEL_COLORS.length] })),
+    [questions, wheelNames]
+  );
+
+  const allDone = answeredIds.length >= segmentCount;
 
   const spinWheel = () => {
-    if (spinning || answeredQuestions.length >= questions.length) return;
-    
+    if (spinning || allDone) return;
     setSpinning(true);
-    setSelectedQuestion(null);
-    
-    // Random spin - 5-8 full rotations plus random segment
-    const availableSegments = segments.filter((_, i) => !answeredQuestions.includes(questions[i].id));
-    const randomSegment = availableSegments[Math.floor(Math.random() * availableSegments.length)];
-    const targetAngle = segments.findIndex(s => s.id === randomSegment.id);
-    const segmentAngle = 360 / segments.length;
-    const targetRotation = 1800 + (360 - targetAngle * segmentAngle - rotation % 360);
-    
-    setRotation(prev => prev + targetRotation);
-    
+
+    const availableIdx = segments.map((_, i) => i).filter(i => !answeredIds.includes(segments[i].id));
+    const winIdx = availableIdx[Math.floor(Math.random() * availableIdx.length)];
+
+    // Segment i occupies [i*segmentAngle, (i+1)*segmentAngle) measured clockwise from the
+    // top of the wheel (the pointer sits fixed at the top). Its center is winCenter.
+    const winCenter = winIdx * segmentAngle + segmentAngle / 2;
+    // After rotating the wheel by R degrees clockwise, the point that lands under the
+    // fixed top pointer is the one whose original angle satisfies angle + R ≡ 0 (mod 360).
+    // So we need R ≡ (360 - winCenter) (mod 360).
+    const targetMod = (360 - winCenter + 360) % 360;
+    const currentMod = ((rotation % 360) + 360) % 360;
+    let delta = targetMod - currentMod;
+    if (delta <= 0) delta += 360;
+    const extraSpins = 5 + Math.floor(Math.random() * 2); // 5-6 full laps for drama
+    const newRotation = rotation + extraSpins * 360 + delta;
+
+    setRotation(newRotation);
+
     setTimeout(() => {
       setSpinning(false);
-      setSelectedQuestion(randomSegment);
-      setCurrentQuestion(randomSegment);
-      setGamePhase('question');
-      setTimeLeft(randomSegment.timeLimit);
+      const winner = segments[winIdx];
+      setCurrentQuestion(winner);
+      setGamePhase("question");
+      setTimeLeft(winner.timeLimit);
       setSelectedAnswer(null);
       setRevealed(false);
     }, 4200);
   };
 
   useEffect(() => {
-    if (gamePhase === 'question' && currentQuestion && !revealed) {
-      if (timeLeft <= 0) {
-        handleAnswer(null);
-        return;
-      }
-      const timer = setTimeout(() => setTimeLeft(t => t - 1), 1000);
-      return () => clearTimeout(timer);
-    }
+    if (gamePhase !== "question" || !currentQuestion || revealed) return;
+    if (timeLeft <= 0) { handleAnswer(null); return; }
+    const t = setTimeout(() => setTimeLeft(s => s - 1), 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line
   }, [timeLeft, gamePhase, currentQuestion, revealed]);
 
-  const handleAnswer = (optionId) => {
+  function handleAnswer(optionId) {
     if (revealed || !currentQuestion) return;
     setSelectedAnswer(optionId);
     setRevealed(true);
-    
+
     const isCorrect = optionId === currentQuestion.correctAnswer;
-    if (isCorrect) {
-      const bonus = Math.round((timeLeft / currentQuestion.timeLimit) * 40);
-      setScore(s => s + currentQuestion.points + bonus);
-    }
-    
-    setAnsweredQuestions(prev => [...prev, currentQuestion.id]);
-    
+    const earned = isCorrect ? currentQuestion.points + Math.round((timeLeft / currentQuestion.timeLimit) * 40) : 0;
+    const nextScore = score + earned;
+    const nextCorrect = correctCount + (isCorrect ? 1 : 0);
+    const nextAnswered = [...answeredIds, currentQuestion.id];
+
+    setScore(nextScore);
+    setCorrectCount(nextCorrect);
+    setAnsweredIds(nextAnswered);
+
     setTimeout(() => {
-      if (answeredQuestions.length + 1 >= questions.length) {
-        onFinish({
-          score: score + (isCorrect ? currentQuestion.points + Math.round((timeLeft / currentQuestion.timeLimit) * 40) : 0),
-          correct: answeredQuestions.filter(id => {
-            const q = questions.find(qq => qq.id === id);
-            return q && q.correctAnswer === selectedAnswer;
-          }).length + (isCorrect ? 1 : 0),
-          timeUsed: Math.round((Date.now() - startTimeRef.current) / 1000)
-        });
+      if (nextAnswered.length >= segmentCount) {
+        onFinish({ score: nextScore, correct: nextCorrect, timeUsed: Math.round((Date.now() - startTimeRef.current) / 1000) });
       } else {
-        setGamePhase('wheel');
+        setGamePhase("wheel");
         setCurrentQuestion(null);
       }
-    }, 2000);
-  };
+    }, 1900);
+  }
 
-  const startTimeRef = useRef(Date.now());
+  /* ---- wheel rendering ---- */
+  const size = 320;
+  const center = size / 2;
+  const radius = size / 2 - 8;
 
-  // SVG Wheel rendering
-  const renderWheel = () => {
-    const size = 300;
-    const center = size / 2;
-    const radius = size / 2 - 10;
-    
-    return (
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
-        <g transform={`rotate(${rotation} ${center} ${center})`}>
-          {segments.map((segment, i) => {
-            const startAngle = (i * 360) / segments.length;
-            const endAngle = ((i + 1) * 360) / segments.length;
-            const startRad = (startAngle * Math.PI) / 180;
-            const endRad = (endAngle * Math.PI) / 180;
-            
-            const x1 = center + radius * Math.cos(startRad);
-            const y1 = center + radius * Math.sin(startRad);
-            const x2 = center + radius * Math.cos(endRad);
-            const y2 = center + radius * Math.sin(endRad);
-            
-            const largeArc = endAngle - startAngle <= 180 ? "0" : "1";
-            
-            return (
-              <g key={segment.id}>
-                <path
-                  d={`M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                  fill={segment.color}
-                  stroke="#fff"
-                  strokeWidth="2"
-                  opacity={answeredQuestions.includes(segment.id) ? 0.3 : 0.9}
-                />
-                <text
-                  x={center + (radius * 0.65) * Math.cos((startRad + endRad) / 2)}
-                  y={center + (radius * 0.65) * Math.sin((startRad + endRad) / 2)}
-                  fill="#fff"
-                  fontSize="24"
-                  fontWeight="bold"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                >
-                  {i + 1}
-                </text>
-              </g>
-            );
-          })}
-        </g>
-        <circle cx={center} cy={center} r="40" fill="#FFF6E7" stroke="#1D2E4A" strokeWidth="3" />
-        <text x={center} y={center} fontSize="16" fontWeight="bold" fill="#1D2E4A" textAnchor="middle" dominantBaseline="middle">
-          QUAY
-        </text>
-        {/* Pointer */}
-        <polygon
-          points={`${center},0 ${center-15},20 ${center+15},20`}
-          fill="#E4572E"
-          stroke="#1D2E4A"
-          strokeWidth="2"
-        />
-      </svg>
-    );
-  };
+  function polar(angleDeg, r) {
+    // angleDeg measured clockwise from the top (12 o'clock); convert to SVG coords.
+    const rad = ((angleDeg - 90) * Math.PI) / 180;
+    return { x: center + r * Math.cos(rad), y: center + r * Math.sin(rad) };
+  }
 
   return (
-    <div className="flex-1 flex flex-col bg-paper">
-      <div className="flex items-center justify-between px-5 py-3 bg-white border-b border-ink/10">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">🎡</span>
-          <h1 className="font-display text-xl">VÒNG QUAY MAY MẮN</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-sm">⭐ {score} điểm</span>
-          <button onClick={onQuit} className="text-ticket text-sm font-semibold">Thoát</button>
-        </div>
-      </div>
+    <div className="flex-1 flex flex-col" style={{ background: "radial-gradient(120% 140% at 50% 0%, #2A1F52 0%, #17102F 55%, #120C24 100%)" }}>
+      <PlayHeader icon="🎡" title="VÒNG QUAY MAY MẮN" accent="#F4B942" code={game.code}
+        progressLabel={`Đã quay: ${answeredIds.length}/${segmentCount}`} score={score} onQuit={onQuit} />
 
-      <div className="flex-1 flex flex-col items-center justify-center p-5">
-        {gamePhase === 'wheel' && (
-          <>
-            <div className={`wheel-container ${spinning ? 'wheel-spinning' : ''}`}>
-              {renderWheel()}
+      <div className="flex-1 flex flex-col items-center justify-center p-5 md:p-8 gap-6">
+        {gamePhase === "wheel" && (
+          <div className="flex flex-col items-center anim-pop">
+            <div className="relative" style={{ width: size, height: size + 26 }}>
+              {/* marquee glow ring */}
+              <div className="absolute inset-0 rounded-full" style={{
+                boxShadow: "0 0 0 10px rgba(244,185,66,0.10), 0 0 60px rgba(244,185,66,0.25)",
+              }}></div>
+
+              {/* bulbs around the rim */}
+              <svg className="absolute inset-0" width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+                {Array.from({ length: 24 }, (_, i) => {
+                  const p = polar((i * 360) / 24, radius + 8);
+                  return <circle key={i} cx={p.x} cy={p.y} r={3.4} fill="#F4B942" opacity={spinning ? (i % 2 === 0 ? 1 : 0.35) : 0.75} />;
+                })}
+              </svg>
+
+              {/* fixed pointer at the top, aligned with angle 0 */}
+              <div className="absolute left-1/2 -translate-x-1/2 z-20" style={{ top: -4 }}>
+                <svg width="36" height="40" viewBox="0 0 36 40">
+                  <polygon points="18,36 4,6 32,6" fill="#E4572E" stroke="#FFFBF2" strokeWidth="3" strokeLinejoin="round" />
+                  <circle cx="18" cy="6" r="6" fill="#FFFBF2" stroke="#E4572E" strokeWidth="2" />
+                </svg>
+              </div>
+
+              {/* rotating wheel */}
+              <svg
+                width={size} height={size} viewBox={`0 0 ${size} ${size}`}
+                className="absolute left-0"
+                style={{
+                  top: 26,
+                  transition: spinning ? "transform 4.2s cubic-bezier(0.12,0.67,0.1,1)" : "none",
+                  transform: `rotate(${rotation}deg)`,
+                }}
+              >
+                <circle cx={center} cy={center} r={radius + 6} fill="#FFFBF2" stroke="#1D2E4A" strokeWidth="3" />
+                {segments.map((segment, i) => {
+                  const startAngle = i * segmentAngle;
+                  const endAngle = (i + 1) * segmentAngle;
+                  const p1 = polar(startAngle, radius);
+                  const p2 = polar(endAngle, radius);
+                  const largeArc = endAngle - startAngle <= 180 ? "0" : "1";
+                  const labelPos = polar(startAngle + segmentAngle / 2, radius * 0.66);
+                  const isDone = answeredIds.includes(segment.id);
+                  return (
+                    <g key={segment.id}>
+                      <path
+                        d={`M ${center} ${center} L ${p1.x} ${p1.y} A ${radius} ${radius} 0 ${largeArc} 1 ${p2.x} ${p2.y} Z`}
+                        fill={segment.color}
+                        stroke="#FFFBF2"
+                        strokeWidth="3"
+                        opacity={isDone ? 0.28 : 1}
+                      />
+                      <text
+                        x={labelPos.x} y={labelPos.y}
+                        fill="#fff" fontSize="20" fontWeight="700" fontFamily="Fredoka, sans-serif"
+                        textAnchor="middle" dominantBaseline="middle"
+                        transform={`rotate(${startAngle + segmentAngle / 2}, ${labelPos.x}, ${labelPos.y})`}
+                        opacity={isDone ? 0.5 : 1}
+                      >
+                        {isDone ? "✓" : segment.name}
+                      </text>
+                    </g>
+                  );
+                })}
+                <circle cx={center} cy={center} r={radius * 0.22} fill="#1D2E4A" stroke="#F4B942" strokeWidth="4" />
+                <text x={center} y={center + 1} fill="#F4B942" fontSize="15" fontWeight="700" fontFamily="Fredoka, sans-serif" textAnchor="middle" dominantBaseline="middle">
+                  QUAY
+                </text>
+              </svg>
             </div>
+
             <button
               onClick={spinWheel}
-              disabled={spinning || answeredQuestions.length >= questions.length}
-              className="mt-6 bg-ticket text-white font-display font-semibold px-8 py-4 rounded-2xl shadow-lg hover:bg-opacity-90 transition disabled:opacity-50"
+              disabled={spinning || allDone}
+              className="mt-6 font-display font-semibold text-lg px-10 py-4 rounded-full bg-gradient-to-b from-gold to-[#E4572E] text-white shadow-[0_5px_0_rgba(0,0,0,0.35)] active:translate-y-1 active:shadow-[0_2px_0_rgba(0,0,0,0.35)] transition disabled:opacity-50 disabled:active:translate-y-0"
             >
-              {spinning ? 'ĐANG QUAY...' : answeredQuestions.length >= questions.length ? 'HOÀN THÀNH!' : 'QUAY NGAY!'}
+              {spinning ? "ĐANG QUAY... 🎡" : allDone ? "HOÀN THÀNH! 🎉" : "QUAY NGAY! 🎯"}
             </button>
-            <p className="mt-4 text-sm text-[#8A7C63]">
-              Đã trả lời: {answeredQuestions.length}/{questions.length} câu
+            <p className="mt-3 text-sm text-paper/70 font-mono">
+              Đã trả lời {answeredIds.length}/{segmentCount} câu · ⭐ {score} điểm
             </p>
-          </>
+          </div>
         )}
 
-        {gamePhase === 'question' && currentQuestion && (
-          <div className="w-full max-w-md anim-pop">
-            <div className="note-card p-6">
+        {gamePhase === "question" && currentQuestion && (
+          <div className="w-full max-w-lg anim-pop">
+            <div className="note-card p-6 sm:p-7 relative overflow-hidden">
+              <div className="absolute -right-6 -top-6 text-7xl opacity-10 rotate-12 select-none">🎡</div>
               <div className="flex justify-between items-center mb-4">
-                <span className="text-xs font-mono text-[#8A7C63]">Câu hỏi từ vòng quay</span>
-                <span className="text-sm font-mono text-ticket">⏱ {timeLeft}s</span>
+                <span className="inline-flex items-center gap-1.5 bg-gold/20 text-[#8a6a10] font-mono text-xs uppercase px-3 py-1 rounded-full">
+                  🎟️ {currentQuestion.name}
+                </span>
+                <span className={`font-mono text-sm font-semibold ${timeLeft <= 5 ? "text-ticket" : "text-ink/70"}`}>⏱ {timeLeft}s</span>
               </div>
-              <h2 className="font-display text-xl text-ink mb-6">{currentQuestion.content}</h2>
+              <h2 className="font-display text-xl sm:text-2xl text-ink mb-6 leading-snug">{currentQuestion.content}</h2>
               <div className="space-y-3">
                 {currentQuestion.options.map((option, i) => {
                   let stateCls = "border-ink/12 hover:border-ticket/50";
                   if (revealed) {
-                    if (option.id === currentQuestion.correctAnswer) {
-                      stateCls = "border-teal bg-teal/10";
-                    } else if (option.id === selectedAnswer) {
-                      stateCls = "border-ticket bg-ticket/10";
-                    } else {
-                      stateCls = "border-ink/10 opacity-50";
-                    }
-                  } else if (option.id === selectedAnswer) {
-                    stateCls = "border-ticket bg-ticket/10";
-                  }
+                    if (option.id === currentQuestion.correctAnswer) stateCls = "border-teal bg-teal/10";
+                    else if (option.id === selectedAnswer) stateCls = "border-ticket bg-ticket/10";
+                    else stateCls = "border-ink/10 opacity-50";
+                  } else if (option.id === selectedAnswer) stateCls = "border-ticket bg-ticket/10";
                   return (
-                    <button
-                      key={option.id}
-                      disabled={revealed}
-                      onClick={() => handleAnswer(option.id)}
-                      className={`w-full text-left px-4 py-3 rounded-xl border-2 transition font-body ${stateCls}`}
-                    >
-                      <span className="font-mono mr-2">{String.fromCharCode(65 + i)}.</span>
-                      {option.content}
-                      {revealed && option.id === currentQuestion.correctAnswer && <span className="ml-2">✅</span>}
-                      {revealed && option.id === selectedAnswer && option.id !== currentQuestion.correctAnswer && <span className="ml-2">❌</span>}
+                    <button key={option.id} disabled={revealed} onClick={() => handleAnswer(option.id)}
+                      className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                      <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono font-semibold flex-shrink-0">
+                        {String.fromCharCode(65 + i)}
+                      </span>
+                      <span className="flex-1">{option.content}</span>
+                      {revealed && option.id === currentQuestion.correctAnswer && <span>✅</span>}
+                      {revealed && option.id === selectedAnswer && option.id !== currentQuestion.correctAnswer && <span>❌</span>}
                     </button>
                   );
                 })}
               </div>
               {revealed && (
-                <p className={`text-center mt-4 font-display ${selectedAnswer === currentQuestion.correctAnswer ? "text-teal" : "text-ticket"}`}>
-                  {selectedAnswer === currentQuestion.correctAnswer ? "Chính xác! +" + (currentQuestion.points + Math.round((timeLeft / currentQuestion.timeLimit) * 40)) + " điểm" : "Chưa đúng!"}
+                <>
+                <p className={`text-center mt-5 font-display text-lg ${selectedAnswer === currentQuestion.correctAnswer ? "text-teal" : "text-ticket"}`}>
+                  {selectedAnswer === currentQuestion.correctAnswer
+                    ? `Chính xác! +${currentQuestion.points + Math.round((timeLeft / currentQuestion.timeLimit) * 40)} điểm 🎉`
+                    : selectedAnswer === null ? "Hết giờ rồi! ⏰" : "Chưa đúng, quay tiếp nhé!"}
                 </p>
+                <AnswerExplain q={currentQuestion} />
+                </>
               )}
             </div>
           </div>
@@ -2125,7 +2609,13 @@ function JoinGameScreen({ onFound }) {
           className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase" />
         {error && <p className="text-ticket text-sm mt-3">{error}</p>}
         <PrimaryButton type="submit" className="w-full mt-5" disabled={loading || !code.trim()}>{loading ? "Đang kiểm tra..." : "Tham gia →"}</PrimaryButton>
-        <p className="text-xs text-[#B7A987] mt-4 font-mono">Thử mã mẫu: TOAN101, VUTRU22, FAMILY07...</p>
+       <p className="text-xs text-[#B7A987] mt-4 font-mono leading-5">
+        Thử mã mẫu: TOAN101 (đua ốc sên), VUTRU22 (phi thuyền), TONGHOP9 (đập chuột),
+        FAMILY07 (xếp chữ), TRUNGTHU5 (đèn lồng), DIALY88 (bản đồ), CHUCAI3 (lật thẻ),
+        QUAYSO4 (vòng quay), ATGT202 (phi tiêu), DONGVAT6 (bóng bay),
+        LICHSU19 (thuyền buồm), MOITRUONG4 (phân loại), PHIEUL9 (phiêu lưu),
+        HAMNGUC3 (hầm ngục), NINJA77 (ninja vượt ải)
+      </p>
       </form>
     </div>
   );
@@ -2258,9 +2748,12 @@ function PlayGameScreen({ game, questions, onFinish }) {
           })}
         </div>
         {revealed && (
+          <>
           <p className={`text-center mt-5 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
             {selected === q.correctAnswer ? "Chính xác! 🎉" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng rồi 😅"}
           </p>
+          <AnswerExplain q={q} />
+          </>
         )}
       </div>
     </div>
@@ -2429,6 +2922,7 @@ function SnailRacePlayScreen({ game, questions, playerName, onFinish, onQuit }) 
                 );
               })}
             </div>
+            <AnswerExplain q={q} />
           </div>
           <div className="flex items-center gap-3 bg-gold/15 border border-gold/40 rounded-2xl px-5 py-3">
             <span className="text-xl">💡</span>
