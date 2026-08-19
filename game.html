@@ -2136,12 +2136,11 @@ function JoinGameScreen({ onFound }) {
           className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase" />
         {error && <p className="text-ticket text-sm mt-3">{error}</p>}
         <PrimaryButton type="submit" className="w-full mt-5" disabled={loading || !code.trim()}>{loading ? "Đang kiểm tra..." : "Tham gia →"}</PrimaryButton>
-        <p className="text-xs text-[#B7A987] mt-4 font-mono leading-5">
-          Thử mã mẫu: TONGHOP9 (đập chuột), VUTRU22 (phi thuyền), DONGVAT6 (bóng bay),
-          ATGT202 (phi tiêu), LICHSU19 (thuyền buồm), TRUNGTHU5 (đèn lồng),
-          DIALY88 (bản đồ), MOITRUONG4 (phân loại), FAMILY07 (xếp chữ), CHUCAI3 (lật thẻ),
-          QUAYSO4 (vòng quay may mắn).
-        </p>
+       <p className="text-xs text-[#B7A987] mt-4 font-mono leading-5">
+        Thử mã mẫu: TONGHOP9 (đập chuột), VUTRU22 (phi thuyền), DONGVAT6 (bóng bay),
+        ATGT202 (phi tiêu), LICHSU19 (thuyền buồm), TRUNGTHU5 (đèn lồng),
+        DIALY88 (bản đồ), MOITRUONG4 (phân loại), FAMILY07 (xếp chữ), CHUCAI3 (lật thẻ)
+      </p>
       </form>
     </div>
   );
