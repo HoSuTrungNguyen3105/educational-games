@@ -1,0 +1,78 @@
+import { Router } from "express";
+import * as gameService from "../services/gameService.js";
+
+const router = Router();
+
+// GET /api/games?query=&status=&subject=&category=&template=
+router.get("/", async (req, res, next) => {
+  try {
+    const games = await gameService.list(req.query);
+    res.json(games);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/games/code/:code
+router.get("/code/:code", async (req, res, next) => {
+  try {
+    const game = await gameService.getByCode(req.params.code);
+    if (!game) return res.status(404).json({ message: "Không tìm thấy trò chơi" });
+    res.json(game);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/games/:id
+router.get("/:id", async (req, res, next) => {
+  try {
+    const game = await gameService.get(req.params.id);
+    if (!game) return res.status(404).json({ message: "Không tìm thấy trò chơi" });
+    res.json(game);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/games
+router.post("/", async (req, res, next) => {
+  try {
+    const game = await gameService.create(req.body);
+    res.status(201).json(game);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// PUT /api/games/:id
+router.put("/:id", async (req, res, next) => {
+  try {
+    const game = await gameService.update(req.params.id, req.body);
+    res.json(game);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/games/:id/duplicate
+router.post("/:id/duplicate", async (req, res, next) => {
+  try {
+    const game = await gameService.duplicate(req.params.id);
+    res.status(201).json(game);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// DELETE /api/games/:id
+router.delete("/:id", async (req, res, next) => {
+  try {
+    await gameService.remove(req.params.id);
+    res.status(204).end();
+  } catch (e) {
+    next(e);
+  }
+});
+
+export default router;
