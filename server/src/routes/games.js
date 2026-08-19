@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as gameService from "../services/gameService.js";
+import { authenticate, requireRoles } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -36,7 +37,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // POST /api/games
-router.post("/", async (req, res, next) => {
+router.post("/", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const game = await gameService.create(req.body);
     res.status(201).json(game);
@@ -46,7 +47,7 @@ router.post("/", async (req, res, next) => {
 });
 
 // PUT /api/games/:id
-router.put("/:id", async (req, res, next) => {
+router.put("/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const game = await gameService.update(req.params.id, req.body);
     res.json(game);
@@ -56,7 +57,7 @@ router.put("/:id", async (req, res, next) => {
 });
 
 // POST /api/games/:id/duplicate
-router.post("/:id/duplicate", async (req, res, next) => {
+router.post("/:id/duplicate", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const game = await gameService.duplicate(req.params.id);
     res.status(201).json(game);
@@ -66,7 +67,7 @@ router.post("/:id/duplicate", async (req, res, next) => {
 });
 
 // DELETE /api/games/:id
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     await gameService.remove(req.params.id);
     res.status(204).end();

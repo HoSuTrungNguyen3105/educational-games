@@ -5,6 +5,8 @@ import gamesRouter from "./routes/games.js";
 import questionsRouter from "./routes/questions.js";
 import resultsRouter from "./routes/results.js";
 import setupRouter from "./routes/setup.js";
+import authRouter from "./routes/auth.js";
+import usersRouter from "./routes/users.js";
 
 const app = express();
 
@@ -15,6 +17,8 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() });
 });
 
+app.use("/api/auth", authRouter);
+app.use("/api/users", usersRouter);
 app.use("/api/games", gamesRouter);
 app.use("/api/questions", questionsRouter);
 app.use("/api/results", resultsRouter);

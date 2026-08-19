@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as questionService from "../services/questionService.js";
+import { authenticate, requireRoles } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ router.get("/game/:gameId", async (req, res, next) => {
 });
 
 // PUT /api/questions/game/:gameId  (thay thế toàn bộ câu hỏi của game)
-router.put("/game/:gameId", async (req, res, next) => {
+router.put("/game/:gameId", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     if (!Array.isArray(req.body)) {
       return res.status(400).json({ message: "Body phải là mảng câu hỏi" });

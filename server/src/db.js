@@ -130,11 +130,14 @@ export async function initDatabase() {
     } },
     users: { $jsonSchema: {
       bsonType: "object",
-      required: ["id", "name", "role"],
+      required: ["id", "username", "name", "role", "passwordHash"],
       properties: {
         id: { bsonType: "string" },
+        username: { bsonType: "string" },
         name: { bsonType: "string" },
         role: { enum: ["teacher", "student", "admin"] },
+        passwordHash: { bsonType: "string" },
+        createdAt: { bsonType: "string" },
       },
     } },
     categories: { $jsonSchema: {
@@ -173,6 +176,7 @@ export async function initDatabase() {
     ["results", { gameId: 1 }],
     ["results", { gameId: 1, score: -1 }],
     ["users", { id: 1 }, { unique: true }],
+    ["users", { username: 1 }, { unique: true }],
     ["users", { name: 1 }],
   ];
   const createdIndexes = [];
@@ -193,7 +197,6 @@ export async function initDatabase() {
     questions: seedData.questions,
     players: seedData.players,
     results: seedData.results,
-    users: seedData.users,
   };
 
   for (const [col, getter] of Object.entries(seedMap)) {
@@ -203,6 +206,23 @@ export async function initDatabase() {
       const docs = getter();
       await coll.insertMany(docs, { ordered: false });
       seeded.push(`${col} (${docs.length})`);
+    }
+  }
+
+  // Users: upsert theo id (khóa logic), băm password nếu chưa có passwordHash
+  const bcrypt = (await import("bcryptjs")).default;
+  const usersColl = database.collection("users");
+  await usersColl.deleteMany({ username: { $exists: false } }); // dọn bản cũ không có username
+  for (const u of seedData.users()) {
+    const { password, ...rest } = u;
+    const existing = await usersColl.findOne({ id: u.id });
+    if (!existing || !existing.passwordHash) {
+      await usersColl.updateOne(
+        { id: u.id },
+        { $set: { ...rest, passwordHash: bcrypt.hashSync(password || "123456", 10), createdAt: existing?.createdAt || new Date().toISOString() } },
+        { upsert: true }
+      );
+      seeded.push(`users (${u.username})`);
     }
   }
 
