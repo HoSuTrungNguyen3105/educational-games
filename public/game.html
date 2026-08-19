@@ -360,7 +360,24 @@ const API_BASE = window.API_BASE_URL || "https://educational-games-lp4z.onrender
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
 const AUTH_KEY = "edu_games_auth";
-function loadAuth() { try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (_) { return null; } }
+function loadAuth() {
+  try {
+    const auth = JSON.parse(localStorage.getItem(AUTH_KEY));
+    if (auth && auth.token) {
+      const parts = String(auth.token).split(".");
+      if (parts.length === 3) {
+        try {
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+          if (payload && typeof payload.exp === "number" && Date.now() / 1000 > payload.exp) {
+            localStorage.removeItem(AUTH_KEY);
+            return null;
+          }
+        } catch (_) { /* token không decode được */ }
+      }
+    }
+    return auth || null;
+  } catch (_) { return null; }
+}
 function saveAuth(auth) { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); }
 function clearAuth() { localStorage.removeItem(AUTH_KEY); }
 
