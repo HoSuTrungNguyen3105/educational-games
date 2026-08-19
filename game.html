@@ -1179,6 +1179,17 @@ function StudentApp({ onExit, showToast, toast }) {
 
   const restart = () => { setScreen("join"); setGame(null); setQuestions([]); setPlayerName(""); setFinalResult(null); setLeaderboard(null); };
 
+  const handleFinish = async (sessionResult) => {
+    const entry = await resultService.submit({
+      gameId: game.id, playerId: uid("player"), playerName,
+      score: sessionResult.score, correctAnswers: sessionResult.correct,
+      totalQuestions: questions.length, accuracy: Math.round((sessionResult.correct / questions.length) * 100),
+      completionTime: sessionResult.timeUsed,
+    });
+    setFinalResult(entry);
+    setScreen("result");
+  };
+
   return (
     <div className="min-h-screen bg-paper flex flex-col">
       <StudentTopBar onExit={onExit} />
@@ -1190,45 +1201,7 @@ function StudentApp({ onExit, showToast, toast }) {
             onStart={async () => { const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play"); }} />
         )}
         {screen === "play" && game && questions.length > 0 && (
-          game.template === "snail-race" ? (
-            <SnailRacePlayScreen game={game} questions={questions} playerName={playerName}
-              onQuit={restart}
-              onFinish={async (sessionResult) => {
-                const entry = await resultService.submit({
-                  gameId: game.id, playerId: uid("player"), playerName,
-                  score: sessionResult.score, correctAnswers: sessionResult.correct,
-                  totalQuestions: questions.length, accuracy: Math.round((sessionResult.correct / questions.length) * 100),
-                  completionTime: sessionResult.timeUsed,
-                });
-                setFinalResult(entry);
-                setScreen("result");
-              }} />
-          ) : game.template === "lucky-wheel" ? (
-            <LuckyWheelPlayScreen game={game} questions={questions} playerName={playerName}
-              onQuit={restart}
-              onFinish={async (sessionResult) => {
-                const entry = await resultService.submit({
-                  gameId: game.id, playerId: uid("player"), playerName,
-                  score: sessionResult.score, correctAnswers: sessionResult.correct,
-                  totalQuestions: questions.length, accuracy: Math.round((sessionResult.correct / questions.length) * 100),
-                  completionTime: sessionResult.timeUsed,
-                });
-                setFinalResult(entry);
-                setScreen("result");
-              }} />
-          ) : (
-            <PlayGameScreen game={game} questions={questions}
-              onFinish={async (sessionResult) => {
-                const entry = await resultService.submit({
-                  gameId: game.id, playerId: uid("player"), playerName,
-                  score: sessionResult.score, correctAnswers: sessionResult.correct,
-                  totalQuestions: questions.length, accuracy: Math.round((sessionResult.correct / questions.length) * 100),
-                  completionTime: sessionResult.timeUsed,
-                });
-                setFinalResult(entry);
-                setScreen("result");
-              }} />
-          )
+          <GamePlayRouter game={game} questions={questions} playerName={playerName} onQuit={restart} onFinish={handleFinish} />
         )}
         {screen === "result" && finalResult && (
           <ResultScreen result={finalResult} onSeeLeaderboard={async () => { const r = await resultService.listByGame(game.id); setLeaderboard(r); setScreen("leaderboard"); }} />
@@ -1245,6 +1218,646 @@ function StudentTopBar({ onExit }) {
     <div className="flex items-center justify-between px-5 md:px-8 py-4">
       <div className="flex items-center gap-2"><span className="text-xl">🎪</span><span className="font-display text-ink">Lớp Học Vui</span></div>
       <button onClick={onExit} className="text-sm text-[#8A7C63] hover:text-ink">Thoát</button>
+    </div>
+  );
+}
+
+/* Router picks the right dedicated play screen per template so every game feels distinct */
+function GamePlayRouter({ game, questions, playerName, onFinish, onQuit }) {
+  switch (game.template) {
+    case "snail-race": return <SnailRacePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "lucky-wheel": return <LuckyWheelPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "whack-a-mole": return <WhackAMolePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "space-ship": return <SpaceShipPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "balloon-pop": return <BalloonPopPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "dart-throw": return <DartThrowPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "sailing-boat": return <SailingBoatPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "moon-lantern": return <MoonLanternPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "treasure-map": return <TreasureMapPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "sorting-game": return <SortingGamePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "word-scramble": return <WordScramblePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "memory-match": return <MemoryMatchPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    default: return <PlayGameScreen game={game} questions={questions} onFinish={onFinish} />;
+  }
+}
+
+/* Reusable header bar for gameplay screens, styled per template */
+function PlayHeader({ icon, title, accent, code, progressLabel, timeLeft, timeColor, score, onQuit, extra }) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-5 md:px-8 py-3 bg-white border-b border-ink/10 flex-wrap">
+      <div className="flex items-center gap-3">
+        <span className="text-3xl">{icon}</span>
+        <h1 className="font-display text-xl" style={{ color: accent }}>{title}</h1>
+      </div>
+      <div className="flex items-center gap-5 text-sm text-ink/70 font-body flex-wrap">
+        {code && <span>Phòng: <b className="text-ink font-mono">{code}</b></span>}
+        {progressLabel && <span>📋 {progressLabel}</span>}
+        {timeLeft !== undefined && <span style={{ color: timeColor }}>⏱ {timeLeft}s</span>}
+        {score !== undefined && <span>⭐ Điểm: {score}</span>}
+        {extra}
+      </div>
+      <button onClick={onQuit} className="font-display text-sm border rounded-2xl px-4 py-2 hover:opacity-80 transition" style={{ color: accent, borderColor: accent + "66" }}>Thoát</button>
+    </div>
+  );
+}
+
+/* Generic timed-answer hook shared by several play screens */
+function useTimedQuestion(questions, onFinish) {
+  const [idx, setIdx] = useState(0);
+  const q = questions[idx];
+  const [timeLeft, setTimeLeft] = useState(q.timeLimit);
+  const [selected, setSelected] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+  const [score, setScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => { setTimeLeft(q.timeLimit); setSelected(null); setRevealed(false); }, [idx]);
+
+  useEffect(() => {
+    if (revealed) return;
+    if (timeLeft <= 0) { handleAnswer(null); return; }
+    const t = setTimeout(() => setTimeLeft(s => s - 1), 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line
+  }, [timeLeft, revealed]);
+
+  function handleAnswer(optionId) {
+    if (revealed) return;
+    const isCorrect = optionId === q.correctAnswer;
+    const earned = isCorrect ? q.points + Math.round((timeLeft / q.timeLimit) * 40) : 0;
+    setSelected(optionId);
+    setRevealed(true);
+    const nextScore = score + earned;
+    const nextCorrect = correctCount + (isCorrect ? 1 : 0);
+    setScore(nextScore);
+    setCorrectCount(nextCorrect);
+    setTimeout(() => {
+      if (idx + 1 < questions.length) { setIdx(i => i + 1); }
+      else {
+        const timeUsed = Math.round((Date.now() - startRef.current) / 1000);
+        onFinish({ score: nextScore, correct: nextCorrect, timeUsed });
+      }
+    }, 1300);
+    return isCorrect;
+  }
+
+  return { idx, q, timeLeft, selected, revealed, score, handleAnswer, total: questions.length };
+}
+
+/* ---------------------- WHACK-A-MOLE ---------------------- */
+
+function WhackAMolePlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const moleHoles = useMemo(() => Array.from({ length: 6 }, (_, i) => i), []);
+  const answerHoles = useMemo(() => {
+    const holes = [...moleHoles].sort(() => Math.random() - 0.5).slice(0, q.options.length);
+    return q.options.map((o, i) => ({ ...o, hole: holes[i] }));
+  }, [q.id]);
+
+  return (
+    <div className="flex-1 flex flex-col bg-paper">
+      <PlayHeader icon="🔨" title="ĐẬP CHUỘT NHANH TAY" accent="#F4B942" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center justify-center p-5 md:p-8">
+        <div className="note-card p-5 max-w-xl w-full mb-6 text-center">
+          <span className="text-xs font-mono text-[#8A7C63] uppercase">Đập vào con chuột có đáp án đúng!</span>
+          <h2 className="font-display text-xl sm:text-2xl text-ink mt-2">{q.content}</h2>
+        </div>
+        <div className="grid grid-cols-3 gap-4 sm:gap-6 max-w-xl w-full">
+          {moleHoles.map(hole => {
+            const opt = answerHoles.find(a => a.hole === hole);
+            let stateCls = "";
+            if (revealed && opt) {
+              stateCls = opt.id === q.correctAnswer ? "ring-4 ring-teal scale-105" : opt.id === selected ? "ring-4 ring-ticket opacity-60" : "opacity-40";
+            } else if (opt && opt.id === selected) stateCls = "ring-4 ring-ticket";
+            return (
+              <button key={hole} disabled={!opt || revealed} onClick={() => opt && handleAnswer(opt.id)}
+                className={`relative aspect-square rounded-[40%] bg-gradient-to-b from-[#8B6339] to-[#5C4023] flex items-center justify-center overflow-hidden shadow-[0_4px_0_rgba(0,0,0,0.25)] transition ${stateCls}`}>
+                <div className="absolute inset-x-2 bottom-0 h-3 bg-black/30 rounded-t-full"></div>
+                {opt ? (
+                  <div className={`relative z-10 flex flex-col items-center justify-center px-2 py-3 anim-pop`}>
+                    <span className="text-3xl mb-1">🐹</span>
+                    <span className="font-body text-[11px] sm:text-xs text-white text-center bg-black/40 rounded-lg px-2 py-1 leading-tight">{opt.content}</span>
+                    {revealed && opt.id === q.correctAnswer && <span className="absolute -top-2 -right-2 text-lg">✅</span>}
+                    {revealed && opt.id === selected && opt.id !== q.correctAnswer && <span className="absolute -top-2 -right-2 text-lg">❌</span>}
+                  </div>
+                ) : <span className="text-2xl opacity-30">🕳️</span>}
+              </button>
+            );
+          })}
+        </div>
+        {revealed && (
+          <p className={`text-center mt-6 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+            {selected === q.correctAnswer ? "Đập trúng rồi! 🎉" : selected === null ? "Hết giờ! ⏰" : "Trật rồi 😅"}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- SPACE SHIP ---------------------- */
+
+function SpaceShipPlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const progress = ((idx + (revealed ? 1 : 0)) / total) * 88;
+  const stars = useMemo(() => Array.from({ length: 40 }, () => ({ x: Math.random() * 100, y: Math.random() * 100, s: Math.random() * 2 + 0.5, o: Math.random() * 0.6 + 0.3 })), []);
+
+  return (
+    <div className="flex-1 flex flex-col bg-[#0B1330]">
+      <PlayHeader icon="🚀" title="PHI THUYỀN VŨ TRỤ" accent="#7CE0FF" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 grid lg:grid-cols-[1.3fr_1fr] gap-5 p-5 md:p-8">
+        <div className="relative rounded-3xl overflow-hidden border border-white/10" style={{ background: "radial-gradient(120% 160% at 20% 0%, #1B2A5E 0%, #0B1330 60%)" }}>
+          {stars.map((s, i) => <div key={i} className="absolute rounded-full bg-white" style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.s, height: s.s, opacity: s.o }}></div>)}
+          <div className="absolute right-6 top-6 text-4xl">🪐</div>
+          <div className="absolute left-8 bottom-10 text-2xl opacity-70">🌕</div>
+          <div className="absolute bottom-10 transition-all duration-700 ease-out" style={{ left: `calc(6% + ${progress}%)` }}>
+            <div className="text-5xl -rotate-45 float-slow">🚀</div>
+          </div>
+          <div className="absolute left-6 right-6 bottom-4 h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full rounded-full bg-gradient-to-r from-[#7CE0FF] to-[#F4B942] transition-all duration-700" style={{ width: `${progress + 6}%` }}></div>
+          </div>
+          <div className="absolute top-6 left-6 text-white/70 font-mono text-xs">Hành trình: {Math.round(progress)}%</div>
+        </div>
+
+        <div className="note-card p-6 flex flex-col">
+          <span className="inline-flex items-center gap-2 self-start bg-[#7CE0FF]/20 text-[#0B1330] font-display text-xs font-semibold uppercase px-4 py-2 rounded-full mb-4">
+            🛰️ Nhiệm vụ khoa học
+          </span>
+          <p className="font-display text-lg sm:text-xl text-ink mb-6">{q.content}</p>
+          <div className="space-y-3 mt-auto">
+            {q.options.map((o, i) => {
+              let stateCls = "border-ink/12 hover:border-[#1B2A5E]/40";
+              if (revealed) {
+                if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                else stateCls = "border-ink/10 opacity-50";
+              } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+              return (
+                <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                  className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                  <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                  <span className="flex-1">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>🌟</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+              {selected === q.correctAnswer ? "Đẩy phi thuyền bay xa hơn! 🚀" : "Phi thuyền khựng lại một chút..."}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- BALLOON POP ---------------------- */
+
+function BalloonPopPlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const colors = ["#FF6F91", "#7CC6FF", "#F4B942", "#4CAF7D", "#B58AFF"];
+
+  return (
+    <div className="flex-1 flex flex-col bg-gradient-to-b from-[#DDF3FF] to-paper">
+      <PlayHeader icon="🎈" title="BÓNG BAY TRI THỨC" accent="#1B998B" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center justify-center p-5 md:p-8">
+        <div className="note-card p-5 max-w-xl w-full mb-8 text-center">
+          <span className="text-xs font-mono text-[#8A7C63] uppercase">Chọn bóng bay có đáp án đúng để thổi bay lên trời</span>
+          <h2 className="font-display text-xl sm:text-2xl text-ink mt-2">{q.content}</h2>
+        </div>
+        <div className="flex flex-wrap justify-center gap-6 sm:gap-10 max-w-2xl">
+          {q.options.map((o, i) => {
+            const popped = revealed && (o.id === selected || o.id === q.correctAnswer);
+            let ring = colors[i % colors.length];
+            let extraCls = "";
+            if (revealed) {
+              if (o.id === q.correctAnswer) extraCls = "translate-y-[-40px] opacity-0";
+              else if (o.id === selected) extraCls = "scale-75 opacity-30";
+              else extraCls = "opacity-40";
+            }
+            return (
+              <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                className={`flex flex-col items-center transition-all duration-700 ${extraCls}`}>
+                <div className="relative float-slow" style={{ animationDelay: `${i * 0.3}s` }}>
+                  <svg width="88" height="106" viewBox="0 0 88 106">
+                    <ellipse cx="44" cy="44" rx="40" ry="44" fill={ring} opacity="0.9" />
+                    <ellipse cx="30" cy="28" rx="10" ry="14" fill="white" opacity="0.35" />
+                    <polygon points="40,86 48,86 44,98" fill={ring} />
+                    <line x1="44" y1="98" x2="44" y2="106" stroke="#8A7C63" strokeWidth="1.5" />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center font-body text-white text-xs sm:text-sm font-semibold text-center px-4 leading-tight">{o.content}</span>
+                </div>
+                {revealed && o.id === q.correctAnswer && <span className="mt-2 text-xl">✅</span>}
+                {revealed && o.id === selected && o.id !== q.correctAnswer && <span className="mt-2 text-xl">❌</span>}
+              </button>
+            );
+          })}
+        </div>
+        {revealed && (
+          <p className={`text-center mt-6 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+            {selected === q.correctAnswer ? "Bóng bay lên trời rồi! 🎈" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng, thử câu sau nhé!"}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- DART THROW ---------------------- */
+
+function DartThrowPlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+
+  return (
+    <div className="flex-1 flex flex-col bg-paper">
+      <PlayHeader icon="🎯" title="NÉM PHI TIÊU TRÚNG ĐÍCH" accent="#E4572E" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 grid lg:grid-cols-[1fr_1.2fr] gap-5 p-5 md:p-8 items-center">
+        <div className="flex items-center justify-center">
+          <svg width="260" height="260" viewBox="0 0 260 260" className="drop-shadow-[0_6px_0_rgba(0,0,0,0.08)]">
+            <circle cx="130" cy="130" r="126" fill="#E4572E" />
+            <circle cx="130" cy="130" r="98" fill="#FFFBF2" />
+            <circle cx="130" cy="130" r="70" fill="#E4572E" />
+            <circle cx="130" cy="130" r="42" fill="#FFFBF2" />
+            <circle cx="130" cy="130" r="16" fill="#F4B942" />
+            {revealed && (
+              <text x="130" y="140" textAnchor="middle" fontSize="30">{selected === q.correctAnswer ? "🎯" : "💨"}</text>
+            )}
+          </svg>
+        </div>
+        <div className="note-card p-6">
+          <p className="font-display text-lg sm:text-xl text-ink mb-6 text-center">{q.content}</p>
+          <div className="grid gap-3">
+            {q.options.map((o, i) => {
+              let stateCls = "border-ink/12 hover:border-ticket/40";
+              if (revealed) {
+                if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                else stateCls = "border-ink/10 opacity-50";
+              } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+              return (
+                <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                  className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                  <span className="text-lg">🎯</span>
+                  <span className="flex-1">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>✓</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+              {selected === q.correctAnswer ? "Trúng hồng tâm! 🎯" : "Lệch mục tiêu rồi!"}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- SAILING BOAT (team-style progress) ---------------------- */
+
+function SailingBoatPlayScreen({ game, questions, playerName, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const progress = ((idx + (revealed ? 1 : 0)) / total) * 85;
+  const opponentNames = mockPlayersPool.slice(0, 3).map(p => p.name.split(" ").slice(-1)[0]);
+
+  return (
+    <div className="flex-1 flex flex-col bg-gradient-to-b from-[#CFEFFA] to-[#8FD3EE]">
+      <PlayHeader icon="⛵" title="THUYỀN BUỒM RA KHƠI" accent="#0E5C73" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col gap-5 p-5 md:p-8">
+        <div className="relative rounded-3xl overflow-hidden border border-white/40 h-40 sm:h-48" style={{ background: "linear-gradient(180deg, #BEE7F5 0%, #4FA6C4 100%)" }}>
+          <div className="absolute inset-x-0 bottom-0 h-2/3" style={{ background: "repeating-linear-gradient(90deg, rgba(255,255,255,0.25) 0 2px, transparent 2px 26px)" }}></div>
+          <div className="absolute bottom-4 text-5xl transition-all duration-700" style={{ left: `calc(4% + ${progress}%)` }}>⛵</div>
+          <div className="absolute right-6 bottom-4 text-3xl">🏝️</div>
+          <div className="absolute top-4 left-6 text-white font-mono text-xs bg-black/20 rounded-full px-3 py-1">Đã đi: {Math.round(progress)}%</div>
+        </div>
+        <div className="grid lg:grid-cols-[1fr_1fr] gap-5 flex-1">
+          <div className="note-card p-6">
+            <p className="font-display text-lg sm:text-xl text-ink mb-6">{q.content}</p>
+            <div className="grid gap-3">
+              {q.options.map((o, i) => {
+                let stateCls = "border-ink/12 hover:border-[#0E5C73]/40";
+                if (revealed) {
+                  if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                  else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                  else stateCls = "border-ink/10 opacity-50";
+                } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+                return (
+                  <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                    className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                    <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                    <span className="flex-1">{o.content}</span>
+                    {revealed && o.id === q.correctAnswer && <span>⛵</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="note-card p-6 flex flex-col">
+            <span className="text-xs font-mono text-[#8A7C63] uppercase mb-3">Cả đội đang chèo</span>
+            <div className="space-y-3">
+              {[playerName || "Bạn", ...opponentNames].map((n, i) => (
+                <div key={n} className="flex items-center gap-3">
+                  <span className="text-lg">⛵</span>
+                  <span className="text-sm font-body text-ink flex-1">{n}{i === 0 && <span className="text-[#0E5C73] font-semibold"> (bạn)</span>}</span>
+                  <div className="w-24 h-2 bg-ink/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#0E5C73] transition-all duration-700" style={{ width: `${i === 0 ? progress : Math.min(90, progress * (0.5 + Math.random() * 0.7))}%` }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {revealed && (
+              <p className={`text-center mt-auto pt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+                {selected === q.correctAnswer ? "Thuyền lướt nhanh về phía trước! ⛵" : "Sóng cản một chút, cố lên!"}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- MOON LANTERN (seasonal) ---------------------- */
+
+function MoonLanternPlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const litCount = Math.min(total, questions.filter((qq, i) => i < idx || (i === idx && revealed && selected === q.correctAnswer)).length);
+
+  return (
+    <div className="flex-1 flex flex-col" style={{ background: "radial-gradient(120% 140% at 50% 0%, #2A2359 0%, #150F33 60%)" }}>
+      <PlayHeader icon="🏮" title="RƯỚC ĐÈN TRUNG THU" accent="#F4B942" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center p-5 md:p-8">
+        <div className="text-5xl mb-1">🌕</div>
+        <div className="flex gap-3 mb-8">
+          {questions.map((qq, i) => (
+            <span key={qq.id} className={`text-2xl transition-opacity ${i < litCount ? "opacity-100" : "opacity-25"}`}>🏮</span>
+          ))}
+        </div>
+        <div className="note-card p-6 max-w-lg w-full">
+          <p className="font-display text-lg sm:text-xl text-ink mb-6 text-center">{q.content}</p>
+          <div className="grid gap-3">
+            {q.options.map((o, i) => {
+              let stateCls = "border-ink/12 hover:border-gold/60";
+              if (revealed) {
+                if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                else stateCls = "border-ink/10 opacity-50";
+              } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+              return (
+                <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                  className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                  <span className="text-lg">🏮</span>
+                  <span className="flex-1">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>✓</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+              {selected === q.correctAnswer ? "Thắp sáng thêm một chiếc đèn! 🏮" : "Đèn chưa sáng, cố lên nào!"}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- TREASURE MAP ---------------------- */
+
+function TreasureMapPlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const stopIcons = ["🏕️", "🌴", "⛰️", "🏜️", "🗿", "💎"];
+
+  return (
+    <div className="flex-1 flex flex-col bg-[#F3E4C1]">
+      <PlayHeader icon="🗺️" title="BẢN ĐỒ KHO BÁU" accent="#8a6a10" code={game.code}
+        progressLabel={`Chặng: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center p-5 md:p-8">
+        <div className="flex items-center gap-2 sm:gap-4 mb-8 overflow-x-auto max-w-full px-2">
+          {questions.map((qq, i) => (
+            <React.Fragment key={qq.id}>
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl border-2 flex-shrink-0
+                ${i < idx || (i === idx && revealed && selected === q.correctAnswer) ? "bg-gold border-gold" : i === idx ? "bg-white border-ticket" : "bg-white/60 border-[#c8b183]"}`}>
+                {i === total - 1 ? "💎" : stopIcons[i % stopIcons.length]}
+              </div>
+              {i < questions.length - 1 && <div className="w-6 sm:w-10 h-1 rounded-full bg-[#c8b183] flex-shrink-0"></div>}
+            </React.Fragment>
+          ))}
+        </div>
+        <div className="note-card p-6 max-w-lg w-full border-2 border-dashed border-[#c8b183]">
+          <span className="text-xs font-mono text-[#8A7C63] uppercase">Giải đố để mở khóa chặng tiếp theo</span>
+          <p className="font-display text-lg sm:text-xl text-ink mt-2 mb-6">{q.content}</p>
+          <div className="grid gap-3">
+            {q.options.map((o, i) => {
+              let stateCls = "border-ink/12 hover:border-[#8a6a10]/40";
+              if (revealed) {
+                if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                else stateCls = "border-ink/10 opacity-50";
+              } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+              return (
+                <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                  className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                  <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                  <span className="flex-1">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>🔓</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+              {selected === q.correctAnswer ? "Mở khóa chặng tiếp theo! 🗝️" : "Ổ khóa chưa mở, thử chặng sau nhé!"}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- SORTING GAME ---------------------- */
+
+function SortingGamePlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const binColors = ["#4CAF7D", "#F4B942", "#7CC6FF", "#B58AFF"];
+
+  return (
+    <div className="flex-1 flex flex-col bg-paper">
+      <PlayHeader icon="🗂️" title="PHÂN LOẠI ĐÚNG CHỖ" accent="#1B998B" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center p-5 md:p-8">
+        <div className="note-card p-5 max-w-xl w-full mb-8 text-center">
+          <span className="text-xs font-mono text-[#8A7C63] uppercase">Đưa thẻ vào đúng ngăn phân loại</span>
+          <h2 className="font-display text-xl sm:text-2xl text-ink mt-2">{q.content}</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 max-w-3xl w-full">
+          {q.options.map((o, i) => {
+            let stateCls = "border-ink/12 hover:-translate-y-1";
+            if (revealed) {
+              if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10 -translate-y-1";
+              else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+              else stateCls = "border-ink/10 opacity-40";
+            } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+            const c = binColors[i % binColors.length];
+            return (
+              <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 bg-white transition ${stateCls}`}>
+                <div className="w-14 h-12 rounded-b-xl rounded-t-sm flex items-center justify-center text-2xl" style={{ background: c + "33", border: `2px solid ${c}` }}>🗃️</div>
+                <span className="font-body text-sm text-center text-ink">{o.content}</span>
+                {revealed && o.id === q.correctAnswer && <span>✅</span>}
+                {revealed && o.id === selected && o.id !== q.correctAnswer && <span>❌</span>}
+              </button>
+            );
+          })}
+        </div>
+        {revealed && (
+          <p className={`text-center mt-6 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+            {selected === q.correctAnswer ? "Đúng ngăn rồi! 🗂️" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng ngăn, thử lại ở câu sau!"}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- WORD SCRAMBLE ---------------------- */
+
+function WordScramblePlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const correctOption = q.options.find(o => o.id === q.correctAnswer);
+  const scrambledLetters = useMemo(() => {
+    const letters = (correctOption ? correctOption.content : "").replace(/\s/g, "").split("");
+    return letters.map((ch, i) => ({ ch, id: i })).sort(() => Math.random() - 0.5);
+  }, [q.id]);
+
+  return (
+    <div className="flex-1 flex flex-col bg-paper">
+      <PlayHeader icon="🔤" title="XẾP CHỮ KỲ DIỆU" accent="#FF6F91" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center justify-center p-5 md:p-8">
+        <div className="note-card p-6 max-w-xl w-full text-center mb-6">
+          <span className="text-xs font-mono text-[#8A7C63] uppercase">Gợi ý</span>
+          <h2 className="font-display text-lg sm:text-xl text-ink mt-2 mb-5">{q.content}</h2>
+          <div className="flex flex-wrap justify-center gap-2 mb-2">
+            {scrambledLetters.map(l => (
+              <span key={l.id} className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-pink/15 border-2 border-pink/40 flex items-center justify-center font-display text-lg text-ink uppercase">{l.ch}</span>
+            ))}
+          </div>
+          <p className="text-xs text-[#B7A987] mt-2 font-mono">Sắp xếp những chữ cái trên thành đáp án đúng bên dưới</p>
+        </div>
+        <div className="grid gap-3 max-w-xl w-full">
+          {q.options.map((o, i) => {
+            let stateCls = "border-ink/12 hover:border-pink/50";
+            if (revealed) {
+              if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+              else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+              else stateCls = "border-ink/10 opacity-50";
+            } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+            return (
+              <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                <span className="flex-1 uppercase tracking-wide">{o.content}</span>
+                {revealed && o.id === q.correctAnswer && <span>✓</span>}
+              </button>
+            );
+          })}
+        </div>
+        {revealed && (
+          <p className={`text-center mt-6 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+            {selected === q.correctAnswer ? "Xếp đúng chữ rồi! 🔤" : "Chưa đúng thứ tự, thử câu sau nhé!"}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- MEMORY MATCH ---------------------- */
+
+function MemoryMatchPlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const [flipped, setFlipped] = useState({});
+  useEffect(() => { setFlipped({}); }, [q.id]);
+
+  const flip = (optId) => {
+    if (revealed) return;
+    setFlipped(f => ({ ...f, [optId]: true }));
+    setTimeout(() => handleAnswer(optId), 350);
+  };
+
+  return (
+    <div className="flex-1 flex flex-col bg-paper">
+      <PlayHeader icon="🃏" title="LẬT THẺ TRÍ NHỚ" accent="#FF6F91" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center justify-center p-5 md:p-8">
+        <div className="note-card p-5 max-w-xl w-full mb-8 text-center">
+          <span className="text-xs font-mono text-[#8A7C63] uppercase">Lật thẻ có đáp án đúng</span>
+          <h2 className="font-display text-xl sm:text-2xl text-ink mt-2">{q.content}</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 max-w-xl w-full" style={{ perspective: 800 }}>
+          {q.options.map((o) => {
+            const isFlipped = !!flipped[o.id] || revealed;
+            let borderCls = "border-ink/15";
+            if (revealed) {
+              if (o.id === q.correctAnswer) borderCls = "border-teal";
+              else if (o.id === selected) borderCls = "border-ticket";
+            }
+            return (
+              <button key={o.id} disabled={revealed} onClick={() => flip(o.id)}
+                className="relative h-28 sm:h-32" style={{ transformStyle: "preserve-3d", transition: "transform .5s", transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)" }}>
+                <div className={`absolute inset-0 rounded-2xl border-2 flex items-center justify-center bg-gradient-to-br from-pink/20 to-gold/20 ${borderCls}`} style={{ backfaceVisibility: "hidden" }}>
+                  <span className="text-4xl">❓</span>
+                </div>
+                <div className={`absolute inset-0 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 bg-white px-2 ${borderCls}`} style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
+                  <span className="font-body text-sm text-ink text-center leading-tight">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>✅</span>}
+                  {revealed && o.id === selected && o.id !== q.correctAnswer && <span>❌</span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {revealed && (
+          <p className={`text-center mt-6 font-display text-lg ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+            {selected === q.correctAnswer ? "Lật đúng thẻ rồi! 🃏" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng, thử câu sau nhé!"}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
