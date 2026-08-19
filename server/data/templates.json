@@ -133,5 +133,14 @@
     "categoryLabel": "Phản xạ",
     "icon": "🥷",
     "ring": "#1D2E4A"
+  },
+  {
+    "id": "custom",
+    "name": "Tự Thiết Kế",
+    "description": "Dùng Game Builder kéo-thả để thiết kế giao diện trò chơi của riêng bạn",
+    "category": "design",
+    "categoryLabel": "Tự thiết kế",
+    "icon": "🎨",
+    "ring": "#FF6F91"
   }
 ]

@@ -2,9 +2,13 @@ import PlayGameScreen from './PlayGameScreen.jsx'
 import SnailRacePlayScreen from './SnailRace.jsx'
 import LuckyWheelPlayScreen from './LuckyWheel.jsx'
 import DungeonQuestPlayScreen from './DungeonQuest.jsx'
+import CustomDesignPlayScreen from './CustomDesignPlayScreen.jsx'
 import { WhackAMolePlayScreen, SpaceShipPlayScreen, BalloonPopPlayScreen, DartThrowPlayScreen, SailingBoatPlayScreen, MoonLanternPlayScreen, TreasureMapPlayScreen, SortingGamePlayScreen, WordScramblePlayScreen, MemoryMatchPlayScreen, HeroAdventurePlayScreen, NinjaDashPlayScreen } from './TimedGames.jsx'
 
 export function GamePlayRouter({ game, questions, playerName, onFinish, onQuit }) {
+  if (game.design && game.design.elements && game.design.elements.length > 0) {
+    return <CustomDesignPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+  }
   switch (game.template) {
     case "snail-race": return <SnailRacePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
     case "lucky-wheel": return <LuckyWheelPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;

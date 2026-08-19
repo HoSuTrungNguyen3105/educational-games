@@ -3,7 +3,7 @@ import { gameService } from '../../services/api.js'
 import { mockGameTemplates } from '../../data/mockData.js'
 import { StampToken, StatusBadge, IconButton, Loader, ErrorState, EmptyState, PrimaryButton } from '../../components/ui.jsx'
 
-export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onShare, onLive }) {
+export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onDesign }) {
   const tpl = mockGameTemplates.find(t => t.id === game.template);
   return (
     <div className="note-card p-5 flex flex-col gap-3 anim-pop hover:-translate-y-0.5 transition shadow-[0_2px_0_rgba(0,0,0,0.06)]">
@@ -22,6 +22,7 @@ export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onSha
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-2">
           <IconButton title="Chỉnh sửa" onClick={onEdit}>✏️</IconButton>
+          {onDesign && <IconButton title="Thiết kế giao diện (Game Builder)" onClick={onDesign}>🎨</IconButton>}
           {onDuplicate && <IconButton title="Sao chép" onClick={onDuplicate}>📄</IconButton>}
           {onShare && game.status === "published" && <IconButton title="Chia sẻ" onClick={onShare}>🎟️</IconButton>}
           {onDelete && <IconButton title="Xóa" onClick={onDelete}>🗑️</IconButton>}
@@ -39,7 +40,7 @@ export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onSha
   );
 }
 
-export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit, onResults }) {
+export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit, onResults, onDesign }) {
   const [games, setGames] = useState(null);
   const [error, setError] = useState(null);
 
@@ -91,7 +92,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
                 action={<PrimaryButton onClick={onCreate} className="mt-2">+ Tạo trò chơi</PrimaryButton>} />
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {games.slice(0, 3).map(g => <GameCard key={g.id} game={g} onEdit={() => onEdit(g.id)} onResults={() => onResults(g.id)} />)}
+                {games.slice(0, 3).map(g => <GameCard key={g.id} game={g} onEdit={() => onEdit(g.id)} onResults={() => onResults(g.id)} onDesign={() => onDesign(g.id)} />)}
               </div>
             )}
           </div>

@@ -14,6 +14,7 @@ export const mockGameTemplates = [
   { id: "hero-adventure", name: "Anh Hùng Phiêu Lưu", description: "Chạy, nhảy qua từng chặng và thu thập xu trên hành trình phiêu lưu", category: "adventure", categoryLabel: "Phiêu lưu", icon: "🦸", ring: "#E4572E" },
   { id: "dungeon-quest", name: "Hầm Ngục Bí Ẩn", description: "Trả lời đúng để hạ gục quái vật và phiêu lưu qua từng hầm ngục", category: "adventure", categoryLabel: "Phiêu lưu", icon: "🗡️", ring: "#8B6FF1" },
   { id: "ninja-dash", name: "Ninja Vượt Chướng Ngại", description: "Bật nhảy thật nhanh qua chướng ngại vật bằng câu trả lời đúng", category: "reflex", categoryLabel: "Phản xạ", icon: "🥷", ring: "#1D2E4A" },
+  { id: "custom", name: "Tự Thiết Kế", description: "Dùng Game Builder kéo-thả để thiết kế giao diện trò chơi của riêng bạn", category: "design", categoryLabel: "Tự thiết kế", icon: "🎨", ring: "#FF6F91" },
 ];
 
 export const CATEGORIES = [
@@ -27,6 +28,7 @@ export const CATEGORIES = [
   { id: "language", label: "Ngôn ngữ" },
   { id: "logic", label: "Tư duy" },
   { id: "adventure", label: "Phiêu lưu" },
+  { id: "design", label: "Tự thiết kế" },
 ];
 
 export const mockPlayersPool = [

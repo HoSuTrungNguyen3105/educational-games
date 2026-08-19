@@ -5,6 +5,7 @@ import GameLibrary from './GameLibrary.jsx'
 import CreateGameFlow from './CreateGameFlow.jsx'
 import TeacherResults from './TeacherResults.jsx'
 import UserManagement from './UserManagement.jsx'
+import GameBuilder from '../../components/gameBuilder/GameBuilder.jsx'
 
 export default function TeacherApp({ user, onExit, showToast }) {
   const [screen, setScreen] = useState("dashboard");
@@ -14,15 +15,17 @@ export default function TeacherApp({ user, onExit, showToast }) {
 
   const goResults = (id) => { setActiveGameId(id); setScreen("results"); };
   const goEdit = (id) => { setActiveGameId(id); setScreen("create"); };
+  const goDesign = (id) => { setActiveGameId(id); setScreen("builder"); };
   const goCreateNew = () => { setActiveGameId(null); setScreen("create"); };
 
   return (
     <div className="min-h-screen flex flex-col bg-paper">
       <TeacherNav screen={screen} setScreen={setScreen} onExit={onExit} onCreate={goCreateNew} user={user} />
       <main className="flex-1 max-w-6xl w-full mx-auto px-5 md:px-8 py-8">
-        {screen === "dashboard" && <TeacherDashboard key={refreshFlag} user={user} onOpenLibrary={() => setScreen("library")} onCreate={goCreateNew} onEdit={goEdit} onResults={goResults} />}
-        {screen === "library" && <GameLibrary key={refreshFlag} onCreate={goCreateNew} onEdit={goEdit} onResults={goResults} showToast={showToast} onChanged={bump} />}
+        {screen === "dashboard" && <TeacherDashboard key={refreshFlag} user={user} onOpenLibrary={() => setScreen("library")} onCreate={goCreateNew} onEdit={goEdit} onResults={goResults} onDesign={goDesign} />}
+        {screen === "library" && <GameLibrary key={refreshFlag} onCreate={goCreateNew} onEdit={goEdit} onResults={goResults} onDesign={goDesign} onOpenBuilder={() => goDesign(null)} showToast={showToast} onChanged={bump} />}
         {screen === "create" && <CreateGameFlow gameId={activeGameId} showToast={showToast} onDone={() => { bump(); setScreen("library"); }} onCancel={() => setScreen("library")} />}
+        {screen === "builder" && <GameBuilder gameId={activeGameId} showToast={showToast} onDone={(updatedId) => { bump(); setActiveGameId(updatedId); setScreen("library"); }} onCancel={() => setScreen("library")} />}
         {screen === "results" && <TeacherResults gameId={activeGameId} onBack={() => setScreen("library")} />}
         {screen === "users" && <UserManagement user={user} showToast={showToast} />}
       </main>

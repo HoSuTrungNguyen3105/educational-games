@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { authService, saveAuth } from '../services/api.js'
-import { PrimaryButton } from '../components/ui.jsx'
+import { PasswordInput, PrimaryButton } from '../components/ui.jsx'
 
 export default function LoginScreen({ onBack, onLogin, showToast }) {
   const [username, setUsername] = useState("");

@@ -90,6 +90,14 @@ export async function initDatabase() {
         topic: { bsonType: "string" },
         language: { bsonType: "string" },
         template: { bsonType: "string" },
+        theme: { bsonType: "string" },
+        design: {
+          bsonType: "object",
+          properties: {
+            canvas: { bsonType: "object" },
+            elements: { bsonType: "array" },
+          },
+        },
         status: { enum: ["published", "draft"] },
         questionsCount: { bsonType: "int" },
         playersCount: { bsonType: "int" },

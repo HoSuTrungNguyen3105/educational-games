@@ -6,7 +6,7 @@ import { GameCard } from './TeacherDashboard.jsx'
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 
-export default function GameLibrary({ onCreate, onEdit, onResults, showToast, onChanged }) {
+export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onOpenBuilder, showToast, onChanged }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [subject, setSubject] = useState("all");
@@ -40,7 +40,10 @@ export default function GameLibrary({ onCreate, onEdit, onResults, showToast, on
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="font-display text-3xl text-ink">Thư viện trò chơi</h1>
-        <PrimaryButton onClick={onCreate}>+ Tạo trò chơi mới</PrimaryButton>
+        <div className="flex gap-3">
+          <GhostButton onClick={onOpenBuilder} className="!border-ticket/40 !text-ticket">🎨 Game Builder</GhostButton>
+          <PrimaryButton onClick={onCreate}>+ Tạo trò chơi mới</PrimaryButton>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -76,6 +79,7 @@ export default function GameLibrary({ onCreate, onEdit, onResults, showToast, on
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {games.map(g => (
             <GameCard key={g.id} game={g} onEdit={() => onEdit(g.id)} onResults={() => onResults(g.id)}
+              onDesign={() => onDesign(g.id)}
               onDuplicate={() => handleDuplicate(g.id)} onDelete={() => setConfirmDelete(g)} onShare={() => setShareGame(g)} onLive={() => handleLive(g)} />
           ))}
         </div>
