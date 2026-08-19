@@ -1,0 +1,45 @@
+export const mockGameTemplates = [
+  { id: "snail-race", name: "Đường Đua Ốc Sên", description: "Trả lời đúng để ốc sên tiến về đích", category: "quiz", categoryLabel: "Trắc nghiệm", icon: "🐌", ring: "#E4572E" },
+  { id: "whack-a-mole", name: "Đập Chuột Nhanh Tay", description: "Phản xạ nhanh trước khi hết giờ", category: "reflex", categoryLabel: "Phản xạ", icon: "🔨", ring: "#F4B942" },
+  { id: "space-ship", name: "Phi Thuyền Vũ Trụ", description: "Mỗi câu đúng đẩy phi thuyền bay xa hơn", category: "science", categoryLabel: "Khoa học", icon: "🚀", ring: "#1B998B" },
+  { id: "sailing-boat", name: "Thuyền Buồm Ra Khơi", description: "Cả đội cùng chèo thuyền về đích", category: "group", categoryLabel: "Theo nhóm", icon: "⛵", ring: "#1B998B" },
+  { id: "moon-lantern", name: "Rước Đèn Trung Thu", description: "Trò chơi ôn tập theo mùa lễ hội", category: "seasonal", categoryLabel: "Lễ hội", icon: "🏮", ring: "#F4B942" },
+  { id: "memory-match", name: "Lật Thẻ Trí Nhớ", description: "Ghép cặp thẻ giống nhau trong thời gian ngắn nhất", category: "memory", categoryLabel: "Trí nhớ", icon: "🃏", ring: "#FF6F91" },
+  { id: "lucky-wheel", name: "Vòng Quay May Mắn", description: "Quay vòng để nhận câu hỏi và phần thưởng ngẫu nhiên", category: "quiz", categoryLabel: "Trắc nghiệm", icon: "🎡", ring: "#E4572E" },
+  { id: "treasure-map", name: "Bản Đồ Kho Báu", description: "Giải đố để mở khóa từng chặng trên bản đồ", category: "logic", categoryLabel: "Tư duy", icon: "🗺️", ring: "#F4B942" },
+  { id: "dart-throw", name: "Ném Phi Tiêu Trúng Đích", description: "Chọn đáp án đúng để ném trúng tâm bia", category: "reflex", categoryLabel: "Phản xạ", icon: "🎯", ring: "#E4572E" },
+  { id: "word-scramble", name: "Xếp Chữ Kỳ Diệu", description: "Sắp xếp chữ cái thành từ đúng nghĩa", category: "language", categoryLabel: "Ngôn ngữ", icon: "🔤", ring: "#FF6F91" },
+  { id: "balloon-pop", name: "Bóng Bay Tri Thức", description: "Chọn đáp án đúng để thổi bóng bay lên trời", category: "reflex", categoryLabel: "Phản xạ", icon: "🎈", ring: "#1B998B" },
+  { id: "sorting-game", name: "Phân Loại Đúng Chỗ", description: "Sắp xếp kiến thức vào đúng nhóm", category: "logic", categoryLabel: "Tư duy", icon: "🗂️", ring: "#F4B942" },
+  { id: "hero-adventure", name: "Anh Hùng Phiêu Lưu", description: "Chạy, nhảy qua từng chặng và thu thập xu trên hành trình phiêu lưu", category: "adventure", categoryLabel: "Phiêu lưu", icon: "🦸", ring: "#E4572E" },
+  { id: "dungeon-quest", name: "Hầm Ngục Bí Ẩn", description: "Trả lời đúng để hạ gục quái vật và phiêu lưu qua từng hầm ngục", category: "adventure", categoryLabel: "Phiêu lưu", icon: "🗡️", ring: "#8B6FF1" },
+  { id: "ninja-dash", name: "Ninja Vượt Chướng Ngại", description: "Bật nhảy thật nhanh qua chướng ngại vật bằng câu trả lời đúng", category: "reflex", categoryLabel: "Phản xạ", icon: "🥷", ring: "#1D2E4A" },
+];
+
+export const CATEGORIES = [
+  { id: "all", label: "Tất cả" },
+  { id: "quiz", label: "Trắc nghiệm" },
+  { id: "reflex", label: "Phản xạ" },
+  { id: "science", label: "Khoa học" },
+  { id: "group", label: "Theo nhóm" },
+  { id: "seasonal", label: "Lễ hội" },
+  { id: "memory", label: "Trí nhớ" },
+  { id: "language", label: "Ngôn ngữ" },
+  { id: "logic", label: "Tư duy" },
+  { id: "adventure", label: "Phiêu lưu" },
+];
+
+export const mockPlayersPool = [
+  { name: "Nguyễn Minh Anh" }, { name: "Trần Gia Huy" }, { name: "Lê Khánh Linh" },
+  { name: "Phạm Bảo Ngọc" }, { name: "Đỗ Quang Vinh" }, { name: "Vũ Thảo My" },
+  { name: "Hoàng Nhật Nam" }, { name: "Bùi Thu Trang" },
+];
+
+export const SUBJECTS = ["Toán", "Khoa học", "Tiếng Việt", "Tiếng Anh", "Địa lý", "Lịch sử", "Kỹ năng sống", "Tổng hợp"];
+
+export const THEMES = [
+  { id: "gold", label: "Vé Vàng", color: "#F4B942" },
+  { id: "teal", label: "Vé Xanh Ngọc", color: "#1B998B" },
+  { id: "ticket", label: "Vé Đỏ", color: "#E4572E" },
+  { id: "pink", label: "Vé Hồng", color: "#FF6F91" },
+];

@@ -1,0 +1,239 @@
+import { useEffect, useState } from 'react'
+import { uid, resultService, questionService, gameService } from '../../services/api.js'
+import { mockGameTemplates, mockPlayersPool } from '../../data/mockData.js'
+import { rankMedal } from '../../lib/utils.js'
+import { PrimaryButton, GhostButton, StampToken, TicketStub, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
+import { GamePlayRouter } from '../../games/GamePlayRouter.jsx'
+
+export default function StudentApp({ initialGame, onExit, showToast, toast }) {
+  const [screen, setScreen] = useState(initialGame ? "name" : "join");
+  const [game, setGame] = useState(initialGame || null);
+  const [questions, setQuestions] = useState([]);
+  const [playerName, setPlayerName] = useState("");
+  const [finalResult, setFinalResult] = useState(null);
+  const [leaderboard, setLeaderboard] = useState(null);
+
+  const restart = () => { setScreen(initialGame ? "name" : "join"); setGame(initialGame || null); setQuestions([]); setPlayerName(""); setFinalResult(null); setLeaderboard(null); };
+  const goHome = () => { setGame(null); setQuestions([]); setFinalResult(null); setLeaderboard(null); onExit(); };
+
+  const handleFinish = async (sessionResult) => {
+    const entry = await resultService.submit({
+      gameId: game.id, playerId: uid("player"), playerName,
+      score: sessionResult.score, correctAnswers: sessionResult.correct,
+      totalQuestions: questions.length, accuracy: Math.round((sessionResult.correct / questions.length) * 100),
+      completionTime: sessionResult.timeUsed,
+    });
+    setFinalResult(entry);
+    setScreen("result");
+  };
+
+  return (
+    <div className="min-h-screen bg-paper flex flex-col">
+      <StudentTopBar onExit={goHome} />
+      <main className="flex-1 flex flex-col">
+        {screen === "join" && <JoinGameScreen onFound={(g) => { setGame(g); setScreen("name"); }} />}
+        {screen === "name" && game && <EnterNameScreen game={game} onBack={initialGame ? goHome : restart} onSubmit={(name) => { setPlayerName(name); setScreen("waiting"); }} />}
+        {screen === "waiting" && game && (
+          <WaitingRoomScreen game={game} playerName={playerName}
+            onStart={async () => { const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play"); }} />
+        )}
+        {screen === "play" && game && questions.length > 0 && (
+          <GamePlayRouter game={game} questions={questions} playerName={playerName} onQuit={restart} onFinish={handleFinish} />
+        )}
+        {screen === "result" && finalResult && (
+          <ResultScreen result={finalResult} onSeeLeaderboard={async () => { const r = await resultService.listByGame(game.id); setLeaderboard(r); setScreen("leaderboard"); }} />
+        )}
+        {screen === "leaderboard" && leaderboard && <LeaderboardScreen results={leaderboard} playerName={playerName} onPlayAgain={restart} />}
+      </main>
+      <Toast toast={toast} />
+    </div>
+  );
+}
+
+export function StudentTopBar({ onExit }) {
+  return (
+    <div className="flex items-center justify-between px-5 md:px-8 py-4">
+      <div className="flex items-center gap-2"><span className="text-xl">🎪</span><span className="font-display text-ink">Lớp Học Vui</span></div>
+      <button onClick={onExit} className="text-sm text-[#8A7C63] hover:text-ink">Thoát</button>
+    </div>
+  );
+}
+
+function JoinGameScreen({ onFound }) {
+  const [games, setGames] = useState(null);
+  const [error, setError] = useState(null);
+  const [mode, setMode] = useState("list"); // "list" | "code"
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const loadGames = async () => {
+    setGames(null); setError(null);
+    try {
+      setGames(await gameService.list({ status: "published" }));
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+  useEffect(() => { loadGames(); }, []);
+
+  const submitCode = async (e) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setLoading(true); setError(null);
+    const game = await gameService.getByCode(code);
+    setLoading(false);
+    if (!game) { setError("Không tìm thấy trò chơi với mã này. Kiểm tra lại hoặc chọn trò chơi trong danh sách nhé!"); return; }
+    onFound(game);
+  };
+
+  return (
+    <div className="flex-1 px-6 py-10">
+      <div className="max-w-4xl mx-auto anim-pop">
+        <div className="flex items-start justify-between gap-3 mb-6">
+          <div>
+            <h1 className="font-display text-2xl md:text-3xl text-ink">Chọn trò chơi</h1>
+            <p className="text-sm text-[#8A7C63] mt-1">Chọn một trò chơi để tham gia, hoặc nhập mã vé nếu bạn quên trò chơi ở đâu 😉</p>
+          </div>
+          <button onClick={() => setMode(mode === "list" ? "code" : "list")}
+            className="shrink-0 note-card px-4 py-2.5 text-sm font-semibold text-ink flex items-center gap-2 hover:bg-ink/5 transition">
+            {mode === "list" ? "🔑 Nhập mã vé" : "← Về danh sách"}
+          </button>
+        </div>
+
+        {mode === "code" ? (
+          <form onSubmit={submitCode} className="max-w-md mx-auto text-center pb-10">
+            <div className="text-6xl mb-4 float-slow">🎟️</div>
+            <p className="text-sm text-[#8A7C63] mb-4">Nhập mã vé giáo viên đã cung cấp</p>
+            <TicketStub icon="🔑" code={code || "______"} />
+            <input value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
+              placeholder="VD: TOAN101" maxLength={10}
+              className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase" />
+            {error && <p className="text-ticket text-sm mt-3">{error}</p>}
+            <PrimaryButton type="submit" className="w-full mt-5" disabled={loading || !code.trim()}>{loading ? "Đang kiểm tra..." : "Tham gia →"}</PrimaryButton>
+          </form>
+        ) : games === null ? (
+          <Loader label="Đang tải danh sách trò chơi..." />
+        ) : error ? (
+          <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
+        ) : games.length === 0 ? (
+          <EmptyState icon="🕹️" title="Chưa có trò chơi nào" subtitle="Giáo viên chưa xuất bản trò chơi nào. Hãy thử nhập mã vé hoặc quay lại sau nhé!" />
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {games.map(g => {
+              const tpl = mockGameTemplates.find(t => t.id === g.template);
+              return (
+                <button key={g.id} onClick={() => onFound(g)}
+                  className="note-card p-5 text-left flex flex-col gap-3 hover:-translate-y-1 hover:shadow-[0_8px_0_rgba(0,0,0,0.1)] transition shadow-[0_3px_0_rgba(0,0,0,0.09)] group anim-pop bg-paper2">
+                  <div className="flex items-center justify-between">
+                    <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#1D2E4A"} size={46} fontSize={22} />
+                    <span className="font-mono text-[11px] text-[#8A7C63] bg-ink/5 rounded-full px-2.5 py-1">{g.code}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg text-ink leading-snug clamp-2">{g.title}</h3>
+                    <p className="text-sm text-[#8A7C63] mt-1 clamp-2">{g.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-[#8A7C63] font-mono flex-wrap">
+                    <span>{g.subject}</span><span>·</span><span>{g.questionsCount} câu hỏi</span><span>·</span><span>{g.playersCount} lượt chơi</span>
+                  </div>
+                  <div className="mt-auto pt-2">
+                    <span className="inline-block text-sm font-semibold text-teal group-hover:translate-x-1 transition">Chơi ngay →</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EnterNameScreen({ game, onBack, onSubmit }) {
+  const [name, setName] = useState("");
+  const tpl = mockGameTemplates.find(t => t.id === game.template);
+  return (
+    <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <form onSubmit={e => { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); }} className="max-w-sm w-full text-center anim-pop">
+        <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={72} fontSize={32} className="mx-auto mb-4" />
+        <h1 className="font-display text-2xl text-ink mb-1">{game.title}</h1>
+        <p className="text-sm text-[#8A7C63] mb-6">{game.subject} · {game.topic}</p>
+        <input value={name} onChange={e => setName(e.target.value)} maxLength={24} autoFocus placeholder="Nhập tên của bạn"
+          className="w-full text-center note-card px-4 py-3 text-lg border-ink/10 focus:border-ticket" />
+        <div className="flex gap-3 mt-5">
+          <GhostButton onClick={onBack} className="flex-1">← Quay lại</GhostButton>
+          <PrimaryButton type="submit" className="flex-1" disabled={!name.trim()}>Vào phòng chờ →</PrimaryButton>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function WaitingRoomScreen({ game, playerName, onStart }) {
+  const [others, setOthers] = useState([]);
+  const tpl = mockGameTemplates.find(t => t.id === game.template);
+
+  useEffect(() => {
+    const timers = mockPlayersPool.slice(0, 4).map((p, i) => setTimeout(() => setOthers(prev => [...prev, p.name]), 500 + i * 500));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <div className="max-w-md w-full text-center anim-pop">
+        <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={80} fontSize={36} className="mx-auto mb-5 float-slow" />
+        <h1 className="font-display text-2xl text-ink mb-1">Phòng chờ</h1>
+        <p className="text-sm text-[#8A7C63] mb-6">Chờ giáo viên bắt đầu trò chơi "{game.title}"</p>
+        <div className="note-card p-5 mb-6">
+          <p className="text-xs font-mono text-[#8A7C63] uppercase mb-3">{others.length + 1} người đã tham gia</p>
+          <div className="flex flex-wrap gap-2 justify-center">
+            <span className="px-3 py-1.5 rounded-full bg-ticket/10 text-ticket text-sm font-semibold">{playerName} (bạn)</span>
+            {others.map(n => <span key={n} className="px-3 py-1.5 rounded-full bg-ink/5 text-ink text-sm anim-pop">{n}</span>)}
+          </div>
+        </div>
+        <PrimaryButton onClick={onStart} className="w-full">Bắt đầu chơi 🚀</PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
+export function ResultScreen({ result, onSeeLeaderboard }) {
+  const isGreat = result.accuracy >= 80;
+  return (
+    <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <div className="max-w-md w-full text-center anim-pop">
+        <div className="text-7xl mb-4 float-slow">{isGreat ? "🏆" : result.accuracy >= 50 ? "🌟" : "💪"}</div>
+        <h1 className="font-display text-3xl text-ink mb-1">{result.score} điểm</h1>
+        <p className="text-[#8A7C63] mb-8">{result.correctAnswers}/{result.totalQuestions} câu đúng · độ chính xác {result.accuracy}%</p>
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="note-card p-4"><div className="font-display text-2xl text-teal">{result.correctAnswers}</div><div className="text-xs text-[#8A7C63] font-mono uppercase mt-1">Câu đúng</div></div>
+          <div className="note-card p-4"><div className="font-display text-2xl text-ticket">{result.completionTime}s</div><div className="text-xs text-[#8A7C63] font-mono uppercase mt-1">Thời gian</div></div>
+        </div>
+        <PrimaryButton onClick={onSeeLeaderboard} className="w-full">Xem bảng xếp hạng →</PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
+export function LeaderboardScreen({ results, playerName, onPlayAgain }) {
+  return (
+    <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <div className="max-w-md w-full anim-pop">
+        <h1 className="font-display text-2xl text-ink text-center mb-6">🏅 Bảng xếp hạng</h1>
+        <div className="note-card divide-y divide-ink/5 overflow-hidden mb-6">
+          {results.map((r, i) => {
+            const medal = rankMedal(i + 1);
+            const isMe = r.playerName === playerName;
+            return (
+              <div key={r.id} className={`flex items-center gap-3 px-4 py-3 ${isMe ? "bg-ticket/5" : ""}`}>
+                <StampToken icon={medal.icon} ring={medal.ring} size={34} fontSize={i < 3 ? 16 : 13} />
+                <span className={`flex-1 font-body ${isMe ? "font-semibold text-ticket" : "text-ink"}`}>{r.playerName}{isMe && " (bạn)"}</span>
+                <span className="font-display text-ink">{r.score}</span>
+              </div>
+            );
+          })}
+        </div>
+        <PrimaryButton onClick={onPlayAgain} className="w-full">Chơi trò chơi khác</PrimaryButton>
+      </div>
+    </div>
+  );
+}
