@@ -655,7 +655,7 @@ function LoginScreen({ onBack, onLogin, showToast }) {
       }
       saveAuth({ token, user });
       showToast(`Xin chào, ${user.name}! 👋`);
-      onLogin();
+      onLogin(user);
     } catch (err) {
       setError(err.message || "Đăng nhập thất bại");
       setLoading(false);
