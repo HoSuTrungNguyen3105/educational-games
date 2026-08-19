@@ -116,7 +116,16 @@
   }
   .wheel-spinning { animation: spin-wheel 4s cubic-bezier(0.17, 0.67, 0.12, 0.99) forwards; }
 
-  @media (prefers-reduced-motion: reduce){ .anim-pop, .float-slow, .marquee-lights, .wheel-spinning{ animation:none !important; } }
+  @keyframes bob-hero{ 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-10px); } }
+  .bob-hero{ animation: bob-hero .9s ease-in-out infinite; }
+
+  @keyframes run-cycle{ 0%,100%{ transform: translateY(0) rotate(0deg); } 50%{ transform: translateY(-4px) rotate(-4deg); } }
+  .run-cycle{ animation: run-cycle .4s ease-in-out infinite; }
+
+  @keyframes shake-hit{ 0%,100%{ transform: translateX(0); } 25%{ transform: translateX(-6px); } 75%{ transform: translateX(6px); } }
+  .shake-hit{ animation: shake-hit .35s ease-in-out; }
+
+  @media (prefers-reduced-motion: reduce){ .anim-pop, .float-slow, .marquee-lights, .wheel-spinning, .bob-hero, .run-cycle, .shake-hit{ animation:none !important; } }
 
   input:focus, button:focus, select:focus, textarea:focus{ outline: 3px solid #FF6F9155; outline-offset: 2px; }
 
@@ -156,6 +165,9 @@ const mockGameTemplates = [
   { id: "word-scramble", name: "Xếp Chữ Kỳ Diệu", description: "Sắp xếp chữ cái thành từ đúng nghĩa", category: "language", categoryLabel: "Ngôn ngữ", icon: "🔤", ring: "#FF6F91" },
   { id: "balloon-pop", name: "Bóng Bay Tri Thức", description: "Chọn đáp án đúng để thổi bóng bay lên trời", category: "reflex", categoryLabel: "Phản xạ", icon: "🎈", ring: "#1B998B" },
   { id: "sorting-game", name: "Phân Loại Đúng Chỗ", description: "Sắp xếp kiến thức vào đúng nhóm", category: "logic", categoryLabel: "Tư duy", icon: "🗂️", ring: "#F4B942" },
+  { id: "hero-adventure", name: "Anh Hùng Phiêu Lưu", description: "Chạy, nhảy qua từng chặng và thu thập xu trên hành trình phiêu lưu", category: "adventure", categoryLabel: "Phiêu lưu", icon: "🦸", ring: "#E4572E" },
+  { id: "dungeon-quest", name: "Hầm Ngục Bí Ẩn", description: "Trả lời đúng để hạ gục quái vật và phiêu lưu qua từng hầm ngục", category: "adventure", categoryLabel: "Phiêu lưu", icon: "🗡️", ring: "#8B6FF1" },
+  { id: "ninja-dash", name: "Ninja Vượt Chướng Ngại", description: "Bật nhảy thật nhanh qua chướng ngại vật bằng câu trả lời đúng", category: "reflex", categoryLabel: "Phản xạ", icon: "🥷", ring: "#1D2E4A" },
 ];
 
 const CATEGORIES = [
@@ -168,6 +180,7 @@ const CATEGORIES = [
   { id: "memory", label: "Trí nhớ" },
   { id: "language", label: "Ngôn ngữ" },
   { id: "logic", label: "Tư duy" },
+  { id: "adventure", label: "Phiêu lưu" },
 ];
 
 const initialGames = [
@@ -183,6 +196,9 @@ const initialGames = [
   { id: "game-010", title: "Động vật hoang dã", description: "Thổi bóng bay tri thức về thế giới động vật", subject: "Khoa học", topic: "Động vật hoang dã", language: "vi", template: "balloon-pop", status: "published", questionsCount: 2, playersCount: 9, code: "DONGVAT6", createdAt: "2026-08-10T08:00:00Z", updatedAt: "2026-08-10T08:00:00Z" },
   { id: "game-011", title: "Đua thuyền: Lịch sử Việt Nam", description: "Cả đội cùng chèo thuyền qua các mốc lịch sử", subject: "Lịch sử", topic: "Các triều đại Việt Nam", language: "vi", template: "sailing-boat", status: "published", questionsCount: 2, playersCount: 20, code: "LICHSU19", createdAt: "2026-08-11T08:00:00Z", updatedAt: "2026-08-11T08:00:00Z" },
   { id: "game-012", title: "Phân loại rác thải", description: "Sắp xếp rác đúng nhóm tái chế, hữu cơ, vô cơ", subject: "Khoa học", topic: "Bảo vệ môi trường", language: "vi", template: "sorting-game", status: "published", questionsCount: 2, playersCount: 8, code: "MOITRUONG4", createdAt: "2026-08-12T08:00:00Z", updatedAt: "2026-08-12T08:00:00Z" },
+  { id: "game-013", title: "Đại Phiêu Lưu Toán Học", description: "Chạy nhảy qua từng chặng, trả lời đúng để vượt chướng ngại vật và gom xu", subject: "Toán", topic: "Ôn tập phép tính", language: "vi", template: "hero-adventure", status: "published", questionsCount: 4, playersCount: 16, code: "PHIEUL9", createdAt: "2026-08-13T08:00:00Z", updatedAt: "2026-08-13T08:00:00Z" },
+  { id: "game-014", title: "Hầm Ngục Kiến Thức", description: "Đánh bại quái vật bằng câu trả lời đúng để phiêu lưu qua hầm ngục", subject: "Tổng hợp", topic: "Ôn tập tổng hợp", language: "vi", template: "dungeon-quest", status: "published", questionsCount: 4, playersCount: 10, code: "HAMNGUC3", createdAt: "2026-08-14T08:00:00Z", updatedAt: "2026-08-14T08:00:00Z" },
+  { id: "game-015", title: "Ninja Vượt Ải Từ Vựng", description: "Bật nhảy thật nhanh qua chướng ngại vật bằng câu trả lời đúng", subject: "Tiếng Anh", topic: "Từ vựng cơ bản", language: "vi", template: "ninja-dash", status: "published", questionsCount: 3, playersCount: 13, code: "NINJA77", createdAt: "2026-08-15T08:00:00Z", updatedAt: "2026-08-15T08:00:00Z" },
 ];
 
 const initialQuestions = [
@@ -218,6 +234,17 @@ const initialQuestions = [
   { id: "question-024", gameId: "game-011", content: "Vị vua nào dời đô về Thăng Long?", options: [{ id: "answer-070", content: "Lý Thái Tổ" }, { id: "answer-071", content: "Trần Nhân Tông" }, { id: "answer-072", content: "Lê Lợi" }], correctAnswer: "answer-070", timeLimit: 20, points: 100 },
   { id: "question-025", gameId: "game-012", content: "Vỏ chai nhựa nên bỏ vào nhóm rác nào?", options: [{ id: "answer-073", content: "Rác tái chế" }, { id: "answer-074", content: "Rác hữu cơ" }, { id: "answer-075", content: "Rác nguy hại" }], correctAnswer: "answer-073", timeLimit: 15, points: 100 },
   { id: "question-026", gameId: "game-012", content: "Vỏ trái cây thuộc nhóm rác nào?", options: [{ id: "answer-076", content: "Rác hữu cơ" }, { id: "answer-077", content: "Rác tái chế" }, { id: "answer-078", content: "Rác điện tử" }], correctAnswer: "answer-076", timeLimit: 15, points: 100 },
+  { id: "question-201", gameId: "game-013", content: "12 x 4 bằng bao nhiêu?", options: [{ id: "answer-201", content: "46" }, { id: "answer-202", content: "48" }, { id: "answer-203", content: "52" }], correctAnswer: "answer-202", timeLimit: 15, points: 100 },
+  { id: "question-202", gameId: "game-013", content: "100 - 37 bằng bao nhiêu?", options: [{ id: "answer-204", content: "63" }, { id: "answer-205", content: "67" }, { id: "answer-206", content: "73" }], correctAnswer: "answer-204", timeLimit: 15, points: 100 },
+  { id: "question-203", gameId: "game-013", content: "Một hình vuông có cạnh 5cm. Chu vi hình vuông đó là bao nhiêu?", options: [{ id: "answer-207", content: "15cm" }, { id: "answer-208", content: "20cm" }, { id: "answer-209", content: "25cm" }], correctAnswer: "answer-208", timeLimit: 20, points: 100 },
+  { id: "question-204", gameId: "game-013", content: "81 chia 9 bằng bao nhiêu?", options: [{ id: "answer-210", content: "7" }, { id: "answer-211", content: "8" }, { id: "answer-212", content: "9" }], correctAnswer: "answer-212", timeLimit: 15, points: 100 },
+  { id: "question-211", gameId: "game-014", content: "Núi nào cao nhất thế giới?", options: [{ id: "answer-221", content: "Everest" }, { id: "answer-222", content: "Fansipan" }, { id: "answer-223", content: "Kilimanjaro" }], correctAnswer: "answer-221", timeLimit: 20, points: 120 },
+  { id: "question-212", gameId: "game-014", content: "Cơ quan nào trong cơ thể người bơm máu đi khắp cơ thể?", options: [{ id: "answer-224", content: "Phổi" }, { id: "answer-225", content: "Tim" }, { id: "answer-226", content: "Gan" }], correctAnswer: "answer-225", timeLimit: 15, points: 120 },
+  { id: "question-213", gameId: "game-014", content: "Ai là tác giả của bài thơ \"Lượm\"?", options: [{ id: "answer-227", content: "Tố Hữu" }, { id: "answer-228", content: "Xuân Diệu" }, { id: "answer-229", content: "Nguyễn Du" }], correctAnswer: "answer-227", timeLimit: 20, points: 120 },
+  { id: "question-214", gameId: "game-014", content: "Đại dương nào lớn nhất thế giới?", options: [{ id: "answer-230", content: "Đại Tây Dương" }, { id: "answer-231", content: "Thái Bình Dương" }, { id: "answer-232", content: "Ấn Độ Dương" }], correctAnswer: "answer-231", timeLimit: 20, points: 120 },
+  { id: "question-221", gameId: "game-015", content: "\"Con mèo\" trong tiếng Anh là gì?", options: [{ id: "answer-241", content: "Dog" }, { id: "answer-242", content: "Cat" }, { id: "answer-243", content: "Bird" }], correctAnswer: "answer-242", timeLimit: 12, points: 100 },
+  { id: "question-222", gameId: "game-015", content: "\"Quyển sách\" trong tiếng Anh là gì?", options: [{ id: "answer-244", content: "Book" }, { id: "answer-245", content: "Pen" }, { id: "answer-246", content: "Bag" }], correctAnswer: "answer-244", timeLimit: 12, points: 100 },
+  { id: "question-223", gameId: "game-015", content: "\"Chạy\" trong tiếng Anh là gì?", options: [{ id: "answer-247", content: "Jump" }, { id: "answer-248", content: "Run" }, { id: "answer-249", content: "Walk" }], correctAnswer: "answer-248", timeLimit: 12, points: 100 },
 ];
 
 const mockPlayersPool = [
@@ -1243,6 +1270,9 @@ function GamePlayRouter({ game, questions, playerName, onFinish, onQuit }) {
     case "sorting-game": return <SortingGamePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
     case "word-scramble": return <WordScramblePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
     case "memory-match": return <MemoryMatchPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "hero-adventure": return <HeroAdventurePlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "dungeon-quest": return <DungeonQuestPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
+    case "ninja-dash": return <NinjaDashPlayScreen game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;
     default: return <PlayGameScreen game={game} questions={questions} onFinish={onFinish} />;
   }
 }
@@ -1863,6 +1893,265 @@ function MemoryMatchPlayScreen({ game, questions, onFinish, onQuit }) {
             {selected === q.correctAnswer ? "Lật đúng thẻ rồi! 🃏" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng, thử câu sau nhé!"}
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- HERO ADVENTURE (platformer-style) ---------------------- */
+
+function HeroAdventurePlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const [coins, setCoins] = useState(0);
+  const [stumble, setStumble] = useState(false);
+  const prevRevealed = useRef(false);
+
+  useEffect(() => {
+    if (revealed && !prevRevealed.current) {
+      if (selected === q.correctAnswer) setCoins(c => c + 1);
+      else { setStumble(true); setTimeout(() => setStumble(false), 400); }
+    }
+    prevRevealed.current = revealed;
+  }, [revealed]);
+
+  const progress = ((idx + (revealed ? 1 : 0)) / total) * 88;
+  const platforms = useMemo(() => Array.from({ length: 6 }, (_, i) => 10 + i * 16), []);
+
+  return (
+    <div className="flex-1 flex flex-col bg-gradient-to-b from-[#9FD8F5] to-[#EAF6FF]">
+      <PlayHeader icon="🦸" title="ANH HÙNG PHIÊU LƯU" accent="#E4572E" code={game.code}
+        progressLabel={`Chặng: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit}
+        extra={<span>🪙 {coins}</span>} />
+      <div className="flex-1 grid lg:grid-cols-[1.3fr_1fr] gap-5 p-5 md:p-8">
+        <div className={`relative rounded-3xl overflow-hidden border border-white/40 h-56 sm:h-64 ${stumble ? "shake-hit" : ""}`}
+          style={{ background: "linear-gradient(180deg, #BFE8FF 0%, #EAF6FF 70%, #C9E9A6 100%)" }}>
+          <div className="absolute top-4 left-6 text-3xl opacity-70">☁️</div>
+          <div className="absolute top-10 right-10 text-2xl opacity-60">☁️</div>
+          <div className="absolute right-6 bottom-8 text-4xl">🏁</div>
+          {platforms.map((p, i) => (
+            <div key={i} className="absolute bottom-4 w-10 h-3 rounded-full bg-[#8B6339]/50" style={{ left: `${p}%` }}></div>
+          ))}
+          <div className="absolute bottom-6 transition-all duration-700 ease-out" style={{ left: `calc(4% + ${progress}%)` }}>
+            <span className={`text-5xl inline-block ${revealed && selected === q.correctAnswer ? "run-cycle" : ""} ${revealed && selected !== q.correctAnswer && selected !== undefined ? "" : "bob-hero"}`}>🦸</span>
+          </div>
+          <div className="absolute left-6 right-6 bottom-2 h-1.5 rounded-full bg-white/40 overflow-hidden">
+            <div className="h-full rounded-full bg-gradient-to-r from-gold to-ticket transition-all duration-700" style={{ width: `${progress + 6}%` }}></div>
+          </div>
+          <div className="absolute top-4 right-6 text-ink/70 font-mono text-xs bg-white/60 rounded-full px-3 py-1">Hành trình: {Math.round(progress)}%</div>
+        </div>
+
+        <div className="note-card p-6 flex flex-col">
+          <span className="inline-flex items-center gap-2 self-start bg-ticket/15 text-ticket font-display text-xs font-semibold uppercase px-4 py-2 rounded-full mb-4">
+            🚧 Thử thách vượt chướng ngại vật
+          </span>
+          <p className="font-display text-lg sm:text-xl text-ink mb-6">{q.content}</p>
+          <div className="space-y-3 mt-auto">
+            {q.options.map((o, i) => {
+              let stateCls = "border-ink/12 hover:border-ticket/40";
+              if (revealed) {
+                if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                else stateCls = "border-ink/10 opacity-50";
+              } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+              return (
+                <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                  className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                  <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                  <span className="flex-1">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>🪙</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+              {selected === q.correctAnswer ? "Nhảy qua chướng ngại vật, +1 xu! 🪙" : "Vấp phải chướng ngại vật, cố lên nào!"}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- DUNGEON QUEST (RPG battle-style) ---------------------- */
+
+const DUNGEON_MONSTERS = ["🐉", "👹", "🧟", "🦂", "🦇", "🐍", "👻", "🕷️"];
+
+function DungeonQuestPlayScreen({ game, questions, onFinish, onQuit }) {
+  const [idx, setIdx] = useState(0);
+  const q = questions[idx];
+  const [timeLeft, setTimeLeft] = useState(q.timeLimit);
+  const [selected, setSelected] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+  const [score, setScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [heroHp, setHeroHp] = useState(100);
+  const [monsterHp, setMonsterHp] = useState(100);
+  const [flash, setFlash] = useState(null); // "hero" | "monster" | null
+  const startRef = useRef(Date.now());
+  const monster = DUNGEON_MONSTERS[idx % DUNGEON_MONSTERS.length];
+
+  useEffect(() => { setTimeLeft(q.timeLimit); setSelected(null); setRevealed(false); setMonsterHp(100); }, [idx]);
+
+  useEffect(() => {
+    if (revealed) return;
+    if (timeLeft <= 0) { handleAnswer(null); return; }
+    const t = setTimeout(() => setTimeLeft(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timeLeft, revealed]);
+
+  function handleAnswer(optionId) {
+    if (revealed) return;
+    const isCorrect = optionId === q.correctAnswer;
+    const earned = isCorrect ? q.points + Math.round((timeLeft / q.timeLimit) * 40) : 0;
+    setSelected(optionId);
+    setRevealed(true);
+    if (isCorrect) { setMonsterHp(0); setFlash("monster"); }
+    else { setHeroHp(h => Math.max(0, h - 20)); setFlash("hero"); }
+    setTimeout(() => setFlash(null), 400);
+
+    const nextScore = score + earned;
+    const nextCorrect = correctCount + (isCorrect ? 1 : 0);
+    setScore(nextScore);
+    setCorrectCount(nextCorrect);
+
+    setTimeout(() => {
+      if (idx + 1 < questions.length) { setIdx(i => i + 1); }
+      else {
+        const timeUsed = Math.round((Date.now() - startRef.current) / 1000);
+        onFinish({ score: nextScore, correct: nextCorrect, timeUsed });
+      }
+    }, 1400);
+  }
+
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+
+  return (
+    <div className="flex-1 flex flex-col" style={{ background: "radial-gradient(120% 140% at 50% 0%, #2E1F4A 0%, #170F28 60%)" }}>
+      <PlayHeader icon="🗡️" title="HẦM NGỤC BÍ ẨN" accent="#B58AFF" code={game.code}
+        progressLabel={`Chặng: ${idx + 1}/${questions.length}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center p-5 md:p-8 gap-6">
+        <div className={`w-full max-w-2xl flex items-center justify-between gap-4 ${flash === "hero" ? "shake-hit" : ""}`}>
+          <div className="flex-1 note-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">🛡️</span>
+              <span className="font-display text-sm text-ink">Anh hùng</span>
+            </div>
+            <div className="w-full h-3 bg-ink/10 rounded-full overflow-hidden">
+              <div className="h-full bg-teal transition-all duration-500" style={{ width: `${heroHp}%` }}></div>
+            </div>
+          </div>
+          <span className="text-3xl text-white/60">⚔️</span>
+          <div className={`flex-1 note-card p-4 ${flash === "monster" ? "shake-hit" : ""}`}>
+            <div className="flex items-center gap-2 mb-2 justify-end">
+              <span className="font-display text-sm text-ink">Quái vật</span>
+              <span className="text-2xl">{monster}</span>
+            </div>
+            <div className="w-full h-3 bg-ink/10 rounded-full overflow-hidden">
+              <div className="h-full bg-ticket transition-all duration-500 ml-auto" style={{ width: `${monsterHp}%` }}></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-7xl anim-pop" key={idx}>{monster}</div>
+
+        <div className="note-card p-6 max-w-lg w-full">
+          <span className="text-xs font-mono text-[#8A7C63] uppercase">Trả lời đúng để tung đòn chí mạng</span>
+          <p className="font-display text-lg sm:text-xl text-ink mt-2 mb-6">{q.content}</p>
+          <div className="grid gap-3">
+            {q.options.map((o, i) => {
+              let stateCls = "border-ink/12 hover:border-[#8B6FF1]/50";
+              if (revealed) {
+                if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                else stateCls = "border-ink/10 opacity-50";
+              } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+              return (
+                <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                  className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                  <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                  <span className="flex-1">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>⚔️</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+              {selected === q.correctAnswer ? "Hạ gục quái vật! 🎉" : "Quái vật phản đòn, mất máu rồi!"}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------- NINJA DASH (endless-runner-style) ---------------------- */
+
+function NinjaDashPlayScreen({ game, questions, onFinish, onQuit }) {
+  const { idx, q, timeLeft, selected, revealed, score, handleAnswer, total } = useTimedQuestion(questions, onFinish);
+  const pct = (timeLeft / q.timeLimit) * 100;
+  const timerColor = pct > 50 ? "#4CAF7D" : pct > 20 ? "#F4B942" : "#E4572E";
+  const [jumping, setJumping] = useState(false);
+  const prevRevealed = useRef(false);
+
+  useEffect(() => {
+    if (revealed && !prevRevealed.current && selected === q.correctAnswer) {
+      setJumping(true);
+      setTimeout(() => setJumping(false), 500);
+    }
+    prevRevealed.current = revealed;
+  }, [revealed]);
+
+  const obstacleIcons = ["🌵", "🪨", "🔥", "🧱"];
+
+  return (
+    <div className="flex-1 flex flex-col" style={{ background: "linear-gradient(180deg, #1D2E4A 0%, #16233A 60%, #0F172A 100%)" }}>
+      <PlayHeader icon="🥷" title="NINJA VƯỢT CHƯỚNG NGẠI" accent="#F4B942" code={game.code}
+        progressLabel={`Câu hỏi: ${idx + 1}/${total}`} timeLeft={timeLeft} timeColor={timerColor} score={score} onQuit={onQuit} />
+      <div className="flex-1 flex flex-col items-center p-5 md:p-8 gap-6">
+        <div className="relative w-full max-w-2xl h-32 rounded-3xl overflow-hidden border border-white/10" style={{ background: "linear-gradient(180deg, #223154 0%, #16233A 100%)" }}>
+          <div className="absolute inset-x-0 bottom-0 h-6" style={{ backgroundImage: "repeating-linear-gradient(90deg, rgba(244,185,66,0.35) 0 18px, transparent 18px 36px)" }}></div>
+          <div className="absolute bottom-6 left-10">
+            <span className={`text-5xl inline-block transition-transform duration-500 ${jumping ? "-translate-y-8" : ""}`}>🥷</span>
+          </div>
+          {obstacleIcons.map((ic, i) => (
+            <span key={i} className="absolute bottom-6 text-2xl opacity-70" style={{ right: `${10 + i * 22}%` }}>{ic}</span>
+          ))}
+          <div className="absolute top-3 left-4 text-white/60 font-mono text-xs">Câu {idx + 1}/{total}</div>
+        </div>
+
+        <div className="note-card p-6 max-w-xl w-full">
+          <p className="font-display text-lg sm:text-xl text-ink mb-6 text-center">{q.content}</p>
+          <div className="grid gap-3">
+            {q.options.map((o, i) => {
+              let stateCls = "border-ink/12 hover:border-gold/60";
+              if (revealed) {
+                if (o.id === q.correctAnswer) stateCls = "border-teal bg-teal/10";
+                else if (o.id === selected) stateCls = "border-ticket bg-ticket/10";
+                else stateCls = "border-ink/10 opacity-50";
+              } else if (o.id === selected) stateCls = "border-ticket bg-ticket/5";
+              return (
+                <button key={o.id} disabled={revealed} onClick={() => handleAnswer(o.id)}
+                  className={`w-full text-left flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition font-body ${stateCls}`}>
+                  <span className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-xs font-mono flex-shrink-0">{String.fromCharCode(65 + i)}</span>
+                  <span className="flex-1">{o.content}</span>
+                  {revealed && o.id === q.correctAnswer && <span>🥷</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <p className={`text-center mt-4 font-display ${selected === q.correctAnswer ? "text-teal" : "text-ticket"}`}>
+              {selected === q.correctAnswer ? "Bật nhảy qua chướng ngại vật! 🥷" : selected === null ? "Hết giờ, va phải chướng ngại vật! ⏰" : "Va phải chướng ngại vật rồi!"}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
