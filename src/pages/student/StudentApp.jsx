@@ -173,7 +173,7 @@ function EnterNameScreen({ game, onBack, onSubmit }) {
   const [name, setName] = useState("");
   const tpl = useTemplate(game);
   return (
-    <div className="flex-1 flex items-center justify-center px-6 py-10">
+    <div className="flex-1 flex items-start sm:items-center justify-center px-6 pt-[14dvh] sm:pt-10 pb-10">
       <form onSubmit={e => { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); }} className="max-w-sm w-full text-center anim-pop">
         <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={72} fontSize={32} className="mx-auto mb-4" />
         <h1 className="font-display text-2xl text-ink mb-1">{game.title}</h1>

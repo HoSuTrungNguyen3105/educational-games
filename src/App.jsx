@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { loadAuth } from './services/api.js'
 import { authService } from './services/api.js'
 import { gameService } from './services/api.js'
@@ -11,6 +11,7 @@ import HomeScreen from './pages/HomeScreen.jsx'
 import LoginScreen from './pages/LoginScreen.jsx'
 import TeacherApp from './pages/teacher/TeacherApp.jsx'
 import StudentApp from './pages/student/StudentApp.jsx'
+import { startWarmup } from './services/warmup.js'
 
 function App() {
   const route = useRoute();
@@ -18,6 +19,13 @@ function App() {
   const [playGame, setPlayGame] = useState(null);
   const [loadingGame, setLoadingGame] = useState(false);
   const [toast, showToast] = useToast();
+  const pendingGameRef = useRef(null);
+
+  // Chọn game trên Home → chuyển thẳng vào màn nhập tên, không fetch lại lần nữa
+  const selectGame = (g) => {
+    pendingGameRef.current = g;
+    navigate(`/play/${g.id}`);
+  };
 
   const connectSocket = (token) => {
     socket.auth = { token };
@@ -26,6 +34,11 @@ function App() {
 
   useEffect(() => {
     return registerSocketListeners();
+  }, []);
+
+  // Đánh thức backend ngay khi mở app để tránh chờ cold-start
+  useEffect(() => {
+    startWarmup();
   }, []);
 
   useEffect(() => {
@@ -39,11 +52,16 @@ function App() {
     return () => window.removeEventListener("edu-auth-expired", onExpired);
   }, []);
 
-  // Route học sinh #/play/:id → tải game theo id
+  // Route học sinh #/play/:id → dùng game đã chọn ngay nếu có, nếu không thì tải theo id
   useEffect(() => {
     if (route.name !== "student" || !route.gameId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    const pending = pendingGameRef.current;
+    if (pending && String(pending.id) === String(route.gameId)) {
+      pendingGameRef.current = null;
+      setPlayGame(pending);
+      return () => { cancelled = true; };
+    }
     setLoadingGame(true);
     gameService.get(route.gameId)
       .then((g) => { if (!cancelled) setPlayGame(g); })
@@ -81,7 +99,7 @@ function App() {
     return <StudentApp initialGame={playGame} onExit={() => navigate("/")} showToast={showToast} toast={toast} />;
   }
 
-  return <HomeScreen onSelectGame={(g) => navigate(`/play/${g.id}`)} />;
+  return <HomeScreen onSelectGame={selectGame} />;
 }
 
 export default App

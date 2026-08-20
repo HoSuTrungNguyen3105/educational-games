@@ -99,7 +99,7 @@ export default function HomeScreen({ onSelectGame }) {
         ) : games.length === 0 ? (
           <EmptyState icon="🕹️" title="Chưa có trò chơi nào" subtitle="Giáo viên chưa xuất bản trò chơi nào. Hãy thử nhập mã vé hoặc quay lại sau nhé!" />
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {games.map(g => {
               const tpl = templates.find(t => t.id === g.template);
               return (

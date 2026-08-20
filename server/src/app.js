@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { isReady } from "./db.js";
 
 import gamesRouter from "./routes/games.js";
 import questionsRouter from "./routes/questions.js";
@@ -15,6 +16,12 @@ app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() });
+});
+
+// Trong lúc DB đang khởi động (cold start) → trả 503 để client retry nhanh
+app.use("/api", (_req, res, next) => {
+  if (isReady()) return next();
+  res.status(503).json({ message: "Server đang khởi động, vui lòng thử lại" });
 });
 
 app.use("/api/auth", authRouter);

@@ -25,9 +25,25 @@ export function loadAuth() {
 export function saveAuth(auth) { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); }
 export function clearAuth() { localStorage.removeItem(AUTH_KEY); }
 
+// Lặp lại khi backend đang cold-start (503 / lỗi mạng), tránh request đầu tiên chết
+async function fetchWithRetry(url, init, attempts = 5) {
+  let res;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      res = await fetch(url, init);
+      if (res.status !== 503 || i === attempts - 1) return res;
+    } catch (e) {
+      if (i === attempts - 1) throw e;
+    }
+    await new Promise((r) => setTimeout(r, Math.min(800 * 2 ** i, 5000)));
+  }
+  return res;
+}
+
 export async function apiFetch(path, options = {}) {
   const auth = loadAuth();
-  const res = await fetch(`${API_BASE}${path}`, {
+  const url = `${API_BASE}${path}`;
+  const init = {
     headers: {
       "Content-Type": "application/json",
       ...(auth && auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
@@ -35,7 +51,8 @@ export async function apiFetch(path, options = {}) {
     },
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  };
+  const res = await fetchWithRetry(url, init);
   if (res.status === 401 && !path.startsWith("/auth/")) {
     clearAuth();
     window.dispatchEvent(new Event("edu-auth-expired"));

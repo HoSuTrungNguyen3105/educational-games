@@ -25,22 +25,24 @@ export function parseRoute() {
   const parts = hash.split("/").filter(Boolean);
   const first = parts[0] || "";
   const second = parts[1] || "";
-  const gameId = parts[2] || null;
+  const third = parts[2] || null;
 
   if (first === "admin") {
     switch (second) {
       case "library": return { name: "admin-library", gameId: null };
       case "users": return { name: "admin-users", gameId: null };
       case "create": return { name: "admin-create", gameId: null };
-      case "edit": return { name: "admin-edit", gameId };
-      case "builder": return { name: "admin-builder", gameId };
-      case "results": return { name: "admin-results", gameId };
+      case "edit": return { name: "admin-edit", gameId: third };
+      case "builder": return { name: "admin-builder", gameId: third };
+      case "results": return { name: "admin-results", gameId: third };
       default: return { name: "admin-dashboard", gameId: null };
     }
   }
 
   if (first === "play") {
-    return gameId ? { name: "student", gameId } : { name: "student-join", gameId: null };
+    // #/play/:id → id nằm ở parts[1] (khác với admin/action/:id lấy parts[2])
+    const playId = second || null;
+    return playId ? { name: "student", gameId: playId } : { name: "student-join", gameId: null };
   }
 
   return { name: "home", gameId: null };

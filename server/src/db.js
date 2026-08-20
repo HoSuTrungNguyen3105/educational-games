@@ -9,6 +9,11 @@ const DATA_DIR = path.resolve(__dirname, "../data");
 
 let client = null;
 let db = null;
+let ready = false;
+
+export function isReady() {
+  return ready;
+}
 
 function loadDataFile(name) {
   const raw = readFileSync(path.join(DATA_DIR, name), "utf8");
@@ -239,6 +244,7 @@ export async function initDatabase() {
   await database.collection("subjects").insertOne({ list: subjects });
   seeded.push("subjects");
 
+  ready = true;
   console.log("[db] Khởi tạo CSDL hoàn tất.");
   return {
     dbName: config.dbName,
