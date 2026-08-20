@@ -7,6 +7,7 @@ import ElementsSidebar from './ElementsSidebar.jsx'
 import PropertiesPanel from './PropertiesPanel.jsx'
 import TemplateRenderer from '../../games/TemplateRenderer.jsx'
 import { Loader } from '../ui.jsx'
+import { gameTemplateRegistry } from '../../games/templates/gameTemplates.js'
 
 // Context giả lập để hiển thị trong editor (không có dữ liệu game thật)
 const PREVIEW_CONTEXT = {
@@ -28,6 +29,7 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
   const [showPreview, setShowPreview] = useState(false);
   const [sheet, setSheet] = useState(null); // "elements" | "properties" — mobile overlay
   const [title, setTitle] = useState("");
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const isMobile = useMediaQuery("(max-width: 1023px)");
 
   const template = useEditorStore(s => s.template);
@@ -49,7 +51,8 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
     let cancelled = false;
     (async () => {
       if (!gameId) {
-        loadTemplate(null);
+        if (!template) setShowTemplateSelector(true);
+        setLoading(false);
         return;
       }
       try {
@@ -99,10 +102,20 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
     try {
       let id = gameId;
       const payload = { design: template };
+      if (template?.templateId) payload.templateId = template.templateId;
       if (title.trim()) payload.title = title.trim();
       if (id) await gameService.update(id, payload);
       else {
-        const created = await gameService.create({ title: title.trim() || "Trò chơi mới", description: "", subject: "Tổng hợp", topic: "", language: "vi", template: "custom", status: "draft", design: template });
+        const created = await gameService.create({ 
+          title: title.trim() || "Trò chơi mới", 
+          description: "", 
+          subject: "Tổng hợp", 
+          topic: "", 
+          language: "vi", 
+          template: template?.templateId || "custom", 
+          status: "draft", 
+          design: template 
+        });
         id = created.id;
       }
       showToast("Đã lưu thiết kế 🎨", "success");
@@ -114,6 +127,21 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader label="Đang mở Game Builder..." /></div>;
+
+  if (showTemplateSelector) {
+    return <TemplateSelector onSelect={(t) => {
+      // Clone default template
+      const defaultDesign = {
+        templateId: t.id,
+        version: t.version,
+        canvas: JSON.parse(JSON.stringify(t.canvas)),
+        elements: JSON.parse(JSON.stringify(t.elements || [])),
+        customizable: JSON.parse(JSON.stringify(t.customizable || {}))
+      };
+      loadTemplate(defaultDesign);
+      setShowTemplateSelector(false);
+    }} onCancel={onCancel} />;
+  }
 
   return (
     <div className="h-screen flex flex-col bg-paper overflow-hidden">
@@ -265,6 +293,41 @@ function PreviewModal({ template, onClose }) {
           </div>
         </div>
         <p className="text-xs text-[#8A7C63] mt-3 text-center">Đây là giao diện học sinh sẽ thấy khi chơi. Dữ liệu câu hỏi/đáp án/bảng xếp hạng sẽ lấy từ game realtime.</p>
+      </div>
+    </div>
+  );
+}
+
+function TemplateSelector({ onSelect, onCancel }) {
+  const templates = gameTemplateRegistry.getAll();
+  
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-paper p-4">
+      <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full shadow-xl">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-display text-ink font-bold">Chọn Template Trò Chơi</h2>
+            <p className="text-ink/60 mt-1">Bắt đầu thiết kế với một mẫu có sẵn hoặc một canvas trống</p>
+          </div>
+          <button onClick={onCancel} className="text-ink/50 hover:text-ink">✕ Thoát</button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {templates.map(t => (
+            <div key={t.id} onClick={() => onSelect(t)} 
+              className="border-2 border-ink/10 rounded-2xl p-5 hover:border-gold hover:shadow-lg transition cursor-pointer flex flex-col">
+              <div className="text-4xl mb-3">🎨</div>
+              <h3 className="font-display font-semibold text-lg text-ink mb-2">{t.name}</h3>
+              <p className="text-sm text-ink/70 flex-1">{t.description}</p>
+            </div>
+          ))}
+          <div onClick={() => onSelect({ id: 'custom', version: 1, name: 'Trống', canvas: {width: 1200, height: 800, background: '#FFF6E7'}, elements: [], customizable: {canvasBackground: true, elements: {text: true, image: true, shape: true, button: true}} })}
+            className="border-2 border-dashed border-ink/20 rounded-2xl p-5 hover:border-gold hover:bg-gold/5 transition cursor-pointer flex flex-col items-center justify-center text-center">
+            <div className="text-4xl mb-3">✨</div>
+            <h3 className="font-display font-semibold text-lg text-ink mb-2">Bắt đầu từ số 0</h3>
+            <p className="text-sm text-ink/70 flex-1">Thiết kế một canvas hoàn toàn mới</p>
+          </div>
+        </div>
       </div>
     </div>
   );

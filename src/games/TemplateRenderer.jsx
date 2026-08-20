@@ -1,5 +1,6 @@
 import { fontStack } from "./elementUtils.js";
 import { memo, useCallback, useMemo } from "react";
+import { GameComponentRenderer } from "./templates/GameComponentRegistry.jsx";
 
 // ---------------------------------------------------------------------------
 // Dữ liệu tĩnh: tạo 1 lần duy nhất khi module load, không tạo lại mỗi render
@@ -266,6 +267,8 @@ export function renderElementContent(el, context = {}) {
         </div>
       );
     }
+    case "game-component":
+      return <GameComponentRenderer el={el} context={context} editing={context.editing} />;
     default:
       return null;
   }
@@ -296,6 +299,8 @@ function relevantContextSlice(el, context) {
         players: context.players,
         playerName: context.playerName,
       };
+    case "game-component":
+      return context;
     default:
       return null; // text / image / button / shape: không đọc context runtime
   }

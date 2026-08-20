@@ -18,6 +18,18 @@ export default function PropertiesPanel({ onPreview }) {
   const el = template?.elements.find(e => e.id === selectedId) || null;
   const p = el?.properties || {};
 
+  const getElConfig = (el) => {
+    if (!el || !template?.customizable?.elements) return true;
+    const elements = template.customizable.elements;
+    if (elements[el.id] !== undefined) return elements[el.id];
+    if (el.type === 'game-component' && elements[el.component] !== undefined) return elements[el.component];
+    if (elements[el.type] !== undefined) return elements[el.type];
+    return true;
+  };
+
+  const elConfig = getElConfig(el);
+  const allow = (prop) => elConfig === true || elConfig?.[prop];
+
   if (!template) return <div className="w-full lg:w-72 lg:shrink-0 lg:border-l border-ink/10 bg-paper2"></div>;
 
   return (
@@ -33,24 +45,33 @@ export default function PropertiesPanel({ onPreview }) {
         ) : (
           <>
             <div className="space-y-3">
-              <Labeled label="Position">
-                <div className="grid grid-cols-2 gap-2">
-                  <NumField label="X" value={el.x} onChange={(v) => updateElement(el.id, { x: v })} />
-                  <NumField label="Y" value={el.y} onChange={(v) => updateElement(el.id, { y: v })} />
-                </div>
-              </Labeled>
-              <Labeled label="Size">
-                <div className="grid grid-cols-2 gap-2">
-                  <NumField label="W" value={el.width} onChange={(v) => updateElement(el.id, { width: Math.max(20, v) })} />
-                  <NumField label="H" value={el.height} onChange={(v) => updateElement(el.id, { height: Math.max(20, v) })} />
-                </div>
-              </Labeled>
+              {allow("position") && (
+                <Labeled label="Position">
+                  <div className="grid grid-cols-2 gap-2">
+                    <NumField label="X" value={el.x} onChange={(v) => updateElement(el.id, { x: v })} />
+                    <NumField label="Y" value={el.y} onChange={(v) => updateElement(el.id, { y: v })} />
+                  </div>
+                </Labeled>
+              )}
+              {allow("size") && (
+                <Labeled label="Size">
+                  <div className="grid grid-cols-2 gap-2">
+                    <NumField label="W" value={el.width} onChange={(v) => updateElement(el.id, { width: Math.max(20, v) })} />
+                    <NumField label="H" value={el.height} onChange={(v) => updateElement(el.id, { height: Math.max(20, v) })} />
+                  </div>
+                </Labeled>
+              )}
             </div>
 
             <SectionTitle>Style</SectionTitle>
-            <TypeProps el={el} p={p} onUpdate={(patch) => updateProperties(el.id, patch)} />
-            <SectionTitle>Typography</SectionTitle>
-            <TypographyProps el={el} p={p} onUpdate={(patch) => updateProperties(el.id, patch)} />
+            <TypeProps el={el} p={p} onUpdate={(patch) => updateProperties(el.id, patch)} allow={allow} />
+            
+            {allow("font") && (
+              <>
+                <SectionTitle>Typography</SectionTitle>
+                <TypographyProps el={el} p={p} onUpdate={(patch) => updateProperties(el.id, patch)} />
+              </>
+            )}
 
             <SectionTitle>Layer</SectionTitle>
             <div className="grid grid-cols-2 gap-2">
@@ -128,7 +149,7 @@ function ColorRow({ value, onChange }) {
   );
 }
 
-function TypeProps({ el, p, onUpdate }) {
+function TypeProps({ el, p, onUpdate, allow }) {
   switch (el.type) {
     case "text":
       return <>
@@ -180,13 +201,22 @@ function TypeProps({ el, p, onUpdate }) {
         <ColorRow value={p.color || "#1D2E4A"} onChange={(v) => onUpdate({ color: v })} />
         <ColorRow value={p.background || "#FFFFFF"} onChange={(v) => onUpdate({ background: v })} />
       </>;
+    case "game-component":
+      return <>
+        {allow("text") && <TextField label="Nội dung" value={p.text || ""} onChange={(v) => onUpdate({ text: v })} />}
+        {allow("src") && <TextField label="URL ảnh" value={p.src || ""} onChange={(v) => onUpdate({ src: v })} placeholder="https://..." />}
+        {allow("color") && <ColorRow value={p.color || "#1D2E4A"} onChange={(v) => onUpdate({ color: v })} />}
+        {allow("background") && <ColorRow value={p.background || ""} onChange={(v) => onUpdate({ background: v })} />}
+        {allow("gap") && <NumSlider label="Khoảng cách" value={p.gap ?? 8} min={0} max={40} onChange={(v) => onUpdate({ gap: v })} />}
+        {allow("radius") && <NumSlider label="Bo góc" value={p.radius ?? 0} min={0} max={100} onChange={(v) => onUpdate({ radius: v })} />}
+      </>;
     default:
       return null;
   }
 }
 
 function TypographyProps({ el, p, onUpdate }) {
-  const showFont = ["text", "button", "question", "answer", "timer", "leaderboard"].includes(el.type);
+  const showFont = ["text", "button", "question", "answer", "timer", "leaderboard", "game-component"].includes(el.type);
   if (!showFont) return null;
   return <>
     {showFont && (
@@ -196,7 +226,7 @@ function TypographyProps({ el, p, onUpdate }) {
         </select>
       </Labeled>
     )}
-    {["text", "button", "question", "answer", "timer", "leaderboard"].includes(el.type) && (
+    {["text", "button", "question", "answer", "timer", "leaderboard", "game-component"].includes(el.type) && (
       <div className="grid grid-cols-2 gap-2">
         <NumSlider label="Size" value={p.fontSize ?? 20} min={8} max={120} onChange={(v) => onUpdate({ fontSize: v })} />
         <NumSlider label="Đậm" value={p.fontWeight ?? 500} min={300} max={900} step={100} onChange={(v) => onUpdate({ fontWeight: v })} />

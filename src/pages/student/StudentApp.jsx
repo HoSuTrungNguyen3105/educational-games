@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { uid, resultService, questionService, gameService } from '../../services/api.js'
-import { useTemplate, usePlayerNames, useTemplates } from '../../lib/hooks.js'
+import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, TicketStub, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
 import { GamePlayRouter } from '../../games/GamePlayRouter.jsx'
@@ -179,6 +179,7 @@ function EnterNameScreen({ game, onBack, onSubmit }) {
         <h1 className="font-display text-2xl text-ink mb-1">{game.title}</h1>
         <p className="text-sm text-[#8A7C63] mb-6">{game.subject} · {game.topic}</p>
         <input value={name} onChange={e => setName(e.target.value)} maxLength={24} autoFocus placeholder="Nhập tên của bạn"
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); } }}
           className="w-full text-center note-card px-4 py-3 text-lg border-ink/10 focus:border-ticket" />
         <div className="flex gap-3 mt-5">
           <GhostButton onClick={onBack} className="flex-1">← Quay lại</GhostButton>
@@ -190,16 +191,14 @@ function EnterNameScreen({ game, onBack, onSubmit }) {
 }
 
 function WaitingRoomScreen({ game, playerName, onStart }) {
-  const [mockOthers, setMockOthers] = useState([]);
   const tpl = useTemplate(game);
-  const playerNames = usePlayerNames();
   const connected = useSocketConnected();
   const players = useGameStore(s => s.players);
   const gameStatus = useGameStore(s => s.gameStatus);
   const joined = players.length > 0 && connected;
   const others = joined
     ? players.filter(p => p.name !== playerName).map(p => p.name).slice(0, 6)
-    : mockOthers;
+    : [];
   const started = gameStatus === "playing";
 
   // Tham gia trò chơi qua socket khi vào phòng chờ
@@ -216,13 +215,6 @@ function WaitingRoomScreen({ game, playerName, onStart }) {
 
   // Backend gửi game:started → tự động vào chơi
   useSocketEvent(SOCKET_EVENTS.GAME_STARTED, () => onStart());
-
-  // Fallback dữ liệu minh hoạ khi chưa có socket backend
-  useEffect(() => {
-    if (joined) return;
-    const timers = playerNames.slice(0, 4).map((name, i) => setTimeout(() => setMockOthers(prev => [...prev, name]), 500 + i * 500));
-    return () => timers.forEach(clearTimeout);
-  }, [joined, playerNames]);
 
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-10">
