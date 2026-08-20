@@ -5,6 +5,7 @@ import { useTemplates, useSubjects, useCategories } from '../../lib/hooks.js'
 import { emptyQuestion } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, IconButton, Loader } from '../../components/ui.jsx'
 import Field, { StampToken } from './fields.jsx'
+import QuestionImportModal from './QuestionImportModal.jsx'
 
 const STEPS = [
   { id: "template", label: "Chọn mẫu" },
@@ -183,6 +184,7 @@ function StepInfo({ form, setForm, subjects }) {
 
 function StepQuestions({ questions, setQuestions }) {
   const [openIdx, setOpenIdx] = useState(0);
+  const [showImportModal, setShowImportModal] = useState(false);
   const update = (idx, patch) => setQuestions(qs => qs.map((q, i) => i === idx ? { ...q, ...patch } : q));
   const updateOption = (idx, optId, content) => setQuestions(qs => qs.map((q, i) => i !== idx ? q : { ...q, options: q.options.map(o => o.id === optId ? { ...o, content } : o) }));
   const addOption = (idx) => setQuestions(qs => qs.map((q, i) => i !== idx ? q : (q.options.length >= 4 ? q : { ...q, options: [...q.options, { id: uid("answer"), content: "" }] })));
@@ -205,6 +207,10 @@ function StepQuestions({ questions, setQuestions }) {
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-display text-xl text-ink">Quản lý câu hỏi</h2>
         <span className="text-xs font-mono text-[#8A7C63]">{questions.length} câu hỏi</span>
+      </div>
+      <div className="flex gap-3 mb-4">
+        <GhostButton onClick={addQuestion} className="flex-1">+ Thêm câu hỏi</GhostButton>
+        <PrimaryButton onClick={() => setShowImportModal(true)} className="flex-1">Import câu hỏi</PrimaryButton>
       </div>
       <div className="space-y-3">
         {questions.map((q, idx) => (
@@ -257,7 +263,31 @@ function StepQuestions({ questions, setQuestions }) {
           </div>
         ))}
       </div>
-      <GhostButton onClick={addQuestion} className="mt-4 w-full">+ Thêm câu hỏi</GhostButton>
+      {showImportModal && (
+        <QuestionImportModal 
+          onClose={() => setShowImportModal(false)} 
+          onImport={(imported) => {
+            const mapped = imported.filter(q => q.status === 'valid').map(q => {
+              const opts = q.answers.map(a => ({ id: uid("answer"), content: a.content, _key: a.key }));
+              const correctOpt = opts.find(o => o._key === q.correctAnswer);
+              return {
+                id: uid("question"),
+                content: q.question,
+                options: opts.map(({ id, content }) => ({ id, content })), // remove _key
+                correctAnswer: correctOpt ? correctOpt.id : null,
+                timeLimit: q.time || 20,
+                points: q.score || 100
+              };
+            });
+            // if we only had the default empty question, replace it. Otherwise append.
+            if (questions.length === 1 && questions[0].content === "") {
+              setQuestions(mapped);
+            } else {
+              setQuestions(prev => [...prev, ...mapped]);
+            }
+          }} 
+        />
+      )}
     </div>
   );
 }
