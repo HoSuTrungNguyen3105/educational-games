@@ -144,7 +144,7 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-paper overflow-hidden">
+    <div className="h-dvh flex flex-col bg-paper overflow-hidden">
       <Toolbar title={title} setTitle={setTitle} zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onResetZoom={resetZoom}
         canUndo={past.length > 0} canRedo={future.length > 0} onUndo={undo} onRedo={redo}
         onPreview={() => setShowPreview(true)} onSave={save} saving={saving} onCancel={onCancel} />
@@ -154,7 +154,6 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
         <CanvasArea
           ctx={{ previewContext: PREVIEW_CONTEXT }}
           isMobile={isMobile}
-          onOpenSheet={setSheet}
         />
         {!isMobile && <PropertiesPanel onPreview={() => setShowPreview(true)} />}
       </div>
@@ -184,22 +183,22 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
 
 function MobileBar({ zoom, onZoomIn, onZoomOut, onResetZoom, sheet, setSheet, onPreview, onSave, saving }) {
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-ink text-paper border-t border-paper/10 z-30">
-      <div className="flex items-center gap-1.5">
+    <div className="flex items-stretch justify-between gap-2 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] bg-ink text-paper border-t border-paper/10 z-30">
+      <div className="flex items-center gap-2">
         <button onClick={() => setSheet(sheet === "elements" ? null : "elements")}
-          className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl transition ${sheet === "elements" ? "bg-gold text-ink" : "bg-paper/10 hover:bg-paper/20"}`}
-          title="Thêm element" aria-label="Thêm element">🧩</button>
+          className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-lg gap-0.5 transition ${sheet === "elements" ? "bg-gold text-ink" : "bg-paper/10 hover:bg-paper/20"}`}
+          title="Thêm element" aria-label="Thêm element"><span>🧩</span><span className="text-[9px] font-mono">Element</span></button>
         <button onClick={() => setSheet(sheet === "properties" ? null : "properties")}
-          className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl transition ${sheet === "properties" ? "bg-gold text-ink" : "bg-paper/10 hover:bg-paper/20"}`}
-          title="Thuộc tính" aria-label="Thuộc tính">🎛️</button>
+          className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-lg gap-0.5 transition ${sheet === "properties" ? "bg-gold text-ink" : "bg-paper/10 hover:bg-paper/20"}`}
+          title="Thuộc tính" aria-label="Thuộc tính"><span>🎛️</span><span className="text-[9px] font-mono">Chỉnh sửa</span></button>
       </div>
 
       <div className="flex items-center gap-1.5">
-        <button onClick={onZoomOut} className="w-10 h-10 rounded-xl bg-paper/10 hover:bg-paper/20 text-lg" title="Thu nhỏ" aria-label="Thu nhỏ">−</button>
-        <button onClick={onResetZoom} className="px-2 h-10 text-xs font-mono text-paper/80 hover:text-paper" title="Về mặc định">{Math.round(zoom * 100)}%</button>
-        <button onClick={onZoomIn} className="w-10 h-10 rounded-xl bg-paper/10 hover:bg-paper/20 text-lg" title="Phóng to" aria-label="Phóng to">+</button>
-        <button onClick={onPreview} className="w-10 h-10 rounded-xl bg-paper/10 hover:bg-paper/20 text-lg" title="Preview" aria-label="Preview">👁️</button>
-        <button onClick={onSave} disabled={saving} className="h-10 px-4 rounded-xl bg-gold text-ink font-display font-semibold text-sm hover:brightness-105 transition disabled:opacity-50">
+        <button onClick={onZoomOut} className="w-11 h-12 rounded-xl bg-paper/10 hover:bg-paper/20 text-lg" title="Thu nhỏ" aria-label="Thu nhỏ">−</button>
+        <button onClick={onResetZoom} className="px-2 h-12 text-xs font-mono text-paper/80 hover:text-paper" title="Về mặc định">{Math.round(zoom * 100)}%</button>
+        <button onClick={onZoomIn} className="w-11 h-12 rounded-xl bg-paper/10 hover:bg-paper/20 text-lg" title="Phóng to" aria-label="Phóng to">+</button>
+        <button onClick={onPreview} className="w-12 h-12 rounded-xl bg-paper/10 hover:bg-paper/20 text-lg flex flex-col items-center justify-center gap-0.5" title="Preview" aria-label="Preview"><span>👁️</span><span className="text-[9px] font-mono">Xem</span></button>
+        <button onClick={onSave} disabled={saving} className="h-12 px-4 rounded-xl bg-gold text-ink font-display font-semibold text-sm hover:brightness-105 transition disabled:opacity-50">
           {saving ? "..." : "💾"}
         </button>
       </div>
@@ -209,8 +208,8 @@ function MobileBar({ zoom, onZoomIn, onZoomOut, onResetZoom, sheet, setSheet, on
 
 function MobileSheet({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-40 bg-ink/50 backdrop-blur-sm flex flex-col justify-end anim-fade" onClick={onClose}>
-      <div className="bg-paper2 rounded-t-3xl h-[75vh] flex flex-col anim-pop shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-40 bg-ink/50 backdrop-blur-sm flex flex-col justify-end anim-fade pb-[env(safe-area-inset-bottom)]" onClick={onClose}>
+      <div className="bg-paper2 rounded-t-3xl h-[75dvh] max-h-[85dvh] flex flex-col anim-pop shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="p-3 border-b border-ink/10 flex items-center justify-between">
           <h3 className="font-display text-base text-ink">{title}</h3>
           <button onClick={onClose} className="w-10 h-10 rounded-xl bg-ink/5 hover:bg-ink/10 text-ink flex items-center justify-center" title="Đóng" aria-label="Đóng">✕</button>

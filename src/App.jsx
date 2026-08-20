@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadAuth } from './services/api.js'
-import { authService } from './services/api.js'
 import { gameService } from './services/api.js'
 import { navigate, useRoute } from './lib/router.js'
 import { useToast } from './lib/hooks.js'
@@ -75,20 +74,13 @@ function App() {
     setUser(u);
     if (auth && auth.token) connectSocket(auth.token);
   };
-  const handleLogout = () => {
-    authService.logout();
-    socket.disconnect();
-    setUser(null);
-    navigate("/");
-  };
 
   const isAdminRoute = route.name.startsWith("admin-");
-
   if (isAdminRoute) {
     if (!user) return <LoginScreen onBack={() => navigate("/")} onLogin={handleLogin} showToast={showToast} />;
     return (
       <>
-        <TeacherApp user={user} route={route} onExit={handleLogout} showToast={showToast} />
+        <TeacherApp user={user} route={route} onExit={() => navigate("/")} showToast={showToast} />
         <Toast toast={toast} />
       </>
     );

@@ -239,7 +239,7 @@ function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew })
   return (
     <button
       onClick={() => onSelect(game)}
-      className="group relative bg-white rounded-3xl p-5 text-left shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-purple-200 overflow-hidden animate-fade-in-up"
+      className="group relative bg-white rounded-lg p-3 text-left shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-purple-200 overflow-hidden animate-fade-in-up"
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       {/* Background gradient on hover */}
@@ -259,23 +259,23 @@ function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew })
 
       {/* Content */}
       <div className="relative z-10">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2.5">
           <div className="transform group-hover:scale-110 transition-transform duration-300">
-            <StampToken icon={template ? template.icon : "🎲"} ring={template ? template.ring : "#A855F7"} size={56} fontSize={26} />
+            <StampToken icon={template ? template.icon : "🎲"} ring={template ? template.ring : "#A855F7"} size={48} fontSize={22} />
           </div>
-          <span className="font-mono text-xs text-gray-500 bg-gray-100 group-hover:bg-purple-100 rounded-full px-3 py-1.5 transition-colors">
+          <span className="font-mono text-[11px] text-gray-500 bg-gray-100 group-hover:bg-purple-100 rounded-full px-2.5 py-1 transition-colors">
             {game.code}
           </span>
         </div>
 
-        <h3 className="font-display text-xl text-gray-800 leading-snug mb-2 group-hover:text-purple-700 transition-colors">
+        <h3 className="font-display text-lg text-gray-800 leading-snug mb-1.5 group-hover:text-purple-700 transition-colors">
           {game.title}
         </h3>
-        <p className="text-sm text-gray-500 mb-4 line-clamp-2 group-hover:text-gray-600">
+        <p className="text-[13px] text-gray-500 mb-2.5 line-clamp-2 group-hover:text-gray-600">
           {game.description}
         </p>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 font-mono mb-4">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400 font-mono mb-2.5">
           <span className="bg-purple-50 text-purple-600 px-2 py-1 rounded-lg">{game.subject}</span>
           <span>•</span>
           <span className="bg-pink-50 text-pink-600 px-2 py-1 rounded-lg">{game.questionsCount} câu hỏi</span>

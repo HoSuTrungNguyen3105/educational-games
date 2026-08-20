@@ -31,7 +31,7 @@ export default function TeacherApp({ user, route, onExit, showToast }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-paper">
-      <TeacherNav screen={page} onExit={onExit} onCreate={goCreate} user={user} />
+      <TeacherNav screen={page} onExit={onExit} onCreate={goCreate} />
       <main className="flex-1 max-w-6xl w-full mx-auto px-5 md:px-8 py-8">
         {page === "admin-dashboard" && <TeacherDashboard key={refreshFlag} user={user} onOpenLibrary={goLibrary} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} onDesign={(id) => navigate(`/admin/builder/${id}`)} showToast={showToast} />}
         {page === "admin-library" && <GameLibrary key={refreshFlag} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} onDesign={(id) => navigate(`/admin/builder/${id}`)} onOpenBuilder={() => navigate("/admin/builder")} showToast={showToast} onChanged={bump} />}
@@ -44,7 +44,7 @@ export default function TeacherApp({ user, route, onExit, showToast }) {
   );
 }
 
-function TeacherNav({ screen, onExit, onCreate, user }) {
+function TeacherNav({ screen, onExit, onCreate }) {
   const tabs = [
     { id: "admin-dashboard", label: "Dashboard", route: "/admin" },
     { id: "admin-library", label: "Thư viện trò chơi", route: "/admin/library" },
@@ -69,9 +69,9 @@ function TeacherNav({ screen, onExit, onCreate, user }) {
         </nav>
         <div className="flex items-center gap-3">
           <PrimaryButton onClick={onCreate} className="!bg-ticket !text-white !shadow-none px-4 py-2 text-sm">+ Tạo trò chơi</PrimaryButton>
-          <button onClick={onExit} className="flex items-center gap-2 text-paper/70 hover:text-paper text-sm">
-            <span className="w-8 h-8 rounded-full bg-paper/15 flex items-center justify-center font-display">{(user ? user.name : "G")[0]}</span>
-            <span className="hidden md:inline">Thoát</span>
+          <button onClick={onExit} className="flex items-center gap-2 text-paper/70 hover:text-paper text-sm" title="Quay về trang chủ">
+            <span className="w-8 h-8 rounded-full bg-paper/15 flex items-center justify-center">🏠</span>
+            <span className="hidden md:inline">Về trang chủ</span>
           </button>
         </div>
       </div>
