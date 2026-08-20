@@ -1,7 +1,19 @@
-import { fontStack } from "./elementUtils.js"
+import { fontStack } from "./elementUtils.js";
+import { memo, useCallback, useMemo } from "react";
 
-// Render một element riêng lẻ theo design data.
-// context: dữ liệu game runtime hoặc mock cho preview.
+// ---------------------------------------------------------------------------
+// Dữ liệu tĩnh: tạo 1 lần duy nhất khi module load, không tạo lại mỗi render
+// ---------------------------------------------------------------------------
+const FALLBACK_ANSWERS = ["Paris", "London", "Tokyo", "Seoul"].map((t, i) => ({
+  id: `a${i}`,
+  content: t,
+  label: String.fromCharCode(65 + i),
+}));
+
+// ---------------------------------------------------------------------------
+// Style builder cho từng element — hàm thuần (pure), không đọc context runtime,
+// nên có thể memo hoá theo riêng `el`.
+// ---------------------------------------------------------------------------
 // eslint-disable-next-line react-refresh/only-export-components
 export function renderElementStyle(el) {
   const p = el.properties || {};
@@ -123,7 +135,9 @@ export function renderElementStyle(el) {
   }
 }
 
-// Render nội dung bên trong element (không tính position/style của chính element)
+// ---------------------------------------------------------------------------
+// Content builder — có đọc context runtime (câu hỏi, điểm số, thời gian...)
+// ---------------------------------------------------------------------------
 // eslint-disable-next-line react-refresh/only-export-components
 export function renderElementContent(el, context = {}) {
   const p = el.properties || {};
@@ -132,7 +146,13 @@ export function renderElementContent(el, context = {}) {
     case "text":
       return p.text || "";
     case "image":
-      return p.src ? <img src={p.src} alt={p.alt || ""} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} /> : null;
+      return p.src ? (
+        <img
+          src={p.src}
+          alt={p.alt || ""}
+          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+        />
+      ) : null;
     case "button":
       return p.text || "Button";
     case "shape":
@@ -140,7 +160,7 @@ export function renderElementContent(el, context = {}) {
     case "question":
       return question ? question.content : (p.text || "Câu hỏi của bạn");
     case "answer": {
-      const list = question?.options || context.options || fallbackAnswers();
+      const list = question?.options || context.options || FALLBACK_ANSWERS;
       const cols = p.columns || 2;
       const grid = {
         display: "grid",
@@ -157,11 +177,27 @@ export function renderElementContent(el, context = {}) {
             const isSelected = context.selected === opt.id;
             const isCorrect = isRuntime && context.revealed && opt.id === question?.correctAnswer;
             const isWrong = isRuntime && context.revealed && isSelected && !isCorrect;
-            const stateBg = isCorrect ? "rgba(27,153,139,0.18)" : isWrong ? "rgba(228,87,46,0.18)" : isSelected ? "rgba(29,46,74,0.08)" : "#FFFFFF";
-            const stateBorder = isCorrect ? "2px solid #1B998B" : isWrong ? "2px solid #E4572E" : isSelected ? "2px solid #1D2E4A" : "2px solid rgba(0,0,0,0.08)";
+            const stateBg = isCorrect
+              ? "rgba(27,153,139,0.18)"
+              : isWrong
+                ? "rgba(228,87,46,0.18)"
+                : isSelected
+                  ? "rgba(29,46,74,0.08)"
+                  : "#FFFFFF";
+            const stateBorder = isCorrect
+              ? "2px solid #1B998B"
+              : isWrong
+                ? "2px solid #E4572E"
+                : isSelected
+                  ? "2px solid #1D2E4A"
+                  : "2px solid rgba(0,0,0,0.08)";
             const cursor = context.editing ? "default" : context.revealed ? "default" : "pointer";
             return (
-              <div key={opt.id || i} className={`answer-chip ${isRuntime ? "runtime-answer" : ""}`} data-answer-id={opt.id} data-answer-index={i}
+              <div
+                key={opt.id || i}
+                className={`answer-chip ${isRuntime ? "runtime-answer" : ""}`}
+                data-answer-id={opt.id}
+                data-answer-index={i}
                 style={{
                   background: isRuntime ? stateBg : (context.palette ? context.palette[i % context.palette.length] : "#FFFFFF"),
                   color: p.color || "#1D2E4A",
@@ -175,7 +211,8 @@ export function renderElementContent(el, context = {}) {
                   alignItems: "center",
                   gap: 10,
                   cursor,
-                }}>
+                }}
+              >
                 <span className="answer-letter" style={{ fontWeight: 700 }}>{label}.</span>
                 <span style={{ flex: 1 }}>{content}</span>
                 {isRuntime && isCorrect && <span style={{ color: "#1B998B" }}>✓</span>}
@@ -200,20 +237,32 @@ export function renderElementContent(el, context = {}) {
           <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.8, marginBottom: 4 }}>🏅 Bảng xếp hạng</div>
           {rows.length === 0 ? (
             <div style={{ opacity: 0.5, fontSize: 14 }}>Chưa có người chơi</div>
-          ) : rows.map((row, i) => (
-            <div key={row.playerId || row.id || i} style={{
-              display: "flex", alignItems: "center", gap: 8,
-              fontSize: p.fontSize || 14, color: p.color || "#1D2E4A",
-              fontFamily: fontStack(p.font), fontWeight: p.fontWeight || 500,
-              opacity: row.highlight || row.name === myName ? 1 : 0.9,
-              background: row.highlight || row.name === myName ? "rgba(255,111,145,0.12)" : "transparent",
-              borderRadius: 8, padding: "2px 6px",
-            }}>
-              <span style={{ minWidth: 22 }}>{["🥇", "🥈", "🥉"][i] || `${i + 1}.`}</span>
-              <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.name || row.playerName}{row.name === myName ? " (bạn)" : ""}</span>
-              <span style={{ fontWeight: 700 }}>{row.score}</span>
-            </div>
-          ))}
+          ) : (
+            rows.map((row, i) => (
+              <div
+                key={row.playerId || row.id || i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: p.fontSize || 14,
+                  color: p.color || "#1D2E4A",
+                  fontFamily: fontStack(p.font),
+                  fontWeight: p.fontWeight || 500,
+                  opacity: row.highlight || row.name === myName ? 1 : 0.9,
+                  background: row.highlight || row.name === myName ? "rgba(255,111,145,0.12)" : "transparent",
+                  borderRadius: 8,
+                  padding: "2px 6px",
+                }}
+              >
+                <span style={{ minWidth: 22 }}>{["🥇", "🥈", "🥉"][i] || `${i + 1}.`}</span>
+                <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {row.name || row.playerName}{row.name === myName ? " (bạn)" : ""}
+                </span>
+                <span style={{ fontWeight: 700 }}>{row.score}</span>
+              </div>
+            ))
+          )}
         </div>
       );
     }
@@ -222,34 +271,132 @@ export function renderElementContent(el, context = {}) {
   }
 }
 
-function fallbackAnswers() {
-  return ["Paris", "London", "Tokyo", "Seoul"].map((t, i) => ({ id: `a${i}`, content: t, label: String.fromCharCode(65 + i) }));
+// ---------------------------------------------------------------------------
+// Chỉ ra "lát cắt" context mà mỗi loại element thực sự phụ thuộc.
+// Nhờ đó timer chạy mỗi giây KHÔNG kéo theo việc render lại toàn bộ canvas
+// (text/image/button/shape là tĩnh, không phụ thuộc context runtime).
+// ---------------------------------------------------------------------------
+function relevantContextSlice(el, context) {
+  switch (el.type) {
+    case "question":
+      return { question: context.question };
+    case "answer":
+      return {
+        question: context.question,
+        options: context.options,
+        selected: context.selected,
+        revealed: context.revealed,
+        palette: context.palette,
+      };
+    case "timer":
+      return { timeLeft: context.timeLeft };
+    case "leaderboard":
+      return {
+        leaderboard: context.leaderboard,
+        players: context.players,
+        playerName: context.playerName,
+      };
+    default:
+      return null; // text / image / button / shape: không đọc context runtime
+  }
 }
 
+function shallowEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  return keys.every((k) => a[k] === b[k]);
+}
+
+// ---------------------------------------------------------------------------
+// Một element trên canvas — memo hoá để chỉ re-render khi:
+//  - chính element đó thay đổi (di chuyển, đổi thuộc tính, v.v.), hoặc
+//  - phần context mà loại element đó thực sự cần dùng thay đổi.
+// Style được useMemo theo `el` nên không tính lại mỗi lần cha re-render.
+// ---------------------------------------------------------------------------
+const CanvasElement = memo(
+  function CanvasElement({ el, context, editing, clickable }) {
+    const style = useMemo(() => renderElementStyle(el), [el]);
+    const content = renderElementContent(el, { ...context, editing });
+    if (content === null && el.type !== "shape") return null;
+
+    return (
+      <div
+        style={style}
+        data-type={el.type}
+        data-id={el.id}
+        data-clickable={clickable || undefined}
+      >
+        {content}
+      </div>
+    );
+  },
+  (prev, next) => {
+    if (prev.el !== next.el || prev.editing !== next.editing || prev.clickable !== next.clickable) {
+      return false;
+    }
+    const prevSlice = relevantContextSlice(prev.el, prev.context);
+    const nextSlice = relevantContextSlice(next.el, next.context);
+    if (prevSlice === null) return true; // element tĩnh: bỏ qua mọi thay đổi context
+    return shallowEqual(prevSlice, nextSlice);
+  }
+);
+
+// ---------------------------------------------------------------------------
 // Render toàn bộ template (canvas + elements)
+// - sort chỉ tính lại khi mảng elements đổi (useMemo)
+// - dùng 1 click handler duy nhất (event delegation) thay vì tạo N closure
+//   mới cho N element mỗi lần render
+// - shape giờ cũng click được, để giáo viên chọn/sửa hình khối trên canvas
+//   (trước đây bị "câm" vì content của shape luôn là null)
+// ---------------------------------------------------------------------------
 export default function TemplateRenderer({ template, context = {}, onElementClick, editing = false }) {
+  const sorted = useMemo(() => {
+    if (!template) return [];
+    return [...template.elements].sort((a, b) => a.zIndex - b.zIndex);
+  }, [template]);
+
+  const elementsById = useMemo(() => {
+    const map = new Map();
+    sorted.forEach((el) => map.set(String(el.id), el));
+    return map;
+  }, [sorted]);
+
+  const handleClick = useCallback(
+    (e) => {
+      if (!onElementClick) return;
+      const target = e.target.closest("[data-id]");
+      if (!target) return;
+      const el = elementsById.get(target.dataset.id);
+      if (el) onElementClick(el);
+    },
+    [onElementClick, elementsById]
+  );
+
   if (!template) return null;
-  const sorted = [...template.elements].sort((a, b) => a.zIndex - b.zIndex);
+
   return (
-    <div style={{
-      position: "relative",
-      width: template.canvas.width,
-      height: template.canvas.height,
-      background: template.canvas.background || "#FFF6E7",
-      overflow: "hidden",
-      flexShrink: 0,
-    }}>
-      {sorted.map(el => {
-        const content = renderElementContent(el, { ...context, editing });
-        if (onElementClick && content !== null) {
-          return (
-            <div key={el.id} style={renderElementStyle(el, context)} onClick={(e) => { e.stopPropagation(); onElementClick(el); }} data-type={el.type} data-id={el.id}>
-              {content}
-            </div>
-          );
-        }
-        return <div key={el.id} style={renderElementStyle(el, context)} data-type={el.type} data-id={el.id}>{content}</div>;
-      })}
+    <div
+      style={{
+        position: "relative",
+        width: template.canvas.width,
+        height: template.canvas.height,
+        background: template.canvas.background || "#FFF6E7",
+        overflow: "hidden",
+        flexShrink: 0,
+      }}
+      onClick={onElementClick ? handleClick : undefined}
+    >
+      {sorted.map((el) => (
+        <CanvasElement
+          key={el.id}
+          el={el}
+          context={context}
+          editing={editing}
+          clickable={!!onElementClick}
+        />
+      ))}
     </div>
   );
 }

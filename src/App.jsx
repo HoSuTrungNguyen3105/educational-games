@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { loadAuth } from './services/api.js'
 import { authService } from './services/api.js'
-import { getRoute, navigate } from './lib/utils.js'
+import { gameService } from './services/api.js'
+import { navigate, useRoute } from './lib/router.js'
 import { useToast } from './lib/hooks.js'
-import { Toast } from './components/ui.jsx'
+import { Toast, Loader } from './components/ui.jsx'
 import { socket } from './socket/socket.js'
 import { registerSocketListeners } from './socket/socket.listeners.js'
 import HomeScreen from './pages/HomeScreen.jsx'
@@ -12,25 +13,16 @@ import TeacherApp from './pages/teacher/TeacherApp.jsx'
 import StudentApp from './pages/student/StudentApp.jsx'
 
 function App() {
-  const [route, setRoute] = useState(getRoute);
+  const route = useRoute();
   const [user, setUser] = useState(null);
   const [playGame, setPlayGame] = useState(null);
+  const [loadingGame, setLoadingGame] = useState(false);
   const [toast, showToast] = useToast();
 
   const connectSocket = (token) => {
     socket.auth = { token };
     socket.connect();
   };
-
-  useEffect(() => {
-    const onRoute = () => setRoute(getRoute());
-    window.addEventListener("hashchange", onRoute);
-    window.addEventListener("popstate", onRoute);
-    return () => {
-      window.removeEventListener("hashchange", onRoute);
-      window.removeEventListener("popstate", onRoute);
-    };
-  }, []);
 
   useEffect(() => {
     return registerSocketListeners();
@@ -47,6 +39,19 @@ function App() {
     return () => window.removeEventListener("edu-auth-expired", onExpired);
   }, []);
 
+  // Route học sinh #/play/:id → tải game theo id
+  useEffect(() => {
+    if (route.name !== "student" || !route.gameId) return;
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadingGame(true);
+    gameService.get(route.gameId)
+      .then((g) => { if (!cancelled) setPlayGame(g); })
+      .catch(() => { if (!cancelled) setPlayGame(null); })
+      .finally(() => { if (!cancelled) setLoadingGame(false); });
+    return () => { cancelled = true; };
+  }, [route.name, route.gameId]);
+
   const handleLogin = (u) => {
     const auth = loadAuth();
     setUser(u);
@@ -56,24 +61,27 @@ function App() {
     authService.logout();
     socket.disconnect();
     setUser(null);
-    navigate("home");
+    navigate("/");
   };
 
-  if (route === "admin") {
-    if (!user) return <LoginScreen onBack={() => navigate("home")} onLogin={handleLogin} showToast={showToast} />;
+  const isAdminRoute = route.name.startsWith("admin-");
+
+  if (isAdminRoute) {
+    if (!user) return <LoginScreen onBack={() => navigate("/")} onLogin={handleLogin} showToast={showToast} />;
     return (
       <>
-        <TeacherApp user={user} onExit={handleLogout} showToast={showToast} />
+        <TeacherApp user={user} route={route} onExit={handleLogout} showToast={showToast} />
         <Toast toast={toast} />
       </>
     );
   }
 
-  if (playGame) {
-    return <StudentApp initialGame={playGame} onExit={() => setPlayGame(null)} showToast={showToast} toast={toast} />;
+  if (route.name === "student" || route.name === "student-join") {
+    if (loadingGame) return <div className="min-h-screen bg-paper flex items-center justify-center"><Loader label="Đang mở trò chơi..." /></div>;
+    return <StudentApp initialGame={playGame} onExit={() => navigate("/")} showToast={showToast} toast={toast} />;
   }
 
-  return <HomeScreen onSelectGame={setPlayGame} />;
+  return <HomeScreen onSelectGame={(g) => navigate(`/play/${g.id}`)} />;
 }
 
 export default App

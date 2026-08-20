@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { gameService } from '../services/api.js'
 import { mockGameTemplates } from '../data/mockData.js'
+import { navigate } from '../lib/router.js'
 import { PrimaryButton, TicketStub, Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
 
 export default function HomeScreen({ onSelectGame }) {
@@ -125,7 +126,7 @@ export default function HomeScreen({ onSelectGame }) {
       </main>
 
       <footer className="border-t border-ink/10 py-5 text-center">
-        <a href="#/admin" className="text-xs text-[#B7A987] font-mono hover:text-ticket transition">Giáo viên? Đăng nhập quản trị →</a>
+        <a onClick={() => navigate("/admin")} href="#/admin" className="text-xs text-[#B7A987] font-mono hover:text-ticket transition">Giáo viên? Đăng nhập quản trị →</a>
       </footer>
     </div>
   );

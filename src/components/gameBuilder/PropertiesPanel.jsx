@@ -18,10 +18,10 @@ export default function PropertiesPanel({ onPreview }) {
   const el = template?.elements.find(e => e.id === selectedId) || null;
   const p = el?.properties || {};
 
-  if (!template) return <div className="w-72 shrink-0 border-l border-ink/10 bg-paper2"></div>;
+  if (!template) return <div className="w-full lg:w-72 lg:shrink-0 lg:border-l border-ink/10 bg-paper2"></div>;
 
   return (
-    <div className="w-72 shrink-0 border-l border-ink/10 bg-paper2 flex flex-col max-h-full overflow-hidden">
+    <div className="w-full lg:w-72 lg:shrink-0 lg:border-l border-ink/10 bg-paper2 flex flex-col max-h-full overflow-hidden">
       <div className="p-3 border-b border-ink/10 flex items-center justify-between">
         <h3 className="font-display text-sm text-ink">Properties</h3>
         {el && <span className="text-[11px] font-mono text-[#8A7C63]">{el.type}</span>}

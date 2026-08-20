@@ -9,7 +9,7 @@ import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import { useSocketEvent, useSocketConnected } from '../../socket/socket.listeners.js'
 import { useGameStore } from '../../stores/game.store.js'
 
-export default function StudentApp({ initialGame, onExit, showToast, toast }) {
+export default function StudentApp({ initialGame, onExit, toast }) {
   const [screen, setScreen] = useState(initialGame ? "name" : "join");
   const [game, setGame] = useState(initialGame || null);
   const [questions, setQuestions] = useState([]);
@@ -21,6 +21,20 @@ export default function StudentApp({ initialGame, onExit, showToast, toast }) {
 
   const restart = () => { resetStore(); setScreen(initialGame ? "name" : "join"); setGame(initialGame || null); setQuestions([]); setPlayerName(""); setFinalResult(null); setLeaderboard(null); };
   const goHome = () => { resetStore(); setGame(null); setQuestions([]); setFinalResult(null); setLeaderboard(null); onExit(); };
+
+  // Khi route thay đổi sang một game cụ thể → đồng bộ game hiển thị
+  useEffect(() => {
+    if (initialGame && initialGame.id && initialGame.id !== (game && game.id)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGame(initialGame);
+      setQuestions([]);
+      setScreen("name");
+    }
+  }, [initialGame, game]);
+
+  const handleFound = (g) => { setGame(g); setQuestions([]); setScreen("name"); };
+
+  const handleStart = async () => { const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play"); };
 
   const handleFinish = async (sessionResult) => {
     const entry = await resultService.submit({
@@ -37,11 +51,11 @@ export default function StudentApp({ initialGame, onExit, showToast, toast }) {
     <div className="min-h-screen bg-paper flex flex-col">
       <StudentTopBar onExit={goHome} />
       <main className="flex-1 flex flex-col">
-        {screen === "join" && <JoinGameScreen onFound={(g) => { setGame(g); setScreen("name"); }} />}
+        {screen === "join" && <JoinGameScreen onFound={handleFound} />}
         {screen === "name" && game && <EnterNameScreen game={game} onBack={initialGame ? goHome : restart} onSubmit={(name) => { setPlayerName(name); setScreen("waiting"); }} />}
         {screen === "waiting" && game && (
           <WaitingRoomScreen game={game} playerName={playerName}
-            onStart={async () => { const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play"); }} />
+            onStart={handleStart} />
         )}
         {screen === "play" && game && questions.length > 0 && (
           <GamePlayRouter game={game} questions={questions} playerName={playerName} onQuit={restart} onFinish={handleFinish} />

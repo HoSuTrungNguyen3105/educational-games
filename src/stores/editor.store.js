@@ -40,6 +40,12 @@ export const useEditorStore = create((set, get) => ({
   zoomIn: () => set((s) => ({ zoom: clampZoom(s.zoom + 0.1) })),
   zoomOut: () => set((s) => ({ zoom: clampZoom(s.zoom - 0.1) })),
   resetZoom: () => set({ zoom: 0.6 }),
+  fitToScreen: (containerWidth, containerHeight, pad = 48) => {
+    const tpl = get().template;
+    if (!tpl) return;
+    const zoom = clampZoom(Math.min((containerWidth - pad) / tpl.canvas.width, (containerHeight - pad) / tpl.canvas.height));
+    set({ zoom });
+  },
 
   selectElement: (id) => set({ selectedId: id }),
   select: (id) => set({ selectedId: id }),

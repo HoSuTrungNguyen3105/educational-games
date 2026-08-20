@@ -1,10 +1,10 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import TemplateRenderer from '../../games/TemplateRenderer.jsx'
 import { useEditorStore } from '../../stores/editor.store.js'
 
 const RESIZE_HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 
-export default function CanvasArea({ ctx }) {
+export default function CanvasArea({ ctx, isMobile = false, onOpenSheet }) {
   const template = useEditorStore(s => s.template);
   const selectedId = useEditorStore(s => s.selectedId);
   const zoom = useEditorStore(s => s.zoom);
@@ -13,15 +13,30 @@ export default function CanvasArea({ ctx }) {
   const addElement = useEditorStore(s => s.addElement);
   const moveElement = useEditorStore(s => s.moveElement);
   const resizeElement = useEditorStore(s => s.resizeElement);
+  const fitToScreen = useEditorStore(s => s.fitToScreen);
 
+  const scrollRef = useRef(null);
   const canvasRef = useRef(null);
   const dragRef = useRef(null);
   const [dropHint, setDropHint] = useState(null);
 
   const sorted = template ? template.elements.slice().sort((a, b) => a.zIndex - b.zIndex) : [];
+  const pad = isMobile ? 24 : 48; // tổng padding ngang/dọc bên trong scroll
+
+  useEffect(() => {
+    const measure = () => {
+      if (!scrollRef.current || !template) return;
+      const rect = scrollRef.current.getBoundingClientRect();
+      fitToScreen(rect.width, rect.height, pad);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [fitToScreen, template, pad]);
 
   const startDrag = useCallback((e, el) => {
     e.stopPropagation();
+    e.preventDefault();
     selectElement(el.id);
     dragRef.current = { mode: "move", id: el.id, startX: e.clientX, startY: e.clientY, origX: el.x, origY: el.y };
     const onMove = (ev) => {
@@ -29,13 +44,15 @@ export default function CanvasArea({ ctx }) {
       if (!d) return;
       moveElement(d.id, Math.round(d.origX + (ev.clientX - d.startX) / zoom), Math.round(d.origY + (ev.clientY - d.startY) / zoom));
     };
-    const onUp = () => { dragRef.current = null; window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); };
+    const onUp = () => { dragRef.current = null; window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); window.removeEventListener("pointercancel", onUp); };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   }, [moveElement, selectElement, zoom]);
 
   const startResize = useCallback((e, el, handle) => {
     e.stopPropagation();
+    e.preventDefault();
     selectElement(el.id);
     dragRef.current = { mode: "resize", id: el.id, handle, startX: e.clientX, startY: e.clientY, origX: el.x, origY: el.y, origW: el.width, origH: el.height };
     const onMove = (ev) => {
@@ -50,9 +67,10 @@ export default function CanvasArea({ ctx }) {
       if (d.handle.includes("n")) { y = Math.max(0, d.origY + dy); height = Math.max(30, d.origY + d.origH - y); }
       resizeElement(d.id, { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) });
     };
-    const onUp = () => { dragRef.current = null; window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); };
+    const onUp = () => { dragRef.current = null; window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); window.removeEventListener("pointercancel", onUp); };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   }, [resizeElement, selectElement, zoom]);
 
   const handleDrop = (e) => {
@@ -75,15 +93,16 @@ export default function CanvasArea({ ctx }) {
   if (!template) return <div className="flex-1 flex items-center justify-center text-sm text-[#8A7C63]">Đang tải thiết kế...</div>;
 
   return (
-    <div className="editor-canvas-scroll flex-1 overflow-auto bg-[#E9E4D6]" style={{ cursor: dropHint ? "copy" : "default" }}>
-      <div className="min-h-full min-w-full flex items-start justify-center p-8" style={{ width: template.canvas.width * zoom + 80, height: template.canvas.height * zoom + 80 }}>
+    <div ref={scrollRef} className={`${isMobile ? "editor-canvas-scroll-mobile" : ""} flex-1 overflow-auto bg-[#E9E4D6]`} style={{ cursor: dropHint ? "copy" : "default" }}>
+      <div className={`min-h-full min-w-full flex items-center justify-center ${isMobile ? "p-3" : "p-6"}`}
+        style={{ width: template.canvas.width * zoom + pad, height: template.canvas.height * zoom + pad }}>
         <div
           ref={canvasRef}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={() => setDropHint(null)}
           onClick={() => select(null)}
-          className="relative rounded-lg"
+          className="relative"
           style={{ width: template.canvas.width, height: template.canvas.height, background: template.canvas.background, transform: `scale(${zoom})`, transformOrigin: "top left" }}
         >
           <div className="absolute inset-0 pointer-events-none" style={{
@@ -96,10 +115,10 @@ export default function CanvasArea({ ctx }) {
           </div>
 
           {sorted.map(el => (
-            <div key={el.id} onPointerDown={(e) => startDrag(e, el)} onClick={(e) => e.stopPropagation()}
+            <div key={el.id} onPointerDown={(e) => startDrag(e, el)} onClick={(e) => { e.stopPropagation(); isMobile && onOpenSheet?.("properties"); }}
               style={{
                 position: "absolute", left: el.x, top: el.y, width: el.width, height: el.height,
-                zIndex: el.zIndex, cursor: "move",
+                zIndex: el.zIndex, cursor: "move", touchAction: "none", userSelect: "none", WebkitUserSelect: "none",
                 outline: selectedId === el.id ? "2px solid #1B998B" : "1px dashed rgba(29,46,74,0.35)",
                 outlineOffset: -1,
                 borderRadius: el.type === "shape" && el.properties?.kind === "circle" ? "50%" : 8,
@@ -134,8 +153,8 @@ function ElementHandles({ el, onResize }) {
       {RESIZE_HANDLES.map(h => (
         <span key={h}
           onPointerDown={(e) => onResize(e, el, h)}
-          className="absolute w-3 h-3 bg-white border-2 border-[#1B998B] rounded-sm"
-          style={{ cursor: `${h}-resize`, ...pos[h] }} />
+          className="absolute w-4 h-4 bg-white border-2 border-[#1B998B] rounded-sm"
+          style={{ cursor: `${h}-resize`, touchAction: "none", ...pos[h] }} />
       ))}
     </>
   );
