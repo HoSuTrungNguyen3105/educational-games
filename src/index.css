@@ -89,9 +89,85 @@ body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; backgroun
 @keyframes shake-hit{ 0%,100%{ transform: translateX(0); } 25%{ transform: translateX(-6px); } 75%{ transform: translateX(6px); } }
 .shake-hit{ animation: shake-hit .35s ease-in-out; }
 
-@media (prefers-reduced-motion: reduce){ .anim-pop, .float-slow, .marquee-lights, .wheel-spinning, .bob-hero, .run-cycle, .shake-hit{ animation:none !important; } }
+@media (prefers-reduced-motion: reduce){ .anim-pop, .float-slow, .marquee-lights, .wheel-spinning, .bob-hero, .run-cycle, .shake-hit, .animate-blob, .animate-float, .animate-gradient, .animate-fade-in-up, .animate-bounce-slow, .animate-sparkle{ animation:none !important; } }
 
 input:focus, button:focus, select:focus, textarea:focus{ outline: 3px solid #FF6F9155; outline-offset: 2px; }
+
+/* === KIDS-FRIENDLY ANIMATIONS === */
+
+/* Blob animation cho background gradients */
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(20px, -30px) scale(1.1); }
+  50% { transform: translate(-20px, 20px) scale(0.9); }
+  75% { transform: translate(30px, 10px) scale(1.05); }
+}
+.animate-blob { animation: blob 8s ease-in-out infinite; }
+.animation-delay-2000 { animation-delay: 2s; }
+.animation-delay-4000 { animation-delay: 4s; }
+
+/* Float animation cho icons */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+  25% { transform: translateY(-20px) rotate(5deg); opacity: 1; }
+  50% { transform: translateY(-10px) rotate(-5deg); opacity: 0.9; }
+  75% { transform: translateY(-25px) rotate(3deg); opacity: 1; }
+}
+.animate-float { animation: float 4s ease-in-out infinite; }
+
+/* Gradient text animation */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* Fade in up animation */
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up { animation: fade-in-up 0.6s ease-out both; }
+.animation-delay-300 { animation-delay: 0.3s; }
+.animation-delay-500 { animation-delay: 0.5s; }
+
+/* Bounce slow animation */
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
+
+/* Sparkle animation */
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+}
+.animate-sparkle { animation: sparkle 1.5s ease-in-out infinite; }
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(251, 146, 60, 0.5); }
+  50% { box-shadow: 0 0 40px rgba(251, 146, 60, 0.8); }
+}
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Card hover effects */
+button.group:hover .group-hover\:scale-110 {
+  transform: scale(1.1);
+}
 
 .badge-status{ font-family:'JetBrains Mono', monospace; letter-spacing:.02em; }
 
