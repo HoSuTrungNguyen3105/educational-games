@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { usePlayerNames } from '../lib/hooks.js'
+import { useGameStore } from '../stores/game.store.js'
 import { PlayHeader, AnswerExplain } from './shared.jsx'
 import { shortName } from '../lib/utils.js'
 
@@ -21,19 +21,22 @@ export default function LuckyWheelPlayScreen({ game, questions, playerName, onFi
   const segmentCount = questions.length;
   const segmentAngle = 360 / segmentCount;
 
-  const playerNames = usePlayerNames();
+  const participants = useGameStore(s => s.players);
 
   const wheelNames = useMemo(() => {
-    const pool = [...playerNames];
+    const pool = participants.length
+      ? participants.map(p => p.name)
+      : (playerName ? [playerName] : []);
+    if (!pool.length) return [];
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     return Array.from({ length: segmentCount }, (_, i) => shortName(pool[i % pool.length]));
-  }, [segmentCount, playerNames]);
+  }, [segmentCount, participants, playerName]);
 
   const segments = useMemo(
-    () => questions.map((q, i) => ({ ...q, name: wheelNames[i % wheelNames.length], color: WHEEL_COLORS[i % WHEEL_COLORS.length] })),
+    () => questions.map((q, i) => ({ ...q, name: wheelNames.length ? wheelNames[i % wheelNames.length] : "", color: WHEEL_COLORS[i % WHEEL_COLORS.length] })),
     [questions, wheelNames]
   );
 

@@ -1,21 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { setupService } from '../services/setupService.js';
 
-const FALLBACK_PLAYER_NAMES = [
-  "Học sinh 1", "Học sinh 2", "Học sinh 3", "Học sinh 4",
-  "Học sinh 5", "Học sinh 6", "Học sinh 7", "Học sinh 8",
-];
 const FALLBACK_TEMPLATE = { icon: "🎲", ring: "#F4B942" };
-
-export function usePlayerNames() {
-  const [names, setNames] = useState(FALLBACK_PLAYER_NAMES);
-  useEffect(() => {
-    let active = true;
-    setupService.listPlayers().then((list) => { if (active) setNames(list); });
-    return () => { active = false; };
-  }, []);
-  return names;
-}
 
 export function useSubjects() {
   const [subjects, setSubjects] = useState([]);

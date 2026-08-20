@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react'
 import { gameService } from '../services/api.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
-import { PrimaryButton, TicketStub, Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
+import { PrimaryButton, Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
+import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 
 export default function HomeScreen({ onSelectGame }) {
   const [games, setGames] = useState(null);
   const [error, setError] = useState(null);
-  const [mode, setMode] = useState("list"); // "list" | "code"
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
   const templates = useTemplates();
 
   const floaters = [
@@ -32,16 +31,6 @@ export default function HomeScreen({ onSelectGame }) {
     }
   };
   useEffect(() => { loadGames(); }, []);
-
-  const submitCode = async (e) => {
-    e.preventDefault();
-    if (!code.trim()) return;
-    setLoading(true); setError(null);
-    const game = await gameService.getByCode(code);
-    setLoading(false);
-    if (!game) { setError("Không tìm thấy trò chơi với mã này. Kiểm tra lại hoặc chọn trò chơi trong danh sách nhé!"); return; }
-    onSelectGame(game);
-  };
 
   return (
     <div className="min-h-screen bg-paper flex flex-col">
@@ -75,24 +64,13 @@ export default function HomeScreen({ onSelectGame }) {
             <h2 className="font-display text-2xl text-ink">Chọn trò chơi</h2>
             <p className="text-sm text-[#8A7C63] mt-1">Bấm vào trò chơi để tham gia ngay.</p>
           </div>
-          <button onClick={() => setMode(mode === "list" ? "code" : "list")}
+          <button onClick={() => setShowCodeModal(true)}
             className="shrink-0 note-card px-4 py-2.5 text-sm font-semibold text-ink flex items-center gap-2 hover:bg-ink/5 transition">
-            {mode === "list" ? "🔑 Nhập mã vé" : "← Về danh sách"}
+            🔑 Nhập mã vé
           </button>
         </div>
 
-        {mode === "code" ? (
-          <form onSubmit={submitCode} className="max-w-md mx-auto text-center pb-10">
-            <div className="text-6xl mb-4 float-slow">🎟️</div>
-            <p className="text-sm text-[#8A7C63] mb-4">Nhập mã vé giáo viên đã cung cấp</p>
-            <TicketStub icon="🔑" code={code || "______"} />
-            <input value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
-              placeholder="VD: TOAN101" maxLength={10}
-              className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase" />
-            {error && <p className="text-ticket text-sm mt-3">{error}</p>}
-            <PrimaryButton type="submit" className="w-full mt-5" disabled={loading || !code.trim()}>{loading ? "Đang kiểm tra..." : "Tham gia →"}</PrimaryButton>
-          </form>
-        ) : games === null ? (
+        {games === null ? (
           <Loader label="Đang tải danh sách trò chơi..." />
         ) : error ? (
           <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
@@ -129,6 +107,9 @@ export default function HomeScreen({ onSelectGame }) {
       <footer className="border-t border-ink/10 py-5 text-center">
         <a onClick={() => navigate("/admin")} href="#/admin" className="text-xs text-[#B7A987] font-mono hover:text-ticket transition">Giáo viên? Đăng nhập quản trị →</a>
       </footer>
+
+      {/* Modal nhập mã vé */}
+      <EnterCodeModal open={showCodeModal} onClose={() => setShowCodeModal(false)} onFound={onSelectGame} />
     </div>
   );
 }

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { uid, resultService, questionService, gameService } from '../../services/api.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
-import { PrimaryButton, GhostButton, StampToken, TicketStub, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
+import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
+import { EnterCodeModal } from '../../components/EnterCodeModal.jsx'
 import { GamePlayRouter } from '../../games/GamePlayRouter.jsx'
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
@@ -82,9 +83,7 @@ export function StudentTopBar({ onExit }) {
 function JoinGameScreen({ onFound }) {
   const [games, setGames] = useState(null);
   const [error, setError] = useState(null);
-  const [mode, setMode] = useState("list"); // "list" | "code"
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
   const templates = useTemplates();
 
   const loadGames = async () => {
@@ -97,16 +96,6 @@ function JoinGameScreen({ onFound }) {
   };
   useEffect(() => { loadGames(); }, []);
 
-  const submitCode = async (e) => {
-    e.preventDefault();
-    if (!code.trim()) return;
-    setLoading(true); setError(null);
-    const game = await gameService.getByCode(code);
-    setLoading(false);
-    if (!game) { setError("Không tìm thấy trò chơi với mã này. Kiểm tra lại hoặc chọn trò chơi trong danh sách nhé!"); return; }
-    onFound(game);
-  };
-
   return (
     <div className="flex-1 px-6 py-10">
       <div className="max-w-4xl mx-auto anim-pop">
@@ -115,24 +104,13 @@ function JoinGameScreen({ onFound }) {
             <h1 className="font-display text-2xl md:text-3xl text-ink">Chọn trò chơi</h1>
             <p className="text-sm text-[#8A7C63] mt-1">Chọn một trò chơi để tham gia, hoặc nhập mã vé nếu bạn quên trò chơi ở đâu 😉</p>
           </div>
-          <button onClick={() => setMode(mode === "list" ? "code" : "list")}
+          <button onClick={() => setShowCodeModal(true)}
             className="shrink-0 note-card px-4 py-2.5 text-sm font-semibold text-ink flex items-center gap-2 hover:bg-ink/5 transition">
-            {mode === "list" ? "🔑 Nhập mã vé" : "← Về danh sách"}
+            🔑 Nhập mã vé
           </button>
         </div>
 
-        {mode === "code" ? (
-          <form onSubmit={submitCode} className="max-w-md mx-auto text-center pb-10">
-            <div className="text-6xl mb-4 float-slow">🎟️</div>
-            <p className="text-sm text-[#8A7C63] mb-4">Nhập mã vé giáo viên đã cung cấp</p>
-            <TicketStub icon="🔑" code={code || "______"} />
-            <input value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
-              placeholder="VD: TOAN101" maxLength={10}
-              className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase" />
-            {error && <p className="text-ticket text-sm mt-3">{error}</p>}
-            <PrimaryButton type="submit" className="w-full mt-5" disabled={loading || !code.trim()}>{loading ? "Đang kiểm tra..." : "Tham gia →"}</PrimaryButton>
-          </form>
-        ) : games === null ? (
+        {games === null ? (
           <Loader label="Đang tải danh sách trò chơi..." />
         ) : error ? (
           <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
@@ -165,6 +143,9 @@ function JoinGameScreen({ onFound }) {
           </div>
         )}
       </div>
+
+      {/* Modal nhập mã vé */}
+      <EnterCodeModal open={showCodeModal} onClose={() => setShowCodeModal(false)} onFound={onFound} />
     </div>
   );
 }
