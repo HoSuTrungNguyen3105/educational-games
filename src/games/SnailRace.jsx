@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { mockPlayersPool } from '../data/mockData.js'
+import { usePlayerNames } from '../lib/hooks.js'
 import { AnswerExplain, timerColor } from './shared.jsx'
 import { shortName } from '../lib/utils.js'
 import { IconButton } from '../components/ui.jsx'
@@ -33,8 +33,8 @@ export default function SnailRacePlayScreen({ game, questions, playerName, onFin
   const [muted, setMuted] = useState(false);
   const startRef = useRef(Date.now());
 
-  const opponentNames = mockPlayersPool.slice(0, 4).map(p => shortName(p.name));
-  const racers = useMemo(() => ["Bạn", ...opponentNames].map((name, i) => ({ name, color: SNAIL_LANE_COLORS[i] })), []);
+  const opponentNames = usePlayerNames().slice(0, 4).map(shortName);
+  const racers = useMemo(() => ["Bạn", ...opponentNames].map((name, i) => ({ name, color: SNAIL_LANE_COLORS[i] })), [opponentNames]);
   const [scores, setScores] = useState(() => racers.map(() => 0));
   const [myScore, setMyScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);

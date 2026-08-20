@@ -38,7 +38,7 @@ export default function TeacherResults({ gameId, onBack }) {
 
 export function LeaderboardTable({ results }) {
   return (
-    <div className="note-card overflow-hidden">
+    <div className="note-card overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">

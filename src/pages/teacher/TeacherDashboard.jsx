@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { gameService } from '../../services/api.js'
-import { mockGameTemplates } from '../../data/mockData.js'
+import { useTemplates } from '../../lib/hooks.js'
 import { StampToken, StatusBadge, IconButton, Loader, ErrorState, EmptyState, PrimaryButton } from '../../components/ui.jsx'
 
 export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onDesign }) {
-  const tpl = mockGameTemplates.find(t => t.id === game.template);
+  const templates = useTemplates();
+  const tpl = templates.find(t => t.id === game.template);
   return (
     <div className="note-card p-5 flex flex-col gap-3 anim-pop hover:-translate-y-0.5 transition shadow-[0_2px_0_rgba(0,0,0,0.06)]">
       <div className="flex items-start justify-between">

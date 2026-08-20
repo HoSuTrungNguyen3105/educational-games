@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { gameService } from '../../services/api.js'
 import { useEditorStore } from '../../stores/editor.store.js'
 import { useMediaQuery } from '../../lib/hooks.js'
@@ -233,15 +233,36 @@ function PreviewModal({ template, onClose }) {
     question: { ...PREVIEW_CONTEXT.question, content: "Thủ đô của nước Pháp là gì?" },
     timeLeft: 15,
   };
+  const [scale, setScale] = useState(1);
+  const fitRef = useRef(null);
+
+  useEffect(() => {
+    const node = fitRef.current;
+    if (!node || !template) return;
+    const compute = () => {
+      const rect = node.getBoundingClientRect();
+      const s = Math.min(1.5, (rect.width - 16) / template.canvas.width, (rect.height - 16) / template.canvas.height);
+      setScale(Math.max(0.05, s));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(node);
+    window.addEventListener("resize", compute);
+    return () => { ro.disconnect(); window.removeEventListener("resize", compute); };
+  }, [template]);
+
   return (
-    <div className="fixed inset-0 z-50 bg-ink/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl p-4 md:p-6 max-w-[90vw] max-h-[90vh] overflow-auto anim-pop" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display text-lg text-ink">👁️ Preview — giao diện học sinh</h3>
-          <button onClick={onClose} className="text-ink/50 hover:text-ink text-lg">✕</button>
+    <div className="fixed inset-0 z-50 bg-ink/70 backdrop-blur-sm flex items-center justify-center p-3 md:p-4" onClick={onClose}>
+      <div ref={fitRef} className="bg-white rounded-3xl p-4 md:p-6 max-w-[94vw] max-h-[92vh] overflow-hidden anim-pop" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="font-display text-base md:text-lg text-ink truncate">👁️ Preview — giao diện học sinh</h3>
+          <button onClick={onClose} className="text-ink/50 hover:text-ink text-lg flex-shrink-0">✕</button>
         </div>
-        <div className="rounded-2xl overflow-hidden shadow-lg">
-          <TemplateRenderer template={template} context={ctx} />
+        <div className="rounded-2xl overflow-hidden shadow-lg mx-auto"
+          style={{ width: Math.max(1, Math.round(template.canvas.width * scale)), height: Math.max(1, Math.round(template.canvas.height * scale)) }}>
+          <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
+            <TemplateRenderer template={template} context={ctx} />
+          </div>
         </div>
         <p className="text-xs text-[#8A7C63] mt-3 text-center">Đây là giao diện học sinh sẽ thấy khi chơi. Dữ liệu câu hỏi/đáp án/bảng xếp hạng sẽ lấy từ game realtime.</p>
       </div>

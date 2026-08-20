@@ -16,6 +16,26 @@ export default function CustomDesignPlayScreen({ game, questions, playerName, on
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const startRef = useRef(Date.now());
+  const stageRef = useRef(null);
+  const [scale, setScale] = useState(1);
+
+  // Scale canvas để nhìn toàn diện trong mọi khung (đặc biệt là iframe trên mobile)
+  useEffect(() => {
+    const node = stageRef.current;
+    if (!node || !game.design) return;
+    const compute = () => {
+      const rect = node.getBoundingClientRect();
+      const { width: cw, height: ch } = game.design.canvas;
+      // Scale canvas khớp toàn bộ khung (upscale để iframe trông "bự", có chặn tránh vỡ nét quá mức)
+      const s = Math.min(2, (rect.width - 16) / cw, (rect.height - 16) / ch);
+      setScale(Math.max(0.05, s));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(node);
+    window.addEventListener("resize", compute);
+    return () => { ro.disconnect(); window.removeEventListener("resize", compute); };
+  }, [game.design]);
 
   const players = useGameStore(s => s.players);
   const leaderboard = useGameStore(s => s.leaderboard);
@@ -83,27 +103,31 @@ export default function CustomDesignPlayScreen({ game, questions, playerName, on
 
   return (
     <div className="flex-1 flex flex-col">
-      <div className="flex items-center justify-between gap-4 px-5 md:px-8 py-3 bg-white border-b border-ink/10 flex-wrap">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🎨</span>
-          <h1 className="font-display text-xl text-ink">{game.title}</h1>
+      <div className="flex items-center justify-between gap-3 px-4 md:px-8 py-2.5 bg-white border-b border-ink/10 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xl md:text-2xl">🎨</span>
+          <h1 className="font-display text-base md:text-xl text-ink truncate">{game.title}</h1>
         </div>
-        <div className="flex items-center gap-4 text-sm text-ink/70 font-body flex-wrap">
-          <span>Phòng: <b className="text-ink font-mono">{game.code}</b></span>
-          <span>📋 Câu hỏi: {idx + 1}/{questions.length}</span>
-          <span>⭐ Điểm: {realtimeScore || score}</span>
+        <div className="flex items-center gap-3 text-xs md:text-sm text-ink/70 font-body flex-wrap">
+          <span className="hidden sm:inline">Phòng: <b className="text-ink font-mono">{game.code}</b></span>
+          <span className="sm:hidden">📋 {idx + 1}/{questions.length}</span>
+          <span className="hidden sm:inline">📋 Câu hỏi: {idx + 1}/{questions.length}</span>
+          <span>⭐ {realtimeScore || score}</span>
         </div>
-        <button onClick={onQuit} className="font-display text-sm text-ticket border border-ticket/40 rounded-2xl px-4 py-2 hover:bg-ticket/5 transition">Thoát</button>
+        <button onClick={onQuit} className="font-display text-xs md:text-sm text-ticket border border-ticket/40 rounded-2xl px-3 py-1.5 md:px-4 md:py-2 hover:bg-ticket/5 transition">Thoát</button>
       </div>
 
-      <div className="flex-1 bg-paper p-4 md:p-6 overflow-auto flex items-start justify-center">
-        <div className="shadow-xl rounded-2xl overflow-auto max-w-full" style={{ width: game.design.canvas.width }}>
+      <div ref={stageRef} className="flex-1 bg-paper p-3 md:p-6 flex items-center justify-center">
+        <div className="shadow-xl rounded-2xl overflow-hidden flex-none"
+          style={{ width: Math.max(1, Math.round(game.design.canvas.width * scale)), height: Math.max(1, Math.round(game.design.canvas.height * scale)) }}>
           <div className="relative" onClick={onStageClick}
             style={{
               width: game.design.canvas.width,
               height: game.design.canvas.height,
               background: game.design.canvas.background || "#FFF6E7",
               overflow: "hidden",
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
             }}>
             <TemplateRenderer template={game.design} context={context} />
           </div>

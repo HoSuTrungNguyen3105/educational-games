@@ -25,7 +25,7 @@ export function loadAuth() {
 export function saveAuth(auth) { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); }
 export function clearAuth() { localStorage.removeItem(AUTH_KEY); }
 
-async function apiFetch(path, options = {}) {
+export async function apiFetch(path, options = {}) {
   const auth = loadAuth();
   const res = await fetch(`${API_BASE}${path}`, {
     headers: {

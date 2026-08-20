@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { gameService } from '../services/api.js'
-import { mockGameTemplates } from '../data/mockData.js'
+import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
 import { PrimaryButton, TicketStub, Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
 
@@ -10,6 +10,7 @@ export default function HomeScreen({ onSelectGame }) {
   const [mode, setMode] = useState("list"); // "list" | "code"
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const templates = useTemplates();
 
   const floaters = [
     { icon: "🎡", cls: "top-16 left-6 text-5xl", delay: 0 },
@@ -100,7 +101,7 @@ export default function HomeScreen({ onSelectGame }) {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {games.map(g => {
-              const tpl = mockGameTemplates.find(t => t.id === g.template);
+              const tpl = templates.find(t => t.id === g.template);
               return (
                 <button key={g.id} onClick={() => onSelectGame(g)}
                   className="note-card p-5 text-left flex flex-col gap-3 hover:-translate-y-1 hover:shadow-[0_8px_0_rgba(0,0,0,0.1)] transition shadow-[0_3px_0_rgba(0,0,0,0.09)] group anim-pop bg-paper2">

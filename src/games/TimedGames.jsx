@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect, useRef, Fragment } from 'react'
-import { useTimedQuestion } from '../lib/hooks.js'
-import { mockPlayersPool } from '../data/mockData.js'
+import { useTimedQuestion, usePlayerNames } from '../lib/hooks.js'
 import { PlayHeader, AnswerExplain, timerColor } from './shared.jsx'
 import OptionButton from '../components/OptionButton.jsx'
 
@@ -247,7 +246,7 @@ export function SailingBoatPlayScreen({ game, questions, playerName, onFinish, o
   const pct = (timeLeft / q.timeLimit) * 100;
   const timeColor = timerColor(pct);
   const progress = ((idx + (revealed ? 1 : 0)) / total) * 85;
-  const opponentNames = mockPlayersPool.slice(0, 3).map(p => p.name.split(" ").slice(-1)[0]);
+  const opponentNames = usePlayerNames().slice(0, 3).map(p => (p.split(" ").slice(-1)[0] || "Bạn"));
 
   return (
     <div className="flex-1 flex flex-col bg-gradient-to-b from-[#CFEFFA] to-[#8FD3EE]">

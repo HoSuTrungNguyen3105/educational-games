@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { uid, resultService, questionService, gameService } from '../../services/api.js'
-import { mockGameTemplates, mockPlayersPool } from '../../data/mockData.js'
+import { useTemplate, usePlayerNames, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, TicketStub, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
 import { GamePlayRouter } from '../../games/GamePlayRouter.jsx'
@@ -85,6 +85,7 @@ function JoinGameScreen({ onFound }) {
   const [mode, setMode] = useState("list"); // "list" | "code"
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const templates = useTemplates();
 
   const loadGames = async () => {
     setGames(null); setError(null);
@@ -140,7 +141,7 @@ function JoinGameScreen({ onFound }) {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {games.map(g => {
-              const tpl = mockGameTemplates.find(t => t.id === g.template);
+              const tpl = templates.find(t => t.id === g.template);
               return (
                 <button key={g.id} onClick={() => onFound(g)}
                   className="note-card p-5 text-left flex flex-col gap-3 hover:-translate-y-1 hover:shadow-[0_8px_0_rgba(0,0,0,0.1)] transition shadow-[0_3px_0_rgba(0,0,0,0.09)] group anim-pop bg-paper2">
@@ -170,7 +171,7 @@ function JoinGameScreen({ onFound }) {
 
 function EnterNameScreen({ game, onBack, onSubmit }) {
   const [name, setName] = useState("");
-  const tpl = mockGameTemplates.find(t => t.id === game.template);
+  const tpl = useTemplate(game);
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-10">
       <form onSubmit={e => { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); }} className="max-w-sm w-full text-center anim-pop">
@@ -190,7 +191,8 @@ function EnterNameScreen({ game, onBack, onSubmit }) {
 
 function WaitingRoomScreen({ game, playerName, onStart }) {
   const [mockOthers, setMockOthers] = useState([]);
-  const tpl = mockGameTemplates.find(t => t.id === game.template);
+  const tpl = useTemplate(game);
+  const playerNames = usePlayerNames();
   const connected = useSocketConnected();
   const players = useGameStore(s => s.players);
   const gameStatus = useGameStore(s => s.gameStatus);
@@ -218,9 +220,9 @@ function WaitingRoomScreen({ game, playerName, onStart }) {
   // Fallback dữ liệu minh hoạ khi chưa có socket backend
   useEffect(() => {
     if (joined) return;
-    const timers = mockPlayersPool.slice(0, 4).map((p, i) => setTimeout(() => setMockOthers(prev => [...prev, p.name]), 500 + i * 500));
+    const timers = playerNames.slice(0, 4).map((name, i) => setTimeout(() => setMockOthers(prev => [...prev, name]), 500 + i * 500));
     return () => timers.forEach(clearTimeout);
-  }, [joined]);
+  }, [joined, playerNames]);
 
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-10">

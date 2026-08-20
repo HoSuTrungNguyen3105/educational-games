@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService } from '../../services/api.js'
-import { CATEGORIES, SUBJECTS } from '../../data/mockData.js'
+import { useSubjects, useCategories } from '../../lib/hooks.js'
 import { PrimaryButton, GhostButton, Modal, TicketStub, Loader, ErrorState, EmptyState } from '../../components/ui.jsx'
 import { GameCard } from './TeacherDashboard.jsx'
 import { socket } from '../../socket/socket.js'
@@ -15,6 +15,8 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
   const [error, setError] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [shareGame, setShareGame] = useState(null);
+  const subjects = useSubjects();
+  const categories = useCategories();
 
   const load = useCallback(() => {
     setGames(null); setError(null);
@@ -56,12 +58,12 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
         </select>
         <select value={subject} onChange={e => setSubject(e.target.value)} className="note-card px-4 py-2.5 text-sm">
           <option value="all">Tất cả môn học</option>
-          {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+          {subjects.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {CATEGORIES.map(c => (
+        {categories.map(c => (
           <button key={c.id} onClick={() => setCategory(c.id)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-body border transition ${category === c.id ? "bg-ink text-paper border-ink" : "border-ink/15 text-ink/70 hover:border-ink/35"}`}>
             {c.label}

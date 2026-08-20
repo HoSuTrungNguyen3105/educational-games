@@ -24,14 +24,18 @@ export default function CanvasArea({ ctx, isMobile = false, onOpenSheet }) {
   const pad = isMobile ? 24 : 48; // tổng padding ngang/dọc bên trong scroll
 
   useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
     const measure = () => {
-      if (!scrollRef.current || !template) return;
-      const rect = scrollRef.current.getBoundingClientRect();
+      if (!template) return;
+      const rect = node.getBoundingClientRect();
       fitToScreen(rect.width, rect.height, pad);
     };
     measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(node);
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
   }, [fitToScreen, template, pad]);
 
   const startDrag = useCallback((e, el) => {

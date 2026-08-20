@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { mockGameTemplates } from '../data/mockData.js'
+import { useTemplate } from '../lib/hooks.js'
 import { StampToken } from '../components/ui.jsx'
 import { AnswerExplain } from './shared.jsx'
 
@@ -12,7 +12,7 @@ export default function PlayGameScreen({ game, questions, onFinish }) {
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const startRef = useRef(Date.now());
-  const tpl = mockGameTemplates.find(t => t.id === game.template);
+  const tpl = useTemplate(game);
 
   useEffect(() => { setTimeLeft(q.timeLimit); setSelected(null); setRevealed(false); }, [idx]);
 

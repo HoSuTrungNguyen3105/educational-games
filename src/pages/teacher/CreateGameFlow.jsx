@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useEffect, useState } from 'react'
 import { gameService, questionService, uid } from '../../services/api.js'
-import { mockGameTemplates, THEMES, SUBJECTS, CATEGORIES } from '../../data/mockData.js'
+import { THEMES } from '../../lib/setupConstants.js'
+import { useTemplates, useSubjects, useCategories } from '../../lib/hooks.js'
 import { emptyQuestion } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, IconButton, Loader } from '../../components/ui.jsx'
 import Field, { StampToken } from './fields.jsx'
@@ -16,9 +17,12 @@ const STEPS = [
 export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) {
   const [loading, setLoading] = useState(!!gameId);
   const [stepIdx, setStepIdx] = useState(0);
-  const [form, setForm] = useState({ title: "", description: "", subject: SUBJECTS[0], topic: "", template: null, theme: "gold" });
+  const [form, setForm] = useState({ title: "", description: "", subject: "", topic: "", template: null, theme: "gold" });
   const [questions, setQuestions] = useState([]);
   const [savingStatus, setSavingStatus] = useState(null);
+  const templates = useTemplates();
+  const subjects = useSubjects();
+  const categories = useCategories();
 
   useEffect(() => {
     if (!gameId) return;
@@ -44,7 +48,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const persist = async (status) => {
     setSavingStatus(status);
     let id = gameId;
-    const payload = { ...form, status, questionsCount: questions.length };
+    const payload = { ...form, subject: form.subject || (subjects[0] || ""), status, questionsCount: questions.length };
     if (id) await gameService.update(id, payload);
     else { const created = await gameService.create(payload); id = created.id; }
     await questionService.save(id, questions);
@@ -65,11 +69,11 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
       <Stepper steps={STEPS} activeIdx={stepIdx} onJump={(i) => i < stepIdx && setStepIdx(i)} />
 
       <div className="note-card p-6 md:p-8 min-h-[380px]">
-        {step.id === "template" && <StepTemplate form={form} setForm={setForm} />}
-        {step.id === "info" && <StepInfo form={form} setForm={setForm} />}
+        {step.id === "template" && <StepTemplate form={form} setForm={setForm} templates={templates} categories={categories} />}
+        {step.id === "info" && <StepInfo form={form} setForm={setForm} subjects={subjects} />}
         {step.id === "questions" && <StepQuestions questions={questions} setQuestions={setQuestions} />}
         {step.id === "customize" && <StepCustomize form={form} setForm={setForm} />}
-        {step.id === "preview" && <StepPreview form={form} questions={questions} />}
+        {step.id === "preview" && <StepPreview form={form} questions={questions} templates={templates} />}
       </div>
 
       <div className="flex items-center justify-between">
@@ -106,15 +110,19 @@ function Stepper({ steps, activeIdx, onJump }) {
   );
 }
 
-function StepTemplate({ form, setForm }) {
+function StepTemplate({ form, setForm, templates, categories }) {
   const [filter, setFilter] = useState("all");
-  const list = filter === "all" ? mockGameTemplates : mockGameTemplates.filter(t => t.category === filter);
+  const list = filter === "all" ? templates : templates.filter(t => t.category === filter);
   return (
     <div>
       <h2 className="font-display text-xl text-ink mb-1">Chọn mẫu trò chơi</h2>
       <p className="text-sm text-[#8A7C63] mb-4">Mỗi mẫu mang một cách chơi khác nhau — chọn mẫu phù hợp với nội dung ôn tập của bạn.</p>
+      {templates.length === 0 ? (
+        <div className="py-10 text-center text-sm text-[#8A7C63]">Đang tải mẫu trò chơi...</div>
+      ) : (
+        <>
       <div className="flex flex-wrap gap-2 mb-6">
-        {CATEGORIES.map(c => (
+        {categories.map(c => (
           <button key={c.id} onClick={() => setFilter(c.id)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-body border transition ${filter === c.id ? "bg-ink text-paper border-ink" : "border-ink/15 text-ink/70 hover:border-ink/35"}`}>
             {c.label}
@@ -135,13 +143,15 @@ function StepTemplate({ form, setForm }) {
           </button>
         ))}
       </div>
+        </>
+      )}
     </div>
   );
 }
 
 const inputCls = "w-full note-card px-4 py-2.5 text-sm border-ink/10 focus:border-ticket";
 
-function StepInfo({ form, setForm }) {
+function StepInfo({ form, setForm, subjects }) {
   return (
     <div>
       <h2 className="font-display text-xl text-ink mb-6">Nhập thông tin trò chơi</h2>
@@ -150,8 +160,8 @@ function StepInfo({ form, setForm }) {
           <input className={inputCls} value={form.title} maxLength={80} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Ví dụ: Ôn tập Toán lớp 3" />
         </Field>
         <Field label="Môn học">
-          <select className={inputCls} value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}>
-            {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+          <select className={inputCls} value={form.subject || (subjects[0] || "")} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}>
+            {subjects.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </Field>
         <Field label="Chủ đề" hint="Chủ đề cụ thể của bài ôn tập">
@@ -270,8 +280,8 @@ function StepCustomize({ form, setForm }) {
   );
 }
 
-function StepPreview({ form, questions }) {
-  const tpl = mockGameTemplates.find(t => t.id === form.template);
+function StepPreview({ form, questions, templates }) {
+  const tpl = templates.find(t => t.id === form.template);
   const themeColor = (THEMES.find(t => t.id === form.theme) || THEMES[0]).color;
   return (
     <div>

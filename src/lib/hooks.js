@@ -1,4 +1,57 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { setupService } from '../services/setupService.js';
+
+const FALLBACK_PLAYER_NAMES = [
+  "Học sinh 1", "Học sinh 2", "Học sinh 3", "Học sinh 4",
+  "Học sinh 5", "Học sinh 6", "Học sinh 7", "Học sinh 8",
+];
+const FALLBACK_TEMPLATE = { icon: "🎲", ring: "#F4B942" };
+
+export function usePlayerNames() {
+  const [names, setNames] = useState(FALLBACK_PLAYER_NAMES);
+  useEffect(() => {
+    let active = true;
+    setupService.listPlayers().then((list) => { if (active) setNames(list); });
+    return () => { active = false; };
+  }, []);
+  return names;
+}
+
+export function useSubjects() {
+  const [subjects, setSubjects] = useState([]);
+  useEffect(() => {
+    let active = true;
+    setupService.listSubjects().then((list) => { if (active) setSubjects(list); });
+    return () => { active = false; };
+  }, []);
+  return subjects;
+}
+
+export function useCategories() {
+  const [categories, setCategories] = useState([]);
+  useEffect(() => {
+    let active = true;
+    setupService.listCategories().then((list) => { if (active) setCategories(list); });
+    return () => { active = false; };
+  }, []);
+  return categories;
+}
+
+export function useTemplates() {
+  const [templates, setTemplates] = useState([]);
+  useEffect(() => {
+    let active = true;
+    setupService.listTemplates().then((list) => { if (active) setTemplates(list); });
+    return () => { active = false; };
+  }, []);
+  return templates;
+}
+
+export function useTemplate(game) {
+  const templates = useTemplates();
+  if (!game) return FALLBACK_TEMPLATE;
+  return templates.find((t) => t.id === game.template) || FALLBACK_TEMPLATE;
+}
 
 export function useMediaQuery(query) {
   const subscribe = useCallback((onChange) => {
