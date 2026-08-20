@@ -8,6 +8,7 @@ import resultsRouter from "./routes/results.js";
 import setupRouter from "./routes/setup.js";
 import authRouter from "./routes/auth.js";
 import usersRouter from "./routes/users.js";
+import statsRouter from "./routes/stats.js";
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use("/api/users", usersRouter);
 app.use("/api/games", gamesRouter);
 app.use("/api/questions", questionsRouter);
 app.use("/api/results", resultsRouter);
+app.use("/api/stats", statsRouter);
 app.use("/api", setupRouter);
 
 app.use((req, res) => {

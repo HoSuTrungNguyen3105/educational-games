@@ -103,12 +103,12 @@ export default function CustomDesignPlayScreen({ game, questions, playerName, on
 
   return (
     <div className="flex-1 flex flex-col">
-      <div className="flex items-center justify-between gap-3 px-4 md:px-8 py-2.5 bg-white border-b border-ink/10 flex-wrap">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xl md:text-2xl">🎨</span>
-          <h1 className="font-display text-base md:text-xl text-ink truncate">{game.title}</h1>
+      <div className="flex items-center justify-between gap-2 px-3 md:px-8 py-2 bg-white border-b border-ink/10">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-lg md:text-2xl">🎨</span>
+          <h1 className="font-display text-sm md:text-xl text-ink truncate">{game.title}</h1>
         </div>
-        <div className="flex items-center gap-3 text-xs md:text-sm text-ink/70 font-body flex-wrap">
+        <div className="flex items-center gap-2 text-[11px] md:text-sm text-ink/70 font-body whitespace-nowrap shrink-0">
           <span className="hidden sm:inline">Phòng: <b className="text-ink font-mono">{game.code}</b></span>
           <span className="sm:hidden">📋 {idx + 1}/{questions.length}</span>
           <span className="hidden sm:inline">📋 Câu hỏi: {idx + 1}/{questions.length}</span>

@@ -13,7 +13,7 @@ export async function listByGame(gameId) {
 export async function submit(result) {
   const entry = { id: uid("result"), ...result };
   const { _id, ...rest } = entry;
-  const doc = { ...rest };
+  const doc = { ...rest, createdAt: rest.createdAt || new Date().toISOString() };
   await getCollection(COLLECTION).insertOne(doc);
 
   // cập nhật player count nếu chưa có id người chơi này trong game

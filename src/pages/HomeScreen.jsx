@@ -148,7 +148,7 @@ export default function HomeScreen({ onSelectGame }) {
                   </div>
                   <div className="flex-1 h-0.5 bg-gradient-to-r from-orange-300 to-transparent rounded-full"></div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
                   {hotGames.map((g, index) => (
                     <GameCard
                       key={g.id}
@@ -174,7 +174,7 @@ export default function HomeScreen({ onSelectGame }) {
                   </div>
                   <div className="flex-1 h-0.5 bg-gradient-to-r from-teal-300 to-transparent rounded-full"></div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
                   {newGames.map((g, index) => (
                     <GameCard
                       key={g.id}
@@ -198,7 +198,7 @@ export default function HomeScreen({ onSelectGame }) {
                 </div>
                 <div className="flex-1 h-0.5 bg-gradient-to-r from-indigo-300 to-transparent rounded-full"></div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
                 {games.map((g, index) => (
                   <GameCard
                     key={g.id}

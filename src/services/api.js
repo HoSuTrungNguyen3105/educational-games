@@ -142,3 +142,9 @@ export const userService = {
     return apiFetch(`/users/${id}`, { method: "DELETE" });
   },
 };
+
+export const statsService = {
+  async get() {
+    return apiFetch("/stats");
+  },
+};
