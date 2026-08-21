@@ -63,7 +63,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
 
   return (
     <div className="min-h-screen bg-paper flex flex-col">
-      <StudentTopBar onExit={goHome} />
+      {screen !== "play" && <StudentTopBar onExit={goHome} />}
       <main className="flex-1 flex flex-col">
         {screen === "join" && <JoinGameScreen onFound={handleFound} />}
         {screen === "name" && game && (

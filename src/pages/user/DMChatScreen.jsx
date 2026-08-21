@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { chatApi } from "../../services/chatApi.js";
 import { useUserAuthStore } from "../../stores/userAuth.store.js";
 import { Loader } from "../../components/ui.jsx";
@@ -11,23 +11,22 @@ export default function DMChatScreen({ targetUser, onBack }) {
   const [sending, setSending] = useState(false);
   const listRef = useRef(null);
   const bottomRef = useRef(null);
-
-  const loadMessages = useCallback(async () => {
-    if (!targetUser?.id) return;
-    setLoading(true);
-    try {
-      const res = await chatApi.listDmMessages(targetUser.id, { limit: 50 });
-      setMessages(res.items || []);
-    } catch (e) {
-      console.error("[dm] load error:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [targetUser?.id]);
+  const targetUserId = targetUser?.id;
 
   useEffect(() => {
-    loadMessages();
-  }, [loadMessages]);
+    if (!targetUserId) return;
+    let cancelled = false;
+    chatApi.listDmMessages(targetUserId, { limit: 50 }).then((res) => {
+      if (!cancelled) {
+        setMessages(res.items || []);
+        setLoading(false);
+      }
+    }).catch((e) => {
+      console.error("[dm] load error:", e);
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [targetUserId]);
 
   useEffect(() => {
     if (!loading && messages.length > 0) {

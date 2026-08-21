@@ -5,7 +5,7 @@ import { Loader, ErrorState, EmptyState } from "../../components/ui.jsx";
 import { navigate } from "../../lib/router.js";
 import DMChatScreen from "./DMChatScreen.jsx";
 
-export default function ConversationListScreen({ userAuth, onSelectConversation, onLogout }) {
+export default function ConversationListScreen({ userAuth, onLogout }) {
   const [state, setState] = useState({ conversations: null, error: null });
   const [chatTarget, setChatTarget] = useState(null);
   const loadingRef = useRef(false);

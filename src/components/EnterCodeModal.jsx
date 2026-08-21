@@ -60,7 +60,7 @@ export function EnterCodeModal({ open, onClose, onFound }) {
                         <PrimaryButton
                             type="button"
                             onClick={handleClose}
-                            className="flex-1 bg-paper2 text-ink border border-ink/10 hover:bg-ink hover:text-paper"
+                            className="flex-1 !bg-paper2 !text-paper border border-ink/10 hover:!bg-ink hover:!text-paper"
                         >
                             Huỷ
                         </PrimaryButton>

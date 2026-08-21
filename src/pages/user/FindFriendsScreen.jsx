@@ -3,7 +3,7 @@ import { userService } from "../../services/api.js";
 import { Loader } from "../../components/ui.jsx";
 import DMChatScreen from "./DMChatScreen.jsx";
 
-export default function FindFriendsScreen({ onStartChat }) {
+export default function FindFriendsScreen() {
   const [query, setQuery] = useState("");
   const [state, setState] = useState({ results: null, loading: false, error: null });
   const [chatTarget, setChatTarget] = useState(null);
