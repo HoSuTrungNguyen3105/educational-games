@@ -49,6 +49,14 @@ export function parseRoute() {
     return { name: "chat", gameId: null };
   }
 
+  if (first === "profile") {
+    return { name: "profile", gameId: null };
+  }
+
+  if (first === "find-friends") {
+    return { name: "find-friends", gameId: null };
+  }
+
   return { name: "home", gameId: null };
 }
 

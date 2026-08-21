@@ -4,26 +4,48 @@ export const API_BASE = window.API_BASE_URL || "https://educational-games-lp4z.o
 export const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
 const AUTH_KEY = "edu_games_auth";
+const USER_AUTH_KEY = "edu_games_user_auth";
+
+function parseToken(auth) {
+  if (!auth || !auth.token) return null;
+  const parts = String(auth.token).split(".");
+  if (parts.length !== 3) return auth;
+  try {
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+    if (payload && typeof payload.exp === "number" && Date.now() / 1000 > payload.exp) {
+      return null;
+    }
+  } catch { /* invalid token */ }
+  return auth;
+}
+
 export function loadAuth() {
   try {
-    const auth = JSON.parse(localStorage.getItem(AUTH_KEY));
-    if (auth && auth.token) {
-      const parts = String(auth.token).split(".");
-      if (parts.length === 3) {
-        try {
-          const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-          if (payload && typeof payload.exp === "number" && Date.now() / 1000 > payload.exp) {
-            localStorage.removeItem(AUTH_KEY);
-            return null;
-          }
-        } catch (_) { /* token không decode được */ }
-      }
-    }
-    return auth || null;
-  } catch (_) { return null; }
+    // Ưu tiên teacher auth, nếu không có thì dùng user auth
+    const teacherAuth = parseToken(JSON.parse(localStorage.getItem(AUTH_KEY)));
+    if (teacherAuth && teacherAuth.token) return teacherAuth;
+    const userAuth = parseToken(JSON.parse(localStorage.getItem(USER_AUTH_KEY)));
+    if (userAuth && userAuth.token) return userAuth;
+    return null;
+  } catch { return null; }
 }
+
+export function loadTeacherAuth() {
+  try {
+    return parseToken(JSON.parse(localStorage.getItem(AUTH_KEY)));
+  } catch { return null; }
+}
+
+export function loadUserAuth() {
+  try {
+    return parseToken(JSON.parse(localStorage.getItem(USER_AUTH_KEY)));
+  } catch { return null; }
+}
+
 export function saveAuth(auth) { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); }
+export function saveUserAuth(auth) { localStorage.setItem(USER_AUTH_KEY, JSON.stringify(auth)); }
 export function clearAuth() { localStorage.removeItem(AUTH_KEY); }
+export function clearUserAuth() { localStorage.removeItem(USER_AUTH_KEY); }
 
 // Lặp lại khi backend đang cold-start (503 / lỗi mạng), tránh request đầu tiên chết
 async function fetchWithRetry(url, init, attempts = 5) {
@@ -64,7 +86,7 @@ export async function apiFetch(path, options = {}) {
     try {
       const err = await res.json();
       if (err && err.message) message = err.message;
-    } catch (_) { /* ignore */ }
+    } catch { /* ignore */ }
     throw new Error(message);
   }
   return res.json();
@@ -143,6 +165,9 @@ export const userService = {
   },
   async remove(id) {
     return apiFetch(`/users/${id}`, { method: "DELETE" });
+  },
+  async search(query) {
+    return apiFetch(`/users/search?q=${encodeURIComponent(query)}`) || [];
   },
 };
 

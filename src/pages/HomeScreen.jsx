@@ -5,7 +5,7 @@ import { navigate } from '../lib/router.js'
 import { PrimaryButton, Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 
-export default function HomeScreen({ onSelectGame }) {
+export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUserRegister, onUserLogout }) {
   const [games, setGames] = useState(null);
   const [error, setError] = useState(null);
   const [showCodeModal, setShowCodeModal] = useState(false);
@@ -218,7 +218,39 @@ export default function HomeScreen({ onSelectGame }) {
       <footer className="bg-gradient-to-r from-purple-100 via-pink-100 to-cyan-100 border-t border-purple-200 py-6 text-center">
         <div className="flex flex-col items-center gap-3">
           <p className="text-sm text-gray-600">Made with 💜 for students</p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-center">
+            {userAuth?.user ? (
+              <>
+                <a
+                  onClick={() => navigate("/profile")}
+                  href="#/profile"
+                  className="inline-flex items-center gap-2 text-sm text-purple-600 font-semibold hover:text-purple-700 transition"
+                >
+                  👤 {userAuth.user.name}
+                </a>
+                <button
+                  onClick={onUserLogout}
+                  className="inline-flex items-center gap-2 text-sm text-red-500 font-semibold hover:text-red-600 transition"
+                >
+                  🚪 Đăng xuất
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onUserLogin}
+                  className="inline-flex items-center gap-2 text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold px-4 py-2 rounded-full hover:from-purple-600 hover:to-pink-600 transition shadow-md"
+                >
+                  🔑 Đăng nhập
+                </button>
+                <button
+                  onClick={onUserRegister}
+                  className="inline-flex items-center gap-2 text-sm bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold px-4 py-2 rounded-full hover:from-cyan-600 hover:to-blue-600 transition shadow-md"
+                >
+                  ✨ Đăng ký
+                </button>
+              </>
+            )}
             <a
               onClick={() => navigate("/chat")}
               href="#/chat"
@@ -226,6 +258,15 @@ export default function HomeScreen({ onSelectGame }) {
             >
               💬 Tin nhắn
             </a>
+            {userAuth?.user && (
+              <a
+                onClick={() => navigate("/find-friends")}
+                href="#/find-friends"
+                className="inline-flex items-center gap-2 text-sm text-purple-600 font-semibold hover:text-purple-700 transition"
+              >
+                🔍 Tìm bạn
+              </a>
+            )}
             <a
               onClick={() => navigate("/admin")}
               href="#/admin"

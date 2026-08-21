@@ -8,6 +8,7 @@ import resultsRouter from "./routes/results.js";
 import setupRouter from "./routes/setup.js";
 import authRouter from "./routes/auth.js";
 import usersRouter from "./routes/users.js";
+import usersSearchRouter from "./routes/usersSearch.js";
 import statsRouter from "./routes/stats.js";
 import chatRouter from "./routes/chat.js";
 import conversationsRouter from "./routes/conversations.js";
@@ -29,6 +30,7 @@ app.use("/api", (_req, res, next) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/users", usersSearchRouter);
 app.use("/api/games", gamesRouter);
 app.use("/api/questions", questionsRouter);
 app.use("/api/results", resultsRouter);

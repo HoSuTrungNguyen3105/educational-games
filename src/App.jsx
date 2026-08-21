@@ -13,6 +13,8 @@ import StudentApp from './pages/student/StudentApp.jsx'
 import UserLoginScreen from './pages/user/UserLoginScreen.jsx'
 import UserRegisterScreen from './pages/user/UserRegisterScreen.jsx'
 import ConversationListScreen from './pages/user/ConversationListScreen.jsx'
+import ProfileScreen from './pages/user/ProfileScreen.jsx'
+import FindFriendsScreen from './pages/user/FindFriendsScreen.jsx'
 import { startWarmup } from './services/warmup.js'
 
 const USER_AUTH_KEY = "edu_games_user_auth";
@@ -169,14 +171,39 @@ function App() {
           <div className="flex items-center px-5 md:px-8 py-4">
             <button onClick={() => navigate("/")} className="text-sm text-[#8A7C63] hover:text-ink">← Về trang chủ</button>
           </div>
-          <ConversationListScreen userAuth={userAuth} onSelectConversation={() => { /* TODO: open conversation chat */ }} />
+          <ConversationListScreen userAuth={userAuth} onSelectConversation={() => { /* TODO: open conversation chat */ }} onLogout={handleUserLogout} />
         </div>
         <Toast toast={toast} />
       </>
     );
   }
 
-  return <HomeScreen onSelectGame={selectGame} />;
+  if (route.name === "profile") {
+    return (
+      <>
+        <div className="min-h-screen bg-paper flex flex-col">
+          <ProfileScreen userAuth={userAuth} onLogout={handleUserLogout} onBack={() => navigate("/")} />
+        </div>
+        <Toast toast={toast} />
+      </>
+    );
+  }
+
+  if (route.name === "find-friends") {
+    return (
+      <>
+        <div className="min-h-screen bg-paper flex flex-col">
+          <div className="flex items-center px-5 md:px-8 py-4">
+            <button onClick={() => navigate("/")} className="text-sm text-[#8A7C63] hover:text-ink">← Về trang chủ</button>
+          </div>
+          <FindFriendsScreen userAuth={userAuth} />
+        </div>
+        <Toast toast={toast} />
+      </>
+    );
+  }
+
+  return <HomeScreen onSelectGame={selectGame} userAuth={userAuth} onUserLogin={() => setShowUserLogin(true)} onUserRegister={() => setShowUserRegister(true)} onUserLogout={handleUserLogout} />;
 }
 
 export default App

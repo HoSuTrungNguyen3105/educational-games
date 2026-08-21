@@ -14,16 +14,23 @@ import ChatPanel from '../../components/chat/ChatPanel.jsx'
 import ChatBubble from '../../components/chat/ChatBubble.jsx'
 
 export default function StudentApp({ initialGame, onExit, toast, userAuth, onUserLogin, onUserLogout }) {
-  const [screen, setScreen] = useState(initialGame ? "name" : "join");
+  const [screen, setScreen] = useState(() => {
+    if (initialGame && userAuth?.user) return "waiting";
+    return initialGame ? "name" : "join";
+  });
   const [game, setGame] = useState(initialGame || null);
   const [questions, setQuestions] = useState([]);
-  const [playerName, setPlayerName] = useState("");
+  const [playerName, setPlayerName] = useState(userAuth?.user?.name || "");
   const [finalResult, setFinalResult] = useState(null);
   const [leaderboard, setLeaderboard] = useState(null);
 
   const resetStore = () => useGameStore.getState().resetGame();
 
-  const restart = () => { resetStore(); setScreen(initialGame ? "name" : "join"); setGame(initialGame || null); setQuestions([]); setPlayerName(""); setFinalResult(null); setLeaderboard(null); };
+  const restart = () => {
+    resetStore();
+    setScreen(initialGame && userAuth?.user ? "waiting" : initialGame ? "name" : "join");
+    setGame(initialGame || null); setQuestions([]); setPlayerName(userAuth?.user?.name || ""); setFinalResult(null); setLeaderboard(null);
+  };
   const goHome = () => { resetStore(); setGame(null); setQuestions([]); setFinalResult(null); setLeaderboard(null); onExit(); };
 
   // Khi route thay đổi sang một game cụ thể → đồng bộ game hiển thị
@@ -32,11 +39,14 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGame(initialGame);
       setQuestions([]);
-      setScreen("name");
+      setScreen(userAuth?.user ? "waiting" : "name");
     }
-  }, [initialGame, game]);
+  }, [initialGame, game, userAuth]);
 
-  const handleFound = (g) => { setGame(g); setQuestions([]); setScreen("name"); };
+  const handleFound = (g) => {
+    setGame(g); setQuestions([]);
+    setScreen(userAuth?.user ? "waiting" : "name");
+  };
 
   const handleStart = async () => { const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play"); };
 
@@ -56,7 +66,14 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
       <StudentTopBar onExit={goHome} />
       <main className="flex-1 flex flex-col">
         {screen === "join" && <JoinGameScreen onFound={handleFound} />}
-        {screen === "name" && game && <EnterNameScreen game={game} onBack={initialGame ? goHome : restart} onSubmit={(name) => { setPlayerName(name); setScreen("waiting"); }} />}
+        {screen === "name" && game && (
+          <EnterNameScreen
+            game={game}
+            onBack={initialGame ? goHome : restart}
+            onSubmit={(name) => { setPlayerName(name); setScreen("waiting"); }}
+            userAuth={userAuth}
+          />
+        )}
         {screen === "waiting" && game && (
           <WaitingRoomScreen game={game} playerName={playerName}
             onStart={handleStart} userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} />
@@ -156,8 +173,8 @@ function JoinGameScreen({ onFound }) {
   );
 }
 
-function EnterNameScreen({ game, onBack, onSubmit }) {
-  const [name, setName] = useState("");
+function EnterNameScreen({ game, onBack, onSubmit, userAuth }) {
+  const [name, setName] = useState(userAuth?.user?.name || "");
   const tpl = useTemplate(game);
   return (
     <div className="flex-1 flex items-start sm:items-center justify-center px-6 pt-[14dvh] sm:pt-10 pb-10">
@@ -165,9 +182,15 @@ function EnterNameScreen({ game, onBack, onSubmit }) {
         <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={72} fontSize={32} className="mx-auto mb-4" />
         <h1 className="font-display text-2xl text-ink mb-1">{game.title}</h1>
         <p className="text-sm text-[#8A7C63] mb-6">{game.subject} · {game.topic}</p>
-        <input value={name} onChange={e => setName(e.target.value)} maxLength={24} autoFocus placeholder="Nhập tên của bạn"
-          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); } }}
-          className="w-full text-center note-card px-4 py-3 text-lg border-ink/10 focus:border-ticket" />
+        {userAuth?.user ? (
+          <div className="note-card px-4 py-3 text-lg text-ink bg-ink/5 text-center">
+            👤 {userAuth.user.name}
+          </div>
+        ) : (
+          <input value={name} onChange={e => setName(e.target.value)} maxLength={24} autoFocus placeholder="Nhập tên của bạn"
+            onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); } }}
+            className="w-full text-center note-card px-4 py-3 text-lg border-ink/10 focus:border-ticket" />
+        )}
         <div className="flex gap-3 mt-5">
           <GhostButton onClick={onBack} className="flex-1">← Quay lại</GhostButton>
           <PrimaryButton type="submit" className="flex-1" disabled={!name.trim()}>Vào phòng chờ →</PrimaryButton>

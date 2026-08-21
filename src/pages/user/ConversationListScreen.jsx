@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { conversationApi } from "../../services/conversationApi.js";
 import { Loader, ErrorState, EmptyState } from "../../components/ui.jsx";
+import { navigate } from "../../lib/router.js";
 
-export default function ConversationListScreen({ userAuth, onSelectConversation }) {
+export default function ConversationListScreen({ userAuth, onSelectConversation, onLogout }) {
   const [state, setState] = useState({ conversations: null, error: null });
   const loadingRef = useRef(false);
 
@@ -35,7 +36,25 @@ export default function ConversationListScreen({ userAuth, onSelectConversation 
   return (
     <div className="flex-1 px-6 py-10">
       <div className="max-w-2xl mx-auto anim-pop">
-        <h1 className="font-display text-2xl text-ink mb-6">💬 Tin nhắn</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="font-display text-2xl text-ink">💬 Tin nhắn</h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/find-friends")}
+              className="px-4 py-2 rounded-2xl bg-ink text-paper text-sm font-semibold hover:bg-ink2 transition"
+            >
+              🔍 Tìm bạn
+            </button>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="text-sm text-red-500 font-semibold hover:text-red-600 transition"
+              >
+                🚪 Đăng xuất
+              </button>
+            )}
+          </div>
+        </div>
 
         {state.conversations === null ? (
           <Loader label="Đang tải danh sách..." />
