@@ -10,7 +10,30 @@ import HomeScreen from './pages/HomeScreen.jsx'
 import LoginScreen from './pages/LoginScreen.jsx'
 import TeacherApp from './pages/teacher/TeacherApp.jsx'
 import StudentApp from './pages/student/StudentApp.jsx'
+import UserLoginScreen from './pages/user/UserLoginScreen.jsx'
+import UserRegisterScreen from './pages/user/UserRegisterScreen.jsx'
+import ConversationListScreen from './pages/user/ConversationListScreen.jsx'
 import { startWarmup } from './services/warmup.js'
+
+const USER_AUTH_KEY = "edu_games_user_auth";
+function loadUserAuth() {
+  try {
+    const auth = JSON.parse(localStorage.getItem(USER_AUTH_KEY));
+    if (auth && auth.token) {
+      const parts = String(auth.token).split(".");
+      if (parts.length === 3) {
+        try {
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+          if (payload && typeof payload.exp === "number" && Date.now() / 1000 > payload.exp) {
+            localStorage.removeItem(USER_AUTH_KEY);
+            return null;
+          }
+        } catch (_) { /* invalid token */ }
+      }
+    }
+    return auth || null;
+  } catch (_) { return null; }
+}
 
 function App() {
   const route = useRoute();
@@ -19,6 +42,11 @@ function App() {
   const [loadingGame, setLoadingGame] = useState(false);
   const [toast, showToast] = useToast();
   const pendingGameRef = useRef(null);
+
+  // User auth state (for chat)
+  const [userAuth, setUserAuth] = useState(() => loadUserAuth());
+  const [showUserLogin, setShowUserLogin] = useState(false);
+  const [showUserRegister, setShowUserRegister] = useState(false);
 
   // Chọn game trên Home → chuyển thẳng vào màn nhập tên, không fetch lại lần nữa
   const selectGame = (g) => {
@@ -75,6 +103,49 @@ function App() {
     if (auth && auth.token) connectSocket(auth.token);
   };
 
+  const handleUserLogin = (userData, token) => {
+    setUserAuth({ user: userData, token });
+    setShowUserLogin(false);
+  };
+
+  const handleUserRegister = (userData, token) => {
+    setUserAuth({ user: userData, token });
+    setShowUserRegister(false);
+  };
+
+  const handleUserLogout = () => {
+    localStorage.removeItem(USER_AUTH_KEY);
+    setUserAuth(null);
+  };
+
+  // User login/register screens
+  if (showUserLogin) {
+    return (
+      <>
+        <UserLoginScreen
+          onBack={() => { setShowUserLogin(false); }}
+          onLogin={handleUserLogin}
+          onGoRegister={() => { setShowUserLogin(false); setShowUserRegister(true); }}
+          showToast={showToast}
+        />
+        <Toast toast={toast} />
+      </>
+    );
+  }
+  if (showUserRegister) {
+    return (
+      <>
+        <UserRegisterScreen
+          onBack={() => { setShowUserRegister(false); }}
+          onRegistered={handleUserRegister}
+          onGoLogin={() => { setShowUserRegister(false); setShowUserLogin(true); }}
+          showToast={showToast}
+        />
+        <Toast toast={toast} />
+      </>
+    );
+  }
+
   const isAdminRoute = route.name.startsWith("admin-");
   if (isAdminRoute) {
     if (!user) return <LoginScreen onBack={() => navigate("/")} onLogin={handleLogin} showToast={showToast} />;
@@ -88,7 +159,21 @@ function App() {
 
   if (route.name === "student" || route.name === "student-join") {
     if (loadingGame) return <div className="min-h-screen bg-paper flex items-center justify-center"><Loader label="Đang mở trò chơi..." /></div>;
-    return <StudentApp initialGame={playGame} onExit={() => navigate("/")} showToast={showToast} toast={toast} />;
+    return <StudentApp initialGame={playGame} onExit={() => navigate("/")} showToast={showToast} toast={toast} userAuth={userAuth} onUserLogin={() => setShowUserLogin(true)} onUserLogout={handleUserLogout} />;
+  }
+
+  if (route.name === "chat") {
+    return (
+      <>
+        <div className="min-h-screen bg-paper flex flex-col">
+          <div className="flex items-center px-5 md:px-8 py-4">
+            <button onClick={() => navigate("/")} className="text-sm text-[#8A7C63] hover:text-ink">← Về trang chủ</button>
+          </div>
+          <ConversationListScreen userAuth={userAuth} onSelectConversation={() => { /* TODO: open conversation chat */ }} />
+        </div>
+        <Toast toast={toast} />
+      </>
+    );
   }
 
   return <HomeScreen onSelectGame={selectGame} />;

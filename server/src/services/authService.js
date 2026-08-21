@@ -10,8 +10,14 @@ export async function findByUsername(username) {
   return getCollection(COLLECTION).findOne({ username: username.trim().toLowerCase() });
 }
 
-export async function verifyCredentials(username, password) {
-  const user = await findByUsername(username);
+export async function findByEmail(email) {
+  if (!email) return null;
+  return getCollection(COLLECTION).findOne({ email: email.trim().toLowerCase() });
+}
+
+export async function verifyCredentials(identifier, password) {
+  // Hỗ trợ đăng nhập bằng username hoặc email
+  const user = await findByUsername(identifier) || await findByEmail(identifier);
   if (!user) return null;
   const ok = user.passwordHash && (await bcrypt.compare(password, user.passwordHash));
   return ok ? user : null;
@@ -30,7 +36,7 @@ export function verifyToken(token) {
 }
 
 export function publicUser(user) {
-  return { id: user.id, username: user.username, name: user.name, role: user.role };
+  return { id: user.id, username: user.username, email: user.email || null, name: user.name, role: user.role };
 }
 
 function normalizeRole(role) {
@@ -38,8 +44,9 @@ function normalizeRole(role) {
   return "teacher";
 }
 
-export async function createUser({ username, password, name, role }) {
+export async function createUser({ username, email, password, name, role }) {
   const uname = String(username || "").trim().toLowerCase();
+  const eml = String(email || "").trim().toLowerCase();
   const pwd = String(password || "");
   const displayName = String(name || "").trim();
   if (!uname || !pwd || !displayName) throw new Error("Thiếu tên đăng nhập, mật khẩu hoặc họ tên");
@@ -48,9 +55,15 @@ export async function createUser({ username, password, name, role }) {
   const exists = await findByUsername(uname);
   if (exists) throw new Error("Tên đăng nhập đã tồn tại");
 
+  if (eml) {
+    const emailExists = await findByEmail(eml);
+    if (emailExists) throw new Error("Email đã được sử dụng");
+  }
+
   const user = {
     id: uid("user"),
     username: uname,
+    email: eml || null,
     name: displayName,
     role: normalizeRole(role),
     passwordHash: bcrypt.hashSync(pwd, 10),
@@ -58,6 +71,14 @@ export async function createUser({ username, password, name, role }) {
   };
   await getCollection(COLLECTION).insertOne(user);
   return publicUser(user);
+}
+
+export async function registerUser({ username, email, password, name }) {
+  const user = await createUser({ username, email, password, name, role: "student" });
+  // Auto-login: trả về token sau khi register
+  const fullUser = await findByUsername(username);
+  const token = signToken(fullUser);
+  return { token, user };
 }
 
 export async function listUsers() {

@@ -10,6 +10,7 @@ import authRouter from "./routes/auth.js";
 import usersRouter from "./routes/users.js";
 import statsRouter from "./routes/stats.js";
 import chatRouter from "./routes/chat.js";
+import conversationsRouter from "./routes/conversations.js";
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use("/api/questions", questionsRouter);
 app.use("/api/results", resultsRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/conversations", conversationsRouter);
 app.use("/api", setupRouter);
 
 app.use((req, res) => {

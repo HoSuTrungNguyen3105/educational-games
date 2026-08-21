@@ -218,13 +218,22 @@ export default function HomeScreen({ onSelectGame }) {
       <footer className="bg-gradient-to-r from-purple-100 via-pink-100 to-cyan-100 border-t border-purple-200 py-6 text-center">
         <div className="flex flex-col items-center gap-3">
           <p className="text-sm text-gray-600">Made with 💜 for students</p>
-          <a
-            onClick={() => navigate("/admin")}
-            href="#/admin"
-            className="inline-flex items-center gap-2 text-sm text-purple-600 font-semibold hover:text-purple-700 transition"
-          >
-            👨‍🏫 Giáo viên? Đăng nhập quản trị →
-          </a>
+          <div className="flex items-center gap-4">
+            <a
+              onClick={() => navigate("/chat")}
+              href="#/chat"
+              className="inline-flex items-center gap-2 text-sm text-purple-600 font-semibold hover:text-purple-700 transition"
+            >
+              💬 Tin nhắn
+            </a>
+            <a
+              onClick={() => navigate("/admin")}
+              href="#/admin"
+              className="inline-flex items-center gap-2 text-sm text-purple-600 font-semibold hover:text-purple-700 transition"
+            >
+              👨‍🏫 Giáo viên? Đăng nhập quản trị →
+            </a>
+          </div>
         </div>
       </footer>
 

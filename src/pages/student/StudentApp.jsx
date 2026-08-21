@@ -11,8 +11,9 @@ import { useSocketEvent, useSocketConnected } from '../../socket/socket.listener
 import { useGameStore } from '../../stores/game.store.js'
 import { useChatStore } from '../../stores/chat.store.js'
 import ChatPanel from '../../components/chat/ChatPanel.jsx'
+import ChatBubble from '../../components/chat/ChatBubble.jsx'
 
-export default function StudentApp({ initialGame, onExit, toast }) {
+export default function StudentApp({ initialGame, onExit, toast, userAuth, onUserLogin, onUserLogout }) {
   const [screen, setScreen] = useState(initialGame ? "name" : "join");
   const [game, setGame] = useState(initialGame || null);
   const [questions, setQuestions] = useState([]);
@@ -58,10 +59,13 @@ export default function StudentApp({ initialGame, onExit, toast }) {
         {screen === "name" && game && <EnterNameScreen game={game} onBack={initialGame ? goHome : restart} onSubmit={(name) => { setPlayerName(name); setScreen("waiting"); }} />}
         {screen === "waiting" && game && (
           <WaitingRoomScreen game={game} playerName={playerName}
-            onStart={handleStart} />
+            onStart={handleStart} userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} />
         )}
         {screen === "play" && game && questions.length > 0 && (
-          <GamePlayRouter game={game} questions={questions} playerName={playerName} onQuit={restart} onFinish={handleFinish} />
+          <>
+            <GamePlayRouter game={game} questions={questions} playerName={playerName} onQuit={restart} onFinish={handleFinish} />
+            <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} />
+          </>
         )}
         {screen === "result" && finalResult && (
           <ResultScreen result={finalResult} onSeeLeaderboard={async () => { const r = await resultService.listByGame(game.id); setLeaderboard(r); setScreen("leaderboard"); }} />
@@ -173,7 +177,7 @@ function EnterNameScreen({ game, onBack, onSubmit }) {
   );
 }
 
-function WaitingRoomScreen({ game, playerName, onStart }) {
+function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, onUserLogout }) {
   const tpl = useTemplate(game);
   const connected = useSocketConnected();
   const players = useGameStore(s => s.players);
@@ -184,14 +188,18 @@ function WaitingRoomScreen({ game, playerName, onStart }) {
     : [];
   const started = gameStatus === "playing";
 
+  // Use authenticated user ID if available, otherwise random
+  const senderId = userAuth?.user?.id || uid("player");
+  const displayName = userAuth?.user?.name || playerName;
+
   // Khởi tạo chat store
   const initChat = useChatStore(s => s.init);
   const resetChat = useChatStore(s => s.reset);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    initChat(game.id, uid("player"), playerName);
+    initChat(game.id, senderId, displayName);
     return () => resetChat();
-  }, [game.id, playerName]);
+  }, [game.id, senderId, displayName]);
 
   // Tham gia trò chơi qua socket khi vào phòng chờ
   useEffect(() => {
@@ -229,7 +237,7 @@ function WaitingRoomScreen({ game, playerName, onStart }) {
       </div>
 
       {/* Chat sidebar (desktop) / overlay (mobile) */}
-      <ChatPanel />
+      <ChatPanel userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} />
     </div>
   );
 }

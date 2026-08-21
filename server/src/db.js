@@ -194,6 +194,11 @@ export async function initDatabase() {
     ["messages", { conversationId: 1, createdAt: -1, id: -1 }],
     ["messages", { clientMessageId: 1 }, { unique: true, sparse: true }],
     ["chatReadStates", { conversationId: 1, playerId: 1 }, { unique: true }],
+    ["conversations", { id: 1 }, { unique: true }],
+    ["conversations", { type: 1 }],
+    ["conversations", { gameId: 1 }],
+    ["conversationMembers", { conversationId: 1, userId: 1 }, { unique: true }],
+    ["conversationMembers", { userId: 1 }],
   ];
   const createdIndexes = [];
   for (const [col, keys, opts = {}] of indexDefs) {

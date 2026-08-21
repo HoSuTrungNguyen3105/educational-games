@@ -3,7 +3,7 @@ import ChatHeader from "./ChatHeader.jsx";
 import MessageList from "./MessageList.jsx";
 import MessageComposer from "./MessageComposer.jsx";
 
-export default function ChatPanel({ className = "" }) {
+export default function ChatPanel({ className = "", userAuth, onUserLogin, onUserLogout }) {
   const isOpen = useChatStore((s) => s.isOpen);
   const toggleOpen = useChatStore((s) => s.toggleOpen);
   const unreadCount = useChatStore((s) => s.unreadCount);
@@ -12,11 +12,11 @@ export default function ChatPanel({ className = "" }) {
     <>
       {/* Desktop: sidebar panel */}
       <div className={`hidden lg:flex flex-col bg-paper2 border-l border-ink/10 ${className}`}>
-        <ChatHeader />
+        <ChatHeader userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} />
         {isOpen && (
           <>
             <MessageList />
-            <MessageComposer />
+            <MessageComposer userAuth={userAuth} />
           </>
         )}
       </div>
@@ -42,9 +42,9 @@ export default function ChatPanel({ className = "" }) {
         {/* Fullscreen overlay */}
         {isOpen && (
           <div className="fixed inset-0 z-50 flex flex-col bg-paper2 anim-fade">
-            <ChatHeader />
+            <ChatHeader userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} />
             <MessageList />
-            <MessageComposer />
+            <MessageComposer userAuth={userAuth} />
           </div>
         )}
       </div>

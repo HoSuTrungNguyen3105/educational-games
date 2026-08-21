@@ -45,6 +45,10 @@ export function parseRoute() {
     return playId ? { name: "student", gameId: playId } : { name: "student-join", gameId: null };
   }
 
+  if (first === "chat") {
+    return { name: "chat", gameId: null };
+  }
+
   return { name: "home", gameId: null };
 }
 

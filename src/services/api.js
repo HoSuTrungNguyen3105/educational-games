@@ -122,6 +122,9 @@ export const authService = {
   async login(username, password) {
     return apiFetch("/auth/login", { method: "POST", body: { username, password } });
   },
+  async register({ username, email, password, name }) {
+    return apiFetch("/auth/register", { method: "POST", body: { username, email, password, name } });
+  },
   async me() {
     return apiFetch("/auth/me");
   },
