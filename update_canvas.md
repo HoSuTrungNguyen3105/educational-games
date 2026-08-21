@@ -1,1157 +1,841 @@
-# Tối ưu Canvas Game Builder thành hệ thống Game Template linh hoạt
+# Canvas Refactor – Mobile Responsive & Area Game UI
 
-## 1. Mục tiêu
+## 1. Mục tiêu bổ sung
 
-Tối ưu lại hệ thống Canvas hiện tại để có thể xây dựng và tùy chỉnh **nhiều loại trò chơi khác nhau** trên cùng một Game Builder.
+Tập trung xử lý **responsive mobile** cho Canvas và đặc biệt là phần **hiển thị trò chơi trong mục Area**.
 
-Canvas không được thiết kế cứng cho một game cụ thể. Giáo viên phải có thể:
+Hiện tại mobile UI chưa được tối ưu, trong đó khu vực Area đang có vấn đề về:
 
-* Chọn một loại game/template có sẵn.
-* Tùy chỉnh giao diện, bố cục, màu sắc, hình ảnh, text, button, background...
-* Tùy chỉnh các thành phần riêng của từng loại game.
-* Tùy chỉnh vị trí, kích thước, font, màu, animation của từng element.
-* Có thể thêm/xóa/thay đổi element nếu template cho phép.
-* Preview game ngay trong Builder.
-* Lưu toàn bộ thiết kế thành `game.design`.
-* Runtime sử dụng chính thiết kế đó để render game cho học sinh.
-
-Hệ thống cần có kiến trúc đủ linh hoạt để sau này có thể thêm nhiều game/template mới mà **không phải sửa lại Canvas core**.
+* Kích thước game không phù hợp với màn hình mobile.
+* Layout chưa tự co giãn theo viewport.
+* Game có thể bị tràn ngang hoặc bị cắt nội dung.
+* Khoảng cách giữa các element chưa phù hợp với mobile.
+* Header / toolbar / action của Area chiếm quá nhiều diện tích.
+* Canvas game chưa có cơ chế fit theo kích thước màn hình.
+* Khi thay đổi orientation hoặc resize màn hình, game chưa cập nhật layout ổn định.
+* Trải nghiệm scroll / touch trên mobile chưa tốt.
 
 ---
 
-# 2. Canvas hiện tại
+# 2. Mobile Responsive Requirements
 
-## Game Builder
-
-File chính:
+Canvas cần support tối thiểu:
 
 ```text
-src/components/gameBuilder/GameBuilder.jsx
-src/components/gameBuilder/CanvasArea.jsx
-```
-
-Route:
-
-```text
-#/admin/builder/:id?
-```
-
-Đây là màn hình giáo viên thiết kế game.
-
-Canvas hiện tại hỗ trợ:
-
-* Kéo thả element.
-* Zoom.
-* Thiết kế layout.
-* Preview.
-
----
-
-## Preview
-
-Nằm trong:
-
-```text
-GameBuilder.jsx
-```
-
-Thông qua:
-
-```text
-PreviewModal
-```
-
-Preview render runtime thu nhỏ và sử dụng scale-to-fit.
-
-Preview phải đảm bảo render gần như giống với runtime thật.
-
----
-
-## Runtime game
-
-File:
-
-```text
-src/games/CustomDesignPlayScreen.jsx
-```
-
-Route:
-
-```text
-#/play/:id
-```
-
-Được sử dụng khi:
-
-```js
-game.design
-```
-
-tồn tại.
-
-GamePlayRouter sẽ đưa game có `game.design` vào:
-
-```text
-CustomDesignPlayScreen
-```
-
-Canvas runtime hỗ trợ:
-
-* Scale-to-fit.
-* Upscale tối đa 2×.
-* Render game thiết kế.
-
----
-
-## Component render dùng chung
-
-File:
-
-```text
-src/games/TemplateRenderer.jsx
-```
-
-Đây là component quan trọng dùng để render:
-
-```text
-template.canvas
-template.elements
-```
-
-Component này đang được sử dụng bởi:
-
-1. Game Builder
-2. Preview
-3. CustomDesignPlayScreen
-
-Do đó cần giữ nguyên nguyên tắc:
-
-> Builder, Preview và Runtime phải sử dụng cùng một cấu trúc template/render để tránh tình trạng thiết kế trên Builder khác với lúc học sinh chơi.
-
----
-
-# 3. Phân biệt game Canvas và game thường
-
-Không phải tất cả game đều sử dụng Canvas.
-
-Các game hiện tại như:
-
-```text
-SnailRace
-LuckyWheel
-SpaceShip
-...
-```
-
-được xử lý riêng thông qua:
-
-```text
-GamePlayRouter
-```
-
-Chỉ những game có:
-
-```js
-game.design
-```
-
-mới sử dụng:
-
-```text
-CustomDesignPlayScreen
-```
-
-và:
-
-```text
-TemplateRenderer
-```
-
-Không được làm ảnh hưởng hoặc phá vỡ các game runtime hiện tại.
-
----
-
-# 4. Kiến trúc Game Template mới
-
-Cần xây dựng hệ thống theo hướng:
-
-```text
-Game Type
-    ↓
-Game Template
-    ↓
-Canvas
-    ↓
-Elements
-    ↓
-Game Configuration
-    ↓
-Questions / Data
-    ↓
-Runtime
-```
-
-Ví dụ:
-
-```text
-Đuổi Hình Bắt Chữ
-    ↓
-Template: duoi-hinh-bat-chu
-    ↓
-Canvas layout
-    ↓
-Image + Answer + Question + Timer + Score...
-    ↓
-Game config
-    ↓
-Question API
-    ↓
-Runtime
-```
-
----
-
-# 5. Template không được chứa dữ liệu câu hỏi cố định
-
-Template chỉ nên định nghĩa:
-
-* Giao diện.
-* Layout.
-* Các element.
-* Component game.
-* Cấu hình hiển thị.
-* Các vùng dữ liệu động.
-* Các interaction được phép.
-
-Không hard-code danh sách câu hỏi vào template.
-
-Ví dụ:
-
-```json
-{
-  "templateId": "duoi-hinh-bat-chu",
-  "name": "Đuổi Hình Bắt Chữ",
-  "version": 1,
-  "canvas": {},
-  "elements": [],
-  "gameConfig": {}
-}
-```
-
-Câu hỏi nên được lấy từ API/data riêng.
-
----
-
-# 6. Hỗ trợ Game Template từ API
-
-Cần thiết kế API riêng cho hệ thống template game.
-
-Ví dụ:
-
-```text
-GET    /game-templates
-GET    /game-templates/:id
-POST   /game-templates
-PUT    /game-templates/:id
-DELETE /game-templates/:id
-```
-
-Template API có thể trả về:
-
-```json
-{
-  "id": "duoi-hinh-bat-chu",
-  "name": "Đuổi Hình Bắt Chữ",
-  "slug": "duoi-hinh-bat-chu",
-  "type": "canvas",
-  "version": 1,
-  "canvas": {},
-  "elements": [],
-  "gameConfig": {},
-  "customizable": {}
-}
-```
-
-Không bắt buộc phải chuyển toàn bộ game hiện tại sang API ngay lập tức.
-
-Có thể hỗ trợ cả:
-
-```text
-Template có sẵn trong frontend
-+
-Template lấy từ API
-```
-
-Sau này có thể chuyển dần sang API.
-
----
-
-# 7. Template phải có khả năng định nghĩa những gì được tùy chỉnh
-
-Mỗi template cần có metadata cho biết giáo viên được phép chỉnh sửa phần nào.
-
-Ví dụ:
-
-```json
-{
-  "customizable": {
-    "background": true,
-    "text": true,
-    "images": true,
-    "colors": true,
-    "font": true,
-    "position": true,
-    "size": true,
-    "animation": true,
-    "timer": true,
-    "score": true,
-    "question": true,
-    "answer": true
-  }
-}
-```
-
-Hoặc chi tiết hơn theo từng element:
-
-```json
-{
-  "elementId": "question-image",
-  "editable": {
-    "position": true,
-    "size": true,
-    "image": true,
-    "opacity": true,
-    "animation": true
-  }
-}
-```
-
-Mục tiêu là không để Canvas Builder phải biết logic riêng của từng game.
-
----
-
-# 8. Các loại Element trên Canvas
-
-Canvas nên hỗ trợ hệ thống element generic.
-
-Ví dụ:
-
-```text
-Text
-Image
-Shape
-Button
-Container
-Background
-Icon
-Video
-Timer
-Score
-Question
-Answer
-Progress
-Game-specific Component
-```
-
-Mỗi element có thể có:
-
-```json
-{
-  "id": "element-1",
-  "type": "text",
-  "x": 100,
-  "y": 100,
-  "width": 300,
-  "height": 60,
-  "rotation": 0,
-  "style": {},
-  "content": {},
-  "animation": {},
-  "responsive": {}
-}
-```
-
-Không nên tạo một component Canvas riêng cho từng game nếu element đó có thể dùng chung.
-
----
-
-# 9. Game-specific Component
-
-Một số game cần component đặc biệt.
-
-Ví dụ Đuổi Hình Bắt Chữ:
-
-```text
-QuestionImage
-AnswerInput
-AnswerOptions
-Hint
-Timer
-Score
-```
-
-Template có thể khai báo:
-
-```json
-{
-  "type": "game-component",
-  "component": "QuestionImage"
-}
-```
-
-Canvas core chỉ cần biết đây là một game component.
-
-Logic cụ thể nằm trong component/template handler.
-
-Ví dụ:
-
-```text
-Canvas Core
-    ↓
-Game Component Registry
-    ↓
-QuestionImage
-AnswerOptions
-Timer
-Score
-...
-```
-
-Như vậy khi thêm game mới có thể đăng ký component mới mà không sửa toàn bộ Canvas.
-
----
-
-# 10. Template Registry
-
-Nên có cơ chế Registry để đăng ký các game template.
-
-Ví dụ:
-
-```js
-gameTemplateRegistry.register({
-  id: "duoi-hinh-bat-chu",
-  renderer: DuoiHinhBatChuRenderer,
-  components: [...]
-});
-```
-
-Template có thể đến từ:
-
-```text
-Frontend Registry
-hoặc
-API
-```
-
-Nếu API trả về template mới nhưng frontend chưa có component đặc biệt thì phải có cơ chế fallback hoặc báo template chưa được hỗ trợ.
-
----
-
-# 11. Canvas Builder UI
-
-Game Builder nên được chia thành các khu vực rõ ràng:
-
-```text
-┌──────────────────────────────────────────────┐
-│ Toolbar                                      │
-├─────────────┬──────────────────┬─────────────┤
-│ Elements    │                  │ Properties  │
-│ / Template  │      Canvas     │             │
-│             │                  │             │
-│             │                  │             │
-├─────────────┴──────────────────┴─────────────┤
-│ Bottom toolbar / Zoom / Preview / Save       │
-└──────────────────────────────────────────────┘
-```
-
----
-
-# 12. Template Selector
-
-Khi tạo game mới:
-
-```text
-Chọn loại trò chơi
-
-[ Đuổi Hình Bắt Chữ ]
-[ Trắc Nghiệm ]
-[ Đúng / Sai ]
-[ Ghép Đôi ]
-[ Ô Chữ ]
-[ Vòng Quay ]
-[ ... ]
-```
-
-Sau khi chọn template:
-
-```text
-Template
-    ↓
-Load template definition
-    ↓
-Create game.design
-    ↓
-Open Canvas Builder
-```
-
----
-
-# 13. Properties Panel
-
-Khi click vào element trên Canvas, Properties Panel phải tự động hiển thị các thuộc tính mà element/template cho phép chỉnh sửa.
-
-Ví dụ:
-
-```text
-Position
-X
-Y
-
-Size
-Width
-Height
-
-Style
-Font
-Font Size
-Font Weight
-Color
-Background
-Border
-Radius
-Shadow
-Opacity
-
-Transform
-Rotation
-
-Animation
-Type
-Duration
-Delay
-
-Responsive
+Mobile Portrait
+Mobile Landscape
+Tablet Portrait
+Tablet Landscape
 Desktop
-Tablet
-Mobile
 ```
 
-Không hiển thị các option không được template cho phép.
+Không được thiết kế mobile bằng cách chỉ scale toàn bộ desktop UI xuống.
+
+Cần có responsive layout riêng cho mobile.
 
 ---
 
-# 14. Responsive Canvas
+# 3. Area Game UI
 
-Canvas phải hỗ trợ responsive.
+Phần **Area** cần được ưu tiên refactor vì đây là khu vực đang hiển thị game.
 
-Không nên chỉ lưu một vị trí tuyệt đối duy nhất.
+Layout mobile đề xuất:
 
-Có thể hỗ trợ:
+```text
+┌──────────────────────────┐
+│ Area Header              │
+├──────────────────────────┤
+│                          │
+│                          │
+│       GAME AREA          │
+│                          │
+│                          │
+├──────────────────────────┤
+│ Game Actions             │
+└──────────────────────────┘
+```
 
-```json
-{
-  "responsive": {
-    "desktop": {
-      "x": 100,
-      "y": 100,
-      "width": 500
-    },
-    "tablet": {
-      "x": 50,
-      "y": 80,
-      "width": 400
-    },
-    "mobile": {
-      "x": 20,
-      "y": 50,
-      "width": 300
-    }
-  }
+Game phải sử dụng phần diện tích khả dụng tối đa nhưng vẫn đảm bảo:
+
+* Không overflow ngang.
+* Không bị crop ngoài ý muốn.
+* Không phá vỡ aspect ratio.
+* Không che UI quan trọng.
+* Không gây horizontal scroll cho toàn page.
+
+---
+
+# 4. Game Sizing
+
+Không hard-code kích thước game theo desktop.
+
+Không nên:
+
+```css
+.game {
+  width: 1200px;
+  height: 700px;
 }
 ```
 
-Nếu không có cấu hình riêng cho mobile/tablet thì tự động scale từ desktop.
+Nên sử dụng responsive sizing:
+
+```css
+.game {
+  width: 100%;
+  max-width: 100%;
+}
+```
+
+Nếu game có aspect ratio cố định:
+
+```css
+.game-wrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+```
+
+Game renderer phải tự calculate kích thước dựa trên container thực tế.
 
 ---
 
-# 15. Layer Management
+# 5. Canvas / Game Scaling
 
-Canvas cần hỗ trợ:
+Cần phân biệt:
 
 ```text
-Bring to front
-Send to back
-Bring forward
-Send backward
+CSS Size
 ```
 
-và có thể quản lý:
+và
 
 ```text
-Layers
-├── Background
-├── Decoration
-├── Question
-├── Answer
-├── Timer
-└── Score
+Internal Rendering Resolution
 ```
 
-Có thể khóa element:
+Ví dụ:
 
 ```text
-Lock
-Hide
+Mobile container
+     ↓
+320 × 180 CSS pixels
+     ↓
+Canvas internal resolution
+     ↓
+640 × 360 / DPR-aware
+```
+
+Canvas cần hỗ trợ device pixel ratio để tránh hình ảnh bị blur trên màn hình mobile.
+
+Ví dụ:
+
+```ts
+const dpr = window.devicePixelRatio || 1;
+
+canvas.width = width * dpr;
+canvas.height = height * dpr;
+
+canvas.style.width = `${width}px`;
+canvas.style.height = `${height}px`;
+```
+
+Rendering context cần scale theo DPR tương ứng.
+
+---
+
+# 6. Resize Handling
+
+Khi mobile thay đổi:
+
+* Orientation.
+* Browser toolbar.
+* Viewport height.
+* Split screen.
+* Resize window.
+
+Game phải recalculate lại kích thước.
+
+Nên ưu tiên:
+
+```ts
+ResizeObserver
+```
+
+thay vì chỉ dựa vào:
+
+```ts
+window.resize
+```
+
+Flow:
+
+```text
+Container Resize
+      ↓
+ResizeObserver
+      ↓
+Calculate Game Size
+      ↓
+Update Canvas
+      ↓
+Re-render
 ```
 
 ---
 
-# 16. Group Element
+# 7. Mobile Height
 
-Cho phép group nhiều element:
+Không nên phụ thuộc hoàn toàn vào:
 
-```text
-Group
-    ├── Image
-    ├── Text
-    └── Decoration
+```css
+height: 100vh;
 ```
 
-Khi di chuyển group thì các element bên trong di chuyển theo.
+Trên mobile browser, `100vh` có thể gây sai lệch do browser UI.
+
+Ưu tiên sử dụng viewport units phù hợp:
+
+```css
+min-height: 100dvh;
+```
+
+hoặc:
+
+```css
+height: 100dvh;
+```
+
+tùy layout.
+
+Cần đảm bảo Area không bị che bởi browser UI.
 
 ---
 
-# 17. Undo / Redo
+# 8. Safe Area
 
-Canvas Builder cần có:
+Đối với mobile có notch / dynamic island, cần support:
+
+```css
+padding-top: env(safe-area-inset-top);
+padding-bottom: env(safe-area-inset-bottom);
+```
+
+Đặc biệt với:
+
+* Fixed toolbar.
+* Bottom action bar.
+* Fullscreen game.
+* Bottom sheet.
+
+---
+
+# 9. Mobile Area Layout
+
+Desktop:
+
+```text
+┌─────────────┬────────────────────────┬─────────────┐
+│ Sidebar     │        Game Area       │ Properties  │
+│             │                        │             │
+└─────────────┴────────────────────────┴─────────────┘
+```
+
+Mobile:
+
+```text
+┌───────────────────────────────┐
+│ Header                        │
+├───────────────────────────────┤
+│                               │
+│          GAME AREA            │
+│                               │
+├───────────────────────────────┤
+│ Actions                       │
+└───────────────────────────────┘
+```
+
+Các sidebar desktop không nên tiếp tục chiếm width trên mobile.
+
+Chuyển thành:
+
+```text
+Drawer
+Bottom Sheet
+Overlay
+Floating Panel
+```
+
+---
+
+# 10. Mobile Toolbar
+
+Toolbar desktop có thể có nhiều action:
 
 ```text
 Undo
 Redo
-```
-
-Có thể sử dụng history state thay vì tự lưu toàn bộ game sau mỗi thao tác.
-
-Không được để mỗi lần drag element lại gọi API.
-
----
-
-# 18. Auto Save
-
-Thiết kế nên có:
-
-```text
-Local state
-    ↓
-Debounce
-    ↓
-Save API
-```
-
-Không save server liên tục trong lúc kéo element.
-
-Ví dụ debounce:
-
-```text
-500ms - 1500ms
-```
-
-Có trạng thái:
-
-```text
-Saving...
-Saved
-Unsaved changes
-```
-
----
-
-# 19. Data API của game
-
-Ví dụ hiện tại đã có game:
-
-```text
-Đuổi Hình Bắt Chữ
-```
-
-và câu hỏi đã có trong Data API.
-
-Không nên copy câu hỏi vào Canvas template.
-
-Nên tách:
-
-```text
-Game Template
-    ↓
-Game Design
-    ↓
-Game Data
-```
-
-Ví dụ:
-
-```text
-Template:
-duoi-hinh-bat-chu
-
-Design:
-background
-question position
-image position
-answer style
-timer position
-...
-
-Game Data:
-question 1
-question 2
-question 3
+Zoom
+Grid
+Settings
+Share
+Export
 ...
 ```
 
-Runtime kết hợp cả hai.
+Không nên hiển thị toàn bộ trên mobile.
 
----
-
-# 20. Cho phép chọn nguồn dữ liệu
-
-Game template có thể định nghĩa data source:
+Ưu tiên:
 
 ```text
-API
-Existing Game Data
-Question Bank
-Manual Input
-Imported Data
+Primary Actions
+```
+
+và gom action phụ vào:
+
+```text
+More
 ```
 
 Ví dụ:
 
 ```text
-Đuổi Hình Bắt Chữ
-    ↓
-Question Source
-    ├── Bộ câu hỏi có sẵn
-    ├── Question Bank
-    ├── API
-    └── Import Excel/Word
-```
-
-Canvas không chịu trách nhiệm xử lý toàn bộ dữ liệu câu hỏi.
-
-Nó chỉ cần biết game component cần dữ liệu gì.
-
----
-
-# 21. Import câu hỏi
-
-Hệ thống nên được thiết kế để sau này hỗ trợ:
-
-```text
-Import Excel
-Import Word
-Import CSV
-```
-
-Ví dụ dữ liệu:
-
-```text
-Question
-Image
-Answer
-Hint
-Time
-```
-
-Sau khi import:
-
-```text
-File
- ↓
-Parser
- ↓
-Validate
- ↓
-Question Bank
- ↓
-Game Data
-```
-
-Không đưa logic import trực tiếp vào Canvas Renderer.
-
----
-
-# 22. Template versioning
-
-Template cần có version:
-
-```json
-{
-  "templateId": "duoi-hinh-bat-chu",
-  "version": 2
-}
-```
-
-Khi template thay đổi:
-
-```text
-v1
-v2
-v3
-```
-
-Các game cũ vẫn phải chạy được.
-
-Không được tự động phá `game.design` cũ khi template được cập nhật.
-
----
-
-# 23. Data Model đề xuất
-
-Game:
-
-```json
-{
-  "id": "game-123",
-  "type": "canvas",
-  "templateId": "duoi-hinh-bat-chu",
-  "templateVersion": 1,
-  "design": {},
-  "gameConfig": {},
-  "dataSource": {}
-}
-```
-
-Template:
-
-```json
-{
-  "id": "duoi-hinh-bat-chu",
-  "name": "Đuổi Hình Bắt Chữ",
-  "slug": "duoi-hinh-bat-chu",
-  "type": "canvas",
-  "version": 1,
-  "canvas": {},
-  "elements": [],
-  "gameConfig": {},
-  "customizable": {},
-  "components": []
-}
+┌───────────────────────────────┐
+│ ← Area     Undo  Redo    ⋮   │
+└───────────────────────────────┘
 ```
 
 ---
 
-# 24. Template và Design phải tách biệt
+# 11. Touch Interaction
 
-Đây là nguyên tắc quan trọng.
+Canvas Area phải ưu tiên touch interaction.
 
-```text
-Template
-```
-
-là mẫu gốc.
+Cần support:
 
 ```text
-Design
+Tap
+Double Tap
+Long Press
+Drag
+Pinch Zoom
+Two-finger Pan
 ```
 
-là bản giáo viên đã chỉnh sửa.
+Không nên phụ thuộc hoàn toàn vào:
+
+```text
+mouseenter
+mouseleave
+hover
+right-click
+```
+
+Mobile không có hover interaction như desktop.
+
+---
+
+# 12. Pointer Events
+
+Nên chuẩn hóa interaction bằng:
+
+```ts
+Pointer Events
+```
+
+thay vì duy trì logic riêng:
+
+```ts
+mousedown
+mousemove
+mouseup
+
+touchstart
+touchmove
+touchend
+```
 
 Ví dụ:
 
-```text
-Template:
-Đuổi Hình Bắt Chữ mặc định
-        ↓
-Teacher customize
-        ↓
-Game Design
-        ↓
-Save
+```ts
+onPointerDown
+onPointerMove
+onPointerUp
 ```
 
-Không sửa trực tiếp template gốc khi giáo viên chỉnh game.
+Điều này giúp dùng chung logic cho:
+
+```text
+Mouse
+Touch
+Pen
+```
 
 ---
 
-# 25. Template có thể có Default Design
+# 13. Pinch Zoom
 
-Template có thể cung cấp:
+Nếu Area Game hỗ trợ zoom, mobile cần hỗ trợ pinch gesture.
 
-```text
-defaultCanvas
-defaultElements
-defaultGameConfig
-```
-
-Khi tạo game:
+Flow:
 
 ```text
-Template
- ↓
-Clone default design
- ↓
-Game.design
+Touch 1
+   +
+Touch 2
+   ↓
+Distance Changed
+   ↓
+Calculate Scale
+   ↓
+Update Viewport Zoom
 ```
 
-Sau đó giáo viên tùy chỉnh bản clone.
+Không được để browser page zoom xảy ra thay vì Canvas zoom nếu product yêu cầu custom zoom.
 
 ---
 
-# 26. Runtime
+# 14. Page Scroll vs Canvas Interaction
 
-`CustomDesignPlayScreen.jsx` cần nhận:
-
-```text
-game
-template
-design
-gameData
-```
-
-Sau đó:
+Cần tránh conflict giữa:
 
 ```text
-GamePlayRouter
-    ↓
-CustomDesignPlayScreen
-    ↓
-TemplateRenderer
-    ↓
-Template Components
-    ↓
-Game Data
-```
-
-Runtime không được phụ thuộc vào state của Builder.
-
-Game đã lưu phải có thể chạy độc lập.
-
----
-
-# 27. TemplateRenderer
-
-Cần refactor `TemplateRenderer.jsx` thành renderer generic.
-
-Nhiệm vụ:
-
-```text
-TemplateRenderer
-├── Render canvas
-├── Render elements
-├── Render generic elements
-├── Render registered game components
-├── Apply styles
-├── Apply responsive
-├── Apply animation
-└── Handle runtime mode
-```
-
-Không nhúng logic riêng của Đuổi Hình Bắt Chữ trực tiếp vào `TemplateRenderer`.
-
----
-
-# 28. Builder Mode và Runtime Mode
-
-`TemplateRenderer` nên hỗ trợ:
-
-```js
-mode="builder"
+Page Scroll
 ```
 
 và:
 
-```js
-mode="preview"
+```text
+Canvas Pan
 ```
 
-và:
-
-```js
-mode="runtime"
-```
-
-Builder:
+Ví dụ:
 
 ```text
-drag
-resize
-select
-edit
+Single finger
+→ page scroll
+
+Two fingers
+→ canvas pan
 ```
 
-Preview:
+hoặc behavior cụ thể theo UX của sản phẩm.
 
-```text
-interactive nhưng không chỉnh layout
+Không được disable toàn bộ page scrolling bằng:
+
+```css
+touch-action: none;
 ```
 
-Runtime:
+trên toàn bộ page nếu không thực sự cần.
 
-```text
-gameplay thật
-```
-
-Có thể dùng chung renderer nhưng khác interaction layer.
+Chỉ áp dụng trên vùng interaction cần thiết.
 
 ---
 
-# 29. Performance
+# 15. Area Overflow
 
-Canvas Builder phải tối ưu để không bị lag khi có nhiều element.
+Đây là điểm cần xử lý kỹ.
 
-Không nên:
+Không để:
 
-* Re-render toàn bộ Canvas khi kéo một element.
-* Gọi API mỗi lần thay đổi position.
-* Tạo object mới không cần thiết cho toàn bộ design.
-* Render game logic khi chỉ thay đổi UI property.
+```css
+width: 100vw;
+```
 
-Nên:
+kết hợp với padding / sidebar làm overflow.
 
-* Memoization.
-* Local state cho interaction.
-* Debounce save.
-* Chỉ update element đang thao tác.
-* Tách Builder state và Runtime state.
+Cần kiểm tra:
+
+```text
+width
+min-width
+max-width
+padding
+margin
+gap
+position
+transform
+```
+
+đặc biệt với nested flex/grid.
+
+Ưu tiên:
+
+```css
+min-width: 0;
+```
+
+cho flex/grid child cần shrink.
 
 ---
 
-# 30. Tương thích với hệ thống game hiện tại
+# 16. Game Container
 
-Không được phá các game đang chạy:
+Nên có structure rõ ràng:
 
-```text
-SnailRace
-LuckyWheel
-SpaceShip
-...
+```tsx
+<Area>
+  <AreaHeader />
+
+  <GameViewport>
+    <GameContainer>
+      <GameCanvas />
+    </GameContainer>
+  </GameViewport>
+
+  <AreaActions />
+</Area>
 ```
 
-GamePlayRouter vẫn phải xử lý:
+Trong đó:
+
+### `Area`
+
+Quản lý layout.
+
+### `GameViewport`
+
+Quản lý:
+
+* Available space.
+* Overflow.
+* Pan / zoom boundary.
+
+### `GameContainer`
+
+Quản lý kích thước thực tế của game.
+
+### `GameCanvas`
+
+Chỉ chịu trách nhiệm render game.
+
+---
+
+# 17. Responsive Breakpoints
+
+Không nên dựa hoàn toàn vào một breakpoint duy nhất.
+
+Cần kiểm tra tối thiểu:
 
 ```text
-game.design
+< 480px
+480px – 767px
+768px – 1023px
+1024px+
 ```
 
-và các game runtime truyền thống như hiện tại.
-
-Chỉ refactor phần:
+Đặc biệt test:
 
 ```text
-Canvas Game
+360 × 800
+375 × 812
+390 × 844
+412 × 915
+```
+
+và mobile landscape.
+
+---
+
+# 18. Orientation
+
+Khi đổi:
+
+```text
+Portrait
+→ Landscape
+```
+
+Area phải:
+
+1. Detect kích thước mới.
+2. Recalculate game viewport.
+3. Recalculate canvas resolution.
+4. Preserve game state.
+5. Preserve selected object nếu phù hợp.
+6. Không reset game ngoài ý muốn.
+
+---
+
+# 19. Responsive UI Rules
+
+### Không dùng
+
+```css
+width: 500px;
+margin-left: 200px;
+```
+
+cho layout chính.
+
+### Hạn chế
+
+```css
+position: absolute;
+```
+
+để bố trí UI responsive.
+
+### Ưu tiên
+
+```text
+Flex
+Grid
+Container Queries
+Percentage
+minmax()
+clamp()
+aspect-ratio()
 ```
 
 ---
 
-# 31. Mục tiêu cuối cùng
+# 20. Container Query
 
-Sau khi hoàn thành, hệ thống phải đạt kiến trúc:
+Nếu Area được sử dụng trong nhiều layout khác nhau, nên cân nhắc Container Query thay vì chỉ dựa vào viewport.
+
+Ví dụ:
+
+```css
+.area {
+  container-type: inline-size;
+}
+
+@container (max-width: 600px) {
+  .area-toolbar {
+    ...
+  }
+}
+```
+
+Điều này giúp Area responsive dựa trên **kích thước container thực tế**, không phụ thuộc hoàn toàn vào viewport.
+
+---
+
+# 21. Typography Mobile
+
+Text trong Area cần responsive.
+
+Không hard-code quá nhiều font size.
+
+Có thể dùng:
+
+```css
+font-size: clamp(14px, 2vw, 18px);
+```
+
+Nhưng cần tránh text quá nhỏ.
+
+Các button/action trên mobile cần đủ vùng touch.
+
+Target tương tác nên đủ lớn để thao tác bằng ngón tay.
+
+---
+
+# 22. Bottom Action Bar
+
+Nếu Area có nhiều action, mobile nên ưu tiên bottom action bar:
 
 ```text
-                    ┌────────────────────┐
-                    │   Game Templates   │
-                    │                    │
-                    │ API / Registry     │
-                    └─────────┬──────────┘
-                              │
-                              ▼
-                    ┌────────────────────┐
-                    │   Game Builder     │
-                    │                    │
-                    │ CanvasArea         │
-                    │ Properties         │
-                    │ Layers             │
-                    │ Responsive         │
-                    └─────────┬──────────┘
-                              │
-                              ▼
-                       game.design
-                              │
-                 ┌────────────┴────────────┐
-                 ▼                         ▼
-          PreviewModal             CustomDesignPlayScreen
-                 │                         │
-                 └────────────┬────────────┘
-                              ▼
-                     TemplateRenderer
-                              │
-                 ┌────────────┴────────────┐
-                 ▼                         ▼
-          Generic Elements          Game Components
-                                      │
-                                      ▼
-                                  Game Data API
+┌───────────────────────────────┐
+│                               │
+│           GAME                │
+│                               │
+│                               │
+├───────────────────────────────┤
+│  Play  Edit  Zoom  More      │
+└───────────────────────────────┘
+```
+
+Bottom bar cần:
+
+* Fixed/sticky đúng context.
+* Support safe area.
+* Không che game.
+* Có background rõ ràng.
+* Có trạng thái active rõ ràng.
+
+---
+
+# 23. Performance Mobile
+
+Mobile có tài nguyên thấp hơn desktop nên cần đặc biệt chú ý:
+
+* Không rerender Canvas liên tục.
+* Không tạo object mới không cần thiết trong render.
+* Không attach event listener nhiều lần.
+* Không update React state ở mỗi pointer move nếu không cần.
+* Dùng `requestAnimationFrame` cho animation / interaction.
+* Cleanup toàn bộ listener / observer khi unmount.
+
+---
+
+# 24. Mobile Performance Checklist
+
+```text
+[ ] Canvas không re-render toàn bộ khi pointer move
+[ ] ResizeObserver được cleanup
+[ ] Pointer listener được cleanup
+[ ] requestAnimationFrame được cancel khi unmount
+[ ] Không có memory leak
+[ ] Không có layout thrashing
+[ ] Không đọc/ghi layout liên tục trong cùng frame
+[ ] Không tạo unnecessary DOM node
+[ ] Không load asset kích thước quá lớn trên mobile
 ```
 
 ---
 
-# 32. Yêu cầu triển khai
+# 25. Area Game Loading
 
-Trước khi code:
+Mobile cần loading state phù hợp.
 
-1. Đọc toàn bộ các file liên quan:
+Ví dụ:
 
-   * `GameBuilder.jsx`
-   * `CanvasArea.jsx`
-   * `TemplateRenderer.jsx`
-   * `CustomDesignPlayScreen.jsx`
-   * `GamePlayRouter`
-   * Các model/API hiện tại liên quan đến game design/template.
+```text
+┌──────────────────────────┐
+│                          │
+│        Loading...        │
+│                          │
+└──────────────────────────┘
+```
 
-2. Phân tích cấu trúc `game.design` hiện tại.
+Không được để container game có kích thước:
 
-3. Không tự ý phá format data đang được lưu nếu chưa cần thiết.
+```text
+0 × 0
+```
 
-4. Ưu tiên backward compatibility.
+trong lúc loading nếu điều đó gây layout jump.
 
-5. Nếu cần thay đổi schema thì tạo migration/adapter để game cũ vẫn chạy.
-
-6. Tách rõ:
-
-   * Canvas Core
-   * Template
-   * Design
-   * Game Component
-   * Game Data
-   * Runtime
-
-7. Không hard-code riêng cho Đuổi Hình Bắt Chữ trong Canvas core.
-
-8. Thiết kế sao cho khi muốn thêm game mới chỉ cần:
-
-   * Tạo template.
-   * Khai báo customizable properties.
-   * Đăng ký game components nếu cần.
-   * Khai báo data source.
-   * Không phải viết lại Canvas Builder.
+Nên reserve đúng aspect ratio của game.
 
 ---
 
-# 33. Tiêu chí hoàn thành
+# 26. Empty / Error State
 
-Hệ thống được xem là đạt khi:
+Area cần responsive cho:
 
-* Có thể chọn nhiều Game Template.
-* Template có thể lấy từ API hoặc registry.
-* Giáo viên có thể chỉnh Canvas bằng drag/drop.
-* Có Properties Panel động theo template/element.
-* Có resize, position, layer, group.
-* Có responsive desktop/tablet/mobile.
-* Có undo/redo.
-* Có preview.
-* Có auto-save.
-* `game.design` lưu độc lập với template gốc.
-* Template có version.
-* Runtime render đúng thiết kế đã lưu.
-* TemplateRenderer dùng chung cho Builder/Preview/Runtime.
-* Có thể sử dụng dữ liệu câu hỏi từ API hiện tại.
-* Có kiến trúc mở để sau này thêm Question Bank, Import Excel/Word.
-* Không ảnh hưởng các game không sử dụng Canvas.
-* Không hard-code logic của từng game vào Canvas core.
+```text
+Empty Game
+Game Load Error
+Game Not Available
+Offline
+Permission Error
+```
 
-## Nguyên tắc quan trọng nhất
+UI cần nằm trong viewport game và không làm vỡ layout.
 
-> **Canvas là một Game Builder Engine, không phải một Canvas riêng cho từng game.**
+---
 
-Mọi game có thiết kế Canvas phải có thể sử dụng chung hệ thống Canvas/Template/Renderer và chỉ khác nhau ở **Template + Game Components + Game Data**.
+# 27. Acceptance Criteria – Mobile
+
+Phần Area được xem là đạt khi:
+
+* Game hiển thị đúng trên mobile portrait.
+* Game hiển thị đúng trên mobile landscape.
+* Không có horizontal scrollbar ngoài ý muốn.
+* Không bị crop game ngoài chủ đích.
+* Không làm vỡ aspect ratio.
+* Game tự resize khi viewport thay đổi.
+* Toolbar không chiếm quá nhiều diện tích.
+* Sidebar desktop không làm mất không gian game.
+* Touch interaction hoạt động ổn định.
+* Không xảy ra conflict giữa page scroll và Canvas interaction.
+* Pinch zoom hoạt động đúng nếu feature yêu cầu.
+* Safe area được xử lý.
+* Không che action bởi notch/browser UI.
+* Không có layout jump đáng kể.
+* Không có performance degradation rõ rệt trên mobile.
+
+---
+
+# 28. Testing Matrix
+
+Cần test Area trên tối thiểu:
+
+| Device / Viewport | Portrait | Landscape |
+| ----------------- | -------: | --------: |
+| 360 × 800         |        ✓ |         ✓ |
+| 375 × 812         |        ✓ |         ✓ |
+| 390 × 844         |        ✓ |         ✓ |
+| 412 × 915         |        ✓ |         ✓ |
+| 768 × 1024        |        ✓ |         ✓ |
+| 1024 × 768        |        - |         ✓ |
+
+Ngoài kích thước, cần test:
+
+```text
+Touch
+Scroll
+Pinch
+Rotate
+Resize
+Open / Close Sidebar
+Open / Close Menu
+Game Loading
+Game Error
+Long Content
+Large Canvas
+Multiple Objects
+```
+
+---
+
+# 29. Implementation Priority
+
+Ưu tiên implementation theo thứ tự:
+
+```text
+P0
+├── Area Game responsive layout
+├── Game sizing / aspect ratio
+├── Mobile overflow fix
+├── Canvas resize
+└── Mobile toolbar
+
+P1
+├── Touch interaction
+├── Scroll / pan behavior
+├── Sidebar → Drawer
+├── Bottom action bar
+└── Safe area
+
+P2
+├── Pinch zoom
+├── Container query
+├── Mobile performance optimization
+└── Advanced responsive states
+```
+
+---
+
+# 30. Kết quả mong muốn
+
+Sau refactor:
+
+```text
+Desktop
+┌──────────┬──────────────────────────┬──────────┐
+│ Sidebar  │        Game Area         │ Panel    │
+└──────────┴──────────────────────────┴──────────┘
+
+
+Mobile
+┌───────────────────────────────┐
+│ Area Header                   │
+├───────────────────────────────┤
+│                               │
+│                               │
+│          GAME                 │
+│                               │
+│                               │
+├───────────────────────────────┤
+│ Actions                       │
+└───────────────────────────────┘
+```
+
+Mục tiêu chính là **Area phải ưu tiên Game**, tự động sử dụng phần không gian còn lại trên mobile, giữ đúng tỷ lệ và không bị desktop layout ảnh hưởng.
+
+Mobile không nên được xem là phiên bản thu nhỏ của desktop mà cần được thiết kế như **một responsive layout riêng**, trong khi vẫn dùng chung Canvas logic và renderer ở phía FE.

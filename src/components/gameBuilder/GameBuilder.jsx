@@ -144,7 +144,7 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-paper overflow-hidden">
+    <div className="h-[100dvh] flex flex-col bg-paper overflow-hidden pt-[env(safe-area-inset-top)]">
       <Toolbar title={title} setTitle={setTitle} zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onResetZoom={resetZoom}
         canUndo={past.length > 0} canRedo={future.length > 0} onUndo={undo} onRedo={redo}
         onPreview={() => setShowPreview(true)} onSave={save} saving={saving} onCancel={onCancel} />

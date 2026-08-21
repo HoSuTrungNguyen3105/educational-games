@@ -9,6 +9,8 @@ import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import { useSocketEvent, useSocketConnected } from '../../socket/socket.listeners.js'
 import { useGameStore } from '../../stores/game.store.js'
+import { useChatStore } from '../../stores/chat.store.js'
+import ChatPanel from '../../components/chat/ChatPanel.jsx'
 
 export default function StudentApp({ initialGame, onExit, toast }) {
   const [screen, setScreen] = useState(initialGame ? "name" : "join");
@@ -182,6 +184,15 @@ function WaitingRoomScreen({ game, playerName, onStart }) {
     : [];
   const started = gameStatus === "playing";
 
+  // Khởi tạo chat store
+  const initChat = useChatStore(s => s.init);
+  const resetChat = useChatStore(s => s.reset);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    initChat(game.id, uid("player"), playerName);
+    return () => resetChat();
+  }, [game.id, playerName]);
+
   // Tham gia trò chơi qua socket khi vào phòng chờ
   useEffect(() => {
     if (!connected) {
@@ -198,21 +209,27 @@ function WaitingRoomScreen({ game, playerName, onStart }) {
   useSocketEvent(SOCKET_EVENTS.GAME_STARTED, () => onStart());
 
   return (
-    <div className="flex-1 flex items-center justify-center px-6 py-10">
-      <div className="max-w-md w-full text-center anim-pop">
-        <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={80} fontSize={36} className="mx-auto mb-5 float-slow" />
-        <h1 className="font-display text-2xl text-ink mb-1">Phòng chờ</h1>
-        <p className="text-sm text-[#8A7C63] mb-6">Chờ giáo viên bắt đầu trò chơi "{game.title}"</p>
-        <div className="note-card p-5 mb-6">
-          <p className="text-xs font-mono text-[#8A7C63] uppercase mb-3">{others.length + 1} người đã tham gia{connected && <span className="ml-2 text-teal">● realtime</span>}</p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            <span className="px-3 py-1.5 rounded-full bg-ticket/10 text-ticket text-sm font-semibold">{playerName} (bạn)</span>
-            {others.map(n => <span key={n} className="px-3 py-1.5 rounded-full bg-ink/5 text-ink text-sm anim-pop">{n}</span>)}
+    <div className="flex-1 flex min-h-0">
+      {/* Game area */}
+      <div className="flex-1 flex items-center justify-center px-6 py-10 min-w-0">
+        <div className="max-w-md w-full text-center anim-pop">
+          <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={80} fontSize={36} className="mx-auto mb-5 float-slow" />
+          <h1 className="font-display text-2xl text-ink mb-1">Phòng chờ</h1>
+          <p className="text-sm text-[#8A7C63] mb-6">Chờ giáo viên bắt đầu trò chơi "{game.title}"</p>
+          <div className="note-card p-5 mb-6">
+            <p className="text-xs font-mono text-[#8A7C63] uppercase mb-3">{others.length + 1} người đã tham gia{connected && <span className="ml-2 text-teal">● realtime</span>}</p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              <span className="px-3 py-1.5 rounded-full bg-ticket/10 text-ticket text-sm font-semibold">{playerName} (bạn)</span>
+              {others.map(n => <span key={n} className="px-3 py-1.5 rounded-full bg-ink/5 text-ink text-sm anim-pop">{n}</span>)}
+            </div>
           </div>
+          {!started && <PrimaryButton onClick={onStart} className="w-full">Vào chơi 🚀</PrimaryButton>}
+          {started && <p className="text-xs text-[#8A7C63] font-mono">Giáo viên đã bắt đầu — đang vào trò chơi... 🎬</p>}
         </div>
-        {!started && <PrimaryButton onClick={onStart} className="w-full">Vào chơi 🚀</PrimaryButton>}
-        {started && <p className="text-xs text-[#8A7C63] font-mono">Giáo viên đã bắt đầu — đang vào trò chơi... 🎬</p>}
       </div>
+
+      {/* Chat sidebar (desktop) / overlay (mobile) */}
+      <ChatPanel />
     </div>
   );
 }

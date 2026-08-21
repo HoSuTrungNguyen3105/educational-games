@@ -26,8 +26,8 @@ export default function CustomDesignPlayScreen({ game, questions, playerName, on
     const compute = () => {
       const rect = node.getBoundingClientRect();
       const { width: cw, height: ch } = game.design.canvas;
-      // Scale canvas khớp toàn bộ khung (upscale để iframe trông "bự", có chặn tránh vỡ nét quá mức)
-      const s = Math.min(2, (rect.width - 16) / cw, (rect.height - 16) / ch);
+      const pad = window.innerWidth < 768 ? 16 : 48; // padding dựa theo p-2 hay p-6
+      const s = Math.min(2, (rect.width - pad) / cw, (rect.height - pad) / ch);
       setScale(Math.max(0.05, s));
     };
     compute();
@@ -102,8 +102,8 @@ export default function CustomDesignPlayScreen({ game, questions, playerName, on
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="flex items-center justify-between gap-2 px-3 md:px-8 py-2 bg-white border-b border-ink/10">
+    <div className="flex-1 flex flex-col min-h-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] relative">
+      <div className="flex items-center justify-between gap-2 px-3 md:px-8 py-2 bg-white border-b border-ink/10 shrink-0 z-10">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-lg md:text-2xl">🎨</span>
           <h1 className="font-display text-sm md:text-xl text-ink truncate">{game.title}</h1>
@@ -117,10 +117,10 @@ export default function CustomDesignPlayScreen({ game, questions, playerName, on
         <button onClick={onQuit} className="font-display text-xs md:text-sm text-ticket border border-ticket/40 rounded-2xl px-3 py-1.5 md:px-4 md:py-2 hover:bg-ticket/5 transition">Thoát</button>
       </div>
 
-      <div ref={stageRef} className="flex-1 bg-paper p-3 md:p-6 flex items-center justify-center">
+      <div ref={stageRef} className="flex-1 min-h-0 bg-paper p-2 md:p-6 flex items-center justify-center relative overflow-hidden">
         <div className="shadow-xl rounded-2xl overflow-hidden flex-none"
           style={{ width: Math.max(1, Math.round(game.design.canvas.width * scale)), height: Math.max(1, Math.round(game.design.canvas.height * scale)) }}>
-          <div className="relative" onClick={onStageClick}
+          <div className="relative w-full h-full" onClick={onStageClick}
             style={{
               width: game.design.canvas.width,
               height: game.design.canvas.height,
@@ -132,13 +132,15 @@ export default function CustomDesignPlayScreen({ game, questions, playerName, on
             <TemplateRenderer template={game.design} context={context} />
           </div>
         </div>
+        
+        {revealed && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 anim-pop">
+            <div className={`px-6 py-3 rounded-2xl shadow-2xl text-center font-display text-base md:text-lg whitespace-nowrap ${selected === q.correctAnswer ? "bg-teal text-white" : "bg-ticket text-white"}`}>
+              {selected === q.correctAnswer ? "Chính xác! 🎉" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng rồi 😅"}
+            </div>
+          </div>
+        )}
       </div>
-
-      {revealed && (
-        <div className={`px-6 py-3 text-center font-display text-lg ${selected === q.correctAnswer ? "bg-teal/15 text-teal" : "bg-ticket/10 text-ticket"}`}>
-          {selected === q.correctAnswer ? "Chính xác! 🎉" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng rồi 😅"}
-        </div>
-      )}
     </div>
   );
 }

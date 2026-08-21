@@ -24,4 +24,8 @@ export const SOCKET_EVENTS = {
 
   PLAYER_JOINED: "player:joined",
   PLAYER_LEFT: "player:left",
+
+  CHAT_MESSAGE: "chat:message",
+  CHAT_TYPING: "chat:typing",
+  CHAT_READ: "chat:read",
 };

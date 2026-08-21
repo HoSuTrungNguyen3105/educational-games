@@ -4,6 +4,7 @@ import { verifyToken } from "./services/authService.js";
 import * as gameService from "./services/gameService.js";
 import * as questionService from "./services/questionService.js";
 import * as resultService from "./services/resultService.js";
+import * as chatService from "./services/chatService.js";
 
 // Event names — PHẢI khớp với frontend src/socket/socket.events.js
 export const EVENTS = {
@@ -29,6 +30,10 @@ export const EVENTS = {
 
   PLAYER_JOINED: "player:joined",
   PLAYER_LEFT: "player:left",
+
+  CHAT_MESSAGE: "chat:message",
+  CHAT_TYPING: "chat:typing",
+  CHAT_READ: "chat:read",
 };
 
 const roomName = (gameId) => `game:${gameId}`;
@@ -183,6 +188,51 @@ export function initSocket(httpServer) {
       io.to(roomName(gameId)).emit(EVENTS.LEADERBOARD_UPDATED, {
         leaderboard: sortedPlayers(session),
       });
+    });
+
+    // --- CHAT EVENTS ---
+
+    // Gửi tin nhắn qua socket (realtime)
+    socket.on(EVENTS.CHAT_MESSAGE, async (data = {}) => {
+      const gameId = data.gameId || socket.data.gameId;
+      if (!gameId) return;
+      const senderId = socket.data.playerId || socket.data.user?.id || socket.id;
+      const playerName = data.playerName || socket.data.playerId || "Ẩn danh";
+      try {
+        const msg = await chatService.sendMessage({
+          conversationId: gameId,
+          senderId,
+          playerName,
+          content: data.content,
+          clientMessageId: data.clientMessageId,
+          type: data.type || "text",
+        });
+        // Broadcast tin nhắn đến tất cả trong phòng game
+        io.to(roomName(gameId)).emit(EVENTS.CHAT_MESSAGE, msg);
+      } catch (e) {
+        socket.emit(EVENTS.CHAT_MESSAGE, { error: e.message || "Không gửi được tin nhắn" });
+      }
+    });
+
+    // Typing indicator
+    socket.on(EVENTS.CHAT_TYPING, (data = {}) => {
+      const gameId = data.gameId || socket.data.gameId;
+      if (!gameId) return;
+      socket.to(roomName(gameId)).emit(EVENTS.CHAT_TYPING, {
+        playerId: socket.data.playerId || socket.id,
+        playerName: socket.data.playerName || "Ẩn danh",
+        isTyping: !!data.isTyping,
+      });
+    });
+
+    // Đánh dấu đã đọc
+    socket.on(EVENTS.CHAT_READ, async (data = {}) => {
+      const gameId = data.gameId || socket.data.gameId;
+      const playerId = socket.data.playerId || socket.id;
+      if (!gameId || !data.messageId) return;
+      try {
+        await chatService.markRead(gameId, playerId, data.messageId);
+      } catch (_) { /* ignore */ }
     });
 
     socket.on("disconnect", () => {
