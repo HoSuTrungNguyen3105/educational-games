@@ -33,6 +33,18 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   };
   const goHome = () => { resetStore(); setGame(null); setQuestions([]); setFinalResult(null); setLeaderboard(null); onExit(); };
 
+  // Khởi tạo chat store khi có game
+  const initChat = useChatStore((s) => s.init);
+  const resetChat = useChatStore((s) => s.reset);
+  const senderId = userAuth?.user?.id || null;
+  const displayName = userAuth?.user?.name || playerName;
+  useEffect(() => {
+    if (game?.id && senderId) {
+      initChat(game.id, senderId, displayName);
+    }
+    return () => resetChat();
+  }, [game?.id, senderId, displayName]);
+
   // Khi route thay đổi sang một game cụ thể → đồng bộ game hiển thị
   useEffect(() => {
     if (initialGame && initialGame.id && initialGame.id !== (game && game.id)) {
@@ -213,19 +225,6 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
     ? players.filter(p => p.name !== playerName).map(p => p.name).slice(0, 6)
     : [];
   const started = gameStatus === "playing";
-
-  // Use authenticated user ID if available, otherwise random
-  const senderId = userAuth?.user?.id || uid("player");
-  const displayName = userAuth?.user?.name || playerName;
-
-  // Khởi tạo chat store
-  const initChat = useChatStore(s => s.init);
-  const resetChat = useChatStore(s => s.reset);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => {
-    initChat(game.id, senderId, displayName);
-    return () => resetChat();
-  }, [game.id, senderId, displayName]);
 
   // Tham gia trò chơi qua socket khi vào phòng chờ
   useEffect(() => {
