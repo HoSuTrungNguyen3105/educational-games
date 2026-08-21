@@ -21,9 +21,12 @@ router.get("/dm/:targetUserId/messages", authenticate, async (req, res, next) =>
     const { limit, before } = req.query;
     const currentUserId = req.user.sub;
     const convId = chatService.getDmConversationId(currentUserId, targetUserId);
+    console.log("[chat:dm:get]", { currentUserId, targetUserId, convId });
     const result = await chatService.listMessages(convId, { before, limit: Number(limit) });
+    console.log("[chat:dm:get:result]", { count: result.items?.length, hasMore: result.hasMore });
     res.json(result);
   } catch (e) {
+    console.error("[chat:dm:get:error]", e);
     next(e);
   }
 });
@@ -36,9 +39,11 @@ router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) =
     const currentUserId = req.user.sub;
     const userName = req.user.name || "Ẩn danh";
     const convId = chatService.getDmConversationId(currentUserId, targetUserId);
+    console.log("[chat:dm:post]", { currentUserId, targetUserId, convId, userName });
 
     // Đảm bảo conversation + members tồn tại (cho ConversationListScreen)
     await ensureDmConversation(currentUserId, targetUserId);
+    console.log("[chat:dm:post:ensured]");
 
     const msg = await chatService.sendMessage({
       conversationId: convId,
@@ -48,8 +53,10 @@ router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) =
       clientMessageId,
       type,
     });
+    console.log("[chat:dm:post:sent]", { msgId: msg.id });
     res.status(201).json(msg);
   } catch (e) {
+    console.error("[chat:dm:post:error]", e);
     next(e);
   }
 });

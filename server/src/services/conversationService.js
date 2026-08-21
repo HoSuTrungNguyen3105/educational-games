@@ -8,24 +8,28 @@ function uid(prefix) {
 }
 
 /**
- * Tạo hoặc lấy conversation trực tiếp (DM) giữa 2 user.
+ * Tạo hoặc lấy conversation DM giữa 2 user.
+ * Dùng chung format "dm:userA:userB" với chatService.
  */
 export async function getOrCreateDM(userId1, userId2) {
   const sorted = [userId1, userId2].sort();
-  const existing = await getCollection(CONVERSATIONS).findOne({
-    type: "dm",
-    memberIds: { $all: sorted, $size: 2 },
-  });
+  const convId = `dm:${sorted[0]}:${sorted[1]}`;
+
+  const existing = await getCollection(CONVERSATIONS).findOne({ id: convId });
   if (existing) return existing;
 
   const conv = {
-    id: uid("conv"),
+    id: convId,
     type: "dm",
     memberIds: sorted,
     name: null,
     createdAt: new Date().toISOString(),
   };
-  await getCollection(CONVERSATIONS).insertOne(conv);
+  await getCollection(CONVERSATIONS).updateOne(
+    { id: convId },
+    { $setOnInsert: conv },
+    { upsert: true }
+  );
   return conv;
 }
 
@@ -54,44 +58,64 @@ export async function createGameRoom(gameId, title) {
 export async function addMember(conversationId, userId, displayName) {
   await getCollection(MEMBERS).updateOne(
     { conversationId, userId },
-    { $set: { conversationId, userId, displayName, joinedAt: new Date().toISOString() } },
+    { $set: { conversationId, userId, displayName: displayName || null, joinedAt: new Date().toISOString() } },
     { upsert: true }
   );
 }
 
 /**
- * Lấy danh sách conversation mà user tham gia (bao gồm cả DM tìm từ messages).
+ * Lấy danh sách conversation mà user tham gia.
  */
 export async function listConversations(userId) {
   // 1) Tìm từ conversationMembers
   const memberDocs = await getCollection(MEMBERS)
     .find({ userId })
     .toArray();
-  const memberConvIds = new Set(memberDocs.map((m) => m.conversationId));
 
-  // 2) Tìm DM conversations từ messages collection (fallback cho tin nhắn cũ)
-  const dmPattern = new RegExp(`^dm:.+:${userId}$|^dm:${userId}:.+$`);
+  const memberConvIds = memberDocs.map((m) => m.conversationId);
+
+  // 2) Nếu có memberConvIds → lấy conversations
+  if (memberConvIds.length > 0) {
+    const convs = await getCollection(CONVERSATIONS)
+      .find({ id: { $in: memberConvIds } })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return convs;
+  }
+
+  // 3) Fallback: tìm từ messages collection (DM format)
+  const regexA = new RegExp(`^dm:${escapeRegex(userId)}:[^:]+$`);
+  const regexB = new RegExp(`^dm:[^:]+:${escapeRegex(userId)}$`);
+
   const dmMessages = await getCollection("messages")
-    .find({ conversationId: dmPattern })
-    .sort({ createdAt: -1 })
-    .limit(100)
+    .find({
+      $or: [
+        { conversationId: { $regex: regexA } },
+        { conversationId: { $regex: regexB } },
+      ],
+    })
+    .project({ conversationId: 1, createdAt: 1 })
     .toArray();
 
-  const msgConvIds = new Set(dmMessages.map((m) => m.conversationId));
+  if (dmMessages.length === 0) return [];
 
-  // Gộp tất cả conversationIds
-  const allConvIds = new Set([...memberConvIds, ...msgConvIds]);
-  if (allConvIds.size === 0) return [];
+  // Lấy unique conversationIds
+  const convIdSet = new Set(dmMessages.map((m) => m.conversationId));
+  const convIds = [...convIdSet];
 
-  const convs = await getCollection(CONVERSATIONS)
-    .find({ id: { $in: [...allConvIds] } })
-    .sort({ createdAt: -1 })
+  // Tìm conversations đã tồn tại
+  const existingConvs = await getCollection(CONVERSATIONS)
+    .find({ id: { $in: convIds } })
     .toArray();
+  const existingMap = new Map(existingConvs.map((c) => [c.id, c]));
 
-  // 3) Nếu có conversationId từ messages nhưng chưa có trong conversations collection → tạo placeholder
-  const existingIds = new Set(convs.map((c) => c.id));
-  for (const convId of msgConvIds) {
-    if (!existingIds.has(convId)) {
+  const result = [];
+  for (const convId of convIds) {
+    const existing = existingMap.get(convId);
+    if (existing) {
+      result.push(existing);
+    } else {
+      // Tạo placeholder conversation
       const parts = convId.split(":");
       const memberIds = parts.length === 3 ? [parts[1], parts[2]].sort() : [];
       const placeholder = {
@@ -106,11 +130,15 @@ export async function listConversations(userId) {
         { $setOnInsert: placeholder },
         { upsert: true }
       );
-      convs.push(placeholder);
+      result.push(placeholder);
     }
   }
 
-  return convs.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  return result.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**

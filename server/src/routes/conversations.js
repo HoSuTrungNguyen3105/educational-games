@@ -7,9 +7,13 @@ const router = Router();
 // GET /api/conversations — danh sách conversation của user
 router.get("/", authenticate, async (req, res, next) => {
   try {
-    const conversations = await convService.listConversations(req.user.sub);
+    const userId = req.user.sub;
+    console.log("[conversations:list]", { userId });
+    const conversations = await convService.listConversations(userId);
+    console.log("[conversations:list:result]", { count: conversations.length, ids: conversations.map(c => c.id) });
     res.json(conversations);
   } catch (e) {
+    console.error("[conversations:list:error]", e);
     next(e);
   }
 });
