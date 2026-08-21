@@ -5,6 +5,12 @@ export const genCode = () => uid("code").slice(0, 8).toUpperCase();
 
 const COLLECTION = "games";
 
+function cleanGame(doc) {
+  if (!doc) return doc;
+  const { _id, design, ...rest } = doc;
+  return rest;
+}
+
 export async function list(filters = {}) {
   const coll = getCollection(COLLECTION);
   const query = {};
@@ -16,7 +22,7 @@ export async function list(filters = {}) {
 
   const games = await cursor.toArray();
 
-  let result = games;
+  let result = games.map(cleanGame);
   if (filters.query) {
     const q = filters.query.trim().toLowerCase();
     result = result.filter(
@@ -32,14 +38,14 @@ export async function list(filters = {}) {
 }
 
 export async function get(id) {
-  return getCollection(COLLECTION).findOne({ id });
+  return cleanGame(await getCollection(COLLECTION).findOne({ id }));
 }
 
 export async function getByCode(code) {
-  return getCollection(COLLECTION).findOne({
+  return cleanGame(await getCollection(COLLECTION).findOne({
     code: new RegExp(`^${escapeRegExp(code.trim().toLowerCase())}$`, "i"),
     status: "published",
-  });
+  }));
 }
 
 export async function create(data) {
@@ -77,7 +83,7 @@ export async function update(id, data) {
     { returnDocument: "after" }
   );
   if (!result) throw new Error("Không tìm thấy trò chơi");
-  return result;
+  return cleanGame(result);
 }
 
 export async function remove(id) {
@@ -102,7 +108,6 @@ export async function duplicate(id) {
     updatedAt: now,
   };
   delete copy._id;
-  if (copy.htmlTemplate) copy.htmlTemplate = copy.htmlTemplate;
   await getCollection(COLLECTION).insertOne(copy);
 
   const questions = await getCollection("questions").find({ gameId: src.id }).toArray();

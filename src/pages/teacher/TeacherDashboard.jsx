@@ -7,7 +7,7 @@ import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
-export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onDesign }) {
+export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onDesign, onHtmlTemplate }) {
   const templates = useTemplates();
   const tpl = templates.find(t => t.id === game.template);
   return (
@@ -28,6 +28,7 @@ export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onSha
         <div className="flex gap-2">
           <IconButton title="Chỉnh sửa" onClick={onEdit}>✏️</IconButton>
           {onDesign && <IconButton title="Thiết kế giao diện (Game Builder)" onClick={onDesign}>🎨</IconButton>}
+          {onHtmlTemplate && <IconButton title="Cập nhật HTML Template" onClick={onHtmlTemplate}>📝</IconButton>}
           {/* {onDuplicate && <IconButton title="Sao chép" onClick={onDuplicate}>📄</IconButton>} */}
           {onShare && game.status === "published" && <IconButton title="Chia sẻ" onClick={onShare}>🎟️</IconButton>}
           {onDelete && <IconButton title="Xóa" onClick={onDelete}>🗑️</IconButton>}

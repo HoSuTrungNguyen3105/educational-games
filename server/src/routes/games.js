@@ -1,8 +1,27 @@
 import { Router } from "express";
 import * as gameService from "../services/gameService.js";
+import * as questionService from "../services/questionService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 
 const router = Router();
+
+// POST /api/games/answer — kiểm tra đáp án (an toàn, không lộ correctAnswer)
+router.post("/answer", async (req, res, next) => {
+  try {
+    const { questionId, answerId } = req.body;
+    if (!questionId || !answerId) {
+      return res.status(400).json({ message: "questionId và answerId là bắt buộc" });
+    }
+    const question = await questionService.getById(questionId);
+    if (!question) {
+      return res.status(404).json({ message: "Không tìm thấy câu hỏi" });
+    }
+    const isCorrect = question.correctAnswer === answerId;
+    res.json({ correct: isCorrect, points: isCorrect ? (question.points || 0) : 0, correctAnswer: question.correctAnswer });
+  } catch (e) {
+    next(e);
+  }
+});
 
 // GET /api/games?query=&status=&subject=&category=&template=
 router.get("/", async (req, res, next) => {

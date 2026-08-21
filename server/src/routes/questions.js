@@ -4,11 +4,12 @@ import { authenticate, requireRoles } from "../middleware/auth.js";
 
 const router = Router();
 
-// GET /api/questions/game/:gameId
+// GET /api/questions/game/:gameId — trả về câu hỏi KHÔNG có correctAnswer
 router.get("/game/:gameId", async (req, res, next) => {
   try {
     const questions = await questionService.listByGame(req.params.gameId);
-    res.json(questions);
+    const safe = questions.map(({ correctAnswer, ...rest }) => rest);
+    res.json(safe);
   } catch (e) {
     next(e);
   }

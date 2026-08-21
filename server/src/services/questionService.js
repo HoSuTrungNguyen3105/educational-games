@@ -29,3 +29,7 @@ export async function add(gameId, question) {
   await getCollection(COLLECTION).insertOne(doc);
   return doc;
 }
+
+export async function getById(questionId) {
+  return getCollection(COLLECTION).findOne({ id: questionId });
+}

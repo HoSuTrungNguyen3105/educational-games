@@ -15,6 +15,10 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
   const [error, setError] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [shareGame, setShareGame] = useState(null);
+  const [htmlTemplateGame, setHtmlTemplateGame] = useState(null);
+  const [htmlContent, setHtmlContent] = useState("");
+  const [htmlSaving, setHtmlSaving] = useState(false);
+  const [htmlLoading, setHtmlLoading] = useState(false);
   const subjects = useSubjects();
   const categories = useCategories();
 
@@ -36,6 +40,34 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
     socket.emit(SOCKET_EVENTS.JOIN_CLASSROOM, { gameId: g.id });
     socket.emit(SOCKET_EVENTS.START_GAME, { gameId: g.id });
     showToast(`Đã phát trực tiếp "${g.title}" — học sinh nhập mã ${g.code}`, "success");
+  };
+
+  const handleOpenHtmlTemplate = async (g) => {
+    setHtmlTemplateGame(g);
+    setHtmlContent("");
+    setHtmlLoading(true);
+    try {
+      const res = await gameService.getTemplate(g.id);
+      setHtmlContent(res?.htmlTemplate || "");
+    } catch (e) {
+      showToast(e.message || "Không tải được HTML template", "error");
+      setHtmlTemplateGame(null);
+    }
+    setHtmlLoading(false);
+  };
+
+  const handleSaveHtmlTemplate = async () => {
+    if (!htmlTemplateGame) return;
+    setHtmlSaving(true);
+    try {
+      await gameService.saveTemplate(htmlTemplateGame.id, htmlContent);
+      showToast("Đã lưu HTML Template", "success");
+      setHtmlTemplateGame(null);
+      onChanged();
+    } catch (e) {
+      showToast(e.message || "Không lưu được HTML template", "error");
+    }
+    setHtmlSaving(false);
   };
 
   return (
@@ -82,6 +114,7 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
           {games.map(g => (
             <GameCard key={g.id} game={g} onEdit={() => onEdit(g.id)} onResults={() => onResults(g.id)}
               onDesign={() => onDesign(g.id)}
+              onHtmlTemplate={() => handleOpenHtmlTemplate(g)}
               onDuplicate={() => handleDuplicate(g.id)} onDelete={() => setConfirmDelete(g)} onShare={() => setShareGame(g)} onLive={() => handleLive(g)} />
           ))}
         </div>
@@ -105,6 +138,30 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
           <div className="flex justify-end mt-6">
             <PrimaryButton onClick={() => setShareGame(null)}>Đã hiểu</PrimaryButton>
           </div>
+        </Modal>
+      )}
+      {htmlTemplateGame && (
+        <Modal onClose={() => setHtmlTemplateGame(null)}>
+          <h3 className="font-display text-xl text-ink mb-1">HTML Template</h3>
+          <p className="text-sm text-[#8A7C63] mb-4">Cập nhật HTML template cho "{htmlTemplateGame.title}". Template sẽ được load trong iframe khi học sinh chơi.</p>
+          {htmlLoading ? (
+            <Loader label="Đang tải template..." />
+          ) : (
+            <>
+              <textarea
+                value={htmlContent}
+                onChange={e => setHtmlContent(e.target.value)}
+                placeholder="Dán HTML template vào đây..."
+                className="w-full h-72 note-card px-4 py-3 text-sm font-mono resize-none placeholder:text-[#B7A987]"
+              />
+              <div className="flex justify-end gap-3 mt-4">
+                <GhostButton onClick={() => setHtmlTemplateGame(null)}>Hủy</GhostButton>
+                <PrimaryButton onClick={handleSaveHtmlTemplate} disabled={htmlSaving} className="!bg-teal">
+                  {htmlSaving ? "Đang lưu..." : "💾 Lưu template"}
+                </PrimaryButton>
+              </div>
+            </>
+          )}
         </Modal>
       )}
     </div>

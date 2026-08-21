@@ -51,7 +51,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGame(initialGame);
       setQuestions([]);
-      if (initialGame.type === "play-to-win") {
+      if (initialGame.type === "play-to-win" || initialGame.htmlTemplate) {
         setScreen("play");
       } else {
         setScreen(userAuth?.user ? "waiting" : "name");
@@ -59,18 +59,24 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
     }
   }, [initialGame, game, userAuth]);
 
-  const isPlayToWin = game?.type === "play-to-win";
+  const isPlayToWin = game?.type === "play-to-win" || !!game?.htmlTemplate;
 
-  const handleFound = (g) => {
-    setGame(g); setQuestions([]);
-    if (g.type === "play-to-win") {
+  const handleFound = async (g) => {
+    setGame(g);
+    if (g.type === "play-to-win" || g.htmlTemplate) {
+      const qs = await questionService.listByGame(g.id);
+      setQuestions(qs);
       setScreen("play");
     } else {
+      setQuestions([]);
       setScreen(userAuth?.user ? "waiting" : "name");
     }
   };
 
   const handleStart = async () => {
+    if (game?.htmlTemplate) {
+      const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play"); return;
+    }
     if (isPlayToWin) { setScreen("play"); return; }
     const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play");
   };
@@ -100,7 +106,14 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
           <EnterNameScreen
             game={game}
             onBack={initialGame ? goHome : restart}
-            onSubmit={(name) => { setPlayerName(name); setScreen(isPlayToWin ? "play" : "waiting"); }}
+            onSubmit={async (name) => {
+              setPlayerName(name);
+              if (game?.htmlTemplate) {
+                const qs = await questionService.listByGame(game.id);
+                setQuestions(qs);
+              }
+              setScreen(isPlayToWin ? "play" : "waiting");
+            }}
             userAuth={userAuth}
           />
         )}
