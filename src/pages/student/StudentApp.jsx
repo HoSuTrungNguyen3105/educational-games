@@ -51,18 +51,36 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGame(initialGame);
       setQuestions([]);
-      setScreen(userAuth?.user ? "waiting" : "name");
+      if (initialGame.type === "play-to-win") {
+        setScreen("play");
+      } else {
+        setScreen(userAuth?.user ? "waiting" : "name");
+      }
     }
   }, [initialGame, game, userAuth]);
 
+  const isPlayToWin = game?.type === "play-to-win";
+
   const handleFound = (g) => {
     setGame(g); setQuestions([]);
-    setScreen(userAuth?.user ? "waiting" : "name");
+    if (g.type === "play-to-win") {
+      setScreen("play");
+    } else {
+      setScreen(userAuth?.user ? "waiting" : "name");
+    }
   };
 
-  const handleStart = async () => { const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play"); };
+  const handleStart = async () => {
+    if (isPlayToWin) { setScreen("play"); return; }
+    const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play");
+  };
 
   const handleFinish = async (sessionResult) => {
+    if (isPlayToWin) {
+      setFinalResult({ score: sessionResult.score, correctAnswers: 0, totalQuestions: 0, accuracy: 0, completionTime: sessionResult.timeUsed });
+      setScreen("result");
+      return;
+    }
     const entry = await resultService.submit({
       gameId: game.id, playerId: uid("player"), playerName,
       score: sessionResult.score, correctAnswers: sessionResult.correct,
@@ -82,7 +100,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
           <EnterNameScreen
             game={game}
             onBack={initialGame ? goHome : restart}
-            onSubmit={(name) => { setPlayerName(name); setScreen("waiting"); }}
+            onSubmit={(name) => { setPlayerName(name); setScreen(isPlayToWin ? "play" : "waiting"); }}
             userAuth={userAuth}
           />
         )}
@@ -90,7 +108,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
           <WaitingRoomScreen game={game} playerName={playerName}
             onStart={handleStart} userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} />
         )}
-        {screen === "play" && game && questions.length > 0 && (
+        {screen === "play" && game && (isPlayToWin || questions.length > 0) && (
           <>
             <GamePlayRouter game={game} questions={questions} playerName={playerName} onQuit={restart} onFinish={handleFinish} />
             <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} />
