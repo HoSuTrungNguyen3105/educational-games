@@ -15,7 +15,6 @@ export default function TeacherApp({ user, route, onExit, showToast }) {
   const goCreate = () => navigate("/admin/create");
   const goLibrary = () => navigate("/admin/library");
 
-  // Màn Game Builder hiển thị toàn màn hình (không có nav, canvas full width)
   if (route.name === "admin-builder") {
     return (
       <GameBuilder
@@ -45,10 +44,11 @@ export default function TeacherApp({ user, route, onExit, showToast }) {
 }
 
 function TeacherNav({ screen, onExit, onCreate }) {
+  const [mobileMenu, setMobileMenu] = useState(false);
   const tabs = [
-    { id: "admin-dashboard", label: "Dashboard", route: "/admin" },
-    { id: "admin-library", label: "Thư viện trò chơi", route: "/admin/library" },
-    { id: "admin-users", label: "Quản lý người dùng", route: "/admin/users" },
+    { id: "admin-dashboard", label: "Dashboard", icon: "📊", route: "/admin" },
+    { id: "admin-library", label: "Thư viện", icon: "📚", route: "/admin/library" },
+    { id: "admin-users", label: "Người dùng", icon: "👥", route: "/admin/users" },
   ];
   const activeTab = tabs.some(t => t.id === screen) ? screen : "admin-library";
   return (
@@ -59,6 +59,8 @@ function TeacherNav({ screen, onExit, onCreate }) {
           <span className="text-2xl">🎪</span>
           <span className="font-display text-paper text-lg">Lớp Học Vui</span>
         </button>
+
+        {/* Desktop nav */}
         <nav className="hidden sm:flex items-center gap-1 bg-paper/10 rounded-full p-1">
           {tabs.map(t => (
             <button key={t.id} onClick={() => navigate(t.route)}
@@ -67,6 +69,45 @@ function TeacherNav({ screen, onExit, onCreate }) {
             </button>
           ))}
         </nav>
+
+        {/* Mobile hamburger */}
+        <div className="sm:hidden relative">
+          <button onClick={() => setMobileMenu(v => !v)} className="w-9 h-9 rounded-full bg-paper/15 flex items-center justify-center text-paper text-lg">
+            {mobileMenu ? "✕" : "☰"}
+          </button>
+          {mobileMenu && (
+            <>
+              <div className="fixed inset-0 z-[-1]" onClick={() => setMobileMenu(false)}></div>
+              <div className="absolute right-0 top-12 w-56 bg-ink rounded-2xl shadow-2xl border border-white/10 overflow-hidden z-50">
+                {tabs.map(t => (
+                  <button key={t.id} onClick={() => { navigate(t.route); setMobileMenu(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-body text-left transition ${activeTab === t.id ? "bg-gold/20 text-gold" : "text-paper/80 hover:bg-white/5 hover:text-paper"}`}>
+                    <span className="text-lg">{t.icon}</span>
+                    {t.label}
+                  </button>
+                ))}
+                <div className="border-t border-white/10">
+                  <button onClick={() => { navigate("/chat"); setMobileMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-body text-paper/80 hover:bg-white/5 hover:text-paper">
+                    <span className="text-lg">💬</span>
+                    Tin nhắn
+                  </button>
+                  <button onClick={() => { navigate("/admin/create"); setMobileMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-body text-paper/80 hover:bg-white/5 hover:text-paper">
+                    <span className="text-lg">➕</span>
+                    Tạo trò chơi
+                  </button>
+                  <button onClick={() => { onExit(); setMobileMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-body text-paper/80 hover:bg-white/5 hover:text-paper">
+                    <span className="text-lg">🏠</span>
+                    Về trang chủ
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
         <div className="flex items-center gap-3">
           <PrimaryButton onClick={onCreate} className="!bg-ticket !text-white !shadow-none px-4 py-2 text-sm">+ Tạo trò chơi</PrimaryButton>
           <button onClick={onExit} className="flex items-center gap-2 text-paper/70 hover:text-paper text-sm" title="Quay về trang chủ">

@@ -60,21 +60,57 @@ export async function addMember(conversationId, userId, displayName) {
 }
 
 /**
- * Lấy danh sách conversation mà user tham gia.
+ * Lấy danh sách conversation mà user tham gia (bao gồm cả DM tìm từ messages).
  */
 export async function listConversations(userId) {
+  // 1) Tìm từ conversationMembers
   const memberDocs = await getCollection(MEMBERS)
     .find({ userId })
     .toArray();
-  if (memberDocs.length === 0) return [];
+  const memberConvIds = new Set(memberDocs.map((m) => m.conversationId));
 
-  const convIds = memberDocs.map((m) => m.conversationId);
+  // 2) Tìm DM conversations từ messages collection (fallback cho tin nhắn cũ)
+  const dmPattern = new RegExp(`^dm:.+:${userId}$|^dm:${userId}:.+$`);
+  const dmMessages = await getCollection("messages")
+    .find({ conversationId: dmPattern })
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .toArray();
+
+  const msgConvIds = new Set(dmMessages.map((m) => m.conversationId));
+
+  // Gộp tất cả conversationIds
+  const allConvIds = new Set([...memberConvIds, ...msgConvIds]);
+  if (allConvIds.size === 0) return [];
+
   const convs = await getCollection(CONVERSATIONS)
-    .find({ id: { $in: convIds } })
+    .find({ id: { $in: [...allConvIds] } })
     .sort({ createdAt: -1 })
     .toArray();
 
-  return convs;
+  // 3) Nếu có conversationId từ messages nhưng chưa có trong conversations collection → tạo placeholder
+  const existingIds = new Set(convs.map((c) => c.id));
+  for (const convId of msgConvIds) {
+    if (!existingIds.has(convId)) {
+      const parts = convId.split(":");
+      const memberIds = parts.length === 3 ? [parts[1], parts[2]].sort() : [];
+      const placeholder = {
+        id: convId,
+        type: "dm",
+        memberIds,
+        name: null,
+        createdAt: dmMessages.find((m) => m.conversationId === convId)?.createdAt || new Date().toISOString(),
+      };
+      await getCollection(CONVERSATIONS).updateOne(
+        { id: convId },
+        { $setOnInsert: placeholder },
+        { upsert: true }
+      );
+      convs.push(placeholder);
+    }
+  }
+
+  return convs.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 }
 
 /**

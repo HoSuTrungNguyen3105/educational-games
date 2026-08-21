@@ -63,7 +63,7 @@ async function fetchWithRetry(url, init, attempts = 5) {
 }
 
 export async function apiFetch(path, options = {}) {
-  const auth = loadAuth();
+  const auth = options._token ? { token: options._token } : loadAuth();
   const url = `${API_BASE}${path}`;
   const init = {
     headers: {
@@ -74,6 +74,7 @@ export async function apiFetch(path, options = {}) {
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined,
   };
+  delete init._token;
   const res = await fetchWithRetry(url, init);
   if (res.status === 401 && !path.startsWith("/auth/")) {
     clearAuth();
@@ -164,7 +165,10 @@ export const userService = {
     return apiFetch("/users", { method: "POST", body: data });
   },
   async remove(id) {
-    return apiFetch(`/users/${id}`, { method: "DELETE" });
+    return apiFetch(`/users/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+  async getById(id) {
+    return apiFetch(`/users/${encodeURIComponent(id)}`);
   },
   async search(query) {
     return apiFetch(`/users/search?q=${encodeURIComponent(query)}`) || [];

@@ -35,4 +35,17 @@ router.get("/search", authenticate, async (req, res, next) => {
   }
 });
 
+// GET /api/users/:id — lấy thông tin 1 user theo id (SAU /search để tránh match nhầm)
+router.get("/:id", authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await getCollection("users")
+      .findOne({ id }, { projection: { passwordHash: 0 } });
+    if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    res.json(user);
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default router;

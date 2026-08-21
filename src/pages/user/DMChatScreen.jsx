@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { chatApi } from "../../services/chatApi.js";
-import { useUserAuthStore } from "../../stores/userAuth.store.js";
 import { Loader } from "../../components/ui.jsx";
 
-export default function DMChatScreen({ targetUser, onBack }) {
-  const user = useUserAuthStore((s) => s.user);
+export default function DMChatScreen({ targetUser, userAuth, onBack }) {
+  const user = userAuth?.user;
+  const token = userAuth?.token;
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
@@ -14,9 +14,9 @@ export default function DMChatScreen({ targetUser, onBack }) {
   const targetUserId = targetUser?.id;
 
   useEffect(() => {
-    if (!targetUserId) return;
+    if (!targetUserId || !token) return;
     let cancelled = false;
-    chatApi.listDmMessages(targetUserId, { limit: 50 }).then((res) => {
+    chatApi.listDmMessages(targetUserId, { limit: 50, token }).then((res) => {
       if (!cancelled) {
         setMessages(res.items || []);
         setLoading(false);
@@ -26,7 +26,7 @@ export default function DMChatScreen({ targetUser, onBack }) {
       if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [targetUserId]);
+  }, [targetUserId, token]);
 
   useEffect(() => {
     if (!loading && messages.length > 0) {
@@ -37,7 +37,7 @@ export default function DMChatScreen({ targetUser, onBack }) {
   const handleSend = async (e) => {
     e?.preventDefault();
     const trimmed = text.trim();
-    if (!trimmed || sending) return;
+    if (!trimmed || sending || !token) return;
 
     const clientMessageId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const optimistic = {
@@ -59,6 +59,7 @@ export default function DMChatScreen({ targetUser, onBack }) {
       const saved = await chatApi.sendDmMessage(targetUser.id, {
         content: trimmed,
         clientMessageId,
+        token,
       });
       setMessages((prev) => prev.map((m) =>
         m.id === clientMessageId ? { ...saved, status: "sent" } : m

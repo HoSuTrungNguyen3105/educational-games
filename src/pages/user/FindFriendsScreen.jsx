@@ -3,7 +3,7 @@ import { userService } from "../../services/api.js";
 import { Loader } from "../../components/ui.jsx";
 import DMChatScreen from "./DMChatScreen.jsx";
 
-export default function FindFriendsScreen() {
+export default function FindFriendsScreen({ userAuth }) {
   const [query, setQuery] = useState("");
   const [state, setState] = useState({ results: null, loading: false, error: null });
   const [chatTarget, setChatTarget] = useState(null);
@@ -37,6 +37,7 @@ export default function FindFriendsScreen() {
     return (
       <DMChatScreen
         targetUser={chatTarget}
+        userAuth={userAuth}
         onBack={() => setChatTarget(null)}
       />
     );

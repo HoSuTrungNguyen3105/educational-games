@@ -9,12 +9,13 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
   const [state, setState] = useState({ conversations: null, error: null });
   const [chatTarget, setChatTarget] = useState(null);
   const loadingRef = useRef(false);
+  const token = userAuth?.token;
 
   useEffect(() => {
-    if (!userAuth?.user) return;
+    if (!userAuth?.user || !token) return;
     let cancelled = false;
     loadingRef.current = true;
-    conversationApi.list().then((data) => {
+    conversationApi.list(token).then((data) => {
       if (!cancelled) setState({ conversations: data, error: null });
     }).catch((e) => {
       if (!cancelled) setState({ conversations: null, error: e.message });
@@ -22,13 +23,13 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
       loadingRef.current = false;
     });
     return () => { cancelled = true; };
-  }, [userAuth]);
+  }, [userAuth, token]);
 
-  // Nếu đang mở chat → hiện DMChatScreen
   if (chatTarget) {
     return (
       <DMChatScreen
         targetUser={chatTarget}
+        userAuth={userAuth}
         onBack={() => setChatTarget(null)}
       />
     );
@@ -86,12 +87,11 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
                 key={conv.id}
                 conversation={conv}
                 currentUser={userAuth.user}
+                token={token}
                 onClick={() => {
-                  // Tìm user còn lại trong DM
                   const otherId = conv.memberIds?.find((id) => id !== userAuth.user.id);
                   if (otherId && conv.type === "dm") {
-                    userService.search(otherId).then((users) => {
-                      const found = Array.isArray(users) ? users.find((u) => u.id === otherId) : null;
+                    userService.getById(otherId).then((found) => {
                       if (found) setChatTarget(found);
                     }).catch(() => {});
                   }
@@ -105,15 +105,14 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
   );
 }
 
-function ConversationItem({ conversation, currentUser, onClick }) {
+function ConversationItem({ conversation, currentUser, token, onClick }) {
   const [otherUser, setOtherUser] = useState(null);
 
   useEffect(() => {
     if (conversation.type !== "dm" || !conversation.memberIds) return;
     const otherId = conversation.memberIds.find((id) => id !== currentUser.id);
     if (!otherId) return;
-    userService.search(otherId).then((users) => {
-      const found = Array.isArray(users) ? users.find((u) => u.id === otherId) : null;
+    userService.getById(otherId).then((found) => {
       if (found) setOtherUser(found);
     }).catch(() => {});
   }, [conversation, currentUser]);

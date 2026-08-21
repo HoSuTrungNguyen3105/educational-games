@@ -194,7 +194,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             {visibleGames.length === 0 ? (
               <EmptyState icon="🧐" title="Chưa có trò chơi cho môn này" subtitle="Thử chọn môn khác hoặc bấm 'Tất cả' để xem hết trò chơi nhé!" />
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                 {visibleGames.map((g, index) => (
                   <GameCard key={g.id} game={g} template={templates.find(t => t.id === g.template)} onSelect={onSelectGame} index={index} />
                 ))}
@@ -206,7 +206,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             {hotGames.length > 0 && (
               <section className="mb-14">
                 <SectionHeader icon="🔥" title="Trò chơi đang HOT" gradient="from-red-500 to-orange-500" pulse />
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                   {hotGames.map((g, index) => (
                     <GameCard
                       key={g.id}
@@ -225,7 +225,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             {newGames.length > 0 && (
               <section className="mb-14">
                 <SectionHeader icon="✨" title="Trò chơi mới" gradient="from-emerald-500 to-teal-500" />
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                   {newGames.map((g, index) => (
                     <GameCard key={g.id} game={g} template={templates.find(t => t.id === g.template)} onSelect={onSelectGame} index={index} isNew />
                   ))}
@@ -235,7 +235,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
             <section>
               <SectionHeader icon="🎮" title="Tất cả trò chơi" gradient="from-purple-500 to-indigo-500" />
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                 {games.map((g, index) => (
                   <GameCard key={g.id} game={g} template={templates.find(t => t.id === g.template)} onSelect={onSelectGame} index={index} />
                 ))}
@@ -416,48 +416,38 @@ function SubjectChip({ label, active, onClick, classes }) {
   );
 }
 
-// Thẻ trò chơi — bo tròn nhiều hơn, dải màu theo môn học, dễ đọc cho trẻ nhỏ
+// Thẻ trò chơi — hình vuông, gọn gàng
 function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew }) {
   const color = colorForSubject(game.subject);
   return (
     <button
       onClick={() => onSelect(game)}
       aria-label={`Chơi ${game.title}`}
-      className="group relative bg-white rounded-3xl p-4 text-left shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 border-2 border-transparent hover:border-purple-200 overflow-hidden animate-fade-in-up focus:outline-none focus-visible:ring-4 focus-visible:ring-purple-200"
+      className="group relative bg-white rounded-2xl p-3 text-left shadow-md hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1 border border-ink/10 hover:border-purple-300 overflow-hidden aspect-square flex flex-col"
       style={{ animationDelay: `${index * 0.06}s` }}
     >
       {/* Dải màu theo môn học */}
-      <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${color.grad}`}></div>
+      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${color.grad}`}></div>
 
       {(badge || isNew) && (
-        <div className={`absolute top-3 right-3 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md z-10 bg-gradient-to-r ${badge ? badgeColor : "from-emerald-400 to-teal-400"}`}>
+        <div className={`absolute top-2 right-2 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow z-10 bg-gradient-to-r ${badge ? badgeColor : "from-emerald-400 to-teal-400"}`}>
           {badge || "MỚI"}
         </div>
       )}
 
-      <div className="relative z-10 pt-1.5">
-        <div className="mb-3">
-          <StampToken icon={template ? template.icon : "🎲"} ring={template ? template.ring : "#A855F7"} size={52} fontSize={24} />
+      <div className="relative z-10 flex flex-col flex-1 min-h-0">
+        <div className="flex justify-center mb-2">
+          <StampToken icon={template ? template.icon : "🎲"} ring={template ? template.ring : "#A855F7"} size={44} fontSize={20} />
         </div>
 
-        <h3 className="font-display text-lg text-gray-800 leading-snug mb-1.5 group-hover:text-purple-700 transition-colors line-clamp-2">
+        <h3 className="font-display text-sm text-gray-800 leading-tight mb-1 group-hover:text-purple-700 transition-colors line-clamp-2 text-center">
           {game.title}
         </h3>
-        <p className="text-[13px] text-gray-500 mb-3 line-clamp-2">
-          {game.description}
-        </p>
 
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono mb-3">
-          <span className={`px-2 py-1 rounded-lg border ${color.chip}`}>{game.subject}</span>
-          <span className="bg-gray-50 text-gray-500 px-2 py-1 rounded-lg">❓ {game.questionsCount}</span>
-          <span className="bg-gray-50 text-gray-500 px-2 py-1 rounded-lg">🎮 {game.playersCount}</span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-2 text-sm font-bold text-purple-600 group-hover:gap-3 transition-all">
-            Chơi ngay <span className="group-hover:translate-x-1 transition-transform">→</span>
-          </span>
-          <span className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity">🎮</span>
+        <div className="flex flex-wrap items-center justify-center gap-1 text-[9px] font-mono mt-auto">
+          <span className={`px-1.5 py-0.5 rounded ${color.chip}`}>{game.subject}</span>
+          <span className="bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded">❓{game.questionsCount}</span>
+          <span className="bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded">🎮{game.playersCount}</span>
         </div>
       </div>
     </button>

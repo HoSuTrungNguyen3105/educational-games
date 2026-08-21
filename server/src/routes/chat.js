@@ -1,9 +1,60 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth.js";
 import * as chatService from "../services/chatService.js";
+import * as convService from "../services/conversationService.js";
 
 const router = Router();
 
+// Helper: đảm bảo conversation DM tồn tại + cả 2 user đều là member
+async function ensureDmConversation(userId1, userId2) {
+  const conv = await convService.getOrCreateDM(userId1, userId2);
+  await convService.addMember(conv.id, userId1);
+  await convService.addMember(conv.id, userId2);
+  return conv;
+}
+
+// DM routes TRƯỚC để không bị match nhầm với /:conversationId
+// GET /api/chat/dm/:targetUserId/messages — DM chat với user khác (cần đăng nhập)
+router.get("/dm/:targetUserId/messages", authenticate, async (req, res, next) => {
+  try {
+    const { targetUserId } = req.params;
+    const { limit, before } = req.query;
+    const currentUserId = req.user.sub;
+    const convId = chatService.getDmConversationId(currentUserId, targetUserId);
+    const result = await chatService.listMessages(convId, { before, limit: Number(limit) });
+    res.json(result);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/chat/dm/:targetUserId/messages — gửi tin nhắn DM (cần đăng nhập)
+router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) => {
+  try {
+    const { targetUserId } = req.params;
+    const { content, clientMessageId, type } = req.body;
+    const currentUserId = req.user.sub;
+    const userName = req.user.name || "Ẩn danh";
+    const convId = chatService.getDmConversationId(currentUserId, targetUserId);
+
+    // Đảm bảo conversation + members tồn tại (cho ConversationListScreen)
+    await ensureDmConversation(currentUserId, targetUserId);
+
+    const msg = await chatService.sendMessage({
+      conversationId: convId,
+      senderId: currentUserId,
+      playerName: userName,
+      content,
+      clientMessageId,
+      type,
+    });
+    res.status(201).json(msg);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Generic routes SAU DM routes
 // GET /api/chat/:conversationId/messages?limit=30&before=<cursor>
 router.get("/:conversationId/messages", async (req, res, next) => {
   try {
@@ -57,42 +108,6 @@ router.get("/:conversationId/unread", async (req, res, next) => {
     if (!playerId) return res.json({ unread: 0 });
     const unread = await chatService.getUnreadCount(conversationId, playerId);
     res.json({ unread });
-  } catch (e) {
-    next(e);
-  }
-});
-
-// GET /api/chat/dm/:targetUserId/messages — DM chat với user khác (cần đăng nhập)
-router.get("/dm/:targetUserId/messages", authenticate, async (req, res, next) => {
-  try {
-    const { targetUserId } = req.params;
-    const { limit, before } = req.query;
-    const currentUserId = req.user.sub;
-    const convId = chatService.getDmConversationId(currentUserId, targetUserId);
-    const result = await chatService.listMessages(convId, { before, limit: Number(limit) });
-    res.json(result);
-  } catch (e) {
-    next(e);
-  }
-});
-
-// POST /api/chat/dm/:targetUserId/messages — gửi tin nhắn DM (cần đăng nhập)
-router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) => {
-  try {
-    const { targetUserId } = req.params;
-    const { content, clientMessageId, type } = req.body;
-    const currentUserId = req.user.sub;
-    const userName = req.user.name || "Ẩn danh";
-    const convId = chatService.getDmConversationId(currentUserId, targetUserId);
-    const msg = await chatService.sendMessage({
-      conversationId: convId,
-      senderId: currentUserId,
-      playerName: userName,
-      content,
-      clientMessageId,
-      type,
-    });
-    res.status(201).json(msg);
   } catch (e) {
     next(e);
   }
