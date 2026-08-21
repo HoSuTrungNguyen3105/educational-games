@@ -10,15 +10,11 @@ export default function ChatPanel({ className = "", userAuth, onUserLogin, onUse
 
   return (
     <>
-      {/* Desktop: sidebar panel */}
-      <div className={`hidden lg:flex flex-col bg-paper2 border-l border-ink/10 ${className}`}>
+      {/* Desktop: sidebar panel - always show messages + input */}
+      <div className={`hidden lg:flex flex-col w-72 bg-paper2 border-l border-ink/10 shrink-0 ${className}`}>
         <ChatHeader userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} />
-        {isOpen && (
-          <>
-            <MessageList />
-            <MessageComposer userAuth={userAuth} />
-          </>
-        )}
+        <MessageList />
+        <MessageComposer userAuth={userAuth} />
       </div>
 
       {/* Mobile: floating button + fullscreen overlay */}
@@ -27,7 +23,7 @@ export default function ChatPanel({ className = "", userAuth, onUserLogin, onUse
         {!isOpen && (
           <button
             onClick={toggleOpen}
-            className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-ink text-paper shadow-xl flex items-center justify-center text-2xl hover:bg-ink2 transition active:scale-95"
+            className="fixed bottom-24 right-4 z-40 w-12 h-12 rounded-full bg-ink text-paper shadow-xl flex items-center justify-center text-xl hover:bg-ink2 transition active:scale-95"
             title="Mở chat"
           >
             💬

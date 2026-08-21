@@ -145,22 +145,29 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-paper overflow-hidden pt-[env(safe-area-inset-top)]">
-      <Toolbar title={title} setTitle={setTitle} zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onResetZoom={resetZoom}
+      {/* Thanh công cụ trên cùng — chỉ giữ các thao tác quan trọng nhất (Thoát, tên, Undo/Redo, Save) */}
+      <Toolbar title={title} setTitle={setTitle}
         canUndo={past.length > 0} canRedo={future.length > 0} onUndo={undo} onRedo={redo}
-        onPreview={() => setShowPreview(true)} onSave={save} saving={saving} onCancel={onCancel} />
+        onSave={save} saving={saving} onCancel={onCancel} />
 
       <div className="flex-1 flex min-h-0">
         {!isMobile && <ElementsSidebar />}
-        <CanvasArea
-          ctx={{ previewContext: PREVIEW_CONTEXT }}
-          isMobile={isMobile}
-        />
+
+        {/* Vùng canvas — Zoom & Preview nổi ngay trên canvas, dùng chung cho cả mobile lẫn desktop */}
+        <div className="relative flex-1 min-w-0 min-h-0">
+          <CanvasArea ctx={{ previewContext: PREVIEW_CONTEXT }} isMobile={isMobile} />
+          <CanvasFloatingControls
+            zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onResetZoom={resetZoom}
+            onPreview={() => setShowPreview(true)}
+          />
+        </div>
+
         {!isMobile && <PropertiesPanel onPreview={() => setShowPreview(true)} />}
       </div>
 
+      {/* Thanh dưới trên mobile — chỉ 2 lối tắt chính, to và dễ chạm bằng ngón cái */}
       {isMobile && (
-        <MobileBar zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onResetZoom={resetZoom}
-          sheet={sheet} setSheet={setSheet} onPreview={() => setShowPreview(true)} onSave={save} saving={saving} />
+        <MobileBar sheet={sheet} setSheet={setSheet} />
       )}
 
       {isMobile && sheet === "elements" && (
@@ -181,27 +188,47 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
   );
 }
 
-function MobileBar({ zoom, onZoomIn, onZoomOut, onResetZoom, sheet, setSheet, onPreview, onSave, saving }) {
+// Điều khiển Zoom + Preview nổi trên canvas — dùng chung mọi kích thước màn hình,
+// tránh phải lặp lại các nút này ở cả thanh trên và thanh dưới trên mobile
+function CanvasFloatingControls({ zoom, onZoomIn, onZoomOut, onResetZoom, onPreview }) {
   return (
-    <div className="flex items-stretch justify-between gap-2 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] bg-ink text-paper border-t border-paper/10 z-30">
-      <div className="flex items-center gap-2">
-        <button onClick={() => setSheet(sheet === "elements" ? null : "elements")}
-          className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-lg gap-0.5 transition ${sheet === "elements" ? "bg-gold text-ink" : "bg-paper/10 hover:bg-paper/20"}`}
-          title="Thêm element" aria-label="Thêm element"><span>🧩</span><span className="text-[9px] font-mono">Element</span></button>
-        <button onClick={() => setSheet(sheet === "properties" ? null : "properties")}
-          className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-lg gap-0.5 transition ${sheet === "properties" ? "bg-gold text-ink" : "bg-paper/10 hover:bg-paper/20"}`}
-          title="Thuộc tính" aria-label="Thuộc tính"><span>🎛️</span><span className="text-[9px] font-mono">Chỉnh sửa</span></button>
-      </div>
+    <>
+      <button
+        onClick={onPreview}
+        className="absolute top-3 right-3 z-20 flex items-center gap-1.5 h-10 pl-3.5 pr-4 rounded-full bg-ink text-paper text-sm font-display shadow-lg hover:brightness-110 active:scale-95 transition"
+        title="Xem thử (Esc để đóng)"
+        aria-label="Xem thử giao diện học sinh"
+      >
+        <span aria-hidden="true">👁️</span> <span className="hidden sm:inline">Xem thử</span>
+      </button>
 
-      <div className="flex items-center gap-1.5">
-        <button onClick={onZoomOut} className="w-11 h-12 rounded-xl bg-paper/10 hover:bg-paper/20 text-lg" title="Thu nhỏ" aria-label="Thu nhỏ">−</button>
-        <button onClick={onResetZoom} className="px-2 h-12 text-xs font-mono text-paper/80 hover:text-paper" title="Về mặc định">{Math.round(zoom * 100)}%</button>
-        <button onClick={onZoomIn} className="w-11 h-12 rounded-xl bg-paper/10 hover:bg-paper/20 text-lg" title="Phóng to" aria-label="Phóng to">+</button>
-        <button onClick={onPreview} className="w-12 h-12 rounded-xl bg-paper/10 hover:bg-paper/20 text-lg flex flex-col items-center justify-center gap-0.5" title="Preview" aria-label="Preview"><span>👁️</span><span className="text-[9px] font-mono">Xem</span></button>
-        <button onClick={onSave} disabled={saving} className="h-12 px-4 rounded-xl bg-gold text-ink font-display font-semibold text-sm hover:brightness-105 transition disabled:opacity-50">
-          {saving ? "..." : "💾"}
-        </button>
+      <div className="absolute bottom-3 right-3 z-20 flex items-center rounded-full bg-ink text-paper shadow-lg overflow-hidden">
+        <button onClick={onZoomOut} className="w-10 h-10 flex items-center justify-center hover:bg-paper/10 active:bg-paper/20 text-lg transition" title="Thu nhỏ" aria-label="Thu nhỏ">−</button>
+        <button onClick={onResetZoom} className="px-2.5 h-10 text-xs font-mono text-paper/80 hover:text-paper transition" title="Về 100%">{Math.round(zoom * 100)}%</button>
+        <button onClick={onZoomIn} className="w-10 h-10 flex items-center justify-center hover:bg-paper/10 active:bg-paper/20 text-lg transition" title="Phóng to" aria-label="Phóng to">+</button>
       </div>
+    </>
+  );
+}
+
+// Thanh dưới trên mobile — chỉ còn 2 lối tắt điều hướng panel (không trùng Preview/Save nữa)
+function MobileBar({ sheet, setSheet }) {
+  return (
+    <div className="flex items-center justify-center gap-3 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+10px)] bg-ink text-paper border-t border-paper/10 z-30">
+      <button
+        onClick={() => setSheet(sheet === "elements" ? null : "elements")}
+        className={`flex-1 max-w-[220px] h-14 rounded-2xl flex items-center justify-center gap-2 text-sm font-display font-semibold transition active:scale-[0.98] ${sheet === "elements" ? "bg-gold text-ink" : "bg-paper/10 hover:bg-paper/20"}`}
+        aria-pressed={sheet === "elements"}
+      >
+        <span className="text-xl" aria-hidden="true">🧩</span> Thêm element
+      </button>
+      <button
+        onClick={() => setSheet(sheet === "properties" ? null : "properties")}
+        className={`flex-1 max-w-[220px] h-14 rounded-2xl flex items-center justify-center gap-2 text-sm font-display font-semibold transition active:scale-[0.98] ${sheet === "properties" ? "bg-gold text-ink" : "bg-paper/10 hover:bg-paper/20"}`}
+        aria-pressed={sheet === "properties"}
+      >
+        <span className="text-xl" aria-hidden="true">🎛️</span> Chỉnh sửa
+      </button>
     </div>
   );
 }
@@ -210,6 +237,7 @@ function MobileSheet({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-40 bg-ink/50 backdrop-blur-sm flex flex-col justify-end anim-fade pb-[env(safe-area-inset-bottom)]" onClick={onClose}>
       <div className="bg-paper2 rounded-t-3xl h-[75dvh] max-h-[85dvh] flex flex-col anim-pop shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-ink/15 flex-shrink-0"></div>
         <div className="p-3 border-b border-ink/10 flex items-center justify-between">
           <h3 className="font-display text-base text-ink">{title}</h3>
           <button onClick={onClose} className="w-10 h-10 rounded-xl bg-ink/5 hover:bg-ink/10 text-ink flex items-center justify-center" title="Đóng" aria-label="Đóng">✕</button>
@@ -220,33 +248,37 @@ function MobileSheet({ title, onClose, children }) {
   );
 }
 
-function Toolbar({ title, setTitle, zoom, onZoomIn, onZoomOut, onResetZoom, canUndo, canRedo, onUndo, onRedo, onPreview, onSave, saving, onCancel }) {
+// Thanh công cụ trên cùng — gọn lại còn: Thoát, tên trò chơi, Undo/Redo, Save.
+// Zoom và Preview đã chuyển xuống nổi trên canvas nên không còn lặp lại ở đây.
+function Toolbar({ title, setTitle, canUndo, canRedo, onUndo, onRedo, onSave, saving, onCancel }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-3 bg-ink text-paper sticky top-0 z-30 flex-wrap">
-      <div className="flex items-center gap-3">
-        <button onClick={onCancel} className="text-paper/60 hover:text-paper text-sm">← Thoát</button>
-        <span className="text-2xl">🎨</span>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tên trò chơi..."
-          className="bg-ink2 text-paper rounded-xl px-3 py-1.5 text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-gold/50 placeholder:text-paper/40" />
-      </div>
-
-      <div className="hidden lg:flex items-center gap-2">
-        <button onClick={onUndo} disabled={!canUndo} title="Hoàn tác (Ctrl+Z)"
-          className="w-9 h-9 rounded-xl bg-paper/10 hover:bg-paper/20 flex items-center justify-center text-lg disabled:opacity-30 transition">↩️</button>
-        <button onClick={onRedo} disabled={!canRedo} title="Làm lại (Ctrl+Y)"
-          className="w-9 h-9 rounded-xl bg-paper/10 hover:bg-paper/20 flex items-center justify-center text-lg disabled:opacity-30 transition">↪️</button>
-        <div className="flex items-center rounded-xl bg-paper/10 overflow-hidden ml-1">
-          <button onClick={onZoomOut} className="w-9 h-9 hover:bg-paper/20 text-lg">−</button>
-          <button onClick={onResetZoom} className="px-2 text-xs font-mono text-paper/80 hover:text-paper" title="Về mặc định">{Math.round(zoom * 100)}%</button>
-          <button onClick={onZoomIn} className="w-9 h-9 hover:bg-paper/20 text-lg">+</button>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button onClick={onPreview} className="font-display text-sm bg-paper/15 hover:bg-paper/25 text-paper rounded-2xl px-4 py-2 transition">
-          👁️ Preview
+    <div className="flex items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-2.5 md:py-3 bg-ink text-paper sticky top-0 z-30">
+      <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+        <button
+          onClick={onCancel}
+          title="Thoát"
+          aria-label="Thoát khỏi Game Builder"
+          className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-paper/70 hover:text-paper hover:bg-paper/10 md:w-auto md:h-auto md:px-1 md:rounded-none md:hover:bg-transparent transition"
+        >
+          <span aria-hidden="true">←</span><span className="hidden md:inline md:ml-1.5 text-sm">Thoát</span>
         </button>
-        <button onClick={onSave} disabled={saving} className="font-display font-semibold text-sm bg-gold text-ink rounded-2xl px-5 py-2 hover:brightness-105 transition disabled:opacity-50">
+        <span className="text-xl md:text-2xl flex-shrink-0" aria-hidden="true">🎨</span>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Tên trò chơi..."
+          aria-label="Tên trò chơi"
+          className="bg-ink2 text-paper rounded-xl px-3 py-1.5 text-sm min-w-0 flex-1 md:flex-none md:w-64 focus:outline-none focus:ring-2 focus:ring-gold/50 placeholder:text-paper/40 transition"
+        />
+      </div>
+
+      <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+        <button onClick={onUndo} disabled={!canUndo} title="Hoàn tác (Ctrl+Z)" aria-label="Hoàn tác"
+          className="w-9 h-9 rounded-xl bg-paper/10 hover:bg-paper/20 flex items-center justify-center text-base md:text-lg disabled:opacity-30 transition">↩️</button>
+        <button onClick={onRedo} disabled={!canRedo} title="Làm lại (Ctrl+Y)" aria-label="Làm lại"
+          className="w-9 h-9 rounded-xl bg-paper/10 hover:bg-paper/20 flex items-center justify-center text-base md:text-lg disabled:opacity-30 transition">↪️</button>
+        <button onClick={onSave} disabled={saving}
+          className="font-display font-semibold text-sm bg-gold text-ink rounded-2xl px-4 md:px-5 py-2 hover:brightness-105 active:scale-95 transition disabled:opacity-50 ml-0.5">
           {saving ? "Đang lưu..." : "💾 Save"}
         </button>
       </div>
@@ -283,7 +315,7 @@ function PreviewModal({ template, onClose }) {
       <div ref={fitRef} className="bg-white rounded-3xl p-4 md:p-6 max-w-[94vw] max-h-[92vh] overflow-hidden anim-pop" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-3 mb-4">
           <h3 className="font-display text-base md:text-lg text-ink truncate">👁️ Preview — giao diện học sinh</h3>
-          <button onClick={onClose} className="text-ink/50 hover:text-ink text-lg flex-shrink-0">✕</button>
+          <button onClick={onClose} aria-label="Đóng preview" className="w-9 h-9 flex items-center justify-center rounded-xl text-ink/50 hover:text-ink hover:bg-ink/5 text-lg flex-shrink-0 transition">✕</button>
         </div>
         <div className="rounded-2xl overflow-hidden shadow-lg mx-auto"
           style={{ width: Math.max(1, Math.round(template.canvas.width * scale)), height: Math.max(1, Math.round(template.canvas.height * scale)) }}>
@@ -299,33 +331,38 @@ function PreviewModal({ template, onClose }) {
 
 function TemplateSelector({ onSelect, onCancel }) {
   const templates = gameTemplateRegistry.getAll();
-  
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-paper p-4">
-      <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full shadow-xl">
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-paper p-4">
+      <div className="bg-white rounded-3xl p-5 md:p-8 max-w-4xl w-full shadow-xl max-h-[92dvh] overflow-y-auto">
+        <div className="flex items-start md:items-center justify-between gap-4 mb-6 md:mb-8">
           <div>
-            <h2 className="text-2xl font-display text-ink font-bold">Chọn Template Trò Chơi</h2>
-            <p className="text-ink/60 mt-1">Bắt đầu thiết kế với một mẫu có sẵn hoặc một canvas trống</p>
+            <h2 className="text-xl md:text-2xl font-display text-ink font-bold">Chọn Template Trò Chơi</h2>
+            <p className="text-ink/60 mt-1 text-sm md:text-base">Bắt đầu thiết kế với một mẫu có sẵn hoặc một canvas trống</p>
           </div>
-          <button onClick={onCancel} className="text-ink/50 hover:text-ink">✕ Thoát</button>
+          <button onClick={onCancel} className="flex-shrink-0 text-sm text-ink/50 hover:text-ink px-3 py-2 rounded-xl hover:bg-ink/5 transition">✕ Thoát</button>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {templates.map(t => (
-            <div key={t.id} onClick={() => onSelect(t)} 
-              className="border-2 border-ink/10 rounded-2xl p-5 hover:border-gold hover:shadow-lg transition cursor-pointer flex flex-col">
-              <div className="text-4xl mb-3">🎨</div>
+            <button
+              key={t.id}
+              onClick={() => onSelect(t)}
+              className="text-left border-2 border-ink/10 rounded-2xl p-5 hover:border-gold hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-gold transition flex flex-col"
+            >
+              <div className="text-4xl mb-3" aria-hidden="true">🎨</div>
               <h3 className="font-display font-semibold text-lg text-ink mb-2">{t.name}</h3>
               <p className="text-sm text-ink/70 flex-1">{t.description}</p>
-            </div>
+            </button>
           ))}
-          <div onClick={() => onSelect({ id: 'custom', version: 1, name: 'Trống', canvas: {width: 1200, height: 800, background: '#FFF6E7'}, elements: [], customizable: {canvasBackground: true, elements: {text: true, image: true, shape: true, button: true}} })}
-            className="border-2 border-dashed border-ink/20 rounded-2xl p-5 hover:border-gold hover:bg-gold/5 transition cursor-pointer flex flex-col items-center justify-center text-center">
-            <div className="text-4xl mb-3">✨</div>
+          <button
+            onClick={() => onSelect({ id: 'custom', version: 1, name: 'Trống', canvas: { width: 1200, height: 800, background: '#FFF6E7' }, elements: [], customizable: { canvasBackground: true, elements: { text: true, image: true, shape: true, button: true } } })}
+            className="border-2 border-dashed border-ink/20 rounded-2xl p-5 hover:border-gold hover:bg-gold/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold transition flex flex-col items-center justify-center text-center"
+          >
+            <div className="text-4xl mb-3" aria-hidden="true">✨</div>
             <h3 className="font-display font-semibold text-lg text-ink mb-2">Bắt đầu từ số 0</h3>
-            <p className="text-sm text-ink/70 flex-1">Thiết kế một canvas hoàn toàn mới</p>
-          </div>
+            <p className="text-sm text-ink/70">Thiết kế một canvas hoàn toàn mới</p>
+          </button>
         </div>
       </div>
     </div>

@@ -22,6 +22,7 @@ export const useChatStore = create((set, get) => ({
 
   // Actions
   init: (gameId, playerId, playerName) => {
+    console.log("[chat] init:", { gameId, playerId, playerName });
     set({ gameId, playerId, playerName, messages: [], hasMore: true, unreadCount: 0 });
     get().loadInitial();
     get().listenSocket();
@@ -60,11 +61,14 @@ export const useChatStore = create((set, get) => ({
   loadInitial: async () => {
     const { gameId } = get();
     if (!gameId || get().isLoading) return;
+    console.log("[chat] loadInitial for gameId:", gameId);
     set({ isLoading: true });
     try {
       const res = await chatApi.listMessages(gameId, { limit: 30 });
+      console.log("[chat] loadInitial result:", res);
       set({ messages: res.items || [], hasMore: res.hasMore, isLoading: false });
-    } catch {
+    } catch (e) {
+      console.error("[chat] loadInitial error:", e);
       set({ isLoading: false });
     }
   },
@@ -90,7 +94,11 @@ export const useChatStore = create((set, get) => ({
 
   send: async (content) => {
     const { gameId, playerId, playerName } = get();
-    if (!content?.trim() || !gameId || !playerId) return;
+    if (!content?.trim() || !gameId || !playerId) {
+      console.log("[chat] send blocked:", { gameId, playerId, content });
+      return;
+    }
+    console.log("[chat] send:", { gameId, playerId, content: content.trim() });
     const clientMessageId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const optimistic = {
       id: clientMessageId,
@@ -119,7 +127,8 @@ export const useChatStore = create((set, get) => ({
         messages: s.messages.map((m) => m.id === clientMessageId ? { ...saved, status: "sent" } : m),
         isSending: false,
       }));
-    } catch {
+    } catch (e) {
+      console.error("[chat] send REST error:", e);
       // Fallback: try via socket
       socket.emit(SOCKET_EVENTS.CHAT_MESSAGE, {
         gameId, content: content.trim(), playerName, clientMessageId,

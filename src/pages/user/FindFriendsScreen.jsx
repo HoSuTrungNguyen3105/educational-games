@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { userService } from "../../services/api.js";
-import { conversationApi } from "../../services/conversationApi.js";
 import { Loader } from "../../components/ui.jsx";
-import { navigate } from "../../lib/router.js";
+import DMChatScreen from "./DMChatScreen.jsx";
 
 export default function FindFriendsScreen({ onStartChat }) {
   const [query, setQuery] = useState("");
   const [state, setState] = useState({ results: null, loading: false, error: null });
-  const [startingChat, setStartingChat] = useState(null);
+  const [chatTarget, setChatTarget] = useState(null);
   const debounceRef = useRef(null);
 
   const searchUsers = useCallback(async (q) => {
@@ -29,21 +28,19 @@ export default function FindFriendsScreen({ onStartChat }) {
     return () => clearTimeout(debounceRef.current);
   }, [query, searchUsers]);
 
-  const handleStartChat = async (targetUser) => {
-    setStartingChat(targetUser.id);
-    try {
-      const conv = await conversationApi.getDM(targetUser.id);
-      if (onStartChat) {
-        onStartChat(conv, targetUser);
-      } else {
-        navigate("/chat");
-      }
-    } catch (e) {
-      setState((s) => ({ ...s, error: e.message }));
-    } finally {
-      setStartingChat(null);
-    }
+  const handleStartChat = (targetUser) => {
+    setChatTarget(targetUser);
   };
+
+  // Nếu đang mở chat → hiện DMChatScreen
+  if (chatTarget) {
+    return (
+      <DMChatScreen
+        targetUser={chatTarget}
+        onBack={() => setChatTarget(null)}
+      />
+    );
+  }
 
   return (
     <div className="flex-1 px-6 py-10">
@@ -98,10 +95,9 @@ export default function FindFriendsScreen({ onStartChat }) {
                 {/* Action */}
                 <button
                   onClick={() => handleStartChat(user)}
-                  disabled={startingChat === user.id}
-                  className="px-4 py-2 rounded-2xl bg-ink text-paper text-sm font-semibold hover:bg-ink2 transition disabled:opacity-50 shrink-0"
+                  className="px-4 py-2 rounded-2xl bg-ink text-paper text-sm font-semibold hover:bg-ink2 transition shrink-0"
                 >
-                  {startingChat === user.id ? "..." : "💬 Chat"}
+                  💬 Chat
                 </button>
               </div>
             ))}

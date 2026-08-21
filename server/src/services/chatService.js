@@ -10,6 +10,14 @@ function uid(prefix) {
 }
 
 /**
+ * Tạo conversationId cho DM giữa 2 user (deterministic).
+ */
+export function getDmConversationId(userId1, userId2) {
+  const sorted = [userId1, userId2].sort();
+  return `dm:${sorted[0]}:${sorted[1]}`;
+}
+
+/**
  * Lấy tin nhắn theo conversation (gameId), cursor-based pagination.
  * @param {string} gameId
  * @param {{ before?: string, limit?: number }} opts

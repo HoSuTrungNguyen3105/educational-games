@@ -96,9 +96,12 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
 
 export function StudentTopBar({ onExit }) {
   return (
-    <div className="flex items-center justify-between px-5 md:px-8 py-4">
-      <div className="flex items-center gap-2"><span className="text-xl">🎪</span><span className="font-display text-ink">Lớp Học Vui</span></div>
-      <button onClick={onExit} className="text-sm text-[#8A7C63] hover:text-ink">Thoát</button>
+    <div className="flex items-center justify-between px-3 md:px-6 py-2 md:py-3 border-b border-ink/5 shrink-0">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="text-base md:text-xl">🎪</span>
+        <span className="font-display text-sm md:text-base text-ink truncate">Lớp Học Vui</span>
+      </div>
+      <button onClick={onExit} className="text-xs md:text-sm text-[#8A7C63] hover:text-ink shrink-0 ml-2">Thoát</button>
     </div>
   );
 }

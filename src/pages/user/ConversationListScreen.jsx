@@ -1,10 +1,13 @@
 import { useEffect, useState, useRef } from "react";
 import { conversationApi } from "../../services/conversationApi.js";
+import { userService } from "../../services/api.js";
 import { Loader, ErrorState, EmptyState } from "../../components/ui.jsx";
 import { navigate } from "../../lib/router.js";
+import DMChatScreen from "./DMChatScreen.jsx";
 
 export default function ConversationListScreen({ userAuth, onSelectConversation, onLogout }) {
   const [state, setState] = useState({ conversations: null, error: null });
+  const [chatTarget, setChatTarget] = useState(null);
   const loadingRef = useRef(false);
 
   useEffect(() => {
@@ -20,6 +23,16 @@ export default function ConversationListScreen({ userAuth, onSelectConversation,
     });
     return () => { cancelled = true; };
   }, [userAuth]);
+
+  // Nếu đang mở chat → hiện DMChatScreen
+  if (chatTarget) {
+    return (
+      <DMChatScreen
+        targetUser={chatTarget}
+        onBack={() => setChatTarget(null)}
+      />
+    );
+  }
 
   if (!userAuth?.user) {
     return (
@@ -64,33 +77,64 @@ export default function ConversationListScreen({ userAuth, onSelectConversation,
           <EmptyState
             icon="📭"
             title="Chưa có tin nhắn"
-            subtitle="Bạn chưa có cuộc trò chuyện nào. Hãy tham gia trò chơi để bắt đầu chat!"
+            subtitle="Bạn chưa có cuộc trò chuyện nào. Hãy tìm bạn để bắt đầu chat!"
           />
         ) : (
           <div className="space-y-2">
             {state.conversations.map((conv) => (
-              <button
+              <ConversationItem
                 key={conv.id}
-                onClick={() => onSelectConversation(conv)}
-                className="w-full note-card p-4 text-left flex items-center gap-3 hover:bg-ink/5 transition"
-              >
-                <div className="w-10 h-10 rounded-full bg-ink/10 flex items-center justify-center text-lg shrink-0">
-                  {conv.type === "game_room" ? "🎮" : "💬"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-display text-sm text-ink truncate">
-                    {conv.name || (conv.type === "game_room" ? "Phòng game" : "Tin nhắn trực tiếp")}
-                  </h3>
-                  <p className="text-xs text-[#8A7C63] font-mono">
-                    {conv.type === "game_room" ? "Phòng game" : "Nhắn tin trực tiếp"}
-                  </p>
-                </div>
-                <span className="text-ink/30">→</span>
-              </button>
+                conversation={conv}
+                currentUser={userAuth.user}
+                onClick={() => {
+                  // Tìm user còn lại trong DM
+                  const otherId = conv.memberIds?.find((id) => id !== userAuth.user.id);
+                  if (otherId && conv.type === "dm") {
+                    userService.search(otherId).then((users) => {
+                      const found = Array.isArray(users) ? users.find((u) => u.id === otherId) : null;
+                      if (found) setChatTarget(found);
+                    }).catch(() => {});
+                  }
+                }}
+              />
             ))}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function ConversationItem({ conversation, currentUser, onClick }) {
+  const [otherUser, setOtherUser] = useState(null);
+
+  useEffect(() => {
+    if (conversation.type !== "dm" || !conversation.memberIds) return;
+    const otherId = conversation.memberIds.find((id) => id !== currentUser.id);
+    if (!otherId) return;
+    userService.search(otherId).then((users) => {
+      const found = Array.isArray(users) ? users.find((u) => u.id === otherId) : null;
+      if (found) setOtherUser(found);
+    }).catch(() => {});
+  }, [conversation, currentUser]);
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full note-card p-4 text-left flex items-center gap-3 hover:bg-ink/5 transition"
+    >
+      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-lg text-white shrink-0 font-semibold">
+        {otherUser?.name?.charAt(0)?.toUpperCase() || (conversation.type === "game_room" ? "🎮" : "💬")}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-display text-sm text-ink truncate">
+          {otherUser?.name || conversation.name || (conversation.type === "game_room" ? "Phòng game" : "Tin nhắn trực tiếp")}
+        </h3>
+        <p className="text-xs text-[#8A7C63] font-mono">
+          {conversation.type === "game_room" ? "Phòng game" : otherUser ? `@${otherUser.username}` : "Nhắn tin trực tiếp"}
+        </p>
+      </div>
+      <span className="text-ink/30">→</span>
+    </button>
   );
 }
