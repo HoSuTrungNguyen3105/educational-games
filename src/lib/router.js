@@ -1,70 +1,81 @@
 import { useEffect, useState } from 'react'
 
-// Hash router đơn giản (an toàn cho GitHub Pages — không cần server rewrite).
-// Các route:
-//   #/                    → home
-//   #/admin               → teacher dashboard
-//   #/admin/library       → thư viện trò chơi
-//   #/admin/users         → quản lý người dùng
-//   #/admin/create        → tạo trò chơi mới
-//   #/admin/edit/:id      → chỉnh sửa trò chơi
-//   #/admin/builder/:id?  → Game Builder (id có thể rỗng = tạo mới)
-//   #/admin/results/:id   → kết quả trò chơi
-//   #/play                → học sinh chọn/join trò chơi
-//   #/play/:id            → học sinh chơi trò chơi cụ thể
+// ─── Route Table ───────────────────────────────────────────────
+// Thêm/sửa/xóa route ở đây — parseRoute tự động match.
+// Pattern hỗ trợ: "/prefix", "/prefix/:param", "/prefix/:param1/:param2"
+const ROUTES = [
+  // ── Student ──
+  { name: "student",       pattern: "/play/:gameId" },
+  { name: "student-join",  pattern: "/play" },
 
+  // ── Teacher / Admin ──
+  { name: "admin-dashboard", pattern: "/admin" },
+  { name: "admin-library",   pattern: "/admin/library" },
+  { name: "admin-users",     pattern: "/admin/users" },
+  { name: "admin-create",    pattern: "/admin/create" },
+  { name: "admin-edit",      pattern: "/admin/edit/:gameId" },
+  { name: "admin-builder",   pattern: "/admin/builder/:gameId" },
+  { name: "admin-results",   pattern: "/admin/results/:gameId" },
+
+  // ── User / Social ──
+  { name: "chat",         pattern: "/chat" },
+  { name: "profile",      pattern: "/profile" },
+  { name: "find-friends", pattern: "/find-friends" },
+
+  // ── Home (fallback) ──
+  { name: "home", pattern: "/" },
+];
+
+// ─── Pattern Parser ────────────────────────────────────────────
+// Biến "/play/:gameId" thành RegExp + danh sách param names
+function compilePattern(pattern) {
+  const paramNames = [];
+  const regexStr = pattern
+    .replace(/:([A-Za-z_][A-Za-z0-9_]*)/g, (_, name) => {
+      paramNames.push(name);
+      return "([^/]+)";
+    })
+    .replace(/\/+$/, "");  // bỏ trailing slash
+
+  return { regex: new RegExp(`^${regexStr}$`), paramNames };
+}
+
+// Compile một lần — không parse lại mỗi request
+const COMPILED_ROUTES = ROUTES.map(({ name, pattern }) => ({
+  name,
+  ...compilePattern(pattern),
+}));
+
+// ─── Parse Route ───────────────────────────────────────────────
 export function parseRoute() {
-  const path = (window.location.pathname || "").toLowerCase().replace(/\/+$/, "");
   const hash = (window.location.hash || "").replace(/^#/, "") || "/";
+  const path = hash.split("?")[0].split("#")[0]; // bỏ query/hash nếu có
 
   // Hỗ trợ đường dẫn cũ /admin (không hash)
-  if (!hash || hash === "/") {
-    if (path.endsWith("/admin")) return { name: "admin-dashboard", gameId: null };
+  if (path === "/admin") {
+    return { name: "admin-dashboard", params: {} };
   }
 
-  const parts = hash.split("/").filter(Boolean);
-  const first = parts[0] || "";
-  const second = parts[1] || "";
-  const third = parts[2] || null;
-
-  if (first === "admin") {
-    switch (second) {
-      case "library": return { name: "admin-library", gameId: null };
-      case "users": return { name: "admin-users", gameId: null };
-      case "create": return { name: "admin-create", gameId: null };
-      case "edit": return { name: "admin-edit", gameId: third };
-      case "builder": return { name: "admin-builder", gameId: third };
-      case "results": return { name: "admin-results", gameId: third };
-      default: return { name: "admin-dashboard", gameId: null };
+  for (const { name, regex, paramNames } of COMPILED_ROUTES) {
+    const match = path.match(regex);
+    if (match) {
+      const params = {};
+      paramNames.forEach((key, i) => { params[key] = match[i + 1]; });
+      return { name, params };
     }
   }
 
-  if (first === "play") {
-    // #/play/:id → id nằm ở parts[1] (khác với admin/action/:id lấy parts[2])
-    const playId = second || null;
-    return playId ? { name: "student", gameId: playId } : { name: "student-join", gameId: null };
-  }
-
-  if (first === "chat") {
-    return { name: "chat", gameId: null };
-  }
-
-  if (first === "profile") {
-    return { name: "profile", gameId: null };
-  }
-
-  if (first === "find-friends") {
-    return { name: "find-friends", gameId: null };
-  }
-
-  return { name: "home", gameId: null };
+  return { name: "home", params: {} };
 }
 
+// ─── Navigate ──────────────────────────────────────────────────
 export function navigate(path) {
   const target = String(path).startsWith("#") ? String(path) : `#${String(path).replace(/^\/?/, "/")}`;
   if (window.location.hash !== target) window.location.hash = target;
 }
 
+// ─── useRoute Hook ─────────────────────────────────────────────
+// Trả về { name, params } — dùng route.name để match, route.params.gameId để lấy param
 export function useRoute() {
   const [route, setRoute] = useState(parseRoute);
   useEffect(() => {

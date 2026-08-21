@@ -83,21 +83,21 @@ function App() {
 
   // Route học sinh #/play/:id → dùng game đã chọn ngay nếu có, nếu không thì tải theo id
   useEffect(() => {
-    if (route.name !== "student" || !route.gameId) return;
+    if (route.name !== "student" || !route.params.gameId) return;
     let cancelled = false;
     const pending = pendingGameRef.current;
-    if (pending && String(pending.id) === String(route.gameId)) {
+    if (pending && String(pending.id) === String(route.params.gameId)) {
       pendingGameRef.current = null;
       setPlayGame(pending);
       return () => { cancelled = true; };
     }
     setLoadingGame(true);
-    gameService.get(route.gameId)
+    gameService.get(route.params.gameId)
       .then((g) => { if (!cancelled) setPlayGame(g); })
       .catch(() => { if (!cancelled) setPlayGame(null); })
       .finally(() => { if (!cancelled) setLoadingGame(false); });
     return () => { cancelled = true; };
-  }, [route.name, route.gameId]);
+  }, [route.name, route.params.gameId]);
 
   const handleLogin = (u) => {
     const auth = loadAuth();

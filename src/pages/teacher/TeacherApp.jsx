@@ -18,7 +18,7 @@ export default function TeacherApp({ user, route, onExit, showToast }) {
   if (route.name === "admin-builder") {
     return (
       <GameBuilder
-        gameId={route.gameId}
+        gameId={route.params.gameId}
         showToast={showToast}
         onDone={() => { bump(); goLibrary(); }}
         onCancel={goLibrary}
@@ -35,8 +35,8 @@ export default function TeacherApp({ user, route, onExit, showToast }) {
         {page === "admin-dashboard" && <TeacherDashboard key={refreshFlag} user={user} onOpenLibrary={goLibrary} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} onDesign={(id) => navigate(`/admin/builder/${id}`)} showToast={showToast} />}
         {page === "admin-library" && <GameLibrary key={refreshFlag} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} onDesign={(id) => navigate(`/admin/builder/${id}`)} onOpenBuilder={() => navigate("/admin/builder")} showToast={showToast} onChanged={bump} />}
         {page === "admin-create" && <CreateGameFlow gameId={null} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
-        {page === "admin-edit" && <CreateGameFlow key={route.gameId} gameId={route.gameId} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
-        {page === "admin-results" && <TeacherResults gameId={route.gameId} onBack={goLibrary} />}
+        {page === "admin-edit" && <CreateGameFlow key={route.params.gameId} gameId={route.params.gameId} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
+        {page === "admin-results" && <TeacherResults gameId={route.params.gameId} onBack={goLibrary} />}
         {page === "admin-users" && <UserManagement user={user} showToast={showToast} />}
       </main>
     </div>
