@@ -1,0 +1,104 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+// ─── Note Card ─────────────────────────────────────────────────
+.note-card {
+  background: $paper2;
+  border: 1px solid $line;
+  border-radius: 18px;
+}
+
+// ─── Stamp Token ───────────────────────────────────────────────
+.stamp-token {
+  @include flex-center;
+  border-radius: $radius-full;
+  border: 3px dashed var(--ring, $gold);
+  background: $paper2;
+  box-shadow: $shadow-sm;
+}
+
+// ─── Marquee Panel (Admin nav) ─────────────────────────────────
+.marquee-panel {
+  background: radial-gradient(120% 140% at 10% 0%, #2A4770 0%, $ink 45%, $ink2 100%);
+  position: relative;
+}
+
+.marquee-lights {
+  height: 10px;
+  background-image: radial-gradient(circle, $gold 2.5px, transparent 2.6px);
+  background-size: 22px 10px;
+  background-position: center;
+  opacity: 0.85;
+  animation: bulb-flicker 1.6s steps(2) infinite;
+}
+
+// ─── Ticket Stub ───────────────────────────────────────────────
+.ticket-stub {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  background: $paper2;
+  border: 2px dashed rgba($ink, 0.35);
+  border-radius: 18px;
+  overflow: hidden;
+
+  &::before, &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    border-radius: $radius-full;
+    background: var(--notch-bg, $paper);
+    z-index: 2;
+  }
+  &::before { left: -13px; }
+  &::after  { right: -13px; }
+}
+
+.ticket-stub-tab {
+  flex-shrink: 0;
+  width: 64px;
+  @include flex-center;
+  font-size: 26px;
+  border-right: 2px dashed rgba($ink, 0.3);
+  background: rgba($gold, 0.16);
+}
+
+.ticket-stub-body {
+  flex: 1;
+  padding: 14px 18px;
+}
+
+// ─── Dash Rule ─────────────────────────────────────────────────
+.dash-rule       { border: none; border-top: 2px dashed rgba($ink, 0.18); }
+.dash-rule-light { border: none; border-top: 2px dashed rgba(255, 246, 231, 0.28); }
+
+// ─── Badge Status ──────────────────────────────────────────────
+.badge-status {
+  font-family: $font-mono;
+  letter-spacing: 0.02em;
+}
+
+// ─── Runtime / Answer chips ────────────────────────────────────
+.runtime-answer,
+.answer-chip {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+// ─── Mobile ────────────────────────────────────────────────────
+@media (max-width: $bp-sm) {
+  .container { padding: 16px; }
+  .game-card { margin-bottom: 12px; }
+  .wheel-container { transform: scale(0.85); margin: -20px auto; }
+  .btn-touch { min-height: 48px; min-width: 48px; }
+}
+
+// ─── Group hover (fallback for Tailwind group-hover) ───────────
+button.group:hover .group-hover--scale-110 {
+  transform: scale(1.1);
+}
