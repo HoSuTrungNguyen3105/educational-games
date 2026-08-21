@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merge & Blast</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root {
+    --paper: #FBF7EE;
+    --ink: #20283A;
+    --card: #FFFFFF;
+    --line: #E7D9BE;
+    --teal: #1B998B;
+    --orange: #E4572E;
+    --yellow: #F4B942;
+    --ticket: #E4572E;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Nunito', sans-serif;
+  }
+
+  #root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .font-display { font-family: 'Poppins', sans-serif; }
+  .font-body { font-family: 'Nunito', sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+  .bg-paper { background: var(--paper); }
+  .text-ink { color: var(--ink); }
+
+  .note-card {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 24px;
+    box-shadow: 0 4px 0 var(--line), 0 8px 24px rgba(32,40,58,0.06);
+  }
+
+  .dash-rule {
+    border-top: 2px dashed var(--line);
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .anim-pop { animation: pop 0.25s ease-out; }
+
+  @keyframes popIn {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .anim-pop-in { animation: popIn 0.3s ease-out; }
+
+  @keyframes blast {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.5; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+  .anim-blast { animation: blast 0.25s ease-in forwards; }
+
+  @keyframes slideUp {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .anim-slide-up { animation: slideUp 0.3s ease-out; }
+
+  @keyframes comboPop {
+    0% { transform: scale(0.5) translateY(0); opacity: 1; }
+    100% { transform: scale(1.3) translateY(-30px); opacity: 0; }
+  }
+  .anim-combo { animation: comboPop 0.7s ease-out forwards; }
+
+  .screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .hidden { display: none !important; }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .menu-btn {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 16px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    border: 2px solid;
+    transition: box-shadow 0.15s ease;
+    background: none;
+  }
+  .menu-btn:hover { box-shadow: 0 6px 16px rgba(32,40,58,0.12); }
+
+  .back-link {
+    margin-top: 1.5rem;
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    color: rgba(32,40,58,0.5);
+    font-family: 'Poppins', sans-serif;
+  }
+  .back-link:hover { color: var(--ink); }
+
+  header.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: white;
+    border-bottom: 1px solid rgba(32,40,58,0.1);
+    flex-wrap: wrap;
+  }
+
+  .quit-btn {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    color: var(--ticket);
+    border: 1px solid rgba(228,87,46,0.4);
+    border-radius: 16px;
+    padding: 0.5rem 1rem;
+    background: none;
+    transition: background 0.15s ease;
+  }
+  .quit-btn:hover { background: rgba(228,87,46,0.05); }
+
+  .action-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 16px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    border: 2px solid;
+    transition: box-shadow 0.15s ease;
+    background: none;
+  }
+  .action-btn:hover { box-shadow: 0 4px 12px rgba(32,40,58,0.1); }
+
+  .buttons-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .stat-block { text-align: center; }
+  .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; }
+  .stat-label { font-family: 'Nunito', sans-serif; font-size: 0.75rem; color: rgba(32,40,58,0.5); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    width: min(92vw, 420px);
+    aspect-ratio: 1;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  @media (min-width: 480px) { .grid { gap: 6px; width: min(80vw, 440px); } }
+
+  .tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.1rem, 4.5vw, 1.75rem);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.1s ease;
+    aspect-ratio: 1;
+  }
+  .tile:hover { transform: scale(1.04); }
+  .tile:active { transform: scale(0.96); }
+
+  .tile.selected {
+    border-color: var(--yellow) !important;
+    box-shadow: 0 0 0 3px var(--yellow), 0 4px 12px rgba(244,185,66,0.4);
+    z-index: 2;
+  }
+
+  .power-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    border: 2px solid var(--line);
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+  .power-btn:hover { box-shadow: 0 4px 12px rgba(32,40,58,0.12); }
+  .power-btn.active {
+    border-color: var(--orange);
+    background: var(--orange);
+    color: white;
+    box-shadow: 0 0 0 3px rgba(228,87,46,0.3);
+  }
+  .power-btn .count-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--orange);
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.625rem;
+    font-weight: 700;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+  }
+
+  .score-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .combo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 0.875rem;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var SIZE = 6;
+  var VALUES = [2, 4, 8, 16, 32];
+  var POWERUP_INTERVAL = 500;
+  var POWERUPS = ['bomb', 'row', 'col', 'shuffle'];
+  var POWERUP_EMOJI = { bomb: '\uD83D\uDCA3', row: '\u2194\uFE0F', col: '\u2195\uFE0F', shuffle: '\uD83D\uDD00' };
+  var POWERUP_LABEL = { bomb: 'Bom', row: 'Hàng', col: 'C\u1ED9t', shuffle: 'X\u1EAFp l\u1EA1i' };
+
+  var TILE_COLORS = {
+    2:    { bg: '#E8F5F3', text: '#1B998B', border: '#1B998B' },
+    4:    { bg: '#FFF3E0', text: '#E4572E', border: '#E4572E' },
+    8:    { bg: '#FFF8E1', text: '#C8940A', border: '#F4B942' },
+    16:   { bg: '#F3E5F5', text: '#7B1FA2', border: '#BA68C8' },
+    32:   { bg: '#E3F2FD', text: '#1565C0', border: '#42A5F5' },
+    64:   { bg: '#E8F5E9', text: '#2E7D32', border: '#66BB6A' },
+    128:  { bg: '#FCE4EC', text: '#C62828', border: '#EF5350' },
+    256:  { bg: '#FBE9E7', text: '#BF360C', border: '#FF7043' },
+    512:  { bg: '#E0F2F1', text: '#00695C', border: '#26A69A' },
+    1024: { bg: '#FFF3E0', text: '#E65100', border: '#FF9800' },
+    2048: { bg: '#FFF9C4', text: '#F57F17', border: '#FFD54F' }
+  };
+  function getTileColor(v) { return TILE_COLORS[v] || { bg: '#ECEFF1', text: '#20283A', border: '#B0BEC5' }; }
+
+  var root = document.getElementById('root');
+  var startTime = 0;
+  var timerInterval = null;
+  var bestScore = parseInt(localStorage.getItem('merge-blast-best') || '0', 10);
+
+  var state = {
+    screen: 'start',
+    board: [],
+    score: 0,
+    combo: 0,
+    gameOver: false,
+    powerups: { bomb: 0, row: 0, col: 0, shuffle: 0 },
+    activePower: null,
+    lastMilestone: 0,
+    timeUsed: 0
+  };
+
+  function randItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function emptyBoard() {
+    var b = [];
+    for (var i = 0; i < SIZE; i++) {
+      b[i] = [];
+      for (var j = 0; j < SIZE; j++) b[i][j] = 0;
+    }
+    return b;
+  }
+
+  function spawnTile(board) {
+    var empty = [];
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (board[r][c] === 0) empty.push([r, c]);
+    if (empty.length === 0) return false;
+    var cell = randItem(empty);
+    board[cell[0]][cell[1]] = randItem(VALUES);
+    return true;
+  }
+
+  function initBoard() {
+    state.board = emptyBoard();
+    for (var i = 0; i < 12; i++) spawnTile(state.board);
+  }
+
+  function cloneBoard(b) {
+    return b.map(function(row) { return row.slice(); });
+  }
+
+  function dirs() { return [[0,1],[0,-1],[1,0],[-1,0]]; }
+
+  function findGroup(board, r0, c0) {
+    var val = board[r0][c0];
+    if (val === 0) return [];
+    var visited = {};
+    var queue = [[r0, c0]];
+    var key = r0 + ',' + c0;
+    visited[key] = true;
+    var group = [[r0, c0]];
+    while (queue.length) {
+      var cur = queue.shift();
+      var cr = cur[0], cc = cur[1];
+      for (var d = 0; d < dirs().length; d++) {
+        var nr = cr + dirs()[d][0], nc = cc + dirs()[d][1];
+        var nk = nr + ',' + nc;
+        if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && !visited[nk] && board[nr][nc] === val) {
+          visited[nk] = true;
+          queue.push([nr, nc]);
+          group.push([nr, nc]);
+        }
+      }
+    }
+    return group;
+  }
+
+  function hasValidGroup(board) {
+    var visited = {};
+    for (var r = 0; r < SIZE; r++) {
+      for (var c = 0; c < SIZE; c++) {
+        if (board[r][c] === 0) continue;
+        var g = findGroup(board, r, c);
+        if (g.length >= 2) return true;
+      }
+    }
+    return false;
+  }
+
+  function centerOfGroup(group) {
+    var sumR = 0, sumC = 0;
+    for (var i = 0; i < group.length; i++) { sumR += group[i][0]; sumC += group[i][1]; }
+    return [Math.round(sumR / group.length), Math.round(sumC / group.length)];
+  }
+
+  function blastGroup(board, group) {
+    var val = board[group[0][0]][group[0][1]];
+    var center = centerOfGroup(group);
+    var newVal = val * 2;
+    var cellsCleared = group.length;
+    for (var i = 0; i < group.length; i++) {
+      board[group[i][0]][group[i][1]] = 0;
+    }
+    if (newVal <= 2048) board[center[0]][center[1]] = newVal;
+    else board[center[0]][center[1]] = 2048;
+    return { newVal: newVal, center: center, cellsCleared: cellsCleared };
+  }
+
+  function checkPowerups(score) {
+    var milestone = Math.floor(score / POWERUP_INTERVAL);
+    if (milestone > state.lastMilestone) {
+      var earned = milestone - state.lastMilestone;
+      for (var i = 0; i < earned; i++) {
+        var type = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
+        state.powerups[type]++;
+      }
+      state.lastMilestone = milestone;
+    }
+  }
+
+  function applyBomb(r, c) {
+    var board = state.board;
+    var destroyed = [];
+    for (var dr = -1; dr <= 1; dr++) {
+      for (var dc = -1; dc <= 1; dc++) {
+        var nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] !== 0) {
+          destroyed.push({ r: nr, c: nc, val: board[nr][nc] });
+          board[nr][nc] = 0;
+        }
+      }
+    }
+    return destroyed;
+  }
+
+  function applyRow(r) {
+    var board = state.board;
+    var destroyed = [];
+    for (var c = 0; c < SIZE; c++) {
+      if (board[r][c] !== 0) {
+        destroyed.push({ r: r, c: c, val: board[r][c] });
+        board[r][c] = 0;
+      }
+    }
+    return destroyed;
+  }
+
+  function applyCol(c) {
+    var board = state.board;
+    var destroyed = [];
+    for (var r = 0; r < SIZE; r++) {
+      if (board[r][c] !== 0) {
+        destroyed.push({ r: r, c: c, val: board[r][c] });
+        board[r][c] = 0;
+      }
+    }
+    return destroyed;
+  }
+
+  function shuffleBoard() {
+    var vals = [];
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (state.board[r][c] !== 0) vals.push(state.board[r][c]);
+    for (var i = vals.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = vals[i]; vals[i] = vals[j]; vals[j] = tmp;
+    }
+    var idx = 0;
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (state.board[r][c] !== 0) { state.board[r][c] = vals[idx++]; }
+  }
+
+  function fillEmptyCells() {
+    var count = 0;
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (state.board[r][c] === 0) count++;
+    var toSpawn = Math.min(count, 3);
+    for (var i = 0; i < toSpawn; i++) spawnTile(state.board);
+  }
+
+  function checkGameOver() {
+    return !hasValidGroup(state.board);
+  }
+
+  function startGame() {
+    state.screen = 'playing';
+    state.score = 0;
+    state.combo = 0;
+    state.gameOver = false;
+    state.powerups = { bomb: 0, row: 0, col: 0, shuffle: 0 };
+    state.activePower = null;
+    state.lastMilestone = 0;
+    startTime = Date.now();
+    state.timeUsed = 0;
+    initBoard();
+    if (!hasValidGroup(state.board)) {
+      initBoard();
+    }
+    render();
+    startTimer();
+  }
+
+  function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(function() {
+      if (state.screen === 'playing' && !state.gameOver) {
+        state.timeUsed = Math.floor((Date.now() - startTime) / 1000);
+        var el = document.getElementById('timer-display');
+        if (el) el.textContent = formatTime(state.timeUsed);
+      }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  function formatTime(s) {
+    var m = Math.floor(s / 60);
+    var sec = s % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec;
+  }
+
+  function endGame() {
+    state.gameOver = true;
+    state.screen = 'gameover';
+    state.timeUsed = Math.floor((Date.now() - startTime) / 1000);
+    stopTimer();
+    if (state.score > bestScore) {
+      bestScore = state.score;
+      localStorage.setItem('merge-blast-best', String(bestScore));
+    }
+    try {
+      window.parent.postMessage({ type: 'game-over', data: { score: state.score, timeUsed: state.timeUsed } }, '*');
+    } catch(e) {}
+    render();
+  }
+
+  function handleTileClick(r, c) {
+    if (state.gameOver || state.screen !== 'playing') return;
+    if (state.board[r][c] === 0) return;
+
+    if (state.activePower) {
+      var destroyed = [];
+      switch (state.activePower) {
+        case 'bomb':
+          state.powerups.bomb--;
+          destroyed = applyBomb(r, c);
+          break;
+        case 'row':
+          state.powerups.row--;
+          destroyed = applyRow(r);
+          break;
+        case 'col':
+          state.powerups.col--;
+          destroyed = applyCol(c);
+          break;
+      }
+      state.activePower = null;
+      var powerScore = 0;
+      for (var i = 0; i < destroyed.length; i++) powerScore += destroyed[i].val;
+      if (powerScore > 0) {
+        state.score += powerScore;
+        state.combo = 0;
+        checkPowerups(state.score);
+      }
+      fillEmptyCells();
+      if (checkGameOver()) {
+        endGame();
+      } else {
+        render();
+      }
+      return;
+    }
+
+    var group = findGroup(state.board, r, c);
+    if (group.length < 2) return;
+
+    var result = blastGroup(state.board, group);
+    var points = result.cellsCleared * result.newVal / 2;
+    state.combo++;
+    points *= state.combo;
+    state.score += points;
+    checkPowerups(state.score);
+    fillEmptyCells();
+
+    if (checkGameOver()) {
+      render();
+      setTimeout(function() { endGame(); }, 500);
+    } else {
+      render();
+    }
+  }
+
+  function handlePowerup(type) {
+    if (state.gameOver || state.screen !== 'playing') return;
+    if (state.powerups[type] <= 0) return;
+    if (type === 'shuffle') {
+      state.powerups.shuffle--;
+      shuffleBoard();
+      state.combo = 0;
+      render();
+      return;
+    }
+    if (state.activePower === type) {
+      state.activePower = null;
+      render();
+      return;
+    }
+    state.activePower = type;
+    render();
+  }
+
+  function quitGame() {
+    stopTimer();
+    try {
+      window.parent.postMessage({ type: 'quit' }, '*');
+    } catch(e) {}
+    state.screen = 'start';
+    render();
+  }
+
+  // ---------- Rendering ----------
+
+  function render() {
+    switch (state.screen) {
+      case 'start': renderStart(); break;
+      case 'playing': renderPlaying(); break;
+      case 'gameover': renderGameOver(); break;
+    }
+  }
+
+  function renderStart() {
+    root.innerHTML = '<div class="screen bg-paper">' +
+      '<div class="anim-pop note-card" style="padding:2.5rem; max-width:28rem; width:100%; text-align:center;">' +
+        '<div style="font-size:3.75rem; margin-bottom:1rem;">\uD83D\uDCA5\uD83E\uDDF1</div>' +
+        '<h1 class="font-display" style="font-size:1.875rem; margin:0 0 0.5rem;">' +
+          '<span style="color:#1B998B">MERGE</span> &amp; <span style="color:#E4572E">BLAST</span>' +
+        '</h1>' +
+        '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:2rem;">N\u1ED1m nh\u1EEFng \u0111\u1ED3ng lo\u1EA1i, n\u1ED9 b\u1ECFng, t\u00EDch l\u0169y \u0111i\u1EC3m!</p>' +
+        '<div style="display:flex; flex-direction:column; gap:0.75rem;">' +
+          '<button id="btn-play" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">\u25B6 Ch\u01A1i Ngay</button>' +
+        '</div>' +
+        '<div class="dash-rule" style="margin-top:2rem; padding-top:1.25rem;">' +
+          '<p class="font-display" style="font-size:0.875rem; color:rgba(32,40,58,0.5); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">\u0110i\u1EC3m cao nh\u1EA5t</p>' +
+          '<div class="stat-block"><div class="stat-num" style="color:#F4B942">' + bestScore + '</div><div class="stat-label">Best Score</div></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+    document.getElementById('btn-play').onclick = startGame;
+  }
+
+  function renderPlaying() {
+    var gridHtml = '';
+    for (var r = 0; r < SIZE; r++) {
+      for (var c = 0; c < SIZE; c++) {
+        var val = state.board[r][c];
+        var color = getTileColor(val);
+        var isSelected = state.activePower && val !== 0;
+        var classes = 'tile font-display' + (isSelected ? ' selected' : '');
+        var dataAttr = 'data-r="' + r + '" data-c="' + c + '"';
+        if (val === 0) {
+          gridHtml += '<div class="tile" style="background:#F5F0E5; border:2px dashed rgba(32,40,58,0.1);"></div>';
+        } else {
+          gridHtml += '<div class="' + classes + '" ' + dataAttr +
+            ' style="background:' + color.bg + '; color:' + color.text + '; border:2px solid ' + color.border + '22;">' +
+            '<span class="anim-pop-in">' + val + '</span></div>';
+        }
+      }
+    }
+
+    var comboHtml = '';
+    if (state.combo > 1) {
+      comboHtml = '<div class="combo-badge anim-pop" style="background:#F4B94220; color:#C8940A;">Combo x' + state.combo + ' \u26A1</div>';
+    }
+
+    var powerBtnsHtml = '';
+    var types = ['bomb', 'row', 'col', 'shuffle'];
+    for (var i = 0; i < types.length; i++) {
+      var t = types[i];
+      var cnt = state.powerups[t];
+      var isActive = state.activePower === t;
+      var btnClass = 'power-btn' + (isActive ? ' active' : '');
+      var disabledAttr = cnt <= 0 ? ' style="opacity:0.4; pointer-events:none;"' : '';
+      powerBtnsHtml += '<button class="' + btnClass + '" data-power="' + t + '" title="' + POWERUP_LABEL[t] + '"' + disabledAttr + '>' +
+        POWERUP_EMOJI[t] +
+        (cnt > 0 ? '<span class="count-badge">' + cnt + '</span>' : '') +
+        '</button>';
+    }
+
+    var modeLabel = state.activePower ? '\uD83C\uDFAF ' + POWERUP_LABEL[state.activePower] : '\uD83E\uDDE9 Power-ups';
+
+    root.innerHTML =
+      '<div class="bg-paper" style="flex:1; display:flex; flex-direction:column;">' +
+        '<header class="app-header">' +
+          '<div style="display:flex; align-items:center; gap:0.75rem;">' +
+            '<span style="font-size:1.875rem;">\uD83D\uDCA5\uD83E\uDDF1</span>' +
+            '<h1 class="font-display" style="font-size:1.25rem; color:#1B998B; margin:0;">MERGE &amp; BLAST</h1>' +
+          '</div>' +
+          '<div class="font-body" style="display:flex; align-items:center; gap:1.25rem; font-size:0.875rem; color:rgba(32,40,58,0.7); flex-wrap:wrap;">' +
+            '<span class="font-mono" id="timer-display">' + formatTime(state.timeUsed) + '</span>' +
+          '</div>' +
+          '<button id="btn-quit" class="quit-btn">Tho\u00E1t</button>' +
+        '</header>' +
+
+        '<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1rem 1rem; gap:1rem;">' +
+
+          '<div style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap; justify-content:center;">' +
+            '<div style="text-align:center;">' +
+              '<div class="font-body" style="font-size:0.75rem; color:rgba(32,40,58,0.5); text-transform:uppercase; letter-spacing:0.05em;">\u0110I\u1EC2M</div>' +
+              '<div class="score-display font-mono" style="color:#E4572E;">' + state.score + '</div>' +
+            '</div>' +
+            comboHtml +
+            '<div style="text-align:center;">' +
+              '<div class="font-body" style="font-size:0.75rem; color:rgba(32,40,58,0.5); text-transform:uppercase; letter-spacing:0.05em;">BEST</div>' +
+              '<div class="font-mono" style="font-size:1.25rem; font-weight:700; color:#F4B942;">' + bestScore + '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="note-card" style="padding:0.75rem;">' +
+            '<div class="grid" id="game-grid">' + gridHtml + '</div>' +
+          '</div>' +
+
+          '<div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; justify-content:center;">' +
+            '<span class="font-body" style="font-size:0.75rem; color:rgba(32,40,58,0.5);">' + modeLabel + '</span>' +
+          '</div>' +
+          '<div class="buttons-row">' + powerBtnsHtml + '</div>' +
+
+          '<div class="buttons-row" style="margin-top:0.5rem;">' +
+            '<button id="btn-restart" class="action-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B08;">\uD83D\uDD04 Ch\u01A1i L\u1EA1i</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    var tiles = document.querySelectorAll('.tile[data-r]');
+    for (var j = 0; j < tiles.length; j++) {
+      (function(tile) {
+        tile.addEventListener('click', function() {
+          handleTileClick(parseInt(tile.getAttribute('data-r')), parseInt(tile.getAttribute('data-c')));
+        });
+      })(tiles[j]);
+    }
+
+    var pwrBtns = document.querySelectorAll('.power-btn[data-power]');
+    for (var k = 0; k < pwrBtns.length; k++) {
+      (function(btn) {
+        btn.addEventListener('click', function() {
+          handlePowerup(btn.getAttribute('data-power'));
+        });
+      })(pwrBtns[k]);
+    }
+
+    document.getElementById('btn-quit').onclick = quitGame;
+    document.getElementById('btn-restart').onclick = function() { startTimer(); startGame(); };
+  }
+
+  function renderGameOver() {
+    var mins = Math.floor(state.timeUsed / 60);
+    var secs = state.timeUsed % 60;
+    var timeStr = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+    root.innerHTML = '<div class="screen bg-paper">' +
+      '<div class="anim-pop note-card" style="padding:2.5rem; max-width:28rem; width:100%; text-align:center;">' +
+        '<div style="font-size:3.75rem; margin-bottom:1rem;">\uD83C\uDF1F</div>' +
+        '<h2 class="font-display" style="font-size:1.5rem; margin:0 0 0.5rem; color:#E4572E;">GAME OVER</h2>' +
+        '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:1.5rem;">Kh\u00F4ng c\u00F3 nh\u00F3m n\u00E0o th\u00EDch h\u1EE3p n\u1EEFa!</p>' +
+
+        '<div class="dash-rule" style="padding-top:1.25rem; margin-bottom:1.25rem;">' +
+          '<div style="display:flex; justify-content:center; gap:2rem;">' +
+            '<div class="stat-block"><div class="stat-num" style="color:#E4572E;">' + state.score + '</div><div class="stat-label">\u0110i\u1EC3m</div></div>' +
+            '<div class="stat-block"><div class="stat-num" style="color:#F4B942;">' + bestScore + '</div><div class="stat-label">Best</div></div>' +
+            '<div class="stat-block"><div class="stat-num" style="color:#1B998B;">' + timeStr + '</div><div class="stat-label">Th\u1EDDi gian</div></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="display:flex; flex-direction:column; gap:0.75rem;">' +
+          '<button id="btn-retry" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">\uD83D\uDD04 Ch\u01A1i L\u1EA1i</button>' +
+          '<button id="btn-home" class="menu-btn font-display" style="border-color:rgba(32,40,58,0.2); color:rgba(32,40,58,0.5); background:rgba(32,40,58,0.03);">\uD83C\uDFE0 Trang ch\u1EE7</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+    document.getElementById('btn-retry').onclick = startGame;
+    document.getElementById('btn-home').onclick = function() { state.screen = 'start'; render(); };
+  }
+
+  // ---------- PostMessage listener ----------
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'init') {
+      startGame();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

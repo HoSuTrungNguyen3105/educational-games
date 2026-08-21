@@ -1,6 +1,7 @@
 [
   {
     "id": "game-001",
+    "slug": "on-toan-lop-3",
     "title": "Ôn tập Toán lớp 3",
     "description": "Trò chơi ôn tập phép cộng và phép trừ",
     "subject": "Toán",
@@ -16,6 +17,7 @@
   },
   {
     "id": "game-002",
+    "slug": "kham-pha-vu-tru",
     "title": "Khám phá vũ trụ",
     "description": "Cùng khám phá những kiến thức thú vị về vũ trụ",
     "subject": "Khoa học",
@@ -31,6 +33,7 @@
   },
   {
     "id": "game-003",
+    "slug": "on-tap-kien-thuc-tong-hop",
     "title": "Ôn tập kiến thức tổng hợp",
     "description": "Trò chơi kiểm tra nhanh kiến thức tổng hợp",
     "subject": "Tổng hợp",
@@ -46,6 +49,7 @@
   },
   {
     "id": "game-004",
+    "slug": "tu-vung-tieng-anh-gia-dinh",
     "title": "Từ vựng tiếng Anh: Gia đình",
     "description": "Sắp xếp chữ cái để ôn từ vựng chủ đề gia đình",
     "subject": "Tiếng Anh",
@@ -61,6 +65,7 @@
   },
   {
     "id": "game-005",
+    "slug": "trung-thu-vui-ve",
     "title": "Trung Thu Vui Vẻ",
     "description": "Rước đèn ôn tập kiến thức nhân dịp Tết Trung Thu",
     "subject": "Tổng hợp",
@@ -76,6 +81,7 @@
   },
   {
     "id": "game-006",
+    "slug": "dia-ly-viet-nam",
     "title": "Địa lý Việt Nam",
     "description": "Giải đố mở khóa bản đồ các vùng miền",
     "subject": "Địa lý",
@@ -91,6 +97,7 @@
   },
   {
     "id": "game-007",
+    "slug": "bang-chu-cai-tieng-viet",
     "title": "Bảng chữ cái tiếng Việt",
     "description": "Lật thẻ ghi nhớ để ôn bảng chữ cái",
     "subject": "Tiếng Việt",
@@ -106,6 +113,7 @@
   },
   {
     "id": "game-008",
+    "slug": "vong-quay-kien-thuc-lop-4",
     "title": "Vòng quay kiến thức lớp 4",
     "description": "Quay vòng để nhận câu hỏi ôn tập ngẫu nhiên",
     "subject": "Tổng hợp",
@@ -121,6 +129,7 @@
   },
   {
     "id": "game-009",
+    "slug": "luat-giao-thong-an-toan",
     "title": "Luật giao thông an toàn",
     "description": "Ném phi tiêu vào đáp án đúng về an toàn giao thông",
     "subject": "Kỹ năng sống",
@@ -136,6 +145,7 @@
   },
   {
     "id": "game-010",
+    "slug": "dong-vat-hoang-da",
     "title": "Động vật hoang dã",
     "description": "Thổi bóng bay tri thức về thế giới động vật",
     "subject": "Khoa học",
@@ -151,6 +161,7 @@
   },
   {
     "id": "game-011",
+    "slug": "dua-thuyen-lich-su",
     "title": "Đua thuyền: Lịch sử Việt Nam",
     "description": "Cả đội cùng chèo thuyền qua các mốc lịch sử",
     "subject": "Lịch sử",
@@ -166,6 +177,7 @@
   },
   {
     "id": "game-012",
+    "slug": "phan-loai-rac-thai",
     "title": "Phân loại rác thải",
     "description": "Sắp xếp rác đúng nhóm tái chế, hữu cơ, vô cơ",
     "subject": "Khoa học",
@@ -181,6 +193,7 @@
   },
   {
     "id": "game-013",
+    "slug": "dai-phieu-luu-toan-hoc",
     "title": "Đại Phiêu Lưu Toán Học",
     "description": "Chạy nhảy qua từng chặng, trả lời đúng để vượt chướng ngại vật và gom xu",
     "subject": "Toán",
@@ -196,6 +209,7 @@
   },
   {
     "id": "game-014",
+    "slug": "ham-nguc-kien-thuc",
     "title": "Hầm Ngục Kiến Thức",
     "description": "Đánh bại quái vật bằng câu trả lời đúng để phiêu lưu qua hầm ngục",
     "subject": "Tổng hợp",
@@ -211,6 +225,7 @@
   },
   {
     "id": "game-015",
+    "slug": "ninja-vuot-ai-tu-vung",
     "title": "Ninja Vượt Ải Từ Vựng",
     "description": "Bật nhảy thật nhanh qua chướng ngại vật bằng câu trả lời đúng",
     "subject": "Tiếng Anh",

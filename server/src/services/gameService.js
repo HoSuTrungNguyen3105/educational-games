@@ -44,6 +44,11 @@ export async function getByCode(code) {
 
 export async function create(data) {
   const now = new Date().toISOString();
+  // Validate slug uniqueness
+  if (data.slug) {
+    const existing = await getCollection(COLLECTION).findOne({ slug: data.slug });
+    if (existing) throw new Error(`Slug "${data.slug}" đã tồn tại`);
+  }
   const game = {
     id: uid("game"),
     status: "draft",
@@ -60,6 +65,11 @@ export async function create(data) {
 
 export async function update(id, data) {
   const { _id, ...rest } = data;
+  // Validate slug uniqueness if changing slug
+  if (rest.slug) {
+    const existing = await getCollection(COLLECTION).findOne({ slug: rest.slug, id: { $ne: id } });
+    if (existing) throw new Error(`Slug "${rest.slug}" đã tồn tại`);
+  }
   const updateDoc = { $set: { ...rest, updatedAt: new Date().toISOString() } };
   const result = await getCollection(COLLECTION).findOneAndUpdate(
     { id },
@@ -92,6 +102,7 @@ export async function duplicate(id) {
     updatedAt: now,
   };
   delete copy._id;
+  if (copy.htmlTemplate) copy.htmlTemplate = copy.htmlTemplate;
   await getCollection(COLLECTION).insertOne(copy);
 
   const questions = await getCollection("questions").find({ gameId: src.id }).toArray();

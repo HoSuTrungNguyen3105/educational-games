@@ -73,9 +73,10 @@ export async function initDatabase() {
   const collectionDefs = {
     templates: { $jsonSchema: {
       bsonType: "object",
-      required: ["id", "name", "description", "category", "categoryLabel", "icon", "ring"],
+      required: ["id", "slug", "name", "description", "category", "categoryLabel", "icon", "ring"],
       properties: {
         id: { bsonType: "string" },
+        slug: { bsonType: "string" },
         name: { bsonType: "string" },
         description: { bsonType: "string" },
         category: { bsonType: "string" },
@@ -86,9 +87,10 @@ export async function initDatabase() {
     } },
     games: { $jsonSchema: {
       bsonType: "object",
-      required: ["id", "title", "description", "subject", "topic", "language", "template", "status", "questionsCount", "playersCount", "code"],
+      required: ["id", "slug", "title", "description", "subject", "topic", "language", "template", "status", "questionsCount", "playersCount", "code"],
       properties: {
         id: { bsonType: "string" },
+        slug: { bsonType: "string" },
         title: { bsonType: "string" },
         description: { bsonType: "string" },
         subject: { bsonType: "string" },
@@ -96,13 +98,7 @@ export async function initDatabase() {
         language: { bsonType: "string" },
         template: { bsonType: "string" },
         theme: { bsonType: "string" },
-        design: {
-          bsonType: "object",
-          properties: {
-            canvas: { bsonType: "object" },
-            elements: { bsonType: "array" },
-          },
-        },
+        htmlTemplate: { bsonType: "string" },
         status: { enum: ["published", "draft"] },
         questionsCount: { bsonType: "int" },
         playersCount: { bsonType: "int" },
@@ -178,9 +174,12 @@ export async function initDatabase() {
   const indexDefs = [
     ["games", { code: 1 }, { unique: true }],
     ["games", { id: 1 }, { unique: true }],
+    ["games", { slug: 1 }, { unique: true }],
     ["games", { template: 1 }],
     ["games", { status: 1 }],
     ["games", { updatedAt: -1 }],
+    ["templates", { slug: 1 }, { unique: true }],
+    ["templates", { id: 1 }, { unique: true }],
     ["questions", { id: 1 }, { unique: true }],
     ["questions", { gameId: 1 }],
     ["questions", { gameId: 1, id: 1 }, { unique: true }],

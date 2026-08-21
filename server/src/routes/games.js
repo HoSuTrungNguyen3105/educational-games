@@ -56,6 +56,31 @@ router.put("/:id", authenticate, requireRoles("teacher", "admin"), async (req, r
   }
 });
 
+// PUT /api/games/:id/template — lưu htmlTemplate cho game
+router.put("/:id/template", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const { htmlTemplate } = req.body;
+    if (typeof htmlTemplate !== "string") {
+      return res.status(400).json({ message: "htmlTemplate phải là string" });
+    }
+    const game = await gameService.update(req.params.id, { htmlTemplate });
+    res.json(game);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/games/:id/template — lấy htmlTemplate của game
+router.get("/:id/template", async (req, res, next) => {
+  try {
+    const game = await gameService.get(req.params.id);
+    if (!game) return res.status(404).json({ message: "Không tìm thấy trò chơi" });
+    res.json({ htmlTemplate: game.htmlTemplate || null });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // POST /api/games/:id/duplicate
 router.post("/:id/duplicate", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {

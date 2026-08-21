@@ -1,6 +1,7 @@
 [
   {
     "id": "snail-race",
+    "slug": "snail-race",
     "name": "Đường Đua Ốc Sên",
     "description": "Trả lời đúng để ốc sên tiến về đích",
     "category": "quiz",
@@ -10,6 +11,7 @@
   },
   {
     "id": "whack-a-mole",
+    "slug": "whack-a-mole",
     "name": "Đập Chuột Nhanh Tay",
     "description": "Phản xạ nhanh trước khi hết giờ",
     "category": "reflex",
@@ -19,6 +21,7 @@
   },
   {
     "id": "space-ship",
+    "slug": "space-ship",
     "name": "Phi Thuyền Vũ Trụ",
     "description": "Mỗi câu đúng đẩy phi thuyền bay xa hơn",
     "category": "science",
@@ -28,6 +31,7 @@
   },
   {
     "id": "sailing-boat",
+    "slug": "sailing-boat",
     "name": "Thuyền Buồm Ra Khơi",
     "description": "Cả đội cùng chèo thuyền về đích",
     "category": "group",
@@ -37,6 +41,7 @@
   },
   {
     "id": "moon-lantern",
+    "slug": "moon-lantern",
     "name": "Rước Đèn Trung Thu",
     "description": "Trò chơi ôn tập theo mùa lễ hội",
     "category": "seasonal",
@@ -46,6 +51,7 @@
   },
   {
     "id": "memory-match",
+    "slug": "memory-match",
     "name": "Lật Thẻ Trí Nhớ",
     "description": "Ghép cặp thẻ giống nhau trong thời gian ngắn nhất",
     "category": "memory",
@@ -55,6 +61,7 @@
   },
   {
     "id": "lucky-wheel",
+    "slug": "lucky-wheel",
     "name": "Vòng Quay May Mắn",
     "description": "Quay vòng để nhận câu hỏi và phần thưởng ngẫu nhiên",
     "category": "quiz",
@@ -64,6 +71,7 @@
   },
   {
     "id": "treasure-map",
+    "slug": "treasure-map",
     "name": "Bản Đồ Kho Báu",
     "description": "Giải đố để mở khóa từng chặng trên bản đồ",
     "category": "logic",
@@ -73,6 +81,7 @@
   },
   {
     "id": "dart-throw",
+    "slug": "dart-throw",
     "name": "Ném Phi Tiêu Trúng Đích",
     "description": "Chọn đáp án đúng để ném trúng tâm bia",
     "category": "reflex",
@@ -82,6 +91,7 @@
   },
   {
     "id": "word-scramble",
+    "slug": "word-scramble",
     "name": "Xếp Chữ Kỳ Diệu",
     "description": "Sắp xếp chữ cái thành từ đúng nghĩa",
     "category": "language",
@@ -91,6 +101,7 @@
   },
   {
     "id": "balloon-pop",
+    "slug": "balloon-pop",
     "name": "Bóng Bay Tri Thức",
     "description": "Chọn đáp án đúng để thổi bóng bay lên trời",
     "category": "reflex",
@@ -100,6 +111,7 @@
   },
   {
     "id": "sorting-game",
+    "slug": "sorting-game",
     "name": "Phân Loại Đúng Chỗ",
     "description": "Sắp xếp kiến thức vào đúng nhóm",
     "category": "logic",
@@ -109,6 +121,7 @@
   },
   {
     "id": "hero-adventure",
+    "slug": "hero-adventure",
     "name": "Anh Hùng Phiêu Lưu",
     "description": "Chạy, nhảy qua từng chặng và thu thập xu trên hành trình phiêu lưu",
     "category": "adventure",
@@ -118,6 +131,7 @@
   },
   {
     "id": "dungeon-quest",
+    "slug": "dungeon-quest",
     "name": "Hầm Ngục Bí Ẩn",
     "description": "Trả lời đúng để hạ gục quái vật và phiêu lưu qua từng hầm ngục",
     "category": "adventure",
@@ -127,6 +141,7 @@
   },
   {
     "id": "ninja-dash",
+    "slug": "ninja-dash",
     "name": "Ninja Vượt Chướng Ngại",
     "description": "Bật nhảy thật nhanh qua chướng ngại vật bằng câu trả lời đúng",
     "category": "reflex",
@@ -135,12 +150,53 @@
     "ring": "#1D2E4A"
   },
   {
-    "id": "custom",
-    "name": "Tự Thiết Kế",
-    "description": "Dùng Game Builder kéo-thả để thiết kế giao diện trò chơi của riêng bạn",
-    "category": "design",
-    "categoryLabel": "Tự thiết kế",
-    "icon": "🎨",
-    "ring": "#FF6F91"
+    "id": "block-master",
+    "slug": "block-master",
+    "name": "Block Master - Super Puzzle",
+    "description": "Xếp block vào bảng, lấp đầy hàng/cột để nhận điểm",
+    "category": "puzzle",
+    "categoryLabel": "Puzzle",
+    "icon": "🧩",
+    "ring": "#8B6FF1"
+  },
+  {
+    "id": "find-number",
+    "slug": "find-number",
+    "name": "Find The Number",
+    "description": "Tìm con số被 yêu cầu trong bảng số càng nhanh càng tốt",
+    "category": "reflex",
+    "categoryLabel": "Phản xạ",
+    "icon": "🔢",
+    "ring": "#1B998B"
+  },
+  {
+    "id": "merge-blast",
+    "slug": "merge-blast",
+    "name": "Merge and Blast",
+    "description": "Chọn nhóm ô giống nhau để blast và merge tạo ô mới",
+    "category": "puzzle",
+    "categoryLabel": "Puzzle",
+    "icon": "💥",
+    "ring": "#E4572E"
+  },
+  {
+    "id": "tic-tac-toe",
+    "slug": "tic-tac-toe",
+    "name": "Tic-Tac-Toe",
+    "description": "Game X/O cổ điển với chế độ chơi với máy hoặc hai người",
+    "category": "strategy",
+    "categoryLabel": "Chiến thuật",
+    "icon": "❌⭕",
+    "ring": "#1B998B"
+  },
+  {
+    "id": "maths-racing",
+    "slug": "maths-racing",
+    "name": "Maths Racing",
+    "description": "Chạy đua=endless runner với thử thách toán học",
+    "category": "arcade",
+    "categoryLabel": "Arcade",
+    "icon": "🏃",
+    "ring": "#F4B942"
   }
 ]

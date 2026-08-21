@@ -121,6 +121,12 @@ export const gameService = {
   async duplicate(id) {
     return apiFetch(`/games/${id}/duplicate`, { method: "POST" });
   },
+  async getTemplate(id) {
+    return apiFetch(`/games/${id}/template`);
+  },
+  async saveTemplate(id, htmlTemplate) {
+    return apiFetch(`/games/${id}/template`, { method: "PUT", body: { htmlTemplate } });
+  },
 };
 
 export const questionService = {

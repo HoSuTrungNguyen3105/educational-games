@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Find The Number</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root {
+    --paper: #FBF7EE;
+    --ink: #20283A;
+    --card: #FFFFFF;
+    --line: #E7D9BE;
+    --teal: #1B998B;
+    --orange: #E4572E;
+    --yellow: #F4B942;
+    --ticket: #E4572E;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Nunito', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .font-display { font-family: 'Poppins', sans-serif; }
+  .font-body { font-family: 'Nunito', sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+  .bg-paper { background: var(--paper); }
+
+  .note-card {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 24px;
+    box-shadow: 0 4px 0 var(--line), 0 8px 24px rgba(32,40,58,0.06);
+  }
+
+  .dash-rule { border-top: 2px dashed var(--line); }
+
+  @keyframes pop {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .anim-pop { animation: pop 0.25s ease-out; }
+
+  @keyframes flash-correct {
+    0% { background: #1B998B44; }
+    100% { background: transparent; }
+  }
+  .flash-correct { animation: flash-correct 0.5s ease-out; }
+
+  @keyframes flash-wrong {
+    0% { background: #E4572E44; }
+    100% { background: transparent; }
+  }
+  .flash-wrong { animation: flash-wrong 0.4s ease-out; }
+
+  .screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .hidden { display: none !important; }
+
+  button { font-family: inherit; cursor: pointer; -webkit-user-select: none; user-select: none; }
+
+  .menu-btn {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 16px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    border: 2px solid;
+    transition: box-shadow 0.15s ease;
+    background: none;
+  }
+  .menu-btn:hover { box-shadow: 0 6px 16px rgba(32,40,58,0.12); }
+
+  .diff-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
+    border: 2px solid;
+    text-align: left;
+    transition: box-shadow 0.15s ease;
+    background: none;
+  }
+  .diff-btn:hover { box-shadow: 0 6px 16px rgba(32,40,58,0.12); }
+
+  .back-link {
+    margin-top: 1.5rem;
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    color: rgba(32,40,58,0.5);
+    font-family: 'Poppins', sans-serif;
+  }
+  .back-link:hover { color: var(--ink); }
+
+  header.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: white;
+    border-bottom: 1px solid rgba(32,40,58,0.1);
+    flex-wrap: wrap;
+  }
+
+  .quit-btn {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    color: var(--ticket);
+    border: 1px solid rgba(228,87,46,0.4);
+    border-radius: 16px;
+    padding: 0.5rem 1rem;
+    background: none;
+    transition: background 0.15s ease;
+  }
+  .quit-btn:hover { background: rgba(228,87,46,0.05); }
+
+  .action-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 16px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    border: 2px solid;
+    transition: box-shadow 0.15s ease;
+    background: none;
+  }
+  .action-btn:hover { box-shadow: 0 4px 12px rgba(32,40,58,0.1); }
+
+  .buttons-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .stat-block { text-align: center; }
+  .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; }
+  .stat-label { font-family: 'Nunito', sans-serif; font-size: 0.75rem; color: rgba(32,40,58,0.5); }
+
+  .target-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #1B998B15, #F4B94215);
+    border: 2px solid var(--line);
+  }
+
+  .number-grid {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+    max-width: min(90vw, 480px);
+  }
+
+  .num-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border-radius: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    background: #FFFBF2;
+    border: 2px solid var(--line);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .num-cell:active {
+    transform: scale(0.94);
+    box-shadow: 0 2px 4px rgba(32,40,58,0.1);
+  }
+  .num-cell.correct {
+    background: #1B998B;
+    border-color: #1B998B;
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(27,153,139,0.3);
+  }
+  .num-cell.wrong {
+    background: #E4572E;
+    border-color: #E4572E;
+    color: white;
+    animation: shake 0.4s ease;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+  }
+
+  .timer-bar {
+    width: 100%;
+    max-width: min(90vw, 480px);
+    height: 8px;
+    border-radius: 4px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .timer-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.1s linear, background 0.3s ease;
+  }
+
+  .combo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: #F4B94220;
+    color: #E4572E;
+    border: 1px solid #F4B942;
+  }
+
+  .score-popup {
+    position: fixed;
+    pointer-events: none;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: #1B998B;
+    z-index: 100;
+    animation: score-fly 0.8s ease-out forwards;
+  }
+  .score-popup.wrong-pop {
+    color: #E4572E;
+  }
+
+  @keyframes score-fly {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+  }
+
+  @media (min-width: 640px) {
+    .number-grid { gap: 10px; max-width: 480px; }
+    .num-cell { border-radius: 16px; }
+  }
+
+  .pause-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(251,247,238,0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    backdrop-filter: blur(4px);
+  }
+  .pause-card {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 24px;
+    padding: 2.5rem;
+    text-align: center;
+    max-width: 28rem;
+    width: 90%;
+    box-shadow: 0 4px 0 var(--line), 0 8px 24px rgba(32,40,58,0.06);
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var DIFFICULTY = {
+    easy:   { cols: 4, rows: 4, maxNum: 50,  label: 'Dễ',   icon: '😊' },
+    normal: { cols: 5, rows: 5, maxNum: 99,  label: 'TB',   icon: '🤔' },
+    hard:   { cols: 6, rows: 6, maxNum: 199, label: 'Khó',  icon: '🧠' },
+  };
+
+  var BEST_KEY = 'find-number-best';
+  var state = {
+    screen: 'menu',
+    difficulty: 'easy',
+    score: 0,
+    combo: 0,
+    maxCombo: 0,
+    timer: 30,
+    maxTimer: 60,
+    target: 0,
+    numbers: [],
+    paused: false,
+    gameOver: false,
+    roundCount: 0,
+    correctCount: 0,
+    wrongCount: 0,
+    timeUsed: 0,
+  };
+
+  var timerInterval = null;
+  var roundTimeout = null;
+  var startTime = 0;
+  var playerName = '';
+
+  function getBest() {
+    try { return parseInt(localStorage.getItem(BEST_KEY), 10) || 0; } catch (e) { return 0; }
+  }
+
+  function saveBest(val) {
+    try { localStorage.setItem(BEST_KEY, String(val)); } catch (e) {}
+  }
+
+  function generateRound() {
+    var d = DIFFICULTY[state.difficulty];
+    var totalCells = d.cols * d.rows;
+    var maxNum = d.maxNum;
+    var target = Math.floor(Math.random() * maxNum) + 1;
+    var nums = [];
+    nums.push(target);
+    while (nums.length < totalCells) {
+      var n = Math.floor(Math.random() * maxNum) + 1;
+      if (nums.indexOf(n) === -1) nums.push(n);
+    }
+    for (var i = nums.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = nums[i];
+      nums[i] = nums[j];
+      nums[j] = tmp;
+    }
+    state.target = target;
+    state.numbers = nums;
+    state.roundCount++;
+  }
+
+  function startTimer() {
+    stopTimer();
+    timerInterval = setInterval(function () {
+      if (state.paused || state.gameOver) return;
+      state.timer = Math.max(0, state.timer - 0.1);
+      state.timeUsed += 0.1;
+      if (state.timer <= 0) {
+        state.timer = 0;
+        endGame();
+      }
+      renderPlayingUI();
+    }, 100);
+  }
+
+  function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  function endGame() {
+    state.gameOver = true;
+    stopTimer();
+    if (roundTimeout) { clearTimeout(roundTimeout); roundTimeout = null; }
+    var best = getBest();
+    if (state.score > best) {
+      saveBest(state.score);
+    }
+    state.screen = 'gameover';
+    render();
+    sendGameOver();
+  }
+
+  function handleNumberClick(num, idx) {
+    if (state.paused || state.gameOver) return;
+
+    if (num === state.target) {
+      state.combo++;
+      state.correctCount++;
+      if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+      var bonus = 100 + (state.combo - 1) * 25;
+      state.score += bonus;
+      state.timer = Math.min(state.maxTimer, state.timer + 2);
+      showScorePopup('+' + bonus, false);
+      var cellEl = document.querySelector('[data-idx="' + idx + '"]');
+      if (cellEl) {
+        cellEl.classList.add('correct');
+      }
+      if (roundTimeout) clearTimeout(roundTimeout);
+      roundTimeout = setTimeout(function () {
+        generateRound();
+        renderPlayingUI();
+      }, 220);
+    } else {
+      state.combo = 0;
+      state.wrongCount++;
+      state.timer = Math.max(0, state.timer - 2);
+      showScorePopup('-2s', true);
+      var cellElW = document.querySelector('[data-idx="' + idx + '"]');
+      if (cellElW) {
+        cellElW.classList.add('wrong');
+        setTimeout(function () { cellElW.classList.remove('wrong'); }, 500);
+      }
+      if (state.timer <= 0) {
+        state.timer = 0;
+        endGame();
+      }
+    }
+    renderPlayingUI();
+  }
+
+  function showScorePopup(text, isWrong) {
+    var popup = document.createElement('div');
+    popup.className = 'score-popup' + (isWrong ? ' wrong-pop' : '');
+    popup.textContent = text;
+    popup.style.left = (window.innerWidth / 2 - 30) + 'px';
+    popup.style.top = (window.innerHeight / 2 - 20) + 'px';
+    document.body.appendChild(popup);
+    setTimeout(function () { popup.remove(); }, 800);
+  }
+
+  function sendGameOver() {
+    try {
+      window.parent.postMessage({
+        type: 'game-over',
+        data: { score: state.score, timeUsed: Math.round(state.timeUsed * 10) / 10 }
+      }, '*');
+    } catch (e) {}
+  }
+
+  function sendQuit() {
+    try {
+      window.parent.postMessage({ type: 'quit' }, '*');
+    } catch (e) {}
+  }
+
+  window.addEventListener('message', function (e) {
+    if (!e.data || typeof e.data !== 'object') return;
+    if (e.data.type === 'init') {
+      playerName = (e.data.data && e.data.data.playerName) || '';
+    }
+  });
+
+  var root = document.getElementById('root');
+
+  function render() {
+    if (state.screen === 'menu') return renderMenu();
+    if (state.screen === 'difficulty') return renderDifficulty();
+    if (state.screen === 'playing') return renderPlaying();
+    if (state.screen === 'gameover') return renderGameOver();
+  }
+
+  function renderMenu() {
+    root.innerHTML =
+      '<div class="screen bg-paper">' +
+        '<div class="anim-pop note-card" style="padding:2.5rem; max-width:28rem; width:100%; text-align:center;">' +
+          '<div style="font-size:3.75rem; margin-bottom:1rem;">🔍</div>' +
+          '<h1 class="font-display" style="font-size:1.875rem; margin:0 0 0.5rem;">' +
+            '<span style="color:#1B998B">TÌM</span> <span style="color:#E4572E">SỐ</span>' +
+          '</h1>' +
+          '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:2rem;">Tìm con số đúng nhanh nhất có thể!</p>' +
+          '<div style="display:flex; flex-direction:column; gap:0.75rem;">' +
+            '<button id="btn-play" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">▶ Bắt đầu chơi</button>' +
+          '</div>' +
+          '<div class="dash-rule" style="margin-top:2rem; padding-top:1.25rem;">' +
+            '<p class="font-display" style="font-size:0.875rem; color:rgba(32,40,58,0.5); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Kỷ lục</p>' +
+            '<div style="display:flex; justify-content:center; gap:1.5rem;">' +
+              '<div class="stat-block"><div class="stat-num" style="color:#F4B942">⭐ ' + getBest() + '</div><div class="stat-label">Điểm cao nhất</div></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.getElementById('btn-play').onclick = function () {
+      state.screen = 'difficulty';
+      render();
+    };
+  }
+
+  function renderDifficulty() {
+    var diffs = [
+      { key: 'easy', label: 'Dễ', desc: '4×4 · Số 1-50', icon: '😊', color: '#1B998B' },
+      { key: 'normal', label: 'Trung bình', desc: '5×5 · Số 1-99', icon: '🤔', color: '#F4B942' },
+      { key: 'hard', label: 'Khó', desc: '6×6 · Số 1-199', icon: '🧠', color: '#E4572E' },
+    ];
+    var html = '<div class="screen bg-paper">' +
+      '<div class="anim-pop note-card" style="padding:2.5rem; max-width:28rem; width:100%; text-align:center;">' +
+        '<div style="font-size:3rem; margin-bottom:1rem;">🎯</div>' +
+        '<h2 class="font-display" style="font-size:1.5rem; margin:0 0 0.5rem;">Chọn độ khó</h2>' +
+        '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:2rem;">Độ khó càng cao, số càng nhiều!</p>' +
+        '<div style="display:flex; flex-direction:column; gap:0.75rem;">';
+    for (var i = 0; i < diffs.length; i++) {
+      var d = diffs[i];
+      html += '<button class="diff-btn" data-key="' + d.key + '" style="border-color:' + d.color + '44; background:' + d.color + '08;">' +
+        '<span style="font-size:1.875rem;">' + d.icon + '</span>' +
+        '<div><div class="font-display" style="font-size:1.125rem; color:' + d.color + ';">' + d.label + '</div>' +
+        '<div class="font-body" style="font-size:0.875rem; color:rgba(32,40,58,0.6);">' + d.desc + '</div></div></button>';
+    }
+    html += '</div><button id="btn-back" class="back-link font-display">← Quay lại</button></div></div>';
+    root.innerHTML = html;
+
+    root.querySelectorAll('.diff-btn').forEach(function (btn) {
+      btn.onclick = function () {
+        state.difficulty = btn.dataset.key;
+        startNewGame();
+      };
+    });
+    document.getElementById('btn-back').onclick = function () {
+      state.screen = 'menu';
+      render();
+    };
+  }
+
+  function startNewGame() {
+    state.screen = 'playing';
+    state.score = 0;
+    state.combo = 0;
+    state.maxCombo = 0;
+    state.timer = 30;
+    state.paused = false;
+    state.gameOver = false;
+    state.roundCount = 0;
+    state.correctCount = 0;
+    state.wrongCount = 0;
+    state.timeUsed = 0;
+    startTime = Date.now();
+    generateRound();
+    startTimer();
+    renderPlaying();
+  }
+
+  function renderPlaying() {
+    var d = DIFFICULTY[state.difficulty];
+    var timerPct = (state.timer / state.maxTimer) * 100;
+    var timerColor = state.timer > 15 ? '#1B998B' : state.timer > 5 ? '#F4B942' : '#E4572E';
+
+    var numbersHtml = '';
+    for (var i = 0; i < state.numbers.length; i++) {
+      var n = state.numbers[i];
+      var fontSize = state.numbers.length > 25 ? 'clamp(0.8rem, 2.5vw, 1.1rem)' : 'clamp(1rem, 3vw, 1.4rem)';
+      numbersHtml += '<button class="num-cell" data-idx="' + i + '" data-num="' + n + '" style="font-size:' + fontSize + ';">' + n + '</button>';
+    }
+
+    var comboHtml = state.combo > 1
+      ? '<span class="combo-badge">🔥 ×' + state.combo + '</span>'
+      : '';
+
+    root.innerHTML =
+      '<div class="bg-paper" style="flex:1; display:flex; flex-direction:column;">' +
+        '<header class="app-header">' +
+          '<div style="display:flex; align-items:center; gap:0.75rem;">' +
+            '<span style="font-size:1.875rem;">🔍</span>' +
+            '<h1 class="font-display" style="font-size:1.25rem; color:#1B998B; margin:0;">TÌM SỐ</h1>' +
+          '</div>' +
+          '<div class="font-body" style="display:flex; align-items:center; gap:1.25rem; font-size:0.875rem; color:rgba(32,40,58,0.7); flex-wrap:wrap;">' +
+            '<span class="font-mono">' + DIFFICULTY[state.difficulty].label + '</span>' +
+            '<span>⭐ ' + state.score + '</span>' +
+            '<span>🎯 ' + state.correctCount + '/' + state.roundCount + '</span>' +
+          '</div>' +
+          '<button id="btn-pause" class="quit-btn" style="color:var(--ink); border-color:rgba(32,40,58,0.2);">⏸ Tạm dừng</button>' +
+          '<button id="btn-quit" class="quit-btn">Thoát</button>' +
+        '</header>' +
+
+        '<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1rem; gap:1rem;">' +
+
+          '<div class="target-display anim-pop">' +
+            '<span class="font-body" style="font-size:1rem; color:rgba(32,40,58,0.6);">TÌM SỐ</span>' +
+            '<span class="font-display" style="font-size:2rem; font-weight:800; color:var(--ink);">' + state.target + '</span>' +
+            comboHtml +
+          '</div>' +
+
+          '<div class="timer-bar">' +
+            '<div class="timer-fill" style="width:' + timerPct + '%; background:' + timerColor + ';"></div>' +
+          '</div>' +
+          '<div class="font-mono" style="font-size:0.8rem; color:rgba(32,40,58,0.5); margin-top:-0.5rem;">' + state.timer.toFixed(1) + 's</div>' +
+
+          '<div class="number-grid" style="grid-template-columns:repeat(' + d.cols + ', 1fr);">' +
+            numbersHtml +
+          '</div>' +
+
+          '<div style="display:flex; gap:1rem; align-items:center; justify-content:center; margin-top:0.5rem;">' +
+            '<div class="stat-block"><div class="stat-num font-mono" style="color:#1B998B; font-size:1.1rem;">' + state.correctCount + '</div><div class="stat-label">Đúng</div></div>' +
+            '<div class="stat-block"><div class="stat-num font-mono" style="color:#E4572E; font-size:1.1rem;">' + state.wrongCount + '</div><div class="stat-label">Sai</div></div>' +
+            '<div class="stat-block"><div class="stat-num font-mono" style="color:#F4B942; font-size:1.1rem;">' + state.maxCombo + '</div><div class="stat-label">Combo max</div></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div id="pause-overlay" class="pause-overlay hidden">' +
+        '<div class="pause-card anim-pop">' +
+          '<div style="font-size:3rem; margin-bottom:1rem;">⏸</div>' +
+          '<h2 class="font-display" style="font-size:1.5rem; margin-bottom:0.5rem;">Tạm dừng</h2>' +
+          '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:1.5rem;">Điểm hiện tại: <strong>' + state.score + '</strong></p>' +
+          '<div style="display:flex; flex-direction:column; gap:0.75rem;">' +
+            '<button id="btn-resume" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">▶ Tiếp tục</button>' +
+            '<button id="btn-restart-pause" class="menu-btn font-display" style="border-color:#F4B942; color:#F4B942; background:#F4B94210;">🔄 Chơi lại</button>' +
+            '<button id="btn-quit-pause" class="menu-btn font-display" style="border-color:#E4572E; color:#E4572E; background:#E4572E10;">🏠 Thoát</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    root.querySelectorAll('.num-cell').forEach(function (btn) {
+      btn.onclick = function () {
+        handleNumberClick(parseInt(btn.dataset.num, 10), parseInt(btn.dataset.idx, 10));
+      };
+    });
+
+    document.getElementById('btn-pause').onclick = function () {
+      state.paused = true;
+      document.getElementById('pause-overlay').classList.remove('hidden');
+    };
+    document.getElementById('btn-quit').onclick = function () {
+      stopTimer();
+      sendQuit();
+      state.screen = 'menu';
+      render();
+    };
+    document.getElementById('btn-resume').onclick = function () {
+      state.paused = false;
+      document.getElementById('pause-overlay').classList.add('hidden');
+    };
+    document.getElementById('btn-restart-pause').onclick = function () {
+      document.getElementById('pause-overlay').classList.add('hidden');
+      startNewGame();
+    };
+    document.getElementById('btn-quit-pause').onclick = function () {
+      document.getElementById('pause-overlay').classList.add('hidden');
+      stopTimer();
+      sendQuit();
+      state.screen = 'menu';
+      render();
+    };
+  }
+
+  function renderPlayingUI() {
+    if (state.screen !== 'playing' || state.gameOver) return;
+
+    var timerPct = (state.timer / state.maxTimer) * 100;
+    var timerColor = state.timer > 15 ? '#1B998B' : state.timer > 5 ? '#F4B942' : '#E4572E';
+
+    var timerFill = document.querySelector('.timer-fill');
+    if (timerFill) {
+      timerFill.style.width = timerPct + '%';
+      timerFill.style.background = timerColor;
+    }
+
+    var timerText = root.querySelector('.font-mono');
+    if (timerText && timerText.textContent.indexOf('s') > -1) {
+      timerText.textContent = state.timer.toFixed(1) + 's';
+    }
+
+    var scoreSpan = document.querySelector('header.app-header .font-mono');
+    if (!scoreSpan) {
+      var spans = document.querySelectorAll('header.app-header span');
+      for (var i = 0; i < spans.length; i++) {
+        if (spans[i].textContent.indexOf('⭐') === 0) {
+          spans[i].textContent = '⭐ ' + state.score;
+          break;
+        }
+      }
+    }
+
+    var comboEl = root.querySelector('.combo-badge');
+    if (state.combo > 1) {
+      if (comboEl) {
+        comboEl.textContent = '🔥 ×' + state.combo;
+      }
+    } else if (comboEl) {
+      comboEl.remove();
+    }
+  }
+
+  function renderGameOver() {
+    var best = getBest();
+    var isNewBest = state.score >= best && state.score > 0;
+
+    root.innerHTML =
+      '<div class="screen bg-paper">' +
+        '<div class="anim-pop note-card" style="padding:2.5rem; max-width:28rem; width:100%; text-align:center;">' +
+          '<div style="font-size:3.75rem; margin-bottom:1rem;">⏱️</div>' +
+          '<h2 class="font-display" style="font-size:1.5rem; margin:0 0 0.25rem;">Hết giờ!</h2>' +
+          (isNewBest ? '<p style="color:#F4B942; font-weight:700; margin-bottom:0.5rem;">🏆 Kỷ lục mới!</p>' : '') +
+          '<div class="dash-rule" style="padding-top:1.25rem; margin:1rem 0;">' +
+            '<div style="display:flex; justify-content:center; gap:2rem; flex-wrap:wrap;">' +
+              '<div class="stat-block"><div class="stat-num" style="color:#1B998B;">' + state.score + '</div><div class="stat-label">Điểm</div></div>' +
+              '<div class="stat-block"><div class="stat-num" style="color:#1B998B;">' + state.correctCount + '</div><div class="stat-label">Đúng</div></div>' +
+              '<div class="stat-block"><div class="stat-num" style="color:#E4572E;">' + state.wrongCount + '</div><div class="stat-label">Sai</div></div>' +
+              '<div class="stat-block"><div class="stat-num" style="color:#F4B942;">' + state.maxCombo + '</div><div class="stat-label">Combo max</div></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="dash-rule" style="padding-top:1rem; margin-bottom:1.25rem;">' +
+            '<p class="font-body" style="font-size:0.875rem; color:rgba(32,40,58,0.5);">Thời gian chơi: ' + state.timeUsed.toFixed(1) + 's</p>' +
+          '</div>' +
+          '<div style="display:flex; flex-direction:column; gap:0.75rem;">' +
+            '<button id="btn-restart" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">🔄 Chơi lại</button>' +
+            '<button id="btn-home" class="menu-btn font-display" style="border-color:#8A7C6344; color:#8A7C63; background:#8A7C6308;">🏠 Menu</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.getElementById('btn-restart').onclick = function () {
+      startNewGame();
+    };
+    document.getElementById('btn-home').onclick = function () {
+      sendQuit();
+      state.screen = 'menu';
+      render();
+    };
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

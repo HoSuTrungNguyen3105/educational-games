@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic-Tac-Toe</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root {
+    --paper: #FBF7EE;
+    --ink: #20283A;
+    --card: #FFFFFF;
+    --line: #E7D9BE;
+    --teal: #1B998B;
+    --orange: #E4572E;
+    --yellow: #F4B942;
+    --ticket: #E4572E;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Nunito', sans-serif;
+  }
+
+  #root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .font-display { font-family: 'Poppins', sans-serif; }
+  .font-body { font-family: 'Nunito', sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+  .bg-paper { background: var(--paper); }
+  .text-ink { color: var(--ink); }
+
+  .note-card {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 24px;
+    box-shadow: 0 4px 0 var(--line), 0 8px 24px rgba(32,40,58,0.06);
+  }
+
+  .dash-rule {
+    border-top: 2px dashed var(--line);
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .anim-pop { animation: pop 0.25s ease-out; }
+
+  .screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .hidden { display: none !important; }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .menu-btn {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 16px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    border: 2px solid;
+    transition: box-shadow 0.15s ease;
+    background: none;
+  }
+  .menu-btn:hover { box-shadow: 0 6px 16px rgba(32,40,58,0.12); }
+
+  .diff-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
+    border: 2px solid;
+    text-align: left;
+    transition: box-shadow 0.15s ease;
+    background: none;
+  }
+  .diff-btn:hover { box-shadow: 0 6px 16px rgba(32,40,58,0.12); }
+
+  .back-link {
+    margin-top: 1.5rem;
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    color: rgba(32,40,58,0.5);
+    font-family: 'Poppins', sans-serif;
+  }
+  .back-link:hover { color: var(--ink); }
+
+  header.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: white;
+    border-bottom: 1px solid rgba(32,40,58,0.1);
+    flex-wrap: wrap;
+  }
+
+  .quit-btn {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    color: var(--ticket);
+    border: 1px solid rgba(228,87,46,0.4);
+    border-radius: 16px;
+    padding: 0.5rem 1rem;
+    background: none;
+    transition: background 0.15s ease;
+  }
+  .quit-btn:hover { background: rgba(228,87,46,0.05); }
+
+  .board-wrap {
+    padding: 1.5rem;
+  }
+  @media (min-width: 640px) { .board-wrap { padding: 1.5rem 2rem; } }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    width: min(80vw, 340px);
+    height: min(80vw, 340px);
+  }
+  @media (min-width: 640px) { .board { gap: 0.75rem; } }
+
+  .cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: clamp(2rem, 8vw, 3.5rem);
+    transition: all 0.2s ease;
+    background: #FFFBF2;
+    border: 2px solid var(--line);
+  }
+  @media (min-width: 640px) { .cell { border-radius: 16px; } }
+  .cell:disabled { cursor: default; }
+  .cell:not(:disabled) { cursor: pointer; }
+
+  .dot { opacity: 0.2; font-size: 2rem; }
+  @media (min-width: 640px) { .dot { font-size: 2.25rem; } }
+
+  .result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 16px;
+  }
+
+  .stats-bar {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .action-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 16px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    border: 2px solid;
+    transition: box-shadow 0.15s ease;
+    background: none;
+  }
+  .action-btn:hover { box-shadow: 0 4px 12px rgba(32,40,58,0.1); }
+
+  .buttons-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .stat-block { text-align: center; }
+  .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; }
+  .stat-label { font-family: 'Nunito', sans-serif; font-size: 0.75rem; color: rgba(32,40,58,0.5); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- Game logic ----------
+  const LINES = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6],
+  ];
+
+  function checkWinner(board) {
+    for (const [a, b, c] of LINES) {
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+        return { winner: board[a], line: [a, b, c] };
+      }
+    }
+    return null;
+  }
+
+  function isDraw(board) {
+    return board.every(c => c !== null);
+  }
+
+  function getEmpty(board) {
+    return board.reduce((acc, c, i) => c === null ? [...acc, i] : acc, []);
+  }
+
+  function aiEasy(board) {
+    const empty = getEmpty(board);
+    return empty[Math.floor(Math.random() * empty.length)];
+  }
+
+  function aiMedium(board, aiSymbol) {
+    const humanSymbol = aiSymbol === 'X' ? 'O' : 'X';
+    const empty = getEmpty(board);
+
+    for (const i of empty) {
+      const test = [...board];
+      test[i] = aiSymbol;
+      if (checkWinner(test)) return i;
+    }
+
+    for (const i of empty) {
+      const test = [...board];
+      test[i] = humanSymbol;
+      if (checkWinner(test)) return i;
+    }
+
+    if (board[4] === null) return 4;
+
+    const corners = [0, 2, 6, 8].filter(i => board[i] === null);
+    if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
+
+    return empty[Math.floor(Math.random() * empty.length)];
+  }
+
+  function aiHard(board, aiSymbol) {
+    const humanSymbol = aiSymbol === 'X' ? 'O' : 'X';
+
+    function minimax(b, isMax, depth) {
+      const result = checkWinner(b);
+      if (result) return result.winner === aiSymbol ? 10 - depth : depth - 10;
+      if (isDraw(b)) return 0;
+
+      const empty = getEmpty(b);
+      if (isMax) {
+        let best = -Infinity;
+        for (const i of empty) {
+          b[i] = aiSymbol;
+          best = Math.max(best, minimax(b, false, depth + 1));
+          b[i] = null;
+        }
+        return best;
+      } else {
+        let best = Infinity;
+        for (const i of empty) {
+          b[i] = humanSymbol;
+          best = Math.min(best, minimax(b, true, depth + 1));
+          b[i] = null;
+        }
+        return best;
+      }
+    }
+
+    const empty = getEmpty(board);
+    let bestScore = -Infinity;
+    let bestMove = empty[0];
+
+    for (const i of empty) {
+      board[i] = aiSymbol;
+      const score = minimax(board, false, 0);
+      board[i] = null;
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = i;
+      }
+    }
+    return bestMove;
+  }
+
+  function getAIMove(board, difficulty, aiSymbol) {
+    switch (difficulty) {
+      case 'easy': return aiEasy(board);
+      case 'medium': return aiMedium(board, aiSymbol);
+      case 'hard': return aiHard([...board], aiSymbol);
+      default: return aiEasy(board);
+    }
+  }
+
+  // ---------- In-memory "storage" (browser storage APIs are unavailable in this environment) ----------
+  let stats = { wins: 0, losses: 0, draws: 0 };
+
+  // ---------- App state ----------
+  const AI_SYMBOL = 'O';
+  const HUMAN_SYMBOL = 'X';
+
+  const state = {
+    screen: 'menu', // menu | difficulty | playing
+    mode: null,     // 'ai' | 'pvp'
+    difficulty: 'medium',
+    board: Array(9).fill(null),
+    isXNext: true,
+    result: null,   // { winner, line } | { draw: true }
+    gameOver: false,
+    aiThinking: false,
+  };
+
+  let aiTimer = null;
+  let startTime = Date.now();
+
+  function resetGame() {
+    state.board = Array(9).fill(null);
+    state.isXNext = true;
+    state.result = null;
+    state.gameOver = false;
+    state.aiThinking = false;
+    startTime = Date.now();
+    if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; }
+  }
+
+  function handleCellClick(idx) {
+    if (state.board[idx] || state.gameOver || state.result) return;
+
+    const newBoard = [...state.board];
+    const currentSymbol = state.isXNext ? 'X' : 'O';
+    newBoard[idx] = currentSymbol;
+
+    const winResult = checkWinner(newBoard);
+    if (winResult) {
+      state.board = newBoard;
+      state.result = winResult;
+      state.gameOver = true;
+      if (state.mode === 'ai') {
+        const isAIWin = winResult.winner === AI_SYMBOL;
+        stats = {
+          wins: stats.wins + (winResult.winner === HUMAN_SYMBOL ? 1 : 0),
+          losses: stats.losses + (isAIWin ? 1 : 0),
+          draws: stats.draws,
+        };
+      }
+      var timeUsed = Math.round((Date.now() - startTime) / 1000);
+      window.parent.postMessage({ type: 'game-over', data: { score: stats.wins * 100, timeUsed: timeUsed } }, '*');
+      render();
+      return;
+    }
+
+    if (isDraw(newBoard)) {
+      state.board = newBoard;
+      state.result = { draw: true };
+      state.gameOver = true;
+      if (state.mode === 'ai') {
+        stats = { ...stats, draws: stats.draws + 1 };
+      }
+      var timeUsed = Math.round((Date.now() - startTime) / 1000);
+      window.parent.postMessage({ type: 'game-over', data: { score: stats.wins * 100, timeUsed: timeUsed } }, '*');
+      render();
+      return;
+    }
+
+    state.board = newBoard;
+    state.isXNext = !state.isXNext;
+    render();
+    maybeTriggerAI();
+  }
+
+  function maybeTriggerAI() {
+    if (state.mode !== 'ai' || state.gameOver || state.result || state.isXNext) return;
+    if (state.aiThinking) return;
+    state.aiThinking = true;
+
+    aiTimer = setTimeout(() => {
+      const move = getAIMove([...state.board], state.difficulty, AI_SYMBOL);
+      state.aiThinking = false;
+      if (move !== undefined && move !== null) {
+        handleCellClick(move);
+      }
+    }, 400);
+  }
+
+  // ---------- Rendering ----------
+  const root = document.getElementById('root');
+
+  function render() {
+    if (state.screen === 'menu') return renderMenu();
+    if (state.screen === 'difficulty') return renderDifficulty();
+    return renderGame();
+  }
+
+  function renderMenu() {
+    root.innerHTML = `
+      <div class="screen bg-paper">
+        <div class="anim-pop note-card" style="padding:2.5rem; max-width:28rem; width:100%; text-align:center;">
+          <div style="font-size:3.75rem; margin-bottom:1rem;">❌⭕</div>
+          <h1 class="font-display" style="font-size:1.875rem; margin:0 0 0.5rem;">
+            <span style="color:#1B998B">TIC</span>–<span style="color:#E4572E">TAC</span>–<span style="color:#F4B942">TOE</span>
+          </h1>
+          <p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:2rem;">Chọn chế độ chơi</p>
+
+          <div style="display:flex; flex-direction:column; gap:0.75rem;">
+            <button id="btn-ai" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">🤖 Chơi với Máy</button>
+            <button id="btn-pvp" class="menu-btn font-display" style="border-color:#E4572E; color:#E4572E; background:#E4572E10;">👥 Hai Người Chơi</button>
+          </div>
+
+          <div class="dash-rule" style="margin-top:2rem; padding-top:1.25rem;">
+            <p class="font-display" style="font-size:0.875rem; color:rgba(32,40,58,0.5); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Thống kê (AI)</p>
+            <div style="display:flex; justify-content:center; gap:1.5rem;">
+              <div class="stat-block"><div class="stat-num" style="color:#1B998B">${stats.wins}</div><div class="stat-label">Thắng</div></div>
+              <div class="stat-block"><div class="stat-num" style="color:#E4572E">${stats.losses}</div><div class="stat-label">Thua</div></div>
+              <div class="stat-block"><div class="stat-num" style="color:#F4B942">${stats.draws}</div><div class="stat-label">Hòa</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('btn-ai').onclick = () => { state.mode = 'ai'; state.screen = 'difficulty'; render(); };
+    document.getElementById('btn-pvp').onclick = () => { state.mode = 'pvp'; state.screen = 'playing'; resetGame(); render(); };
+  }
+
+  function renderDifficulty() {
+    const diffs = [
+      { key: 'easy', label: 'Dễ', desc: 'Máy đi ngẫu nhiên', icon: '😊', color: '#1B998B' },
+      { key: 'medium', label: 'Trung bình', desc: 'Máy chặn & thắng thông minh', icon: '🤔', color: '#F4B942' },
+      { key: 'hard', label: 'Khó', desc: 'Minimax — gần như bất bại', icon: '🧠', color: '#E4572E' },
+    ];
+    root.innerHTML = `
+      <div class="screen bg-paper">
+        <div class="anim-pop note-card" style="padding:2.5rem; max-width:28rem; width:100%; text-align:center;">
+          <div style="font-size:3rem; margin-bottom:1rem;">🤖</div>
+          <h2 class="font-display" style="font-size:1.5rem; margin:0 0 0.5rem;">Chọn độ khó</h2>
+          <p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:2rem;">Bạn sẽ chơi quân X, máy chơi quân O</p>
+
+          <div style="display:flex; flex-direction:column; gap:0.75rem;">
+            ${diffs.map(d => `
+              <button class="diff-btn" data-key="${d.key}" style="border-color:${d.color}44; background:${d.color}08;">
+                <span style="font-size:1.875rem;">${d.icon}</span>
+                <div>
+                  <div class="font-display" style="font-size:1.125rem; color:${d.color};">${d.label}</div>
+                  <div class="font-body" style="font-size:0.875rem; color:rgba(32,40,58,0.6);">${d.desc}</div>
+                </div>
+              </button>
+            `).join('')}
+          </div>
+
+          <button id="btn-back" class="back-link font-display">← Quay lại</button>
+        </div>
+      </div>
+    `;
+    root.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.onclick = () => {
+        state.difficulty = btn.dataset.key;
+        state.screen = 'playing';
+        resetGame();
+        render();
+      };
+    });
+    document.getElementById('btn-back').onclick = () => { state.screen = 'menu'; render(); };
+  }
+
+  function renderGame() {
+    const isAI = state.mode === 'ai';
+    const isHumanTurn = !state.isXNext || !isAI;
+    const turnSymbol = state.isXNext ? 'X' : 'O';
+    const winLine = (state.result && state.result.line) || [];
+
+    let statusText = '';
+    let statusColor = '#20283A';
+    const result = state.result;
+
+    if (result && result.draw) {
+      statusText = 'Hòa!';
+      statusColor = '#F4B942';
+    } else if (result && result.winner) {
+      if (isAI) {
+        statusText = result.winner === HUMAN_SYMBOL ? 'Bạn thắng!' : 'Máy thắng!';
+        statusColor = result.winner === HUMAN_SYMBOL ? '#1B998B' : '#E4572E';
+      } else {
+        statusText = `Người chơi ${result.winner} thắng!`;
+        statusColor = result.winner === 'X' ? '#1B998B' : '#E4572E';
+      }
+    } else {
+      if (isAI) {
+        statusText = isHumanTurn ? 'Lượt của bạn' : 'Máy đang suy nghĩ...';
+        statusColor = isHumanTurn ? '#1B998B' : '#E4572E';
+      } else {
+        statusText = `Lượt chơi: ${turnSymbol}`;
+        statusColor = turnSymbol === 'X' ? '#1B998B' : '#E4572E';
+      }
+    }
+
+    const diffLabel = state.difficulty === 'easy' ? 'Dễ' : state.difficulty === 'medium' ? 'TB' : 'Khó';
+
+    const cellsHtml = state.board.map((cell, i) => {
+      const isWinCell = winLine.includes(i);
+      const isX = cell === 'X';
+      const isO = cell === 'O';
+      const bg = isWinCell ? (result.winner === 'X' ? '#1B998B22' : '#E4572E22') : '#FFFBF2';
+      const border = isWinCell ? `2px solid ${result.winner === 'X' ? '#1B998B' : '#E4572E'}` : '2px solid #E7D9BE';
+      const color = isX ? '#1B998B' : isO ? '#E4572E' : '#E7D9BE';
+      const disabled = !!cell || state.gameOver || result || (isAI && !isHumanTurn);
+      return `
+        <button class="cell" data-idx="${i}" ${disabled ? 'disabled' : ''}
+          style="background:${bg}; border:${border}; color:${color};">
+          ${cell ? `<span class="anim-pop" style="${isWinCell ? 'font-weight:900;' : ''}">${cell}</span>` : (!state.gameOver ? '<span class="dot">·</span>' : '')}
+        </button>
+      `;
+    }).join('');
+
+    let resultBadgeHtml = '';
+    if (result) {
+      if (result.draw) {
+        resultBadgeHtml = `
+          <div class="anim-pop" style="text-align:center;">
+            <div class="result-badge" style="background:#F4B94220; border:2px solid #F4B942;">
+              <span style="font-size:1.875rem;">🤝</span>
+              <span class="font-display" style="font-size:1.125rem; color:#F4B942;">Hòa nhau!</span>
+            </div>
+          </div>
+        `;
+      } else {
+        const humanWon = isAI && result.winner === HUMAN_SYMBOL;
+        resultBadgeHtml = `
+          <div class="anim-pop" style="text-align:center;">
+            <div class="result-badge" style="background:${humanWon ? '#1B998B20' : '#E4572E20'}; border:2px solid ${humanWon ? '#1B998B' : '#E4572E'};">
+              <span style="font-size:1.875rem;">${humanWon ? '🎉' : '🏆'}</span>
+              <span class="font-display" style="font-size:1.125rem; font-weight:700; color:${humanWon ? '#1B998B' : '#E4572E'};">
+                ${isAI ? (result.winner === HUMAN_SYMBOL ? 'Bạn thắng!' : 'Máy thắng!') : `Người chơi ${result.winner} thắng!`}
+              </span>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    root.innerHTML = `
+      <div class="bg-paper" style="flex:1; display:flex; flex-direction:column;">
+        <header class="app-header">
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <span style="font-size:1.875rem;">❌⭕</span>
+            <h1 class="font-display" style="font-size:1.25rem; color:#1B998B; margin:0;">TIC–TAC–TOE</h1>
+          </div>
+          <div class="font-body" style="display:flex; align-items:center; gap:1.25rem; font-size:0.875rem; color:rgba(32,40,58,0.7); flex-wrap:wrap;">
+            <span class="font-mono">${isAI ? `Máy: ${diffLabel}` : '2 Người'}</span>
+            ${isAI ? `<span>·</span><span>⭐ ${stats.wins * 100}</span>` : ''}
+          </div>
+          <button id="btn-quit" class="quit-btn">Thoát</button>
+        </header>
+
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem 1rem; gap:1.5rem;">
+          <div class="font-display anim-pop" style="font-size:1.5rem; font-weight:700; color:${statusColor};">${statusText}</div>
+
+          <div class="note-card board-wrap">
+            <div class="board">${cellsHtml}</div>
+          </div>
+
+          ${resultBadgeHtml}
+
+          ${isAI ? `
+            <div class="stats-bar font-mono">
+              <span style="color:#1B998B">✓ ${stats.wins}</span>
+              <span style="color:#E4572E">✗ ${stats.losses}</span>
+              <span style="color:#F4B942">○ ${stats.draws}</span>
+            </div>
+          ` : ''}
+
+          <div class="buttons-row">
+            <button id="btn-new" class="action-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B08;">🔄 Trò chơi mới</button>
+            ${isAI && result ? `<button id="btn-score" class="action-btn font-display" style="border-color:#F4B942; color:#F4B942; background:#F4B94208;">⭐ Xem điểm</button>` : ''}
+            ${!isAI ? `<button id="btn-home" class="action-btn font-display" style="border-color:#8A7C6344; color:#8A7C63; background:#8A7C6308;">🏠 Menu</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    root.querySelectorAll('.cell').forEach(btn => {
+      btn.onclick = () => handleCellClick(parseInt(btn.dataset.idx, 10));
+    });
+    document.getElementById('btn-quit').onclick = () => {
+      if (aiTimer) clearTimeout(aiTimer);
+      window.parent.postMessage({ type: 'quit' }, '*');
+      state.screen = 'menu';
+      state.mode = null;
+      resetGame();
+      render();
+    };
+    document.getElementById('btn-new').onclick = () => { resetGame(); render(); };
+    const scoreBtn = document.getElementById('btn-score');
+    if (scoreBtn) scoreBtn.onclick = () => { alert(`Điểm của bạn: ${stats.wins * 100}`); };
+    const homeBtn = document.getElementById('btn-home');
+    if (homeBtn) homeBtn.onclick = () => { state.screen = 'menu'; resetGame(); render(); };
+  }
+
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'init') {
+      // Could store playerName from e.data.data.playerName if needed
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
