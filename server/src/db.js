@@ -158,6 +158,22 @@ export async function initDatabase() {
     }
   }
 
+  // Drop stale indexes from old schema that conflict with new schema.
+  // Old code had unique indexes on string 'id' fields. After migration
+  // $unset removes 'id', all docs have id: null → unique index violation.
+  const staleIndexes = [
+    ["games", "id_1"],
+    ["templates", "id_1"],
+    ["templates", "slug_1"],
+  ];
+  for (const [col, idxName] of staleIndexes) {
+    try {
+      await database.collection(col).dropIndex(idxName);
+    } catch (e) {
+      // Index may not exist, ignore
+    }
+  }
+
   const indexDefs = [
     ["games", { code: 1 }, { unique: true }],
     ["games", { templateId: 1 }],
