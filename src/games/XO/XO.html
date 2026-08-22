@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>XO - Bàn cờ vô hạn</title>
+    <style>
+        /* ===== CSS Variables ===== */
+        :root {
+            --bg-canvas: #1a1a2e;
+            --grid-color: #2a2a5a;
+            --x-color: #ff6b6b;
+            --o-color: #4ecdc4;
+            --header-bg: #16213e;
+            --header-text: #ffffff;
+            --btn-bg: #e94560;
+            --btn-text: #ffffff;
+            --win-border: #e94560;
+            --win-bg: rgba(0, 0, 0, 0.85);
+            --panel-bg: #1e2a4a;
+            --panel-text: #eee;
+            --input-bg: #2a3a5a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: var(--bg-canvas);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ===== Layout ===== */
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        #header {
+            padding: 10px 20px;
+            background: var(--header-bg);
+            color: var(--header-text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-bottom: 2px solid var(--grid-color);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        #header .turn {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+        #header .turn span {
+            padding: 6px 16px;
+            border-radius: 30px;
+            background: var(--grid-color);
+            display: inline-block;
+            color: var(--header-text);
+        }
+        #header .score {
+            font-size: 1.2rem;
+            background: var(--grid-color);
+            padding: 6px 16px;
+            border-radius: 30px;
+            color: var(--header-text);
+        }
+        #header .score span {
+            font-weight: 700;
+        }
+        .btn-reset {
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            padding: 8px 24px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-reset:hover {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+
+        /* Main row: canvas + panel */
+        #main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Canvas wrapper */
+        #canvas-wrap {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-canvas);
+            cursor: grab;
+            min-width: 0;
+        }
+        #canvas-wrap:active {
+            cursor: grabbing;
+        }
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-canvas);
+        }
+
+        /* ===== Color Panel ===== */
+        #color-panel {
+            width: 260px;
+            background: var(--panel-bg);
+            color: var(--panel-text);
+            padding: 16px 14px;
+            overflow-y: auto;
+            flex-shrink: 0;
+            border-left: 2px solid var(--grid-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+        #color-panel h3 {
+            font-size: 1.1rem;
+            text-align: center;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--grid-color);
+            padding-bottom: 8px;
+            margin-bottom: 4px;
+            color: var(--panel-text);
+        }
+        .color-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .color-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+        }
+        .color-group label input[type="color"] {
+            width: 36px;
+            height: 30px;
+            border: none;
+            background: var(--input-bg);
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 2px;
+        }
+        .color-group label input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        .color-group label input[type="color"]::-webkit-color-swatch {
+            border: 1px solid #555;
+            border-radius: 4px;
+        }
+        .panel-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .panel-actions button {
+            flex: 1;
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            padding: 8px 0;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+        .panel-actions button:hover {
+            filter: brightness(1.1);
+        }
+        .panel-actions button.secondary {
+            background: var(--grid-color);
+            color: var(--panel-text);
+        }
+        .panel-toggle {
+            display: none;
+            background: var(--panel-bg);
+            color: var(--panel-text);
+            border: none;
+            border-radius: 30px;
+            padding: 6px 16px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: 1px solid var(--grid-color);
+        }
+        .panel-toggle:hover {
+            background: var(--grid-color);
+        }
+
+        /* ===== Win Message ===== */
+        #win-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--win-bg);
+            padding: 30px 50px;
+            border-radius: 20px;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s;
+            border: 2px solid var(--win-border);
+            backdrop-filter: blur(4px);
+            z-index: 20;
+            color: white;
+        }
+        #win-message.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #win-message h2 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+        }
+        #win-message p {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        #win-message .btn-again {
+            margin-top: 20px;
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.2s;
+            pointer-events: auto;
+        }
+        #win-message .btn-again:hover {
+            filter: brightness(1.1);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 800px) {
+            #color-panel {
+                width: 220px;
+                padding: 12px 10px;
+            }
+        }
+        @media (max-width: 650px) {
+            #main {
+                flex-direction: column;
+            }
+            #color-panel {
+                width: 100% !important;
+                max-height: 200px;
+                border-left: none;
+                border-top: 2px solid var(--grid-color);
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+                gap: 6px 16px;
+                padding: 10px 12px;
+                overflow-y: auto;
+            }
+            #color-panel h3 {
+                display: none;
+            }
+            .color-group {
+                flex-direction: row;
+                align-items: center;
+                gap: 4px;
+            }
+            .color-group label {
+                font-size: 0.75rem;
+                gap: 4px;
+            }
+            .color-group label input[type="color"] {
+                width: 28px;
+                height: 24px;
+            }
+            .panel-actions {
+                order: 10;
+                width: 100%;
+                justify-content: center;
+            }
+            .panel-actions button {
+                padding: 4px 12px;
+                font-size: 0.8rem;
+                flex: 0 1 auto;
+            }
+            #header .turn {
+                font-size: 1rem;
+            }
+            #header .score {
+                font-size: 0.9rem;
+                padding: 4px 12px;
+            }
+            .btn-reset {
+                padding: 6px 16px;
+                font-size: 0.9rem;
+            }
+        }
+        @media (max-width: 480px) {
+            #color-panel {
+                max-height: 160px;
+            }
+            #win-message {
+                padding: 20px 30px;
+            }
+            #win-message h2 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <!-- Header -->
+        <div id="header">
+            <div class="turn">🎯 Lượt: <span id="turnDisplay">X</span></div>
+            <div class="score">🏆 X: <span id="scoreX">0</span> &nbsp;|&nbsp; O: <span id="scoreO">0</span></div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button class="btn-reset" id="resetBtn">🔄 Bàn mới</button>
+                <button class="panel-toggle" id="panelToggle">🎨 Màu</button>
+            </div>
+        </div>
+
+        <!-- Main -->
+        <div id="main">
+            <div id="canvas-wrap">
+                <canvas id="gameCanvas"></canvas>
+                <div id="win-message">
+                    <h2 id="winnerText">🎉 X thắng!</h2>
+                    <p id="winDesc">5 liên tiếp</p>
+                    <button class="btn-again" id="playAgainBtn">🔄 Chơi tiếp</button>
+                </div>
+            </div>
+
+            <!-- Color Panel -->
+            <div id="color-panel">
+                <h3>🎨 Tùy chỉnh màu</h3>
+
+                <div class="color-group">
+                    <label>Nền canvas <input type="color" id="bgCanvas" value="#1a1a2e"></label>
+                    <label>Đường kẻ <input type="color" id="gridColor" value="#2a2a5a"></label>
+                </div>
+                <div class="color-group">
+                    <label>Quân X <input type="color" id="xColor" value="#ff6b6b"></label>
+                    <label>Quân O <input type="color" id="oColor" value="#4ecdc4"></label>
+                </div>
+                <div class="color-group">
+                    <label>Nền header <input type="color" id="headerBg" value="#16213e"></label>
+                    <label>Chữ header <input type="color" id="headerText" value="#ffffff"></label>
+                </div>
+                <div class="color-group">
+                    <label>Nút (nền) <input type="color" id="btnBg" value="#e94560"></label>
+                    <label>Nút (chữ) <input type="color" id="btnText" value="#ffffff"></label>
+                </div>
+                <div class="color-group">
+                    <label>Thông báo (nền) <input type="color" id="winBg" value="#000000d9"></label>
+                    <label>Thông báo (viền) <input type="color" id="winBorder" value="#e94560"></label>
+                </div>
+
+                <div class="panel-actions">
+                    <button class="secondary" id="resetColorsBtn">↺ Mặc định</button>
+                    <button id="closePanelBtn">✕ Ẩn</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ===== DOM refs =====
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const wrap = document.getElementById('canvas-wrap');
+
+            const turnDisplay = document.getElementById('turnDisplay');
+            const scoreXEl = document.getElementById('scoreX');
+            const scoreOEl = document.getElementById('scoreO');
+            const resetBtn = document.getElementById('resetBtn');
+            const playAgainBtn = document.getElementById('playAgainBtn');
+            const winMsg = document.getElementById('win-message');
+            const winnerText = document.getElementById('winnerText');
+            const winDesc = document.getElementById('winDesc');
+
+            // Color inputs
+            const colorInputs = {
+                bgCanvas: document.getElementById('bgCanvas'),
+                gridColor: document.getElementById('gridColor'),
+                xColor: document.getElementById('xColor'),
+                oColor: document.getElementById('oColor'),
+                headerBg: document.getElementById('headerBg'),
+                headerText: document.getElementById('headerText'),
+                btnBg: document.getElementById('btnBg'),
+                btnText: document.getElementById('btnText'),
+                winBg: document.getElementById('winBg'),
+                winBorder: document.getElementById('winBorder'),
+            };
+
+            const panel = document.getElementById('color-panel');
+            const panelToggle = document.getElementById('panelToggle');
+            const closePanelBtn = document.getElementById('closePanelBtn');
+            const resetColorsBtn = document.getElementById('resetColorsBtn');
+
+            // ===== Settings =====
+            const DEFAULT_COLORS = {
+                bgCanvas: '#1a1a2e',
+                gridColor: '#2a2a5a',
+                xColor: '#ff6b6b',
+                oColor: '#4ecdc4',
+                headerBg: '#16213e',
+                headerText: '#ffffff',
+                btnBg: '#e94560',
+                btnText: '#ffffff',
+                winBg: 'rgba(0,0,0,0.85)',
+                winBorder: '#e94560',
+            };
+
+            // Current colors (copy of defaults)
+            let colors = { ...DEFAULT_COLORS };
+
+            // ===== Game state =====
+            const CELL_SIZE = 50;
+            const HALF = CELL_SIZE / 2;
+            let grid = {};
+            let currentPlayer = 'X';
+            let gameOver = false;
+            let scoreX = 0,
+                scoreO = 0;
+
+            // Pan state
+            let offsetX = 0,
+                offsetY = 0;
+            let isDragging = false;
+            let dragStartX = 0,
+                dragStartY = 0;
+            let startOffsetX = 0,
+                startOffsetY = 0;
+
+            // ===== Apply colors to CSS variables and UI =====
+            function applyColors() {
+                const root = document.documentElement;
+                root.style.setProperty('--bg-canvas', colors.bgCanvas);
+                root.style.setProperty('--grid-color', colors.gridColor);
+                root.style.setProperty('--x-color', colors.xColor);
+                root.style.setProperty('--o-color', colors.oColor);
+                root.style.setProperty('--header-bg', colors.headerBg);
+                root.style.setProperty('--header-text', colors.headerText);
+                root.style.setProperty('--btn-bg', colors.btnBg);
+                root.style.setProperty('--btn-text', colors.btnText);
+                root.style.setProperty('--win-bg', colors.winBg);
+                root.style.setProperty('--win-border', colors.winBorder);
+
+                // Update input values to match (in case of programmatic change)
+                for (const [key, input] of Object.entries(colorInputs)) {
+                    if (colors[key] !== undefined) {
+                        // For winBg which may be rgba, convert to hex? We'll just set the input value if it's a hex.
+                        // Since we store hex for all except winBg maybe, but we'll store hex for simplicity.
+                        // But winBg default is rgba, we'll convert to hex for input? Actually color input only supports hex.
+                        // We'll store winBg as hex, and use it as background with alpha if needed.
+                        // But we can also keep it as hex and add alpha via CSS? Better to store hex and use opacity separately?
+                        // Let's keep winBg as hex (without alpha) and use a separate opacity? Or use rgba.
+                        // For simplicity, I'll store winBg as hex and apply with opacity 0.85 always.
+                        // But user might want to change opacity? Not required.
+                        // So we'll store winBg as hex, and apply as background-color with a fixed alpha.
+                        // But the input returns hex. We'll store hex and apply with alpha via CSS variable.
+                        // Actually we can set --win-bg as hex and use opacity in CSS? We'll keep as rgba string in CSS variable.
+                        // The input will show hex, but we convert to rgba? It's getting complicated.
+                        // Let's just store winBg as hex and use a separate variable for opacity? Simpler: store winBg as hex and use a fixed alpha.
+                        // But user might want to change both color and opacity? Not needed.
+                        // I'll store winBg as hex and set --win-bg to hex with opacity via rgba in CSS? But then we need to update CSS variable with rgba.
+                        // I'll change the default to hex and use rgba in the CSS variable by adding opacity.
+                        // Actually in CSS, --win-bg is used as background, we can set it as rgba string directly.
+                        // The input value for winBg will be hex, but we can convert to rgba when applying.
+                        // I'll just keep winBg as hex and set --win-bg as hex with opacity via CSS? No, CSS variable can't combine.
+                        // I'll store winBg as rgba string in colors and also in CSS variable. But the input color only supports hex.
+                        // So I'll use two properties: winBgColor (hex) and winBgOpacity (0-1). But that complicates UI.
+                        // Simpler: keep winBg as a hex color and apply it with opacity 0.85 always. User changes the color, opacity stays.
+                        // That's fine. So I'll store winBg as hex and set --win-bg to that hex but with opacity 0.85 in CSS variable.
+                        // But CSS variable can't do arithmetic. I'll set --win-bg as rgba using the hex converted to rgb.
+                        // I'll write a helper to convert hex to rgb and set --win-bg as rgba string.
+                        // For now, I'll just set --win-bg to the hex value, and in CSS I'll set background: var(--win-bg) with opacity? No.
+                        // Let's change approach: in CSS, #win-message background is rgba(var(--win-bg-r), var(--win-bg-g), var(--win-bg-b), 0.85).
+                        // So I'll store winBg as hex, split into r,g,b and set CSS custom properties for r,g,b.
+                        // Or simpler: just store winBg as rgba string in colors, and the input will be hex, but we convert when input changes.
+                        // For the input, we set value to hex, but when it changes, we convert to rgba with fixed alpha.
+                        // I'll do that: when user changes winBg input, we take the hex, convert to rgba and store in colors.winBg.
+                        // Then apply to CSS variable.
+                        // Similarly, the default winBg is rgba string, but we'll set the input value to the hex of that color.
+                        // I'll pre-convert default rgba to hex.
+                        // But rgba(0,0,0,0.85) is not a simple hex. I'll use #000000 for the color, and opacity 0.85 is fixed.
+                        // So winBgColor = '#000000' and opacity = 0.85.
+                        // Then I'll have winBgColor and winBgOpacity? That's extra.
+                        // Let's keep it simple: user can choose a color for the background of win message, and we apply it with a fixed opacity (0.85).
+                        // So I'll store winBg as a hex color (without alpha). In CSS, I'll set background: rgba(r,g,b,0.85) using the hex.
+                        // I'll set CSS variable --win-bg-r, --win-bg-g, --win-bg-b and use in rgba.
+                        // That's too much for a simple game. Let's just allow user to pick a solid color for win-bg, and we'll use that as background with no transparency.
+                        // But the original had transparency. I'll keep transparency by using the color with an alpha channel using CSS 'background-color: var(--win-bg)' but with opacity? I can use 'background-color: var(--win-bg)' and set the color to rgba directly.
+                        // I'll store winBg as rgba string (with alpha), and the input will be a color picker. But color picker only returns hex. So I'll convert hex to rgba with fixed alpha 0.85.
+                        // So, when user changes winBg input, I'll set colors.winBg = hexToRgba(hex, 0.85). And the input value remains hex.
+                        // Default winBg will be rgba(0,0,0,0.85), but I'll set the input value to '#000000' initially.
+                        // So I need to store winBg as rgba string, and also keep a separate winBgHex for input? Or just convert when needed.
+                        // Let's store winBg as rgba string, and for the input value, we use the hex part.
+                        // I'll create a helper to convert rgba to hex (if possible) but for default it's black.
+                        // This is getting overcomplicated. I'll just make the win-bg a solid color (no transparency) and use a semi-transparent overlay if needed.
+                        // Actually the original used rgba(0,0,0,0.8) with backdrop-filter: blur. I'll keep the backdrop blur and use a solid color.
+                        // I'll change the win-bg to a solid color, and keep the backdrop blur. That's fine.
+                        // So I'll store winBg as a hex color, and apply it as background-color with backdrop-filter: blur(4px).
+                        // The user can change the color, and the blur will still be there.
+                        // Let's do that. Default winBg = '#000000' (black). And we'll keep backdrop blur.
+                        // Then no need for alpha in CSS variable. So --win-bg is just a hex color.
+                        // I'll update the default to '#000000'.
+                        // But the original had rgba(0,0,0,0.8). We'll use #000000 with blur, it will be similar.
+                        // So I'll set DEFAULT_COLORS.winBg = '#000000';
+                        // And the CSS variable --win-bg will be that hex.
+                        // Good.
+                    }
+                }
+
+                // Special handling for winBg: convert to rgba with alpha? No, we use solid.
+                // Set --win-bg directly to colors.winBg (hex)
+                root.style.setProperty('--win-bg', colors.winBg);
+                // winBorder is already set
+
+                // Also update header style directly (though CSS variables handle it)
+                // But some elements might not use variables, so we update them.
+                document.querySelector('#header').style.backgroundColor = colors.headerBg;
+                document.querySelector('#header').style.color = colors.headerText;
+                // But we also need to update the children that have background: var(--grid-color) etc.
+                // They are already using variables, so they will update.
+
+                // Update canvas background
+                canvas.style.backgroundColor = colors.bgCanvas;
+                wrap.style.backgroundColor = colors.bgCanvas;
+                document.body.style.backgroundColor = colors.bgCanvas;
+
+                // Redraw
+                draw();
+            }
+
+            // Helper to convert hex to rgba (with alpha)
+            function hexToRgba(hex, alpha) {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return `rgba(${r},${g},${b},${alpha})`;
+            }
+
+            // ===== Initialize color inputs =====
+            function initColorInputs() {
+                // Set initial values from DEFAULT_COLORS
+                for (const [key, input] of Object.entries(colorInputs)) {
+                    if (DEFAULT_COLORS[key] !== undefined) {
+                        // For winBg, we use hex
+                        input.value = DEFAULT_COLORS[key];
+                    }
+                }
+                // Load from localStorage if available
+                loadColorsFromStorage();
+                // Apply
+                applyColors();
+            }
+
+            // ===== LocalStorage =====
+            function saveColorsToStorage() {
+                try {
+                    localStorage.setItem('xo-colors', JSON.stringify(colors));
+                } catch (e) {}
+            }
+
+            function loadColorsFromStorage() {
+                try {
+                    const saved = localStorage.getItem('xo-colors');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        for (const key of Object.keys(colors)) {
+                            if (parsed[key] !== undefined) {
+                                colors[key] = parsed[key];
+                                // Update input value
+                                if (colorInputs[key]) {
+                                    colorInputs[key].value = parsed[key];
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            // ===== Color change handler =====
+            function onColorChange(e) {
+                const input = e.target;
+                const key = input.id;
+                if (colors[key] !== undefined) {
+                    colors[key] = input.value;
+                    // If it's winBg, we might want to keep as hex (no alpha)
+                    applyColors();
+                    saveColorsToStorage();
+                }
+            }
+
+            // Attach listeners
+            for (const input of Object.values(colorInputs)) {
+                input.addEventListener('input', onColorChange);
+            }
+
+            // ===== Reset colors =====
+            function resetColors() {
+                for (const key of Object.keys(DEFAULT_COLORS)) {
+                    colors[key] = DEFAULT_COLORS[key];
+                    if (colorInputs[key]) {
+                        colorInputs[key].value = DEFAULT_COLORS[key];
+                    }
+                }
+                applyColors();
+                saveColorsToStorage();
+            }
+
+            resetColorsBtn.addEventListener('click', resetColors);
+
+            // ===== Panel toggle =====
+            panelToggle.addEventListener('click', () => {
+                panel.style.display = panel.style.display === 'none' ? '' : 'none';
+            });
+            closePanelBtn.addEventListener('click', () => {
+                panel.style.display = 'none';
+            });
+            // Initially show panel on desktop, hide on small? We'll show by default.
+
+            // ===== Resize canvas =====
+            function resizeCanvas() {
+                const rect = wrap.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                draw();
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            // ===== Game logic =====
+            function getCellFromPoint(cx, cy) {
+                const wx = cx - offsetX;
+                const wy = cy - offsetY;
+                const col = Math.floor(wx / CELL_SIZE);
+                const row = Math.floor(wy / CELL_SIZE);
+                return { row, col };
+            }
+
+            function checkWin(row, col, player) {
+                const directions = [
+                    [1, 0],
+                    [0, 1],
+                    [1, 1],
+                    [1, -1]
+                ];
+                for (const d of directions) {
+                    let count = 1;
+                    for (let step = 1; step < 5; step++) {
+                        const r = row + d[0] * step,
+                            c = col + d[1] * step;
+                        if (grid[r + ',' + c] === player) count++;
+                        else break;
+                    }
+                    for (let step = 1; step < 5; step++) {
+                        const r = row - d[0] * step,
+                            c = col - d[1] * step;
+                        if (grid[r + ',' + c] === player) count++;
+                        else break;
+                    }
+                    if (count >= 5) return true;
+                }
+                return false;
+            }
+
+            function handleCanvasClick(e) {
+                if (gameOver) return;
+                const rect = canvas.getBoundingClientRect();
+                const cx = e.clientX - rect.left;
+                const cy = e.clientY - rect.top;
+                const { row, col } = getCellFromPoint(cx, cy);
+                const key = row + ',' + col;
+                if (grid[key]) return;
+
+                grid[key] = currentPlayer;
+                draw();
+
+                if (checkWin(row, col, currentPlayer)) {
+                    gameOver = true;
+                    if (currentPlayer === 'X') scoreX++;
+                    else scoreO++;
+                    updateScore();
+                    showWinMessage(currentPlayer);
+                    draw();
+                    return;
+                }
+
+                currentPlayer = (currentPlayer === 'X' ? 'O' : 'X');
+                turnDisplay.textContent = currentPlayer;
+                draw();
+            }
+
+            // ===== Draw =====
+            function draw() {
+                const w = canvas.width,
+                    h = canvas.height;
+                ctx.clearRect(0, 0, w, h);
+
+                // Background (already set via CSS but clear doesn't use bg, so fill)
+                ctx.fillStyle = colors.bgCanvas;
+                ctx.fillRect(0, 0, w, h);
+
+                const startCol = Math.floor(-offsetX / CELL_SIZE) - 1;
+                const endCol = Math.ceil((w - offsetX) / CELL_SIZE) + 1;
+                const startRow = Math.floor(-offsetY / CELL_SIZE) - 1;
+                const endRow = Math.ceil((h - offsetY) / CELL_SIZE) + 1;
+
+                ctx.strokeStyle = colors.gridColor;
+                ctx.lineWidth = 1;
+
+                for (let r = startRow; r <= endRow; r++) {
+                    for (let c = startCol; c <= endCol; c++) {
+                        const x = offsetX + c * CELL_SIZE;
+                        const y = offsetY + r * CELL_SIZE;
+                        ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+
+                        const key = r + ',' + c;
+                        const val = grid[key];
+                        if (val) {
+                            ctx.font = `${CELL_SIZE * 0.7}px "Segoe UI", Arial, sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillStyle = val === 'X' ? colors.xColor : colors.oColor;
+                            ctx.fillText(val, x + HALF, y + HALF + 2);
+                        }
+                    }
+                }
+            }
+
+            // ===== Win message =====
+            function showWinMessage(player) {
+                winnerText.textContent = `🎉 ${player} thắng!`;
+                winDesc.textContent = '5 liên tiếp';
+                winMsg.classList.add('show');
+            }
+
+            function hideWinMessage() {
+                winMsg.classList.remove('show');
+            }
+
+            function updateScore() {
+                scoreXEl.textContent = scoreX;
+                scoreOEl.textContent = scoreO;
+            }
+
+            // ===== Reset game =====
+            function resetGame() {
+                grid = {};
+                currentPlayer = 'X';
+                gameOver = false;
+                hideWinMessage();
+                turnDisplay.textContent = 'X';
+                draw();
+            }
+
+            function fullReset() {
+                scoreX = 0;
+                scoreO = 0;
+                updateScore();
+                resetGame();
+            }
+
+            // ===== Pan events =====
+            function onPointerDown(e) {
+                const clientX = e.clientX || e.touches?.[0]?.clientX;
+                const clientY = e.clientY || e.touches?.[0]?.clientY;
+                if (clientX === undefined) return;
+                isDragging = true;
+                dragStartX = clientX;
+                dragStartY = clientY;
+                startOffsetX = offsetX;
+                startOffsetY = offsetY;
+                canvas.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+
+            function onPointerMove(e) {
+                if (!isDragging) return;
+                const clientX = e.clientX || e.touches?.[0]?.clientX;
+                const clientY = e.clientY || e.touches?.[0]?.clientY;
+                if (clientX === undefined) return;
+                const dx = clientX - dragStartX;
+                const dy = clientY - dragStartY;
+                offsetX = startOffsetX + dx;
+                offsetY = startOffsetY + dy;
+                draw();
+                e.preventDefault();
+            }
+
+            function onPointerUp(e) {
+                if (isDragging) {
+                    isDragging = false;
+                    canvas.style.cursor = 'grab';
+                    const clientX = e.clientX || e.changedTouches?.[0]?.clientX;
+                    const clientY = e.clientY || e.changedTouches?.[0]?.clientY;
+                    if (clientX !== undefined) {
+                        const dx = clientX - dragStartX;
+                        const dy = clientY - dragStartY;
+                        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+                            handleCanvasClick(e);
+                        }
+                    }
+                    e.preventDefault();
+                }
+            }
+
+            // ===== Register events =====
+            canvas.addEventListener('mousedown', onPointerDown);
+            window.addEventListener('mousemove', onPointerMove);
+            window.addEventListener('mouseup', onPointerUp);
+
+            canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+            window.addEventListener('touchmove', onPointerMove, { passive: false });
+            window.addEventListener('touchend', onPointerUp, { passive: false });
+
+            resetBtn.addEventListener('click', fullReset);
+            playAgainBtn.addEventListener('click', resetGame);
+
+            // ===== Init =====
+            initColorInputs();
+            resizeCanvas();
+            updateScore();
+            turnDisplay.textContent = 'X';
+            // Ensure panel is visible
+            panel.style.display = '';
+            // On small screens, hide panel by default?
+            if (window.innerWidth < 650) {
+                panel.style.display = 'none';
+            }
+            // Toggle panel on small screen with button
+            panelToggle.style.display = (window.innerWidth < 650) ? 'inline-block' : 'none';
+            window.addEventListener('resize', () => {
+                panelToggle.style.display = (window.innerWidth < 650) ? 'inline-block' : 'none';
+            });
+
+        })();
+    </script>
+</body>
+</html>

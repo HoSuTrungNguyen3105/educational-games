@@ -1,7 +1,9 @@
 import { getCollection } from "../db.js";
-import { uid } from "./gameService.js";
+import { ObjectId } from "mongodb";
 
 const COLLECTION = "questions";
+
+const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
 export async function listByGame(gameId) {
   return getCollection(COLLECTION).find({ gameId }).sort({ id: 1 }).toArray();
@@ -18,7 +20,7 @@ export async function save(gameId, questions) {
   if (prepared.length > 0) await coll.insertMany(prepared);
 
   await getCollection("games").updateOne(
-    { id: gameId },
+    { _id: new ObjectId(gameId) },
     { $set: { questionsCount: prepared.length, updatedAt: new Date().toISOString() } }
   );
   return prepared;

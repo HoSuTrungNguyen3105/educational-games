@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getCollection } from "../db.js";
-import { uid } from "./gameService.js";
 import { config } from "../config.js";
+
+const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
 const COLLECTION = "users";
 

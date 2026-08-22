@@ -1,0 +1,89 @@
+{
+    "fields": [
+        { "key": "side.isDoubleSided", "label": "Thiệp 2 mặt", "type": "boolean", "default": false },
+        { "key": "side.frontLabel", "label": "Tên mặt trước", "type": "text", "default": "Front" },
+        { "key": "side.backLabel", "label": "Tên mặt sau", "type": "text", "default": "Back" },
+        { "key": "side.frontBackground", "label": "Ảnh nền mặt trước", "type": "image", "default": null },
+        { "key": "side.backBackground", "label": "Ảnh nền mặt sau", "type": "image", "default": null },
+
+        { "key": "overlay.src", "label": "Ảnh overlay", "type": "image", "default": null },
+        { "key": "overlay.fileName", "label": "Tên file ảnh overlay", "type": "text", "default": "" },
+        
+        { "key": "text.content", "label": "Nội dung văn bản", "type": "textarea", "default": "" },
+        {
+            "key": "text.fontFamily",
+            "label": "Font chữ",
+            "type": "select",
+            "default": "'Playfair Display', serif",
+            "options": [
+                { "label": "Playfair Display", "value": "'Playfair Display', serif" },
+                { "label": "Inter", "value": "'Inter', sans-serif" },
+                { "label": "Georgia", "value": "'Georgia', serif" },
+                { "label": "Arial", "value": "'Arial', sans-serif" },
+                { "label": "Times New Roman", "value": "'Times New Roman', serif" },
+                { "label": "Courier New", "value": "'Courier New', monospace" },
+                { "label": "Verdana", "value": "'Verdana', sans-serif" },
+                { "label": "Tahoma", "value": "'Tahoma', sans-serif" },
+                { "label": "Roboto", "value": "'Roboto', sans-serif" },
+                { "label": "Open Sans", "value": "'Open Sans', sans-serif" },
+                { "label": "Lora", "value": "'Lora', serif" },
+                { "label": "Montserrat", "value": "'Montserrat', sans-serif" },
+                { "label": "Poppins", "value": "'Poppins', sans-serif" },
+                { "label": "Nunito", "value": "'Nunito', sans-serif" },
+                { "label": "Raleway", "value": "'Raleway', sans-serif" }
+            ]
+        },
+        { "key": "text.fontSize", "label": "Cỡ chữ", "type": "number", "unit": "px", "min": 1, "max": 300, "default": 26 },
+        { "key": "text.bold", "label": "In đậm", "type": "boolean", "default": false },
+        { "key": "text.italic", "label": "In nghiêng", "type": "boolean", "default": false },
+        {
+            "key": "text.align",
+            "label": "Căn lề (khi xuống dòng)",
+            "type": "select",
+            "default": "center",
+            "options": [
+                { "label": "Trái", "value": "left" },
+                { "label": "Giữa", "value": "center" },
+                { "label": "Phải", "value": "right" }
+            ]
+        },
+        {
+            "key": "text.colorType",
+            "label": "Kiểu màu chữ",
+            "type": "select",
+            "default": "solid",
+            "options": [
+                { "label": "Màu đơn", "value": "solid" },
+                { "label": "Gradient", "value": "gradient" }
+            ]
+        },
+        {
+            "key": "text.color",
+            "label": "Màu chữ (solid)",
+            "type": "color",
+            "default": "#FFFFFF",
+            "swatches": ["#14161A", "#4F46E5", "#FFFFFF", "#D97706", "#DC2626", "#0891B2"]
+        },
+        { "key": "text.gradientFrom", "label": "Màu gradient - bắt đầu", "type": "color", "default": "#2F6F4E" },
+        { "key": "text.gradientTo", "label": "Màu gradient - kết thúc", "type": "color", "default": "#B8863B" },
+        { "key": "text.gradientAngle", "label": "Góc gradient", "type": "range", "unit": "deg", "min": 0, "max": 360, "default": 135 },
+        {
+            "key": "text.gradientPresets",
+            "label": "Preset gradient",
+            "type": "presetList",
+            "options": [
+                { "from": "#4F46E5", "to": "#D97706", "angle": 135 },
+                { "from": "#DC2626", "to": "#0891B2", "angle": 135 },
+                { "from": "#14161A", "to": "#9CA3AF", "angle": 90 },
+                { "from": "#FFFFFF", "to": "#D97706", "angle": 135 },
+                { "from": "#DC2626", "to": "#FFFFFF", "angle": 135 },
+                { "from": "#0891B2", "to": "#FFFFFF", "angle": 135 }
+            ]
+        },
+        { "key": "text.scaleY", "label": "Kéo giãn chiều cao chữ", "type": "range", "min": 0.3, "max": 3, "step": 0.01, "default": 1 },
+        { "key": "text.rotation", "label": "Xoay chữ", "type": "range", "unit": "deg", "min": -360, "max": 360, "default": 0 }
+    ],
+        "constraints": {
+        "upload": { "maxSizeMB": 10, "acceptedTypes": ["image/jpeg", "image/png", "image/webp"] }
+    }
+}

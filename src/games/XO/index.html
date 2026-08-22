@@ -1,378 +1,1148 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>XO - Bàn cờ vô hạn</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-  body {
-    background: #1a1a2e;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-    color: white;
-  }
-  #header {
-    padding: 12px 20px;
-    background: #16213e;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    border-bottom: 2px solid #0f3460;
-    z-index: 10;
-    flex-shrink: 0;
-  }
-  #header .turn {
-    font-size: 1.4rem;
-    font-weight: 600;
-  }
-  #header .turn span {
-    padding: 6px 16px;
-    border-radius: 30px;
-    background: #0f3460;
-    display: inline-block;
-  }
-  #header .score {
-    font-size: 1.2rem;
-    background: #0f3460;
-    padding: 6px 16px;
-    border-radius: 30px;
-  }
-  #header .score span { font-weight: 700; }
-  .btn-reset {
-    background: #e94560;
-    border: none;
-    color: white;
-    padding: 8px 24px;
-    border-radius: 30px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  .btn-reset:hover { background: #c73652; transform: scale(1.02); }
-  #canvas-wrap {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-    background: #1a1a2e;
-    cursor: grab;
-  }
-  #canvas-wrap:active { cursor: grabbing; }
-  #gameCanvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: #1a1a2e;
-  }
-  #win-message {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.8);
-    padding: 30px 50px;
-    border-radius: 20px;
-    text-align: center;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.4s;
-    border: 2px solid #e94560;
-    backdrop-filter: blur(4px);
-    z-index: 20;
-  }
-  #win-message.show {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  #win-message h2 {
-    font-size: 2.8rem;
-    margin-bottom: 10px;
-  }
-  #win-message p {
-    font-size: 1.2rem;
-    opacity: 0.8;
-  }
-  #win-message .btn-again {
-    margin-top: 20px;
-    background: #e94560;
-    border: none;
-    color: white;
-    padding: 10px 30px;
-    border-radius: 30px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: 0.2s;
-    pointer-events: auto;
-  }
-  #win-message .btn-again:hover { background: #c73652; }
-  @media (max-width: 600px) {
-    #header { padding: 8px 12px; }
-    #header .turn { font-size: 1rem; }
-    #header .score { font-size: 0.9rem; padding: 4px 12px; }
-    .btn-reset { padding: 6px 16px; font-size: 0.9rem; }
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎮 Pixel Quest</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #1e1e24;
+            --main-yellow: #fcc201;
+            --main-green: #38b000;
+            --main-red: #d90429;
+            --sky-blue: #4cc9f0;
+            --text-white: #ffffff;
+            --border-width: 4px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive, monospace;
+            background-color: var(--bg-dark);
+            color: var(--text-white);
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .main-container {
+            max-width: 700px;
+            width: 100%;
+            margin: 0 auto;
+            background-color: #000;
+            border-left: var(--border-width) solid #555;
+            border-right: var(--border-width) solid #555;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-header {
+            padding: 12px 16px;
+            background: #111;
+            border-bottom: var(--border-width) solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .game-header .title {
+            font-size: 13px;
+            color: var(--main-yellow);
+            text-shadow: 2px 2px 0 var(--main-red);
+        }
+
+        .game-header .stats {
+            display: flex;
+            gap: 12px;
+            font-size: 9px;
+            align-items: center;
+        }
+
+        .game-header .stats span {
+            background: #222;
+            padding: 4px 10px;
+            border: 2px solid #555;
+            border-radius: 2px;
+        }
+
+        .game-header .stats .hp-val {
+            color: var(--main-red);
+        }
+        .game-header .stats .key-val {
+            color: var(--main-yellow);
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            background: #0a0a12;
+            overflow: hidden;
+            min-height: 500px;
+            touch-action: none;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #0a0a12;
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .overlay h1 {
+            font-size: 24px;
+            color: var(--main-yellow);
+            text-shadow: 4px 4px 0 var(--main-red);
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .overlay p {
+            font-size: 10px;
+            color: #ccc;
+            line-height: 2;
+            margin-bottom: 16px;
+        }
+
+        .overlay .final-score {
+            font-size: 20px;
+            color: var(--main-yellow);
+            margin-bottom: 14px;
+            text-shadow: 2px 2px 0 var(--main-red);
+        }
+
+        .btn-arcade {
+            display: inline-block;
+            background-color: var(--main-yellow);
+            color: #000;
+            border: var(--border-width) solid #fff;
+            box-shadow: 4px 4px 0px #000;
+            padding: 12px 24px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            margin-top: 6px;
+        }
+
+        .btn-arcade:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .btn-arcade.red {
+            background-color: var(--main-red);
+            color: #fff;
+        }
+
+        .btn-arcade.green {
+            background-color: var(--main-green);
+            color: #fff;
+        }
+
+        .controls-hint {
+            padding: 8px 12px;
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+            background: #0a0a0a;
+            border-top: 2px solid #222;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .controls-hint kbd {
+            display: inline-block;
+            background: #222;
+            padding: 2px 8px;
+            border: 2px solid #444;
+            border-radius: 2px;
+            font-size: 8px;
+            color: #aaa;
+            font-family: inherit;
+        }
+
+        @media (max-width: 500px) {
+            .game-header .title {
+                font-size: 10px;
+            }
+            .game-header .stats {
+                font-size: 7px;
+                gap: 6px;
+            }
+            .game-header .stats span {
+                padding: 2px 8px;
+            }
+            .overlay h1 {
+                font-size: 18px;
+            }
+            .btn-arcade {
+                padding: 10px 18px;
+                font-size: 9px;
+            }
+            .controls-hint {
+                font-size: 7px;
+                gap: 8px;
+            }
+            .controls-hint kbd {
+                font-size: 7px;
+                padding: 1px 6px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div id="header">
-  <div class="turn">🎯 Lượt: <span id="turnDisplay">X</span></div>
-  <div class="score">🏆 X: <span id="scoreX">0</span> &nbsp;|&nbsp; O: <span id="scoreO">0</span></div>
-  <button class="btn-reset" id="resetBtn">🔄 Bàn mới</button>
-</div>
+    <div class="main-container">
+        <div class="game-header">
+            <div class="title">⚔️ PIXEL QUEST</div>
+            <div class="stats">
+                <span>❤️ <span class="hp-val" id="hpDisplay">3</span></span>
+                <span>🗝️ <span class="key-val" id="keyDisplay">0</span></span>
+            </div>
+        </div>
 
-<div id="canvas-wrap">
-  <canvas id="gameCanvas"></canvas>
-  <div id="win-message">
-    <h2 id="winnerText">🎉 X thắng!</h2>
-    <p id="winDesc">5 liên tiếp</p>
-    <button class="btn-again" id="playAgainBtn">🔄 Chơi tiếp</button>
-  </div>
-</div>
+        <div class="canvas-wrapper" id="canvasWrapper">
+            <canvas id="gameCanvas"></canvas>
 
-<script>
-(function(){
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-  const wrap = document.getElementById('canvas-wrap');
+            <div class="overlay show" id="startOverlay">
+                <h1>🏰 THE ADVENTURE</h1>
+                <p>WASD / Mũi tên: Di chuyển<br>Space: Tấn công · E: Tương tác<br>Tìm 2 chìa khóa để mở cổng!</p>
+                <button class="btn-arcade green" id="startBtn">▶ VÀO CUỘC</button>
+            </div>
 
-  // Kích thước ô
-  const CELL_SIZE = 50;
-  const HALF = CELL_SIZE / 2;
+            <div class="overlay" id="gameOverOverlay">
+                <h1>💀 GAME OVER</h1>
+                <p id="gameOverMsg">Hãy thử lại!</p>
+                <button class="btn-arcade red" id="restartBtn">🔄 CHƠI LẠI</button>
+            </div>
 
-  // State
-  let grid = {};          // key: "x,y" => 'X' hoặc 'O'
-  let currentPlayer = 'X';
-  let gameOver = false;
-  let scoreX = 0, scoreO = 0;
+            <div class="overlay" id="winOverlay">
+                <h1>🎉 VICTORY!</h1>
+                <p>Bạn đã thu thập đủ chìa khóa và mở được cổng!<br>Một anh hùng mới đã xuất hiện.</p>
+                <button class="btn-arcade" id="winRestartBtn">🔄 CHƠI LẠI</button>
+            </div>
+        </div>
 
-  // Pan
-  let offsetX = 0, offsetY = 0;
-  let isDragging = false;
-  let dragStartX = 0, dragStartY = 0;
-  let startOffsetX = 0, startOffsetY = 0;
+        <div class="controls-hint">
+            <span>⌨️ <kbd>W A S D</kbd> / <kbd>↑ ← ↓ →</kbd></span>
+            <span>⚔️ <kbd>Space</kbd> tấn công · <kbd>E</kbd> tương tác</span>
+        </div>
+    </div>
 
-  // Resize canvas
-  function resize() {
-    const rect = wrap.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-    draw();
-  }
-  window.addEventListener('resize', resize);
+    <script>
+        (function() {
+            'use strict';
 
-  // Lấy tọa độ ô từ điểm canvas
-  function getCellFromPoint(cx, cy) {
-    const worldX = cx - offsetX;
-    const worldY = cy - offsetY;
-    const col = Math.floor(worldX / CELL_SIZE);
-    const row = Math.floor(worldY / CELL_SIZE);
-    return { row, col };
-  }
+            // ===== DOM =====
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const wrapper = document.getElementById('canvasWrapper');
+            const hpDisplay = document.getElementById('hpDisplay');
+            const keyDisplay = document.getElementById('keyDisplay');
 
-  // Kiểm tra 5 liên tiếp từ ô (row, col)
-  function checkWin(row, col, player) {
-    const directions = [
-      [1, 0],   // dọc
-      [0, 1],   // ngang
-      [1, 1],   // chéo xuống phải
-      [1, -1]   // chéo xuống trái
-    ];
-    for (let d of directions) {
-      let count = 1;
-      // hướng dương
-      for (let step = 1; step < 5; step++) {
-        const r = row + d[0] * step, c = col + d[1] * step;
-        if (grid[r+','+c] === player) count++; else break;
-      }
-      // hướng âm
-      for (let step = 1; step < 5; step++) {
-        const r = row - d[0] * step, c = col - d[1] * step;
-        if (grid[r+','+c] === player) count++; else break;
-      }
-      if (count >= 5) return true;
-    }
-    return false;
-  }
+            const startOverlay = document.getElementById('startOverlay');
+            const gameOverOverlay = document.getElementById('gameOverOverlay');
+            const winOverlay = document.getElementById('winOverlay');
+            const gameOverMsg = document.getElementById('gameOverMsg');
 
-  // Xử lý click
-  function handleCanvasClick(e) {
-    if (gameOver) return;
-    const rect = canvas.getBoundingClientRect();
-    const cx = e.clientX - rect.left;
-    const cy = e.clientY - rect.top;
-    const { row, col } = getCellFromPoint(cx, cy);
-    const key = row + ',' + col;
-    if (grid[key]) return; // ô đã có
+            const startBtn = document.getElementById('startBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            const winRestartBtn = document.getElementById('winRestartBtn');
 
-    // Đánh dấu
-    grid[key] = currentPlayer;
-    draw();
+            // ===== Constants =====
+            const TILE_SIZE = 40;
+            const COLS = 15;
+            const ROWS = 13;
+            const PLAYER_SIZE = 32;
 
-    // Kiểm tra thắng
-    if (checkWin(row, col, currentPlayer)) {
-      gameOver = true;
-      if (currentPlayer === 'X') scoreX++; else scoreO++;
-      updateScore();
-      showWinMessage(currentPlayer);
-      draw();
-      return;
-    }
+            // ===== Game State =====
+            let game = {
+                running: false,
+                hp: 3,
+                keys: 0,
+                attacking: false,
+                attackTimer: 0,
+                messages: [],
+                messageTimer: 0,
+            };
 
-    // Chuyển lượt
-    currentPlayer = (currentPlayer === 'X' ? 'O' : 'X');
-    document.getElementById('turnDisplay').textContent = currentPlayer;
-    draw();
-  }
+            // ===== Map =====
+            // 0 = path, 1 = wall, 2 = water, 3 = tree, 4 = chest, 5 = gate
+            let map = [];
+            let entities = [];
+            let npcs = [];
+            let chests = [];
+            let gates = [];
 
-  // Vẽ
-  function draw() {
-    const w = canvas.width, h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
+            // ===== Player =====
+            const player = {
+                x: 1.5 * TILE_SIZE,
+                y: 1.5 * TILE_SIZE,
+                w: PLAYER_SIZE,
+                h: PLAYER_SIZE,
+                dir: 0, // 0=down, 1=up, 2=left, 3=right
+                speed: 2.5,
+                moving: false,
+                step: 0,
+            };
 
-    // Xác định vùng ô cần vẽ
-    const startCol = Math.floor(-offsetX / CELL_SIZE) - 1;
-    const endCol = Math.ceil((w - offsetX) / CELL_SIZE) + 1;
-    const startRow = Math.floor(-offsetY / CELL_SIZE) - 1;
-    const endRow = Math.ceil((h - offsetY) / CELL_SIZE) + 1;
+            // ===== Input =====
+            const keys = {
+                up: false,
+                down: false,
+                left: false,
+                right: false,
+                attack: false,
+                interact: false,
+            };
+            let attackCooldown = 0;
 
-    // Vẽ lưới
-    for (let r = startRow; r <= endRow; r++) {
-      for (let c = startCol; c <= endCol; c++) {
-        const x = offsetX + c * CELL_SIZE;
-        const y = offsetY + r * CELL_SIZE;
-        // Vẽ ô
-        ctx.strokeStyle = '#2a2a5a';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+            // ===== Canvas Sizing =====
+            function resizeCanvas() {
+                const rect = wrapper.getBoundingClientRect();
+                const w = rect.width;
+                const h = rect.height;
+                canvas.width = w;
+                canvas.height = h;
+                canvas.style.width = w + 'px';
+                canvas.style.height = h + 'px';
+                ctx.imageSmoothingEnabled = false;
+            }
+            window.addEventListener('resize', resizeCanvas);
 
-        const key = r + ',' + c;
-        const val = grid[key];
-        if (val) {
-          ctx.font = `${CELL_SIZE * 0.7}px "Segoe UI", Arial, sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = val === 'X' ? '#ff6b6b' : '#4ecdc4';
-          ctx.fillText(val, x + HALF, y + HALF + 2);
-        }
-      }
-    }
+            // ===== Map Generation =====
+            function buildMap() {
+                map = [];
+                for (let r = 0; r < ROWS; r++) {
+                    map[r] = [];
+                    for (let c = 0; c < COLS; c++) {
+                        // Border walls
+                        if (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) {
+                            map[r][c] = 1;
+                        } else {
+                            map[r][c] = 0;
+                        }
+                    }
+                }
 
-    // Vẽ viền ngoài nhẹ
-    ctx.strokeStyle = '#3a3a6a';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, w, h);
-  }
+                // Inner walls and trees
+                const obstacles = [
+                    [2, 2],
+                    [2, 3],
+                    [2, 4],
+                    [3, 7],
+                    [3, 8],
+                    [4, 7],
+                    [4, 8],
+                    [5, 2],
+                    [5, 3],
+                    [6, 2],
+                    [6, 3],
+                    [7, 6],
+                    [7, 7],
+                    [8, 6],
+                    [8, 7],
+                    [9, 2],
+                    [9, 3],
+                    [10, 2],
+                    [10, 3],
+                    [10, 10],
+                    [10, 11],
+                    [11, 10],
+                    [11, 11],
+                    [3, 12],
+                    [4, 12],
+                    [5, 12],
+                    [6, 12],
+                    [7, 12],
+                    [8, 12],
+                    [9, 12],
+                ];
+                for (const [r, c] of obstacles) {
+                    if (r > 0 && r < ROWS - 1 && c > 0 && c < COLS - 1) {
+                        map[r][c] = 3; // tree / wall
+                    }
+                }
 
-  // Hiển thị thông báo thắng
-  function showWinMessage(player) {
-    const msg = document.getElementById('win-message');
-    document.getElementById('winnerText').textContent = `🎉 ${player} thắng!`;
-    document.getElementById('winDesc').textContent = '5 liên tiếp';
-    msg.classList.add('show');
-  }
+                // Water
+                map[2][10] = 2;
+                map[2][11] = 2;
+                map[3][11] = 2;
+                map[4][11] = 2;
 
-  function hideWinMessage() {
-    document.getElementById('win-message').classList.remove('show');
-  }
+                // Gate at the end
+                map[11][7] = 5; // Gate
+                gates.push({ r: 11, c: 7, open: false });
 
-  function updateScore() {
-    document.getElementById('scoreX').textContent = scoreX;
-    document.getElementById('scoreO').textContent = scoreO;
-  }
+                // Chests
+                chests = [
+                    { r: 2, c: 6, open: false, hasKey: true },
+                    { r: 7, c: 2, open: false, hasKey: true },
+                ];
+                for (const ch of chests) {
+                    map[ch.r][ch.c] = 4;
+                }
 
-  // Reset game
-  function resetGame() {
-    grid = {};
-    currentPlayer = 'X';
-    gameOver = false;
-    hideWinMessage();
-    document.getElementById('turnDisplay').textContent = 'X';
-    draw();
-  }
+                // NPCs
+                npcs = [
+                    { r: 9, c: 8, text: "Chào nhà thám hiểm! Hãy tìm 2 chìa khóa ở rương.", face: 'down' },
+                    { r: 4, c: 4, text: "Cẩn thận bọn quái vật! Dùng Space để tấn công.", face: 'left' },
+                ];
 
-  // Reset toàn bộ (giữ điểm)
-  function fullReset() {
-    scoreX = 0; scoreO = 0;
-    updateScore();
-    resetGame();
-  }
+                // Entities (enemies)
+                entities = [
+                    { r: 5, c: 5, type: 'slime', hp: 2, dir: 0, moveTimer: 0, alive: true },
+                    { r: 8, c: 9, type: 'slime', hp: 2, dir: 0, moveTimer: 0, alive: true },
+                    { r: 3, c: 9, type: 'bat', hp: 1, dir: 0, moveTimer: 0, alive: true },
+                ];
+            }
 
-  // Pan events
-  function onPointerDown(e) {
-    if (e.button !== undefined && e.button !== 0) return; // chỉ chuột trái
-    const clientX = e.clientX || e.touches?.[0]?.clientX;
-    const clientY = e.clientY || e.touches?.[0]?.clientY;
-    if (clientX === undefined) return;
-    isDragging = true;
-    dragStartX = clientX;
-    dragStartY = clientY;
-    startOffsetX = offsetX;
-    startOffsetY = offsetY;
-    canvas.style.cursor = 'grabbing';
-    e.preventDefault();
-  }
+            // ===== Helpers =====
+            function tileToPixel(col, row) {
+                return { x: col * TILE_SIZE, y: row * TILE_SIZE };
+            }
 
-  function onPointerMove(e) {
-    if (!isDragging) return;
-    const clientX = e.clientX || e.touches?.[0]?.clientX;
-    const clientY = e.clientY || e.touches?.[0]?.clientY;
-    if (clientX === undefined) return;
-    const dx = clientX - dragStartX;
-    const dy = clientY - dragStartY;
-    offsetX = startOffsetX + dx;
-    offsetY = startOffsetY + dy;
-    draw();
-    e.preventDefault();
-  }
+            function pixelToTile(px, py) {
+                return { col: Math.floor(px / TILE_SIZE), row: Math.floor(py / TILE_SIZE) };
+            }
 
-  function onPointerUp(e) {
-    if (isDragging) {
-      isDragging = false;
-      canvas.style.cursor = 'grab';
-      // Kiểm tra nếu kéo ít thì coi là click
-      const clientX = e.clientX || e.changedTouches?.[0]?.clientX;
-      const clientY = e.clientY || e.changedTouches?.[0]?.clientY;
-      if (clientX !== undefined) {
-        const dx = clientX - dragStartX;
-        const dy = clientY - dragStartY;
-        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
-          // Click
-          handleCanvasClick(e);
-        }
-      }
-      e.preventDefault();
-    }
-  }
+            function isWalkable(col, row, ignoreEntities = false) {
+                if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return false;
+                const tile = map[row][col];
+                if (tile === 1 || tile === 2 || tile === 5) return false;
+                if (tile === 4) {
+                    // Chest: walkable only if open
+                    const chest = chests.find(c => c.r === row && c.c === col);
+                    if (chest && !chest.open) return false;
+                }
+                if (!ignoreEntities) {
+                    for (const e of entities) {
+                        if (!e.alive) continue;
+                        if (e.r === row && e.c === col) return false;
+                    }
+                }
+                return true;
+            }
 
-  // Đăng ký sự kiện chuột và cảm ứng
-  canvas.addEventListener('mousedown', onPointerDown);
-  window.addEventListener('mousemove', onPointerMove);
-  window.addEventListener('mouseup', onPointerUp);
+            function getEntityAt(row, col) {
+                for (const e of entities) {
+                    if (!e.alive) continue;
+                    if (e.r === row && e.c === col) return e;
+                }
+                return null;
+            }
 
-  canvas.addEventListener('touchstart', onPointerDown, { passive: false });
-  window.addEventListener('touchmove', onPointerMove, { passive: false });
-  window.addEventListener('touchend', onPointerUp, { passive: false });
+            // ===== Attack =====
+            function performAttack() {
+                if (attackCooldown > 0) return;
+                attackCooldown = 20;
+                game.attacking = true;
+                game.attackTimer = 10;
 
-  // Nút reset
-  document.getElementById('resetBtn').addEventListener('click', fullReset);
-  document.getElementById('playAgainBtn').addEventListener('click', function() {
-    resetGame();
-  });
+                // Determine attack direction
+                let dr = 0,
+                    dc = 0;
+                switch (player.dir) {
+                    case 0:
+                        dr = 1;
+                        break;
+                    case 1:
+                        dr = -1;
+                        break;
+                    case 2:
+                        dc = -1;
+                        break;
+                    case 3:
+                        dc = 1;
+                        break;
+                }
+                const targetRow = Math.round(player.y / TILE_SIZE) + dr;
+                const targetCol = Math.round(player.x / TILE_SIZE) + dc;
 
-  // Khởi tạo
-  resize();
-  updateScore();
-  document.getElementById('turnDisplay').textContent = 'X';
+                // Check if entity there
+                const entity = getEntityAt(targetRow, targetCol);
+                if (entity) {
+                    entity.hp--;
+                    if (entity.hp <= 0) {
+                        entity.alive = false;
+                        showMessage('💥 Quái vật bị tiêu diệt!', 30);
+                    } else {
+                        showMessage('💢 Quái vật bị thương!', 20);
+                    }
+                } else {
+                    // Check if chest
+                    const chest = chests.find(c => c.r === targetRow && c.c === targetCol);
+                    if (chest && !chest.open) {
+                        chest.open = true;
+                        map[targetRow][targetCol] = 0;
+                        if (chest.hasKey) {
+                            game.keys++;
+                            updateUI();
+                            showMessage('🗝️ Tìm thấy chìa khóa! (' + game.keys + '/2)', 40);
+                            // Check win
+                            if (game.keys >= 2) {
+                                // Open gate
+                                for (const g of gates) {
+                                    g.open = true;
+                                    map[g.r][g.c] = 0;
+                                }
+                                showMessage('🚪 Cổng đã mở! Hãy đến đó!', 60);
+                            }
+                        }
+                    }
+                }
+            }
 
-  // Nếu click trên canvas khi đã có thông báo thắng, ẩn thông báo và reset? Không, để người chơi bấm nút.
-})();
-</script>
+            // ===== Message =====
+            function showMessage(text, duration = 30) {
+                game.messages.push({ text, timer: duration });
+                if (game.messages.length > 3) game.messages.shift();
+            }
+
+            // ===== Update =====
+            function update() {
+                if (!game.running) return;
+
+                // Attack cooldown
+                if (attackCooldown > 0) attackCooldown--;
+                if (game.attackTimer > 0) game.attackTimer--;
+                else game.attacking = false;
+
+                // Player movement
+                let dx = 0,
+                    dy = 0;
+                if (keys.up) dy = -1;
+                else if (keys.down) dy = 1;
+                if (keys.left) dx = -1;
+                else if (keys.right) dx = 1;
+
+                if (dx !== 0 || dy !== 0) {
+                    player.moving = true;
+                    if (dx !== 0) player.dir = dx > 0 ? 3 : 2;
+                    else if (dy !== 0) player.dir = dy > 0 ? 0 : 1;
+
+                    const newX = player.x + dx * player.speed;
+                    const newY = player.y + dy * player.speed;
+
+                    // Check collision with map
+                    const col = Math.round((newX + player.w / 2) / TILE_SIZE);
+                    const row = Math.round((newY + player.h / 2) / TILE_SIZE);
+
+                    // Check corners
+                    const corners = [
+                        { x: newX, y: newY },
+                        { x: newX + player.w - 1, y: newY },
+                        { x: newX, y: newY + player.h - 1 },
+                        { x: newX + player.w - 1, y: newY + player.h - 1 },
+                    ];
+                    let blocked = false;
+                    for (const c of corners) {
+                        const tc = Math.floor(c.x / TILE_SIZE);
+                        const tr = Math.floor(c.y / TILE_SIZE);
+                        if (!isWalkable(tc, tr, false)) {
+                            blocked = true;
+                            break;
+                        }
+                    }
+                    if (!blocked) {
+                        player.x = newX;
+                        player.y = newY;
+                        player.step += 0.1;
+                    } else {
+                        // Try sliding
+                        if (dy !== 0) {
+                            const testY = newY;
+                            const testX = player.x;
+                            let blockedY = false;
+                            for (const c of corners) {
+                                const tc = Math.floor((testX + player.w / 2) / TILE_SIZE);
+                                const tr = Math.floor((testY + player.h / 2) / TILE_SIZE);
+                                if (!isWalkable(tc, tr, false)) { blockedY = true; break; }
+                            }
+                            if (!blockedY) player.y = testY;
+                        }
+                        if (dx !== 0) {
+                            const testX = newX;
+                            const testY = player.y;
+                            let blockedX = false;
+                            for (const c of corners) {
+                                const tc = Math.floor((testX + player.w / 2) / TILE_SIZE);
+                                const tr = Math.floor((testY + player.h / 2) / TILE_SIZE);
+                                if (!isWalkable(tc, tr, false)) { blockedX = true; break; }
+                            }
+                            if (!blockedX) player.x = testX;
+                        }
+                    }
+                } else {
+                    player.moving = false;
+                }
+
+                // Clamp player
+                player.x = Math.max(0, Math.min(player.x, (COLS - 1) * TILE_SIZE - player.w));
+                player.y = Math.max(0, Math.min(player.y, (ROWS - 1) * TILE_SIZE - player.h));
+
+                // Attack
+                if (keys.attack) {
+                    performAttack();
+                    keys.attack = false;
+                }
+
+                // Interact (E) - talk to NPC or open chest
+                if (keys.interact) {
+                    keys.interact = false;
+                    const pRow = Math.round((player.y + player.h / 2) / TILE_SIZE);
+                    const pCol = Math.round((player.x + player.w / 2) / TILE_SIZE);
+                    // Check NPCs
+                    for (const npc of npcs) {
+                        if (Math.abs(npc.r - pRow) <= 1 && Math.abs(npc.c - pCol) <= 1) {
+                            showMessage('💬 ' + npc.text, 60);
+                            break;
+                        }
+                    }
+                    // Check chests nearby
+                    for (const chest of chests) {
+                        if (!chest.open && Math.abs(chest.r - pRow) <= 1 && Math.abs(chest.c - pCol) <= 1) {
+                            chest.open = true;
+                            map[chest.r][chest.c] = 0;
+                            if (chest.hasKey) {
+                                game.keys++;
+                                updateUI();
+                                showMessage('🗝️ Tìm thấy chìa khóa! (' + game.keys + '/2)', 40);
+                                if (game.keys >= 2) {
+                                    for (const g of gates) {
+                                        g.open = true;
+                                        map[g.r][g.c] = 0;
+                                    }
+                                    showMessage('🚪 Cổng đã mở! Hãy đến đó!', 60);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                // Entity AI
+                for (const e of entities) {
+                    if (!e.alive) continue;
+                    e.moveTimer++;
+                    if (e.moveTimer > 30 + Math.random() * 30) {
+                        e.moveTimer = 0;
+                        const dirs = [
+                            [0, 1],
+                            [0, -1],
+                            [1, 0],
+                            [-1, 0]
+                        ];
+                        const d = dirs[Math.floor(Math.random() * dirs.length)];
+                        const nr = e.r + d[0];
+                        const nc = e.c + d[1];
+                        if (isWalkable(nc, nr, true) && !getEntityAt(nr, nc)) {
+                            e.r = nr;
+                            e.c = nc;
+                            e.dir = d[0] !== 0 ? (d[0] > 0 ? 3 : 2) : (d[1] > 0 ? 0 : 1);
+                        }
+                    }
+                }
+
+                // Check win condition: player reaches gate
+                const pTile = pixelToTile(player.x + player.w / 2, player.y + player.h / 2);
+                for (const g of gates) {
+                    if (g.open && pTile.col === g.c && pTile.row === g.r) {
+                        game.running = false;
+                        winOverlay.classList.add('show');
+                        return;
+                    }
+                }
+
+                // Check game over (HP)
+                if (game.hp <= 0) {
+                    game.running = false;
+                    gameOverMsg.textContent = 'Bạn đã thua! Hãy cẩn thận hơn.';
+                    gameOverOverlay.classList.add('show');
+                    return;
+                }
+
+                // Update messages
+                for (let i = game.messages.length - 1; i >= 0; i--) {
+                    game.messages[i].timer--;
+                    if (game.messages[i].timer <= 0) {
+                        game.messages.splice(i, 1);
+                    }
+                }
+
+                // Update UI
+                updateUI();
+            }
+
+            // ===== Draw =====
+            function draw() {
+                const w = canvas.width,
+                    h = canvas.height;
+                ctx.clearRect(0, 0, w, h);
+
+                // Background
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, w, h);
+
+                const tileSize = TILE_SIZE;
+
+                // Draw map
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        const x = c * tileSize,
+                            y = r * tileSize;
+                        const tile = map[r][c];
+
+                        // Ground
+                        if (tile === 0 || tile === 4 || tile === 5) {
+                            ctx.fillStyle = (r + c) % 2 === 0 ? '#2a2a3a' : '#222236';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                        } else if (tile === 2) {
+                            ctx.fillStyle = '#1a4a6a';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#2a6a8a';
+                            ctx.fillRect(x + 4, y + 4, tileSize - 8, tileSize - 8);
+                        } else if (tile === 3) {
+                            ctx.fillStyle = '#2a4a2a';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#3a6a3a';
+                            ctx.fillRect(x + 6, y + 4, tileSize - 12, tileSize - 8);
+                            ctx.fillRect(x + 4, y + 8, tileSize - 8, tileSize - 16);
+                        } else if (tile === 1) {
+                            ctx.fillStyle = '#555577';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#666688';
+                            ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+                            ctx.fillStyle = '#444466';
+                            ctx.fillRect(x + 4, y + 4, tileSize - 8, tileSize - 8);
+                        }
+
+                        // Draw chests
+                        if (tile === 4) {
+                            const chest = chests.find(ch => ch.r === r && ch.c === c);
+                            if (chest && !chest.open) {
+                                ctx.fillStyle = '#d4a373';
+                                ctx.fillRect(x + 6, y + 16, tileSize - 12, 12);
+                                ctx.fillStyle = '#b08050';
+                                ctx.fillRect(x + 10, y + 12, tileSize - 20, 6);
+                                ctx.fillStyle = '#fcc201';
+                                ctx.fillRect(x + 14, y + 14, 4, 4);
+                                ctx.fillRect(x + tileSize - 18, y + 14, 4, 4);
+                            }
+                        }
+
+                        // Gate
+                        if (tile === 5) {
+                            const gate = gates.find(g => g.r === r && g.c === c);
+                            if (gate && gate.open) {
+                                ctx.fillStyle = '#fcc201';
+                                ctx.fillRect(x + 4, y, tileSize - 8, tileSize);
+                                ctx.fillStyle = '#ffd700';
+                                ctx.fillRect(x + 8, y + 4, tileSize - 16, tileSize - 8);
+                                ctx.fillStyle = '#fff';
+                                ctx.font = '14px "Press Start 2P", monospace';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText('★', x + tileSize / 2, y + tileSize / 2);
+                            } else {
+                                ctx.fillStyle = '#444';
+                                ctx.fillRect(x, y + 4, tileSize, tileSize - 8);
+                                ctx.fillStyle = '#666';
+                                ctx.fillRect(x + 6, y + 8, tileSize - 12, tileSize - 16);
+                                ctx.fillStyle = '#888';
+                                ctx.fillRect(x + 10, y + 12, tileSize - 20, 4);
+                                ctx.fillRect(x + 10, y + tileSize - 16, tileSize - 20, 4);
+                            }
+                        }
+                    }
+                }
+
+                // Draw entities (enemies)
+                for (const e of entities) {
+                    if (!e.alive) continue;
+                    const x = e.c * tileSize + 4,
+                        y = e.r * tileSize + 4;
+                    const s = tileSize - 8;
+                    if (e.type === 'slime') {
+                        ctx.fillStyle = '#38b000';
+                        ctx.fillRect(x, y + 6, s, s - 10);
+                        ctx.fillStyle = '#4cd000';
+                        ctx.fillRect(x + 4, y + 4, s - 8, s - 12);
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(x + 6, y + 8, 4, 4);
+                        ctx.fillRect(x + s - 10, y + 8, 4, 4);
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(x + 7, y + 9, 2, 2);
+                        ctx.fillRect(x + s - 9, y + 9, 2, 2);
+                        // HP bar
+                        ctx.fillStyle = '#d90429';
+                        ctx.fillRect(x, y - 4, s, 3);
+                        ctx.fillStyle = '#38b000';
+                        ctx.fillRect(x, y - 4, s * (e.hp / 2), 3);
+                    } else if (e.type === 'bat') {
+                        ctx.fillStyle = '#4a2a6a';
+                        ctx.fillRect(x + 4, y + 6, s - 8, s - 12);
+                        ctx.fillStyle = '#6a4a8a';
+                        ctx.fillRect(x + 6, y + 4, s - 12, s - 8);
+                        ctx.fillStyle = '#d90429';
+                        ctx.fillRect(x + 8, y + 12, 4, 4);
+                        ctx.fillRect(x + s - 12, y + 12, 4, 4);
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(x + 10, y + 14, 2, 2);
+                        ctx.fillRect(x + s - 10, y + 14, 2, 2);
+                    }
+                }
+
+                // Draw NPCs
+                for (const npc of npcs) {
+                    const x = npc.c * tileSize + 4,
+                        y = npc.r * tileSize + 4;
+                    const s = tileSize - 8;
+                    // Body
+                    ctx.fillStyle = '#4a7a9a';
+                    ctx.fillRect(x + 4, y + 12, s - 8, s - 16);
+                    ctx.fillStyle = '#f5d0b8';
+                    ctx.fillRect(x + 6, y + 4, s - 12, 12);
+                    // Eyes
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(x + 8, y + 6, 4, 4);
+                    ctx.fillRect(x + s - 12, y + 6, 4, 4);
+                    // Hat
+                    ctx.fillStyle = '#d90429';
+                    ctx.fillRect(x + 4, y, s - 8, 6);
+                    ctx.fillRect(x + 8, y - 4, s - 16, 6);
+                    // Speech bubble hint
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.fillRect(x + 10, y - 16, 16, 8);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '7px "Press Start 2P", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('!', x + s / 2, y - 12);
+                }
+
+                // Draw player
+                const px = player.x,
+                    py = player.y;
+                const pw = player.w,
+                    ph = player.h;
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(px + 2, py + ph - 2, pw, 4);
+
+                // Body (tunic)
+                ctx.fillStyle = '#2b7a3a';
+                ctx.fillRect(px + 4, py + 10, pw - 8, 16);
+                // Head
+                ctx.fillStyle = '#f5d0b8';
+                ctx.fillRect(px + 4, py + 2, pw - 8, 12);
+                // Hat (green)
+                ctx.fillStyle = '#1a5a2a';
+                ctx.fillRect(px + 2, py - 2, pw - 4, 6);
+                ctx.fillRect(px + 6, py - 6, pw - 12, 6);
+                // Eyes
+                ctx.fillStyle = '#111';
+                if (player.dir === 0) { // down
+                    ctx.fillRect(px + 8, py + 4, 4, 4);
+                    ctx.fillRect(px + pw - 12, py + 4, 4, 4);
+                } else if (player.dir === 1) { // up
+                    ctx.fillRect(px + 8, py + 4, 4, 4);
+                    ctx.fillRect(px + pw - 12, py + 4, 4, 4);
+                    ctx.fillRect(px + 10, py + 2, 4, 4);
+                } else if (player.dir === 2) { // left
+                    ctx.fillRect(px + 4, py + 4, 4, 4);
+                    ctx.fillRect(px + 10, py + 4, 4, 4);
+                } else { // right
+                    ctx.fillRect(px + 8, py + 4, 4, 4);
+                    ctx.fillRect(px + 14, py + 4, 4, 4);
+                }
+                // Sword (when attacking)
+                if (game.attacking) {
+                    ctx.fillStyle = '#ccc';
+                    let sx = px + pw,
+                        sy = py + 4;
+                    if (player.dir === 0) { sy = py + ph;
+                        sx = px + 8; } else if (player.dir === 1) { sy = py - 8;
+                        sx = px + 8; } else if (player.dir === 2) { sx = px - 8;
+                        sy = py + 4; }
+                    ctx.fillRect(sx, sy, 8, 8);
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(sx + 2, sy + 2, 4, 4);
+                }
+
+                // Draw messages
+                let msgY = 40;
+                for (const msg of game.messages) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                    ctx.fillRect(10, msgY - 10, canvas.width - 20, 30);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '9px "Press Start 2P", monospace';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(msg.text, 20, msgY + 4);
+                    msgY += 34;
+                }
+
+                // Interaction hint
+                const pTile = pixelToTile(player.x + player.w / 2, player.y + player.h / 2);
+                let hint = '';
+                for (const npc of npcs) {
+                    if (Math.abs(npc.r - pTile.row) <= 1 && Math.abs(npc.c - pTile.col) <= 1) {
+                        hint = '💬 E: Nói chuyện';
+                        break;
+                    }
+                }
+                if (!hint) {
+                    for (const chest of chests) {
+                        if (!chest.open && Math.abs(chest.r - pTile.row) <= 1 && Math.abs(chest.c - pTile.col) <= 1) {
+                            hint = '📦 E: Mở rương';
+                            break;
+                        }
+                    }
+                }
+                if (hint) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(canvas.width / 2 - 80, canvas.height - 40, 160, 24);
+                    ctx.fillStyle = '#fcc201';
+                    ctx.font = '8px "Press Start 2P", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(hint, canvas.width / 2, canvas.height - 30);
+                }
+            }
+
+            // ===== Game Loop =====
+            function gameLoop() {
+                update();
+                draw();
+                requestAnimationFrame(gameLoop);
+            }
+
+            // ===== UI =====
+            function updateUI() {
+                hpDisplay.textContent = game.hp;
+                keyDisplay.textContent = game.keys;
+            }
+
+            // ===== Start / Reset =====
+            function startGame() {
+                game.hp = 3;
+                game.keys = 0;
+                game.attacking = false;
+                game.attackTimer = 0;
+                game.messages = [];
+                game.running = true;
+                player.x = 1.5 * TILE_SIZE;
+                player.y = 1.5 * TILE_SIZE;
+                player.dir = 0;
+                attackCooldown = 0;
+                buildMap();
+                updateUI();
+                hideAllOverlays();
+            }
+
+            function hideAllOverlays() {
+                startOverlay.classList.remove('show');
+                gameOverOverlay.classList.remove('show');
+                winOverlay.classList.remove('show');
+            }
+
+            // ===== Events =====
+            document.addEventListener('keydown', (e) => {
+                const key = e.key;
+                if (key === 'w' || key === 'W' || key === 'ArrowUp') { keys.up = true;
+                    e.preventDefault(); }
+                if (key === 's' || key === 'S' || key === 'ArrowDown') { keys.down = true;
+                    e.preventDefault(); }
+                if (key === 'a' || key === 'A' || key === 'ArrowLeft') { keys.left = true;
+                    e.preventDefault(); }
+                if (key === 'd' || key === 'D' || key === 'ArrowRight') { keys.right = true;
+                    e.preventDefault(); }
+                if (key === ' ') {
+                    keys.attack = true;
+                    e.preventDefault();
+                }
+                if (key === 'e' || key === 'E') {
+                    keys.interact = true;
+                    e.preventDefault();
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                const key = e.key;
+                if (key === 'w' || key === 'W' || key === 'ArrowUp') { keys.up = false;
+                    e.preventDefault(); }
+                if (key === 's' || key === 'S' || key === 'ArrowDown') { keys.down = false;
+                    e.preventDefault(); }
+                if (key === 'a' || key === 'A' || key === 'ArrowLeft') { keys.left = false;
+                    e.preventDefault(); }
+                if (key === 'd' || key === 'D' || key === 'ArrowRight') { keys.right = false;
+                    e.preventDefault(); }
+                if (key === ' ') { e.preventDefault(); }
+                if (key === 'e' || key === 'E') { e.preventDefault(); }
+            });
+
+            // Touch controls
+            let touchDir = { x: 0, y: 0 };
+            let touchAttack = false;
+            let touchInteract = false;
+
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+
+                // Split screen: left side for movement, right side for action
+                if (x < rect.width / 2) {
+                    // Movement: relative to center
+                    const cx = rect.width / 4;
+                    const cy = rect.height / 2;
+                    const dx = x - cx;
+                    const dy = y - cy;
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        touchDir.x = dx > 0 ? 1 : -1;
+                        touchDir.y = 0;
+                    } else {
+                        touchDir.y = dy > 0 ? 1 : -1;
+                        touchDir.x = 0;
+                    }
+                    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) {
+                        touchDir.x = 0;
+                        touchDir.y = 0;
+                    }
+                } else {
+                    // Action: attack or interact
+                    if (y < rect.height / 2) {
+                        touchAttack = true;
+                        keys.attack = true;
+                    } else {
+                        touchInteract = true;
+                        keys.interact = true;
+                    }
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+
+                if (x < rect.width / 2) {
+                    const cx = rect.width / 4;
+                    const cy = rect.height / 2;
+                    const dx = x - cx;
+                    const dy = y - cy;
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        touchDir.x = dx > 0 ? 1 : -1;
+                        touchDir.y = 0;
+                    } else {
+                        touchDir.y = dy > 0 ? 1 : -1;
+                        touchDir.x = 0;
+                    }
+                    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) {
+                        touchDir.x = 0;
+                        touchDir.y = 0;
+                    }
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchDir.x = 0;
+                touchDir.y = 0;
+                if (touchAttack) {
+                    touchAttack = false;
+                    keys.attack = false;
+                }
+                if (touchInteract) {
+                    touchInteract = false;
+                    keys.interact = false;
+                }
+            }, { passive: false });
+
+            // Map touch to keys
+            setInterval(() => {
+                if (touchDir.x === 0 && touchDir.y === 0) {
+                    keys.up = false;
+                    keys.down = false;
+                    keys.left = false;
+                    keys.right = false;
+                } else {
+                    keys.up = touchDir.y < 0;
+                    keys.down = touchDir.y > 0;
+                    keys.left = touchDir.x < 0;
+                    keys.right = touchDir.x > 0;
+                }
+            }, 50);
+
+            // Buttons
+            startBtn.addEventListener('click', startGame);
+            restartBtn.addEventListener('click', startGame);
+            winRestartBtn.addEventListener('click', startGame);
+
+            // ===== Init =====
+            resizeCanvas();
+            buildMap();
+            updateUI();
+            hideAllOverlays();
+            startOverlay.classList.add('show');
+            game.running = false;
+            gameLoop();
+
+            window.addEventListener('resize', resizeCanvas);
+
+        })();
+    </script>
 </body>
 </html>
