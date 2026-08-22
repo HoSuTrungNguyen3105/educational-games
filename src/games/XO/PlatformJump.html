@@ -2,1086 +2,225 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎮 Pixel Platform Jump</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genshin Impact Landscape</title>
     <style>
-        /* ===== Theme Arcade Pixel ===== */
-        :root {
-            --bg-dark: #1e1e24;
-            --main-yellow: #fcc201;
-            --main-green: #38b000;
-            --main-red: #d90429;
-            --sky-blue: #4cc9f0;
-            --text-white: #ffffff;
-            --border-width: 4px;
-        }
-
+        /* Reset cơ bản */
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            user-select: none;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            font-family: 'Press Start 2P', cursive, monospace;
-            background-color: var(--bg-dark);
-            color: var(--text-white);
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
-            animation: bg-scroll 5s linear infinite;
-            min-height: 100vh;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            overflow-x: hidden;
+            background-color: #87CEEB;
         }
 
-        @keyframes bg-scroll {
-            from {
-                background-position: 0 0;
-            }
-            to {
-                background-position: 30px 30px;
-            }
-        }
-
-        .main-container {
-            max-width: 600px;
+        /* Khung cảnh chính */
+        .scene {
+            position: relative;
             width: 100%;
-            margin: 0 auto;
-            background-color: #000;
-            border-left: var(--border-width) solid #555;
-            border-right: var(--border-width) solid #555;
-            min-height: 100vh;
-            position: relative;
+            height: 100vh;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            display: flex;
-            flex-direction: column;
         }
 
-        /* ===== Header ===== */
-        .game-header {
-            padding: 12px 16px;
-            background: #111;
-            border-bottom: var(--border-width) solid #444;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-
-        .game-header .title {
-            font-size: 13px;
-            color: var(--main-yellow);
-            text-shadow: 2px 2px 0 var(--main-red);
-            letter-spacing: 1px;
-        }
-
-        .game-header .stats {
-            display: flex;
-            gap: 12px;
-            font-size: 9px;
-            align-items: center;
-        }
-
-        .game-header .stats span {
-            background: #222;
-            padding: 4px 10px;
-            border: 2px solid #555;
-            border-radius: 2px;
-        }
-
-        .game-header .stats .score-val {
-            color: var(--main-yellow);
-        }
-        .game-header .stats .lives-val {
-            color: var(--main-red);
-        }
-
-        /* ===== Canvas ===== */
-        .canvas-wrapper {
-            flex: 1;
-            position: relative;
-            background: #0a0a12;
-            overflow: hidden;
-            min-height: 420px;
-            touch-action: none;
-        }
-
-        #gameCanvas {
-            display: block;
+        /* Các lớp nền (Parallax) */
+        .layer {
+            position: absolute;
             width: 100%;
             height: 100%;
-            background: #0a0a12;
-            image-rendering: pixelated;
-            touch-action: none;
+            background-size: cover;
+            background-position: center bottom;
         }
 
-        /* ===== Overlay ===== */
-        .overlay {
+        .sky {
+            background: linear-gradient(to bottom, #4a90e2, #87CEEB, #b0e0e6);
+            z-index: 1;
+        }
+
+        .mountains {
+            background: linear-gradient(to top, #6b7b8d, #8b9dc3);
+            clip-path: polygon(0 100%, 0 60%, 20% 30%, 40% 50%, 60% 20%, 80% 40%, 100% 10%, 100% 100%);
+            z-index: 2;
+            opacity: 0.8;
+        }
+
+        .cliffs {
+            background: linear-gradient(to top, #a8b5a2, #7a8b6f);
+            clip-path: polygon(0 100%, 0 70%, 15% 40%, 35% 60%, 55% 30%, 75% 50%, 100% 20%, 100% 100%);
+            z-index: 3;
+        }
+
+        .forest {
+            background: linear-gradient(to top, #3cb371, #228b22);
+            clip-path: polygon(0 100%, 0 80%, 10% 70%, 25% 75%, 40% 65%, 55% 70%, 70% 60%, 85% 65%, 100% 55%, 100% 100%);
+            z-index: 4;
+        }
+
+        .grass {
+            background: linear-gradient(to top, #90EE90, #32CD32);
+            z-index: 5;
+        }
+
+        /* Nhân vật đứng giữa */
+        .character {
             position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(4px);
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 6;
+            width: 300px;
+            height: 500px;
+            /* Sử dụng ảnh nhân vật của bạn, hoặc placeholder */
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Genshin_Impact_character_Aether.png/600px-Genshin_Impact_character_Aether.png'); 
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center bottom;
+            filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.5));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+            100% { transform: translateX(-50%) translateY(0); }
+        }
+
+        /* UI Genshin Impact */
+        .ui-element {
+            position: absolute;
+            color: white;
+            text-shadow: 1px 1px 2px black;
             z-index: 10;
-            padding: 20px;
-            text-align: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s;
         }
 
-        .overlay.show {
-            opacity: 1;
-            pointer-events: auto;
+        /* Thanh HP và Stamina */
+        .hp-bar {
+            bottom: 20px;
+            left: 20px;
+            width: 300px;
         }
 
-        .overlay h1 {
-            font-size: 26px;
-            color: var(--main-yellow);
-            text-shadow: 4px 4px 0 var(--main-red);
-            margin-bottom: 12px;
-            line-height: 1.4;
+        .hp-bar .bar-bg {
+            width: 100%;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            border: 2px solid #fff;
+            overflow: hidden;
         }
 
-        .overlay h2 {
-            font-size: 16px;
-            color: #fff;
-            margin-bottom: 8px;
+        .hp-bar .bar-fill {
+            width: 85%;
+            height: 100%;
+            background: linear-gradient(to right, #4caf50, #8bc34a);
+            border-radius: 8px;
+            transition: width 0.5s ease;
         }
 
-        .overlay p {
-            font-size: 10px;
-            color: #ccc;
-            line-height: 2;
-            margin-bottom: 14px;
+        .stamina-circle {
+            bottom: 50px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.8);
+            border-radius: 50%;
+            border-top-color: transparent; 
         }
 
-        .overlay .final-score {
-            font-size: 22px;
-            color: var(--main-yellow);
-            margin-bottom: 14px;
-            text-shadow: 2px 2px 0 var(--main-red);
-        }
-
-        .btn-arcade {
-            display: inline-block;
-            background-color: var(--main-green);
-            color: #fff;
-            border: var(--border-width) solid #fff;
-            box-shadow: 4px 4px 0px #000;
-            padding: 12px 24px;
-            font-family: inherit;
-            font-size: 11px;
-            text-decoration: none;
-            cursor: pointer;
-            transition: transform 0.1s, box-shadow 0.1s;
-            margin-top: 6px;
-            background-color: var(--main-yellow);
-            color: #000;
-        }
-
-        .btn-arcade:active {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0px #000;
-        }
-
-        .btn-arcade.red {
-            background-color: var(--main-red);
-            color: #fff;
-        }
-
-        .btn-arcade.green {
-            background-color: var(--main-green);
-            color: #fff;
-        }
-
-        .btn-arcade.blue {
-            background-color: var(--sky-blue);
-            color: #000;
-        }
-
-        /* ===== Controls hint ===== */
-        .controls-hint {
-            padding: 8px 12px;
-            text-align: center;
-            font-size: 8px;
-            color: #666;
-            background: #0a0a0a;
-            border-top: 2px solid #222;
-            flex-shrink: 0;
+        /* Minimap */
+        .minimap {
+            top: 20px;
+            right: 20px;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 3px solid rgba(255,255,255,0.8);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
             display: flex;
+            align-items: center;
             justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
+            color: rgba(255,255,255,0.6);
         }
 
-        .controls-hint kbd {
-            display: inline-block;
-            background: #222;
-            padding: 2px 8px;
-            border: 2px solid #444;
-            border-radius: 2px;
-            font-size: 8px;
-            color: #aaa;
-            font-family: inherit;
+        /* Nút tương tác (Loot/Interact) */
+        .interact-btn {
+            bottom: 30%;
+            left: 45%;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
         }
 
-        /* ===== Responsive ===== */
-        @media (max-width: 500px) {
-            .game-header .title {
-                font-size: 10px;
-            }
-            .game-header .stats {
-                font-size: 7px;
-                gap: 6px;
-            }
-            .game-header .stats span {
-                padding: 2px 8px;
-            }
-            .overlay h1 {
-                font-size: 20px;
-            }
-            .overlay h2 {
-                font-size: 13px;
-            }
-            .overlay .final-score {
-                font-size: 18px;
-            }
-            .btn-arcade {
-                padding: 10px 18px;
-                font-size: 9px;
-            }
-            .controls-hint {
-                font-size: 7px;
-                gap: 8px;
-            }
-            .controls-hint kbd {
-                font-size: 7px;
-                padding: 1px 6px;
-            }
+        .interact-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
         }
 
-        @media (max-width: 380px) {
-            .game-header .title {
-                font-size: 8px;
-            }
-            .game-header .stats {
-                font-size: 6px;
-                gap: 4px;
-            }
-            .game-header .stats span {
-                padding: 2px 6px;
-            }
+        /* Hiệu ứng chuyển động khi cuộn chuột */
+        .content {
+            position: relative;
+            z-index: 20;
+            padding: 100px;
+            background: #f4f4f4;
+            text-align: center;
+            color: #333;
         }
+
+        .content h1 {
+            margin-bottom: 20px;
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="main-container">
+    <div class="scene">
+        <!-- Các lớp phong cảnh -->
+        <div class="layer sky"></div>
+        <div class="layer mountains"></div>
+        <div class="layer cliffs"></div>
+        <div class="layer forest"></div>
+        <div class="layer grass"></div>
 
-        <!-- Header -->
-        <div class="game-header">
-            <div class="title">🏃 PLATFORM JUMP</div>
-            <div class="stats">
-                <span>⭐ <span class="score-val" id="scoreDisplay">0</span></span>
-                <span>❤️ <span class="lives-val" id="livesDisplay">3</span></span>
-            </div>
+        <!-- Nhân vật -->
+        <div class="character"></div>
+
+        <!-- UI Genshin -->
+        <div class="ui-element hp-bar">
+            <div style="margin-bottom: 5px; font-size: 14px;">Lv.90 Traveler</div>
+            <div class="bar-bg"><div class="bar-fill"></div></div>
         </div>
+        
+        <div class="ui-element stamina-circle"></div>
 
-        <!-- Canvas -->
-        <div class="canvas-wrapper" id="canvasWrapper">
-            <canvas id="gameCanvas"></canvas>
+        <div class="ui-element minimap">Mini Map</div>
 
-            <!-- Start -->
-            <div class="overlay show" id="startOverlay">
-                <h1>🎮 JUMP & COLLECT</h1>
-                <p>Nhấn SPACE / ↑ hoặc chạm để nhảy<br>Thu thập ⭐, tránh 💀 rơi xuống hố</p>
-                <button class="btn-arcade blue" id="startBtn">▶ BẮT ĐẦU</button>
-            </div>
+        <div class="ui-element interact-btn">F: Tương tác</div>
+    </div>
 
-            <!-- Game Over -->
-            <div class="overlay" id="gameOverOverlay">
-                <h1>💀 GAME OVER</h1>
-                <div class="final-score" id="finalScore">0</div>
-                <p id="gameOverMsg">Hãy thử lại!</p>
-                <button class="btn-arcade red" id="restartBtn">🔄 CHƠI LẠI</button>
-            </div>
-
-            <!-- Win -->
-            <div class="overlay" id="winOverlay">
-                <h1>🎉 YOU WIN!</h1>
-                <div class="final-score" id="winScore">50</div>
-                <p>Bạn đã thu thập đủ 50 ⭐! Xuất sắc!</p>
-                <button class="btn-arcade green" id="winRestartBtn">🔄 CHƠI LẠI</button>
-            </div>
-        </div>
-
-        <!-- Controls -->
-        <div class="controls-hint">
-            <span>⌨️ <kbd>SPACE</kbd> / <kbd>↑</kbd> / <kbd>W</kbd></span>
-            <span>🖱️ Chạm / Click để nhảy</span>
-        </div>
+    <div class="content">
+        <h1>Chào mừng đến với Teyvat!</h1>
+        <p>Đây là phần nội dung dưới trang web (Scrolling). Bạn có thể cuộn xuống để thấy hiệu ứng.</p>
+        <p><i>Lưu ý: Để thấy hiệu ứng Parallax rõ nhất, bạn có thể thêm thư viện JavaScript nhỏ (ví dụ: ScrollMagic) hoặc sử dụng CSS position: fixed, nhưng ở đây mình dùng cấu trúc cơ bản để dễ chỉnh sửa.</i></p>
     </div>
 
     <script>
-        (function() {
-            'use strict';
-
-            // ===== DOM =====
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-            const wrapper = document.getElementById('canvasWrapper');
-
-            const scoreDisplay = document.getElementById('scoreDisplay');
-            const livesDisplay = document.getElementById('livesDisplay');
-
-            const startOverlay = document.getElementById('startOverlay');
-            const gameOverOverlay = document.getElementById('gameOverOverlay');
-            const winOverlay = document.getElementById('winOverlay');
-            const finalScore = document.getElementById('finalScore');
-            const winScore = document.getElementById('winScore');
-            const gameOverMsg = document.getElementById('gameOverMsg');
-
-            const startBtn = document.getElementById('startBtn');
-            const restartBtn = document.getElementById('restartBtn');
-            const winRestartBtn = document.getElementById('winRestartBtn');
-
-            // ===== Constants =====
-            const GRAVITY = 0.5;
-            const JUMP_FORCE = -11;
-            const PLAYER_W = 24;
-            const PLAYER_H = 32;
-            const COIN_SIZE = 18;
-            const PLATFORM_MIN_WIDTH = 50;
-            const PLATFORM_MAX_WIDTH = 100;
-            const PLATFORM_HEIGHT = 14;
-            const MAX_LIVES = 3;
-            const WIN_SCORE = 50;
-            const LEVEL_WIDTH = 3000;
-            const HORIZONTAL_SPEED = 2.8;
-
-            // ===== State =====
-            let game = {
-                running: false,
-                score: 0,
-                lives: MAX_LIVES,
-                cameraX: 0,
-                worldWidth: LEVEL_WIDTH,
-            };
-
-            // ===== Player =====
-            const player = {
-                x: 80,
-                y: 0,
-                w: PLAYER_W,
-                h: PLAYER_H,
-                vx: 0,
-                vy: 0,
-                onGround: false,
-                facing: 1, // 1 right, -1 left
-                jumpTimer: 0,
-            };
-
-            // ===== Platforms =====
-            let platforms = [];
-            let coins = [];
-            let spikes = [];
-            let particles = [];
-
-            // ===== Input =====
-            let jumpPressed = false;
-            let jumpConsumed = false;
-            let touchActive = false;
-
-            // ===== Canvas sizing =====
-            function resizeCanvas() {
-                const rect = wrapper.getBoundingClientRect();
-                canvas.width = rect.width;
-                canvas.height = rect.height;
-                canvas.style.width = rect.width + 'px';
-                canvas.style.height = rect.height + 'px';
-                ctx.imageSmoothingEnabled = false;
-                // Place player near bottom initially
-                if (player.y === 0) {
-                    player.y = canvas.height - 120;
-                }
-            }
-
-            window.addEventListener('resize', resizeCanvas);
-
-            // ===== Generate World =====
-            function generateWorld() {
-                platforms = [];
-                coins = [];
-                spikes = [];
-
-                const groundY = canvas.height - 30;
-                // Ground platform (full width)
-                platforms.push({
-                    x: 0,
-                    y: groundY,
-                    w: LEVEL_WIDTH,
-                    h: 30,
-                    type: 'ground'
-                });
-
-                // Generate random platforms (floating)
-                let lastX = 100;
-                let lastY = groundY - 80;
-                const numPlatforms = 25;
-
-                for (let i = 0; i < numPlatforms; i++) {
-                    const minGap = 80;
-                    const maxGap = 180;
-                    const gap = minGap + Math.random() * (maxGap - minGap);
-                    const x = lastX + gap + Math.random() * 60;
-                    const w = PLATFORM_MIN_WIDTH + Math.random() * (PLATFORM_MAX_WIDTH - PLATFORM_MIN_WIDTH);
-                    const y = Math.max(60, Math.min(groundY - 40, lastY + (Math.random() - 0.5) * 100));
-
-                    platforms.push({
-                        x: x,
-                        y: y,
-                        w: w,
-                        h: PLATFORM_HEIGHT,
-                        type: 'floating'
-                    });
-
-                    // Coins on platforms
-                    const numCoins = 1 + Math.floor(Math.random() * 2);
-                    for (let c = 0; c < numCoins; c++) {
-                        const cx = x + 10 + c * 20 + Math.random() * 10;
-                        coins.push({
-                            x: cx,
-                            y: y - COIN_SIZE - 6,
-                            w: COIN_SIZE,
-                            h: COIN_SIZE,
-                            collected: false,
-                            bob: Math.random() * Math.PI * 2,
-                        });
-                    }
-
-                    // Spikes (rare)
-                    if (Math.random() < 0.15 && i > 2) {
-                        spikes.push({
-                            x: x + w / 2 - 12,
-                            y: y - 18,
-                            w: 24,
-                            h: 18,
-                        });
-                    }
-
-                    lastX = x + w;
-                    lastY = y;
-                }
-
-                // Ensure there's a platform near the end (win zone)
-                const finalPlatform = platforms[platforms.length - 1];
-                const finishX = finalPlatform.x + finalPlatform.w + 120;
-                platforms.push({
-                    x: finishX,
-                    y: groundY - 50,
-                    w: 120,
-                    h: PLATFORM_HEIGHT,
-                    type: 'finish'
-                });
-                // Put a flag / coin on finish
-                coins.push({
-                    x: finishX + 50,
-                    y: groundY - 50 - COIN_SIZE - 10,
-                    w: COIN_SIZE,
-                    h: COIN_SIZE,
-                    collected: false,
-                    bob: 0,
-                    isFinish: true,
-                });
-            }
-
-            // ===== Reset game =====
-            function resetGame() {
-                game.score = 0;
-                game.lives = MAX_LIVES;
-                game.cameraX = 0;
-                game.running = true;
-                player.x = 80;
-                player.y = canvas.height - 120;
-                player.vx = 0;
-                player.vy = 0;
-                player.onGround = false;
-                player.facing = 1;
-                jumpPressed = false;
-                jumpConsumed = false;
-                particles = [];
-                generateWorld();
-                updateUI();
-                hideAllOverlays();
-            }
-
-            // ===== UI =====
-            function updateUI() {
-                scoreDisplay.textContent = game.score;
-                livesDisplay.textContent = game.lives;
-            }
-
-            function hideAllOverlays() {
-                startOverlay.classList.remove('show');
-                gameOverOverlay.classList.remove('show');
-                winOverlay.classList.remove('show');
-            }
-
-            function showGameOver(msg) {
-                gameOverMsg.textContent = msg || 'Hãy thử lại!';
-                finalScore.textContent = game.score;
-                gameOverOverlay.classList.add('show');
-            }
-
-            function showWin() {
-                winScore.textContent = game.score;
-                winOverlay.classList.add('show');
-            }
-
-            // ===== Collision helpers =====
-            function rectCollide(a, b) {
-                return a.x < b.x + b.w &&
-                    a.x + a.w > b.x &&
-                    a.y < b.y + b.h &&
-                    a.y + a.h > b.y;
-            }
-
-            // ===== Update =====
-            function update() {
-                if (!game.running) return;
-
-                // ---- Player physics ----
-                // Horizontal (auto-scroll right)
-                player.vx = HORIZONTAL_SPEED;
-                player.x += player.vx;
-
-                // Gravity
-                player.vy += GRAVITY;
-                if (player.vy > 15) player.vy = 15;
-
-                // Jump
-                if ((jumpPressed || touchActive) && player.onGround && !jumpConsumed) {
-                    player.vy = JUMP_FORCE;
-                    player.onGround = false;
-                    jumpConsumed = true;
-                    // Spawn jump particles
-                    for (let i = 0; i < 6; i++) {
-                        particles.push({
-                            x: player.x + player.w / 2 + (Math.random() - 0.5) * 10,
-                            y: player.y + player.h,
-                            vx: (Math.random() - 0.5) * 3,
-                            vy: Math.random() * 2,
-                            life: 20 + Math.random() * 10,
-                            maxLife: 30,
-                            size: 3 + Math.random() * 3,
-                            color: '#fcc201',
-                        });
-                    }
-                }
-
-                // Reset jump if not pressed
-                if (!jumpPressed && !touchActive) {
-                    jumpConsumed = false;
-                }
-
-                // Move Y
-                player.y += player.vy;
-
-                // ---- Collision with platforms ----
-                player.onGround = false;
-                for (const plat of platforms) {
-                    if (rectCollide(player, plat)) {
-                        // Resolve from top
-                        if (player.vy >= 0 && player.y + player.h - player.vy <= plat.y + 4) {
-                            player.y = plat.y - player.h;
-                            player.vy = 0;
-                            player.onGround = true;
-                        } else if (player.vy < 0 && player.y - player.vy >= plat.y + plat.h - 4) {
-                            player.y = plat.y + plat.h;
-                            player.vy = 0;
-                        } else {
-                            // Side collision (prevent going through)
-                            if (player.x + player.w > plat.x && player.x < plat.x + plat.w) {
-                                // Already handled, but push out horizontally if stuck
-                            }
-                        }
-                    }
-                }
-
-                // ---- Coins ----
-                for (const coin of coins) {
-                    if (coin.collected) continue;
-                    if (rectCollide(player, coin)) {
-                        coin.collected = true;
-                        if (coin.isFinish) {
-                            // Win!
-                            game.running = false;
-                            showWin();
-                            return;
-                        } else {
-                            game.score++;
-                            updateUI();
-                            // Particle burst
-                            for (let i = 0; i < 10; i++) {
-                                particles.push({
-                                    x: coin.x + coin.w / 2,
-                                    y: coin.y + coin.h / 2,
-                                    vx: (Math.random() - 0.5) * 6,
-                                    vy: (Math.random() - 0.5) * 6 - 2,
-                                    life: 20 + Math.random() * 15,
-                                    maxLife: 35,
-                                    size: 3 + Math.random() * 4,
-                                    color: '#fcc201',
-                                });
-                            }
-                            if (game.score >= WIN_SCORE) {
-                                game.running = false;
-                                showWin();
-                                return;
-                            }
-                        }
-                    }
-                }
-
-                // ---- Spikes ----
-                for (const spike of spikes) {
-                    if (rectCollide(player, spike)) {
-                        // Hurt player
-                        playerHit();
-                        return;
-                    }
-                }
-
-                // ---- Falling off screen ----
-                if (player.y > canvas.height + 50) {
-                    playerHit();
-                    return;
-                }
-
-                // ---- Camera ----
-                const targetCam = player.x - canvas.width * 0.35;
-                game.cameraX += (targetCam - game.cameraX) * 0.08;
-                game.cameraX = Math.max(0, Math.min(game.cameraX, game.worldWidth - canvas.width));
-
-                // ---- Update particles ----
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    const p = particles[i];
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.vy += 0.1;
-                    p.life--;
-                    if (p.life <= 0) {
-                        particles.splice(i, 1);
-                    }
-                }
-
-                // ---- Touch / jump reset ----
-                if (touchActive && !jumpPressed) {
-                    // If touch is held and player is on ground, jump once per touch
-                    if (player.onGround && !jumpConsumed) {
-                        player.vy = JUMP_FORCE;
-                        player.onGround = false;
-                        jumpConsumed = true;
-                        // particles
-                        for (let i = 0; i < 6; i++) {
-                            particles.push({
-                                x: player.x + player.w / 2 + (Math.random() - 0.5) * 10,
-                                y: player.y + player.h,
-                                vx: (Math.random() - 0.5) * 3,
-                                vy: Math.random() * 2,
-                                life: 20 + Math.random() * 10,
-                                maxLife: 30,
-                                size: 3 + Math.random() * 3,
-                                color: '#fcc201',
-                            });
-                        }
-                    }
-                }
-            }
-
-            function playerHit() {
-                game.lives--;
-                updateUI();
-                if (game.lives <= 0) {
-                    game.running = false;
-                    showGameOver('Hết mạng rồi!');
-                    return;
-                }
-                // Respawn player at last safe position
-                // Find nearest platform
-                let bestPlat = null;
-                let bestDist = Infinity;
-                for (const plat of platforms) {
-                    if (plat.y < canvas.height - 50) {
-                        const dist = Math.abs(plat.x + plat.w / 2 - player.x);
-                        if (dist < bestDist && player.x > plat.x - 20 && player.x < plat.x + plat.w + 20) {
-                            bestDist = dist;
-                            bestPlat = plat;
-                        }
-                    }
-                }
-                if (bestPlat) {
-                    player.y = bestPlat.y - player.h;
-                    player.x = bestPlat.x + 20;
-                    player.vy = 0;
-                    player.onGround = true;
-                } else {
-                    // Fallback: ground
-                    player.y = canvas.height - 30 - player.h;
-                    player.x = 80;
-                    player.vy = 0;
-                    player.onGround = true;
-                }
-                // Spawn hurt particles
-                for (let i = 0; i < 15; i++) {
-                    particles.push({
-                        x: player.x + player.w / 2,
-                        y: player.y + player.h / 2,
-                        vx: (Math.random() - 0.5) * 8,
-                        vy: (Math.random() - 0.5) * 8 - 2,
-                        life: 20 + Math.random() * 15,
-                        maxLife: 35,
-                        size: 4 + Math.random() * 4,
-                        color: '#d90429',
-                    });
-                }
-            }
-
-            // ===== Draw =====
-            function draw() {
-                const w = canvas.width,
-                    h = canvas.height;
-                ctx.clearRect(0, 0, w, h);
-
-                // ---- Background ----
-                ctx.fillStyle = '#0a0a12';
-                ctx.fillRect(0, 0, w, h);
-
-                // Sky gradient
-                const grad = ctx.createLinearGradient(0, 0, 0, h);
-                grad.addColorStop(0, '#1a1a3e');
-                grad.addColorStop(0.6, '#0a0a12');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, w, h);
-
-                // Stars
-                ctx.fillStyle = 'rgba(255,255,255,0.15)';
-                for (let i = 0; i < 30; i++) {
-                    const sx = (i * 137 + 50) % w;
-                    const sy = (i * 97 + 20) % (h * 0.6);
-                    const size = 1 + (i % 3);
-                    ctx.fillRect(sx, sy, size, size);
-                }
-
-                // ---- Camera transform ----
-                const camX = game.cameraX;
-
-                // ---- Draw platforms ----
-                for (const plat of platforms) {
-                    const px = plat.x - camX;
-                    if (px > w + 20 || px + plat.w < -20) continue;
-
-                    if (plat.type === 'ground') {
-                        ctx.fillStyle = '#2a2a3a';
-                        ctx.fillRect(px, plat.y, plat.w, plat.h);
-                        // Grass strip
-                        ctx.fillStyle = '#38b000';
-                        ctx.fillRect(px, plat.y, plat.w, 6);
-                        // Grid pattern
-                        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-                        ctx.lineWidth = 1;
-                        for (let gx = px; gx < px + plat.w; gx += 20) {
-                            ctx.beginPath();
-                            ctx.moveTo(gx, plat.y + 6);
-                            ctx.lineTo(gx, plat.y + plat.h);
-                            ctx.stroke();
-                        }
-                    } else if (plat.type === 'finish') {
-                        ctx.fillStyle = '#fcc201';
-                        ctx.fillRect(px, plat.y, plat.w, plat.h);
-                        ctx.fillStyle = '#d90429';
-                        ctx.fillRect(px + 4, plat.y + 2, plat.w - 8, 4);
-                        ctx.fillRect(px + 4, plat.y + plat.h - 6, plat.w - 8, 4);
-                        // Flag
-                        ctx.fillStyle = '#fff';
-                        ctx.fillRect(px + plat.w - 10, plat.y - 20, 4, 20);
-                        ctx.fillStyle = '#d90429';
-                        ctx.fillRect(px + plat.w - 6, plat.y - 20, 16, 10);
-                        ctx.fillStyle = '#fcc201';
-                        ctx.fillRect(px + plat.w + 2, plat.y - 16, 6, 6);
-                    } else {
-                        // Floating
-                        ctx.fillStyle = '#3a3a5a';
-                        ctx.fillRect(px, plat.y, plat.w, plat.h);
-                        ctx.fillStyle = '#4cc9f0';
-                        ctx.fillRect(px + 2, plat.y + 2, plat.w - 4, 3);
-                        ctx.fillRect(px + 2, plat.y + plat.h - 5, plat.w - 4, 3);
-                        // Edge glow
-                        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-                        ctx.fillRect(px + 4, plat.y + 4, 4, plat.h - 8);
-                        ctx.fillRect(px + plat.w - 8, plat.y + 4, 4, plat.h - 8);
-                    }
-                }
-
-                // ---- Draw coins ----
-                for (const coin of coins) {
-                    if (coin.collected) continue;
-                    const cx = coin.x - camX;
-                    const cy = coin.y + Math.sin(coin.bob + Date.now() / 400) * 2;
-                    if (cx > w + 20 || cx < -20) continue;
-
-                    const s = coin.w;
-                    ctx.fillStyle = coin.isFinish ? '#d90429' : '#fcc201';
-                    ctx.fillRect(cx, cy, s, s);
-                    // Inner
-                    ctx.fillStyle = '#fff';
-                    ctx.fillRect(cx + 4, cy + 4, 4, 4);
-                    ctx.fillRect(cx + s - 8, cy + 4, 4, 4);
-                    ctx.fillRect(cx + 4, cy + s - 8, 4, 4);
-                    ctx.fillRect(cx + s - 8, cy + s - 8, 4, 4);
-                    // Shine
-                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                    ctx.fillRect(cx + 2, cy + 2, 6, 6);
-                    if (coin.isFinish) {
-                        ctx.fillStyle = '#fff';
-                        ctx.font = '12px "Press Start 2P", monospace';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText('🏁', cx + s / 2, cy + s / 2 + 2);
-                    }
-                }
-
-                // ---- Draw spikes ----
-                for (const spike of spikes) {
-                    const sx = spike.x - camX;
-                    if (sx > w + 20 || sx < -20) continue;
-                    ctx.fillStyle = '#d90429';
-                    // Triangle
-                    ctx.beginPath();
-                    ctx.moveTo(sx + spike.w / 2, spike.y);
-                    ctx.lineTo(sx, spike.y + spike.h);
-                    ctx.lineTo(sx + spike.w, spike.y + spike.h);
-                    ctx.fill();
-                    ctx.fillStyle = '#ff4444';
-                    ctx.beginPath();
-                    ctx.moveTo(sx + spike.w / 2, spike.y + 4);
-                    ctx.lineTo(sx + 6, spike.y + spike.h - 4);
-                    ctx.lineTo(sx + spike.w - 6, spike.y + spike.h - 4);
-                    ctx.fill();
-                }
-
-                // ---- Draw player ----
-                const px = player.x - camX;
-                const py = player.y;
-                const pw = player.w,
-                    ph = player.h;
-
-                // Shadow
-                ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                ctx.fillRect(px + 2, py + ph - 2, pw, 4);
-
-                // Body
-                ctx.fillStyle = '#2b2d42';
-                ctx.fillRect(px + 2, py + 10, pw - 4, 16);
-                // Head
-                ctx.fillStyle = '#f5d0b8';
-                ctx.fillRect(px + 4, py + 2, pw - 8, 12);
-                // Eyes
-                ctx.fillStyle = '#111';
-                if (player.facing > 0) {
-                    ctx.fillRect(px + 12, py + 4, 4, 4);
-                    ctx.fillRect(px + 18, py + 4, 4, 4);
-                } else {
-                    ctx.fillRect(px + 4, py + 4, 4, 4);
-                    ctx.fillRect(px + 10, py + 4, 4, 4);
-                }
-                // Mouth
-                ctx.fillRect(px + 10, py + 10, 6, 2);
-                // Hat
-                ctx.fillStyle = '#d90429';
-                ctx.fillRect(px + 6, py - 2, 12, 4);
-                ctx.fillRect(px + 8, py - 6, 8, 4);
-                // Legs
-                ctx.fillStyle = '#1a1a2e';
-                ctx.fillRect(px + 4, py + 26, 6, 6);
-                ctx.fillRect(px + pw - 10, py + 26, 6, 6);
-                // Shoes
-                ctx.fillStyle = '#fcc201';
-                ctx.fillRect(px + 2, py + 30, 8, 4);
-                ctx.fillRect(px + pw - 10, py + 30, 8, 4);
-
-                // ---- Particles ----
-                for (const p of particles) {
-                    const px2 = p.x - camX;
-                    const alpha = p.life / p.maxLife;
-                    ctx.globalAlpha = alpha;
-                    ctx.fillStyle = p.color;
-                    ctx.fillRect(px2 - p.size / 2, p.y - p.size / 2, p.size, p.size);
-                }
-                ctx.globalAlpha = 1;
-
-                // ---- HUD on canvas ----
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(10, 10, 100, 26);
-                ctx.fillStyle = '#fff';
-                ctx.font = '9px "Press Start 2P", monospace';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('⭐ ' + game.score, 18, 24);
-
-                // Progress bar
-                const progress = Math.min(1, game.score / WIN_SCORE);
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(canvas.width - 130, 12, 110, 18);
-                ctx.fillStyle = '#4cc9f0';
-                ctx.fillRect(canvas.width - 126, 16, progress * 102, 10);
-                ctx.fillStyle = '#fff';
-                ctx.font = '7px "Press Start 2P", monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText('🏆', canvas.width - 75, 23);
-
-                // ---- Touch hint ----
-                if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-                    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-                    ctx.font = '7px "Press Start 2P", monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('CHẠM ĐỂ NHẢY', canvas.width / 2, canvas.height - 12);
-                }
-            }
-
-            // ===== Game Loop =====
-            function gameLoop() {
-                update();
-                draw();
-                requestAnimationFrame(gameLoop);
-            }
-
-            // ===== Start / Restart =====
-            function startGame() {
-                resetGame();
-            }
-
-            // ===== Events =====
-            // Keyboard
-            document.addEventListener('keydown', (e) => {
-                if (e.key === ' ' || e.key === 'Space' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-                    e.preventDefault();
-                    if (!game.running) return;
-                    jumpPressed = true;
-                    if (player.onGround && !jumpConsumed) {
-                        player.vy = JUMP_FORCE;
-                        player.onGround = false;
-                        jumpConsumed = true;
-                        // particles
-                        for (let i = 0; i < 6; i++) {
-                            particles.push({
-                                x: player.x + player.w / 2 + (Math.random() - 0.5) * 10,
-                                y: player.y + player.h,
-                                vx: (Math.random() - 0.5) * 3,
-                                vy: Math.random() * 2,
-                                life: 20 + Math.random() * 10,
-                                maxLife: 30,
-                                size: 3 + Math.random() * 3,
-                                color: '#fcc201',
-                            });
-                        }
-                    }
-                }
-            });
-
-            document.addEventListener('keyup', (e) => {
-                if (e.key === ' ' || e.key === 'Space' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-                    e.preventDefault();
-                    jumpPressed = false;
-                }
-            });
-
-            // Touch / Mouse
-            function handlePointerDown(e) {
-                e.preventDefault();
-                if (!game.running) return;
-                touchActive = true;
-                if (player.onGround && !jumpConsumed) {
-                    player.vy = JUMP_FORCE;
-                    player.onGround = false;
-                    jumpConsumed = true;
-                    for (let i = 0; i < 6; i++) {
-                        particles.push({
-                            x: player.x + player.w / 2 + (Math.random() - 0.5) * 10,
-                            y: player.y + player.h,
-                            vx: (Math.random() - 0.5) * 3,
-                            vy: Math.random() * 2,
-                            life: 20 + Math.random() * 10,
-                            maxLife: 30,
-                            size: 3 + Math.random() * 3,
-                            color: '#fcc201',
-                        });
-                    }
-                }
-            }
-
-            function handlePointerUp(e) {
-                e.preventDefault();
-                touchActive = false;
-            }
-
-            canvas.addEventListener('mousedown', handlePointerDown);
-            canvas.addEventListener('mouseup', handlePointerUp);
-            canvas.addEventListener('mouseleave', handlePointerUp);
-
-            canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
-            canvas.addEventListener('touchend', handlePointerUp, { passive: false });
-            canvas.addEventListener('touchcancel', handlePointerUp, { passive: false });
-
-            // Buttons
-            startBtn.addEventListener('click', startGame);
-            restartBtn.addEventListener('click', startGame);
-            winRestartBtn.addEventListener('click', startGame);
-
-            // ===== Init =====
-            resizeCanvas();
-            generateWorld();
-            player.y = canvas.height - 120;
-            player.x = 80;
-            updateUI();
-            hideAllOverlays();
-            startOverlay.classList.add('show');
-            game.running = false;
-
-            // Start loop
-            gameLoop();
-
-            // Handle resize
-            window.addEventListener('resize', () => {
-                resizeCanvas();
-                // Reposition ground if needed
-                generateWorld();
-                if (!game.running) {
-                    player.y = canvas.height - 120;
-                }
-            });
-
-            // Prevent scrolling
-            document.addEventListener('touchmove', (e) => {
-                if (e.target.closest('.main-container')) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-
-        })();
+        // Thêm hiệu ứng đơn giản: Di chuyển nhân vật theo chuột (tùy chọn)
+        document.addEventListener('mousemove', (e) => {
+            const char = document.querySelector('.character');
+            const x = (window.innerWidth / 2 - e.pageX) / 30;
+            const y = (window.innerHeight / 2 - e.pageY) / 30;
+            
+            // Chỉnh nhẹ vị trí để tạo cảm giác nhìn nghiêng
+            char.style.marginLeft = `${x}px`;
+            char.style.marginTop = `${y}px`;
+        });
     </script>
 </body>
 </html>

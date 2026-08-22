@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { gameService, statsService } from '../../services/api.js'
+import { gameService, statsService, templateService } from '../../services/api.js'
 import { useTemplates } from '../../lib/hooks.js'
 import { StampToken, StatusBadge, IconButton, Loader, ErrorState, EmptyState, PrimaryButton, GhostButton, Modal, TicketStub } from '../../components/ui.jsx'
 import { socket } from '../../socket/socket.js'
@@ -50,6 +50,8 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
   const [shareGame, setShareGame] = useState(null);
+  const [confirmReset, setConfirmReset] = useState(null); // null | "games" | "templates"
+  const [resetting, setResetting] = useState(false);
 
   const load = useCallback(() => {
     setGames(null); setStats(null); setError(null);
@@ -68,6 +70,25 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
     socket.emit(SOCKET_EVENTS.JOIN_CLASSROOM, { gameId: gid });
     socket.emit(SOCKET_EVENTS.START_GAME, { gameId: gid });
     showToast(`Đã phát trực tiếp "${g.name}" — học sinh nhập mã ${g.code}`, "success");
+  };
+
+  const handleReset = async () => {
+    setResetting(true);
+    try {
+      if (confirmReset === "games") {
+        const r = await gameService.removeAll();
+        showToast(r?.message || "Đã xóa tất cả trò chơi", "success");
+      } else if (confirmReset === "templates") {
+        const r = await templateService.removeAll();
+        showToast(r?.message || "Đã xóa tất cả template", "success");
+      }
+      setConfirmReset(null);
+      load();
+    } catch (e) {
+      showToast(e.message || "Lỗi khi xóa dữ liệu", "error");
+    } finally {
+      setResetting(false);
+    }
   };
 
   const t = stats || { totals: {}, activity: [], topPlayers: [], topGames: [], subjects: [], attention: { drafts: [], neverPlayed: [] } };
@@ -181,6 +202,42 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
           <div className="flex justify-end gap-3 mt-6">
             <GhostButton onClick={() => setShareGame(null)}>Đóng</GhostButton>
             <PrimaryButton onClick={() => { handleLive(shareGame); setShareGame(null); }}>Phát trực tiếp ▶</PrimaryButton>
+          </div>
+        </Modal>
+      )}
+
+      {/* Vùng nguy hiểm — reset dữ liệu */}
+      <section className="note-card p-5 border-l-4 border-l-red-400">
+        <h2 className="font-display text-lg text-ink mb-1">⚠️ Vùng nguy hiểm</h2>
+        <p className="text-sm text-[#8A7C63] mb-4">Xóa toàn bộ dữ liệu để tạo lại từ đầu. Thao tác không thể hoàn tác.</p>
+        <div className="flex flex-wrap gap-3">
+          <button onClick={() => setConfirmReset("games")}
+            className="px-4 py-2 rounded-xl border-2 border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 transition">
+            🗑️ Xóa tất cả trò chơi
+          </button>
+          <button onClick={() => setConfirmReset("templates")}
+            className="px-4 py-2 rounded-xl border-2 border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 transition">
+            🗑️ Xóa tất cả template
+          </button>
+        </div>
+      </section>
+
+      {confirmReset && (
+        <Modal onClose={() => !resetting && setConfirmReset(null)}>
+          <h3 className="font-display text-xl text-ink mb-2">
+            Xác nhận xóa {confirmReset === "games" ? "tất cả trò chơi?" : "tất cả template?"}
+          </h3>
+          <p className="text-sm text-[#8A7C63] mb-1">
+            {confirmReset === "games"
+              ? "Sẽ xóa toàn bộ games kèm câu hỏi và kết quả liên quan."
+              : "Sẽ xóa toàn bộ templates trong hệ thống."}
+          </p>
+          <p className="text-sm text-red-500 font-semibold mb-6">Hành động này không thể hoàn tác!</p>
+          <div className="flex justify-end gap-3">
+            <GhostButton onClick={() => setConfirmReset(null)} disabled={resetting}>Hủy</GhostButton>
+            <PrimaryButton onClick={handleReset} disabled={resetting}>
+              {resetting ? "Đang xóa..." : "Xóa hết"}
+            </PrimaryButton>
           </div>
         </Modal>
       )}
