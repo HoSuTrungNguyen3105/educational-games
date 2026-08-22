@@ -12,6 +12,16 @@ router.get("/templates", async (_req, res, next) => {
   }
 });
 
+router.get("/templates/slug/:slug", async (req, res, next) => {
+  try {
+    const tpl = await setupService.getTemplateBySlug(req.params.slug);
+    if (!tpl) return res.status(404).json({ message: "Không tìm thấy template" });
+    res.json(tpl);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get("/templates/:id", async (req, res, next) => {
   try {
     const tpl = await setupService.getTemplate(req.params.id);
@@ -42,7 +52,10 @@ router.put("/templates/:id", authenticate, requireRoles("teacher", "admin"), asy
 
 router.delete("/templates/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
-    await setupService.removeTemplate(req.params.id);
+    const result = await setupService.removeTemplate(req.params.id);
+    if (result.deactivated) {
+      return res.json({ message: `Template đang được ${result.gamesCount} game sử dụng, đã chuyển sang inactive`, deactivated: true });
+    }
     res.status(204).end();
   } catch (e) {
     next(e);

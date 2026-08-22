@@ -24,7 +24,6 @@ export async function getStats() {
     avgAccuracy: results.length ? Math.round(results.reduce((s, r) => s + (r.accuracy || 0), 0) / results.length) : 0,
   };
 
-  // Hoạt động theo ngày: 7 ngày gần nhất (result không có createdAt coi như ngoài phạm vi)
   const now = new Date();
   const counts = new Map();
   for (let i = DAYS - 1; i >= 0; i--) {
@@ -38,7 +37,6 @@ export async function getStats() {
   });
   const activity = [...counts.entries()].map(([date, count]) => ({ date, count }));
 
-  // Học sinh xuất sắc: tổng hợp theo playerName/playerId
   const byPlayer = new Map();
   results.forEach((r) => {
     const key = r.playerId || r.playerName || "Ẩn danh";
@@ -57,15 +55,13 @@ export async function getStats() {
     .slice(0, 5)
     .map(({ name, games, score, accuracy }) => ({ name, games, score, accuracy }));
 
-  // Lượt chơi theo từng trò chơi
   const playedCount = new Map();
   results.forEach((r) => playedCount.set(r.gameId, (playedCount.get(r.gameId) || 0) + 1));
   const topGames = games
-    .map((g) => ({ id: g.id, title: g.title, code: g.code, status: g.status, playedCount: playedCount.get(g.id) || 0 }))
-    .sort((a, b) => b.playedCount - a.playedCount || b.id.localeCompare(a.id))
+    .map((g) => ({ id: g._id?.toString() || g.id, name: g.name, code: g.code, status: g.status, playedCount: playedCount.get(g._id?.toString() || g.id) || 0 }))
+    .sort((a, b) => b.playedCount - a.playedCount)
     .slice(0, 5);
 
-  // Phân bố theo môn học
   const bySubject = {};
   games.forEach((g) => {
     const s = g.subject || "Khác";
@@ -75,14 +71,13 @@ export async function getStats() {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
-  // Việc cần làm
   const neverPlayed = games
-    .filter((g) => g.status === "published" && (playedCount.get(g.id) || 0) === 0)
-    .map((g) => ({ id: g.id, title: g.title, code: g.code }))
+    .filter((g) => g.status === "published" && (playedCount.get(g._id?.toString()) || 0) === 0)
+    .map((g) => ({ id: g._id?.toString(), name: g.name, code: g.code }))
     .slice(0, 5);
   const drafts = games
     .filter((g) => g.status === "draft")
-    .map((g) => ({ id: g.id, title: g.title }))
+    .map((g) => ({ id: g._id?.toString(), name: g.name }))
     .slice(0, 5);
 
   return { totals, activity, topPlayers, topGames, subjects, attention: { drafts, neverPlayed } };

@@ -58,7 +58,7 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
       try {
         const g = await gameService.get(gameId);
         if (cancelled) return;
-        setTitle(g ? g.title : "");
+        setTitle(g ? g.name : "");
         loadTemplate(g?.design || null);
         setLoading(false);
       } catch (e) {
@@ -103,11 +103,11 @@ export default function GameBuilder({ gameId, onDone, onCancel, showToast }) {
       let id = gameId;
       const payload = { design: template };
       if (template?.templateId) payload.templateId = template.templateId;
-      if (title.trim()) payload.title = title.trim();
+      if (title.trim()) payload.name = title.trim();
       if (id) await gameService.update(id, payload);
       else {
         const created = await gameService.create({ 
-          title: title.trim() || "Trò chơi mới", 
+          name: title.trim() || "Trò chơi mới", 
           description: "", 
           subject: "Tổng hợp", 
           topic: "", 

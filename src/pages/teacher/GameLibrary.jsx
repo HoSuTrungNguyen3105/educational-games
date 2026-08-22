@@ -15,10 +15,6 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
   const [error, setError] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [shareGame, setShareGame] = useState(null);
-  const [htmlTemplateGame, setHtmlTemplateGame] = useState(null);
-  const [htmlContent, setHtmlContent] = useState("");
-  const [htmlSaving, setHtmlSaving] = useState(false);
-  const [htmlLoading, setHtmlLoading] = useState(false);
   const subjects = useSubjects();
   const categories = useCategories();
 
@@ -37,37 +33,10 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
       showToast("Chưa kết nối realtime. Kiểm tra VITE_SOCKET_URL hoặc backend Socket.IO.", "error");
       return;
     }
-    socket.emit(SOCKET_EVENTS.JOIN_CLASSROOM, { gameId: g.id });
-    socket.emit(SOCKET_EVENTS.START_GAME, { gameId: g.id });
-    showToast(`Đã phát trực tiếp "${g.title}" — học sinh nhập mã ${g.code}`, "success");
-  };
-
-  const handleOpenHtmlTemplate = async (g) => {
-    setHtmlTemplateGame(g);
-    setHtmlContent("");
-    setHtmlLoading(true);
-    try {
-      const res = await gameService.getTemplate(g.id);
-      setHtmlContent(res?.htmlTemplate || "");
-    } catch (e) {
-      showToast(e.message || "Không tải được HTML template", "error");
-      setHtmlTemplateGame(null);
-    }
-    setHtmlLoading(false);
-  };
-
-  const handleSaveHtmlTemplate = async () => {
-    if (!htmlTemplateGame) return;
-    setHtmlSaving(true);
-    try {
-      await gameService.saveTemplate(htmlTemplateGame.id, htmlContent);
-      showToast("Đã lưu HTML Template", "success");
-      setHtmlTemplateGame(null);
-      onChanged();
-    } catch (e) {
-      showToast(e.message || "Không lưu được HTML template", "error");
-    }
-    setHtmlSaving(false);
+    const gid = g._id?.toString() || g.id;
+    socket.emit(SOCKET_EVENTS.JOIN_CLASSROOM, { gameId: gid });
+    socket.emit(SOCKET_EVENTS.START_GAME, { gameId: gid });
+    showToast(`Đã phát trực tiếp "${g.name}" — học sinh nhập mã ${g.code}`, "success");
   };
 
   return (
@@ -111,57 +80,35 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
       )}
       {!error && games && games.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {games.map(g => (
-            <GameCard key={g.id} game={g} onEdit={() => onEdit(g.id)} onResults={() => onResults(g.id)}
-              onDesign={() => onDesign(g.id)}
-              onHtmlTemplate={() => handleOpenHtmlTemplate(g)}
-              onDuplicate={() => handleDuplicate(g.id)} onDelete={() => setConfirmDelete(g)} onShare={() => setShareGame(g)} onLive={() => handleLive(g)} />
-          ))}
+          {games.map(g => {
+            const gid = g._id?.toString() || g.id;
+            return (
+              <GameCard key={gid} game={g} onEdit={() => onEdit(gid)} onResults={() => onResults(gid)}
+                onDesign={() => onDesign(gid)}
+                onDuplicate={() => handleDuplicate(gid)} onDelete={() => setConfirmDelete(g)} onShare={() => setShareGame(g)} onLive={() => handleLive(g)} />
+            );
+          })}
         </div>
       )}
 
       {confirmDelete && (
         <Modal onClose={() => setConfirmDelete(null)}>
-          <h3 className="font-display text-xl text-ink mb-2">Xóa "{confirmDelete.title}"?</h3>
+          <h3 className="font-display text-xl text-ink mb-2">Xóa "{confirmDelete.name}"?</h3>
           <p className="text-sm text-[#8A7C63] mb-6">Thao tác này không thể hoàn tác. Toàn bộ câu hỏi và kết quả liên quan sẽ bị xóa.</p>
           <div className="flex justify-end gap-3">
             <GhostButton onClick={() => setConfirmDelete(null)}>Hủy</GhostButton>
-            <PrimaryButton onClick={() => handleDelete(confirmDelete.id)} className="!bg-ticket">Xóa trò chơi</PrimaryButton>
+            <PrimaryButton onClick={() => handleDelete(confirmDelete._id?.toString() || confirmDelete.id)} className="!bg-ticket">Xóa trò chơi</PrimaryButton>
           </div>
         </Modal>
       )}
       {shareGame && (
         <Modal onClose={() => setShareGame(null)}>
-          <h3 className="font-display text-xl text-ink mb-2">Vé mời "{shareGame.title}"</h3>
+          <h3 className="font-display text-xl text-ink mb-2">Vé mời "{shareGame.name}"</h3>
           <p className="text-sm text-[#8A7C63] mb-4">Học sinh nhập mã vé sau tại màn hình "Tham gia trò chơi":</p>
           <TicketStub icon="🎟️" code={shareGame.code} notchBg="#FFFBF2" />
           <div className="flex justify-end mt-6">
             <PrimaryButton onClick={() => setShareGame(null)}>Đã hiểu</PrimaryButton>
           </div>
-        </Modal>
-      )}
-      {htmlTemplateGame && (
-        <Modal onClose={() => setHtmlTemplateGame(null)}>
-          <h3 className="font-display text-xl text-ink mb-1">HTML Template</h3>
-          <p className="text-sm text-[#8A7C63] mb-4">Cập nhật HTML template cho "{htmlTemplateGame.title}". Template sẽ được load trong iframe khi học sinh chơi.</p>
-          {htmlLoading ? (
-            <Loader label="Đang tải template..." />
-          ) : (
-            <>
-              <textarea
-                value={htmlContent}
-                onChange={e => setHtmlContent(e.target.value)}
-                placeholder="Dán HTML template vào đây..."
-                className="w-full h-72 note-card px-4 py-3 text-sm font-mono resize-none placeholder:text-[#B7A987]"
-              />
-              <div className="flex justify-end gap-3 mt-4">
-                <GhostButton onClick={() => setHtmlTemplateGame(null)}>Hủy</GhostButton>
-                <PrimaryButton onClick={handleSaveHtmlTemplate} disabled={htmlSaving} className="!bg-teal">
-                  {htmlSaving ? "Đang lưu..." : "💾 Lưu template"}
-                </PrimaryButton>
-              </div>
-            </>
-          )}
         </Modal>
       )}
     </div>

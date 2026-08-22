@@ -18,7 +18,7 @@ const STEPS = [
 export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) {
   const [loading, setLoading] = useState(!!gameId);
   const [stepIdx, setStepIdx] = useState(0);
-  const [form, setForm] = useState({ title: "", description: "", subject: "", topic: "", template: null, theme: "gold" });
+  const [form, setForm] = useState({ name: "", description: "", subject: "", topic: "", templateId: null, theme: "gold" });
   const [questions, setQuestions] = useState([]);
   const [savingStatus, setSavingStatus] = useState(null);
   const templates = useTemplates();
@@ -29,7 +29,11 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
     if (!gameId) return;
     (async () => {
       const g = await gameService.get(gameId);
-      if (g) { setForm({ title: g.title, description: g.description, subject: g.subject, topic: g.topic, template: g.template, theme: g.theme || "gold" }); setStepIdx(1); }
+      if (g) {
+        const tid = g.templateId ? (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid || g.templateId) : null;
+        setForm({ name: g.name || g.title || "", description: g.description, subject: g.subject, topic: g.topic, templateId: tid, theme: g.theme || "gold" });
+        setStepIdx(1);
+      }
       const qs = await questionService.listByGame(gameId);
       setQuestions(qs.length ? qs : [emptyQuestion()]);
       setLoading(false);
@@ -40,8 +44,8 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
 
   const step = STEPS[stepIdx];
   const canNext = useMemo(() => {
-    if (step.id === "template") return !!form.template;
-    if (step.id === "info") return form.title.trim().length > 2 && form.topic.trim().length > 1;
+    if (step.id === "template") return !!form.templateId;
+    if (step.id === "info") return form.name.trim().length > 2 && form.topic.trim().length > 1;
     if (step.id === "questions") return questions.length > 0 && questions.every(q => q.content.trim() && q.correctAnswer && q.options.every(o => o.content.trim()));
     return true;
   }, [step, form, questions]);
@@ -51,10 +55,10 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
     let id = gameId;
     const payload = { ...form, subject: form.subject || (subjects[0] || ""), status, questionsCount: questions.length };
     if (id) await gameService.update(id, payload);
-    else { const created = await gameService.create(payload); id = created.id; }
+    else { const created = await gameService.create(payload); id = created._id?.toString() || created.id; }
     await questionService.save(id, questions);
     setSavingStatus(null);
-    showToast(status === "published" ? "Đã xuất bản trò chơi 🎉" : "Đã lưu bản nháp", "success");
+    showToast(status === "published" ? "Đã xuất bản trò chơi" : "Đã lưu bản nháp", "success");
     onDone();
   };
 
@@ -83,7 +87,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
           {step.id === "preview" ? (
             <>
               <GhostButton onClick={() => persist("draft")} disabled={savingStatus !== null}>{savingStatus === "draft" ? "Đang lưu..." : "Lưu bản nháp"}</GhostButton>
-              <PrimaryButton onClick={() => persist("published")} disabled={savingStatus !== null}>{savingStatus === "published" ? "Đang xuất bản..." : "Xuất bản 🚀"}</PrimaryButton>
+              <PrimaryButton onClick={() => persist("published")} disabled={savingStatus !== null}>{savingStatus === "published" ? "Đang xuất bản..." : "Xuất bản"}</PrimaryButton>
             </>
           ) : (
             <PrimaryButton onClick={() => setStepIdx(i => Math.min(STEPS.length - 1, i + 1))} disabled={!canNext}>Tiếp tục →</PrimaryButton>
@@ -132,14 +136,14 @@ function StepTemplate({ form, setForm, templates, categories }) {
       </div>
       <div className="grid sm:grid-cols-2 gap-4">
         {list.map(t => (
-          <button key={t.id} onClick={() => setForm(f => ({ ...f, template: t.id }))}
+          <button key={t._id} onClick={() => setForm(f => ({ ...f, templateId: t._id }))}
             className={`text-left p-5 rounded-2xl border-2 transition flex gap-4 items-start
-              ${form.template === t.id ? "border-ticket bg-ticket/5" : "border-ink/10 hover:border-ink/25"}`}>
+              ${form.templateId === t._id ? "border-ticket bg-ticket/5" : "border-ink/10 hover:border-ink/25"}`}>
             <StampToken icon={t.icon} ring={t.ring} size={48} fontSize={22} />
             <div>
               <h3 className="font-display text-base text-ink">{t.name}</h3>
               <p className="text-sm text-[#8A7C63] mt-1">{t.description}</p>
-              <span className="inline-block mt-2 text-[10px] font-mono uppercase text-[#B7A987]">{t.categoryLabel}</span>
+              <span className="inline-block mt-2 text-[10px] font-mono uppercase text-[#B7A987]">{t.category}</span>
             </div>
           </button>
         ))}
@@ -158,7 +162,7 @@ function StepInfo({ form, setForm, subjects }) {
       <h2 className="font-display text-xl text-ink mb-6">Nhập thông tin trò chơi</h2>
       <div className="grid sm:grid-cols-2 gap-x-6">
         <Field label="Tên trò chơi">
-          <input className={inputCls} value={form.title} maxLength={80} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Ví dụ: Ôn tập Toán lớp 3" />
+          <input className={inputCls} value={form.name} maxLength={80} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ví dụ: Ôn tập Toán lớp 3" />
         </Field>
         <Field label="Môn học">
           <select className={inputCls} value={form.subject || (subjects[0] || "")} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}>
@@ -273,13 +277,12 @@ function StepQuestions({ questions, setQuestions }) {
               return {
                 id: uid("question"),
                 content: q.question,
-                options: opts.map(({ id, content }) => ({ id, content })), // remove _key
+                options: opts.map(({ id, content }) => ({ id, content })),
                 correctAnswer: correctOpt ? correctOpt.id : null,
                 timeLimit: q.time || 20,
                 points: q.score || 100
               };
             });
-            // if we only had the default empty question, replace it. Otherwise append.
             if (questions.length === 1 && questions[0].content === "") {
               setQuestions(mapped);
             } else {
@@ -311,7 +314,7 @@ function StepCustomize({ form, setForm }) {
 }
 
 function StepPreview({ form, questions, templates }) {
-  const tpl = templates.find(t => t.id === form.template);
+  const tpl = templates.find(t => t._id === form.templateId);
   const themeColor = (THEMES.find(t => t.id === form.theme) || THEMES[0]).color;
   return (
     <div>
@@ -320,7 +323,7 @@ function StepPreview({ form, questions, templates }) {
         <div className="flex items-center gap-4 mb-6">
           <StampToken icon={tpl ? tpl.icon : "🎲"} ring={themeColor} size={56} fontSize={26} />
           <div>
-            <h3 className="font-display text-2xl text-ink">{form.title || "Tên trò chơi"}</h3>
+            <h3 className="font-display text-2xl text-ink">{form.name || "Tên trò chơi"}</h3>
             <p className="text-sm text-[#8A7C63]">{form.subject} · {form.topic || "Chủ đề"}</p>
           </div>
         </div>

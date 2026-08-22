@@ -36,7 +36,11 @@ export function useTemplates() {
 export function useTemplate(game) {
   const templates = useTemplates();
   if (!game) return FALLBACK_TEMPLATE;
-  return templates.find((t) => t.id === game.template) || FALLBACK_TEMPLATE;
+  if (game.templateId) {
+    const tid = typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || game.templateId;
+    return templates.find((t) => t._id === tid) || FALLBACK_TEMPLATE;
+  }
+  return templates.find((t) => t.slug === game.template || t.id === game.template) || FALLBACK_TEMPLATE;
 }
 
 export function useMediaQuery(query) {

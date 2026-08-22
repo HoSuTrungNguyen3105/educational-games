@@ -9,7 +9,8 @@ import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 
 export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onDesign, onHtmlTemplate }) {
   const templates = useTemplates();
-  const tpl = templates.find(t => t.id === game.template);
+  const tplId = game.templateId ? (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || game.templateId) : null;
+  const tpl = tplId ? templates.find(t => t._id === tplId) : templates.find(t => t.slug === game.template || t.id === game.template);
   return (
     <div className="note-card p-5 flex flex-col gap-3 anim-pop hover:-translate-y-0.5 transition shadow-[0_2px_0_rgba(0,0,0,0.06)]">
       <div className="flex items-start justify-between">
@@ -17,19 +18,17 @@ export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onSha
         <StatusBadge status={game.status} />
       </div>
       <div>
-        <h3 className="font-display text-lg text-ink leading-snug clamp-2">{game.title}</h3>
+        <h3 className="font-display text-lg text-ink leading-snug clamp-2">{game.name}</h3>
         <p className="text-sm text-[#8A7C63] mt-1 clamp-2">{game.description}</p>
       </div>
       <div className="flex items-center gap-3 text-xs text-[#8A7C63] font-mono flex-wrap">
-        <span>{game.subject}</span><span>·</span><span>{tpl ? tpl.categoryLabel : ""}</span><span>·</span><span>{game.questionsCount} câu hỏi</span><span>·</span><span>{game.playersCount} lượt chơi</span>
+        <span>{game.subject}</span><span>·</span><span>{tpl ? tpl.category : ""}</span><span>·</span><span>{game.questionsCount} câu hỏi</span><span>·</span><span>{game.playersCount} lượt chơi</span>
       </div>
       <hr className="dash-rule my-1" />
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-2">
           <IconButton title="Chỉnh sửa" onClick={onEdit}>✏️</IconButton>
           {onDesign && <IconButton title="Thiết kế giao diện (Game Builder)" onClick={onDesign}>🎨</IconButton>}
-          {onHtmlTemplate && <IconButton title="Cập nhật HTML Template" onClick={onHtmlTemplate}>📝</IconButton>}
-          {/* {onDuplicate && <IconButton title="Sao chép" onClick={onDuplicate}>📄</IconButton>} */}
           {onShare && game.status === "published" && <IconButton title="Chia sẻ" onClick={onShare}>🎟️</IconButton>}
           {onDelete && <IconButton title="Xóa" onClick={onDelete}>🗑️</IconButton>}
         </div>
@@ -65,14 +64,15 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
       showToast("Chưa kết nối realtime. Kiểm tra VITE_SOCKET_URL hoặc backend Socket.IO.", "error");
       return;
     }
-    socket.emit(SOCKET_EVENTS.JOIN_CLASSROOM, { gameId: g.id });
-    socket.emit(SOCKET_EVENTS.START_GAME, { gameId: g.id });
-    showToast(`Đã phát trực tiếp "${g.title}" — học sinh nhập mã ${g.code}`, "success");
+    const gid = g._id?.toString() || g.id;
+    socket.emit(SOCKET_EVENTS.JOIN_CLASSROOM, { gameId: gid });
+    socket.emit(SOCKET_EVENTS.START_GAME, { gameId: gid });
+    showToast(`Đã phát trực tiếp "${g.name}" — học sinh nhập mã ${g.code}`, "success");
   };
 
   const t = stats || { totals: {}, activity: [], topPlayers: [], topGames: [], subjects: [], attention: { drafts: [], neverPlayed: [] } };
-  const draftGames = (stats ? stats.attention.drafts : []).map(d => ({ ...d, raw: games?.find(g => g.id === d.id) }));
-  const neverPlayedGames = (stats ? stats.attention.neverPlayed : []).map(n => ({ ...n, raw: games?.find(g => g.id === n.id) }));
+  const draftGames = (stats ? stats.attention.drafts : []).map(d => ({ ...d, raw: games?.find(g => (g._id?.toString() || g.id) === d.id) }));
+  const neverPlayedGames = (stats ? stats.attention.neverPlayed : []).map(n => ({ ...n, raw: games?.find(g => (g._id?.toString() || g.id) === n.id) }));
 
   return (
     <div className="space-y-8">
@@ -117,7 +117,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
                     <ul className="space-y-2">
                       {draftGames.map(d => (
                         <li key={d.id} className="flex items-center justify-between gap-3 bg-paper rounded-xl px-3 py-2">
-                          <span className="text-sm font-body text-ink truncate">{d.title}</span>
+                          <span className="text-sm font-body text-ink truncate">{d.name}</span>
                           <button onClick={() => onEdit(d.id)} className="text-xs font-semibold text-ticket hover:underline shrink-0">Chỉnh sửa →</button>
                         </li>
                       ))}
@@ -132,7 +132,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
                     <ul className="space-y-2">
                       {neverPlayedGames.map(n => (
                         <li key={n.id} className="flex items-center justify-between gap-3 bg-paper rounded-xl px-3 py-2">
-                          <span className="text-sm font-body text-ink truncate">{n.title}</span>
+                          <span className="text-sm font-body text-ink truncate">{n.name}</span>
                           <button onClick={() => handleLive(n.raw)} className="text-xs font-semibold text-teal hover:underline shrink-0">Phát trực tiếp ▶</button>
                         </li>
                       ))}
@@ -163,7 +163,10 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
                 action={<PrimaryButton onClick={onCreate} className="mt-2">+ Tạo trò chơi</PrimaryButton>} />
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {games.slice(0, 3).map(g => <GameCard key={g.id} game={g} onEdit={() => onEdit(g.id)} onResults={() => onResults(g.id)} onDesign={() => onDesign(g.id)} onLive={() => handleLive(g)} onShare={() => setShareGame(g)} />)}
+                {games.slice(0, 3).map(g => {
+                  const gid = g._id?.toString() || g.id;
+                  return <GameCard key={gid} game={g} onEdit={() => onEdit(gid)} onResults={() => onResults(gid)} onDesign={() => onDesign(gid)} onLive={() => handleLive(g)} onShare={() => setShareGame(g)} />;
+                })}
               </div>
             )}
           </div>
@@ -172,7 +175,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
 
       {shareGame && (
         <Modal onClose={() => setShareGame(null)}>
-          <h3 className="font-display text-xl text-ink mb-2">Vé mời "{shareGame.title}"</h3>
+          <h3 className="font-display text-xl text-ink mb-2">Vé mời "{shareGame.name}"</h3>
           <p className="text-sm text-[#8A7C63] mb-4">Học sinh nhập mã vé sau tại màn hình "Tham gia trò chơi":</p>
           <TicketStub icon="🎟️" code={shareGame.code} notchBg="#FFFBF2" />
           <div className="flex justify-end gap-3 mt-6">
@@ -249,7 +252,7 @@ function TopGames({ data, onResults, onLive }) {
           {data.filter(g => g.playedCount > 0).map((g, i) => (
             <div key={g.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-ink/5 transition">
               <span className="font-display text-lg text-[#B7A987] w-6 text-center shrink-0">{i + 1}</span>
-              <span className="flex-1 min-w-0 text-sm font-body text-ink truncate">{g.title}</span>
+              <span className="flex-1 min-w-0 text-sm font-body text-ink truncate">{g.name}</span>
               <span className="text-xs font-mono text-[#8A7C63] shrink-0">{g.playedCount} lượt</span>
               <button onClick={() => onResults(g.id)} className="text-xs text-ticket font-semibold hover:underline shrink-0">Kết quả</button>
               {g.status === "published" && <button onClick={() => onLive(g)} className="text-xs text-teal font-semibold hover:underline shrink-0">Phát ▶</button>}

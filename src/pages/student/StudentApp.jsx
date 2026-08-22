@@ -38,20 +38,23 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   const resetChat = useChatStore((s) => s.reset);
   const senderId = userAuth?.user?.id || null;
   const displayName = userAuth?.user?.name || playerName;
+  const gameGid = game?._id?.toString() || game?.id;
   useEffect(() => {
-    if (game?.id && senderId) {
-      initChat(game.id, senderId, displayName);
+    if (gameGid && senderId) {
+      initChat(gameGid, senderId, displayName);
     }
     return () => resetChat();
-  }, [game?.id, senderId, displayName]);
+  }, [gameGid, senderId, displayName]);
 
   // Khi route thay đổi sang một game cụ thể → đồng bộ game hiển thị
   useEffect(() => {
-    if (initialGame && initialGame.id && initialGame.id !== (game && game.id)) {
+    const gid = initialGame?._id?.toString() || initialGame?.id;
+    const currentGid = game?._id?.toString() || game?.id;
+    if (initialGame && gid && gid !== currentGid) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGame(initialGame);
       setQuestions([]);
-      if (initialGame.type === "play-to-win" || initialGame.htmlTemplate) {
+      if (initialGame.type === "play-to-win") {
         setScreen("play");
       } else {
         setScreen(userAuth?.user ? "waiting" : "name");
@@ -59,12 +62,13 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
     }
   }, [initialGame, game, userAuth]);
 
-  const isPlayToWin = game?.type === "play-to-win" || !!game?.htmlTemplate;
+  const isPlayToWin = game?.type === "play-to-win";
 
   const handleFound = async (g) => {
     setGame(g);
-    if (g.type === "play-to-win" || g.htmlTemplate) {
-      const qs = await questionService.listByGame(g.id);
+    const gid = g._id?.toString() || g.id;
+    if (g.type === "play-to-win") {
+      const qs = await questionService.listByGame(gid);
       setQuestions(qs);
       setScreen("play");
     } else {
@@ -74,11 +78,9 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   };
 
   const handleStart = async () => {
-    if (game?.htmlTemplate) {
-      const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play"); return;
-    }
+    const gid = game?._id?.toString() || game?.id;
     if (isPlayToWin) { setScreen("play"); return; }
-    const qs = await questionService.listByGame(game.id); setQuestions(qs); setScreen("play");
+    const qs = await questionService.listByGame(gid); setQuestions(qs); setScreen("play");
   };
 
   const handleFinish = async (sessionResult) => {
@@ -88,7 +90,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
       return;
     }
     const entry = await resultService.submit({
-      gameId: game.id, playerId: uid("player"), playerName,
+      gameId: gameGid, playerId: uid("player"), playerName,
       score: sessionResult.score, correctAnswers: sessionResult.correct,
       totalQuestions: questions.length, accuracy: Math.round((sessionResult.correct / questions.length) * 100),
       completionTime: sessionResult.timeUsed,
@@ -108,8 +110,8 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
             onBack={initialGame ? goHome : restart}
             onSubmit={async (name) => {
               setPlayerName(name);
-              if (game?.htmlTemplate) {
-                const qs = await questionService.listByGame(game.id);
+              if (isPlayToWin) {
+                const qs = await questionService.listByGame(gameGid);
                 setQuestions(qs);
               }
               setScreen(isPlayToWin ? "play" : "waiting");
@@ -128,7 +130,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
           </>
         )}
         {screen === "result" && finalResult && (
-          <ResultScreen result={finalResult} onSeeLeaderboard={async () => { const r = await resultService.listByGame(game.id); setLeaderboard(r); setScreen("leaderboard"); }} />
+          <ResultScreen result={finalResult} onSeeLeaderboard={async () => { const r = await resultService.listByGame(gameGid); setLeaderboard(r); setScreen("leaderboard"); }} />
         )}
         {screen === "leaderboard" && leaderboard && <LeaderboardScreen results={leaderboard} playerName={playerName} onPlayAgain={restart} />}
       </main>
@@ -188,16 +190,18 @@ function JoinGameScreen({ onFound }) {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {games.map(g => {
-              const tpl = templates.find(t => t.id === g.template);
+              const gid = g._id?.toString() || g.id;
+              const tplId = g.templateId ? (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid || g.templateId) : null;
+              const tpl = tplId ? templates.find(t => t._id === tplId) : templates.find(t => t.slug === g.template);
               return (
-                <button key={g.id} onClick={() => onFound(g)}
+                <button key={gid} onClick={() => onFound(g)}
                   className="note-card p-5 text-left flex flex-col gap-3 hover:-translate-y-1 hover:shadow-[0_8px_0_rgba(0,0,0,0.1)] transition shadow-[0_3px_0_rgba(0,0,0,0.09)] group anim-pop bg-paper2">
                   <div className="flex items-center justify-between">
                     <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#1D2E4A"} size={46} fontSize={22} />
                     <span className="font-mono text-[11px] text-[#8A7C63] bg-ink/5 rounded-full px-2.5 py-1">{g.code}</span>
                   </div>
                   <div>
-                    <h3 className="font-display text-lg text-ink leading-snug clamp-2">{g.title}</h3>
+                    <h3 className="font-display text-lg text-ink leading-snug clamp-2">{g.name}</h3>
                     <p className="text-sm text-[#8A7C63] mt-1 clamp-2">{g.description}</p>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-[#8A7C63] font-mono flex-wrap">
@@ -226,7 +230,7 @@ function EnterNameScreen({ game, onBack, onSubmit, userAuth }) {
     <div className="flex-1 flex items-start sm:items-center justify-center px-6 pt-[14dvh] sm:pt-10 pb-10">
       <form onSubmit={e => { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); }} className="max-w-sm w-full text-center anim-pop">
         <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={72} fontSize={32} className="mx-auto mb-4" />
-        <h1 className="font-display text-2xl text-ink mb-1">{game.title}</h1>
+        <h1 className="font-display text-2xl text-ink mb-1">{game.name}</h1>
         <p className="text-sm text-[#8A7C63] mb-6">{game.subject} · {game.topic}</p>
         {userAuth?.user ? (
           <div className="note-card px-4 py-3 text-lg text-ink bg-ink/5 text-center">
@@ -256,6 +260,7 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
     ? players.filter(p => p.name !== playerName).map(p => p.name).slice(0, 6)
     : [];
   const started = gameStatus === "playing";
+  const gameGid = game?._id?.toString() || game?.id;
 
   // Tham gia trò chơi qua socket khi vào phòng chờ
   useEffect(() => {
@@ -263,11 +268,11 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
       socket.auth = {};
       socket.connect();
     }
-    socket.emit(SOCKET_EVENTS.JOIN_GAME, { gameId: game.id, playerName });
+    socket.emit(SOCKET_EVENTS.JOIN_GAME, { gameId: gameGid, playerName });
     return () => {
-      socket.emit(SOCKET_EVENTS.LEAVE_CLASSROOM, { gameId: game.id });
+      socket.emit(SOCKET_EVENTS.LEAVE_CLASSROOM, { gameId: gameGid });
     };
-  }, [connected, game.id, playerName]);
+  }, [connected, gameGid, playerName]);
 
   // Backend gửi game:started → tự động vào chơi
   useSocketEvent(SOCKET_EVENTS.GAME_STARTED, () => onStart());
@@ -279,7 +284,7 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
         <div className="max-w-md w-full text-center anim-pop">
           <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={80} fontSize={36} className="mx-auto mb-5 float-slow" />
           <h1 className="font-display text-2xl text-ink mb-1">Phòng chờ</h1>
-          <p className="text-sm text-[#8A7C63] mb-6">Chờ giáo viên bắt đầu trò chơi "{game.title}"</p>
+          <p className="text-sm text-[#8A7C63] mb-6">Chờ giáo viên bắt đầu trò chơi "{game.name}"</p>
           <div className="note-card p-5 mb-6">
             <p className="text-xs font-mono text-[#8A7C63] uppercase mb-3">{others.length + 1} người đã tham gia{connected && <span className="ml-2 text-teal">● realtime</span>}</p>
             <div className="flex flex-wrap gap-2 justify-center">

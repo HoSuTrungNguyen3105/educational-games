@@ -196,7 +196,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-5">
                 {visibleGames.map((g, index) => (
-                  <GameCard key={g.id} game={g} template={templates.find(t => t.id === g.template)} onSelect={onSelectGame} index={index} />
+                  <GameCard key={g._id?.toString() || g.id} game={g} template={templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid))} onSelect={onSelectGame} index={index} />
                 ))}
               </div>
             )}
@@ -209,9 +209,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-5">
                   {hotGames.map((g, index) => (
                     <GameCard
-                      key={g.id}
+                      key={g._id?.toString() || g.id}
                       game={g}
-                      template={templates.find(t => t.id === g.template)}
+                      template={templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid))}
                       onSelect={onSelectGame}
                       index={index}
                       badge={index === 0 ? "🥇 TOP 1" : index === 1 ? "🥈 TOP 2" : index === 2 ? "🥉 TOP 3" : null}
@@ -227,7 +227,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 <SectionHeader icon="✨" title="Trò chơi mới" gradient="from-emerald-500 to-teal-500" />
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-5">
                   {newGames.map((g, index) => (
-                    <GameCard key={g.id} game={g} template={templates.find(t => t.id === g.template)} onSelect={onSelectGame} index={index} isNew />
+                    <GameCard key={g._id?.toString() || g.id} game={g} template={templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid))} onSelect={onSelectGame} index={index} isNew />
                   ))}
                 </div>
               </section>
@@ -237,7 +237,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <SectionHeader icon="🎮" title="Tất cả trò chơi" gradient="from-purple-500 to-indigo-500" />
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                 {games.map((g, index) => (
-                  <GameCard key={g.id} game={g} template={templates.find(t => t.id === g.template)} onSelect={onSelectGame} index={index} />
+                  <GameCard key={g._id?.toString() || g.id} game={g} template={templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid))} onSelect={onSelectGame} index={index} />
                 ))}
               </div>
             </section>
@@ -428,7 +428,7 @@ function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew })
   return (
     <button
       onClick={() => onSelect(game)}
-      aria-label={`Chơi ${game.title}`}
+      aria-label={`Chơi ${game.name}`}
       className="group relative bg-white rounded-lg lg:rounded-2xl p-3 text-left shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0 lg:hover:-translate-y-2 border-2 border-transparent hover:border-purple-200 overflow-hidden aspect-square lg:aspect-auto flex flex-col animate-fade-in-up"
       style={{ animationDelay: `${index * 0.08}s` }}
     >
@@ -447,7 +447,7 @@ function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew })
           <StampToken icon={template ? template.icon : "🎲"} ring={template ? template.ring : "#A855F7"} size={44} fontSize={20} />
         </div>
         <h3 className="font-display text-sm text-gray-800 leading-tight mb-1 group-hover:text-purple-700 transition-colors line-clamp-2 text-center">
-          {game.title}
+          {game.name}
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-1 text-[9px] font-mono mt-auto">
           <span className={`px-1.5 py-0.0.5 rounded ${color.chip}`}>{game.subject}</span>
@@ -468,7 +468,7 @@ function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew })
         </div>
 
         <h3 className="font-display text-lg text-gray-800 leading-snug mb-1.5 group-hover:text-purple-700 transition-colors line-clamp-2">
-          {game.title}
+          {game.name}
         </h3>
         <p className="text-[13px] text-gray-500 mb-2.5 line-clamp-2 group-hover:text-gray-600">
           {game.description}

@@ -22,7 +22,7 @@ export default function TeacherResults({ gameId, onBack }) {
       {!error && results && (
         <>
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <h1 className="font-display text-3xl text-ink">{game ? game.title : "Kết quả"}</h1>
+            <h1 className="font-display text-3xl text-ink">{game ? game.name : "Kết quả"}</h1>
             <StatusBadge status={game ? game.status : "draft"} />
           </div>
           {results.length === 0 ? (

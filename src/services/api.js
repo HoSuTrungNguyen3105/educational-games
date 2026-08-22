@@ -121,12 +121,6 @@ export const gameService = {
   async duplicate(id) {
     return apiFetch(`/games/${id}/duplicate`, { method: "POST" });
   },
-  async getTemplate(id) {
-    return apiFetch(`/games/${id}/template`);
-  },
-  async saveTemplate(id, htmlTemplate) {
-    return apiFetch(`/games/${id}/template`, { method: "PUT", body: { htmlTemplate } });
-  },
   async answer(questionId, answerId) {
     return apiFetch("/games/answer", { method: "POST", body: { questionId, answerId } });
   },
@@ -196,6 +190,9 @@ export const templateService = {
   },
   async get(id) {
     return apiFetch(`/templates/${encodeURIComponent(id)}`);
+  },
+  async getBySlug(slug) {
+    return apiFetch(`/templates/slug/${encodeURIComponent(slug)}`);
   },
   async create(data) {
     return apiFetch("/templates", { method: "POST", body: data });

@@ -5,7 +5,6 @@ import { authenticate, requireRoles } from "../middleware/auth.js";
 
 const router = Router();
 
-// POST /api/games/answer — kiểm tra đáp án (an toàn, không lộ correctAnswer)
 router.post("/answer", async (req, res, next) => {
   try {
     const { questionId, answerId } = req.body;
@@ -23,7 +22,6 @@ router.post("/answer", async (req, res, next) => {
   }
 });
 
-// GET /api/games?query=&status=&subject=&category=&template=
 router.get("/", async (req, res, next) => {
   try {
     const games = await gameService.list(req.query);
@@ -33,7 +31,6 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-// GET /api/games/code/:code
 router.get("/code/:code", async (req, res, next) => {
   try {
     const game = await gameService.getByCode(req.params.code);
@@ -44,7 +41,6 @@ router.get("/code/:code", async (req, res, next) => {
   }
 });
 
-// GET /api/games/:id
 router.get("/:id", async (req, res, next) => {
   try {
     const game = await gameService.get(req.params.id);
@@ -55,7 +51,6 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-// POST /api/games
 router.post("/", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const game = await gameService.create(req.body);
@@ -65,7 +60,6 @@ router.post("/", authenticate, requireRoles("teacher", "admin"), async (req, res
   }
 });
 
-// PUT /api/games/:id
 router.put("/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const game = await gameService.update(req.params.id, req.body);
@@ -75,32 +69,6 @@ router.put("/:id", authenticate, requireRoles("teacher", "admin"), async (req, r
   }
 });
 
-// PUT /api/games/:id/template — lưu htmlTemplate cho game
-router.put("/:id/template", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
-  try {
-    const { htmlTemplate } = req.body;
-    if (typeof htmlTemplate !== "string") {
-      return res.status(400).json({ message: "htmlTemplate phải là string" });
-    }
-    const game = await gameService.update(req.params.id, { htmlTemplate });
-    res.json(game);
-  } catch (e) {
-    next(e);
-  }
-});
-
-// GET /api/games/:id/template — lấy htmlTemplate của game
-router.get("/:id/template", async (req, res, next) => {
-  try {
-    const game = await gameService.get(req.params.id);
-    if (!game) return res.status(404).json({ message: "Không tìm thấy trò chơi" });
-    res.json({ htmlTemplate: game.htmlTemplate || null });
-  } catch (e) {
-    next(e);
-  }
-});
-
-// POST /api/games/:id/duplicate
 router.post("/:id/duplicate", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const game = await gameService.duplicate(req.params.id);
@@ -110,7 +78,6 @@ router.post("/:id/duplicate", authenticate, requireRoles("teacher", "admin"), as
   }
 });
 
-// DELETE /api/games/:id
 router.delete("/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     await gameService.remove(req.params.id);

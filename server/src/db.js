@@ -1,4 +1,4 @@
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -58,12 +58,6 @@ export async function close() {
   db = null;
 }
 
-/**
- * Tạo CSDL: tạo các collection + index cần thiết rồi seed dữ liệu
- * nếu collection còn trống.
- *
- * @returns {{ dbName: string, created: string[], seeded: string[], indexes: string[] }}
- */
 export async function initDatabase() {
   await connect();
   const database = getDb();
@@ -73,36 +67,39 @@ export async function initDatabase() {
   const collectionDefs = {
     templates: { $jsonSchema: {
       bsonType: "object",
-      required: ["id", "slug", "name", "description", "category", "categoryLabel", "icon", "ring"],
+      required: ["name", "description", "type", "category", "icon", "ring", "htmlTemplate", "status"],
       properties: {
-        id: { bsonType: "string" },
-        slug: { bsonType: "string" },
         name: { bsonType: "string" },
         description: { bsonType: "string" },
+        type: { enum: ["play-to-learn", "play-to-win"] },
         category: { bsonType: "string" },
-        categoryLabel: { bsonType: "string" },
         icon: { bsonType: "string" },
         ring: { bsonType: "string" },
+        htmlTemplate: { bsonType: "string" },
+        thumbnail: { bsonType: "string" },
+        version: { bsonType: "int" },
+        status: { enum: ["published", "draft", "inactive"] },
+        createdAt: { bsonType: "string" },
+        updatedAt: { bsonType: "string" },
       },
     } },
     games: { $jsonSchema: {
       bsonType: "object",
-      required: ["id", "slug", "title", "description", "subject", "topic", "language", "template", "status", "questionsCount", "playersCount", "code"],
+      required: ["name", "description", "subject", "topic", "language", "templateId", "type", "status", "questionsCount", "playersCount", "code"],
       properties: {
-        id: { bsonType: "string" },
-        slug: { bsonType: "string" },
-        title: { bsonType: "string" },
+        name: { bsonType: "string" },
         description: { bsonType: "string" },
         subject: { bsonType: "string" },
         topic: { bsonType: "string" },
         language: { bsonType: "string" },
-        template: { bsonType: "string" },
-        theme: { bsonType: "string" },
-        htmlTemplate: { bsonType: "string" },
+        templateId: { bsonType: "objectId" },
+        type: { enum: ["play-to-learn", "play-to-win"] },
         status: { enum: ["published", "draft"] },
         questionsCount: { bsonType: "int" },
         playersCount: { bsonType: "int" },
         code: { bsonType: "string" },
+        createdAt: { bsonType: "string" },
+        updatedAt: { bsonType: "string" },
       },
     } },
     questions: { $jsonSchema: {
@@ -166,20 +163,16 @@ export async function initDatabase() {
       await database.createCollection(name, { validator });
       created.push(name);
     } catch (e) {
-      if (e.code !== 48) throw e; // 48 = NamespaceExists
+      if (e.code !== 48) throw e;
     }
   }
 
-  // Indexes — đảm bảo unique cho code, khóa chính logic id
   const indexDefs = [
     ["games", { code: 1 }, { unique: true }],
-    ["games", { id: 1 }, { unique: true }],
-    ["games", { slug: 1 }, { unique: true }],
-    ["games", { template: 1 }],
+    ["games", { templateId: 1 }],
     ["games", { status: 1 }],
     ["games", { updatedAt: -1 }],
-    ["templates", { slug: 1 }, { unique: true }],
-    ["templates", { id: 1 }, { unique: true }],
+    ["templates", { name: 1 }],
     ["questions", { id: 1 }, { unique: true }],
     ["questions", { gameId: 1 }],
     ["questions", { gameId: 1, id: 1 }, { unique: true }],
@@ -199,6 +192,7 @@ export async function initDatabase() {
     ["conversationMembers", { conversationId: 1, userId: 1 }, { unique: true }],
     ["conversationMembers", { userId: 1 }],
   ];
+
   const createdIndexes = [];
   for (const [col, keys, opts = {}] of indexDefs) {
     try {
@@ -210,11 +204,56 @@ export async function initDatabase() {
   }
 
   // Seed nếu collection rỗng
+  const templatesColl = database.collection("templates");
+  const templatesCount = await templatesColl.countDocuments();
+  if (templatesCount === 0) {
+    const docs = seedData.templates();
+    await templatesColl.insertMany(docs, { ordered: false });
+    seeded.push(`templates (${docs.length})`);
+  }
+
+  // Games seed — resolve templateId from template slug
+  const gamesColl = database.collection("games");
+  const gamesCount = await gamesColl.countDocuments();
+  if (gamesCount === 0) {
+    const rawGames = seedData.games();
+    const allTemplates = await templatesColl.find({}).toArray();
+    const slugToId = {};
+    for (const t of allTemplates) {
+      if (t.slug) slugToId[t.slug] = t._id;
+      slugToId[t.id] = t._id;
+    }
+    const now = new Date().toISOString();
+    const migrated = rawGames.map(g => {
+      const tplId = slugToId[g.template] || null;
+      return {
+        name: g.title || g.name || "Game",
+        description: g.description || "",
+        subject: g.subject || "",
+        topic: g.topic || "",
+        language: g.language || "vi",
+        templateId: tplId,
+        type: g.type || "play-to-learn",
+        status: g.status || "draft",
+        questionsCount: g.questionsCount || 0,
+        playersCount: g.playersCount || 0,
+        code: g.code || "",
+        createdAt: g.createdAt || now,
+        updatedAt: g.updatedAt || now,
+      };
+    });
+    await gamesColl.insertMany(migrated, { ordered: false });
+    seeded.push(`games (${migrated.length})`);
+  }
+
+  // Migrate existing games: add templateId from slug, rename title→name
+  await migrateGames(database);
+
+  // Migrate existing templates: add new fields, remove old
+  await migrateTemplates(database);
+
   const seedMap = {
-    templates: seedData.templates,
     categories: seedData.categories,
-    games: seedData.games,
-    questions: seedData.questions,
     players: seedData.players,
     results: seedData.results,
   };
@@ -229,10 +268,10 @@ export async function initDatabase() {
     }
   }
 
-  // Users: upsert theo id (khóa logic), băm password nếu chưa có passwordHash
+  // Users
   const bcrypt = (await import("bcryptjs")).default;
   const usersColl = database.collection("users");
-  await usersColl.deleteMany({ username: { $exists: false } }); // dọn bản cũ không có username
+  await usersColl.deleteMany({ username: { $exists: false } });
   for (const u of seedData.users()) {
     const { password, ...rest } = u;
     const existing = await usersColl.findOne({ id: u.id });
@@ -259,4 +298,66 @@ export async function initDatabase() {
     seeded,
     indexes: createdIndexes,
   };
+}
+
+async function migrateGames(database) {
+  const gamesColl = database.collection("games");
+  const templatesColl = database.collection("templates");
+
+  // Build slug→_id map from templates
+  const allTemplates = await templatesColl.find({}).toArray();
+  const slugToId = {};
+  for (const t of allTemplates) {
+    if (t.slug) slugToId[t.slug] = t._id;
+    if (t.id) slugToId[t.id] = t._id;
+  }
+
+  // Games with string 'template' field but no templateId → migrate
+  const gamesToMigrate = await gamesColl.find({
+    $or: [
+      { templateId: { $exists: false } },
+      { templateId: null },
+      { template: { $exists: true } },
+    ]
+  }).toArray();
+
+  for (const g of gamesToMigrate) {
+    const update = {};
+    // Set templateId from template slug
+    if (!g.templateId && g.template && slugToId[g.template]) {
+      update.templateId = slugToId[g.template];
+    }
+    // Rename title → name
+    if (g.title && !g.name) {
+      update.name = g.title;
+    }
+    // Add type if missing
+    if (!g.type) {
+      update.type = "play-to-learn";
+    }
+    if (Object.keys(update).length > 0) {
+      await gamesColl.updateOne({ _id: g._id }, { $set: update });
+    }
+  }
+
+  // Remove old fields from games
+  await gamesColl.updateMany({}, {
+    $unset: { id: "", slug: "", title: "", template: "", theme: "", htmlTemplate: "" }
+  });
+}
+
+async function migrateTemplates(database) {
+  const templatesColl = database.collection("templates");
+
+  // Add new fields to templates that don't have them
+  const now = new Date().toISOString();
+  await templatesColl.updateMany(
+    { type: { $exists: false } },
+    { $set: { type: "play-to-learn", htmlTemplate: "", thumbnail: "", version: 1, status: "draft", createdAt: now, updatedAt: now } }
+  );
+
+  // Remove old fields
+  await templatesColl.updateMany({}, {
+    $unset: { id: "", slug: "", categoryLabel: "" }
+  });
 }
