@@ -7,7 +7,7 @@ import { PrimaryButton, GhostButton, IconButton, Loader } from '../../components
 import Field, { StampToken } from './fields.jsx'
 import QuestionImportModal from './QuestionImportModal.jsx'
 
-const STEPS = [
+const ALL_STEPS = [
   { id: "template", label: "Chọn mẫu" },
   { id: "info", label: "Nhập thông tin" },
   { id: "questions", label: "Câu hỏi" },
@@ -24,6 +24,14 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const templates = useTemplates();
   const subjects = useSubjects();
   const categories = useCategories();
+
+  const selectedTemplate = useMemo(() => templates.find(t => t._id === form.templateId), [templates, form.templateId]);
+  const isPlayToWin = selectedTemplate?.type === "play-to-win";
+
+  const steps = useMemo(() => {
+    if (isPlayToWin) return ALL_STEPS.filter(s => s.id !== "questions");
+    return ALL_STEPS;
+  }, [isPlayToWin]);
 
   useEffect(() => {
     if (!gameId) return;
@@ -42,7 +50,11 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
 
   useEffect(() => { if (!gameId && questions.length === 0) setQuestions([emptyQuestion()]); }, []);
 
-  const step = STEPS[stepIdx];
+  useEffect(() => {
+    if (isPlayToWin && stepIdx >= 2) setStepIdx(1);
+  }, [isPlayToWin]);
+
+  const step = steps[stepIdx];
   const canNext = useMemo(() => {
     if (step.id === "template") return !!form.templateId;
     if (step.id === "info") return form.name.trim().length > 2 && form.topic.trim().length > 1;
@@ -53,10 +65,10 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const persist = async (status) => {
     setSavingStatus(status);
     let id = gameId;
-    const payload = { ...form, subject: form.subject || (subjects[0] || ""), status, questionsCount: questions.length };
+    const payload = { ...form, subject: form.subject || (subjects[0] || ""), status, questionsCount: isPlayToWin ? 0 : questions.length };
     if (id) await gameService.update(id, payload);
     else { const created = await gameService.create(payload); id = created._id?.toString() || created.id; }
-    await questionService.save(id, questions);
+    if (!isPlayToWin) await questionService.save(id, questions);
     setSavingStatus(null);
     showToast(status === "published" ? "Đã xuất bản trò chơi" : "Đã lưu bản nháp", "success");
     onDone();
@@ -71,7 +83,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
         <button onClick={onCancel} className="text-sm text-[#8A7C63] hover:text-ink">Hủy ✕</button>
       </div>
 
-      <Stepper steps={STEPS} activeIdx={stepIdx} onJump={(i) => i < stepIdx && setStepIdx(i)} />
+      <Stepper steps={steps} activeIdx={stepIdx} onJump={(i) => i < stepIdx && setStepIdx(i)} />
 
       <div className="note-card p-6 md:p-8 min-h-[380px]">
         {step.id === "template" && <StepTemplate form={form} setForm={setForm} templates={templates} categories={categories} />}
@@ -90,7 +102,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
               <PrimaryButton onClick={() => persist("published")} disabled={savingStatus !== null}>{savingStatus === "published" ? "Đang xuất bản..." : "Xuất bản"}</PrimaryButton>
             </>
           ) : (
-            <PrimaryButton onClick={() => setStepIdx(i => Math.min(STEPS.length - 1, i + 1))} disabled={!canNext}>Tiếp tục →</PrimaryButton>
+            <PrimaryButton onClick={() => setStepIdx(i => Math.min(steps.length - 1, i + 1))} disabled={!canNext}>Tiếp tục →</PrimaryButton>
           )}
         </div>
       </div>
