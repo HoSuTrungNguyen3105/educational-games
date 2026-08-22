@@ -41,6 +41,16 @@ router.post("/templates", authenticate, requireRoles("teacher", "admin"), async 
   }
 });
 
+// Xóa TẤT CẢ templates
+router.delete("/templates", authenticate, requireRoles("teacher", "admin"), async (_req, res, next) => {
+  try {
+    const result = await setupService.removeAllTemplates();
+    res.json({ message: `Đã xóa ${result.deleted} template`, ...result });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.put("/templates/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const tpl = await setupService.updateTemplate(req.params.id, req.body);

@@ -78,6 +78,16 @@ router.post("/:id/duplicate", authenticate, requireRoles("teacher", "admin"), as
   }
 });
 
+// Xóa TẤT CẢ games (kèm questions + results)
+router.delete("/", authenticate, requireRoles("teacher", "admin"), async (_req, res, next) => {
+  try {
+    const result = await gameService.removeAll();
+    res.json({ message: `Đã xóa ${result.deleted} trò chơi`, ...result });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.delete("/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     await gameService.remove(req.params.id);

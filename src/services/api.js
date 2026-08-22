@@ -118,6 +118,9 @@ export const gameService = {
   async remove(id) {
     return apiFetch(`/games/${id}`, { method: "DELETE" });
   },
+  async removeAll() {
+    return apiFetch("/games", { method: "DELETE" });
+  },
   async duplicate(id) {
     return apiFetch(`/games/${id}/duplicate`, { method: "POST" });
   },
@@ -202,5 +205,8 @@ export const templateService = {
   },
   async remove(id) {
     return apiFetch(`/templates/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+  async removeAll() {
+    return apiFetch("/templates", { method: "DELETE" });
   },
 };

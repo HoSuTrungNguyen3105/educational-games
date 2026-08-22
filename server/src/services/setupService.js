@@ -86,6 +86,14 @@ export async function removeTemplate(id) {
   return { deleted: true };
 }
 
+// Xóa TẤT CẢ templates
+export async function removeAllTemplates() {
+  const coll = getCollection("templates");
+  const count = await coll.countDocuments();
+  await coll.deleteMany({});
+  return { deleted: count };
+}
+
 export async function listCategories() {
   const docs = await getCollection("categories").find({}).toArray();
   return docs.map(({ _id, ...rest }) => rest);

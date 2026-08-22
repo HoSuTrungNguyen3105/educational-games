@@ -116,6 +116,16 @@ export async function remove(id) {
   return true;
 }
 
+// Xóa TẤT CẢ games + questions + results liên quan
+export async function removeAll() {
+  const coll = getCollection(COLLECTION);
+  const count = await coll.countDocuments();
+  await coll.deleteMany({});
+  await getCollection("questions").deleteMany({});
+  await getCollection("results").deleteMany({});
+  return { deleted: count };
+}
+
 export async function duplicate(id) {
   const src = await get(id);
   if (!src) throw new Error("Không tìm thấy trò chơi");
