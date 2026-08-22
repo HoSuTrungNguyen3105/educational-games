@@ -5,12 +5,28 @@ export const genCode = () => Math.random().toString(36).slice(2, 9).toUpperCase(
 
 const COLLECTION = "games";
 
-// Serialize ObjectId fields to plain strings so frontend always receives strings
+// Schema mới — chỉ các trường này được trả về cho frontend
+const GAME_FIELDS = [
+  "name", "description", "subject", "topic", "language",
+  "templateId", "type", "status", "questionsCount", "playersCount",
+  "code", "createdAt", "updatedAt",
+];
+
+// Chuẩn hóa về schema mới: bỏ trường cũ (id/slug/title/template/theme/htmlTemplate),
+// map title→name, đảm bảo kiểu dữ liệu đúng
 function serialize(doc) {
   if (!doc) return doc;
-  const out = { ...doc };
-  if (out._id) out._id = out._id.toString();
-  if (out.templateId) out.templateId = out.templateId.toString();
+  const out = { _id: doc._id.toString() };
+  for (const key of GAME_FIELDS) {
+    let value = doc[key];
+    if (key === "name") value = doc.name ?? doc.title ?? "Game";
+    if (value === undefined) value = "";
+    if (key === "templateId" && value) value = value.toString();
+    if ((key === "questionsCount" || key === "playersCount")) value = Number(value) || 0;
+    out[key] = value;
+  }
+  if (!out.type) out.type = "play-to-learn";
+  if (!out.status) out.status = "draft";
   return out;
 }
 

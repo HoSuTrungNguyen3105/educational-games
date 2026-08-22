@@ -1,9 +1,25 @@
 import { getCollection } from "../db.js";
 import { ObjectId } from "mongodb";
 
+// Schema mới — chỉ các trường này được trả về cho frontend
+const TEMPLATE_FIELDS = [
+  "name", "description", "type", "category", "icon", "ring",
+  "htmlTemplate", "thumbnail", "version", "status", "createdAt", "updatedAt",
+];
+
+// Chuẩn hóa về schema mới: bỏ trường cũ (id/slug/categoryLabel)
 function serialize(doc) {
   if (!doc) return doc;
-  return { ...doc, _id: doc._id.toString() };
+  const out = { _id: doc._id.toString() };
+  for (const key of TEMPLATE_FIELDS) {
+    let value = doc[key];
+    if (value === undefined) value = "";
+    out[key] = value;
+  }
+  if (!out.type) out.type = "play-to-learn";
+  if (!out.status) out.status = "draft";
+  out.version = Number(out.version) || 1;
+  return out;
 }
 
 export async function listTemplates() {
@@ -21,7 +37,8 @@ export async function getTemplate(id) {
 }
 
 export async function getTemplateBySlug(slug) {
-  return getCollection("templates").findOne({ slug });
+  const doc = await getCollection("templates").findOne({ slug });
+  return serialize(doc);
 }
 
 export async function createTemplate(data) {
