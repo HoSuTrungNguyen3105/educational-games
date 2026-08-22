@@ -149,12 +149,12 @@ export async function initDatabase() {
     } },
   };
 
-  for (const [name, validator] of Object.entries(collectionDefs)) {
+  for (const name of Object.keys(collectionDefs)) {
     try {
-      await database.createCollection(name, { validator, validationLevel: "moderate", validationAction: "error" });
+      await database.createCollection(name);
       created.push(name);
     } catch (e) {
-      if (e.code !== 48 && e.code !== 121) throw e;
+      if (e.code !== 48) throw e;
     }
   }
 
@@ -191,6 +191,16 @@ export async function initDatabase() {
       createdIndexes.push(`${col}:${JSON.stringify(keys)}`);
     } catch (e) {
       console.error(`[db] Lỗi tạo index ${col}:`, e.message);
+    }
+  }
+
+  // Clear any existing validators from PREVIOUS deployments BEFORE migrations
+  const allCollections = Object.keys(collectionDefs);
+  for (const name of allCollections) {
+    try {
+      await database.command({ collMod: name, validator: {} });
+    } catch (e) {
+      // Collection may not exist yet, ignore
     }
   }
 
@@ -242,20 +252,6 @@ export async function initDatabase() {
 
   // Migrate existing templates: add new fields, remove old
   await migrateTemplates(database);
-
-  // Apply validators on existing collections (collMod) after migrations
-  for (const [name, validator] of Object.entries(collectionDefs)) {
-    try {
-      await database.command({
-        collMod: name,
-        validator,
-        validationLevel: "moderate",
-        validationAction: "error",
-      });
-    } catch (e) {
-      // Ignore if collection doesn't exist
-    }
-  }
 
   const seedMap = {
     categories: seedData.categories,
