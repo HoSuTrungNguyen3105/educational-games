@@ -40,32 +40,38 @@ const QUIZ_GAME_COMPONENTS = {
   'ninja-dash': NinjaDashPlayScreen,
 }
 
-export function GamePlayRouter({ game, questions, playerName, onFinish, onQuit }) {
-  const [htmlContent, setHtmlContent] = useState(null);
+export function GamePlayRouter({ game, questions, playerName, onFinish, onQuit, template: templateProp }) {
+  const [tpl, setTpl] = useState(templateProp || null);
   const [loading, setLoading] = useState(false);
 
-  // Resolve template slug from game
-  const slug = game.slug || game.template || "";
+  // Resolve templateId (chuỗi hoặc {$oid})
+  const tid = game?.templateId
+    ? (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || String(game.templateId))
+    : null;
+  const slug = tpl?.slug || game.slug || game.template || "";
 
+  // Gọi API template theo id → nhận type + htmlTemplate từ template
   useEffect(() => {
-    // If game has templateId, fetch template's htmlTemplate from API
-    const tid = game.templateId ? (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || game.templateId) : null;
-    if (tid) {
-      setLoading(true);
-      templateService.get(tid).then(tpl => {
-        if (tpl?.htmlTemplate) {
-          setHtmlContent(tpl.htmlTemplate);
-        } else {
-          setHtmlContent(null);
-        }
-      }).catch(() => setHtmlContent(null)).finally(() => setLoading(false));
-    } else {
-      setHtmlContent(null);
-    }
-  }, [game.templateId, slug]);
+    if (templateProp) { setTpl(templateProp); return; }
+    if (!tid) { setTpl(null); return; }
+    let active = true;
+    setLoading(true);
+    templateService.get(tid)
+      .then((t) => { if (active) setTpl(t); })
+      .catch(() => { if (active) setTpl(null); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [tid, templateProp]);
 
-  // Play-to-win HTML games: from API template or local fallback
-  const isPlayToWin = game.type === "play-to-win";
+  // Type quyết định theo TEMPLATE, fallback về game.type nếu chưa có template
+  const isPlayToWin = tpl ? tpl.type === "play-to-win" : game.type === "play-to-win";
+
+  // Play-to-win HTML games: htmlTemplate từ API template hoặc local fallback
+  if (isPlayToWin && (tpl?.htmlTemplate || HTML_GAME_FILES[slug])) {
+    const content = tpl?.htmlTemplate || HTML_GAME_FILES[slug];
+    return <HtmlGameLoader htmlContent={content} game={game} questions={questions} playerName={playerName} onFinish={onFinish} onQuit={onQuit} />;
+  }
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-paper">
@@ -74,12 +80,7 @@ export function GamePlayRouter({ game, questions, playerName, onFinish, onQuit }
     );
   }
 
-  if (isPlayToWin && (htmlContent || HTML_GAME_FILES[slug])) {
-    const content = htmlContent || HTML_GAME_FILES[slug];
-    return <HtmlGameLoader htmlContent={content} game={game} questions={questions} playerName={playerName} onFinish={onFinish} onQuit={onQuit} />;
-  }
-
-  // Quiz/traditional games: map theo slug
+  // Quiz/traditional games: map theo slug của template
   const QuizComponent = QUIZ_GAME_COMPONENTS[slug];
   if (QuizComponent) {
     return <QuizComponent game={game} questions={questions} playerName={playerName} onQuit={onQuit} onFinish={onFinish} />;

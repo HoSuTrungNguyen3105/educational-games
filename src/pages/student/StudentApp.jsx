@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { uid, resultService, questionService, gameService } from '../../services/api.js'
+import { uid, resultService, questionService, gameService, templateService } from '../../services/api.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
@@ -25,6 +25,16 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   const [leaderboard, setLeaderboard] = useState(null);
 
   const resetStore = () => useGameStore.getState().resetGame();
+
+  // Loại chơi quyết định theo TEMPLATE (templateId → template.type),
+  // fallback về game.type nếu chưa tải được template
+  const templates = useTemplates();
+  const tplIdOf = (g) => {
+    if (!g?.templateId) return null;
+    return typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid || String(g.templateId);
+  };
+  const template = game ? templates.find(t => t._id === tplIdOf(game)) || null : null;
+  const isPlayToWin = template ? template.type === "play-to-win" : game?.type === "play-to-win";
 
   const restart = () => {
     resetStore();
@@ -54,22 +64,28 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGame(initialGame);
       setQuestions([]);
-      if (initialGame.type === "play-to-win") {
+      const tid = tplIdOf(initialGame);
+      const tpl = tid ? templates.find(t => t._id === tid) : null;
+      const win = tpl ? tpl.type === "play-to-win" : initialGame.type === "play-to-win";
+      if (win) {
         setScreen("play");
       } else {
         setScreen(userAuth?.user ? "waiting" : "name");
       }
     }
-  }, [initialGame, game, userAuth]);
-
-  const isPlayToWin = game?.type === "play-to-win";
+  }, [initialGame, game, userAuth, templates]);
 
   const handleFound = async (g) => {
     setGame(g);
-    const gid = g._id?.toString() || g.id;
-    if (g.type === "play-to-win") {
-      const qs = await questionService.listByGame(gid);
-      setQuestions(qs);
+    // Quyết định theo template type, không tin game.type
+    let win = g.type === "play-to-win";
+    const tid = tplIdOf(g);
+    if (tid) {
+      const tpl = templates.find(t => t._id === tid) || await templateService.get(tid).catch(() => null);
+      if (tpl?.type) win = tpl.type === "play-to-win";
+    }
+    if (win) {
+      setQuestions([]);
       setScreen("play");
     } else {
       setQuestions([]);
@@ -110,10 +126,6 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
             onBack={initialGame ? goHome : restart}
             onSubmit={async (name) => {
               setPlayerName(name);
-              if (isPlayToWin) {
-                const qs = await questionService.listByGame(gameGid);
-                setQuestions(qs);
-              }
               setScreen(isPlayToWin ? "play" : "waiting");
             }}
             userAuth={userAuth}
@@ -125,7 +137,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
         )}
         {screen === "play" && game && (isPlayToWin || questions.length > 0) && (
           <>
-            <GamePlayRouter game={game} questions={questions} playerName={playerName} onQuit={restart} onFinish={handleFinish} />
+            <GamePlayRouter game={game} questions={questions} playerName={playerName} onQuit={restart} onFinish={handleFinish} template={template} />
             <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} />
           </>
         )}
