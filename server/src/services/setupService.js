@@ -1,13 +1,20 @@
 import { getCollection } from "../db.js";
 import { ObjectId } from "mongodb";
 
+function serialize(doc) {
+  if (!doc) return doc;
+  return { ...doc, _id: doc._id.toString() };
+}
+
 export async function listTemplates() {
-  return getCollection("templates").find({}).sort({ name: 1 }).toArray();
+  const docs = await getCollection("templates").find({}).sort({ name: 1 }).toArray();
+  return docs.map(serialize);
 }
 
 export async function getTemplate(id) {
   try {
-    return await getCollection("templates").findOne({ _id: new ObjectId(id) });
+    const doc = await getCollection("templates").findOne({ _id: new ObjectId(id) });
+    return serialize(doc);
   } catch {
     return null;
   }
@@ -34,7 +41,7 @@ export async function createTemplate(data) {
     updatedAt: now,
   };
   const result = await getCollection("templates").insertOne(doc);
-  return { _id: result.insertedId, ...doc };
+  return { _id: result.insertedId.toString(), ...doc };
 }
 
 export async function updateTemplate(id, data) {
@@ -47,7 +54,7 @@ export async function updateTemplate(id, data) {
     { returnDocument: "after" }
   );
   if (!result) throw new Error("Không tìm thấy template");
-  return result;
+  return serialize(result);
 }
 
 export async function removeTemplate(id) {

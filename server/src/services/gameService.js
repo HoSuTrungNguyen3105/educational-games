@@ -5,6 +5,15 @@ export const genCode = () => Math.random().toString(36).slice(2, 9).toUpperCase(
 
 const COLLECTION = "games";
 
+// Serialize ObjectId fields to plain strings so frontend always receives strings
+function serialize(doc) {
+  if (!doc) return doc;
+  const out = { ...doc };
+  if (out._id) out._id = out._id.toString();
+  if (out.templateId) out.templateId = out.templateId.toString();
+  return out;
+}
+
 export async function list(filters = {}) {
   const coll = getCollection(COLLECTION);
   const query = {};
@@ -17,7 +26,7 @@ export async function list(filters = {}) {
   let cursor = coll.find(query).sort({ updatedAt: -1 });
   const games = await cursor.toArray();
 
-  let result = games;
+  let result = games.map(serialize);
   if (filters.query) {
     const q = filters.query.trim().toLowerCase();
     result = result.filter(
@@ -34,17 +43,19 @@ export async function list(filters = {}) {
 
 export async function get(id) {
   try {
-    return await getCollection(COLLECTION).findOne({ _id: new ObjectId(id) });
+    const doc = await getCollection(COLLECTION).findOne({ _id: new ObjectId(id) });
+    return serialize(doc);
   } catch {
     return null;
   }
 }
 
 export async function getByCode(code) {
-  return getCollection(COLLECTION).findOne({
+  const doc = await getCollection(COLLECTION).findOne({
     code: new RegExp(`^${escapeRegExp(code.trim().toLowerCase())}$`, "i"),
     status: "published",
   });
+  return serialize(doc);
 }
 
 export async function create(data) {
@@ -65,7 +76,7 @@ export async function create(data) {
     updatedAt: now,
   };
   const result = await getCollection(COLLECTION).insertOne(game);
-  return { _id: result.insertedId, ...game };
+  return { _id: result.insertedId.toString(), ...game };
 }
 
 export async function update(id, data) {
@@ -78,7 +89,7 @@ export async function update(id, data) {
     { returnDocument: "after" }
   );
   if (!result) throw new Error("Không tìm thấy trò chơi");
-  return result;
+  return serialize(result);
 }
 
 export async function remove(id) {
@@ -104,17 +115,18 @@ export async function duplicate(id) {
     updatedAt: now,
   };
   const result = await getCollection(COLLECTION).insertOne(copy);
+  const copyId = result.insertedId.toString();
 
   const questions = await getCollection("questions").find({ gameId: id }).toArray();
   if (questions.length > 0) {
     const cloned = questions.map((q) => ({
       ...q,
       _id: undefined,
-      gameId: result.insertedId.toString(),
+      gameId: copyId,
     }));
     await getCollection("questions").insertMany(cloned);
   }
-  return { _id: result.insertedId, ...copy };
+  return { _id: copyId, ...copy };
 }
 
 function escapeRegExp(str) {

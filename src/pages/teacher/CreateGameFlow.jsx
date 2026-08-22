@@ -65,7 +65,13 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const persist = async (status) => {
     setSavingStatus(status);
     let id = gameId;
-    const payload = { ...form, subject: form.subject || (subjects[0] || ""), status, questionsCount: isPlayToWin ? 0 : questions.length };
+    const payload = {
+      ...form,
+      subject: form.subject || (subjects[0] || ""),
+      status,
+      type: isPlayToWin ? "play-to-win" : "play-to-learn",
+      questionsCount: isPlayToWin ? 0 : questions.length,
+    };
     if (id) await gameService.update(id, payload);
     else { const created = await gameService.create(payload); id = created._id?.toString() || created.id; }
     if (!isPlayToWin) await questionService.save(id, questions);
@@ -87,7 +93,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
 
       <div className="note-card p-6 md:p-8 min-h-[380px]">
         {step.id === "template" && <StepTemplate form={form} setForm={setForm} templates={templates} categories={categories} />}
-        {step.id === "info" && <StepInfo form={form} setForm={setForm} subjects={subjects} />}
+        {step.id === "info" && <StepInfo form={form} setForm={setForm} subjects={subjects} templates={templates} />}
         {step.id === "questions" && <StepQuestions questions={questions} setQuestions={setQuestions} />}
         {step.id === "customize" && <StepCustomize form={form} setForm={setForm} />}
         {step.id === "preview" && <StepPreview form={form} questions={questions} templates={templates} />}
@@ -168,10 +174,34 @@ function StepTemplate({ form, setForm, templates, categories }) {
 
 const inputCls = "w-full note-card px-4 py-2.5 text-sm border-ink/10 focus:border-ticket";
 
-function StepInfo({ form, setForm, subjects }) {
+function StepInfo({ form, setForm, subjects, templates }) {
+  const currentTpl = templates.find(t => t._id === form.templateId);
   return (
     <div>
       <h2 className="font-display text-xl text-ink mb-6">Nhập thông tin trò chơi</h2>
+
+      {templates.length > 0 && (
+        <div className="mb-6">
+          <Field label="Mẫu trò chơi" hint="Đổi mẫu sẽ thay đổi cách chơi — HTML template sẽ được tải từ API theo templateId">
+            <select
+              className={inputCls}
+              value={form.templateId || ""}
+              onChange={e => setForm(f => ({ ...f, templateId: e.target.value || null }))}
+            >
+              <option value="">— Chọn mẫu —</option>
+              {templates.map(t => (
+                <option key={t._id} value={t._id}>
+                  {t.icon} {t.name} ({t.type === "play-to-win" ? "chơi để thắng" : "học qua chơi"})
+                </option>
+              ))}
+            </select>
+          </Field>
+          {currentTpl?.htmlTemplate && (
+            <p className="text-xs text-teal mt-1.5">✓ Mẫu này có HTML template riêng (v{currentTpl.version || 1})</p>
+          )}
+        </div>
+      )}
+
       <div className="grid sm:grid-cols-2 gap-x-6">
         <Field label="Tên trò chơi">
           <input className={inputCls} value={form.name} maxLength={80} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ví dụ: Ôn tập Toán lớp 3" />
