@@ -6,6 +6,7 @@ import GameLibrary from './GameLibrary.jsx'
 import CreateGameFlow from './CreateGameFlow.jsx'
 import TeacherResults from './TeacherResults.jsx'
 import UserManagement from './UserManagement.jsx'
+import TemplateManagement from './TemplateManagement.jsx'
 import GameBuilder from '../../components/gameBuilder/GameBuilder.jsx'
 
 export default function TeacherApp({ user, route, onExit, showToast }) {
@@ -38,6 +39,7 @@ export default function TeacherApp({ user, route, onExit, showToast }) {
         {page === "admin-edit" && <CreateGameFlow key={route.params.gameId} gameId={route.params.gameId} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
         {page === "admin-results" && <TeacherResults gameId={route.params.gameId} onBack={goLibrary} />}
         {page === "admin-users" && <UserManagement user={user} showToast={showToast} />}
+        {page === "admin-templates" && <TemplateManagement user={user} showToast={showToast} />}
       </main>
     </div>
   );
@@ -49,6 +51,7 @@ function TeacherNav({ screen, onExit, onCreate }) {
     { id: "admin-dashboard", label: "Dashboard", icon: "📊", route: "/admin" },
     { id: "admin-library", label: "Thư viện", icon: "📚", route: "/admin/library" },
     { id: "admin-users", label: "Người dùng", icon: "👥", route: "/admin/users" },
+    { id: "admin-templates", label: "Templates", icon: "🎨", route: "/admin/templates" },
   ];
   const activeTab = tabs.some(t => t.id === screen) ? screen : "admin-library";
   return (

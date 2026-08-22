@@ -12,6 +12,7 @@ const ROUTES = [
   { name: "admin-dashboard", pattern: "/admin" },
   { name: "admin-library",   pattern: "/admin/library" },
   { name: "admin-users",     pattern: "/admin/users" },
+  { name: "admin-templates", pattern: "/admin/templates" },
   { name: "admin-create",    pattern: "/admin/create" },
   { name: "admin-edit",      pattern: "/admin/edit/:gameId" },
   { name: "admin-builder",   pattern: "/admin/builder/:gameId" },

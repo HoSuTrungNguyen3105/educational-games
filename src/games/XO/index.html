@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>XO - Bàn cờ vô hạn</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+  body {
+    background: #1a1a2e;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    color: white;
+  }
+  #header {
+    padding: 12px 20px;
+    background: #16213e;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 2px solid #0f3460;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+  #header .turn {
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+  #header .turn span {
+    padding: 6px 16px;
+    border-radius: 30px;
+    background: #0f3460;
+    display: inline-block;
+  }
+  #header .score {
+    font-size: 1.2rem;
+    background: #0f3460;
+    padding: 6px 16px;
+    border-radius: 30px;
+  }
+  #header .score span { font-weight: 700; }
+  .btn-reset {
+    background: #e94560;
+    border: none;
+    color: white;
+    padding: 8px 24px;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .btn-reset:hover { background: #c73652; transform: scale(1.02); }
+  #canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #1a1a2e;
+    cursor: grab;
+  }
+  #canvas-wrap:active { cursor: grabbing; }
+  #gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #1a1a2e;
+  }
+  #win-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    padding: 30px 50px;
+    border-radius: 20px;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+    border: 2px solid #e94560;
+    backdrop-filter: blur(4px);
+    z-index: 20;
+  }
+  #win-message.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  #win-message h2 {
+    font-size: 2.8rem;
+    margin-bottom: 10px;
+  }
+  #win-message p {
+    font-size: 1.2rem;
+    opacity: 0.8;
+  }
+  #win-message .btn-again {
+    margin-top: 20px;
+    background: #e94560;
+    border: none;
+    color: white;
+    padding: 10px 30px;
+    border-radius: 30px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: 0.2s;
+    pointer-events: auto;
+  }
+  #win-message .btn-again:hover { background: #c73652; }
+  @media (max-width: 600px) {
+    #header { padding: 8px 12px; }
+    #header .turn { font-size: 1rem; }
+    #header .score { font-size: 0.9rem; padding: 4px 12px; }
+    .btn-reset { padding: 6px 16px; font-size: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="turn">🎯 Lượt: <span id="turnDisplay">X</span></div>
+  <div class="score">🏆 X: <span id="scoreX">0</span> &nbsp;|&nbsp; O: <span id="scoreO">0</span></div>
+  <button class="btn-reset" id="resetBtn">🔄 Bàn mới</button>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="gameCanvas"></canvas>
+  <div id="win-message">
+    <h2 id="winnerText">🎉 X thắng!</h2>
+    <p id="winDesc">5 liên tiếp</p>
+    <button class="btn-again" id="playAgainBtn">🔄 Chơi tiếp</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('canvas-wrap');
+
+  // Kích thước ô
+  const CELL_SIZE = 50;
+  const HALF = CELL_SIZE / 2;
+
+  // State
+  let grid = {};          // key: "x,y" => 'X' hoặc 'O'
+  let currentPlayer = 'X';
+  let gameOver = false;
+  let scoreX = 0, scoreO = 0;
+
+  // Pan
+  let offsetX = 0, offsetY = 0;
+  let isDragging = false;
+  let dragStartX = 0, dragStartY = 0;
+  let startOffsetX = 0, startOffsetY = 0;
+
+  // Resize canvas
+  function resize() {
+    const rect = wrap.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    draw();
+  }
+  window.addEventListener('resize', resize);
+
+  // Lấy tọa độ ô từ điểm canvas
+  function getCellFromPoint(cx, cy) {
+    const worldX = cx - offsetX;
+    const worldY = cy - offsetY;
+    const col = Math.floor(worldX / CELL_SIZE);
+    const row = Math.floor(worldY / CELL_SIZE);
+    return { row, col };
+  }
+
+  // Kiểm tra 5 liên tiếp từ ô (row, col)
+  function checkWin(row, col, player) {
+    const directions = [
+      [1, 0],   // dọc
+      [0, 1],   // ngang
+      [1, 1],   // chéo xuống phải
+      [1, -1]   // chéo xuống trái
+    ];
+    for (let d of directions) {
+      let count = 1;
+      // hướng dương
+      for (let step = 1; step < 5; step++) {
+        const r = row + d[0] * step, c = col + d[1] * step;
+        if (grid[r+','+c] === player) count++; else break;
+      }
+      // hướng âm
+      for (let step = 1; step < 5; step++) {
+        const r = row - d[0] * step, c = col - d[1] * step;
+        if (grid[r+','+c] === player) count++; else break;
+      }
+      if (count >= 5) return true;
+    }
+    return false;
+  }
+
+  // Xử lý click
+  function handleCanvasClick(e) {
+    if (gameOver) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    const { row, col } = getCellFromPoint(cx, cy);
+    const key = row + ',' + col;
+    if (grid[key]) return; // ô đã có
+
+    // Đánh dấu
+    grid[key] = currentPlayer;
+    draw();
+
+    // Kiểm tra thắng
+    if (checkWin(row, col, currentPlayer)) {
+      gameOver = true;
+      if (currentPlayer === 'X') scoreX++; else scoreO++;
+      updateScore();
+      showWinMessage(currentPlayer);
+      draw();
+      return;
+    }
+
+    // Chuyển lượt
+    currentPlayer = (currentPlayer === 'X' ? 'O' : 'X');
+    document.getElementById('turnDisplay').textContent = currentPlayer;
+    draw();
+  }
+
+  // Vẽ
+  function draw() {
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Xác định vùng ô cần vẽ
+    const startCol = Math.floor(-offsetX / CELL_SIZE) - 1;
+    const endCol = Math.ceil((w - offsetX) / CELL_SIZE) + 1;
+    const startRow = Math.floor(-offsetY / CELL_SIZE) - 1;
+    const endRow = Math.ceil((h - offsetY) / CELL_SIZE) + 1;
+
+    // Vẽ lưới
+    for (let r = startRow; r <= endRow; r++) {
+      for (let c = startCol; c <= endCol; c++) {
+        const x = offsetX + c * CELL_SIZE;
+        const y = offsetY + r * CELL_SIZE;
+        // Vẽ ô
+        ctx.strokeStyle = '#2a2a5a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+
+        const key = r + ',' + c;
+        const val = grid[key];
+        if (val) {
+          ctx.font = `${CELL_SIZE * 0.7}px "Segoe UI", Arial, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = val === 'X' ? '#ff6b6b' : '#4ecdc4';
+          ctx.fillText(val, x + HALF, y + HALF + 2);
+        }
+      }
+    }
+
+    // Vẽ viền ngoài nhẹ
+    ctx.strokeStyle = '#3a3a6a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, w, h);
+  }
+
+  // Hiển thị thông báo thắng
+  function showWinMessage(player) {
+    const msg = document.getElementById('win-message');
+    document.getElementById('winnerText').textContent = `🎉 ${player} thắng!`;
+    document.getElementById('winDesc').textContent = '5 liên tiếp';
+    msg.classList.add('show');
+  }
+
+  function hideWinMessage() {
+    document.getElementById('win-message').classList.remove('show');
+  }
+
+  function updateScore() {
+    document.getElementById('scoreX').textContent = scoreX;
+    document.getElementById('scoreO').textContent = scoreO;
+  }
+
+  // Reset game
+  function resetGame() {
+    grid = {};
+    currentPlayer = 'X';
+    gameOver = false;
+    hideWinMessage();
+    document.getElementById('turnDisplay').textContent = 'X';
+    draw();
+  }
+
+  // Reset toàn bộ (giữ điểm)
+  function fullReset() {
+    scoreX = 0; scoreO = 0;
+    updateScore();
+    resetGame();
+  }
+
+  // Pan events
+  function onPointerDown(e) {
+    if (e.button !== undefined && e.button !== 0) return; // chỉ chuột trái
+    const clientX = e.clientX || e.touches?.[0]?.clientX;
+    const clientY = e.clientY || e.touches?.[0]?.clientY;
+    if (clientX === undefined) return;
+    isDragging = true;
+    dragStartX = clientX;
+    dragStartY = clientY;
+    startOffsetX = offsetX;
+    startOffsetY = offsetY;
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
+
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    const clientX = e.clientX || e.touches?.[0]?.clientX;
+    const clientY = e.clientY || e.touches?.[0]?.clientY;
+    if (clientX === undefined) return;
+    const dx = clientX - dragStartX;
+    const dy = clientY - dragStartY;
+    offsetX = startOffsetX + dx;
+    offsetY = startOffsetY + dy;
+    draw();
+    e.preventDefault();
+  }
+
+  function onPointerUp(e) {
+    if (isDragging) {
+      isDragging = false;
+      canvas.style.cursor = 'grab';
+      // Kiểm tra nếu kéo ít thì coi là click
+      const clientX = e.clientX || e.changedTouches?.[0]?.clientX;
+      const clientY = e.clientY || e.changedTouches?.[0]?.clientY;
+      if (clientX !== undefined) {
+        const dx = clientX - dragStartX;
+        const dy = clientY - dragStartY;
+        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+          // Click
+          handleCanvasClick(e);
+        }
+      }
+      e.preventDefault();
+    }
+  }
+
+  // Đăng ký sự kiện chuột và cảm ứng
+  canvas.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+
+  canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+  window.addEventListener('touchmove', onPointerMove, { passive: false });
+  window.addEventListener('touchend', onPointerUp, { passive: false });
+
+  // Nút reset
+  document.getElementById('resetBtn').addEventListener('click', fullReset);
+  document.getElementById('playAgainBtn').addEventListener('click', function() {
+    resetGame();
+  });
+
+  // Khởi tạo
+  resize();
+  updateScore();
+  document.getElementById('turnDisplay').textContent = 'X';
+
+  // Nếu click trên canvas khi đã có thông báo thắng, ẩn thông báo và reset? Không, để người chơi bấm nút.
+})();
+</script>
+</body>
+</html>

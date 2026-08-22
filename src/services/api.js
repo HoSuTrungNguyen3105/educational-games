@@ -189,3 +189,21 @@ export const statsService = {
     return apiFetch("/stats");
   },
 };
+
+export const templateService = {
+  async list() {
+    return apiFetch("/templates") || [];
+  },
+  async get(id) {
+    return apiFetch(`/templates/${encodeURIComponent(id)}`);
+  },
+  async create(data) {
+    return apiFetch("/templates", { method: "POST", body: data });
+  },
+  async update(id, data) {
+    return apiFetch(`/templates/${encodeURIComponent(id)}`, { method: "PUT", body: data });
+  },
+  async remove(id) {
+    return apiFetch(`/templates/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+};

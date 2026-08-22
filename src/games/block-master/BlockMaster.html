@@ -227,12 +227,14 @@
     justify-content: center;
     padding: 6px;
     border-radius: 12px;
-    cursor: pointer;
+    cursor: grab;
     transition: all 0.15s ease;
     border: 2px solid transparent;
     min-width: 70px;
     min-height: 70px;
+    touch-action: none; /* prevent scroll while dragging */
   }
+  .tray-slot:active { cursor: grabbing; }
   .tray-slot.empty { opacity: 0.15; pointer-events: none; }
   .tray-slot.selected {
     border-color: var(--teal);
@@ -246,6 +248,7 @@
   .tray-block {
     display: grid;
     gap: 1px;
+    pointer-events: none;
   }
 
   .tray-cell {
@@ -289,11 +292,32 @@
   .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; }
   .stat-label { font-family: 'Nunito', sans-serif; font-size: 0.75rem; color: rgba(32,40,58,0.5); }
 
+  /* Ghost block following cursor */
+  .drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.8;
+    transform: translate(-50%, -50%);
+    display: grid;
+    gap: 1px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 4px;
+    padding: 2px;
+  }
+  .drag-ghost .ghost-cell {
+    width: 13px;
+    height: 13px;
+    border-radius: 2px;
+  }
+  .drag-ghost .ghost-cell.empty { background: transparent; }
+
   @media (max-height: 650px) {
     .board { width: min(85vw, 320px); height: min(85vw, 320px); }
     .tray { min-height: 75px; }
     .game-area { gap: 0.3rem; padding: 0.2rem 0.5rem 0.4rem; }
     .tray-cell { width: 11px; height: 11px; }
+    .drag-ghost .ghost-cell { width: 11px; height: 11px; }
   }
 </style>
 </head>
@@ -482,6 +506,7 @@
           '<p>⭐ <strong>Điểm:</strong> 100/đường + bonus 50/đường thừa + nhân combo.</p>' +
           '<p>🚫 <strong>Game Over:</strong> Khi cả 3 block đều không đặt được.</p>' +
           '<p>⏸️ Nhấn <strong>TẠM DỪNG</strong> để nghỉ ngơi bất cứ lúc nào.</p>' +
+          '<p>🖱️ <strong>KÉO THẢ:</strong> Bạn có thể kéo trực tiếp khối từ khay lên bàn cờ để đặt nhanh hơn.</p>' +
         '</div>' +
         '<button id="btn-close-help" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10; margin-top:1rem;">ĐÃ HIỂU</button>' +
       '</div>';
@@ -567,7 +592,7 @@
         '</header>' +
         '<div class="game-area">' +
           '<div class="board" id="board">'+cellsHtml+'</div>' +
-          '<div class="guide-text" id="guide">'+(state.selectedSlot>=0?'Nhấp ô trên lưới để đặt block':'Chọn block bên dưới rồi đặt lên lưới')+'</div>' +
+          '<div class="guide-text" id="guide">'+(state.selectedSlot>=0?'Nhấp ô trên lưới để đặt block (hoặc kéo thả)':'Chọn block bên dưới rồi đặt lên lưới (kéo thả hoặc click)')+'</div>' +
           '<div class="tray" id="tray">'+trayHtml+'</div>' +
         '</div>' +
       '</div>';
@@ -582,9 +607,32 @@
       cell.addEventListener('click', onCellClick);
     });
 
-    document.querySelectorAll('.tray-slot').forEach(function(slot) {
-      slot.addEventListener('click', function() {
+    // Drag & Drop on tray slots
+    var slots = document.querySelectorAll('.tray-slot:not(.empty)');
+    slots.forEach(function(slot) {
+      // Prevent default touch behavior
+      slot.addEventListener('touchstart', function(e) {
         if (state.clearing || state.paused || state.gameOver) return;
+        // Store the slot index
+        var idx = parseInt(slot.dataset.slot, 10);
+        if (!state.tray[idx]) return;
+        startDrag(e, idx);
+      }, { passive: false });
+
+      slot.addEventListener('mousedown', function(e) {
+        if (state.clearing || state.paused || state.gameOver) return;
+        var idx = parseInt(slot.dataset.slot, 10);
+        if (!state.tray[idx]) return;
+        startDrag(e, idx);
+      });
+    });
+
+    // Also allow click selection (original behavior)
+    document.querySelectorAll('.tray-slot').forEach(function(slot) {
+      slot.addEventListener('click', function(e) {
+        if (state.clearing || state.paused || state.gameOver) return;
+        // Ignore if drag was just performed (we use a flag)
+        if (e.defaultPrevented) return;
         var idx = parseInt(slot.dataset.slot, 10);
         if (!state.tray[idx]) return;
         state.selectedSlot = state.selectedSlot === idx ? -1 : idx;
@@ -608,11 +656,202 @@
     };
   }
 
-  function updateGuide() {
-    var el = document.getElementById('guide');
-    if (el) el.textContent = state.selectedSlot >= 0 ? 'Nhấp ô trên lưới để đặt block' : 'Chọn block bên dưới rồi đặt lên lưới';
+  // ---------- Drag and Drop implementation ----------
+  var dragData = {
+    active: false,
+    slotIdx: -1,
+    shape: null,
+    ghost: null,
+    startX: 0, startY: 0,
+    offsetX: 0, offsetY: 0,
+    boardRect: null,
+    currentRow: -1, currentCol: -1,
+  };
+
+  function startDrag(e, slotIdx) {
+    if (state.clearing || state.paused || state.gameOver) return;
+    var shape = state.tray[slotIdx];
+    if (!shape) return;
+
+    // Prevent default to avoid text selection or scroll
+    e.preventDefault();
+
+    var pos = getEventPos(e);
+    dragData.active = true;
+    dragData.slotIdx = slotIdx;
+    dragData.shape = shape;
+    dragData.startX = pos.x;
+    dragData.startY = pos.y;
+
+    // Create ghost element
+    var ghost = document.createElement('div');
+    ghost.className = 'drag-ghost';
+    var maxR=0,maxC=0;
+    for (var j=0;j<shape.cells.length;j++) {
+      if (shape.cells[j][0] > maxR) maxR = shape.cells[j][0];
+      if (shape.cells[j][1] > maxC) maxC = shape.cells[j][1];
+    }
+    ghost.style.gridTemplateColumns = 'repeat(' + (maxC+1) + ',13px)';
+    for (var rr=0; rr<=maxR; rr++) {
+      for (var cc=0; cc<=maxC; cc++) {
+        var found = false;
+        for (var jj=0;jj<shape.cells.length;jj++) {
+          if (shape.cells[jj][0]===rr && shape.cells[jj][1]===cc) { found=true; break; }
+        }
+        var cell = document.createElement('div');
+        cell.className = 'ghost-cell' + (found?'':' empty');
+        if (found) cell.style.background = shape.color;
+        ghost.appendChild(cell);
+      }
+    }
+    document.body.appendChild(ghost);
+    dragData.ghost = ghost;
+
+    // Update ghost position
+    updateDrag(pos);
+
+    // Add global listeners
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup', onDragEnd);
+    document.addEventListener('touchmove', onDragMove, { passive: false });
+    document.addEventListener('touchend', onDragEnd, { passive: false });
   }
 
+  function getEventPos(e) {
+    if (e.touches) {
+      return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  function updateDrag(pos) {
+    if (!dragData.ghost) return;
+    dragData.ghost.style.left = pos.x + 'px';
+    dragData.ghost.style.top = pos.y + 'px';
+
+    // Determine which board cell is under cursor
+    var boardEl = document.getElementById('board');
+    if (!boardEl) return;
+    var rect = boardEl.getBoundingClientRect();
+    dragData.boardRect = rect;
+    var x = pos.x - rect.left;
+    var y = pos.y - rect.top;
+    var cellW = rect.width / COLS;
+    var cellH = rect.height / ROWS;
+    var col = Math.floor(x / cellW);
+    var row = Math.floor(y / cellH);
+    if (row < 0 || row >= ROWS || col < 0 || col >= COLS) {
+      // Not over board
+      clearHighlights();
+      dragData.currentRow = -1; dragData.currentCol = -1;
+      return;
+    }
+
+    // Check if shape can be placed
+    var shape = dragData.shape;
+    var can = canPlace(state.board, shape, row, col);
+    highlightCells(row, col, shape, can);
+    dragData.currentRow = row;
+    dragData.currentCol = col;
+  }
+
+  function highlightCells(row, col, shape, valid) {
+    clearHighlights();
+    var cells = document.querySelectorAll('.cell');
+    for (var i=0;i<shape.cells.length;i++) {
+      var r = row + shape.cells[i][0];
+      var c = col + shape.cells[i][1];
+      if (r>=0 && r<ROWS && c>=0 && c<COLS) {
+        var idx = r * COLS + c;
+        if (cells[idx]) {
+          cells[idx].classList.add(valid ? 'highlight' : 'invalid-highlight');
+        }
+      }
+    }
+  }
+
+  function clearHighlights() {
+    document.querySelectorAll('.cell.highlight, .cell.invalid-highlight').forEach(function(el) {
+      el.classList.remove('highlight', 'invalid-highlight');
+    });
+  }
+
+  function onDragMove(e) {
+    e.preventDefault();
+    if (!dragData.active) return;
+    var pos = getEventPos(e);
+    updateDrag(pos);
+  }
+
+  function onDragEnd(e) {
+    if (!dragData.active) return;
+    var pos = getEventPos(e);
+    // Determine drop
+    var boardEl = document.getElementById('board');
+    if (boardEl && dragData.currentRow >= 0 && dragData.currentCol >= 0) {
+      var row = dragData.currentRow;
+      var col = dragData.currentCol;
+      var shape = dragData.shape;
+      if (canPlace(state.board, shape, row, col)) {
+        // Place the block
+        placeBlock(state.board, shape, row, col);
+        state.tray[dragData.slotIdx] = null;
+        state.selectedSlot = -1;
+
+        var lines = findFullLines(state.board);
+        var total = lines.rows.length + lines.cols.length;
+        if (total > 0) {
+          state.combo++;
+          var pts = 0;
+          for (var i = 0; i < total; i++) { pts += 100; if (i > 0) pts += 50; }
+          pts *= Math.min(state.combo, 4);
+          state.score += pts;
+          state.totalLinesCleared += total;
+          highlightAndClear(lines, total, pts, row, col);
+        } else {
+          state.combo = 0;
+          afterPlace();
+        }
+      }
+    }
+
+    // Cleanup
+    if (dragData.ghost) {
+      dragData.ghost.remove();
+      dragData.ghost = null;
+    }
+    clearHighlights();
+    dragData.active = false;
+    dragData.slotIdx = -1;
+    dragData.shape = null;
+    dragData.currentRow = -1;
+    dragData.currentCol = -1;
+
+    document.removeEventListener('mousemove', onDragMove);
+    document.removeEventListener('mouseup', onDragEnd);
+    document.removeEventListener('touchmove', onDragMove);
+    document.removeEventListener('touchend', onDragEnd);
+
+    // Re-render to reflect tray changes, but avoid if game is over or clearing
+    if (!state.clearing && !state.gameOver) {
+      // afterPlace will be called from highlightAndClear or afterPlace
+    }
+  }
+
+  // Override highlightAndClear and afterPlace to handle re-render properly
+  // But we already have those functions; they call render() eventually.
+  // We just need to make sure that after a drag drop, we call the same flow.
+  // Actually the above code calls afterPlace or highlightAndClear which will handle rendering.
+  // However, highlightAndClear uses setTimeout and calls afterPlace, which calls render.
+  // So it's fine.
+
+  // updateGuide function
+  function updateGuide() {
+    var el = document.getElementById('guide');
+    if (el) el.textContent = state.selectedSlot >= 0 ? 'Nhấp ô trên lưới để đặt block (hoặc kéo thả)' : 'Chọn block bên dưới rồi đặt lên lưới (kéo thả hoặc click)';
+  }
+
+  // ----- original onCellClick (still works) -----
   function onCellClick(e) {
     if (state.clearing || state.paused || state.gameOver) return;
     var r = parseInt(e.currentTarget.dataset.r, 10);

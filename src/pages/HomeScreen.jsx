@@ -246,7 +246,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       </main>
 
       {/* Footer — nhẹ nhàng, chỉ để lời chào và lối tắt cho giáo viên */}
-      <footer className="bg-gradient-to-r from-purple-100 via-pink-100 to-cyan-100 border-t border-purple-200 py-8 text-center">
+      {/* <footer className="bg-gradient-to-r from-purple-100 via-pink-100 to-cyan-100 border-t border-purple-200 py-8 text-center">
         <div className="flex flex-col items-center gap-3">
           <p className="text-sm text-gray-600 flex items-center gap-1.5">Làm với <span className="text-pink-500">💜</span> cho các bạn học sinh</p>
           <a
@@ -257,7 +257,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             👨‍🏫 Giáo viên? Đăng nhập quản trị →
           </a>
         </div>
-      </footer>
+      </footer> */}
 
       <EnterCodeModal open={showCodeModal} onClose={() => setShowCodeModal(false)} onFound={onSelectGame} />
     </div>
@@ -302,6 +302,13 @@ function TopBar({ userAuth, onUserLogin, onUserRegister, onUserLogout }) {
               🔍 <span className="hidden md:inline">Tìm bạn</span>
             </a>
           )}
+          <a
+            onClick={() => navigate("/admin")}
+            href="#/admin"
+            className="inline-flex items-center gap-2 text-sm text-purple-600 font-semibold hover:text-purple-700 transition"
+          >
+            👨‍🏫 Giáo viên? Vào quản trị →
+          </a>
           {!userAuth?.user && (
             <button
               onClick={onUserRegister}
@@ -407,9 +414,8 @@ function SubjectChip({ label, active, onClick, classes }) {
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 whitespace-nowrap text-sm font-bold px-4 py-2 rounded-full border-2 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 ${
-        active ? `${classes} shadow-md scale-105` : `${classes} opacity-60 hover:opacity-100`
-      }`}
+      className={`shrink-0 whitespace-nowrap text-sm font-bold px-4 py-2 rounded-full border-2 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 ${active ? `${classes} shadow-md scale-105` : `${classes} opacity-60 hover:opacity-100`
+        }`}
     >
       {label}
     </button>
