@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { uid, resultService, questionService, gameService, templateService } from '../../services/api.js'
+import { uid, resultService, questionService, gameService } from '../../services/api.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
@@ -64,33 +64,16 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGame(initialGame);
       setQuestions([]);
-      const tid = tplIdOf(initialGame);
-      const tpl = tid ? templates.find(t => t._id === tid) : null;
-      const win = tpl ? tpl.type === "play-to-win" : initialGame.type === "play-to-win";
-      if (win) {
-        setScreen("play");
-      } else {
-        setScreen(userAuth?.user ? "waiting" : "name");
-      }
+      // Cả 2 loại đều vào phòng chờ / nhập tên trước khi chơi
+      setScreen(userAuth?.user ? "waiting" : "name");
     }
-  }, [initialGame, game, userAuth, templates]);
+  }, [initialGame, game, userAuth]);
 
   const handleFound = async (g) => {
     setGame(g);
-    // Quyết định theo template type, không tin game.type
-    let win = g.type === "play-to-win";
-    const tid = tplIdOf(g);
-    if (tid) {
-      const tpl = templates.find(t => t._id === tid) || await templateService.get(tid).catch(() => null);
-      if (tpl?.type) win = tpl.type === "play-to-win";
-    }
-    if (win) {
-      setQuestions([]);
-      setScreen("play");
-    } else {
-      setQuestions([]);
-      setScreen(userAuth?.user ? "waiting" : "name");
-    }
+    setQuestions([]);
+    // Cả play-to-win lẫn play-to-learn đều vào nhập tên / phòng chờ trước
+    setScreen(userAuth?.user ? "waiting" : "name");
   };
 
   const handleStart = async () => {
@@ -117,7 +100,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
 
   return (
     <div className="min-h-screen bg-paper flex flex-col">
-      {screen !== "play" && <StudentTopBar onExit={goHome} />}
+      <StudentTopBar onExit={goHome} />
       <main className="flex-1 flex flex-col">
         {screen === "join" && <JoinGameScreen onFound={handleFound} />}
         {screen === "name" && game && (
@@ -126,7 +109,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
             onBack={initialGame ? goHome : restart}
             onSubmit={async (name) => {
               setPlayerName(name);
-              setScreen(isPlayToWin ? "play" : "waiting");
+              setScreen("waiting");
             }}
             userAuth={userAuth}
           />
