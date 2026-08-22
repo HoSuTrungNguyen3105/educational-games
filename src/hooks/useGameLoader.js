@@ -16,7 +16,8 @@ export function useGameLoader(route) {
   // Chọn game từ Home → cache vào pendingGameRef, chuyển route
   const selectGame = useCallback((g) => {
     pendingGameRef.current = g;
-    navigate(`/play/${g.id}`);
+    const gid = g._id?.toString() || g.id;
+    navigate(`/play/${gid}`);
   }, []);
 
   // Load game khi route thay đổi
@@ -36,7 +37,7 @@ export function useGameLoader(route) {
     const pending = pendingGameRef.current;
 
     // Nếu có pending game khớp → dùng ngay, không fetch
-    if (pending && String(pending.id) === String(gameId)) {
+    if (pending && String(pending._id?.toString() || pending.id) === String(gameId)) {
       pendingGameRef.current = null;
       setPlayGame(pending);
       return;
