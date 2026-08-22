@@ -67,7 +67,7 @@ export async function initDatabase() {
   const collectionDefs = {
     templates: { $jsonSchema: {
       bsonType: "object",
-      required: ["name", "description", "type", "category", "icon", "ring", "htmlTemplate", "status"],
+      required: ["name", "description", "type", "category", "icon", "ring", "status"],
       properties: {
         name: { bsonType: "string" },
         description: { bsonType: "string" },
@@ -77,7 +77,6 @@ export async function initDatabase() {
         ring: { bsonType: "string" },
         htmlTemplate: { bsonType: "string" },
         thumbnail: { bsonType: "string" },
-        version: { bsonType: "int" },
         status: { enum: ["published", "draft", "inactive"] },
         createdAt: { bsonType: "string" },
         updatedAt: { bsonType: "string" },
@@ -85,7 +84,7 @@ export async function initDatabase() {
     } },
     games: { $jsonSchema: {
       bsonType: "object",
-      required: ["name", "description", "subject", "topic", "language", "templateId", "type", "status", "questionsCount", "playersCount", "code"],
+      required: ["name", "description", "status", "questionsCount", "playersCount", "code"],
       properties: {
         name: { bsonType: "string" },
         description: { bsonType: "string" },
@@ -95,8 +94,6 @@ export async function initDatabase() {
         templateId: { bsonType: "objectId" },
         type: { enum: ["play-to-learn", "play-to-win"] },
         status: { enum: ["published", "draft"] },
-        questionsCount: { bsonType: "int" },
-        playersCount: { bsonType: "int" },
         code: { bsonType: "string" },
         createdAt: { bsonType: "string" },
         updatedAt: { bsonType: "string" },
@@ -104,15 +101,13 @@ export async function initDatabase() {
     } },
     questions: { $jsonSchema: {
       bsonType: "object",
-      required: ["id", "gameId", "content", "options", "correctAnswer", "timeLimit", "points"],
+      required: ["id", "gameId", "content", "options", "correctAnswer"],
       properties: {
         id: { bsonType: "string" },
         gameId: { bsonType: "string" },
         content: { bsonType: "string" },
         options: { bsonType: "array" },
         correctAnswer: { bsonType: "string" },
-        timeLimit: { bsonType: "int" },
-        points: { bsonType: "int" },
       },
     } },
     players: { $jsonSchema: {
@@ -128,10 +123,6 @@ export async function initDatabase() {
         gameId: { bsonType: "string" },
         playerId: { bsonType: "string" },
         playerName: { bsonType: "string" },
-        score: { bsonType: "int" },
-        correctAnswers: { bsonType: "int" },
-        totalQuestions: { bsonType: "int" },
-        accuracy: { bsonType: "int" },
       },
     } },
     users: { $jsonSchema: {
@@ -160,10 +151,10 @@ export async function initDatabase() {
 
   for (const [name, validator] of Object.entries(collectionDefs)) {
     try {
-      await database.createCollection(name, { validator });
+      await database.createCollection(name, { validator, validationLevel: "moderate", validationAction: "error" });
       created.push(name);
     } catch (e) {
-      if (e.code !== 48) throw e;
+      if (e.code !== 48 && e.code !== 121) throw e;
     }
   }
 
@@ -252,6 +243,20 @@ export async function initDatabase() {
   // Migrate existing templates: add new fields, remove old
   await migrateTemplates(database);
 
+  // Apply validators on existing collections (collMod) after migrations
+  for (const [name, validator] of Object.entries(collectionDefs)) {
+    try {
+      await database.command({
+        collMod: name,
+        validator,
+        validationLevel: "moderate",
+        validationAction: "error",
+      });
+    } catch (e) {
+      // Ignore if collection doesn't exist
+    }
+  }
+
   const seedMap = {
     categories: seedData.categories,
     players: seedData.players,
@@ -323,18 +328,15 @@ async function migrateGames(database) {
 
   for (const g of gamesToMigrate) {
     const update = {};
-    // Set templateId from template slug
     if (!g.templateId && g.template && slugToId[g.template]) {
       update.templateId = slugToId[g.template];
     }
-    // Rename title → name
     if (g.title && !g.name) {
       update.name = g.title;
     }
-    // Add type if missing
-    if (!g.type) {
-      update.type = "play-to-learn";
-    }
+    if (!g.name) update.name = "Game";
+    if (!g.description) update.description = "";
+    if (!g.type) update.type = "play-to-learn";
     if (Object.keys(update).length > 0) {
       await gamesColl.updateOne({ _id: g._id }, { $set: update });
     }
