@@ -40,34 +40,32 @@ const QUIZ_GAME_COMPONENTS = {
   'ninja-dash': NinjaDashPlayScreen,
 }
 
-export function GamePlayRouter({ game, questions, playerName, onFinish, onQuit, template: templateProp }) {
-  const [tpl, setTpl] = useState(templateProp || null);
-  const [loading, setLoading] = useState(false);
-
-  // Resolve templateId (chuỗi hoặc {$oid})
+export function GamePlayRouter({ game, questions, playerName, onFinish, onQuit, template: initialTemplate }) {
+  // Dùng template truyền xuống chỉ làm giá trị tạm trong lúc chờ API,
+  // LUÔN gọi GET /api/templates/:templateId để lấy type + htmlTemplate mới nhất
+  const [tpl, setTpl] = useState(initialTemplate || null);
   const tid = game?.templateId
     ? (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || String(game.templateId))
     : null;
+  const [loading, setLoading] = useState(!!tid);
   const slug = tpl?.slug || game.slug || game.template || "";
 
-  // Gọi API template theo id → nhận type + htmlTemplate từ template
   useEffect(() => {
-    if (templateProp) { setTpl(templateProp); return; }
-    if (!tid) { setTpl(null); return; }
+    if (!tid) { setTpl(null); setLoading(false); return; }
     let active = true;
     setLoading(true);
     templateService.get(tid)
-      .then((t) => { if (active) setTpl(t); })
+      .then((t) => { if (active) setTpl(t || null); })
       .catch(() => { if (active) setTpl(null); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [tid, templateProp]);
+  }, [tid]);
 
-  // Type quyết định theo TEMPLATE, fallback về game.type nếu chưa có template
+  // Type quyết định theo TEMPLATE lấy từ API, fallback về game.type nếu chưa có
   const isPlayToWin = tpl ? tpl.type === "play-to-win" : game.type === "play-to-win";
 
   // Play-to-win HTML games: htmlTemplate từ API template hoặc local fallback
-  if (isPlayToWin && (tpl?.htmlTemplate || HTML_GAME_FILES[slug])) {
+  if (!loading && isPlayToWin && (tpl?.htmlTemplate || HTML_GAME_FILES[slug])) {
     const content = tpl?.htmlTemplate || HTML_GAME_FILES[slug];
     return <HtmlGameLoader htmlContent={content} game={game} questions={questions} playerName={playerName} onFinish={onFinish} onQuit={onQuit} />;
   }
