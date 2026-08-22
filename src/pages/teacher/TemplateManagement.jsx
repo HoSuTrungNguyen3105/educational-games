@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { templateService } from '../../services/api.js'
 import { PrimaryButton, IconButton, Loader, ErrorState } from '../../components/ui.jsx'
 
@@ -28,6 +28,7 @@ export default function TemplateManagement({ user, showToast }) {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [editId, setEditId] = useState(null);
   const [showHtmlEditor, setShowHtmlEditor] = useState(false);
+  const formRef = useRef(null);
 
   const load = useCallback(() => {
     setTemplates(null); setError(null);
@@ -72,6 +73,8 @@ export default function TemplateManagement({ user, showToast }) {
     });
     setEditId(t._id);
     setError(null);
+    // Cuộn lên đầu form để người dùng thấy các input cần sửa
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const cancelEdit = () => {
@@ -103,7 +106,7 @@ export default function TemplateManagement({ user, showToast }) {
         <h1 className="font-display text-3xl text-ink">Templates</h1>
       </div>
 
-      <form onSubmit={submit} className="note-card p-6 bg-paper2">
+      <form ref={formRef} onSubmit={submit} className="note-card p-6 bg-paper2 scroll-mt-24">
         <h2 className="font-display text-lg text-ink mb-4">{editId ? "✏️ Sửa template" : "➕ Tạo template mới"}</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>

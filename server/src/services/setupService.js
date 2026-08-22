@@ -53,7 +53,7 @@ export async function createTemplate(data) {
     htmlTemplate: data.htmlTemplate || "",
     thumbnail: data.thumbnail || "",
     version: 1,
-    status: "draft",
+    status: ["published", "draft", "inactive"].includes(data.status) ? data.status : "draft",
     createdAt: now,
     updatedAt: now,
   };
