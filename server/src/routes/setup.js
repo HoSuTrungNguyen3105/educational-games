@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as setupService from "../services/setupService.js";
-import * as gameService from "../services/api.js";
+import * as gameService from "../services/gameService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
 

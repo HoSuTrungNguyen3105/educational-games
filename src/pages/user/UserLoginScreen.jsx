@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PasswordInput, PrimaryButton } from "../../components/ui.jsx";
+import { apiFetch } from "../../services/api.js";
 
 export default function UserLoginScreen({ onBack, onLogin, onGoRegister, showToast }) {
   const [identifier, setIdentifier] = useState("");
@@ -16,13 +17,10 @@ export default function UserLoginScreen({ onBack, onLogin, onGoRegister, showToa
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${window.API_BASE_URL || "https://educational-games-lp4z.onrender.com/api"}/auth/login`, {
+      const data = await apiFetch("/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: identifier.trim(), password }),
+        body: { identifier: identifier.trim(), password },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Đăng nhập thất bại");
       if (data.user.role !== "student" && data.user.role !== "teacher") {
         throw new Error("Tài khoản này không thể sử dụng chat");
       }
