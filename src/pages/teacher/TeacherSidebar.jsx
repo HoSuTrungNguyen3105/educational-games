@@ -32,7 +32,7 @@ const MOBILE_MORE = [
   { id: "admin-questions", label: "Câu hỏi", icon: "❓", route: "/admin/questions" },
 ];
 
-export default function TeacherSidebar({ screen }) {
+export default function TeacherSidebar({ screen, user, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const activeId = MENU.some(t => t.id === screen) ? screen : "admin-library";
@@ -61,6 +61,24 @@ export default function TeacherSidebar({ screen }) {
             {t.label}
           </button>
         ))}
+        {user && (
+          <div className="mt-2 pt-3 border-t border-white/10">
+            <div className="flex items-center gap-3 px-4 py-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold shrink-0">
+                {user.name?.charAt(0)?.toUpperCase() || "?"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-body text-paper truncate">{user.name}</p>
+                <p className="text-[10px] font-mono text-paper/50 capitalize">{user.role}</p>
+              </div>
+            </div>
+            <button onClick={() => { onLogout?.(); if (isMobile) setMobileOpen(false); }}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-body text-red-400 hover:bg-red-500/10 transition">
+              <span className="text-lg">🚪</span>
+              Đăng xuất
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -111,6 +129,11 @@ export default function TeacherSidebar({ screen }) {
                               <span className="text-xs font-body font-medium">{m.label}</span>
                             </button>
                           ))}
+                          <button onClick={() => { onLogout?.(); setMoreOpen(false); }}
+                            className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition">
+                            <span className="text-2xl">🚪</span>
+                            <span className="text-xs font-body font-medium">Đăng xuất</span>
+                          </button>
                         </div>
                       </div>
                     </>
@@ -132,6 +155,13 @@ export default function TeacherSidebar({ screen }) {
               </button>
             );
           })}
+          {user && (
+            <button onClick={onLogout}
+              className="flex flex-col items-center justify-center gap-0.5 w-16 py-1 rounded-xl transition text-red-400">
+              <span className="text-xl">🚪</span>
+              <span className="text-[10px] font-body leading-tight">Thoát</span>
+            </button>
+          )}
         </div>
       </nav>
     </>

@@ -112,7 +112,7 @@ function App() {
     }
     return (
       <>
-        <TeacherApp user={teacher.user} route={route} onExit={() => navigate("/")} showToast={showToast} />
+        <TeacherApp user={teacher.user} route={route} onExit={() => navigate("/")} onLogout={teacher.logout} showToast={showToast} />
       </>
     );
   }

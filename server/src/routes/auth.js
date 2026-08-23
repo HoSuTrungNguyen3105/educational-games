@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyCredentials, signToken, publicUser, registerUser } from "../services/authService.js";
+import { verifyCredentials, signToken, publicUser, registerUser, updateProfile } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 
@@ -42,6 +42,15 @@ router.post("/register", async (req, res, next) => {
 
 router.get("/me", authenticate, (req, res) => {
   sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, role: req.user.role });
+});
+
+router.put("/me", authenticate, async (req, res, next) => {
+  try {
+    const updated = await updateProfile(req.user.sub, req.body || {});
+    sendSuccess(res, updated);
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
 });
 
 export default router;

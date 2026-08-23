@@ -17,7 +17,7 @@ export default function HtmlGameLoader({ htmlContent, game, questions, players, 
     if (!iframe?.contentWindow) return;
     const playerNames = (players || []).map(p => (typeof p === "string" ? p : p?.name)).filter(Boolean);
     iframe.contentWindow.postMessage(
-      { type: "init", data: { gameId: game?.id, playerName: playerName || "Player", players: playerNames, questions: questions || [], apiBase: API_BASE, playMode: playMode || "solo" } },
+      { type: "init", data: { gameId: game?.id, playerName: playerName || "Player", players: playerNames, questions: questions || [], apiBase: API_BASE, playMode: playMode || "solo", questionsTotal: questions?.length || 0 } },
       "*"
     );
   }, [game?.id, playerName, questions, players, playMode]);
@@ -26,7 +26,9 @@ export default function HtmlGameLoader({ htmlContent, game, questions, players, 
     const onMessage = (e) => {
       const msg = e.data;
       if (!msg || typeof msg !== "object") return;
-      if (msg.type === "game-over") {
+      if (msg.type === "ready") {
+        handleInit();
+      } else if (msg.type === "game-over") {
         onFinish?.({
           score: msg.data?.score || 0,
           correct: msg.data?.correct ?? 0,
@@ -39,15 +41,15 @@ export default function HtmlGameLoader({ htmlContent, game, questions, players, 
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [onFinish, onQuit]);
+  }, [handleInit, onFinish, onQuit]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
-    const onLoad = () => handleInit();
+    const onLoad = () => {};
     iframe.addEventListener("load", onLoad);
     return () => iframe.removeEventListener("load", onLoad);
-  }, [htmlContent, handleInit]);
+  }, [htmlContent]);
 
   if (!htmlContent) {
     return (

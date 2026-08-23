@@ -87,6 +87,35 @@ export async function listUsers() {
   return docs.map(({ _id, passwordHash, ...rest }) => rest);
 }
 
+export async function updateProfile(userId, { name, email, password, currentPassword }) {
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+
+  const updates = {};
+  if (name) updates.name = String(name).trim();
+  if (email) {
+    const eml = String(email).trim().toLowerCase();
+    if (eml !== (user.email || "")) {
+      const emailExists = await findByEmail(eml);
+      if (emailExists) throw new Error("Email đã được sử dụng");
+    }
+    updates.email = eml;
+  }
+  if (password) {
+    if (password.length < 6) throw new Error("Mật khẩu phải có ít nhất 6 ký tự");
+    if (!currentPassword) throw new Error("Vui lòng nhập mật khẩu hiện tại");
+    const ok = user.passwordHash && (await bcrypt.compare(currentPassword, user.passwordHash));
+    if (!ok) throw new Error("Mật khẩu hiện tại không đúng");
+    updates.passwordHash = bcrypt.hashSync(password, 10);
+  }
+
+  if (Object.keys(updates).length === 0) throw new Error("Không có gì để cập nhật");
+  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: updates });
+
+  const updated = await getCollection(COLLECTION).findOne({ id: userId });
+  return publicUser(updated);
+}
+
 export async function removeUser(id) {
   if (id === "user-001") throw new Error("Không thể xóa tài khoản quản trị mặc định");
   await getCollection(COLLECTION).deleteOne({ id });

@@ -199,6 +199,9 @@ export const userService = {
   async search(query) {
     return apiFetch(`/users/search?q=${encodeURIComponent(query)}`) || [];
   },
+  async updateProfile(data) {
+    return apiFetch("/auth/me", { method: "PUT", body: data });
+  },
 };
 
 export const statsService = {
