@@ -18,7 +18,7 @@ const ALL_STEPS = [
 export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) {
   const [loading, setLoading] = useState(!!gameId);
   const [stepIdx, setStepIdx] = useState(0);
-  const [form, setForm] = useState({ name: "", description: "", subject: "", topic: "", templateId: null, theme: "gold" });
+  const [form, setForm] = useState({ name: "", description: "", subject: "", topic: "", templateId: null, theme: "gold", status: "draft" });
   const [questions, setQuestions] = useState([]);
   const [savingStatus, setSavingStatus] = useState(null);
   const templates = useTemplates();
@@ -39,7 +39,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
       const g = await gameService.get(gameId);
       if (g) {
         const tid = g.templateId ? (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid || g.templateId) : null;
-        setForm({ name: g.name || g.title || "", description: g.description, subject: g.subject, topic: g.topic, templateId: tid, theme: g.theme || "gold" });
+        setForm({ name: g.name || g.title || "", description: g.description, subject: g.subject, topic: g.topic, templateId: tid, theme: g.theme || "gold", status: g.status || "draft" });
         setStepIdx(1);
       }
       const qs = await questionService.listByGame(gameId);
@@ -62,7 +62,8 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
     return true;
   }, [step, form, questions]);
 
-  const persist = async (status) => {
+  const persist = async (statusOverride) => {
+    const status = statusOverride || form.status || "draft";
     setSavingStatus(status);
     let id = gameId;
     const payload = {
@@ -220,6 +221,12 @@ function StepInfo({ form, setForm, subjects, templates }) {
             <option value="en">Tiếng Anh</option>
           </select>
         </Field>
+        <Field label="Trạng thái">
+          <select className={inputCls} value={form.status || "draft"} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+            <option value="draft">Nháp</option>
+            <option value="published">Xuất bản</option>
+          </select>
+        </Field>
       </div>
       <Field label="Mô tả">
         <textarea className={inputCls + " min-h-[90px]"} value={form.description} maxLength={200} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Mô tả ngắn gọn nội dung trò chơi..." />
@@ -371,7 +378,12 @@ function StepPreview({ form, questions, templates, isPlayToWin }) {
             <p className="text-sm text-[#8A7C63]">{form.subject} · {form.topic || "Chủ đề"}</p>
           </div>
         </div>
-        <p className="text-sm text-[#8A7C63] mb-6">{form.description || "Chưa có mô tả."}</p>
+        <p className="text-sm text-[#8A7C63] mb-4">{form.description || "Chưa có mô tả."}</p>
+        <div className="mb-6">
+          <span className={`inline-block px-3 py-1 rounded-full text-xs font-mono ${form.status === "published" ? "bg-teal/15 text-teal" : "bg-ink/10 text-ink/60"}`}>
+            {form.status === "published" ? "✓ Xuất bản" : "Nháp"}
+          </span>
+        </div>
 
         {hasHtml && (
           <div className="mb-6">

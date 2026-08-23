@@ -81,6 +81,42 @@ router.get("/categories", async (_req, res, next) => {
   }
 });
 
+router.post("/categories", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const cat = await setupService.createCategory(req.body);
+    res.status(201).json(cat);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.put("/categories/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const cat = await setupService.updateCategory(req.params.id, req.body);
+    res.json(cat);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete("/categories/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    await setupService.removeCategory(req.params.id);
+    res.status(204).end();
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete("/categories", authenticate, requireRoles("teacher", "admin"), async (_req, res, next) => {
+  try {
+    const result = await setupService.removeAllCategories();
+    res.json({ message: `Đã xóa ${result.deleted} category`, ...result });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get("/players", async (_req, res, next) => {
   try {
     res.json(await setupService.listPlayers());

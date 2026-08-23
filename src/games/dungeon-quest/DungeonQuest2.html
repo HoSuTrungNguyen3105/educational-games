@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Battle — Trả lời để chiến đấu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0e1020;--panel:#171a30;--panel-2:#20233f;
+  --line:rgba(232,214,176,.16);--gold:#e8b649;--gold-dim:#8a7038;
+  --crimson:#e0546a;--teal:#49c6b8;--paper:#f2ecdd;--paper-dim:#b9b3a0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:radial-gradient(1200px 700px at 20% -10%,#1c2145 0%,transparent 60%),radial-gradient(1000px 600px at 100% 110%,#241a35 0%,transparent 55%),var(--ink);color:var(--paper);font-family:'Inter',sans-serif;display:flex;justify-content:center;padding:28px 16px 60px}
+.stage{width:100%;max-width:760px}
+.topbar{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;flex-wrap:wrap;gap:6px}
+.brand{font-family:'Cinzel',serif;font-weight:700;letter-spacing:.04em;font-size:22px;color:var(--gold)}
+.brand span{color:var(--paper-dim);font-size:13px;font-family:'Inter';font-weight:500;letter-spacing:0;display:block;margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.score{font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--paper);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+.score b{color:var(--gold)}
+.btn-quit{font-family:'Cinzel',serif;font-size:12px;border:1px solid var(--crimson);border-radius:8px;padding:6px 14px;color:var(--crimson);background:transparent;cursor:pointer;transition:opacity .15s;letter-spacing:.03em}
+.btn-quit:hover{opacity:.8}
+.arena{position:relative;background:linear-gradient(180deg,#171a30,#12142a);border:1px solid var(--line);border-radius:16px;padding:26px 22px 18px;display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:10px;overflow:hidden}
+.arena::before{content:'';position:absolute;inset:0;background:radial-gradient(600px 200px at 50% 100%,rgba(232,182,73,.08),transparent);pointer-events:none}
+.combatant{display:flex;flex-direction:column;align-items:center;gap:10px;z-index:1}
+.combatant .name{font-family:'Cinzel',serif;font-size:14px;letter-spacing:.03em;color:var(--paper-dim)}
+.hpbar-wrap{width:150px}
+.hpbar{height:9px;border-radius:6px;background:#0c0e1c;border:1px solid var(--line);overflow:hidden}
+.hpfill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.hpfill.player{background:linear-gradient(90deg,#2fa89a,var(--teal))}
+.hpfill.enemy{background:linear-gradient(90deg,#a8324a,var(--crimson))}
+.hptext{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--paper-dim);margin-top:4px;text-align:center}
+.sprite{width:96px;height:96px;position:relative}
+.sprite svg{width:100%;height:100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.45))}
+.sprite.hit{animation:hit .35s ease}
+@keyframes hit{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px) rotate(-2deg)}55%{transform:translateX(6px) rotate(2deg)}}
+.vs{font-family:'Cinzel',serif;color:var(--gold-dim);font-size:22px;padding-bottom:44px}
+.floattext{position:absolute;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;pointer-events:none;opacity:0;z-index:5}
+.floattext.show{animation:floatUp 1s ease forwards}
+@keyframes floatUp{0%{opacity:0;transform:translateY(0)}15%{opacity:1}100%{opacity:0;transform:translateY(-46px)}}
+.floattext.dmg{color:var(--crimson)}
+.floattext.heal{color:var(--gold)}
+.qcard{margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px}
+.qmeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.qeyebrow{font-family:'Cinzel',serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dim)}
+.timerwrap{display:flex;align-items:center;gap:8px}
+.timerring{position:relative;width:30px;height:30px}
+.timerring svg{width:30px;height:30px;transform:rotate(-90deg)}
+.timerring circle.bg{stroke:var(--line)}
+.timerring circle.fg{stroke:var(--gold);transition:stroke-dashoffset 1s linear}
+.timernum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--paper)}
+.qtext{font-size:18px;font-weight:600;line-height:1.45;margin-bottom:14px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.options{grid-template-columns:1fr}}
+.opt{text-align:left;background:var(--panel-2);border:1px solid var(--line);color:var(--paper);border-radius:10px;padding:12px 14px;font-family:'Inter';font-size:14.5px;font-weight:500;cursor:pointer;transition:border-color .15s,transform .1s,background .15s}
+.opt:hover:not(:disabled){border-color:var(--gold-dim);transform:translateY(-1px)}
+.opt:disabled{cursor:default}
+.opt.correct{border-color:var(--gold);background:rgba(232,182,73,.14)}
+.opt.wrong{border-color:var(--crimson);background:rgba(224,84,106,.14)}
+.feedback{margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:13px;min-height:18px}
+.feedback.ok{color:var(--gold)}.feedback.bad{color:var(--crimson)}
+.attacks{display:none;margin-top:14px;gap:10px;grid-template-columns:repeat(3,1fr)}
+.attacks.show{display:grid}
+@media(max-width:520px){.attacks.show{grid-template-columns:1fr}}
+.atk{background:linear-gradient(180deg,#232748,#191c34);border:1px solid var(--gold-dim);border-radius:10px;padding:12px 10px;text-align:center;cursor:pointer;color:var(--paper);transition:transform .1s,border-color .15s}
+.atk:hover{border-color:var(--gold);transform:translateY(-2px)}
+.atk .icon{font-size:22px;display:block;margin-bottom:4px}
+.atk .aname{font-weight:600;font-size:13.5px}
+.atk .arange{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--paper-dim);margin-top:2px}
+.banner{display:none;margin-top:16px;text-align:center;padding:22px 18px;border-radius:14px;border:1px solid var(--line);background:var(--panel)}
+.banner.show{display:block}
+.banner h2{font-family:'Cinzel',serif;color:var(--gold);font-size:24px;margin-bottom:8px}
+.banner p{color:var(--paper-dim);font-size:14px;margin-bottom:16px}
+.retry{font-family:'Cinzel',serif;background:var(--gold);color:#241a06;border:none;border-radius:8px;padding:10px 22px;font-weight:700;cursor:pointer;letter-spacing:.03em}
+.statusline{text-align:center;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--paper-dim)}
+.statusline.err{color:var(--crimson)}
+</style>
+</head>
+<body>
+<div id="api_submit"></div>
+<div class="stage">
+  <div class="topbar">
+    <div class="brand">QUIZ BATTLE<span>Trả lời đúng để mở đòn tấn công</span></div>
+    <div class="topbar-right">
+      <div class="score">Điểm: <b id="scoreVal">0</b></div>
+      <button class="btn-quit" id="btnQuit">Thoát</button>
+    </div>
+  </div>
+
+  <div class="arena" id="arena">
+    <div class="combatant">
+      <div class="name">Nhà hiền triết</div>
+      <div class="sprite" id="playerSprite">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="34" r="16" fill="#f2ecdd"/><path d="M50 14c-10 0-17 6-17 6l4 8h26l4-8s-7-6-17-6z" fill="#49c6b8"/><rect x="34" y="50" width="32" height="34" rx="8" fill="#20233f" stroke="#49c6b8" stroke-width="2"/><rect x="40" y="84" width="8" height="14" fill="#49c6b8"/><rect x="52" y="84" width="8" height="14" fill="#49c6b8"/></svg>
+      </div>
+      <div class="hpbar-wrap"><div class="hpbar"><div class="hpfill player" id="playerHpFill" style="width:100%"></div></div><div class="hptext" id="playerHpText">100 / 100</div></div>
+    </div>
+    <div class="vs">VS</div>
+    <div class="combatant">
+      <div class="name" id="enemyName">Slime Cổ Đại</div>
+      <div class="sprite" id="enemySprite">
+        <svg viewBox="0 0 100 100"><path d="M50 20c22 0 34 18 34 38 0 16-15 26-34 26S16 74 16 58c0-20 12-38 34-38z" fill="#7a4fb8" opacity="0.9"/><circle cx="40" cy="52" r="5" fill="#0e1020"/><circle cx="62" cy="52" r="5" fill="#0e1020"/><path d="M40 66q10 8 20 0" stroke="#0e1020" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+      </div>
+      <div class="hpbar-wrap"><div class="hpbar"><div class="hpfill enemy" id="enemyHpFill" style="width:100%"></div></div><div class="hptext" id="enemyHpText">80 / 80</div></div>
+    </div>
+    <div class="floattext" id="floatText"></div>
+  </div>
+
+  <div class="qcard" id="qcard">
+    <div class="qmeta">
+      <div class="qeyebrow" id="qcounter">Câu hỏi 1</div>
+      <div class="timerwrap">
+        <div class="timerring">
+          <svg viewBox="0 0 30 30">
+            <circle class="bg" cx="15" cy="15" r="13" fill="none" stroke-width="3"/>
+            <circle class="fg" id="timerCircle" cx="15" cy="15" r="13" fill="none" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <div class="timernum" id="timerNum">20</div>
+        </div>
+      </div>
+    </div>
+    <div class="qtext" id="qtext">Đang tải câu hỏi…</div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="attacks" id="attacks"></div>
+  </div>
+
+  <div class="banner" id="banner">
+    <h2 id="bannerTitle"></h2>
+    <p id="bannerText"></p>
+    <button class="retry" id="retryBtn">Chơi lại</button>
+  </div>
+  <div class="statusline" id="statusline"></div>
+</div>
+
+<script>
+(function(){
+var ATTACKS=[
+  {name:"Chém",icon:"\u2694\uFE0F",min:14,max:22},
+  {name:"Cầu lửa",icon:"\uD83D\uDD25",min:18,max:28},
+  {name:"Sét",icon:"\u26A1",min:10,max:34}
+];
+var ENEMY_NAMES=["Slime C\u1ED3 \u0110\u1EA1i","Yêu Tinh R\u1EEBng S\u00E2u","B\u00F4ng Ma Th\u01B0 Vi\u1EC7n","R\u00F4ng Non Tinh Ngh\u1ECBch"];
+var ENEMY_BASE_HP=80,ENEMY_HP_STEP=25,PLAYER_MAX_HP=100,ENEMY_HIT_DMG=[8,16];
+
+var state={questions:[],qIndex:0,score:0,playerHp:PLAYER_MAX_HP,enemyHp:ENEMY_BASE_HP,enemyMaxHp:ENEMY_BASE_HP,enemyRound:0,timer:null,timeLeft:20,timeLimit:20,locked:false};
+
+var el=function(id){return document.getElementById(id)};
+
+function setStatus(msg,isErr){var s=el('statusline');s.textContent=msg||'';s.className='statusline'+(isErr?' err':'')}
+
+function renderQuestion(){
+  clearInterval(state.timer);state.locked=false;
+  el('attacks').className='attacks';el('attacks').innerHTML='';
+  el('feedback').textContent='';el('feedback').className='feedback';
+  var q=state.questions[state.qIndex%state.questions.length];
+  el('qcounter').textContent='C\u00E2u h\u1ECFi '+(state.qIndex+1);
+  el('qtext').textContent=q.content;
+  var optWrap=el('options');optWrap.innerHTML='';
+  q.options.forEach(function(opt){
+    var btn=document.createElement('button');btn.className='opt';btn.textContent=opt.content;
+    btn.onclick=function(){submitAnswer(q,opt.id,btn)};optWrap.appendChild(btn);
+  });
+  state.timeLimit=q.timeLimit||20;state.timeLeft=state.timeLimit;updateTimerRing();
+  state.timer=setInterval(function(){
+    state.timeLeft--;updateTimerRing();
+    if(state.timeLeft<=0){clearInterval(state.timer);if(!state.locked)handleTimeout()}
+  },1000);
+}
+
+function updateTimerRing(){
+  var circ=2*Math.PI*13;var ratio=Math.max(0,state.timeLeft/state.timeLimit);
+  el('timerCircle').style.strokeDasharray=circ;
+  el('timerCircle').style.strokeDashoffset=circ*(1-ratio);
+  el('timerNum').textContent=Math.max(0,state.timeLeft);
+}
+
+function submitAnswer(question,answerId,btnEl){
+  if(state.locked)return;state.locked=true;clearInterval(state.timer);
+  Array.from(el('options').children).forEach(function(b){b.disabled=true});
+
+  if(typeof window.apiSubmitAnswer==="function"){
+    window.apiSubmitAnswer(question.id,answerId).then(function(result){
+      handleAnswerResult(result,btnEl);
+    }).catch(function(){
+      setStatus('L\u1ED7i g\u1EEDi \u0111\u00E1p \u00E1n',true);
+      state.locked=false;Array.from(el('options').children).forEach(function(b){b.disabled=false});
+    });
+  }else{
+    handleAnswerResult({correct:false,points:0},btnEl);
+  }
+}
+
+function handleAnswerResult(result,btnEl){
+  setStatus('');
+  if(result.correct){
+    btnEl.classList.add('correct');
+    el('feedback').textContent='Ch\u00EDnh x\u00E1c! +'+(result.points||0)+' \u0111i\u1EC3m \u2014 ch\u1ECDn m\u1ED9t \u0111\u00F4n \u0111\u1EC3 t\u1EA5n c\u00F4ng.';
+    el('feedback').className='feedback ok';
+    state.score+=(result.points||0);el('scoreVal').textContent=state.score;
+    showAttackOptions();
+  }else{
+    btnEl.classList.add('wrong');
+    el('feedback').textContent='Sai r\u1ED3i \u2014 \u0111\u1ED1i th\u1EE7 ph\u1EA3n \u0111\u00E1n!';
+    el('feedback').className='feedback bad';
+    setTimeout(enemyStrikes,500);
+  }
+}
+
+function handleTimeout(){
+  state.locked=true;Array.from(el('options').children).forEach(function(b){b.disabled=true});
+  el('feedback').textContent='H\u1EBFt gi\u1EDD \u2014 \u0111\u1ED1i th\u1EE7 ph\u1EA3n \u0111\u00E1n!';
+  el('feedback').className='feedback bad';setTimeout(enemyStrikes,400);
+}
+
+function showAttackOptions(){
+  var wrap=el('attacks');wrap.innerHTML='';
+  ATTACKS.forEach(function(a){
+    var div=document.createElement('div');div.className='atk';
+    div.innerHTML='<span class="icon">'+a.icon+'</span><span class="aname">'+a.name+'</span><span class="arange">'+a.min+'-'+a.max+' dmg</span>';
+    div.onclick=function(){playerAttacks(a)};wrap.appendChild(div);
+  });
+  wrap.className='attacks show';
+}
+
+function floatText(text,cls,overEnemy){
+  var arena=el('arena'),ft=el('floatText');
+  var rect=(overEnemy?el('enemySprite'):el('playerSprite')).getBoundingClientRect();
+  var arenaRect=arena.getBoundingClientRect();
+  ft.style.left=(rect.left-arenaRect.left+rect.width/2-14)+'px';
+  ft.style.top=(rect.top-arenaRect.top-6)+'px';
+  ft.textContent=text;ft.className='floattext '+cls;void ft.offsetWidth;ft.className='floattext '+cls+' show';
+}
+
+function playerAttacks(atk){
+  el('attacks').className='attacks';
+  var dmg=Math.floor(Math.random()*(atk.max-atk.min+1))+atk.min;
+  state.enemyHp=Math.max(0,state.enemyHp-dmg);
+  el('enemySprite').className='sprite hit';floatText('-'+dmg,'dmg',true);updateBars();
+  setTimeout(function(){el('enemySprite').className='sprite'},400);
+  if(state.enemyHp<=0)setTimeout(defeatEnemy,500);
+  else setTimeout(nextQuestionOrEnd,900);
+}
+
+function enemyStrikes(){
+  var dmg=Math.floor(Math.random()*(ENEMY_HIT_DMG[1]-ENEMY_HIT_DMG[0]+1))+ENEMY_HIT_DMG[0];
+  state.playerHp=Math.max(0,state.playerHp-dmg);
+  el('playerSprite').className='sprite hit';floatText('-'+dmg,'dmg',false);updateBars();
+  setTimeout(function(){el('playerSprite').className='sprite'},400);
+  if(state.playerHp<=0)setTimeout(gameOver,600);
+  else setTimeout(nextQuestionOrEnd,900);
+}
+
+function updateBars(){
+  el('playerHpFill').style.width=(state.playerHp/PLAYER_MAX_HP*100)+'%';
+  el('playerHpText').textContent=state.playerHp+' / '+PLAYER_MAX_HP;
+  el('enemyHpFill').style.width=(state.enemyHp/state.enemyMaxHp*100)+'%';
+  el('enemyHpText').textContent=state.enemyHp+' / '+state.enemyMaxHp;
+}
+
+function defeatEnemy(){
+  state.enemyRound++;
+  var nextMax=ENEMY_BASE_HP+state.enemyRound*ENEMY_HP_STEP;
+  state.enemyMaxHp=nextMax;state.enemyHp=nextMax;
+  el('enemyName').textContent=ENEMY_NAMES[state.enemyRound%ENEMY_NAMES.length];
+  updateBars();el('feedback').textContent='H\u1EA1 g\u1EE1c! M\u1ED9t \u0111\u1ED1i th\u1EE7 m\u1EDBi xu\u1EA5t hi\u1EC7n.';
+  el('feedback').className='feedback ok';nextQuestionOrEnd();
+}
+
+function nextQuestionOrEnd(){
+  state.qIndex++;
+  if(state.qIndex>=state.questions.length*20)winGame();
+  else renderQuestion();
+}
+
+function gameOver(){
+  clearInterval(state.timer);el('qcard').style.display='none';
+  el('bannerTitle').textContent='B\u1EA1n \u0111\u00E3 g\u1EE1c ng\u1EE7';
+  el('bannerText').textContent='\u0110i\u1EC3m s\u1ED1 cu\u1ED1i c\u00F9ng: '+state.score+'. Th\u1EED l\u1EA1i \u0111\u1EC3 \u0111\u00E1nh b\u1EA1i \u0111\u1ED1i th\u1EE7 ti\u1EBFp theo!';
+  el('banner').className='banner show';
+  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.qIndex,timeUsed:0}},"*");
+}
+
+function winGame(){
+  clearInterval(state.timer);el('qcard').style.display='none';
+  el('bannerTitle').textContent='Chi\u1EBFn th\u1EAFng vang d\u1EF1ng!';
+  el('bannerText').textContent='B\u1EA1n \u0111\u00E3 tr\u1EA3 l\u1EDDi h\u1EBFt c\u00E2u h\u1ECFi v\u1EDBi '+state.score+' \u0111i\u1EC3m.';
+  el('banner').className='banner show';
+  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.questions.length,timeUsed:0}},"*");
+}
+
+el('retryBtn').onclick=function(){
+  state={questions:state.questions,qIndex:0,score:0,playerHp:PLAYER_MAX_HP,enemyHp:ENEMY_BASE_HP,enemyMaxHp:ENEMY_BASE_HP,enemyRound:0,timer:null,timeLeft:20,timeLimit:20,locked:false};
+  el('scoreVal').textContent='0';el('enemyName').textContent=ENEMY_NAMES[0];updateBars();
+  el('qcard').style.display='block';el('banner').className='banner';renderQuestion();
+};
+
+el('btnQuit').onclick=function(){parent.postMessage({type:"quit"},"*")};
+
+window.addEventListener('message',function(e){
+  if(!e.data||typeof e.data!=='object')return;
+  if(e.data.type==='init'){
+    var d=e.data.data||{};
+    state.questions=d.questions||[];state.qIndex=0;state.score=0;
+    state.playerHp=PLAYER_MAX_HP;state.enemyHp=ENEMY_BASE_HP;
+    state.enemyMaxHp=ENEMY_BASE_HP;state.enemyRound=0;state.locked=false;
+    el('scoreVal').textContent='0';el('enemyName').textContent=ENEMY_NAMES[0];
+    el('qcard').style.display='block';el('banner').className='banner';
+    updateBars();renderQuestion();
+  }
+});
+
+parent.postMessage({type:"ready"},"*");
+})();
+</script>
+</body>
+</html>
