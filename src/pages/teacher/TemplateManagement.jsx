@@ -27,13 +27,18 @@ const FIELDS = [
       { value: "draft", label: "Bản nháp" }, { value: "published", label: "Xuất bản" }, { value: "inactive", label: "Vô hiệu" },
     ]
   },
+  {
+    name: "playMode", label: "Chế độ chơi", type: "select", options: [
+      { value: "solo", label: "Cá nhân (học sinh tự chơi)" }, { value: "classroom", label: "Lớp học (giáo viên điều khiển)" },
+    ]
+  },
   { name: "icon", label: "Icon" },
   { name: "ring", label: "Màu viền", type: "color" },
   { name: "description", label: "Mô tả", type: "textarea", full: true },
   { name: "thumbnail", label: "Ảnh thumbnail", placeholder: "/uploads/templates/example.png", full: true },
 ];
 
-const EMPTY = { name: "", description: "", type: "play-to-learn", category: "quiz", icon: "🎲", ring: "#1D2E4A", htmlTemplate: "", thumbnail: "", status: "draft" };
+const EMPTY = { name: "", description: "", type: "play-to-learn", category: "quiz", icon: "🎲", ring: "#1D2E4A", htmlTemplate: "", thumbnail: "", status: "draft", playMode: "solo" };
 
 export default function TemplateManagement({ showToast }) {
   const [templates, setTemplates] = useState(null);

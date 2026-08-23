@@ -8,7 +8,7 @@ const COLLECTION = "games";
 // Schema mới — chỉ các trường này được trả về cho frontend
 const GAME_FIELDS = [
   "name", "description", "subject", "topic", "language",
-  "templateId", "type", "status", "questionsCount", "playersCount",
+  "templateId", "type", "status", "playMode", "questionsCount", "playersCount",
   "code", "createdAt", "updatedAt",
 ];
 
@@ -27,6 +27,7 @@ function serialize(doc) {
   }
   if (!out.type) out.type = "play-to-learn";
   if (!out.status) out.status = "draft";
+  if (!out.playMode) out.playMode = "solo";
   return out;
 }
 
@@ -94,6 +95,7 @@ export async function create(data) {
     templateId: data.templateId ? new ObjectId(data.templateId) : null,
     type: data.type || "play-to-learn",
     status: data.status || "draft",
+    playMode: ["solo", "classroom"].includes(data.playMode) ? data.playMode : "solo",
     questionsCount: data.questionsCount || 0,
     playersCount: 0,
     code: genCode(),

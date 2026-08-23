@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lật Thẻ Trí Nhớ</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#FBF7EE;--ink:#20283A;--teal:#1B998B;--ticket:#E4572E;--gold:#F4B942;--pink:#FF6F91}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Nunito',sans-serif;background:var(--paper);color:var(--ink);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.header{display:flex;align-items:center;gap:12px;padding:8px 18px;background:#fff;border-bottom:1px solid rgba(0,0,0,.08);flex-shrink:0;height:50px}
+.header .icon{font-size:26px}
+.header .title{font-family:'Poppins',sans-serif;font-weight:700;font-size:16px;color:var(--pink)}
+.header .stats{display:flex;align-items:center;gap:14px;margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(0,0,0,.55)}
+.header .timer{color:var(--teal);font-weight:600}
+.btn-quit{font-family:'Poppins',sans-serif;font-size:12px;border:1px solid rgba(0,0,0,.15);border-radius:14px;padding:5px 16px;background:transparent;cursor:pointer;transition:all .15s;color:var(--ink)}
+.btn-quit:hover{background:rgba(0,0,0,.05)}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.question-card{background:#fff;border-radius:16px;padding:18px;max-width:500px;width:100%;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.06);margin-bottom:20px}
+.question-card .label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;color:#8A7C63;letter-spacing:1px;margin-bottom:6px}
+.question-card h2{font-family:'Poppins',sans-serif;font-size:17px;line-height:1.4}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:480px;width:100%;perspective:800px}
+.card-btn{position:relative;height:120px;cursor:pointer;transition:transform .5s;transform-style:preserve-3d}
+.card-btn:disabled{cursor:default}
+.card-btn.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;border-radius:16px;border:2px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;backface-visibility:hidden;transition:border-color .3s}
+.card-front{background:linear-gradient(135deg,rgba(255,111,145,.15),rgba(244,185,66,.15));border-color:rgba(0,0,0,.12)}
+.card-front .question-mark{font-size:40px;opacity:.5}
+.card-back{background:#fff;transform:rotateY(180deg);flex-direction:column;gap:6px;padding:10px}
+.card-back .card-text{font-family:'Nunito',sans-serif;font-size:13px;text-align:center;line-height:1.3;color:var(--ink)}
+.card-back .card-result{font-size:20px}
+.card-btn.correct .card-back{border-color:var(--teal);background:rgba(27,153,139,.08)}
+.card-btn.wrong .card-back{border-color:var(--ticket);background:rgba(228,87,46,.08)}
+.card-btn.dimmed .card-back{opacity:.4}
+.feedback{margin-top:18px;font-family:'Poppins',sans-serif;font-size:18px;text-align:center}
+.feedback.correct{color:var(--teal)}
+.feedback.wrong{color:var(--ticket)}
+.feedback.timeout{color:#888}
+.explanation{margin-top:12px;padding:10px 14px;background:#f0f9ff;border-left:3px solid var(--teal);border-radius:8px;font-size:13px;line-height:1.5;max-width:480px;width:100%;text-align:left}
+.overlay{display:none;position:fixed;inset:0;background:rgba(32,40,58,.85);z-index:100;justify-content:center;align-items:center}
+.overlay.active{display:flex}
+.overlay-card{background:#fff;border-radius:20px;padding:36px 44px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3);max-width:380px;width:90%;animation:popIn .4s ease}
+.overlay-card h2{font-family:'Poppins',sans-serif;font-size:22px;margin-bottom:8px}
+.overlay-card .final-score{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:700;color:var(--gold);margin:12px 0}
+.overlay-card .final-time{font-size:14px;color:#888;margin-bottom:20px}
+.overlay-card .btn-back{padding:10px 28px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@media(max-width:500px){.grid{gap:8px;max-width:320px}.card-btn{height:90px}.card-back .card-text{font-size:11px}.header .title{font-size:13px}}
+</style>
+</head>
+<body>
+<div id="api_submit"></div>
+<div class="header">
+  <span class="icon">🃏</span>
+  <span class="title">LẬP THẺ TRÍ NHỚ</span>
+  <div class="stats">
+    <span id="questionCounter">Câu 0/0</span>
+    <span class="timer" id="timerDisplay">⏱ 0s</span>
+    <span>⭐ <b id="scoreDisplay">0</b></span>
+    <button class="btn-quit" id="btnQuit">Thoát</button>
+  </div>
+</div>
+<div class="main">
+  <div class="question-card">
+    <div class="label">Lật thẻ có đáp án đúng</div>
+    <h2 id="questionText">Đang tải...</h2>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="feedback" id="feedback"></div>
+  <div id="explanationArea"></div>
+</div>
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <h2>🎉 Hoàn thành!</h2>
+    <div class="final-score" id="finalScore">0</div>
+    <div class="final-time" id="finalTime">Thời gian: 0s</div>
+    <button class="btn-back" id="btnBack">Quay lại</button>
+  </div>
+</div>
+<script>
+(function(){
+var questions=[],currentIdx=0,score=0,correctCount=0,startTime=0,timeLeft=0,timerInterval=null,answered=false;
+var grid=document.getElementById('grid'),questionText=document.getElementById('questionText');
+var questionCounter=document.getElementById('questionCounter'),timerDisplay=document.getElementById('timerDisplay');
+var scoreDisplay=document.getElementById('scoreDisplay'),feedback=document.getElementById('feedback');
+var explanationArea=document.getElementById('explanationArea'),overlay=document.getElementById('overlay');
+var finalScore=document.getElementById('finalScore'),finalTime=document.getElementById('finalTime');
+
+function renderQuestion(){
+  if(currentIdx>=questions.length){endGame();return;}
+  answered=false;
+  var q=questions[currentIdx];
+  questionText.textContent=q.content;
+  questionCounter.textContent='Câu '+(currentIdx+1)+'/'+questions.length;
+  scoreDisplay.textContent=score;
+  feedback.textContent='';
+  feedback.className='feedback';
+  explanationArea.innerHTML='';
+
+  grid.innerHTML='';
+  q.options.forEach(function(o){
+    var card=document.createElement('button');
+    card.className='card-btn';
+    card.setAttribute('data-id',o.id);
+    card.innerHTML='<div class="card-face card-front"><span class="question-mark">❓</span></div><div class="card-face card-back"><span class="card-text">'+o.content+'</span></div>';
+    card.onclick=function(){flipCard(o.id,q,card);};
+    grid.appendChild(card);
+  });
+
+  timeLeft=q.timeLimit||15;
+  updateTimer();
+  startTimer(q);
+}
+
+function startTimer(q){
+  clearInterval(timerInterval);
+  timerInterval=setInterval(function(){
+    timeLeft--;
+    updateTimer();
+    if(timeLeft<=0){clearInterval(timerInterval);if(!answered)selectAnswer(null,q);}
+  },1000);
+}
+
+function updateTimer(){
+  var q=questions[currentIdx];
+  var tl=q?q.timeLimit:15;
+  var pct=Math.max((timeLeft/tl)*100,0);
+  timerDisplay.textContent='⏱ '+timeLeft+'s';
+  if(pct>50)timerDisplay.style.color='var(--teal)';
+  else if(pct>20)timerDisplay.style.color='var(--gold)';
+  else timerDisplay.style.color='var(--ticket)';
+}
+
+function flipCard(optionId,q,card){
+  if(answered)return;
+  card.classList.add('flipped');
+  setTimeout(function(){selectAnswer(optionId,q);},350);
+}
+
+function selectAnswer(answerId,q){
+  if(answered)return;
+  answered=true;
+  clearInterval(timerInterval);
+
+  var cards=Array.from(grid.querySelectorAll('.card-btn'));
+  cards.forEach(function(c){c.disabled=true;c.classList.add('flipped');});
+
+  if(answerId!==null&&typeof window.apiSubmitAnswer==='function'){
+    window.apiSubmitAnswer(q.id,answerId)
+    .then(function(res){showResult(res.correct,res.points,q,answerId,res.correctAnswer);})
+    .catch(function(){showResult(false,0,q,answerId,null);});
+  }else{
+    showResult(false,0,q,answerId,null);
+  }
+}
+
+function showResult(isCorrect,earnedPoints,q,answerId,correctAnswerId){
+  var cards=Array.from(grid.querySelectorAll('.card-btn'));
+  cards.forEach(function(c){
+    var cId=c.getAttribute('data-id');
+    if(cId===correctAnswerId)c.classList.add('correct');
+    if(cId===answerId&&!isCorrect)c.classList.add('wrong');
+    if(cId!==correctAnswerId&&cId!==answerId)c.classList.add('dimmed');
+    if(cId===correctAnswerId&&cId!==answerId){
+      var icon=document.createElement('span');
+      icon.className='card-result';icon.textContent='✅';
+      c.querySelector('.card-back').appendChild(icon);
+    }
+    if(cId===answerId&&!isCorrect){
+      var icon2=document.createElement('span');
+      icon2.className='card-result';icon2.textContent='❌';
+      c.querySelector('.card-back').appendChild(icon2);
+    }
+  });
+
+  if(isCorrect){
+    var timeBonus=Math.round((timeLeft/(q.timeLimit||15))*40);
+    score+=earnedPoints+timeBonus;
+    correctCount++;
+    scoreDisplay.textContent=score;
+    feedback.textContent='Lật đúng thẻ rồi! 🃏';
+    feedback.className='feedback correct';
+  }else if(answerId===null){
+    feedback.textContent='Hết giờ! ⏰';
+    feedback.className='feedback timeout';
+  }else{
+    feedback.textContent='Chưa đúng, thử câu sau nhé!';
+    feedback.className='feedback wrong';
+  }
+
+  if(q.explanation){
+    explanationArea.innerHTML='<div class="explanation">💡 <b>Giải thích:</b> '+q.explanation+'</div>';
+  }
+
+  setTimeout(function(){
+    currentIdx++;
+    renderQuestion();
+  },1800);
+}
+
+function endGame(){
+  clearInterval(timerInterval);
+  var timeUsed=Math.round((Date.now()-startTime)/1000);
+  finalScore.textContent=score+' điểm';
+  finalTime.textContent='Thời gian: '+timeUsed+' giây | Đúng: '+correctCount+'/'+questions.length;
+  overlay.classList.add('active');
+  setTimeout(function(){parent.postMessage({type:'game-over',data:{score:score,correct:correctCount,totalQuestions:questions.length,timeUsed:timeUsed}},'*');},1300);
+}
+
+document.getElementById('btnQuit').onclick=function(){parent.postMessage({type:'quit'},'*');};
+document.getElementById('btnBack').onclick=function(){parent.postMessage({type:'quit'},'*');};
+
+window.addEventListener('message',function(e){
+  if(!e.data||!e.data.type)return;
+  if(e.data.type==='init'){
+    var d=e.data.data;
+    questions=d.questions||[];
+    startTime=Date.now();
+    score=0;correctCount=0;currentIdx=0;
+    scoreDisplay.textContent='0';
+    overlay.classList.remove('active');
+    renderQuestion();
+  }
+});
+
+parent.postMessage({type:'ready'},'*');
+})();
+</script>
+</body>
+</html>

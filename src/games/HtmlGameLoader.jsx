@@ -9,19 +9,18 @@ import { API_BASE } from "../services/api.js";
  * iframe → React: { type: "game-over", data: { score, timeUsed } }
  * iframe → React: { type: "quit" }
  */
-export default function HtmlGameLoader({ htmlContent, game, questions, players, playerName, onFinish, onQuit }) {
+export default function HtmlGameLoader({ htmlContent, game, questions, players, playerName, playMode, onFinish, onQuit }) {
   const iframeRef = useRef(null);
 
   const handleInit = useCallback(() => {
     const iframe = iframeRef.current;
     if (!iframe?.contentWindow) return;
-    // players từ socket store là object {name,...} → map về mảng tên
     const playerNames = (players || []).map(p => (typeof p === "string" ? p : p?.name)).filter(Boolean);
     iframe.contentWindow.postMessage(
-      { type: "init", data: { gameId: game?.id, playerName: playerName || "Player", players: playerNames, questions: questions || [], apiBase: API_BASE } },
+      { type: "init", data: { gameId: game?.id, playerName: playerName || "Player", players: playerNames, questions: questions || [], apiBase: API_BASE, playMode: playMode || "solo" } },
       "*"
     );
-  }, [game?.id, playerName, questions, players]);
+  }, [game?.id, playerName, questions, players, playMode]);
 
   useEffect(() => {
     const onMessage = (e) => {

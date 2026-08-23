@@ -4,7 +4,7 @@ import { ObjectId } from "mongodb";
 // Schema mới — chỉ các trường này được trả về cho frontend
 const TEMPLATE_FIELDS = [
   "name", "description", "type", "category", "icon", "ring",
-  "htmlTemplate", "thumbnail", "version", "status", "createdAt", "updatedAt",
+  "htmlTemplate", "thumbnail", "version", "status", "playMode", "createdAt", "updatedAt",
 ];
 
 // Chuẩn hóa về schema mới: bỏ trường cũ (id/slug/categoryLabel)
@@ -18,6 +18,7 @@ function serialize(doc) {
   }
   if (!out.type) out.type = "play-to-learn";
   if (!out.status) out.status = "draft";
+  if (!out.playMode) out.playMode = "solo";
   out.version = Number(out.version) || 1;
   return out;
 }
@@ -54,6 +55,7 @@ export async function createTemplate(data) {
     thumbnail: data.thumbnail || "",
     version: 1,
     status: ["published", "draft", "inactive"].includes(data.status) ? data.status : "draft",
+    playMode: ["solo", "classroom"].includes(data.playMode) ? data.playMode : "solo",
     createdAt: now,
     updatedAt: now,
   };
