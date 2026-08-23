@@ -93,7 +93,7 @@ export async function create(data) {
     language: data.language || "vi",
     templateId: data.templateId ? new ObjectId(data.templateId) : null,
     type: data.type || "play-to-learn",
-    status: "draft",
+    status: data.status || "draft",
     questionsCount: data.questionsCount || 0,
     playersCount: 0,
     code: genCode(),
