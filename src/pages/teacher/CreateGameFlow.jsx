@@ -96,7 +96,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
         {step.id === "info" && <StepInfo form={form} setForm={setForm} subjects={subjects} templates={templates} />}
         {step.id === "questions" && <StepQuestions questions={questions} setQuestions={setQuestions} />}
         {step.id === "customize" && <StepCustomize form={form} setForm={setForm} />}
-        {step.id === "preview" && <StepPreview form={form} questions={questions} templates={templates} />}
+        {step.id === "preview" && <StepPreview form={form} questions={questions} templates={templates} isPlayToWin={isPlayToWin} />}
       </div>
 
       <div className="flex items-center justify-between">
@@ -355,9 +355,11 @@ function StepCustomize({ form, setForm }) {
   );
 }
 
-function StepPreview({ form, questions, templates }) {
+function StepPreview({ form, questions, templates, isPlayToWin }) {
   const tpl = templates.find(t => t._id === form.templateId);
   const themeColor = (THEMES.find(t => t.id === form.theme) || THEMES[0]).color;
+  const hasHtml = tpl?.htmlTemplate && tpl.htmlTemplate.trim() !== "";
+
   return (
     <div>
       <h2 className="font-display text-xl text-ink mb-6">Xem trước</h2>
@@ -370,19 +372,49 @@ function StepPreview({ form, questions, templates }) {
           </div>
         </div>
         <p className="text-sm text-[#8A7C63] mb-6">{form.description || "Chưa có mô tả."}</p>
-        {questions[0] && (
-          <div className="note-card p-6 max-w-lg">
-            <div className="flex justify-between items-center mb-4 text-xs font-mono text-[#8A7C63]">
-              <span>Câu 1/{questions.length}</span><span>⏱ {questions[0].timeLimit}s</span>
+
+        {hasHtml && (
+          <div className="mb-6">
+            <span className="text-xs font-mono text-[#8A7C63] uppercase mb-2 block">HTML Preview</span>
+            <div className="rounded-2xl overflow-hidden border-2 border-ink/10" style={{ height: 420 }}>
+              <iframe srcDoc={tpl.htmlTemplate} className="w-full h-full border-0" title="HTML Preview" sandbox="allow-scripts" />
             </div>
-            <p className="font-display text-lg text-ink mb-4">{questions[0].content || "Nội dung câu hỏi..."}</p>
-            <div className="grid gap-2">
-              {questions[0].options.map((o, i) => (
-                <div key={o.id} className="px-4 py-2.5 rounded-xl border-2" style={{ borderColor: o.id === questions[0].correctAnswer ? "#1B998B" : "#E7D9BE" }}>
-                  {String.fromCharCode(65 + i)}. {o.content || "..."}
+          </div>
+        )}
+
+        {!hasHtml && (
+          <div className="mb-6 p-4 rounded-2xl bg-ink/5 text-sm text-[#8A7C63]">
+            Template này chưa có HTML. Hãy cập nhật HTML trong trang quản lý template.
+          </div>
+        )}
+
+        {!isPlayToWin && questions.length > 0 && (
+          <div>
+            <span className="text-xs font-mono text-[#8A7C63] uppercase mb-3 block">Danh sách câu hỏi ({questions.length})</span>
+            <div className="space-y-2">
+              {questions.map((q, idx) => (
+                <div key={q.id || idx} className="note-card p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="w-6 h-6 rounded-full bg-ink text-paper text-xs flex items-center justify-center font-mono flex-shrink-0">{idx + 1}</span>
+                    <span className="text-xs font-mono text-[#8A7C63]">⏱ {q.timeLimit}s · ⭐ {q.points}</span>
+                  </div>
+                  <p className="font-body text-sm text-ink mb-2">{q.content || "—"}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {q.options.map((o, i) => (
+                      <div key={o.id} className="text-xs px-3 py-1.5 rounded-lg border" style={{ borderColor: o.id === q.correctAnswer ? "#1B998B" : "#E7D9BE", background: o.id === q.correctAnswer ? "#1B998B15" : "transparent" }}>
+                        {String.fromCharCode(65 + i)}. {o.content || "—"}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {!isPlayToWin && questions.length === 0 && (
+          <div className="p-4 rounded-2xl bg-ink/5 text-sm text-[#8A7C63]">
+            Chưa có câu hỏi nào. Hãy quay lại bước "Câu hỏi" để thêm.
           </div>
         )}
       </div>
