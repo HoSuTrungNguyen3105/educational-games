@@ -13,6 +13,7 @@ import usersSearchRouter from "./routes/usersSearch.js";
 import statsRouter from "./routes/stats.js";
 import chatRouter from "./routes/chat.js";
 import conversationsRouter from "./routes/conversations.js";
+import seedRouter from "./routes/seed.js";
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);
 app.use("/api", setupRouter);
+app.use("/api", seedRouter);
 
 app.use((req, res) => {
   sendError(res, `Không tìm thấy endpoint: ${req.method} ${req.path}`, 404);

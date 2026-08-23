@@ -230,3 +230,9 @@ export const templateService = {
     return apiFetch("/templates", { method: "DELETE" });
   },
 };
+
+export const seedService = {
+  async seed() {
+    return apiFetch("/seed", { method: "POST" });
+  },
+};

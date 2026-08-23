@@ -27,6 +27,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
 
   const selectedTemplate = useMemo(() => templates.find(t => t._id === form.templateId), [templates, form.templateId]);
   const isPlayToWin = selectedTemplate?.type === "play-to-win";
+  const playMode = selectedTemplate?.playMode || "solo";
 
   const steps = useMemo(() => {
     if (isPlayToWin) return ALL_STEPS.filter(s => s.id !== "questions");
@@ -71,6 +72,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
       subject: form.subject || (subjects[0] || ""),
       status,
       type: isPlayToWin ? "play-to-win" : "play-to-learn",
+      playMode,
       questionsCount: isPlayToWin ? 0 : questions.length,
     };
     if (id) await gameService.update(id, payload);
@@ -199,6 +201,9 @@ function StepInfo({ form, setForm, subjects, templates }) {
           </Field>
           {currentTpl?.htmlTemplate && (
             <p className="text-xs text-teal mt-1.5">✓ Mẫu này có HTML template riêng (v{currentTpl.version || 1})</p>
+          )}
+          {currentTpl?.playMode === "classroom" && (
+            <p className="text-xs text-ticket mt-1.5 font-semibold">🎓 Chế độ lớp học — giáo viên điều khiển, học sinh lên chơi</p>
           )}
         </div>
       )}

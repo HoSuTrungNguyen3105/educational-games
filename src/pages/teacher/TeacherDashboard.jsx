@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { gameService, statsService, templateService } from '../../services/api.js'
+import { gameService, statsService, templateService, seedService } from '../../services/api.js'
 import { useTemplates } from '../../lib/hooks.js'
 import { StampToken, StatusBadge, IconButton, Loader, ErrorState, EmptyState, PrimaryButton, GhostButton, Modal, TicketStub } from '../../components/ui.jsx'
 import { socket } from '../../socket/socket.js'
@@ -61,6 +61,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
   const [shareGame, setShareGame] = useState(null);
   const [confirmReset, setConfirmReset] = useState(null);
   const [resetting, setResetting] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   const load = useCallback(() => {
     setGames(null); setStats(null); setError(null);
@@ -100,6 +101,29 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
     }
   };
 
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      const r = await seedService.seed();
+      const msg = r?.message || "Đã inject dữ liệu";
+      const details = r?.data;
+      let summary = msg;
+      if (details) {
+        const parts = [];
+        for (const [k, v] of Object.entries(details)) {
+          if (v.added > 0) parts.push(`${k}: +${v.added}`);
+        }
+        if (parts.length > 0) summary += " (" + parts.join(", ") + ")";
+      }
+      showToast(summary, "success");
+      load();
+    } catch (e) {
+      showToast(e.message || "Lỗi khi inject dữ liệu", "error");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const t = stats || { totals: {}, activity: [], topPlayers: [], topGames: [], subjects: [], attention: { drafts: [], neverPlayed: [] } };
   const draftGames = (stats ? stats.attention.drafts : []).map(d => ({ ...d, raw: games?.find(g => (g._id?.toString() || g.id) === d.id) }));
   const neverPlayedGames = (stats ? stats.attention.neverPlayed : []).map(n => ({ ...n, raw: games?.find(g => (g._id?.toString() || g.id) === n.id) }));
@@ -107,9 +131,15 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Header */}
-      <div>
-        <p className="text-[#8A7C63] text-xs sm:text-sm font-mono">Xin chào,</p>
-        <h1 className="font-display text-2xl sm:text-3xl text-ink">{user ? user.name : "Giáo viên"} 👋</h1>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[#8A7C63] text-xs sm:text-sm font-mono">Xin chào,</p>
+          <h1 className="font-display text-2xl sm:text-3xl text-ink">{user ? user.name : "Giáo viên"} 👋</h1>
+        </div>
+        <button onClick={handleSeed} disabled={seeding}
+          className="text-xs font-mono px-3 py-1.5 rounded-lg border border-ink/15 text-[#8A7C63] hover:bg-ink/5 transition disabled:opacity-50">
+          {seeding ? "⏳ Đang inject..." : "📦 Inject dữ liệu"}
+        </button>
       </div>
 
       {error && <ErrorState subtitle="Không thể tải dữ liệu Dashboard." onRetry={load} />}
