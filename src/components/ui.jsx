@@ -95,7 +95,7 @@ export function TicketStub({ icon, code, notchBg = "#FFF6E7" }) {
 
 export function Modal({ children, onClose, wide }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-2 sm:px-4 bg-ink/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-2 sm:px-4 bg-ink/40 backdrop-blur-sm" onClick={onClose} style={{ marginTop: 0 }}>
       <div className={`note-card w-full p-4 sm:p-6 anim-pop max-h-[90vh] overflow-y-auto ${wide ? "max-w-[95vw]" : "max-w-md"}`} onClick={e => e.stopPropagation()}>{children}</div>
     </div>
   );
@@ -146,9 +146,8 @@ export function ConfirmModal({ open, title, message, onConfirm, onClose, confirm
       <div className="flex justify-end gap-2">
         <GhostButton onClick={onClose}>Hủy</GhostButton>
         <button onClick={onConfirm}
-          className={`font-display font-semibold rounded-2xl px-5 py-3 active:scale-[0.98] transition shadow-[0_3px_0_rgba(0,0,0,0.18)] ${
-            danger ? "bg-ticket text-white hover:bg-ticket/90" : "bg-ink text-paper hover:bg-ink2"
-          }`}>
+          className={`font-display font-semibold rounded-2xl px-5 py-3 active:scale-[0.98] transition shadow-[0_3px_0_rgba(0,0,0,0.18)] ${danger ? "bg-ticket text-white hover:bg-ticket/90" : "bg-ink text-paper hover:bg-ink2"
+            }`}>
           {confirmLabel}
         </button>
       </div>
@@ -221,7 +220,7 @@ export function FormModal({ open, title, fields, values, onChange, onSubmit, onC
 export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, onRemoveAll, removeAllLabel, onCreate, createLabel }) {
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-end justify-between mb-3">
         <h2 className="font-display text-lg text-ink">{title}{count !== undefined ? ` (${count})` : ""}</h2>
         <div className="flex items-center gap-3">
           {onRemoveAll && <button onClick={onRemoveAll} className="text-xs text-ticket/70 hover:text-ticket">{removeAllLabel || "Xóa tất cả"}</button>}

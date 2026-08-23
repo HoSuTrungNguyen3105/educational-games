@@ -7,7 +7,11 @@ export function useSubjects() {
   const [subjects, setSubjects] = useState([]);
   useEffect(() => {
     let active = true;
-    setupService.listSubjects().then((list) => { if (active) setSubjects(list); });
+    setupService.listSubjects().then((list) => {
+      if (!active) return;
+      const names = Array.isArray(list) ? list.map(s => typeof s === "string" ? s : s.name) : [];
+      setSubjects(names);
+    });
     return () => { active = false; };
   }, []);
   return subjects;

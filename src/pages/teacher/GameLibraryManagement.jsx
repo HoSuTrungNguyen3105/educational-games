@@ -64,11 +64,11 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, onD
   const handleNext = () => setFrom(f => Math.min(f + PAGE_SIZE, total));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="font-display text-3xl text-ink">Thư viện trò chơi</h1>
         <div className="flex gap-3">
-          <GhostButton onClick={onOpenBuilder} className="!border-ticket/40 !text-ticket">🎨 Game Builder</GhostButton>
+          {/* <GhostButton onClick={onOpenBuilder} className="!border-ticket/40 !text-ticket">🎨 Game Builder</GhostButton> */}
           <PrimaryButton onClick={onCreate}>+ Tạo trò chơi mới</PrimaryButton>
         </div>
       </div>

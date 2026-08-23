@@ -140,37 +140,33 @@ export async function listPlayers() {
 }
 
 export async function listSubjects() {
-  const doc = await getCollection("subjects").findOne({});
-  return doc ? doc.list : [];
+  const docs = await getCollection("subjects").find({}).sort({ name: 1 }).toArray();
+  return docs.map(d => ({ _id: d._id.toString(), name: d.name }));
 }
 
 export async function addSubject(name) {
   const coll = getCollection("subjects");
-  const doc = await coll.findOne({});
-  if (!doc) {
-    await coll.insertOne({ list: [name] });
-    return [name];
-  }
-  if (doc.list.includes(name)) throw new Error("Môn học đã tồn tại");
-  await coll.updateOne({ _id: doc._id }, { $set: { list: [...doc.list, name] } });
-  return [...doc.list, name];
+  const existing = await coll.findOne({ name });
+  if (existing) throw new Error("Môn học đã tồn tại");
+  await coll.insertOne({ name });
+  return listSubjects();
 }
 
 export async function removeSubject(name) {
   const coll = getCollection("subjects");
-  const doc = await coll.findOne({});
-  if (!doc || !doc.list.includes(name)) throw new Error("Không tìm thấy môn học");
-  const updated = doc.list.filter(s => s !== name);
-  await coll.updateOne({ _id: doc._id }, { $set: { list: updated } });
-  return updated;
+  const result = await coll.deleteOne({ name });
+  if (result.deletedCount === 0) throw new Error("Không tìm thấy môn học");
+  return listSubjects();
 }
 
 export async function updateSubject(oldName, newName) {
   const coll = getCollection("subjects");
-  const doc = await coll.findOne({});
-  if (!doc || !doc.list.includes(oldName)) throw new Error("Không tìm thấy môn học");
-  if (oldName !== newName && doc.list.includes(newName)) throw new Error("Môn học mới đã tồn tại");
-  const updated = doc.list.map(s => s === oldName ? newName : s);
-  await coll.updateOne({ _id: doc._id }, { $set: { list: updated } });
-  return updated;
+  const existing = await coll.findOne({ name: oldName });
+  if (!existing) throw new Error("Không tìm thấy môn học");
+  if (oldName !== newName) {
+    const dup = await coll.findOne({ name: newName });
+    if (dup) throw new Error("Môn học mới đã tồn tại");
+  }
+  await coll.updateOne({ _id: existing._id }, { $set: { name: newName } });
+  return listSubjects();
 }

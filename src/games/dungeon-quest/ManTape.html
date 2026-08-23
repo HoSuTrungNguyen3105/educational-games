@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Reflex Tap — Bấm Nhanh Như Chớp</title>
+<title>⚡ Reflex Games — Bộ sưu tập phản xạ</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
   :root{
-    --bg1:#170f2b; --bg2:#241640; --panel:#1e1438; --line:rgba(255,255,255,.08);
-    --go:#31e0a0; --nogo:#ff5470; --gold:#ffd166; --violet:#a685ff;
+    --bg1:#0f0820; --bg2:#1d1235; --panel:#1a1030; --line:rgba(255,255,255,.08);
+    --go:#31e0a0; --nogo:#ff5470; --gold:#ffd166; --violet:#a685ff; --blue:#5b9aff;
     --text:#f4f0ff; --text-dim:#a79fc9;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -17,6 +17,8 @@
   #root{min-height:100vh;display:flex;flex-direction:column;}
   .font-display{font-family:'Rubik',sans-serif;}
   .font-mono{font-family:'JetBrains Mono',monospace;}
+  .hidden{display:none !important;}
+  button{font-family:inherit;cursor:pointer;-webkit-user-select:none;user-select:none;border:none;background:none;}
 
   .bg-arcade{
     background:
@@ -29,70 +31,53 @@
     box-shadow:0 20px 60px rgba(0,0,0,.5); backdrop-filter:blur(6px);
   }
   .screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;}
-  .hidden{display:none !important;}
-  button{font-family:inherit;cursor:pointer;-webkit-user-select:none;user-select:none;}
-
-  @keyframes pop{0%{transform:scale(.88);opacity:0;}100%{transform:scale(1);opacity:1;}}
   .anim-pop{animation:pop .28s cubic-bezier(.2,.9,.3,1.2);}
+  @keyframes pop{0%{transform:scale(.88);opacity:0;}100%{transform:scale(1);opacity:1;}}
 
-  .glow-btn{width:100%;padding:1rem;border-radius:16px;font-size:1.05rem;font-weight:700;border:1.5px solid;transition:transform .1s ease;background:none;letter-spacing:.01em;}
+  .glow-btn{width:100%;padding:1rem;border-radius:16px;font-size:1.05rem;font-weight:700;border:1.5px solid;transition:transform .1s ease;background:none;}
   .glow-btn:hover{transform:translateY(-1px);}
   .glow-btn:active{transform:scale(.98);}
+  .glow-btn.primary{background:rgba(49,224,160,.12);border-color:var(--go);color:var(--go);}
+  .glow-btn.secondary{background:rgba(255,255,255,.04);border-color:var(--line);color:var(--text);}
+  .glow-btn.danger{background:rgba(255,84,112,.10);border-color:var(--nogo);color:var(--nogo);}
+  .glow-btn.gold{background:rgba(255,209,102,.10);border-color:var(--gold);color:var(--gold);}
 
-  .diff-btn{width:100%;display:flex;align-items:center;gap:1rem;padding:1rem 1.2rem;border-radius:16px;border:1.5px solid;text-align:left;transition:transform .1s ease;background:none;}
-  .diff-btn:hover{transform:translateY(-1px);}
+  .game-card{display:flex;align-items:center;gap:1rem;padding:1rem 1.2rem;border-radius:16px;border:1.5px solid var(--line);background:rgba(255,255,255,.02);text-align:left;width:100%;transition:transform .1s, border-color .2s;}
+  .game-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.2);}
+  .game-card .gicon{font-size:2.2rem;flex-shrink:0;}
+  .game-card .ginfo{flex:1;}
+  .game-card .gtitle{font-family:'Rubik';font-weight:700;font-size:1.05rem;color:var(--text);}
+  .game-card .gdesc{font-size:.78rem;color:var(--text-dim);margin-top:2px;}
+  .game-card .gbadge{font-family:'JetBrains Mono';font-size:.68rem;background:rgba(255,209,102,.12);color:var(--gold);padding:.15rem .7rem;border-radius:12px;border:1px solid rgba(255,209,102,.3);white-space:nowrap;}
 
-  .back-link{margin-top:1.4rem;background:none;border:none;font-size:.85rem;color:var(--text-dim);font-family:'Rubik';}
-  .back-link:hover{color:var(--text);}
-
-  header.app-header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem 1.2rem;background:rgba(15,9,30,.9);border-bottom:1px solid var(--line);flex-wrap:wrap;position:relative;z-index:5;}
-  .quit-btn{font-family:'Rubik';font-size:.78rem;border:1px solid rgba(255,84,112,.5);color:var(--nogo);border-radius:14px;padding:.45rem .9rem;background:none;}
+  header.app-header{display:flex;align-items:center;justify-content:space-between;gap:.8rem;padding:.6rem 1.2rem;background:rgba(15,9,30,.9);border-bottom:1px solid var(--line);flex-wrap:wrap;z-index:5;}
+  .quit-btn{font-family:'Rubik';font-size:.78rem;border:1px solid rgba(255,84,112,.5);color:var(--nogo);border-radius:14px;padding:.4rem .9rem;}
   .quit-btn:hover{background:rgba(255,84,112,.08);}
-  .pause-toggle{font-family:'Rubik';font-size:.78rem;border:1px solid var(--line);color:var(--text);border-radius:14px;padding:.45rem .9rem;background:none;}
+  .back-btn{font-family:'Rubik';font-size:.78rem;color:var(--text-dim);padding:.4rem .6rem;}
+  .back-btn:hover{color:var(--text);}
 
-  .hud-row{display:flex;align-items:center;gap:1.1rem;font-size:.82rem;color:var(--text-dim);flex-wrap:wrap;}
+  .hud-row{display:flex;align-items:center;gap:1rem;font-size:.78rem;color:var(--text-dim);flex-wrap:wrap;}
   .stat-block{text-align:center;}
-  .stat-num{font-family:'JetBrains Mono';font-size:1.3rem;font-weight:700;}
-  .stat-label{font-size:.66rem;color:var(--text-dim);letter-spacing:.03em;text-transform:uppercase;}
+  .stat-num{font-family:'JetBrains Mono';font-size:1.2rem;font-weight:700;color:var(--text);}
+  .stat-label{font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;}
 
-  .rule-bar{display:flex;align-items:center;justify-content:center;gap:1.4rem;padding:.55rem 1.2rem;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid var(--line);font-size:.82rem;flex-wrap:wrap;}
-  .rule-bar .go-chip{color:var(--go);font-weight:700;}
-  .rule-bar .nogo-chip{color:var(--nogo);font-weight:700;}
-  .combo-badge{display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .65rem;border-radius:20px;font-family:'JetBrains Mono';font-size:.76rem;font-weight:700;background:rgba(255,209,102,.12);color:var(--gold);border:1px solid rgba(255,209,102,.5);}
-
-  .timer-bar{width:100%;max-width:520px;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .timer-bar{width:100%;max-width:520px;height:7px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;}
   .timer-fill{height:100%;border-radius:4px;transition:width .1s linear, background .3s ease;}
 
-  .arena-wrap{position:relative;width:100%;max-width:480px;aspect-ratio:1/1;margin:0 auto;}
-  .arena{
-    position:relative;width:100%;height:100%;display:grid;gap:10px;padding:12px;
-    border-radius:22px;border:1.5px solid var(--line);
-    background:radial-gradient(circle at 50% 0%, rgba(166,133,255,.08), transparent 60%), #130b26;
-  }
+  /* ---- Game: Tap Arena ---- */
+  .arena-wrap{position:relative;width:100%;max-width:420px;aspect-ratio:1/1;margin:0 auto;}
+  .arena{position:relative;width:100%;height:100%;display:grid;gap:8px;padding:10px;border-radius:20px;border:1.5px solid var(--line);background:radial-gradient(circle at 50% 0%, rgba(166,133,255,.08), transparent 60%), #130b26;}
   .arena.shake{animation:shakeArena .35s ease;}
   @keyframes shakeArena{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
-
-  .hole{
-    position:relative;border-radius:18px;background:rgba(255,255,255,.03);
-    border:1.5px dashed rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;
-    overflow:hidden;
-  }
-
-  .target{
-    position:absolute; inset:6%; border-radius:16px; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:2px;
-    animation:popIn .18s cubic-bezier(.3,1.4,.4,1) both;
-    box-shadow:0 6px 18px rgba(0,0,0,.4);
-  }
+  .hole{position:relative;border-radius:14px;background:rgba(255,255,255,.03);border:1.5px dashed rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .target{position:absolute;inset:6%;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;animation:popIn .18s cubic-bezier(.3,1.4,.4,1) both;box-shadow:0 6px 18px rgba(0,0,0,.4);}
   @keyframes popIn{0%{transform:scale(.2);opacity:0;}70%{transform:scale(1.12);opacity:1;}100%{transform:scale(1);}}
-  .target.go{background:radial-gradient(circle at 35% 30%, #45f5b8, #1cb37f); }
-  .target.nogo{background:radial-gradient(circle at 35% 30%, #ff7d92, #d93553); }
-  .target .ticon{font-size:clamp(1.4rem,6vw,2rem);filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
+  .target.go{background:radial-gradient(circle at 35% 30%, #45f5b8, #1cb37f);}
+  .target.nogo{background:radial-gradient(circle at 35% 30%, #ff7d92, #d93553);}
+  .target .ticon{font-size:clamp(1.4rem,5vw,2rem);filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
   .target .lifebar-track{position:absolute;left:10%;right:10%;bottom:9%;height:4px;border-radius:3px;background:rgba(0,0,0,.28);overflow:hidden;}
   .target .lifebar{height:100%;background:rgba(255,255,255,.85);width:100%;animation-name:shrinkBar;animation-timing-function:linear;animation-fill-mode:forwards;}
   @keyframes shrinkBar{from{width:100%;}to{width:0%;}}
-  .arena.paused .target .lifebar{animation-play-state:paused;}
-
   .target.resolved{animation:popOut .22s ease forwards;}
   @keyframes popOut{to{transform:scale(1.5);opacity:0;}}
 
@@ -108,6 +93,27 @@
   .floatscore.bad{color:var(--nogo);}
   .floatscore.neutral{color:var(--gold);}
 
+  /* ---- Game: Color Match ---- */
+  .color-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:320px;margin:0 auto;}
+  .color-btn{aspect-ratio:1/1;border-radius:16px;border:2px solid rgba(255,255,255,.15);transition:transform .1s, border-color .2s;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.3);}
+  .color-btn:active{transform:scale(.92);}
+  .color-btn.correct{border-color:var(--go);box-shadow:0 0 20px rgba(49,224,160,.3);}
+  .color-btn.wrong{border-color:var(--nogo);box-shadow:0 0 20px rgba(255,84,112,.3);}
+
+  /* ---- Game: Sequence Memory ---- */
+  .seq-display{font-family:'JetBrains Mono';font-size:3rem;font-weight:800;letter-spacing:.1em;color:var(--text);padding:.5rem 1rem;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line);min-width:120px;text-align:center;}
+  .seq-input{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+  .seq-input button{width:56px;height:56px;border-radius:14px;font-size:1.3rem;font-weight:700;border:1.5px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);transition:transform .1s;}
+  .seq-input button:active{transform:scale(.9);}
+
+  /* ---- Game: Reaction Tap ---- */
+  .reaction-area{width:100%;max-width:400px;aspect-ratio:1/1;border-radius:24px;background:rgba(255,255,255,.04);border:2px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .2s, border-color .2s;font-size:1.5rem;color:var(--text-dim);gap:.5rem;}
+  .reaction-area.active{background:rgba(49,224,160,.10);border-color:var(--go);}
+  .reaction-area.waiting{background:rgba(255,209,102,.06);border-color:var(--gold);}
+  .reaction-area.nogo{background:rgba(255,84,112,.08);border-color:var(--nogo);}
+  .reaction-area .big-icon{font-size:4rem;}
+
+  /* ---- Pause overlay ---- */
   .pause-overlay{position:fixed;inset:0;background:rgba(10,6,20,.85);display:flex;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(6px);}
   .pause-card{padding:2.4rem;text-align:center;max-width:26rem;width:90%;}
 </style>
@@ -119,296 +125,776 @@
 (function(){
   'use strict';
 
-  var DIFFICULTY = {
-    easy:   { label:'Dễ',  icon:'🙂', desc:'Lưới 3×3 · Chậm rãi',  grid:3, popMin:820, popMax:1300, life:1200, noGoProb:0.15 },
-    normal: { label:'TB',  icon:'⚡', desc:'Lưới 3×3 · Tốc độ vừa', grid:3, popMin:560, popMax:950,  life:900,  noGoProb:0.22 },
-    hard:   { label:'Khó', icon:'🔥', desc:'Lưới 4×4 · Cực nhanh',  grid:4, popMin:380, popMax:680,  life:650,  noGoProb:0.3 },
+  // ========== GAME DEFINITIONS ==========
+  var GAMES = {
+    tap: {
+      id:'tap', name:'Chạm nhanh', icon:'⚡', desc:'Chạm vào ô xanh, tránh ô đỏ',
+      levels: [
+        { label:'Dễ', grid:3, popMin:820, popMax:1300, life:1200, noGoProb:0.15, time:35 },
+        { label:'Trung bình', grid:3, popMin:560, popMax:950, life:900, noGoProb:0.22, time:30 },
+        { label:'Khó', grid:4, popMin:380, popMax:680, life:650, noGoProb:0.3, time:25 },
+        { label:'Cực khó', grid:4, popMin:280, popMax:520, life:480, noGoProb:0.35, time:20 },
+        { label:'Thách thức', grid:5, popMin:220, popMax:400, life:350, noGoProb:0.4, time:18 },
+      ]
+    },
+    color: {
+      id:'color', name:'Đúng màu', icon:'🎨', desc:'Chọn màu trùng với tên màu hiển thị',
+      levels: [
+        { label:'Dễ', colors:3, time:30, rounds:8 },
+        { label:'Trung bình', colors:4, time:25, rounds:10 },
+        { label:'Khó', colors:5, time:20, rounds:12 },
+        { label:'Cực khó', colors:6, time:16, rounds:14 },
+      ]
+    },
+    seq: {
+      id:'seq', name:'Ghi nhớ', icon:'🧠', desc:'Nhớ và nhập lại dãy số tăng dần',
+      levels: [
+        { label:'Dễ', startLen:3, maxLen:6, time:30 },
+        { label:'Trung bình', startLen:4, maxLen:8, time:25 },
+        { label:'Khó', startLen:5, maxLen:10, time:20 },
+        { label:'Cực khó', startLen:6, maxLen:12, time:18 },
+      ]
+    },
+    reaction: {
+      id:'reaction', name:'Phản xạ nhanh', icon:'⚡', desc:'Bấm ngay khi đèn xanh bật (tránh đèn đỏ)',
+      levels: [
+        { label:'Dễ', delayMin:1200, delayMax:2200, goChance:0.75, time:30 },
+        { label:'Trung bình', delayMin:800, delayMax:1800, goChance:0.65, time:25 },
+        { label:'Khó', delayMin:500, delayMax:1400, goChance:0.55, time:20 },
+        { label:'Cực khó', delayMin:300, delayMax:1000, goChance:0.45, time:15 },
+      ]
+    }
   };
 
-  var BEST_KEY = 'reflex-tap-best';
-  function getBest(){ try{ return parseInt(localStorage.getItem(BEST_KEY),10)||0; }catch(e){ return 0; } }
-  function saveBest(v){ try{ localStorage.setItem(BEST_KEY, String(v)); }catch(e){} }
+  // ========== STATE ==========
+  var state = {
+    screen: 'menu',        // menu | game_select | playing | gameover | pause
+    gameId: null,
+    levelIdx: 0,
+    score: 0,
+    bestScores: {},        // lưu điểm cao cho từng game+level
+    // Dữ liệu động cho từng game
+    gameData: {}
+  };
 
-  var GO_ICONS = ['⚡','⭐','💎','🔵','🟢'];
-  var NOGO_ICONS = ['⛔','💣','🚫'];
-
-  var state, arena, rafId, lastT, spawnAcc, nextSpawnDelay, holes;
-
-  function freshState(diffKey){
-    return {
-      screen:'menu', difficulty:diffKey||'easy',
-      score:0, combo:0, maxCombo:0,
-      timer:35, maxTimer:35,
-      correctCount:0, missCount:0, mistakeCount:0, inhibitCount:0,
-      reactionSum:0, reactionN:0,
-      paused:false, gameOver:false, timeUsed:0,
-    };
+  // Load best scores
+  function loadBest(){
+    try{
+      var raw = localStorage.getItem('reflex-games-best');
+      if(raw) state.bestScores = JSON.parse(raw);
+    }catch(e){}
   }
-  state = freshState();
-
-  function sendGameOver(){
-    try{ window.parent.postMessage({type:'game-over', data:{score:state.score, timeUsed:Math.round(state.timeUsed*10)/10}}, '*'); }catch(e){}
+  function saveBest(){
+    try{ localStorage.setItem('reflex-games-best', JSON.stringify(state.bestScores)); }catch(e){}
   }
-  function sendQuit(){ try{ window.parent.postMessage({type:'quit'}, '*'); }catch(e){} }
-  window.addEventListener('message', function(e){
-    if(!e.data || typeof e.data!=='object') return;
-  });
+  loadBest();
+
+  function getBestKey(gameId, levelIdx){ return gameId+'-'+levelIdx; }
+  function getBest(gameId, levelIdx){ return state.bestScores[getBestKey(gameId, levelIdx)] || 0; }
+  function setBest(gameId, levelIdx, val){
+    var key = getBestKey(gameId, levelIdx);
+    if(!state.bestScores[key] || val > state.bestScores[key]){
+      state.bestScores[key] = val;
+      saveBest();
+    }
+  }
 
   var root = document.getElementById('root');
+  var rafId = null, lastT = null;
 
+  // ========== RENDER FUNCTIONS ==========
   function render(){
-    stopLoop();
-    if(state.screen==='menu') return renderMenu();
-    if(state.screen==='difficulty') return renderDifficulty();
-    if(state.screen==='playing') return renderPlaying();
-    if(state.screen==='gameover') return renderGameOver();
+    if(state.screen==='menu') renderMenu();
+    else if(state.screen==='game_select') renderGameSelect();
+    else if(state.screen==='playing') renderPlaying();
+    else if(state.screen==='gameover') renderGameOver();
+    else if(state.screen==='pause') renderPause();
   }
 
+  // ----- MENU -----
   function renderMenu(){
     root.innerHTML =
       '<div class="screen bg-arcade">'+
-        '<div class="anim-pop glass-card" style="padding:2.6rem;max-width:26rem;width:100%;text-align:center;">'+
-          '<div style="font-size:3.6rem;margin-bottom:.9rem;">⚡</div>'+
-          '<h1 class="font-display" style="font-size:1.7rem;margin:0 0 .5rem;">'+
-            '<span style="color:var(--go)">REFLEX</span> <span style="color:var(--nogo)">TAP</span>'+
-          '</h1>'+
-          '<p style="color:var(--text-dim);margin-bottom:1.4rem;font-size:.92rem;">Chạm thật nhanh vào ô sáng xanh — nhưng đừng chạm vào ô đỏ nhé!</p>'+
-          '<div class="rule-bar" style="margin-bottom:1.8rem;">'+
-            '<span><span class="go-chip">⚡ Xanh</span> = chạm nhanh</span>'+
-            '<span><span class="nogo-chip">⛔ Đỏ</span> = tránh xa</span>'+
-          '</div>'+
-          '<button id="btn-play" class="glow-btn font-display" style="border-color:var(--go);color:var(--go);background:rgba(49,224,160,.08);">▶ BẮT ĐẦU</button>'+
-          '<div style="margin-top:1.6rem;padding-top:1rem;border-top:1px dashed var(--line);">'+
-            '<p class="font-display" style="font-size:.76rem;color:var(--text-dim);margin-bottom:.5rem;letter-spacing:.05em;text-transform:uppercase;">Kỷ lục</p>'+
-            '<div class="stat-block"><div class="stat-num" style="color:var(--gold)">⭐ '+getBest()+'</div><div class="stat-label">Điểm cao nhất</div></div>'+
+        '<div class="anim-pop glass-card" style="padding:2.4rem;max-width:28rem;width:100%;text-align:center;">'+
+          '<div style="font-size:3.6rem;margin-bottom:.6rem;">⚡</div>'+
+          '<h1 class="font-display" style="font-size:1.6rem;margin:0 0 .3rem;color:var(--go);">REFLEX GAMES</h1>'+
+          '<p style="color:var(--text-dim);margin-bottom:1.4rem;font-size:.88rem;">Rèn luyện phản xạ với nhiều thử thách khác nhau</p>'+
+          '<button id="btn-play" class="glow-btn primary" style="margin-bottom:.8rem;">🎯 Chọn game</button>'+
+          '<div style="border-top:1px dashed var(--line);padding-top:.8rem;margin-top:.2rem;">'+
+            '<p style="font-size:.7rem;color:var(--text-dim);">Đã lưu tiến trình của bạn</p>'+
           '</div>'+
         '</div>'+
       '</div>';
-    document.getElementById('btn-play').onclick=function(){ state.screen='difficulty'; render(); };
+    document.getElementById('btn-play').onclick = function(){ state.screen='game_select'; render(); };
   }
 
-  function renderDifficulty(){
-    var order=['easy','normal','hard'];
-    var colorMap={easy:'var(--go)',normal:'var(--gold)',hard:'var(--nogo)'};
-    var html='<div class="screen bg-arcade">'+
-      '<div class="anim-pop glass-card" style="padding:2.4rem;max-width:26rem;width:100%;text-align:center;">'+
-        '<div style="font-size:2.6rem;margin-bottom:.8rem;">🎯</div>'+
-        '<h2 class="font-display" style="font-size:1.3rem;margin:0 0 .4rem;">Chọn độ khó</h2>'+
-        '<p style="color:var(--text-dim);margin-bottom:1.8rem;font-size:.88rem;">Càng khó, ô hiện càng nhanh và biến mất sớm hơn!</p>'+
-        '<div style="display:flex;flex-direction:column;gap:.7rem;">';
-    order.forEach(function(key){
-      var d=DIFFICULTY[key];
-      html+='<button class="diff-btn" data-key="'+key+'" style="border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.02);">'+
-        '<span style="font-size:1.7rem;">'+d.icon+'</span>'+
-        '<div><div class="font-display" style="font-size:1.02rem;color:'+colorMap[key]+';">'+d.label+'</div>'+
-        '<div style="font-size:.82rem;color:var(--text-dim);">'+d.desc+'</div></div></button>';
+  // ----- GAME SELECT -----
+  function renderGameSelect(){
+    var html = '<div class="screen bg-arcade">'+
+      '<div class="anim-pop glass-card" style="padding:2rem;max-width:28rem;width:100%;">'+
+        '<h2 class="font-display" style="font-size:1.3rem;margin-bottom:1.2rem;text-align:center;">🎯 Chọn thử thách</h2>'+
+        '<div style="display:flex;flex-direction:column;gap:.8rem;">';
+    Object.keys(GAMES).forEach(function(key){
+      var g = GAMES[key];
+      var best = getBest(key, 0); // lấy điểm cao nhất level đầu tiên làm đại diện
+      html += '<button class="game-card" data-game="'+key+'">'+
+        '<span class="gicon">'+g.icon+'</span>'+
+        '<div class="ginfo"><div class="gtitle">'+g.name+'</div><div class="gdesc">'+g.desc+'</div></div>'+
+        (best ? '<span class="gbadge">🏆 '+best+'</span>' : '')+
+      '</button>';
     });
-    html+='</div><button id="btn-back" class="back-link">← Quay lại</button></div></div>';
+    html += '</div><button id="btn-back-menu" class="back-btn" style="margin-top:1rem;width:100%;text-align:center;padding:.6rem;">← Quay lại</button></div></div>';
     root.innerHTML = html;
-    root.querySelectorAll('.diff-btn').forEach(function(btn){
-      btn.onclick=function(){ startNewGame(btn.dataset.key); };
+    root.querySelectorAll('.game-card').forEach(function(btn){
+      btn.onclick = function(){
+        state.gameId = btn.dataset.game;
+        state.levelIdx = 0;
+        state.screen = 'playing';
+        startGame();
+      };
     });
-    document.getElementById('btn-back').onclick=function(){ state.screen='menu'; render(); };
+    document.getElementById('btn-back-menu').onclick = function(){ state.screen='menu'; render(); };
   }
 
-  function startNewGame(diffKey){
-    state = freshState(diffKey || state.difficulty);
-    state.screen='playing';
-    renderPlaying();
-    initGameLoop();
-  }
-
+  // ----- GAME PLAYING -----
   function renderPlaying(){
-    var d = DIFFICULTY[state.difficulty];
-    var holesHtml = '';
-    for(var i=0;i<d.grid*d.grid;i++){
-      holesHtml += '<div class="hole" data-idx="'+i+'"></div>';
+    var g = GAMES[state.gameId];
+    var lvl = g.levels[state.levelIdx];
+    // Reset data
+    state.gameData = {};
+
+    // Tạo header
+    var headerHtml =
+      '<header class="app-header">'+
+        '<div style="display:flex;align-items:center;gap:.6rem;">'+
+          '<span style="font-size:1.5rem;">'+g.icon+'</span>'+
+          '<h1 class="font-display" style="font-size:1.02rem;color:var(--go);margin:0;">'+g.name+'</h1>'+
+        '</div>'+
+        '<div class="hud-row font-mono">'+
+          '<span>Lv.'+(state.levelIdx+1)+' / '+g.levels.length+'</span>'+
+          '<span>⭐ <b id="hud-score">0</b></span>'+
+        '</div>'+
+        '<div style="display:flex;gap:.5rem;">'+
+          '<button id="btn-pause" class="back-btn" style="border:1px solid var(--line);padding:.3rem .8rem;border-radius:12px;">⏸</button>'+
+          '<button id="btn-quit" class="quit-btn">✕</button>'+
+        '</div>'+
+      '</header>';
+
+    // Nội dung game tùy theo loại
+    var bodyHtml = '';
+    if(state.gameId==='tap'){
+      bodyHtml = buildTapGame(lvl);
+    } else if(state.gameId==='color'){
+      bodyHtml = buildColorGame(lvl);
+    } else if(state.gameId==='seq'){
+      bodyHtml = buildSeqGame(lvl);
+    } else if(state.gameId==='reaction'){
+      bodyHtml = buildReactionGame(lvl);
     }
-    root.innerHTML =
-      '<div class="bg-arcade" style="flex:1;display:flex;flex-direction:column;">'+
-        '<header class="app-header">'+
-          '<div style="display:flex;align-items:center;gap:.6rem;">'+
-            '<span style="font-size:1.6rem;">⚡</span>'+
-            '<h1 class="font-display" style="font-size:1.02rem;color:var(--go);margin:0;">REFLEX TAP</h1>'+
-          '</div>'+
-          '<div class="hud-row font-mono">'+
-            '<span>'+d.label+'</span>'+
-            '<span>⭐ <b id="hud-score">0</b></span>'+
-            '<span>✅ <b id="hud-good">0</b></span>'+
-          '</div>'+
-          '<div style="display:flex;gap:.5rem;">'+
-            '<button id="btn-pause" class="pause-toggle">⏸ Tạm dừng</button>'+
-            '<button id="btn-quit" class="quit-btn">Thoát</button>'+
-          '</div>'+
-        '</header>'+
 
-        '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;gap:.85rem;">'+
-          '<div class="rule-bar">'+
-            '<span><span class="go-chip">⚡</span> chạm nhanh</span>'+
-            '<span><span class="nogo-chip">⛔</span> tránh chạm</span>'+
-            '<span id="hud-combo"></span>'+
-          '</div>'+
-          '<div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%;background:var(--go);"></div></div>'+
-          '<div class="font-mono" style="font-size:.76rem;color:var(--text-dim);margin-top:-.4rem;" id="timer-text">'+state.timer.toFixed(1)+'s</div>'+
+    root.innerHTML = '<div class="bg-arcade" style="flex:1;display:flex;flex-direction:column;">'+headerHtml+bodyHtml+'</div>';
 
-          '<div class="arena-wrap"><div class="arena" id="arena" style="grid-template-columns:repeat('+d.grid+',1fr);grid-template-rows:repeat('+d.grid+',1fr);">'+holesHtml+'</div></div>'+
+    // Gắn sự kiện
+    document.getElementById('btn-pause').onclick = function(){ togglePause(); };
+    document.getElementById('btn-quit').onclick = function(){ stopLoop(); state.screen='menu'; render(); };
 
-          '<div style="display:flex;gap:1.1rem;align-items:center;justify-content:center;flex-wrap:wrap;">'+
-            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--go);font-size:1rem;" id="hud-hit">0</div><div class="stat-label">Trúng</div></div>'+
-            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--nogo);font-size:1rem;" id="hud-mistake">0</div><div class="stat-label">Chạm nhầm</div></div>'+
-            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--text-dim);font-size:1rem;" id="hud-miss">0</div><div class="stat-label">Bỏ lỡ</div></div>'+
-            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--gold);font-size:1rem;" id="hud-combo-max">0</div><div class="stat-label">Combo max</div></div>'+
-          '</div>'+
-        '</div>'+
-      '</div>'+
+    // Khởi tạo game
+    if(state.gameId==='tap') initTap();
+    else if(state.gameId==='color') initColor();
+    else if(state.gameId==='seq') initSeq();
+    else if(state.gameId==='reaction') initReaction();
 
-      '<div id="pause-overlay" class="pause-overlay hidden">'+
-        '<div class="pause-card glass-card anim-pop">'+
-          '<div style="font-size:2.6rem;margin-bottom:.8rem;">⏸</div>'+
-          '<h2 class="font-display" style="font-size:1.3rem;margin-bottom:.4rem;">Tạm dừng</h2>'+
-          '<p style="color:var(--text-dim);margin-bottom:1.4rem;font-size:.9rem;">Điểm hiện tại: <strong style="color:var(--text)">'+state.score+'</strong></p>'+
-          '<div style="display:flex;flex-direction:column;gap:.7rem;">'+
-            '<button id="btn-resume" class="glow-btn font-display" style="border-color:var(--go);color:var(--go);background:rgba(49,224,160,.08);">▶ Tiếp tục</button>'+
-            '<button id="btn-restart-pause" class="glow-btn font-display" style="border-color:var(--gold);color:var(--gold);background:rgba(255,209,102,.08);">🔄 Chơi lại</button>'+
-            '<button id="btn-quit-pause" class="glow-btn font-display" style="border-color:var(--nogo);color:var(--nogo);background:rgba(255,84,112,.08);">🏠 Thoát</button>'+
-          '</div>'+
-        '</div>'+
-      '</div>';
-
-    arena = document.getElementById('arena');
-    holes = Array.prototype.slice.call(arena.querySelectorAll('.hole'));
-    holes.forEach(function(h){ h.onclick=function(){ onHoleClick(h); }; });
-
-    document.getElementById('btn-pause').onclick=function(){ setPaused(true); };
-    document.getElementById('btn-resume').onclick=function(){ setPaused(false); };
-    document.getElementById('btn-restart-pause').onclick=function(){ document.getElementById('pause-overlay').classList.add('hidden'); startNewGame(); };
-    document.getElementById('btn-quit-pause').onclick=function(){ document.getElementById('pause-overlay').classList.add('hidden'); stopLoop(); sendQuit(); state.screen='menu'; render(); };
-    document.getElementById('btn-quit').onclick=function(){ stopLoop(); sendQuit(); state.screen='menu'; render(); };
-  }
-
-  function setPaused(p){
-    state.paused = p;
-    var ov = document.getElementById('pause-overlay');
-    if(ov) ov.classList.toggle('hidden', !p);
-    if(arena) arena.classList.toggle('paused', p);
-  }
-
-  /* ============ GAME LOOP ============ */
-  function initGameLoop(){
-    spawnAcc = 0;
-    nextSpawnDelay = randDelay();
+    // Bắt đầu loop
     lastT = performance.now();
     rafId = requestAnimationFrame(loop);
   }
-  function stopLoop(){ if(rafId){ cancelAnimationFrame(rafId); rafId=null; } }
 
-  function randDelay(){
-    var d = DIFFICULTY[state.difficulty];
-    return d.popMin + Math.random()*(d.popMax-d.popMin);
+  // ----- PAUSE -----
+  function renderPause(){
+    var overlay = document.createElement('div');
+    overlay.className = 'pause-overlay';
+    overlay.id = 'pause-overlay';
+    overlay.innerHTML =
+      '<div class="pause-card glass-card anim-pop">'+
+        '<div style="font-size:2.6rem;margin-bottom:.8rem;">⏸</div>'+
+        '<h2 class="font-display" style="font-size:1.3rem;margin-bottom:.4rem;">Tạm dừng</h2>'+
+        '<p style="color:var(--text-dim);margin-bottom:1.2rem;font-size:.9rem;">Điểm: <strong style="color:var(--text)">'+state.score+'</strong></p>'+
+        '<div style="display:flex;flex-direction:column;gap:.6rem;">'+
+          '<button id="btn-resume" class="glow-btn primary">▶ Tiếp tục</button>'+
+          '<button id="btn-restart" class="glow-btn gold">🔄 Chơi lại</button>'+
+          '<button id="btn-quit-pause" class="glow-btn secondary">🏠 Menu</button>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(overlay);
+    document.getElementById('btn-resume').onclick = function(){ togglePause(); };
+    document.getElementById('btn-restart').onclick = function(){ document.getElementById('pause-overlay').remove(); state.screen='playing'; startGame(); };
+    document.getElementById('btn-quit-pause').onclick = function(){ document.getElementById('pause-overlay').remove(); stopLoop(); state.screen='menu'; render(); };
   }
 
-  function loop(now){
-    var dt = Math.min(0.05, (now-lastT)/1000);
-    lastT = now;
-    if(!state.paused && !state.gameOver){
-      spawnAcc += dt*1000;
-      if(spawnAcc >= nextSpawnDelay){
-        spawnAcc = 0;
-        nextSpawnDelay = randDelay();
-        trySpawn();
-      }
-      state.timer -= dt;
-      state.timeUsed += dt;
-      if(state.timer <= 0){
-        state.timer = 0;
-        updateHud();
-        endGame();
-        return;
-      }
-      updateHud();
+  function togglePause(){
+    if(state.screen==='pause'){
+      state.screen = 'playing';
+      var ov = document.getElementById('pause-overlay');
+      if(ov) ov.remove();
+      // restart loop
+      lastT = performance.now();
+      rafId = requestAnimationFrame(loop);
+    } else {
+      state.screen = 'pause';
+      if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+      renderPause();
     }
-    rafId = requestAnimationFrame(loop);
   }
 
-  function trySpawn(){
-    var freeHoles = holes.filter(function(h){ return !h.querySelector('.target'); });
-    if(!freeHoles.length) return;
-    var d = DIFFICULTY[state.difficulty];
-    var hole = freeHoles[Math.floor(Math.random()*freeHoles.length)];
-    var isNoGo = Math.random() < d.noGoProb;
-    var t = document.createElement('div');
-    t.className = 'target ' + (isNoGo ? 'nogo' : 'go');
-    var icon = isNoGo ? NOGO_ICONS[Math.floor(Math.random()*NOGO_ICONS.length)] : GO_ICONS[Math.floor(Math.random()*GO_ICONS.length)];
-    t.innerHTML = '<span class="ticon">'+icon+'</span><div class="lifebar-track"><div class="lifebar"></div></div>';
-    var lifebar = t.querySelector('.lifebar');
-    lifebar.style.animationDuration = d.life+'ms';
-    t.dataset.type = isNoGo ? 'nogo' : 'go';
-    t.dataset.spawnT = String(performance.now());
-    t.dataset.resolved = '0';
-    hole.appendChild(t);
+  // ----- GAME OVER -----
+  function renderGameOver(){
+    var g = GAMES[state.gameId];
+    var lvl = g.levels[state.levelIdx];
+    var best = getBest(state.gameId, state.levelIdx);
+    var isNewBest = state.score > best;
+    if(isNewBest) setBest(state.gameId, state.levelIdx, state.score);
 
-    var expTimer = setTimeout(function(){
-      if(t.dataset.resolved==='1') return;
-      resolveTarget(t, hole, 'expire');
-    }, d.life + 20);
-    t._expTimer = expTimer;
+    root.innerHTML =
+      '<div class="screen bg-arcade">'+
+        '<div class="anim-pop glass-card" style="padding:2rem;max-width:28rem;width:100%;text-align:center;">'+
+          '<div style="font-size:3rem;margin-bottom:.6rem;">🏁</div>'+
+          '<h2 class="font-display" style="font-size:1.3rem;margin:0 0 .2rem;">Kết thúc</h2>'+
+          (isNewBest ? '<p style="color:var(--gold);font-weight:700;margin-bottom:.4rem;">🏆 Kỷ lục mới!</p>' : '')+
+          '<div style="padding:.8rem 0;margin:.4rem 0;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);">'+
+            '<div style="display:flex;justify-content:center;gap:1.4rem;flex-wrap:wrap;">'+
+              '<div class="stat-block"><div class="stat-num" style="color:var(--go);">'+state.score+'</div><div class="stat-label">Điểm</div></div>'+
+              '<div class="stat-block"><div class="stat-num" style="color:var(--gold);">'+best+'</div><div class="stat-label">Kỷ lục</div></div>'+
+            '</div>'+
+          '</div>'+
+          (state.gameData.detail ? '<p style="font-size:.78rem;color:var(--text-dim);margin:.6rem 0;">'+state.gameData.detail+'</p>' : '')+
+          '<div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem;">'+
+            '<button id="btn-retry" class="glow-btn primary">🔄 Chơi lại level này</button>'+
+            '<button id="btn-next" class="glow-btn gold">'+(state.levelIdx < g.levels.length-1 ? '➡️ Level tiếp theo' : '🏆 Hoàn thành tất cả!')+'</button>'+
+            '<button id="btn-home" class="glow-btn secondary">🏠 Menu</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    document.getElementById('btn-retry').onclick = function(){ state.screen='playing'; startGame(); };
+    document.getElementById('btn-next').onclick = function(){
+      if(state.levelIdx < g.levels.length-1){
+        state.levelIdx++;
+        state.screen='playing';
+        startGame();
+      } else {
+        state.screen='menu';
+        render();
+      }
+    };
+    document.getElementById('btn-home').onclick = function(){ state.screen='menu'; render(); };
   }
 
-  function onHoleClick(hole){
-    if(state.paused || state.gameOver) return;
+  // ========== GAME: TAP ==========
+  function buildTapGame(lvl){
+    var cols = lvl.grid;
+    var holesHtml = '';
+    for(var i=0;i<cols*cols;i++){ holesHtml += '<div class="hole" data-idx="'+i+'"></div>'; }
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;gap:.6rem;">'+
+      '<div class="rule-bar" style="display:flex;gap:1.2rem;font-size:.8rem;color:var(--text-dim);">'+
+        '<span><span style="color:var(--go);font-weight:700;">⚡ Xanh</span> = chạm</span>'+
+        '<span><span style="color:var(--nogo);font-weight:700;">⛔ Đỏ</span> = tránh</span>'+
+        '<span id="hud-combo"></span>'+
+      '</div>'+
+      '<div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%;background:var(--go);"></div></div>'+
+      '<div class="font-mono" style="font-size:.75rem;color:var(--text-dim);" id="timer-text">'+lvl.time+'s</div>'+
+      '<div class="arena-wrap"><div class="arena" id="arena" style="grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+cols+',1fr);">'+holesHtml+'</div></div>'+
+      '<div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;font-size:.75rem;">'+
+        '<span>✅ <b id="hud-hit">0</b></span>'+
+        '<span style="color:var(--nogo);">❌ <b id="hud-mistake">0</b></span>'+
+        '<span style="color:var(--text-dim);">💨 <b id="hud-miss">0</b></span>'+
+        '<span style="color:var(--gold);">🔥 <b id="hud-combo-max">0</b></span>'+
+      '</div>'+
+    '</div>';
+  }
+
+  var tapState = { holes:[], spawnAcc:0, nextDelay:0, combo:0, maxCombo:0, correct:0, mistake:0, miss:0, timer:0, maxTimer:0 };
+
+  function initTap(){
+    var lvl = GAMES[state.gameId].levels[state.levelIdx];
+    tapState.timer = lvl.time;
+    tapState.maxTimer = lvl.time;
+    tapState.combo = 0;
+    tapState.maxCombo = 0;
+    tapState.correct = 0;
+    tapState.mistake = 0;
+    tapState.miss = 0;
+    tapState.spawnAcc = 0;
+    tapState.nextDelay = randDelayTap();
+    var arena = document.getElementById('arena');
+    tapState.holes = Array.prototype.slice.call(arena.querySelectorAll('.hole'));
+    tapState.holes.forEach(function(h){ h.onclick = function(){ onTapHoleClick(h); }; });
+    updateTapHud();
+  }
+
+  function randDelayTap(){
+    var lvl = GAMES[state.gameId].levels[state.levelIdx];
+    return lvl.popMin + Math.random()*(lvl.popMax-lvl.popMin);
+  }
+
+  function onTapHoleClick(hole){
+    if(state.screen!=='playing') return;
     var t = hole.querySelector('.target');
-    if(!t){
-      spawnFloat(hole, 'neutral', '');
-      return;
-    }
+    if(!t){ spawnFloat(hole,'neutral',''); return; }
     if(t.dataset.resolved==='1') return;
-    resolveTarget(t, hole, 'tap');
+    resolveTapTarget(t, hole, 'tap');
   }
 
-  function resolveTarget(t, hole, cause){
+  function resolveTapTarget(t, hole, cause){
     if(t.dataset.resolved==='1') return;
     t.dataset.resolved='1';
     if(t._expTimer) clearTimeout(t._expTimer);
     var type = t.dataset.type;
-    var reactionMs = performance.now() - parseFloat(t.dataset.spawnT);
+    var reaction = performance.now() - parseFloat(t.dataset.spawnT);
 
     if(cause==='tap' && type==='go'){
-      state.combo++;
-      state.correctCount++;
-      if(state.combo>state.maxCombo) state.maxCombo=state.combo;
-      state.reactionSum += reactionMs; state.reactionN++;
-      var speedBonus = reactionMs<250 ? 60 : reactionMs<450 ? 35 : reactionMs<700 ? 15 : 0;
-      var bonus = 80 + (state.combo-1)*15 + speedBonus;
+      tapState.combo++;
+      if(tapState.combo>tapState.maxCombo) tapState.maxCombo = tapState.combo;
+      tapState.correct++;
+      var bonus = 80 + (tapState.combo-1)*15 + (reaction<250 ? 60 : reaction<450 ? 35 : reaction<700 ? 15 : 0);
       state.score += bonus;
-      adjustTimer(0.9);
+      adjustTimerTap(0.8);
       spawnRipple(hole,'good'); spawnFloat(hole,'good','+'+bonus);
     } else if(cause==='tap' && type==='nogo'){
-      state.combo = 0;
-      state.mistakeCount++;
-      adjustTimer(-2.2);
+      tapState.combo=0; tapState.mistake++;
+      adjustTimerTap(-2.2);
       spawnRipple(hole,'bad'); spawnFloat(hole,'bad','-2.2s');
       shakeArena();
     } else if(cause==='expire' && type==='go'){
-      state.combo = 0;
-      state.missCount++;
-      adjustTimer(-1.4);
+      tapState.combo=0; tapState.miss++;
+      adjustTimerTap(-1.4);
       spawnFloat(hole,'bad','Lỡ!');
     } else if(cause==='expire' && type==='nogo'){
-      state.inhibitCount++;
       state.score += 15;
       spawnFloat(hole,'neutral','+15 kiềm chế');
     }
 
     t.classList.add('resolved');
     setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 220);
-    updateHud();
-    if(state.timer<=0){ state.timer=0; endGame(); }
+    updateTapHud();
+    if(tapState.timer<=0){ tapState.timer=0; endGame(); }
   }
 
-  function adjustTimer(delta){
-    state.timer = Math.max(0, Math.min(state.maxTimer, state.timer+delta));
+  function adjustTimerTap(delta){
+    tapState.timer = Math.max(0, Math.min(tapState.maxTimer, tapState.timer+delta));
   }
 
+  function updateTapHud(){
+    var s = document.getElementById('hud-score'); if(s) s.textContent = state.score;
+    var hit = document.getElementById('hud-hit'); if(hit) hit.textContent = tapState.correct;
+    var mistake = document.getElementById('hud-mistake'); if(mistake) mistake.textContent = tapState.mistake;
+    var miss = document.getElementById('hud-miss'); if(miss) miss.textContent = tapState.miss;
+    var cmax = document.getElementById('hud-combo-max'); if(cmax) cmax.textContent = tapState.maxCombo;
+    var combo = document.getElementById('hud-combo');
+    if(combo) combo.innerHTML = tapState.combo>1 ? '<span style="color:var(--gold);font-weight:700;">🔥 ×'+tapState.combo+'</span>' : '';
+    var fill = document.getElementById('timer-fill');
+    var txt = document.getElementById('timer-text');
+    var pct = (tapState.timer/tapState.maxTimer)*100;
+    var color = pct>50 ? 'var(--go)' : pct>25 ? 'var(--gold)' : 'var(--nogo)';
+    if(fill){ fill.style.width=pct+'%'; fill.style.background=color; }
+    if(txt) txt.textContent = tapState.timer.toFixed(1)+'s';
+  }
+
+  function spawnTapTarget(){
+    var free = tapState.holes.filter(function(h){ return !h.querySelector('.target'); });
+    if(!free.length) return;
+    var lvl = GAMES[state.gameId].levels[state.levelIdx];
+    var hole = free[Math.floor(Math.random()*free.length)];
+    var isNoGo = Math.random() < lvl.noGoProb;
+    var t = document.createElement('div');
+    t.className = 'target ' + (isNoGo ? 'nogo' : 'go');
+    var icon = isNoGo ? ['⛔','💣','🚫'][Math.floor(Math.random()*3)] : ['⚡','⭐','💎','🔵','🟢'][Math.floor(Math.random()*5)];
+    t.innerHTML = '<span class="ticon">'+icon+'</span><div class="lifebar-track"><div class="lifebar"></div></div>';
+    var lifebar = t.querySelector('.lifebar');
+    lifebar.style.animationDuration = lvl.life+'ms';
+    t.dataset.type = isNoGo ? 'nogo' : 'go';
+    t.dataset.spawnT = String(performance.now());
+    t.dataset.resolved = '0';
+    hole.appendChild(t);
+    var expTimer = setTimeout(function(){
+      if(t.dataset.resolved==='1') return;
+      resolveTapTarget(t, hole, 'expire');
+    }, lvl.life + 20);
+    t._expTimer = expTimer;
+  }
+
+  // ========== GAME: COLOR MATCH ==========
+  function buildColorGame(lvl){
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;gap:.6rem;">'+
+      '<div style="font-size:1.8rem;font-weight:700;color:var(--text);" id="color-prompt">Đỏ</div>'+
+      '<div class="color-grid" id="color-grid"></div>'+
+      '<div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%;background:var(--go);"></div></div>'+
+      '<div class="font-mono" style="font-size:.75rem;color:var(--text-dim);" id="timer-text">'+lvl.time+'s</div>'+
+      '<div style="display:flex;gap:1.2rem;font-size:.78rem;">'+
+        '<span>✅ <b id="hud-correct">0</b></span>'+
+        '<span style="color:var(--nogo);">❌ <b id="hud-wrong">0</b></span>'+
+      '</div>'+
+    '</div>';
+  }
+
+  var colorState = { colors:[], targetIdx:0, correct:0, wrong:0, timer:0, maxTimer:0, round:0, rounds:0, active:false };
+
+  function initColor(){
+    var lvl = GAMES[state.gameId].levels[state.levelIdx];
+    colorState.timer = lvl.time;
+    colorState.maxTimer = lvl.time;
+    colorState.correct = 0;
+    colorState.wrong = 0;
+    colorState.round = 0;
+    colorState.rounds = lvl.rounds;
+    colorState.active = true;
+    colorState.colors = [];
+    var colorNames = ['Đỏ','Xanh lam','Xanh lá','Vàng','Tím','Cam','Hồng','Nâu'];
+    var colorCodes = ['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22','#fd79a8','#6c5ce7'];
+    for(var i=0;i<lvl.colors;i++){
+      colorState.colors.push({ name:colorNames[i], code:colorCodes[i] });
+    }
+    var grid = document.getElementById('color-grid');
+    grid.innerHTML = '';
+    colorState.colors.forEach(function(c, idx){
+      var btn = document.createElement('button');
+      btn.className = 'color-btn';
+      btn.style.background = c.code;
+      btn.dataset.idx = idx;
+      btn.onclick = function(){ onColorClick(parseInt(btn.dataset.idx)); };
+      grid.appendChild(btn);
+    });
+    nextColorRound();
+    updateColorHud();
+  }
+
+  function nextColorRound(){
+    if(colorState.round >= colorState.rounds){
+      endGame();
+      return;
+    }
+    colorState.round++;
+    // Chọn màu đích
+    colorState.targetIdx = Math.floor(Math.random() * colorState.colors.length);
+    var target = colorState.colors[colorState.targetIdx];
+    document.getElementById('color-prompt').textContent = target.name;
+    document.getElementById('color-prompt').style.color = target.code;
+    // Reset trạng thái các nút
+    document.querySelectorAll('.color-btn').forEach(function(btn){ btn.classList.remove('correct','wrong'); });
+    colorState.active = true;
+  }
+
+  function onColorClick(idx){
+    if(!colorState.active || state.screen!=='playing') return;
+    colorState.active = false;
+    var btn = document.querySelectorAll('.color-btn')[idx];
+    if(idx === colorState.targetIdx){
+      colorState.correct++;
+      btn.classList.add('correct');
+      state.score += 50;
+      spawnFloat(btn, 'good', '+50');
+    } else {
+      colorState.wrong++;
+      btn.classList.add('wrong');
+      state.score = Math.max(0, state.score - 15);
+      spawnFloat(btn, 'bad', '-15');
+    }
+    updateColorHud();
+    setTimeout(function(){
+      if(colorState.round < colorState.rounds) nextColorRound();
+      else endGame();
+    }, 400);
+  }
+
+  function updateColorHud(){
+    var s = document.getElementById('hud-score'); if(s) s.textContent = state.score;
+    var c = document.getElementById('hud-correct'); if(c) c.textContent = colorState.correct;
+    var w = document.getElementById('hud-wrong'); if(w) w.textContent = colorState.wrong;
+    var fill = document.getElementById('timer-fill');
+    var txt = document.getElementById('timer-text');
+    var pct = (colorState.timer/colorState.maxTimer)*100;
+    var color = pct>50 ? 'var(--go)' : pct>25 ? 'var(--gold)' : 'var(--nogo)';
+    if(fill){ fill.style.width=pct+'%'; fill.style.background=color; }
+    if(txt) txt.textContent = colorState.timer.toFixed(1)+'s';
+  }
+
+  // ========== GAME: SEQUENCE MEMORY ==========
+  function buildSeqGame(lvl){
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;gap:.8rem;">'+
+      '<div style="font-size:.9rem;color:var(--text-dim);">Nhập lại dãy số</div>'+
+      '<div class="seq-display" id="seq-display">_</div>'+
+      '<div class="seq-input" id="seq-input"></div>'+
+      '<div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%;background:var(--go);"></div></div>'+
+      '<div class="font-mono" style="font-size:.75rem;color:var(--text-dim);" id="timer-text">'+lvl.time+'s</div>'+
+      '<div style="display:flex;gap:1.2rem;font-size:.78rem;">'+
+        '<span>✅ <b id="hud-correct">0</b></span>'+
+        '<span style="color:var(--nogo);">❌ <b id="hud-wrong">0</b></span>'+
+        '<span style="color:var(--gold);">🔢 <b id="hud-level">0</b></span>'+
+      '</div>'+
+    '</div>';
+  }
+
+  var seqState = { sequence:[], userIdx:0, correct:0, wrong:0, timer:0, maxTimer:0, phase:'show', showIdx:0, totalRounds:0 };
+
+  function initSeq(){
+    var lvl = GAMES[state.gameId].levels[state.levelIdx];
+    seqState.timer = lvl.time;
+    seqState.maxTimer = lvl.time;
+    seqState.correct = 0;
+    seqState.wrong = 0;
+    seqState.totalRounds = 0;
+    seqState.phase = 'show';
+    seqState.showIdx = 0;
+    seqState.sequence = [];
+    // Tạo dãy ban đầu
+    for(var i=0;i<lvl.startLen;i++){
+      seqState.sequence.push(Math.floor(Math.random()*9)+1);
+    }
+    buildSeqInput();
+    showSequence();
+    updateSeqHud();
+  }
+
+  function buildSeqInput(){
+    var container = document.getElementById('seq-input');
+    container.innerHTML = '';
+    for(var i=1;i<=9;i++){
+      var btn = document.createElement('button');
+      btn.textContent = i;
+      btn.onclick = function(){ seqInput(parseInt(this.textContent)); };
+      container.appendChild(btn);
+    }
+  }
+
+  function showSequence(){
+    var display = document.getElementById('seq-display');
+    var lvl = GAMES[state.gameId].levels[state.levelIdx];
+    seqState.phase = 'show';
+    seqState.showIdx = 0;
+    display.textContent = seqState.sequence[seqState.showIdx];
+    display.style.color = 'var(--go)';
+    var interval = setInterval(function(){
+      seqState.showIdx++;
+      if(seqState.showIdx >= seqState.sequence.length){
+        clearInterval(interval);
+        display.textContent = '?';
+        display.style.color = 'var(--text)';
+        seqState.phase = 'input';
+        seqState.userIdx = 0;
+      } else {
+        display.textContent = seqState.sequence[seqState.showIdx];
+      }
+    }, 600);
+    seqState._showInterval = interval;
+  }
+
+  function seqInput(num){
+    if(seqState.phase !== 'input' || state.screen!=='playing') return;
+    if(num === seqState.sequence[seqState.userIdx]){
+      seqState.userIdx++;
+      if(seqState.userIdx === seqState.sequence.length){
+        // Hoàn thành
+        seqState.correct++;
+        state.score += 50 + seqState.sequence.length*10;
+        seqState.totalRounds++;
+        var lvl = GAMES[state.gameId].levels[state.levelIdx];
+        if(seqState.sequence.length < lvl.maxLen){
+          seqState.sequence.push(Math.floor(Math.random()*9)+1);
+        }
+        // Thưởng thêm thời gian
+        seqState.timer = Math.min(seqState.maxTimer, seqState.timer + 2);
+        updateSeqHud();
+        // Hiện dãy mới
+        document.getElementById('seq-display').textContent = '✅';
+        setTimeout(function(){
+          if(state.screen==='playing') showSequence();
+        }, 400);
+      } else {
+        document.getElementById('seq-display').textContent = num;
+      }
+    } else {
+      // Sai
+      seqState.wrong++;
+      state.score = Math.max(0, state.score - 20);
+      seqState.timer = Math.max(0, seqState.timer - 1.5);
+      updateSeqHud();
+      document.getElementById('seq-display').textContent = '❌';
+      setTimeout(function(){
+        if(state.screen==='playing') showSequence();
+      }, 500);
+    }
+  }
+
+  function updateSeqHud(){
+    var s = document.getElementById('hud-score'); if(s) s.textContent = state.score;
+    var c = document.getElementById('hud-correct'); if(c) c.textContent = seqState.correct;
+    var w = document.getElementById('hud-wrong'); if(w) w.textContent = seqState.wrong;
+    var l = document.getElementById('hud-level'); if(l) l.textContent = seqState.sequence.length;
+    var fill = document.getElementById('timer-fill');
+    var txt = document.getElementById('timer-text');
+    var pct = (seqState.timer/seqState.maxTimer)*100;
+    var color = pct>50 ? 'var(--go)' : pct>25 ? 'var(--gold)' : 'var(--nogo)';
+    if(fill){ fill.style.width=pct+'%'; fill.style.background=color; }
+    if(txt) txt.textContent = seqState.timer.toFixed(1)+'s';
+  }
+
+  // ========== GAME: REACTION TAP ==========
+  function buildReactionGame(lvl){
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;gap:.8rem;">'+
+      '<div class="reaction-area" id="reaction-area">'+
+        '<div class="big-icon" id="reaction-icon">⏳</div>'+
+        '<div style="font-size:.9rem;color:var(--text-dim);" id="reaction-status">Chuẩn bị...</div>'+
+      '</div>'+
+      '<div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%;background:var(--go);"></div></div>'+
+      '<div class="font-mono" style="font-size:.75rem;color:var(--text-dim);" id="timer-text">'+lvl.time+'s</div>'+
+      '<div style="display:flex;gap:1.2rem;font-size:.78rem;">'+
+        '<span>✅ <b id="hud-hit">0</b></span>'+
+        '<span style="color:var(--nogo);">❌ <b id="hud-mistake">0</b></span>'+
+        '<span style="color:var(--text-dim);">💨 <b id="hud-miss">0</b></span>'+
+      '</div>'+
+    '</div>';
+  }
+
+  var reactionState = { phase:'waiting', timer:0, maxTimer:0, hit:0, mistake:0, miss:0, waitTimeout:null, goTimeout:null, active:false };
+
+  function initReaction(){
+    var lvl = GAMES[state.gameId].levels[state.levelIdx];
+    reactionState.timer = lvl.time;
+    reactionState.maxTimer = lvl.time;
+    reactionState.hit = 0;
+    reactionState.mistake = 0;
+    reactionState.miss = 0;
+    reactionState.active = true;
+    var area = document.getElementById('reaction-area');
+    area.className = 'reaction-area waiting';
+    area.onclick = onReactionClick;
+    document.getElementById('reaction-icon').textContent = '⏳';
+    document.getElementById('reaction-status').textContent = 'Chuẩn bị...';
+    scheduleReaction();
+    updateReactionHud();
+  }
+
+  function scheduleReaction(){
+    if(!reactionState.active || state.screen!=='playing') return;
+    var lvl = GAMES[state.gameId].levels[state.levelIdx];
+    var delay = lvl.delayMin + Math.random()*(lvl.delayMax-lvl.delayMin);
+    reactionState.phase = 'waiting';
+    var area = document.getElementById('reaction-area');
+    area.className = 'reaction-area waiting';
+    document.getElementById('reaction-icon').textContent = '⏳';
+    document.getElementById('reaction-status').textContent = 'Chờ...';
+    if(reactionState.waitTimeout) clearTimeout(reactionState.waitTimeout);
+    reactionState.waitTimeout = setTimeout(function(){
+      if(!reactionState.active || state.screen!=='playing') return;
+      var isGo = Math.random() < lvl.goChance;
+      if(isGo){
+        reactionState.phase = 'go';
+        area.className = 'reaction-area active';
+        document.getElementById('reaction-icon').textContent = '⚡';
+        document.getElementById('reaction-status').textContent = 'Bấm ngay!';
+        if(reactionState.goTimeout) clearTimeout(reactionState.goTimeout);
+        reactionState.goTimeout = setTimeout(function(){
+          if(reactionState.phase === 'go'){
+            reactionState.miss++;
+            state.score = Math.max(0, state.score - 15);
+            document.getElementById('reaction-icon').textContent = '💨';
+            document.getElementById('reaction-status').textContent = 'Chậm!';
+            updateReactionHud();
+            setTimeout(function(){ if(reactionState.active) scheduleReaction(); }, 500);
+          }
+        }, 800);
+      } else {
+        reactionState.phase = 'nogo';
+        area.className = 'reaction-area nogo';
+        document.getElementById('reaction-icon').textContent = '⛔';
+        document.getElementById('reaction-status').textContent = 'ĐỪNG bấm!';
+        if(reactionState.goTimeout) clearTimeout(reactionState.goTimeout);
+        reactionState.goTimeout = setTimeout(function(){
+          if(reactionState.phase === 'nogo'){
+            // Không bấm -> đúng
+            state.score += 20;
+            document.getElementById('reaction-icon').textContent = '✅';
+            document.getElementById('reaction-status').textContent = 'Tốt!';
+            updateReactionHud();
+            setTimeout(function(){ if(reactionState.active) scheduleReaction(); }, 400);
+          }
+        }, 1200);
+      }
+    }, delay);
+  }
+
+  function onReactionClick(){
+    if(!reactionState.active || state.screen!=='playing') return;
+    if(reactionState.phase === 'go'){
+      // Bấm đúng
+      reactionState.hit++;
+      state.score += 80;
+      if(reactionState.goTimeout) clearTimeout(reactionState.goTimeout);
+      document.getElementById('reaction-icon').textContent = '🎯';
+      document.getElementById('reaction-status').textContent = 'Xuất sắc!';
+      reactionState.phase = 'done';
+      updateReactionHud();
+      setTimeout(function(){ if(reactionState.active) scheduleReaction(); }, 400);
+    } else if(reactionState.phase === 'nogo'){
+      // Bấm nhầm
+      reactionState.mistake++;
+      state.score = Math.max(0, state.score - 30);
+      if(reactionState.goTimeout) clearTimeout(reactionState.goTimeout);
+      document.getElementById('reaction-icon').textContent = '💥';
+      document.getElementById('reaction-status').textContent = 'Sai!';
+      reactionState.phase = 'done';
+      updateReactionHud();
+      setTimeout(function(){ if(reactionState.active) scheduleReaction(); }, 400);
+    } else {
+      // Bấm khi đang chờ -> không sao
+    }
+  }
+
+  function updateReactionHud(){
+    var s = document.getElementById('hud-score'); if(s) s.textContent = state.score;
+    var hit = document.getElementById('hud-hit'); if(hit) hit.textContent = reactionState.hit;
+    var mistake = document.getElementById('hud-mistake'); if(mistake) mistake.textContent = reactionState.mistake;
+    var miss = document.getElementById('hud-miss'); if(miss) miss.textContent = reactionState.miss;
+    var fill = document.getElementById('timer-fill');
+    var txt = document.getElementById('timer-text');
+    var pct = (reactionState.timer/reactionState.maxTimer)*100;
+    var color = pct>50 ? 'var(--go)' : pct>25 ? 'var(--gold)' : 'var(--nogo)';
+    if(fill){ fill.style.width=pct+'%'; fill.style.background=color; }
+    if(txt) txt.textContent = reactionState.timer.toFixed(1)+'s';
+  }
+
+  // ========== COMMON LOOP ==========
+  function loop(now){
+    var dt = Math.min(0.05, (now-lastT)/1000);
+    lastT = now;
+    if(state.screen==='playing' && !state.paused){
+      // Cập nhật timer và logic theo game
+      if(state.gameId==='tap'){
+        tapState.timer -= dt;
+        tapState.spawnAcc += dt*1000;
+        if(tapState.spawnAcc >= tapState.nextDelay){
+          tapState.spawnAcc = 0;
+          tapState.nextDelay = randDelayTap();
+          spawnTapTarget();
+        }
+        if(tapState.timer <= 0){ tapState.timer=0; updateTapHud(); endGame(); return; }
+        updateTapHud();
+      } else if(state.gameId==='color'){
+        colorState.timer -= dt;
+        if(colorState.timer <= 0){ colorState.timer=0; updateColorHud(); endGame(); return; }
+        updateColorHud();
+      } else if(state.gameId==='seq'){
+        seqState.timer -= dt;
+        if(seqState.timer <= 0){ seqState.timer=0; updateSeqHud(); endGame(); return; }
+        updateSeqHud();
+      } else if(state.gameId==='reaction'){
+        reactionState.timer -= dt;
+        if(reactionState.timer <= 0){ reactionState.timer=0; updateReactionHud(); endGame(); return; }
+        updateReactionHud();
+      }
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  // ========== UTILITY ==========
   function spawnRipple(hole, kind){
     var r = document.createElement('div');
     r.className = 'ripple ' + kind;
@@ -417,94 +903,50 @@
     setTimeout(function(){ if(r.parentNode) r.parentNode.removeChild(r); }, 520);
   }
 
-  function spawnFloat(hole, kind, text){
+  function spawnFloat(el, kind, text){
     if(!text) return;
     var f = document.createElement('div');
     f.className = 'floatscore ' + kind;
     f.textContent = text;
     f.style.left = '50%'; f.style.top = '38%'; f.style.transform='translate(-50%,-50%)';
-    hole.appendChild(f);
+    el.appendChild(f);
     setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 720);
   }
 
   function shakeArena(){
+    var arena = document.getElementById('arena');
     if(!arena) return;
     arena.classList.remove('shake'); void arena.offsetWidth; arena.classList.add('shake');
   }
 
-  function updateHud(){
-    var scoreEl=document.getElementById('hud-score'); if(scoreEl) scoreEl.textContent=state.score;
-    var goodEl=document.getElementById('hud-good'); if(goodEl) goodEl.textContent=state.correctCount;
-    var hitEl=document.getElementById('hud-hit'); if(hitEl) hitEl.textContent=state.correctCount;
-    var mistakeEl=document.getElementById('hud-mistake'); if(mistakeEl) mistakeEl.textContent=state.mistakeCount;
-    var missEl=document.getElementById('hud-miss'); if(missEl) missEl.textContent=state.missCount;
-    var comboMaxEl=document.getElementById('hud-combo-max'); if(comboMaxEl) comboMaxEl.textContent=state.maxCombo;
-    var comboBadge=document.getElementById('hud-combo');
-    if(comboBadge){ comboBadge.innerHTML = state.combo>1 ? '<span class="combo-badge">🔥 ×'+state.combo+'</span>' : ''; }
-    var fill=document.getElementById('timer-fill'); var txt=document.getElementById('timer-text');
-    var pct=(state.timer/state.maxTimer)*100;
-    var color = state.timer>14 ? 'var(--go)' : state.timer>6 ? 'var(--gold)' : 'var(--nogo)';
-    if(fill){ fill.style.width=pct+'%'; fill.style.background=color; }
-    if(txt){ txt.textContent = state.timer.toFixed(1)+'s'; }
+  function stopLoop(){
+    if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
   }
 
-  /* ============ END / RESULTS ============ */
-  function endGame(){
-    state.gameOver = true;
-    stopLoop();
-    var best = getBest();
-    if(state.score>best) saveBest(state.score);
-    state.screen='gameover';
+  function startGame(){
+    state.score = 0;
+    state.gameData = {};
+    state.screen = 'playing';
     render();
-    sendGameOver();
   }
 
-  function avgReaction(){
-    if(state.reactionN===0) return null;
-    return Math.round(state.reactionSum/state.reactionN);
+  function endGame(){
+    stopLoop();
+    state.screen = 'gameover';
+    // Thu thập thông tin chi tiết
+    if(state.gameId==='tap'){
+      state.gameData.detail = 'Trúng '+tapState.correct+' · Chạm nhầm '+tapState.mistake+' · Bỏ lỡ '+tapState.miss;
+    } else if(state.gameId==='color'){
+      state.gameData.detail = 'Đúng '+colorState.correct+' · Sai '+colorState.wrong;
+    } else if(state.gameId==='seq'){
+      state.gameData.detail = 'Đúng '+seqState.correct+' · Sai '+seqState.wrong+' · Dãy dài '+seqState.sequence.length;
+    } else if(state.gameId==='reaction'){
+      state.gameData.detail = 'Trúng '+reactionState.hit+' · Nhầm '+reactionState.mistake+' · Bỏ lỡ '+reactionState.miss;
+    }
+    render();
   }
 
-  function reactionGrade(avg){
-    if(avg===null) return {label:'Chưa đủ dữ liệu', color:'var(--text-dim)'};
-    if(avg<250) return {label:'Phản xạ siêu nhân ⚡', color:'var(--go)'};
-    if(avg<420) return {label:'Rất nhanh 🚀', color:'var(--go)'};
-    if(avg<650) return {label:'Khá tốt 👍', color:'var(--gold)'};
-    return {label:'Luyện thêm nhé 💪', color:'var(--nogo)'};
-  }
-
-  function renderGameOver(){
-    var best = getBest();
-    var isNewBest = state.score>=best && state.score>0;
-    var avg = avgReaction();
-    var grade = reactionGrade(avg);
-    root.innerHTML =
-      '<div class="screen bg-arcade">'+
-        '<div class="anim-pop glass-card" style="padding:2.4rem;max-width:26rem;width:100%;text-align:center;">'+
-          '<div style="font-size:3.4rem;margin-bottom:.9rem;">⏱️</div>'+
-          '<h2 class="font-display" style="font-size:1.35rem;margin:0 0 .3rem;">Hết giờ!</h2>'+
-          (isNewBest ? '<p style="color:var(--gold);font-weight:700;margin-bottom:.4rem;font-size:.9rem;">🏆 Kỷ lục mới!</p>' : '')+
-          '<p style="font-weight:700;font-size:.95rem;margin-bottom:.6rem;color:'+grade.color+';">'+grade.label+(avg!==null?' · '+avg+'ms trung bình':'')+'</p>'+
-          '<div style="padding-top:1rem;margin:.8rem 0;border-top:1px dashed var(--line);">'+
-            '<div style="display:flex;justify-content:center;gap:1.4rem;flex-wrap:wrap;">'+
-              '<div class="stat-block"><div class="stat-num" style="color:var(--go);">'+state.score+'</div><div class="stat-label">Điểm</div></div>'+
-              '<div class="stat-block"><div class="stat-num" style="color:var(--go);">'+state.correctCount+'</div><div class="stat-label">Trúng</div></div>'+
-              '<div class="stat-block"><div class="stat-num" style="color:var(--nogo);">'+state.mistakeCount+'</div><div class="stat-label">Chạm nhầm</div></div>'+
-              '<div class="stat-block"><div class="stat-num" style="color:var(--gold);">'+state.maxCombo+'</div><div class="stat-label">Combo max</div></div>'+
-            '</div>'+
-          '</div>'+
-          '<div style="padding-top:.9rem;margin-bottom:1.2rem;border-top:1px dashed var(--line);">'+
-            '<p style="font-size:.82rem;color:var(--text-dim);">Bỏ lỡ: '+state.missCount+' · Kiềm chế đúng: '+state.inhibitCount+' · Thời gian: '+state.timeUsed.toFixed(1)+'s</p>'+
-          '</div>'+
-          '<div style="display:flex;flex-direction:column;gap:.7rem;">'+
-            '<button id="btn-restart" class="glow-btn font-display" style="border-color:var(--go);color:var(--go);background:rgba(49,224,160,.08);">🔄 Chơi lại</button>'+
-            '<button id="btn-home" class="glow-btn font-display" style="border-color:var(--text-dim);color:var(--text-dim);background:rgba(255,255,255,.02);">🏠 Menu</button>'+
-          '</div>'+
-        '</div>'+
-      '</div>';
-    document.getElementById('btn-restart').onclick=function(){ startNewGame(); };
-    document.getElementById('btn-home').onclick=function(){ sendQuit(); state.screen='menu'; render(); };
-  }
-
+  // ========== KHỞI ĐỘNG ==========
   render();
 })();
 </script>

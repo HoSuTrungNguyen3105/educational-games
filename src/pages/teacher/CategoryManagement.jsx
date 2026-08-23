@@ -72,7 +72,7 @@ export default function CategoryManagement({ showToast }) {
       <ManagementHeader subtitle="Quản lý danh mục" title="Categories" />
 
       <ManagementTable
-        title="Danh sách category"
+        // title="Danh sách category"
         data={categories}
         error={error && !categories ? error : null}
         onRetry={load}

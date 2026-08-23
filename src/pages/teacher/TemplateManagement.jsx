@@ -94,7 +94,7 @@ export default function TemplateManagement({ showToast }) {
       <ManagementHeader subtitle="Quản lý template trò chơi" title="Templates" />
 
       <ManagementTable
-        title="Danh sách template"
+        // title="Danh sách template"
         count={templates ? templates.length : 0}
         data={templates}
         error={error && !templates ? error : null}
@@ -117,7 +117,7 @@ export default function TemplateManagement({ showToast }) {
             </td>
             <td className="px-5 py-3">
               <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${t.status === "published" ? "bg-teal/15 text-teal border-teal/30"
-                  : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20" : "bg-gold/15 text-gold border-gold/30"
+                : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20" : "bg-gold/15 text-gold border-gold/30"
                 }`}>{t.status}</span>
             </td>
             <td className="px-5 py-3"><span className="inline-block w-6 h-6 rounded-full border border-ink/10" style={{ backgroundColor: t.ring }}></span></td>

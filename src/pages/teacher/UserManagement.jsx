@@ -65,7 +65,7 @@ export default function UserManagement({ user, showToast }) {
       <ManagementHeader subtitle="Quản lý tài khoản" title="Người dùng" />
 
       <ManagementTable
-        title="Danh sách tài khoản"
+        // title="Danh sách tài khoản"
         data={users}
         error={error && !users ? error : null}
         onRetry={load}

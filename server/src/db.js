@@ -331,9 +331,24 @@ export async function initDatabase() {
   }
 
   const subjects = seedData.subjects();
-  await database.collection("subjects").deleteMany({});
-  await database.collection("subjects").insertOne({ list: subjects });
-  seeded.push("subjects");
+  const subjectsColl = database.collection("subjects");
+  const subjectsCount = await subjectsColl.countDocuments();
+  if (subjectsCount === 0 && subjects.length > 0) {
+    const docs = subjects.map(name => ({ name }));
+    await subjectsColl.insertMany(docs, { ordered: false });
+    seeded.push(`subjects (${docs.length})`);
+  }
+
+  // Migrate old subjects format: { list: [...] } → individual { name } docs
+  const oldDoc = await subjectsColl.findOne({ list: { $exists: true } });
+  if (oldDoc && Array.isArray(oldDoc.list)) {
+    const names = oldDoc.list.filter(n => typeof n === "string" && n.trim());
+    const newDocs = names.map(name => ({ name }));
+    if (newDocs.length > 0) {
+      await subjectsColl.insertMany(newDocs, { ordered: false });
+    }
+    await subjectsColl.deleteOne({ _id: oldDoc._id });
+  }
 
   ready = true;
   console.log("[db] Khởi tạo CSDL hoàn tất.");
