@@ -302,6 +302,16 @@ function TopBar({ userAuth, onUserLogin, onUserRegister, onUserLogout }) {
               🔍 <span className="hidden md:inline">Tìm bạn</span>
             </a>
           )}
+          {userAuth?.user && (
+            <a
+              onClick={() => navigate("/my-coins")}
+              href="#/my-coins"
+              title="Coin của tôi"
+              className="hidden sm:inline-flex items-center gap-1.5 text-sm text-gold font-semibold hover:text-yellow-600 transition px-3 py-2 rounded-full hover:bg-yellow-50"
+            >
+              💰 <span className="hidden md:inline">Coin</span>
+            </a>
+          )}
           <a
             onClick={() => navigate("/admin")}
             href="#/admin"

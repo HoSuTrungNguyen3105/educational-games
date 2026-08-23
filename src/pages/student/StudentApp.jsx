@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { uid, resultService, questionService, gameService } from '../../services/api.js'
+import { uid, resultService, questionService, gameService, gameProgressService } from '../../services/api.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
@@ -94,6 +94,18 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
       totalQuestions: total, accuracy,
       completionTime: sessionResult.timeUsed,
     });
+
+    // Only save coins for play-to-win games when user is logged in
+    if (isPlayToWin && userAuth?.user && game?.code) {
+      try {
+        const coinAmount = sessionResult.score || 0;
+        await gameProgressService.addCoins(game.code, coinAmount);
+        await gameProgressService.incrementPlay(game.code);
+      } catch (e) {
+        console.warn("Failed to save coin progress:", e);
+      }
+    }
+
     setFinalResult(entry);
     setScreen("result");
   };

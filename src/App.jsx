@@ -14,6 +14,7 @@ import UserLoginScreen from "./pages/user/UserLoginScreen.jsx";
 import UserRegisterScreen from "./pages/user/UserRegisterScreen.jsx";
 import ConversationListScreen from "./pages/user/ConversationListScreen.jsx";
 import ProfileScreen from "./pages/user/ProfileScreen.jsx";
+import MyCoins from "./pages/user/MyCoins.jsx";
 import FindFriendsScreen from "./pages/user/FindFriendsScreen.jsx";
 
 const USER_AUTH_KEY = "edu_games_user_auth";
@@ -162,6 +163,15 @@ function App() {
     return (
       <RouteShell toast={toast}>
         <FindFriendsScreen userAuth={userAuth} />
+      </RouteShell>
+    );
+  }
+
+  // My Coins
+  if (route.name === "my-coins") {
+    return (
+      <RouteShell toast={toast} showBack={false}>
+        <MyCoins userAuth={userAuth} onBack={() => navigate("/")} />
       </RouteShell>
     );
   }

@@ -14,6 +14,8 @@ import statsRouter from "./routes/stats.js";
 import chatRouter from "./routes/chat.js";
 import conversationsRouter from "./routes/conversations.js";
 import seedRouter from "./routes/seed.js";
+import gameProgressRouter, { adminRouter } from "./routes/gameProgress.js";
+import { verifyToken } from "./services/authService.js";
 
 const app = express();
 
@@ -33,6 +35,23 @@ app.use("/api", (_req, res, next) => {
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/users", usersSearchRouter);
+app.use("/api/users", gameProgressRouter);
+app.use("/api/users", adminRouter);
+
+// GET /api/users/me — current user profile
+app.get("/api/users/me", (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return sendError(res, "Unauthorized", 401);
+    }
+    const token = authHeader.slice(7);
+    const payload = verifyToken(token);
+    sendSuccess(res, { id: payload.sub, username: payload.username, name: payload.name, role: payload.role });
+  } catch {
+    sendError(res, "Token không hợp lệ hoặc đã hết hạn", 401);
+  }
+});
 app.use("/api/games", gamesRouter);
 app.use("/api/questions", questionsRouter);
 app.use("/api/results", resultsRouter);

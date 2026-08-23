@@ -20,11 +20,13 @@ const ROUTES = [
   { name: "admin-edit",      pattern: "/admin/edit/:gameId" },
   { name: "admin-builder",   pattern: "/admin/builder/:gameId" },
   { name: "admin-results",   pattern: "/admin/results/:gameId" },
+  { name: "admin-coins",     pattern: "/admin/coins" },
 
   // ── User / Social ──
   { name: "chat",         pattern: "/chat" },
   { name: "profile",      pattern: "/profile" },
   { name: "find-friends", pattern: "/find-friends" },
+  { name: "my-coins",     pattern: "/my-coins" },
 
   // ── Home (fallback) ──
   { name: "home", pattern: "/" },

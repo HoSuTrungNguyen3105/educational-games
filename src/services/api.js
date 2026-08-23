@@ -239,3 +239,42 @@ export const seedService = {
     return apiFetch("/seed", { method: "POST" });
   },
 };
+
+export const gameProgressService = {
+  async listGames() {
+    return apiFetch("/users/me/games") || [];
+  },
+  async getGame(gameId) {
+    return apiFetch(`/users/me/games/${encodeURIComponent(gameId)}`);
+  },
+  async upsertGame(gameId, data) {
+    return apiFetch(`/users/me/games/${encodeURIComponent(gameId)}`, { method: "PUT", body: data });
+  },
+  async addCoins(gameId, amount) {
+    return apiFetch(`/users/me/games/${encodeURIComponent(gameId)}/coins`, { method: "POST", body: { amount } });
+  },
+  async addExperience(gameId, amount) {
+    return apiFetch(`/users/me/games/${encodeURIComponent(gameId)}/experience`, { method: "POST", body: { amount } });
+  },
+  async incrementPlay(gameId) {
+    return apiFetch(`/users/me/games/${encodeURIComponent(gameId)}/play`, { method: "POST" });
+  },
+  async addInventoryItem(gameId, itemId, quantity = 1) {
+    return apiFetch(`/users/me/games/${encodeURIComponent(gameId)}/inventory`, { method: "POST", body: { itemId, quantity } });
+  },
+  async removeInventoryItem(gameId, itemId, quantity = 1) {
+    return apiFetch(`/users/me/games/${encodeURIComponent(gameId)}/inventory/${encodeURIComponent(itemId)}?quantity=${quantity}`, { method: "DELETE" });
+  },
+};
+
+export const adminGameProgressService = {
+  async listAll() {
+    return apiFetch("/users/game-progress") || [];
+  },
+  async updateProgress(id, data) {
+    return apiFetch(`/users/game-progress/${encodeURIComponent(id)}`, { method: "PUT", body: data });
+  },
+  async removeProgress(id) {
+    return apiFetch(`/users/game-progress/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+};
