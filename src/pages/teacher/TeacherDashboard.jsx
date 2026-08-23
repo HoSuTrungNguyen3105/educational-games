@@ -96,7 +96,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
   const neverPlayedGames = (stats ? stats.attention.neverPlayed : []).map(n => ({ ...n, raw: games?.find(g => (g._id?.toString() || g.id) === n.id) }));
 
   return (
-    <div className="space-y-8">
+    <div>
       <div>
         <p className="text-[#8A7C63] text-sm font-mono">Xin chào,</p>
         <h1 className="font-display text-3xl text-ink">{user ? user.name : "Giáo viên"} 👋</h1>

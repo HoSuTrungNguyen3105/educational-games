@@ -16,13 +16,17 @@ const CATEGORY_OPTIONS = [
 
 const FIELDS = [
   { name: "name", label: "Tên template" },
-  { name: "type", label: "Loại", type: "select", options: [
-    { value: "play-to-learn", label: "Play-to-Learn" }, { value: "play-to-win", label: "Play-to-Win" },
-  ]},
+  {
+    name: "type", label: "Loại", type: "select", options: [
+      { value: "play-to-learn", label: "Play-to-Learn" }, { value: "play-to-win", label: "Play-to-Win" },
+    ]
+  },
   { name: "category", label: "Thể loại", type: "select", options: CATEGORY_OPTIONS },
-  { name: "status", label: "Trạng thái", type: "select", options: [
-    { value: "draft", label: "Bản nháp" }, { value: "published", label: "Xuất bản" }, { value: "inactive", label: "Vô hiệu" },
-  ]},
+  {
+    name: "status", label: "Trạng thái", type: "select", options: [
+      { value: "draft", label: "Bản nháp" }, { value: "published", label: "Xuất bản" }, { value: "inactive", label: "Vô hiệu" },
+    ]
+  },
   { name: "icon", label: "Icon" },
   { name: "ring", label: "Màu viền", type: "color" },
   { name: "description", label: "Mô tả", type: "textarea", full: true },
@@ -86,7 +90,7 @@ export default function TemplateManagement({ showToast }) {
   };
 
   return (
-    <div className="space-y-8">
+    <div>
       <ManagementHeader subtitle="Quản lý template trò chơi" title="Templates" />
 
       <ManagementTable
@@ -112,10 +116,9 @@ export default function TemplateManagement({ showToast }) {
                 style={{ color: t.ring, borderColor: t.ring + "40", backgroundColor: t.ring + "15" }}>{t.category}</span>
             </td>
             <td className="px-5 py-3">
-              <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${
-                t.status === "published" ? "bg-teal/15 text-teal border-teal/30"
-                : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20" : "bg-gold/15 text-gold border-gold/30"
-              }`}>{t.status}</span>
+              <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${t.status === "published" ? "bg-teal/15 text-teal border-teal/30"
+                  : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20" : "bg-gold/15 text-gold border-gold/30"
+                }`}>{t.status}</span>
             </td>
             <td className="px-5 py-3"><span className="inline-block w-6 h-6 rounded-full border border-ink/10" style={{ backgroundColor: t.ring }}></span></td>
             <td className="px-5 py-3 text-right flex gap-1 justify-end">

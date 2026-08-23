@@ -54,7 +54,7 @@ export default function SubjectManagement({ showToast }) {
   };
 
   return (
-    <div className="space-y-8">
+    <div>
       <ManagementHeader subtitle="Quản lý môn học" title="Môn học" />
 
       <ManagementTable

@@ -75,6 +75,8 @@ export async function apiFetch(path, options = {}) {
     body: options.body ? JSON.stringify(options.body) : undefined,
   };
   delete init._token;
+  delete init._withPagination;
+  const withPagination = options._withPagination;
   const res = await fetchWithRetry(url, init);
   if (res.status === 401 && !path.startsWith("/auth/")) {
     clearAuth();
@@ -92,8 +94,10 @@ export async function apiFetch(path, options = {}) {
     throw new Error(message);
   }
   const json = await res.json();
-  // New format: { status, code, msg, data, pagination }
   if (json && typeof json === "object" && "data" in json) {
+    if (withPagination && json.pagination) {
+      return { data: json.data, pagination: json.pagination };
+    }
     return json.data;
   }
   return json;
@@ -106,8 +110,15 @@ export const gameService = {
     if (filters.status && filters.status !== "all") params.set("status", filters.status);
     if (filters.subject && filters.subject !== "all") params.set("subject", filters.subject);
     if (filters.category && filters.category !== "all") params.set("category", filters.category);
+    const hasPaging = filters.from || filters.to;
+    if (filters.from) params.set("from", filters.from);
+    if (filters.to) params.set("to", filters.to);
     const qs = params.toString();
-    return apiFetch(`/games${qs ? `?${qs}` : ""}`) || [];
+    if (hasPaging) {
+      const res = await apiFetch(`/games${qs ? `?${qs}` : ""}`, { _withPagination: true });
+      return { items: res?.data || [], pagination: res?.pagination || null };
+    }
+    return (await apiFetch(`/games${qs ? `?${qs}` : ""}`)) || [];
   },
   async get(id) {
     return apiFetch(`/games/${id}`);

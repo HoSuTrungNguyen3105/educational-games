@@ -5,8 +5,11 @@ import { PrimaryButton, GhostButton, Modal, TicketStub, Loader, ErrorState, Empt
 import { GameCard } from './TeacherDashboard.jsx'
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
+import RangePagination from '../../components/RangePagination.jsx'
 
-export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onOpenBuilder, showToast, onChanged }) {
+const PAGE_SIZE = 12;
+
+export default function GameLibraryManagement({ onCreate, onEdit, onResults, onDesign, onOpenBuilder, showToast, onChanged }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [subject, setSubject] = useState("all");
@@ -15,15 +18,29 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
   const [error, setError] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [shareGame, setShareGame] = useState(null);
+  const [from, setFrom] = useState(1);
+  const [total, setTotal] = useState(0);
   const subjects = useSubjects();
   const categories = useCategories();
 
+  const to = from + PAGE_SIZE - 1;
+
   const load = useCallback(() => {
     setGames(null); setError(null);
-    gameService.list({ query, status, subject, category }).then(setGames).catch(e => setError(e.message || "Lỗi tải dữ liệu"));
-  }, [query, status, subject, category]);
+    gameService.list({ query, status, subject, category, from, to }).then(res => {
+      if (res && res.items) {
+        setGames(res.items);
+        setTotal(res.pagination?.total || 0);
+      } else {
+        setGames(res || []);
+        setTotal(0);
+      }
+    }).catch(e => setError(e.message || "Lỗi tải dữ liệu"));
+  }, [query, status, subject, category, from, to]);
 
   useEffect(() => { const t = setTimeout(load, 250); return () => clearTimeout(t); }, [load]);
+
+  useEffect(() => { setFrom(1); }, [query, status, subject, category]);
 
   const handleDelete = async (id) => { await gameService.remove(id); showToast("Đã xóa trò chơi", "success"); setConfirmDelete(null); onChanged(); load(); };
   const handleDuplicate = async (id) => { await gameService.duplicate(id); showToast("Đã sao chép trò chơi vào Bản nháp", "success"); onChanged(); load(); };
@@ -38,6 +55,13 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
     socket.emit(SOCKET_EVENTS.START_GAME, { gameId: gid });
     showToast(`Đã phát trực tiếp "${g.name}" — học sinh nhập mã ${g.code}`, "success");
   };
+
+  const handleRangeChange = (newFrom, newTo) => {
+    setFrom(newFrom);
+  };
+
+  const handlePrev = () => setFrom(f => Math.max(1, f - PAGE_SIZE));
+  const handleNext = () => setFrom(f => Math.min(f + PAGE_SIZE, total));
 
   return (
     <div className="space-y-6">
@@ -79,16 +103,30 @@ export default function GameLibrary({ onCreate, onEdit, onResults, onDesign, onO
           action={<PrimaryButton onClick={onCreate} className="mt-2">+ Tạo trò chơi</PrimaryButton>} />
       )}
       {!error && games && games.length > 0 && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {games.map(g => {
-            const gid = g._id?.toString() || g.id;
-            return (
-              <GameCard key={gid} game={g} onEdit={() => onEdit(gid)} onResults={() => onResults(gid)}
-                onDesign={() => onDesign(gid)}
-                onDuplicate={() => handleDuplicate(gid)} onDelete={() => setConfirmDelete(g)} onShare={() => setShareGame(g)} onLive={() => handleLive(g)} />
-            );
-          })}
-        </div>
+        <>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {games.map(g => {
+              const gid = g._id?.toString() || g.id;
+              return (
+                <GameCard key={gid} game={g} onEdit={() => onEdit(gid)} onResults={() => onResults(gid)}
+                  onDesign={() => onDesign(gid)}
+                  onDuplicate={() => handleDuplicate(gid)} onDelete={() => setConfirmDelete(g)} onShare={() => setShareGame(g)} onLive={() => handleLive(g)} />
+              );
+            })}
+          </div>
+          {total > PAGE_SIZE && (
+            <div className="flex justify-center pt-2">
+              <RangePagination
+                fromRecord={from}
+                toRecord={Math.min(to, total)}
+                totalItems={total}
+                onRangeChange={handleRangeChange}
+                onPrevPage={handlePrev}
+                onNextPage={handleNext}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {confirmDelete && (

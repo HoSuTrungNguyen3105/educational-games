@@ -25,14 +25,15 @@ router.post("/answer", async (req, res, next) => {
 
 router.get("/", async (req, res, next) => {
   try {
-    const games = await gameService.list(req.query);
-    const total = Array.isArray(games) ? games.length : 0;
+    const { items, total, from, to } = await gameService.list(req.query);
     const pagination = buildPagination({
       page: req.query.page, perPage: req.query.per_page, total,
       keyword: req.query.query || "", sortBy: req.query.sort_by || "",
       sortDir: req.query.sort_dir || "DESC",
     });
-    sendSuccess(res, games, "success", pagination);
+    pagination.from = from;
+    pagination.to = to;
+    sendSuccess(res, items, "success", pagination);
   } catch (e) {
     next(e);
   }

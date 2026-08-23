@@ -54,7 +54,16 @@ export async function list(filters = {}) {
     const tplIds = new Set(templates.map((t) => t._id.toString()));
     result = result.filter((g) => g.templateId && tplIds.has(g.templateId.toString()));
   }
-  return result;
+
+  const total = result.length;
+  let from = Math.max(1, parseInt(filters.from) || 1);
+  let to = parseInt(filters.to) || Math.min(from + 49, total);
+  to = Math.min(to, total);
+  if (to < from) to = Math.min(from + 49, total);
+  if (to - from + 1 > 50) to = from + 49;
+  const sliced = result.slice(from - 1, to);
+
+  return { items: sliced, total, from, to };
 }
 
 export async function get(id) {

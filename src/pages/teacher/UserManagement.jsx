@@ -15,11 +15,13 @@ export default function UserManagement({ user, showToast }) {
     { name: "username", label: "Tên đăng nhập" },
     { name: "password", label: "Mật khẩu (≥ 6 ký tự)", type: "password" },
     { name: "name", label: "Họ tên" },
-    { name: "role", label: "Vai trò", type: "select", options: [
-      { value: "student", label: "Học sinh" },
-      { value: "teacher", label: "Giáo viên" },
-      ...(isAdmin ? [{ value: "admin", label: "Quản trị" }] : []),
-    ]},
+    {
+      name: "role", label: "Vai trò", type: "select", options: [
+        { value: "student", label: "Học sinh" },
+        { value: "teacher", label: "Giáo viên" },
+        ...(isAdmin ? [{ value: "admin", label: "Quản trị" }] : []),
+      ]
+    },
   ];
 
   const load = useCallback(() => {
@@ -59,7 +61,7 @@ export default function UserManagement({ user, showToast }) {
   };
 
   return (
-    <div className="space-y-8">
+    <div>
       <ManagementHeader subtitle="Quản lý tài khoản" title="Người dùng" />
 
       <ManagementTable
@@ -75,11 +77,10 @@ export default function UserManagement({ user, showToast }) {
             <td className="px-5 py-3 font-body text-ink">{u.name}</td>
             <td className="px-5 py-3 font-mono text-[#8A7C63]">{u.username}</td>
             <td className="px-5 py-3">
-              <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${
-                u.role === "admin" ? "bg-pink/15 text-pink border-pink/30"
+              <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${u.role === "admin" ? "bg-pink/15 text-pink border-pink/30"
                 : u.role === "teacher" ? "bg-ticket/15 text-ticket border-ticket/30"
-                : "bg-teal/15 text-teal border-teal/30"
-              }`}>
+                  : "bg-teal/15 text-teal border-teal/30"
+                }`}>
                 {u.role === "admin" ? "Quản trị" : u.role === "teacher" ? "Giáo viên" : "Học sinh"}
               </span>
             </td>

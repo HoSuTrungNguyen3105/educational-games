@@ -123,7 +123,7 @@ export default function QuestionManagement({ showToast }) {
   const selectedGameObj = games?.find(g => g._id === selectedGame);
 
   return (
-    <div className="space-y-6">
+    <div>
       <ManagementHeader subtitle="Quản lý câu hỏi" title="Questions" />
 
       <div className="note-card p-4 bg-paper2">

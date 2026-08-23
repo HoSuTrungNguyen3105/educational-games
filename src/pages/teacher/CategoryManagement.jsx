@@ -68,7 +68,7 @@ export default function CategoryManagement({ showToast }) {
   };
 
   return (
-    <div className="space-y-8">
+    <div>
       <ManagementHeader subtitle="Quản lý danh mục" title="Categories" />
 
       <ManagementTable

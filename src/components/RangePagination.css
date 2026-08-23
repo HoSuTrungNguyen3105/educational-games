@@ -1,0 +1,88 @@
+.range-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 13px;
+  color: var(--ink, #20283A);
+  user-select: none;
+}
+
+.range-display {
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--paper, #FBF7EE);
+  border: 1px solid rgba(32, 40, 58, 0.08);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.range-display:hover {
+  border-color: rgba(32, 40, 58, 0.18);
+  background: #f5f0e4;
+}
+
+.range-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--paper, #FBF7EE);
+  border: 1px solid var(--teal, #1B998B);
+}
+
+.range-input {
+  width: 42px;
+  padding: 3px 4px;
+  text-align: center;
+  font-family: inherit;
+  font-size: 13px;
+  border: 1px solid rgba(32, 40, 58, 0.12);
+  border-radius: 5px;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.range-input:focus {
+  border-color: var(--teal, #1B998B);
+}
+
+.range-separator {
+  color: #8A7C63;
+  font-weight: 500;
+}
+
+.range-total {
+  color: #8A7C63;
+}
+
+.range-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.range-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(32, 40, 58, 0.08);
+  background: var(--paper, #FBF7EE);
+  color: var(--ink, #20283A);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.range-btn:hover:not(:disabled) {
+  background: #f5f0e4;
+  border-color: rgba(32, 40, 58, 0.18);
+}
+.range-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
