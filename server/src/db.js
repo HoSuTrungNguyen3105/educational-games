@@ -242,7 +242,11 @@ export async function initDatabase() {
     }
     const now = new Date().toISOString();
     const migrated = rawGames.map(g => {
-      const tplId = slugToId[g.template] || null;
+      let tplId = null;
+      if (g.templateId) {
+        try { tplId = new ObjectId(g.templateId); } catch { tplId = null; }
+      }
+      if (!tplId && g.template) tplId = slugToId[g.template] || null;
       return {
         name: g.title || g.name || "Game",
         description: g.description || "",
