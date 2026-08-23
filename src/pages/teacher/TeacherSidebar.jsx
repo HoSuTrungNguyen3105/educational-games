@@ -8,6 +8,7 @@ const MENU = [
   { id: "admin-templates", label: "Templates", icon: "🎨", route: "/admin/templates" },
   { id: "admin-categories", label: "Categories", icon: "🏷️", route: "/admin/categories" },
   { id: "admin-subjects", label: "Môn học", icon: "📖", route: "/admin/subjects" },
+  { id: "admin-questions", label: "Câu hỏi", icon: "❓", route: "/admin/questions" },
 ];
 
 const BOTTOM_MENU = [
@@ -28,6 +29,7 @@ const MOBILE_MORE = [
   { id: "admin-templates", label: "Templates", icon: "🎨", route: "/admin/templates" },
   { id: "admin-categories", label: "Categories", icon: "🏷️", route: "/admin/categories" },
   { id: "admin-subjects", label: "Môn học", icon: "📖", route: "/admin/subjects" },
+  { id: "admin-questions", label: "Câu hỏi", icon: "❓", route: "/admin/questions" },
 ];
 
 export default function TeacherSidebar({ screen }) {

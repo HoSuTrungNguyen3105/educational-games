@@ -9,6 +9,7 @@ import UserManagement from './UserManagement.jsx'
 import TemplateManagement from './TemplateManagement.jsx'
 import CategoryManagement from './CategoryManagement.jsx'
 import SubjectManagement from './SubjectManagement.jsx'
+import QuestionManagement from './QuestionManagement.jsx'
 import GameBuilder from '../../components/gameBuilder/GameBuilder.jsx'
 
 export default function TeacherApp({ user, route, showToast }) {
@@ -42,6 +43,7 @@ export default function TeacherApp({ user, route, showToast }) {
       {page === "admin-templates" && <TemplateManagement showToast={showToast} />}
       {page === "admin-categories" && <CategoryManagement showToast={showToast} />}
       {page === "admin-subjects" && <SubjectManagement showToast={showToast} />}
+      {page === "admin-questions" && <QuestionManagement showToast={showToast} />}
     </TeacherLayout>
   );
 }
