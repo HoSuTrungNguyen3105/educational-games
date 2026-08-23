@@ -37,13 +37,15 @@ export default function TeacherResults({ gameId, onBack }) {
 }
 
 export function LeaderboardTable({ results }) {
+  const hasAccuracy = results.some(r => r.totalQuestions > 0);
   return (
     <div className="note-card overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">
             <th className="px-5 py-3">Hạng</th><th className="px-5 py-3">Học sinh</th><th className="px-5 py-3">Điểm</th>
-            <th className="px-5 py-3">Độ chính xác</th><th className="px-5 py-3 hidden sm:table-cell">Thời gian hoàn thành</th>
+            {hasAccuracy && <th className="px-5 py-3">Độ chính xác</th>}
+            <th className="px-5 py-3 hidden sm:table-cell">Thời gian</th>
           </tr>
         </thead>
         <tbody>
@@ -54,7 +56,11 @@ export function LeaderboardTable({ results }) {
                 <td className="px-5 py-3"><StampToken icon={medal.icon} ring={medal.ring} size={34} fontSize={i < 3 ? 16 : 13} /></td>
                 <td className="px-5 py-3 font-body text-ink">{r.playerName}</td>
                 <td className="px-5 py-3 font-display text-ink">{r.score}</td>
-                <td className="px-5 py-3 text-[#8A7C63]">{r.correctAnswers}/{r.totalQuestions} ({r.accuracy}%)</td>
+                {hasAccuracy && (
+                  <td className="px-5 py-3 text-[#8A7C63]">
+                    {r.totalQuestions > 0 ? `${r.correctAnswers}/${r.totalQuestions} (${r.accuracy}%)` : "—"}
+                  </td>
+                )}
                 <td className="px-5 py-3 hidden sm:table-cell text-[#8A7C63] font-mono">{r.completionTime}s</td>
               </tr>
             );

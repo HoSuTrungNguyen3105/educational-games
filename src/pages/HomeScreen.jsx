@@ -47,7 +47,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   };
   useEffect(() => { loadGames(); }, []);
 
-  const hotGames = games ? [...games].sort((a, b) => (b.playersCount || 0) - (a.playersCount || 0)).slice(0, 6) : [];
+  const hotGames = games ? [...games].sort((a, b) => (b.playersCount || 0) - (a.playersCount || 0)).slice(0, 3) : [];
   const newGames = games ? [...games].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6) : [];
 
   const subjects = useMemo(() => {

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Reflex Tap — Bấm Nhanh Như Chớp</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+  :root{
+    --bg1:#170f2b; --bg2:#241640; --panel:#1e1438; --line:rgba(255,255,255,.08);
+    --go:#31e0a0; --nogo:#ff5470; --gold:#ffd166; --violet:#a685ff;
+    --text:#f4f0ff; --text-dim:#a79fc9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg1);color:var(--text);font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;overflow:hidden;}
+  #root{min-height:100vh;display:flex;flex-direction:column;}
+  .font-display{font-family:'Rubik',sans-serif;}
+  .font-mono{font-family:'JetBrains Mono',monospace;}
+
+  .bg-arcade{
+    background:
+      radial-gradient(800px 460px at 10% -10%, rgba(166,133,255,.14), transparent 60%),
+      radial-gradient(800px 460px at 100% 110%, rgba(49,224,160,.10), transparent 55%),
+      linear-gradient(180deg,var(--bg1),var(--bg2));
+  }
+  .glass-card{
+    background:rgba(30,20,56,.88); border:1px solid var(--line); border-radius:24px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5); backdrop-filter:blur(6px);
+  }
+  .screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;}
+  .hidden{display:none !important;}
+  button{font-family:inherit;cursor:pointer;-webkit-user-select:none;user-select:none;}
+
+  @keyframes pop{0%{transform:scale(.88);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .anim-pop{animation:pop .28s cubic-bezier(.2,.9,.3,1.2);}
+
+  .glow-btn{width:100%;padding:1rem;border-radius:16px;font-size:1.05rem;font-weight:700;border:1.5px solid;transition:transform .1s ease;background:none;letter-spacing:.01em;}
+  .glow-btn:hover{transform:translateY(-1px);}
+  .glow-btn:active{transform:scale(.98);}
+
+  .diff-btn{width:100%;display:flex;align-items:center;gap:1rem;padding:1rem 1.2rem;border-radius:16px;border:1.5px solid;text-align:left;transition:transform .1s ease;background:none;}
+  .diff-btn:hover{transform:translateY(-1px);}
+
+  .back-link{margin-top:1.4rem;background:none;border:none;font-size:.85rem;color:var(--text-dim);font-family:'Rubik';}
+  .back-link:hover{color:var(--text);}
+
+  header.app-header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem 1.2rem;background:rgba(15,9,30,.9);border-bottom:1px solid var(--line);flex-wrap:wrap;position:relative;z-index:5;}
+  .quit-btn{font-family:'Rubik';font-size:.78rem;border:1px solid rgba(255,84,112,.5);color:var(--nogo);border-radius:14px;padding:.45rem .9rem;background:none;}
+  .quit-btn:hover{background:rgba(255,84,112,.08);}
+  .pause-toggle{font-family:'Rubik';font-size:.78rem;border:1px solid var(--line);color:var(--text);border-radius:14px;padding:.45rem .9rem;background:none;}
+
+  .hud-row{display:flex;align-items:center;gap:1.1rem;font-size:.82rem;color:var(--text-dim);flex-wrap:wrap;}
+  .stat-block{text-align:center;}
+  .stat-num{font-family:'JetBrains Mono';font-size:1.3rem;font-weight:700;}
+  .stat-label{font-size:.66rem;color:var(--text-dim);letter-spacing:.03em;text-transform:uppercase;}
+
+  .rule-bar{display:flex;align-items:center;justify-content:center;gap:1.4rem;padding:.55rem 1.2rem;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid var(--line);font-size:.82rem;flex-wrap:wrap;}
+  .rule-bar .go-chip{color:var(--go);font-weight:700;}
+  .rule-bar .nogo-chip{color:var(--nogo);font-weight:700;}
+  .combo-badge{display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .65rem;border-radius:20px;font-family:'JetBrains Mono';font-size:.76rem;font-weight:700;background:rgba(255,209,102,.12);color:var(--gold);border:1px solid rgba(255,209,102,.5);}
+
+  .timer-bar{width:100%;max-width:520px;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .timer-fill{height:100%;border-radius:4px;transition:width .1s linear, background .3s ease;}
+
+  .arena-wrap{position:relative;width:100%;max-width:480px;aspect-ratio:1/1;margin:0 auto;}
+  .arena{
+    position:relative;width:100%;height:100%;display:grid;gap:10px;padding:12px;
+    border-radius:22px;border:1.5px solid var(--line);
+    background:radial-gradient(circle at 50% 0%, rgba(166,133,255,.08), transparent 60%), #130b26;
+  }
+  .arena.shake{animation:shakeArena .35s ease;}
+  @keyframes shakeArena{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+
+  .hole{
+    position:relative;border-radius:18px;background:rgba(255,255,255,.03);
+    border:1.5px dashed rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+
+  .target{
+    position:absolute; inset:6%; border-radius:16px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:2px;
+    animation:popIn .18s cubic-bezier(.3,1.4,.4,1) both;
+    box-shadow:0 6px 18px rgba(0,0,0,.4);
+  }
+  @keyframes popIn{0%{transform:scale(.2);opacity:0;}70%{transform:scale(1.12);opacity:1;}100%{transform:scale(1);}}
+  .target.go{background:radial-gradient(circle at 35% 30%, #45f5b8, #1cb37f); }
+  .target.nogo{background:radial-gradient(circle at 35% 30%, #ff7d92, #d93553); }
+  .target .ticon{font-size:clamp(1.4rem,6vw,2rem);filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
+  .target .lifebar-track{position:absolute;left:10%;right:10%;bottom:9%;height:4px;border-radius:3px;background:rgba(0,0,0,.28);overflow:hidden;}
+  .target .lifebar{height:100%;background:rgba(255,255,255,.85);width:100%;animation-name:shrinkBar;animation-timing-function:linear;animation-fill-mode:forwards;}
+  @keyframes shrinkBar{from{width:100%;}to{width:0%;}}
+  .arena.paused .target .lifebar{animation-play-state:paused;}
+
+  .target.resolved{animation:popOut .22s ease forwards;}
+  @keyframes popOut{to{transform:scale(1.5);opacity:0;}}
+
+  .ripple{position:absolute;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);animation:rippleOut .5s ease-out forwards;}
+  @keyframes rippleOut{0%{width:0;height:0;opacity:.6;}100%{width:120px;height:120px;opacity:0;}}
+  .ripple.good{background:radial-gradient(circle, rgba(49,224,160,.5), transparent 70%);}
+  .ripple.bad{background:radial-gradient(circle, rgba(255,84,112,.5), transparent 70%);}
+  .ripple.neutral{background:radial-gradient(circle, rgba(255,209,102,.4), transparent 70%);}
+
+  .floatscore{position:absolute;font-family:'Rubik';font-weight:800;font-size:1rem;pointer-events:none;animation:floatUp .7s ease forwards;z-index:6;}
+  @keyframes floatUp{0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-34px);}}
+  .floatscore.good{color:var(--go);}
+  .floatscore.bad{color:var(--nogo);}
+  .floatscore.neutral{color:var(--gold);}
+
+  .pause-overlay{position:fixed;inset:0;background:rgba(10,6,20,.85);display:flex;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(6px);}
+  .pause-card{padding:2.4rem;text-align:center;max-width:26rem;width:90%;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var DIFFICULTY = {
+    easy:   { label:'Dễ',  icon:'🙂', desc:'Lưới 3×3 · Chậm rãi',  grid:3, popMin:820, popMax:1300, life:1200, noGoProb:0.15 },
+    normal: { label:'TB',  icon:'⚡', desc:'Lưới 3×3 · Tốc độ vừa', grid:3, popMin:560, popMax:950,  life:900,  noGoProb:0.22 },
+    hard:   { label:'Khó', icon:'🔥', desc:'Lưới 4×4 · Cực nhanh',  grid:4, popMin:380, popMax:680,  life:650,  noGoProb:0.3 },
+  };
+
+  var BEST_KEY = 'reflex-tap-best';
+  function getBest(){ try{ return parseInt(localStorage.getItem(BEST_KEY),10)||0; }catch(e){ return 0; } }
+  function saveBest(v){ try{ localStorage.setItem(BEST_KEY, String(v)); }catch(e){} }
+
+  var GO_ICONS = ['⚡','⭐','💎','🔵','🟢'];
+  var NOGO_ICONS = ['⛔','💣','🚫'];
+
+  var state, arena, rafId, lastT, spawnAcc, nextSpawnDelay, holes;
+
+  function freshState(diffKey){
+    return {
+      screen:'menu', difficulty:diffKey||'easy',
+      score:0, combo:0, maxCombo:0,
+      timer:35, maxTimer:35,
+      correctCount:0, missCount:0, mistakeCount:0, inhibitCount:0,
+      reactionSum:0, reactionN:0,
+      paused:false, gameOver:false, timeUsed:0,
+    };
+  }
+  state = freshState();
+
+  function sendGameOver(){
+    try{ window.parent.postMessage({type:'game-over', data:{score:state.score, timeUsed:Math.round(state.timeUsed*10)/10}}, '*'); }catch(e){}
+  }
+  function sendQuit(){ try{ window.parent.postMessage({type:'quit'}, '*'); }catch(e){} }
+  window.addEventListener('message', function(e){
+    if(!e.data || typeof e.data!=='object') return;
+  });
+
+  var root = document.getElementById('root');
+
+  function render(){
+    stopLoop();
+    if(state.screen==='menu') return renderMenu();
+    if(state.screen==='difficulty') return renderDifficulty();
+    if(state.screen==='playing') return renderPlaying();
+    if(state.screen==='gameover') return renderGameOver();
+  }
+
+  function renderMenu(){
+    root.innerHTML =
+      '<div class="screen bg-arcade">'+
+        '<div class="anim-pop glass-card" style="padding:2.6rem;max-width:26rem;width:100%;text-align:center;">'+
+          '<div style="font-size:3.6rem;margin-bottom:.9rem;">⚡</div>'+
+          '<h1 class="font-display" style="font-size:1.7rem;margin:0 0 .5rem;">'+
+            '<span style="color:var(--go)">REFLEX</span> <span style="color:var(--nogo)">TAP</span>'+
+          '</h1>'+
+          '<p style="color:var(--text-dim);margin-bottom:1.4rem;font-size:.92rem;">Chạm thật nhanh vào ô sáng xanh — nhưng đừng chạm vào ô đỏ nhé!</p>'+
+          '<div class="rule-bar" style="margin-bottom:1.8rem;">'+
+            '<span><span class="go-chip">⚡ Xanh</span> = chạm nhanh</span>'+
+            '<span><span class="nogo-chip">⛔ Đỏ</span> = tránh xa</span>'+
+          '</div>'+
+          '<button id="btn-play" class="glow-btn font-display" style="border-color:var(--go);color:var(--go);background:rgba(49,224,160,.08);">▶ BẮT ĐẦU</button>'+
+          '<div style="margin-top:1.6rem;padding-top:1rem;border-top:1px dashed var(--line);">'+
+            '<p class="font-display" style="font-size:.76rem;color:var(--text-dim);margin-bottom:.5rem;letter-spacing:.05em;text-transform:uppercase;">Kỷ lục</p>'+
+            '<div class="stat-block"><div class="stat-num" style="color:var(--gold)">⭐ '+getBest()+'</div><div class="stat-label">Điểm cao nhất</div></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    document.getElementById('btn-play').onclick=function(){ state.screen='difficulty'; render(); };
+  }
+
+  function renderDifficulty(){
+    var order=['easy','normal','hard'];
+    var colorMap={easy:'var(--go)',normal:'var(--gold)',hard:'var(--nogo)'};
+    var html='<div class="screen bg-arcade">'+
+      '<div class="anim-pop glass-card" style="padding:2.4rem;max-width:26rem;width:100%;text-align:center;">'+
+        '<div style="font-size:2.6rem;margin-bottom:.8rem;">🎯</div>'+
+        '<h2 class="font-display" style="font-size:1.3rem;margin:0 0 .4rem;">Chọn độ khó</h2>'+
+        '<p style="color:var(--text-dim);margin-bottom:1.8rem;font-size:.88rem;">Càng khó, ô hiện càng nhanh và biến mất sớm hơn!</p>'+
+        '<div style="display:flex;flex-direction:column;gap:.7rem;">';
+    order.forEach(function(key){
+      var d=DIFFICULTY[key];
+      html+='<button class="diff-btn" data-key="'+key+'" style="border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.02);">'+
+        '<span style="font-size:1.7rem;">'+d.icon+'</span>'+
+        '<div><div class="font-display" style="font-size:1.02rem;color:'+colorMap[key]+';">'+d.label+'</div>'+
+        '<div style="font-size:.82rem;color:var(--text-dim);">'+d.desc+'</div></div></button>';
+    });
+    html+='</div><button id="btn-back" class="back-link">← Quay lại</button></div></div>';
+    root.innerHTML = html;
+    root.querySelectorAll('.diff-btn').forEach(function(btn){
+      btn.onclick=function(){ startNewGame(btn.dataset.key); };
+    });
+    document.getElementById('btn-back').onclick=function(){ state.screen='menu'; render(); };
+  }
+
+  function startNewGame(diffKey){
+    state = freshState(diffKey || state.difficulty);
+    state.screen='playing';
+    renderPlaying();
+    initGameLoop();
+  }
+
+  function renderPlaying(){
+    var d = DIFFICULTY[state.difficulty];
+    var holesHtml = '';
+    for(var i=0;i<d.grid*d.grid;i++){
+      holesHtml += '<div class="hole" data-idx="'+i+'"></div>';
+    }
+    root.innerHTML =
+      '<div class="bg-arcade" style="flex:1;display:flex;flex-direction:column;">'+
+        '<header class="app-header">'+
+          '<div style="display:flex;align-items:center;gap:.6rem;">'+
+            '<span style="font-size:1.6rem;">⚡</span>'+
+            '<h1 class="font-display" style="font-size:1.02rem;color:var(--go);margin:0;">REFLEX TAP</h1>'+
+          '</div>'+
+          '<div class="hud-row font-mono">'+
+            '<span>'+d.label+'</span>'+
+            '<span>⭐ <b id="hud-score">0</b></span>'+
+            '<span>✅ <b id="hud-good">0</b></span>'+
+          '</div>'+
+          '<div style="display:flex;gap:.5rem;">'+
+            '<button id="btn-pause" class="pause-toggle">⏸ Tạm dừng</button>'+
+            '<button id="btn-quit" class="quit-btn">Thoát</button>'+
+          '</div>'+
+        '</header>'+
+
+        '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;gap:.85rem;">'+
+          '<div class="rule-bar">'+
+            '<span><span class="go-chip">⚡</span> chạm nhanh</span>'+
+            '<span><span class="nogo-chip">⛔</span> tránh chạm</span>'+
+            '<span id="hud-combo"></span>'+
+          '</div>'+
+          '<div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%;background:var(--go);"></div></div>'+
+          '<div class="font-mono" style="font-size:.76rem;color:var(--text-dim);margin-top:-.4rem;" id="timer-text">'+state.timer.toFixed(1)+'s</div>'+
+
+          '<div class="arena-wrap"><div class="arena" id="arena" style="grid-template-columns:repeat('+d.grid+',1fr);grid-template-rows:repeat('+d.grid+',1fr);">'+holesHtml+'</div></div>'+
+
+          '<div style="display:flex;gap:1.1rem;align-items:center;justify-content:center;flex-wrap:wrap;">'+
+            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--go);font-size:1rem;" id="hud-hit">0</div><div class="stat-label">Trúng</div></div>'+
+            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--nogo);font-size:1rem;" id="hud-mistake">0</div><div class="stat-label">Chạm nhầm</div></div>'+
+            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--text-dim);font-size:1rem;" id="hud-miss">0</div><div class="stat-label">Bỏ lỡ</div></div>'+
+            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--gold);font-size:1rem;" id="hud-combo-max">0</div><div class="stat-label">Combo max</div></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+
+      '<div id="pause-overlay" class="pause-overlay hidden">'+
+        '<div class="pause-card glass-card anim-pop">'+
+          '<div style="font-size:2.6rem;margin-bottom:.8rem;">⏸</div>'+
+          '<h2 class="font-display" style="font-size:1.3rem;margin-bottom:.4rem;">Tạm dừng</h2>'+
+          '<p style="color:var(--text-dim);margin-bottom:1.4rem;font-size:.9rem;">Điểm hiện tại: <strong style="color:var(--text)">'+state.score+'</strong></p>'+
+          '<div style="display:flex;flex-direction:column;gap:.7rem;">'+
+            '<button id="btn-resume" class="glow-btn font-display" style="border-color:var(--go);color:var(--go);background:rgba(49,224,160,.08);">▶ Tiếp tục</button>'+
+            '<button id="btn-restart-pause" class="glow-btn font-display" style="border-color:var(--gold);color:var(--gold);background:rgba(255,209,102,.08);">🔄 Chơi lại</button>'+
+            '<button id="btn-quit-pause" class="glow-btn font-display" style="border-color:var(--nogo);color:var(--nogo);background:rgba(255,84,112,.08);">🏠 Thoát</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+
+    arena = document.getElementById('arena');
+    holes = Array.prototype.slice.call(arena.querySelectorAll('.hole'));
+    holes.forEach(function(h){ h.onclick=function(){ onHoleClick(h); }; });
+
+    document.getElementById('btn-pause').onclick=function(){ setPaused(true); };
+    document.getElementById('btn-resume').onclick=function(){ setPaused(false); };
+    document.getElementById('btn-restart-pause').onclick=function(){ document.getElementById('pause-overlay').classList.add('hidden'); startNewGame(); };
+    document.getElementById('btn-quit-pause').onclick=function(){ document.getElementById('pause-overlay').classList.add('hidden'); stopLoop(); sendQuit(); state.screen='menu'; render(); };
+    document.getElementById('btn-quit').onclick=function(){ stopLoop(); sendQuit(); state.screen='menu'; render(); };
+  }
+
+  function setPaused(p){
+    state.paused = p;
+    var ov = document.getElementById('pause-overlay');
+    if(ov) ov.classList.toggle('hidden', !p);
+    if(arena) arena.classList.toggle('paused', p);
+  }
+
+  /* ============ GAME LOOP ============ */
+  function initGameLoop(){
+    spawnAcc = 0;
+    nextSpawnDelay = randDelay();
+    lastT = performance.now();
+    rafId = requestAnimationFrame(loop);
+  }
+  function stopLoop(){ if(rafId){ cancelAnimationFrame(rafId); rafId=null; } }
+
+  function randDelay(){
+    var d = DIFFICULTY[state.difficulty];
+    return d.popMin + Math.random()*(d.popMax-d.popMin);
+  }
+
+  function loop(now){
+    var dt = Math.min(0.05, (now-lastT)/1000);
+    lastT = now;
+    if(!state.paused && !state.gameOver){
+      spawnAcc += dt*1000;
+      if(spawnAcc >= nextSpawnDelay){
+        spawnAcc = 0;
+        nextSpawnDelay = randDelay();
+        trySpawn();
+      }
+      state.timer -= dt;
+      state.timeUsed += dt;
+      if(state.timer <= 0){
+        state.timer = 0;
+        updateHud();
+        endGame();
+        return;
+      }
+      updateHud();
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function trySpawn(){
+    var freeHoles = holes.filter(function(h){ return !h.querySelector('.target'); });
+    if(!freeHoles.length) return;
+    var d = DIFFICULTY[state.difficulty];
+    var hole = freeHoles[Math.floor(Math.random()*freeHoles.length)];
+    var isNoGo = Math.random() < d.noGoProb;
+    var t = document.createElement('div');
+    t.className = 'target ' + (isNoGo ? 'nogo' : 'go');
+    var icon = isNoGo ? NOGO_ICONS[Math.floor(Math.random()*NOGO_ICONS.length)] : GO_ICONS[Math.floor(Math.random()*GO_ICONS.length)];
+    t.innerHTML = '<span class="ticon">'+icon+'</span><div class="lifebar-track"><div class="lifebar"></div></div>';
+    var lifebar = t.querySelector('.lifebar');
+    lifebar.style.animationDuration = d.life+'ms';
+    t.dataset.type = isNoGo ? 'nogo' : 'go';
+    t.dataset.spawnT = String(performance.now());
+    t.dataset.resolved = '0';
+    hole.appendChild(t);
+
+    var expTimer = setTimeout(function(){
+      if(t.dataset.resolved==='1') return;
+      resolveTarget(t, hole, 'expire');
+    }, d.life + 20);
+    t._expTimer = expTimer;
+  }
+
+  function onHoleClick(hole){
+    if(state.paused || state.gameOver) return;
+    var t = hole.querySelector('.target');
+    if(!t){
+      spawnFloat(hole, 'neutral', '');
+      return;
+    }
+    if(t.dataset.resolved==='1') return;
+    resolveTarget(t, hole, 'tap');
+  }
+
+  function resolveTarget(t, hole, cause){
+    if(t.dataset.resolved==='1') return;
+    t.dataset.resolved='1';
+    if(t._expTimer) clearTimeout(t._expTimer);
+    var type = t.dataset.type;
+    var reactionMs = performance.now() - parseFloat(t.dataset.spawnT);
+
+    if(cause==='tap' && type==='go'){
+      state.combo++;
+      state.correctCount++;
+      if(state.combo>state.maxCombo) state.maxCombo=state.combo;
+      state.reactionSum += reactionMs; state.reactionN++;
+      var speedBonus = reactionMs<250 ? 60 : reactionMs<450 ? 35 : reactionMs<700 ? 15 : 0;
+      var bonus = 80 + (state.combo-1)*15 + speedBonus;
+      state.score += bonus;
+      adjustTimer(0.9);
+      spawnRipple(hole,'good'); spawnFloat(hole,'good','+'+bonus);
+    } else if(cause==='tap' && type==='nogo'){
+      state.combo = 0;
+      state.mistakeCount++;
+      adjustTimer(-2.2);
+      spawnRipple(hole,'bad'); spawnFloat(hole,'bad','-2.2s');
+      shakeArena();
+    } else if(cause==='expire' && type==='go'){
+      state.combo = 0;
+      state.missCount++;
+      adjustTimer(-1.4);
+      spawnFloat(hole,'bad','Lỡ!');
+    } else if(cause==='expire' && type==='nogo'){
+      state.inhibitCount++;
+      state.score += 15;
+      spawnFloat(hole,'neutral','+15 kiềm chế');
+    }
+
+    t.classList.add('resolved');
+    setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 220);
+    updateHud();
+    if(state.timer<=0){ state.timer=0; endGame(); }
+  }
+
+  function adjustTimer(delta){
+    state.timer = Math.max(0, Math.min(state.maxTimer, state.timer+delta));
+  }
+
+  function spawnRipple(hole, kind){
+    var r = document.createElement('div');
+    r.className = 'ripple ' + kind;
+    r.style.left = '50%'; r.style.top = '50%';
+    hole.appendChild(r);
+    setTimeout(function(){ if(r.parentNode) r.parentNode.removeChild(r); }, 520);
+  }
+
+  function spawnFloat(hole, kind, text){
+    if(!text) return;
+    var f = document.createElement('div');
+    f.className = 'floatscore ' + kind;
+    f.textContent = text;
+    f.style.left = '50%'; f.style.top = '38%'; f.style.transform='translate(-50%,-50%)';
+    hole.appendChild(f);
+    setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 720);
+  }
+
+  function shakeArena(){
+    if(!arena) return;
+    arena.classList.remove('shake'); void arena.offsetWidth; arena.classList.add('shake');
+  }
+
+  function updateHud(){
+    var scoreEl=document.getElementById('hud-score'); if(scoreEl) scoreEl.textContent=state.score;
+    var goodEl=document.getElementById('hud-good'); if(goodEl) goodEl.textContent=state.correctCount;
+    var hitEl=document.getElementById('hud-hit'); if(hitEl) hitEl.textContent=state.correctCount;
+    var mistakeEl=document.getElementById('hud-mistake'); if(mistakeEl) mistakeEl.textContent=state.mistakeCount;
+    var missEl=document.getElementById('hud-miss'); if(missEl) missEl.textContent=state.missCount;
+    var comboMaxEl=document.getElementById('hud-combo-max'); if(comboMaxEl) comboMaxEl.textContent=state.maxCombo;
+    var comboBadge=document.getElementById('hud-combo');
+    if(comboBadge){ comboBadge.innerHTML = state.combo>1 ? '<span class="combo-badge">🔥 ×'+state.combo+'</span>' : ''; }
+    var fill=document.getElementById('timer-fill'); var txt=document.getElementById('timer-text');
+    var pct=(state.timer/state.maxTimer)*100;
+    var color = state.timer>14 ? 'var(--go)' : state.timer>6 ? 'var(--gold)' : 'var(--nogo)';
+    if(fill){ fill.style.width=pct+'%'; fill.style.background=color; }
+    if(txt){ txt.textContent = state.timer.toFixed(1)+'s'; }
+  }
+
+  /* ============ END / RESULTS ============ */
+  function endGame(){
+    state.gameOver = true;
+    stopLoop();
+    var best = getBest();
+    if(state.score>best) saveBest(state.score);
+    state.screen='gameover';
+    render();
+    sendGameOver();
+  }
+
+  function avgReaction(){
+    if(state.reactionN===0) return null;
+    return Math.round(state.reactionSum/state.reactionN);
+  }
+
+  function reactionGrade(avg){
+    if(avg===null) return {label:'Chưa đủ dữ liệu', color:'var(--text-dim)'};
+    if(avg<250) return {label:'Phản xạ siêu nhân ⚡', color:'var(--go)'};
+    if(avg<420) return {label:'Rất nhanh 🚀', color:'var(--go)'};
+    if(avg<650) return {label:'Khá tốt 👍', color:'var(--gold)'};
+    return {label:'Luyện thêm nhé 💪', color:'var(--nogo)'};
+  }
+
+  function renderGameOver(){
+    var best = getBest();
+    var isNewBest = state.score>=best && state.score>0;
+    var avg = avgReaction();
+    var grade = reactionGrade(avg);
+    root.innerHTML =
+      '<div class="screen bg-arcade">'+
+        '<div class="anim-pop glass-card" style="padding:2.4rem;max-width:26rem;width:100%;text-align:center;">'+
+          '<div style="font-size:3.4rem;margin-bottom:.9rem;">⏱️</div>'+
+          '<h2 class="font-display" style="font-size:1.35rem;margin:0 0 .3rem;">Hết giờ!</h2>'+
+          (isNewBest ? '<p style="color:var(--gold);font-weight:700;margin-bottom:.4rem;font-size:.9rem;">🏆 Kỷ lục mới!</p>' : '')+
+          '<p style="font-weight:700;font-size:.95rem;margin-bottom:.6rem;color:'+grade.color+';">'+grade.label+(avg!==null?' · '+avg+'ms trung bình':'')+'</p>'+
+          '<div style="padding-top:1rem;margin:.8rem 0;border-top:1px dashed var(--line);">'+
+            '<div style="display:flex;justify-content:center;gap:1.4rem;flex-wrap:wrap;">'+
+              '<div class="stat-block"><div class="stat-num" style="color:var(--go);">'+state.score+'</div><div class="stat-label">Điểm</div></div>'+
+              '<div class="stat-block"><div class="stat-num" style="color:var(--go);">'+state.correctCount+'</div><div class="stat-label">Trúng</div></div>'+
+              '<div class="stat-block"><div class="stat-num" style="color:var(--nogo);">'+state.mistakeCount+'</div><div class="stat-label">Chạm nhầm</div></div>'+
+              '<div class="stat-block"><div class="stat-num" style="color:var(--gold);">'+state.maxCombo+'</div><div class="stat-label">Combo max</div></div>'+
+            '</div>'+
+          '</div>'+
+          '<div style="padding-top:.9rem;margin-bottom:1.2rem;border-top:1px dashed var(--line);">'+
+            '<p style="font-size:.82rem;color:var(--text-dim);">Bỏ lỡ: '+state.missCount+' · Kiềm chế đúng: '+state.inhibitCount+' · Thời gian: '+state.timeUsed.toFixed(1)+'s</p>'+
+          '</div>'+
+          '<div style="display:flex;flex-direction:column;gap:.7rem;">'+
+            '<button id="btn-restart" class="glow-btn font-display" style="border-color:var(--go);color:var(--go);background:rgba(49,224,160,.08);">🔄 Chơi lại</button>'+
+            '<button id="btn-home" class="glow-btn font-display" style="border-color:var(--text-dim);color:var(--text-dim);background:rgba(255,255,255,.02);">🏠 Menu</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    document.getElementById('btn-restart').onclick=function(){ startNewGame(); };
+    document.getElementById('btn-home').onclick=function(){ sendQuit(); state.screen='menu'; render(); };
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

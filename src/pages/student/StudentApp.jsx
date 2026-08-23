@@ -84,15 +84,14 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   };
 
   const handleFinish = async (sessionResult) => {
-    if (isPlayToWin) {
-      setFinalResult({ score: sessionResult.score, correctAnswers: 0, totalQuestions: 0, accuracy: 0, completionTime: sessionResult.timeUsed });
-      setScreen("result");
-      return;
-    }
+    const correct = sessionResult.correct || 0;
+    const total = isPlayToWin ? 0 : questions.length;
+    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
     const entry = await resultService.submit({
       gameId: gameGid, playerId: uid("player"), playerName,
-      score: sessionResult.score, correctAnswers: sessionResult.correct,
-      totalQuestions: questions.length, accuracy: Math.round((sessionResult.correct / questions.length) * 100),
+      gameType: isPlayToWin ? "play-to-win" : "play-to-learn",
+      score: sessionResult.score, correctAnswers: correct,
+      totalQuestions: total, accuracy,
       completionTime: sessionResult.timeUsed,
     });
     setFinalResult(entry);
@@ -300,15 +299,22 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
 }
 
 export function ResultScreen({ result, onSeeLeaderboard }) {
-  const isGreat = result.accuracy >= 80;
+  const hasAccuracy = result.totalQuestions > 0;
+  const isGreat = hasAccuracy ? result.accuracy >= 80 : result.score > 0;
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-10">
       <div className="max-w-md w-full text-center anim-pop">
-        <div className="text-7xl mb-4 float-slow">{isGreat ? "🏆" : result.accuracy >= 50 ? "🌟" : "💪"}</div>
+        <div className="text-7xl mb-4 float-slow">{isGreat ? "🏆" : hasAccuracy && result.accuracy >= 50 ? "🌟" : "💪"}</div>
         <h1 className="font-display text-3xl text-ink mb-1">{result.score} điểm</h1>
-        <p className="text-[#8A7C63] mb-8">{result.correctAnswers}/{result.totalQuestions} câu đúng · độ chính xác {result.accuracy}%</p>
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="note-card p-4"><div className="font-display text-2xl text-teal">{result.correctAnswers}</div><div className="text-xs text-[#8A7C63] font-mono uppercase mt-1">Câu đúng</div></div>
+        {hasAccuracy ? (
+          <p className="text-[#8A7C63] mb-8">{result.correctAnswers}/{result.totalQuestions} câu đúng · độ chính xác {result.accuracy}%</p>
+        ) : (
+          <p className="text-[#8A7C63] mb-8">Hoàn thành trong {result.completionTime}s</p>
+        )}
+        <div className={`grid gap-4 mb-8 ${hasAccuracy ? "grid-cols-2" : "grid-cols-1"}`}>
+          {hasAccuracy && (
+            <div className="note-card p-4"><div className="font-display text-2xl text-teal">{result.correctAnswers}</div><div className="text-xs text-[#8A7C63] font-mono uppercase mt-1">Câu đúng</div></div>
+          )}
           <div className="note-card p-4"><div className="font-display text-2xl text-ticket">{result.completionTime}s</div><div className="text-xs text-[#8A7C63] font-mono uppercase mt-1">Thời gian</div></div>
         </div>
         <PrimaryButton onClick={onSeeLeaderboard} className="w-full">Xem bảng xếp hạng →</PrimaryButton>

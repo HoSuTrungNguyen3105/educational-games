@@ -28,7 +28,12 @@ export default function HtmlGameLoader({ htmlContent, game, questions, players, 
       const msg = e.data;
       if (!msg || typeof msg !== "object") return;
       if (msg.type === "game-over") {
-        onFinish?.({ score: msg.data?.score || 0, correct: 0, timeUsed: msg.data?.timeUsed || 0 });
+        onFinish?.({
+          score: msg.data?.score || 0,
+          correct: msg.data?.correct ?? 0,
+          totalQuestions: msg.data?.totalQuestions ?? 0,
+          timeUsed: msg.data?.timeUsed || 0,
+        });
       } else if (msg.type === "quit") {
         onQuit?.();
       }
