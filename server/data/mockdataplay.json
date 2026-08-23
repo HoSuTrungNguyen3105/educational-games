@@ -1,0 +1,338 @@
+{
+  "type": "play-to-win",
+  "gameId": "game-ptw-001",
+  "playerId": "player-abc123",
+  "coins": 320,
+  "energy": 68,
+  "maxEnergy": 100,
+  "level": 4,
+  "xp": 210,
+  "xpToNextLevel": 400,
+  "updatedAt": "2026-08-23T09:15:00Z",
+
+  "options": [
+    {
+      "id": "action-chop-wood",
+      "label": "Chặt cây",
+      "icon": "🪓",
+      "category": "gather",
+      "resourceId": "wood",
+      "energyCost": 5,
+      "coinCost": 0,
+      "durationSeconds": 3,
+      "rewardMin": 1,
+      "rewardMax": 3,
+      "requiredItemId": "item-axe",
+      "requiredBuildingId": null,
+      "unlocked": true
+    },
+    {
+      "id": "action-mine-gold",
+      "label": "Đào vàng",
+      "icon": "⛏️",
+      "category": "gather",
+      "resourceId": "gold_ore",
+      "energyCost": 8,
+      "coinCost": 0,
+      "durationSeconds": 5,
+      "rewardMin": 1,
+      "rewardMax": 2,
+      "requiredItemId": "item-pickaxe",
+      "requiredBuildingId": "building-mine",
+      "unlocked": false
+    },
+    {
+      "id": "action-dig-treasure",
+      "label": "Đào kho báu",
+      "icon": "🗺️",
+      "category": "explore",
+      "resourceId": null,
+      "energyCost": 12,
+      "coinCost": 0,
+      "durationSeconds": 8,
+      "rewardType": "random_item",
+      "possibleRewardItemIds": ["item-ancient-coin", "item-gem", "item-map-fragment"],
+      "requiredItemId": null,
+      "requiredBuildingId": null,
+      "unlocked": true
+    },
+    {
+      "id": "action-plant-seed",
+      "label": "Gieo hạt",
+      "icon": "🌱",
+      "category": "farm",
+      "resourceId": "seed_wheat",
+      "energyCost": 3,
+      "coinCost": 0,
+      "durationSeconds": 2,
+      "requiredBuildingId": "building-farm",
+      "unlocked": true
+    },
+    {
+      "id": "action-water-plant",
+      "label": "Tưới cây",
+      "icon": "💧",
+      "category": "farm",
+      "resourceId": "water",
+      "energyCost": 2,
+      "coinCost": 0,
+      "durationSeconds": 1,
+      "requiredBuildingId": "building-farm",
+      "unlocked": true
+    },
+    {
+      "id": "action-harvest-crop",
+      "label": "Thu hoạch",
+      "icon": "🌾",
+      "category": "farm",
+      "resourceId": "wheat",
+      "energyCost": 4,
+      "coinCost": 0,
+      "durationSeconds": 2,
+      "rewardMin": 2,
+      "rewardMax": 5,
+      "requiredBuildingId": "building-farm",
+      "unlocked": true
+    },
+    {
+      "id": "action-buy-shop-item",
+      "label": "Mua vật phẩm",
+      "icon": "🏪",
+      "category": "shop",
+      "coinCost": 50,
+      "requiredBuildingId": "building-shop",
+      "unlocked": true
+    },
+    {
+      "id": "action-upgrade-building",
+      "label": "Nâng cấp công trình",
+      "icon": "🔧",
+      "category": "build",
+      "coinCost": 0,
+      "requiredBuildingId": null,
+      "unlocked": true
+    },
+    {
+      "id": "action-expand-land",
+      "label": "Mở rộng khu đất",
+      "icon": "🏡",
+      "category": "expand",
+      "coinCost": 500,
+      "requiredBuildingId": null,
+      "unlocked": true
+    }
+  ],
+
+  "items": [
+    {
+      "id": "item-axe",
+      "name": "Rìu gỗ",
+      "icon": "🪓",
+      "category": "tool",
+      "rarity": "common",
+      "quantity": 1,
+      "equipped": true,
+      "durability": 80,
+      "maxDurability": 100
+    },
+    {
+      "id": "item-pickaxe",
+      "name": "Cuốc chim",
+      "icon": "⛏️",
+      "category": "tool",
+      "rarity": "common",
+      "quantity": 1,
+      "equipped": true,
+      "durability": 100,
+      "maxDurability": 100
+    },
+    {
+      "id": "item-watering-can",
+      "name": "Bình tưới nước",
+      "icon": "💧",
+      "category": "tool",
+      "rarity": "common",
+      "quantity": 1,
+      "equipped": true
+    },
+    {
+      "id": "item-ancient-coin",
+      "name": "Đồng xu cổ",
+      "icon": "🪙",
+      "category": "treasure",
+      "rarity": "rare",
+      "quantity": 3,
+      "sellPriceCoins": 20,
+      "description": "Một đồng xu cổ tìm thấy khi đào kho báu."
+    },
+    {
+      "id": "item-gem",
+      "name": "Đá quý",
+      "icon": "💎",
+      "category": "treasure",
+      "rarity": "epic",
+      "quantity": 1,
+      "sellPriceCoins": 80,
+      "description": "Viên đá quý lấp lánh, có thể bán hoặc dùng để nâng cấp."
+    },
+    {
+      "id": "item-map-fragment",
+      "name": "Mảnh bản đồ kho báu",
+      "icon": "📜",
+      "category": "quest_item",
+      "rarity": "rare",
+      "quantity": 2,
+      "neededForQuestId": "quest-treasure-map"
+    },
+    {
+      "id": "item-seed-wheat",
+      "name": "Hạt giống lúa mì",
+      "icon": "🌾",
+      "category": "seed",
+      "rarity": "common",
+      "quantity": 6,
+      "growTimeSeconds": 60,
+      "yieldsResourceId": "wheat"
+    }
+  ],
+
+  "resources": [
+    { "id": "wood", "name": "Gỗ", "icon": "🪵", "quantity": 45, "maxCapacity": 200 },
+    { "id": "stone", "name": "Đá", "icon": "🪨", "quantity": 12, "maxCapacity": 150 },
+    { "id": "gold_ore", "name": "Quặng vàng", "icon": "🥇", "quantity": 8, "maxCapacity": 100 },
+    { "id": "water", "name": "Nước", "icon": "💧", "quantity": 30, "maxCapacity": 100 },
+    { "id": "wheat", "name": "Lúa mì", "icon": "🌾", "quantity": 5, "maxCapacity": 80 },
+    { "id": "seed_wheat", "name": "Hạt giống", "icon": "🌱", "quantity": 6, "maxCapacity": 50 }
+  ],
+
+  "quests": [
+    {
+      "id": "quest-first-tree",
+      "title": "Người tiều phu tập sự",
+      "description": "Chặt cây để thu thập 10 gỗ dựng nhà.",
+      "type": "gather",
+      "target": { "resourceId": "wood", "amount": 10 },
+      "progress": 6,
+      "status": "active",
+      "rewardCoins": 50,
+      "rewardItems": [{ "itemId": "item-axe", "quantity": 1 }],
+      "expiresAt": null
+    },
+    {
+      "id": "quest-treasure-map",
+      "title": "Mảnh bản đồ bí ẩn",
+      "description": "Thu thập đủ 3 mảnh bản đồ để mở khóa kho báu ẩn trong rừng sâu.",
+      "type": "collect",
+      "target": { "itemId": "item-map-fragment", "amount": 3 },
+      "progress": 2,
+      "status": "active",
+      "rewardCoins": 200,
+      "rewardItems": [{ "itemId": "item-gem", "quantity": 1 }],
+      "expiresAt": null
+    },
+    {
+      "id": "quest-first-harvest",
+      "title": "Vụ mùa đầu tiên",
+      "description": "Thu hoạch 5 lúa mì từ nông trại của bạn.",
+      "type": "harvest",
+      "target": { "resourceId": "wheat", "amount": 5 },
+      "progress": 5,
+      "status": "completed",
+      "rewardCoins": 30,
+      "rewardItems": [],
+      "claimedAt": "2026-08-20T10:00:00Z"
+    },
+    {
+      "id": "quest-build-house",
+      "title": "Mái ấm nhỏ",
+      "description": "Xây dựng căn nhà đầu tiên trên khu đất của bạn.",
+      "type": "build",
+      "target": { "buildingId": "building-house", "level": 1 },
+      "progress": 1,
+      "status": "completed",
+      "rewardCoins": 100,
+      "rewardItems": [],
+      "claimedAt": "2026-08-18T08:30:00Z"
+    },
+    {
+      "id": "quest-open-mine",
+      "title": "Khai mở hầm mỏ",
+      "description": "Mở khóa hầm mỏ để bắt đầu đào vàng và khoáng sản.",
+      "type": "unlock_building",
+      "target": { "buildingId": "building-mine" },
+      "progress": 0,
+      "status": "locked",
+      "rewardCoins": 0,
+      "rewardItems": [],
+      "expiresAt": null
+    }
+  ],
+
+  "buildings": [
+    {
+      "id": "building-house",
+      "name": "Nhà ở",
+      "icon": "🏠",
+      "level": 1,
+      "maxLevel": 5,
+      "status": "built",
+      "upgradeCostCoins": 150,
+      "upgradeCostResources": [
+        { "resourceId": "wood", "amount": 30 },
+        { "resourceId": "stone", "amount": 15 }
+      ],
+      "unlocksOptionIds": ["action-rest"]
+    },
+    {
+      "id": "building-farm",
+      "name": "Nông trại",
+      "icon": "🌾",
+      "level": 2,
+      "maxLevel": 5,
+      "status": "built",
+      "upgradeCostCoins": 200,
+      "upgradeCostResources": [
+        { "resourceId": "wood", "amount": 20 }
+      ],
+      "unlocksOptionIds": ["action-plant-seed", "action-water-plant", "action-harvest-crop"]
+    },
+    {
+      "id": "building-mine",
+      "name": "Hầm mỏ",
+      "icon": "⛏️",
+      "level": 0,
+      "maxLevel": 4,
+      "status": "locked",
+      "unlockCostCoins": 300,
+      "upgradeCostResources": [
+        { "resourceId": "stone", "amount": 25 }
+      ],
+      "unlocksOptionIds": ["action-mine-gold"]
+    },
+    {
+      "id": "building-shop",
+      "name": "Cửa hàng",
+      "icon": "🏪",
+      "level": 1,
+      "maxLevel": 3,
+      "status": "built",
+      "upgradeCostCoins": 250,
+      "upgradeCostResources": [
+        { "resourceId": "gold_ore", "amount": 5 }
+      ],
+      "unlocksOptionIds": ["action-buy-shop-item"]
+    },
+    {
+      "id": "land-plot-2",
+      "name": "Ô đất mở rộng #2",
+      "icon": "🏡",
+      "level": 0,
+      "maxLevel": 1,
+      "status": "locked",
+      "unlockCostCoins": 500,
+      "upgradeCostResources": [],
+      "description": "Mở rộng thêm đất để xây dựng công trình mới.",
+      "unlocksOptionIds": []
+    }
+  ]
+}
