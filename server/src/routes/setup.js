@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as setupService from "../services/setupService.js";
+import * as gameService from "../services/api.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 
 const router = Router();
@@ -83,6 +84,25 @@ router.get("/categories", async (_req, res, next) => {
 router.get("/players", async (_req, res, next) => {
   try {
     res.json(await setupService.listPlayers());
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get("/games/:gameId/players", async (req, res, next) => {
+  try {
+    const { gameId } = req.params;
+    const game = await gameService.get(gameId);
+    if (!game) return res.status(404).json({ error: "Game not found" });
+    // Trả về playersCount và info cơ bản từ DB game
+    // Để lấy live score đang chơi thì HTML nên dùng init PostMessage từ parent
+    res.json({
+      _id: game._id,
+      name: game.name,
+      playersCount: game.playersCount || 0,
+      type: game.type,
+      templateId: game.templateId,
+    });
   } catch (e) {
     next(e);
   }

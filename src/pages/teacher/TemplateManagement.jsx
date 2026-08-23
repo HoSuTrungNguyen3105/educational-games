@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { templateService } from '../../services/api.js'
+import { injectApiBridge, detectApiMarkers } from '../../lib/apiBridge.js'
 import { PrimaryButton, IconButton, Loader, ErrorState } from '../../components/ui.jsx'
 
 const CATEGORY_OPTIONS = [
@@ -44,12 +45,22 @@ export default function TemplateManagement({ user, showToast }) {
     }
     setError(null);
     try {
+      // Auto-inject API bridge nếu HTML chứa marker (api_submit, api_questions, ...)
+      const markers = detectApiMarkers(form.htmlTemplate);
+      const payload = {
+        ...form,
+        htmlTemplate: injectApiBridge(form.htmlTemplate),
+      };
       if (editId) {
-        await templateService.update(editId, form);
-        showToast("Đã cập nhật template");
+        await templateService.update(editId, payload);
+        showToast(markers.length > 0
+          ? `Đã cập nhật template (auto-inject: ${markers.join(", ")})`
+          : "Đã cập nhật template");
       } else {
-        await templateService.create(form);
-        showToast("Đã tạo template mới");
+        await templateService.create(payload);
+        showToast(markers.length > 0
+          ? `Đã tạo template mới (auto-inject: ${markers.join(", ")})`
+          : "Đã tạo template mới");
       }
       setForm({ ...EMPTY_FORM });
       setEditId(null);

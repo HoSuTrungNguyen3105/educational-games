@@ -25,7 +25,7 @@ body{font-family:'Nunito',sans-serif;background:var(--paper);color:var(--ink);he
 .race-track{background:linear-gradient(180deg,#4CAF50 0%,#2E7D32 100%);padding:18px 16px 10px;display:flex;flex-direction:column;position:relative;overflow:hidden}
 .race-track::after{content:'';position:absolute;right:0;top:0;bottom:0;width:28px;background:repeating-conic-gradient(#fff 0% 25%,#222 0% 50%) 0 0/14px 14px;opacity:.6}
 .track-label{font-family:'Poppins',sans-serif;font-weight:700;font-size:13px;color:rgba(255,255,255,.85);margin-bottom:10px;text-align:center;letter-spacing:1px}
-.lanes{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:6px;min-height:0}
+.lanes{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:6px;min-height:0;overflow-y:auto}
 .lane{display:flex;align-items:center;gap:8px;position:relative;height:18%;min-height:40px}
 .lane.is-player{background:rgba(255,255,255,.12);border-radius:8px;padding:0 6px}
 .lane-label{width:36px;text-align:center;font-size:10px;font-weight:700;color:rgba(255,255,255,.7);flex-shrink:0}
@@ -75,6 +75,7 @@ body{font-family:'Nunito',sans-serif;background:var(--paper);color:var(--ink);he
 </style>
 </head>
 <body>
+<div id="api_submit"></div>
 <div class="header">
   <span class="snail-icon">🐌</span>
   <span class="title">ĐƯỜNG ĐUA ỐC SÊN</span>
@@ -113,13 +114,11 @@ body{font-family:'Nunito',sans-serif;background:var(--paper);color:var(--ink);he
 </div>
 <script>
 (function(){
-const LANE_COLORS=["#FF6F91","#4C8DFF","#F4B942","#4CAF7D","#8B6FF1"];
-const BOT_NAMES=["Ốc Zippy","Ốc Speedy","Ốc Turbo","Ốc Flash"];
+const LANE_COLORS=["#FF6F91","#4C8DFF","#F4B942","#4CAF7D","#8B6FF1","#E88CFF","#FFB347","#87CEEB"];
 const SNAIL_SVG=c=>`<svg width="44" height="34" viewBox="0 0 64 50" fill="none"><ellipse cx="30" cy="44" rx="22" ry="4" fill="rgba(29,46,74,0.10)"/><path d="M10 36 Q5 28 14 24 Q9 17 16 13 Q23 7 30 13 Q34 7 41 12" stroke="${c}" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="22" cy="21" r="15" fill="${c}"/><circle cx="22" cy="21" r="10" fill="rgba(255,255,255,0.32)"/><circle cx="22" cy="21" r="5" fill="rgba(255,255,255,0.45)"/><line x1="41" y1="12" x2="46" y2="2" stroke="${c}" stroke-width="3" stroke-linecap="round"/><line x1="34" y1="14" x2="37" y2="5" stroke="${c}" stroke-width="3" stroke-linecap="round"/><circle cx="46" cy="2" r="3.2" fill="white" stroke="${c}" stroke-width="1.5"/><circle cx="37" cy="5" r="3.2" fill="white" stroke="${c}" stroke-width="1.5"/><circle cx="47" cy="1.4" r="1.1" fill="${c}"/><circle cx="38" cy="4.4" r="1.1" fill="${c}"/></svg>`;
 
 let questions=[],score=0,currentIndex=0,timerInterval=null,timeLeft=0,totalPoints=0,startTime=0,answered=false;
-let botScores=[0,0,0,0];
-let apiBase='';
+let botScores=[],laneCount=0,myName='Bạn',playersList=[];
 
 const lanesEl=document.getElementById('lanes');
 const questionCounter=document.getElementById('questionCounter');
@@ -134,35 +133,45 @@ const overlay=document.getElementById('overlay');
 const finalScore=document.getElementById('finalScore');
 const finalTime=document.getElementById('finalTime');
 
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
 function buildLanes(){
   lanesEl.innerHTML='';
-  const names=[{name:'Bạn',color:LANE_COLORS[0]},...BOT_NAMES.map((n,i)=>({name:n,color:LANE_COLORS[i+1]}))];
-  names.forEach((r,i)=>{
+  // Làn 0 luôn là bạn; các làn sau là người chơi thật từ socket
+  const others=(playersList||[]).filter(n=>n&&n!==myName).slice(0,7);
+  const roster=[{name:myName,me:true},...others.map(n=>({name:n}))];
+  if(roster.length>8)roster.length=8;
+  laneCount=roster.length;
+  botScores=new Array(Math.max(0,laneCount-1)).fill(0);
+  roster.forEach((r,i)=>{
+    const color=LANE_COLORS[i%LANE_COLORS.length];
     const lane=document.createElement('div');
-    lane.className='lane'+(i===0?' is-player':'');
+    lane.className='lane'+(r.me?' is-player':'');
     lane.innerHTML=`
-      <span class="player-badge">BẠN</span>
-      <div class="snail-wrapper" id="snail-${i}" style="left:0">${SNAIL_SVG(r.color)}</div>
-      <span class="lane-label">${i===0?'YOU':r.name.split(' ').pop()}</span>
-      <span class="lane-name">${r.name}</span>`;
+      ${r.me?'<span class="player-badge">BẠN</span>':''}
+      <div class="snail-wrapper" id="snail-${i}" style="left:0">${SNAIL_SVG(color)}</div>
+      <span class="lane-label">${r.me?'YOU':escapeHtml(String(r.name).split(' ').pop())}</span>
+      <span class="lane-name">${escapeHtml(r.name)}</span>`;
     lanesEl.appendChild(lane);
   });
 }
 
 function updateSnails(){
   const maxScore=totalPoints||1;
-  for(let i=0;i<5;i++){
-    const s=i===0?score:botScores[i-1];
-    const pct=Math.min((s/maxScore)*92,98);
-    document.getElementById('snail-'+i).style.left=pct+'%';
+  for(let i=0;i<laneCount;i++){
+    const el=document.getElementById('snail-'+i);
+    if(!el)continue;
+    const s=i===0?score:(botScores[i-1]||0);
+    el.style.left=Math.min((s/maxScore)*92,98)+'%';
   }
 }
 
-function advanceBots(){
-  for(let i=0;i<4;i++){
+// Mô phỏng tiến độ cho người chơi khác (isAI=true nếu là bot/đối thủ)
+function advanceOthers(){
+  for(let i=1;i<laneCount;i++){
     if(Math.random()<0.35) continue;
     const pts=questions[currentIndex]?questions[currentIndex].points:10;
-    botScores[i]+=Math.round(pts*(0.5+Math.random()*0.6));
+    botScores[i-1]+=Math.round(pts*(0.5+Math.random()*0.6));
   }
 }
 
@@ -226,16 +235,11 @@ function selectAnswer(answerId,q,shuffled){
   answered=true;
   clearInterval(timerInterval);
 
-  const btns=optionsContainer.querySelectorAll('.option-btn');
+  const btns=Array.from(optionsContainer.querySelectorAll('.option-btn'));
   btns.forEach(b=>b.disabled=true);
 
-  if(answerId!==null && apiBase){
-    fetch(apiBase+'/games/answer',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({questionId:q.id,answerId:answerId})
-    })
-    .then(r=>r.json())
+  if(answerId!==null && typeof window.apiSubmitAnswer==='function'){
+    window.apiSubmitAnswer(q.id,answerId)
     .then(res=>{
       showResult(res.correct,res.points,q,answerId,shuffled,btns,res.correctAnswer);
     })
@@ -248,8 +252,7 @@ function selectAnswer(answerId,q,shuffled){
 }
 
 function showResult(isCorrect,earnedPoints,q,answerId,shuffled,btns,correctAnswerId){
-  btns.forEach(b=>{
-    const idx=btns.indexOf(b);
+  btns.forEach((b,idx)=>{
     const opt=shuffled?shuffled[idx]:q.options[idx];
     if(opt){
       if(opt.id===correctAnswerId)b.classList.add('correct');
@@ -266,7 +269,7 @@ function showResult(isCorrect,earnedPoints,q,answerId,shuffled,btns,correctAnswe
     explanationArea.innerHTML='<div class="explanation">💡 '+q.explanation+'</div>';
   }
 
-  advanceBots();
+  advanceOthers();
   updateSnails();
   nextBtn.style.display='inline-block';
   nextBtn.textContent=currentIndex>=questions.length-1?'Kết quả →':'Câu tiếp theo →';
@@ -291,13 +294,16 @@ window.addEventListener('message',function(e){
   if(!e.data||!e.data.type)return;
   if(e.data.type==='init'){
     const d=e.data.data;
-    apiBase=d.apiBase||'';
+    myName=d.playerName||'Bạn';
+    playersList=Array.isArray(d.players)?d.players.filter(Boolean):[];
+    if(playersList.length===0)playersList=[myName];
+    // Đảm bảo bạn luôn đứng làn đầu tiên
+    playersList=[myName,...playersList.filter(n=>n!==myName)];
     questions=d.questions||[];
     totalPoints=questions.reduce((a,q)=>a+(q.points||10),0);
     startTime=Date.now();
     score=0;
     currentIndex=0;
-    botScores=[0,0,0,0];
     scoreDisplay.textContent='0';
     overlay.classList.remove('active');
     buildLanes();

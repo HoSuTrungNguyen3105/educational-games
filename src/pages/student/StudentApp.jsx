@@ -35,6 +35,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   };
   const template = game ? templates.find(t => t._id === tplIdOf(game)) || null : null;
   const isPlayToWin = template ? template.type === "play-to-win" : game?.type === "play-to-win";
+  const players = useGameStore(s => s.players);
 
   const restart = () => {
     resetStore();
@@ -120,7 +121,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
         )}
         {screen === "play" && game && (isPlayToWin || questions.length > 0) && (
           <>
-            <GamePlayRouter game={game} questions={questions} playerName={playerName} onQuit={restart} onFinish={handleFinish} template={template} />
+            <GamePlayRouter game={game} questions={questions} players={players} playerName={playerName} onQuit={restart} onFinish={handleFinish} template={template} />
             <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} />
           </>
         )}

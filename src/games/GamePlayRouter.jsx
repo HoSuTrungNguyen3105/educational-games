@@ -40,7 +40,7 @@ const QUIZ_GAME_COMPONENTS = {
   'ninja-dash': NinjaDashPlayScreen,
 }
 
-export function GamePlayRouter({ game, questions, playerName, onFinish, onQuit, template: initialTemplate }) {
+export function GamePlayRouter({ game, questions, players, playerName, onFinish, onQuit, template: initialTemplate }) {
   // Dùng template truyền xuống chỉ làm giá trị tạm trong lúc chờ API,
   // LUÔN gọi GET /api/templates/:templateId để lấy type + htmlTemplate mới nhất
   const [tpl, setTpl] = useState(initialTemplate || null);
@@ -61,13 +61,14 @@ export function GamePlayRouter({ game, questions, playerName, onFinish, onQuit, 
     return () => { active = false; };
   }, [tid]);
 
-  // Type quyết định theo TEMPLATE lấy từ API, fallback về game.type nếu chưa có
-  const isPlayToWin = tpl ? tpl.type === "play-to-win" : game.type === "play-to-win";
+  // htmlTemplate là king - nếu có thì render ngay, không cần chờ loading hay check type
+  if (tpl?.htmlTemplate && tpl.htmlTemplate.trim() !== "") {
+    return <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} onFinish={onFinish} onQuit={onQuit} />;
+  }
 
-  // Play-to-win HTML games: htmlTemplate từ API template hoặc local fallback
-  if (!loading && isPlayToWin && (tpl?.htmlTemplate || HTML_GAME_FILES[slug])) {
-    const content = tpl?.htmlTemplate || HTML_GAME_FILES[slug];
-    return <HtmlGameLoader htmlContent={content} game={game} questions={questions} playerName={playerName} onFinish={onFinish} onQuit={onQuit} />;
+  // Fallback: local HTML files theo slug (chỉ dùng khi template chưa có htmlTemplate)
+  if (!loading && HTML_GAME_FILES[slug]) {
+    return <HtmlGameLoader htmlContent={HTML_GAME_FILES[slug]} game={game} questions={questions} players={players} playerName={playerName} onFinish={onFinish} onQuit={onQuit} />;
   }
 
   if (loading) {

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genshin Impact UI Replica</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; user-select:none; }
+
+  body{
+    background:#000;
+    overflow:hidden;
+    display:flex; justify-content:center; align-items:center;
+    height:100vh;
+  }
+
+  .game-container{
+    position:relative;
+    width:100vw; height:100vh;
+    max-width:1920px; max-height:1080px;
+    overflow:hidden;
+    aspect-ratio:16/9;
+  }
+
+  /* ============ NỀN CẢNH (vẽ bằng CSS thay cho ảnh có bản quyền) ============ */
+  .background{
+    position:absolute; inset:0; z-index:1;
+    background:linear-gradient(to bottom,#bfe6ff 0%,#dff3e0 45%,#e8f7d8 60%,#8fc76b 62%,#6fae52 100%);
+  }
+  .sun{
+    position:absolute; top:8%; left:70%;
+    width:70px; height:70px; border-radius:50%;
+    background:radial-gradient(circle,#fffbe0 0%,#ffe9a8 60%,rgba(255,233,168,0) 75%);
+    z-index:2;
+  }
+  .cloud{ position:absolute; z-index:2; opacity:.85; }
+  .cloud::before,.cloud::after{ content:''; position:absolute; background:#fff; border-radius:50%; }
+  .cloud1{ top:10%; left:12%; width:120px; height:30px; background:#fff; border-radius:30px; }
+  .cloud1::before{ width:60px; height:60px; top:-30px; left:10px; }
+  .cloud1::after{ width:50px; height:50px; top:-24px; left:55px; }
+  .cloud2{ top:16%; left:45%; width:90px; height:24px; background:#fff; border-radius:24px; opacity:.7; }
+  .cloud2::before{ width:44px; height:44px; top:-20px; left:8px; }
+  .cloud2::after{ width:36px; height:36px; top:-16px; left:42px; }
+
+  .castle{
+    position:absolute; bottom:44%; left:52%;
+    width:220px; height:120px; z-index:3; opacity:.9;
+  }
+  .castle .tower{ position:absolute; bottom:0; width:26px; height:70px; background:#d9c9a8; border:1px solid #b8a883; }
+  .castle .roof{ position:absolute; width:0; height:0; border-left:16px solid transparent; border-right:16px solid transparent; border-bottom:22px solid #b5493f; }
+  .t1{ left:0; } .t1 .roof{ bottom:70px; left:-3px; }
+  .t2{ left:40px; height:95px; width:34px; } .t2 .roof{ bottom:95px; left:1px; border-left-width:20px; border-right-width:20px; border-bottom-width:26px; }
+  .t3{ left:90px; } .t3 .roof{ bottom:70px; left:-3px; }
+  .t4{ left:140px; height:85px; } .t4 .roof{ bottom:85px; left:-3px; border-bottom-width:24px; }
+  .t5{ left:185px; } .t5 .roof{ bottom:70px; left:-3px; }
+  .castle .wall{ position:absolute; bottom:0; left:0; width:220px; height:35px; background:#e3d3ae; border-top:2px solid #b8a883; }
+
+  .mountains-far{
+    position:absolute; bottom:38%; left:0; width:100%; height:180px; z-index:2;
+    background:linear-gradient(135deg,#a9c9dd,#c9dbe6);
+    clip-path:polygon(0 100%,0 55%,10% 30%,22% 60%,35% 20%,50% 55%,65% 15%,80% 50%,92% 25%,100% 60%,100% 100%);
+    opacity:.75;
+  }
+
+  .hills{
+    position:absolute; bottom:0; left:0; width:100%; height:56%; z-index:4;
+    background:linear-gradient(180deg,#7ab851 0%,#5f9e3f 60%,#4c8a34 100%);
+    clip-path:polygon(0 40%,15% 30%,30% 45%,48% 20%,65% 38%,82% 15%,100% 35%,100% 100%,0 100%);
+  }
+  .hills2{
+    position:absolute; bottom:0; left:0; width:100%; height:34%; z-index:5;
+    background:linear-gradient(180deg,#5c9b3d 0%,#3f7d28 100%);
+    clip-path:polygon(0 60%,20% 30%,40% 55%,58% 25%,78% 50%,100% 20%,100% 100%,0 100%);
+  }
+  .path{
+    position:absolute; bottom:0; left:30%; width:40%; height:38%; z-index:6;
+    background:#c9c0a8;
+    clip-path:polygon(38% 0%,62% 0%,100% 100%,0% 100%);
+    opacity:.9;
+  }
+
+  .tree{ position:absolute; z-index:6; }
+  .tree .trunk{ position:absolute; bottom:0; left:50%; width:6px; height:18px; background:#5b3a22; transform:translateX(-50%); }
+  .tree .leaf{ position:absolute; bottom:14px; left:50%; width:34px; height:34px; background:radial-gradient(circle,#4d9b3a,#357024); border-radius:50%; transform:translateX(-50%); }
+  .tr1{ left:6%; bottom:20%; transform:scale(1.4); }
+  .tr2{ left:14%; bottom:16%; transform:scale(1.1); }
+  .tr3{ left:78%; bottom:22%; transform:scale(1.3); }
+  .tr4{ left:88%; bottom:15%; transform:scale(1); }
+  .tr5{ left:4%; bottom:8%; transform:scale(2); }
+  .tr6{ left:92%; bottom:6%; transform:scale(2.1); }
+
+  .character{
+    position:absolute; bottom:24%; left:50%; transform:translateX(-50%); z-index:7;
+    width:60px; height:130px;
+  }
+  .character .head{ position:absolute; top:0; left:50%; transform:translateX(-50%); width:26px; height:26px; border-radius:50%; background:#f4d9b0; }
+  .character .hair{ position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:32px; height:20px; border-radius:50% 50% 40% 40%; background:#f2c94c; }
+  .character .body{ position:absolute; top:24px; left:50%; transform:translateX(-50%); width:34px; height:52px; border-radius:10px 10px 6px 6px; background:linear-gradient(#fff,#e8e8e8); border:1px solid #d8cba8; }
+  .character .cape{ position:absolute; top:26px; left:50%; transform:translateX(-50%); width:44px; height:60px; background:linear-gradient(#f0e6c8,#d8c48f); clip-path:polygon(20% 0%,80% 0%,100% 100%,0% 100%); opacity:.9; z-index:-1; }
+  .character .legs{ position:absolute; top:74px; left:50%; transform:translateX(-50%); width:26px; height:40px; }
+  .character .legs::before,.character .legs::after{ content:''; position:absolute; width:9px; height:40px; background:#6b4a2b; border-radius:3px; }
+  .character .legs::before{ left:2px; } .character .legs::after{ right:2px; }
+  .character .shadow{ position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); width:36px; height:8px; background:rgba(0,0,0,.35); border-radius:50%; filter:blur(2px); }
+
+  .vignette{
+    position:absolute; inset:0; z-index:8; pointer-events:none;
+    background:radial-gradient(circle, rgba(0,0,0,0) 55%, rgba(0,0,0,.38) 100%);
+  }
+
+  /* ============ UI TRÊN TRÁI ============ */
+  .ui-left{ position:absolute; top:16px; left:16px; z-index:10; color:#fff; text-shadow:1px 1px 2px rgba(0,0,0,.8); }
+
+  .minimap-wrap{ position:relative; width:110px; }
+  .char-icon{
+    position:absolute; top:-8px; left:-8px; z-index:3;
+    width:34px; height:34px; border-radius:50%;
+    background:#3d3d3d; border:2px solid #ffd966;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 6px rgba(0,0,0,.6);
+  }
+  .char-icon svg{ width:20px; height:20px; }
+  .level-badge{
+    position:absolute; top:-8px; left:20px; z-index:4;
+    background:#ffd966; color:#5c3d00; font-size:10px; font-weight:700;
+    border-radius:8px; padding:0 5px; border:1px solid #b8860b;
+  }
+
+  .minimap{
+    width:110px; height:110px; border-radius:50%;
+    background:
+      radial-gradient(circle at 30% 30%, #9ed17a 0%, #6fae52 40%, #4c8a34 100%);
+    border:3px solid rgba(255,255,255,.85);
+    box-shadow:0 0 10px rgba(0,0,0,.5), inset 0 0 15px rgba(0,0,0,.25);
+    position:relative; overflow:hidden;
+  }
+  .minimap .river{ position:absolute; width:140%; height:14px; background:#6fb8d6; top:55%; left:-20%; transform:rotate(-20deg); opacity:.8; }
+  .minimap .player-dot{
+    position:absolute; top:50%; left:50%; width:10px; height:10px;
+    background:#ffe14d; border:1.5px solid #333; border-radius:50%;
+    transform:translate(-50%,-50%);
+    box-shadow:0 0 6px #ffe14d;
+  }
+  .compass{
+    position:absolute; top:-14px; left:50%; transform:translateX(-50%);
+    width:26px; height:26px; border-radius:50%; background:rgba(0,0,0,.5);
+    display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; border:1px solid rgba(255,255,255,.6);
+  }
+
+  .quest-tracker{
+    margin-top:14px; background:rgba(0,0,0,.35); padding:8px 12px 8px 10px;
+    border-radius:4px; border-left:3px solid #ffcc33; max-width:230px;
+    backdrop-filter:blur(1px);
+  }
+  .quest-title{ font-size:14px; font-weight:600; color:#fff; margin-bottom:4px; line-height:1.3; }
+  .quest-distance{ font-size:12px; color:#ffd966; display:flex; align-items:center; gap:5px; }
+
+  /* ============ UI TRÊN PHẢI ============ */
+  .ui-right{ position:absolute; top:16px; right:16px; z-index:10; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+  .icon-btn{
+    background:rgba(20,20,20,.45); border:1.5px solid rgba(255,255,255,.7); border-radius:50%;
+    width:38px; height:38px; display:flex; justify-content:center; align-items:center;
+    color:#fff; backdrop-filter:blur(3px); position:relative;
+  }
+  .icon-btn svg{ width:18px; height:18px; fill:#fff; }
+  .badge{
+    position:absolute; top:-4px; right:-4px; background:#ff5555; color:#fff; font-size:9px;
+    border-radius:8px; padding:0 4px; border:1px solid #fff;
+  }
+
+  /* ============ UI DƯỚI ĐÁY (thanh máu + level) ============ */
+  .ui-bottom{
+    position:absolute; bottom:18px; left:50%; transform:translateX(-50%); z-index:10;
+    text-align:center; color:#fff; text-shadow:1px 1px 2px rgba(0,0,0,.9);
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .level-row{ font-size:13px; font-weight:600; display:flex; gap:8px; align-items:baseline; }
+  .level-row .lv{ color:#e8e8e8; }
+  .level-row .exp{ color:#8bd94a; }
+  .hp-bar{
+    width:320px; height:10px; background:rgba(0,0,0,.55); border-radius:8px;
+    border:1px solid rgba(255,255,255,.5); overflow:hidden; position:relative;
+  }
+  .hp-fill{
+    width:78%; height:100%; border-radius:8px;
+    background:linear-gradient(to right,#a6e93a,#76ff03);
+    box-shadow:0 0 8px rgba(118,255,3,.7);
+  }
+
+  /* ============ UI KỸ NĂNG (phải dưới) ============ */
+  .ui-skills{ position:absolute; bottom:18px; right:18px; z-index:10; display:flex; align-items:flex-end; gap:12px; }
+
+  .skill-slot{
+    width:52px; height:52px; border-radius:50%;
+    background:rgba(20,20,20,.4); border:2px solid rgba(255,255,255,.55);
+    display:flex; justify-content:center; align-items:center; position:relative;
+    backdrop-filter:blur(4px);
+  }
+  .skill-slot svg{ width:24px; height:24px; fill:#fff; }
+  .skill-slot.big{ width:72px; height:72px; border-color:rgba(255,255,255,.9); }
+  .skill-slot.big svg{ width:32px; height:32px; }
+  .skill-slot.sprint{ width:44px; height:44px; align-self:flex-start; }
+  .skill-slot.sprint svg{ width:20px; height:20px; }
+
+  .cooldown{
+    position:absolute; inset:0; background:rgba(0,0,0,.6); border-radius:50%;
+    display:flex; justify-content:center; align-items:center; font-size:16px; font-weight:700; color:#fff;
+  }
+
+  .uid{ position:absolute; bottom:4px; right:10px; color:rgba(255,255,255,.75); font-size:11px; z-index:10; }
+
+  @media (max-width:700px){
+    .hp-bar{ width:220px; }
+    .quest-tracker{ max-width:170px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <!-- Nền cảnh vẽ bằng CSS -->
+  <div class="background"></div>
+  <div class="sun"></div>
+  <div class="cloud cloud1"></div>
+  <div class="cloud cloud2"></div>
+  <div class="mountains-far"></div>
+  <div class="castle">
+    <div class="wall"></div>
+    <div class="tower t1"><div class="roof"></div></div>
+    <div class="tower t2"><div class="roof"></div></div>
+    <div class="tower t3"><div class="roof"></div></div>
+    <div class="tower t4"><div class="roof"></div></div>
+    <div class="tower t5"><div class="roof"></div></div>
+  </div>
+  <div class="hills"></div>
+  <div class="hills2"></div>
+  <div class="path"></div>
+
+  <div class="tree tr1"><div class="trunk"></div><div class="leaf"></div></div>
+  <div class="tree tr2"><div class="trunk"></div><div class="leaf"></div></div>
+  <div class="tree tr3"><div class="trunk"></div><div class="leaf"></div></div>
+  <div class="tree tr4"><div class="trunk"></div><div class="leaf"></div></div>
+  <div class="tree tr5"><div class="trunk"></div><div class="leaf"></div></div>
+  <div class="tree tr6"><div class="trunk"></div><div class="leaf"></div></div>
+
+  <!-- Nhân vật đứng nhìn về phía thành phố -->
+  <div class="character">
+    <div class="cape"></div>
+    <div class="hair"></div>
+    <div class="head"></div>
+    <div class="body"></div>
+    <div class="legs"></div>
+    <div class="shadow"></div>
+  </div>
+
+  <div class="vignette"></div>
+
+  <!-- UI trái: minimap + quest -->
+  <div class="ui-left">
+    <div class="minimap-wrap">
+      <div class="compass">N</div>
+      <div class="minimap">
+        <div class="river"></div>
+        <div class="player-dot"></div>
+      </div>
+      <div class="char-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none" stroke="#fff" stroke-width="2"/></svg>
+      </div>
+      <div class="level-badge">Lv2</div>
+    </div>
+    <div class="quest-tracker">
+      <div class="quest-title">Keep heading towards Mondstadt</div>
+      <div class="quest-distance">◆ 98m</div>
+    </div>
+  </div>
+
+  <!-- UI phải trên: túi đồ / nhân vật -->
+  <div class="ui-right">
+    <div class="icon-btn">
+      <svg viewBox="0 0 24 24"><path d="M6 7h12l1 13H5L6 7z" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M9 7a3 3 0 0 1 6 0" fill="none" stroke="#fff" stroke-width="1.6"/></svg>
+      <span class="badge">3</span>
+    </div>
+    <div class="icon-btn">
+      <svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20c0-3.5 3-5.5 6-5.5s6 2 6 5.5M10 20c0-3.5 3-5.5 6-5.5s6 2 6 5.5" fill="none" stroke="#fff" stroke-width="1.4"/></svg>
+    </div>
+  </div>
+
+  <!-- UI dưới: level + thanh máu -->
+  <div class="ui-bottom">
+    <div class="level-row">
+      <span class="lv">Lv. 2</span>
+      <span class="exp">327 / 987</span>
+    </div>
+    <div class="hp-bar"><div class="hp-fill"></div></div>
+  </div>
+
+  <!-- UI kỹ năng -->
+  <div class="ui-skills">
+    <div class="skill-slot sprint">
+      <svg viewBox="0 0 24 24"><path d="M13 2l-7 12h5l-1 8 8-13h-5l0-7z"/></svg>
+    </div>
+    <div class="skill-slot">
+      <svg viewBox="0 0 24 24"><path d="M12 2C7 6 4 10 4 14a8 8 0 0 0 16 0c0-4-3-8-8-12z"/></svg>
+    </div>
+    <div class="skill-slot">
+      <svg viewBox="0 0 24 24"><path d="M13 2l-7 12h5l-1 8 8-13h-5l0-7z"/></svg>
+      <div class="cooldown">4</div>
+    </div>
+    <div class="skill-slot big">
+      <svg viewBox="0 0 24 24"><path d="M6 2l14 14-3 3L3 5l3-3z"/><path d="M14 14l6 6-2 2-6-6"/></svg>
+    </div>
+  </div>
+
+  <div class="uid">UID: 704201467</div>
+</div>
+
+</body>
+</html>
