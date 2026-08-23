@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { templateService } from '../../services/api.js'
 import { injectApiBridge, detectApiMarkers } from '../../lib/apiBridge.js'
-import { PrimaryButton, IconButton, Loader, ErrorState } from '../../components/ui.jsx'
+import { IconButton, ManagementHeader, ManagementForm, ManagementTable, Field } from '../../components/ui.jsx'
 
 const CATEGORY_OPTIONS = [
   { value: "quiz", label: "Trắc nghiệm" },
@@ -23,12 +23,13 @@ const CATEGORY_OPTIONS = [
 
 const EMPTY_FORM = { name: "", description: "", type: "play-to-learn", category: "quiz", icon: "🎲", ring: "#1D2E4A", htmlTemplate: "", thumbnail: "", status: "draft" };
 
-export default function TemplateManagement({ user, showToast }) {
+export default function TemplateManagement({ showToast }) {
   const [templates, setTemplates] = useState(null);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [editId, setEditId] = useState(null);
   const [showHtmlEditor, setShowHtmlEditor] = useState(false);
+  const [saving, setSaving] = useState(false);
   const formRef = useRef(null);
 
   const load = useCallback(() => {
@@ -43,9 +44,8 @@ export default function TemplateManagement({ user, showToast }) {
       setError("Tên template không được để trống");
       return;
     }
-    setError(null);
+    setSaving(true); setError(null);
     try {
-      // Auto-inject API bridge nếu HTML chứa marker (api_submit, api_questions, ...)
       const markers = detectApiMarkers(form.htmlTemplate);
       const payload = {
         ...form,
@@ -67,6 +67,8 @@ export default function TemplateManagement({ user, showToast }) {
       load();
     } catch (err) {
       setError(err.message || "Không thể lưu template");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -84,7 +86,6 @@ export default function TemplateManagement({ user, showToast }) {
     });
     setEditId(t._id);
     setError(null);
-    // Cuộn lên đầu form để người dùng thấy các input cần sửa
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -112,67 +113,63 @@ export default function TemplateManagement({ user, showToast }) {
 
   return (
     <div className="space-y-8">
-      <div>
-        <p className="text-[#8A7C63] text-sm font-mono">Quản lý template trò chơi</p>
-        <h1 className="font-display text-3xl text-ink">Templates</h1>
-      </div>
+      <ManagementHeader subtitle="Quản lý template trò chơi" title="Templates" />
 
-      <form ref={formRef} onSubmit={submit} className="note-card p-6 bg-paper2 scroll-mt-24">
-        <h2 className="font-display text-lg text-ink mb-4">{editId ? "✏️ Sửa template" : "➕ Tạo template mới"}</h2>
+      <ManagementForm
+        title="Template"
+        onSubmit={submit}
+        error={error}
+        saving={saving}
+        editId={editId}
+        onCancel={cancelEdit}
+        formRef={formRef}
+      >
         <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-mono uppercase text-[#8A7C63]">Tên template</label>
+          <Field label="Tên template">
             <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
               className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket" autoComplete="off" />
-          </div>
-          <div>
-            <label className="text-xs font-mono uppercase text-[#8A7C63]">Loại</label>
+          </Field>
+          <Field label="Loại">
             <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
               className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket bg-paper2">
               <option value="play-to-learn">Play-to-Learn</option>
               <option value="play-to-win">Play-to-Win</option>
             </select>
-          </div>
-          <div>
-            <label className="text-xs font-mono uppercase text-[#8A7C63]">Thể loại</label>
+          </Field>
+          <Field label="Thể loại">
             <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
               className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket bg-paper2">
               {CATEGORY_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="text-xs font-mono uppercase text-[#8A7C63]">Trạng thái</label>
+          </Field>
+          <Field label="Trạng thái">
             <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}
               className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket bg-paper2">
               <option value="draft">Bản nháp</option>
               <option value="published">Xuất bản</option>
               <option value="inactive">Vô hiệu</option>
             </select>
-          </div>
-          <div>
-            <label className="text-xs font-mono uppercase text-[#8A7C63]">Icon</label>
+          </Field>
+          <Field label="Icon">
             <input value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })}
               className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket" autoComplete="off" />
-          </div>
-          <div>
-            <label className="text-xs font-mono uppercase text-[#8A7C63]">Màu viền</label>
+          </Field>
+          <Field label="Màu viền">
             <div className="flex items-center gap-2 mt-1">
               <input type="color" value={form.ring} onChange={e => setForm({ ...form, ring: e.target.value })}
                 className="w-10 h-10 rounded-lg border border-ink/10 cursor-pointer" />
               <input value={form.ring} onChange={e => setForm({ ...form, ring: e.target.value })}
                 className="w-full note-card px-4 py-2.5 border-ink/10 focus:border-ticket" autoComplete="off" />
             </div>
-          </div>
-          <div className="sm:col-span-2">
-            <label className="text-xs font-mono uppercase text-[#8A7C63]">Mô tả</label>
+          </Field>
+          <Field label="Mô tả" className="sm:col-span-2">
             <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
               className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket" autoComplete="off" />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="text-xs font-mono uppercase text-[#8A7C63]">Ảnh thumbnail</label>
+          </Field>
+          <Field label="Ảnh thumbnail" className="sm:col-span-2">
             <input value={form.thumbnail} onChange={e => setForm({ ...form, thumbnail: e.target.value })}
               className="w-full note-card px-4 py-2.5 mt-1 border-ink/10 focus:border-ticket" autoComplete="off" placeholder="/uploads/templates/example.png" />
-          </div>
+          </Field>
           <div className="sm:col-span-2">
             <button type="button" onClick={() => setShowHtmlEditor(!showHtmlEditor)}
               className="text-sm text-ticket font-semibold hover:underline">
@@ -185,68 +182,53 @@ export default function TemplateManagement({ user, showToast }) {
             )}
           </div>
         </div>
-        {error && <p className="text-ticket text-sm mt-3">{error}</p>}
-        <div className="mt-4 flex items-center gap-3">
-          <PrimaryButton type="submit">{editId ? "Cập nhật" : "Tạo template"}</PrimaryButton>
-          {editId && <button type="button" onClick={cancelEdit} className="text-sm text-[#8A7C63] hover:text-ink underline cursor-pointer">Hủy</button>}
-        </div>
-      </form>
+      </ManagementForm>
 
-      <div>
-        <h2 className="font-display text-lg text-ink mb-3">Danh sách template ({templates ? templates.length : 0})</h2>
-        {error && <ErrorState subtitle={error} onRetry={load} />}
-        {!error && !templates && <Loader label="Đang tải templates..." />}
-        {!error && templates && (
-          <div className="note-card overflow-x-auto">
-            <table className="w-full min-w-[800px]">
-              <thead>
-                <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">
-                  <th className="px-5 py-3">Icon</th><th className="px-5 py-3">Tên</th>
-                  <th className="px-5 py-3">Loại</th><th className="px-5 py-3">Thể loại</th>
-                  <th className="px-5 py-3">Trạng thái</th><th className="px-5 py-3">Màu</th><th className="px-5 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {templates.map(t => (
-                  <tr key={t._id} className="border-b border-ink/5 last:border-0">
-                    <td className="px-5 py-3 text-xl">{t.icon}</td>
-                    <td className="px-5 py-3 font-body text-ink">{t.name}</td>
-                    <td className="px-5 py-3">
-                      <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${
-                        t.type === "play-to-win" ? "bg-teal/15 text-teal border-teal/30" : "bg-ticket/15 text-ticket border-ticket/30"
-                      }`}>
-                        {t.type === "play-to-win" ? "Win" : "Learn"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border"
-                        style={{ color: t.ring, borderColor: t.ring + "40", backgroundColor: t.ring + "15" }}>
-                        {t.category}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${
-                        t.status === "published" ? "bg-teal/15 text-teal border-teal/30"
-                        : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20"
-                        : "bg-gold/15 text-gold border-gold/30"
-                      }`}>
-                        {t.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="inline-block w-6 h-6 rounded-full border border-ink/10" style={{ backgroundColor: t.ring }}></span>
-                    </td>
-                    <td className="px-5 py-3 text-right flex gap-1 justify-end">
-                      <IconButton title="Sửa" onClick={() => startEdit(t)}>✏️</IconButton>
-                      <IconButton title="Xóa" onClick={() => removeTemplate(t)}>🗑️</IconButton>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <ManagementTable
+        title="Danh sách template"
+        count={templates ? templates.length : 0}
+        data={templates}
+        loading={!error && !templates}
+        error={error && !templates ? error : null}
+        onRetry={load}
+        emptyLabel="Chưa có template nào."
+        headers={["Icon", "Tên", "Loại", "Thể loại", "Trạng thái", "Màu", ""]}
+        renderRow={(t) => (
+          <tr key={t._id} className="border-b border-ink/5 last:border-0">
+            <td className="px-5 py-3 text-xl">{t.icon}</td>
+            <td className="px-5 py-3 font-body text-ink">{t.name}</td>
+            <td className="px-5 py-3">
+              <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${
+                t.type === "play-to-win" ? "bg-teal/15 text-teal border-teal/30" : "bg-ticket/15 text-ticket border-ticket/30"
+              }`}>
+                {t.type === "play-to-win" ? "Win" : "Learn"}
+              </span>
+            </td>
+            <td className="px-5 py-3">
+              <span className="text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border"
+                style={{ color: t.ring, borderColor: t.ring + "40", backgroundColor: t.ring + "15" }}>
+                {t.category}
+              </span>
+            </td>
+            <td className="px-5 py-3">
+              <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${
+                t.status === "published" ? "bg-teal/15 text-teal border-teal/30"
+                : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20"
+                : "bg-gold/15 text-gold border-gold/30"
+              }`}>
+                {t.status}
+              </span>
+            </td>
+            <td className="px-5 py-3">
+              <span className="inline-block w-6 h-6 rounded-full border border-ink/10" style={{ backgroundColor: t.ring }}></span>
+            </td>
+            <td className="px-5 py-3 text-right flex gap-1 justify-end">
+              <IconButton title="Sửa" onClick={() => startEdit(t)}>✏️</IconButton>
+              <IconButton title="Xóa" onClick={() => removeTemplate(t)}>🗑️</IconButton>
+            </td>
+          </tr>
         )}
-      </div>
+      />
     </div>
   );
 }

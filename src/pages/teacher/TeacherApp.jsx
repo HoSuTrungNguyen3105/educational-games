@@ -7,6 +7,8 @@ import CreateGameFlow from './CreateGameFlow.jsx'
 import TeacherResults from './TeacherResults.jsx'
 import UserManagement from './UserManagement.jsx'
 import TemplateManagement from './TemplateManagement.jsx'
+import CategoryManagement from './CategoryManagement.jsx'
+import SubjectManagement from './SubjectManagement.jsx'
 import GameBuilder from '../../components/gameBuilder/GameBuilder.jsx'
 
 export default function TeacherApp({ user, route, showToast }) {
@@ -37,7 +39,9 @@ export default function TeacherApp({ user, route, showToast }) {
       {page === "admin-edit" && <CreateGameFlow key={route.params.gameId} gameId={route.params.gameId} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
       {page === "admin-results" && <TeacherResults gameId={route.params.gameId} onBack={goLibrary} />}
       {page === "admin-users" && <UserManagement user={user} showToast={showToast} />}
-      {page === "admin-templates" && <TemplateManagement user={user} showToast={showToast} />}
+      {page === "admin-templates" && <TemplateManagement showToast={showToast} />}
+      {page === "admin-categories" && <CategoryManagement showToast={showToast} />}
+      {page === "admin-subjects" && <SubjectManagement showToast={showToast} />}
     </TeacherLayout>
   );
 }

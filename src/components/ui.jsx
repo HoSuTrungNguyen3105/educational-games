@@ -117,3 +117,65 @@ export function PasswordInput({ value, onChange, fieldClass = "w-full note-card 
     </div>
   );
 }
+
+export function Field({ label, hint, children, className = "" }) {
+  return (
+    <div className={className}>
+      <label className="text-xs font-mono uppercase text-[#8A7C63]">{label}</label>
+      {children}
+      {hint && <p className="text-xs text-[#B7A987] mt-1">{hint}</p>}
+    </div>
+  );
+}
+
+export function ManagementHeader({ subtitle, title }) {
+  return (
+    <div>
+      <p className="text-[#8A7C63] text-sm font-mono">{subtitle}</p>
+      <h1 className="font-display text-3xl text-ink">{title}</h1>
+    </div>
+  );
+}
+
+export function ManagementForm({ title, onSubmit, error, saving, savingLabel, editId, onCancel, children, formRef }) {
+  return (
+    <form ref={formRef} onSubmit={onSubmit} className="note-card p-6 bg-paper2 scroll-mt-24">
+      <h2 className="font-display text-lg text-ink mb-4">{editId ? "✏️ " + title : "➕ " + title}</h2>
+      {children}
+      {error && <p className="text-ticket text-sm mt-3">{error}</p>}
+      <div className="mt-4 flex items-center gap-3">
+        <PrimaryButton type="submit" disabled={saving}>{saving ? (savingLabel || "Đang lưu...") : editId ? "Cập nhật" : "Thêm mới"}</PrimaryButton>
+        {editId && <button type="button" onClick={onCancel} className="text-sm text-[#8A7C63] hover:text-ink underline cursor-pointer">Hủy</button>}
+      </div>
+    </form>
+  );
+}
+
+export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, onRemoveAll, removeAllLabel }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-display text-lg text-ink">{title}{count !== undefined ? ` (${count})` : ""}</h2>
+        {onRemoveAll && <button onClick={onRemoveAll} className="text-xs text-ticket/70 hover:text-ticket">{removeAllLabel || "Xóa tất cả"}</button>}
+      </div>
+      {error && !data && <ErrorState subtitle={error} onRetry={onRetry} />}
+      {!error && !data && <Loader label="Đang tải..." />}
+      {!error && data && (
+        <div className="note-card overflow-x-auto">
+          {data.length === 0 ? (
+            <p className="p-6 text-sm text-[#8A7C63] text-center">{emptyLabel || "Chưa có dữ liệu."}</p>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">
+                  {headers.map((h, i) => <th key={i} className="px-5 py-3">{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>{data.map(renderRow)}</tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

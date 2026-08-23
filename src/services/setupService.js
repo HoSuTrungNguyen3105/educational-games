@@ -9,6 +9,10 @@ function cachedGet(key, loader) {
   return cache[key];
 }
 
+function clearCache(key) {
+  delete cache[key];
+}
+
 export const setupService = {
   async listTemplates() {
     try {
@@ -26,6 +30,25 @@ export const setupService = {
       return [];
     }
   },
+  async createCategory(data) {
+    const result = await apiFetch("/categories", { method: "POST", body: data });
+    clearCache("categories");
+    return result;
+  },
+  async updateCategory(id, data) {
+    const result = await apiFetch(`/categories/${id}`, { method: "PUT", body: data });
+    clearCache("categories");
+    return result;
+  },
+  async removeCategory(id) {
+    await apiFetch(`/categories/${id}`, { method: "DELETE" });
+    clearCache("categories");
+  },
+  async removeAllCategories() {
+    const result = await apiFetch("/categories", { method: "DELETE" });
+    clearCache("categories");
+    return result;
+  },
   async listSubjects() {
     try {
       const list = await cachedGet("subjects", () => apiFetch("/subjects"));
@@ -33,5 +56,20 @@ export const setupService = {
     } catch {
       return [];
     }
+  },
+  async addSubject(name) {
+    const result = await apiFetch("/subjects", { method: "POST", body: { name } });
+    clearCache("subjects");
+    return result;
+  },
+  async updateSubject(oldName, newName) {
+    const result = await apiFetch(`/subjects/${encodeURIComponent(oldName)}`, { method: "PUT", body: { name: newName } });
+    clearCache("subjects");
+    return result;
+  },
+  async removeSubject(name) {
+    const result = await apiFetch(`/subjects/${encodeURIComponent(name)}`, { method: "DELETE" });
+    clearCache("subjects");
+    return result;
   },
 };

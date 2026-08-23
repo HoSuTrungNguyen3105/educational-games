@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vườn Ong Chăm Học</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky1:#bfe9ff;--sky2:#eaf9ff;--sun:#ffd54f;--grass1:#9be08d;--grass2:#6fc95e;
+  --flower:#ff8fab;--berry:#b185db;--leaf:#3f9142;--ink:#3a3a3a;--ink-soft:#6b6b6b;
+  --card:#ffffff;--line:#e4ecd8;--gold:#ffb703;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 45%,#f5fbe9 100%);
+  color:var(--ink);font-family:'Nunito',sans-serif;
+  display:flex;justify-content:center;padding:24px 14px 50px;
+}
+.stage{width:100%;max-width:720px}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.brand{font-family:'Fredoka',sans-serif;font-weight:700;font-size:24px;color:var(--leaf)}
+.brand span{display:block;font-family:'Nunito';font-weight:600;font-size:13px;color:var(--ink-soft);margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.score{
+  font-family:'Fredoka',sans-serif;font-size:16px;color:var(--ink);
+  background:#fff;border:2px solid var(--sun);border-radius:20px;padding:6px 16px;
+  display:flex;align-items:center;gap:6px;box-shadow:0 3px 0 rgba(0,0,0,.06);
+}
+.score .stars{color:var(--gold);font-size:18px}
+.btn-quit{
+  font-family:'Fredoka',sans-serif;font-size:13px;border:2px solid #ffb4c0;border-radius:16px;
+  padding:6px 14px;color:#e0546a;background:#fff;cursor:pointer;font-weight:600;
+}
+.btn-quit:hover{background:#fff0f2}
+
+/* ===== Garden scene ===== */
+.garden{
+  position:relative;background:linear-gradient(180deg,#fff8e1 0%,#f2fbe6 60%);
+  border:3px solid #fff;border-radius:22px;padding:20px 18px 16px;
+  box-shadow:0 6px 0 rgba(0,0,0,.05);overflow:hidden;
+}
+.sun-face{
+  position:absolute;top:12px;right:18px;width:46px;height:46px;border-radius:50%;
+  background:var(--sun);box-shadow:0 0 0 6px rgba(255,213,79,.35);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+.scene-row{display:flex;align-items:flex-end;justify-content:center;gap:18px;min-height:130px;position:relative}
+.bee{font-size:44px;transform:translateY(0);transition:transform .3s ease;filter:drop-shadow(0 4px 4px rgba(0,0,0,.15));}
+.bee.happy{animation:bounce .5s ease;}
+.bee.sad{animation:wiggle .4s ease;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-16px) rotate(6deg);}}
+@keyframes wiggle{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+
+.growth-track{
+  position:relative;width:60px;height:130px;display:flex;flex-direction:column-reverse;align-items:center;
+}
+.stem{width:8px;background:linear-gradient(180deg,#7bc96f,#4c9a3f);border-radius:6px;transition:height .6s ease;}
+.flower-top{font-size:34px;position:absolute;top:-6px;transition:transform .4s ease;transform:scale(0.4);opacity:.4;}
+.flower-top.bloom{transform:scale(1);opacity:1;}
+
+.flowerbed{display:flex;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap;min-height:34px;}
+.flowerbed span{font-size:24px;opacity:0;transform:translateY(6px) scale(.5);transition:all .35s ease;}
+.flowerbed span.show{opacity:1;transform:translateY(0) scale(1);}
+
+.floattext{position:absolute;font-family:'Fredoka',sans-serif;font-weight:700;font-size:18px;pointer-events:none;opacity:0;z-index:5;}
+.floattext.show{animation:floatUp 1s ease forwards;}
+@keyframes floatUp{0%{opacity:0;transform:translateY(0);}15%{opacity:1;}100%{opacity:0;transform:translateY(-40px);}}
+.floattext.good{color:var(--leaf);}
+.floattext.gentle{color:#b98a2e;}
+
+.progresswrap{margin-top:14px;}
+.progresslabel{font-family:'Fredoka',sans-serif;font-size:12px;color:var(--ink-soft);margin-bottom:5px;display:flex;justify-content:space-between;}
+.progressbar{height:12px;border-radius:8px;background:#eef3e0;border:2px solid #fff;overflow:hidden;}
+.progressfill{height:100%;border-radius:8px;background:linear-gradient(90deg,#9be08d,#4c9a3f);transition:width .5s cubic-bezier(.2,.8,.2,1);}
+
+/* ===== Question card ===== */
+.qcard{margin-top:16px;background:var(--card);border:2px solid var(--line);border-radius:20px;padding:20px 18px;box-shadow:0 4px 0 rgba(0,0,0,.04);}
+.qmeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.qeyebrow{font-family:'Fredoka',sans-serif;font-size:13px;color:var(--leaf);font-weight:600;}
+.timerwrap{display:flex;align-items:center;gap:8px;}
+.timerring{position:relative;width:34px;height:34px;}
+.timerring svg{width:34px;height:34px;transform:rotate(-90deg);}
+.timerring circle.bg{stroke:var(--line);}
+.timerring circle.fg{stroke:var(--sun);transition:stroke-dashoffset 1s linear;}
+.timernum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-size:12px;color:var(--ink);}
+
+.qtext{font-family:'Fredoka',sans-serif;font-size:20px;font-weight:600;line-height:1.4;margin-bottom:16px;color:var(--ink);}
+
+.options{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:520px){.options{grid-template-columns:1fr;}}
+.opt{
+  text-align:left;background:#f7fbef;border:2px solid var(--line);color:var(--ink);
+  border-radius:16px;padding:14px 16px;font-family:'Nunito';font-size:15.5px;font-weight:700;
+  cursor:pointer;transition:transform .1s,border-color .15s,background .15s;
+}
+.opt:hover:not(:disabled){border-color:var(--grass2);transform:translateY(-2px);}
+.opt:disabled{cursor:default;}
+.opt.correct{border-color:var(--leaf);background:#e4f7e0;}
+.opt.wrong{border-color:#ffb4c0;background:#fff0f2;}
+
+.feedback{margin-top:12px;font-family:'Fredoka',sans-serif;font-size:14px;min-height:20px;font-weight:600;}
+.feedback.ok{color:var(--leaf);}
+.feedback.gentle{color:#b98a2e;}
+
+/* ===== Reward picker ===== */
+.rewards{display:none;margin-top:16px;gap:12px;grid-template-columns:repeat(3,1fr);}
+.rewards.show{display:grid;}
+@media(max-width:520px){.rewards.show{grid-template-columns:1fr;}}
+.reward{
+  background:#fff7e0;border:2px solid var(--sun);border-radius:16px;padding:14px 10px;
+  text-align:center;cursor:pointer;transition:transform .12s,border-color .15s;
+}
+.reward:hover{border-color:var(--gold);transform:translateY(-3px) scale(1.02);}
+.reward .icon{font-size:28px;display:block;margin-bottom:4px;}
+.reward .rname{font-family:'Fredoka',sans-serif;font-weight:600;font-size:13.5px;color:var(--ink);}
+.reward .rpts{font-family:'Nunito';font-size:11px;color:var(--ink-soft);margin-top:2px;}
+
+.banner{display:none;margin-top:18px;text-align:center;padding:26px 20px;border-radius:20px;border:2px solid var(--line);background:#fffdf5;}
+.banner.show{display:block;}
+.banner .emoji{font-size:44px;margin-bottom:8px;}
+.banner h2{font-family:'Fredoka',sans-serif;color:var(--leaf);font-size:24px;margin-bottom:8px;}
+.banner p{color:var(--ink-soft);font-size:14px;margin-bottom:18px;}
+.retry{
+  font-family:'Fredoka',sans-serif;background:var(--gold);color:#4a2e00;border:none;border-radius:16px;
+  padding:12px 26px;font-weight:700;cursor:pointer;font-size:15px;box-shadow:0 4px 0 #d99400;
+}
+.retry:active{transform:translateY(2px);box-shadow:0 2px 0 #d99400;}
+
+.statusline{text-align:center;margin-top:10px;font-family:'Nunito',sans-serif;font-size:12px;color:var(--ink-soft);}
+.statusline.err{color:#d1495b;}
+</style>
+</head>
+<body>
+<div id="api_submit"></div>
+<div class="stage">
+  <div class="topbar">
+    <div class="brand">VƯỜN ONG CHĂM HỌC<span>Trả lời đúng để giúp khu vườn nở hoa 🌼</span></div>
+    <div class="topbar-right">
+      <div class="score"><span class="stars">⭐</span><b id="scoreVal">0</b></div>
+      <button class="btn-quit" id="btnQuit">Thoát</button>
+    </div>
+  </div>
+
+  <div class="garden" id="garden">
+    <div class="sun-face">☀️</div>
+    <div class="scene-row">
+      <div class="bee" id="bee">🐝</div>
+      <div class="growth-track">
+        <div class="stem" id="stem" style="height:14px;"></div>
+        <div class="flower-top" id="flowerTop">🌻</div>
+      </div>
+    </div>
+    <div class="flowerbed" id="flowerbed"></div>
+    <div class="floattext" id="floatText"></div>
+
+    <div class="progresswrap">
+      <div class="progresslabel"><span>Khu vườn lớn lên</span><span id="progressPct">0%</span></div>
+      <div class="progressbar"><div class="progressfill" id="progressFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="qcard" id="qcard">
+    <div class="qmeta">
+      <div class="qeyebrow" id="qcounter">Câu hỏi 1</div>
+      <div class="timerwrap">
+        <div class="timerring">
+          <svg viewBox="0 0 34 34">
+            <circle class="bg" cx="17" cy="17" r="14" fill="none" stroke-width="4"/>
+            <circle class="fg" id="timerCircle" cx="17" cy="17" r="14" fill="none" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <div class="timernum" id="timerNum">20</div>
+        </div>
+      </div>
+    </div>
+    <div class="qtext" id="qtext">Đang tải câu hỏi…</div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="rewards" id="rewards"></div>
+  </div>
+
+  <div class="banner" id="banner">
+    <div class="emoji">🌈</div>
+    <h2 id="bannerTitle"></h2>
+    <p id="bannerText"></p>
+    <button class="retry" id="retryBtn">Chơi lại</button>
+  </div>
+  <div class="statusline" id="statusline"></div>
+</div>
+
+<script>
+(function(){
+// Mỗi lần trả lời đúng, bé được chọn 1 phần thưởng để tô điểm khu vườn.
+var REWARDS=[
+  {name:"Hoa hướng dương",icon:"🌻",pts:10},
+  {name:"Bươm bướm",icon:"🦋",pts:10},
+  {name:"Cầu vồng nhỏ",icon:"🌈",pts:15}
+];
+var FLOWER_ICONS=["🌸","🌼","🌷","🌹","🌺"];
+var TOTAL_ROUNDS_MULTIPLIER=1; // số vòng lặp qua danh sách câu hỏi trước khi hoàn thành
+
+var state={
+  questions:[],qIndex:0,score:0,correctCount:0,growth:0,
+  timer:null,timeLeft:20,timeLimit:20,locked:false
+};
+
+var el=function(id){return document.getElementById(id)};
+
+function setStatus(msg,isErr){var s=el('statusline');s.textContent=msg||'';s.className='statusline'+(isErr?' err':'')}
+
+function renderQuestion(){
+  clearInterval(state.timer);state.locked=false;
+  el('rewards').className='rewards';el('rewards').innerHTML='';
+  el('feedback').textContent='';el('feedback').className='feedback';
+
+  var q=state.questions[state.qIndex%state.questions.length];
+  el('qcounter').textContent='Câu hỏi '+(state.qIndex+1);
+  el('qtext').textContent=q.content;
+
+  var optWrap=el('options');optWrap.innerHTML='';
+  q.options.forEach(function(opt){
+    var btn=document.createElement('button');
+    btn.className='opt';btn.textContent=opt.content;
+    btn.onclick=function(){submitAnswer(q,opt.id,btn)};
+    optWrap.appendChild(btn);
+  });
+
+  state.timeLimit=q.timeLimit||20;state.timeLeft=state.timeLimit;
+  updateTimerRing();
+  state.timer=setInterval(function(){
+    state.timeLeft--;updateTimerRing();
+    if(state.timeLeft<=0){clearInterval(state.timer);if(!state.locked)handleTimeout();}
+  },1000);
+}
+
+function updateTimerRing(){
+  var circ=2*Math.PI*14;
+  var ratio=Math.max(0,state.timeLeft/state.timeLimit);
+  el('timerCircle').style.strokeDasharray=circ;
+  el('timerCircle').style.strokeDashoffset=circ*(1-ratio);
+  el('timerNum').textContent=Math.max(0,state.timeLeft);
+}
+
+function submitAnswer(question,answerId,btnEl){
+  if(state.locked)return;
+  state.locked=true;clearInterval(state.timer);
+  Array.from(el('options').children).forEach(function(b){b.disabled=true});
+
+  if(typeof window.apiSubmitAnswer==="function"){
+    window.apiSubmitAnswer(question.id,answerId).then(function(result){
+      handleAnswerResult(result,btnEl);
+    }).catch(function(){
+      setStatus('Không gửi được đáp án, thử lại nhé!',true);
+      state.locked=false;
+      Array.from(el('options').children).forEach(function(b){b.disabled=false});
+    });
+  }else{
+    handleAnswerResult({correct:false,points:0},btnEl);
+  }
+}
+
+function handleAnswerResult(result,btnEl){
+  setStatus('');
+  if(result.correct){
+    btnEl.classList.add('correct');
+    state.correctCount++;
+    el('feedback').textContent='Giỏi quá! +'+(result.points||0)+' điểm — chọn một phần thưởng cho khu vườn nhé!';
+    el('feedback').className='feedback ok';
+    state.score+=(result.points||0);
+    el('scoreVal').textContent=state.score;
+    el('bee').className='bee happy';
+    floatText('+'+(result.points||0),'good');
+    setTimeout(function(){el('bee').className='bee';},500);
+    showRewardOptions();
+  }else{
+    btnEl.classList.add('wrong');
+    el('feedback').textContent='Chưa đúng rồi, không sao, thử câu tiếp theo nha!';
+    el('feedback').className='feedback gentle';
+    el('bee').className='bee sad';
+    floatText('Cố lên!','gentle');
+    setTimeout(function(){el('bee').className='bee';},450);
+    setTimeout(nextQuestionOrEnd,1100);
+  }
+}
+
+function handleTimeout(){
+  state.locked=true;
+  Array.from(el('options').children).forEach(function(b){b.disabled=true});
+  el('feedback').textContent='Hết giờ rồi, mình thử câu khác nha!';
+  el('feedback').className='feedback gentle';
+  el('bee').className='bee sad';
+  setTimeout(function(){el('bee').className='bee';},450);
+  setTimeout(nextQuestionOrEnd,1000);
+}
+
+function showRewardOptions(){
+  var wrap=el('rewards');wrap.innerHTML='';
+  REWARDS.forEach(function(r){
+    var div=document.createElement('div');
+    div.className='reward';
+    div.innerHTML='<span class="icon">'+r.icon+'</span><span class="rname">'+r.name+'</span><span class="rpts">+'+r.pts+' điểm vườn</span>';
+    div.onclick=function(){pickReward(r)};
+    wrap.appendChild(div);
+  });
+  wrap.className='rewards show';
+}
+
+function floatText(text,cls){
+  var ft=el('floatText');
+  var beeRect=el('bee').getBoundingClientRect();
+  var gardenRect=el('garden').getBoundingClientRect();
+  ft.style.left=(beeRect.left-gardenRect.left+beeRect.width/2-14)+'px';
+  ft.style.top=(beeRect.top-gardenRect.top-10)+'px';
+  ft.textContent=text;
+  ft.className='floattext '+cls;
+  void ft.offsetWidth;
+  ft.className='floattext '+cls+' show';
+}
+
+function pickReward(reward){
+  el('rewards').className='rewards';
+  state.growth=Math.min(100,state.growth+reward.pts);
+  updateGrowth();
+  addFlowerToBed();
+  setTimeout(nextQuestionOrEnd,700);
+}
+
+function updateGrowth(){
+  el('progressFill').style.width=state.growth+'%';
+  el('progressPct').textContent=state.growth+'%';
+  el('stem').style.height=(14+state.growth*1.0)+'px';
+  if(state.growth>=40){el('flowerTop').classList.add('bloom');}
+}
+
+function addFlowerToBed(){
+  var bed=el('flowerbed');
+  var span=document.createElement('span');
+  span.textContent=FLOWER_ICONS[Math.floor(Math.random()*FLOWER_ICONS.length)];
+  bed.appendChild(span);
+  requestAnimationFrame(function(){span.classList.add('show');});
+}
+
+function nextQuestionOrEnd(){
+  state.qIndex++;
+  if(state.growth>=100 || state.qIndex>=state.questions.length*TOTAL_ROUNDS_MULTIPLIER){
+    finishGame();
+    return;
+  }
+  renderQuestion();
+}
+
+function finishGame(){
+  clearInterval(state.timer);
+  el('qcard').style.display='none';
+  el('bannerTitle').textContent='Khu vườn đã nở hoa rực rỡ! 🎉';
+  el('bannerText').textContent='Bé đã trả lời đúng '+state.correctCount+' câu và đạt '+state.score+' điểm. Thật tuyệt vời!';
+  el('banner').className='banner show';
+  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.correctCount,timeUsed:0}},"*");
+}
+
+el('retryBtn').onclick=function(){
+  state={questions:state.questions,qIndex:0,score:0,correctCount:0,growth:0,timer:null,timeLeft:20,timeLimit:20,locked:false};
+  el('scoreVal').textContent='0';
+  el('flowerbed').innerHTML='';
+  el('flowerTop').classList.remove('bloom');
+  updateGrowth();
+  el('qcard').style.display='block';
+  el('banner').className='banner';
+  renderQuestion();
+};
+
+el('btnQuit').onclick=function(){parent.postMessage({type:"quit"},"*")};
+
+window.addEventListener('message',function(e){
+  if(!e.data||typeof e.data!=='object')return;
+  if(e.data.type==='init'){
+    var d=e.data.data||{};
+    state.questions=d.questions||[];
+    state.qIndex=0;state.score=0;state.correctCount=0;state.growth=0;state.locked=false;
+    el('scoreVal').textContent='0';
+    el('flowerbed').innerHTML='';
+    el('flowerTop').classList.remove('bloom');
+    updateGrowth();
+    el('qcard').style.display='block';
+    el('banner').className='banner';
+    renderQuestion();
+  }
+});
+
+parent.postMessage({type:"ready"},"*");
+})();
+</script>
+</body>
+</html>

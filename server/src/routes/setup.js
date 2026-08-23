@@ -152,4 +152,31 @@ router.get("/subjects", async (_req, res, next) => {
   }
 });
 
+router.post("/subjects", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const list = await setupService.addSubject(req.body.name);
+    res.status(201).json(list);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.put("/subjects/:name", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const list = await setupService.updateSubject(decodeURIComponent(req.params.name), req.body.name);
+    res.json(list);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete("/subjects/:name", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const list = await setupService.removeSubject(decodeURIComponent(req.params.name));
+    res.json(list);
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default router;
