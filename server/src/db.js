@@ -267,6 +267,30 @@ export async function initDatabase() {
     seeded.push(`games (${migrated.length})`);
   }
 
+  // Questions seed — resolve gameCode → gameId (ObjectId)
+  const questionsColl = database.collection("questions");
+  const questionsCount = await questionsColl.countDocuments();
+  if (questionsCount === 0) {
+    const rawQuestions = seedData.questions();
+    const allGames = await gamesColl.find({}, { code: 1 }).toArray();
+    const codeToId = {};
+    for (const g of allGames) {
+      if (g.code) codeToId[g.code] = g._id;
+    }
+    const prepared = rawQuestions
+      .map((q) => {
+        const gameId = q.gameCode ? codeToId[q.gameCode] : null;
+        if (!gameId) return null;
+        const { gameCode, _id, ...rest } = q;
+        return { ...rest, gameId: gameId.toString() };
+      })
+      .filter(Boolean);
+    if (prepared.length > 0) {
+      await questionsColl.insertMany(prepared, { ordered: false });
+      seeded.push(`questions (${prepared.length})`);
+    }
+  }
+
   // Migrate existing games: add templateId from slug, rename title→name
   await migrateGames(database);
 

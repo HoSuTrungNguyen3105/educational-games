@@ -35,3 +35,10 @@ export async function add(gameId, question) {
 export async function getById(questionId) {
   return getCollection(COLLECTION).findOne({ id: questionId });
 }
+
+export async function removeAll() {
+  const coll = getCollection(COLLECTION);
+  const count = await coll.countDocuments();
+  await coll.deleteMany({});
+  return count;
+}

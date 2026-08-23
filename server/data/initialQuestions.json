@@ -1,7 +1,7 @@
 [
   {
     "id": "question-001",
-    "gameId": "game-001",
+    "gameCode": "TOAN101",
     "content": "Trong vườn có 45 cây cam và 28 cây táo. Hỏi trong vườn có tất cả bao nhiêu cây?",
     "options": [
       {
@@ -23,7 +23,7 @@
   },
   {
     "id": "question-002",
-    "gameId": "game-001",
+    "gameCode": "TOAN101",
     "content": "56 + 24 bằng bao nhiêu?",
     "options": [
       {
@@ -45,7 +45,7 @@
   },
   {
     "id": "question-003",
-    "gameId": "game-001",
+    "gameCode": "TOAN101",
     "content": "Một lớp có 32 học sinh, đã có 19 bạn nộp bài. Hỏi còn bao nhiêu bạn chưa nộp?",
     "options": [
       {
@@ -67,7 +67,7 @@
   },
   {
     "id": "question-004",
-    "gameId": "game-002",
+    "gameCode": "VUTRU22",
     "content": "Hành tinh nào được gọi là \"Hành tinh Đỏ\"?",
     "options": [
       {
@@ -89,7 +89,7 @@
   },
   {
     "id": "question-005",
-    "gameId": "game-002",
+    "gameCode": "VUTRU22",
     "content": "Hệ Mặt Trời có tất cả bao nhiêu hành tinh?",
     "options": [
       {
@@ -111,7 +111,7 @@
   },
   {
     "id": "question-006",
-    "gameId": "game-002",
+    "gameCode": "VUTRU22",
     "content": "Ngôi sao nào gần Trái Đất nhất?",
     "options": [
       {
@@ -133,7 +133,7 @@
   },
   {
     "id": "question-007",
-    "gameId": "game-003",
+    "gameCode": "TONGHOP9",
     "content": "Thủ đô của Việt Nam là gì?",
     "options": [
       {
@@ -155,7 +155,7 @@
   },
   {
     "id": "question-008",
-    "gameId": "game-003",
+    "gameCode": "TONGHOP9",
     "content": "1 giờ có bao nhiêu phút?",
     "options": [
       {
@@ -177,7 +177,7 @@
   },
   {
     "id": "question-009",
-    "gameId": "game-004",
+    "gameCode": "FAMILY07",
     "content": "Từ nào sau đây nghĩa là \"mẹ\" trong tiếng Anh?",
     "options": [
       {
@@ -199,7 +199,7 @@
   },
   {
     "id": "question-010",
-    "gameId": "game-004",
+    "gameCode": "FAMILY07",
     "content": "\"Anh trai\" trong tiếng Anh là gì?",
     "options": [
       {
@@ -221,7 +221,7 @@
   },
   {
     "id": "question-011",
-    "gameId": "game-005",
+    "gameCode": "TRUNGTHU5",
     "content": "Tết Trung Thu diễn ra vào ngày nào theo âm lịch?",
     "options": [
       {
@@ -243,7 +243,7 @@
   },
   {
     "id": "question-012",
-    "gameId": "game-005",
+    "gameCode": "TRUNGTHU5",
     "content": "Loại bánh nào thường được ăn trong dịp Trung Thu?",
     "options": [
       {
@@ -265,7 +265,7 @@
   },
   {
     "id": "question-013",
-    "gameId": "game-006",
+    "gameCode": "DIALY88",
     "content": "Vùng nào sau đây thuộc miền Bắc Việt Nam?",
     "options": [
       {
@@ -287,7 +287,7 @@
   },
   {
     "id": "question-014",
-    "gameId": "game-006",
+    "gameCode": "DIALY88",
     "content": "Dãy núi nào dài nhất Việt Nam?",
     "options": [
       {
@@ -309,7 +309,7 @@
   },
   {
     "id": "question-015",
-    "gameId": "game-007",
+    "gameCode": "CHUCAI3",
     "content": "Chữ cái nào đứng đầu bảng chữ cái tiếng Việt?",
     "options": [
       {
@@ -331,7 +331,7 @@
   },
   {
     "id": "question-016",
-    "gameId": "game-007",
+    "gameCode": "CHUCAI3",
     "content": "Bảng chữ cái tiếng Việt có bao nhiêu chữ cái?",
     "options": [
       {
@@ -529,7 +529,7 @@
   },
   {
     "id": "question-019",
-    "gameId": "game-009",
+    "gameCode": "ATGT202",
     "content": "Khi đèn giao thông chuyển sang màu đỏ, người đi bộ nên làm gì?",
     "options": [
       {
@@ -551,7 +551,7 @@
   },
   {
     "id": "question-020",
-    "gameId": "game-009",
+    "gameCode": "ATGT202",
     "content": "Trước khi qua đường, em cần làm gì?",
     "options": [
       {
@@ -573,7 +573,7 @@
   },
   {
     "id": "question-021",
-    "gameId": "game-010",
+    "gameCode": "DONGVAT6",
     "content": "Loài động vật nào có cổ dài nhất?",
     "options": [
       {
@@ -595,7 +595,7 @@
   },
   {
     "id": "question-022",
-    "gameId": "game-010",
+    "gameCode": "DONGVAT6",
     "content": "Loài chim nào không biết bay nhưng bơi giỏi?",
     "options": [
       {
@@ -617,7 +617,7 @@
   },
   {
     "id": "question-023",
-    "gameId": "game-011",
+    "gameCode": "LICHSU19",
     "content": "Kinh đô đầu tiên của nhà Lý là ở đâu?",
     "options": [
       {
@@ -639,7 +639,7 @@
   },
   {
     "id": "question-024",
-    "gameId": "game-011",
+    "gameCode": "LICHSU19",
     "content": "Vị vua nào dời đô về Thăng Long?",
     "options": [
       {
@@ -661,7 +661,7 @@
   },
   {
     "id": "question-025",
-    "gameId": "game-012",
+    "gameCode": "MOITRUONG4",
     "content": "Vỏ chai nhựa nên bỏ vào nhóm rác nào?",
     "options": [
       {
@@ -683,7 +683,7 @@
   },
   {
     "id": "question-026",
-    "gameId": "game-012",
+    "gameCode": "MOITRUONG4",
     "content": "Vỏ trái cây thuộc nhóm rác nào?",
     "options": [
       {
@@ -705,7 +705,7 @@
   },
   {
     "id": "question-201",
-    "gameId": "game-013",
+    "gameCode": "PHIEUL9",
     "content": "12 x 4 bằng bao nhiêu?",
     "options": [
       {
@@ -727,7 +727,7 @@
   },
   {
     "id": "question-202",
-    "gameId": "game-013",
+    "gameCode": "PHIEUL9",
     "content": "100 - 37 bằng bao nhiêu?",
     "options": [
       {
@@ -749,7 +749,7 @@
   },
   {
     "id": "question-203",
-    "gameId": "game-013",
+    "gameCode": "PHIEUL9",
     "content": "Một hình vuông có cạnh 5cm. Chu vi hình vuông đó là bao nhiêu?",
     "options": [
       {
@@ -771,7 +771,7 @@
   },
   {
     "id": "question-204",
-    "gameId": "game-013",
+    "gameCode": "PHIEUL9",
     "content": "81 chia 9 bằng bao nhiêu?",
     "options": [
       {
@@ -793,7 +793,7 @@
   },
   {
     "id": "question-211",
-    "gameId": "game-014",
+    "gameCode": "HAMNGUC3",
     "content": "Núi nào cao nhất thế giới?",
     "options": [
       {
@@ -815,7 +815,7 @@
   },
   {
     "id": "question-212",
-    "gameId": "game-014",
+    "gameCode": "HAMNGUC3",
     "content": "Cơ quan nào trong cơ thể người bơm máu đi khắp cơ thể?",
     "options": [
       {
@@ -837,7 +837,7 @@
   },
   {
     "id": "question-213",
-    "gameId": "game-014",
+    "gameCode": "HAMNGUC3",
     "content": "Ai là tác giả của bài thơ \"Lượm\"?",
     "options": [
       {
@@ -859,7 +859,7 @@
   },
   {
     "id": "question-214",
-    "gameId": "game-014",
+    "gameCode": "HAMNGUC3",
     "content": "Đại dương nào lớn nhất thế giới?",
     "options": [
       {
@@ -881,7 +881,7 @@
   },
   {
     "id": "question-221",
-    "gameId": "game-015",
+    "gameCode": "NINJA77",
     "content": "\"Con mèo\" trong tiếng Anh là gì?",
     "options": [
       {
@@ -903,7 +903,7 @@
   },
   {
     "id": "question-222",
-    "gameId": "game-015",
+    "gameCode": "NINJA77",
     "content": "\"Quyển sách\" trong tiếng Anh là gì?",
     "options": [
       {
@@ -925,7 +925,7 @@
   },
   {
     "id": "question-223",
-    "gameId": "game-015",
+    "gameCode": "NINJA77",
     "content": "\"Chạy\" trong tiếng Anh là gì?",
     "options": [
       {
@@ -947,7 +947,7 @@
   },
   {
     "id": "question-301",
-    "gameId": "game-001",
+    "gameCode": "TOAN101",
     "content": "Lan có 24 viên bi, cho bạn 7 viên rồi được mẹ cho thêm 10 viên. Hỏi Lan có bao nhiêu viên bi?",
     "options": [
       {
@@ -970,7 +970,7 @@
   },
   {
     "id": "question-302",
-    "gameId": "game-001",
+    "gameCode": "TOAN101",
     "content": "Số nào thích hợp điền vào chỗ trống: 5, 10, 15, 20, ...?",
     "options": [
       {
@@ -993,7 +993,7 @@
   },
   {
     "id": "question-303",
-    "gameId": "game-001",
+    "gameCode": "TOAN101",
     "content": "Một cửa hàng có 5 hộp bút, mỗi hộp có 8 chiếc. Cửa hàng có tất cả bao nhiêu chiếc bút?",
     "options": [
       {
@@ -1016,7 +1016,7 @@
   },
   {
     "id": "question-304",
-    "gameId": "game-001",
+    "gameCode": "TOAN101",
     "content": "Một chiếc bánh được chia thành 8 phần bằng nhau. Mai ăn 3 phần. Mai đã ăn bao nhiêu phần chiếc bánh?",
     "options": [
       {
@@ -1039,7 +1039,7 @@
   },
   {
     "id": "question-305",
-    "gameId": "game-002",
+    "gameCode": "VUTRU22",
     "content": "Hành tinh nào nổi tiếng với hệ thống vành đai lớn?",
     "options": [
       {
@@ -1062,7 +1062,7 @@
   },
   {
     "id": "question-306",
-    "gameId": "game-002",
+    "gameCode": "VUTRU22",
     "content": "Con người sống trên hành tinh nào?",
     "options": [
       {
@@ -1085,7 +1085,7 @@
   },
   {
     "id": "question-307",
-    "gameId": "game-002",
+    "gameCode": "VUTRU22",
     "content": "Ánh sáng từ Mặt Trời giúp Trái Đất có điều gì?",
     "options": [
       {
@@ -1108,7 +1108,7 @@
   },
   {
     "id": "question-308",
-    "gameId": "game-003",
+    "gameCode": "TONGHOP9",
     "content": "Thành phố nào được gọi là thành phố ngàn hoa?",
     "options": [
       {
@@ -1131,7 +1131,7 @@
   },
   {
     "id": "question-309",
-    "gameId": "game-003",
+    "gameCode": "TONGHOP9",
     "content": "Vịnh Hạ Long thuộc tỉnh nào?",
     "options": [
       {
@@ -1154,7 +1154,7 @@
   },
   {
     "id": "question-310",
-    "gameId": "game-003",
+    "gameCode": "TONGHOP9",
     "content": "Sông nào chảy qua Hà Nội?",
     "options": [
       {
@@ -1177,7 +1177,7 @@
   },
   {
     "id": "question-311",
-    "gameId": "game-004",
+    "gameCode": "FAMILY07",
     "content": "Từ nào có nghĩa là \"con gái\" trong tiếng Anh?",
     "options": [
       {
@@ -1200,7 +1200,7 @@
   },
   {
     "id": "question-312",
-    "gameId": "game-004",
+    "gameCode": "FAMILY07",
     "content": "Chọn từ thích hợp: \"My ___ is a doctor.\" Nếu muốn nói \"Mẹ tôi là bác sĩ\".",
     "options": [
       {
@@ -1223,7 +1223,7 @@
   },
   {
     "id": "question-313",
-    "gameId": "game-004",
+    "gameCode": "FAMILY07",
     "content": "Từ nào có nghĩa là \"chị/em gái\"?",
     "options": [
       {
@@ -1246,7 +1246,7 @@
   },
   {
     "id": "question-314",
-    "gameId": "game-005",
+    "gameCode": "TRUNGTHU5",
     "content": "Trong đêm Trung Thu, trẻ em thường tham gia hoạt động nào?",
     "options": [
       {
@@ -1269,7 +1269,7 @@
   },
   {
     "id": "question-315",
-    "gameId": "game-005",
+    "gameCode": "TRUNGTHU5",
     "content": "Nhân vật thường xuất hiện trong các câu chuyện Trung Thu là ai?",
     "options": [
       {
@@ -1292,7 +1292,7 @@
   },
   {
     "id": "question-316",
-    "gameId": "game-006",
+    "gameCode": "DIALY88",
     "content": "Địa danh nào nổi tiếng với phố cổ và đèn lồng ở miền Trung?",
     "options": [
       {
@@ -1315,7 +1315,7 @@
   },
   {
     "id": "question-317",
-    "gameId": "game-006",
+    "gameCode": "DIALY88",
     "content": "Đồng bằng sông Cửu Long nằm chủ yếu ở khu vực nào của Việt Nam?",
     "options": [
       {
@@ -1338,7 +1338,7 @@
   },
   {
     "id": "question-318",
-    "gameId": "game-006",
+    "gameCode": "DIALY88",
     "content": "Biển Đông nằm ở phía nào của Việt Nam?",
     "options": [
       {
@@ -1361,7 +1361,7 @@
   },
   {
     "id": "question-319",
-    "gameId": "game-007",
+    "gameCode": "CHUCAI3",
     "content": "Từ nào sau đây bắt đầu bằng chữ \"B\"?",
     "options": [
       {
@@ -1384,7 +1384,7 @@
   },
   {
     "id": "question-320",
-    "gameId": "game-007",
+    "gameCode": "CHUCAI3",
     "content": "Từ \"mẹ\" có chữ cái đầu tiên là chữ nào?",
     "options": [
       {
@@ -1407,7 +1407,7 @@
   },
   {
     "id": "question-321",
-    "gameId": "game-009",
+    "gameCode": "ATGT202",
     "content": "Khi đi xe máy cùng người lớn, trẻ em nên làm gì?",
     "options": [
       {
@@ -1430,7 +1430,7 @@
   },
   {
     "id": "question-322",
-    "gameId": "game-009",
+    "gameCode": "ATGT202",
     "content": "Đèn giao thông màu xanh báo hiệu điều gì?",
     "options": [
       {
@@ -1453,7 +1453,7 @@
   },
   {
     "id": "question-323",
-    "gameId": "game-009",
+    "gameCode": "ATGT202",
     "content": "Khi đi bộ trên đường, em nên đi ở đâu?",
     "options": [
       {
@@ -1476,7 +1476,7 @@
   },
   {
     "id": "question-324",
-    "gameId": "game-010",
+    "gameCode": "DONGVAT6",
     "content": "Con vật nào có vòi dài?",
     "options": [
       {
@@ -1499,7 +1499,7 @@
   },
   {
     "id": "question-325",
-    "gameId": "game-010",
+    "gameCode": "DONGVAT6",
     "content": "Động vật nào thường được biết đến với khả năng đổi màu để ngụy trang?",
     "options": [
       {
@@ -1522,7 +1522,7 @@
   },
   {
     "id": "question-326",
-    "gameId": "game-010",
+    "gameCode": "DONGVAT6",
     "content": "Con vật nào là động vật có vú?",
     "options": [
       {
@@ -1545,7 +1545,7 @@
   },
   {
     "id": "question-327",
-    "gameId": "game-011",
+    "gameCode": "LICHSU19",
     "content": "Chiến thắng Bạch Đằng năm 938 gắn với vị anh hùng nào?",
     "options": [
       {
@@ -1568,7 +1568,7 @@
   },
   {
     "id": "question-328",
-    "gameId": "game-011",
+    "gameCode": "LICHSU19",
     "content": "Hai Bà Trưng khởi nghĩa chống lại quân nào?",
     "options": [
       {
@@ -1591,7 +1591,7 @@
   },
   {
     "id": "question-329",
-    "gameId": "game-011",
+    "gameCode": "LICHSU19",
     "content": "Ai là người lãnh đạo nghĩa quân Lam Sơn?",
     "options": [
       {
@@ -1614,7 +1614,7 @@
   },
   {
     "id": "question-330",
-    "gameId": "game-012",
+    "gameCode": "MOITRUONG4",
     "content": "Lon nhôm đã dùng xong nên được xử lý như thế nào?",
     "options": [
       {
@@ -1637,7 +1637,7 @@
   },
   {
     "id": "question-331",
-    "gameId": "game-012",
+    "gameCode": "MOITRUONG4",
     "content": "Hành động nào giúp tiết kiệm nước?",
     "options": [
       {
@@ -1660,7 +1660,7 @@
   },
   {
     "id": "question-332",
-    "gameId": "game-012",
+    "gameCode": "MOITRUONG4",
     "content": "Việc nào giúp giảm lượng rác thải nhựa?",
     "options": [
       {
@@ -1683,7 +1683,7 @@
   },
   {
     "id": "question-333",
-    "gameId": "game-013",
+    "gameCode": "PHIEUL9",
     "content": "Một cửa hàng có 36 quả táo, chia đều vào 4 giỏ. Mỗi giỏ có bao nhiêu quả?",
     "options": [
       {
@@ -1706,7 +1706,7 @@
   },
   {
     "id": "question-334",
-    "gameId": "game-013",
+    "gameCode": "PHIEUL9",
     "content": "Nếu hôm nay là thứ Hai thì 3 ngày sau là thứ mấy?",
     "options": [
       {
@@ -1729,7 +1729,7 @@
   },
   {
     "id": "question-335",
-    "gameId": "game-013",
+    "gameCode": "PHIEUL9",
     "content": "Một hình chữ nhật dài 8cm và rộng 3cm. Chu vi hình chữ nhật là bao nhiêu?",
     "options": [
       {
@@ -1752,7 +1752,7 @@
   },
   {
     "id": "question-336",
-    "gameId": "game-014",
+    "gameCode": "HAMNGUC3",
     "content": "Loài cây nào thường được gọi là \"vua của các loài cây\" trong rừng nhiệt đới?",
     "options": [
       {
@@ -1775,7 +1775,7 @@
   },
   {
     "id": "question-337",
-    "gameId": "game-014",
+    "gameCode": "HAMNGUC3",
     "content": "Hiện tượng nước biến thành hơi nước khi được đun nóng gọi là gì?",
     "options": [
       {
@@ -1798,7 +1798,7 @@
   },
   {
     "id": "question-338",
-    "gameId": "game-014",
+    "gameCode": "HAMNGUC3",
     "content": "Mặt Trăng quay quanh thiên thể nào?",
     "options": [
       {
@@ -1821,7 +1821,7 @@
   },
   {
     "id": "question-339",
-    "gameId": "game-015",
+    "gameCode": "NINJA77",
     "content": "Chọn câu đúng: \"Tôi thích màu xanh.\" trong tiếng Anh.",
     "options": [
       {
@@ -1844,7 +1844,7 @@
   },
   {
     "id": "question-340",
-    "gameId": "game-015",
+    "gameCode": "NINJA77",
     "content": "Từ nào có nghĩa là \"mặt trời\"?",
     "options": [
       {
@@ -1867,7 +1867,7 @@
   },
   {
     "id": "question-341",
-    "gameId": "game-015",
+    "gameCode": "NINJA77",
     "content": "Chọn từ thích hợp: \"I ___ a student.\"",
     "options": [
       {

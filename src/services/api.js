@@ -142,6 +142,9 @@ export const questionService = {
   async save(gameId, questions) {
     return apiFetch(`/questions/game/${gameId}`, { method: "PUT", body: questions });
   },
+  async removeAll() {
+    return apiFetch("/questions", { method: "DELETE" });
+  },
 };
 
 export const resultService = {
