@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { isReady } from "./db.js";
+import { sendSuccess, sendError } from "./utils/response.js";
 
 import gamesRouter from "./routes/games.js";
 import questionsRouter from "./routes/questions.js";
@@ -19,13 +20,13 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, ts: new Date().toISOString() });
+  sendSuccess(res, { ok: true, ts: new Date().toISOString() });
 });
 
 // Trong lúc DB đang khởi động (cold start) → trả 503 để client retry nhanh
 app.use("/api", (_req, res, next) => {
   if (isReady()) return next();
-  res.status(503).json({ message: "Server đang khởi động, vui lòng thử lại" });
+  sendError(res, "Server đang khởi động, vui lòng thử lại", 503);
 });
 
 app.use("/api/auth", authRouter);
@@ -40,12 +41,12 @@ app.use("/api/conversations", conversationsRouter);
 app.use("/api", setupRouter);
 
 app.use((req, res) => {
-  res.status(404).json({ message: `Không tìm thấy endpoint: ${req.method} ${req.path}` });
+  sendError(res, `Không tìm thấy endpoint: ${req.method} ${req.path}`, 404);
 });
 
 app.use((err, _req, res, _next) => {
   console.error("[error]", err);
-  res.status(500).json({ message: err.message || "Lỗi máy chủ" });
+  sendError(res, err.message || "Lỗi máy chủ", 500);
 });
 
 export default app;

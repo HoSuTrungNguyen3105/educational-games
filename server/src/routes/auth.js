@@ -1,49 +1,47 @@
 import { Router } from "express";
 import { verifyCredentials, signToken, publicUser, registerUser } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
+import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 
 const router = Router();
 
-// POST /api/auth/login
 router.post("/login", async (req, res, next) => {
   try {
     const { username, password, identifier } = req.body || {};
     const id = identifier || username;
     if (!id || !password) {
-      return res.status(400).json({ message: "Vui lòng nhập tên đăng nhập/email và mật khẩu" });
+      return sendError(res, "Vui lòng nhập tên đăng nhập/email và mật khẩu", 400);
     }
     const user = await verifyCredentials(id, password);
-    if (!user) return res.status(401).json({ message: "Sai tên đăng nhập hoặc mật khẩu" });
+    if (!user) return sendError(res, "Sai tên đăng nhập hoặc mật khẩu", 401);
 
     const token = signToken(user);
-    res.json({ token, user: publicUser(user) });
+    sendSuccess(res, { token, user: publicUser(user) });
   } catch (e) {
     next(e);
   }
 });
 
-// POST /api/auth/register
 router.post("/register", async (req, res, next) => {
   try {
     const { username, email, password, name } = req.body || {};
     if (!username || !password || !name) {
-      return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin" });
+      return sendError(res, "Vui lòng nhập đầy đủ thông tin", 400);
     }
     if (password.length < 6) {
-      return res.status(400).json({ message: "Mật khẩu phải có ít nhất 6 ký tự" });
+      return sendError(res, "Mật khẩu phải có ít nhất 6 ký tự", 400);
     }
     const result = await registerUser({ username, email, password, name });
-    res.status(201).json(result);
+    sendCreated(res, result);
   } catch (e) {
     const msg = e.message || "Đăng ký thất bại";
-    if (msg.includes("tồn tại")) return res.status(409).json({ message: msg });
+    if (msg.includes("tồn tại")) return sendError(res, msg, 409);
     next(e);
   }
 });
 
-// GET /api/auth/me — kiểm tra token còn hạn
 router.get("/me", authenticate, (req, res) => {
-  res.json({ user: { id: req.user.sub, username: req.user.username, name: req.user.name, role: req.user.role } });
+  sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, role: req.user.role });
 });
 
 export default router;

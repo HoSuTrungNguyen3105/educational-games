@@ -1,32 +1,33 @@
 import { Router } from "express";
 import * as resultService from "../services/resultService.js";
+import { sendSuccess, sendCreated, sendError, buildPagination } from "../utils/response.js";
 
 const router = Router();
 
-// GET /api/results
 router.get("/", async (req, res, next) => {
   try {
-    res.json(await resultService.listAll());
+    const data = await resultService.listAll();
+    const pagination = buildPagination({ total: data.length });
+    sendSuccess(res, data, "success", pagination);
   } catch (e) {
     next(e);
   }
 });
 
-// GET /api/results/game/:gameId
 router.get("/game/:gameId", async (req, res, next) => {
   try {
-    const results = await resultService.listByGame(req.params.gameId);
-    res.json(results);
+    const data = await resultService.listByGame(req.params.gameId);
+    const pagination = buildPagination({ total: data.length });
+    sendSuccess(res, data, "success", pagination);
   } catch (e) {
     next(e);
   }
 });
 
-// POST /api/results
 router.post("/", async (req, res, next) => {
   try {
     const entry = await resultService.submit(req.body);
-    res.status(201).json(entry);
+    sendCreated(res, entry);
   } catch (e) {
     next(e);
   }

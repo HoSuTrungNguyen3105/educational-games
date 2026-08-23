@@ -2,12 +2,15 @@ import { Router } from "express";
 import * as setupService from "../services/setupService.js";
 import * as gameService from "../services/api.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
+import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
 
 const router = Router();
 
-router.get("/templates", async (_req, res, next) => {
+router.get("/templates", async (req, res, next) => {
   try {
-    res.json(await setupService.listTemplates());
+    const data = await setupService.listTemplates();
+    const pagination = buildPagination({ total: data.length, keyword: req.query.keyword || "" });
+    sendSuccess(res, data, "success", pagination);
   } catch (e) {
     next(e);
   }
@@ -16,8 +19,8 @@ router.get("/templates", async (_req, res, next) => {
 router.get("/templates/slug/:slug", async (req, res, next) => {
   try {
     const tpl = await setupService.getTemplateBySlug(req.params.slug);
-    if (!tpl) return res.status(404).json({ message: "Không tìm thấy template" });
-    res.json(tpl);
+    if (!tpl) return sendError(res, "Không tìm thấy template", 404);
+    sendSuccess(res, tpl);
   } catch (e) {
     next(e);
   }
@@ -26,8 +29,8 @@ router.get("/templates/slug/:slug", async (req, res, next) => {
 router.get("/templates/:id", async (req, res, next) => {
   try {
     const tpl = await setupService.getTemplate(req.params.id);
-    if (!tpl) return res.status(404).json({ message: "Không tìm thấy template" });
-    res.json(tpl);
+    if (!tpl) return sendError(res, "Không tìm thấy template", 404);
+    sendSuccess(res, tpl);
   } catch (e) {
     next(e);
   }
@@ -36,17 +39,16 @@ router.get("/templates/:id", async (req, res, next) => {
 router.post("/templates", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const tpl = await setupService.createTemplate(req.body);
-    res.status(201).json(tpl);
+    sendCreated(res, tpl);
   } catch (e) {
     next(e);
   }
 });
 
-// Xóa TẤT CẢ templates
 router.delete("/templates", authenticate, requireRoles("teacher", "admin"), async (_req, res, next) => {
   try {
     const result = await setupService.removeAllTemplates();
-    res.json({ message: `Đã xóa ${result.deleted} template`, ...result });
+    sendSuccess(res, result, `Đã xóa ${result.deleted} template`);
   } catch (e) {
     next(e);
   }
@@ -55,7 +57,7 @@ router.delete("/templates", authenticate, requireRoles("teacher", "admin"), asyn
 router.put("/templates/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const tpl = await setupService.updateTemplate(req.params.id, req.body);
-    res.json(tpl);
+    sendSuccess(res, tpl);
   } catch (e) {
     next(e);
   }
@@ -65,17 +67,19 @@ router.delete("/templates/:id", authenticate, requireRoles("teacher", "admin"), 
   try {
     const result = await setupService.removeTemplate(req.params.id);
     if (result.deactivated) {
-      return res.json({ message: `Template đang được ${result.gamesCount} game sử dụng, đã chuyển sang inactive`, deactivated: true });
+      return sendSuccess(res, result, `Template đang được ${result.gamesCount} game sử dụng, đã chuyển sang inactive`);
     }
-    res.status(204).end();
+    sendNoContent(res);
   } catch (e) {
     next(e);
   }
 });
 
-router.get("/categories", async (_req, res, next) => {
+router.get("/categories", async (req, res, next) => {
   try {
-    res.json(await setupService.listCategories());
+    const data = await setupService.listCategories();
+    const pagination = buildPagination({ total: data.length, keyword: req.query.keyword || "" });
+    sendSuccess(res, data, "success", pagination);
   } catch (e) {
     next(e);
   }
@@ -84,7 +88,7 @@ router.get("/categories", async (_req, res, next) => {
 router.post("/categories", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const cat = await setupService.createCategory(req.body);
-    res.status(201).json(cat);
+    sendCreated(res, cat);
   } catch (e) {
     next(e);
   }
@@ -93,7 +97,7 @@ router.post("/categories", authenticate, requireRoles("teacher", "admin"), async
 router.put("/categories/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const cat = await setupService.updateCategory(req.params.id, req.body);
-    res.json(cat);
+    sendSuccess(res, cat);
   } catch (e) {
     next(e);
   }
@@ -102,7 +106,7 @@ router.put("/categories/:id", authenticate, requireRoles("teacher", "admin"), as
 router.delete("/categories/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     await setupService.removeCategory(req.params.id);
-    res.status(204).end();
+    sendNoContent(res);
   } catch (e) {
     next(e);
   }
@@ -111,7 +115,7 @@ router.delete("/categories/:id", authenticate, requireRoles("teacher", "admin"),
 router.delete("/categories", authenticate, requireRoles("teacher", "admin"), async (_req, res, next) => {
   try {
     const result = await setupService.removeAllCategories();
-    res.json({ message: `Đã xóa ${result.deleted} category`, ...result });
+    sendSuccess(res, result, `Đã xóa ${result.deleted} category`);
   } catch (e) {
     next(e);
   }
@@ -119,7 +123,8 @@ router.delete("/categories", authenticate, requireRoles("teacher", "admin"), asy
 
 router.get("/players", async (_req, res, next) => {
   try {
-    res.json(await setupService.listPlayers());
+    const data = await setupService.listPlayers();
+    sendSuccess(res, data);
   } catch (e) {
     next(e);
   }
@@ -129,10 +134,8 @@ router.get("/games/:gameId/players", async (req, res, next) => {
   try {
     const { gameId } = req.params;
     const game = await gameService.get(gameId);
-    if (!game) return res.status(404).json({ error: "Game not found" });
-    // Trả về playersCount và info cơ bản từ DB game
-    // Để lấy live score đang chơi thì HTML nên dùng init PostMessage từ parent
-    res.json({
+    if (!game) return sendError(res, "Game not found", 404);
+    sendSuccess(res, {
       _id: game._id,
       name: game.name,
       playersCount: game.playersCount || 0,
@@ -146,7 +149,8 @@ router.get("/games/:gameId/players", async (req, res, next) => {
 
 router.get("/subjects", async (_req, res, next) => {
   try {
-    res.json(await setupService.listSubjects());
+    const data = await setupService.listSubjects();
+    sendSuccess(res, data);
   } catch (e) {
     next(e);
   }
@@ -155,7 +159,7 @@ router.get("/subjects", async (_req, res, next) => {
 router.post("/subjects", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const list = await setupService.addSubject(req.body.name);
-    res.status(201).json(list);
+    sendCreated(res, list);
   } catch (e) {
     next(e);
   }
@@ -164,7 +168,7 @@ router.post("/subjects", authenticate, requireRoles("teacher", "admin"), async (
 router.put("/subjects/:name", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const list = await setupService.updateSubject(decodeURIComponent(req.params.name), req.body.name);
-    res.json(list);
+    sendSuccess(res, list);
   } catch (e) {
     next(e);
   }
@@ -173,7 +177,7 @@ router.put("/subjects/:name", authenticate, requireRoles("teacher", "admin"), as
 router.delete("/subjects/:name", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const list = await setupService.removeSubject(decodeURIComponent(req.params.name));
-    res.json(list);
+    sendSuccess(res, list);
   } catch (e) {
     next(e);
   }

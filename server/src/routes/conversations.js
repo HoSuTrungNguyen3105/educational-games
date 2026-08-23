@@ -1,63 +1,57 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth.js";
 import * as convService from "../services/conversationService.js";
+import { sendSuccess, sendError, buildPagination } from "../utils/response.js";
 
 const router = Router();
 
-// GET /api/conversations — danh sách conversation của user
 router.get("/", authenticate, async (req, res, next) => {
   try {
     const userId = req.user.sub;
-    console.log("[conversations:list]", { userId });
     const conversations = await convService.listConversations(userId);
-    console.log("[conversations:list:result]", { count: conversations.length, ids: conversations.map(c => c.id) });
-    res.json(conversations);
+    const pagination = buildPagination({ total: conversations.length });
+    sendSuccess(res, conversations, "success", pagination);
   } catch (e) {
-    console.error("[conversations:list:error]", e);
     next(e);
   }
 });
 
-// POST /api/conversations/dm — tạo hoặc lấy DM với user khác
 router.post("/dm", authenticate, async (req, res, next) => {
   try {
     const { targetUserId } = req.body || {};
-    if (!targetUserId) return res.status(400).json({ message: "Thiếu targetUserId" });
+    if (!targetUserId) return sendError(res, "Thiếu targetUserId", 400);
     const conv = await convService.getOrCreateDM(req.user.sub, targetUserId);
-    res.json(conv);
+    sendSuccess(res, conv);
   } catch (e) {
     next(e);
   }
 });
 
-// GET /api/conversations/:id — lấy chi tiết conversation
 router.get("/:id", authenticate, async (req, res, next) => {
   try {
     const conv = await convService.getById(req.params.id);
-    if (!conv) return res.status(404).json({ message: "Không tìm thấy conversation" });
-    res.json(conv);
+    if (!conv) return sendError(res, "Không tìm thấy conversation", 404);
+    sendSuccess(res, conv);
   } catch (e) {
     next(e);
   }
 });
 
-// GET /api/conversations/:id/members — lấy danh sách members
 router.get("/:id/members", authenticate, async (req, res, next) => {
   try {
     const members = await convService.listMembers(req.params.id);
-    res.json(members);
+    sendSuccess(res, members);
   } catch (e) {
     next(e);
   }
 });
 
-// POST /api/conversations/:id/members — thêm member
 router.post("/:id/members", authenticate, async (req, res, next) => {
   try {
     const { userId, displayName } = req.body || {};
-    if (!userId) return res.status(400).json({ message: "Thiếu userId" });
+    if (!userId) return sendError(res, "Thiếu userId", 400);
     await convService.addMember(req.params.id, userId, displayName || req.user.name);
-    res.json({ ok: true });
+    sendSuccess(res, { ok: true });
   } catch (e) {
     next(e);
   }

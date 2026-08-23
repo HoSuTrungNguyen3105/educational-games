@@ -86,11 +86,17 @@ export async function apiFetch(path, options = {}) {
     let message = `Lỗi ${res.status}`;
     try {
       const err = await res.json();
-      if (err && err.message) message = err.message;
+      if (err && err.msg) message = err.msg;
+      else if (err && err.message) message = err.message;
     } catch { /* ignore */ }
     throw new Error(message);
   }
-  return res.json();
+  const json = await res.json();
+  // New format: { status, code, msg, data, pagination }
+  if (json && typeof json === "object" && "data" in json) {
+    return json.data;
+  }
+  return json;
 }
 
 export const gameService = {
