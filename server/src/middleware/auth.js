@@ -12,6 +12,16 @@ export function authenticate(req, res, next) {
   }
 }
 
+export function optionalAuth(req, res, next) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : null;
+  if (!token) return next();
+  try {
+    req.user = verifyToken(token);
+  } catch { /* ignore invalid token */ }
+  next();
+}
+
 export function requireRoles(...roles) {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {

@@ -1,14 +1,17 @@
 import { Router } from "express";
 import * as questionService from "../services/questionService.js";
-import { authenticate, requireRoles } from "../middleware/auth.js";
+import { authenticate, optionalAuth, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError, sendNoContent, buildPagination } from "../utils/response.js";
 
 const router = Router();
 
-router.get("/game/:gameId", async (req, res, next) => {
+router.get("/game/:gameId", optionalAuth, async (req, res, next) => {
   try {
     const questions = await questionService.listByGame(req.params.gameId);
-    const safe = questions.map(({ correctAnswer, ...rest }) => rest);
+    const isAdmin = req.user && (req.user.role === "teacher" || req.user.role === "admin");
+    const safe = isAdmin
+      ? questions
+      : questions.map(({ correctAnswer, ...rest }) => rest);
     const pagination = buildPagination({ total: safe.length });
     sendSuccess(res, safe, "success", pagination);
   } catch (e) {
