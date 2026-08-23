@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Number Ninja — Chém Số Bay</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root{
+    --bg1:#070914; --bg2:#0d1128; --panel:#11152c; --line:rgba(120,150,255,.14);
+    --cyan:#20e3ff; --magenta:#ff3fb0; --lime:#c6ff3d; --amber:#ffb84d; --danger:#ff4d6d;
+    --text:#eef1ff; --text-dim:#8b92c2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg1);color:var(--text);font-family:'Space Grotesk',sans-serif;-webkit-tap-highlight-color:transparent;overflow:hidden;}
+  #root{min-height:100vh;display:flex;flex-direction:column;}
+  .font-display{font-family:'Orbitron',sans-serif;}
+  .font-mono{font-family:'JetBrains Mono',monospace;}
+
+  .bg-space{
+    background:
+      radial-gradient(900px 500px at 15% -10%, rgba(32,227,255,.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 110%, rgba(255,63,176,.10), transparent 55%),
+      linear-gradient(180deg,var(--bg1),var(--bg2));
+  }
+
+  .glass-card{
+    background:rgba(17,21,44,.85); border:1px solid var(--line); border-radius:22px;
+    box-shadow:0 0 0 1px rgba(255,255,255,.02), 0 20px 60px rgba(0,0,0,.5);
+    backdrop-filter:blur(6px);
+  }
+
+  .screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;}
+  .hidden{display:none !important;}
+  button{font-family:inherit;cursor:pointer;-webkit-user-select:none;user-select:none;}
+
+  @keyframes pop{0%{transform:scale(.88);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .anim-pop{animation:pop .28s cubic-bezier(.2,.9,.3,1.2);}
+
+  .glow-btn{
+    width:100%;padding:1rem;border-radius:16px;font-size:1.05rem;font-weight:700;
+    border:1.5px solid; transition:box-shadow .15s ease, transform .1s ease; background:none; letter-spacing:.02em;
+  }
+  .glow-btn:hover{transform:translateY(-1px);}
+  .glow-btn:active{transform:translateY(0px) scale(.98);}
+
+  .diff-btn{
+    width:100%;display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;border-radius:16px;
+    border:1.5px solid;text-align:left;transition:box-shadow .15s ease, transform .1s ease;background:none;
+  }
+  .diff-btn:hover{transform:translateY(-1px);}
+
+  .back-link{margin-top:1.4rem;background:none;border:none;font-size:.85rem;color:var(--text-dim);font-family:'Orbitron';letter-spacing:.03em;}
+  .back-link:hover{color:var(--text);}
+
+  header.app-header{
+    display:flex;align-items:center;justify-content:space-between;gap:1rem;
+    padding:.7rem 1.2rem;background:rgba(11,14,30,.9);border-bottom:1px solid var(--line);
+    flex-wrap:wrap;z-index:5;position:relative;
+  }
+  .quit-btn{
+    font-family:'Orbitron';font-size:.78rem;letter-spacing:.03em;
+    border:1px solid rgba(255,77,109,.5);color:var(--danger);border-radius:14px;
+    padding:.45rem .9rem;background:none;transition:background .15s ease;
+  }
+  .quit-btn:hover{background:rgba(255,77,109,.08);}
+  .pause-toggle{
+    font-family:'Orbitron';font-size:.78rem;border:1px solid var(--line);color:var(--text);
+    border-radius:14px;padding:.45rem .9rem;background:none;
+  }
+
+  .hud-row{display:flex;align-items:center;gap:1.1rem;font-size:.82rem;color:var(--text-dim);flex-wrap:wrap;}
+  .hud-row b{color:var(--text);}
+
+  .stat-block{text-align:center;}
+  .stat-num{font-family:'JetBrains Mono';font-size:1.35rem;font-weight:700;}
+  .stat-label{font-size:.68rem;color:var(--text-dim);letter-spacing:.03em;text-transform:uppercase;}
+
+  .target-bar{
+    display:flex;align-items:center;justify-content:center;gap:.6rem;
+    padding:.6rem 1.4rem;border-radius:16px;
+    background:linear-gradient(135deg, rgba(32,227,255,.08), rgba(255,63,176,.08));
+    border:1px solid var(--line);
+  }
+  .target-num{font-family:'Orbitron';font-weight:900;font-size:1.8rem;color:var(--cyan);text-shadow:0 0 18px rgba(32,227,255,.55);}
+  .combo-badge{
+    display:inline-flex;align-items:center;gap:.25rem;padding:.22rem .7rem;border-radius:20px;
+    font-family:'JetBrains Mono';font-size:.78rem;font-weight:700;
+    background:rgba(198,255,61,.1);color:var(--lime);border:1px solid rgba(198,255,61,.5);
+  }
+
+  .timer-bar{width:100%;max-width:520px;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .timer-fill{height:100%;border-radius:4px;transition:width .1s linear, background .3s ease;}
+
+  .canvas-wrap{position:relative;width:100%;max-width:560px;aspect-ratio:3/4;margin:0 auto;border-radius:20px;overflow:hidden;border:1.5px solid var(--line);background:radial-gradient(circle at 50% 0%, rgba(32,227,255,.05), transparent 60%), #090b1c;}
+  #gameCanvas{width:100%;height:100%;display:block;touch-action:none;}
+
+  .flash-overlay{position:absolute;inset:0;pointer-events:none;opacity:0;}
+  .flash-overlay.hit{animation:flashGood .35s ease;}
+  .flash-overlay.miss{animation:flashBad .35s ease;}
+  @keyframes flashGood{0%{opacity:.5;background:rgba(32,227,255,.25);}100%{opacity:0;}}
+  @keyframes flashBad{0%{opacity:.55;background:rgba(255,77,109,.3);}100%{opacity:0;}}
+
+  .pause-overlay{position:fixed;inset:0;background:rgba(7,9,20,.85);display:flex;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(6px);}
+  .pause-card{padding:2.4rem;text-align:center;max-width:26rem;width:90%;}
+
+  @media (min-width:640px){ .canvas-wrap{ max-width:520px; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var DIFFICULTY = {
+    easy:   { label:'Dễ',    icon:'🙂', desc:'Số 1–30 · Rơi chậm',  numMax:30, waveSize:6,  spawnMs:760, speedMin:70,  speedMax:120, radius:34 },
+    normal: { label:'TB',    icon:'⚡', desc:'Số 1–60 · Tốc độ vừa', numMax:60, waveSize:8,  spawnMs:580, speedMin:100, speedMax:160, radius:30 },
+    hard:   { label:'Khó',   icon:'🔥', desc:'Số 1–99 · Cực nhanh',  numMax:99, waveSize:10, spawnMs:430, speedMin:135, speedMax:210, radius:26 },
+  };
+
+  var BEST_KEY = 'number-ninja-best';
+  function getBest(){ try{ return parseInt(localStorage.getItem(BEST_KEY),10)||0; }catch(e){ return 0; } }
+  function saveBest(v){ try{ localStorage.setItem(BEST_KEY, String(v)); }catch(e){} }
+
+  var COLORS = ['#20e3ff','#ff3fb0','#c6ff3d','#ffb84d','#9d7bff'];
+
+  var state, canvas, ctx, rafId, lastT, spawnAcc, wave, orbs, particles, trail, dragging;
+
+  function freshState(diffKey){
+    return {
+      screen:'menu', difficulty:diffKey||'easy',
+      score:0, combo:0, maxCombo:0,
+      timer:40, maxTimer:40,
+      target:0, correctCount:0, wrongCount:0, missedCount:0,
+      paused:false, gameOver:false, timeUsed:0,
+    };
+  }
+  state = freshState();
+
+  function sendGameOver(){
+    try{ window.parent.postMessage({type:'game-over', data:{score:state.score, timeUsed:Math.round(state.timeUsed*10)/10}}, '*'); }catch(e){}
+  }
+  function sendQuit(){ try{ window.parent.postMessage({type:'quit'}, '*'); }catch(e){} }
+  window.addEventListener('message', function(e){
+    if(!e.data || typeof e.data!=='object') return;
+    // no external question data needed for this game — reserved for future init payloads
+  });
+
+  var root = document.getElementById('root');
+
+  function render(){
+    stopLoop();
+    if(state.screen==='menu') return renderMenu();
+    if(state.screen==='difficulty') return renderDifficulty();
+    if(state.screen==='playing') return renderPlaying();
+    if(state.screen==='gameover') return renderGameOver();
+  }
+
+  function renderMenu(){
+    root.innerHTML =
+      '<div class="screen bg-space">'+
+        '<div class="anim-pop glass-card" style="padding:2.6rem;max-width:26rem;width:100%;text-align:center;">'+
+          '<div style="font-size:3.6rem;margin-bottom:.9rem;">🥷</div>'+
+          '<h1 class="font-display" style="font-size:1.7rem;margin:0 0 .5rem;letter-spacing:.02em;">'+
+            '<span style="color:var(--cyan)">NUMBER</span> <span style="color:var(--magenta)">NINJA</span>'+
+          '</h1>'+
+          '<p style="color:var(--text-dim);margin-bottom:2rem;font-size:.92rem;">Vuốt chém đúng con số bay ngang trước khi nó rơi mất!</p>'+
+          '<button id="btn-play" class="glow-btn font-display" style="border-color:var(--cyan);color:var(--cyan);background:rgba(32,227,255,.06);">▶ BẮT ĐẦU</button>'+
+          '<div style="margin-top:1.8rem;padding-top:1.1rem;border-top:1px dashed var(--line);">'+
+            '<p class="font-display" style="font-size:.78rem;color:var(--text-dim);margin-bottom:.6rem;letter-spacing:.06em;text-transform:uppercase;">Kỷ lục</p>'+
+            '<div class="stat-block"><div class="stat-num" style="color:var(--amber)">⭐ '+getBest()+'</div><div class="stat-label">Điểm cao nhất</div></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    document.getElementById('btn-play').onclick = function(){ state.screen='difficulty'; render(); };
+  }
+
+  function renderDifficulty(){
+    var order=['easy','normal','hard'];
+    var colorMap={easy:'var(--cyan)',normal:'var(--amber)',hard:'var(--magenta)'};
+    var html='<div class="screen bg-space">'+
+      '<div class="anim-pop glass-card" style="padding:2.4rem;max-width:26rem;width:100%;text-align:center;">'+
+        '<div style="font-size:2.6rem;margin-bottom:.8rem;">🎯</div>'+
+        '<h2 class="font-display" style="font-size:1.3rem;margin:0 0 .4rem;">Chọn độ khó</h2>'+
+        '<p style="color:var(--text-dim);margin-bottom:1.8rem;font-size:.88rem;">Càng khó, số càng bay nhanh!</p>'+
+        '<div style="display:flex;flex-direction:column;gap:.7rem;">';
+    order.forEach(function(key){
+      var d=DIFFICULTY[key];
+      html+='<button class="diff-btn" data-key="'+key+'" style="border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.02);">'+
+        '<span style="font-size:1.7rem;">'+d.icon+'</span>'+
+        '<div><div class="font-display" style="font-size:1.02rem;color:'+colorMap[key]+';">'+d.label+'</div>'+
+        '<div style="font-size:.82rem;color:var(--text-dim);">'+d.desc+'</div></div></button>';
+    });
+    html+='</div><button id="btn-back" class="back-link">← Quay lại</button></div></div>';
+    root.innerHTML = html;
+    root.querySelectorAll('.diff-btn').forEach(function(btn){
+      btn.onclick=function(){ startNewGame(btn.dataset.key); };
+    });
+    document.getElementById('btn-back').onclick=function(){ state.screen='menu'; render(); };
+  }
+
+  function startNewGame(diffKey){
+    state = freshState(diffKey || state.difficulty);
+    state.screen='playing';
+    renderPlaying();
+    initGameLoop();
+  }
+
+  function renderPlaying(){
+    var d = DIFFICULTY[state.difficulty];
+    root.innerHTML =
+      '<div class="bg-space" style="flex:1;display:flex;flex-direction:column;">'+
+        '<header class="app-header">'+
+          '<div style="display:flex;align-items:center;gap:.6rem;">'+
+            '<span style="font-size:1.6rem;">🥷</span>'+
+            '<h1 class="font-display" style="font-size:1.05rem;color:var(--cyan);margin:0;letter-spacing:.02em;">NUMBER NINJA</h1>'+
+          '</div>'+
+          '<div class="hud-row font-mono">'+
+            '<span>'+d.label+'</span>'+
+            '<span>⭐ <b id="hud-score">0</b></span>'+
+            '<span>🎯 <b id="hud-correct">0</b>/<b id="hud-total">0</b></span>'+
+          '</div>'+
+          '<div style="display:flex;gap:.5rem;">'+
+            '<button id="btn-pause" class="pause-toggle">⏸ Tạm dừng</button>'+
+            '<button id="btn-quit" class="quit-btn">Thoát</button>'+
+          '</div>'+
+        '</header>'+
+
+        '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;gap:.85rem;">'+
+          '<div class="target-bar anim-pop">'+
+            '<span style="font-size:.85rem;color:var(--text-dim);">CHÉM SỐ</span>'+
+            '<span class="target-num" id="hud-target">0</span>'+
+            '<span id="hud-combo"></span>'+
+          '</div>'+
+          '<div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%;background:var(--cyan);"></div></div>'+
+          '<div class="font-mono" style="font-size:.76rem;color:var(--text-dim);margin-top:-.4rem;" id="timer-text">'+state.timer.toFixed(1)+'s</div>'+
+
+          '<div class="canvas-wrap">'+
+            '<canvas id="gameCanvas"></canvas>'+
+            '<div class="flash-overlay" id="flashOverlay"></div>'+
+          '</div>'+
+
+          '<div style="display:flex;gap:1.2rem;align-items:center;justify-content:center;">'+
+            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--cyan);font-size:1rem;" id="hud-good">0</div><div class="stat-label">Đúng</div></div>'+
+            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--danger);font-size:1rem;" id="hud-bad">0</div><div class="stat-label">Sai</div></div>'+
+            '<div class="stat-block"><div class="stat-num font-mono" style="color:var(--amber);font-size:1rem;" id="hud-combo-max">0</div><div class="stat-label">Combo max</div></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+
+      '<div id="pause-overlay" class="pause-overlay hidden">'+
+        '<div class="pause-card glass-card anim-pop">'+
+          '<div style="font-size:2.6rem;margin-bottom:.8rem;">⏸</div>'+
+          '<h2 class="font-display" style="font-size:1.3rem;margin-bottom:.4rem;">Tạm dừng</h2>'+
+          '<p style="color:var(--text-dim);margin-bottom:1.4rem;font-size:.9rem;">Điểm hiện tại: <strong style="color:var(--text)">'+state.score+'</strong></p>'+
+          '<div style="display:flex;flex-direction:column;gap:.7rem;">'+
+            '<button id="btn-resume" class="glow-btn font-display" style="border-color:var(--cyan);color:var(--cyan);background:rgba(32,227,255,.06);">▶ Tiếp tục</button>'+
+            '<button id="btn-restart-pause" class="glow-btn font-display" style="border-color:var(--amber);color:var(--amber);background:rgba(255,184,77,.06);">🔄 Chơi lại</button>'+
+            '<button id="btn-quit-pause" class="glow-btn font-display" style="border-color:var(--danger);color:var(--danger);background:rgba(255,77,109,.06);">🏠 Thoát</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    document.getElementById('btn-pause').onclick=function(){ setPaused(true); };
+    document.getElementById('btn-resume').onclick=function(){ setPaused(false); };
+    document.getElementById('btn-restart-pause').onclick=function(){ document.getElementById('pause-overlay').classList.add('hidden'); startNewGame(); };
+    document.getElementById('btn-quit-pause').onclick=function(){ document.getElementById('pause-overlay').classList.add('hidden'); stopLoop(); sendQuit(); state.screen='menu'; render(); };
+    document.getElementById('btn-quit').onclick=function(){ stopLoop(); sendQuit(); state.screen='menu'; render(); };
+
+    attachPointerHandlers();
+  }
+
+  function setPaused(p){
+    state.paused = p;
+    var ov = document.getElementById('pause-overlay');
+    if(ov) ov.classList.toggle('hidden', !p);
+  }
+
+  function resizeCanvas(){
+    if(!canvas) return;
+    var wrap = canvas.parentElement;
+    var rect = wrap.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(rect.width*dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height*dpr));
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    canvas._logicalW = rect.width;
+    canvas._logicalH = rect.height;
+  }
+
+  /* ============ GAME LOOP ============ */
+  function initGameLoop(){
+    orbs=[]; particles=[]; trail=[]; wave=[]; spawnAcc=0; dragging=false;
+    newWave();
+    lastT=performance.now();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function stopLoop(){
+    if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+    window.removeEventListener('resize', resizeCanvas);
+  }
+
+  function newWave(){
+    var d = DIFFICULTY[state.difficulty];
+    var target = 1 + Math.floor(Math.random()*d.numMax);
+    var arr = [target];
+    while(arr.length < d.waveSize){
+      arr.push(1 + Math.floor(Math.random()*d.numMax));
+    }
+    for(var i=arr.length-1;i>0;i--){
+      var j=Math.floor(Math.random()*(i+1));
+      var t=arr[i]; arr[i]=arr[j]; arr[j]=t;
+    }
+    wave = arr;
+    state.target = target;
+    updateTargetHud();
+  }
+
+  function updateTargetHud(){
+    var t=document.getElementById('hud-target');
+    if(t) t.textContent = state.target;
+  }
+
+  function spawnOrb(num){
+    var d = DIFFICULTY[state.difficulty];
+    var w = canvas._logicalW || 320, h = canvas._logicalH || 420;
+    var r = d.radius;
+    var x = r + Math.random()*(w - r*2);
+    var speed = d.speedMin + Math.random()*(d.speedMax-d.speedMin);
+    orbs.push({
+      x:x, y:-r-10, vx:(Math.random()-0.5)*30, vy:speed,
+      r:r, num:num, color:COLORS[Math.floor(Math.random()*COLORS.length)],
+      hit:false, bornT:performance.now()
+    });
+  }
+
+  function loop(now){
+    var dt = Math.min(0.05, (now-lastT)/1000);
+    lastT = now;
+    if(!state.paused && !state.gameOver){
+      update(dt);
+    }
+    draw();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function update(dt){
+    var d = DIFFICULTY[state.difficulty];
+    // spawning from current wave
+    spawnAcc += dt*1000;
+    if(spawnAcc >= d.spawnMs && wave.length){
+      spawnAcc = 0;
+      spawnOrb(wave.shift());
+    }
+    if(!wave.length && !orbs.some(function(o){return !o.hit;})){
+      // small breather then next wave
+      newWave();
+    }
+
+    var h = canvas._logicalH || 420;
+    for(var i=orbs.length-1;i>=0;i--){
+      var o = orbs[i];
+      o.vy += 18*dt; // slight gravity acceleration
+      o.x += o.vx*dt;
+      o.y += o.vy*dt;
+      if(o.y - o.r > h){
+        // missed
+        if(!o.hit && o.num === state.target){
+          state.missedCount++;
+          state.combo = 0;
+          adjustTimer(-3);
+          flash('miss');
+        }
+        orbs.splice(i,1);
+      }
+    }
+
+    for(var p=particles.length-1;p>=0;p--){
+      particles[p].life -= dt;
+      particles[p].x += particles[p].vx*dt;
+      particles[p].y += particles[p].vy*dt;
+      particles[p].vy += 60*dt;
+      if(particles[p].life<=0) particles.splice(p,1);
+    }
+
+    for(var tr=trail.length-1;tr>=0;tr--){
+      trail[tr].life -= dt;
+      if(trail[tr].life<=0) trail.splice(tr,1);
+    }
+
+    state.timer -= dt;
+    state.timeUsed += dt;
+    if(state.timer <= 0){
+      state.timer = 0;
+      endGame();
+      return;
+    }
+    updateHud();
+  }
+
+  function adjustTimer(delta){
+    state.timer = Math.max(0, Math.min(state.maxTimer, state.timer + delta));
+  }
+
+  function burst(x,y,color,n){
+    n = n||14;
+    for(var i=0;i<n;i++){
+      var ang = Math.random()*Math.PI*2;
+      var spd = 60+Math.random()*140;
+      particles.push({x:x,y:y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:.5+Math.random()*.3,color:color,r:2+Math.random()*2.5});
+    }
+  }
+
+  function flash(kind){
+    var ov = document.getElementById('flashOverlay');
+    if(!ov) return;
+    ov.classList.remove('hit','miss');
+    void ov.offsetWidth;
+    ov.classList.add(kind);
+  }
+
+  function sliceOrb(o, viaClick){
+    o.hit = true;
+    var idx = orbs.indexOf(o);
+    if(idx>=0) orbs.splice(idx,1);
+    if(o.num === state.target){
+      state.combo++;
+      state.correctCount++;
+      if(state.combo > state.maxCombo) state.maxCombo = state.combo;
+      var bonus = 100 + (state.combo-1)*25;
+      state.score += bonus;
+      adjustTimer(1.4);
+      burst(o.x,o.y,o.color,16);
+      flash('hit');
+      // remove one occurrence of target from remaining queued wave/orbs count implicitly (wave already fixed)
+    }else{
+      state.combo = 0;
+      state.wrongCount++;
+      adjustTimer(-2);
+      burst(o.x,o.y,'#ff4d6d',10);
+      flash('miss');
+    }
+    updateHud();
+    if(state.timer<=0){ state.timer=0; endGame(); }
+  }
+
+  function updateHud(){
+    var scoreEl=document.getElementById('hud-score'); if(scoreEl) scoreEl.textContent=state.score;
+    var goodEl=document.getElementById('hud-good'); if(goodEl) goodEl.textContent=state.correctCount;
+    var badEl=document.getElementById('hud-bad'); if(badEl) badEl.textContent=state.wrongCount;
+    var comboMaxEl=document.getElementById('hud-combo-max'); if(comboMaxEl) comboMaxEl.textContent=state.maxCombo;
+    var totalEl=document.getElementById('hud-total'); if(totalEl) totalEl.textContent=(state.correctCount+state.wrongCount);
+    var correctEl=document.getElementById('hud-correct'); if(correctEl) correctEl.textContent=state.correctCount;
+    var comboBadge=document.getElementById('hud-combo');
+    if(comboBadge){
+      comboBadge.innerHTML = state.combo>1 ? '<span class="combo-badge">🔥 ×'+state.combo+'</span>' : '';
+    }
+    var fill=document.getElementById('timer-fill');
+    var txt=document.getElementById('timer-text');
+    var pct = (state.timer/state.maxTimer)*100;
+    var color = state.timer>15 ? 'var(--cyan)' : state.timer>6 ? 'var(--amber)' : 'var(--danger)';
+    if(fill){ fill.style.width=pct+'%'; fill.style.background=color; }
+    if(txt){ txt.textContent = state.timer.toFixed(1)+'s'; }
+    updateTargetHud();
+  }
+
+  function draw(){
+    if(!ctx) return;
+    var w = canvas._logicalW||320, h=canvas._logicalH||420;
+    ctx.clearRect(0,0,w,h);
+
+    // subtle starfield
+    ctx.fillStyle='rgba(255,255,255,.05)';
+    for(var s=0;s<18;s++){
+      ctx.fillRect((s*53)%w, (s*97)%h, 1.4, 1.4);
+    }
+
+    // trail
+    if(trail.length>1){
+      ctx.lineCap='round'; ctx.lineJoin='round';
+      for(var i=1;i<trail.length;i++){
+        var a=trail[i-1], b=trail[i];
+        var alpha = Math.max(0, b.life/0.25);
+        ctx.strokeStyle = 'rgba(32,227,255,'+(0.15+alpha*0.55)+')';
+        ctx.lineWidth = 3+alpha*5;
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+
+    // orbs
+    for(var o2=0;o2<orbs.length;o2++){
+      var o=orbs[o2];
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(o.x,o.y,o.r,0,Math.PI*2);
+      var grad=ctx.createRadialGradient(o.x-o.r*0.3,o.y-o.r*0.3,o.r*0.1,o.x,o.y,o.r);
+      grad.addColorStop(0, '#1a1e3a');
+      grad.addColorStop(1, '#0c0e22');
+      ctx.fillStyle=grad;
+      ctx.fill();
+      ctx.lineWidth=2.4;
+      ctx.strokeStyle=o.color;
+      ctx.shadowColor=o.color;
+      ctx.shadowBlur=14;
+      ctx.stroke();
+      ctx.shadowBlur=0;
+      ctx.fillStyle='#eef1ff';
+      ctx.font='700 '+(o.r*0.8)+'px "JetBrains Mono", monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(o.num), o.x, o.y+1);
+      ctx.restore();
+    }
+
+    // particles
+    for(var p3=0;p3<particles.length;p3++){
+      var p=particles[p3];
+      ctx.globalAlpha = Math.max(0,p.life/0.6);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /* ============ POINTER / SLICE INPUT ============ */
+  function getPos(evt, rect){
+    var cx, cy;
+    if(evt.touches && evt.touches.length){ cx=evt.touches[0].clientX; cy=evt.touches[0].clientY; }
+    else { cx=evt.clientX; cy=evt.clientY; }
+    return { x: cx-rect.left, y: cy-rect.top };
+  }
+
+  function distToSeg(px,py,ax,ay,bx,by){
+    var abx=bx-ax, aby=by-ay;
+    var apx=px-ax, apy=py-ay;
+    var abLen2 = abx*abx+aby*aby;
+    var t = abLen2>0 ? Math.max(0,Math.min(1,(apx*abx+apy*aby)/abLen2)) : 0;
+    var cx=ax+abx*t, cy=ay+aby*t;
+    var dx=px-cx, dy=py-cy;
+    return Math.sqrt(dx*dx+dy*dy);
+  }
+
+  function attachPointerHandlers(){
+    if(!canvas) return;
+    var down=false, prev=null;
+
+    function start(evt){
+      if(state.paused||state.gameOver) return;
+      down=true;
+      var rect=canvas.getBoundingClientRect();
+      var pos=getPos(evt,rect);
+      prev=pos;
+      trail.push({x:pos.x,y:pos.y,life:.25});
+      checkSliceAt(pos, pos);
+      evt.preventDefault();
+    }
+    function move(evt){
+      if(!down || state.paused||state.gameOver) return;
+      var rect=canvas.getBoundingClientRect();
+      var pos=getPos(evt,rect);
+      trail.push({x:pos.x,y:pos.y,life:.25});
+      if(trail.length>40) trail.shift();
+      if(prev) checkSliceAt(prev,pos);
+      prev=pos;
+      evt.preventDefault();
+    }
+    function end(){ down=false; prev=null; }
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', start, {passive:false});
+    canvas.addEventListener('touchmove', move, {passive:false});
+    canvas.addEventListener('touchend', end);
+    canvas.addEventListener('touchcancel', end);
+  }
+
+  function checkSliceAt(a,b){
+    for(var i=orbs.length-1;i>=0;i--){
+      var o=orbs[i];
+      if(o.hit) continue;
+      var d = distToSeg(o.x,o.y,a.x,a.y,b.x,b.y);
+      if(d <= o.r+6){
+        sliceOrb(o);
+      }
+    }
+  }
+
+  /* ============ END / RESULTS ============ */
+  function endGame(){
+    state.gameOver = true;
+    stopLoop();
+    var best = getBest();
+    if(state.score > best) saveBest(state.score);
+    state.screen='gameover';
+    render();
+    sendGameOver();
+  }
+
+  function renderGameOver(){
+    var best = getBest();
+    var isNewBest = state.score>=best && state.score>0;
+    root.innerHTML =
+      '<div class="screen bg-space">'+
+        '<div class="anim-pop glass-card" style="padding:2.4rem;max-width:26rem;width:100%;text-align:center;">'+
+          '<div style="font-size:3.4rem;margin-bottom:.9rem;">⏱️</div>'+
+          '<h2 class="font-display" style="font-size:1.35rem;margin:0 0 .3rem;">Hết giờ!</h2>'+
+          (isNewBest ? '<p style="color:var(--amber);font-weight:700;margin-bottom:.5rem;font-size:.9rem;">🏆 Kỷ lục mới!</p>' : '')+
+          '<div style="padding-top:1.1rem;margin:1rem 0;border-top:1px dashed var(--line);">'+
+            '<div style="display:flex;justify-content:center;gap:1.6rem;flex-wrap:wrap;">'+
+              '<div class="stat-block"><div class="stat-num" style="color:var(--cyan);">'+state.score+'</div><div class="stat-label">Điểm</div></div>'+
+              '<div class="stat-block"><div class="stat-num" style="color:var(--cyan);">'+state.correctCount+'</div><div class="stat-label">Đúng</div></div>'+
+              '<div class="stat-block"><div class="stat-num" style="color:var(--danger);">'+state.wrongCount+'</div><div class="stat-label">Sai</div></div>'+
+              '<div class="stat-block"><div class="stat-num" style="color:var(--amber);">'+state.maxCombo+'</div><div class="stat-label">Combo max</div></div>'+
+            '</div>'+
+          '</div>'+
+          '<div style="padding-top:.9rem;margin-bottom:1.2rem;border-top:1px dashed var(--line);">'+
+            '<p style="font-size:.82rem;color:var(--text-dim);">Thời gian chơi: '+state.timeUsed.toFixed(1)+'s · Bỏ lỡ: '+state.missedCount+'</p>'+
+          '</div>'+
+          '<div style="display:flex;flex-direction:column;gap:.7rem;">'+
+            '<button id="btn-restart" class="glow-btn font-display" style="border-color:var(--cyan);color:var(--cyan);background:rgba(32,227,255,.06);">🔄 Chơi lại</button>'+
+            '<button id="btn-home" class="glow-btn font-display" style="border-color:var(--text-dim);color:var(--text-dim);background:rgba(255,255,255,.02);">🏠 Menu</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    document.getElementById('btn-restart').onclick=function(){ startNewGame(); };
+    document.getElementById('btn-home').onclick=function(){ sendQuit(); state.screen='menu'; render(); };
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

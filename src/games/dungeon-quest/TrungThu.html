@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đêm Hội Trăng Rằm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night1:#161b3d;--night2:#232a5c;--night3:#33397a;
+  --moon:#fff4d6;--moon-glow:#ffe38a;--gold:#ffc548;--lantern-red:#e2543a;
+  --lantern-orange:#ff9a3d;--lotus:#ff8fab;--ink:#2c2a4a;--ink-soft:#8a87b3;
+  --card:#fffaf0;--line:#efe3c8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:linear-gradient(180deg,var(--night1) 0%,var(--night2) 55%,var(--night3) 100%);
+  color:var(--ink);font-family:'Nunito',sans-serif;
+  display:flex;justify-content:center;padding:24px 14px 50px;
+}
+.stage{width:100%;max-width:720px}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.brand{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:24px;color:var(--moon)}
+.brand span{display:block;font-family:'Nunito';font-weight:600;font-size:13px;color:#c9c6e8;margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.score{
+  font-family:'Baloo 2',sans-serif;font-size:16px;color:var(--ink);
+  background:#fff;border:2px solid var(--gold);border-radius:20px;padding:6px 16px;
+  display:flex;align-items:center;gap:6px;box-shadow:0 3px 0 rgba(0,0,0,.15);
+}
+.score .icon{font-size:18px}
+.btn-quit{
+  font-family:'Baloo 2',sans-serif;font-size:13px;border:2px solid #ffb4c0;border-radius:16px;
+  padding:6px 14px;color:#e0546a;background:#fff;cursor:pointer;font-weight:600;
+}
+.btn-quit:hover{background:#fff0f2}
+
+/* ===== Night scene ===== */
+.scene{
+  position:relative;background:radial-gradient(600px 260px at 80% 0%, rgba(255,227,138,.12), transparent),
+    linear-gradient(180deg,#20265a 0%,#171b41 100%);
+  border:3px solid #3a3f74;border-radius:22px;padding:20px 18px 16px;overflow:hidden;
+}
+.stars{position:absolute;inset:0;pointer-events:none;}
+.stars span{position:absolute;width:3px;height:3px;background:#fff;border-radius:50%;opacity:.7;animation:twinkle 2.4s ease-in-out infinite;}
+@keyframes twinkle{0%,100%{opacity:.2;}50%{opacity:.9;}}
+
+.moon-row{display:flex;align-items:center;justify-content:center;gap:22px;min-height:130px;position:relative;z-index:1;}
+.moon-wrap{position:relative;width:110px;height:110px;display:flex;align-items:center;justify-content:center;}
+.moon{
+  width:90px;height:90px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #fffdf0, var(--moon) 70%);
+  box-shadow:0 0 20px 6px rgba(255,227,138,.25);transition:box-shadow .6s ease;
+  display:flex;align-items:center;justify-content:center;font-size:34px;
+}
+.moon.bright{box-shadow:0 0 46px 16px rgba(255,227,138,.6);}
+.kid{font-size:40px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35));transition:transform .3s ease;}
+.kid.happy{animation:bounce .5s ease;}
+.kid.sad{animation:wiggle .4s ease;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px) rotate(6deg);}}
+@keyframes wiggle{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+
+.lantern-path{display:flex;justify-content:center;gap:10px;margin-top:12px;flex-wrap:wrap;min-height:34px;z-index:1;position:relative;}
+.lantern-path span{font-size:24px;opacity:0;transform:translateY(6px) scale(.5);transition:all .35s ease;}
+.lantern-path span.show{opacity:1;transform:translateY(0) scale(1);}
+
+.floattext{position:absolute;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:18px;pointer-events:none;opacity:0;z-index:5;}
+.floattext.show{animation:floatUp 1s ease forwards;}
+@keyframes floatUp{0%{opacity:0;transform:translateY(0);}15%{opacity:1;}100%{opacity:0;transform:translateY(-40px);}}
+.floattext.good{color:var(--gold);}
+.floattext.gentle{color:#c9c6e8;}
+
+.progresswrap{margin-top:16px;position:relative;z-index:1;}
+.progresslabel{font-family:'Baloo 2',sans-serif;font-size:12px;color:#c9c6e8;margin-bottom:5px;display:flex;justify-content:space-between;}
+.progressbar{height:12px;border-radius:8px;background:#12163a;border:2px solid #3a3f74;overflow:hidden;}
+.progressfill{height:100%;border-radius:8px;background:linear-gradient(90deg,#ffc548,#ff9a3d);transition:width .5s cubic-bezier(.2,.8,.2,1);}
+
+.storybox{
+  margin-top:14px;background:rgba(255,255,255,.06);border:1px dashed #4a4f8a;border-radius:14px;
+  padding:12px 14px;font-size:13.5px;color:#e7e5ff;line-height:1.55;min-height:22px;position:relative;z-index:1;
+}
+.storybox b{color:var(--gold);font-family:'Baloo 2',sans-serif;font-size:12px;letter-spacing:.03em;display:block;margin-bottom:4px;}
+
+/* ===== Question card ===== */
+.qcard{margin-top:16px;background:var(--card);border:2px solid var(--line);border-radius:20px;padding:20px 18px;box-shadow:0 4px 0 rgba(0,0,0,.15);}
+.qmeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.qeyebrow{font-family:'Baloo 2',sans-serif;font-size:13px;color:#c9622b;font-weight:600;}
+.timerwrap{display:flex;align-items:center;gap:8px;}
+.timerring{position:relative;width:34px;height:34px;}
+.timerring svg{width:34px;height:34px;transform:rotate(-90deg);}
+.timerring circle.bg{stroke:var(--line);}
+.timerring circle.fg{stroke:var(--lantern-orange);transition:stroke-dashoffset 1s linear;}
+.timernum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Baloo 2',sans-serif;font-size:12px;color:var(--ink);}
+
+.qtext{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:600;line-height:1.4;margin-bottom:16px;color:var(--ink);}
+
+.options{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:520px){.options{grid-template-columns:1fr;}}
+.opt{
+  text-align:left;background:#fff6e2;border:2px solid var(--line);color:var(--ink);
+  border-radius:16px;padding:14px 16px;font-family:'Nunito';font-size:15.5px;font-weight:700;
+  cursor:pointer;transition:transform .1s,border-color .15s,background .15s;
+}
+.opt:hover:not(:disabled){border-color:var(--lantern-orange);transform:translateY(-2px);}
+.opt:disabled{cursor:default;}
+.opt.correct{border-color:#4c9a3f;background:#e4f7e0;}
+.opt.wrong{border-color:#ffb4c0;background:#fff0f2;}
+
+.feedback{margin-top:12px;font-family:'Baloo 2',sans-serif;font-size:14px;min-height:20px;font-weight:600;}
+.feedback.ok{color:#4c9a3f;}
+.feedback.gentle{color:#b98a2e;}
+
+/* ===== Reward picker (lantern styles) ===== */
+.rewards{display:none;margin-top:16px;gap:12px;grid-template-columns:repeat(3,1fr);}
+.rewards.show{display:grid;}
+@media(max-width:520px){.rewards.show{grid-template-columns:1fr;}}
+.reward{
+  background:#fff2d9;border:2px solid var(--gold);border-radius:16px;padding:14px 10px;
+  text-align:center;cursor:pointer;transition:transform .12s,border-color .15s;
+}
+.reward:hover{border-color:#e2a025;transform:translateY(-3px) scale(1.02);}
+.reward .icon{font-size:28px;display:block;margin-bottom:4px;}
+.reward .rname{font-family:'Baloo 2',sans-serif;font-weight:600;font-size:13.5px;color:var(--ink);}
+.reward .rpts{font-family:'Nunito';font-size:11px;color:var(--ink-soft);margin-top:2px;}
+
+.banner{display:none;margin-top:18px;text-align:center;padding:26px 20px;border-radius:20px;border:2px solid var(--line);background:#fffdf5;}
+.banner.show{display:block;}
+.banner .emoji{font-size:44px;margin-bottom:8px;}
+.banner h2{font-family:'Baloo 2',sans-serif;color:#c9622b;font-size:24px;margin-bottom:8px;}
+.banner p{color:var(--ink-soft);font-size:14px;margin-bottom:10px;}
+.banner .fulltale{font-size:13px;color:var(--ink);background:#fff6e2;border:1px dashed var(--gold);border-radius:12px;padding:12px 14px;text-align:left;line-height:1.6;margin-bottom:18px;}
+.retry{
+  font-family:'Baloo 2',sans-serif;background:var(--gold);color:#4a2e00;border:none;border-radius:16px;
+  padding:12px 26px;font-weight:700;cursor:pointer;font-size:15px;box-shadow:0 4px 0 #d99400;
+}
+.retry:active{transform:translateY(2px);box-shadow:0 2px 0 #d99400;}
+
+.statusline{text-align:center;margin-top:10px;font-family:'Nunito',sans-serif;font-size:12px;color:#c9c6e8;}
+.statusline.err{color:#ff8fa0;}
+</style>
+</head>
+<body>
+<div id="api_submit"></div>
+<div class="stage">
+  <div class="topbar">
+    <div class="brand">ĐÊM HỘI TRĂNG RẰM<span>Trả lời đúng để rước đèn và kể chuyện chú Cuội 🏮</span></div>
+    <div class="topbar-right">
+      <div class="score"><span class="icon">🌕</span><b id="scoreVal">0</b></div>
+      <button class="btn-quit" id="btnQuit">Thoát</button>
+    </div>
+  </div>
+
+  <div class="scene" id="scene">
+    <div class="stars" id="stars"></div>
+    <div class="moon-row">
+      <div class="kid" id="kid">🧒</div>
+      <div class="moon-wrap">
+        <div class="moon" id="moon">🐇</div>
+      </div>
+    </div>
+    <div class="lantern-path" id="lanternPath"></div>
+    <div class="floattext" id="floatText"></div>
+
+    <div class="progresswrap">
+      <div class="progresslabel"><span>Ánh trăng rực rỡ</span><span id="progressPct">0%</span></div>
+      <div class="progressbar"><div class="progressfill" id="progressFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="storybox" id="storybox">
+      <b>SỰ TÍCH CHÚ CUỘI CUNG TRĂNG</b>
+      <span id="storyText">Trả lời đúng để mở từng đoạn của câu chuyện nhé…</span>
+    </div>
+  </div>
+
+  <div class="qcard" id="qcard">
+    <div class="qmeta">
+      <div class="qeyebrow" id="qcounter">Câu hỏi 1</div>
+      <div class="timerwrap">
+        <div class="timerring">
+          <svg viewBox="0 0 34 34">
+            <circle class="bg" cx="17" cy="17" r="14" fill="none" stroke-width="4"/>
+            <circle class="fg" id="timerCircle" cx="17" cy="17" r="14" fill="none" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <div class="timernum" id="timerNum">20</div>
+        </div>
+      </div>
+    </div>
+    <div class="qtext" id="qtext">Đang tải câu hỏi…</div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="rewards" id="rewards"></div>
+  </div>
+
+  <div class="banner" id="banner">
+    <div class="emoji">🏮</div>
+    <h2 id="bannerTitle"></h2>
+    <p id="bannerText"></p>
+    <div class="fulltale" id="fulltale"></div>
+    <button class="retry" id="retryBtn">Chơi lại</button>
+  </div>
+  <div class="statusline" id="statusline"></div>
+</div>
+
+<script>
+(function(){
+// Mỗi lần trả lời đúng, bé chọn 1 kiểu đèn lồng để rước quanh trăng,
+// đồng thời mở khoá thêm một đoạn của sự tích chú Cuội.
+var REWARDS=[
+  {name:"Đèn ông sao",icon:"⭐",pts:12},
+  {name:"Đèn cá chép",icon:"🐟",pts:12},
+  {name:"Đèn hoa sen",icon:"🪷",pts:16}
+];
+var LANTERN_ICONS=["🏮","🎑","🕯️","✨"];
+var STORY_LINES=[
+  "Ngày xưa, có anh Cuội sống bên một cây đa quý — chỉ cần lấy lá cây ấy đắp vào vết thương là lành ngay tức khắc.",
+  "Một hôm, vợ Cuội quên lời dặn, đem nước bẩn tưới vào gốc cây, khiến cây đa bật rễ, từ từ bay lên trời.",
+  "Cuội vội chạy ra ôm chặt lấy rễ cây, nhưng cây cứ bay mãi, bay mãi, mang theo cả Cuội lên tận cung trăng.",
+  "Từ đó, mỗi đêm rằm nhìn lên mặt trăng, người ta lại thấy bóng dáng chú Cuội ngồi bên gốc cây đa.",
+  "Cứ đến Tết Trung Thu, trẻ em khắp nơi rước đèn dưới trăng để chú Cuội trên cung trăng bớt nhớ nhà.",
+  "Và ánh trăng rằm cứ thế sáng lung linh mãi, soi đường cho những chiếc đèn lồng nhỏ xinh của các bạn nhỏ."
+];
+
+var state={
+  questions:[],qIndex:0,score:0,correctCount:0,growth:0,
+  timer:null,timeLeft:20,timeLimit:20,locked:false
+};
+
+var el=function(id){return document.getElementById(id)};
+
+function setStatus(msg,isErr){var s=el('statusline');s.textContent=msg||'';s.className='statusline'+(isErr?' err':'')}
+
+function makeStars(){
+  var wrap=el('stars');wrap.innerHTML='';
+  for(var i=0;i<26;i++){
+    var s=document.createElement('span');
+    s.style.left=Math.random()*100+'%';
+    s.style.top=Math.random()*70+'%';
+    s.style.animationDelay=(Math.random()*2.4)+'s';
+    wrap.appendChild(s);
+  }
+}
+makeStars();
+
+function renderQuestion(){
+  clearInterval(state.timer);state.locked=false;
+  el('rewards').className='rewards';el('rewards').innerHTML='';
+  el('feedback').textContent='';el('feedback').className='feedback';
+
+  var q=state.questions[state.qIndex%state.questions.length];
+  el('qcounter').textContent='Câu hỏi '+(state.qIndex+1);
+  el('qtext').textContent=q.content;
+
+  var optWrap=el('options');optWrap.innerHTML='';
+  q.options.forEach(function(opt){
+    var btn=document.createElement('button');
+    btn.className='opt';btn.textContent=opt.content;
+    btn.onclick=function(){submitAnswer(q,opt.id,btn)};
+    optWrap.appendChild(btn);
+  });
+
+  state.timeLimit=q.timeLimit||20;state.timeLeft=state.timeLimit;
+  updateTimerRing();
+  state.timer=setInterval(function(){
+    state.timeLeft--;updateTimerRing();
+    if(state.timeLeft<=0){clearInterval(state.timer);if(!state.locked)handleTimeout();}
+  },1000);
+}
+
+function updateTimerRing(){
+  var circ=2*Math.PI*14;
+  var ratio=Math.max(0,state.timeLeft/state.timeLimit);
+  el('timerCircle').style.strokeDasharray=circ;
+  el('timerCircle').style.strokeDashoffset=circ*(1-ratio);
+  el('timerNum').textContent=Math.max(0,state.timeLeft);
+}
+
+function submitAnswer(question,answerId,btnEl){
+  if(state.locked)return;
+  state.locked=true;clearInterval(state.timer);
+  Array.from(el('options').children).forEach(function(b){b.disabled=true});
+
+  if(typeof window.apiSubmitAnswer==="function"){
+    window.apiSubmitAnswer(question.id,answerId).then(function(result){
+      handleAnswerResult(result,btnEl);
+    }).catch(function(){
+      setStatus('Không gửi được đáp án, thử lại nhé!',true);
+      state.locked=false;
+      Array.from(el('options').children).forEach(function(b){b.disabled=false});
+    });
+  }else{
+    handleAnswerResult({correct:false,points:0},btnEl);
+  }
+}
+
+function handleAnswerResult(result,btnEl){
+  setStatus('');
+  if(result.correct){
+    btnEl.classList.add('correct');
+    state.correctCount++;
+    el('feedback').textContent='Giỏi quá! +'+(result.points||0)+' điểm — chọn một chiếc đèn để rước quanh trăng nhé!';
+    el('feedback').className='feedback ok';
+    state.score+=(result.points||0);
+    el('scoreVal').textContent=state.score;
+    el('kid').className='kid happy';
+    floatText('+'+(result.points||0),'good');
+    setTimeout(function(){el('kid').className='kid';},500);
+    revealStoryLine();
+    showRewardOptions();
+  }else{
+    btnEl.classList.add('wrong');
+    el('feedback').textContent='Chưa đúng rồi, không sao, thử câu tiếp theo nha!';
+    el('feedback').className='feedback gentle';
+    el('kid').className='kid sad';
+    floatText('Cố lên!','gentle');
+    setTimeout(function(){el('kid').className='kid';},450);
+    setTimeout(nextQuestionOrEnd,1100);
+  }
+}
+
+function handleTimeout(){
+  state.locked=true;
+  Array.from(el('options').children).forEach(function(b){b.disabled=true});
+  el('feedback').textContent='Hết giờ rồi, mình thử câu khác nha!';
+  el('feedback').className='feedback gentle';
+  el('kid').className='kid sad';
+  setTimeout(function(){el('kid').className='kid';},450);
+  setTimeout(nextQuestionOrEnd,1000);
+}
+
+function showRewardOptions(){
+  var wrap=el('rewards');wrap.innerHTML='';
+  REWARDS.forEach(function(r){
+    var div=document.createElement('div');
+    div.className='reward';
+    div.innerHTML='<span class="icon">'+r.icon+'</span><span class="rname">'+r.name+'</span><span class="rpts">+'+r.pts+' điểm trăng</span>';
+    div.onclick=function(){pickReward(r)};
+    wrap.appendChild(div);
+  });
+  wrap.className='rewards show';
+}
+
+function floatText(text,cls){
+  var ft=el('floatText');
+  var kidRect=el('kid').getBoundingClientRect();
+  var sceneRect=el('scene').getBoundingClientRect();
+  ft.style.left=(kidRect.left-sceneRect.left+kidRect.width/2-14)+'px';
+  ft.style.top=(kidRect.top-sceneRect.top-10)+'px';
+  ft.textContent=text;
+  ft.className='floattext '+cls;
+  void ft.offsetWidth;
+  ft.className='floattext '+cls+' show';
+}
+
+function pickReward(reward){
+  el('rewards').className='rewards';
+  state.growth=Math.min(100,state.growth+reward.pts);
+  updateGrowth();
+  addLanternToPath();
+  setTimeout(nextQuestionOrEnd,700);
+}
+
+function updateGrowth(){
+  el('progressFill').style.width=state.growth+'%';
+  el('progressPct').textContent=state.growth+'%';
+  if(state.growth>=45){el('moon').classList.add('bright');}
+}
+
+function addLanternToPath(){
+  var path=el('lanternPath');
+  var span=document.createElement('span');
+  span.textContent=LANTERN_ICONS[Math.floor(Math.random()*LANTERN_ICONS.length)];
+  path.appendChild(span);
+  requestAnimationFrame(function(){span.classList.add('show');});
+}
+
+function revealStoryLine(){
+  var idx=Math.min(state.correctCount-1,STORY_LINES.length-1);
+  if(idx<0)return;
+  var box=el('storyText');
+  if(state.correctCount<=STORY_LINES.length){
+    box.textContent=STORY_LINES[idx];
+  }
+}
+
+function nextQuestionOrEnd(){
+  state.qIndex++;
+  if(state.growth>=100 || state.qIndex>=state.questions.length*2){
+    finishGame();
+    return;
+  }
+  renderQuestion();
+}
+
+function finishGame(){
+  clearInterval(state.timer);
+  el('qcard').style.display='none';
+  el('bannerTitle').textContent='Trăng rằm sáng tỏ khắp muôn nơi! 🎉';
+  el('bannerText').textContent='Bé đã trả lời đúng '+state.correctCount+' câu và đạt '+state.score+' điểm. Cùng đọc lại trọn vẹn sự tích nhé:';
+  el('fulltale').textContent=STORY_LINES.join(' ');
+  el('banner').className='banner show';
+  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.correctCount,timeUsed:0}},"*");
+}
+
+el('retryBtn').onclick=function(){
+  state={questions:state.questions,qIndex:0,score:0,correctCount:0,growth:0,timer:null,timeLeft:20,timeLimit:20,locked:false};
+  el('scoreVal').textContent='0';
+  el('lanternPath').innerHTML='';
+  el('moon').classList.remove('bright');
+  el('storyText').textContent='Trả lời đúng để mở từng đoạn của câu chuyện nhé…';
+  updateGrowth();
+  el('qcard').style.display='block';
+  el('banner').className='banner';
+  renderQuestion();
+};
+
+el('btnQuit').onclick=function(){parent.postMessage({type:"quit"},"*")};
+
+window.addEventListener('message',function(e){
+  if(!e.data||typeof e.data!=='object')return;
+  if(e.data.type==='init'){
+    var d=e.data.data||{};
+    state.questions=d.questions||[];
+    state.qIndex=0;state.score=0;state.correctCount=0;state.growth=0;state.locked=false;
+    el('scoreVal').textContent='0';
+    el('lanternPath').innerHTML='';
+    el('moon').classList.remove('bright');
+    el('storyText').textContent='Trả lời đúng để mở từng đoạn của câu chuyện nhé…';
+    updateGrowth();
+    el('qcard').style.display='block';
+    el('banner').className='banner';
+    renderQuestion();
+  }
+});
+
+parent.postMessage({type:"ready"},"*");
+})();
+</script>
+</body>
+</html>

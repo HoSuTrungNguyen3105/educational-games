@@ -93,10 +93,10 @@ export function TicketStub({ icon, code, notchBg = "#FFF6E7" }) {
   );
 }
 
-export function Modal({ children, onClose }) {
+export function Modal({ children, onClose, wide }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-ink/40 backdrop-blur-sm" onClick={onClose}>
-      <div className="note-card max-w-md w-full p-6 anim-pop" onClick={e => e.stopPropagation()}>{children}</div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-2 sm:px-4 bg-ink/40 backdrop-blur-sm" onClick={onClose}>
+      <div className={`note-card w-full p-4 sm:p-6 anim-pop max-h-[90vh] overflow-y-auto ${wide ? "max-w-[95vw]" : "max-w-md"}`} onClick={e => e.stopPropagation()}>{children}</div>
     </div>
   );
 }
@@ -121,9 +121,9 @@ export function PasswordInput({ value, onChange, fieldClass = "w-full note-card 
 export function Field({ label, hint, children, className = "" }) {
   return (
     <div className={className}>
-      <label className="text-xs font-mono uppercase text-[#8A7C63]">{label}</label>
+      <label className="text-[11px] font-mono uppercase text-[#8A7C63] leading-tight">{label}</label>
       {children}
-      {hint && <p className="text-xs text-[#B7A987] mt-1">{hint}</p>}
+      {hint && <p className="text-[10px] text-[#B7A987] mt-0.5">{hint}</p>}
     </div>
   );
 }
@@ -137,26 +137,96 @@ export function ManagementHeader({ subtitle, title }) {
   );
 }
 
-export function ManagementForm({ title, onSubmit, error, saving, savingLabel, editId, onCancel, children, formRef }) {
+export function ConfirmModal({ open, title, message, onConfirm, onClose, confirmLabel = "Xóa", danger = true }) {
+  if (!open) return null;
   return (
-    <form ref={formRef} onSubmit={onSubmit} className="note-card p-6 bg-paper2 scroll-mt-24">
-      <h2 className="font-display text-lg text-ink mb-4">{editId ? "✏️ " + title : "➕ " + title}</h2>
-      {children}
-      {error && <p className="text-ticket text-sm mt-3">{error}</p>}
-      <div className="mt-4 flex items-center gap-3">
-        <PrimaryButton type="submit" disabled={saving}>{saving ? (savingLabel || "Đang lưu...") : editId ? "Cập nhật" : "Thêm mới"}</PrimaryButton>
-        {editId && <button type="button" onClick={onCancel} className="text-sm text-[#8A7C63] hover:text-ink underline cursor-pointer">Hủy</button>}
+    <Modal onClose={onClose}>
+      <h3 className="font-display text-lg text-ink mb-1">{title}</h3>
+      <p className="text-sm text-[#8A7C63] mb-4">{message}</p>
+      <div className="flex justify-end gap-2">
+        <GhostButton onClick={onClose}>Hủy</GhostButton>
+        <button onClick={onConfirm}
+          className={`font-display font-semibold rounded-2xl px-5 py-3 active:scale-[0.98] transition shadow-[0_3px_0_rgba(0,0,0,0.18)] ${
+            danger ? "bg-ticket text-white hover:bg-ticket/90" : "bg-ink text-paper hover:bg-ink2"
+          }`}>
+          {confirmLabel}
+        </button>
       </div>
-    </form>
+    </Modal>
   );
 }
 
-export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, onRemoveAll, removeAllLabel }) {
+function FormField({ field, value, onChange }) {
+  const base = "w-full note-card px-3 py-2 mt-0.5 border-ink/10 focus:border-ticket text-sm";
+  const disabled = field.disabled;
+  if (field.type === "select") {
+    return (
+      <select value={value || ""} onChange={e => onChange(field.name, e.target.value)}
+        disabled={disabled}
+        className={`${base} bg-paper2 ${disabled ? "opacity-50" : ""}`}>
+        {field.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    );
+  }
+  if (field.type === "color") {
+    return (
+      <div className="flex items-center gap-2 mt-0.5">
+        <input type="color" value={value || "#000000"} onChange={e => onChange(field.name, e.target.value)}
+          disabled={disabled} className="w-8 h-8 rounded-lg border border-ink/10 cursor-pointer" />
+        <input value={value || ""} onChange={e => onChange(field.name, e.target.value)}
+          disabled={disabled} className={`${base} ${disabled ? "opacity-50" : ""}`} autoComplete="off" />
+      </div>
+    );
+  }
+  if (field.type === "textarea") {
+    return (
+      <textarea value={value || ""} onChange={e => onChange(field.name, e.target.value)}
+        disabled={disabled} placeholder={field.placeholder || ""}
+        className={`${base} min-h-[90px] ${disabled ? "opacity-50" : ""}`} />
+    );
+  }
+  if (field.type === "password") {
+    return <PasswordInput value={value || ""} onChange={e => onChange(field.name, e.target.value)} fieldClass={base} />;
+  }
+  return (
+    <input type={field.type || "text"} value={value || ""} onChange={e => onChange(field.name, e.target.value)}
+      disabled={disabled} placeholder={field.placeholder || ""} autoComplete="off"
+      className={`${base} ${disabled ? "opacity-50" : ""}`} />
+  );
+}
+
+export function FormModal({ open, title, fields, values, onChange, onSubmit, onClose, error, saving, editId, savingLabel, wide }) {
+  if (!open) return null;
+  return (
+    <Modal onClose={onClose} wide={wide}>
+      <h3 className="font-display text-lg text-ink mb-3">{editId ? "✏️ Sửa " + title : "➕ Thêm " + title}</h3>
+      <form onSubmit={e => { e.preventDefault(); onSubmit(); }}>
+        <div className={`grid gap-x-4 gap-y-2 ${wide ? "sm:grid-cols-2" : ""}`}>
+          {fields.map(f => (
+            <Field key={f.name} label={f.label} className={f.full ? "sm:col-span-2" : ""}>
+              <FormField field={f} value={values[f.name]} onChange={onChange} />
+            </Field>
+          ))}
+        </div>
+        {error && <p className="text-ticket text-sm mt-2">{error}</p>}
+        <div className="mt-3 flex items-center gap-2 justify-end">
+          <GhostButton onClick={onClose} type="button">Hủy</GhostButton>
+          <PrimaryButton type="submit" disabled={saving}>{saving ? (savingLabel || "Đang lưu...") : editId ? "Cập nhật" : "Thêm mới"}</PrimaryButton>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, onRemoveAll, removeAllLabel, onCreate, createLabel }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-display text-lg text-ink">{title}{count !== undefined ? ` (${count})` : ""}</h2>
-        {onRemoveAll && <button onClick={onRemoveAll} className="text-xs text-ticket/70 hover:text-ticket">{removeAllLabel || "Xóa tất cả"}</button>}
+        <div className="flex items-center gap-3">
+          {onRemoveAll && <button onClick={onRemoveAll} className="text-xs text-ticket/70 hover:text-ticket">{removeAllLabel || "Xóa tất cả"}</button>}
+          {onCreate && <PrimaryButton onClick={onCreate} className="text-xs px-3 py-1.5">{createLabel || "+ Thêm mới"}</PrimaryButton>}
+        </div>
       </div>
       {error && !data && <ErrorState subtitle={error} onRetry={onRetry} />}
       {!error && !data && <Loader label="Đang tải..." />}
