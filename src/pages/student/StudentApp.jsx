@@ -99,15 +99,37 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
     if (isPlayToWin && userAuth?.user && game?.code) {
       try {
         const coinAmount = sessionResult.score || 0;
-        await gameProgressService.addCoins(game.code, coinAmount);
-        await gameProgressService.incrementPlay(game.code);
+        console.log("[Coin] Saving coins:", { gameId: game.code, score: coinAmount, userId: userAuth.user.id });
+        const coinResult = await gameProgressService.addCoins(game.code, coinAmount);
+        console.log("[Coin] addCoins result:", coinResult);
+        const playResult = await gameProgressService.incrementPlay(game.code);
+        console.log("[Coin] incrementPlay result:", playResult);
       } catch (e) {
-        console.warn("Failed to save coin progress:", e);
+        console.error("[Coin] Failed to save coin progress:", e);
       }
+    } else {
+      console.log("[Coin] Skipped:", { isPlayToWin, hasUser: !!userAuth?.user, gameCode: game?.code });
     }
 
     setFinalResult(entry);
     setScreen("result");
+  };
+
+  // Handle state-update from persistent games (e.g. LangCuaToi)
+  // Saves coins to API whenever game reports a state change
+  const handleStateUpdate = async (data) => {
+    if (!data || !isPlayToWin || !userAuth?.user || !game?.code) return;
+    try {
+      const newCoins = data.coins || 0;
+      if (newCoins > 0) {
+        await gameProgressService.upsertGame(game.code, {
+          coins: newCoins,
+          gameName: game.name || game.code,
+        });
+      }
+    } catch (e) {
+      console.error("[Coin] Failed to save state-update:", e);
+    }
   };
 
   return (
@@ -132,7 +154,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
         )}
         {screen === "play" && game && (isPlayToWin || questions.length > 0) && (
           <>
-            <GamePlayRouter game={game} questions={questions} players={players} playerName={playerName} onQuit={restart} onFinish={handleFinish} template={template} />
+            <GamePlayRouter game={game} questions={questions} players={players} playerName={playerName} onQuit={restart} onFinish={handleFinish} onStateUpdate={handleStateUpdate} template={template} />
             <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} />
           </>
         )}

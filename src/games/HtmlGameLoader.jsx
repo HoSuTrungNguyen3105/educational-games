@@ -9,7 +9,7 @@ import { API_BASE } from "../services/api.js";
  * iframe → React: { type: "game-over", data: { score, timeUsed } }
  * iframe → React: { type: "quit" }
  */
-export default function HtmlGameLoader({ htmlContent, game, questions, players, playerName, playMode, onFinish, onQuit }) {
+export default function HtmlGameLoader({ htmlContent, game, questions, players, playerName, playMode, onFinish, onQuit, onStateUpdate }) {
   const iframeRef = useRef(null);
 
   const handleInit = useCallback(() => {
@@ -35,13 +35,15 @@ export default function HtmlGameLoader({ htmlContent, game, questions, players, 
           totalQuestions: msg.data?.totalQuestions ?? 0,
           timeUsed: msg.data?.timeUsed || 0,
         });
+      } else if (msg.type === "state-update") {
+        onStateUpdate?.(msg.data);
       } else if (msg.type === "quit") {
         onQuit?.();
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [handleInit, onFinish, onQuit]);
+  }, [handleInit, onFinish, onQuit, onStateUpdate]);
 
   useEffect(() => {
     const iframe = iframeRef.current;

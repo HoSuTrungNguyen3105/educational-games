@@ -3,7 +3,7 @@ import PlayGameScreen from './PlayGameScreen.jsx'
 import HtmlGameLoader from './HtmlGameLoader.jsx'
 import { templateService } from '../services/api.js'
 
-export function GamePlayRouter({ game, questions, players, playerName, onFinish, onQuit, template: initialTemplate }) {
+export function GamePlayRouter({ game, questions, players, playerName, onFinish, onQuit, onStateUpdate, template: initialTemplate }) {
   const [tpl, setTpl] = useState(initialTemplate || null);
   const tid = game?.templateId
     ? (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || String(game.templateId))
@@ -30,7 +30,7 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
   }
 
   if (tpl?.htmlTemplate && tpl.htmlTemplate.trim() !== "") {
-    return <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={tpl.playMode || "solo"} onFinish={onFinish} onQuit={onQuit} />;
+    return <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={tpl.playMode || "solo"} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} />;
   }
 
   return <PlayGameScreen game={game} questions={questions} onFinish={onFinish} />;
