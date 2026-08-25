@@ -109,6 +109,7 @@ body{font-family:'Nunito',sans-serif;background:var(--dark);color:var(--ink);hei
     <span>Phòng: <b id="gameCode">---</b></span>
     <span>📋 <span id="progressLabel">Chặng: 0/0</span></span>
     <span style="color:#4CAF7D">⏱ <span id="timerDisplay">0s</span></span>
+    <span>💰 <b id="coinDisplay">0</b></span>
     <span>⭐ Điểm: <b id="scoreDisplay">0</b></span>
   </div>
   <button class="btn-quit" id="btnQuit">Thoát</button>
@@ -172,6 +173,11 @@ var timerInterval=null,timeLeft=0;
 var flashTimeout=null;
 var shieldActive=false,timeBonusNext=0;
 var pendingCorrect=false,pendingQ=null,pendingBtns=null,pendingOptionId=null;
+var userCoins=0;
+
+function broadcastState(){
+  try{window.parent.postMessage({type:'state-update',data:{type:'play-to-win',coins:userCoins+score}},'*');}catch(e){}
+}
 
 /* ── DOM refs ── */
 var heroBarCard=document.getElementById("heroBarCard");
@@ -319,6 +325,8 @@ function handleAnswer(optionId){
       flash("hero");
       correctCount+=0;
       scoreDisplay.textContent=score;
+      document.getElementById("coinDisplay").textContent=userCoins+score;
+      broadcastState();
       updateBars();
       showResult(false,q,optionId,correctAnswerId);
     }
@@ -405,6 +413,8 @@ function applyAttack(atk,q){
 
   correctCount++;
   scoreDisplay.textContent=score;
+  document.getElementById("coinDisplay").textContent=userCoins+score;
+  broadcastState();
   updateBars();
   showResult(true,q,pendingOptionId,q.correctAnswer);
 }
@@ -428,7 +438,7 @@ function showResult(isCorrect,q,optionId,correctAnswerId){
 function endGame(){
   clearInterval(timerInterval);
   var timeUsed=Math.round((Date.now()-startTime)/1000);
-  parent.postMessage({type:"game-over",data:{score:score,correct:correctCount,timeUsed:timeUsed}},"*");
+  parent.postMessage({type:"game-over",data:{score:score,correct:correctCount,timeUsed:timeUsed,totalCoins:userCoins+score}},"*");
 }
 
 function handleMessage(e){
@@ -439,7 +449,9 @@ function handleMessage(e){
     startTime=Date.now();
     score=0;correctCount=0;heroHp=100;monsterHp=100;
     currentIndex=0;shieldActive=false;timeBonusNext=0;
+    userCoins=d.coins||0;
     scoreDisplay.textContent="0";
+    document.getElementById("coinDisplay").textContent=userCoins;
     document.getElementById("gameCode").textContent=d.gameId||"";
     renderQuestion();
   }

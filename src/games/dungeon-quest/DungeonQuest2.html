@@ -85,6 +85,7 @@ body{min-height:100vh;background:radial-gradient(1200px 700px at 20% -10%,#1c214
   <div class="topbar">
     <div class="brand">QUIZ BATTLE<span>Trả lời đúng để mở đòn tấn công</span></div>
     <div class="topbar-right">
+      <div class="score">💰 <b id="coinVal">0</b></div>
       <div class="score">Điểm: <b id="scoreVal">0</b></div>
       <button class="btn-quit" id="btnQuit">Thoát</button>
     </div>
@@ -147,6 +148,11 @@ var ENEMY_NAMES=["Slime C\u1ED3 \u0110\u1EA1i","Yêu Tinh R\u1EEBng S\u00E2u","B
 var ENEMY_BASE_HP=80,ENEMY_HP_STEP=25,PLAYER_MAX_HP=100,ENEMY_HIT_DMG=[8,16];
 
 var state={questions:[],qIndex:0,score:0,playerHp:PLAYER_MAX_HP,enemyHp:ENEMY_BASE_HP,enemyMaxHp:ENEMY_BASE_HP,enemyRound:0,timer:null,timeLeft:20,timeLimit:20,locked:false};
+var userCoins=0;
+
+function broadcastState(){
+  try{window.parent.postMessage({type:'state-update',data:{type:'play-to-win',coins:userCoins+state.score}},'*');}catch(e){}
+}
 
 var el=function(id){return document.getElementById(id)};
 
@@ -201,6 +207,8 @@ function handleAnswerResult(result,btnEl){
     el('feedback').textContent='Ch\u00EDnh x\u00E1c! +'+(result.points||0)+' \u0111i\u1EC3m \u2014 ch\u1ECDn m\u1ED9t \u0111\u00F4n \u0111\u1EC3 t\u1EA5n c\u00F4ng.';
     el('feedback').className='feedback ok';
     state.score+=(result.points||0);el('scoreVal').textContent=state.score;
+    el('coinVal').textContent=userCoins+state.score;
+    broadcastState();
     showAttackOptions();
   }else{
     btnEl.classList.add('wrong');
@@ -281,7 +289,7 @@ function gameOver(){
   el('bannerTitle').textContent='B\u1EA1n \u0111\u00E3 g\u1EE1c ng\u1EE7';
   el('bannerText').textContent='\u0110i\u1EC3m s\u1ED1 cu\u1ED1i c\u00F9ng: '+state.score+'. Th\u1EED l\u1EA1i \u0111\u1EC3 \u0111\u00E1nh b\u1EA1i \u0111\u1ED1i th\u1EE7 ti\u1EBFp theo!';
   el('banner').className='banner show';
-  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.qIndex,timeUsed:0}},"*");
+  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.qIndex,timeUsed:0,totalCoins:userCoins+state.score}},"*");
 }
 
 function winGame(){
@@ -289,12 +297,13 @@ function winGame(){
   el('bannerTitle').textContent='Chi\u1EBFn th\u1EAFng vang d\u1EF1ng!';
   el('bannerText').textContent='B\u1EA1n \u0111\u00E3 tr\u1EA3 l\u1EDDi h\u1EBFt c\u00E2u h\u1ECFi v\u1EDBi '+state.score+' \u0111i\u1EC3m.';
   el('banner').className='banner show';
-  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.questions.length,timeUsed:0}},"*");
+  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.questions.length,timeUsed:0,totalCoins:userCoins+state.score}},"*");
 }
 
 el('retryBtn').onclick=function(){
   state={questions:state.questions,qIndex:0,score:0,playerHp:PLAYER_MAX_HP,enemyHp:ENEMY_BASE_HP,enemyMaxHp:ENEMY_BASE_HP,enemyRound:0,timer:null,timeLeft:20,timeLimit:20,locked:false};
-  el('scoreVal').textContent='0';el('enemyName').textContent=ENEMY_NAMES[0];updateBars();
+  el('scoreVal').textContent='0';el('coinVal').textContent=userCoins;
+  el('enemyName').textContent=ENEMY_NAMES[0];updateBars();
   el('qcard').style.display='block';el('banner').className='banner';renderQuestion();
 };
 
@@ -307,7 +316,9 @@ window.addEventListener('message',function(e){
     state.questions=d.questions||[];state.qIndex=0;state.score=0;
     state.playerHp=PLAYER_MAX_HP;state.enemyHp=ENEMY_BASE_HP;
     state.enemyMaxHp=ENEMY_BASE_HP;state.enemyRound=0;state.locked=false;
-    el('scoreVal').textContent='0';el('enemyName').textContent=ENEMY_NAMES[0];
+    userCoins=d.coins||0;
+    el('scoreVal').textContent='0';el('coinVal').textContent=userCoins;
+    el('enemyName').textContent=ENEMY_NAMES[0];
     el('qcard').style.display='block';el('banner').className='banner';
     updateBars();renderQuestion();
   }
