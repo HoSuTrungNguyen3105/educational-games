@@ -78,48 +78,8 @@ function App() {
     if (auth?.token) teacher.login(u, auth.token);
   };
 
-  // ── Route rendering ──
-
-  // User login/register modals (override current route)
-  if (showUserLogin) {
-    return (
-      <>
-        <UserLoginScreen
-          onBack={() => setShowUserLogin(false)}
-          onLogin={handleUserLogin}
-          onGoRegister={() => { setShowUserLogin(false); setShowUserRegister(true); }}
-          showToast={showToast}
-        />
-      </>
-    );
-  }
-  if (showUserRegister) {
-    return (
-      <>
-        <UserRegisterScreen
-          onBack={() => setShowUserRegister(false)}
-          onRegistered={handleUserRegister}
-          onGoLogin={() => { setShowUserRegister(false); setShowUserLogin(true); }}
-          showToast={showToast}
-        />
-      </>
-    );
-  }
-
-  // Admin/teacher routes
-  if (route.name.startsWith("admin-")) {
-    if (!teacher.user) {
-      return <LoginScreen onBack={() => navigate("/")} onLogin={handleTeacherLogin} showToast={showToast} />;
-    }
-    return (
-      <>
-        <TeacherApp user={teacher.user} route={route} onExit={() => navigate("/")} onLogout={teacher.logout} showToast={showToast} />
-      </>
-    );
-  }
-
-  // Student play routes
-  if (route.name === "student" || route.name === "student-join") {
+  // ── Student Screen Renderer ──
+  const renderStudent = () => {
     if (loadingGame) {
       return (
         <div className="min-h-screen bg-paper flex items-center justify-center">
@@ -138,54 +98,94 @@ function App() {
         onUserLogout={handleUserLogout}
       />
     );
-  }
+  };
 
-  // Chat
-  if (route.name === "chat") {
-    return (
+  // ── Route Map (O(1) declarative lookup) ──
+  const routeMap = {
+    student: renderStudent,
+    "student-join": renderStudent,
+    chat: () => (
       <RouteShell toast={toast}>
         <ConversationListScreen userAuth={userAuth} onLogout={handleUserLogout} />
       </RouteShell>
-    );
-  }
-
-  // Profile
-  if (route.name === "profile") {
-    return (
+    ),
+    profile: () => (
       <RouteShell toast={toast} showBack={false}>
         <ProfileScreen userAuth={userAuth} onLogout={handleUserLogout} onBack={() => navigate("/")} />
       </RouteShell>
-    );
-  }
-
-  // Find friends
-  if (route.name === "find-friends") {
-    return (
+    ),
+    "find-friends": () => (
       <RouteShell toast={toast}>
         <FindFriendsScreen userAuth={userAuth} />
       </RouteShell>
-    );
-  }
-
-  // My Coins
-  if (route.name === "my-coins") {
-    return (
+    ),
+    "my-coins": () => (
       <RouteShell toast={toast} showBack={false}>
         <MyCoins userAuth={userAuth} onBack={() => navigate("/")} />
       </RouteShell>
-    );
-  }
+    ),
+  };
 
-  // Home (default)
-  return (
-    <HomeScreen
-      onSelectGame={selectGame}
-      userAuth={userAuth}
-      onUserLogin={() => setShowUserLogin(true)}
-      onUserRegister={() => setShowUserRegister(true)}
-      onUserLogout={handleUserLogout}
-    />
-  );
+  // ── Render Screen ──
+  const renderScreen = () => {
+    // User login/register modals (override current route)
+    if (showUserLogin) {
+      return (
+        <UserLoginScreen
+          onBack={() => setShowUserLogin(false)}
+          onLogin={handleUserLogin}
+          onGoRegister={() => { setShowUserLogin(false); setShowUserRegister(true); }}
+          showToast={showToast}
+        />
+      );
+    }
+
+    if (showUserRegister) {
+      return (
+        <UserRegisterScreen
+          onBack={() => setShowUserRegister(false)}
+          onRegistered={handleUserRegister}
+          onGoLogin={() => { setShowUserRegister(false); setShowUserLogin(true); }}
+          showToast={showToast}
+        />
+      );
+    }
+
+    // Admin/teacher routes
+    if (route.name.startsWith("admin-")) {
+      if (!teacher.user) {
+        return <LoginScreen onBack={() => navigate("/")} onLogin={handleTeacherLogin} showToast={showToast} />;
+      }
+      return (
+        <TeacherApp
+          user={teacher.user}
+          route={route}
+          onExit={() => navigate("/")}
+          onLogout={teacher.logout}
+          showToast={showToast}
+        />
+      );
+    }
+
+    // Match route from routeMap
+    const renderTarget = routeMap[route.name];
+    if (renderTarget) {
+      return renderTarget();
+    }
+
+    // Home (default fallback)
+    return (
+      <HomeScreen
+        onSelectGame={selectGame}
+        userAuth={userAuth}
+        onUserLogin={() => setShowUserLogin(true)}
+        onUserRegister={() => setShowUserRegister(true)}
+        onUserLogout={handleUserLogout}
+      />
+    );
+  };
+
+  return renderScreen();
 }
 
 export default App;

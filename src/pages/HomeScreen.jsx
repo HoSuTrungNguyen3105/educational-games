@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { gameService } from '../services/api.js'
+import { gameService, coinService } from '../services/api.js'
+import { getLevelProgress, getLevelEmoji } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
 import { PrimaryButton, Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
@@ -267,6 +268,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 // Thanh điều hướng cố định — gom mọi thao tác quan trọng lên đầu trang
 function TopBar({ userAuth, onUserLogin, onUserRegister, onUserLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userCoins, setUserCoins] = useState(0);
+
+  useEffect(() => {
+    if (userAuth?.user) {
+      coinService.get().then(c => setUserCoins(c?.coins || 0)).catch(() => {});
+    }
+  }, [userAuth?.user]);
+
+  const lv = getLevelProgress(userCoins);
 
   const go = (path) => {
     navigate(path);
@@ -306,10 +316,11 @@ function TopBar({ userAuth, onUserLogin, onUserRegister, onUserLogout }) {
             <a
               onClick={() => navigate("/my-coins")}
               href="#/my-coins"
-              title="Coin của tôi"
-              className="hidden sm:inline-flex items-center gap-1.5 text-sm text-gold font-semibold hover:text-yellow-600 transition px-3 py-2 rounded-full hover:bg-yellow-50"
+              title={`${userCoins.toLocaleString()} Coin - Level ${lv.level}`}
+              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold transition px-3 py-2 rounded-full hover:bg-yellow-50"
             >
-              💰 <span className="hidden md:inline">Coin</span>
+              <span className="text-gold">💰 {userCoins.toLocaleString()}</span>
+              <span className="text-[10px] text-yellow-600">{getLevelEmoji(lv.level)} Lv.{lv.level}</span>
             </a>
           )}
           <a

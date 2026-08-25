@@ -250,9 +250,6 @@ export const gameProgressService = {
   async upsertGame(gameId, data) {
     return apiFetch(`/users/me/games/${encodeURIComponent(gameId)}`, { method: "PUT", body: data });
   },
-  async addCoins(gameId, amount) {
-    return apiFetch(`/users/me/games/${encodeURIComponent(gameId)}/coins`, { method: "POST", body: { amount } });
-  },
   async addExperience(gameId, amount) {
     return apiFetch(`/users/me/games/${encodeURIComponent(gameId)}/experience`, { method: "POST", body: { amount } });
   },
@@ -276,5 +273,14 @@ export const adminGameProgressService = {
   },
   async removeProgress(id) {
     return apiFetch(`/users/game-progress/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+};
+
+export const coinService = {
+  async get() {
+    return apiFetch("/auth/me/coins");
+  },
+  async add(amount) {
+    return apiFetch("/auth/me/coins", { method: "POST", body: { amount } });
   },
 };

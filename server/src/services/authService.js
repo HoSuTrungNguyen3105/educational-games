@@ -37,7 +37,7 @@ export function verifyToken(token) {
 }
 
 export function publicUser(user) {
-  return { id: user.id, username: user.username, email: user.email || null, name: user.name, role: user.role };
+  return { id: user.id, username: user.username, email: user.email || null, name: user.name, role: user.role, coins: user.coins || 0 };
 }
 
 function normalizeRole(role) {
@@ -120,4 +120,27 @@ export async function removeUser(id) {
   if (id === "user-001") throw new Error("Không thể xóa tài khoản quản trị mặc định");
   await getCollection(COLLECTION).deleteOne({ id });
   return true;
+}
+
+export async function getCoins(userId) {
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  return user.coins || 0;
+}
+
+export async function addCoins(userId, amount) {
+  if (typeof amount !== "number") throw new Error("amount must be a number");
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  const newCoins = Math.max(0, (user.coins || 0) + amount);
+  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { coins: newCoins } });
+  return newCoins;
+}
+
+export async function setCoins(userId, coins) {
+  if (typeof coins !== "number" || coins < 0) throw new Error("coins must be a non-negative number");
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { coins } });
+  return coins;
 }

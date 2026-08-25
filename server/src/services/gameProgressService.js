@@ -35,7 +35,6 @@ export async function upsert(userId, gameId, data = {}) {
     _id: uid(),
     userId,
     gameId,
-    coins: 0,
     level: 1,
     experience: 0,
     progress: 0,
@@ -49,20 +48,6 @@ export async function upsert(userId, gameId, data = {}) {
   };
   await getCollection(COLLECTION).insertOne(doc);
   return doc;
-}
-
-export async function incrementCoins(userId, gameId, amount) {
-  const now = new Date().toISOString();
-  const existing = await getByUserAndGame(userId, gameId);
-  if (!existing) {
-    return upsert(userId, gameId, { coins: Math.max(0, amount), lastPlayedAt: now });
-  }
-  const newCoins = Math.max(0, (existing.coins || 0) + amount);
-  await getCollection(COLLECTION).updateOne(
-    { _id: existing._id },
-    { $set: { coins: newCoins, updatedAt: now, lastPlayedAt: now } }
-  );
-  return { ...existing, coins: newCoins, updatedAt: now, lastPlayedAt: now };
 }
 
 export async function incrementExperience(userId, gameId, amount) {

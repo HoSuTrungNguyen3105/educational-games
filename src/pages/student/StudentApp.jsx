@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { uid, resultService, questionService, gameService, gameProgressService } from '../../services/api.js'
+import { uid, resultService, questionService, gameService, gameProgressService, coinService } from '../../services/api.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
@@ -99,11 +99,10 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
     if (isPlayToWin && userAuth?.user && game?.code) {
       try {
         const coinAmount = sessionResult.score || 0;
-        console.log("[Coin] Saving coins:", { gameId: game.code, score: coinAmount, userId: userAuth.user.id });
-        const coinResult = await gameProgressService.addCoins(game.code, coinAmount);
+        console.log("[Coin] Saving coins:", { score: coinAmount, userId: userAuth.user.id });
+        const coinResult = await coinService.add(coinAmount);
         console.log("[Coin] addCoins result:", coinResult);
-        const playResult = await gameProgressService.incrementPlay(game.code);
-        console.log("[Coin] incrementPlay result:", playResult);
+        await gameProgressService.incrementPlay(game.code);
       } catch (e) {
         console.error("[Coin] Failed to save coin progress:", e);
       }
@@ -116,16 +115,19 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   };
 
   // Handle state-update from persistent games (e.g. LangCuaToi)
-  // Saves coins to API whenever game reports a state change
+  // Saves coins globally whenever game reports a state change
   const handleStateUpdate = async (data) => {
-    if (!data || !isPlayToWin || !userAuth?.user || !game?.code) return;
+    if (!data || !isPlayToWin || !userAuth?.user) return;
     try {
       const newCoins = data.coins || 0;
       if (newCoins > 0) {
-        await gameProgressService.upsertGame(game.code, {
-          coins: newCoins,
-          gameName: game.name || game.code,
-        });
+        // Get current global coins, calculate diff, and add
+        const current = await coinService.get();
+        const currentCoins = current?.coins || 0;
+        const diff = newCoins - currentCoins;
+        if (diff > 0) {
+          await coinService.add(diff);
+        }
       }
     } catch (e) {
       console.error("[Coin] Failed to save state-update:", e);

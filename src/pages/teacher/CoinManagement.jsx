@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { adminGameProgressService, userService } from '../../services/api.js'
+import { getLevelProgress, getLevelTitle, getLevelEmoji } from '../../lib/utils.js'
 import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton } from '../../components/ui.jsx'
 
 /* eslint-disable react-hooks/set-state-in-effect */
@@ -22,27 +23,15 @@ const GAME_NAMES = {
   "NINJA77": "Ninja Vượt Ải Từ Vựng",
 };
 
-function getGameName(gameId) {
-  return GAME_NAMES[gameId] || gameId;
-}
-
+function getGameName(gameId) { return GAME_NAMES[gameId] || gameId; }
 function getGameIcon(gameId) {
   const icons = {
-    "TOAN101": "\u{1F9EE}",
-    "VUTRU22": "\u{1F30C}",
-    "TONGHOP9": "\u{1F4DA}",
+    "TOAN101": "\u{1F9EE}", "VUTRU22": "\u{1F30C}", "TONGHOP9": "\u{1F4DA}",
     "FAMILY07": "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}",
-    "TRUNGTHU5": "\u{1F391}",
-    "DIALY88": "\u{1F30D}",
-    "CHUCAI3": "\u{1F4DD}",
-    "QUAYSO4": "\u{1F3B0}",
-    "ATGT202": "\u{1F6A6}",
-    "DONGVAT6": "\u{1F43E}",
-    "LICHSU19": "\u{1F6F6}",
-    "MOITRUONG4": "\u{267B}\uFE0F",
-    "PHIEUL9": "\u{1F9EE}",
-    "HAMNGUC3": "\u{1F3F0}",
-    "NINJA77": "\u{1F977}",
+    "TRUNGTHU5": "\u{1F391}", "DIALY88": "\u{1F30D}", "CHUCAI3": "\u{1F4DD}",
+    "QUAYSO4": "\u{1F3B0}", "ATGT202": "\u{1F6A6}", "DONGVAT6": "\u{1F43E}",
+    "LICHSU19": "\u{1F6F6}", "MOITRUONG4": "\u{267B}\uFE0F", "PHIEUL9": "\u{1F9EE}",
+    "HAMNGUC3": "\u{1F3F0}", "NINJA77": "\u{1F977}",
   };
   return icons[gameId] || "\u{1F3AE}";
 }
@@ -56,6 +45,7 @@ export default function CoinManagement({ showToast }) {
   const [saving, setSaving] = useState(false);
   const [filterUser, setFilterUser] = useState("");
   const [filterGame, setFilterGame] = useState("");
+  const [tab, setTab] = useState("users");
 
   const load = useCallback(() => {
     setProgress(null); setError(null);
@@ -76,14 +66,12 @@ export default function CoinManagement({ showToast }) {
 
   const allGameIds = [...new Set((progress || []).map(p => p.gameId))];
   const allUserIds = [...new Set((progress || []).map(p => p.userId))];
-
-  const totalCoins = filtered.reduce((s, p) => s + (p.coins || 0), 0);
+  const totalGlobalCoins = users.reduce((s, u) => s + (u.coins || 0), 0);
   const totalPlays = filtered.reduce((s, p) => s + (p.gamesPlayed || 0), 0);
 
   const openEdit = (item) => {
     setEditItem(item);
     setEditForm({
-      coins: item.coins || 0,
       level: item.level || 1,
       experience: item.experience || 0,
       progress: item.progress || 0,
@@ -117,19 +105,44 @@ export default function CoinManagement({ showToast }) {
     }
   };
 
-  const headers = ["Người dùng", "Game", "Coin", "Level", "XP", "Lượt chơi", "Nhiệm vụ", "Thao tác"];
+  const userHeaders = ["Người dùng", "Vai trò", "💰 Coin", "Hạng"];
+  const renderUserRow = (u) => {
+    const lv = getLevelProgress(u.coins || 0);
+    return (
+      <tr key={u.id} className="border-t border-ink/5 hover:bg-ink/[0.02] transition">
+        <td className="py-2.5 px-3 text-sm font-body text-ink">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-xs text-white font-bold shrink-0">
+              {(u.name || "?").charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className="font-semibold truncate max-w-[180px]">{u.name || u.username}</p>
+              <p className="text-[10px] text-[#8A7C63] font-mono truncate max-w-[180px]">@{u.username}</p>
+            </div>
+          </div>
+        </td>
+        <td className="py-2.5 px-3 text-sm font-mono text-ink capitalize">{u.role === "student" ? "Học sinh" : u.role}</td>
+        <td className="py-2.5 px-3 text-sm font-mono font-bold text-gold">{(u.coins || 0).toLocaleString()}</td>
+        <td className="py-2.5 px-3">
+          <div className="flex items-center gap-1.5">
+            <span>{getLevelEmoji(lv.level)}</span>
+            <span className="text-sm font-semibold text-ink">Lv.{lv.level}</span>
+            <span className="text-[10px] font-mono text-[#8A7C63]">{getLevelTitle(lv.level)}</span>
+          </div>
+        </td>
+      </tr>
+    );
+  };
 
-  const renderRow = (item) => (
+  const progressHeaders = ["Người dùng", "Game", "Level", "XP", "Lượt chơi", "Nhiệm vụ", "Thao tác"];
+  const renderProgressRow = (item) => (
     <tr key={item._id} className="border-t border-ink/5 hover:bg-ink/[0.02] transition">
       <td className="py-2.5 px-3 text-sm font-body text-ink">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-xs text-white font-bold shrink-0">
             {(userMap[item.userId] || "?").charAt(0).toUpperCase()}
           </div>
-          <div>
-            <p className="font-semibold truncate max-w-[140px]">{userMap[item.userId] || item.userId}</p>
-            <p className="text-[10px] text-[#8A7C63] font-mono truncate max-w-[140px]">{item.userId}</p>
-          </div>
+          <p className="font-semibold truncate max-w-[140px]">{userMap[item.userId] || item.userId}</p>
         </div>
       </td>
       <td className="py-2.5 px-3 text-sm font-body text-ink">
@@ -138,15 +151,14 @@ export default function CoinManagement({ showToast }) {
           <span className="truncate max-w-[120px]">{getGameName(item.gameId)}</span>
         </span>
       </td>
-      <td className="py-2.5 px-3 text-sm font-mono font-bold text-gold">{(item.coins || 0).toLocaleString()}</td>
       <td className="py-2.5 px-3 text-sm font-mono text-ink">{item.level || 1}</td>
       <td className="py-2.5 px-3 text-sm font-mono text-ink">{(item.experience || 0).toLocaleString()}</td>
       <td className="py-2.5 px-3 text-sm font-mono text-[#8A7C63]">{item.gamesPlayed || 0}</td>
       <td className="py-2.5 px-3 text-sm font-mono text-[#8A7C63]">{item.questsCompleted || 0}</td>
       <td className="py-2.5 px-3">
         <div className="flex items-center gap-1.5">
-          <button onClick={() => openEdit(item)} className="text-xs font-semibold text-ticket hover:underline">✏️</button>
-          <button onClick={() => handleDelete(item)} className="text-xs font-semibold text-red-400 hover:underline">🗑️</button>
+          <button onClick={() => openEdit(item)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
+          <button onClick={() => handleDelete(item)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
         </div>
       </td>
     </tr>
@@ -156,12 +168,23 @@ export default function CoinManagement({ showToast }) {
     <div className="space-y-5">
       <ManagementHeader subtitle="Quản trị" title="💰 Coin & Tiến trình người chơi" />
 
+      <div className="flex gap-2">
+        <button onClick={() => setTab("users")}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "users" ? "bg-gold/20 text-gold" : "text-[#8A7C63] hover:bg-ink/5"}`}>
+          {"\u{1F465}"} Coin & Hạng
+        </button>
+        <button onClick={() => setTab("progress")}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "progress" ? "bg-gold/20 text-gold" : "text-[#8A7C63] hover:bg-ink/5"}`}>
+          {"\u{1F4CA}"} Tiến trình game
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Tổng bản ghi", value: filtered.length, icon: "📋" },
-          { label: "Tổng Coin", value: totalCoins.toLocaleString(), icon: "💰" },
-          { label: "Tổng lượt chơi", value: totalPlays.toLocaleString(), icon: "🎮" },
-          { label: "Người chơi", value: allUserIds.length, icon: "👥" },
+          { label: "Người dùng", value: users.length, icon: "\u{1F465}" },
+          { label: "Tổng Coin", value: totalGlobalCoins.toLocaleString(), icon: "\u{1F4B0}" },
+          { label: "Bản ghi tiến trình", value: filtered.length, icon: "\u{1F4CB}" },
+          { label: "Tổng lượt chơi", value: totalPlays.toLocaleString(), icon: "\u{1F3AE}" },
         ].map(s => (
           <div key={s.label} className="note-card p-4">
             <div className="text-2xl mb-1">{s.icon}</div>
@@ -171,48 +194,63 @@ export default function CoinManagement({ showToast }) {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <select value={filterUser} onChange={e => setFilterUser(e.target.value)}
-          className="note-card px-3 py-2 text-sm font-body text-ink border-ink/10 focus:border-ticket">
-          <option value="">Tất cả người dùng</option>
-          {allUserIds.map(uid => (
-            <option key={uid} value={uid}>{userMap[uid] || uid}</option>
-          ))}
-        </select>
-        <select value={filterGame} onChange={e => setFilterGame(e.target.value)}
-          className="note-card px-3 py-2 text-sm font-body text-ink border-ink/10 focus:border-ticket">
-          <option value="">Tất cả game</option>
-          {allGameIds.map(gid => (
-            <option key={gid} value={gid}>{getGameIcon(gid)} {getGameName(gid)}</option>
-          ))}
-        </select>
-        {(filterUser || filterGame) && (
-          <button onClick={() => { setFilterUser(""); setFilterGame(""); }}
-            className="text-xs text-ticket font-semibold hover:underline self-center">Xóa bộ lọc</button>
-        )}
-      </div>
+      {tab === "users" && (
+        <ManagementTable
+          title="Coin & Hạng theo người dùng"
+          count={users.length}
+          data={users}
+          error={error}
+          onRetry={load}
+          emptyLabel="Chưa có người dùng nào"
+          headers={userHeaders}
+          renderRow={renderUserRow}
+        />
+      )}
 
-      <ManagementTable
-        title="Danh sách tiến trình"
-        count={filtered.length}
-        data={filtered}
-        error={error}
-        onRetry={load}
-        emptyLabel="Chưa có dữ liệu tiến trình nào"
-        headers={headers}
-        renderRow={renderRow}
-      />
+      {tab === "progress" && (
+        <>
+          <div className="flex flex-wrap gap-3">
+            <select value={filterUser} onChange={e => setFilterUser(e.target.value)}
+              className="note-card px-3 py-2 text-sm font-body text-ink border-ink/10 focus:border-ticket">
+              <option value="">Tất cả người dùng</option>
+              {allUserIds.map(uid => (
+                <option key={uid} value={uid}>{userMap[uid] || uid}</option>
+              ))}
+            </select>
+            <select value={filterGame} onChange={e => setFilterGame(e.target.value)}
+              className="note-card px-3 py-2 text-sm font-body text-ink border-ink/10 focus:border-ticket">
+              <option value="">Tất cả game</option>
+              {allGameIds.map(gid => (
+                <option key={gid} value={gid}>{getGameIcon(gid)} {getGameName(gid)}</option>
+              ))}
+            </select>
+            {(filterUser || filterGame) && (
+              <button onClick={() => { setFilterUser(""); setFilterGame(""); }}
+                className="text-xs text-ticket font-semibold hover:underline self-center">Xóa bộ lọc</button>
+            )}
+          </div>
+          <ManagementTable
+            title="Tiến trình theo game"
+            count={filtered.length}
+            data={filtered}
+            error={error}
+            onRetry={load}
+            emptyLabel="Chưa có dữ liệu tiến trình nào"
+            headers={progressHeaders}
+            renderRow={renderProgressRow}
+          />
+        </>
+      )}
 
       {editItem && (
         <Modal onClose={() => !saving && setEditItem(null)}>
           <div className="space-y-4">
-            <h3 className="font-display text-xl text-ink">✏️ Sửa tiến trình</h3>
+            <h3 className="font-display text-xl text-ink">Sửa tiến trình</h3>
             <p className="text-sm text-[#8A7C63]">
               {userMap[editItem.userId] || editItem.userId} — {getGameIcon(editItem.gameId)} {getGameName(editItem.gameId)}
             </p>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { key: "coins", label: "Coin" },
                 { key: "level", label: "Level" },
                 { key: "experience", label: "Experience" },
                 { key: "progress", label: "Progress %" },
@@ -230,7 +268,7 @@ export default function CoinManagement({ showToast }) {
             <div className="flex flex-wrap justify-end gap-3 pt-2">
               <GhostButton onClick={() => setEditItem(null)} disabled={saving}>Hủy</GhostButton>
               <PrimaryButton onClick={handleSave} disabled={saving}>
-                {saving ? "Đang lưu..." : "💾 Lưu thay đổi"}
+                {saving ? "Đang lưu..." : "Lưu thay đổi"}
               </PrimaryButton>
             </div>
           </div>

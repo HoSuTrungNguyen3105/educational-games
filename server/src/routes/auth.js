@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyCredentials, signToken, publicUser, registerUser, updateProfile } from "../services/authService.js";
+import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, addCoins } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 
@@ -40,14 +40,43 @@ router.post("/register", async (req, res, next) => {
   }
 });
 
-router.get("/me", authenticate, (req, res) => {
-  sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, role: req.user.role });
+router.get("/me", authenticate, async (req, res) => {
+  try {
+    const coins = await getCoins(req.user.sub);
+    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, role: req.user.role, coins });
+  } catch {
+    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, role: req.user.role, coins: 0 });
+  }
 });
 
 router.put("/me", authenticate, async (req, res, next) => {
   try {
     const updated = await updateProfile(req.user.sub, req.body || {});
     sendSuccess(res, updated);
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+// GET /api/auth/me/coins — get global coins
+router.get("/me/coins", authenticate, async (req, res, next) => {
+  try {
+    const coins = await getCoins(req.user.sub);
+    sendSuccess(res, { coins });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/auth/me/coins — add/deduct coins (global)
+router.post("/me/coins", authenticate, async (req, res, next) => {
+  try {
+    const { amount } = req.body || {};
+    if (amount === undefined || typeof amount !== "number") {
+      return sendError(res, "amount (number) is required", 400);
+    }
+    const coins = await addCoins(req.user.sub, amount);
+    sendSuccess(res, { coins });
   } catch (e) {
     sendError(res, e.message, 400);
   }

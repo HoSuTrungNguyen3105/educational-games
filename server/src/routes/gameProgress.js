@@ -17,7 +17,6 @@ router.get("/me/games", async (req, res, next) => {
       name: p.gameName || p.gameId,
       progress: p.progress || 0,
       level: p.level || 1,
-      coins: p.coins || 0,
       experience: p.experience || 0,
       gamesPlayed: p.gamesPlayed || 0,
       lastPlayedAt: p.lastPlayedAt || p.updatedAt,
@@ -38,7 +37,6 @@ router.get("/me/games/:gameId", async (req, res, next) => {
     if (!progress) {
       return sendSuccess(res, {
         gameId: req.params.gameId,
-        coins: 0,
         level: 1,
         experience: 0,
         progress: 0,
@@ -49,7 +47,6 @@ router.get("/me/games/:gameId", async (req, res, next) => {
     }
     sendSuccess(res, {
       gameId: progress.gameId,
-      coins: progress.coins || 0,
       level: progress.level || 1,
       experience: progress.experience || 0,
       progress: progress.progress || 0,
@@ -63,12 +60,11 @@ router.get("/me/games/:gameId", async (req, res, next) => {
   }
 });
 
-// PUT /api/users/me/games/:gameId — upsert progress (coins, level, experience, etc.)
+// PUT /api/users/me/games/:gameId — upsert progress (level, experience, etc.)
 router.put("/me/games/:gameId", async (req, res, next) => {
   try {
-    const { coins, level, experience, progress, gamesPlayed, questsCompleted, inventory, gameName } = req.body || {};
+    const { level, experience, progress, gamesPlayed, questsCompleted, inventory, gameName } = req.body || {};
     const data = {};
-    if (coins !== undefined) data.coins = coins;
     if (level !== undefined) data.level = level;
     if (experience !== undefined) data.experience = experience;
     if (progress !== undefined) data.progress = progress;
@@ -80,7 +76,6 @@ router.put("/me/games/:gameId", async (req, res, next) => {
     const result = await gameProgressService.upsert(req.user.sub, req.params.gameId, data);
     sendSuccess(res, {
       gameId: result.gameId,
-      coins: result.coins || 0,
       level: result.level || 1,
       experience: result.experience || 0,
       progress: result.progress || 0,
@@ -89,20 +84,6 @@ router.put("/me/games/:gameId", async (req, res, next) => {
       inventory: result.inventory || [],
       lastPlayedAt: result.lastPlayedAt,
     });
-  } catch (e) {
-    next(e);
-  }
-});
-
-// POST /api/users/me/games/:gameId/coins — add/deduct coins
-router.post("/me/games/:gameId/coins", async (req, res, next) => {
-  try {
-    const { amount } = req.body || {};
-    if (amount === undefined || typeof amount !== "number") {
-      return sendError(res, "amount (number) is required", 400);
-    }
-    const result = await gameProgressService.incrementCoins(req.user.sub, req.params.gameId, amount);
-    sendSuccess(res, { gameId: result.gameId, coins: result.coins });
   } catch (e) {
     next(e);
   }
@@ -174,7 +155,6 @@ adminRouter.use(requireRoles("teacher", "admin"));
 adminRouter.get("/game-progress", async (req, res, next) => {
   try {
     const all = await gameProgressService.listAll();
-    // Enrich with game names from games collection
     const { getCollection } = await import("../db.js");
     const games = await getCollection("games").find({}).toArray();
     const gameNameMap = {};
@@ -192,9 +172,8 @@ adminRouter.get("/game-progress", async (req, res, next) => {
 // PUT /api/users/game-progress/:id — admin update any user's progress
 adminRouter.put("/game-progress/:id", async (req, res, next) => {
   try {
-    const { coins, level, experience, progress, gamesPlayed, questsCompleted } = req.body || {};
+    const { level, experience, progress, gamesPlayed, questsCompleted } = req.body || {};
     const data = {};
-    if (coins !== undefined) data.coins = coins;
     if (level !== undefined) data.level = level;
     if (experience !== undefined) data.experience = experience;
     if (progress !== undefined) data.progress = progress;
