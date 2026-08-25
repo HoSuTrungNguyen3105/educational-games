@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>Lớp Học Vui — Hội Chợ Trò Chơi Học Tập</title>
+    <script>
+      /* iOS "Request Desktop Website" fix:
+         When toggled, Safari reports a desktop UA (Macintosh) but viewport meta
+         width=device-width still reports ~375px, so lg: (1024px) never fires.
+         Detect this and force the CSS viewport to 1024px. */
+      (function () {
+        var vp = document.querySelector('meta[name="viewport"]');
+        if (!vp) return;
+        var isIOS = /iPhone|iPad|iPod/.test(navigator.platform) ||
+                    (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+        if (isIOS && /Macintosh/.test(navigator.userAgent)) {
+          vp.setAttribute('content', 'width=1024, initial-scale=0.33');
+        }
+      })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
