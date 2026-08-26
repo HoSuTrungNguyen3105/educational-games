@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { uid, resultService, questionService, gameService, gameProgressService, coinService } from '../../services/api.js'
+import { uid, resultService, questionService, gameService, gameProgressService, coinService, gameEventService } from '../../services/api.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
@@ -95,7 +95,27 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
       completionTime: sessionResult.timeUsed,
     });
 
-    // Only save coins for play-to-win games when user is logged in
+    if (userAuth?.user) {
+      const evtBase = { gameId: gameGid, gameType: game?.code || gameGid };
+      try {
+        await gameEventService.send({ ...evtBase, event: "GAME_COMPLETED", score: sessionResult.score, won: correct > 0 });
+        if (correct > 0) {
+          await gameEventService.send({ ...evtBase, event: "GAME_WON", score: sessionResult.score, won: true });
+        }
+        if (total > 0) {
+          await gameEventService.send({ ...evtBase, event: "QUESTION_ANSWERED", questionsAnswered: total });
+        }
+        if (correct > 0) {
+          await gameEventService.send({ ...evtBase, event: "QUESTION_CORRECT", questionsCorrect: correct });
+        }
+        if (sessionResult.score > 0) {
+          await gameEventService.send({ ...evtBase, event: "SCORE_ACHIEVED", score: sessionResult.score });
+        }
+      } catch (e) {
+        console.error("[GameEvent] Failed to send events:", e);
+      }
+    }
+
     if (isPlayToWin && userAuth?.user && game?.code) {
       try {
         const coinAmount = sessionResult.score || 0;

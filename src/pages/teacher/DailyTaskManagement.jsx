@@ -4,15 +4,16 @@ import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton } 
 
 const TASK_TYPES = [
   { value: "play_game", label: "Chơi game" },
+  { value: "answer_question", label: "Trả lời câu hỏi" },
   { value: "correct_answer", label: "Trả lời đúng" },
   { value: "earn_xp", label: "Kiếm XP" },
   { value: "win_game", label: "Thắng game" },
   { value: "login", label: "Đăng nhập" },
 ];
 
-const TASK_ICONS = ["🎮", "🏆", "📖", "🧠", "⭐", "🌟", "🎉", "👋", "📋", "🎯", "🔥", "💪"];
+const TASK_ICONS = ["🎮", "🏆", "📖", "🧠", "⭐", "🌟", "🎉", "👋", "📋", "🎯", "🔥", "💪", "✅", "📝"];
 
-const emptyForm = { name: "", desc: "", icon: "📋", type: "play_game", target: 1, coinReward: 10 };
+const emptyForm = { name: "", desc: "", icon: "📋", type: "play_game", target: 1, coinReward: 10, conditions: {} };
 
 export default function DailyTaskManagement({ showToast }) {
   const [stats, setStats] = useState(null);
@@ -43,7 +44,7 @@ export default function DailyTaskManagement({ showToast }) {
   const openEdit = (task) => {
     if (task.builtin) { showToast("Nhiệm vụ mặc định không thể sửa", "error"); return; }
     setEditId(task.id);
-    setForm({ name: task.name, desc: task.desc || "", icon: task.icon || "📋", type: task.type, target: task.target, coinReward: task.coinReward });
+    setForm({ name: task.name, desc: task.desc || "", icon: task.icon || "📋", type: task.type, target: task.target, coinReward: task.coinReward, conditions: task.conditions || {} });
     setShowForm(true);
   };
 
@@ -239,6 +240,25 @@ export default function DailyTaskManagement({ showToast }) {
               <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-1">💰 Thưởng xu *</label>
               <input type="number" min="1" value={form.coinReward} onChange={(e) => setForm({ ...form, coinReward: Number(e.target.value) })}
                 className="w-full px-4 py-2.5 rounded-xl border border-ink/15 bg-paper text-ink text-sm font-body focus:outline-none focus:border-ticket" />
+            </div>
+
+            <div className="border-t border-ink/10 pt-3">
+              <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-2">Điều kiện (tùy chọn)</label>
+              <p className="text-[10px] text-[#8A7C63] mb-2">Nhiệm vụ chỉ tính khi event khớp điều kiện. Để trống = áp dụng cho tất cả game.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-mono text-[#8A7C63] uppercase block mb-1">Game code</label>
+                  <input value={form.conditions?.gameType || ""} onChange={(e) => setForm({ ...form, conditions: { ...form.conditions, gameType: e.target.value || undefined } })}
+                    placeholder="VD: monopoly"
+                    className="w-full px-3 py-2 rounded-xl border border-ink/15 bg-paper text-ink text-xs font-mono focus:outline-none focus:border-ticket" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono text-[#8A7C63] uppercase block mb-1">Điểm tối thiểu</label>
+                  <input type="number" min="0" value={form.conditions?.minScore || ""} onChange={(e) => setForm({ ...form, conditions: { ...form.conditions, minScore: e.target.value ? Number(e.target.value) : undefined } })}
+                    placeholder="0"
+                    className="w-full px-3 py-2 rounded-xl border border-ink/15 bg-paper text-ink text-xs font-mono focus:outline-none focus:border-ticket" />
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-wrap justify-end gap-3 pt-2">

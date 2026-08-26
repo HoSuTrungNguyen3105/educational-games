@@ -4,6 +4,7 @@ import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { getByUser } from "../services/gameProgressService.js";
 import { getCollection } from "../db.js";
+import { trackAction } from "../services/dailyTaskService.js";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.post("/login", async (req, res, next) => {
     if (!user) return sendError(res, "Sai tên đăng nhập hoặc mật khẩu", 401);
 
     const token = signToken(user);
+    trackAction(user.id, "login", 1).catch(() => {});
     sendSuccess(res, { token, user: publicUser(user) });
   } catch (e) {
     next(e);

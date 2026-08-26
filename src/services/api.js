@@ -288,6 +288,12 @@ export const coinService = {
   },
 };
 
+export const gameEventService = {
+  async send(eventData) {
+    return apiFetch("/game-events", { method: "POST", body: eventData });
+  },
+};
+
 export const dailyTaskService = {
   async list() {
     return apiFetch("/daily-tasks") || [];
