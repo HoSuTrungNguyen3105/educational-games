@@ -3,12 +3,6 @@ import { gameService } from '../services/api.js'
 import { Modal, PrimaryButton, TicketStub } from './ui.jsx'
 import { Ticket, KeyRound } from 'lucide-react'
 
-/**
- * Modal nhập mã vé để tham gia trò chơi
- * @param {boolean} open - Trạng thái mở/đóng modal
- * @param {function} onClose - Callback khi đóng modal
- * @param {function} onFound - Callback khi tìm thấy game (nhận game object)
- */
 export function EnterCodeModal({ open, onClose, onFound }) {
     const [code, setCode] = useState("");
     const [error, setError] = useState(null);
@@ -25,7 +19,6 @@ export function EnterCodeModal({ open, onClose, onFound }) {
             setError("Không tìm thấy trò chơi với mã này. Kiểm tra lại hoặc chọn trò chơi trong danh sách nhé!");
             return;
         }
-        // Reset và đóng modal
         setCode("");
         setError(null);
         onClose();
@@ -42,7 +35,7 @@ export function EnterCodeModal({ open, onClose, onFound }) {
 
     return (
         <Modal onClose={handleClose}>
-            <div className="text-center">
+            <div className="text-center max-h-[85vh] overflow-y-auto">
                 <div className="text-6xl mb-4 float-slow">
                     <Ticket className="w-16 h-16 inline-block text-ticket" />
                 </div>
@@ -56,6 +49,13 @@ export function EnterCodeModal({ open, onClose, onFound }) {
                         placeholder="VD: TOAN101"
                         maxLength={10}
                         autoFocus
+                        onFocus={(e) => {
+                            // Đảm bảo input không bị che bởi bàn phím trên mobile
+                            setTimeout(() => {
+                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 300);
+                        }}
+                        style={{ scrollMarginBottom: '20px' }}
                         className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase"
                     />
                     {error && <p className="text-ticket text-sm mt-3">{error}</p>}
