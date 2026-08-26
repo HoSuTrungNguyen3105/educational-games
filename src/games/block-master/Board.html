@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Cờ Tỷ Phú - Phiên Bản Nâng Cấp</title>
+    <style>
+        /* ... (toàn bộ style giữ nguyên) ... */
+        :root {
+            --bg: #0d5c3a;
+            --paper: #f4ecd8;
+            --ink: #20283A;
+            --gold: #f4b942;
+            --red: #e4572e;
+            --teal: #1b998b;
+            --card: #ffffff;
+            --line: #d8c9a3;
+            --brown: #955436;
+            --lblue: #aae0fa;
+            --pink: #d93a96;
+            --orange: #f7941d;
+            --dred: #ed1b24;
+            --yellow: #fef200;
+            --green: #1fb25a;
+            --dblue: #0072bb;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            --radius: 14px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        html,
+        body {
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            overflow: hidden;
+        }
+        #app {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        button {
+            cursor: pointer;
+            font-family: inherit;
+            border: none;
+            transition: all var(--transition);
+        }
+        .btn {
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            transform: translateY(0);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        }
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .btn-primary {
+            background: var(--gold);
+            color: #3a2600;
+        }
+        .btn-secondary {
+            background: #e5e5e5;
+            color: #222;
+        }
+        .btn-danger {
+            background: var(--red);
+            color: #fff;
+        }
+        .btn-teal {
+            background: var(--teal);
+            color: #fff;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        /* Setup Screen */
+        .setup-screen {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: radial-gradient(circle at 20% 20%, #0f6b42, #063a24);
+        }
+        .setup-card {
+            background: var(--paper);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: var(--shadow);
+            animation: slideUp 0.4s ease;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .setup-card h1 {
+            text-align: center;
+            font-size: 32px;
+            margin: 0 0 6px;
+            color: var(--red);
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.08);
+        }
+        .setup-card .sub {
+            text-align: center;
+            color: #7a6a4a;
+            margin-bottom: 24px;
+            font-size: 15px;
+        }
+        .count-select {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .count-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: #fff;
+            border: 2px solid var(--line);
+            font-size: 20px;
+            font-weight: 700;
+            transition: all var(--transition);
+        }
+        .count-btn.active {
+            background: var(--teal);
+            color: #fff;
+            border-color: var(--teal);
+            transform: scale(1.08);
+            box-shadow: 0 8px 20px rgba(27, 153, 139, 0.4);
+        }
+        .player-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            background: #fff;
+            border-radius: 14px;
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            transition: all var(--transition);
+        }
+        .player-row:focus-within {
+            border-color: var(--teal);
+            box-shadow: 0 0 0 3px rgba(27, 153, 139, 0.2);
+        }
+        .player-row .swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+        .player-row input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            font-weight: 600;
+            outline: none;
+            color: var(--ink);
+        }
+        .start-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 16px;
+            font-size: 18px;
+            border-radius: 40px;
+            background: linear-gradient(135deg, #f4b942, #f59e2e);
+            box-shadow: 0 10px 24px rgba(244, 185, 66, 0.5);
+        }
+
+        /* Game Screen */
+        .game-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: rgba(6, 48, 30, 0.95);
+            color: #fff;
+            flex-shrink: 0;
+            backdrop-filter: blur(10px);
+            z-index: 50;
+        }
+        .topbar h2 {
+            font-size: 18px;
+            margin: 0;
+            letter-spacing: 1px;
+            color: var(--gold);
+            font-weight: 800;
+        }
+        .topbar .turn-info {
+            font-size: 12px;
+            opacity: 0.85;
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+        .topbar .quit-btn {
+            background: var(--red);
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .layout {
+            flex: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 300px;
+            gap: 14px;
+            padding: 14px;
+            min-height: 0;
+            overflow: hidden;
+        }
+        @media(max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+                overflow-y: auto;
+            }
+        }
+
+        .board-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            min-height: 0;
+            position: relative;
+        }
+        .board {
+            aspect-ratio: 1/1;
+            width: 100%;
+            max-width: 700px;
+            max-height: 78vh;
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            grid-template-rows: repeat(11, 1fr);
+            background: #0a7a4d;
+            border-radius: 18px;
+            box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 2px rgba(255, 255, 255, 0.05);
+            position: relative;
+            transition: all 0.3s;
+        }
+        .cell {
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            background: #f7f2e3;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            font-size: 7px;
+            text-align: center;
+            padding: 2px 1px;
+            transition: all 0.2s;
+            cursor: default;
+        }
+        .cell:hover {
+            background: #fffef5;
+            z-index: 2;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            transform: scale(1.03);
+        }
+        .cell .grp {
+            height: 14%;
+            width: 100%;
+            flex-shrink: 0;
+        }
+        .cell .cname {
+            font-weight: 700;
+            line-height: 1.05;
+            padding: 1px 2px;
+            word-break: break-word;
+            font-size: 6.5px;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.7);
+        }
+        .cell .cprice {
+            font-size: 6px;
+            color: #555;
+            font-weight: 600;
+        }
+        .cell .cicon {
+            font-size: 17px;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+        }
+        .cell.corner {
+            font-size: 8px;
+            background: #f0e6d3;
+        }
+        .cell.corner .cicon {
+            font-size: 22px;
+        }
+        .cell.owned {
+            outline: 2px solid var(--gold);
+            outline-offset: -2px;
+        }
+        .tokens-in-cell {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            right: 2px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .token {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1.5px solid #fff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: bounceIn 0.4s;
+        }
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0);
+            }
+            60% {
+                transform: scale(1.3);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .center-panel {
+            grid-column: 2/11;
+            grid-row: 2/11;
+            background: radial-gradient(circle at 50% 30%, #12734a, #0a4a2f);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .center-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+            animation: rotateGlow 12s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes rotateGlow {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        .center-panel h1 {
+            color: var(--gold);
+            font-size: clamp(20px, 3.5vw, 32px);
+            margin: 0;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            font-style: italic;
+            font-weight: 900;
+            position: relative;
+            z-index: 1;
+        }
+        .center-panel .cur-player {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: clamp(13px, 1.8vw, 17px);
+            position: relative;
+            z-index: 1;
+        }
+        .cur-player .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 12px currentColor;
+        }
+        .dice-row {
+            display: flex;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+        .die {
+            width: clamp(38px, 5.5vw, 52px);
+            height: clamp(38px, 5.5vw, 52px);
+            background: #fff;
+            color: #222;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(20px, 3.5vw, 30px);
+            font-weight: 800;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            transition: transform 0.1s;
+        }
+        .die.rolling {
+            animation: diceSpin 0.08s infinite;
+        }
+        @keyframes diceSpin {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            50% {
+                transform: rotate(180deg) scale(1.1);
+            }
+            100% {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+        .roll-btn {
+            padding: 12px 30px;
+            font-size: clamp(14px, 1.8vw, 17px);
+            border-radius: 40px;
+            background: linear-gradient(135deg, #f4b942, #f59e2e);
+            color: #3a2600;
+            font-weight: 800;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 1;
+        }
+        .roll-btn:not(:disabled):hover {
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
+        }
+        .money-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(16px, 2.5vw, 22px);
+            font-weight: 700;
+            color: var(--gold);
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            position: relative;
+            z-index: 1;
+        }
+        .center-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+        .toast-area {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            right: 8px;
+            font-size: 11px;
+            color: #fff;
+            text-align: center;
+            min-height: 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 4px 8px;
+            backdrop-filter: blur(6px);
+            z-index: 5;
+            transition: all 0.4s;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 4px;
+        }
+        .panel {
+            background: var(--paper);
+            border-radius: var(--radius);
+            padding: 14px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .panel h3 {
+            margin: 0 0 10px;
+            font-size: 13px;
+            color: #7a4a1a;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .player-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            margin-bottom: 6px;
+            background: #fff;
+            border: 2px solid transparent;
+            transition: all 0.25s;
+            cursor: default;
+        }
+        .player-card.active {
+            border-color: var(--teal);
+            box-shadow: 0 0 0 3px rgba(27, 153, 139, 0.25);
+            background: #f0fffa;
+        }
+        .player-card.bankrupt {
+            opacity: 0.4;
+            filter: grayscale(1);
+        }
+        .player-card .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .player-card .pname {
+            font-weight: 700;
+            font-size: 13px;
+            flex: 1;
+        }
+        .player-card .pmoney {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--teal);
+        }
+        .player-card .pjail {
+            font-size: 10px;
+            color: var(--red);
+        }
+        .log-box {
+            font-size: 11px;
+            line-height: 1.5;
+            max-height: 180px;
+            overflow-y: auto;
+            color: #4a3d20;
+            scrollbar-width: thin;
+        }
+        .log-box div {
+            border-bottom: 1px dashed var(--line);
+            padding: 3px 0;
+            animation: fadeIn 0.2s;
+        }
+        .props-box {
+            font-size: 11px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .props-box .prow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 6px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            gap: 4px;
+            flex-wrap: wrap;
+            transition: background 0.2s;
+        }
+        .props-box .prow:hover {
+            background: rgba(0, 0, 0, 0.03);
+        }
+        .actions-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .actions-grid .btn {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 20, 15, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 16px;
+            backdrop-filter: blur(4px);
+            animation: fadeInOverlay 0.2s;
+        }
+        @keyframes fadeInOverlay {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.85) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        .modal h2 {
+            margin: 0 0 4px;
+            font-size: 20px;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal .modal-sub {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 16px;
+        }
+        .modal .modal-body {
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 18px;
+        }
+        .modal .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #eee;
+        }
+        .group-swatch {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 6px;
+            vertical-align: -2px;
+        }
+        .trade-select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            background: #fafafa;
+            transition: border 0.2s;
+        }
+        .trade-select:focus {
+            border-color: var(--teal);
+            outline: none;
+        }
+        .trade-box {
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #fefefe;
+        }
+        .trade-box h4 {
+            margin: 0 0 8px;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+        .trade-box label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+        .trade-box input,
+        .trade-box select {
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 13px;
+            background: #fff;
+        }
+        .win-emoji {
+            font-size: 64px;
+            text-align: center;
+            animation: bounceIn 0.6s;
+        }
+        .challenge-emoji {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 8px;
+            animation: bounceIn 0.5s;
+        }
+
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--gold);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFly 1s ease-out forwards;
+        }
+        @keyframes particleFly {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty)) scale(0);
+            }
+        }
+
+        @media(max-width: 700px) {
+            .layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+                overflow-y: auto;
+                gap: 8px;
+                padding: 8px;
+            }
+            .board {
+                max-height: 60vh;
+                aspect-ratio: 1/1;
+            }
+            .cell .cname {
+                font-size: 5px;
+            }
+            .cell .cprice {
+                font-size: 5px;
+            }
+            .cell .cicon {
+                font-size: 14px;
+            }
+            .topbar h2 {
+                font-size: 14px;
+            }
+            .sidebar {
+                flex-direction: column;
+                max-height: 40vh;
+            }
+            .panel {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script>
+        (function() {
+            "use strict";
+
+            // =========================
+            // GAME CONFIG
+            // =========================
+            const STARTING_MONEY = 1500;
+            const SALARY_PASS_GO = 200;
+            const JAIL_POSITION = 10;
+            const GO_TO_JAIL_POSITION = 30;
+            const JAIL_FINE = 50;
+            const MAX_JAIL_TURNS = 3;
+            const MAX_DOUBLES_STREAK = 3;
+            const PLAYER_COLORS = ["#e4572e", "#1b998b", "#3a6bd9", "#f4b942", "#8e44ad", "#2ecc71"];
+            const AVATARS = ["🐯", "🐸", "🐧", "🦊", "🐼", "🐵"];
+            const STATION_RENTS = [25, 50, 100, 200];
+
+            const GROUP_COLORS = {
+                brown: "var(--brown)",
+                lblue: "var(--lblue)",
+                pink: "var(--pink)",
+                orange: "var(--orange)",
+                dred: "var(--dred)",
+                yellow: "var(--yellow)",
+                green: "var(--green)",
+                dblue: "var(--dblue)"
+            };
+
+            function P(name, price, baseRent, group) {
+                return {
+                    name,
+                    type: "PROPERTY",
+                    price,
+                    group,
+                    ownerId: null,
+                    level: 0,
+                    mortgaged: false,
+                    rentTable: [baseRent, baseRent * 5, baseRent * 15, baseRent * 45, baseRent * 70, baseRent * 90],
+                    houseCost: Math.round(price / 2)
+                };
+            }
+
+            function S(name) { return { name, type: "STATION", price: 200, ownerId: null, mortgaged: false }; }
+
+            function U(name) { return { name, type: "UTILITY", price: 150, ownerId: null, mortgaged: false }; }
+
+            function T(name, amount) { return { name, type: "TAX", amount }; }
+
+            function E(name, desc) { return { name, type: "EVENT", desc }; }
+
+            const BOARD_DEF = [
+                { name: "KHỞI HÀNH", type: "START" },
+                P("Xóm Chài", 60, 2, "brown"),
+                E("Sự Kiện", "Nhận một thử thách bất ngờ!"),
+                P("Vinhomes Q9", 60, 4, "brown"),
+                T("Thuế Thu Nhập", 200),
+                S("Ga Sài Gòn"),
+                P("Quận 1", 100, 6, "lblue"),
+                { name: "Cơ Hội", type: "CHANCE" },
+                P("Quận 3", 100, 6, "lblue"),
+                P("Quận 5", 120, 8, "lblue"),
+                { name: "NHÀ TÙ", type: "JAIL" },
+                P("Quận 7", 140, 10, "pink"),
+                U("Công Ty Điện Lực"),
+                P("Phú Nhuận", 140, 10, "pink"),
+                P("Bình Thạnh", 160, 12, "pink"),
+                S("Ga Hà Nội"),
+                P("Đà Lạt", 180, 14, "orange"),
+                E("Sự Kiện", "Thử thách mạo hiểm!"),
+                P("Nha Trang", 180, 14, "orange"),
+                P("Vũng Tàu", 200, 16, "orange"),
+                { name: "BÃI ĐỖ XE", type: "FREE_PARKING" },
+                P("Hà Nội", 220, 18, "dred"),
+                { name: "Cơ Hội", type: "CHANCE" },
+                P("Hải Phòng", 220, 18, "dred"),
+                P("Quảng Ninh", 240, 20, "dred"),
+                S("Ga Đà Nẵng"),
+                P("Đà Nẵng", 260, 22, "yellow"),
+                P("Hội An", 260, 22, "yellow"),
+                U("Công Ty Cấp Nước"),
+                P("Huế", 280, 24, "yellow"),
+                { name: "VÀO TÙ", type: "GO_TO_JAIL" },
+                P("Cần Thơ", 300, 26, "green"),
+                P("Phú Quốc", 300, 26, "green"),
+                E("Sự Kiện", "Vận may hay rủi ro?"),
+                P("Sapa", 320, 28, "green"),
+                S("Ga Metro"),
+                { name: "Cơ Hội", type: "CHANCE" },
+                P("Landmark 81", 350, 35, "dblue"),
+                T("Thuế Xa Xỉ", 100),
+                P("Bitexco", 400, 50, "dblue"),
+            ];
+
+            const CELL_ICON = {
+                START: "🏁",
+                JAIL: "🚔",
+                FREE_PARKING: "🅿️",
+                GO_TO_JAIL: "👮",
+                CHANCE: "❓",
+                EVENT: "⚡",
+                TAX: "💰"
+            };
+
+            const CHANCE_CARDS = [
+                { text: "Bạn trúng số! Nhận $200.", apply: (pl) => { changeMoney(pl, 200); } },
+                { text: "Phạt vi phạm giao thông. Trả $100.", apply: (pl) => { changeMoney(pl, -100); } },
+                { text: "Đi đến ô KHỞI HÀNH. Nhận $200.", apply: (pl) => { movePlayerTo(pl, 0, true); } },
+                { text: "Đi đến ô VÀO TÙ.", apply: (pl) => { sendToJail(pl); } },
+                { text: "Nhận thẻ 'Ra Tù Miễn Phí'.", apply: (pl) => { pl.getOutOfJailCards++; } },
+                { text: "Mỗi người chơi khác trả bạn $50.", apply: (pl) => { collectFromAll(pl, 50); } },
+                { text: "Bạn phải trả mỗi người chơi khác $50.", apply: (pl) => { payToAll(pl, 50); } },
+                { text: "Được hoàn thuế: nhận $150.", apply: (pl) => { changeMoney(pl, 150); } },
+                { text: "Sửa nhà tốn kém: trả $120.", apply: (pl) => { changeMoney(pl, -120); } },
+                { text: "Lùi lại 3 ô.", apply: (pl) => { movePlayerBy(pl, -3); } },
+                { text: "Thưởng nóng: nhận $300 nhưng mất lượt sau.", apply: (pl) => { changeMoney(pl, 300);
+                        gameState.skipNextTurn = true; } },
+                { text: "Bạn bị phạt $80 vì xả rác.", apply: (pl) => { changeMoney(pl, -80); } },
+                { text: "Trúng thưởng lớn! Nhận $500.", apply: (pl) => { changeMoney(pl, 500); } },
+            ];
+            const COMMUNITY_CARDS = [
+                { text: "Sinh nhật vui vẻ! Nhận $100 từ mỗi người.", apply: (pl) => { collectFromAll(pl, 100); } },
+                { text: "Viện phí: trả $120.", apply: (pl) => { changeMoney(pl, -120); } },
+                { text: "Trúng vé số vận may: nhận $200.", apply: (pl) => { changeMoney(pl, 200); } },
+                { text: "Đóng học phí: trả $150.", apply: (pl) => { changeMoney(pl, -150); } },
+                { text: "Đi đến KHỞI HÀNH, nhận $200.", apply: (pl) => { movePlayerTo(pl, 0, true); } },
+                { text: "Bảo hiểm đáo hạn: nhận $80.", apply: (pl) => { changeMoney(pl, 80); } },
+                { text: "Từ thiện: trả $60.", apply: (pl) => { changeMoney(pl, -60); } },
+                { text: "Nhận thẻ 'Ra Tù Miễn Phí'.", apply: (pl) => { pl.getOutOfJailCards++; } },
+                { text: "Đi tù ngay lập tức.", apply: (pl) => { sendToJail(pl); } },
+                { text: "Bán tranh cũ: nhận $90.", apply: (pl) => { changeMoney(pl, 90); } },
+                { text: "Bị phạt $70 vì gây ồn.", apply: (pl) => { changeMoney(pl, -70); } },
+                { text: "Nhận quà Giáng sinh: $150.", apply: (pl) => { changeMoney(pl, 150); } },
+            ];
+
+            const EVENT_CARDS = [
+                { text: "⚡ Thử thách: Bạn phải chọn: Trả $100 hoặc mất lượt tiếp theo.",
+                    apply: (pl) => { openModal({ type: "challenge", pl, challenge: { pay: 100, skip: true } }); } },
+                { text: "🎲 Vận may: Nhận ngay $200 và thêm một lượt tung xúc xắc.",
+                    apply: (pl) => { changeMoney(pl, 200);
+                        gameState.extraTurn = true; } },
+                { text: "🏦 Đầu tư: Trả $150 để nhận $400 sau 3 lượt.",
+                    apply: (pl) => { changeMoney(pl, -150);
+                        pl.pendingReward = { amount: 400, turns: 3 }; } },
+                { text: "🚔 Bị bắt vì vượt đèn đỏ: Phạt $120 hoặc vào tù.",
+                    apply: (pl) => { openModal({ type: "challenge", pl, challenge: { pay: 120, jail: true } }); } },
+                { text: "🌈 Cơ hội vàng: Chọn một người chơi khác để nhận $100 từ họ.",
+                    apply: (pl) => { openModal({ type: "choosePlayer", pl, action: "collect", amount: 100 }); } },
+                { text: "💸 Hào phóng: Bạn phải cho mỗi người chơi khác $40.",
+                    apply: (pl) => { payToAll(pl, 40); } },
+                { text: "🔮 Dự đoán: Nếu tung được đôi trong lượt tới, nhận $300.",
+                    apply: (pl) => { pl.bonusIfDouble = 300; } },
+                { text: "📉 Khủng hoảng: Mất 10% số tiền hiện có.",
+                    apply: (pl) => { const loss = Math.round(pl.money * 0.1);
+                        changeMoney(pl, -loss); } },
+            ];
+
+            // =========================
+            // GAME STATE
+            // =========================
+            let gameState = {
+                players: [],
+                board: [],
+                currentPlayerIndex: 0,
+                turn: 1,
+                phase: "waiting",
+                dice: [1, 1],
+                doublesStreak: 0,
+                log: [],
+                winner: null,
+                skipNextTurn: false,
+                extraTurn: false,
+            };
+            let setupState = { count: 2, names: ["Người chơi 1", "Người chơi 2", "Người chơi 3", "Người chơi 4"] };
+            let uiState = { modal: null, toast: "" };
+            let diceInterval = null; // Thêm biến toàn cục
+
+            // =========================
+            // INITIALIZE GAME
+            // =========================
+            function buildBoard() {
+                return BOARD_DEF.map((def, i) => ({ id: i, position: i, ...JSON.parse(JSON.stringify(def)) }));
+            }
+
+            function initGame(playerCount, names) {
+                gameState.board = buildBoard();
+                gameState.players = [];
+                for (let i = 0; i < playerCount; i++) {
+                    gameState.players.push({
+                        id: i,
+                        name: names[i] || ("Người chơi " + (i + 1)),
+                        avatar: AVATARS[i % AVATARS.length],
+                        color: PLAYER_COLORS[i % PLAYER_COLORS.length],
+                        money: STARTING_MONEY,
+                        position: 0,
+                        properties: [],
+                        isBankrupt: false,
+                        isInJail: false,
+                        jailTurns: 0,
+                        getOutOfJailCards: 0,
+                        pendingReward: null,
+                        bonusIfDouble: 0,
+                    });
+                }
+                gameState.currentPlayerIndex = 0;
+                gameState.turn = 1;
+                gameState.phase = "rolling";
+                gameState.dice = [1, 1];
+                gameState.doublesStreak = 0;
+                gameState.log = [];
+                gameState.winner = null;
+                gameState.skipNextTurn = false;
+                gameState.extraTurn = false;
+                addLog(`🎮 Ván chơi bắt đầu với ${playerCount} người chơi!`);
+                render();
+            }
+
+            function addLog(msg) {
+                gameState.log.unshift(msg);
+                if (gameState.log.length > 80) gameState.log.pop();
+            }
+
+            function currentPlayer() { return gameState.players[gameState.currentPlayerIndex]; }
+
+            // =========================
+            // DICE & MOVEMENT (nâng cấp animation, sửa lỗi giật sidebar)
+            // =========================
+            function rollDice() {
+                if (gameState.phase !== "rolling") return;
+                const pl = currentPlayer();
+                if (gameState.skipNextTurn) {
+                    gameState.skipNextTurn = false;
+                    addLog(`⏭️ ${pl.name} bị mất lượt theo hiệu lực.`);
+                    endTurn();
+                    return;
+                }
+                gameState.phase = "moving";
+                // Disable nút roll ngay lập tức
+                const rollBtn = document.querySelector('.roll-btn');
+                if (rollBtn) rollBtn.disabled = true;
+                renderDiceOnly(true);
+                if (diceInterval) clearInterval(diceInterval);
+                let spins = 0;
+                diceInterval = setInterval(() => {
+                    gameState.dice = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
+                    renderDiceOnly(true);
+                    spins++;
+                    if (spins >= 10) {
+                        clearInterval(diceInterval);
+                        diceInterval = null;
+                        const d1 = 1 + Math.floor(Math.random() * 6);
+                        const d2 = 1 + Math.floor(Math.random() * 6);
+                        gameState.dice = [d1, d2];
+                        renderDiceOnly(false);
+                        handleDiceResult(pl, d1, d2);
+                    }
+                }, 70);
+            }
+
+            function handleDiceResult(pl, d1, d2) {
+                renderDiceOnly(false);
+                const isDouble = d1 === d2;
+
+                if (pl.isInJail) {
+                    handleJailRoll(pl, d1, d2, isDouble);
+                    return;
+                }
+
+                if (isDouble) {
+                    gameState.doublesStreak++;
+                    if (gameState.doublesStreak >= MAX_DOUBLES_STREAK) {
+                        addLog(`🎲 ${pl.name} tung đôi 3 lần liên tiếp → vào tù!`);
+                        sendToJail(pl);
+                        gameState.doublesStreak = 0;
+                        setTimeout(endTurn, 600);
+                        return;
+                    }
+                } else {
+                    gameState.doublesStreak = 0;
+                }
+
+                addLog(`🎲 ${pl.name} tung được ${d1} + ${d2} = ${d1 + d2}`);
+                movePlayerBy(pl, d1 + d2, () => {
+                    resolveCell(pl, isDouble);
+                });
+            }
+
+            function movePlayerBy(pl, steps, onDone) {
+                const total = gameState.board.length;
+                let remaining = Math.abs(steps);
+                const dir = steps >= 0 ? 1 : -1;
+                gameState.phase = "moving";
+
+                function step() {
+                    if (remaining <= 0) {
+                        gameState.phase = "resolving";
+                        render();
+                        if (onDone) onDone();
+                        return;
+                    }
+                    const before = pl.position;
+                    pl.position = (pl.position + dir + total) % total;
+                    if (dir > 0 && pl.position < before) {
+                        changeMoney(pl, SALARY_PASS_GO);
+                        addLog(`💵 ${pl.name} đi qua KHỞI HÀNH, nhận $${SALARY_PASS_GO}`);
+                        spawnParticles(pl.position);
+                    }
+                    remaining--;
+                    render();
+                    setTimeout(step, 120);
+                }
+                step();
+            }
+
+            function movePlayerTo(pl, targetPos, passGoBonus) {
+                const total = gameState.board.length;
+                let steps = targetPos - pl.position;
+                if (steps < 0) steps += total;
+                if (steps === 0) steps = total;
+                gameState.phase = "moving";
+                movePlayerBy(pl, steps, () => { resolveCell(pl, false); });
+            }
+
+            function spawnParticles(pos) {
+                const cellEl = document.querySelector(`.cell[data-pos="${pos}"]`);
+                if (!cellEl) return;
+                for (let i = 0; i < 8; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'particle';
+                    p.style.left = '50%';
+                    p.style.top = '50%';
+                    p.style.setProperty('--tx', (Math.random() * 80 - 40) + 'px');
+                    p.style.setProperty('--ty', (Math.random() * 80 - 40) + 'px');
+                    p.style.background = ['#f4b942', '#f59e2e', '#fff'][Math.floor(Math.random() * 3)];
+                    cellEl.appendChild(p);
+                    setTimeout(() => p.remove(), 1000);
+                }
+            }
+
+            // =========================
+            // CELL RESOLUTION
+            // =========================
+            function resolveCell(pl, wasDouble) {
+                const cell = gameState.board[pl.position];
+                gameState.phase = "resolving";
+
+                switch (cell.type) {
+                    case "START":
+                        addLog(`${pl.name} dừng tại KHỞI HÀNH.`);
+                        finishResolution(pl, wasDouble);
+                        break;
+                    case "PROPERTY":
+                    case "STATION":
+                    case "UTILITY":
+                        resolveProperty(pl, cell, wasDouble);
+                        break;
+                    case "TAX":
+                        openModal({ type: "tax", cell, pl, wasDouble });
+                        break;
+                    case "CHANCE":
+                        drawCard(pl, CHANCE_CARDS, "Cơ Hội", wasDouble);
+                        break;
+                    case "COMMUNITY":
+                        drawCard(pl, COMMUNITY_CARDS, "Vận May", wasDouble);
+                        break;
+                    case "EVENT":
+                        drawEventCard(pl, wasDouble);
+                        break;
+                    case "JAIL":
+                        addLog(`${pl.name} ghé thăm nhà tù (chỉ tham quan).`);
+                        finishResolution(pl, wasDouble);
+                        break;
+                    case "GO_TO_JAIL":
+                        sendToJail(pl);
+                        finishResolution(pl, false);
+                        break;
+                    case "FREE_PARKING":
+                        addLog(`${pl.name} nghỉ ngơi tại Bãi Đỗ Xe.`);
+                        finishResolution(pl, wasDouble);
+                        break;
+                    default:
+                        finishResolution(pl, wasDouble);
+                }
+                render();
+            }
+
+            function finishResolution(pl, wasDouble) {
+                if (pl.pendingReward) {
+                    pl.pendingReward.turns--;
+                    if (pl.pendingReward.turns <= 0) {
+                        changeMoney(pl, pl.pendingReward.amount);
+                        addLog(`🏦 ${pl.name} nhận $${pl.pendingReward.amount} từ đầu tư trước đó.`);
+                        pl.pendingReward = null;
+                    }
+                }
+                if (pl.bonusIfDouble > 0 && wasDouble) {
+                    changeMoney(pl, pl.bonusIfDouble);
+                    addLog(`🔮 ${pl.name} nhận bonus $${pl.bonusIfDouble} vì tung được đôi!`);
+                    pl.bonusIfDouble = 0;
+                }
+                checkBankruptcyNeeded(pl, () => {
+                    if ((wasDouble || gameState.extraTurn) && !pl.isInJail && gameState.phase !== "finished") {
+                        gameState.extraTurn = false;
+                        gameState.phase = "rolling";
+                        addLog(`✨ ${pl.name} được tung xúc xắc thêm lượt!`);
+                    } else {
+                        endTurn();
+                    }
+                    render();
+                });
+            }
+
+            // =========================
+            // PROPERTY LOGIC
+            // =========================
+            function resolveProperty(pl, cell, wasDouble) {
+                if (cell.ownerId === null || cell.ownerId === undefined) {
+                    gameState.phase = "buying";
+                    openModal({ type: "buy", cell, pl, wasDouble });
+                    return;
+                }
+                if (cell.ownerId === pl.id) {
+                    addLog(`${pl.name} đứng trên đất của chính mình.`);
+                    finishResolution(pl, wasDouble);
+                    return;
+                }
+                if (cell.mortgaged) {
+                    addLog(`Đất "${cell.name}" đang bị cầm cố, không thu tiền thuê.`);
+                    finishResolution(pl, wasDouble);
+                    return;
+                }
+                const owner = gameState.players.find(p => p.id === cell.ownerId);
+                const rent = computeRent(cell, owner);
+                addLog(`💸 ${pl.name} trả $${rent} tiền thuê "${cell.name}" cho ${owner.name}`);
+                changeMoney(pl, -rent);
+                changeMoney(owner, rent);
+                checkBankruptcyNeeded(pl, () => { finishResolution(pl, wasDouble); }, rent, owner);
+            }
+
+            function computeRent(cell, owner) {
+                if (cell.type === "PROPERTY") return cell.rentTable[cell.level];
+                if (cell.type === "STATION") {
+                    const count = owner.properties.filter(id => gameState.board[id].type === "STATION").length;
+                    return STATION_RENTS[Math.min(count - 1, 3)];
+                }
+                if (cell.type === "UTILITY") {
+                    const count = owner.properties.filter(id => gameState.board[id].type === "UTILITY").length;
+                    const mult = count >= 2 ? 10 : 4;
+                    return (gameState.dice[0] + gameState.dice[1]) * mult;
+                }
+                return 0;
+            }
+
+            function buyProperty(pl, cell, wasDouble) {
+                if (pl.money < cell.price) return;
+                changeMoney(pl, -cell.price);
+                cell.ownerId = pl.id;
+                pl.properties.push(cell.id);
+                addLog(`🏠 ${pl.name} đã mua "${cell.name}" giá $${cell.price}`);
+                closeModal();
+                finishResolution(pl, wasDouble);
+            }
+
+            function skipBuy(pl, wasDouble) {
+                addLog(`${pl.name} bỏ qua không mua "${gameState.board[pl.position].name}"`);
+                closeModal();
+                finishResolution(pl, wasDouble);
+            }
+
+            function ownsFullGroup(pl, group) {
+                const groupCells = gameState.board.filter(c => c.type === "PROPERTY" && c.group === group);
+                return groupCells.every(c => c.ownerId === pl.id && !c.mortgaged);
+            }
+
+            function buildHouse(pl, cellId) {
+                const cell = gameState.board[cellId];
+                if (cell.ownerId !== pl.id || cell.type !== "PROPERTY") return;
+                if (!ownsFullGroup(pl, cell.group)) { flashToast("Bạn cần sở hữu trọn bộ nhóm đất để xây nhà!"); return; }
+                if (cell.level >= 5) { flashToast("Đất đã đạt cấp Hotel tối đa!"); return; }
+                if (pl.money < cell.houseCost) { flashToast("Không đủ tiền để xây nhà!"); return; }
+                changeMoney(pl, -cell.houseCost);
+                cell.level++;
+                addLog(`🏗️ ${pl.name} nâng cấp "${cell.name}" lên cấp ${cell.level}`);
+                render();
+            }
+
+            function mortgageProperty(pl, cellId) {
+                const cell = gameState.board[cellId];
+                if (cell.ownerId !== pl.id || cell.mortgaged) return;
+                if (cell.type === "PROPERTY" && cell.level > 0) { flashToast("Bán hết nhà trước khi cầm cố!"); return; }
+                cell.mortgaged = true;
+                const value = Math.round(cell.price / 2);
+                changeMoney(pl, value);
+                addLog(`🏦 ${pl.name} cầm cố "${cell.name}", nhận $${value}`);
+                render();
+            }
+
+            function unmortgageProperty(pl, cellId) {
+                const cell = gameState.board[cellId];
+                if (cell.ownerId !== pl.id || !cell.mortgaged) return;
+                const cost = Math.round(cell.price / 2 * 1.1);
+                if (pl.money < cost) { flashToast("Không đủ tiền chuộc lại đất!"); return; }
+                changeMoney(pl, -cost);
+                cell.mortgaged = false;
+                addLog(`✅ ${pl.name} chuộc lại "${cell.name}" giá $${cost}`);
+                render();
+            }
+
+            function sellHouse(pl, cellId) {
+                const cell = gameState.board[cellId];
+                if (cell.ownerId !== pl.id || cell.level <= 0) return;
+                cell.level--;
+                const refund = Math.round(cell.houseCost / 2);
+                changeMoney(pl, refund);
+                addLog(`🔨 ${pl.name} bán 1 cấp nhà tại "${cell.name}", nhận $${refund}`);
+                render();
+            }
+
+            // =========================
+            // CARDS & EVENTS
+            // =========================
+            function drawCard(pl, deck, label, wasDouble) {
+                const card = deck[Math.floor(Math.random() * deck.length)];
+                openModal({ type: "card", label, card, pl, wasDouble });
+            }
+
+            function drawEventCard(pl, wasDouble) {
+                const card = EVENT_CARDS[Math.floor(Math.random() * EVENT_CARDS.length)];
+                openModal({ type: "eventCard", card, pl, wasDouble });
+            }
+
+            function applyCard(pl, card, wasDouble) {
+                closeModal();
+                card.apply(pl);
+                render();
+                setTimeout(() => {
+                    checkBankruptcyNeeded(pl, () => { finishResolution(pl, wasDouble); });
+                }, 250);
+            }
+
+            function applyEventCard(pl, card, wasDouble) {
+                closeModal();
+                card.apply(pl);
+                render();
+                if (!uiState.modal) {
+                    setTimeout(() => {
+                        checkBankruptcyNeeded(pl, () => { finishResolution(pl, wasDouble); });
+                    }, 300);
+                }
+            }
+
+            function changeMoney(pl, amount) {
+                pl.money += amount;
+                if (pl.money < 0) pl.money = Math.round(pl.money);
+            }
+
+            function collectFromAll(pl, amount) {
+                gameState.players.forEach(other => {
+                    if (other.id !== pl.id && !other.isBankrupt) { other.money -= amount;
+                        pl.money += amount; }
+                });
+                addLog(`💰 ${pl.name} thu $${amount} từ mỗi người chơi khác.`);
+            }
+
+            function payToAll(pl, amount) {
+                gameState.players.forEach(other => {
+                    if (other.id !== pl.id && !other.isBankrupt) { other.money += amount;
+                        pl.money -= amount; }
+                });
+                addLog(`💸 ${pl.name} trả $${amount} cho mỗi người chơi khác.`);
+            }
+
+            // =========================
+            // JAIL
+            // =========================
+            function sendToJail(pl) {
+                pl.position = JAIL_POSITION;
+                pl.isInJail = true;
+                pl.jailTurns = 0;
+                addLog(`🚔 ${pl.name} bị đưa vào NHÀ TÙ!`);
+            }
+
+            function handleJailRoll(pl, d1, d2, isDouble) {
+                if (isDouble) {
+                    addLog(`🎲 ${pl.name} tung đôi ${d1}-${d2}, được ra tù!`);
+                    pl.isInJail = false;
+                    pl.jailTurns = 0;
+                    movePlayerBy(pl, d1 + d2, () => resolveCell(pl, false));
+                    return;
+                }
+                pl.jailTurns++;
+                addLog(`🎲 ${pl.name} tung ${d1}+${d2}, không phải đôi. (Lượt tù thứ ${pl.jailTurns})`);
+                if (pl.jailTurns >= MAX_JAIL_TURNS) {
+                    addLog(`⛓️ ${pl.name} phải nộp phạt $${JAIL_FINE} để ra tù.`);
+                    changeMoney(pl, -JAIL_FINE);
+                    pl.isInJail = false;
+                    pl.jailTurns = 0;
+                    checkBankruptcyNeeded(pl, () => { resolveCell(pl, false); });
+                    return;
+                }
+                render();
+                setTimeout(endTurn, 600);
+            }
+
+            function payJailFine(pl) {
+                if (pl.money < JAIL_FINE) { flashToast("Không đủ tiền nộp phạt!"); return; }
+                changeMoney(pl, -JAIL_FINE);
+                pl.isInJail = false;
+                pl.jailTurns = 0;
+                addLog(`💵 ${pl.name} nộp $${JAIL_FINE} để ra tù.`);
+                render();
+            }
+
+            function useJailCard(pl) {
+                if (pl.getOutOfJailCards <= 0) return;
+                pl.getOutOfJailCards--;
+                pl.isInJail = false;
+                pl.jailTurns = 0;
+                addLog(`🎫 ${pl.name} dùng thẻ "Ra Tù Miễn Phí".`);
+                render();
+            }
+
+            // =========================
+            // TRADE
+            // =========================
+            function openTradeModal(pl) {
+                openModal({ type: "trade", pl, target: null, offerMoney: 0, offerProp: "", wantMoney: 0,
+                    wantProp: "" });
+            }
+
+            function sendTradeOffer(state) {
+                const { pl, target, offerMoney, offerProp, wantMoney, wantProp } = state;
+                if (!target) { flashToast("Chọn người chơi để giao dịch!"); return; }
+                const targetPl = gameState.players.find(p => p.id === Number(target));
+                if (!targetPl) return;
+                if (pl.money < offerMoney) { flashToast("Bạn không đủ tiền để đề nghị!"); return; }
+                if (targetPl.money < wantMoney) { flashToast("Đối phương không đủ tiền!"); return; }
+
+                const summary =
+                    `${pl.name} đề nghị giao dịch với ${targetPl.name}:\n\n` +
+                    `${pl.name} ĐƯA: $${offerMoney}${offerProp ? ` + ${gameState.board[offerProp].name}` : ""}\n` +
+                    `${pl.name} NHẬN: $${wantMoney}${wantProp ? ` + ${gameState.board[wantProp].name}` : ""}\n\n` +
+                    `${targetPl.name} có đồng ý không?`;
+
+                closeModal();
+                const accepted = window.confirm(summary);
+                if (accepted) {
+                    pl.money -= offerMoney;
+                    targetPl.money += offerMoney;
+                    targetPl.money -= wantMoney;
+                    pl.money += wantMoney;
+                    if (offerProp) {
+                        const c = gameState.board[offerProp];
+                        c.ownerId = targetPl.id;
+                        pl.properties = pl.properties.filter(id => id != offerProp);
+                        targetPl.properties.push(Number(offerProp));
+                    }
+                    if (wantProp) {
+                        const c = gameState.board[wantProp];
+                        c.ownerId = pl.id;
+                        targetPl.properties = targetPl.properties.filter(id => id != wantProp);
+                        pl.properties.push(Number(wantProp));
+                    }
+                    addLog(`🤝 Giao dịch giữa ${pl.name} và ${targetPl.name} thành công!`);
+                } else {
+                    addLog(`❌ ${targetPl.name} đã từ chối đề nghị giao dịch của ${pl.name}.`);
+                }
+                render();
+            }
+
+            // =========================
+            // BANKRUPTCY
+            // =========================
+            function checkBankruptcyNeeded(pl, onOk, debtAmount, creditor) {
+                if (pl.money >= 0) { onOk(); return; }
+                openModal({ type: "bankruptcy-help", pl, onOk, creditor });
+                render();
+            }
+
+            function attemptResolveDebt(pl) {
+                if (pl.money >= 0) {
+                    closeModal();
+                    const cb = uiState.modal && uiState.modal.onOk;
+                    if (cb) cb();
+                    render();
+                    return true;
+                }
+                return false;
+            }
+
+            function declareBankrupt(pl, creditor) {
+                pl.isBankrupt = true;
+                addLog(`💀 ${pl.name} đã PHÁ SẢN!`);
+                pl.properties.forEach(id => {
+                    const c = gameState.board[id];
+                    if (creditor) {
+                        c.ownerId = creditor.id;
+                        c.mortgaged = false;
+                        c.level = 0;
+                        creditor.properties.push(id);
+                    } else {
+                        c.ownerId = null;
+                        c.mortgaged = false;
+                        c.level = 0;
+                    }
+                });
+                pl.properties = [];
+                closeModal();
+                checkWinCondition();
+                if (gameState.phase !== "finished") endTurn();
+                render();
+            }
+
+            // =========================
+            // WIN CONDITION
+            // =========================
+            function checkWinCondition() {
+                const alive = gameState.players.filter(p => !p.isBankrupt);
+                if (alive.length <= 1) {
+                    gameState.phase = "finished";
+                    gameState.winner = alive[0] || null;
+                    addLog(gameState.winner ? `🏆 ${gameState.winner.name} CHIẾN THẮNG!` : "Ván chơi kết thúc.");
+                    openModal({ type: "win" });
+                }
+            }
+
+            // =========================
+            // TURN MANAGEMENT
+            // =========================
+            function endTurn() {
+                if (gameState.phase === "finished") return;
+                gameState.doublesStreak = 0;
+                let next = gameState.currentPlayerIndex;
+                let loopGuard = 0;
+                do {
+                    next = (next + 1) % gameState.players.length;
+                    loopGuard++;
+                } while (gameState.players[next].isBankrupt && loopGuard <= gameState.players.length);
+                gameState.currentPlayerIndex = next;
+                gameState.turn++;
+                gameState.phase = "rolling";
+                gameState.extraTurn = false;
+                render();
+            }
+
+            // =========================
+            // UI HELPERS
+            // =========================
+            function openModal(m) { uiState.modal = m;
+                render(); }
+
+            function closeModal() { uiState.modal = null;
+                render(); }
+
+            function flashToast(msg) {
+                uiState.toast = msg;
+                render();
+                setTimeout(() => { if (uiState.toast === msg) { uiState.toast = "";
+                        render(); } }, 2200);
+            }
+
+            // =========================
+            // UI RENDER
+            // =========================
+            const root = document.getElementById('app');
+
+            function render() {
+                if (gameState.players.length === 0) {
+                    renderSetup();
+                } else {
+                    renderGame();
+                }
+            }
+
+            function renderSetup() {
+                let rows = "";
+                for (let i = 0; i < setupState.count; i++) {
+                    rows += `
+            <div class="player-row">
+              <div class="swatch" style="background:${PLAYER_COLORS[i]}">${AVATARS[i]}</div>
+              <input type="text" value="${setupState.names[i]}" oninput="window.__updateName(${i}, this.value)">
+            </div>`;
+                }
+                let countBtns = "";
+                for (let n = 2; n <= 4; n++) {
+                    countBtns +=
+                        `<button class="count-btn ${setupState.count===n?'active':''}" onclick="window.__setCount(${n})">${n}</button>`;
+                }
+                root.innerHTML = `
+          <div class="setup-screen">
+            <div class="setup-card">
+              <h1>🎩 CỜ TỶ PHÚ</h1>
+              <p class="sub">Thiết lập người chơi & bắt đầu phiên bản nâng cấp</p>
+              <div style="text-align:center;font-size:13px;color:#7a6a4a;margin-bottom:10px;font-weight:600;">Số người chơi</div>
+              <div class="count-select">${countBtns}</div>
+              ${rows}
+              <button class="btn btn-primary start-btn" onclick="window.__startGame()">🎲 BẮT ĐẦU CHƠI</button>
+            </div>
+          </div>
+        `;
+            }
+
+            window.__setCount = function(n) { setupState.count = n;
+                renderSetup(); };
+            window.__updateName = function(i, val) { setupState.names[i] = val; };
+            window.__startGame = function() {
+                initGame(setupState.count, setupState.names.slice(0, setupState.count));
+            };
+
+            function cellCornerClass(cell) {
+                return ["START", "JAIL", "FREE_PARKING", "GO_TO_JAIL"].includes(cell.type) ? "corner" : "";
+            }
+
+            function gridPosFor(i) {
+                let row, col;
+                if (i <= 10) { row = 11;
+                    col = 11 - i; } else if (i <= 20) { row = 11 - (i - 10);
+                    col = 1; } else if (i <= 30) { row = 1;
+                    col = 1 + (i - 20); } else { row = 1 + (i - 30);
+                    col = 11; }
+                return { row, col };
+            }
+
+            function renderCell(cell, i) {
+                const { row, col } = gridPosFor(i);
+                let inner = "";
+                if (cell.type === "PROPERTY") {
+                    const owner = cell.ownerId !== null && cell.ownerId !== undefined ? gameState.players[cell
+                        .ownerId] : null;
+                    inner = `
+            <div class="grp" style="background:${GROUP_COLORS[cell.group]}"></div>
+            <div class="cname">${cell.name}${cell.mortgaged?' 🔒':''}</div>
+            <div class="cprice">${owner ? '★'.repeat(cell.level) || '$'+cell.price : '$'+cell.price}</div>
+          `;
+                } else if (cell.type === "STATION") {
+                    inner = `<div class="cicon">🚉</div><div class="cname">${cell.name}</div><div class="cprice">$${cell.price}</div>`;
+                } else if (cell.type === "UTILITY") {
+                    inner =
+                        `<div class="cicon">${cell.name.includes('Điện')?'💡':'🚿'}</div><div class="cname">${cell.name}</div><div class="cprice">$${cell.price}</div>`;
+                } else if (cell.type === "TAX") {
+                    inner = `<div class="cicon">💰</div><div class="cname">${cell.name}</div><div class="cprice">$${cell.amount}</div>`;
+                } else if (cell.type === "EVENT") {
+                    inner = `<div class="cicon">⚡</div><div class="cname">${cell.name}</div><div class="cprice">Sự kiện</div>`;
+                } else {
+                    inner = `<div class="cicon">${CELL_ICON[cell.type]||' '}</div><div class="cname">${cell.name}</div>`;
+                }
+
+                const playersHere = gameState.players.filter(p => p.position === i && !p.isBankrupt);
+                const tokensHtml = playersHere.length ?
+                    `<div class="tokens-in-cell">${playersHere.map(p=>`<div class="token" style="background:${p.color}" title="${p.name}"></div>`).join('')}</div>` :
+                    "";
+
+                const ownedClass = (cell.ownerId !== null && cell.ownerId !== undefined) ? "owned" : "";
+
+                return `<div class="cell ${cellCornerClass(cell)} ${ownedClass}" style="grid-row:${row};grid-column:${col};" data-pos="${i}">${inner}${tokensHtml}</div>`;
+            }
+
+            function renderBoard() {
+                let cellsHtml = "";
+                gameState.board.forEach((cell, i) => { cellsHtml += renderCell(cell, i); });
+                const pl = currentPlayer();
+                const canRoll = gameState.phase === "rolling";
+                const rollLabel = pl && pl.isInJail ? "🎲 THỬ RA TÙ" : "🎲 TUNG XÚC XẮC";
+
+                const centerHtml = `
+          <div class="center-panel">
+            <h1>CỜ TỶ PHÚ</h1>
+            ${pl ? `
+            <div class="cur-player"><span class="dot" style="background:${pl.color}; color:${pl.color}"></span> ${pl.avatar} ${pl.name} ${pl.isInJail?'🚔':''}</div>
+            <div class="dice-row">
+              <div class="die" id="die1">${gameState.dice[0]}</div>
+              <div class="die" id="die2">${gameState.dice[1]}</div>
+            </div>
+            <button class="roll-btn" ${canRoll?'':'disabled'} onclick="window.__rollDice()">${rollLabel}</button>
+            <div class="money-tag">💵 $${pl.money}</div>
+            ${pl.isInJail ? `
+            <div class="center-actions">
+              <button class="btn btn-secondary" style="font-size:11px;padding:6px 10px;" onclick="window.__payJailFine()">Trả $${JAIL_FINE} ra tù</button>
+              ${pl.getOutOfJailCards>0?`<button class="btn btn-teal" style="font-size:11px;padding:6px 10px;" onclick="window.__useJailCard()">Dùng thẻ ra tù</button>`:""}
+            </div>` : ""}
+            ` : ""}
+            <div class="toast-area">${uiState.toast || 'Chờ hành động...'}</div>
+          </div>
+        `;
+
+                return `<div class="board">${cellsHtml}${centerHtml}</div>`;
+            }
+
+            function renderSidebar() {
+                const playersHtml = gameState.players.map(p => `
+          <div class="player-card ${p.id===gameState.currentPlayerIndex?'active':''} ${p.isBankrupt?'bankrupt':''}">
+            <div class="avatar" style="background:${p.color}">${p.avatar}</div>
+            <div class="pname">${p.name}${p.isInJail?' <span class="pjail">🚔 Tù</span>':''}</div>
+            <div class="pmoney">$${p.money}</div>
+          </div>
+        `).join('');
+
+                const pl = currentPlayer();
+                const myProps = pl ? pl.properties.map(id => gameState.board[id]) : [];
+                const propsHtml = myProps.length ? myProps.map(c => `
+          <div class="prow" style="background:${c.type==='PROPERTY'?GROUP_COLORS[c.group]+'55':'#eee'}">
+            <span>${c.name}${c.mortgaged?' 🔒':''}${c.level?` (Lv${c.level})`:''}</span>
+            <span style="display:flex;gap:4px;">
+              ${c.type==='PROPERTY' && !c.mortgaged && c.level<5 ? `<button class="btn btn-teal" style="padding:2px 6px;font-size:10px;" onclick="window.__buildHouse(${c.id})">🏗️$${c.houseCost}</button>`:""}
+              ${c.type==='PROPERTY' && c.level>0 ? `<button class="btn btn-secondary" style="padding:2px 6px;font-size:10px;" onclick="window.__sellHouse(${c.id})">➖🏠</button>`:""}
+              ${!c.mortgaged ? `<button class="btn btn-secondary" style="padding:2px 6px;font-size:10px;" onclick="window.__mortgage(${c.id})">Cầm cố</button>` : `<button class="btn btn-secondary" style="padding:2px 6px;font-size:10px;" onclick="window.__unmortgage(${c.id})">Chuộc</button>`}
+            </span>
+          </div>
+        `).join('') :
+                    `<div style="color:#999;font-size:12px;">Chưa sở hữu tài sản nào.</div>`;
+
+                const logHtml = gameState.log.map(l => `<div>${l}</div>`).join('');
+
+                return `
+          <div class="sidebar">
+            <div class="panel">
+              <h3>👥 Người chơi — Lượt ${gameState.turn}</h3>
+              ${playersHtml}
+            </div>
+            <div class="panel">
+              <h3>🏘️ Tài sản của bạn</h3>
+              <div class="props-box">${propsHtml}</div>
+            </div>
+            <div class="panel">
+              <h3>⚡ Hành động</h3>
+              <div class="actions-grid">
+                <button class="btn btn-secondary" onclick="window.__openTrade()">🤝 Giao dịch</button>
+                ${pl && pl.isInJail ? `<button class="btn btn-teal" onclick="window.__payJailFine()">💵 Trả phạt ra tù</button>` : ''}
+              </div>
+            </div>
+            <div class="panel">
+              <h3>📜 Nhật ký</h3>
+              <div class="log-box">${logHtml}</div>
+            </div>
+          </div>
+        `;
+            }
+
+            function renderModal() {
+                const m = uiState.modal;
+                if (!m) return "";
+
+                if (m.type === "buy") {
+                    const { cell, pl, wasDouble } = m;
+                    return `
+            <div class="modal-overlay">
+              <div class="modal">
+                <h2>🏠 ${cell.name}</h2>
+                <div class="modal-sub">${cell.type==='PROPERTY' ? `Nhóm: <span class="group-swatch" style="background:${GROUP_COLORS[cell.group]}"></span>` : cell.type}</div>
+                <div class="modal-body">
+                  <div class="price-row"><span>Giá mua</span><b>$${cell.price}</b></div>
+                  <div class="price-row"><span>Tiền thuê cơ bản</span><b>$${cell.type==='PROPERTY'?cell.rentTable[0]:(cell.type==='STATION'?STATION_RENTS[0]:'4x xúc xắc')}</b></div>
+                  <div class="price-row"><span>Tiền của bạn</span><b>$${pl.money}</b></div>
+                </div>
+                <div class="modal-actions">
+                  <button class="btn btn-secondary" onclick="window.__skipBuy()">BỎ QUA</button>
+                  <button class="btn btn-primary" ${pl.money<cell.price?'disabled':''} onclick="window.__buy()">MUA ĐẤT</button>
+                </div>
+              </div>
+            </div>
+          `;
+                }
+
+                if (m.type === "tax") {
+                    const { cell, pl, wasDouble } = m;
+                    return `
+            <div class="modal-overlay">
+              <div class="modal">
+                <h2>💰 ${cell.name}</h2>
+                <div class="modal-body">Bạn phải trả <b>$${cell.amount}</b></div>
+                <div class="modal-actions">
+                  <button class="btn btn-primary" onclick="window.__payTax(${cell.amount})">ĐỒNG Ý</button>
+                </div>
+              </div>
+            </div>
+          `;
+                }
+
+                if (m.type === "card") {
+                    const { label, card } = m;
+                    return `
+            <div class="modal-overlay">
+              <div class="modal">
+                <h2>${label==='Cơ Hội'?'🎴':'🎁'} ${label}</h2>
+                <div class="modal-body">${card.text}</div>
+                <div class="modal-actions">
+                  <button class="btn btn-primary" onclick="window.__applyCard()">ĐỒNG Ý</button>
+                </div>
+              </div>
+            </div>
+          `;
+                }
+
+                if (m.type === "eventCard") {
+                    const { card } = m;
+                    return `
+            <div class="modal-overlay">
+              <div class="modal">
+                <h2>⚡ Sự kiện đặc biệt</h2>
+                <div class="challenge-emoji">⚡</div>
+                <div class="modal-body">${card.text}</div>
+                <div class="modal-actions">
+                  <button class="btn btn-primary" onclick="window.__applyEventCard()">TIẾP TỤC</button>
+                </div>
+              </div>
+            </div>
+          `;
+                }
+
+                if (m.type === "challenge") {
+                    const { pl, challenge } = m;
+                    return `
+            <div class="modal-overlay">
+              <div class="modal">
+                <h2>⚡ Thử thách!</h2>
+                <div class="challenge-emoji">🤔</div>
+                <div class="modal-body">
+                  ${challenge.pay ? `<p>Bạn có thể trả <b>$${challenge.pay}</b> để tránh hình phạt.</p>` : ''}
+                  ${challenge.skip ? '<p>Hoặc mất lượt tiếp theo.</p>' : ''}
+                  ${challenge.jail ? '<p>Hoặc vào tù ngay lập tức.</p>' : ''}
+                </div>
+                <div class="modal-actions">
+                  <button class="btn btn-danger" onclick="window.__acceptChallengePenalty()">Chấp nhận hình phạt</button>
+                  ${challenge.pay ? `<button class="btn btn-primary" onclick="window.__payChallenge()">Trả $${challenge.pay}</button>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+                }
+
+                if (m.type === "choosePlayer") {
+                    const { pl, action, amount } = m;
+                    const others = gameState.players.filter(p => p.id !== pl.id && !p.isBankrupt);
+                    return `
+            <div class="modal-overlay">
+              <div class="modal">
+                <h2>👥 Chọn người chơi</h2>
+                <div class="modal-body">Chọn một người chơi để ${action === 'collect' ? `nhận $${amount} từ họ` : ''}</div>
+                <div class="modal-actions" style="flex-direction:column;gap:6px;">
+                  ${others.map(o => `<button class="btn btn-secondary" onclick="window.__choosePlayerAction(${o.id})">${o.avatar} ${o.name}</button>`).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+                }
+
+                if (m.type === "bankruptcy-help") {
+                    const { pl } = m;
+                    return `
+            <div class="modal-overlay">
+              <div class="modal">
+                <h2>⚠️ BẠN KHÔNG ĐỦ TIỀN</h2>
+                <div class="modal-sub">Số dư hiện tại: <b style="color:var(--red)">$${pl.money}</b></div>
+                <div class="modal-body">Hãy bán nhà, cầm cố đất, hoặc giao dịch để có đủ tiền. Nếu vẫn không đủ, bạn sẽ phải tuyên bố phá sản.</div>
+                <div class="modal-actions">
+                  <button class="btn btn-secondary" onclick="window.__openTrade()">🤝 Giao dịch</button>
+                  <button class="btn btn-danger" onclick="window.__bankrupt()">TUYÊN BỐ PHÁ SẢN</button>
+                  <button class="btn btn-primary" onclick="window.__retryDebt()">Đã xử lý xong</button>
+                </div>
+              </div>
+            </div>
+          `;
+                }
+
+                if (m.type === "trade") {
+                    const pl = m.pl;
+                    const others = gameState.players.filter(p => p.id !== pl.id && !p.isBankrupt);
+                    const myProps = pl.properties.map(id => gameState.board[id]);
+                    const targetPl = m.target ? gameState.players.find(p => p.id === Number(m.target)) : null;
+                    const theirProps = targetPl ? targetPl.properties.map(id => gameState.board[id]) : [];
+                    return `
+            <div class="modal-overlay">
+              <div class="modal" style="max-width:460px;">
+                <h2>🤝 Giao dịch</h2>
+                <div class="modal-sub">Chọn người chơi và đề nghị trao đổi</div>
+                <select class="trade-select" onchange="window.__tradeSetField('target', this.value)">
+                  <option value="">-- Chọn người chơi --</option>
+                  ${others.map(o=>`<option value="${o.id}" ${m.target==o.id?'selected':''}>${o.name}</option>`).join('')}
+                </select>
+                <div class="trade-box">
+                  <h4>Bạn đưa</h4>
+                  <label>Tiền: <input type="number" min="0" value="${m.offerMoney}" style="width:80px;" oninput="window.__tradeSetField('offerMoney', this.value)"></label>
+                  <label>Đất:
+                    <select onchange="window.__tradeSetField('offerProp', this.value)">
+                      <option value="">(không)</option>
+                      ${myProps.map(c=>`<option value="${c.id}" ${m.offerProp==c.id?'selected':''}>${c.name}</option>`).join('')}
+                    </select>
+                  </label>
+                </div>
+                <div class="trade-box">
+                  <h4>Bạn nhận</h4>
+                  <label>Tiền: <input type="number" min="0" value="${m.wantMoney}" style="width:80px;" oninput="window.__tradeSetField('wantMoney', this.value)"></label>
+                  <label>Đất:
+                    <select onchange="window.__tradeSetField('wantProp', this.value)" ${!targetPl?'disabled':''}>
+                      <option value="">(không)</option>
+                      ${theirProps.map(c=>`<option value="${c.id}" ${m.wantProp==c.id?'selected':''}>${c.name}</option>`).join('')}
+                    </select>
+                  </label>
+                </div>
+                <div class="modal-actions">
+                  <button class="btn btn-secondary" onclick="window.__closeModal()">HỦY</button>
+                  <button class="btn btn-primary" onclick="window.__sendTrade()">GỬI ĐỀ NGHỊ</button>
+                </div>
+              </div>
+            </div>
+          `;
+                }
+
+                if (m.type === "win") {
+                    const w = gameState.winner;
+                    return `
+            <div class="modal-overlay">
+              <div class="modal" style="text-align:center;">
+                <div class="win-emoji">🏆</div>
+                <h2>${w?('CHIẾN THẮNG! '+w.name):'Ván chơi kết thúc'}</h2>
+                ${w?`<div class="modal-body">Tổng tài sản: <b>$${w.money}</b></div>`:''}
+                <div class="modal-actions" style="justify-content:center;">
+                  <button class="btn btn-primary" onclick="window.__restart()">CHƠI LẠI</button>
+                </div>
+              </div>
+            </div>
+          `;
+                }
+
+                return "";
+            }
+
+            function renderGame() {
+                root.innerHTML = `
+          <div class="game-screen">
+            <div class="topbar">
+              <h2>🎩 CỜ TỶ PHÚ</h2>
+              <div class="turn-info">Lượt: ${gameState.turn} | ${gameState.phase}</div>
+              <button class="quit-btn" onclick="window.__quit()">Thoát</button>
+            </div>
+            <div class="layout">
+              <div class="board-area">${renderBoard()}</div>
+              ${renderSidebar()}
+            </div>
+          </div>
+          ${renderModal()}
+        `;
+            }
+
+            function renderDiceOnly(rolling) {
+                const d1 = document.getElementById('die1');
+                const d2 = document.getElementById('die2');
+                if (d1) { d1.textContent = gameState.dice[0];
+                    d1.classList.toggle('rolling', rolling); }
+                if (d2) { d2.textContent = gameState.dice[1];
+                    d2.classList.toggle('rolling', rolling); }
+            }
+
+            // =========================
+            // EVENT HANDLERS
+            // =========================
+            window.__rollDice = function() { rollDice(); };
+            window.__payJailFine = function() { payJailFine(currentPlayer()); };
+            window.__useJailCard = function() { useJailCard(currentPlayer()); };
+            window.__buy = function() { const m = uiState.modal;
+                buyProperty(m.pl, m.cell, m.wasDouble); };
+            window.__skipBuy = function() { const m = uiState.modal;
+                skipBuy(m.pl, m.wasDouble); };
+            window.__payTax = function(amount) {
+                const m = uiState.modal;
+                const pl = m.pl;
+                changeMoney(pl, -amount);
+                addLog(`💰 ${pl.name} đã trả $${amount} tiền thuế.`);
+                closeModal();
+                checkBankruptcyNeeded(pl, () => { finishResolution(pl, m.wasDouble); });
+            };
+            window.__applyCard = function() { const m = uiState.modal;
+                applyCard(m.pl, m.card, m.wasDouble); };
+            window.__applyEventCard = function() { const m = uiState.modal;
+                applyEventCard(m.pl, m.card, m.wasDouble); };
+            window.__acceptChallengePenalty = function() {
+                const m = uiState.modal;
+                const pl = m.pl;
+                closeModal();
+                if (m.challenge.skip) gameState.skipNextTurn = true;
+                if (m.challenge.jail) sendToJail(pl);
+                finishResolution(pl, false);
+            };
+            window.__payChallenge = function() {
+                const m = uiState.modal;
+                const pl = m.pl;
+                changeMoney(pl, -m.challenge.pay);
+                addLog(`💵 ${pl.name} trả $${m.challenge.pay} để tránh hình phạt.`);
+                closeModal();
+                finishResolution(pl, false);
+            };
+            window.__choosePlayerAction = function(targetId) {
+                const m = uiState.modal;
+                const pl = m.pl;
+                const target = gameState.players.find(p => p.id === targetId);
+                if (!target) return;
+                if (m.action === 'collect') {
+                    const amount = m.amount;
+                    if (target.money < amount) {
+                        flashToast(`${target.name} không đủ tiền!`);
+                        return;
+                    }
+                    target.money -= amount;
+                    pl.money += amount;
+                    addLog(`💸 ${pl.name} nhận $${amount} từ ${target.name}.`);
+                }
+                closeModal();
+                finishResolution(pl, false);
+            };
+            window.__buildHouse = function(id) { buildHouse(currentPlayer(), id); };
+            window.__sellHouse = function(id) { sellHouse(currentPlayer(), id); };
+            window.__mortgage = function(id) { mortgageProperty(currentPlayer(), id); };
+            window.__unmortgage = function(id) { unmortgageProperty(currentPlayer(), id); };
+            window.__openTrade = function() { openTradeModal(currentPlayer()); };
+            window.__tradeSetField = function(field, val) {
+                if (!uiState.modal || uiState.modal.type !== "trade") return;
+                if (field === 'offerMoney' || field === 'wantMoney') val = Number(val) || 0;
+                uiState.modal[field] = val;
+                render();
+            };
+            window.__sendTrade = function() { sendTradeOffer(uiState.modal); };
+            window.__closeModal = function() { closeModal(); };
+            window.__bankrupt = function() { const m = uiState.modal;
+                declareBankrupt(m.pl, m.creditor); };
+            window.__retryDebt = function() { const pl = uiState.modal.pl;
+                attemptResolveDebt(pl); };
+            window.__quit = function() {
+                if (confirm("Bạn có chắc muốn thoát ván chơi hiện tại?")) {
+                    gameState = { players: [], board: [], currentPlayerIndex: 0, turn: 1, phase: "waiting", dice: [1,
+                            1], doublesStreak: 0, log: [], winner: null, skipNextTurn: false,
+                        extraTurn: false };
+                    uiState = { modal: null, toast: "" };
+                    render();
+                }
+            };
+            window.__restart = function() {
+                gameState = { players: [], board: [], currentPlayerIndex: 0, turn: 1, phase: "waiting", dice: [1, 1],
+                    doublesStreak: 0, log: [], winner: null, skipNextTurn: false, extraTurn: false };
+                uiState = { modal: null, toast: "" };
+                render();
+            };
+
+            // initial render
+            render();
+
+        })();
+    </script>
+</body>
+</html>
