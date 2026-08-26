@@ -202,6 +202,9 @@ export const userService = {
   async updateProfile(data) {
     return apiFetch("/auth/me", { method: "PUT", body: data });
   },
+  async resetPassword(id, newPassword) {
+    return apiFetch(`/users/${encodeURIComponent(id)}/reset-password`, { method: "PATCH", body: { newPassword } });
+  },
 };
 
 export const statsService = {

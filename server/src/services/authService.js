@@ -122,6 +122,16 @@ export async function removeUser(id) {
   return true;
 }
 
+export async function resetPassword(userId, newPassword) {
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  const pwd = String(newPassword || "").trim();
+  if (!pwd) throw new Error("Mật khẩu không được để trống");
+  if (pwd.length < 6) throw new Error("Mật khẩu phải có ít nhất 6 ký tự");
+  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { passwordHash: bcrypt.hashSync(pwd, 10) } });
+  return true;
+}
+
 export async function getCoins(userId) {
   const user = await getCollection(COLLECTION).findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");

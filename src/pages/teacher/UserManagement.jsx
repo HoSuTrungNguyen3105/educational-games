@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { userService } from '../../services/api.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui.jsx'
+import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal, Modal } from '../../components/ui.jsx'
 
 export default function UserManagement({ user, showToast }) {
   const [users, setUsers] = useState(null);
@@ -9,6 +9,10 @@ export default function UserManagement({ user, showToast }) {
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, item: null });
+  const [resetTarget, setResetTarget] = useState(null);
+  const [resetPwd, setResetPwd] = useState("");
+  const [resetSaving, setResetSaving] = useState(false);
+  const [resetError, setResetError] = useState("");
   const isAdmin = user && user.role === "admin";
 
   const FIELDS = [
@@ -60,12 +64,28 @@ export default function UserManagement({ user, showToast }) {
     } catch (err) { showToast(err.message || "Không thể xóa", "error"); }
   };
 
+  const openReset = (u) => { setResetTarget(u); setResetPwd(""); setResetError(""); };
+  const closeReset = () => { setResetTarget(null); setResetPwd(""); setResetError(""); };
+  const doReset = async () => {
+    if (!resetPwd.trim()) { setResetError("Vui lòng nhập mật khẩu mới"); return; }
+    if (resetPwd.length < 6) { setResetError("Mật khẩu phải có ít nhất 6 ký tự"); return; }
+    setResetSaving(true); setResetError("");
+    try {
+      await userService.resetPassword(resetTarget.id, resetPwd);
+      showToast("Đã đổi mật khẩu thành công");
+      closeReset();
+    } catch (err) {
+      setResetError(err.message || "Không thể đổi mật khẩu");
+    } finally {
+      setResetSaving(false);
+    }
+  };
+
   return (
     <div>
       <ManagementHeader subtitle="Quản lý tài khoản" title="Người dùng" />
 
       <ManagementTable
-        // title="Danh sách tài khoản"
         data={users}
         error={error && !users ? error : null}
         onRetry={load}
@@ -86,7 +106,10 @@ export default function UserManagement({ user, showToast }) {
             </td>
             <td className="px-5 py-3 text-right">
               {(isAdmin || u.role !== "admin") && u.username !== (user && user.username) && (
-                <IconButton title="Xóa tài khoản" onClick={() => confirmRemove(u)}>🗑️</IconButton>
+                <div className="flex items-center justify-end gap-1">
+                  <IconButton title="Đổi mật khẩu" onClick={() => openReset(u)}>🔑</IconButton>
+                  <IconButton title="Xóa tài khoản" onClick={() => confirmRemove(u)}>🗑️</IconButton>
+                </div>
               )}
             </td>
           </tr>
@@ -99,6 +122,38 @@ export default function UserManagement({ user, showToast }) {
       <ConfirmModal open={confirm.open} title="Xóa tài khoản"
         message={confirm.item ? `Xóa "${confirm.item.name}" (${confirm.item.username})?` : ""}
         onConfirm={doRemove} onClose={() => setConfirm({ open: false, item: null })} />
+
+      {resetTarget && (
+        <Modal onClose={closeReset}>
+          <div className="note-card p-6 w-full max-w-sm mx-auto anim-pop bg-paper2">
+            <h3 className="font-display text-lg text-ink mb-1">Đổi mật khẩu</h3>
+            <p className="text-sm text-[#8A7C63] mb-4">
+              Đặt lại mật khẩu cho <span className="font-semibold text-ink">{resetTarget.name}</span> ({resetTarget.username})
+            </p>
+            <label className="block text-sm font-semibold text-ink mb-1">Mật khẩu mới</label>
+            <input
+              type="password"
+              value={resetPwd}
+              onChange={(e) => { setResetPwd(e.target.value); setResetError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") doReset(); }}
+              placeholder="Nhập mật khẩu mới (≥ 6 ký tự)"
+              className="w-full note-card px-4 py-2.5 border-ink/10 focus:border-ticket rounded-2xl text-sm font-mono outline-none"
+              autoFocus
+            />
+            {resetError && <p className="text-xs text-red-500 mt-2">{resetError}</p>}
+            <div className="flex gap-3 mt-5">
+              <button onClick={closeReset}
+                className="flex-1 px-4 py-2.5 rounded-2xl border border-ink/10 text-sm text-[#8A7C63] hover:bg-ink/5 transition">
+                Hủy
+              </button>
+              <button onClick={doReset} disabled={resetSaving}
+                className="flex-1 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-500 to-violet-500 text-white text-sm font-semibold shadow hover:shadow-md transition disabled:opacity-50">
+                {resetSaving ? "Đang lưu..." : "Đổi mật khẩu"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -45,14 +45,13 @@ export default function UserRegisterScreen({ onBack, onRegistered, onGoLogin, sh
   };
 
   return (
-    <div className="min-h-screen bg-paper flex items-center justify-center px-6 py-10">
+    <div className="min-h-screen bg-paper flex items-center justify-center px-2 py-1">
       <div className="w-full max-w-md anim-pop">
-        <div className="note-card p-8 formbg bg-paper2">
+        <div className="note-card p-5 formbg bg-paper2">
           <button onClick={onBack} className="text-sm text-[#8A7C63] hover:text-ink transition inline-flex items-center gap-1">
             ← Về trang chủ
           </button>
-          <div className="text-center mt-4">
-            <div className="text-6xl mb-3 float-slow">✨</div>
+          <div className="text-center mt-2">
             <h1 className="font-display text-2xl text-ink">Đăng ký tài khoản</h1>
             <p className="text-sm text-[#8A7C63] mt-1">Tạo tài khoản để sử dụng tính năng chat</p>
           </div>

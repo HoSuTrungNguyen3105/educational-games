@@ -2,6 +2,8 @@ import { Router } from "express";
 import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, addCoins } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
+import { getByUser } from "../services/gameProgressService.js";
+import { getCollection } from "../db.js";
 
 const router = Router();
 
@@ -42,10 +44,38 @@ router.post("/register", async (req, res, next) => {
 
 router.get("/me", authenticate, async (req, res) => {
   try {
-    const coins = await getCoins(req.user.sub);
-    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, role: req.user.role, coins });
+    const [userDoc, coins, games] = await Promise.all([
+      getCollection("users").findOne({ id: req.user.sub }).catch(() => null),
+      getCoins(req.user.sub).catch(() => 0),
+      getByUser(req.user.sub).catch(() => []),
+    ]);
+    const totalPlays = games.reduce((s, g) => s + (g.gamesPlayed || 0), 0);
+    const totalXP = games.reduce((s, g) => s + (g.experience || 0), 0);
+    sendSuccess(res, {
+      id: req.user.sub,
+      username: req.user.username,
+      name: req.user.name,
+      email: userDoc?.email || null,
+      role: req.user.role,
+      coins,
+      createdAt: userDoc?.createdAt || null,
+      stats: {
+        totalPlays,
+        totalXP,
+        gamesPlayed: games.length,
+      },
+      games: games.map(g => ({
+        gameId: g.gameId,
+        name: g.gameName || g.gameId,
+        level: g.level || 1,
+        experience: g.experience || 0,
+        progress: g.progress || 0,
+        gamesPlayed: g.gamesPlayed || 0,
+        lastPlayedAt: g.lastPlayedAt || g.updatedAt,
+      })),
+    });
   } catch {
-    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, role: req.user.role, coins: 0 });
+    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, coins: 0, createdAt: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 }, games: [] });
   }
 });
 

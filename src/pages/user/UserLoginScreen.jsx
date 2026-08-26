@@ -43,9 +43,8 @@ export default function UserLoginScreen({ onBack, onLogin, onGoRegister, showToa
             ← Về trang chủ
           </button>
           <div className="text-center mt-4">
-            <div className="text-6xl mb-3 float-slow">💬</div>
             <h1 className="font-display text-2xl text-ink">Đăng nhập</h1>
-            <p className="text-sm text-[#8A7C63] mt-1">Đăng nhập để sử dụng tính năng chat</p>
+            <p className="text-sm text-[#8A7C63] mt-1">Đăng nhập để nâng cao trải nghiệm</p>
           </div>
           <form onSubmit={submit} className="mt-6 space-y-4">
             <div>

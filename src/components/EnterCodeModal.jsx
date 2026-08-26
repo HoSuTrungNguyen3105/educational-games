@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { gameService } from '../services/api.js'
 import { Modal, PrimaryButton, TicketStub } from './ui.jsx'
+import { Ticket, KeyRound } from 'lucide-react'
 
 /**
  * Modal nhập mã vé để tham gia trò chơi
@@ -42,11 +43,13 @@ export function EnterCodeModal({ open, onClose, onFound }) {
     return (
         <Modal onClose={handleClose}>
             <div className="text-center">
-                <div className="text-6xl mb-4 float-slow">🎟️</div>
+                <div className="text-6xl mb-4 float-slow">
+                    <Ticket className="w-16 h-16 inline-block text-ticket" />
+                </div>
                 <h2 className="font-display text-xl text-ink mb-2">Nhập mã vé</h2>
                 <p className="text-sm text-[#8A7C63] mb-4">Nhập mã vé giáo viên đã cung cấp</p>
                 <form onSubmit={submitCode}>
-                    <TicketStub icon="🔑" code={code || "______"} />
+                    <TicketStub icon={<KeyRound className="w-5 h-5 text-ink" />} code={code || "______"} />
                     <input
                         value={code}
                         onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
@@ -60,7 +63,7 @@ export function EnterCodeModal({ open, onClose, onFound }) {
                         <PrimaryButton
                             type="button"
                             onClick={handleClose}
-                            className="flex-1 !bg-paper2 !text-paper border border-ink/10 hover:!bg-ink hover:!text-paper"
+                            className="flex-1 !bg-paper2 !text-ink border border-ink/10 hover:!bg-ink hover:!text-paper"
                         >
                             Huỷ
                         </PrimaryButton>

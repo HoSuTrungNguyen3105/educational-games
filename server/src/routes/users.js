@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
-import { createUser, listUsers, removeUser } from "../services/authService.js";
+import { createUser, listUsers, removeUser, resetPassword } from "../services/authService.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
 
 const router = Router();
@@ -31,6 +31,17 @@ router.delete("/:id", async (req, res, next) => {
   try {
     await removeUser(req.params.id);
     sendNoContent(res);
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+router.patch("/:id/reset-password", async (req, res, next) => {
+  try {
+    const { newPassword } = req.body || {};
+    if (!newPassword) return sendError(res, "newPassword là bắt buộc", 400);
+    await resetPassword(req.params.id, newPassword);
+    sendSuccess(res, { ok: true }, "Đã đổi mật khẩu thành công");
   } catch (e) {
     sendError(res, e.message, 400);
   }
