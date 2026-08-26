@@ -224,10 +224,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </div>
                 <div className="flex items-center justify-between text-xs font-bold text-amber-600 mb-1">
                   <span>{getLevelEmoji(lv.level)} Cấp {lv.level}</span>
-                  <span>{lv.progress ?? 0}%</span>
+                  <span className="text-[10px] font-mono">{lv.earned ?? 0}/{lv.needed ?? 0} xu</span>
                 </div>
                 <div className="h-2 rounded-full bg-amber-50 overflow-hidden mb-4">
-                  <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all" style={{ width: `${lv.progress ?? 0}%` }} />
+                  <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all" style={{ width: `${lv.percent ?? 0}%` }} />
                 </div>
                 <a
                   onClick={() => navigate("/my-coins")}
@@ -371,7 +371,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     <div className="shrink-0 text-right">
                       <p className="text-[11px] font-bold text-amber-600 whitespace-nowrap">{getLevelEmoji(lv.level)} Cấp {lv.level}</p>
                       <div className="w-16 h-1.5 mt-1 rounded-full bg-amber-100 overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full" style={{ width: `${lv.progress ?? 0}%` }} />
+                        <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full" style={{ width: `${lv.percent ?? 0}%` }} />
                       </div>
                     </div>
                   )}
