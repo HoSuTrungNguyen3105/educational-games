@@ -5,6 +5,7 @@ import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
 import { PrimaryButton, Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
+import DailyTasksCard from '../components/DailyTasksCard.jsx'
 
 // Bảng màu theo môn học — mỗi môn luôn ra cùng 1 màu, giúp trẻ nhận diện nhanh
 const SUBJECT_PALETTE = [
@@ -24,6 +25,7 @@ function colorForSubject(subject = "") {
 
 const NAV_ITEMS = (userAuth) => [
   { key: "home", icon: "🏠", label: "Trang chủ", path: "/", show: true },
+  { key: "tasks", icon: "📝", label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user },
   { key: "chat", icon: "💬", label: "Tin nhắn", path: "/chat", show: !!userAuth?.user },
   { key: "friends", icon: "🔍", label: "Tìm bạn", path: "/find-friends", show: !!userAuth?.user },
   { key: "coins", icon: "💰", label: "Ví của tôi", path: "/my-coins", show: !!userAuth?.user },
@@ -34,6 +36,7 @@ const NAV_ITEMS = (userAuth) => [
 // giữ tinh thần vui nhộn của Lớp Học Vui thay vì tông xanh dương đơn sắc kiểu app cửa hàng.
 const QUICK_MENU_ITEMS = (userAuth) => [
   { key: "code", icon: "🎟️", label: "Nhập mã vé", action: "code", show: true, tint: "from-purple-400 to-fuchsia-400" },
+  { key: "tasks", icon: "📝", label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user, tint: "from-violet-400 to-purple-400" },
   { key: "games", icon: "🎮", label: "Trò chơi", action: "scroll", show: true, tint: "from-orange-400 to-amber-400" },
   { key: "coins", icon: "💰", label: "Ví của tôi", path: "/my-coins", show: !!userAuth?.user, tint: "from-amber-400 to-yellow-400" },
   { key: "chat", icon: "💬", label: "Tin nhắn", path: "/chat", show: !!userAuth?.user, tint: "from-cyan-400 to-blue-400" },
@@ -49,14 +52,6 @@ const DESKTOP_TABS = [
   { key: "games", icon: "🎮", label: "Chơi game", type: "scroll", target: "games-section" },
   { key: "subjects", icon: "📖", label: "Học tập", type: "scroll", target: "subjects-section" },
   { key: "board", icon: "🏆", label: "Bảng xếp hạng", type: "scroll", target: "leaderboard-section" },
-];
-
-// ⚠️ Dữ liệu mẫu (placeholder) — app hiện chưa có API cho nhiệm vụ / sự kiện / bảng xếp hạng.
-// Khi có endpoint thật, thay 3 mảng này bằng dữ liệu lấy từ service tương ứng.
-const MOCK_MISSIONS = [
-  { icon: "🎯", label: "Hoàn thành 3 game bất kỳ", progress: 2, total: 3, reward: "+50" },
-  { icon: "📖", label: "Học 1 bài trong phần Học tập", progress: 1, total: 1, reward: "+30" },
-  { icon: "🎮", label: "Chơi game trong 15 phút", progress: 10, total: 15, reward: "+20" },
 ];
 
 const MOCK_LEADERBOARD = [
@@ -91,6 +86,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   }, [userAuth?.user]);
 
   const lv = getLevelProgress(userCoins);
+
+  const handleClaimCoins = (newCoins) => {
+    setUserCoins(newCoins);
+  };
 
   const hotGames = games ? [...games].sort((a, b) => (b.playersCount || 0) - (a.playersCount || 0)).slice(0, 3) : [];
   const newGames = games ? [...games].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6) : [];
@@ -179,12 +178,13 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         </div>
       </header>
 
-      <div className="lg:flex lg:max-w-7xl lg:mx-auto">
+      <div className="lg:flex w-full">
 
         {/* ═══════════════════════════ SIDEBAR (chỉ desktop) ═══════════════════════════ */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-72 lg:shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] px-5 py-6 gap-4">
+        <aside className="hidden lg:flex lg:flex-col lg:w-72 lg:shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:overflow-y-auto px-5 py-6 gap-4">
 
           {userAuth?.user ? (
+            <>
             <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-5">
               <div className="flex flex-col items-center text-center mb-4">
                 <span className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-2xl shrink-0 shadow-sm mb-2">👤</span>
@@ -206,6 +206,24 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 💰 {userCoins.toLocaleString()} coin
               </a>
             </div>
+
+            <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
+              <div className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white px-3 py-1.5 rounded-full shadow-sm mb-3">
+                <span className="text-sm">📝</span>
+                <h3 className="font-display text-xs font-bold">Nhiệm vụ hôm nay</h3>
+              </div>
+              <DailyTasksCard
+                compact
+                onClaimCoins={handleClaimCoins}
+              />
+              <button
+                onClick={() => navigate("/daily-tasks")}
+                className="w-full text-center text-[11px] font-semibold text-purple-500 hover:text-purple-700 transition mt-2"
+              >
+                Xem tất cả →
+              </button>
+            </div>
+            </>
           ) : (
             <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-5 text-center">
               <span className="text-3xl block mb-2">🎪</span>
@@ -297,7 +315,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             )}
           </header>
 
-          <main className="flex-1 w-full max-w-6xl mx-auto p-3 space-y-10">
+          <main className="flex-1 w-full p-3 space-y-10">
 
             {/* ───────── Thẻ chào mừng + lưới truy cập nhanh — kiểu "mini app", chỉ hiện trên mobile (giữ nguyên) ───────── */}
             <section className="lg:hidden -mt-2">
@@ -409,23 +427,16 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             {/* ═══════════════ DASHBOARD 3 CỘT: Nhiệm vụ / Sự kiện / Bảng xếp hạng (Responsive) ═══════════════ */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <DashboardCard icon="📝" title="Nhiệm vụ hàng ngày" gradient="from-violet-500 to-purple-500">
-                <div className="flex flex-col gap-3">
-                  {MOCK_MISSIONS.map((m, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <span className="w-9 h-9 shrink-0 rounded-xl bg-purple-50 flex items-center justify-center text-base">{m.icon}</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-gray-700 truncate mb-1">{m.label}</p>
-                        <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full" style={{ width: `${Math.min(100, (m.progress / m.total) * 100)}%` }} />
-                        </div>
-                      </div>
-                      <span className="shrink-0 text-[11px] font-bold text-amber-600">{m.reward}</span>
-                    </div>
-                  ))}
-                </div>
+                <DailyTasksCard onClaimCoins={handleClaimCoins} />
+                <button
+                  onClick={() => navigate("/daily-tasks")}
+                  className="w-full text-center text-[11px] font-semibold text-purple-500 hover:text-purple-700 transition mt-3"
+                >
+                  Xem tất cả →
+                </button>
               </DashboardCard>
 
-              <DashboardCard icon="🎁" title="Sự kiện nổi bật" gradient="from-pink-500 to-rose-500">
+              <DashboardCard icon="🎁" title="Sự kiện nổi bật" gradient="from-yellow-500 to-rose-500">
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-white p-4 h-full flex flex-col justify-between min-h-[10rem]">
                   <span className="absolute -bottom-3 -right-3 text-6xl opacity-30" aria-hidden="true">🏖️</span>
                   <div className="relative">

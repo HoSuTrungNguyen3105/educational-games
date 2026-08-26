@@ -198,6 +198,7 @@ export async function initDatabase() {
     ["conversations", { gameId: 1 }],
     ["conversationMembers", { conversationId: 1, userId: 1 }, { unique: true }],
     ["conversationMembers", { userId: 1 }],
+    ["dailyTaskProgress", { userId: 1, date: 1 }, { unique: true }],
   ];
 
   const createdIndexes = [];

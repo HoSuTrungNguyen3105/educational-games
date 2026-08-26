@@ -16,6 +16,7 @@ import ConversationListScreen from "./pages/user/ConversationListScreen.jsx";
 import ProfileScreen from "./pages/user/ProfileScreen.jsx";
 import MyCoins from "./pages/user/MyCoins.jsx";
 import FindFriendsScreen from "./pages/user/FindFriendsScreen.jsx";
+import DailyTasksPage from "./pages/user/DailyTasksPage.jsx";
 
 const USER_AUTH_KEY = "edu_games_user_auth";
 
@@ -122,6 +123,11 @@ function App() {
     "my-coins": () => (
       <RouteShell toast={toast} showBack={false}>
         <MyCoins userAuth={userAuth} onBack={() => navigate("/")} />
+      </RouteShell>
+    ),
+    "daily-tasks": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <DailyTasksPage userAuth={userAuth} onBack={() => navigate("/")} />
       </RouteShell>
     ),
   };

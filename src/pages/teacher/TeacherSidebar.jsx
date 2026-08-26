@@ -6,6 +6,7 @@ const MENU = [
   { id: "admin-library", label: "Thư viện", icon: "📚", route: "/admin/library" },
   { id: "admin-users", label: "Người dùng", icon: "👥", route: "/admin/users" },
   { id: "admin-coins", label: "Coin & Progress", icon: "💰", route: "/admin/coins" },
+  { id: "admin-daily-tasks", label: "Nhiệm vụ ngày", icon: "📝", route: "/admin/daily-tasks" },
   { id: "admin-templates", label: "Templates", icon: "🎨", route: "/admin/templates" },
   { id: "admin-categories", label: "Categories", icon: "🏷️", route: "/admin/categories" },
   { id: "admin-subjects", label: "Môn học", icon: "📖", route: "/admin/subjects" },
@@ -28,6 +29,7 @@ const MOBILE_MAIN = [
 const MOBILE_MORE = [
   { id: "admin-users", label: "Người dùng", icon: "👥", route: "/admin/users" },
   { id: "admin-coins", label: "Coins", icon: "💰", route: "/admin/coins" },
+  { id: "admin-daily-tasks", label: "Nhiệm vụ", icon: "📝", route: "/admin/daily-tasks" },
   { id: "admin-templates", label: "Templates", icon: "🎨", route: "/admin/templates" },
   { id: "admin-categories", label: "Categories", icon: "🏷️", route: "/admin/categories" },
   { id: "admin-subjects", label: "Môn học", icon: "📖", route: "/admin/subjects" },

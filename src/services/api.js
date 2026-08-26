@@ -284,3 +284,27 @@ export const coinService = {
     return apiFetch("/auth/me/coins", { method: "POST", body: { amount } });
   },
 };
+
+export const dailyTaskService = {
+  async list() {
+    return apiFetch("/daily-tasks") || [];
+  },
+  async getMyStatus() {
+    return apiFetch("/daily-tasks/me");
+  },
+  async track(type, amount) {
+    return apiFetch("/daily-tasks/track", { method: "POST", body: { type, amount } });
+  },
+  async claim(taskId) {
+    return apiFetch(`/daily-tasks/claim/${encodeURIComponent(taskId)}`, { method: "POST" });
+  },
+  async adminStats() {
+    return apiFetch("/daily-tasks/admin/stats");
+  },
+  async adminProgress() {
+    return apiFetch("/daily-tasks/admin/progress");
+  },
+  async adminReset(userId) {
+    return apiFetch("/daily-tasks/admin/reset", { method: "POST", body: { userId } });
+  },
+};

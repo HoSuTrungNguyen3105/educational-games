@@ -12,6 +12,7 @@ import QuestionManagement from './QuestionManagement.jsx'
 import GameBuilder from '../../components/gameBuilder/GameBuilder.jsx'
 import GameLibraryManagement from './GameLibraryManagement.jsx'
 import CoinManagement from './CoinManagement.jsx'
+import DailyTaskManagement from './DailyTaskManagement.jsx'
 
 export default function TeacherApp({ user, route, onLogout, showToast }) {
   const [refreshFlag, setRefreshFlag] = useState(0);
@@ -42,6 +43,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
       {page === "admin-results" && <TeacherResults gameId={route.params.gameId} onBack={goLibrary} />}
       {page === "admin-users" && <UserManagement user={user} showToast={showToast} />}
       {page === "admin-coins" && <CoinManagement showToast={showToast} />}
+      {page === "admin-daily-tasks" && <DailyTaskManagement showToast={showToast} />}
       {page === "admin-templates" && <TemplateManagement showToast={showToast} />}
       {page === "admin-categories" && <CategoryManagement showToast={showToast} />}
       {page === "admin-subjects" && <SubjectManagement showToast={showToast} />}
