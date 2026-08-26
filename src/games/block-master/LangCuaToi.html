@@ -1449,6 +1449,11 @@
       function saveState() {
         try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
         broadcastState();
+        if (_authToken && _backendCoins !== null && state.coins !== _backendCoins) {
+          var diff = state.coins - _backendCoins;
+          if (diff > 0) syncCoinsToBackend(state.coins);
+          _backendCoins = state.coins;
+        }
       }
 
       function broadcastState() {
@@ -1475,10 +1480,38 @@
 
       function sendQuit() { try { window.parent.postMessage({ type: 'quit' }, '*'); } catch (e) {} }
 
+      // Backend sync vars
+      var _apiBase = null;
+      var _authToken = null;
+      var _backendCoins = null;
+
+      function syncCoinsToBackend(newTotal) {
+        if (!_apiBase || !_authToken) return;
+        try {
+          var url = _apiBase.replace(/\/api\/?$/, '') + '/api/auth/me/coins';
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _authToken },
+            body: JSON.stringify({ amount: newTotal })
+          }).catch(function() {});
+        } catch (e) {}
+      }
+
       window.addEventListener('message', function(e) {
         if (!e.data || typeof e.data !== 'object') return;
         if (e.data.type === 'init' && e.data.data) {
-          state = Object.assign(defaultState(), e.data.data);
+          var d = e.data.data;
+          _apiBase = d.apiBase || null;
+          _authToken = d.authToken || null;
+
+          var saved = loadState();
+
+          if (d.userCoins != null && d.userCoins > 0) {
+            saved.coins = d.userCoins;
+            _backendCoins = d.userCoins;
+          }
+
+          state = Object.assign(defaultState(), saved);
           if (screen === 'playing') renderPlaying();
         }
       });

@@ -307,4 +307,13 @@ export const dailyTaskService = {
   async adminReset(userId) {
     return apiFetch("/daily-tasks/admin/reset", { method: "POST", body: { userId } });
   },
+  async adminCreateTask(data) {
+    return apiFetch("/daily-tasks/admin/tasks", { method: "POST", body: data });
+  },
+  async adminUpdateTask(taskId, data) {
+    return apiFetch(`/daily-tasks/admin/tasks/${encodeURIComponent(taskId)}`, { method: "PUT", body: data });
+  },
+  async adminDeleteTask(taskId) {
+    return apiFetch(`/daily-tasks/admin/tasks/${encodeURIComponent(taskId)}`, { method: "DELETE" });
+  },
 };

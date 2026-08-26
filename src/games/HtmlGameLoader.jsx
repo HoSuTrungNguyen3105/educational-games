@@ -1,26 +1,50 @@
 import { useEffect, useRef, useCallback } from "react";
-import { API_BASE } from "../services/api.js";
+import { API_BASE, coinService } from "../services/api.js";
 
 /**
  * HtmlGameLoader - Renders a self-contained HTML game in an iframe.
  * Communication via postMessage:
  *
- * React → iframe: { type: "init", data: { gameId, playerName, questions, apiBase } }
+ * React → iframe: { type: "init", data: { gameId, playerName, questions, apiBase, userCoins, authToken } }
  * iframe → React: { type: "game-over", data: { score, timeUsed } }
  * iframe → React: { type: "quit" }
  */
-export default function HtmlGameLoader({ htmlContent, game, questions, players, playerName, playMode, onFinish, onQuit, onStateUpdate }) {
+export default function HtmlGameLoader({ htmlContent, game, questions, players, playerName, playMode, onFinish, onQuit, onStateUpdate, userAuth }) {
   const iframeRef = useRef(null);
 
-  const handleInit = useCallback(() => {
+  const handleInit = useCallback(async () => {
     const iframe = iframeRef.current;
     if (!iframe?.contentWindow) return;
     const playerNames = (players || []).map(p => (typeof p === "string" ? p : p?.name)).filter(Boolean);
+
+    let userCoins = 0;
+    let authToken = null;
+    try {
+      if (userAuth?.token) {
+        authToken = userAuth.token;
+        const coinData = await coinService.get();
+        userCoins = coinData?.coins || 0;
+      }
+    } catch { /* ignore */ }
+
     iframe.contentWindow.postMessage(
-      { type: "init", data: { gameId: game?.id, playerName: playerName || "Player", players: playerNames, questions: questions || [], apiBase: API_BASE, playMode: playMode || "solo", questionsTotal: questions?.length || 0 } },
+      {
+        type: "init",
+        data: {
+          gameId: game?.id,
+          playerName: playerName || "Player",
+          players: playerNames,
+          questions: questions || [],
+          apiBase: API_BASE,
+          playMode: playMode || "solo",
+          questionsTotal: questions?.length || 0,
+          userCoins,
+          authToken,
+        }
+      },
       "*"
     );
-  }, [game?.id, playerName, questions, players, playMode]);
+  }, [game?.id, playerName, questions, players, playMode, userAuth]);
 
   useEffect(() => {
     const onMessage = (e) => {

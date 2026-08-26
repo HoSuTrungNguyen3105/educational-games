@@ -1,87 +1,47 @@
 import { getCollection } from "../db.js";
 import { addCoins } from "./authService.js";
+import { ObjectId } from "mongodb";
 
+const TASKS_COL = "dailyTasks";
 const PROGRESS_COL = "dailyTaskProgress";
 const USERS_COL = "users";
 
-const DAILY_TASKS = [
-  {
-    id: "play_1_game",
-    name: "Chơi 1 trận",
-    desc: "Hoàn thành 1 trận game bất kỳ",
-    icon: "🎮",
-    type: "play_game",
-    target: 1,
-    coinReward: 10,
-  },
-  {
-    id: "play_3_games",
-    name: "Chơi 3 trận",
-    desc: "Hoàn thành 3 trận game",
-    icon: "🏆",
-    type: "play_game",
-    target: 3,
-    coinReward: 30,
-  },
-  {
-    id: "answer_5_correct",
-    name: "Trả lời đúng 5 câu",
-    desc: "Trả lời đúng 5 câu hỏi",
-    icon: "📖",
-    type: "correct_answer",
-    target: 5,
-    coinReward: 25,
-  },
-  {
-    id: "answer_10_correct",
-    name: "Trả lời đúng 10 câu",
-    desc: "Trả lời đúng 10 câu hỏi",
-    icon: "🧠",
-    type: "correct_answer",
-    target: 10,
-    coinReward: 50,
-  },
-  {
-    id: "earn_100_xp",
-    name: "Kiếm 100 XP",
-    desc: "Tích lũy 100 XP trong ngày",
-    icon: "⭐",
-    type: "earn_xp",
-    target: 100,
-    coinReward: 20,
-  },
-  {
-    id: "earn_500_xp",
-    name: "Kiếm 500 XP",
-    desc: "Tích lũy 500 XP trong ngày",
-    icon: "🌟",
-    type: "earn_xp",
-    target: 500,
-    coinReward: 80,
-  },
-  {
-    id: "win_1_game",
-    name: "Thắng 1 trận",
-    desc: "Thắng 1 trận game",
-    icon: "🎉",
-    type: "win_game",
-    target: 1,
-    coinReward: 40,
-  },
-  {
-    id: "login_today",
-    name: "Đăng nhập hôm nay",
-    desc: "Đăng nhập vào hệ thống",
-    icon: "👋",
-    type: "login",
-    target: 1,
-    coinReward: 5,
-  },
+const DEFAULT_TASKS = [
+  { id: "play_1_game", name: "Chơi 1 trận", desc: "Hoàn thành 1 trận game bất kỳ", icon: "🎮", type: "play_game", target: 1, coinReward: 10, builtin: true },
+  { id: "play_3_games", name: "Chơi 3 trận", desc: "Hoàn thành 3 trận game", icon: "🏆", type: "play_game", target: 3, coinReward: 30, builtin: true },
+  { id: "answer_5_correct", name: "Trả lời đúng 5 câu", desc: "Trả lời đúng 5 câu hỏi", icon: "📖", type: "correct_answer", target: 5, coinReward: 25, builtin: true },
+  { id: "answer_10_correct", name: "Trả lời đúng 10 câu", desc: "Trả lời đúng 10 câu hỏi", icon: "🧠", type: "correct_answer", target: 10, coinReward: 50, builtin: true },
+  { id: "earn_100_xp", name: "Kiếm 100 XP", desc: "Tích lũy 100 XP trong ngày", icon: "⭐", type: "earn_xp", target: 100, coinReward: 20, builtin: true },
+  { id: "earn_500_xp", name: "Kiếm 500 XP", desc: "Tích lũy 500 XP trong ngày", icon: "🌟", type: "earn_xp", target: 500, coinReward: 80, builtin: true },
+  { id: "win_1_game", name: "Thắng 1 trận", desc: "Thắng 1 trận game", icon: "🎉", type: "win_game", target: 1, coinReward: 40, builtin: true },
+  { id: "login_today", name: "Đăng nhập hôm nay", desc: "Đăng nhập vào hệ thống", icon: "👋", type: "login", target: 1, coinReward: 5, builtin: true },
 ];
 
 function todayKey() {
   const d = new Date();
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+async function getAllTasks() {
+  const col = getCollection(TASKS_COL);
+  const dbTasks = await col.find({}).sort({ createdAt: 1 }).toArray();
+  return [
+    ...DEFAULT_TASKS.map((t) => ({ ...t })),
+    ...dbTasks.map((t) => ({
+      id: t._id.toString(),
+      name: t.name,
+      desc: t.desc,
+      icon: t.icon || "📋",
+      type: t.type,
+      target: t.target,
+      coinReward: t.coinReward,
+      builtin: false,
+    })),
+  ];
+}
+
+function findTaskById(tasks, id) {
+  return tasks.find((t) => t.id === id) || null;
 }
 
 async function getProgress(userId) {
@@ -95,8 +55,9 @@ async function getProgress(userId) {
   return doc;
 }
 
-export function getDailyTasks() {
-  return DAILY_TASKS.map((t) => ({
+export async function getDailyTasks() {
+  const tasks = await getAllTasks();
+  return tasks.map((t) => ({
     id: t.id,
     name: t.name,
     desc: t.desc,
@@ -104,12 +65,14 @@ export function getDailyTasks() {
     type: t.type,
     target: t.target,
     coinReward: t.coinReward,
+    builtin: !!t.builtin,
   }));
 }
 
 export async function getUserDailyStatus(userId) {
+  const tasks = await getAllTasks();
   const progress = await getProgress(userId);
-  return DAILY_TASKS.map((task) => {
+  return tasks.map((task) => {
     const p = progress.tasks[task.id] || { count: 0, claimed: false };
     return {
       id: task.id,
@@ -118,6 +81,7 @@ export async function getUserDailyStatus(userId) {
       icon: task.icon,
       target: task.target,
       coinReward: task.coinReward,
+      builtin: !!task.builtin,
       current: Math.min(p.count, task.target),
       completed: p.count >= task.target,
       claimed: !!p.claimed,
@@ -134,7 +98,8 @@ export async function trackAction(userId, actionType, amount = 1) {
     { upsert: true }
   );
 
-  const relevant = DAILY_TASKS.filter((t) => t.type === actionType);
+  const tasks = await getAllTasks();
+  const relevant = tasks.filter((t) => t.type === actionType);
   if (!relevant.length) return;
 
   for (const task of relevant) {
@@ -147,7 +112,8 @@ export async function trackAction(userId, actionType, amount = 1) {
 }
 
 export async function claimReward(userId, taskId) {
-  const task = DAILY_TASKS.find((t) => t.id === taskId);
+  const tasks = await getAllTasks();
+  const task = findTaskById(tasks, taskId);
   if (!task) throw new Error("Nhiệm vụ không tồn tại");
 
   const progress = await getProgress(userId);
@@ -168,26 +134,64 @@ export async function claimReward(userId, taskId) {
 
 // ═══════════════════════════════ ADMIN ═══════════════════════════════
 
+export async function createTask({ name, desc, icon, type, target, coinReward }) {
+  if (!name || !type || !target || !coinReward) throw new Error("Thiếu trường bắt buộc");
+  const col = getCollection(TASKS_COL);
+  const doc = {
+    name,
+    desc: desc || "",
+    icon: icon || "📋",
+    type,
+    target: Number(target),
+    coinReward: Number(coinReward),
+    createdAt: new Date().toISOString(),
+  };
+  const result = await col.insertOne(doc);
+  return { id: result.insertedId.toString(), ...doc };
+}
+
+export async function updateTask(taskId, { name, desc, icon, type, target, coinReward }) {
+  const col = getCollection(TASKS_COL);
+  const oid = new ObjectId(taskId);
+  const update = {};
+  if (name !== undefined) update.name = name;
+  if (desc !== undefined) update.desc = desc;
+  if (icon !== undefined) update.icon = icon;
+  if (type !== undefined) update.type = type;
+  if (target !== undefined) update.target = Number(target);
+  if (coinReward !== undefined) update.coinReward = Number(coinReward);
+  if (!Object.keys(update).length) return null;
+  update.updatedAt = new Date().toISOString();
+  await col.updateOne({ _id: oid }, { $set: update });
+  return { id: taskId, ...update };
+}
+
+export async function deleteTask(taskId) {
+  const col = getCollection(TASKS_COL);
+  await col.deleteOne({ _id: new ObjectId(taskId) });
+}
+
 export async function getAdminStats() {
+  const tasks = await getAllTasks();
   const col = getCollection(PROGRESS_COL);
   const date = todayKey();
   const todayDocs = await col.find({ date }).toArray();
 
   const totalUsersToday = todayDocs.length;
-  const totalClaimedToday = todayDocs.reduce((sum, doc) => {
-    const tasks = doc.tasks || {};
-    return sum + Object.values(tasks).filter((t) => t.claimed).length;
-  }, 0);
-  const totalCoinsAwarded = todayDocs.reduce((sum, doc) => {
-    const tasks = doc.tasks || {};
-    return sum + Object.entries(tasks).reduce((s, [taskId, t]) => {
-      if (!t.claimed) return s;
-      const def = DAILY_TASKS.find((d) => d.id === taskId);
-      return s + (def ? def.coinReward : 0);
-    }, 0);
-  }, 0);
+  let totalClaimedToday = 0;
+  let totalCoinsAwarded = 0;
+  todayDocs.forEach((doc) => {
+    const pt = doc.tasks || {};
+    Object.entries(pt).forEach(([taskId, t]) => {
+      if (t.claimed) {
+        totalClaimedToday++;
+        const def = findTaskById(tasks, taskId);
+        if (def) totalCoinsAwarded += def.coinReward;
+      }
+    });
+  });
 
-  const taskStats = DAILY_TASKS.map((task) => {
+  const taskStats = tasks.map((task) => {
     const completed = todayDocs.filter((doc) => {
       const t = (doc.tasks || {})[task.id];
       return t && t.count >= task.target;
@@ -204,16 +208,11 @@ export async function getAdminStats() {
     };
   });
 
-  return {
-    date,
-    totalUsersToday,
-    totalClaimedToday,
-    totalCoinsAwarded,
-    taskStats,
-  };
+  return { date, totalUsersToday, totalClaimedToday, totalCoinsAwarded, taskStats };
 }
 
 export async function getAllUsersProgress() {
+  const tasks = await getAllTasks();
   const col = getCollection(PROGRESS_COL);
   const date = todayKey();
   const docs = await col.find({ date }).toArray();
@@ -221,7 +220,6 @@ export async function getAllUsersProgress() {
   const userIds = [...new Set(docs.map((d) => d.userId))];
   let userMap = {};
   if (userIds.length) {
-    const { ObjectId } = await import("mongodb");
     const usersCol = getCollection(USERS_COL);
     const objectIds = userIds.map((id) => {
       try { return new ObjectId(id); } catch { return id; }
@@ -231,18 +229,18 @@ export async function getAllUsersProgress() {
   }
 
   return docs.map((doc) => {
-    const tasks = doc.tasks || {};
-    const claimedCount = Object.values(tasks).filter((t) => t.claimed).length;
-    const totalReward = Object.entries(tasks).reduce((s, [taskId, t]) => {
+    const pt = doc.tasks || {};
+    const claimedCount = Object.values(pt).filter((t) => t.claimed).length;
+    const totalReward = Object.entries(pt).reduce((s, [taskId, t]) => {
       if (!t.claimed) return s;
-      const def = DAILY_TASKS.find((d) => d.id === taskId);
+      const def = findTaskById(tasks, taskId);
       return s + (def ? def.coinReward : 0);
     }, 0);
     return {
       userId: doc.userId,
       userName: userMap[doc.userId] || "Unknown",
       date: doc.date,
-      tasks,
+      tasks: pt,
       claimedCount,
       totalReward,
     };
