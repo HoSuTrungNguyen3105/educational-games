@@ -516,111 +516,6 @@
                 }
             }
 
-            // =========================
-            // API CLIENT
-            // =========================
-            let API_BASE_URL = '';
-            let API_TOKEN = '';
-            let API_GAME_ID = '';
-            let API_PLAYER_NAME = '';
-            let apiSessionId = null;
-
-            async function apiCall(path, options = {}) {
-                if (!API_BASE_URL) return null;
-                try {
-                    const url = API_BASE_URL + path;
-                    const headers = { 'Content-Type': 'application/json' };
-                    if (API_TOKEN) headers['Authorization'] = 'Bearer ' + API_TOKEN;
-                    const res = await fetch(url, {
-                        method: options.method || 'GET',
-                        headers,
-                        body: options.body ? JSON.stringify(options.body) : undefined,
-                    });
-                    if (!res.ok) return null;
-                    const json = await res.json();
-                    return json && json.data !== undefined ? json.data : json;
-                } catch (e) {
-                    console.warn('[API]', path, e.message);
-                    return null;
-                }
-            }
-
-            async function apiGameStart() {
-                if (!API_GAME_ID) return;
-                const data = await apiCall('/results', {
-                    method: 'POST',
-                    body: {
-                        gameId: API_GAME_ID,
-                        playerName: API_PLAYER_NAME,
-                        score: 0,
-                        correct: 0,
-                        totalQuestions: 0,
-                        timeUsed: 0,
-                        status: 'playing',
-                        theme: activeTheme.id || 'viET',
-                        players: gameState.players.map(p => ({ name: p.name, money: p.money })),
-                    },
-                });
-                if (data && data._id) apiSessionId = data._id;
-            }
-
-            async function apiRecordAction(action, payload) {
-                if (!API_GAME_ID || !apiSessionId) return;
-                apiCall('/results/' + apiSessionId, {
-                    method: 'PUT',
-                    body: { action, ...payload, timestamp: Date.now() },
-                }).catch(() => {});
-            }
-
-            async function apiAnswerQuestion(questionId, selectedOption, isCorrect, reward) {
-                if (!API_GAME_ID) return;
-                apiCall('/games/answer', {
-                    method: 'POST',
-                    body: {
-                        questionId: questionId,
-                        answerId: selectedOption,
-                        gameId: API_GAME_ID,
-                        correct: isCorrect,
-                        reward: reward,
-                    },
-                }).catch(() => {});
-            }
-
-            async function apiSubmitResult(finalData) {
-                if (!API_GAME_ID || !apiSessionId) return;
-                apiCall('/results/' + apiSessionId, {
-                    method: 'PUT',
-                    body: {
-                        score: finalData.score || 0,
-                        correct: finalData.correct || 0,
-                        totalQuestions: finalData.totalQuestions || 0,
-                        timeUsed: finalData.timeUsed || 0,
-                        status: finalData.status || 'finished',
-                        xp: finalData.xp || 0,
-                        level: finalData.level || 1,
-                        money: finalData.money || 0,
-                        properties: finalData.properties || 0,
-                        winner: finalData.winner || false,
-                        players: finalData.players || [],
-                    },
-                }).catch(() => {});
-            }
-
-            async function apiAddXP(amount) {
-                if (!API_GAME_ID) return;
-                apiCall('/users/me/games/' + API_GAME_ID + '/experience', {
-                    method: 'POST',
-                    body: { amount },
-                }).catch(() => {});
-            }
-
-            async function apiIncrementPlay() {
-                if (!API_GAME_ID) return;
-                apiCall('/users/me/games/' + API_GAME_ID + '/play', {
-                    method: 'POST',
-                }).catch(() => {});
-            }
-
             // Teacher mode actions
             function handleTeacherAction(action) {
                 if (!window.__teacherMode || !action) return;
@@ -774,6 +669,7 @@
                 }
 
                 addLog(`🎲 ${pl.name} tung được ${d1} + ${d2} = ${d1+d2}`);
+                apiRecordAction('roll_dice', { player: pl.name, d1, d2, total: d1+d2, isDouble, position: pl.position });
                 movePlayerBy(pl, d1+d2, () => { resolveCell(pl, isDouble); });
             }
 
@@ -961,6 +857,9 @@
                 addLog(`💸 ${pl.name} trả $${rent} tiền thuê "${cell.name}" cho ${owner.name}`);
                 changeMoney(pl, -rent);
                 changeMoney(owner, rent);
+                apiRecordAction('pay_rent', {
+                    property: cell.name, rent: rent, from: pl.name, to: owner.name,
+                });
                 checkBankruptcyNeeded(pl, () => { finishResolution(pl, wasDouble); }, rent, owner);
             }
 
@@ -985,6 +884,12 @@
                 pl.properties.push(cell.id);
                 addLog(`🏠 ${pl.name} đã mua "${cell.name}" giá $${cell.price}`);
                 addXP(pl, XP_BUY);
+                apiRecordAction('buy_property', {
+                    property: cell.name,
+                    price: cell.price,
+                    player: pl.name,
+                    position: cell.position,
+                });
                 closeModal();
                 finishResolution(pl, wasDouble);
             }
@@ -1150,6 +1055,7 @@
                 pl.isInJail = true;
                 pl.jailTurns = 0;
                 addLog(`🚔 ${pl.name} bị đưa vào NHÀ TÙ!`);
+                apiRecordAction('jail', { player: pl.name, position: pl.position });
             }
 
             function handleJailRoll(pl, d1, d2, isDouble) {
@@ -1252,6 +1158,7 @@
             function declareBankrupt(pl, creditor) {
                 pl.isBankrupt = true;
                 addLog(`💀 ${pl.name} đã PHÁ SẢN!`);
+                apiRecordAction('bankrupt', { player: pl.name, creditor: creditor ? creditor.name : null, money: pl.money });
                 pl.properties.forEach(id => {
                     const c = gameState.board[id];
                     if (creditor) { c.ownerId = creditor.id; c.mortgaged = false; c.level = 0; creditor.properties.push(id); }
@@ -1279,6 +1186,22 @@
                     postToParent('game-over', {
                         winner: gameState.winner ? gameState.winner.name : null,
                         players: gameState.players.map(p => ({ name: p.name, money: p.money, level: p.level, xp: p.xp })),
+                    });
+                    apiSubmitResult({
+                        score: gameState.winner ? gameState.winner.money : 0,
+                        correct: 0,
+                        totalQuestions: (activeTheme.questions || []).length,
+                        timeUsed: 0,
+                        status: 'finished',
+                        xp: gameState.winner ? gameState.winner.xp : 0,
+                        level: gameState.winner ? gameState.winner.level : 1,
+                        money: gameState.winner ? gameState.winner.money : 0,
+                        properties: gameState.winner ? gameState.winner.properties.length : 0,
+                        winner: !!gameState.winner,
+                        players: gameState.players.map(p => ({
+                            name: p.name, money: p.money, level: p.level, xp: p.xp,
+                            properties: p.properties.length, bankrupt: p.isBankrupt,
+                        })),
                     });
                 }
             }
@@ -1665,6 +1588,7 @@
                 const m = uiState.modal; const pl = m.pl;
                 changeMoney(pl, -amount);
                 addLog(`💰 ${pl.name} đã trả $${amount} tiền thuế.`);
+                apiRecordAction('pay_tax', { player: pl.name, amount: amount, cell: m.cell.name });
                 closeModal();
                 checkBankruptcyNeeded(pl, () => { finishResolution(pl, m.wasDouble); });
             };

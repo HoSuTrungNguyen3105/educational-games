@@ -8,12 +8,12 @@ import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 
 // Bảng màu theo môn học — mỗi môn luôn ra cùng 1 màu, giúp trẻ nhận diện nhanh
 const SUBJECT_PALETTE = [
-  { grad: "from-purple-400 to-fuchsia-400", chip: "bg-purple-100 text-purple-700 border-purple-200", solid: "bg-purple-500", soft: "bg-purple-50" },
-  { grad: "from-orange-400 to-amber-400", chip: "bg-amber-100 text-amber-700 border-amber-200", solid: "bg-amber-500", soft: "bg-amber-50" },
-  { grad: "from-cyan-400 to-blue-400", chip: "bg-cyan-100 text-cyan-700 border-cyan-200", solid: "bg-cyan-500", soft: "bg-cyan-50" },
-  { grad: "from-emerald-400 to-teal-400", chip: "bg-emerald-100 text-emerald-700 border-emerald-200", solid: "bg-emerald-500", soft: "bg-emerald-50" },
-  { grad: "from-pink-400 to-rose-400", chip: "bg-pink-100 text-pink-700 border-pink-200", solid: "bg-pink-500", soft: "bg-pink-50" },
-  { grad: "from-indigo-400 to-violet-400", chip: "bg-indigo-100 text-indigo-700 border-indigo-200", solid: "bg-indigo-500", soft: "bg-indigo-50" },
+  { grad: "from-purple-400 to-fuchsia-400", chip: "bg-purple-100 text-purple-700 border-purple-200", solid: "bg-purple-500", soft: "bg-purple-50", hover: "hover:bg-purple-50 hover:border-purple-400 hover:text-purple-700" },
+  { grad: "from-orange-400 to-amber-400", chip: "bg-amber-100 text-amber-700 border-amber-200", solid: "bg-amber-500", soft: "bg-amber-50", hover: "hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700" },
+  { grad: "from-cyan-400 to-blue-400", chip: "bg-cyan-100 text-cyan-700 border-cyan-200", solid: "bg-cyan-500", soft: "bg-cyan-50", hover: "hover:bg-cyan-50 hover:border-cyan-400 hover:text-cyan-700" },
+  { grad: "from-emerald-400 to-teal-400", chip: "bg-emerald-100 text-emerald-700 border-emerald-200", solid: "bg-emerald-500", soft: "bg-emerald-50", hover: "hover:bg-emerald-50 hover:border-emerald-400 hover:text-emerald-700" },
+  { grad: "from-pink-400 to-rose-400", chip: "bg-pink-100 text-pink-700 border-pink-200", solid: "bg-pink-500", soft: "bg-pink-50", hover: "hover:bg-pink-50 hover:border-pink-400 hover:text-pink-700" },
+  { grad: "from-indigo-400 to-violet-400", chip: "bg-indigo-100 text-indigo-700 border-indigo-200", solid: "bg-indigo-500", soft: "bg-indigo-50", hover: "hover:bg-indigo-50 hover:border-indigo-400 hover:text-indigo-700" },
 ];
 
 function colorForSubject(subject = "") {
@@ -297,7 +297,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             )}
           </header>
 
-          <main className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-6 lg:px-6 py-8 space-y-10">
+          <main className="flex-1 w-full max-w-6xl mx-auto p-3 space-y-10">
 
             {/* ───────── Thẻ chào mừng + lưới truy cập nhanh — kiểu "mini app", chỉ hiện trên mobile (giữ nguyên) ───────── */}
             <section className="lg:hidden -mt-2">
@@ -342,7 +342,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             </section>
 
             {/* Banner chào mừng (dùng chung, không đổi) */}
-            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-100 via-fuchsia-50 to-amber-50 border border-purple-100 px-6 py-8 md:py-10 text-center">
+            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-100 via-fuchsia-50 to-amber-50 border border-purple-100 p-3 text-center" style={{ marginTop: "9px" }}>
               <span className="absolute top-4 left-[6%] text-3xl animate-float" aria-hidden="true">⭐</span>
               <span className="absolute bottom-4 right-[8%] text-3xl animate-float" aria-hidden="true">🌈</span>
               <span className="absolute top-6 right-[14%] text-2xl animate-float" aria-hidden="true">🎈</span>
@@ -372,8 +372,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </div>
             </section>
 
-            {/* ═══════════════ DASHBOARD 2 CỘT: Chơi game / Học tập (chỉ desktop) ═══════════════ */}
-            <section className="hidden lg:grid lg:grid-cols-2 gap-6">
+            {/* ═══════════════ DASHBOARD 2 CỘT: Chơi game / Học tập (Responsive) ═══════════════ */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <DashboardCard icon="🎮" title="Chơi game" gradient="from-orange-500 to-amber-500" onSeeAll={() => scrollTo('games-section')}>
                 {games === null ? (
                   <p className="text-sm text-gray-400 py-6 text-center">Đang tải...</p>
@@ -406,8 +406,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </DashboardCard>
             </section>
 
-            {/* ═══════════════ DASHBOARD 3 CỘT: Nhiệm vụ / Sự kiện / Bảng xếp hạng (chỉ desktop) ═══════════════ */}
-            <section className="hidden lg:grid lg:grid-cols-3 gap-6">
+            {/* ═══════════════ DASHBOARD 3 CỘT: Nhiệm vụ / Sự kiện / Bảng xếp hạng (Responsive) ═══════════════ */}
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <DashboardCard icon="📝" title="Nhiệm vụ hàng ngày" gradient="from-violet-500 to-purple-500">
                 <div className="flex flex-col gap-3">
                   {MOCK_MISSIONS.map((m, i) => (
@@ -462,7 +462,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     icon="🌟"
                     active={activeSubject === "all"}
                     onClick={() => setActiveSubject("all")}
-                    classes={{ solid: "bg-gray-400", soft: "bg-gray-50", chip: "text-gray-700 border-gray-200" }}
+                    classes={{ solid: "bg-gray-400", soft: "bg-gray-50", chip: "text-gray-700 border-gray-200", hover: "hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700" }}
                   />
                   {subjects.map(subject => (
                     <SubjectTile
@@ -593,7 +593,7 @@ function SubjectTile({ label, icon, active, onClick, classes }) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-2 rounded-2xl px-2 py-4 border-2 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 ${active ? `${classes.soft} border-current ${classes.chip} shadow-md scale-[1.03]` : `bg-white border-gray-100 text-gray-600 hover:${classes.soft} hover:border-current hover:${classes.chip}`
+      className={`flex flex-col items-center gap-2 rounded-2xl px-2 py-4 border-2 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 ${active ? `${classes.soft} border-current ${classes.chip} shadow-md scale-[1.03]` : `bg-white border-gray-100 text-gray-600 ${classes.hover}`
         }`}
     >
       <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg shadow-sm ${classes.solid}`}>{icon}</span>
