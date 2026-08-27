@@ -17,7 +17,7 @@ export default function FindFriendsScreen({ userAuth }) {
     } catch (e) {
       setState({ results: null, loading: false, error: e.message });
     }
-  }, []);
+  }, [userAuth]);
 
   useEffect(() => {
     if (query.trim().length < 2) return;

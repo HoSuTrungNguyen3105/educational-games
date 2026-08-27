@@ -4,7 +4,6 @@ export const API_BASE = window.API_BASE_URL || "https://educational-games-lp4z.o
 export const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
 const AUTH_KEY = "edu_games_auth";
-const USER_AUTH_KEY = "edu_games_user_auth";
 
 function parseToken(auth) {
   if (!auth || !auth.token) return null;
@@ -21,31 +20,12 @@ function parseToken(auth) {
 
 export function loadAuth() {
   try {
-    // Ưu tiên teacher auth, nếu không có thì dùng user auth
-    const teacherAuth = parseToken(JSON.parse(localStorage.getItem(AUTH_KEY)));
-    if (teacherAuth && teacherAuth.token) return teacherAuth;
-    const userAuth = parseToken(JSON.parse(localStorage.getItem(USER_AUTH_KEY)));
-    if (userAuth && userAuth.token) return userAuth;
-    return null;
-  } catch { return null; }
-}
-
-export function loadTeacherAuth() {
-  try {
     return parseToken(JSON.parse(localStorage.getItem(AUTH_KEY)));
   } catch { return null; }
 }
 
-export function loadUserAuth() {
-  try {
-    return parseToken(JSON.parse(localStorage.getItem(USER_AUTH_KEY)));
-  } catch { return null; }
-}
-
 export function saveAuth(auth) { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); }
-export function saveUserAuth(auth) { localStorage.setItem(USER_AUTH_KEY, JSON.stringify(auth)); }
 export function clearAuth() { localStorage.removeItem(AUTH_KEY); }
-export function clearUserAuth() { localStorage.removeItem(USER_AUTH_KEY); }
 
 // Lặp lại khi backend đang cold-start (503 / lỗi mạng), tránh request đầu tiên chết
 async function fetchWithRetry(url, init, attempts = 5) {
@@ -63,7 +43,12 @@ async function fetchWithRetry(url, init, attempts = 5) {
 }
 
 export async function apiFetch(path, options = {}) {
-  const auth = options._token ? { token: options._token } : loadAuth();
+  let auth;
+  if (options._token) {
+    auth = { token: options._token };
+  } else {
+    auth = loadAuth();
+  }
   const url = `${API_BASE}${path}`;
   const init = {
     headers: {
@@ -193,11 +178,11 @@ export const userService = {
   async remove(id) {
     return apiFetch(`/users/${encodeURIComponent(id)}`, { method: "DELETE" });
   },
-  async getById(id) {
-    return apiFetch(`/users/${encodeURIComponent(id)}`);
+  async getById(id, opts) {
+    return apiFetch(`/users/${encodeURIComponent(id)}`, typeof opts === "string" ? {} : (opts || {}));
   },
-  async search(query) {
-    return apiFetch(`/users/search?q=${encodeURIComponent(query)}`) || [];
+  async search(query, opts) {
+    return apiFetch(`/users/search?q=${encodeURIComponent(query)}`, typeof opts === "string" ? {} : (opts || {})) || [];
   },
   async updateProfile(data) {
     return apiFetch("/auth/me", { method: "PUT", body: data });

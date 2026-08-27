@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, navigate } from "./lib/router.js";
 import { useToast } from "./lib/hooks.js";
 import { Loader } from "./components/ui.jsx";
-import { useTeacherAuth } from "./hooks/useTeacherAuth.js";
+import { useUserAuthStore } from "./stores/userAuth.store.js";
+import { canAccessDashboard } from "./config/roles.js";
 import { useSocketManager } from "./hooks/useSocketManager.js";
 import { useGameLoader } from "./hooks/useGameLoader.js";
 import RouteShell from "./components/RouteShell.jsx";
@@ -18,68 +19,42 @@ import MyCoins from "./pages/user/MyCoins.jsx";
 import FindFriendsScreen from "./pages/user/FindFriendsScreen.jsx";
 import DailyTasksPage from "./pages/user/DailyTasksPage.jsx";
 
-const USER_AUTH_KEY = "edu_games_user_auth";
-
-function loadUserAuth() {
-  try {
-    const auth = JSON.parse(localStorage.getItem(USER_AUTH_KEY));
-    if (auth?.token) {
-      const parts = String(auth.token).split(".");
-      if (parts.length === 3) {
-        try {
-          const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-          if (payload?.exp && Date.now() / 1000 > payload.exp) {
-            localStorage.removeItem(USER_AUTH_KEY);
-            return null;
-          }
-        } catch { /* invalid token */ }
-      }
-    }
-    return auth || null;
-  } catch { return null; }
-}
-
 function App() {
   const route = useRoute();
   const [toast, showToast] = useToast();
 
-  // Teacher auth (admin dashboard)
-  const teacher = useTeacherAuth();
-
-  // User auth (chat, profile, friends)
-  const [userAuth, setUserAuth] = useState(() => loadUserAuth());
+  const { user, token, login, register, logout, init } = useUserAuthStore();
   const [showUserLogin, setShowUserLogin] = useState(false);
   const [showUserRegister, setShowUserRegister] = useState(false);
 
-  // Socket manager — connect when any token is available
-  useSocketManager(teacher.token, userAuth?.token);
+  useEffect(() => { init(); }, [init]);
 
-  // Game loader for /play/:gameId
+  useSocketManager(token);
+
   const { playGame, loadingGame, selectGame } = useGameLoader(route);
 
-  // ── User auth handlers ──
-  const handleUserLogin = (userData, token) => {
-    setUserAuth({ user: userData, token });
+  const handleLogin = async (identifier, password) => {
+    const u = await login(identifier, password);
     setShowUserLogin(false);
+    setShowUserRegister(false);
+    return u;
   };
 
-  const handleUserRegister = (userData, token) => {
-    setUserAuth({ user: userData, token });
+  const handleRegister = async (data) => {
+    const u = await register(data);
+    setShowUserLogin(false);
+    setShowUserRegister(false);
+    return u;
+  };
+
+  const handleLogout = () => {
+    logout();
+    setShowUserLogin(false);
     setShowUserRegister(false);
   };
 
-  const handleUserLogout = () => {
-    localStorage.removeItem(USER_AUTH_KEY);
-    setUserAuth(null);
-  };
+  const userAuth = user ? { user, token } : null;
 
-  // ── Teacher login handler ──
-  const handleTeacherLogin = (u) => {
-    const auth = JSON.parse(localStorage.getItem("edu_games_auth"));
-    if (auth?.token) teacher.login(u, auth.token);
-  };
-
-  // ── Student Screen Renderer ──
   const renderStudent = () => {
     if (loadingGame) {
       return (
@@ -96,23 +71,22 @@ function App() {
         toast={toast}
         userAuth={userAuth}
         onUserLogin={() => setShowUserLogin(true)}
-        onUserLogout={handleUserLogout}
+        onUserLogout={handleLogout}
       />
     );
   };
 
-  // ── Route Map (O(1) declarative lookup) ──
   const routeMap = {
     student: renderStudent,
     "student-join": renderStudent,
     chat: () => (
       <RouteShell toast={toast}>
-        <ConversationListScreen userAuth={userAuth} onLogout={handleUserLogout} />
+        <ConversationListScreen userAuth={userAuth} onLogout={handleLogout} />
       </RouteShell>
     ),
     profile: () => (
       <RouteShell toast={toast} showBack={false}>
-        <ProfileScreen userAuth={userAuth} onLogout={handleUserLogout} onBack={() => navigate("/")} />
+        <ProfileScreen userAuth={userAuth} onLogout={handleLogout} onBack={() => navigate("/")} />
       </RouteShell>
     ),
     "find-friends": () => (
@@ -132,14 +106,12 @@ function App() {
     ),
   };
 
-  // ── Render Screen ──
   const renderScreen = () => {
-    // User login/register modals (override current route)
     if (showUserLogin) {
       return (
         <UserLoginScreen
           onBack={() => setShowUserLogin(false)}
-          onLogin={handleUserLogin}
+          onLogin={handleLogin}
           onGoRegister={() => { setShowUserLogin(false); setShowUserRegister(true); }}
           showToast={showToast}
         />
@@ -150,43 +122,51 @@ function App() {
       return (
         <UserRegisterScreen
           onBack={() => setShowUserRegister(false)}
-          onRegistered={handleUserRegister}
+          onRegistered={handleRegister}
           onGoLogin={() => { setShowUserRegister(false); setShowUserLogin(true); }}
           showToast={showToast}
         />
       );
     }
 
-    // Admin/teacher routes
     if (route.name.startsWith("admin-")) {
-      if (!teacher.user) {
-        return <LoginScreen onBack={() => navigate("/")} onLogin={handleTeacherLogin} showToast={showToast} />;
+      if (!user) {
+        return <LoginScreen onBack={() => navigate("/")} onLogin={handleLogin} showToast={showToast} />;
+      }
+      if (!canAccessDashboard(user.role)) {
+        return (
+          <HomeScreen
+            onSelectGame={selectGame}
+            userAuth={userAuth}
+            onUserLogin={() => setShowUserLogin(true)}
+            onUserRegister={() => setShowUserRegister(true)}
+            onUserLogout={handleLogout}
+          />
+        );
       }
       return (
         <TeacherApp
-          user={teacher.user}
+          user={user}
           route={route}
           onExit={() => navigate("/")}
-          onLogout={teacher.logout}
+          onLogout={handleLogout}
           showToast={showToast}
         />
       );
     }
 
-    // Match route from routeMap
     const renderTarget = routeMap[route.name];
     if (renderTarget) {
       return renderTarget();
     }
 
-    // Home (default fallback)
     return (
       <HomeScreen
         onSelectGame={selectGame}
         userAuth={userAuth}
         onUserLogin={() => setShowUserLogin(true)}
         onUserRegister={() => setShowUserRegister(true)}
-        onUserLogout={handleUserLogout}
+        onUserLogout={handleLogout}
       />
     );
   };

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { navigate } from '../../lib/router.js'
+import { hasPermission, getRoleLabel } from '../../config/roles.js'
 import {
   LayoutDashboard,
   Library,
@@ -14,49 +15,59 @@ import {
   Home,
   PartyPopper,
   LogOut,
-  Menu,
   X,
+  MessageCircle,
 } from 'lucide-react'
 
 const MENU = [
-  { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin" },
-  { id: "admin-library", label: "Thư viện", icon: Library, route: "/admin/library" },
-  { id: "admin-users", label: "Người dùng", icon: Users, route: "/admin/users" },
-  { id: "admin-coins", label: "Coin & Progress", icon: Coins, route: "/admin/coins" },
-  { id: "admin-daily-tasks", label: "Nhiệm vụ ngày", icon: ClipboardList, route: "/admin/daily-tasks" },
-  { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates" },
-  { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories" },
-  { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects" },
-  { id: "admin-questions", label: "Câu hỏi", icon: HelpCircle, route: "/admin/questions" },
+  { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin", permission: null },
+  { id: "admin-library", label: "Thư viện", icon: Library, route: "/admin/library", permission: "games.manage" },
+  { id: "admin-users", label: "Người dùng", icon: Users, route: "/admin/users", permission: "users.view" },
+  { id: "admin-coins", label: "Coin & Progress", icon: Coins, route: "/admin/coins", permission: "coins.manage" },
+  { id: "admin-daily-tasks", label: "Nhiệm vụ ngày", icon: ClipboardList, route: "/admin/daily-tasks", permission: "daily-tasks.manage" },
+  { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
+  { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories", permission: "categories.manage" },
+  { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects", permission: "subjects.manage" },
+  { id: "admin-questions", label: "Câu hỏi", icon: HelpCircle, route: "/admin/questions", permission: "questions.manage" },
+  { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
 ];
 
 const BOTTOM_MENU = [
-  { id: "admin-create", label: "Tạo trò chơi", icon: Plus, route: "/admin/create" },
-  { id: "home", label: "Về trang chủ", icon: Home, route: "/" },
+  { id: "admin-create", label: "Tạo trò chơi", icon: Plus, route: "/admin/create", permission: "games.manage" },
+  { id: "home", label: "Về trang chủ", icon: Home, route: "/", permission: null },
 ];
 
 const MOBILE_MAIN = [
-  { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin" },
-  { id: "admin-library", label: "Thư viện", icon: Library, route: "/admin/library" },
-  { id: "admin-create", label: "Tạo", icon: Plus, route: "/admin/create" },
-  { id: "home", label: "Trang chủ", icon: Home, route: "/" },
-  { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates" },
+  { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin", permission: null },
+  { id: "admin-library", label: "Thư viện", icon: Library, route: "/admin/library", permission: "games.manage" },
+  { id: "admin-create", label: "Tạo", icon: Plus, route: "/admin/create", permission: "games.manage" },
+  { id: "home", label: "Trang chủ", icon: Home, route: "/", permission: null },
+  { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
 ];
 
 const MOBILE_MORE = [
-  { id: "admin-users", label: "Người dùng", icon: Users, route: "/admin/users" },
-  { id: "admin-coins", label: "Coins", icon: Coins, route: "/admin/coins" },
-  { id: "admin-daily-tasks", label: "Nhiệm vụ", icon: ClipboardList, route: "/admin/daily-tasks" },
-  { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates" },
-  { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories" },
-  { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects" },
-  { id: "admin-questions", label: "Câu hỏi", icon: HelpCircle, route: "/admin/questions" },
+  { id: "admin-users", label: "Người dùng", icon: Users, route: "/admin/users", permission: "users.view" },
+  { id: "admin-coins", label: "Coins", icon: Coins, route: "/admin/coins", permission: "coins.manage" },
+  { id: "admin-daily-tasks", label: "Nhiệm vụ", icon: ClipboardList, route: "/admin/daily-tasks", permission: "daily-tasks.manage" },
+  { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories", permission: "categories.manage" },
+  { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects", permission: "subjects.manage" },
+  { id: "admin-questions", label: "Câu hỏi", icon: HelpCircle, route: "/admin/questions", permission: "questions.manage" },
+  { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
 ];
 
 export default function TeacherSidebar({ screen, user, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const activeId = MENU.some(t => t.id === screen) ? screen : "admin-library";
+
+  const role = user?.role;
+  const canSee = (item) => !item.permission || hasPermission(role, item.permission);
+
+  const visibleMenu = MENU.filter(canSee);
+  const visibleBottom = BOTTOM_MENU.filter(canSee);
+  const visibleMobileMain = MOBILE_MAIN.filter(canSee);
+  const visibleMobileMore = MOBILE_MORE.filter(canSee);
+
+  const activeId = visibleMenu.some(t => t.id === screen) ? screen : "admin-library";
 
   const renderNav = (isMobile) => (
     <div className="flex flex-col h-full">
@@ -65,7 +76,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
         <span className="font-display text-paper text-lg">Lớp Học Vui</span>
       </div>
       <nav className="flex-1 px-3 py-2 space-y-1">
-        {MENU.map(t => {
+        {visibleMenu.map(t => {
           const Icon = t.icon;
           return (
             <button key={t.id} onClick={() => { navigate(t.route); if (isMobile) setMobileOpen(false); }}
@@ -78,7 +89,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
         })}
       </nav>
       <div className="px-3 pb-4 space-y-1 border-t border-white/10 pt-3">
-        {BOTTOM_MENU.map(t => {
+        {visibleBottom.map(t => {
           const Icon = t.icon;
           return (
             <button key={t.id} onClick={() => { navigate(t.route); if (isMobile) setMobileOpen(false); }}
@@ -96,7 +107,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-body text-paper truncate">{user.name}</p>
-                <p className="text-[10px] font-mono text-paper/50 capitalize">{user.role}</p>
+                <p className="text-[10px] font-mono text-paper/50">{getRoleLabel(role)}</p>
               </div>
             </div>
             <button onClick={() => { onLogout?.(); if (isMobile) setMobileOpen(false); }}
@@ -112,7 +123,6 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
 
   return (
     <>
-      {/* Mobile drawer (hamburger) */}
       {mobileOpen && (
         <>
           <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setMobileOpen(false)} />
@@ -128,15 +138,13 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
         </>
       )}
 
-      {/* Desktop sidebar */}
       <aside className="hidden sm:flex flex-col w-[240px] min-h-screen bg-ink text-paper flex-shrink-0 overflow-y-auto sticky top-0 h-screen">
         {renderNav(false)}
       </aside>
 
-      {/* Mobile bottom nav */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-ink border-t border-white/10 pb-safe">
         <div className="flex items-center justify-around h-16 px-2">
-          {MOBILE_MAIN.map((t, i) => {
+          {visibleMobileMain.map((t, i) => {
             if (i === 2) {
               return (
                 <div key="center-group" className="relative flex items-center justify-center">
@@ -146,7 +154,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
                       <div className="fixed inset-x-4 bottom-20 z-50 note-card p-4 anim-pop shadow-2xl sm:hidden">
                         <p className="text-[10px] font-mono uppercase text-[#8A7C63] mb-3 text-center">Quản lý thêm</p>
                         <div className="grid grid-cols-2 gap-2">
-                          {MOBILE_MORE.map(m => {
+                          {visibleMobileMore.map(m => {
                             const Icon = m.icon;
                             return (
                               <button key={m.id} onClick={() => { navigate(m.route); setMoreOpen(false); }}

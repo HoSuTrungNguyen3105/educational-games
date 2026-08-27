@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { authService } from "../../services/api.js";
+import { getRoleLabel } from "../../config/roles.js";
 import { getLevelProgress, getLevelEmoji, getLevelTitle } from "../../lib/utils.js";
 import { PrimaryButton, GhostButton, Loader } from "../../components/ui.jsx";
 
@@ -114,7 +115,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         )}
         <div className="flex items-center justify-center gap-3 mt-2 text-xs">
           <span className="px-2.5 py-1 rounded-full bg-purple-100 text-purple-600 font-semibold capitalize">
-            {user.role === "student" ? "Học sinh" : user.role === "teacher" ? "Giáo viên" : "Admin"}
+            {getRoleLabel(user.role)}
           </span>
           {user.createdAt && (
             <span className="text-[#8A7C63] font-mono">

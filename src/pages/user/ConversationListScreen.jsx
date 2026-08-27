@@ -16,7 +16,7 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
     if (!userAuth?.user || !token) return;
     let cancelled = false;
     loadingRef.current = true;
-    conversationApi.list(token).then((data) => {
+    conversationApi.list().then((data) => {
       if (!cancelled) setState({ conversations: data, error: null });
     }).catch((e) => {
       if (!cancelled) setState({ conversations: null, error: e.message });
@@ -90,7 +90,6 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
                   key={conv.id}
                   conversation={conv}
                   currentUser={userAuth.user}
-                  token={token}
                   isActive={conv.id === activeConvId}
                   onClick={() => handleSelectConversation(conv)}
                 />
@@ -125,14 +124,14 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
   );
 }
 
-function ConversationItem({ conversation, currentUser, token, onClick, isActive }) {
+function ConversationItem({ conversation, currentUser, onClick, isActive }) {
   const [otherUser, setOtherUser] = useState(null);
 
   useEffect(() => {
     if (conversation.type !== "dm" || !conversation.memberIds) return;
     const otherId = conversation.memberIds.find((id) => id !== currentUser.id);
     if (!otherId) return;
-    userService.getById(otherId).then((found) => {
+    userService.getById(otherId, "user").then((found) => {
       if (found) setOtherUser(found);
     }).catch(() => {});
   }, [conversation, currentUser]);

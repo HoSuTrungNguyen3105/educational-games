@@ -13,6 +13,7 @@ import GameBuilder from '../../components/gameBuilder/GameBuilder.jsx'
 import GameLibraryManagement from './GameLibraryManagement.jsx'
 import CoinManagement from './CoinManagement.jsx'
 import DailyTaskManagement from './DailyTaskManagement.jsx'
+import TeacherChat from './TeacherChat.jsx'
 
 export default function TeacherApp({ user, route, onLogout, showToast }) {
   const [refreshFlag, setRefreshFlag] = useState(0);
@@ -48,6 +49,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
       {page === "admin-categories" && <CategoryManagement showToast={showToast} />}
       {page === "admin-subjects" && <SubjectManagement showToast={showToast} />}
       {page === "admin-questions" && <QuestionManagement showToast={showToast} />}
+      {page === "admin-chat" && <TeacherChat user={user} showToast={showToast} />}
     </TeacherLayout>
   );
 }

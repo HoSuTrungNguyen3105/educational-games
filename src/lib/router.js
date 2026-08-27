@@ -22,6 +22,7 @@ const ROUTES = [
   { name: "admin-results",   pattern: "/admin/results/:gameId" },
   { name: "admin-coins",     pattern: "/admin/coins" },
   { name: "admin-daily-tasks", pattern: "/admin/daily-tasks" },
+  { name: "admin-chat", pattern: "/admin/chat" },
 
   // ── User / Social ──
   { name: "chat",         pattern: "/chat" },

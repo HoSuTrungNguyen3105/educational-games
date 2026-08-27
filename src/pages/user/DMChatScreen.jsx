@@ -4,7 +4,6 @@ import { Loader } from "../../components/ui.jsx";
 
 export default function DMChatScreen({ targetUser, userAuth, onBack }) {
   const user = userAuth?.user;
-  const token = userAuth?.token;
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
@@ -14,11 +13,11 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
   const targetUserId = targetUser?.id;
 
   useEffect(() => {
-    if (!targetUserId || !token) return;
+    if (!targetUserId) return;
     let cancelled = false;
-    chatApi.listDmMessages(targetUserId, { limit: 50, token }).then((res) => {
+    chatApi.listDmMessages(targetUserId, { limit: 50 }).then((res) => {
       if (!cancelled) {
-        setMessages(res.items || []);
+        setMessages(res || []);
         setLoading(false);
       }
     }).catch((e) => {
@@ -26,7 +25,7 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
       if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [targetUserId, token]);
+  }, [targetUserId]);
 
   useEffect(() => {
     if (!loading && messages.length > 0) {
@@ -37,7 +36,7 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
   const handleSend = async (e) => {
     e?.preventDefault();
     const trimmed = text.trim();
-    if (!trimmed || sending || !token) return;
+    if (!trimmed || sending || !user) return;
 
     const clientMessageId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const optimistic = {
@@ -59,7 +58,6 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
       const saved = await chatApi.sendDmMessage(targetUser.id, {
         content: trimmed,
         clientMessageId,
-        token,
       });
       setMessages((prev) => prev.map((m) =>
         m.id === clientMessageId ? { ...saved, status: "sent" } : m

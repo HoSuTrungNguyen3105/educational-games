@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { PasswordInput, PrimaryButton } from "../../components/ui.jsx";
-import { apiFetch } from "../../services/api.js";
 
 export default function UserLoginScreen({ onBack, onLogin, onGoRegister, showToast }) {
   const [identifier, setIdentifier] = useState("");
@@ -17,17 +16,8 @@ export default function UserLoginScreen({ onBack, onLogin, onGoRegister, showToa
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch("/auth/login", {
-        method: "POST",
-        body: { identifier: identifier.trim(), password },
-      });
-      if (data.user.role !== "student" && data.user.role !== "teacher") {
-        throw new Error("Tài khoản này không thể sử dụng chat");
-      }
-      const USER_AUTH_KEY = "edu_games_user_auth";
-      localStorage.setItem(USER_AUTH_KEY, JSON.stringify({ token: data.token, user: data.user }));
-      showToast(`Xin chào, ${data.user.name}!`);
-      onLogin(data.user, data.token);
+      await onLogin(identifier.trim(), password);
+      showToast(`Đăng nhập thành công!`);
     } catch (err) {
       setError(err.message || "Đăng nhập thất bại");
     } finally {

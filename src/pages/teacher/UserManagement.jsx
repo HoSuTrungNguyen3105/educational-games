@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { userService } from '../../services/api.js'
+import { hasPermission, getRoleLabel } from '../../config/roles.js'
 import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal, Modal } from '../../components/ui.jsx'
 
 export default function UserManagement({ user, showToast }) {
@@ -13,7 +14,7 @@ export default function UserManagement({ user, showToast }) {
   const [resetPwd, setResetPwd] = useState("");
   const [resetSaving, setResetSaving] = useState(false);
   const [resetError, setResetError] = useState("");
-  const isAdmin = user && user.role === "admin";
+  const isAdmin = hasPermission(user?.role, "users.manage");
 
   const FIELDS = [
     { name: "username", label: "Tên đăng nhập" },
@@ -101,7 +102,7 @@ export default function UserManagement({ user, showToast }) {
                 : u.role === "teacher" ? "bg-ticket/15 text-ticket border-ticket/30"
                   : "bg-teal/15 text-teal border-teal/30"
                 }`}>
-                {u.role === "admin" ? "Quản trị" : u.role === "teacher" ? "Giáo viên" : "Học sinh"}
+                {getRoleLabel(u.role)}
               </span>
             </td>
             <td className="px-5 py-3 text-right">

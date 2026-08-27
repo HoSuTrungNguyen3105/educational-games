@@ -27,22 +27,18 @@ export const chatApi = {
     return apiFetch(`/chat/${encodeURIComponent(conversationId)}/unread?playerId=${encodeURIComponent(playerId)}`);
   },
 
-  // DM chat — luôn dùng user token (không dùng teacher token)
-  async listDmMessages(targetUserId, { before, limit = 30, token } = {}) {
+  async listDmMessages(targetUserId, { before, limit = 30 } = {}) {
     const params = new URLSearchParams();
     if (before) params.set("before", before);
     if (limit) params.set("limit", String(limit));
     const qs = params.toString();
-    return apiFetch(`/chat/dm/${encodeURIComponent(targetUserId)}/messages${qs ? `?${qs}` : ""}`, {
-      _token: token,
-    });
+    return apiFetch(`/chat/dm/${encodeURIComponent(targetUserId)}/messages${qs ? `?${qs}` : ""}`);
   },
 
-  async sendDmMessage(targetUserId, { content, clientMessageId, token }) {
+  async sendDmMessage(targetUserId, { content, clientMessageId }) {
     return apiFetch(`/chat/dm/${encodeURIComponent(targetUserId)}/messages`, {
       method: "POST",
       body: { content, clientMessageId },
-      _token: token,
     });
   },
 };

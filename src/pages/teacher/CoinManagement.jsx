@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { adminGameProgressService, userService } from '../../services/api.js'
 import { getLevelProgress, getLevelTitle, getLevelEmoji } from '../../lib/utils.js'
+import { getRoleLabel } from '../../config/roles.js'
 import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton } from '../../components/ui.jsx'
 
 /* eslint-disable react-hooks/set-state-in-effect */
@@ -121,7 +122,7 @@ export default function CoinManagement({ showToast }) {
             </div>
           </div>
         </td>
-        <td className="py-2.5 px-3 text-sm font-mono text-ink capitalize">{u.role === "student" ? "Học sinh" : u.role}</td>
+        <td className="py-2.5 px-3 text-sm font-mono text-ink">{getRoleLabel(u.role)}</td>
         <td className="py-2.5 px-3 text-sm font-mono font-bold text-gold">{(u.coins || 0).toLocaleString()}</td>
         <td className="py-2.5 px-3">
           <div className="flex items-center gap-1.5">

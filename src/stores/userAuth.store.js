@@ -1,27 +1,6 @@
 import { create } from "zustand";
-import { authService } from "../services/api.js";
+import { authService, loadAuth, saveAuth, clearAuth } from "../services/api.js";
 import { socket } from "../socket/socket.js";
-
-const USER_AUTH_KEY = "edu_games_user_auth";
-
-function loadUserAuth() {
-  try {
-    const auth = JSON.parse(localStorage.getItem(USER_AUTH_KEY));
-    if (auth && auth.token) {
-      const parts = String(auth.token).split(".");
-      if (parts.length === 3) {
-        try {
-          const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-          if (payload && typeof payload.exp === "number" && Date.now() / 1000 > payload.exp) {
-            localStorage.removeItem(USER_AUTH_KEY);
-            return null;
-          }
-        } catch { /* invalid token */ }
-      }
-    }
-    return auth || null;
-  } catch { return null; }
-}
 
 export const useUserAuthStore = create((set, get) => ({
   user: null,
@@ -30,10 +9,9 @@ export const useUserAuthStore = create((set, get) => ({
   error: null,
 
   init: () => {
-    const auth = loadUserAuth();
+    const auth = loadAuth();
     if (auth && auth.token && auth.user) {
       set({ user: auth.user, token: auth.token });
-      // Connect socket with user token
       socket.auth = { token: auth.token };
       if (!socket.connected) socket.connect();
     }
@@ -43,9 +21,7 @@ export const useUserAuthStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { token, user } = await authService.login(identifier, password);
-      // Chỉ lưu nếu là student (user auth)
-      const userAuth = { token, user };
-      localStorage.setItem(USER_AUTH_KEY, JSON.stringify(userAuth));
+      saveAuth({ token, user });
       set({ user, token, isLoading: false });
       socket.auth = { token };
       if (!socket.connected) socket.connect();
@@ -60,8 +36,7 @@ export const useUserAuthStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { token, user } = await authService.register({ username, email, password, name });
-      const userAuth = { token, user };
-      localStorage.setItem(USER_AUTH_KEY, JSON.stringify(userAuth));
+      saveAuth({ token, user });
       set({ user, token, isLoading: false });
       socket.auth = { token };
       if (!socket.connected) socket.connect();
@@ -73,8 +48,9 @@ export const useUserAuthStore = create((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem(USER_AUTH_KEY);
+    clearAuth();
     set({ user: null, token: null, error: null });
+    socket.disconnect();
   },
 
   clearError: () => set({ error: null }),

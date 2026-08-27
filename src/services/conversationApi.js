@@ -1,31 +1,29 @@
 import { apiFetch } from "./api.js";
 
 export const conversationApi = {
-  async list(token) {
-    return apiFetch("/conversations", { _token: token }) || [];
+  async list() {
+    return apiFetch("/conversations") || [];
   },
 
-  async getDM(targetUserId, token) {
+  async getDM(targetUserId) {
     return apiFetch("/conversations/dm", {
       method: "POST",
       body: { targetUserId },
-      _token: token,
     });
   },
 
-  async get(id, token) {
-    return apiFetch(`/conversations/${id}`, { _token: token });
+  async get(id) {
+    return apiFetch(`/conversations/${id}`);
   },
 
-  async getMembers(id, token) {
-    return apiFetch(`/conversations/${id}/members`, { _token: token }) || [];
+  async getMembers(id) {
+    return apiFetch(`/conversations/${id}/members`) || [];
   },
 
-  async addMember(id, userId, displayName, token) {
+  async addMember(id, userId, displayName) {
     return apiFetch(`/conversations/${id}/members`, {
       method: "POST",
       body: { userId, displayName },
-      _token: token,
     });
   },
 };
