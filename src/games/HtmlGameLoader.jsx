@@ -108,6 +108,11 @@ export default function HtmlGameLoader({
     });
   }, [game]);
 
+  // Handle join by code from iframe
+  const handleJoinByCode = useCallback((data) => {
+    socket.emit(SOCKET_EVENTS.GAME_JOIN_BY_CODE, { code: data.code });
+  }, []);
+
   useEffect(() => {
     const onMessage = (e) => {
       const msg = e.data;
@@ -133,11 +138,13 @@ export default function HtmlGameLoader({
         handleInviteUser(msg.data);
       } else if (msg.type === "game-move") {
         handleGameMove(msg.data);
+      } else if (msg.type === "join-by-code") {
+        handleJoinByCode(msg.data);
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove]);
+  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleJoinByCode]);
 
   // Listen for opponent moves from socket and forward to iframe
   useEffect(() => {
@@ -150,12 +157,18 @@ export default function HtmlGameLoader({
       postToIframe({ type: "multiplayer-start", data: { opponent: data } });
     };
 
+    const onGameJoined = (data) => {
+      postToIframe({ type: "game-joined", data });
+    };
+
     socket.on(SOCKET_EVENTS.GAME_MOVE, onOpponentMove);
     socket.on(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, onInviteAccepted);
+    socket.on(SOCKET_EVENTS.GAME_JOINED, onGameJoined);
 
     return () => {
       socket.off(SOCKET_EVENTS.GAME_MOVE, onOpponentMove);
       socket.off(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, onInviteAccepted);
+      socket.off(SOCKET_EVENTS.GAME_JOINED, onGameJoined);
     };
   }, [postToIframe]);
 

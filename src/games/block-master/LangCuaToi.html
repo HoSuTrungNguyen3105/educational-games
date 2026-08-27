@@ -1488,11 +1488,44 @@
       function syncCoinsToBackend(newTotal) {
         if (!_apiBase || !_authToken) return;
         try {
+          var diff = newTotal - (_backendCoins || 0);
+          if (diff === 0) return;
+          _backendCoins = newTotal;
           var url = _apiBase.replace(/\/api\/?$/, '') + '/api/auth/me/coins';
           fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _authToken },
-            body: JSON.stringify({ amount: newTotal })
+            body: JSON.stringify({ amount: diff })
+          }).catch(function() {});
+        } catch (e) {}
+      }
+
+      function syncProgressToBackend() {
+        if (!_apiBase || !_authToken) return;
+        try {
+          var questsCompleted = Object.keys(state.quests).length;
+          var monstersDefeated = 0;
+          Object.keys(state.monsters).forEach(function(k) {
+            if (state.monsters[k] && state.monsters[k].hp <= 0) monstersDefeated++;
+          });
+          var buildingsBuilt = 0;
+          ['house', 'farm', 'mine', 'shop', 'land'].forEach(function(k) {
+            if (state.buildings[k] && state.buildings[k].level >= 1) buildingsBuilt++;
+          });
+          var url = _apiBase.replace(/\/api\/?$/, '') + '/api/users/me/games/block-master';
+          fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _authToken },
+            body: JSON.stringify({
+              level: state.level,
+              experience: state.xp,
+              progress: Math.min(100, Math.round((questsCompleted / QUEST_DEFS.length) * 100)),
+              gameName: 'Làng Nhỏ Của Tôi',
+              questsCompleted: questsCompleted,
+              monstersDefeated: monstersDefeated,
+              buildingsBuilt: buildingsBuilt,
+              resources: { wood: state.resources.wood, stone: state.resources.stone, wheat: state.resources.wheat, gold_ore: state.resources.gold_ore },
+            })
           }).catch(function() {});
         } catch (e) {}
       }
@@ -1503,6 +1536,7 @@
           var d = e.data.data;
           _apiBase = d.apiBase || null;
           _authToken = d.authToken || null;
+          state._userId = d.userId || null;
 
           var saved = loadState();
 
@@ -1513,6 +1547,80 @@
 
           state = Object.assign(defaultState(), saved);
           if (screen === 'playing') renderPlaying();
+        } else if (e.data.type === 'opponent-move' && e.data.data) {
+          var om = e.data.data;
+          if (om.playerId && om.playerId !== (state._userId || '')) {
+            opponent = { id: om.playerId, name: om.playerName || 'Bạn', x: om.x || 50, y: om.y || 50 };
+            var opEl = document.getElementById('opponent-pos');
+            if (opEl) {
+              opEl.style.left = opponent.x + '%';
+              opEl.style.top = opponent.y + '%';
+            }
+          }
+        } else if (e.data.type === 'search-results' && e.data.data) {
+          var users = e.data.data.users || [];
+          var listEl = document.getElementById('coop-user-list');
+          if (!listEl) return;
+          listEl.innerHTML = '';
+          if (users.length === 0) {
+            listEl.innerHTML = '<div style="text-align:center;padding:12px;opacity:0.5;font-size:0.85rem;">Không tìm thấy</div>';
+            return;
+          }
+          users.forEach(function(u) {
+            var item = document.createElement('div');
+            item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;margin-bottom:4px;transition:background 0.15s;';
+            item.onmouseenter = function() { item.style.background = 'rgba(255,255,255,0.08)'; };
+            item.onmouseleave = function() { item.style.background = 'transparent'; };
+            var avatar = document.createElement('div');
+            avatar.style.cssText = 'width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff6b6b,#4ecdc4);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0;';
+            avatar.textContent = (u.name || u.username || '?')[0].toUpperCase();
+            var info = document.createElement('div');
+            info.style.cssText = 'text-align:left;flex:1;min-width:0;';
+            info.innerHTML = '<div style="font-size:0.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (u.name || u.username) + '</div>' +
+              '<div style="font-size:0.75rem;opacity:0.5;">@' + (u.username || '') + '</div>';
+            var inviteBtn = document.createElement('button');
+            inviteBtn.style.cssText = 'padding:6px 14px;border-radius:8px;border:none;background:#4ecdc4;color:#1a1a2e;font-weight:700;font-size:0.8rem;cursor:pointer;flex-shrink:0;';
+            inviteBtn.textContent = 'Mời chơi';
+            inviteBtn.onclick = function(ev) {
+              ev.stopPropagation();
+              inviteBtn.disabled = true;
+              inviteBtn.textContent = 'Đang gửi...';
+              var code = '';
+              var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+              for (var ci = 0; ci < 6; ci++) code += chars[Math.floor(Math.random() * chars.length)];
+              gameCode = code;
+              try { window.parent.postMessage({ type: 'invite-user', data: { toUserId: u.id, gameId: 'block-master', gameName: 'Làng Nhỏ Của Tôi', gameCode: code } }, '*'); } catch(ex) {}
+              var statusEl = document.getElementById('coop-status');
+              if (statusEl) {
+                statusEl.innerHTML = '<div style="padding:12px;border-radius:10px;background:rgba(255,255,255,0.05);font-size:0.85rem;border-left:3px solid #f4b942;">⏳ Đang chờ ' + (u.name || u.username) + ' chấp nhận...<br>Mã phòng: <b style="font-family:JetBrains Mono,monospace;letter-spacing:2px;">' + code + '</b></div>';
+              }
+              listEl.innerHTML = '';
+            };
+            item.appendChild(avatar);
+            item.appendChild(info);
+            item.appendChild(inviteBtn);
+            listEl.appendChild(item);
+          });
+        } else if (e.data.type === 'invite-accepted' && e.data.data) {
+          var ad = e.data.data;
+          opponent = { id: ad.acceptedBy, name: ad.acceptedByName || 'Bạn', x: 50, y: 50 };
+          gameMode = 'coop';
+          var overlay = document.getElementById('coop-overlay');
+          if (overlay) overlay.remove();
+          screen = 'playing'; renderPlaying(); startTick();
+          toast('🎮 ' + (ad.acceptedByName || 'Bạn') + ' đã tham gia!');
+        } else if (e.data.type === 'game-joined' && e.data.data) {
+          var jd = e.data.data;
+          if (jd.ok) {
+            gameMode = 'coop';
+            screen = 'playing'; renderPlaying(); startTick();
+            toast('🎮 Đã vào phòng thành công!');
+          } else {
+            var errEl = document.getElementById('coop-code-error');
+            if (errEl) errEl.textContent = jd.error || 'Mã phòng không hợp lệ';
+            var joinBtn = document.getElementById('btn-join-code');
+            if (joinBtn) { joinBtn.textContent = 'Vào phòng'; joinBtn.disabled = false; }
+          }
         }
       });
 
@@ -1525,6 +1633,9 @@
       var tickInterval = null;
       var currentZone = 'village';
       var actionBusy = false;
+      var gameMode = 'solo';
+      var opponent = null;
+      var gameCode = null;
 
       // ========== PLAYER ==========
       var player = {
@@ -1540,6 +1651,8 @@
       // ========== RENDER ==========
       function render() {
         if (screen === 'menu') return renderMenu();
+        if (screen === 'mode-select') return renderModeSelect();
+        if (screen === 'coop-join') return renderCoopJoin();
         if (screen === 'playing') return renderPlaying();
       }
 
@@ -1566,13 +1679,111 @@
           '</div>' +
           '</div>' +
           '</div>';
-        document.getElementById('btn-play').onclick = function() { screen = 'playing';
-          renderPlaying();
-          startTick(); };
+        document.getElementById('btn-play').onclick = function() { screen = 'mode-select';
+          render(); };
         var resetBtn = document.getElementById('btn-reset');
         if (resetBtn) resetBtn.onclick = function() { state = defaultState();
           saveState();
           render(); };
+      }
+
+      // ========== MODE SELECT ==========
+      function renderModeSelect() {
+        stopTick();
+        root.innerHTML =
+          '<div class="screen" style="flex:1;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:linear-gradient(170deg,#eaf6ff,#f5ede0);">' +
+          '<div style="background:var(--panel);border:2px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 32px var(--shadow),inset 0 1px 0 rgba(255,255,255,0.6);padding:2rem 1.8rem;max-width:28rem;width:100%;text-align:center;animation:popIn 0.35s cubic-bezier(0.2,0.9,0.3,1.2) forwards;">' +
+          '<span style="font-size:3rem;display:block;margin-bottom:0.6rem;">🎮</span>' +
+          '<h2 style="font-family:Quicksand,sans-serif;font-size:1.4rem;font-weight:800;color:var(--grass-dark);margin-bottom:0.3rem;">Chọn chế độ chơi</h2>' +
+          '<p style="color:var(--ink-dim);font-size:0.85rem;margin-bottom:1.4rem;">Chơi một mình hoặc mời bạn cùng chơi</p>' +
+          '<button id="btn-solo" style="width:100%;padding:0.8rem;border-radius:var(--radius-sm);font-weight:700;font-size:0.95rem;border:2px solid var(--grass);background:var(--grass);color:#fff;border-color:var(--grass-dark);box-shadow:0 4px 0 var(--grass-dark);margin-bottom:0.5rem;transition:transform 0.12s,box-shadow 0.2s;">🤖 Chơi một mình</button>' +
+          '<button id="btn-coop-invite" style="width:100%;padding:0.8rem;border-radius:var(--radius-sm);font-weight:700;font-size:0.95rem;border:2px solid var(--ticket);background:var(--ticket);color:#fff;border-color:#c0392b;box-shadow:0 4px 0 #c0392b;margin-bottom:0.5rem;transition:transform 0.12s,box-shadow 0.2s;">👥 Mời bạn chơi</button>' +
+          '<button id="btn-coop-join" style="width:100%;padding:0.8rem;border-radius:var(--radius-sm);font-weight:700;font-size:0.95rem;border:2px solid var(--gold);background:var(--gold);color:#fff;border-color:var(--gold-dark);box-shadow:0 4px 0 var(--gold-dark);transition:transform 0.12s,box-shadow 0.2s;">🔑 Nhập mã phòng</button>' +
+          '<button id="btn-back-menu" style="width:100%;margin-top:0.8rem;padding:0.6rem;border-radius:var(--radius-sm);font-weight:600;font-size:0.85rem;background:transparent;color:var(--ink-dim);border:2px solid rgba(180,160,130,0.3);transition:transform 0.12s;">← Quay lại</button>' +
+          '</div></div>';
+        document.getElementById('btn-solo').onclick = function() {
+          gameMode = 'solo'; opponent = null;
+          screen = 'playing'; renderPlaying(); startTick();
+        };
+        document.getElementById('btn-coop-invite').onclick = function() {
+          showCoopInviteOverlay();
+        };
+        document.getElementById('btn-coop-join').onclick = function() {
+          screen = 'coop-join'; render();
+        };
+        document.getElementById('btn-back-menu').onclick = function() {
+          screen = 'menu'; render();
+        };
+      }
+
+      // ========== CO-OP INVITE OVERLAY ==========
+      function showCoopInviteOverlay() {
+        var overlay = document.createElement('div');
+        overlay.id = 'coop-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;font-family:Segoe UI,sans-serif;color:#fff;';
+        var modal = document.createElement('div');
+        modal.style.cssText = 'background:#1e2a4a;border-radius:20px;padding:28px;max-width:380px;width:90%;text-align:center;';
+        modal.innerHTML =
+          '<h2 style="font-size:1.3rem;margin-bottom:6px;">👥 Tìm người chơi</h2>' +
+          '<p style="font-size:0.85rem;opacity:0.7;margin-bottom:14px;">Nhập tên để tìm và mời bạn cùng chơi</p>' +
+          '<input id="coop-search-input" type="text" placeholder="Tìm kiếm người chơi..." ' +
+          'style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;font-size:0.9rem;outline:none;box-sizing:border-box;" />' +
+          '<div id="coop-user-list" style="max-height:200px;overflow-y:auto;margin:12px 0;text-align:left;"></div>' +
+          '<div id="coop-status"></div>' +
+          '<button id="coop-back-btn" style="padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.7);cursor:pointer;font-size:0.85rem;margin-top:8px;">← Quay lại</button>';
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        var searchTimeout = null;
+        var input = document.getElementById('coop-search-input');
+        input.addEventListener('input', function() {
+          clearTimeout(searchTimeout);
+          var q = input.value.trim();
+          var listEl = document.getElementById('coop-user-list');
+          if (q.length < 2) { listEl.innerHTML = ''; return; }
+          listEl.innerHTML = '<div style="text-align:center;padding:12px;opacity:0.5;">⏳ Đang tìm...</div>';
+          searchTimeout = setTimeout(function() {
+            try { window.parent.postMessage({ type: 'search-user', data: { query: q } }, '*'); } catch(e) {}
+          }, 300);
+        });
+        setTimeout(function() { input.focus(); }, 100);
+
+        document.getElementById('coop-back-btn').onclick = function() {
+          overlay.remove();
+        };
+      }
+
+      function renderCoopJoin() {
+        stopTick();
+        root.innerHTML =
+          '<div class="screen" style="flex:1;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:linear-gradient(170deg,#eaf6ff,#f5ede0);">' +
+          '<div style="background:var(--panel);border:2px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 32px var(--shadow),inset 0 1px 0 rgba(255,255,255,0.6);padding:2rem 1.8rem;max-width:28rem;width:100%;text-align:center;animation:popIn 0.35s cubic-bezier(0.2,0.9,0.3,1.2) forwards;">' +
+          '<span style="font-size:3rem;display:block;margin-bottom:0.6rem;">🔑</span>' +
+          '<h2 style="font-family:Quicksand,sans-serif;font-size:1.4rem;font-weight:800;color:var(--grass-dark);margin-bottom:0.3rem;">Nhập mã phòng</h2>' +
+          '<p style="color:var(--ink-dim);font-size:0.85rem;margin-bottom:1.4rem;">Nhập mã 6 ký tự từ bạn bè để vào phòng</p>' +
+          '<input id="coop-code-input" type="text" maxlength="6" placeholder="MÃ PHÒNG" ' +
+          'style="width:100%;padding:14px;border-radius:var(--radius-sm);border:2px solid var(--line);font-family:JetBrains Mono,monospace;font-size:1.5rem;font-weight:700;text-align:center;letter-spacing:8px;text-transform:uppercase;background:var(--paper2);color:var(--ink);outline:none;box-sizing:border-box;" />' +
+          '<div id="coop-code-error" style="color:var(--danger);font-size:0.85rem;margin-top:8px;min-height:1.2em;"></div>' +
+          '<button id="btn-join-code" style="width:100%;margin-top:1rem;padding:0.8rem;border-radius:var(--radius-sm);font-weight:700;font-size:0.95rem;border:2px solid var(--gold);background:var(--gold);color:#fff;border-color:var(--gold-dark);box-shadow:0 4px 0 var(--gold-dark);transition:transform 0.12s,box-shadow 0.2s;">Vào phòng</button>' +
+          '<button id="btn-back-mode" style="width:100%;margin-top:0.5rem;padding:0.6rem;border-radius:var(--radius-sm);font-weight:600;font-size:0.85rem;background:transparent;color:var(--ink-dim);border:2px solid rgba(180,160,130,0.3);transition:transform 0.12s;">← Quay lại</button>' +
+          '</div></div>';
+        document.getElementById('btn-join-code').onclick = function() {
+          var code = document.getElementById('coop-code-input').value.trim().toUpperCase();
+          if (!code || code.length < 4) {
+            document.getElementById('coop-code-error').textContent = 'Vui lòng nhập mã phòng hợp lệ';
+            return;
+          }
+          try { window.parent.postMessage({ type: 'join-by-code', data: { code: code } }, '*'); } catch(e) {}
+          document.getElementById('btn-join-code').textContent = 'Đang kết nối...';
+          document.getElementById('btn-join-code').disabled = true;
+        };
+        document.getElementById('btn-back-mode').onclick = function() {
+          screen = 'mode-select'; render();
+        };
+        document.getElementById('coop-code-input').addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') document.getElementById('btn-join-code').click();
+        });
+        setTimeout(function() { document.getElementById('coop-code-input').focus(); }, 100);
       }
 
       // ========== TICK ==========
@@ -1653,6 +1864,9 @@
           '<div id="monster-container"></div>' +
           '<div class="villager-pos" id="villager-pos" style="left:' + player.x + '%;top:' + player.y +
           '%;">' + VILLAGER_SVG + '</div>' +
+          (opponent ? '<div class="villager-pos" id="opponent-pos" style="left:' + (opponent.x || 50) + '%;top:' + (opponent.y || 50) + '%;opacity:0.85;">' +
+          '<div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:0.55rem;background:rgba(0,0,0,0.6);color:#fff;padding:1px 6px;border-radius:6px;white-space:nowrap;">' + (opponent.name || 'Bạn') + '</div>' +
+          VILLAGER_SVG.replace('#5b8c5a', '#e74c3c').replace('#4a7c49', '#c0392b') + '</div>' : '') +
           '</div>' +
 
           '<div class="hud-top">' +
@@ -1823,6 +2037,10 @@
           } else if (!changed) {
             v.classList.remove('moving');
           }
+        }
+        // Broadcast position in co-op mode
+        if (gameMode === 'coop' && (dx !== 0 || dy !== 0)) {
+          try { window.parent.postMessage({ type: 'game-move', data: { x: player.x, y: player.y, zone: currentZone } }, '*'); } catch(e) {}
         }
         return true;
       }
@@ -2127,6 +2345,7 @@
                   .rewardXp + ' XP');
               }
               saveState();
+              syncProgressToBackend();
             } else {
               popFloatAt(el, 'bad', '-' + damage + ' HP');
             }
@@ -2399,6 +2618,7 @@
           state.xpToNext = Math.round(state.xpToNext * 1.35);
           state.maxEnergy += 5;
           toast('🎉 Lên cấp ' + state.level + '! Năng lượng tối đa +5');
+          syncProgressToBackend();
         }
       }
 
@@ -2547,6 +2767,7 @@
           toast('🔧 ' + def.name + ' đã lên cấp ' + b.level + '!');
         }
         saveState();
+        syncProgressToBackend();
         updateHud();
         renderPanels();
         renderZoneScene();
@@ -2585,6 +2806,7 @@
         popFloatAt(cardEl, 'coin', '+' + q.rewardCoins + ' 🪙');
         toast('📜 Hoàn thành: ' + q.title + '!');
         saveState();
+        syncProgressToBackend();
         updateHud();
         renderPanels();
       }

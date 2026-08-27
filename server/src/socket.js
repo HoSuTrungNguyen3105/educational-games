@@ -43,12 +43,23 @@ export const EVENTS = {
   GAME_INVITE_DECLINED: "game:invite:declined",
   GAME_MOVE: "game:move",
   GAME_STATE_SYNC: "game:state:sync",
+  GAME_JOIN_BY_CODE: "game:join-by-code",
+  GAME_JOINED: "game:joined",
 };
 
 const roomName = (gameId) => `game:${gameId}`;
 
 // Session game realtime (in-memory). Mỗi game một session.
 const sessions = new Map(); // gameId -> session
+
+// Code -> gameId mapping for co-op join by code
+const gameCodes = new Map(); // code -> { gameId, hostUserId, createdAt }
+function generateGameCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
 
 export function initSocket(httpServer) {
   const io = new Server(httpServer, {
@@ -300,6 +311,11 @@ export function initSocket(httpServer) {
       }
 
       socket.emit(EVENTS.GAME_INVITE_SEND, { ok: true, toUserId });
+
+      // Register game code for join-by-code flow
+      if (gameCode) {
+        gameCodes.set(gameCode, { gameId, hostUserId: fromUserId, createdAt: Date.now() });
+      }
     });
 
     // Player B accepts invite
@@ -337,6 +353,35 @@ export function initSocket(httpServer) {
           declinedBy, declinedByName,
         });
       }
+    });
+
+    // Player joins a game room by code
+    socket.on(EVENTS.GAME_JOIN_BY_CODE, (data = {}) => {
+      const { code } = data;
+      if (!code) return socket.emit(EVENTS.GAME_JOINED, { ok: false, error: "Thiếu mã phòng" });
+
+      const entry = gameCodes.get(code);
+      if (!entry) return socket.emit(EVENTS.GAME_JOINED, { ok: false, error: "Mã phòng không hợp lệ hoặc đã hết hạn" });
+
+      const { gameId, hostUserId } = entry;
+      const joinerName = socket.data.user?.name || socket.data.playerId || "Ẩn danh";
+      const joinerId = socket.data.user?.sub || socket.data.playerId;
+
+      // Join the socket room
+      socket.join(roomName(gameId));
+      socket.data.gameId = gameId;
+
+      // Notify the host
+      const hostSocket = findSocketByUserId(io, hostUserId);
+      if (hostSocket) {
+        hostSocket.emit(EVENTS.GAME_INVITE_ACCEPTED, {
+          acceptedBy: joinerId,
+          acceptedByName: joinerName,
+          gameId,
+        });
+      }
+
+      socket.emit(EVENTS.GAME_JOINED, { ok: true, gameId, hostUserId });
     });
 
     // Multiplayer game move sync (for board games like XO)

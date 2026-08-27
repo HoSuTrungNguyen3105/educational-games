@@ -36,4 +36,6 @@ export const SOCKET_EVENTS = {
   GAME_INVITE_DECLINED: "game:invite:declined",
   GAME_MOVE: "game:move",
   GAME_STATE_SYNC: "game:state:sync",
+  GAME_JOIN_BY_CODE: "game:join-by-code",
+  GAME_JOINED: "game:joined",
 };
