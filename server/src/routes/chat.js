@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate } from "../middleware/auth.js";
 import * as chatService from "../services/chatService.js";
 import * as convService from "../services/conversationService.js";
+import * as notificationService from "../services/notificationService.js";
 import { sendSuccess, sendCreated, sendError, buildPagination } from "../utils/response.js";
 
 const router = Router();
@@ -32,11 +33,22 @@ router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) =
     const { content, clientMessageId, type } = req.body;
     const currentUserId = req.user.sub;
     const userName = req.user.name || "Ẩn danh";
+    const userUsername = req.user.username || "";
     const convId = chatService.getDmConversationId(currentUserId, targetUserId);
     await ensureDmConversation(currentUserId, targetUserId);
     const msg = await chatService.sendMessage({
       conversationId: convId, senderId: currentUserId, playerName: userName, content, clientMessageId, type,
     });
+    notificationService.createNotification({
+      fromUserId: currentUserId,
+      fromUsername: userUsername,
+      fromName: userName,
+      toUserId: targetUserId,
+      type: "chat_message",
+      gameId: convId,
+      gameName: `Tin nhắn từ ${userName}`,
+      content: content?.substring(0, 100) || "",
+    }).catch(() => {});
     sendCreated(res, msg);
   } catch (e) {
     next(e);
