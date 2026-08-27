@@ -1483,6 +1483,8 @@
       // Backend sync vars
       var _apiBase = null;
       var _authToken = null;
+      var _gameId = null;
+      var _gameName = 'Trò chơi';
       var _backendCoins = null;
 
       function syncCoinsToBackend(newTotal) {
@@ -1537,6 +1539,8 @@
           _apiBase = d.apiBase || null;
           _authToken = d.authToken || null;
           state._userId = d.userId || null;
+          _gameId = d.gameId || null;
+          _gameName = d.gameName || 'Trò chơi';
 
           var saved = loadState();
 
@@ -1589,7 +1593,7 @@
               var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
               for (var ci = 0; ci < 6; ci++) code += chars[Math.floor(Math.random() * chars.length)];
               gameCode = code;
-              try { window.parent.postMessage({ type: 'invite-user', data: { toUserId: u.id, gameId: 'block-master', gameName: 'Làng Nhỏ Của Tôi', gameCode: code } }, '*'); } catch(ex) {}
+              try { window.parent.postMessage({ type: 'invite-user', data: { toUserId: u.id, gameId: _gameId, gameName: _gameName, gameCode: code } }, '*'); } catch(ex) {}
               var statusEl = document.getElementById('coop-status');
               if (statusEl) {
                 statusEl.innerHTML = '<div style="padding:12px;border-radius:10px;background:rgba(255,255,255,0.05);font-size:0.85rem;border-left:3px solid #f4b942;">⏳ Đang chờ ' + (u.name || u.username) + ' chấp nhận...<br>Mã phòng: <b style="font-family:JetBrains Mono,monospace;letter-spacing:2px;">' + code + '</b></div>';
@@ -1773,9 +1777,26 @@
             document.getElementById('coop-code-error').textContent = 'Vui lòng nhập mã phòng hợp lệ';
             return;
           }
-          try { window.parent.postMessage({ type: 'join-by-code', data: { code: code } }, '*'); } catch(e) {}
-          document.getElementById('btn-join-code').textContent = 'Đang kết nối...';
-          document.getElementById('btn-join-code').disabled = true;
+          var btn = document.getElementById('btn-join-code');
+          btn.textContent = 'Đang kết nối...';
+          btn.disabled = true;
+          document.getElementById('coop-code-error').textContent = '';
+          try {
+            window.parent.postMessage({ type: 'join-by-code', data: { code: code } }, '*');
+          } catch(ex) {
+            document.getElementById('coop-code-error').textContent = 'Lỗi gửi yêu cầu: ' + ex.message;
+            btn.textContent = 'Vào phòng';
+            btn.disabled = false;
+          }
+          // Timeout fallback — if no response in 5s, allow retry
+          setTimeout(function() {
+            var btn2 = document.getElementById('btn-join-code');
+            if (btn2 && btn2.disabled) {
+              btn2.textContent = 'Vào phòng';
+              btn2.disabled = false;
+              document.getElementById('coop-code-error').textContent = 'Không có phản hồi. Thử lại.';
+            }
+          }, 5000);
         };
         document.getElementById('btn-back-mode').onclick = function() {
           screen = 'mode-select'; render();

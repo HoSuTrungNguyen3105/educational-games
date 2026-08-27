@@ -225,7 +225,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     {unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>}
                   </button>
                   {showNotifications && (
-                    <NotificationDropdown notifications={notifications} unreadCount={unreadCount} onMarkAsRead={handleMarkAsRead} onMarkAllAsRead={handleMarkAllAsRead} onClose={() => setShowNotifications(false)} />
+                    <NotificationDropdown notifications={notifications} unreadCount={unreadCount} onMarkAsRead={handleMarkAsRead} onMarkAllAsRead={handleMarkAllAsRead} onClose={() => setShowNotifications(false)} onSelectGame={onSelectGame} />
                   )}
                 </div>
               </>
@@ -355,7 +355,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                         {unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>}
                       </button>
                       {showNotifications && (
-                        <NotificationDropdown notifications={notifications} unreadCount={unreadCount} onMarkAsRead={handleMarkAsRead} onMarkAllAsRead={handleMarkAllAsRead} onClose={() => setShowNotifications(false)} />
+                        <NotificationDropdown notifications={notifications} unreadCount={unreadCount} onMarkAsRead={handleMarkAsRead} onMarkAllAsRead={handleMarkAllAsRead} onClose={() => setShowNotifications(false)} onSelectGame={onSelectGame} />
                       )}
                     </div>
                   </>
@@ -756,7 +756,7 @@ function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew })
   );
 }
 
-function NotificationDropdown({ notifications, unreadCount, onMarkAsRead, onMarkAllAsRead, onClose }) {
+function NotificationDropdown({ notifications, unreadCount, onMarkAsRead, onMarkAllAsRead, onClose, onSelectGame }) {
   return (
     <>
       <div className="fixed inset-0 z-40 lg:hidden" onClick={onClose}></div>
@@ -779,13 +779,36 @@ function NotificationDropdown({ notifications, unreadCount, onMarkAsRead, onMark
                   <div className="mt-0.5">
                     {notif.type === 'chat_message' ? <MessageCircle className="w-5 h-5 text-blue-500" /> : <Gamepad2 className="w-5 h-5 text-purple-500" />}
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-800">
                       <span className="font-semibold">{notif.fromName}</span>
                       {notif.type === 'chat_message' ? ' đã gửi một tin nhắn' : ` mời bạn chơi ${notif.gameName || 'trò chơi'}`}
                     </p>
+                    {notif.gameCode && (
+                      <p className="text-xs text-purple-600 mt-0.5 font-mono font-semibold">Mã phòng: {notif.gameCode}</p>
+                    )}
                     {notif.content && <p className="text-xs text-gray-600 mt-0.5 line-clamp-1">{notif.content}</p>}
                     <p className="text-[10px] text-gray-400 mt-1">{new Date(notif.createdAt).toLocaleString('vi-VN')}</p>
+                    {notif.type === 'game_invite' && notif.gameId && (
+                      <button onClick={async (e) => {
+                        e.stopPropagation();
+                        onClose();
+                        try {
+                          const g = await gameService.get(notif.gameId);
+                          if (g) onSelectGame(g);
+                          else navigate('/student');
+                        } catch { navigate('/student'); }
+                      }}
+                        className="mt-2 px-3 py-1.5 bg-purple-500 text-white text-xs font-semibold rounded-lg hover:bg-purple-600 transition">
+                        Vào chơi ngay →
+                      </button>
+                    )}
+                    {notif.type === 'chat_message' && (
+                      <button onClick={(e) => { e.stopPropagation(); onClose(); navigate('/chat'); }}
+                        className="mt-2 px-3 py-1.5 bg-blue-500 text-white text-xs font-semibold rounded-lg hover:bg-blue-600 transition">
+                        Xem tin nhắn →
+                      </button>
+                    )}
                   </div>
                   {!notif.read && <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5 ml-auto shrink-0"></div>}
                 </div>

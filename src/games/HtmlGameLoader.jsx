@@ -28,6 +28,14 @@ export default function HtmlGameLoader({
 }) {
   const iframeRef = useRef(null);
 
+  // Ensure socket is connected on mount
+  useEffect(() => {
+    if (!socket.connected && userAuth?.token) {
+      socket.auth = { token: userAuth.token };
+      socket.connect();
+    }
+  }, []);
+
   const handleInit = useCallback(async () => {
     const iframe = iframeRef.current;
     if (!iframe?.contentWindow) return;
@@ -110,8 +118,20 @@ export default function HtmlGameLoader({
 
   // Handle join by code from iframe
   const handleJoinByCode = useCallback((data) => {
+    // Ensure socket is connected
+    if (!socket.connected && userAuth?.token) {
+      socket.auth = { token: userAuth.token };
+      socket.connect();
+    }
+    // Socket.IO buffers emits when disconnected — try immediately
     socket.emit(SOCKET_EVENTS.GAME_JOIN_BY_CODE, { code: data.code });
-  }, []);
+    // Also retry after a short delay in case connection was just initiated
+    setTimeout(() => {
+      if (!socket.connected && userAuth?.token) {
+        socket.emit(SOCKET_EVENTS.GAME_JOIN_BY_CODE, { code: data.code });
+      }
+    }, 1500);
+  }, [userAuth]);
 
   useEffect(() => {
     const onMessage = (e) => {
