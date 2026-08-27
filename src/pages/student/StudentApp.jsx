@@ -23,11 +23,10 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   const [playerName, setPlayerName] = useState(userAuth?.user?.name || "");
   const [finalResult, setFinalResult] = useState(null);
   const [leaderboard, setLeaderboard] = useState(null);
+  const [pendingInvite, setPendingInvite] = useState(null);
 
   const resetStore = () => useGameStore.getState().resetGame();
 
-  // Loại chơi quyết định theo TEMPLATE (templateId → template.type),
-  // fallback về game.type nếu chưa tải được template
   const templates = useTemplates();
   const tplIdOf = (g) => {
     if (!g?.templateId) return null;
@@ -44,7 +43,6 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   };
   const goHome = () => { resetStore(); setGame(null); setQuestions([]); setFinalResult(null); setLeaderboard(null); onExit(); };
 
-  // Khởi tạo chat store khi có game
   const initChat = useChatStore((s) => s.init);
   const resetChat = useChatStore((s) => s.reset);
   const senderId = userAuth?.user?.id || null;
@@ -57,23 +55,76 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
     return () => resetChat();
   }, [gameGid, senderId, displayName]);
 
-  // Khi route thay đổi sang một game cụ thể → đồng bộ game hiển thị
   useEffect(() => {
     const gid = initialGame?._id?.toString() || initialGame?.id;
     const currentGid = game?._id?.toString() || game?.id;
     if (initialGame && gid && gid !== currentGid) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setGame(initialGame);
       setQuestions([]);
-      // Cả 2 loại đều vào phòng chờ / nhập tên trước khi chơi
       setScreen(userAuth?.user ? "waiting" : "name");
     }
   }, [initialGame, game, userAuth]);
 
+  // Listen for game invite notifications via socket
+  useEffect(() => {
+    if (!userAuth?.user) return;
+
+    const onInviteReceived = (data) => {
+      setPendingInvite(data);
+    };
+
+    const onInviteAccepted = (data) => {
+      // The invited user accepted - we can now start the game together
+      if (data.gameId) {
+        // Navigate to the game
+        gameService.get(data.gameId).then(g => {
+          if (g) {
+            setGame(g);
+            setQuestions([]);
+            setScreen("waiting");
+          }
+        }).catch(() => {});
+      }
+    };
+
+    socket.on(SOCKET_EVENTS.GAME_INVITE_RECEIVED, onInviteReceived);
+    socket.on(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, onInviteAccepted);
+
+    return () => {
+      socket.off(SOCKET_EVENTS.GAME_INVITE_RECEIVED, onInviteReceived);
+      socket.off(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, onInviteAccepted);
+    };
+  }, [userAuth]);
+
+  const handleAcceptInvite = () => {
+    if (!pendingInvite) return;
+    // Accept via socket
+    socket.emit(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, {
+      fromUserId: pendingInvite.fromUserId,
+      gameId: pendingInvite.gameId,
+    });
+    // Load the game
+    gameService.get(pendingInvite.gameId).then(g => {
+      if (g) {
+        setGame(g);
+        setQuestions([]);
+        setScreen("waiting");
+      }
+    }).catch(() => {});
+    setPendingInvite(null);
+  };
+
+  const handleDeclineInvite = () => {
+    if (!pendingInvite) return;
+    socket.emit(SOCKET_EVENTS.GAME_INVITE_DECLINED, {
+      fromUserId: pendingInvite.fromUserId,
+    });
+    setPendingInvite(null);
+  };
+
   const handleFound = async (g) => {
     setGame(g);
     setQuestions([]);
-    // Cả play-to-win lẫn play-to-learn đều vào nhập tên / phòng chờ trước
     setScreen(userAuth?.user ? "waiting" : "name");
   };
 
@@ -116,32 +167,39 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
       }
     }
 
-    if (isPlayToWin && userAuth?.user && game?.code) {
+    // Coin reward: game may send coinReward (e.g. +50 for XO win)
+    const coinReward = sessionResult.coinReward || 0;
+    if (coinReward > 0 && userAuth?.user) {
+      try {
+        console.log("[Coin] Game awarded coins:", coinReward);
+        const coinResult = await coinService.add(coinReward);
+        console.log("[Coin] addCoins result:", coinResult);
+        if (game?.code) await gameProgressService.incrementPlay(game.code);
+      } catch (e) {
+        console.error("[Coin] Failed to save coin reward:", e);
+      }
+    } else if (isPlayToWin && userAuth?.user && game?.code) {
+      // Fallback: use score as coin amount for play-to-win games
       try {
         const coinAmount = sessionResult.score || 0;
-        console.log("[Coin] Saving coins:", { score: coinAmount, userId: userAuth.user.id });
+        console.log("[Coin] Saving coins (fallback):", { score: coinAmount, userId: userAuth.user.id });
         const coinResult = await coinService.add(coinAmount);
         console.log("[Coin] addCoins result:", coinResult);
         await gameProgressService.incrementPlay(game.code);
       } catch (e) {
         console.error("[Coin] Failed to save coin progress:", e);
       }
-    } else {
-      console.log("[Coin] Skipped:", { isPlayToWin, hasUser: !!userAuth?.user, gameCode: game?.code });
     }
 
     setFinalResult(entry);
     setScreen("result");
   };
 
-  // Handle state-update from persistent games (e.g. LangCuaToi)
-  // Saves coins globally whenever game reports a state change
   const handleStateUpdate = async (data) => {
     if (!data || !isPlayToWin || !userAuth?.user) return;
     try {
       const newCoins = data.coins || 0;
       if (newCoins > 0) {
-        // Get current global coins, calculate diff, and add
         const current = await coinService.get();
         const currentCoins = current?.coins || 0;
         const diff = newCoins - currentCoins;
@@ -156,7 +214,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
 
   return (
     <div className="min-h-screen bg-paper flex flex-col">
-      <StudentTopBar onExit={goHome} />
+      <StudentTopBar onExit={goHome} userAuth={userAuth} pendingInvite={pendingInvite} onAcceptInvite={handleAcceptInvite} onDeclineInvite={handleDeclineInvite} />
       <main className="flex-1 flex flex-col">
         {screen === "join" && <JoinGameScreen onFound={handleFound} />}
         {screen === "name" && game && (
@@ -190,14 +248,32 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   );
 }
 
-export function StudentTopBar({ onExit }) {
+export function StudentTopBar({ onExit, userAuth, pendingInvite, onAcceptInvite, onDeclineInvite }) {
   return (
     <div className="flex items-center justify-between px-3 md:px-6 py-2 md:py-3 border-b border-ink/5 shrink-0">
       <div className="flex items-center gap-1.5 min-w-0">
         <span className="text-base md:text-xl">🎪</span>
         <span className="font-display text-sm md:text-base text-ink truncate">Lớp Học Vui</span>
       </div>
-      <button onClick={onExit} className="text-xs md:text-sm text-[#8A7C63] hover:text-ink shrink-0 ml-2">Thoát</button>
+      <div className="flex items-center gap-2">
+        {/* Invite notification bell */}
+        {pendingInvite && userAuth?.user && (
+          <div className="relative">
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-ticket rounded-full animate-pulse"></div>
+            <div className="note-card p-3 max-w-xs anim-pop shadow-lg border-ticket/30">
+              <p className="text-xs text-[#8A7C63] mb-1">🎮 Lời mời chơi game</p>
+              <p className="text-sm font-semibold text-ink mb-2">
+                <span className="text-ticket">{pendingInvite.fromName}</span> mời bạn chơi "{pendingInvite.gameName}"
+              </p>
+              <div className="flex gap-2">
+                <PrimaryButton onClick={onAcceptInvite} className="flex-1 text-xs py-1.5">Chấp nhận</PrimaryButton>
+                <GhostButton onClick={onDeclineInvite} className="flex-1 text-xs py-1.5">Từ chối</GhostButton>
+              </div>
+            </div>
+          </div>
+        )}
+        <button onClick={onExit} className="text-xs md:text-sm text-[#8A7C63] hover:text-ink shrink-0 ml-2">Thoát</button>
+      </div>
     </div>
   );
 }

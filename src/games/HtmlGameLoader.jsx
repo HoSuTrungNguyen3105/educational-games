@@ -1,15 +1,31 @@
 import { useEffect, useRef, useCallback } from "react";
-import { API_BASE, coinService } from "../services/api.js";
+import { API_BASE, coinService, userService } from "../services/api.js";
+import { socket } from "../socket/socket.js";
+import { SOCKET_EVENTS } from "../socket/socket.events.js";
 
 /**
  * HtmlGameLoader - Renders a self-contained HTML game in an iframe.
  * Communication via postMessage:
  *
  * React → iframe: { type: "init", data: { gameId, playerName, questions, apiBase, userCoins, authToken } }
- * iframe → React: { type: "game-over", data: { score, timeUsed } }
+ * React → iframe: { type: "opponent-move", data: { row, col, player } }
+ * React → iframe: { type: "invite-accepted", data: { playerName } }
+ * React → iframe: { type: "multiplayer-start", data: { opponent } }
+ *
+ * iframe → React: { type: "ready" }
+ * iframe → React: { type: "bridge-ready" }
+ * iframe → React: { type: "mode-selected", data: { mode } }
+ * iframe → React: { type: "search-user", data: { query } }
+ * iframe → React: { type: "invite-user", data: { toUserId, gameId, gameName, gameCode } }
+ * iframe → React: { type: "game-move", data: { row, col, player } }
+ * iframe → React: { type: "game-over", data: { score, timeUsed, coinReward } }
+ * iframe → React: { type: "state-update", data: { coins, type, ... } }
  * iframe → React: { type: "quit" }
  */
-export default function HtmlGameLoader({ htmlContent, game, questions, players, playerName, playMode, onFinish, onQuit, onStateUpdate, userAuth }) {
+export default function HtmlGameLoader({
+  htmlContent, game, questions, players, playerName,
+  playMode, onFinish, onQuit, onStateUpdate, userAuth
+}) {
   const iframeRef = useRef(null);
 
   const handleInit = useCallback(async () => {
@@ -19,9 +35,11 @@ export default function HtmlGameLoader({ htmlContent, game, questions, players, 
 
     let userCoins = 0;
     let authToken = null;
+    let userId = null;
     try {
       if (userAuth?.token) {
         authToken = userAuth.token;
+        userId = userAuth.user?.id;
         const coinData = await coinService.get();
         userCoins = coinData?.coins || 0;
       }
@@ -31,7 +49,7 @@ export default function HtmlGameLoader({ htmlContent, game, questions, players, 
       {
         type: "init",
         data: {
-          gameId: game?.id,
+          gameId: game?.id || game?._id?.toString(),
           playerName: playerName || "Player",
           players: playerNames,
           questions: questions || [],
@@ -40,17 +58,62 @@ export default function HtmlGameLoader({ htmlContent, game, questions, players, 
           questionsTotal: questions?.length || 0,
           userCoins,
           authToken,
+          userId,
+          gameName: game?.name || "Trò chơi",
+          gameCode: game?.code || "",
         }
       },
       "*"
     );
-  }, [game?.id, playerName, questions, players, playMode, userAuth]);
+  }, [game, playerName, questions, players, playMode, userAuth]);
+
+  // Send message to iframe
+  const postToIframe = useCallback((msg) => {
+    const iframe = iframeRef.current;
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage(msg, "*");
+    }
+  }, []);
+
+  // Handle user search request from iframe
+  const handleSearchUser = useCallback(async (query) => {
+    try {
+      const results = await userService.search(query);
+      postToIframe({ type: "search-results", data: { users: results || [] } });
+    } catch (e) {
+      console.error("[HtmlGameLoader] Search error:", e);
+      postToIframe({ type: "search-results", data: { users: [] } });
+    }
+  }, [postToIframe]);
+
+  // Handle invite user request from iframe
+  const handleInviteUser = useCallback((data) => {
+    const { toUserId, gameId, gameName, gameCode } = data;
+    socket.emit(SOCKET_EVENTS.GAME_INVITE_SEND, {
+      toUserId,
+      gameId: gameId || game?.id || game?._id?.toString(),
+      gameName: gameName || game?.name,
+      gameCode: gameCode || game?.code,
+    });
+    postToIframe({ type: "invite-sent", data: { ok: true, toUserId } });
+  }, [game, postToIframe]);
+
+  // Handle game move from iframe (forward to socket)
+  const handleGameMove = useCallback((data) => {
+    socket.emit(SOCKET_EVENTS.GAME_MOVE, {
+      gameId: game?.id || game?._id?.toString(),
+      row: data.row,
+      col: data.col,
+      player: data.player,
+    });
+  }, [game]);
 
   useEffect(() => {
     const onMessage = (e) => {
       const msg = e.data;
       if (!msg || typeof msg !== "object") return;
-      if (msg.type === "ready") {
+
+      if (msg.type === "ready" || msg.type === "bridge-ready") {
         handleInit();
       } else if (msg.type === "game-over") {
         onFinish?.({
@@ -58,16 +121,43 @@ export default function HtmlGameLoader({ htmlContent, game, questions, players, 
           correct: msg.data?.correct ?? 0,
           totalQuestions: msg.data?.totalQuestions ?? 0,
           timeUsed: msg.data?.timeUsed || 0,
+          coinReward: msg.data?.coinReward || 0,
         });
       } else if (msg.type === "state-update") {
         onStateUpdate?.(msg.data);
       } else if (msg.type === "quit") {
         onQuit?.();
+      } else if (msg.type === "search-user") {
+        handleSearchUser(msg.data?.query);
+      } else if (msg.type === "invite-user") {
+        handleInviteUser(msg.data);
+      } else if (msg.type === "game-move") {
+        handleGameMove(msg.data);
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [handleInit, onFinish, onQuit, onStateUpdate]);
+  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove]);
+
+  // Listen for opponent moves from socket and forward to iframe
+  useEffect(() => {
+    const onOpponentMove = (data) => {
+      postToIframe({ type: "opponent-move", data });
+    };
+
+    const onInviteAccepted = (data) => {
+      postToIframe({ type: "invite-accepted", data });
+      postToIframe({ type: "multiplayer-start", data: { opponent: data } });
+    };
+
+    socket.on(SOCKET_EVENTS.GAME_MOVE, onOpponentMove);
+    socket.on(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, onInviteAccepted);
+
+    return () => {
+      socket.off(SOCKET_EVENTS.GAME_MOVE, onOpponentMove);
+      socket.off(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, onInviteAccepted);
+    };
+  }, [postToIframe]);
 
   useEffect(() => {
     const iframe = iframeRef.current;

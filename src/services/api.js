@@ -326,3 +326,18 @@ export const dailyTaskService = {
     return apiFetch(`/daily-tasks/admin/tasks/${encodeURIComponent(taskId)}`, { method: "DELETE" });
   },
 };
+
+export const notificationService = {
+  async list(unreadOnly = false) {
+    return apiFetch(`/notifications${unreadOnly ? "?unread=true" : ""}`) || [];
+  },
+  async unreadCount() {
+    return apiFetch("/notifications/unread-count");
+  },
+  async markRead(id) {
+    return apiFetch(`/notifications/${id}/read`, { method: "POST" });
+  },
+  async markAllRead() {
+    return apiFetch("/notifications/read-all", { method: "POST" });
+  },
+};

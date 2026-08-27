@@ -1611,9 +1611,12 @@
               }, 5000);
             }
           });
-          if (changed && screen === 'playing') {
-            updateHud();
-            if (openPanelName === null) renderZoneScene();
+          if (changed) {
+            saveState();
+            if (screen === 'playing') {
+              updateHud();
+              if (openPanelName === null) renderZoneScene();
+            }
           }
         }, 1000);
       }

@@ -28,4 +28,12 @@ export const SOCKET_EVENTS = {
   CHAT_MESSAGE: "chat:message",
   CHAT_TYPING: "chat:typing",
   CHAT_READ: "chat:read",
+
+  // Game invite events
+  GAME_INVITE_SEND: "game:invite:send",
+  GAME_INVITE_RECEIVED: "game:invite:received",
+  GAME_INVITE_ACCEPTED: "game:invite:accepted",
+  GAME_INVITE_DECLINED: "game:invite:declined",
+  GAME_MOVE: "game:move",
+  GAME_STATE_SYNC: "game:state:sync",
 };

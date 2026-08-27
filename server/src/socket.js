@@ -5,6 +5,7 @@ import * as gameService from "./services/gameService.js";
 import * as questionService from "./services/questionService.js";
 import * as resultService from "./services/resultService.js";
 import * as chatService from "./services/chatService.js";
+import * as notificationService from "./services/notificationService.js";
 
 // Event names — PHẢI khớp với frontend src/socket/socket.events.js
 export const EVENTS = {
@@ -34,6 +35,14 @@ export const EVENTS = {
   CHAT_MESSAGE: "chat:message",
   CHAT_TYPING: "chat:typing",
   CHAT_READ: "chat:read",
+
+  // Game invite events
+  GAME_INVITE_SEND: "game:invite:send",
+  GAME_INVITE_RECEIVED: "game:invite:received",
+  GAME_INVITE_ACCEPTED: "game:invite:accepted",
+  GAME_INVITE_DECLINED: "game:invite:declined",
+  GAME_MOVE: "game:move",
+  GAME_STATE_SYNC: "game:state:sync",
 };
 
 const roomName = (gameId) => `game:${gameId}`;
@@ -235,6 +244,95 @@ export function initSocket(httpServer) {
       } catch (_) { /* ignore */ }
     });
 
+    // --- GAME INVITE EVENTS ---
+
+    // Player A sends invite to Player B
+    socket.on(EVENTS.GAME_INVITE_SEND, async (data = {}) => {
+      const { toUserId, gameId, gameName, gameCode } = data;
+      const fromUserId = socket.data.user?.sub || socket.data.playerId;
+      const fromUsername = socket.data.user?.username || "";
+      const fromName = socket.data.user?.name || socket.data.playerId || "Ẩn danh";
+      if (!toUserId || !gameId) return;
+
+      // Save notification to DB
+      try {
+        await notificationService.createNotification({
+          fromUserId, fromUsername, fromName,
+          toUserId, gameId, gameName, gameCode,
+          type: "game_invite",
+        });
+      } catch (e) {
+        console.error("[socket] Failed to create invite notification:", e.message);
+      }
+
+      // Try to deliver via socket (if target is online)
+      const targetSocket = findSocketByUserId(io, toUserId);
+      if (targetSocket) {
+        targetSocket.emit(EVENTS.GAME_INVITE_RECEIVED, {
+          fromUserId, fromUsername, fromName,
+          gameId, gameName, gameCode,
+        });
+      }
+
+      socket.emit(EVENTS.GAME_INVITE_SEND, { ok: true, toUserId });
+    });
+
+    // Player B accepts invite
+    socket.on(EVENTS.GAME_INVITE_ACCEPTED, (data = {}) => {
+      const { fromUserId, gameId } = data;
+      const acceptedBy = socket.data.user?.sub || socket.data.playerId;
+      const acceptedByName = socket.data.user?.name || socket.data.playerId || "Ẩn danh";
+
+      // Notify the inviter
+      const inviterSocket = findSocketByUserId(io, fromUserId);
+      if (inviterSocket) {
+        inviterSocket.emit(EVENTS.GAME_INVITE_ACCEPTED, {
+          acceptedBy, acceptedByName, gameId,
+        });
+      }
+
+      // Both join the game room
+      socket.join(roomName(gameId));
+      socket.data.gameId = gameId;
+      if (inviterSocket) {
+        inviterSocket.join(roomName(gameId));
+        inviterSocket.data.gameId = gameId;
+      }
+    });
+
+    // Player B declines invite
+    socket.on(EVENTS.GAME_INVITE_DECLINED, (data = {}) => {
+      const { fromUserId } = data;
+      const declinedBy = socket.data.user?.sub || socket.data.playerId;
+      const declinedByName = socket.data.user?.name || socket.data.playerId || "Ẩn danh";
+
+      const inviterSocket = findSocketByUserId(io, fromUserId);
+      if (inviterSocket) {
+        inviterSocket.emit(EVENTS.GAME_INVITE_DECLINED, {
+          declinedBy, declinedByName,
+        });
+      }
+    });
+
+    // Multiplayer game move sync (for board games like XO)
+    socket.on(EVENTS.GAME_MOVE, (data = {}) => {
+      const gameId = data.gameId || socket.data.gameId;
+      if (!gameId) return;
+      const playerName = socket.data.user?.name || socket.data.playerId || "Ẩn danh";
+      socket.to(roomName(gameId)).emit(EVENTS.GAME_MOVE, {
+        ...data,
+        playerName,
+        playerId: socket.data.playerId || socket.data.user?.sub,
+      });
+    });
+
+    // Generic state sync for multiplayer games
+    socket.on(EVENTS.GAME_STATE_SYNC, (data = {}) => {
+      const gameId = data.gameId || socket.data.gameId;
+      if (!gameId) return;
+      socket.to(roomName(gameId)).emit(EVENTS.GAME_STATE_SYNC, data);
+    });
+
     socket.on("disconnect", () => {
       const gameId = socket.data.gameId;
       if (gameId) removePlayer(io, socket, gameId);
@@ -277,6 +375,13 @@ function playersList(session) {
 
 function sortedPlayers(session) {
   return playersList(session).sort((a, b) => b.score - a.score);
+}
+
+function findSocketByUserId(io, userId) {
+  for (const [, s] of io.sockets.sockets) {
+    if (s.data.user?.sub === userId || s.data.playerId === userId) return s;
+  }
+  return null;
 }
 
 function startQuestion(io, gameId) {

@@ -17,6 +17,7 @@ import seedRouter from "./routes/seed.js";
 import gameProgressRouter, { adminRouter } from "./routes/gameProgress.js";
 import dailyTasksRouter from "./routes/dailyTasks.js";
 import gameEventsRouter from "./routes/gameEvents.js";
+import notificationsRouter from "./routes/notifications.js";
 import { verifyToken } from "./services/authService.js";
 
 const app = express();
@@ -59,6 +60,7 @@ app.use("/api/questions", questionsRouter);
 app.use("/api/results", resultsRouter);
 app.use("/api/daily-tasks", dailyTasksRouter);
 app.use("/api/game-events", gameEventsRouter);
+app.use("/api/notifications", notificationsRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);
