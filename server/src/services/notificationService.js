@@ -3,7 +3,7 @@ import { getCollection } from "../db.js";
 const COLLECTION = "notifications";
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
-export async function createNotification({ fromUserId, fromUsername, fromName, toUserId, gameId, gameName, gameCode, type = "game_invite" }) {
+export async function createNotification({ fromUserId, fromUsername, fromName, toUserId, gameId, gameName, gameCode, type = "game_invite", ...rest }) {
   const doc = {
     id: uid("notif"),
     fromUserId,
@@ -16,6 +16,7 @@ export async function createNotification({ fromUserId, fromUsername, fromName, t
     type,
     read: false,
     createdAt: new Date().toISOString(),
+    ...rest,
   };
   await getCollection(COLLECTION).insertOne(doc);
   return doc;

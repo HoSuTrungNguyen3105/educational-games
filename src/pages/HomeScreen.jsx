@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { gameService, coinService } from '../services/api.js'
+import { gameService, coinService, notificationService } from '../services/api.js'
 import { getLevelProgress, getLevelEmoji } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
@@ -33,6 +33,7 @@ import {
   Users,
   School,
   BadgeCheck,
+  Bell,
 } from 'lucide-react'
 
 // Bảng màu theo môn học — mỗi môn luôn ra cùng 1 màu, giúp trẻ nhận diện nhanh
@@ -95,6 +96,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [activeSubject, setActiveSubject] = useState("all");
   const [userCoins, setUserCoins] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const templates = useTemplates();
 
   const loadGames = async () => {
@@ -107,11 +110,36 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   };
   useEffect(() => { loadGames(); }, []);
 
+  const loadNotifications = async () => {
+    if (!userAuth?.user) return;
+    try {
+      const all = await notificationService.list();
+      setNotifications(all);
+    } catch (e) {}
+  };
+
   useEffect(() => {
+    loadNotifications();
     if (userAuth?.user) {
       coinService.get().then(c => setUserCoins(c?.coins || 0)).catch(() => { });
     }
   }, [userAuth?.user]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await notificationService.markRead(id);
+      loadNotifications();
+    } catch (e) {}
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllRead();
+      loadNotifications();
+    } catch (e) {}
+  };
 
   const lv = getLevelProgress(userCoins);
 
@@ -191,6 +219,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   <span className="w-6 h-6 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs"><Coins className="w-3.5 h-3.5" /></span>
                   {userCoins.toLocaleString()}
                 </a>
+                <div className="relative">
+                  <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 rounded-full hover:bg-purple-50 transition text-purple-600">
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>}
+                  </button>
+                  {showNotifications && (
+                    <NotificationDropdown notifications={notifications} unreadCount={unreadCount} onMarkAsRead={handleMarkAsRead} onMarkAllAsRead={handleMarkAllAsRead} onClose={() => setShowNotifications(false)} />
+                  )}
+                </div>
               </>
             )}
             {userAuth?.user ? (
@@ -308,9 +345,20 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </a>
               <div className="flex items-center gap-2">
                 {userAuth?.user && (
-                  <a onClick={() => navigate("/my-coins")} href="#/my-coins" className="inline-flex items-center gap-1.5 text-sm font-bold text-amber-600 bg-amber-50 rounded-full px-3 py-1.5">
-                    <Coins className="w-4 h-4" /> {userCoins.toLocaleString()}
-                  </a>
+                  <>
+                    <a onClick={() => navigate("/my-coins")} href="#/my-coins" className="inline-flex items-center gap-1.5 text-sm font-bold text-amber-600 bg-amber-50 rounded-full px-3 py-1.5">
+                      <Coins className="w-4 h-4" /> {userCoins.toLocaleString()}
+                    </a>
+                    <div className="relative">
+                      <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-1.5 rounded-full hover:bg-purple-50 transition text-purple-600">
+                        <Bell className="w-5 h-5" />
+                        {unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>}
+                      </button>
+                      {showNotifications && (
+                        <NotificationDropdown notifications={notifications} unreadCount={unreadCount} onMarkAsRead={handleMarkAsRead} onMarkAllAsRead={handleMarkAllAsRead} onClose={() => setShowNotifications(false)} />
+                      )}
+                    </div>
+                  </>
                 )}
                 {!userAuth?.user ? (
                   <button onClick={onUserLogin} className="inline-flex items-center gap-1.5 text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold px-3 py-2 rounded-full">
@@ -705,5 +753,47 @@ function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew })
         Chơi ngay <ChevronRight className="w-3.5 h-3.5" />
       </span>
     </button>
+  );
+}
+
+function NotificationDropdown({ notifications, unreadCount, onMarkAsRead, onMarkAllAsRead, onClose }) {
+  return (
+    <>
+      <div className="fixed inset-0 z-40 lg:hidden" onClick={onClose}></div>
+      <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-purple-100 overflow-hidden z-50 origin-top-right">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-purple-50 bg-purple-50/50">
+          <h3 className="font-bold text-gray-800">Thông báo</h3>
+          {unreadCount > 0 && (
+            <button onClick={onMarkAllAsRead} className="text-xs text-purple-600 hover:text-purple-800 font-medium">
+              Đánh dấu đã đọc
+            </button>
+          )}
+        </div>
+        <div className="max-h-80 overflow-y-auto">
+          {notifications.length === 0 ? (
+            <div className="p-4 text-center text-sm text-gray-500">Không có thông báo nào</div>
+          ) : (
+            notifications.map(notif => (
+              <div key={notif.id} onClick={() => { if(!notif.read) onMarkAsRead(notif.id); }} className={`p-3 border-b border-purple-50 hover:bg-purple-50/50 cursor-pointer transition ${!notif.read ? 'bg-purple-50/20' : ''}`}>
+                <div className="flex gap-3">
+                  <div className="mt-0.5">
+                    {notif.type === 'chat_message' ? <MessageCircle className="w-5 h-5 text-blue-500" /> : <Gamepad2 className="w-5 h-5 text-purple-500" />}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-800">
+                      <span className="font-semibold">{notif.fromName}</span>
+                      {notif.type === 'chat_message' ? ' đã gửi một tin nhắn' : ` mời bạn chơi ${notif.gameName || 'trò chơi'}`}
+                    </p>
+                    {notif.content && <p className="text-xs text-gray-600 mt-0.5 line-clamp-1">{notif.content}</p>}
+                    <p className="text-[10px] text-gray-400 mt-1">{new Date(notif.createdAt).toLocaleString('vi-VN')}</p>
+                  </div>
+                  {!notif.read && <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5 ml-auto shrink-0"></div>}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </>
   );
 }

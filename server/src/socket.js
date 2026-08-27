@@ -218,6 +218,31 @@ export function initSocket(httpServer) {
         });
         // Broadcast tin nhắn đến tất cả trong phòng game
         io.to(roomName(gameId)).emit(EVENTS.CHAT_MESSAGE, msg);
+
+        // Nếu là tin nhắn trực tiếp (DM), tạo thông báo
+        if (gameId.startsWith("dm:")) {
+          const parts = gameId.split(":");
+          const toUserId = parts[1] === senderId ? parts[2] : parts[1];
+          if (toUserId) {
+            try {
+              await notificationService.createNotification({
+                fromUserId: senderId,
+                fromName: playerName,
+                toUserId: toUserId,
+                type: "chat_message",
+                gameId: gameId,
+                content: data.content,
+              });
+              
+              const targetSocket = findSocketByUserId(io, toUserId);
+              if (targetSocket) {
+                targetSocket.emit("notification:new", { type: "chat_message", message: msg });
+              }
+            } catch (err) {
+              console.error("[socket] Lỗi tạo thông báo tin nhắn:", err.message);
+            }
+          }
+        }
       } catch (e) {
         socket.emit(EVENTS.CHAT_MESSAGE, { error: e.message || "Không gửi được tin nhắn" });
       }
