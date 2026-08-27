@@ -190,6 +190,12 @@ export const userService = {
   async resetPassword(id, newPassword) {
     return apiFetch(`/users/${encodeURIComponent(id)}/reset-password`, { method: "PATCH", body: { newPassword } });
   },
+  async updateRole(id, role) {
+    return apiFetch(`/users/${encodeURIComponent(id)}/role`, { method: "PATCH", body: { role } });
+  },
+  async update(id, data) {
+    return apiFetch(`/users/${encodeURIComponent(id)}`, { method: "PATCH", body: data });
+  },
 };
 
 export const statsService = {

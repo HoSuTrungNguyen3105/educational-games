@@ -154,3 +154,37 @@ export async function setCoins(userId, coins) {
   await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { coins } });
   return coins;
 }
+
+export async function updateUserRole(userId, newRole) {
+  const role = normalizeRole(newRole);
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  if (user.id === "user-001") throw new Error("Không thể thay đổi vai trò tài khoản quản trị mặc định");
+  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { role } });
+  return publicUser({ ...user, role });
+}
+
+export async function updateUser(userId, { name, email, role }) {
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+
+  const updates = {};
+  if (name) updates.name = String(name).trim();
+  if (email) {
+    const eml = String(email).trim().toLowerCase();
+    if (eml !== (user.email || "")) {
+      const emailExists = await findByEmail(eml);
+      if (emailExists) throw new Error("Email đã được sử dụng");
+    }
+    updates.email = eml;
+  }
+  if (role && user.id !== "user-001") {
+    updates.role = normalizeRole(role);
+  }
+
+  if (Object.keys(updates).length === 0) throw new Error("Không có gì để cập nhật");
+  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: updates });
+
+  const updated = await getCollection(COLLECTION).findOne({ id: userId });
+  return publicUser(updated);
+}

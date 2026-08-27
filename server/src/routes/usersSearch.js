@@ -12,15 +12,17 @@ router.get("/search", authenticate, async (req, res, next) => {
       return sendSuccess(res, []);
     }
     const currentUserId = req.user.sub;
+    const isAdmin = req.user.role === "admin";
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    const conditions = [
+      { id: { $ne: currentUserId } },
+      { $or: [{ name: regex }, { username: regex }, { email: regex }] },
+    ];
+    if (!isAdmin) {
+      conditions.push({ role: { $in: ["student", "teacher"] } });
+    }
     const users = await getCollection("users")
-      .find({
-        $and: [
-          { id: { $ne: currentUserId } },
-          { role: { $in: ["student", "teacher"] } },
-          { $or: [{ name: regex }, { username: regex }] },
-        ],
-      })
+      .find({ $and: conditions })
       .project({ passwordHash: 0 })
       .limit(20)
       .toArray();

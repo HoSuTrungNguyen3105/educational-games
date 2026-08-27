@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { userService } from '../../services/api.js'
-import { hasPermission, getRoleLabel } from '../../config/roles.js'
+import { hasPermission, getRoleLabel, ROLES } from '../../config/roles.js'
 import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal, Modal } from '../../components/ui.jsx'
 
 export default function UserManagement({ user, showToast }) {
@@ -14,7 +14,12 @@ export default function UserManagement({ user, showToast }) {
   const [resetPwd, setResetPwd] = useState("");
   const [resetSaving, setResetSaving] = useState(false);
   const [resetError, setResetError] = useState("");
+  const [roleTarget, setRoleTarget] = useState(null);
+  const [roleSaving, setRoleSaving] = useState(false);
+  const [roleError, setRoleError] = useState("");
   const isAdmin = hasPermission(user?.role, "users.manage");
+
+  const ROLE_OPTIONS = Object.entries(ROLES).map(([value, r]) => ({ value, label: r.label }));
 
   const FIELDS = [
     { name: "username", label: "Tên đăng nhập" },
@@ -22,9 +27,7 @@ export default function UserManagement({ user, showToast }) {
     { name: "name", label: "Họ tên" },
     {
       name: "role", label: "Vai trò", type: "select", options: [
-        { value: "student", label: "Học sinh" },
-        { value: "teacher", label: "Giáo viên" },
-        ...(isAdmin ? [{ value: "admin", label: "Quản trị" }] : []),
+        ...ROLE_OPTIONS,
       ]
     },
   ];
@@ -82,6 +85,22 @@ export default function UserManagement({ user, showToast }) {
     }
   };
 
+  const openRoleChange = (u) => { setRoleTarget({ ...u, newRole: u.role }); setRoleError(""); };
+  const closeRoleChange = () => { setRoleTarget(null); setRoleError(""); };
+  const doRoleChange = async () => {
+    if (!roleTarget || roleTarget.newRole === roleTarget.role) { closeRoleChange(); return; }
+    setRoleSaving(true); setRoleError("");
+    try {
+      await userService.updateRole(roleTarget.id, roleTarget.newRole);
+      showToast(`Đã đổi vai trò thành ${getRoleLabel(roleTarget.newRole)}`);
+      closeRoleChange(); load();
+    } catch (err) {
+      setRoleError(err.message || "Không thể đổi vai trò");
+    } finally {
+      setRoleSaving(false);
+    }
+  };
+
   return (
     <div>
       <ManagementHeader subtitle="Quản lý tài khoản" title="Người dùng" />
@@ -106,10 +125,15 @@ export default function UserManagement({ user, showToast }) {
               </span>
             </td>
             <td className="px-5 py-3 text-right">
-              {(isAdmin || u.role !== "admin") && u.username !== (user && user.username) && (
+              {u.username !== (user && user.username) && (
                 <div className="flex items-center justify-end gap-1">
+                  {isAdmin && u.id !== "user-001" && (
+                    <IconButton title="Đổi vai trò" onClick={() => openRoleChange(u)}>🔄</IconButton>
+                  )}
                   <IconButton title="Đổi mật khẩu" onClick={() => openReset(u)}>🔑</IconButton>
-                  <IconButton title="Xóa tài khoản" onClick={() => confirmRemove(u)}>🗑️</IconButton>
+                  {(isAdmin || u.role !== "admin") && (
+                    <IconButton title="Xóa tài khoản" onClick={() => confirmRemove(u)}>🗑️</IconButton>
+                  )}
                 </div>
               )}
             </td>
@@ -150,6 +174,38 @@ export default function UserManagement({ user, showToast }) {
               <button onClick={doReset} disabled={resetSaving}
                 className="flex-1 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-500 to-violet-500 text-white text-sm font-semibold shadow hover:shadow-md transition disabled:opacity-50">
                 {resetSaving ? "Đang lưu..." : "Đổi mật khẩu"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {roleTarget && (
+        <Modal onClose={closeRoleChange}>
+          <div className="note-card p-6 w-full max-w-sm mx-auto anim-pop bg-paper2">
+            <h3 className="font-display text-lg text-ink mb-1">Đổi vai trò</h3>
+            <p className="text-sm text-[#8A7C63] mb-4">
+              Thay đổi vai trò cho <span className="font-semibold text-ink">{roleTarget.name}</span> ({roleTarget.username})
+            </p>
+            <label className="block text-sm font-semibold text-ink mb-1">Vai trò mới</label>
+            <select
+              value={roleTarget.newRole}
+              onChange={(e) => { setRoleTarget(r => ({ ...r, newRole: e.target.value })); setRoleError(""); }}
+              className="w-full note-card px-4 py-2.5 border-ink/10 focus:border-ticket rounded-2xl text-sm font-mono outline-none"
+            >
+              {ROLE_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            {roleError && <p className="text-xs text-red-500 mt-2">{roleError}</p>}
+            <div className="flex gap-3 mt-5">
+              <button onClick={closeRoleChange}
+                className="flex-1 px-4 py-2.5 rounded-2xl border border-ink/10 text-sm text-[#8A7C63] hover:bg-ink/5 transition">
+                Hủy
+              </button>
+              <button onClick={doRoleChange} disabled={roleSaving || roleTarget.newRole === roleTarget.role}
+                className="flex-1 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-500 to-violet-500 text-white text-sm font-semibold shadow hover:shadow-md transition disabled:opacity-50">
+                {roleSaving ? "Đang lưu..." : "Lưu vai trò"}
               </button>
             </div>
           </div>

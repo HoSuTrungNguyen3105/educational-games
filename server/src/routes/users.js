@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
-import { createUser, listUsers, removeUser, resetPassword } from "../services/authService.js";
+import { createUser, listUsers, removeUser, resetPassword, updateUserRole, updateUser } from "../services/authService.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
 
 const router = Router();
@@ -20,8 +20,32 @@ router.get("/", async (_req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
+    const { role } = req.body || {};
+    if (role === "admin" && req.user.role !== "admin") {
+      return sendError(res, "Chỉ quản trị mới có thể tạo tài khoản quản trị", 403);
+    }
     const user = await createUser(req.body || {});
     sendCreated(res, user);
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+router.patch("/:id/role", requireRoles("admin"), async (req, res, next) => {
+  try {
+    const { role } = req.body || {};
+    if (!role) return sendError(res, "role là bắt buộc", 400);
+    const user = await updateUserRole(req.params.id, role);
+    sendSuccess(res, user, "Đã cập nhật vai trò");
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+router.patch("/:id", requireRoles("admin"), async (req, res, next) => {
+  try {
+    const user = await updateUser(req.params.id, req.body || {});
+    sendSuccess(res, user, "Đã cập nhật người dùng");
   } catch (e) {
     sendError(res, e.message, 400);
   }
