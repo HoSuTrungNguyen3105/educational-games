@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { navigate } from '../../lib/router.js'
-import { hasPermission, getRoleLabel } from '../../config/roles.js'
+import { hasPermission } from '../../config/roles.js'
 import {
   LayoutDashboard,
   Library,
@@ -17,6 +17,7 @@ import {
   LogOut,
   X,
   MessageCircle,
+  User,
 } from 'lucide-react'
 
 const MENU = [
@@ -99,7 +100,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
             </button>
           );
         })}
-        {user && (
+        {/* {user && (
           <div className="mt-2 pt-3 border-t border-white/10">
             <div className="flex items-center gap-3 px-4 py-2">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold shrink-0">
@@ -112,6 +113,20 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
             </div>
             <button onClick={() => { onLogout?.(); if (isMobile) setMobileOpen(false); }}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-body text-red-400 hover:bg-red-500/10 transition">
+              <LogOut className="w-5 h-5" />
+              Đăng xuất
+            </button>
+          </div>
+        )} */}
+        {user && (
+          <div className="mt-2 pt-3 border-t border-white/10">
+            <button onClick={() => { navigate("/admin/profile"); if (isMobile) setMobileOpen(false); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-body text-paper/70 hover:bg-white/5 hover:text-paper transition">
+              <User className="w-5 h-5" />
+              Hồ sơ
+            </button>
+            <button onClick={() => { onLogout?.(); if (isMobile) setMobileOpen(false); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-body text-red-400 hover:bg-red-500/10 transition">
               <LogOut className="w-5 h-5" />
               Đăng xuất
             </button>

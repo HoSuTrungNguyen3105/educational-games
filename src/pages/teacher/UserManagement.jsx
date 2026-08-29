@@ -182,7 +182,7 @@ export default function UserManagement({ user, showToast }) {
 
       {roleTarget && (
         <Modal onClose={closeRoleChange}>
-          <div className="note-card p-6 w-full max-w-sm mx-auto anim-pop bg-paper2">
+          <div className="note-card max-w-sm mx-auto anim-pop bg-paper2" style={{ border: "none" }}>
             <h3 className="font-display text-lg text-ink mb-1">Đổi vai trò</h3>
             <p className="text-sm text-[#8A7C63] mb-4">
               Thay đổi vai trò cho <span className="font-semibold text-ink">{roleTarget.name}</span> ({roleTarget.username})

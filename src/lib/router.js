@@ -25,6 +25,7 @@ const ROUTES = [
   { name: "admin-coins",     pattern: "/admin/coins" },
   { name: "admin-daily-tasks", pattern: "/admin/daily-tasks" },
   { name: "admin-chat", pattern: "/admin/chat" },
+  { name: "admin-profile", pattern: "/admin/profile" },
 
   // ── User / Social ──
   { name: "chat",         pattern: "/chat" },

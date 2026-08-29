@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
-import { gameService, statsService, templateService, seedService, userService } from '../../services/api.js'
+import { gameService, statsService, templateService, seedService } from '../../services/api.js'
 import { useTemplates } from '../../lib/hooks.js'
 import { StampToken, StatusBadge, IconButton, Loader, ErrorState, EmptyState, PrimaryButton, GhostButton, Modal, TicketStub } from '../../components/ui.jsx'
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
+import { navigate } from '../../lib/router.js'
 import {
   Gamepad2,
   Pencil,
   Ticket,
   Trash2,
-  LogOut,
   Package,
   Loader2,
   CheckCircle2,
@@ -22,9 +22,9 @@ import {
   Medal,
   BookOpen,
   AlertTriangle,
-  Save,
   Play,
   Plus,
+  User,
 } from 'lucide-react'
 
 /* eslint-disable react-hooks/set-state-in-effect */
@@ -76,7 +76,7 @@ export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onSha
   );
 }
 
-export default function TeacherDashboard({ user, onLogout, onOpenLibrary, onCreate, onEdit, onResults, onDesign, showToast }) {
+export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit, onResults, onDesign, showToast }) {
   const [games, setGames] = useState(null);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
@@ -84,9 +84,6 @@ export default function TeacherDashboard({ user, onLogout, onOpenLibrary, onCrea
   const [confirmReset, setConfirmReset] = useState(null);
   const [resetting, setResetting] = useState(false);
   const [seeding, setSeeding] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", email: "", password: "", currentPassword: "" });
-  const [savingProfile, setSavingProfile] = useState(false);
 
   const load = useCallback(() => {
     setGames(null); setStats(null); setError(null);
@@ -149,50 +146,20 @@ export default function TeacherDashboard({ user, onLogout, onOpenLibrary, onCrea
     }
   };
 
-  const openProfile = () => {
-    setProfileForm({ name: user?.name || "", email: user?.email || "", password: "", currentPassword: "" });
-    setShowProfile(true);
-  };
-
-  const handleSaveProfile = async () => {
-    setSavingProfile(true);
-    try {
-      const payload = {};
-      if (profileForm.name && profileForm.name !== user?.name) payload.name = profileForm.name;
-      if (profileForm.email !== undefined && profileForm.email !== (user?.email || "")) payload.email = profileForm.email;
-      if (profileForm.password) {
-        payload.password = profileForm.password;
-        payload.currentPassword = profileForm.currentPassword;
-      }
-      if (Object.keys(payload).length === 0) { setShowProfile(false); return; }
-      const updated = await userService.updateProfile(payload);
-      const auth = JSON.parse(localStorage.getItem("edu_games_auth") || "{}");
-      if (auth?.user) { auth.user = { ...auth.user, ...updated }; localStorage.setItem("edu_games_auth", JSON.stringify(auth)); }
-      showToast("Đã cập nhật hồ sơ", "success");
-      setShowProfile(false);
-    } catch (e) {
-      showToast(e.message || "Lỗi cập nhật hồ sơ", "error");
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
   const t = stats || { totals: {}, activity: [], topPlayers: [], topGames: [], subjects: [], attention: { drafts: [], neverPlayed: [] } };
   const draftGames = (stats ? stats.attention.drafts : []).map(d => ({ ...d, raw: games?.find(g => (g._id?.toString() || g.id) === d.id) }));
   const neverPlayedGames = (stats ? stats.attention.neverPlayed : []).map(n => ({ ...n, raw: games?.find(g => (g._id?.toString() || g.id) === n.id) }));
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-3 sm:space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <p className="text-[#8A7C63] text-xs sm:text-sm font-mono">Xin chào,</p>
           <h1 className="font-display text-2xl sm:text-3xl text-ink">{user ? user.name : "Giáo viên"}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <button onClick={openProfile} className="text-xs text-ticket font-semibold hover:underline"><Pencil className="w-4 h-4 inline mr-1" /> Chỉnh sửa hồ sơ</button>
-            <span className="text-[#8A7C63]">·</span>
-            <button onClick={onLogout} className="text-xs text-red-500 font-semibold hover:underline"><LogOut className="w-4 h-4 inline mr-1" /> Đăng xuất</button>
-          </div>
+          {/* <button onClick={() => navigate("/admin/profile")} className="text-xs text-ticket font-semibold hover:underline mt-1">
+            <User className="w-4 h-4 inline mr-1" /> Xem hồ sơ
+          </button> */}
         </div>
         <button onClick={handleSeed} disabled={seeding}
           className="text-xs font-mono px-3 py-1.5 rounded-lg border border-ink/15 text-[#8A7C63] hover:bg-ink/5 transition disabled:opacity-50">
@@ -352,42 +319,6 @@ export default function TeacherDashboard({ user, onLogout, onOpenLibrary, onCrea
         </Modal>
       )}
 
-      {/* Modal chỉnh sửa hồ sơ */}
-      {showProfile && (
-        <Modal onClose={() => !savingProfile && setShowProfile(false)}>
-          <div className="space-y-4">
-            <h3 className="font-display text-xl text-ink"><Pencil className="w-5 h-5 inline mr-2 text-ticket" /> Chỉnh sửa hồ sơ</h3>
-            <div>
-              <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-1">Họ tên</label>
-              <input type="text" value={profileForm.name} onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full px-4 py-2.5 rounded-xl border border-ink/15 bg-paper text-ink text-sm font-body focus:outline-none focus:border-ticket" />
-            </div>
-            <div>
-              <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-1">Email</label>
-              <input type="email" value={profileForm.email} onChange={e => setProfileForm(f => ({ ...f, email: e.target.value }))}
-                className="w-full px-4 py-2.5 rounded-xl border border-ink/15 bg-paper text-ink text-sm font-body focus:outline-none focus:border-ticket" />
-            </div>
-            <div>
-              <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-1">Mật khẩu mới (để trống nếu không đổi)</label>
-              <input type="password" value={profileForm.password} onChange={e => setProfileForm(f => ({ ...f, password: e.target.value }))}
-                className="w-full px-4 py-2.5 rounded-xl border border-ink/15 bg-paper text-ink text-sm font-body focus:outline-none focus:border-ticket" />
-            </div>
-            {profileForm.password && (
-              <div>
-                <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-1">Mật khẩu hiện tại (bắt buộc khi đổi)</label>
-                <input type="password" value={profileForm.currentPassword} onChange={e => setProfileForm(f => ({ ...f, currentPassword: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-ink/15 bg-paper text-ink text-sm font-body focus:outline-none focus:border-ticket" />
-              </div>
-            )}
-            <div className="flex flex-wrap justify-end gap-3 pt-2">
-              <GhostButton onClick={() => setShowProfile(false)} disabled={savingProfile}>Hủy</GhostButton>
-              <PrimaryButton onClick={handleSaveProfile} disabled={savingProfile}>
-                {savingProfile ? "Đang lưu..." : <><Save className="w-4 h-4 inline mr-1" /> Lưu thay đổi</>}
-              </PrimaryButton>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }
