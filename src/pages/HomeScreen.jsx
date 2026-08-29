@@ -31,9 +31,9 @@ import {
   Flame,
   Gift,
   Users,
-  School,
-  BadgeCheck,
   Bell,
+  Crown,
+  ListChecks,
 } from 'lucide-react'
 
 // Bảng màu theo môn học — giữ nguyên
@@ -374,7 +374,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   placeholder="Tìm trò chơi..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-gray-100 rounded-full px-3 py-1.5 pl-8 text-xs focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  className="w-full bg-gray-100 border border-transparent rounded-full px-3 py-1.5 pl-8 text-xs transition-all focus:outline-none focus:bg-white focus:border-purple-200 focus:ring-2 focus:ring-purple-100"
                 />
                 <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               </div>
@@ -478,8 +478,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 {QUICK_MENU_ITEMS(userAuth).filter(i => i.show).slice(0, 8).map(item => {
                   const Icon = item.icon;
                   return (
-                    <button key={item.key} onClick={() => handleQuickMenuClick(item)} className="flex flex-col items-center gap-1 group">
-                      <span className={`w-12 h-12 rounded-full bg-gradient-to-br ${item.tint} text-white flex items-center justify-center shadow-sm group-active:scale-90 transition-transform`}>
+                    <button key={item.key} onClick={() => handleQuickMenuClick(item)} className="flex flex-col items-center gap-1 group focus:outline-none">
+                      <span className={`w-12 h-12 rounded-full bg-gradient-to-br ${item.tint} text-white flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 group-active:scale-90 group-focus-visible:ring-2 group-focus-visible:ring-purple-300 transition-all duration-200`}>
                         <Icon className="w-5 h-5" />
                       </span>
                       <span className="text-[9px] font-semibold text-gray-600 text-center leading-tight line-clamp-1">{item.label}</span>
@@ -492,7 +492,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             {/* 3. Banner Flash Sale (Shopee style) */}
             {/* <div className="rounded-3xl overflow-hidden bg-white shadow-md border border-purple-50">
               <div className="bg-gradient-to-r from-red-500 to-orange-400 px-4 py-2 flex items-center justify-between">
-                <span className="font-display text-white text-sm">⚡ FLASH SALE</span>
+                <span className="font-display text-white text-sm flex items-center gap-1"><Flame className="w-4 h-4" /> FLASH SALE</span>
                 <span className="text-xs text-white bg-black/20 px-2 py-0.5 rounded-full">Kết thúc sau 02:45:30</span>
               </div>
               <div className="p-3 grid grid-cols-2 gap-3">
@@ -529,11 +529,11 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   <h3 className="font-display text-sm font-bold text-gray-800">Môn học</h3>
                 </div>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                  <button onClick={() => setActiveSubject('all')} className={`px-4 py-2 rounded-full text-xs font-bold ${activeSubject === 'all' ? 'bg-purple-500 text-white' : 'bg-purple-50 text-purple-600'}`}>
+                  <button onClick={() => setActiveSubject('all')} className={`px-4 py-2 rounded-full text-xs font-bold shrink-0 transition-all duration-200 ${activeSubject === 'all' ? 'bg-purple-500 text-white shadow-sm' : 'bg-purple-50 text-purple-600 hover:bg-purple-100'}`}>
                     Tất cả
                   </button>
                   {subjects.map(sub => (
-                    <button key={sub} onClick={() => setActiveSubject(sub)} className={`px-4 py-2 rounded-full text-xs font-bold ${activeSubject === sub ? 'bg-purple-500 text-white' : 'bg-purple-50 text-purple-600'}`}>
+                    <button key={sub} onClick={() => setActiveSubject(sub)} className={`px-4 py-2 rounded-full text-xs font-bold shrink-0 transition-all duration-200 ${activeSubject === sub ? 'bg-purple-500 text-white shadow-sm' : 'bg-purple-50 text-purple-600 hover:bg-purple-100'}`}>
                       {sub}
                     </button>
                   ))}
@@ -544,8 +544,13 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             {/* 6. Danh sách trò chơi dạng thẻ sản phẩm 2 cột */}
             <div id="games-section" className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-base font-bold text-gray-800">🎮 Trò chơi</h2>
-                <span className="text-xs text-gray-400">{filteredGames.length} trò</span>
+                <h2 className="font-display text-base font-bold text-gray-800 flex items-center gap-1.5">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center shrink-0">
+                    <Gamepad2 className="w-4 h-4" />
+                  </span>
+                  Trò chơi
+                </h2>
+                <span className="text-xs text-gray-400 font-semibold">{filteredGames.length} trò</span>
               </div>
               {games === null ? (
                 <Loader label="Đang tải..." />
@@ -559,17 +564,21 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     const color = colorForSubject(g.subject);
                     const template = templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid));
                     return (
-                      <button key={g._id || g.id} onClick={() => onSelectGame(g)} className="bg-white rounded-2xl p-3 shadow-sm hover:shadow-md transition flex flex-col items-start animate-fade-in-up" style={{ animationDelay: `${idx * 0.05}s` }}>
+                      <button key={g._id || g.id} onClick={() => onSelectGame(g)} className="bg-white rounded-2xl p-3 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col items-start animate-fade-in-up focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300" style={{ animationDelay: `${idx * 0.05}s` }}>
                         <div className={`w-full aspect-[4/3] rounded-xl bg-gradient-to-br ${color.grad} flex items-center justify-center mb-2 relative`}>
                           <StampToken icon={template?.icon || <Gamepad2 className="w-6 h-6" />} ring="#fff" size={40} fontSize={18} />
                           {g.playersCount > 0 && (
-                            <span className="absolute top-1 right-1 bg-black/40 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">👥 {g.playersCount}</span>
+                            <span className="absolute top-1 right-1 bg-black/50 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                              <Users className="w-2.5 h-2.5" /> {g.playersCount}
+                            </span>
                           )}
                         </div>
                         <h3 className="text-sm font-display text-gray-800 line-clamp-1 text-left">{g.name}</h3>
                         <div className="flex items-center gap-1 mt-1 text-[9px] text-gray-500">
                           <span className={`px-1.5 py-0.5 rounded ${color.chip}`}>{g.subject}</span>
-                          <span className="bg-gray-50 px-1 py-0.5 rounded">📝 {g.questionsCount}</span>
+                          <span className="bg-gray-50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            <ListChecks className="w-2.5 h-2.5" /> {g.questionsCount}
+                          </span>
                         </div>
                         <span className="mt-2 inline-flex items-center gap-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-3 py-1 rounded-full">
                           Chơi ngay <ChevronRight className="w-3 h-3" />
@@ -741,7 +750,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                         games={hotGames}
                         templates={templates}
                         onSelect={onSelectGame}
-                        badges={["🥇 TOP 1", "🥈 TOP 2", "🥉 TOP 3"]}
+                        badges={["TOP 1", "TOP 2", "TOP 3"]}
                         badgeColors={["from-yellow-400 to-amber-500", "from-gray-300 to-gray-400", "from-orange-400 to-orange-500"]}
                       />
                     </div>
@@ -772,8 +781,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             const Icon = item.icon;
             const isActive = item.key === 'home' || (item.path && window.location.hash === `#${item.path}`);
             return (
-              <button key={item.key} onClick={() => handleBottomNavClick(item)} className={`flex flex-col items-center gap-0.5 p-2 transition ${isActive ? 'text-purple-600' : 'text-gray-400'}`}>
-                <Icon className={`w-5 h-5 ${isActive ? 'fill-purple-50' : ''}`} />
+              <button key={item.key} onClick={() => handleBottomNavClick(item)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 ${isActive ? 'text-purple-600 bg-purple-50' : 'text-gray-400 hover:text-purple-500'}`}>
+                <Icon className="w-5 h-5" />
                 <span className="text-[10px] font-semibold">{item.label}</span>
               </button>
             );
@@ -879,17 +888,28 @@ function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew })
     <button
       onClick={() => onSelect(game)}
       aria-label={`Chơi ${game.name}`}
-      className="group relative bg-white rounded-2xl p-3 text-left shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-2 border-transparent hover:border-purple-200 overflow-hidden flex flex-col animate-fade-in-up"
+      className="group relative bg-white rounded-2xl p-3 text-left shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-2 border-transparent hover:border-purple-200 overflow-hidden flex flex-col animate-fade-in-up focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
       style={{ animationDelay: `${index * 0.06}s` }}
     >
       {(badge || isNew) && (
-        <div className={`absolute top-2 right-2 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md z-10 bg-gradient-to-r ${badge ? badgeColor : "from-emerald-400 to-teal-400"}`}>
+        <div className={`absolute top-2 right-2 flex items-center gap-1 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md z-10 bg-gradient-to-r ${badge ? badgeColor : "from-emerald-400 to-teal-400"}`}>
+          {badge ? (
+            index === 0 ? <Crown className="w-3 h-3" /> : <Medal className="w-3 h-3" />
+          ) : (
+            <Sparkles className="w-3 h-3" />
+          )}
           {badge || "MỚI"}
         </div>
       )}
 
-      <div className={`w-full aspect-[4/3] rounded-xl bg-gradient-to-br ${color.grad} flex items-center justify-center mb-2.5`}>
+      <div className={`w-full aspect-[4/3] rounded-xl bg-gradient-to-br ${color.grad} flex items-center justify-center mb-2.5 relative overflow-hidden`}>
+        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
         <StampToken icon={template ? template.icon : <Gamepad2 className="w-6 h-6" />} ring="#ffffff" size={48} fontSize={22} />
+        {game.playersCount > 0 && (
+          <span className="absolute bottom-1.5 left-1.5 bg-black/40 backdrop-blur-sm text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+            <Users className="w-2.5 h-2.5" /> {game.playersCount}
+          </span>
+        )}
       </div>
 
       <h3 className="font-display text-sm text-gray-800 leading-tight mb-1.5 group-hover:text-purple-700 transition-colors line-clamp-2">
@@ -898,7 +918,7 @@ function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew })
 
       <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono mb-2">
         <span className={`px-1.5 py-0.5 rounded ${color.chip}`}>{game.subject}</span>
-        <span className="bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded"><BadgeCheck className="w-3 h-3 inline mr-0.5" />{game.questionsCount}</span>
+        <span className="bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded flex items-center gap-0.5"><ListChecks className="w-3 h-3" />{game.questionsCount}</span>
       </div>
 
       <span className="mt-auto inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-full py-1.5 group-hover:from-purple-600 group-hover:to-pink-600 transition-all">
