@@ -6,6 +6,7 @@ import CreateGameFlow from './CreateGameFlow.jsx'
 import TeacherResults from './TeacherResults.jsx'
 import UserManagement from './UserManagement.jsx'
 import TemplateManagement from './TemplateManagement.jsx'
+import TemplateFormPage from './TemplateFormPage.jsx'
 import CategoryManagement from './CategoryManagement.jsx'
 import SubjectManagement from './SubjectManagement.jsx'
 import QuestionManagement from './QuestionManagement.jsx'
@@ -46,6 +47,8 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
       {page === "admin-coins" && <CoinManagement showToast={showToast} />}
       {page === "admin-daily-tasks" && <DailyTaskManagement showToast={showToast} />}
       {page === "admin-templates" && <TemplateManagement showToast={showToast} />}
+      {page === "admin-template-new" && <TemplateFormPage showToast={showToast} />}
+      {page === "admin-template-edit" && <TemplateFormPage key={route.params.templateId} showToast={showToast} route={route} />}
       {page === "admin-categories" && <CategoryManagement showToast={showToast} />}
       {page === "admin-subjects" && <SubjectManagement showToast={showToast} />}
       {page === "admin-questions" && <QuestionManagement showToast={showToast} />}

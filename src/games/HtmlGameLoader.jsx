@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { API_BASE, coinService, userService } from "../services/api.js";
+import { trackTaskEvent } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
 
@@ -138,8 +139,25 @@ export default function HtmlGameLoader({
       const msg = e.data;
       if (!msg || typeof msg !== "object") return;
 
+      // GameTaskBridge events — forward to task API
+      if (msg.source === "game" && msg.type) {
+        const gameId = game?.id || game?._id?.toString() || msg.data?.gameId;
+        trackTaskEvent(msg.type, { gameId, ...msg.data }).catch(() => {});
+        return;
+      }
+
       if (msg.type === "ready" || msg.type === "bridge-ready") {
         handleInit();
+      } else if (msg.type === "add-coins") {
+        const amount = msg.data?.amount || 0;
+        if (amount > 0 && userAuth?.token) {
+          coinService.add(amount).then(res => {
+            postToIframe({ type: "coins-added", data: { success: true, coins: res?.coins || 0 } });
+            onStateUpdate?.({ coins: res?.coins || 0 });
+          }).catch(() => {
+            postToIframe({ type: "coins-added", data: { success: false } });
+          });
+        }
       } else if (msg.type === "game-over") {
         onFinish?.({
           score: msg.data?.score || 0,
@@ -164,7 +182,7 @@ export default function HtmlGameLoader({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleJoinByCode]);
+  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleJoinByCode, userAuth, postToIframe]);
 
   // Listen for opponent moves from socket and forward to iframe
   useEffect(() => {

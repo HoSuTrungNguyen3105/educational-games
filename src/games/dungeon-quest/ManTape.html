@@ -174,7 +174,9 @@
     score: 0,
     bestScores: {},        // lưu điểm cao cho từng game+level
     // Dữ liệu động cho từng game
-    gameData: {}
+    gameData: {},
+    userCoins: 0,
+    gameIdServer: null
   };
 
   // Load best scores
@@ -188,6 +190,22 @@
     try{ localStorage.setItem('reflex-games-best', JSON.stringify(state.bestScores)); }catch(e){}
   }
   loadBest();
+
+  // Listen for init message from parent
+  window.addEventListener('message', function(e){
+    if(!e.data || typeof e.data !== 'object') return;
+    if(e.data.type === 'init'){
+      var d = e.data.data || {};
+      state.userCoins = d.coins || 0;
+      state.gameIdServer = d.gameId || null;
+      render();
+    } else if(e.data.type === 'coins-added'){
+      if(e.data.data && e.data.data.success){
+        state.userCoins = e.data.data.coins || (state.userCoins + state.score);
+      }
+    }
+  });
+  parent.postMessage({type:'ready'}, '*');
 
   function getBestKey(gameId, levelIdx){ return gameId+'-'+levelIdx; }
   function getBest(gameId, levelIdx){ return state.bestScores[getBestKey(gameId, levelIdx)] || 0; }
@@ -219,6 +237,7 @@
           '<div style="font-size:3.6rem;margin-bottom:.6rem;">⚡</div>'+
           '<h1 class="font-display" style="font-size:1.6rem;margin:0 0 .3rem;color:var(--go);">REFLEX GAMES</h1>'+
           '<p style="color:var(--text-dim);margin-bottom:1.4rem;font-size:.88rem;">Rèn luyện phản xạ với nhiều thử thách khác nhau</p>'+
+          (state.userCoins > 0 ? '<div style="font-family:\'JetBrains Mono\';font-size:.85rem;color:var(--gold);margin-bottom:1rem;">💰 '+state.userCoins+' xu</div>' : '')+
           '<button id="btn-play" class="glow-btn primary" style="margin-bottom:.8rem;">🎯 Chọn game</button>'+
           '<div style="border-top:1px dashed var(--line);padding-top:.8rem;margin-top:.2rem;">'+
             '<p style="font-size:.7rem;color:var(--text-dim);">Đã lưu tiến trình của bạn</p>'+
@@ -943,6 +962,14 @@
     } else if(state.gameId==='reaction'){
       state.gameData.detail = 'Trúng '+reactionState.hit+' · Nhầm '+reactionState.mistake+' · Bỏ lỡ '+reactionState.miss;
     }
+    // Gửi xu về parent
+    var coinReward = state.score;
+    if(coinReward > 0){
+      state.userCoins += coinReward;
+      try{ window.parent.postMessage({type:'add-coins', data:{amount:coinReward}}, '*'); }catch(e){}
+    }
+    parent.postMessage({type:'game-over', data:{score:state.score, correct:state.score, timeUsed:0, totalCoins:state.userCoins}}, '*');
+    if(window.GameTaskBridge) GameTaskBridge.emit('GAME_PLAYED', {gameId: state.gameIdServer});
     render();
   }
 

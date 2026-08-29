@@ -13,6 +13,8 @@ const ROUTES = [
   { name: "admin-library",   pattern: "/admin/library" },
   { name: "admin-users",     pattern: "/admin/users" },
   { name: "admin-templates", pattern: "/admin/templates" },
+  { name: "admin-template-new", pattern: "/admin/templates/new" },
+  { name: "admin-template-edit", pattern: "/admin/templates/:templateId" },
   { name: "admin-categories", pattern: "/admin/categories" },
   { name: "admin-subjects",  pattern: "/admin/subjects" },
   { name: "admin-questions", pattern: "/admin/questions" },

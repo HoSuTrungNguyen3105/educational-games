@@ -62,11 +62,11 @@ export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onSha
           {onDelete && <IconButton title="Xóa" onClick={onDelete}><Trash2 className="w-5 h-5" /></IconButton>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {onLive && game.status === "published" && (
+          {/* {onLive && game.status === "published" && (
             <button onClick={onLive} className="text-xs sm:text-sm font-semibold text-teal hover:underline whitespace-nowrap">
               Phát trực tiếp <Play className="w-4 h-4 inline ml-1" />
             </button>
-          )}
+          )} */}
           <button onClick={onResults} className="text-xs sm:text-sm font-semibold text-ticket hover:underline whitespace-nowrap">
             Kết quả →
           </button>

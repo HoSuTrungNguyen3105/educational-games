@@ -224,7 +224,7 @@ var STORY_LINES=[
 
 var state={
   questions:[],qIndex:0,score:0,correctCount:0,growth:0,
-  timer:null,timeLeft:20,timeLimit:20,locked:false
+  timer:null,timeLeft:20,timeLimit:20,locked:false,gameId:null
 };
 
 var el=function(id){return document.getElementById(id)};
@@ -282,7 +282,8 @@ function submitAnswer(question,answerId,btnEl){
   Array.from(el('options').children).forEach(function(b){b.disabled=true});
 
   if(typeof window.apiSubmitAnswer==="function"){
-    window.apiSubmitAnswer(question.id,answerId).then(function(result){
+    window.apiSubmitAnswer(question.id,answerId).then(function(response){
+      var result = response && response.data ? response.data : response;
       handleAnswerResult(result,btnEl);
     }).catch(function(){
       setStatus('Không gửi được đáp án, thử lại nhé!',true);
@@ -306,6 +307,7 @@ function handleAnswerResult(result,btnEl){
     el('kid').className='kid happy';
     floatText('+'+(result.points||0),'good');
     setTimeout(function(){el('kid').className='kid';},500);
+    if(window.GameTaskBridge)GameTaskBridge.emit('ANSWER_CORRECT',{gameId:state.gameId});
     revealStoryLine();
     showRewardOptions();
   }else{
@@ -423,6 +425,7 @@ window.addEventListener('message',function(e){
     var d=e.data.data||{};
     state.questions=d.questions||[];
     state.qIndex=0;state.score=0;state.correctCount=0;state.growth=0;state.locked=false;
+    state.gameId=d.gameId||null;
     el('scoreVal').textContent='0';
     el('lanternPath').innerHTML='';
     el('moon').classList.remove('bright');
@@ -431,6 +434,7 @@ window.addEventListener('message',function(e){
     el('qcard').style.display='block';
     el('banner').className='banner';
     renderQuestion();
+    if(window.GameTaskBridge)GameTaskBridge.emit('GAME_PLAYED',{gameId:state.gameId});
   }
 });
 

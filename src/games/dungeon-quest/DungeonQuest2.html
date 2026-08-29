@@ -759,7 +759,7 @@ var ATTACKS=[
 var ENEMY_NAMES=["Slime Cổ Đại","Yêu Tinh Rừng Sâu","Bông Ma Thư Viện","Rồng Non Tinh Nghịch"];
 var ENEMY_BASE_HP=80,ENEMY_HP_STEP=25,PLAYER_MAX_HP=100,ENEMY_HIT_DMG=[8,16];
 
-var state={questions:[],qIndex:0,score:0,playerHp:PLAYER_MAX_HP,enemyHp:ENEMY_BASE_HP,enemyMaxHp:ENEMY_BASE_HP,enemyRound:0,timer:null,timeLeft:20,timeLimit:20,locked:false};
+var state={questions:[],qIndex:0,score:0,playerHp:PLAYER_MAX_HP,enemyHp:ENEMY_BASE_HP,enemyMaxHp:ENEMY_BASE_HP,enemyRound:0,timer:null,timeLeft:20,timeLimit:20,locked:false,gameId:null};
 var userCoins=0;
 
 function broadcastState(){
@@ -822,6 +822,7 @@ function handleAnswerResult(result,btnEl){
     state.score+=(result.points||0);el('scoreVal').textContent=state.score;
     el('coinVal').textContent=userCoins+state.score;
     broadcastState();
+    if(window.GameTaskBridge)GameTaskBridge.emit('ANSWER_CORRECT',{gameId:state.gameId});
     showAttackOptions();
   }else{
     btnEl.classList.add('wrong');
@@ -914,7 +915,14 @@ function gameOver(){
   el('bannerTitle').textContent='Bạn đã gục ngã';
   el('bannerText').textContent='Điểm số cuối cùng: '+state.score+'. Thử lại để đánh bại đối thủ tiếp theo!';
   el('banner').className='banner show';
-  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.qIndex,timeUsed:0,totalCoins:userCoins+state.score}},"*");
+  var coinReward = state.score;
+  if(coinReward > 0){
+    userCoins += coinReward;
+    el('coinVal').textContent = userCoins;
+    try{window.parent.postMessage({type:'add-coins',data:{amount:coinReward}},'*');}catch(e){}
+  }
+  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.qIndex,timeUsed:0,totalCoins:userCoins}},"*");
+  if(window.GameTaskBridge)GameTaskBridge.emit('GAME_LOST',{gameId:state.gameId});
 }
 
 function winGame(){
@@ -922,7 +930,12 @@ function winGame(){
   el('bannerTitle').textContent='Chin thắng vang dội!';
   el('bannerText').textContent='Bạn đã trả lời hết câu hỏi với '+state.score+' điểm.';
   el('banner').className='banner show';
-  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.questions.length,timeUsed:0,totalCoins:userCoins+state.score}},"*");
+  var coinReward = state.score;
+  userCoins += coinReward;
+  el('coinVal').textContent = userCoins;
+  try{window.parent.postMessage({type:'add-coins',data:{amount:coinReward}},'*');}catch(e){}
+  parent.postMessage({type:"game-over",data:{score:state.score,correct:state.questions.length,timeUsed:0,totalCoins:userCoins}},"*");
+  if(window.GameTaskBridge)GameTaskBridge.emit('GAME_WON',{gameId:state.gameId});
 }
 
 el('retryBtn').onclick=function(){
@@ -941,11 +954,13 @@ window.addEventListener('message',function(e){
     state.questions=d.questions||[];state.qIndex=0;state.score=0;
     state.playerHp=PLAYER_MAX_HP;state.enemyHp=ENEMY_BASE_HP;
     state.enemyMaxHp=ENEMY_BASE_HP;state.enemyRound=0;state.locked=false;
+    state.gameId=d.gameId||null;
     userCoins=d.coins||0;
     el('scoreVal').textContent='0';el('coinVal').textContent=userCoins;
     el('enemyName').textContent=ENEMY_NAMES[0];
     el('qcard').style.display='block';el('banner').className='banner';
     updateBars();renderQuestion();
+    if(window.GameTaskBridge)GameTaskBridge.emit('GAME_PLAYED',{gameId:d.gameId});
   }
 });
 
