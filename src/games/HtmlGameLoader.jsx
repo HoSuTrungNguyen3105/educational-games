@@ -58,7 +58,7 @@ export default function HtmlGameLoader({
       {
         type: "init",
         data: {
-          gameId: game?.id || game?._id?.toString(),
+          gameId: game?._id?.toString() || game?.id,
           playerName: playerName || "Player",
           players: playerNames,
           questions: questions || [],
@@ -97,10 +97,11 @@ export default function HtmlGameLoader({
 
   // Handle invite user request from iframe
   const handleInviteUser = useCallback((data) => {
-    const { toUserId, gameId, gameName, gameCode } = data;
+    const { toUserId, gameName, gameCode } = data;
+    const correctGameId = game?._id?.toString() || game?.id;
     socket.emit(SOCKET_EVENTS.GAME_INVITE_SEND, {
       toUserId,
-      gameId: gameId || game?.id || game?._id?.toString(),
+      gameId: correctGameId,
       gameName: gameName || game?.name,
       gameCode: gameCode || game?.code,
     });
@@ -110,7 +111,7 @@ export default function HtmlGameLoader({
   // Handle game move from iframe (forward to socket)
   const handleGameMove = useCallback((data) => {
     socket.emit(SOCKET_EVENTS.GAME_MOVE, {
-      gameId: game?.id || game?._id?.toString(),
+      gameId: game?._id?.toString() || game?.id,
       row: data.row,
       col: data.col,
       player: data.player,
@@ -141,7 +142,7 @@ export default function HtmlGameLoader({
 
       // GameTaskBridge events — forward to task API
       if (msg.source === "game" && msg.type) {
-        const gameId = game?.id || game?._id?.toString() || msg.data?.gameId;
+        const gameId = game?._id?.toString() || game?.id || msg.data?.gameId;
         trackTaskEvent(msg.type, { gameId, ...msg.data }).catch(() => {});
         return;
       }

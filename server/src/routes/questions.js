@@ -31,6 +31,16 @@ router.put("/game/:gameId", authenticate, requireRoles("teacher", "admin"), asyn
   }
 });
 
+router.patch("/game/:gameId/:questionId", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const updated = await questionService.updateOne(req.params.gameId, req.params.questionId, req.body);
+    if (!updated) return sendError(res, "Không tìm thấy câu hỏi", 404);
+    sendSuccess(res, updated);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.delete("/", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const count = await questionService.removeAll();

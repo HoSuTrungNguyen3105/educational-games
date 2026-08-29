@@ -194,7 +194,7 @@ function FormField({ field, value, onChange }) {
   );
 }
 
-export function FormModal({ open, title, fields, values, onChange, onSubmit, onClose, error, saving, editId, savingLabel, wide }) {
+export function FormModal({ open, title, fields, values, onChange, onSubmit, onClose, error, saving, editId, savingLabel, wide, extraButtons }) {
   if (!open) return null;
   return (
     <Modal onClose={onClose} wide={wide}>
@@ -209,6 +209,7 @@ export function FormModal({ open, title, fields, values, onChange, onSubmit, onC
         </div>
         {error && <p className="text-ticket text-sm mt-2">{error}</p>}
         <div className="mt-3 flex items-center gap-2 justify-end">
+          {extraButtons}
           <GhostButton onClick={onClose} type="button">Hủy</GhostButton>
           <PrimaryButton type="submit" disabled={saving}>{saving ? (savingLabel || "Đang lưu...") : editId ? "Cập nhật" : "Thêm mới"}</PrimaryButton>
         </div>
@@ -217,13 +218,14 @@ export function FormModal({ open, title, fields, values, onChange, onSubmit, onC
   );
 }
 
-export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, onRemoveAll, removeAllLabel, onCreate, createLabel }) {
+export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, onRemoveAll, removeAllLabel, onCreate, createLabel, onImport, importLabel }) {
   return (
     <div>
       <div className="flex items-end justify-between mb-3">
         <h2 className="font-display text-lg text-ink">{title}{count !== undefined ? ` (${count})` : ""}</h2>
         <div className="flex items-center gap-3">
           {onRemoveAll && <button onClick={onRemoveAll} className="text-xs text-ticket/70 hover:text-ticket">{removeAllLabel || "Xóa tất cả"}</button>}
+          {onImport && <GhostButton onClick={onImport} className="text-xs px-3 py-1.5">{importLabel || "📥 Import"}</GhostButton>}
           {onCreate && <PrimaryButton onClick={onCreate} className="text-xs px-3 py-1.5">{createLabel || "+ Thêm mới"}</PrimaryButton>}
         </div>
       </div>

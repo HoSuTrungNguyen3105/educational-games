@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService, questionService } from '../../services/api.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, Loader, EmptyState } from '../../components/ui.jsx'
+import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui.jsx'
+import QuestionImportModal from './QuestionImportModal.jsx'
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -16,6 +17,7 @@ export default function QuestionManagement({ showToast }) {
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, item: null });
+  const [importOpen, setImportOpen] = useState(false);
 
   const loadGames = useCallback(() => {
     setGames(null); setError(null);
@@ -114,13 +116,50 @@ export default function QuestionManagement({ showToast }) {
   const confirmRemoveAll = () => setConfirm({ open: true, item: { _all: true } });
   const doRemoveAll = async () => {
     try {
-      await questionService.removeAll();
-      showToast("Đã xóa tất cả câu hỏi");
+      await questionService.save(selectedGame, []);
+      showToast("Đã xóa tất cả câu hỏi của game này");
       setConfirm({ open: false, item: null }); loadQuestions();
     } catch (err) { showToast(err.message || "Lỗi xóa", "error"); }
   };
 
   const selectedGameObj = games?.find(g => g._id === selectedGame);
+
+  const handleImport = async (importedQuestions) => {
+    if (!selectedGame) return;
+    try {
+      const normalized = importedQuestions.map(q => {
+        const options = (q.answers || q.options || []).map((a) => ({
+          id: a.id || uid("ans"),
+          content: a.content || a.text || "",
+        }));
+
+        let correctAnswer = q.correctAnswer || "";
+        if (correctAnswer && correctAnswer.length <= 2) {
+          const match = options.find((o, i) => {
+            const key = (q.answers || q.options || [])[i]?.key || "";
+            return key.toUpperCase() === correctAnswer.toUpperCase();
+          });
+          if (match) correctAnswer = match.id;
+        }
+
+        return {
+          id: uid("question"),
+          content: q.question || q.content || "",
+          options,
+          correctAnswer,
+          timeLimit: Number(q.time) || 15,
+          points: Number(q.score) || 100,
+        };
+      });
+      const merged = [...(questions || []), ...normalized];
+      await questionService.save(selectedGame, merged);
+      showToast(`Đã import ${normalized.length} câu hỏi`);
+      setImportOpen(false);
+      loadQuestions();
+    } catch (err) {
+      showToast(err.message || "Lỗi import", "error");
+    }
+  };
 
   return (
     <div>
@@ -152,6 +191,7 @@ export default function QuestionManagement({ showToast }) {
           onRetry={loadQuestions}
           emptyLabel="Chưa có câu hỏi nào."
           onCreate={openCreate}
+          onImport={() => setImportOpen(true)}
           onRemoveAll={questions && questions.length > 0 ? confirmRemoveAll : null}
           headers={["#", "Nội dung", "Đáp án đúng", "Thời gian", "Điểm", ""]}
           renderRow={(q, idx) => (
@@ -250,10 +290,27 @@ export default function QuestionManagement({ showToast }) {
       <ConfirmModal open={confirm.open}
         title={confirm.item?._all ? "Xóa tất cả câu hỏi" : "Xóa câu hỏi"}
         message={confirm.item?._all
-          ? "Xóa TẤT CẢ câu hỏi trên toàn hệ thống?"
+          ? `Xóa tất cả câu hỏi của game "${selectedGameObj?.name || ""}"?`
           : `Xóa "${confirm.item?.q?.content?.slice(0, 60)}..."?`}
         onConfirm={confirm.item?._all ? doRemoveAll : doRemove}
         onClose={() => setConfirm({ open: false, item: null })} />
+
+      {importOpen && selectedGame && (
+        <QuestionImportModal
+          onClose={() => setImportOpen(false)}
+          onImport={handleImport}
+          onSaveSingle={async (gameId, questionId, data) => {
+            try {
+              await questionService.updateOne(gameId, questionId, data);
+              showToast("Đã lưu câu hỏi");
+              loadQuestions();
+            } catch (err) {
+              showToast(err.message || "Lỗi lưu", "error");
+            }
+          }}
+          gameId={selectedGame}
+        />
+      )}
     </div>
   );
 }

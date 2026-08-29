@@ -42,3 +42,21 @@ export async function removeAll() {
   await coll.deleteMany({});
   return count;
 }
+
+export async function updateOne(gameId, questionId, data) {
+  const coll = getCollection(COLLECTION);
+  const { _id, id, gameId: _gid, ...fields } = data;
+  const result = await coll.findOneAndUpdate(
+    { id: questionId, gameId },
+    { $set: fields },
+    { returnDocument: "after" }
+  );
+  if (result) {
+    const count = await coll.countDocuments({ gameId });
+    await getCollection("games").updateOne(
+      { _id: new ObjectId(gameId) },
+      { $set: { questionsCount: count, updatedAt: new Date().toISOString() } }
+    );
+  }
+  return result;
+}

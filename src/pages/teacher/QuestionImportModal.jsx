@@ -5,7 +5,7 @@ import { parseWord } from '../../services/question-import/word.parser';
 import { validateQuestion } from '../../services/question-import/question.validator';
 import { Modal, PrimaryButton, GhostButton } from '../../components/ui';
 
-export default function QuestionImportModal({ onClose, onImport }) {
+export default function QuestionImportModal({ onClose, onImport, onSaveSingle, gameId }) {
   const fileInputRef = useRef(null);
   const { 
     file, fileType, questions, isParsing, isValid, 
@@ -78,9 +78,12 @@ export default function QuestionImportModal({ onClose, onImport }) {
     setEditForm(JSON.parse(JSON.stringify(questions[idx]))); // deep copy
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     const validated = validateQuestion(editForm);
     updateQuestion(editIdx, validated);
+    if (onSaveSingle && gameId) {
+      await onSaveSingle(gameId, questions[editIdx]?.id, validated);
+    }
     setEditIdx(null);
     setEditForm(null);
   };

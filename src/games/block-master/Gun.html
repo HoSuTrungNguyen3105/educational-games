@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Làng Nhỏ: Sinh Tồn · Battle Royale</title>
+<style>
+/* ===== RESET ===== */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --hud-bg:rgba(8,14,22,.78);
+  --hud-border:rgba(180,190,200,.12);
+  --health:#e84c4c;
+  --health-bg:#5c1e1e;
+  --boost:#d9a53a;
+  --energy:#4a9ed8;
+  --map-bg:#0f1a25;
+  --safezone:#2a8a5a;
+  --dangerzone:#b03030;
+  --loot-yellow:#e8c859;
+  --rarity-common:#b0b8c0;
+  --rarity-rare:#4a9ed8;
+  --rarity-epic:#a84ec4;
+  --rarity-legendary:#e8b44a;
+  --grass:#2d4a30;
+  --grass-dark:#1e3320;
+  --road:#3a3f45;
+  --road-light:#4a5058;
+  --water:#1e3f5a;
+  --building:#5a5a5a;
+  --building-roof:#7a4030;
+  --tree:#1b3d1f;
+  --tree-trunk:#3d2815;
+  --ink:#e0e6ed;
+  --ink-dim:#8a94a0;
+  --accent:#d9a53a;
+  --panel:#0d151e;
+  --panel-border:#1f2d3d;
+  --radius:10px;
+  --shadow:0 8px 32px rgba(0,0,0,.55);
+}
+html,body{height:100%;background:#050a10;color:var(--ink);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#game{position:fixed;inset:0;overflow:hidden;background:#0a120a}
+button{font-family:inherit;cursor:pointer;border:none;background:none;touch-action:manipulation}
+.hidden{display:none!important}
+
+/* ===== WORLD ===== */
+#viewport{position:absolute;inset:0;overflow:hidden}
+#world{position:absolute;left:0;top:0;width:2400px;height:2400px;transform-origin:0 0;will-change:transform}
+.ground{position:absolute;inset:0;background:linear-gradient(160deg,#2a4d2f 0%,#1e3a22 40%,#26402a 100%)}
+.ground::after{content:'';position:absolute;inset:0;opacity:.06;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:20px 20px}
+
+/* Terrain patches */
+.terrain{position:absolute;border-radius:50%;opacity:.35;pointer-events:none}
+.terrain.forest{background:#143618}
+.terrain.field{background:#4a6e2a}
+.terrain.dirt{background:#5a4a30}
+
+/* Water */
+.water{position:absolute;background:linear-gradient(180deg,#1a3c5a,#122e45);border:2px solid rgba(120,180,220,.15);border-radius:8px;opacity:.9}
+
+/* Road */
+.road{position:absolute;background:var(--road);border-radius:3px;box-shadow:inset 0 1px 2px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.04)}
+.road::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 18px,var(--road-light) 18px,var(--road-light) 28px);opacity:.5}
+
+/* Building */
+.building{position:absolute;background:var(--building);border:2px solid #3a3a3a;border-radius:2px;box-shadow:0 6px 12px rgba(0,0,0,.35),inset 0 2px 4px rgba(255,255,255,.04)}
+.building::before{content:'';position:absolute;left:-4px;top:-8px;right:-4px;height:10px;background:var(--building-roof);border-radius:2px 2px 0 0}
+.building::after{content:'';position:absolute;left:20%;top:30%;width:18%;height:22%;background:rgba(20,30,40,.7);border:1px solid rgba(255,255,255,.08);border-radius:1px;box-shadow:inset 0 0 8px rgba(0,0,0,.5)}
+
+/* Tree top-down */
+.tree{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;z-index:5}
+.tree .t-canopy{width:34px;height:34px;background:radial-gradient(circle at 35% 35%,#3a8a42,#1a3d1f 60%);border-radius:50%;box-shadow:0 3px 8px rgba(0,0,0,.35),inset 0 -2px 4px rgba(0,0,0,.2)}
+.tree .t-trunk{position:absolute;left:50%;top:50%;transform:translate(-50%,-30%);width:6px;height:10px;background:var(--tree-trunk);border-radius:2px}
+
+/* Rock */
+.rock{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;z-index:4}
+.rock svg{width:28px;height:20px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+
+/* Loot crate */
+.loot-crate{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:8}
+.loot-crate .crate-body{width:22px;height:18px;background:linear-gradient(135deg,#c9a84c,#a08030);border:2px solid #e8d898;border-radius:3px;box-shadow:0 4px 10px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.3);position:relative}
+.loot-crate .crate-body::after{content:'';position:absolute;left:40%;top:0;bottom:0;width:4px;background:rgba(0,0,0,.25)}
+.loot-crate .crate-glow{position:absolute;inset:-6px;border-radius:8px;background:radial-gradient(circle,rgba(232,200,89,.35),transparent 70%);animation:cratePulse 2s ease-in-out infinite}
+@keyframes cratePulse{0%,100%{opacity:.6}50%{opacity:1}}
+
+/* Vehicle */
+.vehicle{position:absolute;transform:translate(-50%,-50%);z-index:10;cursor:pointer}
+.vehicle svg{width:44px;height:60px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}
+
+/* Player top-down */
+#player{position:absolute;transform:translate(-50%,-50%);z-index:20;will-change:left,top}
+#player .p-body{width:22px;height:22px;background:linear-gradient(135deg,#4a9ed8,#2e6fa8);border-radius:50%;border:2px solid #8ac8f0;box-shadow:0 0 0 2px rgba(0,0,0,.35),0 4px 10px rgba(0,0,0,.4);position:relative}
+#player .p-dir{position:absolute;left:50%;top:50%;width:0;height:0;transform-origin:0 0}
+#player .p-dir::after{content:'';position:absolute;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:18px solid rgba(138,200,240,.9);transform:translate(-50%,-100%)}
+#player .p-name{position:absolute;left:50%;bottom:120%;transform:translateX(-50%);font-size:.6rem;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);white-space:nowrap}
+#player .p-hp-bar{position:absolute;left:50%;top:128%;transform:translateX(-50%);width:28px;height:3px;background:rgba(0,0,0,.5);border-radius:2px;overflow:hidden}
+#player .p-hp-fill{height:100%;background:var(--health);width:100%}
+
+/* Bot */
+.bot{position:absolute;transform:translate(-50%,-50%);z-index:19}
+.bot .b-body{width:20px;height:20px;background:linear-gradient(135deg,#b03030,#701a1a);border-radius:50%;border:2px solid #e86868;box-shadow:0 0 0 2px rgba(0,0,0,.35),0 3px 8px rgba(0,0,0,.4);position:relative}
+.bot .b-dir{position:absolute;left:50%;top:50%;width:0;height:0;transform-origin:0 0}
+.bot .b-dir::after{content:'';position:absolute;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:14px solid rgba(232,104,104,.85);transform:translate(-50%,-100%)}
+.bot .b-hp-bar{position:absolute;left:50%;top:125%;transform:translateX(-50%);width:24px;height:3px;background:rgba(0,0,0,.5);border-radius:2px;overflow:hidden}
+.bot .b-hp-fill{height:100%;background:#e84c4c;width:100%}
+
+/* Safe zone circle */
+#safezone-ring{position:absolute;border:3px dashed rgba(42,138,90,.6);border-radius:50%;pointer-events:none;box-shadow:0 0 30px rgba(42,138,90,.15),inset 0 0 60px rgba(42,138,90,.08);z-index:3}
+#danger-overlay{position:absolute;inset:0;pointer-events:none;z-index:4;background:radial-gradient(circle at var(--dx,50%) var(--dy,50%),transparent 0%,transparent var(--inner,30%),rgba(160,30,30,.18) var(--outer,70%));mix-blend-mode:multiply}
+
+/* Bullet */
+.bullet{position:absolute;width:4px;height:4px;background:#ffdf80;border-radius:50%;box-shadow:0 0 6px #ffdf80;z-index:18;pointer-events:none}
+
+/* ===== HUD ===== */
+.hud-layer{position:fixed;inset:0;z-index:100;pointer-events:none}
+.hud-layer>*{pointer-events:auto}
+
+/* Top-left: player info */
+.hud-info{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.hud-card{background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:var(--radius);padding:8px 12px;backdrop-filter:blur(8px);box-shadow:var(--shadow);min-width:160px}
+.hud-card .hud-title{font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-dim);margin-bottom:4px;font-weight:700}
+.bar-track{width:100%;height:10px;background:var(--health-bg);border-radius:6px;overflow:hidden;margin-bottom:6px;border:1px solid rgba(0,0,0,.35)}
+.bar-fill{height:100%;transition:width .25s ease}
+.bar-fill.health{background:linear-gradient(90deg,var(--health),#ff6b6b)}
+.bar-fill.boost{background:linear-gradient(90deg,var(--boost),#f0d060)}
+.bar-fill.energy{background:linear-gradient(90deg,var(--energy),#6ab8f0)}
+.hud-stat-row{display:flex;justify-content:space-between;font-size:.72rem;font-weight:600;margin-top:2px}
+
+/* Top-right: minimap */
+#minimap-wrap{position:absolute;right:10px;top:10px;width:160px;height:160px;background:var(--map-bg);border:2px solid var(--hud-border);border-radius:50%;overflow:hidden;box-shadow:var(--shadow)}
+#minimap{position:absolute;left:0;top:0;width:100%;height:100%}
+.minimap-player{position:absolute;width:6px;height:6px;background:#4a9ed8;border:1.5px solid #fff;border-radius:50%;transform:translate(-50%,-50%);z-index:5;box-shadow:0 0 4px #4a9ed8}
+.minimap-safe{position:absolute;border:1.5px dashed rgba(42,138,90,.7);border-radius:50%;transform:translate(-50%,-50%)}
+.minimap-bot{position:absolute;width:4px;height:4px;background:#e84c4c;border:1px solid #fff;border-radius:50%;transform:translate(-50%,-50%)}
+.minimap-loot{position:absolute;width:3px;height:3px;background:var(--loot-yellow);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 3px var(--loot-yellow)}
+
+/* Bottom: hotbar */
+.hud-hotbar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:var(--radius);padding:6px;backdrop-filter:blur(8px);box-shadow:var(--shadow)}
+.hot-slot{width:52px;height:52px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);position:relative;transition:transform .1s,border-color .2s}
+.hot-slot.active{border-color:var(--accent);background:rgba(217,165,58,.1);box-shadow:0 0 12px rgba(217,165,58,.15)}
+.hot-slot:active{transform:scale(.93)}
+.hot-slot .hs-icon{font-size:1.3rem}
+.hot-slot .hs-ammo{font-size:.55rem;font-weight:700;color:var(--ink-dim);margin-top:1px;font-family:monospace}
+.hot-slot .hs-key{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:.5rem;background:rgba(0,0,0,.6);color:#fff;padding:1px 4px;border-radius:4px;font-weight:700}
+
+/* Bottom-right: buttons */
+.hud-actions{position:absolute;right:10px;bottom:14px;display:flex;gap:8px}
+.hud-btn{width:48px;height:48px;border-radius:50%;background:var(--hud-bg);border:1.5px solid var(--hud-border);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:1.2rem;backdrop-filter:blur(6px);box-shadow:var(--shadow);transition:transform .1s,background .2s}
+.hud-btn:active{transform:scale(.9);background:rgba(255,255,255,.08)}
+.hud-btn.shoot{background:rgba(184,50,50,.85);border-color:rgba(232,100,100,.4);color:#fff;font-size:.9rem;font-weight:800}
+.hud-btn.shoot:active{background:rgba(140,30,30,.9)}
+
+/* Bottom-left: dpad */
+.dpad{position:absolute;left:10px;bottom:80px;display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:2px;opacity:.75}
+.dpad>div{display:flex;align-items:center;justify-content:center;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:10px;color:#fff;font-size:1.1rem;backdrop-filter:blur(6px);touch-action:none}
+.dpad>div:active{background:rgba(255,255,255,.12);transform:scale(.92)}
+.dpad .dup{grid-column:2;grid-row:1}
+.dpad .ddown{grid-column:2;grid-row:3}
+.dpad .dleft{grid-column:1;grid-row:2}
+.dpad .dright{grid-column:3;grid-row:2}
+.dpad .dcenter{grid-column:2;grid-row:2;font-size:.8rem;opacity:.6;pointer-events:none}
+
+/* Kill feed */
+#killfeed{position:absolute;left:50%;top:60px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;z-index:101}
+.kill-msg{background:rgba(8,14,22,.85);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px 10px;font-size:.72rem;font-weight:600;color:var(--ink);backdrop-filter:blur(4px);animation:feedIn .4s ease}
+@keyframes feedIn{0%{opacity:0;transform:translateY(-6px)}100%{opacity:1;transform:translateY(0)}}
+
+/* Toast / floating text */
+.floatpop{position:fixed;pointer-events:none;font-weight:800;font-size:.95rem;z-index:300;animation:floatUp .9s ease forwards;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-44px) scale(1.1)}}
+.floatpop.coin{color:var(--loot-yellow)}
+.floatpop.good{color:#7ad06a}
+.floatpop.bad{color:#ff6b6b}
+
+/* Panels (inventory, menu) */
+.modal-backdrop{position:fixed;inset:0;background:rgba(4,8,12,.7);z-index:200;backdrop-filter:blur(4px)}
+.panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,520px);max-height:82vh;background:var(--panel);border:2px solid var(--panel-border);border-radius:16px;box-shadow:var(--shadow);z-index:201;display:flex;flex-direction:column;overflow:hidden}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;background:linear-gradient(135deg,#141e2a,#0d151e);border-bottom:2px solid var(--panel-border)}
+.panel-header h2{font-size:1rem;font-weight:800;display:flex;align-items:center;gap:.4rem}
+.panel-close{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#fff;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.panel-close:active{background:rgba(255,255,255,.15);transform:scale(.92)}
+.panel-body{flex:1;overflow-y:auto;padding:1rem}
+.inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.inv-item{aspect-ratio:1/1;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;transition:border-color .2s,background .2s}
+.inv-item:active{transform:scale(.96)}
+.inv-item .ii-icon{font-size:1.4rem}
+.inv-item .ii-qty{position:absolute;right:4px;bottom:2px;font-size:.6rem;font-weight:700;color:#fff;background:rgba(0,0,0,.5);padding:1px 4px;border-radius:4px}
+.inv-item.r-common{border-color:rgba(176,184,192,.25)}
+.inv-item.r-rare{border-color:rgba(74,158,216,.35)}
+.inv-item.r-epic{border-color:rgba(168,78,196,.4)}
+.inv-item.r-legendary{border-color:rgba(232,180,74,.45);background:rgba(232,180,74,.06)}
+
+/* Menu */
+.menu-screen{position:fixed;inset:0;z-index:500;background:linear-gradient(170deg,#0a1218 0%,#14201a 40%,#0f1a25 100%);display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.menu-card{background:linear-gradient(180deg,#111b26,#0a1218);border:2px solid #1f2d3d;border-radius:20px;padding:2rem 1.5rem;max-width:380px;width:100%;text-align:center;box-shadow:var(--shadow)}
+.menu-card h1{font-size:1.6rem;font-weight:800;letter-spacing:-.5px;margin-bottom:.4rem;background:linear-gradient(90deg,#fff,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.menu-card p{color:var(--ink-dim);font-size:.85rem;margin-bottom:1.4rem;line-height:1.5}
+.menu-btn{width:100%;padding:.85rem;border-radius:var(--radius);font-weight:700;font-size:.95rem;margin-bottom:.5rem;transition:transform .12s,box-shadow .2s}
+.menu-btn.primary{background:var(--accent);color:#1a1200;border:2px solid #b08820;box-shadow:0 4px 0 #8a6a18}
+.menu-btn.primary:active{transform:scale(.97)}
+.menu-btn.secondary{background:rgba(255,255,255,.06);color:var(--ink);border:2px solid rgba(255,255,255,.1)}
+.menu-btn.secondary:active{background:rgba(255,255,255,.1);transform:scale(.97)}
+.menu-stats{display:flex;justify-content:center;gap:1.5rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.08)}
+.menu-stat{text-align:center}
+.menu-stat .val{font-family:monospace;font-weight:700;font-size:1.1rem;color:var(--accent)}
+.menu-stat .lbl{font-size:.6rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.5px}
+
+/* Responsive */
+@media (max-width:480px){
+  #minimap-wrap{width:120px;height:120px}
+  .hud-card{min-width:130px;padding:6px 8px}
+  .hot-slot{width:44px;height:44px}
+  .hud-btn{width:42px;height:42px}
+  .dpad{grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,38px)}
+}
+@media (max-width:380px){
+  #minimap-wrap{width:100px;height:100px}
+  .hot-slot{width:36px;height:36px}
+  .hot-slot .hs-icon{font-size:1rem}
+  .dpad{grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);bottom:70px}
+}
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="menu" class="menu-screen">
+  <div class="menu-card">
+    <div style="font-size:3.2rem;margin-bottom:.4rem;">🍂🔥</div>
+    <h1>LÀNG NHỎ: SINH TỒN</h1>
+    <p>Góc nhìn từ trên xuống. Loot, chiến đấu, sinh tồn trong vùng an toàn. Chỉ một người sống sót.</p>
+    <button class="menu-btn primary" id="btn-start">▶ Bắt đầu sinh tồn</button>
+    <button class="menu-btn secondary" id="btn-how">📖 Hướng dẫn</button>
+    <div class="menu-stats">
+      <div class="menu-stat"><div class="val" id="menu-kills">0</div><div class="lbl">Hạ gục</div></div>
+      <div class="menu-stat"><div class="val" id="menu-wins">0</div><div class="lbl">Top 1</div></div>
+      <div class="menu-stat"><div class="val" id="menu-plays">0</div><div class="lbl">Trận</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="hidden">
+  <div id="viewport">
+    <div id="world">
+      <div class="ground" id="ground"></div>
+      <div id="objects"></div>
+      <div id="safezone-ring"></div>
+      <div id="danger-overlay"></div>
+      <div id="entities"></div>
+      <div id="player">
+        <div class="p-name">Bạn</div>
+        <div class="p-body">
+          <div class="p-dir" id="p-dir"></div>
+        </div>
+        <div class="p-hp-bar"><div class="p-hp-fill" id="p-hp-fill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hud-layer">
+    <div class="hud-info">
+      <div class="hud-card">
+        <div class="hud-title">Sức khỏe</div>
+        <div class="bar-track"><div class="bar-fill health" id="bar-hp" style="width:100%"></div></div>
+        <div class="hud-title" style="margin-top:6px">Năng lượng</div>
+        <div class="bar-track"><div class="bar-fill energy" id="bar-energy" style="width:100%"></div></div>
+        <div class="hud-title" style="margin-top:6px">Tăng tốc</div>
+        <div class="bar-track"><div class="bar-fill boost" id="bar-boost" style="width:0%"></div></div>
+        <div class="hud-stat-row"><span>🪙 <span id="hud-coins">0</span></span><span>⚡ <span id="hud-eng">100</span></span></div>
+      </div>
+      <div class="hud-card" style="margin-top:4px">
+        <div class="hud-title">Thông tin vùng</div>
+        <div class="hud-stat-row"><span id="zone-name">Đồng cỏ</span><span id="zone-timer">--:--</span></div>
+        <div class="hud-stat-row" style="margin-top:2px;color:var(--ink-dim)"><span>Còn lại</span><span id="bots-left">0</span></div>
+      </div>
+    </div>
+
+    <div id="minimap-wrap">
+      <div id="minimap"></div>
+      <div class="minimap-player" id="mm-player"></div>
+    </div>
+
+    <div id="killfeed"></div>
+
+    <div class="hud-hotbar" id="hotbar">
+      <div class="hot-slot active" data-slot="0"><span class="hs-key">1</span><span class="hs-icon">👊</span><span class="hs-ammo"></span></div>
+      <div class="hot-slot" data-slot="1"><span class="hs-key">2</span><span class="hs-icon">🔫</span><span class="hs-ammo" id="ammo-1">30</span></div>
+      <div class="hot-slot" data-slot="2"><span class="hs-key">3</span><span class="hs-icon">🍃</span><span class="hs-ammo" id="ammo-2">1</span></div>
+      <div class="hot-slot" data-slot="3"><span class="hs-key">4</span><span class="hs-icon">🥤</span><span class="hs-ammo" id="ammo-3">2</span></div>
+    </div>
+
+    <div class="hud-actions">
+      <button class="hud-btn" id="btn-inv" title="Túi đồ">🎒</button>
+      <button class="hud-btn" id="btn-map" title="Bản đồ">🗺️</button>
+      <button class="hud-btn shoot" id="btn-shoot" title="Bắn">💥</button>
+    </div>
+
+    <div class="dpad">
+      <div class="dup" data-dir="up">▲</div>
+      <div class="ddown" data-dir="down">▼</div>
+      <div class="dleft" data-dir="left">◀</div>
+      <div class="dright" data-dir="right">▶</div>
+      <div class="dcenter">★</div>
+    </div>
+  </div>
+</div>
+
+<!-- INVENTORY PANEL -->
+<div id="panel-layer" class="hidden">
+  <div class="modal-backdrop" id="pbackdrop"></div>
+  <div class="panel">
+    <div class="panel-header"><h2>🎒 Túi đồ</h2><button class="panel-close" id="pclose">✕</button></div>
+    <div class="panel-body">
+      <div style="font-size:.75rem;color:var(--ink-dim);margin-bottom:8px">Vũ khí &middot; Vật phẩm &middot; Nguyên liệu</div>
+      <div class="inv-grid" id="inv-grid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ===== CONSTANTS =====
+var WORLD_W = 2400, WORLD_H = 2400;
+var SAVE_KEY = 'lnc-sinh-ton';
+var SLOT_NAMES = ['Fist','AKM','Medkit','Energy Drink'];
+var SLOT_ICONS = ['👊','🔫','🍃','🥤'];
+
+// ===== STATE =====
+var state = {
+  hp:100,maxHp:100,
+  energy:100,maxEnergy:100,
+  boost:0,
+  coins:0,
+  kills:0,
+  x:WORLD_W/2,y:WORLD_H/2,
+  angle:0,
+  slot:0,
+  ammo:[0,120,2,3],
+  inventory:[],
+  bots:[],bullets:[],loots:[],
+  safeR:1100,safeX:WORLD_W/2,safeY:WORLD_H/2,
+  nextSafeR:900,nextSafeX:WORLD_W/2,nextSafeY:WORLD_H/2,
+  shrinkTimer:60,shrinkTotal:60,
+  gameOver:false,started:false,
+  trees:[],rocks:[],buildings:[],vehicles:[],
+  stats:{plays:0,wins:0,kills:0}
+};
+
+function load(){
+  try{var r=localStorage.getItem(SAVE_KEY);if(r){var d=JSON.parse(r);Object.assign(state.stats,d.stats||{});}}catch(e){}
+}
+function save(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({stats:state.stats}));}catch(e){}
+}
+
+// ===== DOM =====
+var menu=$('#menu'), game=$('#game'), panel=$('#panel-layer');
+var world=$('#world'), objects=$('#objects'), entities=$('#entities');
+var playerEl=$('#player'), pDir=$('#p-dir');
+var barHp=$('#bar-hp'), barEnergy=$('#bar-energy'), barBoost=$('#bar-boost');
+var hudCoins=$('#hud-coins'), hudEng=$('#hud-eng'), botsLeft=$('#bots-left');
+var zoneName=$('#zone-name'), zoneTimer=$('#zone-timer');
+var mmWrap=$('#minimap-wrap'), mm=$('#minimap'), mmPlayer=$('#mm-player');
+var killfeed=$('#killfeed');
+function $(s){return document.querySelector(s)}
+function $$(s){return document.querySelectorAll(s)}
+
+// ===== INPUT =====
+var keys={};
+var mouse={x:0,y:0,down:false};
+document.addEventListener('keydown',function(e){keys[e.code]=true;if(e.code=='Digit1')selectSlot(0);if(e.code=='Digit2')selectSlot(1);if(e.code=='Digit3')selectSlot(2);if(e.code=='Digit4')selectSlot(3);if(e.code=='KeyI')toggleInv();if(e.code=='KeyM')toggleMap();if(e.code=='Space'){e.preventDefault();shoot();}});
+document.addEventListener('keyup',function(e){keys[e.code]=false;});
+document.addEventListener('pointermove',function(e){mouse.x=e.clientX;mouse.y=e.clientY;});
+document.addEventListener('pointerdown',function(e){mouse.down=true;if(e.target.closest('#viewport'))updateAngleFromMouse();});
+document.addEventListener('pointerup',function(){mouse.down=false});
+
+// D-pad
+$$('.dpad>div[data-dir]').forEach(function(el){el.addEventListener('pointerdown',function(e){e.preventDefault();keys['Arrow'+cap(el.dataset.dir)]=true;});el.addEventListener('pointerup',function(){keys['Arrow'+cap(el.dataset.dir)]=false;});el.addEventListener('pointerleave',function(){keys['Arrow'+cap(el.dataset.dir)]=false;});});
+function cap(s){return s[0].toUpperCase()+s.slice(1)}
+
+// ===== WORLD GEN =====
+function rand(a,b){return Math.random()*(b-a)+a}
+function dist(a,b){var dx=a.x-b.x,dy=a.y-b.y;return Math.hypot(dx,dy)}
+
+function genWorld(){
+  var html='';
+  // Terrain blobs
+  for(var i=0;i<40;i++){
+    var t=['forest','field','dirt'][Math.floor(Math.random()*3)];
+    html+='<div class="terrain '+t+'" style="left:'+rand(0,100)+'%;top:'+rand(0,100)+'%;width:'+rand(80,300)+'px;height:'+rand(80,300)+'px"></div>';
+  }
+  // Water
+  html+='<div class="water" style="left:200px;top:300px;width:320px;height:220px"></div>';
+  html+='<div class="water" style="left:1700px;top:1600px;width:260px;height:180px"></div>';
+  // Roads
+  for(i=0;i<6;i++){
+    var horiz=Math.random()>.5;
+    if(horiz) html+='<div class="road" style="left:0;top:'+rand(10,90)+'%;width:100%;height:18px"></div>';
+    else html+='<div class="road" style="left:'+rand(10,90)+'%;top:0;width:18px;height:100%"></div>';
+  }
+  // Buildings
+  state.buildings=[];
+  for(i=0;i<18;i++){
+    var bx=rand(120,WORLD_W-220),by=rand(120,WORLD_H-220);
+    state.buildings.push({x:bx,y:by,w:90,h:70});
+    html+='<div class="building" style="left:'+bx+'px;top:'+by+'px;width:90px;height:70px"></div>';
+  }
+  // Trees
+  state.trees=[];
+  for(i=0;i<350;i++){
+    var tx=rand(20,WORLD_W-20),ty=rand(20,WORLD_H-20);
+    state.trees.push({x:tx,y:ty});
+    html+='<div class="tree" style="left:'+tx+'px;top:'+ty+'px"><div class="t-trunk"></div><div class="t-canopy"></div></div>';
+  }
+  // Rocks
+  state.rocks=[];
+  for(i=0;i<80;i++){
+    var rx=rand(20,WORLD_W-20),ry=rand(20,WORLD_H-20);
+    state.rocks.push({x:rx,y:ry});
+    html+='<div class="rock" style="left:'+rx+'px;top:'+ry+'px"><svg viewBox="0 0 28 20"><ellipse cx="14" cy="12" rx="12" ry="7" fill="#6a6a5a"/><ellipse cx="10" cy="10" rx="7" ry="5" fill="#7a7a6a"/><ellipse cx="18" cy="11" rx="6" ry="4" fill="#5a5a4a"/></svg></div>';
+  }
+  // Loot crates
+  state.loots=[];
+  for(i=0;i<30;i++){
+    var lx=rand(60,WORLD_W-60),ly=rand(60,WORLD_H-60);
+    var types=['coin','ammo','medkit','drink','armor'];
+    var t=types[Math.floor(Math.random()*types.length)];
+    state.loots.push({x:lx,y:ly,type:t,active:true});
+    html+='<div class="loot-crate" id="loot-'+i+'" style="left:'+lx+'px;top:'+ly+'px" data-i="'+i+'"><div class="crate-glow"></div><div class="crate-body"></div></div>';
+  }
+  // Vehicle
+  state.vehicles=[];
+  for(i=0;i<4;i++){
+    var vx=rand(200,WORLD_W-200),vy=rand(200,WORLD_H-200);
+    state.vehicles.push({x:vx,y:vy,angle:rand(0,360),taken:false});
+    html+='<div class="vehicle" style="left:'+vx+'px;top:'+vy+'px;transform:translate(-50%,-50%) rotate('+rand(0,360)+'deg)"><svg viewBox="0 0 44 60"><rect x="8" y="10" width="28" height="40" rx="6" fill="#5a6a3a"/><rect x="12" y="14" width="20" height="14" rx="2" fill="#3a4a2a"/><rect x="10" y="36" width="6" height="10" rx="2" fill="#2a2a2a"/><rect x="28" y="36" width="6" height="10" rx="2" fill="#2a2a2a"/><rect x="6" y="8" width="32" height="6" rx="2" fill="#4a5a2a"/></svg></div>';
+  }
+  objects.innerHTML=html;
+  // Loot click
+  setTimeout(function(){
+    $$('.loot-crate').forEach(function(el){el.onclick=function(e){e.stopPropagation();lootClick(+el.dataset.i);};});
+  },0);
+}
+
+// ===== BOTS =====
+function spawnBots(n){
+  state.bots=[];
+  for(var i=0;i<n;i++){
+    var bx,by,d;
+    do{bx=rand(100,WORLD_W-100);by=rand(100,WORLD_H-100);d=Math.hypot(bx-state.x,by-state.y);}while(d<400);
+    state.bots.push({id:i,x:bx,y:by,hp:100,maxHp:100,angle:rand(0,360),speed:rand(.8,1.6),cd:0,alive:true,name:'Bot '+i,target:null});
+  }
+  renderBots();
+}
+function renderBots(){
+  var html='';
+  state.bots.forEach(function(b){if(!b.alive)return;html+='<div class="bot" id="bot-'+b.id+'" style="left:'+b.x+'px;top:'+b.y+'px"><div class="b-body"><div class="b-dir" id="bdir-'+b.id+'"></div></div><div class="b-hp-bar"><div class="b-hp-fill" id="bhp-'+b.id+'"></div></div></div>';});
+  entities.innerHTML=html;
+}
+function updateBotVisuals(){
+  state.bots.forEach(function(b){
+    if(!b.alive)return;
+    var el=$('#bot-'+b.id);if(!el)return;
+    el.style.left=b.x+'px';el.style.top=b.y+'px';
+    var d=$('#bdir-'+b.id);if(d)d.style.transform='rotate('+(b.angle+90)+'deg)';
+    var h=$('#bhp-'+b.id);if(h)h.style.width=(b.hp/b.maxHp*100)+'%';
+  });
+}
+
+// ===== GAME LOOP =====
+var last=performance.now(),acc=0,dt=1/60;
+function loop(now){
+  if(!state.started||state.gameOver){requestAnimationFrame(loop);return;}
+  var t=(now-last)/1000;last=now;acc+=Math.min(t,.2);
+  while(acc>=dt){update(dt);acc-=dt;}
+  renderFrame();
+  requestAnimationFrame(loop);
+}
+
+function update(step){
+  // Player move
+  var spd=2.8,turn=0,move=0;
+  if(keys['ArrowLeft']||keys['KeyA']) turn-=1;
+  if(keys['ArrowRight']||keys['KeyD']) turn+=1;
+  if(keys['ArrowUp']||keys['KeyW']) move+=1;
+  if(keys['ArrowDown']||keys['KeyS']) move-=.6;
+  if(mouse.down&&move===0){ /* aim only */ }
+
+  state.angle+=turn*4;
+  var rad=state.angle*Math.PI/180;
+  state.x+=Math.cos(rad)*move*spd;
+  state.y+=Math.sin(rad)*move*spd;
+  state.x=Math.max(18,Math.min(WORLD_W-18,state.x));
+  state.y=Math.max(18,Math.min(WORLD_H-18,state.y));
+
+  // Energy regen
+  if(state.energy<state.maxEnergy){state.energy=Math.min(state.maxEnergy,state.energy+step*1.5);}
+  // Boost drain / effect
+  if(state.boost>0){state.boost=Math.max(0,state.boost-step*.3);state.hp=Math.min(state.maxHp,state.hp+step*.8);}
+
+  // Safe zone damage
+  var dToSafe=Math.hypot(state.x-state.safeX,state.y-state.safeY);
+  if(dToSafe>state.safeR){state.hp-=step*3; popFloat(playerEl,'bad','-'+Math.ceil(step*3)+' HP',8);}
+
+  // Shrink
+  state.shrinkTimer-=step;
+  if(state.shrinkTimer<=0){state.shrinkTimer=0;}
+
+  // Bots AI
+  state.bots.forEach(function(b){
+    if(!b.alive)return;
+    b.cd=Math.max(0,b.cd-step);
+    var bd=Math.hypot(b.x-state.x,b.y-state.y);
+    b.target=null;
+    if(bd<280){b.target={x:state.x,y:state.y};}
+    if(b.target){
+      var ba=Math.atan2(b.target.y-b.y,b.target.x-b.x)*180/Math.PI;
+      b.angle=lerpAngle(b.angle,ba,step*3);
+      b.x+=Math.cos(b.angle*Math.PI/180)*b.speed;
+      b.y+=Math.sin(b.angle*Math.PI/180)*b.speed;
+      if(bd<180&&b.cd<=0){botShoot(b);b.cd=1.2;}
+    }else{
+      if(Math.random()<.02){b.angle+=rand(-40,40);}
+      b.x+=Math.cos(b.angle*Math.PI/180)*b.speed*.6;
+      b.y+=Math.sin(b.angle*Math.PI/180)*b.speed*.6;
+    }
+    // Safe damage
+    var bsd=Math.hypot(b.x-state.safeX,b.y-state.safeY);
+    if(bsd>state.safeR){b.hp-=step*2;}
+    if(b.hp<=0){b.alive=false;addKillFeed(b.name+' chết vùng nguy hiểm');}
+  });
+
+  // Bullets
+  for(var i=state.bullets.length-1;i>=0;i--){
+    var bul=state.bullets[i];
+    bul.x+=Math.cos(bul.angle)*bul.speed;
+    bul.y+=Math.sin(bul.angle)*bul.speed;
+    bul.life-=step;
+    if(bul.life<=0||bul.x<0||bul.x>WORLD_W||bul.y<0||bul.y>WORLD_H){state.bullets.splice(i,1);continue;}
+    // Hit bots
+    if(bul.from==='player'){
+      for(var j=0;j<state.bots.length;j++){
+        var bot=state.bots[j];if(!bot.alive)continue;
+        if(Math.hypot(bul.x-bot.x,bul.y-bot.y)<16){bot.hp-=bul.dmg;state.bullets.splice(i,1);if(bot.hp<=0){bot.alive=false;state.kills++;state.coins+=15;addKillFeed('Bạn hạ '+bot.name);}break;}
+      }
+    }else if(bul.from==='bot'){
+      if(Math.hypot(bul.x-state.x,bul.y-state.y)<18){state.hp-=bul.dmg;state.bullets.splice(i,1);popFloat(playerEl,'bad','-'+bul.dmg+' HP',8);}
+    }
+  }
+
+  // Game over check
+  if(state.hp<=0){state.hp=0;state.gameOver=true;endGame(false);}
+  var aliveBots=state.bots.filter(function(b){return b.alive;}).length;
+  if(aliveBots===0&&state.hp>0){state.gameOver=true;endGame(true);}
+}
+
+function renderFrame(){
+  // Camera follow player
+  var vw=window.innerWidth,vh=window.innerHeight;
+  var cx=vw/2-state.x,cy=vh/2-state.y;
+  world.style.transform='translate('+cx+'px,'+cy+'px)';
+
+  // Player visuals
+  playerEl.style.left=state.x+'px';playerEl.style.top=state.y+'px';
+  pDir.style.transform='rotate('+(state.angle+90)+'deg)';
+  $('#p-hp-fill').style.width=(state.hp/state.maxHp*100)+'%';
+
+  // Bullets
+  var bhtml='';
+  state.bullets.forEach(function(b){bhtml+='<div class="bullet" style="left:'+b.x+'px;top:'+b.y+'px"></div>';});
+  $('#entities').innerHTML=bhtml;
+  updateBotVisuals();
+
+  // HUD
+  barHp.style.width=(state.hp/state.maxHp*100)+'%';
+  barEnergy.style.width=(state.energy/state.maxEnergy*100)+'%';
+  barBoost.style.width=(state.boost/100*100)+'%';
+  hudCoins.textContent=state.coins;
+  hudEng.textContent=Math.floor(state.energy);
+  botsLeft.textContent=state.bots.filter(function(b){return b.alive;}).length;
+  zoneTimer.textContent=fmtTime(state.shrinkTimer);
+
+  // Minimap
+  var mw=mmWrap.clientWidth,mh=mmWrap.clientHeight;
+  var mx=state.x/WORLD_W*mw,my=state.y/WORLD_H*mh;
+  mmPlayer.style.left=mx+'px';mmPlayer.style.top=my+'px';
+  updateMinimap();
+
+  // Danger overlay
+  var dang=$('#danger-overlay');
+  var dx=(state.safeX/WORLD_W*100),dy=(state.safeY/WORLD_H*100);
+  var inner=(state.safeR/Math.max(WORLD_W,WORLD_H)*100),outer=inner+20;
+  dang.style.setProperty('--dx',dx+'%');dang.style.setProperty('--dy',dy+'%');
+  dang.style.setProperty('--inner',inner+'%');dang.style.setProperty('--outer',outer+'%');
+}
+
+// ===== SHOOT =====
+function shoot(){
+  if(state.gameOver||!state.started)return;
+  if(state.slot===0){ /* melee */ meleeHit(); return;}
+  if(state.slot===1){
+    if(state.energy<4){popFloat(playerEl,'bad','Hết năng lượng!',8);return;}
+    if(state.ammo[1]<=0){popFloat(playerEl,'bad','Hết đạn!',8);return;}
+    state.energy-=4;state.ammo[1]--;
+    $('#ammo-1').textContent=state.ammo[1];
+    state.bullets.push({x:state.x,y:state.y,angle:state.angle*Math.PI/180,speed:18,life:1.2,dmg:rand(12,20),from:'player'});
+    return;
+  }
+  if(state.slot===2){ // medkit
+    if(state.ammo[2]<=0)return;state.ammo[2]--;
+    state.hp=Math.min(state.maxHp,state.hp+40);$('#ammo-2').textContent=state.ammo[2];popFloat(playerEl,'good','+40 HP',8);return;
+  }
+  if(state.slot===3){ // drink
+    if(state.ammo[3]<=0)return;state.ammo[3]--;
+    state.boost=Math.min(100,state.boost+35);$('#ammo-3').textContent=state.ammo[3];popFloat(playerEl,'good','+35 Boost',8);return;
+  }
+}
+function meleeHit(){
+  state.bots.forEach(function(b){
+    if(!b.alive)return;
+    if(Math.hypot(b.x-state.x,b.y-state.y)<40){b.hp-=rand(15,25);if(b.hp<=0){b.alive=false;state.kills++;state.coins+=10;addKillFeed('Bạn hạ '+b.name);}}
+  });
+}
+function botShoot(b){
+  state.bullets.push({x:b.x,y:b.y,angle:b.angle*Math.PI/180,speed:10,life:1,dmg:rand(5,10),from:'bot'});
+}
+
+// ===== LOOT =====
+function lootClick(i){
+  var lo=state.loots[i];if(!lo||!lo.active)return;
+  var d=Math.hypot(lo.x-state.x,lo.y-state.y);
+  if(d>50){popFloat(playerEl,'bad','Quá xa!',8);return;}
+  lo.active=false;
+  var el=$('#loot-'+i);if(el)el.style.display='none';
+  if(lo.type==='coin'){var g=rand(10,30);state.coins+=g;popFloat(playerEl,'coin','+'+g+' 🪙',8);}
+  if(lo.type==='ammo'){state.ammo[1]+=rand(15,30);$('#ammo-1').textContent=state.ammo[1];popFloat(playerEl,'good','+Đạn',8);}
+  if(lo.type==='medkit'){state.ammo[2]++;$('#ammo-2').textContent=state.ammo[2];popFloat(playerEl,'good','+Medkit',8);}
+  if(lo.type==='drink'){state.ammo[3]++;$('#ammo-3').textContent=state.ammo[3];popFloat(playerEl,'good','+Drink',8);}
+  if(lo.type==='armor'){state.maxHp=120;state.hp=Math.min(state.hp+20,state.maxHp);popFloat(playerEl,'good','+Giáp',8);}
+  refreshInv();
+}
+
+// ===== UI =====
+function selectSlot(i){state.slot=i;$$('.hot-slot').forEach(function(el){el.classList.toggle('active',+el.dataset.slot===i);});}
+function toggleInv(){panel.classList.toggle('hidden');if(!panel.classList.contains('hidden'))refreshInv();}
+function toggleMap(){/* minimap already visible, could expand later */}
+$('#btn-inv').onclick=toggleInv;
+$('#btn-map').onclick=toggleMap;
+$('#btn-shoot').onclick=function(e){e.stopPropagation();shoot();};
+$('#pbackdrop').onclick=function(){panel.classList.add('hidden');};
+$('#pclose').onclick=function(){panel.classList.add('hidden');};
+$$('.hot-slot').forEach(function(el){el.onclick=function(){selectSlot(+el.dataset.slot);};});
+
+function refreshInv(){
+  var g=$('#inv-grid');if(!g)return;
+  var html='';
+  for(var i=0;i<16;i++){
+    var icon='',qty='',cls='';
+    if(i===0){icon='👊';qty='';}
+    else if(i===1){icon='🔫';qty=state.ammo[1];}
+    else if(i===2){icon='🍃';qty=state.ammo[2];}
+    else if(i===3){icon='🥤';qty=state.ammo[3];}
+    else if(i===4){icon='🪙';qty=state.coins;cls='r-legendary';}
+    html+='<div class="inv-item '+cls+'"><span class="ii-icon">'+icon+'</span>'+(qty!==''?'<span class="ii-qty">'+qty+'</span>':'')+'</div>';
+  }
+  g.innerHTML=html;
+}
+
+// ===== MINIMAP =====
+function updateMinimap(){
+  var mw=mmWrap.clientWidth,mh=mmWrap.clientHeight;
+  var html='';
+  // safezone
+  var sr=(state.safeR/WORLD_W)*mw;
+  html+='<div class="minimap-safe" style="left:'+(state.safeX/WORLD_W*mw)+'px;top:'+(state.safeY/WORLD_H*mh)+'px;width:'+(sr*2)+'px;height:'+(sr*2)+'px"></div>';
+  // loots
+  state.loots.forEach(function(lo){if(!lo.active)return;html+='<div class="minimap-loot" style="left:'+(lo.x/WORLD_W*mw)+'px;top:'+(lo.y/WORLD_H*mh)+'px"></div>';});
+  // bots
+  state.bots.forEach(function(b){if(!b.alive)return;html+='<div class="minimap-bot" style="left:'+(b.x/WORLD_W*mw)+'px;top:'+(b.y/WORLD_H*mh)+'px"></div>';});
+  mm.innerHTML=html;
+}
+
+// ===== HELPERS =====
+function lerpAngle(a,b,t){var d=((b-a+540)%360)-180;return a+d*t}
+function fmtTime(s){var m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+(sec<10?'0':'')+sec}
+function popFloat(el,kind,text,off){off=off||0;var r=el.getBoundingClientRect();var f=document.createElement('div');f.className='floatpop '+kind;f.textContent=text;f.style.left=(r.left+r.width/2-20)+'px';f.style.top=(r.top-off)+'px';document.body.appendChild(f);setTimeout(function(){f.remove();},900);}
+function addKillFeed(msg){var d=document.createElement('div');d.className='kill-msg';d.textContent=msg;killfeed.appendChild(d);if(killfeed.children.length>4)killfeed.removeChild(killfeed.firstChild);setTimeout(function(){d.remove();},4000);}
+function updateAngleFromMouse(){var rect=$('#viewport').getBoundingClientRect();var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;var dx=mouse.x-cx,dy=mouse.y-cy;state.angle=Math.atan2(dy,dx)*180/Math.PI;}
+
+// ===== START / END =====
+function startGame(){
+  load();
+  state.stats.plays++;
+  save();
+  state.hp=100;state.maxHp=100;state.energy=100;state.maxEnergy=100;state.boost=0;state.coins=0;state.kills=0;
+  state.x=WORLD_W/2;state.y=WORLD_H/2;state.angle=0;state.slot=0;state.ammo=[0,90,1,2];
+  state.bullets=[];state.gameOver=false;state.started=true;
+  state.safeR=1100;state.safeX=rand(600,1800);state.safeY=rand(600,1800);
+  state.nextSafeR=800;state.nextSafeX=rand(400,2000);state.nextSafeY=rand(400,2000);
+  state.shrinkTimer=60;state.shrinkTotal=60;
+  menu.classList.add('hidden');game.classList.remove('hidden');panel.classList.add('hidden');
+  genWorld();
+  spawnBots(15);
+  selectSlot(0);
+  last=performance.now();requestAnimationFrame(loop);
+}
+function endGame(win){
+  state.started=false;
+  if(win){state.stats.wins++;state.stats.kills+=state.kills;toast('🏆 Winner Winner Chicken Dinner! Hạ gục: '+state.kills);}
+  else{state.stats.kills+=state.kills;toast('💀 Bạn đã ngã xuống. Hạ gục: '+state.kills);}
+  save();
+  setTimeout(function(){
+    menu.classList.remove('hidden');game.classList.add('hidden');
+    $('#menu-kills').textContent=state.stats.kills;
+    $('#menu-wins').textContent=state.stats.wins;
+    $('#menu-plays').textContent=state.stats.plays;
+  },2500);
+}
+
+// ===== INIT =====
+$('#btn-start').onclick=startGame;
+$('#btn-how').onclick=function(){alert('WASD / Mũi tên: Di chuyển hặt loot để sinh tồn, ở trong vòng bo!');};
+$('#menu-kills').textContent=state.stats.kills;
+$('#menu-wins').textContent=state.stats.wins;
+$('#menu-plays').textContent=state.stats.plays;
+
+})();
+</script>
+</body>
+</html>
