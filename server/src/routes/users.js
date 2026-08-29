@@ -6,9 +6,8 @@ import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } f
 const router = Router();
 
 router.use(authenticate);
-router.use(requireRoles("teacher", "admin"));
 
-router.get("/", async (_req, res, next) => {
+router.get("/", requireRoles("teacher", "admin"), async (_req, res, next) => {
   try {
     const data = await listUsers();
     const pagination = buildPagination({ total: data.length });
@@ -18,7 +17,7 @@ router.get("/", async (_req, res, next) => {
   }
 });
 
-router.post("/", async (req, res, next) => {
+router.post("/", requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const { role } = req.body || {};
     if (role === "admin" && req.user.role !== "admin") {
@@ -51,7 +50,7 @@ router.patch("/:id", requireRoles("admin"), async (req, res, next) => {
   }
 });
 
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     await removeUser(req.params.id);
     sendNoContent(res);
@@ -60,7 +59,7 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
-router.patch("/:id/reset-password", async (req, res, next) => {
+router.patch("/:id/reset-password", requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const { newPassword } = req.body || {};
     if (!newPassword) return sendError(res, "newPassword là bắt buộc", 400);
