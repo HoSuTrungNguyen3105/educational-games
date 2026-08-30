@@ -43,6 +43,7 @@ router.get("/me/games/:gameId", async (req, res, next) => {
         gamesPlayed: 0,
         questsCompleted: 0,
         inventory: [],
+        loadout: null,
       });
     }
     sendSuccess(res, {
@@ -53,6 +54,7 @@ router.get("/me/games/:gameId", async (req, res, next) => {
       gamesPlayed: progress.gamesPlayed || 0,
       questsCompleted: progress.questsCompleted || 0,
       inventory: progress.inventory || [],
+      loadout: progress.loadout || null,
       lastPlayedAt: progress.lastPlayedAt,
     });
   } catch (e) {
@@ -63,7 +65,7 @@ router.get("/me/games/:gameId", async (req, res, next) => {
 // PUT /api/users/me/games/:gameId — upsert progress (level, experience, etc.)
 router.put("/me/games/:gameId", async (req, res, next) => {
   try {
-    const { level, experience, progress, gamesPlayed, questsCompleted, inventory, gameName } = req.body || {};
+    const { level, experience, progress, gamesPlayed, questsCompleted, inventory, gameName, loadout } = req.body || {};
     const data = {};
     if (level !== undefined) data.level = level;
     if (experience !== undefined) data.experience = experience;
@@ -72,6 +74,7 @@ router.put("/me/games/:gameId", async (req, res, next) => {
     if (questsCompleted !== undefined) data.questsCompleted = questsCompleted;
     if (inventory !== undefined) data.inventory = inventory;
     if (gameName !== undefined) data.gameName = gameName;
+    if (loadout !== undefined) data.loadout = loadout;
 
     const result = await gameProgressService.upsert(req.user.sub, req.params.gameId, data);
     sendSuccess(res, {
@@ -82,6 +85,7 @@ router.put("/me/games/:gameId", async (req, res, next) => {
       gamesPlayed: result.gamesPlayed || 0,
       questsCompleted: result.questsCompleted || 0,
       inventory: result.inventory || [],
+      loadout: result.loadout || null,
       lastPlayedAt: result.lastPlayedAt,
     });
   } catch (e) {

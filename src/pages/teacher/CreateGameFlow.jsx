@@ -21,9 +21,9 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const [form, setForm] = useState({ name: "", description: "", subject: "", topic: "", templateId: null, theme: "gold", status: "draft" });
   const [questions, setQuestions] = useState([]);
   const [savingStatus, setSavingStatus] = useState(null);
-  const templates = useTemplates();
-  const subjects = useSubjects();
-  const categories = useCategories();
+  const templates = useTemplates(stepIdx);
+  const subjects = useSubjects(stepIdx);
+  const categories = useCategories(stepIdx);
 
   const selectedTemplate = useMemo(() => templates.find(t => t._id === form.templateId), [templates, form.templateId]);
   const isPlayToWin = selectedTemplate?.type === "play-to-win";

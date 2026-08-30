@@ -1,244 +1,1606 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ninja Vượt Chướng Ngại</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root{--paper:#FBF7EE;--ink:#20283A;--teal:#1B998B;--ticket:#E4572E;--gold:#F4B942}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Nunito',sans-serif;background:linear-gradient(180deg,#1D2E4A 0%,#16233A 60%,#0F172A 100%);color:#fff;height:100vh;overflow:hidden;display:flex;flex-direction:column}
-.header{display:flex;align-items:center;gap:12px;padding:8px 18px;background:rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;height:50px}
-.header .icon{font-size:26px}
-.header .title{font-family:'Poppins',sans-serif;font-weight:700;font-size:16px;color:var(--gold)}
-.header .stats{display:flex;align-items:center;gap:14px;margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(255,255,255,.5)}
-.header .stat{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);padding:3px 10px;border-radius:16px}
-.btn-quit{font-family:'Poppins',sans-serif;font-size:12px;border:1px solid rgba(244,185,66,.3);border-radius:14px;padding:5px 16px;background:transparent;cursor:pointer;transition:all .15s;color:var(--gold)}
-.btn-quit:hover{background:rgba(244,185,66,.12)}
-.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px;gap:20px}
-.scene{position:relative;width:100%;max-width:600px;height:130px;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,#223154 0%,#16233A 100%)}
-.ground{position:absolute;inset-x-0;bottom:0;height:24px;background:repeating-linear-gradient(90deg,rgba(244,185,66,.35) 0 18px,transparent 18px 36px)}
-.ninja{position:absolute;bottom:24px;left:40px;font-size:48px;transition:transform .5s ease;z-index:10}
-.ninja.jumping{transform:translateY(-50px)}
-.obstacle{position:absolute;bottom:24px;font-size:22px;opacity:.7;transition:right .3s}
-.scene-label{position:absolute;top:10px;left:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.5)}
-.question-card{background:rgba(255,255,255,.95);border-radius:16px;padding:24px;max-width:500px;width:100%;color:var(--ink);box-shadow:0 4px 20px rgba(0,0,0,.3)}
-.q-content{font-family:'Poppins',sans-serif;font-size:18px;line-height:1.5;margin-bottom:20px;text-align:center}
-.options{display:flex;flex-direction:column;gap:10px}
-.option-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border:2px solid rgba(0,0,0,.08);border-radius:14px;background:#fff;cursor:pointer;transition:all .2s;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--ink);text-align:left}
-.option-btn:hover:not(:disabled){border-color:rgba(244,185,66,.4)}
-.option-btn:disabled{cursor:default}
-.option-btn .letter{width:30px;height:30px;border-radius:50%;border:2px solid currentColor;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;flex-shrink:0}
-.option-btn.correct{border-color:var(--teal);background:rgba(27,153,139,.1)}
-.option-btn.wrong{border-color:var(--ticket);background:rgba(228,87,46,.1)}
-.option-btn.dimmed{opacity:.5}
-.feedback{margin-top:16px;font-family:'Poppins',sans-serif;font-size:17px;text-align:center}
-.feedback.correct{color:var(--teal)}
-.feedback.wrong{color:var(--ticket)}
-.feedback.timeout{color:#888}
-.explanation{margin-top:12px;padding:10px 14px;background:#f0f9ff;border-left:3px solid var(--teal);border-radius:8px;font-size:13px;line-height:1.5;color:var(--ink)}
-.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.9);z-index:100;justify-content:center;align-items:center}
-.overlay.active{display:flex}
-.overlay-card{background:#fff;border-radius:20px;padding:36px 44px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4);max-width:380px;width:90%;animation:popIn .4s ease}
-.overlay-card h2{font-family:'Poppins',sans-serif;font-size:22px;margin-bottom:8px;color:var(--ink)}
-.overlay-card .final-score{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:700;color:var(--gold);margin:12px 0}
-.overlay-card .final-time{font-size:14px;color:#888;margin-bottom:20px}
-.overlay-card .btn-back{padding:10px 28px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-weight:700;font-size:14px;cursor:pointer}
-@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
-@media(max-width:500px){.q-content{font-size:15px}.option-btn{font-size:12px;padding:10px 12px}.header .title{font-size:13px}.ninja{font-size:36px;left:20px}.scene{height:110px}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ninja Vượt Chướng Ngại</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --paper: #FBF7EE;
+            --ink: #20283A;
+            --teal: #1B998B;
+            --ticket: #E4572E;
+            --gold: #F4B942;
+            --shadow: rgba(0, 0, 0, 0.35);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(180deg, #1D2E4A 0%, #16233A 60%, #0F172A 100%);
+            color: #fff;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 16px;
+            background: rgba(255, 255, 255, .06);
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            flex-shrink: 0;
+            height: 50px;
+            flex-wrap: nowrap;
+        }
+        .header .icon {
+            font-size: 24px;
+        }
+        .header .title {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--gold);
+            white-space: nowrap;
+        }
+        .header .stats {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: rgba(255, 255, 255, .6);
+            flex-wrap: nowrap;
+        }
+        .header .stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 255, 255, .07);
+            padding: 2px 10px;
+            border-radius: 14px;
+            white-space: nowrap;
+        }
+        .header .stat .num {
+            font-weight: 700;
+            color: #fff;
+            min-width: 18px;
+            text-align: center;
+        }
+        .btn-icon {
+            background: rgba(255, 255, 255, .07);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, .15);
+        }
+        .btn-icon.shop-btn {
+            background: rgba(244, 185, 66, .15);
+            color: var(--gold);
+            font-size: 17px;
+        }
+        .btn-icon.shop-btn:hover {
+            background: rgba(244, 185, 66, .3);
+        }
+        .btn-quit {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            border: 1px solid rgba(255, 255, 255, .15);
+            border-radius: 14px;
+            padding: 4px 14px;
+            background: transparent;
+            cursor: pointer;
+            transition: all .15s;
+            color: rgba(255, 255, 255, .5);
+            flex-shrink: 0;
+        }
+        .btn-quit:hover {
+            background: rgba(255, 255, 255, .08);
+            color: #fff;
+        }
+
+        /* MAIN */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 14px 16px 16px;
+            gap: 14px;
+            min-height: 0;
+        }
+
+        /* SCENE */
+        .scene-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 660px;
+            margin: 0 auto;
+            flex-shrink: 0;
+        }
+        .scene {
+            position: relative;
+            width: 100%;
+            height: 130px;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, .08);
+            background: linear-gradient(180deg, #1F3255 0%, #142238 100%);
+            box-shadow: inset 0 4px 30px rgba(0, 0, 0, .3);
+        }
+        .scene-bg {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 30% 80%, rgba(27, 153, 139, .07), transparent 60%);
+            pointer-events: none;
+        }
+        .ground {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 26px;
+            background: repeating-linear-gradient(90deg, rgba(244, 185, 66, .25) 0 20px, transparent 20px 40px);
+            border-top: 1px solid rgba(244, 185, 66, .12);
+        }
+        .ground-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 26px;
+            height: 1px;
+            background: rgba(255, 255, 255, .04);
+        }
+
+        /* Progress bar on scene */
+        .progress-track {
+            position: absolute;
+            bottom: 32px;
+            left: 12px;
+            right: 12px;
+            height: 4px;
+            background: rgba(255, 255, 255, .08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--gold), var(--teal));
+            border-radius: 4px;
+            transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .progress-label {
+            position: absolute;
+            bottom: 38px;
+            right: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: rgba(255, 255, 255, .3);
+            letter-spacing: 0.5px;
+        }
+
+        /* NINJA */
+        .ninja {
+            position: absolute;
+            bottom: 26px;
+            font-size: 40px;
+            z-index: 10;
+            transition: left 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.2s;
+            left: 4%;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .4));
+            transform-origin: bottom center;
+        }
+        .ninja.run {
+            animation: runAnim 0.25s ease-in-out 3;
+        }
+        .ninja.jump {
+            animation: jumpAnim 0.5s ease;
+        }
+        .ninja.attack {
+            animation: attackAnim 0.4s ease;
+        }
+        @keyframes runAnim {
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-6px) rotate(-3deg);
+            }
+        }
+        @keyframes jumpAnim {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+            40% {
+                transform: translateY(-40px) scale(0.9);
+            }
+            100% {
+                transform: translateY(0) scale(1);
+            }
+        }
+        @keyframes attackAnim {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            30% {
+                transform: rotate(-15deg) scale(1.15);
+            }
+            60% {
+                transform: rotate(10deg) scale(1.1);
+            }
+            100% {
+                transform: rotate(0deg) scale(1);
+            }
+        }
+
+        /* DESTINATION */
+        .destination {
+            position: absolute;
+            bottom: 26px;
+            right: 2%;
+            font-size: 34px;
+            z-index: 5;
+            opacity: 0.7;
+            filter: drop-shadow(0 2px 10px rgba(244, 185, 66, .2));
+            transition: opacity 0.5s;
+        }
+        .destination.reached {
+            opacity: 1;
+            animation: flagWave 0.6s ease-in-out 3;
+        }
+        @keyframes flagWave {
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+            50% {
+                transform: rotate(8deg);
+            }
+        }
+
+        /* OBSTACLES */
+        .obstacle {
+            position: absolute;
+            bottom: 26px;
+            font-size: 24px;
+            opacity: 0.5;
+            z-index: 4;
+            transition: opacity 0.4s;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .3));
+        }
+        .obstacle.hit {
+            opacity: 0.2;
+            animation: shake 0.3s ease;
+        }
+        @keyframes shake {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-6px);
+            }
+            75% {
+                transform: translateX(6px);
+            }
+        }
+
+        /* ENEMIES */
+        .enemy {
+            position: absolute;
+            bottom: 26px;
+            font-size: 30px;
+            z-index: 6;
+            transition: opacity 0.5s, transform 0.5s;
+            filter: drop-shadow(0 2px 8px rgba(228, 87, 46, .2));
+        }
+        .enemy .hp-bar {
+            position: absolute;
+            bottom: 34px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 28px;
+            height: 4px;
+            background: rgba(255, 255, 255, .15);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .enemy .hp-fill {
+            height: 100%;
+            width: 100%;
+            background: var(--ticket);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        .enemy .enemy-label {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            font-family: 'JetBrains Mono', monospace;
+            color: rgba(255, 255, 255, .5);
+            white-space: nowrap;
+            background: rgba(0, 0, 0, .5);
+            padding: 0 6px;
+            border-radius: 6px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .enemy:hover .enemy-label {
+            opacity: 1;
+        }
+        .enemy.defeated {
+            opacity: 0.15;
+            transform: scale(0.6) rotate(20deg);
+        }
+        .enemy.alert {
+            animation: enemyAlert 0.5s ease 2;
+        }
+        @keyframes enemyAlert {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.25);
+                filter: drop-shadow(0 0 20px rgba(228, 87, 46, .6));
+            }
+        }
+
+        /* SCENE LABEL */
+        .scene-label {
+            position: absolute;
+            top: 10px;
+            left: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: rgba(255, 255, 255, .35);
+            letter-spacing: 0.3px;
+            z-index: 8;
+        }
+        .scene-status {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: rgba(255, 255, 255, .3);
+            z-index: 8;
+            text-align: right;
+            line-height: 1.4;
+        }
+
+        /* QUESTION CARD */
+        .question-card {
+            background: rgba(255, 255, 255, .95);
+            border-radius: 16px;
+            padding: 20px 22px 22px;
+            max-width: 660px;
+            width: 100%;
+            margin: 0 auto;
+            color: var(--ink);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, .35);
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 200px;
+        }
+        .q-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: rgba(0, 0, 0, .3);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .q-header .q-num {
+            background: rgba(0, 0, 0, .04);
+            padding: 2px 12px;
+            border-radius: 12px;
+        }
+        .q-header .q-timer {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .q-content {
+            font-family: 'Poppins', sans-serif;
+            font-size: 17px;
+            line-height: 1.5;
+            margin-bottom: 16px;
+            text-align: center;
+            min-height: 48px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .option-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border: 2px solid rgba(0, 0, 0, .07);
+            border-radius: 12px;
+            background: #fff;
+            cursor: pointer;
+            transition: all .2s;
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+            text-align: left;
+        }
+        .option-btn:hover:not(:disabled) {
+            border-color: rgba(244, 185, 66, .4);
+            background: rgba(244, 185, 66, .04);
+        }
+        .option-btn:disabled {
+            cursor: default;
+        }
+        .option-btn .letter {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid currentColor;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            flex-shrink: 0;
+            color: rgba(0, 0, 0, .25);
+        }
+        .option-btn.correct {
+            border-color: var(--teal);
+            background: rgba(27, 153, 139, .1);
+        }
+        .option-btn.correct .letter {
+            border-color: var(--teal);
+            color: var(--teal);
+        }
+        .option-btn.wrong {
+            border-color: var(--ticket);
+            background: rgba(228, 87, 46, .1);
+        }
+        .option-btn.wrong .letter {
+            border-color: var(--ticket);
+            color: var(--ticket);
+        }
+        .option-btn.dimmed {
+            opacity: .4;
+        }
+        .feedback {
+            margin-top: 14px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            text-align: center;
+            min-height: 26px;
+        }
+        .feedback.correct {
+            color: var(--teal);
+        }
+        .feedback.wrong {
+            color: var(--ticket);
+        }
+        .feedback.timeout {
+            color: #888;
+        }
+        .feedback.enemy {
+            color: var(--ticket);
+        }
+        .feedback.weapon {
+            color: var(--gold);
+        }
+        .explanation {
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: #f0f9ff;
+            border-left: 3px solid var(--teal);
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--ink);
+        }
+
+        /* SHOP OVERLAY */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .85);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+            padding: 20px;
+        }
+        .overlay.active {
+            display: flex;
+        }
+        .overlay-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px 32px 32px;
+            max-width: 440px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 48px rgba(0, 0, 0, .5);
+            animation: popIn .35s ease;
+            color: var(--ink);
+        }
+        .overlay-card h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 20px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .overlay-card .sub {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 18px;
+        }
+        .shop-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 12px 0 18px;
+        }
+        .shop-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid rgba(0, 0, 0, .06);
+            border-radius: 12px;
+            background: #f8f8fa;
+            transition: .15s;
+        }
+        .shop-item .emoji {
+            font-size: 28px;
+            width: 40px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .shop-item .info {
+            flex: 1;
+        }
+        .shop-item .info .name {
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .shop-item .info .desc {
+            font-size: 12px;
+            color: #888;
+        }
+        .shop-item .info .owned {
+            font-size: 11px;
+            color: var(--teal);
+            font-weight: 600;
+        }
+        .shop-item .price {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .shop-item .btn-buy {
+            padding: 5px 16px;
+            border: none;
+            border-radius: 8px;
+            background: var(--teal);
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: .15s;
+            font-family: 'Nunito', sans-serif;
+            flex-shrink: 0;
+        }
+        .shop-item .btn-buy:hover:not(:disabled) {
+            transform: scale(1.04);
+            box-shadow: 0 2px 12px rgba(27, 153, 139, .3);
+        }
+        .shop-item .btn-buy:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+        .shop-total {
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: #666;
+            padding: 8px 0;
+            border-top: 1px solid rgba(0, 0, 0, .06);
+            margin-top: 4px;
+        }
+        .shop-total span {
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .btn-close-shop {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, .04);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: .15s;
+            color: #666;
+            margin-top: 4px;
+        }
+        .btn-close-shop:hover {
+            background: rgba(0, 0, 0, .08);
+        }
+
+        /* GAME OVER OVERLAY */
+        .overlay-card.gameover {
+            text-align: center;
+            max-width: 360px;
+        }
+        .overlay-card.gameover h2 {
+            justify-content: center;
+            font-size: 24px;
+        }
+        .overlay-card .final-score {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 40px;
+            font-weight: 700;
+            color: var(--gold);
+            margin: 8px 0;
+        }
+        .overlay-card .final-detail {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 18px;
+            line-height: 1.6;
+        }
+        .overlay-card .btn-back {
+            padding: 10px 32px;
+            background: var(--teal);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: .15s;
+        }
+        .overlay-card .btn-back:hover {
+            transform: scale(1.04);
+            box-shadow: 0 2px 16px rgba(27, 153, 139, .3);
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(.92) translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* INVENTORY BADGE */
+        .inv-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, .06);
+            padding: 2px 10px 2px 8px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            color: rgba(255, 255, 255, .5);
+            cursor: pointer;
+            transition: .15s;
+            white-space: nowrap;
+        }
+        .inv-badge:hover {
+            background: rgba(255, 255, 255, .12);
+        }
+        .inv-badge .inv-item {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 13px;
+        }
+        .inv-badge .inv-item .count {
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+            min-width: 14px;
+            text-align: center;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 540px) {
+            .header .title {
+                font-size: 12px;
+            }
+            .header .stats {
+                font-size: 10px;
+                gap: 4px;
+            }
+            .header .stat {
+                padding: 1px 6px;
+            }
+            .btn-icon {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+            .btn-quit {
+                font-size: 10px;
+                padding: 3px 10px;
+            }
+            .scene {
+                height: 100px;
+            }
+            .ninja {
+                font-size: 30px;
+            }
+            .obstacle {
+                font-size: 18px;
+            }
+            .enemy {
+                font-size: 24px;
+            }
+            .destination {
+                font-size: 26px;
+            }
+            .q-content {
+                font-size: 15px;
+                min-height: 36px;
+            }
+            .option-btn {
+                font-size: 12px;
+                padding: 8px 10px;
+                gap: 8px;
+            }
+            .option-btn .letter {
+                width: 24px;
+                height: 24px;
+                font-size: 10px;
+            }
+            .question-card {
+                padding: 14px 16px 16px;
+                min-height: 170px;
+            }
+            .overlay-card {
+                padding: 20px 16px;
+            }
+            .shop-item {
+                padding: 10px 12px;
+                flex-wrap: wrap;
+            }
+            .shop-item .emoji {
+                font-size: 22px;
+                width: 32px;
+            }
+            .inv-badge {
+                font-size: 10px;
+                padding: 1px 6px 1px 4px;
+            }
+            .inv-badge .inv-item {
+                font-size: 11px;
+            }
+            .progress-label {
+                font-size: 8px;
+                bottom: 34px;
+            }
+            .scene-label {
+                font-size: 8px;
+                top: 6px;
+                left: 10px;
+            }
+            .scene-status {
+                font-size: 8px;
+                top: 6px;
+                right: 10px;
+            }
+            .ground {
+                height: 20px;
+            }
+            .ninja {
+                bottom: 20px;
+            }
+            .obstacle {
+                bottom: 20px;
+            }
+            .enemy {
+                bottom: 20px;
+            }
+            .destination {
+                bottom: 20px;
+            }
+            .enemy .hp-bar {
+                bottom: 28px;
+                width: 22px;
+                height: 3px;
+            }
+            .enemy .enemy-label {
+                font-size: 7px;
+                bottom: 32px;
+            }
+            .progress-track {
+                bottom: 26px;
+                left: 8px;
+                right: 8px;
+                height: 3px;
+            }
+        }
+        @media (max-width: 400px) {
+            .header .title {
+                font-size: 10px;
+            }
+            .header .stat {
+                font-size: 9px;
+                padding: 1px 4px;
+            }
+            .btn-icon {
+                width: 24px;
+                height: 24px;
+                font-size: 12px;
+            }
+            .scene {
+                height: 80px;
+            }
+            .ninja {
+                font-size: 24px;
+            }
+            .obstacle {
+                font-size: 16px;
+            }
+            .enemy {
+                font-size: 20px;
+            }
+            .destination {
+                font-size: 20px;
+            }
+            .q-content {
+                font-size: 13px;
+            }
+            .option-btn {
+                font-size: 11px;
+                padding: 6px 8px;
+            }
+            .question-card {
+                padding: 10px 12px 12px;
+                min-height: 150px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div id="api_submit"></div>
-<div class="header">
-  <span class="icon">🥷</span>
-  <span class="title">NINJA VƯỢT CHƯỚNG NGẠI</span>
-  <div class="stats">
-    <span id="questionCounter">Câu 0/0</span>
-    <span>⭐ <b id="scoreDisplay">0</b></span>
-    <button class="btn-quit" id="btnQuit">Thoát</button>
-  </div>
-</div>
-<div class="main">
-  <div class="scene" id="scene">
-    <div class="ground"></div>
-    <div class="ninja" id="ninja">🥷</div>
-    <span class="scene-label" id="sceneLabel">Câu 1/1</span>
-  </div>
-  <div class="question-card">
-    <div class="q-content" id="qContent">Đang tải...</div>
-    <div class="options" id="qOptions"></div>
-    <div class="feedback" id="feedback"></div>
-    <div id="explanationArea"></div>
-  </div>
-</div>
-<div class="overlay" id="overlay">
-  <div class="overlay-card">
-    <h2>🎉 Hoàn thành!</h2>
-    <div class="final-score" id="finalScore">0</div>
-    <div class="final-time" id="finalTime">Thời gian: 0s</div>
-    <button class="btn-back" id="btnBack">Quay lại</button>
-  </div>
-</div>
-<script>
-(function(){
-var questions=[],currentIdx=0,score=0,correctCount=0,startTime=0,timeLeft=0,timerInterval=null,answered=false;
-var jumping=false;
-var ninja=document.getElementById('ninja'),scene=document.getElementById('scene'),sceneLabel=document.getElementById('sceneLabel');
-var qContent=document.getElementById('qContent'),qOptions=document.getElementById('qOptions');
-var scoreDisplay=document.getElementById('scoreDisplay'),questionCounter=document.getElementById('questionCounter');
-var feedback=document.getElementById('feedback'),explanationArea=document.getElementById('explanationArea');
-var overlay=document.getElementById('overlay'),finalScore=document.getElementById('finalScore'),finalTime=document.getElementById('finalTime');
-var OBSTACLE_ICONS=["🌵","🪨","🔥","🧱"];
 
-function renderObstacles(){
-  scene.querySelectorAll('.obstacle').forEach(function(o){o.remove();});
-  for(var i=0;i<4;i++){
-    var obs=document.createElement('span');
-    obs.className='obstacle';
-    obs.textContent=OBSTACLE_ICONS[i%OBSTACLE_ICONS.length];
-    obs.style.right=(10+i*22)+'%';
-    scene.appendChild(obs);
-  }
-}
+    <div id="api_submit"></div>
 
-function jump(){
-  if(jumping)return;
-  jumping=true;
-  ninja.classList.add('jumping');
-  setTimeout(function(){jumping=false;ninja.classList.remove('jumping');},500);
-}
+    <!-- HEADER -->
+    <div class="header">
+        <span class="icon">🥷</span>
+        <span class="title">NINJA VƯỢT CHƯỚNG</span>
+        <div class="stats">
+            <div class="stat">⭐ <span class="num" id="scoreDisplay">0</span></div>
+            <div class="inv-badge" id="invBadge" title="Kho đồ">
+                <span class="inv-item" id="invDisplay">🗡️<span class="count">0</span></span>
+                <span class="inv-item" id="invDisplay2" style="display:none;">⚔️<span class="count">0</span></span>
+            </div>
+            <button class="btn-icon shop-btn" id="btnShop" title="Cửa hàng">🛒</button>
+            <button class="btn-quit" id="btnQuit">Thoát</button>
+        </div>
+    </div>
 
-function renderQuestion(){
-  if(currentIdx>=questions.length){endGame();return;}
-  answered=false;
-  var q=questions[currentIdx];
-  qContent.textContent=q.content;
-  questionCounter.textContent='Câu '+(currentIdx+1)+'/'+questions.length;
-  sceneLabel.textContent='Câu '+(currentIdx+1)+'/'+questions.length;
-  scoreDisplay.textContent=score;
-  feedback.textContent='';feedback.className='feedback';
-  explanationArea.innerHTML='';
+    <!-- MAIN -->
+    <div class="main">
+        <div class="scene-wrap">
+            <div class="scene" id="scene">
+                <div class="scene-bg"></div>
+                <div class="ground"></div>
+                <div class="ground-line"></div>
 
-  renderObstacles();
+                <span class="scene-label" id="sceneLabel">🏁 0%</span>
+                <span class="scene-status" id="sceneStatus">⚔️ 0</span>
 
-  var LETTERS=['A','B','C','D'];
-  qOptions.innerHTML='';
-  q.options.forEach(function(o,i){
-    var btn=document.createElement('button');
-    btn.className='option-btn';
-    btn.innerHTML='<span class="letter">'+LETTERS[i]+'</span><span>'+o.content+'</span>';
-    btn.onclick=function(){selectAnswer(o.id,q);};
-    qOptions.appendChild(btn);
-  });
+                <div class="progress-track">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span class="progress-label" id="progressLabel">0%</span>
 
-  timeLeft=q.timeLimit||15;
-  updateTimer();
-  startTimer(q);
-}
+                <div class="ninja" id="ninja">🥷</div>
+                <div class="destination" id="destination">🏁</div>
+            </div>
+        </div>
 
-function startTimer(q){
-  clearInterval(timerInterval);
-  timerInterval=setInterval(function(){
-    timeLeft--;
-    updateTimer();
-    if(timeLeft<=0){clearInterval(timerInterval);if(!answered)selectAnswer(null,q);}
-  },1000);
-}
+        <div class="question-card" id="questionCard">
+            <div class="q-header">
+                <span class="q-num" id="qNum">Câu 0/0</span>
+                <span class="q-timer">⏱ <span id="qTimer">15</span>s</span>
+            </div>
+            <div class="q-content" id="qContent">Đang tải...</div>
+            <div class="options" id="qOptions"></div>
+            <div class="feedback" id="feedback"></div>
+            <div id="explanationArea"></div>
+        </div>
+    </div>
 
-function updateTimer(){
-  var q=questions[currentIdx];
-  var tl=q?q.timeLimit:15;
-  var pct=Math.max((timeLeft/tl)*100,0);
-  if(pct>50)sceneLabel.style.color='rgba(76,175,80,.8)';
-  else if(pct>20)sceneLabel.style.color='rgba(244,185,66,.8)';
-  else sceneLabel.style.color='rgba(228,87,46,.8)';
-}
+    <!-- SHOP OVERLAY -->
+    <div class="overlay" id="shopOverlay">
+        <div class="overlay-card">
+            <h2>🛒 Cửa hàng vũ khí</h2>
+            <div class="sub">Dùng điểm ⭐ để mua vũ khí đánh bại kẻ địch</div>
+            <div class="shop-items" id="shopItems"></div>
+            <div class="shop-total">Điểm: <span id="shopPoints">0</span> ⭐</div>
+            <button class="btn-close-shop" id="btnCloseShop">Đóng</button>
+        </div>
+    </div>
 
-function selectAnswer(answerId,q){
-  if(answered)return;
-  answered=true;
-  clearInterval(timerInterval);
+    <!-- GAME OVER OVERLAY -->
+    <div class="overlay" id="gameOverOverlay">
+        <div class="overlay-card gameover">
+            <h2>🎉 Hoàn thành!</h2>
+            <div class="final-score" id="finalScore">0</div>
+            <div class="final-detail" id="finalDetail">Thời gian: 0s · Đúng: 0/0</div>
+            <button class="btn-back" id="btnBack">Quay lại</button>
+        </div>
+    </div>
 
-  var btns=Array.from(qOptions.querySelectorAll('.option-btn'));
-  btns.forEach(function(b){b.disabled=true;});
+    <script>
+        (function() {
+            'use strict';
 
-  if(answerId!==null&&typeof window.apiSubmitAnswer==='function'){
-    window.apiSubmitAnswer(q.id,answerId)
-    .then(function(res){
-      if(res.correct)jump();
-      showResult(res.correct,res.points,q,answerId,res.correctAnswer);
-    })
-    .catch(function(){showResult(false,0,q,answerId,null);});
-  }else{
-    showResult(false,0,q,answerId,null);
-  }
-}
+            // ─── STATE ──────────────────────────────────────────────
+            var questions = [];
+            var currentIdx = 0;
+            var score = 0;
+            var correctCount = 0;
+            var startTime = 0;
+            var timeLeft = 15;
+            var timerInterval = null;
+            var answered = false;
 
-function showResult(isCorrect,earnedPoints,q,answerId,correctAnswerId){
-  var btns=Array.from(qOptions.querySelectorAll('.option-btn'));
-  btns.forEach(function(b){
-    var text=b.querySelector('span:last-child').textContent;
-    var matching=q.options.find(function(o){return o.content===text;});
-    if(!matching)return;
-    if(matching.id===correctAnswerId)b.classList.add('correct');
-    if(matching.id===answerId&&!isCorrect)b.classList.add('wrong');
-    if(matching.id!==correctAnswerId&&matching.id!==answerId)b.classList.add('dimmed');
-  });
+            // Progress: 0..1
+            var progress = 0;
+            var totalQuestions = 0;
+            var stepPerQuestion = 0;
 
-  if(isCorrect){
-    var timeBonus=Math.round((timeLeft/(q.timeLimit||15))*40);
-    score+=earnedPoints+timeBonus;
-    correctCount++;
-    scoreDisplay.textContent=score;
-    feedback.textContent='Bật nhảy qua chướng ngại vật! 🥷';
-    feedback.className='feedback correct';
-  }else if(answerId===null){
-    feedback.textContent='Hết giờ, va phải chướng ngại vật! ⏰';
-    feedback.className='feedback timeout';
-  }else{
-    feedback.textContent='Va phải chướng ngại vật rồi!';
-    feedback.className='feedback wrong';
-  }
+            // Enemies
+            var enemies = [];
+            // Each enemy: { pos: 0..1, icon, label, defeated: bool, hp: 1 }
+            var enemyConfigs = [
+                { pos: 0.20, icon: '🦹', label: 'Bandit' },
+                { pos: 0.40, icon: '👹', label: 'Oni' },
+                { pos: 0.60, icon: '🐉', label: 'Dragon' },
+                { pos: 0.80, icon: '🧟', label: 'Zombie' }
+            ];
 
-  if(q.explanation){
-    explanationArea.innerHTML='<div class="explanation">💡 <b>Giải thích:</b> '+q.explanation+'</div>';
-  }
+            // Inventory: { shuriken, katana, bomb, shield }
+            var inventory = {
+                shuriken: 0,
+                katana: 0,
+                bomb: 0,
+                shield: 0
+            };
 
-  setTimeout(function(){
-    currentIdx++;
-    renderQuestion();
-  },1800);
-}
+            // Shop items
+            var shopItems = [
+                { id: 'shuriken', icon: '🗡️', name: 'Shuriken', desc: 'Đánh bại 1 kẻ địch', price: 5 },
+                { id: 'katana', icon: '⚔️', name: 'Katana', desc: 'Đánh bại 2 kẻ địch', price: 10 },
+                { id: 'bomb', icon: '💣', name: 'Bom', desc: 'Đánh bại TẤT CẢ kẻ địch', price: 18 },
+                { id: 'shield', icon: '🛡️', name: 'Khiên', desc: 'Chặn 1 chướng ngại vật', price: 8 }
+            ];
 
-function endGame(){
-  clearInterval(timerInterval);
-  var timeUsed=Math.round((Date.now()-startTime)/1000);
-  finalScore.textContent=score+' điểm';
-  finalTime.textContent='Thời gian: '+timeUsed+' giây | Đúng: '+correctCount+'/'+questions.length;
-  overlay.classList.add('active');
-  setTimeout(function(){parent.postMessage({type:'game-over',data:{score:score,correct:correctCount,totalQuestions:questions.length,timeUsed:timeUsed}},'*');},1300);
-}
+            var ninjaEl = document.getElementById('ninja');
+            var sceneEl = document.getElementById('scene');
+            var sceneLabel = document.getElementById('sceneLabel');
+            var sceneStatus = document.getElementById('sceneStatus');
+            var progressFill = document.getElementById('progressFill');
+            var progressLabel = document.getElementById('progressLabel');
+            var destinationEl = document.getElementById('destination');
+            var qContent = document.getElementById('qContent');
+            var qOptions = document.getElementById('qOptions');
+            var qNum = document.getElementById('qNum');
+            var qTimer = document.getElementById('qTimer');
+            var scoreDisplay = document.getElementById('scoreDisplay');
+            var feedback = document.getElementById('feedback');
+            var explanationArea = document.getElementById('explanationArea');
+            var shopOverlay = document.getElementById('shopOverlay');
+            var shopItemsEl = document.getElementById('shopItems');
+            var shopPoints = document.getElementById('shopPoints');
+            var gameOverOverlay = document.getElementById('gameOverOverlay');
+            var finalScore = document.getElementById('finalScore');
+            var finalDetail = document.getElementById('finalDetail');
+            var invDisplay = document.getElementById('invDisplay');
+            var invDisplay2 = document.getElementById('invDisplay2');
 
-document.getElementById('btnQuit').onclick=function(){parent.postMessage({type:'quit'},'*');};
-document.getElementById('btnBack').onclick=function(){parent.postMessage({type:'quit'},'*');};
+            var obstacleIcons = ['🌵', '🪨', '🔥', '🧱'];
 
-window.addEventListener('message',function(e){
-  if(!e.data||!e.data.type)return;
-  if(e.data.type==='init'){
-    var d=e.data.data;
-    questions=d.questions||[];
-    startTime=Date.now();
-    score=0;correctCount=0;currentIdx=0;
-    scoreDisplay.textContent='0';
-    overlay.classList.remove('active');
-    renderQuestion();
-  }
-});
+            // ─── HELPERS ────────────────────────────────────────────
+            function updateInventoryUI() {
+                var total = inventory.shuriken + inventory.katana + inventory.bomb + inventory.shield;
+                if (total === 0) {
+                    invDisplay.textContent = '🗡️0';
+                    invDisplay2.style.display = 'none';
+                    return;
+                }
+                var parts = [];
+                if (inventory.shuriken > 0) parts.push('🗡️' + inventory.shuriken);
+                if (inventory.katana > 0) parts.push('⚔️' + inventory.katana);
+                if (inventory.bomb > 0) parts.push('💣' + inventory.bomb);
+                if (inventory.shield > 0) parts.push('🛡️' + inventory.shield);
+                if (parts.length <= 2) {
+                    invDisplay.textContent = parts.join(' ');
+                    invDisplay2.style.display = 'none';
+                } else {
+                    invDisplay.textContent = parts.slice(0, 2).join(' ');
+                    invDisplay2.style.display = 'inline';
+                    invDisplay2.textContent = ' +' + (parts.length - 2) + ' more';
+                }
+                // Update badge tooltip
+                var detail = parts.map(function(p) { return p; }).join(' · ');
+                document.getElementById('invBadge').title = 'Kho đồ: ' + detail;
+            }
 
-parent.postMessage({type:'ready'},'*');
-})();
-</script>
+            function getTotalWeapons() {
+                return inventory.shuriken + inventory.katana + inventory.bomb + inventory.shield;
+            }
+
+            function useWeapon() {
+                // Use the most "powerful" weapon first: bomb > katana > shuriken
+                if (inventory.bomb > 0) { inventory.bomb--; return '💣'; }
+                if (inventory.katana > 0) { inventory.katana--; return '⚔️'; }
+                if (inventory.shuriken > 0) { inventory.shuriken--; return '🗡️'; }
+                return null;
+            }
+
+            function countWeapons() {
+                return inventory.shuriken + inventory.katana + inventory.bomb + inventory.shield;
+            }
+
+            function hasWeapon() {
+                return countWeapons() > 0;
+            }
+
+            // ─── RENDER SCENE ──────────────────────────────────────
+            function renderScene() {
+                // Ninja position: from 4% to 88%
+                var left = 4 + progress * 84;
+                ninjaEl.style.left = left + '%';
+                progressFill.style.width = (progress * 100) + '%';
+                progressLabel.textContent = Math.round(progress * 100) + '%';
+                sceneLabel.textContent = '🏁 ' + Math.round(progress * 100) + '%';
+
+                // Destination pulse
+                if (progress >= 0.99) {
+                    destinationEl.classList.add('reached');
+                } else {
+                    destinationEl.classList.remove('reached');
+                }
+
+                // Enemies
+                var existing = sceneEl.querySelectorAll('.enemy');
+                existing.forEach(function(e) { e.remove(); });
+
+                enemies.forEach(function(en) {
+                    if (en.defeated) return;
+                    var el = document.createElement('div');
+                    el.className = 'enemy';
+                    el.style.left = (4 + en.pos * 84) + '%';
+                    el.innerHTML = en.icon +
+                        '<div class="hp-bar"><div class="hp-fill" style="width:' + (en.hp / en.maxHp * 100) +
+                        '%"></div></div>' +
+                        '<span class="enemy-label">' + en.label + '</span>';
+                    el.dataset.enemyIdx = enemies.indexOf(en);
+                    sceneEl.appendChild(el);
+                });
+
+                // Obstacles (only show some)
+                var obsExisting = sceneEl.querySelectorAll('.obstacle');
+                obsExisting.forEach(function(o) { o.remove(); });
+                // Show 3-4 obstacles at random positions, but only if progress > 0.05
+                if (progress > 0.05) {
+                    var count = 3 + Math.floor(Math.random() * 2);
+                    var positions = [];
+                    for (var i = 0; i < count; i++) {
+                        var p = 0.08 + Math.random() * 0.84;
+                        // Avoid enemy positions
+                        var tooClose = false;
+                        enemies.forEach(function(en) {
+                            if (Math.abs(p - en.pos) < 0.06) tooClose = true;
+                        });
+                        if (tooClose) p = (p + 0.1) % 0.9;
+                        positions.push(p);
+                    }
+                    positions.forEach(function(p) {
+                        var obs = document.createElement('span');
+                        obs.className = 'obstacle';
+                        obs.textContent = obstacleIcons[Math.floor(Math.random() * obstacleIcons.length)];
+                        obs.style.left = (4 + p * 84) + '%';
+                        sceneEl.appendChild(obs);
+                    });
+                }
+
+                // Update status
+                var alive = enemies.filter(function(e) { return !e.defeated; }).length;
+                sceneStatus.textContent = '⚔️ ' + alive + ' kẻ địch';
+                updateInventoryUI();
+            }
+
+            // ─── ENEMY ENCOUNTER ──────────────────────────────────
+            function checkEnemyEncounter() {
+                // Check if ninja has reached any alive enemy position
+                for (var i = 0; i < enemies.length; i++) {
+                    var en = enemies[i];
+                    if (en.defeated) continue;
+                    var diff = Math.abs(progress - en.pos);
+                    if (diff < 0.025) {
+                        // Encounter!
+                        encounterEnemy(en);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function encounterEnemy(en) {
+                // Pause timer
+                clearInterval(timerInterval);
+
+                // Visual alert
+                var enemyEls = sceneEl.querySelectorAll('.enemy');
+                enemyEls.forEach(function(el) {
+                    var idx = parseInt(el.dataset.enemyIdx);
+                    if (idx === enemies.indexOf(en)) {
+                        el.classList.add('alert');
+                    }
+                });
+
+                // Check if player has weapon
+                var weapon = useWeapon();
+                if (weapon) {
+                    // Defeat enemy
+                    en.defeated = true;
+                    var bonus = 5;
+                    score += bonus;
+                    scoreDisplay.textContent = score;
+                    feedback.textContent = '⚔️ Dùng ' + weapon + ' đánh bại ' + en.label + '! +' + bonus + ' điểm';
+                    feedback.className = 'feedback weapon';
+                    // Ninja attack animation
+                    ninjaEl.classList.add('attack');
+                    setTimeout(function() { ninjaEl.classList.remove('attack'); }, 400);
+                    renderScene();
+                    // Continue after delay
+                    setTimeout(function() {
+                        resumeAfterEncounter();
+                    }, 1000);
+                } else {
+                    // No weapon - take damage
+                    var penalty = 5;
+                    score = Math.max(0, score - penalty);
+                    scoreDisplay.textContent = score;
+                    feedback.textContent = '💥 Không có vũ khí! ' + en.label + ' tấn công! -' + penalty + ' điểm';
+                    feedback.className = 'feedback enemy';
+                    // Push back slightly
+                    progress = Math.max(0, progress - 0.04);
+                    renderScene();
+                    // Enemy still there (not defeated)
+                    setTimeout(function() {
+                        resumeAfterEncounter();
+                    }, 1200);
+                }
+            }
+
+            function resumeAfterEncounter() {
+                // Continue the game
+                if (currentIdx >= questions.length) {
+                    endGame();
+                    return;
+                }
+                answered = false;
+                renderScene();
+                startTimer(questions[currentIdx]);
+            }
+
+            // ─── QUESTIONS ─────────────────────────────────────────
+            function renderQuestion() {
+                if (currentIdx >= questions.length) {
+                    endGame();
+                    return;
+                }
+                answered = false;
+                var q = questions[currentIdx];
+                qContent.textContent = q.content;
+                qNum.textContent = 'Câu ' + (currentIdx + 1) + '/' + questions.length;
+                scoreDisplay.textContent = score;
+
+                feedback.textContent = '';
+                feedback.className = 'feedback';
+                explanationArea.innerHTML = '';
+
+                var LETTERS = ['A', 'B', 'C', 'D'];
+                qOptions.innerHTML = '';
+                q.options.forEach(function(o, i) {
+                    var btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.innerHTML = '<span class="letter">' + LETTERS[i] + '</span><span>' + o.content +
+                        '</span>';
+                    btn.onclick = function() { selectAnswer(o.id, q); };
+                    qOptions.appendChild(btn);
+                });
+
+                timeLeft = q.timeLimit || 15;
+                qTimer.textContent = timeLeft;
+                startTimer(q);
+                renderScene();
+
+                // Check if ninja is already at an enemy position (from previous progress)
+                // But we handle this in the timer loop
+            }
+
+            function startTimer(q) {
+                clearInterval(timerInterval);
+                timerInterval = setInterval(function() {
+                    timeLeft--;
+                    qTimer.textContent = Math.max(0, timeLeft);
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        if (!answered) selectAnswer(null, q);
+                    }
+                }, 1000);
+            }
+
+            function selectAnswer(answerId, q) {
+                if (answered) return;
+                answered = true;
+                clearInterval(timerInterval);
+
+                var btns = Array.from(qOptions.querySelectorAll('.option-btn'));
+                btns.forEach(function(b) { b.disabled = true; });
+
+                if (answerId !== null && typeof window.apiSubmitAnswer === 'function') {
+                    window.apiSubmitAnswer(q.id, answerId)
+                        .then(function(raw) {
+                            var res = raw && raw.data ? raw.data : raw;
+                            processResult(res.correct, res.points, q, answerId, res.correctAnswer);
+                        })
+                        .catch(function() {
+                            processResult(false, 0, q, answerId, null);
+                        });
+                } else {
+                    // Fallback: check against correctAnswerId
+                    var isCorrect = (answerId === q.correctAnswerId);
+                    processResult(isCorrect, isCorrect ? 10 : 0, q, answerId, q.correctAnswerId);
+                }
+            }
+
+            function processResult(isCorrect, earnedPoints, q, answerId, correctAnswerId) {
+                var btns = Array.from(qOptions.querySelectorAll('.option-btn'));
+                btns.forEach(function(b) {
+                    var text = b.querySelector('span:last-child').textContent;
+                    var matching = q.options.find(function(o) { return o.content === text; });
+                    if (!matching) return;
+                    if (matching.id === correctAnswerId) b.classList.add('correct');
+                    if (matching.id === answerId && !isCorrect) b.classList.add('wrong');
+                    if (matching.id !== correctAnswerId && matching.id !== answerId) b.classList.add('dimmed');
+                });
+
+                var timeBonus = 0;
+                if (isCorrect) {
+                    timeBonus = Math.round((timeLeft / (q.timeLimit || 15)) * 30);
+                    var totalEarned = (earnedPoints || 10) + timeBonus;
+                    score += totalEarned;
+                    correctCount++;
+                    scoreDisplay.textContent = score;
+
+                    // Move ninja forward
+                    progress = Math.min(1, progress + stepPerQuestion);
+                    ninjaEl.classList.add('run');
+                    setTimeout(function() { ninjaEl.classList.remove('run'); }, 700);
+                    ninjaEl.classList.add('jump');
+                    setTimeout(function() { ninjaEl.classList.remove('jump'); }, 500);
+
+                    feedback.textContent = '✅ Chính xác! +' + totalEarned + ' điểm 🥷';
+                    feedback.className = 'feedback correct';
+
+                    // Check if enemy encountered
+                    var hasEncounter = checkEnemyEncounter();
+                    if (hasEncounter) {
+                        // Enemy encounter handled in checkEnemyEncounter
+                        renderScene();
+                        return;
+                    }
+
+                } else if (answerId === null) {
+                    feedback.textContent = '⏰ Hết giờ! Va phải chướng ngại!';
+                    feedback.className = 'feedback timeout';
+                    progress = Math.max(0, progress - 0.03);
+                } else {
+                    feedback.textContent = '❌ Sai rồi! Va phải chướng ngại!';
+                    feedback.className = 'feedback wrong';
+                    progress = Math.max(0, progress - 0.03);
+                }
+
+                if (q.explanation) {
+                    explanationArea.innerHTML = '<div class="explanation">💡 <b>Giải thích:</b> ' + q.explanation +
+                        '</div>';
+                }
+
+                renderScene();
+
+                setTimeout(function() {
+                    currentIdx++;
+                    renderQuestion();
+                }, 1600);
+            }
+
+            // ─── END GAME ──────────────────────────────────────────
+            function endGame() {
+                clearInterval(timerInterval);
+                var timeUsed = Math.round((Date.now() - startTime) / 1000);
+                finalScore.textContent = score + ' điểm';
+                var alive = enemies.filter(function(e) { return !e.defeated; }).length;
+                var detail = '⏱ ' + timeUsed + 's  ·  ✅ ' + correctCount + '/' + questions.length + ' đúng';
+                if (alive > 0) detail += '  ·  👹 ' + alive + ' kẻ địch còn sống';
+                finalDetail.textContent = detail;
+                gameOverOverlay.classList.add('active');
+                setTimeout(function() {
+                    parent.postMessage({
+                        type: 'game-over',
+                        data: {
+                            score: score,
+                            correct: correctCount,
+                            totalQuestions: questions.length,
+                            timeUsed: timeUsed
+                        }
+                    }, '*');
+                }, 1300);
+            }
+
+            // ─── SHOP ──────────────────────────────────────────────
+            function openShop() {
+                renderShop();
+                shopOverlay.classList.add('active');
+            }
+
+            function closeShop() {
+                shopOverlay.classList.remove('active');
+            }
+
+            function renderShop() {
+                shopPoints.textContent = score;
+                shopItemsEl.innerHTML = '';
+                shopItems.forEach(function(item) {
+                    var owned = inventory[item.id] || 0;
+                    var div = document.createElement('div');
+                    div.className = 'shop-item';
+                    var canBuy = score >= item.price;
+                    div.innerHTML =
+                        '<span class="emoji">' + item.icon + '</span>' +
+                        '<div class="info">' +
+                        '<div class="name">' + item.name + '</div>' +
+                        '<div class="desc">' + item.desc + '</div>' +
+                        '<div class="owned">' + (owned > 0 ? 'Sở hữu: ' + owned : '') + '</div>' +
+                        '</div>' +
+                        '<span class="price">' + item.price + '⭐</span>' +
+                        '<button class="btn-buy" ' + (canBuy ? '' : 'disabled') + ' data-id="' + item.id +
+                        '">Mua</button>';
+                    shopItemsEl.appendChild(div);
+                });
+
+                shopItemsEl.querySelectorAll('.btn-buy').forEach(function(btn) {
+                    btn.onclick = function() {
+                        var id = this.dataset.id;
+                        var item = shopItems.find(function(i) { return i.id === id; });
+                        if (!item) return;
+                        if (score < item.price) return;
+                        score -= item.price;
+                        inventory[id] = (inventory[id] || 0) + 1;
+                        scoreDisplay.textContent = score;
+                        renderShop();
+                        renderScene();
+                        updateInventoryUI();
+                        feedback.textContent = '🛒 Mua ' + item.icon + ' ' + item.name + ' thành công!';
+                        feedback.className = 'feedback weapon';
+                        setTimeout(function() {
+                            if (feedback.className === 'feedback weapon') {
+                                feedback.textContent = '';
+                                feedback.className = 'feedback';
+                            }
+                        }, 2000);
+                    };
+                });
+            }
+
+            // ─── INIT ──────────────────────────────────────────────
+            function initGame(data) {
+                questions = data.questions || [];
+                totalQuestions = questions.length;
+                stepPerQuestion = totalQuestions > 0 ? 1 / totalQuestions : 0.05;
+
+                // Reset state
+                currentIdx = 0;
+                score = 0;
+                correctCount = 0;
+                progress = 0;
+                answered = false;
+                startTime = Date.now();
+                inventory = { shuriken: 0, katana: 0, bomb: 0, shield: 0 };
+
+                // Init enemies
+                enemies = enemyConfigs.map(function(cfg) {
+                    return {
+                        pos: cfg.pos,
+                        icon: cfg.icon,
+                        label: cfg.label,
+                        defeated: false,
+                        hp: 1,
+                        maxHp: 1
+                    };
+                });
+
+                scoreDisplay.textContent = '0';
+                gameOverOverlay.classList.remove('active');
+                shopOverlay.classList.remove('active');
+                renderScene();
+                renderQuestion();
+                updateInventoryUI();
+            }
+
+            // ─── EVENT LISTENERS ──────────────────────────────────
+            document.getElementById('btnQuit').onclick = function() {
+                parent.postMessage({ type: 'quit' }, '*');
+            };
+            document.getElementById('btnBack').onclick = function() {
+                parent.postMessage({ type: 'quit' }, '*');
+            };
+            document.getElementById('btnShop').onclick = openShop;
+            document.getElementById('btnCloseShop').onclick = closeShop;
+            document.getElementById('invBadge').onclick = openShop;
+
+            // Close shop on overlay click
+            shopOverlay.onclick = function(e) {
+                if (e.target === shopOverlay) closeShop();
+            };
+
+            // ─── PARENT COMMUNICATION ─────────────────────────────
+            window.addEventListener('message', function(e) {
+                if (!e.data || !e.data.type) return;
+                if (e.data.type === 'init') {
+                    var d = e.data.data;
+                    if (d && d.questions) {
+                        initGame(d);
+                    } else {
+                        // Fallback with sample questions
+                        var sample = {
+                            questions: [{
+                                id: 1,
+                                content: 'Ninja thường sử dụng vũ khí gì?',
+                                options: [
+                                    { id: 1, content: 'Kiếm' },
+                                    { id: 2, content: 'Súng' },
+                                    { id: 3, content: 'Phi tiêu' },
+                                    { id: 4, content: 'Rìu' }
+                                ],
+                                correctAnswerId: 1,
+                                timeLimit: 15,
+                                explanation: 'Ninja thường dùng phi tiêu (shuriken) làm vũ khí đặc trưng.'
+                            }, {
+                                id: 2,
+                                content: 'Điều gì giúp ninja di chuyển nhanh?',
+                                options: [
+                                    { id: 1, content: 'Giày cao su' },
+                                    { id: 2, content: 'Kỹ năng nhảy' },
+                                    { id: 3, content: 'Áo choàng' },
+                                    { id: 4, content: 'Giày leo núi' }
+                                ],
+                                correctAnswerId: 2,
+                                timeLimit: 15,
+                                explanation: 'Kỹ năng nhảy và di chuyển linh hoạt là điểm mạnh của ninja.'
+                            }, {
+                                id: 3,
+                                content: 'Màu sắc nào thường gắn liền với ninja?',
+                                options: [
+                                    { id: 1, content: 'Đỏ' },
+                                    { id: 2, content: 'Xanh' },
+                                    { id: 3, content: 'Đen' },
+                                    { id: 4, content: 'Trắng' }
+                                ],
+                                correctAnswerId: 3,
+                                timeLimit: 15,
+                                explanation: 'Ninja thường mặc đồ đen để ngụy trang trong bóng tối.'
+                            }, {
+                                id: 4,
+                                content: 'Ninja thường tập luyện ở đâu?',
+                                options: [
+                                    { id: 1, content: 'Trong rừng' },
+                                    { id: 2, content: 'Trên núi' },
+                                    { id: 3, content: 'Trong thành phố' },
+                                    { id: 4, content: 'Trên biển' }
+                                ],
+                                correctAnswerId: 2,
+                                timeLimit: 15,
+                                explanation: 'Ninja thường tập luyện ở vùng núi cao để rèn luyện thể lực.'
+                            }, {
+                                id: 5,
+                                content: 'Vũ khí nào được ninja sử dụng để tấn công từ xa?',
+                                options: [
+                                    { id: 1, content: 'Kiếm' },
+                                    { id: 2, content: 'Shuriken' },
+                                    { id: 3, content: 'Rìu' },
+                                    { id: 4, content: 'Gậy' }
+                                ],
+                                correctAnswerId: 2,
+                                timeLimit: 15,
+                                explanation: 'Shuriken (phi tiêu) là vũ khí tầm xa đặc trưng của ninja.'
+                            }]
+                        };
+                        initGame(sample);
+                    }
+                }
+            });
+
+            parent.postMessage({ type: 'ready' }, '*');
+
+            // ─── KEYBOARD SHORTCUT ──────────────────────────────
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (shopOverlay.classList.contains('active')) {
+                        closeShop();
+                    } else if (gameOverOverlay.classList.contains('active')) {
+                        // ignore
+                    }
+                }
+                if (e.key >= '1' && e.key <= '4') {
+                    var idx = parseInt(e.key) - 1;
+                    var btns = qOptions.querySelectorAll('.option-btn');
+                    if (btns[idx] && !btns[idx].disabled) {
+                        btns[idx].click();
+                    }
+                }
+                if (e.key === 's' || e.key === 'S') {
+                    openShop();
+                }
+            });
+
+            console.log('🥷 Ninja game loaded! Use 1-4 to answer, S for shop.');
+        })();
+    </script>
 </body>
 </html>

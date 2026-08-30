@@ -148,7 +148,7 @@ function selectAnswer(answerId,q){
 
   if(answerId!==null&&typeof window.apiSubmitAnswer==='function'){
     window.apiSubmitAnswer(q.id,answerId)
-    .then(function(res){showResult(res.correct,res.points,q,answerId,res.correctAnswer);})
+    .then(function(raw){var res=raw&&raw.data?raw.data:raw;showResult(res.correct,res.points,q,answerId,res.correctAnswer);})
     .catch(function(){showResult(false,0,q,answerId,null);});
   }else{
     showResult(false,0,q,answerId,null);

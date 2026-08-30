@@ -377,7 +377,7 @@ function selectAnswer(answerId){
 
   if(answerId!==null&&typeof window.apiSubmitAnswer==='function'){
     window.apiSubmitAnswer(currentQ.id,answerId)
-    .then(function(res){showResult(res.correct,res.points,res.correctAnswer);})
+    .then(function(raw){var res=raw&&raw.data?raw.data:raw;showResult(res.correct,res.points,res.correctAnswer);})
     .catch(function(){showResult(false,0,null);});
   }else{
     showResult(false,0,null);

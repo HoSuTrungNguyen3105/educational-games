@@ -3,7 +3,7 @@ import { setupService } from '../services/setupService.js';
 
 const FALLBACK_TEMPLATE = { icon: "🎲", ring: "#F4B942" };
 
-export function useSubjects() {
+export function useSubjects(refreshKey) {
   const [subjects, setSubjects] = useState([]);
   useEffect(() => {
     let active = true;
@@ -13,32 +13,32 @@ export function useSubjects() {
       setSubjects(names);
     });
     return () => { active = false; };
-  }, []);
+  }, [refreshKey]);
   return subjects;
 }
 
-export function useCategories() {
+export function useCategories(refreshKey) {
   const [categories, setCategories] = useState([]);
   useEffect(() => {
     let active = true;
     setupService.listCategories().then((list) => { if (active) setCategories(list); });
     return () => { active = false; };
-  }, []);
+  }, [refreshKey]);
   return categories;
 }
 
-export function useTemplates() {
+export function useTemplates(refreshKey) {
   const [templates, setTemplates] = useState([]);
   useEffect(() => {
     let active = true;
     setupService.listTemplates().then((list) => { if (active) setTemplates(list); });
     return () => { active = false; };
-  }, []);
+  }, [refreshKey]);
   return templates;
 }
 
-export function useTemplate(game) {
-  const templates = useTemplates();
+export function useTemplate(game, refreshKey) {
+  const templates = useTemplates(refreshKey);
   if (!game) return FALLBACK_TEMPLATE;
   if (game.templateId) {
     const tid = typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || game.templateId;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import { API_BASE, coinService, userService } from "../services/api.js";
+import { API_BASE, coinService, userService, gameProgressService } from "../services/api.js";
 import { trackTaskEvent } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
@@ -45,12 +45,18 @@ export default function HtmlGameLoader({
     let userCoins = 0;
     let authToken = null;
     let userId = null;
+    let loadout = null;
     try {
       if (userAuth?.token) {
         authToken = userAuth.token;
         userId = userAuth.user?.id;
         const coinData = await coinService.get();
         userCoins = coinData?.coins || 0;
+        const gameId = game?._id?.toString() || game?.id;
+        if (gameId) {
+          const progress = await gameProgressService.getGame(gameId);
+          if (progress?.loadout) loadout = progress.loadout;
+        }
       }
     } catch { /* ignore */ }
 
@@ -66,8 +72,10 @@ export default function HtmlGameLoader({
           playMode: playMode || "solo",
           questionsTotal: questions?.length || 0,
           userCoins,
+          coins: userCoins,
           authToken,
           userId,
+          loadout,
           gameName: game?.name || "Trò chơi",
           gameCode: game?.code || "",
         }
@@ -158,6 +166,12 @@ export default function HtmlGameLoader({
           }).catch(() => {
             postToIframe({ type: "coins-added", data: { success: false } });
           });
+        }
+      } else if (msg.type === "save-loadout") {
+        const loadoutData = msg.data?.loadout;
+        const gameId = game?._id?.toString() || game?.id;
+        if (loadoutData && gameId && userAuth?.token) {
+          gameProgressService.upsertGame(gameId, { loadout: loadoutData }).catch(() => {});
         }
       } else if (msg.type === "game-over") {
         onFinish?.({
