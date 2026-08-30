@@ -29,14 +29,29 @@ export async function requestNotificationPermission() {
     if (!("Notification" in window)) return null;
 
     const permission = await Notification.requestPermission();
-    if (permission !== "granted") return null;
+
+    if (permission !== "granted") {
+      return null;
+    }
 
     const msg = initMessaging();
-    if (!msg) return null;
 
-    token = await getToken(msg, { vapidKey: VAPID_KEY });
+    if (!msg) {
+      return null;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+
+    token = await getToken(msg, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
+
+    console.log("FCM Token:", token);
+
     return token;
-  } catch {
+  } catch (error) {
+    console.error("FCM error:", error);
     return null;
   }
 }
@@ -54,7 +69,7 @@ export function getTokenValue() {
  */
 export function onForegroundMessage(callback) {
   const msg = initMessaging();
-  if (!msg) return () => {};
+  if (!msg) return () => { };
 
   return onMessage(msg, (payload) => {
     callback(payload);

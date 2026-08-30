@@ -84,7 +84,7 @@ function App() {
     student: renderStudent,
     "student-join": renderStudent,
     chat: () => (
-      <RouteShell toast={toast}>
+      <RouteShell toast={toast} fullHeight>
         <ConversationListScreen userAuth={userAuth} onLogout={handleLogout} />
       </RouteShell>
     ),

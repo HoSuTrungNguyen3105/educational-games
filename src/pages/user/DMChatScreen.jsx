@@ -95,7 +95,7 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-paper/30">
+    <div className="h-full flex flex-col min-h-0 bg-paper/30 overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-3 py-2.5 bg-paper border-b border-ink/8 shrink-0 pb-[max(env(safe-area-inset-top),8px)]">
         <button onClick={onBack}
@@ -130,7 +130,7 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
           </div>
         </div>
       ) : (
-        <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+        <div ref={listRef} className="h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-1">
           {groupedMessages.map((item, i) => {
             if (item.type === "date") {
               return (

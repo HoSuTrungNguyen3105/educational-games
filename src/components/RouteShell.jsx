@@ -6,10 +6,10 @@ import { Toast } from "../components/ui.jsx";
  * - Nút "← Về trang chủ" ở trên cùng
  * - Toast notification
  */
-export default function RouteShell({ children, toast, showBack = true }) {
+export default function RouteShell({ children, toast, showBack = true, fullHeight = false }) {
   return (
     <>
-      <div className="min-h-screen bg-paper flex flex-col">
+      <div className={`${fullHeight ? "h-screen" : "min-h-screen"} bg-paper flex flex-col overflow-hidden`}>
         {showBack && (
           <div className="flex items-center px-5 md:px-8 py-4">
             <button

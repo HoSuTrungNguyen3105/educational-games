@@ -136,9 +136,9 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
   const totalUnread = (conversations || []).reduce((sum, c) => sum + (c.unread || 0), 0);
 
   return (
-    <div className="flex-1 flex h-full min-h-0 bg-paper">
+    <div className="h-full flex min-h-0 bg-paper overflow-hidden">
       {/* LEFT: Conversation List */}
-      <div className={`w-full md:w-80 lg:w-[340px] border-r border-ink/8 flex flex-col shrink-0 ${chatTarget ? "hidden md:flex" : "flex"}`}>
+      <div className={`w-full md:w-80 lg:w-[340px] border-r border-ink/8 flex flex-col shrink-0 h-full min-h-0 ${chatTarget ? "hidden md:flex" : "flex"}`}>
         {/* Header */}
         <div className="px-4 pt-5 pb-3 border-b border-ink/8 shrink-0">
           <div className="flex items-center justify-between mb-3">
@@ -177,7 +177,7 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
         </div>
 
         {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="h-0 flex-1 overflow-y-auto overflow-x-hidden">
           {conversations === null ? (
             <div className="flex items-center justify-center h-40">
               <Loader label="Đang tải..." />
@@ -220,7 +220,7 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
       </div>
 
       {/* RIGHT: Chat Area */}
-      <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${chatTarget ? "flex" : "hidden md:flex"}`}>
+      <div className={`h-full flex flex-col min-h-0 min-w-0 overflow-hidden ${chatTarget ? "flex" : "hidden md:flex"}`}>
         {chatTarget ? (
           <DMChatScreen
             targetUser={chatTarget}
