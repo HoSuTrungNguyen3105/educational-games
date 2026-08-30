@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { classService, assignmentService, gameService, questionService } from '../../services/api.js';
+import { useState, useEffect, useMemo } from 'react';
+import { classService, assignmentService, templateService, questionService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { AlertCircle, Clock, FileText, Gamepad2, BookOpen, HelpCircle } from 'lucide-react';
+import { AlertCircle, Clock, FileText, CheckSquare, Square, Search, Filter } from 'lucide-react';
 
 const TIME_OPTIONS = [
   { value: 30, label: '30 phút' },
@@ -11,12 +11,14 @@ const TIME_OPTIONS = [
 
 export default function AssignmentCreate() {
   const [classes, setClasses] = useState([]);
-  const [games, setGames] = useState([]);
-  const [questions, setQuestions] = useState([]);
-  const [selectedGame, setSelectedGame] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [allQuestions, setAllQuestions] = useState([]);
+  const [selectedQuestions, setSelectedQuestions] = useState(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState('all');
   const [form, setForm] = useState({
     classId: '',
-    gameId: '',
+    templateId: '',
     title: '',
     description: '',
     isExam: true,
@@ -28,54 +30,84 @@ export default function AssignmentCreate() {
 
   useEffect(() => {
     loadClasses();
-    loadGames();
+    loadTemplates();
+    loadQuestions();
   }, []);
 
-  useEffect(() => {
-    if (form.gameId) {
-      loadQuestions(form.gameId);
-    } else {
-      setQuestions([]);
-      setSelectedGame(null);
-    }
-  }, [form.gameId]);
-
   async function loadClasses() {
-    try { setClasses(await classService.list()); } catch {}
+    try { setClasses((await classService.list()) || []); } catch { setClasses([]); }
   }
 
-  async function loadGames() {
-    try {
-      const all = await gameService.list();
-      setGames(all);
-    } catch {}
+  async function loadTemplates() {
+    try { setTemplates((await templateService.list()) || []); } catch { setTemplates([]); }
   }
 
-  async function loadQuestions(gameId) {
+  async function loadQuestions() {
     try {
-      const game = games.find(g => g._id === gameId);
-      setSelectedGame(game || null);
-      const qs = await questionService.listByGame(gameId);
-      setQuestions(qs);
+      const qs = await questionService.listAll();
+      setAllQuestions(qs || []);
     } catch {
-      setQuestions([]);
+      setAllQuestions([]);
+    }
+  }
+
+  const selectedTemplate = (templates || []).find(t => t._id === form.templateId);
+
+  // Filter questions by search + difficulty
+  const filteredQuestions = useMemo(() => {
+    return allQuestions.filter(q => {
+      const matchSearch = !searchQuery || 
+        (q.question || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchDiff = filterDifficulty === 'all' || q.difficulty === filterDifficulty;
+      return matchSearch && matchDiff;
+    });
+  }, [allQuestions, searchQuery, filterDifficulty]);
+
+  // Group questions by gameId for display
+  const questionsByGame = useMemo(() => {
+    const groups = {};
+    for (const q of filteredQuestions) {
+      const gid = q.gameId || 'unknown';
+      if (!groups[gid]) groups[gid] = [];
+      groups[gid].push(q);
+    }
+    return groups;
+  }, [filteredQuestions]);
+
+  function toggleQuestion(qId) {
+    setSelectedQuestions(prev => {
+      const next = new Set(prev);
+      if (next.has(qId)) next.delete(qId);
+      else next.add(qId);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (selectedQuestions.size === filteredQuestions.length) {
+      setSelectedQuestions(new Set());
+    } else {
+      setSelectedQuestions(new Set(filteredQuestions.map(q => q.id)));
     }
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.classId || !form.gameId || !form.title) {
-      setError('Vui lòng chọn lớp, game và nhập tiêu đề');
+    if (!form.classId || !form.title) {
+      setError('Vui lòng chọn lớp và nhập tiêu đề');
       return;
     }
-    if (questions.length === 0) {
-      setError('Game này chưa có câu hỏi. Vui lòng chọn game khác.');
+    if (selectedQuestions.size === 0) {
+      setError('Vui lòng chọn ít nhất 1 câu hỏi');
       return;
     }
     setSubmitting(true);
     setError('');
     try {
-      const data = { ...form };
+      const data = {
+        ...form,
+        questionIds: Array.from(selectedQuestions),
+      };
       if (!data.deadline) delete data.deadline;
       const assignment = await assignmentService.create(data);
       navigate(`/admin/assignments/${assignment.id}`);
@@ -84,14 +116,14 @@ export default function AssignmentCreate() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
           <FileText className="w-5 h-5 text-gold" />
         </div>
         <div>
           <h1 className="font-display text-2xl text-ink">Tạo bài thi mới</h1>
-          <p className="text-sm font-body text-ink/40">Tạo bài thi từ Question Bank có sẵn</p>
+          <p className="text-sm font-body text-ink/40">Chọn template và câu hỏi từ Question Bank</p>
         </div>
       </div>
 
@@ -118,7 +150,7 @@ export default function AssignmentCreate() {
             rows={2} placeholder="Mô tả bài thi (không bắt buộc)" />
         </div>
 
-        {/* Class + Game */}
+        {/* Class + Template */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-body text-ink/60 mb-1">Lớp *</label>
@@ -129,39 +161,102 @@ export default function AssignmentCreate() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-body text-ink/60 mb-1">Game (Question Bank) *</label>
-            <select value={form.gameId} onChange={e => setForm({ ...form, gameId: e.target.value })}
+            <label className="block text-sm font-body text-ink/60 mb-1">Template</label>
+            <select value={form.templateId} onChange={e => setForm({ ...form, templateId: e.target.value })}
               className="w-full px-3 py-2.5 rounded-xl border border-ink/10 bg-paper2 text-ink font-body focus:outline-none focus:ring-2 focus:ring-gold/40">
-              <option value="">Chọn game</option>
-              {games.map(g => (
-                <option key={g._id} value={g._id}>{g.name}</option>
-              ))}
+              <option value="">Tất cả câu hỏi</option>
+              {templates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
             </select>
           </div>
         </div>
 
-        {/* Game Info */}
-        {selectedGame && (
-          <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Gamepad2 className="w-4 h-4 text-blue-500" />
-              <span className="font-display text-sm text-blue-700">{selectedGame.name}</span>
-            </div>
-            <div className="flex items-center gap-4 text-xs font-body text-blue-600">
-              {selectedGame.subject && (
-                <span className="flex items-center gap-1">
-                  <BookOpen className="w-3 h-3" /> {selectedGame.subject}
-                </span>
-              )}
-              <span className="flex items-center gap-1">
-                <HelpCircle className="w-3 h-3" /> {questions.length} câu hỏi
-              </span>
-            </div>
-            {questions.length === 0 && (
-              <p className="mt-2 text-xs text-red-500 font-body">⚠ Game này chưa có câu hỏi!</p>
-            )}
+        {selectedTemplate && (
+          <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-body">
+            Template: {selectedTemplate.name} — {selectedTemplate.description || 'Không có mô tả'}
           </div>
         )}
+
+        {/* Question Selection */}
+        <div className="p-4 bg-paper2 rounded-xl border border-ink/8 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="w-4 h-4 text-gold" />
+              <span className="font-display text-sm text-ink">Chọn câu hỏi</span>
+            </div>
+            <span className="text-xs font-mono text-ink/40">
+              {selectedQuestions.size}/{filteredQuestions.length} câu đã chọn
+            </span>
+          </div>
+
+          {/* Search + Filter */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/30" />
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Tìm câu hỏi..."
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-ink/10 text-sm font-body text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-gold/30" />
+            </div>
+            <select value={filterDifficulty} onChange={e => setFilterDifficulty(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-white border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-gold/30">
+              <option value="all">Tất cả</option>
+              <option value="easy">Dễ</option>
+              <option value="medium">Trung bình</option>
+              <option value="hard">Khó</option>
+            </select>
+          </div>
+
+          {/* Select All */}
+          <button type="button" onClick={toggleAll}
+            className="flex items-center gap-2 text-xs font-body text-gold hover:text-gold/80 transition">
+            {selectedQuestions.size === filteredQuestions.length ? (
+              <CheckSquare className="w-4 h-4" />
+            ) : (
+              <Square className="w-4 h-4" />
+            )}
+            {selectedQuestions.size === filteredQuestions.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+          </button>
+
+          {/* Questions List */}
+          <div className="max-h-[400px] overflow-y-auto space-y-2">
+            {filteredQuestions.length === 0 ? (
+              <p className="text-sm text-ink/40 text-center py-4">Không có câu hỏi nào</p>
+            ) : (
+              filteredQuestions.map(q => (
+                <button key={q.id} type="button" onClick={() => toggleQuestion(q.id)}
+                  className={`w-full text-left p-3 rounded-xl border transition ${
+                    selectedQuestions.has(q.id)
+                      ? 'border-gold bg-gold/5'
+                      : 'border-ink/8 bg-white hover:border-ink/20'
+                  }`}>
+                  <div className="flex items-start gap-2">
+                    {selectedQuestions.has(q.id) ? (
+                      <CheckSquare className="w-4 h-4 text-gold shrink-0 mt-0.5" />
+                    ) : (
+                      <Square className="w-4 h-4 text-ink/30 shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-body text-ink truncate">{q.question}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {q.difficulty && (
+                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                            q.difficulty === 'easy' ? 'bg-green-100 text-green-600' :
+                            q.difficulty === 'hard' ? 'bg-red-100 text-red-600' :
+                            'bg-yellow-100 text-yellow-600'
+                          }`}>
+                            {q.difficulty === 'easy' ? 'Dễ' : q.difficulty === 'hard' ? 'Khó' : 'TB'}
+                          </span>
+                        )}
+                        {q.score && (
+                          <span className="text-[10px] font-mono text-ink/30">{q.score} điểm</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
 
         {/* Exam Settings */}
         <div className="p-4 bg-paper2 rounded-xl border border-ink/8 space-y-4">
@@ -170,28 +265,23 @@ export default function AssignmentCreate() {
             <span className="font-display text-sm text-ink">Cài đặt bài thi</span>
           </div>
 
-          {/* Time Options */}
           <div>
             <label className="block text-sm font-body text-ink/60 mb-2">Thời gian làm bài *</label>
             <div className="grid grid-cols-3 gap-2">
               {TIME_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
+                <button key={opt.value} type="button"
                   onClick={() => setForm({ ...form, examDuration: opt.value })}
                   className={`py-2.5 rounded-xl text-sm font-body font-semibold transition ${
                     form.examDuration === opt.value
                       ? 'bg-gold text-white shadow-sm'
                       : 'bg-white border border-ink/10 text-ink hover:border-gold/40'
-                  }`}
-                >
+                  }`}>
                   {opt.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Deadline */}
           <div>
             <label className="block text-sm font-body text-ink/60 mb-1">Hạn nộp (tùy chọn)</label>
             <input type="datetime-local" value={form.deadline}
@@ -201,17 +291,17 @@ export default function AssignmentCreate() {
         </div>
 
         {/* Summary */}
-        {selectedGame && questions.length > 0 && (
+        {selectedQuestions.size > 0 && (
           <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
             <p className="text-sm font-body text-green-700">
-              <span className="font-semibold">Tóm tắt:</span> {form.title || '(chưa nhập tiêu đề)'} — {questions.length} câu hỏi, {form.examDuration} phút
+              <span className="font-semibold">Tóm tắt:</span> {form.title || '(chưa nhập tiêu đề)'} — {selectedQuestions.size} câu hỏi, {form.examDuration} phút
             </p>
           </div>
         )}
 
         {/* Buttons */}
         <div className="flex gap-3 pt-2">
-          <button type="submit" disabled={submitting || !form.classId || !form.gameId || !form.title}
+          <button type="submit" disabled={submitting || !form.classId || !form.title || selectedQuestions.size === 0}
             className="px-6 py-2.5 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition disabled:opacity-50 disabled:cursor-not-allowed">
             {submitting ? 'Đang tạo...' : 'Tạo bài thi'}
           </button>

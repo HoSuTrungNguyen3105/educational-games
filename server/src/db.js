@@ -207,11 +207,13 @@ export async function initDatabase() {
     } },
     assignments: { $jsonSchema: {
       bsonType: "object",
-      required: ["id", "teacherId", "gameId", "title", "classId", "code", "status"],
+      required: ["id", "teacherId", "title", "classId", "code", "status"],
       properties: {
         id: { bsonType: "string" },
         teacherId: { bsonType: "string" },
+        templateId: { bsonType: "string" },
         gameId: { bsonType: "string" },
+        questionIds: { bsonType: "array" },
         title: { bsonType: "string" },
         description: { bsonType: "string" },
         classId: { bsonType: "string" },

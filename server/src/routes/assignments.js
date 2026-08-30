@@ -26,18 +26,18 @@ r.post("/", auth, requireTeacher, async (req, res) => {
       return res.status(400).json({ error: "gameId, title, classId là bắt buộc" });
     }
     const assignment = await assignmentService.createAssignment({
-      teacherId: req.user.id, gameId, title, description, classId, isExam, examDuration, deadline,
+      teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline,
     });
 
     // Notify all students in class
     try {
       const students = await classService.getClassStudents(classId);
-      const fromUser = await getCollection("users").findOne({ id: req.user.id });
+      const fromUser = await getCollection("users").findOne({ id: req.user.sub });
       const game = await getCollection("games").findOne({ id: gameId });
       for (const student of students) {
         await notificationService.createNotification({
           toUserId: student.id,
-          fromUserId: req.user.id,
+          fromUserId: req.user.sub,
           fromUsername: fromUser?.username || "",
           fromName: fromUser?.name || "",
           type: "ASSIGNMENT",
@@ -59,12 +59,12 @@ r.get("/", auth, async (req, res) => {
     const { classId, status } = req.query;
     if (req.user.role === "teacher" || req.user.role === "admin") {
       const assignments = await assignmentService.listAssignments({
-        classId, teacherId: req.user.id, status,
+        classId, teacherId: req.user.sub, status,
       });
       return res.json(assignments);
     }
     // Student: get assignments from their class
-    const cls = await classService.getStudentClass(req.user.id);
+    const cls = await classService.getStudentClass(req.user.sub);
     if (!cls) return res.json([]);
     const assignments = await assignmentService.listAssignments({ classId: cls.id, status: "ACTIVE" });
     res.json(assignments);
@@ -97,7 +97,7 @@ r.post("/:id/start", auth, async (req, res) => {
   try {
     const submission = await assignmentService.startSubmission({
       assignmentId: req.params.id,
-      studentId: req.user.id,
+      studentId: req.user.sub,
     });
     res.json(submission);
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -110,7 +110,7 @@ r.post("/:id/submit", auth, async (req, res) => {
     if (!submissionId) return res.status(400).json({ error: "submissionId là bắt buộc" });
     const result = await assignmentService.submitAnswers({
       submissionId,
-      studentId: req.user.id,
+      studentId: req.user.sub,
       answers: answers || [],
     });
     res.json(result);
@@ -120,7 +120,7 @@ r.post("/:id/submit", auth, async (req, res) => {
 // Get student result
 r.get("/:id/result", auth, async (req, res) => {
   try {
-    const result = await assignmentService.getAssignmentResult(req.params.id, req.user.id);
+    const result = await assignmentService.getAssignmentResult(req.params.id, req.user.sub);
     if (!result) return res.status(404).json({ error: "Chưa có kết quả" });
     res.json(result);
   } catch (e) { res.status(500).json({ error: e.message }); }

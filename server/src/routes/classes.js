@@ -21,7 +21,7 @@ r.post("/", auth, requireTeacher, async (req, res) => {
     const { name, code, schoolYear } = req.body;
     if (!name || !code) return res.status(400).json({ error: "name và code là bắt buộc" });
     const cls = await classService.createClass({ name, code, schoolYear });
-    await classService.assignTeacher(req.user.id, cls.id);
+    await classService.assignTeacher(req.user.sub, cls.id);
     res.status(201).json(cls);
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -34,11 +34,11 @@ r.get("/", auth, async (req, res) => {
       return res.json(classes);
     }
     if (req.user.role === "teacher") {
-      const classes = await classService.getTeacherClasses(req.user.id);
+      const classes = await classService.getTeacherClasses(req.user.sub);
       return res.json(classes);
     }
     // Student: return own class if any
-    const cls = await classService.getStudentClass(req.user.id);
+    const cls = await classService.getStudentClass(req.user.sub);
     res.json(cls ? [cls] : []);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -68,7 +68,7 @@ r.post("/join", auth, async (req, res) => {
     const cls = await classService.getClassByCode(code);
     if (!cls) return res.status(404).json({ error: "Mã lớp không hợp lệ" });
     if (cls.status !== "ACTIVE") return res.status(400).json({ error: "Lớp đã đóng" });
-    await classService.setStudentClass(req.user.id, cls.id);
+    await classService.setStudentClass(req.user.sub, cls.id);
     res.json(cls);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

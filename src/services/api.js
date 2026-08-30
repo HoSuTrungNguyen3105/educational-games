@@ -132,6 +132,9 @@ export const gameService = {
 };
 
 export const questionService = {
+  async listAll() {
+    return apiFetch("/questions") || [];
+  },
   async listByGame(gameId, { inputMode } = {}) {
     const params = inputMode ? `?inputMode=${encodeURIComponent(inputMode)}` : "";
     return apiFetch(`/questions/game/${gameId}${params}`) || [];

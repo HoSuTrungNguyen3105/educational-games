@@ -11,6 +11,10 @@ export async function listByGame(gameId, { inputMode } = {}) {
   return getCollection(COLLECTION).find(filter).sort({ id: 1 }).toArray();
 }
 
+export async function listAll({ limit = 500 } = {}) {
+  return getCollection(COLLECTION).find({}).sort({ gameId: 1, id: 1 }).limit(limit).toArray();
+}
+
 export async function save(gameId, questions) {
   const coll = getCollection(COLLECTION);
   await coll.deleteMany({ gameId });

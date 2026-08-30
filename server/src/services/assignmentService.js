@@ -8,16 +8,18 @@ function generateCode() {
 
 // ── Assignment CRUD ──
 
-export async function createAssignment({ teacherId, gameId, title, description, classId, isExam, examDuration, deadline }) {
-  if (!teacherId || !gameId || !title || !classId) {
-    throw new Error("teacherId, gameId, title, classId là bắt buộc");
+export async function createAssignment({ teacherId, templateId, gameId, questionIds, title, description, classId, isExam, examDuration, deadline }) {
+  if (!teacherId || !title || !classId) {
+    throw new Error("teacherId, title, classId là bắt buộc");
   }
   const now = new Date().toISOString();
   const doc = {
     _id: uid("asgn"),
     id: uid("asgn"),
     teacherId,
-    gameId,
+    templateId: templateId || null,
+    gameId: gameId || null,
+    questionIds: questionIds || [],
     title,
     description: description || null,
     classId,
@@ -118,8 +120,13 @@ export async function submitAnswers({ submissionId, studentId, answers }) {
   const assignment = await getAssignmentById(sub.assignmentId);
   if (!assignment) throw new Error("Bài giao không tồn tại");
 
-  // Fetch questions from Question Bank (questions collection)
-  const questions = await getCollection("questions").find({ gameId: assignment.gameId }).toArray();
+  // Fetch questions - use questionIds if available, otherwise fallback to gameId
+  let questions = [];
+  if (assignment.questionIds && assignment.questionIds.length > 0) {
+    questions = await getCollection("questions").find({ id: { $in: assignment.questionIds } }).toArray();
+  } else if (assignment.gameId) {
+    questions = await getCollection("questions").find({ gameId: assignment.gameId }).toArray();
+  }
   
   let correctCount = 0;
   let wrongCount = 0;
@@ -197,8 +204,13 @@ export async function getAssignmentResult(assignmentId, studentId) {
   if (!sub) return null;
 
   const assignment = await getAssignmentById(assignmentId);
-  // Fetch questions from Question Bank
-  const questions = await getCollection("questions").find({ gameId: assignment?.gameId }).toArray();
+  // Fetch questions - use questionIds if available, otherwise fallback to gameId
+  let questions = [];
+  if (assignment?.questionIds && assignment.questionIds.length > 0) {
+    questions = await getCollection("questions").find({ id: { $in: assignment.questionIds } }).toArray();
+  } else if (assignment?.gameId) {
+    questions = await getCollection("questions").find({ gameId: assignment.gameId }).toArray();
+  }
 
   // Build detail: each question + user's answer + correct answer
   const detail = questions.map((q) => {

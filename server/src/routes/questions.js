@@ -5,6 +5,20 @@ import { sendSuccess, sendError, sendNoContent, buildPagination } from "../utils
 
 const router = Router();
 
+router.get("/", optionalAuth, async (req, res, next) => {
+  try {
+    const questions = await questionService.listAll({ limit: 500 });
+    const isAdmin = req.user && (req.user.role === "teacher" || req.user.role === "admin");
+    const safe = isAdmin
+      ? questions
+      : questions.map(({ correctAnswer, ...rest }) => rest);
+    const pagination = buildPagination({ total: safe.length });
+    sendSuccess(res, safe, "success", pagination);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get("/game/:gameId", optionalAuth, async (req, res, next) => {
   try {
     const { inputMode } = req.query;
