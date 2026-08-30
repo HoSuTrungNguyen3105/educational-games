@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { coinService } from "../../services/api.js";
-import { taskService } from "../../services/taskService.js";
+import { taskService, trackTaskEvent } from "../../services/taskService.js";
 import { Loader } from "../../components/ui.jsx";
 // Optional: nếu muốn confetti, cài đặt canvas-confetti và import
 // import confetti from "canvas-confetti";
@@ -54,7 +54,6 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
   const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState(null);
   const [spinsLeft, setSpinsLeft] = useState(0);
-  const [loginClaimed, setLoginClaimed] = useState(false);
   const [coins, setCoins] = useState(0);
   const wheelRef = useRef(null);
 
@@ -80,10 +79,12 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
       const taskList = taskData?.tasks || [];
       setCoins(coinData?.coins || 0);
 
-      const loginTask = taskList.find(t => t.code === "LOGIN_1");
-      const claimed = loginTask?.completed || false;
-      setLoginClaimed(claimed);
-      setSpinsLeft(claimed ? 1 : 0);
+      const spinTask = taskList.find(t => t.code === "SPIN_WHEEL");
+      if (spinTask) {
+        setSpinsLeft(spinTask.spinsLeft ?? Math.max(0, spinTask.target - (spinTask.progress || 0)));
+      } else {
+        setSpinsLeft(0);
+      }
     } catch {
       // ignore
     } finally {
@@ -115,11 +116,7 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
         try {
           await coinService.add(seg.coins);
           setCoins(c => c + seg.coins);
-          // Nếu là jackpot, bắn confetti (nếu có)
           if (seg.jackpot) {
-            // if (typeof confetti === "function") {
-            //   confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            // }
             showToast?.(`🏆 THẮNG LỚN! +${seg.coins} xu!`, "success");
           } else {
             showToast?.(`🎉 +${seg.coins} xu!`, "success");
@@ -130,6 +127,15 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
       } else {
         showToast?.("Chúc bạn may mắn lần sau!", "info");
       }
+
+      try {
+        const res = await trackTaskEvent("SPIN", {});
+        const spinTask = res?.completedTasks?.find(t => t.code === "SPIN_WHEEL");
+        if (spinTask) {
+          setSpinsLeft(spinTask.spinsLeft ?? Math.max(0, spinTask.target - (spinTask.progress || 0)));
+        }
+      } catch { /* ignore */ }
+
       setSpinning(false);
     }, 4500);
   };
@@ -410,19 +416,7 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
 
         {/* Info cards */}
         <div className="text-center space-y-3 mt-2 w-full max-w-xs px-4">
-          {!loginClaimed ? (
-            <div
-              className="px-5 py-3 rounded-2xl text-sm backdrop-blur-md"
-              style={{
-                background: "rgba(251,191,36,0.10)",
-                border: "1px solid rgba(251,191,36,0.25)",
-                color: "#fbbf24",
-                boxShadow: "0 4px 12px rgba(251,191,36,0.08)",
-              }}
-            >
-              👋 Hoàn thành <strong>LOGIN_1</strong> để nhận <strong>1 lượt quay</strong>
-            </div>
-          ) : (
+          {spinsLeft > 0 ? (
             <div
               className="px-5 py-3 rounded-2xl text-sm backdrop-blur-md"
               style={{
@@ -432,7 +426,19 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
                 boxShadow: "0 4px 12px rgba(74,222,128,0.08)",
               }}
             >
-              ✅ Bạn có <strong>{spinsLeft} lượt</strong> hôm nay!
+              ✅ Bạn có <strong>{spinsLeft} lượt</strong> quay hôm nay!
+            </div>
+          ) : (
+            <div
+              className="px-5 py-3 rounded-2xl text-sm backdrop-blur-md"
+              style={{
+                background: "rgba(251,191,36,0.10)",
+                border: "1px solid rgba(251,191,36,0.25)",
+                color: "#fbbf24",
+                boxShadow: "0 4px 12px rgba(251,191,36,0.08)",
+              }}
+            >
+              ⛔ Hết lượt quay — quay lại ngày mai!
             </div>
           )}
           <div className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>

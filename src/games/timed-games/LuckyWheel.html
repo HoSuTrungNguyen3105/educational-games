@@ -171,7 +171,6 @@ var questions=[],answeredIds=[],correctIds=[],score=0,correctCount=0,startTime=0
 var spinning=false,gamePhase="wheel",currentQ=null,timeLeft=0,timerInterval=null,selectedAnswer=null,revealed=false;
 var rotation=0,segmentCount=0,segmentAngle=0,questionsTotal=0;
 var leaderboard=[];
-var spinsLeft=3;
 var wheelSvg=document.getElementById('wheelSvg'),spinBtn=document.getElementById('spinBtn');
 var spinLabel=document.getElementById('spinLabel'),progressLabel=document.getElementById('progressLabel');
 var scoreDisplay=document.getElementById('scoreDisplay');
@@ -354,16 +353,13 @@ function updateLeaderboardEntry(qId,name,points){
 }
 
 function spinWheel(){
-  if(spinning||spinsLeft<=0)return;
+  if(spinning)return;
   // Only exclude correctly answered segments — wrong ones stay available
   var available=questions.map(function(_,i){return i;}).filter(function(i){return correctIds.indexOf(questions[i].id)<0;});
   if(available.length===0)return;
   spinning=true;
   spinBtn.disabled=true;
   spinBtn.textContent='ĐANG QUAY... 🎡';
-
-  // Track spin via parent
-  try{parent.postMessage({type:'spin-wheel'},'*');}catch(e){}
 
   var available=questions.map(function(_,i){return i;}).filter(function(i){return answeredIds.indexOf(questions[i].id)<0;});
   var winIdx=available[Math.floor(Math.random()*available.length)];
@@ -498,11 +494,7 @@ function showResult(isCorrect,earnedPoints,correctAnswerId){
     wheelPhase.style.display='block';
     renderWheel();
     if(correctIds.length>=segmentCount){endGame();}
-    else{
-      spinsLeft=Math.max(0,spinsLeft-1);
-      if(spinsLeft<=0){spinBtn.disabled=true;spinBtn.textContent='HẾT LƯỢT QUAY';}
-      else{spinBtn.disabled=false;spinBtn.textContent='QUAY NGAY! 🎯 ('+spinsLeft+' lượt)';}
-    }
+    else{spinBtn.disabled=false;spinBtn.textContent='QUAY NGAY! 🎯';}
   },1900);
 }
 
@@ -526,7 +518,6 @@ window.addEventListener('message',function(e){
     var mode=d.playMode||'solo';
     var qSource=d.questions||[];
     questionsTotal=d.questionsTotal||qSource.length||0;
-    spinsLeft=d.spinsLeft!=null?d.spinsLeft:3;
 
     if(mode==='solo'){
       var pName=d.playerName||'Bạn';
@@ -560,18 +551,9 @@ window.addEventListener('message',function(e){
     spinLabel.textContent='Đã trả lời 0 câu · ⭐ 0 điểm';
     overlay.classList.remove('active');
     wheelSvg.style.transform='rotate(0deg)';
-    if(spinsLeft<=0){spinBtn.disabled=true;spinBtn.textContent='HẾT LƯỢT QUAY';}
-    else{spinBtn.disabled=false;spinBtn.textContent='QUAY NGAY! 🎯 ('+spinsLeft+' lượt)';}
+    spinBtn.disabled=false;spinBtn.textContent='QUAY NGAY! 🎯';
     renderWheel();
     renderLeaderboard();
-  }
-  if(e.data.type==='spin-tracked'){
-    var sd=e.data.data||{};
-    if(sd.success&&sd.spinsLeft!=null){
-      spinsLeft=sd.spinsLeft;
-      if(spinsLeft<=0){spinBtn.disabled=true;spinBtn.textContent='HẾT LƯỢT QUAY';}
-      else{spinBtn.disabled=false;spinBtn.textContent='QUAY NGAY! 🎯 ('+spinsLeft+' lượt)';}
-    }
   }
 });
 
