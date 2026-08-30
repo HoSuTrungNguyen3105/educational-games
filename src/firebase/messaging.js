@@ -83,10 +83,15 @@ export async function requestNotificationPermission() {
     }
 
     // Get token
+    console.log("[FCM] VAPID:", VAPID_KEY);
+    console.log("[FCM] SW:", registration.active?.scriptURL);
+
     token = await getToken(msg, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration,
     });
+
+    console.log("[FCM] TOKEN:", token);
 
     if (token) {
       console.log("[FCM] Token obtained:", token.substring(0, 20) + "...");

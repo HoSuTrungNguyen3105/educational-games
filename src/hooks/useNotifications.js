@@ -30,6 +30,7 @@ export function useNotifications(userAuth) {
     if (!userAuth?.token) return;
     try {
       const fcmToken = await requestNotificationPermission();
+      console.log("🔥 FCM TOKEN:", fcmToken);
       if (fcmToken) {
         await notificationService.registerDevice(fcmToken, "WEB");
       }
