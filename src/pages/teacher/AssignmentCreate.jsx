@@ -53,7 +53,7 @@ export default function AssignmentCreate() {
 
   async function loadQuestions(gameId) {
     try {
-      const game = games.find(g => g.id === gameId);
+      const game = games.find(g => g._id === gameId);
       setSelectedGame(game || null);
       const qs = await questionService.listByGame(gameId);
       setQuestions(qs);
@@ -134,7 +134,7 @@ export default function AssignmentCreate() {
               className="w-full px-3 py-2.5 rounded-xl border border-ink/10 bg-paper2 text-ink font-body focus:outline-none focus:ring-2 focus:ring-gold/40">
               <option value="">Chọn game</option>
               {games.map(g => (
-                <option key={g.id} value={g.id}>{g.name}</option>
+                <option key={g._id} value={g._id}>{g.name}</option>
               ))}
             </select>
           </div>

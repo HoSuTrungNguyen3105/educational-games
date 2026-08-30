@@ -19,6 +19,7 @@ const firebaseConfig = {
 // Initialize Firebase (only once)
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
+  console.log("Firebase initialized:", app.name);
 }
 
 const messaging = firebase.messaging();

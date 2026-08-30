@@ -25,6 +25,7 @@ const ROUTES = [
   { name: "admin-coins",     pattern: "/admin/coins" },
   { name: "admin-daily-tasks", pattern: "/admin/daily-tasks" },
   { name: "admin-classes", pattern: "/admin/classes" },
+  { name: "admin-class-students", pattern: "/admin/classes/:classId/students" },
   { name: "admin-assignments", pattern: "/admin/assignments" },
   { name: "admin-assignment-new", pattern: "/admin/assignments/new" },
   { name: "admin-assignment-detail", pattern: "/admin/assignments/:assignmentId" },

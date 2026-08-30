@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { assignmentService, gameProgressService } from '../../services/api.js';
+import { assignmentService, gameService } from '../../services/api.js';
 import { useUserAuthStore } from '../../stores/userAuth.store.js';
 import { navigate } from '../../lib/router.js';
 import { Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
@@ -47,8 +47,8 @@ export default function AssignmentTake({ assignmentId }) {
       setSubmission(sub);
 
       // Load game for questions
-      const allGames = await gameProgressService.listAll();
-      const g = allGames.find(x => x.id === a.gameId);
+      const allGames = await gameService.list();
+      const g = allGames.find(x => x._id === a.gameId);
       setGame(g);
 
       // Start timer if exam

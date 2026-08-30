@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { assignmentService, gameProgressService } from '../../services/api.js';
+import { assignmentService, gameService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { Copy, Users, BarChart3, Clock, X } from 'lucide-react';
 
@@ -29,8 +29,8 @@ export default function AssignmentDetail({ assignmentId }) {
       setStats(st);
       if (a?.gameId) {
         try {
-          const all = await gameProgressService.listAll();
-          const g = all.find(x => x.id === a.gameId);
+          const all = await gameService.list();
+          const g = all.find(x => x._id === a.gameId);
           setGameName(g?.name || '');
         } catch {}
       }

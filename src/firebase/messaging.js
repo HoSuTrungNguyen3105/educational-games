@@ -29,6 +29,7 @@ async function initMessaging() {
       app = existingApps[0];
     } else {
       app = initializeApp(firebaseConfig);
+      console.log("Firebase initialized:", app.name);
     }
 
     messaging = getMessaging(app);
@@ -116,7 +117,7 @@ export function getTokenValue() {
  * Returns an unsubscribe function.
  */
 export function onForegroundMessage(callback) {
-  let unsubscribe = () => {};
+  let unsubscribe = () => { };
 
   initMessaging().then((msg) => {
     if (!msg) return;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { assignmentService, gameProgressService, classService } from '../../services/api.js';
+import { assignmentService, gameService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { Plus, Clock, Users, CheckCircle, XCircle, Eye } from 'lucide-react';
 
@@ -16,11 +16,11 @@ export default function AssignmentList() {
     try {
       const [all, allGames, allClasses] = await Promise.all([
         assignmentService.list(),
-        gameProgressService.listAll(),
+        gameService.list(),
         classService.list(),
       ]);
       setAssignments(all);
-      const gMap = {}; allGames.forEach(g => { gMap[g.id] = g.name; });
+      const gMap = {}; allGames.forEach(g => { gMap[g._id] = g.name; });
       const cMap = {}; allClasses.forEach(c => { cMap[c.id] = c.name; });
       setGames(gMap);
       setClasses(cMap);

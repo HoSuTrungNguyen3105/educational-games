@@ -17,6 +17,7 @@ import DailyTaskManagement from './DailyTaskManagement.jsx'
 import TeacherChat from './TeacherChat.jsx'
 import TeacherProfile from './TeacherProfile.jsx'
 import ClassManagement from './ClassManagement.jsx'
+import ClassStudents from './ClassStudents.jsx'
 import AssignmentCreate from './AssignmentCreate.jsx'
 import AssignmentDetail from './AssignmentDetail.jsx'
 import AssignmentList from './AssignmentList.jsx'
@@ -60,6 +61,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
       {page === "admin-chat" && <TeacherChat user={user} showToast={showToast} />}
       {page === "admin-profile" && <TeacherProfile user={user} onLogout={onLogout} showToast={showToast} />}
       {page === "admin-classes" && <ClassManagement />}
+      {page === "admin-class-students" && <ClassStudents classId={route.params?.classId} />}
       {page === "admin-assignments" && <AssignmentList />}
       {page === "admin-assignment-new" && <AssignmentCreate />}
       {page === "admin-assignment-detail" && <AssignmentDetail assignmentId={route.params?.assignmentId} />}
