@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nối Từ Co-op — Thách Thức Từ Vựng</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #8B5CF6;
+      --primary-dark: #7C3AED;
+      --success: #10B981;
+      --danger: #EF4444;
+      --warning: #F59E0B;
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f1f5f9;
+      --text-dim: #94a3b8;
+      --accent: #38bdf8;
+      --gold: #fbbf24;
+    }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+      user-select: none;
+    }
+    #root {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      background: none;
+      touch-action: manipulation;
+    }
+    .hidden { display: none !important; }
+    .font-mono { font-family: 'JetBrains Mono', 'Cascadia Code', monospace; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+    /* ---- HEADER ---- */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      z-index: 10;
+      flex-shrink: 0;
+    }
+    .header .title {
+      font-size: 1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header .stats {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .header .stats span { display: flex; align-items: center; gap: 4px; }
+    .header .timer { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: var(--accent); }
+    .header .timer.warning { color: var(--warning); }
+    .header .timer.danger { color: var(--danger); animation: pulse 0.5s infinite alternate; }
+
+    /* ---- PLAYER BAR ---- */
+    .player-bar {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      padding: 8px 16px;
+      background: rgba(30, 41, 59, 0.5);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      flex-shrink: 0;
+    }
+    .player-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .player-tag.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+    }
+    .player-tag .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .player-tag .lives {
+      font-size: 0.8rem;
+    }
+
+    /* ---- CHAIN AREA ---- */
+    .chain-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .chain-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 360px;
+    }
+    .chain-word {
+      padding: 12px 28px;
+      border-radius: 14px;
+      background: var(--card);
+      border: 2px solid rgba(255,255,255,0.08);
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-align: center;
+      animation: fadeIn 0.3s ease;
+      position: relative;
+    }
+    .chain-word.current {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+    }
+    .chain-word.correct {
+      border-color: var(--success);
+      background: rgba(16, 185, 129, 0.15);
+    }
+    .chain-word.wrong {
+      border-color: var(--danger);
+      background: rgba(239, 68, 68, 0.1);
+      animation: shake 0.3s;
+    }
+    .chain-arrow {
+      font-size: 1.2rem;
+      color: var(--text-dim);
+    }
+    .chain-hint {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* ---- INPUT ---- */
+    .input-area {
+      width: 100%;
+      max-width: 360px;
+      padding: 0 0 16px;
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .input-row input {
+      flex: 1;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 2px solid rgba(255,255,255,0.08);
+      color: var(--text);
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-row input:focus { border-color: var(--primary); }
+    .input-row input::placeholder { color: rgba(255,255,255,0.2); text-transform: none; font-weight: 400; letter-spacing: 0; }
+    .submit-btn {
+      padding: 14px 20px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+    .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3); }
+    .submit-btn:disabled { opacity: 0.5; pointer-events: none; }
+
+    /* ---- WORD SUGGESTIONS ---- */
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    .sug-btn {
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .sug-btn:hover { background: rgba(139, 92, 246, 0.15); border-color: var(--primary); color: var(--text); }
+
+    /* ---- ROUND INFO ---- */
+    .round-info {
+      text-align: center;
+      padding: 8px 16px;
+      flex-shrink: 0;
+    }
+    .round-info .round-text {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+    .round-info .target-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--gold);
+    }
+
+    /* ---- RESULT ---- */
+    .result-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .result-icon { font-size: 4rem; margin-bottom: 16px; }
+    .result-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+    .result-subtitle { font-size: 0.95rem; color: var(--text-dim); margin-bottom: 24px; }
+    .result-stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .result-stat {
+      text-align: center;
+      padding: 16px 20px;
+      border-radius: 14px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.06);
+      min-width: 100px;
+    }
+    .result-stat .num { font-size: 1.6rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .result-stat .label { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
+    .result-buttons { display: flex; gap: 12px; }
+    .result-btn {
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+    .result-btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; }
+    .result-btn.secondary { background: var(--card); color: var(--text); border: 1px solid rgba(255,255,255,0.1); }
+    .result-btn:hover { transform: translateY(-1px); }
+
+    /* ---- LOBBY ---- */
+    .lobby {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .lobby-icon { font-size: 4rem; margin-bottom: 16px; }
+    .lobby-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .lobby-subtitle { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 24px; text-align: center; line-height: 1.6; }
+    .lobby-settings { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; width: 100%; max-width: 300px; }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; }
+    .setting-label { font-size: 0.85rem; color: var(--text-dim); }
+    .setting-select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .lobby-btn {
+      padding: 14px 40px;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      transition: all 0.2s;
+    }
+    .lobby-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3); }
+
+    /* ---- TOAST ---- */
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      padding: 10px 20px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 999;
+      transition: transform 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ---- INPUT TIME BAR ---- */
+    .time-bar {
+      width: 100%;
+      max-width: 360px;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .time-bar .fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width 0.1s linear;
+    }
+
+    @media (max-width: 480px) {
+      .chain-word { font-size: 1.1rem; padding: 10px 20px; }
+      .result-stats { gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      var root = document.getElementById('root');
+      var _apiBase = '';
+      var _authToken = null;
+      var _gameId = null;
+
+      var MAX_ROUNDS = 15;
+      var INPUT_TIME = 20;
+      var MAX_LIVES = 3;
+      var TARGET_WORDS = 20;
+
+      var WORD_DICT = {
+        'HỌC': ['HỌC', 'HỌC SINH', 'HỌC TẬP', 'HỌC BÀI', 'HỌC TRƯỜNG'],
+        'CÔNG': ['CÔNG VIÊC', 'CÔNG TY', 'CÔNG NGHỆ', 'CÔNG AN', 'CÔNG VIÊN'],
+        'NHÀ': ['NHÀ TRƯỜNG', 'NHÀ HÀNG', 'NHÀ SÁCH', 'NHÀ VĂN', 'NHÀ THỜI'],
+        'TH𝐁Ọ': ['THẦN', 'THẦN KINH', 'THẦN TÀI', 'THẦN DÂN'],
+        'BẠN': ['BẠN BÈ', 'BẠN HỌC', 'BẠN THÂN', 'BẠN GÁI', 'BẠN TRAI'],
+        'TRƯỜNG': ['TRƯỜNG HỌC', 'TRƯỜNG HỌC'],
+        'SÁCH': ['SÁCH VỞ', 'SÁCH VỞ'],
+        'ĐỌC': ['ĐỌC SÁCH', 'ĐỌC HIỂU'],
+        'VIẾT': ['VIẾT TẤT'],
+        'TOÁN': ['TOÁN HỌC'],
+        'ANH': ['ANH NGỮ'],
+        'VĂN': ['VĂN HỌC'],
+        'LỊCH': ['LỊCH SỬ'],
+        'SỬ': ['SỬ HỌC'],
+        'HOÁ': ['HOÁ HỌC'],
+        'SINH': ['SINH HỌC'],
+        'ĐỊA': ['ĐỊA LÝ'],
+        'GIÁO': ['GIÁO DỤC'],
+        'DỤC': ['DỤC HỌC'],
+        'CHUYÊN': ['CHUYÊN NGÀNH'],
+        'NGÀNH': ['NGÀNH HỌC'],
+        'HỌC': ['HỌC KỲ', 'HỌC PHÍ', 'HỌC THUYẾT', 'HỌC BỔNG'],
+        'KỲ': ['KỲ THI', 'KỲ NGHỈ'],
+        'THI': ['THI ĐẤU', 'THI CUỐN'],
+        'CÚNG': ['CÚNG DẤU'],
+        'DẤU': ['DẤU ẤN'],
+        'ẤN': ['ẤN TƯỢNG'],
+        'ƯỚC': ['ƯỚC MƠ'],
+        'MƠ': ['MƠ ƯỚC'],
+        'ƯỚC': ['ƯỚC NGUYỆN'],
+        'NGUYỆT': ['NGUYỆT ÁNH'],
+        'ÁNH': ['ÁNH SÁNG'],
+        'SÁNG': ['SÁNG TẠO'],
+        'TẠO': ['TẠO DỰNG'],
+        'DỰNG': ['DỰNG XÂY'],
+        'XÂY': ['XÂY DỰNG'],
+        'DỰNG': ['DỰ ÁN'],
+        'ÁN': ['ÁN PHẠT'],
+        'PHẠT': ['PHẠT TIỀN'],
+        'TIỀN': ['TIỀN MẶT'],
+        'MẶT': ['MẶT TRỜI'],
+        'TRỜI': ['TRỜI MƠ'],
+        'MƠ': ['MƠ HỒ'],
+        'HỒ': ['HỒ BƠI'],
+        'BƠI': ['BƠI LỘI'],
+        'LỘI': ['LỘI NGỤC'],
+        'NGỤC': ['NGỤC TỤC'],
+        'TỤC': ['TỤC LỆ'],
+        'LỆ': ['LỆ NHẬT'],
+        'NHẬT': ['NHẬT KÝ'],
+        'KÝ': ['KÝ ỨC'],
+        'ỨC': ['ỨC CHẾ'],
+        'CHẾ': ['CHẾ ĐỘ'],
+        'ĐỘ': ['ĐỘ NHÂN'],
+        'NHÂN': ['NHÂN DÂN'],
+        'DÂN': ['DÂN SỐ'],
+        'SỐ': ['SỐ LIỆU'],
+        'LIỆU': ['LIỆU PHÁP'],
+        'PHÁP': ['PHÁP LUẬT'],
+        'LUẬT': ['LUẬT PHÁP'],
+        'TÀI': ['TÀI NĂNG'],
+        'NĂNG': ['NĂNG LƯỢNG'],
+        'LƯỢNG': ['LƯỢNG THỰC'],
+        'THỰC': ['THỰC HÀNH'],
+        'HÀNH': ['HÀNH ĐỘNG'],
+        'ĐỘNG': ['ĐỘNG LỰC'],
+        'LỰC': ['LỰC LƯỢNG'],
+        'LƯỢNG': ['LƯỢNG GIÁC'],
+        'GIÁC': ['GIÁC QUAN'],
+        'QUAN': ['QUAN TRỌNG'],
+        'TRỌNG': ['TRỌNG TÂM'],
+        'TÂM': ['TÂM HỌC'],
+        'TRÍ': ['TRÍ TUỆ'],
+        'TUỆ': ['TUỆ MỘNG'],
+        'DŨNG': ['DŨNG CẢM'],
+        'CẢM': ['CẢM THỨNG'],
+        'THỨNG': ['THỨNG KÝ'],
+        'KÝ': ['KÝ ỨC'],
+        'CƠ': ['CƠ HỘI'],
+        'HỘI': ['HỘI NGHỊ'],
+        'NGHỊ': ['NGHỊ XUẤT'],
+        'NGHỈ': ['NGHỈ MÁT'],
+        'MÁT': ['MÁT MẺ'],
+        'MẺ': ['MẺ NHÀ'],
+        'NHÀ': ['NHÀ NƯỚC'],
+        'NƯỚC': ['NƯỚC NGOÀI'],
+        'NGOÀI': ['NGOÀI TRỜI'],
+        'TRỜI': ['TRỜI CAO'],
+        'CAO': ['CAO NGUYÊN'],
+        'NGUYÊN': ['NGUYÊN TẮC'],
+        'TẮC': ['TẮC NGHẼN'],
+        'NGHẼN': ['NGHẼN MẠCH'],
+        'MẠCH': ['MẠCH MÁU'],
+        'MÁU': ['MÁU MIỆNG'],
+        'MIỆNG': ['MIỆNG MIỆNG'],
+        'TỪ': ['TỪ ĐIỂN'],
+        'ĐIỂN': ['ĐIỂN HÌNH'],
+        'HÌNH': ['HÌNH ẢNH'],
+        'ẢNH': ['ẢNH CHỤP'],
+        'CHỤP': ['CHỤP ẢNH'],
+        'ẢNH': ['ẢNH HƯỚNG'],
+        'HƯỚNG': ['HƯỚNG DẪN'],
+        'DẪN': ['DẪN ĐẦU'],
+        'ĐẦU': ['ĐẦU ĐỂU'],
+        'ĐỂU': ['ĐỂU TRÁI'],
+        'TRÁI': ['TRÁI NGƯỢC'],
+        'NGƯỢC': ['NGƯỢC LẠI'],
+        'LẠI': ['LẠI NHẬP'],
+        'NHẬP': ['NHẬP HỌC'],
+        'HỌC': ['HỌC VIÊN'],
+        'VIÊN': ['VIÊN CHỨC'],
+        'CHỨC': ['CHỨC NĂNG'],
+        'NĂNG': ['NĂNG SUẤT'],
+        'SUẤT': ['SUẤT ĂN'],
+        'ĂN': ['ĂN UỐNG'],
+        'UỐNG': ['UỐNG NƯỚC'],
+        'NƯỚC': ['NƯỚC RƠI'],
+        'RƠI': ['RƠI VÀO'],
+        'VÀO': ['VÀO MÙA'],
+        'MÙA': ['MÙA XUÂN'],
+        'XUÂN': ['XUÂN NAM'],
+        'NAM': ['NAM BẮC'],
+        'BẮC': ['BẮC BỘ'],
+        'BỘ': ['BỘ PHẬN'],
+        'PHẬN': ['PHẬN SỰ'],
+        'SỰ': ['SỰ KIỆN'],
+        'KIỆN': ['KIỆN TỤC'],
+        'TỤC': ['TỤC LỆ']
+      };
+
+      var state = {
+        screen: 'lobby',
+        words: [],
+        currentIdx: 0,
+        score: 0,
+        lives: MAX_LIVES,
+        timer: INPUT_TIME,
+        timerInterval: null,
+        player1: { name: 'Bạn 1', color: '#60a5fa' },
+        player2: { name: 'Bạn 2', color: '#f472b6' },
+        currentPlayer: 1,
+        totalWords: 0,
+        coopMode: false,
+        aiActive: true,
+        _userId: null,
+        gameOver: false
+      };
+
+      function toast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(function() { t.classList.remove('show'); }, 2200);
+      }
+
+      function postToParent(type, data) {
+        try { window.parent.postMessage({ type: type, data: data || {} }, '*'); } catch (e) {}
+      }
+
+      function randomWord() {
+        var keys = Object.keys(WORD_DICT);
+        return keys[Math.floor(Math.random() * keys.length)];
+      }
+
+      function getStartingWord() {
+        return randomWord();
+      }
+
+      function getWordHint(word) {
+        var possibilities = WORD_DICT[word];
+        if (possibilities && possibilities.length > 0) {
+          var filtered = possibilities.filter(function(w) { return w !== word; });
+          if (filtered.length > 0) return filtered[0];
+        }
+        var keys = Object.keys(WORD_DICT);
+        for (var i = 0; i < keys.length; i++) {
+          if (keys[i].startsWith(word.slice(-1))) return keys[i];
+        }
+        return word;
+      }
+
+      function findValidWord(prevWord) {
+        var lastChar = prevWord.slice(-1);
+        var matches = [];
+        var keys = Object.keys(WORD_DICT);
+        for (var i = 0; i < keys.length; i++) {
+          if (keys[i].startsWith(lastChar)) {
+            matches.push(keys[i]);
+          }
+        }
+        if (matches.length > 0) return matches[Math.floor(Math.random() * matches.length)];
+        return randomWord();
+      }
+
+      function validateWord(word) {
+        return word && word.length > 0 && /^[A-ZÀ-Ỹ\s]+$/i.test(word);
+      }
+
+      function startGame() {
+        state.words = [];
+        state.currentIdx = 0;
+        state.score = 0;
+        state.lives = MAX_LIVES;
+        state.totalWords = 0;
+        state.gameOver = false;
+        state.currentPlayer = 1;
+        var start = getStartingWord();
+        state.words.push(start);
+        state.screen = 'playing';
+        startTimer();
+        render();
+      }
+
+      function startTimer() {
+        clearInterval(state.timerInterval);
+        state.timer = INPUT_TIME;
+        state.timerInterval = setInterval(function() {
+          state.timer = Math.max(0, state.timer - 0.1);
+          var fill = document.getElementById('timer-fill');
+          if (fill) fill.style.width = (state.timer / INPUT_TIME * 100) + '%';
+          var timerEl = document.getElementById('timer-display');
+          if (timerEl) {
+            timerEl.textContent = Math.ceil(state.timer) + 's';
+            timerEl.className = 'timer font-mono' + (state.timer <= 5 ? ' danger' : state.timer <= 10 ? ' warning' : '');
+          }
+          if (state.timer <= 0) {
+            clearInterval(state.timerInterval);
+            timeUp();
+          }
+        }, 100);
+      }
+
+      function timeUp() {
+        state.lives--;
+        state.totalWords = state.words.length;
+        if (state.lives <= 0) {
+          state.gameOver = true;
+          state.screen = 'result';
+          postToParent('game-over', {
+            score: state.score,
+            correct: state.totalWords,
+            totalQuestions: state.totalWords,
+            timeUsed: 0,
+            coinReward: Math.floor(state.score / 10)
+          });
+          render();
+          return;
+        }
+        toast('⏱️ Hết giờ! Mất 1 mạng');
+        nextWord();
+      }
+
+      function submitWord(word) {
+        var w = word.trim().toUpperCase();
+        if (!validateWord(w)) {
+          toast('❌ Từ không hợp lệ!');
+          return;
+        }
+        var prev = state.words[state.words.length - 1];
+        var lastChar = prev.slice(-1);
+        if (!w.startsWith(lastChar)) {
+          state.lives--;
+          toast('❌ Từ phải bắt đầu bằng "' + lastChar + '"! Mất 1 mạng');
+          shakeInput();
+          if (state.lives <= 0) {
+            state.gameOver = true;
+            clearInterval(state.timerInterval);
+            state.totalWords = state.words.length;
+            state.screen = 'result';
+            postToParent('game-over', {
+              score: state.score,
+              correct: state.totalWords,
+              totalQuestions: state.totalWords,
+              timeUsed: 0,
+              coinReward: Math.floor(state.score / 10)
+            });
+            render();
+            return;
+          }
+          renderLives();
+          return;
+        }
+        state.words.push(w);
+        state.score += 10 + Math.floor(state.timer);
+        state.totalWords = state.words.length;
+        state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+        toast('✅ +' + (10 + Math.floor(state.timer)) + ' điểm!');
+        if (state.totalWords >= TARGET_WORDS) {
+          state.gameOver = true;
+          state.screen = 'result';
+          clearInterval(state.timerInterval);
+          postToParent('game-over', {
+            score: state.score,
+            correct: state.totalWords,
+            totalQuestions: state.totalWords,
+            timeUsed: 0,
+            coinReward: Math.floor(state.score / 10)
+          });
+          render();
+          return;
+        }
+        render();
+        startTimer();
+        if (state.aiActive && state.currentPlayer === 2) scheduleAIAnswer();
+      }
+
+      function nextWord() {
+        var prev = state.words[state.words.length - 1];
+        var next = findValidWord(prev);
+        state.words.push(next);
+        state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+        render();
+        startTimer();
+        if (state.aiActive && state.currentPlayer === 2) scheduleAIAnswer();
+      }
+
+      function scheduleAIAnswer() {
+        setTimeout(function() {
+          if (state.screen !== 'playing' || state.gameOver) return;
+          var prev = state.words[state.words.length - 1];
+          var lastChar = prev.slice(-1);
+          var matches = Object.keys(WORD_DICT).filter(function(k) { return k.startsWith(lastChar); });
+          var answer;
+          if (matches.length > 0) {
+            answer = matches[Math.floor(Math.random() * matches.length)];
+          } else {
+            answer = prev + 'ĐỜI';
+          }
+          state.words.push(answer);
+          state.score += 5;
+          state.totalWords = state.words.length;
+          state.currentPlayer = 1;
+          toast('🤖 AI nối: ' + answer);
+          if (state.totalWords >= TARGET_WORDS) {
+            state.gameOver = true;
+            state.screen = 'result';
+            clearInterval(state.timerInterval);
+            postToParent('game-over', {
+              score: state.score,
+              correct: state.totalWords,
+              totalQuestions: state.totalWords,
+              timeUsed: 0,
+              coinReward: Math.floor(state.score / 10)
+            });
+            render();
+            return;
+          }
+          render();
+          startTimer();
+        }, 1500 + Math.random() * 2000);
+      }
+
+      function shakeInput() {
+        var inp = document.getElementById('word-input');
+        if (inp) {
+          inp.style.animation = 'shake 0.3s';
+          setTimeout(function() { inp.style.animation = ''; }, 300);
+        }
+      }
+
+      function renderLives() {
+        var el = document.getElementById('lives-display');
+        if (el) el.textContent = '❤️'.repeat(state.lives) + '🖤'.repeat(Math.max(0, MAX_LIVES - state.lives));
+      }
+
+      function render() {
+        if (state.screen === 'lobby') renderLobby();
+        else if (state.screen === 'playing') renderPlaying();
+        else if (state.screen === 'result') renderResult();
+      }
+
+      function renderLobby() {
+        root.innerHTML =
+          '<div class="lobby">' +
+          '<div class="lobby-icon">🔤</div>' +
+          '<div class="lobby-title">NỐI TỪ CO-OP</div>' +
+          '<div class="lobby-subtitle">Cùng nhau nối từ!<br>Từ tiếp phải bắt đầu bằng chữ cái cuối<br>của từ trước đó.<br><br>⏱️ ' + INPUT_TIME + 's mỗi lượt · ❤️ ' + MAX_LIVES + ' mạng · 🎯 ' + TARGET_WORDS + ' từ</div>' +
+          '<div class="lobby-settings">' +
+          '<div class="setting-row"><span class="setting-label">Người chơi</span><span style="color:var(--accent);font-weight:600;">vs AI Bot</span></div>' +
+          '</div>' +
+          '<button class="lobby-btn" id="btn-start">▶ BẮT ĐẦU</button>' +
+          '</div>';
+
+        document.getElementById('btn-start').onclick = function() { startGame(); };
+      }
+
+      function renderPlaying() {
+        var prevWord = state.words[state.words.length - 1];
+        var lastChar = prevWord.slice(-1);
+        var progress = Math.min(state.totalWords / TARGET_WORDS * 100, 100);
+        var p1Active = state.currentPlayer === 1;
+        var currentName = p1Active ? state.player1.name : state.player2.name;
+
+        var wordsHtml = '';
+        var startIdx = Math.max(0, state.words.length - 4);
+        for (var i = startIdx; i < state.words.length; i++) {
+          var w = state.words[i];
+          var isCurrent = i === state.words.length - 1;
+          if (i > startIdx) wordsHtml += '<div class="chain-arrow">↓</div>';
+          wordsHtml += '<div class="chain-word' + (isCurrent ? ' current' : '') + '">' + w + '</div>';
+        }
+
+        root.innerHTML =
+          '<div class="header">' +
+          '<div class="title">NỐI TỪ</div>' +
+          '<div class="stats">' +
+          '<span>⭐ <span id="score-display">' + state.score + '</span></span>' +
+          '<span id="lives-display">❤️'.repeat(state.lives) + '🖤'.repeat(Math.max(0, MAX_LIVES - state.lives)) + '</span>' +
+          '</div>' +
+          '<div class="timer font-mono" id="timer-display">' + Math.ceil(state.timer) + 's</div>' +
+          '</div>' +
+          '<div class="player-bar">' +
+          '<div class="player-tag' + (p1Active ? ' active' : '') + '">' +
+          '<div class="dot" style="background:' + state.player1.color + ';"></div>' +
+          state.player1.name +
+          '</div>' +
+          '<div class="player-tag' + (!p1Active ? ' active' : '') + '">' +
+          '<div class="dot" style="background:' + state.player2.color + ';"></div>' +
+          state.player2.name +
+          (state.aiActive ? ' 🤖' : '') +
+          '</div>' +
+          '</div>' +
+          '<div class="round-info">' +
+          '<div class="target-text">🎯 Từ #' + (state.totalWords + 1) + ' / ' + TARGET_WORDS + '</div>' +
+          '<div class="time-bar"><div class="fill" id="timer-fill" style="width:' + (state.timer / INPUT_TIME * 100) + '%;"></div></div>' +
+          '</div>' +
+          '<div class="chain-area">' +
+          '<div class="chain-container" id="chain-container">' + wordsHtml + '</div>' +
+          '<div class="chain-hint">Từ tiếp phải bắt đầu bằng chữ "<strong style="color:var(--accent);">' + lastChar + '</strong>"</div>' +
+          '</div>' +
+          '<div class="input-area" style="padding:16px;">' +
+          '<div style="text-align:center;font-size:0.85rem;color:var(--text-dim);margin-bottom:8px;">' + currentName + ' nhập từ:</div>' +
+          '<div class="input-row">' +
+          '<input type="text" id="word-input" placeholder="Nhập từ bắt đầu bằng ' + lastChar + '..." autocomplete="off" maxlength="20" ' + (!p1Active && state.aiActive ? 'disabled' : '') + '>' +
+          '<button class="submit-btn" id="btn-submit"' + (!p1Active && state.aiActive ? ' disabled' : '') + '>✓</button>' +
+          '</div>' +
+          '</div>';
+
+        var inp = document.getElementById('word-input');
+        if (inp && !inp.disabled) {
+          inp.focus();
+          inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              submitWord(inp.value);
+            }
+          });
+        }
+
+        document.getElementById('btn-submit').onclick = function() {
+          var inp2 = document.getElementById('word-input');
+          if (inp2) submitWord(inp2.value);
+        };
+
+        if (state.aiActive && state.currentPlayer === 2) scheduleAIAnswer();
+      }
+
+      function renderResult() {
+        var grade, icon;
+        if (state.totalWords >= TARGET_WORDS) { grade = 'Hoàn thành xuất sắc!'; icon = '🏆'; }
+        else if (state.totalWords >= 15) { grade = 'Tuyệt vời!'; icon = '🌟'; }
+        else if (state.totalWords >= 10) { grade = 'Khá tốt!'; icon = '👍'; }
+        else { grade = 'Cố gắng hơn nhé!'; icon = '💪'; }
+
+        var lastWords = state.words.slice(-5).map(function(w) {
+          return '<div style="padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.06);font-size:0.85rem;font-weight:600;letter-spacing:1px;">' + w + '</div>';
+        }).join('<div style="color:var(--text-dim);font-size:0.8rem;">→</div>');
+
+        root.innerHTML =
+          '<div class="result-screen">' +
+          '<div class="result-icon">' + icon + '</div>' +
+          '<div class="result-title">' + grade + '</div>' +
+          '<div class="result-subtitle">Đã nối được ' + state.totalWords + ' từ liên tiếp!</div>' +
+          '<div style="display:flex;gap:4px;align-items:center;margin-bottom:20px;flex-wrap:wrap;justify-content:center;">' + lastWords + '</div>' +
+          '<div class="result-stats">' +
+          '<div class="result-stat"><div class="num" style="color:var(--gold);">' + state.score + '</div><div class="label">Điểm</div></div>' +
+          '<div class="result-stat"><div class="num" style="color:var(--accent);">' + state.totalWords + '</div><div class="label">Từ</div></div>' +
+          '<div class="result-stat"><div class="num" style="color:var(--danger);">' + (MAX_LIVES - state.lives) + '</div><div class="label">Lỗi</div></div>' +
+          '<div class="result-stat"><div class="num" style="color:var(--success);">' + Math.floor(state.score / 10) + '</div><div class="label">Xu</div></div>' +
+          '</div>' +
+          '<div class="result-buttons">' +
+          '<button class="result-btn secondary" id="btn-home">🏠 Menu</button>' +
+          '<button class="result-btn primary" id="btn-replay">🔄 Chơi lại</button>' +
+          '</div>' +
+          '</div>';
+
+        document.getElementById('btn-home').onclick = function() {
+          state.screen = 'lobby';
+          render();
+        };
+        document.getElementById('btn-replay').onclick = function() { startGame(); };
+      }
+
+      // ---- INIT ----
+      window.addEventListener('message', function(e) {
+        if (!e.data || typeof e.data !== 'object') return;
+        if (e.data.type === 'init' && e.data.data) {
+          var d = e.data.data;
+          _apiBase = d.apiBase || '';
+          _authToken = d.authToken || null;
+          _gameId = d.gameId || null;
+          state._userId = d.userId || null;
+          if (d.playerName) state.player1.name = d.playerName;
+          if (d.players && d.players.length >= 2) {
+            state.player2.name = d.players[1];
+            state.coopMode = true;
+            state.aiActive = false;
+          }
+          render();
+        } else if (e.data.type === 'opponent-move' && e.data.data) {
+          var om = e.data.data;
+          if (om.playerId && om.playerId !== (state._userId || '')) {
+            state.coopMode = true;
+            state.aiActive = false;
+            state.player2.name = om.playerName || 'Bạn';
+            if (om.word) {
+              state.words.push(om.word.toUpperCase());
+              state.totalWords = state.words.length;
+              state.currentPlayer = 1;
+              render();
+              startTimer();
+            }
+          }
+        }
+      });
+
+      postToParent('ready');
+      render();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Memory Team — Co-op Memorization</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #EC4899;
+      --primary-dark: #DB2777;
+      --success: #10B981;
+      --danger: #EF4444;
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f1f5f9;
+      --text-dim: #94a3b8;
+      --accent: #38bdf8;
+      --gold: #fbbf24;
+    }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+      user-select: none;
+    }
+    #root {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      background: none;
+      touch-action: manipulation;
+    }
+    .hidden { display: none !important; }
+    .font-mono { font-family: 'JetBrains Mono', 'Cascadia Code', monospace; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+    @keyframes matchBounce { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    @keyframes wrongShake { 0%,100% { transform: rotateY(0); } 25% { transform: rotateY(10deg); } 75% { transform: rotateY(-10deg); } }
+
+    /* ---- HEADER ---- */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      z-index: 10;
+      flex-shrink: 0;
+    }
+    .header .title {
+      font-size: 1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f472b6, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header .stats {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .header .stats span { display: flex; align-items: center; gap: 4px; }
+    .header .timer {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .header .timer.warning { color: var(--gold); }
+    .header .timer.danger { color: var(--danger); animation: pulse 0.5s infinite alternate; }
+
+    /* ---- PLAYER BAR ---- */
+    .player-bar {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 8px 16px;
+      background: rgba(30, 41, 59, 0.5);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      flex-shrink: 0;
+    }
+    .player-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .player-tag.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+    }
+    .player-tag .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* ---- BOARD ---- */
+    .board-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      overflow: hidden;
+    }
+    .board {
+      display: grid;
+      gap: 8px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .board-4x3 { grid-template-columns: repeat(4, 1fr); }
+    .board-4x4 { grid-template-columns: repeat(4, 1fr); }
+    .board-5x4 { grid-template-columns: repeat(5, 1fr); }
+
+    .card {
+      aspect-ratio: 1;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--card), #2d3a4f);
+      border: 2px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card:hover:not(.flipped):not(.matched) {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+    .card .card-face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      backface-visibility: hidden;
+    }
+    .card .card-back {
+      font-size: 1.4rem;
+      color: rgba(255,255,255,0.15);
+    }
+    .card .card-front {
+      transform: rotateY(180deg);
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(139, 92, 246, 0.15));
+    }
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+    .card.flipped .card-front {
+      transform: rotateY(0);
+    }
+    .card.flipped .card-back {
+      transform: rotateY(-180deg);
+    }
+    .card.matched {
+      border-color: var(--success);
+      background: rgba(16, 185, 129, 0.15);
+      animation: matchBounce 0.4s ease;
+      pointer-events: none;
+    }
+    .card.wrong {
+      animation: wrongShake 0.4s;
+      border-color: var(--danger);
+    }
+    .card .card-emoji {
+      font-size: 2rem;
+    }
+    .card .card-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      position: absolute;
+      bottom: 4px;
+    }
+
+    /* ---- INFO BAR ---- */
+    .info-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 8px 16px;
+      flex-shrink: 0;
+    }
+    .info-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .info-badge.pairs {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+    }
+    .info-badge.moves {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-dim);
+    }
+
+    /* ---- RESULT ---- */
+    .result-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .result-icon { font-size: 4rem; margin-bottom: 16px; }
+    .result-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+    .result-subtitle { font-size: 0.95rem; color: var(--text-dim); margin-bottom: 24px; }
+    .result-stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .result-stat {
+      text-align: center;
+      padding: 16px 20px;
+      border-radius: 14px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.06);
+      min-width: 100px;
+    }
+    .result-stat .num { font-size: 1.6rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .result-stat .label { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
+    .result-buttons { display: flex; gap: 12px; }
+    .result-btn {
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+    .result-btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; }
+    .result-btn.secondary { background: var(--card); color: var(--text); border: 1px solid rgba(255,255,255,0.1); }
+    .result-btn:hover { transform: translateY(-1px); }
+
+    /* ---- LOBBY ---- */
+    .lobby {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .lobby-icon { font-size: 4rem; margin-bottom: 16px; }
+    .lobby-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #f472b6, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .lobby-subtitle { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 20px; text-align: center; line-height: 1.6; }
+    .theme-select {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .theme-btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: var(--card);
+      border: 2px solid rgba(255,255,255,0.06);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      min-width: 80px;
+      text-align: center;
+    }
+    .theme-btn.selected {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(236, 72, 153, 0.1);
+    }
+    .theme-btn:hover:not(:disabled) { border-color: var(--primary); }
+    .lobby-btn {
+      padding: 14px 40px;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      transition: all 0.2s;
+    }
+    .lobby-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(236, 72, 153, 0.3); }
+
+    /* ---- TOAST ---- */
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      padding: 10px 20px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 999;
+      transition: transform 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ---- TURN INDICATOR ---- */
+    .turn-indicator {
+      text-align: center;
+      padding: 6px 0;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+    .turn-indicator strong { color: var(--accent); }
+
+    @media (max-width: 480px) {
+      .card .card-emoji { font-size: 1.5rem; }
+      .board { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      var root = document.getElementById('root');
+      var _apiBase = '';
+      var _authToken = null;
+      var _gameId = null;
+
+      var THEMES = {
+        animals: { name: 'Động vật', icon: '🐾', pairs: 8, emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔'] },
+        fruits: { name: 'Trái cây', icon: '🍎', pairs: 8, emojis: ['🍎','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍑','🥝','🍒','🥭','🍍','🥥','🍈','🍐'] },
+        flags: { name: 'Quốc gia', icon: '🌍', pairs: 8, emojis: ['🇻🇳','🇯🇵','🇰🇷','🇨🇳','🇺🇸','🇬🇧','🇫🇷','🇩🇪','🇮🇹','🇪🇸','🇧🇷','🇷🇺','🇮🇳','🇹🇭','🇲🇾','🇮🇩'] },
+        space: { name: 'Vũ trụ', icon: '🚀', pairs: 8, emojis: ['🚀','🛸','🌍','🌙','⭐','☀️','☄️','🪐','🌌','🔭','👽','🛰️','💺','🌃','✨','💫'] },
+        food: { name: 'Đồ ăn', icon: '🍕', pairs: 6, emojis: ['🍕','🍔','🍟','🌭','🌮','🌯','🥗','🍣','🍜','🍱','🍙','🍩','🍪','🎂','🍰','🧁'] }
+      };
+
+      var state = {
+        screen: 'lobby',
+        selectedTheme: 'animals',
+        cards: [],
+        flippedCards: [],
+        matchedPairs: 0,
+        totalPairs: 8,
+        moves: 0,
+        score: 0,
+        timer: 120,
+        timerInterval: null,
+        currentPlayer: 1,
+        player1: { name: 'Bạn 1', color: '#60a5fa', matched: 0 },
+        player2: { name: 'Bạn 2', color: '#f472b6', matched: 0 },
+        coopMode: false,
+        aiActive: true,
+        _userId: null,
+        gameOver: false,
+        lockBoard: false
+      };
+
+      function toast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(function() { t.classList.remove('show'); }, 2200);
+      }
+
+      function postToParent(type, data) {
+        try { window.parent.postMessage({ type: type, data: data || {} }, '*'); } catch (e) {}
+      }
+
+      function shuffle(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+        }
+        return a;
+      }
+
+      function createBoard(themeId) {
+        var theme = THEMES[themeId];
+        var numPairs = theme.pairs;
+        var emojis = shuffle(theme.emojis).slice(0, numPairs);
+        var cards = [];
+        emojis.forEach(function(emoji, i) {
+          cards.push({ id: i * 2, emoji: emoji, pairId: i, flipped: false, matched: false });
+          cards.push({ id: i * 2 + 1, emoji: emoji, pairId: i, flipped: false, matched: false });
+        });
+        return shuffle(cards);
+      }
+
+      function startGame() {
+        state.cards = createBoard(state.selectedTheme);
+        state.totalPairs = THEMES[state.selectedTheme].pairs;
+        state.matchedPairs = 0;
+        state.moves = 0;
+        state.score = 0;
+        state.timer = 120;
+        state.currentPlayer = 1;
+        state.flippedCards = [];
+        state.gameOver = false;
+        state.lockBoard = false;
+        state.player1.matched = 0;
+        state.player2.matched = 0;
+        state.screen = 'playing';
+        startTimer();
+        render();
+      }
+
+      function startTimer() {
+        clearInterval(state.timerInterval);
+        state.timerInterval = setInterval(function() {
+          state.timer = Math.max(0, state.timer - 1);
+          var timerEl = document.getElementById('timer-display');
+          if (timerEl) {
+            timerEl.textContent = state.timer + 's';
+            timerEl.className = 'timer font-mono' + (state.timer <= 10 ? ' danger' : state.timer <= 20 ? ' warning' : '');
+          }
+          if (state.timer <= 0) {
+            clearInterval(state.timerInterval);
+            endGame(false);
+          }
+        }, 1000);
+      }
+
+      function flipCard(cardId) {
+        if (state.lockBoard || state.gameOver) return;
+        var card = state.cards.find(function(c) { return c.id === cardId; });
+        if (!card || card.flipped || card.matched) return;
+        if (state.flippedCards.length >= 2) return;
+
+        card.flipped = true;
+        state.flippedCards.push(card);
+        render();
+
+        if (state.flippedCards.length === 2) {
+          state.moves++;
+          state.lockBoard = true;
+          var c1 = state.flippedCards[0];
+          var c2 = state.flippedCards[1];
+
+          if (c1.pairId === c2.pairId) {
+            c1.matched = true;
+            c2.matched = true;
+            state.matchedPairs++;
+            state.score += 100 + Math.floor(state.timer * 2);
+
+            if (state.currentPlayer === 1) state.player1.matched++;
+            else state.player2.matched++;
+
+            toast('🎉 Đúng cặp! +' + (100 + Math.floor(state.timer * 2)));
+
+            setTimeout(function() {
+              state.flippedCards = [];
+              state.lockBoard = false;
+              render();
+
+              if (state.matchedPairs >= state.totalPairs) {
+                setTimeout(function() { endGame(true); }, 500);
+              }
+            }, 500);
+
+            if (state.aiActive && state.currentPlayer === 2) {
+              setTimeout(function() {
+                state.currentPlayer = 1;
+                render();
+              }, 600);
+            }
+          } else {
+            setTimeout(function() {
+              c1.flipped = false;
+              c2.flipped = false;
+              state.flippedCards = [];
+              state.lockBoard = false;
+              state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+              render();
+
+              if (state.aiActive && state.currentPlayer === 2) {
+                scheduleAIAnswer();
+              }
+            }, 800);
+          }
+        }
+      }
+
+      function scheduleAIAnswer() {
+        setTimeout(function() {
+          if (state.screen !== 'playing' || state.gameOver || state.lockBoard) return;
+          var unmatched = state.cards.filter(function(c) { return !c.matched && !c.flipped; });
+          if (unmatched.length < 2) return;
+
+          var pairs = {};
+          unmatched.forEach(function(c) {
+            if (!pairs[c.pairId]) pairs[c.pairId] = [];
+            pairs[c.pairId].push(c);
+          });
+
+          var pairKeys = Object.keys(pairs).filter(function(k) { return pairs[k].length === 2; });
+          var chosen;
+          if (pairKeys.length > 0 && Math.random() < 0.4) {
+            var pk = pairKeys[Math.floor(Math.random() * pairKeys.length)];
+            chosen = pairs[pk];
+          } else {
+            chosen = [unmatched[0], unmatched[1]];
+          }
+
+          flipCard(chosen[0].id);
+          setTimeout(function() {
+            if (state.screen === 'playing' && !state.gameOver) {
+              flipCard(chosen[1].id);
+            }
+          }, 600);
+        }, 800);
+      }
+
+      function endGame(won) {
+        state.gameOver = true;
+        clearInterval(state.timerInterval);
+        state.screen = 'result';
+        var coins = won ? Math.floor(state.score / 10) + 20 : Math.floor(state.score / 10);
+        postToParent('game-over', {
+          score: state.score,
+          correct: state.matchedPairs,
+          totalQuestions: state.totalPairs,
+          timeUsed: 120 - state.timer,
+          coinReward: coins
+        });
+        render();
+      }
+
+      function render() {
+        if (state.screen === 'lobby') renderLobby();
+        else if (state.screen === 'playing') renderPlaying();
+        else if (state.screen === 'result') renderResult();
+      }
+
+      function renderLobby() {
+        var themeHtml = Object.keys(THEMES).map(function(key) {
+          var t = THEMES[key];
+          var sel = state.selectedTheme === key ? ' selected' : '';
+          return '<button class="theme-btn' + sel + '" data-theme="' + key + '">' + t.icon + ' ' + t.name + '</button>';
+        }).join('');
+
+        root.innerHTML =
+          '<div class="lobby">' +
+          '<div class="lobby-icon">🧠</div>' +
+          '<div class="lobby-title">MEMORY TEAM</div>' +
+          '<div class="lobby-subtitle">Cùng nhau tìm cặp thẻ giống nhau!<br>Lật 2 thẻ mỗi lượt, tìm đủ cặp để thắng.</div>' +
+          '<div style="font-size:0.85rem;color:var(--text-dim);margin-bottom:8px;">Chọn chủ đề:</div>' +
+          '<div class="theme-select">' + themeHtml + '</div>' +
+          '<button class="lobby-btn" id="btn-start">▶ BẮT ĐẦU</button>' +
+          '</div>';
+
+        document.querySelectorAll('.theme-btn').forEach(function(btn) {
+          btn.onclick = function() {
+            state.selectedTheme = btn.dataset.theme;
+            renderLobby();
+          };
+        });
+        document.getElementById('btn-start').onclick = function() { startGame(); };
+      }
+
+      function renderPlaying() {
+        var theme = THEMES[state.selectedTheme];
+        var boardClass = theme.pairs === 6 ? 'board-4x3' : theme.pairs <= 8 ? 'board-4x4' : 'board-5x4';
+        var cols = boardClass === 'board-4x3' ? 4 : 4;
+
+        var cardsHtml = state.cards.map(function(card) {
+          var cls = 'card';
+          if (card.flipped) cls += ' flipped';
+          if (card.matched) cls += ' matched';
+          return '<div class="' + cls + '" data-card-id="' + card.id + '">' +
+            '<div class="card-face card-back">❓</div>' +
+            '<div class="card-face card-front"><span class="card-emoji">' + card.emoji + '</span></div>' +
+            '</div>';
+        }).join('');
+
+        var currentPlayerName = state.currentPlayer === 1 ? state.player1.name : state.player2.name;
+
+        root.innerHTML =
+          '<div class="header">' +
+          '<div class="title">MEMORY TEAM</div>' +
+          '<div class="stats">' +
+          '<span>⭐ ' + state.score + '</span>' +
+          '<span>🔄 ' + state.moves + '</span>' +
+          '</div>' +
+          '<div class="timer font-mono" id="timer-display">' + state.timer + 's</div>' +
+          '</div>' +
+          '<div class="player-bar">' +
+          '<div class="player-tag' + (state.currentPlayer === 1 ? ' active' : '') + '">' +
+          '<div class="dot" style="background:' + state.player1.color + ';"></div>' +
+          state.player1.name + ' (' + state.player1.matched + ')' +
+          '</div>' +
+          '<div class="player-tag' + (state.currentPlayer === 2 ? ' active' : '') + '">' +
+          '<div class="dot" style="background:' + state.player2.color + ';"></div>' +
+          state.player2.name + (state.aiActive ? ' 🤖' : '') + ' (' + state.player2.matched + ')' +
+          '</div>' +
+          '</div>' +
+          '<div class="info-bar">' +
+          '<div class="info-badge pairs">🃏 ' + state.matchedPairs + '/' + state.totalPairs + ' cặp</div>' +
+          '</div>' +
+          '<div class="turn-indicator">Lượt của: <strong>' + currentPlayerName + '</strong></div>' +
+          '<div class="board-area">' +
+          '<div class="board ' + boardClass + '" id="board">' + cardsHtml + '</div>' +
+          '</div>';
+
+        document.querySelectorAll('.card').forEach(function(cardEl) {
+          cardEl.onclick = function() {
+            var id = parseInt(cardEl.dataset.cardId, 10);
+            if (!isNaN(id)) flipCard(id);
+          };
+        });
+
+        if (state.aiActive && state.currentPlayer === 2 && !state.gameOver && state.matchedPairs < state.totalPairs) {
+          scheduleAIAnswer();
+        }
+      }
+
+      function renderResult() {
+        var won = state.matchedPairs >= state.totalPairs;
+        var icon = won ? '🏆' : '⏱️';
+        var title = won ? 'Hoàn thành!' : 'Hết giờ!';
+        var subtitle = won ? 'Cả đội đã tìm đủ cặp!' : 'Đã tìm được ' + state.matchedPairs + '/' + state.totalPairs + ' cặp';
+
+        root.innerHTML =
+          '<div class="result-screen">' +
+          '<div class="result-icon">' + icon + '</div>' +
+          '<div class="result-title">' + title + '</div>' +
+          '<div class="result-subtitle">' + subtitle + '</div>' +
+          '<div class="result-stats">' +
+          '<div class="result-stat"><div class="num" style="color:var(--gold);">' + state.score + '</div><div class="label">Điểm</div></div>' +
+          '<div class="result-stat"><div class="num" style="color:var(--accent);">' + state.matchedPairs + '</div><div class="label">Cặp</div></div>' +
+          '<div class="result-stat"><div class="num" style="color:var(--text-dim);">' + state.moves + '</div><div class="label">Lượt lật</div></div>' +
+          '<div class="result-stat"><div class="num" style="color:var(--success);">' + (state.player1.matched + state.player2.matched) + '</div><div class="label">Đúng</div></div>' +
+          '</div>' +
+          '<div class="result-buttons">' +
+          '<button class="result-btn secondary" id="btn-home">🏠 Menu</button>' +
+          '<button class="result-btn primary" id="btn-replay">🔄 Chơi lại</button>' +
+          '</div>' +
+          '</div>';
+
+        document.getElementById('btn-home').onclick = function() {
+          state.screen = 'lobby';
+          state.score = 0;
+          render();
+        };
+        document.getElementById('btn-replay').onclick = function() { startGame(); };
+      }
+
+      // ---- INIT ----
+      window.addEventListener('message', function(e) {
+        if (!e.data || typeof e.data !== 'object') return;
+        if (e.data.type === 'init' && e.data.data) {
+          var d = e.data.data;
+          _apiBase = d.apiBase || '';
+          _authToken = d.authToken || null;
+          _gameId = d.gameId || null;
+          state._userId = d.userId || null;
+          if (d.playerName) state.player1.name = d.playerName;
+          if (d.players && d.players.length >= 2) {
+            state.player2.name = d.players[1];
+            state.coopMode = true;
+            state.aiActive = false;
+          }
+          render();
+        } else if (e.data.type === 'opponent-move' && e.data.data) {
+          var om = e.data.data;
+          if (om.playerId && om.playerId !== (state._userId || '')) {
+            state.coopMode = true;
+            state.aiActive = false;
+            state.player2.name = om.playerName || 'Bạn';
+            if (om.cardId != null) {
+              flipCard(om.cardId);
+            }
+          }
+        }
+      });
+
+      postToParent('ready');
+      render();
+    })();
+  </script>
+</body>
+</html>

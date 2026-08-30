@@ -33,6 +33,7 @@ const ROUTES = [
   { name: "find-friends", pattern: "/find-friends" },
   { name: "my-coins",     pattern: "/my-coins" },
   { name: "daily-tasks",  pattern: "/daily-tasks" },
+  { name: "spin-wheel",   pattern: "/spin-wheel" },
 
   // ── Home (fallback) ──
   { name: "home", pattern: "/" },

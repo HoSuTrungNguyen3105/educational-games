@@ -5,6 +5,7 @@ import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { getByUser } from "../services/gameProgressService.js";
 import { getCollection } from "../db.js";
 import { trackAction } from "../services/dailyTaskService.js";
+import { processTaskEvent } from "../services/taskEngineService.js";
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.post("/login", async (req, res, next) => {
 
     const token = signToken(user);
     trackAction(user.id, "login", 1).catch(() => {});
+    processTaskEvent(user.id, { type: "LOGIN" }).catch(() => {});
     sendSuccess(res, { token, user: publicUser(user) });
   } catch (e) {
     next(e);

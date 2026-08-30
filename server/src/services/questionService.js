@@ -5,8 +5,10 @@ const COLLECTION = "questions";
 
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
-export async function listByGame(gameId) {
-  return getCollection(COLLECTION).find({ gameId }).sort({ id: 1 }).toArray();
+export async function listByGame(gameId, { inputMode } = {}) {
+  const filter = { gameId };
+  if (inputMode) filter.inputMode = inputMode;
+  return getCollection(COLLECTION).find(filter).sort({ id: 1 }).toArray();
 }
 
 export async function save(gameId, questions) {

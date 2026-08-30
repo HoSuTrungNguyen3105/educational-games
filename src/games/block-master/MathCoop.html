@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Giải Toán Cùng Nhau — Co-op Math</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #F59E0B;
+      --primary-dark: #D97706;
+      --success: #10B981;
+      --danger: #EF4444;
+      --bg: #0c1222;
+      --card: #1a2332;
+      --text: #f1f5f9;
+      --text-dim: #64748b;
+      --accent: #38bdf8;
+      --gold: #fbbf24;
+    }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+      user-select: none;
+    }
+    #root {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; touch-action: manipulation; }
+    .hidden { display: none !important; }
+    .font-mono { font-family: 'JetBrains Mono', 'Cascadia Code', monospace; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+    /* ---- HEADER ---- */
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: rgba(12,18,34,0.95); border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 10; flex-shrink: 0; }
+    .header .title { font-size: 1rem; font-weight: 700; background: linear-gradient(135deg, var(--gold), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .header .score-box { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 8px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); }
+    .header .score-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--gold); font-size: 1rem; }
+    .header .timer { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: var(--accent); }
+    .header .timer.warning { color: var(--primary); }
+    .header .timer.danger { color: var(--danger); animation: pulse 0.5s infinite alternate; }
+
+    /* ---- PLAYER BAR ---- */
+    .player-bar { display: flex; justify-content: center; gap: 20px; padding: 10px 16px; background: rgba(26,35,50,0.5); border-bottom: 1px solid rgba(255,255,255,0.04); flex-shrink: 0; }
+    .player-card { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); min-width: 130px; transition: all 0.3s; }
+    .player-card.active { border-color: var(--accent); background: rgba(56,189,248,0.08); }
+    .player-card .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: #fff; }
+    .player-card .info .name { font-size: 0.85rem; font-weight: 600; }
+    .player-card .info .status { font-size: 0.75rem; color: var(--text-dim); }
+    .player-card .info .status.solved { color: var(--success); font-weight: 600; }
+
+    /* ---- LEVEL BAR ---- */
+    .level-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 16px; flex-shrink: 0; }
+    .level-badge { padding: 4px 14px; border-radius: 20px; background: rgba(245,158,11,0.15); color: var(--gold); font-size: 0.8rem; font-weight: 700; }
+    .level-progress { display: flex; gap: 4px; align-items: center; }
+    .level-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.1); transition: all 0.3s; }
+    .level-dot.done { background: var(--success); }
+    .level-dot.current { background: var(--gold); box-shadow: 0 0 8px rgba(251,191,36,0.5); }
+
+    /* ---- MATH AREA ---- */
+    .math-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; overflow-y: auto; }
+    .equation-card { padding: 24px 32px; border-radius: 20px; background: linear-gradient(135deg, rgba(26,35,50,0.8), rgba(36,48,68,0.8)); border: 1px solid rgba(255,255,255,0.08); text-align: center; margin-bottom: 20px; animation: fadeIn 0.3s ease; min-width: 260px; }
+    .equation-card .equation { font-size: 2rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; letter-spacing: 2px; margin-bottom: 4px; background: linear-gradient(135deg, var(--gold), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .equation-card .eq-hint { font-size: 0.85rem; color: var(--text-dim); }
+
+    /* ---- INPUT ---- */
+    .input-area { width: 100%; max-width: 340px; }
+    .input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .input-row input { flex: 1; padding: 16px; border-radius: 14px; background: var(--card); border: 2px solid rgba(255,255,255,0.08); color: var(--text); font-size: 1.2rem; font-weight: 700; text-align: center; font-family: 'JetBrains Mono', monospace; outline: none; transition: border-color 0.2s; }
+    .input-row input:focus { border-color: var(--primary); }
+    .input-row input.correct { border-color: var(--success); background: rgba(16,185,129,0.1); }
+    .input-row input.wrong { border-color: var(--danger); background: rgba(239,68,68,0.08); animation: shake 0.3s; }
+    .input-row input::placeholder { color: rgba(255,255,255,0.15); font-weight: 400; }
+    .submit-btn { padding: 16px 24px; border-radius: 14px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; font-size: 1.1rem; font-weight: 700; transition: all 0.2s; }
+    .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,158,11,0.3); }
+    .submit-btn:disabled { opacity: 0.5; pointer-events: none; }
+
+    /* ---- PROGRESS ---- */
+    .progress-row { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 340px; margin-bottom: 16px; }
+    .progress-track { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--primary), var(--gold)); transition: width 0.3s ease; }
+    .progress-label { font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+
+    /* ---- COMBO ---- */
+    .combo-bar { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 0; flex-shrink: 0; }
+    .combo-bar .combo-text { font-size: 0.85rem; font-weight: 700; color: var(--gold); font-family: 'JetBrains Mono', monospace; }
+
+    /* ---- TIMER BAR ---- */
+    .timer-bar-wrap { width: 100%; max-width: 340px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
+    .timer-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.1s linear; }
+
+    /* ---- RESULT ---- */
+    .result-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+    .result-icon { font-size: 4rem; margin-bottom: 16px; }
+    .result-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+    .result-subtitle { font-size: 0.95rem; color: var(--text-dim); margin-bottom: 24px; }
+    .result-stats { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; justify-content: center; }
+    .result-stat { text-align: center; padding: 16px 20px; border-radius: 14px; background: var(--card); border: 1px solid rgba(255,255,255,0.06); min-width: 100px; }
+    .result-stat .num { font-size: 1.6rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .result-stat .label { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
+    .result-buttons { display: flex; gap: 12px; }
+    .result-btn { padding: 12px 28px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; transition: all 0.2s; }
+    .result-btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; }
+    .result-btn.secondary { background: var(--card); color: var(--text); border: 1px solid rgba(255,255,255,0.1); }
+    .result-btn:hover { transform: translateY(-1px); }
+
+    /* ---- LOBBY ---- */
+    .lobby { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+    .lobby-icon { font-size: 3.5rem; margin-bottom: 12px; }
+    .lobby-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; background: linear-gradient(135deg, var(--gold), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .lobby-subtitle { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 16px; text-align: center; line-height: 1.5; }
+    .lobby-btn { padding: 12px 32px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; transition: all 0.2s; }
+    .lobby-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,158,11,0.3); }
+    .lobby-btn:disabled { opacity: 0.5; pointer-events: none; }
+
+    /* ---- COOP PANEL ---- */
+    .coop-panel { width: 100%; max-width: 360px; margin-bottom: 16px; }
+    .coop-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+    .coop-tab { flex: 1; padding: 8px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; text-align: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); color: var(--text-dim); transition: all 0.2s; }
+    .coop-tab.active { background: rgba(56,189,248,0.1); border-color: var(--accent); color: var(--accent); }
+    .coop-search-row { display: flex; gap: 6px; margin-bottom: 8px; }
+    .coop-search-row input { flex: 1; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--text); font-size: 0.85rem; outline: none; }
+    .coop-search-row input:focus { border-color: var(--accent); }
+    .coop-search-row button { padding: 10px 14px; border-radius: 8px; background: var(--accent); color: #0c1222; font-weight: 700; font-size: 0.8rem; }
+    .coop-user-list { max-height: 160px; overflow-y: auto; }
+    .coop-user-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: background 0.15s; margin-bottom: 4px; }
+    .coop-user-item:hover { background: rgba(255,255,255,0.06); }
+    .coop-user-item .avatar-sm { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #ff6b6b, #4ecdc4); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; color: #fff; }
+    .coop-user-item .uinfo { flex: 1; min-width: 0; text-align: left; }
+    .coop-user-item .uname { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .coop-user-item .uusername { font-size: 0.7rem; color: var(--text-dim); }
+    .coop-invite-btn { padding: 5px 12px; border-radius: 6px; background: var(--success); color: #fff; font-weight: 700; font-size: 0.75rem; flex-shrink: 0; }
+    .coop-invite-btn:disabled { opacity: 0.5; }
+    .coop-status { padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); font-size: 0.8rem; color: var(--text-dim); border-left: 3px solid var(--gold); margin-top: 8px; }
+    .coop-join-row { display: flex; gap: 6px; margin-top: 8px; }
+    .coop-join-row input { flex: 1; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--text); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px; font-family: 'JetBrains Mono', monospace; outline: none; text-align: center; }
+    .coop-join-row input:focus { border-color: var(--accent); }
+    .coop-join-row button { padding: 10px 14px; border-radius: 8px; background: var(--primary); color: #fff; font-weight: 700; font-size: 0.8rem; }
+    .api-status { font-size: 0.75rem; margin-bottom: 12px; text-align: center; }
+    .api-status.loading { color: var(--text-dim); }
+    .api-status.ok { color: var(--success); }
+    .api-status.fallback { color: var(--gold); }
+    .api-status.error { color: var(--danger); }
+
+    /* ---- TOAST ---- */
+    .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-60px); padding: 10px 20px; border-radius: 12px; background: var(--card); border: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem; font-weight: 600; z-index: 999; transition: transform 0.3s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 480px) {
+      .equation-card .equation { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      var root = document.getElementById('root');
+      var _apiBase = '';
+      var _authToken = null;
+      var _gameId = null;
+      var _gameName = 'Giải Toán Co-op';
+
+      var QUESTIONS_PER_ROUND = 10;
+      var TIME_PER_Q = 15;
+      var CORRECT_PTS = 100;
+      var STREAK_FOR_COMBO = 3;
+      var COMBO_BONUS = 50;
+
+      var state = {
+        screen: 'lobby',
+        questions: [],
+        questionIdx: 0,
+        teamScore: 0,
+        streak: 0,
+        timer: TIME_PER_Q,
+        timerInterval: null,
+        player1: { name: 'Bạn', color: '#60a5fa', solved: false, answer: null, isCorrect: false },
+        player2: { name: 'Đối thủ', color: '#f472b6', solved: false, answer: null, isCorrect: false },
+        bothSolved: false,
+        coopMode: false,
+        _userId: null,
+        totalCorrect: 0,
+        totalWrong: 0,
+        gameOver: false,
+        apiStatus: 'loading',
+        gameCode: null
+      };
+
+      function toast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(function() { t.classList.remove('show'); }, 2200);
+      }
+
+      function postToParent(type, data) {
+        try { window.parent.postMessage({ type: type, data: data || {} }, '*'); } catch (e) {}
+      }
+
+      function randInt(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
+      function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = b; b = a % b; a = t; } return a; }
+
+      function shuffle(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = a[i]; a[i] = a[j]; a[j] = tmp; }
+        return a;
+      }
+
+      // ---- LOCAL QUESTION GENERATORS ----
+      function genLevel1() {
+        var a = randInt(10, 99), b = randInt(1, 50), op = Math.random() > 0.5 ? '+' : '-';
+        if (op === '-' && a < b) { var t = a; a = b; b = t; }
+        return { text: a + ' ' + op + ' ' + b + ' = ?', answer: String(op === '+' ? a + b : a - b), hint: 'Phép ' + (op === '+' ? 'cộng' : 'trừ') };
+      }
+      function genLevel2() {
+        var a = randInt(2, 12), b = randInt(2, 12), op = Math.random() > 0.5 ? '×' : '÷';
+        if (op === '×') return { text: a + ' × ' + b + ' = ?', answer: String(a * b), hint: 'Phép nhân' };
+        var product = a * b;
+        return { text: product + ' ÷ ' + a + ' = ?', answer: String(b), hint: 'Phép chia' };
+      }
+      function genLevel3() {
+        var den = [2, 3, 4, 6, 8][randInt(0, 4)];
+        var n1 = randInt(1, den - 1), n2 = randInt(1, den - 1);
+        var sum = n1 + n2, g = gcd(sum, den);
+        return { text: n1 + '/' + den + ' + ' + n2 + '/' + den + ' = ?', answer: (sum / g) + '/' + (den / g), hint: 'Cộng phân số' };
+      }
+      function genLevel4() {
+        var a = randInt(2, 10), b = randInt(1, 20), x = randInt(1, 15);
+        return { text: a + 'x + ' + b + ' = ' + (a * x + b) + ', x = ?', answer: String(x), hint: 'PT bậc 1' };
+      }
+      function genLevel5() {
+        var start = randInt(1, 10), step = randInt(2, 5), seq = [];
+        for (var i = 0; i < 4; i++) seq.push(start + step * i);
+        return { text: seq.join(', ') + ', ?', answer: String(start + step * 4), hint: 'Quy luật cộng đều' };
+      }
+      var generators = [genLevel1, genLevel2, genLevel3, genLevel4, genLevel5];
+
+      function generateLocalQuestions(count) {
+        var qs = [];
+        for (var i = 0; i < count; i++) qs.push(generators[randInt(0, 4)]());
+        return qs;
+      }
+
+      // ---- FETCH QUESTIONS FROM API ----
+      function fetchQuestionsFromAPI() {
+        if (!_apiBase || !_authToken || !_gameId) {
+          state.apiStatus = 'fallback';
+          return Promise.resolve([]);
+        }
+        state.apiStatus = 'loading';
+        var url = _apiBase + '/questions/game/' + _gameId + '?inputMode=input';
+        return fetch(url, { headers: { 'Authorization': 'Bearer ' + _authToken } })
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
+            var data = res && res.data ? res.data : res;
+            if (!Array.isArray(data) || data.length === 0) { state.apiStatus = 'fallback'; return []; }
+            state.apiStatus = 'ok';
+            return data.map(function(q) {
+              return {
+                text: q.text || q.question || q.content || '',
+                answer: q.correctAnswer != null ? String(q.correctAnswer) : (q.answer != null ? String(q.answer) : ''),
+                hint: q.hint || q.category || '',
+                _apiId: q.id
+              };
+            }).filter(function(q) { return q.text && q.answer; });
+          })
+          .catch(function() { state.apiStatus = 'error'; return []; });
+      }
+
+      function loadQuestions() {
+        if (state.apiQuestions && state.apiQuestions.length > 0) {
+          return shuffle(state.apiQuestions).slice(0, QUESTIONS_PER_ROUND);
+        }
+        return generateLocalQuestions(QUESTIONS_PER_ROUND);
+      }
+
+      // ---- GAME LOGIC ----
+      function startGame() {
+        state.questions = loadQuestions();
+        state.questionIdx = 0;
+        state.teamScore = 0;
+        state.streak = 0;
+        state.totalCorrect = 0;
+        state.totalWrong = 0;
+        state.gameOver = false;
+        state.screen = 'playing';
+        startQuestion();
+      }
+
+      function startQuestion() {
+        state.player1 = { name: state.player1.name, color: state.player1.color, solved: false, answer: null, isCorrect: false };
+        state.player2 = { name: state.player2.name, color: state.player2.color, solved: false, answer: null, isCorrect: false };
+        state.bothSolved = false;
+        state.timer = TIME_PER_Q;
+        render();
+        startTimer();
+      }
+
+      function startTimer() {
+        clearInterval(state.timerInterval);
+        state.timerInterval = setInterval(function() {
+          state.timer = Math.max(0, state.timer - 0.1);
+          var fill = document.getElementById('timer-bar-fill');
+          if (fill) fill.style.width = (state.timer / TIME_PER_Q * 100) + '%';
+          var timerEl = document.getElementById('timer-display');
+          if (timerEl) {
+            timerEl.textContent = Math.ceil(state.timer) + 's';
+            timerEl.className = 'timer font-mono' + (state.timer <= 5 ? ' danger' : state.timer <= 8 ? ' warning' : '');
+          }
+          if (state.timer <= 0) { clearInterval(state.timerInterval); timeUp(); }
+        }, 100);
+      }
+
+      function timeUp() {
+        if (state.bothSolved) return;
+        state.streak = 0;
+        state.totalWrong++;
+        toast('⏱️ Hết giờ!');
+        setTimeout(nextQuestion, 1500);
+      }
+
+      function checkAnswer(userAnswer) {
+        if (state.player1.solved || state.bothSolved) return;
+        var q = state.questions[state.questionIdx];
+        var isCorrect = String(userAnswer).trim().toLowerCase() === String(q.answer).trim().toLowerCase();
+        state.player1.solved = true;
+        state.player1.answer = userAnswer;
+        state.player1.isCorrect = isCorrect;
+        if (isCorrect) {
+          var combo = state.streak >= STREAK_FOR_COMBO ? COMBO_BONUS : 0;
+          var pts = CORRECT_PTS + combo + Math.floor(state.timer * 5);
+          state.teamScore += pts;
+          state.streak++;
+          state.totalCorrect++;
+          toast('✅ Đúng! +' + pts);
+        } else {
+          state.streak = 0;
+          state.totalWrong++;
+          toast('❌ Sai! Đáp án: ' + q.answer);
+        }
+        var inp = document.getElementById('answer-input');
+        if (inp) { inp.classList.add(isCorrect ? 'correct' : 'wrong'); inp.disabled = true; }
+        checkBothSolved();
+      }
+
+      function checkBothSolved() {
+        if (!state.player1.solved) return;
+        // In coop, wait for opponent. If no coop, auto-solve opponent.
+        if (!state.coopMode) {
+          state.player2.solved = true;
+          state.player2.isCorrect = true;
+        }
+        if (!state.player2.solved) return;
+        state.bothSolved = true;
+        clearInterval(state.timerInterval);
+        setTimeout(nextQuestion, 1200);
+      }
+
+      function nextQuestion() {
+        state.questionIdx++;
+        if (state.questionIdx >= state.questions.length) {
+          state.screen = 'result';
+          state.gameOver = true;
+          clearInterval(state.timerInterval);
+          postToParent('game-over', {
+            score: state.teamScore,
+            correct: state.totalCorrect,
+            totalQuestions: state.totalCorrect + state.totalWrong,
+            timeUsed: 0,
+            coinReward: Math.floor(state.teamScore / 10)
+          });
+          render();
+          return;
+        }
+        startQuestion();
+      }
+
+      // ---- RENDER ----
+      function render() {
+        if (state.screen === 'lobby') renderLobby();
+        else if (state.screen === 'playing') renderPlaying();
+        else if (state.screen === 'result') renderResult();
+      }
+
+      function renderLobby() {
+        var apiStatusHtml = '';
+        if (state.apiStatus === 'loading') apiStatusHtml = '<div class="api-status loading">⏳ Đang tải câu hỏi từ hệ thống...</div>';
+        else if (state.apiStatus === 'ok') apiStatusHtml = '<div class="api-status ok">✅ Đã tải ' + (state.apiQuestions || []).length + ' câu hỏi từ hệ thống</div>';
+        else if (state.apiStatus === 'fallback') apiStatusHtml = '<div class="api-status fallback">🎲 Không có câu hỏi từ hệ thống — dùng câu ngẫu nhiên</div>';
+        else apiStatusHtml = '<div class="api-status error">⚠️ Lỗi tải câu hỏi — dùng câu ngẫu nhiên</div>';
+
+        root.innerHTML =
+          '<div class="lobby">' +
+          '<div class="lobby-icon">🔢</div>' +
+          '<div class="lobby-title">GIẢI TOÁN CÙNG NHAU</div>' +
+          '<div class="lobby-subtitle">Mời bạn cùng giải toán!<br>Hai người cùng nhập đáp án, tích điểm cho đội.</div>' +
+          apiStatusHtml +
+          '<div class="coop-panel" id="coop-panel">' +
+          '<div class="coop-tabs">' +
+          '<button class="coop-tab active" id="tab-search">🔍 Tìm bạn</button>' +
+          '<button class="coop-tab" id="tab-code">🔑 Vào mã</button>' +
+          '</div>' +
+          '<div id="coop-content-search">' +
+          '<div class="coop-search-row">' +
+          '<input type="text" id="coop-search-input" placeholder="Nhập tên bạn cần tìm...">' +
+          '<button id="btn-search">Tìm</button>' +
+          '</div>' +
+          '<div class="coop-user-list" id="coop-user-list"></div>' +
+          '</div>' +
+          '<div id="coop-content-code" class="hidden">' +
+          '<div class="coop-join-row">' +
+          '<input type="text" id="coop-code-input" placeholder="MÃ PHÒNG" maxlength="8">' +
+          '<button id="btn-join-code">Vào phòng</button>' +
+          '</div>' +
+          '<div id="coop-code-error" style="color:var(--danger);font-size:0.8rem;margin-top:6px;"></div>' +
+          '</div>' +
+          '<div id="coop-status"></div>' +
+          '</div>' +
+          '<button class="lobby-btn" id="btn-start" disabled>🔒 Cần có bạn chơi</button>' +
+          '</div>';
+
+        // Tab switching
+        document.getElementById('tab-search').onclick = function() {
+          this.classList.add('active');
+          document.getElementById('tab-code').classList.remove('active');
+          document.getElementById('coop-content-search').classList.remove('hidden');
+          document.getElementById('coop-content-code').classList.add('hidden');
+        };
+        document.getElementById('tab-code').onclick = function() {
+          this.classList.add('active');
+          document.getElementById('tab-search').classList.remove('active');
+          document.getElementById('coop-content-code').classList.remove('hidden');
+          document.getElementById('coop-content-search').classList.add('hidden');
+        };
+
+        // Search
+        document.getElementById('btn-search').onclick = function() {
+          var q = document.getElementById('coop-search-input').value.trim();
+          if (q) postToParent('search-user', { query: q });
+        };
+        document.getElementById('coop-search-input').addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') { var q = this.value.trim(); if (q) postToParent('search-user', { query: q }); }
+        });
+
+        // Join by code
+        document.getElementById('btn-join-code').onclick = function() {
+          var code = document.getElementById('coop-code-input').value.trim().toUpperCase();
+          if (!code) return;
+          this.textContent = 'Đang vào...';
+          this.disabled = true;
+          postToParent('join-by-code', { code: code });
+        };
+
+        // Start button only enabled when coop
+        if (state.coopMode) {
+          var startBtn = document.getElementById('btn-start');
+          if (startBtn) { startBtn.disabled = false; startBtn.textContent = '▶ BẮT ĐẦU'; }
+        }
+        document.getElementById('btn-start').onclick = function() {
+          if (!state.coopMode) return;
+          startGame();
+        };
+      }
+
+      function renderPlaying() {
+        var q = state.questions[state.questionIdx];
+        if (!q) return;
+        var progress = ((state.questionIdx + 1) / state.questions.length * 100).toFixed(0);
+        var comboHtml = state.streak >= 2 ? '<div class="combo-bar"><span class="combo-text">🔥 Combo x' + state.streak + '!</span></div>' : '';
+
+        root.innerHTML =
+          '<div class="header">' +
+          '<div class="title">GIẢI TOÁN</div>' +
+          '<div class="score-box">⭐ <span class="score-num">' + state.teamScore + '</span></div>' +
+          '<div class="timer font-mono" id="timer-display">' + Math.ceil(state.timer) + 's</div>' +
+          '</div>' +
+          '<div class="player-bar">' +
+          renderPlayerTag(state.player1, 1) +
+          renderPlayerTag(state.player2, 2) +
+          '</div>' +
+          '<div class="level-bar">' +
+          '<div class="level-badge">Câu ' + (state.questionIdx + 1) + '/' + state.questions.length + '</div>' +
+          '</div>' +
+          comboHtml +
+          '<div class="math-area">' +
+          '<div class="equation-card">' +
+          '<div class="equation">' + q.text + '</div>' +
+          (q.hint ? '<div class="eq-hint">' + q.hint + '</div>' : '') +
+          '</div>' +
+          '<div class="timer-bar-wrap"><div class="timer-bar-fill" id="timer-bar-fill" style="width:' + (state.timer / TIME_PER_Q * 100) + '%;"></div></div>' +
+          '<div class="progress-row">' +
+          '<div class="progress-track"><div class="progress-fill" style="width:' + progress + '%;"></div></div>' +
+          '<div class="progress-label">' + (state.questionIdx + 1) + '/' + state.questions.length + '</div>' +
+          '</div>' +
+          '<div class="input-area">' +
+          '<div class="input-row">' +
+          '<input type="text" id="answer-input" placeholder="Nhập đáp án..." autocomplete="off">' +
+          '<button class="submit-btn" id="btn-submit">✓</button>' +
+          '</div>' +
+          '</div>' +
+          '</div>';
+
+        var inp = document.getElementById('answer-input');
+        if (inp) {
+          inp.focus();
+          inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); checkAnswer(inp.value); }
+          });
+        }
+        document.getElementById('btn-submit').onclick = function() {
+          var inp2 = document.getElementById('answer-input');
+          if (inp2) checkAnswer(inp2.value);
+        };
+      }
+
+      function renderPlayerTag(p, num) {
+        var active = num === 1 ? !state.player1.solved : !state.player2.solved;
+        var statusText = '';
+        if (num === 1) {
+          statusText = state.player1.solved ? (state.player1.isCorrect ? '✅ Đúng' : '❌ Sai') : '⏳ Đang giải';
+        } else {
+          statusText = state.player2.solved ? '✅ xong' : '⏳';
+        }
+        var cls = active ? ' active' : '';
+        return '<div class="player-card' + cls + '">' +
+          '<div class="avatar" style="background:' + p.color + ';">' + (p.name[0] || '?') + '</div>' +
+          '<div class="info"><div class="name">' + p.name + '</div>' +
+          '<div class="status' + (state.player2.solved && num === 2 ? ' solved' : '') + '">' + statusText + '</div></div></div>';
+      }
+
+      function renderResult() {
+        var totalQ = state.totalCorrect + state.totalWrong;
+        var pct = totalQ > 0 ? Math.round(state.totalCorrect / totalQ * 100) : 0;
+        var grade, icon;
+        if (pct >= 80) { grade = 'Xuất sắc!'; icon = '🏆'; }
+        else if (pct >= 60) { grade = 'Tốt lắm!'; icon = '🌟'; }
+        else if (pct >= 40) { grade = 'Khá ổn!'; icon = '👍'; }
+        else { grade = 'Cố gắng nhé!'; icon = '💪'; }
+
+        root.innerHTML =
+          '<div class="result-screen">' +
+          '<div class="result-icon">' + icon + '</div>' +
+          '<div class="result-title">' + grade + '</div>' +
+          '<div class="result-subtitle">Hoàn thành ' + (state.totalCorrect + state.totalWrong) + ' câu hỏi!</div>' +
+          '<div class="result-stats">' +
+          '<div class="result-stat"><div class="num" style="color:var(--gold);">' + state.teamScore + '</div><div class="label">Điểm</div></div>' +
+          '<div class="result-stat"><div class="num" style="color:var(--success);">' + state.totalCorrect + '</div><div class="label">Đúng</div></div>' +
+          '<div class="result-stat"><div class="num" style="color:var(--danger);">' + state.totalWrong + '</div><div class="label">Sai</div></div>' +
+          '<div class="result-stat"><div class="num" style="color:var(--accent);">' + Math.floor(state.teamScore / 10) + '</div><div class="label">Xu</div></div>' +
+          '</div>' +
+          '<div class="result-buttons">' +
+          '<button class="result-btn secondary" id="btn-home">🏠 Menu</button>' +
+          '<button class="result-btn primary" id="btn-replay">🔄 Chơi lại</button>' +
+          '</div></div>';
+
+        document.getElementById('btn-home').onclick = function() { state.screen = 'lobby'; state.teamScore = 0; render(); };
+        document.getElementById('btn-replay').onclick = function() { startGame(); };
+      }
+
+      // ---- MESSAGE HANDLER ----
+      window.addEventListener('message', function(e) {
+        if (!e.data || typeof e.data !== 'object') return;
+
+        if (e.data.type === 'init' && e.data.data) {
+          var d = e.data.data;
+          _apiBase = d.apiBase || '';
+          _authToken = d.authToken || null;
+          _gameId = d.gameId || null;
+          _gameName = d.gameName || 'Giải Toán Co-op';
+          state._userId = d.userId || null;
+          if (d.playerName) state.player1.name = d.playerName;
+
+          // If questions passed from parent, use them
+          if (d.questions && d.questions.length > 0) {
+            state.apiQuestions = d.questions.map(function(q) {
+              return {
+                text: q.text || q.question || q.content || '',
+                answer: q.correctAnswer != null ? String(q.correctAnswer) : (q.answer != null ? String(q.answer) : ''),
+                hint: q.hint || q.category || ''
+              };
+            }).filter(function(q) { return q.text && q.answer; });
+            state.apiStatus = state.apiQuestions.length > 0 ? 'ok' : 'fallback';
+          }
+
+          // Fetch from API
+          fetchQuestionsFromAPI().then(function(apiQs) {
+            if (apiQs.length > 0) state.apiQuestions = apiQs;
+            render();
+          });
+
+          render();
+        }
+
+        else if (e.data.type === 'search-results' && e.data.data) {
+          var users = e.data.data.users || [];
+          var listEl = document.getElementById('coop-user-list');
+          if (!listEl) return;
+          listEl.innerHTML = '';
+          if (users.length === 0) {
+            listEl.innerHTML = '<div style="text-align:center;padding:12px;opacity:0.5;font-size:0.85rem;">Không tìm thấy</div>';
+            return;
+          }
+          users.forEach(function(u) {
+            var item = document.createElement('div');
+            item.className = 'coop-user-item';
+            item.innerHTML =
+              '<div class="avatar-sm">' + (u.name || u.username || '?')[0].toUpperCase() + '</div>' +
+              '<div class="uinfo"><div class="uname">' + (u.name || u.username) + '</div><div class="uusername">@' + (u.username || '') + '</div></div>';
+            var btn = document.createElement('button');
+            btn.className = 'coop-invite-btn';
+            btn.textContent = 'Mời chơi';
+            btn.onclick = function(ev) {
+              ev.stopPropagation();
+              btn.disabled = true;
+              btn.textContent = 'Đang gửi...';
+              var code = '';
+              var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+              for (var ci = 0; ci < 6; ci++) code += chars[Math.floor(Math.random() * chars.length)];
+              state.gameCode = code;
+              postToParent('invite-user', { toUserId: u.id, gameId: _gameId, gameName: _gameName, gameCode: code });
+              var statusEl = document.getElementById('coop-status');
+              if (statusEl) statusEl.innerHTML = '<div class="coop-status">⏳ Đang chờ ' + (u.name || u.username) + '...<br>Mã: <b style="font-family:JetBrains Mono,monospace;letter-spacing:2px;">' + code + '</b></div>';
+              listEl.innerHTML = '';
+            };
+            item.appendChild(btn);
+            listEl.appendChild(item);
+          });
+        }
+
+        else if (e.data.type === 'invite-accepted' && e.data.data) {
+          var ad = e.data.data;
+          state.coopMode = true;
+          state.player2.name = ad.acceptedByName || 'Bạn';
+          state.player2.color = '#f472b6';
+          var overlay = document.getElementById('coop-panel');
+          if (overlay) overlay.innerHTML = '<div class="coop-status" style="border-left-color:var(--success);">🎮 ' + state.player2.name + ' đã tham gia! Nhấn BẮT ĐẦU.</div>';
+          var startBtn = document.getElementById('btn-start');
+          if (startBtn) { startBtn.disabled = false; startBtn.textContent = '▶ BẮT ĐẦU'; }
+          toast('🎮 ' + state.player2.name + ' đã tham gia!');
+        }
+
+        else if (e.data.type === 'game-joined' && e.data.data) {
+          var jd = e.data.data;
+          if (jd.ok) {
+            state.coopMode = true;
+            state.player2.name = jd.opponentName || 'Bạn';
+            var overlay2 = document.getElementById('coop-panel');
+            if (overlay2) overlay2.innerHTML = '<div class="coop-status" style="border-left-color:var(--success);">🎮 Đã vào phòng! Nhấn BẮT ĐẦU.</div>';
+            var startBtn2 = document.getElementById('btn-start');
+            if (startBtn2) { startBtn2.disabled = false; startBtn2.textContent = '▶ BẮT ĐẦU'; }
+            toast('🎮 Đã vào phòng!');
+          } else {
+            var errEl = document.getElementById('coop-code-error');
+            if (errEl) errEl.textContent = jd.error || 'Mã phòng không hợp lệ';
+            var joinBtn = document.getElementById('btn-join-code');
+            if (joinBtn) { joinBtn.textContent = 'Vào phòng'; joinBtn.disabled = false; }
+          }
+        }
+
+        else if (e.data.type === 'opponent-move' && e.data.data) {
+          var om = e.data.data;
+          if (om.playerId && om.playerId !== (state._userId || '')) {
+            state.player2.name = om.playerName || state.player2.name;
+            state.player2.solved = true;
+            state.player2.answer = om.answer || null;
+            state.player2.isCorrect = om.isCorrect || false;
+            checkBothSolved();
+          }
+        }
+      });
+
+      postToParent('ready');
+      render();
+    })();
+  </script>
+</body>
+</html>

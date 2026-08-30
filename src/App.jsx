@@ -18,6 +18,7 @@ import ProfileScreen from "./pages/user/ProfileScreen.jsx";
 import MyCoins from "./pages/user/MyCoins.jsx";
 import FindFriendsScreen from "./pages/user/FindFriendsScreen.jsx";
 import DailyTasksPage from "./pages/user/DailyTasksPage.jsx";
+import SpinWheel from "./pages/user/SpinWheel.jsx";
 
 function App() {
   const route = useRoute();
@@ -102,6 +103,11 @@ function App() {
     "daily-tasks": () => (
       <RouteShell toast={toast} showBack={false}>
         <DailyTasksPage userAuth={userAuth} onBack={() => navigate("/")} />
+      </RouteShell>
+    ),
+    "spin-wheel": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <SpinWheel userAuth={userAuth} onBack={() => navigate("/")} showToast={showToast} />
       </RouteShell>
     ),
   };

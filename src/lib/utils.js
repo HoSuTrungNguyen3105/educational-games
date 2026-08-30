@@ -17,6 +17,7 @@ export function emptyQuestion() {
     id: uid("question"), content: "",
     options: [{ id: uid("answer"), content: "" }, { id: uid("answer"), content: "" }, { id: uid("answer"), content: "" }],
     correctAnswer: null, timeLimit: 20, points: 100,
+    inputMode: "choice",
   };
 }
 

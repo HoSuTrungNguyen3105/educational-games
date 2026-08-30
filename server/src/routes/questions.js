@@ -7,7 +7,8 @@ const router = Router();
 
 router.get("/game/:gameId", optionalAuth, async (req, res, next) => {
   try {
-    const questions = await questionService.listByGame(req.params.gameId);
+    const { inputMode } = req.query;
+    const questions = await questionService.listByGame(req.params.gameId, { inputMode });
     const isAdmin = req.user && (req.user.role === "teacher" || req.user.role === "admin");
     const safe = isAdmin
       ? questions

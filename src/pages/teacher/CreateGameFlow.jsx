@@ -18,12 +18,13 @@ const ALL_STEPS = [
 export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) {
   const [loading, setLoading] = useState(!!gameId);
   const [stepIdx, setStepIdx] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [form, setForm] = useState({ name: "", description: "", subject: "", topic: "", templateId: null, theme: "gold", status: "draft" });
   const [questions, setQuestions] = useState([]);
   const [savingStatus, setSavingStatus] = useState(null);
-  const templates = useTemplates(stepIdx);
-  const subjects = useSubjects(stepIdx);
-  const categories = useCategories(stepIdx);
+  const templates = useTemplates(refreshKey);
+  const subjects = useSubjects(refreshKey);
+  const categories = useCategories(refreshKey);
 
   const selectedTemplate = useMemo(() => templates.find(t => t._id === form.templateId), [templates, form.templateId]);
   const isPlayToWin = selectedTemplate?.type === "play-to-win";
@@ -35,6 +36,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   }, [isPlayToWin]);
 
   useEffect(() => {
+    setRefreshKey(k => k + 1);
     if (!gameId) return;
     (async () => {
       const g = await gameService.get(gameId);
@@ -59,7 +61,11 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const canNext = useMemo(() => {
     if (step.id === "template") return !!form.templateId;
     if (step.id === "info") return form.name.trim().length > 2 && form.topic.trim().length > 1;
-    if (step.id === "questions") return questions.length > 0 && questions.every(q => q.content.trim() && q.correctAnswer && q.options.every(o => o.content.trim()));
+    if (step.id === "questions") return questions.length > 0 && questions.every(q => {
+      if (!q.content.trim()) return false;
+      if (q.inputMode === "input") return !!q.correctAnswer && String(q.correctAnswer).trim().length > 0;
+      return q.correctAnswer && q.options.every(o => o.content.trim());
+    });
     return true;
   }, [step, form, questions]);
 
@@ -271,36 +277,60 @@ function StepQuestions({ questions, setQuestions }) {
         <PrimaryButton onClick={() => setShowImportModal(true)} className="flex-1">Import câu hỏi</PrimaryButton>
       </div>
       <div className="space-y-3">
-        {questions.map((q, idx) => (
+        {questions.map((q, idx) => {
+          const isInputMode = q.inputMode === "input";
+          return (
           <div key={q.id} className="border border-ink/10 rounded-2xl overflow-hidden">
             <button onClick={() => setOpenIdx(openIdx === idx ? -1 : idx)} className="w-full flex items-center justify-between px-4 py-3 bg-ink/[0.03] text-left">
               <span className="flex items-center gap-3 min-w-0">
                 <span className="w-7 h-7 rounded-full bg-ink text-paper text-xs flex items-center justify-center font-mono flex-shrink-0">{idx + 1}</span>
                 <span className="font-body text-sm text-ink truncate">{q.content || "Câu hỏi mới — nhấn để chỉnh sửa"}</span>
+                {isInputMode && <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal/15 text-teal flex-shrink-0">INPUT</span>}
               </span>
               <span className="text-[#8A7C63] text-xs flex-shrink-0 ml-2">{openIdx === idx ? "▲" : "▼"}</span>
             </button>
             {openIdx === idx && (
               <div className="p-4 sm:p-5 border-t border-ink/10 space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-ink">Loại câu hỏi:</span>
+                  <div className="flex gap-2">
+                    <button onClick={() => update(idx, { inputMode: "choice", correctAnswer: null })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${!isInputMode ? "bg-ink text-paper border-ink" : "border-ink/15 text-ink/60 hover:border-ink/35"}`}>
+                      📋 Trắc nghiệm
+                    </button>
+                    <button onClick={() => update(idx, { inputMode: "input", correctAnswer: "", options: [] })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${isInputMode ? "bg-teal text-white border-teal" : "border-ink/15 text-ink/60 hover:border-ink/35"}`}>
+                      ✏️ Nhập đáp án
+                    </button>
+                  </div>
+                </div>
                 <Field label="Nội dung câu hỏi">
                   <textarea className={inputCls} value={q.content} onChange={e => update(idx, { content: e.target.value })} placeholder="Nhập câu hỏi..." />
                 </Field>
-                <div>
-                  <span className="block text-sm font-semibold text-ink mb-2">Phương án trả lời (chọn ô tròn cho đáp án đúng)</span>
-                  <div className="space-y-2">
-                    {q.options.map(o => (
-                      <div key={o.id} className="flex items-center gap-2">
-                        <button onClick={() => update(idx, { correctAnswer: o.id })}
-                          className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition ${q.correctAnswer === o.id ? "bg-teal border-teal text-white" : "border-ink/25"}`}>
-                          {q.correctAnswer === o.id && "✓"}
-                        </button>
-                        <input className={inputCls} value={o.content} onChange={e => updateOption(idx, o.id, e.target.value)} placeholder="Nội dung đáp án" />
-                        {q.options.length > 2 && <button onClick={() => removeOption(idx, o.id)} className="text-[#B7A987] hover:text-ticket px-1">✕</button>}
-                      </div>
-                    ))}
+
+                {!isInputMode ? (
+                  <div>
+                    <span className="block text-sm font-semibold text-ink mb-2">Phương án trả lời (chọn ô tròn cho đáp án đúng)</span>
+                    <div className="space-y-2">
+                      {q.options.map(o => (
+                        <div key={o.id} className="flex items-center gap-2">
+                          <button onClick={() => update(idx, { correctAnswer: o.id })}
+                            className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition ${q.correctAnswer === o.id ? "bg-teal border-teal text-white" : "border-ink/25"}`}>
+                            {q.correctAnswer === o.id && "✓"}
+                          </button>
+                          <input className={inputCls} value={o.content} onChange={e => updateOption(idx, o.id, e.target.value)} placeholder="Nội dung đáp án" />
+                          {q.options.length > 2 && <button onClick={() => removeOption(idx, o.id)} className="text-[#B7A987] hover:text-ticket px-1">✕</button>}
+                        </div>
+                      ))}
+                    </div>
+                    {q.options.length < 4 && <button onClick={() => addOption(idx)} className="text-sm text-ticket font-semibold mt-2 hover:underline">+ Thêm đáp án</button>}
                   </div>
-                  {q.options.length < 4 && <button onClick={() => addOption(idx)} className="text-sm text-ticket font-semibold mt-2 hover:underline">+ Thêm đáp án</button>}
-                </div>
+                ) : (
+                  <Field label="Đáp án đúng (học sinh sẽ nhập nội dung này)">
+                    <input className={inputCls} value={q.correctAnswer || ""} onChange={e => update(idx, { correctAnswer: e.target.value })} placeholder="Ví dụ: 90, 3/4, x=5..." />
+                  </Field>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Thời gian trả lời (giây)">
                     <input type="number" min={5} max={120} className={inputCls} value={q.timeLimit} onChange={e => update(idx, { timeLimit: Number(e.target.value) || 5 })} />
@@ -319,7 +349,8 @@ function StepQuestions({ questions, setQuestions }) {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
       {showImportModal && (
         <QuestionImportModal 
@@ -331,6 +362,7 @@ function StepQuestions({ questions, setQuestions }) {
               return {
                 id: uid("question"),
                 content: q.question,
+                inputMode: "choice",
                 options: opts.map(({ id, content }) => ({ id, content })),
                 correctAnswer: correctOpt ? correctOpt.id : null,
                 timeLimit: q.time || 20,

@@ -56,6 +56,7 @@ function colorForSubject(subject = "") {
 const NAV_ITEMS = (userAuth) => [
   { key: "home", icon: Home, label: "Trang chủ", path: "/", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user },
+  { key: "spin", icon: "🎰", label: "Vòng quay", path: "/spin-wheel", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", path: "/chat", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", path: "/find-friends", show: !!userAuth?.user },
   { key: "coins", icon: Coins, label: "Ví của tôi", path: "/my-coins", show: !!userAuth?.user },
@@ -66,6 +67,7 @@ const NAV_ITEMS = (userAuth) => [
 const QUICK_MENU_ITEMS = (userAuth) => [
   { key: "code", icon: Ticket, label: "Nhập mã vé", action: "code", show: true, tint: "from-purple-400 to-fuchsia-400" },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user, tint: "from-violet-400 to-purple-400" },
+  { key: "spin", icon: "🎰", label: "Vòng quay", path: "/spin-wheel", show: !!userAuth?.user, tint: "from-amber-400 to-yellow-500" },
   { key: "games", icon: Gamepad2, label: "Trò chơi", action: "scroll", show: true, tint: "from-orange-400 to-amber-400" },
   { key: "coins", icon: Coins, label: "Ví của tôi", path: "/my-coins", show: !!userAuth?.user, tint: "from-amber-400 to-yellow-400" },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", path: "/chat", show: !!userAuth?.user, tint: "from-cyan-400 to-blue-400" },

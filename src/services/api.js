@@ -132,8 +132,9 @@ export const gameService = {
 };
 
 export const questionService = {
-  async listByGame(gameId) {
-    return apiFetch(`/questions/game/${gameId}`) || [];
+  async listByGame(gameId, { inputMode } = {}) {
+    const params = inputMode ? `?inputMode=${encodeURIComponent(inputMode)}` : "";
+    return apiFetch(`/questions/game/${gameId}${params}`) || [];
   },
   async save(gameId, questions) {
     return apiFetch(`/questions/game/${gameId}`, { method: "PUT", body: questions });
