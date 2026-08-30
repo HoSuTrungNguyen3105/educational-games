@@ -53,6 +53,14 @@ router.get("/me", authenticate, async (req, res) => {
       getCoins(req.user.sub).catch(() => 0),
       getByUser(req.user.sub).catch(() => []),
     ]);
+
+    const gameIds = games.map(g => g.gameId).filter(Boolean);
+    const gameDocs = gameIds.length
+      ? await getCollection("games").find({ _id: { $in: gameIds } }).toArray().catch(() => [])
+      : [];
+    const gameDocMap = {};
+    gameDocs.forEach(d => { gameDocMap[d._id.toString()] = d; });
+
     const totalPlays = games.reduce((s, g) => s + (g.gamesPlayed || 0), 0);
     const totalXP = games.reduce((s, g) => s + (g.experience || 0), 0);
     sendSuccess(res, {
@@ -68,15 +76,31 @@ router.get("/me", authenticate, async (req, res) => {
         totalXP,
         gamesPlayed: games.length,
       },
-      games: games.map(g => ({
-        gameId: g.gameId,
-        name: g.gameName || g.gameId,
-        level: g.level || 1,
-        experience: g.experience || 0,
-        progress: g.progress || 0,
-        gamesPlayed: g.gamesPlayed || 0,
-        lastPlayedAt: g.lastPlayedAt || g.updatedAt,
-      })),
+      games: games.map(g => {
+        const doc = gameDocMap[g.gameId] || {};
+        return {
+          gameId: g.gameId,
+          name: doc.name || g.gameName || g.gameId,
+          description: doc.description || null,
+          subject: doc.subject || null,
+          topic: doc.topic || null,
+          language: doc.language || null,
+          type: doc.type || null,
+          status: doc.status || null,
+          code: doc.code || null,
+          questionsCount: doc.questionsCount || 0,
+          playersCount: doc.playersCount || 0,
+          level: g.level || 1,
+          experience: g.experience || 0,
+          progress: g.progress || 0,
+          gamesPlayed: g.gamesPlayed || 0,
+          questsCompleted: g.questsCompleted || 0,
+          inventory: g.inventory || [],
+          lastPlayedAt: g.lastPlayedAt || g.updatedAt,
+          createdAt: doc.createdAt || null,
+          updatedAt: doc.updatedAt || null,
+        };
+      }),
     });
   } catch {
     sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, coins: 0, createdAt: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 }, games: [] });

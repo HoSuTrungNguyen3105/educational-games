@@ -1,30 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { authService } from "../../services/api.js";
 import { getRoleLabel } from "../../config/roles.js";
-import { getLevelProgress, getLevelEmoji, getLevelTitle } from "../../lib/utils.js";
-import { PrimaryButton, GhostButton, Loader } from "../../components/ui.jsx";
+import { getLevelProgress } from "../../lib/utils.js";
 
-const GAME_META = {
-  "TOAN101": { name: "Ôn tập Toán lớp 3", icon: "\u{1F9EE}", color: "from-blue-400 to-indigo-500" },
-  "VUTRU22": { name: "Khám phá vũ trụ", icon: "\u{1F30C}", color: "from-indigo-400 to-purple-600" },
-  "TONGHOP9": { name: "Ôn tập kiến thức tổng hợp", icon: "\u{1F4DA}", color: "from-amber-400 to-orange-500" },
-  "FAMILY07": { name: "Từ vựng tiếng Anh: Gia đình", icon: "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}", color: "from-pink-400 to-rose-500" },
-  "TRUNGTHU5": { name: "Trung Thu Vui Vẻ", icon: "\u{1F391}", color: "from-yellow-400 to-amber-500" },
-  "DIALY88": { name: "Địa lý Việt Nam", icon: "\u{1F30D}", color: "from-green-400 to-emerald-500" },
-  "CHUCAI3": { name: "Bảng chữ cái tiếng Việt", icon: "\u{1F4DD}", color: "from-cyan-400 to-blue-500" },
-  "QUAYSO4": { name: "Vòng quay kiến thức lớp 4", icon: "\u{1F3B0}", color: "from-red-400 to-pink-500" },
-  "ATGT202": { name: "Luật giao thông an toàn", icon: "\u{1F6A6}", color: "from-teal-400 to-cyan-500" },
-  "DONGVAT6": { name: "Động vật hoang dã", icon: "\u{1F43E}", color: "from-lime-400 to-green-500" },
-  "LICHSU19": { name: "Đua thuyền: Lịch sử Việt Nam", icon: "\u{1F6F6}", color: "from-blue-400 to-sky-500" },
-  "MOITRUONG4": { name: "Phân loại rác thải", icon: "\u{267B}\uFE0F", color: "from-emerald-400 to-green-500" },
-  "PHIEUL9": { name: "Đại Phiêu Lưu Toán Học", icon: "\u{1F9EE}", color: "from-purple-400 to-violet-500" },
-  "HAMNGUC3": { name: "Hầm Ngục Kiến Thức", icon: "\u{1F3F0}", color: "from-slate-500 to-gray-700" },
-  "NINJA77": { name: "Ninja Vượt Ải Từ Vựng", icon: "\u{1F977}", color: "from-gray-500 to-zinc-700" },
-};
-
-function getMeta(gameId) {
-  return GAME_META[gameId] || { name: gameId, icon: "\u{1F3AE}", color: "from-gray-400 to-gray-500" };
-}
+const TYPE_LABELS = { "play-to-learn": "Học mà chơi", "play-to-win": "Chơi để thắng" };
+const STATUS_LABELS = { published: "Đã xuất bản", draft: "Bản nháp" };
 
 function timeAgo(dateStr) {
   if (!dateStr) return "";
@@ -38,6 +18,171 @@ function timeAgo(dateStr) {
   if (days < 30) return `${Math.floor(days / 7)} tuần trước`;
   if (days < 365) return `${Math.floor(days / 30)} tháng trước`;
   return `${Math.floor(days / 365)} năm trước`;
+}
+
+function StatCard({ icon, value, label, color }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5 text-center" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+      <div className="absolute inset-0 opacity-5" style={{ background: `linear-gradient(135deg, ${color}, transparent)` }} />
+      <div className="relative">
+        <div className="text-2xl sm:text-3xl mb-1">{icon}</div>
+        <div className="font-display text-xl sm:text-2xl" style={{ color }}>{value}</div>
+        <div className="text-[10px] sm:text-xs font-mono mt-1" style={{ color: "var(--muted)" }}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function GameCard({ game, index }) {
+  const [expanded, setExpanded] = useState(false);
+  const lv = getLevelProgress(game.experience || 0);
+  const progressPct = Math.min(100, game.progress || 0);
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-0.5"
+      style={{
+        background: "var(--card)",
+        border: "1px solid var(--line)",
+        animationDelay: `${index * 0.05}s`,
+      }}
+    >
+      {/* Color bar */}
+      <div className="h-1.5" style={{ background: `linear-gradient(90deg, var(--accent), var(--purple, #8b5cf6))` }} />
+
+      <div className="p-4 sm:p-5">
+        {/* Top row: name + level */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display text-base sm:text-lg text-ink truncate">{game.name}</h3>
+            {game.description && (
+              <p className="text-xs mt-0.5 line-clamp-2" style={{ color: "var(--muted)" }}>{game.description}</p>
+            )}
+          </div>
+          <div className="shrink-0 text-center px-3 py-1.5 rounded-xl" style={{ background: "var(--bg)" }}>
+            <div className="text-lg leading-none">{lv.level}</div>
+            <div className="text-[9px] font-mono uppercase" style={{ color: "var(--muted)" }}>Lv</div>
+          </div>
+        </div>
+
+        {/* Tags row */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {game.subject && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "var(--accent-bg, #dbeafe)", color: "var(--accent, #2563eb)" }}>
+              📚 {game.subject}
+            </span>
+          )}
+          {game.topic && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "#f0fdf4", color: "#16a34a" }}>
+              🏷️ {game.topic}
+            </span>
+          )}
+          {game.type && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "#fef3c7", color: "#d97706" }}>
+              🎯 {TYPE_LABELS[game.type] || game.type}
+            </span>
+          )}
+          {game.language && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "#f3e8ff", color: "#9333ea" }}>
+              🌐 {game.language.toUpperCase()}
+            </span>
+          )}
+        </div>
+
+        {/* XP progress bar */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-mono" style={{ color: "var(--muted)" }}>Kinh nghiệm</span>
+            <span className="text-[10px] font-mono font-semibold" style={{ color: "var(--accent)" }}>{lv.current}/{lv.next} XP</span>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--bg)" }}>
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{ width: lv.percent + "%", background: "linear-gradient(90deg, var(--accent), var(--purple, #8b5cf6))" }}
+            />
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-mono" style={{ color: "var(--muted)" }}>Tiến độ</span>
+            <span className="text-[10px] font-mono font-semibold" style={{ color: progressPct >= 100 ? "#16a34a" : "var(--accent)" }}>{progressPct}%</span>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--bg)" }}>
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: progressPct + "%",
+                background: progressPct >= 100
+                  ? "linear-gradient(90deg, #22c55e, #16a34a)"
+                  : "linear-gradient(90deg, var(--accent), var(--purple, #8b5cf6))",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Quick stats */}
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="text-center py-2 rounded-xl" style={{ background: "var(--bg)" }}>
+            <div className="text-sm font-bold text-ink">{game.gamesPlayed || 0}</div>
+            <div className="text-[9px] font-mono" style={{ color: "var(--muted)" }}>Lượt chơi</div>
+          </div>
+          <div className="text-center py-2 rounded-xl" style={{ background: "var(--bg)" }}>
+            <div className="text-sm font-bold text-ink">{game.experience || 0}</div>
+            <div className="text-[9px] font-mono" style={{ color: "var(--muted)" }}>XP</div>
+          </div>
+          <div className="text-center py-2 rounded-xl" style={{ background: "var(--bg)" }}>
+            <div className="text-sm font-bold text-ink">{game.questsCompleted || 0}</div>
+            <div className="text-[9px] font-mono" style={{ color: "var(--muted)" }}>Nhiệm vụ</div>
+          </div>
+        </div>
+
+        {/* Expand details */}
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full text-[11px] font-semibold py-1.5 rounded-xl transition"
+          style={{ color: "var(--accent)", background: expanded ? "var(--accent-bg, #dbeafe)" : "transparent" }}
+        >
+          {expanded ? "▲ Ẩn bớt" : "▼ Chi tiết game"}
+        </button>
+
+        {expanded && (
+          <div className="mt-3 pt-3 space-y-2" style={{ borderTop: "1px solid var(--line)" }}>
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <InfoRow label="Mã game" value={game.code} />
+              <InfoRow label="Trạng thái" value={STATUS_LABELS[game.status] || game.status} />
+              <InfoRow label="Số câu hỏi" value={game.questionsCount} />
+              <InfoRow label="Người chơi" value={game.playersCount} />
+              <InfoRow label="Lần chơi cuối" value={timeAgo(game.lastPlayedAt)} />
+              <InfoRow label="Ngày tạo" value={game.createdAt ? new Date(game.createdAt).toLocaleDateString("vi-VN") : null} />
+            </div>
+            {game.inventory && game.inventory.length > 0 && (
+              <div>
+                <div className="text-[10px] font-semibold mb-1" style={{ color: "var(--muted)" }}>Vật phẩm:</div>
+                <div className="flex flex-wrap gap-1">
+                  {game.inventory.map((item, i) => (
+                    <span key={i} className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: "var(--bg)", color: "var(--ink)" }}>
+                      {item.name || item.itemId} {item.quantity > 1 ? `x${item.quantity}` : ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="flex justify-between items-center py-1 px-2 rounded-lg" style={{ background: "var(--bg)" }}>
+      <span className="font-mono" style={{ color: "var(--muted)" }}>{label}</span>
+      <span className="font-semibold text-ink truncate ml-2">{value || "—"}</span>
+    </div>
+  );
 }
 
 export default function ProfileScreen({ userAuth, onLogout, onBack }) {
@@ -54,14 +199,16 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       .finally(() => setLoading(false));
   }, [userAuth]);
 
+  const lv = useMemo(() => getLevelProgress(profile?.coins || 0), [profile?.coins]);
+
   if (!userAuth?.user) {
     return (
       <div className="flex-1 flex items-center justify-center px-6 py-10">
         <div className="text-center anim-pop">
           <div className="text-6xl mb-4">👤</div>
           <h2 className="font-display text-xl text-ink mb-2">Chưa đăng nhập</h2>
-          <p className="text-sm text-[#8A7C63] mb-4">Bạn cần đăng nhập để xem profile</p>
-          <PrimaryButton onClick={onBack}>← Về trang chủ</PrimaryButton>
+          <p className="text-sm mb-4" style={{ color: "var(--muted)" }}>Bạn cần đăng nhập để xem profile</p>
+          <button onClick={onBack} className="btn-primary px-6 py-2.5 rounded-2xl text-sm font-semibold">← Về trang chủ</button>
         </div>
       </div>
     );
@@ -70,7 +217,10 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center px-6 py-10">
-        <Loader label="Đang tải profile..." />
+        <div className="text-center">
+          <div className="text-4xl mb-3 animate-bounce">⏳</div>
+          <p className="text-sm" style={{ color: "var(--muted)" }}>Đang tải profile...</p>
+        </div>
       </div>
     );
   }
@@ -81,7 +231,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         <div className="text-center">
           <div className="text-5xl mb-4">😵</div>
           <p className="text-sm text-red-500 mb-4">{error}</p>
-          <PrimaryButton onClick={onBack}>← Về trang chủ</PrimaryButton>
+          <button onClick={onBack} className="btn-primary px-6 py-2.5 rounded-2xl text-sm font-semibold">← Về trang chủ</button>
         </div>
       </div>
     );
@@ -90,145 +240,136 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const user = profile || {};
   const games = user.games || [];
   const stats = user.stats || { totalPlays: 0, totalXP: 0, gamesPlayed: 0 };
-  const lv = getLevelProgress(user.coins || 0);
-  const totalPlays = stats.totalPlays;
-  const totalXP = stats.totalXP;
-  const gamesPlayed = stats.gamesPlayed;
 
   return (
-    <div className="flex-1 px-4 sm:px-6 py-6 sm:py-10 max-w-4xl mx-auto w-full">
-      <button onClick={onBack} className="text-sm text-[#8A7C63] hover:text-ink transition inline-flex items-center gap-1 mb-6">
+    <div className="flex-1 px-4 sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto w-full">
+      <button
+        onClick={onBack}
+        className="text-sm transition inline-flex items-center gap-1 mb-6 font-semibold"
+        style={{ color: "var(--muted)" }}
+        onMouseEnter={e => e.currentTarget.style.color = "var(--ink)"}
+        onMouseLeave={e => e.currentTarget.style.color = "var(--muted)"}
+      >
         ← Về trang chủ
       </button>
 
-      {/* Header */}
-      <div className="note-card p-6 bg-paper2 text-center mb-6">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-4xl text-white mx-auto mb-4 shadow-lg">
-          {user.name?.charAt(0)?.toUpperCase() || "?"}
-        </div>
-        <h1 className="font-display text-2xl text-ink mb-1">{user.name}</h1>
-        <p className="text-sm text-[#8A7C63] font-mono mb-1">@{user.username}</p>
-        {user.email && (
-          <p className="text-xs text-[#8A7C63] flex items-center justify-center gap-1">
-            📧 {user.email}
-          </p>
-        )}
-        <div className="flex items-center justify-center gap-3 mt-2 text-xs">
-          <span className="px-2.5 py-1 rounded-full bg-purple-100 text-purple-600 font-semibold capitalize">
-            {getRoleLabel(user.role)}
-          </span>
-          {user.createdAt && (
-            <span className="text-[#8A7C63] font-mono">
-              Tham gia {timeAgo(user.createdAt)}
-            </span>
-          )}
+      {/* ═══════ HERO HEADER ═══════ */}
+      <div className="relative rounded-3xl overflow-hidden mb-8" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+        <div className="absolute inset-0 opacity-10" style={{ background: "linear-gradient(135deg, var(--accent), var(--purple, #8b5cf6), var(--accent))" }} />
+        <div className="relative p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            <div
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center text-4xl sm:text-5xl text-white font-display shadow-xl"
+              style={{ background: "linear-gradient(135deg, var(--accent), var(--purple, #8b5cf6))" }}
+            >
+              {user.name?.charAt(0)?.toUpperCase() || "?"}
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-lg" style={{ background: "var(--card)", border: "2px solid var(--line)" }}>
+              {lv.level >= 10 ? "👑" : lv.level >= 5 ? "⭐" : "🌱"}
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 text-center sm:text-left">
+            <h1 className="font-display text-2xl sm:text-3xl text-ink mb-0.5">{user.name}</h1>
+            <p className="text-sm font-mono mb-2" style={{ color: "var(--muted)" }}>@{user.username}</p>
+            {user.email && (
+              <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>📧 {user.email}</p>
+            )}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "var(--accent-bg, #dbeafe)", color: "var(--accent)" }}>
+                {getRoleLabel(user.role)}
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#fef3c7", color: "#d97706" }}>
+                Level {lv.level}
+              </span>
+              {user.createdAt && (
+                <span className="text-xs font-mono" style={{ color: "var(--muted)" }}>
+                  Tham gia {timeAgo(user.createdAt)}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Level */}
-      <div className="note-card p-5 sm:p-6 mb-6 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/60">
-        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+      {/* ═══════ LEVEL + CURRENCY ═══════ */}
+      <div className="rounded-2xl p-5 sm:p-6 mb-6" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+        <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
           <div className="text-center shrink-0">
-            <div className="text-5xl mb-1">{getLevelEmoji(lv.level)}</div>
-            <div className="font-display text-3xl text-ink">{lv.level}</div>
-            <div className="text-xs font-mono text-amber-600 font-bold uppercase">{getLevelTitle(lv.level)}</div>
+            <div className="text-4xl sm:text-5xl mb-1">{lv.level >= 10 ? "👑" : lv.level >= 5 ? "⭐" : "🌱"}</div>
+            <div className="font-display text-2xl sm:text-3xl text-ink">{lv.level}</div>
+            <div className="text-[10px] font-mono font-bold uppercase" style={{ color: "var(--accent)" }}>Level {lv.level}</div>
           </div>
           <div className="flex-1 w-full">
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-ink">💰 {(user.coins || 0).toLocaleString()} Coin</span>
-                <span className="text-sm font-semibold text-amber-600">🌟 {(user.stars || 0).toLocaleString()} Sao</span>
+              <span className="text-xs font-mono" style={{ color: "var(--muted)" }}>{lv.current} / {lv.next} XP</span>
+              <span className="text-xs font-mono font-semibold" style={{ color: "var(--accent)" }}>{lv.percent}%</span>
+            </div>
+            <div className="h-3 rounded-full overflow-hidden" style={{ background: "var(--bg)" }}>
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: lv.percent + "%", background: "linear-gradient(90deg, var(--accent), var(--purple, #8b5cf6))" }}
+              />
+            </div>
+            {/* Currency */}
+            <div className="flex items-center gap-4 mt-3">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl" style={{ background: "var(--bg)" }}>
+                <span className="text-base">💰</span>
+                <span className="font-display text-sm font-bold text-ink">{(user.coins || 0).toLocaleString()}</span>
+                <span className="text-[10px] font-mono" style={{ color: "var(--muted)" }}>Xu</span>
               </div>
-              <span className="text-xs font-mono text-[#8A7C63]">
-                {lv.percent}% → Level {lv.level + 1}
-              </span>
-            </div>
-            <div className="h-3 bg-amber-100 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all duration-700"
-                style={{ width: lv.percent + "%" }} />
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[10px] font-mono text-[#8A7C63]">{lv.current} coin</span>
-              <span className="text-[10px] font-mono text-[#8A7C63]">{lv.next} coin</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl" style={{ background: "var(--bg)" }}>
+                <span className="text-base">⭐</span>
+                <span className="font-display text-sm font-bold" style={{ color: "#d97706" }}>{(user.stars || 0).toLocaleString()}</span>
+                <span className="text-[10px] font-mono" style={{ color: "var(--muted)" }}>Sao</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* ═══════ STATS ═══════ */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
-        <div className="note-card p-4 sm:p-5 text-center">
-          <div className="text-3xl mb-2">🎮</div>
-          <div className="font-display text-2xl sm:text-3xl text-teal">{totalPlays}</div>
-          <div className="text-[10px] sm:text-xs text-[#8A7C63] font-mono uppercase mt-1">Lượt chơi</div>
-        </div>
-        <div className="note-card p-4 sm:p-5 text-center">
-          <div className="text-3xl mb-2">📚</div>
-          <div className="font-display text-2xl sm:text-3xl text-ink">{gamesPlayed}</div>
-          <div className="text-[10px] sm:text-xs text-[#8A7C63] font-mono uppercase mt-1">Game đã chơi</div>
-        </div>
-        <div className="note-card p-4 sm:p-5 text-center">
-          <div className="text-3xl mb-2">✨</div>
-          <div className="font-display text-2xl sm:text-3xl text-purple-500">{totalXP}</div>
-          <div className="text-[10px] sm:text-xs text-[#8A7C63] font-mono uppercase mt-1">Tổng XP</div>
-        </div>
+        <StatCard icon="🎮" value={stats.totalPlays} label="Lượt chơi" color="var(--accent)" />
+        <StatCard icon="📚" value={stats.gamesPlayed} label="Game đã chơi" color="var(--purple, #8b5cf6)" />
+        <StatCard icon="✨" value={stats.totalXP} label="Tổng XP" color="#d97706" />
       </div>
 
-      {/* Games */}
-      {games.length > 0 && (
-        <div className="mb-6">
-          <h2 className="font-display text-lg text-ink mb-3">🎮 Game đang chơi</h2>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {games.map(g => {
-              const meta = getMeta(g.gameId);
-              return (
-                <div key={g.gameId} className="note-card p-4 transition hover:-translate-y-0.5">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${meta.color} flex items-center justify-center text-xl text-white shadow-md shrink-0`}>
-                      {meta.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-display text-sm text-ink truncate">{meta.name}</h3>
-                      <div className="flex items-center gap-2 mt-1 text-[11px] font-mono text-[#8A7C63]">
-                        <span>Lv.{g.level}</span>
-                        <span>·</span>
-                        <span>{g.experience} XP</span>
-                        <span>·</span>
-                        <span>{g.gamesPlayed} lượt</span>
-                      </div>
-                      <div className="mt-2 h-1.5 bg-ink/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-purple-400 to-violet-500 rounded-full transition-all duration-500"
-                          style={{ width: Math.min(100, g.progress || 0) + "%" }} />
-                      </div>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-[10px] text-[#8A7C63] font-mono">{g.progress}% hoàn thành</span>
-                        {g.lastPlayedAt && (
-                          <span className="text-[10px] text-[#8A7C63] font-mono">{timeAgo(g.lastPlayedAt)}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+      {/* ═══════ GAMES LIST ═══════ */}
+      <div className="mb-6">
+        <h2 className="font-display text-lg sm:text-xl text-ink mb-4">
+          🎮 Trò chơi ({games.length})
+        </h2>
+        {games.length > 0 ? (
+          <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+            {games.map((g, i) => (
+              <GameCard key={g.gameId} game={g} index={i} />
+            ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="rounded-2xl p-8 text-center" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+            <div className="text-4xl mb-3">🎲</div>
+            <h3 className="font-display text-base text-ink mb-1">Chưa có game nào</h3>
+            <p className="text-sm" style={{ color: "var(--muted)" }}>Hãy bắt đầu chơi để tích lũy kinh nghiệm!</p>
+          </div>
+        )}
+      </div>
 
-      {games.length === 0 && (
-        <div className="note-card p-6 text-center mb-6">
-          <div className="text-4xl mb-2">🎲</div>
-          <h3 className="font-display text-base text-ink mb-1">Chưa có game nào</h3>
-          <p className="text-sm text-[#8A7C63]">Hãy bắt đầu chơi để tích lũy kinh nghiệm!</p>
-        </div>
-      )}
-
-      {/* Actions */}
+      {/* ═══════ ACTIONS ═══════ */}
       <div className="flex gap-3">
-        <GhostButton onClick={onBack} className="flex-1">← Quay lại</GhostButton>
+        <button
+          onClick={onBack}
+          className="flex-1 px-4 py-3 rounded-2xl font-semibold text-sm transition"
+          style={{ background: "var(--card)", border: "1px solid var(--line)", color: "var(--ink)" }}
+        >
+          ← Quay lại
+        </button>
         <button
           onClick={onLogout}
-          className="flex-1 px-4 py-3 rounded-2xl border-2 border-red-300 text-red-500 font-semibold text-sm hover:bg-red-50 transition"
+          className="flex-1 px-4 py-3 rounded-2xl font-semibold text-sm transition hover:bg-red-100"
+          style={{ border: "2px solid #fca5a5", color: "#ef4444" }}
         >
           🚪 Đăng xuất
         </button>

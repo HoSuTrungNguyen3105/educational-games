@@ -350,7 +350,8 @@ function selectAnswer(answerId,q,shuffled){
 
   if(answerId!==null && typeof window.apiSubmitAnswer==='function'){
     window.apiSubmitAnswer(q.id,answerId)
-    .then(res=>{
+    .then(raw=>{
+      var res=raw&&raw.data?raw.data:raw;
       showResult(res.correct,res.points,q,answerId,shuffled,btns,res.correctAnswer);
     })
     .catch(()=>{

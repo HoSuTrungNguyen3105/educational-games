@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { coinService } from "../../services/api.js";
 import { taskService } from "../../services/taskService.js";
 import { Loader } from "../../components/ui.jsx";
@@ -56,8 +56,19 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
   const [spinsLeft, setSpinsLeft] = useState(0);
   const [loginClaimed, setLoginClaimed] = useState(false);
   const [coins, setCoins] = useState(0);
-  const [tasks, setTasks] = useState([]);
   const wheelRef = useRef(null);
+
+  const stars = useMemo(() =>
+    Array.from({ length: 30 }, (_, i) => ({
+      w: (((i * 7 + 3) % 11) / 11) * 3 + 1,
+      h: (((i * 13 + 5) % 11) / 11) * 3 + 1,
+      top: ((i * 17 + 2) % 100),
+      left: ((i * 23 + 7) % 100),
+      opacity: (((i * 11 + 1) % 11) / 11) * 0.5 + 0.2,
+      dur: (((i * 3 + 5) % 11) / 11) * 4 + 3,
+      delay: (((i * 7 + 2) % 11) / 11) * 5,
+    })), []
+  );
 
   const load = useCallback(async () => {
     if (!userAuth?.token) { setLoading(false); return; }
@@ -67,7 +78,6 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
         coinService.get().catch(() => ({ coins: 0 })),
       ]);
       const taskList = taskData?.tasks || [];
-      setTasks(taskList);
       setCoins(coinData?.coins || 0);
 
       const loginTask = taskList.find(t => t.code === "LOGIN_1");
@@ -154,18 +164,18 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
     >
       {/* Hiệu ứng sao lấp lánh (tạo vài chấm nhỏ) */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {[...Array(30)].map((_, i) => (
+        {stars.map((s, i) => (
           <div
             key={i}
             className="absolute rounded-full bg-white"
             style={{
-              width: Math.random() * 3 + 1 + "px",
-              height: Math.random() * 3 + 1 + "px",
-              top: Math.random() * 100 + "%",
-              left: Math.random() * 100 + "%",
-              opacity: Math.random() * 0.5 + 0.2,
-              animation: `twinkle ${Math.random() * 4 + 3}s infinite alternate`,
-              animationDelay: Math.random() * 5 + "s",
+              width: s.w + "px",
+              height: s.h + "px",
+              top: s.top + "%",
+              left: s.left + "%",
+              opacity: s.opacity,
+              animation: `twinkle ${s.dur}s infinite alternate`,
+              animationDelay: s.delay + "s",
             }}
           />
         ))}
