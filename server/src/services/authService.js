@@ -37,7 +37,7 @@ export function verifyToken(token) {
 }
 
 export function publicUser(user) {
-  return { id: user.id, username: user.username, email: user.email || null, name: user.name, role: user.role, coins: user.coins || 0 };
+  return { id: user.id, username: user.username, email: user.email || null, name: user.name, role: user.role, coins: user.coins || 0, stars: user.stars || 0 };
 }
 
 function normalizeRole(role) {
@@ -187,4 +187,34 @@ export async function updateUser(userId, { name, email, role }) {
 
   const updated = await getCollection(COLLECTION).findOne({ id: userId });
   return publicUser(updated);
+}
+
+const STAR_TO_COIN_RATE = 10;
+
+export async function getStars(userId) {
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  return user?.stars || 0;
+}
+
+export async function addStars(userId, amount) {
+  if (typeof amount !== "number") throw new Error("amount must be a number");
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  const newTotal = Math.max(0, (user.stars || 0) + amount);
+  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { stars: newTotal } });
+  return newTotal;
+}
+
+export async function exchangeStarsForCoins(userId) {
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  const stars = user.stars || 0;
+  if (stars <= 0) throw new Error("Không đủ sao để đổi");
+  const coinsToAdd = stars * STAR_TO_COIN_RATE;
+  const newCoins = (user.coins || 0) + coinsToAdd;
+  await getCollection(COLLECTION).updateOne(
+    { id: userId },
+    { $set: { stars: 0, coins: newCoins } }
+  );
+  return { coins: newCoins, stars: 0, exchanged: coinsToAdd };
 }

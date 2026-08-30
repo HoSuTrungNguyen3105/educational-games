@@ -660,7 +660,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             </section>
 
             {/* Dashboard 3 cột */}
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
               <DashboardCard icon={ClipboardList} title="Nhiệm vụ hàng ngày" gradient="from-violet-500 to-purple-500">
                 <DailyTasksCard onClaimCoins={handleClaimCoins} />
                 <button
@@ -671,7 +671,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </button>
               </DashboardCard>
 
-              <DashboardCard icon={Gift} title="Sự kiện nổi bật" gradient="from-yellow-500 to-rose-500">
+              {/* <DashboardCard icon={Gift} title="Sự kiện nổi bật" gradient="from-yellow-500 to-rose-500">
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-white p-4 h-full flex flex-col justify-between min-h-[10rem]">
                   <span className="absolute -bottom-3 -right-3 text-6xl opacity-30" aria-hidden="true"><Sun className="w-16 h-16" /></span>
                   <div className="relative">
@@ -682,7 +682,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     Tham gia ngay
                   </button>
                 </div>
-              </DashboardCard>
+              </DashboardCard> */}
 
               <DashboardCard icon={Trophy} title="Bảng xếp hạng" gradient="from-amber-500 to-yellow-500" id="leaderboard-section">
                 <div className="flex flex-col gap-1">

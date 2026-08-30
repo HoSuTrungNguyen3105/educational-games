@@ -883,6 +883,32 @@
                 finishResolution(pl, wasDouble);
             }
 
+            function startAuction(pl, cell, wasDouble) {
+                closeModal();
+                addLog(`🔨 "${cell.name}" được đưa ra đấu giá!`);
+                const bidders = gameState.players.filter(p => !p.isBankrupt);
+                let highestBid = 0;
+                let highestBidder = null;
+                bidders.forEach(b => {
+                    const input = window.prompt(`${b.name} — Đấu giá "${cell.name}" (Giá gốc: $${cell.price}, Tiền của bạn: $${b.money}).\nNhập số tiền muốn đặt giá, hoặc 0 để bỏ qua:`, '0');
+                    const bid = parseInt(input, 10);
+                    if (!isNaN(bid) && bid > highestBid && bid <= b.money) {
+                        highestBid = bid;
+                        highestBidder = b;
+                    }
+                });
+                if (highestBidder && highestBid > 0) {
+                    changeMoney(highestBidder, -highestBid);
+                    cell.ownerId = highestBidder.id;
+                    highestBidder.properties.push(cell.id);
+                    addLog(`🏆 ${highestBidder.name} thắng đấu giá "${cell.name}" với $${highestBid}!`);
+                    addXP(highestBidder, XP_BUY);
+                } else {
+                    addLog(`🔨 Không ai đặt giá. "${cell.name}" vẫn bỏ trống.`);
+                }
+                finishResolution(pl, wasDouble);
+            }
+
             function ownsFullGroup(pl, group) {
                 const groupCells = gameState.board.filter(c => c.type === 'PROPERTY' && c.group === group);
                 return groupCells.length > 0 && groupCells.every(c => c.ownerId === pl.id && !c.mortgaged);
@@ -947,6 +973,17 @@
                 if (!deck.length) { finishResolution(pl, wasDouble); return; }
                 const card = deck[Math.floor(Math.random() * deck.length)];
                 openModal({ type: 'eventCard', card, pl, wasDouble });
+            }
+
+            function isNegativeEffect(effect) {
+                if (!effect) return false;
+                if (effect.type === 'money' && effect.amount < 0) return true;
+                if (effect.type === 'jail') return true;
+                if (effect.type === 'payToAll') return true;
+                if (effect.type === 'moneyAndSkip') return true;
+                if (effect.type === 'moveBy' && effect.steps < 0) return true;
+                if (effect.type === 'losePercent') return true;
+                return false;
             }
 
             function applyCardEffect(effect, pl) {
@@ -1351,6 +1388,7 @@
                       </div>
                       <div class="modal-actions">
                         <button class="btn btn-secondary" onclick="window.__skipBuy()">BỎ QUA</button>
+                        <button class="btn btn-teal" onclick="window.__auction()">🔨 ĐẤU GIÁ</button>
                         <button class="btn btn-primary" ${pl.money<cell.price?'disabled':''} onclick="window.__buy()">MUA ĐẤT</button>
                       </div>
                     </div></div>`;
@@ -1365,19 +1403,29 @@
                         finishResolution(pl, wasDouble);
                         return '';
                     }
+                    const hasMortgageable = pl.properties.some(id => { const c = gameState.board[id]; return !c.mortgaged && c.level === 0; });
                     return `<div class="modal-overlay"><div class="modal">
                       <h2>💰 ${cell.name}</h2>
-                      <div class="modal-body">Bạn phải trả <b>$${cell.amount}</b></div>
-                      <div class="modal-actions"><button class="btn btn-primary" onclick="window.__payTax(${cell.amount})">ĐỒNG Ý</button></div>
+                      <div class="modal-body">Bạn phải nộp thuế <b>$${cell.amount}</b>. Chọn cách xử lý:</div>
+                      <div class="modal-actions">
+                        <button class="btn btn-primary" ${pl.money<cell.amount?'disabled':''} onclick="window.__payTax(${cell.amount})">TRẢ ĐỦ $${cell.amount}</button>
+                        <button class="btn btn-teal" onclick="window.__taxGamble()">🎲 ĐÁNH CƯỢC (chẵn: nửa giá / lẻ: gấp đôi)</button>
+                        <button class="btn btn-secondary" ${hasMortgageable?'':'disabled'} onclick="window.__taxMortgage()">🏦 CẦM CỐ ĐẤT ĐỂ TRẢ</button>
+                      </div>
                     </div></div>`;
                 }
 
                 if (m.type === 'card') {
-                    const { label, card } = m;
+                    const { label, card, pl } = m;
+                    const negative = isNegativeEffect(card.effect);
                     return `<div class="modal-overlay"><div class="modal">
                       <h2>${label==='Cơ Hội'?'🎴':'🎁'} ${label}</h2>
                       <div class="modal-body">${card.text}</div>
-                      <div class="modal-actions"><button class="btn btn-primary" onclick="window.__applyCard()">ĐỒNG Ý</button></div>
+                      <div class="modal-actions">
+                        <button class="btn btn-primary" onclick="window.__applyCard()">ĐỒNG Ý</button>
+                        ${negative ? `<button class="btn btn-danger" ${pl.money<30?'disabled':''} onclick="window.__waiveCard()">🛡️ TRẢ $30 ĐỂ HỦY THẺ</button>` : ''}
+                        <button class="btn btn-secondary" ${pl.money<20?'disabled':''} onclick="window.__redrawCard()">🔄 ĐỔI THẺ KHÁC ($20)</button>
+                      </div>
                     </div></div>`;
                 }
 
@@ -1432,10 +1480,12 @@
                         ${challenge.pay?`<p>Bạn có thể trả <b>$${challenge.pay}</b> để tránh hình phạt.</p>`:''}
                         ${challenge.penalty==='skip'?'<p>Hoặc mất lượt tiếp theo.</p>':''}
                         ${challenge.penalty==='jail'?'<p>Hoặc vào tù ngay lập tức.</p>':''}
+                        <p>Hoặc <b>đánh cược</b>: tung 1 xúc xắc, ra 4-5-6 thì thoát hoàn toàn miễn phí, ra 1-2-3 thì vừa chịu phạt vừa mất thêm tiền!</p>
                       </div>
                       <div class="modal-actions">
                         <button class="btn btn-danger" onclick="window.__acceptChallengePenalty()">Chấp nhận hình phạt</button>
                         ${challenge.pay?`<button class="btn btn-primary" onclick="window.__payChallenge()">Trả $${challenge.pay}</button>`:''}
+                        <button class="btn btn-teal" onclick="window.__gambleChallenge()">🎲 Đánh cược</button>
                       </div>
                     </div></div>`;
                 }
@@ -1541,6 +1591,7 @@
             window.__useJailCard = function() { useJailCard(currentPlayer()); };
             window.__buy = function() { const m = uiState.modal; buyProperty(m.pl, m.cell, m.wasDouble); };
             window.__skipBuy = function() { const m = uiState.modal; skipBuy(m.pl, m.wasDouble); };
+            window.__auction = function() { const m = uiState.modal; startAuction(m.pl, m.cell, m.wasDouble); };
             window.__payTax = function(amount) {
                 const m = uiState.modal; const pl = m.pl;
                 changeMoney(pl, -amount);
@@ -1548,11 +1599,71 @@
                 closeModal();
                 checkBankruptcyNeeded(pl, () => { finishResolution(pl, m.wasDouble); });
             };
+            window.__taxGamble = function() {
+                const m = uiState.modal; const pl = m.pl; const cell = m.cell;
+                const roll = 1 + Math.floor(Math.random()*6);
+                if (roll % 2 === 0) {
+                    const half = Math.round(cell.amount/2);
+                    changeMoney(pl, -half);
+                    addLog(`🎲 ${pl.name} đánh cược thuế, tung được ${roll} (chẵn) → chỉ trả $${half}!`);
+                } else {
+                    const dbl = cell.amount*2;
+                    changeMoney(pl, -dbl);
+                    addLog(`🎲 ${pl.name} đánh cược thuế, tung được ${roll} (lẻ) → phải trả gấp đôi $${dbl}!`);
+                }
+                closeModal();
+                checkBankruptcyNeeded(pl, () => { finishResolution(pl, m.wasDouble); });
+            };
+            window.__taxMortgage = function() {
+                const m = uiState.modal; const pl = m.pl; const cell = m.cell;
+                const options = pl.properties.map(id => gameState.board[id]).filter(c => !c.mortgaged && c.level === 0);
+                if (!options.length) { flashToast('Không có tài sản nào có thể cầm cố!'); return; }
+                const names = options.map((c,i) => `${i+1}. ${c.name} (nhận $${Math.round(c.price/2)})`).join('\n');
+                const choice = window.prompt(`Chọn tài sản để cầm cố lấy tiền trả thuế:\n${names}`, '1');
+                const idx = parseInt(choice,10) - 1;
+                if (isNaN(idx) || idx<0 || idx>=options.length) { flashToast('Đã hủy cầm cố.'); return; }
+                mortgageProperty(pl, options[idx].id);
+                changeMoney(pl, -cell.amount);
+                addLog(`💰 ${pl.name} đã trả $${cell.amount} tiền thuế (sau khi cầm cố tài sản).`);
+                closeModal();
+                checkBankruptcyNeeded(pl, () => { finishResolution(pl, m.wasDouble); });
+            };
             window.__applyCard = function() { const m = uiState.modal; closeModal(); const result = applyCardEffect(m.card.effect, m.pl); render(); setTimeout(() => { checkBankruptcyNeeded(m.pl, () => { if (!result.handled && result.moveSteps) { movePlayerBy(m.pl, result.moveSteps, () => resolveCell(m.pl, false)); } else { finishResolution(m.pl, m.wasDouble); } }); }, 250); };
+            window.__waiveCard = function() {
+                const m = uiState.modal; const pl = m.pl;
+                changeMoney(pl, -30);
+                addLog(`🛡️ ${pl.name} trả $30 để hủy hiệu ứng thẻ "${m.card.text}"`);
+                closeModal();
+                checkBankruptcyNeeded(pl, () => { finishResolution(pl, m.wasDouble); });
+            };
+            window.__redrawCard = function() {
+                const m = uiState.modal; const pl = m.pl;
+                changeMoney(pl, -20);
+                const deck = m.label === 'Cơ Hội' ? (activeTheme.chanceCards||[]) : (activeTheme.communityCards||[]);
+                if (!deck.length) { flashToast('Không có thẻ khác để đổi!'); return; }
+                const newCard = deck[Math.floor(Math.random()*deck.length)];
+                addLog(`🔄 ${pl.name} trả $20 để đổi thẻ mới.`);
+                uiState.modal = { type:'card', label:m.label, card:newCard, pl, wasDouble:m.wasDouble };
+                render();
+            };
             window.__applyEventCard = function() { const m = uiState.modal; closeModal(); const result = applyCardEffect(m.card.effect, m.pl); render(); if (!uiState.modal) { setTimeout(() => { checkBankruptcyNeeded(m.pl, () => { if (!result.handled) { if (result.challenge) { openModal({ type:'challenge', pl:m.pl, challenge:result.challenge }); } else if (result.choosePlayer) { openModal({ type:'choosePlayer', pl:m.pl, action:result.choosePlayer.action, amount:result.choosePlayer.amount }); } else if (result.moveSteps) { movePlayerBy(m.pl, result.moveSteps, () => resolveCell(m.pl, false)); } else { finishResolution(m.pl, m.wasDouble); } } else { finishResolution(m.pl, m.wasDouble); } }); }, 300); } };
             window.__answerQuestion = function(idx) { answerQuestion(idx); };
             window.__acceptChallengePenalty = function() { const m = uiState.modal; const pl = m.pl; closeModal(); if (m.challenge.penalty === 'skip') gameState.skipNextTurn = true; if (m.challenge.penalty === 'jail') sendToJail(pl); finishResolution(pl, false); };
             window.__payChallenge = function() { const m = uiState.modal; const pl = m.pl; changeMoney(pl, -m.challenge.pay); addLog(`💵 ${pl.name} trả $${m.challenge.pay} để tránh hình phạt.`); closeModal(); finishResolution(pl, false); };
+            window.__gambleChallenge = function() {
+                const m = uiState.modal; const pl = m.pl; const challenge = m.challenge;
+                closeModal();
+                const roll = 1 + Math.floor(Math.random()*6);
+                if (roll >= 4) {
+                    addLog(`🎲 ${pl.name} đánh cược thành công (tung ${roll})! Thoát khỏi thử thách hoàn toàn miễn phí!`);
+                } else {
+                    addLog(`🎲 ${pl.name} đánh cược thất bại (tung ${roll})!`);
+                    if (challenge.penalty === 'jail') { sendToJail(pl); }
+                    else { gameState.skipNextTurn = true; }
+                    if (challenge.pay) { changeMoney(pl, -challenge.pay); }
+                }
+                checkBankruptcyNeeded(pl, () => { finishResolution(pl, false); });
+            };
             window.__choosePlayerAction = function(targetId) { const m = uiState.modal; const pl = m.pl; const target = gameState.players.find(p => p.id === targetId); if (!target) return; if (m.action === 'collect') { const amt = m.amount; if (target.money < amt) { flashToast(`${target.name} không đủ tiền!`); return; } target.money -= amt; pl.money += amt; addLog(`💸 ${pl.name} nhận $${amt} từ ${target.name}.`); } closeModal(); finishResolution(pl, false); };
             window.__buildHouse = function(id) { buildHouse(currentPlayer(), id); };
             window.__sellHouse = function(id) { sellHouse(currentPlayer(), id); };

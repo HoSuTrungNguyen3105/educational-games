@@ -78,6 +78,18 @@ body{font-family:'Nunito',sans-serif;background:radial-gradient(120% 140% at 50%
 .name-btn:disabled{opacity:.4;cursor:default;transform:none;box-shadow:none}
 .name-warn{display:none;font-size:12px;color:var(--ticket);font-weight:600;margin-top:6px;animation:popIn .25s ease}
 .name-warn.show{display:block}
+.game-layout{display:flex;align-items:flex-start;justify-content:center;gap:24px;width:100%;max-width:800px}
+.wheel-col{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.lb-panel{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:16px;min-width:200px;max-width:260px;flex-shrink:0;max-height:420px;overflow-y:auto}
+.lb-title{font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:var(--gold);margin-bottom:10px;text-align:center}
+.lb-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;margin-bottom:4px;background:rgba(255,255,255,.05);transition:background .2s}
+.lb-row.top{background:rgba(244,185,66,.15)}
+.lb-rank{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.5);width:20px;text-align:center;flex-shrink:0}
+.lb-name{flex:1;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-pts{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--gold);flex-shrink:0}
+.lb-check{color:var(--teal);font-size:13px;flex-shrink:0}
+.lb-empty{font-size:12px;color:rgba(255,255,255,.35);text-align:center;padding:12px 0}
+@media(max-width:640px){.game-layout{flex-direction:column;align-items:center}.lb-panel{min-width:0;width:100%;max-width:340px;max-height:160px}}
 @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 @keyframes bulbBlink{0%,100%{opacity:1}50%{opacity:.35}}
 @media(max-width:500px){.wheel-container{width:260px;height:286px}.q-content{font-size:15px}.option-btn{font-size:12px;padding:10px 12px}.header .title{font-size:13px}.header .stat{padding:2px 7px;font-size:11px}.name-card{padding:28px 24px}}
@@ -111,15 +123,23 @@ body{font-family:'Nunito',sans-serif;background:radial-gradient(120% 140% at 50%
     </div>
   </div>
   <div id="wheelPhase" style="display:none">
-    <div class="wheel-container" id="wheelContainer">
-      <div class="glow-ring"></div>
-      <svg class="pointer" width="36" height="40" viewBox="0 0 36 40"><polygon points="18,36 4,6 32,6" fill="#E4572E" stroke="#FFFBF2" stroke-width="3" stroke-linejoin="round"/><circle cx="18" cy="6" r="6" fill="#FFFBF2" stroke="#E4572E" stroke-width="2"/></svg>
-      <svg class="wheel-svg" id="wheelSvg" width="320" height="320" viewBox="0 0 320 320"></svg>
-      <div class="center-circle">QUAY</div>
-    </div>
-    <div style="text-align:center">
-      <button class="spin-btn" id="spinBtn">QUAY NGAY! 🎯</button>
-      <div class="spin-label" id="spinLabel">Đã trả lời 0 câu · ⭐ 0 điểm</div>
+    <div class="game-layout">
+      <div class="wheel-col">
+        <div class="wheel-container" id="wheelContainer">
+          <div class="glow-ring"></div>
+          <svg class="pointer" width="36" height="40" viewBox="0 0 36 40"><polygon points="18,36 4,6 32,6" fill="#E4572E" stroke="#FFFBF2" stroke-width="3" stroke-linejoin="round"/><circle cx="18" cy="6" r="6" fill="#FFFBF2" stroke="#E4572E" stroke-width="2"/></svg>
+          <svg class="wheel-svg" id="wheelSvg" width="320" height="320" viewBox="0 0 320 320"></svg>
+          <div class="center-circle">QUAY</div>
+        </div>
+        <div style="text-align:center">
+          <button class="spin-btn" id="spinBtn">QUAY NGAY! 🎯</button>
+          <div class="spin-label" id="spinLabel">Đã trả lời 0 câu · ⭐ 0 điểm</div>
+        </div>
+      </div>
+      <div class="lb-panel" id="lbPanel">
+        <div class="lb-title">🏆 Bảng xếp hạng</div>
+        <div id="lbList"><div class="lb-empty">Chưa có điểm</div></div>
+      </div>
     </div>
   </div>
   <div id="questionPhase" class="question-panel" style="display:none">
@@ -147,9 +167,10 @@ body{font-family:'Nunito',sans-serif;background:radial-gradient(120% 140% at 50%
 <script>
 (function(){
 var COLORS=["#E4572E","#F4B942","#1B998B","#FF6F91","#4C8DFF","#8B6FF1","#4CAF7D","#FF9F5A","#31B0C9","#D96CD9"];
-var questions=[],answeredIds=[],score=0,correctCount=0,startTime=0,playerName='';
+var questions=[],answeredIds=[],correctIds=[],score=0,correctCount=0,startTime=0,playerName='';
 var spinning=false,gamePhase="wheel",currentQ=null,timeLeft=0,timerInterval=null,selectedAnswer=null,revealed=false;
 var rotation=0,segmentCount=0,segmentAngle=0,questionsTotal=0;
+var leaderboard=[];
 var wheelSvg=document.getElementById('wheelSvg'),spinBtn=document.getElementById('spinBtn');
 var spinLabel=document.getElementById('spinLabel'),progressLabel=document.getElementById('progressLabel');
 var scoreDisplay=document.getElementById('scoreDisplay');
@@ -246,12 +267,12 @@ function renderWheel(){
     var largeArc=endAngle-startAngle<=180?'0':'1';
     var labelPos=polar(startAngle+segmentAngle/2,radius*0.66);
     var color=COLORS[i%COLORS.length];
-    var isDone=answeredIds.indexOf(q.id)>=0;
+    var isCorrect=correctIds.indexOf(q.id)>=0;
 
     var path=document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('d','M 160 160 L '+p1.x+' '+p1.y+' A '+radius+' '+radius+' 0 '+largeArc+' 1 '+p2.x+' '+p2.y+' Z');
     path.setAttribute('fill',color);path.setAttribute('stroke','#FFFBF2');path.setAttribute('stroke-width','3');
-    if(isDone)path.setAttribute('opacity','0.28');
+    if(isCorrect)path.setAttribute('opacity','0.28');
     wheelSvg.appendChild(path);
 
     var text=document.createElementNS('http://www.w3.org/2000/svg','text');
@@ -259,8 +280,14 @@ function renderWheel(){
     text.setAttribute('fill','#fff');text.setAttribute('font-size','20');text.setAttribute('font-weight','700');
     text.setAttribute('font-family','Fredoka, sans-serif');text.setAttribute('text-anchor','middle');text.setAttribute('dominant-baseline','middle');
     text.setAttribute('transform','rotate('+(startAngle+segmentAngle/2)+','+labelPos.x+','+labelPos.y+')');
-    if(isDone){text.setAttribute('opacity','0.5');text.textContent='✓';}
-    else{text.textContent=q._playerName||'';}
+    if(isCorrect){
+      text.setAttribute('opacity','0.5');
+      var lbEntry=leaderboard.find(function(e){return e.qId===q.id;});
+      text.textContent=lbEntry?(lbEntry.score+' pts'):'✓';
+      text.setAttribute('font-size','14');
+    }else{
+      text.textContent=q._playerName||'';
+    }
     wheelSvg.appendChild(text);
   });
 
@@ -295,8 +322,41 @@ function renderBulbs(){
   }
 }
 
+function renderLeaderboard(){
+  var lbList=document.getElementById('lbList');
+  if(!lbList)return;
+  var sorted=leaderboard.slice().sort(function(a,b){return b.score-a.score;});
+  if(sorted.length===0||sorted.every(function(s){return s.score===0;})){
+    lbList.innerHTML='<div class="lb-empty">Chưa có điểm</div>';
+    return;
+  }
+  lbList.innerHTML='';
+  sorted.forEach(function(entry,i){
+    var row=document.createElement('div');
+    row.className='lb-row'+(i<3?' top':'');
+    var rank=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    var isDone=correctIds.indexOf(entry.qId)>=0;
+    row.innerHTML=
+      '<span class="lb-rank">'+rank+'</span>'+
+      '<span class="lb-name">'+entry.name+'</span>'+
+      '<span class="lb-pts">'+entry.score+' pts</span>'+
+      (isDone?'<span class="lb-check">✓</span>':'');
+    lbList.appendChild(row);
+  });
+}
+
+function updateLeaderboardEntry(qId,name,points){
+  var existing=leaderboard.find(function(e){return e.qId===qId;});
+  if(existing){existing.score+=points;}
+  else{leaderboard.push({qId:qId,name:name,score:points});}
+  renderLeaderboard();
+}
+
 function spinWheel(){
-  if(spinning||answeredIds.length>=segmentCount)return;
+  if(spinning)return;
+  // Only exclude correctly answered segments — wrong ones stay available
+  var available=questions.map(function(_,i){return i;}).filter(function(i){return correctIds.indexOf(questions[i].id)<0;});
+  if(available.length===0)return;
   spinning=true;
   spinBtn.disabled=true;
   spinBtn.textContent='ĐANG QUAY... 🎡';
@@ -398,25 +458,34 @@ function showResult(isCorrect,earnedPoints,correctAnswerId){
   var timeBonus=0;
   if(isCorrect){
     timeBonus=Math.round((timeLeft/(currentQ.timeLimit||15))*40);
-    score+=earnedPoints+timeBonus;
+    var totalPts=earnedPoints+timeBonus;
+    score+=totalPts;
     correctCount++;
     scoreDisplay.textContent=score;
-    feedback.textContent='Chính xác! +'+(earnedPoints+timeBonus)+' điểm 🎉';
+    feedback.textContent='Chính xác! +'+totalPts+' điểm 🎉';
     feedback.className='feedback correct';
+    // Mark as correct — won't be spun again
+    correctIds.push(currentQ.id);
+    answeredIds.push(currentQ.id);
+    // Update leaderboard
+    updateLeaderboardEntry(currentQ.id,currentQ._playerName||'Bạn',totalPts);
   }else if(selectedAnswer===null){
     feedback.textContent='Hết giờ rồi! ⏰';
     feedback.className='feedback timeout';
+    // Wrong — push to answeredIds for progress but NOT correctIds (can re-spin)
+    answeredIds.push(currentQ.id);
   }else{
     feedback.textContent='Chưa đúng, quay tiếp nhé!';
     feedback.className='feedback wrong';
+    // Wrong — push to answeredIds for progress but NOT correctIds (can re-spin)
+    answeredIds.push(currentQ.id);
   }
 
   if(currentQ.explanation){
     explanationArea.innerHTML='<div class="explanation">💡 <b>Giải thích:</b> '+currentQ.explanation+'</div>';
   }
 
-  answeredIds.push(currentQ.id);
-  progressLabel.textContent=answeredIds.length+'/'+segmentCount;
+  progressLabel.textContent=correctIds.length+'/'+segmentCount;
   spinLabel.textContent='Đã trả lời '+answeredIds.length+' câu · ⭐ '+score+' điểm';
 
   setTimeout(function(){
@@ -424,7 +493,7 @@ function showResult(isCorrect,earnedPoints,correctAnswerId){
     questionPhase.style.display='none';
     wheelPhase.style.display='block';
     renderWheel();
-    if(answeredIds.length>=segmentCount){endGame();}
+    if(correctIds.length>=segmentCount){endGame();}
     else{spinBtn.disabled=false;spinBtn.textContent='QUAY NGAY! 🎯';}
   },1900);
 }
@@ -474,7 +543,8 @@ window.addEventListener('message',function(e){
     }
     segmentCount=questions.length;
     segmentAngle=360/segmentCount;
-    answeredIds=[];score=0;correctCount=0;startTime=Date.now();
+    answeredIds=[];correctIds=[];score=0;correctCount=0;startTime=Date.now();
+    leaderboard=[];
     rotation=0;spinning=false;gamePhase='wheel';
     scoreDisplay.textContent='0';
     progressLabel.textContent='0/'+segmentCount;
@@ -483,6 +553,7 @@ window.addEventListener('message',function(e){
     wheelSvg.style.transform='rotate(0deg)';
     spinBtn.disabled=false;spinBtn.textContent='QUAY NGAY! 🎯';
     renderWheel();
+    renderLeaderboard();
   }
 });
 

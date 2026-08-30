@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, addCoins } from "../services/authService.js";
+import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, addCoins, getStars, addStars, exchangeStarsForCoins } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { getByUser } from "../services/gameProgressService.js";
@@ -109,6 +109,40 @@ router.post("/me/coins", authenticate, async (req, res, next) => {
     }
     const coins = await addCoins(req.user.sub, amount);
     sendSuccess(res, { coins });
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+// GET /api/auth/me/stars — get global stars
+router.get("/me/stars", authenticate, async (req, res, next) => {
+  try {
+    const stars = await getStars(req.user.sub);
+    sendSuccess(res, { stars });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/auth/me/stars — add stars
+router.post("/me/stars", authenticate, async (req, res, next) => {
+  try {
+    const { amount } = req.body || {};
+    if (amount === undefined || typeof amount !== "number") {
+      return sendError(res, "amount (number) is required", 400);
+    }
+    const stars = await addStars(req.user.sub, amount);
+    sendSuccess(res, { stars });
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+// POST /api/auth/me/stars/exchange — exchange all stars for coins
+router.post("/me/stars/exchange", authenticate, async (req, res, next) => {
+  try {
+    const result = await exchangeStarsForCoins(req.user.sub);
+    sendSuccess(res, result);
   } catch (e) {
     sendError(res, e.message, 400);
   }

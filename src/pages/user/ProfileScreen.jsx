@@ -135,7 +135,10 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           </div>
           <div className="flex-1 w-full">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-semibold text-ink">💰 {(user.coins || 0).toLocaleString()} Coin</span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-ink">💰 {(user.coins || 0).toLocaleString()} Coin</span>
+                <span className="text-sm font-semibold text-amber-600">🌟 {(user.stars || 0).toLocaleString()} Sao</span>
+              </div>
               <span className="text-xs font-mono text-[#8A7C63]">
                 {lv.percent}% → Level {lv.level + 1}
               </span>

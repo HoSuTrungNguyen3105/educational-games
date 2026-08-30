@@ -43,6 +43,7 @@ export default function HtmlGameLoader({
     const playerNames = (players || []).map(p => (typeof p === "string" ? p : p?.name)).filter(Boolean);
 
     let userCoins = 0;
+    let userStars = 0;
     let authToken = null;
     let userId = null;
     let loadout = null;
@@ -57,6 +58,13 @@ export default function HtmlGameLoader({
           const progress = await gameProgressService.getGame(gameId);
           if (progress?.loadout) loadout = progress.loadout;
         }
+        try {
+          const starsResp = await fetch(`${API_BASE}/api/auth/me/stars`, {
+            headers: { Authorization: `Bearer ${userAuth.token}` },
+          });
+          const starsJson = await starsResp.json();
+          userStars = starsJson?.data?.stars || starsJson?.stars || 0;
+        } catch { /* ignore */ }
       }
     } catch { /* ignore */ }
 
@@ -73,6 +81,8 @@ export default function HtmlGameLoader({
           questionsTotal: questions?.length || 0,
           userCoins,
           coins: userCoins,
+          userStars,
+          stars: userStars,
           authToken,
           userId,
           loadout,
@@ -166,6 +176,22 @@ export default function HtmlGameLoader({
           }).catch(() => {
             postToIframe({ type: "coins-added", data: { success: false } });
           });
+        }
+      } else if (msg.type === "exchange-stars") {
+        if (userAuth?.token) {
+          fetch(`${apiBase}/api/auth/me/stars/exchange`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${userAuth.token}` },
+          })
+            .then(r => r.json())
+            .then(res => {
+              const d = res?.data || res;
+              postToIframe({ type: "exchange-stars-result", data: { success: true, coins: d.coins || 0, stars: d.stars || 0, exchanged: d.exchanged || 0 } });
+              if (d.coins) onStateUpdate?.({ coins: d.coins });
+            })
+            .catch(() => {
+              postToIframe({ type: "exchange-stars-result", data: { success: false } });
+            });
         }
       } else if (msg.type === "save-loadout") {
         const loadoutData = msg.data?.loadout;

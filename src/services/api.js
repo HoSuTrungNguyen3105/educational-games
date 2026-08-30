@@ -282,6 +282,18 @@ export const coinService = {
   },
 };
 
+export const starService = {
+  async get() {
+    return apiFetch("/auth/me/stars");
+  },
+  async add(amount) {
+    return apiFetch("/auth/me/stars", { method: "POST", body: { amount } });
+  },
+  async exchange() {
+    return apiFetch("/auth/me/stars/exchange", { method: "POST" });
+  },
+};
+
 export const gameEventService = {
   async send(eventData) {
     return apiFetch("/game-events", { method: "POST", body: eventData });

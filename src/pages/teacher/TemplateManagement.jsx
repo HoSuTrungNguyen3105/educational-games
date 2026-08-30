@@ -34,7 +34,7 @@ export default function TemplateManagement({ showToast }) {
         onRetry={load}
         emptyLabel="Chưa có template nào."
         onCreate={() => navigate("/admin/templates/new")}
-        headers={["Icon", "Tên", "Loại", "Thể loại", "Trạng thái", "Màu", ""]}
+        headers={["Icon", "Tên", "Loại", "Thể loại", "Trạng thái", "Cập nhật", ""]}
         renderRow={(t) => (
           <tr key={t._id} className="border-b border-ink/5 last:border-0">
             <td className="px-5 py-3 text-xl">{t.icon}</td>
@@ -53,7 +53,9 @@ export default function TemplateManagement({ showToast }) {
                 : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20" : "bg-gold/15 text-gold border-gold/30"
                 }`}>{t.status}</span>
             </td>
-            <td className="px-5 py-3"><span className="inline-block w-6 h-6 rounded-full border border-ink/10" style={{ backgroundColor: t.ring }}></span></td>
+            <td className="px-5 py-3 text-sm text-[#8A7C63]">
+              {t.updatedAt ? new Date(t.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+            </td>
             <td className="px-5 py-3 text-right flex gap-1 justify-end">
               <IconButton title="Sửa" onClick={() => navigate(`/admin/templates/${t._id}`)}>✏️</IconButton>
               <IconButton title="Xóa" onClick={() => confirmRemove(t)}>🗑️</IconButton>
