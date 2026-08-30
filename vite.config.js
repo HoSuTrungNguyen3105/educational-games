@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg'],
+      includeAssets: ['favicon.svg', 'icons.svg', 'eduplay-icon-192x192.png', 'eduplay-icon-512x512.svg'],
       manifest: {
         name: 'Educational Games - Trò chơi giáo dục',
         short_name: 'EduGames',
@@ -21,17 +21,17 @@ export default defineConfig({
         start_url: '/educational-games/',
         icons: [
           {
-            src: 'pwa-192x192.svg',
+            src: 'eduplay-icon-192x192.png',
             sizes: '192x192',
-            type: 'image/svg+xml',
+            type: 'image/png',
           },
           {
-            src: 'pwa-512x512.svg',
+            src: 'eduplay-icon-512x512.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
           },
           {
-            src: 'pwa-maskable-512x512.svg',
+            src: 'eduplay-icon-512x512.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'maskable',

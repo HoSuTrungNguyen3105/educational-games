@@ -2,10 +2,14 @@
   --line:#E7D9BE;
   --muted:#8A7C63;
   --text-dark:#20283A;
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
 }
 *{ -webkit-tap-highlight-color: transparent; }
 html{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; }
-body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; background:#FFF6E7; color:var(--text-dark); font-family:'Be Vietnam Pro', sans-serif; }
+body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; background:#FFF6E7; color:var(--text-dark); font-family:'Be Vietnam Pro', sans-serif; padding-top: var(--sat); padding-left: var(--sal); padding-right: var(--sar); }
 #root{ min-height:100vh; min-height:100dvh; width:100%; max-width:100%; }
 
 .dash-rule{ border:none; border-top:2px dashed rgba(29,46,74,0.18); }

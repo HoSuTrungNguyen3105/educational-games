@@ -804,7 +804,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       </div>
 
       {/* ═══════════════ BOTTOM NAVIGATION (chỉ mobile) — THÊM MỚI ═══════════════ */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-purple-100 shadow-lg">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-purple-100 shadow-lg" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="flex justify-around items-center h-16">
           {BOTTOM_NAV(userAuth).filter(i => i.show).map(item => {
             const Icon = item.icon;
