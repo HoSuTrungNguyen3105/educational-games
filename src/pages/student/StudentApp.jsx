@@ -83,7 +83,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
             setQuestions([]);
             setScreen("waiting");
           }
-        }).catch(() => {});
+        }).catch(() => { });
       }
     };
 
@@ -110,7 +110,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
         setQuestions([]);
         setScreen("waiting");
       }
-    }).catch(() => {});
+    }).catch(() => { });
     setPendingInvite(null);
   };
 
@@ -235,7 +235,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
         {screen === "play" && game && (isPlayToWin || questions.length > 0) && (
           <>
             <GamePlayRouter game={game} questions={questions} players={players} playerName={playerName} onQuit={restart} onFinish={handleFinish} onStateUpdate={handleStateUpdate} template={template} userAuth={userAuth} />
-            <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} />
+            {/* <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} /> */}
           </>
         )}
         {screen === "result" && finalResult && (
@@ -425,7 +425,7 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
       </div>
 
       {/* Chat sidebar (desktop) / overlay (mobile) */}
-      <ChatPanel userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} />
+      {/* <ChatPanel userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} /> */}
     </div>
   );
 }

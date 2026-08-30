@@ -64,6 +64,33 @@ body::before{
   pointer-events:none;
   z-index:0;
 }
+body::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  opacity:.6;
+  background-image:
+    radial-gradient(1.6px 1.6px at 12% 18%,rgba(242,236,216,.9),transparent),
+    radial-gradient(1.4px 1.4px at 28% 8%,rgba(242,236,216,.7),transparent),
+    radial-gradient(1.8px 1.8px at 46% 22%,rgba(240,192,90,.8),transparent),
+    radial-gradient(1.2px 1.2px at 62% 6%,rgba(242,236,216,.6),transparent),
+    radial-gradient(1.6px 1.6px at 78% 16%,rgba(242,236,216,.8),transparent),
+    radial-gradient(1.3px 1.3px at 90% 28%,rgba(139,111,191,.8),transparent),
+    radial-gradient(1.5px 1.5px at 8% 42%,rgba(242,236,216,.55),transparent),
+    radial-gradient(1.7px 1.7px at 35% 55%,rgba(242,236,216,.7),transparent),
+    radial-gradient(1.4px 1.4px at 68% 48%,rgba(240,192,90,.6),transparent),
+    radial-gradient(1.6px 1.6px at 92% 62%,rgba(242,236,216,.65),transparent),
+    radial-gradient(1.3px 1.3px at 20% 78%,rgba(242,236,216,.5),transparent),
+    radial-gradient(1.5px 1.5px at 55% 88%,rgba(242,236,216,.6),transparent);
+  animation:twinkle 6s ease-in-out infinite alternate;
+}
+@keyframes twinkle{
+  0%{opacity:.35}
+  50%{opacity:.75}
+  100%{opacity:.45}
+}
 .stage{width:100%;max-width:880px;position:relative;z-index:1}
 
 /* ===== TOPBAR ===== */
@@ -224,9 +251,9 @@ body::before{
 .arena{
   position:relative;
   background:
-    linear-gradient(180deg,rgba(19,22,43,.95),rgba(11,13,26,.98)),
-    radial-gradient(700px 250px at 30% 100%,rgba(79,209,192,.06),transparent),
-    radial-gradient(600px 200px at 70% 100%,rgba(232,93,116,.05),transparent);
+    linear-gradient(180deg,rgba(19,22,43,.95) 0%,rgba(15,17,34,.97) 62%,rgba(8,9,18,1) 100%),
+    radial-gradient(700px 250px at 30% 100%,rgba(79,209,192,.07),transparent),
+    radial-gradient(600px 200px at 70% 100%,rgba(232,93,116,.06),transparent);
   border:1px solid var(--line);
   border-radius:20px;
   padding:32px 26px 22px;
@@ -248,24 +275,87 @@ body::before{
     inset 0 1px 0 rgba(255,255,255,.04),
     0 0 40px rgba(232,93,116,.12);
 }
+/* ambient light pools + soft floor sheen */
 .arena::before{
   content:'';
   position:absolute;
   inset:0;
   background:
     radial-gradient(800px 280px at 50% 110%,rgba(240,192,90,.07),transparent 60%),
+    radial-gradient(260px 220px at 10% 15%,rgba(240,192,90,.14),transparent 70%),
+    radial-gradient(260px 220px at 90% 15%,rgba(240,192,90,.14),transparent 70%),
     linear-gradient(180deg,transparent 70%,rgba(79,209,192,.04));
   pointer-events:none;
 }
+/* stone floor + ground line */
 .arena::after{
   content:'';
   position:absolute;
   bottom:0;
-  left:10%;
-  right:10%;
-  height:1px;
-  background:linear-gradient(90deg,transparent,var(--gold-dim),transparent);
-  opacity:.3;
+  left:0;
+  right:0;
+  height:34%;
+  background:
+    linear-gradient(180deg,transparent,rgba(0,0,0,.35) 88%),
+    repeating-linear-gradient(90deg,rgba(232,214,176,.035) 0 2px,transparent 2px 64px),
+    linear-gradient(0deg,rgba(6,7,14,.9),rgba(6,7,14,0));
+  border-top:1px solid rgba(232,214,176,.08);
+  pointer-events:none;
+}
+/* ornate corner flourishes */
+.arena .corner-orn{
+  position:absolute;
+  width:34px;height:34px;
+  border:1.5px solid var(--gold-dim);
+  opacity:.35;
+  pointer-events:none;
+  z-index:1;
+}
+.arena .corner-orn.tl{top:10px;left:10px;border-right:none;border-bottom:none;border-radius:8px 0 0 0}
+.arena .corner-orn.tr{top:10px;right:10px;border-left:none;border-bottom:none;border-radius:0 8px 0 0}
+.arena .corner-orn.bl{bottom:10px;left:10px;border-right:none;border-top:none;border-radius:0 0 0 8px}
+.arena .corner-orn.br{bottom:10px;right:10px;border-left:none;border-top:none;border-radius:0 0 8px 0}
+/* torches flanking the arena */
+.torch{
+  position:absolute;
+  top:18px;
+  width:16px;
+  z-index:1;
+  pointer-events:none;
+  filter:drop-shadow(0 0 10px rgba(240,140,60,.5));
+}
+.torch.left{left:22px}
+.torch.right{right:22px}
+.torch .stick{width:5px;height:26px;margin:0 auto;background:linear-gradient(180deg,#5a4020,#2c1d0c);border-radius:2px}
+.torch .flame{
+  width:14px;height:20px;margin:-2px auto 0;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+  background:radial-gradient(circle at 50% 70%,#fff2b0,#f0a63c 55%,#c94a2e 85%,transparent 100%);
+  animation:flicker 1.6s ease-in-out infinite alternate;
+  transform-origin:50% 100%;
+}
+@keyframes flicker{
+  0%{transform:scale(1,1) rotate(-2deg);opacity:.9}
+  30%{transform:scale(.94,1.08) rotate(1deg);opacity:1}
+  60%{transform:scale(1.05,.94) rotate(-1deg);opacity:.85}
+  100%{transform:scale(.97,1.05) rotate(2deg);opacity:1}
+}
+/* drifting embers across the chamber */
+.embers{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.embers span{
+  position:absolute;
+  bottom:-6px;
+  width:3px;height:3px;
+  border-radius:50%;
+  background:var(--gold);
+  box-shadow:0 0 6px 1px rgba(240,192,90,.8);
+  opacity:0;
+  animation:emberRise linear infinite;
+}
+@keyframes emberRise{
+  0%{opacity:0;transform:translate(0,0) scale(.6)}
+  8%{opacity:.9}
+  90%{opacity:.5}
+  100%{opacity:0;transform:translate(var(--dx,10px),-220px) scale(1)}
 }
 .combatant{
   display:flex;
@@ -1042,6 +1132,19 @@ body::before{
   </div>
 
   <div class="arena" id="arena">
+    <span class="corner-orn tl"></span><span class="corner-orn tr"></span><span class="corner-orn bl"></span><span class="corner-orn br"></span>
+    <div class="torch left"><div class="flame"></div><div class="stick"></div></div>
+    <div class="torch right"><div class="flame"></div><div class="stick"></div></div>
+    <div class="embers">
+      <span style="left:8%;--dx:14px;animation-duration:5.5s;animation-delay:0s"></span>
+      <span style="left:18%;--dx:-10px;animation-duration:7s;animation-delay:1.2s"></span>
+      <span style="left:32%;--dx:8px;animation-duration:6.2s;animation-delay:2.4s"></span>
+      <span style="left:48%;--dx:-6px;animation-duration:5.8s;animation-delay:.6s"></span>
+      <span style="left:63%;--dx:12px;animation-duration:6.8s;animation-delay:3s"></span>
+      <span style="left:77%;--dx:-14px;animation-duration:6s;animation-delay:1.8s"></span>
+      <span style="left:88%;--dx:6px;animation-duration:7.4s;animation-delay:2.9s"></span>
+      <span style="left:95%;--dx:-8px;animation-duration:5.2s;animation-delay:.2s"></span>
+    </div>
     <div class="combatant">
       <div class="name">Nhà hiền triết</div>
       <div class="sprite" id="playerSprite">
@@ -1055,23 +1158,70 @@ body::before{
               <stop offset="0%" style="stop-color:var(--outfit-a2,#49c6b8)"/>
               <stop offset="100%" style="stop-color:var(--outfit-b2,#1e5e56)"/>
             </linearGradient>
-            <filter id="pglow" x="-30%" y="-30%" width="160%" height="160%">
+            <linearGradient id="pgSkin" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fbf1de"/>
+              <stop offset="100%" stop-color="#e9d3ab"/>
+            </linearGradient>
+            <radialGradient id="pAura" cx="50%" cy="55%" r="55%">
+              <stop offset="0%" style="stop-color:var(--outfit-a,#5dd8c8)" stop-opacity=".35"/>
+              <stop offset="100%" style="stop-color:var(--outfit-a,#5dd8c8)" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="ph" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" id="hairStop0" style="stop-color:#3a2a18"/>
+              <stop offset="100%" id="hairStop1" style="stop-color:#2a1a0e"/>
+            </linearGradient>
+            <filter id="pglow" x="-40%" y="-40%" width="180%" height="180%">
               <feGaussianBlur stdDeviation="3" result="b"/>
               <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
           </defs>
-          <ellipse cx="50" cy="92" rx="28" ry="6" fill="#000" opacity=".25"/>
-          <rect x="38" y="78" width="10" height="14" rx="3" fill="url(#pg2)"/>
-          <rect x="52" y="78" width="10" height="14" rx="3" fill="url(#pg2)"/>
-          <rect x="32" y="48" width="36" height="34" rx="9" fill="#1c2040" stroke="url(#pg)" stroke-width="2.5"/>
-          <path d="M32 62h36" stroke="url(#pg)" stroke-width="1" opacity=".3"/>
-          <circle cx="50" cy="32" r="17" fill="#f2ecdd"/>
-          <path d="M33 14c-10 2-16 9-16 9l5 10h26l5-10s-6-7-16-9z" fill="url(#pg)" filter="url(#pglow)"/>
-          <path d="M38 20h24v6H38z" fill="url(#pg2)" opacity=".5"/>
-          <circle cx="43" cy="34" r="2.5" fill="#0e1020"/>
-          <circle cx="57" cy="34" r="2.5" fill="#0e1020"/>
-          <path d="M47 40q3 3 6 0" stroke="#0e1020" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-          <rect x="44" y="52" width="12" height="16" rx="3" fill="url(#pg)" opacity=".15"/>
+          <ellipse cx="50" cy="93" rx="30" ry="5.5" fill="#000" opacity=".28"/>
+          <circle cx="50" cy="54" r="40" fill="url(#pAura)"/>
+          <!-- staff (behind body) -->
+          <g opacity=".97">
+            <rect x="74" y="18" width="3.6" height="66" rx="1.8" fill="#3a2a18" transform="rotate(8 76 50)"/>
+            <circle cx="80" cy="19" r="6.5" fill="none" stroke="url(#pg)" stroke-width="2.4" filter="url(#pglow)"/>
+            <circle cx="80" cy="19" r="2.6" fill="url(#pg)" filter="url(#pglow)"/>
+          </g>
+          <!-- back cloak flow -->
+          <path d="M30 50c-9 10-11 26-6 38h14c-4-13-4-27 2-38z" fill="url(#pg2)" opacity=".85"/>
+          <!-- boots -->
+          <rect x="37" y="79" width="10" height="13" rx="3" fill="#2b2418"/>
+          <rect x="53" y="79" width="10" height="13" rx="3" fill="#2b2418"/>
+          <rect x="36" y="88" width="12" height="4" rx="2" fill="#181310"/>
+          <rect x="52" y="88" width="12" height="4" rx="2" fill="#181310"/>
+          <!-- robe body with folds -->
+          <path d="M31 84c-2-14 1-27 6-34 4-5 9-8 13-8s9 3 13 8c5 7 8 20 6 34-6 3-32 3-38 0z" fill="#1a1e38" stroke="url(#pg)" stroke-width="2.4"/>
+          <path d="M38 55c-3 9-4 19-3 27" stroke="url(#pg)" stroke-width="1" opacity=".35" fill="none"/>
+          <path d="M50 53c-1 10-1 20 0 29" stroke="url(#pg)" stroke-width="1" opacity=".35" fill="none"/>
+          <path d="M62 55c3 9 4 19 3 27" stroke="url(#pg)" stroke-width="1" opacity=".35" fill="none"/>
+          <path d="M40 50c4 3 16 3 20 0l2 8c-8 3-16 3-24 0z" fill="url(#pg2)"/>
+          <!-- belt + book -->
+          <rect x="34" y="62" width="32" height="4.5" rx="2" fill="#151a30" opacity=".8"/>
+          <g transform="translate(60 60) rotate(18)">
+            <rect x="0" y="0" width="13" height="10" rx="1.4" fill="#e8d6b0"/>
+            <rect x="0" y="0" width="13" height="10" rx="1.4" fill="none" stroke="#a08040" stroke-width="1"/>
+            <line x1="6.5" y1="1" x2="6.5" y2="9" stroke="#a08040" stroke-width=".8"/>
+          </g>
+          <!-- arms -->
+          <path d="M33 58c-4 4-7 9-7 13 0 2 2 4 4 4s5-3 6-6" fill="none" stroke="url(#pg)" stroke-width="6" stroke-linecap="round"/>
+          <path d="M67 56c5 3 9 7 10 11" fill="none" stroke="url(#pg)" stroke-width="6" stroke-linecap="round"/>
+          <!-- neck + head -->
+          <rect x="45" y="38" width="10" height="10" fill="url(#pgSkin)"/>
+          <circle cx="50" cy="30" r="15.5" fill="url(#pgSkin)"/>
+          <!-- hood -->
+          <path d="M32 22c1-11 8-19 18-19s17 8 18 19c0 3-1 6-3 8-3-8-9-13-15-13s-12 5-15 13c-2-2-3-5-3-8z" fill="url(#ph)" filter="url(#pglow)"/>
+          <path d="M37 18h26v5H37z" fill="url(#ph)" opacity=".55"/>
+          <path d="M50 3c2 3 2 7 0 10" stroke="url(#pg)" stroke-width="2" opacity=".6" fill="none"/>
+          <!-- face -->
+          <path d="M39 30q2-3 5-1" stroke="#3a2c1a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M56 29q3-2 5 1" stroke="#3a2c1a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <circle cx="43.5" cy="32.5" r="2.3" fill="#20140a"/>
+          <circle cx="57.5" cy="32" r="2.3" fill="#20140a"/>
+          <path d="M46 39q4 3 8 0" stroke="#3a2c1a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M48 34.5c1 1 2.5 1 3.5 0" stroke="#c9a978" stroke-width="1" fill="none" opacity=".6"/>
+          <!-- beard wisps -->
+          <path d="M42 40c1 4 4 7 8 7s7-3 8-7" fill="#e9e3d2" opacity=".9"/>
         </svg>
         <span class="weapon-badge" id="weaponBadge">&#128481;&#65039;</span>
       </div>
@@ -1150,6 +1300,7 @@ body::before{
       <div class="shop-tabs">
         <button class="shop-tab active" id="tabWeapon" data-tab="weapon">Vũ Khí</button>
         <button class="shop-tab" id="tabOutfit" data-tab="outfit">Trang Phục</button>
+        <button class="shop-tab" id="tabHair" data-tab="hair">Tóc</button>
       </div>
       <div class="shop-equipped" id="shopEquippedLine"></div>
       <div class="shop-grid" id="shopGrid"></div>
@@ -1180,6 +1331,36 @@ var BOSS_NAMES=["TRÙM: Vua Slime Vĩnh Cửu","TRÙM: Chúa Tể Rừng Đen","
 var ENEMY_BASE_HP=80,ENEMY_HP_STEP=14,PLAYER_MAX_HP=100,ENEMY_HIT_DMG=[8,16];
 var XP_PER_CORRECT=8;
 
+/* ---------- Unique artwork per monster (index-matched to ENEMY_NAMES / BOSS_NAMES) ---------- */
+var ENEMY_ART=[
+// 0 Slime Cổ Đại — ancient rune-etched ooze
+'<svg viewBox="0 0 100 100"><defs><radialGradient id="m0g" cx="50%" cy="38%" r="62%"><stop offset="0%" stop-color="#9be3c8"/><stop offset="55%" stop-color="#3f9e82"/><stop offset="100%" stop-color="#1c4a3c"/></radialGradient><filter id="m0f" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="50" cy="90" rx="27" ry="7" fill="#000" opacity=".3"/><path d="M50 20c23 0 35 17 35 39 0 18-15 29-35 29S15 77 15 59c0-22 12-39 35-39z" fill="url(#m0g)" filter="url(#m0f)"/><path d="M28 46c3-11 11-19 22-19s19 8 22 19" fill="none" stroke="#e8f7ee" stroke-width="1" opacity=".25"/><g stroke="#164a38" stroke-width="1.6" opacity=".55" fill="none"><path d="M38 30l3 6-3 6"/><path d="M62 30l-3 6 3 6"/><circle cx="50" cy="66" r="5"/></g><ellipse cx="39" cy="48" rx="6" ry="7.5" fill="#0c2018"/><ellipse cx="61" cy="48" rx="6" ry="7.5" fill="#0c2018"/><circle cx="41" cy="46" r="2.4" fill="#c9f2c0"/><circle cx="63" cy="46" r="2.4" fill="#c9f2c0"/><path d="M38 63q12 9 24 0" stroke="#0c2018" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="28" cy="56" r="4" fill="rgba(155,227,200,.35)"/><circle cx="72" cy="52" r="3" fill="rgba(155,227,200,.3)"/></svg>',
+// 1 Yêu Tinh Rừng Sâu — deep forest goblin
+'<svg viewBox="0 0 100 100"><defs><linearGradient id="m1g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8fd15a"/><stop offset="100%" stop-color="#3c7a2c"/></linearGradient></defs><ellipse cx="50" cy="92" rx="26" ry="6" fill="#000" opacity=".28"/><path d="M30 66c-2 12 2 20 2 20h36s4-8 2-20z" fill="#5a3a22"/><path d="M35 70h30v14H35z" fill="#42301c"/><circle cx="50" cy="42" r="19" fill="url(#m1g)"/><path d="M28 34l-11-14 9-2 6 12z" fill="url(#m1g)"/><path d="M72 34l11-14-9-2-6 12z" fill="url(#m1g)"/><path d="M22 22l4 10 6-6z" fill="#f3d9a8"/><path d="M78 22l-4 10-6-6z" fill="#f3d9a8"/><path d="M20 56c8 4 20 5 30 0" stroke="#2f5c1e" stroke-width="3" fill="none" opacity=".4"/><circle cx="42" cy="40" r="3" fill="#12210a"/><circle cx="58" cy="40" r="3" fill="#12210a"/><circle cx="43" cy="39" r=".9" fill="#eaffb0"/><circle cx="59" cy="39" r=".9" fill="#eaffb0"/><path d="M40 51q10 6 20 0" stroke="#12210a" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M40 51l-2 4M44 53l-1 4M50 53v4M56 53l1 4M60 51l2 4" stroke="#e8f5c8" stroke-width="1.6" stroke-linecap="round"/><path d="M62 60c8-2 14 2 16 8l-8 2c-3-4-6-6-8-10z" fill="#7a5230"/><circle cx="80" cy="68" r="6" fill="#93673b"/></svg>',
+// 2 Bóng Ma Thư Viện — translucent library ghost
+'<svg viewBox="0 0 100 100"><defs><radialGradient id="m2g" cx="50%" cy="35%" r="65%"><stop offset="0%" stop-color="#eaf6ff"/><stop offset="55%" stop-color="#a9c9e8" stop-opacity=".85"/><stop offset="100%" stop-color="#5c7ea8" stop-opacity=".55"/></radialGradient><filter id="m2f" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M50 14c17 0 28 13 28 32v28c-3-4-6 2-9-2s-6 4-9 0-6 4-9 0-6 4-9 0-6 4-9 0-6 2-9-2V46c0-19 9-32 26-32z" fill="url(#m2g)" filter="url(#m2f)" opacity=".92"/><path d="M30 46c0-16 9-27 20-27" stroke="#fff" stroke-width="1" opacity=".3" fill="none"/><ellipse cx="40" cy="42" rx="5" ry="6.5" fill="#16233a" opacity=".85"/><ellipse cx="60" cy="42" rx="5" ry="6.5" fill="#16233a" opacity=".85"/><circle cx="41" cy="40" r="1.8" fill="#bfe0ff"/><circle cx="61" cy="40" r="1.8" fill="#bfe0ff"/><path d="M42 56q8 5 16 0" stroke="#16233a" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".8"/><g transform="translate(38 60) rotate(-6)"><rect width="24" height="17" rx="1.5" fill="#f2ecd8" opacity=".92"/><rect width="24" height="17" rx="1.5" fill="none" stroke="#5c7ea8" stroke-width="1"/><line x1="12" y1="1.5" x2="12" y2="15.5" stroke="#5c7ea8" stroke-width=".8"/><line x1="3" y1="5" x2="9" y2="5" stroke="#8fa8c4" stroke-width=".8"/><line x1="3" y1="9" x2="9" y2="9" stroke="#8fa8c4" stroke-width=".8"/></g><circle cx="24" cy="34" r="3" fill="rgba(234,246,255,.5)"/><circle cx="78" cy="30" r="2.4" fill="rgba(234,246,255,.45)"/></svg>',
+// 3 Rồng Non Tinh Nghịch — mischievous baby dragon
+'<svg viewBox="0 0 100 100"><defs><linearGradient id="m3g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#79e8d6"/><stop offset="100%" stop-color="#1f7d6e"/></linearGradient></defs><ellipse cx="50" cy="92" rx="26" ry="6" fill="#000" opacity=".28"/><path d="M22 46c-8-4-14-2-14-2s6 10 16 12z" fill="url(#m3g)"/><path d="M78 46c8-4 14-2 14-2s-6 10-16 12z" fill="url(#m3g)"/><path d="M34 78c-4 4-4 10-4 10h14c2-4 2-8 1-11z" fill="url(#m3g)"/><path d="M66 78c4 4 4 10 4 10H56c-2-4-2-8-1-11z" fill="url(#m3g)"/><ellipse cx="50" cy="55" rx="26" ry="22" fill="url(#m3g)"/><path d="M32 40l-6-14 9 3 4 10z" fill="url(#m3g)"/><path d="M68 40l6-14-9 3-4 10z" fill="url(#m3g)"/><path d="M40 34c3-4 17-4 20 0" stroke="#0d4238" stroke-width="2" fill="none" opacity=".4"/><ellipse cx="41" cy="52" rx="5" ry="6" fill="#0a2b24"/><ellipse cx="59" cy="52" rx="5" ry="6" fill="#0a2b24"/><circle cx="42.5" cy="50" r="1.8" fill="#fff6c8"/><circle cx="60.5" cy="50" r="1.8" fill="#fff6c8"/><path d="M40 65q10 8 20 0" stroke="#0a2b24" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M44 66l3 5M56 66l-3 5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M24 60c-14 4-20 16-18 26 6-2 10-10 12-16 3 6 8 10 12 10-4-6-6-14-6-20z" fill="url(#m3g)" opacity=".9"/></svg>',
+// 4 Quỷ Ám Bóng Đêm — dark shadow demon
+'<svg viewBox="0 0 100 100"><defs><radialGradient id="m4g" cx="50%" cy="35%" r="65%"><stop offset="0%" stop-color="#6a4a92"/><stop offset="60%" stop-color="#38264f"/><stop offset="100%" stop-color="#170e26"/></radialGradient><filter id="m4f" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="50" cy="92" rx="27" ry="6" fill="#000" opacity=".32"/><path d="M50 12l10 16-2 10 14-6-8 16 16 2-14 10 10 14-16-4 2 16-12-12-10 14-6-16-14 8 4-16-16 2 10-14-14-8 16-4-6-16 14 6-2-10z" fill="url(#m4g)" filter="url(#m4f)" opacity=".9"/><path d="M32 22l-10-10 2 14z" fill="#2a1a3e"/><path d="M68 22l10-10-2 14z" fill="#2a1a3e"/><circle cx="50" cy="54" r="20" fill="#100a1c"/><ellipse cx="41" cy="52" rx="4.5" ry="6" fill="#e85d74"/><ellipse cx="59" cy="52" rx="4.5" ry="6" fill="#e85d74"/><circle cx="41" cy="52" r="1.6" fill="#2a0810"/><circle cx="59" cy="52" r="1.6" fill="#2a0810"/><path d="M38 66q12 6 24 0" stroke="#e85d74" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/><path d="M20 70c-6 6-8 14-6 20 4-4 8-10 10-16z" fill="#2a1a3e" opacity=".85"/><path d="M80 70c6 6 8 14 6 20-4-4-8-10-10-16z" fill="#2a1a3e" opacity=".85"/></svg>',
+// 5 Pháp Sư Điên Loạn — mad mage
+'<svg viewBox="0 0 100 100"><defs><linearGradient id="m5g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f0899a"/><stop offset="100%" stop-color="#7a2038"/></linearGradient><filter id="m5f" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="50" cy="92" rx="27" ry="6" fill="#000" opacity=".3"/><path d="M28 58c-3 14 0 26 0 26h44s3-12 0-26c-6-14-18-22-22-22s-16 8-22 22z" fill="#241333" stroke="url(#m5g)" stroke-width="2.4"/><path d="M20 20c8-6 14-2 14-2l-6 16z" fill="url(#m5g)" filter="url(#m5f)"/><path d="M80 20c-8-6-14-2-14-2l6 16z" fill="url(#m5g)" filter="url(#m5f)"/><path d="M32 18c6-8 12-4 18 4 6-8 12-12 18-4-4 10-10 18-18 18s-14-8-18-18z" fill="#f2ecd8"/><circle cx="42" cy="30" r="3.4" fill="#7a2038"/><circle cx="58" cy="30" r="3.4" fill="#7a2038"/><path d="M39 27l6 6M45 27l-6 6M55 27l6 6M61 27l-6 6" stroke="#3a0e1a" stroke-width="1.4"/><path d="M43 40q7 5 14 0" stroke="#3a0e1a" stroke-width="2" fill="none" stroke-linecap="round"/><g transform="translate(66 45) rotate(20)"><rect x="0" y="0" width="3" height="42" rx="1.5" fill="#3a2010"/><circle cx="1.5" cy="0" r="7" fill="none" stroke="url(#m5g)" stroke-width="2.4" filter="url(#m5f)"/></g><circle cx="30" cy="66" r="2.4" fill="rgba(240,137,154,.6)"/><circle cx="70" cy="70" r="2" fill="rgba(240,137,154,.5)"/></svg>'
+];
+var BOSS_ART=[
+// 0 TRÙM: Vua Slime Vĩnh Cửu — crowned ancient slime king
+'<svg viewBox="0 0 100 100"><defs><radialGradient id="b0g" cx="50%" cy="36%" r="65%"><stop offset="0%" stop-color="#c8f7dd"/><stop offset="55%" stop-color="#3f9e82"/><stop offset="100%" stop-color="#123a2e"/></radialGradient><filter id="b0f" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="50" cy="92" rx="30" ry="7" fill="#000" opacity=".34"/><path d="M50 18c25 0 37 18 37 40 0 19-16 30-37 30S13 77 13 58c0-22 12-40 37-40z" fill="url(#b0g)" filter="url(#b0f)"/><g stroke="#0c2a20" stroke-width="1.8" opacity=".6" fill="none"><path d="M34 32l4 7-4 7"/><path d="M66 32l-4 7 4 7"/><circle cx="50" cy="70" r="6"/><path d="M50 40v10"/></g><path d="M34 22l4-12 5 8 7-10 5 10 7-8 4 12c-9 5-23 5-32 0z" fill="#f0c05a" filter="url(#b0f)"/><circle cx="50" cy="8" r="3" fill="#f0c05a"/><ellipse cx="38" cy="50" rx="7" ry="8.5" fill="#08160f"/><ellipse cx="62" cy="50" rx="7" ry="8.5" fill="#08160f"/><circle cx="40.5" cy="48" r="2.8" fill="#e85d74"/><circle cx="64.5" cy="48" r="2.8" fill="#e85d74"/><path d="M36 66q14 10 28 0" stroke="#08160f" stroke-width="3.4" fill="none" stroke-linecap="round"/><circle cx="24" cy="58" r="5" fill="rgba(200,247,221,.4)"/><circle cx="76" cy="54" r="4" fill="rgba(200,247,221,.35)"/></svg>',
+// 1 TRÙM: Chúa Tể Rừng Đen — dark forest lord
+'<svg viewBox="0 0 100 100"><defs><linearGradient id="b1g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4a6a34"/><stop offset="100%" stop-color="#1c2c12"/></linearGradient><filter id="b1f" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="50" cy="92" rx="29" ry="7" fill="#000" opacity=".34"/><path d="M30 68c-3 14 2 22 2 22h36s5-8 2-22z" fill="#241c10"/><path d="M18 20l6 24 10-8z" fill="#8a5a2c" filter="url(#b1f)"/><path d="M82 20l-6 24-10-8z" fill="#8a5a2c" filter="url(#b1f)"/><path d="M14 34l14 12" stroke="#8a5a2c" stroke-width="4" stroke-linecap="round"/><path d="M86 34l-14 12" stroke="#8a5a2c" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="44" r="21" fill="url(#b1g)"/><path d="M14 18l12 16 8-8z" fill="url(#b1g)"/><path d="M86 18l-12 16-8-8z" fill="url(#b1g)"/><ellipse cx="41" cy="42" rx="4.5" ry="6" fill="#e85d74" filter="url(#b1f)"/><ellipse cx="59" cy="42" rx="4.5" ry="6" fill="#e85d74" filter="url(#b1f)"/><path d="M38 56q12 7 24 0" stroke="#0c1808" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M38 56l-3 5M44 58l-1 5M50 58v5M56 58l1 5M62 56l3 5" stroke="#e8f5c8" stroke-width="1.8" stroke-linecap="round"/><path d="M66 66c10-2 18 3 21 11l-10 2c-4-5-7-8-11-13z" fill="#5a3a1e"/></svg>',
+// 2 TRÙM: Hồn Ma Đại Thư Viện — grand library ghost
+'<svg viewBox="0 0 100 100"><defs><radialGradient id="b2g" cx="50%" cy="32%" r="68%"><stop offset="0%" stop-color="#ffffff"/><stop offset="50%" stop-color="#b9d4f0" stop-opacity=".9"/><stop offset="100%" stop-color="#6485ac" stop-opacity=".55"/></radialGradient><filter id="b2f" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M50 8c19 0 31 15 31 36v32c-3-4-6 2-9-2s-6 4-9 0-6 4-9 0-6 4-9 0-6 4-9 0-6 4-9 0-6 2-9-2V44c0-21 10-36 32-36z" fill="url(#b2g)" filter="url(#b2f)" opacity=".95"/><path d="M32 20l7-10 6 8 5-9 5 9 6-8 7 10c-9 8-27 8-36 0z" fill="#f0c05a" opacity=".9"/><ellipse cx="40" cy="44" rx="5.5" ry="7" fill="#101d34"/><ellipse cx="60" cy="44" rx="5.5" ry="7" fill="#101d34"/><circle cx="41.5" cy="42" r="2" fill="#bfe0ff"/><circle cx="61.5" cy="42" r="2" fill="#bfe0ff"/><path d="M42 60q8 5 16 0" stroke="#101d34" stroke-width="2.4" fill="none" stroke-linecap="round"/><g transform="translate(32 64) rotate(-8)"><rect width="36" height="22" rx="2" fill="#f2ecd8"/><rect width="36" height="22" rx="2" fill="none" stroke="#6485ac" stroke-width="1.2"/><line x1="18" y1="2" x2="18" y2="20" stroke="#6485ac" stroke-width="1"/><line x1="5" y1="6" x2="14" y2="6" stroke="#9fb6cf" stroke-width="1"/><line x1="5" y1="11" x2="14" y2="11" stroke="#9fb6cf" stroke-width="1"/><line x1="22" y1="6" x2="31" y2="6" stroke="#9fb6cf" stroke-width="1"/></g><circle cx="20" cy="36" r="3.4" fill="rgba(255,255,255,.55)"/><circle cx="82" cy="30" r="2.8" fill="rgba(255,255,255,.5)"/></svg>',
+// 3 TRÙM: Cổ Long Thức Tỉnh — awakened ancient dragon
+'<svg viewBox="0 0 100 100"><defs><linearGradient id="b3g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff9a6b"/><stop offset="100%" stop-color="#7a2016"/></linearGradient><filter id="b3f" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="50" cy="93" rx="30" ry="6" fill="#000" opacity=".3"/><path d="M16 44c-10-5-16-2-16-2s7 13 19 15z" fill="url(#b3g)" filter="url(#b3f)"/><path d="M84 44c10-5 16-2 16-2s-7 13-19 15z" fill="url(#b3g)" filter="url(#b3f)"/><path d="M30 80c-5 5-5 12-5 12h16c2-5 2-9 1-13z" fill="url(#b3g)"/><path d="M70 80c5 5 5 12 5 12H59c-2-5-2-9-1-13z" fill="url(#b3g)"/><ellipse cx="50" cy="56" rx="29" ry="24" fill="url(#b3g)"/><path d="M28 36l-8-18 11 4 5 12z" fill="url(#b3g)"/><path d="M72 36l8-18-11 4-5 12z" fill="url(#b3g)"/><g stroke="#4a0e08" stroke-width="1.6" opacity=".5" fill="none"><path d="M38 38q12-6 24 0"/><path d="M32 60h36"/></g><ellipse cx="40" cy="53" rx="5.5" ry="6.5" fill="#1a0604"/><ellipse cx="60" cy="53" rx="5.5" ry="6.5" fill="#1a0604"/><circle cx="41.5" cy="51" r="2" fill="#ffe9a8"/><circle cx="61.5" cy="51" r="2" fill="#ffe9a8"/><path d="M38 68q12 9 24 0" stroke="#1a0604" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M42 69l4 6M58 69l-4 6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M18 62c-16 5-22 18-20 29 7-3 12-11 14-18 3 7 9 11 14 11-5-7-7-15-8-22z" fill="url(#b3g)" opacity=".92"/></svg>'
+];
+function renderEnemySprite(round,tier){
+  if(tier==='boss') return BOSS_ART[Math.floor(round/5)%BOSS_ART.length];
+  return ENEMY_ART[round%ENEMY_ART.length];
+}
+
 /* ---------- Shop: weapons & outfits ---------- */
 var WEAPONS=[
   {id:'wood',name:'Kiếm Gỗ',icon:'\u2694\uFE0F',price:0,bonus:0,desc:'Vũ khí khởi đầu, chưa được tôi luyện.'},
@@ -1196,7 +1377,15 @@ var OUTFITS=[
   {id:'royal',name:'Y Phục Hoàng Gia',icon:'\uD83D\uDC51',price:200,cls:'player-outfit-royal',desc:'Sắc đỏ – vàng vương giả.'},
   {id:'dragon',name:'Áo Choàng Rồng',icon:'\uD83D\uDC09',price:320,cls:'player-outfit-dragon',desc:'Dệt từ vảy rồng cổ đại.'}
 ];
-var loadout={ownedWeapons:['wood'],ownedOutfits:['scholar'],equippedWeapon:'wood',equippedOutfit:'scholar'};
+var HAIRS=[
+  {id:'brown',name:'Tóc Nâu',icon:'\uD83E\uDDD0',price:0,color:'#3a2a18',color2:'#2a1a0e',desc:'Màu tóc tự nhiên.'},
+  {id:'black',name:'Tóc Đen',icon:'\uD83E\uDDD1',price:30,color:'#1a1020',color2:'#0a0810',desc:'Sắc đen huyền bí.'},
+  {id:'blonde',name:'Tóc Vàng',icon:'\uD83D\uDC71',price:50,color:'#d4a845',color2:'#a08040',desc:'Vàng óng ả như ánh nắng.'},
+  {id:'red',name:'Tóc Đỏ',icon:'\uD83D\uDC78',price:80,color:'#c94a2e',color2:'#8a2a1a',desc:'Nóng bỏng như lửa.'},
+  {id:'silver',name:'Tóc Bạc',icon:'\u2744\uFE0F',price:120,color:'#c0c8d8',color2:'#8090a8',desc:'Bạc pha lê cổ đại.'},
+  {id:'purple',name:'Tóc Tím',icon:'\uD83C\uDF38',price:160,color:'#8b6fbf',color2:'#5a4480',desc:'Tím ma mị huyền ảo.'}
+];
+var loadout={ownedWeapons:['wood'],ownedOutfits:['scholar'],ownedHairs:['brown'],equippedWeapon:'wood',equippedOutfit:'scholar',equippedHair:'brown'};
 var currentShopTab='weapon';
 
 var state={questions:[],qIndex:0,score:0,xp:0,level:1,playerHp:PLAYER_MAX_HP,enemyHp:ENEMY_BASE_HP,enemyMaxHp:ENEMY_BASE_HP,enemyRound:0,tier:'common',floor:1,timer:null,timeLeft:20,timeLimit:20,locked:false,gameId:null,sessionCoins:0};
@@ -1212,16 +1401,18 @@ function setStatus(msg,isErr){var s=el('statusline');s.textContent=msg||'';s.cla
 
 /* ---------- Shop logic ---------- */
 function findItem(type,id){
-  var list=type==='weapon'?WEAPONS:OUTFITS;
+  var list=type==='weapon'?WEAPONS:type==='hair'?HAIRS:OUTFITS;
   for(var i=0;i<list.length;i++){ if(list[i].id===id) return list[i]; }
   return list[0];
 }
 function isOwned(type,id){
-  var owned=type==='weapon'?loadout.ownedWeapons:loadout.ownedOutfits;
+  var owned=type==='weapon'?loadout.ownedWeapons:type==='hair'?loadout.ownedHairs:loadout.ownedOutfits;
   return owned.indexOf(id)!==-1;
 }
 function isEquipped(type,id){
-  return (type==='weapon'?loadout.equippedWeapon:loadout.equippedOutfit)===id;
+  if(type==='weapon')return loadout.equippedWeapon===id;
+  if(type==='hair')return loadout.equippedHair===id;
+  return loadout.equippedOutfit===id;
 }
 function spendCoins(amount){
   userCoins=Math.max(0,userCoins-amount);
@@ -1232,12 +1423,38 @@ function spendCoins(amount){
 function applyPlayerVisual(){
   var outfit=findItem('outfit',loadout.equippedOutfit);
   var weapon=findItem('weapon',loadout.equippedWeapon);
+  var hair=findItem('hair',loadout.equippedHair);
   el('playerSprite').className='sprite player-outfit '+outfit.cls;
   el('weaponBadge').textContent=weapon.icon;
   el('equipLine').textContent='Trang bị: '+weapon.name+' \u00B7 '+outfit.name;
+  // Directly update SVG gradient stops to ensure colors change
+  var css=getComputedStyle(el('playerSprite'));
+  var a=css.getPropertyValue('--outfit-a').trim()||'#5dd8c8';
+  var b=css.getPropertyValue('--outfit-b').trim()||'#2a887c';
+  var a2=css.getPropertyValue('--outfit-a2').trim()||'#49c6b8';
+  var b2=css.getPropertyValue('--outfit-b2').trim()||'#1e5e56';
+  var svg=el('playerSprite').querySelector('svg');
+  if(svg){
+    var stops=svg.querySelectorAll('#pg stop');
+    if(stops[0])stops[0].style.stopColor=a;
+    if(stops[1])stops[1].style.stopColor=b;
+    var stops2=svg.querySelectorAll('#pg2 stop');
+    if(stops2[0])stops2[0].style.stopColor=a2;
+    if(stops2[1])stops2[1].style.stopColor=b2;
+    var aura=svg.querySelectorAll('#pAura stop');
+    if(aura[0])aura[0].style.stopColor=a;
+    if(aura[1])aura[1].style.stopColor=a;
+    // Update hair color
+    var h0=svg.getElementById('hairStop0');
+    var h1=svg.getElementById('hairStop1');
+    if(h0)h0.style.stopColor=hair.color;
+    if(h1)h1.style.stopColor=hair.color2;
+  }
 }
 function equipItem(type,id){
-  if(type==='weapon') loadout.equippedWeapon=id; else loadout.equippedOutfit=id;
+  if(type==='weapon')loadout.equippedWeapon=id;
+  else if(type==='hair')loadout.equippedHair=id;
+  else loadout.equippedOutfit=id;
   applyPlayerVisual();
   renderShopGrid(currentShopTab);
   syncLoadoutToBackend();
@@ -1246,7 +1463,7 @@ function buyItem(type,id){
   var item=findItem(type,id);
   if(!item || userCoins<item.price) return;
   if(item.price>0) spendCoins(item.price);
-  var owned=type==='weapon'?loadout.ownedWeapons:loadout.ownedOutfits;
+  var owned=type==='weapon'?loadout.ownedWeapons:type==='hair'?loadout.ownedHairs:loadout.ownedOutfits;
   owned.push(id);
   equipItem(type,id);
 }
@@ -1257,8 +1474,9 @@ function renderShopGrid(tab){
   currentShopTab=tab;
   el('tabWeapon').classList.toggle('active',tab==='weapon');
   el('tabOutfit').classList.toggle('active',tab==='outfit');
+  el('tabHair').classList.toggle('active',tab==='hair');
   el('shopCoinVal').textContent=userCoins;
-  var list=tab==='weapon'?WEAPONS:OUTFITS;
+  var list=tab==='weapon'?WEAPONS:tab==='hair'?HAIRS:OUTFITS;
   var grid=el('shopGrid');grid.innerHTML='';
   list.forEach(function(item){
     var owned=isOwned(tab,item.id), equipped=isEquipped(tab,item.id);
@@ -1266,7 +1484,7 @@ function renderShopGrid(tab){
     card.className='shop-item'+(equipped?' equipped':'');
     var btnLabel = equipped ? 'Đang dùng' : (owned ? 'Trang bị' : (userCoins>=item.price ? 'Mua \u2014 '+item.price+' xu' : 'Không đủ xu'));
     var disabled = equipped || (!owned && userCoins<item.price);
-    var statLine = tab==='weapon' ? ('+'+item.bonus+' sát thương') : 'Đổi giao diện nhân vật';
+    var statLine = tab==='weapon' ? ('+'+item.bonus+' sát thương') : tab==='hair' ? 'Đổi màu tóc' : 'Đổi giao diện nhân vật';
     card.innerHTML=
       '<span class="shop-icon">'+item.icon+'</span>'+
       '<span class="shop-name">'+item.name+'</span>'+
@@ -1276,8 +1494,8 @@ function renderShopGrid(tab){
     card.querySelector('button').onclick=function(){ owned ? equipItem(tab,item.id) : buyItem(tab,item.id); };
     grid.appendChild(card);
   });
-  var w=findItem('weapon',loadout.equippedWeapon),o=findItem('outfit',loadout.equippedOutfit);
-  el('shopEquippedLine').innerHTML='Đang trang bị: <b>'+w.name+'</b> \u00B7 <b>'+o.name+'</b>';
+  var w=findItem('weapon',loadout.equippedWeapon),o=findItem('outfit',loadout.equippedOutfit),h=findItem('hair',loadout.equippedHair);
+  el('shopEquippedLine').innerHTML='Đang trang bị: <b>'+w.name+'</b> \u00B7 <b>'+o.name+'</b> \u00B7 <b>'+h.name+'</b>';
 }
 function openShop(){
   el('shopOverlay').classList.add('show');
@@ -1289,6 +1507,7 @@ el('shopClose').onclick=closeShop;
 el('shopOverlay').addEventListener('click',function(e){ if(e.target===el('shopOverlay')) closeShop(); });
 el('tabWeapon').onclick=function(){renderShopGrid('weapon')};
 el('tabOutfit').onclick=function(){renderShopGrid('outfit')};
+el('tabHair').onclick=function(){renderShopGrid('hair')};
 
 /* ---------- Leveling ---------- */
 function levelFromXp(xp){
@@ -1528,6 +1747,7 @@ function defeatEnemy(){
   else if(state.tier==='elite') nextMax=Math.round(nextMax*1.25);
   state.enemyMaxHp=nextMax;state.enemyHp=nextMax;
   el('enemyName').textContent=enemyDisplayName(state.enemyRound,state.tier);
+  el('enemySprite').innerHTML=renderEnemySprite(state.enemyRound,state.tier);
   updateDungeonUI();
   updateBars();
   var msg = defeatedTier==='boss' ? 'Hạ gục Trùm tầng! +'+reward+' xu — bước sang tầng mới.' : 'Hạ gục! +'+reward+' xu. Một đối thủ mới xuất hiện.';
@@ -1574,6 +1794,7 @@ el('retryBtn').onclick=function(){
   state={questions:keepQuestions,qIndex:0,score:0,xp:0,level:1,playerHp:PLAYER_MAX_HP,enemyHp:ENEMY_BASE_HP,enemyMaxHp:ENEMY_BASE_HP,enemyRound:0,tier:'common',floor:1,timer:null,timeLeft:20,timeLimit:20,locked:false,gameId:keepGameId,sessionCoins:0};
   el('scoreVal').textContent='0';el('coinVal').textContent=userCoins;
   el('enemyName').textContent=ENEMY_NAMES[0];
+  el('enemySprite').innerHTML=renderEnemySprite(0,'common');
   updateLevelUI();updateDungeonUI();updateBars();applyPlayerVisual();
   el('qcard').style.display='block';el('banner').className='banner';renderQuestion();
 };
@@ -1598,9 +1819,12 @@ window.addEventListener('message',function(e){
       loadout.ownedOutfits=Array.isArray(d.loadout.ownedOutfits)&&d.loadout.ownedOutfits.length?d.loadout.ownedOutfits:['scholar'];
       loadout.equippedWeapon=d.loadout.equippedWeapon||'wood';
       loadout.equippedOutfit=d.loadout.equippedOutfit||'scholar';
+      loadout.ownedHairs=Array.isArray(d.loadout.ownedHairs)&&d.loadout.ownedHairs.length?d.loadout.ownedHairs:['brown'];
+      loadout.equippedHair=d.loadout.equippedHair||'brown';
     }
     el('scoreVal').textContent='0';el('coinVal').textContent=userCoins;
     el('enemyName').textContent=enemyDisplayName(0,state.tier);
+    el('enemySprite').innerHTML=renderEnemySprite(0,state.tier);
     el('qcard').style.display='block';el('banner').className='banner';
     updateLevelUI();updateDungeonUI();updateBars();applyPlayerVisual();renderQuestion();
     if(window.GameTaskBridge)GameTaskBridge.emit('GAME_PLAYED',{gameId:d.gameId});
