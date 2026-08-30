@@ -147,6 +147,40 @@ export async function initDatabase() {
       required: ["list"],
       properties: { list: { bsonType: "array" } },
     } },
+    notifications: { $jsonSchema: {
+      bsonType: "object",
+      required: ["id", "toUserId", "type", "read", "createdAt"],
+      properties: {
+        id: { bsonType: "string" },
+        fromUserId: { bsonType: "string" },
+        fromUsername: { bsonType: "string" },
+        fromName: { bsonType: "string" },
+        toUserId: { bsonType: "string" },
+        gameId: { bsonType: "string" },
+        gameName: { bsonType: "string" },
+        gameCode: { bsonType: "string" },
+        type: { bsonType: "string" },
+        title: { bsonType: "string" },
+        message: { bsonType: "string" },
+        data: { bsonType: "object" },
+        read: { bsonType: "bool" },
+        sentAt: { bsonType: "string" },
+        createdAt: { bsonType: "string" },
+      },
+    } },
+    user_devices: { $jsonSchema: {
+      bsonType: "object",
+      required: ["id", "userId", "token", "deviceType", "isActive"],
+      properties: {
+        id: { bsonType: "string" },
+        userId: { bsonType: "string" },
+        token: { bsonType: "string" },
+        deviceType: { bsonType: "string" },
+        isActive: { bsonType: "bool" },
+        createdAt: { bsonType: "string" },
+        updatedAt: { bsonType: "string" },
+      },
+    } },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -210,6 +244,15 @@ export async function initDatabase() {
     ["user_task_progress", { periodKey: 1 }],
     ["task_events", { eventId: 1 }, { unique: true }],
     ["task_events", { userId: 1 }],
+    // Notification system indexes
+    ["notifications", { id: 1 }, { unique: true }],
+    ["notifications", { toUserId: 1, read: 1 }],
+    ["notifications", { toUserId: 1, createdAt: -1 }],
+    // User device indexes
+    ["user_devices", { id: 1 }, { unique: true }],
+    ["user_devices", { userId: 1 }],
+    ["user_devices", { token: 1 }, { unique: true }],
+    ["user_devices", { userId: 1, isActive: 1 }],
   ];
 
   const createdIndexes = [];

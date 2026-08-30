@@ -1,9 +1,42 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth.js";
 import * as notificationService from "../services/notificationService.js";
+import * as userDeviceService from "../services/userDeviceService.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 
 const router = Router();
+
+// ── Device Token Management ──
+
+// POST /api/notifications/device-token — register device
+router.post("/device-token", authenticate, async (req, res, next) => {
+  try {
+    const { token, deviceType } = req.body || {};
+    if (!token) return sendError(res, "Token là bắt buộc", 400);
+    const device = await userDeviceService.registerDevice(req.user.sub, token, deviceType || "WEB");
+    sendSuccess(res, device);
+  } catch (e) { next(e); }
+});
+
+// DELETE /api/notifications/device-token — remove device
+router.delete("/device-token", authenticate, async (req, res, next) => {
+  try {
+    const { token } = req.body || {};
+    if (!token) return sendError(res, "Token là bắt buộc", 400);
+    await userDeviceService.removeDevice(token);
+    sendSuccess(res, { ok: true });
+  } catch (e) { next(e); }
+});
+
+// GET /api/notifications/devices — list user's devices
+router.get("/devices", authenticate, async (req, res, next) => {
+  try {
+    const devices = await userDeviceService.getDevicesByUser(req.user.sub);
+    sendSuccess(res, devices);
+  } catch (e) { next(e); }
+});
+
+// ── Notification CRUD ──
 
 // GET /api/notifications — list current user's notifications
 router.get("/", authenticate, async (req, res, next) => {

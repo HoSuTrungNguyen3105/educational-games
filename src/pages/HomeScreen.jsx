@@ -6,6 +6,7 @@ import { navigate } from '../lib/router.js'
 import { PrimaryButton, Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import DailyTasksCard from '../components/DailyTasksCard.jsx'
+import { requestNotificationPermission, onForegroundMessage } from '../firebase/messaging.js'
 import {
   Home,
   ClipboardList,
@@ -139,7 +140,31 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     loadNotifications();
     if (userAuth?.user) {
       coinService.get().then(c => setUserCoins(c?.coins || 0)).catch(() => { });
+
+      // Register FCM token for push notifications
+      requestNotificationPermission().then((token) => {
+        if (token) notificationService.registerDevice(token, "WEB").catch(() => {});
+      }).catch(() => {});
     }
+  }, [userAuth?.user]);
+
+  // Listen for foreground push messages
+  useEffect(() => {
+    if (!userAuth?.user) return;
+    const unsubscribe = onForegroundMessage((payload) => {
+      const { title, body } = payload.notification || {};
+      const data = payload.data || {};
+      setNotifications(prev => [{
+        id: `fg-${Date.now()}`,
+        title: title || "Thông báo",
+        message: body || "",
+        type: data.type || "SYSTEM",
+        data,
+        read: false,
+        createdAt: new Date().toISOString(),
+      }, ...prev]);
+    });
+    return unsubscribe;
   }, [userAuth?.user]);
 
   const unreadCount = notifications.filter(n => !n.read).length;

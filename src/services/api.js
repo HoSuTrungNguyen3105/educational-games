@@ -347,4 +347,10 @@ export const notificationService = {
   async markAllRead() {
     return apiFetch("/notifications/read-all", { method: "POST" });
   },
+  async registerDevice(token, deviceType = "WEB") {
+    return apiFetch("/notifications/device-token", { method: "POST", body: { token, deviceType } });
+  },
+  async removeDevice(token) {
+    return apiFetch("/notifications/device-token", { method: "DELETE", body: { token } });
+  },
 };
