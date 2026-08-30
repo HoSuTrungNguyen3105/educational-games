@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { API_BASE, coinService, userService, gameProgressService } from "../services/api.js";
-import { trackTaskEvent } from "../services/taskService.js";
+import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
 
@@ -44,6 +44,7 @@ export default function HtmlGameLoader({
 
     let userCoins = 0;
     let userStars = 0;
+    let spinsLeft = 3;
     let authToken = null;
     let userId = null;
     let loadout = null;
@@ -65,6 +66,11 @@ export default function HtmlGameLoader({
           const starsJson = await starsResp.json();
           userStars = starsJson?.data?.stars || starsJson?.stars || 0;
         } catch { /* ignore */ }
+        try {
+          const taskData = await taskService.getTasks("DAILY");
+          const spinTask = (taskData?.tasks || []).find(t => t.code === "SPIN_WHEEL");
+          if (spinTask) spinsLeft = spinTask.spinsLeft ?? Math.max(0, spinTask.target - (spinTask.progress || 0));
+        } catch { /* ignore */ }
       }
     } catch { /* ignore */ }
 
@@ -83,6 +89,7 @@ export default function HtmlGameLoader({
           coins: userCoins,
           userStars,
           stars: userStars,
+          spinsLeft,
           authToken,
           userId,
           loadout,
@@ -175,6 +182,16 @@ export default function HtmlGameLoader({
             onStateUpdate?.({ coins: res?.coins || 0 });
           }).catch(() => {
             postToIframe({ type: "coins-added", data: { success: false } });
+          });
+        }
+      } else if (msg.type === "spin-wheel") {
+        if (userAuth?.token) {
+          trackTaskEvent("SPIN", {}).then(res => {
+            const spinTask = res?.completedTasks?.find(t => t.code === "SPIN_WHEEL");
+            const newSpinsLeft = spinTask ? Math.max(0, 3 - (spinTask.progress || 0)) : undefined;
+            postToIframe({ type: "spin-tracked", data: { success: true, spinsLeft: newSpinsLeft } });
+          }).catch(() => {
+            postToIframe({ type: "spin-tracked", data: { success: false } });
           });
         }
       } else if (msg.type === "exchange-stars") {

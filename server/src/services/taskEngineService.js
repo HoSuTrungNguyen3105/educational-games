@@ -90,7 +90,7 @@ export async function getUserTaskProgress(userId, scope = "DAILY") {
   return scopedTasks.map((task) => {
     const taskId = task._id.toString();
     const p = progressMap[taskId] || { progress: 0, completed: false, claimed: false };
-    return {
+    const result = {
       id: taskId,
       code: task.code,
       name: task.name,
@@ -108,6 +108,11 @@ export async function getUserTaskProgress(userId, scope = "DAILY") {
       completedAt: p.completedAt,
       claimedAt: p.claimedAt,
     };
+    // Add spinsLeft for SPIN_WHEEL task
+    if (task.code === "SPIN_WHEEL") {
+      result.spinsLeft = Math.max(0, task.target - (p.progress || 0));
+    }
+    return result;
   });
 }
 

@@ -321,6 +321,7 @@ export async function initDatabase() {
       { code: "XP_100", name: "Kiếm 100 XP", description: "Tích lũy 100 XP", icon: "⭐", type: "XP_EARNED", target: 100, rewardXp: 0, rewardCoin: 20, scope: "DAILY", gameId: null, isActive: true, sortOrder: 10, createdAt: now, updatedAt: now },
       { code: "XP_500", name: "Kiếm 500 XP", description: "Tích lũy 500 XP", icon: "🌟", type: "XP_EARNED", target: 500, rewardXp: 0, rewardCoin: 80, scope: "DAILY", gameId: null, isActive: true, sortOrder: 11, createdAt: now, updatedAt: now },
       { code: "LOGIN_1", name: "Đăng nhập hôm nay", description: "Đăng nhập vào hệ thống", icon: "👋", type: "LOGIN", target: 1, rewardXp: 0, rewardCoin: 5, scope: "DAILY", gameId: null, isActive: true, sortOrder: 12, createdAt: now, updatedAt: now },
+      { code: "SPIN_WHEEL", name: "Quay vòng may mắn", description: "Được quay vòng may mắn hàng ngày", icon: "🎰", type: "SPIN", target: 3, rewardXp: 0, rewardCoin: 0, scope: "DAILY", gameId: null, isActive: true, sortOrder: 14, createdAt: now, updatedAt: now },
       { code: "PLAY_100_TOTAL", name: "Chơi 100 trận", description: "Hoàn thành 100 trận game", icon: "🏅", type: "GAME_PLAYED", target: 100, rewardXp: 0, rewardCoin: 200, scope: "TOTAL", gameId: null, isActive: true, sortOrder: 13, createdAt: now, updatedAt: now },
     ];
     await tasksColl.insertMany(defaultTasks, { ordered: false });

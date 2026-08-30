@@ -34,6 +34,7 @@ router.post("/", authenticate, async (req, res, next) => {
       QUESTION_WRONG: "QUESTION_WRONG",
       SCORE_ACHIEVED: "XP_EARNED",
       LOGIN: "LOGIN",
+      SPIN: "SPIN",
     };
 
     const newType = EVENT_MAP[event];
