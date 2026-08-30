@@ -118,29 +118,34 @@ export async function submitAnswers({ submissionId, studentId, answers }) {
   const assignment = await getAssignmentById(sub.assignmentId);
   if (!assignment) throw new Error("Bài giao không tồn tại");
 
-  // Fetch questions for scoring
-  const game = await getCollection("games").findOne({ id: assignment.gameId });
-  if (!game) throw new Error("Game không tồn tại");
-
+  // Fetch questions from Question Bank (questions collection)
+  const questions = await getCollection("questions").find({ gameId: assignment.gameId }).toArray();
+  
   let correctCount = 0;
   let wrongCount = 0;
-  const totalQuestions = game.questions ? game.questions.length : 0;
+  const totalQuestions = questions.length;
 
-  if (game.questions && game.questions.length > 0) {
+  if (questions.length > 0) {
     const questionMap = {};
-    for (const q of game.questions) questionMap[q.id] = q;
+    for (const q of questions) questionMap[q.id] = q;
 
     for (const ans of (answers || [])) {
       const q = questionMap[ans.questionId];
       if (!q) { wrongCount++; continue; }
-      if (q.type === "fill-in") {
-        if (String(ans.value || "").trim().toLowerCase() === String(q.answer || "").trim().toLowerCase()) {
+      
+      // Check answer based on question type
+      const questionType = q.questionType || q.type || "multiple_choice";
+      
+      if (questionType === "fill-in" || questionType === "text") {
+        // Fill-in: case-insensitive comparison
+        if (String(ans.value || "").trim().toLowerCase() === String(q.correctAnswer || q.answer || "").trim().toLowerCase()) {
           correctCount++;
         } else {
           wrongCount++;
         }
       } else {
-        if (ans.value === q.answer) {
+        // Multiple choice: compare option key (A, B, C, D)
+        if (ans.value === q.correctAnswer || ans.value === q.answer) {
           correctCount++;
         } else {
           wrongCount++;
@@ -192,21 +197,24 @@ export async function getAssignmentResult(assignmentId, studentId) {
   if (!sub) return null;
 
   const assignment = await getAssignmentById(assignmentId);
-  const game = await getCollection("games").findOne({ id: assignment?.gameId });
-  const questions = game?.questions || [];
+  // Fetch questions from Question Bank
+  const questions = await getCollection("questions").find({ gameId: assignment?.gameId }).toArray();
 
   // Build detail: each question + user's answer + correct answer
   const detail = questions.map((q) => {
     const userAns = (sub.answers || []).find(a => a.questionId === q.id);
+    const questionType = q.questionType || q.type || "multiple_choice";
+    const correctAns = q.correctAnswer || q.answer;
+    
     return {
       questionId: q.id,
       question: q.question,
-      correctAnswer: q.answer,
+      correctAnswer: correctAns,
       userAnswer: userAns ? userAns.value : null,
       isCorrect: userAns
-        ? (q.type === "fill-in"
-          ? String(userAns.value || "").trim().toLowerCase() === String(q.answer || "").trim().toLowerCase()
-          : userAns.value === q.answer)
+        ? (questionType === "fill-in" || questionType === "text"
+          ? String(userAns.value || "").trim().toLowerCase() === String(correctAns || "").trim().toLowerCase()
+          : userAns.value === correctAns)
         : false,
     };
   });

@@ -9,9 +9,9 @@ import { Toast } from "../components/ui.jsx";
 export default function RouteShell({ children, toast, showBack = true, fullHeight = false }) {
   return (
     <>
-      <div className={`${fullHeight ? "h-screen" : "min-h-screen"} bg-paper flex flex-col overflow-hidden`}>
+      <div className={`${fullHeight ? "h-screen" : "min-h-screen"} bg-paper flex flex-col ${fullHeight ? "overflow-hidden" : ""}`}>
         {showBack && (
-          <div className="flex items-center px-5 md:px-8 py-4">
+          <div className="flex items-center px-5 md:px-8 py-4 shrink-0">
             <button
               onClick={() => navigate("/")}
               className="text-sm text-[#8A7C63] hover:text-ink"
@@ -20,7 +20,9 @@ export default function RouteShell({ children, toast, showBack = true, fullHeigh
             </button>
           </div>
         )}
-        {children}
+        <div className={`${fullHeight ? "h-0 flex-1 min-h-0" : "flex-1"} flex flex-col`}>
+          {children}
+        </div>
       </div>
       <Toast toast={toast} />
     </>

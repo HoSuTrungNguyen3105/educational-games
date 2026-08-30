@@ -136,9 +136,9 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
   const totalUnread = (conversations || []).reduce((sum, c) => sum + (c.unread || 0), 0);
 
   return (
-    <div className="h-full flex min-h-0 bg-paper overflow-hidden">
+    <div className="h-full flex flex-col md:flex-row min-h-0 bg-paper overflow-hidden">
       {/* LEFT: Conversation List */}
-      <div className={`w-full md:w-80 lg:w-[340px] border-r border-ink/8 flex flex-col shrink-0 h-full min-h-0 ${chatTarget ? "hidden md:flex" : "flex"}`}>
+      <div className={`w-full md:w-80 lg:w-[360px] border-r border-ink/8 flex flex-col shrink-0 h-full min-h-0 ${chatTarget ? "hidden md:flex" : "flex"}`}>
         {/* Header */}
         <div className="px-4 pt-5 pb-3 border-b border-ink/8 shrink-0">
           <div className="flex items-center justify-between mb-3">
@@ -220,7 +220,7 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
       </div>
 
       {/* RIGHT: Chat Area */}
-      <div className={`h-full flex flex-col min-h-0 min-w-0 overflow-hidden ${chatTarget ? "flex" : "hidden md:flex"}`}>
+      <div className={`h-full flex flex-col min-h-0 min-w-0 overflow-hidden flex-1 ${chatTarget ? "flex" : "hidden md:flex"}`}>
         {chatTarget ? (
           <DMChatScreen
             targetUser={chatTarget}

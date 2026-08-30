@@ -1,17 +1,12 @@
 /* eslint-disable no-undef */
 // Firebase Messaging Service Worker
-// This file handles push notifications when the app is in the background or closed.
+// Handles push notifications when app is in background or closed.
 
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
 
-firebase.initializeApp({
-  // apiKey: "YOUR_API_KEY",
-  // authDomain: "YOUR_PROJECT.firebaseapp.com",
-  // projectId: "YOUR_PROJECT",
-  // storageBucket: "YOUR_PROJECT.appspot.com",
-  // messagingSenderId: "000000000000",
-  // appId: "1:000000000000:web:000000000000",
+// Firebase config - must match firebaseConfig.js
+const firebaseConfig = {
   apiKey: "AIzaSyDPu6j3eT-AJ2JztbmPzAxXUjUK8rGWbCA",
   authDomain: "eduplay-74301.firebaseapp.com",
   projectId: "eduplay-74301",
@@ -19,45 +14,76 @@ firebase.initializeApp({
   messagingSenderId: "906308269770",
   appId: "1:906308269770:web:d3da03a6be412710666633",
   measurementId: "G-L41PW0PQ45"
-});
+};
+
+// Initialize Firebase (only once)
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 const messaging = firebase.messaging();
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
+  console.log("[SW] Background message received:", payload);
+
   const { title, body, icon } = payload.notification || {};
   const data = payload.data || {};
 
-  self.registration.showNotification(title || "Educational Games", {
+  const notificationTitle = title || "EduPlay";
+  const notificationOptions = {
     body: body || "",
-    icon: icon || "/educational-games/pwa-192x192.svg",
-    badge: "/educational-games/pwa-192x192.svg",
+    icon: icon || "/educational-games/eduplay-icon-192x192.png",
+    badge: "/educational-games/eduplay-icon-192x192.png",
     data,
-    actions: [
-      { action: "open", title: "Mở app" },
-      { action: "dismiss", title: "Để sau" },
-    ],
-  });
+    tag: data.type || "general",
+    renotify: true,
+    vibrate: [200, 100, 200],
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // Handle notification click
 self.addEventListener("notificationclick", (event) => {
+  console.log("[SW] Notification click:", event.notification.tag, event.action);
   event.notification.close();
 
   if (event.action === "dismiss") return;
 
-  const urlToOpen = new URL("/educational-games/", self.location.origin).href;
+  // Determine URL to open
+  let urlToOpen = "/educational-games/";
+  const data = event.notification.data;
+
+  if (data?.link) {
+    urlToOpen = `/educational-games${data.link}`;
+  } else if (data?.type === "ASSIGNMENT" && data?.assignmentId) {
+    urlToOpen = `/educational-games/#/assignment/${data.assignmentId}`;
+  } else if (data?.type === "CHAT" && data?.conversationId) {
+    urlToOpen = `/educational-games/#/chat`;
+  } else if (data?.gameId) {
+    urlToOpen = `/educational-games/#/play/${data.gameId}`;
+  }
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
-      // If app is already open, focus it
+      // Check if app is already open
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin) && "focus" in client) {
+          // Focus existing window and navigate if needed
+          if (data?.link || data?.assignmentId) {
+            client.navigate(urlToOpen);
+          }
           return client.focus();
         }
       }
-      // Otherwise open new window
+      // Open new window
       return clients.openWindow(urlToOpen);
     })
   );
+});
+
+// Handle notification close (for analytics/logging)
+self.addEventListener("notificationclose", (event) => {
+  console.log("[SW] Notification closed:", event.notification.tag);
 });
