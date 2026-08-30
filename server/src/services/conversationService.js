@@ -2,6 +2,8 @@ import { getCollection } from "../db.js";
 
 const CONVERSATIONS = "conversations";
 const MEMBERS = "conversationMembers";
+const MESSAGES = "messages";
+const READ_STATES = "chatReadStates";
 
 function uid(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -135,6 +137,82 @@ export async function listConversations(userId) {
   }
 
   return result.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+}
+
+/**
+ * Lấy danh sách conversation với last message + unread count.
+ */
+export async function listConversationsEnriched(userId) {
+  const convs = await listConversations(userId);
+  if (convs.length === 0) return [];
+
+  const convIds = convs.map(c => c.id);
+
+  // Get last message for each conversation
+  const lastMessages = await getCollection(MESSAGES)
+    .find({ conversationId: { $in: convIds } })
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  // Group by conversationId, keep only the latest
+  const lastMsgMap = {};
+  for (const msg of lastMessages) {
+    if (!lastMsgMap[msg.conversationId]) {
+      lastMsgMap[msg.conversationId] = msg;
+    }
+  }
+
+  // Get unread counts
+  const readStates = await getCollection(READ_STATES)
+    .find({ conversationId: { $in: convIds }, playerId: userId })
+    .toArray();
+  const readStateMap = {};
+  for (const rs of readStates) readStateMap[rs.conversationId] = rs;
+
+  const enriched = [];
+  for (const conv of convs) {
+    const lastMsg = lastMsgMap[conv.id];
+    const readState = readStateMap[conv.id];
+    let unread = 0;
+
+    if (lastMsg) {
+      if (!readState?.lastReadMessageId) {
+        // Chưa đọc gì → đếm tất cả message trong conv
+        unread = await getCollection(MESSAGES).countDocuments({ conversationId: conv.id });
+      } else {
+        const readMsg = await getCollection(MESSAGES).findOne({ id: readState.lastReadMessageId });
+        if (readMsg) {
+          unread = await getCollection(MESSAGES).countDocuments({
+            conversationId: conv.id,
+            $or: [
+              { createdAt: { $gt: readMsg.createdAt } },
+              { createdAt: readMsg.createdAt, id: { $gt: readMsg.id } },
+            ],
+          });
+        }
+      }
+    }
+
+    enriched.push({
+      ...conv,
+      lastMessage: lastMsg ? {
+        content: lastMsg.content,
+        senderId: lastMsg.senderId,
+        playerName: lastMsg.playerName,
+        createdAt: lastMsg.createdAt,
+      } : null,
+      unread,
+    });
+  }
+
+  // Sort by last message time (newest first), then by createdAt
+  enriched.sort((a, b) => {
+    const tA = a.lastMessage?.createdAt || a.createdAt || "";
+    const tB = b.lastMessage?.createdAt || b.createdAt || "";
+    return tB.localeCompare(tA);
+  });
+
+  return enriched;
 }
 
 function escapeRegex(str) {

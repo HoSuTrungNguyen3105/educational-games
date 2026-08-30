@@ -37,6 +37,7 @@ import {
   ListChecks,
   SplineIcon,
   ShipWheel,
+  FileText,
 } from 'lucide-react'
 
 // Bảng màu theo môn học — giữ nguyên
@@ -63,6 +64,7 @@ const NAV_ITEMS = (userAuth) => [
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", path: "/chat", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", path: "/find-friends", show: !!userAuth?.user },
   { key: "coins", icon: Coins, label: "Ví của tôi", path: "/my-coins", show: !!userAuth?.user },
+  { key: "assignment", icon: FileText, label: "Bài tập", path: "/assignment", show: !!userAuth?.user },
   { key: "profile", icon: User, label: "Hồ sơ", path: "/profile", show: !!userAuth?.user },
 ];
 
@@ -75,6 +77,7 @@ const QUICK_MENU_ITEMS = (userAuth) => [
   { key: "coins", icon: Coins, label: "Ví của tôi", path: "/my-coins", show: !!userAuth?.user, tint: "from-amber-400 to-yellow-400" },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", path: "/chat", show: !!userAuth?.user, tint: "from-cyan-400 to-blue-400" },
   { key: "friends", icon: Search, label: "Tìm bạn", path: "/find-friends", show: !!userAuth?.user, tint: "from-emerald-400 to-teal-400" },
+  { key: "assignment", icon: FileText, label: "Bài tập", path: "/assignment", show: !!userAuth?.user, tint: "from-blue-400 to-indigo-400" },
   { key: "profile", icon: User, label: "Hồ sơ", path: "/profile", show: !!userAuth?.user, tint: "from-blue-400 to-rose-400" },
   { key: "teacher", icon: GraduationCap, label: "Giáo viên", path: "/admin", show: userAuth?.user?.role === 'admin', tint: "from-indigo-400 to-violet-400" },
   { key: "login", icon: KeyRound, label: "Đăng nhập", action: "login", show: !userAuth?.user, tint: "from-purple-400 to-pink-400" },

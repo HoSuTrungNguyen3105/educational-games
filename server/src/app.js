@@ -19,6 +19,8 @@ import dailyTasksRouter from "./routes/dailyTasks.js";
 import tasksRouter from "./routes/tasks.js";
 import gameEventsRouter from "./routes/gameEvents.js";
 import notificationsRouter from "./routes/notifications.js";
+import classesRouter from "./routes/classes.js";
+import assignmentsRouter from "./routes/assignments.js";
 import { verifyToken } from "./services/authService.js";
 
 const app = express();
@@ -63,6 +65,8 @@ app.use("/api/daily-tasks", dailyTasksRouter);
 app.use("/api/tasks", tasksRouter);
 app.use("/api/game-events", gameEventsRouter);
 app.use("/api/notifications", notificationsRouter);
+app.use("/api/classes", classesRouter);
+app.use("/api/assignments", assignmentsRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);

@@ -26,4 +26,8 @@ export const conversationApi = {
       body: { userId, displayName },
     });
   },
+
+  async markRead(id) {
+    return apiFetch(`/conversations/${id}/read`, { method: "POST" });
+  },
 };

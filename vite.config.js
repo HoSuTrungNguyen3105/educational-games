@@ -21,6 +21,11 @@ export default defineConfig({
         start_url: '/educational-games/',
         icons: [
           {
+            src: 'eduplay-icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+          },
+          {
             src: 'eduplay-icon-192x192.png',
             sizes: '192x192',
             type: 'image/png',

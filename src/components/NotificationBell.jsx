@@ -21,6 +21,7 @@ const TYPE_ICONS = {
   DAILY_MISSION: "📋",
   NEW_LESSON: "📚",
   TEACHER_ASSIGNMENT: "📝",
+  ASSIGNMENT: "📝",
   MESSAGE: "💬",
   LEVEL_UP: "🏆",
   ITEM_REWARD: "🎁",

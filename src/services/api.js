@@ -354,3 +354,32 @@ export const notificationService = {
     return apiFetch("/notifications/device-token", { method: "DELETE", body: { token } });
   },
 };
+
+export const classService = {
+  async list() { return apiFetch("/classes") || []; },
+  async get(id) { return apiFetch(`/classes/${id}`); },
+  async create(data) { return apiFetch("/classes", { method: "POST", body: data }); },
+  async update(id, data) { return apiFetch(`/classes/${id}`, { method: "PUT", body: data }); },
+  async delete_(id) { return apiFetch(`/classes/${id}`, { method: "DELETE" }); },
+  async join(code) { return apiFetch("/classes/join", { method: "POST", body: { code } }); },
+  async getStudents(id) { return apiFetch(`/classes/${id}/students`) || []; },
+};
+
+export const assignmentService = {
+  async list(classId) {
+    const q = classId ? `?classId=${classId}` : "";
+    return apiFetch(`/assignments${q}`) || [];
+  },
+  async get(id) { return apiFetch(`/assignments/${id}`); },
+  async create(data) { return apiFetch("/assignments", { method: "POST", body: data }); },
+  async join(code) { return apiFetch("/assignments/join", { method: "POST", body: { code } }); },
+  async start(id) { return apiFetch(`/assignments/${id}/start`, { method: "POST" }); },
+  async submit(id, submissionId, answers) {
+    return apiFetch(`/assignments/${id}/submit`, { method: "POST", body: { submissionId, answers } });
+  },
+  async getResult(id) { return apiFetch(`/assignments/${id}/result`); },
+  async getStats(id) { return apiFetch(`/assignments/${id}/stats`); },
+  async getSubmissions(id) { return apiFetch(`/assignments/${id}/submissions`) || []; },
+  async close(id) { return apiFetch(`/assignments/${id}/close`, { method: "PUT" }); },
+  async delete_(id) { return apiFetch(`/assignments/${id}`, { method: "DELETE" }); },
+};

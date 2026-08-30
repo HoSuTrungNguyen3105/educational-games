@@ -24,6 +24,10 @@ const ROUTES = [
   { name: "admin-results",   pattern: "/admin/results/:gameId" },
   { name: "admin-coins",     pattern: "/admin/coins" },
   { name: "admin-daily-tasks", pattern: "/admin/daily-tasks" },
+  { name: "admin-classes", pattern: "/admin/classes" },
+  { name: "admin-assignments", pattern: "/admin/assignments" },
+  { name: "admin-assignment-new", pattern: "/admin/assignments/new" },
+  { name: "admin-assignment-detail", pattern: "/admin/assignments/:assignmentId" },
   { name: "admin-chat", pattern: "/admin/chat" },
   { name: "admin-profile", pattern: "/admin/profile" },
 
@@ -34,6 +38,8 @@ const ROUTES = [
   { name: "my-coins",     pattern: "/my-coins" },
   { name: "daily-tasks",  pattern: "/daily-tasks" },
   { name: "spin-wheel",   pattern: "/spin-wheel" },
+  { name: "assignment-join", pattern: "/assignment" },
+  { name: "assignment-take", pattern: "/assignment/:assignmentId" },
 
   // ── Home (fallback) ──
   { name: "home", pattern: "/" },

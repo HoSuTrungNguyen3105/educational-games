@@ -18,6 +18,8 @@ import {
   X,
   MessageCircle,
   User,
+  GraduationCap,
+  FileText,
 } from 'lucide-react'
 
 const MENU = [
@@ -31,6 +33,8 @@ const MENU = [
   { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects", permission: "subjects.manage" },
   { id: "admin-questions", label: "Câu hỏi", icon: HelpCircle, route: "/admin/questions", permission: "questions.manage" },
   { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
+  { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
+  { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments/new", permission: null },
 ];
 
 const BOTTOM_MENU = [
@@ -54,6 +58,8 @@ const MOBILE_MORE = [
   { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects", permission: "subjects.manage" },
   { id: "admin-questions", label: "Câu hỏi", icon: HelpCircle, route: "/admin/questions", permission: "questions.manage" },
   { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
+  { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
+  { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments/new", permission: null },
 ];
 
 export default function TeacherSidebar({ screen, user, onLogout }) {

@@ -19,6 +19,8 @@ import MyCoins from "./pages/user/MyCoins.jsx";
 import FindFriendsScreen from "./pages/user/FindFriendsScreen.jsx";
 import DailyTasksPage from "./pages/user/DailyTasksPage.jsx";
 import SpinWheel from "./pages/user/SpinWheel.jsx";
+import AssignmentJoin from "./pages/user/AssignmentJoin.jsx";
+import AssignmentTake from "./pages/user/AssignmentTake.jsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
 
 function App() {
@@ -111,6 +113,8 @@ function App() {
         <SpinWheel userAuth={userAuth} onBack={() => navigate("/")} showToast={showToast} />
       </RouteShell>
     ),
+    "assignment-join": () => <AssignmentJoin />,
+    "assignment-take": () => <AssignmentTake assignmentId={route.params?.assignmentId} />,
   };
 
   const renderScreen = () => {

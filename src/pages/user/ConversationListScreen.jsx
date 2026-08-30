@@ -1,95 +1,215 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { conversationApi } from "../../services/conversationApi.js";
 import { userService } from "../../services/api.js";
 import { Loader, ErrorState, EmptyState } from "../../components/ui.jsx";
 import { navigate } from "../../lib/router.js";
 import DMChatScreen from "./DMChatScreen.jsx";
+import { Search, ArrowLeft, MessageCircle, Users, UserPlus, RefreshCw } from "lucide-react";
+
+function formatTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 1) return "Vừa xong";
+  if (diffMin < 60) return `${diffMin} phút`;
+  if (diffHr < 24) return `${diffHr} giờ`;
+  if (diffDay < 7) return `${diffDay} ngày`;
+
+  return d.toLocaleDateString("vi", { day: "2-digit", month: "2-digit" });
+}
+
+function truncate(str, len = 45) {
+  if (!str) return "";
+  return str.length > len ? str.slice(0, len) + "..." : str;
+}
 
 export default function ConversationListScreen({ userAuth, onLogout }) {
-  const [state, setState] = useState({ conversations: null, error: null });
+  const [conversations, setConversations] = useState(null);
+  const [error, setError] = useState(null);
   const [chatTarget, setChatTarget] = useState(null);
   const [activeConvId, setActiveConvId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userCache, setUserCache] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
   const loadingRef = useRef(false);
   const token = userAuth?.token;
 
-  useEffect(() => {
+  const loadConversations = useCallback(async () => {
     if (!userAuth?.user || !token) return;
-    let cancelled = false;
+    if (loadingRef.current) return;
     loadingRef.current = true;
-    conversationApi.list().then((data) => {
-      if (!cancelled) setState({ conversations: data, error: null });
-    }).catch((e) => {
-      if (!cancelled) setState({ conversations: null, error: e.message });
-    }).finally(() => {
+    setRefreshing(true);
+    try {
+      const data = await conversationApi.list();
+      setConversations(data);
+      setError(null);
+    } catch (e) {
+      setError(e.message);
+    } finally {
       loadingRef.current = false;
-    });
-    return () => { cancelled = true; };
+      setRefreshing(false);
+    }
   }, [userAuth, token]);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  // Fetch other user info for each conversation
+  useEffect(() => {
+    if (!conversations || !userAuth?.user) return;
+    const ids = new Set();
+    for (const conv of conversations) {
+      if (conv.type !== "dm" || !conv.memberIds) continue;
+      const otherId = conv.memberIds.find(id => id !== userAuth.user.id);
+      if (otherId && !userCache[otherId]) ids.add(otherId);
+    }
+    if (ids.size === 0) return;
+
+    for (const uid of ids) {
+      userService.getById(uid, "user").then(found => {
+        if (found) setUserCache(prev => ({ ...prev, [uid]: found }));
+      }).catch(() => {});
+    }
+  }, [conversations, userAuth?.user]);
+
+  const handleSelectConversation = useCallback((conv) => {
+    const otherId = conv.memberIds?.find(id => id !== userAuth.user.id);
+    if (otherId && conv.type === "dm") {
+      setActiveConvId(conv.id);
+      // Mark as read
+      conversationApi.markRead(conv.id).catch(() => {});
+      // Update unread to 0 locally
+      setConversations(prev => prev?.map(c =>
+        c.id === conv.id ? { ...c, unread: 0 } : c
+      )) || [];
+      const target = userCache[otherId];
+      if (target) {
+        setChatTarget(target);
+      } else {
+        userService.getById(otherId, "user").then(found => {
+          if (found) setChatTarget(found);
+        }).catch(() => {});
+      }
+    }
+  }, [userAuth?.user, userCache]);
+
+  const handleBack = useCallback(() => {
+    setChatTarget(null);
+    setActiveConvId(null);
+    loadConversations();
+  }, [loadConversations]);
 
   if (!userAuth?.user) {
     return (
       <div className="flex-1 flex items-center justify-center px-6 py-10">
         <div className="text-center">
-          <div className="text-6xl mb-4">💬</div>
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mx-auto mb-4">
+            <MessageCircle className="w-10 h-10 text-purple-400" />
+          </div>
           <h2 className="font-display text-xl text-ink mb-2">Đăng nhập để xem tin nhắn</h2>
-          <p className="text-sm text-[#8A7C63]">Bạn cần đăng nhập để sử dụng tính năng chat</p>
+          <p className="text-sm text-[#8A7C63] mb-4">Bạn cần đăng nhập để sử dụng tính năng chat</p>
+          <button onClick={() => navigate("/")}
+            className="px-5 py-2 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition">
+            Đăng nhập
+          </button>
         </div>
       </div>
     );
   }
 
-  const handleSelectConversation = (conv) => {
-    const otherId = conv.memberIds?.find((id) => id !== userAuth.user.id);
-    if (otherId && conv.type === "dm") {
-      setActiveConvId(conv.id);
-      userService.getById(otherId).then((found) => {
-        if (found) setChatTarget(found);
-      }).catch(() => {});
-    }
-  };
+  const filtered = (conversations || []).filter(conv => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const otherId = conv.memberIds?.find(id => id !== userAuth.user.id);
+    const other = otherId ? userCache[otherId] : null;
+    const name = (other?.name || conv.name || "").toLowerCase();
+    const username = (other?.username || "").toLowerCase();
+    return name.includes(q) || username.includes(q);
+  });
+
+  const totalUnread = (conversations || []).reduce((sum, c) => sum + (c.unread || 0), 0);
 
   return (
-    <div className="flex-1 flex h-full min-h-0">
+    <div className="flex-1 flex h-full min-h-0 bg-paper">
       {/* LEFT: Conversation List */}
-      <div className={`w-full md:w-80 lg:w-96 border-r border-ink/10 flex flex-col bg-paper shrink-0 ${chatTarget ? "hidden md:flex" : "flex"}`}>
-        <div className="px-4 py-4 border-b border-ink/10 flex items-center justify-between shrink-0">
-          <h1 className="font-display text-lg text-ink">💬 Tin nhắn</h1>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate("/find-friends")}
-              className="px-3 py-1.5 rounded-xl bg-ink text-paper text-xs font-semibold hover:bg-ink2 transition"
-            >
-              🔍 Tìm bạn
-            </button>
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                className="text-xs text-red-500 font-semibold hover:text-red-600 transition"
-              >
-                🚪 Đăng xuất
+      <div className={`w-full md:w-80 lg:w-[340px] border-r border-ink/8 flex flex-col shrink-0 ${chatTarget ? "hidden md:flex" : "flex"}`}>
+        {/* Header */}
+        <div className="px-4 pt-5 pb-3 border-b border-ink/8 shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-lg text-ink">Tin nhắn</h1>
+              {totalUnread > 0 && (
+                <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full font-mono">
+                  {totalUnread}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={loadConversations}
+                className="p-2 rounded-xl hover:bg-ink/5 transition text-ink/40 hover:text-ink"
+                title="Làm mới">
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               </button>
-            )}
+              <button onClick={() => navigate("/find-friends")}
+                className="p-2 rounded-xl hover:bg-ink/5 transition text-ink/40 hover:text-ink"
+                title="Tìm bạn">
+                <UserPlus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/30" />
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Tìm kiếm..."
+              className="w-full pl-9 pr-3 py-2 rounded-xl bg-ink/5 border border-ink/8 text-sm font-body text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold/40 transition"
+            />
           </div>
         </div>
 
+        {/* Conversation List */}
         <div className="flex-1 overflow-y-auto">
-          {state.conversations === null ? (
-            <Loader label="Đang tải danh sách..." />
-          ) : state.error ? (
-            <ErrorState title="Lỗi tải danh sách" subtitle={state.error} onRetry={() => setState({ conversations: null, error: null })} />
-          ) : state.conversations.length === 0 ? (
-            <EmptyState
-              icon="📭"
-              title="Chưa có tin nhắn"
-              subtitle="Bạn chưa có cuộc trò chuyện nào. Hãy tìm bạn để bắt đầu chat!"
-            />
+          {conversations === null ? (
+            <div className="flex items-center justify-center h-40">
+              <Loader label="Đang tải..." />
+            </div>
+          ) : error ? (
+            <div className="p-4">
+              <ErrorState title="Lỗi tải danh sách" subtitle={error}
+                onRetry={loadConversations} />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 px-4 text-center">
+              <div className="w-14 h-14 rounded-full bg-ink/5 flex items-center justify-center mb-3">
+                <MessageCircle className="w-7 h-7 text-ink/20" />
+              </div>
+              <p className="text-sm font-body text-ink/40">
+                {searchQuery ? "Không tìm thấy kết quả" : "Chưa có tin nhắn nào"}
+              </p>
+              {!searchQuery && (
+                <button onClick={() => navigate("/find-friends")}
+                  className="mt-2 text-xs font-body text-gold hover:text-gold/80 transition">
+                  Tìm bạn để bắt đầu chat →
+                </button>
+              )}
+            </div>
           ) : (
-            <div className="p-2 space-y-1">
-              {state.conversations.map((conv) => (
+            <div className="py-1">
+              {filtered.map(conv => (
                 <ConversationItem
                   key={conv.id}
                   conversation={conv}
                   currentUser={userAuth.user}
+                  otherUser={conv.memberIds?.find(id => id !== userAuth.user.id) ? userCache[conv.memberIds.find(id => id !== userAuth.user.id)] : null}
                   isActive={conv.id === activeConvId}
                   onClick={() => handleSelectConversation(conv)}
                 />
@@ -105,14 +225,13 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
           <DMChatScreen
             targetUser={chatTarget}
             userAuth={userAuth}
-            onBack={() => {
-              setChatTarget(null);
-              setActiveConvId(null);
-            }}
+            onBack={handleBack}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-3 bg-paper/50">
-            <div className="text-6xl float-slow">💬</div>
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-3">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center mb-2">
+              <MessageCircle className="w-10 h-10 text-purple-300" />
+            </div>
             <h2 className="font-display text-xl text-ink">Chọn một cuộc trò chuyện</h2>
             <p className="text-sm text-[#8A7C63] max-w-xs">
               Chọn cuộc trò chuyện từ danh sách bên trái để bắt đầu nhắn tin
@@ -124,41 +243,69 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
   );
 }
 
-function ConversationItem({ conversation, currentUser, onClick, isActive }) {
-  const [otherUser, setOtherUser] = useState(null);
+function ConversationItem({ conversation, currentUser, otherUser, onClick, isActive }) {
+  const name = otherUser?.name || conversation.name || (conversation.type === "game_room" ? "Phòng game" : "Tin nhắn");
+  const username = otherUser?.username;
+  const lastMsg = conversation.lastMessage;
+  const unread = conversation.unread || 0;
+  const isFromMe = lastMsg?.senderId === currentUser.id;
 
-  useEffect(() => {
-    if (conversation.type !== "dm" || !conversation.memberIds) return;
-    const otherId = conversation.memberIds.find((id) => id !== currentUser.id);
-    if (!otherId) return;
-    userService.getById(otherId, "user").then((found) => {
-      if (found) setOtherUser(found);
-    }).catch(() => {});
-  }, [conversation, currentUser]);
+  let preview = "";
+  if (lastMsg) {
+    const prefix = isFromMe ? "Bạn: " : "";
+    preview = prefix + truncate(lastMsg.content, 40);
+  } else if (conversation.type === "game_room") {
+    preview = "Phòng game";
+  } else {
+    preview = "Nhắn tin trực tiếp";
+  }
 
   return (
     <button
       onClick={onClick}
-      className={`w-full p-3 text-left flex items-center gap-3 rounded-xl transition ${
+      className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-all duration-150 border-l-3 ${
         isActive
-          ? "bg-ink text-paper"
-          : "hover:bg-ink/5 text-ink"
+          ? "bg-gold/8 border-l-gold"
+          : "border-l-transparent hover:bg-ink/3"
       }`}
     >
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 font-semibold ${
-        isActive
-          ? "bg-paper/20 text-paper"
-          : "bg-gradient-to-br from-purple-400 to-pink-400 text-white"
-      }`}>
-        {otherUser?.name?.charAt(0)?.toUpperCase() || (conversation.type === "game_room" ? "🎮" : "💬")}
+      {/* Avatar */}
+      <div className="relative shrink-0">
+        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold ${
+          isActive
+            ? "bg-gold text-white"
+            : "bg-gradient-to-br from-purple-400 to-pink-400 text-white"
+        }`}>
+          {otherUser?.name?.charAt(0)?.toUpperCase() || (conversation.type === "game_room" ? "🎮" : "💬")}
+        </div>
+        {/* Online indicator */}
+        {otherUser && (
+          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-paper" />
+        )}
       </div>
+
+      {/* Content */}
       <div className="flex-1 min-w-0">
-        <h3 className={`font-display text-sm truncate ${isActive ? "text-paper" : "text-ink"}`}>
-          {otherUser?.name || conversation.name || (conversation.type === "game_room" ? "Phòng game" : "Tin nhắn trực tiếp")}
-        </h3>
-        <p className={`text-xs font-mono ${isActive ? "text-paper/60" : "text-[#8A7C63]"}`}>
-          {conversation.type === "game_room" ? "Phòng game" : otherUser ? `@${otherUser.username}` : "Nhắn tin trực tiếp"}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className={`font-display text-sm truncate ${isActive ? "text-ink" : "text-ink"}`}>
+            {name}
+          </h3>
+          {lastMsg?.createdAt && (
+            <span className={`text-[10px] font-mono shrink-0 ${unread > 0 ? "text-gold font-semibold" : "text-ink/30"}`}>
+              {formatTime(lastMsg.createdAt)}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-2 mt-0.5">
+          <p className={`text-xs truncate ${unread > 0 ? "text-ink font-medium" : "text-ink/40"}`}>
+            {preview}
+          </p>
+          {unread > 0 && (
+            <span className="shrink-0 px-1.5 py-0.5 bg-gold text-white text-[9px] font-bold rounded-full font-mono min-w-[18px] text-center">
+              {unread > 99 ? "99+" : unread}
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );
