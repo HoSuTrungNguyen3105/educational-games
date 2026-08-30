@@ -96,6 +96,7 @@ router.get("/me", authenticate, async (req, res) => {
           gamesPlayed: g.gamesPlayed || 0,
           questsCompleted: g.questsCompleted || 0,
           inventory: g.inventory || [],
+          loadout: g.loadout || null,
           lastPlayedAt: g.lastPlayedAt || g.updatedAt,
           createdAt: doc.createdAt || null,
           updatedAt: doc.updatedAt || null,

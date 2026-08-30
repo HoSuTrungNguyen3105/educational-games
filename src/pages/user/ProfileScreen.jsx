@@ -169,6 +169,59 @@ function GameCard({ game, index }) {
                 </div>
               </div>
             )}
+            {game.loadout && (
+              <div>
+                <div className="text-[10px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>Trang bị hiện tại:</div>
+                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                  {game.loadout.equippedWeapon && (
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: "var(--bg)" }}>
+                      <span>⚔️</span>
+                      <span className="font-semibold text-ink">{game.loadout.equippedWeapon}</span>
+                    </div>
+                  )}
+                  {game.loadout.equippedOutfit && (
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: "var(--bg)" }}>
+                      <span>🧥</span>
+                      <span className="font-semibold text-ink">{game.loadout.equippedOutfit}</span>
+                    </div>
+                  )}
+                  {game.loadout.equippedHair && (
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: "var(--bg)" }}>
+                      <span>💇</span>
+                      <span className="font-semibold text-ink">{game.loadout.equippedHair}</span>
+                    </div>
+                  )}
+                </div>
+                {game.loadout.potions && Object.keys(game.loadout.potions).length > 0 && (
+                  <div className="mt-1.5">
+                    <div className="text-[9px] font-mono mb-1" style={{ color: "var(--muted)" }}>Thuốc:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(game.loadout.potions).map(([k, v]) => v > 0 && (
+                        <span key={k} className="px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "#fef3c7", color: "#92400e" }}>
+                          {k === "heal_small" ? "🧪 Nhỏ" : k === "heal_medium" ? "🧪 Vừa" : k === "heal_large" ? "🧪 Lớn" : k} ×{v}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(game.loadout.ownedWeapons?.length > 0 || game.loadout.ownedOutfits?.length > 0 || game.loadout.ownedHairs?.length > 0) && (
+                  <div className="mt-1.5">
+                    <div className="text-[9px] font-mono mb-1" style={{ color: "var(--muted)" }}>Đã sở hữu:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {game.loadout.ownedWeapons?.map((id, i) => (
+                        <span key={`w${i}`} className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: "#dbeafe", color: "#1e40af" }}>⚔️ {id}</span>
+                      ))}
+                      {game.loadout.ownedOutfits?.map((id, i) => (
+                        <span key={`o${i}`} className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: "#fce7f3", color: "#9d174d" }}>🧥 {id}</span>
+                      ))}
+                      {game.loadout.ownedHairs?.map((id, i) => (
+                        <span key={`h${i}`} className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: "#f3e8ff", color: "#6b21a8" }}>💇 {id}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
