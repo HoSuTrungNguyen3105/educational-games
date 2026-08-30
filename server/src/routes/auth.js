@@ -6,6 +6,7 @@ import { getByUser } from "../services/gameProgressService.js";
 import { getCollection } from "../db.js";
 import { trackAction } from "../services/dailyTaskService.js";
 import { processTaskEvent } from "../services/taskEngineService.js";
+import { getClassById } from "../services/classService.js";
 
 const router = Router();
 
@@ -54,6 +55,11 @@ router.get("/me", authenticate, async (req, res) => {
       getByUser(req.user.sub).catch(() => []),
     ]);
 
+    let classInfo = null;
+    if (userDoc?.classId) {
+      classInfo = await getClassById(userDoc.classId).catch(() => null);
+    }
+
     const gameIds = games.map(g => g.gameId).filter(Boolean);
     const gameDocs = gameIds.length
       ? await getCollection("games").find({ _id: { $in: gameIds } }).toArray().catch(() => [])
@@ -71,6 +77,9 @@ router.get("/me", authenticate, async (req, res) => {
       role: req.user.role,
       coins,
       createdAt: userDoc?.createdAt || null,
+      classId: userDoc?.classId || null,
+      className: classInfo?.name || null,
+      classCode: classInfo?.code || null,
       stats: {
         totalPlays,
         totalXP,
@@ -104,7 +113,7 @@ router.get("/me", authenticate, async (req, res) => {
       }),
     });
   } catch {
-    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, coins: 0, createdAt: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 }, games: [] });
+    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, coins: 0, createdAt: null, classId: null, className: null, classCode: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 }, games: [] });
   }
 });
 

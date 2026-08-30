@@ -4,17 +4,18 @@ import * as notificationService from "../services/notificationService.js";
 import * as classService from "../services/classService.js";
 import { verifyToken } from "../services/authService.js";
 import { getCollection } from "../db.js";
+import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 
 const r = Router();
 
 function auth(req, res, next) {
   const h = req.headers.authorization;
-  if (!h || !h.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
-  try { req.user = verifyToken(h.slice(7)); next(); } catch { res.status(401).json({ error: "Invalid token" }); }
+  if (!h || !h.startsWith("Bearer ")) return sendError(res, "Unauthorized", 401);
+  try { req.user = verifyToken(h.slice(7)); next(); } catch { sendError(res, "Invalid token", 401); }
 }
 
 function requireTeacher(req, res, next) {
-  if (!["teacher", "admin"].includes(req.user.role)) return res.status(403).json({ error: "Teacher only" });
+  if (!["teacher", "admin"].includes(req.user.role)) return sendError(res, "Teacher only", 403);
   next();
 }
 
@@ -23,7 +24,7 @@ r.post("/", auth, requireTeacher, async (req, res) => {
   try {
     const { gameId, title, description, classId, isExam, examDuration, deadline } = req.body;
     if (!gameId || !title || !classId) {
-      return res.status(400).json({ error: "gameId, title, classId là bắt buộc" });
+      return sendError(res, "gameId, title, classId là bắt buộc", 400);
     }
     const assignment = await assignmentService.createAssignment({
       teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline,
@@ -49,8 +50,8 @@ r.post("/", auth, requireTeacher, async (req, res) => {
       console.error("Failed to send assignment notifications:", notifyErr);
     }
 
-    res.status(201).json(assignment);
-  } catch (e) { res.status(400).json({ error: e.message }); }
+    sendCreated(res, assignment);
+  } catch (e) { sendError(res, e.message, 400); }
 });
 
 // List assignments
@@ -61,35 +62,35 @@ r.get("/", auth, async (req, res) => {
       const assignments = await assignmentService.listAssignments({
         classId, teacherId: req.user.sub, status,
       });
-      return res.json(assignments);
+      return sendSuccess(res, assignments);
     }
     // Student: get assignments from their class
     const cls = await classService.getStudentClass(req.user.sub);
-    if (!cls) return res.json([]);
+    if (!cls) return sendSuccess(res, []);
     const assignments = await assignmentService.listAssignments({ classId: cls.id, status: "ACTIVE" });
-    res.json(assignments);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    sendSuccess(res, assignments);
+  } catch (e) { sendError(res, e.message, 500); }
 });
 
 // Get assignment by id
 r.get("/:id", auth, async (req, res) => {
   try {
     const assignment = await assignmentService.getAssignmentById(req.params.id);
-    if (!assignment) return res.status(404).json({ error: "Không tìm thấy bài giao" });
-    res.json(assignment);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    if (!assignment) return sendError(res, "Không tìm thấy bài giao", 404);
+    sendSuccess(res, assignment);
+  } catch (e) { sendError(res, e.message, 500); }
 });
 
 // Join assignment by code (student enters 6-digit code)
 r.post("/join", auth, async (req, res) => {
   try {
     const { code } = req.body;
-    if (!code) return res.status(400).json({ error: "code là bắt buộc" });
+    if (!code) return sendError(res, "code là bắt buộc", 400);
     const assignment = await assignmentService.getAssignmentByCode(code);
-    if (!assignment) return res.status(404).json({ error: "Mã bài tập không hợp lệ" });
-    if (assignment.status !== "ACTIVE") return res.status(400).json({ error: "Bài giao đã đóng" });
-    res.json(assignment);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    if (!assignment) return sendError(res, "Mã bài tập không hợp lệ", 404);
+    if (assignment.status !== "ACTIVE") return sendError(res, "Bài giao đã đóng", 400);
+    sendSuccess(res, assignment);
+  } catch (e) { sendError(res, e.message, 500); }
 });
 
 // Start submission (student)
@@ -99,63 +100,63 @@ r.post("/:id/start", auth, async (req, res) => {
       assignmentId: req.params.id,
       studentId: req.user.sub,
     });
-    res.json(submission);
-  } catch (e) { res.status(400).json({ error: e.message }); }
+    sendSuccess(res, submission);
+  } catch (e) { sendError(res, e.message, 400); }
 });
 
 // Submit answers (student)
 r.post("/:id/submit", auth, async (req, res) => {
   try {
     const { submissionId, answers } = req.body;
-    if (!submissionId) return res.status(400).json({ error: "submissionId là bắt buộc" });
+    if (!submissionId) return sendError(res, "submissionId là bắt buộc", 400);
     const result = await assignmentService.submitAnswers({
       submissionId,
       studentId: req.user.sub,
       answers: answers || [],
     });
-    res.json(result);
-  } catch (e) { res.status(400).json({ error: e.message }); }
+    sendSuccess(res, result);
+  } catch (e) { sendError(res, e.message, 400); }
 });
 
 // Get student result
 r.get("/:id/result", auth, async (req, res) => {
   try {
     const result = await assignmentService.getAssignmentResult(req.params.id, req.user.sub);
-    if (!result) return res.status(404).json({ error: "Chưa có kết quả" });
-    res.json(result);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    if (!result) return sendError(res, "Chưa có kết quả", 404);
+    sendSuccess(res, result);
+  } catch (e) { sendError(res, e.message, 500); }
 });
 
 // Get assignment stats (teacher)
 r.get("/:id/stats", auth, requireTeacher, async (req, res) => {
   try {
     const stats = await assignmentService.getAssignmentStats(req.params.id);
-    res.json(stats);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    sendSuccess(res, stats);
+  } catch (e) { sendError(res, e.message, 500); }
 });
 
 // List submissions for assignment (teacher)
 r.get("/:id/submissions", auth, requireTeacher, async (req, res) => {
   try {
     const subs = await assignmentService.listSubmissions({ assignmentId: req.params.id });
-    res.json(subs);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    sendSuccess(res, subs);
+  } catch (e) { sendError(res, e.message, 500); }
 });
 
 // Close assignment (teacher)
 r.put("/:id/close", auth, requireTeacher, async (req, res) => {
   try {
     const updated = await assignmentService.closeAssignment(req.params.id);
-    res.json(updated);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    sendSuccess(res, updated);
+  } catch (e) { sendError(res, e.message, 500); }
 });
 
 // Delete assignment (teacher)
 r.delete("/:id", auth, requireTeacher, async (req, res) => {
   try {
     await assignmentService.deleteAssignment(req.params.id);
-    res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    sendSuccess(res, { ok: true });
+  } catch (e) { sendError(res, e.message, 500); }
 });
 
 export default r;
