@@ -5,7 +5,15 @@ function getIsInstalled() {
 }
 
 function getWasDismissed() {
-  return sessionStorage.getItem("pwa-install-dismissed") === "1";
+  return localStorage.getItem("pwa-install-dismissed") === "1";
+}
+
+function setDismissed() {
+  localStorage.setItem("pwa-install-dismissed", "1");
+}
+
+function clearDismissed() {
+  localStorage.removeItem("pwa-install-dismissed");
 }
 
 export default function PWAInstallPrompt() {
@@ -24,30 +32,44 @@ export default function PWAInstallPrompt() {
     const installedHandler = () => {
       setShowInstall(false);
       setDeferredPrompt(null);
+      clearDismissed();
     };
 
     window.addEventListener("beforeinstallprompt", handler);
     window.addEventListener("appinstalled", installedHandler);
 
+    // Fallback: nếu beforeinstallprompt không fire trong 3s → hiện prompt bằng manual mode
+    const fallbackTimer = setTimeout(() => {
+      if (!getIsInstalled() && !getWasDismissed() && !deferredPrompt) {
+        setShowInstall(true);
+      }
+    }, 3000);
+
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
       window.removeEventListener("appinstalled", installedHandler);
+      clearTimeout(fallbackTimer);
     };
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      // Fallback: hướng dẫn user manually install
+      alert("Vui lòng sử dụng menu trình duyệt → 'Thêm vào màn hình chính' để cài đặt ứng dụng.");
+      return;
+    }
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") {
       setShowInstall(false);
+      clearDismissed();
     }
     setDeferredPrompt(null);
   };
 
   const handleDismiss = () => {
     setShowInstall(false);
-    sessionStorage.setItem("pwa-install-dismissed", "1");
+    setDismissed();
   };
 
   if (getIsInstalled() || !showInstall) {
