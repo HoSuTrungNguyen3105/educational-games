@@ -1,8 +1,86 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  base: "/educational-games/",
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'icons.svg'],
+      manifest: {
+        name: 'Educational Games - Trò chơi giáo dục',
+        short_name: 'EduGames',
+        description: 'Nền tảng trò chơi giáo dục tương tác cho học sinh',
+        theme_color: '#6C3BF5',
+        background_color: '#FBF7EE',
+        display: 'standalone',
+        orientation: 'portrait',
+        scope: '/educational-games/',
+        start_url: '/educational-games/',
+        icons: [
+          {
+            src: 'pwa-192x192.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml',
+          },
+          {
+            src: 'pwa-512x512.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+          },
+          {
+            src: 'pwa-maskable-512x512.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/cdn\.tailwindcss\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'tailwindcss-cache',
+              expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\/api\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [0, 200] },
+              networkTimeoutSeconds: 5,
+            },
+          },
+        ],
+      },
+    }),
+  ],
+  base: '/educational-games/',
 })

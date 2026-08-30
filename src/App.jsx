@@ -19,6 +19,7 @@ import MyCoins from "./pages/user/MyCoins.jsx";
 import FindFriendsScreen from "./pages/user/FindFriendsScreen.jsx";
 import DailyTasksPage from "./pages/user/DailyTasksPage.jsx";
 import SpinWheel from "./pages/user/SpinWheel.jsx";
+import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
 
 function App() {
   const route = useRoute();
@@ -177,7 +178,12 @@ function App() {
     );
   };
 
-  return renderScreen();
+  return (
+    <>
+      {renderScreen()}
+      <PWAInstallPrompt />
+    </>
+  );
 }
 
 export default App;
