@@ -1,14 +1,17 @@
 import { Router } from "express";
 import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
+import { v2 as cloudinary } from "cloudinary";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendError, sendCreated } from "../utils/response.js";
 import { getCollection } from "../db.js";
 
 const router = Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const ITEMS = "avatarItems";
 const USERS = "users";
@@ -28,18 +31,10 @@ const DEFAULT_LOADOUT = {
   hat: null, glasses: null, accessory: null,
 };
 
-// ─── FILE UPLOAD ─────────────────────────────────────────────────
+// ─── FILE UPLOAD (Cloudinary) ────────────────────────────────────
 
-const uploadDir = path.join(__dirname, "../uploads/avatar");
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".png";
-    cb(null, `av-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
-  },
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith("image/")) cb(null, true);
@@ -47,18 +42,36 @@ const upload = multer({
   },
 });
 
-// POST /api/avatar/upload — upload 1 file ảnh
-router.post("/upload", authenticate, upload.single("file"), (req, res) => {
-  if (!req.file) return sendError(res, "Không có file", 400);
-  const url = `/uploads/avatar/${req.file.filename}`;
-  sendCreated(res, { url, filename: req.file.filename });
+function uploadToCloudinary(fileBuffer, folder = "avatar-items") {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: "image", format: "png" },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    stream.end(fileBuffer);
+  });
+}
+
+// POST /api/avatar/upload — upload 1 file ảnh lên Cloudinary
+router.post("/upload", authenticate, upload.single("file"), async (req, res, next) => {
+  try {
+    if (!req.file) return sendError(res, "Không có file", 400);
+    const result = await uploadToCloudinary(req.file.buffer);
+    sendCreated(res, { url: result.secure_url, publicId: result.public_id });
+  } catch (e) { next(e); }
 });
 
 // POST /api/avatar/upload/batch — upload nhiều file
-router.post("/upload/batch", authenticate, upload.array("files", 50), (req, res) => {
-  if (!req.files || req.files.length === 0) return sendError(res, "Không có file", 400);
-  const urls = req.files.map(f => ({ url: `/uploads/avatar/${f.filename}`, filename: f.filename }));
-  sendCreated(res, { files: urls, count: urls.length });
+router.post("/upload/batch", authenticate, upload.array("files", 50), async (req, res, next) => {
+  try {
+    if (!req.files || req.files.length === 0) return sendError(res, "Không có file", 400);
+    const results = await Promise.all(req.files.map(f => uploadToCloudinary(f.buffer)));
+    const files = results.map(r => ({ url: r.secure_url, publicId: r.public_id }));
+    sendCreated(res, { files, count: files.length });
+  } catch (e) { next(e); }
 });
 
 // ─── SEED DEFAULT ITEMS (with placeholder images) ────────────────
