@@ -14,7 +14,13 @@ export default function AssignmentJoin() {
     setLoading(true);
     setError('');
     try {
-      const assignment = await assignmentService.join(code.trim());
+      const res = await assignmentService.join(code.trim());
+      const assignment = res?.data || res;
+      if (!assignment?.id) {
+        setError('Không tìm thấy bài tập');
+        setLoading(false);
+        return;
+      }
       navigate(`/assignment/${assignment.id}`);
     } catch (err) {
       setError(err.message);

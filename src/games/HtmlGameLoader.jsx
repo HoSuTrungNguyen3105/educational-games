@@ -122,6 +122,7 @@ export default function HtmlGameLoader({
 
   // Handle invite user request from iframe
   const handleInviteUser = useCallback((data) => {
+    if (!data) return;
     const { toUserId, gameName, gameCode } = data;
     const correctGameId = game?._id?.toString() || game?.id;
     socket.emit(SOCKET_EVENTS.GAME_INVITE_SEND, {
@@ -135,6 +136,7 @@ export default function HtmlGameLoader({
 
   // Handle game move from iframe (forward to socket)
   const handleGameMove = useCallback((data) => {
+    if (!data) return;
     socket.emit(SOCKET_EVENTS.GAME_MOVE, {
       gameId: game?._id?.toString() || game?.id,
       row: data.row,
@@ -145,6 +147,7 @@ export default function HtmlGameLoader({
 
   // Handle join by code from iframe
   const handleJoinByCode = useCallback((data) => {
+    if (!data) return;
     // Ensure socket is connected
     if (!socket.connected && userAuth?.token) {
       socket.auth = { token: userAuth.token };
@@ -196,7 +199,7 @@ export default function HtmlGameLoader({
         }
       } else if (msg.type === "exchange-stars") {
         if (userAuth?.token) {
-          fetch(`${apiBase}/api/auth/me/stars/exchange`, {
+          fetch(`${API_BASE}/api/auth/me/stars/exchange`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${userAuth.token}` },
           })

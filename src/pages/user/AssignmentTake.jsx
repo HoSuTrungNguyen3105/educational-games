@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { assignmentService, gameService, questionService } from '../../services/api.js';
+import { assignmentService, questionService, templateService } from '../../services/api.js';
 import { useUserAuthStore } from '../../stores/userAuth.store.js';
 import { navigate } from '../../lib/router.js';
 import { Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import HtmlGameLoader from '../../games/HtmlGameLoader.jsx';
 
 const TIMER_WARN = 60;
 
 export default function AssignmentTake({ assignmentId }) {
   const user = useUserAuthStore(s => s.user);
+  const userAuth = useUserAuthStore(s => s);
   const [assignment, setAssignment] = useState(null);
-  const [game, setGame] = useState(null);
+  const [template, setTemplate] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [questionAnswers, setQuestionAnswers] = useState({});
   const [submission, setSubmission] = useState(null);
@@ -18,9 +20,10 @@ export default function AssignmentTake({ assignmentId }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const iframeRef = useRef(null);
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
+  const submissionRef = useRef(null);
+  const readyRef = useRef(false);
 
   useEffect(() => {
     if (!assignmentId) return;
@@ -32,10 +35,9 @@ export default function AssignmentTake({ assignmentId }) {
     setLoading(true);
     try {
       const a = await assignmentService.get(assignmentId);
-      if (!a) { setError('Không tìm thấy bài giao'); setLoading(false); return; }
+      if (!a || !a.id) { setError('Không tìm thấy bài giao'); setLoading(false); return; }
       setAssignment(a);
 
-      // Check if already submitted
       const existing = await assignmentService.getResult(assignmentId).catch(() => null);
       if (existing) {
         setResult(existing);
@@ -44,23 +46,34 @@ export default function AssignmentTake({ assignmentId }) {
         return;
       }
 
-      // Start submission
       const sub = await assignmentService.start(assignmentId);
+      if (sub && !sub.id && sub._id) sub.id = sub._id;
       setSubmission(sub);
+      submissionRef.current = sub;
 
-      // Load game or questions
-      if (a.gameId) {
-        const allGames = await gameService.list();
-        const g = allGames.find(x => x._id === a.gameId);
-        setGame(g);
-      } else if (a.questionIds?.length) {
-        const allQ = await questionService.listAll();
-        const filtered = allQ.filter(q => a.questionIds.includes(q.id));
-        setQuestions(filtered);
+      if (a.questionIds?.length) {
+        try {
+          const allQ = await questionService.listAll();
+          if (Array.isArray(allQ)) {
+            setQuestions(allQ.filter(q => q && q.id && a.questionIds.includes(q.id)));
+          }
+        } catch (e) { console.error('[AssignmentTake] questions load error:', e); }
       }
 
-      // Start timer if exam
-      if (a.isExam && a.examDuration) {
+      if (a.templateId) {
+        try {
+          const tplRes = await templateService.get(a.templateId);
+          const tpl = tplRes?.data || tplRes;
+          console.log('[AssignmentTake] template loaded:', tpl?._id, tpl?.htmlTemplate?.substring(0, 50));
+          if (tpl && tpl.htmlTemplate) {
+            setTemplate(tpl);
+          } else {
+            console.warn('[AssignmentTake] template missing htmlTemplate:', tpl);
+          }
+        } catch (e) { console.error('[AssignmentTake] template load error:', e); }
+      }
+
+      if (a.isExam && a.examDuration && sub) {
         const elapsed = Math.floor((Date.now() - new Date(sub.startedAt).getTime()) / 1000);
         const remaining = Math.max(0, a.examDuration * 60 - elapsed);
         setTimeLeft(remaining);
@@ -80,11 +93,16 @@ export default function AssignmentTake({ assignmentId }) {
           }
         }, 1000);
       }
-    } catch (err) { setError(err.message); }
+    } catch (err) {
+      console.error('[AssignmentTake] init error:', err);
+      setError(err.message);
+    }
     setLoading(false);
+    readyRef.current = true;
   }
 
   const doSubmit = useCallback(async () => {
+    if (!readyRef.current) return;
     if (submitted) return;
     setSubmitted(true);
     if (timerRef.current) clearInterval(timerRef.current);
@@ -92,8 +110,7 @@ export default function AssignmentTake({ assignmentId }) {
     try {
       let answers = [];
 
-      if (game) {
-        // Game iframe path: ask iframe for answers via postMessage
+      if (template?.htmlTemplate) {
         answers = await new Promise((resolve) => {
           const handler = (e) => {
             try {
@@ -102,38 +119,44 @@ export default function AssignmentTake({ assignmentId }) {
                 window.removeEventListener('message', handler);
                 resolve(msg.answers || []);
               }
-            } catch {}
+            } catch { }
           };
           window.addEventListener('message', handler);
-          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: 'get-assignment-answers' }), '*');
+          const iframe = document.querySelector('iframe');
+          iframe?.contentWindow?.postMessage(JSON.stringify({ type: 'get-assignment-answers' }), '*');
           setTimeout(() => { window.removeEventListener('message', handler); resolve([]); }, 3000);
         });
       } else {
-        // Direct questions path: collect from questionAnswers state
         answers = Object.entries(questionAnswers).map(([questionId, value]) => ({ questionId, value }));
       }
 
-      const res = await assignmentService.submit(assignmentId, submission.id, answers);
+      const sub = submissionRef.current || submission;
+      const submissionId = sub?.id || sub?._id;
+      if (!submissionId) {
+        setError('Không tìm thấy submission để nộp bài. Vui lòng thử lại.');
+        setSubmitted(false);
+        return;
+      }
+
+      await assignmentService.submit(assignmentId, submissionId, answers);
       const full = await assignmentService.getResult(assignmentId);
       setResult(full);
     } catch (err) { setError(err.message); }
-  }, [assignmentId, submission, submitted, game, questionAnswers]);
+  }, [assignmentId, submission, submitted, template, questionAnswers]);
 
-  // Listen for game-answers message (alternative path from game)
   useEffect(() => {
     function onMsg(e) {
       try {
         const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (msg.type === 'game-answers' && msg.answers) {
+        if (msg?.type === 'game-answers' && msg.answers) {
           doSubmit();
         }
-      } catch {}
+      } catch { }
     }
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
   }, [doSubmit]);
 
-  // Auto-submit on deadline
   useEffect(() => {
     if (!assignment?.deadline) return;
     const dl = new Date(assignment.deadline).getTime() - Date.now();
@@ -147,6 +170,8 @@ export default function AssignmentTake({ assignmentId }) {
     const s = sec % 60;
     return `${m}:${String(s).padStart(2, '0')}`;
   }
+
+  const hasHtmlGame = !!(template?.htmlTemplate && template.htmlTemplate.trim());
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-body text-ink/40">Đang tải...</div>;
   if (error) return (
@@ -183,11 +208,8 @@ export default function AssignmentTake({ assignmentId }) {
     );
   }
 
-  const gameUrl = game ? `/games/${game.code}.html` : null;
-
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
-      {/* Header */}
       <div className="bg-ink/90 text-white px-4 py-2 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <span className="font-display text-sm truncate">{assignment?.title}</span>
@@ -201,14 +223,18 @@ export default function AssignmentTake({ assignmentId }) {
         <button onClick={() => navigate('/')} className="text-white/60 hover:text-white text-xs font-body">Thoát</button>
       </div>
 
-      {/* Content: game iframe or direct questions */}
       <div className="flex-1 relative overflow-auto">
-        {gameUrl ? (
-          <iframe
-            ref={iframeRef}
-            src={gameUrl}
-            className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin allow-popups"
+        {hasHtmlGame ? (
+          <HtmlGameLoader
+            htmlContent={template.htmlTemplate}
+            game={{ _id: template._id || 'assignment', id: template._id || 'assignment', name: assignment?.title || 'Bài tập', code: 'assignment' }}
+            questions={questions}
+            players={[]}
+            playerName={user?.name || 'Học sinh'}
+            playMode={template.playMode || 'solo'}
+            onFinish={() => { }}
+            onQuit={() => navigate('/')}
+            userAuth={userAuth}
           />
         ) : questions.length > 0 ? (
           <div className="max-w-2xl mx-auto p-4 space-y-4">
@@ -249,8 +275,7 @@ export default function AssignmentTake({ assignmentId }) {
         )}
       </div>
 
-      {/* Footer submit button (for non-exam or always visible) */}
-      {!submitted && (
+      {!submitted && !hasHtmlGame && (
         <div className="bg-ink/90 px-4 py-3 flex justify-center shrink-0">
           <button onClick={doSubmit}
             className="px-8 py-2.5 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition">
