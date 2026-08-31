@@ -1,229 +1,129 @@
-# Avatar Profile — React xử lý Sprite Sheet
+# Avatar Sprite Sheet — Tọa độ và cách React xử lý
 
-## 1. Mục tiêu
+Sprite sheet:
+public/avatar/avatar-sprite.png
 
-Tạo hệ thống Avatar nhân vật ngay trong **trang Profile User**.
+Kích thước:
+1536 × 1024 px
 
-Avatar sử dụng **một sprite sheet PNG nền trong suốt** thay vì tách mỗi trang phục thành một file riêng.
+QUAN TRỌNG:
+- Không render nguyên sprite sheet.
+- Không dùng <img src="/avatar/avatar-sprite.png"> cho Avatar Preview.
+- Sprite sheet chỉ là nguồn asset.
+- React phải crop từng item bằng background-position / CSS hoặc dùng object-position.
+- Mỗi item phải có vùng crop riêng.
+- Preview phải ghép các layer thành Avatar.
 
-React sẽ lấy từng vùng trong sprite sheet và ghép các layer thành một nhân vật hoàn chỉnh.
+## Khu vực chính
 
-Không lưu HTML cho Avatar.
+### Body
+X: 0 → 245
+Y: 0 → 275
 
----
+### Face / Skin
+X: 250 → 610
+Y: 0 → 290
 
-## 2. File Avatar
+### Hair
+X: 625 → 1536
+Y: 0 → 310
 
-Đặt sprite sheet vào:
+### Shirt
+X: 0 → 1050
+Y: 270 → 575
 
-```text
-public/avatar-sprite.png
-```
+### Hat
+X: 1040 → 1536
+Y: 280 → 455
 
-Sprite sheet là ảnh PNG nền trong suốt, chứa nhiều bộ phận và trang phục.
+### Glasses
+X: 1160 → 1536
+Y: 430 → 600
 
-Không cần tách thành hàng chục file PNG riêng.
+### Accessory
+X: 1040 → 1536
+Y: 430 → 1024
 
-Các nhóm có thể gồm:
+### Pants
+X: 0 → 1050
+Y: 540 → 810
 
-- Body
-- Skin
-- Face
-- Hair
-- Shirt
-- Pants
-- Shoes
-- Hat
-- Glasses
-- Accessory
+### Shoes
+X: 0 → 1050
+Y: 785 → 1024
 
----
+## Cách render
 
-## 3. Cách React hiển thị Avatar
+Tạo:
 
-Không hiển thị nguyên sprite sheet.
+src/components/avatar/AvatarPreview.jsx
 
-Tạo một component:
+Avatar Preview sử dụng một canvas/avatar container cố định.
 
-```text
-AvatarPreview
-```
+Mỗi layer:
 
-Component nhận cấu hình Avatar hiện tại của user, sau đó tạo các layer.
+- body
+- skin
+- face
+- hair
+- shirt
+- pants
+- shoes
+- hat
+- glasses
+- accessory
 
-Thứ tự layer đề xuất:
+được render độc lập.
 
-```text
-Body
-→ Skin
-→ Face
-→ Hair
-→ Shirt
-→ Pants
-→ Shoes
-→ Hat
-→ Glasses
-→ Accessory
-```
+Không được hiển thị các item khác ngoài item đang được chọn.
 
-Các layer phải nằm cùng một vị trí và cùng kích thước canvas để khi chồng lên nhau tạo thành một nhân vật hoàn chỉnh.
+## Quan trọng về tọa độ
 
----
+Các tọa độ trên là vùng CATEGORY, không phải nói rằng toàn bộ vùng đó là một item.
 
-## 4. Không lưu ảnh Avatar hoàn chỉnh vào User
-
-Trong User chỉ lưu **trạng thái trang phục đang trang bị**.
-
-Ví dụ:
-
-```text
-avatar:
-  body
-  skin
-  face
-  hair
-  shirt
-  pants
-  shoes
-  hat
-  glasses
-  accessory
-```
-
-Mỗi giá trị là ID của item.
+AI phải xác định bounding box của từng item nằm bên trong category tương ứng.
 
 Ví dụ:
 
-```text
-hair = hair_03
-shirt = shirt_08
-pants = pants_02
-shoes = shoes_04
-```
+hair:
+- hair_01
+- hair_02
+- hair_03
+- ...
 
-React dựa vào ID để tìm tọa độ của item trong sprite sheet.
+Mỗi item phải có:
 
----
-
-## 5. Metadata của Sprite Sheet
-
-Tạo một file cấu hình:
-
-```text
-src/data/avatarItems.js
-```
-
-File này chứa metadata của từng item.
-
-Mỗi item cần có:
-
-```text
-id
-category
-name
 x
 y
 width
 height
-price
-default
-```
 
-Trong đó:
+riêng.
 
-- `id`: ID duy nhất của item.
-- `category`: nhóm item.
-- `name`: tên hiển thị.
-- `x`: vị trí X trong sprite sheet.
-- `y`: vị trí Y.
-- `width`: chiều rộng vùng item.
-- `height`: chiều cao vùng item.
-- `price`: giá bằng Coin.
-- `default`: có được trang bị miễn phí mặc định hay không.
+Không được lấy toàn bộ vùng Hair làm một item.
 
-Không hard-code thông tin này trực tiếp trong component Profile.
+## Preview
 
----
+Avatar container:
 
-## 6. Component Avatar
+512 × 512
 
-Tạo:
+Các layer được đặt absolute:
 
-```text
-src/components/avatar/AvatarPreview.jsx
-```
+position: absolute;
+inset: 0;
 
-Component có nhiệm vụ:
+Mỗi layer phải được crop từ sprite sheet và scale về cùng canvas 512 × 512.
 
-1. Nhận cấu hình Avatar.
-2. Tìm item tương ứng trong `avatarItems.js`.
-3. Hiển thị sprite sheet bằng CSS.
-4. Cắt đúng vùng của từng item.
-5. Xếp các layer theo đúng thứ tự.
-6. Trả về Avatar hoàn chỉnh.
+## Profile
 
-Không tạo thêm ảnh PNG cho từng item.
+Profile User → Tùy chỉnh Avatar
 
----
+Tabs:
 
-## 7. CSS Sprite
-
-Có thể sử dụng:
-
-```css
-background-image: url("/avatar/avatar-sprite.png");
-background-repeat: no-repeat;
-```
-
-Mỗi layer sử dụng:
-
-```css
-background-position
-```
-
-để lấy đúng vùng của sprite sheet.
-
-Nếu sprite sheet được thiết kế theo ô có kích thước cố định thì ưu tiên dùng hệ thống grid để tính vị trí thay vì ghi tọa độ thủ công quá nhiều.
-
----
-
-## 8. Hiển thị trong Profile
-
-Trong:
-
-```text
-Profile User
-```
-
-thêm khu vực:
-
-```text
-Avatar của tôi
-```
-
-Gồm:
-
-```text
-┌─────────────────────────────┐
-│        Avatar Preview       │
-│                             │
-│          Nhân vật           │
-│                             │
-└─────────────────────────────┘
-
-        [ Tùy chỉnh Avatar ]
-```
-
-Khi bấm `Tùy chỉnh Avatar`, mở modal hoặc panel tùy chỉnh.
-
----
-
-## 9. Giao diện tùy chỉnh
-
-Chia item thành các tab:
-
-```text
-Tổng quan
+Thân
+Da
+Mặt
 Tóc
 Áo
 Quần
@@ -231,271 +131,48 @@ Giày
 Mũ
 Kính
 Phụ kiện
-```
 
-Khi user chọn item:
+Khi chọn item:
 
-1. Preview Avatar thay đổi ngay lập tức.
-2. Chưa cần gọi API ngay.
-3. User có thể thử nhiều item.
-4. Khi bấm `Lưu Avatar`, mới gửi cấu hình lên API.
+- Preview thay đổi ngay.
+- Không gọi API ngay.
 
----
+Khi bấm:
 
-## 10. Item miễn phí và Item mua bằng Coin
-
-Mỗi item có:
-
-```text
-price
-```
-
-Nếu:
-
-```text
-price = 0
-```
-
-thì item miễn phí.
-
-Nếu:
-
-```text
-price > 0
-```
-
-thì yêu cầu user mua bằng Coin.
-
-Luồng:
-
-```text
-User chọn item
-        ↓
-Kiểm tra user đã sở hữu chưa
-        ↓
-Nếu đã sở hữu
-        ↓
-Cho trang bị
-
-Nếu chưa sở hữu
-        ↓
-Hiển thị giá Coin
-        ↓
-User bấm Mua
-        ↓
-API kiểm tra Coin
-        ↓
-Trừ Coin
-        ↓
-Thêm item vào Inventory
-        ↓
-Cho phép trang bị
-```
-
-Không tự trừ Coin ở frontend.
-
----
-
-## 11. Inventory và Loadout
-
-Nên tách:
-
-```text
-Inventory
-```
-
-và:
-
-```text
-Loadout
-```
-
-### Inventory
-
-Lưu những item user đã sở hữu.
-
-Ví dụ:
-
-```text
-hair_01
-hair_03
-shirt_02
-shirt_08
-shoes_01
-```
-
-### Loadout
-
-Lưu những item đang mặc.
-
-Ví dụ:
-
-```text
-hair: hair_03
-shirt: shirt_08
-pants: pants_02
-shoes: shoes_01
-hat: null
-glasses: glasses_02
-accessory: null
-```
-
-Avatar Preview chỉ đọc `Loadout`.
-
----
-
-## 12. Lưu vào User Profile
-
-Avatar phải thuộc về User hiện tại.
-
-Khi user đăng nhập:
-
-```text
-GET /user/profile
-```
-
-API trả về thông tin user cùng Avatar/Loadout.
-
-React dùng dữ liệu đó để render Avatar.
-
-Khi thay đổi:
-
-```text
-PUT /user/avatar
-```
-
-hoặc endpoint tương đương của hệ thống hiện tại.
-
-Request chỉ gửi ID item, không gửi ảnh.
-
----
-
-## 13. Không lưu sprite sheet vào API
-
-Sprite sheet:
-
-```text
-public/avatar/avatar-sprite.png
-```
-
-được đóng gói cùng frontend.
-
-API chỉ lưu:
-
-```text
-item ID
-```
-
-Ví dụ:
-
-```text
-hair_03
-shirt_08
-pants_02
-shoes_01
-```
-
-Điều này giúp database nhẹ và dễ mở rộng.
-
----
-
-## 14. Avatar mặc định
-
-Nếu user chưa có Avatar:
-
-```text
-body mặc định
-skin mặc định
-face mặc định
-hair mặc định
-shirt mặc định
-pants mặc định
-shoes mặc định
-```
-
-React tự tạo Avatar mặc định.
-
-Sau khi user lưu Avatar lần đầu thì lưu Loadout vào User.
-
----
-
-## 15. Yêu cầu quan trọng
-
-### Không làm
-
-- Không tách sprite sheet thành 40+ file.
-- Không lưu ảnh Avatar hoàn chỉnh vào database.
-- Không lưu HTML Avatar.
-- Không để frontend tự trừ Coin.
-- Không hard-code toàn bộ item trực tiếp trong Profile.
-
-### Phải làm
-
-- Dùng một sprite sheet PNG nền trong suốt.
-- React xử lý việc ghép layer.
-- Metadata item nằm riêng.
-- User chỉ lưu ID item.
-- Inventory quản lý item đã sở hữu.
-- Loadout quản lý item đang mặc.
-- API xử lý mua/trừ Coin.
-- Preview thay đổi ngay khi chọn item.
-- Chỉ lưu Loadout khi user bấm Lưu.
-
----
-
-## 16. Kết quả mong muốn
-
-Trang Profile sẽ có:
-
-```text
-Profile
-│
-├── Thông tin User
-│
-├── Avatar
-│   ├── Preview nhân vật
-│   └── Tùy chỉnh Avatar
-│
-├── Inventory
-│   └── Các item đã sở hữu
-│
-└── Coin
-    └── Số Coin hiện tại
-```
-
-Người dùng có thể:
-
-```text
-Xem Avatar
-   ↓
-Tùy chỉnh
-   ↓
-Chọn tóc / áo / quần / giày / phụ kiện
-   ↓
-Preview ngay
-   ↓
-Mua item bằng Coin nếu chưa sở hữu
-   ↓
-Trang bị
-   ↓
 Lưu Avatar
-   ↓
-API lưu Loadout
-```
 
-## 17. Tích hợp với hệ thống Game
+mới gửi Loadout lên API.
 
-Avatar Profile này **không thay thế nhân vật riêng của từng game**.
+## Inventory
 
-Mỗi game vẫn giữ nhân vật/gameplay riêng như hiện tại.
+Item chưa sở hữu:
 
-Avatar Profile chỉ dùng cho:
+Hiển thị giá Coin.
 
-- Profile User
-- Trang cá nhân
-- Bảng xếp hạng
-- Thành tích
-- Khu vực xã hội
-- Hiển thị thông tin học sinh
+Item đã sở hữu:
 
-Nếu sau này muốn sử dụng Avatar Profile trong game thì có thể lấy Loadout từ User API, nhưng không được làm ảnh hưởng đến logic nhân vật riêng của từng game.
+Hiển thị:
+
+Trang bị
+
+Mua item phải xử lý ở API.
+Frontend không được tự trừ Coin.
+
+## Loadout
+
+User chỉ lưu ID:
+
+body
+skin
+face
+hair
+shirt
+pants
+shoes
+hat
+glasses
+accessory
+
+Không lưu ảnh.
+Không lưu sprite sheet vào database.
+Không lưu HTML.

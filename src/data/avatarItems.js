@@ -1,4 +1,4 @@
-export const SPRITE_SHEET = '/avatar-sprite.png';
+export const SPRITE_SHEET = `${import.meta.env.BASE_URL}avatar-sprite.png`;
 export const CELL_SIZE = 256;
 
 export const CATEGORIES = [
