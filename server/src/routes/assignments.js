@@ -22,19 +22,22 @@ function requireTeacher(req, res, next) {
 // Create assignment (teacher) → notify all students in class
 r.post("/", auth, requireTeacher, async (req, res) => {
   try {
-    const { gameId, title, description, classId, isExam, examDuration, deadline } = req.body;
-    if (!gameId || !title || !classId) {
-      return sendError(res, "gameId, title, classId là bắt buộc", 400);
+    const { gameId, title, description, classId, isExam, examDuration, deadline, questionIds } = req.body;
+    if (!title || !classId) {
+      return sendError(res, "title, classId là bắt buộc", 400);
+    }
+    if (!questionIds?.length && !gameId) {
+      return sendError(res, "Cần chọn ít nhất 1 câu hỏi hoặc chọn game", 400);
     }
     const assignment = await assignmentService.createAssignment({
-      teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline,
+      teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline, questionIds,
     });
 
     // Notify all students in class
     try {
       const students = await classService.getClassStudents(classId);
       const fromUser = await getCollection("users").findOne({ id: req.user.sub });
-      const game = await getCollection("games").findOne({ id: gameId });
+      const game = gameId ? await getCollection("games").findOne({ id: gameId }) : null;
       for (const student of students) {
         await notificationService.createNotification({
           toUserId: student.id,
