@@ -4,6 +4,46 @@ import { ManagementHeader, ConfirmModal } from '../../components/ui.jsx';
 import AvatarItemExtractor from '../../components/avatar/AvatarItemExtractor.jsx';
 import { Plus, Pencil, Trash2, X, Save, Upload, List, ImageIcon } from 'lucide-react';
 
+const CLOUD_NAME = 'rnygwa06';
+const UPLOAD_PRESET = 'avatar-items';
+
+async function uploadToCloudinary(blob, filename) {
+  let token = '';
+  try { token = JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch {}
+
+  // Try server API first (no CORS)
+  if (token) {
+    try {
+      const fd = new FormData();
+      fd.append('file', blob, filename);
+      const res = await fetch(`${API_BASE}/avatar/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json();
+      if (json.status && json.data?.url) return json.data.url;
+    } catch (e) {
+      console.warn('Server upload failed, trying direct Cloudinary:', e.message);
+    }
+  }
+
+  // Fallback: direct Cloudinary
+  const fd = new FormData();
+  fd.append('file', blob, filename);
+  fd.append('upload_preset', UPLOAD_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: 'POST',
+    body: fd,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Upload failed: ${res.status}`);
+  }
+  const data = await res.json();
+  return data.secure_url;
+}
+
 const CATEGORIES = [
   { id: "body", label: "Thân" }, { id: "skin", label: "Da" }, { id: "face", label: "Mặt" },
   { id: "hair", label: "Tóc" }, { id: "shirt", label: "Áo" }, { id: "pants", label: "Quần" },
@@ -62,18 +102,8 @@ export default function AvatarItemManagement({ showToast }) {
   const uploadImage = async (file) => {
     setUploadingImg(true);
     try {
-      const token = JSON.parse(localStorage.getItem("edu_games_auth") || "{}")?.token;
-      if (!token) throw new Error("Chưa đăng nhập");
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch(`${API_BASE}/avatar/upload`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const json = await res.json();
-      if (!json.status) throw new Error(json.msg || "Lỗi upload");
-      onChange("image", json.data.url);
+      const url = await uploadToCloudinary(file, file.name || 'avatar-item.png');
+      onChange("image", url);
     } catch (err) { showToast(err.message, "error"); }
     setUploadingImg(false);
   };

@@ -196,6 +196,47 @@ const CATEGORIES = [
   {id:"accessory",label:"Phụ kiện"},
 ];
 
+// ─── Cloudinary config ───────────────────────────────────────────
+const CLOUD_NAME = 'rnygwa06';
+const UPLOAD_PRESET = 'avatar-items';
+
+async function uploadToCloudinary(blob, filename) {
+  const apiBase = apiUrlInput.value.trim();
+  const token = getToken();
+
+  // Try server API first (no CORS)
+  if (apiBase && token) {
+    try {
+      const fd = new FormData();
+      fd.append('file', blob, filename);
+      const res = await fetch(`${apiBase}/avatar/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json();
+      if (json.status && json.data?.url) return json.data.url;
+    } catch (e) {
+      console.warn('Server upload failed, trying direct Cloudinary:', e.message);
+    }
+  }
+
+  // Fallback: direct Cloudinary
+  const fd2 = new FormData();
+  fd2.append('file', blob, filename);
+  fd2.append('upload_preset', UPLOAD_PRESET);
+  const res2 = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: 'POST',
+    body: fd2,
+  });
+  if (!res2.ok) {
+    const err = await res2.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Cloudinary upload failed: ${res2.status}`);
+  }
+  const data = await res2.json();
+  return data.secure_url;
+}
+
 const drop = document.getElementById('drop');
 const fileInput = document.getElementById('fileInput');
 const srcCanvas = document.getElementById('srcCanvas');
@@ -598,19 +639,6 @@ addManualBtn.addEventListener('click', () => {
 
 // ─── Upload + Save ───────────────────────────────────────────────
 
-async function uploadBlob(blob, filename, token, apiBase) {
-  const fd = new FormData();
-  fd.append('file', blob, filename);
-  const res = await fetch(`${apiBase}/avatar/upload`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: fd,
-  });
-  const json = await res.json();
-  if (!json.status) throw new Error(json.msg || 'Upload failed');
-  return json.data.url;
-}
-
 saveAllBtn.addEventListener('click', async () => {
   if (!detectedItems.length) return;
   const apiBase = apiUrlInput.value.trim();
@@ -627,10 +655,10 @@ saveAllBtn.addEventListener('click', async () => {
     try {
       let imageUrl = '';
 
-      // Upload image if we have a canvas
+      // Upload image directly to Cloudinary
       if (item.canvas) {
         const blob = await new Promise(res => item.canvas.toBlob(res, 'image/png'));
-        imageUrl = await uploadBlob(blob, `${item.name.replace(/\s+/g,'_')}.png`, token, apiBase);
+        imageUrl = await uploadToCloudinary(blob, `${item.name.replace(/\s+/g,'_')}.png`);
       }
 
       if (item.mode === 'update' && item.assignTo) {

@@ -31,6 +31,7 @@ const ROUTES = [
   { name: "admin-assignment-edit", pattern: "/admin/assignments/:assignmentId/edit" },
   { name: "admin-assignment-detail", pattern: "/admin/assignments/:assignmentId" },
   { name: "admin-avatar-items", pattern: "/admin/avatar-items" },
+  { name: "admin-upload-items", pattern: "/admin/upload-items" },
   { name: "admin-chat", pattern: "/admin/chat" },
   { name: "admin-profile", pattern: "/admin/profile" },
 

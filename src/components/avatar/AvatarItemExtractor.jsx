@@ -2,6 +2,47 @@ import { useCallback, useRef, useState } from 'react';
 import { Upload, Trash2, Plus, Loader2, Eye, Save } from 'lucide-react';
 import { API_BASE } from '../../services/api.js';
 
+const CLOUD_NAME = 'rnygwa06';
+const UPLOAD_PRESET = 'avatar-items';
+
+async function uploadToCloudinary(blob, filename) {
+  const apiBase = API_BASE;
+  let token = '';
+  try { token = JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch {}
+
+  // Try server API first (no CORS)
+  if (apiBase && token) {
+    try {
+      const fd = new FormData();
+      fd.append('file', blob, filename);
+      const res = await fetch(`${apiBase}/avatar/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json();
+      if (json.status && json.data?.url) return json.data.url;
+    } catch (e) {
+      console.warn('Server upload failed, trying direct Cloudinary:', e.message);
+    }
+  }
+
+  // Fallback: direct Cloudinary
+  const fd = new FormData();
+  fd.append('file', blob, filename);
+  fd.append('upload_preset', UPLOAD_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: 'POST',
+    body: fd,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Upload failed: ${res.status}`);
+  }
+  const data = await res.json();
+  return data.secure_url;
+}
+
 const CATEGORIES = [
   { id: "body", label: "Thân" }, { id: "skin", label: "Da" }, { id: "face", label: "Mặt" },
   { id: "hair", label: "Tóc" }, { id: "shirt", label: "Áo" }, { id: "pants", label: "Quần" },
@@ -97,19 +138,6 @@ function cropRegionToBlob(canvas, img, region) {
     ctx.drawImage(img, region.x, region.y, region.width, region.height, 0, 0, region.width, region.height);
     cropCanvas.toBlob(resolve, 'image/png');
   });
-}
-
-async function uploadFile(blob, filename, token) {
-  const formData = new FormData();
-  formData.append('file', blob, filename);
-  const res = await fetch(`${API_BASE}/avatar/upload`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
-  });
-  const json = await res.json();
-  if (!json.status) throw new Error(json.msg || 'Lỗi upload');
-  return json.data.url;
 }
 
 // ─── REGION PREVIEW ──────────────────────────────────────────────
@@ -214,9 +242,6 @@ export default function AvatarItemExtractor({ onBatchSave, saving }) {
     setProgress(`0/${items.length}`);
 
     try {
-      const token = JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token;
-      if (!token) throw new Error('Chưa đăng nhập');
-
       const savedItems = [];
       for (let i = 0; i < items.length; i++) {
         setProgress(`${i + 1}/${items.length}`);
@@ -225,7 +250,7 @@ export default function AvatarItemExtractor({ onBatchSave, saving }) {
         let imageUrl = it.image;
         if (!imageUrl) {
           const blob = await cropRegionToBlob(imgCanvas.canvas, imgCanvas.img, it);
-          imageUrl = await uploadFile(blob, `${it.name.replace(/\s+/g, '_')}.png`, token);
+          imageUrl = await uploadToCloudinary(blob, `${it.name.replace(/\s+/g, '_')}.png`);
         }
 
         savedItems.push({

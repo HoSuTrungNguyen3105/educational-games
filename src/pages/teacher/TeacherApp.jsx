@@ -23,6 +23,7 @@ import AssignmentEdit from './AssignmentEdit.jsx'
 import AssignmentDetail from './AssignmentDetail.jsx'
 import AssignmentList from './AssignmentList.jsx'
 import AvatarItemManagement from './AvatarItemManagement.jsx'
+import UploadItems from './UploadItems.jsx'
 
 export default function TeacherApp({ user, route, onLogout, showToast }) {
   const [refreshFlag, setRefreshFlag] = useState(0);
@@ -69,6 +70,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
       {page === "admin-assignment-edit" && <AssignmentEdit assignmentId={route.params?.assignmentId} />}
       {page === "admin-assignment-detail" && <AssignmentDetail assignmentId={route.params?.assignmentId} />}
       {page === "admin-avatar-items" && <AvatarItemManagement showToast={showToast} />}
+      {page === "admin-upload-items" && <UploadItems showToast={showToast} />}
     </TeacherLayout>
   );
 }

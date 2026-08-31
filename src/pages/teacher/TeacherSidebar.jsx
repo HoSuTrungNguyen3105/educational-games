@@ -21,6 +21,7 @@ import {
   GraduationCap,
   FileText,
   Shirt,
+  Scissors,
 } from 'lucide-react'
 
 const MENU = [
@@ -37,6 +38,7 @@ const MENU = [
   { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
   { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
   { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
+  { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/admin/upload-items", permission: null },
 ];
 
 const BOTTOM_MENU = [
@@ -63,6 +65,7 @@ const MOBILE_MORE = [
   { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
   { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
   { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
+  { id: "admin-upload-items", label: "Trích xuất", icon: Scissors, route: "/admin/upload-items", permission: null },
 ];
 
 export default function TeacherSidebar({ screen, user, onLogout }) {
