@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Tách phần tử từ sprite sheet</title>
+<title>Quản lý Avatar Items</title>
 <style>
   :root{
     --bg:#151a17;
@@ -12,6 +12,8 @@
     --sub:#95a396;
     --accent:#7fd67a;
     --accent-dim:#4a7a48;
+    --gold:#d4a843;
+    --red:#d65a5a;
   }
   *{box-sizing:border-box;}
   body{
@@ -21,19 +23,8 @@
     font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
     padding:28px 20px 60px;
   }
-  h1{
-    font-size:19px;
-    font-weight:600;
-    margin:0 0 4px;
-    letter-spacing:.2px;
-  }
-  p.lede{
-    color:var(--sub);
-    font-size:13px;
-    margin:0 0 22px;
-    line-height:1.6;
-    max-width:640px;
-  }
+  h1{font-size:19px;font-weight:600;margin:0 0 4px;letter-spacing:.2px;}
+  p.lede{color:var(--sub);font-size:13px;margin:0 0 22px;line-height:1.6;max-width:640px;}
   .panel{
     background:var(--panel);
     border:1px solid var(--line);
@@ -54,17 +45,23 @@
   .drop:hover{border-color:var(--accent-dim);}
   .drop.over{border-color:var(--accent);color:var(--ink);}
   input[type=file]{display:none;}
-  .controls{
-    display:flex;
-    flex-wrap:wrap;
-    gap:22px;
-    margin-top:16px;
-    font-size:12px;
-  }
+  .controls{display:flex;flex-wrap:wrap;gap:22px;margin-top:16px;font-size:12px;}
   .ctrl{display:flex;flex-direction:column;gap:6px;min-width:150px;}
   .ctrl label{color:var(--sub);display:flex;justify-content:space-between;}
   .ctrl span.val{color:var(--accent);}
   input[type=range]{accent-color:var(--accent);width:100%;}
+  input[type=text],input[type=number],select{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:inherit;
+    font-size:12px;
+    padding:6px 8px;
+    border-radius:5px;
+    outline:none;
+    width:100%;
+  }
+  input:focus,select:focus{border-color:var(--accent);}
   button{
     background:var(--accent);
     color:#0d130e;
@@ -77,80 +74,101 @@
     cursor:pointer;
   }
   button:disabled{background:var(--accent-dim);cursor:default;}
-  button.secondary{
-    background:transparent;
-    border:1px solid var(--line);
-    color:var(--ink);
-  }
+  button.secondary{background:transparent;border:1px solid var(--line);color:var(--ink);}
+  button.gold{background:var(--gold);color:#1a1400;}
+  button.red{background:var(--red);color:#fff;}
   .row{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap;}
   .status{color:var(--sub);font-size:12px;}
   #srcWrap{position:relative;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:8px;}
   #srcCanvas{display:block;max-width:100%;}
   #boxLayer{position:absolute;top:0;left:0;pointer-events:none;}
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(96px,1fr));
-    gap:10px;
-    margin-top:14px;
-  }
-  .cell{
+  .count{color:var(--accent);}
+
+  .item-card{
     background:#10140f;
     border:1px solid var(--line);
     border-radius:8px;
-    padding:8px;
+    padding:10px;
     display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:6px;
+    gap:10px;
+    align-items:flex-start;
   }
-  .cell canvas{max-width:100%;image-rendering:pixelated;}
-  .cell a{
-    font-size:10px;
-    color:var(--sub);
-    text-decoration:none;
-    border:1px solid var(--line);
-    padding:3px 8px;
+  .item-card.preview{
+    position:relative;
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  .item-card.preview canvas{
+    width:80px;height:80px;
+    image-rendering:pixelated;
     border-radius:5px;
+    border:1px solid var(--line);
   }
-  .cell a:hover{color:var(--accent);border-color:var(--accent-dim);}
-  .count{color:var(--accent);}
+  .item-card .fields{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .item-card .row-label{font-size:10px;color:var(--sub);margin-bottom:2px;}
+  .item-card .field-row{display:flex;gap:6px;align-items:center;}
+  .item-card .field-row label{font-size:10px;color:var(--sub);min-width:40px;}
+  .item-card .field-row input,.item-card .field-row select{flex:1;}
+  .item-card .idx{
+    position:absolute;top:4px;left:4px;
+    background:var(--accent);color:#0d130e;
+    font-size:9px;font-weight:700;
+    padding:1px 5px;border-radius:4px;
+  }
+  .item-card .mode-badge{
+    font-size:9px;padding:1px 5px;border-radius:4px;font-weight:600;
+  }
+  .mode-badge.create{background:#2a4a2a;color:var(--accent);}
+  .mode-badge.update{background:#4a3a1a;color:var(--gold);}
+
+  .items-grid{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+  .api-url{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+  .api-url input{flex:1;min-width:200px;}
 </style>
 </head>
 <body>
 
-<h1>Tách phần tử từ sprite sheet</h1>
+<h1>Quản lý Avatar Items</h1>
 <p class="lede">
-  Tải ảnh chứa nhiều phần tử rời rạc trên nền trắng (như bảng tóc / quần áo / vật phẩm).
-  Công cụ sẽ tự nhận diện từng cụm pixel không phải nền, gộp các mảnh gần nhau thành một
-  phần tử, rồi cắt riêng từng phần tử ra ảnh PNG có nền trong suốt để bạn tải về.
+  Tải sprite sheet → tự nhận diện phần tử → nhập tên/loại cho từng item.
+  Có thể tạo mới hoặc gán ảnh vào item đã có.
 </p>
 
 <div class="panel">
-  <div class="drop" id="drop">Kéo thả ảnh vào đây, hoặc bấm để chọn file</div>
+  <div class="api-url">
+    <label style="color:var(--sub);font-size:11px;white-space:nowrap;">API URL:</label>
+    <input type="text" id="apiUrl" value="https://educational-games-lp4z.onrender.com/api">
+    <label style="color:var(--sub);font-size:11px;white-space:nowrap;">Token:</label>
+    <input type="text" id="apiToken" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTAwMiIsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJuYW1lIjoiUXXhuqNuIHRy4buLIGjhu4cgdGjhu5FuZyIsImlhdCI6MTc4ODE3OTU5MCwiZXhwIjoxNzg4Nzg0MzkwfQ.UJ-107vs9GKqungufqRaMNd1-EYoZR9NnymehCt5cfo" style="font-size:10px;">
+    <button class="secondary" id="loadItemsBtn" style="white-space:nowrap;">Tải items</button>
+  </div>
+  <div id="existingInfo" class="status" style="margin-bottom:8px;"></div>
+
+  <div class="drop" id="drop">Kéo thả ảnh sprite sheet vào đây, hoặc bấm để chọn</div>
   <input type="file" id="fileInput" accept="image/*">
 
   <div class="controls">
     <div class="ctrl">
-      <label>Ngưỡng nền (độ gần trắng) <span class="val" id="threshVal">18</span></label>
+      <label>Ngưỡng nền <span class="val" id="threshVal">18</span></label>
       <input type="range" id="thresh" min="2" max="60" value="18">
     </div>
     <div class="ctrl">
-      <label>Khoảng cách gộp mảnh (px) <span class="val" id="mergeVal">10</span></label>
+      <label>Gộp mảnh (px) <span class="val" id="mergeVal">10</span></label>
       <input type="range" id="merge" min="0" max="40" value="10">
     </div>
     <div class="ctrl">
-      <label>Diện tích tối thiểu (px²) <span class="val" id="minAreaVal">60</span></label>
+      <label>Diện tích tối thiểu <span class="val" id="minAreaVal">60</span></label>
       <input type="range" id="minArea" min="4" max="800" value="60">
     </div>
     <div class="ctrl">
-      <label>Đệm quanh phần tử (px) <span class="val" id="padVal">3</span></label>
+      <label>Đệm (px) <span class="val" id="padVal">3</span></label>
       <input type="range" id="pad" min="0" max="20" value="3">
     </div>
   </div>
 
   <div class="row">
-    <button id="runBtn" disabled>Nhận diện &amp; cắt</button>
-    <button id="zipBtn" class="secondary" disabled>Tải tất cả (.zip)</button>
+    <button id="runBtn" disabled>Nhận diện</button>
+    <button id="saveAllBtn" class="gold" disabled>Lưu tất cả</button>
     <span class="status" id="status">Chưa có ảnh</span>
   </div>
 </div>
@@ -163,24 +181,37 @@
 </div>
 
 <div class="panel" id="resultPanel" style="display:none;">
-  <div class="status">Tìm thấy <span class="count" id="foundCount">0</span> phần tử</div>
-  <div class="grid" id="grid"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div class="status">Tìm thấy <span class="count" id="foundCount">0</span> phần tử</div>
+    <button class="secondary" id="addManualBtn" style="font-size:11px;padding:5px 10px;">+ Thêm thủ công</button>
+  </div>
+  <div class="items-grid" id="itemsGrid"></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
+const CATEGORIES = [
+  {id:"body",label:"Thân"},{id:"skin",label:"Da"},{id:"face",label:"Mặt"},
+  {id:"hair",label:"Tóc"},{id:"shirt",label:"Áo"},{id:"pants",label:"Quần"},
+  {id:"shoes",label:"Giày"},{id:"hat",label:"Mũ"},{id:"glasses",label:"Kính"},
+  {id:"accessory",label:"Phụ kiện"},
+];
+
 const drop = document.getElementById('drop');
 const fileInput = document.getElementById('fileInput');
 const srcCanvas = document.getElementById('srcCanvas');
 const boxLayer = document.getElementById('boxLayer');
-const srcWrap = document.getElementById('srcWrap');
 const runBtn = document.getElementById('runBtn');
-const zipBtn = document.getElementById('zipBtn');
+const saveAllBtn = document.getElementById('saveAllBtn');
 const statusEl = document.getElementById('status');
 const previewPanel = document.getElementById('previewPanel');
 const resultPanel = document.getElementById('resultPanel');
-const grid = document.getElementById('grid');
+const itemsGrid = document.getElementById('itemsGrid');
 const foundCount = document.getElementById('foundCount');
+const existingInfo = document.getElementById('existingInfo');
+const loadItemsBtn = document.getElementById('loadItemsBtn');
+const addManualBtn = document.getElementById('addManualBtn');
+const apiUrlInput = document.getElementById('apiUrl');
+const apiTokenInput = document.getElementById('apiToken');
 
 const threshInput = document.getElementById('thresh');
 const mergeInput = document.getElementById('merge');
@@ -193,7 +224,44 @@ const padInput = document.getElementById('pad');
 });
 
 let img = null;
-let lastCrops = [];
+let detectedItems = [];
+let existingItems = [];
+
+// ─── Load existing items ─────────────────────────────────────────
+
+function getToken() {
+  const manual = apiTokenInput.value.trim();
+  if (manual) return manual;
+  try {
+    const raw = localStorage.getItem('edu_games_auth');
+    return raw ? JSON.parse(raw)?.token || '' : '';
+  } catch { return ''; }
+}
+
+async function loadExistingItems() {
+  const apiBase = apiUrlInput.value.trim();
+  existingInfo.textContent = 'Đang tải items...';
+  try {
+    const res = await fetch(`${apiBase}/avatar/items`);
+    const json = await res.json();
+    if (json.status) {
+      existingItems = json.data.items || [];
+      existingInfo.textContent = `Đã tải ${existingItems.length} items`;
+    } else {
+      existingInfo.textContent = 'Lỗi: ' + (json.msg || json.message || 'unknown');
+    }
+  } catch (e) {
+    existingInfo.textContent = 'Lỗi kết nối: ' + e.message;
+  }
+  rebuildItemCards();
+}
+
+loadItemsBtn.addEventListener('click', loadExistingItems);
+
+// Try auto-load on page load
+loadExistingItems();
+
+// ─── File handling ───────────────────────────────────────────────
 
 drop.addEventListener('click', ()=> fileInput.click());
 drop.addEventListener('dragover', e=>{e.preventDefault(); drop.classList.add('over');});
@@ -223,8 +291,8 @@ function loadFile(file){
       previewPanel.style.display = 'block';
       resultPanel.style.display = 'none';
       runBtn.disabled = false;
-      zipBtn.disabled = true;
-      statusEl.textContent = `Đã tải ảnh ${image.width}×${image.height}px — sẵn sàng nhận diện`;
+      saveAllBtn.disabled = true;
+      statusEl.textContent = `Ảnh ${image.width}×${image.height}px — sẵn sàng`;
       boxLayer.innerHTML = '';
     };
     image.src = ev.target.result;
@@ -232,11 +300,13 @@ function loadFile(file){
   reader.readAsDataURL(file);
 }
 
+// ─── Detection ───────────────────────────────────────────────────
+
 runBtn.addEventListener('click', ()=>{
   if(!img) return;
   statusEl.textContent = 'Đang phân tích...';
   runBtn.disabled = true;
-  setTimeout(runDetection, 30); // let status paint first
+  setTimeout(runDetection, 30);
 });
 
 function runDetection(){
@@ -249,8 +319,6 @@ function runDetection(){
   const minArea = parseInt(minAreaInput.value,10);
   const pad = parseInt(padInput.value,10);
 
-  // foreground mask: pixel differs from near-white background beyond threshold,
-  // or has meaningful alpha if the source has transparency
   const fg = new Uint8Array(w*h);
   for(let i=0, p=0; i<data.length; i+=4, p++){
     const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
@@ -259,9 +327,8 @@ function runDetection(){
     fg[p] = (distFromWhite > thresh && a > 10) ? 1 : 0;
   }
 
-  // connected components (8-connectivity) via flood fill with iterative stack
   const labels = new Int32Array(w*h).fill(-1);
-  let boxes = []; // {minX,minY,maxX,maxY,area}
+  let boxes = [];
   const stack = new Int32Array(w*h);
 
   for(let start=0; start<w*h; start++){
@@ -293,14 +360,8 @@ function runDetection(){
   }
 
   boxes = boxes.filter(b => b.area >= minArea);
+  if(mergeDist > 0) boxes = mergeBoxes(boxes, mergeDist);
 
-  // merge boxes whose gap is within mergeDist (handles items split by thin gaps,
-  // e.g. multi-color trims or separated straps)
-  if(mergeDist > 0){
-    boxes = mergeBoxes(boxes, mergeDist);
-  }
-
-  // sort roughly reading order: top-to-bottom rows, then left-to-right
   boxes.sort((a,b)=>{
     const rowA = Math.round(a.minY/40), rowB = Math.round(b.minY/40);
     if(rowA!==rowB) return a.minY-b.minY;
@@ -308,9 +369,10 @@ function runDetection(){
   });
 
   drawBoxes(boxes, w, h);
-  buildCrops(boxes, pad);
-  statusEl.textContent = `Xong — tìm thấy ${boxes.length} phần tử`;
+  buildItemCards(boxes, pad);
+  statusEl.textContent = `Tìm thấy ${boxes.length} phần tử`;
   runBtn.disabled = false;
+  saveAllBtn.disabled = false;
 }
 
 function mergeBoxes(boxes, dist){
@@ -318,16 +380,11 @@ function mergeBoxes(boxes, dist){
   const parent = Array.from({length:n}, (_,i)=>i);
   function find(x){ while(parent[x]!==x){parent[x]=parent[parent[x]]; x=parent[x];} return x; }
   function union(a,b){ const ra=find(a), rb=find(b); if(ra!==rb) parent[ra]=rb; }
-
   function overlaps(a,b){
     return !(a.maxX+dist < b.minX || b.maxX+dist < a.minX ||
              a.maxY+dist < b.minY || b.maxY+dist < a.minY);
   }
-  for(let i=0;i<n;i++){
-    for(let j=i+1;j<n;j++){
-      if(overlaps(boxes[i], boxes[j])) union(i,j);
-    }
-  }
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) if(overlaps(boxes[i], boxes[j])) union(i,j);
   const groups = {};
   for(let i=0;i<n;i++){
     const r = find(i);
@@ -357,13 +414,13 @@ function drawBoxes(boxes, w, h){
   });
 }
 
-function buildCrops(boxes, pad){
-  grid.innerHTML = '';
-  lastCrops = [];
-  const srcCtx = srcCanvas.getContext('2d');
-  const w = srcCanvas.width, h = srcCanvas.height;
+// ─── Item cards ──────────────────────────────────────────────────
 
-  boxes.forEach((b, i)=>{
+function buildItemCards(boxes, pad){
+  const w = srcCanvas.width, h = srcCanvas.height;
+  const ctx = srcCanvas.getContext('2d');
+
+  detectedItems = boxes.map((b, i) => {
     const x0 = Math.max(0, b.minX - pad);
     const y0 = Math.max(0, b.minY - pad);
     const x1 = Math.min(w-1, b.maxX + pad);
@@ -372,48 +429,254 @@ function buildCrops(boxes, pad){
 
     const c = document.createElement('canvas');
     c.width = cw; c.height = ch;
-    const cctx = c.getContext('2d');
-    cctx.drawImage(srcCanvas, x0,y0,cw,ch, 0,0,cw,ch);
+    c.getContext('2d').drawImage(srcCanvas, x0,y0,cw,ch, 0,0,cw,ch);
 
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    const dispCanvas = c.cloneNode();
-    dispCanvas.getContext('2d').drawImage(c,0,0);
-    cell.appendChild(dispCanvas);
-
-    const link = document.createElement('a');
-    link.textContent = `#${i+1} tải`;
-    link.href = c.toDataURL('image/png');
-    link.download = `phan-tu-${String(i+1).padStart(3,'0')}.png`;
-    cell.appendChild(link);
-
-    grid.appendChild(cell);
-    lastCrops.push({name: `phan-tu-${String(i+1).padStart(3,'0')}.png`, canvas: c});
+    return {
+      canvas: c,
+      name: `Item ${String(i+1).padStart(2,'0')}`,
+      category: 'hair',
+      price: 0,
+      isDefault: false,
+      assignTo: '',
+      mode: 'create',
+    };
   });
 
-  foundCount.textContent = boxes.length;
-  resultPanel.style.display = boxes.length ? 'block' : 'none';
-  zipBtn.disabled = boxes.length === 0;
+  rebuildItemCards();
+  foundCount.textContent = detectedItems.length;
+  resultPanel.style.display = detectedItems.length ? 'block' : 'none';
 }
 
-zipBtn.addEventListener('click', async ()=>{
-  if(!lastCrops.length) return;
-  zipBtn.disabled = true;
-  zipBtn.textContent = 'Đang nén...';
-  const zip = new JSZip();
-  for(const item of lastCrops){
-    const blob = await new Promise(res => item.canvas.toBlob(res, 'image/png'));
-    zip.file(item.name, blob);
+function rebuildItemCards(){
+  itemsGrid.innerHTML = '';
+  detectedItems.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+
+    // Preview
+    const prev = document.createElement('div');
+    prev.className = 'item-card preview';
+    if (item.canvas) {
+      prev.appendChild(item.canvas.cloneNode());
+      prev.querySelector('canvas').getContext('2d').drawImage(item.canvas, 0, 0);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.style.cssText = 'width:80px;height:80px;border:1px dashed var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:10px;';
+      placeholder.textContent = 'Ảnh';
+      prev.appendChild(placeholder);
+    }
+    const idx = document.createElement('div');
+    idx.className = 'idx';
+    idx.textContent = `#${i+1}`;
+    prev.appendChild(idx);
+
+    // Fields
+    const fields = document.createElement('div');
+    fields.className = 'item-card fields';
+
+    // Row 1: Name + Category
+    const row1 = document.createElement('div');
+    row1.className = 'field-row';
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.value = item.name;
+    nameInput.placeholder = 'Tên item...';
+    nameInput.addEventListener('input', e => { item.name = e.target.value; });
+    row1.appendChild(nameInput);
+
+    const catSelect = document.createElement('select');
+    CATEGORIES.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id; opt.textContent = c.label;
+      if (c.id === item.category) opt.selected = true;
+      catSelect.appendChild(opt);
+    });
+    catSelect.addEventListener('change', e => { item.category = e.target.value; });
+    row1.appendChild(catSelect);
+    fields.appendChild(row1);
+
+    // Row 2: Price + Default
+    const row2 = document.createElement('div');
+    row2.className = 'field-row';
+
+    const priceLabel = document.createElement('label');
+    priceLabel.textContent = '💰';
+    row2.appendChild(priceLabel);
+    const priceInput = document.createElement('input');
+    priceInput.type = 'number';
+    priceInput.value = item.price;
+    priceInput.min = 0;
+    priceInput.style.maxWidth = '80px';
+    priceInput.addEventListener('input', e => { item.price = Math.max(0, parseInt(e.target.value)||0); });
+    row2.appendChild(priceInput);
+
+    const defLabel = document.createElement('label');
+    defLabel.style.cssText = 'min-width:auto;display:flex;align-items:center;gap:4px;cursor:pointer;';
+    const defCheck = document.createElement('input');
+    defCheck.type = 'checkbox';
+    defCheck.checked = item.isDefault;
+    defCheck.addEventListener('change', e => { item.isDefault = e.target.checked; });
+    defLabel.appendChild(defCheck);
+    defLabel.appendChild(document.createTextNode('Mặc định'));
+    row2.appendChild(defLabel);
+    fields.appendChild(row2);
+
+    // Row 3: Assign to existing item
+    const row3 = document.createElement('div');
+    row3.className = 'field-row';
+
+    const assignLabel = document.createElement('label');
+    assignLabel.textContent = 'Gán';
+    assignLabel.style.minWidth = '30px';
+    row3.appendChild(assignLabel);
+
+    const assignSelect = document.createElement('select');
+    // Empty option = create new
+    const optNew = document.createElement('option');
+    optNew.value = '';
+    optNew.textContent = `— Tạo mới (#${i+1}) —`;
+    assignSelect.appendChild(optNew);
+
+    existingItems.forEach(ei => {
+      const opt = document.createElement('option');
+      opt.value = ei.id;
+      opt.textContent = `${ei.name} (${ei.id}) [${ei.category}]`;
+      if (ei.id === item.assignTo) opt.selected = true;
+      assignSelect.appendChild(opt);
+    });
+
+    assignSelect.addEventListener('change', e => {
+      item.assignTo = e.target.value;
+      item.mode = e.target.value ? 'update' : 'create';
+      updateModeBadges();
+    });
+    row3.appendChild(assignSelect);
+    fields.appendChild(row3);
+
+    // Mode badge
+    const badge = document.createElement('span');
+    badge.className = `mode-badge ${item.mode}`;
+    badge.textContent = item.mode === 'update' ? 'CẬP NHẬT' : 'TẠO MỚI';
+    badge.dataset.idx = i;
+    fields.appendChild(badge);
+
+    card.appendChild(prev);
+    card.appendChild(fields);
+    itemsGrid.appendChild(card);
+  });
+}
+
+function updateModeBadges(){
+  document.querySelectorAll('.mode-badge').forEach(el => {
+    const i = parseInt(el.dataset.idx);
+    const item = detectedItems[i];
+    if (!item) return;
+    el.className = `mode-badge ${item.mode}`;
+    el.textContent = item.mode === 'update' ? 'CẬP NHẬT' : 'TẠO MỚI';
+  });
+}
+
+// ─── Add manual item ─────────────────────────────────────────────
+
+addManualBtn.addEventListener('click', () => {
+  const i = detectedItems.length + 1;
+  detectedItems.push({
+    canvas: null,
+    name: `Item ${String(i).padStart(2,'0')}`,
+    category: 'hair',
+    price: 0,
+    isDefault: false,
+    assignTo: '',
+    mode: 'create',
+  });
+  rebuildItemCards();
+  foundCount.textContent = detectedItems.length;
+  resultPanel.style.display = 'block';
+  saveAllBtn.disabled = false;
+});
+
+// ─── Upload + Save ───────────────────────────────────────────────
+
+async function uploadBlob(blob, filename, token, apiBase) {
+  const fd = new FormData();
+  fd.append('file', blob, filename);
+  const res = await fetch(`${apiBase}/avatar/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  const json = await res.json();
+  if (!json.status) throw new Error(json.msg || 'Upload failed');
+  return json.data.url;
+}
+
+saveAllBtn.addEventListener('click', async () => {
+  if (!detectedItems.length) return;
+  const apiBase = apiUrlInput.value.trim();
+  const token = getToken();
+  if (!token) { alert('Cần nhập token hoặc đăng nhập'); return; }
+
+  saveAllBtn.disabled = true;
+  let created = 0, updated = 0, errors = 0;
+
+  for (let i = 0; i < detectedItems.length; i++) {
+    const item = detectedItems[i];
+    statusEl.textContent = `${i+1}/${detectedItems.length} — ${item.name}...`;
+
+    try {
+      let imageUrl = '';
+
+      // Upload image if we have a canvas
+      if (item.canvas) {
+        const blob = await new Promise(res => item.canvas.toBlob(res, 'image/png'));
+        imageUrl = await uploadBlob(blob, `${item.name.replace(/\s+/g,'_')}.png`, token, apiBase);
+      }
+
+      if (item.mode === 'update' && item.assignTo) {
+        // Update existing item
+        const res = await fetch(`${apiBase}/avatar/admin/items/${item.assignTo}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            name: item.name,
+            category: item.category,
+            price: item.price,
+            default: item.isDefault,
+            ...(imageUrl ? { image: imageUrl } : {}),
+          }),
+        });
+        const json = await res.json();
+        if (!json.status) throw new Error(json.msg || 'Update failed');
+        updated++;
+      } else {
+        // Create new item
+        const res = await fetch(`${apiBase}/avatar/admin/items`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            name: item.name,
+            category: item.category,
+            price: item.price,
+            default: item.isDefault,
+            image: imageUrl,
+          }),
+        });
+        const json = await res.json();
+        if (!json.status) throw new Error(json.msg || 'Create failed');
+        created++;
+      }
+    } catch (e) {
+      console.error(`Item ${i+1} error:`, e);
+      errors++;
+    }
   }
-  const content = await zip.generateAsync({type:'blob'});
-  const url = URL.createObjectURL(content);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'sprite-elements.zip';
-  a.click();
-  URL.revokeObjectURL(url);
-  zipBtn.disabled = false;
-  zipBtn.textContent = 'Tải tất cả (.zip)';
+
+  statusEl.textContent = `Xong! Tạo: ${created}, Cập nhật: ${updated}, Lỗi: ${errors}`;
+  saveAllBtn.disabled = false;
+
+  // Reload existing items
+  await loadExistingItems();
 });
 </script>
 </body>
