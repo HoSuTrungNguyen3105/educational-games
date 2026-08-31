@@ -70,9 +70,14 @@ function uploadToCloudinary(fileBuffer, folder = "avatar-items") {
 router.post("/upload", authenticate, upload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) return sendError(res, "Không có file", 400);
+    console.log("[avatar/upload] file:", req.file.originalname, req.file.size, "bytes");
     const result = await uploadToCloudinary(req.file.buffer);
+    console.log("[avatar/upload] success:", result.secure_url);
     sendCreated(res, { url: result.secure_url, publicId: result.public_id });
-  } catch (e) { next(e); }
+  } catch (e) {
+    console.error("[avatar/upload] Cloudinary error:", e.message, JSON.stringify(e));
+    next(e);
+  }
 });
 
 // POST /api/avatar/upload/batch — upload nhiều file

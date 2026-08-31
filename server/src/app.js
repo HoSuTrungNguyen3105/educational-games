@@ -86,7 +86,9 @@ app.use((req, res) => {
 });
 
 app.use((err, _req, res, _next) => {
-  console.error("[error]", err);
+  console.error("[error]", err.message || err);
+  if (err.http_code) console.error("[error] Cloudinary http_code:", err.http_code);
+  if (err.name) console.error("[error] name:", err.name);
   sendError(res, err.message || "Lỗi máy chủ", 500);
 });
 
