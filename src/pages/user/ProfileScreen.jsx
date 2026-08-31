@@ -1,9 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
-import { authService, classService } from "../../services/api.js";
+import { authService, classService, API_BASE } from "../../services/api.js";
 import { getLevelProgress } from "../../lib/utils.js";
 import { getRoleLabel } from "../../config/roles.js";
 import { navigate } from "../../lib/router.js";
-import { ArrowLeft, LogOut, GraduationCap, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
+import { ArrowLeft, LogOut, GraduationCap, ChevronDown, ChevronUp, Copy, Check, Palette } from "lucide-react";
+import AvatarPreview from "../../components/avatar/AvatarPreview.jsx";
+import AvatarCustomizer from "../../components/avatar/AvatarCustomizer.jsx";
+import { getDefaultLoadout } from "../../data/avatarItems.js";
 
 export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [profile, setProfile] = useState(null);
@@ -14,12 +17,20 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
   const [copied, setCopied] = useState(null);
+  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [avatarLoadout, setAvatarLoadout] = useState(getDefaultLoadout());
+  const [inventory, setInventory] = useState([]);
 
   useEffect(() => {
     if (!userAuth?.user) return;
     setLoading(true);
     authService.me()
-      .then((data) => { setProfile(data); setError(null); })
+      .then((data) => {
+        setProfile(data);
+        setError(null);
+        if (data.avatarLoadout) setAvatarLoadout(data.avatarLoadout);
+        if (data.inventory) setInventory(data.inventory);
+      })
       .catch((e) => setError(e.message || "Lỗi tải profile"))
       .finally(() => setLoading(false));
   }, [userAuth]);
@@ -147,6 +158,44 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           </div>
         </div>
       </div>
+
+      {/* Avatar Section */}
+      <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Palette className="w-4 h-4 text-gold" />
+          <span className="font-display text-sm text-ink">Avatar của tôi</span>
+        </div>
+        <div className="flex flex-col items-center gap-3">
+          <AvatarPreview loadout={avatarLoadout} size={160} />
+          <button onClick={() => setShowCustomizer(true)}
+            className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-body font-semibold hover:bg-gold/80 transition">
+            Tùy chỉnh Avatar
+          </button>
+        </div>
+      </div>
+
+      {showCustomizer && (
+        <AvatarCustomizer
+          loadout={avatarLoadout}
+          inventory={inventory}
+          coins={user.coins || 0}
+          onSave={async (newLoadout) => {
+            setAvatarLoadout(newLoadout);
+            setShowCustomizer(false);
+            try {
+              await fetch(`${API_BASE}/auth/me`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${userAuth.token}`,
+                },
+                body: JSON.stringify({ avatarLoadout: newLoadout }),
+              });
+            } catch {}
+          }}
+          onClose={() => setShowCustomizer(false)}
+        />
+      )}
 
       {/* Class Section */}
       <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>

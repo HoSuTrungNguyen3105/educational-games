@@ -37,7 +37,11 @@ export function verifyToken(token) {
 }
 
 export function publicUser(user) {
-  return { id: user.id, username: user.username, email: user.email || null, name: user.name, role: user.role, coins: user.coins || 0, stars: user.stars || 0 };
+  return {
+    id: user.id, username: user.username, email: user.email || null,
+    name: user.name, role: user.role, coins: user.coins || 0, stars: user.stars || 0,
+    avatarLoadout: user.avatarLoadout || null, inventory: user.inventory || [],
+  };
 }
 
 function normalizeRole(role) {
@@ -87,7 +91,7 @@ export async function listUsers() {
   return docs.map(({ _id, passwordHash, ...rest }) => rest);
 }
 
-export async function updateProfile(userId, { name, email, password, currentPassword }) {
+export async function updateProfile(userId, { name, email, password, currentPassword, avatarLoadout }) {
   const user = await getCollection(COLLECTION).findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");
 
@@ -107,6 +111,9 @@ export async function updateProfile(userId, { name, email, password, currentPass
     const ok = user.passwordHash && (await bcrypt.compare(currentPassword, user.passwordHash));
     if (!ok) throw new Error("Mật khẩu hiện tại không đúng");
     updates.passwordHash = bcrypt.hashSync(password, 10);
+  }
+  if (avatarLoadout && typeof avatarLoadout === "object") {
+    updates.avatarLoadout = avatarLoadout;
   }
 
   if (Object.keys(updates).length === 0) throw new Error("Không có gì để cập nhật");

@@ -135,6 +135,8 @@ export async function initDatabase() {
         role: { enum: ["teacher", "student", "admin"] },
         passwordHash: { bsonType: "string" },
         classId: { bsonType: "string" },
+        avatarLoadout: { bsonType: "object" },
+        inventory: { bsonType: "array" },
         createdAt: { bsonType: "string" },
       },
     } },
