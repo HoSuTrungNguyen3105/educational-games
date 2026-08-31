@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { classService, assignmentService, templateService, questionService } from '../../services/api.js';
+import { classService, assignmentService, questionService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { AlertCircle, Clock, FileText, CheckSquare, Square, Search, ArrowLeft } from 'lucide-react';
 
@@ -11,14 +11,11 @@ const TIME_OPTIONS = [
 
 export default function AssignmentEdit({ assignmentId }) {
   const [classes, setClasses] = useState([]);
-  const [templates, setTemplates] = useState([]);
   const [allQuestions, setAllQuestions] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterDifficulty, setFilterDifficulty] = useState('all');
   const [form, setForm] = useState({
     classId: '',
-    templateId: '',
     title: '',
     description: '',
     isExam: true,
@@ -37,21 +34,18 @@ export default function AssignmentEdit({ assignmentId }) {
   async function init() {
     setLoading(true);
     try {
-      const [a, cls, tpl, qs] = await Promise.all([
+      const [a, cls, qs] = await Promise.all([
         assignmentService.get(assignmentId),
         classService.list().catch(() => []),
-        templateService.list().catch(() => []),
         questionService.listAll().catch(() => []),
       ]);
       if (!a) { setError('Không tìm thấy bài giao'); setLoading(false); return; }
 
       setClasses(cls || []);
-      setTemplates(tpl || []);
       setAllQuestions(qs || []);
 
       setForm({
         classId: a.classId || '',
-        templateId: a.templateId || '',
         title: a.title || '',
         description: a.description || '',
         isExam: !!a.isExam,
@@ -66,16 +60,12 @@ export default function AssignmentEdit({ assignmentId }) {
     setLoading(false);
   }
 
-  const selectedTemplate = (templates || []).find(t => t._id === form.templateId);
-
   const filteredQuestions = useMemo(() => {
     return allQuestions.filter(q => {
-      const matchSearch = !searchQuery ||
-        (q.question || '').toLowerCase().includes(searchQuery.toLowerCase());
-      const matchDiff = filterDifficulty === 'all' || q.difficulty === filterDifficulty;
-      return matchSearch && matchDiff;
+      const text = (q.content || q.question || '').toLowerCase();
+      return !searchQuery || text.includes(searchQuery.toLowerCase());
     });
-  }, [allQuestions, searchQuery, filterDifficulty]);
+  }, [allQuestions, searchQuery]);
 
   function toggleQuestion(qId) {
     setSelectedQuestions(prev => {
@@ -111,7 +101,6 @@ export default function AssignmentEdit({ assignmentId }) {
         title: form.title,
         description: form.description,
         classId: form.classId,
-        templateId: form.templateId || null,
         isExam: form.isExam,
         examDuration: form.isExam ? form.examDuration : null,
         deadline: form.deadline || null,
@@ -148,7 +137,6 @@ export default function AssignmentEdit({ assignmentId }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Title */}
         <div>
           <label className="block text-sm font-body text-ink/60 mb-1">Tiêu đề bài thi *</label>
           <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
@@ -156,7 +144,6 @@ export default function AssignmentEdit({ assignmentId }) {
             placeholder="VD: Bài kiểm tra Toán chương 1" required />
         </div>
 
-        {/* Description */}
         <div>
           <label className="block text-sm font-body text-ink/60 mb-1">Mô tả</label>
           <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
@@ -164,33 +151,15 @@ export default function AssignmentEdit({ assignmentId }) {
             rows={2} placeholder="Mô tả bài thi (không bắt buộc)" />
         </div>
 
-        {/* Class + Template */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-body text-ink/60 mb-1">Lớp *</label>
-            <select value={form.classId} onChange={e => setForm({ ...form, classId: e.target.value })}
-              className="w-full px-3 py-2.5 rounded-xl border border-ink/10 bg-paper2 text-ink font-body focus:outline-none focus:ring-2 focus:ring-gold/40">
-              <option value="">Chọn lớp</option>
-              {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-body text-ink/60 mb-1">Template</label>
-            <select value={form.templateId} onChange={e => setForm({ ...form, templateId: e.target.value })}
-              className="w-full px-3 py-2.5 rounded-xl border border-ink/10 bg-paper2 text-ink font-body focus:outline-none focus:ring-2 focus:ring-gold/40">
-              <option value="">Tất cả câu hỏi</option>
-              {templates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
-            </select>
-          </div>
+        <div>
+          <label className="block text-sm font-body text-ink/60 mb-1">Lớp *</label>
+          <select value={form.classId} onChange={e => setForm({ ...form, classId: e.target.value })}
+            className="w-full px-3 py-2.5 rounded-xl border border-ink/10 bg-paper2 text-ink font-body focus:outline-none focus:ring-2 focus:ring-gold/40">
+            <option value="">Chọn lớp</option>
+            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
         </div>
 
-        {selectedTemplate && (
-          <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-body">
-            Template: {selectedTemplate.name} — {selectedTemplate.description || 'Không có mô tả'}
-          </div>
-        )}
-
-        {/* Question Selection */}
         <div className="p-4 bg-paper2 rounded-xl border border-ink/8 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -202,20 +171,11 @@ export default function AssignmentEdit({ assignmentId }) {
             </span>
           </div>
 
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/30" />
-              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Tìm câu hỏi..."
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-ink/10 text-sm font-body text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-gold/30" />
-            </div>
-            <select value={filterDifficulty} onChange={e => setFilterDifficulty(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-white border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-gold/30">
-              <option value="all">Tất cả</option>
-              <option value="easy">Dễ</option>
-              <option value="medium">Trung bình</option>
-              <option value="hard">Khó</option>
-            </select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/30" />
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Tìm câu hỏi..."
+              className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-ink/10 text-sm font-body text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-gold/30" />
           </div>
 
           <button type="button" onClick={toggleAll}
@@ -246,20 +206,12 @@ export default function AssignmentEdit({ assignmentId }) {
                       <Square className="w-4 h-4 text-ink/30 shrink-0 mt-0.5" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-body text-ink truncate">{q.question}</p>
+                      <p className="text-sm font-body text-ink truncate">{q.content || q.question}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        {q.difficulty && (
-                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                            q.difficulty === 'easy' ? 'bg-green-100 text-green-600' :
-                            q.difficulty === 'hard' ? 'bg-red-100 text-red-600' :
-                            'bg-yellow-100 text-yellow-600'
-                          }`}>
-                            {q.difficulty === 'easy' ? 'Dễ' : q.difficulty === 'hard' ? 'Khó' : 'TB'}
-                          </span>
+                        {q.points != null && (
+                          <span className="text-[10px] font-mono text-ink/30">{q.points} điểm</span>
                         )}
-                        {q.score && (
-                          <span className="text-[10px] font-mono text-ink/30">{q.score} điểm</span>
-                        )}
+                        <span className="text-[10px] font-mono text-ink/30">{q.options?.length || 0} đáp án</span>
                       </div>
                     </div>
                   </div>
@@ -269,7 +221,6 @@ export default function AssignmentEdit({ assignmentId }) {
           </div>
         </div>
 
-        {/* Exam Settings */}
         <div className="p-4 bg-paper2 rounded-xl border border-ink/8 space-y-4">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-gold" />
@@ -301,7 +252,6 @@ export default function AssignmentEdit({ assignmentId }) {
           </div>
         </div>
 
-        {/* Summary */}
         {selectedQuestions.size > 0 && (
           <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
             <p className="text-sm font-body text-green-700">
@@ -310,7 +260,6 @@ export default function AssignmentEdit({ assignmentId }) {
           </div>
         )}
 
-        {/* Buttons */}
         <div className="flex gap-3 pt-2">
           <button type="submit" disabled={submitting || !form.classId || !form.title || selectedQuestions.size === 0}
             className="px-6 py-2.5 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition disabled:opacity-50 disabled:cursor-not-allowed">

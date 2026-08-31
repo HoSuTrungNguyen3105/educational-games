@@ -78,16 +78,17 @@ export async function startSubmission({ assignmentId, studentId }) {
     throw new Error("Đã hết hạn nộp bài");
   }
 
-  // Check existing active submission
+  // Check any existing submission (IN_PROGRESS or SUBMITTED)
   const existing = await getCollection("submissions").findOne({
-    assignmentId, studentId, status: "IN_PROGRESS",
+    assignmentId, studentId,
   });
-  if (existing) return existing;
-
-  // Check max attempts (reuse existing completed submissions to count)
-  const completedCount = await getCollection("submissions").countDocuments({
-    assignmentId, studentId, status: "SUBMITTED",
-  });
+  if (existing) {
+    if (existing.status === "IN_PROGRESS") return existing;
+    if (existing.status === "SUBMITTED") {
+      throw new Error("Bạn đã nộp bài rồi. Không thể làm lại.");
+    }
+    return existing;
+  }
 
   const now = new Date().toISOString();
   const doc = {
@@ -103,7 +104,7 @@ export async function startSubmission({ assignmentId, studentId }) {
     wrongCount: 0,
     totalQuestions: 0,
     answers: [],
-    attemptNumber: completedCount + 1,
+    attemptNumber: 1,
     createdAt: now,
     updatedAt: now,
   };

@@ -22,7 +22,7 @@ function requireTeacher(req, res, next) {
 // Create assignment (teacher) → notify all students in class
 r.post("/", auth, requireTeacher, async (req, res) => {
   try {
-    const { gameId, title, description, classId, isExam, examDuration, deadline, questionIds, templateId } = req.body;
+    const { gameId, title, description, classId, isExam, examDuration, deadline, questionIds } = req.body;
     if (!title || !classId) {
       return sendError(res, "title, classId là bắt buộc", 400);
     }
@@ -30,7 +30,7 @@ r.post("/", auth, requireTeacher, async (req, res) => {
       return sendError(res, "Cần chọn ít nhất 1 câu hỏi hoặc chọn game", 400);
     }
     const assignment = await assignmentService.createAssignment({
-      teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline, questionIds, templateId,
+      teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline, questionIds,
     });
 
     // Notify all students in class
@@ -96,14 +96,20 @@ r.post("/join", auth, async (req, res) => {
   } catch (e) { sendError(res, e.message, 500); }
 });
 
-// Start submission (student)
+// Start submission (student) — also returns remainingTime for exams
 r.post("/:id/start", auth, async (req, res) => {
   try {
     const submission = await assignmentService.startSubmission({
       assignmentId: req.params.id,
       studentId: req.user.sub,
     });
-    sendSuccess(res, submission);
+    const assignment = await assignmentService.getAssignmentById(req.params.id);
+    let remainingTime = null;
+    if (assignment?.isExam && assignment?.examDuration && submission?.startedAt) {
+      const elapsed = Math.floor((Date.now() - new Date(submission.startedAt).getTime()) / 1000);
+      remainingTime = Math.max(0, assignment.examDuration * 60 - elapsed);
+    }
+    sendSuccess(res, { ...submission, remainingTime });
   } catch (e) { sendError(res, e.message, 400); }
 });
 
@@ -161,7 +167,7 @@ r.put("/:id", auth, requireTeacher, async (req, res) => {
     if (!existing) return sendError(res, "Không tìm thấy bài giao", 404);
     if (existing.status !== "ACTIVE") return sendError(res, "Bài giao đã đóng, không thể chỉnh sửa", 400);
 
-    const { title, description, classId, isExam, examDuration, deadline, questionIds, gameId, templateId } = req.body;
+    const { title, description, classId, isExam, examDuration, deadline, questionIds, gameId } = req.body;
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
@@ -171,7 +177,6 @@ r.put("/:id", auth, requireTeacher, async (req, res) => {
     if (deadline !== undefined) updateData.deadline = deadline || null;
     if (questionIds !== undefined) updateData.questionIds = questionIds;
     if (gameId !== undefined) updateData.gameId = gameId || null;
-    if (templateId !== undefined) updateData.templateId = templateId || null;
 
     const updated = await assignmentService.updateAssignment(req.params.id, updateData);
     sendSuccess(res, updated);

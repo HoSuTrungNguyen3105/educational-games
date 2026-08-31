@@ -281,21 +281,20 @@ export default function HtmlGameLoader({
 
   if (!htmlContent) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-paper">
+      <div className="absolute inset-0 flex items-center justify-center bg-paper">
         <p className="text-sm text-[#8A7C63]">Đang tải game...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-paper min-h-0">
+    <div className="absolute inset-0 flex flex-col bg-paper">
       <iframe
         ref={iframeRef}
         srcDoc={htmlContent}
         sandbox="allow-scripts allow-same-origin"
-        className="flex-1 w-full border-0"
+        className="flex-1 w-full h-full border-0"
         title={game?.title || "Game"}
-        style={{ minHeight: 0 }}
       />
     </div>
   );
