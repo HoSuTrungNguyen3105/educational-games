@@ -56,12 +56,27 @@ const upload = multer({
 function uploadToCloudinary(fileBuffer, folder = "avatar-items") {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: "image", format: "png" },
+      {
+        folder,
+        resource_type: "image",
+        format: "png",
+      },
       (error, result) => {
-        if (error) reject(error);
-        else resolve(result);
+        if (error) {
+          console.error("========== CLOUDINARY ERROR ==========");
+          console.error("http_code:", error.http_code);
+          console.error("message:", error.message);
+          console.error("error:", error);
+          console.error("======================================");
+
+          reject(error);
+          return;
+        }
+
+        resolve(result);
       }
     );
+
     stream.end(fileBuffer);
   });
 }
