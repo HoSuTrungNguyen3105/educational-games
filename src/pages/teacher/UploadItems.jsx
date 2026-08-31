@@ -10,31 +10,22 @@ const CATEGORIES = [
   { id: "accessory", label: "Phụ kiện" },
 ];
 
-const CLOUD_NAME = 'rnygwa06';
-const UPLOAD_PRESET = 'avatar-items';
+function getAuthToken() {
+  try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; }
+}
 
 async function uploadImage(blob, filename) {
-  try {
-    let token = '';
-    try { token = JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch {}
-    if (token) {
-      const fd = new FormData();
-      fd.append('file', blob, filename);
-      const res = await fetch(`${API_BASE}/avatar/upload`, {
-        method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
-      });
-      const json = await res.json();
-      if (json.status && json.data?.url) return json.data.url;
-    }
-  } catch {}
+  const token = getAuthToken();
   const fd = new FormData();
   fd.append('file', blob, filename);
-  fd.append('upload_preset', UPLOAD_PRESET);
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-    method: 'POST', body: fd,
+  const res = await fetch(`${API_BASE}/avatar/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
-  if (!res.ok) throw new Error('Upload failed');
-  return (await res.json()).secure_url;
+  const json = await res.json();
+  if (json.status && json.data?.url) return json.data.url;
+  throw new Error(json.msg || 'Upload failed');
 }
 
 function mergeBoxes(boxes, dist) {

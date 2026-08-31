@@ -1,17 +1,27 @@
 import { Router } from "express";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
-import { config } from "../config.js";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import path from "path";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendError, sendCreated } from "../utils/response.js";
 import { getCollection } from "../db.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, "../../.env") });
+
 const router = Router();
 
+console.log("[avatar] CLOUDINARY_CLOUD_NAME:", process.env.CLOUDINARY_CLOUD_NAME || "MISSING");
+console.log("[avatar] CLOUDINARY_API_KEY:", process.env.CLOUDINARY_API_KEY ? "OK" : "MISSING");
+console.log("[avatar] CLOUDINARY_API_SECRET:", process.env.CLOUDINARY_API_SECRET ? "OK" : "MISSING");
+
 cloudinary.config({
-  cloud_name: config.cloudinaryCloudName,
-  api_key: config.cloudinaryApiKey,
-  api_secret: config.cloudinaryApiSecret,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 const ITEMS = "avatarItems";

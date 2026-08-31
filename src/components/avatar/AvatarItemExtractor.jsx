@@ -2,45 +2,22 @@ import { useCallback, useRef, useState } from 'react';
 import { Upload, Trash2, Plus, Loader2, Eye, Save } from 'lucide-react';
 import { API_BASE } from '../../services/api.js';
 
-const CLOUD_NAME = 'rnygwa06';
-const UPLOAD_PRESET = 'avatar-items';
+function getAuthToken() {
+  try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; }
+}
 
-async function uploadToCloudinary(blob, filename) {
-  const apiBase = API_BASE;
-  let token = '';
-  try { token = JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch {}
-
-  // Try server API first (no CORS)
-  if (apiBase && token) {
-    try {
-      const fd = new FormData();
-      fd.append('file', blob, filename);
-      const res = await fetch(`${apiBase}/avatar/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
-      const json = await res.json();
-      if (json.status && json.data?.url) return json.data.url;
-    } catch (e) {
-      console.warn('Server upload failed, trying direct Cloudinary:', e.message);
-    }
-  }
-
-  // Fallback: direct Cloudinary
+async function uploadToServer(blob, filename) {
+  const token = getAuthToken();
   const fd = new FormData();
   fd.append('file', blob, filename);
-  fd.append('upload_preset', UPLOAD_PRESET);
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+  const res = await fetch(`${API_BASE}/avatar/upload`, {
     method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
     body: fd,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Upload failed: ${res.status}`);
-  }
-  const data = await res.json();
-  return data.secure_url;
+  const json = await res.json();
+  if (json.status && json.data?.url) return json.data.url;
+  throw new Error(json.msg || 'Upload failed');
 }
 
 const CATEGORIES = [
@@ -250,7 +227,7 @@ export default function AvatarItemExtractor({ onBatchSave, saving }) {
         let imageUrl = it.image;
         if (!imageUrl) {
           const blob = await cropRegionToBlob(imgCanvas.canvas, imgCanvas.img, it);
-          imageUrl = await uploadToCloudinary(blob, `${it.name.replace(/\s+/g, '_')}.png`);
+          imageUrl = await uploadToServer(blob, `${it.name.replace(/\s+/g, '_')}.png`);
         }
 
         savedItems.push({
