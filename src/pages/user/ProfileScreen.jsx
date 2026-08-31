@@ -20,6 +20,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [avatarLoadout, setAvatarLoadout] = useState({});
   const [avatarItems, setAvatarItems] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [spriteSheet, setSpriteSheet] = useState('');
 
   useEffect(() => {
     if (!userAuth?.user) return;
@@ -37,7 +38,10 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       .then(([userData, itemsRes, loadoutRes, invRes]) => {
         setProfile(userData);
         setError(null);
-        if (itemsRes.status) setAvatarItems(itemsRes.data.items);
+        if (itemsRes.status) {
+          setAvatarItems(itemsRes.data.items);
+          if (itemsRes.data.spriteSheet) setSpriteSheet(itemsRes.data.spriteSheet);
+        }
         if (loadoutRes.status) setAvatarLoadout(loadoutRes.data.loadout);
         if (invRes.status) setInventory(invRes.data.inventory);
       })
@@ -126,7 +130,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           <div className="relative shrink-0">
             {avatarItems.length > 0 ? (
               <div className="w-16 h-16 rounded-full overflow-hidden shadow-lg ring-2 ring-white">
-                <AvatarPreview loadout={avatarLoadout} items={avatarItems} size={64} />
+                <AvatarPreview loadout={avatarLoadout} items={avatarItems} size={64} spriteSheet={spriteSheet} />
               </div>
             ) : (
               <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl text-white font-display shadow-lg"
@@ -182,7 +186,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           <span className="font-display text-sm text-ink">Avatar của tôi</span>
         </div>
         <div className="flex flex-col items-center gap-3">
-          <AvatarPreview loadout={avatarLoadout} items={avatarItems} size={160} />
+          <AvatarPreview loadout={avatarLoadout} items={avatarItems} size={160} spriteSheet={spriteSheet} />
           <button onClick={() => setShowCustomizer(true)}
             className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-body font-semibold hover:bg-gold/80 transition">
             Tùy chỉnh Avatar

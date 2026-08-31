@@ -43,6 +43,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
   const [activeTab, setActiveTab] = useState('hair');
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [spriteSheet, setSpriteSheet] = useState('');
   const [buying, setBuying] = useState(null);
   const [localCoins, setLocalCoins] = useState(coins);
   const [localInventory, setLocalInventory] = useState(inventory);
@@ -54,6 +55,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
         if (json.status) {
           setItems(json.data.items);
           setCategories(json.data.categories);
+          if (json.data.spriteSheet) setSpriteSheet(json.data.spriteSheet);
         }
       })
       .catch(() => {});
@@ -105,7 +107,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
         </div>
 
         <div className="flex justify-center py-6 shrink-0" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
-          <AvatarPreview loadout={draft} items={items} size={256} />
+          <AvatarPreview loadout={draft} items={items} size={256} spriteSheet={spriteSheet} />
         </div>
 
         <div className="flex gap-1 px-4 pt-3 overflow-x-auto shrink-0">

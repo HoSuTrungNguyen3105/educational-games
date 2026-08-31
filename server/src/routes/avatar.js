@@ -41,6 +41,10 @@ const ZINDEX_MAP = {
   pants: 50, shoes: 60, hat: 70, glasses: 80, accessory: 90,
 };
 
+const SPRITE_SHEET = "/avatar/avatar-sprite.png";
+const SPRITE_W = 1536;
+const SPRITE_H = 1024;
+
 const DEFAULT_LOADOUT = {
   body: "body_01", skin: "skin_01", face: "face_01", hair: "hair_01",
   shirt: "shirt_01", pants: "pants_01", shoes: "shoes_01",
@@ -150,7 +154,7 @@ router.get("/items", async (_req, res, next) => {
       }
     }
     if (bulkOps.length > 0) await getCollection(ITEMS).bulkWrite(bulkOps);
-    sendSuccess(res, { items, categories: CATEGORIES, layerOrder: LAYER_ORDER });
+    sendSuccess(res, { items, categories: CATEGORIES, layerOrder: LAYER_ORDER, spriteSheet: SPRITE_SHEET, spriteW: SPRITE_W, spriteH: SPRITE_H });
   } catch (e) { next(e); }
 });
 
