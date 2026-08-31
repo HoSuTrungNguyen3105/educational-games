@@ -36,6 +36,11 @@ const CATEGORIES = [
 
 const LAYER_ORDER = ["body", "skin", "face", "hair", "shirt", "pants", "shoes", "hat", "glasses", "accessory"];
 
+const ZINDEX_MAP = {
+  body: 10, skin: 15, face: 20, hair: 30, shirt: 40,
+  pants: 50, shoes: 60, hat: 70, glasses: 80, accessory: 90,
+};
+
 const DEFAULT_LOADOUT = {
   body: "body_01", skin: "skin_01", face: "face_01", hair: "hair_01",
   shirt: "shirt_01", pants: "pants_01", shoes: "shoes_01",
@@ -108,12 +113,12 @@ router.post("/upload/batch", authenticate, upload.array("files", 50), async (req
 // ─── SEED DEFAULT ITEMS (with placeholder images) ────────────────
 
 const SEED_ITEMS = [
-  { id: "body_01", category: "body", name: "Thân mặc định", image: "", price: 0, default: true },
-  { id: "skin_01", category: "skin", name: "Da sáng", image: "", price: 0, default: true },
-  { id: "hair_01", category: "hair", name: "Tóc ngắn", image: "", price: 0, default: true },
-  { id: "shirt_01", category: "shirt", name: "Áo thun trắng", image: "", price: 0, default: true },
-  { id: "pants_01", category: "pants", name: "Quần jean", image: "", price: 0, default: true },
-  { id: "shoes_01", category: "shoes", name: "Giày sneaker", image: "", price: 0, default: true },
+  { id: "body_01", category: "body", name: "Thân mặc định", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.body },
+  { id: "skin_01", category: "skin", name: "Da sáng", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.skin },
+  { id: "hair_01", category: "hair", name: "Tóc ngắn", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.hair },
+  { id: "shirt_01", category: "shirt", name: "Áo thun trắng", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.shirt },
+  { id: "pants_01", category: "pants", name: "Quần jean", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.pants },
+  { id: "shoes_01", category: "shoes", name: "Giày sneaker", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.shoes },
 ];
 
 async function ensureSeeded() {
@@ -135,6 +140,16 @@ router.get("/items", async (_req, res, next) => {
   try {
     await ensureSeeded();
     const items = await getCollection(ITEMS).find({}).sort({ category: 1, price: 1 }).toArray();
+    // Backfill zIndex for old items missing it
+    const bulkOps = [];
+    for (const item of items) {
+      if (item.zIndex === undefined || item.zIndex === null) {
+        const z = ZINDEX_MAP[item.category] || 50;
+        item.zIndex = z;
+        bulkOps.push({ updateOne: { filter: { id: item.id }, update: { $set: { zIndex: z } } } });
+      }
+    }
+    if (bulkOps.length > 0) await getCollection(ITEMS).bulkWrite(bulkOps);
     sendSuccess(res, { items, categories: CATEGORIES, layerOrder: LAYER_ORDER });
   } catch (e) { next(e); }
 });
@@ -213,10 +228,14 @@ const uid = () => `av-${Math.random().toString(36).slice(2, 9)}`;
 // POST /api/avatar/admin/items — create single item
 router.post("/admin/items", authenticate, async (req, res, next) => {
   try {
-    const { category, name, image, price, default: isDefault } = req.body || {};
+    const { category, name, image, price, default: isDefault, zIndex } = req.body || {};
     if (!category || !name) return sendError(res, "Thiếu category hoặc name", 400);
     if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400);
-    const item = { id: uid(), category, name: String(name).trim(), image: image || "", price: Math.max(0, Number(price) || 0), default: !!isDefault };
+    const item = {
+      id: uid(), category, name: String(name).trim(), image: image || "",
+      price: Math.max(0, Number(price) || 0), default: !!isDefault,
+      zIndex: Number(zIndex) || ZINDEX_MAP[category] || 50,
+    };
     await getCollection(ITEMS).insertOne(item);
     sendCreated(res, item);
   } catch (e) { next(e); }
@@ -228,13 +247,14 @@ router.put("/admin/items/:id", authenticate, async (req, res, next) => {
     const { id } = req.params;
     const existing = await getCollection(ITEMS).findOne({ id });
     if (!existing) return sendError(res, "Item không tồn tại", 404);
-    const { category, name, image, price, default: isDefault } = req.body || {};
+    const { category, name, image, price, default: isDefault, zIndex } = req.body || {};
     const updates = {};
     if (category !== undefined) { if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400); updates.category = category; }
     if (name !== undefined) updates.name = String(name).trim();
     if (image !== undefined) updates.image = image;
     if (price !== undefined) updates.price = Math.max(0, Number(price) || 0);
     if (isDefault !== undefined) updates.default = !!isDefault;
+    if (zIndex !== undefined) updates.zIndex = Number(zIndex) || 50;
     if (Object.keys(updates).length === 0) return sendError(res, "Không có gì để cập nhật", 400);
     await getCollection(ITEMS).updateOne({ id }, { $set: updates });
     const updated = await getCollection(ITEMS).findOne({ id });
@@ -250,10 +270,14 @@ router.post("/admin/items/batch", authenticate, async (req, res, next) => {
     if (items.length > 100) return sendError(res, "Tối đa 100 item mỗi lần", 400);
     const created = [];
     for (const it of items) {
-      const { category, name, image, price, default: isDefault } = it || {};
+      const { category, name, image, price, default: isDefault, zIndex } = it || {};
       if (!category || !name) return sendError(res, "Thiếu category hoặc name", 400);
       if (!CATEGORIES.find(c => c.id === category)) return sendError(res, `Category không hợp lệ: ${category}`, 400);
-      const item = { id: uid(), category, name: String(name).trim(), image: image || "", price: Math.max(0, Number(price) || 0), default: !!isDefault };
+      const item = {
+        id: uid(), category, name: String(name).trim(), image: image || "",
+        price: Math.max(0, Number(price) || 0), default: !!isDefault,
+        zIndex: Number(zIndex) || ZINDEX_MAP[category] || 50,
+      };
       await getCollection(ITEMS).insertOne(item);
       created.push(item);
     }

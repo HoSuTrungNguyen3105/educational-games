@@ -11,16 +11,21 @@ function ItemLayer({ item, size }) {
 }
 
 export default function AvatarPreview({ loadout = {}, items = [], size = 512, className = '' }) {
-  const LAYER_ORDER = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
+  const resolved = Object.entries(loadout)
+    .map(([category, itemId]) => {
+      if (!itemId) return null;
+      const item = items.find(i => i.id === itemId);
+      if (!item) return null;
+      return { ...item, _category: category };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+
   return (
     <div className={`relative overflow-hidden ${className}`} style={{ width: size, height: size }}>
-      {LAYER_ORDER.map(layerKey => {
-        const itemId = loadout[layerKey];
-        if (!itemId) return null;
-        const item = items.find(i => i.id === itemId);
-        if (!item) return null;
-        return <ItemLayer key={layerKey} item={item} size={size} />;
-      })}
+      {resolved.map(item => (
+        <ItemLayer key={item._category} item={item} size={size} />
+      ))}
     </div>
   );
 }

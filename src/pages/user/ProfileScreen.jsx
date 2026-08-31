@@ -124,10 +124,16 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         <div className="p-4 flex items-center gap-4">
           {/* Avatar */}
           <div className="relative shrink-0">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl text-white font-display shadow-lg"
-              style={{ background: "linear-gradient(135deg, var(--accent), var(--purple, #8b5cf6))" }}>
-              {user.name?.charAt(0)?.toUpperCase() || "?"}
-            </div>
+            {avatarItems.length > 0 ? (
+              <div className="w-16 h-16 rounded-full overflow-hidden shadow-lg ring-2 ring-white">
+                <AvatarPreview loadout={avatarLoadout} items={avatarItems} size={64} />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl text-white font-display shadow-lg"
+                style={{ background: "linear-gradient(135deg, var(--accent), var(--purple, #8b5cf6))" }}>
+                {user.name?.charAt(0)?.toUpperCase() || "?"}
+              </div>
+            )}
             <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center text-sm shadow ring-2 ring-white"
               style={{ background: "var(--card)" }}>
               {lv.level >= 10 ? "👑" : lv.level >= 5 ? "⭐" : "🌱"}

@@ -10,6 +10,11 @@ const CATEGORIES = [
   { id: "accessory", label: "Phụ kiện" },
 ];
 
+const ZINDEX_MAP = {
+  body: 10, skin: 15, face: 20, hair: 30, shirt: 40,
+  pants: 50, shoes: 60, hat: 70, glasses: 80, accessory: 90,
+};
+
 function getAuthToken() {
   try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; }
 }
@@ -222,7 +227,7 @@ export default function UploadItems({ showToast }) {
         if (item.mode === 'update' && item.assignTo) {
           const res = await fetch(`${API_BASE}/avatar/admin/items/${item.assignTo}`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ name: item.name, category: item.category, price: item.price, default: item.isDefault, ...(imageUrl ? { image: imageUrl } : {}) }),
+            body: JSON.stringify({ name: item.name, category: item.category, price: item.price, default: item.isDefault, zIndex: ZINDEX_MAP[item.category] || 50, ...(imageUrl ? { image: imageUrl } : {}) }),
           });
           const json = await res.json();
           if (!json.status) throw new Error(json.msg || 'Update failed');
@@ -230,7 +235,7 @@ export default function UploadItems({ showToast }) {
         } else {
           const res = await fetch(`${API_BASE}/avatar/admin/items`, {
             method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ name: item.name, category: item.category, price: item.price, default: item.isDefault, image: imageUrl }),
+            body: JSON.stringify({ name: item.name, category: item.category, price: item.price, default: item.isDefault, zIndex: ZINDEX_MAP[item.category] || 50, image: imageUrl }),
           });
           const json = await res.json();
           if (!json.status) throw new Error(json.msg || 'Create failed');
