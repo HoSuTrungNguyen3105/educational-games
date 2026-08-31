@@ -188,6 +188,27 @@ router.put("/admin/items/:id", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+router.post("/admin/items/batch", authenticate, async (req, res, next) => {
+  try {
+    const { items } = req.body || {};
+    if (!Array.isArray(items) || items.length === 0) return sendError(res, "Thiếu items array", 400);
+    if (items.length > 100) return sendError(res, "Tối đa 100 item mỗi lần", 400);
+    const created = [];
+    for (const it of items) {
+      const { category, name, x, y, width, height, price, default: isDefault } = it || {};
+      if (!category || !name) return sendError(res, "Thiếu category hoặc name", 400);
+      if (!CATEGORIES.find(c => c.id === category)) return sendError(res, `Category không hợp lệ: ${category}`, 400);
+      if (typeof x !== "number" || typeof y !== "number" || typeof width !== "number" || typeof height !== "number") {
+        return sendError(res, `Thiếu x,y,width,height cho item: ${name}`, 400);
+      }
+      const item = { id: uid(), category, name: String(name).trim(), x, y, width, height, price: Math.max(0, Number(price) || 0), default: !!isDefault };
+      await getCollection(ITEMS).insertOne(item);
+      created.push(item);
+    }
+    sendCreated(res, { items: created, count: created.length });
+  } catch (e) { next(e); }
+});
+
 router.delete("/admin/items/:id", authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;

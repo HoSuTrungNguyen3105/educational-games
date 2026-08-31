@@ -3,7 +3,7 @@ import AvatarPreview from './AvatarPreview.jsx';
 import { API_BASE } from '../../services/api.js';
 import { X, Check, ShoppingBag } from 'lucide-react';
 
-const SPRITE_SHEET_PATH = '/avatar/avatar-sprite.png';
+const SPRITE_SHEET_PATH = `${import.meta.env.BASE_URL}avatar/avatar-sprite.png`;
 const SPRITE_W = 1536;
 const SPRITE_H = 1024;
 

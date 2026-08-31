@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { ManagementHeader, ConfirmModal } from '../../components/ui.jsx';
-import { Plus, Pencil, Trash2, X, Save, Image } from 'lucide-react';
+import CropEditor from '../../components/avatar/CropEditor.jsx';
+import AvatarItemExtractor from '../../components/avatar/AvatarItemExtractor.jsx';
+import { Plus, Pencil, Trash2, X, Save, Image, Upload, List } from 'lucide-react';
 
 const CATEGORIES = [
   { id: "body", label: "Thân" }, { id: "skin", label: "Da" }, { id: "face", label: "Mặt" },
@@ -12,7 +14,7 @@ const CATEGORIES = [
 
 const EMPTY_FORM = { category: "hair", name: "", x: 0, y: 0, width: 256, height: 256, price: 0, default: false };
 
-const SPRITE_SHEET = '/avatar/avatar-sprite.png';
+const SPRITE_SHEET = `${import.meta.env.BASE_URL}avatar/avatar-sprite.png`;
 const SPRITE_W = 1536;
 const SPRITE_H = 1024;
 
@@ -41,6 +43,7 @@ export default function AvatarItemManagement({ showToast }) {
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, item: null });
   const [filter, setFilter] = useState("all");
+  const [tab, setTab] = useState("list");
 
   const load = useCallback(() => {
     setItems(null); setError(null);
@@ -73,12 +76,12 @@ export default function AvatarItemManagement({ showToast }) {
       if (editingId) {
         const res = await fetch(`${API_BASE}/avatar/admin/items/${editingId}`, { method: "PUT", headers, body: JSON.stringify(form) });
         const json = await res.json();
-        if (json.status !== "success") throw new Error(json.message || "Lỗi cập nhật");
+        if (!json.status) throw new Error(json.msg || "Lỗi cập nhật");
         showToast("Đã cập nhật item");
       } else {
         const res = await fetch(`${API_BASE}/avatar/admin/items`, { method: "POST", headers, body: JSON.stringify(form) });
         const json = await res.json();
-        if (json.status !== "success") throw new Error(json.message || "Lỗi tạo item");
+        if (!json.status) throw new Error(json.msg || "Lỗi tạo item");
         showToast("Đã tạo item mới");
       }
       closeModal(); load();
@@ -95,10 +98,27 @@ export default function AvatarItemManagement({ showToast }) {
 
       const res = await fetch(`${API_BASE}/avatar/admin/items/${confirm.item.id}`, { method: "DELETE", headers });
       const json = await res.json();
-      if (json.status !== "success") throw new Error(json.message || "Lỗi xóa");
+      if (!json.status) throw new Error(json.msg || "Lỗi xóa");
       showToast("Đã xóa item");
       setConfirm({ open: false, item: null }); load();
     } catch (err) { showToast(err.message || "Lỗi xóa", "error"); }
+  };
+
+  const batchSave = async (batchItems) => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("edu_games_auth");
+      const parsed = token ? JSON.parse(token) : null;
+      const headers = { "Content-Type": "application/json" };
+      if (parsed?.token) headers.Authorization = `Bearer ${parsed.token}`;
+
+      const res = await fetch(`${API_BASE}/avatar/admin/items/batch`, { method: "POST", headers, body: JSON.stringify({ items: batchItems }) });
+      const json = await res.json();
+      if (!json.status) throw new Error(json.msg || "Lỗi lưu");
+      showToast(`Đã tạo ${json.data.count} item`);
+      load();
+    } catch (err) { showToast(err.message || "Lỗi lưu", "error"); }
+    setSaving(false);
   };
 
   const filtered = items ? (filter === "all" ? items : items.filter(i => i.category === filter)) : [];
@@ -107,6 +127,21 @@ export default function AvatarItemManagement({ showToast }) {
     <div>
       <ManagementHeader subtitle="Quản lý vật phẩm Avatar" title="Avatar Items" />
 
+      {/* Tabs */}
+      <div className="flex gap-1 mb-4 bg-ink/5 rounded-xl p-1">
+        <button onClick={() => setTab("list")}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition ${tab === "list" ? "bg-white text-ink shadow-sm" : "text-ink/40 hover:text-ink/60"}`}>
+          <List className="w-4 h-4" />
+          Danh sách ({items?.length || 0})
+        </button>
+        <button onClick={() => setTab("extractor")}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition ${tab === "extractor" ? "bg-white text-ink shadow-sm" : "text-ink/40 hover:text-ink/60"}`}>
+          <Upload className="w-4 h-4" />
+          Trích xuất từ ảnh
+        </button>
+      </div>
+
+      {tab === "list" && (<>
       <div className="flex flex-wrap gap-2 mb-4">
         <button onClick={() => setFilter("all")}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${filter === "all" ? "bg-gold text-white" : "bg-ink/5 text-ink/50 hover:bg-ink/10"}`}>
@@ -172,69 +207,40 @@ export default function AvatarItemManagement({ showToast }) {
         className="fixed bottom-24 sm:bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-gold text-white shadow-lg hover:shadow-xl hover:bg-gold/80 transition flex items-center justify-center">
         <Plus className="w-6 h-6" />
       </button>
+      </>)}
+
+      {tab === "extractor" && (
+        <div className="bg-white rounded-xl border border-ink/8 p-4">
+          <AvatarItemExtractor onBatchSave={batchSave} saving={saving} />
+          {saving && <div className="mt-3 text-center text-sm text-gold animate-pulse">Đang lưu...</div>}
+        </div>
+      )}
 
       {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-ink/10 shrink-0">
               <h3 className="font-display text-lg text-ink">{editingId ? "Sửa Item" : "Thêm Item mới"}</h3>
               <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><X className="w-5 h-5 text-ink/50" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-              {/* Preview */}
-              <div className="flex justify-center py-4 rounded-xl" style={{ background: "linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)" }}>
-                {form.width > 0 && form.height > 0 ? (
-                  <div className="w-32 h-32 rounded-xl overflow-hidden border-2 border-ink/10"
-                    style={{
-                      backgroundImage: `url(${SPRITE_SHEET})`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: `${-(form.x * (32 / form.width))}px ${-(form.y * (32 / form.height))}px`,
-                      backgroundSize: `${SPRITE_W * (32 / form.width)}px ${SPRITE_H * (32 / form.height)}px`,
-                    }} />
-                ) : (
-                  <div className="w-32 h-32 rounded-xl border-2 border-dashed border-ink/20 flex items-center justify-center">
-                    <Image className="w-8 h-8 text-ink/20" />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="text-xs font-mono uppercase text-ink/50">Category *</label>
-                <select value={form.category} onChange={e => onChange("category", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-gold/30">
-                  {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-mono uppercase text-ink/50">Tên item *</label>
-                <input value={form.name} onChange={e => onChange("name", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-gold/30"
-                  placeholder="VD: Tóc xoăn" />
-              </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+              <CropEditor value={form} onChange={setForm} />
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">X</label>
-                  <input type="number" value={form.x} onChange={e => onChange("x", Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-gold/30" />
+                  <label className="text-xs font-mono uppercase text-ink/50">Category *</label>
+                  <select value={form.category} onChange={e => onChange("category", e.target.value)}
+                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-gold/30">
+                    {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">Y</label>
-                  <input type="number" value={form.y} onChange={e => onChange("y", Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-gold/30" />
-                </div>
-                <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">Width</label>
-                  <input type="number" value={form.width} onChange={e => onChange("width", Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-gold/30" />
-                </div>
-                <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">Height</label>
-                  <input type="number" value={form.height} onChange={e => onChange("height", Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-gold/30" />
+                  <label className="text-xs font-mono uppercase text-ink/50">Tên item *</label>
+                  <input value={form.name} onChange={e => onChange("name", e.target.value)}
+                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-gold/30"
+                    placeholder="VD: Tóc xoăn" />
                 </div>
               </div>
 
