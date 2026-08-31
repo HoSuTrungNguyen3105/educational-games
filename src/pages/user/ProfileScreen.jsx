@@ -6,7 +6,6 @@ import { navigate } from "../../lib/router.js";
 import { ArrowLeft, LogOut, GraduationCap, ChevronDown, ChevronUp, Copy, Check, Palette } from "lucide-react";
 import AvatarPreview from "../../components/avatar/AvatarPreview.jsx";
 import AvatarCustomizer from "../../components/avatar/AvatarCustomizer.jsx";
-import { getDefaultLoadout } from "../../data/avatarItems.js";
 
 export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [profile, setProfile] = useState(null);
@@ -18,18 +17,29 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [joining, setJoining] = useState(false);
   const [copied, setCopied] = useState(null);
   const [showCustomizer, setShowCustomizer] = useState(false);
-  const [avatarLoadout, setAvatarLoadout] = useState(getDefaultLoadout());
+  const [avatarLoadout, setAvatarLoadout] = useState({});
+  const [avatarItems, setAvatarItems] = useState([]);
   const [inventory, setInventory] = useState([]);
 
   useEffect(() => {
     if (!userAuth?.user) return;
     setLoading(true);
-    authService.me()
-      .then((data) => {
-        setProfile(data);
+    Promise.all([
+      authService.me(),
+      fetch(`${API_BASE}/avatar/items`).then(r => r.json()),
+      fetch(`${API_BASE}/avatar/loadout`, {
+        headers: { Authorization: `Bearer ${userAuth.token}` },
+      }).then(r => r.json()),
+      fetch(`${API_BASE}/avatar/inventory`, {
+        headers: { Authorization: `Bearer ${userAuth.token}` },
+      }).then(r => r.json()),
+    ])
+      .then(([userData, itemsRes, loadoutRes, invRes]) => {
+        setProfile(userData);
         setError(null);
-        if (data.avatarLoadout) setAvatarLoadout(data.avatarLoadout);
-        if (data.inventory) setInventory(data.inventory);
+        if (itemsRes.status === "success") setAvatarItems(itemsRes.data.items);
+        if (loadoutRes.status === "success") setAvatarLoadout(loadoutRes.data.loadout);
+        if (invRes.status === "success") setInventory(invRes.data.inventory);
       })
       .catch((e) => setError(e.message || "Lỗi tải profile"))
       .finally(() => setLoading(false));
@@ -166,7 +176,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           <span className="font-display text-sm text-ink">Avatar của tôi</span>
         </div>
         <div className="flex flex-col items-center gap-3">
-          <AvatarPreview loadout={avatarLoadout} size={160} />
+          <AvatarPreview loadout={avatarLoadout} items={avatarItems} size={160} />
           <button onClick={() => setShowCustomizer(true)}
             className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-body font-semibold hover:bg-gold/80 transition">
             Tùy chỉnh Avatar
@@ -179,17 +189,18 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           loadout={avatarLoadout}
           inventory={inventory}
           coins={user.coins || 0}
+          token={userAuth.token}
           onSave={async (newLoadout) => {
             setAvatarLoadout(newLoadout);
             setShowCustomizer(false);
             try {
-              await fetch(`${API_BASE}/auth/me`, {
-                method: 'PUT',
+              await fetch(`${API_BASE}/avatar/save`, {
+                method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: `Bearer ${userAuth.token}`,
                 },
-                body: JSON.stringify({ avatarLoadout: newLoadout }),
+                body: JSON.stringify({ loadout: newLoadout }),
               });
             } catch {}
           }}

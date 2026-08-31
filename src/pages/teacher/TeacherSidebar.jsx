@@ -20,6 +20,7 @@ import {
   User,
   GraduationCap,
   FileText,
+  Shirt,
 } from 'lucide-react'
 
 const MENU = [
