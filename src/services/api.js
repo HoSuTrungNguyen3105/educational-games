@@ -384,5 +384,6 @@ export const assignmentService = {
   async getStats(id) { return apiFetch(`/assignments/${id}/stats`); },
   async getSubmissions(id) { return apiFetch(`/assignments/${id}/submissions`) || []; },
   async close(id) { return apiFetch(`/assignments/${id}/close`, { method: "PUT" }); },
+  async update(id, data) { return apiFetch(`/assignments/${id}`, { method: "PUT", body: data }); },
   async delete_(id) { return apiFetch(`/assignments/${id}`, { method: "DELETE" }); },
 };

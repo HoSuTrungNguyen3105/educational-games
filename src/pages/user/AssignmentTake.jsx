@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { assignmentService, gameService } from '../../services/api.js';
+import { assignmentService, gameService, questionService } from '../../services/api.js';
 import { useUserAuthStore } from '../../stores/userAuth.store.js';
 import { navigate } from '../../lib/router.js';
 import { Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
@@ -10,6 +10,8 @@ export default function AssignmentTake({ assignmentId }) {
   const user = useUserAuthStore(s => s.user);
   const [assignment, setAssignment] = useState(null);
   const [game, setGame] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [questionAnswers, setQuestionAnswers] = useState({});
   const [submission, setSubmission] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -46,10 +48,16 @@ export default function AssignmentTake({ assignmentId }) {
       const sub = await assignmentService.start(assignmentId);
       setSubmission(sub);
 
-      // Load game for questions
-      const allGames = await gameService.list();
-      const g = allGames.find(x => x._id === a.gameId);
-      setGame(g);
+      // Load game or questions
+      if (a.gameId) {
+        const allGames = await gameService.list();
+        const g = allGames.find(x => x._id === a.gameId);
+        setGame(g);
+      } else if (a.questionIds?.length) {
+        const allQ = await questionService.listAll();
+        const filtered = allQ.filter(q => a.questionIds.includes(q.id));
+        setQuestions(filtered);
+      }
 
       // Start timer if exam
       if (a.isExam && a.examDuration) {
@@ -82,27 +90,34 @@ export default function AssignmentTake({ assignmentId }) {
     if (timerRef.current) clearInterval(timerRef.current);
 
     try {
-      // Ask iframe for answers via postMessage
-      const answers = await new Promise((resolve) => {
-        const handler = (e) => {
-          try {
-            const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-            if (msg.type === 'assignment-answers') {
-              window.removeEventListener('message', handler);
-              resolve(msg.answers || []);
-            }
-          } catch {}
-        };
-        window.addEventListener('message', handler);
-        iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: 'get-assignment-answers' }), '*');
-        setTimeout(() => { window.removeEventListener('message', handler); resolve([]); }, 3000);
-      });
+      let answers = [];
+
+      if (game) {
+        // Game iframe path: ask iframe for answers via postMessage
+        answers = await new Promise((resolve) => {
+          const handler = (e) => {
+            try {
+              const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+              if (msg.type === 'assignment-answers') {
+                window.removeEventListener('message', handler);
+                resolve(msg.answers || []);
+              }
+            } catch {}
+          };
+          window.addEventListener('message', handler);
+          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: 'get-assignment-answers' }), '*');
+          setTimeout(() => { window.removeEventListener('message', handler); resolve([]); }, 3000);
+        });
+      } else {
+        // Direct questions path: collect from questionAnswers state
+        answers = Object.entries(questionAnswers).map(([questionId, value]) => ({ questionId, value }));
+      }
 
       const res = await assignmentService.submit(assignmentId, submission.id, answers);
       const full = await assignmentService.getResult(assignmentId);
       setResult(full);
     } catch (err) { setError(err.message); }
-  }, [assignmentId, submission, submitted]);
+  }, [assignmentId, submission, submitted, game, questionAnswers]);
 
   // Listen for game-answers message (alternative path from game)
   useEffect(() => {
@@ -186,8 +201,8 @@ export default function AssignmentTake({ assignmentId }) {
         <button onClick={() => navigate('/')} className="text-white/60 hover:text-white text-xs font-body">Thoát</button>
       </div>
 
-      {/* Game iframe */}
-      <div className="flex-1 relative">
+      {/* Content: game iframe or direct questions */}
+      <div className="flex-1 relative overflow-auto">
         {gameUrl ? (
           <iframe
             ref={iframeRef}
@@ -195,8 +210,42 @@ export default function AssignmentTake({ assignmentId }) {
             className="w-full h-full border-0"
             sandbox="allow-scripts allow-same-origin allow-popups"
           />
+        ) : questions.length > 0 ? (
+          <div className="max-w-2xl mx-auto p-4 space-y-4">
+            {questions.map((q, idx) => (
+              <div key={q.id} className="rounded-xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
+                <p className="text-sm font-body text-ink mb-3">
+                  <span className="font-bold mr-1">{idx + 1}.</span> {q.question}
+                </p>
+                {q.type === 'fill-in' || q.questionType === 'fill-in' ? (
+                  <input
+                    value={questionAnswers[q.id] || ''}
+                    onChange={e => setQuestionAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-ink/10 bg-ink/5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-gold/30"
+                    placeholder="Nhập đáp án..."
+                  />
+                ) : (
+                  <div className="space-y-2">
+                    {(q.options || []).map((opt) => {
+                      const optKey = typeof opt === 'string' ? opt : opt.key || opt.id;
+                      const optText = typeof opt === 'string' ? opt : opt.text || opt.label || optKey;
+                      return (
+                        <label key={optKey} className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition ${questionAnswers[q.id] === optKey ? 'border-gold bg-gold/5' : 'border-ink/10 bg-ink/5 hover:bg-ink/3'}`}>
+                          <input type="radio" name={`q-${q.id}`} value={optKey}
+                            checked={questionAnswers[q.id] === optKey}
+                            onChange={() => setQuestionAnswers(prev => ({ ...prev, [q.id]: optKey }))}
+                            className="accent-gold" />
+                          <span className="text-sm text-ink">{optText}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         ) : (
-          <div className="flex items-center justify-center h-full font-body text-ink/40">Đang tải game...</div>
+          <div className="flex items-center justify-center h-full font-body text-ink/40">Đang tải...</div>
         )}
       </div>
 

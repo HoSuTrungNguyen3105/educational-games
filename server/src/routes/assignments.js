@@ -22,7 +22,7 @@ function requireTeacher(req, res, next) {
 // Create assignment (teacher) → notify all students in class
 r.post("/", auth, requireTeacher, async (req, res) => {
   try {
-    const { gameId, title, description, classId, isExam, examDuration, deadline, questionIds } = req.body;
+    const { gameId, title, description, classId, isExam, examDuration, deadline, questionIds, templateId } = req.body;
     if (!title || !classId) {
       return sendError(res, "title, classId là bắt buộc", 400);
     }
@@ -30,7 +30,7 @@ r.post("/", auth, requireTeacher, async (req, res) => {
       return sendError(res, "Cần chọn ít nhất 1 câu hỏi hoặc chọn game", 400);
     }
     const assignment = await assignmentService.createAssignment({
-      teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline, questionIds,
+      teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline, questionIds, templateId,
     });
 
     // Notify all students in class
@@ -152,6 +152,29 @@ r.put("/:id/close", auth, requireTeacher, async (req, res) => {
     const updated = await assignmentService.closeAssignment(req.params.id);
     sendSuccess(res, updated);
   } catch (e) { sendError(res, e.message, 500); }
+});
+
+// Update assignment (teacher)
+r.put("/:id", auth, requireTeacher, async (req, res) => {
+  try {
+    const existing = await assignmentService.getAssignmentById(req.params.id);
+    if (!existing) return sendError(res, "Không tìm thấy bài giao", 404);
+    if (existing.status !== "ACTIVE") return sendError(res, "Bài giao đã đóng, không thể chỉnh sửa", 400);
+
+    const { title, description, classId, isExam, examDuration, deadline, questionIds, gameId } = req.body;
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (classId !== undefined) updateData.classId = classId;
+    if (isExam !== undefined) updateData.isExam = isExam;
+    if (examDuration !== undefined) updateData.examDuration = isExam ? (examDuration || 60) : null;
+    if (deadline !== undefined) updateData.deadline = deadline || null;
+    if (questionIds !== undefined) updateData.questionIds = questionIds;
+    if (gameId !== undefined) updateData.gameId = gameId || null;
+
+    const updated = await assignmentService.updateAssignment(req.params.id, updateData);
+    sendSuccess(res, updated);
+  } catch (e) { sendError(res, e.message, 400); }
 });
 
 // Delete assignment (teacher)

@@ -34,7 +34,7 @@ const MENU = [
   { id: "admin-questions", label: "Câu hỏi", icon: HelpCircle, route: "/admin/questions", permission: "questions.manage" },
   { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
   { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
-  { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments/new", permission: null },
+  { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
 ];
 
 const BOTTOM_MENU = [
@@ -59,7 +59,7 @@ const MOBILE_MORE = [
   { id: "admin-questions", label: "Câu hỏi", icon: HelpCircle, route: "/admin/questions", permission: "questions.manage" },
   { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
   { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
-  { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments/new", permission: null },
+  { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
 ];
 
 export default function TeacherSidebar({ screen, user, onLogout }) {
@@ -106,24 +106,6 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
             </button>
           );
         })}
-        {/* {user && (
-          <div className="mt-2 pt-3 border-t border-white/10">
-            <div className="flex items-center gap-3 px-4 py-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold shrink-0">
-                {user.name?.charAt(0)?.toUpperCase() || "?"}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-body text-paper truncate">{user.name}</p>
-                <p className="text-[10px] font-mono text-paper/50">{getRoleLabel(role)}</p>
-              </div>
-            </div>
-            <button onClick={() => { onLogout?.(); if (isMobile) setMobileOpen(false); }}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-body text-red-400 hover:bg-red-500/10 transition">
-              <LogOut className="w-5 h-5" />
-              Đăng xuất
-            </button>
-          </div>
-        )} */}
         {user && (
           <div className="mt-2 pt-3 border-t border-white/10">
             <button onClick={() => { navigate("/admin/profile"); if (isMobile) setMobileOpen(false); }}

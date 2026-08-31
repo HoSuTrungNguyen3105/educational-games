@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { assignmentService, gameService } from '../../services/api.js';
+import { assignmentService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Copy, Users, BarChart3, Clock, X } from 'lucide-react';
+import { Copy, Users, BarChart3, Pencil } from 'lucide-react';
 
 export default function AssignmentDetail({ assignmentId }) {
   const [assignment, setAssignment] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [stats, setStats] = useState(null);
-  const [gameName, setGameName] = useState('');
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -27,13 +26,6 @@ export default function AssignmentDetail({ assignmentId }) {
       setAssignment(a);
       setSubmissions(subs);
       setStats(st);
-      if (a?.gameId) {
-        try {
-          const all = await gameService.list();
-          const g = all.find(x => x._id === a.gameId);
-          setGameName(g?.name || '');
-        } catch {}
-      }
     } catch {}
     setLoading(false);
   }
@@ -68,9 +60,15 @@ export default function AssignmentDetail({ assignmentId }) {
         </div>
         <div className="flex gap-2">
           {assignment.status === 'ACTIVE' && (
-            <button onClick={handleClose} className="px-3 py-1.5 bg-red-100 text-red-600 rounded-xl text-sm font-body hover:bg-red-200 transition">
-              Đóng bài
-            </button>
+            <>
+              <button onClick={() => navigate(`/admin/assignments/${assignmentId}/edit`)}
+                className="px-3 py-1.5 bg-gold/10 text-gold rounded-xl text-sm font-body hover:bg-gold/20 transition flex items-center gap-1.5">
+                <Pencil className="w-3.5 h-3.5" /> Sửa
+              </button>
+              <button onClick={handleClose} className="px-3 py-1.5 bg-red-100 text-red-600 rounded-xl text-sm font-body hover:bg-red-200 transition">
+                Đóng bài
+              </button>
+            </>
           )}
           <button onClick={handleDelete} className="px-3 py-1.5 bg-ink/5 text-ink/40 rounded-xl text-sm font-body hover:bg-red-100 hover:text-red-500 transition">
             Xóa
@@ -94,8 +92,10 @@ export default function AssignmentDetail({ assignmentId }) {
           </p>
         </div>
         <div className="note-card p-3 text-center">
-          <p className="text-xs font-body text-ink/40">Game</p>
-          <p className="mt-1 text-sm font-body font-semibold text-ink">{gameName || assignment.gameId}</p>
+          <p className="text-xs font-body text-ink/40">Câu hỏi</p>
+          <p className="mt-1 text-sm font-body font-semibold text-ink">
+            {assignment.questionIds?.length || 0} câu
+          </p>
         </div>
         <div className="note-card p-3 text-center">
           <p className="text-xs font-body text-ink/40">Loại</p>
