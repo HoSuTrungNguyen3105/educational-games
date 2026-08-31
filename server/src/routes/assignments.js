@@ -161,7 +161,7 @@ r.put("/:id", auth, requireTeacher, async (req, res) => {
     if (!existing) return sendError(res, "Không tìm thấy bài giao", 404);
     if (existing.status !== "ACTIVE") return sendError(res, "Bài giao đã đóng, không thể chỉnh sửa", 400);
 
-    const { title, description, classId, isExam, examDuration, deadline, questionIds, gameId } = req.body;
+    const { title, description, classId, isExam, examDuration, deadline, questionIds, gameId, templateId } = req.body;
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
@@ -171,6 +171,7 @@ r.put("/:id", auth, requireTeacher, async (req, res) => {
     if (deadline !== undefined) updateData.deadline = deadline || null;
     if (questionIds !== undefined) updateData.questionIds = questionIds;
     if (gameId !== undefined) updateData.gameId = gameId || null;
+    if (templateId !== undefined) updateData.templateId = templateId || null;
 
     const updated = await assignmentService.updateAssignment(req.params.id, updateData);
     sendSuccess(res, updated);
