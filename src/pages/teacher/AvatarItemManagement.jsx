@@ -45,7 +45,7 @@ export default function AvatarItemManagement({ showToast }) {
   const load = useCallback(() => {
     setItems(null); setError(null);
     fetch(`${API_BASE}/avatar/items`).then(r => r.json()).then(json => {
-      if (json.status === "success") setItems(json.data.items);
+      if (json.status) setItems(json.data.items);
       else setError(json.message || "Lỗi tải items");
     }).catch(e => setError(e.message));
   }, []);
@@ -65,7 +65,7 @@ export default function AvatarItemManagement({ showToast }) {
     if (!form.name.trim()) { setError("Vui lòng nhập tên item"); return; }
     setSaving(true); setError(null);
     try {
-      const token = localStorage.getItem("edu_games_user_auth");
+      const token = localStorage.getItem("edu_games_auth");
       const parsed = token ? JSON.parse(token) : null;
       const headers = { "Content-Type": "application/json" };
       if (parsed?.token) headers.Authorization = `Bearer ${parsed.token}`;
@@ -88,7 +88,7 @@ export default function AvatarItemManagement({ showToast }) {
 
   const doRemove = async () => {
     try {
-      const token = localStorage.getItem("edu_games_user_auth");
+      const token = localStorage.getItem("edu_games_auth");
       const parsed = token ? JSON.parse(token) : null;
       const headers = {};
       if (parsed?.token) headers.Authorization = `Bearer ${parsed.token}`;

@@ -37,9 +37,9 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       .then(([userData, itemsRes, loadoutRes, invRes]) => {
         setProfile(userData);
         setError(null);
-        if (itemsRes.status === "success") setAvatarItems(itemsRes.data.items);
-        if (loadoutRes.status === "success") setAvatarLoadout(loadoutRes.data.loadout);
-        if (invRes.status === "success") setInventory(invRes.data.inventory);
+        if (itemsRes.status) setAvatarItems(itemsRes.data.items);
+        if (loadoutRes.status) setAvatarLoadout(loadoutRes.data.loadout);
+        if (invRes.status) setInventory(invRes.data.inventory);
       })
       .catch((e) => setError(e.message || "Lỗi tải profile"))
       .finally(() => setLoading(false));

@@ -5,10 +5,9 @@ import { getCollection } from "../db.js";
 
 const router = Router();
 
-const COLLECTION = "avatarItems";
+const ITEMS = "avatarItems";
 const USERS = "users";
 
-// ── Seed data: default items if collection is empty ──
 const SEED_ITEMS = [
   { id: "body_01", category: "body", name: "Thân mặc định", x: 0, y: 0, width: 245, height: 275, price: 0, default: true },
   { id: "skin_01", category: "skin", name: "Da sáng", x: 250, y: 0, width: 120, height: 290, price: 0, default: true },
@@ -40,15 +39,9 @@ const SEED_ITEMS = [
 ];
 
 const CATEGORIES = [
-  { id: "body", label: "Thân" },
-  { id: "skin", label: "Da" },
-  { id: "face", label: "Mặt" },
-  { id: "hair", label: "Tóc" },
-  { id: "shirt", label: "Áo" },
-  { id: "pants", label: "Quần" },
-  { id: "shoes", label: "Giày" },
-  { id: "hat", label: "Mũ" },
-  { id: "glasses", label: "Kính" },
+  { id: "body", label: "Thân" }, { id: "skin", label: "Da" }, { id: "face", label: "Mặt" },
+  { id: "hair", label: "Tóc" }, { id: "shirt", label: "Áo" }, { id: "pants", label: "Quần" },
+  { id: "shoes", label: "Giày" }, { id: "hat", label: "Mũ" }, { id: "glasses", label: "Kính" },
   { id: "accessory", label: "Phụ kiện" },
 ];
 
@@ -60,51 +53,35 @@ const DEFAULT_LOADOUT = {
   hat: null, glasses: null, accessory: null,
 };
 
-// ── Avatar HTML Template ──
-const AVATAR_TEMPLATE = {
-  html: `<div class="avatar" style="position:relative;width:512px;height:512px;overflow:hidden;">
-  <div class="avatar-layer" data-layer="body" style="position:absolute;inset:0;"></div>
-  <div class="avatar-layer" data-layer="skin" style="position:absolute;inset:0;"></div>
-  <div class="avatar-layer" data-layer="face" style="position:absolute;inset:0;"></div>
-  <div class="avatar-layer" data-layer="hair" style="position:absolute;inset:0;"></div>
-  <div class="avatar-layer" data-layer="shirt" style="position:absolute;inset:0;"></div>
-  <div class="avatar-layer" data-layer="pants" style="position:absolute;inset:0;"></div>
-  <div class="avatar-layer" data-layer="shoes" style="position:absolute;inset:0;"></div>
-  <div class="avatar-layer" data-layer="hat" style="position:absolute;inset:0;"></div>
-  <div class="avatar-layer" data-layer="glasses" style="position:absolute;inset:0;"></div>
-  <div class="avatar-layer" data-layer="accessory" style="position:absolute;inset:0;"></div>
-</div>`,
-  css: `.avatar { position: relative; width: 512px; height: 512px; overflow: hidden; }
-.avatar-layer { position: absolute; inset: 0; background-repeat: no-repeat; }`,
-  spriteSheet: "/avatar/avatar-sprite.png",
-  spriteWidth: 1536,
-  spriteHeight: 1024,
-  canvasSize: 512,
-};
+const SPRITE_SHEET = "/avatar/avatar-sprite.png";
+const SPRITE_W = 1536;
+const SPRITE_H = 1024;
+const CANVAS_SIZE = 512;
 
-// Helper: seed items if collection is empty
 async function ensureSeeded() {
-  const count = await getCollection(COLLECTION).countDocuments();
+  const count = await getCollection(ITEMS).countDocuments();
   if (count === 0 && SEED_ITEMS.length > 0) {
-    await getCollection(COLLECTION).insertMany(SEED_ITEMS.map(i => ({ ...i })));
+    await getCollection(ITEMS).insertMany(SEED_ITEMS.map(i => ({ ...i })));
   }
 }
 
-// ── GET /api/avatar/template ──
-router.get("/template", (_req, res) => {
-  sendSuccess(res, AVATAR_TEMPLATE);
+// ─── PUBLIC ──────────────────────────────────────────────────────
+
+// GET /api/avatar/sheet — sprite sheet metadata
+router.get("/sheet", (_req, res) => {
+  sendSuccess(res, { spriteSheet: SPRITE_SHEET, spriteWidth: SPRITE_W, spriteHeight: SPRITE_H, canvasSize: CANVAS_SIZE });
 });
 
-// ── GET /api/avatar/items ── (public)
+// GET /api/avatar/items
 router.get("/items", async (_req, res, next) => {
   try {
     await ensureSeeded();
-    const items = await getCollection(COLLECTION).find({}).sort({ category: 1, price: 1 }).toArray();
+    const items = await getCollection(ITEMS).find({}).sort({ category: 1, price: 1 }).toArray();
     sendSuccess(res, { items, categories: CATEGORIES, layerOrder: LAYER_ORDER });
   } catch (e) { next(e); }
 });
 
-// ── GET /api/avatar/inventory ── (auth)
+// GET /api/avatar/inventory
 router.get("/inventory", authenticate, async (req, res, next) => {
   try {
     const user = await getCollection(USERS).findOne({ id: req.user.sub });
@@ -113,7 +90,7 @@ router.get("/inventory", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// ── GET /api/avatar/loadout ── (auth)
+// GET /api/avatar/loadout
 router.get("/loadout", authenticate, async (req, res, next) => {
   try {
     const user = await getCollection(USERS).findOne({ id: req.user.sub });
@@ -122,31 +99,24 @@ router.get("/loadout", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// ── POST /api/avatar/buy ── (auth)
+// POST /api/avatar/buy
 router.post("/buy", authenticate, async (req, res, next) => {
   try {
     const { itemId } = req.body || {};
     if (!itemId) return sendError(res, "Thiếu itemId", 400);
-
     await ensureSeeded();
-    const item = await getCollection(COLLECTION).findOne({ id: itemId });
+    const item = await getCollection(ITEMS).findOne({ id: itemId });
     if (!item) return sendError(res, "Item không tồn tại", 404);
-
     const user = await getCollection(USERS).findOne({ id: req.user.sub });
     if (!user) return sendError(res, "Không tìm thấy người dùng", 404);
-
     if (item.price === 0 || item.default) {
       return sendSuccess(res, { owned: true, inventory: user.inventory || [], coins: user.coins || 0 });
     }
     if ((user.inventory || []).includes(itemId)) {
       return sendSuccess(res, { owned: true, inventory: user.inventory, coins: user.coins || 0 });
     }
-
     const coins = user.coins || 0;
-    if (coins < item.price) {
-      return sendError(res, `Không đủ coin. Cần ${item.price}, bạn có ${coins}`, 400);
-    }
-
+    if (coins < item.price) return sendError(res, `Không đủ coin. Cần ${item.price}, bạn có ${coins}`, 400);
     const newCoins = coins - item.price;
     const newInventory = [...(user.inventory || []), itemId];
     await getCollection(USERS).updateOne({ id: req.user.sub }, { $set: { coins: newCoins, inventory: newInventory } });
@@ -154,40 +124,34 @@ router.post("/buy", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// ── POST /api/avatar/save ── (auth)
+// POST /api/avatar/save
 router.post("/save", authenticate, async (req, res, next) => {
   try {
     const { loadout } = req.body || {};
     if (!loadout || typeof loadout !== "object") return sendError(res, "Thiếu loadout", 400);
-
     await ensureSeeded();
     const user = await getCollection(USERS).findOne({ id: req.user.sub });
     if (!user) return sendError(res, "Không tìm thấy người dùng", 404);
     const inventory = user.inventory || [];
-
     for (const [layer, itemId] of Object.entries(loadout)) {
       if (itemId === null) continue;
       if (!LAYER_ORDER.includes(layer)) return sendError(res, `Layer không hợp lệ: ${layer}`, 400);
-      const item = await getCollection(COLLECTION).findOne({ id: itemId });
+      const item = await getCollection(ITEMS).findOne({ id: itemId });
       if (!item) return sendError(res, `Item không tồn tại: ${itemId}`, 400);
       if (item.category !== layer) return sendError(res, `Item ${itemId} không thuộc layer ${layer}`, 400);
       if (item.price > 0 && !item.default && !inventory.includes(itemId)) {
         return sendError(res, `Bạn chưa sở hữu item: ${item.name}`, 400);
       }
     }
-
     await getCollection(USERS).updateOne({ id: req.user.sub }, { $set: { avatarLoadout: loadout } });
     sendSuccess(res, { loadout });
   } catch (e) { next(e); }
 });
 
-// ────────────────────────────────────────────────────────────────
-// ADMIN CRUD
-// ────────────────────────────────────────────────────────────────
+// ─── ADMIN ITEMS CRUD ────────────────────────────────────────────
 
 const uid = () => `av-${Math.random().toString(36).slice(2, 9)}`;
 
-// ── POST /api/avatar/admin/items — create item ──
 router.post("/admin/items", authenticate, async (req, res, next) => {
   try {
     const { category, name, x, y, width, height, price, default: isDefault } = req.body || {};
@@ -196,31 +160,20 @@ router.post("/admin/items", authenticate, async (req, res, next) => {
     if (typeof x !== "number" || typeof y !== "number" || typeof width !== "number" || typeof height !== "number") {
       return sendError(res, "Thiếu x, y, width, height (phải là number)", 400);
     }
-
-    const item = {
-      id: uid(), category, name: String(name).trim(),
-      x, y, width, height,
-      price: Math.max(0, Number(price) || 0),
-      default: !!isDefault,
-    };
-    await getCollection(COLLECTION).insertOne(item);
+    const item = { id: uid(), category, name: String(name).trim(), x, y, width, height, price: Math.max(0, Number(price) || 0), default: !!isDefault };
+    await getCollection(ITEMS).insertOne(item);
     sendCreated(res, item);
   } catch (e) { next(e); }
 });
 
-// ── PUT /api/avatar/admin/items/:id — update item ──
 router.put("/admin/items/:id", authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const existing = await getCollection(COLLECTION).findOne({ id });
+    const existing = await getCollection(ITEMS).findOne({ id });
     if (!existing) return sendError(res, "Item không tồn tại", 404);
-
     const { category, name, x, y, width, height, price, default: isDefault } = req.body || {};
     const updates = {};
-    if (category !== undefined) {
-      if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400);
-      updates.category = category;
-    }
+    if (category !== undefined) { if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400); updates.category = category; }
     if (name !== undefined) updates.name = String(name).trim();
     if (x !== undefined) updates.x = Number(x);
     if (y !== undefined) updates.y = Number(y);
@@ -228,24 +181,20 @@ router.put("/admin/items/:id", authenticate, async (req, res, next) => {
     if (height !== undefined) updates.height = Number(height);
     if (price !== undefined) updates.price = Math.max(0, Number(price) || 0);
     if (isDefault !== undefined) updates.default = !!isDefault;
-
     if (Object.keys(updates).length === 0) return sendError(res, "Không có gì để cập nhật", 400);
-
-    await getCollection(COLLECTION).updateOne({ id }, { $set: updates });
-    const updated = await getCollection(COLLECTION).findOne({ id });
+    await getCollection(ITEMS).updateOne({ id }, { $set: updates });
+    const updated = await getCollection(ITEMS).findOne({ id });
     sendSuccess(res, updated);
   } catch (e) { next(e); }
 });
 
-// ── DELETE /api/avatar/admin/items/:id — delete item ──
 router.delete("/admin/items/:id", authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const existing = await getCollection(COLLECTION).findOne({ id });
+    const existing = await getCollection(ITEMS).findOne({ id });
     if (!existing) return sendError(res, "Item không tồn tại", 404);
     if (existing.default) return sendError(res, "Không thể xóa item mặc định", 400);
-
-    await getCollection(COLLECTION).deleteOne({ id });
+    await getCollection(ITEMS).deleteOne({ id });
     sendSuccess(res, { deleted: id });
   } catch (e) { next(e); }
 });

@@ -63,7 +63,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
     fetch(`${API_BASE}/avatar/items`)
       .then(r => r.json())
       .then(json => {
-        if (json.status === 'success') {
+        if (json.status) {
           setItems(json.data.items);
           setCategories(json.data.categories);
         }
@@ -95,7 +95,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
         body: JSON.stringify({ itemId: item.id }),
       });
       const json = await res.json();
-      if (json.status === 'success') {
+      if (json.status) {
         setLocalInventory(json.data.inventory);
         setLocalCoins(json.data.coins);
         setDraft(prev => ({ ...prev, [item.category]: item.id }));
