@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { ManagementHeader, ConfirmModal } from '../../components/ui.jsx';
-import CropEditor from '../../components/avatar/CropEditor.jsx';
 import AvatarItemExtractor from '../../components/avatar/AvatarItemExtractor.jsx';
-import { Plus, Pencil, Trash2, X, Save, Image, Upload, List } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Save, Upload, List, ImageIcon } from 'lucide-react';
 
 const CATEGORIES = [
   { id: "body", label: "Thân" }, { id: "skin", label: "Da" }, { id: "face", label: "Mặt" },
@@ -12,25 +11,19 @@ const CATEGORIES = [
   { id: "accessory", label: "Phụ kiện" },
 ];
 
-const EMPTY_FORM = { category: "hair", name: "", x: 0, y: 0, width: 256, height: 256, price: 0, default: false };
-
-const SPRITE_SHEET = `${import.meta.env.BASE_URL}avatar/avatar-sprite.png`;
-const SPRITE_W = 1536;
-const SPRITE_H = 1024;
+const EMPTY_FORM = { category: "hair", name: "", image: "", price: 0, default: false };
 
 function ItemThumb({ item }) {
-  if (!item || !item.width) return null;
-  const s = 48 / item.width;
-  const bgW = SPRITE_W * s;
-  const bgH = SPRITE_H * s;
+  if (!item?.image) {
+    return (
+      <div className="w-12 h-12 rounded-lg border border-ink/10 bg-ink/5 flex items-center justify-center shrink-0">
+        <ImageIcon className="w-5 h-5 text-ink/20" />
+      </div>
+    );
+  }
   return (
-    <div className="w-12 h-12 rounded-lg overflow-hidden border border-ink/10 shrink-0"
-      style={{
-        backgroundImage: `url(${SPRITE_SHEET})`,
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: `${-(item.x * s)}px ${-(item.y * s)}px`,
-        backgroundSize: `${bgW}px ${bgH}px`,
-      }} />
+    <img src={item.image} alt={item.name} draggable={false}
+      className="w-12 h-12 rounded-lg object-contain border border-ink/10 bg-ink/5 shrink-0" />
   );
 }
 
@@ -44,6 +37,8 @@ export default function AvatarItemManagement({ showToast }) {
   const [confirm, setConfirm] = useState({ open: false, item: null });
   const [filter, setFilter] = useState("all");
   const [tab, setTab] = useState("list");
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const fileRef = useRef(null);
 
   const load = useCallback(() => {
     setItems(null); setError(null);
@@ -57,12 +52,31 @@ export default function AvatarItemManagement({ showToast }) {
 
   const openCreate = () => { setForm({ ...EMPTY_FORM }); setEditingId(null); setError(null); setModalOpen(true); };
   const openEdit = (item) => {
-    setForm({ category: item.category, name: item.name, x: item.x, y: item.y, width: item.width, height: item.height, price: item.price, default: item.default });
+    setForm({ category: item.category, name: item.name, image: item.image || "", price: item.price, default: item.default });
     setEditingId(item.id); setError(null); setModalOpen(true);
   };
   const closeModal = () => { setModalOpen(false); setError(null); };
 
   const onChange = (name, val) => { setForm(f => ({ ...f, [name]: val })); setError(null); };
+
+  const uploadImage = async (file) => {
+    setUploadingImg(true);
+    try {
+      const token = JSON.parse(localStorage.getItem("edu_games_auth") || "{}")?.token;
+      if (!token) throw new Error("Chưa đăng nhập");
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${API_BASE}/avatar/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const json = await res.json();
+      if (!json.status) throw new Error(json.msg || "Lỗi upload");
+      onChange("image", json.data.url);
+    } catch (err) { showToast(err.message, "error"); }
+    setUploadingImg(false);
+  };
 
   const submit = async () => {
     if (!form.name.trim()) { setError("Vui lòng nhập tên item"); return; }
@@ -127,7 +141,6 @@ export default function AvatarItemManagement({ showToast }) {
     <div>
       <ManagementHeader subtitle="Quản lý vật phẩm Avatar" title="Avatar Items" />
 
-      {/* Tabs */}
       <div className="flex gap-1 mb-4 bg-ink/5 rounded-xl p-1">
         <button onClick={() => setTab("list")}
           className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition ${tab === "list" ? "bg-white text-ink shadow-sm" : "text-ink/40 hover:text-ink/60"}`}>
@@ -183,7 +196,6 @@ export default function AvatarItemManagement({ showToast }) {
                 <div className="flex items-center gap-3 mt-0.5 text-[11px] font-mono text-ink/40">
                   <span>{item.id}</span>
                   <span>{item.category}</span>
-                  <span>{item.x},{item.y} {item.width}x{item.height}</span>
                   <span>💰 {item.price}</span>
                 </div>
               </div>
@@ -202,7 +214,6 @@ export default function AvatarItemManagement({ showToast }) {
         </div>
       )}
 
-      {/* Floating create button */}
       <button onClick={openCreate}
         className="fixed bottom-24 sm:bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-gold text-white shadow-lg hover:shadow-xl hover:bg-gold/80 transition flex items-center justify-center">
         <Plus className="w-6 h-6" />
@@ -216,32 +227,56 @@ export default function AvatarItemManagement({ showToast }) {
         </div>
       )}
 
-      {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-ink/10 shrink-0">
               <h3 className="font-display text-lg text-ink">{editingId ? "Sửa Item" : "Thêm Item mới"}</h3>
               <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><X className="w-5 h-5 text-ink/50" /></button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-              <CropEditor value={form} onChange={setForm} />
+              {/* Image upload */}
+              <div>
+                <label className="text-xs font-mono uppercase text-ink/50">Ảnh item</label>
+                <div className="mt-2 flex items-center gap-3">
+                  {form.image ? (
+                    <img src={form.image} alt="Preview" className="w-20 h-20 rounded-xl object-contain border border-ink/10 bg-ink/5" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-xl border-2 border-dashed border-ink/20 flex items-center justify-center bg-ink/5">
+                      <ImageIcon className="w-6 h-6 text-ink/20" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input ref={fileRef} type="file" accept="image/*" className="hidden"
+                      onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])} />
+                    <button onClick={() => fileRef.current?.click()} disabled={uploadingImg}
+                      className="px-3 py-2 rounded-lg bg-ink/5 text-ink/60 text-xs font-semibold hover:bg-ink/10 transition flex items-center gap-1.5 disabled:opacity-50">
+                      <Upload className="w-3.5 h-3.5" />
+                      {uploadingImg ? "Đang upload..." : "Chọn ảnh"}
+                    </button>
+                    {form.image && (
+                      <button onClick={() => onChange("image", "")} className="mt-1.5 text-[11px] text-red-400 hover:text-red-600">
+                        Xóa ảnh
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">Category *</label>
-                  <select value={form.category} onChange={e => onChange("category", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-gold/30">
-                    {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">Tên item *</label>
-                  <input value={form.name} onChange={e => onChange("name", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-gold/30"
-                    placeholder="VD: Tóc xoăn" />
-                </div>
+              <div>
+                <label className="text-xs font-mono uppercase text-ink/50">Category *</label>
+                <select value={form.category} onChange={e => onChange("category", e.target.value)}
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-gold/30">
+                  {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-mono uppercase text-ink/50">Tên item *</label>
+                <input value={form.name} onChange={e => onChange("name", e.target.value)}
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-gold/30"
+                  placeholder="VD: Tóc xoăn" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -254,7 +289,7 @@ export default function AvatarItemManagement({ showToast }) {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.default} onChange={e => onChange("default", e.target.checked)}
                       className="w-4 h-4 rounded border-ink/20 text-gold focus:ring-gold/30" />
-                    <span className="text-sm font-body text-ink">Item mặc định (miễn phí)</span>
+                    <span className="text-sm font-body text-ink">Mặc định (miễn phí)</span>
                   </label>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { Upload, Trash2, Plus, Loader2, Eye, Save } from 'lucide-react';
+import { API_BASE } from '../../services/api.js';
 
 const CATEGORIES = [
   { id: "body", label: "Thân" }, { id: "skin", label: "Da" }, { id: "face", label: "Mặt" },
@@ -8,128 +9,107 @@ const CATEGORIES = [
   { id: "accessory", label: "Phụ kiện" },
 ];
 
-// ─── DETECTION ENGINE v2 — White-background Sprite Sheet ─────────
-//
-// Thuật toán:
-// 1. Phân tích row/column projection — tỉ lệ pixel trắng trên mỗi hàng/cột
-// 2. Tìm dải "gap" (hàng/cột toàn trắng) và dải "nội dung" xen kẽ
-// 3. Giao của dải nội dung hàng × cột = bounding box của item
-// 4. Lọc ô quá nhỏ hoặc quá trắng
-// 5. Merge region gần nhau
-// ─────────────────────────────────────────────────────────────────
+// ─── DETECTION ENGINE ────────────────────────────────────────────
 
-function isWhitePx(r, g, b, a, thr) {
-  if (a < 30) return true; // transparent cũng tính là trắng
-  return r >= thr && g >= thr && b >= thr;
-}
-
-function detectItemsWhiteBg(imageData, W, H, opts = {}) {
-  const {
-    whiteThreshold = 245, // pixel >= ngưỡng này = trắng
-    gapRatio = 0.97,      // hàng/cột có >= ratio% trắng = khoảng trắng
-    minItemSize = 30,     // bỏ item nhỏ hơn ngưỡng này (px)
-    mergeGap = 8,         // merge 2 region cách nhau <= px này
-  } = opts;
-
+function detectItems(imageData, imgW, imgH, opts = {}) {
+  const { alphaThreshold = 20, minPartSize = 15, mergeGap = 3 } = opts;
   const data = imageData.data;
 
-  // Bước 1: mask pixel trắng
-  const isWhite = new Uint8Array(W * H);
-  for (let i = 0; i < W * H; i++) {
-    const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2], a = data[i * 4 + 3];
-    isWhite[i] = isWhitePx(r, g, b, a, whiteThreshold) ? 1 : 0;
+  const fg = new Uint8Array(imgW * imgH);
+  for (let i = 0; i < imgW * imgH; i++) {
+    fg[i] = data[i * 4 + 3] >= alphaThreshold ? 1 : 0;
   }
 
-  // Bước 2: Row projection
-  const rowWhite = new Float32Array(H);
-  for (let y = 0; y < H; y++) {
-    let cnt = 0;
-    for (let x = 0; x < W; x++) cnt += isWhite[y * W + x];
-    rowWhite[y] = cnt / W;
-  }
+  const labels = new Int32Array(imgW * imgH);
+  let nextLabel = 1;
+  const boxes = new Map();
+  const stack = [];
 
-  // Bước 3: Col projection
-  const colWhite = new Float32Array(W);
-  for (let x = 0; x < W; x++) {
-    let cnt = 0;
-    for (let y = 0; y < H; y++) cnt += isWhite[y * W + x];
-    colWhite[x] = cnt / H;
-  }
+  for (let y = 0; y < imgH; y++) {
+    for (let x = 0; x < imgW; x++) {
+      const pi = y * imgW + x;
+      if (!fg[pi] || labels[pi] !== 0) continue;
 
-  // Bước 4: Tìm dải nội dung (không phải gap)
-  function findBands(proj, size) {
-    const gap = new Uint8Array(size);
-    for (let i = 0; i < size; i++) gap[i] = proj[i] >= gapRatio ? 1 : 0;
-    const bands = [];
-    let inC = false, start = 0;
-    for (let i = 0; i < size; i++) {
-      if (!gap[i] && !inC) { inC = true; start = i; }
-      if ((gap[i] || i === size - 1) && inC) {
-        inC = false;
-        const end = gap[i] ? i - 1 : i;
-        if (end - start + 1 >= minItemSize * 0.3) bands.push({ start, end });
+      const label = nextLabel++;
+      let minX = x, maxX = x, minY = y, maxY = y;
+      stack.length = 0;
+      stack.push(pi);
+      labels[pi] = label;
+
+      while (stack.length > 0) {
+        const ci = stack.pop();
+        const cx = ci % imgW;
+        const cy = (ci / imgW) | 0;
+        if (cx < minX) minX = cx;
+        if (cx > maxX) maxX = cx;
+        if (cy < minY) minY = cy;
+        if (cy > maxY) maxY = cy;
+
+        if (cy > 0) { const ni = ci - imgW; if (fg[ni] && !labels[ni]) { labels[ni] = label; stack.push(ni); } }
+        if (cy < imgH - 1) { const ni = ci + imgW; if (fg[ni] && !labels[ni]) { labels[ni] = label; stack.push(ni); } }
+        if (cx > 0) { const ni = ci - 1; if (fg[ni] && !labels[ni]) { labels[ni] = label; stack.push(ni); } }
+        if (cx < imgW - 1) { const ni = ci + 1; if (fg[ni] && !labels[ni]) { labels[ni] = label; stack.push(ni); } }
       }
-    }
-    return bands;
-  }
 
-  const rowBands = findBands(rowWhite, H);
-  const colBands = findBands(colWhite, W);
-
-  // Bước 5: Tạo regions từ giao của row band × col band
-  let regions = [];
-  for (const rb of rowBands) {
-    for (const cb of colBands) {
-      const x = cb.start, y = rb.start;
-      const w = cb.end - cb.start + 1;
-      const h = rb.end - rb.start + 1;
-      if (w < minItemSize || h < minItemSize) continue;
-
-      // Kiểm tra vùng có nội dung thực
-      let cntPx = 0;
-      const step = Math.max(1, Math.floor(Math.min(w, h) / 12));
-      let total = 0;
-      for (let dy = 0; dy < h; dy += step) {
-        for (let dx = 0; dx < w; dx += step) {
-          if (!isWhite[(y + dy) * W + (x + dx)]) cntPx++;
-          total++;
-        }
-      }
-      if (total === 0 || cntPx / total < 0.02) continue;
-      regions.push({ x, y, width: w, height: h });
+      boxes.set(label, { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 });
     }
   }
 
-  // Bước 6: Merge region gần nhau
-  function near(a, b, gap) {
-    const ox = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
-    const oy = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
-    return ox > -gap && oy > -gap;
-  }
-  let merged = true;
-  while (merged) {
-    merged = false;
-    outer: for (let i = 0; i < regions.length; i++) {
-      for (let j = i + 1; j < regions.length; j++) {
-        if (near(regions[i], regions[j], mergeGap)) {
+  let regions = [...boxes.values()].filter(r => r.width >= minPartSize && r.height >= minPartSize);
+
+  if (mergeGap > 0) {
+    let merged = true;
+    while (merged) {
+      merged = false;
+      for (let i = 0; i < regions.length; i++) {
+        for (let j = i + 1; j < regions.length; j++) {
           const a = regions[i], b = regions[j];
-          const nx = Math.min(a.x, b.x), ny = Math.min(a.y, b.y);
-          regions.splice(i, 1, { x: nx, y: ny, width: Math.max(a.x + a.width, b.x + b.width) - nx, height: Math.max(a.y + a.height, b.y + b.height) - ny });
-          regions.splice(j, 1);
-          merged = true; break outer;
+          const nearX = a.x <= b.x + b.width + mergeGap && b.x <= a.x + a.width + mergeGap;
+          const nearY = a.y <= b.y + b.height + mergeGap && b.y <= a.y + a.height + mergeGap;
+          if (nearX && nearY) {
+            const nx = Math.min(a.x, b.x);
+            const ny = Math.min(a.y, b.y);
+            a.x = nx; a.y = ny;
+            a.width = Math.max(a.x + a.width, b.x + b.width) - nx;
+            a.height = Math.max(a.y + a.height, b.y + b.height) - ny;
+            regions.splice(j, 1);
+            merged = true;
+            break;
+          }
         }
+        if (merged) break;
       }
     }
   }
 
-  // Bước 7: Sort theo hàng rồi cột
-  regions.sort((a, b) => {
-    const rowTol = 20;
-    const dy = a.y - b.y;
-    return Math.abs(dy) > rowTol ? dy : a.x - b.x;
-  });
-
+  regions.sort((a, b) => a.y - b.y || a.x - b.x);
   return regions;
+}
+
+// ─── CROP + UPLOAD ───────────────────────────────────────────────
+
+function cropRegionToBlob(canvas, img, region) {
+  return new Promise((resolve) => {
+    const cropCanvas = document.createElement('canvas');
+    cropCanvas.width = region.width;
+    cropCanvas.height = region.height;
+    const ctx = cropCanvas.getContext('2d');
+    ctx.drawImage(img, region.x, region.y, region.width, region.height, 0, 0, region.width, region.height);
+    cropCanvas.toBlob(resolve, 'image/png');
+  });
+}
+
+async function uploadFile(blob, filename, token) {
+  const formData = new FormData();
+  formData.append('file', blob, filename);
+  const res = await fetch(`${API_BASE}/avatar/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const json = await res.json();
+  if (!json.status) throw new Error(json.msg || 'Lỗi upload');
+  return json.data.url;
 }
 
 // ─── REGION PREVIEW ──────────────────────────────────────────────
@@ -138,15 +118,11 @@ function RegionPreview({ imgSrc, region, imgW, imgH }) {
   const { x, y, width, height } = region;
   const SIZE = 112;
   const scale = SIZE / Math.max(width, height);
-  const scaledW = Math.round(width * scale);
-  const scaledH = Math.round(height * scale);
   return (
-    <div className="rounded-lg overflow-hidden border border-ink/10 bg-[#f0f0f0] shrink-0 flex items-center justify-center"
+    <div className="relative rounded-lg overflow-hidden border border-ink/10 bg-ink/5 shrink-0"
       style={{ width: SIZE, height: SIZE }}>
-      <div style={{ position: 'relative', width: scaledW, height: scaledH, overflow: 'hidden', flexShrink: 0 }}>
-        <img src={imgSrc} draggable={false} className="absolute pointer-events-none select-none"
-          style={{ width: imgW * scale, height: imgH * scale, left: -(x * scale), top: -(y * scale), maxWidth: 'none' }} />
-      </div>
+      <img src={imgSrc} draggable={false} className="absolute pointer-events-none"
+        style={{ width: imgW * scale, height: imgH * scale, left: -(x * scale), top: -(y * scale) }} />
     </div>
   );
 }
@@ -156,51 +132,53 @@ function RegionPreview({ imgSrc, region, imgW, imgH }) {
 export default function AvatarItemExtractor({ onBatchSave, saving }) {
   const [imgSrc, setImgSrc] = useState(null);
   const [imgObj, setImgObj] = useState(null);
+  const [imgCanvas, setImgCanvas] = useState(null);
   const [items, setItems] = useState([]);
   const [detecting, setDetecting] = useState(false);
-  const [whiteThreshold, setWhiteThreshold] = useState(245);
-  const [gapRatio, setGapRatio] = useState(97);   // 0-100, chia 100 khi dùng
-  const [minItemSize, setMinItemSize] = useState(30);
-  const [mergeGap, setMergeGap] = useState(8);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState('');
+  const [alphaThreshold, setAlphaThreshold] = useState(20);
+  const [minPartSize, setMinPartSize] = useState(15);
+  const [mergeGap, setMergeGap] = useState(3);
   const fileRef = useRef(null);
-  const imgUrlRef = useRef(null); // giữ url blob để redetect
 
-  const runDetection = useCallback((imgUrl, wThr, gRatio, minSize, mGap) => {
+  const runDetection = useCallback((file, alpha, minSize, gap) => {
     setDetecting(true);
     setItems([]);
+
     const img = new Image();
+    const url = URL.createObjectURL(file);
     img.onload = () => {
-      const W = img.naturalWidth, H = img.naturalHeight;
       const canvas = document.createElement('canvas');
-      canvas.width = W; canvas.height = H;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, W, H);
-      const regions = detectItemsWhiteBg(imageData, W, H, {
-        whiteThreshold: wThr,
-        gapRatio: gRatio / 100,
-        minItemSize: minSize,
-        mergeGap: mGap,
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      const regions = detectItems(imageData, canvas.width, canvas.height, {
+        alphaThreshold: alpha, minPartSize: minSize, mergeGap: gap,
       });
-      setImgObj({ naturalWidth: W, naturalHeight: H });
+
+      setImgCanvas({ canvas, img, width: canvas.width, height: canvas.height });
       setItems(regions.map((r, i) => ({
         name: `Item ${String(i + 1).padStart(2, '0')}`,
         category: 'hair', price: 0, default: false,
-        x: r.x, y: r.y, width: r.width, height: r.height,
+        x: r.x, y: r.y, width: r.width, height: r.height, image: '',
       })));
       setDetecting(false);
     };
-    img.src = imgUrl;
+    img.src = url;
+    setImgSrc(url);
+    const preview = new Image();
+    preview.onload = () => setImgObj(preview);
+    preview.src = url;
   }, []);
 
   const onFile = useCallback((file) => {
     if (!file || !file.type.startsWith('image/')) return;
-    const url = URL.createObjectURL(file);
-    imgUrlRef.current = url;
-    setImgSrc(url);
-    setImgObj(null);
-    runDetection(url, whiteThreshold, gapRatio, minItemSize, mergeGap);
-  }, [whiteThreshold, gapRatio, minItemSize, mergeGap, runDetection]);
+    runDetection(file, alphaThreshold, minPartSize, mergeGap);
+  }, [alphaThreshold, minPartSize, mergeGap, runDetection]);
 
   const onDrop = useCallback((e) => {
     e.preventDefault();
@@ -209,9 +187,12 @@ export default function AvatarItemExtractor({ onBatchSave, saving }) {
   }, [onFile]);
 
   const redetect = useCallback(() => {
-    if (!imgUrlRef.current) return;
-    runDetection(imgUrlRef.current, whiteThreshold, gapRatio, minItemSize, mergeGap);
-  }, [whiteThreshold, gapRatio, minItemSize, mergeGap, runDetection]);
+    if (!imgSrc) return;
+    fetch(imgSrc).then(r => r.blob()).then(blob => {
+      const file = new File([blob], 'detected.png', { type: 'image/png' });
+      runDetection(file, alphaThreshold, minPartSize, mergeGap);
+    });
+  }, [imgSrc, alphaThreshold, minPartSize, mergeGap, runDetection]);
 
   const updateItem = (index, field, value) => {
     setItems(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
@@ -223,13 +204,49 @@ export default function AvatarItemExtractor({ onBatchSave, saving }) {
     setItems(prev => [...prev, {
       name: `Item ${String(prev.length + 1).padStart(2, '0')}`,
       category: 'hair', price: 0, default: false,
-      x: 0, y: 0, width: 100, height: 100,
+      x: 0, y: 0, width: 100, height: 100, image: '',
     }]);
+  };
+
+  const handleSaveAll = async () => {
+    if (!items.length || !imgCanvas) return;
+    setUploading(true);
+    setProgress(`0/${items.length}`);
+
+    try {
+      const token = JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token;
+      if (!token) throw new Error('Chưa đăng nhập');
+
+      const savedItems = [];
+      for (let i = 0; i < items.length; i++) {
+        setProgress(`${i + 1}/${items.length}`);
+        const it = items[i];
+
+        let imageUrl = it.image;
+        if (!imageUrl) {
+          const blob = await cropRegionToBlob(imgCanvas.canvas, imgCanvas.img, it);
+          imageUrl = await uploadFile(blob, `${it.name.replace(/\s+/g, '_')}.png`, token);
+        }
+
+        savedItems.push({
+          category: it.category,
+          name: it.name,
+          image: imageUrl,
+          price: it.price,
+          default: it.default,
+        });
+      }
+
+      await onBatchSave(savedItems);
+    } catch (err) {
+      alert(err.message || 'Lỗi lưu');
+    }
+    setUploading(false);
+    setProgress('');
   };
 
   return (
     <div className="space-y-4">
-      {/* Upload area */}
       {!imgSrc && (
         <div
           className="border-2 border-dashed border-ink/20 rounded-2xl p-10 text-center cursor-pointer hover:border-gold/50 hover:bg-gold/5 transition"
@@ -240,12 +257,11 @@ export default function AvatarItemExtractor({ onBatchSave, saving }) {
           <input ref={fileRef} type="file" accept="image/*" className="hidden"
             onChange={e => e.target.files?.[0] && onFile(e.target.files[0])} />
           <Upload className="w-10 h-10 mx-auto text-ink/30 mb-3" />
-          <p className="text-sm font-body text-ink/60">Kéo thả ảnh sprite vào đây hoặc bấm để chọn</p>
-          <p className="text-xs text-ink/40 mt-1">Hỗ trợ nền trắng — tự động nhận diện từng item riêng biệt</p>
+          <p className="text-sm font-body text-ink/60">Kéo thả ảnh tổng vào đây hoặc bấm để chọn</p>
+          <p className="text-xs text-ink/40 mt-1">Tự động nhận diện từng phần tử riêng biệt</p>
         </div>
       )}
 
-      {/* Image loaded */}
       {imgSrc && (
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -255,59 +271,49 @@ export default function AvatarItemExtractor({ onBatchSave, saving }) {
               <span className="text-xs text-ink/30">•</span>
               <span className="text-xs font-mono text-gold font-semibold">{items.length} item</span>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => { setImgSrc(null); setImgObj(null); setItems([]); imgUrlRef.current = null; }}
-                className="px-3 py-1.5 rounded-lg bg-ink/5 text-ink/50 text-xs font-semibold hover:bg-ink/10 transition">
-                Chọn lại
-              </button>
-            </div>
+            <button onClick={() => { setImgSrc(null); setImgObj(null); setImgCanvas(null); setItems([]); }}
+              className="px-3 py-1.5 rounded-lg bg-ink/5 text-ink/50 text-xs font-semibold hover:bg-ink/10 transition">
+              Chọn lại
+            </button>
           </div>
 
-          {/* Detection settings */}
-          <details className="bg-ink/5 rounded-xl p-3" open>
+          <details className="bg-ink/5 rounded-xl p-3">
             <summary className="text-xs font-mono text-ink/50 cursor-pointer select-none flex items-center gap-1">
-              <Eye className="w-3 h-3" /> Cài đặt nhận diện (White-BG Projection)
+              <Eye className="w-3 h-3" /> Cài đặt nhận diện
             </summary>
-            <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="mt-3 grid grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] font-mono text-ink/50 block mb-1">Ngưỡng trắng ({whiteThreshold})</label>
-                <input type="range" min={200} max={255} value={whiteThreshold}
-                  onChange={e => setWhiteThreshold(Number(e.target.value))} className="w-full" />
-                <p className="text-[9px] text-ink/30 mt-0.5">Pixel ≥ ngưỡng = nền trắng</p>
+                <label className="text-[10px] font-mono text-ink/40">Alpha threshold</label>
+                <input type="range" min={1} max={100} value={alphaThreshold}
+                  onChange={e => setAlphaThreshold(Number(e.target.value))} className="w-full" />
+                <span className="text-[10px] font-mono text-ink/40">{alphaThreshold}</span>
               </div>
               <div>
-                <label className="text-[10px] font-mono text-ink/50 block mb-1">Gap ratio ({gapRatio}%)</label>
-                <input type="range" min={80} max={100} value={gapRatio}
-                  onChange={e => setGapRatio(Number(e.target.value))} className="w-full" />
-                <p className="text-[9px] text-ink/30 mt-0.5">Hàng/cột ≥ ratio% trắng = khoảng trắng</p>
+                <label className="text-[10px] font-mono text-ink/40">Min size (px)</label>
+                <input type="range" min={5} max={100} value={minPartSize}
+                  onChange={e => setMinPartSize(Number(e.target.value))} className="w-full" />
+                <span className="text-[10px] font-mono text-ink/40">{minPartSize}</span>
               </div>
               <div>
-                <label className="text-[10px] font-mono text-ink/50 block mb-1">Min size ({minItemSize}px)</label>
-                <input type="range" min={10} max={150} value={minItemSize}
-                  onChange={e => setMinItemSize(Number(e.target.value))} className="w-full" />
-                <p className="text-[9px] text-ink/30 mt-0.5">Bỏ item nhỏ hơn</p>
-              </div>
-              <div>
-                <label className="text-[10px] font-mono text-ink/50 block mb-1">Merge gap ({mergeGap}px)</label>
-                <input type="range" min={0} max={30} value={mergeGap}
+                <label className="text-[10px] font-mono text-ink/40">Merge gap (px)</label>
+                <input type="range" min={0} max={20} value={mergeGap}
                   onChange={e => setMergeGap(Number(e.target.value))} className="w-full" />
-                <p className="text-[9px] text-ink/30 mt-0.5">Gộp region gần nhau</p>
+                <span className="text-[10px] font-mono text-ink/40">{mergeGap}</span>
               </div>
             </div>
-            <button onClick={redetect} className="mt-3 px-4 py-1.5 rounded-lg bg-gold text-white text-xs font-semibold hover:bg-gold/80 transition">
+            <button onClick={redetect} className="mt-2 px-3 py-1 rounded-lg bg-gold text-white text-xs font-semibold hover:bg-gold/80 transition">
               Nhận diện lại
             </button>
           </details>
 
-          {detecting && (
+          {(detecting || uploading) && (
             <div className="flex items-center justify-center py-8 text-ink/40 text-sm gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Đang phân tích...
+              {uploading ? `Đang upload ${progress}...` : 'Đang phân tích...'}
             </div>
           )}
 
-          {/* Item list */}
-          {!detecting && items.length > 0 && (
+          {!detecting && !uploading && items.length > 0 && (
             <div className="space-y-2">
               {items.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-white border border-ink/8">
@@ -360,17 +366,16 @@ export default function AvatarItemExtractor({ onBatchSave, saving }) {
 
           {!detecting && items.length === 0 && (
             <div className="text-center py-8 text-ink/40 text-sm">
-              Không phát hiện item nào. Thử điều chỉnh alpha threshold hoặc chọn ảnh khác.
+              Không phát hiện item nào. Thử điều chỉnh settings hoặc chọn ảnh khác.
             </div>
           )}
 
-          {/* Save all button */}
           {!detecting && items.length > 0 && (
             <div className="flex justify-end pt-2 border-t border-ink/10">
-              <button onClick={() => onBatchSave(items)} disabled={saving}
+              <button onClick={handleSaveAll} disabled={saving || uploading}
                 className="px-5 py-2.5 bg-gold text-white rounded-xl text-sm font-semibold hover:bg-gold/80 transition disabled:opacity-50 flex items-center gap-2">
                 <Save className="w-4 h-4" />
-                {saving ? "Đang lưu..." : `Lưu tất cả (${items.length} item)`}
+                {uploading ? `Đang upload ${progress}` : saving ? 'Đang lưu...' : `Lưu tất cả (${items.length} item)`}
               </button>
             </div>
           )}

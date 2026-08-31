@@ -1,20 +1,10 @@
 import { useState, useEffect } from 'react';
 import AvatarPreview from './AvatarPreview.jsx';
 import { API_BASE } from '../../services/api.js';
-import { X, Check, ShoppingBag } from 'lucide-react';
-
-const SPRITE_SHEET_PATH = `${import.meta.env.BASE_URL}avatar/avatar-sprite.png`;
-const SPRITE_W = 1536;
-const SPRITE_H = 1024;
+import { X, Check, ShoppingBag, ImageIcon } from 'lucide-react';
 
 function ItemThumbnail({ item, selected, onClick, owned }) {
-  if (!item || !item.width) return null;
-  const scaleX = 64 / item.width;
-  const scaleY = 64 / item.height;
-  const bgW = SPRITE_W * scaleX;
-  const bgH = SPRITE_H * scaleY;
-  const bgX = -(item.x * scaleX);
-  const bgY = -(item.y * scaleY);
+  if (!item) return null;
 
   return (
     <button
@@ -23,15 +13,13 @@ function ItemThumbnail({ item, selected, onClick, owned }) {
         selected ? 'border-gold shadow-md' : 'border-ink/10 hover:border-ink/20'
       }`}
     >
-      <div
-        className="w-full h-full"
-        style={{
-          backgroundImage: `url(${SPRITE_SHEET_PATH})`,
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: `${bgX}px ${bgY}px`,
-          backgroundSize: `${bgW}px ${bgH}px`,
-        }}
-      />
+      {item.image ? (
+        <img src={item.image} alt={item.name} draggable={false} className="w-full h-full object-contain bg-ink/5" />
+      ) : (
+        <div className="w-full h-full bg-ink/5 flex items-center justify-center">
+          <ImageIcon className="w-5 h-5 text-ink/20" />
+        </div>
+      )}
       {owned ? (
         <div className="absolute bottom-0 inset-x-0 bg-green-500/80 text-white text-[8px] font-mono text-center py-0.5">
           Trang bị
