@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { gameService, coinService, notificationService } from '../services/api.js'
+import { gameService, coinService, notificationService, API_BASE } from '../services/api.js'
 import { getLevelProgress, getLevelEmoji } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
 import { PrimaryButton, Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
+import { AvatarPreviewSmall } from '../components/avatar/AvatarPreview.jsx'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import DailyTasksCard from '../components/DailyTasksCard.jsx'
 import { requestNotificationPermission, onForegroundMessage } from '../firebase/messaging.js'
@@ -120,6 +121,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   // THÊM MỚI: state cho search (chỉ dùng cho mobile)
   const [searchQuery, setSearchQuery] = useState('');
+  const [avatarLoadout, setAvatarLoadout] = useState({});
+  const [avatarItems, setAvatarItems] = useState([]);
 
   const loadGames = async () => {
     setGames(null); setError(null);
@@ -143,6 +146,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     loadNotifications();
     if (userAuth?.user) {
       coinService.get().then(c => setUserCoins(c?.coins || 0)).catch(() => { });
+
+      // Load avatar
+      Promise.all([
+        fetch(`${API_BASE}/avatar/items`).then(r => r.json()),
+        fetch(`${API_BASE}/avatar/loadout`, { headers: { Authorization: `Bearer ${userAuth.token}` } }).then(r => r.json()),
+      ]).then(([itemsRes, loadoutRes]) => {
+        if (itemsRes.status) setAvatarItems(itemsRes.data.items || []);
+        if (loadoutRes.status) setAvatarLoadout(loadoutRes.data.loadout || {});
+      }).catch(() => {});
 
       // Register FCM token for push notifications
       requestNotificationPermission().then((token) => {
@@ -287,7 +299,13 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </>
             )}
             {userAuth?.user ? (
-              <a onClick={() => navigate("/profile")} href="#/profile" className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-lg shadow-sm hover:shadow-md transition"><User className="w-5 h-5" /></a>
+              <a onClick={() => navigate("/profile")} href="#/profile" className="w-10 h-10 rounded-full overflow-hidden shadow-sm hover:shadow-md transition ring-2 ring-white">
+                {avatarItems.length > 0 ? (
+                  <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={40} />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-lg"><User className="w-5 h-5" /></div>
+                )}
+              </a>
             ) : (
               <div className="flex items-center gap-2">
                 <button onClick={onUserRegister} className="text-sm font-semibold text-purple-600 px-4 py-2 rounded-full hover:bg-purple-50 transition">
@@ -311,7 +329,13 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             <>
               <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-5">
                 <div className="flex flex-col items-center text-center mb-4">
-                  <span className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-2xl shrink-0 shadow-sm mb-2"><User className="w-7 h-7" /></span>
+                  <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 shadow-sm mb-2 ring-2 ring-purple-100">
+                    {avatarItems.length > 0 ? (
+                      <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={64} />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-2xl"><User className="w-7 h-7" /></div>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-400">Xin chào,</p>
                   <p className="font-display text-base text-gray-800 truncate max-w-full">{userAuth.user.name}</p>
                 </div>
@@ -429,8 +453,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   </>
                 )}
                 {userAuth?.user ? (
-                  <a href="#/profile" onClick={() => navigate("/profile")} className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-sm">
-                    <User className="w-4 h-4" />
+                  <a href="#/profile" onClick={() => navigate("/profile")} className="w-8 h-8 rounded-full overflow-hidden">
+                    {avatarItems.length > 0 ? (
+                      <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={32} />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-sm"><User className="w-4 h-4" /></div>
+                    )}
                   </a>
                 ) : (
                   <button onClick={onUserLogin} className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">

@@ -38,11 +38,25 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       .then(([userData, itemsRes, loadoutRes, invRes]) => {
         setProfile(userData);
         setError(null);
+        let items = [];
         if (itemsRes.status) {
-          setAvatarItems(itemsRes.data.items);
+          items = itemsRes.data.items || [];
+          setAvatarItems(items);
           if (itemsRes.data.template) setTemplate(itemsRes.data.template);
         }
-        if (loadoutRes.status) setAvatarLoadout(loadoutRes.data.loadout);
+        if (loadoutRes.status) {
+          const raw = loadoutRes.data.loadout || {};
+          const VALID_LAYERS = ['skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
+          const itemIds = new Set(items.map(i => i.id));
+          const defaults = { skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
+          const cleaned = {};
+          for (const k of VALID_LAYERS) {
+            const v = raw[k];
+            if (v && itemIds.has(v)) cleaned[k] = v;
+            else cleaned[k] = defaults[k] ?? null;
+          }
+          setAvatarLoadout(cleaned);
+        }
         if (invRes.status) setInventory(invRes.data.inventory);
       })
       .catch((e) => setError(e.message || "Lỗi tải profile"))
@@ -194,7 +208,17 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           coins={user.coins || 0}
           token={userAuth.token}
           onSave={async (newLoadout) => {
-            setAvatarLoadout(newLoadout);
+            // Validate against available items before save
+            const itemIds = new Set(avatarItems.map(i => i.id));
+            const VALID_LAYERS = ['skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
+            const defaults = { skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
+            const cleaned = {};
+            for (const k of VALID_LAYERS) {
+              const v = newLoadout[k];
+              if (v && itemIds.has(v)) cleaned[k] = v;
+              else cleaned[k] = defaults[k] ?? null;
+            }
+            setAvatarLoadout(cleaned);
             setShowCustomizer(false);
             try {
               await fetch(`${API_BASE}/avatar/save`, {
@@ -203,7 +227,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                   'Content-Type': 'application/json',
                   Authorization: `Bearer ${userAuth.token}`,
                 },
-                body: JSON.stringify({ loadout: newLoadout }),
+                body: JSON.stringify({ loadout: cleaned }),
               });
             } catch {}
           }}
