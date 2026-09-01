@@ -29,6 +29,7 @@ export const ROLES = {
       "questions.manage",
       "users.view",
       "coins.manage",
+      "daily-tasks.manage",
       "categories.manage",
       "subjects.manage",
       "templates.manage",

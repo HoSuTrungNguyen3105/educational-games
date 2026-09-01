@@ -53,7 +53,7 @@ const MOBILE_MAIN = [
   { id: "admin-library", label: "Thư viện", icon: Library, route: "/admin/library", permission: "games.manage" },
   { id: "admin-create", label: "Tạo", icon: Plus, route: "/admin/create", permission: "games.manage" },
   { id: "home", label: "Trang chủ", icon: Home, route: "/", permission: null },
-  { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
+  // { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
 ];
 
 const MOBILE_MORE = [

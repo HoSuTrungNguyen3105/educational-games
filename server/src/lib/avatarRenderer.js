@@ -307,7 +307,7 @@ function renderItemHtml(category, params) {
   if (category === 'shoes') return shoesMarkup({ style: params.style || 'sneaker', color: params.color || '#3B5EA6' });
   if (category === 'hat') return hatMarkup({ style: params.style || 'none', color: params.color || '#000' });
   if (category === 'glasses') return glassesMarkup({ style: params.style || 'none', color: params.color || '#000' });
-  if (category === 'accessory') return accessoryMarkup({ style: params.style || 'none', color: params.color || '#000' });
+  if (category === 'accessory') { const a = accessoryMarkup({ style: params.style || 'none', color: params.color || '#000' }); return a.back + a.front; }
   return '';
 }
 

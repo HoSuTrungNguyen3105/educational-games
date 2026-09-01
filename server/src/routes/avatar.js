@@ -225,11 +225,19 @@ router.get("/categories", (_req, res) => {
   sendSuccess(res, { categories: CATEGORIES, layerOrder: LAYER_ORDER });
 });
 
-router.get("/items", async (_req, res, next) => {
+router.get("/items", async (req, res, next) => {
   try {
     await ensureSeeded();
     await ensureTemplate();
-    const items = await getCollection(ITEMS).find({}).sort({ category: 1, price: 1 }).toArray();
+    let items = await getCollection(ITEMS).find({}).sort({ category: 1, price: 1 }).toArray();
+    const q = (req.query.query || "").trim().toLowerCase();
+    if (q) {
+      items = items.filter(it =>
+        (it.name || "").toLowerCase().includes(q) ||
+        (it.id || "").toLowerCase().includes(q) ||
+        (it.category || "").toLowerCase().includes(q)
+      );
+    }
     const tmpl = await getCollection(TEMPLATE).findOne({ _id: "default" });
     sendSuccess(res, {
       items,

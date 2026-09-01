@@ -194,7 +194,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         </div>
         <div className="flex flex-col items-center gap-3">
           <AvatarPreview loadout={avatarLoadout} items={avatarItems} template={template} size={160} />
-          <button onClick={() => setShowCustomizer(true)}
+          <button onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setShowCustomizer(true); }}
             className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-body font-semibold hover:bg-gold/80 transition">
             Tùy chỉnh Avatar
           </button>

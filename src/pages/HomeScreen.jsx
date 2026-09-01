@@ -80,7 +80,7 @@ const QUICK_MENU_ITEMS = (userAuth) => [
   { key: "friends", icon: Search, label: "Tìm bạn", path: "/find-friends", show: !!userAuth?.user, tint: "from-emerald-400 to-teal-400" },
   { key: "assignment", icon: FileText, label: "Bài tập", path: "/assignment", show: !!userAuth?.user, tint: "from-blue-400 to-indigo-400" },
   { key: "profile", icon: User, label: "Hồ sơ", path: "/profile", show: !!userAuth?.user, tint: "from-blue-400 to-rose-400" },
-  { key: "teacher", icon: GraduationCap, label: "Giáo viên", path: "/admin", show: userAuth?.user?.role === 'admin', tint: "from-indigo-400 to-violet-400" },
+  { key: "teacher", icon: GraduationCap, label: "Giáo viên", path: "/admin", show: userAuth?.user?.role === 'admin' || 'teacher', tint: "from-indigo-400 to-violet-400" },
   { key: "login", icon: KeyRound, label: "Đăng nhập", action: "login", show: !userAuth?.user, tint: "from-purple-400 to-pink-400" },
 ];
 
@@ -154,12 +154,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       ]).then(([itemsRes, loadoutRes]) => {
         if (itemsRes.status) setAvatarItems(itemsRes.data.items || []);
         if (loadoutRes.status) setAvatarLoadout(loadoutRes.data.loadout || {});
-      }).catch(() => {});
+      }).catch(() => { });
 
       // Register FCM token for push notifications
       requestNotificationPermission().then((token) => {
-        if (token) notificationService.registerDevice(token, "WEB").catch(() => {});
-      }).catch(() => {});
+        if (token) notificationService.registerDevice(token, "WEB").catch(() => { });
+      }).catch(() => { });
     }
   }, [userAuth?.user]);
 
@@ -399,7 +399,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </button>
               );
             })}
-            {userAuth?.user?.role === 'admin' && (
+            {(userAuth?.user?.role === 'admin' || userAuth?.user?.role === 'teacher') && (
               <button onClick={() => goTo("/admin")} className="flex items-center gap-3 text-sm font-semibold text-gray-600 px-3 py-2.5 rounded-2xl hover:bg-purple-50 hover:text-purple-700 transition text-left">
                 <GraduationCap className="w-5 h-5" /> Trang giáo viên
               </button>
@@ -421,10 +421,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               {/* Logo */}
               <a href="#/" onClick={() => navigate("/")} className="flex items-center gap-1 shrink-0">
                 <PartyPopper className="w-5 h-5 text-purple-500" />
-                <span className="font-display text-base text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500">Lớp Học Vui</span>
+                <span className="font-display text-base text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-purple-500">Lớp Học Vui</span>
               </a>
               {/* Search bar */}
-              <div className="flex-1 max-w-[170px] relative">
+              {/* <div className="flex-1 max-w-[170px] relative">
                 <input
                   type="text"
                   placeholder="Tìm trò chơi..."
@@ -433,7 +433,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   className="w-full bg-gray-100 border border-transparent rounded-full px-3 py-1.5 pl-8 text-xs transition-all focus:outline-none focus:bg-white focus:border-purple-200 focus:ring-2 focus:ring-purple-100"
                 />
                 <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              </div>
+              </div> */}
               {/* Coin + Notification + Avatar + Menu */}
               <div className="flex items-center gap-1.5 shrink-0">
                 {userAuth?.user && (
@@ -485,7 +485,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     </button>
                   );
                 })}
-                {userAuth?.user?.role === 'admin' && (
+                {(userAuth?.user?.role === 'admin' || userAuth?.user?.role === 'teacher') && (
                   <button onClick={() => goTo("/admin")} className="flex items-center gap-3 text-sm font-semibold text-gray-700 px-3 py-2.5 rounded-xl hover:bg-purple-50 text-left">
                     <GraduationCap className="w-5 h-5" /> Trang giáo viên
                   </button>
@@ -500,7 +500,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           </header>
 
           {/* ═══════════════════════════ MOBILE CONTENT (THAY ĐỔI HOÀN TOÀN) ═══════════════════════════ */}
-          <main className="flex-1 w-full px-3 space-y-4 py-4 lg:hidden">
+          <main className="flex-1 w-full px-2 space-y-2 py-3 lg:hidden">
             {/* 1. Thẻ thành viên (kiểu trà sữa) */}
             <div className="relative rounded-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 p-4 text-white overflow-hidden shadow-lg">
               <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full"></div>

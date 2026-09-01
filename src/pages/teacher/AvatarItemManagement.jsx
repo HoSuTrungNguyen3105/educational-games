@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { ManagementHeader, ConfirmModal } from '../../components/ui.jsx';
-import { Plus, Pencil, Trash2, X, Save } from 'lucide-react';
-import { renderAvatarFull } from '../../lib/avatarRenderer.js';
+import { Plus, Pencil, Trash2, X, Save, Search } from 'lucide-react';
+import { renderAvatarFull, renderItemHtml } from '../../lib/avatarRenderer.js';
+
+function renderItemHtmlLocal(category, params) {
+  if (!params) return '';
+  const result = renderItemHtml(category, params);
+  if (typeof result === 'string') return result;
+  if (result && typeof result === 'object') return (result.back || '') + (result.front || '');
+  return '';
+}
 
 function getAuthToken() {
   try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; }
@@ -79,20 +87,24 @@ export default function AvatarItemManagement({ showToast }) {
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, item: null });
   const [filter, setFilter] = useState("all");
+  const [query, setQuery] = useState('');
+  const [editedHtml, setEditedHtml] = useState('');
 
   const load = useCallback(() => {
     setItems(null); setError(null);
-    fetch(`${API_BASE}/avatar/items`).then(r => r.json()).then(json => {
+    const qs = query ? `?query=${encodeURIComponent(query)}` : '';
+    fetch(`${API_BASE}/avatar/items${qs}`).then(r => r.json()).then(json => {
       if (json.status) setItems(json.data.items);
       else setError(json.message || "Lỗi tải items");
     }).catch(e => setError(e.message));
-  }, []);
+  }, [query]);
 
   useEffect(() => { load(); }, [load]);
 
   const openCreate = () => {
     setForm({ ...EMPTY_FORM });
     setEditingId(null); setError(null); setModalOpen(true);
+    setEditedHtml(renderItemHtmlLocal(EMPTY_FORM.category, EMPTY_FORM.params));
   };
 
   const openEdit = (item) => {
@@ -102,6 +114,7 @@ export default function AvatarItemManagement({ showToast }) {
       params: { ...(item.params || {}) },
     });
     setEditingId(item.id); setError(null); setModalOpen(true);
+    setEditedHtml(item.html || renderItemHtmlLocal(item.category, item.params));
   };
 
   const closeModal = () => { setModalOpen(false); setError(null); };
@@ -127,7 +140,7 @@ export default function AvatarItemManagement({ showToast }) {
 
       const body = {
         category: form.category, name: form.name, price: form.price,
-        default: form.default, params: form.params,
+        default: form.default, params: form.params, html: editedHtml,
         ...(form.gender ? { gender: form.gender } : {}),
       };
 
@@ -169,7 +182,18 @@ export default function AvatarItemManagement({ showToast }) {
     <div>
       <ManagementHeader subtitle="Quản lý vật phẩm Avatar" title="Avatar Items" />
 
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/30" />
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Tìm tên, ID, category..."
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-pink/30"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
         <button onClick={() => setFilter("all")}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${filter === "all" ? "bg-pink text-white" : "bg-ink/5 text-ink/50 hover:bg-ink/10"}`}>
           Tất cả ({items?.length || 0})
@@ -183,6 +207,7 @@ export default function AvatarItemManagement({ showToast }) {
             </button>
           );
         })}
+        </div>
       </div>
 
       {error && !items && <div className="text-center py-10 text-red-500 text-sm">{error}</div>}
@@ -236,7 +261,7 @@ export default function AvatarItemManagement({ showToast }) {
               <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><X className="w-5 h-5 text-ink/50" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ WebkitOverflowScrolling: 'touch' }}>
               <div>
                 <label className="text-xs font-mono uppercase text-ink/50">Category *</label>
                 <select value={form.category} onChange={e => onChange("category", e.target.value)}
@@ -316,6 +341,38 @@ export default function AvatarItemManagement({ showToast }) {
                   <ItemPreview item={{ category: form.category, params: form.params, gender: form.gender }} allItems={items} />
                 </div>
               </div>
+
+              {/* Hiển thị params JSON */}
+              <div>
+                <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Params (JSON)</div>
+                <pre className="p-3 rounded-xl bg-ink/[0.03] text-[11px] font-mono text-ink/60 overflow-x-auto whitespace-pre-wrap break-all">
+                  {JSON.stringify(form.params, null, 2)}
+                </pre>
+              </div>
+
+              {/* HTML: raw editable + rendered side by side */}
+              {(() => {
+                if (!editedHtml) return null;
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">HTML (SVG raw) — sửa ở đây</div>
+                      <textarea
+                        value={editedHtml}
+                        onChange={e => setEditedHtml(e.target.value)}
+                        className="w-full h-40 sm:h-48 p-3 rounded-xl bg-ink/[0.03] text-[9px] font-mono text-ink/70 border border-ink/10 focus:outline-none focus:ring-2 focus:ring-pink/30 resize-none whitespace-pre-wrap break-all"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Rendered SVG</div>
+                      <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03] border border-ink/5 min-h-[100px] sm:min-h-[120px]">
+                        <svg viewBox="0 0 300 440" width="80" height="117" xmlns="http://www.w3.org/2000/svg"
+                          dangerouslySetInnerHTML={{ __html: editedHtml }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {error && <p className="text-xs text-red-500">{error}</p>}
             </div>

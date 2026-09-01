@@ -96,6 +96,7 @@ export function parseRoute() {
 export function navigate(path) {
   const target = String(path).startsWith("#") ? String(path) : `#${String(path).replace(/^\/?/, "/")}`;
   if (window.location.hash !== target) window.location.hash = target;
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 // ─── useRoute Hook ─────────────────────────────────────────────
@@ -103,7 +104,10 @@ export function navigate(path) {
 export function useRoute() {
   const [route, setRoute] = useState(parseRoute);
   useEffect(() => {
-    const onChange = () => setRoute(parseRoute());
+    const onChange = () => {
+      setRoute(parseRoute());
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
     window.addEventListener("hashchange", onChange);
     window.addEventListener("popstate", onChange);
     return () => {
