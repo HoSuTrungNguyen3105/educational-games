@@ -216,6 +216,15 @@ async function ensureSeeded(force = false) {
     if (items.length > 0) {
       await getCollection(ITEMS).insertMany(items.map(i => ({ ...i })));
     }
+  } else {
+    // Add body items if missing (migration for existing DBs)
+    const bodyCount = await getCollection(ITEMS).countDocuments({ category: "body" });
+    if (bodyCount === 0) {
+      const bodyItems = buildSeedItems().filter(i => i.category === "body");
+      if (bodyItems.length > 0) {
+        await getCollection(ITEMS).insertMany(bodyItems.map(i => ({ ...i })));
+      }
+    }
   }
 }
 
@@ -447,6 +456,55 @@ router.delete("/admin/items", authenticate, async (_req, res, next) => {
   try {
     const result = await getCollection(ITEMS).deleteMany({});
     sendSuccess(res, { message: "Đã xóa toàn bộ items", deletedCount: result.deletedCount });
+  } catch (e) { next(e); }
+});
+
+// ─── ADMIN: BODY CRUD ────────────────────────────────────────────
+
+router.post("/admin/body", authenticate, async (req, res, next) => {
+  try {
+    const { name, type, price, default: isDefault, gender, html } = req.body || {};
+    if (!name) return sendError(res, "Thiếu tên body", 400);
+    const item = {
+      id: uid(), category: "body", name: String(name).trim(),
+      params: { type: String(type || "custom").trim() },
+      html: html ? String(html) : renderItemHtml("body", {}),
+      price: Math.max(0, Number(price) || 0), default: !!isDefault,
+      ...(gender ? { gender } : {}),
+    };
+    await getCollection(ITEMS).insertOne(item);
+    sendCreated(res, item);
+  } catch (e) { next(e); }
+});
+
+router.put("/admin/body/:id", authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const existing = await getCollection(ITEMS).findOne({ id });
+    if (!existing) return sendError(res, "Body không tồn tại", 404);
+    const { name, type, price, default: isDefault, gender, html } = req.body || {};
+    const updates = {};
+    if (name !== undefined) updates.name = String(name).trim();
+    if (type !== undefined) updates.params = { ...(existing.params || {}), type: String(type).trim() };
+    if (price !== undefined) updates.price = Math.max(0, Number(price) || 0);
+    if (isDefault !== undefined) updates.default = !!isDefault;
+    if (gender !== undefined) updates.gender = gender;
+    if (html !== undefined && html !== null) updates.html = String(html);
+    if (Object.keys(updates).length === 0) return sendError(res, "Không có gì để cập nhật", 400);
+    await getCollection(ITEMS).updateOne({ id }, { $set: updates });
+    const updated = await getCollection(ITEMS).findOne({ id });
+    sendSuccess(res, updated);
+  } catch (e) { next(e); }
+});
+
+router.delete("/admin/body/:id", authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const existing = await getCollection(ITEMS).findOne({ id });
+    if (!existing) return sendError(res, "Body không tồn tại", 404);
+    if (existing.default) return sendError(res, "Không thể xóa body mặc định", 400);
+    await getCollection(ITEMS).deleteOne({ id });
+    sendSuccess(res, { deleted: id });
   } catch (e) { next(e); }
 });
 

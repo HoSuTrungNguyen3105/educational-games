@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { ManagementHeader, ConfirmModal } from '../../components/ui.jsx';
 import { Plus, Pencil, Trash2, X, Save, Search } from 'lucide-react';
-import { renderAvatarFull, renderAvatarFullWithOverrides, renderItemHtml, SKIN } from '../../lib/avatarRenderer.js';
+import { renderAvatarFull, renderAvatarFullWithOverrides, renderItemHtml } from '../../lib/avatarRenderer.js';
 
 function renderItemHtmlLocal(category, params) {
   if (!params) return '';
@@ -127,7 +127,17 @@ export default function AvatarItemManagement({ showToast }) {
   const closeModal = () => { setModalOpen(false); setError(null); };
 
   const onChange = (name, val) => {
-    setForm(f => ({ ...f, [name]: val }));
+    setForm(f => {
+      const next = { ...f, [name]: val };
+      if (name === 'category') {
+        if (val === 'body') {
+          next.params = { type: 'boy' };
+        } else {
+          next.params = { style: STYLE_OPTIONS[val]?.[0] || 'none', color: '#000' };
+        }
+      }
+      return next;
+    });
     setError(null);
   };
 
@@ -145,22 +155,22 @@ export default function AvatarItemManagement({ showToast }) {
       const headers = { "Content-Type": "application/json" };
       if (parsed?.token) headers.Authorization = `Bearer ${parsed.token}`;
 
-      const body = {
-        category: form.category, name: form.name, price: form.price,
-        default: form.default, params: form.params, html: editedHtml,
-        ...(form.gender ? { gender: form.gender } : {}),
-      };
+      const isBody = form.category === 'body';
+      const base = isBody ? `${API_BASE}/avatar/admin/body` : `${API_BASE}/avatar/admin/items`;
+      const body = isBody
+        ? { name: form.name, type: form.params?.type || 'custom', price: form.price, default: form.default, html: editedHtml, ...(form.gender ? { gender: form.gender } : {}) }
+        : { category: form.category, name: form.name, price: form.price, default: form.default, params: form.params, html: editedHtml, ...(form.gender ? { gender: form.gender } : {}) };
 
       if (editingId) {
-        const res = await fetch(`${API_BASE}/avatar/admin/items/${editingId}`, { method: "PUT", headers, body: JSON.stringify(body) });
+        const res = await fetch(`${base}/${editingId}`, { method: "PUT", headers, body: JSON.stringify(body) });
         const json = await res.json();
         if (!json.status) throw new Error(json.msg || "Lỗi cập nhật");
-        showToast("Đã cập nhật item");
+        showToast("Đã cập nhật");
       } else {
-        const res = await fetch(`${API_BASE}/avatar/admin/items`, { method: "POST", headers, body: JSON.stringify(body) });
+        const res = await fetch(base, { method: "POST", headers, body: JSON.stringify(body) });
         const json = await res.json();
-        if (!json.status) throw new Error(json.msg || "Lỗi tạo item");
-        showToast("Đã tạo item mới");
+        if (!json.status) throw new Error(json.msg || "Lỗi tạo");
+        showToast("Đã tạo mới");
       }
       closeModal(); load();
     } catch (err) { setError(err.message || "Lỗi lưu item"); }
@@ -173,10 +183,12 @@ export default function AvatarItemManagement({ showToast }) {
       const parsed = token ? JSON.parse(token) : null;
       const headers = {};
       if (parsed?.token) headers.Authorization = `Bearer ${parsed.token}`;
-      const res = await fetch(`${API_BASE}/avatar/admin/items/${confirm.item.id}`, { method: "DELETE", headers });
+      const isBody = confirm.item?.category === 'body';
+      const base = isBody ? `${API_BASE}/avatar/admin/body` : `${API_BASE}/avatar/admin/items`;
+      const res = await fetch(`${base}/${confirm.item.id}`, { method: "DELETE", headers });
       const json = await res.json();
       if (!json.status) throw new Error(json.msg || "Lỗi xóa");
-      showToast("Đã xóa item");
+      showToast("Đã xóa");
       setConfirm({ open: false, item: null }); load();
     } catch (err) { showToast(err.message || "Lỗi xóa", "error"); }
   };
@@ -232,6 +244,7 @@ export default function AvatarItemManagement({ showToast }) {
                 <div className="flex items-center gap-2">
                   <span className="font-body font-semibold text-sm text-ink truncate">{item.name}</span>
                   {item.default && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-600">Mặc định</span>}
+                  {item.category === 'body' && item.params?.type && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-600">{item.params.type}</span>}
                   {item.gender && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-600">{item.gender}</span>}
                 </div>
                 <div className="flex items-center gap-3 mt-0.5 text-[11px] font-mono text-ink/40">
@@ -309,6 +322,14 @@ export default function AvatarItemManagement({ showToast }) {
               </label>
 
               {/* Params */}
+              {form.category === 'body' ?? (
+                <div>
+                  <label className="text-xs font-mono uppercase text-ink/50">Type (boy, girl, custom...)</label>
+                  <input value={form.params?.type || ''} onChange={e => onChangeParam("type", e.target.value)}
+                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30"
+                    placeholder="VD: boy, girl, custom, robot..." />
+                </div>
+              )}
               {styleOptions.length > 0 && (
                 <div>
                   <label className="text-xs font-mono uppercase text-ink/50">Style</label>
