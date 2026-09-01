@@ -256,6 +256,12 @@ router.get("/template", async (_req, res, next) => {
   } catch (e) { next(e); }
 });
 
+router.get("/body", (req, res) => {
+  const skin = req.query.skin || '#FFDFC4';
+  const svg = bodyBase(skin);
+  sendSuccess(res, { html: svg, skin });
+});
+
 router.put("/template", authenticate, async (req, res, next) => {
   try {
     const { categories } = req.body || {};

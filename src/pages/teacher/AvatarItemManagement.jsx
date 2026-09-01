@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { ManagementHeader, ConfirmModal } from '../../components/ui.jsx';
 import { Plus, Pencil, Trash2, X, Save, Search } from 'lucide-react';
-import { renderAvatarFull, renderAvatarFullWithOverrides, renderItemHtml } from '../../lib/avatarRenderer.js';
+import { renderAvatarFull, renderAvatarFullWithOverrides, renderItemHtml, SKIN } from '../../lib/avatarRenderer.js';
 
 function renderItemHtmlLocal(category, params) {
   if (!params) return '';
@@ -50,7 +50,7 @@ const DEFAULT_STATE = {
   accessory: { style: 'none' },
 };
 
-function ItemPreview({ item, allItems }) {
+function ItemPreview({ item, allItems, bodyCache }) {
   if (!item) return null;
   const state = { ...DEFAULT_STATE };
   if (allItems) {
@@ -68,9 +68,11 @@ function ItemPreview({ item, allItems }) {
   else if (item.category === 'face') state.face = item.params?.style || 'gentle';
   else state[item.category] = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
 
+  const overrides = {};
+  if (bodyCache?.has(state.skin)) overrides.skin = bodyCache.get(state.skin);
   const svg = item.html
-    ? renderAvatarFullWithOverrides(state, { [item.category]: item.html })
-    : renderAvatarFull(state);
+    ? renderAvatarFullWithOverrides(state, { ...overrides, [item.category]: item.html })
+    : renderAvatarFullWithOverrides(state, overrides);
   return (
     <svg viewBox="0 0 300 440" width="48" height="70" xmlns="http://www.w3.org/2000/svg"
       dangerouslySetInnerHTML={{ __html: svg }} />
@@ -88,6 +90,16 @@ export default function AvatarItemManagement({ showToast }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState('');
   const [editedHtml, setEditedHtml] = useState('');
+  const [bodyCache, setBodyCache] = useState(null);
+
+  useEffect(() => {
+    const cache = new Map();
+    Promise.all(SKIN.map(s =>
+      fetch(`${API_BASE}/avatar/body?skin=${encodeURIComponent(s.hex)}`).then(r => r.json()).then(json => {
+        if (json.status) cache.set(s.hex, json.data.html);
+      }).catch(() => {})
+    )).then(() => setBodyCache(cache));
+  }, []);
 
   const load = useCallback(() => {
     setItems(null); setError(null);
@@ -218,7 +230,7 @@ export default function AvatarItemManagement({ showToast }) {
           {filtered.map(item => (
             <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-ink/8 hover:shadow-sm transition">
               <div className="w-12 h-17 flex items-center justify-center shrink-0 overflow-hidden rounded-lg bg-ink/5">
-                <ItemPreview item={item} allItems={items} />
+                <ItemPreview item={item} allItems={items} bodyCache={bodyCache} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -353,9 +365,11 @@ export default function AvatarItemManagement({ showToast }) {
                     }
                     if (form.category === 'skin') {
                       state.skin = form.params?.hex || '#FFDFC4';
-                      return renderAvatarFull(state);
+                      const bodyHtml = bodyCache?.has(state.skin) ? bodyCache.get(state.skin) : null;
+                      return bodyHtml || renderAvatarFull(state);
                     }
-                    return renderAvatarFullWithOverrides(state, { [form.category]: editedHtml });
+                    const bodyHtml = bodyCache?.has(state.skin) ? bodyCache.get(state.skin) : null;
+                    return renderAvatarFullWithOverrides(state, { ...(bodyHtml ? { skin: bodyHtml } : {}), [form.category]: editedHtml });
                   })() }} />
               </div>
               </div>
