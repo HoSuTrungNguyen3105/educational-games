@@ -29,12 +29,40 @@ const STYLE_OPTIONS = {
 
 const EMPTY_FORM = { category: "hair", name: "", price: 0, default: false, gender: "boy", params: { style: "spiky", color: "#6B4226" } };
 
-function ItemPreview({ item }) {
+// Default full avatar state for thumbnails
+const DEFAULT_STATE = {
+  skin: '#FFDFC4',
+  face: 'gentle',
+  hair: { style: 'spiky', color: '#6B4226' },
+  shirt: { style: 'tee', color: '#F5F5F5' },
+  pants: { style: 'shorts', color: '#241F1C' },
+  shoes: { style: 'sneaker', color: '#3B5EA6' },
+  hat: { style: 'none' },
+  glasses: { style: 'none' },
+  accessory: { style: 'none' },
+};
+
+function ItemPreview({ item, allItems }) {
   if (!item) return null;
-  const state = {};
+  // Build full state: all defaults + this item overridden
+  const state = { ...DEFAULT_STATE };
+  // Try to use default items from allItems for the same gender
+  if (allItems) {
+    const gender = item.gender || 'boy';
+    for (const it of allItems) {
+      if (it.default && it.category !== item.category) {
+        if (it.gender && it.gender !== gender) continue;
+        if (it.category === 'skin') state.skin = it.params?.hex || '#FFDFC4';
+        else if (it.category === 'face') state.face = it.params?.style || 'gentle';
+        else state[it.category] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
+      }
+    }
+  }
+  // Override this item
   if (item.category === 'skin') state.skin = item.params?.hex || '#FFDFC4';
   else if (item.category === 'face') state.face = item.params?.style || 'gentle';
   else state[item.category] = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+
   const svg = renderAvatarFull(state);
   return (
     <svg viewBox="0 0 300 440" width="48" height="70" xmlns="http://www.w3.org/2000/svg"
@@ -166,7 +194,7 @@ export default function AvatarItemManagement({ showToast }) {
           {filtered.map(item => (
             <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-ink/8 hover:shadow-sm transition">
               <div className="w-12 h-17 flex items-center justify-center shrink-0 overflow-hidden rounded-lg bg-ink/5">
-                <ItemPreview item={item} />
+                <ItemPreview item={item} allItems={items} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -285,7 +313,7 @@ export default function AvatarItemManagement({ showToast }) {
               <div>
                 <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Preview</div>
                 <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03]">
-                  <ItemPreview item={{ category: form.category, params: form.params }} />
+                  <ItemPreview item={{ category: form.category, params: form.params, gender: form.gender }} allItems={items} />
                 </div>
               </div>
 

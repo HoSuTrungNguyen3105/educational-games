@@ -62,7 +62,7 @@ function heartShape(cx, cy, size, color) {
   return `<path transform="translate(${cx - 16 * s},${cy - 14 * s}) scale(${s})" d="M16,28 C4,20 0,12 0,7 C0,2 4,-2 8,-2 C12,-2 16,1 16,6 C16,1 20,-2 24,-2 C28,-2 32,2 32,7 C32,12 28,20 16,28 Z" fill="${color}" fill-opacity="0.9"/>`;
 }
 
-export function bodyBase(skin) {
+function bodyBase(skin) {
   const sole = shade(skin, -20);
   return `
     <ellipse cx="150" cy="420" rx="72" ry="10" fill="rgba(36,25,52,0.08)"/>
@@ -80,7 +80,7 @@ export function bodyBase(skin) {
   `;
 }
 
-export function drawFace(style) {
+function drawFace(style) {
   const ink = '#241934';
   let eyes = '', brows = '', mouth = '', blush = '';
   if (style !== 'fierce') {
@@ -116,7 +116,7 @@ export function drawFace(style) {
   return blush + brows + eyes + mouth;
 }
 
-export function hairMarkup(h) {
+function hairMarkup(h) {
   const c = h.color;
   let back = '', front = '';
   switch (h.style) {
@@ -141,10 +141,10 @@ export function hairMarkup(h) {
       front = `<path d="${capPath(150, 95, 58, 4, 6, 185, 355, 0)}" fill="${c}"/>`;
       break;
   }
-  return { back, front };
+  return back + front;
 }
 
-export function shirtMarkup(o) {
+function shirtMarkup(o) {
   const c = o.color, d = shade(c, -18);
   const sleeves = `<rect x="77" y="156" width="30" height="60" rx="14" fill="${c}"/><rect x="193" y="156" width="30" height="60" rx="14" fill="${c}"/>`;
   const torso = `<rect x="106" y="149" width="88" height="110" rx="26" fill="${c}"/>`;
@@ -182,7 +182,7 @@ export function shirtMarkup(o) {
   return torso + sleeves;
 }
 
-export function pantsMarkup(o) {
+function pantsMarkup(o) {
   const c = o.color, d = shade(c, -20);
   switch (o.style) {
     case 'shorts':
@@ -199,7 +199,7 @@ export function pantsMarkup(o) {
   return `<rect x="112" y="255" width="76" height="90" rx="16" fill="${c}"/>`;
 }
 
-export function shoesMarkup(o) {
+function shoesMarkup(o) {
   const c = o.color, sole = shade(c, -30);
   if (o.style === 'boots') {
     return `<rect x="112" y="372" width="34" height="42" rx="10" fill="${c}"/><rect x="154" y="372" width="34" height="42" rx="10" fill="${c}"/><rect x="110" y="406" width="38" height="9" rx="4" fill="${sole}"/><rect x="152" y="406" width="38" height="9" rx="4" fill="${sole}"/>`;
@@ -207,7 +207,7 @@ export function shoesMarkup(o) {
   return `<ellipse cx="131" cy="398" rx="23" ry="15" fill="${c}"/><ellipse cx="169" cy="398" rx="23" ry="15" fill="${c}"/><ellipse cx="131" cy="408" rx="23" ry="6" fill="#fff"/><ellipse cx="169" cy="408" rx="23" ry="6" fill="#fff"/><path d="M121,392 L141,392 M124,398 L138,398" stroke="${sole}" stroke-width="2"/><path d="M159,392 L179,392 M162,398 L176,398" stroke="${sole}" stroke-width="2"/>`;
 }
 
-export function hatMarkup(o) {
+function hatMarkup(o) {
   if (o.style === 'none') return '';
   const c = o.color, d = shade(c, -18);
   switch (o.style) {
@@ -225,7 +225,7 @@ export function hatMarkup(o) {
   return '';
 }
 
-export function glassesMarkup(o) {
+function glassesMarkup(o) {
   if (o.style === 'none') return '';
   const c = o.color;
   switch (o.style) {
@@ -243,27 +243,26 @@ export function glassesMarkup(o) {
   return '';
 }
 
-export function accessoryMarkup(o) {
-  if (o.style === 'none') return { back: '', front: '' };
+function accessoryMarkup(o) {
   const c = o.color, d = shade(c, -20);
   switch (o.style) {
     case 'headphones':
-      return { back: '', front: `<path d="M100,70 Q150,18 200,70" stroke="${c}" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="100" cy="98" r="15" fill="${c}"/><circle cx="200" cy="98" r="15" fill="${c}"/><circle cx="100" cy="98" r="7" fill="#241934"/><circle cx="200" cy="98" r="7" fill="#241934"/>` };
+      return `<path d="M100,70 Q150,18 200,70" stroke="${c}" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="100" cy="98" r="15" fill="${c}"/><circle cx="200" cy="98" r="15" fill="${c}"/><circle cx="100" cy="98" r="7" fill="#241934"/><circle cx="200" cy="98" r="7" fill="#241934"/>`;
     case 'scarf':
-      return { back: '', front: `<rect x="118" y="130" width="64" height="24" rx="12" fill="${c}"/><rect x="146" y="148" width="20" height="52" rx="8" fill="${d}"/>` };
+      return `<rect x="118" y="130" width="64" height="24" rx="12" fill="${c}"/><rect x="146" y="148" width="20" height="52" rx="8" fill="${d}"/>`;
     case 'mask':
-      return { back: '', front: `<rect x="121" y="100" width="58" height="26" rx="13" fill="${c}"/><line x1="121" y1="108" x2="90" y2="96" stroke="${c}" stroke-width="3"/><line x1="179" y1="108" x2="210" y2="96" stroke="${c}" stroke-width="3"/>` };
+      return `<rect x="121" y="100" width="58" height="26" rx="13" fill="${c}"/><line x1="121" y1="108" x2="90" y2="96" stroke="${c}" stroke-width="3"/><line x1="179" y1="108" x2="210" y2="96" stroke="${c}" stroke-width="3"/>`;
     case 'backpack':
-      return { back: `<rect x="118" y="140" width="64" height="26" rx="10" fill="${c}"/>`, front: `<rect x="132" y="148" width="8" height="40" rx="4" fill="${d}"/><rect x="160" y="148" width="8" height="40" rx="4" fill="${d}"/>` };
+      return `<rect x="118" y="140" width="64" height="26" rx="10" fill="${c}"/><rect x="132" y="148" width="8" height="40" rx="4" fill="${d}"/><rect x="160" y="148" width="8" height="40" rx="4" fill="${d}"/>`;
     case 'ears':
-      return { back: '', front: `<path d="M118,42 L128,4 L146,36 Z" fill="${c}"/><path d="M182,42 L172,4 L154,36 Z" fill="${c}"/><path d="M122,38 L129,14 L140,34 Z" fill="#F2A6C6"/><path d="M178,38 L171,14 L160,34 Z" fill="#F2A6C6"/>` };
+      return `<path d="M118,42 L128,4 L146,36 Z" fill="${c}"/><path d="M182,42 L172,4 L154,36 Z" fill="${c}"/><path d="M122,38 L129,14 L140,34 Z" fill="#F2A6C6"/><path d="M178,38 L171,14 L160,34 Z" fill="#F2A6C6"/>`;
     case 'wings':
-      return { back: `<path d="M92,170 Q40,180 46,240 Q70,220 96,225 Q80,195 92,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M208,170 Q260,180 254,240 Q230,220 204,225 Q220,195 208,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/>`, front: '' };
+      return `<path d="M92,170 Q40,180 46,240 Q70,220 96,225 Q80,195 92,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M208,170 Q260,180 254,240 Q230,220 204,225 Q220,195 208,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/>`;
   }
-  return { back: '', front: '' };
+  return '';
 }
 
-export function renderAvatarFull(state) {
+function renderAvatarFull(state) {
   const skin = state.skin || '#FFDFC4';
   const faceStyle = state.face || 'gentle';
   const hairOpt = state.hair || { style: 'spiky', color: '#6B4226' };
@@ -274,203 +273,32 @@ export function renderAvatarFull(state) {
   const glassesOpt = state.glasses || { style: 'none' };
   const accOpt = state.accessory || { style: 'none' };
 
-  const hair = hairMarkup(hairOpt);
-  const acc = accessoryMarkup(accOpt);
+  const hairBack = (() => {
+    const c = hairOpt.color;
+    switch (hairOpt.style) {
+      case 'long': return `<path d="${girlLongHair(150, 95, 60, 300, 4)}" fill="${c}"/>`;
+      case 'twin': return `<g transform="rotate(-10 88 175)"><ellipse cx="88" cy="175" rx="16" ry="82" fill="${c}"/></g><g transform="rotate(10 212 175)"><ellipse cx="212" cy="175" rx="16" ry="82" fill="${c}"/></g>`;
+      case 'wavy': return `<path d="${girlLongHair(150, 95, 52, 255, 7)}" fill="${c}"/>`;
+      case 'braid': return `<g transform="rotate(14 198 190)"><ellipse cx="198" cy="190" rx="14" ry="92" fill="${c}"/><rect x="190" y="150" width="16" height="6" rx="3" fill="${shade(c, -25)}"/><rect x="190" y="185" width="16" height="6" rx="3" fill="${shade(c, -25)}"/><rect x="190" y="220" width="16" height="6" rx="3" fill="${shade(c, -25)}"/></g>`;
+      default: return '';
+    }
+  })();
 
-  return acc.back + hair.back + bodyBase(skin) + pantsMarkup(pantsOpt) +
+  const accBack = (() => {
+    const c = accOpt.color, d = shade(c, -20);
+    switch (accOpt.style) {
+      case 'backpack': return `<rect x="118" y="140" width="64" height="26" rx="10" fill="${c}"/>`;
+      case 'wings': return `<path d="M92,170 Q40,180 46,240 Q70,220 96,225 Q80,195 92,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M208,170 Q260,180 254,240 Q230,220 204,225 Q220,195 208,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/>`;
+      default: return '';
+    }
+  })();
+
+  return accBack + hairBack + bodyBase(skin) + pantsMarkup(pantsOpt) +
     shirtMarkup(shirtOpt) + shoesMarkup(shoesOpt) + drawFace(faceStyle) +
-    hair.front + hatMarkup(hatOpt) + glassesMarkup(glassesOpt) + acc.front;
+    hairMarkup(hairOpt) + hatMarkup(hatOpt) + glassesMarkup(glassesOpt) + accessoryMarkup(accOpt);
 }
 
-export const SKIN = [
-  { name: 'Trắng hồng', hex: '#FFDFC4' },
-  { name: 'Vàng sáng', hex: '#F0C299' },
-  { name: 'Rám nắng', hex: '#D9A066' },
-  { name: 'Nâu đồng', hex: '#A9714F' },
-  { name: 'Nâu sẫm', hex: '#6B4226' },
-];
-
-export const FACE = [
-  { name: 'Hiền dịu', style: 'gentle', emoji: '🙂' },
-  { name: 'Vui tươi', style: 'happy', emoji: '😄' },
-  { name: 'Tinh nghịch', style: 'wink', emoji: '😉' },
-  { name: 'Cười to', style: 'laughing', emoji: '😆' },
-  { name: 'Cá tính', style: 'fierce', emoji: '😠' },
-];
-
-export const HAIR = {
-  boy: [
-    { name: 'Bờm gai nâu', style: 'spiky', color: '#6B4226' },
-    { name: 'Bờm gai đen', style: 'spiky', color: '#241F1C' },
-    { name: 'Tóc rối navy', style: 'messy', color: '#2A3A6B' },
-    { name: 'Tóc rối bạc', style: 'messy', color: '#D8D8D8' },
-    { name: 'Bờm gai đỏ', style: 'wild', color: '#C0392B' },
-    { name: 'Chải lệch hạt dẻ', style: 'side', color: '#4A2E1E' },
-    { name: 'Chải lệch vàng', style: 'side', color: '#E8B94B' },
-    { name: 'Bờm gai lục', style: 'wild', color: '#2F8F5B' },
-    { name: 'Tóc rối tím', style: 'messy', color: '#7B4FA0' },
-    { name: 'Bờm gai ngọc lam', style: 'spiky', color: '#2F9E9E' },
-  ],
-  girl: [
-    { name: 'Tóc dài nâu', style: 'long', color: '#6B4226' },
-    { name: 'Hai bím nâu', style: 'twin', color: '#6B4226' },
-    { name: 'Tóc xoăn hồng', style: 'wavy', color: '#F2A6C6' },
-    { name: 'Tóc dài vàng', style: 'long', color: '#E8B94B' },
-    { name: 'Tóc dài đen', style: 'long', color: '#241F1C' },
-    { name: 'Tóc xoăn navy', style: 'wavy', color: '#2A3A6B' },
-    { name: 'Tóc xoăn tím', style: 'wavy', color: '#7B4FA0' },
-    { name: 'Tóc tết hạt dẻ', style: 'braid', color: '#4A2E1E' },
-    { name: 'Tóc dài nâu nhạt', style: 'long', color: '#8A5A34' },
-    { name: 'Hai bím đen', style: 'twin', color: '#241F1C' },
-  ],
-};
-
-export const SHIRT = {
-  boy: [
-    { name: 'Áo phông trắng', style: 'tee', color: '#F5F5F5' },
-    { name: 'Áo hoodie đen', style: 'hoodie', color: '#241F1C' },
-    { name: 'Áo hoodie đỏ', style: 'hoodie', color: '#C0392B' },
-    { name: 'Áo khoác xanh', style: 'jacket', color: '#3FB6E8' },
-    { name: 'Áo khoác đen', style: 'jacket', color: '#241F1C' },
-    { name: 'Áo hoodie vàng', style: 'hoodie', color: '#F2B705' },
-    { name: 'Áo hoodie lục', style: 'hoodie', color: '#2F8F5B' },
-    { name: 'Áo polo trắng', style: 'polo', color: '#F5F5F5' },
-    { name: 'Áo phông đen', style: 'tee', color: '#241F1C' },
-    { name: 'Áo hoodie trắng', style: 'hoodie', color: '#F5F5F5' },
-  ],
-  girl: [
-    { name: 'Áo phông nơ trắng', style: 'tee', color: '#F5F5F5' },
-    { name: 'Áo len hồng', style: 'sweater', color: '#F2A6C6' },
-    { name: 'Áo len xanh nơ', style: 'sweater', color: '#8FD3F4' },
-    { name: 'Áo hoodie đen', style: 'hoodie', color: '#241F1C' },
-    { name: 'Áo phông tim', style: 'tee', color: '#FDFDFD' },
-    { name: 'Áo cardigan vàng', style: 'cardigan', color: '#F2B705' },
-    { name: 'Áo khoác đen phối', style: 'jacket', color: '#241F1C' },
-    { name: 'Áo hoodie hồng', style: 'hoodie', color: '#F2A6C6' },
-    { name: 'Áo thủy thủ trắng', style: 'sailor', color: '#F5F5F5' },
-    { name: 'Áo thủy thủ navy', style: 'sailor', color: '#2A3A6B' },
-  ],
-};
-
-export const PANTS = {
-  boy: [
-    { name: 'Quần short đen', style: 'shorts', color: '#241F1C' },
-    { name: 'Quần short xanh', style: 'shorts', color: '#3FB6E8' },
-    { name: 'Quần cargo be', style: 'cargo', color: '#D2B48C' },
-    { name: 'Quần short xám', style: 'shorts', color: '#9AA0A6' },
-    { name: 'Quần jean xanh', style: 'jeans', color: '#3B5EA6' },
-    { name: 'Quần jogger đen', style: 'joggers', color: '#241F1C' },
-    { name: 'Quần cargo olive', style: 'cargo', color: '#6E7B3B' },
-    { name: 'Quần kaki', style: 'jeans', color: '#C8B27A' },
-    { name: 'Quần jean đen', style: 'jeans', color: '#2B2B2B' },
-    { name: 'Quần short kem', style: 'shorts', color: '#E8DCC4' },
-  ],
-  girl: [
-    { name: 'Váy xếp ly đen', style: 'skirt', color: '#241F1C' },
-    { name: 'Váy xếp ly trắng', style: 'skirt', color: '#F5F5F5' },
-    { name: 'Váy caro hồng', style: 'skirt', color: '#F2A6C6' },
-    { name: 'Quần short đen', style: 'shorts', color: '#241F1C' },
-    { name: 'Váy navy', style: 'skirt', color: '#2A3A6B' },
-    { name: 'Quần short hồng', style: 'shorts', color: '#F2A6C6' },
-    { name: 'Quần jean xanh nhạt', style: 'jeans', color: '#8FB8E6' },
-    { name: 'Quần cargo hồng', style: 'cargo', color: '#E6A5C0' },
-    { name: 'Quần jean đen', style: 'jeans', color: '#2B2B2B' },
-    { name: 'Váy xếp ly xanh', style: 'skirt', color: '#3B5EA6' },
-  ],
-};
-
-export const SHOES = {
-  boy: [
-    { name: 'Giày thể thao xanh', style: 'sneaker', color: '#3B5EA6' },
-    { name: 'Giày thể thao đỏ', style: 'sneaker', color: '#C0392B' },
-    { name: 'Giày thể thao trắng', style: 'sneaker', color: '#F5F5F5' },
-    { name: 'Bốt đen', style: 'boots', color: '#241F1C' },
-    { name: 'Giày thể thao vàng', style: 'sneaker', color: '#F2B705' },
-    { name: 'Giày thể thao lục', style: 'sneaker', color: '#2F8F5B' },
-    { name: 'Bốt nâu', style: 'boots', color: '#8A5A34' },
-    { name: 'Giày đỏ đen', style: 'sneaker', color: '#8E2A2A' },
-    { name: 'Bốt đen cao', style: 'boots', color: '#3A3A3A' },
-    { name: 'Bốt trắng', style: 'boots', color: '#F0F0F0' },
-  ],
-  girl: [
-    { name: 'Giày thể thao hồng', style: 'sneaker', color: '#F2A6C6' },
-    { name: 'Giày thể thao trắng', style: 'sneaker', color: '#F5F5F5' },
-    { name: 'Bốt đen', style: 'boots', color: '#241F1C' },
-    { name: 'Bốt hồng', style: 'boots', color: '#E6A5C0' },
-    { name: 'Giày thể thao xanh', style: 'sneaker', color: '#8FD3F4' },
-    { name: 'Bốt trắng', style: 'boots', color: '#F0F0F0' },
-    { name: 'Bốt hồng phấn', style: 'boots', color: '#F6C6DA' },
-    { name: 'Giày thể thao đen', style: 'sneaker', color: '#2B2B2B' },
-    { name: 'Bốt navy', style: 'boots', color: '#2A3A6B' },
-    { name: 'Giày thể thao vàng', style: 'sneaker', color: '#F2B705' },
-  ],
-};
-
-export const HAT = [
-  { name: 'Không đội mũ', style: 'none' },
-  { name: 'Mũ lưỡi trai xanh', style: 'cap', color: '#3FB6E8' },
-  { name: 'Mũ lưỡi trai đen', style: 'cap', color: '#241F1C' },
-  { name: 'Mũ lưỡi trai đỏ', style: 'cap', color: '#C0392B' },
-  { name: 'Mũ len đen', style: 'beanie', color: '#241F1C' },
-  { name: 'Mũ bucket vàng', style: 'bucket', color: '#F2B705' },
-  { name: 'Mũ bucket lục', style: 'bucket', color: '#2F8F5B' },
-  { name: 'Mũ nồi cao', style: 'tophat', color: '#241F1C' },
-  { name: 'Mũ rơm', style: 'sunhat', color: '#E8B94B' },
-];
-
-export const GLASSES = [
-  { name: 'Không đeo kính', style: 'none' },
-  { name: 'Kính tròn đen', style: 'round', color: '#241F1C' },
-  { name: 'Kính tròn vàng', style: 'round', color: '#C99A2E' },
-  { name: 'Kính trái tim', style: 'heart', color: '#FF5DA2' },
-  { name: 'Kính râm vuông', style: 'sun', color: '#1C1C1C' },
-  { name: 'Kính mắt mèo hồng', style: 'cat', color: '#FF5DA2' },
-  { name: 'Kính mắt mèo đen', style: 'cat', color: '#241F1C' },
-  { name: 'Kính ngôi sao', style: 'star', color: '#F2B705' },
-];
-
-export const ACCESSORY = [
-  { name: 'Không có', style: 'none' },
-  { name: 'Tai nghe xanh', style: 'headphones', color: '#3FB6E8' },
-  { name: 'Tai nghe hồng', style: 'headphones', color: '#FF5DA2' },
-  { name: 'Khăn quàng đỏ', style: 'scarf', color: '#C0392B' },
-  { name: 'Khăn quàng trắng', style: 'scarf', color: '#F5F5F5' },
-  { name: 'Khẩu trang đen', style: 'mask', color: '#241F1C' },
-  { name: 'Balo xanh', style: 'backpack', color: '#3FB6E8' },
-  { name: 'Balo hồng', style: 'backpack', color: '#FF5DA2' },
-  { name: 'Tai mèo đen', style: 'ears', color: '#241F1C' },
-  { name: 'Cánh thiên thần', style: 'wings', color: '#FFFFFF' },
-  { name: 'Cánh dơi đen', style: 'wings', color: '#241F1C' },
-];
-
-export const CATEGORY_LIST = [
-  { key: 'skin', label: 'Da' },
-  { key: 'face', label: 'Khuôn mặt' },
-  { key: 'hair', label: 'Tóc' },
-  { key: 'shirt', label: 'Áo' },
-  { key: 'pants', label: 'Quần' },
-  { key: 'shoes', label: 'Giày' },
-  { key: 'hat', label: 'Mũ' },
-  { key: 'glasses', label: 'Kính' },
-  { key: 'accessory', label: 'Phụ kiện' },
-];
-
-export function getOptions(key, gender = 'boy') {
-  switch (key) {
-    case 'skin': return SKIN;
-    case 'face': return FACE;
-    case 'hair': return HAIR[gender];
-    case 'shirt': return SHIRT[gender];
-    case 'pants': return PANTS[gender];
-    case 'shoes': return SHOES[gender];
-    case 'hat': return HAT;
-    case 'glasses': return GLASSES;
-    case 'accessory': return ACCESSORY;
-  }
-  return [];
-}
-
-export function renderItemHtml(category, params) {
+function renderItemHtml(category, params) {
   if (category === 'skin') return '';
   if (category === 'face') return drawFace(params.style || 'gentle');
   if (category === 'hair') return hairMarkup({ style: params.style || 'spiky', color: params.color || '#6B4226' });
@@ -482,3 +310,10 @@ export function renderItemHtml(category, params) {
   if (category === 'accessory') return accessoryMarkup({ style: params.style || 'none', color: params.color || '#000' });
   return '';
 }
+
+export {
+  shade, capPath, girlLongHair, starShape, heartShape,
+  bodyBase, drawFace, hairMarkup, shirtMarkup, pantsMarkup,
+  shoesMarkup, hatMarkup, glassesMarkup, accessoryMarkup,
+  renderAvatarFull, renderItemHtml,
+};

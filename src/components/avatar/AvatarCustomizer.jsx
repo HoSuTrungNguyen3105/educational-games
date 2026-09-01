@@ -1,10 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AvatarPreview from './AvatarPreview.jsx';
+import { renderAvatarFull } from '../../lib/avatarRenderer.js';
 import { API_BASE } from '../../services/api.js';
 import { X, Check, ShoppingBag } from 'lucide-react';
 
-function ItemThumbnail({ item, selected, onClick, owned }) {
+function ItemThumbnail({ item, selected, onClick, owned, allItems }) {
   if (!item) return null;
+
+  // Build a full avatar state: defaults + this item
+  const fullAvatarSvg = useMemo(() => {
+    if (!item.html) return null;
+    if (item.category === 'skin') {
+      // skin is special - just show a color swatch
+      return null;
+    }
+    // Build full default state and override this category
+    const defaultItems = {};
+    for (const it of allItems) {
+      if (it.default && !defaultItems[it.category]) {
+        defaultItems[it.category] = it;
+      }
+    }
+    const state = {};
+    // Fill defaults
+    for (const [cat, it] of Object.entries(defaultItems)) {
+      if (cat === 'skin') state.skin = it.params?.hex || '#FFDFC4';
+      else if (cat === 'face') state.face = it.params?.style || 'gentle';
+      else state[cat] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
+    }
+    // Override with this item
+    if (item.category === 'skin') state.skin = item.params?.hex || '#FFDFC4';
+    else if (item.category === 'face') state.face = item.params?.style || 'gentle';
+    else state[item.category] = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+    // Import renderAvatarFull dynamically
+    return renderAvatarFull(state);
+  }, [item, allItems]);
 
   const getSwatchStyle = () => {
     if (item.category === 'skin') return { background: item.params?.hex || '#ddd' };
@@ -17,6 +47,12 @@ function ItemThumbnail({ item, selected, onClick, owned }) {
   const getContent = () => {
     if (item.category === 'face') return <span>{item.params?.emoji || '🙂'}</span>;
     if (item.params?.style === 'none') return <span className="text-lg font-bold text-ink/20">–</span>;
+    if (fullAvatarSvg) {
+      return (
+        <svg viewBox="0 0 300 440" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
+          dangerouslySetInnerHTML={{ __html: fullAvatarSvg }} />
+      );
+    }
     return null;
   };
 
@@ -26,7 +62,7 @@ function ItemThumbnail({ item, selected, onClick, owned }) {
       className={`relative w-16 h-16 rounded-xl border-2 overflow-hidden transition shrink-0 flex items-center justify-center ${
         selected ? 'border-pink shadow-md' : 'border-ink/10 hover:border-ink/20'
       }`}
-      style={getSwatchStyle()}
+      style={fullAvatarSvg ? {} : getSwatchStyle()}
     >
       {getContent()}
       {owned ? (
@@ -138,6 +174,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
                     item={item}
                     selected={draft[activeTab] === item.id}
                     owned={owned}
+                    allItems={items}
                     onClick={() => owned ? selectItem(activeTab, item.id) : handleBuy(item)}
                   />
                   {!owned && item.price > 0 && (
