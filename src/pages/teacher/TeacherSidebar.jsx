@@ -40,7 +40,7 @@ const MENU = [
   { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
   { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
   { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/admin/avatar-template", permission: null },
-  { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/admin/upload-items", permission: null },
+  // { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/admin/upload-items", permission: null },
 ];
 
 const BOTTOM_MENU = [
@@ -87,8 +87,13 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
 
   const renderNav = (isMobile) => (
     <div className="flex flex-col h-full">
-      <div className="px-5 pt-6 pb-4">
-        <img src={`${import.meta.env.BASE_URL}eduplay-admin-logo2.png`} alt="EduPlay Admin" className="w-full h-auto object-contain" draggable={false} />
+      <div className="px-3 pt-3 pb-2">
+        <img
+          src={`${import.meta.env.BASE_URL}eduplay-admin-logo2.png`}
+          alt="EduPlay Admin"
+          className="w-4/5 mx-auto h-auto object-contain"
+          draggable={false}
+        />
       </div>
       <nav className="flex-1 px-3 py-2 space-y-1">
         {visibleMenu.map(t => {

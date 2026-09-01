@@ -50,6 +50,7 @@ export async function apiFetch(path, options = {}) {
     auth = loadAuth();
   }
   const url = `${API_BASE}${path}`;
+  const method = (options.method || "GET").toUpperCase();
   const init = {
     headers: {
       "Content-Type": "application/json",
@@ -67,16 +68,25 @@ export async function apiFetch(path, options = {}) {
     clearAuth();
     window.dispatchEvent(new Event("edu-auth-expired"));
   }
-  if (res.status === 404) return null;
   if (res.status === 204) return true;
   if (!res.ok) {
-    let message = `Lỗi ${res.status}`;
+    // Try to read the JSON error body first — this is where { status:false, msg } lives.
+    let payload = null;
     try {
-      const err = await res.json();
-      if (err && err.msg) message = err.msg;
-      else if (err && err.message) message = err.message;
-    } catch { /* ignore */ }
-    throw new Error(message);
+      payload = await res.json();
+    } catch { /* body not JSON / empty */ }
+
+    // Keep the old "404 on a GET means not found -> null" convenience
+    // (e.g. games/code/:code lookups), but ONLY for GET requests.
+    // For POST/PUT/PATCH/DELETE (e.g. classes/join), a 404 is a real
+    // error and must surface its msg instead of silently returning null.
+    if (res.status === 404 && method === "GET") return null;
+
+    const message = payload?.msg || payload?.message || `Lỗi ${res.status}`;
+    const err = new Error(message);
+    err.status = res.status;
+    err.data = payload;
+    throw err;
   }
   const json = await res.json();
   if (json && typeof json === "object" && "data" in json) {
