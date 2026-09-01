@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import AvatarPreview from './AvatarPreview.jsx';
 import { renderAvatarFull } from '../../lib/avatarRenderer.js';
 import { API_BASE } from '../../services/api.js';
+import { Modal } from '../ui.jsx';
 import { X, Check, ShoppingBag } from 'lucide-react';
 
 function ItemThumbnail({ item, selected, preview, onClick, owned, allItems }) {
@@ -51,9 +52,8 @@ function ItemThumbnail({ item, selected, preview, onClick, owned, allItems }) {
   return (
     <button
       onClick={onClick}
-      className={`relative w-16 h-16 rounded-xl border-2 overflow-hidden transition shrink-0 flex items-center justify-center ${
-        selected ? 'border-pink shadow-md' : preview ? 'border-sky shadow-sm' : 'border-ink/10 hover:border-ink/20'
-      }`}
+      className={`relative w-16 h-16 rounded-xl border-2 overflow-hidden transition shrink-0 flex items-center justify-center ${selected ? 'border-pink shadow-md' : preview ? 'border-sky shadow-sm' : 'border-ink/10 hover:border-ink/20'
+        }`}
       style={fullAvatarSvg ? {} : getSwatchStyle()}
     >
       {getContent()}
@@ -90,7 +90,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
           setCategories(json.data.categories);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   function selectItem(category, itemId) {
@@ -132,7 +132,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
         setDraft(prev => ({ ...prev, [item.category]: item.id }));
         setPreviewItem(null);
       }
-    } catch {}
+    } catch { }
     setBuying(null);
   }
 
@@ -148,106 +148,101 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
   }, [draft, previewItem]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-ink/10 shrink-0">
-          <h2 className="font-display text-lg text-ink">Tùy chỉnh Avatar</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition">
-            <X className="w-5 h-5 text-ink/50" />
+    <Modal onClose={onClose}>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-display text-lg text-ink">Tùy chỉnh Avatar</h2>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition">
+          <X className="w-5 h-5 text-ink/50" />
+        </button>
+      </div>
+
+      {/* Preview area with buy button overlay */}
+      <div className="relative flex justify-center py-4 mb-3 rounded-xl" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
+        <AvatarPreview loadout={previewLoadout} items={items} size={200} />
+
+        {previewItem && !isOwned(previewItem.id) && previewItem.price > 0 && (
+          <button
+            onClick={() => handleBuy(previewItem)}
+            disabled={buying === previewItem.id || localCoins < previewItem.price}
+            className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-pink text-white text-sm font-bold shadow-lg hover:bg-pink/80 transition disabled:opacity-50"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            {buying === previewItem.id ? 'Đang mua...' : `Mua ${previewItem.price} coin`}
           </button>
-        </div>
-
-        {/* Preview area with buy button overlay */}
-        <div className="relative flex justify-center py-6 shrink-0" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
-          <AvatarPreview loadout={previewLoadout} items={items} size={200} />
-
-          {/* Buy button on preview - bottom right */}
-          {previewItem && !isOwned(previewItem.id) && previewItem.price > 0 && (
-            <button
-              onClick={() => handleBuy(previewItem)}
-              disabled={buying === previewItem.id || localCoins < previewItem.price}
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-pink text-white text-sm font-bold shadow-lg hover:bg-pink/80 transition disabled:opacity-50"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              {buying === previewItem.id ? 'Đang mua...' : `Mua ${previewItem.price} coin`}
-            </button>
-          )}
-
-          {/* Selected badge */}
-          {previewItem && isOwned(previewItem.id) && (
-            <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-green-500 text-white text-xs font-bold shadow-lg">
-              <Check className="w-3.5 h-3.5" /> Đã sở hữu
-            </div>
-          )}
-        </div>
-
-        {previewItem && (
-          <div className="flex items-center justify-center gap-3 px-4 py-2 bg-sky/5 border-b border-sky/10 shrink-0">
-            <span className="text-xs font-body text-sky font-semibold">Đang xem: {previewItem.name}</span>
-            <button onClick={() => setPreviewItem(null)} className="text-[10px] font-mono text-sky/60 hover:text-sky">đóng</button>
-          </div>
         )}
 
-        <div className="flex gap-1 px-4 pt-3 overflow-x-auto shrink-0">
-          {categories.map(cat => (
-            <button key={cat.id} onClick={() => { setActiveTab(cat.id); setPreviewItem(null); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-body font-semibold whitespace-nowrap transition ${
-                activeTab === cat.id ? 'bg-pink text-white' : 'bg-ink/5 text-ink/50 hover:bg-ink/10'
+        {previewItem && isOwned(previewItem.id) && (
+          <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-green-500 text-white text-xs font-bold shadow-lg">
+            <Check className="w-3.5 h-3.5" /> Đã sở hữu
+          </div>
+        )}
+      </div>
+
+      {previewItem && (
+        <div className="flex items-center justify-center gap-3 px-3 py-2 mb-3 rounded-lg bg-sky/5 border border-sky/10">
+          <span className="text-xs font-body text-sky font-semibold">Đang xem: {previewItem.name}</span>
+          <button onClick={() => setPreviewItem(null)} className="text-[10px] font-mono text-sky/60 hover:text-sky">đóng</button>
+        </div>
+      )}
+
+      <div className="flex gap-1 mb-3 overflow-x-auto">
+        {categories.map(cat => (
+          <button key={cat.id} onClick={() => { setActiveTab(cat.id); setPreviewItem(null); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-body font-semibold whitespace-nowrap transition ${activeTab === cat.id ? 'bg-pink text-white' : 'bg-ink/5 text-ink/50 hover:bg-ink/10'
               }`}>
-              {cat.label}
-            </button>
-          ))}
-        </div>
+            {cat.label}
+          </button>
+        ))}
+      </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3">
-          <div className="flex flex-wrap gap-2">
-            {tabItems.map(item => {
-              const owned = isOwned(item.id);
-              const isPreviewing = previewItem?.id === item.id;
-              const isSelected = draft[activeTab] === item.id;
-              return (
-                <div key={item.id} className="flex flex-col items-center gap-1">
-                  <ItemThumbnail
-                    item={item}
-                    selected={isSelected}
-                    preview={isPreviewing && !isSelected}
-                    owned={owned}
-                    allItems={items}
-                    onClick={() => previewItemClick(item)}
-                  />
-                  {!owned && item.price > 0 && (
-                    <button
-                      onClick={() => handleBuy(item)}
-                      disabled={buying === item.id || localCoins < item.price}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-pink/10 text-pink text-xs font-mono font-bold hover:bg-pink/20 transition disabled:opacity-40"
-                    >
-                      <ShoppingBag className="w-3 h-3" />
-                      {buying === item.id ? '...' : `${item.price}`}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {tabItems.length === 0 && (
-            <p className="text-sm text-ink/40 text-center py-8">Chưa có item nào</p>
-          )}
+      <div className="max-h-60 overflow-y-auto mb-3">
+        <div className="flex flex-wrap gap-2">
+          {tabItems.map(item => {
+            const owned = isOwned(item.id);
+            const isPreviewing = previewItem?.id === item.id;
+            const isSelected = draft[activeTab] === item.id;
+            return (
+              <div key={item.id} className="flex flex-col items-center gap-1">
+                <ItemThumbnail
+                  item={item}
+                  selected={isSelected}
+                  preview={isPreviewing && !isSelected}
+                  owned={owned}
+                  allItems={items}
+                  onClick={() => previewItemClick(item)}
+                />
+                {!owned && item.price > 0 && (
+                  <button
+                    onClick={() => handleBuy(item)}
+                    disabled={buying === item.id || localCoins < item.price}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-pink/10 text-pink text-xs font-mono font-bold hover:bg-pink/20 transition disabled:opacity-40"
+                  >
+                    <ShoppingBag className="w-3 h-3" />
+                    {buying === item.id ? '...' : `${item.price}`}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
+        {tabItems.length === 0 && (
+          <p className="text-sm text-ink/40 text-center py-8">Chưa có item nào</p>
+        )}
+      </div>
 
-        <div className="flex items-center justify-between px-4 py-3 border-t border-ink/10 shrink-0">
-          <span className="text-xs font-mono text-ink/40">{localCoins.toLocaleString()} Coin</span>
-          <div className="flex gap-2">
-            <button onClick={onClose}
-              className="px-4 py-2 bg-ink/5 text-ink/60 rounded-xl text-sm font-body font-semibold hover:bg-ink/10 transition">
-              Hủy
-            </button>
-            <button onClick={() => onSave(draft)}
-              className="px-5 py-2 bg-pink text-white rounded-xl text-sm font-body font-semibold hover:bg-pink/80 transition">
-              Lưu Avatar
-            </button>
-          </div>
+      <div className="flex items-center justify-between pt-3 border-t border-ink/10">
+        <span className="text-xs font-mono text-ink/40">{localCoins.toLocaleString()} Coin</span>
+        <div className="flex gap-2">
+          <button onClick={onClose}
+            className="px-4 py-2 bg-ink/5 text-ink/60 rounded-xl text-sm font-body font-semibold hover:bg-ink/10 transition">
+            Hủy
+          </button>
+          <button onClick={() => onSave(draft)}
+            className="px-5 py-2 bg-pink text-white rounded-xl text-sm font-body font-semibold hover:bg-pink/80 transition">
+            Lưu Avatar
+          </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -252,7 +252,7 @@ function MobileSheet({ title, onClose, children }) {
 // Zoom và Preview đã chuyển xuống nổi trên canvas nên không còn lặp lại ở đây.
 function Toolbar({ title, setTitle, canUndo, canRedo, onUndo, onRedo, onSave, saving, onCancel }) {
   return (
-    <div className="flex items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-2.5 md:py-3 bg-ink text-paper sticky top-0 z-30">
+    <div className="flex items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-2.5 md:py-3 bg-ink text-paper sticky top-[var(--sat)] z-30">
       <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
         <button
           onClick={onCancel}

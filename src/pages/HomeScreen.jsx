@@ -71,14 +71,14 @@ const NAV_ITEMS = (userAuth) => [
 
 // QUICK_MENU_ITEMS giữ nguyên
 const QUICK_MENU_ITEMS = (userAuth) => [
-  { key: "code", icon: Ticket, label: "Nhập mã vé", action: "code", show: true, tint: "from-purple-400 to-fuchsia-400" },
+  { key: "code", icon: Ticket, label: "Nhập mã vé", action: "code", show: true, tint: "from-yellow-800 to-fuchsia-400" },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user, tint: "from-violet-400 to-purple-400" },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", path: "/spin-wheel", show: !!userAuth?.user, tint: "from-amber-400 to-yellow-500" },
   { key: "games", icon: Gamepad2, label: "Trò chơi", action: "scroll", show: true, tint: "from-orange-400 to-amber-400" },
   { key: "coins", icon: Coins, label: "Ví của tôi", path: "/my-coins", show: !!userAuth?.user, tint: "from-amber-400 to-yellow-400" },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", path: "/chat", show: !!userAuth?.user, tint: "from-cyan-400 to-blue-400" },
-  { key: "friends", icon: Search, label: "Tìm bạn", path: "/find-friends", show: !!userAuth?.user, tint: "from-emerald-400 to-teal-400" },
-  { key: "assignment", icon: FileText, label: "Bài tập", path: "/assignment", show: !!userAuth?.user, tint: "from-blue-400 to-indigo-400" },
+  { key: "friends", icon: Search, label: "Tìm bạn", path: "/find-friends", show: !!userAuth?.user, tint: "from-emerald-400 to-red-400" },
+  { key: "assignment", icon: FileText, label: "Bài tập", path: "/assignment", show: !!userAuth?.user, tint: "from-blue-400 to-yellow-400" },
   { key: "profile", icon: User, label: "Hồ sơ", path: "/profile", show: !!userAuth?.user, tint: "from-blue-400 to-rose-400" },
   { key: "teacher", icon: GraduationCap, label: "Giáo viên", path: "/admin", show: userAuth?.user?.role === 'admin' || 'teacher', tint: "from-indigo-400 to-violet-400" },
   { key: "login", icon: KeyRound, label: "Đăng nhập", action: "login", show: !userAuth?.user, tint: "from-purple-400 to-pink-400" },
@@ -416,7 +416,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         <div className="flex-1 min-w-0 flex flex-col">
 
           {/* ═══════════════════════════ MOBILE HEADER (Shopee style) — THAY ĐỔI ═══════════════════════════ */}
-          <header className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-purple-100 shadow-sm">
+          <header className="lg:hidden sticky top-[var(--sat)] z-30 bg-white/95 backdrop-blur-md border-b border-purple-100 shadow-sm">
             <div className="px-4 h-14 flex items-center justify-between gap-3">
               {/* Logo */}
               <a href="#/" onClick={() => navigate("/")} className="flex items-center gap-1 shrink-0">

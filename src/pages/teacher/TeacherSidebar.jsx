@@ -154,7 +154,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
         {renderNav(false)}
       </aside>
 
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-ink border-t border-white/10 pb-safe">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-ink border-t border-white/10" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="flex items-center justify-around h-16 px-2">
           {visibleMobileMain.map((t, i) => {
             if (i === 2) {
