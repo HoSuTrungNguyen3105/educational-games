@@ -338,13 +338,13 @@ const uid = () => `av-${Math.random().toString(36).slice(2, 9)}`;
 
 router.post("/admin/items", authenticate, async (req, res, next) => {
   try {
-    const { category, name, params, price, default: isDefault, gender } = req.body || {};
+    const { category, name, params, price, default: isDefault, gender, html } = req.body || {};
     if (!category || !name) return sendError(res, "Thiếu category hoặc name", 400);
     if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400);
     const p = params || {};
     const item = {
       id: uid(), category, name: String(name).trim(),
-      html: renderItemHtml(category, p),
+      html: (html !== undefined && html !== null) ? String(html) : renderItemHtml(category, p),
       params: p, price: Math.max(0, Number(price) || 0), default: !!isDefault,
       ...(gender ? { gender } : {}),
     };
@@ -358,7 +358,7 @@ router.put("/admin/items/:id", authenticate, async (req, res, next) => {
     const { id } = req.params;
     const existing = await getCollection(ITEMS).findOne({ id });
     if (!existing) return sendError(res, "Item không tồn tại", 404);
-    const { category, name, params, price, default: isDefault, gender } = req.body || {};
+    const { category, name, params, price, default: isDefault, gender, html } = req.body || {};
     const updates = {};
     if (category !== undefined) { if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400); updates.category = category; }
     if (name !== undefined) updates.name = String(name).trim();
@@ -366,11 +366,14 @@ router.put("/admin/items/:id", authenticate, async (req, res, next) => {
     if (price !== undefined) updates.price = Math.max(0, Number(price) || 0);
     if (isDefault !== undefined) updates.default = !!isDefault;
     if (gender !== undefined) updates.gender = gender;
+    if (html !== undefined && html !== null) {
+      updates.html = String(html);
+    } else {
+      const cat = updates.category || existing.category;
+      const p = updates.params || existing.params || {};
+      updates.html = renderItemHtml(cat, p);
+    }
     if (Object.keys(updates).length === 0) return sendError(res, "Không có gì để cập nhật", 400);
-    // Re-render html if params or category changed
-    const cat = updates.category || existing.category;
-    const p = updates.params || existing.params || {};
-    updates.html = renderItemHtml(cat, p);
     await getCollection(ITEMS).updateOne({ id }, { $set: updates });
     const updated = await getCollection(ITEMS).findOne({ id });
     sendSuccess(res, updated);
