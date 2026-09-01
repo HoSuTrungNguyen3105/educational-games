@@ -258,8 +258,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       {/* ═══════════════════════════ THANH TRÊN CÙNG (chỉ desktop) — GIỮ NGUYÊN ═══════════════════════════ */}
       <header className="hidden lg:block sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-purple-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center gap-6">
-          <a href="#/" onClick={() => navigate("/")} className="flex items-center gap-2 font-display text-2xl text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500 shrink-0">
-            <PartyPopper className="w-7 h-7 text-purple-500" /> Lớp Học Vui
+          <a href="#/" onClick={() => navigate("/")} className="shrink-0">
+            <img src={`${import.meta.env.BASE_URL}eduplay-logo.png`} alt="EduPlay" className="h-14 w-auto object-contain" draggable={false} />
           </a>
 
           <nav className="flex items-center gap-1 bg-purple-50/70 rounded-full p-1 mx-auto">
@@ -419,9 +419,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           <header className="lg:hidden sticky top-[var(--sat)] z-30 bg-white/95 backdrop-blur-md border-b border-purple-100 shadow-sm">
             <div className="px-4 h-14 flex items-center justify-between gap-3">
               {/* Logo */}
-              <a href="#/" onClick={() => navigate("/")} className="flex items-center gap-1 shrink-0">
-                <PartyPopper className="w-5 h-5 text-purple-500" />
-                <span className="font-display text-base text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-purple-500">Lớp Học Vui</span>
+              <a href="#/" onClick={() => navigate("/")} className="shrink-0">
+                <img src={`${import.meta.env.BASE_URL}eduplay-logo.png`} alt="EduPlay" className="h-8 w-auto object-contain" draggable={false} />
               </a>
               {/* Search bar */}
               {/* <div className="flex-1 max-w-[170px] relative">

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { navigate } from '../../lib/router.js'
 import { hasPermission } from '../../config/roles.js'
+import { Modal } from '../../components/ui.jsx'
 import {
   LayoutDashboard,
   Library,
@@ -13,7 +14,6 @@ import {
   HelpCircle,
   Plus,
   Home,
-  PartyPopper,
   LogOut,
   X,
   MessageCircle,
@@ -87,9 +87,8 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
 
   const renderNav = (isMobile) => (
     <div className="flex flex-col h-full">
-      <div className="px-5 pt-6 pb-4 flex items-center gap-3">
-        <PartyPopper className="w-6 h-6 text-gold" />
-        <span className="font-display text-paper text-lg">Lớp Học Vui</span>
+      <div className="px-5 pt-6 pb-4">
+        <img src={`${import.meta.env.BASE_URL}eduplay-admin-logo2.png`} alt="EduPlay Admin" className="w-full h-auto object-contain" draggable={false} />
       </div>
       <nav className="flex-1 px-3 py-2 space-y-1">
         {visibleMenu.map(t => {
@@ -161,30 +160,33 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
               return (
                 <div key="center-group" className="relative flex items-center justify-center">
                   {moreOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm" onClick={() => setMoreOpen(false)} />
-                      <div className="fixed inset-x-4 bottom-20 z-50 note-card p-4 anim-pop shadow-2xl sm:hidden">
-                        <p className="text-[10px] font-mono uppercase text-[#8A7C63] mb-3 text-center">Quản lý thêm</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {visibleMobileMore.map(m => {
-                            const Icon = m.icon;
-                            return (
-                              <button key={m.id} onClick={() => { navigate(m.route); setMoreOpen(false); }}
-                                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition
-                                  ${activeId === m.id ? "border-gold bg-gold/10 text-gold" : "border-ink/10 bg-paper2 text-ink hover:border-ink/25"}`}>
-                                <Icon className="w-6 h-6" />
-                                <span className="text-xs font-body font-medium">{m.label}</span>
-                              </button>
-                            );
-                          })}
-                          <button onClick={() => { onLogout?.(); setMoreOpen(false); }}
-                            className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition">
-                            <LogOut className="w-6 h-6" />
-                            <span className="text-xs font-body font-medium">Đăng xuất</span>
-                          </button>
-                        </div>
+                    <Modal
+                      onClose={() => setMoreOpen(false)}
+                      align="bottom"
+                      unstyled
+                      overlayClassName="bg-ink/40 backdrop-blur-sm pb-20 px-4 sm:hidden"
+                      contentClassName="note-card p-4 anim-pop shadow-2xl w-full max-w-md"
+                    >
+                      <p className="text-[10px] font-mono uppercase text-[#8A7C63] mb-3 text-center">Quản lý thêm</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {visibleMobileMore.map(m => {
+                          const Icon = m.icon;
+                          return (
+                            <button key={m.id} onClick={() => { navigate(m.route); setMoreOpen(false); }}
+                              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition
+                                ${activeId === m.id ? "border-gold bg-gold/10 text-gold" : "border-ink/10 bg-paper2 text-ink hover:border-ink/25"}`}>
+                              <Icon className="w-6 h-6" />
+                              <span className="text-xs font-body font-medium">{m.label}</span>
+                            </button>
+                          );
+                        })}
+                        <button onClick={() => { onLogout?.(); setMoreOpen(false); }}
+                          className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition">
+                          <LogOut className="w-6 h-6" />
+                          <span className="text-xs font-body font-medium">Đăng xuất</span>
+                        </button>
                       </div>
-                    </>
+                    </Modal>
                   )}
                   <button onClick={() => setMoreOpen(v => !v)}
                     className={`w-14 h-14 -mt-5 rounded-full flex items-center justify-center text-2xl shadow-lg transition

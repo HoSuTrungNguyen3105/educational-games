@@ -6,7 +6,7 @@ import CanvasArea from './CanvasArea.jsx'
 import ElementsSidebar from './ElementsSidebar.jsx'
 import PropertiesPanel from './PropertiesPanel.jsx'
 import TemplateRenderer from '../../games/TemplateRenderer.jsx'
-import { Loader } from '../ui.jsx'
+import { Loader, Modal } from '../ui.jsx'
 import { gameTemplateRegistry } from '../../games/templates/gameTemplates.js'
 
 // Context giả lập để hiển thị trong editor (không có dữ liệu game thật)
@@ -235,16 +235,20 @@ function MobileBar({ sheet, setSheet }) {
 
 function MobileSheet({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-40 bg-ink/50 backdrop-blur-sm flex flex-col justify-end anim-fade pb-[env(safe-area-inset-bottom)]" onClick={onClose}>
-      <div className="bg-paper2 rounded-t-3xl h-[75dvh] max-h-[85dvh] flex flex-col anim-pop shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-ink/15 flex-shrink-0"></div>
-        <div className="p-3 border-b border-ink/10 flex items-center justify-between">
-          <h3 className="font-display text-base text-ink">{title}</h3>
-          <button onClick={onClose} className="w-10 h-10 rounded-xl bg-ink/5 hover:bg-ink/10 text-ink flex items-center justify-center" title="Đóng" aria-label="Đóng">✕</button>
-        </div>
-        <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+    <Modal
+      onClose={onClose}
+      align="bottom"
+      unstyled
+      overlayClassName="bg-ink/50 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]"
+      contentClassName="bg-paper2 rounded-t-3xl h-[75dvh] max-h-[85dvh] w-full flex flex-col anim-pop shadow-2xl"
+    >
+      <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-ink/15 flex-shrink-0"></div>
+      <div className="p-3 border-b border-ink/10 flex items-center justify-between">
+        <h3 className="font-display text-base text-ink">{title}</h3>
+        <button onClick={onClose} className="w-10 h-10 rounded-xl bg-ink/5 hover:bg-ink/10 text-ink flex items-center justify-center" title="Đóng" aria-label="Đóng">✕</button>
       </div>
-    </div>
+      <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+    </Modal>
   );
 }
 
@@ -311,21 +315,25 @@ function PreviewModal({ template, onClose }) {
   }, [template]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/70 backdrop-blur-sm flex items-center justify-center p-3 md:p-4" onClick={onClose}>
-      <div ref={fitRef} className="bg-white rounded-3xl p-4 md:p-6 max-w-[94vw] max-h-[92vh] overflow-hidden anim-pop" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="font-display text-base md:text-lg text-ink truncate">👁️ Preview — giao diện học sinh</h3>
-          <button onClick={onClose} aria-label="Đóng preview" className="w-9 h-9 flex items-center justify-center rounded-xl text-ink/50 hover:text-ink hover:bg-ink/5 text-lg flex-shrink-0 transition">✕</button>
-        </div>
-        <div className="rounded-2xl overflow-hidden shadow-lg mx-auto"
-          style={{ width: Math.max(1, Math.round(template.canvas.width * scale)), height: Math.max(1, Math.round(template.canvas.height * scale)) }}>
-          <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
-            <TemplateRenderer template={template} context={ctx} />
-          </div>
-        </div>
-        <p className="text-xs text-[#8A7C63] mt-3 text-center">Đây là giao diện học sinh sẽ thấy khi chơi. Dữ liệu câu hỏi/đáp án/bảng xếp hạng sẽ lấy từ game realtime.</p>
+    <Modal
+      onClose={onClose}
+      unstyled
+      overlayClassName="bg-ink/70 backdrop-blur-sm p-3 md:p-4"
+      contentClassName="bg-white rounded-3xl p-4 md:p-6 max-w-[94vw] max-h-[92vh] overflow-hidden anim-pop"
+      contentRef={fitRef}
+    >
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h3 className="font-display text-base md:text-lg text-ink truncate">👁️ Preview — giao diện học sinh</h3>
+        <button onClick={onClose} aria-label="Đóng preview" className="w-9 h-9 flex items-center justify-center rounded-xl text-ink/50 hover:text-ink hover:bg-ink/5 text-lg flex-shrink-0 transition">✕</button>
       </div>
-    </div>
+      <div className="rounded-2xl overflow-hidden shadow-lg mx-auto"
+        style={{ width: Math.max(1, Math.round(template.canvas.width * scale)), height: Math.max(1, Math.round(template.canvas.height * scale)) }}>
+        <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
+          <TemplateRenderer template={template} context={ctx} />
+        </div>
+      </div>
+      <p className="text-xs text-[#8A7C63] mt-3 text-center">Đây là giao diện học sinh sẽ thấy khi chơi. Dữ liệu câu hỏi/đáp án/bảng xếp hạng sẽ lấy từ game realtime.</p>
+    </Modal>
   );
 }
 

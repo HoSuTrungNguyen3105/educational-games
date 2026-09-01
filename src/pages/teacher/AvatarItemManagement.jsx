@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
-import { ManagementHeader, ConfirmModal } from '../../components/ui.jsx';
+import { ManagementHeader, ConfirmModal, Modal } from '../../components/ui.jsx';
 import { Plus, Pencil, Trash2, X, Save, Search } from 'lucide-react';
 import { renderAvatarFull, renderAvatarFullWithOverrides, renderItemHtml } from '../../lib/avatarRenderer.js';
 
@@ -274,14 +274,18 @@ export default function AvatarItemManagement({ showToast }) {
       </button>
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-ink/10 shrink-0">
-              <h3 className="font-display text-lg text-ink">{editingId ? "Sửa Item" : "Thêm Item mới"}</h3>
-              <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><X className="w-5 h-5 text-ink/50" /></button>
-            </div>
+        <Modal
+          onClose={closeModal}
+          unstyled
+          overlayClassName="p-4"
+          contentClassName="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden anim-pop shadow-2xl"
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-ink/10 shrink-0">
+            <h3 className="font-display text-lg text-ink">{editingId ? "Sửa Item" : "Thêm Item mới"}</h3>
+            <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><X className="w-5 h-5 text-ink/50" /></button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ WebkitOverflowScrolling: 'touch' }}>
               <div>
                 <label className="text-xs font-mono uppercase text-ink/50">Category *</label>
                 <select value={form.category} onChange={e => onChange("category", e.target.value)}
@@ -322,7 +326,7 @@ export default function AvatarItemManagement({ showToast }) {
               </label>
 
               {/* Params */}
-              {form.category === 'body' ?? (
+              {form.category === 'body' && (
                 <div>
                   <label className="text-xs font-mono uppercase text-ink/50">Type (boy, girl, custom...)</label>
                   <input value={form.params?.type || ''} onChange={e => onChangeParam("type", e.target.value)}
@@ -431,18 +435,17 @@ export default function AvatarItemManagement({ showToast }) {
               })()}
 
               {error && <p className="text-xs text-red-500">{error}</p>}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-ink/10 shrink-0">
-              <button onClick={closeModal} className="px-4 py-2 bg-ink/5 text-ink/60 rounded-xl text-sm font-semibold hover:bg-ink/10 transition">Hủy</button>
-              <button onClick={submit} disabled={saving}
-                className="px-5 py-2 bg-pink text-white rounded-xl text-sm font-semibold hover:bg-pink/80 transition disabled:opacity-50 flex items-center gap-1.5">
-                <Save className="w-4 h-4" />
-                {saving ? "Đang lưu..." : editingId ? "Cập nhật" : "Tạo mới"}
-              </button>
-            </div>
           </div>
-        </div>
+
+          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-ink/10 shrink-0">
+            <button onClick={closeModal} className="px-4 py-2 bg-ink/5 text-ink/60 rounded-xl text-sm font-semibold hover:bg-ink/10 transition">Hủy</button>
+            <button onClick={submit} disabled={saving}
+              className="px-5 py-2 bg-pink text-white rounded-xl text-sm font-semibold hover:bg-pink/80 transition disabled:opacity-50 flex items-center gap-1.5">
+              <Save className="w-4 h-4" />
+              {saving ? "Đang lưu..." : editingId ? "Cập nhật" : "Tạo mới"}
+            </button>
+          </div>
+        </Modal>
       )}
 
       <ConfirmModal
@@ -450,7 +453,7 @@ export default function AvatarItemManagement({ showToast }) {
         title="Xóa item?"
         message={confirm.item ? `Bạn muốn xóa "${confirm.item.name}"?` : ""}
         onConfirm={doRemove}
-        onCancel={() => setConfirm({ open: false, item: null })}
+        onClose={() => setConfirm({ open: false, item: null })}
       />
     </div>
   );

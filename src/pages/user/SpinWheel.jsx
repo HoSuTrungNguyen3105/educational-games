@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { coinService } from "../../services/api.js";
 import { taskService, trackTaskEvent } from "../../services/taskService.js";
-import { Loader } from "../../components/ui.jsx";
+import { Loader, Modal } from "../../components/ui.jsx";
 // Optional: nếu muốn confetti, cài đặt canvas-confetti và import
 // import confetti from "canvas-confetti";
 
@@ -448,20 +448,17 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
 
         {/* Result popup - đẹp hơn với blur và hiệu ứng bật */}
         {result && (
-          <div
-            className="fixed inset-0 flex items-center justify-center z-50"
-            style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)" }}
-            onClick={() => setResult(null)}
+          <Modal
+            onClose={() => setResult(null)}
+            unstyled
+            overlayClassName="bg-black/60 backdrop-blur-lg px-4"
+            contentClassName="rounded-3xl p-8 text-center max-w-sm w-full transform transition-all duration-300 scale-100 opacity-100"
+            contentStyle={{
+              background: "linear-gradient(145deg, #ffffff, #f5f5f5)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+              animation: "popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
           >
-            <div
-              className="rounded-3xl p-8 text-center max-w-sm mx-4 transform transition-all duration-300 scale-100 opacity-100"
-              style={{
-                background: "linear-gradient(145deg, #ffffff, #f5f5f5)",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
-                animation: "popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
               <div className="text-6xl mb-4">{result.icon}</div>
               <h3
                 className="text-2xl font-bold mb-2"
@@ -490,8 +487,7 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
               >
                 Đóng
               </button>
-            </div>
-          </div>
+          </Modal>
         )}
       </div>
 

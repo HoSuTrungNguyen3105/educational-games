@@ -93,10 +93,45 @@ export function TicketStub({ icon, code, notchBg = "#FFF6E7" }) {
   );
 }
 
-export function Modal({ children, onClose, wide }) {
+export function Modal({
+  children,
+  onClose,
+  wide,
+  /**
+   * - "center": modal dạng card (mặc định)
+   * - "bottom": giống bottom-sheet (dùng cho mobile)
+   */
+  align = "center",
+  overlayClassName = "",
+  contentClassName = "",
+  overlayStyle,
+  contentStyle,
+  contentRef,
+  unstyled = false,
+  closeOnBackdrop = true,
+}) {
+  const overlayBase =
+    `fixed inset-0 z-50 flex ${align === "bottom" ? "items-end justify-center" : "items-center justify-center"} ` +
+    `${align === "center" ? "px-2 sm:px-4" : ""} bg-ink/40 backdrop-blur-sm`;
+
+  const contentBase = unstyled
+    ? "w-full"
+    : `note-card w-full p-4 sm:p-6 anim-pop max-h-[90vh] overflow-y-auto ${wide ? "max-w-[95vw]" : "max-w-md"}`;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-2 sm:px-4 bg-ink/40 backdrop-blur-sm" onClick={onClose} style={{ marginTop: 0 }}>
-      <div className={`note-card w-full p-4 sm:p-6 anim-pop max-h-[90vh] overflow-y-auto ${wide ? "max-w-[95vw]" : "max-w-md"}`} onClick={e => e.stopPropagation()}>{children}</div>
+    <div
+      className={`${overlayBase} ${overlayClassName}`}
+      onClick={closeOnBackdrop ? onClose : undefined}
+      style={{ marginTop: 0, ...(overlayStyle || {}) }}
+    >
+      <div
+        ref={contentRef}
+        className={`${contentBase} ${contentClassName}`}
+        style={contentStyle}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
     </div>
   );
 }

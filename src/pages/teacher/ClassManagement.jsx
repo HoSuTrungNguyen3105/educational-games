@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { Plus, Copy, Users, Trash2, X } from 'lucide-react';
+import { Modal } from '../../components/ui.jsx';
 
 export default function ClassManagement() {
   const [classes, setClasses] = useState([]);
@@ -52,8 +53,12 @@ export default function ClassManagement() {
       </div>
 
       {showCreate && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-paper rounded-2xl shadow-xl w-full max-w-md p-6 anim-pop" onClick={e => e.stopPropagation()}>
+        <Modal
+          onClose={() => setShowCreate(false)}
+          unstyled
+          overlayClassName="bg-black/40 p-4"
+          contentClassName="bg-paper rounded-2xl shadow-xl w-full max-w-md p-6 anim-pop"
+        >
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg text-ink">Tạo lớp mới</h2>
               <button onClick={() => setShowCreate(false)}><X className="w-5 h-5 text-ink/40" /></button>
@@ -82,8 +87,7 @@ export default function ClassManagement() {
                 Tạo lớp
               </button>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {loading ? (
