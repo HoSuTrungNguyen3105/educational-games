@@ -137,7 +137,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
       {mobileOpen && (
         <>
           <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setMobileOpen(false)} />
-          <aside className="fixed top-0 left-0 w-60 h-full bg-ink z-50 shadow-2xl overflow-y-auto transition-transform duration-300 sm:hidden">
+          <aside className="fixed top-0 left-0 w-60 h-full bg-ink z-50 shadow-2xl overflow-y-auto transition-transform duration-300 sm:hidden pwa-safe-top pwa-safe-top-h">
             <div className="flex items-center justify-between px-5 pt-5 pb-2">
               <span className="font-display text-paper text-base">Menu</span>
               <button onClick={() => setMobileOpen(false)} className="text-paper/60 hover:text-paper">

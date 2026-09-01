@@ -222,3 +222,44 @@ textarea {
 .animate-slide-up {
   animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* ============================================================
+   iPhone PWA Safe Area (Status Bar)
+   - Chỉ áp dụng khi chạy dạng PWA (standalone)
+   - Không hardcode px, dùng env(safe-area-inset-top)
+   - Safe area phía trên luôn tím #a855f7
+   ============================================================ */
+@media (display-mode: standalone) {
+  body {
+    /* iOS PWA thường dùng viewport-fit=cover => nội dung có thể chui vào status bar nếu không đẩy xuống */
+    padding-top: env(safe-area-inset-top);
+    background: #a855f7;
+  }
+
+  /* Vùng nội dung bên dưới safe-area */
+  #root {
+    min-height: calc(100dvh - env(safe-area-inset-top));
+    background: #f8fafc;
+  }
+
+  /* Lớp phủ cố định để safe-area trên luôn cùng màu, kể cả khi scroll/overscroll */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    background: #a855f7;
+    z-index: 99999;
+    pointer-events: none;
+  }
+
+  /* Utility cho các phần tử fixed top-0 trên mobile (menu/header) */
+  .pwa-safe-top {
+    top: env(safe-area-inset-top) !important;
+  }
+  .pwa-safe-top-h {
+    height: calc(100% - env(safe-area-inset-top)) !important;
+  }
+}
