@@ -1,56 +1,44 @@
-const AVATAR_W = 245;
-const AVATAR_H = 275;
+import { renderAvatarFull } from '../../lib/avatarRenderer.js';
 
-function ItemLayer({ item, category, template }) {
-  if (!item || !item.html) return null;
-  const pos = template?.[category];
-  if (!pos) return null;
+export default function AvatarPreview({ loadout = {}, items = [], size = 512, className = '' }) {
+  const state = {};
 
-  return (
-    <div
-      className="absolute pointer-events-none"
-      style={{
-        left: `${(pos.x / AVATAR_W) * 100}%`,
-        top: `${(pos.y / AVATAR_H) * 100}%`,
-        width: `${(pos.width / AVATAR_W) * 100}%`,
-        height: `${(pos.height / AVATAR_H) * 100}%`,
-        zIndex: pos.zIndex || 0,
-      }}
-      dangerouslySetInnerHTML={{ __html: item.html }}
-    />
-  );
-}
+  for (const [category, itemId] of Object.entries(loadout)) {
+    if (!itemId) continue;
+    const item = items.find(i => i.id === itemId);
+    if (!item) continue;
 
-export default function AvatarPreview({ loadout = {}, items = [], template = {}, size = 512, className = '' }) {
-  const LAYER_ORDER = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
+    if (category === 'skin') {
+      state.skin = item.params?.hex || '#FFDFC4';
+    } else if (category === 'face') {
+      state.face = item.params?.style || 'gentle';
+    } else if (category === 'hair') {
+      state.hair = { style: item.params?.style || 'spiky', color: item.params?.color || '#6B4226' };
+    } else if (category === 'shirt') {
+      state.shirt = { style: item.params?.style || 'tee', color: item.params?.color || '#F5F5F5' };
+    } else if (category === 'pants') {
+      state.pants = { style: item.params?.style || 'shorts', color: item.params?.color || '#241F1C' };
+    } else if (category === 'shoes') {
+      state.shoes = { style: item.params?.style || 'sneaker', color: item.params?.color || '#3B5EA6' };
+    } else if (category === 'hat') {
+      state.hat = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+    } else if (category === 'glasses') {
+      state.glasses = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+    } else if (category === 'accessory') {
+      state.accessory = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+    }
+  }
 
-  const resolved = LAYER_ORDER
-    .map(category => {
-      const itemId = loadout[category];
-      if (!itemId) return null;
-      const item = items.find(i => i.id === itemId);
-      if (!item) return null;
-      return { item, category };
-    })
-    .filter(Boolean);
+  const svgContent = renderAvatarFull(state);
 
   return (
-    <div
-      className={`relative overflow-hidden ${className}`}
-      style={{ width: size, height: size * (AVATAR_H / AVATAR_W) }}
-    >
-      {resolved.map(({ item, category }) => (
-        <ItemLayer
-          key={category}
-          item={item}
-          category={category}
-          template={template}
-        />
-      ))}
+    <div className={`relative overflow-hidden ${className}`} style={{ width: size, height: size * (440 / 300) }}>
+      <svg viewBox="0 0 300 440" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
+        dangerouslySetInnerHTML={{ __html: svgContent }} />
     </div>
   );
 }
 
-export function AvatarPreviewSmall({ loadout = {}, items = [], template = {}, size = 64, className = '' }) {
-  return <AvatarPreview loadout={loadout} items={items} template={template} size={size} className={`rounded-full ${className}`} />;
+export function AvatarPreviewSmall({ loadout = {}, items = [], size = 64, className = '' }) {
+  return <AvatarPreview loadout={loadout} items={items} size={size} className={`rounded-full ${className}`} />;
 }

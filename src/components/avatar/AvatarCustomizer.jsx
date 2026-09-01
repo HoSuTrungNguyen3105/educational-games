@@ -6,22 +6,29 @@ import { X, Check, ShoppingBag } from 'lucide-react';
 function ItemThumbnail({ item, selected, onClick, owned }) {
   if (!item) return null;
 
+  const getSwatchStyle = () => {
+    if (item.category === 'skin') return { background: item.params?.hex || '#ddd' };
+    if (item.category === 'face') return { background: '#FFF1E4' };
+    if (item.params?.style === 'none') return { background: 'repeating-linear-gradient(45deg,#EDEBF8,#EDEBF8 4px,#E1DEF4 4px,#E1DEF4 8px)' };
+    if (item.params?.color) return { background: item.params.color };
+    return { background: '#ddd' };
+  };
+
+  const getContent = () => {
+    if (item.category === 'face') return <span>{item.params?.emoji || '🙂'}</span>;
+    if (item.params?.style === 'none') return <span className="text-lg font-bold text-ink/20">–</span>;
+    return null;
+  };
+
   return (
     <button
       onClick={onClick}
-      className={`relative w-16 h-16 rounded-xl border-2 overflow-hidden transition shrink-0 ${
-        selected ? 'border-gold shadow-md' : 'border-ink/10 hover:border-ink/20'
+      className={`relative w-16 h-16 rounded-xl border-2 overflow-hidden transition shrink-0 flex items-center justify-center ${
+        selected ? 'border-pink shadow-md' : 'border-ink/10 hover:border-ink/20'
       }`}
+      style={getSwatchStyle()}
     >
-      {item.html ? (
-        <div className="w-full h-full flex items-center justify-center bg-ink/5 p-1">
-          <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: item.html }} />
-        </div>
-      ) : (
-        <div className="w-full h-full bg-ink/5 flex items-center justify-center">
-          <span className="text-[8px] text-ink/30">trống</span>
-        </div>
-      )}
+      {getContent()}
       {owned ? (
         <div className="absolute bottom-0 inset-x-0 bg-green-500/80 text-white text-[8px] font-mono text-center py-0.5">
           Sở hữu
@@ -32,7 +39,7 @@ function ItemThumbnail({ item, selected, onClick, owned }) {
         </div>
       ) : null}
       {selected && (
-        <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-gold flex items-center justify-center">
+        <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-pink flex items-center justify-center">
           <Check className="w-2.5 h-2.5 text-white" />
         </div>
       )}
@@ -45,7 +52,6 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
   const [activeTab, setActiveTab] = useState('hair');
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [template, setTemplate] = useState({});
   const [buying, setBuying] = useState(null);
   const [localCoins, setLocalCoins] = useState(coins);
   const [localInventory, setLocalInventory] = useState(inventory);
@@ -57,7 +63,6 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
         if (json.status) {
           setItems(json.data.items);
           setCategories(json.data.categories);
-          if (json.data.template) setTemplate(json.data.template);
         }
       })
       .catch(() => {});
@@ -109,14 +114,14 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
         </div>
 
         <div className="flex justify-center py-6 shrink-0" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
-          <AvatarPreview loadout={draft} items={items} template={template} size={256} />
+          <AvatarPreview loadout={draft} items={items} size={200} />
         </div>
 
         <div className="flex gap-1 px-4 pt-3 overflow-x-auto shrink-0">
           {categories.map(cat => (
             <button key={cat.id} onClick={() => setActiveTab(cat.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-body font-semibold whitespace-nowrap transition ${
-                activeTab === cat.id ? 'bg-gold text-white' : 'bg-ink/5 text-ink/50 hover:bg-ink/10'
+                activeTab === cat.id ? 'bg-pink text-white' : 'bg-ink/5 text-ink/50 hover:bg-ink/10'
               }`}>
               {cat.label}
             </button>
@@ -139,7 +144,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
                     <button
                       onClick={() => handleBuy(item)}
                       disabled={buying === item.id || localCoins < item.price}
-                      className="flex items-center gap-0.5 px-2 py-0.5 rounded-lg bg-gold/10 text-gold text-[9px] font-mono font-bold hover:bg-gold/20 transition disabled:opacity-40"
+                      className="flex items-center gap-0.5 px-2 py-0.5 rounded-lg bg-pink/10 text-pink text-[9px] font-mono font-bold hover:bg-pink/20 transition disabled:opacity-40"
                     >
                       <ShoppingBag className="w-2.5 h-2.5" />
                       {buying === item.id ? '...' : `${item.price}`}
@@ -162,7 +167,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
               Hủy
             </button>
             <button onClick={() => onSave(draft)}
-              className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-body font-semibold hover:bg-gold/80 transition">
+              className="px-5 py-2 bg-pink text-white rounded-xl text-sm font-body font-semibold hover:bg-pink/80 transition">
               Lưu Avatar
             </button>
           </div>

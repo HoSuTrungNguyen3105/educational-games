@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import path from "path";
@@ -12,12 +11,6 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 const router = Router();
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 const ITEMS = "avatarItems";
 const USERS = "users";
@@ -33,77 +26,168 @@ const CATEGORIES = [
 const LAYER_ORDER = ["body", "skin", "face", "hair", "shirt", "pants", "shoes", "hat", "glasses", "accessory"];
 
 const DEFAULT_LOADOUT = {
-  body: "body_01", skin: "skin_01", face: "face_01", hair: "hair_01",
-  shirt: "shirt_01", pants: "pants_01", shoes: "shoes_01",
-  hat: null, glasses: null, accessory: null,
+  skin: "skin_01", face: "face_01", hair: "hair_boy_01", shirt: "shirt_boy_01",
+  pants: "pants_boy_01", shoes: "shoes_boy_01", hat: null, glasses: null, accessory: null,
 };
 
 const DEFAULT_TEMPLATE = {
-  body:    { x: 0,   y: 0,   width: 245, height: 275, zIndex: 1 },
-  skin:    { x: 0,   y: 0,   width: 245, height: 275, zIndex: 2 },
-  face:    { x: 50,  y: 20,  width: 145, height: 120, zIndex: 3 },
-  hair:    { x: 40,  y: -10, width: 165, height: 100, zIndex: 4 },
-  shirt:   { x: 30,  y: 130, width: 185, height: 100, zIndex: 5 },
-  pants:   { x: 40,  y: 220, width: 165, height: 80,  zIndex: 6 },
-  shoes:   { x: 50,  y: 285, width: 145, height: 40,  zIndex: 7 },
-  hat:     { x: 30,  y: -20, width: 185, height: 60,  zIndex: 8 },
-  glasses: { x: 65,  y: 55,  width: 115, height: 35,  zIndex: 9 },
-  accessory: { x: 180, y: 140, width: 60, height: 60, zIndex: 10 },
+  skin:    { x: 0, y: 0, width: 300, height: 440, zIndex: 1 },
+  face:    { x: 0, y: 0, width: 300, height: 440, zIndex: 2 },
+  hair:    { x: 0, y: 0, width: 300, height: 440, zIndex: 3 },
+  shirt:   { x: 0, y: 0, width: 300, height: 440, zIndex: 4 },
+  pants:   { x: 0, y: 0, width: 300, height: 440, zIndex: 5 },
+  shoes:   { x: 0, y: 0, width: 300, height: 440, zIndex: 6 },
+  hat:     { x: 0, y: 0, width: 300, height: 440, zIndex: 7 },
+  glasses: { x: 0, y: 0, width: 300, height: 440, zIndex: 8 },
+  accessory: { x: 0, y: 0, width: 300, height: 440, zIndex: 9 },
 };
 
-// ─── SEED DEFAULT ITEMS ─────────────────────────────────────────
+// ─── SEED DATA FROM avatar.html ─────────────────────────────────
 
 const SEED_ITEMS = [
-  {
-    id: "body_01", category: "body", name: "Thân mặc định", price: 0, default: true,
-    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="122" cy="137" rx="75" ry="100" fill="#F5D6B8"/>
-    </svg>`,
-  },
-  {
-    id: "skin_01", category: "skin", name: "Da sáng", price: 0, default: true,
-    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="122" cy="137" rx="70" ry="95" fill="#FFE0C2"/>
-    </svg>`,
-  },
-  {
-    id: "face_01", category: "face", name: "Mặt mặc định", price: 0, default: true,
-    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="95" cy="100" r="8" fill="#3D2B1F"/>
-      <circle cx="150" cy="100" r="8" fill="#3D2B1F"/>
-      <path d="M105 130 Q122 145 140 130" stroke="#C4756B" stroke-width="3" fill="none" stroke-linecap="round"/>
-    </svg>`,
-  },
-  {
-    id: "hair_01", category: "hair", name: "Tóc ngắn nâu", price: 0, default: true,
-    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
-      <path d="M50 90 Q50 20 122 15 Q195 20 195 90 Q195 60 170 45 Q145 30 122 28 Q100 30 75 45 Q50 60 50 90Z" fill="#6B3A2A"/>
-    </svg>`,
-  },
-  {
-    id: "shirt_01", category: "shirt", name: "Áo thun trắng", price: 0, default: true,
-    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
-      <path d="M40 145 L80 135 L122 140 L165 135 L205 145 L210 230 L35 230Z" fill="#FFFFFF" stroke="#DDD" stroke-width="1"/>
-      <path d="M80 135 L65 115 L80 110" fill="#FFFFFF" stroke="#DDD" stroke-width="1"/>
-      <path d="M165 135 L180 115 L165 110" fill="#FFFFFF" stroke="#DDD" stroke-width="1"/>
-    </svg>`,
-  },
-  {
-    id: "pants_01", category: "pants", name: "Quần jean", price: 0, default: true,
-    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
-      <path d="M55 225 L50 310 L105 310 L122 240 L140 310 L195 310 L190 225Z" fill="#4A6FA5" stroke="#3D5A80" stroke-width="1"/>
-      <line x1="122" y1="230" x2="122" y2="290" stroke="#3D5A80" stroke-width="1"/>
-    </svg>`,
-  },
-  {
-    id: "shoes_01", category: "shoes", name: "Giày sneaker", price: 0, default: true,
-    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
-      <rect x="40" y="300" width="70" height="25" rx="8" fill="#333"/>
-      <rect x="135" y="300" width="70" height="25" rx="8" fill="#333"/>
-      <rect x="40" y="300" width="70" height="8" rx="4" fill="#FFF"/>
-      <rect x="135" y="300" width="70" height="8" rx="4" fill="#FFF"/>
-    </svg>`,
-  },
+  // SKIN
+  { id: "skin_01", category: "skin", name: "Trắng hồng", price: 0, default: true, params: { hex: "#FFDFC4" } },
+  { id: "skin_02", category: "skin", name: "Vàng sáng", price: 50, default: false, params: { hex: "#F0C299" } },
+  { id: "skin_03", category: "skin", name: "Rám nắng", price: 50, default: false, params: { hex: "#D9A066" } },
+  { id: "skin_04", category: "skin", name: "Nâu đồng", price: 50, default: false, params: { hex: "#A9714F" } },
+  { id: "skin_05", category: "skin", name: "Nâu sẫm", price: 50, default: false, params: { hex: "#6B4226" } },
+
+  // FACE
+  { id: "face_01", category: "face", name: "Hiền dịu", price: 0, default: true, params: { style: "gentle", emoji: "🙂" } },
+  { id: "face_02", category: "face", name: "Vui tươi", price: 0, default: false, params: { style: "happy", emoji: "😄" } },
+  { id: "face_03", category: "face", name: "Tinh nghịch", price: 0, default: false, params: { style: "wink", emoji: "😉" } },
+  { id: "face_04", category: "face", name: "Cười to", price: 0, default: false, params: { style: "laughing", emoji: "😆" } },
+  { id: "face_05", category: "face", name: "Cá tính", price: 0, default: false, params: { style: "fierce", emoji: "😠" } },
+
+  // HAIR BOY
+  { id: "hair_boy_01", category: "hair", name: "Bờm gai nâu", price: 0, default: true, gender: "boy", params: { style: "spiky", color: "#6B4226" } },
+  { id: "hair_boy_02", category: "hair", name: "Bờm gai đen", price: 80, default: false, gender: "boy", params: { style: "spiky", color: "#241F1C" } },
+  { id: "hair_boy_03", category: "hair", name: "Tóc rối navy", price: 80, default: false, gender: "boy", params: { style: "messy", color: "#2A3A6B" } },
+  { id: "hair_boy_04", category: "hair", name: "Tóc rối bạc", price: 100, default: false, gender: "boy", params: { style: "messy", color: "#D8D8D8" } },
+  { id: "hair_boy_05", category: "hair", name: "Bờm gai đỏ", price: 80, default: false, gender: "boy", params: { style: "wild", color: "#C0392B" } },
+  { id: "hair_boy_06", category: "hair", name: "Chải lệch hạt dẻ", price: 80, default: false, gender: "boy", params: { style: "side", color: "#4A2E1E" } },
+  { id: "hair_boy_07", category: "hair", name: "Chải lệch vàng", price: 80, default: false, gender: "boy", params: { style: "side", color: "#E8B94B" } },
+  { id: "hair_boy_08", category: "hair", name: "Bờm gai lục", price: 100, default: false, gender: "boy", params: { style: "wild", color: "#2F8F5B" } },
+  { id: "hair_boy_09", category: "hair", name: "Tóc rối tím", price: 100, default: false, gender: "boy", params: { style: "messy", color: "#7B4FA0" } },
+  { id: "hair_boy_10", category: "hair", name: "Bờm gai ngọc lam", price: 120, default: false, gender: "boy", params: { style: "spiky", color: "#2F9E9E" } },
+
+  // HAIR GIRL
+  { id: "hair_girl_01", category: "hair", name: "Tóc dài nâu", price: 0, default: true, gender: "girl", params: { style: "long", color: "#6B4226" } },
+  { id: "hair_girl_02", category: "hair", name: "Hai bím nâu", price: 80, default: false, gender: "girl", params: { style: "twin", color: "#6B4226" } },
+  { id: "hair_girl_03", category: "hair", name: "Tóc xoăn hồng", price: 100, default: false, gender: "girl", params: { style: "wavy", color: "#F2A6C6" } },
+  { id: "hair_girl_04", category: "hair", name: "Tóc dài vàng", price: 80, default: false, gender: "girl", params: { style: "long", color: "#E8B94B" } },
+  { id: "hair_girl_05", category: "hair", name: "Tóc dài đen", price: 80, default: false, gender: "girl", params: { style: "long", color: "#241F1C" } },
+  { id: "hair_girl_06", category: "hair", name: "Tóc xoăn navy", price: 100, default: false, gender: "girl", params: { style: "wavy", color: "#2A3A6B" } },
+  { id: "hair_girl_07", category: "hair", name: "Tóc xoăn tím", price: 120, default: false, gender: "girl", params: { style: "wavy", color: "#7B4FA0" } },
+  { id: "hair_girl_08", category: "hair", name: "Tóc tết hạt dẻ", price: 100, default: false, gender: "girl", params: { style: "braid", color: "#4A2E1E" } },
+  { id: "hair_girl_09", category: "hair", name: "Tóc dài nâu nhạt", price: 80, default: false, gender: "girl", params: { style: "long", color: "#8A5A34" } },
+  { id: "hair_girl_10", category: "hair", name: "Hai bím đen", price: 80, default: false, gender: "girl", params: { style: "twin", color: "#241F1C" } },
+
+  // SHIRT BOY
+  { id: "shirt_boy_01", category: "shirt", name: "Áo phông trắng", price: 0, default: true, gender: "boy", params: { style: "tee", color: "#F5F5F5" } },
+  { id: "shirt_boy_02", category: "shirt", name: "Áo hoodie đen", price: 120, default: false, gender: "boy", params: { style: "hoodie", color: "#241F1C" } },
+  { id: "shirt_boy_03", category: "shirt", name: "Áo hoodie đỏ", price: 120, default: false, gender: "boy", params: { style: "hoodie", color: "#C0392B" } },
+  { id: "shirt_boy_04", category: "shirt", name: "Áo khoác xanh", price: 150, default: false, gender: "boy", params: { style: "jacket", color: "#3FB6E8" } },
+  { id: "shirt_boy_05", category: "shirt", name: "Áo khoác đen", price: 150, default: false, gender: "boy", params: { style: "jacket", color: "#241F1C" } },
+  { id: "shirt_boy_06", category: "shirt", name: "Áo hoodie vàng", price: 120, default: false, gender: "boy", params: { style: "hoodie", color: "#F2B705" } },
+  { id: "shirt_boy_07", category: "shirt", name: "Áo hoodie lục", price: 120, default: false, gender: "boy", params: { style: "hoodie", color: "#2F8F5B" } },
+  { id: "shirt_boy_08", category: "shirt", name: "Áo polo trắng", price: 100, default: false, gender: "boy", params: { style: "polo", color: "#F5F5F5" } },
+  { id: "shirt_boy_09", category: "shirt", name: "Áo phông đen", price: 0, default: false, gender: "boy", params: { style: "tee", color: "#241F1C" } },
+  { id: "shirt_boy_10", category: "shirt", name: "Áo hoodie trắng", price: 120, default: false, gender: "boy", params: { style: "hoodie", color: "#F5F5F5" } },
+
+  // SHIRT GIRL
+  { id: "shirt_girl_01", category: "shirt", name: "Áo phông nơ trắng", price: 0, default: true, gender: "girl", params: { style: "tee", color: "#F5F5F5" } },
+  { id: "shirt_girl_02", category: "shirt", name: "Áo len hồng", price: 120, default: false, gender: "girl", params: { style: "sweater", color: "#F2A6C6" } },
+  { id: "shirt_girl_03", category: "shirt", name: "Áo len xanh nơ", price: 120, default: false, gender: "girl", params: { style: "sweater", color: "#8FD3F4" } },
+  { id: "shirt_girl_04", category: "shirt", name: "Áo hoodie đen", price: 120, default: false, gender: "girl", params: { style: "hoodie", color: "#241F1C" } },
+  { id: "shirt_girl_05", category: "shirt", name: "Áo phông tim", price: 80, default: false, gender: "girl", params: { style: "tee", color: "#FDFDFD" } },
+  { id: "shirt_girl_06", category: "shirt", name: "Áo cardigan vàng", price: 150, default: false, gender: "girl", params: { style: "cardigan", color: "#F2B705" } },
+  { id: "shirt_girl_07", category: "shirt", name: "Áo khoác đen phối", price: 150, default: false, gender: "girl", params: { style: "jacket", color: "#241F1C" } },
+  { id: "shirt_girl_08", category: "shirt", name: "Áo hoodie hồng", price: 120, default: false, gender: "girl", params: { style: "hoodie", color: "#F2A6C6" } },
+  { id: "shirt_girl_09", category: "shirt", name: "Áo thủy thủ trắng", price: 100, default: false, gender: "girl", params: { style: "sailor", color: "#F5F5F5" } },
+  { id: "shirt_girl_10", category: "shirt", name: "Áo thủy thủ navy", price: 100, default: false, gender: "girl", params: { style: "sailor", color: "#2A3A6B" } },
+
+  // PANTS BOY
+  { id: "pants_boy_01", category: "pants", name: "Quần short đen", price: 0, default: true, gender: "boy", params: { style: "shorts", color: "#241F1C" } },
+  { id: "pants_boy_02", category: "pants", name: "Quần short xanh", price: 60, default: false, gender: "boy", params: { style: "shorts", color: "#3FB6E8" } },
+  { id: "pants_boy_03", category: "pants", name: "Quần cargo be", price: 100, default: false, gender: "boy", params: { style: "cargo", color: "#D2B48C" } },
+  { id: "pants_boy_04", category: "pants", name: "Quần short xám", price: 60, default: false, gender: "boy", params: { style: "shorts", color: "#9AA0A6" } },
+  { id: "pants_boy_05", category: "pants", name: "Quần jean xanh", price: 100, default: false, gender: "boy", params: { style: "jeans", color: "#3B5EA6" } },
+  { id: "pants_boy_06", category: "pants", name: "Quần jogger đen", price: 120, default: false, gender: "boy", params: { style: "joggers", color: "#241F1C" } },
+  { id: "pants_boy_07", category: "pants", name: "Quần cargo olive", price: 100, default: false, gender: "boy", params: { style: "cargo", color: "#6E7B3B" } },
+  { id: "pants_boy_08", category: "pants", name: "Quần kaki", price: 80, default: false, gender: "boy", params: { style: "jeans", color: "#C8B27A" } },
+  { id: "pants_boy_09", category: "pants", name: "Quần jean đen", price: 100, default: false, gender: "boy", params: { style: "jeans", color: "#2B2B2B" } },
+  { id: "pants_boy_10", category: "pants", name: "Quần short kem", price: 60, default: false, gender: "boy", params: { style: "shorts", color: "#E8DCC4" } },
+
+  // PANTS GIRL
+  { id: "pants_girl_01", category: "pants", name: "Váy xếp ly đen", price: 0, default: true, gender: "girl", params: { style: "skirt", color: "#241F1C" } },
+  { id: "pants_girl_02", category: "pants", name: "Váy xếp ly trắng", price: 80, default: false, gender: "girl", params: { style: "skirt", color: "#F5F5F5" } },
+  { id: "pants_girl_03", category: "pants", name: "Váy caro hồng", price: 100, default: false, gender: "girl", params: { style: "skirt", color: "#F2A6C6" } },
+  { id: "pants_girl_04", category: "pants", name: "Quần short đen", price: 60, default: false, gender: "girl", params: { style: "shorts", color: "#241F1C" } },
+  { id: "pants_girl_05", category: "pants", name: "Váy navy", price: 100, default: false, gender: "girl", params: { style: "skirt", color: "#2A3A6B" } },
+  { id: "pants_girl_06", category: "pants", name: "Quần short hồng", price: 60, default: false, gender: "girl", params: { style: "shorts", color: "#F2A6C6" } },
+  { id: "pants_girl_07", category: "pants", name: "Quần jean xanh nhạt", price: 100, default: false, gender: "girl", params: { style: "jeans", color: "#8FB8E6" } },
+  { id: "pants_girl_08", category: "pants", name: "Quần cargo hồng", price: 100, default: false, gender: "girl", params: { style: "cargo", color: "#E6A5C0" } },
+  { id: "pants_girl_09", category: "pants", name: "Quần jean đen", price: 100, default: false, gender: "girl", params: { style: "jeans", color: "#2B2B2B" } },
+  { id: "pants_girl_10", category: "pants", name: "Váy xếp ly xanh", price: 100, default: false, gender: "girl", params: { style: "skirt", color: "#3B5EA6" } },
+
+  // SHOES BOY
+  { id: "shoes_boy_01", category: "shoes", name: "Giày thể thao xanh", price: 0, default: true, gender: "boy", params: { style: "sneaker", color: "#3B5EA6" } },
+  { id: "shoes_boy_02", category: "shoes", name: "Giày thể thao đỏ", price: 80, default: false, gender: "boy", params: { style: "sneaker", color: "#C0392B" } },
+  { id: "shoes_boy_03", category: "shoes", name: "Giày thể thao trắng", price: 80, default: false, gender: "boy", params: { style: "sneaker", color: "#F5F5F5" } },
+  { id: "shoes_boy_04", category: "shoes", name: "Bốt đen", price: 120, default: false, gender: "boy", params: { style: "boots", color: "#241F1C" } },
+  { id: "shoes_boy_05", category: "shoes", name: "Giày thể thao vàng", price: 80, default: false, gender: "boy", params: { style: "sneaker", color: "#F2B705" } },
+  { id: "shoes_boy_06", category: "shoes", name: "Giày thể thao lục", price: 80, default: false, gender: "boy", params: { style: "sneaker", color: "#2F8F5B" } },
+  { id: "shoes_boy_07", category: "shoes", name: "Bốt nâu", price: 120, default: false, gender: "boy", params: { style: "boots", color: "#8A5A34" } },
+  { id: "shoes_boy_08", category: "shoes", name: "Giày đỏ đen", price: 100, default: false, gender: "boy", params: { style: "sneaker", color: "#8E2A2A" } },
+  { id: "shoes_boy_09", category: "shoes", name: "Bốt đen cao", price: 140, default: false, gender: "boy", params: { style: "boots", color: "#3A3A3A" } },
+  { id: "shoes_boy_10", category: "shoes", name: "Bốt trắng", price: 120, default: false, gender: "boy", params: { style: "boots", color: "#F0F0F0" } },
+
+  // SHOES GIRL
+  { id: "shoes_girl_01", category: "shoes", name: "Giày thể thao hồng", price: 0, default: true, gender: "girl", params: { style: "sneaker", color: "#F2A6C6" } },
+  { id: "shoes_girl_02", category: "shoes", name: "Giày thể thao trắng", price: 80, default: false, gender: "girl", params: { style: "sneaker", color: "#F5F5F5" } },
+  { id: "shoes_girl_03", category: "shoes", name: "Bốt đen", price: 120, default: false, gender: "girl", params: { style: "boots", color: "#241F1C" } },
+  { id: "shoes_girl_04", category: "shoes", name: "Bốt hồng", price: 120, default: false, gender: "girl", params: { style: "boots", color: "#E6A5C0" } },
+  { id: "shoes_girl_05", category: "shoes", name: "Giày thể thao xanh", price: 80, default: false, gender: "girl", params: { style: "sneaker", color: "#8FD3F4" } },
+  { id: "shoes_girl_06", category: "shoes", name: "Bốt trắng", price: 120, default: false, gender: "girl", params: { style: "boots", color: "#F0F0F0" } },
+  { id: "shoes_girl_07", category: "shoes", name: "Bốt hồng phấn", price: 140, default: false, gender: "girl", params: { style: "boots", color: "#F6C6DA" } },
+  { id: "shoes_girl_08", category: "shoes", name: "Giày thể thao đen", price: 80, default: false, gender: "girl", params: { style: "sneaker", color: "#2B2B2B" } },
+  { id: "shoes_girl_09", category: "shoes", name: "Bốt navy", price: 120, default: false, gender: "girl", params: { style: "boots", color: "#2A3A6B" } },
+  { id: "shoes_girl_10", category: "shoes", name: "Giày thể thao vàng", price: 80, default: false, gender: "girl", params: { style: "sneaker", color: "#F2B705" } },
+
+  // HAT
+  { id: "hat_01", category: "hat", name: "Không đội mũ", price: 0, default: true, params: { style: "none" } },
+  { id: "hat_02", category: "hat", name: "Mũ lưỡi trai xanh", price: 100, default: false, params: { style: "cap", color: "#3FB6E8" } },
+  { id: "hat_03", category: "hat", name: "Mũ lưỡi trai đen", price: 100, default: false, params: { style: "cap", color: "#241F1C" } },
+  { id: "hat_04", category: "hat", name: "Mũ lưỡi trai đỏ", price: 100, default: false, params: { style: "cap", color: "#C0392B" } },
+  { id: "hat_05", category: "hat", name: "Mũ len đen", price: 80, default: false, params: { style: "beanie", color: "#241F1C" } },
+  { id: "hat_06", category: "hat", name: "Mũ bucket vàng", price: 120, default: false, params: { style: "bucket", color: "#F2B705" } },
+  { id: "hat_07", category: "hat", name: "Mũ bucket lục", price: 120, default: false, params: { style: "bucket", color: "#2F8F5B" } },
+  { id: "hat_08", category: "hat", name: "Mũ nồi cao", price: 150, default: false, params: { style: "tophat", color: "#241F1C" } },
+  { id: "hat_09", category: "hat", name: "Mũ rơm", price: 100, default: false, params: { style: "sunhat", color: "#E8B94B" } },
+
+  // GLASSES
+  { id: "glasses_01", category: "glasses", name: "Không đeo kính", price: 0, default: true, params: { style: "none" } },
+  { id: "glasses_02", category: "glasses", name: "Kính tròn đen", price: 80, default: false, params: { style: "round", color: "#241F1C" } },
+  { id: "glasses_03", category: "glasses", name: "Kính tròn vàng", price: 80, default: false, params: { style: "round", color: "#C99A2E" } },
+  { id: "glasses_04", category: "glasses", name: "Kính trái tim", price: 120, default: false, params: { style: "heart", color: "#FF5DA2" } },
+  { id: "glasses_05", category: "glasses", name: "Kính râm vuông", price: 100, default: false, params: { style: "sun", color: "#1C1C1C" } },
+  { id: "glasses_06", category: "glasses", name: "Kính mắt mèo hồng", price: 120, default: false, params: { style: "cat", color: "#FF5DA2" } },
+  { id: "glasses_07", category: "glasses", name: "Kính mắt mèo đen", price: 120, default: false, params: { style: "cat", color: "#241F1C" } },
+  { id: "glasses_08", category: "glasses", name: "Kính ngôi sao", price: 150, default: false, params: { style: "star", color: "#F2B705" } },
+
+  // ACCESSORY
+  { id: "accessory_01", category: "accessory", name: "Không có", price: 0, default: true, params: { style: "none" } },
+  { id: "accessory_02", category: "accessory", name: "Tai nghe xanh", price: 150, default: false, params: { style: "headphones", color: "#3FB6E8" } },
+  { id: "accessory_03", category: "accessory", name: "Tai nghe hồng", price: 150, default: false, params: { style: "headphones", color: "#FF5DA2" } },
+  { id: "accessory_04", category: "accessory", name: "Khăn quàng đỏ", price: 80, default: false, params: { style: "scarf", color: "#C0392B" } },
+  { id: "accessory_05", category: "accessory", name: "Khăn quàng trắng", price: 80, default: false, params: { style: "scarf", color: "#F5F5F5" } },
+  { id: "accessory_06", category: "accessory", name: "Khẩu trang đen", price: 60, default: false, params: { style: "mask", color: "#241F1C" } },
+  { id: "accessory_07", category: "accessory", name: "Balo xanh", price: 200, default: false, params: { style: "backpack", color: "#3FB6E8" } },
+  { id: "accessory_08", category: "accessory", name: "Balo hồng", price: 200, default: false, params: { style: "backpack", color: "#FF5DA2" } },
+  { id: "accessory_09", category: "accessory", name: "Tai mèo đen", price: 120, default: false, params: { style: "ears", color: "#241F1C" } },
+  { id: "accessory_10", category: "accessory", name: "Cánh thiên thần", price: 300, default: false, params: { style: "wings", color: "#FFFFFF" } },
+  { id: "accessory_11", category: "accessory", name: "Cánh dơi đen", price: 300, default: false, params: { style: "wings", color: "#241F1C" } },
 ];
 
 async function ensureSeeded() {
@@ -231,12 +315,13 @@ const uid = () => `av-${Math.random().toString(36).slice(2, 9)}`;
 
 router.post("/admin/items", authenticate, async (req, res, next) => {
   try {
-    const { category, name, html, price, default: isDefault } = req.body || {};
+    const { category, name, html, params, price, default: isDefault, gender } = req.body || {};
     if (!category || !name) return sendError(res, "Thiếu category hoặc name", 400);
     if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400);
     const item = {
       id: uid(), category, name: String(name).trim(), html: html || "",
-      price: Math.max(0, Number(price) || 0), default: !!isDefault,
+      params: params || {}, price: Math.max(0, Number(price) || 0), default: !!isDefault,
+      ...(gender ? { gender } : {}),
     };
     await getCollection(ITEMS).insertOne(item);
     sendCreated(res, item);
@@ -248,13 +333,15 @@ router.put("/admin/items/:id", authenticate, async (req, res, next) => {
     const { id } = req.params;
     const existing = await getCollection(ITEMS).findOne({ id });
     if (!existing) return sendError(res, "Item không tồn tại", 404);
-    const { category, name, html, price, default: isDefault } = req.body || {};
+    const { category, name, html, params, price, default: isDefault, gender } = req.body || {};
     const updates = {};
     if (category !== undefined) { if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400); updates.category = category; }
     if (name !== undefined) updates.name = String(name).trim();
     if (html !== undefined) updates.html = html;
+    if (params !== undefined) updates.params = params;
     if (price !== undefined) updates.price = Math.max(0, Number(price) || 0);
     if (isDefault !== undefined) updates.default = !!isDefault;
+    if (gender !== undefined) updates.gender = gender;
     if (Object.keys(updates).length === 0) return sendError(res, "Không có gì để cập nhật", 400);
     await getCollection(ITEMS).updateOne({ id }, { $set: updates });
     const updated = await getCollection(ITEMS).findOne({ id });
@@ -269,12 +356,13 @@ router.post("/admin/items/batch", authenticate, async (req, res, next) => {
     if (items.length > 100) return sendError(res, "Tối đa 100 item mỗi lần", 400);
     const created = [];
     for (const it of items) {
-      const { category, name, html, price, default: isDefault } = it || {};
+      const { category, name, html, params, price, default: isDefault, gender } = it || {};
       if (!category || !name) return sendError(res, "Thiếu category hoặc name", 400);
       if (!CATEGORIES.find(c => c.id === category)) return sendError(res, `Category không hợp lệ: ${category}`, 400);
       const item = {
         id: uid(), category, name: String(name).trim(), html: html || "",
-        price: Math.max(0, Number(price) || 0), default: !!isDefault,
+        params: params || {}, price: Math.max(0, Number(price) || 0), default: !!isDefault,
+        ...(gender ? { gender } : {}),
       };
       await getCollection(ITEMS).insertOne(item);
       created.push(item);
