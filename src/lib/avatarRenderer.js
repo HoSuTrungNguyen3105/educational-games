@@ -282,6 +282,44 @@ export function renderAvatarFull(state) {
     hair.front + hatMarkup(hatOpt) + glassesMarkup(glassesOpt) + acc.front;
 }
 
+export function renderAvatarFullWithOverrides(state, overrides = {}) {
+  const skin = state.skin || '#FFDFC4';
+  const faceStyle = state.face || 'gentle';
+  const hairOpt = state.hair || { style: 'spiky', color: '#6B4226' };
+  const shirtOpt = state.shirt || { style: 'tee', color: '#F5F5F5' };
+  const pantsOpt = state.pants || { style: 'shorts', color: '#241F1C' };
+  const shoesOpt = state.shoes || { style: 'sneaker', color: '#3B5EA6' };
+  const hatOpt = state.hat || { style: 'none' };
+  const glassesOpt = state.glasses || { style: 'none' };
+  const accOpt = state.accessory || { style: 'none' };
+
+  let hairBack = '', hairFront = '';
+  if (overrides.hair) {
+    const sp = splitBackFront(overrides.hair);
+    hairBack = sp.back; hairFront = sp.front;
+  } else {
+    const h = hairMarkup(hairOpt); hairBack = h.back; hairFront = h.front;
+  }
+
+  let accBack = '', accFront = '';
+  if (overrides.accessory) {
+    const sp = splitBackFront(overrides.accessory);
+    accBack = sp.back; accFront = sp.front;
+  } else {
+    const a = accessoryMarkup(accOpt); accBack = a.back; accFront = a.front;
+  }
+
+  return accBack + hairBack + (overrides.skin || bodyBase(skin)) +
+    (overrides.pants || pantsMarkup(pantsOpt)) +
+    (overrides.shirt || shirtMarkup(shirtOpt)) +
+    (overrides.shoes || shoesMarkup(shoesOpt)) +
+    (overrides.face || drawFace(faceStyle)) +
+    hairFront +
+    (overrides.hat || hatMarkup(hatOpt)) +
+    (overrides.glasses || glassesMarkup(glassesOpt)) +
+    accFront;
+}
+
 export const SKIN = [
   { name: 'Trắng hồng', hex: '#FFDFC4' },
   { name: 'Vàng sáng', hex: '#F0C299' },
@@ -473,7 +511,7 @@ export function getOptions(key, gender = 'boy') {
 export function renderItemHtml(category, params) {
   if (category === 'skin') return '';
   if (category === 'face') return drawFace(params.style || 'gentle');
-  if (category === 'hair') return hairMarkup({ style: params.style || 'spiky', color: params.color || '#6B4226' });
+  if (category === 'hair') { const h = hairMarkup({ style: params.style || 'spiky', color: params.color || '#6B4226' }); return h.back + h.front; }
   if (category === 'shirt') return shirtMarkup({ style: params.style || 'tee', color: params.color || '#F5F5F5' });
   if (category === 'pants') return pantsMarkup({ style: params.style || 'shorts', color: params.color || '#241F1C' });
   if (category === 'shoes') return shoesMarkup({ style: params.style || 'sneaker', color: params.color || '#3B5EA6' });
@@ -481,4 +519,14 @@ export function renderItemHtml(category, params) {
   if (category === 'glasses') return glassesMarkup({ style: params.style || 'none', color: params.color || '#000' });
   if (category === 'accessory') { const a = accessoryMarkup({ style: params.style || 'none', color: params.color || '#000' }); return a.back + a.front; }
   return '';
+}
+
+function splitBackFront(html) {
+  if (!html) return { back: '', front: '' };
+  const gEnd = html.lastIndexOf('</g>');
+  if (gEnd !== -1) {
+    const splitAt = gEnd + 4;
+    return { back: html.slice(0, splitAt), front: html.slice(splitAt) };
+  }
+  return { back: '', front: html };
 }

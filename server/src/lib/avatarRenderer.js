@@ -301,7 +301,7 @@ function renderAvatarFull(state) {
 function renderItemHtml(category, params) {
   if (category === 'skin') return '';
   if (category === 'face') return drawFace(params.style || 'gentle');
-  if (category === 'hair') return hairMarkup({ style: params.style || 'spiky', color: params.color || '#6B4226' });
+  if (category === 'hair') { const h = hairMarkup({ style: params.style || 'spiky', color: params.color || '#6B4226' }); return h.back + h.front; }
   if (category === 'shirt') return shirtMarkup({ style: params.style || 'tee', color: params.color || '#F5F5F5' });
   if (category === 'pants') return pantsMarkup({ style: params.style || 'shorts', color: params.color || '#241F1C' });
   if (category === 'shoes') return shoesMarkup({ style: params.style || 'sneaker', color: params.color || '#3B5EA6' });

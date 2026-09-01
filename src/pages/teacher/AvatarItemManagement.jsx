@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { ManagementHeader, ConfirmModal } from '../../components/ui.jsx';
 import { Plus, Pencil, Trash2, X, Save, Search } from 'lucide-react';
-import { renderAvatarFull, renderItemHtml } from '../../lib/avatarRenderer.js';
+import { renderAvatarFull, renderAvatarFullWithOverrides, renderItemHtml } from '../../lib/avatarRenderer.js';
 
 function renderItemHtmlLocal(category, params) {
   if (!params) return '';
@@ -52,9 +52,7 @@ const DEFAULT_STATE = {
 
 function ItemPreview({ item, allItems }) {
   if (!item) return null;
-  // Build full state: all defaults + this item overridden
   const state = { ...DEFAULT_STATE };
-  // Try to use default items from allItems for the same gender
   if (allItems) {
     const gender = item.gender || 'boy';
     for (const it of allItems) {
@@ -66,12 +64,13 @@ function ItemPreview({ item, allItems }) {
       }
     }
   }
-  // Override this item
   if (item.category === 'skin') state.skin = item.params?.hex || '#FFDFC4';
   else if (item.category === 'face') state.face = item.params?.style || 'gentle';
   else state[item.category] = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
 
-  const svg = renderAvatarFull(state);
+  const svg = item.html
+    ? renderAvatarFullWithOverrides(state, { [item.category]: item.html })
+    : renderAvatarFull(state);
   return (
     <svg viewBox="0 0 300 440" width="48" height="70" xmlns="http://www.w3.org/2000/svg"
       dangerouslySetInnerHTML={{ __html: svg }} />
@@ -337,9 +336,28 @@ export default function AvatarItemManagement({ showToast }) {
               {/* Preview */}
               <div>
                 <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Preview</div>
-                <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03]">
-                  <ItemPreview item={{ category: form.category, params: form.params, gender: form.gender }} allItems={items} />
-                </div>
+              <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03]">
+                <svg viewBox="0 0 300 440" width="48" height="70" xmlns="http://www.w3.org/2000/svg"
+                  dangerouslySetInnerHTML={{ __html: (() => {
+                    const state = { ...DEFAULT_STATE };
+                    if (items) {
+                      const gender = form.gender || 'boy';
+                      for (const it of items) {
+                        if (it.default && it.category !== form.category) {
+                          if (it.gender && it.gender !== gender) continue;
+                          if (it.category === 'skin') state.skin = it.params?.hex || '#FFDFC4';
+                          else if (it.category === 'face') state.face = it.params?.style || 'gentle';
+                          else state[it.category] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
+                        }
+                      }
+                    }
+                    if (form.category === 'skin') {
+                      state.skin = form.params?.hex || '#FFDFC4';
+                      return renderAvatarFull(state);
+                    }
+                    return renderAvatarFullWithOverrides(state, { [form.category]: editedHtml });
+                  })() }} />
+              </div>
               </div>
 
               {/* Hiển thị params JSON */}
