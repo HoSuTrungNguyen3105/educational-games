@@ -413,4 +413,11 @@ router.post("/admin/reset-items", authenticate, async (_req, res, next) => {
   } catch (e) { next(e); }
 });
 
+router.delete("/admin/items", authenticate, async (_req, res, next) => {
+  try {
+    const result = await getCollection(ITEMS).deleteMany({});
+    sendSuccess(res, { message: "Đã xóa toàn bộ items", deletedCount: result.deletedCount });
+  } catch (e) { next(e); }
+});
+
 export default router;
