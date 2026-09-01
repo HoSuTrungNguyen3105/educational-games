@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import AvatarPreview from './AvatarPreview.jsx';
 import { API_BASE } from '../../services/api.js';
-import { X, Check, ShoppingBag, ImageIcon } from 'lucide-react';
+import { X, Check, ShoppingBag } from 'lucide-react';
 
 function ItemThumbnail({ item, selected, onClick, owned }) {
   if (!item) return null;
@@ -13,20 +13,22 @@ function ItemThumbnail({ item, selected, onClick, owned }) {
         selected ? 'border-gold shadow-md' : 'border-ink/10 hover:border-ink/20'
       }`}
     >
-      {item.image ? (
-        <img src={item.image} alt={item.name} draggable={false} className="w-full h-full object-contain bg-ink/5" />
+      {item.html ? (
+        <div className="w-full h-full flex items-center justify-center bg-ink/5 p-1">
+          <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: item.html }} />
+        </div>
       ) : (
         <div className="w-full h-full bg-ink/5 flex items-center justify-center">
-          <ImageIcon className="w-5 h-5 text-ink/20" />
+          <span className="text-[8px] text-ink/30">trống</span>
         </div>
       )}
       {owned ? (
         <div className="absolute bottom-0 inset-x-0 bg-green-500/80 text-white text-[8px] font-mono text-center py-0.5">
-          Trang bị
+          Sở hữu
         </div>
       ) : item.price > 0 ? (
         <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] font-mono text-center py-0.5">
-          💰 {item.price}
+          {item.price}
         </div>
       ) : null}
       {selected && (
@@ -43,7 +45,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
   const [activeTab, setActiveTab] = useState('hair');
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [spriteSheet, setSpriteSheet] = useState('');
+  const [template, setTemplate] = useState({});
   const [buying, setBuying] = useState(null);
   const [localCoins, setLocalCoins] = useState(coins);
   const [localInventory, setLocalInventory] = useState(inventory);
@@ -55,7 +57,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
         if (json.status) {
           setItems(json.data.items);
           setCategories(json.data.categories);
-          if (json.data.spriteSheet) setSpriteSheet(json.data.spriteSheet);
+          if (json.data.template) setTemplate(json.data.template);
         }
       })
       .catch(() => {});
@@ -107,7 +109,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
         </div>
 
         <div className="flex justify-center py-6 shrink-0" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
-          <AvatarPreview loadout={draft} items={items} size={256} spriteSheet={spriteSheet} />
+          <AvatarPreview loadout={draft} items={items} template={template} size={256} />
         </div>
 
         <div className="flex gap-1 px-4 pt-3 overflow-x-auto shrink-0">
@@ -153,7 +155,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
         </div>
 
         <div className="flex items-center justify-between px-4 py-3 border-t border-ink/10 shrink-0">
-          <span className="text-xs font-mono text-ink/40">💰 {localCoins.toLocaleString()} Coin</span>
+          <span className="text-xs font-mono text-ink/40">{localCoins.toLocaleString()} Coin</span>
           <div className="flex gap-2">
             <button onClick={onClose}
               className="px-4 py-2 bg-ink/5 text-ink/60 rounded-xl text-sm font-body font-semibold hover:bg-ink/10 transition">

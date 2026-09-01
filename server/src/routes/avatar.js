@@ -1,5 +1,4 @@
 import { Router } from "express";
-import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
@@ -14,10 +13,6 @@ dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 const router = Router();
 
-console.log("[avatar] CLOUDINARY_CLOUD_NAME:", process.env.CLOUDINARY_CLOUD_NAME || "MISSING");
-console.log("[avatar] CLOUDINARY_API_KEY:", process.env.CLOUDINARY_API_KEY ? "OK" : "MISSING");
-console.log("[avatar] CLOUDINARY_API_SECRET:", process.env.CLOUDINARY_API_SECRET ? "OK" : "MISSING");
-
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -26,6 +21,7 @@ cloudinary.config({
 
 const ITEMS = "avatarItems";
 const USERS = "users";
+const TEMPLATE = "avatarTemplate";
 
 const CATEGORIES = [
   { id: "body", label: "Thân" }, { id: "skin", label: "Da" }, { id: "face", label: "Mặt" },
@@ -36,93 +32,78 @@ const CATEGORIES = [
 
 const LAYER_ORDER = ["body", "skin", "face", "hair", "shirt", "pants", "shoes", "hat", "glasses", "accessory"];
 
-const ZINDEX_MAP = {
-  body: 10, skin: 15, face: 20, hair: 30, shirt: 40,
-  pants: 50, shoes: 60, hat: 70, glasses: 80, accessory: 90,
-};
-
-const SPRITE_SHEET = "/avatar/avatar-sprite.png";
-const SPRITE_W = 1536;
-const SPRITE_H = 1024;
-
 const DEFAULT_LOADOUT = {
   body: "body_01", skin: "skin_01", face: "face_01", hair: "hair_01",
   shirt: "shirt_01", pants: "pants_01", shoes: "shoes_01",
   hat: null, glasses: null, accessory: null,
 };
 
-// ─── FILE UPLOAD (Cloudinary) ────────────────────────────────────
+const DEFAULT_TEMPLATE = {
+  body:    { x: 0,   y: 0,   width: 245, height: 275, zIndex: 1 },
+  skin:    { x: 0,   y: 0,   width: 245, height: 275, zIndex: 2 },
+  face:    { x: 50,  y: 20,  width: 145, height: 120, zIndex: 3 },
+  hair:    { x: 40,  y: -10, width: 165, height: 100, zIndex: 4 },
+  shirt:   { x: 30,  y: 130, width: 185, height: 100, zIndex: 5 },
+  pants:   { x: 40,  y: 220, width: 165, height: 80,  zIndex: 6 },
+  shoes:   { x: 50,  y: 285, width: 145, height: 40,  zIndex: 7 },
+  hat:     { x: 30,  y: -20, width: 185, height: 60,  zIndex: 8 },
+  glasses: { x: 65,  y: 55,  width: 115, height: 35,  zIndex: 9 },
+  accessory: { x: 180, y: 140, width: 60, height: 60, zIndex: 10 },
+};
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Chỉ chấp nhận file ảnh"));
-  },
-});
-
-function uploadToCloudinary(fileBuffer, folder = "avatar-items") {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: "image",
-        format: "png",
-      },
-      (error, result) => {
-        if (error) {
-          console.error("========== CLOUDINARY ERROR ==========");
-          console.error("http_code:", error.http_code);
-          console.error("message:", error.message);
-          console.error("error:", error);
-          console.error("======================================");
-
-          reject(error);
-          return;
-        }
-
-        resolve(result);
-      }
-    );
-
-    stream.end(fileBuffer);
-  });
-}
-
-// POST /api/avatar/upload — upload 1 file ảnh lên Cloudinary
-router.post("/upload", authenticate, upload.single("file"), async (req, res, next) => {
-  try {
-    if (!req.file) return sendError(res, "Không có file", 400);
-    console.log("[avatar/upload] file:", req.file.originalname, req.file.size, "bytes");
-    const result = await uploadToCloudinary(req.file.buffer);
-    console.log("[avatar/upload] success:", result.secure_url);
-    sendCreated(res, { url: result.secure_url, publicId: result.public_id });
-  } catch (e) {
-    console.error("[avatar/upload] Cloudinary error:", e.message, JSON.stringify(e));
-    next(e);
-  }
-});
-
-// POST /api/avatar/upload/batch — upload nhiều file
-router.post("/upload/batch", authenticate, upload.array("files", 50), async (req, res, next) => {
-  try {
-    if (!req.files || req.files.length === 0) return sendError(res, "Không có file", 400);
-    const results = await Promise.all(req.files.map(f => uploadToCloudinary(f.buffer)));
-    const files = results.map(r => ({ url: r.secure_url, publicId: r.public_id }));
-    sendCreated(res, { files, count: files.length });
-  } catch (e) { next(e); }
-});
-
-// ─── SEED DEFAULT ITEMS (with placeholder images) ────────────────
+// ─── SEED DEFAULT ITEMS ─────────────────────────────────────────
 
 const SEED_ITEMS = [
-  { id: "body_01", category: "body", name: "Thân mặc định", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.body },
-  { id: "skin_01", category: "skin", name: "Da sáng", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.skin },
-  { id: "hair_01", category: "hair", name: "Tóc ngắn", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.hair },
-  { id: "shirt_01", category: "shirt", name: "Áo thun trắng", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.shirt },
-  { id: "pants_01", category: "pants", name: "Quần jean", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.pants },
-  { id: "shoes_01", category: "shoes", name: "Giày sneaker", image: "", price: 0, default: true, zIndex: ZINDEX_MAP.shoes },
+  {
+    id: "body_01", category: "body", name: "Thân mặc định", price: 0, default: true,
+    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="122" cy="137" rx="75" ry="100" fill="#F5D6B8"/>
+    </svg>`,
+  },
+  {
+    id: "skin_01", category: "skin", name: "Da sáng", price: 0, default: true,
+    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="122" cy="137" rx="70" ry="95" fill="#FFE0C2"/>
+    </svg>`,
+  },
+  {
+    id: "face_01", category: "face", name: "Mặt mặc định", price: 0, default: true,
+    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="95" cy="100" r="8" fill="#3D2B1F"/>
+      <circle cx="150" cy="100" r="8" fill="#3D2B1F"/>
+      <path d="M105 130 Q122 145 140 130" stroke="#C4756B" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: "hair_01", category: "hair", name: "Tóc ngắn nâu", price: 0, default: true,
+    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 90 Q50 20 122 15 Q195 20 195 90 Q195 60 170 45 Q145 30 122 28 Q100 30 75 45 Q50 60 50 90Z" fill="#6B3A2A"/>
+    </svg>`,
+  },
+  {
+    id: "shirt_01", category: "shirt", name: "Áo thun trắng", price: 0, default: true,
+    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 145 L80 135 L122 140 L165 135 L205 145 L210 230 L35 230Z" fill="#FFFFFF" stroke="#DDD" stroke-width="1"/>
+      <path d="M80 135 L65 115 L80 110" fill="#FFFFFF" stroke="#DDD" stroke-width="1"/>
+      <path d="M165 135 L180 115 L165 110" fill="#FFFFFF" stroke="#DDD" stroke-width="1"/>
+    </svg>`,
+  },
+  {
+    id: "pants_01", category: "pants", name: "Quần jean", price: 0, default: true,
+    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
+      <path d="M55 225 L50 310 L105 310 L122 240 L140 310 L195 310 L190 225Z" fill="#4A6FA5" stroke="#3D5A80" stroke-width="1"/>
+      <line x1="122" y1="230" x2="122" y2="290" stroke="#3D5A80" stroke-width="1"/>
+    </svg>`,
+  },
+  {
+    id: "shoes_01", category: "shoes", name: "Giày sneaker", price: 0, default: true,
+    html: `<svg viewBox="0 0 245 275" xmlns="http://www.w3.org/2000/svg">
+      <rect x="40" y="300" width="70" height="25" rx="8" fill="#333"/>
+      <rect x="135" y="300" width="70" height="25" rx="8" fill="#333"/>
+      <rect x="40" y="300" width="70" height="8" rx="4" fill="#FFF"/>
+      <rect x="135" y="300" width="70" height="8" rx="4" fill="#FFF"/>
+    </svg>`,
+  },
 ];
 
 async function ensureSeeded() {
@@ -132,33 +113,55 @@ async function ensureSeeded() {
   }
 }
 
+async function ensureTemplate() {
+  const existing = await getCollection(TEMPLATE).findOne({ _id: "default" });
+  if (!existing) {
+    await getCollection(TEMPLATE).insertOne({ _id: "default", categories: DEFAULT_TEMPLATE });
+  }
+}
+
 // ─── PUBLIC ──────────────────────────────────────────────────────
 
-// GET /api/avatar/categories
 router.get("/categories", (_req, res) => {
   sendSuccess(res, { categories: CATEGORIES, layerOrder: LAYER_ORDER });
 });
 
-// GET /api/avatar/items
 router.get("/items", async (_req, res, next) => {
   try {
     await ensureSeeded();
+    await ensureTemplate();
     const items = await getCollection(ITEMS).find({}).sort({ category: 1, price: 1 }).toArray();
-    // Backfill zIndex for old items missing it
-    const bulkOps = [];
-    for (const item of items) {
-      if (item.zIndex === undefined || item.zIndex === null) {
-        const z = ZINDEX_MAP[item.category] || 50;
-        item.zIndex = z;
-        bulkOps.push({ updateOne: { filter: { id: item.id }, update: { $set: { zIndex: z } } } });
-      }
-    }
-    if (bulkOps.length > 0) await getCollection(ITEMS).bulkWrite(bulkOps);
-    sendSuccess(res, { items, categories: CATEGORIES, layerOrder: LAYER_ORDER, spriteSheet: SPRITE_SHEET, spriteW: SPRITE_W, spriteH: SPRITE_H });
+    const tmpl = await getCollection(TEMPLATE).findOne({ _id: "default" });
+    sendSuccess(res, {
+      items,
+      categories: CATEGORIES,
+      layerOrder: LAYER_ORDER,
+      template: tmpl?.categories || DEFAULT_TEMPLATE,
+    });
   } catch (e) { next(e); }
 });
 
-// GET /api/avatar/inventory
+router.get("/template", async (_req, res, next) => {
+  try {
+    await ensureTemplate();
+    const tmpl = await getCollection(TEMPLATE).findOne({ _id: "default" });
+    sendSuccess(res, { template: tmpl?.categories || DEFAULT_TEMPLATE });
+  } catch (e) { next(e); }
+});
+
+router.put("/template", authenticate, async (req, res, next) => {
+  try {
+    const { categories } = req.body || {};
+    if (!categories || typeof categories !== "object") return sendError(res, "Thiếu categories", 400);
+    await getCollection(TEMPLATE).updateOne(
+      { _id: "default" },
+      { $set: { categories } },
+      { upsert: true }
+    );
+    sendSuccess(res, { template: categories });
+  } catch (e) { next(e); }
+});
+
 router.get("/inventory", authenticate, async (req, res, next) => {
   try {
     const user = await getCollection(USERS).findOne({ id: req.user.sub });
@@ -167,7 +170,6 @@ router.get("/inventory", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// GET /api/avatar/loadout
 router.get("/loadout", authenticate, async (req, res, next) => {
   try {
     const user = await getCollection(USERS).findOne({ id: req.user.sub });
@@ -176,7 +178,6 @@ router.get("/loadout", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// POST /api/avatar/buy
 router.post("/buy", authenticate, async (req, res, next) => {
   try {
     const { itemId } = req.body || {};
@@ -201,7 +202,6 @@ router.post("/buy", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// POST /api/avatar/save
 router.post("/save", authenticate, async (req, res, next) => {
   try {
     const { loadout } = req.body || {};
@@ -229,36 +229,32 @@ router.post("/save", authenticate, async (req, res, next) => {
 
 const uid = () => `av-${Math.random().toString(36).slice(2, 9)}`;
 
-// POST /api/avatar/admin/items — create single item
 router.post("/admin/items", authenticate, async (req, res, next) => {
   try {
-    const { category, name, image, price, default: isDefault, zIndex } = req.body || {};
+    const { category, name, html, price, default: isDefault } = req.body || {};
     if (!category || !name) return sendError(res, "Thiếu category hoặc name", 400);
     if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400);
     const item = {
-      id: uid(), category, name: String(name).trim(), image: image || "",
+      id: uid(), category, name: String(name).trim(), html: html || "",
       price: Math.max(0, Number(price) || 0), default: !!isDefault,
-      zIndex: Number(zIndex) || ZINDEX_MAP[category] || 50,
     };
     await getCollection(ITEMS).insertOne(item);
     sendCreated(res, item);
   } catch (e) { next(e); }
 });
 
-// PUT /api/avatar/admin/items/:id
 router.put("/admin/items/:id", authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const existing = await getCollection(ITEMS).findOne({ id });
     if (!existing) return sendError(res, "Item không tồn tại", 404);
-    const { category, name, image, price, default: isDefault, zIndex } = req.body || {};
+    const { category, name, html, price, default: isDefault } = req.body || {};
     const updates = {};
     if (category !== undefined) { if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400); updates.category = category; }
     if (name !== undefined) updates.name = String(name).trim();
-    if (image !== undefined) updates.image = image;
+    if (html !== undefined) updates.html = html;
     if (price !== undefined) updates.price = Math.max(0, Number(price) || 0);
     if (isDefault !== undefined) updates.default = !!isDefault;
-    if (zIndex !== undefined) updates.zIndex = Number(zIndex) || 50;
     if (Object.keys(updates).length === 0) return sendError(res, "Không có gì để cập nhật", 400);
     await getCollection(ITEMS).updateOne({ id }, { $set: updates });
     const updated = await getCollection(ITEMS).findOne({ id });
@@ -266,7 +262,6 @@ router.put("/admin/items/:id", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// POST /api/avatar/admin/items/batch — create many items
 router.post("/admin/items/batch", authenticate, async (req, res, next) => {
   try {
     const { items } = req.body || {};
@@ -274,13 +269,12 @@ router.post("/admin/items/batch", authenticate, async (req, res, next) => {
     if (items.length > 100) return sendError(res, "Tối đa 100 item mỗi lần", 400);
     const created = [];
     for (const it of items) {
-      const { category, name, image, price, default: isDefault, zIndex } = it || {};
+      const { category, name, html, price, default: isDefault } = it || {};
       if (!category || !name) return sendError(res, "Thiếu category hoặc name", 400);
       if (!CATEGORIES.find(c => c.id === category)) return sendError(res, `Category không hợp lệ: ${category}`, 400);
       const item = {
-        id: uid(), category, name: String(name).trim(), image: image || "",
+        id: uid(), category, name: String(name).trim(), html: html || "",
         price: Math.max(0, Number(price) || 0), default: !!isDefault,
-        zIndex: Number(zIndex) || ZINDEX_MAP[category] || 50,
       };
       await getCollection(ITEMS).insertOne(item);
       created.push(item);
@@ -289,7 +283,6 @@ router.post("/admin/items/batch", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// DELETE /api/avatar/admin/items/:id
 router.delete("/admin/items/:id", authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;

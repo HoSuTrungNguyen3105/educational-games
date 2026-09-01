@@ -20,7 +20,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [avatarLoadout, setAvatarLoadout] = useState({});
   const [avatarItems, setAvatarItems] = useState([]);
   const [inventory, setInventory] = useState([]);
-  const [spriteSheet, setSpriteSheet] = useState('');
+  const [template, setTemplate] = useState({});
 
   useEffect(() => {
     if (!userAuth?.user) return;
@@ -40,7 +40,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         setError(null);
         if (itemsRes.status) {
           setAvatarItems(itemsRes.data.items);
-          if (itemsRes.data.spriteSheet) setSpriteSheet(itemsRes.data.spriteSheet);
+          if (itemsRes.data.template) setTemplate(itemsRes.data.template);
         }
         if (loadoutRes.status) setAvatarLoadout(loadoutRes.data.loadout);
         if (invRes.status) setInventory(invRes.data.inventory);
@@ -112,7 +112,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
 
   return (
     <div className="flex-1 px-4 py-4 max-w-2xl mx-auto w-full space-y-4">
-      {/* Header: back + logout */}
       <div className="flex items-center justify-between">
         <button onClick={onBack} className="flex items-center gap-1 text-sm text-ink/50 hover:text-ink transition">
           <ArrowLeft className="w-4 h-4" /> Trang chủ
@@ -122,15 +121,13 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         </button>
       </div>
 
-      {/* Hero: Avatar + Info + Level + Currency — all in one card */}
       <div className="rounded-2xl overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="h-1.5" style={{ background: "linear-gradient(90deg, var(--accent), var(--purple, #8b5cf6))" }} />
         <div className="p-4 flex items-center gap-4">
-          {/* Avatar */}
           <div className="relative shrink-0">
             {avatarItems.length > 0 ? (
               <div className="w-16 h-16 rounded-full overflow-hidden shadow-lg ring-2 ring-white">
-                <AvatarPreview loadout={avatarLoadout} items={avatarItems} size={64} spriteSheet={spriteSheet} />
+                <AvatarPreview loadout={avatarLoadout} items={avatarItems} template={template} size={64} />
               </div>
             ) : (
               <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl text-white font-display shadow-lg"
@@ -144,7 +141,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             </div>
           </div>
 
-          {/* Info + Stats inline */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <h1 className="font-display text-lg text-ink truncate">{user.name}</h1>
@@ -154,7 +150,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             </div>
             <p className="text-xs font-mono text-ink/40 mb-2">@{user.username}</p>
 
-            {/* Level + XP bar + Currency — one row */}
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold" style={{ color: "var(--accent)" }}>Lv{lv.level}</span>
               <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--bg)" }}>
@@ -163,7 +158,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               <span className="text-[10px] font-mono text-ink/40">{lv.current}/{lv.next}</span>
             </div>
 
-            {/* Currency pills */}
             <div className="flex items-center gap-2 mt-2">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold" style={{ background: "var(--bg)" }}>
                 💰 {(user.coins || 0).toLocaleString()}
@@ -179,14 +173,13 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         </div>
       </div>
 
-      {/* Avatar Section */}
       <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-2 mb-3">
           <Palette className="w-4 h-4 text-gold" />
           <span className="font-display text-sm text-ink">Avatar của tôi</span>
         </div>
         <div className="flex flex-col items-center gap-3">
-          <AvatarPreview loadout={avatarLoadout} items={avatarItems} size={160} spriteSheet={spriteSheet} />
+          <AvatarPreview loadout={avatarLoadout} items={avatarItems} template={template} size={160} />
           <button onClick={() => setShowCustomizer(true)}
             className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-body font-semibold hover:bg-gold/80 transition">
             Tùy chỉnh Avatar
@@ -218,7 +211,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         />
       )}
 
-      {/* Class Section */}
       <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-2 mb-3">
           <GraduationCap className="w-4 h-4 text-gold" />
@@ -253,7 +245,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         {joinError && <p className="text-xs text-red-500 mt-1.5">{joinError}</p>}
       </div>
 
-      {/* Games — collapsible */}
       <div className="rounded-2xl overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <button onClick={() => setShowGames(!showGames)}
           className="w-full flex items-center justify-between p-4 hover:bg-ink/3 transition">
