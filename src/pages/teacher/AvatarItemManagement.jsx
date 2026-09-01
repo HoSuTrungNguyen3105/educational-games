@@ -17,6 +17,7 @@ function getAuthToken() {
 }
 
 const CATEGORIES = [
+  { id: "body", label: "Body" },
   { id: "skin", label: "Da" }, { id: "face", label: "Mặt" },
   { id: "hair", label: "Tóc" }, { id: "shirt", label: "Áo" }, { id: "pants", label: "Quần" },
   { id: "shoes", label: "Giày" }, { id: "hat", label: "Mũ" }, { id: "glasses", label: "Kính" },
@@ -24,6 +25,7 @@ const CATEGORIES = [
 ];
 
 const STYLE_OPTIONS = {
+  body: ['boy', 'girl', 'custom'],
   skin: [],
   face: ['gentle', 'happy', 'wink', 'laughing', 'fierce'],
   hair: ['spiky', 'messy', 'side', 'wild', 'long', 'twin', 'wavy', 'braid'],
@@ -37,7 +39,6 @@ const STYLE_OPTIONS = {
 
 const EMPTY_FORM = { category: "hair", name: "", price: 0, default: false, gender: "boy", params: { style: "spiky", color: "#6B4226" } };
 
-// Default full avatar state for thumbnails
 const DEFAULT_STATE = {
   skin: '#FFDFC4',
   face: 'gentle',
@@ -50,12 +51,17 @@ const DEFAULT_STATE = {
   accessory: { style: 'none' },
 };
 
-function ItemPreview({ item, allItems, bodyCache }) {
+function ItemPreview({ item, allItems }) {
   if (!item) return null;
   const state = { ...DEFAULT_STATE };
+  let bodyItemHtml = null;
   if (allItems) {
     const gender = item.gender || 'boy';
     for (const it of allItems) {
+      if (it.category === 'body' && it.default) {
+        if (it.gender && it.gender !== gender) continue;
+        bodyItemHtml = it.html || null;
+      }
       if (it.default && it.category !== item.category) {
         if (it.gender && it.gender !== gender) continue;
         if (it.category === 'skin') state.skin = it.params?.hex || '#FFDFC4';
@@ -69,7 +75,7 @@ function ItemPreview({ item, allItems, bodyCache }) {
   else state[item.category] = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
 
   const overrides = {};
-  if (bodyCache?.has(state.skin)) overrides.skin = bodyCache.get(state.skin);
+  if (bodyItemHtml) overrides.body = bodyItemHtml;
   const svg = item.html
     ? renderAvatarFullWithOverrides(state, { ...overrides, [item.category]: item.html })
     : renderAvatarFullWithOverrides(state, overrides);
@@ -90,16 +96,6 @@ export default function AvatarItemManagement({ showToast }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState('');
   const [editedHtml, setEditedHtml] = useState('');
-  const [bodyCache, setBodyCache] = useState(null);
-
-  useEffect(() => {
-    const cache = new Map();
-    Promise.all(SKIN.map(s =>
-      fetch(`${API_BASE}/avatar/body?skin=${encodeURIComponent(s.hex)}`).then(r => r.json()).then(json => {
-        if (json.status) cache.set(s.hex, json.data.html);
-      }).catch(() => {})
-    )).then(() => setBodyCache(cache));
-  }, []);
 
   const load = useCallback(() => {
     setItems(null); setError(null);
@@ -186,7 +182,7 @@ export default function AvatarItemManagement({ showToast }) {
   };
 
   const filtered = items ? (filter === "all" ? items : items.filter(i => i.category === filter)) : [];
-  const showGender = ['hair', 'shirt', 'pants', 'shoes'].includes(form.category);
+  const showGender = ['body', 'hair', 'shirt', 'pants', 'shoes'].includes(form.category);
   const styleOptions = STYLE_OPTIONS[form.category] || [];
 
   return (
@@ -205,19 +201,19 @@ export default function AvatarItemManagement({ showToast }) {
           />
         </div>
         <div className="flex flex-wrap gap-2">
-        <button onClick={() => setFilter("all")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${filter === "all" ? "bg-pink text-white" : "bg-ink/5 text-ink/50 hover:bg-ink/10"}`}>
-          Tất cả ({items?.length || 0})
-        </button>
-        {CATEGORIES.map(c => {
-          const count = items?.filter(i => i.category === c.id).length || 0;
-          return (
-            <button key={c.id} onClick={() => setFilter(c.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${filter === c.id ? "bg-pink text-white" : "bg-ink/5 text-ink/50 hover:bg-ink/10"}`}>
-              {c.label} ({count})
-            </button>
-          );
-        })}
+          <button onClick={() => setFilter("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${filter === "all" ? "bg-pink text-white" : "bg-ink/5 text-ink/50 hover:bg-ink/10"}`}>
+            Tất cả ({items?.length || 0})
+          </button>
+          {CATEGORIES.map(c => {
+            const count = items?.filter(i => i.category === c.id).length || 0;
+            return (
+              <button key={c.id} onClick={() => setFilter(c.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${filter === c.id ? "bg-pink text-white" : "bg-ink/5 text-ink/50 hover:bg-ink/10"}`}>
+                {c.label} ({count})
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -230,7 +226,7 @@ export default function AvatarItemManagement({ showToast }) {
           {filtered.map(item => (
             <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-ink/8 hover:shadow-sm transition">
               <div className="w-12 h-17 flex items-center justify-center shrink-0 overflow-hidden rounded-lg bg-ink/5">
-                <ItemPreview item={item} allItems={items} bodyCache={bodyCache} />
+                <ItemPreview item={item} allItems={items} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -348,30 +344,37 @@ export default function AvatarItemManagement({ showToast }) {
               {/* Preview */}
               <div>
                 <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Preview</div>
-              <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03]">
-                <svg viewBox="0 0 300 440" width="48" height="70" xmlns="http://www.w3.org/2000/svg"
-                  dangerouslySetInnerHTML={{ __html: (() => {
-                    const state = { ...DEFAULT_STATE };
-                    if (items) {
-                      const gender = form.gender || 'boy';
-                      for (const it of items) {
-                        if (it.default && it.category !== form.category) {
-                          if (it.gender && it.gender !== gender) continue;
-                          if (it.category === 'skin') state.skin = it.params?.hex || '#FFDFC4';
-                          else if (it.category === 'face') state.face = it.params?.style || 'gentle';
-                          else state[it.category] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
+                <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03]">
+                  <svg viewBox="0 0 300 440" width="48" height="70" xmlns="http://www.w3.org/2000/svg"
+                    dangerouslySetInnerHTML={{
+                      __html: (() => {
+                        const state = { ...DEFAULT_STATE };
+                        let bodyItemHtml = null;
+                        if (items) {
+                          const gender = form.gender || 'boy';
+                          for (const it of items) {
+                            if (it.category === 'body' && it.default) {
+                              if (it.gender && it.gender !== gender) continue;
+                              bodyItemHtml = it.html || null;
+                            }
+                            if (it.default && it.category !== form.category) {
+                              if (it.gender && it.gender !== gender) continue;
+                              if (it.category === 'skin') state.skin = it.params?.hex || '#FFDFC4';
+                              else if (it.category === 'face') state.face = it.params?.style || 'gentle';
+                              else state[it.category] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
+                            }
+                          }
                         }
-                      }
-                    }
-                    if (form.category === 'skin') {
-                      state.skin = form.params?.hex || '#FFDFC4';
-                      const bodyHtml = bodyCache?.has(state.skin) ? bodyCache.get(state.skin) : null;
-                      return bodyHtml || renderAvatarFull(state);
-                    }
-                    const bodyHtml = bodyCache?.has(state.skin) ? bodyCache.get(state.skin) : null;
-                    return renderAvatarFullWithOverrides(state, { ...(bodyHtml ? { skin: bodyHtml } : {}), [form.category]: editedHtml });
-                  })() }} />
-              </div>
+                        const overrides = {};
+                        if (bodyItemHtml) overrides.body = bodyItemHtml;
+                        if (form.category === 'skin') {
+                          state.skin = form.params?.hex || '#FFDFC4';
+                          return renderAvatarFullWithOverrides(state, overrides);
+                        }
+                        return renderAvatarFullWithOverrides(state, { ...overrides, [form.category]: editedHtml });
+                      })()
+                    }} />
+                </div>
               </div>
 
               {/* Hiển thị params JSON */}

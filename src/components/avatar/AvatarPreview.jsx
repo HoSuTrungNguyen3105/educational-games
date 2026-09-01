@@ -2,13 +2,16 @@ import { renderAvatarFull } from '../../lib/avatarRenderer.js';
 
 export default function AvatarPreview({ loadout = {}, items = [], size = 512, className = '' }) {
   const state = {};
+  let bodyHtml = null;
 
   for (const [category, itemId] of Object.entries(loadout)) {
     if (!itemId) continue;
     const item = items.find(i => i.id === itemId);
     if (!item) continue;
 
-    if (category === 'skin') {
+    if (category === 'body') {
+      bodyHtml = item.html || null;
+    } else if (category === 'skin') {
       state.skin = item.params?.hex || '#FFDFC4';
     } else if (category === 'face') {
       state.face = item.params?.style || 'gentle';
@@ -29,7 +32,7 @@ export default function AvatarPreview({ loadout = {}, items = [], size = 512, cl
     }
   }
 
-  const svgContent = renderAvatarFull(state);
+  const svgContent = renderAvatarFull(state, bodyHtml);
 
   return (
     <div className={`relative overflow-hidden ${className}`} style={{ width: size, height: size * (440 / 300) }}>

@@ -263,7 +263,7 @@ export function accessoryMarkup(o) {
   return { back: '', front: '' };
 }
 
-export function renderAvatarFull(state) {
+export function renderAvatarFull(state, bodyHtml) {
   const skin = state.skin || '#FFDFC4';
   const faceStyle = state.face || 'gentle';
   const hairOpt = state.hair || { style: 'spiky', color: '#6B4226' };
@@ -277,7 +277,7 @@ export function renderAvatarFull(state) {
   const hair = hairMarkup(hairOpt);
   const acc = accessoryMarkup(accOpt);
 
-  return acc.back + hair.back + bodyBase(skin) + pantsMarkup(pantsOpt) +
+  return acc.back + hair.back + (bodyHtml || bodyBase(skin)) + pantsMarkup(pantsOpt) +
     shirtMarkup(shirtOpt) + shoesMarkup(shoesOpt) + drawFace(faceStyle) +
     hair.front + hatMarkup(hatOpt) + glassesMarkup(glassesOpt) + acc.front;
 }
@@ -309,7 +309,9 @@ export function renderAvatarFullWithOverrides(state, overrides = {}) {
     const a = accessoryMarkup(accOpt); accBack = a.back; accFront = a.front;
   }
 
-  return accBack + hairBack + (overrides.skin || bodyBase(skin)) +
+  const bodySvg = overrides.body || overrides.skin || bodyBase(skin);
+
+  return accBack + hairBack + bodySvg +
     (overrides.pants || pantsMarkup(pantsOpt)) +
     (overrides.shirt || shirtMarkup(shirtOpt)) +
     (overrides.shoes || shoesMarkup(shoesOpt)) +
@@ -482,6 +484,7 @@ export const ACCESSORY = [
 ];
 
 export const CATEGORY_LIST = [
+  { key: 'body', label: 'Body' },
   { key: 'skin', label: 'Da' },
   { key: 'face', label: 'Khuôn mặt' },
   { key: 'hair', label: 'Tóc' },
@@ -510,6 +513,7 @@ export function getOptions(key, gender = 'boy') {
 
 export function renderItemHtml(category, params) {
   if (category === 'skin') return '';
+  if (category === 'body') return bodyBase(params?.skin || '#FFDFC4');
   if (category === 'face') return drawFace(params.style || 'gentle');
   if (category === 'hair') { const h = hairMarkup({ style: params.style || 'spiky', color: params.color || '#6B4226' }); return h.back + h.front; }
   if (category === 'shirt') return shirtMarkup({ style: params.style || 'tee', color: params.color || '#F5F5F5' });

@@ -35,14 +35,21 @@ export default function AvatarTemplateEditor({ showToast }) {
   // Build preview state with default items
   function buildPreviewState() {
     const state = {};
+    let bodyHtml = null;
     for (const cat of layerOrder) {
       const defaultItem = items.find(i => i.category === cat && i.default);
       if (!defaultItem) continue;
-      if (cat === 'skin') state.skin = defaultItem.params?.hex || '#FFDFC4';
-      else if (cat === 'face') state.face = defaultItem.params?.style || 'gentle';
-      else state[cat] = { style: defaultItem.params?.style || 'none', color: defaultItem.params?.color || '#000' };
+      if (cat === 'body') {
+        bodyHtml = defaultItem.html || null;
+      } else if (cat === 'skin') {
+        state.skin = defaultItem.params?.hex || '#FFDFC4';
+      } else if (cat === 'face') {
+        state.face = defaultItem.params?.style || 'gentle';
+      } else {
+        state[cat] = { style: defaultItem.params?.style || 'none', color: defaultItem.params?.color || '#000' };
+      }
     }
-    return state;
+    return { state, bodyHtml };
   }
 
   function moveLayer(index, dir) {
@@ -83,8 +90,8 @@ export default function AvatarTemplateEditor({ showToast }) {
     );
   }
 
-  const previewState = buildPreviewState();
-  const svgContent = renderAvatarFull(previewState);
+  const { state: previewState, bodyHtml } = buildPreviewState();
+  const svgContent = renderAvatarFull(previewState, bodyHtml);
 
   return (
     <div>

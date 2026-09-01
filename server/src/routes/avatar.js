@@ -18,20 +18,22 @@ const USERS = "users";
 const TEMPLATE = "avatarTemplate";
 
 const CATEGORIES = [
+  { id: "body", label: "Body" },
   { id: "skin", label: "Da" }, { id: "face", label: "Mặt" },
   { id: "hair", label: "Tóc" }, { id: "shirt", label: "Áo" }, { id: "pants", label: "Quần" },
   { id: "shoes", label: "Giày" }, { id: "hat", label: "Mũ" }, { id: "glasses", label: "Kính" },
   { id: "accessory", label: "Phụ kiện" },
 ];
 
-const LAYER_ORDER = ["skin", "face", "hair", "shirt", "pants", "shoes", "hat", "glasses", "accessory"];
+const LAYER_ORDER = ["body", "skin", "face", "hair", "shirt", "pants", "shoes", "hat", "glasses", "accessory"];
 
 const DEFAULT_LOADOUT = {
-  skin: "skin_01", face: "face_01", hair: "hair_boy_01", shirt: "shirt_boy_01",
+  body: "body_boy_01", skin: "skin_01", face: "face_01", hair: "hair_boy_01", shirt: "shirt_boy_01",
   pants: "pants_boy_01", shoes: "shoes_boy_01", hat: null, glasses: null, accessory: null,
 };
 
 const DEFAULT_TEMPLATE = {
+  body:    { x: 0, y: 0, width: 300, height: 440, zIndex: 0 },
   skin:    { x: 0, y: 0, width: 300, height: 440, zIndex: 1 },
   face:    { x: 0, y: 0, width: 300, height: 440, zIndex: 2 },
   hair:    { x: 0, y: 0, width: 300, height: 440, zIndex: 3 },
@@ -47,6 +49,11 @@ const DEFAULT_TEMPLATE = {
 
 function buildSeedItems() {
   const raw = [
+    // BODY
+    { id: "body_boy_01", category: "body", name: "Body bé trai", price: 0, default: true, gender: "boy", params: { type: "boy" } },
+    { id: "body_girl_01", category: "body", name: "Body bé gái", price: 0, default: true, gender: "girl", params: { type: "girl" } },
+    { id: "body_custom_01", category: "body", name: "Body Custom", price: 200, default: false, params: { type: "custom" } },
+
     // SKIN
     { id: "skin_01", category: "skin", name: "Trắng hồng", price: 0, default: true, params: { hex: "#FFDFC4" } },
     { id: "skin_02", category: "skin", name: "Vàng sáng", price: 50, default: false, params: { hex: "#F0C299" } },
@@ -256,10 +263,16 @@ router.get("/template", async (_req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.get("/body", (req, res) => {
-  const skin = req.query.skin || '#FFDFC4';
-  const svg = bodyBase(skin);
-  sendSuccess(res, { html: svg, skin });
+router.get("/body", async (req, res, next) => {
+  try {
+    await ensureSeeded();
+    const { gender, type } = req.query || {};
+    const query = { category: "body" };
+    if (gender) query.gender = gender;
+    if (type) query["params.type"] = type;
+    const items = await getCollection(ITEMS).find(query).sort({ price: 1 }).toArray();
+    sendSuccess(res, { items });
+  } catch (e) { next(e); }
 });
 
 router.put("/template", authenticate, async (req, res, next) => {

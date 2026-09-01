@@ -262,7 +262,7 @@ function accessoryMarkup(o) {
   return '';
 }
 
-function renderAvatarFull(state) {
+function renderAvatarFull(state, bodyHtml) {
   const skin = state.skin || '#FFDFC4';
   const faceStyle = state.face || 'gentle';
   const hairOpt = state.hair || { style: 'spiky', color: '#6B4226' };
@@ -293,13 +293,14 @@ function renderAvatarFull(state) {
     }
   })();
 
-  return accBack + hairBack + bodyBase(skin) + pantsMarkup(pantsOpt) +
+  return accBack + hairBack + (bodyHtml || bodyBase(skin)) + pantsMarkup(pantsOpt) +
     shirtMarkup(shirtOpt) + shoesMarkup(shoesOpt) + drawFace(faceStyle) +
     hairMarkup(hairOpt) + hatMarkup(hatOpt) + glassesMarkup(glassesOpt) + accessoryMarkup(accOpt);
 }
 
 function renderItemHtml(category, params) {
   if (category === 'skin') return '';
+  if (category === 'body') return bodyBase(params?.skin || '#FFDFC4');
   if (category === 'face') return drawFace(params.style || 'gentle');
   if (category === 'hair') { const h = hairMarkup({ style: params.style || 'spiky', color: params.color || '#6B4226' }); return h.back + h.front; }
   if (category === 'shirt') return shirtMarkup({ style: params.style || 'tee', color: params.color || '#F5F5F5' });

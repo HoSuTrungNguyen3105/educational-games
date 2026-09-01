@@ -12,13 +12,18 @@ function ItemThumbnail({ item, selected, preview, onClick, owned, allItems }) {
     if (!item.html) return null;
     if (item.category === 'skin') return null;
     const defaultItems = {};
+    let bodyHtml = null;
     for (const it of allItems) {
       if (it.default && !defaultItems[it.category]) {
         defaultItems[it.category] = it;
       }
+      if (it.category === 'body' && it.default) {
+        bodyHtml = it.html || null;
+      }
     }
     const state = {};
     for (const [cat, it] of Object.entries(defaultItems)) {
+      if (cat === 'body') continue;
       if (cat === 'skin') state.skin = it.params?.hex || '#FFDFC4';
       else if (cat === 'face') state.face = it.params?.style || 'gentle';
       else state[cat] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
@@ -26,7 +31,7 @@ function ItemThumbnail({ item, selected, preview, onClick, owned, allItems }) {
     if (item.category === 'skin') state.skin = item.params?.hex || '#FFDFC4';
     else if (item.category === 'face') state.face = item.params?.style || 'gentle';
     else state[item.category] = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
-    return renderAvatarFull(state);
+    return renderAvatarFull(state, bodyHtml);
   }, [item, allItems]);
 
   const getSwatchStyle = () => {
