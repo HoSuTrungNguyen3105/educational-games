@@ -33,16 +33,16 @@ const DEFAULT_LOADOUT = {
 };
 
 const DEFAULT_TEMPLATE = {
-  body:    { x: 0, y: 0, width: 300, height: 440, zIndex: 0 },
-  skin:    { x: 0, y: 0, width: 300, height: 440, zIndex: 1 },
-  face:    { x: 0, y: 0, width: 300, height: 440, zIndex: 2 },
-  hair:    { x: 0, y: 0, width: 300, height: 440, zIndex: 3 },
-  shirt:   { x: 0, y: 0, width: 300, height: 440, zIndex: 4 },
-  pants:   { x: 0, y: 0, width: 300, height: 440, zIndex: 5 },
-  shoes:   { x: 0, y: 0, width: 300, height: 440, zIndex: 6 },
-  hat:     { x: 0, y: 0, width: 300, height: 440, zIndex: 7 },
-  glasses: { x: 0, y: 0, width: 300, height: 440, zIndex: 8 },
-  accessory: { x: 0, y: 0, width: 300, height: 440, zIndex: 9 },
+  body:    { x: 0, y: 0, width: 512, height: 700, zIndex: 0 },
+  skin:    { x: 0, y: 0, width: 512, height: 700, zIndex: 1 },
+  face:    { x: 0, y: 0, width: 512, height: 700, zIndex: 2 },
+  hair:    { x: 0, y: 0, width: 512, height: 700, zIndex: 3 },
+  shirt:   { x: 0, y: 0, width: 512, height: 700, zIndex: 4 },
+  pants:   { x: 0, y: 0, width: 512, height: 700, zIndex: 5 },
+  shoes:   { x: 0, y: 0, width: 512, height: 700, zIndex: 6 },
+  hat:     { x: 0, y: 0, width: 512, height: 700, zIndex: 7 },
+  glasses: { x: 0, y: 0, width: 512, height: 700, zIndex: 8 },
+  accessory: { x: 0, y: 0, width: 512, height: 700, zIndex: 9 },
 };
 
 // ─── SEED DATA FROM avatar.html ─────────────────────────────────

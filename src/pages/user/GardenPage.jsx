@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { gardenService, questionService, API_BASE } from '../../services/api.js';
-import { navigate } from '../../lib/router.js';
 import GardenerAvatar from '../../components/avatar/GardenerAvatar.jsx';
 
 /* ============================================================
@@ -655,8 +654,8 @@ function QuizModal({ onEarnWater, onClose }) {
                 className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
                   ${isCorrect ? 'border-green-400 bg-green-50 text-green-700' :
                     isWrong ? 'border-red-400 bg-red-50 text-red-600' :
-                    isSelected ? 'border-blue-400 bg-blue-50 text-blue-700' :
-                    'border-ink/10 bg-white text-ink hover:border-blue-300'}`}
+                      isSelected ? 'border-blue-400 bg-blue-50 text-blue-700' :
+                        'border-ink/10 bg-white text-ink hover:border-blue-300'}`}
               >
                 {opt}
               </button>

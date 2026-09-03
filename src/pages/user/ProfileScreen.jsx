@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from "react";
 import { authService, classService, API_BASE } from "../../services/api.js";
 import { getLevelProgress } from "../../lib/utils.js";
 import { getRoleLabel } from "../../config/roles.js";
-import { navigate } from "../../lib/router.js";
 import { ArrowLeft, LogOut, GraduationCap, ChevronDown, ChevronUp, Copy, Check, Palette } from "lucide-react";
 import AvatarPreview from "../../components/avatar/AvatarPreview.jsx";
 import AvatarCustomizer from "../../components/avatar/AvatarCustomizer.jsx";
