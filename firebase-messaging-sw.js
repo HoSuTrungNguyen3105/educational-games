@@ -17,25 +17,31 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase (only once)
+let app;
 if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-  console.log("Firebase initialized:", app.name);
+  app = firebase.initializeApp(firebaseConfig);
+  console.log("[SW] Firebase initialized:", app.name);
+} else {
+  app = firebase.apps[0];
 }
 
 const messaging = firebase.messaging();
 
-// Handle background messages
+// Handle background messages via FCM SDK
 messaging.onBackgroundMessage((payload) => {
-  console.log("[SW] Background message received:", payload);
+  console.log("[SW] Background message received via FCM:", payload);
 
   const { title, body, icon } = payload.notification || {};
   const data = payload.data || {};
 
+  const iconUrl = icon || (self.location.origin + "/educational-games/eduplay-icon-192x192.png");
+  const badgeUrl = self.location.origin + "/educational-games/eduplay-icon-192x192.png";
+
   const notificationTitle = title || "EduPlay";
   const notificationOptions = {
     body: body || "",
-    icon: icon || "/educational-games/eduplay-icon-192x192.png",
-    badge: "/educational-games/eduplay-icon-192x192.png",
+    icon: iconUrl,
+    badge: badgeUrl,
     data,
     tag: data.type || "general",
     renotify: true,
@@ -43,6 +49,35 @@ messaging.onBackgroundMessage((payload) => {
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Fallback native push event listener
+self.addEventListener("push", (event) => {
+  console.log("[SW] Push event received");
+  if (!event.data) return;
+
+  try {
+    const payload = event.data.json();
+    console.log("[SW] Push data:", payload);
+    const notification = payload.notification || {};
+    const data = payload.data || {};
+    const title = notification.title || data.title || "EduPlay";
+    const iconUrl = notification.icon || (self.location.origin + "/educational-games/eduplay-icon-192x192.png");
+    const badgeUrl = self.location.origin + "/educational-games/eduplay-icon-192x192.png";
+
+    const options = {
+      body: notification.body || data.body || "",
+      icon: iconUrl,
+      badge: badgeUrl,
+      data,
+      tag: data.type || "general",
+      renotify: true,
+      vibrate: [200, 100, 200],
+    };
+    event.waitUntil(self.registration.showNotification(title, options));
+  } catch (err) {
+    console.warn("[SW] Push payload not JSON:", err);
+  }
 });
 
 // Handle notification click
