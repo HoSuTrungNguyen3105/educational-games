@@ -4,6 +4,56 @@ import { gardenService, API_BASE } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { AvatarPreviewSmall } from '../../components/avatar/AvatarPreview.jsx';
 
+const PLANT_CONFIG = {
+  sunflower: {
+    name: 'Hoa hướng dương',
+    icon: '🌻',
+    stages: ['🌱', '🌿', '🌻'],
+    growthTime: 5 * 60 * 1000,
+    harvestCoin: 20,
+    seedPrice: 5,
+    rarity: 'common',
+  },
+  apple: {
+    name: 'Cây táo',
+    icon: '🍎',
+    stages: ['🌱', '🌿', '🌳', '🍎'],
+    growthTime: 30 * 60 * 1000,
+    harvestCoin: 50,
+    seedPrice: 15,
+    rarity: 'common',
+  },
+  cherry: {
+    name: 'Cây anh đào',
+    icon: '🌸',
+    stages: ['🌱', '🌿', '🌸'],
+    growthTime: 2 * 60 * 60 * 1000,
+    harvestCoin: 120,
+    seedPrice: 40,
+    rarity: 'rare',
+  },
+  oak: {
+    name: 'Cây cổ thụ',
+    icon: '🌳',
+    stages: ['🌱', '🌿', '🌳'],
+    growthTime: 12 * 60 * 60 * 1000,
+    harvestCoin: 500,
+    seedPrice: 150,
+    rarity: 'epic',
+  },
+  magic: {
+    name: 'Cây thần kỳ',
+    icon: '🌈',
+    stages: ['🌱', '🌿', '✨', '🌈'],
+    growthTime: 24 * 60 * 60 * 1000,
+    harvestCoin: 1000,
+    seedPrice: 400,
+    rarity: 'legendary',
+  },
+};
+
+const SEED_LIST = Object.entries(PLANT_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
+
 const RARITY_COLORS = {
   common: 'bg-gray-100 text-gray-600',
   rare: 'bg-blue-100 text-blue-600',
@@ -23,12 +73,20 @@ function formatTime(ms) {
   return `${s}s`;
 }
 
-function PlantSlot({ slot, index, onSelect, onPlant, onHarvest, onWater, onRemove, treeTypes }) {
-  const tree = slot.tree;
-  if (!tree) {
+function getStageIcon(plantType, progress) {
+  const cfg = PLANT_CONFIG[plantType];
+  if (!cfg) return '🌱';
+  const stageCount = cfg.stages.length;
+  if (progress >= 100) return cfg.stages[stageCount - 1];
+  return cfg.stages[Math.floor((progress / 100) * (stageCount - 1))];
+}
+
+function PlantSlot({ slot, onSelect, onHarvest, onWater, onRemove }) {
+  const plant = slot.plant;
+  if (!plant) {
     return (
       <button
-        onClick={() => onSelect(index)}
+        onClick={() => onSelect(slot.index)}
         className="aspect-square rounded-2xl border-2 border-dashed border-ink/15 bg-white/50 hover:bg-white hover:border-gold/40 transition-all duration-200 flex flex-col items-center justify-center gap-1 group"
       >
         <Sprout className="w-6 h-6 text-ink/20 group-hover:text-gold transition-colors" />
@@ -37,16 +95,18 @@ function PlantSlot({ slot, index, onSelect, onPlant, onHarvest, onWater, onRemov
     );
   }
 
-  const type = treeTypes.find(t => t.id === tree.treeType);
-  const progress = tree.progress || 0;
-  const isReady = tree.isReady;
+  const cfg = PLANT_CONFIG[plant.plantType];
+  const progress = plant.progress || 0;
+  const isReady = plant.isReady;
+  const stageIcon = getStageIcon(plant.plantType, progress);
 
   return (
     <div className={`aspect-square rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden
       ${isReady ? 'border-green-300 bg-green-50 shadow-md shadow-green-100' : 'border-ink/10 bg-white'}`}>
       {isReady && <div className="absolute inset-0 bg-green-400/5 animate-pulse" />}
 
-      <span className="text-2xl relative z-10">{tree.stageIcon}</span>
+      <span className="text-2xl relative z-10">{stageIcon}</span>
+      {cfg && <span className="text-[8px] font-mono text-ink/30 relative z-10">{cfg.name}</span>}
 
       {!isReady && (
         <>
@@ -63,7 +123,7 @@ function PlantSlot({ slot, index, onSelect, onPlant, onHarvest, onWater, onRemov
       <div className="flex gap-1 mt-1 relative z-10">
         {!isReady && (
           <button
-            onClick={(e) => { e.stopPropagation(); onWater(index); }}
+            onClick={(e) => { e.stopPropagation(); onWater(slot.index); }}
             className="p-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-500 transition-colors"
             title="Tưới nước (+10%)"
           >
@@ -72,7 +132,7 @@ function PlantSlot({ slot, index, onSelect, onPlant, onHarvest, onWater, onRemov
         )}
         {isReady && (
           <button
-            onClick={(e) => { e.stopPropagation(); onHarvest(index); }}
+            onClick={(e) => { e.stopPropagation(); onHarvest(slot.index); }}
             className="p-1 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
             title="Thu hoạch"
           >
@@ -80,7 +140,7 @@ function PlantSlot({ slot, index, onSelect, onPlant, onHarvest, onWater, onRemov
           </button>
         )}
         <button
-          onClick={(e) => { e.stopPropagation(); onRemove(index); }}
+          onClick={(e) => { e.stopPropagation(); onRemove(slot.index); }}
           className="p-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-400 transition-colors"
           title="Xóa cây"
         >
@@ -91,7 +151,7 @@ function PlantSlot({ slot, index, onSelect, onPlant, onHarvest, onWater, onRemov
   );
 }
 
-function SeedShop({ treeTypes, userCoins, onSelect, onClose }) {
+function SeedShop({ userCoins, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -112,36 +172,36 @@ function SeedShop({ treeTypes, userCoins, onSelect, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
-          {treeTypes.map(type => {
-            const canBuy = (userCoins || 0) >= type.seedPrice;
+          {SEED_LIST.map(seed => {
+            const canBuy = (userCoins || 0) >= seed.seedPrice;
             return (
               <button
-                key={type.id}
-                onClick={() => canBuy && onSelect(type.id)}
+                key={seed.id}
+                onClick={() => canBuy && onSelect(seed.id)}
                 disabled={!canBuy}
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left
                   ${canBuy ? 'border-ink/10 bg-white hover:border-gold/40 hover:shadow-md cursor-pointer' : 'border-ink/5 bg-ink/[0.02] opacity-50 cursor-not-allowed'}`}
               >
-                <span className="text-3xl">{type.icon}</span>
+                <span className="text-3xl">{seed.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-sm text-ink">{type.name}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${RARITY_COLORS[type.rarity]}`}>
-                      {type.rarity}
+                    <span className="font-display text-sm text-ink">{seed.name}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${RARITY_COLORS[seed.rarity]}`}>
+                      {seed.rarity}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-ink/40">
                     <span className="flex items-center gap-1">
-                      <Timer className="w-3 h-3" /> {formatTime(type.growthTime)}
+                      <Timer className="w-3 h-3" /> {formatTime(seed.growthTime)}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Coins className="w-3 h-3" /> +{type.harvestCoin}
+                      <Coins className="w-3 h-3" /> +{seed.harvestCoin}
                     </span>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   <div className="flex items-center gap-1 text-sm font-bold text-gold">
-                    <Coins className="w-3.5 h-3.5" /> {type.seedPrice}
+                    <Coins className="w-3.5 h-3.5" /> {seed.seedPrice}
                   </div>
                 </div>
               </button>
@@ -153,16 +213,18 @@ function SeedShop({ treeTypes, userCoins, onSelect, onClose }) {
   );
 }
 
-function HarvestModal({ treeType, onConfirm, onClose }) {
-  if (!treeType) return null;
+function HarvestModal({ plantType, onConfirm, onClose }) {
+  if (!plantType) return null;
+  const cfg = PLANT_CONFIG[plantType];
+  if (!cfg) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl p-6 w-full max-w-xs text-center anim-pop shadow-2xl">
-        <span className="text-5xl block mb-3">{treeType.icon}</span>
+        <span className="text-5xl block mb-3">{cfg.icon}</span>
         <h3 className="font-display text-lg text-ink mb-1">Thu hoạch thành công!</h3>
         <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gold mb-4">
-          <Coins className="w-6 h-6" /> +{treeType.harvestCoin}
+          <Coins className="w-6 h-6" /> +{cfg.harvestCoin}
         </div>
         <button onClick={onConfirm} className="w-full py-2.5 bg-gold text-white rounded-xl font-semibold hover:bg-gold/80 transition">
           Tuyệt vời!
@@ -174,7 +236,6 @@ function HarvestModal({ treeType, onConfirm, onClose }) {
 
 export default function GardenPage({ userAuth, onBack }) {
   const [garden, setGarden] = useState(null);
-  const [treeTypes, setTreeTypes] = useState([]);
   const [userCoins, setUserCoins] = useState(0);
   const [error, setError] = useState(null);
   const [showShop, setShowShop] = useState(false);
@@ -186,12 +247,8 @@ export default function GardenPage({ userAuth, onBack }) {
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [gardenRes, typesRes] = await Promise.all([
-        gardenService.get(),
-        gardenService.getTreeTypes(),
-      ]);
-      if (gardenRes?.status) setGarden(gardenRes.data);
-      if (typesRes?.status) setTreeTypes(typesRes.data.types);
+      const gardenData = await gardenService.get();
+      if (gardenData) setGarden(gardenData);
 
       const auth = JSON.parse(localStorage.getItem('edu_games_auth') || '{}');
       if (auth?.token) {
@@ -217,11 +274,11 @@ export default function GardenPage({ userAuth, onBack }) {
     setShowShop(true);
   };
 
-  const handlePlant = async (treeType) => {
+  const handlePlant = async (plantType) => {
     if (selectedSlot === null) return;
     try {
-      const res = await gardenService.plant(selectedSlot, treeType);
-      if (res?.status) {
+      const res = await gardenService.plant(selectedSlot, plantType);
+      if (res?.success) {
         setShowShop(false);
         setSelectedSlot(null);
         load();
@@ -234,9 +291,8 @@ export default function GardenPage({ userAuth, onBack }) {
   const handleHarvest = async (index) => {
     try {
       const res = await gardenService.harvest(index);
-      if (res?.status) {
-        const type = treeTypes.find(t => t.id === res.data.treeType);
-        setHarvestResult(type);
+      if (res?.success) {
+        setHarvestResult(res.plantType);
         load();
       }
     } catch (e) {
@@ -291,6 +347,8 @@ export default function GardenPage({ userAuth, onBack }) {
   }
 
   const slots = garden?.slots || [];
+  const plantedCount = slots.filter(s => s.plant).length;
+  const readyCount = slots.filter(s => s.plant?.isReady).length;
 
   return (
     <div className="flex-1 px-4 py-4 max-w-4xl mx-auto w-full space-y-4">
@@ -316,26 +374,21 @@ export default function GardenPage({ userAuth, onBack }) {
         <div className="flex-1">
           <h1 className="font-display text-lg text-ink">Khu vườn của tôi</h1>
           <p className="text-xs text-ink/40 mt-0.5">
-            {slots.filter(s => s.tree).length}/{slots.length} ô đã trồng • 
-            {slots.filter(s => s.tree?.isReady).length} cây sẵn sàng thu hoạch
+            {plantedCount}/{slots.length} ô đã trồng • {readyCount} cây sẵn sàng thu hoạch
           </p>
         </div>
       </div>
 
       <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
-
         {slots.length === 0 && !error ? (
           <div className="text-center py-10 text-ink/40 animate-pulse">Đang tải...</div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            {slots.map((slot, i) => (
+            {slots.map((slot) => (
               <PlantSlot
-                key={i}
+                key={slot.index}
                 slot={slot}
-                index={i}
-                treeTypes={treeTypes}
                 onSelect={handleSlotSelect}
-                onPlant={handlePlant}
                 onHarvest={handleHarvest}
                 onWater={handleWater}
                 onRemove={handleRemove}
@@ -352,7 +405,6 @@ export default function GardenPage({ userAuth, onBack }) {
 
       {showShop && (
         <SeedShop
-          treeTypes={treeTypes}
           userCoins={userCoins}
           onSelect={handlePlant}
           onClose={() => { setShowShop(false); setSelectedSlot(null); }}
@@ -361,7 +413,7 @@ export default function GardenPage({ userAuth, onBack }) {
 
       {harvestResult && (
         <HarvestModal
-          treeType={harvestResult}
+          plantType={harvestResult}
           onConfirm={() => setHarvestResult(null)}
           onClose={() => setHarvestResult(null)}
         />

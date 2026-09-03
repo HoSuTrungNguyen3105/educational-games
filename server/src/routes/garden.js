@@ -12,18 +12,11 @@ router.get("/", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.get("/tree-types", async (req, res, next) => {
-  try {
-    const types = gardenService.getTreeTypes();
-    sendSuccess(res, { types });
-  } catch (e) { next(e); }
-});
-
 router.post("/plant", authenticate, async (req, res, next) => {
   try {
-    const { slotIndex, treeType } = req.body || {};
-    if (slotIndex === undefined || !treeType) return sendError(res, "Thiếu slotIndex hoặc treeType", 400);
-    const result = await gardenService.plantTree(req.user.sub, Number(slotIndex), treeType);
+    const { slotIndex, plantType } = req.body || {};
+    if (slotIndex === undefined || !plantType) return sendError(res, "Thiếu slotIndex hoặc plantType", 400);
+    const result = await gardenService.plantTree(req.user.sub, Number(slotIndex), plantType);
     sendSuccess(res, result);
   } catch (e) { sendError(res, e.message, 400); }
 });

@@ -400,9 +400,8 @@ export const assignmentService = {
 
 export const gardenService = {
   async get() { return apiFetch("/garden"); },
-  async getTreeTypes() { return apiFetch("/garden/tree-types"); },
-  async plant(slotIndex, treeType) {
-    return apiFetch("/garden/plant", { method: "POST", body: { slotIndex, treeType } });
+  async plant(slotIndex, plantType) {
+    return apiFetch("/garden/plant", { method: "POST", body: { slotIndex, plantType } });
   },
   async harvest(slotIndex) {
     return apiFetch("/garden/harvest", { method: "POST", body: { slotIndex } });
