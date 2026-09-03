@@ -262,6 +262,10 @@ export function accessoryMarkup(o) {
   return { back: '', front: '' };
 }
 
+function overlayTransform() {
+  return 'translate(16,44) scale(1.6)';
+}
+
 export function renderAvatarFull(state, bodyHtml) {
   const skin = state.skin || '#FFDFC4';
   const faceStyle = state.face || 'gentle';
@@ -273,10 +277,23 @@ export function renderAvatarFull(state, bodyHtml) {
   const glassesOpt = state.glasses || { style: 'none' };
   const accOpt = state.accessory || { style: 'none' };
 
+  const bodySvg = bodyHtml || bodyBase(skin);
+  const isFullSvg = bodySvg.includes('<svg') || (bodySvg.includes('id="head"') && bodySvg.includes('id="body"'));
+  if (isFullSvg) {
+    const t = overlayTransform();
+    const hair = hairMarkup(hairOpt);
+    const acc = accessoryMarkup(accOpt);
+    return bodySvg +
+      `<g transform="${t}">` + acc.back + hair.back + `</g>` +
+      `<g transform="${t}">` +
+      drawFace(faceStyle) + hair.front + hatMarkup(hatOpt) + glassesMarkup(glassesOpt) + acc.front +
+      `</g>`;
+  }
+
   const hair = hairMarkup(hairOpt);
   const acc = accessoryMarkup(accOpt);
 
-  return acc.back + hair.back + (bodyHtml || bodyBase(skin)) + pantsMarkup(pantsOpt) +
+  return acc.back + hair.back + bodySvg + pantsMarkup(pantsOpt) +
     shirtMarkup(shirtOpt) + shoesMarkup(shoesOpt) + drawFace(faceStyle) +
     hair.front + hatMarkup(hatOpt) + glassesMarkup(glassesOpt) + acc.front;
 }
@@ -297,7 +314,29 @@ export function renderAvatarFullWithOverrides(state, overrides = {}) {
   const isFullSvg = bodySvg.includes('<svg') || (bodySvg.includes('id="head"') && bodySvg.includes('id="body"'));
 
   if (isFullSvg) {
-    return bodySvg;
+    const t = overlayTransform();
+    let hairBack = '', hairFront = '';
+    if (overrides.hair) {
+      const sp = splitBackFront(overrides.hair);
+      hairBack = sp.back; hairFront = sp.front;
+    } else {
+      const h = hairMarkup(hairOpt); hairBack = h.back; hairFront = h.front;
+    }
+    let accBack = '', accFront = '';
+    if (overrides.accessory) {
+      const sp = splitBackFront(overrides.accessory);
+      accBack = sp.back; accFront = sp.front;
+    } else {
+      const a = accessoryMarkup(accOpt); accBack = a.back; accFront = a.front;
+    }
+    return bodySvg +
+      `<g transform="${t}">` + accBack + hairBack + `</g>` +
+      `<g transform="${t}">` +
+      (overrides.face || drawFace(faceStyle)) + hairFront +
+      (overrides.hat || hatMarkup(hatOpt)) +
+      (overrides.glasses || glassesMarkup(glassesOpt)) +
+      accFront +
+      `</g>`;
   }
 
   let hairBack = '', hairFront = '';

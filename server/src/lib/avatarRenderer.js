@@ -262,6 +262,20 @@ function accessoryMarkup(o) {
   return '';
 }
 
+function overlayTransform() {
+  return 'translate(16,44) scale(1.6)';
+}
+
+function splitBackFront(html) {
+  if (!html) return { back: '', front: '' };
+  const gEnd = html.lastIndexOf('</g>');
+  if (gEnd !== -1) {
+    const splitAt = gEnd + 4;
+    return { back: html.slice(0, splitAt), front: html.slice(splitAt) };
+  }
+  return { back: '', front: html };
+}
+
 function renderAvatarFull(state, bodyHtml) {
   const skin = state.skin || '#FFDFC4';
   const faceStyle = state.face || 'gentle';
@@ -278,7 +292,16 @@ function renderAvatarFull(state, bodyHtml) {
   const isFullSvg = bodySvg.includes('<svg') || (bodySvg.includes('id="head"') && bodySvg.includes('id="body"'));
 
   if (isFullSvg) {
-    return bodySvg;
+    const t = overlayTransform();
+    const hairHtml = hairMarkup(hairOpt);
+    const accFull = accessoryMarkup(accOpt);
+    const hairSp = splitBackFront(hairHtml);
+    const accSp = splitBackFront(accFull);
+    return bodySvg +
+      `<g transform="${t}">` + accSp.back + hairSp.back + `</g>` +
+      `<g transform="${t}">` +
+      drawFace(faceStyle) + hairSp.front + hatMarkup(hatOpt) + glassesMarkup(glassesOpt) + accSp.front +
+      `</g>`;
   }
 
   const hairBack = (() => {

@@ -24,6 +24,7 @@ import notificationsRouter from "./routes/notifications.js";
 import classesRouter from "./routes/classes.js";
 import assignmentsRouter from "./routes/assignments.js";
 import avatarRouter from "./routes/avatar.js";
+import gardenRouter from "./routes/garden.js";
 import { verifyToken } from "./services/authService.js";
 
 const app = express();
@@ -75,6 +76,7 @@ app.use("/api/notifications", notificationsRouter);
 app.use("/api/classes", classesRouter);
 app.use("/api/assignments", assignmentsRouter);
 app.use("/api/avatar", avatarRouter);
+app.use("/api/garden", gardenRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);

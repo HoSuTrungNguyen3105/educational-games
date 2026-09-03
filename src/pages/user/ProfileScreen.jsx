@@ -46,9 +46,9 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         }
         if (loadoutRes.status) {
           const raw = loadoutRes.data.loadout || {};
-          const VALID_LAYERS = ['skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
+          const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
           const itemIds = new Set(items.map(i => i.id));
-          const defaults = { skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
+          const defaults = { body: null, skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
           const cleaned = {};
           for (const k of VALID_LAYERS) {
             const v = raw[k];
@@ -286,8 +286,8 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           onSave={async (newLoadout) => {
             // Validate against available items before save
             const itemIds = new Set(avatarItems.map(i => i.id));
-            const VALID_LAYERS = ['skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
-            const defaults = { skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
+            const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
+            const defaults = { body: null, skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
             const cleaned = {};
             for (const k of VALID_LAYERS) {
               const v = newLoadout[k];

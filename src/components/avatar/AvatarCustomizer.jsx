@@ -11,6 +11,11 @@ function ItemThumbnail({ item, selected, preview, onClick, owned, allItems }) {
   const fullAvatarSvg = useMemo(() => {
     if (!item.html) return null;
     if (item.category === 'skin') return null;
+
+    if (item.category === 'body') {
+      return item.html;
+    }
+
     const defaultItems = {};
     let bodyHtml = null;
     for (const it of allItems) {
@@ -94,8 +99,17 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
       .then(r => r.json())
       .then(json => {
         if (json.status) {
-          setItems(json.data.items);
+          const fetchedItems = json.data.items || [];
+          setItems(fetchedItems);
           setCategories(json.data.categories);
+          setDraft(prev => {
+            const next = { ...prev };
+            if (!next.body) {
+              const defaultBody = fetchedItems.find(it => it.category === 'body' && it.default);
+              if (defaultBody) next.body = defaultBody.id;
+            }
+            return next;
+          });
         }
       })
       .catch(() => { });

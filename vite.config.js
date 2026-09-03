@@ -55,6 +55,7 @@ export default defineConfig({
           '**/*.mp4',
           '**/*.aac',
           '**/*.m4a',
+          '**/*.md',
         ],
         runtimeCaching: [
           {

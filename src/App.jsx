@@ -21,6 +21,7 @@ import DailyTasksPage from "./pages/user/DailyTasksPage.jsx";
 import SpinWheel from "./pages/user/SpinWheel.jsx";
 import AssignmentJoin from "./pages/user/AssignmentJoin.jsx";
 import AssignmentTake from "./pages/user/AssignmentTake.jsx";
+import GardenPage from "./pages/user/GardenPage.jsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
 
 function App() {
@@ -111,6 +112,11 @@ function App() {
     "spin-wheel": () => (
       <RouteShell toast={toast} showBack={false}>
         <SpinWheel userAuth={userAuth} onBack={() => navigate("/")} showToast={showToast} />
+      </RouteShell>
+    ),
+    garden: () => (
+      <RouteShell toast={toast} showBack={false}>
+        <GardenPage userAuth={userAuth} onBack={() => navigate("/")} />
       </RouteShell>
     ),
     "assignment-join": () => <AssignmentJoin />,

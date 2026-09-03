@@ -397,3 +397,20 @@ export const assignmentService = {
   async update(id, data) { return apiFetch(`/assignments/${id}`, { method: "PUT", body: data }); },
   async delete_(id) { return apiFetch(`/assignments/${id}`, { method: "DELETE" }); },
 };
+
+export const gardenService = {
+  async get() { return apiFetch("/garden"); },
+  async getTreeTypes() { return apiFetch("/garden/tree-types"); },
+  async plant(slotIndex, treeType) {
+    return apiFetch("/garden/plant", { method: "POST", body: { slotIndex, treeType } });
+  },
+  async harvest(slotIndex) {
+    return apiFetch("/garden/harvest", { method: "POST", body: { slotIndex } });
+  },
+  async water(slotIndex) {
+    return apiFetch("/garden/water", { method: "POST", body: { slotIndex } });
+  },
+  async remove(slotIndex) {
+    return apiFetch("/garden/remove", { method: "POST", body: { slotIndex } });
+  },
+};

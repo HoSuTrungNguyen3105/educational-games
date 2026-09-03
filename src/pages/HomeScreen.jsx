@@ -39,6 +39,7 @@ import {
   SplineIcon,
   ShipWheel,
   FileText,
+  Sprout,
 } from 'lucide-react'
 
 // Bảng màu theo môn học — giữ nguyên
@@ -60,6 +61,7 @@ function colorForSubject(subject = "") {
 // NAV_ITEMS giữ nguyên
 const NAV_ITEMS = (userAuth) => [
   { key: "home", icon: Home, label: "Trang chủ", path: "/", show: true },
+  { key: "garden", icon: Sprout, label: "Khu vườn", path: "/garden", show: !!userAuth?.user },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", path: "/spin-wheel", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", path: "/chat", show: !!userAuth?.user },
@@ -72,6 +74,7 @@ const NAV_ITEMS = (userAuth) => [
 // QUICK_MENU_ITEMS giữ nguyên
 const QUICK_MENU_ITEMS = (userAuth) => [
   { key: "code", icon: Ticket, label: "Nhập mã vé", action: "code", show: true, tint: "from-yellow-800 to-fuchsia-400" },
+  { key: "garden", icon: Sprout, label: "Khu vườn", path: "/garden", show: !!userAuth?.user, tint: "from-green-400 to-emerald-400" },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user, tint: "from-violet-400 to-purple-400" },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", path: "/spin-wheel", show: !!userAuth?.user, tint: "from-amber-400 to-yellow-500" },
   { key: "games", icon: Gamepad2, label: "Trò chơi", action: "scroll", show: true, tint: "from-orange-400 to-amber-400" },

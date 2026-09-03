@@ -247,6 +247,15 @@ export async function initDatabase() {
         updatedAt: { bsonType: "string" },
       },
     } },
+    gardens: { $jsonSchema: {
+      bsonType: "object",
+      required: ["userId", "slots"],
+      properties: {
+        userId: { bsonType: "string" },
+        slots: { bsonType: "array" },
+        createdAt: { bsonType: "string" },
+      },
+    } },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -340,6 +349,8 @@ export async function initDatabase() {
     ["submissions", { assignmentId: 1, studentId: 1 }, { unique: true }],
     ["submissions", { studentId: 1 }],
     ["submissions", { assignmentId: 1 }],
+    // Garden system indexes
+    ["gardens", { userId: 1 }, { unique: true }],
   ];
 
   const createdIndexes = [];
