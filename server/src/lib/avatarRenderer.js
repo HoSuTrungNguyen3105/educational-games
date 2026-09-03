@@ -273,6 +273,14 @@ function renderAvatarFull(state, bodyHtml) {
   const glassesOpt = state.glasses || { style: 'none' };
   const accOpt = state.accessory || { style: 'none' };
 
+  const bodySvg = bodyHtml || bodyBase(skin);
+
+  const isFullSvg = bodySvg.includes('<svg') || (bodySvg.includes('id="head"') && bodySvg.includes('id="body"'));
+
+  if (isFullSvg) {
+    return bodySvg;
+  }
+
   const hairBack = (() => {
     const c = hairOpt.color;
     switch (hairOpt.style) {
@@ -310,6 +318,16 @@ function renderItemHtml(category, params) {
   if (category === 'glasses') return glassesMarkup({ style: params.style || 'none', color: params.color || '#000' });
   if (category === 'accessory') { const a = accessoryMarkup({ style: params.style || 'none', color: params.color || '#000' }); return a.back + a.front; }
   return '';
+}
+
+function splitBackFront(html) {
+  if (!html) return { back: '', front: '' };
+  const gEnd = html.lastIndexOf('</g>');
+  if (gEnd !== -1) {
+    const splitAt = gEnd + 4;
+    return { back: html.slice(0, splitAt), front: html.slice(splitAt) };
+  }
+  return { back: '', front: html };
 }
 
 export {

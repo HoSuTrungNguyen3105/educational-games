@@ -35,21 +35,21 @@ import { navigate } from '../../lib/router.js'
 /* eslint-disable react-hooks/set-state-in-effect */
 
 const GAME_META = {
-  "TOAN101": { name: "\u00D4n t\u1EADp To\u00E1n l\u1EDBp 3", icon: "\u{1F9EE}", color: "from-blue-400 to-indigo-500", bg: "bg-blue-500" },
-  "VUTRU22": { name: "Kh\u00E1m ph\u00E1 v\u0169 tr\u1EE5", icon: "\u{1F30C}", color: "from-indigo-400 to-purple-600", bg: "bg-indigo-500" },
-  "TONGHOP9": { name: "\u00D4n t\u1EADp ki\u1EBFn th\u1EE9c t\u1ED5ng h\u1EE3p", icon: "\u{1F4DA}", color: "from-amber-400 to-orange-500", bg: "bg-amber-500" },
-  "FAMILY07": { name: "T\u1EEB v\u1EF1ng ti\u1EBFng Anh: Gia \u0111\u00ECnh", icon: "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}", color: "from-pink-400 to-rose-500", bg: "bg-pink-500" },
-  "TRUNGTHU5": { name: "Trung Thu Vui V\u1EBB", icon: "\u{1F391}", color: "from-yellow-400 to-amber-500", bg: "bg-yellow-500" },
-  "DIALY88": { name: "\u0110\u1ECBa l\u00FD Vi\u1EC7t Nam", icon: "\u{1F30D}", color: "from-green-400 to-emerald-500", bg: "bg-green-500" },
-  "CHUCAI3": { name: "B\u1EA3ng ch\u1EEF c\u00E1i ti\u1EBFng Vi\u1EC7t", icon: "\u{1F4DD}", color: "from-cyan-400 to-blue-500", bg: "bg-cyan-500" },
-  "QUAYSO4": { name: "V\u00F2ng quay ki\u1EBFn th\u1EE9c l\u1EDBp 4", icon: "\u{1F3B0}", color: "from-red-400 to-pink-500", bg: "bg-red-500" },
-  "ATGT202": { name: "Lu\u1EADt giao th\u00F4ng an to\u00E0n", icon: "\u{1F6A6}", color: "from-teal-400 to-cyan-500", bg: "bg-teal-500" },
-  "DONGVAT6": { name: "\u0110\u1ED9ng v\u1EADt hoang d\u00E3", icon: "\u{1F43E}", color: "from-lime-400 to-green-500", bg: "bg-lime-500" },
-  "LICHSU19": { name: "\u0110ua thuy\u1EC1n: L\u1ECBch s\u1EED Vi\u1EC7t Nam", icon: "\u{1F6F6}", color: "from-blue-400 to-sky-500", bg: "bg-sky-500" },
-  "MOITRUONG4": { name: "Ph\u00E2n lo\u1EA1i r\u00E1c th\u1EA3i", icon: "\u{267B}\uFE0F", color: "from-emerald-400 to-green-500", bg: "bg-emerald-500" },
-  "PHIEUL9": { name: "\u0110\u1EA1i Phi\u00EAu L\u01B0u To\u00E1n H\u1ECDc", icon: "\u{1F9EE}", color: "from-purple-400 to-violet-500", bg: "bg-purple-500" },
-  "HAMNGUC3": { name: "H\u1EA7m Ng\u1EE5c Ki\u1EBFn Th\u1EE9c", icon: "\u{1F3F0}", color: "from-slate-500 to-gray-700", bg: "bg-slate-600" },
-  "NINJA77": { name: "Ninja V\u01B0\u1EE3t \u1EA2i T\u1EEB V\u1EF1ng", icon: "\u{1F977}", color: "from-gray-500 to-zinc-700", bg: "bg-gray-600" },
+  "TOAN101": { name: "Ôn tập Toán lớp 3", icon: "🧮", color: "from-blue-400 to-indigo-500", bg: "bg-blue-500" },
+  "VUTRU22": { name: "Khám phá vũ trụ", icon: "🌌", color: "from-indigo-400 to-purple-600", bg: "bg-indigo-500" },
+  "TONGHOP9": { name: "Ôn tập kiến thức tổng hợp", icon: "📚", color: "from-amber-400 to-orange-500", bg: "bg-amber-500" },
+  "FAMILY07": { name: "Từ vựng tiếng Anh: Gia đình", icon: "👨‍👩‍👧‍👦", color: "from-pink-400 to-rose-500", bg: "bg-pink-500" },
+  "TRUNGTHU5": { name: "Trung Thu Vui Vẻ", icon: "🏮", color: "from-yellow-400 to-amber-500", bg: "bg-yellow-500" },
+  "DIALY88": { name: "Địa lý Việt Nam", icon: "🌍", color: "from-green-400 to-emerald-500", bg: "bg-green-500" },
+  "CHUCAI3": { name: "Bảng chữ cái tiếng Việt", icon: "📝", color: "from-cyan-400 to-blue-500", bg: "bg-cyan-500" },
+  "QUAYSO4": { name: "Vòng quay kiến thức lớp 4", icon: "🎰", color: "from-red-400 to-pink-500", bg: "bg-red-500" },
+  "ATGT202": { name: "Luật giao thông an toàn", icon: "🚦", color: "from-teal-400 to-cyan-500", bg: "bg-teal-500" },
+  "DONGVAT6": { name: "Động vật hoang dã", icon: "🐾", color: "from-lime-400 to-green-500", bg: "bg-lime-500" },
+  "LICHSU19": { name: "Đua thuyền: Lịch sử Việt Nam", icon: "🛶", color: "from-blue-400 to-sky-500", bg: "bg-sky-500" },
+  "MOITRUONG4": { name: "Phân loại rác thải", icon: "♻️", color: "from-emerald-400 to-green-500", bg: "bg-emerald-500" },
+  "PHIEUL9": { name: "Đại Phiêu Lưu Toán Học", icon: "🧮", color: "from-purple-400 to-violet-500", bg: "bg-purple-500" },
+  "HAMNGUC3": { name: "Hầm Ngục Kiến Thức", icon: "🏰", color: "from-slate-500 to-gray-700", bg: "bg-slate-600" },
+  "NINJA77": { name: "Ninja Vượt Ải Từ Vựng", icon: "🥷", color: "from-gray-500 to-zinc-700", bg: "bg-gray-600" },
 };
 
 function getMeta(gameId) {
@@ -69,7 +69,7 @@ export default function MyCoins({ userAuth, onBack }) {
     setGames(null); setError(null);
     Promise.all([gameProgressService.listGames(), coinService.get(), starService.get()])
       .then(([g, c, s]) => { setGames(g); setGlobalCoins(c?.coins || 0); setGlobalStars(s?.stars || 0); })
-      .catch(e => setError(e.message || "L\u1ED7i t\u1EA3i d\u1EEF li\u1EC7u"));
+      .catch(e => setError(e.message || "Lỗi tải dữ liệu"));
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -94,10 +94,10 @@ export default function MyCoins({ userAuth, onBack }) {
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-100 to-yellow-50 flex items-center justify-center mx-auto mb-5 ring-1 ring-amber-200 shadow-lg">
             <Coins className="w-10 h-10 text-amber-500" />
           </div>
-          <h2 className="font-display text-xl text-ink mb-2">Ch\u01B0a \u0111\u0103ng nh\u1EADp</h2>
-          <p className="text-sm text-stone-500 mb-5">B\u1EA1n c\u1EA7n \u0111\u0103ng nh\u1EADp \u0111\u1EC3 xem coin v\u00E0 ti\u1EBFn tr\u00ECnh</p>
+          <h2 className="font-display text-xl text-ink mb-2">Chưa đăng nhập</h2>
+          <p className="text-sm text-stone-500 mb-5">Bạn cần đăng nhập để xem coin và tiến trình</p>
           <PrimaryButton onClick={onBack} className="gap-2">
-            <ChevronLeft className="w-4 h-4" /> V\u1EC1 trang ch\u1EE7
+            <ChevronLeft className="w-4 h-4" /> Về trang chủ
           </PrimaryButton>
         </div>
       </div>
@@ -115,7 +115,7 @@ export default function MyCoins({ userAuth, onBack }) {
         className="group text-sm text-stone-500 hover:text-ink transition inline-flex items-center gap-2 mb-6 hover:bg-white/60 rounded-full px-3 py-1.5 -ml-3"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-        V\u1EC1 trang ch\u1EE7
+        Về trang chủ
       </button>
 
       <div className="mb-8">
@@ -123,9 +123,9 @@ export default function MyCoins({ userAuth, onBack }) {
           <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-300 text-white shadow-md">
             <Coins className="w-5 h-5" />
           </span>
-          Coin & H\u1EA1ng
+          Coin & Hạng
         </h1>
-        <p className="text-sm text-stone-500 mt-2 ml-13">T\u00EDch l\u0169y coin \u0111\u1EC3 th\u0103ng h\u1EA1ng v\u00E0 m\u1EDF kh\u00F3a n\u1ED9i dung m\u1EDBi</p>
+        <p className="text-sm text-stone-500 mt-2 ml-13">Tích lũy coin để thăng hạng và mở khóa nội dung mới</p>
       </div>
 
       {/* Hero Rank Card */}
@@ -180,10 +180,10 @@ export default function MyCoins({ userAuth, onBack }) {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
         {[
-          { label: "T\u1ED5ng l\u01B0\u1EE3t ch\u01A1i", value: totalPlays, icon: Gamepad2, color: "text-teal-600", bg: "bg-teal-50", ring: "ring-teal-200" },
-          { label: "Game \u0111\u00E3 ch\u01A1i", value: (games || []).length, icon: Layers, color: "text-purple-600", bg: "bg-purple-50", ring: "ring-purple-200" },
-          { label: "Sao t\u1ED5ng c\u1ECDng", value: globalStars, icon: Star, color: "text-amber-500", bg: "bg-amber-50", ring: "ring-amber-200" },
-          { label: "T\u1ED5ng coin", value: globalCoins, icon: Coins, color: "text-amber-700", bg: "bg-amber-50", ring: "ring-amber-200" },
+          { label: "Tổng lượt chơi", value: totalPlays, icon: Gamepad2, color: "text-teal-600", bg: "bg-teal-50", ring: "ring-teal-200" },
+          { label: "Game đã chơi", value: (games || []).length, icon: Layers, color: "text-purple-600", bg: "bg-purple-50", ring: "ring-purple-200" },
+          { label: "Sao tổng cộng", value: globalStars, icon: Star, color: "text-amber-500", bg: "bg-amber-50", ring: "ring-amber-200" },
+          { label: "Tổng coin", value: globalCoins, icon: Coins, color: "text-amber-700", bg: "bg-amber-50", ring: "ring-amber-200" },
         ].map((s, i) => (
           <div key={i} className="bg-white rounded-2xl border border-stone-100 p-4 text-center hover:-translate-y-0.5 transition-transform duration-200 shadow-sm hover:shadow-md">
             <div className={`w-10 h-10 rounded-xl ${s.bg} ${s.color} flex items-center justify-center mx-auto mb-2 ring-1 ${s.ring}`}>
@@ -199,7 +199,7 @@ export default function MyCoins({ userAuth, onBack }) {
       {!error && games === null && (
         <div className="flex items-center justify-center py-16 text-stone-400">
           <Loader2 className="w-6 h-6 animate-spin mr-2" />
-          <span className="text-sm">\u0110ang t\u1EA3i d\u1EEF li\u1EC7u...</span>
+          <span className="text-sm">Đang tải dữ liệu...</span>
         </div>
       )}
 
@@ -208,10 +208,10 @@ export default function MyCoins({ userAuth, onBack }) {
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mx-auto mb-4 ring-1 ring-purple-200">
             <Gamepad2 className="w-8 h-8 text-purple-500" />
           </div>
-          <h3 className="font-display text-lg text-stone-800 mb-2">Ch\u01B0a c\u00F3 game n\u00E0o</h3>
-          <p className="text-sm text-stone-400 mb-5 max-w-xs mx-auto">B\u1EA1n ch\u01B0a ch\u01A1i game n\u00E0o. H\u00E3y b\u1EAFt \u0111\u1EA7u ch\u01A1i \u0111\u1EC3 t\u00EDch l\u0169y coin v\u00E0 n\u00E2ng c\u1EA5p nh\u00E2n v\u1EADt!</p>
+          <h3 className="font-display text-lg text-stone-800 mb-2">Chưa có game nào</h3>
+          <p className="text-sm text-stone-400 mb-5 max-w-xs mx-auto">Bạn chưa chơi game nào. Hãy bắt đầu chơi để tích lũy coin và nâng cấp nhân vật!</p>
           <PrimaryButton onClick={() => navigate("/")} className="gap-2">
-            <Play className="w-4 h-4" /> Ch\u01A1i game ngay
+            <Play className="w-4 h-4" /> Chơi game ngay
           </PrimaryButton>
         </div>
       )}
@@ -220,7 +220,7 @@ export default function MyCoins({ userAuth, onBack }) {
         <div className="space-y-6">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-stone-700" />
-            <h2 className="font-display text-lg text-stone-800">Ti\u1EBFn tr\u00ECnh t\u1EEBng game</h2>
+            <h2 className="font-display text-lg text-stone-800">Tiến trình từng game</h2>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
@@ -277,7 +277,7 @@ export default function MyCoins({ userAuth, onBack }) {
               {loadingDetail ? (
                 <div className="flex items-center justify-center py-12 text-stone-400">
                   <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  <span className="text-sm">\u0110ang t\u1EA3i chi ti\u1EBFt...</span>
+                  <span className="text-sm">Đang tải chi tiết...</span>
                 </div>
               ) : detail ? (
                 <div className="p-5 sm:p-6 space-y-5">
@@ -290,7 +290,7 @@ export default function MyCoins({ userAuth, onBack }) {
                       <h3 className="font-display text-xl text-stone-800">{getMeta(detail.gameId).name}</h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="inline-flex items-center gap-1 text-xs font-mono text-stone-400 bg-stone-100 rounded-lg px-2 py-0.5">
-                          <Target className="w-3 h-3" /> {detail.progress || 0}% ho\u00E0n th\u00E0nh
+                          <Target className="w-3 h-3" /> {detail.progress || 0}% hoàn thành
                         </span>
                       </div>
                     </div>
@@ -300,11 +300,11 @@ export default function MyCoins({ userAuth, onBack }) {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {[
                       { label: "Level", value: detail.level || 1, icon: Star, color: "text-amber-600", bg: "bg-amber-50" },
-                      { label: "Kinh nghi\u1EC7m", value: (detail.experience || 0).toLocaleString(), icon: Zap, color: "text-purple-600", bg: "bg-purple-50" },
-                      { label: "L\u01B0\u1EE3t ch\u01A1i", value: detail.gamesPlayed || 0, icon: Gamepad2, color: "text-teal-600", bg: "bg-teal-50" },
-                      { label: "Nhi\u1EC7m v\u1EE5", value: detail.questsCompleted || 0, icon: Target, color: "text-rose-600", bg: "bg-rose-50" },
-                      { label: "Ti\u1EBFn tr\u00ECnh", value: (detail.progress || 0) + "%", icon: Activity, color: "text-blue-600", bg: "bg-blue-50" },
-                      { label: "Th\u00E0nh t\u00EDch", value: detail.level > 1 ? "T\u1ED1t" : "M\u1EDBi", icon: Trophy, color: "text-amber-700", bg: "bg-amber-50" },
+                      { label: "Kinh nghiệm", value: (detail.experience || 0).toLocaleString(), icon: Zap, color: "text-purple-600", bg: "bg-purple-50" },
+                      { label: "Lượt chơi", value: detail.gamesPlayed || 0, icon: Gamepad2, color: "text-teal-600", bg: "bg-teal-50" },
+                      { label: "Nhiệm vụ", value: detail.questsCompleted || 0, icon: Target, color: "text-rose-600", bg: "bg-rose-50" },
+                      { label: "Tiến trình", value: (detail.progress || 0) + "%", icon: Activity, color: "text-blue-600", bg: "bg-blue-50" },
+                      { label: "Thành tích", value: detail.level > 1 ? "Tốt" : "Mới", icon: Trophy, color: "text-amber-700", bg: "bg-amber-50" },
                     ].map((s, i) => (
                       <div key={i} className="rounded-xl bg-stone-50 p-3.5 flex items-center gap-3 hover:bg-stone-100 transition-colors">
                         <div className={`w-10 h-10 rounded-xl ${s.bg} ${s.color} flex items-center justify-center shrink-0`}>
@@ -323,7 +323,7 @@ export default function MyCoins({ userAuth, onBack }) {
                     <div className="pt-2">
                       <div className="flex items-center gap-2 mb-3">
                         <Package className="w-4 h-4 text-stone-700" />
-                        <h4 className="text-sm font-display text-stone-800">V\u1EADt ph\u1EA9m \u0111\u00E3 s\u01B0u t\u1EA7m</h4>
+                        <h4 className="text-sm font-display text-stone-800">Vật phẩm đã sưu tầm</h4>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {detail.inventory.map((item, i) => (

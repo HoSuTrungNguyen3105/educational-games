@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { ManagementHeader, ConfirmModal, Modal } from '../../components/ui.jsx';
-import { Plus, Pencil, Trash2, X, Save, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Save, Search, ListChecks, Check } from 'lucide-react';
 import { renderAvatarFull, renderAvatarFullWithOverrides, renderItemHtml } from '../../lib/avatarRenderer.js';
 
 function renderItemHtmlLocal(category, params) {
@@ -79,6 +79,13 @@ function ItemPreview({ item, allItems }) {
   const svg = item.html
     ? renderAvatarFullWithOverrides(state, { ...overrides, [item.category]: item.html })
     : renderAvatarFullWithOverrides(state, overrides);
+  const isFullSvg = svg && (svg.includes('<svg') || (svg.includes('id="head"') && svg.includes('id="body"')));
+  if (isFullSvg) {
+    return (
+      <svg viewBox="0 0 512 700" width="48" height="66" xmlns="http://www.w3.org/2000/svg"
+        dangerouslySetInnerHTML={{ __html: svg }} />
+    );
+  }
   return (
     <svg viewBox="0 0 300 440" width="48" height="70" xmlns="http://www.w3.org/2000/svg"
       dangerouslySetInnerHTML={{ __html: svg }} />
@@ -96,6 +103,9 @@ export default function AvatarItemManagement({ showToast }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState('');
   const [editedHtml, setEditedHtml] = useState('');
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchData, setBatchData] = useState({});
+  const [batchSaving, setBatchSaving] = useState(false);
 
   const load = useCallback(() => {
     setItems(null); setError(null);
@@ -193,8 +203,70 @@ export default function AvatarItemManagement({ showToast }) {
     } catch (err) { showToast(err.message || "Lỗi xóa", "error"); }
   };
 
+  const toggleBatchMode = () => {
+    if (!batchMode) {
+      const init = {};
+      (items || []).forEach(it => {
+        init[it.id] = { name: it.name, price: it.price, default: it.default };
+      });
+      setBatchData(init);
+    }
+    setBatchMode(m => !m);
+  };
+
+  const updateBatchField = (id, key, val) => {
+    setBatchData(prev => ({ ...prev, [id]: { ...prev[id], [key]: val } }));
+  };
+
+  const submitBatch = async () => {
+    setBatchSaving(true);
+    try {
+      const token = localStorage.getItem("edu_games_auth");
+      const parsed = token ? JSON.parse(token) : null;
+      const headers = { "Content-Type": "application/json" };
+      if (parsed?.token) headers.Authorization = `Bearer ${parsed.token}`;
+
+      const changed = (items || []).filter(it => {
+        const b = batchData[it.id];
+        if (!b) return false;
+        return b.name !== it.name || Number(b.price) !== it.price || b.default !== it.default;
+      });
+
+      if (changed.length === 0) {
+        showToast("Không có thay đổi nào");
+        setBatchSaving(false);
+        return;
+      }
+
+      const results = await Promise.all(changed.map(it => {
+        const isBody = it.category === 'body';
+        const base = isBody ? `${API_BASE}/avatar/admin/body` : `${API_BASE}/avatar/admin/items`;
+        const b = batchData[it.id];
+        const body = isBody
+          ? { name: b.name, type: it.params?.type || 'custom', price: Number(b.price), default: b.default, html: it.html, ...(it.gender ? { gender: it.gender } : {}) }
+          : { category: it.category, name: b.name, price: Number(b.price), default: b.default, params: it.params, html: it.html, ...(it.gender ? { gender: it.gender } : {}) };
+        return fetch(`${base}/${it.id}`, { method: "PUT", headers, body: JSON.stringify(body) }).then(r => r.json());
+      }));
+
+      const failed = results.filter(r => !r.status);
+      if (failed.length > 0) showToast(`Lưu xong nhưng ${failed.length} item lỗi`, "error");
+      else showToast(`Đã cập nhật ${changed.length} item`);
+
+      setBatchMode(false);
+      setBatchData({});
+      load();
+    } catch (err) {
+      showToast(err.message || "Lỗi cập nhật hàng loạt", "error");
+    }
+    setBatchSaving(false);
+  };
+
   const filtered = items ? (filter === "all" ? items : items.filter(i => i.category === filter)) : [];
-  const showGender = ['body', 'hair', 'shirt', 'pants', 'shoes'].includes(form.category);
+  const isCustom = form.category === 'body'
+    ? form.params?.type === 'custom'
+    : form.params?.style === 'custom';
+
+  const showGender = ['body', 'hair', 'shirt', 'pants', 'shoes'].includes(form.category) && !isCustom;
   const styleOptions = STYLE_OPTIONS[form.category] || [];
 
   return (
@@ -233,6 +305,31 @@ export default function AvatarItemManagement({ showToast }) {
       {items === null && !error && <div className="text-center py-10 text-ink/40 text-sm animate-pulse">Đang tải...</div>}
       {items !== null && filtered.length === 0 && <div className="text-center py-10 text-ink/40 text-sm">Chưa có item nào</div>}
 
+      {items !== null && filtered.length > 0 && (
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={toggleBatchMode}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${batchMode ? "bg-pink text-white" : "bg-ink/5 text-ink/50 hover:bg-ink/10"}`}
+          >
+            <ListChecks className="w-3.5 h-3.5" />
+            {batchMode ? "Đang sửa hàng loạt" : "Cập nhật hàng loạt"}
+          </button>
+          {batchMode && (
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setBatchMode(false); setBatchData({}); }}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-ink/5 text-ink/50 hover:bg-ink/10 transition">
+                Hủy
+              </button>
+              <button onClick={submitBatch} disabled={batchSaving}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-pink text-white hover:bg-pink/80 transition disabled:opacity-50">
+                <Check className="w-3.5 h-3.5" />
+                {batchSaving ? "Đang lưu..." : "Lưu tất cả"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {filtered.length > 0 && (
         <div className="grid gap-3">
           {filtered.map(item => (
@@ -241,26 +338,57 @@ export default function AvatarItemManagement({ showToast }) {
                 <ItemPreview item={item} allItems={items} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-body font-semibold text-sm text-ink truncate">{item.name}</span>
-                  {item.default && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-600">Mặc định</span>}
-                  {item.category === 'body' && item.params?.type && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-600">{item.params.type}</span>}
-                  {item.gender && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-600">{item.gender}</span>}
-                </div>
-                <div className="flex items-center gap-3 mt-0.5 text-[11px] font-mono text-ink/40">
-                  <span>{item.id}</span>
-                  <span>{item.category}</span>
-                  <span>{item.price} coin</span>
-                </div>
+                {batchMode ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <input
+                      value={batchData[item.id]?.name ?? item.name}
+                      onChange={e => updateBatchField(item.id, 'name', e.target.value)}
+                      className="flex-1 min-w-0 px-2 py-1.5 rounded-lg border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30"
+                    />
+                    <input
+                      type="number"
+                      value={batchData[item.id]?.price ?? item.price}
+                      onChange={e => updateBatchField(item.id, 'price', Number(e.target.value))}
+                      className="w-24 px-2 py-1.5 rounded-lg border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-pink/30"
+                    />
+                    <label className="flex items-center gap-1.5 text-xs font-body text-ink/60 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={batchData[item.id]?.default ?? item.default}
+                        onChange={e => updateBatchField(item.id, 'default', e.target.checked)}
+                        className="w-4 h-4 rounded border-ink/20 text-pink focus:ring-pink/30"
+                      />
+                      Mặc định
+                    </label>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="font-body font-semibold text-sm text-ink truncate">{item.name}</span>
+                      {item.default && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-600">Mặc định</span>}
+                      {item.category === 'body' && item.params?.type && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-600">{item.params.type}</span>}
+                      {item.gender && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-600">{item.gender}</span>}
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5 text-[11px] font-mono text-ink/40">
+                      <span>{item.id}</span>
+                      <span>{item.category}</span>
+                      <span>{item.price} coin</span>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => openEdit(item)} className="p-2 rounded-lg hover:bg-ink/5 transition text-ink/40 hover:text-ink">
-                  <Pencil className="w-4 h-4" />
-                </button>
-                {!item.default && (
-                  <button onClick={() => setConfirm({ open: true, item })} className="p-2 rounded-lg hover:bg-red-50 transition text-ink/40 hover:text-red-500">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                {!batchMode && (
+                  <>
+                    <button onClick={() => openEdit(item)} className="p-2 rounded-lg hover:bg-ink/5 transition text-ink/40 hover:text-ink">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    {!item.default && (
+                      <button onClick={() => setConfirm({ open: true, item })} className="p-2 rounded-lg hover:bg-red-50 transition text-ink/40 hover:text-red-500">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -286,155 +414,161 @@ export default function AvatarItemManagement({ showToast }) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div>
+              <label className="text-xs font-mono uppercase text-ink/50">Category *</label>
+              <select value={form.category} onChange={e => onChange("category", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30">
+                {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-mono uppercase text-ink/50">Tên item *</label>
+              <input value={form.name} onChange={e => onChange("name", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30"
+                placeholder="VD: Tóc xoăn" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-mono uppercase text-ink/50">Category *</label>
-                <select value={form.category} onChange={e => onChange("category", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30">
-                  {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                </select>
+                <label className="text-xs font-mono uppercase text-ink/50">Giá (Coin)</label>
+                <input type="number" value={form.price} onChange={e => onChange("price", Number(e.target.value))}
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-pink/30" />
               </div>
-
-              <div>
-                <label className="text-xs font-mono uppercase text-ink/50">Tên item *</label>
-                <input value={form.name} onChange={e => onChange("name", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30"
-                  placeholder="VD: Tóc xoăn" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              {showGender && (
                 <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">Giá (Coin)</label>
-                  <input type="number" value={form.price} onChange={e => onChange("price", Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-pink/30" />
-                </div>
-                {showGender && (
-                  <div>
-                    <label className="text-xs font-mono uppercase text-ink/50">Giới tính</label>
-                    <select value={form.gender} onChange={e => onChange("gender", e.target.value)}
-                      className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30">
-                      <option value="boy">Bé trai</option>
-                      <option value="girl">Bé gái</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.default} onChange={e => onChange("default", e.target.checked)}
-                  className="w-4 h-4 rounded border-ink/20 text-pink focus:ring-pink/30" />
-                <span className="text-sm font-body text-ink">Mặc định (miễn phí)</span>
-              </label>
-
-              {/* Params */}
-              {form.category === 'body' && (
-                <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">Type (boy, girl, custom...)</label>
-                  <input value={form.params?.type || ''} onChange={e => onChangeParam("type", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30"
-                    placeholder="VD: boy, girl, custom, robot..." />
-                </div>
-              )}
-              {styleOptions.length > 0 && (
-                <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">Style</label>
-                  <select value={form.params?.style || ''} onChange={e => onChangeParam("style", e.target.value)}
+                  <label className="text-xs font-mono uppercase text-ink/50">Giới tính</label>
+                  <select value={form.gender} onChange={e => onChange("gender", e.target.value)}
                     className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30">
-                    {styleOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                    <option value="boy">Bé trai</option>
+                    <option value="girl">Bé gái</option>
                   </select>
                 </div>
               )}
+            </div>
 
-              {form.category === 'skin' ? (
-                <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">Màu da (hex)</label>
-                  <div className="flex gap-2 mt-1">
-                    <input value={form.params?.hex || '#FFDFC4'} onChange={e => onChangeParam("hex", e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-pink/30" />
-                    <input type="color" value={form.params?.hex || '#FFDFC4'} onChange={e => onChangeParam("hex", e.target.value)}
-                      className="w-10 h-10 rounded-xl border border-ink/10 cursor-pointer" />
-                  </div>
-                </div>
-              ) : form.params?.style !== 'none' && (
-                <div>
-                  <label className="text-xs font-mono uppercase text-ink/50">Màu</label>
-                  <div className="flex gap-2 mt-1">
-                    <input value={form.params?.color || '#000000'} onChange={e => onChangeParam("color", e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-pink/30" />
-                    <input type="color" value={form.params?.color || '#000000'} onChange={e => onChangeParam("color", e.target.value)}
-                      className="w-10 h-10 rounded-xl border border-ink/10 cursor-pointer" />
-                  </div>
-                </div>
-              )}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.default} onChange={e => onChange("default", e.target.checked)}
+                className="w-4 h-4 rounded border-ink/20 text-pink focus:ring-pink/30" />
+              <span className="text-sm font-body text-ink">Mặc định (miễn phí)</span>
+            </label>
 
-              {/* Preview */}
+            {/* Params */}
+            {form.category === 'body' && (
               <div>
-                <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Preview</div>
-                <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03]">
-                  <svg viewBox="0 0 300 440" width="48" height="70" xmlns="http://www.w3.org/2000/svg"
-                    dangerouslySetInnerHTML={{
-                      __html: (() => {
-                        const state = { ...DEFAULT_STATE };
-                        let bodyItemHtml = null;
-                        if (items) {
-                          const gender = form.gender || 'boy';
-                          for (const it of items) {
-                            if (it.category === 'body' && it.default) {
-                              if (it.gender && it.gender !== gender) continue;
-                              bodyItemHtml = it.html || null;
-                            }
-                            if (it.default && it.category !== form.category) {
-                              if (it.gender && it.gender !== gender) continue;
-                              if (it.category === 'skin') state.skin = it.params?.hex || '#FFDFC4';
-                              else if (it.category === 'face') state.face = it.params?.style || 'gentle';
-                              else state[it.category] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
-                            }
-                          }
-                        }
-                        const overrides = {};
-                        if (bodyItemHtml) overrides.body = bodyItemHtml;
-                        if (form.category === 'skin') {
-                          state.skin = form.params?.hex || '#FFDFC4';
-                          return renderAvatarFullWithOverrides(state, overrides);
-                        }
-                        return renderAvatarFullWithOverrides(state, { ...overrides, [form.category]: editedHtml });
-                      })()
-                    }} />
+                <label className="text-xs font-mono uppercase text-ink/50">Type (boy, girl, custom...)</label>
+                <input value={form.params?.type || ''} onChange={e => onChangeParam("type", e.target.value)}
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30"
+                  placeholder="VD: boy, girl, custom, robot..." />
+              </div>
+            )}
+            {styleOptions.length > 0 && (
+              <div>
+                <label className="text-xs font-mono uppercase text-ink/50">Style</label>
+                <select value={form.params?.style || ''} onChange={e => onChangeParam("style", e.target.value)}
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30">
+                  {styleOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            )}
+
+            {form.category === 'skin' ? (
+              <div>
+                <label className="text-xs font-mono uppercase text-ink/50">Màu da (hex)</label>
+                <div className="flex gap-2 mt-1">
+                  <input value={form.params?.hex || '#FFDFC4'} onChange={e => onChangeParam("hex", e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-pink/30" />
+                  <input type="color" value={form.params?.hex || '#FFDFC4'} onChange={e => onChangeParam("hex", e.target.value)}
+                    className="w-10 h-10 rounded-xl border border-ink/10 cursor-pointer" />
                 </div>
               </div>
-
-              {/* Hiển thị params JSON */}
+            ) : form.params?.style !== 'none' && (
               <div>
-                <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Params (JSON)</div>
-                <pre className="p-3 rounded-xl bg-ink/[0.03] text-[11px] font-mono text-ink/60 overflow-x-auto whitespace-pre-wrap break-all">
-                  {JSON.stringify(form.params, null, 2)}
-                </pre>
+                <label className="text-xs font-mono uppercase text-ink/50">Màu</label>
+                <div className="flex gap-2 mt-1">
+                  <input value={form.params?.color || '#000000'} onChange={e => onChangeParam("color", e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-pink/30" />
+                  <input type="color" value={form.params?.color || '#000000'} onChange={e => onChangeParam("color", e.target.value)}
+                    className="w-10 h-10 rounded-xl border border-ink/10 cursor-pointer" />
+                </div>
               </div>
+            )}
 
-              {/* HTML: raw editable + rendered side by side */}
-              {(() => {
-                if (!editedHtml) return null;
-                return (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">HTML (SVG raw) — sửa ở đây</div>
-                      <textarea
-                        value={editedHtml}
-                        onChange={e => setEditedHtml(e.target.value)}
-                        className="w-full h-40 sm:h-48 p-3 rounded-xl bg-ink/[0.03] text-[9px] font-mono text-ink/70 border border-ink/10 focus:outline-none focus:ring-2 focus:ring-pink/30 resize-none whitespace-pre-wrap break-all"
-                      />
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Rendered SVG</div>
-                      <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03] border border-ink/5 min-h-[100px] sm:min-h-[120px]">
-                        <svg viewBox="0 0 300 440" width="80" height="117" xmlns="http://www.w3.org/2000/svg"
-                          dangerouslySetInnerHTML={{ __html: editedHtml }} />
-                      </div>
+            {/* Preview */}
+            <div>
+              <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Preview</div>
+              <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03]">
+                {(() => {
+                  const state = { ...DEFAULT_STATE };
+                  let bodyItemHtml = null;
+                  if (items) {
+                    const gender = form.gender || 'boy';
+                    for (const it of items) {
+                      if (it.category === 'body' && it.default) {
+                        if (it.gender && it.gender !== gender) continue;
+                        bodyItemHtml = it.html || null;
+                      }
+                      if (it.default && it.category !== form.category) {
+                        if (it.gender && it.gender !== gender) continue;
+                        if (it.category === 'skin') state.skin = it.params?.hex || '#FFDFC4';
+                        else if (it.category === 'face') state.face = it.params?.style || 'gentle';
+                        else state[it.category] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
+                      }
+                    }
+                  }
+                  const overrides = {};
+                  if (bodyItemHtml) overrides.body = bodyItemHtml;
+                  let svg;
+                  if (form.category === 'skin') {
+                    state.skin = form.params?.hex || '#FFDFC4';
+                    svg = renderAvatarFullWithOverrides(state, overrides);
+                  } else {
+                    svg = renderAvatarFullWithOverrides(state, { ...overrides, [form.category]: editedHtml });
+                  }
+                  const isFullSvg = svg && (svg.includes('<svg') || (svg.includes('id="head"') && svg.includes('id="body"')));
+                  if (isFullSvg) {
+                    return <svg viewBox="0 0 512 700" width="120" height="164" xmlns="http://www.w3.org/2000/svg"
+                      dangerouslySetInnerHTML={{ __html: svg }} />;
+                  }
+                  return <svg viewBox="0 0 300 440" width="80" height="117" xmlns="http://www.w3.org/2000/svg"
+                    dangerouslySetInnerHTML={{ __html: svg }} />;
+                })()}
+              </div>
+            </div>
+
+            {/* Hiển thị params JSON */}
+            <div>
+              <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Params (JSON)</div>
+              <pre className="p-3 rounded-xl bg-ink/[0.03] text-[11px] font-mono text-ink/60 overflow-x-auto whitespace-pre-wrap break-all">
+                {JSON.stringify(form.params, null, 2)}
+              </pre>
+            </div>
+
+            {/* HTML: raw editable + rendered side by side */}
+            {(() => {
+              if (!editedHtml) return null;
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">HTML (SVG raw) — sửa ở đây</div>
+                    <textarea
+                      value={editedHtml}
+                      onChange={e => setEditedHtml(e.target.value)}
+                      className="w-full h-40 sm:h-48 p-3 rounded-xl bg-ink/[0.03] text-[9px] font-mono text-ink/70 border border-ink/10 focus:outline-none focus:ring-2 focus:ring-pink/30 resize-none whitespace-pre-wrap break-all"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Rendered SVG</div>
+                    <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03] border border-ink/5 min-h-[100px] sm:min-h-[120px]">
+                      <svg viewBox="0 0 512 700" width="80" height="109" xmlns="http://www.w3.org/2000/svg"
+                        dangerouslySetInnerHTML={{ __html: editedHtml }} />
                     </div>
                   </div>
-                );
-              })()}
+                </div>
+              );
+            })()}
 
-              {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && <p className="text-xs text-red-500">{error}</p>}
           </div>
 
           <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-ink/10 shrink-0">

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { assignmentService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { AlertCircle, LogIn } from 'lucide-react';
+import { AlertCircle, LogIn, ChevronLeft } from 'lucide-react';
 
 export default function AssignmentJoin() {
   const [code, setCode] = useState('');
@@ -31,6 +31,14 @@ export default function AssignmentJoin() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
       <div className="w-full max-w-sm">
+        <button
+          onClick={() => navigate('/')}
+          className="group text-sm text-stone-500 hover:text-ink transition inline-flex items-center gap-2 mb-4 hover:bg-white/60 rounded-full px-3 py-1.5 -ml-3"
+        >
+          <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          Về trang chủ
+        </button>
+
         <div className="text-center mb-6">
           <h1 className="font-display text-2xl text-ink">Vào bài tập</h1>
           <p className="text-sm font-body text-ink/50 mt-1">Nhập mã bài tập do giáo viên cung cấp</p>

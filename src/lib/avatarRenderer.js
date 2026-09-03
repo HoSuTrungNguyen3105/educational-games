@@ -66,16 +66,15 @@ export function bodyBase(skin) {
   const sole = shade(skin, -20);
   return `
     <ellipse cx="150" cy="420" rx="72" ry="10" fill="rgba(36,25,52,0.08)"/>
-    <rect x="118" y="255" width="27" height="148" rx="13" fill="${skin}"/>
-    <rect x="155" y="255" width="27" height="148" rx="13" fill="${skin}"/>
-    <ellipse cx="131" cy="402" rx="18" ry="9" fill="${sole}"/>
-    <ellipse cx="169" cy="402" rx="18" ry="9" fill="${sole}"/>
-    <rect x="108" y="150" width="84" height="112" rx="27" fill="${skin}"/>
+    <rect x="132" y="118" width="36" height="24" rx="12" fill="${skin}"/>
     <rect x="79" y="158" width="27" height="100" rx="13" fill="${skin}"/>
     <rect x="194" y="158" width="27" height="100" rx="13" fill="${skin}"/>
     <circle cx="92" cy="262" r="14" fill="${skin}"/>
     <circle cx="208" cy="262" r="14" fill="${skin}"/>
-    <rect x="136" y="118" width="28" height="30" rx="10" fill="${skin}"/>
+    <rect x="112" y="255" width="38" height="148" rx="13" fill="${skin}"/>
+    <rect x="150" y="255" width="38" height="148" rx="13" fill="${skin}"/>
+    <ellipse cx="131" cy="402" rx="18" ry="9" fill="${sole}"/>
+    <ellipse cx="169" cy="402" rx="18" ry="9" fill="${sole}"/>
     <circle cx="150" cy="95" r="56" fill="${skin}"/>
   `;
 }
@@ -293,6 +292,14 @@ export function renderAvatarFullWithOverrides(state, overrides = {}) {
   const glassesOpt = state.glasses || { style: 'none' };
   const accOpt = state.accessory || { style: 'none' };
 
+  const bodySvg = overrides.body || overrides.skin || bodyBase(skin);
+
+  const isFullSvg = bodySvg.includes('<svg') || (bodySvg.includes('id="head"') && bodySvg.includes('id="body"'));
+
+  if (isFullSvg) {
+    return bodySvg;
+  }
+
   let hairBack = '', hairFront = '';
   if (overrides.hair) {
     const sp = splitBackFront(overrides.hair);
@@ -308,8 +315,6 @@ export function renderAvatarFullWithOverrides(state, overrides = {}) {
   } else {
     const a = accessoryMarkup(accOpt); accBack = a.back; accFront = a.front;
   }
-
-  const bodySvg = overrides.body || overrides.skin || bodyBase(skin);
 
   return accBack + hairBack + bodySvg +
     (overrides.pants || pantsMarkup(pantsOpt)) +

@@ -33,10 +33,13 @@ export default function AvatarPreview({ loadout = {}, items = [], size = 512, cl
   }
 
   const svgContent = renderAvatarFull(state, bodyHtml);
+  const isFullSvg = svgContent && (svgContent.includes('<svg') || (svgContent.includes('id="head"') && svgContent.includes('id="body"')));
+  const viewBox = isFullSvg ? '0 0 512 700' : '0 0 300 440';
+  const aspectRatio = isFullSvg ? (700 / 512) : (440 / 300);
 
   return (
-    <div className={`relative overflow-hidden ${className}`} style={{ width: size, height: size * (440 / 300) }}>
-      <svg viewBox="0 0 300 440" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
+    <div className={`relative overflow-hidden ${className}`} style={{ width: size, height: size * aspectRatio }}>
+      <svg viewBox={viewBox} width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
         dangerouslySetInnerHTML={{ __html: svgContent }} />
     </div>
   );

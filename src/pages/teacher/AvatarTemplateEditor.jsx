@@ -102,7 +102,7 @@ export default function AvatarTemplateEditor({ showToast }) {
         <div className="flex-1 flex flex-col items-center">
           <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Preview Avatar</div>
           <div className="bg-white rounded-2xl p-6 shadow-lg">
-            <svg viewBox="0 0 300 440" width="300" height="440" xmlns="http://www.w3.org/2000/svg"
+            <svg viewBox="0 0 512 700" width="512" height="700" xmlns="http://www.w3.org/2000/svg"
               dangerouslySetInnerHTML={{ __html: svgContent }} />
           </div>
         </div>

@@ -42,12 +42,15 @@ function ItemThumbnail({ item, selected, preview, onClick, owned, allItems }) {
     return { background: '#ddd' };
   };
 
+  const isFullSvg = fullAvatarSvg && (fullAvatarSvg.includes('<svg') || (fullAvatarSvg.includes('id="head"') && fullAvatarSvg.includes('id="body"')));
+  const thumbViewBox = isFullSvg ? '0 0 512 700' : '0 0 300 440';
+
   const getContent = () => {
     if (item.category === 'face') return <span>{item.params?.emoji || '🙂'}</span>;
     if (item.params?.style === 'none') return <span className="text-lg font-bold text-ink/20">–</span>;
     if (fullAvatarSvg) {
       return (
-        <svg viewBox="0 0 300 440" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
+        <svg viewBox={thumbViewBox} width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
           dangerouslySetInnerHTML={{ __html: fullAvatarSvg }} />
       );
     }
