@@ -3,41 +3,25 @@ import { addCoins } from "./authService.js";
 
 const GARDEN_SIZE = 12;
 
-const SEED_PRICES = {
-  sunflower: 5,
-  apple: 15,
-  cherry: 40,
-  oak: 150,
-  magic: 400,
-};
+async function getPlantTypeMap() {
+  const col = getCollection("plantTypes");
+  const types = await col.find({}).toArray();
+  const map = {};
+  for (const t of types) map[t.id] = t;
+  return map;
+}
 
-const HARVEST_COINS = {
-  sunflower: 20,
-  apple: 50,
-  cherry: 120,
-  oak: 500,
-  magic: 1000,
-};
-
-const GROWTH_TIMES = {
-  sunflower: 5 * 60 * 1000,
-  apple: 30 * 60 * 1000,
-  cherry: 2 * 60 * 60 * 1000,
-  oak: 12 * 60 * 60 * 1000,
-  magic: 24 * 60 * 60 * 1000,
-};
+function calcProgress(plant, plantType) {
+  const elapsed = Date.now() - new Date(plant.plantedAt).getTime();
+  const growthTime = plantType?.growthTime || 300000;
+  return Math.min(100, Math.round((elapsed / growthTime) * 100));
+}
 
 function ensureSlots(garden) {
   if (!garden.slots) garden.slots = [];
   while (garden.slots.length < GARDEN_SIZE) {
     garden.slots.push({ index: garden.slots.length, plant: null });
   }
-}
-
-function calcProgress(plant) {
-  const elapsed = Date.now() - new Date(plant.plantedAt).getTime();
-  const growthTime = GROWTH_TIMES[plant.plantType] || 300000;
-  return Math.min(100, Math.round((elapsed / growthTime) * 100));
 }
 
 export async function getGarden(userId) {
@@ -50,9 +34,12 @@ export async function getGarden(userId) {
   }
   ensureSlots(garden);
 
+  const typeMap = await getPlantTypeMap();
+
   const slots = garden.slots.map(slot => {
     if (!slot.plant) return { index: slot.index, plant: null };
-    const progress = calcProgress(slot.plant);
+    const pt = typeMap[slot.plant.plantType];
+    const progress = calcProgress(slot.plant, pt);
     return {
       index: slot.index,
       plant: {
@@ -70,14 +57,15 @@ export async function getGarden(userId) {
 }
 
 export async function plantTree(userId, slotIndex, plantType) {
-  if (!SEED_PRICES[plantType]) throw new Error("Loại hạt giống không hợp lệ");
+  const typeMap = await getPlantTypeMap();
+  const type = typeMap[plantType];
+  if (!type) throw new Error("Loại hạt giống không hợp lệ");
   if (slotIndex < 0 || slotIndex >= GARDEN_SIZE) throw new Error("Vị trí không hợp lệ");
 
-  const price = SEED_PRICES[plantType];
   const userCol = getCollection("users");
   const user = await userCol.findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");
-  if ((user.coins || 0) < price) throw new Error("Không đủ xu để mua hạt giống");
+  if ((user.coins || 0) < type.seedPrice) throw new Error("Không đủ xu để mua hạt giống");
 
   const col = getCollection("gardens");
   let garden = await col.findOne({ userId });
@@ -92,7 +80,7 @@ export async function plantTree(userId, slotIndex, plantType) {
   if (!slot) throw new Error("Vị trí không tồn tại");
   if (slot.plant) throw new Error("Vị trí này đã có cây");
 
-  await addCoins(userId, -price);
+  await addCoins(userId, -type.seedPrice);
 
   const plantId = `plant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const plant = {
@@ -121,10 +109,14 @@ export async function harvestTree(userId, slotIndex) {
   const slot = garden.slots[slotIndex];
   if (!slot || !slot.plant) throw new Error("Không có cây ở vị trí này");
 
-  const progress = calcProgress(slot.plant);
+  const typeMap = await getPlantTypeMap();
+  const type = typeMap[slot.plant.plantType];
+  if (!type) throw new Error("Loại cây không hợp lệ");
+
+  const progress = calcProgress(slot.plant, type);
   if (progress < 100) throw new Error("Cây chưa trưởng thành");
 
-  const coinReward = HARVEST_COINS[slot.plant.plantType] || 10;
+  const coinReward = type.harvestCoin;
   await addCoins(userId, coinReward);
 
   const harvestedType = slot.plant.plantType;
@@ -160,11 +152,14 @@ export async function waterTree(userId, slotIndex) {
   const slot = garden.slots[slotIndex];
   if (!slot || !slot.plant) throw new Error("Không có cây ở vị trí này");
 
-  const growthTime = GROWTH_TIMES[slot.plant.plantType] || 300000;
-  const progress = calcProgress(slot.plant);
+  const typeMap = await getPlantTypeMap();
+  const type = typeMap[slot.plant.plantType];
+  if (!type) throw new Error("Loại cây không hợp lệ");
+
+  const progress = calcProgress(slot.plant, type);
   if (progress >= 100) throw new Error("Cây đã trưởng thành, hãy thu hoạch");
 
-  const bonusTime = growthTime * 0.1;
+  const bonusTime = (type.growthTime || 300000) * 0.1;
   const currentElapsed = Date.now() - new Date(slot.plant.plantedAt).getTime();
   const newPlantedAt = new Date(Date.now() - currentElapsed - bonusTime).toISOString();
 
@@ -173,7 +168,7 @@ export async function waterTree(userId, slotIndex) {
 
   await col.updateOne({ userId }, { $set: { slots: garden.slots } });
 
-  const newProgress = calcProgress(slot.plant);
+  const newProgress = calcProgress(slot.plant, type);
 
   return {
     success: true,

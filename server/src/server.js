@@ -3,6 +3,7 @@ import app from "./app.js";
 import { config } from "./config.js";
 import { initSocket } from "./socket.js";
 import { initDatabase, close } from "./db.js";
+import { initPlantTypes } from "./services/plantTypeService.js";
 
 async function main() {
   const httpServer = createServer(app);
@@ -16,7 +17,10 @@ async function main() {
   });
 
   initDatabase()
-    .then((info) => console.log(`[server] Collections: ${info.created.length} tạo mới, seed ${info.seeded.length} nhóm`))
+    .then(async (info) => {
+      console.log(`[server] Collections: ${info.created.length} tạo mới, seed ${info.seeded.length} nhóm`);
+      await initPlantTypes();
+    })
     .catch((e) => {
       console.error("[server] Không thể khởi tạo database:", e.message);
       process.exit(1);

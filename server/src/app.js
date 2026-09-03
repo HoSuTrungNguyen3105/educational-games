@@ -25,6 +25,7 @@ import classesRouter from "./routes/classes.js";
 import assignmentsRouter from "./routes/assignments.js";
 import avatarRouter from "./routes/avatar.js";
 import gardenRouter from "./routes/garden.js";
+import plantTypesRouter from "./routes/plantTypes.js";
 import { verifyToken } from "./services/authService.js";
 
 const app = express();
@@ -77,6 +78,7 @@ app.use("/api/classes", classesRouter);
 app.use("/api/assignments", assignmentsRouter);
 app.use("/api/avatar", avatarRouter);
 app.use("/api/garden", gardenRouter);
+app.use("/api/plant-types", plantTypesRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);

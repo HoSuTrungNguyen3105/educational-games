@@ -1,53 +1,28 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { gardenService, API_BASE } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { AvatarPreviewSmall } from '../../components/avatar/AvatarPreview.jsx';
+import GardenerAvatar from '../../components/avatar/GardenerAvatar.jsx';
 
 /* ============================================================
-   PLANT CONFIG
-   Mỗi loại cây có "kind" (kiểu minh hoạ) + bảng màu riêng để
-   PlantArt vẽ ra bằng SVG thay vì icon/emoji.
+   PLANT CONFIG — fetched from backend /api/plant-types
+   Each plant has "kind" (render style) + palette for SVG PlantArt.
+   If fetch fails, falls back to hardcoded defaults.
 ============================================================ */
-const PLANT_CONFIG = {
+const FALLBACK_PLANT_CONFIG = {
   sunflower: {
     name: 'Hoa hướng dương', kind: 'bloom', stageCount: 3,
     growthTime: 5 * 60 * 1000, harvestCoin: 20, seedPrice: 5, rarity: 'common',
     palette: { stem: '#5B8C3A', leaf: '#7CB342', leafDark: '#4C7A2A', accent: '#F4B93E', accentLight: '#FFE08A', accentDark: '#C97F17' },
-  },
-  rose: {
-    name: 'Hoa hồng', kind: 'bloom', stageCount: 3,
-    growthTime: 10 * 60 * 1000, harvestCoin: 30, seedPrice: 10, rarity: 'common',
-    palette: { stem: '#4E7D3B', leaf: '#6FA84D', leafDark: '#3E6630', accent: '#E0486B', accentLight: '#F4A0B4', accentDark: '#A8254A' },
-  },
-  cactus: {
-    name: 'Xương rồng', kind: 'cactus', stageCount: 3,
-    growthTime: 20 * 60 * 1000, harvestCoin: 35, seedPrice: 12, rarity: 'common',
-    palette: { stem: '#3E8E5B', leaf: '#57A873', leafDark: '#2C6B41', accent: '#E792B5', accentLight: '#FBD3E4', accentDark: '#B85685' },
   },
   apple: {
     name: 'Cây táo', kind: 'fruitTree', stageCount: 4,
     growthTime: 30 * 60 * 1000, harvestCoin: 50, seedPrice: 15, rarity: 'common',
     palette: { stem: '#7A5230', leaf: '#4E8B3C', leafDark: '#356428', accent: '#D6483C', accentLight: '#F0847A', accentDark: '#A32A20' },
   },
-  bamboo: {
-    name: 'Cây tre', kind: 'bamboo', stageCount: 3,
-    growthTime: 60 * 60 * 1000, harvestCoin: 80, seedPrice: 25, rarity: 'rare',
-    palette: { stem: '#6FAE4A', leaf: '#8FCB5C', leafDark: '#4E8536', accent: '#8FCB5C', accentLight: '#C6E8A0', accentDark: '#3F6B2A' },
-  },
   cherry: {
     name: 'Cây anh đào', kind: 'bloom', stageCount: 3,
     growthTime: 2 * 60 * 60 * 1000, harvestCoin: 120, seedPrice: 40, rarity: 'rare',
     palette: { stem: '#6B4A34', leaf: '#7CB342', leafDark: '#578A2E', accent: '#F3A6C6', accentLight: '#FFE1EE', accentDark: '#D4679A' },
-  },
-  watermelon: {
-    name: 'Dưa hấu', kind: 'vine', stageCount: 3,
-    growthTime: 3 * 60 * 60 * 1000, harvestCoin: 150, seedPrice: 45, rarity: 'rare',
-    palette: { stem: '#4C8A3C', leaf: '#5FA347', leafDark: '#3B7030', accent: '#3E9B4F', accentLight: '#DDF3D8', accentDark: '#1F5C2A', flesh: '#E9556B' },
-  },
-  coconut: {
-    name: 'Cây dừa', kind: 'fruitTree', stageCount: 4,
-    growthTime: 8 * 60 * 60 * 1000, harvestCoin: 350, seedPrice: 100, rarity: 'epic',
-    palette: { stem: '#8A6B3F', leaf: '#4E9B4C', leafDark: '#31753A', accent: '#8B6A46', accentLight: '#C7A876', accentDark: '#5C4326' },
   },
   oak: {
     name: 'Cây cổ thụ', kind: 'fruitTree', stageCount: 3, noFruit: true,
@@ -59,14 +34,7 @@ const PLANT_CONFIG = {
     growthTime: 24 * 60 * 60 * 1000, harvestCoin: 1000, seedPrice: 400, rarity: 'legendary',
     palette: { stem: '#8A5CC4', leaf: '#B27FE0', leafDark: '#6B3FA0', accent: '#7FD8E8', accentLight: '#F4A6E0', accentDark: '#5C3FA0' },
   },
-  golden: {
-    name: 'Cây vàng', kind: 'aura', stageCount: 4,
-    growthTime: 48 * 60 * 60 * 1000, harvestCoin: 2500, seedPrice: 800, rarity: 'legendary',
-    palette: { stem: '#B8862F', leaf: '#E0B24A', leafDark: '#8C641F', accent: '#FFD866', accentLight: '#FFF1C2', accentDark: '#A8760F' },
-  },
 };
-
-const SEED_LIST = Object.entries(PLANT_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
 
 const RARITY_STYLES = {
   common: { bg: '#EEF0EC', text: '#6B7264', label: 'Thường' },
@@ -74,6 +42,24 @@ const RARITY_STYLES = {
   epic: { bg: '#F0E6FA', text: '#7A4EA8', label: 'Sử thi' },
   legendary: { bg: '#FCEFD6', text: '#B8791A', label: 'Huyền thoại' },
 };
+
+function buildPlantConfig(apiTypes) {
+  if (!apiTypes || apiTypes.length === 0) return FALLBACK_PLANT_CONFIG;
+  const config = {};
+  for (const t of apiTypes) {
+    config[t.id] = {
+      name: t.name,
+      kind: t.kind || 'bloom',
+      stageCount: t.stages || 3,
+      growthTime: t.growthTime || 300000,
+      harvestCoin: t.harvestCoin || 10,
+      seedPrice: t.seedPrice || 5,
+      rarity: t.rarity || 'common',
+      palette: t.palette || FALLBACK_PLANT_CONFIG.sunflower.palette,
+    };
+  }
+  return config;
+}
 
 /* ============================================================
    ĐỒ DÙNG / KHO ĐỒ
@@ -346,7 +332,7 @@ function renderAura({ stageIdx, totalStages, palette, isReady }) {
 }
 
 function PlantArt({ plantId, stageIdx, totalStages, isReady }) {
-  const cfg = PLANT_CONFIG[plantId];
+  const cfg = plantConfig[plantId];
   if (!cfg) return null;
   const { palette, kind, noFruit } = cfg;
   return (
@@ -380,7 +366,7 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
     );
   }
 
-  const cfg = PLANT_CONFIG[plant.plantType];
+  const cfg = plantConfig[plant.plantType];
   const isReady = displayProgress >= 100;
   const stageIdx = isReady ? cfg.stageCount - 1 : Math.min(cfg.stageCount - 1, Math.floor((displayProgress / 100) * (cfg.stageCount - 1)));
 
@@ -439,7 +425,8 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
 /* ============================================================
    SEED SHOP
 ============================================================ */
-function SeedShop({ userCoins, onSelect, onClose }) {
+function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
+  const seedList = Object.entries(plantConfig).map(([id, cfg]) => ({ id, ...cfg }));
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -458,7 +445,7 @@ function SeedShop({ userCoins, onSelect, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
-          {SEED_LIST.map(seed => {
+          {seedList.map(seed => {
             const canBuy = (userCoins || 0) >= seed.seedPrice;
             const r = RARITY_STYLES[seed.rarity];
             return (
@@ -553,9 +540,9 @@ function InventoryShop({ userCoins, inventory, onBuy, onClose }) {
   );
 }
 
-function HarvestModal({ plantType, onConfirm, onClose }) {
+function HarvestModal({ plantType, onConfirm, onClose, plantConfig }) {
   if (!plantType) return null;
-  const cfg = PLANT_CONFIG[plantType];
+  const cfg = plantConfig[plantType];
   if (!cfg) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -589,6 +576,9 @@ export default function GardenPage({ userAuth, onBack }) {
   const [harvestResult, setHarvestResult] = useState(null);
   const [tick, setTick] = useState(0);
   const [inventory, setInventory] = useState(() => loadInventory(userAuth?.user?.id));
+  const [wateringSlot, setWateringSlot] = useState(null);
+  const [plantConfig, setPlantConfig] = useState(FALLBACK_PLANT_CONFIG);
+  const gardenGridRef = useRef(null);
 
   // sync baseline dùng để nội suy tiến độ mọc mượt theo thời gian thực,
   // không cần đợi gọi API mỗi giây.
@@ -606,13 +596,19 @@ export default function GardenPage({ userAuth, onBack }) {
   const load = useCallback(async () => {
     try {
       setError(null);
-      const gardenData = await gardenService.get();
+      const [gardenData, plantTypesRes] = await Promise.all([
+        gardenService.get(),
+        gardenService.getPlantTypes().catch(() => null),
+      ]);
       if (gardenData) {
         setGarden(gardenData);
         (gardenData.slots || []).forEach((s) => {
           if (s.plant) stampSync(s.index, s.plant.isReady ? 100 : (s.plant.progress || 0));
           else delete syncRef.current[s.index];
         });
+      }
+      if (plantTypesRes?.types) {
+        setPlantConfig(buildPlantConfig(plantTypesRes.types));
       }
 
       const auth = JSON.parse(localStorage.getItem('edu_games_auth') || '{}');
@@ -640,7 +636,7 @@ export default function GardenPage({ userAuth, onBack }) {
   const getDisplay = useCallback((slot) => {
     const plant = slot.plant;
     if (!plant) return { progress: 0, remainingMs: 0 };
-    const cfg = PLANT_CONFIG[plant.plantType];
+    const cfg = plantConfig[plant.plantType];
     if (!cfg) return { progress: plant.progress || 0, remainingMs: 0 };
     const sync = syncRef.current[slot.index] || { progress: plant.progress || 0, at: Date.now() };
     if (plant.isReady || sync.progress >= 100) return { progress: 100, remainingMs: 0 };
@@ -659,7 +655,7 @@ export default function GardenPage({ userAuth, onBack }) {
   const handlePlant = async (plantType) => {
     if (selectedSlot === null) return;
     const index = selectedSlot;
-    const cfg = PLANT_CONFIG[plantType];
+    const cfg = plantConfig[plantType];
     setShowShop(false);
     setSelectedSlot(null);
 
@@ -714,6 +710,9 @@ export default function GardenPage({ userAuth, onBack }) {
     const nextProgress = Math.min(100, progress + boost);
     stampSync(index, nextProgress);
     setGarden((g) => ({ ...g, slots: g.slots.map((s) => (s.index === index ? { ...s, plant: { ...s.plant, progress: nextProgress, isReady: nextProgress >= 100 } } : s)) }));
+
+    setWateringSlot(index);
+    setTimeout(() => setWateringSlot(null), 2000);
 
     try {
       await gardenService.water(index);
@@ -795,6 +794,19 @@ export default function GardenPage({ userAuth, onBack }) {
         .gd-twinkle { animation: gd-twinkle 1.6s ease-in-out infinite; }
         @keyframes gd-glow-bg { 0%,100% { opacity: 0.35; } 50% { opacity: 0.7; } }
         .gd-glow-bg { animation: gd-glow-bg 2.4s ease-in-out infinite; }
+        @keyframes gd-idle { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        .gd-gardener-idle { animation: gd-idle 2s ease-in-out infinite; }
+        @keyframes gd-water-bounce { 0%,100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-4px) rotate(-3deg); } 75% { transform: translateY(-2px) rotate(3deg); } }
+        .gd-gardener-water { animation: gd-water-bounce 0.5s ease-in-out 3; }
+        .gd-droplet {
+          width: 5px; height: 8px; background: #8FCBEA; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+          opacity: 0; animation: gd-drop 0.8s ease-in infinite;
+        }
+        @keyframes gd-drop {
+          0% { opacity: 0.9; transform: translateY(0) scale(1); }
+          80% { opacity: 0.6; transform: translateY(18px) scale(0.8); }
+          100% { opacity: 0; transform: translateY(24px) scale(0.4); }
+        }
       `}</style>
 
       <div className="flex items-center justify-between">
@@ -812,13 +824,6 @@ export default function GardenPage({ userAuth, onBack }) {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="w-16 h-20 rounded-xl overflow-hidden bg-gold/10 border-2 border-gold/20 shrink-0 flex items-center justify-center">
-          {userAuth?.user?.avatar ? (
-            <AvatarPreviewSmall avatar={userAuth.user.avatar} className="w-full h-full object-contain" />
-          ) : (
-            <div className="w-10 h-10"><PlantArt plantId="sunflower" stageIdx={2} totalStages={3} isReady /></div>
-          )}
-        </div>
         <div className="flex-1">
           <h1 className="font-display text-lg text-ink">Khu vườn của tôi</h1>
           <p className="text-xs text-ink/40 mt-0.5">
@@ -831,25 +836,33 @@ export default function GardenPage({ userAuth, onBack }) {
         {slots.length === 0 && !error ? (
           <div className="text-center py-10 text-ink/40 animate-pulse">Đang tải...</div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+          <div ref={gardenGridRef} className="grid grid-cols-3 sm:grid-cols-4 gap-3 relative">
             {slots.map((slot) => {
               const { progress, remainingMs } = getDisplay(slot);
               return (
-                <PlantSlot
-                  key={slot.index}
-                  slot={slot}
-                  displayProgress={progress}
-                  remainingMs={remainingMs}
-                  showClock={inventory.magic_lens > 0}
-                  hasFertilizer={hasAnyFertilizer}
-                  onSelect={handleSlotSelect}
-                  onHarvest={handleHarvest}
-                  onWater={handleWater}
-                  onRemove={handleRemove}
-                  onFertilize={handleFertilize}
-                />
+                <div key={slot.index} data-slot-index={slot.index}>
+                  <PlantSlot
+                    slot={slot}
+                    displayProgress={progress}
+                    remainingMs={remainingMs}
+                    showClock={inventory.magic_lens > 0}
+                    hasFertilizer={hasAnyFertilizer}
+                    onSelect={handleSlotSelect}
+                    onHarvest={handleHarvest}
+                    onWater={handleWater}
+                    onRemove={handleRemove}
+                    onFertilize={handleFertilize}
+                  />
+                </div>
               );
             })}
+            <GardenerAvatar
+              userAuth={userAuth}
+              size={90}
+              watering={wateringSlot !== null}
+              wateringSlotIndex={wateringSlot}
+              gardenRef={gardenGridRef}
+            />
           </div>
         )}
 
@@ -864,6 +877,7 @@ export default function GardenPage({ userAuth, onBack }) {
           userCoins={userCoins}
           onSelect={handlePlant}
           onClose={() => { setShowShop(false); setSelectedSlot(null); }}
+          plantConfig={plantConfig}
         />
       )}
 
@@ -881,6 +895,7 @@ export default function GardenPage({ userAuth, onBack }) {
           plantType={harvestResult}
           onConfirm={() => setHarvestResult(null)}
           onClose={() => setHarvestResult(null)}
+          plantConfig={plantConfig}
         />
       )}
     </div>

@@ -256,6 +256,21 @@ export async function initDatabase() {
         createdAt: { bsonType: "string" },
       },
     } },
+    plantTypes: { $jsonSchema: {
+      bsonType: "object",
+      required: ["id", "name"],
+      properties: {
+        id: { bsonType: "string" },
+        name: { bsonType: "string" },
+        icon: { bsonType: "string" },
+        stages: { bsonType: "int" },
+        growthTime: { bsonType: "int" },
+        harvestCoin: { bsonType: "int" },
+        seedPrice: { bsonType: "int" },
+        rarity: { bsonType: "string" },
+        palette: { bsonType: "object" },
+      },
+    } },
   };
 
   for (const name of Object.keys(collectionDefs)) {
