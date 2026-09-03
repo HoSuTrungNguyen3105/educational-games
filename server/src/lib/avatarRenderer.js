@@ -63,11 +63,16 @@ function heartShape(cx, cy, size, color) {
 }
 
 function bodyBase(skin) {
+  const s = skin || '#FFDFC4';
+  const skinLight = shade(s, 20);
+  const skinDark = shade(s, -12);
+  const earColor = shade(s, -8);
+  const neckShadow = shade(s, -18);
   return `
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="700" viewBox="0 0 512 700" fill="none">
   <defs>
     <linearGradient id="skinGradient" x1="180" y1="150" x2="330" y2="420">
-      <stop offset="0%" stop-color="#FFE9D2"/><stop offset="100%" stop-color="#FFCDAA"/>
+      <stop offset="0%" stop-color="${skinLight}"/><stop offset="100%" stop-color="${skinDark}"/>
     </linearGradient>
     <linearGradient id="hairGradient" x1="180" y1="90" x2="330" y2="210">
       <stop offset="0%" stop-color="#6B4228"/><stop offset="100%" stop-color="#432716"/>
@@ -90,10 +95,10 @@ function bodyBase(skin) {
     <g id="hair-back"><path d="M172 207 C145 180 151 124 184 99 C204 83 230 77 256 78 C291 77 322 91 340 116 C365 151 359 193 337 216 L310 234 L201 230 Z" fill="url(#hairGradient)"/></g>
     <g id="head" filter="url(#objectShadow)">
       <path d="M226 292 L226 329 C226 345 286 345 286 329 L286 292 Z" fill="url(#skinGradient)"/>
-      <path d="M226 293 C238 307 272 309 286 293 L286 317 C268 326 242 326 226 316 Z" fill="#E9AE8C" opacity="0.45"/>
+      <path d="M226 293 C238 307 272 309 286 293 L286 317 C268 326 242 326 226 316 Z" fill="${neckShadow}" opacity="0.45"/>
       <path d="M179 164 C179 115 213 91 256 91 C299 91 333 115 333 164 L333 216 C333 263 299 301 256 301 C213 301 179 263 179 216 Z" fill="url(#skinGradient)"/>
-      <ellipse cx="180" cy="213" rx="12" ry="23" fill="#FFD1B1"/>
-      <ellipse cx="332" cy="213" rx="12" ry="23" fill="#FFD1B1"/>
+      <ellipse cx="180" cy="213" rx="12" ry="23" fill="${earColor}"/>
+      <ellipse cx="332" cy="213" rx="12" ry="23" fill="${earColor}"/>
       <ellipse cx="224" cy="143" rx="40" ry="25" fill="#FFFFFF" opacity="0.16"/>
     </g>
     <g id="face">
@@ -347,7 +352,12 @@ function renderAvatarFull(state, bodyHtml) {
 
   const bodySvg = bodyHtml || bodyBase(skin);
 
-  const isFullSvg = bodySvg.includes('<svg') || (bodySvg.includes('id="head"') && bodySvg.includes('id="body"'));
+  const isStandardBody = bodySvg.includes('id="head"') && bodySvg.includes('id="body"');
+  const isFullSvg = bodySvg.includes('<svg') || isStandardBody;
+
+  if (isFullSvg && !isStandardBody) {
+    return bodySvg;
+  }
 
   if (isFullSvg) {
     const t = overlayTransform();

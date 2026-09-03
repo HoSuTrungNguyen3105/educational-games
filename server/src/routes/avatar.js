@@ -47,12 +47,114 @@ const DEFAULT_TEMPLATE = {
 
 // ─── SEED DATA FROM avatar.html ─────────────────────────────────
 
+const CUSTOM_BODY_DRAGON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="700" viewBox="0 0 512 700" fill="none">
+  <defs>
+    <linearGradient id="skin" x1="100" y1="80" x2="420" y2="620">
+      <stop offset="0" stop-color="#A8EC55"/><stop offset="0.35" stop-color="#78D63F"/><stop offset="0.7" stop-color="#4DB83A"/><stop offset="1" stop-color="#268633"/>
+    </linearGradient>
+    <linearGradient id="skinDark" x1="100" y1="300" x2="420" y2="600">
+      <stop offset="0" stop-color="#55B83B"/><stop offset="1" stop-color="#247630"/>
+    </linearGradient>
+    <radialGradient id="belly" cx="40%" cy="30%" r="70%">
+      <stop offset="0" stop-color="#D0F77B"/><stop offset="0.55" stop-color="#A4E653"/><stop offset="1" stop-color="#62B93B"/>
+    </radialGradient>
+    <linearGradient id="horn" x1="150" y1="40" x2="200" y2="180">
+      <stop offset="0" stop-color="#58A93B"/><stop offset="0.5" stop-color="#286B2E"/><stop offset="1" stop-color="#164824"/>
+    </linearGradient>
+    <radialGradient id="eyeWhite">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="0.8" stop-color="#F5FAF2"/><stop offset="1" stop-color="#D7E7D4"/>
+    </radialGradient>
+    <linearGradient id="mouth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#24272A"/><stop offset="1" stop-color="#07090B"/>
+    </linearGradient>
+    <filter id="blurShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <filter id="dropShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#174D24" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <ellipse cx="256" cy="665" rx="175" ry="22" fill="#4B553F" opacity="0.14" filter="url(#blurShadow)"/>
+  <ellipse cx="256" cy="660" rx="145" ry="14" fill="#4B553F" opacity="0.10"/>
+  <g filter="url(#dropShadow)">
+    <path d="M185 470 C181 455 191 444 207 444 L236 444 C252 444 261 455 261 471 L261 604 C261 620 252 631 235 631 L207 631 C190 631 181 619 181 604 Z" fill="url(#skin)" stroke="#237832" stroke-width="5"/>
+    <path d="M251 471 C251 455 260 444 276 444 L305 444 C321 444 331 455 327 471 L331 604 C331 619 322 631 305 631 L277 631 C260 631 251 620 251 604 Z" fill="url(#skin)" stroke="#237832" stroke-width="5"/>
+    <path d="M202 480 L202 585" stroke="#D0FA83" stroke-width="12" stroke-linecap="round" opacity="0.25"/>
+    <path d="M274 480 L274 575" stroke="#D0FA83" stroke-width="11" stroke-linecap="round" opacity="0.20"/>
+    <path d="M178 596 C190 584 228 584 248 597 C263 607 267 626 254 638 C241 650 198 651 181 639 C168 630 167 608 178 596 Z" fill="url(#skinDark)" stroke="#23682D" stroke-width="5"/>
+    <path d="M258 597 C278 584 316 584 333 597 C345 608 344 630 331 639 C314 651 271 650 258 638 C245 626 247 607 258 597 Z" fill="url(#skinDark)" stroke="#23682D" stroke-width="5"/>
+    <ellipse cx="204" cy="607" rx="18" ry="7" fill="#D1F981" opacity="0.5" transform="rotate(-8 204 607)"/>
+    <ellipse cx="289" cy="607" rx="18" ry="7" fill="#D1F981" opacity="0.45" transform="rotate(-8 289 607)"/>
+    <path d="M154 280 C154 250 178 231 207 231 L305 231 C334 231 358 250 358 280 L358 403 C358 465 319 511 256 525 C193 511 154 465 154 403 Z" fill="url(#skin)" stroke="#237832" stroke-width="6"/>
+    <path d="M160 383 C172 455 205 496 256 517 C307 496 340 455 352 383 C345 465 315 510 256 528 C197 510 167 465 160 383 Z" fill="#216D2D" opacity="0.16"/>
+    <ellipse cx="256" cy="378" rx="69" ry="101" fill="url(#belly)" opacity="0.96"/>
+    <ellipse cx="230" cy="337" rx="28" ry="43" fill="#E1FF99" opacity="0.24" transform="rotate(-12 230 337)"/>
+    <circle cx="190" cy="292" r="13" fill="#399A38" opacity="0.55"/>
+    <circle cx="207" cy="321" r="7" fill="#399A38" opacity="0.45"/>
+    <circle cx="322" cy="303" r="13" fill="#398E35" opacity="0.5"/>
+    <circle cx="330" cy="338" r="7" fill="#398E35" opacity="0.45"/>
+    <circle cx="313" cy="431" r="9" fill="#398E35" opacity="0.4"/>
+    <circle cx="194" cy="440" r="8" fill="#398E35" opacity="0.4"/>
+    <path d="M169 272 C147 267 132 281 129 304 L113 446 C111 464 122 477 140 479 C158 481 171 468 173 450 L187 310 C190 290 185 276 169 272 Z" fill="url(#skin)" stroke="#237832" stroke-width="5"/>
+    <path d="M343 272 C365 267 380 281 383 304 L399 446 C401 464 390 477 372 479 C354 481 341 468 339 450 L325 310 C322 290 327 276 343 272 Z" fill="url(#skin)" stroke="#237832" stroke-width="5"/>
+    <path d="M151 301 L139 429" stroke="#D1FA83" stroke-width="11" stroke-linecap="round" opacity="0.25"/>
+    <path d="M361 301 L373 429" stroke="#D1FA83" stroke-width="11" stroke-linecap="round" opacity="0.22"/>
+    <circle cx="135" cy="461" r="29" fill="url(#skin)" stroke="#237832" stroke-width="5"/>
+    <circle cx="377" cy="461" r="29" fill="url(#skin)" stroke="#237832" stroke-width="5"/>
+    <path d="M115 464 L105 437 Q119 442 127 463 Z" fill="#276E2F" stroke="#174D24" stroke-width="2"/>
+    <path d="M130 468 L129 436 Q143 445 143 467 Z" fill="#276E2F" stroke="#174D24" stroke-width="2"/>
+    <path d="M144 464 L158 439 Q160 454 151 469 Z" fill="#276E2F" stroke="#174D24" stroke-width="2"/>
+    <path d="M397 464 L407 437 Q393 442 385 463 Z" fill="#276E2F" stroke="#174D24" stroke-width="2"/>
+    <path d="M382 468 L383 436 Q369 445 369 467 Z" fill="#276E2F" stroke="#174D24" stroke-width="2"/>
+    <path d="M368 464 L354 439 Q352 454 361 469 Z" fill="#276E2F" stroke="#174D24" stroke-width="2"/>
+    <rect x="221" y="213" width="70" height="66" rx="23" fill="url(#skinDark)" stroke="#237832" stroke-width="5"/>
+    <path d="M230 238 Q256 257 282 238" stroke="#A8EB63" stroke-width="7" stroke-linecap="round" opacity="0.25"/>
+    <circle cx="256" cy="145" r="119" fill="url(#skin)" stroke="#237832" stroke-width="6"/>
+    <path d="M141 160 C150 229 193 260 256 264 C319 260 362 229 371 160 C363 227 319 267 256 269 C193 267 149 227 141 160 Z" fill="#216C2D" opacity="0.16"/>
+    <ellipse cx="202" cy="92" rx="51" ry="27" fill="#E2FF9B" opacity="0.30" transform="rotate(-18 202 92)"/>
+    <ellipse cx="170" cy="122" rx="12" ry="7" fill="#FFFFFF" opacity="0.30" transform="rotate(-20 170 122)"/>
+    <circle cx="316" cy="83" r="15" fill="#3A9A36" opacity="0.55"/>
+    <circle cx="338" cy="108" r="8" fill="#3A9A36" opacity="0.45"/>
+    <circle cx="157" cy="155" r="9" fill="#3A9636" opacity="0.42"/>
+    <circle cx="350" cy="174" r="10" fill="#398F36" opacity="0.42"/>
+    <path d="M166 66 C139 48 123 25 119 8 C117 0 125 2 130 8 L194 67 Z" fill="url(#horn)" stroke="#174A25" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M346 66 C373 48 389 25 393 8 C395 0 387 2 382 8 L318 67 Z" fill="url(#horn)" stroke="#174A25" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M130 17 L165 54" stroke="#94E75C" stroke-width="9" stroke-linecap="round" opacity="0.55"/>
+    <path d="M382 17 L347 54" stroke="#94E75C" stroke-width="9" stroke-linecap="round" opacity="0.5"/>
+    <path d="M128 34 Q151 39 173 51" stroke="#174526" stroke-width="5" opacity="0.65"/>
+    <path d="M384 34 Q361 39 339 51" stroke="#174526" stroke-width="5" opacity="0.65"/>
+    <path d="M177 111 Q207 89 234 108" stroke="#286B30" stroke-width="11" stroke-linecap="round"/>
+    <path d="M278 108 Q305 89 335 111" stroke="#286B30" stroke-width="11" stroke-linecap="round"/>
+    <ellipse cx="207" cy="137" rx="35" ry="42" fill="url(#eyeWhite)" stroke="#277133" stroke-width="4"/>
+    <ellipse cx="305" cy="137" rx="35" ry="42" fill="url(#eyeWhite)" stroke="#277133" stroke-width="4"/>
+    <circle cx="212" cy="143" r="19" fill="#10181A"/>
+    <circle cx="310" cy="143" r="19" fill="#10181A"/>
+    <circle cx="212" cy="143" r="13" fill="#174B39"/>
+    <circle cx="310" cy="143" r="13" fill="#174B39"/>
+    <circle cx="219" cy="136" r="7" fill="white"/>
+    <circle cx="317" cy="136" r="7" fill="white"/>
+    <circle cx="207" cy="150" r="3" fill="white" opacity="0.7"/>
+    <circle cx="305" cy="150" r="3" fill="white" opacity="0.7"/>
+    <ellipse cx="163" cy="184" rx="25" ry="13" fill="#FF9696" opacity="0.55"/>
+    <ellipse cx="349" cy="184" rx="25" ry="13" fill="#FF9696" opacity="0.55"/>
+    <ellipse cx="157" cy="180" rx="7" ry="4" fill="#FFFFFF" opacity="0.55"/>
+    <ellipse cx="343" cy="180" rx="7" ry="4" fill="#FFFFFF" opacity="0.55"/>
+    <path d="M181 184 Q256 246 331 184 Q326 245 256 249 Q186 245 181 184 Z" fill="url(#mouth)" stroke="#101416" stroke-width="4"/>
+    <path d="M184 187 Q256 238 328 187" stroke="#080A0B" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <path d="M217 211 L229 235 L241 211 Z" fill="#FFFFFF" stroke="#DDE8DD" stroke-width="2"/>
+    <path d="M271 211 L283 235 L295 211 Z" fill="#FFFFFF" stroke="#DDE8DD" stroke-width="2"/>
+    <ellipse cx="176" cy="88" rx="12" ry="6" fill="white" opacity="0.22" transform="rotate(-25 176 88)"/>
+    <circle cx="126" cy="453" r="5" fill="white" opacity="0.25"/>
+    <circle cx="386" cy="453" r="5" fill="white" opacity="0.22"/>
+  </g>
+</svg>`;
+
 function buildSeedItems() {
   const raw = [
     // BODY
     { id: "body_boy_01", category: "body", name: "Body bé trai", price: 0, default: true, gender: "boy", params: { type: "boy" } },
     { id: "body_girl_01", category: "body", name: "Body bé gái", price: 0, default: true, gender: "girl", params: { type: "girl" } },
-    { id: "body_custom_01", category: "body", name: "Body Custom", price: 200, default: false, params: { type: "custom" } },
+    { id: "body_custom_01", category: "body", name: "Rồng xanh", price: 200, default: false, params: { type: "custom" }, _customHtml: CUSTOM_BODY_DRAGON_SVG },
 
     // SKIN
     { id: "skin_01", category: "skin", name: "Trắng hồng", price: 0, default: true, params: { hex: "#FFDFC4" } },
@@ -200,10 +302,13 @@ function buildSeedItems() {
   ];
 
   // Pre-render html for each item using server-side renderer
-  return raw.map(item => ({
-    ...item,
-    html: renderItemHtml(item.category, item.params || {}),
-  }));
+  return raw.map(item => {
+    const { _customHtml, ...rest } = item;
+    return {
+      ...rest,
+      html: _customHtml || renderItemHtml(item.category, item.params || {}),
+    };
+  });
 }
 
 async function ensureSeeded(force = false) {
