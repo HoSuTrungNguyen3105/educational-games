@@ -366,6 +366,9 @@ export const notificationService = {
   async removeDevice(token) {
     return apiFetch("/notifications/device-token", { method: "DELETE", body: { token } });
   },
+  async testPush() {
+    return apiFetch("/notifications/test-push", { method: "POST" });
+  },
 };
 
 export const classService = {

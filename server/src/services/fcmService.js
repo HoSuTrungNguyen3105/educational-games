@@ -15,7 +15,10 @@ let initialized = false;
 
 async function getMessaging() {
   if (messaging) return messaging;
-  if (initialized) return null; // Already attempted
+  if (initialized) return null; // Already attempted and failed — don't retry
+
+  // Mark as attempted immediately to prevent concurrent init
+  initialized = true;
 
   const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
   const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || "./firebase-service-account.json";
@@ -27,6 +30,7 @@ async function getMessaging() {
 
     if (admin.apps.length > 0) {
       messaging = admin.messaging();
+      console.log("[FCM] Reusing existing Firebase Admin app.");
       return messaging;
     }
 
@@ -35,15 +39,30 @@ async function getMessaging() {
     // 1. Check if full JSON string is in FIREBASE_SERVICE_ACCOUNT env var (Render setup)
     if (serviceAccountEnv) {
       try {
-        const rawJson = serviceAccountEnv.trim().startsWith("{")
-          ? serviceAccountEnv
-          : Buffer.from(serviceAccountEnv, "base64").toString("utf8");
+        let rawJson = serviceAccountEnv.trim();
+
+        // If Base64-encoded, decode first
+        if (!rawJson.startsWith("{")) {
+          rawJson = Buffer.from(rawJson, "base64").toString("utf8");
+        }
+
+        // Fix common Render issue: escaped newlines in private_key
+        // Render sometimes double-escapes \n → \\n inside env vars
         const parsed = JSON.parse(rawJson);
+        if (parsed.private_key) {
+          // Normalize: replace literal \\n with actual newline
+          parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+        }
+
         credential = admin.credential.cert(parsed);
-        console.log("[FCM] Loaded service account credential from process.env.FIREBASE_SERVICE_ACCOUNT");
+        console.log("[FCM] ✅ Loaded service account from FIREBASE_SERVICE_ACCOUNT env var.");
       } catch (e) {
-        console.error("[FCM] Failed to parse FIREBASE_SERVICE_ACCOUNT JSON env var:", e.message);
+        console.error("[FCM] ❌ Failed to parse FIREBASE_SERVICE_ACCOUNT:", e.message);
+        console.error("[FCM] Hint: Make sure the env var contains the full JSON from Firebase Console.");
+        console.error("[FCM] First 100 chars of env var:", serviceAccountEnv?.slice(0, 100));
       }
+    } else {
+      console.warn("[FCM] FIREBASE_SERVICE_ACCOUNT env var is not set on Render.");
     }
 
     // 2. Check local file if exists
@@ -53,6 +72,9 @@ async function getMessaging() {
         try {
           const content = fs.readFileSync(resolvedPath, "utf8");
           const parsed = JSON.parse(content);
+          if (parsed.private_key) {
+            parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+          }
           credential = admin.credential.cert(parsed);
           console.log("[FCM] Loaded service account credential from file:", resolvedPath);
         } catch (e) {
@@ -73,28 +95,22 @@ async function getMessaging() {
 
     if (!credential) {
       console.warn(
-        "[FCM] Warning: Firebase Admin credential not configured!\n" +
-        "--> Push notifications will not be sent.\n" +
-        "--> On Render: Set Environment Variable 'FIREBASE_SERVICE_ACCOUNT' with the content of your Firebase Service Account JSON."
+        "[FCM] ❌ No Firebase credentials found. Push notifications disabled.\n" +
+        "--> On Render: Set Environment Variable 'FIREBASE_SERVICE_ACCOUNT' with the full JSON content."
       );
-      initialized = true;
       return null;
     }
 
-    admin.initializeApp({
-      credential,
-      projectId,
-    });
-
+    admin.initializeApp({ credential, projectId });
     messaging = admin.messaging();
-    console.log("[FCM] Firebase Admin successfully initialized for project:", projectId);
+    console.log("[FCM] ✅ Firebase Admin initialized for project:", projectId);
     return messaging;
   } catch (err) {
-    console.error("[FCM] Failed to initialize Firebase Admin:", err);
-    initialized = true;
+    console.error("[FCM] Fatal error during Firebase Admin init:", err.message);
     return null;
   }
 }
+
 
 /**
  * Send push notification to a list of FCM tokens.
