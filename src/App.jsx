@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRoute, navigate } from "./lib/router.js";
 import { useToast } from "./lib/hooks.js";
 import { Loader } from "./components/ui.jsx";
@@ -8,21 +8,24 @@ import { useSocketManager } from "./hooks/useSocketManager.js";
 import { useGameLoader } from "./hooks/useGameLoader.js";
 import RouteShell from "./components/RouteShell.jsx";
 import HomeScreen from "./pages/HomeScreen.jsx";
-import LoginScreen from "./pages/LoginScreen.jsx";
-import TeacherApp from "./pages/teacher/TeacherApp.jsx";
-import StudentApp from "./pages/student/StudentApp.jsx";
-import UserLoginScreen from "./pages/user/UserLoginScreen.jsx";
-import UserRegisterScreen from "./pages/user/UserRegisterScreen.jsx";
-import ConversationListScreen from "./pages/user/ConversationListScreen.jsx";
-import ProfileScreen from "./pages/user/ProfileScreen.jsx";
-import MyCoins from "./pages/user/MyCoins.jsx";
-import FindFriendsScreen from "./pages/user/FindFriendsScreen.jsx";
-import DailyTasksPage from "./pages/user/DailyTasksPage.jsx";
-import SpinWheel from "./pages/user/SpinWheel.jsx";
-import AssignmentJoin from "./pages/user/AssignmentJoin.jsx";
-import AssignmentTake from "./pages/user/AssignmentTake.jsx";
-import GardenPage from "./pages/user/GardenPage.jsx";
+import PageLoading from "./components/PageLoading.jsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
+
+// Lazy-loaded Pages / Screens
+const TeacherApp = lazy(() => import("./pages/teacher/TeacherApp.jsx"));
+const StudentApp = lazy(() => import("./pages/student/StudentApp.jsx"));
+const GardenPage = lazy(() => import("./pages/user/GardenPage.jsx"));
+const ProfileScreen = lazy(() => import("./pages/user/ProfileScreen.jsx"));
+const MyCoins = lazy(() => import("./pages/user/MyCoins.jsx"));
+const FindFriendsScreen = lazy(() => import("./pages/user/FindFriendsScreen.jsx"));
+const DailyTasksPage = lazy(() => import("./pages/user/DailyTasksPage.jsx"));
+const SpinWheel = lazy(() => import("./pages/user/SpinWheel.jsx"));
+const ConversationListScreen = lazy(() => import("./pages/user/ConversationListScreen.jsx"));
+const AssignmentJoin = lazy(() => import("./pages/user/AssignmentJoin.jsx"));
+const AssignmentTake = lazy(() => import("./pages/user/AssignmentTake.jsx"));
+const LoginScreen = lazy(() => import("./pages/LoginScreen.jsx"));
+const UserLoginScreen = lazy(() => import("./pages/user/UserLoginScreen.jsx"));
+const UserRegisterScreen = lazy(() => import("./pages/user/UserRegisterScreen.jsx"));
 
 function App() {
   const route = useRoute();
@@ -190,7 +193,9 @@ function App() {
 
   return (
     <>
-      {renderScreen()}
+      <Suspense fallback={<PageLoading />}>
+        {renderScreen()}
+      </Suspense>
       <PWAInstallPrompt />
     </>
   );

@@ -1,46 +1,97 @@
+import fs from "fs";
+import path from "path";
+
 /**
  * Firebase Cloud Messaging service for sending push notifications.
  *
- * To enable FCM push:
- * 1. Create a Firebase project at https://console.firebase.google.com
- * 2. Go to Project Settings > Service Accounts > Generate New Private Key
- * 3. Save the JSON key as server/firebase-service-account.json
- * 4. Set FIREBASE_PROJECT_ID env var (or it reads from the JSON key)
- *
- * For web push, also add the VAPID key to frontend Firebase config.
+ * Configuration options:
+ * 1. FIREBASE_SERVICE_ACCOUNT: Full JSON string of service account key (recommended on Render/Cloud)
+ * 2. FIREBASE_SERVICE_ACCOUNT_PATH: Path to local JSON file (e.g. ./firebase-service-account.json)
+ * 3. FIREBASE_PROJECT_ID: e.g. "eduplay-74301"
  */
 
 let messaging = null;
+let initialized = false;
 
 async function getMessaging() {
   if (messaging) return messaging;
+  if (initialized) return null; // Already attempted
 
-  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
   const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || "./firebase-service-account.json";
-
-  if (!projectId && !serviceAccountPath) {
-    // FCM not configured — silently skip
-    return null;
-  }
+  const projectId = process.env.FIREBASE_PROJECT_ID || "eduplay-74301";
 
   try {
-    // Dynamic import so server doesn't crash if firebase-admin isn't installed
-    const admin = await import("firebase-admin");
+    const adminModule = await import("firebase-admin");
+    const admin = adminModule.default || adminModule;
 
-    if (!admin.apps.length) {
-      const serviceAccount = await import(serviceAccountPath).catch(() => null);
-      admin.initializeApp({
-        credential: serviceAccount?.default
-          ? admin.credential.cert(serviceAccount.default)
-          : admin.credential.applicationDefault(),
-        projectId,
-      });
+    if (admin.apps.length > 0) {
+      messaging = admin.messaging();
+      return messaging;
     }
 
+    let credential = null;
+
+    // 1. Check if full JSON string is in FIREBASE_SERVICE_ACCOUNT env var (Render setup)
+    if (serviceAccountEnv) {
+      try {
+        const rawJson = serviceAccountEnv.trim().startsWith("{")
+          ? serviceAccountEnv
+          : Buffer.from(serviceAccountEnv, "base64").toString("utf8");
+        const parsed = JSON.parse(rawJson);
+        credential = admin.credential.cert(parsed);
+        console.log("[FCM] Loaded service account credential from process.env.FIREBASE_SERVICE_ACCOUNT");
+      } catch (e) {
+        console.error("[FCM] Failed to parse FIREBASE_SERVICE_ACCOUNT JSON env var:", e.message);
+      }
+    }
+
+    // 2. Check local file if exists
+    if (!credential) {
+      const resolvedPath = path.resolve(serviceAccountPath);
+      if (fs.existsSync(resolvedPath)) {
+        try {
+          const content = fs.readFileSync(resolvedPath, "utf8");
+          const parsed = JSON.parse(content);
+          credential = admin.credential.cert(parsed);
+          console.log("[FCM] Loaded service account credential from file:", resolvedPath);
+        } catch (e) {
+          console.error("[FCM] Failed to read service account file:", e.message);
+        }
+      }
+    }
+
+    // 3. Fallback to Google Application Default credentials
+    if (!credential && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      try {
+        credential = admin.credential.applicationDefault();
+        console.log("[FCM] Using Google Application Default Credentials");
+      } catch (e) {
+        console.error("[FCM] Application Default Credentials failed:", e.message);
+      }
+    }
+
+    if (!credential) {
+      console.warn(
+        "[FCM] Warning: Firebase Admin credential not configured!\n" +
+        "--> Push notifications will not be sent.\n" +
+        "--> On Render: Set Environment Variable 'FIREBASE_SERVICE_ACCOUNT' with the content of your Firebase Service Account JSON."
+      );
+      initialized = true;
+      return null;
+    }
+
+    admin.initializeApp({
+      credential,
+      projectId,
+    });
+
     messaging = admin.messaging();
+    console.log("[FCM] Firebase Admin successfully initialized for project:", projectId);
     return messaging;
-  } catch {
-    // firebase-admin not installed or config missing — silently skip
+  } catch (err) {
+    console.error("[FCM] Failed to initialize Firebase Admin:", err);
+    initialized = true;
     return null;
   }
 }
@@ -49,38 +100,91 @@ async function getMessaging() {
  * Send push notification to a list of FCM tokens.
  */
 export async function sendToTokens(tokens, { title, body, type, data = {} }) {
-  if (!tokens || tokens.length === 0) return { sent: 0, failed: 0 };
+  if (!tokens || tokens.length === 0) return { sent: 0, failed: 0, reason: "no_tokens" };
 
   const msg = await getMessaging();
-  if (!msg) return { sent: 0, failed: 0, reason: "fcm_not_configured" };
+  if (!msg) {
+    console.warn("[FCM] Cannot send push: FCM Admin is not initialized.");
+    return {
+      sent: 0,
+      failed: tokens.length,
+      reason: "fcm_not_configured",
+      hint: "Configure FIREBASE_SERVICE_ACCOUNT in Render environment variables",
+    };
+  }
+
+  // Convert all data values to string (FCM restriction: data fields must be strings)
+  const stringData = {};
+  if (data && typeof data === "object") {
+    for (const [k, v] of Object.entries(data)) {
+      stringData[k] = typeof v === "object" ? JSON.stringify(v) : String(v);
+    }
+  }
+  stringData.type = String(type || "SYSTEM");
+  stringData.click_action = "/educational-games/";
 
   const message = {
-    notification: { title, body },
-    data: { type, ...data },
+    notification: {
+      title: title || "EduPlay",
+      body: body || "",
+    },
+    data: stringData,
+    webpush: {
+      headers: {
+        Urgency: "high",
+      },
+      notification: {
+        title: title || "EduPlay",
+        body: body || "",
+        icon: "/educational-games/eduplay-icon-192x192.png",
+        badge: "/educational-games/eduplay-icon-192x192.png",
+        vibrate: [200, 100, 200],
+        requireInteraction: true,
+      },
+      fcmOptions: {
+        link: "/educational-games/",
+      },
+    },
     tokens,
   };
 
   try {
     const response = await msg.sendEachForMulticast(message);
+    console.log(`[FCM] Multicast result: ${response.successCount} sent, ${response.failureCount} failed`);
+
+    if (response.failureCount > 0) {
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          console.warn(`[FCM] Token ${tokens[idx]?.slice(0, 15)}... error:`, resp.error?.code || resp.error?.message);
+        }
+      });
+    }
+
     return {
       sent: response.successCount,
       failed: response.failureCount,
     };
-  } catch {
-    return { sent: 0, failed: tokens.length };
+  } catch (err) {
+    console.error("[FCM] sendEachForMulticast error:", err);
+    return { sent: 0, failed: tokens.length, error: err.message };
   }
 }
 
 /**
- * Send push notification to a specific user (all their devices).
+ * Send push notification to a specific user (all their active devices).
  */
 export async function sendPushToUser(userId, { title, body, type, data = {} }) {
   try {
     const { getActiveTokensByUser } = await import("./userDeviceService.js");
     const tokens = await getActiveTokensByUser(userId);
-    if (tokens.length === 0) return { sent: 0, reason: "no_devices" };
+    if (!tokens || tokens.length === 0) {
+      console.log(`[FCM] User ${userId} has no registered devices.`);
+      return { sent: 0, reason: "no_registered_devices" };
+    }
+    console.log(`[FCM] Sending push to user ${userId} across ${tokens.length} device(s)`);
     return sendToTokens(tokens, { title, body, type, data });
-  } catch {
-    return { sent: 0, reason: "error" };
+  } catch (err) {
+    console.error("[FCM] sendPushToUser error:", err);
+    return { sent: 0, reason: "error", error: err.message };
   }
 }

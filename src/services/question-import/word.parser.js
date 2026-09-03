@@ -1,8 +1,9 @@
-import mammoth from 'mammoth';
 import { normalizeQuestion } from './question.normalizer';
 import { validateQuestion } from './question.validator';
 
 export async function parseWord(file) {
+  const mammothModule = await import('mammoth');
+  const mammoth = mammothModule.default || mammothModule;
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     

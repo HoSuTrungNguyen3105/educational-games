@@ -7,7 +7,7 @@ import { PrimaryButton, Loader, ErrorState, EmptyState, StampToken } from '../co
 import { AvatarPreviewSmall } from '../components/avatar/AvatarPreview.jsx'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import DailyTasksCard from '../components/DailyTasksCard.jsx'
-import { requestNotificationPermission, onForegroundMessage } from '../firebase/messaging.js'
+import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import {
   Home,
   ClipboardList,
@@ -159,12 +159,55 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         if (loadoutRes.status) setAvatarLoadout(loadoutRes.data.loadout || {});
       }).catch(() => { });
 
-      // Register FCM token for push notifications
-      requestNotificationPermission().then((token) => {
-        if (token) notificationService.registerDevice(token, "WEB").catch(() => { });
-      }).catch(() => { });
+      // Register FCM token if permission is already granted
+      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+        requestNotificationPermission().then((token) => {
+          if (token) notificationService.registerDevice(token, "WEB").catch(() => { });
+        }).catch(() => { });
+      }
     }
   }, [userAuth?.user]);
+
+  const [pushStatus, setPushStatus] = useState(() => getPushSupportStatus());
+  const [testingPush, setTestingPush] = useState(false);
+  const [pushMessage, setPushMessage] = useState("");
+
+  const handleEnablePush = async () => {
+    try {
+      setPushMessage("Đang xin quyền thông báo...");
+      const token = await requestNotificationPermission();
+      setPushStatus(getPushSupportStatus());
+      if (token) {
+        await notificationService.registerDevice(token, "WEB");
+        setPushMessage("✅ Đã bật thông báo thành công!");
+      } else {
+        setPushMessage("⚠️ Chưa thể cấp quyền. Hãy kiểm tra cài đặt trình duyệt hoặc thêm vào Màn hình chính.");
+      }
+    } catch (err) {
+      setPushMessage("❌ Lỗi: " + (err.message || "Không thể bật thông báo"));
+    }
+  };
+
+  const handleTestPush = async () => {
+    try {
+      setTestingPush(true);
+      setPushMessage("Đang gửi thông báo thử nghiệm...");
+      const res = await notificationService.testPush();
+      if (res?.sent > 0) {
+        setPushMessage(`🎉 Đã gửi thông báo thành công tới ${res.sent} thiết bị!`);
+      } else if (res?.reason === "no_registered_devices") {
+        setPushMessage("⚠️ Chưa có thiết bị nào được đăng ký. Hãy nhấn 'Bật thông báo đẩy' trước!");
+      } else if (res?.reason === "fcm_not_configured") {
+        setPushMessage("⚠️ Backend Render chưa cấu hình FIREBASE_SERVICE_ACCOUNT.");
+      } else {
+        setPushMessage("⚠️ Kết quả: " + JSON.stringify(res));
+      }
+    } catch (err) {
+      setPushMessage("❌ Lỗi gửi thông báo: " + (err.message || "Thất bại"));
+    } finally {
+      setTestingPush(false);
+    }
+  };
 
   // Listen for foreground push messages
   useEffect(() => {
@@ -296,7 +339,19 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     {unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>}
                   </button>
                   {showNotifications && (
-                    <NotificationDropdown notifications={notifications} unreadCount={unreadCount} onMarkAsRead={handleMarkAsRead} onMarkAllAsRead={handleMarkAllAsRead} onClose={() => setShowNotifications(false)} onSelectGame={onSelectGame} />
+                    <NotificationDropdown
+                      notifications={notifications}
+                      unreadCount={unreadCount}
+                      onMarkAsRead={handleMarkAsRead}
+                      onMarkAllAsRead={handleMarkAllAsRead}
+                      onClose={() => setShowNotifications(false)}
+                      onSelectGame={onSelectGame}
+                      pushStatus={pushStatus}
+                      onEnablePush={handleEnablePush}
+                      onTestPush={handleTestPush}
+                      testingPush={testingPush}
+                      pushMessage={pushMessage}
+                    />
                   )}
                 </div>
               </>
@@ -449,7 +504,19 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                         {unreadCount > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>}
                       </button>
                       {showNotifications && (
-                        <NotificationDropdown notifications={notifications} unreadCount={unreadCount} onMarkAsRead={handleMarkAsRead} onMarkAllAsRead={handleMarkAllAsRead} onClose={() => setShowNotifications(false)} onSelectGame={onSelectGame} />
+                        <NotificationDropdown
+                          notifications={notifications}
+                          unreadCount={unreadCount}
+                          onMarkAsRead={handleMarkAsRead}
+                          onMarkAllAsRead={handleMarkAllAsRead}
+                          onClose={() => setShowNotifications(false)}
+                          onSelectGame={onSelectGame}
+                          pushStatus={pushStatus}
+                          onEnablePush={handleEnablePush}
+                          onTestPush={handleTestPush}
+                          testingPush={testingPush}
+                          pushMessage={pushMessage}
+                        />
                       )}
                     </div>
                   </>
@@ -990,19 +1057,78 @@ function GameCard({ game, template, onSelect, index, badge, badgeColor, isNew })
   );
 }
 
-function NotificationDropdown({ notifications, unreadCount, onMarkAsRead, onMarkAllAsRead, onClose, onSelectGame }) {
+function NotificationDropdown({
+  notifications,
+  unreadCount,
+  onMarkAsRead,
+  onMarkAllAsRead,
+  onClose,
+  onSelectGame,
+  pushStatus,
+  onEnablePush,
+  onTestPush,
+  testingPush,
+  pushMessage,
+}) {
   return (
     <>
       <div className="fixed inset-0 z-40 lg:hidden" onClick={onClose}></div>
-      <div className="fixed right-0 top-14 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-purple-100 overflow-hidden z-50 lg:absolute lg:top-auto lg:right-0 lg:mt-2 lg:z-50">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-purple-50 bg-purple-50/50">
-          <h3 className="font-bold text-gray-800">Thông báo</h3>
+      <div className="fixed right-0 top-14 w-84 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden z-50 lg:absolute lg:top-auto lg:right-0 lg:mt-2 lg:z-50">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-purple-50 bg-purple-50/60">
+          <h3 className="font-bold text-gray-800 text-sm">Thông báo</h3>
           {unreadCount > 0 && (
             <button onClick={onMarkAllAsRead} className="text-xs text-purple-600 hover:text-purple-800 font-medium">
               Đánh dấu đã đọc
             </button>
           )}
         </div>
+
+        {/* ── Bật thông báo & Test Push trên điện thoại/web ── */}
+        <div className="p-3 bg-gradient-to-r from-purple-50/80 to-pink-50/80 border-b border-purple-100 text-xs">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="font-semibold text-gray-700 flex items-center gap-1">
+              📱 Thông báo đẩy (Push)
+            </span>
+            {pushStatus?.permission === "granted" ? (
+              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                ✓ Đã bật
+              </span>
+            ) : (
+              <span className="text-[11px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                Chưa bật
+              </span>
+            )}
+          </div>
+
+          {pushStatus?.reason === "ios_not_standalone" ? (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-2.5 text-[11px] leading-relaxed mb-2">
+              💡 <strong>Dành cho iPhone/iPad:</strong> Safari chỉ cho phép thông báo khi cài đặt PWA:
+              <br />Nhấn nút <strong>Chia sẻ (Share)</strong> ở thanh dưới Safari ➔ Chọn <strong>&quot;Thêm vào MH chính&quot;</strong> ➔ Mở lại từ màn hình chính.
+            </div>
+          ) : pushStatus?.permission !== "granted" ? (
+            <button
+              onClick={onEnablePush}
+              className="w-full py-2 px-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold rounded-xl shadow-sm hover:opacity-90 active:scale-95 transition text-center mb-1.5"
+            >
+              🔔 Cho phép thông báo trên điện thoại
+            </button>
+          ) : (
+            <button
+              disabled={testingPush}
+              onClick={onTestPush}
+              className="w-full py-1.5 px-3 bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold rounded-xl transition text-center disabled:opacity-50"
+            >
+              {testingPush ? "Đang gửi..." : "🧪 Gửi thử thông báo tới điện thoại"}
+            </button>
+          )}
+
+          {pushMessage && (
+            <div className="mt-1.5 p-2 bg-white/90 rounded-lg text-[11px] text-gray-700 font-medium border border-purple-100 break-words">
+              {pushMessage}
+            </div>
+          )}
+        </div>
+
         <div className="max-h-80 overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-sm text-gray-500">Không có thông báo nào</div>

@@ -1,8 +1,8 @@
-import * as XLSX from 'xlsx';
 import { normalizeQuestion } from './question.normalizer';
 import { validateQuestion } from './question.validator';
 
 export async function parseExcel(file) {
+  const XLSX = await import('xlsx');
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     

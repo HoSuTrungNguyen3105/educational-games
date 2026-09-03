@@ -1,10 +1,12 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { authService, classService, API_BASE } from "../../services/api.js";
 import { getLevelProgress } from "../../lib/utils.js";
 import { getRoleLabel } from "../../config/roles.js";
 import { ArrowLeft, LogOut, GraduationCap, ChevronDown, ChevronUp, Copy, Check, Palette } from "lucide-react";
 import AvatarPreview from "../../components/avatar/AvatarPreview.jsx";
-import AvatarCustomizer from "../../components/avatar/AvatarCustomizer.jsx";
+import { Loader } from "../../components/ui.jsx";
+
+const AvatarCustomizer = lazy(() => import("../../components/avatar/AvatarCustomizer.jsx"));
 
 export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [profile, setProfile] = useState(null);
@@ -277,37 +279,39 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       </div>
 
       {showCustomizer && (
-        <AvatarCustomizer
-          loadout={avatarLoadout}
-          inventory={inventory}
-          coins={user.coins || 0}
-          token={userAuth.token}
-          onSave={async (newLoadout) => {
-            // Validate against available items before save
-            const itemIds = new Set(avatarItems.map(i => i.id));
-            const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
-            const defaults = { body: null, skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
-            const cleaned = {};
-            for (const k of VALID_LAYERS) {
-              const v = newLoadout[k];
-              if (v && itemIds.has(v)) cleaned[k] = v;
-              else cleaned[k] = defaults[k] ?? null;
-            }
-            setAvatarLoadout(cleaned);
-            setShowCustomizer(false);
-            try {
-              await fetch(`${API_BASE}/avatar/save`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${userAuth.token}`,
-                },
-                body: JSON.stringify({ loadout: cleaned }),
-              });
-            } catch { }
-          }}
-          onClose={() => setShowCustomizer(false)}
-        />
+        <Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"><Loader label="Đang tải tùy chỉnh avatar..." /></div>}>
+          <AvatarCustomizer
+            loadout={avatarLoadout}
+            inventory={inventory}
+            coins={user.coins || 0}
+            token={userAuth.token}
+            onSave={async (newLoadout) => {
+              // Validate against available items before save
+              const itemIds = new Set(avatarItems.map(i => i.id));
+              const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
+              const defaults = { body: null, skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
+              const cleaned = {};
+              for (const k of VALID_LAYERS) {
+                const v = newLoadout[k];
+                if (v && itemIds.has(v)) cleaned[k] = v;
+                else cleaned[k] = defaults[k] ?? null;
+              }
+              setAvatarLoadout(cleaned);
+              setShowCustomizer(false);
+              try {
+                await fetch(`${API_BASE}/avatar/save`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${userAuth.token}`,
+                  },
+                  body: JSON.stringify({ loadout: cleaned }),
+                });
+              } catch { }
+            }}
+            onClose={() => setShowCustomizer(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

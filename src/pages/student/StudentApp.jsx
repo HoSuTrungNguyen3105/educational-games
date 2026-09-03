@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { uid, resultService, questionService, gameService, gameProgressService, coinService, gameEventService } from '../../services/api.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
 import { EnterCodeModal } from '../../components/EnterCodeModal.jsx'
-import { GamePlayRouter } from '../../games/GamePlayRouter.jsx'
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import { useSocketEvent, useSocketConnected } from '../../socket/socket.listeners.js'
@@ -12,6 +11,8 @@ import { useGameStore } from '../../stores/game.store.js'
 import { useChatStore } from '../../stores/chat.store.js'
 import ChatPanel from '../../components/chat/ChatPanel.jsx'
 import ChatBubble from '../../components/chat/ChatBubble.jsx'
+
+const GamePlayRouter = lazy(() => import('../../games/GamePlayRouter.jsx'));
 
 export default function StudentApp({ initialGame, onExit, toast, userAuth, onUserLogin, onUserLogout }) {
   const [screen, setScreen] = useState(() => {
@@ -233,10 +234,10 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
             onStart={handleStart} userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} />
         )}
         {screen === "play" && game && (isPlayToWin || questions.length > 0) && (
-          <>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Loader label="Đang tải trò chơi..." /></div>}>
             <GamePlayRouter game={game} questions={questions} players={players} playerName={playerName} onQuit={restart} onFinish={handleFinish} onStateUpdate={handleStateUpdate} template={template} userAuth={userAuth} />
             {/* <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} /> */}
-          </>
+          </Suspense>
         )}
         {screen === "result" && finalResult && (
           <ResultScreen result={finalResult} onSeeLeaderboard={async () => { const r = await resultService.listByGame(gameGid); setLeaderboard(r); setScreen("leaderboard"); }} />

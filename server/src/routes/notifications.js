@@ -79,4 +79,20 @@ router.post("/read-all", authenticate, async (req, res, next) => {
   }
 });
 
+// POST /api/notifications/test-push — send a test push notification to current user's registered devices
+router.post("/test-push", authenticate, async (req, res, next) => {
+  try {
+    const { sendPushToUser } = await import("../services/fcmService.js");
+    const result = await sendPushToUser(req.user.sub, {
+      title: "🧪 Kiểm tra thông báo",
+      body: "Chúc mừng! Thiết bị di động của bạn đã nhận được thông báo đẩy từ EduPlay.",
+      type: "TEST",
+      data: { test: "true", timestamp: new Date().toISOString() },
+    });
+    sendSuccess(res, result);
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default router;

@@ -1,5 +1,3 @@
-import { initializeApp, getApps } from "firebase/app";
-import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 import { firebaseConfig, VAPID_KEY } from "./firebaseConfig.js";
 
 let messaging = null;
@@ -15,13 +13,15 @@ async function initMessaging() {
   initialized = true;
 
   try {
-    // Check if messaging is supported in this browser
+    // Dynamically import firebase to keep main bundle lean
+    const { isSupported, getMessaging } = await import("firebase/messaging");
     const supported = await isSupported();
     if (!supported) {
       console.warn("[FCM] Messaging not supported in this browser");
       return null;
     }
 
+    const { initializeApp, getApps } = await import("firebase/app");
     // Reuse existing Firebase app if already initialized
     let app;
     const existingApps = getApps();
@@ -38,6 +38,49 @@ async function initMessaging() {
     console.error("[FCM] Init error:", error);
     return null;
   }
+}
+
+/**
+ * Check push notification compatibility on current device (especially iOS/Android).
+ */
+export function getPushSupportStatus() {
+  const isIOS = typeof navigator !== "undefined" && (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+  const isStandalone = typeof window !== "undefined" && (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true
+  );
+
+  if (isIOS && !isStandalone) {
+    return {
+      supported: false,
+      reason: "ios_not_standalone",
+      message: "Trên iPhone/iPad, bạn cần nhấn nút 'Chia sẻ' trong Safari rồi chọn 'Thêm vào Màn hình chính' để nhận được thông báo đẩy.",
+    };
+  }
+
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return {
+      supported: false,
+      reason: "no_notification_api",
+      message: "Trình duyệt này không hỗ trợ Web Notification.",
+    };
+  }
+
+  if (!("serviceWorker" in navigator)) {
+    return {
+      supported: false,
+      reason: "no_service_worker",
+      message: "Trình duyệt không hỗ trợ Service Worker.",
+    };
+  }
+
+  return {
+    supported: true,
+    permission: Notification.permission,
+  };
 }
 
 /**
@@ -86,6 +129,7 @@ export async function requestNotificationPermission() {
     console.log("[FCM] VAPID:", VAPID_KEY);
     console.log("[FCM] SW:", registration.active?.scriptURL);
 
+    const { getToken } = await import("firebase/messaging");
     token = await getToken(msg, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration,
@@ -124,9 +168,10 @@ export function getTokenValue() {
 export function onForegroundMessage(callback) {
   let unsubscribe = () => { };
 
-  initMessaging().then((msg) => {
+  initMessaging().then(async (msg) => {
     if (!msg) return;
     try {
+      const { onMessage } = await import("firebase/messaging");
       unsubscribe = onMessage(msg, (payload) => {
         callback(payload);
       });

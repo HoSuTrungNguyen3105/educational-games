@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
-import PlayGameScreen from './PlayGameScreen.jsx'
-import HtmlGameLoader from './HtmlGameLoader.jsx'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { templateService } from '../services/api.js'
+import { Loader } from '../components/ui.jsx'
+
+const PlayGameScreen = lazy(() => import('./PlayGameScreen.jsx'));
+const HtmlGameLoader = lazy(() => import('./HtmlGameLoader.jsx'));
 
 export function GamePlayRouter({ game, questions, players, playerName, onFinish, onQuit, onStateUpdate, template: initialTemplate, userAuth }) {
   const [tpl, setTpl] = useState(initialTemplate || null);
@@ -23,15 +25,26 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-paper">
-        <p className="text-sm text-[#8A7C63]">Đang tải game...</p>
+      <div className="flex-1 flex items-center justify-center bg-paper py-16">
+        <Loader label="Đang tải trò chơi..." />
       </div>
     );
   }
 
   if (tpl?.htmlTemplate && tpl.htmlTemplate.trim() !== "") {
-    return <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={tpl.playMode || "solo"} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} userAuth={userAuth} />;
+    return (
+      <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-paper py-16"><Loader label="Đang tải trò chơi..." /></div>}>
+        <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={tpl.playMode || "solo"} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} userAuth={userAuth} />
+      </Suspense>
+    );
   }
 
-  return <PlayGameScreen game={game} questions={questions} onFinish={onFinish} />;
+  return (
+    <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-paper py-16"><Loader label="Đang tải câu hỏi..." /></div>}>
+      <PlayGameScreen game={game} questions={questions} onFinish={onFinish} />
+    </Suspense>
+  );
 }
+
+export default GamePlayRouter;
+

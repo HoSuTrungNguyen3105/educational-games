@@ -34,4 +34,8 @@ export const notificationService = {
   async listDevices() {
     return apiFetch("/notifications/devices");
   },
+
+  async testPush() {
+    return apiFetch("/notifications/test-push", { method: "POST" });
+  },
 };

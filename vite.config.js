@@ -44,6 +44,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: ['firebase-messaging-sw.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globIgnores: [
