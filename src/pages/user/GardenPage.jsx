@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { gardenService, API_BASE } from '../../services/api.js';
+import { gardenService, questionService, API_BASE } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import GardenerAvatar from '../../components/avatar/GardenerAvatar.jsx';
 
@@ -99,6 +99,31 @@ function loadInventory(userId) {
 function saveInventory(userId, inv) {
   try { localStorage.setItem(`garden_inventory_${userId || 'guest'}`, JSON.stringify(inv)); } catch { /* ignore */ }
 }
+
+function loadWaterDrops(userId) {
+  try {
+    const raw = localStorage.getItem(`garden_water_${userId || 'guest'}`);
+    return raw ? parseInt(raw, 10) || 0 : 5;
+  } catch { return 5; }
+}
+function saveWaterDrops(userId, count) {
+  try { localStorage.setItem(`garden_water_${userId || 'guest'}`, String(count)); } catch { /* ignore */ }
+}
+
+const MATH_QUESTIONS = [
+  { q: '3 + 5 = ?', options: ['6', '7', '8', '9'], answer: 2 },
+  { q: '12 - 4 = ?', options: ['6', '7', '8', '9'], answer: 2 },
+  { q: '6 x 7 = ?', options: ['36', '42', '48', '49'], answer: 1 },
+  { q: '48 : 6 = ?', options: ['6', '7', '8', '9'], answer: 2 },
+  { q: '9 x 9 = ?', options: ['72', '81', '90', '99'], answer: 1 },
+  { q: '100 - 37 = ?', options: ['53', '63', '73', '83'], answer: 1 },
+  { q: '15 + 28 = ?', options: ['33', '43', '45', '53'], answer: 1 },
+  { q: '7 x 8 = ?', options: ['48', '54', '56', '64'], answer: 2 },
+  { q: '64 : 8 = ?', options: ['6', '7', '8', '9'], answer: 2 },
+  { q: '25 x 4 = ?', options: ['75', '80', '90', '100'], answer: 3 },
+  { q: '144 : 12 = ?', options: ['10', '11', '12', '13'], answer: 2 },
+  { q: '99 + 101 = ?', options: ['180', '190', '200', '210'], answer: 2 },
+];
 
 function formatTime(ms) {
   if (ms <= 0) return 'Sẵn sàng!';
@@ -331,7 +356,7 @@ function renderAura({ stageIdx, totalStages, palette, isReady }) {
   );
 }
 
-function PlantArt({ plantId, stageIdx, totalStages, isReady }) {
+function PlantArt({ plantId, stageIdx, totalStages, isReady, plantConfig }) {
   const cfg = plantConfig[plantId];
   if (!cfg) return null;
   const { palette, kind, noFruit } = cfg;
@@ -352,16 +377,21 @@ function PlantArt({ plantId, stageIdx, totalStages, isReady }) {
 /* ============================================================
    SLOT
 ============================================================ */
-function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, onHarvest, onWater, onRemove, onFertilize, hasFertilizer }) {
+function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, onHarvest, onWater, onRemove, onFertilize, hasFertilizer, plantConfig }) {
   const plant = slot.plant;
   if (!plant) {
     return (
       <button
         onClick={() => onSelect(slot.index)}
-        className="aspect-square rounded-2xl border-2 border-dashed border-ink/15 bg-white/50 hover:bg-white hover:border-gold/40 transition-colors duration-200 flex flex-col items-center justify-center gap-1.5 group"
+        className="aspect-square rounded-2xl border-2 border-dashed border-ink/15 bg-white/50 hover:bg-white hover:border-gold/40 transition-colors duration-200 flex flex-col items-center justify-center gap-1 group overflow-hidden"
       >
-        <span className="w-7 h-7 rounded-full border-2 border-ink/15 group-hover:border-gold/50 flex items-center justify-center text-ink/25 group-hover:text-gold text-lg leading-none transition-colors">+</span>
-        <span className="text-[9px] font-mono text-ink/25 group-hover:text-ink/40">Trồng cây</span>
+        <svg viewBox="0 0 120 140" className="w-full h-full">
+          <ellipse cx="60" cy="126" rx="34" ry="9" fill="#B08A5A" opacity="0.35" />
+          <ellipse cx="60" cy="123.5" rx="30" ry="6.5" fill="#C4A87A" opacity="0.5" />
+          <circle cx="60" cy="80" r="18" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink/10 group-hover:text-gold/40 transition-colors" />
+          <path d="M60,70 L60,90 M50,80 L70,80" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-ink/10 group-hover:text-gold/50 transition-colors" />
+        </svg>
+        <span className="text-[9px] font-mono text-ink/25 group-hover:text-ink/40 -mt-6 relative z-10">Trồng cây</span>
       </button>
     );
   }
@@ -376,7 +406,7 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
       {isReady && <div className="absolute inset-0 bg-green-400/5 gd-glow-bg pointer-events-none" />}
 
       <div className="w-full flex-1 min-h-0 relative z-10">
-        <PlantArt plantId={plant.plantType} stageIdx={stageIdx} totalStages={cfg.stageCount} isReady={isReady} />
+        <PlantArt plantId={plant.plantType} stageIdx={stageIdx} totalStages={cfg.stageCount} isReady={isReady} plantConfig={plantConfig} />
       </div>
 
       <div className="w-full px-1.5 pb-1 relative z-10 shrink-0">
@@ -457,7 +487,7 @@ function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
                   ${canBuy ? 'border-ink/10 bg-white hover:border-gold/40 hover:shadow-md cursor-pointer' : 'border-ink/5 bg-ink/[0.02] opacity-50 cursor-not-allowed'}`}
               >
                 <div className="w-14 h-14 shrink-0 rounded-xl bg-gradient-to-b from-sky-50 to-white border border-ink/5 overflow-hidden">
-                  <PlantArt plantId={seed.id} stageIdx={seed.stageCount - 1} totalStages={seed.stageCount} isReady={false} />
+                  <PlantArt plantId={seed.id} stageIdx={seed.stageCount - 1} totalStages={seed.stageCount} isReady={false} plantConfig={plantConfig} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -549,7 +579,7 @@ function HarvestModal({ plantType, onConfirm, onClose, plantConfig }) {
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl p-6 w-full max-w-xs text-center anim-pop shadow-2xl">
         <div className="w-24 h-24 mx-auto mb-2">
-          <PlantArt plantId={plantType} stageIdx={cfg.stageCount - 1} totalStages={cfg.stageCount} isReady />
+          <PlantArt plantId={plantType} stageIdx={cfg.stageCount - 1} totalStages={cfg.stageCount} isReady plantConfig={plantConfig} />
         </div>
         <h3 className="font-display text-lg text-ink mb-1">Thu hoạch thành công!</h3>
         <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gold mb-4">
@@ -558,6 +588,107 @@ function HarvestModal({ plantType, onConfirm, onClose, plantConfig }) {
         <button onClick={onConfirm} className="w-full py-2.5 bg-gold text-white rounded-xl font-semibold hover:bg-gold/80 transition">
           Tuyệt vời!
         </button>
+      </div>
+    </div>
+  );
+}
+
+function QuizModal({ onEarnWater, onClose }) {
+  const [question, setQuestion] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const pickQuestion = () => {
+    const idx = Math.floor(Math.random() * MATH_QUESTIONS.length);
+    setQuestion(MATH_QUESTIONS[idx]);
+    setSelected(null);
+    setResult(null);
+    setLoading(false);
+  };
+
+  useEffect(() => { pickQuestion(); }, []);
+
+  const handleSubmit = () => {
+    if (selected === null || !question) return;
+    const correct = selected === question.answer;
+    setResult(correct);
+    if (correct) {
+      setTimeout(() => onEarnWater(1), 800);
+    }
+  };
+
+  const handleNext = () => {
+    pickQuestion();
+  };
+
+  if (loading || !question) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl p-5 w-full max-w-sm anim-pop shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Icon name="water" className="w-5 h-5" />
+            <h3 className="font-display text-base text-ink">Trả lời để nhận nước</h3>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-ink/5 transition">
+            <Icon name="close" className="w-4 h-4 text-ink/40" />
+          </button>
+        </div>
+
+        <div className="bg-blue-50 rounded-xl p-4 mb-4 text-center">
+          <p className="text-lg font-bold text-ink">{question.q}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {question.options.map((opt, i) => {
+            const isSelected = selected === i;
+            const isCorrect = result !== null && i === question.answer;
+            const isWrong = result !== null && isSelected && i !== question.answer;
+            return (
+              <button
+                key={i}
+                onClick={() => result === null && setSelected(i)}
+                disabled={result !== null}
+                className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
+                  ${isCorrect ? 'border-green-400 bg-green-50 text-green-700' :
+                    isWrong ? 'border-red-400 bg-red-50 text-red-600' :
+                    isSelected ? 'border-blue-400 bg-blue-50 text-blue-700' :
+                    'border-ink/10 bg-white text-ink hover:border-blue-300'}`}
+              >
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+
+        {result === null ? (
+          <button
+            onClick={handleSubmit}
+            disabled={selected === null}
+            className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-40"
+          >
+            Trả lời
+          </button>
+        ) : (
+          <div className="text-center">
+            {result ? (
+              <div className="mb-2">
+                <p className="text-green-600 font-bold text-sm">Đúng rồi! +1 💧</p>
+              </div>
+            ) : (
+              <div className="mb-2">
+                <p className="text-red-500 font-semibold text-sm">Sai rồi! Đáp án: {question.options[question.answer]}</p>
+              </div>
+            )}
+            <button onClick={handleNext}
+              className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition">
+              Câu tiếp theo
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -578,6 +709,8 @@ export default function GardenPage({ userAuth, onBack }) {
   const [inventory, setInventory] = useState(() => loadInventory(userAuth?.user?.id));
   const [wateringSlot, setWateringSlot] = useState(null);
   const [plantConfig, setPlantConfig] = useState(FALLBACK_PLANT_CONFIG);
+  const [waterDrops, setWaterDrops] = useState(() => loadWaterDrops(userAuth?.user?.id));
+  const [showQuiz, setShowQuiz] = useState(false);
   const gardenGridRef = useRef(null);
 
   // sync baseline dùng để nội suy tiến độ mọc mượt theo thời gian thực,
@@ -703,6 +836,10 @@ export default function GardenPage({ userAuth, onBack }) {
   };
 
   const handleWater = async (index) => {
+    if (waterDrops <= 0) {
+      setShowQuiz(true);
+      return;
+    }
     const slot = slots.find((s) => s.index === index);
     if (!slot?.plant) return;
     const { progress } = getDisplay(slot);
@@ -710,6 +847,10 @@ export default function GardenPage({ userAuth, onBack }) {
     const nextProgress = Math.min(100, progress + boost);
     stampSync(index, nextProgress);
     setGarden((g) => ({ ...g, slots: g.slots.map((s) => (s.index === index ? { ...s, plant: { ...s.plant, progress: nextProgress, isReady: nextProgress >= 100 } } : s)) }));
+
+    const newDrops = waterDrops - 1;
+    setWaterDrops(newDrops);
+    saveWaterDrops(userId, newDrops);
 
     setWateringSlot(index);
     setTimeout(() => setWateringSlot(null), 2000);
@@ -719,6 +860,13 @@ export default function GardenPage({ userAuth, onBack }) {
     } catch (e) {
       alert(e.message || 'Lỗi tưới nước');
     }
+  };
+
+  const handleEarnWater = (amount) => {
+    const newDrops = waterDrops + amount;
+    setWaterDrops(newDrops);
+    saveWaterDrops(userId, newDrops);
+    setShowQuiz(false);
   };
 
   const handleFertilize = (index) => {
@@ -759,7 +907,7 @@ export default function GardenPage({ userAuth, onBack }) {
     return (
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-3"><PlantArt plantId="sunflower" stageIdx={0} totalStages={3} isReady={false} /></div>
+          <div className="w-16 h-16 mx-auto mb-3"><PlantArt plantId="sunflower" stageIdx={0} totalStages={3} isReady={false} plantConfig={plantConfig} /></div>
           <h2 className="font-display text-lg text-ink mb-2">Chưa đăng nhập</h2>
           <p className="text-sm text-ink/50 mb-4">Bạn cần đăng nhập để xem khu vườn</p>
           <button onClick={onBack} className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold">Về trang chủ</button>
@@ -784,7 +932,7 @@ export default function GardenPage({ userAuth, onBack }) {
   const hasAnyFertilizer = inventory.basic_fertilizer > 0 || inventory.premium_fertilizer > 0 || inventory.miracle_fertilizer > 0;
 
   return (
-    <div className="flex-1 px-4 py-4 max-w-4xl mx-auto w-full space-y-4">
+    <div className="flex-1 px-4 py-4 w-full space-y-4">
       <style>{`
         @keyframes gd-sway { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
         .gd-sway { animation: gd-sway 3.2s ease-in-out infinite; }
@@ -817,58 +965,66 @@ export default function GardenPage({ userAuth, onBack }) {
           <button onClick={() => setShowInventory(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ink/5 hover:bg-ink/10 text-ink/60 text-sm font-semibold transition">
             <Icon name="backpack" className="w-4 h-4" /> Kho đồ
           </button>
+          <button onClick={() => setShowQuiz(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-semibold transition">
+            <Icon name="water" className="w-4 h-4" /> {waterDrops}
+          </button>
           <span className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gold/10 text-gold text-sm font-bold">
             <Icon name="coin" className="w-4 h-4" /> {userCoins.toLocaleString()}
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex-1">
-          <h1 className="font-display text-lg text-ink">Khu vườn của tôi</h1>
-          <p className="text-xs text-ink/40 mt-0.5">
-            {plantedCount}/{slots.length} ô đã trồng • {readyCount} cây sẵn sàng thu hoạch
-          </p>
-        </div>
-      </div>
-
-      <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
-        {slots.length === 0 && !error ? (
-          <div className="text-center py-10 text-ink/40 animate-pulse">Đang tải...</div>
-        ) : (
-          <div ref={gardenGridRef} className="grid grid-cols-3 sm:grid-cols-4 gap-3 relative">
-            {slots.map((slot) => {
-              const { progress, remainingMs } = getDisplay(slot);
-              return (
-                <div key={slot.index} data-slot-index={slot.index}>
-                  <PlantSlot
-                    slot={slot}
-                    displayProgress={progress}
-                    remainingMs={remainingMs}
-                    showClock={inventory.magic_lens > 0}
-                    hasFertilizer={hasAnyFertilizer}
-                    onSelect={handleSlotSelect}
-                    onHarvest={handleHarvest}
-                    onWater={handleWater}
-                    onRemove={handleRemove}
-                    onFertilize={handleFertilize}
-                  />
-                </div>
-              );
-            })}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="md:w-48 shrink-0 flex flex-col items-center gap-3">
+          <div className="w-full rounded-2xl p-4 flex flex-col items-center gap-2" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
             <GardenerAvatar
               userAuth={userAuth}
-              size={90}
+              size={120}
               watering={wateringSlot !== null}
               wateringSlotIndex={wateringSlot}
               gardenRef={gardenGridRef}
             />
+            <div className="text-center">
+              <h1 className="font-display text-sm text-ink">Khu vườn</h1>
+              <p className="text-[10px] text-ink/40 mt-0.5">
+                {plantedCount}/{slots.length} ô • {readyCount} sẵn sàng
+              </p>
+            </div>
           </div>
-        )}
+        </div>
 
-        <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-ink/30 font-mono">
-          <Icon name="sparkle" className="w-3 h-3" />
-          <span>Trả lời đúng câu hỏi để nhận nước tưới cây</span>
+        <div className="flex-1 rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
+          {slots.length === 0 && !error ? (
+            <div className="text-center py-10 text-ink/40 animate-pulse">Đang tải...</div>
+          ) : (
+            <div ref={gardenGridRef} className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+              {slots.map((slot) => {
+                const { progress, remainingMs } = getDisplay(slot);
+                return (
+                  <div key={slot.index} data-slot-index={slot.index}>
+                    <PlantSlot
+                      slot={slot}
+                      displayProgress={progress}
+                      remainingMs={remainingMs}
+                      showClock={inventory.magic_lens > 0}
+                      hasFertilizer={hasAnyFertilizer}
+                      onSelect={handleSlotSelect}
+                      onHarvest={handleHarvest}
+                      onWater={handleWater}
+                      onRemove={handleRemove}
+                      onFertilize={handleFertilize}
+                      plantConfig={plantConfig}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-ink/30 font-mono">
+            <Icon name="sparkle" className="w-3 h-3" />
+            <span>Nhấn 💧 ở trên để trả lời câu hỏi nhận nước</span>
+          </div>
         </div>
       </div>
 
@@ -896,6 +1052,13 @@ export default function GardenPage({ userAuth, onBack }) {
           onConfirm={() => setHarvestResult(null)}
           onClose={() => setHarvestResult(null)}
           plantConfig={plantConfig}
+        />
+      )}
+
+      {showQuiz && (
+        <QuizModal
+          onEarnWater={handleEarnWater}
+          onClose={() => setShowQuiz(false)}
         />
       )}
     </div>

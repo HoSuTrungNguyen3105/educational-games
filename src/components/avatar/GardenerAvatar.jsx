@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { renderAvatarFull } from '../../lib/avatarRenderer.js';
 import { API_BASE } from '../../services/api.js';
 
@@ -65,6 +65,7 @@ export default function GardenerAvatar({ userAuth, size = 120, watering = false,
   const aspectRatio = isFullSvg ? (700 / 512) : (440 / 300);
 
   const [pos, setPos] = useState({ x: 0, y: 0 });
+  const avatarRef = useRef(null);
 
   useEffect(() => {
     if (!watering || wateringSlotIndex === null || !gardenRef?.current) {
@@ -75,11 +76,13 @@ export default function GardenerAvatar({ userAuth, size = 120, watering = false,
     const slots = grid.querySelectorAll('[data-slot-index]');
     const targetSlot = Array.from(slots).find(s => s.dataset.slotIndex === String(wateringSlotIndex));
     if (!targetSlot) return;
-    const gridRect = grid.getBoundingClientRect();
+    const avatarEl = avatarRef.current;
+    if (!avatarEl) return;
+    const avatarRect = avatarEl.getBoundingClientRect();
     const slotRect = targetSlot.getBoundingClientRect();
-    const targetX = slotRect.left - gridRect.left + slotRect.width / 2 - size / 2;
-    const targetY = slotRect.top - gridRect.top - size * 0.15;
-    setPos({ x: targetX, y: targetY });
+    const deltaX = slotRect.left + slotRect.width / 2 - (avatarRect.left + avatarRect.width / 2);
+    const deltaY = slotRect.top - avatarRect.bottom + 10;
+    setPos({ x: deltaX, y: deltaY });
   }, [watering, wateringSlotIndex, gardenRef, size]);
 
   if (!userAuth?.user) return null;
@@ -88,7 +91,8 @@ export default function GardenerAvatar({ userAuth, size = 120, watering = false,
 
   return (
     <div
-      className={`absolute z-20 pointer-events-none transition-all ${className}`}
+      ref={avatarRef}
+      className={`relative z-20 pointer-events-none transition-all ${className}`}
       style={{
         width: size,
         height: size * aspectRatio,
