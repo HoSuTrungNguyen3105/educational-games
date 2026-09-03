@@ -12,7 +12,7 @@ router.get("/", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.get("/tree-types", authenticate, async (req, res, next) => {
+router.get("/tree-types", async (req, res, next) => {
   try {
     const types = gardenService.getTreeTypes();
     sendSuccess(res, { types });

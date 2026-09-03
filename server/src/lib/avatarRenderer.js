@@ -343,16 +343,6 @@ function renderItemHtml(category, params) {
   return '';
 }
 
-function splitBackFront(html) {
-  if (!html) return { back: '', front: '' };
-  const gEnd = html.lastIndexOf('</g>');
-  if (gEnd !== -1) {
-    const splitAt = gEnd + 4;
-    return { back: html.slice(0, splitAt), front: html.slice(splitAt) };
-  }
-  return { back: '', front: html };
-}
-
 export {
   shade, capPath, girlLongHair, starShape, heartShape,
   bodyBase, drawFace, hairMarkup, shirtMarkup, pantsMarkup,
