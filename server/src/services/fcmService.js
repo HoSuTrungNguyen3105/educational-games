@@ -29,12 +29,14 @@ async function getMessaging() {
   const projectId = process.env.FIREBASE_PROJECT_ID || "eduplay-74301";
 
   try {
-    const adminModule = await import("firebase-admin");
-    const admin = adminModule.default || adminModule;
+    const { getApps, initializeApp, cert } =
+      await import("firebase-admin/app");
 
-    if (admin.apps.length > 0) {
-      messaging = admin.messaging();
-      console.log("[FCM] Reusing existing Firebase Admin app.");
+    const { getMessaging } =
+      await import("firebase-admin/messaging");
+
+    if (getApps().length > 0) {
+      messaging = getMessaging();
       return messaging;
     }
 
@@ -58,7 +60,7 @@ async function getMessaging() {
           parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
         }
 
-        credential = admin.credential.cert(parsed);
+        credential = cert(parsed);
         console.log("[FCM] ✅ Loaded service account from FIREBASE_SERVICE_ACCOUNT env var.");
       } catch (e) {
         console.error("[FCM] ❌ Failed to parse FIREBASE_SERVICE_ACCOUNT:", e.message);
@@ -79,7 +81,7 @@ async function getMessaging() {
           if (parsed.private_key) {
             parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
           }
-          credential = admin.credential.cert(parsed);
+          credential = cert(parsed);
           console.log("[FCM] Loaded service account credential from file:", resolvedPath);
         } catch (e) {
           console.error("[FCM] Failed to read service account file:", e.message);
@@ -105,8 +107,11 @@ async function getMessaging() {
       return null;
     }
 
-    admin.initializeApp({ credential, projectId });
-    messaging = admin.messaging();
+    initializeApp({
+      credential,
+      projectId,
+    });
+    messaging = getMessaging();
     console.log("[FCM] ✅ Firebase Admin initialized for project:", projectId);
     return messaging;
   } catch (err) {
