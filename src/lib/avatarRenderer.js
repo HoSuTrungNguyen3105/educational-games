@@ -411,15 +411,16 @@ export function renderAvatarFullWithOverrides(state, overrides = {}) {
     } else {
       const a = accessoryMarkup(accOpt); accBack = a.back; accFront = a.front;
     }
-    const overlays =
-      `<g transform="${t}">` + accBack + hairBack + `</g>` +
+    const backOverlays =
+      `<g transform="${t}">` + accBack + hairBack + `</g>`;
+    const frontOverlays =
       `<g transform="${t}">` +
       (overrides.face || drawFace(faceStyle)) + hairFront +
       (overrides.hat || hatMarkup(hatOpt)) +
       (overrides.glasses || glassesMarkup(glassesOpt)) +
       accFront +
       `</g>`;
-    return injectOverlaysIntoSvg(bodySvg, overlays, { face: true, hair: true });
+    return injectOverlaysIntoSvg(bodySvg, backOverlays, frontOverlays);
   }
 
   let hairBack = '', hairFront = '';

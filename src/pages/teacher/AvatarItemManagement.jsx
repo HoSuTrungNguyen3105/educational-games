@@ -76,9 +76,22 @@ function ItemPreview({ item, allItems }) {
 
   const overrides = {};
   if (bodyItemHtml) overrides.body = bodyItemHtml;
-  const svg = item.html
-    ? renderAvatarFullWithOverrides(state, { ...overrides, [item.category]: item.html })
-    : renderAvatarFullWithOverrides(state, overrides);
+  let svg;
+  if (item.html) {
+    // Check if item.html is a full avatar SVG
+    const isFullAvatarSvg = item.html.includes('<svg') && 
+      item.html.includes('viewBox="0 0 512 700"') && 
+      item.html.includes('id="head"') && 
+      item.html.includes('id="body"');
+    
+    if (isFullAvatarSvg) {
+      svg = item.html;
+    } else {
+      svg = renderAvatarFullWithOverrides(state, { ...overrides, [item.category]: item.html });
+    }
+  } else {
+    svg = renderAvatarFullWithOverrides(state, overrides);
+  }
   const isFullSvg = svg && (svg.includes('<svg') || (svg.includes('id="head"') && svg.includes('id="body"')));
   if (isFullSvg) {
     return (
@@ -494,7 +507,7 @@ export default function AvatarItemManagement({ showToast }) {
               </div>
             )}
 
-            {/* Preview */}
+{/* Preview */}
             <div>
               <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Preview</div>
               <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03]">
@@ -523,7 +536,17 @@ export default function AvatarItemManagement({ showToast }) {
                     state.skin = form.params?.hex || '#FFDFC4';
                     svg = renderAvatarFullWithOverrides(state, overrides);
                   } else {
-                    svg = renderAvatarFullWithOverrides(state, { ...overrides, [form.category]: editedHtml });
+                    const isFullAvatarSvg = editedHtml &&
+                      editedHtml.includes('<svg') &&
+                      editedHtml.includes('viewBox="0 0 512 700"') &&
+                      editedHtml.includes('id="head"') &&
+                      editedHtml.includes('id="body"');
+
+                    if (isFullAvatarSvg) {
+                      svg = editedHtml;
+                    } else {
+                      svg = renderAvatarFullWithOverrides(state, { ...overrides, [form.category]: editedHtml });
+                    }
                   }
                   const isFullSvg = svg && (svg.includes('<svg') || (svg.includes('id="head"') && svg.includes('id="body"')));
                   if (isFullSvg) {
