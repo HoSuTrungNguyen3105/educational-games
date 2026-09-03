@@ -36,10 +36,10 @@ const FALLBACK_PLANT_CONFIG = {
 };
 
 const RARITY_STYLES = {
-  common: { bg: '#EEF0EC', text: '#6B7264', label: 'Thường' },
-  rare: { bg: '#E4EEFA', text: '#3D6FA8', label: 'Hiếm' },
-  epic: { bg: '#F0E6FA', text: '#7A4EA8', label: 'Sử thi' },
-  legendary: { bg: '#FCEFD6', text: '#B8791A', label: 'Huyền thoại' },
+  common: { bg: '#EEF0EC', text: '#6B7264', label: 'Thường', border: '#D0D5CC', glow: 'rgba(107,114,100,0.15)' },
+  rare: { bg: '#E4EEFA', text: '#3D6FA8', label: 'Hiếm', border: '#A8C8E8', glow: 'rgba(61,111,168,0.2)' },
+  epic: { bg: '#F0E6FA', text: '#7A4EA8', label: 'Sử thi', border: '#C9A8E0', glow: 'rgba(122,78,168,0.2)' },
+  legendary: { bg: '#FCEFD6', text: '#B8791A', label: 'Huyền thoại', border: '#F0C87A', glow: 'rgba(184,121,26,0.25)' },
 };
 
 function buildPlantConfig(apiTypes) {
@@ -66,23 +66,23 @@ function buildPlantConfig(apiTypes) {
 const ITEM_CONFIG = {
   basic_fertilizer: {
     name: 'Phân bón thường', type: 'consumable', price: 20, boost: 15,
-    desc: 'Thúc cây lớn nhanh thêm 15% ngay lập tức.', color: '#8B6A46',
+    desc: 'Thúc cây lớn nhanh thêm 15% ngay lập tức.', color: '#8B6A46', icon: '🌱',
   },
   premium_fertilizer: {
     name: 'Phân bón cao cấp', type: 'consumable', price: 55, boost: 40,
-    desc: 'Thúc cây lớn nhanh thêm 40% ngay lập tức.', color: '#C97F17',
+    desc: 'Thúc cây lớn nhanh thêm 40% ngay lập tức.', color: '#C97F17', icon: '🌟',
   },
   miracle_fertilizer: {
     name: 'Phân bón thần kỳ', type: 'consumable', price: 150, boost: 100,
-    desc: 'Giúp cây chín ngay lập tức, sẵn sàng thu hoạch.', color: '#B8791A',
+    desc: 'Giúp cây chín ngay lập tức, sẵn sàng thu hoạch.', color: '#B8791A', icon: '✨',
   },
   golden_can: {
     name: 'Bình tưới vàng', type: 'upgrade', price: 300,
-    desc: 'Nâng cấp vĩnh viễn: mỗi lần tưới nước tăng 20% thay vì 10%.', color: '#D8A83E',
+    desc: 'Nâng cấp vĩnh viễn: mỗi lần tưới nước tăng 20% thay vì 10%.', color: '#D8A83E', icon: '🪙',
   },
   magic_lens: {
     name: 'Kính lúp phép thuật', type: 'upgrade', price: 150,
-    desc: 'Nâng cấp vĩnh viễn: hiện đồng hồ đếm ngược chính xác trên mỗi cây.', color: '#5C8BD8',
+    desc: 'Nâng cấp vĩnh viễn: hiện đồng hồ đếm ngược chính xác trên mỗi cây.', color: '#5C8BD8', icon: '🔍',
   },
 };
 
@@ -177,13 +177,13 @@ function Icon({ name, className = 'w-4 h-4', style }) {
 }
 
 /* ============================================================
-   PLANT ART — minh hoạ cây bằng SVG thay cho icon/emoji
+   PLANT ART — minh hoạ cây bằng SVG thay cho icon/emoji (phiên bản đẹp hơn)
 ============================================================ */
-function leafPair(cx, y, spread, size, rotate, fill) {
+function leafPair(cx, y, spread, size, rotate, fill, opacity = 1) {
   return (
     <g key={`${y}-${rotate}`}>
-      <ellipse cx={cx - spread} cy={y} rx={size} ry={size * 0.55} fill={fill} transform={`rotate(${-rotate} ${cx - spread} ${y})`} />
-      <ellipse cx={cx + spread} cy={y} rx={size} ry={size * 0.55} fill={fill} transform={`rotate(${rotate} ${cx + spread} ${y})`} />
+      <ellipse cx={cx - spread} cy={y} rx={size} ry={size * 0.55} fill={fill} opacity={opacity} transform={`rotate(${-rotate} ${cx - spread} ${y})`} />
+      <ellipse cx={cx + spread} cy={y} rx={size} ry={size * 0.55} fill={fill} opacity={opacity} transform={`rotate(${rotate} ${cx + spread} ${y})`} />
     </g>
   );
 }
@@ -197,7 +197,7 @@ function StemBase({ stageIdx, totalStages, palette, withLeaves = true }) {
   if (withLeaves) {
     for (let i = 0; i < leafCount; i++) {
       const y = 118 - (i + 1) * (stemH / (leafCount + 1.4));
-      leaves.push(leafPair(60, y, 8 + i * 2, 9 - i, 35 - i * 4, i % 2 ? palette.leaf : palette.leafDark));
+      leaves.push(leafPair(60, y, 8 + i * 2, 9 - i, 35 - i * 4, i % 2 ? palette.leaf : palette.leafDark, 0.9));
     }
   }
   return (
@@ -218,11 +218,32 @@ function renderBloom({ stageIdx, totalStages, palette, isReady }) {
       <StemBase stageIdx={stageIdx} totalStages={totalStages} palette={palette} />
       {mature && (
         <g className={isReady ? 'gd-sway' : ''} style={{ transformOrigin: `60px ${topY}px` }}>
-          {[0, 60, 120, 180, 240, 300].map((deg) => (
-            <ellipse key={deg} cx={60} cy={topY - 9} rx={7} ry={4.2} fill={palette.accentLight}
-              transform={`rotate(${deg} 60 ${topY})`} />
+          {/* Cánh hoa nhiều lớp */}
+          {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg, i) => {
+            const r = i % 2 === 0 ? 11 : 8;
+            const fill = i % 2 === 0 ? palette.accentLight : palette.accent;
+            return (
+              <ellipse
+                key={deg}
+                cx={60}
+                cy={topY - 12}
+                rx={r}
+                ry={5}
+                fill={fill}
+                stroke={palette.accentDark}
+                strokeWidth={0.3}
+                opacity={0.9}
+                transform={`rotate(${deg} 60 ${topY})`}
+              />
+            );
+          })}
+          <circle cx={60} cy={topY} r={9} fill={palette.accentDark} opacity={0.3} />
+          <circle cx={60} cy={topY} r={7} fill={palette.accent} stroke="#8A5A0E" strokeWidth={0.8} />
+          <circle cx={60} cy={topY} r={3} fill="#FFE08A" />
+          {/* Nhị hoa */}
+          {[0, 45, 90, 135, 180, 225, 270, 315].map(d => (
+            <circle key={d} cx={60 + 3.5 * Math.cos(d * Math.PI / 180)} cy={topY + 3.5 * Math.sin(d * Math.PI / 180)} r={1.2} fill="#C97F17" />
           ))}
-          <circle cx={60} cy={topY} r={6.5} fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.6} />
         </g>
       )}
     </>
@@ -238,15 +259,26 @@ function renderFruitTree({ stageIdx, totalStages, palette, isReady, noFruit }) {
   const mature = stageIdx === totalStages - 1;
   return (
     <>
-      <path d={`M60,122 L${60 - frac},${topY}`} stroke={palette.stem} strokeWidth={4 + frac * 2.5} strokeLinecap="round" />
+      <path d={`M60,122 L${60 - frac * 2},${topY}`} stroke={palette.stem} strokeWidth={4 + frac * 2.5} strokeLinecap="round" />
       {showCanopy && (
         <g className={mature && isReady ? 'gd-sway' : ''} style={{ transformOrigin: `60px ${topY}px` }}>
-          <circle cx={60} cy={topY + 2} r={canopyR} fill={palette.leafDark} />
-          <circle cx={60 - canopyR * 0.4} cy={topY - canopyR * 0.3} r={canopyR * 0.72} fill={palette.leaf} />
-          <circle cx={60 + canopyR * 0.5} cy={topY - canopyR * 0.15} r={canopyR * 0.6} fill={palette.leaf} />
-          {mature && !noFruit && [[-7, 2], [6, 6], [1, -6]].map(([dx, dy], i) => (
-            <circle key={i} cx={60 + dx} cy={topY + 2 + dy} r={3.4} fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.5} />
-          ))}
+          {/* Tán lá rậm rạp */}
+          <circle cx={60} cy={topY + 2} r={canopyR} fill={palette.leafDark} opacity={0.8} />
+          <circle cx={60 - canopyR * 0.35} cy={topY - canopyR * 0.25} r={canopyR * 0.7} fill={palette.leaf} opacity={0.9} />
+          <circle cx={60 + canopyR * 0.45} cy={topY - canopyR * 0.15} r={canopyR * 0.65} fill={palette.leaf} opacity={0.9} />
+          <circle cx={60} cy={topY - canopyR * 0.3} r={canopyR * 0.5} fill={palette.leaf} opacity={0.7} />
+          {mature && !noFruit && (
+            <>
+              {/* Quả có bóng */}
+              {[[-7, 2], [6, 6], [1, -6], [-4, 8], [8, -2]].map(([dx, dy], i) => (
+                <g key={i}>
+                  <circle cx={60 + dx} cy={topY + 2 + dy} r={4.5} fill={palette.accentDark} opacity={0.3} />
+                  <circle cx={60 + dx} cy={topY + dy} r={4.2} fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.6} />
+                  <circle cx={60 + dx + 1.5} cy={topY + dy - 1.5} r={1.2} fill="white" opacity={0.25} />
+                </g>
+              ))}
+            </>
+          )}
         </g>
       )}
     </>
@@ -261,10 +293,18 @@ function renderCactus({ stageIdx, totalStages, palette }) {
   const mature = stageIdx === totalStages - 1;
   return (
     <>
-      <rect x={60 - w / 2} y={topY} width={w} height={h} rx={w / 2} fill={palette.leaf} stroke={palette.leafDark} strokeWidth={1} />
+      <rect x={60 - w / 2} y={topY} width={w} height={h} rx={w / 2} fill={palette.leaf} stroke={palette.leafDark} strokeWidth={1.2} />
       {[1, 2, 3].map((i) => (
-        <line key={i} x1={60 - w / 2 + (i * w) / 4} y1={topY + 4} x2={60 - w / 2 + (i * w) / 4} y2={topY + h - 4} stroke={palette.leafDark} strokeWidth={0.7} opacity={0.6} />
+        <line key={i} x1={60 - w / 2 + (i * w) / 4} y1={topY + 4} x2={60 - w / 2 + (i * w) / 4} y2={topY + h - 4} stroke={palette.leafDark} strokeWidth={0.7} opacity={0.5} />
       ))}
+      {/* Gai nhỏ */}
+      {Array.from({ length: 6 }).map((_, i) => {
+        const angle = (i / 6) * Math.PI * 2;
+        const r = w / 2 + 2;
+        const cx = 60 + r * Math.cos(angle);
+        const cy = topY + h * 0.5 + r * 0.4 * Math.sin(angle);
+        return <line key={i} x1={cx} y1={cy} x2={cx + 4 * Math.cos(angle)} y2={cy + 4 * Math.sin(angle)} stroke="#9C6B3A" strokeWidth={0.8} opacity={0.6} />;
+      })}
       {stageIdx >= 1 && (
         <path d={`M${60 - w / 2},${topY + h * 0.4} q-10,-2 -9,-14`} stroke={palette.leaf} strokeWidth={5} strokeLinecap="round" fill="none" />
       )}
@@ -272,10 +312,11 @@ function renderCactus({ stageIdx, totalStages, palette }) {
         <path d={`M${60 + w / 2},${topY + h * 0.55} q10,-2 9,-14`} stroke={palette.leaf} strokeWidth={5} strokeLinecap="round" fill="none" />
       )}
       {mature && (
-        <>
-          <circle cx={60} cy={topY - 2} r={4.5} fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.5} />
-          <circle cx={60} cy={topY - 2} r={1.6} fill={palette.accentLight} />
-        </>
+        <g>
+          <circle cx={60} cy={topY - 2} r={6} fill={palette.accentDark} opacity={0.2} />
+          <circle cx={60} cy={topY - 4} r={5} fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.6} />
+          <circle cx={60} cy={topY - 4} r={2} fill={palette.accentLight} />
+        </g>
       )}
     </>
   );
@@ -289,17 +330,17 @@ function renderBamboo({ stageIdx, totalStages, palette }) {
       {stalks.map((s, i) => {
         const h = (20 + frac * 62) * s.h;
         const topY = 122 - h;
-        const joints = Math.max(1, Math.round(h / 16));
+        const joints = Math.max(1, Math.round(h / 14));
         return (
           <g key={i}>
-            <rect x={60 + s.dx - 3} y={topY} width={6} height={h} rx={3} fill={palette.stem} />
+            <rect x={60 + s.dx - 3.5} y={topY} width={7} height={h} rx={3.5} fill={palette.stem} />
             {Array.from({ length: joints }).map((_, j) => (
-              <line key={j} x1={60 + s.dx - 3.4} x2={60 + s.dx + 3.4} y1={topY + (j + 1) * (h / (joints + 1))} y2={topY + (j + 1) * (h / (joints + 1))} stroke={palette.leafDark} strokeWidth={1} />
+              <line key={j} x1={60 + s.dx - 4} x2={60 + s.dx + 4} y1={topY + (j + 1) * (h / (joints + 1))} y2={topY + (j + 1) * (h / (joints + 1))} stroke={palette.leafDark} strokeWidth={1.2} opacity={0.6} />
             ))}
             {stageIdx >= 1 && (
               <>
-                <ellipse cx={60 + s.dx - 6} cy={topY + 4} rx={7} ry={2.6} fill={palette.leaf} transform={`rotate(-25 ${60 + s.dx - 6} ${topY + 4})`} />
-                <ellipse cx={60 + s.dx + 6} cy={topY + 9} rx={7} ry={2.6} fill={palette.leaf} transform={`rotate(25 ${60 + s.dx + 6} ${topY + 9})`} />
+                <ellipse cx={60 + s.dx - 7} cy={topY + 4} rx={8} ry={3} fill={palette.leaf} opacity={0.8} transform={`rotate(-30 ${60 + s.dx - 7} ${topY + 4})`} />
+                <ellipse cx={60 + s.dx + 7} cy={topY + 9} rx={8} ry={3} fill={palette.leaf} opacity={0.8} transform={`rotate(30 ${60 + s.dx + 7} ${topY + 9})`} />
               </>
             )}
           </g>
@@ -315,16 +356,17 @@ function renderVine({ stageIdx, totalStages, palette }) {
   const spread = 14 + frac * 14;
   return (
     <>
-      <path d={`M60,120 q${-spread},-4 ${-spread - 6},-14`} stroke={palette.stem} strokeWidth={2} fill="none" strokeLinecap="round" />
-      <path d={`M60,120 q${spread},-6 ${spread + 6},-10`} stroke={palette.stem} strokeWidth={2} fill="none" strokeLinecap="round" />
+      <path d={`M60,120 q${-spread},-4 ${-spread - 6},-14`} stroke={palette.stem} strokeWidth={2.5} fill="none" strokeLinecap="round" />
+      <path d={`M60,120 q${spread},-6 ${spread + 6},-10`} stroke={palette.stem} strokeWidth={2.5} fill="none" strokeLinecap="round" />
       {Array.from({ length: 1 + stageIdx }).map((_, i) => (
-        <ellipse key={i} cx={60 - spread + i * 9} cy={112 - (i % 2) * 4} rx={7} ry={4} fill={i % 2 ? palette.leaf : palette.leafDark} transform={`rotate(${-20 + i * 10} ${60 - spread + i * 9} ${112})`} />
+        <ellipse key={i} cx={60 - spread + i * 9} cy={112 - (i % 2) * 4} rx={8} ry={4.5} fill={i % 2 ? palette.leaf : palette.leafDark} opacity={0.85} transform={`rotate(${-20 + i * 10} ${60 - spread + i * 9} ${112})`} />
       ))}
       {mature && (
         <g>
-          <circle cx={72} cy={112} r={11} fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.8} />
+          <circle cx={72} cy={112} r={12} fill={palette.accentDark} opacity={0.2} />
+          <circle cx={72} cy={112} r={10} fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.8} />
           {[-1, 0, 1].map((k) => (
-            <path key={k} d={`M${72 + k * 3.6},101 q${k * 2},11 0,22`} stroke={palette.leafDark} strokeWidth={1.1} fill="none" opacity={0.55} />
+            <path key={k} d={`M${72 + k * 3.6},100 q${k * 2},11 0,22`} stroke={palette.leafDark} strokeWidth={1.5} fill="none" opacity={0.5} />
           ))}
         </g>
       )}
@@ -340,15 +382,21 @@ function renderAura({ stageIdx, totalStages, palette, isReady }) {
   const orbits = Math.min(stageIdx, 3);
   return (
     <>
-      <path d={`M60,122 L60,${topY}`} stroke={palette.stem} strokeWidth={2.4} strokeLinecap="round" opacity={0.85} />
+      <path d={`M60,122 L60,${topY}`} stroke={palette.stem} strokeWidth={2.8} strokeLinecap="round" opacity={0.8} />
       {Array.from({ length: orbits }).map((_, i) => (
-        <circle key={i} cx={60 + (i % 2 ? 8 : -8)} cy={topY + 10 + i * 12} r={3} fill={palette.accentLight} className="gd-twinkle" style={{ animationDelay: `${i * 0.3}s` }} />
+        <circle key={i} cx={60 + (i % 2 ? 9 : -9)} cy={topY + 10 + i * 12} r={4} fill={palette.accentLight} className="gd-twinkle" style={{ animationDelay: `${i * 0.3}s` }} />
       ))}
       {mature && (
         <g className={isReady ? 'gd-pulse' : ''} style={{ transformOrigin: `60px ${topY}px` }}>
-          {isReady && <circle cx={60} cy={topY} r={16} fill={palette.accent} opacity={0.18} />}
-          <path d={`M60,${topY - 11} L${63.5},${topY - 2} L${73},${topY - 2} L${65},${topY + 4} L${68},${topY + 13} L60,${topY + 7} L52,${topY + 13} L55,${topY + 4} L47,${topY - 2} L${56.5},${topY - 2} Z`}
-            fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.5} />
+          {isReady && (
+            <>
+              <circle cx={60} cy={topY} r={20} fill={palette.accent} opacity={0.15} />
+              <circle cx={60} cy={topY} r={28} fill={palette.accentLight} opacity={0.08} className="gd-pulse" />
+            </>
+          )}
+          <path d={`M60,${topY - 13} L64,${topY - 3} L74,${topY - 3} L66,${topY + 5} L69,${topY + 15} L60,${topY + 8} L51,${topY + 15} L54,${topY + 5} L46,${topY - 3} L56,${topY - 3} Z`}
+            fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.6} />
+          <circle cx={60} cy={topY} r={4} fill="white" opacity={0.3} />
         </g>
       )}
     </>
@@ -361,8 +409,19 @@ function PlantArt({ plantId, stageIdx, totalStages, isReady, plantConfig }) {
   const { palette, kind, noFruit } = cfg;
   return (
     <svg viewBox="0 0 120 140" className="w-full h-full">
-      <ellipse cx="60" cy="126" rx="34" ry="9" fill="#B08A5A" opacity="0.55" />
-      <ellipse cx="60" cy="123.5" rx="30" ry="6.5" fill="#8C6A42" />
+      <defs>
+        <radialGradient id={`shadow-${plantId}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#8C6A42" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#8C6A42" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={`stem-${plantId}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={palette.stem} stopOpacity="0.7" />
+          <stop offset="50%" stopColor={palette.stem} stopOpacity="1" />
+          <stop offset="100%" stopColor={palette.stem} stopOpacity="0.7" />
+        </linearGradient>
+      </defs>
+      <ellipse cx="60" cy="126" rx="34" ry="9" fill="url(#shadow)" />
+      <ellipse cx="60" cy="123.5" rx="30" ry="6.5" fill="#8C6A42" opacity="0.6" />
       {kind === 'bloom' && renderBloom({ stageIdx, totalStages, palette, isReady })}
       {kind === 'fruitTree' && renderFruitTree({ stageIdx, totalStages, palette, isReady, noFruit })}
       {kind === 'cactus' && renderCactus({ stageIdx, totalStages, palette })}
@@ -374,7 +433,7 @@ function PlantArt({ plantId, stageIdx, totalStages, isReady, plantConfig }) {
 }
 
 /* ============================================================
-   SLOT
+   SLOT — phiên bản giao diện đẹp hơn
 ============================================================ */
 function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, onHarvest, onWater, onRemove, onFertilize, hasFertilizer, plantConfig }) {
   const plant = slot.plant;
@@ -382,13 +441,13 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
     return (
       <button
         onClick={() => onSelect(slot.index)}
-        className="aspect-square rounded-2xl border-2 border-dashed border-ink/15 bg-white/50 hover:bg-white hover:border-gold/40 transition-colors duration-200 flex flex-col items-center justify-center gap-1 group overflow-hidden"
+        className="aspect-square rounded-2xl border-2 border-dashed border-ink/15 bg-white/60 hover:bg-white hover:border-gold/50 hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center gap-1 group overflow-hidden"
       >
         <svg viewBox="0 0 120 140" className="w-full h-full">
-          <ellipse cx="60" cy="126" rx="34" ry="9" fill="#B08A5A" opacity="0.35" />
-          <ellipse cx="60" cy="123.5" rx="30" ry="6.5" fill="#C4A87A" opacity="0.5" />
-          <circle cx="60" cy="80" r="18" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink/10 group-hover:text-gold/40 transition-colors" />
-          <path d="M60,70 L60,90 M50,80 L70,80" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-ink/10 group-hover:text-gold/50 transition-colors" />
+          <ellipse cx="60" cy="126" rx="34" ry="9" fill="#B08A5A" opacity="0.25" />
+          <ellipse cx="60" cy="123.5" rx="30" ry="6.5" fill="#C4A87A" opacity="0.4" />
+          <circle cx="60" cy="80" r="20" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink/10 group-hover:text-gold/40 transition-colors" />
+          <path d="M60,68 L60,92 M48,80 L72,80" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-ink/10 group-hover:text-gold/50 transition-colors" />
         </svg>
         <span className="text-[9px] font-mono text-ink/25 group-hover:text-ink/40 -mt-6 relative z-10">Trồng cây</span>
       </button>
@@ -400,9 +459,9 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
   const stageIdx = isReady ? cfg.stageCount - 1 : Math.min(cfg.stageCount - 1, Math.floor((displayProgress / 100) * (cfg.stageCount - 1)));
 
   return (
-    <div className={`aspect-square rounded-2xl border-2 transition-colors duration-300 flex flex-col items-center relative overflow-hidden
-      ${isReady ? 'border-green-300 bg-green-50 shadow-md shadow-green-100' : 'border-ink/10 bg-white'}`}>
-      {isReady && <div className="absolute inset-0 bg-green-400/5 gd-glow-bg pointer-events-none" />}
+    <div className={`aspect-square rounded-2xl border-2 transition-all duration-300 flex flex-col items-center relative overflow-hidden
+      ${isReady ? 'border-green-300 bg-gradient-to-b from-green-50 to-white shadow-lg shadow-green-100/60' : 'border-ink/10 bg-white hover:shadow-md'}`}>
+      {isReady && <div className="absolute inset-0 bg-green-400/10 gd-glow-bg pointer-events-none" />}
 
       <div className="w-full flex-1 min-h-0 relative z-10">
         <PlantArt plantId={plant.plantType} stageIdx={stageIdx} totalStages={cfg.stageCount} isReady={isReady} plantConfig={plantConfig} />
@@ -414,7 +473,7 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
         {!isReady && (
           <>
             <div className="w-full h-1.5 bg-ink/10 rounded-full overflow-hidden mt-1">
-              <div className="h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-1000 ease-linear" style={{ width: `${displayProgress}%` }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 transition-all duration-1000 ease-linear shadow-inner" style={{ width: `${displayProgress}%` }} />
             </div>
             <p className="text-[8px] font-mono text-ink/40 text-center mt-0.5">
               {showClock ? formatClock(remainingMs) : `${Math.floor(displayProgress)}%`}
@@ -425,24 +484,24 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
         <div className="flex items-center justify-center gap-1 mt-1">
           {!isReady && (
             <button onClick={(e) => { e.stopPropagation(); onWater(slot.index); }}
-              className="p-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-500 transition-colors" title="Tưới nước">
+              className="p-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-500 transition-colors shadow-sm hover:shadow" title="Tưới nước">
               <Icon name="water" className="w-3 h-3" />
             </button>
           )}
           {!isReady && hasFertilizer && (
             <button onClick={(e) => { e.stopPropagation(); onFertilize(slot.index); }}
-              className="p-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors" title="Bón phân">
+              className="p-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors shadow-sm hover:shadow" title="Bón phân">
               <Icon name="sparkle" className="w-3 h-3" />
             </button>
           )}
           {isReady && (
             <button onClick={(e) => { e.stopPropagation(); onHarvest(slot.index); }}
-              className="p-1 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors" title="Thu hoạch">
+              className="p-1 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all shadow-sm hover:shadow-md" title="Thu hoạch">
               <Icon name="cut" className="w-3 h-3" />
             </button>
           )}
           <button onClick={(e) => { e.stopPropagation(); onRemove(slot.index); }}
-            className="p-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-400 transition-colors" title="Xóa cây">
+            className="p-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-400 transition-colors shadow-sm hover:shadow" title="Xóa cây">
             <Icon name="trash" className="w-3 h-3" />
           </button>
         </div>
@@ -452,14 +511,14 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
 }
 
 /* ============================================================
-   SEED SHOP
+   SEED SHOP — giao diện đẹp hơn
 ============================================================ */
 function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
   const seedList = Object.entries(plantConfig).map(([id, cfg]) => ({ id, ...cfg }));
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden anim-pop shadow-2xl">
+      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden anim-pop shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-ink/10 shrink-0">
           <div className="flex items-center gap-2">
             <Icon name="bag" className="w-5 h-5 text-gold" />
@@ -468,7 +527,7 @@ function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><Icon name="close" className="w-5 h-5 text-ink/50" /></button>
         </div>
 
-        <div className="flex items-center gap-2 px-5 py-2 bg-gold/5 border-b border-gold/10 shrink-0">
+        <div className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-gold/10 to-amber-100/40 border-b border-gold/10 shrink-0">
           <Icon name="coin" className="w-4 h-4" />
           <span className="text-sm font-bold text-gold">{userCoins?.toLocaleString()} Coin</span>
         </div>
@@ -482,8 +541,9 @@ function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
                 key={seed.id}
                 onClick={() => canBuy && onSelect(seed.id)}
                 disabled={!canBuy}
-                className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all duration-200 text-left
-                  ${canBuy ? 'border-ink/10 bg-white hover:border-gold/40 hover:shadow-md cursor-pointer' : 'border-ink/5 bg-ink/[0.02] opacity-50 cursor-not-allowed'}`}
+                className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all duration-300 text-left
+                  ${canBuy ? `border-${seed.rarity === 'legendary' ? 'amber' : seed.rarity === 'epic' ? 'purple' : seed.rarity === 'rare' ? 'blue' : 'gray'}-200 bg-white hover:shadow-xl hover:scale-[1.02] cursor-pointer` : 'border-ink/5 bg-ink/[0.02] opacity-50 cursor-not-allowed'}`}
+                style={canBuy ? { boxShadow: `0 0 0 1px ${r.border}40, 0 4px 12px ${r.glow}` } : {}}
               >
                 <div className="w-14 h-14 shrink-0 rounded-xl bg-gradient-to-b from-sky-50 to-white border border-ink/5 overflow-hidden">
                   <PlantArt plantId={seed.id} stageIdx={seed.stageCount - 1} totalStages={seed.stageCount} isReady={false} plantConfig={plantConfig} />
@@ -513,13 +573,13 @@ function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
 }
 
 /* ============================================================
-   INVENTORY (KHO ĐỒ)
+   INVENTORY (KHO ĐỒ) — giao diện đẹp hơn
 ============================================================ */
 function InventoryShop({ userCoins, inventory, onBuy, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden anim-pop shadow-2xl">
+      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden anim-pop shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-ink/10 shrink-0">
           <div className="flex items-center gap-2">
             <Icon name="backpack" className="w-5 h-5 text-gold" />
@@ -528,7 +588,7 @@ function InventoryShop({ userCoins, inventory, onBuy, onClose }) {
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><Icon name="close" className="w-5 h-5 text-ink/50" /></button>
         </div>
 
-        <div className="flex items-center gap-2 px-5 py-2 bg-gold/5 border-b border-gold/10 shrink-0">
+        <div className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-gold/10 to-amber-100/40 border-b border-gold/10 shrink-0">
           <Icon name="coin" className="w-4 h-4" />
           <span className="text-sm font-bold text-gold">{userCoins?.toLocaleString()} Coin</span>
         </div>
@@ -541,9 +601,9 @@ function InventoryShop({ userCoins, inventory, onBuy, onClose }) {
             const alreadyOwned = isUpgrade && owned > 0;
             const canBuy = !alreadyOwned && (userCoins || 0) >= item.price;
             return (
-              <div key={id} className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 ${alreadyOwned ? 'border-green-200 bg-green-50/50' : 'border-ink/10 bg-white'}`}>
-                <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center" style={{ background: `${item.color}22` }}>
-                  <span className="w-5 h-5 rounded-full" style={{ background: item.color }} />
+              <div key={id} className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${alreadyOwned ? 'border-green-200 bg-green-50/60 shadow-sm' : 'border-ink/10 bg-white hover:shadow-md'}`}>
+                <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${item.color}22` }}>
+                  {item.icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -556,9 +616,9 @@ function InventoryShop({ userCoins, inventory, onBuy, onClose }) {
                   onClick={() => canBuy && onBuy(id)}
                   disabled={!canBuy}
                   className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors
-                    ${alreadyOwned ? 'bg-green-100 text-green-600 cursor-default' : canBuy ? 'bg-gold text-white hover:bg-gold/80' : 'bg-ink/5 text-ink/30 cursor-not-allowed'}`}
+                    ${alreadyOwned ? 'bg-green-100 text-green-600 cursor-default' : canBuy ? 'bg-gold text-white hover:bg-gold/80 shadow-sm hover:shadow' : 'bg-ink/5 text-ink/30 cursor-not-allowed'}`}
                 >
-                  {alreadyOwned ? 'Đã có' : `${item.price}`}
+                  {alreadyOwned ? '✅ Đã có' : `${item.price} 💰`}
                 </button>
               </div>
             );
@@ -580,11 +640,11 @@ function HarvestModal({ plantType, onConfirm, onClose, plantConfig }) {
         <div className="w-24 h-24 mx-auto mb-2">
           <PlantArt plantId={plantType} stageIdx={cfg.stageCount - 1} totalStages={cfg.stageCount} isReady plantConfig={plantConfig} />
         </div>
-        <h3 className="font-display text-lg text-ink mb-1">Thu hoạch thành công!</h3>
+        <h3 className="font-display text-lg text-ink mb-1">🎉 Thu hoạch thành công!</h3>
         <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gold mb-4">
           <Icon name="coin" className="w-6 h-6" /> +{cfg.harvestCoin}
         </div>
-        <button onClick={onConfirm} className="w-full py-2.5 bg-gold text-white rounded-xl font-semibold hover:bg-gold/80 transition">
+        <button onClick={onConfirm} className="w-full py-2.5 bg-gradient-to-r from-gold to-amber-500 text-white rounded-xl font-semibold hover:from-gold/90 hover:to-amber-500/90 transition shadow-md">
           Tuyệt vời!
         </button>
       </div>
@@ -629,15 +689,15 @@ function QuizModal({ onEarnWater, onClose }) {
       <div className="relative bg-white rounded-2xl p-5 w-full max-w-sm anim-pop shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Icon name="water" className="w-5 h-5" />
-            <h3 className="font-display text-base text-ink">Trả lời để nhận nước</h3>
+            <Icon name="water" className="w-5 h-5 text-blue-500" />
+            <h3 className="font-display text-base text-ink">💧 Trả lời để nhận nước</h3>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-ink/5 transition">
             <Icon name="close" className="w-4 h-4 text-ink/40" />
           </button>
         </div>
 
-        <div className="bg-blue-50 rounded-xl p-4 mb-4 text-center">
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 mb-4 text-center border border-blue-100">
           <p className="text-lg font-bold text-ink">{question.q}</p>
         </div>
 
@@ -652,10 +712,10 @@ function QuizModal({ onEarnWater, onClose }) {
                 onClick={() => result === null && setSelected(i)}
                 disabled={result !== null}
                 className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
-                  ${isCorrect ? 'border-green-400 bg-green-50 text-green-700' :
+                  ${isCorrect ? 'border-green-400 bg-green-50 text-green-700 shadow-md' :
                     isWrong ? 'border-red-400 bg-red-50 text-red-600' :
-                      isSelected ? 'border-blue-400 bg-blue-50 text-blue-700' :
-                        'border-ink/10 bg-white text-ink hover:border-blue-300'}`}
+                      isSelected ? 'border-blue-400 bg-blue-50 text-blue-700 shadow-sm' :
+                        'border-ink/10 bg-white text-ink hover:border-blue-300 hover:bg-blue-50/50'}`}
               >
                 {opt}
               </button>
@@ -667,7 +727,7 @@ function QuizModal({ onEarnWater, onClose }) {
           <button
             onClick={handleSubmit}
             disabled={selected === null}
-            className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-40"
+            className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-40 shadow-md"
           >
             Trả lời
           </button>
@@ -675,15 +735,15 @@ function QuizModal({ onEarnWater, onClose }) {
           <div className="text-center">
             {result ? (
               <div className="mb-2">
-                <p className="text-green-600 font-bold text-sm">Đúng rồi! +1 💧</p>
+                <p className="text-green-600 font-bold text-sm">✅ Đúng rồi! +1 💧</p>
               </div>
             ) : (
               <div className="mb-2">
-                <p className="text-red-500 font-semibold text-sm">Sai rồi! Đáp án: {question.options[question.answer]}</p>
+                <p className="text-red-500 font-semibold text-sm">❌ Sai rồi! Đáp án: {question.options[question.answer]}</p>
               </div>
             )}
             <button onClick={handleNext}
-              className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition">
+              className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition shadow-md">
               Câu tiếp theo
             </button>
           </div>
@@ -694,7 +754,7 @@ function QuizModal({ onEarnWater, onClose }) {
 }
 
 /* ============================================================
-   MAIN PAGE
+   MAIN PAGE — giao diện tổng thể đẹp hơn
 ============================================================ */
 export default function GardenPage({ userAuth, onBack }) {
   const [garden, setGarden] = useState(null);
@@ -712,9 +772,7 @@ export default function GardenPage({ userAuth, onBack }) {
   const [showQuiz, setShowQuiz] = useState(false);
   const gardenGridRef = useRef(null);
 
-  // sync baseline dùng để nội suy tiến độ mọc mượt theo thời gian thực,
-  // không cần đợi gọi API mỗi giây.
-  const syncRef = useRef({}); // { [slotIndex]: { progress, at } }
+  const syncRef = useRef({});
 
   const userId = userAuth?.user?.id;
 
@@ -764,7 +822,6 @@ export default function GardenPage({ userAuth, onBack }) {
 
   const slots = garden?.slots || [];
 
-  // Tiến độ hiển thị được nội suy mượt theo thời gian thực từ mốc đồng bộ gần nhất.
   const getDisplay = useCallback((slot) => {
     const plant = slot.plant;
     if (!plant) return { progress: 0, remainingMs: 0 };
@@ -777,7 +834,7 @@ export default function GardenPage({ userAuth, onBack }) {
     const progress = Math.min(100, sync.progress + grown);
     const remainingMs = Math.max(0, cfg.growthTime * (1 - progress / 100));
     return { progress, remainingMs };
-  }, []);
+  }, [plantConfig]);
 
   const handleSlotSelect = (index) => {
     setSelectedSlot(index);
@@ -791,7 +848,6 @@ export default function GardenPage({ userAuth, onBack }) {
     setShowShop(false);
     setSelectedSlot(null);
 
-    // Cập nhật ngay lập tức để cây hiện ra tức thì, không chờ máy chủ.
     const prevGarden = garden;
     const prevCoins = userCoins;
     setGarden((g) => {
@@ -907,9 +963,9 @@ export default function GardenPage({ userAuth, onBack }) {
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="w-16 h-16 mx-auto mb-3"><PlantArt plantId="sunflower" stageIdx={0} totalStages={3} isReady={false} plantConfig={plantConfig} /></div>
-          <h2 className="font-display text-lg text-ink mb-2">Chưa đăng nhập</h2>
+          <h2 className="font-display text-lg text-ink mb-2">🌱 Chưa đăng nhập</h2>
           <p className="text-sm text-ink/50 mb-4">Bạn cần đăng nhập để xem khu vườn</p>
-          <button onClick={onBack} className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold">Về trang chủ</button>
+          <button onClick={onBack} className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition">Về trang chủ</button>
         </div>
       </div>
     );
@@ -920,7 +976,7 @@ export default function GardenPage({ userAuth, onBack }) {
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="text-center">
           <p className="text-sm text-red-500 mb-3">{error}</p>
-          <button onClick={load} className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold">Thử lại</button>
+          <button onClick={load} className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition">Thử lại</button>
         </div>
       </div>
     );
@@ -933,27 +989,20 @@ export default function GardenPage({ userAuth, onBack }) {
   return (
     <div className="flex-1 px-4 py-4 w-full space-y-4">
       <style>{`
-        @keyframes gd-sway { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+        @keyframes gd-sway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
         .gd-sway { animation: gd-sway 3.2s ease-in-out infinite; }
-        @keyframes gd-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.06); } }
-        .gd-pulse { animation: gd-pulse 1.8s ease-in-out infinite; }
+        @keyframes gd-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.08); } }
+        .gd-pulse { animation: gd-pulse 2s ease-in-out infinite; }
         @keyframes gd-twinkle { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
-        .gd-twinkle { animation: gd-twinkle 1.6s ease-in-out infinite; }
-        @keyframes gd-glow-bg { 0%,100% { opacity: 0.35; } 50% { opacity: 0.7; } }
-        .gd-glow-bg { animation: gd-glow-bg 2.4s ease-in-out infinite; }
-        @keyframes gd-idle { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-        .gd-gardener-idle { animation: gd-idle 2s ease-in-out infinite; }
-        @keyframes gd-water-bounce { 0%,100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-4px) rotate(-3deg); } 75% { transform: translateY(-2px) rotate(3deg); } }
-        .gd-gardener-water { animation: gd-water-bounce 0.5s ease-in-out 3; }
-        .gd-droplet {
-          width: 5px; height: 8px; background: #8FCBEA; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-          opacity: 0; animation: gd-drop 0.8s ease-in infinite;
-        }
-        @keyframes gd-drop {
-          0% { opacity: 0.9; transform: translateY(0) scale(1); }
-          80% { opacity: 0.6; transform: translateY(18px) scale(0.8); }
-          100% { opacity: 0; transform: translateY(24px) scale(0.4); }
-        }
+        .gd-twinkle { animation: gd-twinkle 1.4s ease-in-out infinite; }
+        @keyframes gd-glow-bg { 0%,100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+        .gd-glow-bg { animation: gd-glow-bg 2.2s ease-in-out infinite; }
+        @keyframes gd-idle { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        .gd-gardener-idle { animation: gd-idle 2.4s ease-in-out infinite; }
+        @keyframes gd-water-bounce { 0%,100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-6px) rotate(-4deg); } 75% { transform: translateY(-3px) rotate(4deg); } }
+        .gd-gardener-water { animation: gd-water-bounce 0.6s ease-in-out 3; }
+        @keyframes anim-pop { 0% { opacity: 0; transform: scale(0.9) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        .anim-pop { animation: anim-pop 0.25s ease-out forwards; }
       `}</style>
 
       <div className="flex items-center justify-between">
@@ -961,13 +1010,13 @@ export default function GardenPage({ userAuth, onBack }) {
           <Icon name="back" className="w-4 h-4" /> Trang chủ
         </button>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowInventory(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ink/5 hover:bg-ink/10 text-ink/60 text-sm font-semibold transition">
+          <button onClick={() => setShowInventory(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ink/5 hover:bg-ink/10 text-ink/60 text-sm font-semibold transition shadow-sm">
             <Icon name="backpack" className="w-4 h-4" /> Kho đồ
           </button>
-          <button onClick={() => setShowQuiz(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-semibold transition">
+          <button onClick={() => setShowQuiz(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 text-blue-600 text-sm font-semibold transition shadow-sm">
             <Icon name="water" className="w-4 h-4" /> {waterDrops}
           </button>
-          <span className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gold/10 text-gold text-sm font-bold">
+          <span className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-gold/10 to-amber-100/40 text-gold text-sm font-bold shadow-sm">
             <Icon name="coin" className="w-4 h-4" /> {userCoins.toLocaleString()}
           </span>
         </div>
@@ -975,7 +1024,7 @@ export default function GardenPage({ userAuth, onBack }) {
 
       <div className="flex flex-col md:flex-row gap-4">
         <div className="md:w-48 shrink-0 flex flex-col items-center gap-3">
-          <div className="w-full rounded-2xl p-4 flex flex-col items-center gap-2" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
+          <div className="w-full rounded-2xl p-4 flex flex-col items-center gap-2 shadow-lg" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
             <GardenerAvatar
               userAuth={userAuth}
               size={120}
@@ -984,7 +1033,7 @@ export default function GardenPage({ userAuth, onBack }) {
               gardenRef={gardenGridRef}
             />
             <div className="text-center">
-              <h1 className="font-display text-sm text-ink">Khu vườn</h1>
+              <h1 className="font-display text-sm text-ink">🌿 Khu vườn</h1>
               <p className="text-[10px] text-ink/40 mt-0.5">
                 {plantedCount}/{slots.length} ô • {readyCount} sẵn sàng
               </p>
@@ -992,11 +1041,11 @@ export default function GardenPage({ userAuth, onBack }) {
           </div>
         </div>
 
-        <div className="flex-1 rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
+        <div className="flex-1 rounded-2xl p-4 shadow-lg" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
           {slots.length === 0 && !error ? (
             <div className="text-center py-10 text-ink/40 animate-pulse">Đang tải...</div>
           ) : (
-            <div ref={gardenGridRef} className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+            <div ref={gardenGridRef} className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
               {slots.map((slot) => {
                 const { progress, remainingMs } = getDisplay(slot);
                 return (
@@ -1020,7 +1069,7 @@ export default function GardenPage({ userAuth, onBack }) {
             </div>
           )}
 
-          <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-ink/30 font-mono">
+          <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-ink/30 font-mono">
             <Icon name="sparkle" className="w-3 h-3" />
             <span>Nhấn 💧 ở trên để trả lời câu hỏi nhận nước</span>
           </div>

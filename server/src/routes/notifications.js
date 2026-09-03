@@ -89,6 +89,10 @@ router.post("/test-push", authenticate, async (req, res, next) => {
       type: "TEST",
       data: { test: "true", timestamp: new Date().toISOString() },
     });
+    // Hiển thị thông báo về token đã bị remove
+    if (result.invalidTokensRemoved > 0) {
+      console.log(`[API] ${result.invalidTokensRemoved} token(s) không còn hợp lệ đã được xóa khỏi database.`);
+    }
     sendSuccess(res, result);
   } catch (e) {
     next(e);

@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { getCollection } from "./db.js";
 
 /**
  * Firebase Cloud Messaging service for sending push notifications.
@@ -173,21 +174,44 @@ export async function sendToTokens(tokens, { title, body, type, data = {} }) {
     tokens,
   };
 
-  try {
+  const INVALID_TOKEN_ERRORS = [
+    "registration-token-not-registered",
+    "invalid-registration",
+];
+
+try {
     const response = await msg.sendEachForMulticast(message);
     console.log(`[FCM] Multicast result: ${response.successCount} sent, ${response.failureCount} failed`);
 
+    const invalidTokens = [];
     if (response.failureCount > 0) {
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
-          console.warn(`[FCM] Token ${tokens[idx]?.slice(0, 15)}... error:`, resp.error?.code || resp.error?.message);
+          const errorCode = resp.error?.code || resp.error?.message;
+          console.warn(`[FCM] Token ${tokens[idx]?.slice(0, 15)}... error:`, errorCode);
+          if (INVALID_TOKEN_ERRORS.some((e) => errorCode.includes(e))) {
+            invalidTokens.push(tokens[idx]);
+          }
         }
       });
+    }
+
+    // Xóa các token không còn đăng ký hợp lệ
+    if (invalidTokens.length > 0) {
+      const { ObjectId } = await import("mongodb");
+      const collection = getCollection("user_devices");
+      for (const token of invalidTokens) {
+        await collection.deleteOne({ token });
+        console.log(`[FCM] Token ${token?.slice(0, 15)}... is no longer registered. Removing from database.`);
+      }
+      // Re-send after removing invalid tokens (optional: có thể gửi lại hoặc trả về kết quả)
+      // Ở đây chúng ta chỉ log và cập database, caller có thể quyết định gửi lại
     }
 
     return {
       sent: response.successCount,
       failed: response.failureCount,
+      invalidTokensRemoved: invalidTokens.length,
     };
   } catch (err) {
     console.error("[FCM] sendEachForMulticast error:", err);
