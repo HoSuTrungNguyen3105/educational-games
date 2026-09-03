@@ -21,6 +21,10 @@ async function getMessaging() {
   initialized = true;
 
   const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+  console.log(
+    "[FCM] FIREBASE_SERVICE_ACCOUNT:",
+    serviceAccountEnv ? `ĐÃ CÓ (${serviceAccountEnv.length} ký tự)` : "KHÔNG CÓ"
+  );
   const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || "./firebase-service-account.json";
   const projectId = process.env.FIREBASE_PROJECT_ID || "eduplay-74301";
 
