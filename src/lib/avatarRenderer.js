@@ -361,8 +361,7 @@ export function renderAvatarFull(state, bodyHtml) {
   const glassesOpt = state.glasses || { style: 'none' };
   const accOpt = state.accessory || { style: 'none' };
 
-  const isStandardBodyHtml = bodyHtml && bodyHtml.includes('id="head"') && bodyHtml.includes('id="body"');
-  const bodySvg = isStandardBodyHtml ? bodyBase(skin) : (bodyHtml || bodyBase(skin));
+  const bodySvg = bodyHtml || bodyBase(skin);
   const isStandardBody = bodySvg.includes('id="head"') && bodySvg.includes('id="body"');
   const isFullSvg = bodySvg.includes('<svg') || isStandardBody;
   if (isFullSvg && !isStandardBody) {
@@ -402,7 +401,7 @@ export function renderAvatarFullWithOverrides(state, overrides = {}) {
   const accOpt = state.accessory || { style: 'none' };
 
   const isStandardBodyOverride = overrides.body && overrides.body.includes('id="head"') && overrides.body.includes('id="body"');
-  const bodySvg = isStandardBodyOverride ? bodyBase(skin) : (overrides.body || overrides.skin || bodyBase(skin));
+  const bodySvg = isStandardBodyOverride ? overrides.body : (overrides.body || overrides.skin || bodyBase(skin));
 
   const isStandardBody = bodySvg.includes('id="head"') && bodySvg.includes('id="body"');
   const isFullSvg = bodySvg.includes('<svg') || isStandardBody;
