@@ -424,7 +424,7 @@ function PlantArt({ plantId, stageIdx, totalStages, isReady, plantConfig }) {
 /* ============================================================
    SLOT — phiên bản giao diện đẹp hơn
 ============================================================ */
-function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, onHarvest, onWater, onRemove, onFertilize, hasFertilizer, plantConfig }) {
+function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, onHarvest, onWater, onRemove, onFertilize, hasFertilizer, fertilizing, plantConfig }) {
   const plant = slot.plant;
   if (!plant) {
     return (
@@ -446,6 +446,24 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
   const cfg = plantConfig[plant.plantType];
   const isReady = displayProgress >= 100;
   const stageIdx = isReady ? cfg.stageCount - 1 : Math.min(cfg.stageCount - 1, Math.floor((displayProgress / 100) * (cfg.stageCount - 1)));
+
+  if (fertilizing) {
+    return (
+      <button
+        onClick={() => onFertilize(slot.index)}
+        className="aspect-square rounded-2xl border-2 border-amber-300 bg-amber-50 hover:bg-amber-100 hover:border-amber-400 hover:shadow-lg transition-all duration-200 flex flex-col items-center relative overflow-hidden cursor-pointer"
+        title="Bón phân vào cây này"
+      >
+        <div className="absolute inset-0 bg-amber-200/30 animate-pulse pointer-events-none" />
+        <div className="w-full flex-1 min-h-0 relative z-10">
+          <PlantArt plantId={plant.plantType} stageIdx={stageIdx} totalStages={cfg.stageCount} isReady={isReady} plantConfig={plantConfig} />
+        </div>
+        <div className="w-full px-1 pb-1 relative z-10">
+          <div className="text-[8px] font-bold text-amber-700 bg-amber-100 rounded-md py-0.5 text-center truncate">Bón phân</div>
+        </div>
+      </button>
+    );
+  }
 
   return (
     <div className={`aspect-square rounded-2xl border-2 transition-all duration-300 flex flex-col items-center relative overflow-hidden
@@ -564,7 +582,8 @@ function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
 /* ============================================================
    INVENTORY (KHO ĐỒ) — giao diện đẹp hơn
 ============================================================ */
-function InventoryShop({ userCoins, inventory, onBuy, onClose }) {
+function InventoryShop({ userCoins, inventory, onBuy, onUse, onSelectFertilizer, onClose }) {
+  const ownedEntries = Object.entries(ITEM_CONFIG).filter(([id]) => (inventory[id] || 0) > 0);
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -582,36 +601,82 @@ function InventoryShop({ userCoins, inventory, onBuy, onClose }) {
           <span className="text-sm font-bold text-gold">{userCoins?.toLocaleString()} Coin</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-3">
-          <p className="text-[10px] font-mono text-ink/35 -mt-1 mb-2">Phân bón dùng để bón trực tiếp cho cây trong vườn. Đồ nâng cấp mua một lần, dùng mãi mãi.</p>
-          {Object.entries(ITEM_CONFIG).map(([id, item]) => {
-            const owned = inventory[id] || 0;
-            const isUpgrade = item.type === 'upgrade';
-            const alreadyOwned = isUpgrade && owned > 0;
-            const canBuy = !alreadyOwned && (userCoins || 0) >= item.price;
-            return (
-              <div key={id} className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${alreadyOwned ? 'border-green-200 bg-green-50/60 shadow-sm' : 'border-ink/10 bg-white hover:shadow-md'}`}>
-                <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${item.color}22` }}>
-                  {item.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-display text-sm text-ink">{item.name}</span>
-                    {!isUpgrade && owned > 0 && <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-ink/5 text-ink/50">x{owned}</span>}
-                  </div>
-                  <p className="text-[10px] text-ink/40 mt-0.5 leading-snug">{item.desc}</p>
-                </div>
-                <button
-                  onClick={() => canBuy && onBuy(id)}
-                  disabled={!canBuy}
-                  className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors
-                    ${alreadyOwned ? 'bg-green-100 text-green-600 cursor-default' : canBuy ? 'bg-gold text-white hover:bg-gold/80 shadow-sm hover:shadow' : 'bg-ink/5 text-ink/30 cursor-not-allowed'}`}
-                >
-                  {alreadyOwned ? '✅ Đã có' : `${item.price} 💰`}
-                </button>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {ownedEntries.length > 0 && (
+            <div>
+              <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Đồ đang sở hữu</div>
+              <div className="space-y-2">
+                {ownedEntries.map(([id, item]) => {
+                  const owned = inventory[id] || 0;
+                  const isUpgrade = item.type === 'upgrade';
+                  return (
+                    <div key={id} className="flex items-center gap-3 p-3 rounded-2xl border-2 border-green-200 bg-green-50/60 shadow-sm">
+                      <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${item.color}22` }}>
+                        {item.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-display text-sm text-ink">{item.name}</span>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-green-100 text-green-600">x{owned}</span>
+                        </div>
+                        <p className="text-[10px] text-ink/40 mt-0.5 leading-snug">{item.desc}</p>
+                      </div>
+                      {isUpgrade ? (
+                        <button
+                          onClick={() => onUse(id)}
+                          className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-gold text-white hover:bg-gold/80 shadow-sm transition-colors"
+                        >
+                          Dùng
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onSelectFertilizer(id)}
+                          className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 shadow-sm transition-colors"
+                        >
+                          Bón cây
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          )}
+
+          <div>
+            <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Mua sắm</div>
+            <p className="text-[10px] font-mono text-ink/35 mb-2">Phân bón dùng để bón trực tiếp cho cây trong vườn. Đồ nâng cấp mua một lần, dùng mãi mãi.</p>
+            <div className="space-y-3">
+              {Object.entries(ITEM_CONFIG).map(([id, item]) => {
+                const owned = inventory[id] || 0;
+                const isUpgrade = item.type === 'upgrade';
+                const alreadyOwned = isUpgrade && owned > 0;
+                const canBuy = !alreadyOwned && (userCoins || 0) >= item.price;
+                return (
+                  <div key={id} className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${alreadyOwned ? 'border-green-200 bg-green-50/60 shadow-sm' : 'border-ink/10 bg-white hover:shadow-md'}`}>
+                    <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${item.color}22` }}>
+                      {item.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-display text-sm text-ink">{item.name}</span>
+                        {!isUpgrade && owned > 0 && <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-ink/5 text-ink/50">x{owned}</span>}
+                      </div>
+                      <p className="text-[10px] text-ink/40 mt-0.5 leading-snug">{item.desc}</p>
+                    </div>
+                    <button
+                      onClick={() => canBuy && onBuy(id)}
+                      disabled={!canBuy}
+                      className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors
+                        ${alreadyOwned ? 'bg-green-100 text-green-600 cursor-default' : canBuy ? 'bg-gold text-white hover:bg-gold/80 shadow-sm hover:shadow' : 'bg-ink/5 text-ink/30 cursor-not-allowed'}`}
+                    >
+                      {alreadyOwned ? '✅ Đã có' : `${item.price} 💰`}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -759,6 +824,7 @@ export default function GardenPage({ userAuth, onBack }) {
   const [plantConfig, setPlantConfig] = useState(FALLBACK_PLANT_CONFIG);
   const [waterDrops, setWaterDrops] = useState(() => loadWaterDrops(userAuth?.user?.id));
   const [showQuiz, setShowQuiz] = useState(false);
+  const [fertilizeMode, setFertilizeMode] = useState(null);
   const gardenGridRef = useRef(null);
 
   const syncRef = useRef({});
@@ -916,10 +982,12 @@ export default function GardenPage({ userAuth, onBack }) {
     setShowQuiz(false);
   };
 
-  const handleFertilize = async (index) => {
-    const order = ['miracle_fertilizer', 'premium_fertilizer', 'basic_fertilizer'];
-    const itemId = order.find((id) => inventory[id] > 0);
-    if (!itemId) return;
+  const handleFertilize = async (index, overrideItemId) => {
+    const itemId = overrideItemId || (() => {
+      const order = ['miracle_fertilizer', 'premium_fertilizer', 'basic_fertilizer'];
+      return order.find((id) => inventory[id] > 0);
+    })();
+    if (!itemId || (inventory[itemId] || 0) <= 0) return;
     const slot = slots.find((s) => s.index === index);
     if (!slot?.plant) return;
     const { progress } = getDisplay(slot);
@@ -927,6 +995,7 @@ export default function GardenPage({ userAuth, onBack }) {
     const nextProgress = Math.min(100, progress + boost);
     stampSync(index, nextProgress);
     setGarden((g) => ({ ...g, slots: g.slots.map((s) => (s.index === index ? { ...s, plant: { ...s.plant, progress: nextProgress, isReady: nextProgress >= 100 } } : s)) }));
+    setFertilizeMode(null);
     try {
       const result = await gardenService.useItem(itemId);
       if (result?.inventory) {
@@ -968,6 +1037,25 @@ export default function GardenPage({ userAuth, onBack }) {
     } catch (e) {
       alert(e.message || 'Lỗi mua vật phẩm');
     }
+  };
+
+  const handleUseItem = async (itemId) => {
+    if ((inventory[itemId] || 0) <= 0) return;
+    setInventory((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) - 1 }));
+    try {
+      const result = await gardenService.useItem(itemId);
+      if (result?.inventory) {
+        setInventory({ ...DEFAULT_INVENTORY, ...result.inventory });
+      }
+    } catch (e) {
+      setInventory((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
+      alert(e.message || 'Lỗi dùng vật phẩm');
+    }
+  };
+
+  const handleSelectFertilizer = (itemId) => {
+    setShowInventory(false);
+    setFertilizeMode(itemId);
   };
 
   if (!userAuth?.user) {
@@ -1054,6 +1142,15 @@ export default function GardenPage({ userAuth, onBack }) {
         </div>
 
         <div className="flex-1 rounded-2xl p-4 shadow-lg" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
+          {fertilizeMode && (
+            <div className="mb-3 flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border border-amber-200">
+              <div className="flex items-center gap-2">
+                <Icon name="sparkle" className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-semibold text-amber-700">Chọn cây để bón {ITEM_CONFIG[fertilizeMode]?.name || 'phân'}</span>
+              </div>
+              <button onClick={() => setFertilizeMode(null)} className="text-[10px] text-amber-500 hover:text-amber-700 font-bold">Hủy</button>
+            </div>
+          )}
           {slots.length === 0 && !error ? (
             <div className="text-center py-10 text-ink/40 animate-pulse">Đang tải...</div>
           ) : (
@@ -1067,12 +1164,13 @@ export default function GardenPage({ userAuth, onBack }) {
                       displayProgress={progress}
                       remainingMs={remainingMs}
                       showClock={inventory.magic_lens > 0}
-                      hasFertilizer={hasAnyFertilizer}
+                      hasFertilizer={hasAnyFertilizer || !!fertilizeMode}
+                      fertilizing={!!fertilizeMode}
                       onSelect={handleSlotSelect}
                       onHarvest={handleHarvest}
                       onWater={handleWater}
                       onRemove={handleRemove}
-                      onFertilize={handleFertilize}
+                      onFertilize={(idx) => handleFertilize(idx, fertilizeMode)}
                       plantConfig={plantConfig}
                     />
                   </div>
@@ -1102,6 +1200,8 @@ export default function GardenPage({ userAuth, onBack }) {
           userCoins={userCoins}
           inventory={inventory}
           onBuy={handleBuyItem}
+          onUse={handleUseItem}
+          onSelectFertilizer={handleSelectFertilizer}
           onClose={() => setShowInventory(false)}
         />
       )}
