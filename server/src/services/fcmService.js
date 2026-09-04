@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { getCollection } from "./db.js";
+import { getCollection } from "../db.js";
 
 /**
  * Firebase Cloud Messaging service for sending push notifications.
