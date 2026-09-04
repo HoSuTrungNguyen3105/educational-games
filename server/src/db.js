@@ -253,6 +253,7 @@ export async function initDatabase() {
       properties: {
         userId: { bsonType: "string" },
         slots: { bsonType: "array" },
+        inventory: { bsonType: "object" },
         createdAt: { bsonType: "string" },
       },
     } },

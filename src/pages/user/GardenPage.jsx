@@ -86,18 +86,7 @@ const ITEM_CONFIG = {
   },
 };
 
-function loadInventory(userId) {
-  try {
-    const raw = localStorage.getItem(`garden_inventory_${userId || 'guest'}`);
-    if (!raw) return { basic_fertilizer: 0, premium_fertilizer: 0, miracle_fertilizer: 0, golden_can: 0, magic_lens: 0 };
-    return { basic_fertilizer: 0, premium_fertilizer: 0, miracle_fertilizer: 0, golden_can: 0, magic_lens: 0, ...JSON.parse(raw) };
-  } catch {
-    return { basic_fertilizer: 0, premium_fertilizer: 0, miracle_fertilizer: 0, golden_can: 0, magic_lens: 0 };
-  }
-}
-function saveInventory(userId, inv) {
-  try { localStorage.setItem(`garden_inventory_${userId || 'guest'}`, JSON.stringify(inv)); } catch { /* ignore */ }
-}
+const DEFAULT_INVENTORY = { basic_fertilizer: 0, premium_fertilizer: 0, miracle_fertilizer: 0, golden_can: 0, magic_lens: 0 };
 
 function loadWaterDrops(userId) {
   try {
@@ -765,7 +754,7 @@ export default function GardenPage({ userAuth, onBack }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [harvestResult, setHarvestResult] = useState(null);
   const [tick, setTick] = useState(0);
-  const [inventory, setInventory] = useState(() => loadInventory(userAuth?.user?.id));
+  const [inventory, setInventory] = useState({ ...DEFAULT_INVENTORY });
   const [wateringSlot, setWateringSlot] = useState(null);
   const [plantConfig, setPlantConfig] = useState(FALLBACK_PLANT_CONFIG);
   const [waterDrops, setWaterDrops] = useState(() => loadWaterDrops(userAuth?.user?.id));
@@ -776,8 +765,8 @@ export default function GardenPage({ userAuth, onBack }) {
 
   const userId = userAuth?.user?.id;
 
-  useEffect(() => { setInventory(loadInventory(userId)); }, [userId]);
-  const persistInventory = useCallback((next) => { setInventory(next); saveInventory(userId, next); }, [userId]);
+  useEffect(() => { /* inventory loaded via API in load() */ }, [userId]);
+  const persistInventory = useCallback((next) => { setInventory(next); }, [userId]);
 
   const stampSync = (slotIndex, progress) => {
     syncRef.current[slotIndex] = { progress, at: Date.now() };
@@ -792,6 +781,9 @@ export default function GardenPage({ userAuth, onBack }) {
       ]);
       if (gardenData) {
         setGarden(gardenData);
+        if (gardenData.inventory) {
+          setInventory({ ...DEFAULT_INVENTORY, ...gardenData.inventory });
+        }
         (gardenData.slots || []).forEach((s) => {
           if (s.plant) stampSync(s.index, s.plant.isReady ? 100 : (s.plant.progress || 0));
           else delete syncRef.current[s.index];
@@ -924,7 +916,7 @@ export default function GardenPage({ userAuth, onBack }) {
     setShowQuiz(false);
   };
 
-  const handleFertilize = (index) => {
+  const handleFertilize = async (index) => {
     const order = ['miracle_fertilizer', 'premium_fertilizer', 'basic_fertilizer'];
     const itemId = order.find((id) => inventory[id] > 0);
     if (!itemId) return;
@@ -935,7 +927,16 @@ export default function GardenPage({ userAuth, onBack }) {
     const nextProgress = Math.min(100, progress + boost);
     stampSync(index, nextProgress);
     setGarden((g) => ({ ...g, slots: g.slots.map((s) => (s.index === index ? { ...s, plant: { ...s.plant, progress: nextProgress, isReady: nextProgress >= 100 } } : s)) }));
-    persistInventory({ ...inventory, [itemId]: inventory[itemId] - 1 });
+    try {
+      const result = await gardenService.useItem(itemId);
+      if (result?.inventory) {
+        setInventory({ ...DEFAULT_INVENTORY, ...result.inventory });
+      } else {
+        setInventory((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) - 1 }));
+      }
+    } catch (e) {
+      setInventory((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) - 1 }));
+    }
   };
 
   const handleRemove = async (index) => {
@@ -951,11 +952,22 @@ export default function GardenPage({ userAuth, onBack }) {
     }
   };
 
-  const handleBuyItem = (itemId) => {
+  const handleBuyItem = async (itemId) => {
     const item = ITEM_CONFIG[itemId];
     if ((userCoins || 0) < item.price) return;
-    setUserCoins((c) => c - item.price);
-    persistInventory({ ...inventory, [itemId]: (inventory[itemId] || 0) + 1 });
+    try {
+      const result = await gardenService.buyItem(itemId);
+      if (result?.inventory) {
+        setInventory({ ...DEFAULT_INVENTORY, ...result.inventory });
+      }
+      if (result?.coins !== undefined) {
+        setUserCoins(result.coins);
+      } else {
+        setUserCoins((c) => c - item.price);
+      }
+    } catch (e) {
+      alert(e.message || 'Lỗi mua vật phẩm');
+    }
   };
 
   if (!userAuth?.user) {

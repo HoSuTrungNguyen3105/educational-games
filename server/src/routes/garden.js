@@ -48,4 +48,29 @@ router.post("/remove", authenticate, async (req, res, next) => {
   } catch (e) { sendError(res, e.message, 400); }
 });
 
+router.get("/inventory", authenticate, async (req, res, next) => {
+  try {
+    const inventory = await gardenService.getInventory(req.user.sub);
+    sendSuccess(res, { inventory });
+  } catch (e) { next(e); }
+});
+
+router.post("/buy-item", authenticate, async (req, res, next) => {
+  try {
+    const { itemId } = req.body || {};
+    if (!itemId) return sendError(res, "Thiếu itemId", 400);
+    const result = await gardenService.buyGardenItem(req.user.sub, itemId);
+    sendSuccess(res, result);
+  } catch (e) { sendError(res, e.message, 400); }
+});
+
+router.post("/use-item", authenticate, async (req, res, next) => {
+  try {
+    const { itemId } = req.body || {};
+    if (!itemId) return sendError(res, "Thiếu itemId", 400);
+    const result = await gardenService.useGardenItem(req.user.sub, itemId);
+    sendSuccess(res, result);
+  } catch (e) { sendError(res, e.message, 400); }
+});
+
 export default router;

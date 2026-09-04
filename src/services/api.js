@@ -416,4 +416,7 @@ export const gardenService = {
   async remove(slotIndex) {
     return apiFetch("/garden/remove", { method: "POST", body: { slotIndex } });
   },
+  async getInventory() { return apiFetch("/garden/inventory"); },
+  async buyItem(itemId) { return apiFetch("/garden/buy-item", { method: "POST", body: { itemId } }); },
+  async useItem(itemId) { return apiFetch("/garden/use-item", { method: "POST", body: { itemId } }); },
 };

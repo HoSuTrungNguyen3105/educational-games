@@ -54,9 +54,10 @@ const DEFAULT_STATE = {
 function ItemPreview({ item, allItems }) {
   if (!item) return null;
 
-  if (item.category === 'body' && item.params?.type === 'custom' && item.html) {
+  if (item.category === 'body' && item.html) {
+    const vb = (item.html.includes('id="head"') && item.html.includes('id="body"')) ? '0 0 512 700' : '0 0 512 700';
     return (
-      <svg viewBox="0 0 512 700" width="48" height="66" xmlns="http://www.w3.org/2000/svg"
+      <svg viewBox={vb} width="48" height="66" xmlns="http://www.w3.org/2000/svg"
         dangerouslySetInnerHTML={{ __html: item.html }} />
     );
   }
@@ -521,66 +522,57 @@ export default function AvatarItemManagement({ showToast }) {
               </div>
             )}
 
-{/* Preview */}
-            <div>
-              <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Preview</div>
-              <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03]">
-                {(() => {
-                  if (form.category === 'body' && form.params?.type === 'custom' && editedHtml) {
-                    const isCustomSvg = editedHtml.includes('<svg') &&
-                      !(editedHtml.includes('id="head"') && editedHtml.includes('id="body"'));
-                    if (isCustomSvg) {
-                      return <svg viewBox="0 0 512 700" width="120" height="164" xmlns="http://www.w3.org/2000/svg"
-                        dangerouslySetInnerHTML={{ __html: editedHtml }} />;
-                    }
-                  }
-                  const state = { ...DEFAULT_STATE };
-                  let bodyItemHtml = null;
-                  if (items) {
-                    const gender = form.gender || 'boy';
-                    for (const it of items) {
-                      if (it.category === 'body' && it.default) {
-                        if (it.gender && it.gender !== gender) continue;
-                        bodyItemHtml = it.html || null;
-                      }
-                      if (it.default && it.category !== form.category) {
-                        if (it.gender && it.gender !== gender) continue;
-                        if (it.category === 'skin') state.skin = it.params?.hex || '#FFDFC4';
-                        else if (it.category === 'face') state.face = it.params?.style || 'gentle';
-                        else state[it.category] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
-                      }
-                    }
-                  }
-                  const overrides = {};
-                  if (bodyItemHtml && form.category !== 'skin') overrides.body = bodyItemHtml;
-                  let svg;
-                  if (form.category === 'skin') {
-                    state.skin = form.params?.hex || '#FFDFC4';
-                    svg = renderAvatarFullWithOverrides(state, {});
-                  } else {
-                    const isStandardBody = editedHtml &&
-                      editedHtml.includes('id="head"') &&
-                      editedHtml.includes('id="body"');
+            {/* Body SVG Preview — show HTML as-is */}
+            {form.category === 'body' && editedHtml && (
+              <div>
+                <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Body SVG (data as-is)</div>
+                <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03] border border-ink/5">
+                  <svg viewBox="0 0 512 700" width="120" height="164" xmlns="http://www.w3.org/2000/svg"
+                    dangerouslySetInnerHTML={{ __html: editedHtml }} />
+                </div>
+              </div>
+            )}
 
-                    if (isStandardBody) {
-                      svg = editedHtml;
+            {/* Preview */}
+            {form.category !== 'body' && (
+              <div>
+                <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Preview</div>
+                <div className="flex justify-center p-4 rounded-xl bg-ink/[0.03]">
+                  {(() => {
+                    const state = { ...DEFAULT_STATE };
+                    let bodyItemHtml = null;
+                    if (items) {
+                      const gender = form.gender || 'boy';
+                      for (const it of items) {
+                        if (it.category === 'body' && it.default) {
+                          if (it.gender && it.gender !== gender) continue;
+                          bodyItemHtml = it.html || null;
+                        }
+                        if (it.default && it.category !== form.category) {
+                          if (it.gender && it.gender !== gender) continue;
+                          if (it.category === 'skin') state.skin = it.params?.hex || '#FFDFC4';
+                          else if (it.category === 'face') state.face = it.params?.style || 'gentle';
+                          else state[it.category] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
+                        }
+                      }
+                    }
+                    const overrides = {};
+                    if (bodyItemHtml && form.category !== 'skin') overrides.body = bodyItemHtml;
+                    let svg;
+                    if (form.category === 'skin') {
+                      state.skin = form.params?.hex || '#FFDFC4';
+                      svg = renderAvatarFullWithOverrides(state, {});
                     } else if (editedHtml && editedHtml.includes('<svg')) {
                       svg = editedHtml;
                     } else {
                       svg = renderAvatarFullWithOverrides(state, { ...overrides, [form.category]: editedHtml });
                     }
-                  }
-                  const isStandardSvg = svg && svg.includes('id="head"') && svg.includes('id="body"');
-                  const isCustomSvg = svg && svg.includes('<svg') && !isStandardSvg;
-                  if (isStandardSvg || isCustomSvg) {
                     return <svg viewBox="0 0 512 700" width="120" height="164" xmlns="http://www.w3.org/2000/svg"
                       dangerouslySetInnerHTML={{ __html: svg }} />;
-                  }
-                  return <svg viewBox="0 0 300 440" width="80" height="117" xmlns="http://www.w3.org/2000/svg"
-                    dangerouslySetInnerHTML={{ __html: svg }} />;
-                })()}
+                  })()}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Hiển thị params JSON */}
             <div>

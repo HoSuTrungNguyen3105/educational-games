@@ -3,6 +3,22 @@ import { addCoins } from "./authService.js";
 
 const GARDEN_SIZE = 12;
 
+const GARDEN_ITEM_PRICES = {
+  basic_fertilizer: 20,
+  premium_fertilizer: 55,
+  miracle_fertilizer: 150,
+  golden_can: 300,
+  magic_lens: 150,
+};
+
+function ensureInventory(garden) {
+  if (!garden.inventory) garden.inventory = {};
+  const defaults = { basic_fertilizer: 0, premium_fertilizer: 0, miracle_fertilizer: 0, golden_can: 0, magic_lens: 0 };
+  for (const k of Object.keys(defaults)) {
+    if (typeof garden.inventory[k] !== 'number') garden.inventory[k] = defaults[k];
+  }
+}
+
 async function getPlantTypeMap() {
   const col = getCollection("plantTypes");
   const types = await col.find({}).toArray();
@@ -33,6 +49,7 @@ export async function getGarden(userId) {
     await col.insertOne(garden);
   }
   ensureSlots(garden);
+  ensureInventory(garden);
 
   const typeMap = await getPlantTypeMap();
 
@@ -53,7 +70,7 @@ export async function getGarden(userId) {
     };
   });
 
-  return { slots };
+  return { slots, inventory: garden.inventory || {} };
 }
 
 export async function plantTree(userId, slotIndex, plantType) {
@@ -75,6 +92,7 @@ export async function plantTree(userId, slotIndex, plantType) {
     await col.insertOne(garden);
   }
   ensureSlots(garden);
+  ensureInventory(garden);
 
   const slot = garden.slots[slotIndex];
   if (!slot) throw new Error("Vị trí không tồn tại");
@@ -175,4 +193,61 @@ export async function waterTree(userId, slotIndex) {
     progress: newProgress,
     waterCount: slot.plant.waterCount,
   };
+}
+
+export async function getInventory(userId) {
+  const col = getCollection("gardens");
+  let garden = await col.findOne({ userId });
+  if (!garden) {
+    garden = { userId, slots: [], inventory: {}, createdAt: new Date().toISOString() };
+    ensureSlots(garden);
+    ensureInventory(garden);
+    await col.insertOne(garden);
+  }
+  ensureInventory(garden);
+  return garden.inventory;
+}
+
+export async function buyGardenItem(userId, itemId) {
+  const price = GARDEN_ITEM_PRICES[itemId];
+  if (price === undefined) throw new Error("ItemId không hợp lệ");
+
+  const userCol = getCollection("users");
+  const user = await userCol.findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  if ((user.coins || 0) < price) throw new Error("Không đủ xu");
+
+  await addCoins(userId, -price);
+
+  const col = getCollection("gardens");
+  let garden = await col.findOne({ userId });
+  if (!garden) {
+    garden = { userId, slots: [], inventory: {}, createdAt: new Date().toISOString() };
+    ensureSlots(garden);
+    ensureInventory(garden);
+    await col.insertOne(garden);
+  }
+  ensureInventory(garden);
+
+  garden.inventory[itemId] = (garden.inventory[itemId] || 0) + 1;
+  await col.updateOne({ userId }, { $set: { inventory: garden.inventory } });
+
+  return { success: true, inventory: garden.inventory, coins: (user.coins || 0) - price };
+}
+
+export async function useGardenItem(userId, itemId) {
+  const col = getCollection("gardens");
+  let garden = await col.findOne({ userId });
+  if (!garden) throw new Error("Không tìm thấy khu vườn");
+  ensureInventory(garden);
+
+  if (!garden.inventory[itemId] || garden.inventory[itemId] <= 0) {
+    throw new Error("Không có vật phẩm này");
+  }
+
+  garden.inventory[itemId] -= 1;
+  if (garden.inventory[itemId] <= 0) delete garden.inventory[itemId];
+  await col.updateOne({ userId }, { $set: { inventory: garden.inventory } });
+
+  return { success: true, inventory: garden.inventory };
 }
