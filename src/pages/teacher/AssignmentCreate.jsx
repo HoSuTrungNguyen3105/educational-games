@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { classService, assignmentService, questionService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { AlertCircle, Clock, FileText, CheckSquare, Square, Search } from 'lucide-react';
+import { AlertCircle, Clock, FileText, CheckSquare, Square, Search, ChevronDown } from 'lucide-react';
 
 const TIME_OPTIONS = [
   { value: 30, label: '30 phút' },
@@ -14,6 +14,8 @@ export default function AssignmentCreate() {
   const [allQuestions, setAllQuestions] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [rangeInput, setRangeInput] = useState('');
+  const [rangeError, setRangeError] = useState('');
   const [form, setForm] = useState({
     classId: '',
     title: '',
@@ -75,6 +77,47 @@ export default function AssignmentCreate() {
     }
   }
 
+  // Xử lý chọn theo khoảng (1-index)
+  function handleRangeSelect() {
+    setRangeError('');
+    if (!rangeInput.trim()) {
+      setRangeError('Vui lòng nhập khoảng cần chọn');
+      return;
+    }
+    const parts = rangeInput.split(',').map(s => s.trim());
+    const indices = new Set();
+    for (const part of parts) {
+      if (part.includes('-')) {
+        const [startStr, endStr] = part.split('-').map(s => s.trim());
+        const start = parseInt(startStr, 10);
+        const end = parseInt(endStr, 10);
+        if (isNaN(start) || isNaN(end) || start < 1 || end > filteredQuestions.length || start > end) {
+          setRangeError(`Khoảng "${part}" không hợp lệ (1-${filteredQuestions.length})`);
+          return;
+        }
+        for (let i = start; i <= end; i++) {
+          indices.add(i - 1); // chuyển sang 0-index
+        }
+      } else {
+        const num = parseInt(part, 10);
+        if (isNaN(num) || num < 1 || num > filteredQuestions.length) {
+          setRangeError(`Số "${part}" không hợp lệ (1-${filteredQuestions.length})`);
+          return;
+        }
+        indices.add(num - 1);
+      }
+    }
+    const idsToSelect = Array.from(indices).map(idx => filteredQuestions[idx].id);
+    setSelectedQuestions(prev => {
+      const next = new Set(prev);
+      for (const id of idsToSelect) {
+        next.add(id);
+      }
+      return next;
+    });
+    setRangeInput('');
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.classId || !form.title) {
@@ -100,7 +143,7 @@ export default function AssignmentCreate() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="w-full px-4 md:px-6 lg:px-8 space-y-6">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
           <FileText className="w-5 h-5 text-gold" />
@@ -159,27 +202,51 @@ export default function AssignmentCreate() {
               className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-ink/10 text-sm font-body text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-gold/30" />
           </div>
 
-          <button type="button" onClick={toggleAll}
-            className="flex items-center gap-2 text-xs font-body text-gold hover:text-gold/80 transition">
-            {selectedQuestions.size === filteredQuestions.length ? (
-              <CheckSquare className="w-4 h-4" />
-            ) : (
-              <Square className="w-4 h-4" />
-            )}
-            {selectedQuestions.size === filteredQuestions.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
-          </button>
+          {/* Phần chọn nhanh theo khoảng */}
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={rangeInput}
+              onChange={e => setRangeInput(e.target.value)}
+              placeholder="VD: 1-20, 30-56"
+              className="flex-1 min-w-[180px] px-3 py-2 rounded-xl bg-white border border-ink/10 text-sm font-body text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-gold/30"
+            />
+            <button
+              type="button"
+              onClick={handleRangeSelect}
+              className="px-4 py-2 bg-gold/10 text-gold font-body text-sm font-semibold rounded-xl hover:bg-gold/20 transition"
+            >
+              Chọn khoảng
+            </button>
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="flex items-center gap-1 px-3 py-2 text-xs font-body text-ink/60 hover:text-ink/80 transition"
+            >
+              {selectedQuestions.size === filteredQuestions.length ? (
+                <CheckSquare className="w-4 h-4" />
+              ) : (
+                <Square className="w-4 h-4" />
+              )}
+              {selectedQuestions.size === filteredQuestions.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+            </button>
+          </div>
+          {rangeError && (
+            <p className="text-xs text-red-500 mt-1">{rangeError}</p>
+          )}
+          <p className="text-[10px] text-ink/30 font-mono">
+            * Nhập số thứ tự hiển thị (1-based), cách nhau bằng dấu phẩy. Ví dụ: 1-5, 10, 15-20
+          </p>
 
           <div className="max-h-[400px] overflow-y-auto space-y-2">
             {filteredQuestions.length === 0 ? (
               <p className="text-sm text-ink/40 text-center py-4">Không có câu hỏi nào</p>
             ) : (
-              filteredQuestions.map(q => (
+              filteredQuestions.map((q, index) => (
                 <button key={q.id} type="button" onClick={() => toggleQuestion(q.id)}
-                  className={`w-full text-left p-3 rounded-xl border transition ${
-                    selectedQuestions.has(q.id)
-                      ? 'border-gold bg-gold/5'
-                      : 'border-ink/8 bg-white hover:border-ink/20'
-                  }`}>
+                  className={`w-full text-left p-3 rounded-xl border transition ${selectedQuestions.has(q.id)
+                    ? 'border-gold bg-gold/5'
+                    : 'border-ink/8 bg-white hover:border-ink/20'
+                    }`}>
                   <div className="flex items-start gap-2">
                     {selectedQuestions.has(q.id) ? (
                       <CheckSquare className="w-4 h-4 text-gold shrink-0 mt-0.5" />
@@ -187,7 +254,10 @@ export default function AssignmentCreate() {
                       <Square className="w-4 h-4 text-ink/30 shrink-0 mt-0.5" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-body text-ink truncate">{q.content || q.question}</p>
+                      <p className="text-sm font-body text-ink truncate">
+                        <span className="text-ink/30 font-mono mr-1">#{index + 1}</span>
+                        {q.content || q.question}
+                      </p>
                       <div className="flex items-center gap-2 mt-1">
                         {q.points != null && (
                           <span className="text-[10px] font-mono text-ink/30">{q.points} điểm</span>
@@ -214,11 +284,10 @@ export default function AssignmentCreate() {
               {TIME_OPTIONS.map(opt => (
                 <button key={opt.value} type="button"
                   onClick={() => setForm({ ...form, examDuration: opt.value })}
-                  className={`py-2.5 rounded-xl text-sm font-body font-semibold transition ${
-                    form.examDuration === opt.value
-                      ? 'bg-gold text-white shadow-sm'
-                      : 'bg-white border border-ink/10 text-ink hover:border-gold/40'
-                  }`}>
+                  className={`py-2.5 rounded-xl text-sm font-body font-semibold transition ${form.examDuration === opt.value
+                    ? 'bg-gold text-white shadow-sm'
+                    : 'bg-white border border-ink/10 text-ink hover:border-gold/40'
+                    }`}>
                   {opt.label}
                 </button>
               ))}

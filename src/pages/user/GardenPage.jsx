@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { gardenService, questionService, API_BASE } from '../../services/api.js';
 import GardenerAvatar from '../../components/avatar/GardenerAvatar.jsx';
+import { Modal } from '../../components/ui.jsx';
 
 /* ============================================================
    PLANT CONFIG — fetched from backend /api/plant-types
@@ -135,6 +136,21 @@ function formatClock(ms) {
 }
 
 /* ============================================================
+   COLOR HELPER — lighten/darken a hex color by a percent amount
+============================================================ */
+function shade(hex, percent) {
+  if (!hex || hex[0] !== '#') return hex;
+  const num = parseInt(hex.slice(1), 16);
+  let r = (num >> 16) + percent;
+  let g = ((num >> 8) & 0x00ff) + percent;
+  let b = (num & 0x0000ff) + percent;
+  r = Math.min(255, Math.max(0, r));
+  g = Math.min(255, Math.max(0, g));
+  b = Math.min(255, Math.max(0, b));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
+/* ============================================================
    ICON — nhỏ, tự vẽ bằng SVG, không dùng thư viện icon
 ============================================================ */
 function Icon({ name, className = 'w-4 h-4', style }) {
@@ -166,18 +182,94 @@ function Icon({ name, className = 'w-4 h-4', style }) {
 }
 
 /* ============================================================
-   PLANT ART — minh hoạ cây bằng SVG thay cho icon/emoji (phiên bản đẹp hơn)
+   PLANT ART — bộ SVG cao cấp: gradient, cánh hoa dạng giọt nước,
+   lá có gân, quả có bóng đổ + highlight, hào quang cho cây thần kỳ.
 ============================================================ */
-function leafPair(cx, y, spread, size, rotate, fill, opacity = 1) {
+
+/** Bộ định nghĩa gradient dùng chung cho một cây (theo plantId để tránh trùng id). */
+function PlantGradientDefs({ id, palette }) {
   return (
-    <g key={`${y}-${rotate}`}>
-      <ellipse cx={cx - spread} cy={y} rx={size} ry={size * 0.55} fill={fill} opacity={opacity} transform={`rotate(${-rotate} ${cx - spread} ${y})`} />
-      <ellipse cx={cx + spread} cy={y} rx={size} ry={size * 0.55} fill={fill} opacity={opacity} transform={`rotate(${rotate} ${cx + spread} ${y})`} />
+    <defs>
+      <radialGradient id={`ground-${id}`} cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="#8C6A42" stopOpacity="0.45" />
+        <stop offset="100%" stopColor="#8C6A42" stopOpacity="0" />
+      </radialGradient>
+      <linearGradient id={`stem-${id}`} x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0%" stopColor={shade(palette.stem, -15)} />
+        <stop offset="100%" stopColor={shade(palette.stem, 25)} />
+      </linearGradient>
+      <linearGradient id={`leaf-${id}`} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor={palette.leaf} />
+        <stop offset="100%" stopColor={palette.leafDark} />
+      </linearGradient>
+      <radialGradient id={`petal-${id}`} cx="35%" cy="28%" r="80%">
+        <stop offset="0%" stopColor={palette.accentLight} />
+        <stop offset="55%" stopColor={palette.accent} />
+        <stop offset="100%" stopColor={palette.accentDark} />
+      </radialGradient>
+      <radialGradient id={`fruit-${id}`} cx="32%" cy="28%" r="80%">
+        <stop offset="0%" stopColor={palette.accentLight} />
+        <stop offset="60%" stopColor={palette.accent} />
+        <stop offset="100%" stopColor={palette.accentDark} />
+      </radialGradient>
+      <radialGradient id={`center-${id}`} cx="38%" cy="32%" r="70%">
+        <stop offset="0%" stopColor="#FFF6D8" />
+        <stop offset="60%" stopColor={palette.accentLight} />
+        <stop offset="100%" stopColor={palette.accentDark} />
+      </radialGradient>
+    </defs>
+  );
+}
+
+/** Một chiếc lá dạng giọt nước có gân giữa, đẹp hơn ellipse thô. */
+function LeafShape({ cx, cy, angle, size, fill }) {
+  return (
+    <g transform={`translate(${cx},${cy}) rotate(${angle})`}>
+      <path
+        d={`M0,0 Q${size * 0.62},${-size * 0.5} 0,${-size * 1.55} Q${-size * 0.62},${-size * 0.5} 0,0 Z`}
+        fill={fill}
+        opacity={0.92}
+      />
+      <path d={`M0,-1.5 L0,${-size * 1.35}`} stroke="#00000022" strokeWidth={0.5} strokeLinecap="round" />
     </g>
   );
 }
 
-function StemBase({ stageIdx, totalStages, palette, withLeaves = true }) {
+/** Một cánh hoa dạng giọt nước, xoay quanh tâm hoa theo góc `angle`. */
+function Petal({ cx, cy, angle, length, width, gradientId, strokeColor }) {
+  return (
+    <path
+      d={`M0,0 C${-width / 2},${-length * 0.35} ${-width / 2},${-length * 0.78} 0,${-length}
+          C${width / 2},${-length * 0.78} ${width / 2},${-length * 0.35} 0,0 Z`}
+      fill={`url(#${gradientId})`}
+      stroke={strokeColor}
+      strokeWidth={0.4}
+      opacity={0.96}
+      transform={`translate(${cx},${cy}) rotate(${angle})`}
+    />
+  );
+}
+
+/** Một trái cây tròn có bóng đổ dưới + highlight sáng bóng phía trên. */
+function Fruit({ cx, cy, r, gradientId, strokeColor }) {
+  return (
+    <g>
+      <ellipse cx={cx} cy={cy + r * 0.85} rx={r * 1.05} ry={r * 0.35} fill="#000" opacity={0.1} />
+      <circle cx={cx} cy={cy} r={r} fill={`url(#${gradientId})`} stroke={strokeColor} strokeWidth={0.5} />
+      <ellipse
+        cx={cx - r * 0.32}
+        cy={cy - r * 0.35}
+        rx={r * 0.38}
+        ry={r * 0.2}
+        fill="#fff"
+        opacity={0.4}
+        transform={`rotate(-30 ${cx - r * 0.32} ${cy - r * 0.35})`}
+      />
+    </g>
+  );
+}
+
+function StemBase({ stageIdx, totalStages, palette, withLeaves = true, plantId }) {
   const frac = stageIdx / Math.max(1, totalStages - 1);
   const stemH = 18 + frac * 66;
   const topY = 122 - stemH;
@@ -186,60 +278,82 @@ function StemBase({ stageIdx, totalStages, palette, withLeaves = true }) {
   if (withLeaves) {
     for (let i = 0; i < leafCount; i++) {
       const y = 118 - (i + 1) * (stemH / (leafCount + 1.4));
-      leaves.push(leafPair(60, y, 8 + i * 2, 9 - i, 35 - i * 4, i % 2 ? palette.leaf : palette.leafDark, 0.9));
+      const spread = 8 + i * 2;
+      const size = 9 - i;
+      const rot = 35 - i * 4;
+      leaves.push(
+        <g key={`${y}-${i}`}>
+          <LeafShape cx={60 - spread} cy={y} angle={-rot} size={size} fill={i % 2 ? `url(#leaf-${plantId})` : palette.leafDark} />
+          <LeafShape cx={60 + spread} cy={y} angle={rot} size={size} fill={i % 2 ? palette.leaf : `url(#leaf-${plantId})`} />
+        </g>
+      );
     }
   }
   return (
     <>
-      <path d={`M60,122 Q${58 - frac * 4},${(122 + topY) / 2} 60,${topY}`} stroke={palette.stem} strokeWidth={3.5 - frac * 1} fill="none" strokeLinecap="round" />
+      <ellipse cx={60} cy={122} rx={4} ry={1.4} fill="#000" opacity={0.08} />
+      <path
+        d={`M60,122 Q${58 - frac * 4},${(122 + topY) / 2} 60,${topY}`}
+        stroke={`url(#stem-${plantId})`}
+        strokeWidth={3.5 - frac * 1}
+        fill="none"
+        strokeLinecap="round"
+      />
       {leaves}
     </>
   );
 }
 
-function renderBloom({ stageIdx, totalStages, palette, isReady }) {
+function renderBloom({ stageIdx, totalStages, palette, isReady, plantId }) {
   const frac = stageIdx / Math.max(1, totalStages - 1);
   const stemH = 18 + frac * 66;
   const topY = 122 - stemH;
   const mature = stageIdx === totalStages - 1;
+  const petalCount = 12;
   return (
     <>
-      <StemBase stageIdx={stageIdx} totalStages={totalStages} palette={palette} />
+      <StemBase stageIdx={stageIdx} totalStages={totalStages} palette={palette} plantId={plantId} />
       {mature && (
         <g className={isReady ? 'gd-sway' : ''} style={{ transformOrigin: `60px ${topY}px` }}>
-          {/* Cánh hoa nhiều lớp */}
-          {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg, i) => {
-            const r = i % 2 === 0 ? 11 : 8;
-            const fill = i % 2 === 0 ? palette.accentLight : palette.accent;
-            return (
-              <ellipse
-                key={deg}
-                cx={60}
-                cy={topY - 12}
-                rx={r}
-                ry={5}
-                fill={fill}
-                stroke={palette.accentDark}
-                strokeWidth={0.3}
-                opacity={0.9}
-                transform={`rotate(${deg} 60 ${topY})`}
-              />
-            );
-          })}
-          <circle cx={60} cy={topY} r={9} fill={palette.accentDark} opacity={0.3} />
-          <circle cx={60} cy={topY} r={7} fill={palette.accent} stroke="#8A5A0E" strokeWidth={0.8} />
-          <circle cx={60} cy={topY} r={3} fill="#FFE08A" />
-          {/* Nhị hoa */}
-          {[0, 45, 90, 135, 180, 225, 270, 315].map(d => (
-            <circle key={d} cx={60 + 3.5 * Math.cos(d * Math.PI / 180)} cy={topY + 3.5 * Math.sin(d * Math.PI / 180)} r={1.2} fill="#C97F17" />
+          <ellipse cx={60} cy={topY + 3} rx={15} ry={5.5} fill={palette.accentDark} opacity={0.18} />
+          {/* lớp cánh dưới, xoay lệch để tạo độ dày */}
+          {Array.from({ length: petalCount }).map((_, i) => (
+            <Petal
+              key={`b-${i}`}
+              cx={60}
+              cy={topY}
+              angle={(360 / petalCount) * i + 15}
+              length={9.5}
+              width={5.5}
+              gradientId={`petal-${plantId}`}
+              strokeColor={palette.accentDark}
+            />
           ))}
+          {/* lớp cánh trên, to hơn */}
+          {Array.from({ length: petalCount }).map((_, i) => (
+            <Petal
+              key={`t-${i}`}
+              cx={60}
+              cy={topY}
+              angle={(360 / petalCount) * i}
+              length={13}
+              width={7}
+              gradientId={`petal-${plantId}`}
+              strokeColor={palette.accentDark}
+            />
+          ))}
+          <circle cx={60} cy={topY} r={7.5} fill={`url(#center-${plantId})`} stroke={palette.accentDark} strokeWidth={0.7} />
+          {[0, 60, 120, 180, 240, 300].map((d) => (
+            <circle key={d} cx={60 + 3.2 * Math.cos((d * Math.PI) / 180)} cy={topY + 3.2 * Math.sin((d * Math.PI) / 180)} r={0.9} fill="#C97F17" opacity={0.85} />
+          ))}
+          <ellipse cx={57} cy={topY - 2.2} rx={2.4} ry={1.2} fill="#fff" opacity={0.55} />
         </g>
       )}
     </>
   );
 }
 
-function renderFruitTree({ stageIdx, totalStages, palette, isReady, noFruit }) {
+function renderFruitTree({ stageIdx, totalStages, palette, isReady, noFruit, plantId }) {
   const frac = stageIdx / Math.max(1, totalStages - 1);
   const stemH = 20 + frac * 68;
   const topY = 122 - stemH;
@@ -248,23 +362,19 @@ function renderFruitTree({ stageIdx, totalStages, palette, isReady, noFruit }) {
   const mature = stageIdx === totalStages - 1;
   return (
     <>
-      <path d={`M60,122 L${60 - frac * 2},${topY}`} stroke={palette.stem} strokeWidth={4 + frac * 2.5} strokeLinecap="round" />
+      <ellipse cx={60} cy={122} rx={5} ry={1.6} fill="#000" opacity={0.08} />
+      <path d={`M60,122 L${60 - frac * 2},${topY}`} stroke={`url(#stem-${plantId})`} strokeWidth={4 + frac * 2.5} strokeLinecap="round" />
       {showCanopy && (
         <g className={mature && isReady ? 'gd-sway' : ''} style={{ transformOrigin: `60px ${topY}px` }}>
-          {/* Tán lá rậm rạp */}
-          <circle cx={60} cy={topY + 2} r={canopyR} fill={palette.leafDark} opacity={0.8} />
-          <circle cx={60 - canopyR * 0.35} cy={topY - canopyR * 0.25} r={canopyR * 0.7} fill={palette.leaf} opacity={0.9} />
-          <circle cx={60 + canopyR * 0.45} cy={topY - canopyR * 0.15} r={canopyR * 0.65} fill={palette.leaf} opacity={0.9} />
-          <circle cx={60} cy={topY - canopyR * 0.3} r={canopyR * 0.5} fill={palette.leaf} opacity={0.7} />
+          <ellipse cx={60} cy={topY + canopyR * 0.75} rx={canopyR * 1.05} ry={canopyR * 0.3} fill="#000" opacity={0.08} />
+          <circle cx={60} cy={topY + 2} r={canopyR} fill={`url(#leaf-${plantId})`} opacity={0.92} />
+          <circle cx={60 - canopyR * 0.4} cy={topY - canopyR * 0.28} r={canopyR * 0.65} fill={palette.leaf} opacity={0.85} />
+          <circle cx={60 + canopyR * 0.45} cy={topY - canopyR * 0.18} r={canopyR * 0.6} fill={palette.leaf} opacity={0.85} />
+          <circle cx={60} cy={topY - canopyR * 0.45} r={canopyR * 0.42} fill={shade(palette.leaf, 20)} opacity={0.55} />
           {mature && !noFruit && (
             <>
-              {/* Quả có bóng */}
               {[[-7, 2], [6, 6], [1, -6], [-4, 8], [8, -2]].map(([dx, dy], i) => (
-                <g key={i}>
-                  <circle cx={60 + dx} cy={topY + 2 + dy} r={4.5} fill={palette.accentDark} opacity={0.3} />
-                  <circle cx={60 + dx} cy={topY + dy} r={4.2} fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.6} />
-                  <circle cx={60 + dx + 1.5} cy={topY + dy - 1.5} r={1.2} fill="white" opacity={0.25} />
-                </g>
+                <Fruit key={i} cx={60 + dx} cy={topY + dy} r={4.3} gradientId={`fruit-${plantId}`} strokeColor={palette.accentDark} />
               ))}
             </>
           )}
@@ -274,7 +384,7 @@ function renderFruitTree({ stageIdx, totalStages, palette, isReady, noFruit }) {
   );
 }
 
-function renderCactus({ stageIdx, totalStages, palette }) {
+function renderCactus({ stageIdx, totalStages, palette, plantId }) {
   const frac = stageIdx / Math.max(1, totalStages - 1);
   const h = 20 + frac * 55;
   const w = 12 + frac * 6;
@@ -282,36 +392,36 @@ function renderCactus({ stageIdx, totalStages, palette }) {
   const mature = stageIdx === totalStages - 1;
   return (
     <>
-      <rect x={60 - w / 2} y={topY} width={w} height={h} rx={w / 2} fill={palette.leaf} stroke={palette.leafDark} strokeWidth={1.2} />
+      <ellipse cx={60} cy={120} rx={w * 0.8} ry={3.5} fill="#000" opacity={0.08} />
+      <rect x={60 - w / 2} y={topY} width={w} height={h} rx={w / 2} fill={`url(#leaf-${plantId})`} stroke={palette.leafDark} strokeWidth={1} />
       {[1, 2, 3].map((i) => (
-        <line key={i} x1={60 - w / 2 + (i * w) / 4} y1={topY + 4} x2={60 - w / 2 + (i * w) / 4} y2={topY + h - 4} stroke={palette.leafDark} strokeWidth={0.7} opacity={0.5} />
+        <line key={i} x1={60 - w / 2 + (i * w) / 4} y1={topY + 4} x2={60 - w / 2 + (i * w) / 4} y2={topY + h - 4} stroke={palette.leafDark} strokeWidth={0.6} opacity={0.4} />
       ))}
-      {/* Gai nhỏ */}
       {Array.from({ length: 6 }).map((_, i) => {
         const angle = (i / 6) * Math.PI * 2;
         const r = w / 2 + 2;
         const cx = 60 + r * Math.cos(angle);
         const cy = topY + h * 0.5 + r * 0.4 * Math.sin(angle);
-        return <line key={i} x1={cx} y1={cy} x2={cx + 4 * Math.cos(angle)} y2={cy + 4 * Math.sin(angle)} stroke="#9C6B3A" strokeWidth={0.8} opacity={0.6} />;
+        return <line key={i} x1={cx} y1={cy} x2={cx + 4 * Math.cos(angle)} y2={cy + 4 * Math.sin(angle)} stroke="#9C6B3A" strokeWidth={0.7} opacity={0.55} />;
       })}
       {stageIdx >= 1 && (
-        <path d={`M${60 - w / 2},${topY + h * 0.4} q-10,-2 -9,-14`} stroke={palette.leaf} strokeWidth={5} strokeLinecap="round" fill="none" />
+        <path d={`M${60 - w / 2},${topY + h * 0.4} q-10,-2 -9,-14`} stroke={`url(#leaf-${plantId})`} strokeWidth={5} strokeLinecap="round" fill="none" />
       )}
       {stageIdx >= 2 && (
-        <path d={`M${60 + w / 2},${topY + h * 0.55} q10,-2 9,-14`} stroke={palette.leaf} strokeWidth={5} strokeLinecap="round" fill="none" />
+        <path d={`M${60 + w / 2},${topY + h * 0.55} q10,-2 9,-14`} stroke={`url(#leaf-${plantId})`} strokeWidth={5} strokeLinecap="round" fill="none" />
       )}
       {mature && (
         <g>
-          <circle cx={60} cy={topY - 2} r={6} fill={palette.accentDark} opacity={0.2} />
-          <circle cx={60} cy={topY - 4} r={5} fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.6} />
-          <circle cx={60} cy={topY - 4} r={2} fill={palette.accentLight} />
+          <circle cx={60} cy={topY - 4} r={5.5} fill={`url(#petal-${plantId})`} stroke={palette.accentDark} strokeWidth={0.6} />
+          <circle cx={60} cy={topY - 4} r={2} fill="#FFF6D8" />
+          <ellipse cx={58.4} cy={topY - 5.6} rx={1.3} ry={0.7} fill="#fff" opacity={0.55} />
         </g>
       )}
     </>
   );
 }
 
-function renderBamboo({ stageIdx, totalStages, palette }) {
+function renderBamboo({ stageIdx, totalStages, palette, plantId }) {
   const frac = stageIdx / Math.max(1, totalStages - 1);
   const stalks = [{ dx: -9, h: 0.8 }, { dx: 0, h: 1 }, { dx: 9, h: 0.65 }];
   return (
@@ -322,14 +432,24 @@ function renderBamboo({ stageIdx, totalStages, palette }) {
         const joints = Math.max(1, Math.round(h / 14));
         return (
           <g key={i}>
-            <rect x={60 + s.dx - 3.5} y={topY} width={7} height={h} rx={3.5} fill={palette.stem} />
+            <ellipse cx={60 + s.dx} cy={122} rx={4} ry={1.4} fill="#000" opacity={0.08} />
+            <rect x={60 + s.dx - 3.5} y={topY} width={7} height={h} rx={3.5} fill={`url(#stem-${plantId})`} />
             {Array.from({ length: joints }).map((_, j) => (
-              <line key={j} x1={60 + s.dx - 4} x2={60 + s.dx + 4} y1={topY + (j + 1) * (h / (joints + 1))} y2={topY + (j + 1) * (h / (joints + 1))} stroke={palette.leafDark} strokeWidth={1.2} opacity={0.6} />
+              <line
+                key={j}
+                x1={60 + s.dx - 4}
+                x2={60 + s.dx + 4}
+                y1={topY + (j + 1) * (h / (joints + 1))}
+                y2={topY + (j + 1) * (h / (joints + 1))}
+                stroke={palette.leafDark}
+                strokeWidth={1}
+                opacity={0.5}
+              />
             ))}
             {stageIdx >= 1 && (
               <>
-                <ellipse cx={60 + s.dx - 7} cy={topY + 4} rx={8} ry={3} fill={palette.leaf} opacity={0.8} transform={`rotate(-30 ${60 + s.dx - 7} ${topY + 4})`} />
-                <ellipse cx={60 + s.dx + 7} cy={topY + 9} rx={8} ry={3} fill={palette.leaf} opacity={0.8} transform={`rotate(30 ${60 + s.dx + 7} ${topY + 9})`} />
+                <LeafShape cx={60 + s.dx - 7} cy={topY + 4} angle={-60} size={9} fill={`url(#leaf-${plantId})`} />
+                <LeafShape cx={60 + s.dx + 7} cy={topY + 9} angle={60} size={9} fill={`url(#leaf-${plantId})`} />
               </>
             )}
           </g>
@@ -339,23 +459,24 @@ function renderBamboo({ stageIdx, totalStages, palette }) {
   );
 }
 
-function renderVine({ stageIdx, totalStages, palette }) {
+function renderVine({ stageIdx, totalStages, palette, plantId }) {
   const frac = stageIdx / Math.max(1, totalStages - 1);
   const mature = stageIdx === totalStages - 1;
   const spread = 14 + frac * 14;
   return (
     <>
-      <path d={`M60,120 q${-spread},-4 ${-spread - 6},-14`} stroke={palette.stem} strokeWidth={2.5} fill="none" strokeLinecap="round" />
-      <path d={`M60,120 q${spread},-6 ${spread + 6},-10`} stroke={palette.stem} strokeWidth={2.5} fill="none" strokeLinecap="round" />
+      <path d={`M60,120 q${-spread},-4 ${-spread - 6},-14`} stroke={`url(#stem-${plantId})`} strokeWidth={2.2} fill="none" strokeLinecap="round" />
+      <path d={`M60,120 q${spread},-6 ${spread + 6},-10`} stroke={`url(#stem-${plantId})`} strokeWidth={2.2} fill="none" strokeLinecap="round" />
       {Array.from({ length: 1 + stageIdx }).map((_, i) => (
-        <ellipse key={i} cx={60 - spread + i * 9} cy={112 - (i % 2) * 4} rx={8} ry={4.5} fill={i % 2 ? palette.leaf : palette.leafDark} opacity={0.85} transform={`rotate(${-20 + i * 10} ${60 - spread + i * 9} ${112})`} />
+        <LeafShape key={i} cx={60 - spread + i * 9} cy={112 - (i % 2) * 4} angle={-20 + i * 10} size={8} fill={`url(#leaf-${plantId})`} />
       ))}
       {mature && (
         <g>
-          <circle cx={72} cy={112} r={12} fill={palette.accentDark} opacity={0.2} />
-          <circle cx={72} cy={112} r={10} fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.8} />
+          <circle cx={72} cy={112} r={10} fill={`url(#petal-${plantId})`} stroke={palette.accentDark} strokeWidth={0.7} />
+          <circle cx={72} cy={112} r={3} fill="#FFF6D8" />
+          <ellipse cx={70} cy={110} rx={1.6} ry={0.9} fill="#fff" opacity={0.5} />
           {[-1, 0, 1].map((k) => (
-            <path key={k} d={`M${72 + k * 3.6},100 q${k * 2},11 0,22`} stroke={palette.leafDark} strokeWidth={1.5} fill="none" opacity={0.5} />
+            <path key={k} d={`M${72 + k * 3.6},100 q${k * 2},11 0,22`} stroke={palette.leafDark} strokeWidth={1.3} fill="none" opacity={0.4} />
           ))}
         </g>
       )}
@@ -363,7 +484,7 @@ function renderVine({ stageIdx, totalStages, palette }) {
   );
 }
 
-function renderAura({ stageIdx, totalStages, palette, isReady }) {
+function renderAura({ stageIdx, totalStages, palette, isReady, plantId }) {
   const frac = stageIdx / Math.max(1, totalStages - 1);
   const stemH = 16 + frac * 60;
   const topY = 122 - stemH;
@@ -371,21 +492,33 @@ function renderAura({ stageIdx, totalStages, palette, isReady }) {
   const orbits = Math.min(stageIdx, 3);
   return (
     <>
-      <path d={`M60,122 L60,${topY}`} stroke={palette.stem} strokeWidth={2.8} strokeLinecap="round" opacity={0.8} />
+      <path d={`M60,122 L60,${topY}`} stroke={`url(#stem-${plantId})`} strokeWidth={2.5} strokeLinecap="round" opacity={0.85} />
       {Array.from({ length: orbits }).map((_, i) => (
-        <circle key={i} cx={60 + (i % 2 ? 9 : -9)} cy={topY + 10 + i * 12} r={4} fill={palette.accentLight} className="gd-twinkle" style={{ animationDelay: `${i * 0.3}s` }} />
+        <circle
+          key={i}
+          cx={60 + (i % 2 ? 9 : -9)}
+          cy={topY + 10 + i * 12}
+          r={4}
+          fill={`url(#petal-${plantId})`}
+          className="gd-twinkle"
+          style={{ animationDelay: `${i * 0.3}s` }}
+        />
       ))}
       {mature && (
         <g className={isReady ? 'gd-pulse' : ''} style={{ transformOrigin: `60px ${topY}px` }}>
           {isReady && (
             <>
-              <circle cx={60} cy={topY} r={20} fill={palette.accent} opacity={0.15} />
-              <circle cx={60} cy={topY} r={28} fill={palette.accentLight} opacity={0.08} className="gd-pulse" />
+              <circle cx={60} cy={topY} r={22} fill={`url(#petal-${plantId})`} opacity={0.14} />
+              <circle cx={60} cy={topY} r={30} fill={palette.accentLight} opacity={0.07} className="gd-pulse" />
             </>
           )}
-          <path d={`M60,${topY - 13} L64,${topY - 3} L74,${topY - 3} L66,${topY + 5} L69,${topY + 15} L60,${topY + 8} L51,${topY + 15} L54,${topY + 5} L46,${topY - 3} L56,${topY - 3} Z`}
-            fill={palette.accent} stroke={palette.accentDark} strokeWidth={0.6} />
-          <circle cx={60} cy={topY} r={4} fill="white" opacity={0.3} />
+          <path
+            d={`M60,${topY - 13} L64,${topY - 3} L74,${topY - 3} L66,${topY + 5} L69,${topY + 15} L60,${topY + 8} L51,${topY + 15} L54,${topY + 5} L46,${topY - 3} L56,${topY - 3} Z`}
+            fill={`url(#center-${plantId})`}
+            stroke={palette.accentDark}
+            strokeWidth={0.6}
+          />
+          <circle cx={60} cy={topY} r={4} fill="white" opacity={0.35} />
         </g>
       )}
     </>
@@ -398,25 +531,15 @@ function PlantArt({ plantId, stageIdx, totalStages, isReady, plantConfig }) {
   const { palette, kind, noFruit } = cfg;
   return (
     <svg viewBox="0 0 120 140" className="w-full h-full">
-      <defs>
-        <radialGradient id={`shadow-${plantId}`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#8C6A42" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#8C6A42" stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id={`stem-${plantId}`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={palette.stem} stopOpacity="0.7" />
-          <stop offset="50%" stopColor={palette.stem} stopOpacity="1" />
-          <stop offset="100%" stopColor={palette.stem} stopOpacity="0.7" />
-        </linearGradient>
-      </defs>
-      <ellipse cx="60" cy="126" rx="34" ry="9" fill="url(#shadow)" />
-      <ellipse cx="60" cy="123.5" rx="30" ry="6.5" fill="#8C6A42" opacity="0.6" />
-      {kind === 'bloom' && renderBloom({ stageIdx, totalStages, palette, isReady })}
-      {kind === 'fruitTree' && renderFruitTree({ stageIdx, totalStages, palette, isReady, noFruit })}
-      {kind === 'cactus' && renderCactus({ stageIdx, totalStages, palette })}
-      {kind === 'bamboo' && renderBamboo({ stageIdx, totalStages, palette })}
-      {kind === 'vine' && renderVine({ stageIdx, totalStages, palette })}
-      {kind === 'aura' && renderAura({ stageIdx, totalStages, palette, isReady })}
+      <PlantGradientDefs id={plantId} palette={palette} />
+      <ellipse cx="60" cy="127" rx="32" ry="8" fill={`url(#ground-${plantId})`} />
+      <ellipse cx="60" cy="123.5" rx="28" ry="6" fill="#8C6A42" opacity="0.55" />
+      {kind === 'bloom' && renderBloom({ stageIdx, totalStages, palette, isReady, plantId })}
+      {kind === 'fruitTree' && renderFruitTree({ stageIdx, totalStages, palette, isReady, noFruit, plantId })}
+      {kind === 'cactus' && renderCactus({ stageIdx, totalStages, palette, plantId })}
+      {kind === 'bamboo' && renderBamboo({ stageIdx, totalStages, palette, plantId })}
+      {kind === 'vine' && renderVine({ stageIdx, totalStages, palette, plantId })}
+      {kind === 'aura' && renderAura({ stageIdx, totalStages, palette, isReady, plantId })}
     </svg>
   );
 }
@@ -523,59 +646,59 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
 function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
   const seedList = Object.entries(plantConfig).map(([id, cfg]) => ({ id, ...cfg }));
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden anim-pop shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-ink/10 shrink-0">
-          <div className="flex items-center gap-2">
-            <Icon name="bag" className="w-5 h-5 text-gold" />
-            <h3 className="font-display text-lg text-ink">Cửa hàng hạt giống</h3>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><Icon name="close" className="w-5 h-5 text-ink/50" /></button>
+    <Modal onClose={onClose}
+      unstyled
+      overlayClassName="p-4"
+      contentClassName="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden anim-pop shadow-2xl">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-ink/10 shrink-0">
+        <div className="flex items-center gap-2">
+          <Icon name="bag" className="w-5 h-5 text-gold" />
+          <h3 className="font-display text-lg text-ink">Cửa hàng hạt giống</h3>
         </div>
-
-        <div className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-gold/10 to-amber-100/40 border-b border-gold/10 shrink-0">
-          <Icon name="coin" className="w-4 h-4" />
-          <span className="text-sm font-bold text-gold">{userCoins?.toLocaleString()} Coin</span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 space-y-3">
-          {seedList.map(seed => {
-            const canBuy = (userCoins || 0) >= seed.seedPrice;
-            const r = RARITY_STYLES[seed.rarity];
-            return (
-              <button
-                key={seed.id}
-                onClick={() => canBuy && onSelect(seed.id)}
-                disabled={!canBuy}
-                className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all duration-300 text-left
-                  ${canBuy ? `border-${seed.rarity === 'legendary' ? 'amber' : seed.rarity === 'epic' ? 'purple' : seed.rarity === 'rare' ? 'blue' : 'gray'}-200 bg-white hover:shadow-xl hover:scale-[1.02] cursor-pointer` : 'border-ink/5 bg-ink/[0.02] opacity-50 cursor-not-allowed'}`}
-                style={canBuy ? { boxShadow: `0 0 0 1px ${r.border}40, 0 4px 12px ${r.glow}` } : {}}
-              >
-                <div className="w-14 h-14 shrink-0 rounded-xl bg-gradient-to-b from-sky-50 to-white border border-ink/5 overflow-hidden">
-                  <PlantArt plantId={seed.id} stageIdx={seed.stageCount - 1} totalStages={seed.stageCount} isReady={false} plantConfig={plantConfig} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-display text-sm text-ink">{seed.name}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold" style={{ background: r.bg, color: r.text }}>{r.label}</span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-ink/40">
-                    <span className="flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> {formatTime(seed.growthTime)}</span>
-                    <span className="flex items-center gap-1"><Icon name="coin" className="w-3 h-3" /> +{seed.harvestCoin}</span>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="flex items-center gap-1 text-sm font-bold text-gold">
-                    <Icon name="coin" className="w-3.5 h-3.5" /> {seed.seedPrice}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><Icon name="close" className="w-5 h-5 text-ink/50" /></button>
       </div>
-    </div>
+
+      <div className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-gold/10 to-amber-100/40 border-b border-gold/10 shrink-0">
+        <Icon name="coin" className="w-4 h-4" />
+        <span className="text-sm font-bold text-gold">{userCoins?.toLocaleString()} Coin</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5 space-y-3">
+        {seedList.map(seed => {
+          const canBuy = (userCoins || 0) >= seed.seedPrice;
+          const r = RARITY_STYLES[seed.rarity];
+          return (
+            <button
+              key={seed.id}
+              onClick={() => canBuy && onSelect(seed.id)}
+              disabled={!canBuy}
+              className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all duration-300 text-left
+                ${canBuy ? `border-${seed.rarity === 'legendary' ? 'amber' : seed.rarity === 'epic' ? 'purple' : seed.rarity === 'rare' ? 'blue' : 'gray'}-200 bg-white hover:shadow-xl hover:scale-[1.02] cursor-pointer` : 'border-ink/5 bg-ink/[0.02] opacity-50 cursor-not-allowed'}`}
+              style={canBuy ? { boxShadow: `0 0 0 1px ${r.border}40, 0 4px 12px ${r.glow}` } : {}}
+            >
+              <div className="w-14 h-14 shrink-0 rounded-xl bg-gradient-to-b from-sky-50 to-white border border-ink/5 overflow-hidden">
+                <PlantArt plantId={seed.id} stageIdx={seed.stageCount - 1} totalStages={seed.stageCount} isReady={false} plantConfig={plantConfig} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-sm text-ink">{seed.name}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold" style={{ background: r.bg, color: r.text }}>{r.label}</span>
+                </div>
+                <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-ink/40">
+                  <span className="flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> {formatTime(seed.growthTime)}</span>
+                  <span className="flex items-center gap-1"><Icon name="coin" className="w-3 h-3" /> +{seed.harvestCoin}</span>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="flex items-center gap-1 text-sm font-bold text-gold">
+                  <Icon name="coin" className="w-3.5 h-3.5" /> {seed.seedPrice}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </Modal>
   );
 }
 
@@ -585,101 +708,100 @@ function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
 function InventoryShop({ userCoins, inventory, onBuy, onUse, onSelectFertilizer, onClose }) {
   const ownedEntries = Object.entries(ITEM_CONFIG).filter(([id]) => (inventory[id] || 0) > 0);
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden anim-pop shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-ink/10 shrink-0">
-          <div className="flex items-center gap-2">
-            <Icon name="backpack" className="w-5 h-5 text-gold" />
-            <h3 className="font-display text-lg text-ink">Kho đồ</h3>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><Icon name="close" className="w-5 h-5 text-ink/50" /></button>
+    <Modal onClose={onClose} unstyled align="bottom"
+      overlayClassName="p-0"
+      contentClassName="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden anim-pop shadow-2xl">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-ink/10 shrink-0">
+        <div className="flex items-center gap-2">
+          <Icon name="backpack" className="w-5 h-5 text-gold" />
+          <h3 className="font-display text-lg text-ink">Kho đồ</h3>
         </div>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><Icon name="close" className="w-5 h-5 text-ink/50" /></button>
+      </div>
 
-        <div className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-gold/10 to-amber-100/40 border-b border-gold/10 shrink-0">
-          <Icon name="coin" className="w-4 h-4" />
-          <span className="text-sm font-bold text-gold">{userCoins?.toLocaleString()} Coin</span>
-        </div>
+      <div className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-gold/10 to-amber-100/40 border-b border-gold/10 shrink-0">
+        <Icon name="coin" className="w-4 h-4" />
+        <span className="text-sm font-bold text-gold">{userCoins?.toLocaleString()} Coin</span>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {ownedEntries.length > 0 && (
-            <div>
-              <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Đồ đang sở hữu</div>
-              <div className="space-y-2">
-                {ownedEntries.map(([id, item]) => {
-                  const owned = inventory[id] || 0;
-                  const isUpgrade = item.type === 'upgrade';
-                  return (
-                    <div key={id} className="flex items-center gap-3 p-3 rounded-2xl border-2 border-green-200 bg-green-50/60 shadow-sm">
-                      <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${item.color}22` }}>
-                        {item.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-display text-sm text-ink">{item.name}</span>
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-green-100 text-green-600">x{owned}</span>
-                        </div>
-                        <p className="text-[10px] text-ink/40 mt-0.5 leading-snug">{item.desc}</p>
-                      </div>
-                      {isUpgrade ? (
-                        <button
-                          onClick={() => onUse(id)}
-                          className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-gold text-white hover:bg-gold/80 shadow-sm transition-colors"
-                        >
-                          Dùng
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => onSelectFertilizer(id)}
-                          className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 shadow-sm transition-colors"
-                        >
-                          Bón cây
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        {ownedEntries.length > 0 && (
           <div>
-            <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Mua sắm</div>
-            <p className="text-[10px] font-mono text-ink/35 mb-2">Phân bón dùng để bón trực tiếp cho cây trong vườn. Đồ nâng cấp mua một lần, dùng mãi mãi.</p>
-            <div className="space-y-3">
-              {Object.entries(ITEM_CONFIG).map(([id, item]) => {
+            <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Đồ đang sở hữu</div>
+            <div className="space-y-2">
+              {ownedEntries.map(([id, item]) => {
                 const owned = inventory[id] || 0;
                 const isUpgrade = item.type === 'upgrade';
-                const alreadyOwned = isUpgrade && owned > 0;
-                const canBuy = !alreadyOwned && (userCoins || 0) >= item.price;
                 return (
-                  <div key={id} className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${alreadyOwned ? 'border-green-200 bg-green-50/60 shadow-sm' : 'border-ink/10 bg-white hover:shadow-md'}`}>
+                  <div key={id} className="flex items-center gap-3 p-3 rounded-2xl border-2 border-green-200 bg-green-50/60 shadow-sm">
                     <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${item.color}22` }}>
                       {item.icon}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-display text-sm text-ink">{item.name}</span>
-                        {!isUpgrade && owned > 0 && <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-ink/5 text-ink/50">x{owned}</span>}
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-green-100 text-green-600">x{owned}</span>
                       </div>
                       <p className="text-[10px] text-ink/40 mt-0.5 leading-snug">{item.desc}</p>
                     </div>
-                    <button
-                      onClick={() => canBuy && onBuy(id)}
-                      disabled={!canBuy}
-                      className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors
-                        ${alreadyOwned ? 'bg-green-100 text-green-600 cursor-default' : canBuy ? 'bg-gold text-white hover:bg-gold/80 shadow-sm hover:shadow' : 'bg-ink/5 text-ink/30 cursor-not-allowed'}`}
-                    >
-                      {alreadyOwned ? '✅ Đã có' : `${item.price} 💰`}
-                    </button>
+                    {isUpgrade ? (
+                      <button
+                        onClick={() => onUse(id)}
+                        className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-gold text-white hover:bg-gold/80 shadow-sm transition-colors"
+                      >
+                        Dùng
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => onSelectFertilizer(id)}
+                        className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 shadow-sm transition-colors"
+                      >
+                        Bón cây
+                      </button>
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
+        )}
+
+        <div>
+          <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Mua sắm</div>
+          <p className="text-[10px] font-mono text-ink/35 mb-2">Phân bón dùng để bón trực tiếp cho cây trong vườn. Đồ nâng cấp mua một lần, dùng mãi mãi.</p>
+          <div className="space-y-3">
+            {Object.entries(ITEM_CONFIG).map(([id, item]) => {
+              const owned = inventory[id] || 0;
+              const isUpgrade = item.type === 'upgrade';
+              const alreadyOwned = isUpgrade && owned > 0;
+              const canBuy = !alreadyOwned && (userCoins || 0) >= item.price;
+              return (
+                <div key={id} className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${alreadyOwned ? 'border-green-200 bg-green-50/60 shadow-sm' : 'border-ink/10 bg-white hover:shadow-md'}`}>
+                  <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${item.color}22` }}>
+                    {item.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-sm text-ink">{item.name}</span>
+                      {!isUpgrade && owned > 0 && <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-ink/5 text-ink/50">x{owned}</span>}
+                    </div>
+                    <p className="text-[10px] text-ink/40 mt-0.5 leading-snug">{item.desc}</p>
+                  </div>
+                  <button
+                    onClick={() => canBuy && onBuy(id)}
+                    disabled={!canBuy}
+                    className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors
+                      ${alreadyOwned ? 'bg-green-100 text-green-600 cursor-default' : canBuy ? 'bg-gold text-white hover:bg-gold/80 shadow-sm hover:shadow' : 'bg-ink/5 text-ink/30 cursor-not-allowed'}`}
+                  >
+                    {alreadyOwned ? '✅ Đã có' : `${item.price} 💰`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -688,21 +810,18 @@ function HarvestModal({ plantType, onConfirm, onClose, plantConfig }) {
   const cfg = plantConfig[plantType];
   if (!cfg) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl p-6 w-full max-w-xs text-center anim-pop shadow-2xl">
-        <div className="w-24 h-24 mx-auto mb-2">
-          <PlantArt plantId={plantType} stageIdx={cfg.stageCount - 1} totalStages={cfg.stageCount} isReady plantConfig={plantConfig} />
-        </div>
-        <h3 className="font-display text-lg text-ink mb-1">🎉 Thu hoạch thành công!</h3>
-        <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gold mb-4">
-          <Icon name="coin" className="w-6 h-6" /> +{cfg.harvestCoin}
-        </div>
-        <button onClick={onConfirm} className="w-full py-2.5 bg-gradient-to-r from-gold to-amber-500 text-white rounded-xl font-semibold hover:from-gold/90 hover:to-amber-500/90 transition shadow-md">
-          Tuyệt vời!
-        </button>
+    <Modal onClose={onClose} contentClassName="max-w-xs text-center">
+      <div className="w-24 h-24 mx-auto mb-2">
+        <PlantArt plantId={plantType} stageIdx={cfg.stageCount - 1} totalStages={cfg.stageCount} isReady plantConfig={plantConfig} />
       </div>
-    </div>
+      <h3 className="font-display text-lg text-ink mb-1">🎉 Thu hoạch thành công!</h3>
+      <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gold mb-4">
+        <Icon name="coin" className="w-6 h-6" /> +{cfg.harvestCoin}
+      </div>
+      <button onClick={onConfirm} className="w-full py-2.5 bg-gradient-to-r from-gold to-amber-500 text-white rounded-xl font-semibold hover:from-gold/90 hover:to-amber-500/90 transition shadow-md">
+        Tuyệt vời!
+      </button>
+    </Modal>
   );
 }
 
@@ -738,72 +857,69 @@ function QuizModal({ onEarnWater, onClose }) {
   if (loading || !question) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl p-5 w-full max-w-sm anim-pop shadow-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Icon name="water" className="w-5 h-5 text-blue-500" />
-            <h3 className="font-display text-base text-ink">💧 Trả lời để nhận nước</h3>
-          </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-ink/5 transition">
-            <Icon name="close" className="w-4 h-4 text-ink/40" />
-          </button>
+    <Modal onClose={onClose} contentClassName="max-w-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Icon name="water" className="w-5 h-5 text-blue-500" />
+          <h3 className="font-display text-base text-ink">💧 Trả lời để nhận nước</h3>
         </div>
-
-        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 mb-4 text-center border border-blue-100">
-          <p className="text-lg font-bold text-ink">{question.q}</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {question.options.map((opt, i) => {
-            const isSelected = selected === i;
-            const isCorrect = result !== null && i === question.answer;
-            const isWrong = result !== null && isSelected && i !== question.answer;
-            return (
-              <button
-                key={i}
-                onClick={() => result === null && setSelected(i)}
-                disabled={result !== null}
-                className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
-                  ${isCorrect ? 'border-green-400 bg-green-50 text-green-700 shadow-md' :
-                    isWrong ? 'border-red-400 bg-red-50 text-red-600' :
-                      isSelected ? 'border-blue-400 bg-blue-50 text-blue-700 shadow-sm' :
-                        'border-ink/10 bg-white text-ink hover:border-blue-300 hover:bg-blue-50/50'}`}
-              >
-                {opt}
-              </button>
-            );
-          })}
-        </div>
-
-        {result === null ? (
-          <button
-            onClick={handleSubmit}
-            disabled={selected === null}
-            className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-40 shadow-md"
-          >
-            Trả lời
-          </button>
-        ) : (
-          <div className="text-center">
-            {result ? (
-              <div className="mb-2">
-                <p className="text-green-600 font-bold text-sm">✅ Đúng rồi! +1 💧</p>
-              </div>
-            ) : (
-              <div className="mb-2">
-                <p className="text-red-500 font-semibold text-sm">❌ Sai rồi! Đáp án: {question.options[question.answer]}</p>
-              </div>
-            )}
-            <button onClick={handleNext}
-              className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition shadow-md">
-              Câu tiếp theo
-            </button>
-          </div>
-        )}
+        <button onClick={onClose} className="p-1 rounded-lg hover:bg-ink/5 transition">
+          <Icon name="close" className="w-4 h-4 text-ink/40" />
+        </button>
       </div>
-    </div>
+
+      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 mb-4 text-center border border-blue-100">
+        <p className="text-lg font-bold text-ink">{question.q}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        {question.options.map((opt, i) => {
+          const isSelected = selected === i;
+          const isCorrect = result !== null && i === question.answer;
+          const isWrong = result !== null && isSelected && i !== question.answer;
+          return (
+            <button
+              key={i}
+              onClick={() => result === null && setSelected(i)}
+              disabled={result !== null}
+              className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
+                ${isCorrect ? 'border-green-400 bg-green-50 text-green-700 shadow-md' :
+                  isWrong ? 'border-red-400 bg-red-50 text-red-600' :
+                    isSelected ? 'border-blue-400 bg-blue-50 text-blue-700 shadow-sm' :
+                      'border-ink/10 bg-white text-ink hover:border-blue-300 hover:bg-blue-50/50'}`}
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+
+      {result === null ? (
+        <button
+          onClick={handleSubmit}
+          disabled={selected === null}
+          className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-40 shadow-md"
+        >
+          Trả lời
+        </button>
+      ) : (
+        <div className="text-center">
+          {result ? (
+            <div className="mb-2">
+              <p className="text-green-600 font-bold text-sm">✅ Đúng rồi! +1 💧</p>
+            </div>
+          ) : (
+            <div className="mb-2">
+              <p className="text-red-500 font-semibold text-sm">❌ Sai rồi! Đáp án: {question.options[question.answer]}</p>
+            </div>
+          )}
+          <button onClick={handleNext}
+            className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition shadow-md">
+            Câu tiếp theo
+          </button>
+        </div>
+      )}
+    </Modal>
   );
 }
 

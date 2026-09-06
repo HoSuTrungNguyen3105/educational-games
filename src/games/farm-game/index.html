@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Nông Trại Học Tập</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="game-wrap">
+
+    <div id="sky"></div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD -->
+    <header id="hud">
+      <div class="hud-pill" id="coin-pill">
+        <span class="hud-icon">🌾</span>
+        <span id="coin-count">0</span>
+      </div>
+      <div class="hud-title">
+        <span id="hud-subject-name">Nông Trại Học Tập</span>
+      </div>
+      <div class="hud-pill" id="energy-pill">
+        <span class="hud-icon">💧</span>
+        <span id="energy-count">5</span>
+      </div>
+    </header>
+
+    <!-- bottom action bar -->
+    <footer id="action-bar">
+      <button class="round-btn" id="btn-lang" title="Đổi chủ đề học">
+        <span id="subject-icon">📚</span>
+      </button>
+      <div id="hint-bubble" class="hint-bubble hidden">Nhấn <b>E</b> để học từ này</div>
+      <button class="round-btn" id="btn-book" title="Sổ tay">📖</button>
+    </footer>
+
+    <!-- subject select modal -->
+    <div id="subject-modal" class="modal-overlay">
+      <div class="modal-card lang-card">
+        <div class="lang-card-crop">🧑‍🌾</div>
+        <h1>Chọn chủ đề muốn học</h1>
+        <p class="lang-sub">Đi dạo quanh nông trại, chăm sóc mùa vụ và học kiến thức mới mỗi khi ghé thăm luống cây.</p>
+        <div id="subject-grid" class="lang-grid"></div>
+        <button id="btn-start" class="primary-btn" disabled>Bắt đầu trồng trọt</button>
+      </div>
+    </div>
+
+    <!-- content flashcard modal -->
+    <div id="vocab-modal" class="modal-overlay hidden">
+      <div class="modal-card vocab-card" id="vocab-card-inner">
+        <!-- filled by vocab.js -->
+      </div>
+    </div>
+
+    <!-- content list / notebook panel -->
+    <div id="book-panel" class="side-panel hidden">
+      <div class="side-panel-head">
+        <h2>Sổ tay nông dân</h2>
+        <button id="btn-close-book" class="close-x">✕</button>
+      </div>
+      <div id="vocab-list" class="vocab-list"></div>
+    </div>
+
+    <!-- toast -->
+    <div id="toast" class="toast hidden"></div>
+
+  </div>
+
+<script src="js/data.js"></script>
+<script src="js/map.js"></script>
+<script src="js/player.js"></script>
+<script src="js/vocab.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
