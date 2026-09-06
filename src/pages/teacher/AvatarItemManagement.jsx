@@ -158,7 +158,7 @@ export default function AvatarItemManagement({ showToast }) {
       default: item.default, gender: item.gender || 'boy',
       params: { ...(item.params || {}) },
     });
-    setEditingId(item.id); setError(null); setModalOpen(true);
+    setEditingId(item.code); setError(null); setModalOpen(true);
     setEditedHtml(item.html || renderItemHtmlLocal(item.category, item.params));
   };
 
@@ -223,7 +223,7 @@ export default function AvatarItemManagement({ showToast }) {
       if (parsed?.token) headers.Authorization = `Bearer ${parsed.token}`;
       const isBody = confirm.item?.category === 'body';
       const base = isBody ? `${API_BASE}/avatar/admin/body` : `${API_BASE}/avatar/admin/items`;
-      const res = await fetch(`${base}/${confirm.item.id}`, { method: "DELETE", headers });
+      const res = await fetch(`${base}/${confirm.item.code}`, { method: "DELETE", headers });
       const json = await res.json();
       if (!json.status) throw new Error(json.msg || "Lỗi xóa");
       showToast("Đã xóa");
@@ -235,7 +235,7 @@ export default function AvatarItemManagement({ showToast }) {
     if (!batchMode) {
       const init = {};
       (items || []).forEach(it => {
-        init[it.id] = { name: it.name, price: it.price, default: it.default };
+        init[it.code] = { name: it.name, price: it.price, default: it.default };
       });
       setBatchData(init);
     }
@@ -255,7 +255,7 @@ export default function AvatarItemManagement({ showToast }) {
       if (parsed?.token) headers.Authorization = `Bearer ${parsed.token}`;
 
       const changed = (items || []).filter(it => {
-        const b = batchData[it.id];
+        const b = batchData[it.code];
         if (!b) return false;
         return b.name !== it.name || Number(b.price) !== it.price || b.default !== it.default;
       });
@@ -269,11 +269,11 @@ export default function AvatarItemManagement({ showToast }) {
       const results = await Promise.all(changed.map(it => {
         const isBody = it.category === 'body';
         const base = isBody ? `${API_BASE}/avatar/admin/body` : `${API_BASE}/avatar/admin/items`;
-        const b = batchData[it.id];
+        const b = batchData[it.code];
         const body = isBody
           ? { name: b.name, type: it.params?.type || 'custom', price: Number(b.price), default: b.default, html: it.html, ...(it.gender ? { gender: it.gender } : {}) }
           : { category: it.category, name: b.name, price: Number(b.price), default: b.default, params: it.params, html: it.html, ...(it.gender ? { gender: it.gender } : {}) };
-        return fetch(`${base}/${it.id}`, { method: "PUT", headers, body: JSON.stringify(body) }).then(r => r.json());
+        return fetch(`${base}/${it.code}`, { method: "PUT", headers, body: JSON.stringify(body) }).then(r => r.json());
       }));
 
       const failed = results.filter(r => !r.status);
@@ -361,7 +361,7 @@ export default function AvatarItemManagement({ showToast }) {
       {filtered.length > 0 && (
         <div className="grid gap-3">
           {filtered.map(item => (
-            <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-ink/8 hover:shadow-sm transition">
+            <div key={item.code} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-ink/8 hover:shadow-sm transition">
               <div className="w-12 h-17 flex items-center justify-center shrink-0 overflow-hidden rounded-lg bg-ink/5">
                 <ItemPreview item={item} allItems={items} />
               </div>
@@ -369,21 +369,21 @@ export default function AvatarItemManagement({ showToast }) {
                 {batchMode ? (
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <input
-                      value={batchData[item.id]?.name ?? item.name}
-                      onChange={e => updateBatchField(item.id, 'name', e.target.value)}
+                      value={batchData[item.code]?.name ?? item.name}
+                      onChange={e => updateBatchField(item.code, 'name', e.target.value)}
                       className="flex-1 min-w-0 px-2 py-1.5 rounded-lg border border-ink/10 text-sm font-body text-ink focus:outline-none focus:ring-2 focus:ring-pink/30"
                     />
                     <input
                       type="number"
-                      value={batchData[item.id]?.price ?? item.price}
-                      onChange={e => updateBatchField(item.id, 'price', Number(e.target.value))}
+                      value={batchData[item.code]?.price ?? item.price}
+                      onChange={e => updateBatchField(item.code, 'price', Number(e.target.value))}
                       className="w-24 px-2 py-1.5 rounded-lg border border-ink/10 text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-pink/30"
                     />
                     <label className="flex items-center gap-1.5 text-xs font-body text-ink/60 shrink-0">
                       <input
                         type="checkbox"
-                        checked={batchData[item.id]?.default ?? item.default}
-                        onChange={e => updateBatchField(item.id, 'default', e.target.checked)}
+                        checked={batchData[item.code]?.default ?? item.default}
+                        onChange={e => updateBatchField(item.code, 'default', e.target.checked)}
                         className="w-4 h-4 rounded border-ink/20 text-pink focus:ring-pink/30"
                       />
                       Mặc định
@@ -398,7 +398,7 @@ export default function AvatarItemManagement({ showToast }) {
                       {item.gender && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-600">{item.gender}</span>}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5 text-[11px] font-mono text-ink/40">
-                      <span>{item.id}</span>
+                      <span>{item.code}</span>
                       <span>{item.category}</span>
                       <span>{item.price} coin</span>
                     </div>

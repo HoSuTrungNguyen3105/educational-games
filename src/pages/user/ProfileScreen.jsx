@@ -48,12 +48,13 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         if (loadoutRes.status) {
           const raw = loadoutRes.data.loadout || {};
           const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
-          const itemIds = new Set(items.map(i => i.id));
+          const itemCodes = new Set(items.map(i => i.code));
           const defaults = { body: null, skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
           const cleaned = {};
           for (const k of VALID_LAYERS) {
             const v = raw[k];
-            if (v && itemIds.has(v)) cleaned[k] = v;
+            if (v && typeof v === 'object' && v.code && itemCodes.has(v.code)) cleaned[k] = v.code;
+            else if (typeof v === 'string' && itemCodes.has(v)) cleaned[k] = v;
             else cleaned[k] = defaults[k] ?? null;
           }
           setAvatarLoadout(cleaned);

@@ -7,7 +7,7 @@ function buildAvatarState(loadout, items) {
   let bodyHtml = null;
   for (const [category, itemId] of Object.entries(loadout)) {
     if (!itemId) continue;
-    const item = items.find(i => i.id === itemId);
+    const item = items.find(i => i.code === itemId);
     if (!item) continue;
     if (category === 'body') bodyHtml = item.html || null;
     else if (category === 'skin') state.skin = item.params?.hex || '#FFDFC4';
@@ -41,11 +41,10 @@ export function useAvatarData(userAuth) {
         const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
         const defaults = { body: null, skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
         const cleaned = {};
-        const allItems = itemsRes.data.items || [];
-        const itemIds = new Set(allItems.map(i => i.id));
         for (const k of VALID_LAYERS) {
           const v = raw[k];
-          if (v && itemIds.has(v)) cleaned[k] = v;
+          if (v && typeof v === 'object' && v.code) cleaned[k] = v.code;
+          else if (typeof v === 'string') cleaned[k] = v;
           else cleaned[k] = defaults[k] ?? null;
         }
         setLoadout(cleaned);

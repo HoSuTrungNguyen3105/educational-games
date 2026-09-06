@@ -360,7 +360,7 @@ export default function UploadItems({ showToast }) {
                     }} className="flex-1 px-2 py-1 rounded-lg border border-ink/10 text-xs bg-white text-ink focus:outline-none">
                       <option value="">— Tạo mới —</option>
                       {existingItems.map(ei => (
-                        <option key={ei.id} value={ei.id}>{ei.name} ({ei.id}) [{ei.category}]</option>
+                        <option key={ei.code} value={ei.code}>{ei.name} ({ei.code}) [{ei.category}]</option>
                       ))}
                     </select>
                     <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${item.mode === 'update' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>

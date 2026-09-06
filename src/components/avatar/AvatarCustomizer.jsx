@@ -106,7 +106,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
             const next = { ...prev };
             if (!next.body) {
               const defaultBody = fetchedItems.find(it => it.category === 'body' && it.default);
-              if (defaultBody) next.body = defaultBody.id;
+              if (defaultBody) next.body = defaultBody.code;
             }
             return next;
           });
@@ -115,43 +115,43 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
       .catch(() => { });
   }, []);
 
-  function selectItem(category, itemId) {
-    const item = items.find(i => i.id === itemId);
+  function selectItem(category, itemCode) {
+    const item = items.find(i => i.code === itemCode);
     if (!item) return;
-    if (item.price > 0 && !localInventory.includes(itemId)) return;
-    setDraft(prev => ({ ...prev, [category]: itemId }));
+    if (item.price > 0 && !localInventory.includes(itemCode)) return;
+    setDraft(prev => ({ ...prev, [category]: itemCode }));
     setPreviewItem(null);
   }
 
   function previewItemClick(item) {
-    if (isOwned(item.id)) {
-      selectItem(item.category, item.id);
+    if (isOwned(item.code)) {
+      selectItem(item.category, item.code);
     } else {
       setPreviewItem(item);
     }
   }
 
-  function isOwned(itemId) {
-    const item = items.find(i => i.id === itemId);
+  function isOwned(itemCode) {
+    const item = items.find(i => i.code === itemCode);
     if (!item) return false;
     if (item.price === 0 || item.default) return true;
-    return localInventory.includes(itemId);
+    return localInventory.includes(itemCode);
   }
 
   async function handleBuy(item) {
     if (!token || buying) return;
-    setBuying(item.id);
+    setBuying(item.code);
     try {
       const res = await fetch(`${API_BASE}/avatar/buy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ itemId: item.id }),
+        body: JSON.stringify({ itemCode: item.code }),
       });
       const json = await res.json();
       if (json.status) {
         setLocalInventory(json.data.inventory);
         setLocalCoins(json.data.coins);
-        setDraft(prev => ({ ...prev, [item.category]: item.id }));
+        setDraft(prev => ({ ...prev, [item.category]: item.code }));
         setPreviewItem(null);
       }
     } catch { }
@@ -163,7 +163,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
   const previewLoadout = useMemo(() => {
     if (previewItem) {
       const p = { ...draft };
-      p[previewItem.category] = previewItem.id;
+      p[previewItem.category] = previewItem.code;
       return p;
     }
     return draft;
@@ -182,18 +182,18 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
       <div className="relative flex justify-center py-4 mb-3 rounded-xl" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
         <AvatarPreview loadout={previewLoadout} items={items} size={200} />
 
-        {previewItem && !isOwned(previewItem.id) && previewItem.price > 0 && (
+        {previewItem && !isOwned(previewItem.code) && previewItem.price > 0 && (
           <button
             onClick={() => handleBuy(previewItem)}
-            disabled={buying === previewItem.id || localCoins < previewItem.price}
+            disabled={buying === previewItem.code || localCoins < previewItem.price}
             className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-pink text-white text-sm font-bold shadow-lg hover:bg-pink/80 transition disabled:opacity-50"
           >
             <ShoppingBag className="w-4 h-4" />
-            {buying === previewItem.id ? 'Đang mua...' : `Mua ${previewItem.price} coin`}
+            {buying === previewItem.code ? 'Đang mua...' : `Mua ${previewItem.price} coin`}
           </button>
         )}
 
-        {previewItem && isOwned(previewItem.id) && (
+        {previewItem && isOwned(previewItem.code) && (
           <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-green-500 text-white text-xs font-bold shadow-lg">
             <Check className="w-3.5 h-3.5" /> Đã sở hữu
           </div>
@@ -220,11 +220,11 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
       <div className="max-h-60 overflow-y-auto mb-3">
         <div className="flex flex-wrap gap-2">
           {tabItems.map(item => {
-            const owned = isOwned(item.id);
-            const isPreviewing = previewItem?.id === item.id;
-            const isSelected = draft[activeTab] === item.id;
+            const owned = isOwned(item.code);
+            const isPreviewing = previewItem?.code === item.code;
+            const isSelected = draft[activeTab] === item.code;
             return (
-              <div key={item.id} className="flex flex-col items-center gap-1">
+              <div key={item.code} className="flex flex-col items-center gap-1">
                 <ItemThumbnail
                   item={item}
                   selected={isSelected}
@@ -236,11 +236,11 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
                 {!owned && item.price > 0 && (
                   <button
                     onClick={() => handleBuy(item)}
-                    disabled={buying === item.id || localCoins < item.price}
+                    disabled={buying === item.code || localCoins < item.price}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-pink/10 text-pink text-xs font-mono font-bold hover:bg-pink/20 transition disabled:opacity-40"
                   >
                     <ShoppingBag className="w-3 h-3" />
-                    {buying === item.id ? '...' : `${item.price}`}
+                    {buying === item.code ? '...' : `${item.price}`}
                   </button>
                 )}
               </div>

@@ -6,7 +6,7 @@ export default function AvatarPreview({ loadout = {}, items = [], size = 512, cl
 
   for (const [category, itemId] of Object.entries(loadout)) {
     if (!itemId) continue;
-    const item = items.find(i => i.id === itemId);
+    const item = items.find(i => i.code === itemId);
     if (!item) continue;
 
     if (category === 'body') {

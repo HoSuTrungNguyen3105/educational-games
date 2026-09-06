@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { gameService, coinService, notificationService, API_BASE } from '../services/api.js'
 import { getLevelProgress, getLevelEmoji } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
@@ -30,21 +30,19 @@ import {
   Sun,
   Medal,
   ChevronRight,
-  ChevronLeft,
-  ChevronDown,
   Flame,
   Gift,
   Users,
   Bell,
   Crown,
   ListChecks,
+  SplineIcon,
   ShipWheel,
   FileText,
   Sprout,
-  Settings,
 } from 'lucide-react'
 
-// Bảng màu theo môn học
+// Bảng màu theo môn học — giữ nguyên
 const SUBJECT_PALETTE = [
   { grad: "from-purple-400 to-fuchsia-400", chip: "bg-purple-100 text-purple-700 border-purple-200", solid: "bg-purple-500", soft: "bg-purple-50", hover: "hover:bg-purple-50 hover:border-purple-400 hover:text-purple-700" },
   { grad: "from-orange-400 to-amber-400", chip: "bg-amber-100 text-amber-700 border-amber-200", solid: "bg-amber-500", soft: "bg-amber-50", hover: "hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700" },
@@ -60,29 +58,41 @@ function colorForSubject(subject = "") {
   return SUBJECT_PALETTE[Math.abs(hash) % SUBJECT_PALETTE.length];
 }
 
-// Nav chính — dùng chung cho sidebar desktop & menu mở rộng mobile
+// NAV_ITEMS giữ nguyên
 const NAV_ITEMS = (userAuth) => [
   { key: "home", icon: Home, label: "Trang chủ", path: "/", show: true },
-  { key: "games", icon: Gamepad2, label: "Game", action: "scroll", target: "games-section", show: true },
+  { key: "garden", icon: Sprout, label: "Khu vườn", path: "/garden", show: !!userAuth?.user },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user },
+  { key: "spin", icon: ShipWheel, label: "Vòng quay", path: "/spin-wheel", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", path: "/chat", show: !!userAuth?.user },
-  { key: "profile", icon: User, label: "Cá nhân", path: "/profile", show: !!userAuth?.user },
+  { key: "friends", icon: Search, label: "Tìm bạn", path: "/find-friends", show: !!userAuth?.user },
+  { key: "coins", icon: Coins, label: "Ví của tôi", path: "/my-coins", show: !!userAuth?.user },
+  { key: "assignment", icon: FileText, label: "Bài tập", path: "/assignment", show: !!userAuth?.user },
+  { key: "profile", icon: User, label: "Hồ sơ", path: "/profile", show: !!userAuth?.user },
 ];
 
-// Truy cập nhanh — 8 ô tròn màu, dùng chung mobile + desktop
+// QUICK_MENU_ITEMS giữ nguyên
 const QUICK_MENU_ITEMS = (userAuth) => [
-  { key: "code", icon: Ticket, label: "Nhập mã vé", action: "code", show: true, color: "bg-pink-500" },
-  { key: "garden", icon: Sprout, label: "Khu vườn", path: "/garden", show: !!userAuth?.user, color: "bg-emerald-500" },
-  { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user, color: "bg-violet-500" },
-  { key: "spin", icon: ShipWheel, label: "Vòng quay", path: "/spin-wheel", show: !!userAuth?.user, color: "bg-amber-500" },
-  { key: "games", icon: Gamepad2, label: "Trò chơi", action: "scroll", show: true, color: "bg-rose-500" },
-  { key: "coins", icon: Coins, label: "Ví của tôi", path: "/my-coins", show: !!userAuth?.user, color: "bg-yellow-500" },
-  { key: "chat", icon: MessageCircle, label: "Tin nhắn", path: "/chat", show: !!userAuth?.user, color: "bg-sky-500" },
-  { key: "friends", icon: Search, label: "Tìm bạn", path: "/find-friends", show: !!userAuth?.user, color: "bg-teal-500" },
-  { key: "assignment", icon: FileText, label: "Bài tập", path: "/assignment", show: !!userAuth?.user, color: "bg-blue-500" },
-  { key: "profile", icon: User, label: "Hồ sơ", path: "/profile", show: !!userAuth?.user, color: "bg-fuchsia-500" },
-  { key: "teacher", icon: GraduationCap, label: "Giáo viên", path: "/admin", show: userAuth?.user?.role === 'admin' || userAuth?.user?.role === 'teacher', color: "bg-indigo-500" },
-  { key: "login", icon: KeyRound, label: "Đăng nhập", action: "login", show: !userAuth?.user, color: "bg-purple-500" },
+  { key: "code", icon: Ticket, label: "Nhập mã vé", action: "code", show: true, tint: "from-yellow-800 to-fuchsia-400" },
+  { key: "garden", icon: Sprout, label: "Khu vườn", path: "/garden", show: !!userAuth?.user, tint: "from-green-400 to-emerald-400" },
+  { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user, tint: "from-violet-400 to-purple-400" },
+  { key: "spin", icon: ShipWheel, label: "Vòng quay", path: "/spin-wheel", show: !!userAuth?.user, tint: "from-amber-400 to-yellow-500" },
+  { key: "games", icon: Gamepad2, label: "Trò chơi", action: "scroll", show: true, tint: "from-orange-400 to-amber-400" },
+  { key: "coins", icon: Coins, label: "Ví của tôi", path: "/my-coins", show: !!userAuth?.user, tint: "from-amber-400 to-yellow-400" },
+  { key: "chat", icon: MessageCircle, label: "Tin nhắn", path: "/chat", show: !!userAuth?.user, tint: "from-cyan-400 to-blue-400" },
+  { key: "friends", icon: Search, label: "Tìm bạn", path: "/find-friends", show: !!userAuth?.user, tint: "from-emerald-400 to-red-400" },
+  { key: "assignment", icon: FileText, label: "Bài tập", path: "/assignment", show: !!userAuth?.user, tint: "from-blue-400 to-yellow-400" },
+  { key: "profile", icon: User, label: "Hồ sơ", path: "/profile", show: !!userAuth?.user, tint: "from-blue-400 to-rose-400" },
+  { key: "teacher", icon: GraduationCap, label: "Giáo viên", path: "/admin", show: userAuth?.user?.role === 'admin' || 'teacher', tint: "from-indigo-400 to-violet-400" },
+  { key: "login", icon: KeyRound, label: "Đăng nhập", action: "login", show: !userAuth?.user, tint: "from-purple-400 to-pink-400" },
+];
+
+// DESKTOP_TABS giữ nguyên
+const DESKTOP_TABS = [
+  { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/" },
+  { key: "games", icon: Gamepad2, label: "Chơi game", type: "scroll", target: "games-section" },
+  { key: "subjects", icon: BookOpen, label: "Học tập", type: "scroll", target: "subjects-section" },
+  { key: "board", icon: Trophy, label: "Bảng xếp hạng", type: "scroll", target: "leaderboard-section" },
 ];
 
 const MOCK_LEADERBOARD = [
@@ -91,7 +101,7 @@ const MOCK_LEADERBOARD = [
   { rank: 3, name: "Gia Hân", score: 8320, medal: "bronze" },
 ];
 
-// Bottom navigation cho mobile
+// THÊM MỚI: Bottom navigation cho mobile
 const BOTTOM_NAV = (userAuth) => [
   { key: "home", icon: Home, label: "Trang chủ", path: "/", show: true },
   { key: "games", icon: Gamepad2, label: "Game", action: "scroll", target: "games-section", show: true },
@@ -101,6 +111,7 @@ const BOTTOM_NAV = (userAuth) => [
 ];
 
 export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUserRegister, onUserLogout }) {
+  // GIỮ NGUYÊN TOÀN BỘ STATE, LOGIC
   const [games, setGames] = useState(null);
   const [error, setError] = useState(null);
   const [showCodeModal, setShowCodeModal] = useState(false);
@@ -111,6 +122,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [showNotifications, setShowNotifications] = useState(false);
   const templates = useTemplates();
 
+  // THÊM MỚI: state cho search (chỉ dùng cho mobile)
   const [searchQuery, setSearchQuery] = useState('');
   const [avatarLoadout, setAvatarLoadout] = useState({});
   const [avatarItems, setAvatarItems] = useState([]);
@@ -138,14 +150,27 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     if (userAuth?.user) {
       coinService.get().then(c => setUserCoins(c?.coins || 0)).catch(() => { });
 
+      // Load avatar
       Promise.all([
         fetch(`${API_BASE}/avatar/items`).then(r => r.json()),
         fetch(`${API_BASE}/avatar/loadout`, { headers: { Authorization: `Bearer ${userAuth.token}` } }).then(r => r.json()),
       ]).then(([itemsRes, loadoutRes]) => {
         if (itemsRes.status) setAvatarItems(itemsRes.data.items || []);
-        if (loadoutRes.status) setAvatarLoadout(loadoutRes.data.loadout || {});
+        if (loadoutRes.status) {
+          const raw = loadoutRes.data.loadout || {};
+          const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
+          const codes = {};
+          for (const k of VALID_LAYERS) {
+            const v = raw[k];
+            if (v && typeof v === 'object' && v.code) codes[k] = v.code;
+            else if (typeof v === 'string') codes[k] = v;
+            else codes[k] = null;
+          }
+          setAvatarLoadout(codes);
+        }
       }).catch(() => { });
 
+      // Register FCM token if permission is already granted
       if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
         requestNotificationPermission().then((token) => {
           if (token) notificationService.registerDevice(token, "WEB").catch(() => { });
@@ -195,6 +220,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     }
   };
 
+  // Listen for foreground push messages
   useEffect(() => {
     if (!userAuth?.user) return;
     const unsubscribe = onForegroundMessage((payload) => {
@@ -235,7 +261,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     setUserCoins(newCoins);
   };
 
-  const hotGames = games ? [...games].sort((a, b) => (b.playersCount || 0) - (a.playersCount || 0)).slice(0, 8) : [];
+  const hotGames = games ? [...games].sort((a, b) => (b.playersCount || 0) - (a.playersCount || 0)).slice(0, 3) : [];
   const newGames = games ? [...games].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6) : [];
 
   const subjects = useMemo(() => {
@@ -249,6 +275,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     return games.filter(g => g.subject === activeSubject);
   }, [games, activeSubject]);
 
+  // THÊM MỚI: filter theo search (chỉ áp dụng cho mobile)
   const filteredGames = useMemo(() => {
     if (!searchQuery.trim()) return visibleGames;
     return visibleGames.filter(g => g.name?.toLowerCase().includes(searchQuery.toLowerCase()) || g.subject?.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -272,7 +299,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     if (item.path) return goTo(item.path);
   };
 
-  const handleNavClick = (item) => {
+  const handleDesktopTabClick = (tab) => {
+    if (tab.type === "path") return goTo(tab.path);
+    if (tab.type === "scroll") return scrollTo(tab.target);
+  };
+
+  const handleBottomNavClick = (item) => {
     if (item.action === "scroll") return scrollTo(item.target);
     if (item.path) return goTo(item.path);
   };
@@ -280,26 +312,33 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-purple-50/50 to-pink-50 pb-20 lg:pb-0">
 
-      {/* ═══════════════════════════ THANH TRÊN CÙNG (desktop) ═══════════════════════════ */}
+      {/* ═══════════════════════════ THANH TRÊN CÙNG (chỉ desktop) — GIỮ NGUYÊN ═══════════════════════════ */}
       <header className="hidden lg:block sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-purple-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center gap-6">
           <a href="#/" onClick={() => navigate("/")} className="shrink-0">
             <img src={`${import.meta.env.BASE_URL}eduplay-logo.png`} alt="EduPlay" className="h-14 w-auto object-contain" draggable={false} />
           </a>
 
-          <div className="flex-1 max-w-xl relative">
-            <input
-              type="text"
-              placeholder="Tìm kiếm game, nhiệm vụ..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-gray-100 border border-transparent rounded-full pl-10 pr-4 py-2.5 text-sm transition-all focus:outline-none focus:bg-white focus:border-purple-200 focus:ring-2 focus:ring-purple-100"
-            />
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          </div>
+          <nav className="flex items-center gap-1 bg-purple-50/70 rounded-full p-1 mx-auto">
+            {DESKTOP_TABS.map((tab, i) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => handleDesktopTabClick(tab)}
+                  className={`flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-full transition-all ${i === 0
+                    ? "bg-white text-purple-700 shadow-sm"
+                    : "text-gray-500 hover:text-purple-700 hover:bg-white/70"
+                    }`}
+                >
+                  <Icon className="w-4 h-4" /> {tab.label}
+                </button>
+              );
+            })}
+          </nav>
 
-          <div className="flex items-center gap-3 shrink-0 ml-auto">
-            {userAuth?.user ? (
+          <div className="flex items-center gap-3 shrink-0">
+            {userAuth?.user && (
               <>
                 <a onClick={() => navigate("/my-coins")} href="#/my-coins" className="inline-flex items-center gap-1.5 text-sm font-bold text-amber-600 bg-amber-50 border border-amber-100 rounded-full pl-2 pr-3 py-1.5 hover:bg-amber-100 transition">
                   <span className="w-6 h-6 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs"><Coins className="w-3.5 h-3.5" /></span>
@@ -308,7 +347,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 <div className="relative">
                   <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 rounded-full hover:bg-purple-50 transition text-purple-600">
                     <Bell className="w-5 h-5" />
-                    {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 text-[9px] leading-4 text-center bg-red-500 text-white rounded-full border-2 border-white font-bold">{unreadCount}</span>}
+                    {unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>}
                   </button>
                   {showNotifications && (
                     <NotificationDropdown
@@ -326,17 +365,16 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     />
                   )}
                 </div>
-                <a onClick={() => navigate("/profile")} href="#/profile" className="flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-full hover:bg-purple-50 transition">
-                  <span className="w-10 h-10 rounded-full overflow-hidden shadow-sm ring-2 ring-white shrink-0">
-                    {avatarItems.length > 0 ? (
-                      <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={40} />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-lg"><User className="w-5 h-5" /></div>
-                    )}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                </a>
               </>
+            )}
+            {userAuth?.user ? (
+              <a onClick={() => navigate("/profile")} href="#/profile" className="w-10 h-10 rounded-full overflow-hidden shadow-sm hover:shadow-md transition ring-2 ring-white">
+                {avatarItems.length > 0 ? (
+                  <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={40} />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-lg"><User className="w-5 h-5" /></div>
+                )}
+              </a>
             ) : (
               <div className="flex items-center gap-2">
                 <button onClick={onUserRegister} className="text-sm font-semibold text-purple-600 px-4 py-2 rounded-full hover:bg-purple-50 transition">
@@ -353,44 +391,119 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
       <div className="lg:flex w-full">
 
-        {/* ═══════════════════════════ SIDEBAR (desktop) ═══════════════════════════ */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] px-4 py-6 gap-1">
-          {NAV_ITEMS(userAuth).filter(i => i.show).map((item, i) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.key}
-                onClick={() => handleNavClick(item)}
-                className={`flex items-center gap-3 text-sm font-bold px-4 py-3 rounded-2xl text-left transition ${i === 0 ? "bg-purple-500 text-white shadow-md shadow-purple-200" : "text-gray-500 hover:bg-purple-50 hover:text-purple-700"
-                  }`}
-              >
-                <Icon className="w-5 h-5" /> {item.label}
+        {/* ═══════════════════════════ SIDEBAR (chỉ desktop) — GIỮ NGUYÊN ═══════════════════════════ */}
+        <aside className="hidden lg:flex lg:flex-col lg:w-72 lg:shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:overflow-y-auto px-5 py-6 gap-4">
+          {/* ... TOÀN BỘ NỘI DUNG SIDEBAR CŨ ... */}
+          {userAuth?.user ? (
+            <>
+              <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-5">
+                <div className="flex flex-col items-center text-center mb-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 shadow-sm mb-2 ring-2 ring-purple-100">
+                    {avatarItems.length > 0 ? (
+                      <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={64} />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-2xl"><User className="w-7 h-7" /></div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">Xin chào,</p>
+                  <p className="font-display text-base text-gray-800 truncate max-w-full">{userAuth.user.name}</p>
+                </div>
+                <div className="flex items-center justify-between text-xs font-bold text-amber-600 mb-1">
+                  <span>{getLevelEmoji(lv.level)} Cấp {lv.level}</span>
+                  <span className="text-[10px] font-mono">{lv.earned ?? 0}/{lv.needed ?? 0} xu</span>
+                </div>
+                <div className="h-2 rounded-full bg-amber-50 overflow-hidden mb-4">
+                  <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all" style={{ width: `${lv.percent ?? 0}%` }} />
+                </div>
+                <a
+                  onClick={() => navigate("/my-coins")}
+                  href="#/my-coins"
+                  className="flex items-center justify-center gap-2 text-sm font-bold text-amber-600 bg-amber-50 rounded-2xl px-3 py-2.5 hover:bg-amber-100 transition"
+                >
+                  <Coins className="w-4 h-4" /> {userCoins.toLocaleString()} coin
+                </a>
+              </div>
+
+              <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
+                <div className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white px-3 py-1.5 rounded-full shadow-sm mb-3">
+                  <ClipboardList className="w-4 h-4" />
+                  <h3 className="font-display text-xs font-bold">Nhiệm vụ hôm nay</h3>
+                </div>
+                <DailyTasksCard
+                  compact
+                  onClaimCoins={handleClaimCoins}
+                />
+                <button
+                  onClick={() => navigate("/daily-tasks")}
+                  className="w-full text-center text-[11px] font-semibold text-purple-500 hover:text-purple-700 transition mt-2"
+                >
+                  Xem tất cả →
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-5 text-center">
+              <PartyPopper className="w-8 h-8 mx-auto text-purple-400 mb-2" />
+              <p className="text-sm text-gray-600 mb-3">Đăng nhập để lưu điểm & coin của bạn nhé!</p>
+              <button onClick={onUserLogin} className="w-full text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold px-4 py-2 rounded-full hover:from-purple-600 hover:to-pink-600 transition mb-2">
+                <KeyRound className="w-4 h-4 inline mr-1" /> Đăng nhập
               </button>
-            );
-          })}
-          {(userAuth?.user?.role === 'admin' || userAuth?.user?.role === 'teacher') && (
-            <button onClick={() => goTo("/admin")} className="flex items-center gap-3 text-sm font-bold text-gray-500 px-4 py-3 rounded-2xl hover:bg-purple-50 hover:text-purple-700 transition text-left">
-              <GraduationCap className="w-5 h-5" /> Trang giáo viên
-            </button>
+              <button onClick={onUserRegister} className="w-full text-sm bg-white border border-purple-200 text-purple-600 font-semibold px-4 py-2 rounded-full hover:bg-purple-50 transition">
+                <Sparkles className="w-4 h-4 inline mr-1" /> Đăng ký
+              </button>
+            </div>
           )}
-          <div className="flex-1" />
-          {userAuth?.user && (
-            <button onClick={onUserLogout} className="flex items-center gap-3 text-sm font-bold text-red-500 px-4 py-3 rounded-2xl hover:bg-red-50 transition text-left">
-              <LogOut className="w-5 h-5" /> Đăng xuất
-            </button>
-          )}
+
+          <nav className="bg-white rounded-3xl shadow-md border border-purple-50 p-3 flex flex-col gap-1">
+            {NAV_ITEMS(userAuth).filter(i => i.show).map(item => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => goTo(item.path)}
+                  className={`flex items-center gap-3 text-sm font-semibold px-3 py-2.5 rounded-2xl text-left transition ${item.key === "home" ? "bg-purple-50 text-purple-700" : "text-gray-600 hover:bg-purple-50 hover:text-purple-700"
+                    }`}
+                >
+                  <Icon className="w-5 h-5" /> {item.label}
+                </button>
+              );
+            })}
+            {(userAuth?.user?.role === 'admin' || userAuth?.user?.role === 'teacher') && (
+              <button onClick={() => goTo("/admin")} className="flex items-center gap-3 text-sm font-semibold text-gray-600 px-3 py-2.5 rounded-2xl hover:bg-purple-50 hover:text-purple-700 transition text-left">
+                <GraduationCap className="w-5 h-5" /> Trang giáo viên
+              </button>
+            )}
+            {userAuth?.user && (
+              <button onClick={onUserLogout} className="flex items-center gap-3 text-sm font-semibold text-red-500 px-3 py-2.5 rounded-2xl hover:bg-red-50 transition text-left">
+                <LogOut className="w-5 h-5" /> Đăng xuất
+              </button>
+            )}
+          </nav>
         </aside>
 
         {/* ───────── Cột nội dung chính ───────── */}
         <div className="flex-1 min-w-0 flex flex-col">
 
-          {/* ═══════════════════════════ MOBILE HEADER ═══════════════════════════ */}
+          {/* ═══════════════════════════ MOBILE HEADER (Shopee style) — THAY ĐỔI ═══════════════════════════ */}
           <header className="lg:hidden sticky top-[var(--sat)] z-30 bg-white/95 backdrop-blur-md border-b border-purple-100 shadow-sm">
             <div className="px-4 h-14 flex items-center justify-between gap-3">
+              {/* Logo */}
               <a href="#/" onClick={() => navigate("/")} className="shrink-0">
                 <img src={`${import.meta.env.BASE_URL}eduplay-logo.png`} alt="EduPlay" className="h-8 w-auto object-contain" draggable={false} />
               </a>
-              <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+              {/* Search bar */}
+              {/* <div className="flex-1 max-w-[170px] relative">
+                <input
+                  type="text"
+                  placeholder="Tìm trò chơi..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-gray-100 border border-transparent rounded-full px-3 py-1.5 pl-8 text-xs transition-all focus:outline-none focus:bg-white focus:border-purple-200 focus:ring-2 focus:ring-purple-100"
+                />
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              </div> */}
+              {/* Coin + Notification + Avatar + Menu */}
+              <div className="flex items-center gap-1.5 shrink-0">
                 {userAuth?.user && (
                   <>
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 rounded-full px-2 py-1">
@@ -399,7 +512,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     <div className="relative">
                       <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-1.5 rounded-full hover:bg-purple-50 transition text-purple-600">
                         <Bell className="w-5 h-5" />
-                        {unreadCount > 0 && <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 text-[8px] leading-[14px] text-center bg-red-500 text-white rounded-full border-2 border-white font-bold">{unreadCount}</span>}
+                        {unreadCount > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>}
                       </button>
                       {showNotifications && (
                         <NotificationDropdown
@@ -420,29 +533,34 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   </>
                 )}
                 {userAuth?.user ? (
-                  <button onClick={() => setMobileMenuOpen(v => !v)} className="flex items-center gap-0.5">
-                    <span className="w-8 h-8 rounded-full overflow-hidden shrink-0">
-                      {avatarItems.length > 0 ? (
-                        <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={32} />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-sm"><User className="w-4 h-4" /></div>
-                      )}
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-                  </button>
+                  <a href="#/profile" onClick={() => navigate("/profile")} className="w-8 h-8 rounded-full overflow-hidden">
+                    {avatarItems.length > 0 ? (
+                      <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={32} />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-sm"><User className="w-4 h-4" /></div>
+                    )}
+                  </a>
                 ) : (
                   <button onClick={onUserLogin} className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">
                     Vào
                   </button>
                 )}
+                <button
+                  onClick={() => setMobileMenuOpen(v => !v)}
+                  aria-label="Thêm tuỳ chọn"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 transition"
+                >
+                  {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                </button>
               </div>
             </div>
+            {/* Menu mở rộng khi bấm hamburger */}
             {mobileMenuOpen && (
               <div className="border-t border-purple-100 px-3 py-2 flex flex-col gap-1 bg-white">
                 {NAV_ITEMS(userAuth).filter(i => i.show).map(item => {
                   const Icon = item.icon;
                   return (
-                    <button key={item.key} onClick={() => { handleNavClick(item); setMobileMenuOpen(false); }} className="flex items-center gap-3 text-sm font-semibold text-gray-700 px-3 py-2.5 rounded-xl hover:bg-purple-50 text-left">
+                    <button key={item.key} onClick={() => goTo(item.path)} className="flex items-center gap-3 text-sm font-semibold text-gray-700 px-3 py-2.5 rounded-xl hover:bg-purple-50 text-left">
                       <Icon className="w-5 h-5" /> {item.label}
                     </button>
                   );
@@ -461,18 +579,89 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             )}
           </header>
 
-          {/* ═══════════════════════════ MOBILE CONTENT ═══════════════════════════ */}
-          <main className="flex-1 w-full px-3 space-y-3 py-3 lg:hidden">
-            <HeroBanner userAuth={userAuth} lv={lv} onOpenCode={() => setShowCodeModal(true)} />
+          {/* ═══════════════════════════ MOBILE CONTENT (THAY ĐỔI HOÀN TOÀN) ═══════════════════════════ */}
+          <main className="flex-1 w-full px-2 space-y-2 py-3 lg:hidden">
+            {/* 1. Thẻ thành viên (kiểu trà sữa) */}
+            <div className="relative rounded-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 p-4 text-white overflow-hidden shadow-lg">
+              <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full"></div>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide opacity-80">Thành viên</p>
+                  <p className="font-display text-base">{userAuth?.user?.name || 'Khách'}</p>
+                </div>
+                <div className="bg-white/20 rounded-full px-2 py-1 text-xs font-semibold flex items-center gap-1">
+                  <Star className="w-3 h-3" /> Cấp {lv.level}
+                </div>
+              </div>
+              <div className="h-1.5 bg-white/30 rounded-full mb-3">
+                <div className="h-full bg-white rounded-full" style={{ width: `${lv.percent || 0}%` }}></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs opacity-90">{getLevelEmoji(lv.level)} {lv.earned}/{lv.needed} xu</span>
+                {/* <span className="text-xs font-bold bg-white/20 rounded-full px-2 py-0.5">Đổi quà</span> */}
+              </div>
+              {/* Barcode giả lập */}
+              {/* <div className="mt-2 bg-white/80 text-gray-800 rounded-xl px-3 py-2 flex items-center gap-2">
+                <div className="w-10 h-8 border-2 border-dashed border-purple-300 rounded"></div>
+                <div className="flex-1 h-6 flex gap-0.5 items-stretch overflow-hidden">
+                  {Array.from({ length: 30 }).map((_, i) => (
+                    <div key={i} className={`w-1 ${i % 3 === 0 ? 'bg-purple-600' : i % 2 === 0 ? 'bg-pink-500' : 'bg-amber-400'}`}></div>
+                  ))}
+                </div>
+                <span className="text-[10px] font-mono text-purple-700">MÃ SỐ</span>
+              </div> */}
+            </div>
 
-            <QuickMenuCard userAuth={userAuth} onItemClick={handleQuickMenuClick} />
+            {/* 2. Quick menu dạng tròn (Shopee style) */}
+            <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-3">
+              <div className="grid grid-cols-5 gap-2">
+                {QUICK_MENU_ITEMS(userAuth).filter(i => i.show).slice(0, 8).map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <button key={item.key} onClick={() => handleQuickMenuClick(item)} className="flex flex-col items-center gap-1 group focus:outline-none">
+                      <span className={`w-12 h-12 rounded-full bg-gradient-to-br ${item.tint} text-white flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 group-active:scale-90 group-focus-visible:ring-2 group-focus-visible:ring-purple-300 transition-all duration-200`}>
+                        <Icon className="w-5 h-5" />
+                      </span>
+                      <span className="text-[9px] font-semibold text-gray-600 text-center leading-tight line-clamp-1">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-            <TasksCard onClaimCoins={handleClaimCoins} onSeeAll={() => navigate('/daily-tasks')} />
+            {/* 3. Banner Flash Sale (Shopee style) */}
+            {/* <div className="rounded-3xl overflow-hidden bg-white shadow-md border border-purple-50">
+              <div className="bg-gradient-to-r from-red-500 to-orange-400 px-4 py-2 flex items-center justify-between">
+                <span className="font-display text-white text-sm flex items-center gap-1"><Flame className="w-4 h-4" /> FLASH SALE</span>
+                <span className="text-xs text-white bg-black/20 px-2 py-0.5 rounded-full">Kết thúc sau 02:45:30</span>
+              </div>
+              <div className="p-3 grid grid-cols-2 gap-3">
+                {hotGames.slice(0, 2).map((game, idx) => (
+                  <button key={game._id || game.id} onClick={() => onSelectGame(game)} className="relative bg-purple-50 rounded-xl p-2 text-left">
+                    <span className={`absolute top-1 right-1 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full ${idx === 0 ? 'bg-red-500' : 'bg-amber-500'}`}>
+                      {idx === 0 ? '-30%' : 'MỚI'}
+                    </span>
+                    <div className={`w-full h-16 rounded-lg bg-gradient-to-br ${colorForSubject(game.subject).grad} flex items-center justify-center`}>
+                      <StampToken icon={templates.find(t => t._id === game.templateId)?.icon || <Gamepad2 className="w-6 h-6" />} ring="#fff" size={36} fontSize={18} />
+                    </div>
+                    <p className="text-xs font-bold text-gray-800 mt-1 line-clamp-1">{game.name}</p>
+                    <span className="text-[10px] text-red-500 font-bold">{idx === 0 ? '999 xu' : '299 xu'}</span>
+                  </button>
+                ))}
+              </div>
+            </div> */}
 
-            {games !== null && hotGames.length > 0 && (
-              <HotGamesRow games={hotGames} templates={templates} onSelect={onSelectGame} onSeeAll={() => scrollTo('games-section')} />
-            )}
+            {/* 4. Nhiệm vụ hôm nay (card gọn) */}
+            <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <ClipboardList className="w-4 h-4 text-violet-500" />
+                <h3 className="font-display text-sm font-bold text-gray-800">Nhiệm vụ hôm nay</h3>
+              </div>
+              <DailyTasksCard compact onClaimCoins={handleClaimCoins} />
+              <button onClick={() => navigate('/daily-tasks')} className="w-full text-center text-xs font-semibold text-purple-500 mt-2">Xem tất cả →</button>
+            </div>
 
+            {/* 5. Môn học - dạng chip ngang */}
             {subjects.length > 0 && (
               <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
                 <div className="flex items-center gap-2 mb-3">
@@ -492,6 +681,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </div>
             )}
 
+            {/* 6. Danh sách trò chơi dạng thẻ sản phẩm 2 cột */}
             <div id="games-section" className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-base font-bold text-gray-800 flex items-center gap-1.5">
@@ -539,30 +729,119 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </div>
               )}
             </div>
-
-            <PromoBanner onExplore={() => scrollTo('games-section')} />
           </main>
 
-          {/* ═══════════════════════════ DESKTOP CONTENT ═══════════════════════════ */}
-          <main className="hidden lg:block flex-1 w-full p-6 space-y-6 max-w-6xl">
-            <HeroBanner userAuth={userAuth} lv={lv} onOpenCode={() => setShowCodeModal(true)} desktop />
+          {/* ═══════════════════════════ DESKTOP CONTENT (giữ nguyên) ═══════════════════════════ */}
+          <main className="hidden lg:block flex-1 w-full p-3 space-y-10">
+            {/* ... TOÀN BỘ PHẦN DESKTOP CŨ ... */}
+            {/* Banner chào mừng */}
+            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-100 via-fuchsia-50 to-amber-50 border border-purple-100 p-3 text-center" style={{ marginTop: "9px" }}>
+              <span className="absolute top-4 left-[6%] text-3xl animate-float" aria-hidden="true"><Star className="w-8 h-8 text-amber-400" /></span>
+              <span className="absolute bottom-4 right-[8%] text-3xl animate-float" aria-hidden="true"><Sun className="w-8 h-8 text-orange-300" /></span>
+              <span className="absolute top-6 right-[14%] text-2xl animate-float" aria-hidden="true"><Sparkles className="w-7 h-7 text-pink-400" /></span>
 
-            <QuickMenuCard userAuth={userAuth} onItemClick={handleQuickMenuClick} desktop />
-
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-              <DashboardCard icon={ClipboardList} title="Nhiệm vụ hôm nay" gradient="from-violet-500 to-purple-500" onSeeAll={() => navigate('/daily-tasks')}>
-                <DailyTasksCard onClaimCoins={handleClaimCoins} />
-              </DashboardCard>
-
-              <UserInfoCard userAuth={userAuth} lv={lv} userCoins={userCoins} avatarItems={avatarItems} avatarLoadout={avatarLoadout} />
+              <p className="text-sm font-bold text-purple-500 uppercase tracking-wide mb-1">
+                {userAuth?.user ? `Chào mừng trở lại, ${userAuth.user.name}!` : "Chào mừng bạn đến với"}
+              </p>
+              <h1 className="font-display text-3xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 mb-3">
+                Lớp Học Vui
+              </h1>
+              <p className="text-gray-600 max-w-xl mx-auto mb-6">
+                Học mà chơi, chơi mà học! Chọn một trò chơi bên dưới hoặc nhập mã vé từ thầy cô nhé <Ticket className="w-5 h-5 inline text-purple-400" />
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <PrimaryButton
+                  onClick={() => setShowCodeModal(true)}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                >
+                  <KeyRound className="w-4 h-4 inline mr-1" /> Nhập mã vé
+                </PrimaryButton>
+                <PrimaryButton
+                  onClick={() => scrollTo('games-section')}
+                  className="bg-white text-purple-600 border-2 border-purple-200 px-6 py-3 rounded-2xl shadow-sm hover:bg-purple-50 transition-all"
+                >
+                  <Gamepad2 className="w-4 h-4 inline mr-1" /> Khám phá trò chơi
+                </PrimaryButton>
+              </div>
             </section>
 
-            {subjects.length > 0 && (
-              <section id="subjects-section">
-                <div className="flex items-center justify-between mb-4">
-                  <SectionHeader icon={BookOpen} title="Môn học" gradient="from-cyan-500 to-blue-500" noMargin />
-                  <button onClick={() => scrollTo('games-section')} className="text-xs font-semibold text-purple-500 hover:text-purple-700 transition shrink-0">Xem tất cả →</button>
+            {/* Dashboard 2 cột */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <DashboardCard icon={Gamepad2} title="Chơi game" gradient="from-orange-500 to-amber-500" onSeeAll={() => scrollTo('games-section')}>
+                {games === null ? (
+                  <p className="text-sm text-gray-400 py-6 text-center">Đang tải...</p>
+                ) : hotGames.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-6 text-center">Chưa có trò chơi nào</p>
+                ) : (
+                  <div className="grid grid-cols-4 gap-3">
+                    {hotGames.concat(newGames).slice(0, 4).map(g => (
+                      <MiniGameTile key={g._id?.toString() || g.id} game={g} onSelect={onSelectGame} />
+                    ))}
+                  </div>
+                )}
+              </DashboardCard>
+
+              <DashboardCard icon={BookOpen} title="Học tập" gradient="from-cyan-500 to-blue-500" onSeeAll={() => scrollTo('subjects-section')}>
+                {subjects.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-6 text-center">Chưa có môn học nào</p>
+                ) : (
+                  <div className="grid grid-cols-4 gap-3">
+                    {subjects.slice(0, 4).map(subject => (
+                      <MiniSubjectTile
+                        key={subject}
+                        label={subject}
+                        classes={colorForSubject(subject)}
+                        onClick={() => { setActiveSubject(subject); scrollTo('games-section'); }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </DashboardCard>
+            </section>
+
+            {/* Dashboard 3 cột */}
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+              <DashboardCard icon={ClipboardList} title="Nhiệm vụ hàng ngày" gradient="from-violet-500 to-purple-500">
+                <DailyTasksCard onClaimCoins={handleClaimCoins} />
+                <button
+                  onClick={() => navigate("/daily-tasks")}
+                  className="w-full text-center text-[11px] font-semibold text-purple-500 hover:text-purple-700 transition mt-3"
+                >
+                  Xem tất cả →
+                </button>
+              </DashboardCard>
+
+              {/* <DashboardCard icon={Gift} title="Sự kiện nổi bật" gradient="from-yellow-500 to-rose-500">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-white p-4 h-full flex flex-col justify-between min-h-[10rem]">
+                  <span className="absolute -bottom-3 -right-3 text-6xl opacity-30" aria-hidden="true"><Sun className="w-16 h-16" /></span>
+                  <div className="relative">
+                    <p className="font-display text-lg leading-tight mb-1">Sự kiện hè<br />sôi động</p>
+                    <p className="text-xs text-white/80">Chơi game — nhận quà cực ngầu!</p>
+                  </div>
+                  <button onClick={() => scrollTo('games-section')} className="relative self-start bg-amber-400 hover:bg-amber-300 text-amber-900 text-xs font-bold px-4 py-2 rounded-full transition">
+                    Tham gia ngay
+                  </button>
                 </div>
+              </DashboardCard> */}
+
+              <DashboardCard icon={Trophy} title="Bảng xếp hạng" gradient="from-amber-500 to-yellow-500" id="leaderboard-section">
+                <div className="flex flex-col gap-1">
+                  {MOCK_LEADERBOARD.map(row => (
+                    <div key={row.rank} className="flex items-center gap-3 py-1.5">
+                      <Medal className={`w-5 h-5 ${row.medal === 'gold' ? 'text-amber-400' : row.medal === 'silver' ? 'text-gray-300' : 'text-orange-400'}`} />
+                      <span className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-xs shrink-0"><User className="w-4 h-4" /></span>
+                      <span className="flex-1 text-sm font-semibold text-gray-700 truncate">{row.name}</span>
+                      <span className="text-sm font-bold text-amber-600">{row.score.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </DashboardCard>
+            </section>
+
+            {/* Lưới môn học */}
+            {subjects.length > 1 && (
+              <section id="subjects-section">
+                <SectionHeader icon={BookOpen} title="Môn học" gradient="from-cyan-500 to-blue-500" />
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                   <SubjectTile
                     label="Tất cả"
@@ -585,12 +864,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </section>
             )}
 
-            {games !== null && !error && hotGames.length > 0 && (
-              <GameCarousel games={hotGames} templates={templates} onSelect={onSelectGame} />
-            )}
-
-            <PromoBanner onExplore={() => scrollTo('games-section')} />
-
+            {/* Games section */}
             <section id="games-section">
               {games === null ? (
                 <Loader label="Đang tải danh sách trò chơi..." />
@@ -601,34 +875,33 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               ) : isFiltering ? (
                 <div>
                   <SectionHeader icon={Search} title={`Môn ${activeSubject}`} gradient="from-purple-500 to-indigo-500" />
-                  {filteredGames.length === 0 ? (
+                  {visibleGames.length === 0 ? (
                     <EmptyState icon={Search} title="Chưa có trò chơi cho môn này" subtitle="Thử chọn môn khác hoặc bấm 'Tất cả' để xem hết trò chơi nhé!" />
                   ) : (
-                    <GameGrid games={filteredGames} templates={templates} onSelect={onSelectGame} />
+                    <GameGrid games={visibleGames} templates={templates} onSelect={onSelectGame} />
                   )}
                 </div>
               ) : (
                 <div className="space-y-10">
+                  {hotGames.length > 0 && (
+                    <div>
+                      <SectionHeader icon={Flame} title="Trò chơi đang HOT" gradient="from-red-500 to-orange-500" pulse />
+                      <GameGrid
+                        games={hotGames}
+                        templates={templates}
+                        onSelect={onSelectGame}
+                        badges={["TOP 1", "TOP 2", "TOP 3"]}
+                        badgeColors={["from-yellow-400 to-amber-500", "from-gray-300 to-gray-400", "from-orange-400 to-orange-500"]}
+                      />
+                    </div>
+                  )}
+
                   {newGames.length > 0 && (
                     <div>
                       <SectionHeader icon={Sparkles} title="Trò chơi mới" gradient="from-emerald-500 to-teal-500" />
                       <GameGrid games={newGames} templates={templates} onSelect={onSelectGame} isNew />
                     </div>
                   )}
-
-                  <div>
-                    <SectionHeader icon={Trophy} title="Bảng xếp hạng" gradient="from-amber-500 to-yellow-500" />
-                    <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-5 max-w-md">
-                      {MOCK_LEADERBOARD.map(row => (
-                        <div key={row.rank} className="flex items-center gap-3 py-1.5">
-                          <Medal className={`w-5 h-5 ${row.medal === 'gold' ? 'text-amber-400' : row.medal === 'silver' ? 'text-gray-300' : 'text-orange-400'}`} />
-                          <span className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-xs shrink-0"><User className="w-4 h-4" /></span>
-                          <span className="flex-1 text-sm font-semibold text-gray-700 truncate">{row.name}</span>
-                          <span className="text-sm font-bold text-amber-600">{row.score.toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
 
                   <div>
                     <SectionHeader icon={Gamepad2} title="Tất cả trò chơi" gradient="from-purple-500 to-indigo-500" />
@@ -641,18 +914,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         </div>
       </div>
 
-      {/* ═══════════════ BOTTOM NAVIGATION (chỉ mobile) ═══════════════ */}
+      {/* ═══════════════ BOTTOM NAVIGATION (chỉ mobile) — THÊM MỚI ═══════════════ */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-purple-100 shadow-lg" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="flex justify-around items-center h-16">
           {BOTTOM_NAV(userAuth).filter(i => i.show).map(item => {
             const Icon = item.icon;
             const isActive = item.key === 'home' || (item.path && window.location.hash === `#${item.path}`);
             return (
-              <button key={item.key} onClick={() => handleNavClick(item)} className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 ${isActive ? 'text-purple-600 bg-purple-50' : 'text-gray-400 hover:text-purple-500'}`}>
+              <button key={item.key} onClick={() => handleBottomNavClick(item)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 ${isActive ? 'text-purple-600 bg-purple-50' : 'text-gray-400 hover:text-purple-500'}`}>
                 <Icon className="w-5 h-5" />
-                {item.key === 'chat' && unreadCount > 0 && (
-                  <span className="absolute top-0.5 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-                )}
                 <span className="text-[10px] font-semibold">{item.label}</span>
               </button>
             );
@@ -665,307 +935,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   );
 }
 
-// ═══════════════ Banner chào mừng (cấp độ + tiến độ) ═══════════════
-function HeroBanner({ userAuth, lv, onOpenCode, desktop }) {
-  // Desktop: ảnh banner phủ toàn bộ nền, chữ + tiến độ đè lên trên.
-  // Mobile: không dùng ảnh, chỉ nền gradient như bản gốc.
-  if (desktop) {
-    const bannerSrc = `${import.meta.env.BASE_URL}banner.png`;
-    return (
-      <section
-        className="relative overflow-hidden rounded-3xl text-white shadow-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-500 bg-cover bg-center min-h-[280px] flex items-center"
-        style={{ backgroundImage: `url(${bannerSrc})` }}
-      >
-        {/* lớp phủ tối để chữ luôn đọc được trên ảnh */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" aria-hidden="true" />
-        <div className="relative p-8 max-w-md">
-          <p className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/15 rounded-full px-3 py-1 mb-3">
-            👋 {userAuth?.user ? `Chào mừng trở lại!` : "Chào mừng bạn đến với"}
-          </p>
-          <h1 className="font-display leading-tight mb-2 text-3xl">
-            {userAuth?.user ? `Xin chào, ${userAuth.user.name}!` : "Học mà chơi, chơi mà giỏi!"}
-          </h1>
-          <p className="text-white/85 mb-4 text-sm max-w-sm">
-            Cùng khám phá những thử thách thú vị và tích lũy điểm thưởng nhé!
-          </p>
-          <div className="flex items-center gap-3 bg-white/15 backdrop-blur-sm rounded-2xl px-4 py-2.5 max-w-xs">
-            <span className="text-xs font-bold bg-white/20 rounded-full px-2.5 py-1 flex items-center gap-1 shrink-0">
-              <Star className="w-3.5 h-3.5" /> Cấp {lv.level}
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="h-2 rounded-full bg-white/25 overflow-hidden">
-                <div className="h-full bg-white rounded-full transition-all" style={{ width: `${lv.percent ?? 0}%` }} />
-              </div>
-            </div>
-            <span className="text-[10px] font-mono shrink-0">{(lv.earned ?? 0).toLocaleString()}/{(lv.needed ?? 0).toLocaleString()}</span>
-          </div>
-          {!userAuth?.user && (
-            <div className="flex flex-wrap gap-2 mt-4">
-              <button onClick={onOpenCode} className="text-xs font-bold bg-white text-purple-600 px-4 py-2 rounded-full shadow-sm hover:bg-white/90 transition">
-                <KeyRound className="w-3.5 h-3.5 inline mr-1" /> Nhập mã vé
-              </button>
-            </div>
-          )}
-        </div>
-        <button
-          onClick={onOpenCode}
-          aria-label="Nhập mã vé"
-          className="absolute right-4 bottom-4 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center transition"
-        >
-          <ChevronRight className="w-5 h-5 text-white" />
-        </button>
-      </section>
-    );
-  }
-
-  // ── Mobile: giữ như bản hiện tại, không có ảnh banner ──
-  return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 p-4 text-white shadow-lg">
-      <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <p className="text-[10px] uppercase tracking-wide opacity-80">Thành viên</p>
-          <p className="font-display text-base">{userAuth?.user?.name || 'Khách'}</p>
-        </div>
-        <div className="bg-white/20 rounded-full px-2 py-1 text-xs font-semibold flex items-center gap-1">
-          <Star className="w-3 h-3" /> Cấp {lv.level}
-        </div>
-      </div>
-      <div className="h-1.5 bg-white/30 rounded-full mb-3">
-        <div className="h-full bg-white rounded-full" style={{ width: `${lv.percent || 0}%` }}></div>
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-xs opacity-90">{getLevelEmoji(lv.level)} {lv.earned}/{lv.needed} xu</span>
-      </div>
-    </section>
-  );
-}
-
-// ═══════════════ Truy cập nhanh ═══════════════
-function QuickMenuCard({ userAuth, onItemClick, desktop }) {
-  const items = QUICK_MENU_ITEMS(userAuth).filter(i => i.show).slice(0, 8);
-  return (
-    <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
-      {desktop && (
-        <div className="mb-4">
-          <h3 className="font-display text-sm font-bold text-gray-800 flex items-center gap-2">
-            <ClipboardList className="w-4 h-4 text-purple-500" /> Truy cập nhanh
-          </h3>
-          <p className="text-xs text-gray-400 mt-0.5">Chọn chức năng bạn muốn sử dụng</p>
-        </div>
-      )}
-      <div className={desktop ? "grid grid-cols-8 gap-3" : "grid grid-cols-5 gap-2"}>
-        {items.map(item => {
-          const Icon = item.icon;
-          return (
-            <button key={item.key} onClick={() => onItemClick(item)} className="flex flex-col items-center gap-1.5 group focus:outline-none">
-              <span className={`${desktop ? "w-14 h-14" : "w-12 h-12"} rounded-full ${item.color} text-white flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 group-active:scale-90 group-focus-visible:ring-2 group-focus-visible:ring-purple-300 transition-all duration-200`}>
-                <Icon className={desktop ? "w-6 h-6" : "w-5 h-5"} />
-              </span>
-              <span className={`${desktop ? "text-xs" : "text-[9px]"} font-semibold text-gray-600 text-center leading-tight line-clamp-1`}>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════ Nhiệm vụ hôm nay (mobile) ═══════════════
-function TasksCard({ onClaimCoins, onSeeAll }) {
-  return (
-    <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-display text-sm font-bold text-gray-800 flex items-center gap-2">
-          <ClipboardList className="w-4 h-4 text-violet-500" /> Nhiệm vụ hôm nay
-        </h3>
-        <span className="text-[10px] font-bold text-violet-600 bg-violet-50 rounded-full px-2.5 py-1">Hôm nay</span>
-      </div>
-      <DailyTasksCard compact onClaimCoins={onClaimCoins} />
-      <button onClick={onSeeAll} className="w-full text-center text-xs font-semibold text-purple-500 mt-2">Xem tất cả →</button>
-    </div>
-  );
-}
-
-// ═══════════════ Thông tin người dùng (desktop) ═══════════════
-function UserInfoCard({ userAuth, lv, userCoins, avatarItems, avatarLoadout }) {
-  if (!userAuth?.user) {
-    return (
-      <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-5 flex flex-col items-center justify-center text-center">
-        <PartyPopper className="w-8 h-8 text-purple-400 mb-2" />
-        <p className="text-sm text-gray-600">Đăng nhập để lưu điểm & coin của bạn nhé!</p>
-      </div>
-    );
-  }
-  return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-500 text-white p-5 shadow-md flex flex-col">
-      <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full" aria-hidden="true" />
-      <div className="relative flex items-center justify-between mb-4">
-        <h3 className="font-display text-sm font-bold flex items-center gap-2">
-          <User className="w-4 h-4" /> Thông tin người dùng
-        </h3>
-        <button onClick={() => navigate('/profile')} aria-label="Cài đặt hồ sơ" className="p-1.5 rounded-full bg-white/15 hover:bg-white/25 transition">
-          <Settings className="w-3.5 h-3.5" />
-        </button>
-      </div>
-      <div className="relative flex items-center gap-3 mb-4">
-        <span className="w-14 h-14 rounded-full overflow-hidden shrink-0 ring-2 ring-white/40">
-          {avatarItems.length > 0 ? (
-            <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={56} />
-          ) : (
-            <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl"><User className="w-6 h-6" /></div>
-          )}
-        </span>
-        <div className="min-w-0">
-          <p className="font-display text-base truncate">{userAuth.user.name}</p>
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-white/20 rounded-full px-2 py-0.5 mt-1">
-            {getLevelEmoji(lv.level)} Cấp {lv.level}
-          </span>
-        </div>
-      </div>
-      <div className="relative h-1.5 bg-white/25 rounded-full mb-1">
-        <div className="h-full bg-white rounded-full transition-all" style={{ width: `${lv.percent ?? 0}%` }} />
-      </div>
-      <p className="relative text-[11px] text-white/80 mb-4">{(lv.earned ?? 0).toLocaleString()}/{(lv.needed ?? 0).toLocaleString()} xu</p>
-      <button onClick={() => navigate('/my-coins')} className="relative bg-white/15 hover:bg-white/25 rounded-2xl px-3 py-2.5 flex items-center justify-center gap-2 text-sm font-bold transition mb-3">
-        <Coins className="w-4 h-4" /> {userCoins.toLocaleString()} xu hiện có
-      </button>
-      <p className="relative text-xs text-white/75 italic mt-auto">"Mỗi ngày học thêm một chút, bạn sẽ tiến xa hơn!" ✨</p>
-    </div>
-  );
-}
-
-// ═══════════════ Game nổi bật — cuộn ngang (mobile) ═══════════════
-function HotGamesRow({ games, templates, onSelect, onSeeAll }) {
-  return (
-    <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="font-display text-sm font-bold text-gray-800 flex items-center gap-1.5">
-            <Gamepad2 className="w-4 h-4 text-purple-500" /> Game nổi bật
-          </h3>
-          <p className="text-[10px] text-gray-400 mt-0.5">Những trò chơi được nhiều bạn yêu thích nhất</p>
-        </div>
-        <button onClick={onSeeAll} className="text-xs font-semibold text-purple-500 shrink-0">Xem tất cả →</button>
-      </div>
-      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
-        {games.slice(0, 6).map(g => {
-          const color = colorForSubject(g.subject);
-          const template = templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid));
-          return (
-            <button key={g._id || g.id} onClick={() => onSelect(g)} className="shrink-0 w-32 text-left">
-              <div className={`w-32 h-24 rounded-xl bg-gradient-to-br ${color.grad} flex items-center justify-center relative mb-1.5`}>
-                <StampToken icon={template?.icon || <Gamepad2 className="w-6 h-6" />} ring="#fff" size={36} fontSize={16} />
-                {g.playersCount > 0 && (
-                  <span className="absolute bottom-1 left-1 bg-black/40 backdrop-blur-sm text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                    <Users className="w-2 h-2" /> {g.playersCount}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs font-display text-gray-800 line-clamp-1">{g.name}</p>
-              <span className={`inline-block text-[9px] px-1.5 py-0.5 rounded mt-1 ${color.chip}`}>{g.subject}</span>
-              <span className="mt-1.5 flex items-center justify-center gap-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2 py-1 rounded-full">
-                Chơi ngay <ChevronRight className="w-3 h-3" />
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════ Game nổi bật — carousel với mũi tên (desktop) ═══════════════
-function GameCarousel({ games, templates, onSelect }) {
-  const scrollerRef = useRef(null);
-  const [activeIdx, setActiveIdx] = useState(0);
-
-  const scrollByCards = (dir) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * 260, behavior: 'smooth' });
-  };
-
-  const handleScroll = () => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const cardWidth = 260;
-    const idx = Math.round(el.scrollLeft / cardWidth);
-    setActiveIdx(Math.min(idx, Math.ceil(games.length / 3) - 1));
-  };
-
-  const pageCount = Math.max(1, Math.ceil(games.length / 3));
-
-  return (
-    <section>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <SectionHeader icon={Flame} title="Game nổi bật" gradient="from-red-500 to-orange-500" noMargin />
-          <p className="text-xs text-gray-400 mt-1 ml-1">Những trò chơi được nhiều bạn yêu thích nhất</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => scrollByCards(-1)} aria-label="Trước" className="w-8 h-8 rounded-full bg-white border border-purple-100 shadow-sm flex items-center justify-center text-purple-500 hover:bg-purple-50 transition">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button onClick={() => scrollByCards(1)} aria-label="Tiếp" className="w-8 h-8 rounded-full bg-white border border-purple-100 shadow-sm flex items-center justify-center text-purple-500 hover:bg-purple-50 transition">
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-      <div ref={scrollerRef} onScroll={handleScroll} className="flex gap-5 overflow-x-auto no-scrollbar pb-1 scroll-smooth">
-        {games.map(g => {
-          const color = colorForSubject(g.subject);
-          const template = templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid));
-          return (
-            <button key={g._id || g.id} onClick={() => onSelect(g)} className="shrink-0 w-60 bg-white rounded-2xl p-3 text-left shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 border-transparent hover:border-purple-200">
-              <div className={`w-full aspect-[4/3] rounded-xl bg-gradient-to-br ${color.grad} flex items-center justify-center mb-2.5 relative`}>
-                <StampToken icon={template?.icon || <Gamepad2 className="w-6 h-6" />} ring="#ffffff" size={48} fontSize={22} />
-                {g.playersCount > 0 && (
-                  <span className="absolute bottom-1.5 left-1.5 bg-black/40 backdrop-blur-sm text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                    <Users className="w-2.5 h-2.5" /> {g.playersCount}
-                  </span>
-                )}
-              </div>
-              <h3 className="font-display text-sm text-gray-800 leading-tight mb-1.5 line-clamp-1">{g.name}</h3>
-              <div className="flex items-center gap-1 text-[10px] font-mono mb-2">
-                <span className={`px-1.5 py-0.5 rounded ${color.chip}`}>{g.subject}</span>
-                <span className="bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded flex items-center gap-0.5"><ListChecks className="w-3 h-3" />{g.questionsCount}</span>
-              </div>
-              <span className="inline-flex items-center justify-center gap-1.5 w-full text-xs font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-full py-1.5">
-                Chơi ngay <ChevronRight className="w-3.5 h-3.5" />
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      {pageCount > 1 && (
-        <div className="flex justify-center gap-1.5 mt-3">
-          {Array.from({ length: pageCount }).map((_, i) => (
-            <span key={i} className={`h-1.5 rounded-full transition-all ${i === activeIdx ? "w-5 bg-purple-500" : "w-1.5 bg-purple-200"}`} />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-// ═══════════════ Banner quảng bá cuối trang ═══════════════
-function PromoBanner({ onExplore }) {
-  return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-500 to-indigo-500 text-white p-5 flex items-center justify-between gap-4 shadow-md">
-      <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full" aria-hidden="true" />
-      <div className="relative">
-        <p className="font-display text-base sm:text-lg leading-tight mb-1">Cùng nhau chinh phục<br className="sm:hidden" /> những thử thách mới!</p>
-        <p className="text-xs sm:text-sm text-white/80">Game mới đang chờ bạn khám phá!</p>
-      </div>
-      <button onClick={onExplore} className="relative shrink-0 bg-white text-indigo-600 text-xs sm:text-sm font-bold px-4 py-2 rounded-full hover:bg-white/90 transition">
-        Khám phá ngay →
-      </button>
-    </section>
-  );
-}
-
-// ═══════════════ Component phụ trợ dùng chung ═══════════════
+// ═══════════════ GIỮ NGUYÊN CÁC COMPONENT PHỤ TRỢ ═══════════════
 function DashboardCard({ icon: IconComponent, title, gradient, onSeeAll, children, id }) {
   return (
     <div id={id} className="bg-white rounded-3xl shadow-md border border-purple-50 p-5 flex flex-col">
@@ -985,14 +955,37 @@ function DashboardCard({ icon: IconComponent, title, gradient, onSeeAll, childre
   );
 }
 
-function SectionHeader({ icon: IconComponent, title, gradient, pulse, noMargin }) {
+function MiniGameTile({ game, onSelect }) {
+  const color = colorForSubject(game.subject);
   return (
-    <div className={`flex items-center gap-3 ${noMargin ? "" : "mb-4"}`}>
+    <button onClick={() => onSelect(game)} className="flex flex-col items-center gap-1.5 group">
+      <span className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${color.grad} text-white flex items-center justify-center text-xl shadow-sm group-hover:scale-105 transition-transform`}>
+        <Gamepad2 className="w-6 h-6" />
+      </span>
+      <span className="text-[11px] font-semibold text-gray-600 text-center leading-tight line-clamp-1">{game.name}</span>
+    </button>
+  );
+}
+
+function MiniSubjectTile({ label, classes, onClick }) {
+  return (
+    <button onClick={onClick} className="flex flex-col items-center gap-1.5 group">
+      <span className={`w-14 h-14 rounded-2xl ${classes.solid} text-white flex items-center justify-center text-xl shadow-sm group-hover:scale-105 transition-transform`}>
+        <BookOpen className="w-6 h-6" />
+      </span>
+      <span className="text-[11px] font-semibold text-gray-600 text-center leading-tight line-clamp-1">{label}</span>
+    </button>
+  );
+}
+
+function SectionHeader({ icon: IconComponent, title, gradient, pulse }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
       <div className={`flex items-center gap-2 bg-gradient-to-r ${gradient} text-white px-4 py-2 rounded-full shadow-md ${pulse ? "animate-pulse-glow" : ""}`}>
         <IconComponent className="w-5 h-5" />
         <h2 className="font-display text-base font-bold">{title}</h2>
       </div>
-      {!noMargin && <div className="flex-1 h-0.5 bg-gradient-to-r from-purple-200 to-transparent rounded-full"></div>}
+      <div className="flex-1 h-0.5 bg-gradient-to-r from-purple-200 to-transparent rounded-full"></div>
     </div>
   );
 }
@@ -1101,6 +1094,7 @@ function NotificationDropdown({
           )}
         </div>
 
+        {/* ── Bật thông báo & Test Push trên điện thoại/web ── */}
         <div className="p-3 bg-gradient-to-r from-purple-50/80 to-pink-50/80 border-b border-purple-100 text-xs">
           <div className="flex items-center justify-between gap-2 mb-1.5">
             <span className="font-semibold text-gray-700 flex items-center gap-1">
