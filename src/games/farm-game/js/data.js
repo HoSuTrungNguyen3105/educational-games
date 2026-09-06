@@ -93,35 +93,96 @@ const CONTENT = {
 };
 
 // ------------------------------------------------------------------
-// Farm layout — a fixed "blueprint" of buildings/crops/trees placed
-// on a reference grid. rebuildLayout() centers this blueprint inside
-// a grid sized to fill the current screen, so the farm always spans
-// the full viewport, however big or small.
+// Quiz option generator — every plant/harvest action asks a multiple
+// choice question. Numeric answers get nearby numeric distractors;
+// everything else borrows answers from sibling cards in the subject.
+// ------------------------------------------------------------------
+
+function shuffleArr(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildQuizOptions(subject, item) {
+  const answer = item.answer.trim();
+  const isNumeric = /^-?\d+(\.\d+)?$/.test(answer);
+  let distractors = [];
+
+  if (isNumeric) {
+    const correctNum = parseFloat(answer);
+    const used = new Set([correctNum]);
+    let guard = 0;
+    while (distractors.length < 3 && guard < 40) {
+      guard++;
+      const delta = (Math.floor(Math.random() * 9) + 1) * (Math.random() < 0.5 ? -1 : 1);
+      const cand = correctNum + delta;
+      if (!used.has(cand) && cand >= 0) {
+        used.add(cand);
+        distractors.push(String(cand));
+      }
+    }
+  }
+
+  if (distractors.length < 3) {
+    const pool = CONTENT[subject]
+      .filter(it => it.id !== item.id && it.answer.trim() !== answer)
+      .map(it => it.answer);
+    const extra = shuffleArr(pool).slice(0, 3 - distractors.length);
+    distractors = distractors.concat(extra);
+  }
+
+  return shuffleArr([answer, ...distractors]);
+}
+
+// ------------------------------------------------------------------
+// Farm layout — a fixed "blueprint" of buildings/crops/trees/decor
+// placed on a reference grid. rebuildLayout() centers this blueprint
+// inside a grid sized to fill the current screen, so the farm always
+// spans the full viewport, however big or small.
 // ------------------------------------------------------------------
 
 const TILE_SIZE = 48;
-const BASE_COLS = 14;
-const BASE_ROWS = 10;
+const BASE_COLS = 16;
+const BASE_ROWS = 12;
 
 const BLUEPRINT = {
   cropPlots: [
-    { x: 3, y: 3, id: "carrot", emoji: "🥕" }, { x: 4, y: 3, id: "corn", emoji: "🌽" },
-    { x: 5, y: 3, id: "tomato", emoji: "🍅" }, { x: 3, y: 4, id: "pumpkin", emoji: "🎃" },
-    { x: 4, y: 4, id: "cabbage", emoji: "🥬" }, { x: 5, y: 4, id: "wheat", emoji: "🌾" },
-    { x: 9, y: 6, id: "apple", emoji: "🍎" }, { x: 10, y: 7, id: "egg", emoji: "🥚" },
+    { x: 3, y: 4, id: "carrot", emoji: "🥕" }, { x: 4, y: 4, id: "corn", emoji: "🌽" },
+    { x: 5, y: 4, id: "tomato", emoji: "🍅" }, { x: 6, y: 4, id: "pumpkin", emoji: "🎃" },
+    { x: 3, y: 5, id: "cabbage", emoji: "🥬" }, { x: 4, y: 5, id: "wheat", emoji: "🌾" },
+    { x: 5, y: 5, id: "apple", emoji: "🍎" }, { x: 6, y: 5, id: "egg", emoji: "🥚" },
   ],
   trees: [
-    { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 6 }, { x: 1, y: 7 },
-    { x: 12, y: 1 }, { x: 12, y: 2 }, { x: 8, y: 8 }, { x: 11, y: 8 },
+    { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 3 }, { x: 1, y: 5 },
+    { x: 15, y: 0 }, { x: 15, y: 2 }, { x: 14, y: 6 },
+    { x: 0, y: 11 }, { x: 1, y: 11 }, { x: 15, y: 9 }, { x: 15, y: 11 },
   ],
-  barn: { x: 1, y: 2, w: 3, h: 2 },
-  coop: { x: 10, y: 1, w: 2, h: 1 },
+  bushes: [
+    { x: 7, y: 2 }, { x: 9, y: 9 }, { x: 13, y: 6 }, { x: 1, y: 9 },
+  ],
+  rocks: [
+    { x: 9, y: 3 }, { x: 14, y: 4 }, { x: 2, y: 9 },
+  ],
+  flowers: [
+    { x: 2, y: 3, emoji: "🌷" }, { x: 6, y: 2, emoji: "🌼" }, { x: 10, y: 3, emoji: "🌻" },
+    { x: 13, y: 4, emoji: "🌷" }, { x: 4, y: 9, emoji: "🌼" }, { x: 11, y: 4, emoji: "🌸" },
+    { x: 3, y: 10, emoji: "🌻" }, { x: 9, y: 10, emoji: "🌸" },
+  ],
+  pond: { x: 11, y: 8, w: 2, h: 2 },
+  well: { x: 5, y: 2 },
+  scarecrow: { x: 7, y: 4 },
+  barn: { x: 1, y: 1, w: 3, h: 2 },
+  coop: { x: 12, y: 1, w: 2, h: 1 },
   animals: [
-    { x: 6, y: 8, emoji: "🐑" }, { x: 9, y: 2, emoji: "🐔" }, { x: 2, y: 8, emoji: "🐓" },
+    { x: 2, y: 6, emoji: "🐑" }, { x: 13, y: 3, emoji: "🐔" }, { x: 10, y: 10, emoji: "🐓" },
   ],
-  pathRow: 5,   // horizontal path runs through this row (blueprint space)
-  pathCol: 7,   // vertical path runs through this column (blueprint space)
-  playerStart: { x: 6, y: 6 },
+  pathRow: 7,   // horizontal path runs through this row (blueprint space)
+  pathCol: 8,   // vertical path runs through this column (blueprint space)
+  playerStart: { x: 8, y: 6 },
 };
 
 // mutable, screen-sized layout — populated by rebuildLayout()
@@ -129,6 +190,12 @@ let MAP_COLS = BASE_COLS;
 let MAP_ROWS = BASE_ROWS;
 let CROP_PLOTS = [];
 let TREES = [];
+let BUSHES = [];
+let ROCKS = [];
+let FLOWERS = [];
+let POND = { x: 0, y: 0, w: 0, h: 0 };
+let WELL = { x: 0, y: 0 };
+let SCARECROW = { x: 0, y: 0 };
 let BARN = { x: 0, y: 0, w: 0, h: 0 };
 let COOP = { x: 0, y: 0, w: 0, h: 0 };
 let ANIMALS = [];
@@ -150,11 +217,19 @@ function rebuildLayout(viewportCols, viewportRows) {
   const offY = Math.floor((MAP_ROWS - BASE_ROWS) / 2);
   LAYOUT_OFFSET = { x: offX, y: offY };
 
+  const off = (p) => ({ ...p, x: p.x + offX, y: p.y + offY });
+
   CROP_PLOTS = BLUEPRINT.cropPlots.map(p => ({ x: p.x + offX, y: p.y + offY, vocabId: p.id, emoji: p.emoji }));
-  TREES = BLUEPRINT.trees.map(t => ({ x: t.x + offX, y: t.y + offY }));
+  TREES = BLUEPRINT.trees.map(off);
+  BUSHES = BLUEPRINT.bushes.map(off);
+  ROCKS = BLUEPRINT.rocks.map(off);
+  FLOWERS = BLUEPRINT.flowers.map(off);
+  POND = { x: BLUEPRINT.pond.x + offX, y: BLUEPRINT.pond.y + offY, w: BLUEPRINT.pond.w, h: BLUEPRINT.pond.h };
+  WELL = off(BLUEPRINT.well);
+  SCARECROW = off(BLUEPRINT.scarecrow);
   BARN = { x: BLUEPRINT.barn.x + offX, y: BLUEPRINT.barn.y + offY, w: BLUEPRINT.barn.w, h: BLUEPRINT.barn.h };
   COOP = { x: BLUEPRINT.coop.x + offX, y: BLUEPRINT.coop.y + offY, w: BLUEPRINT.coop.w, h: BLUEPRINT.coop.h };
-  ANIMALS = BLUEPRINT.animals.map(a => ({ x: a.x + offX, y: a.y + offY, emoji: a.emoji }));
+  ANIMALS = BLUEPRINT.animals.map(off);
   PLAYER_START = { x: BLUEPRINT.playerStart.x + offX, y: BLUEPRINT.playerStart.y + offY };
 
   const pathRow = BLUEPRINT.pathRow + offY;

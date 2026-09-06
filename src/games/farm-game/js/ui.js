@@ -70,7 +70,11 @@ function initUIHandlers() {
   });
 }
 
-function updateInteractHint(showing) {
+function updateInteractHint(state) {
   const hint = document.getElementById("hint-bubble");
-  hint.classList.toggle("hidden", !showing);
+  hint.classList.toggle("hidden", !state);
+  if (!state) return;
+  hint.innerHTML = state === "plant"
+    ? 'Nhấn <b>E</b> để trả lời & gieo trồng 🌱'
+    : 'Nhấn <b>E</b> để ôn lại ✨';
 }

@@ -118,11 +118,18 @@ function loop(now) {
   Player.update(now);
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawMap(ctx, AppState.progress, AppState.subject);
+  drawMap(ctx, AppState.progress, AppState.subject, now);
   Player.draw(ctx, now);
 
   const facing = Player.facingTile();
-  updateInteractHint(!!isCropPlot(facing.x, facing.y) && !vocabCardOpen && !!AppState.subject);
+  const facingPlot = isCropPlot(facing.x, facing.y);
+  let hintState = null;
+  if (facingPlot && !vocabCardOpen && AppState.subject) {
+    const key = `${AppState.subject}:${facingPlot.vocabId}`;
+    const known = AppState.progress[key] && AppState.progress[key].known;
+    hintState = known ? "review" : "plant";
+  }
+  updateInteractHint(hintState);
 
   requestAnimationFrame(loop);
 }
