@@ -337,11 +337,13 @@ export default function GardenPage({ userAuth, onBack }) {
   const pfrom = useRef(PLAYER_START);
   const pto = useRef(PLAYER_START);
   const mstart = useRef(0);
-  const MDUR = 140;
+  const MDUR = 120;
   const keys = useRef(new Set());
   const lastMv = useRef(0);
   const sync = useRef({});
   const uid = userAuth?.user?.id;
+  const moveProgress = useRef(0);
+  const [renderPos, setRenderPos] = useState(PLAYER_START);
 
   const toast_ = useCallback(m => setToast(m), []);
   const stamp = (i, p) => { sync.current[i] = { p, at: Date.now() }; };
@@ -424,14 +426,25 @@ export default function GardenPage({ userAuth, onBack }) {
     return()=>{window.removeEventListener('keydown',onK);window.removeEventListener('keyup',onU);cancelAnimationFrame(raf);};
   },[pmoving,tryMove,interact,showShop,showInv,showQuiz,harvestR,confirmDel]);
 
-  // smooth move
+  // smooth move with easing
   useEffect(()=>{
     if(!pmoving)return;let raf;
-    const step=now=>{const t=Math.min(1,(now-mstart.current)/MDUR);if(t>=1){setPp({...pto.current});setPmoving(false);return;}raf=requestAnimationFrame(step);};
+    const step=now=>{
+      const elapsed=now-mstart.current;
+      let t=Math.min(1,elapsed/MDUR);
+      // ease-out cubic for smooth deceleration
+      t=1-Math.pow(1-t,3);
+      moveProgress.current=t;
+      const cx=pfrom.current.x+(pto.current.x-pfrom.current.x)*t;
+      const cy=pfrom.current.y+(pto.current.y-pfrom.current.y)*t;
+      setRenderPos({x:cx,y:cy});
+      if(moveProgress.current>=1){setPp({...pto.current});setRenderPos({...pto.current});setPmoving(false);return;}
+      raf=requestAnimationFrame(step);
+    };
     raf=requestAnimationFrame(step);return()=>cancelAnimationFrame(raf);
-  },[pmoving, tick]);
+  },[pmoving]);
 
-  const bob = pmoving ? Math.sin((tick%10)/10*Math.PI)*3 : 0;
+  const bob = pmoving ? Math.sin(moveProgress.current*Math.PI)*3 : 0;
 
   // actions
   const doPlant = async (plantType) => {
@@ -487,13 +500,23 @@ export default function GardenPage({ userAuth, onBack }) {
   const hasFert = inv.basic_fertilizer>0||inv.premium_fertilizer>0||inv.miracle_fertilizer>0;
 
   const fp = facingSlot?.plant; const fc = fp?cfg[fp.plantType]:null; const fd = facingSlot?getDisplay(facingSlot):null;
-  const hint = fertMode ? `Đi đến ô cây, nhấn E để bón` : facingSlot&&fp ? (fd?.progress>=100?`${fc?.name} — nhấn E thu hoạch! 🎉`:`${fc?.name} — nhấn E tưới 💧`) : facingSlot&&!fp ? 'Nhấn E để trồng 🌱' : 'WASD di chuyển · E tương tác';
+  const hint = fertMode
+    ? `Đi đến ô cây, nhấn E để bón`
+    : facingSlot && fp
+      ? (fd?.progress >= 100
+          ? `${fc?.name} — nhấn E thu hoạch! 🎉`
+          : drops > 0
+            ? `${fc?.name} — nhấn E tưới nước 💧`
+            : `${fc?.name} — hết nước, làm quiz để nhận 💧`)
+    : facingSlot && !fp
+      ? 'Nhấn E để trồng cây 🌱'
+    : 'WASD di chuyển · E tương tác';
 
-  if (!userAuth?.user) return (<div id="game-wrap"><div id="sky"><div className="sky-cloud" style={{'--cy':'8%','--dur':'52s','--delay':'0s'}}/><div className="sky-cloud" style={{'--cy':'16%','--dur':'70s','--delay':'-20s'}}/><div className="sky-cloud" style={{'--cy':'4%','--dur':'60s','--delay':'-40s'}}/></div><div style={{position:'relative',zIndex:5,display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}><div className="modal-card"><h1>🌱 Chưa đăng nhập</h1><p className="lang-sub">Đăng nhập để chơi!</p><button className="primary-btn" onClick={onBack}>Về trang chủ</button></div></div></div>);
-  if (error) return (<div id="game-wrap"><div id="sky"/><div style={{position:'relative',zIndex:5,display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}><div className="modal-card"><p style={{color:'var(--barn-red)'}}>{error}</p><button className="primary-btn" onClick={load}>Thử lại</button></div></div></div>);
+  if (!userAuth?.user) return (<div className="farm-wrap"><div id="sky"><div className="sky-cloud" style={{'--cy':'8%','--dur':'52s','--delay':'0s'}}/><div className="sky-cloud" style={{'--cy':'16%','--dur':'70s','--delay':'-20s'}}/><div className="sky-cloud" style={{'--cy':'4%','--dur':'60s','--delay':'-40s'}}/></div><div style={{position:'relative',zIndex:5,display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}><div className="modal-card"><h1>🌱 Chưa đăng nhập</h1><p className="lang-sub">Đăng nhập để chơi!</p><button className="primary-btn" onClick={onBack}>Về trang chủ</button></div></div></div>);
+  if (error) return (<div className="farm-wrap"><div id="sky"/><div style={{position:'relative',zIndex:5,display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}><div className="modal-card"><p style={{color:'var(--barn-red)'}}>{error}</p><button className="primary-btn" onClick={load}>Thử lại</button></div></div></div>);
 
   return (
-    <div id="game-wrap">
+    <div className="farm-wrap">
       {/* Sky */}
       <div id="sky">
         <div className="sky-cloud" style={{'--cy':'8%','--dur':'52s','--delay':'0s'}}/>
@@ -547,20 +570,20 @@ export default function GardenPage({ userAuth, onBack }) {
             const isReady = progress >= 100;
             const si = isReady ? c.stageCount-1 : Math.min(c.stageCount-1, Math.floor((progress/100)*(c.stageCount-1)));
             const cx = cp.x*TILE+TILE/2, cy = cp.y*TILE+TILE/2;
-            // PlantArt viewBox is 120×140. Scale 0.35 → 42×49px (fits 48px tile).
-            // Soil ellipse is at viewBox y=123 → screen y = (123*0.35)+ty = 42 → ty = -1.05
-            // Center horizontally: tx = cx - 60*0.35 = cx - 21
-            const s = 0.35, tx = cx - 21, ty = -1.05;
+            // PlantArt viewBox 120×140, explicit width/height 120×140
+            // Scale 0.34 → 40.8×47.6px (fits 48px tile)
+            // Soil at viewBox (60,123.5) → screen: 60*0.34+tx=cx, 123.5*0.34+ty=cy+4
+            const s = 0.34, tx = cx - 20, ty = cy - 38;
             return <g key={`plant-${i}`}>
               <g transform={`translate(${tx},${ty}) scale(${s})`}>
                 <PlantArt plantId={slot.plant.plantType} stageIdx={si} totalStages={c.stageCount} isReady={isReady} plantConfig={cfg} />
               </g>
-              {/* progress bar — outside the scaled group, in tile coords */}
-              {!isReady && <g transform={`translate(${cx-20},${cy+TILE/2-8})`}>
+              {/* progress bar — in tile coords */}
+              {!isReady && <g transform={`translate(${cx-20},${cy+16})`}>
                 <rect x={0} y={0} width={40} height={4} rx={2} fill="#4a3220"/>
                 <rect x={0} y={0} width={Math.max(2,progress*0.4)} height={4} rx={2} fill="#4c8c3a"/>
               </g>}
-              {isReady && <text x={cx} y={cy-18} textAnchor="middle" fontSize={10} fill="#fff" fontWeight="bold">✅</text>}
+              {isReady && <text x={cx} y={cy-16} textAnchor="middle" fontSize={10} fill="#fff" fontWeight="bold">✅</text>}
             </g>;
           })}
 
@@ -568,7 +591,7 @@ export default function GardenPage({ userAuth, onBack }) {
           <rect x={2} y={2} width={COLS*TILE-4} height={ROWS*TILE-4} fill="none" stroke="#8a5a34" strokeWidth={3} rx={4}/>
 
           {/* Player */}
-          <g transform={`translate(${pp.x*TILE},${pp.y*TILE - bob})`}>
+          <g transform={`translate(${renderPos.x*TILE},${renderPos.y*TILE - bob})`}>
             <ellipse cx={TILE/2} cy={TILE-4} rx={12} ry={4} fill="rgba(0,0,0,0.18)"/>
             <foreignObject x={0} y={-8} width={TILE} height={TILE+8} style={{overflow:'visible'}}>
               <div xmlns="http://www.w3.org/1999/xhtml" style={{width:TILE,height:TILE,transform:pdir==='left'?'scaleX(-1)':'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -599,10 +622,18 @@ export default function GardenPage({ userAuth, onBack }) {
 
       {/* Action bar — Farmgame.html style + exit button */}
       <footer id="action-bar">
-        <button className="round-btn" onClick={onBack} title="Thoát">🚪</button>
-        <button className="round-btn" onClick={()=>setShowInv(true)} title="Kho đồ">🎒</button>
-        <button className="round-btn" onClick={()=>setShowQuiz(true)} title="Quiz nhận nước">💧</button>
-        <button className="round-btn" onClick={()=>setShowShop(true)} title="Cửa hàng">🛒</button>
+        <button className="round-btn" onClick={onBack} title="Thoát">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+        <button className="round-btn" onClick={()=>setShowInv(true)} title="Kho đồ">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        </button>
+        <button className="round-btn" onClick={()=>setShowQuiz(true)} title="Quiz nhận nước">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
+        </button>
+        <button className="round-btn" onClick={()=>setShowShop(true)} title="Cửa hàng">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+        </button>
       </footer>
 
       {/* Mobile d-pad */}

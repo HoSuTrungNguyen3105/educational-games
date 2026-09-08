@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { gameService, coinService, notificationService, API_BASE } from '../services/api.js'
 import { getLevelProgress, getLevelEmoji } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
@@ -226,6 +226,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     const unsubscribe = onForegroundMessage((payload) => {
       const { title, body } = payload.notification || {};
       const data = payload.data || {};
+      // Add to in-app notification list
       setNotifications(prev => [{
         id: `fg-${Date.now()}`,
         title: title || "Thông báo",
@@ -235,6 +236,21 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         read: false,
         createdAt: new Date().toISOString(),
       }, ...prev]);
+      // Show browser notification when app is in foreground
+      if ("Notification" in window && Notification.permission === "granted") {
+        const n = new Notification(title || "EduGames", {
+          body: body || "",
+          icon: "/educational-games/eduplay-icon-192x192.png",
+          tag: data.type || "general",
+        });
+        n.onclick = () => {
+          window.focus();
+          if (data?.link) navigate(data.link);
+          else if (data?.type === "ASSIGNMENT") navigate(data.link || "/");
+          else if (data?.type === "chat_message") navigate("/chat");
+          n.close();
+        };
+      }
     });
     return unsubscribe;
   }, [userAuth?.user]);
@@ -1081,10 +1097,25 @@ function NotificationDropdown({
   testingPush,
   pushMessage,
 }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    const handleScroll = () => onClose();
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [onClose]);
+
   return (
     <>
-      <div className="fixed inset-0 z-40 lg:hidden" onClick={onClose}></div>
-      <div className="fixed right-0 top-14 w-84 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden z-50 lg:absolute lg:top-auto lg:right-0 lg:mt-2 lg:z-50">
+      <div className="fixed inset-0 z-40" onClick={onClose}></div>
+      <div ref={ref} className="fixed right-2 top-14 w-96 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden z-50 lg:absolute lg:top-auto lg:right-0 lg:mt-2 lg:z-50">
         <div className="flex items-center justify-between px-4 py-3 border-b border-purple-50 bg-purple-50/60">
           <h3 className="font-bold text-gray-800 text-sm">Thông báo</h3>
           {unreadCount > 0 && (

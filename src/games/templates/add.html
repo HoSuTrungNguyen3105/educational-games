@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toán Học Vui</title>
+<style>
+  :root{
+    --sky-top:#3aa8f0;
+    --sky-mid:#6fc6ff;
+    --sky-bottom:#a9e4ff;
+    --grass:#4fae4a;
+    --grass-dark:#3d8f3a;
+    --cliff:#c99a5b;
+    --cliff-dark:#a97b42;
+    --water:#3fb6e8;
+    --water-deep:#1f8fc7;
+    --panel:#ffffff;
+    --panel-soft:#f5f8ff;
+    --ink:#1c3a5e;
+    --ink-soft:#5b7794;
+    --purple:#7c6bf0;
+    --purple-dark:#5f4cd6;
+    --gold:#ffb020;
+    --gold-dark:#e08e00;
+    --coral:#ff7a59;
+    --green-btn:#3fbf6f;
+    --shadow-soft: 0 6px 16px rgba(20,50,90,.14);
+    --radius-lg: 26px;
+    --radius-md: 18px;
+    --radius-sm: 12px;
+    font-family: 'Baloo 2', 'Quicksand', system-ui, sans-serif;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Quicksand:wght@500;600;700&display=swap');
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'Baloo 2', 'Quicksand', system-ui, sans-serif;
+    color:var(--ink);
+    overflow-x:hidden;
+    background:#0b2f4f;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;}
+  ::selection{background:var(--gold);color:#fff;}
+
+  /* ---------- SCENE / WORLD BACKGROUND ---------- */
+  .world{
+    position:relative;
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 500px at 20% -10%, rgba(255,255,255,.35), transparent 60%),
+      linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bottom) 78%, #cdeeff 100%);
+    padding-bottom: 40px;
+    transition: filter .4s ease;
+  }
+  .clouds span{
+    position:absolute; background:#fff; border-radius:50%;
+    opacity:.85; filter:blur(.5px);
+    animation: drift 60s linear infinite;
+  }
+  @keyframes drift{ from{transform:translateX(0);} to{transform:translateX(-120vw);} }
+  .cloud1{ width:140px; height:46px; top:60px; left:20%; animation-duration:80s;}
+  .cloud1:before,.cloud1:after{content:'';position:absolute;background:#fff;border-radius:50%;}
+  .cloud1:before{width:70px;height:70px;top:-30px;left:15px;}
+  .cloud1:after{width:60px;height:60px;top:-22px;left:70px;}
+  .cloud2{ width:100px; height:36px; top:140px; left:60%; animation-duration:100s;}
+  .cloud2:before,.cloud2:after{content:'';position:absolute;background:#fff;border-radius:50%;}
+  .cloud2:before{width:50px;height:50px;top:-22px;left:10px;}
+  .cloud2:after{width:44px;height:44px;top:-16px;left:52px;}
+  .cloud3{ width:90px; height:30px; top:230px; left:85%; animation-duration:70s;}
+  .cloud3:before,.cloud3:after{content:'';position:absolute;background:#fff;border-radius:50%;}
+  .cloud3:before{width:44px;height:44px;top:-18px;left:8px;}
+  .cloud3:after{width:38px;height:38px;top:-14px;left:44px;}
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{
+    display:flex; align-items:center; gap:16px;
+    padding:18px 28px 10px;
+    position:relative; z-index:5;
+  }
+  .back-btn{
+    width:44px;height:44px;border-radius:50%;
+    background:#fff; display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--shadow-soft); font-size:18px; color:var(--ink);
+    flex-shrink:0;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; margin-right:auto;}
+  .brand-icon{
+    width:52px;height:52px;border-radius:14px;
+    background:linear-gradient(160deg,#8f7bff,#5f4cd6);
+    display:flex;align-items:center;justify-content:center;font-size:26px;
+    box-shadow:var(--shadow-soft); transform:rotate(-6deg);
+  }
+  .brand-text{
+    font-weight:800; font-size:26px; line-height:1;
+    background:linear-gradient(180deg,#fff, #ffe27a);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 2px 0 rgba(80,60,0,.25);
+    letter-spacing:.5px;
+  }
+  .brand-text small{display:block; font-size:20px; color:#ffcf4d; -webkit-text-fill-color:#ffd94d;}
+
+  .pill{
+    display:flex; align-items:center; gap:8px;
+    background:rgba(255,255,255,.92);
+    padding:8px 10px 8px 14px; border-radius:999px;
+    box-shadow:var(--shadow-soft); font-weight:700; color:var(--ink);
+    font-size:16px;
+  }
+  .pill .plus{
+    width:26px;height:26px;border-radius:50%;
+    background:linear-gradient(160deg,#54c7ff,#1f9bef);
+    color:#fff; display:flex;align-items:center;justify-content:center; font-size:16px; font-weight:800;
+  }
+  .pill.coin .plus{background:linear-gradient(160deg,#ffd35c,#f5a400);}
+  .icon-bolt{color:#2196f3;}
+  .icon-coin{
+    width:22px;height:22px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ffe98a, #f2a900);
+    display:inline-block; box-shadow:inset 0 -2px 0 rgba(0,0,0,.15);
+  }
+  .profile{
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,.92); padding:6px 16px 6px 6px;
+    border-radius:999px; box-shadow:var(--shadow-soft);
+  }
+  .avatar{
+    width:42px;height:42px;border-radius:50%; background:#dfeeff; border:3px solid #fff;
+    box-shadow:0 0 0 2px #3aa8f0; display:flex;align-items:center;justify-content:center;
+    font-size:20px;
+  }
+  .profile-info{line-height:1.15;}
+  .profile-name{font-weight:800; font-size:15px;}
+  .profile-lv{font-size:12px; font-weight:700; color:var(--gold-dark); display:flex; align-items:center; gap:4px;}
+  .lv-bar{width:70px;height:6px;border-radius:4px;background:#e3e9f5; overflow:hidden; margin-top:2px;}
+  .lv-bar i{display:block;height:100%; width:38%; background:linear-gradient(90deg,#4facfe,#3a7bd5); border-radius:4px;}
+
+  /* ---------- LAYOUT: SIDEBAR + MAIN ---------- */
+  .layout{ display:flex; gap:22px; padding:18px 28px 0; position:relative; z-index:5;}
+  .sidebar{
+    width:210px; flex-shrink:0;
+    background:rgba(255,255,255,.94);
+    border-radius:var(--radius-lg);
+    padding:14px; box-shadow:var(--shadow-soft);
+    height:max-content;
+  }
+  .side-item{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 14px; border-radius:16px; font-weight:700; font-size:15.5px;
+    color:var(--ink-soft); margin-bottom:6px; transition:.15s;
+  }
+  .side-item .ic{font-size:19px;}
+  .side-item.active{
+    background:linear-gradient(135deg,#8f7bff,#6a5aec);
+    color:#fff; box-shadow:0 6px 14px rgba(100,80,240,.35);
+  }
+  .side-item:not(.active):hover{background:#f0f3fb; cursor:pointer;}
+
+  .main{flex:1; min-width:0; position:relative;}
+
+  /* Banner */
+  .banner-wrap{ display:flex; justify-content:center; margin-bottom:8px;}
+  .banner{
+    position:relative;
+    background:linear-gradient(180deg,#3d7fc9,#2a5c9e);
+    border:5px solid #a5723a;
+    border-radius:22px;
+    padding:14px 46px 18px;
+    text-align:center;
+    box-shadow:0 10px 0 rgba(60,40,10,.15), var(--shadow-soft);
+    max-width:560px;
+  }
+  .banner h1{
+    margin:0; font-size:26px; font-weight:800; color:#fff;
+    text-shadow:0 2px 0 rgba(0,0,0,.2);
+  }
+  .banner p{margin:8px 0 0; font-size:13.5px; color:#dbeaff; font-weight:600; line-height:1.5;}
+  .banner .star{position:absolute; font-size:26px; top:-10px;}
+  .banner .star.l{left:-16px;} .banner .star.r{right:-16px;}
+
+  /* progress card top-right */
+  .top-right-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:6px;}
+  .progress-card{
+    background:#fff; border-radius:18px; padding:12px 16px;
+    display:flex; align-items:center; gap:16px;
+    box-shadow:var(--shadow-soft); min-width:270px;
+  }
+  .progress-card .label{font-weight:800; font-size:14px; display:flex; align-items:center; gap:6px;}
+  .progress-bar{width:120px; height:8px; background:#e6ebf7; border-radius:6px; overflow:hidden; margin-top:6px;}
+  .progress-bar i{display:block;height:100%; width:5%; background:linear-gradient(90deg,#4facfe,#3a7bd5);}
+  .progress-num{font-size:11px; color:var(--ink-soft); font-weight:700; margin-top:4px;}
+  .reward-link{
+    display:flex; align-items:center; gap:8px; margin-left:8px; padding-left:16px;
+    border-left:2px dashed #e2e8f5; font-weight:700; font-size:13px; color:var(--ink);
+  }
+
+  /* ---------- ISLAND MAP ---------- */
+  .island{
+    position:relative;
+    background:
+      radial-gradient(ellipse 700px 260px at 78% 30%, rgba(255,255,255,.25), transparent 60%);
+    border-radius:28px;
+    min-height:480px;
+    overflow:visible;
+    margin-top:6px;
+  }
+  .island svg{position:absolute; inset:0; width:100%; height:100%;}
+
+  .mascot{
+    position:absolute; left:2%; top:44%; width:190px; z-index:4;
+    animation: bob 3.2s ease-in-out infinite;
+  }
+  @keyframes bob{ 0%,100%{transform:translateY(0) rotate(-2deg);} 50%{transform:translateY(-10px) rotate(2deg);} }
+  .speech{
+    position:absolute; left:14%; top:26%; background:#fff; border-radius:16px;
+    padding:8px 14px; font-weight:800; font-size:14px; color:var(--ink);
+    box-shadow:var(--shadow-soft); z-index:5;
+  }
+  .speech:after{
+    content:''; position:absolute; bottom:-8px; left:24px;
+    border-width:8px 8px 0 0; border-style:solid; border-color:#fff transparent transparent transparent;
+  }
+
+  .school{
+    position:absolute; right:5%; top:4%; width:220px; z-index:3; filter:drop-shadow(0 8px 10px rgba(0,0,0,.15));
+  }
+
+  .signboard{
+    position:absolute; right:2%; bottom:14%; width:120px; z-index:3;
+    transform:rotate(-4deg);
+  }
+
+  .node{
+    position:absolute; z-index:6; display:flex; flex-direction:column; align-items:center; gap:6px;
+    cursor:pointer; user-select:none;
+  }
+  .node .circle{
+    width:64px;height:64px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px; font-weight:800; color:#fff;
+    box-shadow:0 6px 0 rgba(0,0,0,.15), var(--shadow-soft);
+    border:4px solid #fff;
+    transition: transform .15s;
+  }
+  .node:hover .circle{transform:translateY(-3px) scale(1.05);}
+  .node.unlocked .circle{background:linear-gradient(160deg,#7c6bf0,#5240cf);}
+  .node.locked .circle{background:linear-gradient(160deg,#b8c2d9,#8a97b3); font-size:20px;}
+  .node .stars{display:flex; gap:2px; margin-top:-10px; z-index:2;}
+  .node .stars span{font-size:13px; color:#ffd23e; text-shadow:0 1px 1px rgba(0,0,0,.2);}
+  .node .stars span.empty{color:#d9def0;}
+  .node .tag{
+    background:#fff; padding:5px 12px; border-radius:999px; font-weight:800;
+    font-size:13px; color:var(--ink); box-shadow:var(--shadow-soft); white-space:nowrap;
+  }
+  .node.locked .tag{color:var(--ink-soft);}
+
+  .n1{ left:26%; top:60%; }
+  .n2{ left:44%; top:48%; }
+  .n3{ left:60%; top:38%; }
+  .n4{ left:74%; top:20%; }
+
+  .badge-daily{
+    position:absolute; right:1%; top:35%; z-index:6;
+    background:#fff; border-radius:18px; padding:10px 14px; text-align:center;
+    box-shadow:var(--shadow-soft); width:104px;
+  }
+  .badge-daily .gift{font-size:30px;}
+  .badge-daily .txt{font-size:12px; font-weight:800; color:var(--ink); margin-top:2px; line-height:1.25;}
+  .badge-daily .dot{
+    position:absolute; top:2px; right:10px; width:16px;height:16px;border-radius:50%;
+    background:#ff5252; color:#fff; font-size:10px; display:flex;align-items:center;justify-content:center; font-weight:800;
+  }
+
+  /* ---------- LESSONS ---------- */
+  .lessons-card{
+    background:#fff; border-radius:26px; padding:20px 22px; margin-top:22px;
+    box-shadow:var(--shadow-soft);
+  }
+  .lessons-title{ font-weight:800; font-size:19px; display:flex; align-items:center; gap:8px; margin-bottom:14px;}
+  .lessons-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  .lesson-tile{
+    border-radius:20px; padding:16px; position:relative; overflow:hidden;
+    display:flex; flex-direction:column; justify-content:space-between; min-height:96px;
+    transition:transform .15s;
+  }
+  .lesson-tile:hover{transform:translateY(-3px);}
+  .lesson-tile .ic{
+    width:44px;height:44px;border-radius:14px; background:rgba(255,255,255,.55);
+    display:flex;align-items:center;justify-content:center; font-size:22px; margin-bottom:8px;
+  }
+  .lesson-tile .name{font-weight:800; font-size:14.5px; color:#20304a;}
+  .lesson-tile .go{
+    position:absolute; right:12px; bottom:12px; width:26px;height:26px;border-radius:50%;
+    background:#fff; display:flex;align-items:center;justify-content:center; font-weight:800; color:var(--ink);
+  }
+  .t1{background:linear-gradient(160deg,#ffe17a,#ffcf40);}
+  .t2{background:linear-gradient(160deg,#8fd7ff,#4fb3f0);}
+  .t3{background:linear-gradient(160deg,#c8b6ff,#a084f5);}
+  .t4{background:linear-gradient(160deg,#a8ecc0,#6bd695);}
+
+  /* ---------- START BUTTON ---------- */
+  .start-wrap{ display:flex; justify-content:flex-end; margin-top:20px;}
+  .start-btn{
+    background:linear-gradient(180deg,#ffd54d,#ffb020);
+    border:4px solid #fff; border-radius:999px;
+    padding:16px 30px; display:flex; align-items:center; gap:12px;
+    font-weight:800; font-size:19px; color:#7a3d00;
+    box-shadow:0 8px 0 #d98a00, var(--shadow-soft);
+    transition:.12s;
+  }
+  .start-btn:hover{transform:translateY(-2px);}
+  .start-btn:active{transform:translateY(3px); box-shadow:0 4px 0 #d98a00;}
+  .start-btn .ic-controller{font-size:22px;}
+
+  /* ================= GAME SCREEN ================= */
+  .game-screen{
+    position:fixed; inset:0; z-index:100; display:none;
+    background:linear-gradient(180deg,#3aa8f0 0%, #6fc6ff 45%, #cdeeff 100%);
+    flex-direction:column; align-items:center;
+    overflow:hidden;
+  }
+  .game-screen.active{display:flex;}
+  .game-top{
+    width:100%; max-width:720px; display:flex; align-items:center; gap:14px;
+    padding:20px 20px 8px;
+  }
+  .g-close{
+    width:42px;height:42px;border-radius:50%; background:#fff; box-shadow:var(--shadow-soft);
+    display:flex;align-items:center;justify-content:center; font-size:18px; color:var(--ink); flex-shrink:0;
+  }
+  .g-hearts{ display:flex; gap:5px; font-size:20px;}
+  .g-hearts span.dim{opacity:.25;}
+  .g-progress-track{
+    flex:1; height:16px; background:rgba(255,255,255,.7); border-radius:999px; overflow:hidden;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.08);
+  }
+  .g-progress-fill{
+    height:100%; width:0%; border-radius:999px;
+    background:linear-gradient(90deg,#7c6bf0,#5f4cd6);
+    transition:width .35s ease;
+  }
+  .g-coins{ display:flex; align-items:center; gap:6px; font-weight:800; color:#7a5400; background:#fff; padding:6px 12px; border-radius:999px; box-shadow:var(--shadow-soft); flex-shrink:0;}
+
+  .game-body{
+    width:100%; max-width:640px; flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:10px 20px 30px;
+  }
+  .question-card{
+    background:#fff; border-radius:28px; padding:34px 30px; width:100%;
+    box-shadow:var(--shadow-soft); text-align:center; position:relative;
+  }
+  .question-level{ font-weight:800; color:var(--purple-dark); font-size:14px; margin-bottom:6px; letter-spacing:.3px;}
+  .question-text{ font-size:40px; font-weight:800; color:var(--ink); margin:6px 0 26px; letter-spacing:1px;}
+  .answers-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .answer-btn{
+    background:var(--panel-soft); border:3px solid #e4ebfa; border-radius:18px;
+    padding:18px 10px; font-size:24px; font-weight:800; color:var(--ink);
+    transition:.12s;
+  }
+  .answer-btn:hover{ border-color:#b9c8f2; transform:translateY(-2px);}
+  .answer-btn.correct{ background:#d9f7e2; border-color:#3fbf6f; color:#1e7a41;}
+  .answer-btn.wrong{ background:#ffe3e3; border-color:#ff6b6b; color:#c02f2f;}
+  .answer-btn:disabled{cursor:default;}
+
+  .feedback{ margin-top:18px; font-weight:800; font-size:16px; min-height:22px;}
+  .feedback.ok{color:#1e7a41;}
+  .feedback.bad{color:#c02f2f;}
+
+  .next-btn{
+    margin-top:18px; background:linear-gradient(180deg,#7c6bf0,#5f4cd6); color:#fff;
+    padding:14px 34px; border-radius:999px; font-weight:800; font-size:16px;
+    box-shadow:0 6px 0 #4335a8; display:none;
+  }
+  .next-btn.show{display:inline-block;}
+
+  /* result overlay */
+  .result-card{
+    background:#fff; border-radius:28px; padding:36px 30px; text-align:center;
+    max-width:420px; width:100%; box-shadow:var(--shadow-soft);
+  }
+  .result-emoji{font-size:64px; margin-bottom:6px;}
+  .result-title{font-weight:800; font-size:24px; margin-bottom:6px;}
+  .result-sub{color:var(--ink-soft); font-weight:600; margin-bottom:18px; font-size:14.5px;}
+  .result-stats{ display:flex; justify-content:center; gap:24px; margin-bottom:22px;}
+  .result-stat{ text-align:center;}
+  .result-stat b{display:block; font-size:22px; color:var(--ink);}
+  .result-stat span{font-size:12px; color:var(--ink-soft); font-weight:700;}
+  .result-stars{font-size:30px; margin-bottom:16px; letter-spacing:4px;}
+  .result-btn{
+    background:linear-gradient(180deg,#ffd54d,#ffb020); border-radius:999px;
+    padding:14px 30px; font-weight:800; font-size:16px; color:#7a3d00;
+    box-shadow:0 6px 0 #d98a00; width:100%;
+  }
+  .result-btn.secondary{
+    background:#eef1fb; color:var(--ink); box-shadow:none; margin-top:10px;
+  }
+
+  .toast{
+    position:fixed; top:20px; left:50%; transform:translateX(-50%);
+    background:#20304a; color:#fff; padding:10px 20px; border-radius:999px;
+    font-weight:700; font-size:14px; z-index:200; opacity:0; pointer-events:none;
+    transition:opacity .25s, top .25s;
+  }
+  .toast.show{opacity:1; top:34px;}
+
+  @media (max-width: 880px){
+    .layout{flex-direction:column;}
+    .sidebar{width:100%; display:flex; gap:8px; overflow-x:auto;}
+    .side-item{white-space:nowrap;}
+    .lessons-grid{grid-template-columns:repeat(2,1fr);}
+    .n1{left:8%; top:66%;} .n2{left:34%; top:52%;} .n3{left:58%; top:40%;} .n4{left:78%; top:18%;}
+    .school{width:150px;}
+    .mascot{width:130px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="world" id="world">
+  <div class="clouds">
+    <span class="cloud1"></span><span class="cloud2"></span><span class="cloud3"></span>
+  </div>
+
+  <div class="topbar">
+    <button class="back-btn">‹</button>
+    <div class="brand">
+      <div class="brand-icon">🧮</div>
+      <div class="brand-text">Toán học<br><small>Vui</small></div>
+    </div>
+    <div class="pill"><span class="icon-bolt">⚡</span> <span id="heartsLabel">5/5</span> <span class="plus">+</span></div>
+    <div class="pill coin"><span class="icon-coin"></span> <span id="coinsLabel">120</span> <span class="plus">+</span></div>
+    <div class="profile">
+      <div class="avatar">🧑</div>
+      <div class="profile-info">
+        <div class="profile-name">Nguyên</div>
+        <div class="profile-lv">👑 Lv.3</div>
+        <div class="lv-bar"><i></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div class="side-item active"><span class="ic">🎮</span> Chơi game</div>
+      <div class="side-item"><span class="ic">🏆</span> Bảng xếp hạng</div>
+      <div class="side-item"><span class="ic">🎁</span> Phần thưởng</div>
+      <div class="side-item"><span class="ic">📖</span> Hướng dẫn</div>
+    </div>
+
+    <div class="main">
+      <div class="top-right-row">
+        <div class="banner-wrap" style="margin:0;">
+          <div class="banner">
+            <span class="star l">⭐</span><span class="star r">⭐</span>
+            <h1>Thử thách Toán học!</h1>
+            <p>Vượt qua các thử thách, rèn luyện tư duy<br>và nhận thật nhiều phần thưởng!</p>
+          </div>
+        </div>
+        <div class="progress-card">
+          <div>
+            <div class="label">⭐ Tiến độ</div>
+            <div class="progress-bar" id="mainProgressBar"><i id="mainProgressFill"></i></div>
+            <div class="progress-num"><span id="mainProgressNum">1</span>/20</div>
+          </div>
+          <div class="reward-link">🎁 Nhận thưởng ›</div>
+        </div>
+      </div>
+
+      <div class="island">
+        <svg viewBox="0 0 1000 480" preserveAspectRatio="none">
+          <!-- path -->
+          <path d="M120,300 C220,260 260,340 340,300 C420,260 460,300 520,260 C600,210 640,230 700,190 C760,150 800,140 860,100"
+                fill="none" stroke="#e9d3a3" stroke-width="26" stroke-linecap="round"/>
+          <path d="M120,300 C220,260 260,340 340,300 C420,260 460,300 520,260 C600,210 640,230 700,190 C760,150 800,140 860,100"
+                fill="none" stroke="#d9b97a" stroke-width="26" stroke-dasharray="2 20" stroke-linecap="round"/>
+        </svg>
+
+        <div class="mascot">🐤</div>
+        <div class="speech">Học toán<br>thật vui!</div>
+
+        <div class="school">🏫</div>
+        <div class="signboard">🪧 Cố lên!</div>
+
+        <div class="badge-daily">
+          <div class="dot">1</div>
+          <div class="gift">🎁</div>
+          <div class="txt">Nhiệm vụ<br>hàng ngày</div>
+        </div>
+
+        <div class="node unlocked" data-level="1" data-name="Cộng trừ cơ bản" data-mode="addsub">
+          <div class="circle">1</div>
+          <div class="stars" id="stars-1"></div>
+          <div class="tag">Cộng trừ cơ bản</div>
+        </div>
+        <div class="node locked" data-level="2" data-name="Phép nhân" data-mode="mult">
+          <div class="circle">🔒</div>
+          <div class="tag">Phép nhân</div>
+        </div>
+        <div class="node locked" data-level="3" data-name="Phép chia" data-mode="div">
+          <div class="circle">🔒</div>
+          <div class="tag">Phép chia</div>
+        </div>
+        <div class="node locked" data-level="4" data-name="Tư duy logic" data-mode="logic">
+          <div class="circle">🔒</div>
+          <div class="tag">Tư duy logic</div>
+        </div>
+      </div>
+
+      <div class="lessons-card">
+        <div class="lessons-title">🔥 Bài học nổi bật</div>
+        <div class="lessons-grid">
+          <div class="lesson-tile t1" data-mode="addsub">
+            <div class="ic">➕</div>
+            <div class="name">Cộng trừ trong<br>phạm vi 100</div>
+            <div class="go">›</div>
+          </div>
+          <div class="lesson-tile t2" data-mode="mult">
+            <div class="ic">✖️</div>
+            <div class="name">Bảng nhân<br>2, 3, 4, 5</div>
+            <div class="go">›</div>
+          </div>
+          <div class="lesson-tile t3" data-mode="div">
+            <div class="ic">➗</div>
+            <div class="name">Bảng chia<br>2, 3, 4, 5</div>
+            <div class="go">›</div>
+          </div>
+          <div class="lesson-tile t4" data-mode="logic">
+            <div class="ic">🧠</div>
+            <div class="name">Tư duy nhanh</div>
+            <div class="go">›</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="start-wrap">
+        <button class="start-btn" id="startBtn"><span class="ic-controller">🎮</span> Bắt đầu ›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= GAME SCREEN ================= -->
+<div class="game-screen" id="gameScreen">
+  <div class="game-top">
+    <button class="g-close" id="gClose">✕</button>
+    <div class="g-hearts" id="gHearts"></div>
+    <div class="g-progress-track"><div class="g-progress-fill" id="gProgressFill"></div></div>
+    <div class="g-coins"><span class="icon-coin"></span> <span id="gCoins">120</span></div>
+  </div>
+
+  <div class="game-body" id="gameBody">
+    <div class="question-card" id="questionCard">
+      <div class="question-level" id="qLevelLabel">Cộng trừ cơ bản</div>
+      <div class="question-text" id="qText">?</div>
+      <div class="answers-grid" id="answersGrid"></div>
+      <div class="feedback" id="feedback">&nbsp;</div>
+      <button class="next-btn" id="nextBtn">Tiếp tục ›</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Đã lưu!</div>
+
+<script>
+(function(){
+  // ---------------- STATE ----------------
+  const state = {
+    coins: 120,
+    maxHearts: 5,
+    hearts: 5,
+    unlockedLevel: 1, // levels 1..4
+    levelStars: {1:0,2:0,3:0,4:0},
+    mainProgress: 1, // out of 20
+  };
+
+  const levelInfo = {
+    addsub:{ name:'Cộng trừ cơ bản', level:1 },
+    mult:{ name:'Phép nhân', level:2 },
+    div:{ name:'Phép chia', level:3 },
+    logic:{ name:'Tư duy logic', level:4 },
+  };
+
+  const QUESTIONS_PER_ROUND = 6;
+
+  // ---------------- DOM refs ----------------
+  const heartsLabel = document.getElementById('heartsLabel');
+  const coinsLabel = document.getElementById('coinsLabel');
+  const gCoins = document.getElementById('gCoins');
+  const gHearts = document.getElementById('gHearts');
+  const gProgressFill = document.getElementById('gProgressFill');
+  const gameScreen = document.getElementById('gameScreen');
+  const questionCard = document.getElementById('questionCard');
+  const gameBody = document.getElementById('gameBody');
+  const qText = document.getElementById('qText');
+  const qLevelLabel = document.getElementById('qLevelLabel');
+  const answersGrid = document.getElementById('answersGrid');
+  const feedback = document.getElementById('feedback');
+  const nextBtn = document.getElementById('nextBtn');
+  const gClose = document.getElementById('gClose');
+  const startBtn = document.getElementById('startBtn');
+  const toast = document.getElementById('toast');
+  const mainProgressFill = document.getElementById('mainProgressFill');
+  const mainProgressNum = document.getElementById('mainProgressNum');
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 1600);
+  }
+
+  function renderHUD(){
+    heartsLabel.textContent = state.hearts + '/' + state.maxHearts;
+    coinsLabel.textContent = state.coins;
+    gCoins.textContent = state.coins;
+    gHearts.innerHTML = '';
+    for(let i=0;i<state.maxHearts;i++){
+      const s = document.createElement('span');
+      s.textContent = '⚡';
+      if(i>=state.hearts) s.classList.add('dim');
+      gHearts.appendChild(s);
+    }
+    mainProgressFill.style.width = Math.min(100,(state.mainProgress/20)*100) + '%';
+    mainProgressNum.textContent = state.mainProgress;
+  }
+
+  function renderLevelNodes(){
+    document.querySelectorAll('.node').forEach(node=>{
+      const lvl = parseInt(node.dataset.level,10);
+      const circle = node.querySelector('.circle');
+      const starsDiv = node.querySelector('.stars') || (()=>{
+        const d = document.createElement('div'); d.className='stars'; node.insertBefore(d, node.querySelector('.tag'));
+        return d;
+      })();
+      if(lvl <= state.unlockedLevel){
+        node.classList.remove('locked'); node.classList.add('unlocked');
+        circle.textContent = lvl;
+        const st = state.levelStars[lvl] || 0;
+        starsDiv.innerHTML = '';
+        for(let i=0;i<3;i++){
+          const sp = document.createElement('span');
+          sp.textContent = '⭐';
+          if(i>=st) sp.classList.add('empty');
+          starsDiv.appendChild(sp);
+        }
+      } else {
+        node.classList.add('locked'); node.classList.remove('unlocked');
+        circle.textContent = '🔒';
+        starsDiv.innerHTML='';
+      }
+    });
+  }
+
+  // ---------------- QUESTION GENERATORS ----------------
+  function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+  function shuffle(arr){ return arr.sort(()=>Math.random()-0.5); }
+
+  function genOptions(correct, spread){
+    const opts = new Set([correct]);
+    while(opts.size < 4){
+      let delta = rand(-spread, spread);
+      if(delta===0) delta = 1;
+      let val = correct + delta;
+      if(val < 0) val = correct + Math.abs(delta);
+      opts.add(val);
+    }
+    return shuffle(Array.from(opts));
+  }
+
+  function genQuestion(mode){
+    if(mode === 'addsub'){
+      const isAdd = Math.random() < 0.5;
+      const a = rand(10,90), b = rand(1, 100-a);
+      if(isAdd){
+        return { text: `${a} + ${b} = ?`, answer: a+b, options: genOptions(a+b, 8) };
+      } else {
+        const x = rand(10,99), y = rand(1,x);
+        return { text: `${x} − ${y} = ?`, answer: x-y, options: genOptions(x-y, 8) };
+      }
+    }
+    if(mode === 'mult'){
+      const a = rand(2,5), b = rand(2,10);
+      return { text: `${a} × ${b} = ?`, answer: a*b, options: genOptions(a*b, 6) };
+    }
+    if(mode === 'div'){
+      const b = rand(2,5), q = rand(2,10);
+      const a = b*q;
+      return { text: `${a} ÷ ${b} = ?`, answer: q, options: genOptions(q, 4) };
+    }
+    if(mode === 'logic'){
+      const types = ['seq','odd_even','compare'];
+      const t = types[rand(0,types.length-1)];
+      if(t==='seq'){
+        const start = rand(1,10), step = rand(2,5);
+        const seq = [start, start+step, start+2*step, start+3*step];
+        return { text:`Số tiếp theo: ${seq.join(', ')}, ?`, answer: start+4*step, options: genOptions(start+4*step, 6) };
+      }
+      if(t==='odd_even'){
+        const n = rand(10,50)*2 + (Math.random()<0.5?0:1);
+        const isOdd = n % 2 !== 0;
+        return { text:`Số ${n} là số lẻ hay chẵn?`, answer: isOdd?'Lẻ':'Chẵn', options: shuffle(['Lẻ','Chẵn','Lẻ','Chẵn']).filter((v,i,a)=>a.indexOf(v)===i) };
+      }
+      // compare
+      const a = rand(1,99), b = rand(1,99);
+      const ans = a>b?'>':(a<b?'<':'=');
+      return { text:`${a} ? ${b}`, answer: ans, options: shuffle(['>','<','=']) };
+    }
+  }
+
+  // ---------------- GAME RUNTIME ----------------
+  let currentMode = 'addsub';
+  let roundIndex = 0;
+  let roundCorrect = 0;
+  let roundStartHearts = 5;
+  let currentQ = null;
+  let answered = false;
+
+  function startRound(mode){
+    currentMode = mode;
+    roundIndex = 0;
+    roundCorrect = 0;
+    roundStartHearts = state.hearts;
+    qLevelLabel.textContent = levelInfo[mode].name;
+    gameScreen.classList.add('active');
+    document.body.style.overflow='hidden';
+    nextQuestion();
+  }
+
+  function nextQuestion(){
+    if(state.hearts <= 0){
+      endRound(false);
+      return;
+    }
+    if(roundIndex >= QUESTIONS_PER_ROUND){
+      endRound(true);
+      return;
+    }
+    answered = false;
+    currentQ = genQuestion(currentMode);
+    qText.textContent = currentQ.text;
+    answersGrid.innerHTML = '';
+    feedback.textContent = '\u00A0';
+    feedback.className = 'feedback';
+    nextBtn.classList.remove('show');
+
+    currentQ.options.forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.className = 'answer-btn';
+      btn.textContent = opt;
+      btn.addEventListener('click', ()=>handleAnswer(btn, opt));
+      answersGrid.appendChild(btn);
+    });
+    gProgressFill.style.width = ((roundIndex)/QUESTIONS_PER_ROUND*100)+'%';
+  }
+
+  function handleAnswer(btn, opt){
+    if(answered) return;
+    answered = true;
+    const correct = (opt == currentQ.answer);
+    const allBtns = answersGrid.querySelectorAll('.answer-btn');
+    allBtns.forEach(b=>{
+      b.disabled = true;
+      if(b.textContent == currentQ.answer) b.classList.add('correct');
+    });
+    if(correct){
+      btn.classList.add('correct');
+      feedback.textContent = 'Chính xác! 🎉';
+      feedback.className = 'feedback ok';
+      roundCorrect++;
+      state.coins += 5;
+    } else {
+      btn.classList.add('wrong');
+      feedback.textContent = 'Chưa đúng, thử câu tiếp theo nhé!';
+      feedback.className = 'feedback bad';
+      state.hearts = Math.max(0, state.hearts - 1);
+    }
+    renderHUD();
+    roundIndex++;
+    gProgressFill.style.width = (roundIndex/QUESTIONS_PER_ROUND*100)+'%';
+    nextBtn.classList.add('show');
+  }
+
+  nextBtn.addEventListener('click', nextQuestion);
+
+  function endRound(finished){
+    const pct = roundCorrect / QUESTIONS_PER_ROUND;
+    let stars = 0;
+    if(finished){
+      if(pct >= 0.95) stars = 3;
+      else if(pct >= 0.7) stars = 2;
+      else if(pct > 0) stars = 1;
+    }
+    const lvl = levelInfo[currentMode].level;
+    if(stars > (state.levelStars[lvl]||0)){
+      state.levelStars[lvl] = stars;
+    }
+    if(finished && stars >= 1 && state.unlockedLevel === lvl && lvl < 4){
+      state.unlockedLevel = lvl + 1;
+    }
+    if(finished){
+      state.mainProgress = Math.min(20, state.mainProgress + 1);
+    }
+    // bonus coins for stars
+    if(finished) state.coins += stars * 10;
+
+    renderHUD();
+    renderLevelNodes();
+
+    questionCard.innerHTML = `
+      <div class="result-card">
+        <div class="result-emoji">${finished ? (stars===3?'🏆':stars>=1?'🎉':'💪') : '😅'}</div>
+        <div class="result-title">${finished ? 'Hoàn thành thử thách!' : 'Hết lượt chơi rồi!'}</div>
+        <div class="result-sub">${finished ? 'Làm rất tốt, tiếp tục phát huy nhé!' : 'Nghỉ ngơi chút rồi quay lại thử thách tiếp nào.'}</div>
+        ${finished ? `<div class="result-stars">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div>` : ''}
+        <div class="result-stats">
+          <div class="result-stat"><b>${roundCorrect}/${QUESTIONS_PER_ROUND}</b><span>Câu đúng</span></div>
+          <div class="result-stat"><b>+${finished ? (roundCorrect*5 + stars*10) : roundCorrect*5}</b><span>Xu nhận được</span></div>
+        </div>
+        <button class="result-btn" id="playAgainBtn">${finished ? 'Chơi tiếp' : 'Về trang chủ'}</button>
+        <button class="result-btn secondary" id="homeBtn">Về trang chủ</button>
+      </div>
+    `;
+    document.getElementById('homeBtn').addEventListener('click', closeGame);
+    document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+      if(finished){
+        restoreQuestionCard();
+        startRound(currentMode);
+      } else {
+        closeGame();
+      }
+    });
+  }
+
+  function restoreQuestionCard(){
+    questionCard.innerHTML = `
+      <div class="question-level" id="qLevelLabel">${levelInfo[currentMode].name}</div>
+      <div class="question-text" id="qText">?</div>
+      <div class="answers-grid" id="answersGrid"></div>
+      <div class="feedback" id="feedback">&nbsp;</div>
+      <button class="next-btn" id="nextBtn">Tiếp tục ›</button>
+    `;
+    // reassign refs
+    window.qText = document.getElementById('qText');
+  }
+
+  function closeGame(){
+    gameScreen.classList.remove('active');
+    document.body.style.overflow='';
+    // rebuild original card markup for next time
+    questionCard.innerHTML = `
+      <div class="question-level" id="qLevelLabel">Cộng trừ cơ bản</div>
+      <div class="question-text" id="qText">?</div>
+      <div class="answers-grid" id="answersGrid"></div>
+      <div class="feedback" id="feedback">&nbsp;</div>
+      <button class="next-btn" id="nextBtn">Tiếp tục ›</button>
+    `;
+    rebindQuestionRefs();
+  }
+
+  function rebindQuestionRefs(){
+    // re-grab elements since innerHTML was replaced
+    window.qTextEl = document.getElementById('qText');
+  }
+
+  gClose.addEventListener('click', ()=>{
+    closeGame();
+  });
+
+  // ---------------- ENTRY POINTS ----------------
+  function launch(mode){
+    if(state.hearts <= 0){
+      showToast('Bạn đã hết lượt chơi! Chờ hồi phục nhé ⚡');
+      return;
+    }
+    restoreQuestionCard();
+    startRound(mode);
+  }
+
+  startBtn.addEventListener('click', ()=>{
+    // start at highest unlocked level
+    const modeForLevel = Object.keys(levelInfo).find(k=>levelInfo[k].level===state.unlockedLevel);
+    launch(modeForLevel || 'addsub');
+  });
+
+  document.querySelectorAll('.node').forEach(node=>{
+    node.addEventListener('click', ()=>{
+      const lvl = parseInt(node.dataset.level,10);
+      if(lvl > state.unlockedLevel){
+        showToast('Hãy hoàn thành màn trước để mở khoá! 🔒');
+        return;
+      }
+      launch(node.dataset.mode);
+    });
+  });
+
+  document.querySelectorAll('.lesson-tile').forEach(tile=>{
+    tile.addEventListener('click', ()=>{
+      const mode = tile.dataset.mode;
+      const lvl = levelInfo[mode].level;
+      if(lvl > state.unlockedLevel){
+        showToast('Hoàn thành các màn trước để mở bài học này nhé!');
+        return;
+      }
+      launch(mode);
+    });
+  });
+
+  // ---------------- INIT ----------------
+  renderHUD();
+  renderLevelNodes();
+})();
+</script>
+</body>
+</html>

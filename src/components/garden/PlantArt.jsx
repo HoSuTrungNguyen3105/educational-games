@@ -391,7 +391,7 @@ export function PlantArt({ plantId, stageIdx, totalStages, isReady, plantConfig 
   if (!cfg) return null;
   const { palette, kind, noFruit } = cfg;
   return (
-    <svg viewBox="0 0 120 140" className="w-full h-full">
+    <svg viewBox="0 0 120 140" width="120" height="140">
       <PlantGradientDefs id={plantId} palette={palette} />
       <ellipse cx="60" cy="127" rx="32" ry="8" fill={`url(#ground-${plantId})`} />
       <ellipse cx="60" cy="123.5" rx="28" ry="6" fill="#8C6A42" opacity="0.55" />
