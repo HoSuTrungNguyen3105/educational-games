@@ -1,534 +1,313 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { gardenService, API_BASE } from '../../services/api.js';
-import { Icon, PlantArt } from '../../components/garden/PlantArt.jsx';
+import { PlantArt } from '../../components/garden/PlantArt.jsx';
+import { useAvatarData } from '../../components/avatar/GardenerAvatar.jsx';
+import { renderAvatarFull } from '../../lib/avatarRenderer.js';
+import '../../farmgame.css';
 
 /* ============================================================
-   FARM MAP — like Farmgame.html BLUEPRINT
+   FARM LAYOUT — mirrors Farmgame.html BLUEPRINT 16×12
+   . = grass  T = tree  B = bush  R = rock  F = flower
+   C = crop plot  P = path  W = water  S = scarecrow
+   L = well  A = barn  O = coop  X = animal
 ============================================================ */
-const TILE = 56;
-const MAP_COLS = 12;
-const MAP_ROWS = 9;
-
-// tile types: G=grass, P=path, C=crop plot, T=tree, B=bush, R=rock, W=water, L=flower
-const FARM_MAP = [
-  'T T . . . . . . . . T T',
-  'T . . B . . . . . B . T',
-  'T . . . . W . . . . . T',
-  '. . . C C C C C C . . .',
-  '. . . C C C C C C . . .',
-  '. . . . . . . . . . . .',
-  '. . . . . . . . . . . .',
-  '. . B . . . . . . B . .',
-  '. . . . . . . . . . . .',
+const COLS = 16, ROWS = 12, TILE = 48;
+const FARM = [
+  'T T . A A A . . . . . . . T T',
+  'T . . A A A . B . . . O O . T',
+  'T . L . . F . . . . . . . . T',
+  '. F . . . . . . R . . . X . .',
+  '. . . C C C C C S . F . . F .',
+  '. . . C C C C C . . . . . . .',
+  '. X . . . . . . . . . . . . .',
+  '. . . . . . . . P P P P P P P',
+  '. . . . . . . . . . W W . . .',
+  '. . B . . . . . . . W W . . .',
+  '. . . F . . . . . . . . . . .',
+  'T T . . . . . . . . . . . T T',
 ];
 
-// parse map into structured tiles
-function parseMap() {
-  const tiles = [];
-  const plots = [];
-  const decorations = [];
-  const rows = FARM_MAP.map(r => r.split(' '));
-  for (let y = 0; y < MAP_ROWS; y++) {
-    tiles[y] = [];
-    for (let x = 0; x < MAP_COLS; x++) {
-      const ch = rows[y]?.[x] || '.';
-      let type = 'grass';
-      if (ch === 'P') type = 'path';
-      else if (ch === 'C') type = 'plot';
-      else if (ch === 'T') type = 'tree';
-      else if (ch === 'B') type = 'bush';
-      else if (ch === 'R') type = 'rock';
-      else if (ch === 'W') type = 'water';
-      else if (ch === 'L') type = 'flower';
-      tiles[y][x] = type;
-      if (type === 'plot') plots.push({ x, y });
-      if (type === 'tree') decorations.push({ x, y, emoji: '🌳' });
-      if (type === 'bush') decorations.push({ x, y, emoji: '🌿' });
-      if (type === 'rock') decorations.push({ x, y, emoji: '🪨' });
-      if (type === 'water') decorations.push({ x, y, emoji: '💧' });
-    }
-  }
-  return { tiles, plots, decorations };
-}
-
-const { tiles: FARM_TILES, plots: FARM_PLOTS, decorations: FARM_DECOS } = parseMap();
-
+// which cells are walkable
+function tileAt(x, y) { return FARM[y]?.[x] || '.'; }
 function isWalkable(x, y) {
-  if (x < 0 || y < 0 || x >= MAP_COLS || y >= MAP_ROWS) return false;
-  const t = FARM_TILES[y]?.[x];
-  return t === 'grass' || t === 'path' || t === 'plot';
+  if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return false;
+  const t = tileAt(x, y);
+  return t === '.' || t === 'P' || t === 'C' || t === 'F';
 }
+function isCrop(x, y) { return tileAt(x, y) === 'C'; }
 
-const PLAYER_START = { x: 5, y: 7 };
+const PLAYER_START = { x: 7, y: 6 };
+
+// map crop tiles to slot indices
+const CROP_POSITIONS = [];
+for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (tileAt(x, y) === 'C') CROP_POSITIONS.push({ x, y });
 
 /* ============================================================
    CONSTANTS
 ============================================================ */
 const FALLBACK_PLANT_CONFIG = {
-  sunflower: {
-    name: 'Hoa hướng dương', kind: 'bloom', stageCount: 3,
-    growthTime: 5 * 60 * 1000, harvestCoin: 20, seedPrice: 5, rarity: 'common',
-    palette: { stem: '#5B8C3A', leaf: '#7CB342', leafDark: '#4C7A2A', accent: '#F4B93E', accentLight: '#FFE08A', accentDark: '#C97F17' },
-  },
-  apple: {
-    name: 'Cây táo', kind: 'fruitTree', stageCount: 4,
-    growthTime: 30 * 60 * 1000, harvestCoin: 50, seedPrice: 15, rarity: 'common',
-    palette: { stem: '#7A5230', leaf: '#4E8B3C', leafDark: '#356428', accent: '#D6483C', accentLight: '#F0847A', accentDark: '#A32A20' },
-  },
-  cherry: {
-    name: 'Cây anh đào', kind: 'bloom', stageCount: 3,
-    growthTime: 2 * 60 * 60 * 1000, harvestCoin: 120, seedPrice: 40, rarity: 'rare',
-    palette: { stem: '#6B4A34', leaf: '#7CB342', leafDark: '#578A2E', accent: '#F3A6C6', accentLight: '#FFE1EE', accentDark: '#D4679A' },
-  },
-  oak: {
-    name: 'Cây cổ thụ', kind: 'fruitTree', stageCount: 3, noFruit: true,
-    growthTime: 12 * 60 * 60 * 1000, harvestCoin: 500, seedPrice: 150, rarity: 'epic',
-    palette: { stem: '#6E4E30', leaf: '#3E6B32', leafDark: '#2A4E24', accent: '#3E6B32', accentLight: '#5C8B4C', accentDark: '#20381C' },
-  },
-  magic: {
-    name: 'Cây thần kỳ', kind: 'aura', stageCount: 4,
-    growthTime: 24 * 60 * 60 * 1000, harvestCoin: 1000, seedPrice: 400, rarity: 'legendary',
-    palette: { stem: '#8A5CC4', leaf: '#B27FE0', leafDark: '#6B3FA0', accent: '#7FD8E8', accentLight: '#F4A6E0', accentDark: '#5C3FA0' },
-  },
+  sunflower: { name: 'Hoa hướng dương', kind: 'bloom', stageCount: 3, growthTime: 5*60*1000, harvestCoin: 20, seedPrice: 5, rarity: 'common', palette: { stem:'#5B8C3A', leaf:'#7CB342', leafDark:'#4C7A2A', accent:'#F4B93E', accentLight:'#FFE08A', accentDark:'#C97F17' }},
+  apple: { name: 'Cây táo', kind: 'fruitTree', stageCount: 4, growthTime: 30*60*1000, harvestCoin: 50, seedPrice: 15, rarity: 'common', palette: { stem:'#7A5230', leaf:'#4E8B3C', leafDark:'#356428', accent:'#D6483C', accentLight:'#F0847A', accentDark:'#A32A20' }},
+  cherry: { name: 'Cây anh đào', kind: 'bloom', stageCount: 3, growthTime: 2*60*60*1000, harvestCoin: 120, seedPrice: 40, rarity: 'rare', palette: { stem:'#6B4A34', leaf:'#7CB342', leafDark:'#578A2E', accent:'#F3A6C6', accentLight:'#FFE1EE', accentDark:'#D4679A' }},
+  oak: { name: 'Cây cổ thụ', kind: 'fruitTree', stageCount: 3, noFruit: true, growthTime: 12*60*60*1000, harvestCoin: 500, seedPrice: 150, rarity: 'epic', palette: { stem:'#6E4E30', leaf:'#3E6B32', leafDark:'#2A4E24', accent:'#3E6B32', accentLight:'#5C8B4C', accentDark:'#20381C' }},
+  magic: { name: 'Cây thần kỳ', kind: 'aura', stageCount: 4, growthTime: 24*60*60*1000, harvestCoin: 1000, seedPrice: 400, rarity: 'legendary', palette: { stem:'#8A5CC4', leaf:'#B27FE0', leafDark:'#6B3FA0', accent:'#7FD8E8', accentLight:'#F4A6E0', accentDark:'#5C3FA0' }},
 };
-
 const RARITY_STYLES = {
-  common: { bg: '#EEF0EC', text: '#6B7264', label: 'Thường', border: '#D0D5CC' },
-  rare: { bg: '#E4EEFA', text: '#3D6FA8', label: 'Hiếm', border: '#A8C8E8' },
-  epic: { bg: '#F0E6FA', text: '#7A4EA8', label: 'Sử thi', border: '#C9A8E0' },
-  legendary: { bg: '#FCEFD6', text: '#B8791A', label: 'Huyền thoại', border: '#F0C87A' },
+  common: { bg:'#EEF0EC', text:'#6B7264', label:'Thường', border:'#D0D5CC' },
+  rare: { bg:'#E4EEFA', text:'#3D6FA8', label:'Hiếm', border:'#A8C8E8' },
+  epic: { bg:'#F0E6FA', text:'#7A4EA8', label:'Sử thi', border:'#C9A8E0' },
+  legendary: { bg:'#FCEFD6', text:'#B8791A', label:'Huyền thoại', border:'#F0C87A' },
 };
-
 const ITEM_CONFIG = {
-  basic_fertilizer: { name: 'Phân bón thường', type: 'consumable', price: 20, boost: 15, desc: 'Thúc cây lớn nhanh thêm 15%.', icon: '🌱' },
-  premium_fertilizer: { name: 'Phân bón cao cấp', type: 'consumable', price: 55, boost: 40, desc: 'Thúc cây lớn nhanh thêm 40%.', icon: '🌟' },
-  miracle_fertilizer: { name: 'Phân bón thần kỳ', type: 'consumable', price: 150, boost: 100, desc: 'Giúp cây chín ngay lập tức.', icon: '✨' },
-  golden_can: { name: 'Bình tưới vàng', type: 'upgrade', price: 300, desc: 'Tưới nước tăng 20% thay vì 10%.', icon: '🪙' },
-  magic_lens: { name: 'Kính lúp phép thuật', type: 'upgrade', price: 150, desc: 'Hiện đồng hồ đếm ngược trên cây.', icon: '🔍' },
+  basic_fertilizer: { name:'Phân bón thường', type:'consumable', price:20, boost:15, desc:'Thúc cây +15%.', icon:'🌱' },
+  premium_fertilizer: { name:'Phân bón cao cấp', type:'consumable', price:55, boost:40, desc:'Thúc cây +40%.', icon:'🌟' },
+  miracle_fertilizer: { name:'Phân bón thần kỳ', type:'consumable', price:150, boost:100, desc:'Chín ngay.', icon:'✨' },
+  golden_can: { name:'Bình tưới vàng', type:'upgrade', price:300, desc:'Tưới +20%.', icon:'🪙' },
+  magic_lens: { name:'Kính lúp phép thuật', type:'upgrade', price:150, desc:'Hiện timer.', icon:'🔍' },
 };
-
-const DEFAULT_INVENTORY = { basic_fertilizer: 0, premium_fertilizer: 0, miracle_fertilizer: 0, golden_can: 0, magic_lens: 0 };
-
-const MATH_QUESTIONS = [
-  { q: '12 + 8 = ?', options: ['18', '20', '22', '19'], answer: 1 },
-  { q: '15 - 7 = ?', options: ['9', '8', '7', '6'], answer: 1 },
-  { q: '6 × 7 = ?', options: ['42', '48', '36', '44'], answer: 0 },
-  { q: '56 ÷ 8 = ?', options: ['6', '8', '7', '9'], answer: 2 },
-  { q: '25 + 37 = ?', options: ['60', '62', '58', '64'], answer: 1 },
-  { q: '81 ÷ 9 = ?', options: ['8', '9', '7', '10'], answer: 1 },
-  { q: '14 × 3 = ?', options: ['40', '42', '38', '44'], answer: 1 },
-  { q: '100 - 45 = ?', options: ['50', '55', '60', '45'], answer: 1 },
-  { q: '9 × 9 = ?', options: ['81', '72', '90', '89'], answer: 0 },
-  { q: '72 ÷ 6 = ?', options: ['11', '13', '12', '14'], answer: 2 },
-  { q: '38 + 29 = ?', options: ['65', '67', '69', '63'], answer: 1 },
-  { q: '144 ÷ 12 = ?', options: ['11', '12', '13', '14'], answer: 1 },
+const DEFAULT_INV = { basic_fertilizer:0, premium_fertilizer:0, miracle_fertilizer:0, golden_can:0, magic_lens:0 };
+const MATH_Q = [
+  { q:'12 + 8 = ?', o:['18','20','22','19'], a:1 }, { q:'15 - 7 = ?', o:['9','8','7','6'], a:1 },
+  { q:'6 × 7 = ?', o:['42','48','36','44'], a:0 }, { q:'56 ÷ 8 = ?', o:['6','8','7','9'], a:2 },
+  { q:'25 + 37 = ?', o:['60','62','58','64'], a:1 }, { q:'81 ÷ 9 = ?', o:['8','9','7','10'], a:1 },
+  { q:'14 × 3 = ?', o:['40','42','38','44'], a:1 }, { q:'100 - 45 = ?', o:['50','55','60','45'], a:1 },
+  { q:'9 × 9 = ?', o:['81','72','90','89'], a:0 }, { q:'72 ÷ 6 = ?', o:['11','13','12','14'], a:2 },
 ];
 
 /* ============================================================
    HELPERS
 ============================================================ */
 function buildPlantConfig(apiTypes) {
-  if (!apiTypes || apiTypes.length === 0) return FALLBACK_PLANT_CONFIG;
-  const config = {};
-  for (const t of apiTypes) {
-    config[t.id] = {
-      name: t.name, kind: t.kind || 'bloom', stageCount: t.stages || 3,
-      growthTime: t.growthTime || 300000, harvestCoin: t.harvestCoin || 10,
-      seedPrice: t.seedPrice || 5, rarity: t.rarity || 'common',
-      palette: t.palette || FALLBACK_PLANT_CONFIG.sunflower.palette,
-    };
+  if (!apiTypes?.length) return FALLBACK_PLANT_CONFIG;
+  const c = {};
+  for (const t of apiTypes) c[t.id] = { name:t.name, kind:t.kind||'bloom', stageCount:t.stages||3, growthTime:t.growthTime||300000, harvestCoin:t.harvestCoin||10, seedPrice:t.seedPrice||5, rarity:t.rarity||'common', palette:t.palette||FALLBACK_PLANT_CONFIG.sunflower.palette };
+  return c;
+}
+function loadWater(userId) { try { const r=localStorage.getItem(`garden_water_${userId||'g'}`); return r?Number(r):5; } catch{return 5;} }
+function saveWater(userId,n) { try{localStorage.setItem(`garden_water_${userId||'g'}`,String(n));}catch{} }
+function fmtTime(ms) { const s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60),d=Math.floor(h/24); if(d>0)return`${d}d ${h%24}h`; if(h>0)return`${h}h ${m%60}m`; if(ms<=0)return'Sẵn sàng!'; return`${m}p ${s%60}s`; }
+function fmtClock(ms) { if(ms<=0)return'00:00'; const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60; return h>0?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+
+/* ============================================================
+   SVG FARM DECORATIONS — drawn inline, no external deps
+============================================================ */
+function FarmTileSVG({ type, x, y }) {
+  const px = x * TILE + TILE / 2, py = y * TILE + TILE / 2;
+  const seed = (x * 31 + y * 17) % 9;
+  if (type === 'T') return (<g>
+    <ellipse cx={px} cy={py+14} rx={14} ry={5} fill="rgba(0,0,0,0.12)" />
+    <rect x={px-3} y={py-2} width={6} height={14} rx={2} fill="#7a5230" />
+    <circle cx={px} cy={py-8} r={14} fill="#4c8c3a" />
+    <circle cx={px-6} cy={py-3} r={9} fill="#5fa347" />
+    <circle cx={px+6} cy={py-3} r={9} fill="#5fa347" />
+  </g>);
+  if (type === 'B') return (<g>
+    <ellipse cx={px} cy={py+10} rx={11} ry={3.5} fill="rgba(0,0,0,0.1)" />
+    <circle cx={px-7} cy={py+2} r={8} fill="#4f8e3c" />
+    <circle cx={px+7} cy={py+2} r={8} fill="#4f8e3c" />
+    <circle cx={px} cy={py-3} r={9} fill="#69a851" />
+  </g>);
+  if (type === 'R') return (<g>
+    <ellipse cx={px} cy={py+10} rx={10} ry={3} fill="rgba(0,0,0,0.12)" />
+    <path d={`M${px-10},${py+6} L${px-6},${py-7} L${px+4},${py-9} L${px+10},${py+2} L${px+6},${py+7} Z`} fill="#9a9a92" stroke="#77776e" strokeWidth={1.2} />
+    <path d={`M${px-4},${py-4} L${px},${py-7} L${px-2},${py-1} Z`} fill="rgba(255,255,255,0.3)" />
+  </g>);
+  if (type === 'F') { const emojis = ['🌷','🌼','🌻','🌸']; return <text x={px} y={py+5} textAnchor="middle" fontSize={16}>{emojis[(x+y)%4]}</text>; }
+  if (type === 'W') return (<g>
+    <ellipse cx={px} cy={py} rx={TILE/2-2} ry={TILE/2-2} fill="#5aa7c9" stroke="#3f83a3" strokeWidth={1.5} />
+    <ellipse cx={px-4} cy={py-2} rx={4} ry={2} fill="rgba(255,255,255,0.3)" />
+    <text x={px+6} y={py+4} fontSize={11}>🐟</text>
+  </g>);
+  if (type === 'P') return (<g>
+    {seed===0 && <ellipse cx={px} cy={py+2} rx={5} ry={3} fill="rgba(120,86,50,0.2)" />}
+  </g>);
+  if (type === 'S') return <text x={px} y={py+6} textAnchor="middle" fontSize={20}>🎃</text>;
+  if (type === 'L') return <text x={px} y={py+5} textAnchor="middle" fontSize={14}>🪣</text>;
+  if (type === 'A') return (<g>
+    <rect x={px-18} y={py-4} width={36} height={20} rx={2} fill="#e8dcc0" stroke="#40301d" strokeWidth={1.5} />
+    <path d={`M${px-22},${py-2} L${px},${py-18} L${px+22},${py-2} Z`} fill="#c1443a" stroke="#40301d" strokeWidth={1.5} />
+    <rect x={px-5} y={py+6} width={10} height={12} rx={1} fill="#fff6e2" stroke="#40301d" strokeWidth={1} />
+  </g>);
+  if (type === 'O') return (<g>
+    <rect x={px-12} y={py-2} width={24} height={14} rx={2} fill="#f5efe0" stroke="#40301d" strokeWidth={1.2} />
+    <path d={`M${px-15},${py} L${px},${py-10} L${px+15},${py} Z`} fill="#9c332a" stroke="#40301d" strokeWidth={1.2} />
+  </g>);
+  if (type === 'X') return <text x={px} y={py+6} textAnchor="middle" fontSize={16}>{(x+y)%3===0?'🐑':(x+y)%3===1?'🐔':'🐓'}</text>;
+  return null; // '.' = grass drawn by parent
+}
+
+/* ============================================================
+   AVATAR PLAYER SVG
+============================================================ */
+function AvatarPlayer({ moving, userAuth }) {
+  const { loadout, items } = useAvatarData(userAuth);
+  const state = {};
+  let bodyHtml = null;
+  for (const [cat, id] of Object.entries(loadout)) {
+    if (!id) continue;
+    const item = items.find(i => i.code === id);
+    if (!item) continue;
+    if (cat === 'body') bodyHtml = item.html || null;
+    else if (cat === 'skin') state.skin = item.params?.hex || '#FFDFC4';
+    else if (cat === 'face') state.face = item.params?.style || 'gentle';
+    else if (cat === 'hair') state.hair = { style: item.params?.style || 'spiky', color: item.params?.color || '#6B4226' };
+    else if (cat === 'shirt') state.shirt = { style: item.params?.style || 'tee', color: item.params?.color || '#F5F5F5' };
+    else if (cat === 'pants') state.pants = { style: item.params?.style || 'shorts', color: item.params?.color || '#241F1C' };
+    else if (cat === 'shoes') state.shoes = { style: item.params?.style || 'sneaker', color: item.params?.color || '#3B5EA6' };
+    else if (cat === 'hat') state.hat = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+    else if (cat === 'glasses') state.glasses = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+    else if (cat === 'accessory') state.accessory = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
   }
-  return config;
-}
-
-function loadWaterDrops(userId) {
-  try { const r = localStorage.getItem(`garden_water_${userId || 'guest'}`); return r ? Number(r) : 5; } catch { return 5; }
-}
-function saveWaterDrops(userId, count) {
-  try { localStorage.setItem(`garden_water_${userId || 'guest'}`, String(count)); } catch {}
-}
-
-function formatTime(ms) {
-  const s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
-  if (d > 0) return `${d}d ${h % 24}h`;
-  if (h > 0) return `${h}h ${m % 60}m`;
-  if (ms <= 0) return 'Sẵn sàng!';
-  return `${m}p ${s % 60}s`;
-}
-
-function formatClock(ms) {
-  if (ms <= 0) return '00:00';
-  const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
-  return h > 0 ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
-/* ============================================================
-   FARM TILE — renders a single grid cell
-============================================================ */
-function FarmTile({ x, y, type, plant, progress, isReady, stageIdx, cfg, showClock, remainingMs, isFacing, fertilizing, onInteract }) {
-  const isPlot = type === 'plot';
-  const isTree = type === 'tree';
-  const isBush = type === 'bush';
-  const isWater = type === 'water';
-
-  return (
-    <div
-      className={`relative flex items-center justify-center transition-all duration-100
-        ${isFacing ? 'ring-2 ring-[#ffc94a] ring-offset-1' : ''}
-        ${fertilizing && isPlot && plant && !isReady ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}
-      style={{ width: TILE, height: TILE }}
-    >
-      {/* Tile background */}
-      <div className={`absolute inset-0 rounded-md border border-[#40301d]/20
-        ${isPlot ? 'bg-[#6d4c33]' : isTree ? 'bg-[#83c04a]' : isBush ? 'bg-[#83c04a]' : isWater ? 'bg-[#5aa7c9]' : 'bg-[#8fc94e]'}`}
-        style={isPlot ? { border: '2px solid #4a3220' } : {}}
-      />
-
-      {/* Decorations */}
-      {isTree && <span className="text-2xl relative z-10 select-none" style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.2))' }}>🌳</span>}
-      {isBush && <span className="text-lg relative z-10 select-none">🌿</span>}
-      {isWater && <span className="text-lg relative z-10 select-none">💧</span>}
-
-      {/* Crop plot */}
-      {isPlot && !plant && (
-        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full cursor-pointer" onClick={onInteract}>
-          <div className="text-[8px] text-white/40 font-bold">🌱</div>
-          <div className="w-8 h-0.5 bg-[#4a3220]/40 rounded my-0.5" />
-          <div className="w-6 h-0.5 bg-[#4a3220]/30 rounded" />
-        </div>
-      )}
-
-      {/* Plant on plot */}
-      {isPlot && plant && cfg && (
-        <div className="relative z-10 w-full h-full" onClick={onInteract}>
-          <PlantArt plantId={plant.plantType} stageIdx={stageIdx} totalStages={cfg.stageCount} isReady={isReady} plantConfig={FALLBACK_PLANT_CONFIG} />
-          <div className="absolute bottom-0 left-0 right-0 px-0.5 pb-0.5">
-            <div className="text-[7px] font-bold text-white/60 text-center truncate">{cfg.name}</div>
-            {!isReady ? (
-              <div className="w-full bg-[#4a3220] rounded-full h-1 overflow-hidden">
-                <div className="h-full bg-[#4c8c3a] rounded-full transition-all duration-500" style={{ width: `${Math.max(2, progress)}%` }} />
-              </div>
-            ) : (
-              <div className="text-[7px] font-bold text-[#b9e88a] text-center">✅</div>
-            )}
-            {!isReady && showClock && remainingMs > 0 && (
-              <div className="text-[6px] font-mono text-white/30 text-center">{formatClock(remainingMs)}</div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Grass tuft decoration */}
-      {!isPlot && !isTree && !isBush && !isWater && (x + y) % 4 === 0 && (
-        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] opacity-40 select-none">🌱</div>
-      )}
-    </div>
-  );
-}
-
-/* ============================================================
-   PLAYER — movable avatar
-============================================================ */
-function Player({ x, y, dir, moving, bobOffset }) {
-  const flipX = dir === 'left';
-  return (
-    <div
-      className="absolute z-30 pointer-events-none transition-none"
-      style={{
-        width: TILE,
-        height: TILE,
-        left: x * TILE,
-        top: y * TILE - bobOffset,
-        transform: flipX ? 'scaleX(-1)' : 'none',
-      }}
-    >
-      {/* Shadow */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-2 bg-black/20 rounded-full" />
-      {/* Emoji */}
-      <div className="absolute inset-0 flex items-center justify-center text-3xl select-none" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>
-        🧑‍🌾
-      </div>
-      {/* Direction indicator */}
-      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#ffc94a] rounded-full border border-[#40301d] shadow-sm" />
-    </div>
-  );
+  const svg = renderAvatarFull(state, bodyHtml);
+  if (!svg) return <span className="text-2xl select-none">🧑‍🌾</span>;
+  const isFull = svg.includes('<svg') || (svg.includes('id="head"') && svg.includes('id="body"'));
+  const vb = isFull ? '0 0 512 700' : '0 0 300 440';
+  return <svg viewBox={vb} width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
 /* ============================================================
    SEED SHOP MODAL
 ============================================================ */
-function SeedShop({ userCoins, onSelect, onClose, plantConfig, plotIndex }) {
-  const seedList = Object.entries(plantConfig).map(([id, cfg]) => ({ id, ...cfg }));
+function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
+  const seeds = Object.entries(plantConfig).map(([id, c]) => ({ id, ...c }));
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-[#1c2410]/60" />
-      <div className="relative bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden anim-pop"
-        style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b-[3px] border-[#40301d] shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🌾</span>
-            <h3 className="font-bold text-lg text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>Cửa hàng hạt giống</h3>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center border-[3px] border-[#40301d] bg-[#fff6e2] hover:bg-[#fdecc8] text-[#6b5540] text-sm" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>✕</button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+        <h1 style={{ fontSize: 22, margin: '4px 0 6px' }}>🌾 Cửa hàng hạt giống</h1>
+        <p className="lang-sub">Chọn hạt giống để trồng trên cánh đồng!</p>
+        <div style={{ display:'flex', alignItems:'center', gap:8, justifyContent:'center', marginBottom:14 }}>
+          <span className="hud-icon" style={{ width:22, height:22, fontSize:12 }}>🌾</span>
+          <span style={{ fontFamily:"'Baloo 2'", fontWeight:700, fontSize:16 }}>{userCoins?.toLocaleString()} Coin</span>
         </div>
-        <div className="flex items-center gap-2 px-5 py-2 bg-[#ffc94a]/20 border-b-[3px] border-[#40301d] shrink-0">
-          <div className="w-5 h-5 rounded-full bg-[#ffc94a] border-2 border-[#40301d] flex items-center justify-center text-[10px]">🌾</div>
-          <span className="text-sm font-bold text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{userCoins?.toLocaleString()} Coin</span>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {seedList.map(seed => {
-            const canBuy = (userCoins || 0) >= seed.seedPrice;
-            const r = RARITY_STYLES[seed.rarity];
+        <div style={{ display:'flex', flexDirection:'column', gap:8, textAlign:'left' }}>
+          {seeds.map(s => {
+            const can = (userCoins||0) >= s.seedPrice;
+            const r = RARITY_STYLES[s.rarity];
             return (
-              <button key={seed.id} onClick={() => canBuy && onSelect(seed.id, plotIndex)} disabled={!canBuy}
-                className={`w-full flex items-center gap-3 p-2.5 rounded-xl border-[3px] border-[#40301d] transition-all text-left
-                  ${canBuy ? 'bg-white hover:translate-y-[-1px] cursor-pointer' : 'bg-[#e8e0d0] opacity-50 cursor-not-allowed'}`}
-                style={{ boxShadow: canBuy ? '0 3px 0 rgba(64,48,29,0.35)' : 'none' }}>
-                <div className="w-11 h-11 shrink-0 rounded-lg bg-[#eaf7d8] border-2 border-[#40301d] overflow-hidden">
-                  <PlantArt plantId={seed.id} stageIdx={seed.stageCount - 1} totalStages={seed.stageCount} isReady={false} plantConfig={plantConfig} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-sm text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{seed.name}</span>
-                    <span className="px-1 py-0.5 rounded text-[8px] font-bold border border-[#40301d]" style={{ background: r.bg, color: r.text }}>{r.label}</span>
+              <button key={s.id} onClick={() => can && onSelect(s.id)} disabled={!can}
+                className="lang-option" style={{ opacity: can ? 1 : 0.4, cursor: can ? 'pointer' : 'not-allowed', width:'100%', justifyContent:'space-between' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, flex:1, minWidth:0 }}>
+                  <div style={{ width:40, height:40, borderRadius:10, background:'#eaf7d8', border:'2px solid #40301d', overflow:'hidden', flexShrink:0 }}>
+                    <PlantArt plantId={s.id} stageIdx={s.stageCount-1} totalStages={s.stageCount} isReady={false} plantConfig={plantConfig} />
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5 text-[9px] font-bold text-[#6b5540]">
-                    <span>⏰ {formatTime(seed.growthTime)}</span>
-                    <span>🌾 +{seed.harvestCoin}</span>
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ fontFamily:"'Baloo 2'", fontWeight:700, fontSize:14 }}>{s.name} <span style={{ fontSize:10, background:r.bg, color:r.text, border:`1px solid ${r.border}`, borderRadius:4, padding:'1px 5px' }}>{r.label}</span></div>
+                    <div style={{ fontSize:11, color:'#6b5540' }}>⏰ {fmtTime(s.growthTime)} · 🌾 +{s.harvestCoin}</div>
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="flex items-center gap-1 text-sm font-bold text-[#8a6a10]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>
-                    <span className="w-4 h-4 rounded-full bg-[#ffc94a] border border-[#40301d] flex items-center justify-center text-[9px]">🌾</span>{seed.seedPrice}
-                  </div>
-                </div>
+                <div style={{ fontFamily:"'Baloo 2'", fontWeight:700, fontSize:14, color:'#8a6a10', flexShrink:0 }}>🌾 {s.seedPrice}</div>
               </button>
             );
           })}
         </div>
+        <button className="primary-btn" style={{ marginTop:14 }} onClick={onClose}>Đóng</button>
       </div>
     </div>
   );
 }
 
 /* ============================================================
-   INVENTORY SHOP MODAL
+   INVENTORY MODAL
 ============================================================ */
-function InventoryShop({ userCoins, inventory, onBuy, onUse, onSelectFertilizer, onClose }) {
-  const ownedEntries = Object.entries(ITEM_CONFIG).filter(([id]) => (inventory[id] || 0) > 0);
+function InventoryModal({ userCoins, inventory, onBuy, onUse, onSelectFert, onClose }) {
+  const owned = Object.entries(ITEM_CONFIG).filter(([id]) => (inventory[id]||0) > 0);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-[#1c2410]/60" />
-      <div className="relative bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden anim-pop"
-        style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b-[3px] border-[#40301d] shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🎒</span>
-            <h3 className="font-bold text-lg text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>Kho đồ</h3>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center border-[3px] border-[#40301d] bg-[#fff6e2] hover:bg-[#fdecc8] text-[#6b5540] text-sm" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>✕</button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+        <h1 style={{ fontSize: 22, margin: '4px 0 6px' }}>🎒 Kho đồ</h1>
+        <div style={{ display:'flex', alignItems:'center', gap:8, justifyContent:'center', marginBottom:14 }}>
+          <span className="hud-icon" style={{ width:22, height:22, fontSize:12 }}>🌾</span>
+          <span style={{ fontFamily:"'Baloo 2'", fontWeight:700, fontSize:16 }}>{userCoins?.toLocaleString()} Coin</span>
         </div>
-        <div className="flex items-center gap-2 px-5 py-2 bg-[#ffc94a]/20 border-b-[3px] border-[#40301d] shrink-0">
-          <div className="w-5 h-5 rounded-full bg-[#ffc94a] border-2 border-[#40301d] flex items-center justify-center text-[10px]">🌾</div>
-          <span className="text-sm font-bold text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{userCoins?.toLocaleString()} Coin</span>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {ownedEntries.length > 0 && (
-            <div>
-              <div className="text-[10px] font-bold uppercase text-[#6b5540] mb-1.5">Sở hữu</div>
-              <div className="space-y-1.5">
-                {ownedEntries.map(([id, item]) => {
-                  const owned = inventory[id] || 0;
-                  const isUpgrade = item.type === 'upgrade';
-                  return (
-                    <div key={id} className="flex items-center gap-2.5 p-2 rounded-xl border-[3px] border-[#4c8c3a] bg-[#b9e88a]/30" style={{ boxShadow: '0 3px 0 #2f5a24' }}>
-                      <span className="text-xl">{item.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-sm text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{item.name}</span>
-                          <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-[#4c8c3a] text-white border border-[#2f5a24]">x{owned}</span>
-                        </div>
-                      </div>
-                      {isUpgrade ? (
-                        <button onClick={() => onUse(id)} className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#ffc94a] text-[#40301d] border-[3px] border-[#40301d]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>Dùng</button>
-                      ) : (
-                        <button onClick={() => onSelectFertilizer(id)} className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#fff6e2] text-[#8a6a10] border-[3px] border-[#40301d]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>Bón</button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          <div>
-            <div className="text-[10px] font-bold uppercase text-[#6b5540] mb-1.5">Mua sắm</div>
-            <div className="space-y-2">
-              {Object.entries(ITEM_CONFIG).map(([id, item]) => {
-                const owned = inventory[id] || 0;
-                const isUpgrade = item.type === 'upgrade';
-                const alreadyOwned = isUpgrade && owned > 0;
-                const canBuy = !alreadyOwned && (userCoins || 0) >= item.price;
-                return (
-                  <div key={id} className={`flex items-center gap-2.5 p-2 rounded-xl border-[3px] border-[#40301d] ${alreadyOwned ? 'bg-[#b9e88a]/30 border-[#4c8c3a]' : 'bg-white'}`}
-                    style={{ boxShadow: alreadyOwned ? '0 3px 0 #2f5a24' : '0 3px 0 rgba(64,48,29,0.35)' }}>
-                    <span className="text-xl">{item.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <span className="font-bold text-sm text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{item.name}</span>
-                      <p className="text-[9px] text-[#6b5540]">{item.desc}</p>
-                    </div>
-                    <button onClick={() => canBuy && onBuy(id)} disabled={!canBuy}
-                      className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold border-[3px] border-[#40301d]
-                        ${alreadyOwned ? 'bg-[#b9e88a] text-[#2f5a24] cursor-default' : canBuy ? 'bg-[#ffc94a] text-[#40301d]' : 'bg-[#e8e0d0] text-[#6b5540] cursor-not-allowed opacity-50'}`}
-                      style={{ boxShadow: canBuy ? '0 3px 0 rgba(64,48,29,0.35)' : 'none' }}>
-                      {alreadyOwned ? '✅' : `${item.price}🌾`}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        {owned.length > 0 && <div style={{ marginBottom:12 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:'#6b5540', marginBottom:6, textTransform:'uppercase' }}>Sở hữu</div>
+          {owned.map(([id, item]) => {
+            const n = inventory[id]||0; const up = item.type==='upgrade';
+            return <div key={id} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', background:'#dff2c8', border:'2px solid #4c8c3a', borderRadius:12, marginBottom:6 }}>
+              <span style={{ fontSize:20 }}>{item.icon}</span>
+              <div style={{ flex:1 }}><span style={{ fontFamily:"'Baloo 2'", fontWeight:700, fontSize:13 }}>{item.name}</span> x{n}</div>
+              {up ? <button className="vocab-btn known" style={{ padding:'6px 12px', fontSize:12 }} onClick={() => onUse(id)}>Dùng</button>
+                : <button className="vocab-btn known" style={{ padding:'6px 12px', fontSize:12 }} onClick={() => onSelectFert(id)}>Bón</button>}
+            </div>;
+          })}
+        </div>}
+        <div style={{ fontSize:11, fontWeight:700, color:'#6b5540', marginBottom:6, textTransform:'uppercase' }}>Mua sắm</div>
+        {Object.entries(ITEM_CONFIG).map(([id, item]) => {
+          const up = item.type==='upgrade'; const have = up && (inventory[id]||0)>0;
+          const can = !have && (userCoins||0) >= item.price;
+          return <div key={id} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', background: have ? '#dff2c8' : '#fff', border:`2px solid ${have?'#4c8c3a':'#40301d'}`, borderRadius:12, marginBottom:6 }}>
+            <span style={{ fontSize:20 }}>{item.icon}</span>
+            <div style={{ flex:1 }}><span style={{ fontFamily:"'Baloo 2'", fontWeight:700, fontSize:13 }}>{item.name}</span><div style={{ fontSize:10, color:'#6b5540' }}>{item.desc}</div></div>
+            <button className={`quiz-opt ${have ? 'correct' : can ? '' : 'dim'}`} style={{ padding:'6px 12px', fontSize:12, cursor: can || have ? 'pointer' : 'default' }}
+              onClick={() => can && onBuy(id)}>{have ? '✅' : `🌾 ${item.price}`}</button>
+          </div>;
+        })}
+        <button className="primary-btn" style={{ marginTop:14 }} onClick={onClose}>Đóng</button>
       </div>
     </div>
   );
 }
 
 /* ============================================================
-   HARVEST MODAL
+   HARVEST / QUIZ / CONFIRM MODALS
 ============================================================ */
 function HarvestModal({ plantType, onConfirm, onClose, plantConfig }) {
   if (!plantType) return null;
-  const cfg = plantConfig[plantType];
-  if (!cfg) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-[#1c2410]/60" />
-      <div className="relative bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] w-full max-w-xs text-center p-5 anim-pop"
-        style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }} onClick={e => e.stopPropagation()}>
-        <div className="w-20 h-20 mx-auto mb-2">
-          <PlantArt plantId={plantType} stageIdx={cfg.stageCount - 1} totalStages={cfg.stageCount} isReady plantConfig={plantConfig} />
-        </div>
-        <h3 className="font-bold text-lg text-[#40301d] mb-1" style={{ fontFamily: "'Baloo 2', sans-serif" }}>🎉 Thu hoạch!</h3>
-        <div className="flex items-center justify-center gap-2 text-xl font-bold text-[#8a6a10] mb-3" style={{ fontFamily: "'Baloo 2', sans-serif" }}>
-          🌾 +{cfg.harvestCoin}
-        </div>
-        <button onClick={onConfirm} className="w-full py-2.5 bg-[#4c8c3a] text-white rounded-xl font-bold border-[3px] border-[#40301d] hover:bg-[#2f5a24] transition" style={{ boxShadow: '0 4px 0 #2f5a24' }}>
-          Tuyệt vời!
-        </button>
+  const cfg = plantConfig[plantType]; if (!cfg) return null;
+  return (<div className="modal-overlay" onClick={onClose}>
+    <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth:340 }}>
+      <div style={{ width:80, height:80, margin:'0 auto 8px' }}><PlantArt plantId={plantType} stageIdx={cfg.stageCount-1} totalStages={cfg.stageCount} isReady plantConfig={plantConfig} /></div>
+      <h1 style={{ fontSize:20 }}>🎉 Thu hoạch thành công!</h1>
+      <div style={{ fontFamily:"'Baloo 2'", fontWeight:700, fontSize:24, color:'#8a6a10', margin:'8px 0 14px' }}>🌾 +{cfg.harvestCoin}</div>
+      <button className="primary-btn" onClick={onConfirm}>Tuyệt vời!</button>
+    </div>
+  </div>);
+}
+
+function QuizModal({ onEarn, onClose }) {
+  const [q, setQ] = useState(null); const [sel, setSel] = useState(null); const [res, setRes] = useState(null);
+  const pick = () => { setQ(MATH_Q[Math.floor(Math.random()*MATH_Q.length)]); setSel(null); setRes(null); };
+  useEffect(() => { pick(); }, []);
+  const sub = () => { if(sel===null||!q)return; const ok=sel===q.a; setRes(ok); if(ok)setTimeout(()=>onEarn(1),800); };
+  if (!q) return null;
+  return (<div className="modal-overlay" onClick={onClose}>
+    <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth:380 }}>
+      <h1 style={{ fontSize:18, margin:'0 0 10px' }}>💧 Trả lời để nhận nước</h1>
+      <div style={{ background:'var(--cream-2)', border:'2px solid var(--ink)', borderRadius:14, padding:14, marginBottom:12 }}>
+        <p style={{ fontFamily:"'Baloo 2'", fontWeight:800, fontSize:20, margin:0 }}>{q.q}</p>
       </div>
-    </div>
-  );
-}
-
-/* ============================================================
-   QUIZ MODAL
-============================================================ */
-function QuizModal({ onEarnWater, onClose }) {
-  const [question, setQuestion] = useState(null);
-  const [selected, setSelected] = useState(null);
-  const [result, setResult] = useState(null);
-
-  const pickQuestion = () => {
-    const idx = Math.floor(Math.random() * MATH_QUESTIONS.length);
-    setQuestion(MATH_QUESTIONS[idx]);
-    setSelected(null);
-    setResult(null);
-  };
-
-  useEffect(() => { pickQuestion(); }, []);
-
-  const handleSubmit = () => {
-    if (selected === null || !question) return;
-    const correct = selected === question.answer;
-    setResult(correct);
-    if (correct) setTimeout(() => onEarnWater(1), 800);
-  };
-
-  if (!question) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-[#1c2410]/60" />
-      <div className="relative bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] w-full max-w-sm p-5 anim-pop"
-        style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">💧</span>
-            <h3 className="font-bold text-base text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>Trả lời để nhận nước</h3>
-          </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center border-[3px] border-[#40301d] bg-[#fff6e2] text-[#6b5540] text-xs" style={{ boxShadow: '0 2px 0 rgba(64,48,29,0.35)' }}>✕</button>
-        </div>
-        <div className="bg-[#eaf7d8] rounded-xl p-3 mb-3 text-center border-[3px] border-[#40301d]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>
-          <p className="text-lg font-bold text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{question.q}</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          {question.options.map((opt, i) => {
-            const isSelected = selected === i;
-            const isCorrect = result !== null && i === question.answer;
-            const isWrong = result !== null && isSelected && i !== question.answer;
-            return (
-              <button key={i} onClick={() => result === null && setSelected(i)} disabled={result !== null}
-                className={`py-2.5 rounded-xl border-[3px] border-[#40301d] text-sm font-bold transition-all
-                  ${isCorrect ? 'bg-[#b9e88a] border-[#2f5a24]' : isWrong ? 'bg-[#f3a6a0] border-[#8c2f27]' : isSelected ? 'bg-[#ffc94a]' : 'bg-white hover:translate-y-[-1px]'}`}
-                style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>
-                {opt}
-              </button>
-            );
-          })}
-        </div>
-        {result === null ? (
-          <button onClick={handleSubmit} disabled={selected === null}
-            className="w-full py-2.5 bg-[#5aa7c9] text-white rounded-xl font-bold border-[3px] border-[#40301d] disabled:opacity-40"
-            style={{ boxShadow: '0 4px 0 #2a5a6e' }}>Trả lời</button>
-        ) : (
-          <div className="text-center">
-            <p className={`font-bold text-sm mb-2 ${result ? 'text-[#2f5a24]' : 'text-[#8c2f27]'}`} style={{ fontFamily: "'Baloo 2', sans-serif" }}>
-              {result ? '✅ Đúng rồi! +1 💧' : `❌ Sai! Đáp án: ${question.options[question.answer]}`}
-            </p>
-            <button onClick={pickQuestion} className="w-full py-2.5 bg-[#5aa7c9] text-white rounded-xl font-bold border-[3px] border-[#40301d]" style={{ boxShadow: '0 4px 0 #2a5a6e' }}>Câu tiếp</button>
-          </div>
-        )}
+      <div className="quiz-options">
+        {q.o.map((o,i) => {
+          const cor=res!==null&&i===q.a, wrn=res!==null&&sel===i&&i!==q.a;
+          return <button key={i} className={`quiz-opt ${cor?'correct':''} ${wrn?'wrong':''} ${res!==null&&i!==q.a&&i!==sel?'dim':''}`}
+            onClick={()=>res===null&&setSel(i)} disabled={res!==null}>{o}</button>;
+        })}
       </div>
+      {res===null ? <button className="primary-btn" style={{ marginTop:12 }} disabled={sel===null} onClick={sub}>Trả lời</button>
+        : <div><p style={{ fontFamily:"'Baloo 2'", fontWeight:700, color:res?'#2f5a24':'#8c2f27', margin:'8px 0' }}>{res?'✅ Đúng rồi! +1 💧':`❌ Sai! Đáp án: ${q.o[q.a]}`}</p>
+          <button className="primary-btn" onClick={pick}>Câu tiếp theo</button></div>}
     </div>
-  );
+  </div>);
 }
 
-/* ============================================================
-   TOAST
-============================================================ */
-function FarmToast({ message, onClose }) {
-  useEffect(() => {
-    if (!message) return;
-    const t = setTimeout(() => onClose?.(), 2200);
-    return () => clearTimeout(t);
-  }, [message, onClose]);
-  if (!message) return null;
-  return (
-    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[100] px-5 py-2.5 rounded-full border-[3px] border-[#40301d] max-w-[86vw] text-center whitespace-nowrap overflow-hidden text-ellipsis anim-pop"
-      style={{ fontFamily: "'Baloo 2', sans-serif", background: '#40301d', color: '#fff', boxShadow: '0 6px 16px rgba(0,0,0,0.3)' }}>
-      {message}
-    </div>
-  );
-}
-
-/* ============================================================
-   CONFIRM MODAL
-============================================================ */
-function FarmConfirm({ open, title, message, onConfirm, onCancel }) {
+function ConfirmDialog({ open, title, msg, onYes, onNo }) {
   if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
-      <div className="absolute inset-0 bg-[#1c2410]/60" />
-      <div className="relative bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] w-full max-w-xs text-center p-5 anim-pop"
-        style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }} onClick={e => e.stopPropagation()}>
-        <h3 className="font-bold text-lg text-[#40301d] mb-2" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{title}</h3>
-        <p className="text-sm text-[#6b5540] mb-4">{message}</p>
-        <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl bg-[#fff6e2] text-[#6b5540] font-bold text-sm border-[3px] border-[#40301d] hover:bg-[#fdecc8]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>Hủy</button>
-          <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl bg-[#c1443a] text-white font-bold text-sm border-[3px] border-[#40301d] hover:bg-[#9c332a]" style={{ boxShadow: '0 3px 0 #6b1e18' }}>Xóa</button>
-        </div>
+  return (<div className="modal-overlay" onClick={onNo}>
+    <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth:340 }}>
+      <h1 style={{ fontSize:18 }}>{title}</h1>
+      <p style={{ color:'var(--ink-soft)', fontSize:13, margin:'6px 0 16px' }}>{msg}</p>
+      <div style={{ display:'flex', gap:10 }}>
+        <button className="quiz-opt" style={{ flex:1 }} onClick={onNo}>Hủy</button>
+        <button className="primary-btn" style={{ flex:1, background:'var(--barn-red)', boxShadow:'0 5px 0 var(--barn-red-dark)' }} onClick={onYes}>Xóa</button>
       </div>
     </div>
-  );
+  </div>);
+}
+
+function ToastFarm({ msg, onDone }) {
+  useEffect(() => { if(!msg)return; const t=setTimeout(onDone,2200); return ()=>clearTimeout(t); }, [msg, onDone]);
+  if (!msg) return null;
+  return <div className="toast">{msg}</div>;
 }
 
 /* ============================================================
@@ -539,502 +318,312 @@ export default function GardenPage({ userAuth, onBack }) {
   const [userCoins, setUserCoins] = useState(0);
   const [error, setError] = useState(null);
   const [showShop, setShowShop] = useState(false);
-  const [showInventory, setShowInventory] = useState(false);
-  const [selectedPlotIndex, setSelectedPlotIndex] = useState(null);
-  const [harvestResult, setHarvestResult] = useState(null);
-  const [inventory, setInventory] = useState({ ...DEFAULT_INVENTORY });
-  const [plantConfig, setPlantConfig] = useState(FALLBACK_PLANT_CONFIG);
-  const [waterDrops, setWaterDrops] = useState(() => loadWaterDrops(userAuth?.user?.id));
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [fertilizeMode, setFertilizeMode] = useState(null);
-  const [toast, setToast] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [showInv, setShowInv] = useState(false);
+  const [selSlot, setSelSlot] = useState(null);
+  const [harvestR, setHarvestR] = useState(null);
   const [tick, setTick] = useState(0);
+  const [inv, setInv] = useState({ ...DEFAULT_INV });
+  const [cfg, setCfg] = useState(FALLBACK_PLANT_CONFIG);
+  const [drops, setDrops] = useState(() => loadWater(userAuth?.user?.id));
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [fertMode, setFertMode] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [confirmDel, setConfirmDel] = useState(null);
 
-  // Player state
-  const [playerPos, setPlayerPos] = useState({ x: PLAYER_START.x, y: PLAYER_START.y });
-  const [playerDir, setPlayerDir] = useState('down');
-  const [playerMoving, setPlayerMoving] = useState(false);
-  const [playerFrom, setPlayerFrom] = useState({ x: PLAYER_START.x, y: PLAYER_START.y });
-  const [playerTo, setPlayerTo] = useState({ x: PLAYER_START.x, y: PLAYER_START.y });
-  const moveStartRef = useRef(0);
-  const moveDuration = 140;
-  const keysDown = useRef(new Set());
-  const lastMoveRef = useRef(0);
-  const syncRef = useRef({});
-  const userId = userAuth?.user?.id;
+  // player
+  const [pp, setPp] = useState(PLAYER_START);
+  const [pdir, setPdir] = useState('down');
+  const [pmoving, setPmoving] = useState(false);
+  const pfrom = useRef(PLAYER_START);
+  const pto = useRef(PLAYER_START);
+  const mstart = useRef(0);
+  const MDUR = 140;
+  const keys = useRef(new Set());
+  const lastMv = useRef(0);
+  const sync = useRef({});
+  const uid = userAuth?.user?.id;
 
-  const showToast = useCallback((msg) => setToast(msg), []);
+  const toast_ = useCallback(m => setToast(m), []);
+  const stamp = (i, p) => { sync.current[i] = { p, at: Date.now() }; };
 
-  const stampSync = (idx, prog) => { syncRef.current[idx] = { progress: prog, at: Date.now() }; };
-
-  // Facing tile
-  const facingTile = useMemo(() => {
-    let dx = 0, dy = 0;
-    if (playerDir === 'down') dy = 1;
-    else if (playerDir === 'up') dy = -1;
-    else if (playerDir === 'left') dx = -1;
-    else if (playerDir === 'right') dx = 1;
-    return { x: playerPos.x + dx, y: playerPos.y + dy };
-  }, [playerPos, playerDir]);
-
-  // Load data
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [gardenData, plantTypesRes] = await Promise.all([
-        gardenService.get(),
-        gardenService.getPlantTypes().catch(() => null),
-      ]);
-      if (gardenData) {
-        setGarden(gardenData);
-        if (gardenData.inventory) setInventory({ ...DEFAULT_INVENTORY, ...gardenData.inventory });
-        (gardenData.slots || []).forEach(s => {
-          if (s.plant) stampSync(s.index, s.plant.isReady ? 100 : (s.plant.progress || 0));
-          else delete syncRef.current[s.index];
-        });
-      }
-      if (plantTypesRes?.types) setPlantConfig(buildPlantConfig(plantTypesRes.types));
-      const auth = JSON.parse(localStorage.getItem('edu_games_auth') || '{}');
-      if (auth?.token) {
-        const r = await fetch(`${API_BASE}/auth/me/coins`, { headers: { Authorization: `Bearer ${auth.token}` } }).then(r => r.json());
-        if (r?.status) setUserCoins(r.data.coins || 0);
-      }
-    } catch (e) { setError(e.message || 'Lỗi tải khu vườn'); }
+      const [g, pt] = await Promise.all([gardenService.get(), gardenService.getPlantTypes().catch(()=>null)]);
+      if (g) { setGarden(g); if(g.inventory) setInv({...DEFAULT_INV,...g.inventory}); (g.slots||[]).forEach(s=>{ if(s.plant) stamp(s.index, s.plant.isReady?100:(s.plant.progress||0)); else delete sync.current[s.index]; }); }
+      if (pt?.types) setCfg(buildPlantConfig(pt.types));
+      const auth = JSON.parse(localStorage.getItem('edu_games_auth')||'{}');
+      if (auth?.token) { const r = await fetch(`${API_BASE}/auth/me/coins`,{headers:{Authorization:`Bearer ${auth.token}`}}).then(r=>r.json()); if(r?.status) setUserCoins(r.data.coins||0); }
+    } catch(e) { setError(e.message||'Lỗi tải khu vườn'); }
   }, []);
-
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => { const iv = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(iv); }, []);
+  useEffect(()=>{load();},[load]);
+  useEffect(()=>{const iv=setInterval(()=>setTick(t=>t+1),1000);return()=>clearInterval(iv);},[]);
 
   const slots = garden?.slots || [];
 
-  // Map farm plots to garden slots
-  const plotToSlot = useMemo(() => {
-    const map = {};
-    FARM_PLOTS.forEach((fp, i) => {
-      if (slots[i]) map[`${fp.x},${fp.y}`] = slots[i];
-    });
-    return map;
+  // map crop positions to slots
+  const cropMap = useMemo(() => {
+    const m = {};
+    CROP_POSITIONS.forEach((cp, i) => { if (slots[i]) m[`${cp.x},${cp.y}`] = slots[i]; });
+    return m;
   }, [slots]);
 
   const getDisplay = useCallback((slot) => {
-    const plant = slot?.plant;
-    if (!plant) return { progress: 0, remainingMs: 0 };
-    const cfg = plantConfig[plant.plantType];
-    if (!cfg) return { progress: plant.progress || 0, remainingMs: 0 };
-    const sync = syncRef.current[slot.index] || { progress: plant.progress || 0, at: Date.now() };
-    if (plant.isReady || sync.progress >= 100) return { progress: 100, remainingMs: 0 };
-    const elapsed = Date.now() - sync.at;
-    const grown = (elapsed / cfg.growthTime) * 100;
-    const progress = Math.min(100, sync.progress + grown);
-    const remainingMs = Math.max(0, cfg.growthTime * (1 - progress / 100));
-    return { progress, remainingMs };
-  }, [plantConfig]);
+    const plant = slot?.plant; if (!plant) return { progress:0, remainingMs:0 };
+    const c = cfg[plant.plantType]; if (!c) return { progress:plant.progress||0, remainingMs:0 };
+    const s = sync.current[slot.index]||{ p:plant.progress||0, at:Date.now() };
+    if (plant.isReady||s.p>=100) return { progress:100, remainingMs:0 };
+    const el = Date.now()-s.at; const g = (el/c.growthTime)*100;
+    const progress = Math.min(100, s.p+g);
+    return { progress, remainingMs: Math.max(0, c.growthTime*(1-progress/100)) };
+  }, [cfg]);
 
-  // Player movement
-  const tryMove = useCallback((dx, dy) => {
-    if (playerMoving) return;
-    let dir = 'down';
-    if (dx === 1) dir = 'right';
-    else if (dx === -1) dir = 'left';
-    else if (dy === -1) dir = 'up';
-    setPlayerDir(dir);
-    const nx = playerPos.x + dx;
-    const ny = playerPos.y + dy;
-    if (!isWalkable(nx, ny)) return;
-    setPlayerFrom({ ...playerPos });
-    setPlayerTo({ x: nx, y: ny });
-    setPlayerMoving(true);
-    moveStartRef.current = performance.now();
-  }, [playerPos, playerMoving]);
+  // facing
+  const facing = useCallback(() => {
+    let dx=0,dy=0;
+    if(pdir==='down')dy=1;else if(pdir==='up')dy=-1;else if(pdir==='left')dx=-1;else if(pdir==='right')dx=1;
+    return { x:pp.x+dx, y:pp.y+dy };
+  }, [pp, pdir]);
 
-  // Interaction with facing tile
-  const handleInteract = useCallback(() => {
-    const key = `${facingTile.x},${facingTile.y}`;
-    const slot = plotToSlot[key];
-    if (!slot) return;
+  const facingSlot = (() => { const f=facing(); return cropMap[`${f.x},${f.y}`]||null; })();
 
-    const { progress } = getDisplay(slot);
-    const plant = slot.plant;
+  // movement
+  const tryMove = useCallback((dx,dy) => {
+    if(pmoving)return;
+    let d='down'; if(dx===1)d='right';else if(dx===-1)d='left';else if(dy===-1)d='up';
+    setPdir(d);
+    const nx=pp.x+dx, ny=pp.y+dy;
+    if(!isWalkable(nx,ny))return;
+    pfrom.current={...pp}; pto.current={x:nx,y:ny};
+    setPmoving(true); mstart.current=performance.now();
+  }, [pp, pmoving]);
 
-    if (!plant) {
-      // Empty plot — open seed shop
-      setSelectedPlotIndex(slot.index);
-      setShowShop(true);
-    } else if (progress >= 100) {
-      // Ready — harvest
-      handleHarvest(slot.index);
-    } else if (waterDrops > 0) {
-      // Water
-      handleWater(slot.index);
-    } else {
-      setShowQuiz(true);
-    }
-  }, [facingTile, plotToSlot, getDisplay, waterDrops]);
+  const interact = useCallback(() => {
+    const f=facing(); const slot=cropMap[`${f.x},${f.y}`];
+    if(!slot)return;
+    const {progress}=getDisplay(slot);
+    if(!slot.plant){setSelSlot(slot);setShowShop(true);}
+    else if(progress>=100) doHarvest(slot.index);
+    else if(drops>0) doWater(slot.index);
+    else setShowQuiz(true);
+  }, [facing, cropMap, getDisplay, drops]);
 
-  // Keyboard
-  useEffect(() => {
-    const MOVE_REPEAT = 140;
-    const handleKey = (e) => {
-      const key = e.key.toLowerCase();
-      if (showShop || showInventory || showQuiz || harvestResult || confirmDelete) return;
-      if (key === 'e' || key === ' ') { e.preventDefault(); handleInteract(); return; }
-      keysDown.current.add(key);
+  // keyboard
+  useEffect(()=>{
+    const onK=e=>{const k=e.key.toLowerCase();if(showShop||showInv||showQuiz||harvestR||confirmDel)return;if(k==='e'||k===' '){e.preventDefault();interact();return;}keys.current.add(k);};
+    const onU=e=>keys.current.delete(e.key.toLowerCase());
+    let raf;
+    const loop=now=>{
+      if(!pmoving){const k=keys.current;let dx=0,dy=0;
+        if(k.has('arrowup')||k.has('w'))dy=-1;else if(k.has('arrowdown')||k.has('s'))dy=1;
+        else if(k.has('arrowleft')||k.has('a'))dx=-1;else if(k.has('arrowright')||k.has('d'))dx=1;
+        if((dx||dy)&&now-lastMv.current>140){tryMove(dx,dy);lastMv.current=now;}}
+      raf=requestAnimationFrame(loop);
     };
-    const handleUp = (e) => { keysDown.current.delete(e.key.toLowerCase()); };
+    window.addEventListener('keydown',onK);window.addEventListener('keyup',onU);raf=requestAnimationFrame(loop);
+    return()=>{window.removeEventListener('keydown',onK);window.removeEventListener('keyup',onU);cancelAnimationFrame(raf);};
+  },[pmoving,tryMove,interact,showShop,showInv,showQuiz,harvestR,confirmDel]);
 
-    const loop = (now) => {
-      if (!playerMoving) {
-        const k = keysDown.current;
-        let dx = 0, dy = 0;
-        if (k.has('arrowup') || k.has('w')) dy = -1;
-        else if (k.has('arrowdown') || k.has('s')) dy = 1;
-        else if (k.has('arrowleft') || k.has('a')) dx = -1;
-        else if (k.has('arrowright') || k.has('d')) dx = 1;
-        if ((dx || dy) && now - lastMoveRef.current > MOVE_REPEAT) {
-          tryMove(dx, dy);
-          lastMoveRef.current = now;
-        }
-      }
-      requestAnimationFrame(loop);
-    };
+  // smooth move
+  useEffect(()=>{
+    if(!pmoving)return;let raf;
+    const step=now=>{const t=Math.min(1,(now-mstart.current)/MDUR);if(t>=1){setPp({...pto.current});setPmoving(false);return;}raf=requestAnimationFrame(step);};
+    raf=requestAnimationFrame(step);return()=>cancelAnimationFrame(raf);
+  },[pmoving, tick]);
 
-    window.addEventListener('keydown', handleKey);
-    window.addEventListener('keyup', handleUp);
-    const raf = requestAnimationFrame(loop);
-    return () => { window.removeEventListener('keydown', handleKey); window.removeEventListener('keyup', handleUp); cancelAnimationFrame(raf); };
-  }, [playerMoving, tryMove, handleInteract, showShop, showInventory, showQuiz, harvestResult, confirmDelete]);
+  const bob = pmoving ? Math.sin((tick%10)/10*Math.PI)*3 : 0;
 
-  // Player position update
-  useEffect(() => {
-    if (!playerMoving) return;
-    const iv = requestAnimationFrame((now) => {
-      const t = Math.min(1, (now - moveStartRef.current) / moveDuration);
-      if (t >= 1) {
-        setPlayerPos({ ...playerTo });
-        setPlayerMoving(false);
-      }
-    });
-    return () => cancelAnimationFrame(iv);
-  }, [playerMoving, playerTo, tick]);
-
-  // Bob offset
-  const bobOffset = playerMoving ? Math.sin((tick % 10) / 10 * Math.PI) * 3 : 0;
-
-  // Plant, water, harvest, fertilize handlers
-  const handlePlant = async (plantType, plotIdx) => {
-    const cfg = plantConfig[plantType];
-    setShowShop(false);
-    setSelectedPlotIndex(null);
-    const prevGarden = garden;
-    const prevCoins = userCoins;
-    setGarden(g => {
-      if (!g) return g;
-      return { ...g, slots: g.slots.map(s => s.index === plotIdx ? { ...s, plant: { plantType, progress: 0, isReady: false } } : s) };
-    });
-    stampSync(plotIdx, 0);
-    setUserCoins(c => Math.max(0, c - cfg.seedPrice));
-    try {
-      const res = await gardenService.plant(plotIdx, plantType);
-      if (!res?.success) throw new Error(res?.message || 'Lỗi trồng cây');
-      showToast(`Đã trồng ${cfg.name}! 🌱`);
-      load();
-    } catch (e) {
-      setGarden(prevGarden);
-      setUserCoins(prevCoins);
-      delete syncRef.current[plotIdx];
-      showToast(e.message);
-    }
+  // actions
+  const doPlant = async (plantType) => {
+    if(!selSlot)return; const c=cfg[plantType]; const idx=selSlot.index;
+    setShowShop(false);setSelSlot(null);
+    const pg=garden,pc=userCoins;
+    setGarden(g=>g?{...g,slots:g.slots.map(s=>s.index===idx?{...s,plant:{plantType,progress:0,isReady:false}}:s)}:g);
+    stamp(idx,0);setUserCoins(v=>Math.max(0,v-c.seedPrice));
+    try{const r=await gardenService.plant(idx,plantType);if(!r?.success)throw new Error(r?.message||'Lỗi');toast_(`Trồng ${c.name}! 🌱`);load();}
+    catch(e){setGarden(pg);setUserCoins(pc);delete sync.current[idx];toast_(e.message);}
+  };
+  const doHarvest = async (idx) => {
+    const s=slots.find(s=>s.index===idx);const pt=s?.plant?.plantType;const pg=garden;
+    setGarden(g=>({...g,slots:g.slots.map(s=>s.index===idx?{...s,plant:null}:s)}));delete sync.current[idx];
+    if(pt)setHarvestR(pt);
+    try{const r=await gardenService.harvest(idx);if(!r?.success)throw new Error(r?.message);load();}
+    catch(e){setGarden(pg);setHarvestR(null);toast_(e.message);}
+  };
+  const doWater = async (idx) => {
+    if(drops<=0){setShowQuiz(true);return;}
+    const s=slots.find(s=>s.index===idx);if(!s?.plant)return;
+    const {progress}=getDisplay(s);const boost=inv.golden_can>0?20:10;const next=Math.min(100,progress+boost);
+    stamp(idx,next);setGarden(g=>({...g,slots:g.slots.map(s=>s.index===idx?{...s,plant:{...s.plant,progress:next,isReady:next>=100}}:s)}));
+    const nd=drops-1;setDrops(nd);saveWater(uid,nd);
+    try{await gardenService.water(idx);}catch(e){toast_(e.message);}
+  };
+  const doFert = async (idx, itemId) => {
+    if(!itemId||(inv[itemId]||0)<=0)return; const s=slots.find(s=>s.index===idx);if(!s?.plant)return;
+    const {progress}=getDisplay(s);const next=Math.min(100,progress+ITEM_CONFIG[itemId].boost);
+    stamp(idx,next);setGarden(g=>({...g,slots:g.slots.map(s=>s.index===idx?{...s,plant:{...s.plant,progress:next,isReady:next>=100}}:s)}));
+    setFertMode(null);toast_(`Bón ${ITEM_CONFIG[itemId].name}!`);
+    try{const r=await gardenService.useItem(itemId);if(r?.inventory)setInv({...DEFAULT_INV,...r.inventory});else setInv(p=>({...p,[itemId]:(p[itemId]||0)-1}));}
+    catch{setInv(p=>({...p,[itemId]:(p[itemId]||0)-1}));}
+  };
+  const doEarn = (n) => { const nd=drops+n;setDrops(nd);saveWater(uid,nd);setShowQuiz(false);toast_('Nhận +1 💧'); };
+  const doRemove = async () => { const idx=confirmDel;setConfirmDel(null);const pg=garden;
+    setGarden(g=>({...g,slots:g.slots.map(s=>s.index===idx?{...s,plant:null}:s)}));delete sync.current[idx];
+    try{await gardenService.remove(idx);toast_('Đã xóa');}catch(e){setGarden(pg);toast_(e.message);}
+  };
+  const doBuy = async (itemId) => {
+    const item=ITEM_CONFIG[itemId];if((userCoins||0)<item.price)return;
+    try{const r=await gardenService.buyItem(itemId);if(r?.inventory)setInv({...DEFAULT_INV,...r.inventory});if(r?.coins!==undefined)setUserCoins(r.coins);else setUserCoins(c=>c-item.price);toast_(`Mua ${item.name}!`);}
+    catch(e){toast_(e.message);}
+  };
+  const doUse = async (itemId) => {
+    if((inv[itemId]||0)<=0)return;setInv(p=>({...p,[itemId]:(p[itemId]||0)-1}));
+    try{const r=await gardenService.useItem(itemId);if(r?.inventory)setInv({...DEFAULT_INV,...r.inventory});toast_(`Dùng ${ITEM_CONFIG[itemId]?.name}!`);}
+    catch(e){setInv(p=>({...p,[itemId]:(p[itemId]||0)+1}));toast_(e.message);}
   };
 
-  const handleHarvest = async (index) => {
-    const slot = slots.find(s => s.index === index);
-    const plantType = slot?.plant?.plantType;
-    const prevGarden = garden;
-    setGarden(g => ({ ...g, slots: g.slots.map(s => s.index === index ? { ...s, plant: null } : s) }));
-    delete syncRef.current[index];
-    if (plantType) setHarvestResult(plantType);
-    try {
-      const res = await gardenService.harvest(index);
-      if (!res?.success) throw new Error(res?.message);
-      load();
-    } catch (e) { setGarden(prevGarden); setHarvestResult(null); showToast(e.message); }
-  };
+  const planted = slots.filter(s=>s.plant).length;
+  const ready = slots.filter(s=>s.plant&&getDisplay(s).progress>=100).length;
+  const hasFert = inv.basic_fertilizer>0||inv.premium_fertilizer>0||inv.miracle_fertilizer>0;
 
-  const handleWater = async (index) => {
-    if (waterDrops <= 0) { setShowQuiz(true); return; }
-    const slot = slots.find(s => s.index === index);
-    if (!slot?.plant) return;
-    const { progress } = getDisplay(slot);
-    const boost = inventory.golden_can > 0 ? 20 : 10;
-    const next = Math.min(100, progress + boost);
-    stampSync(index, next);
-    setGarden(g => ({ ...g, slots: g.slots.map(s => s.index === index ? { ...s, plant: { ...s.plant, progress: next, isReady: next >= 100 } } : s) }));
-    const nd = waterDrops - 1;
-    setWaterDrops(nd);
-    saveWaterDrops(userId, nd);
-    try { await gardenService.water(index); } catch (e) { showToast(e.message); }
-  };
+  const fp = facingSlot?.plant; const fc = fp?cfg[fp.plantType]:null; const fd = facingSlot?getDisplay(facingSlot):null;
+  const hint = fertMode ? `Đi đến ô cây, nhấn E để bón` : facingSlot&&fp ? (fd?.progress>=100?`${fc?.name} — nhấn E thu hoạch! 🎉`:`${fc?.name} — nhấn E tưới 💧`) : facingSlot&&!fp ? 'Nhấn E để trồng 🌱' : 'WASD di chuyển · E tương tác';
 
-  const handleEarnWater = (amt) => {
-    const nd = waterDrops + amt;
-    setWaterDrops(nd);
-    saveWaterDrops(userId, nd);
-    setShowQuiz(false);
-    showToast('Nhận +1 💧');
-  };
-
-  const handleFertilize = async (index, itemId) => {
-    if (!itemId || (inventory[itemId] || 0) <= 0) return;
-    const slot = slots.find(s => s.index === index);
-    if (!slot?.plant) return;
-    const { progress } = getDisplay(slot);
-    const next = Math.min(100, progress + ITEM_CONFIG[itemId].boost);
-    stampSync(index, next);
-    setGarden(g => ({ ...g, slots: g.slots.map(s => s.index === index ? { ...s, plant: { ...s.plant, progress: next, isReady: next >= 100 } } : s) }));
-    setFertilizeMode(null);
-    showToast(`Đã bón ${ITEM_CONFIG[itemId].name}!`);
-    try {
-      const r = await gardenService.useItem(itemId);
-      if (r?.inventory) setInventory({ ...DEFAULT_INVENTORY, ...r.inventory });
-      else setInventory(p => ({ ...p, [itemId]: (p[itemId] || 0) - 1 }));
-    } catch { setInventory(p => ({ ...p, [itemId]: (p[itemId] || 0) - 1 })); }
-  };
-
-  const handleRemove = (index) => setConfirmDelete(index);
-  const confirmRemove = async () => {
-    const index = confirmDelete;
-    setConfirmDelete(null);
-    const prevGarden = garden;
-    setGarden(g => ({ ...g, slots: g.slots.map(s => s.index === index ? { ...s, plant: null } : s) }));
-    delete syncRef.current[index];
-    try { await gardenService.remove(index); showToast('Đã xóa cây'); } catch (e) { setGarden(prevGarden); showToast(e.message); }
-  };
-
-  const handleBuyItem = async (itemId) => {
-    const item = ITEM_CONFIG[itemId];
-    if ((userCoins || 0) < item.price) return;
-    try {
-      const r = await gardenService.buyItem(itemId);
-      if (r?.inventory) setInventory({ ...DEFAULT_INVENTORY, ...r.inventory });
-      if (r?.coins !== undefined) setUserCoins(r.coins);
-      else setUserCoins(c => c - item.price);
-      showToast(`Đã mua ${item.name}!`);
-    } catch (e) { showToast(e.message); }
-  };
-
-  const handleUseItem = async (itemId) => {
-    if ((inventory[itemId] || 0) <= 0) return;
-    setInventory(p => ({ ...p, [itemId]: (p[itemId] || 0) - 1 }));
-    try {
-      const r = await gardenService.useItem(itemId);
-      if (r?.inventory) setInventory({ ...DEFAULT_INVENTORY, ...r.inventory });
-      showToast(`Đã dùng ${ITEM_CONFIG[itemId]?.name}!`);
-    } catch (e) { setInventory(p => ({ ...p, [itemId]: (p[itemId] || 0) + 1 })); showToast(e.message); }
-  };
-
-  const handleSelectFertilizer = (itemId) => { setShowInventory(false); setFertilizeMode(itemId); };
-
-  // Planted count
-  const plantedCount = slots.filter(s => s.plant).length;
-  const readyCount = slots.filter(s => s.plant && getDisplay(s).progress >= 100).length;
-  const hasAnyFertilizer = inventory.basic_fertilizer > 0 || inventory.premium_fertilizer > 0 || inventory.miracle_fertilizer > 0;
-
-  // Get facing plot
-  const facingKey = `${facingTile.x},${facingTile.y}`;
-  const facingSlot = plotToSlot[facingKey];
-  const facingPlant = facingSlot?.plant;
-  const facingCfg = facingPlant ? plantConfig[facingPlant.plantType] : null;
-  const facingDisplay = facingSlot ? getDisplay(facingSlot) : null;
-
-  // Hint
-  const getHint = () => {
-    if (fertilizeMode) return `Chọn cây để bón — di chuyển đến ô cây, nhấn E`;
-    if (facingSlot && facingPlant) {
-      if (facingDisplay?.progress >= 100) return `Nhấn E để thu hoạch ${facingCfg?.name || 'cây'}! 🎉`;
-      return `${facingCfg?.name || 'Cây'} — nhấn E để tưới nước 💧`;
-    }
-    if (facingSlot && !facingPlant) return 'Nhấn E để trồng cây 🌱';
-    return 'Dùng WASD/Phím mũi tên để di chuyển, E để tương tác';
-  };
-
-  if (!userAuth?.user) {
-    return (
-      <div className="fixed inset-0 overflow-hidden" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <div id="farm-sky" />
-        <div className="relative z-10 flex items-center justify-center h-full">
-          <div className="bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] p-6 text-center max-w-xs w-full anim-pop" style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }}>
-            <div className="text-4xl mb-3">🌱</div>
-            <h2 className="font-bold text-lg text-[#40301d] mb-2" style={{ fontFamily: "'Baloo 2', sans-serif" }}>Chưa đăng nhập</h2>
-            <p className="text-sm text-[#6b5540] mb-4">Bạn cần đăng nhập để xem khu vườn</p>
-            <button onClick={onBack} className="w-full py-2.5 bg-[#4c8c3a] text-white rounded-xl font-bold border-[3px] border-[#40301d] hover:bg-[#2f5a24]" style={{ boxShadow: '0 4px 0 #2f5a24' }}>Về trang chủ</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="fixed inset-0 overflow-hidden" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <div id="farm-sky" />
-        <div className="relative z-10 flex items-center justify-center h-full">
-          <div className="bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] p-6 text-center max-w-xs w-full anim-pop" style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }}>
-            <p className="text-sm text-[#8c2f27] mb-3 font-bold">{error}</p>
-            <button onClick={load} className="w-full py-2.5 bg-[#4c8c3a] text-white rounded-xl font-bold border-[3px] border-[#40301d] hover:bg-[#2f5a24]" style={{ boxShadow: '0 4px 0 #2f5a24' }}>Thử lại</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!userAuth?.user) return (<div id="game-wrap"><div id="sky"><div className="sky-cloud" style={{'--cy':'8%','--dur':'52s','--delay':'0s'}}/><div className="sky-cloud" style={{'--cy':'16%','--dur':'70s','--delay':'-20s'}}/><div className="sky-cloud" style={{'--cy':'4%','--dur':'60s','--delay':'-40s'}}/></div><div style={{position:'relative',zIndex:5,display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}><div className="modal-card"><h1>🌱 Chưa đăng nhập</h1><p className="lang-sub">Đăng nhập để chơi!</p><button className="primary-btn" onClick={onBack}>Về trang chủ</button></div></div></div>);
+  if (error) return (<div id="game-wrap"><div id="sky"/><div style={{position:'relative',zIndex:5,display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}><div className="modal-card"><p style={{color:'var(--barn-red)'}}>{error}</p><button className="primary-btn" onClick={load}>Thử lại</button></div></div></div>);
 
   return (
-    <div className="fixed inset-0 overflow-hidden" style={{ fontFamily: "'Nunito', sans-serif" }}>
+    <div id="game-wrap">
       {/* Sky */}
-      <div id="farm-sky" />
+      <div id="sky">
+        <div className="sky-cloud" style={{'--cy':'8%','--dur':'52s','--delay':'0s'}}/>
+        <div className="sky-cloud" style={{'--cy':'16%','--dur':'70s','--delay':'-20s'}}/>
+        <div className="sky-cloud" style={{'--cy':'4%','--dur':'60s','--delay':'-40s'}}/>
+      </div>
 
-      {/* Clouds */}
-      <div className="sky-cloud" style={{ '--cy': '8%', '--dur': '52s', '--delay': '0s' }} />
-      <div className="sky-cloud" style={{ '--cy': '16%', '--dur': '70s', '--delay': '-20s' }} />
-      <div className="sky-cloud" style={{ '--cy': '4%', '--dur': '60s', '--delay': '-40s' }} />
+      {/* Farm canvas (CSS grid代替canvas) */}
+      <div style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', zIndex:1, display:'flex', alignItems:'center', justifyContent:'center', touchAction:'none' }}>
+        <svg viewBox={`0 0 ${COLS*TILE} ${ROWS*TILE}`} style={{ maxWidth:'100vw', maxHeight:'100vh', display:'block' }}>
+          {/* Ground tiles */}
+          {Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>{
+            const t=tileAt(x,y); const px=x*TILE, py=y*TILE;
+            if(t==='C') return <rect key={`${x},${y}`} x={px} y={py} width={TILE} height={TILE} fill="#6d4c33" stroke="#4a3220" strokeWidth={1.5}/>;
+            if(t==='P') return <rect key={`${x},${y}`} x={px} y={py} width={TILE} height={TILE} fill="#d8b384"/>;
+            const variant = (x*7+y*13)%5===0;
+            return <rect key={`${x},${y}`} x={px} y={py} width={TILE} height={TILE} fill={variant?'#83c04a':'#8fc94e'}/>;
+          })).flat()}
 
-      {/* HUD */}
-      <header className="absolute top-3 left-3 right-3 z-50 flex items-center justify-between pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-2 bg-[#fff6e2] border-[3px] border-[#40301d] rounded-full px-3 py-1.5" style={{ fontFamily: "'Baloo 2', sans-serif", boxShadow: '0 4px 0 rgba(64,48,29,0.35)' }}>
-          <span className="w-6 h-6 rounded-full bg-[#ffc94a] border-2 border-[#40301d] flex items-center justify-center text-[11px]">🌾</span>
-          <span className="text-[15px] text-[#40301d] font-bold">{userCoins.toLocaleString()}</span>
+          {/* Grass tufts */}
+          {Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>{
+            if(tileAt(x,y)==='C'||tileAt(x,y)==='P')return null;
+            const seed=(x*31+y*17)%9; if(seed!==0)return null;
+            const px=x*TILE, py=y*TILE;
+            return <g key={`tuft-${x}-${y}`} opacity={0.4}>
+              {[0,1,2].map(i=>{const bx=px+10+i*8;return <path key={i} d={`M${bx},${py+TILE-6} Q${bx+2},${py+TILE-16} ${bx+(i-1)*3},${py+TILE-22}`} stroke="rgba(48,90,30,0.45)" strokeWidth={2} fill="none"/>;})}
+            </g>;
+          })).flat()}
+
+          {/* Decorations */}
+          {Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>{
+            const t=tileAt(x,y); if(t==='.'||t==='P'||t==='C')return null;
+            return <FarmTileSVG key={`deco-${x}-${y}`} type={t} x={x} y={y}/>;
+          })).flat()}
+
+          {/* Crop plot lines */}
+          {Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>{
+            if(tileAt(x,y)!=='C')return null;
+            const px=x*TILE+TILE/2, py=y*TILE+TILE/2;
+            return <g key={`plot-${x}-${y}`} opacity={0.5}>
+              {[0,1,2].map(i=><line key={i} x1={px-16} y1={py+i*6-6} x2={px+16} y2={py+i*6-6} stroke="#4a3220" strokeWidth={1}/>)}
+            </g>;
+          })).flat()}
+
+          {/* Plants on crop plots */}
+          {CROP_POSITIONS.map((cp, i) => {
+            const slot = cropMap[`${cp.x},${cp.y}`];
+            if (!slot?.plant) return null;
+            const { progress } = getDisplay(slot);
+            const c = cfg[slot.plant.plantType]; if (!c) return null;
+            const isReady = progress >= 100;
+            const si = isReady ? c.stageCount-1 : Math.min(c.stageCount-1, Math.floor((progress/100)*(c.stageCount-1)));
+            const cx = cp.x*TILE+TILE/2, cy = cp.y*TILE+TILE/2;
+            // PlantArt viewBox is 120×140. Scale 0.35 → 42×49px (fits 48px tile).
+            // Soil ellipse is at viewBox y=123 → screen y = (123*0.35)+ty = 42 → ty = -1.05
+            // Center horizontally: tx = cx - 60*0.35 = cx - 21
+            const s = 0.35, tx = cx - 21, ty = -1.05;
+            return <g key={`plant-${i}`}>
+              <g transform={`translate(${tx},${ty}) scale(${s})`}>
+                <PlantArt plantId={slot.plant.plantType} stageIdx={si} totalStages={c.stageCount} isReady={isReady} plantConfig={cfg} />
+              </g>
+              {/* progress bar — outside the scaled group, in tile coords */}
+              {!isReady && <g transform={`translate(${cx-20},${cy+TILE/2-8})`}>
+                <rect x={0} y={0} width={40} height={4} rx={2} fill="#4a3220"/>
+                <rect x={0} y={0} width={Math.max(2,progress*0.4)} height={4} rx={2} fill="#4c8c3a"/>
+              </g>}
+              {isReady && <text x={cx} y={cy-18} textAnchor="middle" fontSize={10} fill="#fff" fontWeight="bold">✅</text>}
+            </g>;
+          })}
+
+          {/* Fence */}
+          <rect x={2} y={2} width={COLS*TILE-4} height={ROWS*TILE-4} fill="none" stroke="#8a5a34" strokeWidth={3} rx={4}/>
+
+          {/* Player */}
+          <g transform={`translate(${pp.x*TILE},${pp.y*TILE - bob})`}>
+            <ellipse cx={TILE/2} cy={TILE-4} rx={12} ry={4} fill="rgba(0,0,0,0.18)"/>
+            <foreignObject x={0} y={-8} width={TILE} height={TILE+8} style={{overflow:'visible'}}>
+              <div xmlns="http://www.w3.org/1999/xhtml" style={{width:TILE,height:TILE,transform:pdir==='left'?'scaleX(-1)':'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <AvatarPlayer moving={pmoving} userAuth={userAuth}/>
+              </div>
+            </foreignObject>
+          </g>
+        </svg>
+      </div>
+
+      {/* HUD — exact Farmgame.html style */}
+      <header id="hud">
+        <div className="hud-pill" id="coin-pill">
+          <span className="hud-icon">🌾</span>
+          <span>{userCoins.toLocaleString()}</span>
         </div>
-        <div className="pointer-events-auto bg-[rgba(64,48,29,0.35)] backdrop-blur-sm rounded-full px-3 py-1.5 text-white text-[13px] font-bold max-w-[40vw] truncate" style={{ fontFamily: "'Baloo 2', sans-serif", textShadow: '0 2px 0 rgba(0,0,0,0.25)' }}>
-          🌿 Khu vườn
-        </div>
-        <div className="pointer-events-auto flex items-center gap-2 bg-[#fff6e2] border-[3px] border-[#40301d] rounded-full px-3 py-1.5" style={{ fontFamily: "'Baloo 2', sans-serif", boxShadow: '0 4px 0 rgba(64,48,29,0.35)' }}>
-          <span className="w-6 h-6 rounded-full bg-[#ffc94a] border-2 border-[#40301d] flex items-center justify-center text-[11px]">💧</span>
-          <span className="text-[15px] text-[#40301d] font-bold">{waterDrops}</span>
+        <div className="hud-title">🌿 Khu vườn</div>
+        <div className="hud-pill" id="energy-pill">
+          <span className="hud-icon">💧</span>
+          <span>{drops}</span>
         </div>
       </header>
 
-      {/* Hint */}
-      <div className="absolute top-14 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-        <div className="px-4 py-1.5 rounded-full bg-[#fff6e2] border-[3px] border-[#40301d] whitespace-nowrap" style={{ fontFamily: "'Baloo 2', sans-serif", boxShadow: '0 4px 0 rgba(64,48,29,0.35)' }}>
-          <span className="text-[12px] font-semibold text-[#40301d]">{getHint()}</span>
-        </div>
+      {/* Hint bubble */}
+      <div style={{ position:'absolute', top:'calc(56px + env(safe-area-inset-top,0px))', left:'50%', transform:'translateX(-50%)', zIndex:5, pointerEvents:'none' }}>
+        <div className="hint-bubble" style={{ display:'block' }}>{hint}</div>
       </div>
 
-      {/* Farm Grid */}
-      <div className="absolute inset-0 flex items-center justify-center z-10">
-        <div
-          className="relative"
-          style={{ width: MAP_COLS * TILE, height: MAP_ROWS * TILE }}
-        >
-          {/* Grid tiles */}
-          {FARM_TILES.map((row, y) =>
-            row.map((type, x) => {
-              const key = `${x},${y}`;
-              const slot = plotToSlot[key];
-              const plant = slot?.plant;
-              const cfg = plant ? plantConfig[plant.plantType] : null;
-              const display = slot ? getDisplay(slot) : null;
-              const progress = display?.progress || 0;
-              const isReady = progress >= 100;
-              const stageIdx = plant && cfg ? (isReady ? cfg.stageCount - 1 : Math.min(cfg.stageCount - 1, Math.floor((progress / 100) * (cfg.stageCount - 1)))) : 0;
-              const isFacing = facingTile.x === x && facingTile.y === y;
-
-              return (
-                <FarmTile
-                  key={key}
-                  x={x} y={y} type={type}
-                  plant={plant} progress={progress} isReady={isReady}
-                  stageIdx={stageIdx} cfg={cfg}
-                  showClock={inventory.magic_lens > 0}
-                  remainingMs={display?.remainingMs || 0}
-                  isFacing={isFacing}
-                  fertilizing={!!fertilizeMode}
-                  onInteract={() => {
-                    if (type !== 'plot') return;
-                    if (fertilizeMode && plant && !isReady) { handleFertilize(slot.index, fertilizeMode); return; }
-                    if (!plant) { setSelectedPlotIndex(slot.index); setShowShop(true); return; }
-                    if (isReady) { handleHarvest(slot.index); return; }
-                    if (waterDrops > 0) handleWater(slot.index);
-                    else setShowQuiz(true);
-                  }}
-                />
-              );
-            })
-          )}
-
-          {/* Decorations */}
-          {FARM_DECOS.map((d, i) => (
-            <div key={`deco-${i}`} className="absolute z-20 pointer-events-none select-none flex items-center justify-center" style={{ left: d.x * TILE, top: d.y * TILE, width: TILE, height: TILE }}>
-              <span className="text-2xl" style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.2))' }}>{d.emoji}</span>
-            </div>
-          ))}
-
-          {/* Player */}
-          <Player x={playerPos.x} y={playerPos.y} dir={playerDir} moving={playerMoving} bobOffset={bobOffset} />
-        </div>
-      </div>
-
-      {/* Action bar — bottom */}
-      <footer className="absolute bottom-4 left-0 right-0 z-50 flex items-center justify-center gap-4 pointer-events-none px-3">
-        <button onClick={() => setShowInventory(true)} className="pointer-events-auto w-[52px] h-[52px] rounded-full flex items-center justify-center bg-[#fff6e2] border-[3px] border-[#40301d] text-xl hover:translate-y-[2px] active:translate-y-[3px] transition" style={{ boxShadow: '0 5px 0 rgba(64,48,29,0.35)' }} title="Kho đồ">🎒</button>
-        <button onClick={() => setShowQuiz(true)} className="pointer-events-auto w-[52px] h-[52px] rounded-full flex items-center justify-center bg-[#fff6e2] border-[3px] border-[#40301d] text-xl hover:translate-y-[2px] active:translate-y-[3px] transition" style={{ boxShadow: '0 5px 0 rgba(64,48,29,0.35)' }} title="Quiz nhận nước">💧</button>
-        <button onClick={onBack} className="pointer-events-auto w-[52px] h-[52px] rounded-full flex items-center justify-center bg-[#fff6e2] border-[3px] border-[#40301d] text-xl hover:translate-y-[2px] active:translate-y-[3px] transition" style={{ boxShadow: '0 5px 0 rgba(64,48,29,0.35)' }} title="Về trang chủ">🏠</button>
+      {/* Action bar — Farmgame.html style + exit button */}
+      <footer id="action-bar">
+        <button className="round-btn" onClick={onBack} title="Thoát">🚪</button>
+        <button className="round-btn" onClick={()=>setShowInv(true)} title="Kho đồ">🎒</button>
+        <button className="round-btn" onClick={()=>setShowQuiz(true)} title="Quiz nhận nước">💧</button>
+        <button className="round-btn" onClick={()=>setShowShop(true)} title="Cửa hàng">🛒</button>
       </footer>
 
-      {/* Mobile controls */}
-      <div className="absolute bottom-24 left-4 z-50 md:hidden pointer-events-auto">
-        <div className="grid grid-cols-3 gap-1">
-          <div />
-          <button onTouchStart={(e) => { e.preventDefault(); tryMove(0, -1); }} className="w-10 h-10 rounded-full bg-[#fff6e2] border-[3px] border-[#40301d] flex items-center justify-center text-lg active:translate-y-[2px]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>⬆️</button>
-          <div />
-          <button onTouchStart={(e) => { e.preventDefault(); tryMove(-1, 0); }} className="w-10 h-10 rounded-full bg-[#fff6e2] border-[3px] border-[#40301d] flex items-center justify-center text-lg active:translate-y-[2px]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>⬅️</button>
-          <button onTouchStart={(e) => { e.preventDefault(); handleInteract(); }} className="w-10 h-10 rounded-full bg-[#ffc94a] border-[3px] border-[#40301d] flex items-center justify-center text-lg active:translate-y-[2px]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>E</button>
-          <button onTouchStart={(e) => { e.preventDefault(); tryMove(1, 0); }} className="w-10 h-10 rounded-full bg-[#fff6e2] border-[3px] border-[#40301d] flex items-center justify-center text-lg active:translate-y-[2px]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>➡️</button>
-          <div />
-          <button onTouchStart={(e) => { e.preventDefault(); tryMove(0, 1); }} className="w-10 h-10 rounded-full bg-[#fff6e2] border-[3px] border-[#40301d] flex items-center justify-center text-lg active:translate-y-[2px]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>⬇️</button>
-          <div />
+      {/* Mobile d-pad */}
+      <div className="mobile-dpad" style={{ position:'absolute', bottom:90, left:16, zIndex:20, display:'none' }}>
+        <style>{`@media(max-width:768px){.mobile-dpad{display:block!important}}`}</style>
+        <div style={{ display:'grid', gridTemplateColumns:'44px 44px 44px', gap:4 }}>
+          <div/><button className="round-btn" style={{width:44,height:44,fontSize:18}} onTouchStart={e=>{e.preventDefault();tryMove(0,-1);}}>⬆</button><div/>
+          <button className="round-btn" style={{width:44,height:44,fontSize:18}} onTouchStart={e=>{e.preventDefault();tryMove(-1,0);}}>⬅</button>
+          <button className="round-btn" style={{width:44,height:44,fontSize:14,fontWeight:700,background:'var(--sun)'}} onTouchStart={e=>{e.preventDefault();interact();}}>E</button>
+          <button className="round-btn" style={{width:44,height:44,fontSize:18}} onTouchStart={e=>{e.preventDefault();tryMove(1,0);}}>➡</button>
+          <div/><button className="round-btn" style={{width:44,height:44,fontSize:18}} onTouchStart={e=>{e.preventDefault();tryMove(0,1);}}>⬇</button><div/>
         </div>
       </div>
 
       {/* Modals */}
-      {showShop && <SeedShop userCoins={userCoins} onSelect={handlePlant} onClose={() => { setShowShop(false); setSelectedPlotIndex(null); }} plantConfig={plantConfig} plotIndex={selectedPlotIndex} />}
-      {showInventory && <InventoryShop userCoins={userCoins} inventory={inventory} onBuy={handleBuyItem} onUse={handleUseItem} onSelectFertilizer={handleSelectFertilizer} onClose={() => setShowInventory(false)} />}
-      {harvestResult && <HarvestModal plantType={harvestResult} onConfirm={() => setHarvestResult(null)} onClose={() => setHarvestResult(null)} plantConfig={plantConfig} />}
-      {showQuiz && <QuizModal onEarnWater={handleEarnWater} onClose={() => setShowQuiz(false)} />}
-      <FarmConfirm open={confirmDelete !== null} title="Xóa cây?" message="Bạn muốn xóa cây này?" onConfirm={confirmRemove} onCancel={() => setConfirmDelete(null)} />
-      <FarmToast message={toast} onClose={() => setToast(null)} />
-
-      <style>{`
-        @keyframes drift { from { transform: translateX(-20vw); } to { transform: translateX(120vw); } }
-        @keyframes sun-glow { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
-        @keyframes anim-pop { 0% { opacity: 0; transform: scale(0.9) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
-        .anim-pop { animation: anim-pop 0.25s ease-out forwards; }
-        #farm-sky {
-          position: absolute; inset: 0;
-          background: linear-gradient(180deg, #cdeeff 0%, #eaf7d8 45%, #8fc94e 45%);
-          z-index: 0; overflow: hidden;
-        }
-        #farm-sky::before {
-          content: ""; position: absolute; top: 6%; right: 8%;
-          width: clamp(46px, 9vw, 74px); height: clamp(46px, 9vw, 74px);
-          border-radius: 50%;
-          background: radial-gradient(circle at 35% 35%, #fff6c8, #ffc94a 70%);
-          box-shadow: 0 0 40px 10px rgba(255, 201, 74, 0.45);
-          animation: sun-glow 5s ease-in-out infinite;
-        }
-        .sky-cloud {
-          position: absolute; top: var(--cy, 10%);
-          width: clamp(60px, 14vw, 110px); height: clamp(24px, 6vw, 42px);
-          background: #fff; border-radius: 999px; opacity: 0.8;
-          filter: drop-shadow(0 4px 0 rgba(255,255,255,0.5));
-          animation: drift var(--dur, 40s) linear infinite;
-          animation-delay: var(--delay, 0s);
-          z-index: 1;
-        }
-        .sky-cloud::before, .sky-cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
-        .sky-cloud::before { width: 55%; height: 140%; top: -55%; left: 8%; }
-        .sky-cloud::after { width: 45%; height: 110%; top: -40%; right: 10%; }
-      `}</style>
+      {showShop && <SeedShop userCoins={userCoins} onSelect={doPlant} onClose={()=>{setShowShop(false);setSelSlot(null);}} plantConfig={cfg}/>}
+      {showInv && <InventoryModal userCoins={userCoins} inventory={inv} onBuy={doBuy} onUse={doUse} onSelectFert={id=>{setShowInv(false);setFertMode(id);}} onClose={()=>setShowInv(false)}/>}
+      {harvestR && <HarvestModal plantType={harvestR} onConfirm={()=>setHarvestR(null)} onClose={()=>setHarvestR(null)} plantConfig={cfg}/>}
+      {showQuiz && <QuizModal onEarn={doEarn} onClose={()=>setShowQuiz(false)}/>}
+      <ConfirmDialog open={confirmDel!==null} title="Xóa cây?" msg="Không thể hoàn tác." onYes={doRemove} onNo={()=>setConfirmDel(null)}/>
+      <ToastFarm msg={toast} onDone={()=>setToast(null)}/>
     </div>
   );
 }

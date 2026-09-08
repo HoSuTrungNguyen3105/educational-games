@@ -51,34 +51,9 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Fallback native push event listener
-self.addEventListener("push", (event) => {
-  console.log("[SW] Push event received");
-  if (!event.data) return;
-
-  try {
-    const payload = event.data.json();
-    console.log("[SW] Push data:", payload);
-    const notification = payload.notification || {};
-    const data = payload.data || {};
-    const title = notification.title || data.title || "EduPlay";
-    const iconUrl = notification.icon || (self.location.origin + "/educational-games/eduplay-icon-192x192.png");
-    const badgeUrl = self.location.origin + "/educational-games/eduplay-icon-192x192.png";
-
-    const options = {
-      body: notification.body || data.body || "",
-      icon: iconUrl,
-      badge: badgeUrl,
-      data,
-      tag: data.type || "general",
-      renotify: true,
-      vibrate: [200, 100, 200],
-    };
-    event.waitUntil(self.registration.showNotification(title, options));
-  } catch (err) {
-    console.warn("[SW] Push payload not JSON:", err);
-  }
-});
+// NOTE: Do NOT add a separate push event listener here.
+// onBackgroundMessage above already handles all push messages.
+// Having both causes duplicate notifications.
 
 // Handle notification click
 self.addEventListener("notificationclick", (event) => {

@@ -45,9 +45,9 @@ router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) =
       fromName: userName,
       toUserId: targetUserId,
       type: "chat_message",
+      title: `💬 ${userName}`,
+      message: content?.substring(0, 100) || "",
       gameId: convId,
-      gameName: `Tin nhắn từ ${userName}`,
-      content: content?.substring(0, 100) || "",
     }).catch(() => {});
     sendCreated(res, msg);
   } catch (e) {

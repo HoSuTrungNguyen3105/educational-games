@@ -45,7 +45,8 @@ r.post("/", auth, requireTeacher, async (req, res) => {
           fromUsername: fromUser?.username || "",
           fromName: fromUser?.name || "",
           type: "ASSIGNMENT",
-          content: `Bạn có bài tập mới: ${title} từ ${fromUser?.name || "giáo viên"}${game ? ` - ${game.name}` : ""}`,
+          title: "📝 Bài tập mới",
+          message: `Bạn có bài tập mới: ${title} từ ${fromUser?.name || "giáo viên"}${game ? ` - ${game.name}` : ""}`,
           link: `/assignment/${assignment.id}`,
         });
       }
