@@ -1,12 +1,68 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { gardenService, questionService, API_BASE } from '../../services/api.js';
-import GardenerAvatar from '../../components/avatar/GardenerAvatar.jsx';
-import { Modal } from '../../components/ui.jsx';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { gardenService, API_BASE } from '../../services/api.js';
+import { Icon, PlantArt } from '../../components/garden/PlantArt.jsx';
 
 /* ============================================================
-   PLANT CONFIG — fetched from backend /api/plant-types
-   Each plant has "kind" (render style) + palette for SVG PlantArt.
-   If fetch fails, falls back to hardcoded defaults.
+   FARM MAP — like Farmgame.html BLUEPRINT
+============================================================ */
+const TILE = 56;
+const MAP_COLS = 12;
+const MAP_ROWS = 9;
+
+// tile types: G=grass, P=path, C=crop plot, T=tree, B=bush, R=rock, W=water, L=flower
+const FARM_MAP = [
+  'T T . . . . . . . . T T',
+  'T . . B . . . . . B . T',
+  'T . . . . W . . . . . T',
+  '. . . C C C C C C . . .',
+  '. . . C C C C C C . . .',
+  '. . . . . . . . . . . .',
+  '. . . . . . . . . . . .',
+  '. . B . . . . . . B . .',
+  '. . . . . . . . . . . .',
+];
+
+// parse map into structured tiles
+function parseMap() {
+  const tiles = [];
+  const plots = [];
+  const decorations = [];
+  const rows = FARM_MAP.map(r => r.split(' '));
+  for (let y = 0; y < MAP_ROWS; y++) {
+    tiles[y] = [];
+    for (let x = 0; x < MAP_COLS; x++) {
+      const ch = rows[y]?.[x] || '.';
+      let type = 'grass';
+      if (ch === 'P') type = 'path';
+      else if (ch === 'C') type = 'plot';
+      else if (ch === 'T') type = 'tree';
+      else if (ch === 'B') type = 'bush';
+      else if (ch === 'R') type = 'rock';
+      else if (ch === 'W') type = 'water';
+      else if (ch === 'L') type = 'flower';
+      tiles[y][x] = type;
+      if (type === 'plot') plots.push({ x, y });
+      if (type === 'tree') decorations.push({ x, y, emoji: '🌳' });
+      if (type === 'bush') decorations.push({ x, y, emoji: '🌿' });
+      if (type === 'rock') decorations.push({ x, y, emoji: '🪨' });
+      if (type === 'water') decorations.push({ x, y, emoji: '💧' });
+    }
+  }
+  return { tiles, plots, decorations };
+}
+
+const { tiles: FARM_TILES, plots: FARM_PLOTS, decorations: FARM_DECOS } = parseMap();
+
+function isWalkable(x, y) {
+  if (x < 0 || y < 0 || x >= MAP_COLS || y >= MAP_ROWS) return false;
+  const t = FARM_TILES[y]?.[x];
+  return t === 'grass' || t === 'path' || t === 'plot';
+}
+
+const PLAYER_START = { x: 5, y: 7 };
+
+/* ============================================================
+   CONSTANTS
 ============================================================ */
 const FALLBACK_PLANT_CONFIG = {
   sunflower: {
@@ -37,603 +93,218 @@ const FALLBACK_PLANT_CONFIG = {
 };
 
 const RARITY_STYLES = {
-  common: { bg: '#EEF0EC', text: '#6B7264', label: 'Thường', border: '#D0D5CC', glow: 'rgba(107,114,100,0.15)' },
-  rare: { bg: '#E4EEFA', text: '#3D6FA8', label: 'Hiếm', border: '#A8C8E8', glow: 'rgba(61,111,168,0.2)' },
-  epic: { bg: '#F0E6FA', text: '#7A4EA8', label: 'Sử thi', border: '#C9A8E0', glow: 'rgba(122,78,168,0.2)' },
-  legendary: { bg: '#FCEFD6', text: '#B8791A', label: 'Huyền thoại', border: '#F0C87A', glow: 'rgba(184,121,26,0.25)' },
+  common: { bg: '#EEF0EC', text: '#6B7264', label: 'Thường', border: '#D0D5CC' },
+  rare: { bg: '#E4EEFA', text: '#3D6FA8', label: 'Hiếm', border: '#A8C8E8' },
+  epic: { bg: '#F0E6FA', text: '#7A4EA8', label: 'Sử thi', border: '#C9A8E0' },
+  legendary: { bg: '#FCEFD6', text: '#B8791A', label: 'Huyền thoại', border: '#F0C87A' },
 };
 
+const ITEM_CONFIG = {
+  basic_fertilizer: { name: 'Phân bón thường', type: 'consumable', price: 20, boost: 15, desc: 'Thúc cây lớn nhanh thêm 15%.', icon: '🌱' },
+  premium_fertilizer: { name: 'Phân bón cao cấp', type: 'consumable', price: 55, boost: 40, desc: 'Thúc cây lớn nhanh thêm 40%.', icon: '🌟' },
+  miracle_fertilizer: { name: 'Phân bón thần kỳ', type: 'consumable', price: 150, boost: 100, desc: 'Giúp cây chín ngay lập tức.', icon: '✨' },
+  golden_can: { name: 'Bình tưới vàng', type: 'upgrade', price: 300, desc: 'Tưới nước tăng 20% thay vì 10%.', icon: '🪙' },
+  magic_lens: { name: 'Kính lúp phép thuật', type: 'upgrade', price: 150, desc: 'Hiện đồng hồ đếm ngược trên cây.', icon: '🔍' },
+};
+
+const DEFAULT_INVENTORY = { basic_fertilizer: 0, premium_fertilizer: 0, miracle_fertilizer: 0, golden_can: 0, magic_lens: 0 };
+
+const MATH_QUESTIONS = [
+  { q: '12 + 8 = ?', options: ['18', '20', '22', '19'], answer: 1 },
+  { q: '15 - 7 = ?', options: ['9', '8', '7', '6'], answer: 1 },
+  { q: '6 × 7 = ?', options: ['42', '48', '36', '44'], answer: 0 },
+  { q: '56 ÷ 8 = ?', options: ['6', '8', '7', '9'], answer: 2 },
+  { q: '25 + 37 = ?', options: ['60', '62', '58', '64'], answer: 1 },
+  { q: '81 ÷ 9 = ?', options: ['8', '9', '7', '10'], answer: 1 },
+  { q: '14 × 3 = ?', options: ['40', '42', '38', '44'], answer: 1 },
+  { q: '100 - 45 = ?', options: ['50', '55', '60', '45'], answer: 1 },
+  { q: '9 × 9 = ?', options: ['81', '72', '90', '89'], answer: 0 },
+  { q: '72 ÷ 6 = ?', options: ['11', '13', '12', '14'], answer: 2 },
+  { q: '38 + 29 = ?', options: ['65', '67', '69', '63'], answer: 1 },
+  { q: '144 ÷ 12 = ?', options: ['11', '12', '13', '14'], answer: 1 },
+];
+
+/* ============================================================
+   HELPERS
+============================================================ */
 function buildPlantConfig(apiTypes) {
   if (!apiTypes || apiTypes.length === 0) return FALLBACK_PLANT_CONFIG;
   const config = {};
   for (const t of apiTypes) {
     config[t.id] = {
-      name: t.name,
-      kind: t.kind || 'bloom',
-      stageCount: t.stages || 3,
-      growthTime: t.growthTime || 300000,
-      harvestCoin: t.harvestCoin || 10,
-      seedPrice: t.seedPrice || 5,
-      rarity: t.rarity || 'common',
+      name: t.name, kind: t.kind || 'bloom', stageCount: t.stages || 3,
+      growthTime: t.growthTime || 300000, harvestCoin: t.harvestCoin || 10,
+      seedPrice: t.seedPrice || 5, rarity: t.rarity || 'common',
       palette: t.palette || FALLBACK_PLANT_CONFIG.sunflower.palette,
     };
   }
   return config;
 }
 
-/* ============================================================
-   ĐỒ DÙNG / KHO ĐỒ
-============================================================ */
-const ITEM_CONFIG = {
-  basic_fertilizer: {
-    name: 'Phân bón thường', type: 'consumable', price: 20, boost: 15,
-    desc: 'Thúc cây lớn nhanh thêm 15% ngay lập tức.', color: '#8B6A46', icon: '🌱',
-  },
-  premium_fertilizer: {
-    name: 'Phân bón cao cấp', type: 'consumable', price: 55, boost: 40,
-    desc: 'Thúc cây lớn nhanh thêm 40% ngay lập tức.', color: '#C97F17', icon: '🌟',
-  },
-  miracle_fertilizer: {
-    name: 'Phân bón thần kỳ', type: 'consumable', price: 150, boost: 100,
-    desc: 'Giúp cây chín ngay lập tức, sẵn sàng thu hoạch.', color: '#B8791A', icon: '✨',
-  },
-  golden_can: {
-    name: 'Bình tưới vàng', type: 'upgrade', price: 300,
-    desc: 'Nâng cấp vĩnh viễn: mỗi lần tưới nước tăng 20% thay vì 10%.', color: '#D8A83E', icon: '🪙',
-  },
-  magic_lens: {
-    name: 'Kính lúp phép thuật', type: 'upgrade', price: 150,
-    desc: 'Nâng cấp vĩnh viễn: hiện đồng hồ đếm ngược chính xác trên mỗi cây.', color: '#5C8BD8', icon: '🔍',
-  },
-};
-
-const DEFAULT_INVENTORY = { basic_fertilizer: 0, premium_fertilizer: 0, miracle_fertilizer: 0, golden_can: 0, magic_lens: 0 };
-
 function loadWaterDrops(userId) {
-  try {
-    const raw = localStorage.getItem(`garden_water_${userId || 'guest'}`);
-    return raw ? parseInt(raw, 10) || 0 : 5;
-  } catch { return 5; }
+  try { const r = localStorage.getItem(`garden_water_${userId || 'guest'}`); return r ? Number(r) : 5; } catch { return 5; }
 }
 function saveWaterDrops(userId, count) {
-  try { localStorage.setItem(`garden_water_${userId || 'guest'}`, String(count)); } catch { /* ignore */ }
+  try { localStorage.setItem(`garden_water_${userId || 'guest'}`, String(count)); } catch {}
 }
-
-const MATH_QUESTIONS = [
-  { q: '3 + 5 = ?', options: ['6', '7', '8', '9'], answer: 2 },
-  { q: '12 - 4 = ?', options: ['6', '7', '8', '9'], answer: 2 },
-  { q: '6 x 7 = ?', options: ['36', '42', '48', '49'], answer: 1 },
-  { q: '48 : 6 = ?', options: ['6', '7', '8', '9'], answer: 2 },
-  { q: '9 x 9 = ?', options: ['72', '81', '90', '99'], answer: 1 },
-  { q: '100 - 37 = ?', options: ['53', '63', '73', '83'], answer: 1 },
-  { q: '15 + 28 = ?', options: ['33', '43', '45', '53'], answer: 1 },
-  { q: '7 x 8 = ?', options: ['48', '54', '56', '64'], answer: 2 },
-  { q: '64 : 8 = ?', options: ['6', '7', '8', '9'], answer: 2 },
-  { q: '25 x 4 = ?', options: ['75', '80', '90', '100'], answer: 3 },
-  { q: '144 : 12 = ?', options: ['10', '11', '12', '13'], answer: 2 },
-  { q: '99 + 101 = ?', options: ['180', '190', '200', '210'], answer: 2 },
-];
 
 function formatTime(ms) {
+  const s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  if (d > 0) return `${d}d ${h % 24}h`;
+  if (h > 0) return `${h}h ${m % 60}m`;
   if (ms <= 0) return 'Sẵn sàng!';
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  const h = Math.floor(m / 60);
-  const d = Math.floor(h / 24);
-  if (d > 0) return `${d} ngày ${h % 24} giờ`;
-  if (h > 0) return `${h} giờ ${m % 60} phút`;
-  if (m > 0) return `${m} phút ${s % 60} giây`;
-  return `${s} giây`;
+  return `${m}p ${s % 60}s`;
 }
+
 function formatClock(ms) {
   if (ms <= 0) return '00:00';
-  const s = Math.floor(ms / 1000);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const ss = s % 60;
-  const pad = (n) => String(n).padStart(2, '0');
-  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(ss)}` : `${pad(m)}:${pad(ss)}`;
+  const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+  return h > 0 ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 /* ============================================================
-   COLOR HELPER — lighten/darken a hex color by a percent amount
+   FARM TILE — renders a single grid cell
 ============================================================ */
-function shade(hex, percent) {
-  if (!hex || hex[0] !== '#') return hex;
-  const num = parseInt(hex.slice(1), 16);
-  let r = (num >> 16) + percent;
-  let g = ((num >> 8) & 0x00ff) + percent;
-  let b = (num & 0x0000ff) + percent;
-  r = Math.min(255, Math.max(0, r));
-  g = Math.min(255, Math.max(0, g));
-  b = Math.min(255, Math.max(0, b));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-}
+function FarmTile({ x, y, type, plant, progress, isReady, stageIdx, cfg, showClock, remainingMs, isFacing, fertilizing, onInteract }) {
+  const isPlot = type === 'plot';
+  const isTree = type === 'tree';
+  const isBush = type === 'bush';
+  const isWater = type === 'water';
 
-/* ============================================================
-   ICON — nhỏ, tự vẽ bằng SVG, không dùng thư viện icon
-============================================================ */
-function Icon({ name, className = 'w-4 h-4', style }) {
-  const common = { className, style, viewBox: '0 0 24 24', fill: 'none', xmlns: 'http://www.w3.org/2000/svg' };
-  switch (name) {
-    case 'back':
-      return <svg {...common}><path d="M15 5L8 12L15 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-    case 'coin':
-      return <svg {...common}><circle cx="12" cy="12" r="8.5" fill="#F4B93E" stroke="#B8791A" strokeWidth="1.3" /><path d="M12 8v8M9.8 10.2c0-1 1-1.7 2.2-1.7s2.2.6 2.2 1.5c0 2.1-4.4 1.2-4.4 3.3 0 .9 1 1.5 2.2 1.5s2.2-.6 2.2-1.6" stroke="#8A5A0E" strokeWidth="1.1" strokeLinecap="round" /></svg>;
-    case 'close':
-      return <svg {...common}><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>;
-    case 'water':
-      return <svg {...common}><path d="M12 3C12 3 6 10.5 6 14.5C6 18.09 8.69 21 12 21C15.31 21 18 18.09 18 14.5C18 10.5 12 3 12 3Z" fill="#8FCBEA" stroke="#3D8FBF" strokeWidth="1.2" /></svg>;
-    case 'cut':
-      return <svg {...common}><circle cx="6.5" cy="6.5" r="2.3" stroke="currentColor" strokeWidth="1.6" /><circle cx="6.5" cy="17.5" r="2.3" stroke="currentColor" strokeWidth="1.6" /><path d="M8.3 8L19 18M8.3 16L19 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
-    case 'trash':
-      return <svg {...common}><path d="M5 7h14M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-9 0l1 12a1 1 0 001 1h6a1 1 0 001-1l1-12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-    case 'bag':
-      return <svg {...common}><path d="M6 8h12l-1 12H7L6 8Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M9 8V6a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.6" /></svg>;
-    case 'backpack':
-      return <svg {...common}><path d="M8 9V7a4 4 0 018 0v2" stroke="currentColor" strokeWidth="1.6" /><rect x="6" y="9" width="12" height="12" rx="2.5" stroke="currentColor" strokeWidth="1.6" /><path d="M9 13h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
-    case 'clock':
-      return <svg {...common}><circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.6" /><path d="M12 7.5V12l3 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-    case 'sparkle':
-      return <svg {...common}><path d="M12 3l1.6 5.2L19 10l-5.4 1.8L12 17l-1.6-5.2L5 10l5.4-1.8L12 3Z" fill="currentColor" /></svg>;
-    default:
-      return null;
-  }
-}
-
-/* ============================================================
-   PLANT ART — bộ SVG cao cấp: gradient, cánh hoa dạng giọt nước,
-   lá có gân, quả có bóng đổ + highlight, hào quang cho cây thần kỳ.
-============================================================ */
-
-/** Bộ định nghĩa gradient dùng chung cho một cây (theo plantId để tránh trùng id). */
-function PlantGradientDefs({ id, palette }) {
   return (
-    <defs>
-      <radialGradient id={`ground-${id}`} cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor="#8C6A42" stopOpacity="0.45" />
-        <stop offset="100%" stopColor="#8C6A42" stopOpacity="0" />
-      </radialGradient>
-      <linearGradient id={`stem-${id}`} x1="0" y1="1" x2="0" y2="0">
-        <stop offset="0%" stopColor={shade(palette.stem, -15)} />
-        <stop offset="100%" stopColor={shade(palette.stem, 25)} />
-      </linearGradient>
-      <linearGradient id={`leaf-${id}`} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor={palette.leaf} />
-        <stop offset="100%" stopColor={palette.leafDark} />
-      </linearGradient>
-      <radialGradient id={`petal-${id}`} cx="35%" cy="28%" r="80%">
-        <stop offset="0%" stopColor={palette.accentLight} />
-        <stop offset="55%" stopColor={palette.accent} />
-        <stop offset="100%" stopColor={palette.accentDark} />
-      </radialGradient>
-      <radialGradient id={`fruit-${id}`} cx="32%" cy="28%" r="80%">
-        <stop offset="0%" stopColor={palette.accentLight} />
-        <stop offset="60%" stopColor={palette.accent} />
-        <stop offset="100%" stopColor={palette.accentDark} />
-      </radialGradient>
-      <radialGradient id={`center-${id}`} cx="38%" cy="32%" r="70%">
-        <stop offset="0%" stopColor="#FFF6D8" />
-        <stop offset="60%" stopColor={palette.accentLight} />
-        <stop offset="100%" stopColor={palette.accentDark} />
-      </radialGradient>
-    </defs>
-  );
-}
-
-/** Một chiếc lá dạng giọt nước có gân giữa, đẹp hơn ellipse thô. */
-function LeafShape({ cx, cy, angle, size, fill }) {
-  return (
-    <g transform={`translate(${cx},${cy}) rotate(${angle})`}>
-      <path
-        d={`M0,0 Q${size * 0.62},${-size * 0.5} 0,${-size * 1.55} Q${-size * 0.62},${-size * 0.5} 0,0 Z`}
-        fill={fill}
-        opacity={0.92}
+    <div
+      className={`relative flex items-center justify-center transition-all duration-100
+        ${isFacing ? 'ring-2 ring-[#ffc94a] ring-offset-1' : ''}
+        ${fertilizing && isPlot && plant && !isReady ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}
+      style={{ width: TILE, height: TILE }}
+    >
+      {/* Tile background */}
+      <div className={`absolute inset-0 rounded-md border border-[#40301d]/20
+        ${isPlot ? 'bg-[#6d4c33]' : isTree ? 'bg-[#83c04a]' : isBush ? 'bg-[#83c04a]' : isWater ? 'bg-[#5aa7c9]' : 'bg-[#8fc94e]'}`}
+        style={isPlot ? { border: '2px solid #4a3220' } : {}}
       />
-      <path d={`M0,-1.5 L0,${-size * 1.35}`} stroke="#00000022" strokeWidth={0.5} strokeLinecap="round" />
-    </g>
-  );
-}
 
-/** Một cánh hoa dạng giọt nước, xoay quanh tâm hoa theo góc `angle`. */
-function Petal({ cx, cy, angle, length, width, gradientId, strokeColor }) {
-  return (
-    <path
-      d={`M0,0 C${-width / 2},${-length * 0.35} ${-width / 2},${-length * 0.78} 0,${-length}
-          C${width / 2},${-length * 0.78} ${width / 2},${-length * 0.35} 0,0 Z`}
-      fill={`url(#${gradientId})`}
-      stroke={strokeColor}
-      strokeWidth={0.4}
-      opacity={0.96}
-      transform={`translate(${cx},${cy}) rotate(${angle})`}
-    />
-  );
-}
+      {/* Decorations */}
+      {isTree && <span className="text-2xl relative z-10 select-none" style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.2))' }}>🌳</span>}
+      {isBush && <span className="text-lg relative z-10 select-none">🌿</span>}
+      {isWater && <span className="text-lg relative z-10 select-none">💧</span>}
 
-/** Một trái cây tròn có bóng đổ dưới + highlight sáng bóng phía trên. */
-function Fruit({ cx, cy, r, gradientId, strokeColor }) {
-  return (
-    <g>
-      <ellipse cx={cx} cy={cy + r * 0.85} rx={r * 1.05} ry={r * 0.35} fill="#000" opacity={0.1} />
-      <circle cx={cx} cy={cy} r={r} fill={`url(#${gradientId})`} stroke={strokeColor} strokeWidth={0.5} />
-      <ellipse
-        cx={cx - r * 0.32}
-        cy={cy - r * 0.35}
-        rx={r * 0.38}
-        ry={r * 0.2}
-        fill="#fff"
-        opacity={0.4}
-        transform={`rotate(-30 ${cx - r * 0.32} ${cy - r * 0.35})`}
-      />
-    </g>
-  );
-}
-
-function StemBase({ stageIdx, totalStages, palette, withLeaves = true, plantId }) {
-  const frac = stageIdx / Math.max(1, totalStages - 1);
-  const stemH = 18 + frac * 66;
-  const topY = 122 - stemH;
-  const leafCount = Math.min(stageIdx, 3);
-  const leaves = [];
-  if (withLeaves) {
-    for (let i = 0; i < leafCount; i++) {
-      const y = 118 - (i + 1) * (stemH / (leafCount + 1.4));
-      const spread = 8 + i * 2;
-      const size = 9 - i;
-      const rot = 35 - i * 4;
-      leaves.push(
-        <g key={`${y}-${i}`}>
-          <LeafShape cx={60 - spread} cy={y} angle={-rot} size={size} fill={i % 2 ? `url(#leaf-${plantId})` : palette.leafDark} />
-          <LeafShape cx={60 + spread} cy={y} angle={rot} size={size} fill={i % 2 ? palette.leaf : `url(#leaf-${plantId})`} />
-        </g>
-      );
-    }
-  }
-  return (
-    <>
-      <ellipse cx={60} cy={122} rx={4} ry={1.4} fill="#000" opacity={0.08} />
-      <path
-        d={`M60,122 Q${58 - frac * 4},${(122 + topY) / 2} 60,${topY}`}
-        stroke={`url(#stem-${plantId})`}
-        strokeWidth={3.5 - frac * 1}
-        fill="none"
-        strokeLinecap="round"
-      />
-      {leaves}
-    </>
-  );
-}
-
-function renderBloom({ stageIdx, totalStages, palette, isReady, plantId }) {
-  const frac = stageIdx / Math.max(1, totalStages - 1);
-  const stemH = 18 + frac * 66;
-  const topY = 122 - stemH;
-  const mature = stageIdx === totalStages - 1;
-  const petalCount = 12;
-  return (
-    <>
-      <StemBase stageIdx={stageIdx} totalStages={totalStages} palette={palette} plantId={plantId} />
-      {mature && (
-        <g className={isReady ? 'gd-sway' : ''} style={{ transformOrigin: `60px ${topY}px` }}>
-          <ellipse cx={60} cy={topY + 3} rx={15} ry={5.5} fill={palette.accentDark} opacity={0.18} />
-          {/* lớp cánh dưới, xoay lệch để tạo độ dày */}
-          {Array.from({ length: petalCount }).map((_, i) => (
-            <Petal
-              key={`b-${i}`}
-              cx={60}
-              cy={topY}
-              angle={(360 / petalCount) * i + 15}
-              length={9.5}
-              width={5.5}
-              gradientId={`petal-${plantId}`}
-              strokeColor={palette.accentDark}
-            />
-          ))}
-          {/* lớp cánh trên, to hơn */}
-          {Array.from({ length: petalCount }).map((_, i) => (
-            <Petal
-              key={`t-${i}`}
-              cx={60}
-              cy={topY}
-              angle={(360 / petalCount) * i}
-              length={13}
-              width={7}
-              gradientId={`petal-${plantId}`}
-              strokeColor={palette.accentDark}
-            />
-          ))}
-          <circle cx={60} cy={topY} r={7.5} fill={`url(#center-${plantId})`} stroke={palette.accentDark} strokeWidth={0.7} />
-          {[0, 60, 120, 180, 240, 300].map((d) => (
-            <circle key={d} cx={60 + 3.2 * Math.cos((d * Math.PI) / 180)} cy={topY + 3.2 * Math.sin((d * Math.PI) / 180)} r={0.9} fill="#C97F17" opacity={0.85} />
-          ))}
-          <ellipse cx={57} cy={topY - 2.2} rx={2.4} ry={1.2} fill="#fff" opacity={0.55} />
-        </g>
+      {/* Crop plot */}
+      {isPlot && !plant && (
+        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full cursor-pointer" onClick={onInteract}>
+          <div className="text-[8px] text-white/40 font-bold">🌱</div>
+          <div className="w-8 h-0.5 bg-[#4a3220]/40 rounded my-0.5" />
+          <div className="w-6 h-0.5 bg-[#4a3220]/30 rounded" />
+        </div>
       )}
-    </>
-  );
-}
 
-function renderFruitTree({ stageIdx, totalStages, palette, isReady, noFruit, plantId }) {
-  const frac = stageIdx / Math.max(1, totalStages - 1);
-  const stemH = 20 + frac * 68;
-  const topY = 122 - stemH;
-  const canopyR = 12 + frac * 14;
-  const showCanopy = stageIdx >= 1;
-  const mature = stageIdx === totalStages - 1;
-  return (
-    <>
-      <ellipse cx={60} cy={122} rx={5} ry={1.6} fill="#000" opacity={0.08} />
-      <path d={`M60,122 L${60 - frac * 2},${topY}`} stroke={`url(#stem-${plantId})`} strokeWidth={4 + frac * 2.5} strokeLinecap="round" />
-      {showCanopy && (
-        <g className={mature && isReady ? 'gd-sway' : ''} style={{ transformOrigin: `60px ${topY}px` }}>
-          <ellipse cx={60} cy={topY + canopyR * 0.75} rx={canopyR * 1.05} ry={canopyR * 0.3} fill="#000" opacity={0.08} />
-          <circle cx={60} cy={topY + 2} r={canopyR} fill={`url(#leaf-${plantId})`} opacity={0.92} />
-          <circle cx={60 - canopyR * 0.4} cy={topY - canopyR * 0.28} r={canopyR * 0.65} fill={palette.leaf} opacity={0.85} />
-          <circle cx={60 + canopyR * 0.45} cy={topY - canopyR * 0.18} r={canopyR * 0.6} fill={palette.leaf} opacity={0.85} />
-          <circle cx={60} cy={topY - canopyR * 0.45} r={canopyR * 0.42} fill={shade(palette.leaf, 20)} opacity={0.55} />
-          {mature && !noFruit && (
-            <>
-              {[[-7, 2], [6, 6], [1, -6], [-4, 8], [8, -2]].map(([dx, dy], i) => (
-                <Fruit key={i} cx={60 + dx} cy={topY + dy} r={4.3} gradientId={`fruit-${plantId}`} strokeColor={palette.accentDark} />
-              ))}
-            </>
-          )}
-        </g>
-      )}
-    </>
-  );
-}
-
-function renderCactus({ stageIdx, totalStages, palette, plantId }) {
-  const frac = stageIdx / Math.max(1, totalStages - 1);
-  const h = 20 + frac * 55;
-  const w = 12 + frac * 6;
-  const topY = 120 - h;
-  const mature = stageIdx === totalStages - 1;
-  return (
-    <>
-      <ellipse cx={60} cy={120} rx={w * 0.8} ry={3.5} fill="#000" opacity={0.08} />
-      <rect x={60 - w / 2} y={topY} width={w} height={h} rx={w / 2} fill={`url(#leaf-${plantId})`} stroke={palette.leafDark} strokeWidth={1} />
-      {[1, 2, 3].map((i) => (
-        <line key={i} x1={60 - w / 2 + (i * w) / 4} y1={topY + 4} x2={60 - w / 2 + (i * w) / 4} y2={topY + h - 4} stroke={palette.leafDark} strokeWidth={0.6} opacity={0.4} />
-      ))}
-      {Array.from({ length: 6 }).map((_, i) => {
-        const angle = (i / 6) * Math.PI * 2;
-        const r = w / 2 + 2;
-        const cx = 60 + r * Math.cos(angle);
-        const cy = topY + h * 0.5 + r * 0.4 * Math.sin(angle);
-        return <line key={i} x1={cx} y1={cy} x2={cx + 4 * Math.cos(angle)} y2={cy + 4 * Math.sin(angle)} stroke="#9C6B3A" strokeWidth={0.7} opacity={0.55} />;
-      })}
-      {stageIdx >= 1 && (
-        <path d={`M${60 - w / 2},${topY + h * 0.4} q-10,-2 -9,-14`} stroke={`url(#leaf-${plantId})`} strokeWidth={5} strokeLinecap="round" fill="none" />
-      )}
-      {stageIdx >= 2 && (
-        <path d={`M${60 + w / 2},${topY + h * 0.55} q10,-2 9,-14`} stroke={`url(#leaf-${plantId})`} strokeWidth={5} strokeLinecap="round" fill="none" />
-      )}
-      {mature && (
-        <g>
-          <circle cx={60} cy={topY - 4} r={5.5} fill={`url(#petal-${plantId})`} stroke={palette.accentDark} strokeWidth={0.6} />
-          <circle cx={60} cy={topY - 4} r={2} fill="#FFF6D8" />
-          <ellipse cx={58.4} cy={topY - 5.6} rx={1.3} ry={0.7} fill="#fff" opacity={0.55} />
-        </g>
-      )}
-    </>
-  );
-}
-
-function renderBamboo({ stageIdx, totalStages, palette, plantId }) {
-  const frac = stageIdx / Math.max(1, totalStages - 1);
-  const stalks = [{ dx: -9, h: 0.8 }, { dx: 0, h: 1 }, { dx: 9, h: 0.65 }];
-  return (
-    <>
-      {stalks.map((s, i) => {
-        const h = (20 + frac * 62) * s.h;
-        const topY = 122 - h;
-        const joints = Math.max(1, Math.round(h / 14));
-        return (
-          <g key={i}>
-            <ellipse cx={60 + s.dx} cy={122} rx={4} ry={1.4} fill="#000" opacity={0.08} />
-            <rect x={60 + s.dx - 3.5} y={topY} width={7} height={h} rx={3.5} fill={`url(#stem-${plantId})`} />
-            {Array.from({ length: joints }).map((_, j) => (
-              <line
-                key={j}
-                x1={60 + s.dx - 4}
-                x2={60 + s.dx + 4}
-                y1={topY + (j + 1) * (h / (joints + 1))}
-                y2={topY + (j + 1) * (h / (joints + 1))}
-                stroke={palette.leafDark}
-                strokeWidth={1}
-                opacity={0.5}
-              />
-            ))}
-            {stageIdx >= 1 && (
-              <>
-                <LeafShape cx={60 + s.dx - 7} cy={topY + 4} angle={-60} size={9} fill={`url(#leaf-${plantId})`} />
-                <LeafShape cx={60 + s.dx + 7} cy={topY + 9} angle={60} size={9} fill={`url(#leaf-${plantId})`} />
-              </>
+      {/* Plant on plot */}
+      {isPlot && plant && cfg && (
+        <div className="relative z-10 w-full h-full" onClick={onInteract}>
+          <PlantArt plantId={plant.plantType} stageIdx={stageIdx} totalStages={cfg.stageCount} isReady={isReady} plantConfig={FALLBACK_PLANT_CONFIG} />
+          <div className="absolute bottom-0 left-0 right-0 px-0.5 pb-0.5">
+            <div className="text-[7px] font-bold text-white/60 text-center truncate">{cfg.name}</div>
+            {!isReady ? (
+              <div className="w-full bg-[#4a3220] rounded-full h-1 overflow-hidden">
+                <div className="h-full bg-[#4c8c3a] rounded-full transition-all duration-500" style={{ width: `${Math.max(2, progress)}%` }} />
+              </div>
+            ) : (
+              <div className="text-[7px] font-bold text-[#b9e88a] text-center">✅</div>
             )}
-          </g>
-        );
-      })}
-    </>
-  );
-}
-
-function renderVine({ stageIdx, totalStages, palette, plantId }) {
-  const frac = stageIdx / Math.max(1, totalStages - 1);
-  const mature = stageIdx === totalStages - 1;
-  const spread = 14 + frac * 14;
-  return (
-    <>
-      <path d={`M60,120 q${-spread},-4 ${-spread - 6},-14`} stroke={`url(#stem-${plantId})`} strokeWidth={2.2} fill="none" strokeLinecap="round" />
-      <path d={`M60,120 q${spread},-6 ${spread + 6},-10`} stroke={`url(#stem-${plantId})`} strokeWidth={2.2} fill="none" strokeLinecap="round" />
-      {Array.from({ length: 1 + stageIdx }).map((_, i) => (
-        <LeafShape key={i} cx={60 - spread + i * 9} cy={112 - (i % 2) * 4} angle={-20 + i * 10} size={8} fill={`url(#leaf-${plantId})`} />
-      ))}
-      {mature && (
-        <g>
-          <circle cx={72} cy={112} r={10} fill={`url(#petal-${plantId})`} stroke={palette.accentDark} strokeWidth={0.7} />
-          <circle cx={72} cy={112} r={3} fill="#FFF6D8" />
-          <ellipse cx={70} cy={110} rx={1.6} ry={0.9} fill="#fff" opacity={0.5} />
-          {[-1, 0, 1].map((k) => (
-            <path key={k} d={`M${72 + k * 3.6},100 q${k * 2},11 0,22`} stroke={palette.leafDark} strokeWidth={1.3} fill="none" opacity={0.4} />
-          ))}
-        </g>
+            {!isReady && showClock && remainingMs > 0 && (
+              <div className="text-[6px] font-mono text-white/30 text-center">{formatClock(remainingMs)}</div>
+            )}
+          </div>
+        </div>
       )}
-    </>
-  );
-}
 
-function renderAura({ stageIdx, totalStages, palette, isReady, plantId }) {
-  const frac = stageIdx / Math.max(1, totalStages - 1);
-  const stemH = 16 + frac * 60;
-  const topY = 122 - stemH;
-  const mature = stageIdx === totalStages - 1;
-  const orbits = Math.min(stageIdx, 3);
-  return (
-    <>
-      <path d={`M60,122 L60,${topY}`} stroke={`url(#stem-${plantId})`} strokeWidth={2.5} strokeLinecap="round" opacity={0.85} />
-      {Array.from({ length: orbits }).map((_, i) => (
-        <circle
-          key={i}
-          cx={60 + (i % 2 ? 9 : -9)}
-          cy={topY + 10 + i * 12}
-          r={4}
-          fill={`url(#petal-${plantId})`}
-          className="gd-twinkle"
-          style={{ animationDelay: `${i * 0.3}s` }}
-        />
-      ))}
-      {mature && (
-        <g className={isReady ? 'gd-pulse' : ''} style={{ transformOrigin: `60px ${topY}px` }}>
-          {isReady && (
-            <>
-              <circle cx={60} cy={topY} r={22} fill={`url(#petal-${plantId})`} opacity={0.14} />
-              <circle cx={60} cy={topY} r={30} fill={palette.accentLight} opacity={0.07} className="gd-pulse" />
-            </>
-          )}
-          <path
-            d={`M60,${topY - 13} L64,${topY - 3} L74,${topY - 3} L66,${topY + 5} L69,${topY + 15} L60,${topY + 8} L51,${topY + 15} L54,${topY + 5} L46,${topY - 3} L56,${topY - 3} Z`}
-            fill={`url(#center-${plantId})`}
-            stroke={palette.accentDark}
-            strokeWidth={0.6}
-          />
-          <circle cx={60} cy={topY} r={4} fill="white" opacity={0.35} />
-        </g>
+      {/* Grass tuft decoration */}
+      {!isPlot && !isTree && !isBush && !isWater && (x + y) % 4 === 0 && (
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] opacity-40 select-none">🌱</div>
       )}
-    </>
-  );
-}
-
-function PlantArt({ plantId, stageIdx, totalStages, isReady, plantConfig }) {
-  const cfg = plantConfig[plantId];
-  if (!cfg) return null;
-  const { palette, kind, noFruit } = cfg;
-  return (
-    <svg viewBox="0 0 120 140" className="w-full h-full">
-      <PlantGradientDefs id={plantId} palette={palette} />
-      <ellipse cx="60" cy="127" rx="32" ry="8" fill={`url(#ground-${plantId})`} />
-      <ellipse cx="60" cy="123.5" rx="28" ry="6" fill="#8C6A42" opacity="0.55" />
-      {kind === 'bloom' && renderBloom({ stageIdx, totalStages, palette, isReady, plantId })}
-      {kind === 'fruitTree' && renderFruitTree({ stageIdx, totalStages, palette, isReady, noFruit, plantId })}
-      {kind === 'cactus' && renderCactus({ stageIdx, totalStages, palette, plantId })}
-      {kind === 'bamboo' && renderBamboo({ stageIdx, totalStages, palette, plantId })}
-      {kind === 'vine' && renderVine({ stageIdx, totalStages, palette, plantId })}
-      {kind === 'aura' && renderAura({ stageIdx, totalStages, palette, isReady, plantId })}
-    </svg>
+    </div>
   );
 }
 
 /* ============================================================
-   SLOT — phiên bản giao diện đẹp hơn
+   PLAYER — movable avatar
 ============================================================ */
-function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, onHarvest, onWater, onRemove, onFertilize, hasFertilizer, fertilizing, plantConfig }) {
-  const plant = slot.plant;
-  if (!plant) {
-    return (
-      <button
-        onClick={() => onSelect(slot.index)}
-        className="aspect-square rounded-2xl border-2 border-dashed border-ink/15 bg-white/60 hover:bg-white hover:border-gold/50 hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center gap-1 group overflow-hidden"
-      >
-        <svg viewBox="0 0 120 140" className="w-full h-full">
-          <ellipse cx="60" cy="126" rx="34" ry="9" fill="#B08A5A" opacity="0.25" />
-          <ellipse cx="60" cy="123.5" rx="30" ry="6.5" fill="#C4A87A" opacity="0.4" />
-          <circle cx="60" cy="80" r="20" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink/10 group-hover:text-gold/40 transition-colors" />
-          <path d="M60,68 L60,92 M48,80 L72,80" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-ink/10 group-hover:text-gold/50 transition-colors" />
-        </svg>
-        <span className="text-[9px] font-mono text-ink/25 group-hover:text-ink/40 -mt-6 relative z-10">Trồng cây</span>
-      </button>
-    );
-  }
-
-  const cfg = plantConfig[plant.plantType];
-  const isReady = displayProgress >= 100;
-  const stageIdx = isReady ? cfg.stageCount - 1 : Math.min(cfg.stageCount - 1, Math.floor((displayProgress / 100) * (cfg.stageCount - 1)));
-
-  if (fertilizing) {
-    return (
-      <button
-        onClick={() => onFertilize(slot.index)}
-        className="aspect-square rounded-2xl border-2 border-amber-300 bg-amber-50 hover:bg-amber-100 hover:border-amber-400 hover:shadow-lg transition-all duration-200 flex flex-col items-center relative overflow-hidden cursor-pointer"
-        title="Bón phân vào cây này"
-      >
-        <div className="absolute inset-0 bg-amber-200/30 animate-pulse pointer-events-none" />
-        <div className="w-full flex-1 min-h-0 relative z-10">
-          <PlantArt plantId={plant.plantType} stageIdx={stageIdx} totalStages={cfg.stageCount} isReady={isReady} plantConfig={plantConfig} />
-        </div>
-        <div className="w-full px-1 pb-1 relative z-10">
-          <div className="text-[8px] font-bold text-amber-700 bg-amber-100 rounded-md py-0.5 text-center truncate">Bón phân</div>
-        </div>
-      </button>
-    );
-  }
-
+function Player({ x, y, dir, moving, bobOffset }) {
+  const flipX = dir === 'left';
   return (
-    <div className={`aspect-square rounded-2xl border-2 transition-all duration-300 flex flex-col items-center relative overflow-hidden
-      ${isReady ? 'border-green-300 bg-gradient-to-b from-green-50 to-white shadow-lg shadow-green-100/60' : 'border-ink/10 bg-white hover:shadow-md'}`}>
-      {isReady && <div className="absolute inset-0 bg-green-400/10 gd-glow-bg pointer-events-none" />}
-
-      <div className="w-full flex-1 min-h-0 relative z-10">
-        <PlantArt plantId={plant.plantType} stageIdx={stageIdx} totalStages={cfg.stageCount} isReady={isReady} plantConfig={plantConfig} />
+    <div
+      className="absolute z-30 pointer-events-none transition-none"
+      style={{
+        width: TILE,
+        height: TILE,
+        left: x * TILE,
+        top: y * TILE - bobOffset,
+        transform: flipX ? 'scaleX(-1)' : 'none',
+      }}
+    >
+      {/* Shadow */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-2 bg-black/20 rounded-full" />
+      {/* Emoji */}
+      <div className="absolute inset-0 flex items-center justify-center text-3xl select-none" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>
+        🧑‍🌾
       </div>
+      {/* Direction indicator */}
+      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#ffc94a] rounded-full border border-[#40301d] shadow-sm" />
+    </div>
+  );
+}
 
-      <div className="w-full px-1.5 pb-1 relative z-10 shrink-0">
-        <p className="text-[8px] font-mono text-ink/35 text-center truncate leading-tight">{cfg.name}</p>
-
-        {!isReady && (
-          <>
-            <div className="w-full h-1.5 bg-ink/10 rounded-full overflow-hidden mt-1">
-              <div className="h-full rounded-full bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 transition-all duration-1000 ease-linear shadow-inner" style={{ width: `${displayProgress}%` }} />
-            </div>
-            <p className="text-[8px] font-mono text-ink/40 text-center mt-0.5">
-              {showClock ? formatClock(remainingMs) : `${Math.floor(displayProgress)}%`}
-            </p>
-          </>
-        )}
-
-        <div className="flex items-center justify-center gap-1 mt-1">
-          {!isReady && (
-            <button onClick={(e) => { e.stopPropagation(); onWater(slot.index); }}
-              className="p-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-500 transition-colors shadow-sm hover:shadow" title="Tưới nước">
-              <Icon name="water" className="w-3 h-3" />
-            </button>
-          )}
-          {!isReady && hasFertilizer && (
-            <button onClick={(e) => { e.stopPropagation(); onFertilize(slot.index); }}
-              className="p-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors shadow-sm hover:shadow" title="Bón phân">
-              <Icon name="sparkle" className="w-3 h-3" />
-            </button>
-          )}
-          {isReady && (
-            <button onClick={(e) => { e.stopPropagation(); onHarvest(slot.index); }}
-              className="p-1 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all shadow-sm hover:shadow-md" title="Thu hoạch">
-              <Icon name="cut" className="w-3 h-3" />
-            </button>
-          )}
-          <button onClick={(e) => { e.stopPropagation(); onRemove(slot.index); }}
-            className="p-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-400 transition-colors shadow-sm hover:shadow" title="Xóa cây">
-            <Icon name="trash" className="w-3 h-3" />
-          </button>
+/* ============================================================
+   SEED SHOP MODAL
+============================================================ */
+function SeedShop({ userCoins, onSelect, onClose, plantConfig, plotIndex }) {
+  const seedList = Object.entries(plantConfig).map(([id, cfg]) => ({ id, ...cfg }));
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-[#1c2410]/60" />
+      <div className="relative bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden anim-pop"
+        style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 border-b-[3px] border-[#40301d] shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🌾</span>
+            <h3 className="font-bold text-lg text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>Cửa hàng hạt giống</h3>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center border-[3px] border-[#40301d] bg-[#fff6e2] hover:bg-[#fdecc8] text-[#6b5540] text-sm" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>✕</button>
+        </div>
+        <div className="flex items-center gap-2 px-5 py-2 bg-[#ffc94a]/20 border-b-[3px] border-[#40301d] shrink-0">
+          <div className="w-5 h-5 rounded-full bg-[#ffc94a] border-2 border-[#40301d] flex items-center justify-center text-[10px]">🌾</div>
+          <span className="text-sm font-bold text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{userCoins?.toLocaleString()} Coin</span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          {seedList.map(seed => {
+            const canBuy = (userCoins || 0) >= seed.seedPrice;
+            const r = RARITY_STYLES[seed.rarity];
+            return (
+              <button key={seed.id} onClick={() => canBuy && onSelect(seed.id, plotIndex)} disabled={!canBuy}
+                className={`w-full flex items-center gap-3 p-2.5 rounded-xl border-[3px] border-[#40301d] transition-all text-left
+                  ${canBuy ? 'bg-white hover:translate-y-[-1px] cursor-pointer' : 'bg-[#e8e0d0] opacity-50 cursor-not-allowed'}`}
+                style={{ boxShadow: canBuy ? '0 3px 0 rgba(64,48,29,0.35)' : 'none' }}>
+                <div className="w-11 h-11 shrink-0 rounded-lg bg-[#eaf7d8] border-2 border-[#40301d] overflow-hidden">
+                  <PlantArt plantId={seed.id} stageIdx={seed.stageCount - 1} totalStages={seed.stageCount} isReady={false} plantConfig={plantConfig} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-sm text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{seed.name}</span>
+                    <span className="px-1 py-0.5 rounded text-[8px] font-bold border border-[#40301d]" style={{ background: r.bg, color: r.text }}>{r.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 text-[9px] font-bold text-[#6b5540]">
+                    <span>⏰ {formatTime(seed.growthTime)}</span>
+                    <span>🌾 +{seed.harvestCoin}</span>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="flex items-center gap-1 text-sm font-bold text-[#8a6a10]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>
+                    <span className="w-4 h-4 rounded-full bg-[#ffc94a] border border-[#40301d] flex items-center justify-center text-[9px]">🌾</span>{seed.seedPrice}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -641,202 +312,127 @@ function PlantSlot({ slot, displayProgress, remainingMs, showClock, onSelect, on
 }
 
 /* ============================================================
-   SEED SHOP — giao diện đẹp hơn
-============================================================ */
-function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
-  const seedList = Object.entries(plantConfig).map(([id, cfg]) => ({ id, ...cfg }));
-  return (
-    <Modal onClose={onClose}
-      unstyled
-      overlayClassName="p-4"
-      contentClassName="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden anim-pop shadow-2xl">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-ink/10 shrink-0">
-        <div className="flex items-center gap-2">
-          <Icon name="bag" className="w-5 h-5 text-gold" />
-          <h3 className="font-display text-lg text-ink">Cửa hàng hạt giống</h3>
-        </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><Icon name="close" className="w-5 h-5 text-ink/50" /></button>
-      </div>
-
-      <div className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-gold/10 to-amber-100/40 border-b border-gold/10 shrink-0">
-        <Icon name="coin" className="w-4 h-4" />
-        <span className="text-sm font-bold text-gold">{userCoins?.toLocaleString()} Coin</span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-5 space-y-3">
-        {seedList.map(seed => {
-          const canBuy = (userCoins || 0) >= seed.seedPrice;
-          const r = RARITY_STYLES[seed.rarity];
-          return (
-            <button
-              key={seed.id}
-              onClick={() => canBuy && onSelect(seed.id)}
-              disabled={!canBuy}
-              className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all duration-300 text-left
-                ${canBuy ? `border-${seed.rarity === 'legendary' ? 'amber' : seed.rarity === 'epic' ? 'purple' : seed.rarity === 'rare' ? 'blue' : 'gray'}-200 bg-white hover:shadow-xl hover:scale-[1.02] cursor-pointer` : 'border-ink/5 bg-ink/[0.02] opacity-50 cursor-not-allowed'}`}
-              style={canBuy ? { boxShadow: `0 0 0 1px ${r.border}40, 0 4px 12px ${r.glow}` } : {}}
-            >
-              <div className="w-14 h-14 shrink-0 rounded-xl bg-gradient-to-b from-sky-50 to-white border border-ink/5 overflow-hidden">
-                <PlantArt plantId={seed.id} stageIdx={seed.stageCount - 1} totalStages={seed.stageCount} isReady={false} plantConfig={plantConfig} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-display text-sm text-ink">{seed.name}</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold" style={{ background: r.bg, color: r.text }}>{r.label}</span>
-                </div>
-                <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-ink/40">
-                  <span className="flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> {formatTime(seed.growthTime)}</span>
-                  <span className="flex items-center gap-1"><Icon name="coin" className="w-3 h-3" /> +{seed.harvestCoin}</span>
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="flex items-center gap-1 text-sm font-bold text-gold">
-                  <Icon name="coin" className="w-3.5 h-3.5" /> {seed.seedPrice}
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </Modal>
-  );
-}
-
-/* ============================================================
-   INVENTORY (KHO ĐỒ) — giao diện đẹp hơn
+   INVENTORY SHOP MODAL
 ============================================================ */
 function InventoryShop({ userCoins, inventory, onBuy, onUse, onSelectFertilizer, onClose }) {
   const ownedEntries = Object.entries(ITEM_CONFIG).filter(([id]) => (inventory[id] || 0) > 0);
   return (
-    <Modal onClose={onClose} unstyled align="bottom"
-      overlayClassName="p-0"
-      contentClassName="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden anim-pop shadow-2xl">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-ink/10 shrink-0">
-        <div className="flex items-center gap-2">
-          <Icon name="backpack" className="w-5 h-5 text-gold" />
-          <h3 className="font-display text-lg text-ink">Kho đồ</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-[#1c2410]/60" />
+      <div className="relative bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden anim-pop"
+        style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 border-b-[3px] border-[#40301d] shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🎒</span>
+            <h3 className="font-bold text-lg text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>Kho đồ</h3>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center border-[3px] border-[#40301d] bg-[#fff6e2] hover:bg-[#fdecc8] text-[#6b5540] text-sm" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>✕</button>
         </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition"><Icon name="close" className="w-5 h-5 text-ink/50" /></button>
-      </div>
-
-      <div className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-gold/10 to-amber-100/40 border-b border-gold/10 shrink-0">
-        <Icon name="coin" className="w-4 h-4" />
-        <span className="text-sm font-bold text-gold">{userCoins?.toLocaleString()} Coin</span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
-        {ownedEntries.length > 0 && (
+        <div className="flex items-center gap-2 px-5 py-2 bg-[#ffc94a]/20 border-b-[3px] border-[#40301d] shrink-0">
+          <div className="w-5 h-5 rounded-full bg-[#ffc94a] border-2 border-[#40301d] flex items-center justify-center text-[10px]">🌾</div>
+          <span className="text-sm font-bold text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{userCoins?.toLocaleString()} Coin</span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {ownedEntries.length > 0 && (
+            <div>
+              <div className="text-[10px] font-bold uppercase text-[#6b5540] mb-1.5">Sở hữu</div>
+              <div className="space-y-1.5">
+                {ownedEntries.map(([id, item]) => {
+                  const owned = inventory[id] || 0;
+                  const isUpgrade = item.type === 'upgrade';
+                  return (
+                    <div key={id} className="flex items-center gap-2.5 p-2 rounded-xl border-[3px] border-[#4c8c3a] bg-[#b9e88a]/30" style={{ boxShadow: '0 3px 0 #2f5a24' }}>
+                      <span className="text-xl">{item.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-sm text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{item.name}</span>
+                          <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-[#4c8c3a] text-white border border-[#2f5a24]">x{owned}</span>
+                        </div>
+                      </div>
+                      {isUpgrade ? (
+                        <button onClick={() => onUse(id)} className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#ffc94a] text-[#40301d] border-[3px] border-[#40301d]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>Dùng</button>
+                      ) : (
+                        <button onClick={() => onSelectFertilizer(id)} className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#fff6e2] text-[#8a6a10] border-[3px] border-[#40301d]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>Bón</button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div>
-            <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Đồ đang sở hữu</div>
+            <div className="text-[10px] font-bold uppercase text-[#6b5540] mb-1.5">Mua sắm</div>
             <div className="space-y-2">
-              {ownedEntries.map(([id, item]) => {
+              {Object.entries(ITEM_CONFIG).map(([id, item]) => {
                 const owned = inventory[id] || 0;
                 const isUpgrade = item.type === 'upgrade';
+                const alreadyOwned = isUpgrade && owned > 0;
+                const canBuy = !alreadyOwned && (userCoins || 0) >= item.price;
                 return (
-                  <div key={id} className="flex items-center gap-3 p-3 rounded-2xl border-2 border-green-200 bg-green-50/60 shadow-sm">
-                    <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${item.color}22` }}>
-                      {item.icon}
-                    </div>
+                  <div key={id} className={`flex items-center gap-2.5 p-2 rounded-xl border-[3px] border-[#40301d] ${alreadyOwned ? 'bg-[#b9e88a]/30 border-[#4c8c3a]' : 'bg-white'}`}
+                    style={{ boxShadow: alreadyOwned ? '0 3px 0 #2f5a24' : '0 3px 0 rgba(64,48,29,0.35)' }}>
+                    <span className="text-xl">{item.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-display text-sm text-ink">{item.name}</span>
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-green-100 text-green-600">x{owned}</span>
-                      </div>
-                      <p className="text-[10px] text-ink/40 mt-0.5 leading-snug">{item.desc}</p>
+                      <span className="font-bold text-sm text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{item.name}</span>
+                      <p className="text-[9px] text-[#6b5540]">{item.desc}</p>
                     </div>
-                    {isUpgrade ? (
-                      <button
-                        onClick={() => onUse(id)}
-                        className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-gold text-white hover:bg-gold/80 shadow-sm transition-colors"
-                      >
-                        Dùng
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => onSelectFertilizer(id)}
-                        className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 shadow-sm transition-colors"
-                      >
-                        Bón cây
-                      </button>
-                    )}
+                    <button onClick={() => canBuy && onBuy(id)} disabled={!canBuy}
+                      className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold border-[3px] border-[#40301d]
+                        ${alreadyOwned ? 'bg-[#b9e88a] text-[#2f5a24] cursor-default' : canBuy ? 'bg-[#ffc94a] text-[#40301d]' : 'bg-[#e8e0d0] text-[#6b5540] cursor-not-allowed opacity-50'}`}
+                      style={{ boxShadow: canBuy ? '0 3px 0 rgba(64,48,29,0.35)' : 'none' }}>
+                      {alreadyOwned ? '✅' : `${item.price}🌾`}
+                    </button>
                   </div>
                 );
               })}
             </div>
           </div>
-        )}
-
-        <div>
-          <div className="text-[10px] font-mono uppercase text-ink/40 mb-2">Mua sắm</div>
-          <p className="text-[10px] font-mono text-ink/35 mb-2">Phân bón dùng để bón trực tiếp cho cây trong vườn. Đồ nâng cấp mua một lần, dùng mãi mãi.</p>
-          <div className="space-y-3">
-            {Object.entries(ITEM_CONFIG).map(([id, item]) => {
-              const owned = inventory[id] || 0;
-              const isUpgrade = item.type === 'upgrade';
-              const alreadyOwned = isUpgrade && owned > 0;
-              const canBuy = !alreadyOwned && (userCoins || 0) >= item.price;
-              return (
-                <div key={id} className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${alreadyOwned ? 'border-green-200 bg-green-50/60 shadow-sm' : 'border-ink/10 bg-white hover:shadow-md'}`}>
-                  <div className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${item.color}22` }}>
-                    {item.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-display text-sm text-ink">{item.name}</span>
-                      {!isUpgrade && owned > 0 && <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-ink/5 text-ink/50">x{owned}</span>}
-                    </div>
-                    <p className="text-[10px] text-ink/40 mt-0.5 leading-snug">{item.desc}</p>
-                  </div>
-                  <button
-                    onClick={() => canBuy && onBuy(id)}
-                    disabled={!canBuy}
-                    className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors
-                      ${alreadyOwned ? 'bg-green-100 text-green-600 cursor-default' : canBuy ? 'bg-gold text-white hover:bg-gold/80 shadow-sm hover:shadow' : 'bg-ink/5 text-ink/30 cursor-not-allowed'}`}
-                  >
-                    {alreadyOwned ? '✅ Đã có' : `${item.price} 💰`}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }
 
+/* ============================================================
+   HARVEST MODAL
+============================================================ */
 function HarvestModal({ plantType, onConfirm, onClose, plantConfig }) {
   if (!plantType) return null;
   const cfg = plantConfig[plantType];
   if (!cfg) return null;
   return (
-    <Modal onClose={onClose} contentClassName="max-w-xs text-center">
-      <div className="w-24 h-24 mx-auto mb-2">
-        <PlantArt plantId={plantType} stageIdx={cfg.stageCount - 1} totalStages={cfg.stageCount} isReady plantConfig={plantConfig} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-[#1c2410]/60" />
+      <div className="relative bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] w-full max-w-xs text-center p-5 anim-pop"
+        style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }} onClick={e => e.stopPropagation()}>
+        <div className="w-20 h-20 mx-auto mb-2">
+          <PlantArt plantId={plantType} stageIdx={cfg.stageCount - 1} totalStages={cfg.stageCount} isReady plantConfig={plantConfig} />
+        </div>
+        <h3 className="font-bold text-lg text-[#40301d] mb-1" style={{ fontFamily: "'Baloo 2', sans-serif" }}>🎉 Thu hoạch!</h3>
+        <div className="flex items-center justify-center gap-2 text-xl font-bold text-[#8a6a10] mb-3" style={{ fontFamily: "'Baloo 2', sans-serif" }}>
+          🌾 +{cfg.harvestCoin}
+        </div>
+        <button onClick={onConfirm} className="w-full py-2.5 bg-[#4c8c3a] text-white rounded-xl font-bold border-[3px] border-[#40301d] hover:bg-[#2f5a24] transition" style={{ boxShadow: '0 4px 0 #2f5a24' }}>
+          Tuyệt vời!
+        </button>
       </div>
-      <h3 className="font-display text-lg text-ink mb-1">🎉 Thu hoạch thành công!</h3>
-      <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gold mb-4">
-        <Icon name="coin" className="w-6 h-6" /> +{cfg.harvestCoin}
-      </div>
-      <button onClick={onConfirm} className="w-full py-2.5 bg-gradient-to-r from-gold to-amber-500 text-white rounded-xl font-semibold hover:from-gold/90 hover:to-amber-500/90 transition shadow-md">
-        Tuyệt vời!
-      </button>
-    </Modal>
+    </div>
   );
 }
 
+/* ============================================================
+   QUIZ MODAL
+============================================================ */
 function QuizModal({ onEarnWater, onClose }) {
   const [question, setQuestion] = useState(null);
   const [selected, setSelected] = useState(null);
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   const pickQuestion = () => {
     const idx = Math.floor(Math.random() * MATH_QUESTIONS.length);
     setQuestion(MATH_QUESTIONS[idx]);
     setSelected(null);
     setResult(null);
-    setLoading(false);
   };
 
   useEffect(() => { pickQuestion(); }, []);
@@ -845,86 +441,98 @@ function QuizModal({ onEarnWater, onClose }) {
     if (selected === null || !question) return;
     const correct = selected === question.answer;
     setResult(correct);
-    if (correct) {
-      setTimeout(() => onEarnWater(1), 800);
-    }
+    if (correct) setTimeout(() => onEarnWater(1), 800);
   };
 
-  const handleNext = () => {
-    pickQuestion();
-  };
-
-  if (loading || !question) return null;
-
+  if (!question) return null;
   return (
-    <Modal onClose={onClose} contentClassName="max-w-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Icon name="water" className="w-5 h-5 text-blue-500" />
-          <h3 className="font-display text-base text-ink">💧 Trả lời để nhận nước</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-[#1c2410]/60" />
+      <div className="relative bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] w-full max-w-sm p-5 anim-pop"
+        style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">💧</span>
+            <h3 className="font-bold text-base text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>Trả lời để nhận nước</h3>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center border-[3px] border-[#40301d] bg-[#fff6e2] text-[#6b5540] text-xs" style={{ boxShadow: '0 2px 0 rgba(64,48,29,0.35)' }}>✕</button>
         </div>
-        <button onClick={onClose} className="p-1 rounded-lg hover:bg-ink/5 transition">
-          <Icon name="close" className="w-4 h-4 text-ink/40" />
-        </button>
-      </div>
-
-      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 mb-4 text-center border border-blue-100">
-        <p className="text-lg font-bold text-ink">{question.q}</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        {question.options.map((opt, i) => {
-          const isSelected = selected === i;
-          const isCorrect = result !== null && i === question.answer;
-          const isWrong = result !== null && isSelected && i !== question.answer;
-          return (
-            <button
-              key={i}
-              onClick={() => result === null && setSelected(i)}
-              disabled={result !== null}
-              className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
-                ${isCorrect ? 'border-green-400 bg-green-50 text-green-700 shadow-md' :
-                  isWrong ? 'border-red-400 bg-red-50 text-red-600' :
-                    isSelected ? 'border-blue-400 bg-blue-50 text-blue-700 shadow-sm' :
-                      'border-ink/10 bg-white text-ink hover:border-blue-300 hover:bg-blue-50/50'}`}
-            >
-              {opt}
-            </button>
-          );
-        })}
-      </div>
-
-      {result === null ? (
-        <button
-          onClick={handleSubmit}
-          disabled={selected === null}
-          className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-40 shadow-md"
-        >
-          Trả lời
-        </button>
-      ) : (
-        <div className="text-center">
-          {result ? (
-            <div className="mb-2">
-              <p className="text-green-600 font-bold text-sm">✅ Đúng rồi! +1 💧</p>
-            </div>
-          ) : (
-            <div className="mb-2">
-              <p className="text-red-500 font-semibold text-sm">❌ Sai rồi! Đáp án: {question.options[question.answer]}</p>
-            </div>
-          )}
-          <button onClick={handleNext}
-            className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition shadow-md">
-            Câu tiếp theo
-          </button>
+        <div className="bg-[#eaf7d8] rounded-xl p-3 mb-3 text-center border-[3px] border-[#40301d]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>
+          <p className="text-lg font-bold text-[#40301d]" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{question.q}</p>
         </div>
-      )}
-    </Modal>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          {question.options.map((opt, i) => {
+            const isSelected = selected === i;
+            const isCorrect = result !== null && i === question.answer;
+            const isWrong = result !== null && isSelected && i !== question.answer;
+            return (
+              <button key={i} onClick={() => result === null && setSelected(i)} disabled={result !== null}
+                className={`py-2.5 rounded-xl border-[3px] border-[#40301d] text-sm font-bold transition-all
+                  ${isCorrect ? 'bg-[#b9e88a] border-[#2f5a24]' : isWrong ? 'bg-[#f3a6a0] border-[#8c2f27]' : isSelected ? 'bg-[#ffc94a]' : 'bg-white hover:translate-y-[-1px]'}`}
+                style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+        {result === null ? (
+          <button onClick={handleSubmit} disabled={selected === null}
+            className="w-full py-2.5 bg-[#5aa7c9] text-white rounded-xl font-bold border-[3px] border-[#40301d] disabled:opacity-40"
+            style={{ boxShadow: '0 4px 0 #2a5a6e' }}>Trả lời</button>
+        ) : (
+          <div className="text-center">
+            <p className={`font-bold text-sm mb-2 ${result ? 'text-[#2f5a24]' : 'text-[#8c2f27]'}`} style={{ fontFamily: "'Baloo 2', sans-serif" }}>
+              {result ? '✅ Đúng rồi! +1 💧' : `❌ Sai! Đáp án: ${question.options[question.answer]}`}
+            </p>
+            <button onClick={pickQuestion} className="w-full py-2.5 bg-[#5aa7c9] text-white rounded-xl font-bold border-[3px] border-[#40301d]" style={{ boxShadow: '0 4px 0 #2a5a6e' }}>Câu tiếp</button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
 /* ============================================================
-   MAIN PAGE — giao diện tổng thể đẹp hơn
+   TOAST
+============================================================ */
+function FarmToast({ message, onClose }) {
+  useEffect(() => {
+    if (!message) return;
+    const t = setTimeout(() => onClose?.(), 2200);
+    return () => clearTimeout(t);
+  }, [message, onClose]);
+  if (!message) return null;
+  return (
+    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[100] px-5 py-2.5 rounded-full border-[3px] border-[#40301d] max-w-[86vw] text-center whitespace-nowrap overflow-hidden text-ellipsis anim-pop"
+      style={{ fontFamily: "'Baloo 2', sans-serif", background: '#40301d', color: '#fff', boxShadow: '0 6px 16px rgba(0,0,0,0.3)' }}>
+      {message}
+    </div>
+  );
+}
+
+/* ============================================================
+   CONFIRM MODAL
+============================================================ */
+function FarmConfirm({ open, title, message, onConfirm, onCancel }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="absolute inset-0 bg-[#1c2410]/60" />
+      <div className="relative bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] w-full max-w-xs text-center p-5 anim-pop"
+        style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }} onClick={e => e.stopPropagation()}>
+        <h3 className="font-bold text-lg text-[#40301d] mb-2" style={{ fontFamily: "'Baloo 2', sans-serif" }}>{title}</h3>
+        <p className="text-sm text-[#6b5540] mb-4">{message}</p>
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl bg-[#fff6e2] text-[#6b5540] font-bold text-sm border-[3px] border-[#40301d] hover:bg-[#fdecc8]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>Hủy</button>
+          <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl bg-[#c1443a] text-white font-bold text-sm border-[3px] border-[#40301d] hover:bg-[#9c332a]" style={{ boxShadow: '0 3px 0 #6b1e18' }}>Xóa</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   MAIN PAGE
 ============================================================ */
 export default function GardenPage({ userAuth, onBack }) {
   const [garden, setGarden] = useState(null);
@@ -932,28 +540,45 @@ export default function GardenPage({ userAuth, onBack }) {
   const [error, setError] = useState(null);
   const [showShop, setShowShop] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedPlotIndex, setSelectedPlotIndex] = useState(null);
   const [harvestResult, setHarvestResult] = useState(null);
-  const [tick, setTick] = useState(0);
   const [inventory, setInventory] = useState({ ...DEFAULT_INVENTORY });
-  const [wateringSlot, setWateringSlot] = useState(null);
   const [plantConfig, setPlantConfig] = useState(FALLBACK_PLANT_CONFIG);
   const [waterDrops, setWaterDrops] = useState(() => loadWaterDrops(userAuth?.user?.id));
   const [showQuiz, setShowQuiz] = useState(false);
   const [fertilizeMode, setFertilizeMode] = useState(null);
-  const gardenGridRef = useRef(null);
+  const [toast, setToast] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [tick, setTick] = useState(0);
 
+  // Player state
+  const [playerPos, setPlayerPos] = useState({ x: PLAYER_START.x, y: PLAYER_START.y });
+  const [playerDir, setPlayerDir] = useState('down');
+  const [playerMoving, setPlayerMoving] = useState(false);
+  const [playerFrom, setPlayerFrom] = useState({ x: PLAYER_START.x, y: PLAYER_START.y });
+  const [playerTo, setPlayerTo] = useState({ x: PLAYER_START.x, y: PLAYER_START.y });
+  const moveStartRef = useRef(0);
+  const moveDuration = 140;
+  const keysDown = useRef(new Set());
+  const lastMoveRef = useRef(0);
   const syncRef = useRef({});
-
   const userId = userAuth?.user?.id;
 
-  useEffect(() => { /* inventory loaded via API in load() */ }, [userId]);
-  const persistInventory = useCallback((next) => { setInventory(next); }, [userId]);
+  const showToast = useCallback((msg) => setToast(msg), []);
 
-  const stampSync = (slotIndex, progress) => {
-    syncRef.current[slotIndex] = { progress, at: Date.now() };
-  };
+  const stampSync = (idx, prog) => { syncRef.current[idx] = { progress: prog, at: Date.now() }; };
 
+  // Facing tile
+  const facingTile = useMemo(() => {
+    let dx = 0, dy = 0;
+    if (playerDir === 'down') dy = 1;
+    else if (playerDir === 'up') dy = -1;
+    else if (playerDir === 'left') dx = -1;
+    else if (playerDir === 'right') dx = 1;
+    return { x: playerPos.x + dx, y: playerPos.y + dy };
+  }, [playerPos, playerDir]);
+
+  // Load data
   const load = useCallback(async () => {
     try {
       setError(null);
@@ -963,41 +588,37 @@ export default function GardenPage({ userAuth, onBack }) {
       ]);
       if (gardenData) {
         setGarden(gardenData);
-        if (gardenData.inventory) {
-          setInventory({ ...DEFAULT_INVENTORY, ...gardenData.inventory });
-        }
-        (gardenData.slots || []).forEach((s) => {
+        if (gardenData.inventory) setInventory({ ...DEFAULT_INVENTORY, ...gardenData.inventory });
+        (gardenData.slots || []).forEach(s => {
           if (s.plant) stampSync(s.index, s.plant.isReady ? 100 : (s.plant.progress || 0));
           else delete syncRef.current[s.index];
         });
       }
-      if (plantTypesRes?.types) {
-        setPlantConfig(buildPlantConfig(plantTypesRes.types));
-      }
-
+      if (plantTypesRes?.types) setPlantConfig(buildPlantConfig(plantTypesRes.types));
       const auth = JSON.parse(localStorage.getItem('edu_games_auth') || '{}');
       if (auth?.token) {
-        const r = await fetch(`${API_BASE}/auth/me/coins`, {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        }).then(r => r.json());
+        const r = await fetch(`${API_BASE}/auth/me/coins`, { headers: { Authorization: `Bearer ${auth.token}` } }).then(r => r.json());
         if (r?.status) setUserCoins(r.data.coins || 0);
       }
-    } catch (e) {
-      setError(e.message || 'Lỗi tải khu vườn');
-    }
+    } catch (e) { setError(e.message || 'Lỗi tải khu vườn'); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  useEffect(() => {
-    const iv = setInterval(() => setTick(t => t + 1), 1000);
-    return () => clearInterval(iv);
-  }, []);
+  useEffect(() => { const iv = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(iv); }, []);
 
   const slots = garden?.slots || [];
 
+  // Map farm plots to garden slots
+  const plotToSlot = useMemo(() => {
+    const map = {};
+    FARM_PLOTS.forEach((fp, i) => {
+      if (slots[i]) map[`${fp.x},${fp.y}`] = slots[i];
+    });
+    return map;
+  }, [slots]);
+
   const getDisplay = useCallback((slot) => {
-    const plant = slot.plant;
+    const plant = slot?.plant;
     if (!plant) return { progress: 0, remainingMs: 0 };
     const cfg = plantConfig[plant.plantType];
     if (!cfg) return { progress: plant.progress || 0, remainingMs: 0 };
@@ -1010,178 +631,244 @@ export default function GardenPage({ userAuth, onBack }) {
     return { progress, remainingMs };
   }, [plantConfig]);
 
-  const handleSlotSelect = (index) => {
-    setSelectedSlot(index);
-    setShowShop(true);
-  };
+  // Player movement
+  const tryMove = useCallback((dx, dy) => {
+    if (playerMoving) return;
+    let dir = 'down';
+    if (dx === 1) dir = 'right';
+    else if (dx === -1) dir = 'left';
+    else if (dy === -1) dir = 'up';
+    setPlayerDir(dir);
+    const nx = playerPos.x + dx;
+    const ny = playerPos.y + dy;
+    if (!isWalkable(nx, ny)) return;
+    setPlayerFrom({ ...playerPos });
+    setPlayerTo({ x: nx, y: ny });
+    setPlayerMoving(true);
+    moveStartRef.current = performance.now();
+  }, [playerPos, playerMoving]);
 
-  const handlePlant = async (plantType) => {
-    if (selectedSlot === null) return;
-    const index = selectedSlot;
+  // Interaction with facing tile
+  const handleInteract = useCallback(() => {
+    const key = `${facingTile.x},${facingTile.y}`;
+    const slot = plotToSlot[key];
+    if (!slot) return;
+
+    const { progress } = getDisplay(slot);
+    const plant = slot.plant;
+
+    if (!plant) {
+      // Empty plot — open seed shop
+      setSelectedPlotIndex(slot.index);
+      setShowShop(true);
+    } else if (progress >= 100) {
+      // Ready — harvest
+      handleHarvest(slot.index);
+    } else if (waterDrops > 0) {
+      // Water
+      handleWater(slot.index);
+    } else {
+      setShowQuiz(true);
+    }
+  }, [facingTile, plotToSlot, getDisplay, waterDrops]);
+
+  // Keyboard
+  useEffect(() => {
+    const MOVE_REPEAT = 140;
+    const handleKey = (e) => {
+      const key = e.key.toLowerCase();
+      if (showShop || showInventory || showQuiz || harvestResult || confirmDelete) return;
+      if (key === 'e' || key === ' ') { e.preventDefault(); handleInteract(); return; }
+      keysDown.current.add(key);
+    };
+    const handleUp = (e) => { keysDown.current.delete(e.key.toLowerCase()); };
+
+    const loop = (now) => {
+      if (!playerMoving) {
+        const k = keysDown.current;
+        let dx = 0, dy = 0;
+        if (k.has('arrowup') || k.has('w')) dy = -1;
+        else if (k.has('arrowdown') || k.has('s')) dy = 1;
+        else if (k.has('arrowleft') || k.has('a')) dx = -1;
+        else if (k.has('arrowright') || k.has('d')) dx = 1;
+        if ((dx || dy) && now - lastMoveRef.current > MOVE_REPEAT) {
+          tryMove(dx, dy);
+          lastMoveRef.current = now;
+        }
+      }
+      requestAnimationFrame(loop);
+    };
+
+    window.addEventListener('keydown', handleKey);
+    window.addEventListener('keyup', handleUp);
+    const raf = requestAnimationFrame(loop);
+    return () => { window.removeEventListener('keydown', handleKey); window.removeEventListener('keyup', handleUp); cancelAnimationFrame(raf); };
+  }, [playerMoving, tryMove, handleInteract, showShop, showInventory, showQuiz, harvestResult, confirmDelete]);
+
+  // Player position update
+  useEffect(() => {
+    if (!playerMoving) return;
+    const iv = requestAnimationFrame((now) => {
+      const t = Math.min(1, (now - moveStartRef.current) / moveDuration);
+      if (t >= 1) {
+        setPlayerPos({ ...playerTo });
+        setPlayerMoving(false);
+      }
+    });
+    return () => cancelAnimationFrame(iv);
+  }, [playerMoving, playerTo, tick]);
+
+  // Bob offset
+  const bobOffset = playerMoving ? Math.sin((tick % 10) / 10 * Math.PI) * 3 : 0;
+
+  // Plant, water, harvest, fertilize handlers
+  const handlePlant = async (plantType, plotIdx) => {
     const cfg = plantConfig[plantType];
     setShowShop(false);
-    setSelectedSlot(null);
-
+    setSelectedPlotIndex(null);
     const prevGarden = garden;
     const prevCoins = userCoins;
-    setGarden((g) => {
+    setGarden(g => {
       if (!g) return g;
-      const nextSlots = g.slots.map((s) => (s.index === index ? { ...s, plant: { plantType, progress: 0, isReady: false } } : s));
-      return { ...g, slots: nextSlots };
+      return { ...g, slots: g.slots.map(s => s.index === plotIdx ? { ...s, plant: { plantType, progress: 0, isReady: false } } : s) };
     });
-    stampSync(index, 0);
-    setUserCoins((c) => Math.max(0, c - cfg.seedPrice));
-
+    stampSync(plotIdx, 0);
+    setUserCoins(c => Math.max(0, c - cfg.seedPrice));
     try {
-      const res = await gardenService.plant(index, plantType);
-      if (!res?.success) throw new Error(res?.message || 'Không thể trồng cây');
+      const res = await gardenService.plant(plotIdx, plantType);
+      if (!res?.success) throw new Error(res?.message || 'Lỗi trồng cây');
+      showToast(`Đã trồng ${cfg.name}! 🌱`);
       load();
     } catch (e) {
       setGarden(prevGarden);
       setUserCoins(prevCoins);
-      delete syncRef.current[index];
-      alert(e.message || 'Lỗi trồng cây');
+      delete syncRef.current[plotIdx];
+      showToast(e.message);
     }
   };
 
   const handleHarvest = async (index) => {
-    const slot = slots.find((s) => s.index === index);
+    const slot = slots.find(s => s.index === index);
     const plantType = slot?.plant?.plantType;
     const prevGarden = garden;
-
-    setGarden((g) => ({ ...g, slots: g.slots.map((s) => (s.index === index ? { ...s, plant: null } : s)) }));
+    setGarden(g => ({ ...g, slots: g.slots.map(s => s.index === index ? { ...s, plant: null } : s) }));
     delete syncRef.current[index];
     if (plantType) setHarvestResult(plantType);
-
     try {
       const res = await gardenService.harvest(index);
-      if (!res?.success) throw new Error(res?.message || 'Không thể thu hoạch');
+      if (!res?.success) throw new Error(res?.message);
       load();
-    } catch (e) {
-      setGarden(prevGarden);
-      setHarvestResult(null);
-      alert(e.message || 'Lỗi thu hoạch');
-    }
+    } catch (e) { setGarden(prevGarden); setHarvestResult(null); showToast(e.message); }
   };
 
   const handleWater = async (index) => {
-    if (waterDrops <= 0) {
-      setShowQuiz(true);
-      return;
-    }
-    const slot = slots.find((s) => s.index === index);
+    if (waterDrops <= 0) { setShowQuiz(true); return; }
+    const slot = slots.find(s => s.index === index);
     if (!slot?.plant) return;
     const { progress } = getDisplay(slot);
     const boost = inventory.golden_can > 0 ? 20 : 10;
-    const nextProgress = Math.min(100, progress + boost);
-    stampSync(index, nextProgress);
-    setGarden((g) => ({ ...g, slots: g.slots.map((s) => (s.index === index ? { ...s, plant: { ...s.plant, progress: nextProgress, isReady: nextProgress >= 100 } } : s)) }));
-
-    const newDrops = waterDrops - 1;
-    setWaterDrops(newDrops);
-    saveWaterDrops(userId, newDrops);
-
-    setWateringSlot(index);
-    setTimeout(() => setWateringSlot(null), 2000);
-
-    try {
-      await gardenService.water(index);
-    } catch (e) {
-      alert(e.message || 'Lỗi tưới nước');
-    }
+    const next = Math.min(100, progress + boost);
+    stampSync(index, next);
+    setGarden(g => ({ ...g, slots: g.slots.map(s => s.index === index ? { ...s, plant: { ...s.plant, progress: next, isReady: next >= 100 } } : s) }));
+    const nd = waterDrops - 1;
+    setWaterDrops(nd);
+    saveWaterDrops(userId, nd);
+    try { await gardenService.water(index); } catch (e) { showToast(e.message); }
   };
 
-  const handleEarnWater = (amount) => {
-    const newDrops = waterDrops + amount;
-    setWaterDrops(newDrops);
-    saveWaterDrops(userId, newDrops);
+  const handleEarnWater = (amt) => {
+    const nd = waterDrops + amt;
+    setWaterDrops(nd);
+    saveWaterDrops(userId, nd);
     setShowQuiz(false);
+    showToast('Nhận +1 💧');
   };
 
-  const handleFertilize = async (index, overrideItemId) => {
-    const itemId = overrideItemId || (() => {
-      const order = ['miracle_fertilizer', 'premium_fertilizer', 'basic_fertilizer'];
-      return order.find((id) => inventory[id] > 0);
-    })();
+  const handleFertilize = async (index, itemId) => {
     if (!itemId || (inventory[itemId] || 0) <= 0) return;
-    const slot = slots.find((s) => s.index === index);
+    const slot = slots.find(s => s.index === index);
     if (!slot?.plant) return;
     const { progress } = getDisplay(slot);
-    const boost = ITEM_CONFIG[itemId].boost;
-    const nextProgress = Math.min(100, progress + boost);
-    stampSync(index, nextProgress);
-    setGarden((g) => ({ ...g, slots: g.slots.map((s) => (s.index === index ? { ...s, plant: { ...s.plant, progress: nextProgress, isReady: nextProgress >= 100 } } : s)) }));
+    const next = Math.min(100, progress + ITEM_CONFIG[itemId].boost);
+    stampSync(index, next);
+    setGarden(g => ({ ...g, slots: g.slots.map(s => s.index === index ? { ...s, plant: { ...s.plant, progress: next, isReady: next >= 100 } } : s) }));
     setFertilizeMode(null);
+    showToast(`Đã bón ${ITEM_CONFIG[itemId].name}!`);
     try {
-      const result = await gardenService.useItem(itemId);
-      if (result?.inventory) {
-        setInventory({ ...DEFAULT_INVENTORY, ...result.inventory });
-      } else {
-        setInventory((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) - 1 }));
-      }
-    } catch (e) {
-      setInventory((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) - 1 }));
-    }
+      const r = await gardenService.useItem(itemId);
+      if (r?.inventory) setInventory({ ...DEFAULT_INVENTORY, ...r.inventory });
+      else setInventory(p => ({ ...p, [itemId]: (p[itemId] || 0) - 1 }));
+    } catch { setInventory(p => ({ ...p, [itemId]: (p[itemId] || 0) - 1 })); }
   };
 
-  const handleRemove = async (index) => {
-    if (!confirm('Bạn muốn xóa cây này?')) return;
+  const handleRemove = (index) => setConfirmDelete(index);
+  const confirmRemove = async () => {
+    const index = confirmDelete;
+    setConfirmDelete(null);
     const prevGarden = garden;
-    setGarden((g) => ({ ...g, slots: g.slots.map((s) => (s.index === index ? { ...s, plant: null } : s)) }));
+    setGarden(g => ({ ...g, slots: g.slots.map(s => s.index === index ? { ...s, plant: null } : s) }));
     delete syncRef.current[index];
-    try {
-      await gardenService.remove(index);
-    } catch (e) {
-      setGarden(prevGarden);
-      alert(e.message || 'Lỗi xóa cây');
-    }
+    try { await gardenService.remove(index); showToast('Đã xóa cây'); } catch (e) { setGarden(prevGarden); showToast(e.message); }
   };
 
   const handleBuyItem = async (itemId) => {
     const item = ITEM_CONFIG[itemId];
     if ((userCoins || 0) < item.price) return;
     try {
-      const result = await gardenService.buyItem(itemId);
-      if (result?.inventory) {
-        setInventory({ ...DEFAULT_INVENTORY, ...result.inventory });
-      }
-      if (result?.coins !== undefined) {
-        setUserCoins(result.coins);
-      } else {
-        setUserCoins((c) => c - item.price);
-      }
-    } catch (e) {
-      alert(e.message || 'Lỗi mua vật phẩm');
-    }
+      const r = await gardenService.buyItem(itemId);
+      if (r?.inventory) setInventory({ ...DEFAULT_INVENTORY, ...r.inventory });
+      if (r?.coins !== undefined) setUserCoins(r.coins);
+      else setUserCoins(c => c - item.price);
+      showToast(`Đã mua ${item.name}!`);
+    } catch (e) { showToast(e.message); }
   };
 
   const handleUseItem = async (itemId) => {
     if ((inventory[itemId] || 0) <= 0) return;
-    setInventory((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) - 1 }));
+    setInventory(p => ({ ...p, [itemId]: (p[itemId] || 0) - 1 }));
     try {
-      const result = await gardenService.useItem(itemId);
-      if (result?.inventory) {
-        setInventory({ ...DEFAULT_INVENTORY, ...result.inventory });
-      }
-    } catch (e) {
-      setInventory((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
-      alert(e.message || 'Lỗi dùng vật phẩm');
-    }
+      const r = await gardenService.useItem(itemId);
+      if (r?.inventory) setInventory({ ...DEFAULT_INVENTORY, ...r.inventory });
+      showToast(`Đã dùng ${ITEM_CONFIG[itemId]?.name}!`);
+    } catch (e) { setInventory(p => ({ ...p, [itemId]: (p[itemId] || 0) + 1 })); showToast(e.message); }
   };
 
-  const handleSelectFertilizer = (itemId) => {
-    setShowInventory(false);
-    setFertilizeMode(itemId);
+  const handleSelectFertilizer = (itemId) => { setShowInventory(false); setFertilizeMode(itemId); };
+
+  // Planted count
+  const plantedCount = slots.filter(s => s.plant).length;
+  const readyCount = slots.filter(s => s.plant && getDisplay(s).progress >= 100).length;
+  const hasAnyFertilizer = inventory.basic_fertilizer > 0 || inventory.premium_fertilizer > 0 || inventory.miracle_fertilizer > 0;
+
+  // Get facing plot
+  const facingKey = `${facingTile.x},${facingTile.y}`;
+  const facingSlot = plotToSlot[facingKey];
+  const facingPlant = facingSlot?.plant;
+  const facingCfg = facingPlant ? plantConfig[facingPlant.plantType] : null;
+  const facingDisplay = facingSlot ? getDisplay(facingSlot) : null;
+
+  // Hint
+  const getHint = () => {
+    if (fertilizeMode) return `Chọn cây để bón — di chuyển đến ô cây, nhấn E`;
+    if (facingSlot && facingPlant) {
+      if (facingDisplay?.progress >= 100) return `Nhấn E để thu hoạch ${facingCfg?.name || 'cây'}! 🎉`;
+      return `${facingCfg?.name || 'Cây'} — nhấn E để tưới nước 💧`;
+    }
+    if (facingSlot && !facingPlant) return 'Nhấn E để trồng cây 🌱';
+    return 'Dùng WASD/Phím mũi tên để di chuyển, E để tương tác';
   };
 
   if (!userAuth?.user) {
     return (
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-3"><PlantArt plantId="sunflower" stageIdx={0} totalStages={3} isReady={false} plantConfig={plantConfig} /></div>
-          <h2 className="font-display text-lg text-ink mb-2">🌱 Chưa đăng nhập</h2>
-          <p className="text-sm text-ink/50 mb-4">Bạn cần đăng nhập để xem khu vườn</p>
-          <button onClick={onBack} className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition">Về trang chủ</button>
+      <div className="fixed inset-0 overflow-hidden" style={{ fontFamily: "'Nunito', sans-serif" }}>
+        <div id="farm-sky" />
+        <div className="relative z-10 flex items-center justify-center h-full">
+          <div className="bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] p-6 text-center max-w-xs w-full anim-pop" style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }}>
+            <div className="text-4xl mb-3">🌱</div>
+            <h2 className="font-bold text-lg text-[#40301d] mb-2" style={{ fontFamily: "'Baloo 2', sans-serif" }}>Chưa đăng nhập</h2>
+            <p className="text-sm text-[#6b5540] mb-4">Bạn cần đăng nhập để xem khu vườn</p>
+            <button onClick={onBack} className="w-full py-2.5 bg-[#4c8c3a] text-white rounded-xl font-bold border-[3px] border-[#40301d] hover:bg-[#2f5a24]" style={{ boxShadow: '0 4px 0 #2f5a24' }}>Về trang chủ</button>
+          </div>
         </div>
       </div>
     );
@@ -1189,154 +876,165 @@ export default function GardenPage({ userAuth, onBack }) {
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div className="text-center">
-          <p className="text-sm text-red-500 mb-3">{error}</p>
-          <button onClick={load} className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition">Thử lại</button>
+      <div className="fixed inset-0 overflow-hidden" style={{ fontFamily: "'Nunito', sans-serif" }}>
+        <div id="farm-sky" />
+        <div className="relative z-10 flex items-center justify-center h-full">
+          <div className="bg-[#fff6e2] border-[4px] border-[#40301d] rounded-[22px] p-6 text-center max-w-xs w-full anim-pop" style={{ boxShadow: '0 24px 40px -10px rgba(0,0,0,0.45)' }}>
+            <p className="text-sm text-[#8c2f27] mb-3 font-bold">{error}</p>
+            <button onClick={load} className="w-full py-2.5 bg-[#4c8c3a] text-white rounded-xl font-bold border-[3px] border-[#40301d] hover:bg-[#2f5a24]" style={{ boxShadow: '0 4px 0 #2f5a24' }}>Thử lại</button>
+          </div>
         </div>
       </div>
     );
   }
 
-  const plantedCount = slots.filter(s => s.plant).length;
-  const readyCount = slots.filter(s => (s.plant ? getDisplay(s).progress >= 100 : false)).length;
-  const hasAnyFertilizer = inventory.basic_fertilizer > 0 || inventory.premium_fertilizer > 0 || inventory.miracle_fertilizer > 0;
-
   return (
-    <div className="flex-1 px-4 py-4 w-full space-y-4">
+    <div className="fixed inset-0 overflow-hidden" style={{ fontFamily: "'Nunito', sans-serif" }}>
+      {/* Sky */}
+      <div id="farm-sky" />
+
+      {/* Clouds */}
+      <div className="sky-cloud" style={{ '--cy': '8%', '--dur': '52s', '--delay': '0s' }} />
+      <div className="sky-cloud" style={{ '--cy': '16%', '--dur': '70s', '--delay': '-20s' }} />
+      <div className="sky-cloud" style={{ '--cy': '4%', '--dur': '60s', '--delay': '-40s' }} />
+
+      {/* HUD */}
+      <header className="absolute top-3 left-3 right-3 z-50 flex items-center justify-between pointer-events-none">
+        <div className="pointer-events-auto flex items-center gap-2 bg-[#fff6e2] border-[3px] border-[#40301d] rounded-full px-3 py-1.5" style={{ fontFamily: "'Baloo 2', sans-serif", boxShadow: '0 4px 0 rgba(64,48,29,0.35)' }}>
+          <span className="w-6 h-6 rounded-full bg-[#ffc94a] border-2 border-[#40301d] flex items-center justify-center text-[11px]">🌾</span>
+          <span className="text-[15px] text-[#40301d] font-bold">{userCoins.toLocaleString()}</span>
+        </div>
+        <div className="pointer-events-auto bg-[rgba(64,48,29,0.35)] backdrop-blur-sm rounded-full px-3 py-1.5 text-white text-[13px] font-bold max-w-[40vw] truncate" style={{ fontFamily: "'Baloo 2', sans-serif", textShadow: '0 2px 0 rgba(0,0,0,0.25)' }}>
+          🌿 Khu vườn
+        </div>
+        <div className="pointer-events-auto flex items-center gap-2 bg-[#fff6e2] border-[3px] border-[#40301d] rounded-full px-3 py-1.5" style={{ fontFamily: "'Baloo 2', sans-serif", boxShadow: '0 4px 0 rgba(64,48,29,0.35)' }}>
+          <span className="w-6 h-6 rounded-full bg-[#ffc94a] border-2 border-[#40301d] flex items-center justify-center text-[11px]">💧</span>
+          <span className="text-[15px] text-[#40301d] font-bold">{waterDrops}</span>
+        </div>
+      </header>
+
+      {/* Hint */}
+      <div className="absolute top-14 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+        <div className="px-4 py-1.5 rounded-full bg-[#fff6e2] border-[3px] border-[#40301d] whitespace-nowrap" style={{ fontFamily: "'Baloo 2', sans-serif", boxShadow: '0 4px 0 rgba(64,48,29,0.35)' }}>
+          <span className="text-[12px] font-semibold text-[#40301d]">{getHint()}</span>
+        </div>
+      </div>
+
+      {/* Farm Grid */}
+      <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div
+          className="relative"
+          style={{ width: MAP_COLS * TILE, height: MAP_ROWS * TILE }}
+        >
+          {/* Grid tiles */}
+          {FARM_TILES.map((row, y) =>
+            row.map((type, x) => {
+              const key = `${x},${y}`;
+              const slot = plotToSlot[key];
+              const plant = slot?.plant;
+              const cfg = plant ? plantConfig[plant.plantType] : null;
+              const display = slot ? getDisplay(slot) : null;
+              const progress = display?.progress || 0;
+              const isReady = progress >= 100;
+              const stageIdx = plant && cfg ? (isReady ? cfg.stageCount - 1 : Math.min(cfg.stageCount - 1, Math.floor((progress / 100) * (cfg.stageCount - 1)))) : 0;
+              const isFacing = facingTile.x === x && facingTile.y === y;
+
+              return (
+                <FarmTile
+                  key={key}
+                  x={x} y={y} type={type}
+                  plant={plant} progress={progress} isReady={isReady}
+                  stageIdx={stageIdx} cfg={cfg}
+                  showClock={inventory.magic_lens > 0}
+                  remainingMs={display?.remainingMs || 0}
+                  isFacing={isFacing}
+                  fertilizing={!!fertilizeMode}
+                  onInteract={() => {
+                    if (type !== 'plot') return;
+                    if (fertilizeMode && plant && !isReady) { handleFertilize(slot.index, fertilizeMode); return; }
+                    if (!plant) { setSelectedPlotIndex(slot.index); setShowShop(true); return; }
+                    if (isReady) { handleHarvest(slot.index); return; }
+                    if (waterDrops > 0) handleWater(slot.index);
+                    else setShowQuiz(true);
+                  }}
+                />
+              );
+            })
+          )}
+
+          {/* Decorations */}
+          {FARM_DECOS.map((d, i) => (
+            <div key={`deco-${i}`} className="absolute z-20 pointer-events-none select-none flex items-center justify-center" style={{ left: d.x * TILE, top: d.y * TILE, width: TILE, height: TILE }}>
+              <span className="text-2xl" style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.2))' }}>{d.emoji}</span>
+            </div>
+          ))}
+
+          {/* Player */}
+          <Player x={playerPos.x} y={playerPos.y} dir={playerDir} moving={playerMoving} bobOffset={bobOffset} />
+        </div>
+      </div>
+
+      {/* Action bar — bottom */}
+      <footer className="absolute bottom-4 left-0 right-0 z-50 flex items-center justify-center gap-4 pointer-events-none px-3">
+        <button onClick={() => setShowInventory(true)} className="pointer-events-auto w-[52px] h-[52px] rounded-full flex items-center justify-center bg-[#fff6e2] border-[3px] border-[#40301d] text-xl hover:translate-y-[2px] active:translate-y-[3px] transition" style={{ boxShadow: '0 5px 0 rgba(64,48,29,0.35)' }} title="Kho đồ">🎒</button>
+        <button onClick={() => setShowQuiz(true)} className="pointer-events-auto w-[52px] h-[52px] rounded-full flex items-center justify-center bg-[#fff6e2] border-[3px] border-[#40301d] text-xl hover:translate-y-[2px] active:translate-y-[3px] transition" style={{ boxShadow: '0 5px 0 rgba(64,48,29,0.35)' }} title="Quiz nhận nước">💧</button>
+        <button onClick={onBack} className="pointer-events-auto w-[52px] h-[52px] rounded-full flex items-center justify-center bg-[#fff6e2] border-[3px] border-[#40301d] text-xl hover:translate-y-[2px] active:translate-y-[3px] transition" style={{ boxShadow: '0 5px 0 rgba(64,48,29,0.35)' }} title="Về trang chủ">🏠</button>
+      </footer>
+
+      {/* Mobile controls */}
+      <div className="absolute bottom-24 left-4 z-50 md:hidden pointer-events-auto">
+        <div className="grid grid-cols-3 gap-1">
+          <div />
+          <button onTouchStart={(e) => { e.preventDefault(); tryMove(0, -1); }} className="w-10 h-10 rounded-full bg-[#fff6e2] border-[3px] border-[#40301d] flex items-center justify-center text-lg active:translate-y-[2px]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>⬆️</button>
+          <div />
+          <button onTouchStart={(e) => { e.preventDefault(); tryMove(-1, 0); }} className="w-10 h-10 rounded-full bg-[#fff6e2] border-[3px] border-[#40301d] flex items-center justify-center text-lg active:translate-y-[2px]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>⬅️</button>
+          <button onTouchStart={(e) => { e.preventDefault(); handleInteract(); }} className="w-10 h-10 rounded-full bg-[#ffc94a] border-[3px] border-[#40301d] flex items-center justify-center text-lg active:translate-y-[2px]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>E</button>
+          <button onTouchStart={(e) => { e.preventDefault(); tryMove(1, 0); }} className="w-10 h-10 rounded-full bg-[#fff6e2] border-[3px] border-[#40301d] flex items-center justify-center text-lg active:translate-y-[2px]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>➡️</button>
+          <div />
+          <button onTouchStart={(e) => { e.preventDefault(); tryMove(0, 1); }} className="w-10 h-10 rounded-full bg-[#fff6e2] border-[3px] border-[#40301d] flex items-center justify-center text-lg active:translate-y-[2px]" style={{ boxShadow: '0 3px 0 rgba(64,48,29,0.35)' }}>⬇️</button>
+          <div />
+        </div>
+      </div>
+
+      {/* Modals */}
+      {showShop && <SeedShop userCoins={userCoins} onSelect={handlePlant} onClose={() => { setShowShop(false); setSelectedPlotIndex(null); }} plantConfig={plantConfig} plotIndex={selectedPlotIndex} />}
+      {showInventory && <InventoryShop userCoins={userCoins} inventory={inventory} onBuy={handleBuyItem} onUse={handleUseItem} onSelectFertilizer={handleSelectFertilizer} onClose={() => setShowInventory(false)} />}
+      {harvestResult && <HarvestModal plantType={harvestResult} onConfirm={() => setHarvestResult(null)} onClose={() => setHarvestResult(null)} plantConfig={plantConfig} />}
+      {showQuiz && <QuizModal onEarnWater={handleEarnWater} onClose={() => setShowQuiz(false)} />}
+      <FarmConfirm open={confirmDelete !== null} title="Xóa cây?" message="Bạn muốn xóa cây này?" onConfirm={confirmRemove} onCancel={() => setConfirmDelete(null)} />
+      <FarmToast message={toast} onClose={() => setToast(null)} />
+
       <style>{`
-        @keyframes gd-sway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
-        .gd-sway { animation: gd-sway 3.2s ease-in-out infinite; }
-        @keyframes gd-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.08); } }
-        .gd-pulse { animation: gd-pulse 2s ease-in-out infinite; }
-        @keyframes gd-twinkle { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
-        .gd-twinkle { animation: gd-twinkle 1.4s ease-in-out infinite; }
-        @keyframes gd-glow-bg { 0%,100% { opacity: 0.3; } 50% { opacity: 0.6; } }
-        .gd-glow-bg { animation: gd-glow-bg 2.2s ease-in-out infinite; }
-        @keyframes gd-idle { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-        .gd-gardener-idle { animation: gd-idle 2.4s ease-in-out infinite; }
-        @keyframes gd-water-bounce { 0%,100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-6px) rotate(-4deg); } 75% { transform: translateY(-3px) rotate(4deg); } }
-        .gd-gardener-water { animation: gd-water-bounce 0.6s ease-in-out 3; }
+        @keyframes drift { from { transform: translateX(-20vw); } to { transform: translateX(120vw); } }
+        @keyframes sun-glow { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
         @keyframes anim-pop { 0% { opacity: 0; transform: scale(0.9) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
         .anim-pop { animation: anim-pop 0.25s ease-out forwards; }
+        #farm-sky {
+          position: absolute; inset: 0;
+          background: linear-gradient(180deg, #cdeeff 0%, #eaf7d8 45%, #8fc94e 45%);
+          z-index: 0; overflow: hidden;
+        }
+        #farm-sky::before {
+          content: ""; position: absolute; top: 6%; right: 8%;
+          width: clamp(46px, 9vw, 74px); height: clamp(46px, 9vw, 74px);
+          border-radius: 50%;
+          background: radial-gradient(circle at 35% 35%, #fff6c8, #ffc94a 70%);
+          box-shadow: 0 0 40px 10px rgba(255, 201, 74, 0.45);
+          animation: sun-glow 5s ease-in-out infinite;
+        }
+        .sky-cloud {
+          position: absolute; top: var(--cy, 10%);
+          width: clamp(60px, 14vw, 110px); height: clamp(24px, 6vw, 42px);
+          background: #fff; border-radius: 999px; opacity: 0.8;
+          filter: drop-shadow(0 4px 0 rgba(255,255,255,0.5));
+          animation: drift var(--dur, 40s) linear infinite;
+          animation-delay: var(--delay, 0s);
+          z-index: 1;
+        }
+        .sky-cloud::before, .sky-cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
+        .sky-cloud::before { width: 55%; height: 140%; top: -55%; left: 8%; }
+        .sky-cloud::after { width: 45%; height: 110%; top: -40%; right: 10%; }
       `}</style>
-
-      <div className="flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-1 text-sm text-ink/50 hover:text-ink transition">
-          <Icon name="back" className="w-4 h-4" /> Trang chủ
-        </button>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowInventory(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ink/5 hover:bg-ink/10 text-ink/60 text-sm font-semibold transition shadow-sm">
-            <Icon name="backpack" className="w-4 h-4" /> Kho đồ
-          </button>
-          <button onClick={() => setShowQuiz(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 text-blue-600 text-sm font-semibold transition shadow-sm">
-            <Icon name="water" className="w-4 h-4" /> {waterDrops}
-          </button>
-          <span className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-gold/10 to-amber-100/40 text-gold text-sm font-bold shadow-sm">
-            <Icon name="coin" className="w-4 h-4" /> {userCoins.toLocaleString()}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="md:w-48 shrink-0 flex flex-col items-center gap-3">
-          <div className="w-full rounded-2xl p-4 flex flex-col items-center gap-2 shadow-lg" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
-            <GardenerAvatar
-              userAuth={userAuth}
-              size={120}
-              watering={wateringSlot !== null}
-              wateringSlotIndex={wateringSlot}
-              gardenRef={gardenGridRef}
-            />
-            <div className="text-center">
-              <h1 className="font-display text-sm text-ink">🌿 Khu vườn</h1>
-              <p className="text-[10px] text-ink/40 mt-0.5">
-                {plantedCount}/{slots.length} ô • {readyCount} sẵn sàng
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 rounded-2xl p-4 shadow-lg" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
-          {fertilizeMode && (
-            <div className="mb-3 flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border border-amber-200">
-              <div className="flex items-center gap-2">
-                <Icon name="sparkle" className="w-4 h-4 text-amber-500" />
-                <span className="text-xs font-semibold text-amber-700">Chọn cây để bón {ITEM_CONFIG[fertilizeMode]?.name || 'phân'}</span>
-              </div>
-              <button onClick={() => setFertilizeMode(null)} className="text-[10px] text-amber-500 hover:text-amber-700 font-bold">Hủy</button>
-            </div>
-          )}
-          {slots.length === 0 && !error ? (
-            <div className="text-center py-10 text-ink/40 animate-pulse">Đang tải...</div>
-          ) : (
-            <div ref={gardenGridRef} className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-              {slots.map((slot) => {
-                const { progress, remainingMs } = getDisplay(slot);
-                return (
-                  <div key={slot.index} data-slot-index={slot.index}>
-                    <PlantSlot
-                      slot={slot}
-                      displayProgress={progress}
-                      remainingMs={remainingMs}
-                      showClock={inventory.magic_lens > 0}
-                      hasFertilizer={hasAnyFertilizer || !!fertilizeMode}
-                      fertilizing={!!fertilizeMode}
-                      onSelect={handleSlotSelect}
-                      onHarvest={handleHarvest}
-                      onWater={handleWater}
-                      onRemove={handleRemove}
-                      onFertilize={(idx) => handleFertilize(idx, fertilizeMode)}
-                      plantConfig={plantConfig}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-ink/30 font-mono">
-            <Icon name="sparkle" className="w-3 h-3" />
-            <span>Nhấn 💧 ở trên để trả lời câu hỏi nhận nước</span>
-          </div>
-        </div>
-      </div>
-
-      {showShop && (
-        <SeedShop
-          userCoins={userCoins}
-          onSelect={handlePlant}
-          onClose={() => { setShowShop(false); setSelectedSlot(null); }}
-          plantConfig={plantConfig}
-        />
-      )}
-
-      {showInventory && (
-        <InventoryShop
-          userCoins={userCoins}
-          inventory={inventory}
-          onBuy={handleBuyItem}
-          onUse={handleUseItem}
-          onSelectFertilizer={handleSelectFertilizer}
-          onClose={() => setShowInventory(false)}
-        />
-      )}
-
-      {harvestResult && (
-        <HarvestModal
-          plantType={harvestResult}
-          onConfirm={() => setHarvestResult(null)}
-          onClose={() => setHarvestResult(null)}
-          plantConfig={plantConfig}
-        />
-      )}
-
-      {showQuiz && (
-        <QuizModal
-          onEarnWater={handleEarnWater}
-          onClose={() => setShowQuiz(false)}
-        />
-      )}
     </div>
   );
 }

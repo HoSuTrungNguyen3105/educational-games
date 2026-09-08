@@ -51,72 +51,30 @@ const DEFAULT_STATE = {
   accessory: { style: 'none' },
 };
 
-function ItemPreview({ item, allItems }) {
+function ItemPreview({ item }) {
   if (!item) return null;
 
-  if (item.category === 'body' && item.html) {
-    const vb = (item.html.includes('id="head"') && item.html.includes('id="body"')) ? '0 0 512 700' : '0 0 512 700';
-    return (
-      <svg viewBox={vb} width="48" height="66" xmlns="http://www.w3.org/2000/svg"
-        dangerouslySetInnerHTML={{ __html: item.html }} />
-    );
-  }
-
-  const state = { ...DEFAULT_STATE };
-  let bodyItemHtml = null;
-  if (allItems) {
-    const gender = item.gender || 'boy';
-    for (const it of allItems) {
-      if (it.category === 'body' && it.default) {
-        if (it.gender && it.gender !== gender) continue;
-        bodyItemHtml = it.html || null;
-      }
-      if (it.default && it.category !== item.category) {
-        if (it.gender && it.gender !== gender) continue;
-        if (it.category === 'skin') state.skin = it.params?.hex || '#FFDFC4';
-        else if (it.category === 'face') state.face = it.params?.style || 'gentle';
-        else state[it.category] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
-      }
+  if (!item.html) {
+    if (item.category === 'skin' && item.params?.hex) {
+      return (
+        <div className="w-12 h-16 rounded-lg border border-ink/10"
+          style={{ background: item.params.hex }} />
+      );
     }
-  }
-  if (item.category === 'skin') state.skin = item.params?.hex || '#FFDFC4';
-  else if (item.category === 'face') state.face = item.params?.style || 'gentle';
-  else state[item.category] = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
-
-  const overrides = {};
-  if (bodyItemHtml) overrides.body = bodyItemHtml;
-  let svg;
-  if (item.html) {
-    const isStandardBody = item.html.includes('id="head"') && item.html.includes('id="body"');
-    const isFullAvatarSvg = item.html.includes('<svg') && isStandardBody;
-
-    if (isFullAvatarSvg) {
-      svg = item.html;
-    } else if (item.html.includes('<svg')) {
-      svg = item.html;
-    } else {
-      svg = renderAvatarFullWithOverrides(state, { ...overrides, [item.category]: item.html });
-    }
-  } else {
-    svg = renderAvatarFullWithOverrides(state, overrides);
-  }
-  const isStandardSvg = svg && svg.includes('id="head"') && svg.includes('id="body"');
-  const isCustomSvg = svg && svg.includes('<svg') && !isStandardSvg;
-  if (isStandardSvg) {
     return (
-      <svg viewBox="0 0 512 700" width="48" height="66" xmlns="http://www.w3.org/2000/svg"
-        dangerouslySetInnerHTML={{ __html: svg }} />
+      <div className="w-12 h-16 rounded-lg bg-ink/5 border border-ink/10 flex items-center justify-center text-ink/20 text-lg font-bold">
+        –
+      </div>
     );
   }
-  if (isCustomSvg) {
-    return (
-      <svg viewBox="0 0 512 700" width="48" height="66" xmlns="http://www.w3.org/2000/svg"
-        dangerouslySetInnerHTML={{ __html: svg }} />
-    );
-  }
+
+  const isFullAvatar = item.html.includes('<svg') && (item.html.includes('id="head"') || item.html.includes('id="body"'));
+  const viewBox = isFullAvatar ? '0 0 512 700' : '0 0 300 440';
+  const h = isFullAvatar ? 66 : 70;
+
   return (
-    <svg viewBox="0 0 300 440" width="48" height="70" xmlns="http://www.w3.org/2000/svg"
-      dangerouslySetInnerHTML={{ __html: svg }} />
+    <svg viewBox={viewBox} width="48" height={h} xmlns="http://www.w3.org/2000/svg"
+      dangerouslySetInnerHTML={{ __html: item.html }} />
   );
 }
 
@@ -363,7 +321,7 @@ export default function AvatarItemManagement({ showToast }) {
           {filtered.map(item => (
             <div key={item.code} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-ink/8 hover:shadow-sm transition">
               <div className="w-12 h-17 flex items-center justify-center shrink-0 overflow-hidden rounded-lg bg-ink/5">
-                <ItemPreview item={item} allItems={items} />
+                <ItemPreview item={item} />
               </div>
               <div className="flex-1 min-w-0">
                 {batchMode ? (
