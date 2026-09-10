@@ -30,6 +30,21 @@ router.post("/harvest", authenticate, async (req, res, next) => {
   } catch (e) { sendError(res, e.message, 400); }
 });
 
+router.get("/water", authenticate, async (req, res, next) => {
+  try {
+    const result = await gardenService.getWater(req.user.sub);
+    sendSuccess(res, result);
+  } catch (e) { next(e); }
+});
+
+router.post("/water/sync", authenticate, async (req, res, next) => {
+  try {
+    const { waterDrops } = req.body || {};
+    const result = await gardenService.syncWater(req.user.sub, Number(waterDrops) || 0);
+    sendSuccess(res, result);
+  } catch (e) { sendError(res, e.message, 400); }
+});
+
 router.post("/water", authenticate, async (req, res, next) => {
   try {
     const { slotIndex } = req.body || {};

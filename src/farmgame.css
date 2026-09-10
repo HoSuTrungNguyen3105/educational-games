@@ -343,7 +343,253 @@
 
 .farm-wrap .hidden { display: none !important; }
 
+/* ---------- Farm canvas ---------- */
+.farm-canvas-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.farm-canvas-svg {
+  max-width: 100vw;
+  max-height: 100vh;
+  display: block;
+}
+
+/* ---------- Hint bubble ---------- */
+.farm-hint-wrap {
+  position: absolute;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* ---------- Mobile d-pad ---------- */
+.mobile-dpad {
+  display: none;
+  position: absolute;
+  bottom: 100px;
+  left: 16px;
+  z-index: 20;
+}
+
+.mobile-dpad-grid {
+  display: grid;
+  grid-template-columns: 56px 56px 56px;
+  gap: 6px;
+}
+
+.mobile-dpad-btn {
+  pointer-events: auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 5px 0 var(--shadow);
+  transition: transform .08s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.mobile-dpad-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--shadow);
+}
+
+.mobile-dpad-center {
+  background: var(--sun);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+/* ---------- Desktop d-pad ---------- */
+.desktop-dpad {
+  display: block;
+  position: absolute;
+  bottom: 100px;
+  left: 16px;
+  z-index: 20;
+}
+
+.desktop-dpad-grid {
+  display: grid;
+  grid-template-columns: 56px 56px 56px;
+  gap: 6px;
+}
+
+.desktop-dpad-btn {
+  pointer-events: auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 5px 0 var(--shadow);
+  transition: transform .08s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.desktop-dpad-btn:hover {
+  background: var(--cream-2);
+}
+
+.desktop-dpad-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--shadow);
+}
+
+.desktop-dpad-center {
+  background: var(--sun);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.desktop-dpad-center:hover {
+  background: #e6c228;
+}
+
+/* ---------- Mobile responsive ---------- */
+@media (max-width: 768px) {
+  .desktop-dpad {
+    display: none;
+  }
+
+  .mobile-dpad {
+    display: block;
+  }
+
+  .farm-canvas-svg {
+    max-width: none;
+    max-height: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .farm-wrap #action-bar {
+    gap: 10px;
+    padding: 0 10px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .farm-wrap .round-btn {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+
+  .farm-wrap .hud-pill {
+    padding: 5px 10px 5px 6px;
+    gap: 5px;
+    font-size: 13px;
+    border-width: 2px;
+  }
+
+  .farm-wrap .hud-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+    border-width: 2px;
+  }
+
+  .farm-wrap .hint-bubble {
+    font-size: 12px;
+    padding: 6px 10px;
+    max-width: 70vw;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .farm-wrap .modal-card {
+    border-width: 3px;
+    border-radius: 18px;
+    padding: 16px 14px;
+    max-width: 92vw;
+  }
+
+  .farm-wrap .modal-card h1 {
+    font-size: 18px;
+  }
+
+  .farm-wrap .primary-btn {
+    padding: 12px;
+    font-size: 14px;
+    border-width: 2px;
+  }
+
+  .farm-wrap .quiz-opt {
+    padding: 10px 6px;
+    font-size: 13px;
+    border-width: 2px;
+  }
+
+  .farm-wrap .lang-option {
+    padding: 10px 8px;
+    font-size: 13px;
+    border-width: 2px;
+  }
+}
+
 @media (max-width: 420px) {
-  .farm-wrap .hud-title { display: none; }
-  .farm-wrap #hud { justify-content: space-between; }
+  .farm-wrap .hud-title {
+    display: none;
+  }
+
+  .farm-wrap #hud {
+    justify-content: space-between;
+  }
+
+  .mobile-dpad {
+    bottom: 80px;
+    left: 10px;
+  }
+
+  .mobile-dpad-grid {
+    grid-template-columns: 50px 50px 50px;
+    gap: 4px;
+  }
+
+  .mobile-dpad-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 17px;
+    border-width: 2px;
+  }
+
+  .farm-wrap #action-bar {
+    gap: 8px;
+    padding: 0 8px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .farm-wrap .round-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    border-width: 2px;
+  }
 }

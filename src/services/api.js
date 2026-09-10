@@ -419,4 +419,6 @@ export const gardenService = {
   async getInventory() { return apiFetch("/garden/inventory"); },
   async buyItem(itemId) { return apiFetch("/garden/buy-item", { method: "POST", body: { itemId } }); },
   async useItem(itemId) { return apiFetch("/garden/use-item", { method: "POST", body: { itemId } }); },
+  async getWater() { return apiFetch("/garden/water"); },
+  async syncWater(waterDrops) { return apiFetch("/garden/water/sync", { method: "POST", body: { waterDrops } }); },
 };

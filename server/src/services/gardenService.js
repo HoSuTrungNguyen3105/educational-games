@@ -2,6 +2,8 @@ import { getCollection } from "../db.js";
 import { addCoins } from "./authService.js";
 
 const GARDEN_SIZE = 12;
+const WATER_MAX = 50;
+const WATER_REGEN_MS = 5 * 60 * 1000; // 5 minutes per drop
 
 const GARDEN_ITEM_PRICES = {
   basic_fertilizer: 20,
@@ -16,6 +18,23 @@ function ensureInventory(garden) {
   const defaults = { basic_fertilizer: 0, premium_fertilizer: 0, miracle_fertilizer: 0, golden_can: 0, magic_lens: 0 };
   for (const k of Object.keys(defaults)) {
     if (typeof garden.inventory[k] !== 'number') garden.inventory[k] = defaults[k];
+  }
+}
+
+function ensureWater(garden) {
+  if (typeof garden.waterDrops !== 'number') garden.waterDrops = 5;
+  if (!garden.lastWaterRegenAt) garden.lastWaterRegenAt = Date.now();
+}
+
+function calcWaterRegen(garden) {
+  ensureWater(garden);
+  const now = Date.now();
+  const elapsed = now - garden.lastWaterRegenAt;
+  if (elapsed <= 0) return;
+  const dropsToAdd = Math.min(WATER_MAX - garden.waterDrops, Math.floor(elapsed / WATER_REGEN_MS));
+  if (dropsToAdd > 0) {
+    garden.waterDrops = Math.min(WATER_MAX, garden.waterDrops + dropsToAdd);
+    garden.lastWaterRegenAt = now - (elapsed % WATER_REGEN_MS);
   }
 }
 
@@ -50,6 +69,8 @@ export async function getGarden(userId) {
   }
   ensureSlots(garden);
   ensureInventory(garden);
+  ensureWater(garden);
+  calcWaterRegen(garden);
 
   const typeMap = await getPlantTypeMap();
 
@@ -70,7 +91,12 @@ export async function getGarden(userId) {
     };
   });
 
-  return { slots, inventory: garden.inventory || {} };
+  await getCollection("gardens").updateOne(
+    { userId },
+    { $set: { waterDrops: garden.waterDrops, lastWaterRegenAt: garden.lastWaterRegenAt } }
+  );
+
+  return { slots, inventory: garden.inventory || {}, waterDrops: garden.waterDrops, lastWaterRegenAt: garden.lastWaterRegenAt };
 }
 
 export async function plantTree(userId, slotIndex, plantType) {
@@ -250,4 +276,40 @@ export async function useGardenItem(userId, itemId) {
   await col.updateOne({ userId }, { $set: { inventory: garden.inventory } });
 
   return { success: true, inventory: garden.inventory };
+}
+
+export async function getWater(userId) {
+  const col = getCollection("gardens");
+  let garden = await col.findOne({ userId });
+  if (!garden) {
+    garden = { userId, slots: [], waterDrops: 5, lastWaterRegenAt: Date.now(), createdAt: new Date().toISOString() };
+    ensureSlots(garden);
+    ensureInventory(garden);
+    await col.insertOne(garden);
+  }
+  ensureWater(garden);
+  calcWaterRegen(garden);
+  await col.updateOne({ userId }, { $set: { waterDrops: garden.waterDrops, lastWaterRegenAt: garden.lastWaterRegenAt } });
+  return { waterDrops: garden.waterDrops, lastWaterRegenAt: garden.lastWaterRegenAt };
+}
+
+export async function syncWater(userId, clientDrops) {
+  const col = getCollection("gardens");
+  let garden = await col.findOne({ userId });
+  if (!garden) {
+    garden = { userId, slots: [], waterDrops: 5, lastWaterRegenAt: Date.now(), createdAt: new Date().toISOString() };
+    ensureSlots(garden);
+    ensureInventory(garden);
+    await col.insertOne(garden);
+  }
+  ensureWater(garden);
+  calcWaterRegen(garden);
+
+  // Use the higher value between server and client to avoid losing drops
+  const serverDrops = garden.waterDrops;
+  const finalDrops = Math.min(WATER_MAX, Math.max(serverDrops, clientDrops));
+  garden.waterDrops = finalDrops;
+
+  await col.updateOne({ userId }, { $set: { waterDrops: garden.waterDrops, lastWaterRegenAt: garden.lastWaterRegenAt } });
+  return { waterDrops: garden.waterDrops, lastWaterRegenAt: garden.lastWaterRegenAt };
 }

@@ -85,6 +85,9 @@ function buildPlantConfig(apiTypes) {
 }
 function loadWater(userId) { try { const r=localStorage.getItem(`garden_water_${userId||'g'}`); return r?Number(r):5; } catch{return 5;} }
 function saveWater(userId,n) { try{localStorage.setItem(`garden_water_${userId||'g'}`,String(n));}catch{} }
+
+const WATER_MAX = 50;
+const WATER_REGEN_MS = 5 * 60 * 1000;
 function fmtTime(ms) { const s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60),d=Math.floor(h/24); if(d>0)return`${d}d ${h%24}h`; if(h>0)return`${h}h ${m%60}m`; if(ms<=0)return'Sẵn sàng!'; return`${m}p ${s%60}s`; }
 function fmtClock(ms) { if(ms<=0)return'00:00'; const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60; return h>0?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
 
@@ -325,6 +328,7 @@ export default function GardenPage({ userAuth, onBack }) {
   const [inv, setInv] = useState({ ...DEFAULT_INV });
   const [cfg, setCfg] = useState(FALLBACK_PLANT_CONFIG);
   const [drops, setDrops] = useState(() => loadWater(userAuth?.user?.id));
+  const [lastRegenAt, setLastRegenAt] = useState(() => Date.now());
   const [showQuiz, setShowQuiz] = useState(false);
   const [fertMode, setFertMode] = useState(null);
   const [toast, setToast] = useState(null);
@@ -352,7 +356,13 @@ export default function GardenPage({ userAuth, onBack }) {
     try {
       setError(null);
       const [g, pt] = await Promise.all([gardenService.get(), gardenService.getPlantTypes().catch(()=>null)]);
-      if (g) { setGarden(g); if(g.inventory) setInv({...DEFAULT_INV,...g.inventory}); (g.slots||[]).forEach(s=>{ if(s.plant) stamp(s.index, s.plant.isReady?100:(s.plant.progress||0)); else delete sync.current[s.index]; }); }
+      if (g) {
+        setGarden(g);
+        if(g.inventory) setInv({...DEFAULT_INV,...g.inventory});
+        if(typeof g.waterDrops === 'number') { setDrops(g.waterDrops); saveWater(uid, g.waterDrops); }
+        if(g.lastWaterRegenAt) setLastRegenAt(g.lastWaterRegenAt);
+        (g.slots||[]).forEach(s=>{ if(s.plant) stamp(s.index, s.plant.isReady?100:(s.plant.progress||0)); else delete sync.current[s.index]; });
+      }
       if (pt?.types) setCfg(buildPlantConfig(pt.types));
       const auth = JSON.parse(localStorage.getItem('edu_games_auth')||'{}');
       if (auth?.token) { const r = await fetch(`${API_BASE}/auth/me/coins`,{headers:{Authorization:`Bearer ${auth.token}`}}).then(r=>r.json()); if(r?.status) setUserCoins(r.data.coins||0); }
@@ -360,6 +370,33 @@ export default function GardenPage({ userAuth, onBack }) {
   }, []);
   useEffect(()=>{load();},[load]);
   useEffect(()=>{const iv=setInterval(()=>setTick(t=>t+1),1000);return()=>clearInterval(iv);},[]);
+
+  // Water regeneration timer - check every 30 seconds
+  const dropsRef = useRef(drops);
+  const lastRegenRef = useRef(lastRegenAt);
+  useEffect(() => { dropsRef.current = drops; }, [drops]);
+  useEffect(() => { lastRegenRef.current = lastRegenAt; }, [lastRegenAt]);
+
+  useEffect(()=>{
+    const check = () => {
+      const now = Date.now();
+      const d = dropsRef.current;
+      const lr = lastRegenRef.current;
+      const elapsed = now - lr;
+      if (elapsed >= WATER_REGEN_MS && d < WATER_MAX) {
+        const dropsToAdd = Math.min(WATER_MAX - d, Math.floor(elapsed / WATER_REGEN_MS));
+        if (dropsToAdd > 0) {
+          const newDrops = Math.min(WATER_MAX, d + dropsToAdd);
+          setDrops(newDrops);
+          saveWater(uid, newDrops);
+          setLastRegenAt(now - (elapsed % WATER_REGEN_MS));
+          gardenService.syncWater(newDrops).catch(()=>{});
+        }
+      }
+    };
+    const iv = setInterval(check, 30000);
+    return () => clearInterval(iv);
+  }, [uid]);
 
   const slots = garden?.slots || [];
 
@@ -469,7 +506,7 @@ export default function GardenPage({ userAuth, onBack }) {
     const {progress}=getDisplay(s);const boost=inv.golden_can>0?20:10;const next=Math.min(100,progress+boost);
     stamp(idx,next);setGarden(g=>({...g,slots:g.slots.map(s=>s.index===idx?{...s,plant:{...s.plant,progress:next,isReady:next>=100}}:s)}));
     const nd=drops-1;setDrops(nd);saveWater(uid,nd);
-    try{await gardenService.water(idx);}catch(e){toast_(e.message);}
+    try{await gardenService.water(idx);gardenService.syncWater(nd).catch(()=>{});}catch(e){toast_(e.message);}
   };
   const doFert = async (idx, itemId) => {
     if(!itemId||(inv[itemId]||0)<=0)return; const s=slots.find(s=>s.index===idx);if(!s?.plant)return;
@@ -479,7 +516,7 @@ export default function GardenPage({ userAuth, onBack }) {
     try{const r=await gardenService.useItem(itemId);if(r?.inventory)setInv({...DEFAULT_INV,...r.inventory});else setInv(p=>({...p,[itemId]:(p[itemId]||0)-1}));}
     catch{setInv(p=>({...p,[itemId]:(p[itemId]||0)-1}));}
   };
-  const doEarn = (n) => { const nd=drops+n;setDrops(nd);saveWater(uid,nd);setShowQuiz(false);toast_('Nhận +1 💧'); };
+  const doEarn = (n) => { const nd=Math.min(WATER_MAX,drops+n);setDrops(nd);saveWater(uid,nd);gardenService.syncWater(nd).catch(()=>{});setShowQuiz(false);toast_('Nhận +1 💧'); };
   const doRemove = async () => { const idx=confirmDel;setConfirmDel(null);const pg=garden;
     setGarden(g=>({...g,slots:g.slots.map(s=>s.index===idx?{...s,plant:null}:s)}));delete sync.current[idx];
     try{await gardenService.remove(idx);toast_('Đã xóa');}catch(e){setGarden(pg);toast_(e.message);}
@@ -525,8 +562,8 @@ export default function GardenPage({ userAuth, onBack }) {
       </div>
 
       {/* Farm canvas (CSS grid代替canvas) */}
-      <div style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', zIndex:1, display:'flex', alignItems:'center', justifyContent:'center', touchAction:'none' }}>
-        <svg viewBox={`0 0 ${COLS*TILE} ${ROWS*TILE}`} style={{ maxWidth:'100vw', maxHeight:'100vh', display:'block' }}>
+      <div className="farm-canvas-wrap">
+        <svg viewBox={`0 0 ${COLS*TILE} ${ROWS*TILE}`} className="farm-canvas-svg">
           {/* Ground tiles */}
           {Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>{
             const t=tileAt(x,y); const px=x*TILE, py=y*TILE;
@@ -616,7 +653,7 @@ export default function GardenPage({ userAuth, onBack }) {
       </header>
 
       {/* Hint bubble */}
-      <div style={{ position:'absolute', top:'calc(56px + env(safe-area-inset-top,0px))', left:'50%', transform:'translateX(-50%)', zIndex:5, pointerEvents:'none' }}>
+      <div className="farm-hint-wrap">
         <div className="hint-bubble" style={{ display:'block' }}>{hint}</div>
       </div>
 
@@ -637,14 +674,24 @@ export default function GardenPage({ userAuth, onBack }) {
       </footer>
 
       {/* Mobile d-pad */}
-      <div className="mobile-dpad" style={{ position:'absolute', bottom:90, left:16, zIndex:20, display:'none' }}>
-        <style>{`@media(max-width:768px){.mobile-dpad{display:block!important}}`}</style>
-        <div style={{ display:'grid', gridTemplateColumns:'44px 44px 44px', gap:4 }}>
-          <div/><button className="round-btn" style={{width:44,height:44,fontSize:18}} onTouchStart={e=>{e.preventDefault();tryMove(0,-1);}}>⬆</button><div/>
-          <button className="round-btn" style={{width:44,height:44,fontSize:18}} onTouchStart={e=>{e.preventDefault();tryMove(-1,0);}}>⬅</button>
-          <button className="round-btn" style={{width:44,height:44,fontSize:14,fontWeight:700,background:'var(--sun)'}} onTouchStart={e=>{e.preventDefault();interact();}}>E</button>
-          <button className="round-btn" style={{width:44,height:44,fontSize:18}} onTouchStart={e=>{e.preventDefault();tryMove(1,0);}}>➡</button>
-          <div/><button className="round-btn" style={{width:44,height:44,fontSize:18}} onTouchStart={e=>{e.preventDefault();tryMove(0,1);}}>⬇</button><div/>
+      <div className="mobile-dpad">
+        <div className="mobile-dpad-grid">
+          <div/><button className="mobile-dpad-btn mobile-dpad-up" onTouchStart={()=>tryMove(0,-1)} onClick={()=>tryMove(0,-1)}>▲</button><div/>
+          <button className="mobile-dpad-btn mobile-dpad-left" onTouchStart={()=>tryMove(-1,0)} onClick={()=>tryMove(-1,0)}>◀</button>
+          <button className="mobile-dpad-btn mobile-dpad-center" onTouchStart={()=>interact()} onClick={()=>interact()}>E</button>
+          <button className="mobile-dpad-btn mobile-dpad-right" onTouchStart={()=>tryMove(1,0)} onClick={()=>tryMove(1,0)}>▶</button>
+          <div/><button className="mobile-dpad-btn mobile-dpad-down" onTouchStart={()=>tryMove(0,1)} onClick={()=>tryMove(0,1)}>▼</button><div/>
+        </div>
+      </div>
+
+      {/* Desktop d-pad */}
+      <div className="desktop-dpad">
+        <div className="desktop-dpad-grid">
+          <div/><button className="desktop-dpad-btn desktop-dpad-up" onClick={()=>tryMove(0,-1)}>▲</button><div/>
+          <button className="desktop-dpad-btn desktop-dpad-left" onClick={()=>tryMove(-1,0)}>◀</button>
+          <button className="desktop-dpad-btn desktop-dpad-center" onClick={()=>interact()}>E</button>
+          <button className="desktop-dpad-btn desktop-dpad-right" onClick={()=>tryMove(1,0)}>▶</button>
+          <div/><button className="desktop-dpad-btn desktop-dpad-down" onClick={()=>tryMove(0,1)}>▼</button><div/>
         </div>
       </div>
 
