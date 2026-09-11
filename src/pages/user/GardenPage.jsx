@@ -334,20 +334,15 @@ export default function GardenPage({ userAuth, onBack }) {
   const [toast, setToast] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
 
-  // player
-  const [pp, setPp] = useState(PLAYER_START);
-  const [pdir, setPdir] = useState('down');
-  const [pmoving, setPmoving] = useState(false);
-  const pfrom = useRef(PLAYER_START);
-  const pto = useRef(PLAYER_START);
-  const mstart = useRef(0);
-  const MDUR = 120;
-  const keys = useRef(new Set());
-  const lastMv = useRef(0);
+  // player (smooth pixel-based movement)
+  const SPEED = 150; // px/s
+  const [playerPos, setPlayerPos] = useState(() => ({ x: PLAYER_START.x * TILE + TILE / 2, y: PLAYER_START.y * TILE + TILE / 2 }));
+  const [playerDir, setPlayerDir] = useState('down');
+  const playerPosRef = useRef({ x: PLAYER_START.x * TILE + TILE / 2, y: PLAYER_START.y * TILE + TILE / 2 });
+  const keysHeld = useRef(new Set());
+  const dpadDir = useRef(null);
   const sync = useRef({});
   const uid = userAuth?.user?.id;
-  const moveProgress = useRef(0);
-  const [renderPos, setRenderPos] = useState(PLAYER_START);
 
   const toast_ = useCallback(m => setToast(m), []);
   const stamp = (i, p) => { sync.current[i] = { p, at: Date.now() }; };
@@ -417,71 +412,96 @@ export default function GardenPage({ userAuth, onBack }) {
     return { progress, remainingMs: Math.max(0, c.growthTime*(1-progress/100)) };
   }, [cfg]);
 
-  // facing
+  // facing — derive grid cell from pixel position + direction
   const facing = useCallback(() => {
-    let dx=0,dy=0;
-    if(pdir==='down')dy=1;else if(pdir==='up')dy=-1;else if(pdir==='left')dx=-1;else if(pdir==='right')dx=1;
-    return { x:pp.x+dx, y:pp.y+dy };
-  }, [pp, pdir]);
+    const gx = Math.floor(playerPosRef.current.x / TILE);
+    const gy = Math.floor(playerPosRef.current.y / TILE);
+    switch (playerDir) {
+      case 'up':    return { x: gx, y: gy - 1 };
+      case 'down':  return { x: gx, y: gy + 1 };
+      case 'left':  return { x: gx - 1, y: gy };
+      case 'right': return { x: gx + 1, y: gy };
+      default:      return { x: gx, y: gy + 1 };
+    }
+  }, [playerDir]);
 
-  const facingSlot = (() => { const f=facing(); return cropMap[`${f.x},${f.y}`]||null; })();
-
-  // movement
-  const tryMove = useCallback((dx,dy) => {
-    if(pmoving)return;
-    let d='down'; if(dx===1)d='right';else if(dx===-1)d='left';else if(dy===-1)d='up';
-    setPdir(d);
-    const nx=pp.x+dx, ny=pp.y+dy;
-    if(!isWalkable(nx,ny))return;
-    pfrom.current={...pp}; pto.current={x:nx,y:ny};
-    setPmoving(true); mstart.current=performance.now();
-  }, [pp, pmoving]);
+  const facingSlot = (() => { const f = facing(); return cropMap[`${f.x},${f.y}`] || null; })();
 
   const interact = useCallback(() => {
-    const f=facing(); const slot=cropMap[`${f.x},${f.y}`];
-    if(!slot)return;
-    const {progress}=getDisplay(slot);
-    if(!slot.plant){setSelSlot(slot);setShowShop(true);}
-    else if(progress>=100) doHarvest(slot.index);
-    else if(drops>0) doWater(slot.index);
+    const f = facing(); const slot = cropMap[`${f.x},${f.y}`];
+    if (!slot) return;
+    const { progress } = getDisplay(slot);
+    if (!slot.plant) { setSelSlot(slot); setShowShop(true); }
+    else if (progress >= 100) doHarvest(slot.index);
+    else if (drops > 0) doWater(slot.index);
     else setShowQuiz(true);
   }, [facing, cropMap, getDisplay, drops]);
 
   // keyboard
-  useEffect(()=>{
-    const onK=e=>{const k=e.key.toLowerCase();if(showShop||showInv||showQuiz||harvestR||confirmDel)return;if(k==='e'||k===' '){e.preventDefault();interact();return;}keys.current.add(k);};
-    const onU=e=>keys.current.delete(e.key.toLowerCase());
+  useEffect(() => {
+    const onK = (e) => {
+      const k = e.key.toLowerCase();
+      if (showShop || showInv || showQuiz || harvestR || confirmDel) return;
+      if (k === 'e' || k === ' ') { e.preventDefault(); interact(); return; }
+      keysHeld.current.add(k);
+    };
+    const onU = (e) => keysHeld.current.delete(e.key.toLowerCase());
+    window.addEventListener('keydown', onK);
+    window.addEventListener('keyup', onU);
+    return () => { window.removeEventListener('keydown', onK); window.removeEventListener('keyup', onU); };
+  }, [interact, showShop, showInv, showQuiz, harvestR, confirmDel]);
+
+  // smooth movement game loop (pixel-based, no grid snap)
+  useEffect(() => {
     let raf;
-    const loop=now=>{
-      if(!pmoving){const k=keys.current;let dx=0,dy=0;
-        if(k.has('arrowup')||k.has('w'))dy=-1;else if(k.has('arrowdown')||k.has('s'))dy=1;
-        else if(k.has('arrowleft')||k.has('a'))dx=-1;else if(k.has('arrowright')||k.has('d'))dx=1;
-        if((dx||dy)&&now-lastMv.current>140){tryMove(dx,dy);lastMv.current=now;}}
-      raf=requestAnimationFrame(loop);
-    };
-    window.addEventListener('keydown',onK);window.addEventListener('keyup',onU);raf=requestAnimationFrame(loop);
-    return()=>{window.removeEventListener('keydown',onK);window.removeEventListener('keyup',onU);cancelAnimationFrame(raf);};
-  },[pmoving,tryMove,interact,showShop,showInv,showQuiz,harvestR,confirmDel]);
+    let lastTime = performance.now();
+    const loop = (now) => {
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
 
-  // smooth move with easing
-  useEffect(()=>{
-    if(!pmoving)return;let raf;
-    const step=now=>{
-      const elapsed=now-mstart.current;
-      let t=Math.min(1,elapsed/MDUR);
-      // ease-out cubic for smooth deceleration
-      t=1-Math.pow(1-t,3);
-      moveProgress.current=t;
-      const cx=pfrom.current.x+(pto.current.x-pfrom.current.x)*t;
-      const cy=pfrom.current.y+(pto.current.y-pfrom.current.y)*t;
-      setRenderPos({x:cx,y:cy});
-      if(moveProgress.current>=1){setPp({...pto.current});setRenderPos({...pto.current});setPmoving(false);return;}
-      raf=requestAnimationFrame(step);
-    };
-    raf=requestAnimationFrame(step);return()=>cancelAnimationFrame(raf);
-  },[pmoving]);
+      if (showShop || showInv || showQuiz || harvestR || confirmDel) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
 
-  const bob = pmoving ? Math.sin(moveProgress.current*Math.PI)*3 : 0;
+      let dx = 0, dy = 0;
+      if (dpadDir.current) {
+        dx = dpadDir.current.x;
+        dy = dpadDir.current.y;
+      } else {
+        const k = keysHeld.current;
+        if (k.has('arrowup') || k.has('w')) dy = -1;
+        else if (k.has('arrowdown') || k.has('s')) dy = 1;
+        if (k.has('arrowleft') || k.has('a')) dx = -1;
+        else if (k.has('arrowright') || k.has('d')) dx = 1;
+      }
+
+      if (dx || dy) {
+        const len = Math.sqrt(dx * dx + dy * dy);
+        dx /= len; dy /= len;
+
+        if (Math.abs(dx) >= Math.abs(dy)) setPlayerDir(dx > 0 ? 'right' : 'left');
+        else setPlayerDir(dy > 0 ? 'down' : 'up');
+
+        const newX = playerPosRef.current.x + dx * SPEED * dt;
+        const newY = playerPosRef.current.y + dy * SPEED * dt;
+        const curGx = Math.floor(playerPosRef.current.x / TILE);
+        const curGy = Math.floor(playerPosRef.current.y / TILE);
+        const newGx = Math.floor(newX / TILE);
+        const newGy = Math.floor(newY / TILE);
+        let fx = playerPosRef.current.x, fy = playerPosRef.current.y;
+        if (isWalkable(newGx, newGy)) { fx = newX; fy = newY; }
+        else if (isWalkable(newGx, curGy)) { fx = newX; }
+        else if (isWalkable(curGx, newGy)) { fy = newY; }
+        playerPosRef.current = { x: fx, y: fy };
+        setPlayerPos({ x: fx, y: fy });
+      }
+
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [showShop, showInv, showQuiz, harvestR, confirmDel]);
 
   // actions
   const doPlant = async (plantType) => {
@@ -628,11 +648,11 @@ export default function GardenPage({ userAuth, onBack }) {
           <rect x={2} y={2} width={COLS*TILE-4} height={ROWS*TILE-4} fill="none" stroke="#8a5a34" strokeWidth={3} rx={4}/>
 
           {/* Player */}
-          <g transform={`translate(${renderPos.x*TILE},${renderPos.y*TILE - bob})`}>
+          <g transform={`translate(${playerPos.x - TILE/2},${playerPos.y - TILE/2})`}>
             <ellipse cx={TILE/2} cy={TILE-4} rx={12} ry={4} fill="rgba(0,0,0,0.18)"/>
             <foreignObject x={0} y={-8} width={TILE} height={TILE+8} style={{overflow:'visible'}}>
-              <div xmlns="http://www.w3.org/1999/xhtml" style={{width:TILE,height:TILE,transform:pdir==='left'?'scaleX(-1)':'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <AvatarPlayer moving={pmoving} userAuth={userAuth}/>
+              <div xmlns="http://www.w3.org/1999/xhtml" style={{width:TILE,height:TILE,transform:playerDir==='left'?'scaleX(-1)':'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <AvatarPlayer moving={!!(dpadDir.current || keysHeld.current.size)} userAuth={userAuth}/>
               </div>
             </foreignObject>
           </g>
@@ -676,22 +696,60 @@ export default function GardenPage({ userAuth, onBack }) {
       {/* Mobile d-pad */}
       <div className="mobile-dpad">
         <div className="mobile-dpad-grid">
-          <div/><button className="mobile-dpad-btn mobile-dpad-up" onTouchStart={()=>tryMove(0,-1)} onClick={()=>tryMove(0,-1)}>▲</button><div/>
-          <button className="mobile-dpad-btn mobile-dpad-left" onTouchStart={()=>tryMove(-1,0)} onClick={()=>tryMove(-1,0)}>◀</button>
-          <button className="mobile-dpad-btn mobile-dpad-center" onTouchStart={()=>interact()} onClick={()=>interact()}>E</button>
-          <button className="mobile-dpad-btn mobile-dpad-right" onTouchStart={()=>tryMove(1,0)} onClick={()=>tryMove(1,0)}>▶</button>
-          <div/><button className="mobile-dpad-btn mobile-dpad-down" onTouchStart={()=>tryMove(0,1)} onClick={()=>tryMove(0,1)}>▼</button><div/>
+          <div/>
+          <button className="mobile-dpad-btn mobile-dpad-up"
+            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:0,y:-1};}}
+            onPointerUp={()=>{dpadDir.current=null;}}
+            onPointerLeave={()=>{dpadDir.current=null;}}
+            onPointerCancel={()=>{dpadDir.current=null;}}>▲</button>
+          <div/>
+          <button className="mobile-dpad-btn mobile-dpad-left"
+            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:-1,y:0};}}
+            onPointerUp={()=>{dpadDir.current=null;}}
+            onPointerLeave={()=>{dpadDir.current=null;}}
+            onPointerCancel={()=>{dpadDir.current=null;}}>◀</button>
+          <button className="mobile-dpad-btn mobile-dpad-center"
+            onPointerDown={(e)=>{e.preventDefault();interact();}}>E</button>
+          <button className="mobile-dpad-btn mobile-dpad-right"
+            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:1,y:0};}}
+            onPointerUp={()=>{dpadDir.current=null;}}
+            onPointerLeave={()=>{dpadDir.current=null;}}
+            onPointerCancel={()=>{dpadDir.current=null;}}>▶</button>
+          <div/>
+          <button className="mobile-dpad-btn mobile-dpad-down"
+            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:0,y:1};}}
+            onPointerUp={()=>{dpadDir.current=null;}}
+            onPointerLeave={()=>{dpadDir.current=null;}}
+            onPointerCancel={()=>{dpadDir.current=null;}}>▼</button>
+          <div/>
         </div>
       </div>
 
       {/* Desktop d-pad */}
       <div className="desktop-dpad">
         <div className="desktop-dpad-grid">
-          <div/><button className="desktop-dpad-btn desktop-dpad-up" onClick={()=>tryMove(0,-1)}>▲</button><div/>
-          <button className="desktop-dpad-btn desktop-dpad-left" onClick={()=>tryMove(-1,0)}>◀</button>
-          <button className="desktop-dpad-btn desktop-dpad-center" onClick={()=>interact()}>E</button>
-          <button className="desktop-dpad-btn desktop-dpad-right" onClick={()=>tryMove(1,0)}>▶</button>
-          <div/><button className="desktop-dpad-btn desktop-dpad-down" onClick={()=>tryMove(0,1)}>▼</button><div/>
+          <div/>
+          <button className="desktop-dpad-btn desktop-dpad-up"
+            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:0,y:-1};}}
+            onPointerUp={()=>{dpadDir.current=null;}}
+            onPointerLeave={()=>{dpadDir.current=null;}}>▲</button>
+          <div/>
+          <button className="desktop-dpad-btn desktop-dpad-left"
+            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:-1,y:0};}}
+            onPointerUp={()=>{dpadDir.current=null;}}
+            onPointerLeave={()=>{dpadDir.current=null;}}>◀</button>
+          <button className="desktop-dpad-btn desktop-dpad-center"
+            onPointerDown={(e)=>{e.preventDefault();interact();}}>E</button>
+          <button className="desktop-dpad-btn desktop-dpad-right"
+            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:1,y:0};}}
+            onPointerUp={()=>{dpadDir.current=null;}}
+            onPointerLeave={()=>{dpadDir.current=null;}}>▶</button>
+          <div/>
+          <button className="desktop-dpad-btn desktop-dpad-down"
+            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:0,y:1};}}
+            onPointerUp={()=>{dpadDir.current=null;}}
+            onPointerLeave={()=>{dpadDir.current=null;}}>▼</button>
+          <div/>
         </div>
       </div>
 
