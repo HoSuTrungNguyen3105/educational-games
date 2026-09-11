@@ -322,6 +322,12 @@ async function ensureSeeded(force = false) {
       await getCollection(ITEMS).insertMany(items.map(i => ({ ...i })));
     }
   } else {
+    // Migration: rename old "id" field to "code" for items that still use the old schema
+    const oldItems = await getCollection(ITEMS).find({ code: { $exists: false }, id: { $exists: true } }).toArray();
+    for (const item of oldItems) {
+      await getCollection(ITEMS).updateOne({ _id: item._id }, { $set: { code: item.id }, $unset: { id: "" } });
+    }
+
     // Add body items if missing (migration for existing DBs)
     const bodyCount = await getCollection(ITEMS).countDocuments({ category: "body" });
     if (bodyCount === 0) {
