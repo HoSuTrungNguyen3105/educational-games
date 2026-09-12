@@ -23,6 +23,7 @@ import {
   Shirt,
   Scissors,
   Move,
+  Image,
 } from 'lucide-react'
 
 const MENU = [
@@ -42,6 +43,7 @@ const MENU = [
   { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/admin/avatar-template", permission: null },
   { id: "admin-body-custom", label: "Body Custom", icon: Move, route: "/admin/body-custom", permission: null },
   { id: "admin-plant-types", label: "Loại cây (Garden)", icon: Move, route: "/admin/plant-types", permission: null },
+  { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/admin/images", permission: null },
   // { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/admin/upload-items", permission: null },
 ];
 
@@ -70,6 +72,7 @@ const MOBILE_MORE = [
   { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
   { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
   { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/admin/avatar-template", permission: null },
+  { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/admin/images", permission: null },
   { id: "admin-upload-items", label: "Trích xuất", icon: Scissors, route: "/admin/upload-items", permission: null },
 ];
 

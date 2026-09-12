@@ -34,6 +34,7 @@ const ROUTES = [
   { name: "admin-avatar-template", pattern: "/admin/avatar-template" },
   { name: "admin-plant-types", pattern: "/admin/plant-types" },
   { name: "admin-body-custom", pattern: "/admin/body-custom" },
+  { name: "admin-images", pattern: "/admin/images" },
   { name: "admin-upload-items", pattern: "/admin/upload-items" },
   { name: "admin-chat", pattern: "/admin/chat" },
   { name: "admin-profile", pattern: "/admin/profile" },

@@ -44,7 +44,6 @@
             gap: 6px;
         }
 
-        /* Header */
         header {
             width: 100%;
             max-width: 500px;
@@ -78,9 +77,7 @@
             text-shadow: 2px 2px 0px #ffe600;
         }
 
-        .logo-text span {
-            color: #ff5500;
-        }
+        .logo-text span { color: #ff5500; }
 
         .score-board {
             background: #fff0b3;
@@ -92,7 +89,6 @@
             border: 2px solid #ffd700;
         }
 
-        /* Game Card */
         .game-card {
             background: white;
             width: 100%;
@@ -127,14 +123,21 @@
             background: #e1f3ff;
             border: 2px dashed var(--primary-blue);
             border-radius: 14px;
-            padding: 4px 18px;
+            padding: 6px 18px;
             font-size: 15px;
             font-weight: 700;
             color: var(--text-color);
             display: inline-block;
+            max-width: 100%;
+            word-wrap: break-word;
         }
 
-        /* Maze Canvas */
+        .question-counter {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
+        }
+
         .maze-container {
             position: relative;
             margin: 4px 0;
@@ -146,13 +149,8 @@
             flex-shrink: 0;
         }
 
-        canvas {
-            display: block;
-            width: 100%;
-            height: auto;
-        }
+        canvas { display: block; width: 100%; height: auto; }
 
-        /* Controls */
         .controls-hint {
             color: #6688a6;
             font-size: 11px;
@@ -191,33 +189,14 @@
             box-shadow: 0 1px 0 #cc8800;
         }
 
-        .btn-up {
-            grid-column: 2;
-            grid-row: 1;
-        }
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
 
-        .btn-left {
-            grid-column: 1;
-            grid-row: 2;
-        }
-
-        .btn-down {
-            grid-column: 2;
-            grid-row: 2;
-        }
-
-        .btn-right {
-            grid-column: 3;
-            grid-row: 2;
-        }
-
-        /* Modal */
         .modal-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.5);
             border-radius: 18px;
             display: flex;
@@ -250,10 +229,10 @@
             margin-bottom: 6px;
         }
 
-        .modal-content p {
-            font-size: 14px;
-            color: #555;
-        }
+        .modal-content p { font-size: 14px; color: #555; }
+
+        .modal-content.wrong { border-color: #ff4444; box-shadow: 0 8px 0 #cc0000; }
+        .modal-content.wrong h2 { color: #ff4444; }
 
         .btn-next {
             background: var(--green-btn);
@@ -273,6 +252,93 @@
             box-shadow: 0 2px 0 #00994d;
         }
 
+        /* Fill-in input */
+        .fill-input-wrap {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .fill-input {
+            width: 120px;
+            padding: 8px 12px;
+            border: 2px solid #ccc;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            font-family: 'Fredoka', cursive;
+        }
+
+        .fill-input:focus { border-color: var(--primary-blue); }
+
+        .fill-submit {
+            padding: 8px 18px;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            color: #888;
+            font-weight: 600;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid;
+        }
+
+        .legend-dot.correct { background: #00cc66; border-color: #00994d; }
+        .legend-dot.wrong { background: #ff6666; border-color: #cc3333; }
+        .legend-dot.player { font-size: 10px; width: 12px; text-align: center; }
+
+        /* Game over banner */
+        .gameover-banner {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.95);
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .gameover-banner.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .gameover-banner h2 { font-size: 22px; color: var(--primary-blue); }
+        .gameover-banner .stats { font-size: 14px; color: #555; }
+
         @keyframes bounce {
             0%, 100% { transform: translateY(0) rotate(-5deg); }
             50% { transform: translateY(-6px) rotate(5deg); }
@@ -287,7 +353,6 @@
 
 <body>
 
-    <!-- Navigation Header -->
     <header>
         <div class="logo-container">
             <div class="star-icon">⭐</div>
@@ -296,23 +361,25 @@
         <div class="score-board">⭐ Điểm: <span id="score">0</span></div>
     </header>
 
-    <!-- Main Game Card -->
     <div class="game-card">
         <div class="game-header">
-            <h1 class="game-title">Mê Cung Toán Học 🧩</h1>
-            <div class="question-box">
-                Giải phép tính: <span id="math-problem" style="color: #0088ff;">5 + 3 = ?</span>
-            </div>
+            <h1 class="game-title">Mê Cung Trả Lời 🧩</h1>
+            <div class="question-box" id="questionBox">Đang tải câu hỏi...</div>
+            <div class="question-counter" id="questionCounter"></div>
         </div>
 
-        <!-- Maze Canvas -->
         <div class="maze-container" id="mazeContainer">
             <canvas id="mazeCanvas"></canvas>
         </div>
 
-        <p class="controls-hint">Dùng phím mũi tên ⬆️⬇️⬅️➡️ hoặc nút bấm bên dưới</p>
+        <div class="legend">
+            <div class="legend-item"><span class="legend-dot player">⭐</span> Bạn</div>
+            <div class="legend-item"><span class="legend-dot correct"></span> Đáp án</div>
+            <div class="legend-item"><span class="legend-dot wrong"></span> Sai</div>
+        </div>
 
-        <!-- Mobile D-Pad Controls -->
+        <p class="controls-hint">Dùng phím mũi tên hoặc nút bấm để di chuyển đến đáp án đúng</p>
+
         <div class="d-pad">
             <button class="btn-control btn-up" onclick="movePlayer(0, -1)">▲</button>
             <button class="btn-control btn-left" onclick="movePlayer(-1, 0)">◄</button>
@@ -320,45 +387,44 @@
             <button class="btn-control btn-right" onclick="movePlayer(1, 0)">►</button>
         </div>
 
-        <!-- Modal chiến thắng -->
-        <div class="modal-overlay" id="winModal">
-            <div class="modal-content">
-                <h2>Chính xác rồi! 🎉</h2>
-                <p>Bạn đã đưa ngôi sao EduPlay vượt qua mê cung xuất sắc!</p>
-                <button class="btn-next" onclick="nextLevel()">Câu tiếp theo ➡️</button>
+        <div class="modal-overlay" id="resultModal">
+            <div class="modal-content" id="resultModalContent">
+                <h2 id="resultTitle">Chính xác rồi! 🎉</h2>
+                <p id="resultText"></p>
+                <button class="btn-next" id="resultBtn" onclick="handleNext()">Câu tiếp theo ➡️</button>
             </div>
+        </div>
+
+        <div class="gameover-banner" id="gameoverBanner">
+            <h2>🏆 Hoàn thành!</h2>
+            <div class="stats" id="gameoverStats"></div>
+            <button class="btn-next" onclick="sendGameOver()">Hoàn thành</button>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('mazeCanvas');
-        const ctx = canvas.getContext('2d');
-        const gridCols = 7;
-        const gridRows = 7;
+    (function(){
+        var canvas = document.getElementById('mazeCanvas');
+        var ctx = canvas.getContext('2d');
+        var gridCols = 7, gridRows = 7;
 
-        function getCanvasSize() {
-            const card = document.querySelector('.game-card');
-            const cardStyle = getComputedStyle(card);
-            const padX = parseFloat(cardStyle.paddingLeft) + parseFloat(cardStyle.paddingRight);
-            const borderX = parseFloat(cardStyle.borderLeftWidth) + parseFloat(cardStyle.borderRightWidth);
-            const availW = card.clientWidth - padX - borderX - 8;
-            return Math.floor(availW);
-        }
+        /* ── State ── */
+        var state = {
+            questions: [],
+            qIndex: 0,
+            score: 0,
+            correctCount: 0,
+            wrongCount: 0,
+            gameId: null,
+            apiBase: '',
+            authToken: '',
+            player: { x: 0, y: 0 },
+            targets: [],
+            correctAnswer: null,
+            locked: false
+        };
 
-        function initCanvas() {
-            const size = getCanvasSize();
-            canvas.width = size;
-            canvas.height = size;
-        }
-
-        const cellSize = () => canvas.width / gridCols;
-
-        let score = 0;
-        let num1 = 0, num2 = 0, correctAnswer = 0;
-        let player = { x: 0, y: 0 };
-        let targets = [];
-
-        const mazeMap = [
+        var mazeMap = [
             [0, 0, 1, 0, 0, 0, 0],
             [1, 0, 1, 0, 1, 1, 0],
             [0, 0, 0, 0, 1, 0, 0],
@@ -368,31 +434,30 @@
             [0, 0, 0, 1, 0, 0, 0]
         ];
 
-        function generateMathProblem() {
-            num1 = Math.floor(Math.random() * 10) + 1;
-            num2 = Math.floor(Math.random() * 10) + 1;
-            correctAnswer = num1 + num2;
-            document.getElementById('math-problem').innerText = `${num1} + ${num2} = ?`;
-
-            const answers = [
-                correctAnswer,
-                correctAnswer + Math.floor(Math.random() * 3) + 1,
-                Math.max(1, correctAnswer - Math.floor(Math.random() * 3) - 1)
-            ].sort(() => Math.random() - 0.5);
-
-            targets = [
-                { x: 6, y: 0, val: answers[0] },
-                { x: 6, y: 6, val: answers[1] },
-                { x: 0, y: 6, val: answers[2] }
-            ];
+        /* ── Canvas sizing ── */
+        function getCanvasSize() {
+            var card = document.querySelector('.game-card');
+            var s = getComputedStyle(card);
+            var padX = parseFloat(s.paddingLeft) + parseFloat(s.paddingRight);
+            var borderX = parseFloat(s.borderLeftWidth) + parseFloat(s.borderRightWidth);
+            return Math.floor(card.clientWidth - padX - borderX - 8);
         }
 
+        function initCanvas() {
+            var size = getCanvasSize();
+            canvas.width = size;
+            canvas.height = size;
+        }
+
+        function cellSize() { return canvas.width / gridCols; }
+
+        /* ── Drawing ── */
         function drawMaze() {
-            const cs = cellSize();
+            var cs = cellSize();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            for (let r = 0; r < gridRows; r++) {
-                for (let c = 0; c < gridCols; c++) {
+            for (var r = 0; r < gridRows; r++) {
+                for (var c = 0; c < gridCols; c++) {
                     if (mazeMap[r][c] === 1) {
                         ctx.fillStyle = '#ff9999';
                         ctx.fillRect(c * cs, r * cs, cs, cs);
@@ -406,64 +471,200 @@
                 }
             }
 
-            targets.forEach(target => {
-                ctx.fillStyle = '#00cc66';
+            /* Draw targets */
+            state.targets.forEach(function(t) {
+                ctx.fillStyle = t.isCorrect ? '#00cc66' : '#ff6666';
                 ctx.beginPath();
-                ctx.arc(target.x * cs + cs / 2, target.y * cs + cs / 2, cs / 2.5, 0, Math.PI * 2);
+                ctx.arc(t.x * cs + cs / 2, t.y * cs + cs / 2, cs / 2.5, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.lineWidth = 3;
-                ctx.strokeStyle = '#00994d';
+                ctx.strokeStyle = t.isCorrect ? '#00994d' : '#cc3333';
                 ctx.stroke();
 
                 ctx.fillStyle = 'white';
-                ctx.font = `bold ${Math.round(cs * 0.45)}px Fredoka`;
+                ctx.font = 'bold ' + Math.round(cs * 0.3) + 'px Fredoka';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(target.val, target.x * cs + cs / 2, target.y * cs + cs / 2 + 2);
+                var label = t.label;
+                if (label.length > 6) label = label.substring(0, 5) + '…';
+                ctx.fillText(label, t.x * cs + cs / 2, t.y * cs + cs / 2 + 2);
             });
 
-            ctx.font = `${Math.round(cs * 0.65)}px Fredoka`;
+            /* Draw player */
+            ctx.font = Math.round(cs * 0.65) + 'px Fredoka';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('⭐', player.x * cs + cs / 2, player.y * cs + cs / 2);
+            ctx.fillText('⭐', state.player.x * cs + cs / 2, state.player.y * cs + cs / 2);
         }
 
+        /* ── Movement ── */
         function movePlayer(dx, dy) {
-            const newX = player.x + dx;
-            const newY = player.y + dy;
-            if (newX >= 0 && newX < gridCols && newY >= 0 && newY < gridRows && mazeMap[newY][newX] === 0) {
-                player.x = newX;
-                player.y = newY;
+            if (state.locked) return;
+            var nx = state.player.x + dx;
+            var ny = state.player.y + dy;
+            if (nx >= 0 && nx < gridCols && ny >= 0 && ny < gridRows && mazeMap[ny][nx] === 0) {
+                state.player.x = nx;
+                state.player.y = ny;
                 drawMaze();
                 checkAnswer();
             }
         }
+        window.movePlayer = movePlayer;
 
+        /* ── Answer check ── */
         function checkAnswer() {
-            targets.forEach(target => {
-                if (player.x === target.x && player.y === target.y) {
-                    if (target.val === correctAnswer) {
-                        score += 10;
-                        document.getElementById('score').innerText = score;
-                        document.getElementById('winModal').classList.add('active');
+            for (var i = 0; i < state.targets.length; i++) {
+                var t = state.targets[i];
+                if (state.player.x === t.x && state.player.y === t.y) {
+                    state.locked = true;
+                    if (t.isCorrect) {
+                        state.score += 10;
+                        state.correctCount++;
+                        document.getElementById('score').textContent = state.score;
+                        showResultModal(true, 'Đáp án đúng là: ' + t.fullLabel);
                     } else {
-                        alert('Chưa đúng rồi, hãy thử đường khác nhé! 💪');
-                        player.x = 0;
-                        player.y = 0;
-                        drawMaze();
+                        state.wrongCount++;
+                        showResultModal(false, 'Đáp án đúng là: ' + getCorrectTarget().fullLabel);
                     }
+                    return;
                 }
-            });
+            }
         }
 
-        function nextLevel() {
-            document.getElementById('winModal').classList.remove('active');
-            player = { x: 0, y: 0 };
-            generateMathProblem();
+        function getCorrectTarget() {
+            for (var i = 0; i < state.targets.length; i++) {
+                if (state.targets[i].isCorrect) return state.targets[i];
+            }
+            return null;
+        }
+
+        function showResultModal(correct, text) {
+            var modal = document.getElementById('resultModal');
+            var content = document.getElementById('resultModalContent');
+            var title = document.getElementById('resultTitle');
+            var txt = document.getElementById('resultText');
+            var btn = document.getElementById('resultBtn');
+
+            content.className = correct ? 'modal-content' : 'modal-content wrong';
+            title.textContent = correct ? 'Chính xác rồi! 🎉' : 'Chưa đúng! 💪';
+            txt.textContent = text;
+            btn.textContent = (state.qIndex < state.questions.length - 1) ? 'Câu tiếp theo ➡️' : 'Xem kết quả';
+            modal.classList.add('active');
+        }
+
+        function handleNext() {
+            document.getElementById('resultModal').classList.remove('active');
+            state.qIndex++;
+            if (state.qIndex < state.questions.length) {
+                loadQuestion(state.qIndex);
+            } else {
+                showGameOver();
+            }
+        }
+        window.handleNext = handleNext;
+
+        /* ── Game over ── */
+        function showGameOver() {
+            var total = state.questions.length;
+            var pct = total > 0 ? Math.round((state.correctCount / total) * 100) : 0;
+            document.getElementById('gameoverStats').innerHTML =
+                'Đúng: <b>' + state.correctCount + '/' + total + '</b> (' + pct + '%)<br>' +
+                'Điểm: <b>' + state.score + '</b>';
+            document.getElementById('gameoverBanner').classList.add('active');
+        }
+
+        function sendGameOver() {
+            parent.postMessage({
+                type: 'game-over',
+                data: {
+                    score: state.score,
+                    correct: state.correctCount,
+                    wrong: state.wrongCount,
+                    totalQuestions: state.questions.length
+                }
+            }, '*');
+        }
+        window.sendGameOver = sendGameOver;
+
+        /* ── Load question ── */
+        function loadQuestion(idx) {
+            state.locked = false;
+            state.player = { x: 0, y: 0 };
+            var q = state.questions[idx];
+            if (!q) return;
+
+            var qText = q.content || q.question || '';
+            document.getElementById('questionBox').textContent = qText;
+            document.getElementById('questionCounter').textContent = 'Câu ' + (idx + 1) + '/' + state.questions.length;
+
+            var type = q.questionType || q.type || 'multiple_choice';
+            var options = q.options || [];
+            var correctVal = q.correctAnswer || q.answer || '';
+
+            if (type === 'fill-in' || type === 'text') {
+                /* For fill-in: show 3 target nodes with fake answers + 1 correct */
+                var fake1 = String(correctVal) + '?';
+                var fake2 = 'Khác';
+                var labels = [
+                    { label: String(correctVal), full: String(correctVal), isCorrect: true },
+                    { label: fake1.length > 8 ? fake1.substring(0,7) : fake1, full: fake1, isCorrect: false },
+                    { label: fake2, full: fake2, isCorrect: false }
+                ].sort(function() { return Math.random() - 0.5; });
+                placeTargets(labels);
+            } else {
+                /* Multiple choice: use real options */
+                var labels = options.map(function(opt) {
+                    var key = opt.id || opt.key || opt;
+                    var text = opt.content || opt.text || opt.label || String(key);
+                    return { label: text, full: text, isCorrect: (key === correctVal || text === correctVal) };
+                });
+                if (labels.length < 3) {
+                    while (labels.length < 3) {
+                        labels.push({ label: '?', full: '?', isCorrect: false });
+                    }
+                }
+                /* Shuffle */
+                labels.sort(function() { return Math.random() - 0.5; });
+                placeTargets(labels);
+            }
+
             drawMaze();
         }
 
-        window.addEventListener('keydown', (e) => {
+        function placeTargets(labels) {
+            /* Available positions for targets (avoid walls and player start) */
+            var positions = [
+                { x: 6, y: 0 },
+                { x: 6, y: 6 },
+                { x: 0, y: 6 },
+                { x: 3, y: 3 },
+                { x: 6, y: 3 },
+                { x: 3, y: 0 },
+                { x: 0, y: 3 },
+                { x: 3, y: 6 }
+            ].filter(function(p) {
+                return mazeMap[p.y][p.x] === 0 && !(p.x === 0 && p.y === 0);
+            });
+
+            /* Shuffle positions */
+            positions.sort(function() { return Math.random() - 0.5; });
+
+            state.targets = [];
+            var count = Math.min(labels.length, positions.length, 3);
+            for (var i = 0; i < count; i++) {
+                state.targets.push({
+                    x: positions[i].x,
+                    y: positions[i].y,
+                    label: labels[i].label,
+                    fullLabel: labels[i].full,
+                    isCorrect: labels[i].isCorrect
+                });
+            }
+            state.correctAnswer = labels.find(function(l) { return l.isCorrect; });
+        }
+
+        /* ── Keyboard ── */
+        window.addEventListener('keydown', function(e) {
             switch (e.key) {
                 case 'ArrowUp': movePlayer(0, -1); break;
                 case 'ArrowDown': movePlayer(0, 1); break;
@@ -472,11 +673,35 @@
             }
         });
 
-        window.addEventListener('resize', () => { initCanvas(); drawMaze(); });
+        window.addEventListener('resize', function() { initCanvas(); drawMaze(); });
 
-        initCanvas();
-        generateMathProblem();
-        drawMaze();
+        /* ── Tell parent we're ready ── */
+        parent.postMessage({ type: 'ready' }, '*');
+
+        /* ── Listen for init from parent ── */
+        window.addEventListener('message', function(e) {
+            var msg = e.data;
+            if (!msg || typeof msg !== 'object') return;
+            if (msg.type === 'init') {
+                var d = msg.data || {};
+                state.questions = d.questions || [];
+                state.gameId = d.gameId || null;
+                state.apiBase = d.apiBase || '';
+                state.authToken = d.authToken || '';
+                state.qIndex = 0;
+                state.score = 0;
+                state.correctCount = 0;
+                state.wrongCount = 0;
+
+                initCanvas();
+                if (state.questions.length > 0) {
+                    loadQuestion(0);
+                } else {
+                    document.getElementById('questionBox').textContent = 'Không có câu hỏi';
+                }
+            }
+        });
+    })();
     </script>
 </body>
 

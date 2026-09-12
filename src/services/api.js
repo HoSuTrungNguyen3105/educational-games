@@ -308,6 +308,57 @@ export const starService = {
   },
 };
 
+export const imageService = {
+  async upload(file, folder = "edu-game") {
+    const auth = loadAuth();
+    const form = new FormData();
+    form.append("file", file);
+    form.append("folder", folder);
+    const res = await fetch(`${API_BASE}/images/upload`, {
+      method: "POST",
+      headers: auth?.token ? { Authorization: `Bearer ${auth.token}` } : {},
+      body: form,
+    });
+    const json = await res.json();
+    if (!res.ok || !json.status) throw new Error(json.msg || "Lỗi upload");
+    return json.data;
+  },
+  async uploadMultiple(files, folder = "edu-game") {
+    const auth = loadAuth();
+    const form = new FormData();
+    files.forEach(f => form.append("files", f));
+    form.append("folder", folder);
+    const res = await fetch(`${API_BASE}/images/upload-multiple`, {
+      method: "POST",
+      headers: auth?.token ? { Authorization: `Bearer ${auth.token}` } : {},
+      body: form,
+    });
+    const json = await res.json();
+    if (!res.ok || !json.status) throw new Error(json.msg || "Lỗi upload");
+    return json.data;
+  },
+  async list({ folder, page, perPage } = {}) {
+    const params = new URLSearchParams();
+    if (folder) params.set("folder", folder);
+    if (page) params.set("page", page);
+    if (perPage) params.set("perPage", perPage);
+    const qs = params.toString();
+    return apiFetch(`/images${qs ? `?${qs}` : ""}`);
+  },
+  async search(q) {
+    return apiFetch(`/images/search?q=${encodeURIComponent(q)}`);
+  },
+  async remove(publicId) {
+    return apiFetch(`/images/${encodeURIComponent(publicId)}`, { method: "DELETE" });
+  },
+  async removeMany(publicIds) {
+    return apiFetch("/images", { method: "DELETE", body: { publicIds } });
+  },
+  async getInfo(publicId) {
+    return apiFetch(`/images/${encodeURIComponent(publicId)}`);
+  },
+};
+
 export const gameEventService = {
   async send(eventData) {
     return apiFetch("/game-events", { method: "POST", body: eventData });
