@@ -4,6 +4,9 @@ import { config } from "./config.js";
 import { initSocket } from "./socket.js";
 import { initDatabase, close } from "./db.js";
 import { initPlantTypes } from "./services/plantTypeService.js";
+import { checkDeadlineReminders } from "./services/notificationService.js";
+
+const DEADLINE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
 
 async function main() {
   const httpServer = createServer(app);
@@ -20,6 +23,13 @@ async function main() {
     .then(async (info) => {
       console.log(`[server] Collections: ${info.created.length} tạo mới, seed ${info.seeded.length} nhóm`);
       await initPlantTypes();
+
+      // Run deadline reminder check immediately, then every hour
+      checkDeadlineReminders().catch(e => console.error("[server] Deadline reminder error:", e.message));
+      setInterval(() => {
+        checkDeadlineReminders().catch(e => console.error("[server] Deadline reminder error:", e.message));
+      }, DEADLINE_CHECK_INTERVAL);
+      console.log(`[server] Deadline reminder check chạy mỗi ${DEADLINE_CHECK_INTERVAL / 60000} phút`);
     })
     .catch((e) => {
       console.error("[server] Không thể khởi tạo database:", e.message);

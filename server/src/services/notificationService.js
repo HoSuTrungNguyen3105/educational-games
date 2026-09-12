@@ -1,5 +1,6 @@
 import { getCollection } from "../db.js";
 import { sendPushToUser } from "./fcmService.js";
+import * as classService from "./classService.js";
 
 const COLLECTION = "notifications";
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -43,6 +44,7 @@ function getDefaultTitle(type) {
     LEVEL_UP: "🏆 Lên cấp!",
     ITEM_REWARD: "🎁 Nhận vật phẩm",
     COOP_INVITATION: "👥 Lời mời chơi",
+    DEADLINE_REMINDER: "⏰ Bài tập sắp hết hạn",
     SYSTEM: "🔔 Thông báo",
   };
   return titles[type] || "🔔 Thông báo";
@@ -76,4 +78,65 @@ export async function markAllRead(userId) {
 
 export async function getUnreadCount(userId) {
   return getCollection(COLLECTION).countDocuments({ toUserId: userId, read: false });
+}
+
+// ── Deadline Reminder ──
+
+export async function checkDeadlineReminders() {
+  const now = new Date();
+  const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  // Find ACTIVE assignments with deadline within next 24 hours
+  const expiringAssignments = await getCollection("assignments").find({
+    status: "ACTIVE",
+    deadline: { $ne: null, $ne: "" },
+    $expr: {
+      $and: [
+        { $gte: [{ $toDate: "$deadline" }, now] },
+        { $lte: [{ $toDate: "$deadline" }, oneDayLater] },
+      ],
+    },
+  }).toArray();
+
+  for (const assignment of expiringAssignments) {
+    const deadlineDate = new Date(assignment.deadline);
+    const hoursLeft = Math.round((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60));
+
+    // Get students in the class
+    let students = [];
+    try {
+      students = await classService.getClassStudents(assignment.classId);
+    } catch {
+      continue;
+    }
+
+    for (const student of students) {
+      // Check if reminder already sent for this assignment+student
+      const alreadyNotified = await getCollection(COLLECTION).findOne({
+        toUserId: student.id,
+        type: "DEADLINE_REMINDER",
+        "data.assignmentId": assignment.id,
+      });
+      if (alreadyNotified) continue;
+
+      // Check if student already submitted
+      const submitted = await getCollection("submissions").findOne({
+        assignmentId: assignment.id,
+        studentId: student.id,
+        status: "SUBMITTED",
+      });
+      if (submitted) continue;
+
+      const timeText = hoursLeft <= 1 ? "1 giờ" : `${hoursLeft} giờ`;
+
+      // Create notification + push
+      await createNotification({
+        toUserId: student.id,
+        type: "DEADLINE_REMINDER",
+        title: "⏰ Bài tập sắp hết hạn",
+        message: `Bài tập "${assignment.title}" sẽ hết hạn trong ${timeText}. Nhanh tay nộp bài nhé!`,
+        data: { assignmentId: assignment.id },
+      });
+    }
+  }
 }

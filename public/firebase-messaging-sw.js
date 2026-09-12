@@ -68,7 +68,7 @@ self.addEventListener("notificationclick", (event) => {
 
   if (data?.link) {
     urlToOpen = `/educational-games${data.link}`;
-  } else if (data?.type === "ASSIGNMENT" && data?.assignmentId) {
+  } else if ((data?.type === "ASSIGNMENT" || data?.type === "DEADLINE_REMINDER") && data?.assignmentId) {
     urlToOpen = `/educational-games/#/assignment/${data.assignmentId}`;
   } else if (data?.type === "CHAT" && data?.conversationId) {
     urlToOpen = `/educational-games/#/chat`;
