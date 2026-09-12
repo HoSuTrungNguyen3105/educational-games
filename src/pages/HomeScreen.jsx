@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { gameService, coinService, notificationService, API_BASE } from '../services/api.js'
+import { gameService, coinService, notificationService, assignmentService, API_BASE } from '../services/api.js'
 import { getLevelProgress, getLevelEmoji } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
@@ -40,6 +40,7 @@ import {
   ShipWheel,
   FileText,
   Sprout,
+  Repeat,
 } from 'lucide-react'
 
 // Bảng màu theo môn học — giữ nguyên
@@ -126,6 +127,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [searchQuery, setSearchQuery] = useState('');
   const [avatarLoadout, setAvatarLoadout] = useState({});
   const [avatarItems, setAvatarItems] = useState([]);
+  const [completedAssignments, setCompletedAssignments] = useState([]);
 
   const loadGames = async () => {
     setGames(null); setError(null);
@@ -176,6 +178,11 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           if (token) notificationService.registerDevice(token, "WEB").catch(() => { });
         }).catch(() => { });
       }
+
+      // Load completed assignments
+      assignmentService.getMyCompleted().then(list => {
+        setCompletedAssignments(Array.isArray(list) ? list : []);
+      }).catch(() => { });
     }
   }, [userAuth?.user]);
 
@@ -531,38 +538,57 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
           {/* ═══════════════════════════ MOBILE CONTENT (THAY ĐỔI HOÀN TOÀN) ═══════════════════════════ */}
           <main className="flex-1 w-full px-2 space-y-2 py-3 lg:hidden">
-            {/* 1. Thẻ thành viên (kiểu trà sữa) */}
-            <div className="relative rounded-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 p-4 text-white overflow-hidden shadow-lg">
-              <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full"></div>
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wide opacity-80">Thành viên</p>
-                  <p className="font-display text-base">{userAuth?.user?.name || 'Khách'}</p>
-                </div>
-                <div className="bg-white/20 rounded-full px-2 py-1 text-xs font-semibold flex items-center gap-1">
-                  <Star className="w-3 h-3" /> Cấp {lv.level}
-                </div>
-              </div>
-              <div className="h-1.5 bg-white/30 rounded-full mb-3">
-                <div className="h-full bg-white rounded-full" style={{ width: `${lv.percent || 0}%` }}></div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs opacity-90">{getLevelEmoji(lv.level)} {lv.earned}/{lv.needed} xu</span>
-                {/* <span className="text-xs font-bold bg-white/20 rounded-full px-2 py-0.5">Đổi quà</span> */}
-              </div>
-              {/* Barcode giả lập */}
-              {/* <div className="mt-2 bg-white/80 text-gray-800 rounded-xl px-3 py-2 flex items-center gap-2">
-                <div className="w-10 h-8 border-2 border-dashed border-purple-300 rounded"></div>
-                <div className="flex-1 h-6 flex gap-0.5 items-stretch overflow-hidden">
-                  {Array.from({ length: 30 }).map((_, i) => (
-                    <div key={i} className={`w-1 ${i % 3 === 0 ? 'bg-purple-600' : i % 2 === 0 ? 'bg-pink-500' : 'bg-amber-400'}`}></div>
-                  ))}
-                </div>
-                <span className="text-[10px] font-mono text-purple-700">MÃ SỐ</span>
-              </div> */}
-            </div>
 
-            {/* 2. Quick menu dạng tròn (Shopee style) */}
+            {/* ═══════════ BANNER SCROLL NGANG ═══════════ */}
+            <div className="overflow-x-auto no-scrollbar snap-x snap-mandatory flex gap-3 rounded-3xl">
+
+              {/* Banner 1: Banner hình ảnh */}
+              <div className="snap-center shrink-0 w-[calc(100vw-1rem)] rounded-3xl overflow-hidden shadow-lg relative">
+                <img
+                  src={`${import.meta.env.BASE_URL}banner.png`}
+                  alt="Banner"
+                  className="w-full h-44 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end p-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-0.5">✨ Chúc mừng tốt nghiệp</p>
+                    <h2 className="font-display text-lg text-white leading-tight">
+                      Xin chào, {userAuth?.user?.name || 'bạn'}! 👋
+                    </h2>
+                    <p className="text-xs text-white/80">Học mà chơi, chơi mà giỏi!</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Banner 2: Khung thông tin hiện tại */}
+              <div className="snap-center shrink-0 w-[calc(100vw-1rem)] relative rounded-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 p-4 text-white overflow-hidden shadow-lg">
+                <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full"></div>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide opacity-80">Thành viên</p>
+                    <p className="font-display text-base">{userAuth?.user?.name || 'Khách'}</p>
+                  </div>
+                  <div className="bg-white/20 rounded-full px-2 py-1 text-xs font-semibold flex items-center gap-1">
+                    <Star className="w-3 h-3" /> Cấp {lv.level}
+                  </div>
+                </div>
+                <div className="h-1.5 bg-white/30 rounded-full mb-3">
+                  <div className="h-full bg-white rounded-full" style={{ width: `${lv.percent || 0}%` }}></div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs opacity-90">
+                    {getLevelEmoji(lv.level)} {lv.earned}/{lv.needed} xu
+                  </span>
+                  <span className="text-xs font-bold bg-white/20 rounded-full px-2 py-0.5">
+                    {userCoins.toLocaleString()} xu
+                  </span>
+                </div>
+              </div>
+
+            </div>
+            {/* ═══════════ HẾT BANNER SCROLL NGANG ═══════════ */}
+
+            {/* 2. Quick menu dạng tròn (Shopee style) — GIỮ NGUYÊN */}
             <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-3">
               <div className="grid grid-cols-5 gap-2">
                 {QUICK_MENU_ITEMS(userAuth).filter(i => i.show).slice(0, 8).map(item => {
@@ -579,29 +605,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </div>
             </div>
 
-            {/* 3. Banner Flash Sale (Shopee style) */}
-            {/* <div className="rounded-3xl overflow-hidden bg-white shadow-md border border-purple-50">
-              <div className="bg-gradient-to-r from-red-500 to-orange-400 px-4 py-2 flex items-center justify-between">
-                <span className="font-display text-white text-sm flex items-center gap-1"><Flame className="w-4 h-4" /> FLASH SALE</span>
-                <span className="text-xs text-white bg-black/20 px-2 py-0.5 rounded-full">Kết thúc sau 02:45:30</span>
-              </div>
-              <div className="p-3 grid grid-cols-2 gap-3">
-                {hotGames.slice(0, 2).map((game, idx) => (
-                  <button key={game._id || game.id} onClick={() => onSelectGame(game)} className="relative bg-purple-50 rounded-xl p-2 text-left">
-                    <span className={`absolute top-1 right-1 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full ${idx === 0 ? 'bg-red-500' : 'bg-amber-500'}`}>
-                      {idx === 0 ? '-30%' : 'MỚI'}
-                    </span>
-                    <div className={`w-full h-16 rounded-lg bg-gradient-to-br ${colorForSubject(game.subject).grad} flex items-center justify-center`}>
-                      <StampToken icon={templates.find(t => t._id === game.templateId)?.icon || <Gamepad2 className="w-6 h-6" />} ring="#fff" size={36} fontSize={18} />
-                    </div>
-                    <p className="text-xs font-bold text-gray-800 mt-1 line-clamp-1">{game.name}</p>
-                    <span className="text-[10px] text-red-500 font-bold">{idx === 0 ? '999 xu' : '299 xu'}</span>
-                  </button>
-                ))}
-              </div>
-            </div> */}
-
-            {/* 4. Nhiệm vụ hôm nay (card gọn) */}
+            {/* 4. Nhiệm vụ hôm nay (card gọn) — GIỮ NGUYÊN */}
             <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
               <div className="flex items-center gap-2 mb-3">
                 <ClipboardList className="w-4 h-4 text-violet-500" />
@@ -611,7 +615,44 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <button onClick={() => navigate('/daily-tasks')} className="w-full text-center text-xs font-semibold text-purple-500 mt-2">Xem tất cả →</button>
             </div>
 
-            {/* 5. Môn học - dạng chip ngang */}
+            {/* 4.5. Bài đã làm */}
+            {completedAssignments.length > 0 && (
+              <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-blue-500" />
+                    <h3 className="font-display text-sm font-bold text-gray-800">Bài đã làm</h3>
+                  </div>
+                  <button onClick={() => navigate('/assignment')} className="text-xs font-semibold text-blue-500">Vào bài →</button>
+                </div>
+                <div className="space-y-2">
+                  {completedAssignments.slice(0, 3).map((item, idx) => (
+                    <button key={item.assignment.id} onClick={() => navigate(`/assignment/${item.assignment.id}`)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 transition text-left">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                        <FileText className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{item.assignment.title}</p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span className="font-bold text-blue-600">{item.submission?.score ?? 0}%</span>
+                          <span>•</span>
+                          <span>{item.attemptCount}/{item.maxAttempts === 0 ? '∞' : item.maxAttempts} lần</span>
+                        </div>
+                      </div>
+                      <Repeat className="w-4 h-4 text-gray-400 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+                {completedAssignments.length > 3 && (
+                  <button onClick={() => navigate('/assignment')} className="w-full text-center text-xs font-semibold text-blue-500 mt-2">
+                    Xem thêm {completedAssignments.length - 3} bài →
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* 5. Môn học - dạng chip ngang — GIỮ NGUYÊN */}
             {subjects.length > 0 && (
               <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
                 <div className="flex items-center gap-2 mb-3">
@@ -631,7 +672,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </div>
             )}
 
-            {/* 6. Danh sách trò chơi dạng thẻ sản phẩm 2 cột */}
+            {/* 6. Danh sách trò chơi dạng thẻ sản phẩm 2 cột — GIỮ NGUYÊN */}
             <div id="games-section" className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-base font-bold text-gray-800 flex items-center gap-1.5">
@@ -790,6 +831,46 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </div>
               </div>
             </section>
+
+            {/* Bài đã làm */}
+            {completedAssignments.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display text-base font-bold text-gray-800 flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center shrink-0">
+                      <FileText className="w-4 h-4" />
+                    </span>
+                    Bài đã làm
+                  </h2>
+                  <button onClick={() => navigate('/assignment')} className="text-xs font-semibold text-gray-400 hover:text-blue-600 transition">Vào bài tập →</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {completedAssignments.slice(0, 6).map((item) => (
+                    <button key={item.assignment.id} onClick={() => navigate(`/assignment/${item.assignment.id}`)}
+                      className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 text-left border border-blue-50">
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0">
+                          <FileText className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display text-sm font-bold text-gray-800 line-clamp-1">{item.assignment.title}</h3>
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className="text-lg font-bold text-blue-600">{item.submission?.score ?? 0}%</span>
+                            <span className="text-xs text-gray-500">
+                              {item.assignment.questionIds?.length || 0} câu • {item.assignment.isExam ? `${item.assignment.examDuration} phút` : 'Bài tập'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
+                            <Repeat className="w-3 h-3" />
+                            <span>{item.attemptCount}/{item.maxAttempts === 0 ? '∞' : item.maxAttempts} lần làm bài</span>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Môn học */}
             {subjects.length > 0 && (

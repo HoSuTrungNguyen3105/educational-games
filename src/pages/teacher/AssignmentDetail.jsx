@@ -3,7 +3,7 @@ import { assignmentService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import {
   ArrowLeft, Copy, Check, Users, BarChart3, Pencil,
-  Search, Trophy, Clock, FileQuestion, Lock,
+  Search, Trophy, Clock, FileQuestion, Lock, Repeat,
 } from 'lucide-react';
 
 export default function AssignmentDetail({ assignmentId }) {
@@ -137,6 +137,12 @@ export default function AssignmentDetail({ assignmentId }) {
           <span className="text-sm font-body font-semibold text-ink flex items-center justify-center gap-1.5">
             {assignment.isExam ? <Clock className="w-3.5 h-3.5 text-gold" /> : <FileQuestion className="w-3.5 h-3.5 text-gold" />}
             {assignment.isExam ? `${assignment.examDuration} phút` : 'Bài tập'}
+          </span>
+        </InfoCard>
+        <InfoCard label="Số lần làm bài">
+          <span className="text-sm font-body font-semibold text-ink flex items-center justify-center gap-1.5">
+            <Repeat className="w-3.5 h-3.5 text-gold" />
+            {(assignment.maxAttempts ?? 1) === 0 ? 'Không giới hạn' : `${assignment.maxAttempts ?? 1} lần`}
           </span>
         </InfoCard>
         <InfoCard label="Đã nộp">

@@ -22,7 +22,7 @@ function requireTeacher(req, res, next) {
 // Create assignment (teacher) → notify all students in class
 r.post("/", auth, requireTeacher, async (req, res) => {
   try {
-    const { gameId, title, description, classId, isExam, examDuration, deadline, questionIds } = req.body;
+    const { gameId, title, description, classId, isExam, examDuration, deadline, questionIds, maxAttempts } = req.body;
     if (!title || !classId) {
       return sendError(res, "title, classId là bắt buộc", 400);
     }
@@ -30,7 +30,7 @@ r.post("/", auth, requireTeacher, async (req, res) => {
       return sendError(res, "Cần chọn ít nhất 1 câu hỏi hoặc chọn game", 400);
     }
     const assignment = await assignmentService.createAssignment({
-      teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline, questionIds,
+      teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline, questionIds, maxAttempts,
     });
 
     // Notify all students in class
@@ -73,6 +73,14 @@ r.get("/", auth, async (req, res) => {
     if (!cls) return sendSuccess(res, []);
     const assignments = await assignmentService.listAssignments({ classId: cls.id, status: "ACTIVE" });
     sendSuccess(res, assignments);
+  } catch (e) { sendError(res, e.message, 500); }
+});
+
+// Get student's completed assignments
+r.get("/my-completed", auth, async (req, res) => {
+  try {
+    const completed = await assignmentService.getStudentCompletedAssignments(req.user.sub);
+    sendSuccess(res, completed);
   } catch (e) { sendError(res, e.message, 500); }
 });
 
@@ -168,7 +176,7 @@ r.put("/:id", auth, requireTeacher, async (req, res) => {
     if (!existing) return sendError(res, "Không tìm thấy bài giao", 404);
     if (existing.status !== "ACTIVE") return sendError(res, "Bài giao đã đóng, không thể chỉnh sửa", 400);
 
-    const { title, description, classId, isExam, examDuration, deadline, questionIds, gameId } = req.body;
+    const { title, description, classId, isExam, examDuration, deadline, questionIds, gameId, maxAttempts } = req.body;
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
@@ -178,6 +186,7 @@ r.put("/:id", auth, requireTeacher, async (req, res) => {
     if (deadline !== undefined) updateData.deadline = deadline || null;
     if (questionIds !== undefined) updateData.questionIds = questionIds;
     if (gameId !== undefined) updateData.gameId = gameId || null;
+    if (maxAttempts !== undefined) updateData.maxAttempts = maxAttempts;
 
     const updated = await assignmentService.updateAssignment(req.params.id, updateData);
     sendSuccess(res, updated);

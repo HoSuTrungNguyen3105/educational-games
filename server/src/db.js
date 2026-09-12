@@ -223,6 +223,7 @@ export async function initDatabase() {
         isExam: { bsonType: "bool" },
         examDuration: { bsonType: "int" },
         deadline: { bsonType: "string" },
+        maxAttempts: { bsonType: ["int", "null"] },
         status: { enum: ["ACTIVE", "CLOSED"] },
         createdAt: { bsonType: "string" },
         updatedAt: { bsonType: "string" },
@@ -362,7 +363,8 @@ export async function initDatabase() {
     ["assignments", { deadline: 1 }],
     // Submission system indexes
     ["submissions", { id: 1 }, { unique: true }],
-    ["submissions", { assignmentId: 1, studentId: 1 }, { unique: true }],
+    ["submissions", { assignmentId: 1, studentId: 1 }],
+    ["submissions", { assignmentId: 1, studentId: 1, attemptNumber: -1 }],
     ["submissions", { studentId: 1 }],
     ["submissions", { assignmentId: 1 }],
     // Garden system indexes

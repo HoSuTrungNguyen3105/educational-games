@@ -8,7 +8,7 @@ function generateCode() {
 
 // ── Assignment CRUD ──
 
-export async function createAssignment({ teacherId, templateId, gameId, questionIds, title, description, classId, isExam, examDuration, deadline }) {
+export async function createAssignment({ teacherId, templateId, gameId, questionIds, title, description, classId, isExam, examDuration, deadline, maxAttempts }) {
   if (!teacherId || !title || !classId) {
     throw new Error("teacherId, title, classId là bắt buộc");
   }
@@ -27,6 +27,7 @@ export async function createAssignment({ teacherId, templateId, gameId, question
     isExam: !!isExam,
     examDuration: isExam ? (examDuration || 60) : null,
     deadline: deadline || null,
+    maxAttempts: maxAttempts != null ? maxAttempts : 1,
     status: "ACTIVE",
     createdAt: now,
     updatedAt: now,
@@ -78,38 +79,45 @@ export async function startSubmission({ assignmentId, studentId }) {
     throw new Error("Đã hết hạn nộp bài");
   }
 
-  // Check any existing submission (IN_PROGRESS or SUBMITTED)
-  const existing = await getCollection("submissions").findOne({
-    assignmentId, studentId,
+  // Count existing SUBMITTED submissions for this student+assignment
+  const submittedCount = await getCollection("submissions").countDocuments({
+    assignmentId, studentId, status: "SUBMITTED",
   });
-  if (existing) {
-    if (existing.status === "IN_PROGRESS") return existing;
-    if (existing.status === "SUBMITTED") {
-      throw new Error("Bạn đã nộp bài rồi. Không thể làm lại.");
-    }
-    return existing;
+
+  const maxAttempts = assignment.maxAttempts ?? 1;
+
+  // Check if there's an IN_PROGRESS submission
+  const inProgress = await getCollection("submissions").findOne({
+    assignmentId, studentId, status: "IN_PROGRESS",
+  });
+  if (inProgress) return inProgress;
+
+  // If maxAttempts is 0 (unlimited) or haven't reached limit, create new submission
+  if (maxAttempts === 0 || submittedCount < maxAttempts) {
+    const now = new Date().toISOString();
+    const doc = {
+      _id: uid("sub"),
+      id: uid("sub"),
+      assignmentId,
+      studentId,
+      startedAt: now,
+      submittedAt: null,
+      status: "IN_PROGRESS",
+      score: null,
+      correctCount: 0,
+      wrongCount: 0,
+      totalQuestions: 0,
+      answers: [],
+      attemptNumber: submittedCount + 1,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await getCollection("submissions").insertOne(doc);
+    return doc;
   }
 
-  const now = new Date().toISOString();
-  const doc = {
-    _id: uid("sub"),
-    id: uid("sub"),
-    assignmentId,
-    studentId,
-    startedAt: now,
-    submittedAt: null,
-    status: "IN_PROGRESS",
-    score: null,
-    correctCount: 0,
-    wrongCount: 0,
-    totalQuestions: 0,
-    answers: [],
-    attemptNumber: 1,
-    createdAt: now,
-    updatedAt: now,
-  };
-  await getCollection("submissions").insertOne(doc);
-  return doc;
+  // No attempts left
+  throw new Error("Bạn đã hết số lần làm bài cho phép");
 }
 
 export async function submitAnswers({ submissionId, studentId, answers }) {
@@ -232,7 +240,55 @@ export async function getAssignmentResult(assignmentId, studentId) {
     };
   });
 
-  return { submission: sub, assignment, detail };
+  // Get attempt stats
+  const submittedCount = await getCollection("submissions").countDocuments({
+    assignmentId, studentId, status: "SUBMITTED",
+  });
+  const maxAttempts = assignment?.maxAttempts ?? 1;
+
+  return { submission: sub, assignment, detail, submittedCount, maxAttempts };
+}
+
+// ── Student completed assignments ──
+
+export async function getStudentCompletedAssignments(studentId) {
+  // Get all SUBMITTED submissions for this student, grouped by assignmentId
+  const submissions = await getCollection("submissions").find({
+    studentId, status: "SUBMITTED",
+  }).sort({ submittedAt: -1 }).toArray();
+
+  // Get unique assignment IDs
+  const assignmentIds = [...new Set(submissions.map(s => s.assignmentId))];
+  if (assignmentIds.length === 0) return [];
+
+  // Fetch assignment details
+  const assignments = await getCollection("assignments").find({
+    id: { $in: assignmentIds },
+  }).toArray();
+
+  const assignmentMap = {};
+  for (const a of assignments) assignmentMap[a.id] = a;
+
+  // Group submissions by assignment, keep best score per assignment
+  const result = [];
+  const seenAssignments = new Set();
+  for (const sub of submissions) {
+    if (seenAssignments.has(sub.assignmentId)) continue;
+    seenAssignments.add(sub.assignmentId);
+    const assignment = assignmentMap[sub.assignmentId];
+    if (!assignment) continue;
+    // Find best score for this assignment
+    const bestSub = submissions
+      .filter(s => s.assignmentId === sub.assignmentId)
+      .sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+    result.push({
+      assignment,
+      submission: bestSub,
+      attemptCount: submissions.filter(s => s.assignmentId === sub.assignmentId).length,
+      maxAttempts: assignment.maxAttempts ?? 1,
+    });
+  }
+  return result;
 }
 
 // ── Statistics ──

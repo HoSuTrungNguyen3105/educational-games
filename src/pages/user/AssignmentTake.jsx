@@ -99,7 +99,7 @@ function AnswerArea({ question, value, onChange }) {
   );
 }
 
-function ResultView({ result, onBack }) {
+function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
   const sub = result.submission;
   const detail = result.detail || [];
   return (
@@ -113,6 +113,11 @@ function ResultView({ result, onBack }) {
             <p className="text-sm font-body text-ink/50">
               {sub.correctCount}/{sub.totalQuestions} câu đúng
             </p>
+            {attemptInfo && (
+              <p className="text-xs font-body text-ink/40">
+                Lần {attemptInfo.attemptNumber}/{attemptInfo.maxAttempts === 0 ? '∞' : attemptInfo.maxAttempts}
+              </p>
+            )}
           </div>
         </div>
 
@@ -140,10 +145,18 @@ function ResultView({ result, onBack }) {
           </div>
         )}
 
-        <button onClick={onBack}
-          className="w-full py-3 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition">
-          Về trang chủ
-        </button>
+        <div className="flex gap-3">
+          {canRedo && (
+            <button onClick={onRedo}
+              className="flex-1 py-3 bg-ink/10 text-ink rounded-xl font-body font-semibold hover:bg-ink/20 transition">
+              Làm lại
+            </button>
+          )}
+          <button onClick={onBack}
+            className={`${canRedo ? 'flex-1' : 'w-full'} py-3 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition`}>
+            Về trang chủ
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -244,7 +257,27 @@ export default function AssignmentTake({ assignmentId }) {
     </div>
   );
 
-  if (submitted && result) return <ResultView result={result} onBack={() => navigate('/')} />;
+  if (submitted && result) {
+    const maxAttempts = result.maxAttempts ?? assignment?.maxAttempts ?? 1;
+    const submittedCount = result.submittedCount ?? 0;
+    const canRedo = maxAttempts === 0 || submittedCount < maxAttempts;
+    return (
+      <ResultView
+        result={result}
+        onBack={() => navigate('/')}
+        onRedo={() => {
+          setSubmitted(false);
+          setResult(null);
+          setSubmission(null);
+          setAnswers({});
+          setCurrentIdx(0);
+          init();
+        }}
+        canRedo={canRedo}
+        attemptInfo={{ attemptNumber: result.submission?.attemptNumber || 1, maxAttempts }}
+      />
+    );
+  }
 
   const currentQuestion = questions[currentIdx];
 

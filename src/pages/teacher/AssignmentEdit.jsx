@@ -9,6 +9,14 @@ const TIME_OPTIONS = [
   { value: 60, label: '60 phút' },
 ];
 
+const ATTEMPT_OPTIONS = [
+  { value: 1, label: '1 lần' },
+  { value: 2, label: '2 lần' },
+  { value: 3, label: '3 lần' },
+  { value: 5, label: '5 lần' },
+  { value: 0, label: 'Không giới hạn' },
+];
+
 export default function AssignmentEdit({ assignmentId }) {
   const [classes, setClasses] = useState([]);
   const [allQuestions, setAllQuestions] = useState([]);
@@ -21,6 +29,7 @@ export default function AssignmentEdit({ assignmentId }) {
     isExam: true,
     examDuration: 30,
     deadline: '',
+    maxAttempts: 1,
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -51,6 +60,7 @@ export default function AssignmentEdit({ assignmentId }) {
         isExam: !!a.isExam,
         examDuration: a.examDuration || 30,
         deadline: a.deadline ? new Date(a.deadline).toISOString().slice(0, 16) : '',
+        maxAttempts: a.maxAttempts != null ? a.maxAttempts : 1,
       });
 
       if (a.questionIds?.length) {
@@ -105,6 +115,7 @@ export default function AssignmentEdit({ assignmentId }) {
         examDuration: form.isExam ? form.examDuration : null,
         deadline: form.deadline || null,
         questionIds: Array.from(selectedQuestions),
+        maxAttempts: form.maxAttempts,
       };
       await assignmentService.update(assignmentId, data);
       navigate(`/admin/assignments/${assignmentId}`);
@@ -250,12 +261,28 @@ export default function AssignmentEdit({ assignmentId }) {
               onChange={e => setForm({ ...form, deadline: e.target.value })}
               className="w-full px-3 py-2.5 rounded-xl border border-ink/10 bg-white text-ink font-body focus:outline-none focus:ring-2 focus:ring-gold/40" />
           </div>
+
+          <div>
+            <label className="block text-sm font-body text-ink/60 mb-2">Số lần làm bài</label>
+            <div className="grid grid-cols-3 gap-2">
+              {ATTEMPT_OPTIONS.map(opt => (
+                <button key={opt.value} type="button"
+                  onClick={() => setForm({ ...form, maxAttempts: opt.value })}
+                  className={`py-2.5 rounded-xl text-sm font-body font-semibold transition ${form.maxAttempts === opt.value
+                    ? 'bg-gold text-white shadow-sm'
+                    : 'bg-white border border-ink/10 text-ink hover:border-gold/40'
+                    }`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {selectedQuestions.size > 0 && (
           <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
             <p className="text-sm font-body text-green-700">
-              <span className="font-semibold">Tóm tắt:</span> {form.title || '(chưa nhập tiêu đề)'} — {selectedQuestions.size} câu hỏi, {form.examDuration} phút
+              <span className="font-semibold">Tóm tắt:</span> {form.title || '(chưa nhập tiêu đề)'} — {selectedQuestions.size} câu hỏi, {form.examDuration} phút, {form.maxAttempts === 0 ? 'không giới hạn' : `${form.maxAttempts} lần`} làm bài
             </p>
           </div>
         )}
