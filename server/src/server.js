@@ -20,8 +20,7 @@ async function main() {
   });
 
   initDatabase()
-    .then(async (info) => {
-      console.log(`[server] Collections: ${info.created.length} tạo mới, seed ${info.seeded.length} nhóm`);
+    .then(async () => {
       await initPlantTypes();
 
       // Run deadline reminder check immediately, then every hour

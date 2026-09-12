@@ -61,6 +61,18 @@ export async function close() {
 export async function initDatabase() {
   await connect();
   const database = getDb();
+
+  // Mark ready immediately so server can accept requests while heavy init runs in background
+  ready = true;
+  console.log("[db] Đã kết nối MongoDB — sẵn sàng nhận request.");
+
+  // Run heavy initialization in background (non-blocking)
+  _runHeavyInit(database).catch(e => console.error("[db] Heavy init error:", e.message));
+
+  return { dbName: config.dbName, created: [], seeded: [], indexes: [] };
+}
+
+async function _runHeavyInit(database) {
   const created = [];
   const seeded = [];
 
@@ -546,14 +558,7 @@ export async function initDatabase() {
     await subjectsColl.deleteOne({ _id: oldDoc._id });
   }
 
-  ready = true;
-  console.log("[db] Khởi tạo CSDL hoàn tất.");
-  return {
-    dbName: config.dbName,
-    created,
-    seeded,
-    indexes: createdIndexes,
-  };
+  console.log(`[db] Heavy init hoàn tất: ${created.length} collections, ${seeded.length} seed groups.`);
 }
 
 async function migrateGames(database) {
