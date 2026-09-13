@@ -66,3 +66,16 @@ export async function updateOne(gameId, questionId, data) {
   }
   return result;
 }
+
+export async function removeOne(gameId, questionId) {
+  const coll = getCollection(COLLECTION);
+  const result = await coll.deleteOne({ id: questionId, gameId });
+  if (result.deletedCount > 0) {
+    const count = await coll.countDocuments({ gameId });
+    await getCollection("games").updateOne(
+      { _id: new ObjectId(gameId) },
+      { $set: { questionsCount: count, updatedAt: new Date().toISOString() } }
+    );
+  }
+  return result.deletedCount > 0;
+}

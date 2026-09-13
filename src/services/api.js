@@ -155,6 +155,9 @@ export const questionService = {
   async updateOne(gameId, questionId, data) {
     return apiFetch(`/questions/game/${gameId}/${questionId}`, { method: "PATCH", body: data });
   },
+  async removeOne(gameId, questionId) {
+    return apiFetch(`/questions/game/${gameId}/${questionId}`, { method: "DELETE" });
+  },
   async removeAll() {
     return apiFetch("/questions", { method: "DELETE" });
   },

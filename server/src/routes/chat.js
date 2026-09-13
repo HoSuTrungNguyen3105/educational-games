@@ -4,6 +4,7 @@ import * as chatService from "../services/chatService.js";
 import * as convService from "../services/conversationService.js";
 import * as notificationService from "../services/notificationService.js";
 import { sendSuccess, sendCreated, sendError, buildPagination } from "../utils/response.js";
+import { getCollection } from "../db.js";
 
 const router = Router();
 
@@ -72,6 +73,29 @@ router.post("/:conversationId/messages", async (req, res, next) => {
     const { content, clientMessageId, playerName, senderId, type } = req.body;
     if (!senderId) return sendError(res, "Thiếu senderId", 400);
     const msg = await chatService.sendMessage({ conversationId, senderId, playerName, content, clientMessageId, type });
+
+    // Create notification for DM conversations
+    if (conversationId.startsWith("dm:")) {
+      const parts = conversationId.split(":");
+      if (parts.length === 3) {
+        const recipientId = parts[1] === senderId ? parts[2] : parts[1];
+        if (recipientId !== senderId) {
+          const senderDoc = await getCollection("users").findOne({ id: senderId }).catch(() => null);
+          const senderName = senderDoc?.name || playerName || "Ẩn danh";
+          notificationService.createNotification({
+            fromUserId: senderId,
+            fromUsername: senderDoc?.username || "",
+            fromName: senderName,
+            toUserId: recipientId,
+            type: "chat_message",
+            title: `💬 ${senderName}`,
+            message: content?.substring(0, 100) || "",
+            gameId: conversationId,
+          }).catch(() => {});
+        }
+      }
+    }
+
     sendCreated(res, msg);
   } catch (e) {
     next(e);

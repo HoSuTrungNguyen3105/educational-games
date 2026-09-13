@@ -13,6 +13,7 @@ const TemplateFormPage = lazy(() => import('./TemplateFormPage.jsx'));
 const CategoryManagement = lazy(() => import('./CategoryManagement.jsx'));
 const SubjectManagement = lazy(() => import('./SubjectManagement.jsx'));
 const QuestionManagement = lazy(() => import('./QuestionManagement.jsx'));
+const AllQuestionsManagement = lazy(() => import('./AllQuestionsManagement.jsx'));
 const GameBuilder = lazy(() => import('../../components/gameBuilder/GameBuilder.jsx'));
 const GameLibraryManagement = lazy(() => import('./GameLibraryManagement.jsx'));
 const CoinManagement = lazy(() => import('./CoinManagement.jsx'));
@@ -71,6 +72,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
         {page === "admin-categories" && <CategoryManagement showToast={showToast} />}
         {page === "admin-subjects" && <SubjectManagement showToast={showToast} />}
         {page === "admin-questions" && <QuestionManagement showToast={showToast} />}
+        {page === "admin-all-questions" && <AllQuestionsManagement showToast={showToast} />}
         {page === "admin-chat" && <TeacherChat user={user} showToast={showToast} />}
         {page === "admin-profile" && <TeacherProfile user={user} onLogout={onLogout} showToast={showToast} />}
         {page === "admin-classes" && <ClassManagement />}

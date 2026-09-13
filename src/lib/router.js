@@ -18,6 +18,7 @@ const ROUTES = [
   { name: "admin-categories", pattern: "/admin/categories" },
   { name: "admin-subjects",  pattern: "/admin/subjects" },
   { name: "admin-questions", pattern: "/admin/questions" },
+  { name: "admin-all-questions", pattern: "/admin/all-questions" },
   { name: "admin-create",    pattern: "/admin/create" },
   { name: "admin-edit",      pattern: "/admin/edit/:gameId" },
   { name: "admin-builder",   pattern: "/admin/builder/:gameId" },

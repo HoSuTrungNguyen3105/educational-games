@@ -233,16 +233,27 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     const unsubscribe = onForegroundMessage((payload) => {
       const { title, body } = payload.notification || {};
       const data = payload.data || {};
-      // Add to in-app notification list
-      setNotifications(prev => [{
-        id: `fg-${Date.now()}`,
-        title: title || "Thông báo",
-        message: body || "",
-        type: data.type || "SYSTEM",
-        data,
-        read: false,
-        createdAt: new Date().toISOString(),
-      }, ...prev]);
+      // Add to in-app notification list (skip if already exists from API)
+      setNotifications(prev => {
+        const now = Date.now();
+        const isDuplicate = prev.some(n => {
+          if (n.id.startsWith('fg-')) return false;
+          if (n.title !== (title || "Thông báo")) return false;
+          if ((n.message || n.content || "") !== (body || "")) return false;
+          const diff = now - new Date(n.createdAt).getTime();
+          return diff < 5000;
+        });
+        if (isDuplicate) return prev;
+        return [{
+          id: `fg-${Date.now()}`,
+          title: title || "Thông báo",
+          message: body || "",
+          type: data.type || "SYSTEM",
+          data,
+          read: false,
+          createdAt: new Date().toISOString(),
+        }, ...prev];
+      });
       // Show browser notification when app is in foreground
       if ("Notification" in window && Notification.permission === "granted") {
         const n = new Notification(title || "EduGames", {
@@ -1131,19 +1142,14 @@ function NotificationDropdown({
     const handleClickOutside = (e) => {
       if (ref.current && !ref.current.contains(e.target)) onClose();
     };
-    const handleScroll = () => onClose();
-    document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('scroll', handleScroll, true);
+    document.addEventListener('pointerdown', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll, true);
+      document.removeEventListener('pointerdown', handleClickOutside);
     };
   }, [onClose]);
 
   return (
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose}></div>
-      <div ref={ref} className="fixed right-2 top-14 w-96 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden z-50 lg:absolute lg:top-auto lg:right-0 lg:mt-2 lg:z-50">
+    <div ref={ref} onPointerDown={(e) => e.stopPropagation()} className="fixed right-2 top-14 w-96 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden z-50 lg:absolute lg:top-auto lg:right-0 lg:mt-2 lg:z-50">
         <div className="flex items-center justify-between px-4 py-3 border-b border-purple-50 bg-purple-50/60">
           <h3 className="font-bold text-gray-800 text-sm">Thông báo</h3>
           {unreadCount > 0 && (
@@ -1247,6 +1253,5 @@ function NotificationDropdown({
           )}
         </div>
       </div>
-    </>
   );
 }
