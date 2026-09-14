@@ -23,6 +23,7 @@ const SpinWheel = lazy(() => import("./pages/user/SpinWheel.jsx"));
 const ConversationListScreen = lazy(() => import("./pages/user/ConversationListScreen.jsx"));
 const AssignmentJoin = lazy(() => import("./pages/user/AssignmentJoin.jsx"));
 const AssignmentTake = lazy(() => import("./pages/user/AssignmentTake.jsx"));
+const DreamDalePage = lazy(() => import("./pages/user/DreamDalePage.jsx"));
 const LoginScreen = lazy(() => import("./pages/LoginScreen.jsx"));
 const UserLoginScreen = lazy(() => import("./pages/user/UserLoginScreen.jsx"));
 const UserRegisterScreen = lazy(() => import("./pages/user/UserRegisterScreen.jsx"));
@@ -124,6 +125,9 @@ function App() {
     ),
     "assignment-join": () => <AssignmentJoin />,
     "assignment-take": () => <AssignmentTake assignmentId={route.params?.assignmentId} />,
+    dreamdale: () => (
+      <DreamDalePage userAuth={userAuth} onUserLogout={handleLogout} />
+    ),
   };
 
   const renderScreen = () => {

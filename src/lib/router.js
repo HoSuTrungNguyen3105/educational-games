@@ -50,6 +50,7 @@ const ROUTES = [
   { name: "garden",       pattern: "/garden" },
   { name: "assignment-join", pattern: "/assignment" },
   { name: "assignment-take", pattern: "/assignment/:assignmentId" },
+  { name: "dreamdale", pattern: "/dreamdale" },
 
   // ── Home (fallback) ──
   { name: "home", pattern: "/" },
