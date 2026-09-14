@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dreamdale</title>
+    <style>
+        :root {
+            --sand-light: #f0a35c;
+            --sand-mid: #e08a3f;
+            --sand-dark: #c76f2e;
+            --sand-shadow: #a85a24;
+            --night-blue: #232a4a;
+            --night-blue-dark: #171c36;
+            --ui-panel: #1c2340;
+            --ui-panel-light: #2c3560;
+            --gold: #ffcf4d;
+            --hp-green: #5fd85f;
+            --mana-purple: #b06bff;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Verdana, sans-serif;
+            background: #000;
+            touch-action: none;
+        }
+
+        #game {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 480px;
+            max-height: 960px;
+            margin: 0 auto;
+            overflow: hidden;
+            background: var(--night-blue-dark);
+        }
+
+        /* ---------- WORLD (scrollable sand field) ---------- */
+        #world {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 2000px;
+            height: 2000px;
+            background:
+                linear-gradient(120deg, var(--sand-shadow) 0%, var(--sand-dark) 30%, var(--sand-mid) 55%, var(--sand-light) 80%);
+            transform: translate(-760px, -1140px);
+            will-change: transform;
+        }
+
+        /* right-side dark diagonal "off-map" void, like screenshot */
+        #void {
+            position: absolute;
+            top: -400px;
+            right: -400px;
+            width: 1200px;
+            height: 2800px;
+            background: linear-gradient(200deg, var(--night-blue) 0%, var(--night-blue-dark) 70%);
+            transform: rotate(18deg);
+            box-shadow: -30px 0 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .prop {
+            position: absolute;
+            filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.35));
+        }
+
+        .crate {
+            width: 70px;
+            height: 56px;
+            background: linear-gradient(180deg, #3a3f52, #252838);
+            border: 3px solid #14151f;
+            border-radius: 4px;
+        }
+
+        .crate.gold-trim {
+            border-color: #caa24a;
+        }
+
+        .crate::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+        }
+
+        .big-chest {
+            width: 120px;
+            height: 110px;
+            background: linear-gradient(180deg, #3d4258, #20222f);
+            border: 4px solid #101019;
+            border-radius: 10px;
+        }
+
+        .torch {
+            width: 44px;
+            height: 34px;
+            background: linear-gradient(180deg, #f6d98c, #d9a94f);
+            border-radius: 6px;
+            box-shadow: 0 0 22px 6px rgba(255, 210, 110, 0.6);
+        }
+
+        .flame {
+            position: absolute;
+            top: -22px;
+            left: 14px;
+            width: 16px;
+            height: 24px;
+            background: radial-gradient(circle at 50% 70%, #fff6c8, #ffb648 60%, #ff7d1f 100%);
+            border-radius: 50% 50% 50% 50%/60% 60% 40% 40%;
+            animation: flick 0.5s infinite alternate ease-in-out;
+        }
+
+        @keyframes flick {
+            0% {
+                transform: scale(1) translateY(0);
+            }
+
+            100% {
+                transform: scale(1.12, 0.9) translateY(-2px);
+            }
+        }
+
+        .old-cart {
+            width: 120px;
+            height: 90px;
+            background: linear-gradient(180deg, #8a5a2b, #5e3a18);
+            border: 3px solid #3a2410;
+            border-radius: 8px 8px 2px 2px;
+        }
+
+        .stairs {
+            width: 220px;
+            height: 420px;
+            background: repeating-linear-gradient(0deg, #f3d9a2 0 24px, #e0bd7c 24px 30px);
+            border-left: 8px solid #d8b979;
+            border-right: 8px solid #d8b979;
+            border-radius: 6px;
+            box-shadow: inset 0 0 30px rgba(120, 80, 20, 0.3);
+        }
+
+        .stairs::before,
+        .stairs::after {
+            content: '';
+            position: absolute;
+            top: -30px;
+            width: 34px;
+            height: 460px;
+            background: linear-gradient(180deg, #f5e2b0, #dcb877);
+            border-radius: 6px;
+        }
+
+        .stairs::before {
+            left: -30px;
+        }
+
+        .stairs::after {
+            right: -30px;
+        }
+
+        /* ---------- CHARACTER (fixed center of viewport) ---------- */
+        #char-wrap {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        #char-hpbar {
+            width: 60px;
+            height: 8px;
+            background: #1a1a1a;
+            border: 1.5px solid #000;
+            border-radius: 4px;
+            margin: 0 auto 6px;
+            overflow: hidden;
+        }
+
+        #char-hpbar-fill {
+            width: 78%;
+            height: 100%;
+            background: linear-gradient(180deg, #8bf17c, var(--hp-green));
+        }
+
+        #char {
+            width: 56px;
+            height: 64px;
+            position: relative;
+            transition: transform 0.08s linear;
+        }
+
+        #char .body {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 38px;
+            height: 38px;
+            background: radial-gradient(circle at 35% 30%, #ffe6c9, #f4b6c2 40%, #7fd0e8 70%, #f7c948 100%);
+            border-radius: 50%;
+            border: 2px solid rgba(0, 0, 0, 0.15);
+        }
+
+        #char .head {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 24px;
+            background: #4a3222;
+            border-radius: 50% 50% 45% 45%;
+        }
+
+        #char .weapon {
+            position: absolute;
+            top: 14px;
+            right: -6px;
+            width: 6px;
+            height: 34px;
+            background: linear-gradient(180deg, #cfe8f5, #7fb8d8);
+            border-radius: 3px;
+            transform: rotate(20deg);
+        }
+
+        #char.walking {
+            animation: bob 0.35s infinite alternate ease-in-out;
+        }
+
+        @keyframes bob {
+            0% {
+                transform: translateY(0);
+            }
+
+            100% {
+                transform: translateY(-4px);
+            }
+        }
+
+        /* ---------- TOP UI ---------- */
+        #topbar {
+            position: absolute;
+            top: 14px;
+            left: 12px;
+            right: 12px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #level-badge {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(180deg, #3fae6b, #237a45);
+            border: 3px solid #1c1c1c;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        #stats-panel {
+            flex: 1;
+            background: rgba(15, 18, 35, 0.82);
+            border-radius: 16px;
+            padding: 6px 12px 8px 34px;
+            margin-left: -26px;
+            position: relative;
+        }
+
+        #lvl-num {
+            position: absolute;
+            left: 6px;
+            top: -6px;
+            background: var(--gold);
+            color: #5a3d00;
+            font-weight: 800;
+            font-size: 12px;
+            border-radius: 8px;
+            padding: 1px 6px;
+            border: 1.5px solid #8a6a1a;
+        }
+
+        #xp-bar {
+            height: 10px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        #xp-bar-fill {
+            width: 34%;
+            height: 100%;
+            background: linear-gradient(90deg, #c46bff, #8b4fe0);
+        }
+
+        #resources {
+            display: flex;
+            gap: 14px;
+            justify-content: flex-end;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        #resources span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .icon-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .icon-diamond {
+            background: linear-gradient(135deg, #7fd4ff, #3a8bd8);
+            transform: rotate(45deg);
+            border-radius: 3px;
+        }
+
+        .icon-gem {
+            background: linear-gradient(135deg, #d79bff, #8b3fe0);
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+        }
+
+        .icon-coin {
+            background: radial-gradient(circle at 35% 30%, #fff2b0, #ffcf4d 60%, #d99a1e 100%);
+        }
+
+        /* Quest banner */
+        #quest-banner {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25), 0 8px 14px rgba(0, 0, 0, 0.3);
+            padding: 8px 18px 8px 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 280px;
+        }
+
+        #quest-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(160deg, #7fd4ff, #2f8fd8);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            border: 2px solid #1f6aa8;
+        }
+
+        #quest-text-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        #quest-progress {
+            background: #111;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 1px 8px;
+            align-self: flex-start;
+        }
+
+        #quest-title {
+            font-weight: 800;
+            color: #2c2c2c;
+            font-size: 14px;
+            line-height: 1.15;
+        }
+
+        #quest-search {
+            position: absolute;
+            left: -8px;
+            top: -8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #ffcf4d;
+            border: 2px solid #1f1f1f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        /* Left side toggle icons under topbar */
+        #left-toggles {
+            position: absolute;
+            top: 78px;
+            left: 14px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toggle-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(15, 18, 35, 0.82);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #fff;
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+        }
+
+        /* Bottom-left action stack */
+        #left-actions {
+            position: absolute;
+            left: 14px;
+            bottom: 24px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .action-btn {
+            position: relative;
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #3b4a7a, #232a4a);
+            border: 2.5px solid #10132a;
+            box-shadow: 0 4px 0 #0c0e20, 0 6px 8px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+        }
+
+        .action-btn .badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ff4d4d;
+            border: 2px solid #1a1a2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .action-btn .up-arrow {
+            position: absolute;
+            top: -8px;
+            right: -4px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3fae6b;
+            border: 2px solid #1a1a2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 10px;
+        }
+
+        #crystal-btn {
+            background: linear-gradient(180deg, #5a3a8a, #2a1a4a);
+        }
+
+        #crystal-fraction {
+            position: absolute;
+            bottom: -16px;
+            font-size: 10px;
+            color: #fff;
+            font-weight: 700;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            padding: 0 4px;
+            white-space: nowrap;
+        }
+
+        /* Joystick (mobile control) */
+        #joystick-zone {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 55%;
+            height: 55%;
+            z-index: 90;
+        }
+
+        #joystick-base {
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            display: none;
+        }
+
+        #joystick-stick {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.55);
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            left: 30px;
+            top: 30px;
+        }
+
+        #hint {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 11px;
+            z-index: 100;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game">
+        <div id="world">
+            <div id="void"></div>
+
+            <!-- Stairs -->
+            <div class="stairs prop" style="left:900px; top:760px;"></div>
+
+            <!-- Crates -->
+            <div class="crate prop" style="left:700px; top:1180px;"></div>
+            <div class="crate gold-trim prop"
+                style="left:690px; top:1250px; width:64px; height:70px; border-radius:8px;"></div>
+            <div class="crate prop" style="left:1180px; top:1330px;"></div>
+            <div class="crate gold-trim prop" style="left:1120px; top:1420px; border:3px solid #f2d98c;"></div>
+
+            <!-- Old cart -->
+            <div class="old-cart prop" style="left:660px; top:1150px;"></div>
+
+            <!-- Torches -->
+            <div class="torch prop" style="left:1080px; top:1240px;">
+                <div class="flame"></div>
+            </div>
+            <div class="torch prop" style="left:790px; top:1560px;">
+                <div class="flame"></div>
+            </div>
+
+            <!-- Big chest -->
+            <div class="big-chest prop" style="left:1080px; top:1480px;"></div>
+        </div>
+
+        <div id="char-wrap">
+            <div id="char-hpbar">
+                <div id="char-hpbar-fill"></div>
+            </div>
+            <div id="char">
+                <div class="weapon"></div>
+                <div class="body"></div>
+                <div class="head"></div>
+            </div>
+        </div>
+
+        <div id="topbar">
+            <div id="level-badge">🌴</div>
+            <div id="stats-panel">
+                <div id="lvl-num">9</div>
+                <div id="xp-bar">
+                    <div id="xp-bar-fill"></div>
+                </div>
+                <div id="resources">
+                    <span><i class="icon-dot icon-diamond"></i>23</span>
+                    <span><i class="icon-dot icon-gem"></i>23</span>
+                    <span><i class="icon-dot icon-coin"></i>3.7K</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="quest-banner">
+            <div id="quest-search">🔍</div>
+            <div id="quest-icon">🗺️</div>
+            <div id="quest-text-wrap">
+                <div id="quest-progress">0/1</div>
+                <div id="quest-title">Purchase farm<br>blueprint</div>
+            </div>
+        </div>
+
+        <div id="left-toggles">
+            <div class="toggle-btn">☰</div>
+            <div class="toggle-btn">🚫</div>
+        </div>
+
+        <div id="left-actions">
+            <div class="action-btn" id="shop-btn">🏪<span class="badge">!</span></div>
+            <div class="action-btn" id="upgrade-btn">✖<span class="up-arrow">⬆</span></div>
+            <div class="action-btn" id="crystal-btn">💎<span id="crystal-fraction">514/600</span></div>
+        </div>
+
+        <div id="joystick-zone"></div>
+        <div id="joystick-base">
+            <div id="joystick-stick"></div>
+        </div>
+
+        <div id="hint">WASD / mũi tên để di chuyển — hoặc chạm &amp; kéo bên phải màn hình</div>
+    </div>
+
+    <script>
+        (function () {
+            const world = document.getElementById('world');
+            const charEl = document.getElementById('char');
+            const game = document.getElementById('game');
+
+            // world position (top-left of world relative to viewport center), start matches initial transform
+            let worldX = -760, worldY = -1140;
+            const worldSize = 2000;
+
+            const keys = {};
+            let facing = 1;
+
+            window.addEventListener('keydown', e => {
+                keys[e.key.toLowerCase()] = true;
+            });
+            window.addEventListener('keyup', e => {
+                keys[e.key.toLowerCase()] = false;
+            });
+
+            // Joystick control
+            const zone = document.getElementById('joystick-zone');
+            const base = document.getElementById('joystick-base');
+            const stick = document.getElementById('joystick-stick');
+            let joyActive = false;
+            let joyVec = { x: 0, y: 0 };
+            let joyCenter = { x: 0, y: 0 };
+
+            function startJoy(clientX, clientY) {
+                joyActive = true;
+                const rect = game.getBoundingClientRect();
+                joyCenter = { x: clientX - rect.left, y: clientY - rect.top };
+                base.style.left = (joyCenter.x - 55) + 'px';
+                base.style.top = (joyCenter.y - 55) + 'px';
+                base.style.display = 'block';
+            }
+            function moveJoy(clientX, clientY) {
+                if (!joyActive) return;
+                const rect = game.getBoundingClientRect();
+                let dx = (clientX - rect.left) - joyCenter.x;
+                let dy = (clientY - rect.top) - joyCenter.y;
+                const maxR = 45;
+                const dist = Math.min(Math.hypot(dx, dy), maxR);
+                const ang = Math.atan2(dy, dx);
+                const sx = Math.cos(ang) * dist;
+                const sy = Math.sin(ang) * dist;
+                stick.style.left = (55 + sx - 25) + 'px';
+                stick.style.top = (55 + sy - 25) + 'px';
+                joyVec.x = sx / maxR;
+                joyVec.y = sy / maxR;
+            }
+            function endJoy() {
+                joyActive = false;
+                joyVec = { x: 0, y: 0 };
+                base.style.display = 'none';
+                stick.style.left = '30px';
+                stick.style.top = '30px';
+            }
+
+            zone.addEventListener('touchstart', e => {
+                const t = e.touches[0];
+                startJoy(t.clientX, t.clientY);
+            }, { passive: true });
+            zone.addEventListener('touchmove', e => {
+                const t = e.touches[0];
+                moveJoy(t.clientX, t.clientY);
+            }, { passive: true });
+            zone.addEventListener('touchend', endJoy);
+
+            zone.addEventListener('mousedown', e => startJoy(e.clientX, e.clientY));
+            window.addEventListener('mousemove', e => { if (joyActive) moveJoy(e.clientX, e.clientY); });
+            window.addEventListener('mouseup', endJoy);
+
+            const speed = 3.2;
+
+            function tick() {
+                let dx = 0, dy = 0;
+
+                if (keys['arrowup'] || keys['w']) dy += 1;
+                if (keys['arrowdown'] || keys['s']) dy -= 1;
+                if (keys['arrowleft'] || keys['a']) dx += 1;
+                if (keys['arrowright'] || keys['d']) dx -= 1;
+
+                if (joyActive) {
+                    dx += -joyVec.x;
+                    dy += -joyVec.y;
+                }
+
+                const mag = Math.hypot(dx, dy);
+                let moving = mag > 0.05;
+
+                if (moving) {
+                    dx = dx / mag; dy = dy / mag;
+                    worldX += dx * speed;
+                    worldY += dy * speed;
+
+                    // clamp so world doesn't scroll past edges too far
+                    const vw = game.clientWidth, vh = game.clientHeight;
+                    const minX = -(worldSize - vw / 2), maxX = vw / 2;
+                    const minY = -(worldSize - vh / 2), maxY = vh / 2;
+                    worldX = Math.max(minX, Math.min(maxX, worldX));
+                    worldY = Math.max(minY, Math.min(maxY, worldY));
+
+                    charEl.classList.add('walking');
+                    if (dx > 0.15) { charEl.style.transform = 'scaleX(-1)'; facing = -1; }
+                    else if (dx < -0.15) { charEl.style.transform = 'scaleX(1)'; facing = 1; }
+                } else {
+                    charEl.classList.remove('walking');
+                }
+
+                world.style.transform = `translate(${worldX}px, ${worldY}px)`;
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+
+        })();
+    </script>
+
+</body>
+
+</html>

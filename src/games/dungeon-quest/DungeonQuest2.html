@@ -442,6 +442,7 @@ body::after{
   position:relative;
   filter:drop-shadow(0 10px 14px rgba(0,0,0,.5));
   transition:transform .3s ease;
+  overflow:visible;
 }
 .sprite.boss-size{width:132px;height:132px}
 .sprite svg{width:100%;height:100%}
@@ -1585,6 +1586,7 @@ var currentShopTab='weapon';
 
 var state={questions:[],qIndex:0,score:0,xp:0,level:1,playerHp:PLAYER_MAX_HP,enemyHp:ENEMY_BASE_HP,enemyMaxHp:ENEMY_BASE_HP,enemyRound:0,tier:'common',floor:1,timer:null,timeLeft:20,timeLimit:20,locked:false,gameId:null,sessionCoins:0};
 var userCoins=0;
+var hasWebAvatar=false;
 
 function broadcastState(){
   try{window.parent.postMessage({type:'state-update',data:{type:'play-to-win',coins:userCoins}},'*');}catch(e){}
@@ -1619,9 +1621,13 @@ function applyPlayerVisual(){
   var outfit=findItem('outfit',loadout.equippedOutfit);
   var weapon=findItem('weapon',loadout.equippedWeapon);
   var hair=findItem('hair',loadout.equippedHair);
-  el('playerSprite').className='sprite player-outfit '+outfit.cls;
   el('weaponBadge').textContent=weapon.icon;
   el('equipLine').textContent='Trang bị: '+weapon.name+' \u00B7 '+outfit.name;
+  if(hasWebAvatar){
+    el('playerSprite').className='sprite';
+    return;
+  }
+  el('playerSprite').className='sprite player-outfit '+outfit.cls;
   // Directly update SVG gradient stops to ensure colors change
   var css=getComputedStyle(el('playerSprite'));
   var a=css.getPropertyValue('--outfit-a').trim()||'#5dd8c8';
@@ -2078,6 +2084,14 @@ window.addEventListener('message',function(e){
       loadout.ownedHairs=Array.isArray(d.loadout.ownedHairs)&&d.loadout.ownedHairs.length?d.loadout.ownedHairs:['brown'];
       loadout.equippedHair=d.loadout.equippedHair||'brown';
       loadout.potions=d.loadout.potions&&typeof d.loadout.potions==='object'?d.loadout.potions:{heal_small:0,heal_medium:0,heal_large:0};
+    }
+    if(d.avatarSvg){
+      hasWebAvatar=true;
+      var ps=document.getElementById('playerSprite');
+      if(ps){
+        ps.innerHTML='<svg viewBox="0 0 512 700" style="width:100%;height:auto;overflow:visible;">'+d.avatarSvg+'</svg>'+
+          '<span class="weapon-badge" id="weaponBadge">&#128481;&#65039;</span>';
+      }
     }
     el('scoreVal').textContent='0';el('coinVal').textContent=userCoins;
     el('enemyName').textContent=enemyDisplayName(0,state.tier);

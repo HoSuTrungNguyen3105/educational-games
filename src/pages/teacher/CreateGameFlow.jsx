@@ -1,9 +1,9 @@
-import { Fragment, useMemo, useEffect, useState } from 'react'
+import { Fragment, useMemo, useEffect, useState, useCallback } from 'react'
 import { gameService, questionService, uid } from '../../services/api.js'
 import { THEMES } from '../../lib/setupConstants.js'
 import { useTemplates, useSubjects, useCategories } from '../../lib/hooks.js'
 import { emptyQuestion } from '../../lib/utils.js'
-import { PrimaryButton, GhostButton, IconButton, Loader } from '../../components/ui.jsx'
+import { PrimaryButton, GhostButton, IconButton, Loader, Modal } from '../../components/ui.jsx'
 import Field, { StampToken } from './fields.jsx'
 import QuestionImportModal from './QuestionImportModal.jsx'
 
@@ -249,6 +249,7 @@ function StepInfo({ form, setForm, subjects, templates }) {
 function StepQuestions({ questions, setQuestions }) {
   const [openIdx, setOpenIdx] = useState(0);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
   const update = (idx, patch) => setQuestions(qs => qs.map((q, i) => i === idx ? { ...q, ...patch } : q));
   const updateOption = (idx, optId, content) => setQuestions(qs => qs.map((q, i) => i !== idx ? q : { ...q, options: q.options.map(o => o.id === optId ? { ...o, content } : o) }));
   const addOption = (idx) => setQuestions(qs => qs.map((q, i) => i !== idx ? q : (q.options.length >= 4 ? q : { ...q, options: [...q.options, { id: uid("answer"), content: "" }] })));
@@ -266,6 +267,33 @@ function StepQuestions({ questions, setQuestions }) {
     return next;
   });
 
+  const handlePickQuestions = (picked) => {
+    const mapped = picked.map(q => {
+      const newOptions = (q.options || []).map(o => ({ id: uid("answer"), content: o.content || "" }));
+      let correctAnswer = null;
+      if (q.correctAnswer) {
+        const oldIdx = q.options.findIndex(o => o.id === q.correctAnswer);
+        if (oldIdx !== -1 && newOptions[oldIdx]) correctAnswer = newOptions[oldIdx].id;
+      }
+      return {
+        id: uid("question"),
+        content: q.content || "",
+        inputMode: q.inputMode || "choice",
+        options: newOptions,
+        correctAnswer,
+        timeLimit: q.timeLimit || 15,
+        points: q.points || 100,
+      };
+    });
+    if (questions.length === 1 && questions[0].content === "") {
+      setQuestions(mapped);
+    } else {
+      setQuestions(prev => [...prev, ...mapped]);
+    }
+    setOpenIdx(questions.length === 1 && questions[0].content === "" ? 0 : questions.length);
+    setShowPicker(false);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -274,6 +302,7 @@ function StepQuestions({ questions, setQuestions }) {
       </div>
       <div className="flex gap-3 mb-4">
         <GhostButton onClick={addQuestion} className="flex-1">+ Thêm câu hỏi</GhostButton>
+        <PrimaryButton onClick={() => setShowPicker(true)} className="flex-1">Chọn từ câu hỏi có sẵn</PrimaryButton>
         <PrimaryButton onClick={() => setShowImportModal(true)} className="flex-1">Import câu hỏi</PrimaryButton>
       </div>
       <div className="space-y-3">
@@ -377,7 +406,152 @@ function StepQuestions({ questions, setQuestions }) {
           }} 
         />
       )}
+      {showPicker && (
+        <QuestionPickerModal
+          onClose={() => setShowPicker(false)}
+          onPick={handlePickQuestions}
+        />
+      )}
     </div>
+  );
+}
+
+function QuestionPickerModal({ onClose, onPick }) {
+  const [allQuestions, setAllQuestions] = useState(null);
+  const [games, setGames] = useState(null);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filterGame, setFilterGame] = useState("");
+  const [selected, setSelected] = useState(new Set());
+
+  useEffect(() => {
+    Promise.all([
+      questionService.listAll(),
+      gameService.list(),
+    ]).then(([q, g]) => { setAllQuestions(q); setGames(g); })
+      .catch(e => setError(e.message));
+  }, []);
+
+  const gameMap = useMemo(() => {
+    if (!games) return {};
+    const m = {};
+    for (const g of games) m[g._id] = g.name;
+    return m;
+  }, [games]);
+
+  const filtered = useMemo(() => {
+    if (!allQuestions) return [];
+    let list = allQuestions;
+    if (filterGame) list = list.filter(q => q.gameId === filterGame);
+    if (search.trim()) {
+      const s = search.toLowerCase();
+      list = list.filter(q =>
+        q.content?.toLowerCase().includes(s) ||
+        q.options?.some(o => o.content?.toLowerCase().includes(s))
+      );
+    }
+    return list;
+  }, [allQuestions, search, filterGame]);
+
+  const toggle = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map(q => q.id)));
+  };
+
+  const handleConfirm = () => {
+    const picked = allQuestions.filter(q => selected.has(q.id));
+    onPick(picked);
+  };
+
+  return (
+    <Modal wide open onClose={onClose}>
+      <div className="p-5 sm:p-6 space-y-4">
+        <h2 className="font-display text-lg text-ink">Chọn câu hỏi có sẵn</h2>
+
+        <div className="flex flex-wrap gap-3">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm nội dung câu hỏi..."
+            className="flex-1 min-w-[180px] px-3 py-2 rounded-lg border border-ink/10 bg-white text-sm"
+          />
+          <select
+            value={filterGame}
+            onChange={(e) => setFilterGame(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-ink/10 bg-white text-sm"
+          >
+            <option value="">-- Tất cả game --</option>
+            {games?.map(g => (
+              <option key={g._id} value={g._id}>{g.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-[#8A7C63]">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={filtered.length > 0 && selected.size === filtered.length}
+              onChange={toggleAll}
+              className="accent-teal"
+            />
+            Chọn tất cả ({filtered.length})
+          </label>
+          <span>Đã chọn: {selected.size}</span>
+        </div>
+
+        {error && <p className="text-ticket text-sm">{error}</p>}
+
+        {!allQuestions ? (
+          <Loader label="Đang tải câu hỏi..." />
+        ) : filtered.length === 0 ? (
+          <div className="py-8 text-center text-sm text-[#8A7C63]">Không có câu hỏi nào phù hợp.</div>
+        ) : (
+          <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1">
+            {filtered.map(q => (
+              <label
+                key={q.id}
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition
+                  ${selected.has(q.id) ? "border-teal bg-teal/5" : "border-ink/10 hover:border-ink/20"}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.has(q.id)}
+                  onChange={() => toggle(q.id)}
+                  className="mt-0.5 accent-teal shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-ink line-clamp-2">{q.content}</p>
+                  <div className="flex items-center gap-2 mt-1 text-[10px] text-[#8A7C63]">
+                    <span className="inline-block px-1.5 py-0.5 rounded bg-teal/10 text-teal font-medium max-w-[100px] truncate">
+                      {gameMap[q.gameId] || "—"}
+                    </span>
+                    <span>{q.options?.length || 0} đáp án</span>
+                    <span>⏱ {q.timeLimit}s</span>
+                    <span>⭐ {q.points}</span>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-ink/5">
+          <GhostButton onClick={onClose}>Hủy</GhostButton>
+          <PrimaryButton onClick={handleConfirm} disabled={selected.size === 0}>
+            Thêm {selected.size > 0 ? `(${selected.size})` : ""} câu hỏi
+          </PrimaryButton>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

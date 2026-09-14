@@ -3,6 +3,7 @@ import { API_BASE, coinService, userService, gameProgressService } from "../serv
 import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
+import { renderAvatarFull } from "../lib/avatarRenderer.js";
 
 /**
  * HtmlGameLoader - Renders a self-contained HTML game in an iframe.
@@ -48,6 +49,7 @@ export default function HtmlGameLoader({
     let authToken = null;
     let userId = null;
     let loadout = null;
+    let avatarSvg = null;
     try {
       if (userAuth?.token) {
         authToken = userAuth.token;
@@ -71,6 +73,42 @@ export default function HtmlGameLoader({
           const spinTask = (taskData?.tasks || []).find(t => t.code === "SPIN_WHEEL");
           if (spinTask) spinsLeft = spinTask.spinsLeft ?? Math.max(0, spinTask.target - (spinTask.progress || 0));
         } catch { /* ignore */ }
+        try {
+          const [loadoutResp, itemsResp] = await Promise.all([
+            fetch(`${API_BASE}/api/avatar/loadout`, {
+              headers: { Authorization: `Bearer ${userAuth.token}` },
+            }),
+            fetch(`${API_BASE}/api/avatar/items`, {
+              headers: { Authorization: `Bearer ${userAuth.token}` },
+            }),
+          ]);
+          const loadoutJson = await loadoutResp.json();
+          const itemsJson = await itemsResp.json();
+          const rawLoadout = loadoutJson?.data?.loadout || {};
+          const allItems = itemsJson?.data?.items || [];
+          const itemMap = new Map(allItems.map(i => [i.code, i]));
+          const state = {};
+          let bodyHtml = null;
+          for (const [layer, itemId] of Object.entries(rawLoadout)) {
+            if (!itemId) continue;
+            const item = typeof itemId === 'object' ? itemId : itemMap.get(itemId);
+            if (!item) continue;
+            if (layer === 'body') bodyHtml = item.html || null;
+            else if (layer === 'skin') state.skin = item.params?.hex || '#FFDFC4';
+            else if (layer === 'face') state.face = item.params?.style || 'gentle';
+            else if (layer === 'hair') state.hair = { style: item.params?.style || 'spiky', color: item.params?.color || '#6B4226' };
+            else if (layer === 'shirt') state.shirt = { style: item.params?.style || 'tee', color: item.params?.color || '#F5F5F5' };
+            else if (layer === 'pants') state.pants = { style: item.params?.style || 'shorts', color: item.params?.color || '#241F1C' };
+            else if (layer === 'shoes') state.shoes = { style: item.params?.style || 'sneaker', color: item.params?.color || '#3B5EA6' };
+            else if (layer === 'hat') state.hat = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+            else if (layer === 'glasses') state.glasses = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+            else if (layer === 'accessory') state.accessory = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+          }
+          const svgContent = renderAvatarFull(state, bodyHtml);
+          if (svgContent) {
+            avatarSvg = svgContent;
+          }
+        } catch { /* ignore */ }
       }
     } catch { /* ignore */ }
 
@@ -93,6 +131,7 @@ export default function HtmlGameLoader({
           authToken,
           userId,
           loadout,
+          avatarSvg,
           gameName: game?.name || "Trò chơi",
           gameCode: game?.code || "",
         }
