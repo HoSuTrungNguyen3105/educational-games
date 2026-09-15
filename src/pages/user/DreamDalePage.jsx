@@ -54,23 +54,47 @@ export default function DreamDalePage({ userAuth }) {
   }, [loadout, avatarItems])
 
   return (
-    <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', background: '#000' }}>
+    <div style={{
+      height: '100dvh',
+      width: '100vw',
+      display: 'flex',
+      flexDirection: 'column',
+      background: '#000',
+      overflow: 'hidden',
+    }}>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '6px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '6px 12px',
         background: 'linear-gradient(90deg, #1a0533, #2d1b69)',
-        color: '#fff', zIndex: 10, flexShrink: 0,
+        color: '#fff',
+        zIndex: 10,
+        flexShrink: 0,
+        minHeight: 40,
       }}>
         <button onClick={() => navigate("/")} style={{
-          background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff',
-          width: 32, height: 32, borderRadius: '50%', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(255,255,255,0.15)',
+          border: 'none',
+          color: '#fff',
+          width: 30,
+          height: 30,
+          borderRadius: '50%',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
         }}>
-          <ArrowLeft size={18} />
+          <ArrowLeft size={16} />
         </button>
-        <span style={{ fontWeight: 800, fontSize: 14 }}>DreamDale</span>
+        <span style={{
+          fontWeight: 800,
+          fontSize: 13,
+          whiteSpace: 'nowrap',
+        }}>DreamDale</span>
       </div>
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <DreamDaleApp userAuth={userAuth} avatarSvg={avatarSvg} />
       </div>
     </div>

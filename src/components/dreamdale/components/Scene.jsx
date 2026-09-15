@@ -1,6 +1,5 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useMemo } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import Ground from './Ground.jsx'
 import Water from './Water.jsx'
@@ -15,43 +14,107 @@ import Market3D from './Market3D.jsx'
 import Character3D from './Character3D.jsx'
 import NPC3D from './NPC3D.jsx'
 
+function Fireflies({ count = 40 }) {
+  const mesh = useRef()
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  
+  const particles = useMemo(() => {
+    const temp = []
+    for (let i = 0; i < count; i++) {
+      const t = Math.random() * 100
+      const factor = 20 + Math.random() * 100
+      const speed = 0.01 + Math.random() / 200
+      const xFactor = -20 + Math.random() * 40
+      const yFactor = 1 + Math.random() * 4
+      const zFactor = -20 + Math.random() * 40
+      temp.push({ t, factor, speed, xFactor, yFactor, zFactor, mx: 0, my: 0 })
+    }
+    return temp
+  }, [count])
+
+  useFrame((state) => {
+    particles.forEach((particle, i) => {
+      let { t, factor, speed, xFactor, yFactor, zFactor } = particle
+      t = particle.t += speed / 2
+      const a = Math.cos(t) + Math.sin(t * 1) / 10
+      const b = Math.sin(t) + Math.cos(t * 2) / 10
+      const s = Math.cos(t)
+      dummy.position.set(
+        xFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 1) * factor) / 10,
+        yFactor + Math.sin((t / 10) * factor) + (Math.cos(t * 2) * factor) / 10,
+        zFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 3) * factor) / 10
+      )
+      dummy.scale.set(s, s, s)
+      dummy.updateMatrix()
+      mesh.current.setMatrixAt(i, dummy.matrix)
+    })
+    mesh.current.instanceMatrix.needsUpdate = true
+  })
+
+  return (
+    <instancedMesh ref={mesh} args={[null, null, count]}>
+      <sphereGeometry args={[0.08, 4, 4]} />
+      <meshBasicMaterial color="#ffe885" transparent opacity={0.6} />
+    </instancedMesh>
+  )
+}
+
 function CameraFollow({ playerPos }) {
   const { camera } = useThree()
+  const targetPos = useRef(new THREE.Vector3())
+  const targetLook = useRef(new THREE.Vector3())
 
   useFrame(() => {
-    const target = new THREE.Vector3(playerPos.current.x, playerPos.current.y + 8, playerPos.current.z + 18)
-    camera.position.lerp(target, 0.08)
-    camera.lookAt(playerPos.current.x, playerPos.current.y, playerPos.current.z)
+    const px = playerPos.current.x
+    const pz = playerPos.current.z
+
+    targetPos.current.set(px, 10, pz + 16)
+    targetLook.current.set(px, 0, pz)
+
+    camera.position.lerp(targetPos.current, 0.06)
+    const lookAt = new THREE.Vector3()
+    lookAt.copy(camera.position)
+    lookAt.y = 0
+    camera.lookAt(targetLook.current)
   })
 
   return null
 }
 
-export default function Scene({ playerPos, walking, facing, avatarSvg, avatarUrl, playerName, onNearBuilding }) {
+export const FARM_POS = [
+  { x: -4, z: 8, cols: 4, rows: 3 },
+  { x: 2, z: 10, cols: 3, rows: 3 },
+]
+
+export default function Scene({ playerPos, walking, facing, avatarSvg, avatarUrl, playerName, farmCrops, onFarmCellClick }) {
   return (
     <Canvas
       shadows
       camera={{ position: [0, 10, 20], fov: 50 }}
       style={{ background: 'transparent' }}
     >
-      <color attach="background" args={['#87ceeb']} />
+      <color attach="background" args={['#6eb3d9']} />
+      <fog attach="fog" args={['#6eb3d9', 15, 40]} />
 
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={0.7} color="#ffffff" />
       <directionalLight
-        position={[10, 20, 10]}
-        intensity={1.2}
+        position={[15, 30, 10]}
+        intensity={1.5}
+        color="#fff1e0"
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={60}
-        shadow-camera-left={-30}
-        shadow-camera-right={30}
-        shadow-camera-top={30}
-        shadow-camera-bottom={-30}
+        shadow-camera-far={80}
+        shadow-camera-left={-40}
+        shadow-camera-right={40}
+        shadow-camera-top={40}
+        shadow-camera-bottom={-40}
+        shadow-bias={-0.0005}
       />
-      <hemisphereLight args={['#87ceeb', '#5cb83a', 0.4]} />
+      <hemisphereLight args={['#aaccff', '#5cb83a', 0.6]} />
+
+      <Fireflies count={60} />
 
       <Ground />
-
       <Water />
       <Path3D />
 
@@ -79,12 +142,21 @@ export default function Scene({ playerPos, walking, facing, avatarSvg, avatarUrl
       <Rock3D x={7} z={-2} scale={1} />
       <Rock3D x={-3} z={12} scale={0.6} />
 
-      <FarmPlot x={-4} z={8} cols={4} rows={3} />
-      <FarmPlot x={2} z={10} cols={3} rows={3} />
+      {FARM_POS.map((fp, i) => (
+        <FarmPlot
+          key={i}
+          x={fp.x}
+          z={fp.z}
+          cols={fp.cols}
+          rows={fp.rows}
+          crops={farmCrops?.[i]}
+          onCellClick={(cell) => onFarmCellClick?.(i, cell)}
+        />
+      ))}
 
       <House3D x={0} z={-2} />
-      <Blacksmith3D x={4} z={2} onNear={onNearBuilding} playerPos={playerPos} />
-      <Market3D x={6} z={7} onNear={onNearBuilding} playerPos={playerPos} />
+      <Blacksmith3D x={4} z={2} />
+      <Market3D x={6} z={7} />
 
       <NPC3D x={3.5} z={0.5} emoji="👨‍🔧" name="Thợ rèn" />
       <NPC3D x={5.5} z={5.5} emoji="🧑‍🌾" name="Thương nhân" />
