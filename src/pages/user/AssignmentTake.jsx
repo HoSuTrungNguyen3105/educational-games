@@ -310,7 +310,7 @@ export default function AssignmentTake({ code: codeOrId }) {
       setSubmission(sub);
 
       if (sub?.status === 'SUBMITTED') {
-        const existing = await assignmentService.getResult(assignmentId, { guestName }).catch(() => null);
+        const existing = await assignmentService.getResult(assignmentId, { guestName, showCorrectAnswer: true }).catch(() => null);
         if (existing) { setResult(existing); setSubmitted(true); setLoading(false); return; }
       }
 
@@ -351,7 +351,7 @@ export default function AssignmentTake({ code: codeOrId }) {
       const submissionId = sub?.id || sub?._id;
       if (!submissionId) { setError('Không tìm thấy submission'); setSubmitted(false); return; }
       await assignmentService.submit(assignment.id, submissionId, answerList, { guestName });
-      const full = await assignmentService.getResult(assignment.id, { guestName });
+      const full = await assignmentService.getResult(assignment.id, { guestName, showCorrectAnswer: true });
       setResult(full);
     } catch (err) { setError(err.message); }
   }, [assignment, submission, submitted, answers, timerRef, guestName]);

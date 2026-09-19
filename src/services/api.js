@@ -450,8 +450,14 @@ export const assignmentService = {
   async submit(id, submissionId, answers, { guestName } = {}) {
     return apiFetch(`/assignments/${id}/submit`, { method: "POST", body: { submissionId, answers, guestName } });
   },
-  async getResult(id, { guestName } = {}) {
-    const qs = guestName ? `?guestName=${encodeURIComponent(guestName)}` : "";
+  async getResult(id, { guestName, showCorrectAnswer } = {}) {
+    const params = new URLSearchParams();
+    if (guestName) params.set("guestName", guestName);
+    if (showCorrectAnswer) {
+      params.set("final", "true");
+      params.set("correctShow", "true");
+    }
+    const qs = params.toString() ? `?${params.toString()}` : "";
     return apiFetch(`/assignments/${id}/result${qs}`);
   },
   async getStats(id) { return apiFetch(`/assignments/${id}/stats`); },

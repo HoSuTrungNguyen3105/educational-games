@@ -202,11 +202,14 @@ r.post("/:id/submit", optionalAuth, async (req, res) => {
 // Get student result (student/guest)
 r.get("/:id/result", optionalAuth, async (req, res) => {
   try {
-    const { guestName } = req.query;
+    const { guestName, admin, final, correctShow } = req.query;
     const studentId = req.user?.sub || (guestName ? `guest_${guestName}_${req.params.id}` : null);
     if (!studentId) return sendError(res, "Cần đăng nhập hoặc nhập tên", 400);
 
-    const result = await assignmentService.getAssignmentResult(req.params.id, studentId);
+    // Show correctAnswer only if: admin=true OR (final=true AND correctShow=true)
+    const showCorrectAnswer = admin === "true" || (final === "true" && correctShow === "true");
+
+    const result = await assignmentService.getAssignmentResult(req.params.id, studentId, { showCorrectAnswer });
     if (!result) return sendError(res, "Chưa có kết quả", 404);
     sendSuccess(res, result);
   } catch (e) { sendError(res, e.message, 500); }

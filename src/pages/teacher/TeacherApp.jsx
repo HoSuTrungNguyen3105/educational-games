@@ -60,7 +60,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
       <Suspense fallback={<div className="p-12 flex items-center justify-center"><Loader label="Đang tải dữ liệu..." /></div>}>
         {page === "admin-dashboard" && <TeacherDashboard key={refreshFlag} user={user} onLogout={onLogout} onOpenLibrary={goLibrary} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} onDesign={(id) => navigate(`/admin/builder/${id}`)} showToast={showToast} />}
         {page === "admin-library" && <GameLibraryManagement key={refreshFlag} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} onDesign={(id) => navigate(`/admin/builder/${id}`)} onOpenBuilder={() => navigate("/admin/builder")} showToast={showToast} onChanged={bump} />}
-        {page === "admin-create" && <CreateGameFlow gameId={null} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
+        {page === "admin-create" && <CreateGameFlow key="create" gameId={null} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
         {page === "admin-edit" && <CreateGameFlow key={route.params.gameId} gameId={route.params.gameId} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
         {page === "admin-results" && <TeacherResults gameId={route.params.gameId} onBack={goLibrary} />}
         {page === "admin-users" && <UserManagement user={user} showToast={showToast} />}

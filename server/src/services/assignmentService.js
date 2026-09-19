@@ -212,7 +212,7 @@ export async function listSubmissions({ assignmentId, studentId } = {}) {
   return getCollection("submissions").find(query).sort({ submittedAt: -1 }).toArray();
 }
 
-export async function getAssignmentResult(assignmentId, studentId) {
+export async function getAssignmentResult(assignmentId, studentId, { showCorrectAnswer = false } = {}) {
   // Get ALL submissions for this student+assignment (keep history)
   const allSubs = await getCollection("submissions").find({
     assignmentId, studentId, status: "SUBMITTED",
@@ -255,12 +255,10 @@ export async function getAssignmentResult(assignmentId, studentId) {
       const correctAnsKey = q.correctAnswer || q.answer;
       const userAnswerKey = userAns ? userAns.value : null;
       const userAnswerText = resolveOptionText(q, userAnswerKey);
-      const correctAnswerText = resolveOptionText(q, correctAnsKey);
 
-      return {
+      const detail = {
         questionId: q.id,
         question: q.content || q.question,
-        correctAnswer: correctAnswerText,
         userAnswer: userAnswerText,
         isCorrect: userAns
           ? (questionType === "fill-in" || questionType === "text"
@@ -268,6 +266,12 @@ export async function getAssignmentResult(assignmentId, studentId) {
             : userAns.value === correctAnsKey)
           : false,
       };
+
+      if (showCorrectAnswer) {
+        detail.correctAnswer = resolveOptionText(q, correctAnsKey);
+      }
+
+      return detail;
     });
   }
 

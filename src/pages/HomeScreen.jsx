@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { gameService, coinService, notificationService, assignmentService, API_BASE } from '../services/api.js'
+import { gameService, coinService, notificationService, API_BASE } from '../services/api.js'
 import { getLevelProgress, getLevelEmoji } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
@@ -40,8 +40,6 @@ import {
   ShipWheel,
   FileText,
   Sprout,
-  Repeat,
-  Castle,
 } from 'lucide-react'
 
 // Bảng màu theo môn học — giữ nguyên
@@ -63,7 +61,6 @@ function colorForSubject(subject = "") {
 // NAV_ITEMS giữ nguyên
 const NAV_ITEMS = (userAuth) => [
   { key: "home", icon: Home, label: "Trang chủ", path: "/", show: true },
-  { key: "dreamdale", icon: Castle, label: "DreamDale", path: "/dreamdale", show: true },
   { key: "garden", icon: Sprout, label: "Khu vườn", path: "/garden", show: !!userAuth?.user },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", path: "/spin-wheel", show: !!userAuth?.user },
@@ -77,7 +74,6 @@ const NAV_ITEMS = (userAuth) => [
 // QUICK_MENU_ITEMS giữ nguyên
 const QUICK_MENU_ITEMS = (userAuth) => [
   { key: "code", icon: Ticket, label: "Nhập mã vé", action: "code", show: true, tint: "from-yellow-800 to-fuchsia-400" },
-  { key: "dreamdale", icon: Castle, label: "DreamDale", path: "/dreamdale", show: true, tint: "from-violet-500 to-indigo-500" },
   { key: "garden", icon: Sprout, label: "Khu vườn", path: "/garden", show: !!userAuth?.user, tint: "from-green-400 to-emerald-400" },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user, tint: "from-violet-400 to-purple-400" },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", path: "/spin-wheel", show: !!userAuth?.user, tint: "from-amber-400 to-yellow-500" },
@@ -108,7 +104,6 @@ const MOCK_LEADERBOARD = [
 // THÊM MỚI: Bottom navigation cho mobile
 const BOTTOM_NAV = (userAuth) => [
   { key: "home", icon: Home, label: "Trang chủ", path: "/", show: true },
-  { key: "dreamdale", icon: Castle, label: "DreamDale", path: "/dreamdale", show: true },
   { key: "games", icon: Gamepad2, label: "Game", action: "scroll", target: "games-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", path: "/daily-tasks", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", path: "/chat", show: !!userAuth?.user },
@@ -131,7 +126,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [searchQuery, setSearchQuery] = useState('');
   const [avatarLoadout, setAvatarLoadout] = useState({});
   const [avatarItems, setAvatarItems] = useState([]);
-  const [completedAssignments, setCompletedAssignments] = useState([]);
 
   const loadGames = async () => {
     setGames(null); setError(null);
@@ -162,18 +156,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         fetch(`${API_BASE}/avatar/loadout`, { headers: { Authorization: `Bearer ${userAuth.token}` } }).then(r => r.json()),
       ]).then(([itemsRes, loadoutRes]) => {
         if (itemsRes.status) setAvatarItems(itemsRes.data.items || []);
-        if (loadoutRes.status) {
-          const raw = loadoutRes.data.loadout || {};
-          const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
-          const codes = {};
-          for (const k of VALID_LAYERS) {
-            const v = raw[k];
-            if (v && typeof v === 'object' && v.code) codes[k] = v.code;
-            else if (typeof v === 'string') codes[k] = v;
-            else codes[k] = null;
-          }
-          setAvatarLoadout(codes);
-        }
+        if (loadoutRes.status) setAvatarLoadout(loadoutRes.data.loadout || {});
       }).catch(() => { });
 
       // Register FCM token if permission is already granted
@@ -182,11 +165,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           if (token) notificationService.registerDevice(token, "WEB").catch(() => { });
         }).catch(() => { });
       }
-
-      // Load completed assignments
-      assignmentService.getMyCompleted().then(list => {
-        setCompletedAssignments(Array.isArray(list) ? list : []);
-      }).catch(() => { });
     }
   }, [userAuth?.user]);
 
@@ -237,42 +215,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     const unsubscribe = onForegroundMessage((payload) => {
       const { title, body } = payload.notification || {};
       const data = payload.data || {};
-      // Add to in-app notification list (skip if already exists from API)
-      setNotifications(prev => {
-        const now = Date.now();
-        const isDuplicate = prev.some(n => {
-          if (n.id.startsWith('fg-')) return false;
-          if (n.title !== (title || "Thông báo")) return false;
-          if ((n.message || n.content || "") !== (body || "")) return false;
-          const diff = now - new Date(n.createdAt).getTime();
-          return diff < 5000;
-        });
-        if (isDuplicate) return prev;
-        return [{
-          id: `fg-${Date.now()}`,
-          title: title || "Thông báo",
-          message: body || "",
-          type: data.type || "SYSTEM",
-          data,
-          read: false,
-          createdAt: new Date().toISOString(),
-        }, ...prev];
-      });
-      // Show browser notification when app is in foreground
-      if ("Notification" in window && Notification.permission === "granted") {
-        const n = new Notification(title || "EduGames", {
-          body: body || "",
-          icon: "/educational-games/eduplay-icon-192x192.png",
-          tag: data.type || "general",
-        });
-        n.onclick = () => {
-          window.focus();
-          if (data?.link) navigate(data.link);
-          else if (data?.type === "ASSIGNMENT") navigate(data.link || "/");
-          else if (data?.type === "chat_message") navigate("/chat");
-          n.close();
-        };
-      }
+      setNotifications(prev => [{
+        id: `fg-${Date.now()}`,
+        title: title || "Thông báo",
+        message: body || "",
+        type: data.type || "SYSTEM",
+        data,
+        read: false,
+        createdAt: new Date().toISOString(),
+      }, ...prev]);
     });
     return unsubscribe;
   }, [userAuth?.user]);
@@ -357,16 +308,23 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             <img src={`${import.meta.env.BASE_URL}eduplay-logo.png`} alt="EduPlay" className="h-14 w-auto object-contain" draggable={false} />
           </a>
 
-          <div className="flex-1 max-w-xl relative mx-auto">
-            <input
-              type="text"
-              placeholder="Tìm kiếm game, nhiệm vụ..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-gray-100 border border-transparent rounded-full px-4 py-2.5 pl-10 text-sm transition-all focus:outline-none focus:bg-white focus:border-purple-200 focus:ring-2 focus:ring-purple-100"
-            />
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          </div>
+          <nav className="flex items-center gap-1 bg-purple-50/70 rounded-full p-1 mx-auto">
+            {DESKTOP_TABS.map((tab, i) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => handleDesktopTabClick(tab)}
+                  className={`flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-full transition-all ${i === 0
+                    ? "bg-white text-purple-700 shadow-sm"
+                    : "text-gray-500 hover:text-purple-700 hover:bg-white/70"
+                    }`}
+                >
+                  <Icon className="w-4 h-4" /> {tab.label}
+                </button>
+              );
+            })}
+          </nav>
 
           <div className="flex items-center gap-3 shrink-0">
             {userAuth?.user && (
@@ -422,31 +380,90 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
       <div className="lg:flex w-full">
 
-        {/* ═══════════════════════════ SIDEBAR ═══════════════════════════ */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:overflow-y-auto px-4 py-6">
-          <nav className="flex flex-col gap-1">
+        {/* ═══════════════════════════ SIDEBAR (chỉ desktop) — GIỮ NGUYÊN ═══════════════════════════ */}
+        <aside className="hidden lg:flex lg:flex-col lg:w-72 lg:shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:overflow-y-auto px-5 py-6 gap-4">
+          {/* ... TOÀN BỘ NỘI DUNG SIDEBAR CŨ ... */}
+          {userAuth?.user ? (
+            <>
+              <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-5">
+                <div className="flex flex-col items-center text-center mb-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 shadow-sm mb-2 ring-2 ring-purple-100">
+                    {avatarItems.length > 0 ? (
+                      <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={64} />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-2xl"><User className="w-7 h-7" /></div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">Xin chào,</p>
+                  <p className="font-display text-base text-gray-800 truncate max-w-full">{userAuth.user.name}</p>
+                </div>
+                <div className="flex items-center justify-between text-xs font-bold text-amber-600 mb-1">
+                  <span>{getLevelEmoji(lv.level)} Cấp {lv.level}</span>
+                  <span className="text-[10px] font-mono">{lv.earned ?? 0}/{lv.needed ?? 0} xu</span>
+                </div>
+                <div className="h-2 rounded-full bg-amber-50 overflow-hidden mb-4">
+                  <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all" style={{ width: `${lv.percent ?? 0}%` }} />
+                </div>
+                <a
+                  onClick={() => navigate("/my-coins")}
+                  href="#/my-coins"
+                  className="flex items-center justify-center gap-2 text-sm font-bold text-amber-600 bg-amber-50 rounded-2xl px-3 py-2.5 hover:bg-amber-100 transition"
+                >
+                  <Coins className="w-4 h-4" /> {userCoins.toLocaleString()} coin
+                </a>
+              </div>
+
+              <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
+                <div className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white px-3 py-1.5 rounded-full shadow-sm mb-3">
+                  <ClipboardList className="w-4 h-4" />
+                  <h3 className="font-display text-xs font-bold">Nhiệm vụ hôm nay</h3>
+                </div>
+                <DailyTasksCard
+                  compact
+                  onClaimCoins={handleClaimCoins}
+                />
+                <button
+                  onClick={() => navigate("/daily-tasks")}
+                  className="w-full text-center text-[11px] font-semibold text-purple-500 hover:text-purple-700 transition mt-2"
+                >
+                  Xem tất cả →
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-5 text-center">
+              <PartyPopper className="w-8 h-8 mx-auto text-purple-400 mb-2" />
+              <p className="text-sm text-gray-600 mb-3">Đăng nhập để lưu điểm & coin của bạn nhé!</p>
+              <button onClick={onUserLogin} className="w-full text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold px-4 py-2 rounded-full hover:from-purple-600 hover:to-pink-600 transition mb-2">
+                <KeyRound className="w-4 h-4 inline mr-1" /> Đăng nhập
+              </button>
+              <button onClick={onUserRegister} className="w-full text-sm bg-white border border-purple-200 text-purple-600 font-semibold px-4 py-2 rounded-full hover:bg-purple-50 transition">
+                <Sparkles className="w-4 h-4 inline mr-1" /> Đăng ký
+              </button>
+            </div>
+          )}
+
+          <nav className="bg-white rounded-3xl shadow-md border border-purple-50 p-3 flex flex-col gap-1">
             {NAV_ITEMS(userAuth).filter(i => i.show).map(item => {
               const Icon = item.icon;
               return (
                 <button
                   key={item.key}
                   onClick={() => goTo(item.path)}
-                  className={`flex items-center gap-3 text-sm font-semibold px-4 py-3 rounded-xl text-left transition ${item.key === "home" ? "bg-purple-50 text-purple-700" : "text-gray-600 hover:bg-purple-50 hover:text-purple-700"}`}
+                  className={`flex items-center gap-3 text-sm font-semibold px-3 py-2.5 rounded-2xl text-left transition ${item.key === "home" ? "bg-purple-50 text-purple-700" : "text-gray-600 hover:bg-purple-50 hover:text-purple-700"
+                    }`}
                 >
                   <Icon className="w-5 h-5" /> {item.label}
-                  {item.key === "chat" && unreadCount > 0 && (
-                    <span className="ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount}</span>
-                  )}
                 </button>
               );
             })}
             {(userAuth?.user?.role === 'admin' || userAuth?.user?.role === 'teacher') && (
-              <button onClick={() => goTo("/admin")} className="flex items-center gap-3 text-sm font-semibold text-gray-600 px-4 py-3 rounded-xl hover:bg-purple-50 hover:text-purple-700 transition text-left">
+              <button onClick={() => goTo("/admin")} className="flex items-center gap-3 text-sm font-semibold text-gray-600 px-3 py-2.5 rounded-2xl hover:bg-purple-50 hover:text-purple-700 transition text-left">
                 <GraduationCap className="w-5 h-5" /> Trang giáo viên
               </button>
             )}
             {userAuth?.user && (
-              <button onClick={onUserLogout} className="flex items-center gap-3 text-sm font-semibold text-red-500 px-4 py-3 rounded-xl hover:bg-red-50 transition text-left mt-auto">
+              <button onClick={onUserLogout} className="flex items-center gap-3 text-sm font-semibold text-red-500 px-3 py-2.5 rounded-2xl hover:bg-red-50 transition text-left">
                 <LogOut className="w-5 h-5" /> Đăng xuất
               </button>
             )}
@@ -551,59 +568,30 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             )}
           </header>
 
-          {/* ═══════════════════════════ MOBILE CONTENT (THAY ĐỔI HOÀN TOÀN) ═══════════════════════════ */}
+          {/* ═══════════════════════════ MOBILE CONTENT ═══════════════════════════ */}
           <main className="flex-1 w-full px-2 space-y-2 py-3 lg:hidden">
-
-            {/* ═══════════ BANNER SCROLL NGANG ═══════════ */}
-            <div className="overflow-x-auto no-scrollbar snap-x snap-mandatory flex gap-3 rounded-3xl">
-
-              {/* Banner 1: Banner hình ảnh */}
-              <div className="snap-center shrink-0 w-[calc(100vw-1rem)] rounded-3xl overflow-hidden shadow-lg relative">
-                <img
-                  src={`${import.meta.env.BASE_URL}banner.png`}
-                  alt="Banner"
-                  className="w-full h-44 object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end p-4">
-                  <div>
-                    <p className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-0.5">✨ Chúc mừng tốt nghiệp</p>
-                    <h2 className="font-display text-lg text-white leading-tight">
-                      Xin chào, {userAuth?.user?.name || 'bạn'}! 👋
-                    </h2>
-                    <p className="text-xs text-white/80">Học mà chơi, chơi mà giỏi!</p>
+            {/* 1. Banner chào mừng */}
+            <div className="relative rounded-3xl overflow-hidden min-h-[220px] flex items-end shadow-lg">
+              <img src={`${import.meta.env.BASE_URL}banner.png`} alt="EduPlay" className="absolute inset-0 w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              <div className="relative z-10 w-full p-4">
+                <p className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-0.5">✨ Chúc mừng tốt nghiệp</p>
+                <h2 className="font-display text-lg text-white leading-tight">
+                  Xin chào, {userAuth?.user?.name || 'bạn'}! 👋
+                </h2>
+                <p className="text-xs text-white/80 mb-3">Học mà chơi, chơi mà giỏi!</p>
+                <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
+                  <Star className="w-3 h-3 text-amber-300" />
+                  <span className="text-xs font-bold text-white">Cấp {lv.level}</span>
+                  <div className="w-16 h-1 bg-white/30 rounded-full overflow-hidden">
+                    <div className="h-full bg-white rounded-full" style={{ width: `${lv.percent || 0}%` }}></div>
                   </div>
+                  <span className="text-[10px] text-white/80">{getLevelEmoji(lv.level)} {lv.earned}/{lv.needed} xu</span>
                 </div>
               </div>
-
-              {/* Banner 2: Khung thông tin hiện tại */}
-              <div className="snap-center shrink-0 w-[calc(100vw-1rem)] relative rounded-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 p-4 text-white overflow-hidden shadow-lg">
-                <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full"></div>
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wide opacity-80">Thành viên</p>
-                    <p className="font-display text-base">{userAuth?.user?.name || 'Khách'}</p>
-                  </div>
-                  <div className="bg-white/20 rounded-full px-2 py-1 text-xs font-semibold flex items-center gap-1">
-                    <Star className="w-3 h-3" /> Cấp {lv.level}
-                  </div>
-                </div>
-                <div className="h-1.5 bg-white/30 rounded-full mb-3">
-                  <div className="h-full bg-white rounded-full" style={{ width: `${lv.percent || 0}%` }}></div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs opacity-90">
-                    {getLevelEmoji(lv.level)} {lv.earned}/{lv.needed} xu
-                  </span>
-                  <span className="text-xs font-bold bg-white/20 rounded-full px-2 py-0.5">
-                    {userCoins.toLocaleString()} xu
-                  </span>
-                </div>
-              </div>
-
             </div>
-            {/* ═══════════ HẾT BANNER SCROLL NGANG ═══════════ */}
 
-            {/* 2. Quick menu dạng tròn (Shopee style) — GIỮ NGUYÊN */}
+            {/* 2. Quick menu dạng tròn (Shopee style) */}
             <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-3">
               <div className="grid grid-cols-5 gap-2">
                 {QUICK_MENU_ITEMS(userAuth).filter(i => i.show).slice(0, 8).map(item => {
@@ -620,7 +608,29 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </div>
             </div>
 
-            {/* 4. Nhiệm vụ hôm nay (card gọn) — GIỮ NGUYÊN */}
+            {/* 3. Banner Flash Sale (Shopee style) */}
+            {/* <div className="rounded-3xl overflow-hidden bg-white shadow-md border border-purple-50">
+              <div className="bg-gradient-to-r from-red-500 to-orange-400 px-4 py-2 flex items-center justify-between">
+                <span className="font-display text-white text-sm flex items-center gap-1"><Flame className="w-4 h-4" /> FLASH SALE</span>
+                <span className="text-xs text-white bg-black/20 px-2 py-0.5 rounded-full">Kết thúc sau 02:45:30</span>
+              </div>
+              <div className="p-3 grid grid-cols-2 gap-3">
+                {hotGames.slice(0, 2).map((game, idx) => (
+                  <button key={game._id || game.id} onClick={() => onSelectGame(game)} className="relative bg-purple-50 rounded-xl p-2 text-left">
+                    <span className={`absolute top-1 right-1 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full ${idx === 0 ? 'bg-red-500' : 'bg-amber-500'}`}>
+                      {idx === 0 ? '-30%' : 'MỚI'}
+                    </span>
+                    <div className={`w-full h-16 rounded-lg bg-gradient-to-br ${colorForSubject(game.subject).grad} flex items-center justify-center`}>
+                      <StampToken icon={templates.find(t => t._id === game.templateId)?.icon || <Gamepad2 className="w-6 h-6" />} ring="#fff" size={36} fontSize={18} />
+                    </div>
+                    <p className="text-xs font-bold text-gray-800 mt-1 line-clamp-1">{game.name}</p>
+                    <span className="text-[10px] text-red-500 font-bold">{idx === 0 ? '999 xu' : '299 xu'}</span>
+                  </button>
+                ))}
+              </div>
+            </div> */}
+
+            {/* 4. Nhiệm vụ hôm nay (card gọn) */}
             <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
               <div className="flex items-center gap-2 mb-3">
                 <ClipboardList className="w-4 h-4 text-violet-500" />
@@ -630,44 +640,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <button onClick={() => navigate('/daily-tasks')} className="w-full text-center text-xs font-semibold text-purple-500 mt-2">Xem tất cả →</button>
             </div>
 
-            {/* 4.5. Bài đã làm */}
-            {completedAssignments.length > 0 && (
-              <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-500" />
-                    <h3 className="font-display text-sm font-bold text-gray-800">Bài đã làm</h3>
-                  </div>
-                  <button onClick={() => navigate('/assignment')} className="text-xs font-semibold text-blue-500">Vào bài →</button>
-                </div>
-                <div className="space-y-2">
-                  {completedAssignments.slice(0, 3).map((item, idx) => (
-                    <button key={item.assignment.id} onClick={() => navigate(`/assignment/${item.assignment.id}`)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 transition text-left">
-                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                        <FileText className="w-5 h-5 text-blue-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">{item.assignment.title}</p>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <span className="font-bold text-blue-600">{item.submission?.score ?? 0}%</span>
-                          <span>•</span>
-                          <span>{item.attemptCount}/{item.maxAttempts === 0 ? '∞' : item.maxAttempts} lần</span>
-                        </div>
-                      </div>
-                      <Repeat className="w-4 h-4 text-gray-400 shrink-0" />
-                    </button>
-                  ))}
-                </div>
-                {completedAssignments.length > 3 && (
-                  <button onClick={() => navigate('/assignment')} className="w-full text-center text-xs font-semibold text-blue-500 mt-2">
-                    Xem thêm {completedAssignments.length - 3} bài →
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* 5. Môn học - dạng chip ngang — GIỮ NGUYÊN */}
+            {/* 5. Môn học - dạng chip ngang */}
             {subjects.length > 0 && (
               <div className="bg-white rounded-3xl shadow-md border border-purple-50 p-4">
                 <div className="flex items-center gap-2 mb-3">
@@ -687,7 +660,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </div>
             )}
 
-            {/* 6. Danh sách trò chơi dạng thẻ sản phẩm 2 cột — GIỮ NGUYÊN */}
+            {/* 6. Danh sách trò chơi dạng thẻ sản phẩm 2 cột */}
             <div id="games-section" className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-base font-bold text-gray-800 flex items-center gap-1.5">
@@ -703,7 +676,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               ) : error ? (
                 <ErrorState title="Lỗi" subtitle={error} onRetry={loadGames} />
               ) : filteredGames.length === 0 ? (
-                <EmptyState icon={Search} title="Không tìm thấy" subtitle="Thử từ khóa khác nhé!" />
+                <EmptyState icon={<Search className="w-10 h-10 text-gray-400" />} title="Không tìm thấy" subtitle="Thử từ khóa khác nhé!" />
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {filteredGames.map((g, idx) => {
@@ -738,236 +711,184 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           </main>
 
           {/* ═══════════════════════════ DESKTOP CONTENT ═══════════════════════════ */}
-          <main className="hidden lg:block flex-1 w-full px-6 py-6 space-y-6">
+          <main className="hidden lg:block flex-1 w-full p-3 space-y-10">
             {/* Banner chào mừng */}
-            <section className="relative rounded-3xl overflow-hidden min-h-[360px] flex items-center">
-              <img src={`${import.meta.env.BASE_URL}banner.png`} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
-              <div className="relative z-10 flex items-center justify-between w-full p-10">
-                <div>
-                  <p className="text-xs font-bold text-black/70 uppercase tracking-wider mb-1">✨ Chúc mừng tốt nghiệp</p>
-                  <h1 className="font-display text-4xl text-black mb-1">
-                    Xin chào, {userAuth?.user?.name || 'bạn'}! 👋
-                  </h1>
-                  <p className="text-sm text-black/70 mb-4">Học mà chơi, chơi mà giỏi!</p>
-                  <div className="inline-flex items-center gap-2 bg-black/10 backdrop-blur-sm rounded-full px-4 py-2 mb-2">
-                    <Star className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm font-bold text-black">Cấp {lv.level}</span>
-                  </div>
-                  <p className="text-xs text-black/60">{(lv.earned ?? 0).toLocaleString()} / {(lv.needed ?? 0).toLocaleString()} xp</p>
-                </div>
-              </div>
-            </section>
-
-            {/* Truy cập nhanh */}
-            <section className="bg-white rounded-3xl shadow-sm border border-purple-50 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display text-base font-bold text-gray-800">Truy cập nhanh</h2>
-                <button className="text-xs font-semibold text-gray-400 hover:text-purple-600 transition">Xem tất cả →</button>
-              </div>
-              <div className="grid grid-cols-4 lg:grid-cols-8 gap-4">
-                {QUICK_MENU_ITEMS(userAuth).filter(i => i.show).slice(0, 8).map(item => {
-                  const Icon = item.icon;
-                  return (
-                    <button key={item.key} onClick={() => handleQuickMenuClick(item)} className="flex flex-col items-center gap-2 group">
-                      <span className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.tint} text-white flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all`}>
-                        <Icon className="w-6 h-6" />
-                      </span>
-                      <span className="text-[11px] font-semibold text-gray-600 text-center leading-tight">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* Nhiệm vụ + Thông tin người dùng */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Nhiệm vụ hôm nay */}
-              <div className="bg-white rounded-3xl shadow-sm border border-purple-50 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-display text-base font-bold text-gray-800 flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 text-white flex items-center justify-center shrink-0">
-                      <ClipboardList className="w-4 h-4" />
-                    </span>
-                    Nhiệm vụ hôm nay
-                  </h2>
-                  <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-1 rounded-full">8/30 hoàn thành</span>
-                </div>
-                <DailyTasksCard compact onClaimCoins={handleClaimCoins} />
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">Hoàn thành 7 phần thưởng còn lại...</p>
-                  <button onClick={() => navigate('/daily-tasks')} className="text-xs font-bold text-purple-600 hover:text-purple-800 bg-purple-50 px-3 py-1.5 rounded-full transition">Xem tất cả →</button>
-                </div>
-              </div>
-
-              {/* Thông tin người dùng */}
-              <div className="bg-white rounded-3xl shadow-sm border border-purple-50 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-display text-base font-bold text-gray-800 flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center shrink-0">
-                      <User className="w-4 h-4" />
-                    </span>
-                    Thông tin người dùng
-                  </h2>
-                </div>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 shadow-sm ring-2 ring-purple-100">
-                    {avatarItems.length > 0 ? (
-                      <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={64} />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-2xl"><User className="w-7 h-7" /></div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-display text-lg font-bold text-gray-800">{userAuth?.user?.name}</p>
-                    <div className="flex items-center gap-1 text-sm text-amber-600 font-semibold">
-                      <Star className="w-4 h-4" /> Cấp {lv.level}
-                    </div>
-                  </div>
-                </div>
-                <div className="h-2 rounded-full bg-amber-50 overflow-hidden mb-4">
-                  <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all" style={{ width: `${lv.percent || 0}%` }} />
-                </div>
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="text-center p-3 bg-amber-50 rounded-xl">
-                    <p className="text-lg font-bold text-amber-600">{userCoins.toLocaleString()}</p>
-                    <p className="text-[10px] text-gray-500">Xu tích lũy</p>
-                  </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-xl">
-                    <p className="text-lg font-bold text-purple-600">12</p>
-                    <p className="text-[10px] text-gray-500">Nhiệm vụ</p>
-                  </div>
-                  <div className="text-center p-3 bg-blue-50 rounded-xl">
-                    <p className="text-lg font-bold text-blue-600">5</p>
-                    <p className="text-[10px] text-gray-500">Bạn bè</p>
-                  </div>
-                </div>
-                <div className="p-3 bg-purple-50 rounded-xl">
-                  <p className="text-xs text-gray-600 italic">"Mỗi ngày học thêm một chút, bạn đã thành công rồi!" 😊</p>
-                </div>
-              </div>
-            </section>
-
-            {/* Bài đã làm */}
-            {completedAssignments.length > 0 && (
-              <section>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-display text-base font-bold text-gray-800 flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center shrink-0">
-                      <FileText className="w-4 h-4" />
-                    </span>
-                    Bài đã làm
-                  </h2>
-                  <button onClick={() => navigate('/assignment')} className="text-xs font-semibold text-gray-400 hover:text-blue-600 transition">Vào bài tập →</button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {completedAssignments.slice(0, 6).map((item) => (
-                    <button key={item.assignment.id} onClick={() => navigate(`/assignment/${item.assignment.id}`)}
-                      className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 text-left border border-blue-50">
-                      <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0">
-                          <FileText className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-display text-sm font-bold text-gray-800 line-clamp-1">{item.assignment.title}</h3>
-                          <div className="flex items-center gap-3 mt-2">
-                            <span className="text-lg font-bold text-blue-600">{item.submission?.score ?? 0}%</span>
-                            <span className="text-xs text-gray-500">
-                              {item.assignment.questionIds?.length || 0} câu • {item.assignment.isExam ? `${item.assignment.examDuration} phút` : 'Bài tập'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
-                            <Repeat className="w-3 h-3" />
-                            <span>{item.attemptCount}/{item.maxAttempts === 0 ? '∞' : item.maxAttempts} lần làm bài</span>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Môn học */}
-            {subjects.length > 0 && (
-              <section id="subjects-section">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-display text-base font-bold text-gray-800 flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 text-white flex items-center justify-center shrink-0">
-                      <BookOpen className="w-4 h-4" />
-                    </span>
-                    Môn học
-                  </h2>
-                  <button className="text-xs font-semibold text-gray-400 hover:text-purple-600 transition">Xem tất cả →</button>
-                </div>
-                <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                  <button onClick={() => setActiveSubject('all')} className={`px-5 py-2.5 rounded-full text-sm font-bold shrink-0 transition-all ${activeSubject === 'all' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300 hover:text-orange-600'}`}>
-                    Tất cả
+            <section className="relative overflow-hidden rounded-3xl min-h-[400px] flex items-end" style={{ marginTop: "9px" }}>
+              <img src={`${import.meta.env.BASE_URL}banner.png`} alt="EduPlay" className="absolute inset-0 w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              <div className="relative z-10 w-full p-8">
+                <p className="text-sm font-bold text-white/80 uppercase tracking-wider mb-1">✨ Chúc mừng tốt nghiệp</p>
+                <h1 className="font-display text-4xl md:text-5xl text-white leading-tight mb-2">
+                  Xin chào, {userAuth?.user?.name || 'bạn'}! 👋
+                </h1>
+                <p className="text-base text-white/80 mb-5 max-w-xl">Học mà chơi, chơi mà giỏi! Chọn một trò chơi bên dưới hoặc nhập mã vé từ thầy cô nhé.</p>
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <button onClick={() => setShowCodeModal(true)} className="bg-white text-purple-600 font-bold px-6 py-3 rounded-2xl text-sm hover:bg-gray-100 transition shadow-lg">
+                    <KeyRound className="w-4 h-4 inline mr-1" /> Nhập mã vé
                   </button>
-                  {subjects.map(sub => (
-                    <button key={sub} onClick={() => setActiveSubject(sub)} className={`px-5 py-2.5 rounded-full text-sm font-bold shrink-0 transition-all ${activeSubject === sub ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300 hover:text-orange-600'}`}>
-                      {sub}
-                    </button>
+                  <button onClick={() => scrollTo('games-section')} className="bg-white/20 backdrop-blur-sm text-white font-bold px-6 py-3 rounded-2xl text-sm hover:bg-white/30 transition border border-white/30">
+                    <Gamepad2 className="w-4 h-4 inline mr-1" /> Khám phá trò chơi
+                  </button>
+                </div>
+                {userAuth?.user && (
+                  <div className="inline-flex items-center gap-3 bg-white/15 backdrop-blur-sm rounded-2xl px-4 py-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <Star className="w-4 h-4 text-amber-300" />
+                      <span className="text-sm font-bold text-white">Cấp {lv.level}</span>
+                    </div>
+                    <div className="w-28 h-1.5 bg-white/30 rounded-full overflow-hidden">
+                      <div className="h-full bg-white rounded-full" style={{ width: `${lv.percent || 0}%` }}></div>
+                    </div>
+                    <span className="text-xs text-white/80">{getLevelEmoji(lv.level)} {(lv.earned ?? 0).toLocaleString()}/{(lv.needed ?? 0).toLocaleString()} xp</span>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Dashboard 2 cột */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <DashboardCard icon={Gamepad2} title="Chơi game" gradient="from-orange-500 to-amber-500" onSeeAll={() => scrollTo('games-section')}>
+                {games === null ? (
+                  <p className="text-sm text-gray-400 py-6 text-center">Đang tải...</p>
+                ) : hotGames.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-6 text-center">Chưa có trò chơi nào</p>
+                ) : (
+                  <div className="grid grid-cols-4 gap-3">
+                    {hotGames.concat(newGames).slice(0, 4).map(g => (
+                      <MiniGameTile key={g._id?.toString() || g.id} game={g} onSelect={onSelectGame} />
+                    ))}
+                  </div>
+                )}
+              </DashboardCard>
+
+              <DashboardCard icon={BookOpen} title="Học tập" gradient="from-cyan-500 to-blue-500" onSeeAll={() => scrollTo('subjects-section')}>
+                {subjects.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-6 text-center">Chưa có môn học nào</p>
+                ) : (
+                  <div className="grid grid-cols-4 gap-3">
+                    {subjects.slice(0, 4).map(subject => (
+                      <MiniSubjectTile
+                        key={subject}
+                        label={subject}
+                        classes={colorForSubject(subject)}
+                        onClick={() => { setActiveSubject(subject); scrollTo('games-section'); }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </DashboardCard>
+            </section>
+
+            {/* Dashboard 3 cột */}
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+              <DashboardCard icon={ClipboardList} title="Nhiệm vụ hàng ngày" gradient="from-violet-500 to-purple-500">
+                <DailyTasksCard onClaimCoins={handleClaimCoins} />
+                <button
+                  onClick={() => navigate("/daily-tasks")}
+                  className="w-full text-center text-[11px] font-semibold text-purple-500 hover:text-purple-700 transition mt-3"
+                >
+                  Xem tất cả →
+                </button>
+              </DashboardCard>
+
+              {/* <DashboardCard icon={Gift} title="Sự kiện nổi bật" gradient="from-yellow-500 to-rose-500">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-white p-4 h-full flex flex-col justify-between min-h-[10rem]">
+                  <span className="absolute -bottom-3 -right-3 text-6xl opacity-30" aria-hidden="true"><Sun className="w-16 h-16" /></span>
+                  <div className="relative">
+                    <p className="font-display text-lg leading-tight mb-1">Sự kiện hè<br />sôi động</p>
+                    <p className="text-xs text-white/80">Chơi game — nhận quà cực ngầu!</p>
+                  </div>
+                  <button onClick={() => scrollTo('games-section')} className="relative self-start bg-amber-400 hover:bg-amber-300 text-amber-900 text-xs font-bold px-4 py-2 rounded-full transition">
+                    Tham gia ngay
+                  </button>
+                </div>
+              </DashboardCard> */}
+
+              <DashboardCard icon={Trophy} title="Bảng xếp hạng" gradient="from-amber-500 to-yellow-500" id="leaderboard-section">
+                <div className="flex flex-col gap-1">
+                  {MOCK_LEADERBOARD.map(row => (
+                    <div key={row.rank} className="flex items-center gap-3 py-1.5">
+                      <Medal className={`w-5 h-5 ${row.medal === 'gold' ? 'text-amber-400' : row.medal === 'silver' ? 'text-gray-300' : 'text-orange-400'}`} />
+                      <span className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white flex items-center justify-center text-xs shrink-0"><User className="w-4 h-4" /></span>
+                      <span className="flex-1 text-sm font-semibold text-gray-700 truncate">{row.name}</span>
+                      <span className="text-sm font-bold text-amber-600">{row.score.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </DashboardCard>
+            </section>
+
+            {/* Lưới môn học */}
+            {subjects.length > 1 && (
+              <section id="subjects-section">
+                <SectionHeader icon={BookOpen} title="Môn học" gradient="from-cyan-500 to-blue-500" />
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                  <SubjectTile
+                    label="Tất cả"
+                    icon={Sparkles}
+                    active={activeSubject === "all"}
+                    onClick={() => setActiveSubject("all")}
+                    classes={{ solid: "bg-gray-400", soft: "bg-gray-50", chip: "text-gray-700 border-gray-200", hover: "hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700" }}
+                  />
+                  {subjects.map(subject => (
+                    <SubjectTile
+                      key={subject}
+                      label={subject}
+                      icon={BookOpen}
+                      active={activeSubject === subject}
+                      onClick={() => setActiveSubject(subject)}
+                      classes={colorForSubject(subject)}
+                    />
                   ))}
                 </div>
               </section>
             )}
 
-            {/* Game nổi bật */}
+            {/* Games section */}
             <section id="games-section">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display text-base font-bold text-gray-800 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center shrink-0">
-                    <Gamepad2 className="w-4 h-4" />
-                  </span>
-                  Game nổi bật
-                </h2>
-                <button className="text-xs font-semibold text-gray-400 hover:text-purple-600 transition">Xem tất cả →</button>
-              </div>
               {games === null ? (
-                <Loader label="Đang tải..." />
+                <Loader label="Đang tải danh sách trò chơi..." />
               ) : error ? (
-                <ErrorState title="Lỗi" subtitle={error} onRetry={loadGames} />
-              ) : visibleGames.length === 0 ? (
-                <EmptyState icon={Search} title="Không tìm thấy" subtitle="Thử từ khóa khác nhé!" />
+                <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
+              ) : games.length === 0 ? (
+                <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Giáo viên chưa xuất bản trò chơi nào. Hãy thử nhập mã vé hoặc quay lại sau nhé!" />
+              ) : isFiltering ? (
+                <div>
+                  <SectionHeader icon={Search} title={`Môn ${activeSubject}`} gradient="from-purple-500 to-indigo-500" />
+                  {visibleGames.length === 0 ? (
+                    <EmptyState icon={<Search className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi cho môn này" subtitle="Thử chọn môn khác hoặc bấm 'Tất cả' để xem hết trò chơi nhé!" />
+                  ) : (
+                    <GameGrid games={visibleGames} templates={templates} onSelect={onSelectGame} />
+                  )}
+                </div>
               ) : (
-                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                  {visibleGames.slice(0, 6).map((g) => {
-                    const color = colorForSubject(g.subject);
-                    const template = templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid));
-                    return (
-                      <button key={g._id || g.id} onClick={() => onSelectGame(g)} className="flex-shrink-0 w-64 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all border border-purple-50 overflow-hidden text-left group">
-                        <div className={`w-full h-36 bg-gradient-to-br ${color.grad} flex items-center justify-center relative`}>
-                          <StampToken icon={template?.icon || <Gamepad2 className="w-6 h-6" />} ring="#fff" size={48} fontSize={22} />
-                          {g.playersCount > 0 && (
-                            <span className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                              <Users className="w-3 h-3" /> {g.playersCount}
-                            </span>
-                          )}
-                        </div>
-                        <div className="p-3">
-                          <h3 className="font-display text-sm font-bold text-gray-800 line-clamp-1 group-hover:text-purple-700 transition">{g.name}</h3>
-                          <div className="flex items-center gap-2 mt-1.5 text-[10px]">
-                            <span className={`px-2 py-0.5 rounded-full ${color.chip}`}>{g.subject}</span>
-                            <span className="text-gray-400 flex items-center gap-0.5"><ListChecks className="w-3 h-3" /> {g.questionsCount}</span>
-                          </div>
-                          <span className="mt-2.5 inline-flex items-center gap-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-full group-hover:from-purple-600 group-hover:to-pink-600 transition-all">
-                            Chơi ngay <ChevronRight className="w-3 h-3" />
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
+                <div className="space-y-10">
+                  {hotGames.length > 0 && (
+                    <div>
+                      <SectionHeader icon={Flame} title="Trò chơi đang HOT" gradient="from-red-500 to-orange-500" pulse />
+                      <GameGrid
+                        games={hotGames}
+                        templates={templates}
+                        onSelect={onSelectGame}
+                        badges={["TOP 1", "TOP 2", "TOP 3"]}
+                        badgeColors={["from-yellow-400 to-amber-500", "from-gray-300 to-gray-400", "from-orange-400 to-orange-500"]}
+                      />
+                    </div>
+                  )}
+
+                  {newGames.length > 0 && (
+                    <div>
+                      <SectionHeader icon={Sparkles} title="Trò chơi mới" gradient="from-emerald-500 to-teal-500" />
+                      <GameGrid games={newGames} templates={templates} onSelect={onSelectGame} isNew />
+                    </div>
+                  )}
+
+                  <div>
+                    <SectionHeader icon={Gamepad2} title="Tất cả trò chơi" gradient="from-purple-500 to-indigo-500" />
+                    <GameGrid games={games} templates={templates} onSelect={onSelectGame} />
+                  </div>
                 </div>
               )}
-            </section>
-
-            {/* Bottom CTA Banner */}
-            <section className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 p-8 text-center text-white">
-              <h2 className="font-display text-2xl font-bold mb-2">Cùng nhau chinh phục<br />những thử thách mới!</h2>
-              <p className="text-sm text-white/80 mb-4">Game mới đóng cửa bạn nhận thử</p>
-              <button onClick={() => scrollTo('games-section')} className="bg-white text-purple-600 font-bold px-6 py-2.5 rounded-full text-sm hover:bg-gray-100 transition shadow-lg">
-                Khám phá ngay →
-              </button>
             </section>
           </main>
         </div>
@@ -1147,15 +1068,19 @@ function NotificationDropdown({
       if (ref.current && !ref.current.contains(e.target)) onClose();
     };
     document.addEventListener('pointerdown', handleClickOutside);
-    return () => {
-      document.removeEventListener('pointerdown', handleClickOutside);
-    };
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [onClose]);
 
   return (
-    <div ref={ref} onPointerDown={(e) => e.stopPropagation()} className="fixed right-2 top-14 w-96 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden z-50 lg:absolute lg:top-auto lg:right-0 lg:mt-2 lg:z-50">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-purple-50 bg-purple-50/60">
-          <h3 className="font-bold text-gray-800 text-sm">Thông báo</h3>
+    <>
+      <div className="fixed inset-0 z-40 lg:hidden" onClick={onClose} />
+      <div
+        ref={ref}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="fixed right-2 top-14 w-[400px] max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden z-50 lg:absolute lg:top-auto lg:right-0 lg:mt-2 lg:z-50"
+      >
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-purple-50 bg-purple-50/60">
+          <h3 className="font-bold text-gray-800">Thông báo</h3>
           {unreadCount > 0 && (
             <button onClick={onMarkAllAsRead} className="text-xs text-purple-600 hover:text-purple-800 font-medium">
               Đánh dấu đã đọc
@@ -1163,9 +1088,9 @@ function NotificationDropdown({
           )}
         </div>
 
-        {/* ── Bật thông báo & Test Push trên điện thoại/web ── */}
-        <div className="p-3 bg-gradient-to-r from-purple-50/80 to-pink-50/80 border-b border-purple-100 text-xs">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
+        {/* Push notification settings */}
+        <div className="p-3.5 bg-gradient-to-r from-purple-50/80 to-pink-50/80 border-b border-purple-100 text-xs">
+          <div className="flex items-center justify-between gap-2 mb-2">
             <span className="font-semibold text-gray-700 flex items-center gap-1">
               📱 Thông báo đẩy (Push)
             </span>
@@ -1209,25 +1134,36 @@ function NotificationDropdown({
           )}
         </div>
 
-        <div className="max-h-80 overflow-y-auto">
+        {/* Notification list */}
+        <div className="max-h-96 overflow-y-auto">
           {notifications.length === 0 ? (
-            <div className="p-4 text-center text-sm text-gray-500">Không có thông báo nào</div>
+            <div className="p-6 text-center text-sm text-gray-400">
+              <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+              Không có thông báo nào
+            </div>
           ) : (
             notifications.map(notif => (
-              <div key={notif.id} onClick={() => { if (!notif.read) onMarkAsRead(notif.id); }} className={`p-3 border-b border-purple-50 hover:bg-purple-50/50 cursor-pointer transition ${!notif.read ? 'bg-purple-50/20' : ''}`}>
+              <div
+                key={notif.id}
+                onClick={() => { if (!notif.read) onMarkAsRead(notif.id); }}
+                className={`px-5 py-3.5 border-b border-purple-50/60 hover:bg-purple-50/40 cursor-pointer transition ${!notif.read ? 'bg-purple-50/20' : ''}`}
+              >
                 <div className="flex gap-3">
-                  <div className="mt-0.5">
-                    {notif.type === 'chat_message' ? <MessageCircle className="w-5 h-5 text-blue-500" /> : <Gamepad2 className="w-5 h-5 text-purple-500" />}
+                  <div className="mt-0.5 shrink-0">
+                    {notif.type === 'chat_message'
+                      ? <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center"><MessageCircle className="w-4 h-4 text-blue-500" /></div>
+                      : <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center"><Gamepad2 className="w-4 h-4 text-purple-500" /></div>
+                    }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800">
+                    <p className="text-sm text-gray-800 leading-snug">
                       <span className="font-semibold">{notif.fromName}</span>
                       {notif.type === 'chat_message' ? ' đã gửi một tin nhắn' : ` mời bạn chơi ${notif.gameName || 'trò chơi'}`}
                     </p>
                     {notif.gameCode && (
-                      <p className="text-xs text-purple-600 mt-0.5 font-mono font-semibold">Mã phòng: {notif.gameCode}</p>
+                      <p className="text-xs text-purple-600 mt-1 font-mono font-semibold">Mã phòng: {notif.gameCode}</p>
                     )}
-                    {notif.content && <p className="text-xs text-gray-600 mt-0.5 line-clamp-1">{notif.content}</p>}
+                    {notif.content && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.content}</p>}
                     <p className="text-[10px] text-gray-400 mt-1">{new Date(notif.createdAt).toLocaleString('vi-VN')}</p>
                     {notif.type === 'game_invite' && notif.gameId && (
                       <button onClick={async (e) => {
@@ -1250,12 +1186,13 @@ function NotificationDropdown({
                       </button>
                     )}
                   </div>
-                  {!notif.read && <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5 ml-auto shrink-0"></div>}
+                  {!notif.read && <div className="w-2.5 h-2.5 bg-purple-500 rounded-full mt-1.5 ml-auto shrink-0" />}
                 </div>
               </div>
             ))
           )}
         </div>
       </div>
+    </>
   );
 }
