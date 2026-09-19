@@ -79,21 +79,49 @@ export async function startSubmission({ assignmentId, studentId }) {
     throw new Error("Đã hết hạn nộp bài");
   }
 
-  // Count existing SUBMITTED submissions for this student+assignment
-  const submittedCount = await getCollection("submissions").countDocuments({
-    assignmentId, studentId, status: "SUBMITTED",
-  });
-
-  const maxAttempts = assignment.maxAttempts ?? 1;
-
-  // Check if there's an IN_PROGRESS submission
+  // Check if there's an IN_PROGRESS submission — return it
   const inProgress = await getCollection("submissions").findOne({
     assignmentId, studentId, status: "IN_PROGRESS",
   });
   if (inProgress) return inProgress;
 
-  // If maxAttempts is 0 (unlimited) or haven't reached limit, create new submission
+  const maxAttempts = assignment.maxAttempts ?? 1;
+
+  // Count existing SUBMITTED submissions for this student+assignment
+  const submittedCount = await getCollection("submissions").countDocuments({
+    assignmentId, studentId, status: "SUBMITTED",
+  });
+
+  // If maxAttempts is 0 (unlimited) or haven't reached limit, allow redo
   if (maxAttempts === 0 || submittedCount < maxAttempts) {
+    // Find the most recent SUBMITTED submission to reset for redo
+    const existing = await getCollection("submissions").findOne({
+      assignmentId, studentId, status: "SUBMITTED",
+    }, { sort: { submittedAt: -1 } });
+
+    if (existing) {
+      // Reset existing submission to IN_PROGRESS for redo
+      const now = new Date().toISOString();
+      await getCollection("submissions").updateOne(
+        { id: existing.id },
+        { $set: {
+          startedAt: now,
+          submittedAt: null,
+          status: "IN_PROGRESS",
+          score: null,
+          correctCount: 0,
+          wrongCount: 0,
+          totalQuestions: 0,
+          answers: [],
+          attemptNumber: submittedCount + 1,
+          updatedAt: now,
+        } },
+      );
+      const updated = await getCollection("submissions").findOne({ id: existing.id });
+      return updated;
+    }
+
+    // First attempt — create new submission
     const now = new Date().toISOString();
     const doc = {
       _id: uid("sub"),
@@ -108,7 +136,7 @@ export async function startSubmission({ assignmentId, studentId }) {
       wrongCount: 0,
       totalQuestions: 0,
       answers: [],
-      attemptNumber: submittedCount + 1,
+      attemptNumber: 1,
       createdAt: now,
       updatedAt: now,
     };
@@ -116,7 +144,12 @@ export async function startSubmission({ assignmentId, studentId }) {
     return doc;
   }
 
-  // No attempts left
+  // No attempts left — return the last SUBMITTED submission (read-only) so student can view result
+  const lastSubmitted = await getCollection("submissions").findOne({
+    assignmentId, studentId, status: "SUBMITTED",
+  }, { sort: { submittedAt: -1 } });
+  if (lastSubmitted) return lastSubmitted;
+
   throw new Error("Bạn đã hết số lần làm bài cho phép");
 }
 
@@ -221,21 +254,40 @@ export async function getAssignmentResult(assignmentId, studentId) {
     questions = await getCollection("questions").find({ gameId: assignment.gameId }).toArray();
   }
 
-  // Build detail: each question + user's answer + correct answer
+  // Helper: resolve an option key/id to its display text
+  function resolveOptionText(q, optionKey) {
+    if (!optionKey && optionKey !== 0) return null;
+    const options = q.options || q.answers || [];
+    for (const opt of options) {
+      const key = opt.id || opt.key || opt;
+      const text = opt.content || opt.text || opt.label || opt.value || String(key);
+      if (key === optionKey || String(key).toLowerCase() === String(optionKey).toLowerCase()) {
+        return text;
+      }
+    }
+    // Fallback: return the raw key if no matching option found
+    return String(optionKey);
+  }
+
+  // Build detail: each question + user's answer text + correct answer text
   const detail = questions.map((q) => {
     const userAns = (sub.answers || []).find(a => a.questionId === q.id);
     const questionType = q.questionType || q.type || "multiple_choice";
-    const correctAns = q.correctAnswer || q.answer;
-    
+    const correctAnsKey = q.correctAnswer || q.answer;
+
+    const userAnswerKey = userAns ? userAns.value : null;
+    const userAnswerText = resolveOptionText(q, userAnswerKey);
+    const correctAnswerText = resolveOptionText(q, correctAnsKey);
+
     return {
       questionId: q.id,
-      question: q.question,
-      correctAnswer: correctAns,
-      userAnswer: userAns ? userAns.value : null,
+      question: q.content || q.question,
+      correctAnswer: correctAnswerText,
+      userAnswer: userAnswerText,
       isCorrect: userAns
         ? (questionType === "fill-in" || questionType === "text"
-          ? String(userAns.value || "").trim().toLowerCase() === String(correctAns || "").trim().toLowerCase()
-          : userAns.value === correctAns)
+          ? String(userAns.value || "").trim().toLowerCase() === String(correctAnsKey || "").trim().toLowerCase()
+          : userAns.value === correctAnsKey)
         : false,
     };
   });

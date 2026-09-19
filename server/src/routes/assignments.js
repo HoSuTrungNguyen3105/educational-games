@@ -113,7 +113,9 @@ r.get("/resolve/:codeOrId", async (req, res) => {
       description: assignment.description,
       isExam: assignment.isExam,
       examDuration: assignment.examDuration,
+      questionIds: assignment.questionIds || [],
       questionCount: assignment.questionIds?.length || 0,
+      maxAttempts: assignment.maxAttempts ?? 1,
       status: assignment.status,
     });
   } catch (e) { sendError(res, e.message, 500); }

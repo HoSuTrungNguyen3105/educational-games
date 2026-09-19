@@ -291,22 +291,12 @@ export default function AssignmentTake({ code: codeOrId }) {
         if (existing) { setResult(existing); setSubmitted(true); setLoading(false); return; }
       }
 
-      if (assignment.questionIds?.length) {
+      const qIds = assignment.questionIds || [];
+      if (qIds.length) {
         try {
           const allQ = await questionService.listAll();
           if (Array.isArray(allQ)) {
-            setQuestions(allQ.filter(q => q && q.id && assignment.questionIds.includes(q.id)));
-          }
-        } catch { /* ignore */ }
-      } else if (assignment.id) {
-        // Fetch full assignment to get questionIds (resolve endpoint only returns questionCount)
-        try {
-          const full = await assignmentService.get(assignmentId).catch(() => null);
-          if (full?.questionIds?.length) {
-            const allQ = await questionService.listAll();
-            if (Array.isArray(allQ)) {
-              setQuestions(allQ.filter(q => q && q.id && full.questionIds.includes(q.id)));
-            }
+            setQuestions(allQ.filter(q => q && q.id && qIds.includes(q.id)));
           }
         } catch { /* ignore */ }
       }

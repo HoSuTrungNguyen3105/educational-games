@@ -45,7 +45,7 @@ const MENU = [
   { id: "admin-body-custom", label: "Body Custom", icon: Move, route: "/admin/body-custom", permission: null },
   { id: "admin-plant-types", label: "Loại cây (Garden)", icon: Move, route: "/admin/plant-types", permission: null },
   { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/admin/images", permission: null },
-  // { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/admin/upload-items", permission: null },
+  { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/admin/upload-items", permission: null },
 ];
 
 const BOTTOM_MENU = [

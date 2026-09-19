@@ -1,19 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { ManagementHeader } from '../../components/ui.jsx';
-import { Upload, Play, Save, Plus, Loader2 } from 'lucide-react';
-
-const CATEGORIES = [
-  { id: "body", label: "Thân" }, { id: "skin", label: "Da" }, { id: "face", label: "Mặt" },
-  { id: "hair", label: "Tóc" }, { id: "shirt", label: "Áo" }, { id: "pants", label: "Quần" },
-  { id: "shoes", label: "Giày" }, { id: "hat", label: "Mũ" }, { id: "glasses", label: "Kính" },
-  { id: "accessory", label: "Phụ kiện" },
-];
-
-const ZINDEX_MAP = {
-  body: 10, skin: 15, face: 20, hair: 30, shirt: 40,
-  pants: 50, shoes: 60, hat: 70, glasses: 80, accessory: 90,
-};
+import { Upload, Play, Save, Plus, Loader2, Download } from 'lucide-react';
 
 function getAuthToken() {
   try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; }
@@ -177,7 +165,7 @@ export default function UploadItems({ showToast }) {
       });
       const items = boxes.map((b, i) => ({
         canvas, box: b, name: `Item ${String(i + 1).padStart(2, '0')}`,
-        category: 'hair', price: 0, isDefault: false, assignTo: '', mode: 'create',
+        price: 0, isDefault: false, assignTo: '', mode: 'create',
       }));
       setDetectedItems(items);
       setShowResults(true);
@@ -194,14 +182,50 @@ export default function UploadItems({ showToast }) {
   const addItem = () => {
     setDetectedItems(prev => [...prev, {
       canvas: null, box: null, name: `Item ${String(prev.length + 1).padStart(2, '0')}`,
-      category: 'hair', price: 0, isDefault: false, assignTo: '', mode: 'create',
+      price: 0, isDefault: false, assignTo: '', mode: 'create',
     }]);
     setShowResults(true);
   };
 
+  // === DOWNLOAD ALL ===
+  const downloadAll = async () => {
+    const itemsWithCrop = detectedItems.filter(it => it.canvas && it.box);
+    if (!itemsWithCrop.length) { showToast('Không có ảnh để tải', 'error'); return; }
+
+    setStatus('Đang tạo ảnh để tải...');
+    for (let i = 0; i < itemsWithCrop.length; i++) {
+      const item = itemsWithCrop[i];
+      const b = item.box, p = pad;
+      const w = item.canvas.width, h = item.canvas.height;
+      const x0 = Math.max(0, b.minX - p), y0 = Math.max(0, b.minY - p);
+      const x1 = Math.min(w - 1, b.maxX + p), y1 = Math.min(h - 1, b.maxY + p);
+
+      const cropCanvas = document.createElement('canvas');
+      cropCanvas.width = x1 - x0 + 1;
+      cropCanvas.height = y1 - y0 + 1;
+      cropCanvas.getContext('2d').drawImage(
+        item.canvas, x0, y0, cropCanvas.width, cropCanvas.height,
+        0, 0, cropCanvas.width, cropCanvas.height
+      );
+
+      const blob = await new Promise(r => cropCanvas.toBlob(r, 'image/png'));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(item.name || `item_${i + 1}`).replace(/\s+/g, '_')}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      // nghỉ 1 nhịp để browser kịp xử lý nhiều download
+      await new Promise(r => setTimeout(r, 120));
+    }
+    setStatus(`Đã tải ${itemsWithCrop.length} ảnh`);
+  };
+
   const saveAll = async () => {
     if (!detectedItems.length) return;
-    const token = (() => { try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; } })();
+    const token = getAuthToken();
     if (!token) { showToast('Chưa đăng nhập', 'error'); return; }
 
     setSaving(true);
@@ -227,7 +251,7 @@ export default function UploadItems({ showToast }) {
         if (item.mode === 'update' && item.assignTo) {
           const res = await fetch(`${API_BASE}/avatar/admin/items/${item.assignTo}`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ name: item.name, category: item.category, price: item.price, default: item.isDefault, zIndex: ZINDEX_MAP[item.category] || 50, ...(imageUrl ? { image: imageUrl } : {}) }),
+            body: JSON.stringify({ name: item.name, price: item.price, default: item.isDefault, ...(imageUrl ? { image: imageUrl } : {}) }),
           });
           const json = await res.json();
           if (!json.status) throw new Error(json.msg || 'Update failed');
@@ -235,7 +259,7 @@ export default function UploadItems({ showToast }) {
         } else {
           const res = await fetch(`${API_BASE}/avatar/admin/items`, {
             method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ name: item.name, category: item.category, price: item.price, default: item.isDefault, zIndex: ZINDEX_MAP[item.category] || 50, image: imageUrl }),
+            body: JSON.stringify({ name: item.name, price: item.price, default: item.isDefault, image: imageUrl }),
           });
           const json = await res.json();
           if (!json.status) throw new Error(json.msg || 'Create failed');
@@ -289,10 +313,14 @@ export default function UploadItems({ showToast }) {
         </div>
 
         {/* Buttons */}
-        <div className="flex items-center gap-2 mt-4">
+        <div className="flex flex-wrap items-center gap-2 mt-4">
           <button onClick={runDetection} disabled={!imgRef.current}
             className="px-4 py-2 rounded-lg bg-gold text-white text-sm font-semibold hover:bg-gold/80 transition disabled:opacity-40 flex items-center gap-1.5">
             <Play className="w-4 h-4" /> Nhận diện
+          </button>
+          <button onClick={downloadAll} disabled={!detectedItems.length}
+            className="px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition disabled:opacity-40 flex items-center gap-1.5">
+            <Download className="w-4 h-4" /> Download all ({detectedItems.filter(i => i.canvas && i.box).length})
           </button>
           <button onClick={saveAll} disabled={!detectedItems.length || saving}
             className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-40 flex items-center gap-1.5">
@@ -303,7 +331,7 @@ export default function UploadItems({ showToast }) {
         </div>
       </div>
 
-      {/* Preview canvas — always in DOM, hidden until image loaded */}
+      {/* Preview canvas */}
       <div className={`bg-white rounded-xl border border-ink/8 p-4 mb-4 overflow-auto ${showPreview ? '' : 'hidden'}`}>
         <div className="relative inline-block max-w-full">
           <canvas ref={srcCanvasRef} className="block max-w-full" />
@@ -337,10 +365,6 @@ export default function UploadItems({ showToast }) {
                   <div className="flex gap-2">
                     <input value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)}
                       className="flex-1 px-2 py-1.5 rounded-lg border border-ink/10 text-xs bg-white text-ink focus:outline-none focus:ring-1 focus:ring-gold/30" placeholder="Tên item..." />
-                    <select value={item.category} onChange={e => updateItem(idx, 'category', e.target.value)}
-                      className="px-2 py-1.5 rounded-lg border border-ink/10 text-xs bg-white text-ink focus:outline-none">
-                      {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                    </select>
                   </div>
                   <div className="flex gap-2 items-center">
                     <span className="text-[10px] text-ink/40">💰</span>
@@ -360,7 +384,7 @@ export default function UploadItems({ showToast }) {
                     }} className="flex-1 px-2 py-1 rounded-lg border border-ink/10 text-xs bg-white text-ink focus:outline-none">
                       <option value="">— Tạo mới —</option>
                       {existingItems.map(ei => (
-                        <option key={ei.code} value={ei.code}>{ei.name} ({ei.code}) [{ei.category}]</option>
+                        <option key={ei.code} value={ei.code}>{ei.name} ({ei.code})</option>
                       ))}
                     </select>
                     <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${item.mode === 'update' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
