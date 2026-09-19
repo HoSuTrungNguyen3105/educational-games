@@ -49,7 +49,7 @@ const ROUTES = [
   { name: "spin-wheel",   pattern: "/spin-wheel" },
   { name: "garden",       pattern: "/garden" },
   { name: "assignment-join", pattern: "/assignment" },
-  { name: "assignment-take", pattern: "/assignment/:assignmentId" },
+  { name: "assignment-take", pattern: "/assignment/:code" },
   { name: "dreamdale", pattern: "/dreamdale" },
 
   // ── Home (fallback) ──

@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { assignmentService, gameService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Plus, Clock, Users, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { Plus, Clock, Users, CheckCircle, XCircle, Eye, Link2 } from 'lucide-react';
 
 export default function AssignmentList() {
   const [assignments, setAssignments] = useState([]);
   const [games, setGames] = useState({});
   const [classes, setClasses] = useState({});
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState(null);
 
   useEffect(() => { load(); }, []);
 
@@ -32,6 +33,13 @@ export default function AssignmentList() {
     if (!confirm('Đóng bài giao này?')) return;
     await assignmentService.close(id);
     load();
+  }
+
+  function copyLink(assignment) {
+    const url = `${window.location.origin}/#/assignment/${assignment.code || assignment.id}`;
+    navigator.clipboard.writeText(url).catch(() => {});
+    setCopiedId(assignment.id);
+    setTimeout(() => setCopiedId(null), 1800);
   }
 
   return (
@@ -73,6 +81,11 @@ export default function AssignmentList() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <button onClick={() => copyLink(a)}
+                  className={`p-2 rounded-lg hover:bg-ink/5 transition ${copiedId === a.id ? 'text-green-500' : 'text-ink/40 hover:text-gold'}`}
+                  title="Copy link bài tập">
+                  {copiedId === a.id ? <CheckCircle className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                </button>
                 <button onClick={() => navigate(`/admin/assignments/${a.id}`)}
                   className="p-2 rounded-lg hover:bg-ink/5 transition text-ink/40 hover:text-gold">
                   <Eye className="w-4 h-4" />

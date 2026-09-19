@@ -14,6 +14,14 @@ function auth(req, res, next) {
   try { req.user = verifyToken(h.slice(7)); next(); } catch { sendError(res, "Invalid token", 401); }
 }
 
+function optionalAuth(req, res, next) {
+  const h = req.headers.authorization;
+  if (h && h.startsWith("Bearer ")) {
+    try { req.user = verifyToken(h.slice(7)); } catch { /* ignore invalid token */ }
+  }
+  next();
+}
+
 function requireTeacher(req, res, next) {
   if (!["teacher", "admin"].includes(req.user.role)) return sendError(res, "Teacher only", 403);
   next();
@@ -47,7 +55,7 @@ r.post("/", auth, requireTeacher, async (req, res) => {
           type: "ASSIGNMENT",
           title: "📝 Bài tập mới",
           message: `Bạn có bài tập mới: ${title} từ ${fromUser?.name || "giáo viên"}${game ? ` - ${game.name}` : ""}`,
-          link: `/assignment/${assignment.id}`,
+          link: `/assignment/${assignment.code}`,
         });
       }
     } catch (notifyErr) {
@@ -84,12 +92,58 @@ r.get("/my-completed", auth, async (req, res) => {
   } catch (e) { sendError(res, e.message, 500); }
 });
 
-// Get assignment by id
+// Resolve assignment by code or ID (public — no auth required)
+// Used when student opens a direct assignment URL like /assignment/ABC123
+r.get("/resolve/:codeOrId", async (req, res) => {
+  try {
+    const { codeOrId } = req.params;
+    let assignment = await assignmentService.getAssignmentByCode(codeOrId);
+    if (!assignment) {
+      assignment = await assignmentService.getAssignmentById(codeOrId);
+    }
+    if (!assignment) return sendError(res, "Không tìm thấy bài tập", 404);
+    if (assignment.status !== "ACTIVE") return sendError(res, "Bài giao đã đóng", 400);
+    if (assignment.deadline && new Date(assignment.deadline) < new Date()) {
+      return sendError(res, "Đã hết hạn nộp bài", 400);
+    }
+    sendSuccess(res, {
+      id: assignment.id,
+      code: assignment.code,
+      title: assignment.title,
+      description: assignment.description,
+      isExam: assignment.isExam,
+      examDuration: assignment.examDuration,
+      questionCount: assignment.questionIds?.length || 0,
+      status: assignment.status,
+    });
+  } catch (e) { sendError(res, e.message, 500); }
+});
+
+// Get assignment by id (auth required for full details, but also used by guest flow)
 r.get("/:id", auth, async (req, res) => {
   try {
     const assignment = await assignmentService.getAssignmentById(req.params.id);
     if (!assignment) return sendError(res, "Không tìm thấy bài giao", 404);
     sendSuccess(res, assignment);
+  } catch (e) { sendError(res, e.message, 500); }
+});
+
+// Get assignment by id — guest/public variant (minimal info for guest flow)
+r.get("/:id/public", async (req, res) => {
+  try {
+    const assignment = await assignmentService.getAssignmentById(req.params.id);
+    if (!assignment) return sendError(res, "Không tìm thấy bài giao", 404);
+    if (assignment.status !== "ACTIVE") return sendError(res, "Bài giao đã đóng", 400);
+    sendSuccess(res, {
+      id: assignment.id,
+      code: assignment.code,
+      title: assignment.title,
+      description: assignment.description,
+      isExam: assignment.isExam,
+      examDuration: assignment.examDuration,
+      questionCount: assignment.questionIds?.length || 0,
+      status: assignment.status,
+    });
   } catch (e) { sendError(res, e.message, 500); }
 });
 
@@ -105,12 +159,16 @@ r.post("/join", auth, async (req, res) => {
   } catch (e) { sendError(res, e.message, 500); }
 });
 
-// Start submission (student) — also returns remainingTime for exams
-r.post("/:id/start", auth, async (req, res) => {
+// Start submission (student/guest) — also returns remainingTime for exams
+r.post("/:id/start", optionalAuth, async (req, res) => {
   try {
+    const { guestName } = req.body || {};
+    const studentId = req.user?.sub || (guestName ? `guest_${guestName}_${req.params.id}` : null);
+    if (!studentId) return sendError(res, "Cần đăng nhập hoặc nhập tên để bắt đầu", 400);
+
     const submission = await assignmentService.startSubmission({
       assignmentId: req.params.id,
-      studentId: req.user.sub,
+      studentId,
     });
     const assignment = await assignmentService.getAssignmentById(req.params.id);
     let remainingTime = null;
@@ -122,24 +180,31 @@ r.post("/:id/start", auth, async (req, res) => {
   } catch (e) { sendError(res, e.message, 400); }
 });
 
-// Submit answers (student)
-r.post("/:id/submit", auth, async (req, res) => {
+// Submit answers (student/guest)
+r.post("/:id/submit", optionalAuth, async (req, res) => {
   try {
-    const { submissionId, answers } = req.body;
+    const { submissionId, answers, guestName } = req.body;
     if (!submissionId) return sendError(res, "submissionId là bắt buộc", 400);
+    const studentId = req.user?.sub || (guestName ? `guest_${guestName}_${req.params.id}` : null);
+    if (!studentId) return sendError(res, "Cần đăng nhập hoặc nhập tên", 400);
+
     const result = await assignmentService.submitAnswers({
       submissionId,
-      studentId: req.user.sub,
+      studentId,
       answers: answers || [],
     });
     sendSuccess(res, result);
   } catch (e) { sendError(res, e.message, 400); }
 });
 
-// Get student result
-r.get("/:id/result", auth, async (req, res) => {
+// Get student result (student/guest)
+r.get("/:id/result", optionalAuth, async (req, res) => {
   try {
-    const result = await assignmentService.getAssignmentResult(req.params.id, req.user.sub);
+    const { guestName } = req.query;
+    const studentId = req.user?.sub || (guestName ? `guest_${guestName}_${req.params.id}` : null);
+    if (!studentId) return sendError(res, "Cần đăng nhập hoặc nhập tên", 400);
+
+    const result = await assignmentService.getAssignmentResult(req.params.id, studentId);
     if (!result) return sendError(res, "Chưa có kết quả", 404);
     sendSuccess(res, result);
   } catch (e) { sendError(res, e.message, 500); }

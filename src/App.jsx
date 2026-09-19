@@ -124,7 +124,7 @@ function App() {
       </RouteShell>
     ),
     "assignment-join": () => <AssignmentJoin />,
-    "assignment-take": () => <AssignmentTake assignmentId={route.params?.assignmentId} />,
+    "assignment-take": () => <AssignmentTake code={route.params?.code} />,
     dreamdale: () => (
       <DreamDalePage userAuth={userAuth} onUserLogout={handleLogout} />
     ),

@@ -443,11 +443,17 @@ export const assignmentService = {
   async get(id) { return apiFetch(`/assignments/${id}`); },
   async create(data) { return apiFetch("/assignments", { method: "POST", body: data }); },
   async join(code) { return apiFetch("/assignments/join", { method: "POST", body: { code } }); },
-  async start(id) { return apiFetch(`/assignments/${id}/start`, { method: "POST" }); },
-  async submit(id, submissionId, answers) {
-    return apiFetch(`/assignments/${id}/submit`, { method: "POST", body: { submissionId, answers } });
+  async resolve(codeOrId) { return apiFetch(`/assignments/resolve/${encodeURIComponent(codeOrId)}`); },
+  async start(id, { guestName } = {}) {
+    return apiFetch(`/assignments/${id}/start`, { method: "POST", body: { guestName } });
   },
-  async getResult(id) { return apiFetch(`/assignments/${id}/result`); },
+  async submit(id, submissionId, answers, { guestName } = {}) {
+    return apiFetch(`/assignments/${id}/submit`, { method: "POST", body: { submissionId, answers, guestName } });
+  },
+  async getResult(id, { guestName } = {}) {
+    const qs = guestName ? `?guestName=${encodeURIComponent(guestName)}` : "";
+    return apiFetch(`/assignments/${id}/result${qs}`);
+  },
   async getStats(id) { return apiFetch(`/assignments/${id}/stats`); },
   async getSubmissions(id) { return apiFetch(`/assignments/${id}/submissions`) || []; },
   async getMyCompleted() { return apiFetch("/assignments/my-completed") || []; },

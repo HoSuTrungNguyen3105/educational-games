@@ -21,7 +21,7 @@ export default function AssignmentJoin() {
         setLoading(false);
         return;
       }
-      navigate(`/assignment/${assignment.id}`);
+      navigate(`/assignment/${assignment.code || assignment.id}`);
     } catch (err) {
       setError(err.message);
     }

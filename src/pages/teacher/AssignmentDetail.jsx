@@ -3,7 +3,7 @@ import { assignmentService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import {
   ArrowLeft, Copy, Check, Users, BarChart3, Pencil,
-  Search, Trophy, Clock, FileQuestion, Lock, Repeat,
+  Search, Trophy, Clock, FileQuestion, Lock, Repeat, Link2,
 } from 'lucide-react';
 
 export default function AssignmentDetail({ assignmentId }) {
@@ -11,6 +11,7 @@ export default function AssignmentDetail({ assignmentId }) {
   const [submissions, setSubmissions] = useState([]);
   const [stats, setStats] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [sortDesc, setSortDesc] = useState(true);
@@ -39,6 +40,13 @@ export default function AssignmentDetail({ assignmentId }) {
     navigator.clipboard.writeText(assignment?.code || '').catch(() => { });
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
+  }
+
+  function copyLink() {
+    const url = `${window.location.origin}/#/assignment/${assignment?.code || assignment?.id}`;
+    navigator.clipboard.writeText(url).catch(() => { });
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 1800);
   }
 
   async function handleClose() {
@@ -128,6 +136,15 @@ export default function AssignmentDetail({ assignmentId }) {
           >
             {assignment.code}
             {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+          </button>
+        </InfoCard>
+        <InfoCard label="Link bài tập" accent>
+          <button
+            onClick={copyLink}
+            className="text-xs font-body font-semibold text-gold flex items-center gap-1.5 hover:opacity-70 transition truncate max-w-[160px]"
+          >
+            <Link2 className="w-3.5 h-3.5 shrink-0" />
+            {copiedLink ? 'Đã copy!' : 'Copy link'}
           </button>
         </InfoCard>
         <InfoCard label="Câu hỏi">
