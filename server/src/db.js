@@ -113,7 +113,7 @@ async function _runHeavyInit(database) {
     } },
     questions: { $jsonSchema: {
       bsonType: "object",
-      required: ["id", "gameId", "content", "options", "correctAnswer"],
+      required: ["id", "content", "options", "correctAnswer"],
       properties: {
         id: { bsonType: "string" },
         gameId: { bsonType: "string" },
@@ -303,6 +303,7 @@ async function _runHeavyInit(database) {
     ["games", "id_1"],
     ["templates", "id_1"],
     ["templates", "slug_1"],
+    ["submissions", "assignmentId_1_studentId_1"],
   ];
   for (const [col, idxName] of staleIndexes) {
     try {

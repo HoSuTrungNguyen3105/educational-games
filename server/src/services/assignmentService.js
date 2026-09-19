@@ -94,34 +94,7 @@ export async function startSubmission({ assignmentId, studentId }) {
 
   // If maxAttempts is 0 (unlimited) or haven't reached limit, allow redo
   if (maxAttempts === 0 || submittedCount < maxAttempts) {
-    // Find the most recent SUBMITTED submission to reset for redo
-    const existing = await getCollection("submissions").findOne({
-      assignmentId, studentId, status: "SUBMITTED",
-    }, { sort: { submittedAt: -1 } });
-
-    if (existing) {
-      // Reset existing submission to IN_PROGRESS for redo
-      const now = new Date().toISOString();
-      await getCollection("submissions").updateOne(
-        { id: existing.id },
-        { $set: {
-          startedAt: now,
-          submittedAt: null,
-          status: "IN_PROGRESS",
-          score: null,
-          correctCount: 0,
-          wrongCount: 0,
-          totalQuestions: 0,
-          answers: [],
-          attemptNumber: submittedCount + 1,
-          updatedAt: now,
-        } },
-      );
-      const updated = await getCollection("submissions").findOne({ id: existing.id });
-      return updated;
-    }
-
-    // First attempt — create new submission
+    // Create a NEW submission document for each attempt (keep all history)
     const now = new Date().toISOString();
     const doc = {
       _id: uid("sub"),
@@ -136,7 +109,7 @@ export async function startSubmission({ assignmentId, studentId }) {
       wrongCount: 0,
       totalQuestions: 0,
       answers: [],
-      attemptNumber: 1,
+      attemptNumber: submittedCount + 1,
       createdAt: now,
       updatedAt: now,
     };
@@ -240,12 +213,15 @@ export async function listSubmissions({ assignmentId, studentId } = {}) {
 }
 
 export async function getAssignmentResult(assignmentId, studentId) {
-  const sub = await getCollection("submissions").findOne({
+  // Get ALL submissions for this student+assignment (keep history)
+  const allSubs = await getCollection("submissions").find({
     assignmentId, studentId, status: "SUBMITTED",
-  }, { sort: { submittedAt: -1 } });
-  if (!sub) return null;
+  }).sort({ submittedAt: -1 }).toArray();
+  if (allSubs.length === 0) return null;
 
+  const latestSub = allSubs[0];
   const assignment = await getAssignmentById(assignmentId);
+
   // Fetch questions - use questionIds if available, otherwise fallback to gameId
   let questions = [];
   if (assignment?.questionIds && assignment.questionIds.length > 0) {
@@ -253,6 +229,9 @@ export async function getAssignmentResult(assignmentId, studentId) {
   } else if (assignment?.gameId) {
     questions = await getCollection("questions").find({ gameId: assignment.gameId }).toArray();
   }
+
+  const questionMap = {};
+  for (const q of questions) questionMap[q.id] = q;
 
   // Helper: resolve an option key/id to its display text
   function resolveOptionText(q, optionKey) {
@@ -265,40 +244,49 @@ export async function getAssignmentResult(assignmentId, studentId) {
         return text;
       }
     }
-    // Fallback: return the raw key if no matching option found
     return String(optionKey);
   }
 
-  // Build detail: each question + user's answer text + correct answer text
-  const detail = questions.map((q) => {
-    const userAns = (sub.answers || []).find(a => a.questionId === q.id);
-    const questionType = q.questionType || q.type || "multiple_choice";
-    const correctAnsKey = q.correctAnswer || q.answer;
+  // Build detail for each submission
+  function buildDetail(sub) {
+    return questions.map((q) => {
+      const userAns = (sub.answers || []).find(a => a.questionId === q.id);
+      const questionType = q.questionType || q.type || "multiple_choice";
+      const correctAnsKey = q.correctAnswer || q.answer;
+      const userAnswerKey = userAns ? userAns.value : null;
+      const userAnswerText = resolveOptionText(q, userAnswerKey);
+      const correctAnswerText = resolveOptionText(q, correctAnsKey);
 
-    const userAnswerKey = userAns ? userAns.value : null;
-    const userAnswerText = resolveOptionText(q, userAnswerKey);
-    const correctAnswerText = resolveOptionText(q, correctAnsKey);
+      return {
+        questionId: q.id,
+        question: q.content || q.question,
+        correctAnswer: correctAnswerText,
+        userAnswer: userAnswerText,
+        isCorrect: userAns
+          ? (questionType === "fill-in" || questionType === "text"
+            ? String(userAns.value || "").trim().toLowerCase() === String(correctAnsKey || "").trim().toLowerCase()
+            : userAns.value === correctAnsKey)
+          : false,
+      };
+    });
+  }
 
-    return {
-      questionId: q.id,
-      question: q.content || q.question,
-      correctAnswer: correctAnswerText,
-      userAnswer: userAnswerText,
-      isCorrect: userAns
-        ? (questionType === "fill-in" || questionType === "text"
-          ? String(userAns.value || "").trim().toLowerCase() === String(correctAnsKey || "").trim().toLowerCase()
-          : userAns.value === correctAnsKey)
-        : false,
-    };
-  });
-
-  // Get attempt stats
-  const submittedCount = await getCollection("submissions").countDocuments({
-    assignmentId, studentId, status: "SUBMITTED",
-  });
   const maxAttempts = assignment?.maxAttempts ?? 1;
 
-  return { submission: sub, assignment, detail, submittedCount, maxAttempts };
+  // Build all submissions with details
+  const submissions = allSubs.map(sub => ({
+    submission: sub,
+    detail: buildDetail(sub),
+  }));
+
+  return {
+    submissions,
+    submission: latestSub,
+    detail: buildDetail(latestSub),
+    assignment,
+    submittedCount: allSubs.length,
+    maxAttempts,
+  };
 }
 
 // ── Student completed assignments ──

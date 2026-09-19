@@ -16,16 +16,29 @@ export default function AllQuestionsManagement({ showToast }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, item: null });
 
-  const loadAll = useCallback(() => {
+  // Load all games, then load questions per game to have gameId context
+  const loadAll = useCallback(async () => {
     setQuestions(null); setError(null);
-    Promise.all([
-      questionService.listAll(),
-      gameService.list(),
-    ]).then(([q, g]) => {
-      setQuestions(q);
-      setGames(g);
-    }).catch(e => setError(e.message));
+    try {
+      const allGames = await gameService.list();
+      setGames(allGames);
+
+      // Load questions per game so we know which game each question belongs to
+      const allQuestions = [];
+      for (const g of allGames) {
+        try {
+          const qs = await questionService.listByGame(g._id);
+          if (Array.isArray(qs)) {
+            // Attach gameId locally (not from API response)
+            qs.forEach(q => { q.gameId = g._id; });
+            allQuestions.push(...qs);
+          }
+        } catch { /* skip games with no questions */ }
+      }
+      setQuestions(allQuestions);
+    } catch (e) { setError(e.message); }
   }, []);
+
   useEffect(() => { loadAll(); }, [loadAll]);
 
   const gameMap = useMemo(() => {

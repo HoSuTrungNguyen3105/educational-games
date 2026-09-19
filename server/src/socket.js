@@ -444,8 +444,8 @@ function startQuestion(io, gameId) {
   session.answered = new Set();
   session.questionStart = Date.now();
 
-  // Gửi câu hỏi KHÔNG kèm đáp án đúng cho học sinh
-  const { correctAnswer, ...publicQuestion } = q;
+  // Gửi câu hỏi KHÔNG kèm đáp án đúng và gameId cho học sinh
+  const { correctAnswer, gameId: _gid, ...publicQuestion } = q;
   io.to(roomName(gameId)).emit(EVENTS.QUESTION_STARTED, {
     question: publicQuestion,
     index: session.index,

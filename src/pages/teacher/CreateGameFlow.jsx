@@ -425,11 +425,24 @@ function QuestionPickerModal({ onClose, onPick }) {
   const [selected, setSelected] = useState(new Set());
 
   useEffect(() => {
-    Promise.all([
-      questionService.listAll(),
-      gameService.list(),
-    ]).then(([q, g]) => { setAllQuestions(q); setGames(g); })
-      .catch(e => setError(e.message));
+    (async () => {
+      try {
+        const allGames = await gameService.list();
+        setGames(allGames);
+        // Load questions per game to have gameId context
+        const allQ = [];
+        for (const g of allGames) {
+          try {
+            const qs = await questionService.listByGame(g._id);
+            if (Array.isArray(qs)) {
+              qs.forEach(q => { q.gameId = g._id; });
+              allQ.push(...qs);
+            }
+          } catch { /* skip */ }
+        }
+        setAllQuestions(allQ);
+      } catch (e) { setError(e.message); }
+    })();
   }, []);
 
   const gameMap = useMemo(() => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { classService, assignmentService, questionService } from '../../services/api.js';
+import { classService, assignmentService, questionService, gameService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { AlertCircle, Clock, FileText, CheckSquare, Square, Search, ChevronDown } from 'lucide-react';
 
@@ -47,8 +47,18 @@ export default function AssignmentCreate() {
 
   async function loadQuestions() {
     try {
-      const qs = await questionService.listAll();
-      setAllQuestions(qs || []);
+      const allGames = await gameService.list();
+      const allQ = [];
+      for (const g of allGames) {
+        try {
+          const qs = await questionService.listByGame(g._id);
+          if (Array.isArray(qs)) {
+            qs.forEach(q => { q.gameId = g._id; q.gameName = g.name; });
+            allQ.push(...qs);
+          }
+        } catch { /* skip */ }
+      }
+      setAllQuestions(allQ);
     } catch { setAllQuestions([]); }
   }
 
@@ -58,16 +68,6 @@ export default function AssignmentCreate() {
       return !searchQuery || text.includes(searchQuery.toLowerCase());
     });
   }, [allQuestions, searchQuery]);
-
-  const questionsByGame = useMemo(() => {
-    const groups = {};
-    for (const q of filteredQuestions) {
-      const gid = q.gameId || 'unknown';
-      if (!groups[gid]) groups[gid] = [];
-      groups[gid].push(q);
-    }
-    return groups;
-  }, [filteredQuestions]);
 
   function toggleQuestion(qId) {
     setSelectedQuestions(prev => {

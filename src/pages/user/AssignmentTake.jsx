@@ -108,8 +108,12 @@ function AnswerArea({ question, value, onChange }) {
 }
 
 function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
-  const sub = result.submission;
-  const detail = result.detail || [];
+  const allSubs = result.submissions || [];
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const current = allSubs[selectedIdx] || { submission: result.submission, detail: result.detail };
+  const sub = current.submission;
+  const detail = current.detail || [];
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
       <div className="max-w-lg w-full space-y-4">
@@ -123,11 +127,30 @@ function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
             </p>
             {attemptInfo && (
               <p className="text-xs font-body text-ink/40">
-                Lần {attemptInfo.attemptNumber}/{attemptInfo.maxAttempts === 0 ? '∞' : attemptInfo.maxAttempts}
+                Lần {sub.attemptNumber || selectedIdx + 1}/{attemptInfo.maxAttempts === 0 ? '∞' : attemptInfo.maxAttempts}
               </p>
             )}
           </div>
         </div>
+
+        {/* Attempt history tabs */}
+        {allSubs.length > 1 && (
+          <div className="p-3 bg-white rounded-xl border border-ink/8">
+            <p className="text-xs font-body text-ink/50 mb-2 font-semibold">Lịch sử làm bài ({allSubs.length} lần)</p>
+            <div className="flex flex-wrap gap-2">
+              {allSubs.map((item, idx) => {
+                const s = item.submission;
+                const isActive = idx === selectedIdx;
+                return (
+                  <button key={s.id} onClick={() => setSelectedIdx(idx)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-body font-semibold transition ${isActive ? 'bg-gold text-white' : 'bg-ink/5 text-ink/60 hover:bg-ink/10'}`}>
+                    Lần {(s.attemptNumber || idx + 1)}: {s.score ?? 0}%
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {detail.length > 0 && (
           <div className="space-y-3">
