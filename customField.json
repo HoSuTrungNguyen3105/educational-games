@@ -1,14 +1,5 @@
 {
     "fields": [
-        { "key": "side.isDoubleSided", "label": "Thiệp 2 mặt", "type": "boolean", "default": false },
-        { "key": "side.frontLabel", "label": "Tên mặt trước", "type": "text", "default": "Front" },
-        { "key": "side.backLabel", "label": "Tên mặt sau", "type": "text", "default": "Back" },
-        { "key": "side.frontBackground", "label": "Ảnh nền mặt trước", "type": "image", "default": null },
-        { "key": "side.backBackground", "label": "Ảnh nền mặt sau", "type": "image", "default": null },
-
-        { "key": "overlay.src", "label": "Ảnh overlay", "type": "image", "default": null },
-        { "key": "overlay.fileName", "label": "Tên file ảnh overlay", "type": "text", "default": "" },
-        
         { "key": "text.content", "label": "Nội dung văn bản", "type": "textarea", "default": "" },
         {
             "key": "text.fontFamily",

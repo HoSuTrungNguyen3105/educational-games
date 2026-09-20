@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { assignmentService, questionService } from '../../services/api.js';
 import { useUserAuthStore } from '../../stores/userAuth.store.js';
 import { navigate } from '../../lib/router.js';
-import { Clock, AlertTriangle, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Send, User } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Send, User, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const TIMER_WARN = 60;
 const GUEST_STORAGE_KEY = 'edu_assignment_guest';
@@ -14,42 +14,50 @@ function clearGuestName() {
   localStorage.removeItem(GUEST_STORAGE_KEY);
 }
 
-function Header({ title, timeLeft, isExam, onBack }) {
+function Header({ title, timeLeft, isExam, onBack, answeredCount, totalQuestions }) {
   function formatTime(sec) {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${m}:${String(s).padStart(2, '0')}`;
   }
   return (
-    <div className="bg-ink/90 text-white px-4 py-2.5 flex items-center justify-between shrink-0">
+    <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 flex items-center justify-between shrink-0 shadow-sm">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="font-display text-sm truncate">{title}</span>
+        <button onClick={onBack} className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-gray-700">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="min-w-0">
+          <h1 className="font-display text-sm lg:text-base font-bold text-gray-800 truncate">{title}</h1>
+          <p className="text-xs text-gray-400">{answeredCount}/{totalQuestions} câu đã trả lời</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
         {isExam && timeLeft !== null && (
-          <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-mono text-sm font-bold ${timeLeft <= TIMER_WARN ? 'bg-red-500 text-white animate-pulse' : 'bg-white/10 text-white'}`}>
+          <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono text-sm font-bold ${timeLeft <= TIMER_WARN ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-700'}`}>
             <Clock className="w-4 h-4" />
             {formatTime(timeLeft)}
           </span>
         )}
       </div>
-      <button onClick={onBack} className="text-white/60 hover:text-white text-xs font-body">Thoát</button>
     </div>
   );
 }
 
 function QuestionNavigator({ questions, answers, currentIdx, onSelect }) {
   return (
-    <div className="p-3 bg-white rounded-xl border border-ink/8">
-      <p className="text-xs font-body text-ink/50 mb-2 font-semibold">Câu hỏi</p>
-      <div className="grid grid-cols-5 gap-1.5">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Câu hỏi</p>
+      <div className="grid grid-cols-4 gap-2">
         {questions.map((q, idx) => {
           const answered = answers[q.id] != null && answers[q.id] !== '';
           const isCurrent = idx === currentIdx;
           return (
             <button key={q.id} onClick={() => onSelect(idx)}
-              className={`w-full aspect-square rounded-lg text-xs font-mono font-bold transition ${isCurrent ? 'bg-gold text-white shadow-sm ring-2 ring-gold/30' :
-                answered ? 'bg-green-100 text-green-700 border border-green-200' :
-                  'bg-ink/5 text-ink/40 border border-ink/10 hover:border-ink/20'
-                }`}>
+              className={`aspect-square rounded-xl text-sm font-bold transition-all duration-150 ${
+                isCurrent ? 'bg-amber-500 text-white shadow-md ring-2 ring-amber-300 scale-105' :
+                answered ? 'bg-green-50 text-green-700 border-2 border-green-200 hover:bg-green-100' :
+                'bg-gray-50 text-gray-400 border-2 border-gray-100 hover:border-gray-300 hover:text-gray-600'
+              }`}>
               {idx + 1}
             </button>
           );
@@ -61,12 +69,14 @@ function QuestionNavigator({ questions, answers, currentIdx, onSelect }) {
 
 function QuestionItem({ question, index, total }) {
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="w-7 h-7 rounded-lg bg-gold/10 flex items-center justify-center text-xs font-mono font-bold text-gold">{index + 1}</span>
-        <span className="text-xs font-body text-ink/40">Câu {index + 1}/{total}</span>
+    <div className="mb-6">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="w-10 h-10 rounded-xl bg-amber-50 border-2 border-amber-200 flex items-center justify-center text-base font-bold text-amber-600">
+          {index + 1}
+        </span>
+        <span className="text-sm text-gray-400 font-medium">Câu {index + 1} / {total}</span>
       </div>
-      <p className="text-sm font-body text-ink leading-relaxed">{question.content || question.question}</p>
+      <p className="text-base lg:text-lg font-medium text-gray-800 leading-relaxed">{question.content || question.question}</p>
     </div>
   );
 }
@@ -78,27 +88,32 @@ function AnswerArea({ question, value, onChange }) {
   if (type === 'fill-in' || type === 'text') {
     return (
       <input value={value || ''} onChange={e => onChange(e.target.value)}
-        className="w-full px-4 py-3 rounded-xl border border-ink/10 bg-white text-sm text-ink font-body focus:outline-none focus:ring-2 focus:ring-gold/30"
-        placeholder="Nhập đáp án..." />
+        className="w-full px-4 py-4 rounded-2xl border-2 border-gray-200 bg-white text-base text-gray-800 font-medium focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition"
+        placeholder="Nhập đáp án của bạn..." />
     );
   }
 
   return (
-    <div className="space-y-2">
-      {options.map((opt) => {
+    <div className="space-y-3">
+      {options.map((opt, optIdx) => {
         const optKey = opt.id || opt.key || opt;
         const optText = opt.content || opt.text || opt.label || optKey;
         const selected = value === optKey;
+        const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
         return (
           <button key={optKey} onClick={() => onChange(optKey)}
-            className={`w-full text-left p-3.5 rounded-xl border transition ${selected ? 'border-gold bg-gold/5 ring-2 ring-gold/20' : 'border-ink/10 bg-white hover:border-ink/20'
+            className={`w-full text-left p-4 rounded-2xl border-2 transition-all duration-150 ${
+              selected
+                ? 'border-amber-400 bg-amber-50 shadow-sm ring-2 ring-amber-200'
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+            }`}>
+            <div className="flex items-center gap-4">
+              <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold transition ${
+                selected ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500'
               }`}>
-            <div className="flex items-center gap-3">
-              <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition ${selected ? 'border-gold bg-gold' : 'border-ink/20'
-                }`}>
-                {selected && <span className="w-2 h-2 rounded-full bg-white" />}
+                {labels[optIdx] || optIdx + 1}
               </span>
-              <span className="text-sm font-body text-ink">{optText}</span>
+              <span className={`text-base font-medium ${selected ? 'text-amber-800' : 'text-gray-700'}`}>{optText}</span>
             </div>
           </button>
         );
@@ -115,36 +130,39 @@ function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
   const detail = current.detail || [];
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
       <div className="max-w-lg w-full space-y-4">
-        <div className="note-card p-8 text-center space-y-4 anim-pop">
-          <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
-          <h2 className="font-display text-2xl text-ink">Nộp bài thành công!</h2>
+        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 text-center space-y-4">
+          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-10 h-10 text-green-500" />
+          </div>
+          <h2 className="font-display text-2xl font-bold text-gray-800">Nộp bài thành công!</h2>
           <div className="space-y-2">
-            <p className="text-4xl font-display text-gold">{sub.score ?? 0}%</p>
-            <p className="text-sm font-body text-ink/50">
+            <p className="text-5xl font-display font-bold text-amber-500">{sub.score ?? 0}%</p>
+            <p className="text-sm text-gray-500">
               {sub.correctCount}/{sub.totalQuestions} câu đúng
             </p>
             {attemptInfo && (
-              <p className="text-xs font-body text-ink/40">
+              <p className="text-xs text-gray-400">
                 Lần {sub.attemptNumber || selectedIdx + 1}/{attemptInfo.maxAttempts === 0 ? '∞' : attemptInfo.maxAttempts}
               </p>
             )}
           </div>
         </div>
 
-        {/* Attempt history tabs */}
         {allSubs.length > 1 && (
-          <div className="p-3 bg-white rounded-xl border border-ink/8">
-            <p className="text-xs font-body text-ink/50 mb-2 font-semibold">Lịch sử làm bài ({allSubs.length} lần)</p>
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Lịch sử ({allSubs.length} lần)</p>
             <div className="flex flex-wrap gap-2">
               {allSubs.map((item, idx) => {
                 const s = item.submission;
                 const isActive = idx === selectedIdx;
                 return (
                   <button key={s.id} onClick={() => setSelectedIdx(idx)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-body font-semibold transition ${isActive ? 'bg-gold text-white' : 'bg-ink/5 text-ink/60 hover:bg-ink/10'}`}>
-                    Lần {(s.attemptNumber || idx + 1)}: {s.score ?? 0}%
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
+                      isActive ? 'bg-amber-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}>
+                    Lần {s.attemptNumber || idx + 1}: {s.score ?? 0}%
                   </button>
                 );
               })}
@@ -156,16 +174,16 @@ function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
           <div className="space-y-3">
             {detail.map((d, idx) => (
               <div key={d.questionId || idx}
-                className={`p-4 rounded-xl border ${d.isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                <p className="text-sm font-body text-ink mb-2">
+                className={`p-4 rounded-2xl border-2 ${d.isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                <p className="text-sm font-medium text-gray-800 mb-2">
                   <span className="font-bold">{idx + 1}.</span> {d.question}
                 </p>
-                <div className="text-xs font-body space-y-1">
+                <div className="text-sm space-y-1">
                   <p className={d.isCorrect ? 'text-green-600' : 'text-red-600'}>
                     Đáp án của bạn: <span className="font-semibold">{d.userAnswer || '(chưa trả lời)'}</span>
-                    {d.isCorrect ? <CheckCircle2 className="inline w-3 h-3 ml-1" /> : <XCircle className="inline w-3 h-3 ml-1" />}
+                    {d.isCorrect ? <CheckCircle2 className="inline w-4 h-4 ml-1" /> : <XCircle className="inline w-4 h-4 ml-1" />}
                   </p>
-                  {!d.isCorrect && (
+                  {!d.isCorrect && d.correctAnswer && (
                     <p className="text-green-600">
                       Đáp án đúng: <span className="font-semibold">{d.correctAnswer}</span>
                     </p>
@@ -179,12 +197,12 @@ function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
         <div className="flex gap-3">
           {canRedo && (
             <button onClick={onRedo}
-              className="flex-1 py-3 bg-ink/10 text-ink rounded-xl font-body font-semibold hover:bg-ink/20 transition">
+              className="flex-1 py-3.5 bg-gray-100 text-gray-700 rounded-2xl font-semibold hover:bg-gray-200 transition">
               Làm lại
             </button>
           )}
           <button onClick={onBack}
-            className={`${canRedo ? 'flex-1' : 'w-full'} py-3 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition`}>
+            className={`${canRedo ? 'flex-1' : 'w-full'} py-3.5 bg-amber-500 text-white rounded-2xl font-semibold hover:bg-amber-600 transition shadow-md`}>
             Về trang chủ
           </button>
         </div>
@@ -196,37 +214,37 @@ function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
 function GuestNameForm({ assignmentTitle, onSubmit, loading }) {
   const [name, setName] = useState('');
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
       <div className="w-full max-w-sm">
         <button
           onClick={() => navigate('/')}
-          className="group text-sm text-stone-500 hover:text-ink transition inline-flex items-center gap-2 mb-4 hover:bg-white/60 rounded-full px-3 py-1.5 -ml-3"
+          className="group text-sm text-gray-500 hover:text-gray-700 transition inline-flex items-center gap-2 mb-6"
         >
-          <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           Về trang chủ
         </button>
 
         <div className="text-center mb-6">
-          <div className="w-14 h-14 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-3">
-            <User className="w-7 h-7 text-gold" />
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8 text-amber-500" />
           </div>
-          <h1 className="font-display text-2xl text-ink">Nhập tên để bắt đầu</h1>
+          <h1 className="font-display text-2xl font-bold text-gray-800">Nhập tên để bắt đầu</h1>
           {assignmentTitle && (
-            <p className="text-sm font-body text-ink/50 mt-1">{assignmentTitle}</p>
+            <p className="text-sm text-gray-500 mt-2">{assignmentTitle}</p>
           )}
         </div>
 
-        <div className="note-card p-6 space-y-4">
+        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 space-y-4">
           <form onSubmit={(e) => { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); }} className="space-y-4">
             <div>
-              <label className="block text-sm font-body text-ink/60 mb-1">Tên của bạn</label>
+              <label className="block text-sm font-medium text-gray-600 mb-2">Tên của bạn</label>
               <input value={name} onChange={e => setName(e.target.value)}
-                className="w-full text-center text-lg font-body px-4 py-3 rounded-xl border border-ink/10 bg-paper2 text-ink focus:outline-none focus:ring-2 focus:ring-gold/40"
+                className="w-full text-center text-lg font-medium px-4 py-4 rounded-2xl border-2 border-gray-200 bg-gray-50 text-gray-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition"
                 placeholder="Nguyễn Văn A" autoFocus />
             </div>
 
             <button type="submit" disabled={loading || !name.trim()}
-              className="w-full py-3 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition disabled:opacity-50 flex items-center justify-center gap-2">
+              className="w-full py-4 bg-amber-500 text-white rounded-2xl font-semibold hover:bg-amber-600 transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-md">
               <Send className="w-5 h-5" />
               {loading ? 'Đang tải...' : 'Bắt đầu làm bài'}
             </button>
@@ -256,7 +274,6 @@ export default function AssignmentTake({ code: codeOrId }) {
 
   const isGuest = !user && guestName;
 
-  // Step 1: Resolve code to assignment
   useEffect(() => {
     if (!codeOrId) return;
     resolveAssignment();
@@ -268,32 +285,19 @@ export default function AssignmentTake({ code: codeOrId }) {
     setError('');
     try {
       const a = await assignmentService.resolve(codeOrId);
-      if (!a || !a.id) {
-        setError('Không tìm thấy bài tập');
-        setLoading(false);
-        return;
-      }
+      if (!a || !a.id) { setError('Không tìm thấy bài tập'); setLoading(false); return; }
       setAssignment(a);
       setResolved(true);
-    } catch (err) {
-      setError(err.message || 'Không tìm thấy bài tập');
-    }
+    } catch (err) { setError(err.message || 'Không tìm thấy bài tập'); }
     setLoading(false);
   }
 
-  // Step 2: If resolved and user is logged in, auto-start
   useEffect(() => {
-    if (resolved && user && assignment) {
-      clearGuestName();
-      initAssignment(assignment.id);
-    }
+    if (resolved && user && assignment) { clearGuestName(); initAssignment(assignment.id); }
   }, [resolved, user, assignment]);
 
-  // Step 2b: If resolved and guest name is saved, auto-start
   useEffect(() => {
-    if (resolved && !user && guestName && assignment) {
-      initAssignment(assignment.id);
-    }
+    if (resolved && !user && guestName && assignment) { initAssignment(assignment.id); }
   }, [resolved, guestName, assignment]);
 
   async function handleGuestSubmit(name) {
@@ -318,9 +322,7 @@ export default function AssignmentTake({ code: codeOrId }) {
       if (qIds.length) {
         try {
           const allQ = await questionService.listAll();
-          if (Array.isArray(allQ)) {
-            setQuestions(allQ.filter(q => q && q.id && qIds.includes(q.id)));
-          }
+          if (Array.isArray(allQ)) setQuestions(allQ.filter(q => q && q.id && qIds.includes(q.id)));
         } catch { /* ignore */ }
       }
 
@@ -362,40 +364,52 @@ export default function AssignmentTake({ code: codeOrId }) {
 
   const answeredCount = Object.values(answers).filter(v => v != null && v !== '').length;
 
-  // Show loading
-  if (loading && !resolved) return <div className="min-h-screen flex items-center justify-center font-body text-ink/40">Đang tải...</div>;
-
-  // Show error
-  if (error && !assignment) return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="text-center space-y-3">
-        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto" />
-        <p className="font-body text-red-500">{error}</p>
-        <button onClick={() => navigate('/')} className="px-4 py-2 bg-gold text-white rounded-xl text-sm font-body">Về trang chủ</button>
+  if (loading && !resolved) return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-amber-300 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-gray-500 font-medium">Đang tải...</p>
       </div>
     </div>
   );
 
-  // Show guest name form (only when not logged in and no guest name saved)
+  if (error && !assignment) return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-8 h-8 text-red-500" />
+        </div>
+        <p className="font-medium text-red-500">{error}</p>
+        <button onClick={() => navigate('/')} className="px-6 py-3 bg-amber-500 text-white rounded-2xl font-semibold hover:bg-amber-600 transition shadow-md">Về trang chủ</button>
+      </div>
+    </div>
+  );
+
   if (resolved && !user && !guestName && assignment) {
     return <GuestNameForm assignmentTitle={assignment.title} onSubmit={handleGuestSubmit} loading={loading} />;
   }
 
-  // Show loading (waiting for assignment data)
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-body text-ink/40">Đang tải...</div>;
-
-  // Show error during assignment
-  if (error) return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="text-center space-y-3">
-        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto" />
-        <p className="font-body text-red-500">{error}</p>
-        <button onClick={() => navigate('/')} className="px-4 py-2 bg-gold text-white rounded-xl text-sm font-body">Về trang chủ</button>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-amber-300 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-gray-500 font-medium">Đang tải bài tập...</p>
       </div>
     </div>
   );
 
-  // Show result
+  if (error) return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-8 h-8 text-red-500" />
+        </div>
+        <p className="font-medium text-red-500">{error}</p>
+        <button onClick={() => navigate('/')} className="px-6 py-3 bg-amber-500 text-white rounded-2xl font-semibold hover:bg-amber-600 transition shadow-md">Về trang chủ</button>
+      </div>
+    </div>
+  );
+
   if (submitted && result) {
     const maxAttempts = result.maxAttempts ?? assignment?.maxAttempts ?? 1;
     const submittedCount = result.submittedCount ?? 0;
@@ -421,86 +435,101 @@ export default function AssignmentTake({ code: codeOrId }) {
   const currentQuestion = questions[currentIdx];
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #F4E8D1 0%, #E8D5B7 100%)' }}>
-      <Header title={assignment?.title} timeLeft={timeLeft} isExam={assignment?.isExam} onBack={() => navigate('/')} />
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-yellow-50/50">
+      <Header
+        title={assignment?.title}
+        timeLeft={timeLeft}
+        isExam={assignment?.isExam}
+        onBack={() => navigate('/')}
+        answeredCount={answeredCount}
+        totalQuestions={questions.length}
+      />
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar: Question Navigator */}
-        <div className={`hidden sm:block w-48 shrink-0 p-3 ${questions.length > 100 ? 'max-h-[calc(100vh-4.5rem)] overflow-y-auto' : ''}`}>
-          <QuestionNavigator questions={questions} answers={answers} currentIdx={currentIdx} onSelect={setCurrentIdx} />
-          <div className="mt-3 p-3 bg-white rounded-xl border border-ink/8">
-            <p className="text-xs font-body text-ink/50 mb-1">Tiến độ</p>
-            <p className="text-sm font-body font-semibold text-ink">{answeredCount}/{questions.length} câu đã trả lời</p>
-            {isGuest && (
-              <p className="text-[10px] font-body text-gold mt-1">{guestName}</p>
+      <div className="flex-1 flex overflow-hidden max-w-6xl mx-auto w-full">
+        {/* Desktop sidebar */}
+        <div className="hidden lg:block w-64 shrink-0 p-4">
+          <div className="sticky top-4 space-y-4">
+            <QuestionNavigator questions={questions} answers={answers} currentIdx={currentIdx} onSelect={setCurrentIdx} />
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Tiến độ</p>
+              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+                <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${questions.length ? (answeredCount / questions.length) * 100 : 0}%` }} />
+              </div>
+              <p className="text-sm font-semibold text-gray-700">{answeredCount}/{questions.length} câu</p>
+              {isGuest && <p className="text-xs text-amber-500 mt-2">{guestName}</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 flex flex-col overflow-y-auto">
+          <div className="flex-1 p-4 lg:p-8">
+            {currentQuestion ? (
+              <div className="max-w-2xl mx-auto">
+                <QuestionItem question={currentQuestion} index={currentIdx} total={questions.length} />
+                <AnswerArea question={currentQuestion} value={answers[currentQuestion.id]} onChange={v => setAnswer(currentQuestion.id, v)} />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400">Chưa có câu hỏi</div>
             )}
           </div>
-        </div>
 
-        {/* Main: Question */}
-        <div className="flex-1 flex flex-col overflow-y-auto p-4">
-          {currentQuestion ? (
-            <div className="max-w-2xl mx-auto w-full">
-              <QuestionItem question={currentQuestion} index={currentIdx} total={questions.length} />
-              <AnswerArea question={currentQuestion} value={answers[currentQuestion.id]} onChange={v => setAnswer(currentQuestion.id, v)} />
+          {/* Mobile question strip */}
+          <div className="lg:hidden px-4 pb-3">
+            <div className="flex items-center gap-2 overflow-x-auto py-2 scrollbar-hide">
+              {questions.map((q, idx) => {
+                const answered = answers[q.id] != null && answers[q.id] !== '';
+                return (
+                  <button key={q.id} onClick={() => setCurrentIdx(idx)}
+                    className={`w-11 h-11 rounded-xl text-sm font-bold shrink-0 transition-all duration-150 ${
+                      idx === currentIdx ? 'bg-amber-500 text-white shadow-md ring-2 ring-amber-300 scale-105' :
+                      answered ? 'bg-green-100 text-green-700 border-2 border-green-200' :
+                      'bg-gray-100 text-gray-400 border-2 border-gray-200 hover:border-gray-300'
+                    }`}>
+                    {idx + 1}
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <div className="flex items-center justify-center h-full font-body text-ink/40">Chưa có câu hỏi</div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Mobile navigator */}
-      <div className="sm:hidden px-3 pb-2">
-        <div className="flex items-center gap-2 overflow-x-auto py-1">
-          {questions.map((q, idx) => {
-            const answered = answers[q.id] != null && answers[q.id] !== '';
-            return (
-              <button key={q.id} onClick={() => setCurrentIdx(idx)}
-                className={`w-8 h-8 rounded-lg text-xs font-mono font-bold shrink-0 transition ${idx === currentIdx ? 'bg-gold text-white' :
-                  answered ? 'bg-green-100 text-green-700' :
-                    'bg-ink/5 text-ink/40'
-                  }`}>
-                {idx + 1}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Bottom nav + submit */}
-      <div className="bg-white border-t border-ink/8 px-4 py-3 flex items-center justify-between shrink-0 sticky bottom-0 z-10 sm:-mt-[38px] sm:relative sm:shadow-lg">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))} disabled={currentIdx === 0}
-            className="p-2 rounded-lg bg-ink/5 text-ink/60 hover:bg-ink/10 transition disabled:opacity-30">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <span className="text-xs font-mono text-ink/40">{currentIdx + 1}/{questions.length}</span>
-          <button onClick={() => setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1))} disabled={currentIdx === questions.length - 1}
-            className="p-2 rounded-lg bg-ink/5 text-ink/60 hover:bg-ink/10 transition disabled:opacity-30">
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {confirmSubmit ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-body text-ink/50">Xác nhận nộp?</span>
-            <button onClick={() => { setConfirmSubmit(false); doSubmitNow(); }}
-              className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-body font-semibold hover:bg-red-600 transition">
-              Nộp bài
+      {/* Bottom bar */}
+      <div className="bg-white border-t border-gray-200 px-4 lg:px-6 py-3 shrink-0 shadow-lg">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))} disabled={currentIdx === 0}
+              className="p-2.5 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition disabled:opacity-30 disabled:hover:bg-gray-100">
+              <ArrowLeft className="w-5 h-5" />
             </button>
-            <button onClick={() => setConfirmSubmit(false)}
-              className="px-3 py-2 bg-ink/5 text-ink/60 rounded-xl text-xs font-body hover:bg-ink/10 transition">
-              Hủy
+            <span className="text-sm font-semibold text-gray-500 min-w-[60px] text-center">{currentIdx + 1} / {questions.length}</span>
+            <button onClick={() => setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1))} disabled={currentIdx === questions.length - 1}
+              className="p-2.5 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition disabled:opacity-30 disabled:hover:bg-gray-100">
+              <ArrowRight className="w-5 h-5" />
             </button>
           </div>
-        ) : (
-          <button onClick={() => setConfirmSubmit(true)}
-            className="flex items-center gap-2 px-5 py-2 bg-gold text-white rounded-xl text-sm font-body font-semibold hover:bg-gold/80 transition">
-            <Send className="w-4 h-4" />
-            Nộp bài ({answeredCount}/{questions.length})
-          </button>
-        )}
+
+          {confirmSubmit ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-500">Xác nhận nộp?</span>
+              <button onClick={() => { setConfirmSubmit(false); doSubmitNow(); }}
+                className="px-6 py-2.5 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition shadow-sm">
+                Nộp bài
+              </button>
+              <button onClick={() => setConfirmSubmit(false)}
+                className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-medium hover:bg-gray-200 transition">
+                Hủy
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmSubmit(true)}
+              className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 transition shadow-md">
+              <Send className="w-4 h-4" />
+              Nộp bài ({answeredCount}/{questions.length})
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

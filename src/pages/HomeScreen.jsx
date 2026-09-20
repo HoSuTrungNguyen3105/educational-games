@@ -213,12 +213,13 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   useEffect(() => {
     if (!userAuth?.user) return;
     const unsubscribe = onForegroundMessage((payload) => {
-      const { title, body } = payload.notification || {};
       const data = payload.data || {};
+      const title = data.title || payload.notification?.title || "Thông báo";
+      const body = data.body || payload.notification?.body || "";
       setNotifications(prev => [{
         id: `fg-${Date.now()}`,
-        title: title || "Thông báo",
-        message: body || "",
+        title,
+        message: body,
         type: data.type || "SYSTEM",
         data,
         read: false,

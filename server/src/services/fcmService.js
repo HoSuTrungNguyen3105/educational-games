@@ -150,10 +150,6 @@ export async function sendToTokens(tokens, { title, body, type, data = {} }) {
   stringData.click_action = "/educational-games/";
 
   const message = {
-    notification: {
-      title: title || "EduPlay",
-      body: body || "",
-    },
     data: stringData,
     webpush: {
       headers: {

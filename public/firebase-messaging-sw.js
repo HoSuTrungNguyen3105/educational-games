@@ -31,15 +31,18 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log("[SW] Background message received via FCM:", payload);
 
-  const { title, body, icon } = payload.notification || {};
+  // Data-only messages: title/body are in payload.data, not payload.notification
   const data = payload.data || {};
+  const title = data.title || payload.notification?.title || "EduPlay";
+  const body = data.body || payload.notification?.body || "";
+  const icon = data.icon || payload.notification?.icon;
 
   const iconUrl = icon || (self.location.origin + "/educational-games/eduplay-icon-192x192.png");
   const badgeUrl = self.location.origin + "/educational-games/eduplay-icon-192x192.png";
 
-  const notificationTitle = title || "EduPlay";
+  const notificationTitle = title;
   const notificationOptions = {
-    body: body || "",
+    body,
     icon: iconUrl,
     badge: badgeUrl,
     data,
