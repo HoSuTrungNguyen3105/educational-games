@@ -39,7 +39,7 @@ function App() {
 
   useSocketManager(token);
 
-  const { playGame, loadingGame, selectGame } = useGameLoader(route);
+  const { playGame, loadingGame, selectGame, coopSession } = useGameLoader(route);
 
   const handleLogin = async (identifier, password) => {
     const u = await login(identifier, password);
@@ -74,6 +74,7 @@ function App() {
     return (
       <StudentApp
         initialGame={playGame}
+        coopSession={coopSession}
         onExit={() => navigate("/")}
         showToast={showToast}
         toast={toast}

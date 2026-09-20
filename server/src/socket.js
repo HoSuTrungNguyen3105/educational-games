@@ -6,6 +6,7 @@ import * as questionService from "./services/questionService.js";
 import * as resultService from "./services/resultService.js";
 import * as chatService from "./services/chatService.js";
 import * as notificationService from "./services/notificationService.js";
+import * as gameSessionService from "./services/gameSessionService.js";
 
 // Event names — PHẢI khớp với frontend src/socket/socket.events.js
 export const EVENTS = {
@@ -268,6 +269,21 @@ export function initSocket(httpServer) {
       const fromName = socket.data.user?.name || socket.data.playerId || "Ẩn danh";
       if (!toUserId || !gameId) return;
 
+      // Create game session
+      let session = null;
+      try {
+        session = await gameSessionService.createSession({
+          gameId, gameName, gameCode,
+          hostUserId: fromUserId,
+          hostName: fromName,
+        });
+        console.log(`[socket] Created game session ${session.id} for game ${gameId}`);
+      } catch (e) {
+        console.error("[socket] Failed to create game session:", e.message);
+      }
+
+      const sessionId = session?.id || null;
+
       // Save notification to DB
       try {
         await notificationService.createNotification({
@@ -276,6 +292,7 @@ export function initSocket(httpServer) {
           type: "game_invite",
           title: `👥 ${fromName} mời chơi`,
           message: gameName || "Tham gia trò chơi",
+          data: { sessionId },
         });
       } catch (e) {
         console.error("[socket] Failed to create invite notification:", e.message);
@@ -286,29 +303,41 @@ export function initSocket(httpServer) {
       if (targetSocket) {
         targetSocket.emit(EVENTS.GAME_INVITE_RECEIVED, {
           fromUserId, fromUsername, fromName,
-          gameId, gameName, gameCode,
+          gameId, gameName, gameCode, sessionId,
         });
       }
 
-      socket.emit(EVENTS.GAME_INVITE_SEND, { ok: true, toUserId });
+      socket.emit(EVENTS.GAME_INVITE_SEND, { ok: true, toUserId, sessionId });
 
       // Register game code for join-by-code flow
       if (gameCode) {
-        gameCodes.set(gameCode, { gameId, hostUserId: fromUserId, createdAt: Date.now() });
+        gameCodes.set(gameCode, { gameId, hostUserId: fromUserId, sessionId, createdAt: Date.now() });
       }
     });
 
     // Player B accepts invite
-    socket.on(EVENTS.GAME_INVITE_ACCEPTED, (data = {}) => {
-      const { fromUserId, gameId } = data;
+    socket.on(EVENTS.GAME_INVITE_ACCEPTED, async (data = {}) => {
+      const { fromUserId, gameId, sessionId } = data;
       const acceptedBy = socket.data.user?.sub || socket.data.playerId;
       const acceptedByName = socket.data.user?.name || socket.data.playerId || "Ẩn danh";
+
+      // Join game session in DB
+      if (sessionId) {
+        try {
+          await gameSessionService.joinSession(sessionId, {
+            guestUserId: acceptedBy,
+            guestName: acceptedByName,
+          });
+        } catch (e) {
+          console.error("[socket] Failed to join game session:", e.message);
+        }
+      }
 
       // Notify the inviter
       const inviterSocket = findSocketByUserId(io, fromUserId);
       if (inviterSocket) {
         inviterSocket.emit(EVENTS.GAME_INVITE_ACCEPTED, {
-          acceptedBy, acceptedByName, gameId,
+          acceptedBy, acceptedByName, gameId, sessionId,
         });
       }
 
@@ -336,16 +365,28 @@ export function initSocket(httpServer) {
     });
 
     // Player joins a game room by code
-    socket.on(EVENTS.GAME_JOIN_BY_CODE, (data = {}) => {
+    socket.on(EVENTS.GAME_JOIN_BY_CODE, async (data = {}) => {
       const { code } = data;
       if (!code) return socket.emit(EVENTS.GAME_JOINED, { ok: false, error: "Thiếu mã phòng" });
 
       const entry = gameCodes.get(code);
       if (!entry) return socket.emit(EVENTS.GAME_JOINED, { ok: false, error: "Mã phòng không hợp lệ hoặc đã hết hạn" });
 
-      const { gameId, hostUserId } = entry;
+      const { gameId, hostUserId, sessionId } = entry;
       const joinerName = socket.data.user?.name || socket.data.playerId || "Ẩn danh";
       const joinerId = socket.data.user?.sub || socket.data.playerId;
+
+      // Join game session in DB
+      if (sessionId) {
+        try {
+          await gameSessionService.joinSession(sessionId, {
+            guestUserId: joinerId,
+            guestName: joinerName,
+          });
+        } catch (e) {
+          console.error("[socket] Failed to join game session by code:", e.message);
+        }
+      }
 
       // Join the socket room
       socket.join(roomName(gameId));
@@ -358,10 +399,11 @@ export function initSocket(httpServer) {
           acceptedBy: joinerId,
           acceptedByName: joinerName,
           gameId,
+          sessionId,
         });
       }
 
-      socket.emit(EVENTS.GAME_JOINED, { ok: true, gameId, hostUserId });
+      socket.emit(EVENTS.GAME_JOINED, { ok: true, gameId, hostUserId, sessionId });
     });
 
     // Multiplayer game move sync (for board games like XO)

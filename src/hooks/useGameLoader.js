@@ -5,17 +5,20 @@ import { navigate } from "../lib/router.js";
 /**
  * Quản lý tải game cho màn hình chơi (/play/:gameId).
  * - pendingGameRef: game được chọn từ Home, không cần fetch lại
+ * - coopSessionRef: coop session data (sessionId, opponent, gameCode)
  * - AbortController: hủy request khi route thay đổi
  */
 export function useGameLoader(route) {
   const [playGame, setPlayGame] = useState(null);
   const [loadingGame, setLoadingGame] = useState(false);
   const pendingGameRef = useRef(null);
+  const coopSessionRef = useRef(null);
   const abortRef = useRef(null);
 
   // Chọn game từ Home → cache vào pendingGameRef, chuyển route
-  const selectGame = useCallback((g) => {
+  const selectGame = useCallback((g, coopData) => {
     pendingGameRef.current = g;
+    coopSessionRef.current = coopData || null;
     const gid = g._id?.toString() || g.id;
     navigate(`/play/${gid}`);
   }, []);
@@ -23,12 +26,10 @@ export function useGameLoader(route) {
   // Load game khi route thay đổi
   useEffect(() => {
     if (route.name !== "student" || !route.params.gameId) {
-      // Không phải route play → reset game state
       setPlayGame(null);
       return;
     }
 
-    // Hủy request trước đó
     if (abortRef.current) {
       abortRef.current.abort();
     }
@@ -36,14 +37,12 @@ export function useGameLoader(route) {
     const gameId = route.params.gameId;
     const pending = pendingGameRef.current;
 
-    // Nếu có pending game khớp → dùng ngay, không fetch
     if (pending && String(pending._id?.toString() || pending.id) === String(gameId)) {
       pendingGameRef.current = null;
       setPlayGame(pending);
       return;
     }
 
-    // Fetch game từ API với AbortController
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -65,5 +64,8 @@ export function useGameLoader(route) {
     };
   }, [route.name, route.params.gameId]);
 
-  return { playGame, loadingGame, selectGame };
+  const coopSession = coopSessionRef.current;
+  coopSessionRef.current = null;
+
+  return { playGame, loadingGame, selectGame, coopSession };
 }

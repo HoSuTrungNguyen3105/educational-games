@@ -1,36 +1,47 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { API_BASE, coinService, userService, gameProgressService } from "../services/api.js";
 import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
 import { renderAvatarFull } from "../lib/avatarRenderer.js";
+import CoopInvitePanel from "../components/CoopInvitePanel.jsx";
 
 /**
  * HtmlGameLoader - Renders a self-contained HTML game in an iframe.
+ * Includes CoopInvitePanel for multiplayer mode selection + invite flow.
+ *
  * Communication via postMessage:
  *
- * React → iframe: { type: "init", data: { gameId, playerName, questions, apiBase, userCoins, authToken } }
- * React → iframe: { type: "opponent-move", data: { row, col, player } }
- * React → iframe: { type: "invite-accepted", data: { playerName } }
- * React → iframe: { type: "multiplayer-start", data: { opponent } }
+ * React → iframe: { type: "init", data: { gameId, playerName, questions, apiBase, userCoins, authToken, playMode } }
+ * React → iframe: { type: "opponent-move", data: { ... } }
+ * React → iframe: { type: "invite-accepted", data: { acceptedBy, acceptedByName, sessionId } }
+ * React → iframe: { type: "multiplayer-start", data: { opponent, sessionId } }
+ * React → iframe: { type: "game-joined", data: { ok, gameId, sessionId } }
  *
  * iframe → React: { type: "ready" }
  * iframe → React: { type: "bridge-ready" }
- * iframe → React: { type: "mode-selected", data: { mode } }
+ * iframe → React: { type: "show-coop-panel" }
  * iframe → React: { type: "search-user", data: { query } }
  * iframe → React: { type: "invite-user", data: { toUserId, gameId, gameName, gameCode } }
- * iframe → React: { type: "game-move", data: { row, col, player } }
+ * iframe → React: { type: "game-move", data: { ... } }
  * iframe → React: { type: "game-over", data: { score, timeUsed, coinReward } }
- * iframe → React: { type: "state-update", data: { coins, type, ... } }
+ * iframe → React: { type: "state-update", data: { ... } }
  * iframe → React: { type: "quit" }
  */
 export default function HtmlGameLoader({
   htmlContent, game, questions, players, playerName,
-  playMode, onFinish, onQuit, onStateUpdate, userAuth
+  playMode, onFinish, onQuit, onStateUpdate, userAuth,
+  coopSessionId, coopOpponent, onCoopReady,
 }) {
   const iframeRef = useRef(null);
+  const [showCoopPanel, setShowCoopPanel] = useState(false);
+  const [coopMode, setCoopMode] = useState(playMode || "solo");
+  const [pendingOpponent, setPendingOpponent] = useState(coopOpponent || null);
 
-  // Ensure socket is connected on mount
+  const gameId = game?._id?.toString() || game?.id;
+  const gameName = game?.name || "Trò chơi";
+  const gameCode = game?.code || "";
+
   useEffect(() => {
     if (!socket.connected && userAuth?.token) {
       socket.auth = { token: userAuth.token };
@@ -56,7 +67,6 @@ export default function HtmlGameLoader({
         userId = userAuth.user?.id;
         const coinData = await coinService.get();
         userCoins = coinData?.coins || 0;
-        const gameId = game?._id?.toString() || game?.id;
         if (gameId) {
           const progress = await gameProgressService.getGame(gameId);
           if (progress?.loadout) loadout = progress.loadout;
@@ -71,7 +81,7 @@ export default function HtmlGameLoader({
         try {
           const taskData = await taskService.getTasks("DAILY");
           const spinTask = (taskData?.tasks || []).find(t => t.code === "SPIN_WHEEL");
-          if (spinTask) spinsLeft = spinTask.spinsLeft ?? Math.max(0, spinTask.target - (spinTask.progress || 0));
+          if (spinTask) spinsLeft = taskData.spinsLeft ?? Math.max(0, spinTask.target - (spinTask.progress || 0));
         } catch { /* ignore */ }
         try {
           const [loadoutResp, itemsResp] = await Promise.all([
@@ -105,23 +115,23 @@ export default function HtmlGameLoader({
             else if (layer === 'accessory') state.accessory = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
           }
           const svgContent = renderAvatarFull(state, bodyHtml);
-          if (svgContent) {
-            avatarSvg = svgContent;
-          }
+          if (svgContent) avatarSvg = svgContent;
         } catch { /* ignore */ }
       }
     } catch { /* ignore */ }
+
+    const effectivePlayMode = coopMode || playMode || "solo";
 
     iframe.contentWindow.postMessage(
       {
         type: "init",
         data: {
-          gameId: game?._id?.toString() || game?.id,
+          gameId,
           playerName: playerName || "Player",
           players: playerNames,
           questions: questions || [],
           apiBase: API_BASE,
-          playMode: playMode || "solo",
+          playMode: effectivePlayMode,
           questionsTotal: questions?.length || 0,
           userCoins,
           coins: userCoins,
@@ -132,15 +142,16 @@ export default function HtmlGameLoader({
           userId,
           loadout,
           avatarSvg,
-          gameName: game?.name || "Trò chơi",
-          gameCode: game?.code || "",
+          gameName,
+          gameCode,
+          sessionId: coopSessionId || null,
+          opponent: pendingOpponent || null,
         }
       },
       "*"
     );
-  }, [game, playerName, questions, players, playMode, userAuth]);
+  }, [game, playerName, questions, players, playMode, userAuth, coopMode, coopSessionId, pendingOpponent]);
 
-  // Send message to iframe
   const postToIframe = useCallback((msg) => {
     const iframe = iframeRef.current;
     if (iframe?.contentWindow) {
@@ -148,7 +159,6 @@ export default function HtmlGameLoader({
     }
   }, []);
 
-  // Handle user search request from iframe
   const handleSearchUser = useCallback(async (query) => {
     try {
       const results = await userService.search(query);
@@ -159,42 +169,33 @@ export default function HtmlGameLoader({
     }
   }, [postToIframe]);
 
-  // Handle invite user request from iframe
   const handleInviteUser = useCallback((data) => {
     if (!data) return;
-    const { toUserId, gameName, gameCode } = data;
-    const correctGameId = game?._id?.toString() || game?.id;
+    const { toUserId, gameName: gName, gameCode: gCode } = data;
     socket.emit(SOCKET_EVENTS.GAME_INVITE_SEND, {
       toUserId,
-      gameId: correctGameId,
-      gameName: gameName || game?.name,
-      gameCode: gameCode || game?.code,
+      gameId,
+      gameName: gName || gameName,
+      gameCode: gCode || gameCode,
     });
     postToIframe({ type: "invite-sent", data: { ok: true, toUserId } });
-  }, [game, postToIframe]);
+  }, [gameId, gameName, gameCode, postToIframe]);
 
-  // Handle game move from iframe (forward to socket)
   const handleGameMove = useCallback((data) => {
     if (!data) return;
     socket.emit(SOCKET_EVENTS.GAME_MOVE, {
-      gameId: game?._id?.toString() || game?.id,
-      row: data.row,
-      col: data.col,
-      player: data.player,
+      gameId,
+      ...data,
     });
-  }, [game]);
+  }, [gameId]);
 
-  // Handle join by code from iframe
   const handleJoinByCode = useCallback((data) => {
     if (!data) return;
-    // Ensure socket is connected
     if (!socket.connected && userAuth?.token) {
       socket.auth = { token: userAuth.token };
       socket.connect();
     }
-    // Socket.IO buffers emits when disconnected — try immediately
     socket.emit(SOCKET_EVENTS.GAME_JOIN_BY_CODE, { code: data.code });
-    // Also retry after a short delay in case connection was just initiated
     setTimeout(() => {
       if (!socket.connected && userAuth?.token) {
         socket.emit(SOCKET_EVENTS.GAME_JOIN_BY_CODE, { code: data.code });
@@ -207,15 +208,16 @@ export default function HtmlGameLoader({
       const msg = e.data;
       if (!msg || typeof msg !== "object") return;
 
-      // GameTaskBridge events — forward to task API
       if (msg.source === "game" && msg.type) {
-        const gameId = game?._id?.toString() || game?.id || msg.data?.gameId;
-        trackTaskEvent(msg.type, { gameId, ...msg.data }).catch(() => {});
+        const gId = gameId || msg.data?.gameId;
+        trackTaskEvent(msg.type, { gameId: gId, ...msg.data }).catch(() => {});
         return;
       }
 
       if (msg.type === "ready" || msg.type === "bridge-ready") {
         handleInit();
+      } else if (msg.type === "show-coop-panel") {
+        setShowCoopPanel(true);
       } else if (msg.type === "add-coins") {
         const amount = msg.data?.amount || 0;
         if (amount > 0 && userAuth?.token) {
@@ -254,7 +256,6 @@ export default function HtmlGameLoader({
         }
       } else if (msg.type === "save-loadout") {
         const loadoutData = msg.data?.loadout;
-        const gameId = game?._id?.toString() || game?.id;
         if (loadoutData && gameId && userAuth?.token) {
           gameProgressService.upsertGame(gameId, { loadout: loadoutData }).catch(() => {});
         }
@@ -282,21 +283,30 @@ export default function HtmlGameLoader({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleJoinByCode, userAuth, postToIframe]);
+  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleJoinByCode, userAuth, postToIframe, gameId]);
 
-  // Listen for opponent moves from socket and forward to iframe
   useEffect(() => {
     const onOpponentMove = (data) => {
       postToIframe({ type: "opponent-move", data });
     };
 
     const onInviteAccepted = (data) => {
+      setPendingOpponent(data);
+      setCoopMode("multiplayer");
       postToIframe({ type: "invite-accepted", data });
-      postToIframe({ type: "multiplayer-start", data: { opponent: data } });
+      postToIframe({ type: "multiplayer-start", data: { opponent: data, sessionId: data.sessionId } });
+      postToIframe({ type: "init", data: { gameId, playerName: playerName || "Player", playMode: "multiplayer", gameName, gameCode, sessionId: data.sessionId, opponent: data } });
     };
 
     const onGameJoined = (data) => {
-      postToIframe({ type: "game-joined", data });
+      if (data.ok) {
+        setPendingOpponent({ acceptedByName: data.hostUserId });
+        setCoopMode("multiplayer");
+        postToIframe({ type: "game-joined", data });
+        postToIframe({ type: "init", data: { gameId: data.gameId || gameId, playerName: playerName || "Player", playMode: "multiplayer", gameName, gameCode, sessionId: data.sessionId, opponent: { acceptedBy: data.hostUserId } } });
+      } else {
+        postToIframe({ type: "game-joined", data });
+      }
     };
 
     socket.on(SOCKET_EVENTS.GAME_MOVE, onOpponentMove);
@@ -308,7 +318,41 @@ export default function HtmlGameLoader({
       socket.off(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, onInviteAccepted);
       socket.off(SOCKET_EVENTS.GAME_JOINED, onGameJoined);
     };
+  }, [postToIframe, gameId, playerName, gameName, gameCode]);
+
+  useEffect(() => {
+    if (coopSessionId && coopOpponent) {
+      setPendingOpponent(coopOpponent);
+      setCoopMode("multiplayer");
+      postToIframe({ type: "invite-accepted", data: coopOpponent });
+      postToIframe({ type: "multiplayer-start", data: { opponent: coopOpponent, sessionId: coopSessionId } });
+    }
+  }, [coopSessionId, coopOpponent]);
+
+  const handleCoopModeSelected = useCallback((mode) => {
+    if (mode === "solo") {
+      setShowCoopPanel(false);
+      setCoopMode("solo");
+      postToIframe({ type: "mode-selected", data: { mode: "solo" } });
+    }
+    setCoopMode(mode);
   }, [postToIframe]);
+
+  const handleCoopInviteAccepted = useCallback((data) => {
+    setShowCoopPanel(false);
+    setPendingOpponent(data);
+    setCoopMode("multiplayer");
+    postToIframe({ type: "invite-accepted", data });
+    postToIframe({ type: "multiplayer-start", data: { opponent: data, sessionId: data.sessionId } });
+    onCoopReady?.(data);
+  }, [postToIframe, onCoopReady]);
+
+  const handleCoopGameJoined = useCallback((data) => {
+    setShowCoopPanel(false);
+    setCoopMode("multiplayer");
+    postToIframe({ type: "game-joined", data });
+    onCoopReady?.(data);
+  }, [postToIframe, onCoopReady]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -334,6 +378,17 @@ export default function HtmlGameLoader({
         sandbox="allow-scripts allow-same-origin"
         className="flex-1 w-full h-full border-0"
         title={game?.title || "Game"}
+      />
+      <CoopInvitePanel
+        gameId={gameId}
+        gameName={gameName}
+        gameCode={gameCode}
+        visible={showCoopPanel}
+        mode={coopMode}
+        onModeSelected={handleCoopModeSelected}
+        onInviteAccepted={handleCoopInviteAccepted}
+        onGameJoined={handleCoopGameJoined}
+        onClose={() => setShowCoopPanel(false)}
       />
     </div>
   );

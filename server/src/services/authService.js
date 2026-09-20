@@ -88,7 +88,13 @@ export async function registerUser({ username, email, password, name }) {
 
 export async function listUsers() {
   const docs = await getCollection(COLLECTION).find({}).sort({ createdAt: 1 }).toArray();
-  return docs.map(({ _id, passwordHash, ...rest }) => rest);
+  const { getCollection: gc } = await import("../db.js");
+  const classes = await gc("classes").find({}).toArray();
+  const classMap = new Map(classes.map(c => [c.id, c]));
+  return docs.map(({ _id, passwordHash, ...rest }) => {
+    const cls = rest.classId ? classMap.get(rest.classId) : null;
+    return { ...rest, className: cls?.name || null, classCode: cls?.code || null };
+  });
 }
 
 export async function updateProfile(userId, { name, email, password, currentPassword, avatarLoadout }) {

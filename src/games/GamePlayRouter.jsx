@@ -5,7 +5,7 @@ import { Loader } from '../components/ui.jsx'
 const PlayGameScreen = lazy(() => import('./PlayGameScreen.jsx'));
 const HtmlGameLoader = lazy(() => import('./HtmlGameLoader.jsx'));
 
-export function GamePlayRouter({ game, questions, players, playerName, onFinish, onQuit, onStateUpdate, template: initialTemplate, userAuth }) {
+export function GamePlayRouter({ game, questions, players, playerName, onFinish, onQuit, onStateUpdate, template: initialTemplate, userAuth, coopSession }) {
   const [tpl, setTpl] = useState(initialTemplate || null);
   const tid = game?.templateId
     ? (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || String(game.templateId))
@@ -34,7 +34,7 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
   if (tpl?.htmlTemplate && tpl.htmlTemplate.trim() !== "") {
     return (
       <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-paper py-16"><Loader label="Đang tải trò chơi..." /></div>}>
-        <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={tpl.playMode || "solo"} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} userAuth={userAuth} />
+        <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={coopSession ? "multiplayer" : (tpl.playMode || "solo")} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} userAuth={userAuth} coopSessionId={coopSession?.sessionId} coopOpponent={coopSession ? { acceptedBy: coopSession.fromUserId, acceptedByName: coopSession.fromName } : null} />
       </Suspense>
     );
   }

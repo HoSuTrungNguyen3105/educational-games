@@ -78,6 +78,7 @@
             <div class="score">🏆 X: <span id="scoreX">0</span> &nbsp;|&nbsp; O: <span id="scoreO">0</span></div>
             <div style="display:flex; gap:8px; align-items:center;">
                 <span id="modeLabel" style="font-size:0.8rem; background:var(--grid-color); padding:4px 10px; border-radius:20px; display:none;"></span>
+                <button id="coopBtn" class="btn-reset" style="background:#4ecdc4; display:none;">👥 Mời bạn</button>
                 <button class="btn-reset" id="resetBtn">🔄 Bàn mới</button>
                 <button class="panel-toggle" id="panelToggle">🎨 Màu</button>
             </div>
@@ -127,7 +128,7 @@
         'use strict';
 
         // ===== postMessage Communication =====
-        let gameConfig = { mode: 'solo', gameId: null, playerName: 'Player', apiBase: '', authToken: null, userId: null };
+        let gameConfig = { mode: 'solo', gameId: null, playerName: 'Player', apiBase: '', authToken: null, userId: null, sessionId: null };
         let bridgeReady = false;
 
         window.parent.postMessage({ type: 'ready' }, '*');
@@ -143,13 +144,21 @@
                 gameConfig.apiBase = d.apiBase || '';
                 gameConfig.authToken = d.authToken || null;
                 gameConfig.userId = d.userId || null;
-                gameConfig.mode = d.playMode || 'solo';
+                gameConfig.sessionId = d.sessionId || null;
+                var newMode = d.playMode || 'solo';
+                if (newMode !== gameConfig.mode) {
+                    gameConfig.mode = newMode;
+                    if (gameConfig.mode === 'multiplayer') {
+                        myPlayer = 'X';
+                        opponentPlayer = 'O';
+                        if (d.opponent) {
+                            gameConfig.opponent = d.opponent;
+                        }
+                    }
+                }
                 bridgeReady = true;
                 updateModeLabel();
-                if (gameConfig.mode === 'multiplayer') {
-                    myPlayer = 'X';
-                    opponentPlayer = 'O';
-                }
+                updateCoopBtn();
             } else if (msg.type === 'opponent-move') {
                 var d = msg.data || {};
                 if (d.row !== undefined && d.col !== undefined) {
@@ -161,6 +170,16 @@
                 myPlayer = 'X';
                 opponentPlayer = 'O';
                 gameConfig.opponent = d.opponent;
+                if (d.sessionId) gameConfig.sessionId = d.sessionId;
+                updateModeLabel();
+                resetGame();
+            } else if (msg.type === 'invite-accepted') {
+                var d = msg.data || {};
+                gameConfig.mode = 'multiplayer';
+                myPlayer = 'X';
+                opponentPlayer = 'O';
+                gameConfig.opponent = d;
+                if (d.sessionId) gameConfig.sessionId = d.sessionId;
                 updateModeLabel();
                 resetGame();
             }
@@ -178,6 +197,13 @@
             } else {
                 label.textContent = '🤖 Solo';
                 label.style.display = 'inline-block';
+            }
+        }
+
+        function updateCoopBtn() {
+            var btn = document.getElementById('coopBtn');
+            if (btn) {
+                btn.style.display = gameConfig.mode === 'multiplayer' ? 'none' : 'inline-block';
             }
         }
 
@@ -569,6 +595,12 @@
 
         resetBtn.addEventListener('click', fullReset);
         playAgainBtn.addEventListener('click', resetGame);
+        var coopBtn = document.getElementById('coopBtn');
+        if (coopBtn) {
+            coopBtn.addEventListener('click', function() {
+                sendToParent('show-coop-panel', {});
+            });
+        }
 
         // ===== Init =====
         loadColorsFromStorage();
@@ -577,6 +609,7 @@
         updateScore();
         turnDisplay.textContent = 'X';
         updateModeLabel();
+        updateCoopBtn();
         panel.style.display = '';
         if (window.innerWidth < 650) panel.style.display = 'none';
         panelToggle.style.display = (window.innerWidth < 650) ? 'inline-block' : 'none';

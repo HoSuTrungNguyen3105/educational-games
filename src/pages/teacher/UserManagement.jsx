@@ -161,12 +161,22 @@ export default function UserManagement({ user, showToast }) {
         onRetry={load}
         emptyLabel="Chưa có tài khoản nào."
         onCreate={openCreate}
-        headers={["Họ tên", "Tên đăng nhập", "Email", "Vai trò", "Ngày tạo", ""]}
+        headers={["Họ tên", "Tên đăng nhập", "Email", "Lớp", "Vai trò", "Ngày tạo", ""]}
         renderRow={(u) => (
           <tr key={u.id} className="border-b border-ink/5 last:border-0">
             <td className="px-5 py-3 font-body text-ink">{u.name}</td>
             <td className="px-5 py-3 font-mono text-[#8A7C63]">{u.username}</td>
             <td className="px-5 py-3 font-mono text-[#8A7C63] text-sm">{u.email || "—"}</td>
+            <td className="px-5 py-3 text-sm">
+              {u.className ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold">
+                  {u.className}
+                  {u.classCode && <span className="font-mono opacity-60">({u.classCode})</span>}
+                </span>
+              ) : (
+                <span className="text-[#8A7C63] text-xs">—</span>
+              )}
+            </td>
             <td className="px-5 py-3">
               <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${u.role === "admin" ? "bg-pink/15 text-pink border-pink/30"
                 : u.role === "teacher" ? "bg-ticket/15 text-ticket border-ticket/30"

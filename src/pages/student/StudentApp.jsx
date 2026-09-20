@@ -14,7 +14,7 @@ import ChatBubble from '../../components/chat/ChatBubble.jsx'
 
 const GamePlayRouter = lazy(() => import('../../games/GamePlayRouter.jsx'));
 
-export default function StudentApp({ initialGame, onExit, toast, userAuth, onUserLogin, onUserLogout }) {
+export default function StudentApp({ initialGame, coopSession, onExit, toast, userAuth, onUserLogin, onUserLogout }) {
   const [screen, setScreen] = useState(() => {
     if (initialGame && userAuth?.user) return "waiting";
     return initialGame ? "name" : "join";
@@ -25,6 +25,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
   const [finalResult, setFinalResult] = useState(null);
   const [leaderboard, setLeaderboard] = useState(null);
   const [pendingInvite, setPendingInvite] = useState(null);
+  const [activeCoopSession, setActiveCoopSession] = useState(coopSession || null);
 
   const resetStore = () => useGameStore.getState().resetGame();
 
@@ -75,9 +76,14 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
     };
 
     const onInviteAccepted = (data) => {
-      // The invited user accepted - we can now start the game together
       if (data.gameId) {
-        // Navigate to the game
+        if (data.sessionId) {
+          setActiveCoopSession({
+            sessionId: data.sessionId,
+            fromUserId: data.acceptedBy,
+            fromName: data.acceptedByName,
+          });
+        }
         gameService.get(data.gameId).then(g => {
           if (g) {
             setGame(g);
@@ -99,12 +105,19 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
 
   const handleAcceptInvite = () => {
     if (!pendingInvite) return;
-    // Accept via socket
     socket.emit(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, {
       fromUserId: pendingInvite.fromUserId,
       gameId: pendingInvite.gameId,
+      sessionId: pendingInvite.sessionId,
     });
-    // Load the game
+    if (pendingInvite.sessionId) {
+      setActiveCoopSession({
+        sessionId: pendingInvite.sessionId,
+        fromUserId: pendingInvite.fromUserId,
+        fromName: pendingInvite.fromName,
+        gameCode: pendingInvite.gameCode,
+      });
+    }
     gameService.get(pendingInvite.gameId).then(g => {
       if (g) {
         setGame(g);
@@ -235,7 +248,7 @@ export default function StudentApp({ initialGame, onExit, toast, userAuth, onUse
         )}
         {screen === "play" && game && (isPlayToWin || questions.length > 0) && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Loader label="Đang tải trò chơi..." /></div>}>
-            <GamePlayRouter game={game} questions={questions} players={players} playerName={playerName} onQuit={restart} onFinish={handleFinish} onStateUpdate={handleStateUpdate} template={template} userAuth={userAuth} />
+            <GamePlayRouter game={game} questions={questions} players={players} playerName={playerName} onQuit={restart} onFinish={handleFinish} onStateUpdate={handleStateUpdate} template={template} userAuth={userAuth} coopSession={activeCoopSession} />
             {/* <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} /> */}
           </Suspense>
         )}

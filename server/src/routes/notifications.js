@@ -79,6 +79,17 @@ router.post("/read-all", authenticate, async (req, res, next) => {
   }
 });
 
+// DELETE /api/notifications/all — xóa hết thông báo (dùng để test)
+router.delete("/all", authenticate, async (req, res, next) => {
+  try {
+    const { getCollection } = await import("../db.js");
+    const result = await getCollection("notifications").deleteMany({ toUserId: req.user.sub });
+    sendSuccess(res, { deleted: result.deletedCount });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // POST /api/notifications/test-push — send a test push notification to current user's registered devices
 router.post("/test-push", authenticate, async (req, res, next) => {
   try {

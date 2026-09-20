@@ -245,6 +245,13 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     } catch (e) { }
   };
 
+  const handleDeleteAll = async () => {
+    try {
+      await notificationService.deleteAll();
+      setNotifications([]);
+    } catch (e) { }
+  };
+
   const lv = getLevelProgress(userCoins);
 
   const handleClaimCoins = (newCoins) => {
@@ -345,6 +352,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                       unreadCount={unreadCount}
                       onMarkAsRead={handleMarkAsRead}
                       onMarkAllAsRead={handleMarkAllAsRead}
+                      onDeleteAll={handleDeleteAll}
                       onClose={() => setShowNotifications(false)}
                       onSelectGame={onSelectGame}
                       pushStatus={pushStatus}
@@ -510,6 +518,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                           unreadCount={unreadCount}
                           onMarkAsRead={handleMarkAsRead}
                           onMarkAllAsRead={handleMarkAllAsRead}
+                          onDeleteAll={handleDeleteAll}
                           onClose={() => setShowNotifications(false)}
                           onSelectGame={onSelectGame}
                           pushStatus={pushStatus}
@@ -1054,6 +1063,7 @@ function NotificationDropdown({
   unreadCount,
   onMarkAsRead,
   onMarkAllAsRead,
+  onDeleteAll,
   onClose,
   onSelectGame,
   pushStatus,
@@ -1082,11 +1092,18 @@ function NotificationDropdown({
       >
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-purple-50 bg-purple-50/60">
           <h3 className="font-bold text-gray-800">Thông báo</h3>
-          {unreadCount > 0 && (
-            <button onClick={onMarkAllAsRead} className="text-xs text-purple-600 hover:text-purple-800 font-medium">
-              Đánh dấu đã đọc
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {notifications.length > 0 && (
+              <button onClick={onDeleteAll} className="text-[11px] text-red-400 hover:text-red-600 font-medium">
+                Xóa tất cả
+              </button>
+            )}
+            {unreadCount > 0 && (
+              <button onClick={onMarkAllAsRead} className="text-xs text-purple-600 hover:text-purple-800 font-medium">
+                Đánh dấu đã đọc
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Push notification settings */}
@@ -1172,8 +1189,15 @@ function NotificationDropdown({
                         onClose();
                         try {
                           const g = await gameService.get(notif.gameId);
-                          if (g) onSelectGame(g);
-                          else navigate('/student');
+                          if (g) {
+                            const coopData = notif.data?.sessionId ? {
+                              sessionId: notif.data.sessionId,
+                              gameCode: notif.gameCode,
+                              fromUserId: notif.fromUserId,
+                              fromName: notif.fromName,
+                            } : null;
+                            onSelectGame(g, coopData);
+                          } else navigate('/student');
                         } catch { navigate('/student'); }
                       }}
                         className="mt-2 px-3 py-1.5 bg-purple-500 text-white text-xs font-semibold rounded-lg hover:bg-purple-600 transition">

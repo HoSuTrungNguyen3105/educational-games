@@ -120,6 +120,7 @@ export default function TemplateFormPage({ showToast, route }) {
             <select value={form.playMode} onChange={e => onChange("playMode", e.target.value)}
               className="w-full note-card px-3 py-1.5 mt-0.5 border-ink/10 focus:border-ticket bg-paper2 text-sm">
               <option value="solo">Cá nhân (học sinh tự chơi)</option>
+              <option value="coop">Co-op (chơi cùng bạn)</option>
               <option value="classroom">Lớp học (giáo viên điều khiển)</option>
             </select>
           </Field>

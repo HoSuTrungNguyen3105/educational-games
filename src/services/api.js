@@ -423,6 +423,9 @@ export const notificationService = {
   async testPush() {
     return apiFetch("/notifications/test-push", { method: "POST" });
   },
+  async deleteAll() {
+    return apiFetch("/notifications/all", { method: "DELETE" });
+  },
 };
 
 export const classService = {
