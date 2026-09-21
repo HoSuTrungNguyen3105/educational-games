@@ -94,20 +94,46 @@ router.delete("/all", authenticate, async (req, res, next) => {
 router.post("/test-push", authenticate, async (req, res, next) => {
   try {
     const { sendPushToUser } = await import("../services/fcmService.js");
+    console.log(`[API] test-push requested by user: ${req.user.sub}`);
     const result = await sendPushToUser(req.user.sub, {
       title: "🧪 Kiểm tra thông báo",
       body: "Chúc mừng! Thiết bị di động của bạn đã nhận được thông báo đẩy từ EduPlay.",
       type: "TEST",
       data: { test: "true", timestamp: new Date().toISOString() },
     });
+    console.log(`[API] test-push result:`, JSON.stringify(result));
     // Hiển thị thông báo về token đã bị remove
     if (result.invalidTokensRemoved > 0) {
       console.log(`[API] ${result.invalidTokensRemoved} token(s) không còn hợp lệ đã được xóa khỏi database.`);
     }
     sendSuccess(res, result);
   } catch (e) {
+    console.error("[API] test-push error:", e);
     next(e);
   }
+});
+
+// GET /api/notifications/push-status — check FCM config + device count
+router.get("/push-status", authenticate, async (req, res, next) => {
+  try {
+    const { getActiveTokensByUser } = await import("../services/userDeviceService.js");
+    const tokens = await getActiveTokensByUser(req.user.sub);
+    const hasFirebase = !!(process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
+    const hasLocalFile = (() => {
+      try {
+        const fs = await import("fs");
+        return fs.existsSync("./firebase-service-account.json");
+      } catch { return false; }
+    })();
+    sendSuccess(res, {
+      userId: req.user.sub,
+      deviceCount: tokens.length,
+      devices: tokens.map(t => t.slice(0, 20) + "..."),
+      firebaseConfigured: hasFirebase,
+      localServiceAccount: hasLocalFile,
+      nodeEnv: process.env.NODE_ENV,
+    });
+  } catch (e) { next(e); }
 });
 
 export default router;
