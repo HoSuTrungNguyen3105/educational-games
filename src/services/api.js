@@ -427,7 +427,7 @@ export const notificationService = {
     return apiFetch("/notifications/all", { method: "DELETE" });
   },
   async resetDevices() {
-    return apiFetch("/notifications/devices", { method: "DELETE" });
+    return apiFetch("/notifications/devices/reset", { method: "DELETE" });
   },
 };
 

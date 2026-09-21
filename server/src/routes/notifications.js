@@ -36,8 +36,8 @@ router.get("/devices", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// DELETE /api/notifications/devices — reset all device tokens for current user (re-register after reinstall)
-router.delete("/devices", authenticate, async (req, res, next) => {
+// DELETE /api/notifications/devices/reset — reset all device tokens for current user (re-register after reinstall)
+router.delete("/devices/reset", authenticate, async (req, res, next) => {
   try {
     const result = await userDeviceService.deactivateAllByUser(req.user.sub);
     sendSuccess(res, { ok: true, deactivated: result.modifiedCount });
@@ -125,14 +125,10 @@ router.post("/test-push", authenticate, async (req, res, next) => {
 router.get("/push-status", authenticate, async (req, res, next) => {
   try {
     const { getActiveTokensByUser } = await import("../services/userDeviceService.js");
+    const fs = await import("fs");
     const tokens = await getActiveTokensByUser(req.user.sub);
     const hasFirebase = !!(process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
-    const hasLocalFile = (() => {
-      try {
-        const fs = await import("fs");
-        return fs.existsSync("./firebase-service-account.json");
-      } catch { return false; }
-    })();
+    const hasLocalFile = fs.existsSync("./firebase-service-account.json");
     sendSuccess(res, {
       userId: req.user.sub,
       deviceCount: tokens.length,
