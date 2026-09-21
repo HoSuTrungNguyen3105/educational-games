@@ -299,6 +299,7 @@ async function _runHeavyInit(database) {
         relatedId: { bsonType: "string" },
         vibrate: { bsonType: "bool" },
         sound: { bsonType: "bool" },
+        vibratePattern: { bsonType: "string" },
         triggered: { bsonType: "bool" },
         createdAt: { bsonType: "string" },
         updatedAt: { bsonType: "string" },

@@ -105,10 +105,10 @@ app.use((err, _req, res, _next) => {
 
 export default app;
 
-// ── Background scheduler: check due reminders every 60s ──
+// ── Background scheduler: check due reminders every 10s ──
 setInterval(() => {
   reminderService.processDueReminders().catch((e) => {
     console.error("[ReminderScheduler] Error:", e.message);
   });
-}, 60000);
-console.log("[ReminderScheduler] Started — checking every 60s");
+}, 10000);
+console.log("[ReminderScheduler] Started — checking every 10s");

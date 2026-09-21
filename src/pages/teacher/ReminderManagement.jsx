@@ -41,7 +41,7 @@ export default function ReminderManagement({ showToast }) {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", message: "", remindAt: "", repeat: "none", vibrate: true, sound: true });
+  const [form, setForm] = useState({ title: "", message: "", remindAt: "", repeat: "none", vibrate: true, sound: true, vibratePattern: "" });
   const [saving, setSaving] = useState(false);
   const [dueAlert, setDueAlert] = useState(null);
 
@@ -78,9 +78,9 @@ export default function ReminderManagement({ showToast }) {
     setSaving(true);
     try {
       const remindAt = new Date(form.remindAt).toISOString();
-      await reminderService.create({ title: form.title.trim(), message: form.message.trim(), remindAt, repeat: form.repeat, vibrate: form.vibrate, sound: form.sound });
+      await reminderService.create({ title: form.title.trim(), message: form.message.trim(), remindAt, repeat: form.repeat, vibrate: form.vibrate, sound: form.sound, vibratePattern: form.vibratePattern });
       showToast?.("Đã tạo nhắc nhở!", "success");
-      setForm({ title: "", message: "", remindAt: "", repeat: "none", vibrate: true, sound: true });
+      setForm({ title: "", message: "", remindAt: "", repeat: "none", vibrate: true, sound: true, vibratePattern: "" });
       setShowForm(false);
       load();
     } catch (e) {
@@ -197,6 +197,47 @@ export default function ReminderManagement({ showToast }) {
               <span className="text-sm text-ink">🔔 Âm thanh</span>
             </label>
           </div>
+          {form.vibrate && (
+            <div className="pt-2 space-y-2">
+              <label className="block text-sm font-medium text-ink">Nhịp rung</label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "Mặc định", value: "" },
+                  { label: "Nhẹ nhàng", value: "100,50,100" },
+                  { label: "Rung nhanh", value: "50,30,50,30,50,30,50" },
+                  { label: "SOS", value: "100,50,100,50,100,150,300,100,300,100,300,150,100,50,100,50,100" },
+                  { label: "Tim đập", value: "80,80,80,300,80,80,80,300" },
+                  { label: "Vô hạn", value: "repeat" },
+                ].map((p) => (
+                  <button key={p.value} type="button"
+                    onClick={() => setForm({ ...form, vibratePattern: p.value })}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition ${
+                      form.vibratePattern === p.value
+                        ? "bg-gold text-white border-gold"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-gold/50"
+                    }`}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input value={form.vibratePattern} onChange={(e) => setForm({ ...form, vibratePattern: e.target.value })}
+                  placeholder="200,100,200,100,200"
+                  className="flex-1 px-3 py-1.5 border border-ink/10 rounded-xl text-xs font-mono focus:border-gold outline-none" />
+                <button type="button" onClick={() => {
+                  if (navigator.vibrate) {
+                    const p = form.vibratePattern;
+                    if (p === "repeat") { navigator.vibrate([300,100,300,100,300]); }
+                    else if (p) { const nums = p.split(",").map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n)); navigator.vibrate(nums); }
+                    else { navigator.vibrate([200,100,200]); }
+                  }
+                }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-medium text-gray-600 transition">
+                  📳 Test
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-400">Nhập nhịp rung: <code>rung,nghỉ,rung,nghỉ...</code> (ms). Chọn "Vô hạn" để rung liên tục 30s.</p>
+            </div>
+          )}
           <div className="flex gap-2 justify-end">
             <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-ink transition">Hủy</button>
             <button onClick={handleCreate} disabled={saving}

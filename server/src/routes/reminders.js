@@ -39,7 +39,7 @@ r.get("/due", auth, async (req, res) => {
 // Create reminder
 r.post("/", auth, async (req, res) => {
   try {
-    const { title, message, remindAt, repeat, type, relatedId, vibrate, sound } = req.body;
+    const { title, message, remindAt, repeat, type, relatedId, vibrate, sound, vibratePattern } = req.body;
     if (!title || !remindAt) return sendError(res, "title và remindAt là bắt buộc", 400);
     const reminder = await reminderService.createReminder({
       userId: req.user.sub,
@@ -51,6 +51,7 @@ r.post("/", auth, async (req, res) => {
       relatedId,
       vibrate,
       sound,
+      vibratePattern,
     });
 
     // Send confirmation push

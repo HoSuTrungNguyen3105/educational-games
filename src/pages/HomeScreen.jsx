@@ -265,9 +265,27 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         } catch { /* ignore */ }
       }
 
-      // Vibrate device
+      // Vibrate device with custom pattern
       if (data.vibrate !== "false" && navigator.vibrate) {
-        navigator.vibrate([200, 100, 200]);
+        function parseVibratePattern(str) {
+          if (!str) return [200, 100, 200];
+          if (str === "repeat") return "repeat";
+          const nums = str.split(",").map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0);
+          return nums.length > 0 ? nums : [200, 100, 200];
+        }
+        const vp = parseVibratePattern(data.vibratePattern);
+        if (vp === "repeat") {
+          function vibrateLoop() {
+            navigator.vibrate([300, 100, 300, 100, 300]);
+            window._fgVibrateInterval = setInterval(() => {
+              navigator.vibrate([300, 100, 300, 100, 300]);
+            }, 800);
+          }
+          vibrateLoop();
+          setTimeout(() => { if (window._fgVibrateInterval) { clearInterval(window._fgVibrateInterval); window._fgVibrateInterval = null; } }, 30000);
+        } else {
+          navigator.vibrate(vp);
+        }
       }
     });
     return unsubscribe;

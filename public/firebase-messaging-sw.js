@@ -40,6 +40,35 @@ messaging.onBackgroundMessage((payload) => {
   const iconUrl = icon || (self.location.origin + "/educational-games/eduplay-icon-192x192.png");
   const badgeUrl = self.location.origin + "/educational-games/eduplay-icon-192x192.png";
 
+  // Parse vibration pattern
+  function parseVibratePattern(patternStr) {
+    if (!patternStr) return [200, 100, 200];
+    if (patternStr === "repeat") return "repeat";
+    const nums = patternStr.split(",").map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0);
+    return nums.length > 0 ? nums : [200, 100, 200];
+  }
+
+  function runVibration(pattern) {
+    if (pattern === "repeat") {
+      function vibrateLoop() {
+        if (self._swVibrateInterval) clearInterval(self._swVibrateInterval);
+        navigator.vibrate([300, 100, 300, 100, 300]);
+        self._swVibrateInterval = setInterval(() => {
+          navigator.vibrate([300, 100, 300, 100, 300]);
+        }, 800);
+      }
+      vibrateLoop();
+      setTimeout(() => { if (self._swVibrateInterval) { clearInterval(self._swVibrateInterval); self._swVibrateInterval = null; } }, 30000);
+    } else {
+      navigator.vibrate(pattern);
+    }
+  }
+
+  const vibratePattern = parseVibratePattern(data.vibratePattern);
+  if (data.vibrate !== "false" && navigator.vibrate) {
+    runVibration(vibratePattern);
+  }
+
   const notificationTitle = title;
   const notificationOptions = {
     body,
@@ -48,7 +77,7 @@ messaging.onBackgroundMessage((payload) => {
     data,
     tag: data.type || "general",
     renotify: true,
-    vibrate: data.vibrate === "false" ? undefined : [200, 100, 200],
+    vibrate: data.vibrate === "false" ? undefined : (typeof vibratePattern === "string" ? [200, 100, 200] : vibratePattern),
   };
 
   // Play sound for reminder notifications
