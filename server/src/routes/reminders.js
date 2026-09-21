@@ -39,7 +39,7 @@ r.get("/due", auth, async (req, res) => {
 // Create reminder
 r.post("/", auth, async (req, res) => {
   try {
-    const { title, message, remindAt, repeat, type, relatedId } = req.body;
+    const { title, message, remindAt, repeat, type, relatedId, vibrate, sound } = req.body;
     if (!title || !remindAt) return sendError(res, "title và remindAt là bắt buộc", 400);
     const reminder = await reminderService.createReminder({
       userId: req.user.sub,
@@ -49,7 +49,23 @@ r.post("/", auth, async (req, res) => {
       repeat,
       type,
       relatedId,
+      vibrate,
+      sound,
     });
+
+    // Send confirmation push
+    try {
+      const { sendPushToUser } = await import("../services/fcmService.js");
+      const dt = new Date(remindAt);
+      const timeStr = dt.toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+      await sendPushToUser(req.user.sub, {
+        title: "✅ Đã đặt nhắc nhở",
+        body: `"${title}" lúc ${timeStr}`,
+        type: "REMINDER_CREATED",
+        data: { reminderId: reminder.id },
+      });
+    } catch { /* push fail ok */ }
+
     sendSuccess(res, reminder);
   } catch (e) { sendError(res, e.message, 400); }
 });

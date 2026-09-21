@@ -245,6 +245,30 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         read: false,
         createdAt: new Date().toISOString(),
       }, ...prev]);
+
+      // Play sound for reminder notifications
+      if (data.sound !== "false" && (data.type === "REMINDER" || data.type === "REMINDER_CREATED")) {
+        try {
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.1);
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+          osc.start(audioCtx.currentTime);
+          osc.stop(audioCtx.currentTime + 0.5);
+        } catch { /* ignore */ }
+      }
+
+      // Vibrate device
+      if (data.vibrate !== "false" && navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]);
+      }
     });
     return unsubscribe;
   }, [userAuth?.user]);

@@ -4,7 +4,7 @@ function uid() {
   return "rmnd-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-export async function createReminder({ userId, title, message, remindAt, repeat = "none", type = "CUSTOM", relatedId = null }) {
+export async function createReminder({ userId, title, message, remindAt, repeat = "none", type = "CUSTOM", relatedId = null, vibrate = true, sound = true }) {
   const doc = {
     id: uid(),
     userId,
@@ -14,6 +14,8 @@ export async function createReminder({ userId, title, message, remindAt, repeat 
     repeat,
     type,
     relatedId,
+    vibrate,
+    sound,
     triggered: false,
     createdAt: new Date().toISOString(),
   };
@@ -94,7 +96,7 @@ export async function processDueReminders() {
         title: "🔔 " + r.title,
         body: r.message || "Đến giờ nhắc nhở!",
         type: "REMINDER",
-        data: { reminderId: r.id, remindAt: r.remindAt },
+        data: { reminderId: r.id, remindAt: r.remindAt, vibrate: String(r.vibrate !== false), sound: String(r.sound !== false) },
       });
       console.log(`[Reminder] Push to ${r.userId}: sent=${result.sent}, reason=${result.reason || "ok"}`);
 

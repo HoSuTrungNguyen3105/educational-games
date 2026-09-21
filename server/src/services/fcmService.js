@@ -149,6 +149,7 @@ export async function sendToTokens(tokens, { title, body, type, data = {} }) {
   stringData.type = String(type || "SYSTEM");
   stringData.click_action = "/educational-games/";
 
+  const vibrateEnabled = data?.vibrate !== "false";
   const message = {
     data: stringData,
     webpush: {
@@ -160,7 +161,7 @@ export async function sendToTokens(tokens, { title, body, type, data = {} }) {
         body: body || "",
         icon: "/educational-games/eduplay-icon-192x192.png",
         badge: "/educational-games/eduplay-icon-192x192.png",
-        vibrate: [200, 100, 200],
+        vibrate: vibrateEnabled ? [200, 100, 200] : undefined,
         requireInteraction: true,
       },
       fcmOptions: {
