@@ -211,6 +211,24 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     }
   };
 
+  const handleResetDevices = async () => {
+    try {
+      setPushMessage("Đang reset device token...");
+      await notificationService.resetDevices();
+      // Re-register with fresh token
+      const token = await requestNotificationPermission();
+      if (token) {
+        await notificationService.registerDevice(token, "WEB");
+        setPushMessage("✅ Đã reset và đăng ký lại device thành công!");
+      } else {
+        setPushMessage("✅ Đã xóa token cũ. Hãy bật lại thông báo để đăng ký mới.");
+      }
+      setPushStatus(getPushSupportStatus());
+    } catch (err) {
+      setPushMessage("❌ Lỗi reset: " + (err.message || "Thất bại"));
+    }
+  };
+
   // Listen for foreground push messages
   useEffect(() => {
     if (!userAuth?.user) return;
@@ -378,6 +396,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                       pushStatus={pushStatus}
                       onEnablePush={handleEnablePush}
                       onTestPush={handleTestPush}
+                      onResetDevices={handleResetDevices}
                       testingPush={testingPush}
                       pushMessage={pushMessage}
                     />
@@ -544,6 +563,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                           pushStatus={pushStatus}
                           onEnablePush={handleEnablePush}
                           onTestPush={handleTestPush}
+                          onResetDevices={handleResetDevices}
                           testingPush={testingPush}
                           pushMessage={pushMessage}
                         />
@@ -1089,6 +1109,7 @@ function NotificationDropdown({
   pushStatus,
   onEnablePush,
   onTestPush,
+  onResetDevices,
   testingPush,
   pushMessage,
 }) {
@@ -1162,6 +1183,15 @@ function NotificationDropdown({
               className="w-full py-1.5 px-3 bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold rounded-xl transition text-center disabled:opacity-50"
             >
               {testingPush ? "Đang gửi..." : "🧪 Gửi thử thông báo tới điện thoại"}
+            </button>
+          )}
+
+          {pushStatus?.permission === "granted" && (
+            <button
+              onClick={onResetDevices}
+              className="w-full mt-1.5 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium rounded-xl transition text-center text-[11px]"
+            >
+              🔄 Reset device token (sau khi cài lại PWA)
             </button>
           )}
 

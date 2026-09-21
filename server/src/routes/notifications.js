@@ -36,6 +36,14 @@ router.get("/devices", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// DELETE /api/notifications/devices — reset all device tokens for current user (re-register after reinstall)
+router.delete("/devices", authenticate, async (req, res, next) => {
+  try {
+    const result = await userDeviceService.deactivateAllByUser(req.user.sub);
+    sendSuccess(res, { ok: true, deactivated: result.modifiedCount });
+  } catch (e) { next(e); }
+});
+
 // ── Notification CRUD ──
 
 // GET /api/notifications — list current user's notifications

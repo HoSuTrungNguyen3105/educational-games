@@ -426,6 +426,9 @@ export const notificationService = {
   async deleteAll() {
     return apiFetch("/notifications/all", { method: "DELETE" });
   },
+  async resetDevices() {
+    return apiFetch("/notifications/devices", { method: "DELETE" });
+  },
 };
 
 export const classService = {
