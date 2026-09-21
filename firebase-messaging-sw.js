@@ -40,6 +40,35 @@ messaging.onBackgroundMessage((payload) => {
   const iconUrl = icon || (self.location.origin + "/educational-games/eduplay-icon-192x192.png");
   const badgeUrl = self.location.origin + "/educational-games/eduplay-icon-192x192.png";
 
+  // Parse vibration pattern
+  function parseVibratePattern(patternStr) {
+    if (!patternStr) return [200, 100, 200];
+    if (patternStr === "repeat") return "repeat";
+    const nums = patternStr.split(",").map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0);
+    return nums.length > 0 ? nums : [200, 100, 200];
+  }
+
+  function runVibration(pattern) {
+    if (pattern === "repeat") {
+      function vibrateLoop() {
+        if (self._swVibrateInterval) clearInterval(self._swVibrateInterval);
+        navigator.vibrate([300, 100, 300, 100, 300]);
+        self._swVibrateInterval = setInterval(() => {
+          navigator.vibrate([300, 100, 300, 100, 300]);
+        }, 800);
+      }
+      vibrateLoop();
+      setTimeout(() => { if (self._swVibrateInterval) { clearInterval(self._swVibrateInterval); self._swVibrateInterval = null; } }, 30000);
+    } else {
+      navigator.vibrate(pattern);
+    }
+  }
+
+  const vibratePattern = parseVibratePattern(data.vibratePattern);
+  if (data.vibrate !== "false" && navigator.vibrate) {
+    runVibration(vibratePattern);
+  }
+
   const notificationTitle = title;
   const notificationOptions = {
     body,
@@ -48,8 +77,27 @@ messaging.onBackgroundMessage((payload) => {
     data,
     tag: data.type || "general",
     renotify: true,
-    vibrate: [200, 100, 200],
+    vibrate: data.vibrate === "false" ? undefined : (typeof vibratePattern === "string" ? [200, 100, 200] : vibratePattern),
   };
+
+  // Play sound for reminder notifications
+  if (data.sound !== "false" && (data.type === "REMINDER" || data.type === "REMINDER_CREATED")) {
+    try {
+      const audioCtx = new (self.AudioContext || self.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.5);
+    } catch { /* ignore audio errors */ }
+  }
 
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
@@ -75,6 +123,8 @@ self.addEventListener("notificationclick", (event) => {
     urlToOpen = `/educational-games/#/assignment/${data.assignmentId}`;
   } else if (data?.type === "CHAT" && data?.conversationId) {
     urlToOpen = `/educational-games/#/chat`;
+  } else if (data?.type === "REMINDER" || data?.type === "REMINDER_CREATED") {
+    urlToOpen = `/educational-games/#/admin/reminders`;
   } else if (data?.gameId) {
     urlToOpen = `/educational-games/#/play/${data.gameId}`;
   }
