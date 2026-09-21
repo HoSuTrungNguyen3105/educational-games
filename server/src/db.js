@@ -285,6 +285,23 @@ async function _runHeavyInit(database) {
         palette: { bsonType: "object" },
       },
     } },
+    reminders: { $jsonSchema: {
+      bsonType: "object",
+      required: ["id", "userId", "title", "remindAt", "triggered", "createdAt"],
+      properties: {
+        id: { bsonType: "string" },
+        userId: { bsonType: "string" },
+        title: { bsonType: "string" },
+        message: { bsonType: "string" },
+        remindAt: { bsonType: "string" },
+        repeat: { bsonType: "string" },
+        type: { bsonType: "string" },
+        relatedId: { bsonType: "string" },
+        triggered: { bsonType: "bool" },
+        createdAt: { bsonType: "string" },
+        updatedAt: { bsonType: "string" },
+      },
+    } },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -382,6 +399,11 @@ async function _runHeavyInit(database) {
     ["submissions", { assignmentId: 1 }],
     // Garden system indexes
     ["gardens", { userId: 1 }, { unique: true }],
+    // Reminder system indexes
+    ["reminders", { id: 1 }, { unique: true }],
+    ["reminders", { userId: 1 }],
+    ["reminders", { userId: 1, remindAt: 1 }],
+    ["reminders", { remindAt: 1, triggered: 1 }],
   ];
 
   const createdIndexes = [];

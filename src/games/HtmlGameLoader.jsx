@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import { API_BASE, coinService, userService, gameProgressService } from "../services/api.js";
+import { API_BASE, coinService, userService, gameProgressService, classService } from "../services/api.js";
 import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
@@ -203,6 +203,26 @@ export default function HtmlGameLoader({
     }, 1500);
   }, [userAuth]);
 
+  const handleRequestClasses = useCallback(async (requestId) => {
+    try {
+      const classes = await classService.list();
+      postToIframe({ type: "classes-data", requestId, data: { classrooms: classes || [] } });
+    } catch (e) {
+      console.error("[HtmlGameLoader] request-classes error:", e);
+      postToIframe({ type: "classes-data", requestId, data: { error: "Không thể tải danh sách lớp học", classrooms: [] } });
+    }
+  }, [postToIframe]);
+
+  const handleRequestStudents = useCallback(async (classId, requestId) => {
+    try {
+      const students = await classService.getStudents(classId);
+      postToIframe({ type: "students-data", requestId, data: { students: students || [] } });
+    } catch (e) {
+      console.error("[HtmlGameLoader] request-students error:", e);
+      postToIframe({ type: "students-data", requestId, data: { error: "Không thể tải danh sách học sinh", students: [] } });
+    }
+  }, [postToIframe]);
+
   useEffect(() => {
     const onMessage = (e) => {
       const msg = e.data;
@@ -266,6 +286,8 @@ export default function HtmlGameLoader({
           totalQuestions: msg.data?.totalQuestions ?? 0,
           timeUsed: msg.data?.timeUsed || 0,
           coinReward: msg.data?.coinReward || 0,
+          studentId: msg.data?.studentId || null,
+          studentName: msg.data?.studentName || null,
         });
       } else if (msg.type === "state-update") {
         onStateUpdate?.(msg.data);
@@ -279,11 +301,15 @@ export default function HtmlGameLoader({
         handleGameMove(msg.data);
       } else if (msg.type === "join-by-code") {
         handleJoinByCode(msg.data);
+      } else if (msg.type === "request-classes") {
+        handleRequestClasses(msg.requestId);
+      } else if (msg.type === "request-students") {
+        handleRequestStudents(msg.data?.classId, msg.requestId);
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleJoinByCode, userAuth, postToIframe, gameId]);
+  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleJoinByCode, handleRequestClasses, handleRequestStudents, userAuth, postToIframe, gameId]);
 
   useEffect(() => {
     const onOpponentMove = (data) => {

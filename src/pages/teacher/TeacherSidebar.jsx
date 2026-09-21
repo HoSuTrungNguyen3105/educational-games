@@ -24,6 +24,7 @@ import {
   Scissors,
   Move,
   Image,
+  Bell,
 } from 'lucide-react'
 
 const MENU = [
@@ -40,6 +41,7 @@ const MENU = [
   { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
   { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
   { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
+  { id: "admin-reminders", label: "Nhắc nhở", icon: Bell, route: "/admin/reminders", permission: null },
   { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
   { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/admin/avatar-template", permission: null },
   { id: "admin-body-custom", label: "Body Custom", icon: Move, route: "/admin/body-custom", permission: null },
@@ -72,6 +74,7 @@ const MOBILE_MORE = [
   { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
   { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
   { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
+  { id: "admin-reminders", label: "Nhắc nhở", icon: Bell, route: "/admin/reminders", permission: null },
   { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
   { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/admin/avatar-template", permission: null },
   { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/admin/images", permission: null },

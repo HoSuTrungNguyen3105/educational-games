@@ -492,3 +492,13 @@ export const gardenService = {
   async getWater() { return apiFetch("/garden/water"); },
   async syncWater(waterDrops) { return apiFetch("/garden/water/sync", { method: "POST", body: { waterDrops } }); },
 };
+
+export const reminderService = {
+  async list() { return apiFetch("/reminders") || []; },
+  async getDue() { return apiFetch("/reminders/due") || []; },
+  async getUpcoming(minutes) { return apiFetch(`/reminders/upcoming?minutes=${minutes || 60}`) || []; },
+  async create(data) { return apiFetch("/reminders", { method: "POST", body: data }); },
+  async update(id, data) { return apiFetch(`/reminders/${id}`, { method: "PUT", body: data }); },
+  async trigger(id) { return apiFetch(`/reminders/${id}/trigger`, { method: "POST" }); },
+  async delete_(id) { return apiFetch(`/reminders/${id}`, { method: "DELETE" }); },
+};

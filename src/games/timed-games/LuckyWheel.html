@@ -55,6 +55,7 @@ body{font-family:'Nunito',sans-serif;background:radial-gradient(120% 140% at 50%
 .overlay-card .final-score{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:700;color:var(--gold);margin:12px 0}
 .overlay-card .final-time{font-size:14px;color:#888;margin-bottom:20px}
 .overlay-card .btn-back{padding:10px 28px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.overlay-card .btn-next-student{padding:10px 28px;background:var(--gold);color:#fff;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-weight:700;font-size:14px;cursor:pointer;margin-left:10px}
 .name-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;flex:1;padding:20px}
 .name-card{background:rgba(255,255,255,.95);border-radius:20px;padding:36px 40px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3);max-width:420px;width:90%;animation:popIn .4s ease}
 .name-card .emoji{font-size:48px;margin-bottom:8px}
@@ -89,10 +90,32 @@ body{font-family:'Nunito',sans-serif;background:radial-gradient(120% 140% at 50%
 .lb-pts{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--gold);flex-shrink:0}
 .lb-check{color:var(--teal);font-size:13px;flex-shrink:0}
 .lb-empty{font-size:12px;color:rgba(255,255,255,.35);text-align:center;padding:12px 0}
+.classroom-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;flex:1;padding:20px}
+.classroom-card{background:rgba(255,255,255,.95);border-radius:20px;padding:36px 40px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3);max-width:460px;width:90%;animation:popIn .4s ease}
+.classroom-card .emoji{font-size:48px;margin-bottom:8px}
+.classroom-card h2{font-family:'Poppins',sans-serif;font-size:22px;color:var(--ink);margin-bottom:4px}
+.classroom-card .subtitle{font-size:13px;color:#888;margin-bottom:20px}
+.classroom-card .field-label{font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;color:var(--ink);text-align:left;margin-bottom:6px;margin-top:14px}
+.classroom-card select{width:100%;padding:10px 14px;border:2px solid rgba(0,0,0,.1);border-radius:10px;font-family:'Nunito',sans-serif;font-size:15px;color:var(--ink);background:#fff;outline:none;cursor:pointer;transition:border-color .2s;-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.classroom-card select:focus{border-color:var(--gold)}
+.classroom-card select:disabled{opacity:.5;cursor:default}
+.classroom-card .loading{font-size:13px;color:#888;padding:12px 0}
+.classroom-card .error-msg{font-size:13px;color:var(--ticket);padding:12px 0;font-weight:600}
+.classroom-card .btn-retry{margin-top:8px;padding:8px 20px;border:2px solid var(--teal);border-radius:10px;background:transparent;color:var(--teal);font-family:'Poppins',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .15s}
+.classroom-card .btn-retry:hover{background:rgba(27,153,139,.1)}
+.classroom-card .classroom-start-btn{margin-top:20px;width:100%;padding:12px;border:none;border-radius:12px;background:linear-gradient(180deg,var(--gold),var(--ticket));color:#fff;font-family:'Poppins',sans-serif;font-weight:700;font-size:16px;cursor:pointer;transition:all .15s;box-shadow:0 4px 0 rgba(0,0,0,.2)}
+.classroom-card .classroom-start-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.2)}
+.classroom-card .classroom-start-btn:disabled{opacity:.4;cursor:default;transform:none;box-shadow:none}
+.student-badge{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border:2px solid var(--teal);border-radius:12px;padding:12px 16px;margin-top:12px;text-align:left}
+.student-badge .avatar{width:40px;height:40px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0}
+.student-badge .info{flex:1}
+.student-badge .info .label{font-size:11px;color:#666;text-transform:uppercase;font-weight:600}
+.student-badge .info .name{font-family:'Poppins',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+.classroom-header-badge{display:flex;align-items:center;gap:8px;background:rgba(27,153,139,.15);border:1px solid rgba(27,153,139,.3);border-radius:20px;padding:4px 12px 4px 8px;margin-left:12px;font-size:12px;color:var(--teal);font-weight:600}
 @media(max-width:640px){.game-layout{flex-direction:column;align-items:center}.lb-panel{min-width:0;width:100%;max-width:340px;max-height:160px}}
 @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 @keyframes bulbBlink{0%,100%{opacity:1}50%{opacity:.35}}
-@media(max-width:500px){.wheel-container{width:260px;height:286px}.q-content{font-size:15px}.option-btn{font-size:12px;padding:10px 12px}.header .title{font-size:13px}.header .stat{padding:2px 7px;font-size:11px}.name-card{padding:28px 24px}}
+@media(max-width:500px){.wheel-container{width:260px;height:286px}.q-content{font-size:15px}.option-btn{font-size:12px;padding:10px 12px}.header .title{font-size:13px}.header .stat{padding:2px 7px;font-size:11px}.name-card{padding:28px 24px}.classroom-card{padding:28px 24px}}
 </style>
 </head>
 <body>
@@ -100,6 +123,7 @@ body{font-family:'Nunito',sans-serif;background:radial-gradient(120% 140% at 50%
 <div class="header" id="header" style="display:none">
   <span class="icon">🎡</span>
   <span class="title">VÒNG QUAY MAY MẮN</span>
+  <span class="classroom-header-badge" id="headerClassroomBadge" style="display:none">🎓 <span id="headerStudentName"></span></span>
   <div class="stats">
     <div class="stat"><span>Đã quay:</span><b id="progressLabel">0/0</b></div>
     <div class="stat">⭐ <b id="scoreDisplay">0</b></div>
@@ -107,6 +131,26 @@ body{font-family:'Nunito',sans-serif;background:radial-gradient(120% 140% at 50%
   </div>
 </div>
 <div class="main" id="mainArea">
+  <div id="classroomScreen" class="classroom-screen" style="display:none">
+    <div class="classroom-card">
+      <div class="emoji">🎡</div>
+      <h2>VÒNG QUAY MAY MẮN</h2>
+      <div class="subtitle">CHẾ ĐỘ LỚP HỌC</div>
+      <div id="classroomLoading" class="loading">Đang tải danh sách lớp học...</div>
+      <div id="classroomError" class="error-msg" style="display:none"></div>
+      <div id="classroomForm" style="display:none">
+        <div class="field-label">Lớp học</div>
+        <select id="classSelect"><option value="">-- Chọn lớp --</option></select>
+        <div id="studentSection" style="display:none">
+          <div class="field-label">Học sinh</div>
+          <select id="studentSelect" disabled><option value="">-- Chọn học sinh --</option></select>
+        </div>
+        <div id="selectedStudentBadge" style="display:none"></div>
+        <button class="classroom-start-btn" id="classroomStartBtn" disabled>BẮT ĐẦU GAME 🎯</button>
+      </div>
+      <button class="btn-retry" id="classroomRetryBtn" style="display:none">Thử lại</button>
+    </div>
+  </div>
   <div id="nameScreen" class="name-screen">
     <div class="name-card">
       <div class="emoji">🎡</div>
@@ -158,10 +202,12 @@ body{font-family:'Nunito',sans-serif;background:radial-gradient(120% 140% at 50%
 </div>
 <div class="overlay" id="overlay">
   <div class="overlay-card">
-    <h2>🎉 Hoàn thành!</h2>
+    <h2 id="overlayTitle">🎉 Hoàn thành!</h2>
     <div class="final-score" id="finalScore">0</div>
     <div class="final-time" id="finalTime">Thời gian: 0s</div>
-    <button class="btn-back" id="btnBack">Quay lại</button>
+    <div id="overlayActions">
+      <button class="btn-back" id="btnBack">Quay lại</button>
+    </div>
   </div>
 </div>
 <script>
@@ -184,6 +230,26 @@ var nameInput=document.getElementById('nameInput'),nameBtn=document.getElementBy
 var addBtn=document.getElementById('addBtn'),nameTags=document.getElementById('nameTags');
 var nameCounter=document.getElementById('nameCounter'),nameWarn=document.getElementById('nameWarn');
 var playerNames=[];
+var overlayTitle=document.getElementById('overlayTitle'),overlayActions=document.getElementById('overlayActions');
+
+var classroomScreen=document.getElementById('classroomScreen');
+var classSelect=document.getElementById('classSelect'),studentSelect=document.getElementById('studentSelect');
+var classroomLoading=document.getElementById('classroomLoading'),classroomError=document.getElementById('classroomError');
+var classroomForm=document.getElementById('classroomForm'),studentSection=document.getElementById('studentSection');
+var selectedStudentBadge=document.getElementById('selectedStudentBadge');
+var classroomStartBtn=document.getElementById('classroomStartBtn'),classroomRetryBtn=document.getElementById('classroomRetryBtn');
+var headerClassroomBadge=document.getElementById('headerClassroomBadge'),headerStudentName=document.getElementById('headerStudentName');
+
+var playMode='solo';
+var classroomState={classrooms:[],students:[],classId:null,className:'',studentId:null,studentName:''};
+var pendingMessages={};
+
+function postToParent(msg){parent.postMessage(msg,'*');}
+function requestFromParent(type,data){
+  var id='req-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
+  postToParent({type:type,requestId:id,data:data||{}});
+  return id;
+}
 
 function renderTags(){
   nameTags.innerHTML='';
@@ -237,8 +303,8 @@ function startGame(){
   header.style.display='flex';
   wheelPhase.style.display='block';
   if(questions.length>0)renderWheel();
-  parent.postMessage({type:'ready'},'*');
-  parent.postMessage({type:'player-name',data:{names:playerNames}},'*');
+  postToParent({type:'ready'});
+  postToParent({type:'player-name',data:{names:playerNames}});
 }
 
 nameBtn.onclick=startGame;
@@ -354,7 +420,6 @@ function updateLeaderboardEntry(qId,name,points){
 
 function spinWheel(){
   if(spinning)return;
-  // Only exclude correctly answered segments — wrong ones stay available
   var available=questions.map(function(_,i){return i;}).filter(function(i){return correctIds.indexOf(questions[i].id)<0;});
   if(available.length===0)return;
   spinning=true;
@@ -464,20 +529,16 @@ function showResult(isCorrect,earnedPoints,correctAnswerId){
     scoreDisplay.textContent=score;
     feedback.textContent='Chính xác! +'+totalPts+' điểm 🎉';
     feedback.className='feedback correct';
-    // Mark as correct — won't be spun again
     correctIds.push(currentQ.id);
     answeredIds.push(currentQ.id);
-    // Update leaderboard
     updateLeaderboardEntry(currentQ.id,currentQ._playerName||'Bạn',totalPts);
   }else if(selectedAnswer===null){
     feedback.textContent='Hết giờ rồi! ⏰';
     feedback.className='feedback timeout';
-    // Wrong — push to answeredIds for progress but NOT correctIds (can re-spin)
     answeredIds.push(currentQ.id);
   }else{
     feedback.textContent='Chưa đúng, quay tiếp nhé!';
     feedback.className='feedback wrong';
-    // Wrong — push to answeredIds for progress but NOT correctIds (can re-spin)
     answeredIds.push(currentQ.id);
   }
 
@@ -501,24 +562,223 @@ function showResult(isCorrect,earnedPoints,correctAnswerId){
 function endGame(){
   clearInterval(timerInterval);
   var timeUsed=Math.round((Date.now()-startTime)/1000);
-  finalScore.textContent=score+' điểm';
-  finalTime.textContent='Thời gian: '+timeUsed+' giây | Đúng: '+correctCount+'/'+questions.length;
+
+  if(playMode==='classroom'){
+    overlayTitle.textContent='🎉 KẾT QUẢ';
+    finalScore.textContent=score+' điểm';
+    finalTime.textContent='Thời gian: '+timeUsed+' giây | Đúng: '+correctCount+'/'+questions.length;
+    overlayActions.innerHTML='';
+    var btnNext=document.createElement('button');
+    btnNext.className='btn-next-student';
+    btnNext.textContent='Chọn học sinh khác';
+    btnNext.onclick=function(){
+      overlay.classList.remove('active');
+      wheelPhase.style.display='none';
+      questionPhase.style.display='none';
+      header.style.display='none';
+      headerClassroomBadge.style.display='none';
+      resetGame();
+      classroomScreen.style.display='flex';
+      showClassroomStudentSelect();
+    };
+    overlayActions.appendChild(btnNext);
+    var btnQuitOv=document.createElement('button');
+    btnQuitOv.className='btn-back';
+    btnQuitOv.textContent='Thoát';
+    btnQuitOv.onclick=function(){postToParent({type:'quit'});};
+    overlayActions.appendChild(btnQuitOv);
+  }else{
+    overlayTitle.textContent='🎉 Hoàn thành!';
+    finalScore.textContent=score+' điểm';
+    finalTime.textContent='Thời gian: '+timeUsed+' giây | Đúng: '+correctCount+'/'+questions.length;
+    overlayActions.innerHTML='<button class="btn-back" id="btnBack">Quay lại</button>';
+    document.getElementById('btnBack').onclick=function(){postToParent({type:'quit'});};
+  }
+
   overlay.classList.add('active');
-  setTimeout(function(){parent.postMessage({type:'game-over',data:{score:score,correct:correctCount,totalQuestions:questions.length,timeUsed:timeUsed}},'*');},1300);
+  postToParent({type:'game-over',data:{score:score,correct:correctCount,totalQuestions:questions.length,timeUsed:timeUsed,studentId:classroomState.studentId,studentName:classroomState.studentName}});
 }
 
+function resetGame(){
+  answeredIds=[];correctIds=[];score=0;correctCount=0;startTime=Date.now();
+  leaderboard=[];rotation=0;spinning=false;gamePhase='wheel';
+  scoreDisplay.textContent='0';
+  progressLabel.textContent='0/'+segmentCount;
+  spinLabel.textContent='Đã trả lời 0 câu · ⭐ 0 điểm';
+  overlay.classList.remove('active');
+  wheelSvg.style.transform='rotate(0deg)';
+  spinBtn.disabled=false;spinBtn.textContent='QUAY NGAY! 🎯';
+}
+
+function showClassroomSetup(){
+  classroomScreen.style.display='flex';
+  classroomLoading.style.display='block';
+  classroomError.style.display='none';
+  classroomForm.style.display='none';
+  classroomRetryBtn.style.display='none';
+  requestFromParent('request-classes');
+}
+
+function showClassroomError(msg){
+  classroomLoading.style.display='none';
+  classroomError.textContent=msg;
+  classroomError.style.display='block';
+  classroomRetryBtn.style.display='inline-block';
+}
+
+function populateClassSelect(classrooms){
+  classroomState.classrooms=classrooms;
+  classSelect.innerHTML='<option value="">-- Chọn lớp --</option>';
+  classrooms.forEach(function(c){
+    var opt=document.createElement('option');
+    opt.value=c.id;
+    opt.textContent=c.name;
+    classSelect.appendChild(opt);
+  });
+  classroomLoading.style.display='none';
+  classroomForm.style.display='block';
+  studentSection.style.display='none';
+  selectedStudentBadge.style.display='none';
+  classroomStartBtn.disabled=true;
+}
+
+function populateStudentSelect(students){
+  classroomState.students=students;
+  studentSelect.innerHTML='<option value="">-- Chọn học sinh --</option>';
+  students.forEach(function(s){
+    var opt=document.createElement('option');
+    opt.value=s.id;
+    opt.textContent=s.name;
+    studentSelect.appendChild(opt);
+  });
+  studentSelect.disabled=false;
+}
+
+function showClassroomStudentSelect(){
+  studentSection.style.display='block';
+  studentSelect.disabled=false;
+  studentSelect.value='';
+  selectedStudentBadge.style.display='none';
+  classroomStartBtn.disabled=true;
+}
+
+classSelect.onchange=function(){
+  var cid=this.value;
+  if(!cid){
+    studentSection.style.display='none';
+    selectedStudentBadge.style.display='none';
+    classroomStartBtn.disabled=true;
+    classroomState.classId=null;
+    classroomState.className='';
+    return;
+  }
+  var cls=classroomState.classrooms.find(function(c){return c.id===cid||c.id===parseInt(cid)||String(c.id)===String(cid);});
+  classroomState.classId=cid;
+  classroomState.className=cls?cls.name:'';
+  studentSection.style.display='block';
+  studentSelect.disabled=true;
+  studentSelect.innerHTML='<option value="">Đang tải...</option>';
+  selectedStudentBadge.style.display='none';
+  classroomStartBtn.disabled=true;
+  requestFromParent('request-students',{classId:cid});
+};
+
+studentSelect.onchange=function(){
+  var sid=this.value;
+  if(!sid){
+    selectedStudentBadge.style.display='none';
+    classroomStartBtn.disabled=true;
+    classroomState.studentId=null;
+    classroomState.studentName='';
+    return;
+  }
+  var stu=classroomState.students.find(function(s){return s.id===sid||s.id===parseInt(sid)||String(s.id)===String(sid);});
+  classroomState.studentId=sid;
+  classroomState.studentName=stu?stu.name:'';
+  selectedStudentBadge.style.display='block';
+  selectedStudentBadge.innerHTML='<div class="student-badge"><div class="avatar">👤</div><div class="info"><div class="label">Học sinh đang chơi</div><div class="name">'+classroomState.studentName+'</div></div></div>';
+  classroomStartBtn.disabled=false;
+};
+
+classroomStartBtn.onclick=function(){
+  if(!classroomState.studentId)return;
+  classroomScreen.style.display='none';
+  header.style.display='flex';
+  headerClassroomBadge.style.display='inline-flex';
+  headerStudentName.textContent=classroomState.studentName;
+  playerNames=[classroomState.studentName];
+  for(var i=0;i<questionsTotal;i++){
+    if(!playerNames[i])playerNames.push(classroomState.studentName);
+  }
+  playerNames=playerNames.slice(0,questionsTotal);
+  renderTags();
+  wheelPhase.style.display='block';
+  if(questions.length>0)renderWheel();
+  postToParent({type:'ready'});
+  postToParent({type:'player-name',data:{names:playerNames,studentId:classroomState.studentId}});
+};
+
+classroomRetryBtn.onclick=function(){showClassroomSetup();};
+
 spinBtn.onclick=spinWheel;
-document.getElementById('btnQuit').onclick=function(){parent.postMessage({type:'quit'},'*');};
-document.getElementById('btnBack').onclick=function(){parent.postMessage({type:'quit'},'*');};
+document.getElementById('btnQuit').onclick=function(){postToParent({type:'quit'});};
 
 window.addEventListener('message',function(e){
   if(!e.data||!e.data.type)return;
+
+  if(e.data.type==='classes-data'){
+    var d=e.data.data||{};
+    if(d.error){showClassroomError(d.error);return;}
+    var classes=d.classrooms||d.classes||d.list||[];
+    if(classes.length===0){showClassroomError('Chưa có dữ liệu lớp học. Vui lòng kiểm tra kết nối API hoặc cấu hình lớp học.');return;}
+    populateClassSelect(classes);
+    return;
+  }
+
+  if(e.data.type==='students-data'){
+    var d=e.data.data||{};
+    if(d.error){showClassroomError('Không thể tải danh sách học sinh: '+d.error);classroomLoading.style.display='none';return;}
+    var students=d.students||d.list||[];
+    populateStudentSelect(students);
+    return;
+  }
+
   if(e.data.type==='init'){
     var d=e.data.data;
     var mode=d.playMode||'solo';
     var qSource=d.questions||[];
     questionsTotal=d.questionsTotal||qSource.length||0;
 
+    questions=[];
+    answeredIds=[];correctIds=[];score=0;correctCount=0;startTime=Date.now();
+    leaderboard=[];rotation=0;spinning=false;gamePhase='wheel';
+    scoreDisplay.textContent='0';
+    progressLabel.textContent='0/'+segmentCount;
+    spinLabel.textContent='Đã trả lời 0 câu · ⭐ 0 điểm';
+    overlay.classList.remove('active');
+    wheelSvg.style.transform='rotate(0deg)';
+    spinBtn.disabled=false;spinBtn.textContent='QUAY NGAY! 🎯';
+    headerClassroomBadge.style.display='none';
+
+    if(mode==='classroom'){
+      playMode='classroom';
+      header.style.display='none';
+      wheelPhase.style.display='none';
+      questionPhase.style.display='none';
+      nameScreen.style.display='none';
+      var count=qSource.length;
+      questions=[];
+      for(var i=0;i<count;i++){
+        var q=qSource[i%qSource.length];
+        questions.push(Object.assign({},q,{_playerName:'',_fullName:''}));
+      }
+      segmentCount=questions.length;
+      segmentAngle=360/segmentCount;
+      showClassroomSetup();
+      return;
+    }
+
+    playMode=mode;
     if(mode==='solo'){
       var pName=d.playerName||'Bạn';
       playerNames=[pName];
@@ -530,6 +790,10 @@ window.addEventListener('message',function(e){
       nameScreen.style.display='none';
       header.style.display='flex';
       wheelPhase.style.display='block';
+    }else{
+      nameScreen.style.display='flex';
+      header.style.display='none';
+      wheelPhase.style.display='none';
     }
 
     var count=Math.max(playerNames.length,qSource.length);
@@ -543,15 +807,6 @@ window.addEventListener('message',function(e){
     }
     segmentCount=questions.length;
     segmentAngle=360/segmentCount;
-    answeredIds=[];correctIds=[];score=0;correctCount=0;startTime=Date.now();
-    leaderboard=[];
-    rotation=0;spinning=false;gamePhase='wheel';
-    scoreDisplay.textContent='0';
-    progressLabel.textContent='0/'+segmentCount;
-    spinLabel.textContent='Đã trả lời 0 câu · ⭐ 0 điểm';
-    overlay.classList.remove('active');
-    wheelSvg.style.transform='rotate(0deg)';
-    spinBtn.disabled=false;spinBtn.textContent='QUAY NGAY! 🎯';
     renderWheel();
     renderLeaderboard();
   }

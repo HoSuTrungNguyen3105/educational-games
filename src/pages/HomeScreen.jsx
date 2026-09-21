@@ -8,6 +8,7 @@ import { AvatarPreviewSmall } from '../components/avatar/AvatarPreview.jsx'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import DailyTasksCard from '../components/DailyTasksCard.jsx'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
+import useReminderCheck from '../hooks/useReminderCheck.js'
 import {
   Home,
   ClipboardList,
@@ -121,6 +122,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const templates = useTemplates();
+  const { dueReminder, dismissDue } = useReminderCheck(userAuth?.token);
 
   // THÊM MỚI: state cho search (chỉ dùng cho mobile)
   const [searchQuery, setSearchQuery] = useState('');
@@ -308,6 +310,24 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-purple-50/50 to-pink-50 pb-20 lg:pb-0">
+
+      {dueReminder && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-white border border-amber-200 rounded-2xl shadow-2xl p-4 animate-[popIn_.3s_ease]">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">🔔</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-ink text-sm">Nhắc nhở!</p>
+              <p className="font-semibold text-ink">{dueReminder.title}</p>
+              {dueReminder.message && <p className="text-xs text-gray-500 mt-0.5">{dueReminder.message}</p>}
+            </div>
+            <button onClick={dismissDue} className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-amber-600 transition flex-shrink-0">
+              OK
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════ THANH TRÊN CÙNG (chỉ desktop) — GIỮ NGUYÊN ═══════════════════════════ */}
       <header className="hidden lg:block sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-purple-100 shadow-sm">

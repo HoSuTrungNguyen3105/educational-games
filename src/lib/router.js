@@ -38,6 +38,7 @@ const ROUTES = [
   { name: "admin-images", pattern: "/admin/images" },
   { name: "admin-upload-items", pattern: "/admin/upload-items" },
   { name: "admin-chat", pattern: "/admin/chat" },
+  { name: "admin-reminders", pattern: "/admin/reminders" },
   { name: "admin-profile", pattern: "/admin/profile" },
 
   // ── User / Social ──

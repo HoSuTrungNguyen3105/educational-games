@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vòng Xoay Món Ăn</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Poppins',sans-serif;background:radial-gradient(120% 140% at 50% 0%,#1a1a2e 0%,#16213e 55%,#0f3460 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:#fff}
+h1{font-size:28px;margin-bottom:8px;color:#f4b942}
+.subtitle{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px}
+.wheel-wrap{position:relative;width:360px;height:360px}
+.glow{position:absolute;inset:-12px;border-radius:50%;box-shadow:0 0 60px rgba(244,185,66,.2),0 0 0 6px rgba(244,185,66,.1);pointer-events:none}
+svg.wheel{width:360px;height:360px;transition:none}
+svg.wheel.spinning{transition:transform 4.5s cubic-bezier(0.12,0.67,0.1,1)}
+.pointer{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:10}
+.pointer svg{filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
+.center-btn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;background:linear-gradient(180deg,#f4b942,#e4572e);border:4px solid #fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:10;transition:all .15s;user-select:none}
+.center-btn:active{transform:translate(-50%,-50%) scale(.95)}
+.center-btn:disabled{opacity:.6;cursor:default;transform:translate(-50%,-50%)}
+.result{margin-top:32px;font-size:22px;font-weight:700;color:#f4b942;min-height:36px;text-align:center;animation:popIn .3s ease}
+.food-input{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.food-input input{padding:8px 14px;border:2px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.08);color:#fff;font-family:'Poppins',sans-serif;font-size:14px;outline:none;width:220px;transition:border-color .2s}
+.food-input input:focus{border-color:#f4b942}
+.food-input input::placeholder{color:rgba(255,255,255,.35)}
+.food-input button{padding:8px 18px;border:none;border-radius:10px;background:#f4b942;color:#1a1a2e;font-family:'Poppins',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s}
+.food-input button:active{transform:scale(.95)}
+.food-list{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:400px}
+.food-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(244,185,66,.15);border:1px solid rgba(244,185,66,.3);color:#f4b942;padding:4px 10px;border-radius:16px;font-size:12px;font-weight:600}
+.food-tag .x{cursor:pointer;opacity:.6;font-size:14px;line-height:1}
+.food-tag .x:hover{opacity:1}
+@keyframes popIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+@keyframes bulbBlink{0%,100%{opacity:1}50%{opacity:.3}}
+.bulb{position:absolute;width:8px;height:8px;border-radius:50%;background:#f4b942}
+.bulb.on{box-shadow:0 0 8px #f4b942}
+@media(max-width:480px){.wheel-wrap{width:280px;height:280px}svg.wheel{width:280px;height:280px}h1{font-size:22px}}
+</style>
+</head>
+<body>
+
+<h1>🎡 VÒNG XOAY MÓN ĂN</h1>
+<p class="subtitle">Thêm tên món ăn rồi nhấn QUAY!</p>
+
+<div class="wheel-wrap" id="wheelWrap">
+  <div class="glow"></div>
+  <div class="pointer">
+    <svg width="40" height="48" viewBox="0 0 40 48">
+      <polygon points="20,44 4,8 36,8" fill="#e4572e" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="20" cy="8" r="7" fill="#fff" stroke="#e4572e" stroke-width="2.5"/>
+    </svg>
+  </div>
+  <svg class="wheel" id="wheel" viewBox="0 0 320 320"></svg>
+  <div class="center-btn" id="spinBtn">QUAY</div>
+</div>
+
+<div class="result" id="result"></div>
+
+<div class="food-input">
+  <input type="text" id="foodInput" placeholder="Nhập tên món ăn..." maxlength="20">
+  <button id="addBtn">Thêm</button>
+</div>
+<div class="food-list" id="foodList"></div>
+
+<script>
+(function(){
+var COLORS=["#e4572e","#f4b942","#1b998b","#ff6f91","#4c8dff","#8b6ff1","#4caf7d","#ff9f5a","#31b0c9","#d96cd9","#e056a0","#56c8e0","#7bc67e","#c9a0dc","#f0a060"];
+var foods=["Cơm sườn","Bún bò","Phở gà","Bánh mì","Mì xào","Cơm tấm","Bún chả","Bánh canh","Hủ tiếu","Bún riêu"];
+var wheel=document.getElementById('wheel');
+var spinBtn=document.getElementById('spinBtn');
+var result=document.getElementById('result');
+var foodInput=document.getElementById('foodInput');
+var addBtn=document.getElementById('addBtn');
+var foodList=document.getElementById('foodList');
+var wheelWrap=document.getElementById('wheelWrap');
+var rotation=0;
+var spinning=false;
+var segmentAngle=0;
+var R=148;
+var CX=160,CY=160;
+
+function polar(a,r){var rad=((a-90)*Math.PI)/180;return{x:CX+r*Math.cos(rad),y:CY+r*Math.sin(rad)};}
+
+function renderWheel(){
+  var n=foods.length;
+  if(n<2){wheel.innerHTML='<text x="160" y="165" text-anchor="middle" fill="#fff" font-size="14" font-family="Poppins">Thêm ít nhất 2 món</text>';return;}
+  segmentAngle=360/n;
+  wheel.innerHTML='';
+  var bg=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  bg.setAttribute('cx',CX);bg.setAttribute('cy',CY);bg.setAttribute('r',R+6);
+  bg.setAttribute('fill','#FFFBF2');bg.setAttribute('stroke','#1a1a2e');bg.setAttribute('stroke-width','3');
+  wheel.appendChild(bg);
+
+  foods.forEach(function(f,i){
+    var s=i*segmentAngle,e=(i+1)*segmentAngle;
+    var p1=polar(s,R),p2=polar(e,R);
+    var large=e-s<=180?'0':'1';
+    var mid=polar(s+segmentAngle/2,R*0.62);
+    var color=COLORS[i%COLORS.length];
+
+    var path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d','M '+CX+' '+CY+' L '+p1.x+' '+p1.y+' A '+R+' '+R+' 0 '+large+' 1 '+p2.x+' '+p2.y+' Z');
+    path.setAttribute('fill',color);path.setAttribute('stroke','#FFFBF2');path.setAttribute('stroke-width','2.5');
+    wheel.appendChild(path);
+
+    var txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',mid.x);txt.setAttribute('y',mid.y);
+    txt.setAttribute('fill','#fff');txt.setAttribute('font-size',n>10?'12':'14');
+    txt.setAttribute('font-weight','700');txt.setAttribute('font-family','Fredoka, sans-serif');
+    txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','middle');
+    txt.setAttribute('transform','rotate('+(s+segmentAngle/2)+','+mid.x+','+mid.y+')');
+    txt.textContent=f;
+    wheel.appendChild(txt);
+  });
+
+  var cc=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  cc.setAttribute('cx',CX);cc.setAttribute('cy',CY);cc.setAttribute('r',R*0.2);
+  cc.setAttribute('fill','#1a1a2e');cc.setAttribute('stroke','#f4b942');cc.setAttribute('stroke-width','4');
+  wheel.appendChild(cc);
+  var ct=document.createElementNS('http://www.w3.org/2000/svg','text');
+  ct.setAttribute('x',CX);ct.setAttribute('y',CY+1);ct.setAttribute('fill','#f4b942');
+  ct.setAttribute('font-size','14');ct.setAttribute('font-weight','700');ct.setAttribute('font-family','Fredoka, sans-serif');
+  ct.setAttribute('text-anchor','middle');ct.setAttribute('dominant-baseline','middle');ct.textContent='QUAY';
+  wheel.appendChild(ct);
+
+  renderBulbs();
+}
+
+function renderBulbs(){
+  wheelWrap.querySelectorAll('.bulb').forEach(function(b){b.remove();});
+  var n=foods.length;
+  var count=Math.max(16,n*2);
+  for(var i=0;i<count;i++){
+    var a=(i*360)/count;
+    var rad=((a-90)*Math.PI)/180;
+    var r=R+14;
+    var x=CX+r*Math.cos(rad)-4;
+    var y=CY+r*Math.sin(rad)-4;
+    var bulb=document.createElement('div');
+    bulb.className='bulb';
+    bulb.style.left=x+'px';bulb.style.top=y+'px';
+    if(spinning){bulb.classList.add('on');bulb.style.animation='bulbBlink .5s infinite '+(i%2===0?'0s':'.25s');}
+    wheelWrap.appendChild(bulb);
+  }
+}
+
+function spin(){
+  if(spinning||foods.length<2)return;
+  spinning=true;
+  spinBtn.disabled=true;
+  spinBtn.textContent='...';
+  result.textContent='';
+
+  var winIdx=Math.floor(Math.random()*foods.length);
+  var winCenter=winIdx*segmentAngle+segmentAngle/2;
+  var targetMod=(360-winCenter+360)%360;
+  var currentMod=((rotation%360)+360)%360;
+  var delta=targetMod-currentMod;
+  if(delta<=0)delta+=360;
+  var extra=6+Math.floor(Math.random()*3);
+  rotation+=extra*360+delta;
+
+  wheel.classList.add('spinning');
+  wheel.style.transform='rotate('+rotation+'deg)';
+  renderBulbs();
+
+  setTimeout(function(){
+    spinning=false;
+    wheel.classList.remove('spinning');
+    spinBtn.disabled=false;
+    spinBtn.textContent='QUAY';
+    result.textContent='🍽️ '+foods[winIdx]+'!';
+    result.style.animation='none';
+    result.offsetHeight;
+    result.style.animation='popIn .3s ease';
+    renderBulbs();
+  },4600);
+}
+
+function renderFoodTags(){
+  foodList.innerHTML='';
+  foods.forEach(function(f,i){
+    var tag=document.createElement('span');
+    tag.className='food-tag';
+    tag.innerHTML=f+'<span class="x" data-i="'+i+'">&times;</span>';
+    foodList.appendChild(tag);
+  });
+  foodList.querySelectorAll('.x').forEach(function(btn){
+    btn.onclick=function(){
+      foods.splice(parseInt(this.getAttribute('data-i')),1);
+      renderFoodTags();
+      renderWheel();
+    };
+  });
+}
+
+function addFood(){
+  var v=foodInput.value.trim();
+  if(!v||foods.indexOf(v)>=0){foodInput.value='';foodInput.focus();return;}
+  foods.push(v);
+  foodInput.value='';
+  foodInput.focus();
+  renderFoodTags();
+  renderWheel();
+}
+
+addBtn.onclick=addFood;
+foodInput.onkeydown=function(e){if(e.key==='Enter')addFood();};
+spinBtn.onclick=spin;
+
+renderFoodTags();
+renderWheel();
+})();
+</script>
+</body>
+</html>

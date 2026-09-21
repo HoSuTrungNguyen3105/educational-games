@@ -28,6 +28,8 @@ import gardenRouter from "./routes/garden.js";
 import plantTypesRouter from "./routes/plantTypes.js";
 import imagesRouter from "./routes/images.js";
 import gameSessionsRouter from "./routes/gameSessions.js";
+import remindersRouter from "./routes/reminders.js";
+import * as reminderService from "./services/reminderService.js";
 import { verifyToken } from "./services/authService.js";
 
 const app = express();
@@ -83,6 +85,7 @@ app.use("/api/garden", gardenRouter);
 app.use("/api/plant-types", plantTypesRouter);
 app.use("/api/images", imagesRouter);
 app.use("/api/game-sessions", gameSessionsRouter);
+app.use("/api/reminders", remindersRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);
@@ -101,3 +104,11 @@ app.use((err, _req, res, _next) => {
 });
 
 export default app;
+
+// ── Background scheduler: check due reminders every 60s ──
+setInterval(() => {
+  reminderService.processDueReminders().catch((e) => {
+    console.error("[ReminderScheduler] Error:", e.message);
+  });
+}, 60000);
+console.log("[ReminderScheduler] Started — checking every 60s");

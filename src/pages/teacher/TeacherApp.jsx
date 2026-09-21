@@ -32,6 +32,7 @@ const UploadItems = lazy(() => import('./UploadItems.jsx'));
 const PlantTypeManagement = lazy(() => import('./PlantTypeManagement.jsx'));
 const BodyCustomImport = lazy(() => import('./BodyCustomImport.jsx'));
 const ImageLibrary = lazy(() => import('./ImageLibrary.jsx'));
+const ReminderManagement = lazy(() => import('./ReminderManagement.jsx'));
 
 export default function TeacherApp({ user, route, onLogout, showToast }) {
   const [refreshFlag, setRefreshFlag] = useState(0);
@@ -87,6 +88,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
         {page === "admin-body-custom" && <BodyCustomImport showToast={showToast} />}
         {page === "admin-images" && <ImageLibrary showToast={showToast} />}
         {page === "admin-upload-items" && <UploadItems showToast={showToast} />}
+        {page === "admin-reminders" && <ReminderManagement showToast={showToast} />}
       </Suspense>
     </TeacherLayout>
   );
