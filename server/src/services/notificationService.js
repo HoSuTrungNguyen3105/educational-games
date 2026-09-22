@@ -5,6 +5,12 @@ import * as classService from "./classService.js";
 const COLLECTION = "notifications";
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
+const EVENTS = { NOTIFICATION_NEW: "notification:new" };
+
+// Injected from server.js after initSocket — emit realtime to recipient
+let ioRef = null;
+export function setNotificationIO(io) { ioRef = io; }
+
 export async function createNotification({ fromUserId, fromUsername, fromName, toUserId, gameId, gameName, gameCode, type = "SYSTEM", title, message, data, ...rest }) {
   const now = new Date().toISOString();
   const doc = {
@@ -29,6 +35,23 @@ export async function createNotification({ fromUserId, fromUsername, fromName, t
 
   // Send push notification in background (don't block)
   sendPushToUser(toUserId, { title: doc.title, body: doc.message, type, data }).catch(() => {});
+
+  // Realtime emit so frontend can refresh dropdown without polling
+  if (ioRef && toUserId) {
+    try {
+      ioRef.to(`user:${toUserId}`).emit(EVENTS.NOTIFICATION_NEW, doc);
+      // Fallback: direct socket only if user room has no members (no JWT on connect)
+      const room = ioRef.sockets.adapter.rooms.get(`user:${toUserId}`);
+      if (!room || room.size === 0) {
+        for (const [, s] of ioRef.sockets.sockets) {
+          if (s.data?.user?.sub === toUserId || s.data?.playerId === toUserId) {
+            s.emit(EVENTS.NOTIFICATION_NEW, doc);
+            break;
+          }
+        }
+      }
+    } catch { /* ignore */ }
+  }
 
   return doc;
 }

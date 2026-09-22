@@ -5,7 +5,7 @@ import { initSocket } from "./socket.js";
 import { setGameInviteIO } from "./routes/gameInvites.js";
 import { initDatabase, close } from "./db.js";
 import { initPlantTypes } from "./services/plantTypeService.js";
-import { checkDeadlineReminders } from "./services/notificationService.js";
+import { checkDeadlineReminders, setNotificationIO } from "./services/notificationService.js";
 
 const DEADLINE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
 
@@ -13,6 +13,7 @@ async function main() {
   const httpServer = createServer(app);
   const io = initSocket(httpServer);
   setGameInviteIO(io);
+  setNotificationIO(io);
 
   // Listen TRƯỚC khi init DB: /api/health phản hồi ngay trong lúc khởi động,
   // tránh request bị treo hàng chục giây khi instance Render vừa cold-start.

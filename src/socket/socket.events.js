@@ -38,4 +38,7 @@ export const SOCKET_EVENTS = {
   GAME_STATE_SYNC: "game:state:sync",
   GAME_JOIN_BY_CODE: "game:join-by-code",
   GAME_JOINED: "game:joined",
+
+  // Notification events
+  NOTIFICATION_NEW: "notification:new",
 };

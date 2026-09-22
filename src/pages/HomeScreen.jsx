@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { gameService, coinService, notificationService, API_BASE } from '../services/api.js'
+import { socket } from '../socket/socket.js'
+import { SOCKET_EVENTS } from '../socket/socket.events.js'
 import { getLevelProgress, getLevelEmoji } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
@@ -229,6 +231,19 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     }
   };
 
+  // Refresh notifications when receiving game invite or any new notification via socket (realtime)
+  useEffect(() => {
+    if (!userAuth?.user) return;
+    const onInvite = () => loadNotifications();
+    const onNotificationNew = () => loadNotifications();
+    socket.on(SOCKET_EVENTS.GAME_INVITE_RECEIVED, onInvite);
+    socket.on(SOCKET_EVENTS.NOTIFICATION_NEW, onNotificationNew);
+    return () => {
+      socket.off(SOCKET_EVENTS.GAME_INVITE_RECEIVED, onInvite);
+      socket.off(SOCKET_EVENTS.NOTIFICATION_NEW, onNotificationNew);
+    };
+  }, [userAuth?.user]);
+
   // Listen for foreground push messages
   useEffect(() => {
     if (!userAuth?.user) return;
@@ -421,12 +436,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   <span className="w-6 h-6 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs"><Coins className="w-3.5 h-3.5" /></span>
                   {userCoins.toLocaleString()}
                 </a>
-                <div className="relative">
-                  <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 rounded-full hover:bg-purple-50 transition text-purple-600">
-                    <Bell className="w-5 h-5" />
-                    {unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>}
-                  </button>
-                  {showNotifications && (
+                    <div className="relative">
+                      <button onClick={() => { const next = !showNotifications; setShowNotifications(next); if (next) loadNotifications(); }} className="relative p-2 rounded-full hover:bg-purple-50 transition text-purple-600">
+                        <Bell className="w-5 h-5" />
+                        {unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>}
+                      </button>
+                      {showNotifications && (
                     <NotificationDropdown
                       notifications={notifications}
                       unreadCount={unreadCount}
@@ -589,7 +604,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                       <Coins className="w-3.5 h-3.5" /> {userCoins.toLocaleString()}
                     </span>
                     <div className="relative">
-                      <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-1.5 rounded-full hover:bg-purple-50 transition text-purple-600">
+                      <button onClick={() => { const next = !showNotifications; setShowNotifications(next); if (next) loadNotifications(); }} className="relative p-1.5 rounded-full hover:bg-purple-50 transition text-purple-600">
                         <Bell className="w-5 h-5" />
                         {unreadCount > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>}
                       </button>
@@ -1273,7 +1288,7 @@ function NotificationDropdown({
                     {notif.gameCode && (
                       <p className="text-xs text-purple-600 mt-1 font-mono font-semibold">Mã phòng: {notif.gameCode}</p>
                     )}
-                    {notif.content && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.content}</p>}
+                    {notif.message && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.message}</p>}
                     <p className="text-[10px] text-gray-400 mt-1">{new Date(notif.createdAt).toLocaleString('vi-VN')}</p>
                     {notif.type === 'game_invite' && notif.gameId && (
                       <button onClick={async (e) => {

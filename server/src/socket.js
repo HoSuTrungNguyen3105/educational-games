@@ -46,6 +46,9 @@ export const EVENTS = {
   GAME_STATE_SYNC: "game:state:sync",
   GAME_JOIN_BY_CODE: "game:join-by-code",
   GAME_JOINED: "game:joined",
+
+  // Notification events
+  NOTIFICATION_NEW: "notification:new",
 };
 
 const roomName = (gameId) => `game:${gameId}`;
@@ -85,6 +88,10 @@ export function initSocket(httpServer) {
   io.on("connection", (socket) => {
     const role = socket.data.user?.role || "student";
     socket.data.role = role;
+
+    // Join user room for targeted notification emit (requires JWT on connect)
+    const userId = socket.data.user?.sub;
+    if (userId) socket.join(`user:${userId}`);
 
     // Teacher mở lớp / tham gia vào phòng game
     socket.on(EVENTS.JOIN_CLASSROOM, (data = {}) => {
