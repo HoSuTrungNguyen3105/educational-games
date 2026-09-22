@@ -163,6 +163,22 @@ export const questionService = {
   },
 };
 
+export const questionBankService = {
+  async list(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch(`/question-banks${qs ? `?${qs}` : ""}`) || [];
+  },
+  async get(id) { return apiFetch(`/question-banks/${encodeURIComponent(id)}`); },
+  async stats() { return apiFetch("/question-banks/stats"); },
+  async create(data) { return apiFetch("/question-banks", { method: "POST", body: data }); },
+  async update(id, data) { return apiFetch(`/question-banks/${encodeURIComponent(id)}`, { method: "PUT", body: data }); },
+  async remove(id) { return apiFetch(`/question-banks/${encodeURIComponent(id)}`, { method: "DELETE" }); },
+  async removeAll() { return apiFetch("/question-banks", { method: "DELETE" }); },
+  async linkToGame(bankId, gameId) { return apiFetch(`/question-banks/${encodeURIComponent(bankId)}/link/${encodeURIComponent(gameId)}`, { method: "POST" }); },
+  async bulkLink(bankIds, gameId) { return apiFetch("/question-banks/bulk-link", { method: "POST", body: { bankIds, gameId } }); },
+  async sync(id) { return apiFetch(`/question-banks/${encodeURIComponent(id)}/sync`, { method: "POST" }); },
+};
+
 export const resultService = {
   async listByGame(gameId) {
     return apiFetch(`/results/game/${gameId}`) || [];

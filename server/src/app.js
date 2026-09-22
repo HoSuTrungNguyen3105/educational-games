@@ -7,6 +7,7 @@ import { sendSuccess, sendError } from "./utils/response.js";
 
 import gamesRouter from "./routes/games.js";
 import questionsRouter from "./routes/questions.js";
+import questionBanksRouter from "./routes/questionBanks.js";
 import resultsRouter from "./routes/results.js";
 import setupRouter from "./routes/setup.js";
 import authRouter from "./routes/auth.js";
@@ -73,6 +74,7 @@ app.get("/api/users/me", (req, res, next) => {
 });
 app.use("/api/games", gamesRouter);
 app.use("/api/questions", questionsRouter);
+app.use("/api/question-banks", questionBanksRouter);
 app.use("/api/results", resultsRouter);
 app.use("/api/daily-tasks", dailyTasksRouter);
 app.use("/api/tasks", tasksRouter);
