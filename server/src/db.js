@@ -25,6 +25,9 @@ export const seedData = {
   categories: () => loadDataFile("CATEGORIES.json"),
   games: () => loadDataFile("initialGames.json"),
   questions: () => loadDataFile("initialQuestions.json"),
+  questionBanks: () => {
+    try { return loadDataFile("questionBanks.json"); } catch { return []; }
+  },
   players: () => loadDataFile("players.json"),
   results: () => loadDataFile("initialResults.json"),
   users: () => {
@@ -515,6 +518,23 @@ async function _runHeavyInit(database) {
     if (prepared.length > 0) {
       await questionsColl.insertMany(prepared, { ordered: false });
       seeded.push(`questions (${prepared.length})`);
+    }
+  }
+
+  // Question banks seed
+  const qBankColl = database.collection("question_banks");
+  const qBankCount = await qBankColl.countDocuments();
+  if (qBankCount === 0) {
+    const rawBanks = seedData.questionBanks();
+    if (rawBanks.length > 0) {
+      const now = new Date().toISOString();
+      const preparedBanks = rawBanks.map(q => ({
+        ...q,
+        createdAt: q.createdAt || now,
+        updatedAt: q.updatedAt || now,
+      }));
+      await qBankColl.insertMany(preparedBanks, { ordered: false });
+      seeded.push(`question_banks (${preparedBanks.length})`);
     }
   }
 

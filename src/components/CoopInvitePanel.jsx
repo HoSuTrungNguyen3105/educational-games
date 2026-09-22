@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { userService } from "../services/api.js";
+import { userService, apiFetch } from "../services/api.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
 
@@ -112,19 +112,44 @@ export default function CoopInvitePanel({
     searchTimeout.current = setTimeout(() => handleSearch(val), 300);
   };
 
-  const handleInvite = (user) => {
+  const handleInvite = async (user) => {
     const code = gameCode || generateGameCode();
     if (!gameCode) setGameCode(code);
 
     setInvitedUser(user);
     setInviteStatus("waiting");
 
-    socket.emit(SOCKET_EVENTS.GAME_INVITE_SEND, {
-      toUserId: user.id,
-      gameId,
-      gameName,
-      gameCode: code,
-    });
+    // 1) Gửi qua HTTP API để đảm bảo tạo notification + FCM push ngay cả khi socket chưa connect / target offline
+    try {
+      await apiFetch("/game-invites", {
+        method: "POST",
+        body: { toUserId: user.id, gameId, gameName, gameCode: code },
+      });
+    } catch (e) {
+      console.error("[CoopInvite] game-invites API error:", e.message);
+    }
+    // 2) Đồng thời emit qua socket để target đang online nhận realtime ngay
+    if (socket.connected) {
+      socket.emit(SOCKET_EVENTS.GAME_INVITE_SEND, {
+        toUserId: user.id,
+        gameId,
+        gameName,
+        gameCode: code,
+      });
+    } else {
+      // Thử kết nối lại và gửi sau 500ms nếu chưa connect
+      try { socket.connect(); } catch { /* ignore */ }
+      setTimeout(() => {
+        if (socket.connected) {
+          socket.emit(SOCKET_EVENTS.GAME_INVITE_SEND, {
+            toUserId: user.id,
+            gameId,
+            gameName,
+            gameCode: code,
+          });
+        }
+      }, 500);
+    }
   };
 
   const handleJoinByCode = () => {

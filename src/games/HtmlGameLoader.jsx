@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import { API_BASE, coinService, userService, gameProgressService, classService } from "../services/api.js";
+import { API_BASE, apiFetch, coinService, userService, gameProgressService, classService } from "../services/api.js";
 import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
@@ -169,15 +169,30 @@ export default function HtmlGameLoader({
     }
   }, [postToIframe]);
 
-  const handleInviteUser = useCallback((data) => {
+  const handleInviteUser = useCallback(async (data) => {
     if (!data) return;
     const { toUserId, gameName: gName, gameCode: gCode } = data;
-    socket.emit(SOCKET_EVENTS.GAME_INVITE_SEND, {
+    const payload = {
       toUserId,
       gameId,
       gameName: gName || gameName,
       gameCode: gCode || gameCode,
-    });
+    };
+    // HTTP API trước để tạo notification + push (kể cả khi target offline / socket chưa connect)
+    try {
+      await apiFetch("/game-invites", { method: "POST", body: payload });
+    } catch (e) {
+      console.error("[HtmlGameLoader] game-invites API error:", e.message);
+    }
+    // Socket realtime cho target đang online
+    if (socket.connected) {
+      socket.emit(SOCKET_EVENTS.GAME_INVITE_SEND, payload);
+    } else {
+      try { socket.connect(); } catch { /* ignore */ }
+      setTimeout(() => {
+        if (socket.connected) socket.emit(SOCKET_EVENTS.GAME_INVITE_SEND, payload);
+      }, 500);
+    }
     postToIframe({ type: "invite-sent", data: { ok: true, toUserId } });
   }, [gameId, gameName, gameCode, postToIframe]);
 

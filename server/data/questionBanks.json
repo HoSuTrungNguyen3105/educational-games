@@ -1,47 +1,53 @@
 [
   {
-    "id": "question-e2g5lj3",
-    "gameCode": "TOAN101",
+    "id": "qbank-e2g5lj3",
     "content": "1 + 1 bằng bao nhiêu?",
-    "inputMode": "choice",
     "options": [
       { "id": "answer-fu0s45m", "content": "1" },
       { "id": "answer-yu5hhwk", "content": "2" },
       { "id": "answer-3iq1kfy", "content": "3" },
       { "id": "answer-c9vd3pr", "content": "4" }
     ],
+    "correctAnswer": "answer-yu5hhwk",
     "timeLimit": 20,
     "points": 100,
-    "correctAnswer": "answer-yu5hhwk"
+    "subject": "Toán",
+    "category": "Tổng hợp",
+    "difficulty": "medium",
+    "tags": []
   },
   {
-    "id": "question-w4zn589",
-    "gameCode": "TOAN101",
+    "id": "qbank-w4zn589",
     "content": "Thủ đô của Việt Nam là gì?",
-    "inputMode": "choice",
     "options": [
       { "id": "answer-y2o84w8", "content": "Hà Nội" },
       { "id": "answer-wyyckvd", "content": "Huế" },
       { "id": "answer-l5u46qs", "content": "Đà Nẵng" },
       { "id": "answer-jsrmah0", "content": "TP.HCM" }
     ],
+    "correctAnswer": "answer-y2o84w8",
     "timeLimit": 30,
     "points": 100,
-    "correctAnswer": "answer-y2o84w8"
+    "subject": "Địa lý",
+    "category": "Tổng hợp",
+    "difficulty": "medium",
+    "tags": []
   },
   {
-    "id": "question-ywuq32z",
-    "gameCode": "TOAN101",
+    "id": "qbank-ywuq32z",
     "content": "Hành tinh nào được gọi là Hành tinh Đỏ?",
-    "inputMode": "choice",
     "options": [
       { "id": "answer-0m0qtub", "content": "Trái Đất" },
       { "id": "answer-3am7g3x", "content": "Sao Kim" },
       { "id": "answer-t49yk0p", "content": "Sao Hỏa" },
       { "id": "answer-0wtbtyz", "content": "Sao Mộc" }
     ],
+    "correctAnswer": "answer-t49yk0p",
     "timeLimit": 30,
     "points": 100,
-    "correctAnswer": "answer-t49yk0p"
+    "subject": "Khoa học",
+    "category": "Tổng hợp",
+    "difficulty": "medium",
+    "tags": []
   }
 ]
