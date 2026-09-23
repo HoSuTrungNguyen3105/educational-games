@@ -8,6 +8,25 @@ import { getCollection } from "../db.js";
 
 const router = Router();
 
+// Injected from server.js after initSocket — realtime emit for DM messages
+let chatIO = null;
+export function setChatIO(io) { chatIO = io; }
+
+const CHAT_MESSAGE_EVENT = "chat:message";
+
+// Emit DM message to both participants' user rooms (realtime)
+function emitDmMessage(conversationId, msg) {
+  if (!chatIO || !conversationId?.startsWith("dm:")) return;
+  const parts = conversationId.split(":");
+  if (parts.length !== 3) return;
+  const [, userA, userB] = parts;
+  try {
+    chatIO.to(`user:${userA}`).to(`user:${userB}`).emit(CHAT_MESSAGE_EVENT, msg);
+  } catch (e) {
+    console.error("[chat] emitDmMessage failed:", e.message);
+  }
+}
+
 async function ensureDmConversation(userId1, userId2) {
   const conv = await convService.getOrCreateDM(userId1, userId2);
   await convService.addMember(conv.id, userId1);
@@ -40,6 +59,8 @@ router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) =
     const msg = await chatService.sendMessage({
       conversationId: convId, senderId: currentUserId, playerName: userName, content, clientMessageId, type,
     });
+    // Realtime: push message to both participants (admin/student chat pages)
+    emitDmMessage(convId, msg);
     notificationService.createNotification({
       fromUserId: currentUserId,
       fromUsername: userUsername,
@@ -74,6 +95,7 @@ router.post("/:conversationId/messages", async (req, res, next) => {
     const { content, clientMessageId, playerName, senderId, type } = req.body;
     if (!senderId) return sendError(res, "Thiếu senderId", 400);
     const msg = await chatService.sendMessage({ conversationId, senderId, playerName, content, clientMessageId, type });
+    emitDmMessage(conversationId, msg);
 
     // Create notification for DM conversations
     if (conversationId.startsWith("dm:")) {

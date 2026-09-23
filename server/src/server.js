@@ -3,6 +3,7 @@ import app from "./app.js";
 import { config } from "./config.js";
 import { initSocket } from "./socket.js";
 import { setGameInviteIO } from "./routes/gameInvites.js";
+import { setChatIO } from "./routes/chat.js";
 import { initDatabase, close } from "./db.js";
 import { initPlantTypes } from "./services/plantTypeService.js";
 import { checkDeadlineReminders, setNotificationIO } from "./services/notificationService.js";
@@ -14,6 +15,7 @@ async function main() {
   const io = initSocket(httpServer);
   setGameInviteIO(io);
   setNotificationIO(io);
+  setChatIO(io);
 
   // Listen TRƯỚC khi init DB: /api/health phản hồi ngay trong lúc khởi động,
   // tránh request bị treo hàng chục giây khi instance Render vừa cold-start.

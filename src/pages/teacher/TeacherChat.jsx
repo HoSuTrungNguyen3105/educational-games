@@ -3,6 +3,8 @@ import { conversationApi } from "../../services/conversationApi.js";
 import { userService } from "../../services/api.js";
 import { Loader, ErrorState } from "../../components/ui.jsx";
 import DMChatScreen from "../user/DMChatScreen.jsx";
+import { socket } from "../../socket/socket.js";
+import { SOCKET_EVENTS } from "../../socket/socket.events.js";
 
 export default function TeacherChat({ user, showToast }) {
   const [conversations, setConversations] = useState(null);
@@ -15,6 +17,7 @@ export default function TeacherChat({ user, showToast }) {
   const [searching, setSearching] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const searchTimeout = useRef(null);
+  const refreshTimeout = useRef(null);
 
   const loadConversations = useCallback(() => {
     conversationApi.list().then((data) => {
@@ -26,6 +29,21 @@ export default function TeacherChat({ user, showToast }) {
   }, []);
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
+
+  // Realtime: refresh list when any chat message / notification arrives
+  useEffect(() => {
+    const scheduleRefresh = () => {
+      clearTimeout(refreshTimeout.current);
+      refreshTimeout.current = setTimeout(loadConversations, 300);
+    };
+    socket.on(SOCKET_EVENTS.CHAT_MESSAGE, scheduleRefresh);
+    socket.on(SOCKET_EVENTS.NOTIFICATION_NEW, scheduleRefresh);
+    return () => {
+      clearTimeout(refreshTimeout.current);
+      socket.off(SOCKET_EVENTS.CHAT_MESSAGE, scheduleRefresh);
+      socket.off(SOCKET_EVENTS.NOTIFICATION_NEW, scheduleRefresh);
+    };
+  }, [loadConversations]);
 
   const handleSearch = useCallback((q) => {
     setSearchQuery(q);

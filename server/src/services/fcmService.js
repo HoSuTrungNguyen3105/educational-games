@@ -166,21 +166,16 @@ export async function sendToTokens(tokens, { title, body, type, data = {} }) {
   if (title) stringData.title = String(title);
   if (body) stringData.body = String(body);
 
-  const vibrateEnabled = data?.vibrate !== "false";
   const message = {
     data: stringData,
     webpush: {
       headers: {
         Urgency: "high",
       },
-      notification: {
-        title: title || "EduPlay",
-        body: body || "",
-        icon: "/educational-games/eduplay-icon-192x192.png",
-        badge: "/educational-games/eduplay-icon-192x192.png",
-        vibrate: vibrateEnabled ? [200, 100, 200] : undefined,
-        requireInteraction: true,
-      },
+      // Data-only payload: do NOT include webpush.notification.
+      // If notification content is present, FCM auto-displays it AND
+      // onBackgroundMessage's showNotification fires → duplicate on phone.
+      // SW is the single display path (reads title/body from data).
       fcmOptions: {
         link: "/educational-games/",
       },

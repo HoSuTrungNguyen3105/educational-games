@@ -159,15 +159,26 @@ export const useChatStore = create((set, get) => ({
 
     const onMessage = (msg) => {
       if (msg.error) return;
+      // Only messages for the currently open conversation (game or DM)
+      if (msg.conversationId && msg.conversationId !== gameId) return;
       const { playerId, isOpen } = get();
       set((s) => {
-        // Dedup
-        if (s.messages.some((m) => m.id === msg.id)) return s;
-        // Also check clientMessageId
-        const replaced = s.messages.map((m) =>
-          m.status === "sending" && m.clientMessageId === msg.clientMessageId ? { ...msg, status: "sent" } : m
-        );
-        const next = [...replaced, msg].slice(-MAX_MESSAGES);
+        // Dedup by saved id
+        if (msg.id && s.messages.some((m) => m.id === msg.id)) return s;
+        // Replace optimistic (sending) by clientMessageId if present
+        let nextMessages = s.messages;
+        if (msg.clientMessageId) {
+          nextMessages = nextMessages.map((m) =>
+            m.status === "sending" && m.clientMessageId === msg.clientMessageId
+              ? { ...msg, status: "sent" }
+              : m
+          );
+          // Optimistic was replaced → don't append again
+          if (nextMessages.some((m) => m.clientMessageId === msg.clientMessageId && m.id === msg.id)) {
+            return { ...s, messages: nextMessages };
+          }
+        }
+        const next = [...nextMessages, msg].slice(-MAX_MESSAGES);
         const isFromMe = msg.senderId === playerId;
         const newUnread = !isOpen && !isFromMe ? s.unreadCount + 1 : s.unreadCount;
         return { messages: next, unreadCount: newUnread };

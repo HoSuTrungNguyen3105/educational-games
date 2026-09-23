@@ -235,8 +235,15 @@ export function initSocket(httpServer) {
           clientMessageId: data.clientMessageId,
           type: data.type || "text",
         });
-        // Broadcast tin nhắn đến tất cả trong phòng game
-        io.to(roomName(gameId)).emit(EVENTS.CHAT_MESSAGE, msg);
+        // Broadcast tin nhắn: DM → user rooms; game → game room
+        if (gameId.startsWith("dm:")) {
+          const parts = gameId.split(":");
+          if (parts.length === 3) {
+            io.to(`user:${parts[1]}`).to(`user:${parts[2]}`).emit(EVENTS.CHAT_MESSAGE, msg);
+          }
+        } else {
+          io.to(roomName(gameId)).emit(EVENTS.CHAT_MESSAGE, msg);
+        }
 
         // NOTE: DM notification is already created by the HTTP POST route
         // (/chat/dm/:targetUserId/messages) to avoid duplicates.

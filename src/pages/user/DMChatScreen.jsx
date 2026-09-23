@@ -1,12 +1,20 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { chatApi } from "../../services/chatApi.js";
 import { Loader } from "../../components/ui.jsx";
+import { socket } from "../../socket/socket.js";
+import { SOCKET_EVENTS } from "../../socket/socket.events.js";
 import { ArrowLeft, Send, Smile } from "lucide-react";
 
 function formatMessageTime(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   return d.toLocaleTimeString("vi", { hour: "2-digit", minute: "2-digit" });
+}
+
+// Same deterministic id as server: dm:[idA, idB] sorted
+function getDmId(a, b) {
+  if (!a || !b) return null;
+  return `dm:${[a, b].sort().join(":")}`;
 }
 
 export default function DMChatScreen({ targetUser, userAuth, onBack }) {
@@ -19,6 +27,7 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const targetUserId = targetUser?.id;
+  const dmId = useMemo(() => getDmId(user?.id, targetUserId), [user?.id, targetUserId]);
 
   useEffect(() => {
     if (!targetUserId) return;
@@ -36,6 +45,34 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
     return () => { cancelled = true; };
   }, [targetUserId]);
 
+  // Realtime: append messages for this DM (dedupe by id / clientMessageId)
+  useEffect(() => {
+    if (!dmId) return;
+    const onMessage = (msg) => {
+      if (!msg || msg.error) return;
+      if (msg.conversationId !== dmId) return;
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        // Replace optimistic sending message with saved one
+        if (msg.clientMessageId) {
+          const hasOptimistic = prev.some(
+            (m) => m.status === "sending" && m.clientMessageId === msg.clientMessageId
+          );
+          if (hasOptimistic) {
+            return prev.map((m) =>
+              m.status === "sending" && m.clientMessageId === msg.clientMessageId
+                ? { ...msg, status: "sent" }
+                : m
+            );
+          }
+        }
+        return [...prev, msg];
+      });
+    };
+    socket.on(SOCKET_EVENTS.CHAT_MESSAGE, onMessage);
+    return () => socket.off(SOCKET_EVENTS.CHAT_MESSAGE, onMessage);
+  }, [dmId]);
+
   useEffect(() => {
     if (!loading && messages.length > 0) {
       bottomRef.current?.scrollIntoView({ behavior: "instant" });
@@ -50,13 +87,14 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
     const clientMessageId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const optimistic = {
       id: clientMessageId,
-      conversationId: `dm:${user.id}:${targetUser.id}`,
+      conversationId: dmId || getDmId(user.id, targetUser.id),
       senderId: user.id,
       playerName: user.name,
       type: "text",
       content: trimmed,
       createdAt: new Date().toISOString(),
       status: "sending",
+      clientMessageId,
     };
 
     setMessages((prev) => [...prev, optimistic]);
@@ -68,9 +106,14 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
         content: trimmed,
         clientMessageId,
       });
-      setMessages((prev) => prev.map((m) =>
-        m.id === clientMessageId ? { ...saved, status: "sent" } : m
-      ));
+      setMessages((prev) => {
+        const withoutOptimistic = prev.filter((m) =>
+          m.id !== clientMessageId && m.clientMessageId !== clientMessageId
+        );
+        // Socket already delivered the saved message
+        if (withoutOptimistic.some((m) => m.id === saved.id)) return withoutOptimistic;
+        return [...withoutOptimistic, { ...saved, status: "sent" }];
+      });
     } catch (e) {
       console.error("[dm] send error:", e);
       setMessages((prev) => prev.map((m) =>

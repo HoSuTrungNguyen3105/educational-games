@@ -4,6 +4,8 @@ import { userService } from "../../services/api.js";
 import { Loader, ErrorState, EmptyState } from "../../components/ui.jsx";
 import { navigate } from "../../lib/router.js";
 import DMChatScreen from "./DMChatScreen.jsx";
+import { socket } from "../../socket/socket.js";
+import { SOCKET_EVENTS } from "../../socket/socket.events.js";
 import { Search, ArrowLeft, MessageCircle, Users, UserPlus, RefreshCw } from "lucide-react";
 
 function formatTime(iso) {
@@ -59,6 +61,23 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
+
+  // Realtime: refresh list when a chat message arrives (socket)
+  useEffect(() => {
+    if (!token) return;
+    let t;
+    const scheduleRefresh = () => {
+      clearTimeout(t);
+      t = setTimeout(() => loadConversations(), 300);
+    };
+    socket.on(SOCKET_EVENTS.CHAT_MESSAGE, scheduleRefresh);
+    socket.on(SOCKET_EVENTS.NOTIFICATION_NEW, scheduleRefresh);
+    return () => {
+      clearTimeout(t);
+      socket.off(SOCKET_EVENTS.CHAT_MESSAGE, scheduleRefresh);
+      socket.off(SOCKET_EVENTS.NOTIFICATION_NEW, scheduleRefresh);
+    };
+  }, [token, loadConversations]);
 
   // Fetch other user info for each conversation
   useEffect(() => {

@@ -31,11 +31,18 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log("[SW] Background message received via FCM:", payload);
 
-  // Data-only messages: title/body are in payload.data, not payload.notification
+  // Data-only messages: title/body are in payload.data, not payload.notification.
+  // If FCM already delivered notification content, it auto-displayed one —
+  // skip our showNotification to avoid duplicates.
+  if (payload.notification?.title || payload.notification?.body) {
+    console.log("[SW] payload.notification present — FCM auto-displayed, skipping showNotification");
+    return;
+  }
+
   const data = payload.data || {};
-  const title = data.title || payload.notification?.title || "EduPlay";
-  const body = data.body || payload.notification?.body || "";
-  const icon = data.icon || payload.notification?.icon;
+  const title = data.title || "EduPlay";
+  const body = data.body || "";
+  const icon = data.icon;
 
   const iconUrl = icon || (self.location.origin + "/educational-games/eduplay-icon-192x192.png");
   const badgeUrl = self.location.origin + "/educational-games/eduplay-icon-192x192.png";
