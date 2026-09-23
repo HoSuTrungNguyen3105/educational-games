@@ -31,11 +31,18 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log("[SW] Background message received via FCM:", payload);
 
-  // Data-only messages: title/body are in payload.data, not payload.notification
+  // Data-only messages: title/body are in payload.data, not payload.notification.
+  // If FCM already delivered notification content, it auto-displayed one —
+  // skip our showNotification to avoid duplicates.
+  if (payload.notification?.title || payload.notification?.body) {
+    console.log("[SW] payload.notification present — FCM auto-displayed, skipping showNotification");
+    return;
+  }
+
   const data = payload.data || {};
-  const title = data.title || payload.notification?.title || "EduPlay";
-  const body = data.body || payload.notification?.body || "";
-  const icon = data.icon || payload.notification?.icon;
+  const title = data.title || "EduPlay";
+  const body = data.body || "";
+  const icon = data.icon;
 
   const iconUrl = icon || (self.location.origin + "/educational-games/eduplay-icon-192x192.png");
   const badgeUrl = self.location.origin + "/educational-games/eduplay-icon-192x192.png";
@@ -121,7 +128,7 @@ self.addEventListener("notificationclick", (event) => {
     urlToOpen = `/educational-games${data.link}`;
   } else if ((data?.type === "ASSIGNMENT" || data?.type === "DEADLINE_REMINDER") && data?.assignmentId) {
     urlToOpen = `/educational-games/#/assignment/${data.assignmentId}`;
-  } else if (data?.type === "CHAT" && data?.conversationId) {
+  } else if (data?.type === "CHAT" || data?.type === "chat_message" || data?.conversationId?.startsWith?.("dm:")) {
     urlToOpen = `/educational-games/#/chat`;
   } else if (data?.type === "REMINDER" || data?.type === "REMINDER_CREATED") {
     urlToOpen = `/educational-games/#/admin/reminders`;
@@ -135,7 +142,7 @@ self.addEventListener("notificationclick", (event) => {
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin) && "focus" in client) {
           // Focus existing window and navigate if needed
-          if (data?.link || data?.assignmentId) {
+          if (data?.link || data?.assignmentId || data?.type === "chat_message" || data?.type === "CHAT") {
             client.navigate(urlToOpen);
           }
           return client.focus();
