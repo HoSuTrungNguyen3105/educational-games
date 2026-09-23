@@ -49,6 +49,7 @@ router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) =
       title: `💬 ${userName}`,
       message: content?.substring(0, 100) || "",
       gameId: convId,
+      data: { conversationId: convId },
     }).catch(() => {});
     sendCreated(res, msg);
   } catch (e) {
@@ -91,6 +92,7 @@ router.post("/:conversationId/messages", async (req, res, next) => {
             title: `💬 ${senderName}`,
             message: content?.substring(0, 100) || "",
             gameId: conversationId,
+            data: { conversationId },
           }).catch(() => {});
         }
       }

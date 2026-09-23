@@ -261,6 +261,27 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         createdAt: new Date().toISOString(),
       }, ...prev]);
 
+      // Show system notification when app is in foreground (restored from ff1aabc)
+      try {
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+          const notif = new Notification(title, {
+            body,
+            icon: "/educational-games/eduplay-icon-192x192.png",
+            badge: "/educational-games/eduplay-icon-192x192.png",
+            tag: data.type || "eduplay-fg",
+          });
+          notif.onclick = () => {
+            window.focus();
+            if (data.type === "chat_message" || data.type === "CHAT" || data.conversationId?.startsWith?.("dm:")) {
+              navigate("/chat");
+            } else if (data.link) {
+              navigate(data.link);
+            }
+            notif.close();
+          };
+        }
+      } catch { /* ignore */ }
+
       // Play sound for reminder notifications
       if (data.sound !== "false" && (data.type === "REMINDER" || data.type === "REMINDER_CREATED")) {
         try {

@@ -148,6 +148,10 @@ export async function sendToTokens(tokens, { title, body, type, data = {} }) {
   }
   stringData.type = String(type || "SYSTEM");
   stringData.click_action = "/educational-games/";
+  // Always include title/body in data so SW + foreground handlers can read them
+  // (top-level notification payload was removed in 1c7990f)
+  if (title) stringData.title = String(title);
+  if (body) stringData.body = String(body);
 
   const vibrateEnabled = data?.vibrate !== "false";
   const message = {

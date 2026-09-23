@@ -121,7 +121,7 @@ self.addEventListener("notificationclick", (event) => {
     urlToOpen = `/educational-games${data.link}`;
   } else if ((data?.type === "ASSIGNMENT" || data?.type === "DEADLINE_REMINDER") && data?.assignmentId) {
     urlToOpen = `/educational-games/#/assignment/${data.assignmentId}`;
-  } else if (data?.type === "CHAT" && data?.conversationId) {
+  } else if (data?.type === "CHAT" || data?.type === "chat_message" || data?.conversationId?.startsWith?.("dm:")) {
     urlToOpen = `/educational-games/#/chat`;
   } else if (data?.type === "REMINDER" || data?.type === "REMINDER_CREATED") {
     urlToOpen = `/educational-games/#/admin/reminders`;
@@ -135,7 +135,7 @@ self.addEventListener("notificationclick", (event) => {
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin) && "focus" in client) {
           // Focus existing window and navigate if needed
-          if (data?.link || data?.assignmentId) {
+          if (data?.link || data?.assignmentId || data?.type === "chat_message" || data?.type === "CHAT") {
             client.navigate(urlToOpen);
           }
           return client.focus();
