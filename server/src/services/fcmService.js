@@ -12,14 +12,11 @@ import { getCollection } from "../db.js";
  */
 
 let messaging = null;
-let initialized = false;
+let initPromise = null;
+let lastFailAt = 0;
+const INIT_RETRY_MS = 15000; // allow retry after a failed init (avoid permanent lockout)
 
-async function getMessaging() {
-  if (messaging) return messaging;
-  if (initialized) return null; // Already attempted and failed — don't retry
-
-  // Mark as attempted immediately to prevent concurrent init
-  initialized = true;
+async function doInitMessaging() {
 
   const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
   console.log(
@@ -30,7 +27,7 @@ async function getMessaging() {
   const projectId = process.env.FIREBASE_PROJECT_ID || "eduplay-74301";
 
   try {
-    const { getApps, initializeApp, cert } =
+    const { getApps, initializeApp, cert, applicationDefault } =
       await import("firebase-admin/app");
 
     const { getMessaging } =
@@ -93,7 +90,7 @@ async function getMessaging() {
     // 3. Fallback to Google Application Default credentials
     if (!credential && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       try {
-        credential = admin.credential.applicationDefault();
+        credential = applicationDefault();
         console.log("[FCM] Using Google Application Default Credentials");
       } catch (e) {
         console.error("[FCM] Application Default Credentials failed:", e.message);
@@ -119,6 +116,22 @@ async function getMessaging() {
     console.error("[FCM] Fatal error during Firebase Admin init:", err.message);
     return null;
   }
+}
+
+async function getMessaging() {
+  if (messaging) return messaging;
+  if (initPromise) return initPromise;
+  if (lastFailAt && Date.now() - lastFailAt < INIT_RETRY_MS) return null;
+  initPromise = (async () => {
+    try {
+      return await doInitMessaging();
+    } finally {
+      initPromise = null;
+    }
+  })();
+  const result = await initPromise;
+  if (!result) lastFailAt = Date.now();
+  return result;
 }
 
 

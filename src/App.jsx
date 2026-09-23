@@ -55,8 +55,8 @@ function App() {
     return u;
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     setShowUserLogin(false);
     setShowUserRegister(false);
   };

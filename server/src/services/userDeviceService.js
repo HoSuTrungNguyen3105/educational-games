@@ -10,11 +10,13 @@ export async function registerDevice(userId, token, deviceType = "WEB") {
   const now = new Date().toISOString();
   const existing = await getCollection(COLLECTION).findOne({ token });
   if (existing) {
+    // Rebind to the CURRENT user — otherwise a shared device keeps receiving
+    // pushes for whichever user registered the token first.
     await getCollection(COLLECTION).updateOne(
       { _id: existing._id },
-      { $set: { isActive: true, updatedAt: now } }
+      { $set: { userId, deviceType: deviceType.toUpperCase(), isActive: true, updatedAt: now } }
     );
-    return { ...existing, isActive: true, updatedAt: now };
+    return { ...existing, userId, deviceType: deviceType.toUpperCase(), isActive: true, updatedAt: now };
   }
   const doc = {
     _id: uid(),
@@ -60,7 +62,7 @@ export async function deactivateDevice(token) {
 
 export async function deactivateAllByUser(userId) {
   const now = new Date().toISOString();
-  await getCollection(COLLECTION).updateMany(
+  return getCollection(COLLECTION).updateMany(
     { userId },
     { $set: { isActive: false, updatedAt: now } }
   );

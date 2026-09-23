@@ -34,7 +34,11 @@ export async function createNotification({ fromUserId, fromUsername, fromName, t
   await getCollection(COLLECTION).insertOne(doc);
 
   // Send push notification in background (don't block)
-  sendPushToUser(toUserId, { title: doc.title, body: doc.message, type, data }).catch(() => {});
+  sendPushToUser(toUserId, { title: doc.title, body: doc.message, type, data })
+    .then((r) => {
+      if (!r?.sent) console.log(`[notif] push not delivered (to=${toUserId}):`, JSON.stringify(r));
+    })
+    .catch((e) => console.error("[notif] push error:", e));
 
   // Realtime emit so frontend can refresh dropdown without polling
   if (ioRef && toUserId) {

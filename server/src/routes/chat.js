@@ -50,7 +50,7 @@ router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) =
       message: content?.substring(0, 100) || "",
       gameId: convId,
       data: { conversationId: convId },
-    }).catch(() => {});
+    }).catch((e) => console.error("[chat] createNotification failed:", e));
     sendCreated(res, msg);
   } catch (e) {
     next(e);
@@ -93,7 +93,7 @@ router.post("/:conversationId/messages", async (req, res, next) => {
             message: content?.substring(0, 100) || "",
             gameId: conversationId,
             data: { conversationId },
-          }).catch(() => {});
+          }).catch((e) => console.error("[chat] createNotification failed:", e));
         }
       }
     }

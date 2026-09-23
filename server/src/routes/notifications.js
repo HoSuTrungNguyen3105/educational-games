@@ -14,6 +14,7 @@ router.post("/device-token", authenticate, async (req, res, next) => {
     const { token, deviceType } = req.body || {};
     if (!token) return sendError(res, "Token là bắt buộc", 400);
     const device = await userDeviceService.registerDevice(req.user.sub, token, deviceType || "WEB");
+    console.log(`[API] device-token registered/updated for user=${req.user.sub} active=${device.isActive}`);
     sendSuccess(res, device);
   } catch (e) { next(e); }
 });
@@ -23,7 +24,8 @@ router.delete("/device-token", authenticate, async (req, res, next) => {
   try {
     const { token } = req.body || {};
     if (!token) return sendError(res, "Token là bắt buộc", 400);
-    await userDeviceService.removeDevice(token);
+    const removed = await userDeviceService.removeDevice(token);
+    console.log(`[API] device-token removed for user=${req.user.sub} removed=${removed}`);
     sendSuccess(res, { ok: true });
   } catch (e) { next(e); }
 });
