@@ -26,12 +26,14 @@ import {
   Move,
   Image,
   Bell,
+  ShieldCheck,
 } from 'lucide-react'
 
 const MENU = [
   { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin", permission: null },
-  { id: "admin-library", label: "Thư viện", icon: Library, route: "/admin/library", permission: "games.manage" },
+  { id: "admin-library", label: "Trò chơi", icon: Library, route: "/admin/library", permission: "games.manage" },
   { id: "admin-users", label: "Người dùng", icon: Users, route: "/admin/users", permission: "users.view" },
+  { id: "admin-roles", label: "Phân quyền", icon: ShieldCheck, route: "/admin/roles", permission: "users.view" },
   { id: "admin-coins", label: "Coin & Progress", icon: Coins, route: "/admin/coins", permission: "coins.manage" },
   { id: "admin-daily-tasks", label: "Nhiệm vụ ngày", icon: ClipboardList, route: "/admin/daily-tasks", permission: "daily-tasks.manage" },
   { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
@@ -58,7 +60,7 @@ const BOTTOM_MENU = [
 
 const MOBILE_MAIN = [
   { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin", permission: null },
-  { id: "admin-library", label: "Thư viện", icon: Library, route: "/admin/library", permission: "games.manage" },
+  { id: "admin-library", label: "Trò chơi", icon: Library, route: "/admin/library", permission: "games.manage" },
   { id: "admin-create", label: "Tạo", icon: Plus, route: "/admin/create", permission: "games.manage" },
   { id: "home", label: "Trang chủ", icon: Home, route: "/", permission: null },
   // { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
@@ -66,6 +68,7 @@ const MOBILE_MAIN = [
 
 const MOBILE_MORE = [
   { id: "admin-users", label: "Người dùng", icon: Users, route: "/admin/users", permission: "users.view" },
+  { id: "admin-roles", label: "Phân quyền", icon: ShieldCheck, route: "/admin/roles", permission: "users.view" },
   { id: "admin-coins", label: "Coins", icon: Coins, route: "/admin/coins", permission: "coins.manage" },
   { id: "admin-daily-tasks", label: "Nhiệm vụ", icon: ClipboardList, route: "/admin/daily-tasks", permission: "daily-tasks.manage" },
   { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories", permission: "categories.manage" },

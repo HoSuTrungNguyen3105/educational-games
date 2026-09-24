@@ -204,6 +204,19 @@ export default function HtmlGameLoader({
     });
   }, [gameId]);
 
+  const handleXoMove = useCallback((data) => {
+    if (!data) return;
+    const sessionId = pendingOpponent?.sessionId || coopSessionId;
+    if (!sessionId) return;
+    socket.emit(SOCKET_EVENTS.XO_MOVE, { sessionId, row: data.row, col: data.col });
+  }, [pendingOpponent, coopSessionId]);
+
+  const handleXoRematch = useCallback(() => {
+    const sessionId = pendingOpponent?.sessionId || coopSessionId;
+    if (!sessionId) return;
+    socket.emit(SOCKET_EVENTS.XO_REMATCH, { sessionId });
+  }, [pendingOpponent, coopSessionId]);
+
   const handleJoinByCode = useCallback((data) => {
     if (!data) return;
     if (!socket.connected && userAuth?.token) {
@@ -240,6 +253,10 @@ export default function HtmlGameLoader({
 
   useEffect(() => {
     const onMessage = (e) => {
+      // Chỉ tin message đến từ đúng iframe game này — chặn mọi script khác
+      // trên trang (hoặc iframe khác) giả mạo "add-coins", "game-over"...
+      if (e.source !== iframeRef.current?.contentWindow) return;
+
       const msg = e.data;
       if (!msg || typeof msg !== "object") return;
 
@@ -314,6 +331,10 @@ export default function HtmlGameLoader({
         handleInviteUser(msg.data);
       } else if (msg.type === "game-move") {
         handleGameMove(msg.data);
+      } else if (msg.type === "xo-move") {
+        handleXoMove(msg.data);
+      } else if (msg.type === "xo-rematch") {
+        handleXoRematch();
       } else if (msg.type === "join-by-code") {
         handleJoinByCode(msg.data);
       } else if (msg.type === "request-classes") {
@@ -324,7 +345,7 @@ export default function HtmlGameLoader({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleJoinByCode, handleRequestClasses, handleRequestStudents, userAuth, postToIframe, gameId]);
+  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleXoMove, handleXoRematch, handleJoinByCode, handleRequestClasses, handleRequestStudents, userAuth, postToIframe, gameId]);
 
   useEffect(() => {
     const onOpponentMove = (data) => {
@@ -354,12 +375,34 @@ export default function HtmlGameLoader({
     socket.on(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, onInviteAccepted);
     socket.on(SOCKET_EVENTS.GAME_JOINED, onGameJoined);
 
+    const onXoSync = (data) => postToIframe({ type: "xo-sync", data });
+    const onXoMoveResult = (data) => postToIframe({ type: "xo-move-result", data });
+    const onXoResult = (data) => postToIframe({ type: "xo-result", data });
+    socket.on(SOCKET_EVENTS.XO_SYNC, onXoSync);
+    socket.on(SOCKET_EVENTS.XO_MOVE_RESULT, onXoMoveResult);
+    socket.on(SOCKET_EVENTS.XO_RESULT, onXoResult);
+
     return () => {
       socket.off(SOCKET_EVENTS.GAME_MOVE, onOpponentMove);
       socket.off(SOCKET_EVENTS.GAME_INVITE_ACCEPTED, onInviteAccepted);
       socket.off(SOCKET_EVENTS.GAME_JOINED, onGameJoined);
+      socket.off(SOCKET_EVENTS.XO_SYNC, onXoSync);
+      socket.off(SOCKET_EVENTS.XO_MOVE_RESULT, onXoMoveResult);
+      socket.off(SOCKET_EVENTS.XO_RESULT, onXoResult);
     };
   }, [postToIframe, gameId, playerName, gameName, gameCode]);
+
+  // Xin đồng bộ lại bàn cờ XO từ server khi vừa vào trận và mỗi khi socket
+  // reconnect (mất mạng / tải lại) — tránh ván đấu bị "mất trắng" phía
+  // client trong khi server vẫn còn giữ trạng thái chuẩn.
+  useEffect(() => {
+    const sessionId = pendingOpponent?.sessionId || coopSessionId;
+    if (!sessionId) return;
+    const requestSync = () => socket.emit(SOCKET_EVENTS.XO_SYNC_REQUEST, { sessionId });
+    requestSync();
+    socket.on("connect", requestSync);
+    return () => socket.off("connect", requestSync);
+  }, [pendingOpponent, coopSessionId]);
 
   useEffect(() => {
     if (coopSessionId && coopOpponent) {
@@ -416,7 +459,7 @@ export default function HtmlGameLoader({
       <iframe
         ref={iframeRef}
         srcDoc={htmlContent}
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts"
         className="flex-1 w-full h-full border-0"
         title={game?.title || "Game"}
       />

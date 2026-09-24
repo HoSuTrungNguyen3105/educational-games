@@ -8,6 +8,7 @@ const TeacherDashboard = lazy(() => import('./TeacherDashboard.jsx'));
 const CreateGameFlow = lazy(() => import('./CreateGameFlow.jsx'));
 const TeacherResults = lazy(() => import('./TeacherResults.jsx'));
 const UserManagement = lazy(() => import('./UserManagement.jsx'));
+const RoleManagement = lazy(() => import('./RoleManagement.jsx'));
 const TemplateManagement = lazy(() => import('./TemplateManagement.jsx'));
 const TemplateFormPage = lazy(() => import('./TemplateFormPage.jsx'));
 const CategoryManagement = lazy(() => import('./CategoryManagement.jsx'));
@@ -67,6 +68,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
         {page === "admin-edit" && <CreateGameFlow key={route.params.gameId} gameId={route.params.gameId} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
         {page === "admin-results" && <TeacherResults gameId={route.params.gameId} onBack={goLibrary} />}
         {page === "admin-users" && <UserManagement user={user} showToast={showToast} />}
+        {page === "admin-roles" && <RoleManagement user={user} showToast={showToast} />}
         {page === "admin-coins" && <CoinManagement showToast={showToast} />}
         {page === "admin-daily-tasks" && <DailyTaskManagement showToast={showToast} />}
         {page === "admin-templates" && <TemplateManagement showToast={showToast} />}

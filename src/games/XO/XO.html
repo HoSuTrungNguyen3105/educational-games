@@ -148,40 +148,38 @@
                 var newMode = d.playMode || 'solo';
                 if (newMode !== gameConfig.mode) {
                     gameConfig.mode = newMode;
-                    if (gameConfig.mode === 'multiplayer') {
-                        myPlayer = 'X';
-                        opponentPlayer = 'O';
-                        if (d.opponent) {
-                            gameConfig.opponent = d.opponent;
-                        }
+                    if (gameConfig.mode === 'multiplayer' && d.opponent) {
+                        gameConfig.opponent = d.opponent;
                     }
                 }
                 bridgeReady = true;
                 updateModeLabel();
                 updateCoopBtn();
-            } else if (msg.type === 'opponent-move') {
+            } else if (msg.type === 'multiplayer-start') {
+                var d = msg.data || {};
+                gameConfig.mode = 'multiplayer';
+                gameConfig.opponent = d.opponent;
+                if (d.sessionId) gameConfig.sessionId = d.sessionId;
+                updateModeLabel();
+            } else if (msg.type === 'invite-accepted') {
+                var d = msg.data || {};
+                gameConfig.mode = 'multiplayer';
+                gameConfig.opponent = d;
+                if (d.sessionId) gameConfig.sessionId = d.sessionId;
+                updateModeLabel();
+            } else if (msg.type === 'xo-sync') {
+                // Trạng thái CHUẨN từ server: mình là X hay O, bàn cờ hiện
+                // tại, ai đang tới lượt, điểm số. Đây là nguồn sự thật duy
+                // nhất cho ván multiplayer — kể cả sau khi tải lại trang
+                // hoặc mất kết nối rồi reconnect.
+                applyXoSync(msg.data || {});
+            } else if (msg.type === 'xo-move-result') {
                 var d = msg.data || {};
                 if (d.row !== undefined && d.col !== undefined) {
                     handleOpponentMove(d.row, d.col);
                 }
-            } else if (msg.type === 'multiplayer-start') {
-                var d = msg.data || {};
-                gameConfig.mode = 'multiplayer';
-                myPlayer = 'X';
-                opponentPlayer = 'O';
-                gameConfig.opponent = d.opponent;
-                if (d.sessionId) gameConfig.sessionId = d.sessionId;
-                updateModeLabel();
-                resetGame();
-            } else if (msg.type === 'invite-accepted') {
-                var d = msg.data || {};
-                gameConfig.mode = 'multiplayer';
-                myPlayer = 'X';
-                opponentPlayer = 'O';
-                gameConfig.opponent = d;
-                if (d.sessionId) gameConfig.sessionId = d.sessionId;
-                updateModeLabel();
-                resetGame();
+            } else if (msg.type === 'xo-result') {
+                handleXoResult(msg.data || {});
             }
         });
 
@@ -339,24 +337,54 @@
         }
 
         // ===== Opponent move (multiplayer) =====
+        // ===== Đồng bộ chuẩn từ server (multiplayer) =====
+        function applyXoSync(data) {
+            if (data.youAre) {
+                myPlayer = data.youAre;
+                opponentPlayer = myPlayer === 'X' ? 'O' : 'X';
+            }
+            grid = {};
+            (data.cells || []).forEach(function(c) {
+                grid[c.row + ',' + c.col] = c.player;
+            });
+            currentPlayer = data.turn || 'X';
+            if (data.scores) {
+                scoreX = data.scores.X || 0;
+                scoreO = data.scores.O || 0;
+                updateScore();
+            }
+            gameOver = !!data.over;
+            turnDisplay.textContent = currentPlayer;
+            hideWinMessage();
+            draw();
+        }
+
+        function handleXoResult(data) {
+            gameOver = true;
+            if (data.scores) {
+                scoreX = data.scores.X || 0;
+                scoreO = data.scores.O || 0;
+                updateScore();
+            }
+            showWinMessage(data.winner);
+            if (data.winner === myPlayer) {
+                // Server đã tự cộng xu dựa trên kết quả nó tự xác thực —
+                // gọi game-over ở đây chỉ để ghi nhận lịch sử/kết quả ván
+                // đấu phía React, không cộng xu lần nữa.
+                sendToParent('game-over', { score: 50, correct: 1, totalQuestions: 1, timeUsed: 0, coinReward: 50 });
+                coinRewardEl.style.display = 'block';
+                coinRewardEl.textContent = '🪙 +50 xu';
+            } else {
+                coinRewardEl.style.display = 'none';
+            }
+        }
+
         function handleOpponentMove(row, col) {
             if (gameOver) return;
             var key = row + ',' + col;
             if (grid[key]) return;
 
             grid[key] = opponentPlayer;
-            draw();
-
-            if (checkWin(row, col, opponentPlayer)) {
-                gameOver = true;
-                if (opponentPlayer === 'X') scoreX++;
-                else scoreO++;
-                updateScore();
-                showWinMessage(opponentPlayer);
-                draw();
-                return;
-            }
-
             currentPlayer = myPlayer;
             turnDisplay.textContent = currentPlayer;
             draw();
@@ -447,14 +475,14 @@
             grid[key] = currentPlayer;
             draw();
 
-            // In multiplayer, send move to opponent
             if (gameConfig.mode === 'multiplayer') {
-                sendToParent('game-move', {
-                    gameId: gameConfig.gameId,
-                    row: cell.row,
-                    col: cell.col,
-                    player: currentPlayer
-                });
+                // Server xác thực nước đi, tự tính thắng/thua và tự cộng
+                // xu — ở đây chỉ vẽ tạm (optimistic), chờ 'xo-move-result'
+                // / 'xo-result' để có kết quả chính thức.
+                sendToParent('xo-move', { row: cell.row, col: cell.col });
+                currentPlayer = opponentPlayer;
+                turnDisplay.textContent = currentPlayer;
+                return;
             }
 
             if (checkWin(cell.row, cell.col, currentPlayer)) {
@@ -465,27 +493,8 @@
                 updateScore();
                 showWinMessage(currentPlayer);
                 draw();
-
-                // Send game-over to parent with +50 coins for winner
-                var isWinner = (gameConfig.mode === 'multiplayer' && currentPlayer === myPlayer) ||
-                               (gameConfig.mode === 'solo' && currentPlayer === 'X');
-                if (isWinner) {
-                    sendToParent('game-over', {
-                        score: 50,
-                        correct: 1,
-                        totalQuestions: 1,
-                        timeUsed: 0,
-                        coinReward: 50
-                    });
-                    coinRewardEl.style.display = 'block';
-                    coinRewardEl.textContent = '🪙 +50 xu';
-                } else if (gameConfig.mode === 'solo') {
-                    // AI wins, no coins
-                    coinRewardEl.style.display = 'none';
-                } else {
-                    // Opponent won in multiplayer, no coins for us
-                    coinRewardEl.style.display = 'none';
-                }
+                // Solo luôn chơi với vai X, thắng AI không có thưởng xu.
+                coinRewardEl.style.display = 'none';
                 return;
             }
 
@@ -593,8 +602,25 @@
         window.addEventListener('touchmove', onPointerMove, { passive: false });
         window.addEventListener('touchend', onPointerUp, { passive: false });
 
-        resetBtn.addEventListener('click', fullReset);
-        playAgainBtn.addEventListener('click', resetGame);
+        resetBtn.addEventListener('click', function() {
+            if (gameConfig.mode === 'multiplayer') {
+                // Không tự ý xoá điểm/bàn cờ cục bộ trong multiplayer — sẽ
+                // làm lệch với trạng thái server đang giữ cho đối thủ.
+                sendToParent('xo-rematch', {});
+            } else {
+                fullReset();
+            }
+        });
+        playAgainBtn.addEventListener('click', function() {
+            if (gameConfig.mode === 'multiplayer') {
+                // Ván trước đã kết thúc ở server (match.over = true) — xin
+                // server reset lại bàn cho cả 2 người thay vì tự sửa trạng
+                // thái cục bộ, để 2 bên luôn đồng bộ.
+                sendToParent('xo-rematch', {});
+            } else {
+                resetGame();
+            }
+        });
         var coopBtn = document.getElementById('coopBtn');
         if (coopBtn) {
             coopBtn.addEventListener('click', function() {

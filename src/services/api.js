@@ -521,3 +521,19 @@ export const reminderService = {
   async trigger(id) { return apiFetch(`/reminders/${id}/trigger`, { method: "POST" }); },
   async delete_(id) { return apiFetch(`/reminders/${id}`, { method: "DELETE" }); },
 };
+
+export const permissionService = {
+  async features() { return apiFetch("/permissions/features") || []; },
+  async listRoles() { return apiFetch("/permissions/roles") || []; },
+  async getRole(key) { return apiFetch(`/permissions/roles/${encodeURIComponent(key)}`); },
+  async counts() { return apiFetch("/permissions/counts") || {}; },
+  async createRole(data) {
+    return apiFetch("/permissions/roles", { method: "POST", body: data });
+  },
+  async updateRole(key, data) {
+    return apiFetch(`/permissions/roles/${encodeURIComponent(key)}`, { method: "PUT", body: data });
+  },
+  async deleteRole(key) {
+    return apiFetch(`/permissions/roles/${encodeURIComponent(key)}`, { method: "DELETE" });
+  },
+};

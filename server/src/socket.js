@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import { config } from "./config.js";
-import { verifyToken } from "./services/authService.js";
+import { verifyToken, addCoins } from "./services/authService.js";
 import * as gameService from "./services/gameService.js";
 import * as questionService from "./services/questionService.js";
 import * as resultService from "./services/resultService.js";
@@ -47,6 +47,14 @@ export const EVENTS = {
   GAME_JOIN_BY_CODE: "game:join-by-code",
   GAME_JOINED: "game:joined",
 
+  // XO (Caro) — giao thức realtime có server xác thực nước đi/thắng thua
+  XO_MOVE: "game:xo:move",
+  XO_MOVE_RESULT: "game:xo:move-result",
+  XO_SYNC: "game:xo:sync",
+  XO_SYNC_REQUEST: "game:xo:sync:request",
+  XO_RESULT: "game:xo:result",
+  XO_REMATCH: "game:xo:rematch",
+
   // Notification events
   NOTIFICATION_NEW: "notification:new",
 };
@@ -58,6 +66,71 @@ const sessions = new Map(); // gameId -> session
 
 // Code -> gameId mapping for co-op join by code
 const gameCodes = new Map(); // code -> { gameId, hostUserId, createdAt }
+
+// ===== Trạng thái chuẩn (authoritative) cho ván XO (Caro) =====
+// Trước đây bàn cờ/lượt đi chỉ tồn tại trong bộ nhớ của mỗi trình duyệt,
+// server chỉ "relay" nước đi mù — không xác thực đúng lượt, không xác
+// thực người gửi có thuộc trận đó không, và cả 2 người chơi luôn bị gán
+// cứng là "X" (bug). Giờ server giữ 1 bản ghi cho mỗi trận (theo sessionId
+// — mã trận duy nhất của từng cặp người chơi, khác với gameId là ID
+// của "trò chơi XO" dùng chung cho mọi người).
+const xoMatches = new Map(); // sessionId -> { grid, turn, players:{X,O}, scores:{X,O}, over, lastActivityAt }
+const xoRoomName = (sessionId) => `xo:${sessionId}`;
+const xoCellKey = (row, col) => `${row},${col}`;
+
+function checkXoWin(grid, row, col, player) {
+  const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
+  for (const [dr, dc] of directions) {
+    let count = 1;
+    for (let step = 1; step < 5; step++) {
+      if (grid.get(xoCellKey(row + dr * step, col + dc * step)) === player) count++;
+      else break;
+    }
+    for (let step = 1; step < 5; step++) {
+      if (grid.get(xoCellKey(row - dr * step, col - dc * step)) === player) count++;
+      else break;
+    }
+    if (count >= 5) return true;
+  }
+  return false;
+}
+
+function startXoMatch(sessionId, hostUserId, guestUserId) {
+  const match = {
+    grid: new Map(),
+    turn: "X",
+    players: { X: hostUserId, O: guestUserId },
+    scores: { X: 0, O: 0 },
+    over: false,
+    lastActivityAt: Date.now(),
+  };
+  xoMatches.set(sessionId, match);
+  return match;
+}
+
+function xoSyncPayload(sessionId, match, forUserId) {
+  return {
+    sessionId,
+    youAre: match.players.X === forUserId ? "X" : match.players.O === forUserId ? "O" : null,
+    cells: [...match.grid.entries()].map(([key, player]) => {
+      const [row, col] = key.split(",").map(Number);
+      return { row, col, player };
+    }),
+    turn: match.turn,
+    scores: match.scores,
+    over: match.over,
+  };
+}
+
+// Dọn các trận XO không hoạt động quá lâu — tránh rò rỉ bộ nhớ vì có thể
+// không bao giờ nhận được sự kiện "kết thúc" tường minh nếu người chơi chỉ
+// đơn giản đóng tab thay vì bấm thoát game.
+setInterval(() => {
+  const cutoff = Date.now() - 2 * 60 * 60 * 1000; // 2 giờ không hoạt động
+  for (const [sessionId, match] of xoMatches) {
+    if (match.lastActivityAt < cutoff) xoMatches.delete(sessionId);
+  }
+}, 15 * 60 * 1000).unref();
 function generateGameCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
@@ -362,6 +435,16 @@ export function initSocket(httpServer) {
         inviterSocket.join(roomName(gameId));
         inviterSocket.data.gameId = gameId;
       }
+
+      // Khởi tạo trận XO chuẩn (nếu game này dùng giao thức XO) — vô hại
+      // với các game khác vì chỉ được tra cứu khi có sự kiện game:xo:*.
+      if (sessionId) {
+        socket.join(xoRoomName(sessionId));
+        if (inviterSocket) inviterSocket.join(xoRoomName(sessionId));
+        const match = startXoMatch(sessionId, fromUserId, acceptedBy);
+        socket.emit(EVENTS.XO_SYNC, xoSyncPayload(sessionId, match, acceptedBy));
+        if (inviterSocket) inviterSocket.emit(EVENTS.XO_SYNC, xoSyncPayload(sessionId, match, fromUserId));
+      }
     });
 
     // Player B declines invite
@@ -417,6 +500,14 @@ export function initSocket(httpServer) {
         });
       }
 
+      if (sessionId) {
+        socket.join(xoRoomName(sessionId));
+        if (hostSocket) hostSocket.join(xoRoomName(sessionId));
+        const match = startXoMatch(sessionId, hostUserId, joinerId);
+        socket.emit(EVENTS.XO_SYNC, xoSyncPayload(sessionId, match, joinerId));
+        if (hostSocket) hostSocket.emit(EVENTS.XO_SYNC, xoSyncPayload(sessionId, match, hostUserId));
+      }
+
       socket.emit(EVENTS.GAME_JOINED, { ok: true, gameId, hostUserId, sessionId });
     });
 
@@ -437,6 +528,80 @@ export function initSocket(httpServer) {
       const gameId = data.gameId || socket.data.gameId;
       if (!gameId) return;
       socket.to(roomName(gameId)).emit(EVENTS.GAME_STATE_SYNC, data);
+    });
+
+    // ===== XO (Caro) — nước đi được server xác thực & tự tính thắng thua =====
+    socket.on(EVENTS.XO_MOVE, (data = {}) => {
+      const { sessionId, row, col } = data;
+      if (!sessionId || typeof row !== "number" || typeof col !== "number") return;
+
+      const match = xoMatches.get(sessionId);
+      if (!match || match.over) return;
+
+      const userId = socket.data.user?.sub || socket.data.playerId;
+      const myLetter = match.players.X === userId ? "X" : match.players.O === userId ? "O" : null;
+      if (!myLetter) return; // không thuộc trận này — bỏ qua, không cho chèn nước đi vào trận của người khác
+      if (myLetter !== match.turn) return; // không đúng lượt
+
+      const key = xoCellKey(row, col);
+      if (match.grid.has(key)) return; // ô đã có quân
+
+      match.grid.set(key, myLetter);
+      match.lastActivityAt = Date.now();
+
+      const won = checkXoWin(match.grid, row, col, myLetter);
+      if (won) {
+        match.over = true;
+        match.scores[myLetter]++;
+      } else {
+        match.turn = myLetter === "X" ? "O" : "X";
+      }
+
+      // Người gửi đã tự vẽ nước đi của mình (optimistic) — chỉ cần báo cho đối thủ
+      socket.to(xoRoomName(sessionId)).emit(EVENTS.XO_MOVE_RESULT, { sessionId, row, col, player: myLetter });
+
+      if (won) {
+        io.to(xoRoomName(sessionId)).emit(EVENTS.XO_RESULT, {
+          sessionId, winner: myLetter, winnerUserId: userId, scores: match.scores,
+        });
+        // Server tự cộng xu dựa trên kết quả nó tự tính — không tin số xu
+        // do client khai báo qua "add-coins" nữa.
+        addCoins(userId, 50).catch((e) => console.error("[socket] xo addCoins failed:", e.message));
+      }
+    });
+
+    // Client xin đồng bộ lại toàn bộ bàn cờ (mới kết nối / vừa reconnect
+    // sau khi rớt mạng / tải lại trang) — trả về trạng thái hiện tại thay
+    // vì để ván đấu coi như mất trắng.
+    socket.on(EVENTS.XO_SYNC_REQUEST, (data = {}) => {
+      const { sessionId } = data;
+      if (!sessionId) return;
+      const match = xoMatches.get(sessionId);
+      if (!match) return;
+      socket.join(xoRoomName(sessionId));
+      const userId = socket.data.user?.sub || socket.data.playerId;
+      socket.emit(EVENTS.XO_SYNC, xoSyncPayload(sessionId, match, userId));
+    });
+
+    // Chơi lại trong cùng phòng — reset bàn cờ ở server (điểm số giữ
+    // nguyên), chỉ người trong trận mới được yêu cầu.
+    socket.on(EVENTS.XO_REMATCH, (data = {}) => {
+      const { sessionId } = data;
+      if (!sessionId) return;
+      const match = xoMatches.get(sessionId);
+      if (!match) return;
+      const userId = socket.data.user?.sub || socket.data.playerId;
+      if (match.players.X !== userId && match.players.O !== userId) return;
+
+      match.grid = new Map();
+      match.turn = "X";
+      match.over = false;
+      match.lastActivityAt = Date.now();
+
+      const hostSock = findSocketByUserId(io, match.players.X);
+      const guestSock = findSocketByUserId(io, match.players.O);
+      if (hostSock) hostSock.emit(EVENTS.XO_SYNC, xoSyncPayload(sessionId, match, match.players.X));
+      if (guestSock) guestSock.emit(EVENTS.XO_SYNC, xoSyncPayload(sessionId, match, match.players.O));
     });
 
     socket.on("disconnect", () => {

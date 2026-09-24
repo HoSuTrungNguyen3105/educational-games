@@ -39,6 +39,14 @@ export const SOCKET_EVENTS = {
   GAME_JOIN_BY_CODE: "game:join-by-code",
   GAME_JOINED: "game:joined",
 
+  // XO (Caro) — giao thức realtime có server xác thực nước đi/thắng thua
+  XO_MOVE: "game:xo:move",
+  XO_MOVE_RESULT: "game:xo:move-result",
+  XO_SYNC: "game:xo:sync",
+  XO_SYNC_REQUEST: "game:xo:sync:request",
+  XO_RESULT: "game:xo:result",
+  XO_REMATCH: "game:xo:rematch",
+
   // Notification events
   NOTIFICATION_NEW: "notification:new",
 };
