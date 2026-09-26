@@ -1,108 +1,65 @@
 import { getCollection } from "../db.js";
+import {
+  FEATURES,
+  ROLES,
+  ROLES_SEED_VERSION,
+  ROLE_KEYS,
+  permissionsToMatrix,
+  matrixToPermissions,
+} from "../../../src/config/roles.js";
 
 const COLLECTION = "roles";
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
-// Permission features shown in admin matrix (matches UI columns: Xem / Sửa / Xóa)
-export const FEATURES = [
-  { key: "games", label: "Trò chơi", permissions: { view: "games.view", edit: "games.edit", delete: "games.delete" } },
-  { key: "content", label: "Môn học & câu hỏi", permissions: { view: "content.view", edit: "content.edit", delete: "content.delete" } },
-  { key: "users", label: "Người dùng", permissions: { view: "users.view", edit: "users.edit", delete: "users.delete" } },
-  { key: "reports", label: "Báo cáo & thống kê", permissions: { view: "reports.view", edit: "reports.edit", delete: "reports.delete" } },
-  { key: "settings", label: "Cài đặt hệ thống", permissions: { view: "settings.view", edit: "settings.edit", delete: "settings.delete" } },
-];
+const none = () => permissionsToMatrix([]);
 
-const all = (on = true) => {
-  const m = {};
-  for (const f of FEATURES) {
-    m[f.key] = { view: on, edit: on, delete: on };
-  }
-  return m;
-};
-
-const none = () => all(false);
-
-// Built-in role defaults (seeded into `roles` collection)
-export const BUILTIN_ROLES = [
-  {
-    id: "role-admin",
-    key: "admin",
-    label: "Admin",
-    description: "Toàn quyền hệ thống",
-    isBuiltIn: true,
-    dashboardAccess: true,
-    matrix: all(true),
-  },
-  {
-    id: "role-teacher",
-    key: "teacher",
-    label: "Giáo viên",
-    description: "Quản lý nội dung & lớp học",
-    isBuiltIn: true,
-    dashboardAccess: true,
-    matrix: {
-      games: { view: true, edit: true, delete: false },
-      content: { view: true, edit: true, delete: false },
-      users: { view: true, edit: false, delete: false },
-      reports: { view: true, edit: false, delete: false },
-      settings: { view: false, edit: false, delete: false },
-    },
-  },
-  {
-    id: "role-student",
-    key: "student",
-    label: "Học sinh",
-    description: "Chơi game & học tập",
-    isBuiltIn: true,
-    dashboardAccess: false,
-    matrix: none(),
-  },
-];
-
-function matrixToPermissions(matrix) {
-  const perms = [];
-  for (const f of FEATURES) {
-    const m = matrix?.[f.key] || {};
-    if (m.view) perms.push(f.permissions.view);
-    if (m.edit) perms.push(f.permissions.edit);
-    if (m.delete) perms.push(f.permissions.delete);
-  }
-  // Legacy aliases used by sidebar / existing UI
-  if (matrix?.games?.edit) {
-    perms.push("games.manage", "games.play");
-  }
-  if (matrix?.content?.edit) {
-    perms.push("questions.manage", "subjects.manage", "categories.manage", "templates.manage");
-  }
-  if (matrix?.users?.view) perms.push("users.view");
-  if (matrix?.users?.edit) perms.push("users.manage");
-  if (matrix?.settings?.edit) perms.push("setup.manage", "coins.manage", "daily-tasks.manage");
-  // Common non-admin permissions
-  perms.push("chat", "profile", "friends", "coins.view", "daily-tasks");
-  if (matrix?.games?.view || matrix?.games?.edit) perms.push("games.play");
-  return [...new Set(perms)];
-}
+// Built-in roles seeded into the `roles` collection — defined once in src/config/roles.js
+export const BUILTIN_ROLES = Object.entries(ROLES).map(([key, role]) => ({
+  id: `role-${key}`,
+  key,
+  label: role.label,
+  description: role.description || "",
+  isBuiltIn: true,
+  dashboardAccess: !!role.dashboardAccess,
+  matrix: permissionsToMatrix(role.permissions),
+  seedVersion: ROLES_SEED_VERSION,
+}));
 
 async function ensureSeeded() {
   const col = getCollection(COLLECTION);
-  const count = await col.countDocuments({});
-  if (count === 0) {
-    for (const r of BUILTIN_ROLES) {
-      await col.updateOne(
-        { key: r.key },
-        { $setOnInsert: { ...r, createdAt: new Date().toISOString() } },
-        { upsert: true },
-      );
-    }
-  } else {
-    // Ensure built-ins exist even if collection was partially seeded
-    for (const r of BUILTIN_ROLES) {
-      const exists = await col.findOne({ key: r.key });
-      if (!exists) {
-        await col.insertOne({ ...r, createdAt: new Date().toISOString() });
-      }
+  const keys = BUILTIN_ROLES.map((r) => r.key);
+  const existing = await col.find({ key: { $in: keys } }).toArray();
+  const byKey = new Map(existing.map((d) => [d.key, d]));
+  const now = new Date().toISOString();
+
+  const ops = [];
+  for (const r of BUILTIN_ROLES) {
+    const doc = byKey.get(r.key);
+    if (!doc) {
+      ops.push({ insertOne: { document: { ...r, createdAt: now } } });
+    } else if ((doc.seedVersion ?? 0) !== r.seedVersion) {
+      // Config changed (or first run on an older DB) -> refresh built-in defaults.
+      // Custom roles and admin edits made after seeding are kept until the next bump.
+      ops.push({
+        updateOne: {
+          filter: { key: r.key },
+          update: {
+            $set: {
+              id: r.id,
+              label: r.label,
+              description: r.description,
+              isBuiltIn: true,
+              dashboardAccess: r.dashboardAccess,
+              matrix: r.matrix,
+              seedVersion: r.seedVersion,
+              updatedAt: now,
+            },
+          },
+        },
+      });
     }
   }
+  if (ops.length) await col.bulkWrite(ops, { ordered: false });
 }
 
 async function countByRole() {
@@ -131,7 +88,13 @@ function toApi(role, counts = {}) {
 export async function listRoles() {
   await ensureSeeded();
   const counts = await countByRole();
-  const roles = await getCollection(COLLECTION).find({}).sort({ isBuiltIn: -1, label: 1 }).toArray();
+  const roles = await getCollection(COLLECTION).find({}).toArray();
+  // Built-in roles follow the config order (admin -> teacher -> student), custom ones after
+  const rank = (r) => {
+    const i = r.isBuiltIn ? ROLE_KEYS.indexOf(r.key) : -1;
+    return i >= 0 ? i : ROLE_KEYS.length;
+  };
+  roles.sort((a, b) => rank(a) - rank(b) || String(a.label).localeCompare(String(b.label), "vi"));
   return roles.map((r) => toApi(r, counts));
 }
 
@@ -144,13 +107,13 @@ export async function getRole(keyOrId) {
   return toApi(role, counts);
 }
 
-export async function createRole({ key, label, description, dashboardAccess = false, matrix }) {
+export async function createRole({ key, label, description, dashboardAccess = false, matrix, permissions }) {
   await ensureSeeded();
   const k = String(key || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
   const name = String(label || "").trim();
   if (!k) throw new Error("key là bắt buộc (a-z, 0-9, - , _)");
   if (!name) throw new Error("label là bắt buộc");
-  if (["admin", "teacher", "student"].includes(k)) {
+  if (ROLE_KEYS.includes(k)) {
     throw new Error("Không thể tạo trùng vai trò hệ thống");
   }
   const col = getCollection(COLLECTION);
@@ -164,7 +127,7 @@ export async function createRole({ key, label, description, dashboardAccess = fa
     description: String(description || "").trim(),
     isBuiltIn: false,
     dashboardAccess: !!dashboardAccess,
-    matrix: normalizeMatrix(matrix),
+    matrix: buildMatrix({ matrix, permissions }),
     createdAt: new Date().toISOString(),
   };
   await col.insertOne(doc);
@@ -172,7 +135,7 @@ export async function createRole({ key, label, description, dashboardAccess = fa
   return toApi(doc, counts);
 }
 
-export async function updateRole(keyOrId, { label, description, dashboardAccess, matrix }) {
+export async function updateRole(keyOrId, { label, description, dashboardAccess, matrix, permissions }) {
   await ensureSeeded();
   const col = getCollection(COLLECTION);
   const role = await col.findOne({ $or: [{ key: keyOrId }, { id: keyOrId }] });
@@ -186,7 +149,9 @@ export async function updateRole(keyOrId, { label, description, dashboardAccess,
   }
   if (description != null) updates.description = String(description).trim();
   if (dashboardAccess != null) updates.dashboardAccess = !!dashboardAccess;
-  if (matrix != null) updates.matrix = normalizeMatrix(matrix);
+  if (matrix != null || permissions != null) {
+    updates.matrix = buildMatrix({ matrix: matrix ?? role.matrix, permissions });
+  }
   updates.updatedAt = new Date().toISOString();
 
   await col.updateOne({ id: role.id }, { $set: updates });
@@ -221,6 +186,11 @@ function normalizeMatrix(matrix) {
     };
   }
   return out;
+}
+
+// Accepts either `permissions` (array, wins) or `matrix` (UI format) — both normalized
+function buildMatrix({ matrix, permissions }) {
+  return Array.isArray(permissions) ? permissionsToMatrix(permissions) : normalizeMatrix(matrix);
 }
 
 export async function getUserCounts() {
