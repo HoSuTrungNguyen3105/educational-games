@@ -1,0 +1,31 @@
+name: Keep API awake
+
+# Giữ API trên Render (free) không bị sleep:
+# Render sleep sau 15 phút không có traffic → mỗi lần truy cập phải đợi cold-start.
+# Ping /api/health mỗi 10 phút để instance luôn sẵn sàng.
+# Lưu ý: GitHub tắt schedule tự động nếu repo không có hoạt động 60 ngày.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping /api/health
+        run: |
+          URL="https://educational-games-lp4z.onrender.com/api/health"
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /tmp/health.json -w "%{http_code}" --max-time 60 "$URL" || echo 000)
+            echo "attempt $i -> HTTP $code"
+            if [ "$code" = "200" ]; then
+              cat /tmp/health.json
+              exit 0
+            fi
+            # cold-start lần đầu có thể mất 30-60s → thử lại
+            sleep 20
+          done
+          echo "API khong phan hoi"
+          exit 1

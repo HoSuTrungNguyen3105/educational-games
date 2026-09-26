@@ -336,9 +336,13 @@ export default function GardenPage({ userAuth, onBack }) {
 
   // player (smooth pixel-based movement)
   const SPEED = 150; // px/s
-  const [playerPos, setPlayerPos] = useState(() => ({ x: PLAYER_START.x * TILE + TILE / 2, y: PLAYER_START.y * TILE + TILE / 2 }));
-  const [playerDir, setPlayerDir] = useState('down');
   const playerPosRef = useRef({ x: PLAYER_START.x * TILE + TILE / 2, y: PLAYER_START.y * TILE + TILE / 2 });
+  const playerDirRef = useRef('down');
+  const playerGroupRef = useRef(null);
+  const playerInnerRef = useRef(null);
+  const [isMoving, setIsMoving] = useState(false);
+  const facingCoordRef = useRef(`${PLAYER_START.x},${PLAYER_START.y+1}`);
+  const [, setFacingRender] = useState(0);
   const keysHeld = useRef(new Set());
   const dpadDir = useRef(null);
   const sync = useRef({});
@@ -416,14 +420,14 @@ export default function GardenPage({ userAuth, onBack }) {
   const facing = useCallback(() => {
     const gx = Math.floor(playerPosRef.current.x / TILE);
     const gy = Math.floor(playerPosRef.current.y / TILE);
-    switch (playerDir) {
+    switch (playerDirRef.current) {
       case 'up':    return { x: gx, y: gy - 1 };
       case 'down':  return { x: gx, y: gy + 1 };
       case 'left':  return { x: gx - 1, y: gy };
       case 'right': return { x: gx + 1, y: gy };
       default:      return { x: gx, y: gy + 1 };
     }
-  }, [playerDir]);
+  }, []);
 
   const facingSlot = (() => { const f = facing(); return cropMap[`${f.x},${f.y}`] || null; })();
 
@@ -460,6 +464,7 @@ export default function GardenPage({ userAuth, onBack }) {
       lastTime = now;
 
       if (showShop || showInv || showQuiz || harvestR || confirmDel) {
+        setIsMoving(false);
         raf = requestAnimationFrame(loop);
         return;
       }
@@ -476,12 +481,18 @@ export default function GardenPage({ userAuth, onBack }) {
         else if (k.has('arrowright') || k.has('d')) dx = 1;
       }
 
+      const currentlyMoving = (dx !== 0 || dy !== 0);
+      setIsMoving(prev => { if (prev !== currentlyMoving) return currentlyMoving; return prev; });
+
       if (dx || dy) {
         const len = Math.sqrt(dx * dx + dy * dy);
         dx /= len; dy /= len;
 
-        if (Math.abs(dx) >= Math.abs(dy)) setPlayerDir(dx > 0 ? 'right' : 'left');
-        else setPlayerDir(dy > 0 ? 'down' : 'up');
+        let newDir = playerDirRef.current;
+        if (Math.abs(dx) >= Math.abs(dy)) newDir = dx > 0 ? 'right' : 'left';
+        else newDir = dy > 0 ? 'down' : 'up';
+        
+        playerDirRef.current = newDir;
 
         const newX = playerPosRef.current.x + dx * SPEED * dt;
         const newY = playerPosRef.current.y + dy * SPEED * dt;
@@ -493,8 +504,29 @@ export default function GardenPage({ userAuth, onBack }) {
         if (isWalkable(newGx, newGy)) { fx = newX; fy = newY; }
         else if (isWalkable(newGx, curGy)) { fx = newX; }
         else if (isWalkable(curGx, newGy)) { fy = newY; }
+        
         playerPosRef.current = { x: fx, y: fy };
-        setPlayerPos({ x: fx, y: fy });
+
+        if (playerGroupRef.current) {
+          playerGroupRef.current.setAttribute('transform', `translate(${fx - TILE/2},${fy - TILE/2})`);
+        }
+        if (playerInnerRef.current) {
+          playerInnerRef.current.style.transform = newDir === 'left' ? 'scaleX(-1)' : 'none';
+        }
+
+        // check if facing changed
+        const fgx = Math.floor(fx / TILE);
+        const fgy = Math.floor(fy / TILE);
+        let tx = fgx, ty = fgy;
+        if (newDir === 'up') ty--;
+        else if (newDir === 'down') ty++;
+        else if (newDir === 'left') tx--;
+        else if (newDir === 'right') tx++;
+        const newFacingStr = `${tx},${ty}`;
+        if (facingCoordRef.current !== newFacingStr) {
+          facingCoordRef.current = newFacingStr;
+          setFacingRender(r => r + 1);
+        }
       }
 
       raf = requestAnimationFrame(loop);
@@ -648,11 +680,11 @@ export default function GardenPage({ userAuth, onBack }) {
           <rect x={2} y={2} width={COLS*TILE-4} height={ROWS*TILE-4} fill="none" stroke="#8a5a34" strokeWidth={3} rx={4}/>
 
           {/* Player */}
-          <g transform={`translate(${playerPos.x - TILE/2},${playerPos.y - TILE/2})`}>
+          <g ref={playerGroupRef} transform={`translate(${playerPosRef.current.x - TILE/2},${playerPosRef.current.y - TILE/2})`}>
             <ellipse cx={TILE/2} cy={TILE-4} rx={12} ry={4} fill="rgba(0,0,0,0.18)"/>
             <foreignObject x={0} y={-8} width={TILE} height={TILE+8} style={{overflow:'visible'}}>
-              <div xmlns="http://www.w3.org/1999/xhtml" style={{width:TILE,height:TILE,transform:playerDir==='left'?'scaleX(-1)':'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <AvatarPlayer moving={!!(dpadDir.current || keysHeld.current.size)} userAuth={userAuth}/>
+              <div ref={playerInnerRef} xmlns="http://www.w3.org/1999/xhtml" style={{width:TILE,height:TILE,transform:playerDirRef.current==='left'?'scaleX(-1)':'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <AvatarPlayer moving={isMoving} userAuth={userAuth}/>
               </div>
             </foreignObject>
           </g>

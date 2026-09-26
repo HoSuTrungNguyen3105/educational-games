@@ -93,7 +93,7 @@ export default defineConfig({
       },
       workbox: {
         importScripts: ['firebase-messaging-sw.js'],
-        globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
+        globPatterns: ['**/*.{js,css,html}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globIgnores: [
           '**/games/**',
@@ -149,4 +149,11 @@ export default defineConfig({
     }),
   ],
   base: '/educational-games/',
+  build: {
+    target: 'es2020',
+    // Bỏ bước tính gzip size cho từng chunk → build nhanh hơn
+    reportCompressedSize: false,
+    sourcemap: false,
+    chunkSizeWarningLimit: 1500,
+  },
 })

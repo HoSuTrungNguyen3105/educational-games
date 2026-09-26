@@ -5,7 +5,9 @@
   "homepage": "https://ho-nguyen.github.io/educational-games",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite",
+    "dev:api": "npm run dev --prefix server",
     "build": "vite build",
     "lint": "eslint .",
     "predeploy": "npm run build",

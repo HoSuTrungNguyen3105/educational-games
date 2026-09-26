@@ -23,7 +23,6 @@ const ROUTES = [
   { name: "admin-question-bank", pattern: "/admin/question-bank" },
   { name: "admin-create",    pattern: "/admin/create" },
   { name: "admin-edit",      pattern: "/admin/edit/:gameId" },
-  { name: "admin-builder",   pattern: "/admin/builder/:gameId" },
   { name: "admin-results",   pattern: "/admin/results/:gameId" },
   { name: "admin-coins",     pattern: "/admin/coins" },
   { name: "admin-daily-tasks", pattern: "/admin/daily-tasks" },

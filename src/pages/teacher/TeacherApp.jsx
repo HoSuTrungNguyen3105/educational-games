@@ -13,11 +13,8 @@ const TemplateManagement = lazy(() => import('./TemplateManagement.jsx'));
 const TemplateFormPage = lazy(() => import('./TemplateFormPage.jsx'));
 const CategoryManagement = lazy(() => import('./CategoryManagement.jsx'));
 const SubjectManagement = lazy(() => import('./SubjectManagement.jsx'));
-const QuestionManagement = lazy(() => import('./QuestionManagement.jsx'));
-const AllQuestionsManagement = lazy(() => import('./AllQuestionsManagement.jsx'));
 const UnifiedQuestionManagement = lazy(() => import('./UnifiedQuestionManagement.jsx'));
 const QuestionBankManagement = lazy(() => import('./QuestionBankManagement.jsx'));
-const GameBuilder = lazy(() => import('../../components/gameBuilder/GameBuilder.jsx'));
 const GameLibraryManagement = lazy(() => import('./GameLibraryManagement.jsx'));
 const CoinManagement = lazy(() => import('./CoinManagement.jsx'));
 const DailyTaskManagement = lazy(() => import('./DailyTaskManagement.jsx'));
@@ -44,26 +41,13 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
   const goCreate = () => navigate("/admin/create");
   const goLibrary = () => navigate("/admin/library");
 
-  if (route.name === "admin-builder") {
-    return (
-      <Suspense fallback={<div className="min-h-screen bg-paper flex items-center justify-center"><Loader label="Đang mở Game Builder..." /></div>}>
-        <GameBuilder
-          gameId={route.params.gameId}
-          showToast={showToast}
-          onDone={() => { bump(); goLibrary(); }}
-          onCancel={goLibrary}
-        />
-      </Suspense>
-    );
-  }
-
   const page = route.name;
 
   return (
     <TeacherLayout screen={page} user={user} onLogout={onLogout}>
       <Suspense fallback={<div className="p-12 flex items-center justify-center"><Loader label="Đang tải dữ liệu..." /></div>}>
-        {page === "admin-dashboard" && <TeacherDashboard key={refreshFlag} user={user} onLogout={onLogout} onOpenLibrary={goLibrary} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} onDesign={(id) => navigate(`/admin/builder/${id}`)} showToast={showToast} />}
-        {page === "admin-library" && <GameLibraryManagement key={refreshFlag} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} onDesign={(id) => navigate(`/admin/builder/${id}`)} onOpenBuilder={() => navigate("/admin/builder")} showToast={showToast} onChanged={bump} />}
+        {page === "admin-dashboard" && <TeacherDashboard key={refreshFlag} user={user} onLogout={onLogout} onOpenLibrary={goLibrary} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} showToast={showToast} />}
+        {page === "admin-library" && <GameLibraryManagement key={refreshFlag} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} showToast={showToast} onChanged={bump} />}
         {page === "admin-create" && <CreateGameFlow key="create" gameId={null} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
         {page === "admin-edit" && <CreateGameFlow key={route.params.gameId} gameId={route.params.gameId} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
         {page === "admin-results" && <TeacherResults gameId={route.params.gameId} onBack={goLibrary} />}

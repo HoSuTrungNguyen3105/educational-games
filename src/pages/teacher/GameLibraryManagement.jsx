@@ -84,7 +84,7 @@ function ManagementGameCard({ game, templates, onEdit, onResults, onDuplicate, o
   );
 }
 
-export default function GameLibraryManagement({ onCreate, onEdit, onResults, onDesign, showToast, onChanged }) {
+export default function GameLibraryManagement({ onCreate, onEdit, onResults, showToast, onChanged }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [subject, setSubject] = useState("all");
@@ -214,7 +214,6 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, onD
                   templates={templates}
                   onEdit={() => onEdit(gid)}
                   onResults={() => onResults(gid)}
-                  onDesign={() => onDesign(gid)}
                   onDuplicate={() => handleDuplicate(gid)}
                   onDelete={() => setConfirmDelete(g)}
                   onShare={() => setShareGame(g)}

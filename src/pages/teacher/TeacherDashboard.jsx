@@ -4,7 +4,6 @@ import { useTemplates } from '../../lib/hooks.js'
 import { StampToken, StatusBadge, IconButton, Loader, ErrorState, EmptyState, PrimaryButton, GhostButton, Modal, TicketStub } from '../../components/ui.jsx'
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
-import { navigate } from '../../lib/router.js'
 import {
   Gamepad2,
   Pencil,
@@ -24,12 +23,11 @@ import {
   AlertTriangle,
   Play,
   Plus,
-  User,
 } from 'lucide-react'
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
-export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onDesign, onHtmlTemplate }) {
+export function GameCard({ game, onEdit, onResults, onDelete, onShare }) {
   const templates = useTemplates();
   const tplId = game.templateId ? (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || game.templateId) : null;
   const tpl = tplId ? templates.find(t => t._id === tplId) : templates.find(t => t.slug === game.template || t.id === game.template);
@@ -57,7 +55,6 @@ export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onSha
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1.5 sm:gap-2">
           <IconButton title="Chỉnh sửa" onClick={onEdit}><Pencil className="w-5 h-5" /></IconButton>
-          {/* {onDesign && <IconButton title="Thiết kế giao diện (Game Builder)" onClick={onDesign}><Palette className="w-5 h-5" /></IconButton>} */}
           {onShare && game.status === "published" && <IconButton title="Chia sẻ" onClick={onShare}><Ticket className="w-5 h-5" /></IconButton>}
           {onDelete && <IconButton title="Xóa" onClick={onDelete}><Trash2 className="w-5 h-5" /></IconButton>}
         </div>
@@ -76,7 +73,7 @@ export function GameCard({ game, onEdit, onResults, onDuplicate, onDelete, onSha
   );
 }
 
-export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit, onResults, onDesign, showToast }) {
+export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit, onResults, showToast }) {
   const [games, setGames] = useState(null);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
@@ -257,7 +254,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 {games.slice(0, 3).map(g => {
                   const gid = g._id?.toString() || g.id;
-                  return <GameCard key={gid} game={g} onEdit={() => onEdit(gid)} onResults={() => onResults(gid)} onDesign={() => onDesign(gid)} onLive={() => handleLive(g)} onShare={() => setShareGame(g)} />;
+                  return <GameCard key={gid} game={g} onEdit={() => onEdit(gid)} onResults={() => onResults(gid)} onLive={() => handleLive(g)} onShare={() => setShareGame(g)} />;
                 })}
               </div>
             )}

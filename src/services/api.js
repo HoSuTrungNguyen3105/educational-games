@@ -1,6 +1,11 @@
-// ĐỊA CHỈ BACKEND — sau khi deploy lên Render, thay bằng URL thật của bạn, VD:
-// const API_BASE = window.API_BASE_URL || "https://edu-games-api.onrender.com/api";
-export const API_BASE = window.API_BASE_URL || "https://educational-games-lp4z.onrender.com/api";
+// ĐỊA CHỈ BACKEND — thứ tự ưu tiên:
+//   1. window.API_BASE_URL (override lúc runtime)
+//   2. VITE_API_BASE (đặt trong .env — `npm run dev` tự trỏ về http://localhost:5000/api)
+//   3. API đã deploy trên Render (mặc định khi build/production)
+export const API_BASE =
+  window.API_BASE_URL ||
+  import.meta.env.VITE_API_BASE ||
+  "https://educational-games-lp4z.onrender.com/api";
 export const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
 const AUTH_KEY = "edu_games_auth";

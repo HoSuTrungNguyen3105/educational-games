@@ -47,3 +47,9 @@ process.on("SIGINT", async () => {
   await close();
   process.exit(0);
 });
+
+// Render gửi SIGTERM khi deploy/restart — đóng DB gọn gàng để lần khởi động sau sạch
+process.on("SIGTERM", async () => {
+  await close();
+  process.exit(0);
+});
