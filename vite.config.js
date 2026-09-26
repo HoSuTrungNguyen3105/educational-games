@@ -1,11 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import fs from 'fs'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    {
+      name: 'cleanup-dist',
+      closeBundle() {
+        const folders = ['dist/farmgame', 'dist/games', 'dist/src/games'];
+        folders.forEach(f => {
+          const p = path.resolve(__dirname, f);
+          if (fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });
+        });
+      }
+    },
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons.svg', 'eduplay-icon.svg', 'eduplay-icon-192x192.png', 'eduplay-icon-512x512.svg', 'eduplay-logo.png', 'apple-touch-icon.png'],
