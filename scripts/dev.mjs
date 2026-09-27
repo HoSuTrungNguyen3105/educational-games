@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,7 +9,17 @@ import { fileURLToPath } from "node:url";
 //   npm run dev:web    → chỉ frontend (dùng API trong .env)
 //   npm run dev:api    → chỉ API
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+function findProjectRoot(start) {
+  let dir = start;
+  for (;;) {
+    if (existsSync(path.join(dir, "package.json")) && existsSync(path.join(dir, "server"))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return start;
+    dir = parent;
+  }
+}
+
+const root = findProjectRoot(path.dirname(fileURLToPath(import.meta.url)));
 const isWin = process.platform === "win32";
 
 function readDotEnv(file) {
@@ -110,6 +121,45 @@ if (!existsSync(path.join(root, "server", "node_modules"))) {
 console.log(`API  → ${apiUrl}`);
 console.log(`Web  → http://localhost:5173 (VITE_API_BASE=${process.env.VITE_API_BASE})`);
 console.log("Nhấn Ctrl+C để dừng cả hai.\n");
+
+// Chặn trước: nếu cổng API đã bị chiếm thì báo rõ PID thay vì để `node --watch`
+// treo với "Failed running 'src/server.js'" (khó hiểu).
+function isPortFree(port) {
+  return new Promise((resolve) => {
+    const probe = net.createServer();
+    probe.once("error", (err) => resolve(err.code !== "EADDRINUSE"));
+    probe.once("listening", () => probe.close(() => resolve(true)));
+    probe.listen(port, "0.0.0.0");
+  });
+}
+
+function findPortOwner(port) {
+  if (!isWin) return null;
+  try {
+    const r = spawnSync(
+      "powershell",
+      ["-NoProfile", "-Command", `(Get-NetTCPConnection -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess`],
+      { encoding: "utf8", windowsHide: true },
+    );
+    const pid = parseInt(String(r.stdout ?? "").trim(), 10);
+    return Number.isFinite(pid) && pid > 0 ? pid : null;
+  } catch {
+    return null;
+  }
+}
+
+if (!(await isPortFree(Number(apiPort)))) {
+  const pid = findPortOwner(Number(apiPort));
+  console.error(`[dev] Cổng ${apiPort} đang bị chiếm${pid ? ` (PID ${pid})` : ""}.`);
+  if (pid) {
+    const who = spawnSync("tasklist", ["/FI", `PID eq ${pid}`], { encoding: "utf8", windowsHide: true });
+    const line = String(who.stdout ?? "").split(/\r?\n/).find((l) => l.includes("node") || l.includes(".exe"));
+    console.error(`[dev]   → ${line ? line.trim() : ""}`);
+    console.error(`[dev]   → Chạy: taskkill /PID ${pid} /T /F  rồi chạy lại \`npm run dev\``);
+  }
+  console.error("[dev]   → Thường là phiên `npm run dev` cũ chưa được tắt.");
+  process.exit(1);
+}
 
 // API trước, Vite sau 500ms để log không bị đan xen
 start("api", process.execPath, ["--watch", "src/server.js"], {

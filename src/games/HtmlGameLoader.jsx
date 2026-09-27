@@ -4,7 +4,9 @@ import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
 import { renderAvatarFull } from "../lib/avatarRenderer.js";
+import { addPetExp } from "../lib/pet.js";
 import CoopInvitePanel from "../components/CoopInvitePanel.jsx";
+import GameHud from "./GameHud.jsx";
 
 /**
  * HtmlGameLoader - Renders a self-contained HTML game in an iframe.
@@ -37,6 +39,10 @@ export default function HtmlGameLoader({
   const [showCoopPanel, setShowCoopPanel] = useState(false);
   const [coopMode, setCoopMode] = useState(playMode || "solo");
   const [pendingOpponent, setPendingOpponent] = useState(coopOpponent || null);
+  const [hudCoins, setHudCoins] = useState(0);
+  const [petMessage, setPetMessage] = useState("Chúc bạn chơi vui vẻ!");
+  // Game tự render header (stats/pet) thì tắt HUD nổi của app để không trùng lặp
+  const [hudHidden, setHudHidden] = useState(false);
 
   const gameId = game?._id?.toString() || game?.id;
   const gameName = game?.name || "Trò chơi";
@@ -67,6 +73,7 @@ export default function HtmlGameLoader({
         userId = userAuth.user?.id;
         const coinData = await coinService.get();
         userCoins = coinData?.coins || 0;
+        setHudCoins(userCoins);
         if (gameId) {
           const progress = await gameProgressService.getGame(gameId);
           if (progress?.loadout) loadout = progress.loadout;
@@ -275,6 +282,9 @@ export default function HtmlGameLoader({
         if (amount > 0 && userAuth?.token) {
           coinService.add(amount).then(res => {
             postToIframe({ type: "coins-added", data: { success: true, coins: res?.coins || 0 } });
+            setHudCoins(res?.coins || 0);
+            setPetMessage(`🎉 Tuyệt vời! +${amount} coin`);
+            addPetExp(Math.min(10, amount));
             onStateUpdate?.({ coins: res?.coins || 0 });
           }).catch(() => {
             postToIframe({ type: "coins-added", data: { success: false } });
@@ -312,6 +322,13 @@ export default function HtmlGameLoader({
           gameProgressService.upsertGame(gameId, { loadout: loadoutData }).catch(() => {});
         }
       } else if (msg.type === "game-over") {
+        const correct = msg.data?.correct ?? 0;
+        const total = msg.data?.totalQuestions ?? 0;
+        setPetMessage(
+          total > 0 && correct / total >= 0.8
+            ? "🌟 Giỏi quá! Tui tự hào về bạn!"
+            : "💪 Khéo lắm! Hẹn gặp lại nha~"
+        );
         onFinish?.({
           score: msg.data?.score || 0,
           correct: msg.data?.correct ?? 0,
@@ -325,6 +342,8 @@ export default function HtmlGameLoader({
         onStateUpdate?.(msg.data);
       } else if (msg.type === "quit") {
         onQuit?.();
+      } else if (msg.type === "hide-hud") {
+        setHudHidden(true);
       } else if (msg.type === "search-user") {
         handleSearchUser(msg.data?.query);
       } else if (msg.type === "invite-user") {
@@ -463,6 +482,14 @@ export default function HtmlGameLoader({
         className="flex-1 w-full h-full border-0"
         title={game?.title || "Game"}
       />
+      {!hudHidden && (
+        <GameHud
+          coins={hudCoins}
+          gameName={gameName}
+          petMessage={petMessage}
+          onQuit={onQuit}
+        />
+      )}
       <CoopInvitePanel
         gameId={gameId}
         gameName={gameName}

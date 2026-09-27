@@ -26,6 +26,7 @@ const AssignmentTake = lazy(() => import("./pages/user/AssignmentTake.jsx"));
 const LoginScreen = lazy(() => import("./pages/LoginScreen.jsx"));
 const UserLoginScreen = lazy(() => import("./pages/user/UserLoginScreen.jsx"));
 const UserRegisterScreen = lazy(() => import("./pages/user/UserRegisterScreen.jsx"));
+const MathAdventurePage = lazy(() => import("./pages/MathAdventurePage.jsx"));
 
 function App() {
   const route = useRoute();
@@ -125,6 +126,7 @@ function App() {
     ),
     "assignment-join": () => <AssignmentJoin />,
     "assignment-take": () => <AssignmentTake code={route.params?.code} />,
+    "math-adventure": () => <MathAdventurePage />,
   };
 
   const renderScreen = () => {
