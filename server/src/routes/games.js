@@ -77,6 +77,19 @@ router.put("/:id", authenticate, requireRoles("teacher", "admin"), async (req, r
   }
 });
 
+router.put("/:id/config", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const { config } = req.body || {};
+    if (config === undefined || config === null) {
+      return sendError(res, "Thiếu dữ liệu config", 400);
+    }
+    const game = await gameService.updateConfig(req.params.id, config);
+    sendSuccess(res, game);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.post("/:id/duplicate", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const game = await gameService.duplicate(req.params.id);

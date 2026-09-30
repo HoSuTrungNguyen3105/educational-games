@@ -11,6 +11,7 @@ const UserManagement = lazy(() => import('./UserManagement.jsx'));
 const RoleManagement = lazy(() => import('./RoleManagement.jsx'));
 const TemplateManagement = lazy(() => import('./TemplateManagement.jsx'));
 const TemplateFormPage = lazy(() => import('./TemplateFormPage.jsx'));
+const GameConfigEditor = lazy(() => import('./GameConfigEditor.jsx'));
 const CategoryManagement = lazy(() => import('./CategoryManagement.jsx'));
 const SubjectManagement = lazy(() => import('./SubjectManagement.jsx'));
 const UnifiedQuestionManagement = lazy(() => import('./UnifiedQuestionManagement.jsx'));
@@ -58,6 +59,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
         {page === "admin-templates" && <TemplateManagement showToast={showToast} />}
         {page === "admin-template-new" && <TemplateFormPage showToast={showToast} />}
         {page === "admin-template-edit" && <TemplateFormPage key={route.params.templateId} showToast={showToast} route={route} />}
+        {page === "admin-game-config" && <GameConfigEditor key={refreshFlag} showToast={showToast} />}
         {page === "admin-categories" && <CategoryManagement showToast={showToast} />}
         {page === "admin-subjects" && <SubjectManagement showToast={showToast} />}
         {page === "admin-questions" && <UnifiedQuestionManagement showToast={showToast} />}

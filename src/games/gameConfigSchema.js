@@ -1,8 +1,10 @@
 import "./config.js";
 
-export const SCHEMA_VERSION = window.EG_CONFIG_SCHEMA_VERSION || 2;
+const GLOBAL = typeof window !== "undefined" ? window : globalThis;
 
-const DEFS = Array.isArray(window.EG_GAMES) ? window.EG_GAMES : [];
+export const SCHEMA_VERSION = GLOBAL.EG_CONFIG_SCHEMA_VERSION || 2;
+
+const DEFS = Array.isArray(GLOBAL.EG_GAMES) ? GLOBAL.EG_GAMES : [];
 
 const clone = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
 
@@ -80,7 +82,11 @@ function isBlankItem(item, list) {
 function normalizeRows(rows, list) {
   const arr = Array.isArray(rows) ? rows : [];
   const out = arr
-    .filter((item) => item !== null && item !== undefined)
+    .filter((item) => {
+      if (item === null || item === undefined) return false;
+      if (list.itemType === "string") return true;
+      return typeof item === "object" && !Array.isArray(item);
+    })
     .map((item) => normalizeItem(item, list));
   if (typeof list.max === "number" && out.length > list.max) return out.slice(0, list.max);
   return out;
@@ -104,19 +110,24 @@ export function normalizeValues(key, values) {
   const src = values && typeof values === "object" ? values : {};
   const out = {};
 
-  (def.settings || []).forEach((s) => { out[s.key] = normalizeSetting(src[s.key], s); });
+  (def.settings || []).forEach((s) => {
+    out[s.key] = src[s.key] === undefined || src[s.key] === null ? s.default : normalizeSetting(src[s.key], s);
+  });
 
   (def.lists || []).forEach((list) => {
     if (list.kind === "grouped") {
-      const raw = src[list.key] && typeof src[list.key] === "object" ? src[list.key] : {};
+      if (src[list.key] === undefined || src[list.key] === null) { out[list.key] = defaultsOfList(list); return; }
+      const raw = typeof src[list.key] === "object" && !Array.isArray(src[list.key]) ? src[list.key] : {};
       const grouped = {};
-      (list.groups || []).forEach((g) => { grouped[g.key] = normalizeRows(raw[g.key], list); });
+      (list.groups || []).forEach((g) => {
+        grouped[g.key] = raw[g.key] === undefined || raw[g.key] === null ? clone(list.rows?.[g.key] || []) : normalizeRows(raw[g.key], list);
+      });
       out[list.key] = grouped;
       return;
     }
     if (list.kind === "enum") {
-      const allowed = (list.options || []).map((o) => o.value);
       const arr = Array.isArray(src[list.key]) ? src[list.key] : [];
+      const allowed = (list.options || []).map((o) => o.value);
       const seen = new Set();
       const picked = [];
       arr.forEach((v) => {
@@ -125,7 +136,7 @@ export function normalizeValues(key, values) {
       out[list.key] = picked;
       return;
     }
-    out[list.key] = normalizeRows(src[list.key], list);
+    out[list.key] = src[list.key] === undefined || src[list.key] === null ? defaultsOfList(list) : normalizeRows(src[list.key], list);
   });
 
   return out;

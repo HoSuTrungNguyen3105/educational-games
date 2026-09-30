@@ -132,6 +132,9 @@ export const gameService = {
   async update(id, data) {
     return apiFetch(`/games/${id}`, { method: "PUT", body: data });
   },
+  async setConfig(id, config) {
+    return apiFetch(`/games/${id}/config`, { method: "PUT", body: { config } });
+  },
   async remove(id) {
     return apiFetch(`/games/${id}`, { method: "DELETE" });
   },

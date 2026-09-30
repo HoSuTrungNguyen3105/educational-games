@@ -1,6 +1,7 @@
-import { useEffect, useState, lazy, Suspense } from 'react'
+import { useEffect, useMemo, useState, lazy, Suspense } from 'react'
 import { templateService } from '../services/api.js'
 import { Loader } from '../components/ui.jsx'
+import { resolveGameKey } from './gameConfigSchema.js'
 
 const PlayGameScreen = lazy(() => import('./PlayGameScreen.jsx'));
 const HtmlGameLoader = lazy(() => import('./HtmlGameLoader.jsx'));
@@ -23,6 +24,8 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
     return () => { active = false; };
   }, [tid]);
 
+  const gameKey = useMemo(() => resolveGameKey({ game, template: tpl }), [game, tpl]);
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-paper py-16">
@@ -34,7 +37,7 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
   if (tpl?.htmlTemplate && tpl.htmlTemplate.trim() !== "") {
     return (
       <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-paper py-16"><Loader label="Đang tải trò chơi..." /></div>}>
-        <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={coopSession ? "multiplayer" : (tpl.playMode || "solo")} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} userAuth={userAuth} coopSessionId={coopSession?.sessionId} coopOpponent={coopSession ? { acceptedBy: coopSession.fromUserId, acceptedByName: coopSession.fromName } : null} />
+        <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={coopSession ? "multiplayer" : (tpl.playMode || "solo")} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} userAuth={userAuth} coopSessionId={coopSession?.sessionId} coopOpponent={coopSession ? { acceptedBy: coopSession.fromUserId, acceptedByName: coopSession.fromName } : null} gameKey={gameKey} gameConfig={game?.config} />
       </Suspense>
     );
   }

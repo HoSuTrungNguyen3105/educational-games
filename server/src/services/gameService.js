@@ -9,8 +9,21 @@ const COLLECTION = "games";
 const GAME_FIELDS = [
   "name", "description", "subject", "topic", "language",
   "templateId", "type", "status", "playMode", "questionsCount", "playersCount",
-  "code", "createdAt", "updatedAt",
+  "code", "config", "createdAt", "updatedAt",
 ];
+
+// Config của game luôn là object thuần (chuỗi JSON riêng cho từng game).
+// Không dùng chung key giữa các game nên sửa game này không ảnh hưởng game khác.
+function sanitizeConfig(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const { key, schemaVersion, values, ...rest } = value;
+  const out = {};
+  if (typeof key === "string" && key.trim()) out.key = key.trim();
+  if (Number.isFinite(Number(schemaVersion))) out.schemaVersion = Number(schemaVersion);
+  const source = values && typeof values === "object" && !Array.isArray(values) ? values : rest;
+  out.values = source && typeof source === "object" && !Array.isArray(source) ? source : {};
+  return out;
+}
 
 // Chuẩn hóa về schema mới: bỏ trường cũ (id/slug/title/template/theme/htmlTemplate),
 // map title→name, đảm bảo kiểu dữ liệu đúng
@@ -22,6 +35,7 @@ function serialize(doc) {
     if (key === "name") value = doc.name ?? doc.title ?? "Game";
     if (value === undefined) value = "";
     if (key === "templateId" && value) value = value.toString();
+    if (key === "config") value = sanitizeConfig(value);
     if ((key === "questionsCount" || key === "playersCount")) value = Number(value) || 0;
     out[key] = value;
   }
@@ -98,6 +112,7 @@ export async function create(data) {
     playMode: ["solo", "classroom"].includes(data.playMode) ? data.playMode : "solo",
     questionsCount: data.questionsCount || 0,
     playersCount: 0,
+    config: sanitizeConfig(data.config),
     code: genCode(),
     createdAt: now,
     updatedAt: now,
@@ -109,10 +124,23 @@ export async function create(data) {
 export async function update(id, data) {
   const { _id, ...rest } = data;
   if (rest.templateId) rest.templateId = new ObjectId(rest.templateId);
+  if (rest.config !== undefined) rest.config = sanitizeConfig(rest.config);
   rest.updatedAt = new Date().toISOString();
   const result = await getCollection(COLLECTION).findOneAndUpdate(
     { _id: new ObjectId(id) },
     { $set: rest },
+    { returnDocument: "after" }
+  );
+  if (!result) throw new Error("Không tìm thấy trò chơi");
+  return serialize(result);
+}
+
+// Chỉ cập nhật config của 1 game — không đụng tới các trường khác
+export async function updateConfig(id, config) {
+  const updatedAt = new Date().toISOString();
+  const result = await getCollection(COLLECTION).findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: { config: sanitizeConfig(config), updatedAt } },
     { returnDocument: "after" }
   );
   if (!result) throw new Error("Không tìm thấy trò chơi");

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { API_BASE, apiFetch, coinService, userService, gameProgressService, classService } from "../services/api.js";
 import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
@@ -7,6 +7,7 @@ import { renderAvatarFull } from "../lib/avatarRenderer.js";
 import { addPetExp } from "../lib/pet.js";
 import CoopInvitePanel from "../components/CoopInvitePanel.jsx";
 import GameHud from "./GameHud.jsx";
+import { injectGameConfig } from "./injectGameConfig.js";
 
 /**
  * HtmlGameLoader - Renders a self-contained HTML game in an iframe.
@@ -33,7 +34,7 @@ import GameHud from "./GameHud.jsx";
 export default function HtmlGameLoader({
   htmlContent, game, questions, players, playerName,
   playMode, onFinish, onQuit, onStateUpdate, userAuth,
-  coopSessionId, coopOpponent, onCoopReady,
+  coopSessionId, coopOpponent, onCoopReady, gameKey, gameConfig,
 }) {
   const iframeRef = useRef(null);
   const [showCoopPanel, setShowCoopPanel] = useState(false);
@@ -47,6 +48,12 @@ export default function HtmlGameLoader({
   const gameId = game?._id?.toString() || game?.id;
   const gameName = game?.name || "Trò chơi";
   const gameCode = game?.code || "";
+
+  // Nhúng config của riêng game này vào HTML trước khi nạp vào iframe
+  const injectedHtml = useMemo(() => {
+    if (!htmlContent || !gameKey) return htmlContent;
+    return injectGameConfig(htmlContent, { key: gameKey, config: gameConfig });
+  }, [htmlContent, gameKey, gameConfig]);
 
   useEffect(() => {
     if (!socket.connected && userAuth?.token) {
@@ -153,11 +160,13 @@ export default function HtmlGameLoader({
           gameCode,
           sessionId: coopSessionId || null,
           opponent: pendingOpponent || null,
+          gameKey: gameKey || null,
+          gameConfig: gameConfig || null,
         }
       },
       "*"
     );
-  }, [game, playerName, questions, players, playMode, userAuth, coopMode, coopSessionId, pendingOpponent]);
+  }, [game, playerName, questions, players, playMode, userAuth, coopMode, coopSessionId, pendingOpponent, gameKey, gameConfig]);
 
   const postToIframe = useCallback((msg) => {
     const iframe = iframeRef.current;
@@ -465,7 +474,7 @@ export default function HtmlGameLoader({
     return () => iframe.removeEventListener("load", onLoad);
   }, [htmlContent]);
 
-  if (!htmlContent) {
+  if (!injectedHtml) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-paper">
         <p className="text-sm text-[#8A7C63]">Đang tải game...</p>
@@ -477,7 +486,7 @@ export default function HtmlGameLoader({
     <div className="absolute inset-0 flex flex-col bg-paper">
       <iframe
         ref={iframeRef}
-        srcDoc={htmlContent}
+        srcDoc={injectedHtml}
         sandbox="allow-scripts"
         className="flex-1 w-full h-full border-0"
         title={game?.title || "Game"}
