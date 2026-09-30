@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Bóng Bay Vui — Game dễ chơi cho bé</title>
+<script src="config.js"></script>
+<script>window.EG=(function(){var c=window.EG_CONFIG||{};try{if(/[?&]preview=1/.test(location.search)){var d=localStorage.getItem('eg_draft');if(d)c=JSON.parse(d)}}catch(e){}return c})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2B2A4C;--sun:#FFD93D;--pink:#FF7EB6;--mint:#4ADE9B;--sky:#5AB8FF;--cream:#FFFBEF}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#a9defc;overscroll-behavior:none}
+body{font-family:"Baloo 2","Nunito",ui-rounded,"Segoe UI",system-ui,sans-serif;color:var(--ink);display:grid;place-items:center;user-select:none;-webkit-user-select:none}
+#app{position:relative;width:100%;max-width:460px;height:100vh;height:100dvh;max-height:900px;overflow:hidden;
+  background:linear-gradient(#7CCBFF 0%,#BDE9FF 55%,#FFF3D6 100%);touch-action:manipulation}
+@media (min-width:500px){#app{border-radius:30px;box-shadow:0 0 0 6px #fff,0 30px 80px rgba(60,120,200,.35)}}
+.sunny{position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,#FFF3A0 0 40%,rgba(255,240,140,.5) 41% 62%,rgba(255,240,140,0) 64%)}
+.cloud{position:absolute;height:34px;width:110px;background:#fff;border-radius:40px;opacity:.9;animation:drift linear infinite}
+.cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.cloud::before{width:50px;height:50px;left:16px;top:-24px}.cloud::after{width:38px;height:38px;left:56px;top:-16px}
+@keyframes drift{from{transform:translateX(-160px)}to{transform:translateX(560px)}}
+.hill{position:absolute;bottom:-70px;border-radius:50%}
+.h1{left:-80px;width:340px;height:200px;background:#7BE495}
+.h2{right:-100px;width:380px;height:170px;background:#5FD38A}
+
+#top{position:absolute;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 10px) 12px 0;display:flex;gap:8px;align-items:center;z-index:5}
+#dots{flex:1;display:flex;gap:5px;flex-wrap:wrap}
+.dot{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.7);display:grid;place-items:center;font-size:12px;line-height:1}
+.dot.now{background:#fff;box-shadow:0 0 0 3px var(--sun)}
+.dot.done{background:var(--mint);color:#fff}
+.dot.star{background:var(--sun)}
+.rb{width:40px;height:40px;border-radius:50%;border:0;background:#fff;font-size:19px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.rb.off{opacity:.45}
+
+#prompt{position:absolute;top:calc(env(safe-area-inset-top) + 58px);left:50%;transform:translateX(-50%);z-index:4;text-align:center;
+  background:var(--cream);border-radius:26px;padding:8px 22px 10px;min-width:210px;max-width:92%;box-shadow:0 6px 0 rgba(0,0,0,.13);cursor:pointer}
+#pTitle{font-size:19px;font-weight:700;color:#7a6a9a;line-height:1.1}
+#pBig{font-size:80px;font-weight:800;line-height:1;margin:2px 0;text-shadow:0 3px 0 rgba(0,0,0,.08)}
+#pBig.emo{font-size:38px;line-height:1.15;letter-spacing:2px;max-width:280px}
+#pBig.col{font-size:60px;-webkit-text-stroke:3px #fff;paint-order:stroke fill;text-shadow:0 3px 0 rgba(0,0,0,.15)}
+#pSub{font-size:16px;font-weight:600;color:#6a5b8a;line-height:1.1}
+#prompt.pulse{animation:pp .5s}
+@keyframes pp{40%{transform:translateX(-50%) scale(1.08)}}
+
+#sky{position:absolute;left:0;right:0;top:0;bottom:0;z-index:3}
+.balloon{position:absolute;left:0;top:0;will-change:transform;cursor:pointer}
+.body{position:relative;border-radius:50% 50% 46% 46%/56% 56% 44% 44%;display:grid;place-items:center;font-weight:800;color:#fff;
+  background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.75) 0 7%,rgba(255,255,255,0) 8%),linear-gradient(145deg,rgba(255,255,255,.3),rgba(0,0,0,.12)),var(--c);
+  box-shadow:inset -6px -8px 0 rgba(0,0,0,.1),0 8px 14px rgba(40,60,120,.18);text-shadow:0 3px 0 rgba(0,0,0,.2)}
+.body::after{content:"";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);border:8px solid transparent;border-bottom:0;border-top:11px solid var(--c)}
+.string{width:2px;height:46px;margin:9px auto 0;background:rgba(60,60,90,.35);border-radius:2px;transform-origin:top;animation:sw 1.6s ease-in-out infinite alternate}
+@keyframes sw{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
+.balloon.shake .body{animation:shk .45s}
+@keyframes shk{20%{transform:translateX(-9px) rotate(-6deg)}60%{transform:translateX(9px) rotate(6deg)}}
+.balloon.hint .body{animation:hnt .7s ease-in-out infinite alternate}
+@keyframes hnt{from{transform:scale(1);filter:drop-shadow(0 0 0 #fff)}to{transform:scale(1.13);filter:drop-shadow(0 0 16px #fff6a0)}}
+.balloon.away{transition:opacity .4s;opacity:0;pointer-events:none}
+.spark{position:absolute;z-index:6;border-radius:50%;pointer-events:none}
+
+#mascot{position:absolute;left:8px;bottom:6px;z-index:5;display:flex;align-items:flex-end;gap:6px;pointer-events:none}
+#bear{font-size:64px;line-height:1;filter:drop-shadow(0 4px 0 rgba(0,0,0,.12));font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+#bear.jump{animation:jmp .6s}
+@keyframes jmp{30%{transform:translateY(-26px) rotate(-8deg)}60%{transform:translateY(0) rotate(6deg)}}
+#bubble{background:#fff;border-radius:18px;padding:7px 14px;font-weight:700;font-size:17px;max-width:250px;margin-bottom:34px;position:relative;box-shadow:0 4px 0 rgba(0,0,0,.12)}
+#bubble::before{content:"";position:absolute;left:-8px;bottom:12px;border:8px solid transparent;border-left:0;border-right:10px solid #fff}
+
+.overlay{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;
+  background:linear-gradient(rgba(124,203,255,.96),rgba(189,233,255,.97));transition:opacity .3s;overflow-y:auto}
+.overlay.hidden{opacity:0;pointer-events:none}
+.logo{font-size:64px;animation:flt 2.6s ease-in-out infinite}
+@keyframes flt{50%{transform:translateY(-10px) rotate(-5deg)}}
+h1{font-size:46px;line-height:1;font-weight:800;color:#fff;text-shadow:0 4px 0 #3a86d6,0 8px 18px rgba(0,0,0,.15)}
+.sub{font-size:18px;font-weight:600;color:#2f4d7a;max-width:300px;line-height:1.2}
+.topics{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:330px}
+.tp{border:0;border-radius:24px;padding:14px 8px 12px;font:inherit;font-weight:800;font-size:21px;cursor:pointer;color:var(--ink);background:#fff;
+  box-shadow:0 6px 0 var(--c);display:flex;flex-direction:column;align-items:center;line-height:1}
+.tp:active{transform:translateY(5px);box-shadow:0 1px 0 var(--c)}
+.tp .e{font-size:46px;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;margin-bottom:4px}
+.tp small{font-size:13px;font-weight:600;opacity:.6;margin-top:2px}
+.btn{border:0;border-radius:22px;padding:14px 26px;font:inherit;font-weight:800;font-size:22px;cursor:pointer;color:var(--ink);background:var(--sun);box-shadow:0 6px 0 #d9a800;width:100%;max-width:300px}
+.btn:active{transform:translateY(5px);box-shadow:0 1px 0 #d9a800}
+.btn.alt{background:#fff;box-shadow:0 6px 0 #9bb8d8}
+.tp:focus-visible,.btn:focus-visible,.rb:focus-visible{outline:4px solid #fff;outline-offset:3px}
+.trophy{font-size:80px}
+.bigstars{font-size:34px;font-weight:800;color:#fff;text-shadow:0 3px 0 #d9a800}
+#eMsg{font-size:22px;font-weight:800;color:#2f4d7a;max-width:300px;line-height:1.15}
+@media (prefers-reduced-motion:reduce){.logo,.cloud,.string,.balloon.hint .body,#prompt.pulse,#bear.jump{animation:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="sunny"></div>
+  <div class="cloud" style="top:16%;animation-duration:60s"></div>
+  <div class="cloud" style="top:44%;animation-duration:90s;animation-delay:-40s;transform:scale(.7)"></div>
+  <div class="hill h1"></div><div class="hill h2"></div>
+
+  <div id="top">
+    <div id="dots" aria-label="Tiến độ"></div>
+    <button class="rb" id="voice" aria-label="Bật tắt giọng đọc">🗣️</button>
+    <button class="rb" id="mute" aria-label="Bật tắt âm thanh">🔊</button>
+  </div>
+
+  <div id="prompt" role="button" tabindex="0" aria-live="polite"><div id="pTitle"></div><div id="pBig"></div><div id="pSub"></div></div>
+  <div id="sky"></div>
+
+  <div id="mascot"><div id="bear">🐻</div><div id="bubble">Chạm vào bong bóng nhé!</div></div>
+
+  <div id="start" class="overlay">
+    <div class="logo">🎈</div>
+    <h1>Bóng Bay Vui</h1>
+    <p class="sub">Chạm vào bong bóng đúng để làm nó nổ. Không sao nếu chạm sai, bé cứ thử lại!</p>
+    <div class="topics">
+      <button class="tp" data-t="num" style="--c:#FFB84D"><span class="e">🔢</span>Số<small>Tìm số</small></button>
+      <button class="tp" data-t="count" style="--c:#FF7EB6"><span class="e">🍎</span>Đếm<small>Có mấy?</small></button>
+      <button class="tp" data-t="letter" style="--c:#4ADE9B"><span class="e">🔤</span>Chữ cái<small>A B C</small></button>
+      <button class="tp" data-t="color" style="--c:#A78BFA"><span class="e">🌈</span>Màu sắc<small>Tìm màu</small></button>
+    </div>
+  </div>
+
+  <div id="end" class="overlay hidden">
+    <div class="trophy" id="eIcon">🏆</div>
+    <div class="bigstars" id="eStars">⭐ 0/10</div>
+    <div id="eMsg"></div>
+    <button class="btn" id="again">Chơi lại</button>
+    <button class="btn alt" id="menu">Chọn trò khác</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const rnd=Math.random;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rand(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
+const CF=(window.EG&&window.EG.bongbay)||{};
+const TOTALQ=CF.totalQ||10;
+const VN=['','một','hai','ba','bốn','năm','sáu','bảy','tám','chín','mười'];
+const LETTERS=[['A','Áo','👕'],['B','Bóng','⚽'],['C','Cá','🐟'],['D','Dưa hấu','🍉'],['E','Em bé','👶'],['G','Gà','🐔'],['H','Hoa','🌸'],['K','Kem','🍦'],['L','Lá','🍃'],['M','Mèo','🐱'],['N','Nón','👒'],['O','Ong','🐝'],['S','Sao','⭐'],['T','Táo','🍎'],['V','Voi','🐘'],['X','Xe','🚗']];
+const COLORS=[['đỏ','#FF5A5F'],['xanh dương','#3B82F6'],['xanh lá','#22C55E'],['vàng','#FACC15'],['cam','#FB923C'],['hồng','#F472B6'],['tím','#A855F7']];
+const PAL=['#FF5A5F','#3B82F6','#22C55E','#FACC15','#FB923C','#F472B6','#A855F7','#14B8A6'];
+const COUNTERS=['🍎','🐥','⭐','🐟','🚗','🌸','🎈','🍓'];
+const PRAISE=['Giỏi quá!','Tuyệt vời!','Đúng rồi!','Hoan hô!','Bé thật thông minh!','Siêu quá!'];
+const RETRY=['Ồ, thử lại nhé!','Gần đúng rồi, cố lên!','Bé thử bong bóng khác nào!'];
+(function(){
+  const rep=(arr,src,min,map)=>{if(Array.isArray(src)){const l=src.map(map).filter(Boolean);if(l.length>=min)arr.splice(0,arr.length,...l)}};
+  rep(LETTERS,CF.letters,4,x=>x&&x.l?[String(x.l).trim().toUpperCase().slice(0,2),x.w||'',x.e||'']:null);
+  rep(COLORS,CF.colors,4,x=>x&&x.n&&x.c?[String(x.n).trim(),x.c]:null);
+  rep(COUNTERS,CF.counters,1,x=>x?String(x).trim():null);
+  rep(PRAISE,CF.praise,1,x=>x?String(x).trim():null);
+  rep(RETRY,CF.retry,1,x=>x?String(x).trim():null);
+})();
+
+let topic='num',qi=0,stars=0,wrong=0,cur=null,balloons=[],voiceOn=true,muted=false,used=new Set();
+let W=0,H=0,T=0,lastT=0,qStart=0,hinted=false,locked=false;
+
+/* ---------- âm thanh & giọng ---------- */
+let AC=null;
+function tone(f,d,type,v,slide){
+  if(muted)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(f,t);
+    if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),t+d);
+    g.gain.setValueAtTime(v||.12,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d);
+  }catch(e){}
+}
+const sfx={
+  pop:()=>{tone(500,.09,'square',.08,-300);setTimeout(()=>tone(880,.08,'triangle',.1),40)},
+  ok:()=>{[523,659,784].forEach((f,i)=>setTimeout(()=>tone(f,.14,'triangle',.13),i*90))},
+  boing:()=>tone(320,.22,'sine',.12,-120),
+  fan:()=>{[523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>tone(f,.18,'triangle',.13),i*100))}
+};
+function say(text){
+  if(!voiceOn||muted||!window.speechSynthesis)return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='vi-VN';u.rate=.9;u.pitch=1.15;speechSynthesis.speak(u)}catch(e){}
+}
+$('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇':'🔊'};
+$('voice').onclick=()=>{voiceOn=!voiceOn;$('voice').classList.toggle('off',!voiceOn);if(voiceOn&&cur)say(cur.say)};
+
+/* ---------- câu hỏi ---------- */
+function unique(list,keyf){
+  let it,g=0;
+  do{it=list[rand(0,list.length-1)]}while(used.has(keyf(it))&&g++<40);
+  used.add(keyf(it));return it;
+}
+function makeQ(){
+  if(topic==='num'){
+    const NR=Array.from({length:Math.min(10,Math.max(4,CF.maxNum||10))},(_,i)=>i+1);const n=unique(NR,x=>x);
+    const others=shuffle(NR.filter(x=>x!==n)).slice(0,3);
+    return{title:'Tìm số',big:String(n),sub:VN[n],say:'Tìm số '+VN[n],ans:String(n),
+      opts:shuffle([n,...others]).map(x=>({id:String(x),label:String(x)}))};
+  }
+  if(topic==='count'){
+    const max=qi<4?5:qi<7?7:9;
+    const n=unique(Array.from({length:max},(_,i)=>i+1),x=>x);
+    const e=COUNTERS[rand(0,COUNTERS.length-1)];
+    const pool=[];for(let d=1;d<=10;d++)if(d!==n)pool.push(d);
+    pool.sort((a,b)=>Math.abs(a-n)-Math.abs(b-n)||rnd()-.5);
+    const others=pool.slice(0,3);
+    return{title:'Đếm xem có mấy?',big:e.repeat(n),emo:true,sub:'Chạm bong bóng có số đúng',say:'Đếm xem có mấy?',ans:String(n),
+      opts:shuffle([n,...others]).map(x=>({id:String(x),label:String(x)}))};
+  }
+  if(topic==='letter'){
+    const L=unique(LETTERS,x=>x[0]);
+    const others=shuffle(LETTERS.filter(x=>x!==L)).slice(0,3);
+    return{title:'Tìm chữ cái',big:L[0]+' '+L[0].toLowerCase(),sub:L[0]+' của '+L[1]+' '+L[2],say:'Tìm chữ '+L[0]+'. '+L[0]+' của '+L[1],ans:L[0],
+      opts:shuffle([L,...others]).map(x=>({id:x[0],label:x[0]}))};
+  }
+  const C=unique(COLORS,x=>x[0]);
+  const others=shuffle(COLORS.filter(x=>x!==C)).slice(0,3);
+  return{title:'Tìm bóng màu',big:C[0].toUpperCase(),color:C[1],col:true,sub:'Chạm bong bóng màu '+C[0],say:'Tìm bóng màu '+C[0],ans:C[0],
+    opts:shuffle([C,...others]).map(x=>({id:x[0],label:'',color:x[1]}))};
+}
+
+/* ---------- bong bóng ---------- */
+function measure(){const r=$('app').getBoundingClientRect();W=r.width;H=r.height}
+function clearBalloons(){balloons.forEach(b=>b.el.remove());balloons=[]}
+function spawn(q){
+  clearBalloons();
+  const bw=Math.min(96,W*.21),bh=bw*1.2;
+  const lanes=shuffle([0,1,2,3]);
+  const colors=shuffle(PAL.slice());
+  q.opts.forEach((o,i)=>{
+    const el=document.createElement('div');el.className='balloon';
+    const col=o.color||colors[i];
+    el.innerHTML='<div class="body" style="--c:'+col+';width:'+bw+'px;height:'+bh+'px;font-size:'+(bw*.52)+'px"></div><div class="string"></div>';
+    el.querySelector('.body').textContent=o.label;
+    $('sky').appendChild(el);
+    const b={el,id:o.id,bw,bh,bx:W*(lanes[i]+.5)/4-bw/2,y:H*.5+i*74+rand(0,40),v:rand(46,66)*(CF.speed||1),f:.9+rnd()*.8,ph:rnd()*6};
+    el.addEventListener('pointerdown',e=>{e.preventDefault();tap(b)});
+    balloons.push(b);
+  });
+}
+function burst(x,y,cols){
+  for(let i=0;i<16;i++){
+    const s=document.createElement('i');s.className='spark';
+    const sz=6+rnd()*8;s.style.cssText='left:'+x+'px;top:'+y+'px;width:'+sz+'px;height:'+sz+'px;background:'+cols[i%cols.length];
+    $('app').appendChild(s);
+    const a=rnd()*6.28,d=50+rnd()*90;
+    s.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:'translate('+Math.cos(a)*d+'px,'+(Math.sin(a)*d+30)+'px) scale(.3)',opacity:0}],{duration:600+rnd()*300,easing:'ease-out'}).onfinish=()=>s.remove();
+  }
+}
+function bubble(t){$('bubble').textContent=t}
+function jump(){const b=$('bear');b.classList.remove('jump');void b.offsetWidth;b.classList.add('jump')}
+
+function tap(b){
+  if(locked||!cur)return;
+  if(b.id===cur.ans){
+    locked=true;
+    const cs=getComputedStyle(b.el.querySelector('.body')).getPropertyValue('--c').trim()||'#fff';
+    const cx=b.x+b.bw/2,cy=b.y+b.bh/2;
+    burst(cx,cy,[cs,'#FFD93D','#fff']);
+    sfx.pop();b.el.remove();
+    balloons.forEach(o=>{if(o!==b)o.el.classList.add('away')});
+    const first=(wrong===0);
+    if(first)stars++;
+    markDot(first);
+    const p=PRAISE[rand(0,PRAISE.length-1)];bubble(p);jump();
+    setTimeout(()=>{sfx.ok();say(p)},120);
+    qi++;
+    setTimeout(()=>{if(qi>=TOTALQ)finish();else next()},1400);
+  }else{
+    wrong++;b.el.classList.remove('shake');void b.el.offsetWidth;b.el.classList.add('shake');
+    sfx.boing();bubble(RETRY[rand(0,RETRY.length-1)]);
+    if(wrong>=(CF.hintAfter||2))showHint();
+  }
+}
+function showHint(){
+  if(hinted)return;hinted=true;
+  const c=balloons.find(b=>b.id===cur.ans);if(c)c.el.classList.add('hint');
+  bubble('Bé nhìn bong bóng đang sáng nhé!');
+}
+
+/* ---------- vòng chơi ---------- */
+function buildDots(){
+  const d=$('dots');d.innerHTML='';
+  for(let i=0;i<TOTALQ;i++){const e=document.createElement('div');e.className='dot';d.appendChild(e)}
+}
+function markDot(star){
+  const e=$('dots').children[qi];if(!e)return;
+  e.className='dot '+(star?'star':'done');e.textContent=star?'⭐':'✓';
+}
+function updateDots(){
+  [...$('dots').children].forEach((e,i)=>{if(i===qi)e.classList.add('now');else e.classList.remove('now')});
+}
+function showPrompt(q){
+  $('pTitle').textContent=q.title;
+  const big=$('pBig');big.textContent=q.big;big.className=q.emo?'emo':q.col?'col':'';big.style.color=q.col?q.color:'';
+  $('pSub').textContent=q.sub;
+  const p=$('prompt');p.classList.remove('pulse');void p.offsetWidth;p.classList.add('pulse');
+}
+function next(){
+  cur=makeQ();wrong=0;hinted=false;locked=false;qStart=T;
+  showPrompt(cur);spawn(cur);updateDots();
+  bubble(qi===0?'Chạm vào bong bóng nhé!':'Câu tiếp theo nào!');
+  say(cur.say);
+}
+function start(t){
+  topic=t;qi=0;stars=0;used=new Set();
+  $('start').classList.add('hidden');$('end').classList.add('hidden');
+  measure();buildDots();next();
+}
+function finish(){
+  clearBalloons();cur=null;sfx.fan();
+  $('eStars').textContent='⭐ '+stars+'/'+TOTALQ;
+  let m,ic;
+  if(stars>=9){m='Tuyệt đỉnh! Bé giỏi hết sức!';ic='🏆'}
+  else if(stars>=6){m='Giỏi quá! Bé làm rất tốt!';ic='🌟'}
+  else{m='Bé đã cố gắng rất nhiều! Chơi lại để được nhiều sao hơn nhé!';ic='💪'}
+  $('eMsg').textContent=m;$('eIcon').textContent=ic;say(m);
+  for(let i=0;i<3;i++)setTimeout(()=>burst(W*(.25+i*.25),H*.3,['#FFD93D','#FF7EB6','#4ADE9B','#5AB8FF']),i*250);
+  $('end').classList.remove('hidden');
+}
+
+/* ---------- vòng lặp ---------- */
+function loop(ts){
+  const dt=Math.min(.05,(ts-lastT)/1000||0);lastT=ts;T+=dt;
+  balloons.forEach(b=>{
+    if(b.el.classList.contains('away'))return;
+    b.y-=b.v*dt;
+    const x=b.bx+Math.sin(T*b.f+b.ph)*12;
+    b.x=x;
+    if(b.y<-(b.bh+80))b.y=H-40+rand(0,80);
+    b.el.style.transform='translate3d('+x+'px,'+b.y+'px,0) rotate('+Math.sin(T*b.f+b.ph)*4+'deg)';
+  });
+  if(cur&&!hinted&&!locked&&T-qStart>(CF.hintSec||12))showHint();
+  requestAnimationFrame(loop);
+}
+
+$('prompt').addEventListener('click',()=>{if(cur)say(cur.say)});
+$('prompt').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&cur)say(cur.say)});
+document.querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>start(b.dataset.t)));
+$('again').onclick=()=>start(topic);
+$('menu').onclick=()=>{$('end').classList.add('hidden');$('start').classList.remove('hidden');clearBalloons();cur=null;$('pTitle').textContent='';$('pBig').textContent='';$('pSub').textContent=''};
+window.addEventListener('resize',measure);
+measure();buildDots();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
