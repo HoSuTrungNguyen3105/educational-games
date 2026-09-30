@@ -10,7 +10,7 @@ import {
   listGameDefs,
   normalizeValues,
   readGameConfig,
-  resolveGameKey,
+  suggestGameKey,
   validateValues,
 } from "../../games/gameConfigSchema.js";
 import { injectGameConfig } from "../../games/injectGameConfig.js";
@@ -36,18 +36,26 @@ function clearDraft(id) {
   try { localStorage.removeItem(draftKey(id)); } catch { /* ignore */ }
 }
 
-function editorForGame(game) {
+// Luồng 2 bước: /api/games đã trả sẵn `config.key`; từ key này gọi tiếp
+// /game-configs/:key?gameId=… để lấy đúng values cần hiển thị.
+async function loadEditorForGame(game) {
   if (!game) return EMPTY_EDITOR;
-  const saved = readGameConfig(game.config);
   const draft = readDraft(game._id);
-  const fromDraft = draft && getGameDef(draft.key) && draft.values ? draft : null;
-  const key = fromDraft ? draft.key : (resolveGameKey({ game }) || saved.key || null);
-  return {
-    gameId: game._id,
-    key,
-    values: key ? normalizeValues(key, fromDraft ? fromDraft.values : saved.values) : {},
-    dirty: !!fromDraft,
-  };
+  const fromDraft = draft && getGameDef(draft.key) ? draft : null;
+  const key = fromDraft ? draft.key : (suggestGameKey({ game }) || game.config?.key || null);
+  if (!key) return { gameId: game._id, key: null, values: {}, dirty: false };
+
+  let values = defaultValuesFor(key);
+  try {
+    const res = await gameService.getConfigByKey(key, game._id);
+    if (res?.config?.values) values = normalizeValues(key, res.config.values);
+  } catch { /* API lỗi → dùng bộ mặc định của game */ }
+
+  if (fromDraft && fromDraft.values) {
+    values = normalizeValues(key, fromDraft.values);
+    return { gameId: game._id, key, values, dirty: true };
+  }
+  return { gameId: game._id, key, values, dirty: false };
 }
 
 const clone = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
@@ -63,6 +71,24 @@ function formatSetting(def, value) {
 const inputCls = "w-full note-card px-2.5 py-1.5 text-sm border-ink/10 focus:border-ticket outline-none";
 
 function SettingRow({ def, value, onChange }) {
+  if (def.type === "toggle") {
+    const on = value ?? def.default;
+    return (
+      <div className="py-2.5 border-t border-ink/10 first:border-t-0 flex items-center justify-between gap-3">
+        <div>
+          <span className="font-display text-sm text-ink">{def.label}</span>
+          {def.help && <p className="text-[11px] text-[#8A7C63]">{def.help}</p>}
+        </div>
+        <input
+          type="checkbox"
+          className="w-5 h-5 accent-[#1B998B] shrink-0"
+          checked={!!on}
+          aria-label={def.label}
+          onChange={(e) => onChange(e.target.checked)}
+        />
+      </div>
+    );
+  }
   const num = typeof value === "number" ? value : def.default;
   return (
     <div className="py-2.5 border-t border-ink/10 first:border-t-0">
@@ -81,6 +107,241 @@ function SettingRow({ def, value, onChange }) {
         aria-label={def.label}
         onChange={(e) => onChange(parseFloat(e.target.value))}
       />
+    </div>
+  );
+}
+
+const ID_OK = /^[a-zA-Z0-9_-]{1,24}$/;
+
+function EntitiesEditor({ list, table, onChange }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [newId, setNewId] = useState("");
+  const src = table && typeof table === "object" && !Array.isArray(table) ? table : {};
+  const entries = Object.entries(src);
+  const core = (list.fields || []).filter((f) => !f.advanced);
+  const advanced = (list.fields || []).filter((f) => f.advanced);
+
+  const setField = (id, fkey, val) => onChange({ ...src, [id]: { ...(src[id] || {}), [fkey]: val } });
+  const rename = (oldId, nextId) => {
+    const id = String(nextId).trim();
+    if (!ID_OK.test(id) || src[id] !== undefined) return false;
+    const out = {};
+    Object.entries(src).forEach(([k, v]) => { out[k === oldId ? id : k] = v; });
+    onChange(out);
+    return true;
+  };
+  const addRow = () => {
+    const id = newId.trim().toLowerCase().replace(/\s+/g, "_");
+    if (!ID_OK.test(id) || src[id] !== undefined) { setNewId(""); return; }
+    onChange({ ...src, [id]: {} });
+    setNewId("");
+  };
+
+  return (
+    <div className="note-card p-3.5">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div>
+          <h4 className="font-display text-sm text-ink">{list.title}</h4>
+          {list.help && <p className="text-[11px] text-[#8A7C63]">{list.help}</p>}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${typeof list.min === "number" && entries.length < list.min ? "bg-ticket/15 text-ticket" : "bg-teal/15 text-teal"}`}>
+            {entries.length} mục
+          </span>
+          {advanced.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-ink/10 text-ink/60"
+            >
+              {showAdvanced ? "− Ẩn nâng cao" : "+ Nâng cao"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {entries.map(([id, item]) => (
+          <div key={id} className="border border-ink/10 rounded-xl p-2.5 bg-paper2">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] font-mono text-[#8A7C63] shrink-0">{list.idLabel || "id"}</span>
+              <input
+                className={`${inputCls} font-mono text-xs`}
+                defaultValue={id}
+                aria-label={`${list.idLabel || "id"} ${id}`}
+                onBlur={(e) => { if (e.target.value !== id) { if (!rename(id, e.target.value)) e.target.value = id; } }}
+                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+              />
+              <button
+                type="button"
+                className="w-8 h-8 shrink-0 rounded-lg bg-paper text-ticket font-bold"
+                title="Xoá mục này"
+                onClick={() => {
+                  const out = { ...src };
+                  delete out[id];
+                  onChange(out);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              {[...core, ...(showAdvanced ? advanced : [])].map((f) => (
+                <FieldInput key={f.key} field={f} value={item?.[f.key]} onChange={(v) => setField(id, f.key, v)} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 mt-2.5">
+        <input
+          className={`${inputCls} max-w-[160px] font-mono text-xs`}
+          value={newId}
+          onChange={(e) => setNewId(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") addRow(); }}
+          placeholder={list.idHint || "id mới"}
+          aria-label="id mới"
+        />
+        <button type="button" className="text-xs font-bold px-3 py-1.5 rounded-lg bg-ink text-paper" onClick={addRow}>＋ Thêm</button>
+        <button
+          type="button"
+          className="text-xs font-bold px-3 py-1.5 rounded-lg bg-paper text-ink/70"
+          onClick={() => onChange(clone(list.rows || {}))}
+        >
+          ↺ Về mẫu
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FieldInput({ field, value, onChange }) {
+  const label = (
+    <span className="block text-[10px] font-mono text-[#8A7C63] mb-0.5">
+      {field.label || field.key}
+      {field.optional ? " ·" : ""}
+    </span>
+  );
+  if (field.type === "toggle") {
+    return (
+      <label className="flex items-center gap-2 text-xs text-ink/70 pt-3">
+        <input type="checkbox" className="w-4 h-4 accent-[#1B998B]" checked={!!value} onChange={(e) => onChange(e.target.checked)} />
+        {field.label || field.key}
+      </label>
+    );
+  }
+  if (field.type === "select") {
+    return (
+      <label className="block">
+        {label}
+        <select className={inputCls} value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+          {(field.options || []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </label>
+    );
+  }
+  if (field.type === "number") {
+    return (
+      <label className="block">
+        {label}
+        <input
+          type="number"
+          className={inputCls}
+          value={value === "" || value === undefined ? "" : value}
+          step={field.step || 1}
+          min={field.min}
+          onChange={(e) => {
+            const v = e.target.value;
+            onChange(v === "" ? "" : parseFloat(v));
+          }}
+        />
+      </label>
+    );
+  }
+  return (
+    <label className={`block ${field.cls === "wide" ? "col-span-2 sm:col-span-3" : ""}`}>
+      {label}
+      <input className={inputCls} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+    </label>
+  );
+}
+
+function JsonEditor({ list, value, onChange }) {
+  const asText = (v) => JSON.stringify(v ?? list.rows ?? [], null, 2);
+  const [text, setText] = useState(() => asText(value));
+  const [err, setErr] = useState("");
+  const [synced, setSynced] = useState(value);
+
+  // Giữ đồng bộ khi giá trị bị đổi từ bên ngoài (đổi game, bấm "Về mẫu")
+  if (value !== synced) {
+    setSynced(value);
+    setText(asText(value));
+    setErr("");
+  }
+
+  const commit = (parsed) => {
+    setSynced(parsed);
+    onChange(parsed);
+  };
+
+  return (
+    <div className="note-card p-3.5">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div>
+          <h4 className="font-display text-sm text-ink">{list.title}</h4>
+          {list.help && <p className="text-[11px] text-[#8A7C63]">{list.help}</p>}
+        </div>
+        <div className="flex gap-1.5 shrink-0">
+          <button
+            type="button"
+            className="text-[11px] font-bold px-2 py-1 rounded-lg bg-paper text-ink/60"
+            onClick={() => {
+              const def = clone(list.rows);
+              setSynced(def);
+              setText(asText(def));
+              setErr("");
+              onChange(def);
+            }}
+          >
+            ↺ Về mẫu
+          </button>
+          <button
+            type="button"
+            className="text-[11px] font-bold px-2 py-1 rounded-lg bg-ink/10 text-ink/60"
+            onClick={() => {
+              try {
+                const t = JSON.stringify(JSON.parse(text), null, 2);
+                setText(t);
+                setErr("");
+              } catch { /* giữ nguyên */ }
+            }}
+          >
+            Format
+          </button>
+        </div>
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => {
+          const t = e.target.value;
+          setText(t);
+          try {
+            const parsed = JSON.parse(t);
+            setErr("");
+            commit(parsed);
+          } catch (e2) {
+            setErr("JSON chưa hợp lệ: " + e2.message);
+          }
+        }}
+        spellCheck={false}
+        className="w-full h-64 font-mono text-[11px] note-card p-2.5 border-ink/10 outline-none resize-y"
+      />
+      {err ? (
+        <p className="text-xs text-ticket mt-1">{err}</p>
+      ) : (
+        <p className="text-xs text-teal mt-1">✓ JSON hợp lệ — {Array.isArray(value) ? `${value.length} mục` : "đã cập nhật"}</p>
+      )}
     </div>
   );
 }
@@ -167,6 +428,14 @@ function RowsBlock({ list, rows, defaults, min, onChange }) {
 }
 
 function ListEditor({ list, value, onChange }) {
+  if (list.kind === "entities") {
+    return <EntitiesEditor list={list} table={value} onChange={onChange} />;
+  }
+
+  if (list.kind === "json") {
+    return <JsonEditor list={list} value={value} onChange={onChange} />;
+  }
+
   if (list.kind === "grouped") {
     const grouped = value && typeof value === "object" && !Array.isArray(value) ? value : {};
     return (
@@ -216,6 +485,7 @@ export default function GameConfigEditor({ showToast }) {
   const [showJson, setShowJson] = useState(false);
   const [previewHtml, setPreviewHtml] = useState(null);
   const [previewBusy, setPreviewBusy] = useState(false);
+  const [configBusy, setConfigBusy] = useState(false);
   const previewRef = useRef(null);
   const fileRef = useRef(null);
 
@@ -227,21 +497,21 @@ export default function GameConfigEditor({ showToast }) {
   const errorCount = issues.filter((i) => i.level === "error").length;
   const payload = useMemo(() => (editor.key ? buildConfigPayload(editor.key, editor.values) : null), [editor.key, editor.values]);
 
-  const loadGames = useCallback(async () => {
+  const loadGames = useCallback(async (keepId) => {
     try {
       const list = await gameService.list({});
       const items = Array.isArray(list) ? list : [];
       setGames(items);
-      setEditor((prev) => {
-        const stillThere = prev.gameId && items.some((g) => g._id === prev.gameId);
-        if (stillThere) return prev;
-        return items[0] ? editorForGame(items[0]) : EMPTY_EDITOR;
-      });
+      const wanted = keepId && items.some((g) => g._id === keepId) ? keepId : (items[0]?._id || null);
+      if (wanted) setConfigBusy(true);
+      const next = await loadEditorForGame(items.find((g) => g._id === wanted) || null);
+      setEditor(next);
       setStatus((prev) => ({ ...prev, error: null }));
     } catch (e) {
       setStatus((prev) => ({ ...prev, error: e.message || "Không tải được danh sách trò chơi" }));
     } finally {
       setStatus((prev) => ({ ...prev, loading: false }));
+      setConfigBusy(false);
     }
   }, []);
 
@@ -257,13 +527,17 @@ export default function GameConfigEditor({ showToast }) {
     setEditor((prev) => ({ ...prev, values: { ...prev.values, [fieldKey]: v }, dirty: true }));
   }, []);
 
-  const assignKey = useCallback((nextKey) => {
-    setEditor((prev) => (
-      nextKey
-        ? { ...prev, key: nextKey, values: defaultValuesFor(nextKey), dirty: true }
-        : { ...prev, key: null, values: {}, dirty: false }
-    ));
-  }, []);
+  // Đổi loại cấu hình → lấy values của key đó từ API (nếu game này đã có), không có thì dùng mặc định
+  const assignKey = useCallback(async (nextKey) => {
+    if (!nextKey) { setEditor((prev) => ({ ...prev, key: null, values: {}, dirty: false })); return; }
+    setConfigBusy(true);
+    try {
+      const next = await loadEditorForGame({ ...(game || {}), config: { key: nextKey } });
+      setEditor((prev) => ({ ...prev, key: nextKey, values: next.values, dirty: true }));
+    } finally {
+      setConfigBusy(false);
+    }
+  }, [game]);
 
   const resetValues = useCallback(() => {
     if (!editor.key) return;
@@ -283,7 +557,7 @@ export default function GameConfigEditor({ showToast }) {
       clearDraft(game._id);
       setEditor((prev) => ({ ...prev, dirty: false }));
       showToast("Đã lưu cấu hình lên máy chủ", "success");
-      loadGames();
+      loadGames(game._id);
     } catch (e) {
       showToast(e.message || "Lỗi lưu cấu hình", "error");
     } finally {
@@ -394,7 +668,7 @@ export default function GameConfigEditor({ showToast }) {
         <EmptyState
           icon="⚠️"
           title={status.error}
-          action={<button type="button" className="text-sm font-bold text-ticket" onClick={loadGames}>Thử lại</button>}
+          action={<button type="button" className="text-sm font-bold text-ticket" onClick={() => loadGames(editorGameId)}>Thử lại</button>}
         />
       </div>
     );
@@ -412,22 +686,28 @@ export default function GameConfigEditor({ showToast }) {
           value={editor.gameId || ""}
           onChange={(e) => {
             const g = games.find((x) => x._id === e.target.value);
-            if (g) { setPreviewHtml(null); setEditor(editorForGame(g)); }
+            if (!g) return;
+            setPreviewHtml(null);
+            setConfigBusy(true);
+            loadEditorForGame(g).then(setEditor).finally(() => setConfigBusy(false));
           }}
         >
           {games.length === 0 && <option value="">Chưa có trò chơi nào</option>}
           {games.map((g) => (
             <option key={g._id} value={g._id}>
-              {g.name}{g.code ? ` (${g.code})` : ""}{g.config?.values ? " · đã có cấu hình" : ""}
+              {g.name}{g.code ? ` (${g.code})` : ""}{g.config?.key ? " · đã có cấu hình" : ""}
             </option>
           ))}
         </select>
+
+        {configBusy && <span className="text-[11px] font-mono text-[#8A7C63]">⏳ Đang tải cấu hình…</span>}
 
         <label className="text-xs font-bold text-ink/60" htmlFor="cfg-key">Loại game</label>
         <select
           id="cfg-key"
           className={`${inputCls} min-w-[170px]`}
           value={editor.key || ""}
+          disabled={configBusy}
           onChange={(e) => assignKey(e.target.value)}
         >
           <option value="">— Chưa gán —</option>
@@ -436,7 +716,7 @@ export default function GameConfigEditor({ showToast }) {
 
         <button
           type="button"
-          disabled={!game || !editor.key || saving || !editor.dirty}
+          disabled={!game || !editor.key || saving || !editor.dirty || configBusy}
           onClick={save}
           className="inline-flex items-center gap-1.5 text-sm font-bold px-3.5 py-2 rounded-xl bg-teal text-white disabled:opacity-35"
         >
@@ -460,7 +740,7 @@ export default function GameConfigEditor({ showToast }) {
         </button>
         <button
           type="button"
-          onClick={loadGames}
+          onClick={() => loadGames(editorGameId)}
           className="w-9 h-9 rounded-xl bg-paper text-ink/70 inline-flex items-center justify-center"
           title="Tải lại danh sách"
         >

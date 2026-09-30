@@ -23,6 +23,7 @@ function defaultsOfList(list) {
     (list.groups || []).forEach((g) => { out[g.key] = clone(list.rows?.[g.key] || []); });
     return out;
   }
+  if (list.kind === "entities") return clone(list.rows || {});
   return clone(list.rows || []);
 }
 
@@ -56,16 +57,24 @@ function normalizeItem(item, list) {
   }
   const out = {};
   (list.fields || []).forEach((f) => {
-    const raw = item && typeof item === "object" ? item[f.key] : "";
-    let v = raw == null ? "" : raw;
+    const src = item && typeof item === "object" ? item : {};
+    const raw = src[f.key] === undefined ? f.default : src[f.key];
+    let v;
     if (f.type === "color") {
-      v = isHexColor(v) ? String(v).trim() : "";
+      v = isHexColor(raw) ? String(raw).trim() : "";
     } else if (f.type === "number") {
-      const n = typeof v === "number" ? v : parseFloat(v);
+      const n = typeof raw === "number" ? raw : parseFloat(raw);
       v = Number.isFinite(n) ? n : "";
+    } else if (f.type === "toggle") {
+      v = raw === true || raw === "true" || raw === 1;
+    } else if (f.type === "select") {
+      const allowed = (f.options || []).map((o) => o.value);
+      v = allowed.includes(raw) ? raw : (allowed[0] ?? "");
     } else {
-      v = String(v).trim();
+      v = String(raw ?? "").trim();
     }
+    // Trường tuỳ chọn không nhập gì thì không ghi vào JSON (giữ config gọn)
+    if (f.optional === true && (v === "" || v === false)) return;
     out[f.key] = v;
   });
   return out;
@@ -97,11 +106,38 @@ function normalizeSetting(value, def) {
     const allowed = (def.options || []).map((o) => o.value);
     return allowed.includes(value) ? value : def.default;
   }
+  if (def.type === "toggle") {
+    return typeof value === "boolean" ? value : !!def.default;
+  }
   if (def.type === "text") {
     const v = value == null ? "" : String(value);
     return v.trim() === "" ? def.default : v;
   }
   return clampNumber(value, def, def.default);
+}
+
+const ID_RE = /^[a-zA-Z0-9_-]{1,24}$/;
+
+// Bảng dữ liệu theo id: { "worm": { hp, speed, ... } } — id là khoá, HTML tự gắn icon
+function normalizeEntities(value, list) {
+  const src = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const base = list.rows && typeof list.rows === "object" ? list.rows : {};
+  const out = {};
+  Object.keys(src).forEach((id) => {
+    const key = String(id).trim();
+    if (!ID_RE.test(key)) return;
+    // Giữ các trường đã có sẵn của id đó, trường thiếu mới lấy từ dữ liệu mẫu
+    out[key] = normalizeItem(Object.assign({}, base[key] || {}, src[key] || {}), list);
+  });
+  return out;
+}
+
+// Khối JSON tự do (màn chơi/timeline) — giữ nguyên cấu trúc, chỉ chuẩn hoá kiểu
+function normalizeJson(value, list) {
+  if (list.requiredType === "array") return Array.isArray(value) ? clone(value) : clone(list.rows);
+  if (Array.isArray(value)) return clone(list.rows);
+  if (value && typeof value === "object") return clone(value);
+  return clone(list.rows);
 }
 
 export function normalizeValues(key, values) {
@@ -123,6 +159,14 @@ export function normalizeValues(key, values) {
         grouped[g.key] = raw[g.key] === undefined || raw[g.key] === null ? clone(list.rows?.[g.key] || []) : normalizeRows(raw[g.key], list);
       });
       out[list.key] = grouped;
+      return;
+    }
+    if (list.kind === "entities") {
+      out[list.key] = src[list.key] === undefined || src[list.key] === null ? defaultsOfList(list) : normalizeEntities(src[list.key], list);
+      return;
+    }
+    if (list.kind === "json") {
+      out[list.key] = src[list.key] === undefined || src[list.key] === null ? defaultsOfList(list) : normalizeJson(src[list.key], list);
       return;
     }
     if (list.kind === "enum") {
@@ -192,6 +236,49 @@ export function validateValues(key, values) {
       });
       return;
     }
+
+    if (list.kind === "entities") {
+      const table = values?.[list.key] || {};
+      const ids = Object.keys(table);
+      const label = list.title;
+      if (typeof list.min === "number" && ids.length < list.min) {
+        issues.push({ level: "error", path: list.key, message: `${name}: ${label} cần ít nhất ${list.min} mục (đang có ${ids.length})` });
+      }
+      ids.forEach((id) => {
+        const item = table[id];
+        (list.fields || []).forEach((f) => {
+          const v = item?.[f.key];
+          const empty = v === undefined || v === null || String(v).trim() === "";
+          if (!empty) {
+            if (f.min !== undefined && Number(v) < f.min) {
+              issues.push({ level: "error", path: `${list.key}.${id}.${f.key}`, message: `${name}: ${label} — “${id}” có ${f.label || f.key} < ${f.min}` });
+            }
+            return;
+          }
+          if (f.optional === true) return;
+          issues.push({
+            level: "error",
+            path: `${list.key}.${id}.${f.key}`,
+            message: `${name}: ${label} — “${id}” thiếu “${f.label || f.key}”`,
+          });
+        });
+      });
+      return;
+    }
+
+    if (list.kind === "json") {
+      const value = values?.[list.key];
+      const isArray = Array.isArray(value);
+      if (list.requiredType === "array" && !isArray) {
+        issues.push({ level: "error", path: list.key, message: `${name}: ${list.title} phải là một danh sách (mảng JSON)` });
+        return;
+      }
+      if (list.requiredType === "array" && isArray && list.min && value.length < list.min) {
+        issues.push({ level: "error", path: list.key, message: `${name}: ${list.title} cần ít nhất ${list.min} mục (đang có ${value.length})` });
+      }
+      return;
+    }
+
     checkList(list, values?.[list.key], list.title);
   });
 
@@ -210,16 +297,18 @@ function normalizeName(v) {
     .replace(/[^a-z0-9]+/g, "");
 }
 
-export function matchGameDef({ game, template } = {}) {
+export function matchGameDef({ game, template, includeGameName = true } = {}) {
   const candidates = [];
   const push = (v) => {
     if (typeof v === "string" && v.trim()) candidates.push(normalizeName(v));
   };
   push(template?.name);
   push(template?.slug);
-  push(game?.templateName);
-  push(game?.gameType);
-  push(game?.name);
+  if (includeGameName) {
+    push(game?.templateName);
+    push(game?.gameType);
+    push(game?.name);
+  }
 
   if (!candidates.length) return null;
   for (const def of DEFS) {
@@ -236,11 +325,19 @@ export function matchGameDef({ game, template } = {}) {
   return null;
 }
 
+// Khi CHƠI game: chỉ dùng config khi game khai báo key, hoặc template của nó
+// khớp đúng một game trong registry. Không đoán theo tên game để tránh gán nhầm
+// config của game khác cho game cũ vốn đã chạy đúng.
 export function resolveGameKey({ game, template } = {}) {
   const fromConfig = game?.config?.key;
   if (typeof fromConfig === "string" && getGameDef(fromConfig)) return fromConfig;
-  const def = matchGameDef({ game, template });
+  const def = matchGameDef({ game, template, includeGameName: false });
   return def ? def.key : null;
+}
+
+// Khi giáo viên mở trang cấu hình: gợi ý thêm theo tên game (có người xác nhận).
+export function suggestGameKey({ game, template } = {}) {
+  return resolveGameKey({ game, template }) || matchGameDef({ game, template })?.key || null;
 }
 
 export function readGameConfig(config) {

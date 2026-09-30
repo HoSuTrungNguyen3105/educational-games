@@ -189,29 +189,29 @@
 
 <div class="screen" id="rotate"><div class="em">📱</div><p>Xoay ngang điện thoại để chơi nhé!</p></div>
 
-<!-- ============ CẤU HÌNH MẶC ĐỊNH (sửa trực tiếp ở đây hoặc trong game) ============ -->
+<!-- ============ CẤU HÌNH MẶC ĐỊNH (id + số liệu, KHÔNG có emoji — icon nằm ở MON_ICON/PLANT_ICON) ============ -->
 <script type="application/json" id="cfgDefault">
 {
   "unlockAll": true,
 
   "monsters": {
-    "worm":   {"name": "Sâu Bò",        "emoji": "🐛", "hp": 100,  "speed": 0.20, "dps": 20, "size": 1.0},
-    "beetle": {"name": "Bọ Giáp",       "emoji": "🪲", "hp": 260,  "speed": 0.17, "dps": 22, "size": 1.05},
-    "locust": {"name": "Châu Chấu",     "emoji": "🦗", "hp": 90,   "speed": 0.42, "dps": 16, "size": 0.95},
-    "rat":    {"name": "Chuột Nhảy",    "emoji": "🐀", "hp": 150,  "speed": 0.30, "dps": 20, "size": 1.0, "jump": true},
-    "snail":  {"name": "Ốc Sên Khiên",  "emoji": "🐌", "hp": 520,  "speed": 0.09, "dps": 25, "size": 1.1},
-    "boss":   {"name": "Bọ Cạp Chúa",   "emoji": "🦂", "hp": 3200, "speed": 0.06, "dps": 80, "size": 1.7}
+    "worm":   {"name": "Sâu Bò",       "hp": 100,  "speed": 0.20, "dps": 20, "size": 1.0},
+    "beetle": {"name": "Bọ Giáp",      "hp": 260,  "speed": 0.17, "dps": 22, "size": 1.05},
+    "locust": {"name": "Châu Chấu",    "hp": 90,   "speed": 0.42, "dps": 16, "size": 0.95},
+    "rat":    {"name": "Chuột Nhảy",   "hp": 150,  "speed": 0.30, "dps": 20, "size": 1.0, "jump": true},
+    "snail":  {"name": "Ốc Sên Khiên", "hp": 520,  "speed": 0.09, "dps": 25, "size": 1.1},
+    "boss":   {"name": "Bọ Cạp Chúa",  "hp": 3200, "speed": 0.06, "dps": 80, "size": 1.7}
   },
 
   "plants": {
-    "sunflower": {"name": "Hướng Dương",    "emoji": "🌻", "kind": "producer", "cost": 50,  "hp": 80,  "cooldown": 5,  "amount": 25, "every": 9, "first": 5},
-    "shooter":   {"name": "Súp Lơ Bắn Hạt", "emoji": "🥦", "kind": "shooter",  "cost": 100, "hp": 80,  "cooldown": 5,  "damage": 20, "every": 1.5, "shots": 1},
-    "wall":      {"name": "Dừa Tường",      "emoji": "🥥", "kind": "wall",     "cost": 50,  "hp": 600, "cooldown": 14},
-    "bomb":      {"name": "Anh Đào Nổ",     "emoji": "🍒", "kind": "bomb",     "cost": 150, "hp": 50,  "cooldown": 25, "damage": 400, "radius": 1.5, "fuse": 1},
-    "ice":       {"name": "Việt Quất Băng", "emoji": "🫐", "kind": "shooter",  "cost": 175, "hp": 80,  "cooldown": 6,  "damage": 20, "every": 1.5, "shots": 1, "slow": 0.5, "slowTime": 4},
-    "mine":      {"name": "Khoai Bẫy",      "emoji": "🥔", "kind": "mine",     "cost": 25,  "hp": 50,  "cooldown": 18, "damage": 500, "arm": 8},
-    "repeater":  {"name": "Xương Rồng Đôi", "emoji": "🌵", "kind": "shooter",  "cost": 200, "hp": 80,  "cooldown": 7,  "damage": 20, "every": 1.5, "shots": 2},
-    "chili":     {"name": "Ớt Lửa",         "emoji": "🌶️", "kind": "lane",     "cost": 125, "hp": 50,  "cooldown": 25, "damage": 400, "fuse": 0.8}
+    "sunflower": {"name": "Hướng Dương",    "kind": "producer", "cost": 50,  "hp": 80,  "cooldown": 5,  "amount": 25, "every": 9, "first": 5},
+    "shooter":   {"name": "Súp Lơ Bắn Hạt", "kind": "shooter",  "cost": 100, "hp": 80,  "cooldown": 5,  "damage": 20, "every": 1.5, "shots": 1},
+    "wall":      {"name": "Dừa Tường",      "kind": "wall",     "cost": 50,  "hp": 600, "cooldown": 14},
+    "bomb":      {"name": "Anh Đào Nổ",     "kind": "bomb",     "cost": 150, "hp": 50,  "cooldown": 25, "damage": 400, "radius": 1.5, "fuse": 1},
+    "ice":       {"name": "Việt Quất Băng", "kind": "shooter",  "cost": 175, "hp": 80,  "cooldown": 6,  "damage": 20, "every": 1.5, "shots": 1, "slow": 0.5, "slowTime": 4},
+    "mine":      {"name": "Khoai Bẫy",      "kind": "mine",     "cost": 25,  "hp": 50,  "cooldown": 18, "damage": 500, "arm": 8},
+    "repeater":  {"name": "Xương Rồng Đôi", "kind": "shooter",  "cost": 200, "hp": 80,  "cooldown": 7,  "damage": 20, "every": 1.5, "shots": 2},
+    "chili":     {"name": "Ớt Lửa",         "kind": "lane",     "cost": 125, "hp": 50,  "cooldown": 25, "damage": 400, "fuse": 0.8}
   },
 
   "levels": [
@@ -324,8 +324,13 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { memS[k
 
 /* ================= Cấu hình JSON ================= */
 const DEF = JSON.parse($('cfgDefault').textContent);
-const M_BASE = { emoji: '👾', name: 'Quái', hp: 100, speed: .2, dps: 20, size: 1 };
-const P_BASE = { emoji: '🌱', name: 'Cây', kind: 'wall', cost: 50, hp: 80, cooldown: 5 };
+
+/* Icon nằm ở đây, KHÔNG nằm trong JSON config — config chỉ gửi id + số liệu.
+   Thêm quái/cây mới: thêm id vào config, icon tự lấy theo id (thêm id mới thì thêm ở bảng dưới). */
+const MON_ICON = { worm: '🐛', beetle: '🪲', locust: '🦗', rat: '🐀', snail: '🐌', boss: '🦂' };
+const PLANT_ICON = { sunflower: '🌻', shooter: '🥦', wall: '🥥', bomb: '🍒', ice: '🫐', mine: '🥔', repeater: '🌵', chili: '🌶️' };
+const M_BASE = { icon: '👾', name: 'Quái', hp: 100, speed: .2, dps: 20, size: 1 };
+const P_BASE = { icon: '🌱', name: 'Cây', kind: 'wall', cost: 50, hp: 80, cooldown: 5 };
 const KIND_DEF = {
   producer: { amount: 25, every: 9, first: 5 }, shooter: { damage: 20, every: 1.5, shots: 1 },
   bomb: { damage: 400, radius: 1.5, fuse: 1 }, lane: { damage: 400, fuse: .8 }, mine: { damage: 500, arm: 8 }, wall: {}
@@ -334,10 +339,12 @@ function resolve(u) {
   const cfg = { unlockAll: u.unlockAll !== false, monsters: {}, plants: {}, levels: Array.isArray(u.levels) ? u.levels : [] };
   new Set([...Object.keys(DEF.monsters), ...Object.keys(u.monsters || {})]).forEach(id => {
     cfg.monsters[id] = Object.assign({}, M_BASE, DEF.monsters[id] || {}, (u.monsters || {})[id] || {});
+    cfg.monsters[id].icon = cfg.monsters[id].emoji || MON_ICON[id] || M_BASE.icon;
   });
   new Set([...Object.keys(DEF.plants), ...Object.keys(u.plants || {})]).forEach(id => {
     const p = Object.assign({}, P_BASE, DEF.plants[id] || {}, (u.plants || {})[id] || {});
     const kd = KIND_DEF[p.kind] || {}; Object.keys(kd).forEach(k => { if (p[k] === undefined) p[k] = kd[k]; });
+    p.icon = p.emoji || PLANT_ICON[id] || P_BASE.icon;
     cfg.plants[id] = p;
   });
   return cfg;
@@ -375,8 +382,20 @@ function validate(u) {
   });
   return er;
 }
-let userCfg = DEF, CFG;
-{ const s = lsGet(CK); if (s) { try { const u = JSON.parse(s); if (!validate(u).length) userCfg = u; } catch (e) {} } }
+/* Nguồn cấu hình theo thứ tự ưu tiên:
+   1. window.EG_CONFIG.plantvsanimal  → app tiêm từ API (nút "Cấu hình game" của giáo viên)
+   2. localStorage                    → chỉnh nhanh trong game (⚙️ Cấu hình JSON)
+   3. #cfgDefault                     → mặc định nằm ngay trong file này */
+let userCfg = DEF, CFG, cfgFromAPI = false;
+(function loadCfg() {
+  try {
+    const api = window.EG_CONFIG && (window.EG_CONFIG.plantvsanimal || (window.EG && window.EG.plantvsanimal));
+    if (api && typeof api === 'object' && validate(api).length === 0) { userCfg = api; cfgFromAPI = true; return; }
+  } catch (e) {}
+  const s = lsGet(CK);
+  if (s) { try { const u = JSON.parse(s); if (!validate(u).length) { userCfg = u; return; } } catch (e) {} }
+  userCfg = DEF;
+})();
 CFG = resolve(userCfg);
 
 function one(v) {
@@ -399,10 +418,12 @@ function docHtml() {
   <b>count</b>: số lượng (mặc định 1)<br><b>gap</b>: giây giữa các con (mặc định 1.5)<br><b>delay</b>: chờ thêm bao nhiêu giây
   <h4>Nhiều loại quái cùng đợt</h4><code>{"t": 90, "banner": "Đợt lớn!", "flag": true, "spawn": [ {...}, {...} ]}</code><br>
   <b>banner</b>: chữ hiện giữa màn hình<br><b>flag</b>: đánh dấu cờ trên thanh tiến độ
-  <h4>Quái có sẵn</h4>${Object.entries(c.monsters).map(([id, m]) => `${m.emoji} <code>${id}</code> ${m.name}`).join('<br>')}
-  <h4>Cây có sẵn</h4>${Object.entries(c.plants).map(([id, p]) => `${p.emoji} <code>${id}</code> ${p.name}`).join('<br>')}
-  <h4>Tạo quái / cây mới</h4>Thêm id mới vào <code>monsters</code> hoặc <code>plants</code> (đủ emoji, hp, speed...) rồi dùng trong timeline. Tốc độ <b>speed</b> tính bằng ô/giây.
-  <h4>Sao chép ra ngoài</h4>Dùng nút Sao chép hoặc Tải xuống để lưu file levels.json.`;
+  <h4>Quái có sẵn</h4>${Object.entries(c.monsters).map(([id, m]) => `${m.icon} <code>${id}</code> ${m.name}`).join('<br>')}
+  <h4>Cây có sẵn</h4>${Object.entries(c.plants).map(([id, p]) => `${p.icon} <code>${id}</code> ${p.name}`).join('<br>')}
+  <h4>Tạo quái / cây mới</h4>Thêm id mới vào <code>monsters</code> hoặc <code>plants</code> (đủ name, hp, speed…) rồi dùng trong timeline. Tốc độ <b>speed</b> tính bằng ô/giây.
+  <b>Icon không nằm trong JSON</b> — game lấy icon theo id từ bảng <code>MON_ICON</code> / <code>PLANT_ICON</code> trong file plantvsanimal.html.
+  <h4>Nguồn cấu hình</h4>1) Cấu hình giáo viên gán trên máy chủ (<code>window.EG_CONFIG.plantvsanimal</code>) → 2) bản sửa trong máy học sinh → 3) mặc định trong file này.
+  <h4>Sao chép ra ngoài</h4>Dùng nút Sao chép hoặc Tải xuống để lưu file plantvsanimal.json.`;
 }
 
 /* ================= Âm thanh ================= */
@@ -488,7 +509,7 @@ function buildMenu() {
     b.disabled = !unlocked; if (!unlocked) b.style.opacity = .55;
     const mons = new Set(); (L.timeline || []).forEach(e => (Array.isArray(e.spawn) ? e.spawn : (e.monster ? [e] : [])).forEach(s => mons.add(s.monster)));
     b.innerHTML = `<div class="num">${i + 1}</div><div class="ci"><b>${L.name || 'Màn ' + (i + 1)}</b>
-      <span>${[...mons].map(m => (CFG.monsters[m] || {}).emoji || '').join('')}</span><small>${THEME_ICON[L.theme] || '☀️'} ${(L.plants || []).length} loại cây</small></div>
+      <span>${[...mons].map(m => (CFG.monsters[m] || {}).icon || '').join('')}</span><small>${THEME_ICON[L.theme] || '☀️'} ${(L.plants || []).length} loại cây</small></div>
       <div class="st">${prog.cleared[i] ? '⭐' : unlocked ? '▶️' : '🔒'}</div>`;
     b.onclick = () => { ensureAudio(); sfx.tap(); play(i); };
     box.appendChild(b);
@@ -798,11 +819,11 @@ function drawPlant(p) {
     const g = ctx.createRadialGradient(x, y, 2, x, y, s * .8); g.addColorStop(0, `rgba(255,120,40,${k * .7})`); g.addColorStop(1, 'rgba(255,120,40,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s * .8, 0, 6.283); ctx.fill();
   } else if (d.kind === 'mine') {
     ctx.fillStyle = '#6b4526'; ctx.beginPath(); ctx.ellipse(x, y + s * .28, s * .3, s * .12, 0, 0, 6.283); ctx.fill();
-    if (!p.armed) { emoji(d.emoji, x, y + s * .12, s * .42, { alpha: .8 }); ctx.fillStyle = '#8b5a2f'; ctx.beginPath(); ctx.ellipse(x, y + s * .26, s * .32, s * .1, 0, 0, Math.PI); ctx.fill(); return; }
+    if (!p.armed) { emoji(d.icon, x, y + s * .12, s * .42, { alpha: .8 }); ctx.fillStyle = '#8b5a2f'; ctx.beginPath(); ctx.ellipse(x, y + s * .26, s * .32, s * .1, 0, 0, Math.PI); ctx.fill(); return; }
     sy *= 1 + Math.abs(Math.sin(T * 6)) * .06; if (Math.sin(T * 8) > 0) { ctx.fillStyle = '#ff3a2a'; ctx.beginPath(); ctx.arc(x + s * .18, y - s * .15, 3, 0, 6.283); ctx.fill(); }
   }
   if (p.flash > 0) { o.tint = '#ffffff'; o.tintA = .55; }
-  emoji(d.emoji, x, y + dy - s * .04, s, Object.assign({ rot, sx, sy }, o));
+  emoji(d.icon, x, y + dy - s * .04, s, Object.assign({ rot, sx, sy }, o));
   if (d.kind === 'wall') {
     const r = p.hp / p.maxHp; ctx.strokeStyle = 'rgba(60,35,15,.75)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
     if (r < .66) { ctx.beginPath(); ctx.moveTo(x - s * .1, y - s * .3); ctx.lineTo(x - s * .02, y - s * .1); ctx.lineTo(x - s * .14, y + s * .05); ctx.stroke(); }
@@ -819,7 +840,7 @@ function drawMonster(m) {
   if (m.dying > 0) { const k = 1 - m.dying / .7; alpha = 1 - k; rot = m.fling ? k * 9 : k * 1.4; y -= m.fling ? Math.sin(k * Math.PI) * size * .8 : -k * size * .12; xo = m.fling ? k * cw * 1.5 : 0; }
   const o = { rot, alpha };
   if (m.flash > 0) { o.tint = '#ffffff'; o.tintA = .65; } else if (m.slowT > 0) { o.tint = '#59b8ff'; o.tintA = .4; }
-  emoji(m.d.emoji, x + xo, y, size, o);
+  emoji(m.d.icon, x + xo, y, size, o);
   if (m.dying <= 0) {
     if (m.slowT > 0) emoji('❄️', x, y - size * .55, size * .28, { alpha: .9 });
     if (m.hp < m.maxHp && (m.maxHp >= 200 || m.maxHp >= 1000)) {
@@ -886,7 +907,7 @@ function render() {
     G.monsters.filter(m => m.row === r).sort((a, b) => b.u - a.u).forEach(drawMonster);
     G.bullets.forEach(b => { if (b.row === r) drawBullet(b); });
   }
-  if (hc && G.sel && !G.plants[hc.row][hc.col]) emoji(CFG.plants[G.sel].emoji, px(hc.col + .5), py(hc.row + .5), Math.min(cw, ch) * .88, { alpha: .55 });
+  if (hc && G.sel && !G.plants[hc.row][hc.col]) emoji(CFG.plants[G.sel].icon, px(hc.col + .5), py(hc.row + .5), Math.min(cw, ch) * .88, { alpha: .55 });
   if (th === 'night') {
     ctx.fillStyle = 'rgba(8,16,60,.38)'; ctx.fillRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
@@ -895,7 +916,7 @@ function render() {
     ctx.globalCompositeOperation = 'source-over';
   } else if (th === 'dusk') { ctx.fillStyle = 'rgba(255,120,50,.12)'; ctx.fillRect(0, 0, W, H); }
   G.suns.forEach(drawSun);
-  if (drag && drag.moved && G.sel) emoji(CFG.plants[G.sel].emoji, ptr.x, ptr.y - 20, Math.min(cw, ch) * 1.05, { alpha: .9 });
+  if (drag && drag.moved && G.sel) emoji(CFG.plants[G.sel].icon, ptr.x, ptr.y - 20, Math.min(cw, ch) * 1.05, { alpha: .9 });
   drawFx();
   ctx.restore();
 }
@@ -905,7 +926,7 @@ function buildPackets() {
   const box = $('packets'); box.innerHTML = '';
   G.L.plants.forEach(id => {
     const d = CFG.plants[id], b = document.createElement('button'); b.className = 'packet'; b.dataset.id = id; b.setAttribute('aria-label', `${d.name}, ${d.cost} nắng`);
-    b.innerHTML = `<span class="pe">${d.emoji}</span><span class="pc">${d.cost}</span><i class="cd"></i>`; box.appendChild(b);
+    b.innerHTML = `<span class="pe">${d.icon}</span><span class="pc">${d.cost}</span><i class="cd"></i>`; box.appendChild(b);
   });
   $('lvName').textContent = `Màn ${G.li + 1}: ${G.L.name || ''}`;
   const fl = $('flags'); fl.innerHTML = '';
@@ -966,11 +987,12 @@ $('cfgClose').onclick = () => showScreen('menu');
 $('cfgApply').onclick = () => {
   let u; try { u = JSON.parse($('cfgText').value); } catch (e) { cfgErr('JSON sai cú pháp: ' + e.message); return; }
   const er = validate(u); if (er.length) { cfgErr(er.slice(0, 6).join('\n') + (er.length > 6 ? `\n... và ${er.length - 6} lỗi nữa` : '')); return; }
-  userCfg = u; CFG = resolve(u); lsSet(CK, JSON.stringify(u)); buildMenu(); showScreen('menu'); toast('✅ Đã áp dụng cấu hình mới');
+  userCfg = u; CFG = resolve(u); lsSet(CK, JSON.stringify(u)); buildMenu(); showScreen('menu');
+  toast(cfgFromAPI ? '⚠️ Đã lưu bản này, nhưng game đang dùng cấu hình từ máy chủ' : '✅ Đã áp dụng cấu hình mới');
 };
 $('cfgReset').onclick = () => { $('cfgText').value = pretty(DEF); cfgErr('Đã nạp cấu hình mặc định. Bấm "Áp dụng" để dùng.'); };
 $('cfgCopy').onclick = async () => { try { await navigator.clipboard.writeText($('cfgText').value); toast('Đã sao chép JSON'); } catch (e) { $('cfgText').select(); toast('Hãy chọn và sao chép thủ công'); } };
-$('cfgDown').onclick = () => { const b = new Blob([$('cfgText').value], { type: 'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'levels.json'; document.body.appendChild(a); a.click(); a.remove(); };
+$('cfgDown').onclick = () => { const b = new Blob([$('cfgText').value], { type: 'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'plantvsanimal.json'; document.body.appendChild(a); a.click(); a.remove(); };
 $('cfgLoad').onclick = () => $('cfgFile').click();
 $('cfgFile').onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { $('cfgText').value = r.result; cfgErr('Đã nạp file. Bấm "Áp dụng" để dùng.'); }; r.readAsText(f); e.target.value = ''; };
 

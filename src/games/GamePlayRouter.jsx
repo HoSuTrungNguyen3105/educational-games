@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState, lazy, Suspense } from 'react'
-import { templateService } from '../services/api.js'
+import { gameService, templateService } from '../services/api.js'
 import { Loader } from '../components/ui.jsx'
 import { resolveGameKey } from './gameConfigSchema.js'
 
 const PlayGameScreen = lazy(() => import('./PlayGameScreen.jsx'));
 const HtmlGameLoader = lazy(() => import('./HtmlGameLoader.jsx'));
+
+const EMPTY_CONFIG = { key: null, schemaVersion: 0, values: {} };
 
 export function GamePlayRouter({ game, questions, players, playerName, onFinish, onQuit, onStateUpdate, template: initialTemplate, userAuth, coopSession }) {
   const [tpl, setTpl] = useState(initialTemplate || null);
@@ -24,9 +26,33 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
     return () => { active = false; };
   }, [tid]);
 
+  // /api/games chỉ trả config.key — gọi tiếp API cấu hình để lấy values.
   const gameKey = useMemo(() => resolveGameKey({ game, template: tpl }), [game, tpl]);
+  const [gameConfig, setGameConfig] = useState(EMPTY_CONFIG);
+  const [loadedFor, setLoadedFor] = useState(null);
+  const gameId = game?._id?.toString() || game?.id || null;
+  const requestKey = gameKey && gameId ? `${gameId}:${gameKey}` : null;
+  const configLoading = !!requestKey && loadedFor !== requestKey;
 
-  if (loading) {
+  useEffect(() => {
+    if (!requestKey) return;
+    let active = true;
+    gameService.getConfig(gameId)
+      .then((res) => {
+        if (!active) return;
+        const cfg = res?.config;
+        setGameConfig(cfg && cfg.key === gameKey ? cfg : { ...EMPTY_CONFIG, key: gameKey });
+        setLoadedFor(requestKey);
+      })
+      .catch(() => {
+        if (!active) return;
+        setGameConfig({ ...EMPTY_CONFIG, key: gameKey });
+        setLoadedFor(requestKey);
+      });
+    return () => { active = false; };
+  }, [requestKey, gameId, gameKey]);
+
+  if (loading || configLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-paper py-16">
         <Loader label="Đang tải trò chơi..." />
@@ -37,7 +63,7 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
   if (tpl?.htmlTemplate && tpl.htmlTemplate.trim() !== "") {
     return (
       <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-paper py-16"><Loader label="Đang tải trò chơi..." /></div>}>
-        <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={coopSession ? "multiplayer" : (tpl.playMode || "solo")} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} userAuth={userAuth} coopSessionId={coopSession?.sessionId} coopOpponent={coopSession ? { acceptedBy: coopSession.fromUserId, acceptedByName: coopSession.fromName } : null} gameKey={gameKey} gameConfig={game?.config} />
+        <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={coopSession ? "multiplayer" : (tpl.playMode || "solo")} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} userAuth={userAuth} coopSessionId={coopSession?.sessionId} coopOpponent={coopSession ? { acceptedBy: coopSession.fromUserId, acceptedByName: coopSession.fromName } : null} gameKey={gameKey} gameConfig={gameConfig} />
       </Suspense>
     );
   }
@@ -50,4 +76,3 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
 }
 
 export default GamePlayRouter;
-

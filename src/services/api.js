@@ -135,6 +135,15 @@ export const gameService = {
   async setConfig(id, config) {
     return apiFetch(`/games/${id}/config`, { method: "PUT", body: { config } });
   },
+  // Bước 2: /api/games chỉ trả key — gọi endpoint này để lấy values
+  async getConfig(id) {
+    return apiFetch(`/games/${id}/config`);
+  },
+  // Lấy cấu hình theo key (kèm gameId để đúng dữ liệu của game đang mở)
+  async getConfigByKey(key, gameId) {
+    const qs = gameId ? `?gameId=${encodeURIComponent(gameId)}` : "";
+    return apiFetch(`/game-configs/${encodeURIComponent(key)}${qs}`);
+  },
   async remove(id) {
     return apiFetch(`/games/${id}`, { method: "DELETE" });
   },

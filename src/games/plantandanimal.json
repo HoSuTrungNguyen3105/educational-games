@@ -1,0 +1,512 @@
+{
+  "unlockAll": true,
+  "monsters": {
+    "worm": {
+      "name": "Sâu Bò",
+      "hp": 100,
+      "speed": 0.2,
+      "dps": 20,
+      "size": 1
+    },
+    "beetle": {
+      "name": "Bọ Giáp",
+      "hp": 260,
+      "speed": 0.17,
+      "dps": 22,
+      "size": 1.05
+    },
+    "locust": {
+      "name": "Châu Chấu",
+      "hp": 90,
+      "speed": 0.42,
+      "dps": 16,
+      "size": 0.95
+    },
+    "rat": {
+      "name": "Chuột Nhảy",
+      "hp": 150,
+      "speed": 0.3,
+      "dps": 20,
+      "size": 1,
+      "jump": true
+    },
+    "snail": {
+      "name": "Ốc Sên Khiên",
+      "hp": 520,
+      "speed": 0.09,
+      "dps": 25,
+      "size": 1.1
+    },
+    "boss": {
+      "name": "Bọ Cạp Chúa",
+      "hp": 3200,
+      "speed": 0.06,
+      "dps": 80,
+      "size": 1.7
+    }
+  },
+  "plants": {
+    "sunflower": {
+      "name": "Hướng Dương",
+      "kind": "producer",
+      "cost": 50,
+      "hp": 80,
+      "cooldown": 5,
+      "amount": 25,
+      "every": 9,
+      "first": 5
+    },
+    "shooter": {
+      "name": "Súp Lơ Bắn Hạt",
+      "kind": "shooter",
+      "cost": 100,
+      "hp": 80,
+      "cooldown": 5,
+      "damage": 20,
+      "every": 1.5,
+      "shots": 1
+    },
+    "wall": {
+      "name": "Dừa Tường",
+      "kind": "wall",
+      "cost": 50,
+      "hp": 600,
+      "cooldown": 14
+    },
+    "bomb": {
+      "name": "Anh Đào Nổ",
+      "kind": "bomb",
+      "cost": 150,
+      "hp": 50,
+      "cooldown": 25,
+      "damage": 400,
+      "radius": 1.5,
+      "fuse": 1
+    },
+    "ice": {
+      "name": "Việt Quất Băng",
+      "kind": "shooter",
+      "cost": 175,
+      "hp": 80,
+      "cooldown": 6,
+      "damage": 20,
+      "every": 1.5,
+      "shots": 1,
+      "slow": 0.5,
+      "slowTime": 4
+    },
+    "mine": {
+      "name": "Khoai Bẫy",
+      "kind": "mine",
+      "cost": 25,
+      "hp": 50,
+      "cooldown": 18,
+      "damage": 500,
+      "arm": 8
+    },
+    "repeater": {
+      "name": "Xương Rồng Đôi",
+      "kind": "shooter",
+      "cost": 200,
+      "hp": 80,
+      "cooldown": 7,
+      "damage": 20,
+      "every": 1.5,
+      "shots": 2
+    },
+    "chili": {
+      "name": "Ớt Lửa",
+      "kind": "lane",
+      "cost": 125,
+      "hp": 50,
+      "cooldown": 25,
+      "damage": 400,
+      "fuse": 0.8
+    }
+  },
+  "levels": [
+    {
+      "name": "Vườn Trước Nhà",
+      "theme": "day",
+      "rows": 5,
+      "startSun": 150,
+      "plants": [
+        "sunflower",
+        "shooter"
+      ],
+      "skySun": {
+        "first": 6,
+        "every": 9,
+        "amount": 25
+      },
+      "timeline": [
+        {
+          "t": 20,
+          "monster": "worm",
+          "row": "random"
+        },
+        {
+          "t": 40,
+          "monster": "worm",
+          "row": "random"
+        },
+        {
+          "t": 58,
+          "monster": "worm",
+          "row": "random",
+          "count": 2,
+          "gap": 5
+        },
+        {
+          "t": 85,
+          "banner": "Một đợt quái lớn đang kéo tới!",
+          "flag": true,
+          "spawn": [
+            {
+              "monster": "worm",
+              "row": "all"
+            },
+            {
+              "monster": "worm",
+              "row": "random",
+              "count": 3,
+              "gap": 3,
+              "delay": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Vườn Sau Nhà",
+      "theme": "day",
+      "rows": 5,
+      "startSun": 150,
+      "plants": [
+        "sunflower",
+        "shooter",
+        "wall",
+        "bomb"
+      ],
+      "skySun": {
+        "first": 6,
+        "every": 9,
+        "amount": 25
+      },
+      "timeline": [
+        {
+          "t": 15,
+          "monster": "worm",
+          "row": "random"
+        },
+        {
+          "t": 28,
+          "monster": "worm",
+          "row": "random",
+          "count": 2,
+          "gap": 4
+        },
+        {
+          "t": 45,
+          "monster": "beetle",
+          "row": "random"
+        },
+        {
+          "t": 62,
+          "monster": "worm",
+          "row": "random",
+          "count": 3,
+          "gap": 3
+        },
+        {
+          "t": 80,
+          "monster": "beetle",
+          "row": "random",
+          "count": 2,
+          "gap": 6
+        },
+        {
+          "t": 100,
+          "banner": "Một đợt quái lớn đang kéo tới!",
+          "flag": true,
+          "spawn": [
+            {
+              "monster": "beetle",
+              "row": "all"
+            },
+            {
+              "monster": "worm",
+              "row": "random",
+              "count": 4,
+              "gap": 2.5,
+              "delay": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Hoàng Hôn Bên Hàng Rào",
+      "theme": "dusk",
+      "rows": 5,
+      "startSun": 200,
+      "plants": [
+        "sunflower",
+        "shooter",
+        "wall",
+        "bomb",
+        "ice",
+        "mine"
+      ],
+      "skySun": {
+        "first": 8,
+        "every": 11,
+        "amount": 25
+      },
+      "timeline": [
+        {
+          "t": 12,
+          "monster": "worm",
+          "row": "random"
+        },
+        {
+          "t": 22,
+          "monster": "locust",
+          "row": "random"
+        },
+        {
+          "t": 34,
+          "monster": "rat",
+          "row": "random"
+        },
+        {
+          "t": 46,
+          "monster": "worm",
+          "row": "random",
+          "count": 2,
+          "gap": 3
+        },
+        {
+          "t": 60,
+          "monster": "locust",
+          "row": "random",
+          "count": 3,
+          "gap": 2
+        },
+        {
+          "t": 76,
+          "monster": "beetle",
+          "row": "random",
+          "count": 2,
+          "gap": 5
+        },
+        {
+          "t": 92,
+          "banner": "Một đợt quái lớn đang kéo tới!",
+          "flag": true,
+          "spawn": [
+            {
+              "monster": "rat",
+              "row": "all"
+            },
+            {
+              "monster": "locust",
+              "row": "random",
+              "count": 4,
+              "gap": 1.5,
+              "delay": 3
+            },
+            {
+              "monster": "beetle",
+              "row": "random",
+              "count": 2,
+              "gap": 6,
+              "delay": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Đêm Sương Mù",
+      "theme": "night",
+      "rows": 5,
+      "startSun": 250,
+      "plants": [
+        "sunflower",
+        "shooter",
+        "wall",
+        "bomb",
+        "ice",
+        "mine",
+        "repeater",
+        "chili"
+      ],
+      "skySun": {
+        "first": 0,
+        "every": 0,
+        "amount": 25
+      },
+      "timeline": [
+        {
+          "t": 20,
+          "monster": "worm",
+          "row": "random",
+          "count": 2,
+          "gap": 3
+        },
+        {
+          "t": 35,
+          "monster": "snail",
+          "row": "random"
+        },
+        {
+          "t": 55,
+          "monster": "rat",
+          "row": "random",
+          "count": 2,
+          "gap": 4
+        },
+        {
+          "t": 75,
+          "monster": "beetle",
+          "row": "random",
+          "count": 2,
+          "gap": 3
+        },
+        {
+          "t": 95,
+          "banner": "Quái đang kéo đến từ trong sương!",
+          "flag": true,
+          "spawn": [
+            {
+              "monster": "snail",
+              "row": "random",
+              "count": 2,
+              "gap": 8
+            },
+            {
+              "monster": "locust",
+              "row": "all",
+              "delay": 2
+            }
+          ]
+        },
+        {
+          "t": 125,
+          "banner": "Đợt cuối! Giữ vững hàng phòng thủ!",
+          "flag": true,
+          "spawn": [
+            {
+              "monster": "worm",
+              "row": "all",
+              "count": 2,
+              "gap": 6
+            },
+            {
+              "monster": "beetle",
+              "row": "random",
+              "count": 4,
+              "gap": 3,
+              "delay": 3
+            },
+            {
+              "monster": "snail",
+              "row": "random",
+              "count": 2,
+              "gap": 10,
+              "delay": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bọ Cạp Chúa",
+      "theme": "dusk",
+      "rows": 5,
+      "startSun": 300,
+      "plants": [
+        "sunflower",
+        "shooter",
+        "wall",
+        "bomb",
+        "ice",
+        "mine",
+        "repeater",
+        "chili"
+      ],
+      "skySun": {
+        "first": 8,
+        "every": 10,
+        "amount": 25
+      },
+      "timeline": [
+        {
+          "t": 15,
+          "monster": "worm",
+          "row": "random",
+          "count": 3,
+          "gap": 3
+        },
+        {
+          "t": 35,
+          "monster": "beetle",
+          "row": "random",
+          "count": 2,
+          "gap": 4
+        },
+        {
+          "t": 55,
+          "monster": "rat",
+          "row": "random",
+          "count": 3,
+          "gap": 3
+        },
+        {
+          "t": 80,
+          "banner": "Một đợt quái lớn đang kéo tới!",
+          "flag": true,
+          "spawn": [
+            {
+              "monster": "locust",
+              "row": "all",
+              "count": 2,
+              "gap": 4
+            },
+            {
+              "monster": "snail",
+              "row": "random",
+              "count": 2,
+              "gap": 6,
+              "delay": 4
+            }
+          ]
+        },
+        {
+          "t": 115,
+          "banner": "BỌ CẠP CHÚA XUẤT HIỆN!",
+          "flag": true,
+          "spawn": [
+            {
+              "monster": "boss",
+              "row": 3
+            },
+            {
+              "monster": "beetle",
+              "row": "all",
+              "delay": 6
+            },
+            {
+              "monster": "worm",
+              "row": "random",
+              "count": 6,
+              "gap": 2,
+              "delay": 10
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

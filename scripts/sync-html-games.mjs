@@ -94,6 +94,16 @@ const MANIFEST = [
     ring: "#22C55E",
     category: "reflex",
   },
+  {
+    file: "plantvsanimal.html",
+    name: "Vườn Thủ Hộ",
+    aliases: ["Vườn Thủ Hộ", "Vuon Thu Ho", "plantvsanimal", "plant and animal", "PlantVsAnimal"],
+    configKey: "plantvsanimal",
+    description: "Trồng cây, thu nắng, đuổi sâu bọ. Chỉnh quái, cây và các màn chơi.",
+    icon: "🌻",
+    ring: "#1B998B",
+    category: "strategy",
+  },
 ];
 
 // ── Args ──────────────────────────────────────────────────────────

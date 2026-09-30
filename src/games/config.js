@@ -273,6 +273,200 @@
           }
         }
       ]
+    },
+
+    // ── Vườn Thủ Hộ (plantvsanimal) ────────────────────────────────
+    // Icon KHÔNG nằm trong config: file plantvsanimal.html tự gắn icon theo id
+    // (MON_ICON / PLANT_ICON). Config chỉ chứa id + số liệu chơi.
+    {
+      key: "plantvsanimal",
+      name: "Vườn Thủ Hộ",
+      icon: "🌻",
+      desc: "Trồng cây, thu nắng, đuổi sâu bọ. Chỉnh quái, cây và các màn chơi.",
+      file: "src/games/plantvsanimal.html",
+      templateNames: ["Vườn Thủ Hộ", "Vuon Thu Ho", "plantvsanimal", "plant and animal", "PlantVsAnimal"],
+      settings: [
+        { key: "unlockAll", label: "Mở khoá sẵn tất cả màn", type: "toggle", default: true, help: "Tắt để học sinh phải thắng màn trước mới mở màn sau." }
+      ],
+      lists: [
+        {
+          key: "monsters", title: "🐛 Quái", kind: "entities", min: 1,
+          idLabel: "id", idHint: "chữ không dấu, ví dụ: worm, boss",
+          help: "id là khoá để màn chơi gọi tới — HTML tự gắn icon theo id, nên đổi id là game không nhận ra.",
+          fields: [
+            { key: "name", label: "Tên", type: "text", cls: "wide" },
+            { key: "hp", label: "Máu", type: "number", min: 1 },
+            { key: "speed", label: "Tốc độ", type: "number", min: 0.01, step: 0.01, help: "ô/giây" },
+            { key: "dps", label: "Sát thương/giây", type: "number", min: 0 },
+            { key: "size", label: "Cỡ", type: "number", min: 0.2, step: 0.05, optional: true, advanced: true },
+            { key: "jump", label: "Nhảy", type: "toggle", optional: true, advanced: true }
+          ],
+          rows: {
+            worm: { name: "Sâu Bò", hp: 100, speed: 0.2, dps: 20, size: 1 },
+            beetle: { name: "Bọ Giáp", hp: 260, speed: 0.17, dps: 22, size: 1.05 },
+            locust: { name: "Châu Chấu", hp: 90, speed: 0.42, dps: 16, size: 0.95 },
+            rat: { name: "Chuột Nhảy", hp: 150, speed: 0.3, dps: 20, size: 1, jump: true },
+            snail: { name: "Ốc Sên Khiên", hp: 520, speed: 0.09, dps: 25, size: 1.1 },
+            boss: { name: "Bọ Cạp Chúa", hp: 3200, speed: 0.06, dps: 80, size: 1.7 }
+          }
+        },
+        {
+          key: "plants", title: "🌱 Cây", kind: "entities", min: 1,
+          idLabel: "id", idHint: "chữ không dấu, ví dụ: sunflower, chili",
+          help: "Các thuộc tính không nhập sẽ lấy theo “kind” (HTML có sẵn bảng mặc định).",
+          fields: [
+            { key: "name", label: "Tên", type: "text", cls: "wide" },
+            {
+              key: "kind", label: "Loại", type: "select",
+              options: [
+                { value: "producer", label: "producer · thu nắng" },
+                { value: "shooter", label: "shooter · bắn" },
+                { value: "wall", label: "wall · chắn" },
+                { value: "bomb", label: "bomb · nổ" },
+                { value: "lane", label: "lane · dọc hàng" },
+                { value: "mine", label: "mine · bẫy" }
+              ]
+            },
+            { key: "cost", label: "Giá", type: "number", min: 0 },
+            { key: "hp", label: "Máu", type: "number", min: 1 },
+            { key: "cooldown", label: "Hồi (giây)", type: "number", min: 0.5, step: 0.5, optional: true, advanced: true },
+            { key: "damage", label: "Sát thương", type: "number", min: 0, optional: true, advanced: true },
+            { key: "every", label: "Mỗi (giây)", type: "number", min: 0, step: 0.1, optional: true, advanced: true },
+            { key: "shots", label: "Số phát", type: "number", min: 1, optional: true, advanced: true },
+            { key: "amount", label: "Lượng thu", type: "number", min: 1, optional: true, advanced: true },
+            { key: "first", label: "Chờ đầu (giây)", type: "number", min: 0, optional: true, advanced: true },
+            { key: "slow", label: "Làm chậm", type: "number", min: 0, step: 0.05, optional: true, advanced: true },
+            { key: "slowTime", label: "Thời gian chậm", type: "number", min: 0, optional: true, advanced: true },
+            { key: "radius", label: "Bán kính nổ", type: "number", min: 0, step: 0.1, optional: true, advanced: true },
+            { key: "fuse", label: "Độ trễ nổ (giây)", type: "number", min: 0, step: 0.1, optional: true, advanced: true },
+            { key: "arm", label: "Thời gian vô hiệu (giây)", type: "number", min: 0, optional: true, advanced: true }
+          ],
+          rows: {
+            sunflower: { name: "Hướng Dương", kind: "producer", cost: 50, hp: 80, cooldown: 5, amount: 25, every: 9, first: 5 },
+            shooter: { name: "Súp Lơ Bắn Hạt", kind: "shooter", cost: 100, hp: 80, cooldown: 5, damage: 20, every: 1.5, shots: 1 },
+            wall: { name: "Dừa Tường", kind: "wall", cost: 50, hp: 600, cooldown: 14 },
+            bomb: { name: "Anh Đào Nổ", kind: "bomb", cost: 150, hp: 50, cooldown: 25, damage: 400, radius: 1.5, fuse: 1 },
+            ice: { name: "Việt Quất Băng", kind: "shooter", cost: 175, hp: 80, cooldown: 6, damage: 20, every: 1.5, shots: 1, slow: 0.5, slowTime: 4 },
+            mine: { name: "Khoai Bẫy", kind: "mine", cost: 25, hp: 50, cooldown: 18, damage: 500, arm: 8 },
+            repeater: { name: "Xương Rồng Đôi", kind: "shooter", cost: 200, hp: 80, cooldown: 7, damage: 20, every: 1.5, shots: 2 },
+            chili: { name: "Ớt Lửa", kind: "lane", cost: 125, hp: 50, cooldown: 25, damage: 400, fuse: 0.8 }
+          }
+        },
+        {
+          key: "levels", title: "🗺️ Màn chơi (timeline)", kind: "json", requiredType: "array", min: 1,
+          help: "Mỗi màn: { name, theme: day|dusk|night, rows, startSun, plants:[id], skySun, timeline:[...] }. Ô “timeline” là danh sách sự kiện theo giây — xem hướng dẫn trong game (nút ⚙️ Cấu hình JSON).",
+          rows: [
+            {
+              name: "Vườn Trước Nhà", theme: "day", rows: 5, startSun: 150,
+              plants: ["sunflower", "shooter"],
+              skySun: { first: 6, every: 9, amount: 25 },
+              timeline: [
+                { t: 20, monster: "worm", row: "random" },
+                { t: 40, monster: "worm", row: "random" },
+                { t: 58, monster: "worm", row: "random", count: 2, gap: 5 },
+                {
+                  t: 85, banner: "Một đợt quái lớn đang kéo tới!", flag: true,
+                  spawn: [
+                    { monster: "worm", row: "all" },
+                    { monster: "worm", row: "random", count: 3, gap: 3, delay: 4 }
+                  ]
+                }
+              ]
+            },
+            {
+              name: "Vườn Sau Nhà", theme: "day", rows: 5, startSun: 150,
+              plants: ["sunflower", "shooter", "wall", "bomb"],
+              skySun: { first: 6, every: 9, amount: 25 },
+              timeline: [
+                { t: 15, monster: "worm", row: "random" },
+                { t: 28, monster: "worm", row: "random", count: 2, gap: 4 },
+                { t: 45, monster: "beetle", row: "random" },
+                { t: 62, monster: "worm", row: "random", count: 3, gap: 3 },
+                { t: 80, monster: "beetle", row: "random", count: 2, gap: 6 },
+                {
+                  t: 100, banner: "Một đợt quái lớn đang kéo tới!", flag: true,
+                  spawn: [
+                    { monster: "beetle", row: "all" },
+                    { monster: "worm", row: "random", count: 4, gap: 2.5, delay: 3 }
+                  ]
+                }
+              ]
+            },
+            {
+              name: "Hoàng Hôn Bên Hàng Rào", theme: "dusk", rows: 5, startSun: 200,
+              plants: ["sunflower", "shooter", "wall", "bomb", "ice", "mine"],
+              skySun: { first: 8, every: 11, amount: 25 },
+              timeline: [
+                { t: 12, monster: "worm", row: "random" },
+                { t: 22, monster: "locust", row: "random" },
+                { t: 34, monster: "rat", row: "random" },
+                { t: 46, monster: "worm", row: "random", count: 2, gap: 3 },
+                { t: 60, monster: "locust", row: "random", count: 3, gap: 2 },
+                { t: 76, monster: "beetle", row: "random", count: 2, gap: 5 },
+                {
+                  t: 92, banner: "Một đợt quái lớn đang kéo tới!", flag: true,
+                  spawn: [
+                    { monster: "rat", row: "all" },
+                    { monster: "locust", row: "random", count: 4, gap: 1.5, delay: 3 },
+                    { monster: "beetle", row: "random", count: 2, gap: 6, delay: 5 }
+                  ]
+                }
+              ]
+            },
+            {
+              name: "Đêm Sương Mù", theme: "night", rows: 5, startSun: 250,
+              plants: ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili"],
+              skySun: { first: 0, every: 0, amount: 25 },
+              timeline: [
+                { t: 20, monster: "worm", row: "random", count: 2, gap: 3 },
+                { t: 35, monster: "snail", row: "random" },
+                { t: 55, monster: "rat", row: "random", count: 2, gap: 4 },
+                { t: 75, monster: "beetle", row: "random", count: 2, gap: 3 },
+                {
+                  t: 95, banner: "Quái đang kéo đến từ trong sương!", flag: true,
+                  spawn: [
+                    { monster: "snail", row: "random", count: 2, gap: 8 },
+                    { monster: "locust", row: "all", delay: 2 }
+                  ]
+                },
+                {
+                  t: 125, banner: "Đợt cuối! Giữ vững hàng phòng thủ!", flag: true,
+                  spawn: [
+                    { monster: "worm", row: "all", count: 2, gap: 6 },
+                    { monster: "beetle", row: "random", count: 4, gap: 3, delay: 3 },
+                    { monster: "snail", row: "random", count: 2, gap: 10, delay: 5 }
+                  ]
+                }
+              ]
+            },
+            {
+              name: "Bọ Cạp Chúa", theme: "dusk", rows: 5, startSun: 300,
+              plants: ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili"],
+              skySun: { first: 8, every: 10, amount: 25 },
+              timeline: [
+                { t: 15, monster: "worm", row: "random", count: 3, gap: 3 },
+                { t: 35, monster: "beetle", row: "random", count: 2, gap: 4 },
+                { t: 55, monster: "rat", row: "random", count: 3, gap: 3 },
+                {
+                  t: 80, banner: "Một đợt quái lớn đang kéo tới!", flag: true,
+                  spawn: [
+                    { monster: "locust", row: "all", count: 2, gap: 4 },
+                    { monster: "snail", row: "random", count: 2, gap: 6, delay: 4 }
+                  ]
+                },
+                {
+                  t: 115, banner: "BỌ CẠP CHÚA XUẤT HIỆN!", flag: true,
+                  spawn: [
+                    { monster: "boss", row: 3 },
+                    { monster: "beetle", row: "all", delay: 6 },
+                    { monster: "worm", row: "random", count: 6, gap: 2, delay: 10 }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ];
 
@@ -286,7 +480,6 @@
     }
     return clone(list.rows || []);
   }
-
   function defaultsOfGame(def) {
     const out = {};
     (def.settings || []).forEach((s) => { out[s.key] = s.default; });

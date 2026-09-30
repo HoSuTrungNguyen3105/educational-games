@@ -6,6 +6,7 @@ import { isReady } from "./db.js";
 import { sendSuccess, sendError } from "./utils/response.js";
 
 import gamesRouter from "./routes/games.js";
+import gameConfigsRouter from "./routes/gameConfigs.js";
 import questionsRouter from "./routes/questions.js";
 import questionBanksRouter from "./routes/questionBanks.js";
 import resultsRouter from "./routes/results.js";
@@ -75,6 +76,7 @@ app.get("/api/users/me", (req, res, next) => {
   }
 });
 app.use("/api/games", gamesRouter);
+app.use("/api/game-configs", gameConfigsRouter);
 app.use("/api/questions", questionsRouter);
 app.use("/api/question-banks", questionBanksRouter);
 app.use("/api/results", resultsRouter);

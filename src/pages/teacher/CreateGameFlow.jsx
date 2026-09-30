@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useEffect, useState, useCallback } from 'react'
+import { Fragment, useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { gameService, questionService, uid } from '../../services/api.js'
 import { THEMES } from '../../lib/setupConstants.js'
 import { useTemplates, useSubjects, useCategories } from '../../lib/hooks.js'
@@ -6,6 +6,19 @@ import { emptyQuestion } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, IconButton, Loader, Modal } from '../../components/ui.jsx'
 import Field, { StampToken } from './fields.jsx'
 import QuestionImportModal from './QuestionImportModal.jsx'
+import { navigate } from '../../lib/router.js'
+import { injectGameConfig } from '../../games/injectGameConfig.js'
+import {
+  SCHEMA_VERSION,
+  buildConfigPayload,
+  defaultValuesFor,
+  getGameDef,
+  listGameDefs,
+  matchGameDef,
+  normalizeValues,
+  readGameConfig,
+  validateValues,
+} from '../../games/gameConfigSchema.js'
 
 const ALL_STEPS = [
   { id: "template", label: "Chọn mẫu" },
@@ -22,6 +35,9 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const [form, setForm] = useState({ name: "", description: "", subject: "", topic: "", templateId: null, theme: "gold", status: "draft" });
   const [questions, setQuestions] = useState([]);
   const [savingStatus, setSavingStatus] = useState(null);
+  const [configKey, setConfigKey] = useState(null);
+  const [loadedConfig, setLoadedConfig] = useState(null);
+  const keyTouchedRef = useRef(false);
   const templates = useTemplates(refreshKey);
   const subjects = useSubjects(refreshKey);
   const categories = useCategories(refreshKey);
@@ -29,6 +45,33 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const selectedTemplate = useMemo(() => templates.find(t => t._id === form.templateId), [templates, form.templateId]);
   const isPlayToWin = selectedTemplate?.type === "play-to-win";
   const playMode = selectedTemplate?.playMode || "solo";
+
+  // Cấu hình sẽ gửi lên API: giữ nguyên dữ liệu đã chỉnh nếu khoá không đổi,
+  // còn đổi khoá (hoặc tạo game mới) thì lấy bộ mặc định của game đó.
+  const configPayload = useMemo(() => {
+    if (!configKey) return null;
+    const saved = readGameConfig(loadedConfig);
+    if (saved.key === configKey && Object.keys(saved.values || {}).length) {
+      return { key: configKey, schemaVersion: saved.schemaVersion || SCHEMA_VERSION, values: normalizeValues(configKey, saved.values) };
+    }
+    return buildConfigPayload(configKey, defaultValuesFor(configKey));
+  }, [configKey, loadedConfig]);
+
+  const configDef = useMemo(() => getGameDef(configKey), [configKey]);
+  const configIssues = useMemo(() => (configPayload ? validateValues(configKey, configPayload.values) : []), [configKey, configPayload]);
+  const configErrorCount = configIssues.filter(i => i.level === "error").length;
+
+  const pickConfigKey = useCallback((nextKey) => {
+    keyTouchedRef.current = true;
+    setConfigKey(nextKey || null);
+  }, []);
+
+  // Tự nhận diện loại cấu hình theo template (trừ khi giáo viên đã chọn tay)
+  useEffect(() => {
+    if (!selectedTemplate) return;
+    const detected = matchGameDef({ template: selectedTemplate })?.key || null;
+    if (!keyTouchedRef.current) setConfigKey(detected);
+  }, [selectedTemplate]);
 
   const steps = useMemo(() => {
     if (isPlayToWin) return ALL_STEPS.filter(s => s.id !== "questions");
@@ -43,6 +86,9 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
       if (g) {
         const tid = g.templateId ? (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid || g.templateId) : null;
         setForm({ name: g.name || g.title || "", description: g.description, subject: g.subject, topic: g.topic, templateId: tid, theme: g.theme || "gold", status: g.status || "draft" });
+        setLoadedConfig(g.config || null);
+        const savedKey = readGameConfig(g.config).key;
+        if (savedKey) { keyTouchedRef.current = true; setConfigKey(savedKey); }
         setStepIdx(1);
       }
       const qs = await questionService.listByGame(gameId);
@@ -81,6 +127,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
       playMode,
       questionsCount: isPlayToWin ? 0 : questions.length,
     };
+    if (configPayload) payload.config = configPayload;
     if (id) await gameService.update(id, payload);
     else { const created = await gameService.create(payload); id = created._id?.toString() || created.id; }
     if (!isPlayToWin) await questionService.save(id, questions);
@@ -101,11 +148,23 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
       <Stepper steps={steps} activeIdx={stepIdx} onJump={(i) => i < stepIdx && setStepIdx(i)} />
 
       <div className="note-card p-6 md:p-8 min-h-[380px]">
-        {step.id === "template" && <StepTemplate form={form} setForm={setForm} templates={templates} categories={categories} />}
-        {step.id === "info" && <StepInfo form={form} setForm={setForm} subjects={subjects} templates={templates} />}
+        {step.id === "template" && <StepTemplate form={form} setForm={setForm} templates={templates} categories={categories} configKey={configKey} />}
+        {step.id === "info" && (
+          <StepInfo
+            form={form} setForm={setForm} subjects={subjects} templates={templates}
+            configKey={configKey} onConfigKey={pickConfigKey}
+            configDef={configDef} configIssues={configIssues} configErrorCount={configErrorCount}
+            savedConfig={loadedConfig} gameId={gameId}
+          />
+        )}
         {step.id === "questions" && <StepQuestions questions={questions} setQuestions={setQuestions} />}
         {step.id === "customize" && <StepCustomize form={form} setForm={setForm} />}
-        {step.id === "preview" && <StepPreview form={form} questions={questions} templates={templates} isPlayToWin={isPlayToWin} />}
+        {step.id === "preview" && (
+          <StepPreview
+            form={form} questions={questions} templates={templates} isPlayToWin={isPlayToWin}
+            configKey={configKey} configPayload={configPayload} configDef={configDef} configIssues={configIssues}
+          />
+        )}
       </div>
 
       <div className="flex items-center justify-between">
@@ -162,18 +221,28 @@ function StepTemplate({ form, setForm, templates, categories }) {
         ))}
       </div>
       <div className="grid sm:grid-cols-2 gap-4">
-        {list.map(t => (
+        {list.map(t => {
+          const tplConfig = matchGameDef({ template: t });
+          return (
           <button key={t._id} onClick={() => setForm(f => ({ ...f, templateId: t._id }))}
             className={`text-left p-5 rounded-2xl border-2 transition flex gap-4 items-start
               ${form.templateId === t._id ? "border-ticket bg-ticket/5" : "border-ink/10 hover:border-ink/25"}`}>
             <StampToken icon={t.icon} ring={t.ring} size={48} fontSize={22} />
-            <div>
+            <div className="min-w-0">
               <h3 className="font-display text-base text-ink">{t.name}</h3>
               <p className="text-sm text-[#8A7C63] mt-1">{t.description}</p>
-              <span className="inline-block mt-2 text-[10px] font-mono uppercase text-[#B7A987]">{t.category}</span>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="inline-block text-[10px] font-mono uppercase text-[#B7A987]">{t.category}</span>
+                {tplConfig && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal/10 text-teal">
+                    ⚙ {tplConfig.icon} {tplConfig.name}
+                  </span>
+                )}
+              </div>
             </div>
           </button>
-        ))}
+          );
+        })}
       </div>
         </>
       )}
@@ -183,8 +252,13 @@ function StepTemplate({ form, setForm, templates, categories }) {
 
 const inputCls = "w-full note-card px-4 py-2.5 text-sm border-ink/10 focus:border-ticket";
 
-function StepInfo({ form, setForm, subjects, templates }) {
+function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, configDef, configIssues, configErrorCount, savedConfig, gameId }) {
   const currentTpl = templates.find(t => t._id === form.templateId);
+  const defs = listGameDefs();
+  const savedKey = readGameConfig(savedConfig).key;
+  const savedValues = readGameConfig(savedConfig).values || {};
+  const listCount = (configDef?.lists || []).length;
+  const settingCount = (configDef?.settings || []).length;
   return (
     <div>
       <h2 className="font-display text-xl text-ink mb-6">Nhập thông tin trò chơi</h2>
@@ -210,6 +284,59 @@ function StepInfo({ form, setForm, subjects, templates }) {
           )}
           {currentTpl?.playMode === "classroom" && (
             <p className="text-xs text-ticket mt-1.5 font-semibold">🎓 Chế độ lớp học — giáo viên điều khiển, học sinh lên chơi</p>
+          )}
+        </div>
+      )}
+
+      {templates.length > 0 && currentTpl?.htmlTemplate && (
+        <div className="mb-6 p-4 rounded-2xl bg-ink/[0.03] border border-ink/10">
+          <Field
+            label="⚙ Loại cấu hình game"
+            hint="Chỉ game có HTML riêng mới cần cấu hình. Mỗi loại có một chuỗi JSON riêng (luật chơi, danh sách emoji/từ vựng…) lưu riêng cho game này — game khác không bị ảnh hưởng."
+          >
+            <select className={inputCls} value={configKey || ""} onChange={e => onConfigKey(e.target.value || null)}>
+              <option value="">— Không dùng cấu hình riêng —</option>
+              {defs.map(d => <option key={d.key} value={d.key}>{d.icon} {d.name}</option>)}
+            </select>
+          </Field>
+
+          {!configDef && (
+            <p className="text-xs text-[#8A7C63] -mt-2">
+              Template này chưa có cấu hình riêng — game sẽ chạy theo mặc định nằm trong file HTML.
+            </p>
+          )}
+
+          {configDef && (
+            <>
+              <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[#8A7C63]">
+                <span className="px-1.5 py-0.5 rounded bg-ink/10">key: {configDef.key}</span>
+                <span>{settingCount} luật chơi</span>
+                <span>{listCount} danh sách</span>
+                <span className={configErrorCount ? "text-ticket" : "text-teal"}>
+                  {configErrorCount ? `⚠ ${configErrorCount} mục chưa hợp lệ` : "✓ dữ liệu mặc định hợp lệ"}
+                </span>
+              </div>
+              {savedKey === configKey && Object.keys(savedValues).length > 0 && (
+                <p className="text-xs text-teal mt-2">
+                  ✓ Giữ nguyên cấu hình đã lưu của game này ({configDef.name})
+                </p>
+              )}
+              {configIssues.filter(i => i.level === "error").slice(0, 3).map((i, idx) => (
+                <p key={idx} className="text-xs text-ticket mt-1">✕ {i.message}</p>
+              ))}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {gameId ? (
+                  <button
+                    onClick={() => navigate("/admin/game-config")}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-ink text-paper hover:bg-ink2"
+                  >
+                    Mở trang cấu hình để chỉnh chi tiết →
+                  </button>
+                ) : (
+                  <span className="text-xs text-[#B7A987]">Lưu game xong rồi bạn có thể chỉnh chi tiết ở trang “Cấu hình game”.</span>
+                )}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -586,10 +713,16 @@ function StepCustomize({ form, setForm }) {
   );
 }
 
-function StepPreview({ form, questions, templates, isPlayToWin }) {
+function StepPreview({ form, questions, templates, isPlayToWin, configKey, configPayload, configDef, configIssues }) {
   const tpl = templates.find(t => t._id === form.templateId);
   const themeColor = (THEMES.find(t => t.id === form.theme) || THEMES[0]).color;
-  const hasHtml = tpl?.htmlTemplate && tpl.htmlTemplate.trim() !== "";
+  const rawHtml = tpl?.htmlTemplate || "";
+  const hasHtml = rawHtml.trim() !== "";
+  const previewHtml = useMemo(() => {
+    if (!hasHtml || !configKey || !configPayload) return rawHtml;
+    return injectGameConfig(rawHtml, { key: configKey, config: configPayload });
+  }, [rawHtml, hasHtml, configKey, configPayload]);
+  const configErrorCount = configIssues.filter(i => i.level === "error").length;
 
   return (
     <div>
@@ -611,9 +744,11 @@ function StepPreview({ form, questions, templates, isPlayToWin }) {
 
         {hasHtml && (
           <div className="mb-6">
-            <span className="text-xs font-mono text-[#8A7C63] uppercase mb-2 block">HTML Preview</span>
+            <span className="text-xs font-mono text-[#8A7C63] uppercase mb-2 block">
+              HTML Preview{configDef ? ` — đã nạp cấu hình “${configDef.name}”` : ""}
+            </span>
             <div className="rounded-2xl overflow-hidden border-2 border-ink/10" style={{ height: 420 }}>
-              <iframe srcDoc={tpl.htmlTemplate} className="w-full h-full border-0" title="HTML Preview" sandbox="allow-scripts" />
+              <iframe srcDoc={previewHtml} className="w-full h-full border-0" title="HTML Preview" sandbox="allow-scripts" />
             </div>
           </div>
         )}
@@ -623,6 +758,29 @@ function StepPreview({ form, questions, templates, isPlayToWin }) {
             Template này chưa có HTML. Hãy cập nhật HTML trong trang quản lý template.
           </div>
         )}
+
+        <div className="mb-6">
+          <span className="text-xs font-mono text-[#8A7C63] uppercase mb-3 block">Cấu hình game</span>
+          {configDef ? (
+            <div className="p-4 rounded-2xl border border-ink/10 bg-ink/[0.03]">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl leading-none">{configDef.icon}</span>
+                <span className="font-display text-sm text-ink">{configDef.name}</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink/10 text-ink/60">{configDef.key}</span>
+              </div>
+              <p className="text-xs text-[#8A7C63]">
+                Lưu riêng cho game này: {(configDef.settings || []).length} luật chơi, {(configDef.lists || []).length} danh sách dữ liệu.
+              </p>
+              <p className={`text-xs mt-1 ${configErrorCount ? "text-ticket" : "text-teal"}`}>
+                {configErrorCount ? `⚠ Còn ${configErrorCount} mục chưa hợp lệ — xem trang “Cấu hình game”` : "✓ Dữ liệu hợp lệ"}
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-ink/5 text-sm text-[#8A7C63]">
+              Game chạy theo mặc định nằm trong file HTML (không có chuỗi JSON riêng).
+            </div>
+          )}
+        </div>
 
         {!isPlayToWin && questions.length > 0 && (
           <div>

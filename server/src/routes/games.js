@@ -77,6 +77,18 @@ router.put("/:id", authenticate, requireRoles("teacher", "admin"), async (req, r
   }
 });
 
+// Bước 2 của luồng cấu hình: /api/games chỉ trả key, endpoint này trả values.
+// Công khai (không cần token) vì học sinh cũng cần config để chơi đúng logic game.
+router.get("/:id/config", async (req, res, next) => {
+  try {
+    const payload = await gameService.getConfig(req.params.id);
+    if (!payload) return sendError(res, "Không tìm thấy trò chơi", 404);
+    sendSuccess(res, payload);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.put("/:id/config", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const { config } = req.body || {};

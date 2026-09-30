@@ -12,30 +12,49 @@ const GAME_FIELDS = [
   "code", "config", "createdAt", "updatedAt",
 ];
 
-// Config của game luôn là object thuần (chuỗi JSON riêng cho từng game).
-// Không dùng chung key giữa các game nên sửa game này không ảnh hưởng game khác.
+// Config là chuỗi JSON riêng cho từng game (không dùng chung key giữa các game).
+// Game cũ / game không cần cấu hình → trả về `null` để client biết rõ là không có
+// config, tuyệt đối không tự bịa dữ liệu hay gán nhầm config của game khác.
 function sanitizeConfig(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const { key, schemaVersion, values, ...rest } = value;
-  const out = {};
-  if (typeof key === "string" && key.trim()) out.key = key.trim();
-  if (Number.isFinite(Number(schemaVersion))) out.schemaVersion = Number(schemaVersion);
+  const trimmedKey = typeof key === "string" ? key.trim() : "";
   const source = values && typeof values === "object" && !Array.isArray(values) ? values : rest;
-  out.values = source && typeof source === "object" && !Array.isArray(source) ? source : {};
+  const plainValues = source && typeof source === "object" && !Array.isArray(source) ? source : {};
+  if (!trimmedKey && Object.keys(plainValues).length === 0) return null;
+  const out = {};
+  if (trimmedKey) out.key = trimmedKey;
+  if (Number.isFinite(Number(schemaVersion))) out.schemaVersion = Number(schemaVersion);
+  out.values = plainValues;
+  return out;
+}
+
+// Bản "nhẹ" của config: chỉ key + schemaVersion (danh sách game gửi về client).
+// Client sẽ dùng key này để gọi tiếp API lấy đúng values cần hiển thị.
+function summarizeConfig(config, mode) {
+  const out = { key: config.key };
+  if (config.schemaVersion) out.schemaVersion = config.schemaVersion;
+  if (mode === "full") out.values = config.values;
   return out;
 }
 
 // Chuẩn hóa về schema mới: bỏ trường cũ (id/slug/title/template/theme/htmlTemplate),
 // map title→name, đảm bảo kiểu dữ liệu đúng
-function serialize(doc) {
+// configMode "summary" (mặc định): chỉ trả key/schemaVersion — payload nhẹ cho list/detail.
+// configMode "full": kèm luôn values, dùng cho endpoint cấu hình / lúc chơi game.
+function serialize(doc, { configMode = "summary" } = {}) {
   if (!doc) return doc;
   const out = { _id: doc._id.toString() };
   for (const key of GAME_FIELDS) {
     let value = doc[key];
     if (key === "name") value = doc.name ?? doc.title ?? "Game";
+    if (key === "config") {
+      const config = sanitizeConfig(value);
+      out[key] = config ? summarizeConfig(config, configMode) : null;
+      continue;
+    }
     if (value === undefined) value = "";
     if (key === "templateId" && value) value = value.toString();
-    if (key === "config") value = sanitizeConfig(value);
     if ((key === "questionsCount" || key === "playersCount")) value = Number(value) || 0;
     out[key] = value;
   }
@@ -57,7 +76,7 @@ export async function list(filters = {}) {
   let cursor = coll.find(query).sort({ updatedAt: -1 });
   const games = await cursor.toArray();
 
-  let result = games.map(serialize);
+  let result = games.map((g) => serialize(g));
   if (filters.query) {
     const q = filters.query.trim().toLowerCase();
     result = result.filter(
@@ -98,6 +117,66 @@ export async function getByCode(code) {
   return serialize(doc);
 }
 
+// Bước 2: lấy riêng cấu hình (kèm values) của một game theo id
+export async function getConfig(id) {
+  try {
+    const doc = await getCollection(COLLECTION).findOne(
+      { _id: new ObjectId(id) },
+      { projection: { config: 1, name: 1, code: 1, updatedAt: 1 } }
+    );
+    if (!doc) return null;
+    const config = sanitizeConfig(doc.config);
+    return {
+      gameId: doc._id.toString(),
+      gameName: doc.name || "",
+      gameCode: doc.code || "",
+      config: config ? { ...summarizeConfig(config, "full"), updatedAt: doc.updatedAt || null } : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Bước 2 (theo key): client đã có key từ /api/games nên gọi thẳng endpoint này.
+// - có gameId: lấy config của đúng game đó (nếu key khác thì trả rỗng)
+// - không có gameId: lấy config mới nhất trong các game dùng key này
+export async function getConfigByKey(key, gameId) {
+  const trimmed = String(key || "").trim();
+  if (!trimmed) return { key: null, config: null, gamesCount: 0 };
+  const coll = getCollection(COLLECTION);
+
+  if (gameId) {
+    try {
+      const doc = await coll.findOne(
+        { _id: new ObjectId(gameId) },
+        { projection: { config: 1, name: 1, code: 1, updatedAt: 1 } }
+      );
+      const config = sanitizeConfig(doc?.config);
+      if (!config || config.key !== trimmed) {
+        return { key: trimmed, config: null, gamesCount: 0, gameId: String(gameId) };
+      }
+      return {
+        key: trimmed,
+        gameId: String(gameId),
+        config: { ...summarizeConfig(config, "full"), updatedAt: doc.updatedAt || null },
+        gamesCount: await coll.countDocuments({ "config.key": trimmed }),
+      };
+    } catch {
+      return { key: trimmed, config: null, gamesCount: 0 };
+    }
+  }
+
+  const doc = await coll
+    .findOne({ "config.key": trimmed }, { sort: { updatedAt: -1 }, projection: { config: 1, name: 1, code: 1, updatedAt: 1 } });
+  const config = sanitizeConfig(doc?.config);
+  return {
+    key: trimmed,
+    gameId: doc?._id ? doc._id.toString() : null,
+    config: config ? { ...summarizeConfig(config, "full"), updatedAt: doc.updatedAt || null } : null,
+    gamesCount: await coll.countDocuments({ "config.key": trimmed }),
+  };
+}
+
 export async function create(data) {
   const now = new Date().toISOString();
   const game = {
@@ -118,7 +197,7 @@ export async function create(data) {
     updatedAt: now,
   };
   const result = await getCollection(COLLECTION).insertOne(game);
-  return { _id: result.insertedId.toString(), ...game };
+  return { _id: result.insertedId.toString(), ...game, config: game.config ? summarizeConfig(game.config, "full") : null };
 }
 
 export async function update(id, data) {
@@ -144,7 +223,7 @@ export async function updateConfig(id, config) {
     { returnDocument: "after" }
   );
   if (!result) throw new Error("Không tìm thấy trò chơi");
-  return serialize(result);
+  return getConfig(id);
 }
 
 export async function remove(id) {
@@ -175,6 +254,7 @@ export async function duplicate(id) {
     name: `${rest.name} (Bản sao)`,
     status: "draft",
     playersCount: 0,
+    config: sanitizeConfig(rest.config),
     code: genCode(),
     createdAt: now,
     updatedAt: now,
