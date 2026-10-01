@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, addCoins, getStars, addStars, exchangeStarsForCoins } from "../services/authService.js";
+import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, addCoins, getStars, addStars, exchangeStarsForCoins, getXp } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { getByUser } from "../services/gameProgressService.js";
@@ -171,6 +171,15 @@ router.post("/me/stars", authenticate, async (req, res, next) => {
     sendSuccess(res, { stars });
   } catch (e) {
     sendError(res, e.message, 400);
+  }
+});
+
+// GET /api/auth/me/xp — get XP / level
+router.get("/me/xp", authenticate, async (req, res, next) => {
+  try {
+    sendSuccess(res, await getXp(req.user.sub));
+  } catch (e) {
+    next(e);
   }
 });
 

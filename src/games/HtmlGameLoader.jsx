@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
-import { API_BASE, apiFetch, coinService, userService, gameProgressService, classService } from "../services/api.js";
+import { API_BASE, apiFetch, coinService, userService, gameProgressService, classService, gamePlayService, uid } from "../services/api.js";
 import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
@@ -8,6 +8,7 @@ import { addPetExp } from "../lib/pet.js";
 import CoopInvitePanel from "../components/CoopInvitePanel.jsx";
 import GameHud from "./GameHud.jsx";
 import { injectGameConfig } from "./injectGameConfig.js";
+import { injectAnswerBridge } from "./injectAnswerBridge.js";
 
 /**
  * HtmlGameLoader - Renders a self-contained HTML game in an iframe.
@@ -44,15 +45,33 @@ export default function HtmlGameLoader({
   const [petMessage, setPetMessage] = useState("Chúc bạn chơi vui vẻ!");
   // Game tự render header (stats/pet) thì tắt HUD nổi của app để không trùng lặp
   const [hudHidden, setHudHidden] = useState(false);
+  // Câu trả lời game HTML báo lên (EG_ANSWER). Server sẽ chấm lại từ đây.
+  const answersRef = useRef([]);
+  // playId: khóa idempotency để double-submit không cộng XP hai lần.
+  // Gán lại mỗi lần game nạp (xem handleInit).
+  const playIdRef = useRef(null);
 
   const gameId = game?._id?.toString() || game?.id;
   const gameName = game?.name || "Trò chơi";
   const gameCode = game?.code || "";
 
+  // Đáp án do EG_ANSWER trong iframe gửi lên. Game cũ không dùng bridge thì
+  // mảng này rỗng → server chấm từ answers rỗng (không câu nào đúng).
+  const recordAnswer = useCallback((questionId, value, timeSpent) => {
+    if (questionId == null) return;
+    const id = String(questionId);
+    const list = answersRef.current;
+    const idx = list.findIndex(a => a.questionId === id);
+    const entry = { questionId: id, value: value ?? null, timeSpent: typeof timeSpent === "number" ? timeSpent : undefined };
+    if (idx >= 0) list[idx] = entry;
+    else list.push(entry);
+  }, []);
+
   // Nhúng config của riêng game này vào HTML trước khi nạp vào iframe
   const injectedHtml = useMemo(() => {
-    if (!htmlContent || !gameKey) return htmlContent;
-    return injectGameConfig(htmlContent, { key: gameKey, config: gameConfig });
+    if (!htmlContent) return htmlContent;
+    const withConfig = gameKey ? injectGameConfig(htmlContent, { key: gameKey, config: gameConfig }) : htmlContent;
+    return injectAnswerBridge(withConfig);
   }, [htmlContent, gameKey, gameConfig]);
 
   useEffect(() => {
@@ -65,6 +84,9 @@ export default function HtmlGameLoader({
   const handleInit = useCallback(async () => {
     const iframe = iframeRef.current;
     if (!iframe?.contentWindow) return;
+    // Mỗi lần game nạp lại = 1 lượt chơi mới → reset đáp án và khóa idempotency.
+    answersRef.current = [];
+    playIdRef.current = uid("play");
     const playerNames = (players || []).map(p => (typeof p === "string" ? p : p?.name)).filter(Boolean);
 
     let userCoins = 0;
@@ -286,15 +308,23 @@ export default function HtmlGameLoader({
         handleInit();
       } else if (msg.type === "show-coop-panel") {
         setShowCoopPanel(true);
+      } else if (msg.type === "answer" || msg.type === "answer-recorded") {
+        // Game HTML báo đã trả lời 1 câu — giữ lại để server chấm lại.
+        const d = msg.data || {};
+        recordAnswer(d.questionId ?? d.id, d.value ?? d.answer, d.timeSpent);
+      } else if (msg.type === "answers") {
+        const list = Array.isArray(msg.data?.answers) ? msg.data.answers : [];
+        for (const a of list) recordAnswer(a?.questionId, a?.value, a?.timeSpent);
       } else if (msg.type === "add-coins") {
         const amount = msg.data?.amount || 0;
         if (amount > 0 && userAuth?.token) {
-          coinService.add(amount).then(res => {
-            postToIframe({ type: "coins-added", data: { success: true, coins: res?.coins || 0 } });
-            setHudCoins(res?.coins || 0);
+          // Qua endpoint có trần/ngày — iframe không thể spam vô hạn.
+          gamePlayService.rewardCoins(amount).then(res => {
+            postToIframe({ type: "coins-added", data: { success: true, coins: res?.coins ?? 0 } });
+            setHudCoins(res?.coins ?? 0);
             setPetMessage(`🎉 Tuyệt vời! +${amount} coin`);
             addPetExp(Math.min(10, amount));
-            onStateUpdate?.({ coins: res?.coins || 0 });
+            onStateUpdate?.({ coins: res?.coins ?? 0 });
           }).catch(() => {
             postToIframe({ type: "coins-added", data: { success: false } });
           });
@@ -331,21 +361,29 @@ export default function HtmlGameLoader({
           gameProgressService.upsertGame(gameId, { loadout: loadoutData }).catch(() => {});
         }
       } else if (msg.type === "game-over") {
-        const correct = msg.data?.correct ?? 0;
-        const total = msg.data?.totalQuestions ?? 0;
+        const data = msg.data || {};
+        // Game có thể gửi kèm answers; nếu không thì lấy những gì EG_ANSWER đã ghi.
+        const answers = Array.isArray(data.answers) && data.answers.length > 0
+          ? data.answers
+          : answersRef.current;
+        const total = data.totalQuestions || answers.length || 0;
+        const correct = data.correct ?? 0;
         setPetMessage(
           total > 0 && correct / total >= 0.8
             ? "🌟 Giỏi quá! Tui tự hào về bạn!"
             : "💪 Khéo lắm! Hẹn gặp lại nha~"
         );
         onFinish?.({
-          score: msg.data?.score || 0,
-          correct: msg.data?.correct ?? 0,
-          totalQuestions: msg.data?.totalQuestions ?? 0,
-          timeUsed: msg.data?.timeUsed || 0,
-          coinReward: msg.data?.coinReward || 0,
-          studentId: msg.data?.studentId || null,
-          studentName: msg.data?.studentName || null,
+          score: data.score || 0,
+          correct,
+          totalQuestions: total,
+          timeUsed: data.timeUsed || 0,
+          coinReward: data.coinReward || 0,
+          studentId: data.studentId || null,
+          studentName: data.studentName || null,
+          answers,
+          playId: playIdRef.current,
+          questionIds: (questions || []).map(q => q?.id).filter(Boolean),
         });
       } else if (msg.type === "state-update") {
         onStateUpdate?.(msg.data);
@@ -373,7 +411,7 @@ export default function HtmlGameLoader({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleXoMove, handleXoRematch, handleJoinByCode, handleRequestClasses, handleRequestStudents, userAuth, postToIframe, gameId]);
+  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleXoMove, handleXoRematch, handleJoinByCode, handleRequestClasses, handleRequestStudents, userAuth, postToIframe, gameId, recordAnswer, questions]);
 
   useEffect(() => {
     const onOpponentMove = (data) => {

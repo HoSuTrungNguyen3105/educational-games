@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EDU GAME — API Test Console</title>
+<style>
+:root{
+  --bg:#0f1117;--bg2:#161923;--bg3:#1e2230;--line:#2a3040;
+  --fg:#e6e9f0;--fg2:#98a2b8;--fg3:#6b7488;
+  --acc:#5b8cff;--ok:#3ecf8e;--warn:#f0b429;--err:#ff5f6d;--purple:#a78bfa;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font-family:inherit;font-size:13px;color:var(--fg)}
+.app{display:grid;grid-template-columns:295px 1fr;grid-template-rows:auto 1fr;height:100vh}
+header{grid-column:1/3;display:flex;align-items:flex-end;gap:10px;padding:9px 14px;background:var(--bg2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{font-weight:700;letter-spacing:.3px;white-space:nowrap;padding-bottom:2px}
+.brand span{color:var(--acc)}
+.grow{flex:1}
+aside{background:var(--bg2);border-right:1px solid var(--line);overflow:auto;padding:10px}
+main{overflow:auto;padding:16px 18px 60px}
+input,select,textarea{background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:7px 9px;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+textarea{resize:vertical;font-family:var(--mono);font-size:12px}
+label{display:block;font-size:10.5px;color:var(--fg2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.btn{background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#262b3a;border-color:#3a4256}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#06281b;font-weight:600}
+.btn.warn{background:var(--warn);border-color:var(--warn);color:#3a2a00;font-weight:600}
+.btn.sm{padding:4px 8px;font-size:11px;border-radius:6px}
+.btn.ghost{background:transparent}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;min-width:150px}
+.tb{display:flex;flex-direction:column;min-width:160px}
+.tb input{width:250px}
+.tb.tight input{width:120px}
+.grp{margin-bottom:5px}
+.grp-h{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--fg2)}
+.grp-h:hover{background:var(--bg3);color:var(--fg)}
+.grp-h .cnt{margin-left:auto;font-weight:500;color:var(--fg3);font-size:11px}
+.grp-h .chev{font-size:9px;color:var(--fg3);transition:transform .15s}
+.grp.open .chev{transform:rotate(90deg)}
+.grp-b{display:none;padding-left:6px;border-left:1px solid var(--line);margin-left:9px}
+.grp.open .grp-b{display:block}
+.nav{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:12.5px;color:var(--fg2);text-decoration:none}
+.nav:hover{background:var(--bg3);color:var(--fg)}
+.nav.active{background:#23304d;color:#cfe0ff}
+.m{font-family:var(--mono);font-size:9.5px;font-weight:700;padding:2px 5px;border-radius:4px;min-width:44px;text-align:center;flex-shrink:0}
+.m-GET{background:#12331f;color:#5fd39a}
+.m-POST{background:#12324d;color:#63b3ff}
+.m-PUT{background:#3a2f0d;color:#f5c451}
+.m-PATCH{background:#33210e;color:#ffab5c}
+.m-DELETE{background:#3d1518;color:#ff8b93}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.card-h{display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer}
+.card-h:hover{background:#1b202c}
+.card.open .card-h{background:#1b202c;border-bottom:1px solid var(--line)}
+.path{font-family:var(--mono);font-size:12.5px;word-break:break-all}
+.sum{color:var(--fg2);font-size:12px;margin-left:auto;text-align:right;max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-b{display:none;padding:14px}
+.card.open .card-b{display:block}
+.chip{font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--line);color:var(--fg2);white-space:nowrap}
+.chip.auth{border-color:#3a4a6b;color:#9db8ff}
+.chip.open{border-color:#1d5c3d;color:#5fd39a;background:#0f2419}
+.chip.role{border-color:#5c3d6b;color:#c79bf0}
+.chip.no{border-color:#5c262b;color:#ff9aa1}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}
+.req{color:var(--err);margin-left:3px}
+.hint{color:var(--fg3);font-size:11px;margin-top:3px}
+.sub{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--fg3);margin:16px 0 8px;font-weight:700;border-bottom:1px solid var(--line);padding-bottom:5px}
+.sub:first-child{margin-top:0}
+.cases{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.case{border:1px solid var(--line);background:var(--bg3);border-radius:20px;padding:4px 11px;cursor:pointer;font-size:11.5px}
+.case:hover{border-color:#3a4256}
+.case.sel{background:#23304d;border-color:var(--acc);color:#cfe0ff}
+.case .exp{color:var(--fg3);font-family:var(--mono);font-size:10px;margin-left:5px}
+.resp{margin-top:14px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#0c0e14}
+.resp-h{display:flex;align-items:center;gap:9px;padding:8px 11px;background:#12151d;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.st{font-family:var(--mono);font-weight:700;padding:2px 9px;border-radius:6px;font-size:12px}
+.st.s2{background:#12331f;color:#5fd39a}.st.s3{background:#3a2f0d;color:#f5c451}
+.st.s4,.st.s5{background:#3d1518;color:#ff8b93}
+.tabs{margin-left:auto;display:flex;gap:4px}
+.tab{font-size:11px;padding:3px 9px;border-radius:6px;cursor:pointer;color:var(--fg2)}
+.tab.sel{background:var(--bg3);color:var(--fg)}
+pre{margin:0;padding:11px;overflow:auto;max-height:480px;font-family:var(--mono);font-size:12px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.url{font-family:var(--mono);font-size:11.5px;color:var(--fg2);padding:7px 11px;border-bottom:1px solid var(--line);word-break:break-all;background:#0f1218}
+.k{color:#7ee0c0}.s{color:#ffcf8a}.n{color:#9db8ff}.b{color:#c79bf0}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:350px;background:var(--bg2);border-left:1px solid var(--line);transform:translateX(101%);transition:transform .2s;z-index:50;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.drawer-h{padding:11px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;font-weight:700}
+.drawer-b{padding:12px 14px;overflow:auto;flex:1}
+.var{display:grid;grid-template-columns:92px 1fr;gap:6px;align-items:center;margin-bottom:6px}
+.var .vk{font-family:var(--mono);font-size:11px;color:var(--purple)}
+.var input{padding:4px 7px;font-size:11.5px;font-family:var(--mono)}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th,.tbl td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl th{color:var(--fg3);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px}
+.tbl tr:hover td{background:#141824}
+.pass{color:var(--ok);font-weight:700}.fail{color:var(--err);font-weight:700}.skip{color:var(--fg3)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.modal.open{display:flex}
+.modal-c{background:var(--bg2);border:1px solid var(--line);border-radius:12px;max-width:1050px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal-h{padding:12px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.modal-b{padding:15px;overflow:auto}
+.prog{height:4px;background:var(--bg3);border-radius:4px;overflow:hidden;margin:10px 0}
+.prog i{display:block;height:100%;background:var(--acc);width:0;transition:width .2s}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--line);padding:9px 16px;border-radius:9px;z-index:99;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+.live{width:7px;height:7px;border-radius:50%;background:var(--fg3);display:inline-block}
+.live.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#2c3346;border-radius:6px}
+@media(max-width:920px){.app{grid-template-columns:1fr}aside{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">EDU GAME <span>API Test Console</span></div>
+    <div class="tb"><label>Base URL <span style="color:var(--fg3);text-transform:none">(không kèm /api)</span></label><input id="baseUrl" placeholder="http://localhost:5000" /></div>
+    <div class="tb tight"><label>Token <span class="live" id="live"></span></label><input id="token" placeholder="JWT — rỗng = không auth" /></div>
+    <div class="tb"><label>Đăng nhập nhanh</label>
+      <div class="row">
+        <button class="btn sm" data-login="teacher">teacher</button>
+        <button class="btn sm" data-login="admin">admin</button>
+        <button class="btn sm" data-login="student">student</button>
+        <button class="btn sm ghost" id="btnLogout" title="Xoá token">✕</button>
+      </div>
+    </div>
+    <div class="tb tight"><label>Chế độ token</label>
+      <select id="mode"><option value="auto">Auto</option><option value="on">Luôn gửi</option><option value="off">Không gửi</option></select>
+    </div>
+    <div class="grow"></div>
+    <button class="btn" id="btnVars">🧩 Biến <span id="varCount">0</span></button>
+    <button class="btn warn" id="btnSmoke">▶ Smoke test</button>
+    <button class="btn ghost" id="btnHealth">Health</button>
+  </header>
+  <aside>
+    <div style="margin-bottom:10px"><input id="search" placeholder="🔍 Tìm endpoint (path / mô tả)…" /></div>
+    <div id="nav"></div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<div class="drawer" id="drawer">
+  <div class="drawer-h">🧩 Biến dùng chung <span class="grow"></span><button class="btn sm" id="btnVarClear">Xoá hết</button><button class="btn sm" id="btnVarClose">✕</button></div>
+  <div class="drawer-b">
+    <p style="color:var(--fg2);font-size:12px;margin:0 0 10px">Dùng <code style="color:var(--purple)">{{tên}}</code> trong mọi ô nhập. Endpoint có khai báo <b>capture</b> sẽ tự điền biến từ response.</p>
+    <div id="vars"></div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-c">
+    <div class="modal-h"><b id="mTitle">Smoke test</b><span class="grow"></span><button class="btn sm" id="mClose">Đóng</button></div>
+    <div class="modal-b"><div class="prog"><i id="mProg"></i></div><div id="mBody"></div></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════ 0. TIỆN ÍCH ══════════════════ */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const LS={get(k,d){try{const v=localStorage.getItem('apitc:'+k);return v?JSON.parse(v):d}catch{return d}},
+          set(k,v){try{localStorage.setItem('apitc:'+k,JSON.stringify(v))}catch{}}};
+function toast(m,ms=1900){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),ms)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function getPath(o,e){return String(e).split('.').reduce((a,k)=>{const m=k.match(/^(\w+)\[(\d+)\]$/);return m?a?.[m[1]]?.[+m[2]]:a?.[k]},o)}
+
+/* ══════════════════ 1. CATALOG ENDPOINT ══════════════════
+   E(id, method, path, {auth, sum, path:[], query:[], body:[], cases:[]})
+   auth: none | any | student | teacher | admin
+   body field: {k, t, req, d, v}  t=text|number|password|bool|json|array|textarea|date|select
+   case: {n, expect:[...], auth, body, path, query, capture:{}, note, repeat}
+   ═════════════════════════════════════════════════════ */
+const E=(id,method,path,o={})=>({id,method,path,auth:'any',...o});
+const CATALOG = [
+/* ── SYSTEM ── */
+{g:'System',items:[
+ E('health','GET','/api/health',{auth:'none',sum:'Server còn sống (luôn 200)',
+   cases:[{n:'Bình thường',expect:[200]},{n:'503 khi DB chưa sẵn sàng',expect:[503],note:'Render cold start — thử lại sau vài giây'}]}),
+ E('stats','GET','/api/stats',{auth:'teacher',sum:'Thống kê tổng quan (teacher/admin)',
+   cases:[{n:'Teacher',expect:[200]},{n:'Không token',auth:'none',expect:[401]},{n:'Student bị chặn',auth:'student',expect:[403]}]}),
+]},
+/* ── AUTH ── */
+{g:'Auth · Coins · Stars · XP',items:[
+ E('auth.login','POST','/api/auth/login',{auth:'none',sum:'Đăng nhập → token',
+   bd:[{k:'identifier',t:'text',d:'username hoặc email (bỏ trống = dùng `username`)'},{k:'username',t:'text',v:'teacher'},{k:'password',t:'password',req:1,v:'123456'}],
+   cases:[
+     {n:'✔ Đúng',expect:[200],capture:{token:'data.token'}},
+     {n:'Sai mật khẩu',expect:[401],bd:{password:'sai-mat-khau'}},
+     {n:'Thiếu mật khẩu',expect:[400],bd:{password:undefined}},
+     {n:'User không tồn tại',expect:[401],bd:{username:'khong-co-that-aaa'}},
+     {n:'Đăng nhập bằng email',expect:[400],bd:{username:undefined,identifier:'khong-co@x.com'}},
+   ]}),
+ E('auth.register','POST','/api/auth/register',{auth:'none',sum:'Đăng ký (role luôn = student)',
+   bd:[{k:'username',t:'text',req:1,v:'hocsinh01'},{k:'password',t:'password',req:1,v:'123456'},{k:'name',t:'text',req:1,v:'Học Sinh 01'},{k:'email',t:'text',v:'hs01@example.com'}],
+   cases:[{n:'✔ Đăng ký mới',expect:[201]},{n:'Trùng username',expect:[409],bd:{username:'hocsinh01'}},
+          {n:'Mật khẩu < 6 ký tự',expect:[400],bd:{password:'123'}},{n:'Thiếu name',expect:[400],bd:{name:undefined}}]}),
+ E('auth.me','GET','/api/auth/me',{auth:'any',sum:'Hồ sơ tài khoản hiện tại',
+   cases:[{n:'✔ Có token',expect:[200]},{n:'Token sai',auth:'none',expect:[401]}]}),
+ E('auth.me.update','PUT','/api/auth/me',{auth:'any',sum:'Sửa hồ sơ (cần currentPassword khi đổi mật)',
+   bd:[{k:'name',t:'text',v:'Tên Mới'},{k:'email',t:'text'},{k:'password',t:'password'},{k:'currentPassword',t:'password'},{k:'avatarLoadout',t:'json',d:'vd {"hat":"hat_01"}'}],
+   cases:[{n:'✔ Đổi tên',expect:[200],bd:{name:'Tên Mới'}},
+          {n:'Đổi mật thiếu currentPassword',expect:[400],bd:{password:'matkhaumoi',currentPassword:undefined}},
+          {n:'Body rỗng',expect:[400],bd:{name:undefined,email:undefined,password:undefined}}]}),
+ E('auth.coins.get','GET','/api/auth/me/coins',{auth:'any',sum:'Đọc số coin',
+   cases:[{n:'✔ Có token',expect:[200]},{n:'Không token',auth:'none',expect:[401]}]}),
+ E('auth.coins.add','POST','/api/auth/me/coins',{auth:'any',sum:'Cộng / bớt coin',
+   bd:[{k:'amount',t:'number',req:1,v:50}],
+   cases:[{n:'✔ Cộng 50',expect:[200]},{n:'Bớt (âm)',expect:[200],bd:{amount:-10}},
+          {n:'Thiếu amount',expect:[400],bd:{amount:undefined}},{n:'amount sai kiểu',expect:[400],bd:{amount:'abc'}}]}),
+ E('auth.stars.get','GET','/api/auth/me/stars',{auth:'any',sum:'Đọc số sao'}),
+ E('auth.stars.add','POST','/api/auth/me/stars',{auth:'any',sum:'Cộng sao',
+   bd:[{k:'amount',t:'number',req:1,v:5}],
+   cases:[{n:'✔ Cộng 5',expect:[200]},{n:'Thiếu amount',expect:[400],bd:{amount:undefined}}]}),
+ E('auth.stars.exchange','POST','/api/auth/me/stars/exchange',{auth:'any',sum:'Đổi toàn bộ sao → coin (10 coin/sao)',
+   cases:[{n:'✔ Đủ sao',expect:[200]},{n:'Không còn sao → 400',expect:[400]}]}),
+ E('auth.xp','GET','/api/auth/me/xp',{auth:'any',sum:'★ XP / Level — read-only, không cộng XP từ client',
+   cases:[{n:'✔ Có token',expect:[200],expectFields:{data:['xp','level','xpIntoLevel','xpPerLevel']}},
+          {n:'Không token',auth:'none',expect:[401]}]}),
+]},
+/* ── USERS ── */
+{g:'Users',items:[
+ E('users.list','GET','/api/users',{auth:'teacher',sum:'Danh sách user (teacher/admin)',
+   cases:[{n:'✔ Teacher',expect:[200]},{n:'Không token',auth:'none',expect:[401]},{n:'Student bị chặn',auth:'student',expect:[403]}]}),
+ E('users.get','GET','/api/users/:id',{auth:'any',sum:'Chi tiết user (không giới hạn role)',
+   pp:[{k:'id',t:'text',req:1,v:'{{userId}}'}],
+   cases:[{n:'✔ User có thật',expect:[200]},{n:'Không tồn tại',expect:[404],pp:{id:'khong-co'}}]}),
+ E('users.search','GET','/api/users/search',{auth:'any',sum:'Tìm user (bỏ trừ chính mình, max 20)',
+   qp:[{k:'q',t:'text',req:1,v:'a'}],
+   cases:[{n:'✔ ≥ 2 ký tự',expect:[200]},{n:'q = 1 ký tự → []',expect:[200],qp:{q:'a'}},{n:'Thiếu q → []',expect:[200],qp:{q:undefined}}]}),
+ E('users.create','POST','/api/users',{auth:'teacher',sum:'Tạo user',
+   bd:[{k:'username',t:'text',req:1,v:'newuser01'},{k:'password',t:'password',req:1,v:'123456'},{k:'name',t:'text',req:1,v:'Người Dùng Mới'},{k:'email',t:'text',v:'new01@example.com'},{k:'role',t:'select',v:'student',options:['student','teacher','admin']}],
+   cases:[{n:'✔ Tạo student',expect:[201],capture:{userId:'data.id'}},{n:'Trùng username',expect:[400],bd:{username:'newuser01'}},
+          {n:'Mật khẩu < 6',expect:[400],bd:{password:'1'}},{n:'Tạo role admin (bị chặn)',expect:[403],bd:{role:'admin',username:'adminmoi01',email:undefined}}]}),
+ E('users.update','PATCH','/api/users/:id',{auth:'admin',sum:'Sửa user (chỉ admin)',
+   pp:[{k:'id',t:'text',req:1,v:'{{userId}}'}],
+   bd:[{k:'name',t:'text',v:'Tên Đã Sửa'},{k:'email',t:'text'},{k:'role',t:'select',v:'',options:['','student','teacher','admin']}],
+   cases:[{n:'✔ Admin sửa',expect:[200]},{n:'Teacher bị chặn',auth:'teacher',expect:[403]}]}),
+ E('users.role','PATCH','/api/users/:id/role',{auth:'admin',sum:'Đổi role',
+   pp:[{k:'id',t:'text',req:1,v:'{{userId}}'}],bd:[{k:'role',t:'select',req:1,v:'teacher',options:['student','teacher','admin']}],
+   cases:[{n:'✔ Đổi role',expect:[200]},{n:'Thiếu role',expect:[400],bd:{role:undefined}},{n:'Không đổi được user-001',expect:[400],pp:{id:'user-001'}}]}),
+ E('users.resetpw','PATCH','/api/users/:id/reset-password',{auth:'teacher',sum:'Reset mật khẩu',
+   pp:[{k:'id',t:'text',req:1,v:'{{userId}}'}],bd:[{k:'newPassword',t:'password',req:1,v:'123456'}],
+   cases:[{n:'✔ Reset',expect:[200]},{n:'Mật khẩu < 6',expect:[400],bd:{newPassword:'123'}}]}),
+ E('users.delete','DELETE','/api/users/:id',{auth:'teacher',sum:'Xoá user',
+   pp:[{k:'id',t:'text',req:1,v:''}],
+   cases:[{n:'✔ Xoá (tạo user nháp trước)',expect:[204]},{n:'Không xoá được user-001',expect:[400],pp:{id:'user-001'}},{n:'Không token',auth:'none',expect:[401]}]}),
+]},
+/* ── GAME PROGRESS ── */
+{g:'Users › Game Progress',items:[
+ E('gp.list','GET','/api/users/me/games',{auth:'any',sum:'Tiến độ game của tôi'}),
+ E('gp.get','GET','/api/users/me/games/:gameId',{auth:'any',sum:'Tiến độ 1 game (luôn 200, không 404)',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'}],
+   cases:[{n:'✔ Game có data',expect:[200]},{n:'Game chưa chơi → số 0',expect:[200],pp:{gameId:'khong-co-game'}}]}),
+ E('gp.upsert','PUT','/api/users/me/games/:gameId',{auth:'any',sum:'Cập nhật tiến độ',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'}],
+   bd:[{k:'level',t:'number',v:3},{k:'experience',t:'number',v:350},{k:'gamesPlayed',t:'number',v:7},{k:'progress',t:'number',v:0.5},{k:'gameName',t:'text',v:'Game Test'},{k:'loadout',t:'json',d:'object|null'}],
+   cases:[{n:'✔ Cập nhật',expect:[200]}]}),
+ E('gp.exp','POST','/api/users/me/games/:gameId/experience',{auth:'any',sum:'Cộng XP game',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'}],bd:[{k:'amount',t:'number',req:1,v:100}],
+   cases:[{n:'✔ Cộng 100',expect:[200]},{n:'Thiếu amount',expect:[400],bd:{amount:undefined}}]}),
+ E('gp.play','POST','/api/users/me/games/:gameId/play',{auth:'any',sum:'Tăng số lượt chơi',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'}]}),
+ E('gp.inv.add','POST','/api/users/me/games/:gameId/inventory',{auth:'any',sum:'Thêm vật phẩm',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'}],bd:[{k:'itemId',t:'text',req:1,v:'item_apple'},{k:'quantity',t:'number',v:1}],
+   cases:[{n:'✔ Thêm',expect:[200]},{n:'Thiếu itemId',expect:[400],bd:{itemId:undefined}}]}),
+ E('gp.inv.del','DELETE','/api/users/me/games/:gameId/inventory/:itemId',{auth:'any',sum:'Bỏ vật phẩm',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'},{k:'itemId',t:'text',req:1,v:'item_apple'}],qp:[{k:'quantity',t:'number',v:1}],
+   cases:[{n:'✔ Bỏ có sẵn',expect:[200]},{n:'Item không có',expect:[404],pp:{itemId:'khong-co'}}]}),
+ E('gp.admin.list','GET','/api/users/game-progress',{auth:'teacher',sum:'Toàn bộ tiến độ (teacher/admin)',
+   cases:[{n:'✔ Teacher',expect:[200]},{n:'Student bị chặn',auth:'student',expect:[403]}]}),
+ E('gp.admin.put','PUT','/api/users/game-progress/:id',{auth:'teacher',sum:'Sửa tiến độ (id = Mongo _id, KHÔNG phải user id)',
+   pp:[{k:'id',t:'text',req:1,v:''}],bd:[{k:'level',t:'number',v:9},{k:'experience',t:'number',v:9999}],
+   cases:[{n:'✔ Sửa',expect:[200]},{n:'Không tồn tại',expect:[404],pp:{id:'khong-co'}}]}),
+ E('gp.admin.del','DELETE','/api/users/game-progress/:id',{auth:'teacher',sum:'Xoá tiến độ',
+   pp:[{k:'id',t:'text',req:1,v:''}]}),
+]},
+/* ── CLASSES ── */
+{g:'Classes',items:[
+ E('cls.list','GET','/api/classes',{auth:'any',sum:'Lớp của tôi (admin thấy tất cả)'}),
+ E('cls.create','POST','/api/classes',{auth:'teacher',sum:'Tạo lớp (tự gán giáo viên)',
+   bd:[{k:'name',t:'text',req:1,v:'Lớp 3A'},{k:'code',t:'text',req:1,v:'{{classCode}}'},{k:'schoolYear',t:'text',v:'2025-2026'}],
+   cases:[{n:'✔ Tạo',expect:[201],capture:{classId:'data.id',classCode:'data.code'}},
+          {n:'Trùng code',expect:[400],bd:{code:'{{classCode}}'}},{n:'Thiếu name',expect:[400],bd:{name:undefined}},
+          {n:'Thiếu code',expect:[400],bd:{code:undefined,name:'Lớp Không Mã'}}]}),
+ E('cls.get','GET','/api/classes/:id',{auth:'any',sum:'Chi tiết lớp (⚠ không kiểm tra role)',
+   pp:[{k:'id',t:'text',req:1,v:'{{classId}}'}],
+   cases:[{n:'✔ Có token',expect:[200]},{n:'Không token',expect:[401]},{n:'Sai id',expect:[404],pp:{id:'sai-id'}}]}),
+ E('cls.students','GET','/api/classes/:id/students',{auth:'any',sum:'Học sinh lớp (⚠ không kiểm tra role)',
+   pp:[{k:'id',t:'text',req:1,v:'{{classId}}'}],
+   cases:[{n:'✔ Có token',expect:[200]},{n:'Không token',expect:[401]}]}),
+ E('cls.join','POST','/api/classes/join',{auth:'any',sum:'Học sinh vào lớp bằng mã',
+   bd:[{k:'code',t:'text',req:1,v:'{{classCode}}'}],
+   cases:[{n:'✔ Vào lớp',expect:[200]},{n:'Mã sai',expect:[404],bd:{code:'000000'}},{n:'Thiếu code',expect:[400],bd:{code:undefined}}]}),
+ E('cls.update','PUT','/api/classes/:id',{auth:'teacher',sum:'Sửa lớp (toàn bộ body được $set)',
+   pp:[{k:'id',t:'text',req:1,v:'{{classId}}'}],
+   bd:[{k:'name',t:'text',v:'Lớp 3A (đổi tên)'},{k:'code',t:'text',v:'{{classCode}}'},{k:'schoolYear',t:'text',v:'2025-2026'},{k:'status',t:'select',v:'ACTIVE',options:['ACTIVE','CLOSED']}],
+   cases:[{n:'✔ Sửa',expect:[200]},{n:'Không token',auth:'none',expect:[401]}]}),
+ E('cls.delete','DELETE','/api/classes/:id',{auth:'teacher',sum:'Xoá lớp',
+   pp:[{k:'id',t:'text',req:1,v:''}],note:'Nên tạo lớp nháp rồi xoá để không mất dữ liệu thật'}),
+]},
+/* ── GAMES ── */
+{g:'Games',items:[
+ E('games.list','GET','/api/games',{auth:'none',sum:'Danh sách game (công khai)',
+   qp:[{k:'status',t:'select',v:'published',options:['','published','draft','all']},{k:'subject',t:'text'},{k:'templateId',t:'text'},{k:'category',t:'text'},{k:'query',t:'text'},{k:'from',t:'number',v:1},{k:'to',t:'number',v:10}],
+   cases:[{n:'✔ Published',expect:[200]},{n:'Draft',expect:[200],qp:{status:'draft'}},{n:'"all" = không lọc',expect:[200],qp:{status:'all'}},{n:'Tìm kiếm',expect:[200],qp:{query:'a'}}]}),
+ E('games.get','GET','/api/games/:id',{auth:'none',sum:'Chi tiết game (công khai)',
+   pp:[{k:'id',t:'text',req:1,v:'{{gameId}}'}],
+   cases:[{n:'✔ Game có thật',expect:[200]},{n:'ObjectId sai → 404',expect:[404],pp:{id:'abc'}}]}),
+ E('games.bycode','GET','/api/games/code/:code',{auth:'none',sum:'Tra theo mã (chỉ game published)',
+   pp:[{k:'code',t:'text',req:1,v:'{{gameCode}}'}],
+   cases:[{n:'✔ Đúng mã',expect:[200]},{n:'Sai mã',expect:[404],pp:{code:'ZZZZZZ'}}]}),
+ E('games.create','POST','/api/games',{auth:'teacher',sum:'Tạo game',
+   bd:[{k:'name',t:'text',req:1,v:'Game API Test'},{k:'description',t:'text',v:'Tạo từ API Test Console'},{k:'subject',t:'text',v:'Toán'},{k:'topic',t:'text',v:'Ôn tập'},{k:'language',t:'text',v:'vi'},{k:'templateId',t:'text',v:'{{templateId}}'},{k:'type',t:'select',v:'play-to-learn',options:['play-to-learn','play-to-win']},{k:'status',t:'select',v:'draft',options:['draft','published']},{k:'playMode',t:'select',v:'solo',options:['solo','classroom']},{k:'questionsCount',t:'number',v:0},{k:'config',t:'json',d:'object|null — vd {"key":"quiz","schemaVersion":2,"values":{"timeLimit":30}}'}],
+   cases:[{n:'✔ Tạo draft',expect:[201],capture:{gameId:'data._id',gameCode:'data.code'}},
+          {n:'Thiếu name → tự đặt "Game mới"',expect:[201],bd:{name:undefined},note:'Server KHÔNG validate name'},
+          {n:'type sai giá trị → vẫn insert',expect:[201],bd:{type:'abc'},note:'Mongo enum không được validate'},
+          {n:'playMode sai → mặc định solo',expect:[201],bd:{playMode:'xyz'}},
+          {n:'Không token',auth:'none',expect:[401]}]}),
+ E('games.update','PUT','/api/games/:id',{auth:'teacher',sum:'Sửa game (body gì $set nấy)',
+   pp:[{k:'id',t:'text',req:1,v:'{{gameId}}'}],
+   bd:[{k:'name',t:'text',v:'Game API Test (đã sửa)'},{k:'description',t:'text'},{k:'status',t:'select',v:'published',options:['draft','published']}],
+   cases:[{n:'✔ Sửa',expect:[200]},{n:'⚠ ID sai → 500 (không phải 404)',expect:[500],pp:{id:'khong-ton-tai'}}]}),
+ E('games.config.get','GET','/api/games/:id/config',{auth:'none',sum:'Config game (công khai — học sinh cần để chơi)',
+   pp:[{k:'id',t:'text',req:1,v:'{{gameId}}'}],
+   cases:[{n:'✔ Có config',expect:[200]},{n:'Không config → config:null',expect:[200]}]}),
+ E('games.config.put','PUT','/api/games/:id/config',{auth:'teacher',sum:'Gán config cho game',
+   pp:[{k:'id',t:'text',req:1,v:'{{gameId}}'}],
+   bd:[{k:'config',t:'json',req:1,v:'{"key":"quiz","schemaVersion":2,"values":{"timeLimit":30,"lives":3}}'}],
+   cases:[{n:'✔ Gán config',expect:[200]},{n:'Thiếu config',expect:[400],bd:{config:undefined}},{n:'config rỗng → null',expect:[200],bd:{config:''}}]}),
+ E('games.duplicate','POST','/api/games/:id/duplicate',{auth:'teacher',sum:'Nhân bản game + clone câu hỏi',
+   pp:[{k:'id',t:'text',req:1,v:'{{gameId}}'}],
+   cases:[{n:'✔ Nhân bản',expect:[201],capture:{gameId2:'data._id'}},{n:'ID sai → 404',expect:[404],pp:{id:'khong-co'}}]}),
+ E('games.delete','DELETE','/api/games/:id',{auth:'teacher',sum:'Xoá game + câu hỏi + kết quả',
+   pp:[{k:'id',t:'text',req:1,v:'{{gameId2}}'}],
+   cases:[{n:'✔ Xoá bản nhân bản',expect:[204]},{n:'Không token',auth:'none',expect:[401]}]}),
+ E('games.deleteall','DELETE','/api/games',{auth:'teacher',sum:'⚠ XOÁ TOÀN BỘ games + questions + results',danger:1}),
+ E('games.answer','POST','/api/games/answer',{auth:'none',sum:'⚠ Chấm 1 câu — KHÔNG cần auth, trả cả correctAnswer',
+   bd:[{k:'questionId',t:'text',req:1,v:'{{questionId}}'},{k:'answerId',t:'text',req:1,v:'a'}],
+   cases:[{n:'✔ Trả lời',expect:[200]},{n:'Thiếu answerId',expect:[400],bd:{answerId:undefined}},{n:'Câu hỏi sai',expect:[404],bd:{questionId:'khong-co'}}]}),
+]},
+/* ── TEMPLATE / CATEGORY / SUBJECT ── */
+{g:'Templates · Categories · Subjects',items:[
+ E('tpl.list','GET','/api/templates',{auth:'none',sum:'Danh sách template (công khai)',
+   qp:[{k:'keyword',t:'text',d:'chỉ echo vào pagination, KHÔNG lọc'}]}),
+ E('tpl.get','GET','/api/templates/:id',{auth:'none',sum:'Chi tiết template + htmlTemplate',
+   pp:[{k:'id',t:'text',req:1,v:'{{templateId}}'}],
+   cases:[{n:'✔ Template có thật',expect:[200],capture:{templateId:'data._id'}},{n:'ID sai → 404',expect:[404],pp:{id:'abc'}}]}),
+ E('tpl.slug','GET','/api/templates/slug/:slug',{auth:'none',sum:'Tra theo slug (⚠ serializer làm rơi field slug)',
+   pp:[{k:'slug',t:'text',req:1,v:'quiz'}]}),
+ E('tpl.create','POST','/api/templates',{auth:'teacher',sum:'Tạo template (version luôn = 1)',
+   bd:[{k:'name',t:'text',v:'Template Test'},{k:'description',t:'text',v:'Tạo từ console'},{k:'type',t:'text',v:'quiz'},{k:'category',t:'text',v:'quiz'},{k:'icon',t:'text',v:'🎲'},{k:'ring',t:'text',v:'#5b8cff'},{k:'status',t:'select',v:'draft',options:['published','draft','inactive']},{k:'playMode',t:'select',v:'solo',options:['solo','classroom']},{k:'htmlTemplate',t:'textarea',v:'<!DOCTYPE html><html><head><style>body{font-family:sans-serif;padding:24px;background:#fff}</style></head><body><h1 id="t">Game tu API</h1><p id="q"></p><button id="b">Tra loi A</button><pre id="r"></pre><script>window.addEventListener("message",function(e){var d=e.data;if(!d)return;if(d.type==="init"){t.textContent="Game: "+d.gameName;q.textContent=(d.questions||[]).length+" cau hoi"}if(d.type==="answers-result"){r.textContent=JSON.stringify(d.data)}});function t(){return document.getElementById("t")}function q(){return document.getElementById("q")}function r(){return document.getElementById("r")}document.getElementById("b").onclick=function(){if(window.EG_ANSWER)EG_ANSWER.answer("Q_DEMO","a")};<\/script></body></html>'}],
+   cases:[{n:'✔ Tạo template',expect:[201],capture:{templateId:'data._id'}},{n:'Status sai → vẫn tạo',expect:[201],bd:{status:'abc'}}]}),
+ E('tpl.update','PUT','/api/templates/:id',{auth:'teacher',sum:'Sửa template (⚠ ID sai → 500)',
+   pp:[{k:'id',t:'text',req:1,v:'{{templateId}}'}],
+   bd:[{k:'name',t:'text',v:'Template Test (đã sửa)'},{k:'htmlTemplate',t:'textarea',v:'<h1>HTML mới</h1>'},{k:'status',t:'select',v:'published',options:['published','draft','inactive']}],
+   cases:[{n:'✔ Sửa',expect:[200]},{n:'⚠ ID sai → 500',expect:[500],pp:{id:'khong-co'}}]}),
+ E('tpl.delete','DELETE','/api/templates/:id',{auth:'teacher',sum:'Xoá template (200 deactivated nếu còn game dùng, 204 nếu sạch)',
+   pp:[{k:'id',t:'text',req:1,v:''}],
+   cases:[{n:'✔ Xoá (chưa gắn game)',expect:[204],pp:{id:'{{templateId}}'}},{n:'Template đang được game dùng → 200',expect:[200]},{n:'ID sai → 404',expect:[404],pp:{id:'khong-co'}}]}),
+ E('tpl.deleteall','DELETE','/api/templates',{auth:'teacher',sum:'⚠ XOÁ TOÀN BỘ templates',danger:1}),
+ E('cat.list','GET','/api/categories',{auth:'none',sum:'Danh sách category'}),
+ E('cat.create','POST','/api/categories',{auth:'teacher',sum:'Tạo category (⚠ trùng id → 500)',
+   bd:[{k:'id',t:'text',v:'cat_test_1'},{k:'label',t:'text',v:'Toán API Test'}],
+   cases:[{n:'✔ Tạo',expect:[201]},{n:'⚠ Trùng id → 500',expect:[500],bd:{id:'cat_test_1'}},{n:'Bỏ trống id → tự sinh',expect:[201],bd:{id:undefined}}]}),
+ E('cat.update','PUT','/api/categories/:id',{auth:'teacher',sum:'Sửa category (chỉ nhận field `label`)',
+   pp:[{k:'id',t:'text',req:1,v:'cat_test_1'}],bd:[{k:'label',t:'text',v:'Toán (đã sửa)'},{k:'id',t:'text',v:'bị-bỏ-qua'}],
+   cases:[{n:'✔ Sửa',expect:[200]},{n:'⚠ ID sai → 500',expect:[500],pp:{id:'khong-co'}}]}),
+ E('cat.delete','DELETE','/api/categories/:id',{auth:'teacher',sum:'Xoá category',
+   pp:[{k:'id',t:'text',req:1,v:'cat_test_1'}],
+   cases:[{n:'✔ Xoá',expect:[204]},{n:'⚠ ID sai → 500',expect:[500],pp:{id:'khong-co'}}]}),
+ E('cat.deleteall','DELETE','/api/categories',{auth:'teacher',sum:'⚠ XOÁ TOÀN BỘ categories',danger:1}),
+ E('subj.list','GET','/api/subjects',{auth:'none',sum:'Danh sách môn học'}),
+ E('subj.create','POST','/api/subjects',{auth:'teacher',sum:'Thêm môn (trả về TOÀN BỘ danh sách)',
+   bd:[{k:'name',t:'text',req:1,v:'Toán API'}],
+   cases:[{n:'✔ Thêm',expect:[201]},{n:'⚠ Trùng → 500',expect:[500],bd:{name:'Toán API'}}]}),
+ E('subj.update','PUT','/api/subjects/:name',{auth:'teacher',sum:'Đổi tên môn',
+   pp:[{k:'name',t:'text',req:1,v:'Toán API'}],bd:[{k:'name',t:'text',req:1,v:'Toán Đổi Tên'}],
+   cases:[{n:'✔ Đổi tên',expect:[200]},{n:'⚠ Không tồn tại → 500',expect:[500],pp:{name:'khong-co'}}]}),
+ E('subj.delete','DELETE','/api/subjects/:name',{auth:'teacher',sum:'Xoá môn',
+   pp:[{k:'name',t:'text',v:'Toán Đổi Tên'}],
+   cases:[{n:'✔ Xoá',expect:[200]},{n:'⚠ Không tồn tại → 500',expect:[500],pp:{name:'khong-co'}}]}),
+]},
+/* ── QUESTIONS ── */
+{g:'Questions · Question Banks',items:[
+ E('q.list','GET','/api/questions',{auth:'none',sum:'Tất cả câu hỏi (limit 500). correctAnswer CHỈ trả cho teacher/admin',
+   cases:[{n:'✔ Khách — KHÔNG có correctAnswer',auth:'none',expect:[200],expectAbsent:['correctAnswer']},
+          {n:'✔ Teacher — CÓ correctAnswer',auth:'teacher',expect:[200],expectPresent:['correctAnswer']}]}),
+ E('q.bygame','GET','/api/questions/game/:gameId',{auth:'none',sum:'Câu hỏi của 1 game',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'}],qp:[{k:'inputMode',t:'text'}]}),
+ E('q.put','PUT','/api/questions/game/:gameId',{auth:'teacher',sum:'⚠ THAY THẾ toàn bộ câu hỏi của game (body phải là mảng)',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'}],
+   bd:[{k:'(mảng câu hỏi)',t:'json',req:1,v:'[{"content":"5 + 5 = ?","options":[{"id":"a","content":"9"},{"id":"b","content":"10"}],"correctAnswer":"b","timeLimit":20,"points":10},{"content":"10 × 3 = ?","options":[{"id":"a","content":"30"},{"id":"b","content":"13"}],"correctAnswer":"a","timeLimit":15,"points":20}]'}],
+   cases:[{n:'✔ Lưu 2 câu',expect:[200],capture:{questionId:'data[0].id'}},
+          {n:'⚠ Body không phải mảng',expect:[400],bd:{'(mảng câu hỏi)':'{"content":"x"}'}},
+          {n:'⚠ Mảng rỗng → XOÁ HẾT câu hỏi game',expect:[200],bd:{'(mảng câu hỏi)':'[]'},danger:1},
+          {n:'Không token',auth:'none',expect:[401]}]}),
+ E('q.patch','PATCH','/api/questions/game/:gameId/:questionId',{auth:'teacher',sum:'Sửa 1 câu',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'},{k:'questionId',t:'text',req:1,v:'{{questionId}}'}],
+   bd:[{k:'content',t:'text',v:'5 + 5 = ? (đã sửa)'},{k:'correctAnswer',t:'text',v:'b'},{k:'points',t:'number',v:15},{k:'timeLimit',t:'number',v:25},{k:'explanation',t:'text',v:'5 cộng 5 bằng 10'},{k:'questionType',t:'select',v:'',options:['','multiple_choice','fill-in','text']},{k:'gameData',t:'json',d:'★ field mở rộng (§14) — vd {"items":[],"targets":[],"mappings":[]}'}],
+   cases:[{n:'✔ Sửa',expect:[200]},{n:'Thêm gameData (mở rộng)',expect:[200],bd:{gameData:'{"items":["a","b"],"targets":[1,2],"mappings":{"a":1}}'}},{n:'Câu hỏi sai → 404',expect:[404],pp:{questionId:'khong-co'}}]}),
+ E('q.del','DELETE','/api/questions/game/:gameId/:questionId',{auth:'teacher',sum:'Xoá 1 câu',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'},{k:'questionId',t:'text',req:1,v:'{{questionId}}'}],
+   cases:[{n:'✔ Xoá',expect:[200]},{n:'Câu hỏi sai → 404',expect:[404],pp:{questionId:'khong-co'}}]}),
+ E('q.delall','DELETE','/api/questions',{auth:'teacher',sum:'⚠ XOÁ TOÀN BỘ câu hỏi',danger:1}),
+ E('qb.list','GET','/api/question-banks',{auth:'none',sum:'Ngân hàng câu hỏi (⚠ công khai, CÓ correctAnswer)',
+   qp:[{k:'search',t:'text'},{k:'subject',t:'text'},{k:'category',t:'text'},{k:'limit',t:'number',v:500}]}),
+ E('qb.get','GET','/api/question-banks/:id',{auth:'none',sum:'Chi tiết bộ (id là string id, KHÔNG phải ObjectId)',
+   pp:[{k:'id',t:'text',req:1,v:'{{bankId}}'}],
+   cases:[{n:'✔ Có thật',expect:[200]},{n:'Không tồn tại → 404',expect:[404],pp:{id:'khong-co'}}]}),
+ E('qb.stats','GET','/api/question-banks/stats',{auth:'teacher',sum:'Thống kê ngân hàng câu hỏi'}),
+ E('qb.create','POST','/api/question-banks',{auth:'teacher',sum:'Tạo bộ câu hỏi (⚠ trả 200, KHÔNG phải 201)',
+   bd:[{k:'id',t:'text'},{k:'content',t:'text',req:1,v:'Câu hỏi từ API Test'},{k:'options',t:'json',req:1,v:'[{"id":"a","content":"Đáp án A"},{"id":"b","content":"Đáp án B"}]'},{k:'correctAnswer',t:'text',v:'a'},{k:'timeLimit',t:'number',v:15},{k:'points',t:'number',v:100},{k:'subject',t:'text',v:'Toán'},{k:'category',t:'text',v:'quiz'},{k:'difficulty',t:'select',v:'medium',options:['easy','medium','hard']},{k:'tags',t:'array',v:'[]'}],
+   cases:[{n:'✔ Tạo',expect:[200],capture:{bankId:'data.id'}},{n:'⚠ Thiếu content → 500',expect:[500],bd:{content:undefined}},{n:'⚠ options < 2 phần tử → 500',expect:[500],bd:{options:'[{"id":"a","content":"x"}]'}},{n:'Không token',auth:'none',expect:[401]}]}),
+ E('qb.update','PUT','/api/question-banks/:id',{auth:'teacher',sum:'Sửa bộ (lan toả sang câu hỏi game đã link)',
+   pp:[{k:'id',t:'text',req:1,v:'{{bankId}}'}],
+   bd:[{k:'content',t:'text',v:'Câu hỏi (đã sửa)'},{k:'correctAnswer',t:'text',v:'b'},{k:'points',t:'number',v:120}],
+   cases:[{n:'✔ Sửa',expect:[200]},{n:'ID sai → 404',expect:[404],pp:{id:'khong-co'}}]}),
+ E('qb.link','POST','/api/question-banks/:bankId/link/:gameId',{auth:'teacher',sum:'Link 1 bộ → game',
+   pp:[{k:'bankId',t:'text',req:1,v:'{{bankId}}'},{k:'gameId',t:'text',req:1,v:'{{gameId}}'}],
+   cases:[{n:'✔ Link',expect:[200]},{n:'⚠ Bank sai → 500',expect:[500],pp:{bankId:'khong-co'}}]}),
+ E('qb.bulk','POST','/api/question-banks/bulk-link',{auth:'teacher',sum:'Link nhiều bộ → game',
+   bd:[{k:'bankIds',t:'array',req:1,v:'["{{bankId}}"]'},{k:'gameId',t:'text',req:1,v:'{{gameId}}'}],
+   cases:[{n:'✔ Bulk link',expect:[200]},{n:'Thiếu gameId',expect:[400],bd:{gameId:undefined}},{n:'Thiếu bankIds',expect:[400],bd:{bankIds:undefined}}]}),
+ E('qb.sync','POST','/api/question-banks/:id/sync',{auth:'teacher',sum:'Đồng bộ bộ → câu hỏi game',
+   pp:[{k:'id',t:'text',req:1,v:'{{bankId}}'}],
+   cases:[{n:'✔ Sync',expect:[200]},{n:'ID sai → 404',expect:[404],pp:{id:'khong-co'}}]}),
+ E('qb.del','DELETE','/api/question-banks/:id',{auth:'teacher',sum:'Xoá bộ',
+   pp:[{k:'id',t:'text',req:1,v:'{{bankId}}'}]}),
+ E('qb.delall','DELETE','/api/question-banks',{auth:'teacher',sum:'⚠ XOÁ TOÀN BỘ bộ câu hỏi',danger:1}),
+]},
+/* ── ASSIGNMENTS ── */
+{g:'Assignments · Submissions',items:[
+ E('as.create','POST','/api/assignments',{auth:'teacher',sum:'Tạo bài giao + notification cho cả lớp',
+   bd:[{k:'title',t:'text',req:1,v:'Bài API Test'},{k:'classId',t:'text',req:1,v:'{{classId}}'},{k:'gameId',t:'text',v:'{{gameId}}'},{k:'description',t:'text',v:'Tạo từ API Test Console'},{k:'questionIds',t:'array',v:'["{{questionId}}"]'},{k:'isExam',t:'bool',v:false},{k:'examDuration',t:'number',v:30},{k:'deadline',t:'date',d:'để trống = không hạn'},{k:'maxAttempts',t:'number',v:1}],
+   cases:[{n:'✔ Tạo bài thường',expect:[201],capture:{assignmentId:'data.id',assignmentCode:'data.code'}},
+          {n:'✔ Tạo bài thi có deadline',expect:[201],bd:{isExam:true,examDuration:15,deadline:'{{deadline}}'}},
+          {n:'Thiếu title',expect:[400],bd:{title:undefined}},
+          {n:'Thiếu classId',expect:[400],bd:{classId:undefined}},
+          {n:'⚠ Không câu hỏi lẫn game',expect:[400],bd:{questionIds:'[]',gameId:undefined}}]}),
+ E('as.list','GET','/api/assignments',{auth:'any',sum:'Teacher: của tôi · Student: lớp của tôi (ACTIVE)',
+   qp:[{k:'classId',t:'text'},{k:'status',t:'text'}]}),
+ E('as.mycompleted','GET','/api/assignments/my-completed',{auth:'any',sum:'Bài đã nộp (kèm điểm tốt nhất)'}),
+ E('as.resolve','GET','/api/assignments/resolve/:codeOrId',{auth:'none',sum:'Tra bài bằng mã 6 số (công khai) — ★ trả kèm gameId',
+   pp:[{k:'codeOrId',t:'text',req:1,v:'{{assignmentCode}}'}],
+   cases:[{n:'✔ Mã đúng',expect:[200],expectFields:{data:['gameId','templateId','questionIds','questionCount','maxAttempts']}},
+          {n:'Mã sai → 404',expect:[404],pp:{codeOrId:'000000'}}]}),
+ E('as.get','GET','/api/assignments/:id',{auth:'any',sum:'Chi tiết bài (cần token)',
+   pp:[{k:'id',t:'text',req:1,v:'{{assignmentId}}'}],
+   cases:[{n:'✔ Có token',expect:[200]},{n:'Không token',auth:'none',expect:[401]},{n:'ID sai → 404',expect:[404],pp:{id:'sai'}}]}),
+ E('as.public','GET','/api/assignments/:id/public',{auth:'none',sum:'Bản rút gọn (công khai)',
+   pp:[{k:'id',t:'text',req:1,v:'{{assignmentId}}'}],
+   cases:[{n:'✔ Bài đang mở',expect:[200]},{n:'⚠ Bài đã đóng → 400',expect:[400]}]}),
+ E('as.join','POST','/api/assignments/join',{auth:'any',sum:'Học sinh nhập mã bài',
+   bd:[{k:'code',t:'text',req:1,v:'{{assignmentCode}}'}],
+   cases:[{n:'✔ Mã đúng',expect:[200]},{n:'Mã sai',expect:[404],bd:{code:'000000'}},{n:'Thiếu code',expect:[400],bd:{code:undefined}}]}),
+ E('as.start','POST','/api/assignments/:id/start',{auth:'none',sum:'Bắt đầu làm (token HOẶC guestName). Exam trả kèm remainingTime',
+   pp:[{k:'id',t:'text',req:1,v:'{{assignmentId}}'}],bd:[{k:'guestName',t:'text',d:'chỉ dùng khi không có token'}],
+   cases:[{n:'✔ Học sinh có token',auth:'student',expect:[200],capture:{submissionId:'data.id'}},
+          {n:'✔ Khách có guestName',auth:'none',expect:[200],bd:{guestName:'KhachAo'}},
+          {n:'⚠ Không token, không guestName',auth:'none',expect:[400],bd:{guestName:undefined}},
+          {n:'ID sai → 404',expect:[404],pp:{id:'khong-co'}}]}),
+ E('as.submit','POST','/api/assignments/:id/submit',{auth:'none',sum:'Nộp bài — server chấm. answers (chuẩn) hoặc gameResult (game tự chấm)',
+   pp:[{k:'id',t:'text',req:1,v:'{{assignmentId}}'}],
+   bd:[{k:'submissionId',t:'text',req:1,v:'{{submissionId}}'},{k:'answers',t:'array',v:'[{"questionId":"{{questionId}}","value":"a"}]'},{k:'guestName',t:'text'},{k:'gameResult',t:'json',d:'object|null — chỉ dùng khi answers RỖNG: {"correct":2,"wrong":1}'}],
+   cases:[{n:'✔ Nộp có answers (server chấm thật)',expect:[200],note:'Phải start() trước'},
+          {n:'✔ Game tự chấm (gameResult)',expect:[200],bd:{answers:'[]',gameResult:'{"correct":2,"wrong":1}'}},
+          {n:'⚠ Nộp lần 2 → đã nộp',expect:[400]},
+          {n:'Thiếu submissionId',expect:[400],bd:{submissionId:undefined}},
+          {n:'⚠ Submission của người khác',expect:[400],bd:{submissionId:'sub-cua-nguoi-khac'}},
+          {n:'Không token lẫn guestName',auth:'none',expect:[400],bd:{guestName:undefined}}]}),
+ E('as.result','GET','/api/assignments/:id/result',{auth:'none',sum:'Xem kết quả. ⚠ admin=true LEAK đáp án, KHÔNG kiểm tra role',
+   pp:[{k:'id',t:'text',req:1,v:'{{assignmentId}}'}],
+   qp:[{k:'guestName',t:'text'},{k:'admin',t:'select',v:'',options:['','true']},{k:'final',t:'select',v:'',options:['','true']},{k:'correctShow',t:'select',v:'',options:['','true']}],
+   cases:[{n:'✔ Bình thường (ẩn đáp án)',expect:[200]},
+          {n:'⚠ admin=true → lộ đáp án (không cần quyền)',expect:[200],qp:{admin:'true'}},
+          {n:'final + correctShow',expect:[200],qp:{final:'true',correctShow:'true'}},
+          {n:'Chưa có bài nộp → 404',expect:[404],qp:{guestName:'khong-co-nguoi-nao'}},
+          {n:'Không định danh → 400',auth:'none',expect:[400],qp:{guestName:undefined}}]}),
+ E('as.stats','GET','/api/assignments/:id/stats',{auth:'teacher',sum:'TB / cao nhất / thấp nhất (teacher)',
+   pp:[{k:'id',t:'text',req:1,v:'{{assignmentId}}'}],
+   cases:[{n:'✔ Teacher',expect:[200]},{n:'Student bị chặn',auth:'student',expect:[403]},{n:'Không token',auth:'none',expect:[401]}]}),
+ E('as.subs','GET','/api/assignments/:id/submissions',{auth:'teacher',sum:'Danh sách bài nộp (teacher)',
+   pp:[{k:'id',t:'text',req:1,v:'{{assignmentId}}'}],
+   cases:[{n:'✔ Teacher',expect:[200]},{n:'Student bị chặn',auth:'student',expect:[403]}]}),
+ E('as.update','PUT','/api/assignments/:id',{auth:'teacher',sum:'Sửa bài (chỉ khi còn ACTIVE)',
+   pp:[{k:'id',t:'text',req:1,v:'{{assignmentId}}'}],
+   bd:[{k:'title',t:'text',v:'Bài API Test (đã sửa)'},{k:'description',t:'text'},{k:'questionIds',t:'array',v:'["{{questionId}}"]'},{k:'deadline',t:'date'},{k:'maxAttempts',t:'number',v:2},{k:'isExam',t:'bool',v:false},{k:'examDuration',t:'number',v:0}],
+   cases:[{n:'✔ Sửa bài đang mở',expect:[200]},{n:'⚠ Sửa bài đã đóng → 400',expect:[400]},{n:'ID sai → 404',expect:[404],pp:{id:'khong-co'}}]}),
+ E('as.close','PUT','/api/assignments/:id/close',{auth:'teacher',sum:'Đóng bài (sau đó không sửa được)',
+   pp:[{k:'id',t:'text',req:1,v:''}],
+   cases:[{n:'✔ Đóng',expect:[200]},{n:'Đóng lại bài đã đóng',expect:[200]}]}),
+ E('as.delete','DELETE','/api/assignments/:id',{auth:'teacher',sum:'Xoá bài + toàn bộ submissions',
+   pp:[{k:'id',t:'text',req:1,v:''}]}),
+]},
+/* ── GAME PLAYS ★ ── */
+{g:'Game Plays (XP · Coin · Chống spoof)',items:[
+ E('gp.complete','POST','/api/game-plays/complete',{auth:'any',sum:'★ Chốt ván chơi — SERVER CHẤM từ answers, BỎ QUA clientScore',
+   bd:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'},{k:'playerName',t:'text',v:'Học Sinh'},{k:'playId',t:'text',v:'{{playId}}',d:'★ khóa idempotency — gửi lại cùng playId sẽ KHÔNG cộng XP 2 lần'},{k:'answers',t:'array',v:'[{"questionId":"{{questionId}}","value":"a","timeSpent":5}]'},{k:'questionIds',t:'array',v:'[]'},{k:'clientScore',t:'number',v:999999,d:'★ BỊ BỎ QUA khi có câu hỏi — dùng để test chống spoof'},{k:'timeUsed',t:'number',v:60},{k:'gameType',t:'select',v:'play-to-learn',options:['play-to-learn','play-to-win']},{k:'playMode',t:'select',v:'solo',options:['solo','classroom','multiplayer','assignment']}],
+   cases:[
+     {n:'✔ Đúng 1 câu → verified + XP',expect:[201],expectFields:{data:['id','gameId','score','correctAnswers','totalQuestions','accuracy','xpGained','verified','profile']}},
+     {n:'✔ Gửi lại cùng playId → replayed',expect:[200],expectFields:{data:['replayed']}},
+     {n:'✔ playId mới → XP lại tăng',expect:[201]},
+     {n:'✔ Sai đáp án → 0 điểm, 0 XP',expect:[201]},
+     {n:'★ CHỐNG SPOOF: clientScore = 1e9 bị bỏ qua',expect:[201]},
+     {n:'Game cũ không gửi answers → verified=false, 0 XP',expect:[201]},
+     {n:'play-to-win score chặn trần 100000',expect:[201]},
+     {n:'Thiếu gameId',expect:[400],bd:{gameId:undefined}},
+     {n:'Không token',auth:'none',expect:[401]},
+     {n:'⚠ Game không tồn tại → vẫn 201 (không validate)',expect:[201],bd:{gameId:'khong-co-game'}},
+   ]}),
+ E('gp.assignment','POST','/api/game-plays/assignment',{auth:'any',sum:'★ Ghi result + XP cho bài giao đã nộp (KHÔNG chấm lại)',
+   bd:[{k:'submissionId',t:'text',req:1,v:'{{submissionId}}'},{k:'playId',t:'text',v:'{{playId}}a'},{k:'gameScore',t:'number',v:880},{k:'timeUsed',t:'number',v:45}],
+   cases:[
+     {n:'✔ Ghi nhận',expect:[201],note:'Phải start() + submit() trước',expectFields:{data:['score','accuracy','xpGained','verified','source','assignmentId']}},
+     {n:'✔ Gửi lại cùng playId → replayed',expect:[200]},
+     {n:'Submission chưa SUBMITTED → 400',expect:[400]},
+     {n:'Submission không tồn tại → 404',expect:[404],bd:{submissionId:'khong-co'}},
+     {n:'Thiếu submissionId',expect:[400],bd:{submissionId:undefined}},
+     {n:'Không token',auth:'none',expect:[401]},
+   ]}),
+ E('gp.coins','POST','/api/game-plays/reward-coins',{auth:'any',sum:'★ Thưởng coin — TRẦN 500/ngày/user (chặn spam iframe)',
+   bd:[{k:'amount',t:'number',req:1,v:50}],
+   cases:[
+     {n:'✔ +50 coin',expect:[200]},
+     {n:'✔ +100 coin',expect:[200],bd:{amount:100}},
+     {n:'⚠ Spam 20 lần x100 → tự chặn sau 500',expect:[200],bd:{amount:100},repeat:20},
+     {n:'amount = 0',expect:[200],bd:{amount:0}},
+     {n:'amount âm',expect:[200],bd:{amount:-100}},
+     {n:'Thiếu amount',expect:[400],bd:{amount:undefined}},
+     {n:'amount sai kiểu',expect:[400],bd:{amount:'abc'}},
+     {n:'Không token',auth:'none',expect:[401]},
+   ]}),
+ E('ge.post','POST','/api/game-events',{auth:'any',sum:'Gửi sự kiện game → daily task + XP task',
+   bd:[{k:'event',t:'select',req:1,v:'GAME_COMPLETED',options:['GAME_STARTED','GAME_COMPLETED','GAME_WON','GAME_LOST','QUESTION_ANSWERED','QUESTION_CORRECT','QUESTION_WRONG','LEVEL_COMPLETED','SCORE_ACHIEVED','TIME_PLAYED','STREAK_ACHIEVED','LOGIN','SPIN']},{k:'eventId',t:'text',v:'{{playId}}ev1',d:'idempotency'},{k:'gameId',t:'text',v:'{{gameId}}'},{k:'gameType',t:'text'},{k:'score',t:'number',v:100},{k:'won',t:'bool',v:true},{k:'questionsAnswered',t:'number',v:10},{k:'questionsCorrect',t:'number',v:8}],
+   cases:[{n:'✔ GAME_COMPLETED',expect:[200]},{n:'⚠ Event lạ → 400',expect:[400],bd:{event:'KHONG_CO_EVENT'}},
+          {n:'✔ Gửi lại eventId → duplicate',expect:[200],bd:{eventId:'{{playId}}ev1'}},
+          {n:'Thiếu event',expect:[400],bd:{event:undefined}},{n:'Không token',auth:'none',expect:[401]}]}),
+]},
+/* ── RESULTS ── */
+{g:'Results',items:[
+ E('res.list','GET','/api/results',{auth:'none',sum:'⚠ TẤT CẢ kết quả — không cần auth'}),
+ E('res.bygame','GET','/api/results/game/:gameId',{auth:'none',sum:'Bảng xếp hạng theo game (công khai)',
+   pp:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'}]}),
+ E('res.create','POST','/api/results',{auth:'none',sum:'⚠ KHÔNG CẦN AUTH — nhận mọi field tuỳ ý (đường cũ, client vẫn dùng)',
+   bd:[{k:'gameId',t:'text',req:1,v:'{{gameId}}'},{k:'playerId',t:'text',v:'player_test'},{k:'playerName',t:'text',v:'Người Chơi Test'},{k:'score',t:'number',v:850},{k:'correctAnswers',t:'number',v:18},{k:'totalQuestions',t:'number',v:20},{k:'accuracy',t:'number',v:90},{k:'completionTime',t:'number',v:272},{k:'gameType',t:'text',v:'play-to-learn'}],
+   cases:[{n:'✔ Tạo',expect:[201]},{n:'⚠ Thiếu gameId → vẫn tạo',expect:[201],bd:{gameId:undefined}},{n:'⚠ Field lạ vẫn được lưu',expect:[201],bd:{_khoaLa:'van duoc luu'},freeform:1}]}),
+]},
+/* ── TASKS ── */
+{g:'Daily Tasks · Task Engine',items:[
+ E('dt.list','GET','/api/daily-tasks',{auth:'none',sum:'Tất cả nhiệm vụ (công khai)'}),
+ E('dt.me','GET','/api/daily-tasks/me',{auth:'any',sum:'Nhiệm vụ + tiến độ của tôi',
+   cases:[{n:'✔ Có token',expect:[200]},{n:'Không token',auth:'none',expect:[401]}]}),
+ E('dt.track','POST','/api/daily-tasks/track',{auth:'any',sum:'Ghi nhận hành động (⚠ không kiểm tra role)',
+   bd:[{k:'type',t:'select',req:1,v:'answer_question',options:['login','play_game','answer_question','correct_answer','earn_xp','win_game']},{k:'amount',t:'number',v:1}],
+   cases:[{n:'✔ Ghi 1',expect:[200]},{n:'✔ Ghi 5',expect:[200],bd:{amount:5}},{n:'Thiếu type',expect:[400],bd:{type:undefined}},{n:'⚠ Type lạ → vẫn 200',expect:[200],bd:{type:'loai-la'}}]}),
+ E('dt.claim','POST','/api/daily-tasks/claim/:taskId',{auth:'any',sum:'Nhận thưởng nhiệm vụ (cộng coin thật)',
+   pp:[{k:'taskId',t:'text',req:1,v:''}],
+   cases:[{n:'✔ Hoàn thành → nhận',expect:[200]},{n:'⚠ Chưa hoàn thành',expect:[400]},{n:'⚠ Đã nhận rồi',expect:[400]},{n:'Task sai',expect:[400],pp:{taskId:'khong-co'}}]}),
+ E('dt.stats','GET','/api/daily-tasks/admin/stats',{auth:'admin',sum:'Thống kê (admin)',
+   cases:[{n:'✔ Admin',expect:[200]},{n:'Teacher bị chặn',auth:'teacher',expect:[403]}]}),
+ E('dt.progress','GET','/api/daily-tasks/admin/progress',{auth:'admin',sum:'Tiến độ mọi user (admin)'}),
+ E('dt.create','POST','/api/daily-tasks/admin/tasks',{auth:'admin',sum:'Tạo nhiệm vụ (admin)',
+   bd:[{k:'name',t:'text',req:1,v:'Nhiệm vụ API'},{k:'desc',t:'text',v:'Từ test console'},{k:'icon',t:'text',v:'🧪'},{k:'type',t:'text',req:1,v:'answer_question'},{k:'target',t:'number',req:1,v:3},{k:'coinReward',t:'number',req:1,v:10},{k:'conditions',t:'json',d:'object'}],
+   cases:[{n:'✔ Tạo',expect:[200],capture:{taskId:'data.id'}},{n:'Thiếu target',expect:[400],bd:{target:undefined}},{n:'Teacher bị chặn',auth:'teacher',expect:[403]}]}),
+ E('dt.update','PUT','/api/daily-tasks/admin/tasks/:taskId',{auth:'admin',sum:'Sửa nhiệm vụ (admin)',
+   pp:[{k:'taskId',t:'text',req:1,v:'{{taskId}}'}],
+   bd:[{k:'name',t:'text',v:'Nhiệm vụ (đã sửa)'},{k:'target',t:'number',v:5},{k:'coinReward',t:'number',v:25}],
+   cases:[{n:'✔ Sửa',expect:[200]},{n:'⚠ Không có gì đổi',expect:[400],bd:{name:undefined,target:undefined,coinReward:undefined}}]}),
+ E('dt.reset','POST','/api/daily-tasks/admin/reset',{auth:'admin',sum:'Reset tiến độ nhiệm vụ của 1 user',
+   bd:[{k:'userId',t:'text',req:1,v:'{{userId}}'}],
+   cases:[{n:'✔ Reset',expect:[200]},{n:'Thiếu userId',expect:[400],bd:{userId:undefined}}]}),
+ E('dt.delete','DELETE','/api/daily-tasks/admin/tasks/:taskId',{auth:'admin',sum:'Xoá nhiệm vụ',
+   pp:[{k:'taskId',t:'text',req:1,v:'{{taskId}}'}]}),
+ E('tk.me','GET','/api/tasks/me',{auth:'any',sum:'Task engine: nhiệm vụ của tôi'}),
+ E('tk.all','GET','/api/tasks/me/all',{auth:'any',sum:'Task engine: tất cả nhiệm vụ'}),
+ E('tk.claim','POST','/api/tasks/:taskId/claim',{auth:'any',sum:'Task engine: nhận thưởng',
+   pp:[{k:'taskId',t:'text',req:1,v:''}]}),
+ E('tk.events','POST','/api/tasks/events',{auth:'any',sum:'Task engine: gửi sự kiện',
+   bd:[{k:'type',t:'text',req:1,v:'GAME_PLAYED'},{k:'gameId',t:'text',v:'{{gameId}}'},{k:'metadata',t:'json',d:'object'}]}),
+ E('tk.stats','GET','/api/tasks/admin/stats',{auth:'admin',sum:'Task engine: thống kê (admin)'}),
+]},
+/* ── MULTIPLAYER ── */
+{g:'Multiplayer · Sessions · Invites',items:[
+ E('gs.get','GET','/api/game-sessions/:id',{auth:'none',sum:'Chi tiết phòng (công khai)',
+   pp:[{k:'id',t:'text',req:1,v:'{{sessionId}}'}],
+   cases:[{n:'✔ Có thật',expect:[200]},{n:'Không tồn tại → 404',expect:[404],pp:{id:'khong-co'}}]}),
+ E('gs.bycode','GET','/api/game-sessions/by-code/:code',{auth:'none',sum:'Tra phòng theo mã',
+   pp:[{k:'code',t:'text',req:1,v:''}]}),
+ E('gs.active','GET','/api/game-sessions/active/me',{auth:'any',sum:'Phòng đang active của tôi (⚠ token sai vẫn 200 + data:null)',
+   cases:[{n:'✔ Có token',expect:[200]},{n:'⚠ Token sai → 200 data:null',expect:[200]},{n:'⚠ Không header → 401',auth:'none',expect:[401]}]}),
+ E('gs.join','POST','/api/game-sessions/:id/join',{auth:'any',sum:'Vào phòng (lấy tên từ token)',
+   pp:[{k:'id',t:'text',req:1,v:''}],
+   cases:[{n:'✔ Vào phòng',expect:[200]},{n:'Phòng đầy / không có',expect:[404]},{n:'Không token',auth:'none',expect:[401]}]}),
+ E('gs.end','POST','/api/game-sessions/:id/end',{auth:'none',sum:'⚠ Kết thúc phòng — KHÔNG cần auth, không kiểm tra chủ sở hữu',
+   pp:[{k:'id',t:'text',req:1,v:''}]}),
+ E('gi.create','POST','/api/game-invites',{auth:'any',sum:'Gửi lời mời chơi (⚠ student cũng gửi được)',
+   bd:[{k:'toUserId',t:'text',req:1,v:'{{userId}}'},{k:'gameId',t:'text',req:1,v:'{{gameId}}'},{k:'gameName',t:'text'},{k:'gameCode',t:'text'}],
+   cases:[{n:'✔ Gửi mời',expect:[200]},{n:'Thiếu toUserId',expect:[400],bd:{toUserId:undefined}},{n:'Thiếu gameId',expect:[400],bd:{gameId:undefined}},{n:'Không token',auth:'none',expect:[401]}]}),
+]},
+/* ── PERMISSIONS / REMINDERS / NOTIFICATIONS ── */
+{g:'Permissions · Reminders · Notifications',items:[
+ E('pm.features','GET','/api/permissions/features',{auth:'teacher',sum:'Feature flags'}),
+ E('pm.roles','GET','/api/permissions/roles',{auth:'teacher',sum:'Danh sách role'}),
+ E('pm.role','GET','/api/permissions/roles/:key',{auth:'teacher',sum:'Chi tiết role',
+   pp:[{k:'key',t:'text',req:1,v:'teacher'}],
+   cases:[{n:'✔ Role có thật',expect:[200]},{n:'Role sai → 404',expect:[404],pp:{key:'khong-co'}}]}),
+ E('pm.counts','GET','/api/permissions/counts',{auth:'teacher',sum:'Đếm user theo role'}),
+ E('pm.create','POST','/api/permissions/roles',{auth:'admin',sum:'Tạo role (admin)',
+   bd:[{k:'key',t:'text',req:1,v:'role_api_test'},{k:'label',t:'text',req:1,v:'Role API Test'},{k:'description',t:'text'},{k:'dashboardAccess',t:'bool',v:true},{k:'matrix',t:'json',d:'object'},{k:'permissions',t:'array',d:'array — THẮNG matrix'}],
+   cases:[{n:'✔ Tạo',expect:[201],capture:{roleKey:'data.key'}},{n:'Thiếu key',expect:[400],bd:{key:undefined}},{n:'Teacher bị chặn',auth:'teacher',expect:[403]}]}),
+ E('pm.update','PUT','/api/permissions/roles/:key',{auth:'admin',sum:'Sửa role (key không đổi được)',
+   pp:[{k:'key',t:'text',req:1,v:'{{roleKey}}'}],bd:[{k:'label',t:'text',v:'Role (đã sửa)'},{k:'dashboardAccess',t:'bool',v:false}]}),
+ E('pm.delete','DELETE','/api/permissions/roles/:key',{auth:'admin',sum:'Xoá role (không xoá được role gốc / còn user)',
+   pp:[{k:'key',t:'text',req:1,v:''}],
+   cases:[{n:'✔ Xoá role test',expect:[204],pp:{key:'role_api_test'}},{n:'⚠ Role gốc → 400',expect:[400],pp:{key:'teacher'}},{n:'⚠ Không tồn tại',expect:[400],pp:{key:'khong-co'}}]}),
+ E('rm.list','GET','/api/reminders',{auth:'any',sum:'Nhắc việc của tôi'}),
+ E('rm.upcoming','GET','/api/reminders/upcoming',{auth:'any',sum:'Sắp tới',qp:[{k:'minutes',t:'number',v:60}]}),
+ E('rm.due','GET','/api/reminders/due',{auth:'any',sum:'⚠ Đến hạn của MỌI user — không lọc userId'}),
+ E('rm.create','POST','/api/reminders',{auth:'any',sum:'Tạo nhắc việc (bắn FCM)',
+   bd:[{k:'title',t:'text',req:1,v:'Nhắc API Test'},{k:'remindAt',t:'date',req:1,v:'{{in1min}}'},{k:'message',t:'text'},{k:'repeat',t:'select',v:'none',options:['none','daily','weekly','monthly']},{k:'type',t:'text',v:'CUSTOM'},{k:'vibrate',t:'bool',v:true},{k:'sound',t:'bool',v:true}],
+   cases:[{n:'✔ Tạo',expect:[200],capture:{reminderId:'data.id'}},{n:'Thiếu title',expect:[400],bd:{title:undefined}},{n:'Thiếu remindAt',expect:[400],bd:{remindAt:undefined}}]}),
+ E('rm.update','PUT','/api/reminders/:id',{auth:'any',sum:'Sửa nhắc việc của tôi',
+   pp:[{k:'id',t:'text',req:1,v:'{{reminderId}}'}],bd:[{k:'title',t:'text',v:'Nhắc (đã sửa)'},{k:'message',t:'text'},{k:'remindAt',t:'date',v:'{{in1min}}'}],
+   cases:[{n:'✔ Sửa của mình',expect:[200]},{n:'⚠ Của người khác → 403',expect:[403],pp:{id:'khong-phai-cua-toi'}},{n:'Không tồn tại',expect:[404],pp:{id:'khong-co'}}]}),
+ E('rm.trigger','POST','/api/reminders/:id/trigger',{auth:'any',sum:'⚠ Bắn nhắc việc của NGƯỜI KHÁC',
+   pp:[{k:'id',t:'text',req:1,v:'{{reminderId}}'}]}),
+ E('rm.delete','DELETE','/api/reminders/:id',{auth:'any',sum:'Xoá nhắc việc của tôi',
+   pp:[{k:'id',t:'text',req:1,v:''}]}),
+ E('nt.list','GET','/api/notifications',{auth:'any',sum:'Thông báo của tôi'}),
+ E('nt.unread','GET','/api/notifications/unread-count',{auth:'any',sum:'Số thông báo chưa đọc'}),
+ E('nt.read','POST','/api/notifications/:id/read',{auth:'any',sum:'Đánh dấu đã đọc',pp:[{k:'id',t:'text',req:1,v:''}]}),
+ E('nt.readall','POST','/api/notifications/read-all',{auth:'any',sum:'Đánh dấu tất cả đã đọc'}),
+ E('nt.devices','GET','/api/notifications/devices',{auth:'any',sum:'Thiết bị đăng ký FCM'}),
+ E('nt.pushstatus','GET','/api/notifications/push-status',{auth:'any',sum:'Trạng thái push'}),
+]},
+/* ── MINI / SOCIAL / AVATAR ── */
+{g:'Mini Games · Chat · Avatar · Garden',items:[
+ E('mn.me','GET','/api/mini/me',{auth:'any',sum:'Hồ sơ mini-game (xp, best, badges)'}),
+ E('mn.sessions','POST','/api/mini/sessions',{auth:'any',sum:'Tạo session chống gian lận',
+   bd:[{k:'game',t:'select',req:1,v:'quiz',options:['quiz','racing','memory','xo','rush']}],
+   cases:[{n:'✔ Tạo',expect:[200],capture:{sessionId:'data.sessionId'}},{n:'⚠ Game không hợp lệ',expect:[400],bd:{game:'game-la'}}]}),
+ E('mn.results','POST','/api/mini/results',{auth:'any',sum:'Nộp kết quả mini-game (idempotent theo sessionId)',
+   bd:[{k:'sessionId',t:'text',v:'{{sessionId}}'},{k:'game',t:'select',v:'quiz',options:['quiz','racing','memory','xo','rush']},{k:'score',t:'number',v:500},{k:'details',t:'json',d:'object'}],
+   cases:[{n:'✔ Nộp',expect:[200]},{n:'⚠ Score vượt trần',expect:[400],bd:{score:99999999}},{n:'Không token',auth:'none',expect:[401]}]}),
+ E('mn.lb','GET','/api/mini/leaderboard/xp',{auth:'none',sum:'Bảng XP tổng'}),
+ E('mn.lbgame','GET','/api/mini/leaderboard/:game',{auth:'none',sum:'Bảng xếp hạng 1 mini-game',
+   pp:[{k:'game',t:'text',req:1,v:'quiz'}],qp:[{k:'scope',t:'select',v:'all',options:['all','today','week','month']},{k:'limit',t:'number',v:20}]}),
+ E('chat.dm','POST','/api/conversations/dm',{auth:'any',sum:'Mở / lấy cuộc trò chuyện DM',bd:[{k:'targetUserId',t:'text',req:1,v:'{{userId}}'}]}),
+ E('chat.conv','GET','/api/conversations',{auth:'any',sum:'Danh sách cuộc trò chuyện'}),
+ E('chat.msgs','GET','/api/chat/:conversationId/messages',{auth:'any',sum:'Tin nhắn',pp:[{k:'conversationId',t:'text',req:1,v:''}]}),
+ E('chat.send','POST','/api/chat/:conversationId/messages',{auth:'any',sum:'Gửi tin nhắn',
+   pp:[{k:'conversationId',t:'text',req:1,v:''}],bd:[{k:'content',t:'text',req:1,v:'Xin chào'},{k:'clientMessageId',t:'text'},{k:'type',t:'text',v:'text'}]}),
+ E('players','GET','/api/players',{auth:'none',sum:'⚠ Danh sách người chơi — không cần auth'}),
+ E('av.loadout','GET','/api/avatar/loadout',{auth:'any',sum:'Trang bị avatar của tôi'}),
+ E('av.items','GET','/api/avatar/items',{auth:'any',sum:'Kho vật phẩm avatar'}),
+ E('av.save','POST','/api/avatar/save',{auth:'any',sum:'Lưu trang bị',bd:[{k:'loadout',t:'json',req:1,d:'vd {"hat":"hat_01","shirt":"shirt_02"}'}]}),
+ E('av.buy','POST','/api/avatar/buy',{auth:'any',sum:'Mua vật phẩm (trừ coin)',
+   bd:[{k:'code',t:'text',req:1,v:'{{avatarItemCode}}'},{k:'layer',t:'text',v:'hat'}]}),
+ E('gd.my','GET','/api/garden',{auth:'any',sum:'Vườn của tôi'}),
+ E('gd.inv','GET','/api/garden/inventory',{auth:'any',sum:'Kho hạt giống / cây'}),
+ E('gd.plant','POST','/api/garden/plant',{auth:'any',sum:'Gieo hạt',bd:[{k:'plantTypeId',t:'text',req:1,v:'{{plantTypeId}}'},{k:'slot',t:'number',v:0}]}),
+ E('gd.harvest','POST','/api/garden/harvest',{auth:'any',sum:'Thu hoạch',bd:[{k:'slot',t:'number',req:1,v:0}]}),
+ E('gd.water','POST','/api/garden/water',{auth:'any',sum:'Tưới cây',bd:[{k:'slot',t:'number',req:1,v:0}]}),
+ E('pt.list','GET','/api/plant-types',{auth:'any',sum:'Loại cây trồng'}),
+ E('img.list','GET','/api/images',{auth:'any',sum:'Thư viện ảnh',
+   qp:[{k:'folder',t:'text'},{k:'search',t:'text'},{k:'page',t:'number',v:1},{k:'limit',t:'number',v:30}]}),
+]}
+];
+
+/* ══════════════════ 2. STATE ══════════════════ */
+const state={
+  baseUrl:LS.get('baseUrl',(location.origin&&location.origin!=='null'?location.origin:'http://localhost:5000')),
+  token:LS.get('token',''), role:LS.get('role',''), mode:LS.get('mode','auto'),
+  vars:LS.get('vars',{}), open:LS.get('open',{}), caseSel:LS.get('caseSel',{}),
+  vals:{}, resp:{}, q:''
+};
+const VAR_ORDER=['classId','classCode','gameId','gameId2','gameCode','templateId','questionId','bankId',
+  'userId','assignmentId','assignmentCode','submissionId','playId','taskId','roleKey','reminderId',
+  'sessionId','tokenStudent','deadline','in1min','avatarItemCode','plantTypeId'];
+const SPECIAL={playId:()=>'play-'+Math.random().toString(36).slice(2,10),
+  deadline:()=>new Date(Date.now()+864e5).toISOString().slice(0,16),
+  in1min:()=>new Date(Date.now()+6e4).toISOString().slice(0,16)};
+VAR_ORDER.forEach(k=>{if(state.vars[k]==null)state.vars[k]=SPECIAL[k]?SPECIAL[k]():''});
+function save(){LS.set('baseUrl',state.baseUrl);LS.set('token',state.token);LS.set('role',state.role);
+  LS.set('mode',state.mode);LS.set('vars',state.vars);LS.set('open',state.open);LS.set('caseSel',state.caseSel)}
+function setVar(k,v){state.vars[k]=v;save();renderVars();renderNav()}
+function interp(s){return String(s??'').replace(/\{\{\s*([\w.]+)\s*\}\}/g,(_,k)=>{const v=state.vars[String(k).trim()];return v==null?'':String(v)})}
+function parsed(v,t){
+  if(v==null||v==='')return undefined;
+  if(t==='number'){const n=Number(v);return Number.isFinite(n)?n:v}
+  if(t==='bool')return v===true||v==='true'||v==='1';
+  if(t==='array'||t==='json'){if(typeof v!=='string')return v;try{return JSON.parse(v)}catch{return v}}
+  return v;
+}
+
+/* ══════════════════ 3. GỬI REQUEST ══════════════════
+   Quy ước khóa trong catalog: path = URL mẫu · pp = path param · qp = query param · bd = body field */
+
+/** Nạp sẵn giá trị mặc định của mọi field vào state để ô nhập và request khớp nhau. */
+function ensureVals(ep){
+  const v=state.vals[ep.id]||(state.vals[ep.id]={pp:{},qp:{},bd:{}});
+  for(const [key,list] of [['pp',ep.pp],['qp',ep.qp],['bd',ep.bd]])
+    for(const f of (list||[])) if(v[key][f.k]===undefined&&f.v!==undefined) v[key][f.k]=String(f.v);
+  return v;
+}
+
+async function send(ep,o={}){
+  const v=ensureVals(ep);
+  const p={...v.pp,...(o.overrides?.pp||{})}, q={...v.qp,...(o.overrides?.qp||{})}, b={...v.bd,...(o.overrides?.bd||{})};
+  let route=ep.path;
+  // Ô trống → dùng giá trị mặc định của field (thường là {{biến}})
+  (ep.pp||[]).forEach(f=>{route=route.replace(':'+f.k,encodeURIComponent(interp(p[f.k]||f.v||'')))});
+  const qs=Object.entries(q).filter(([,x])=>x!=null&&x!=='').map(([k2,x])=>encodeURIComponent(k2)+'='+encodeURIComponent(interp(x))).join('&');
+  // Base URL có thể bị dán kèm "/api" — bỏ đi để khỏi thành /api/api/...
+  const base=state.baseUrl.trim().replace(/\/+$/,'').replace(/\/api$/,'');
+  const url=base+route+(qs?'?'+qs:'');
+
+  const mode=o.authOverride||state.mode;
+  const wantAuth=mode==='on'?true:mode==='off'?false:ep.auth!=='none';
+  const headers={Accept:'application/json'};
+  if(wantAuth&&state.token)headers.Authorization='Bearer '+state.token;
+
+  const hasBody=ep.method!=='GET'&&ep.method!=='DELETE';
+  if(hasBody)headers['Content-Type']='application/json';
+
+  let payload;
+  if(hasBody){
+    const out={};
+    // duyệt field khai báo trước (để gửi cả giá trị mặc định), rồi tới key người dùng tự thêm
+    const keys=[...(ep.bd||[]).map(f=>f.k), ...Object.keys(b).filter(k=>!(ep.bd||[]).some(f=>f.k===k))];
+    for(const k2 of keys){
+      const f=(ep.bd||[]).find(x=>x.k===k2);
+      if(k2.startsWith('(')){                       // trường đặc biệt = toàn bộ body
+        const raw=interp(b[k2]??f?.v??'');
+        if(raw==='')continue;
+        try{const j=JSON.parse(raw); if(Array.isArray(j)||(j!==null&&typeof j!=="object")) payload=j; else Object.assign(out,j)}catch{payload=raw}
+        continue;
+      }
+      const val=parsed(interp(b[k2]??f?.v??''),f?.t||'text');
+      if(val===undefined||val==='')continue;
+      if(Array.isArray(val)&&!val.length)continue;          // mảng rỗng → không gửi
+      if(val&&typeof val==='object'&&!Array.isArray(val)&&!Object.keys(val).length)continue;
+      out[k2]=val;
+    }
+    payload=payload!==undefined?payload:(Object.keys(out).length?out:undefined);
+  }
+
+  const t0=performance.now();
+  let status=0,text='',err=null;
+  try{
+    const res=await fetch(url,{method:ep.method,headers,body:hasBody&&payload!==undefined?JSON.stringify(payload):undefined});
+    status=res.status;text=await res.text();
+  }catch(e){err=e;status=0;text=String(e.message||e)}
+  const ms=Math.round(performance.now()-t0);
+  let json=null; try{json=JSON.parse(text)}catch{}
+
+  state.resp[ep.id]={url,method:ep.method,status,ms,body:json,raw:text,tab:'pretty',err:!!err,usedAuth:wantAuth};
+  if(!o.silent)renderCard(ep.id);
+
+  for(const[src,key]of[[o,'cap'],[o.overrides?.__case,'capture']])
+    if(src&&src[key])for(const[k,e]of Object.entries(src[key])){const val=getPath(json,e);if(val!=null&&val!=='')setVar(k,val)}
+  return{status,json,ms,text,payload,url,usedAuth:wantAuth};
+}
+
+/* ══════════════════ 4. RENDER ══════════════════ */
+const ALL=[];
+CATALOG.forEach(g=>g.items.forEach(e=>{e.g=g.g;ALL.push(e)}));
+
+function authChip(e){const m={none:['Công khai','no'],any:['Cần token','auth'],student:['Học sinh','role'],teacher:['Giáo viên/Admin','role'],admin:['Chỉ Admin','role']};const[t,c]=m[e.auth]||m.any;return`<span class="chip ${c}">${t}</span>`}
+function fieldHtml(f,scope,id,val){
+  const a=`id="f_${scope}_${id}_${f.k.replace(/[^\w]/g,'')}"`;
+  const req=f.req?'<span class="req">*</span>':'';
+  const v=esc(val??f.v??'');
+  let inp;
+  if(f.t==='select'){const o=(f.options||[]).map(x=>`<option value="${esc(x)}"${String(val??f.v)===String(x)?' selected':''}>${esc(x||'(không gửi)')}</option>`).join('');inp=`<select ${a}>${o}</select>`}
+  else if(f.t==='textarea')inp=`<textarea ${a} rows="4">${v}</textarea>`;
+  else if(f.t==='bool'){const on=val===true||String(val)==='true'||String(f.v)==='true';inp=`<select ${a}><option value=""${on?'':' selected'}>(không gửi)</option><option value="true"${on?' selected':''}>true</option><option value="false"${on?'':' selected'}>false</option></select>`}
+  else{const ty=f.t==='number'?'number':f.t==='password'?'password':f.t==='date'?'datetime-local':'text';inp=`<input type="${ty}" ${a} value="${v}" placeholder="${esc(f.v??'')}" />`}
+  return`<div class="field"><label>${esc(f.k)}${req}</label>${inp}${f.d?`<div class="hint">${esc(f.d)}</div>`:''}</div>`;
+}
+function casesHtml(ep){
+  if(!ep.cases?.length)return'';
+  const sel=state.caseSel[ep.id]??0;
+  return`<div class="sub">Ca test (${ep.cases.length}) — bấm để chọn, "Gửi" sẽ dùng luôn override của ca</div><div class="cases">`+
+    ep.cases.map((c,i)=>`<span class="case${i===sel?' sel':''}" data-act="case" data-ep="${ep.id}" data-i="${i}">${esc(c.n)}<span class="exp">${c.expect.map(x=>' '+x).join('')}</span></span>`).join('')+`</div>`;
+}
+function syntax(v){
+  const j=JSON.stringify(v,null,2)||'null';
+  return esc(j).replace(/&quot;([^&]*?)&quot;(\s*:)/g,'<span class="k">"$1"</span>$2')
+    .replace(/:\s&quot;(.*?)&quot;/g,': <span class="s">"$1"</span>')
+    .replace(/:\s(-?\d+\.?\d*)/g,': <span class="n">$1</span>')
+    .replace(/:\s(true|false|null)/g,': <span class="b">$1</span>');
+}
+function respHtml(ep){
+  const r=state.resp[ep.id];if(!r)return'';
+  const cls=r.status>=500?'s5':r.status>=400?'s4':r.status>=300?'s3':'s2';
+  const ci=state.caseSel[ep.id]??0, c=ep.cases?.[ci]||{};
+  let warn='';
+  if(c.expect?.length&&!c.expect.includes(r.status))warn=`<span class="chip no">mong đợi ${c.expect.join('/')} — nhận ${r.status||'ERR'}</span>`;
+  else if(c.expect?.length)warn=`<span class="chip open">đúng ${r.status}</span>`;
+  if(c.expectPresent)for(const f of c.expectPresent)if(getPath(r.body,f)===undefined)warn+=`<span class="chip no">thiếu ${f}</span>`;
+  if(c.expectAbsent)for(const f of c.expectAbsent)if(getPath(r.body,f)!==undefined)warn+=`<span class="chip no">lộ ${f}</span>`;
+  if(c.expectFields?.data)for(const f of c.expectFields.data)if(getPath(r.body,'data.'+f)===undefined)warn+=`<span class="chip no">thiếu data.${f}</span>`;
+  const body=r.tab==='raw'?esc(r.raw):(r.body!==null?syntax(r.body):esc(r.raw));
+  return`<div class="resp"><div class="resp-h">
+    <span class="st ${cls}">${r.status||'ERR'}</span>
+    <span class="chip">${r.ms}ms</span>
+    <span class="chip">${(r.raw||'').length} B</span>
+    <span class="chip">${r.method}</span>
+    <span class="chip">token: ${r.usedAuth?'có':'không'}</span>
+    ${warn}
+    <span class="tabs">
+      <span class="tab${r.tab!=='raw'?' sel':''}" data-act="tab" data-ep="${ep.id}" data-tab="pretty">Pretty</span>
+      <span class="tab${r.tab==='raw'?' sel':''}" data-act="tab" data-ep="${ep.id}" data-tab="raw">Raw</span>
+      <span class="tab" data-act="curl" data-ep="${ep.id}">cURL</span>
+      <span class="tab" data-act="copy" data-ep="${ep.id}">Copy JSON</span>
+    </span></div>
+    <div class="url">${esc(r.method)} ${esc(r.url)}</div><pre>${body}</pre></div>`;
+}
+function cardInner(ep){
+  const v=ensureVals(ep);
+  const sel=state.caseSel[ep.id]??0, c=ep.cases?.[sel]||{};
+  let h='';
+  if(ep.pp?.length)h+=`<div class="sub">Path param</div><div class="grid">${ep.pp.map(f=>fieldHtml(f,'pp',ep.id,v.pp[f.k])).join('')}</div>`;
+  if(ep.qp?.length)h+=`<div class="sub">Query param</div><div class="grid">${ep.qp.map(f=>fieldHtml(f,'qp',ep.id,v.qp[f.k])).join('')}</div>`;
+  if(ep.bd?.length&&ep.method!=='GET'&&ep.method!=='DELETE')
+    h+=`<div class="sub">Body ${c.bd?'<span class="chip">ca test đang ghi đè: '+esc(c.n)+'</span>':''}</div><div class="grid">${ep.bd.map(f=>fieldHtml(f,'bd',ep.id,v.bd[f.k])).join('')}</div>`;
+  const note=(c.note||ep.note)?`<div class="hint" style="margin-top:8px">ℹ ${esc(c.note||ep.note)}</div>`:'';
+  return`<div class="card-h" data-act="toggle" data-ep="${ep.id}">
+      <span class="m m-${ep.method}">${ep.method}</span>
+      <span class="path">${esc(ep.path)}</span>
+      ${ep.danger?'<span class="chip no">NGUY HIỂM</span>':''}${authChip(ep)}
+      <span class="sum">${esc(c.n||ep.sum||'')}</span></div>
+    <div class="card-b">${casesHtml(ep)}${note}${h}
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" data-act="send" data-ep="${ep.id}">▶ Gửi: ${esc(c.n||'giá trị đang nhập')}</button>
+        <button class="btn" data-act="sendplain" data-ep="${ep.id}">Gửi giá trị đang nhập</button>
+        <button class="btn ghost" data-act="reset" data-ep="${ep.id}">Xoá ô nhập</button>
+      </div>${respHtml(ep)}</div>`;
+}
+function renderCard(id){const el=$('#card_'+id);if(el){const ep=ALL.find(e=>e.id===id);if(ep)el.innerHTML=cardInner(ep)}}
+function renderNav(){
+  const q=state.q.trim().toLowerCase();
+  const open=new Set(Object.entries(state.open).filter(([,v])=>v).map(([k])=>k));
+  let h='';
+  CATALOG.forEach((g,gi)=>{
+    const items=g.items.filter(e=>!q||e.path.toLowerCase().includes(q)||(e.sum||'').toLowerCase().includes(q)||e.id.toLowerCase().includes(q));
+    if(!items.length)return;
+    const open_=q?true:LS.get('grp_'+gi,true);
+    h+=`<div class="grp${open_?' open':''}"><div class="grp-h" data-act="grp" data-gi="${gi}"><span class="chev">▶</span>${esc(g.g)}<span class="cnt">${items.length}</span></div><div class="grp-b">`+
+      items.map(e=>`<a class="nav${open.has(e.id)?' active':''}" href="#${e.id}" data-act="jump" data-ep="${e.id}"><span class="m m-${e.method}">${e.method}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.path.replace('/api',''))}</span></a>`).join('')+`</div></div>`;
+  });
+  $('#nav').innerHTML=h||'<p style="color:var(--fg3);padding:8px">Không tìm thấy.</p>';
+}
+function renderMain(){
+  const ids=Object.entries(state.open).filter(([,v])=>v).map(([k])=>k);
+  $('#main').innerHTML=ids.length?ids.map(id=>{const ep=ALL.find(e=>e.id===id);return ep?`<div class="card${state.open[id]?' open':''}" id="card_${id}">${cardInner(ep)}</div>`:''}).join(''):WELCOME;
+}
+const WELCOME=`<div style="max-width:780px;margin:36px auto;color:var(--fg2);text-align:center">
+<h2 style="color:var(--fg)">API Test Console</h2>
+<p>Bấm endpoint ở cột trái để mở form nhập, hoặc ▶ <b>Smoke test</b> để chạy tự động.</p>
+<p style="margin-top:16px;text-align:left">Gợi ý trình tự test core flow:</p>
+<ol style="line-height:2">
+<li><b>Auth</b> → đăng nhập <code>teacher</code> (token tự lưu)</li>
+<li><b>Classes → Tạo lớp</b> (tự lưu biến <code>classId</code>, <code>classCode</code>)</li>
+<li><b>Templates → Tạo template</b> kèm <code>htmlTemplate</code></li>
+<li><b>Games → Tạo game</b> gắn template (tự lưu <code>gameId</code>)</li>
+<li><b>Questions → PUT /questions/game/:gameId</b> (lưu <code>questionId</code>)</li>
+<li><b>Assignments → Tạo bài</b> gắn game + câu hỏi</li>
+<li><b>Game Plays → complete</b> → kiểm tra <code>verified</code>, XP, idempotency</li>
+</ol>
+<p style="margin-top:16px;font-size:12.5px">Mỗi endpoint có nhiều <b>ca test</b> (200 / 400 / 401 / 403 / 404 / 500) — chọn ca rồi bấm Gửi. Trường hợp nguy hiểm được đánh dấu đỏ.</p></div>`;
+
+/* ══════════════════ 5. SMOKE TEST ══════════════════ */
+const SMOKE=[
+ {n:'Health',e:'health',c:0,auth:'none',x:200},
+ {n:'Đăng nhập teacher',e:'auth.login',c:0,auth:'none',x:200,creds:['teacher','123456']},
+ {n:'Đăng nhập admin',e:'auth.login',c:0,auth:'none',x:200,creds:['admin','admin123']},
+ {n:'Đăng nhập student',e:'auth.login',c:0,auth:'none',x:200,creds:['student','123456']},
+ {n:'XP của tôi',e:'auth.xp',c:0,x:200},
+ {n:'Coins của tôi',e:'auth.coins.get',c:0,x:200},
+ {n:'Danh sách games',e:'games.list',c:0,auth:'none',x:200},
+ {n:'Chi tiết game',e:'games.get',c:0,auth:'none',x:200},
+ {n:'Danh sách templates',e:'tpl.list',c:0,auth:'none',x:200},
+ {n:'Câu hỏi (khách — ẩn đáp án)',e:'q.list',c:0,auth:'none',x:200,absent:'correctAnswer'},
+ {n:'Ngân hàng câu hỏi',e:'qb.list',c:0,auth:'none',x:200},
+ {n:'Lớp của tôi',e:'cls.list',c:0,x:200},
+ {n:'Bài giao',e:'as.list',c:0,x:200},
+ {n:'Nhiệm vụ hôm nay',e:'dt.me',c:0,x:200},
+ {n:'Task engine',e:'tk.me',c:0,x:200},
+ {n:'Leaderboard game',e:'res.bygame',c:0,auth:'none',x:200},
+ {n:'⚠ Không token → 401',e:'users.list',c:1,auth:'none',x:401},
+ {n:'⚠ Endpoint cần token',e:'auth.coins.get',c:1,auth:'none',x:401},
+ {n:'⚠ Sai định dạng id → 404',e:'games.get',c:1,auth:'none',x:404},
+ {n:'⚠ Game sai → 404',e:'as.resolve',c:1,auth:'none',x:404},
+];
+const FLOW=[
+ {n:'① Tạo template',e:'tpl.create',c:0,x:201,cap:{templateId:'data._id'}},
+ {n:'② Tạo game',e:'games.create',c:0,x:201,cap:{gameId:'data._id',gameCode:'data.code'}},
+ {n:'③ Gán config',e:'games.config.put',c:0,x:200},
+ {n:'④ Đọc config (công khai)',e:'games.config.get',c:0,auth:'none',x:200},
+ {n:'⑤ Tạo 2 câu hỏi',e:'q.put',c:0,x:200,cap:{questionId:'data[0].id'},
+   bd:{'(mảng câu hỏi)':'[{"content":"5 + 5 = ?","options":[{"id":"a","content":"9"},{"id":"b","content":"10"}],"correctAnswer":"b","timeLimit":20,"points":10},{"content":"10 × 3 = ?","options":[{"id":"a","content":"30"},{"id":"b","content":"13"}],"correctAnswer":"a","timeLimit":15,"points":20}]'}},
+ {n:'⑥ Sửa 1 câu hỏi',e:'q.patch',c:0,x:200},
+ {n:'⑦ Đọc câu hỏi của game',e:'q.bygame',c:0,auth:'none',x:200},
+ {n:'⑧ ⚠ Spoof clientScore=1e9',e:'gp.complete',c:4,x:201},
+ {n:'⑨ Ván chơi hợp lệ (+XP)',e:'gp.complete',c:0,x:201},
+ {n:'⑩ Idempotency (replayed)',e:'gp.complete',c:1,x:200},
+ {n:'⑪ Sai đáp án → 0 XP',e:'gp.complete',c:3,x:201},
+ {n:'⑫ Thưởng coin',e:'gp.coins',c:0,x:200},
+ {n:'⑬ XP sau khi chơi',e:'auth.xp',c:0,x:200},
+ {n:'⑭ Game event → daily task',e:'ge.post',c:0,x:200},
+ {n:'⑮ Tạo bộ câu hỏi',e:'qb.create',c:0,x:200,cap:{bankId:'data.id'}},
+ {n:'⑯ Link bộ → game',e:'qb.link',c:0,x:200},
+ {n:'⑰ Tạo lớp',e:'cls.create',c:0,x:201,cap:{classId:'data.id',classCode:'data.code'}},
+ {n:'⑱ Tạo bài giao (game + câu hỏi)',e:'as.create',c:0,x:201,cap:{assignmentId:'data.id',assignmentCode:'data.code'}},
+ {n:'⑲ Resolve bài bằng mã',e:'as.resolve',c:0,auth:'none',x:200},
+ {n:'⑳ [student] Start bài',e:'as.start',c:0,x:200,as:'student',cap:{submissionId:'data.id'}},
+ {n:'㉑ [student] Nộp bài — server chấm',e:'as.submit',c:0,x:200,as:'student'},
+ {n:'㉒ [student] Xem kết quả',e:'as.result',c:0,x:200,as:'student'},
+ {n:'㉓ Ghi result + XP cho bài',e:'gp.assignment',c:0,x:201,as:'student'},
+ {n:'㉔ [teacher] Thống kê bài',e:'as.stats',c:0,x:200},
+ {n:'㉕ [teacher] Danh sách bài nộp',e:'as.subs',c:0,x:200},
+ {n:'㉖ ⚠ admin=true lộ đáp án',e:'as.result',c:1,auth:'none',x:200},
+ {n:'㉗ Đóng bài giao',e:'as.close',c:0,x:200},
+ {n:'㉘ Sửa bài (đã đóng → 400)',e:'as.update',c:1,x:400},
+ {n:'㉙ Xoá bài giao',e:'as.delete',c:0,x:200},
+ {n:'㉚ Xoá bộ câu hỏi',e:'qb.del',c:0,x:200},
+ {n:'㉛ Xoá game test',e:'games.delete',c:0,x:204},
+ {n:'㉜ Xoá template test',e:'tpl.delete',c:0,x:204},
+];
+function tbl(rows){
+  return`<table class="tbl"><thead><tr><th>#</th><th>Method</th><th>Path</th><th>Cần</th><th>Nhận</th><th>ms</th><th>KQ</th><th>Message</th></tr></thead><tbody>`+
+    rows.map((r,i)=>{const c=r.pass===null?'skip':r.pass?'pass':'fail';return`<tr><td>${i+1}</td><td><span class="m m-${r.m}">${r.m||'—'}</span></td><td style="font-family:var(--mono);font-size:11px">${esc(r.p)}</td><td style="font-family:var(--mono)">${r.want||''}</td><td style="font-family:var(--mono)" class="${c}">${r.got||'ERR'}</td><td>${r.ms||''}</td><td class="${c}">${r.pass===null?'SKIP':r.pass?'PASS':'FAIL'}</td><td style="color:var(--fg3);font-size:11px">${esc(String(r.msg||'').slice(0,60))}</td></tr>`}).join('')+`</tbody></table>`;
+}
+async function loginAs(role,pw){
+  const ep=ALL.find(e=>e.id==='auth.login');
+  const r=await send(ep,{authOverride:'none',silent:true,overrides:{bd:{username:role,password:pw,identifier:undefined}},cap:{}});
+  if(r.status===200&&r.json?.token){state.token=r.json.token;state.role=role;save();syncTop();return true}
+  toast(`Đăng nhập ${role} thất bại: ${r.json?.msg||r.status}`);return false;
+}
+async function runList(list,rows,onProg){
+  let ok=0,bad=0;
+  for(const s of list){
+    const ep=ALL.find(e=>e.id===s.e);
+    if(!ep){onProg&&onProg();continue}
+    if(s.as)await loginAs(s.as);
+    const ci=s.c|0, c=ep.cases?.[ci]||{};
+    const v=ensureVals(ep);
+    if(s.creds){v.bd.username=s.creds[0];v.bd.password=s.creds[1];v.bd.identifier=''}
+    const ov={__case:c};
+    if(c.bd)ov.bd=c.bd; if(c.pp)ov.pp=c.pp; if(c.qp)ov.qp=c.qp;
+    if(s.bd)ov.bd={...(ov.bd||{}),...s.bd}; if(s.pp)ov.pp={...(ov.pp||{}),...s.pp};
+    const r=await send(ep,{authOverride:s.auth||c.auth,overrides:ov,silent:true,cap:s.cap});
+    let pass=r.status===s.x;
+    if(s.absent&&getPath(r.body,s.absent)!==undefined)pass=false;
+    if(pass)ok++;else bad++;
+    rows.push({n:s.n,m:ep.method,p:ep.path,want:s.x,got:r.status,ms:r.ms,pass,msg:r.json?.msg||r.json?.message||''});
+    onProg&&onProg();
+  }
+  return{ok,bad};
+}
+async function runSmoke(){
+  $('#modal').classList.add('open');$('#mBody').innerHTML='';$('#mProg').style.width='0%';
+  $('#mTitle').textContent='Smoke test — kết nối & phân quyền';
+  const rows=[];
+  const upd=()=>{$('#mBody').innerHTML=tbl(rows);$('#mProg').style.width=Math.min(100,(rows.length/(SMOKE.length+FLOW.length)*100))+'%';$('#mBody').scrollTop=1e9};
+  const r1=await runList(SMOKE,rows,upd);
+  $('#mBody').innerHTML='<h3 style="margin:16px 0 6px;font-size:14px">Luồng đầy đủ — tạo dữ liệu thật rồi dọn dẹp</h3>'+tbl(rows);
+  const r2=await runList(FLOW,rows,upd);
+  await loginAs('teacher');
+  $('#mTitle').innerHTML=`Smoke test — <span class="pass">${r1.ok+r2.ok} pass</span> · <span class="fail">${r1.bad+r2.bad} fail</span>`;
+  upd();
+}
+
+/* ══════════════════ 6. SỰ KIỆN ══════════════════ */
+function syncTop(){$('#baseUrl').value=state.baseUrl;$('#token').value=state.token;$('#mode').value=state.mode;
+  $('#live').classList.toggle('on',!!state.token);$('#varCount').textContent=VAR_ORDER.filter(k=>state.vars[k]).length}
+function renderVars(){
+  $('#vars').innerHTML=VAR_ORDER.map(k=>`<div class="var"><span class="vk">${k}</span><input id="var_${k}" value="${esc(state.vars[k])}" /></div>`).join('');
+  $('#varCount').textContent=VAR_ORDER.filter(k=>state.vars[k]).length;
+}
+function curlOf(ep){
+  const r=state.resp[ep.id];if(!r)return'';
+  const h=r.usedAuth&&state.token?['-H',`Authorization: Bearer ${state.token}`]:[];
+  const body=r.method!=='GET'&&r.method!=='DELETE'?' -H "Content-Type: application/json"':'';
+  return`curl -X ${r.method} '${r.url}' ${h.join(' ')}${body}`;
+}
+document.addEventListener('click',async ev=>{
+  const t=ev.target.closest('[data-act],[data-login]');
+  if(!t)return;
+  if(t.dataset.login){
+    const role=t.dataset.login, pw=role==='admin'?'admin123':'123456';
+    if(await loginAs(role,pw))toast(`Đã đăng nhập: ${role}`);
+    return;
+  }
+  const act=t.dataset.act, id=t.dataset.ep;
+  if(act==='grp'){const gi=t.dataset.gi;const k='grp_'+gi;LS.set(k,!LS.get(k,true));renderNav();return}
+  if(act==='jump'){
+    ev.preventDefault();
+    if(!state.open[id]){state.open[id]=true;save()}
+    renderNav();renderMain();
+    const el=$('#card_'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+    return;
+  }
+  const ep=ALL.find(e=>e.id===id);if(!ep)return;
+  if(act==='toggle'){state.open[id]=!state.open[id];save();renderNav();renderMain();
+    if(state.open[id]){const el=$('#card_'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'})}return}
+  if(act==='case'){state.caseSel[id]=+t.dataset.i;save();renderCard(id);return}
+  if(act==='reset'){state.vals[id]={pp:{},qp:{},bd:{}};renderCard(id);return}
+  if(act==='tab'){const r=state.resp[id];if(r){r.tab=t.dataset.tab;renderCard(id)}return}
+  if(act==='curl'){const c=curlOf(ep);if(!c)return toast('Chưa gửi request nào');
+    try{await navigator.clipboard.writeText(c);toast('Đã copy cURL')}catch{window.prompt('cURL:',c)}return}
+  if(act==='copy'){const r=state.resp[id];if(!r)return toast('Chưa có response');
+    try{await navigator.clipboard.writeText(JSON.stringify(r.body,null,2));toast('Đã copy JSON')}catch{toast('Copy thất bại')}return}
+  if(act==='send'||act==='sendplain'){
+    const ci=act==='send'?(state.caseSel[id]??0):-1;
+    const c=ci>=0?(ep.cases?.[ci]||{}):{};
+    const ov={__case:c};
+    if(c.bd)ov.bd=c.bd;if(c.pp)ov.pp=c.pp;if(c.qp)ov.qp=c.qp;
+    const r=await send(ep,{authOverride:act==='send'?c.auth:undefined,overrides:ov});
+    if(ci>=0&&c.repeat&&c.repeat>1)for(let i=1;i<c.repeat;i++)await send(ep,{authOverride:c.auth,overrides:ov,silent:true});
+    toast(`${ep.method} ${ep.path} → ${r.status||'ERR'} (${r.ms}ms)`);
+    return;
+  }
+});
+document.addEventListener('input',ev=>{
+  const el=ev.target;
+  if(el.id==='search'){state.q=el.value;renderNav();return}
+  if(el.id==='baseUrl'){state.baseUrl=el.value.trim();save();return}
+  if(el.id==='token'){state.token=el.value.trim();state.role='';save();syncTop();return}
+  if(el.id.startsWith('var_')){state.vars[el.id.slice(4)]=el.value;save();$('#varCount').textContent=VAR_ORDER.filter(k=>state.vars[k]).length;return}
+  const m=el.id.match(/^f_(pp|qp|bd)_([\w]+)_(.+)$/);
+  if(m){const ep=ALL.find(e=>e.id===m[2]);if(!ep)return;
+    const v=state.vals[m[2]]||(state.vals[m[2]]={pp:{},qp:{},bd:{}});
+    v[m[1]][m[3]]=el.value;return}
+});
+$('#mode').addEventListener('change',e=>{state.mode=e.target.value;save()});
+$('#btnVars').addEventListener('click',()=>$('#drawer').classList.toggle('open'));
+$('#btnVarClose').addEventListener('click',()=>$('#drawer').classList.remove('open'));
+$('#btnVarClear').addEventListener('click',()=>{VAR_ORDER.forEach(k=>state.vars[k]='');save();renderVars();toast('Đã xoá biến')});
+$('#btnLogout').addEventListener('click',()=>{state.token='';state.role='';save();syncTop();toast('Đã xoá token')});
+$('#btnSmoke').addEventListener('click',runSmoke);
+$('#mClose').addEventListener('click',()=>$('#modal').classList.remove('open'));
+$('#btnHealth').addEventListener('click',async()=>{
+  const ep=ALL.find(e=>e.id==='health');
+  const r=await send(ep,{authOverride:'none'});
+  toast(r.status===200?'✅ Server OK':'⚠ '+r.status+' — thử lại sau vài giây (cold start)');
+});
+window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(id&&ALL.find(e=>e.id===id)){state.open[id]=true;save();renderNav();renderMain();}});
+
+syncTop();renderVars();renderNav();renderMain();
+if(location.hash.slice(1)&&ALL.find(e=>e.id===location.hash.slice(1))){state.open[location.hash.slice(1)]=true;save();renderMain()}
+</script>
+</body>
+</html>

@@ -40,6 +40,7 @@ export function publicUser(user) {
   return {
     id: user.id, username: user.username, email: user.email || null,
     name: user.name, role: user.role, coins: user.coins || 0, stars: user.stars || 0,
+    xp: user.xp || 0, level: levelFromXp(user.xp || 0),
     avatarLoadout: user.avatarLoadout || null, inventory: user.inventory || [],
   };
 }
@@ -203,6 +204,54 @@ export async function updateUser(userId, { name, email, role }) {
 }
 
 const STAR_TO_COIN_RATE = 10;
+
+// ── XP / Level ────────────────────────────────────────────────────────────
+// Đồng nhất với XP_PER_LEVEL của miniGameService để hồ sơ không bị lệch.
+export const XP_PER_LEVEL = 120;
+
+/** Level = floor(xp / XP_PER_LEVEL) + 1 */
+export function levelFromXp(xp) {
+  return Math.floor(Math.max(0, Number(xp) || 0) / XP_PER_LEVEL) + 1;
+}
+
+/** XP cần để lên level tiếp theo (đã trừ phần XP của level hiện tại). */
+export function xpIntoLevel(xp) {
+  return Math.max(0, (Number(xp) || 0) % XP_PER_LEVEL);
+}
+
+export async function getXp(userId) {
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  const xp = user?.xp || 0;
+  return { xp, level: levelFromXp(xp), xpIntoLevel: xpIntoLevel(xp), xpPerLevel: XP_PER_LEVEL };
+}
+
+/**
+ * Cộng XP cho user và trả về mức tiến độ mới.
+ * Trả về `awarded: 0` nếu amount không hợp lệ — XP chỉ được cấp ở server.
+ */
+export async function addXp(userId, amount) {
+  const gained = Math.floor(Number(amount));
+  if (!Number.isFinite(gained) || gained === 0) {
+    return { awarded: 0, ...(await getXp(userId)) };
+  }
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+
+  const prevLevel = levelFromXp(user.xp || 0);
+  const newXp = Math.max(0, (user.xp || 0) + gained);
+  const newLevel = levelFromXp(newXp);
+
+  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { xp: newXp } });
+
+  return {
+    awarded: gained,
+    xp: newXp,
+    level: newLevel,
+    xpIntoLevel: xpIntoLevel(newXp),
+    xpPerLevel: XP_PER_LEVEL,
+    leveledUp: newLevel > prevLevel,
+  };
+}
 
 export async function getStars(userId) {
   const user = await getCollection(COLLECTION).findOne({ id: userId });

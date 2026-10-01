@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
-import { uid, resultService, questionService, gameService, gameProgressService, coinService, gameEventService } from '../../services/api.js'
+import { uid, resultService, questionService, gameService, gameProgressService, gamePlayService, coinService, gameEventService } from '../../services/api.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
@@ -152,13 +152,41 @@ export default function StudentApp({ initialGame, coopSession, onExit, toast, us
     const correct = sessionResult.correct || 0;
     const total = isPlayToWin ? 0 : questions.length;
     const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
-    const entry = await resultService.submit({
-      gameId: gameGid, playerId: uid("player"), playerName,
-      gameType: isPlayToWin ? "play-to-win" : "play-to-learn",
-      score: sessionResult.score, correctAnswers: correct,
-      totalQuestions: total, accuracy,
-      completionTime: sessionResult.timeUsed,
-    });
+
+    let entry;
+    if (userAuth?.user) {
+      // Đã đăng nhập → chấm điểm ở server (không tin score/answers từ client).
+      // playId giữ nguyên khi bấm chơi lại để không cộng XP hai lần cho 1 lượt.
+      entry = await gamePlayService.complete({
+        gameId: gameGid,
+        playerName,
+        playId: sessionResult.playId,
+        answers: sessionResult.answers || [],
+        questionIds: sessionResult.questionIds || null,
+        clientScore: sessionResult.score,
+        timeUsed: sessionResult.timeUsed,
+        gameType: isPlayToWin ? "play-to-win" : "play-to-learn",
+        playMode: activeCoopSession ? "multiplayer" : (game?.playMode || "solo"),
+      });
+      entry = entry || {};
+      setFinalResult({
+        ...entry,
+        // Fallback: server trả totalQuestions=0 cho play-to-win
+        totalQuestions: entry.totalQuestions ?? total,
+        completionTime: entry.completionTime ?? sessionResult.timeUsed ?? 0,
+        accuracy: entry.accuracy ?? accuracy,
+      });
+    } else {
+      // Khách / chưa đăng nhập → giữ đường cũ (POST /api/results) như trước.
+      entry = await resultService.submit({
+        gameId: gameGid, playerId: uid("player"), playerName,
+        gameType: isPlayToWin ? "play-to-win" : "play-to-learn",
+        score: sessionResult.score, correctAnswers: correct,
+        totalQuestions: total, accuracy,
+        completionTime: sessionResult.timeUsed,
+      });
+      setFinalResult(entry);
+    }
 
     if (userAuth?.user) {
       const evtBase = { gameId: gameGid, gameType: game?.code || gameGid };
@@ -181,31 +209,21 @@ export default function StudentApp({ initialGame, coopSession, onExit, toast, us
       }
     }
 
-    // Coin reward: game may send coinReward (e.g. +50 for XO win)
+    // Coin reward: game có thể tự yêu cầu (add-coins, đã qua endpoint có trần).
+    // Ở đây chỉ xử lý phần coinReward mà game trả về kèm game-over.
     const coinReward = sessionResult.coinReward || 0;
-    if (coinReward > 0 && userAuth?.user) {
+    if (userAuth?.user && game?.code && (coinReward > 0 || (isPlayToWin && sessionResult.score > 0))) {
       try {
-        console.log("[Coin] Game awarded coins:", coinReward);
-        const coinResult = await coinService.add(coinReward);
-        console.log("[Coin] addCoins result:", coinResult);
-        if (game?.code) await gameProgressService.incrementPlay(game.code);
+        // play-to-win không báo coinReward → dùng điểm làm mức thưởng như cũ,
+        // giờ đã qua endpoint có trần/ngày nên không thể spam.
+        const amount = coinReward > 0 ? coinReward : (sessionResult.score || 0);
+        await gamePlayService.rewardCoins(amount);
+        await gameProgressService.incrementPlay(game.code);
       } catch (e) {
         console.error("[Coin] Failed to save coin reward:", e);
       }
-    } else if (isPlayToWin && userAuth?.user && game?.code) {
-      // Fallback: use score as coin amount for play-to-win games
-      try {
-        const coinAmount = sessionResult.score || 0;
-        console.log("[Coin] Saving coins (fallback):", { score: coinAmount, userId: userAuth.user.id });
-        const coinResult = await coinService.add(coinAmount);
-        console.log("[Coin] addCoins result:", coinResult);
-        await gameProgressService.incrementPlay(game.code);
-      } catch (e) {
-        console.error("[Coin] Failed to save coin progress:", e);
-      }
     }
 
-    setFinalResult(entry);
     setScreen("result");
   };
 
@@ -447,6 +465,8 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
 export function ResultScreen({ result, onSeeLeaderboard }) {
   const hasAccuracy = result.totalQuestions > 0;
   const isGreat = hasAccuracy ? result.accuracy >= 80 : result.score > 0;
+  const xpGained = result.xpGained || 0;
+  const profile = result.profile || null;
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-10">
       <div className="max-w-md w-full text-center anim-pop">
@@ -463,6 +483,17 @@ export function ResultScreen({ result, onSeeLeaderboard }) {
           )}
           <div className="note-card p-4"><div className="font-display text-2xl text-ticket">{result.completionTime}s</div><div className="text-xs text-[#8A7C63] font-mono uppercase mt-1">Thời gian</div></div>
         </div>
+        {(xpGained > 0 || profile) && (
+          <div className="note-card p-4 mb-8">
+            <p className="font-display text-xl text-ticket">+{xpGained} XP</p>
+            {profile && (
+              <p className="text-xs text-[#8A7C63] font-mono mt-1">
+                Cấp {profile.level}
+                {profile.leveledUp && " · Lên cấp mới!"}
+              </p>
+            )}
+          </div>
+        )}
         <PrimaryButton onClick={onSeeLeaderboard} className="w-full">Xem bảng xếp hạng →</PrimaryButton>
       </div>
     </div>

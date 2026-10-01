@@ -165,6 +165,14 @@ async function _runHeavyInit(database) {
           gameId: { bsonType: "string" },
           playerId: { bsonType: "string" },
           playerName: { bsonType: "string" },
+          // Field mới (ván chơi đã chốt ở server). Tất cả đều optional nên
+          // document cũ ghi bằng POST /api/results vẫn hợp lệ.
+          userId: { bsonType: "string" },
+          playId: { bsonType: "string" },
+          verified: { bsonType: "bool" },
+          xpGained: { bsonType: ["int", "double", "long"] },
+          coinGained: { bsonType: ["int", "double", "long"] },
+          source: { bsonType: "string" },
         },
       }
     },
@@ -181,6 +189,10 @@ async function _runHeavyInit(database) {
           classId: { bsonType: "string" },
           avatarLoadout: { bsonType: "object" },
           inventory: { bsonType: "array" },
+          // Field mới — XP/Level tích luỹ (optional, user cũ không có vẫn OK)
+          xp: { bsonType: ["int", "double", "long"] },
+          coinsEarnedOn: { bsonType: "string" },
+          coinsEarnedToday: { bsonType: ["int", "double", "long"] },
           createdAt: { bsonType: "string" },
         },
       }
@@ -486,6 +498,9 @@ async function _runHeavyInit(database) {
     ["results", { id: 1 }, { unique: true }],
     ["results", { gameId: 1 }],
     ["results", { gameId: 1, score: -1 }],
+    // Ván chơi đã chốt (có userId) — dùng cho idempotency theo playId
+    ["results", { userId: 1, playId: 1 }],
+    ["results", { userId: 1, gameId: 1, createdAt: -1 }],
     ["users", { id: 1 }, { unique: true }],
     ["users", { username: 1 }, { unique: true }],
     ["users", { name: 1 }],

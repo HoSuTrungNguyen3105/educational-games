@@ -205,6 +205,28 @@ export const resultService = {
   },
 };
 
+/**
+ * Chốt kết quả ván chơi (có xác thực + chấm điểm ở server).
+ * `playId` dùng làm khóa idempotency: gửi lại cùng playId sẽ không cộng XP 2 lần.
+ */
+export const gamePlayService = {
+  async complete(payload) {
+    return apiFetch("/game-plays/complete", { method: "POST", body: payload });
+  },
+  async recordAssignment(payload) {
+    return apiFetch("/game-plays/assignment", { method: "POST", body: payload });
+  },
+  async rewardCoins(amount) {
+    return apiFetch("/game-plays/reward-coins", { method: "POST", body: { amount } });
+  },
+};
+
+export const xpService = {
+  async get() {
+    return apiFetch("/auth/me/xp");
+  },
+};
+
 export const authService = {
   async login(username, password) {
     return apiFetch("/auth/login", { method: "POST", body: { username, password } });
@@ -486,8 +508,8 @@ export const assignmentService = {
   async start(id, { guestName } = {}) {
     return apiFetch(`/assignments/${id}/start`, { method: "POST", body: { guestName } });
   },
-  async submit(id, submissionId, answers, { guestName } = {}) {
-    return apiFetch(`/assignments/${id}/submit`, { method: "POST", body: { submissionId, answers, guestName } });
+  async submit(id, submissionId, answers, { guestName, gameResult } = {}) {
+    return apiFetch(`/assignments/${id}/submit`, { method: "POST", body: { submissionId, answers, guestName, gameResult } });
   },
   async getResult(id, { guestName, showCorrectAnswer } = {}) {
     const params = new URLSearchParams();

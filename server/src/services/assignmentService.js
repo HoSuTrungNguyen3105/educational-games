@@ -1,4 +1,5 @@
 import { getCollection } from "../db.js";
+import { isAnswerCorrect } from "../lib/gradeAnswer.js";
 
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -126,7 +127,7 @@ export async function startSubmission({ assignmentId, studentId }) {
   throw new Error("Bạn đã hết số lần làm bài cho phép");
 }
 
-export async function submitAnswers({ submissionId, studentId, answers }) {
+export async function submitAnswers({ submissionId, studentId, answers, gameResult = null }) {
   const sub = await getCollection("submissions").findOne({ id: submissionId });
   if (!sub) throw new Error("Bài nộp không tồn tại");
   if (sub.studentId !== studentId) throw new Error("Không có quyền");
@@ -142,38 +143,30 @@ export async function submitAnswers({ submissionId, studentId, answers }) {
   } else if (assignment.gameId) {
     questions = await getCollection("questions").find({ gameId: assignment.gameId }).toArray();
   }
-  
+
   let correctCount = 0;
   let wrongCount = 0;
   const totalQuestions = questions.length;
+  const answerList = Array.isArray(answers) ? answers : [];
 
-  if (questions.length > 0) {
+  if (answerList.length > 0 && questions.length > 0) {
+    // Đường chuẩn: học sinh trả lời từng câu → chấm ở server như cũ.
     const questionMap = {};
     for (const q of questions) questionMap[q.id] = q;
 
-    for (const ans of (answers || [])) {
+    for (const ans of answerList) {
       const q = questionMap[ans.questionId];
       if (!q) { wrongCount++; continue; }
-      
-      // Check answer based on question type
-      const questionType = q.questionType || q.type || "multiple_choice";
-      
-      if (questionType === "fill-in" || questionType === "text") {
-        // Fill-in: case-insensitive comparison
-        if (String(ans.value || "").trim().toLowerCase() === String(q.correctAnswer || q.answer || "").trim().toLowerCase()) {
-          correctCount++;
-        } else {
-          wrongCount++;
-        }
-      } else {
-        // Multiple choice: compare option key (A, B, C, D)
-        if (ans.value === q.correctAnswer || ans.value === q.answer) {
-          correctCount++;
-        } else {
-          wrongCount++;
-        }
-      }
+
+      if (isAnswerCorrect(q, ans.value)) correctCount++;
+      else wrongCount++;
     }
+  } else if (gameResult) {
+    // Đường bổ sung: bài giao chạy bằng HTML game, game không gửi từng câu trả lời
+    // (game tự chấm trong UI). Server chỉ nhận điểm đã bị chặn trần, không nhận
+    // đáp án đúng. Giữ nguyên công thức % để phần trăm khớp với các bài cũ.
+    correctCount = Math.max(0, Math.floor(Number(gameResult.correct) || 0));
+    wrongCount = Math.max(0, Math.floor(Number(gameResult.wrong) || 0));
   }
 
   const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
@@ -182,7 +175,7 @@ export async function submitAnswers({ submissionId, studentId, answers }) {
   await getCollection("submissions").updateOne(
     { id: submissionId },
     { $set: {
-      answers,
+      answers: answerList,
       submittedAt: now,
       status: "SUBMITTED",
       score,
@@ -193,7 +186,7 @@ export async function submitAnswers({ submissionId, studentId, answers }) {
     } },
   );
 
-  return { ...sub, score, correctCount, wrongCount, totalQuestions, status: "SUBMITTED" };
+  return { ...sub, answers: answerList, score, correctCount, wrongCount, totalQuestions, status: "SUBMITTED" };
 }
 
 export async function getSubmissionById(id) {

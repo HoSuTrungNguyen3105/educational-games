@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { assignmentService, questionService } from '../../services/api.js';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { assignmentService, questionService, gameService, gamePlayService, templateService } from '../../services/api.js';
 import { useUserAuthStore } from '../../stores/userAuth.store.js';
 import { navigate } from '../../lib/router.js';
+import GamePlayRouter from '../../games/GamePlayRouter.jsx';
 import { Clock, AlertTriangle, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Send, User, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const TIMER_WARN = 60;
@@ -14,7 +15,7 @@ function clearGuestName() {
   localStorage.removeItem(GUEST_STORAGE_KEY);
 }
 
-function Header({ title, timeLeft, isExam, onBack, answeredCount, totalQuestions }) {
+function Header({ title, timeLeft, isExam, onBack, answeredCount, totalQuestions, hideProgress }) {
   function formatTime(sec) {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -28,7 +29,9 @@ function Header({ title, timeLeft, isExam, onBack, answeredCount, totalQuestions
         </button>
         <div className="min-w-0">
           <h1 className="font-display text-sm lg:text-base font-bold text-gray-800 truncate">{title}</h1>
-          <p className="text-xs text-gray-400">{answeredCount}/{totalQuestions} câu đã trả lời</p>
+          {!hideProgress && (
+            <p className="text-xs text-gray-400">{answeredCount}/{totalQuestions} câu đã trả lời</p>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-3 shrink-0">
@@ -257,6 +260,7 @@ function GuestNameForm({ assignmentTitle, onSubmit, loading }) {
 
 export default function AssignmentTake({ code: codeOrId }) {
   const user = useUserAuthStore(s => s.user);
+  const token = useUserAuthStore(s => s.token);
   const [assignment, setAssignment] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -271,6 +275,10 @@ export default function AssignmentTake({ code: codeOrId }) {
   const [timerRef, setTimerRef] = useState(null);
   const [resolved, setResolved] = useState(false);
   const [guestName, setGuestName] = useState(null);
+  // Bài giao gắn với 1 game → chạy HTML game thay vì form trắc nghiệm.
+  // Không có gameId thì rơi về UI cũ (xem câu hỏi + nộp bài).
+  const [game, setGame] = useState(null);
+  const [gamePlayError, setGamePlayError] = useState('');
 
   const isGuest = !user && guestName;
 
@@ -291,6 +299,41 @@ export default function AssignmentTake({ code: codeOrId }) {
     } catch (err) { setError(err.message || 'Không tìm thấy bài tập'); }
     setLoading(false);
   }
+
+  // Bài giao có gameId → tải game để chạy HTML template tương ứng.
+  //
+  // CHỈ bật chế độ game khi template thật sự có `htmlTemplate`. Lý do:
+  // nếu không có HTML, GamePlayRouter rơi về PlayGameScreen (React), mà màn
+  // hình đó so sánh `q.correctAnswer` — field này bị API cắt khỏi response cho
+  // học sinh → mọi câu đều sai. Trường hợp đó phải giữ nguyên form trắc nghiệm.
+  useEffect(() => {
+    const gid = assignment?.gameId;
+    if (!gid) return;
+    let active = true;
+    (async () => {
+      try {
+        const g = await gameService.get(gid);
+        if (!active) return;
+        if (!g) { setGame(null); return; }
+        const tid = g.templateId ? (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid || String(g.templateId)) : null;
+        if (!tid) { setGame(null); return; }
+        const tpl = await templateService.get(tid);
+        if (!active) return;
+        setGame(tpl?.htmlTemplate?.trim() ? g : null);
+      } catch {
+        if (active) setGame(null);
+      }
+    })();
+    return () => { active = false; };
+  }, [assignment?.gameId]);
+
+  const activeGame = assignment?.gameId ? game : null;
+
+  // Interval hết giờ đã đóng từ lúc render trước, nên cần ref để biết
+  // hiện đang ở chế độ game hay không mà không cần tạo lại interval.
+  const activeGameRef = useRef(null);
+  activeGameRef.current = activeGame;
+  const gameFinishRef = useRef(null);
 
   useEffect(() => {
     if (resolved && user && assignment) { clearGuestName(); initAssignment(assignment.id); }
@@ -329,11 +372,16 @@ export default function AssignmentTake({ code: codeOrId }) {
       if (assignment.isExam && assignment.examDuration && sub) {
         const remaining = sub.remainingTime ?? Math.max(0, assignment.examDuration * 60 - Math.floor((Date.now() - new Date(sub.startedAt).getTime()) / 1000));
         setTimeLeft(remaining);
-        if (remaining <= 0) { doSubmitNow(); return; }
+        // Hết giờ: chế độ game nộp qua luồng game, ngược lại nộp form như cũ.
+        const timeoutSubmit = () => {
+          if (activeGameRef.current) gameFinishRef.current?.();
+          else doSubmitNow();
+        };
+        if (remaining <= 0) { timeoutSubmit(); return; }
         const intervalId = setInterval(() => {
           setTimeLeft(prev => {
             const next = prev - 1;
-            if (next <= 0) { clearInterval(intervalId); doSubmitNow(); return 0; }
+            if (next <= 0) { clearInterval(intervalId); timeoutSubmit(); return 0; }
             return next;
           });
         }, 1000);
@@ -361,6 +409,58 @@ export default function AssignmentTake({ code: codeOrId }) {
   function setAnswer(questionId, value) {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   }
+
+  /**
+   * Game HTML vừa kết thúc → nộp bài giao.
+   *
+   * - Có `answers`  → server chấm từng câu (đường chuẩn).
+   * - Không có      → game tự chấm trong UI, chỉ gửi số đúng/sai đã bị chặn trần.
+   */
+  const handleGameFinish = useCallback(async (gameResult) => {
+    if (submitted) return;
+    setSubmitted(true);
+    setGamePlayError('');
+    if (timerRef) clearInterval(timerRef);
+
+    const sub = submission;
+    const submissionId = sub?.id || sub?._id;
+    const answerList = Array.isArray(gameResult?.answers) ? gameResult.answers : [];
+
+    try {
+      if (!submissionId) throw new Error('Không tìm thấy submission');
+
+      await assignmentService.submit(assignment.id, submissionId, answerList, {
+        guestName,
+        gameResult: answerList.length > 0 ? null : {
+          correct: gameResult?.correct || 0,
+          wrong: Math.max(0, (gameResult?.totalQuestions || 0) - (gameResult?.correct || 0)),
+        },
+      });
+
+      // Ghi result + cấp XP (chỉ khi đã đăng nhập; khách thì bỏ qua).
+      if (user) {
+        try {
+          await gamePlayService.recordAssignment({
+            submissionId,
+            playId: gameResult?.playId,
+            gameScore: gameResult?.score,
+            timeUsed: gameResult?.timeUsed,
+          });
+        } catch (e) {
+          console.error('[AssignmentTake] Ghi result thất bại:', e);
+        }
+      }
+
+      const full = await assignmentService.getResult(assignment.id, { guestName, showCorrectAnswer: true });
+      setResult(full);
+    } catch (err) {
+      setGamePlayError(err.message || 'Không thể nộp bài');
+      setSubmitted(false);
+    }
+  }, [assignment, submission, submitted, timerRef, guestName, user]);
+
+  // Cho interval hết giờ gọi được (nó được tạo ở render trước).
+  gameFinishRef.current = handleGameFinish;
 
   const answeredCount = Object.values(answers).filter(v => v != null && v !== '').length;
 
@@ -433,6 +533,37 @@ export default function AssignmentTake({ code: codeOrId }) {
   }
 
   const currentQuestion = questions[currentIdx];
+
+  // ── Chế độ GAME: bài giao gắn với 1 game HTML ──
+  // Game tự điều khiển câu hỏi/timer trong iframe; app chỉ giữ header + nộp bài.
+  if (activeGame && questions.length > 0) {
+    return (
+      <div className="min-h-screen flex flex-col bg-paper">
+        <Header
+          title={assignment?.title}
+          timeLeft={timeLeft}
+          isExam={assignment?.isExam}
+          onBack={() => navigate('/')}
+          hideProgress
+        />
+        {gamePlayError && (
+          <div className="mx-4 mt-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
+            {gamePlayError}
+          </div>
+        )}
+        <div className="flex-1 flex flex-col min-h-0">
+          <GamePlayRouter
+            game={activeGame}
+            questions={questions}
+            playerName={user?.name || guestName || 'Học sinh'}
+            userAuth={user && token ? { user, token } : null}
+            onFinish={handleGameFinish}
+            onQuit={() => navigate('/')}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-yellow-50/50">

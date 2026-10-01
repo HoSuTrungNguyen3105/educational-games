@@ -113,6 +113,10 @@ r.get("/resolve/:codeOrId", async (req, res) => {
       description: assignment.description,
       isExam: assignment.isExam,
       examDuration: assignment.examDuration,
+      // gameId: để client biết có nên chạy HTML game thay vì form trắc nghiệm.
+      // Field mới, không ảnh hưởng client cũ (thiếu field → fallback về UI cũ).
+      gameId: assignment.gameId || null,
+      templateId: assignment.templateId || null,
       questionIds: assignment.questionIds || [],
       questionCount: assignment.questionIds?.length || 0,
       maxAttempts: assignment.maxAttempts ?? 1,
@@ -185,7 +189,7 @@ r.post("/:id/start", optionalAuth, async (req, res) => {
 // Submit answers (student/guest)
 r.post("/:id/submit", optionalAuth, async (req, res) => {
   try {
-    const { submissionId, answers, guestName } = req.body;
+    const { submissionId, answers, guestName, gameResult } = req.body;
     if (!submissionId) return sendError(res, "submissionId là bắt buộc", 400);
     const studentId = req.user?.sub || (guestName ? `guest_${guestName}_${req.params.id}` : null);
     if (!studentId) return sendError(res, "Cần đăng nhập hoặc nhập tên", 400);
@@ -194,6 +198,8 @@ r.post("/:id/submit", optionalAuth, async (req, res) => {
       submissionId,
       studentId,
       answers: answers || [],
+      // Bài giao chạy bằng HTML game: game tự chấm trong UI nên không gửi từng câu.
+      gameResult: gameResult && typeof gameResult === "object" ? gameResult : null,
     });
     sendSuccess(res, result);
   } catch (e) { sendError(res, e.message, 400); }

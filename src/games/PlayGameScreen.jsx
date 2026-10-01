@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTemplate } from '../lib/hooks.js'
 import { StampToken } from '../components/ui.jsx'
 import { AnswerExplain } from './shared.jsx'
+import { uid } from '../services/api.js'
 
 export default function PlayGameScreen({ game, questions, onFinish }) {
   const [idx, setIdx] = useState(0);
@@ -12,7 +13,11 @@ export default function PlayGameScreen({ game, questions, onFinish }) {
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const startRef = useRef(Date.now());
+  const playIdRef = useRef(null);
+  const answersRef = useRef([]);
   const tpl = useTemplate(game);
+
+  if (playIdRef.current === null) playIdRef.current = uid('play');
 
   useEffect(() => { setTimeLeft(q.timeLimit); setSelected(null); setRevealed(false); }, [idx]);
 
@@ -26,6 +31,12 @@ export default function PlayGameScreen({ game, questions, onFinish }) {
   function handleAnswer(optionId) {
     if (revealed) return;
     const isCorrect = optionId === q.correctAnswer;
+    // Ghi lại đáp án để server chấm lại (không tin điểm phía client).
+    answersRef.current.push({
+      questionId: q.id,
+      value: optionId,
+      timeSpent: Math.max(0, (q.timeLimit || 0) - timeLeft),
+    });
     setSelected(optionId);
     setRevealed(true);
     if (isCorrect) {
@@ -37,7 +48,15 @@ export default function PlayGameScreen({ game, questions, onFinish }) {
       if (idx + 1 < questions.length) { setIdx(i => i + 1); }
       else {
         const timeUsed = Math.round((Date.now() - startRef.current) / 1000);
-        onFinish({ score: score + (isCorrect ? q.points + Math.round((timeLeft / q.timeLimit) * 40) : 0), correct: correctCount + (isCorrect ? 1 : 0), timeUsed });
+        onFinish({
+          score: score + (isCorrect ? q.points + Math.round((timeLeft / q.timeLimit) * 40) : 0),
+          correct: correctCount + (isCorrect ? 1 : 0),
+          totalQuestions: questions.length,
+          timeUsed,
+          answers: answersRef.current,
+          playId: playIdRef.current,
+          questionIds: questions.map(x => x?.id).filter(Boolean),
+        });
       }
     }, 1300);
   }
