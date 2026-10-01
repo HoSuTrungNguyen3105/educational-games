@@ -1,4 +1,6 @@
 import { MongoClient, ObjectId } from "mongodb";
+// eslint-disable-next-line no-unused-vars
+import { MINI_GAME_IDS } from "./config/miniGameConfig.js";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -80,248 +82,365 @@ async function _runHeavyInit(database) {
   const seeded = [];
 
   const collectionDefs = {
-    templates: { $jsonSchema: {
-      bsonType: "object",
-      required: ["name", "description", "type", "category", "icon", "ring", "status"],
-      properties: {
-        name: { bsonType: "string" },
-        description: { bsonType: "string" },
-        type: { enum: ["play-to-learn", "play-to-win"] },
-        category: { bsonType: "string" },
-        icon: { bsonType: "string" },
-        ring: { bsonType: "string" },
-        htmlTemplate: { bsonType: "string" },
-        thumbnail: { bsonType: "string" },
-        status: { enum: ["published", "draft", "inactive"] },
-        createdAt: { bsonType: "string" },
-        updatedAt: { bsonType: "string" },
-      },
-    } },
-    games: { $jsonSchema: {
-      bsonType: "object",
-      required: ["name", "description", "status", "questionsCount", "playersCount", "code"],
-      properties: {
-        name: { bsonType: "string" },
-        description: { bsonType: "string" },
-        subject: { bsonType: "string" },
-        topic: { bsonType: "string" },
-        language: { bsonType: "string" },
-        templateId: { bsonType: "objectId" },
-        type: { enum: ["play-to-learn", "play-to-win"] },
-        status: { enum: ["published", "draft"] },
-        code: { bsonType: "string" },
-        createdAt: { bsonType: "string" },
-        updatedAt: { bsonType: "string" },
-      },
-    } },
-    questions: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "content", "options", "correctAnswer"],
-      properties: {
-        id: { bsonType: "string" },
-        gameId: { bsonType: "string" },
-        bankId: { bsonType: "string" },
-        content: { bsonType: "string" },
-        options: { bsonType: "array" },
-        correctAnswer: { bsonType: "string" },
-      },
-    } },
-    question_banks: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "content", "options", "correctAnswer"],
-      properties: {
-        id: { bsonType: "string" },
-        content: { bsonType: "string" },
-        options: { bsonType: "array" },
-        correctAnswer: { bsonType: "string" },
-        subject: { bsonType: "string" },
-        category: { bsonType: "string" },
-        difficulty: { bsonType: "string" },
-      },
-    } },
-    players: { $jsonSchema: {
-      bsonType: "object",
-      required: ["name"],
-      properties: { name: { bsonType: "string" } },
-    } },
-    results: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "gameId", "playerId", "playerName", "score", "correctAnswers", "totalQuestions", "accuracy"],
-      properties: {
-        id: { bsonType: "string" },
-        gameId: { bsonType: "string" },
-        playerId: { bsonType: "string" },
-        playerName: { bsonType: "string" },
-      },
-    } },
-    users: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "username", "name", "role", "passwordHash"],
-      properties: {
-        id: { bsonType: "string" },
-        username: { bsonType: "string" },
-        name: { bsonType: "string" },
-        role: { enum: ["teacher", "student", "admin"] },
-        passwordHash: { bsonType: "string" },
-        classId: { bsonType: "string" },
-        avatarLoadout: { bsonType: "object" },
-        inventory: { bsonType: "array" },
-        createdAt: { bsonType: "string" },
-      },
-    } },
-    categories: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "label"],
-      properties: { id: { bsonType: "string" }, label: { bsonType: "string" } },
-    } },
-    subjects: { $jsonSchema: {
-      bsonType: "object",
-      required: ["list"],
-      properties: { list: { bsonType: "array" } },
-    } },
-    notifications: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "toUserId", "type", "read", "createdAt"],
-      properties: {
-        id: { bsonType: "string" },
-        fromUserId: { bsonType: "string" },
-        fromUsername: { bsonType: "string" },
-        fromName: { bsonType: "string" },
-        toUserId: { bsonType: "string" },
-        gameId: { bsonType: "string" },
-        gameName: { bsonType: "string" },
-        gameCode: { bsonType: "string" },
-        type: { bsonType: "string" },
-        title: { bsonType: "string" },
-        message: { bsonType: "string" },
-        data: { bsonType: "object" },
-        read: { bsonType: "bool" },
-        sentAt: { bsonType: "string" },
-        createdAt: { bsonType: "string" },
-      },
-    } },
-    user_devices: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "userId", "token", "deviceType", "isActive"],
-      properties: {
-        id: { bsonType: "string" },
-        userId: { bsonType: "string" },
-        token: { bsonType: "string" },
-        deviceType: { bsonType: "string" },
-        isActive: { bsonType: "bool" },
-        createdAt: { bsonType: "string" },
-        updatedAt: { bsonType: "string" },
-      },
-    } },
-    classes: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "name", "code", "status"],
-      properties: {
-        id: { bsonType: "string" },
-        name: { bsonType: "string" },
-        code: { bsonType: "string" },
-        schoolYear: { bsonType: "string" },
-        status: { enum: ["ACTIVE", "INACTIVE"] },
-        createdAt: { bsonType: "string" },
-        updatedAt: { bsonType: "string" },
-      },
-    } },
-    teacher_classes: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "teacherId", "classId"],
-      properties: {
-        id: { bsonType: "string" },
-        teacherId: { bsonType: "string" },
-        classId: { bsonType: "string" },
-        createdAt: { bsonType: "string" },
-      },
-    } },
-    assignments: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "teacherId", "title", "classId", "code", "status"],
-      properties: {
-        id: { bsonType: "string" },
-        teacherId: { bsonType: "string" },
-        templateId: { bsonType: "string" },
-        gameId: { bsonType: "string" },
-        questionIds: { bsonType: "array" },
-        title: { bsonType: "string" },
-        description: { bsonType: "string" },
-        classId: { bsonType: "string" },
-        code: { bsonType: "string" },
-        isExam: { bsonType: "bool" },
-        examDuration: { bsonType: "int" },
-        deadline: { bsonType: "string" },
-        maxAttempts: { bsonType: ["int", "null"] },
-        status: { enum: ["ACTIVE", "CLOSED"] },
-        createdAt: { bsonType: "string" },
-        updatedAt: { bsonType: "string" },
-      },
-    } },
-    submissions: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "assignmentId", "studentId", "status"],
-      properties: {
-        id: { bsonType: "string" },
-        assignmentId: { bsonType: "string" },
-        studentId: { bsonType: "string" },
-        startedAt: { bsonType: "string" },
-        submittedAt: { bsonType: "string" },
-        status: { enum: ["IN_PROGRESS", "SUBMITTED"] },
-        score: { bsonType: "double" },
-        correctCount: { bsonType: "int" },
-        wrongCount: { bsonType: "int" },
-        totalQuestions: { bsonType: "int" },
-        answers: { bsonType: "array" },
-        createdAt: { bsonType: "string" },
-        updatedAt: { bsonType: "string" },
-      },
-    } },
-    gardens: { $jsonSchema: {
-      bsonType: "object",
-      required: ["userId", "slots"],
-      properties: {
-        userId: { bsonType: "string" },
-        slots: { bsonType: "array" },
-        inventory: { bsonType: "object" },
-        createdAt: { bsonType: "string" },
-      },
-    } },
-    plantTypes: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "name"],
-      properties: {
-        id: { bsonType: "string" },
-        name: { bsonType: "string" },
-        icon: { bsonType: "string" },
-        stages: { bsonType: "int" },
-        growthTime: { bsonType: "int" },
-        harvestCoin: { bsonType: "int" },
-        seedPrice: { bsonType: "int" },
-        rarity: { bsonType: "string" },
-        palette: { bsonType: "object" },
-      },
-    } },
-    reminders: { $jsonSchema: {
-      bsonType: "object",
-      required: ["id", "userId", "title", "remindAt", "triggered", "createdAt"],
-      properties: {
-        id: { bsonType: "string" },
-        userId: { bsonType: "string" },
-        title: { bsonType: "string" },
-        message: { bsonType: "string" },
-        remindAt: { bsonType: "string" },
-        repeat: { bsonType: "string" },
-        type: { bsonType: "string" },
-        relatedId: { bsonType: "string" },
-        vibrate: { bsonType: "bool" },
-        sound: { bsonType: "bool" },
-        vibratePattern: { bsonType: "string" },
-        triggered: { bsonType: "bool" },
-        createdAt: { bsonType: "string" },
-        updatedAt: { bsonType: "string" },
-      },
-    } },
+    templates: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["name", "description", "type", "category", "icon", "ring", "status"],
+        properties: {
+          name: { bsonType: "string" },
+          description: { bsonType: "string" },
+          type: { enum: ["play-to-learn", "play-to-win"] },
+          category: { bsonType: "string" },
+          icon: { bsonType: "string" },
+          ring: { bsonType: "string" },
+          htmlTemplate: { bsonType: "string" },
+          thumbnail: { bsonType: "string" },
+          status: { enum: ["published", "draft", "inactive"] },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+    games: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["name", "description", "status", "questionsCount", "playersCount", "code"],
+        properties: {
+          name: { bsonType: "string" },
+          description: { bsonType: "string" },
+          subject: { bsonType: "string" },
+          topic: { bsonType: "string" },
+          language: { bsonType: "string" },
+          templateId: { bsonType: "objectId" },
+          type: { enum: ["play-to-learn", "play-to-win"] },
+          status: { enum: ["published", "draft"] },
+          code: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+    questions: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "content", "options", "correctAnswer"],
+        properties: {
+          id: { bsonType: "string" },
+          gameId: { bsonType: "string" },
+          bankId: { bsonType: "string" },
+          content: { bsonType: "string" },
+          options: { bsonType: "array" },
+          correctAnswer: { bsonType: "string" },
+        },
+      }
+    },
+    question_banks: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "content", "options", "correctAnswer"],
+        properties: {
+          id: { bsonType: "string" },
+          content: { bsonType: "string" },
+          options: { bsonType: "array" },
+          correctAnswer: { bsonType: "string" },
+          subject: { bsonType: "string" },
+          category: { bsonType: "string" },
+          difficulty: { bsonType: "string" },
+        },
+      }
+    },
+    players: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["name"],
+        properties: { name: { bsonType: "string" } },
+      }
+    },
+    results: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "gameId", "playerId", "playerName", "score", "correctAnswers", "totalQuestions", "accuracy"],
+        properties: {
+          id: { bsonType: "string" },
+          gameId: { bsonType: "string" },
+          playerId: { bsonType: "string" },
+          playerName: { bsonType: "string" },
+        },
+      }
+    },
+    users: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "username", "name", "role", "passwordHash"],
+        properties: {
+          id: { bsonType: "string" },
+          username: { bsonType: "string" },
+          name: { bsonType: "string" },
+          role: { enum: ["teacher", "student", "admin"] },
+          passwordHash: { bsonType: "string" },
+          classId: { bsonType: "string" },
+          avatarLoadout: { bsonType: "object" },
+          inventory: { bsonType: "array" },
+          createdAt: { bsonType: "string" },
+        },
+      }
+    },
+    categories: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "label"],
+        properties: { id: { bsonType: "string" }, label: { bsonType: "string" } },
+      }
+    },
+    subjects: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["list"],
+        properties: { list: { bsonType: "array" } },
+      }
+    },
+    notifications: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "toUserId", "type", "read", "createdAt"],
+        properties: {
+          id: { bsonType: "string" },
+          fromUserId: { bsonType: "string" },
+          fromUsername: { bsonType: "string" },
+          fromName: { bsonType: "string" },
+          toUserId: { bsonType: "string" },
+          gameId: { bsonType: "string" },
+          gameName: { bsonType: "string" },
+          gameCode: { bsonType: "string" },
+          type: { bsonType: "string" },
+          title: { bsonType: "string" },
+          message: { bsonType: "string" },
+          data: { bsonType: "object" },
+          read: { bsonType: "bool" },
+          sentAt: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+        },
+      }
+    },
+    user_devices: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "userId", "token", "deviceType", "isActive"],
+        properties: {
+          id: { bsonType: "string" },
+          userId: { bsonType: "string" },
+          token: { bsonType: "string" },
+          deviceType: { bsonType: "string" },
+          isActive: { bsonType: "bool" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+    classes: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "name", "code", "status"],
+        properties: {
+          id: { bsonType: "string" },
+          name: { bsonType: "string" },
+          code: { bsonType: "string" },
+          schoolYear: { bsonType: "string" },
+          status: { enum: ["ACTIVE", "INACTIVE"] },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+    teacher_classes: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "teacherId", "classId"],
+        properties: {
+          id: { bsonType: "string" },
+          teacherId: { bsonType: "string" },
+          classId: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+        },
+      }
+    },
+    assignments: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "teacherId", "title", "classId", "code", "status"],
+        properties: {
+          id: { bsonType: "string" },
+          teacherId: { bsonType: "string" },
+          templateId: { bsonType: "string" },
+          gameId: { bsonType: "string" },
+          questionIds: { bsonType: "array" },
+          title: { bsonType: "string" },
+          description: { bsonType: "string" },
+          classId: { bsonType: "string" },
+          code: { bsonType: "string" },
+          isExam: { bsonType: "bool" },
+          examDuration: { bsonType: "int" },
+          deadline: { bsonType: "string" },
+          maxAttempts: { bsonType: ["int", "null"] },
+          status: { enum: ["ACTIVE", "CLOSED"] },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+    submissions: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "assignmentId", "studentId", "status"],
+        properties: {
+          id: { bsonType: "string" },
+          assignmentId: { bsonType: "string" },
+          studentId: { bsonType: "string" },
+          startedAt: { bsonType: "string" },
+          submittedAt: { bsonType: "string" },
+          status: { enum: ["IN_PROGRESS", "SUBMITTED"] },
+          score: { bsonType: "double" },
+          correctCount: { bsonType: "int" },
+          wrongCount: { bsonType: "int" },
+          totalQuestions: { bsonType: "int" },
+          answers: { bsonType: "array" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+    gardens: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["userId", "slots"],
+        properties: {
+          userId: { bsonType: "string" },
+          slots: { bsonType: "array" },
+          inventory: { bsonType: "object" },
+          createdAt: { bsonType: "string" },
+        },
+      }
+    },
+    plantTypes: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "name"],
+        properties: {
+          id: { bsonType: "string" },
+          name: { bsonType: "string" },
+          icon: { bsonType: "string" },
+          stages: { bsonType: "int" },
+          growthTime: { bsonType: "int" },
+          harvestCoin: { bsonType: "int" },
+          seedPrice: { bsonType: "int" },
+          rarity: { bsonType: "string" },
+          palette: { bsonType: "object" },
+        },
+      }
+    },
+    reminders: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "userId", "title", "remindAt", "triggered", "createdAt"],
+        properties: {
+          id: { bsonType: "string" },
+          userId: { bsonType: "string" },
+          title: { bsonType: "string" },
+          message: { bsonType: "string" },
+          remindAt: { bsonType: "string" },
+          repeat: { bsonType: "string" },
+          type: { bsonType: "string" },
+          relatedId: { bsonType: "string" },
+          vibrate: { bsonType: "bool" },
+          sound: { bsonType: "bool" },
+          vibratePattern: { bsonType: "string" },
+          triggered: { bsonType: "bool" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+
+    // ── Mini-game integration collections ──────────────────────────────────
+
+    /**
+     * mini_sessions — session chống gian lận cho từng ván solo.
+     * Tạo khi openGame(), đóng khi submit result.
+     */
+    mini_sessions: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["sessionId", "userId", "game", "startedAt", "status"],
+        properties: {
+          sessionId: { bsonType: "string" },
+          userId: { bsonType: "string" },
+          game: { bsonType: "string" },
+          startedAt: { bsonType: "string" },
+          status: { enum: ["open", "closed"] },
+          closedAt: { bsonType: "string" },
+          suspicious: { bsonType: "bool" },
+        },
+      }
+    },
+
+    /**
+     * mini_results — kết quả từng ván mini-game đã xác thực.
+     * sessionId là unique → idempotent.
+     */
+    mini_results: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["sessionId", "userId", "game", "score", "xpGained", "createdAt"],
+        properties: {
+          sessionId: { bsonType: "string" },
+          userId: { bsonType: "string" },
+          game: { bsonType: "string" },
+          score: { bsonType: "int" },
+          xpGained: { bsonType: "int" },
+          details: { bsonType: "object" },
+          suspicious: { bsonType: "bool" },
+          createdAt: { bsonType: "string" },
+        },
+      }
+    },
+
+    /**
+     * user_mini_progress — tiến độ tổng hợp của mỗi user.
+     */
+    user_mini_progress: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["userId", "totalXp", "level", "gamesPlayed", "played", "best", "badges", "updatedAt"],
+        properties: {
+          userId: { bsonType: "string" },
+          totalXp: { bsonType: "int" },
+          level: { bsonType: "int" },
+          gamesPlayed: { bsonType: "int" },
+          played: { bsonType: "array" },
+          best: { bsonType: "object" },
+          badges: { bsonType: "array" },
+          displayName: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+        },
+      }
+    },
+
+    /**
+     * user_badges — lịch sử mở huy hiệu.
+     */
+    user_badges: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["userId", "badgeId", "earnedAt"],
+        properties: {
+          userId: { bsonType: "string" },
+          badgeId: { bsonType: "string" },
+          earnedAt: { bsonType: "string" },
+          sessionId: { bsonType: "string" },
+        },
+      }
+    },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -428,6 +547,33 @@ async function _runHeavyInit(database) {
     ["reminders", { userId: 1 }],
     ["reminders", { userId: 1, remindAt: 1 }],
     ["reminders", { remindAt: 1, triggered: 1 }],
+
+    // ── Mini-game collections indexes ──────────────────────────────────────
+    // mini_sessions
+    ["mini_sessions", { sessionId: 1 }, { unique: true }],
+    ["mini_sessions", { userId: 1 }],
+    ["mini_sessions", { userId: 1, status: 1 }],
+    ["mini_sessions", { startedAt: -1 }],
+
+    // mini_results — sessionId unique → idempotent submit
+    ["mini_results", { sessionId: 1 }, { unique: true }],
+    ["mini_results", { userId: 1 }],
+    ["mini_results", { game: 1 }],
+    // leaderboard: top score per game (chỉ không suspicious)
+    ["mini_results", { game: 1, suspicious: 1, score: -1 }],
+    ["mini_results", { createdAt: -1 }],
+
+    // user_mini_progress — một document duy nhất mỗi user
+    ["user_mini_progress", { userId: 1 }, { unique: true }],
+    // leaderboard XP tổng
+    ["user_mini_progress", { totalXp: -1 }],
+    ["user_mini_progress", { level: -1 }],
+
+    // user_badges — unique per (userId, badgeId) để không trùng
+    ["user_badges", { userId: 1, badgeId: 1 }, { unique: true }],
+    ["user_badges", { userId: 1 }],
+    ["user_badges", { badgeId: 1 }],
+    ["user_badges", { earnedAt: -1 }],
   ];
 
   const createdIndexes = [];

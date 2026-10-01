@@ -33,6 +33,7 @@ import gameSessionsRouter from "./routes/gameSessions.js";
 import gameInvitesRouter from "./routes/gameInvites.js";
 import remindersRouter from "./routes/reminders.js";
 import permissionsRouter from "./routes/permissions.js";
+import miniGamesRouter from "./routes/miniGames.js";
 import * as reminderService from "./services/reminderService.js";
 import { verifyToken } from "./services/authService.js";
 
@@ -94,6 +95,7 @@ app.use("/api/game-sessions", gameSessionsRouter);
 app.use("/api/game-invites", gameInvitesRouter);
 app.use("/api/reminders", remindersRouter);
 app.use("/api/permissions", permissionsRouter);
+app.use("/api/mini", miniGamesRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);

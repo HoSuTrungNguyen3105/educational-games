@@ -1,644 +1,1180 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Học Mà Chơi</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --ink:#1c1b3a; --paper:#fbf8ef; --line:#e6e0cc;
-  --sun:#ffc93c; --tomato:#ff6b57; --mint:#2fc9a5; --sky:#4b9dff; --lilac:#a184ff;
-  --ok:#22b573; --bad:#f0483e;
-  --shadow:4px 4px 0 var(--ink);
-  --head:'Baloo 2','Nunito','Segoe UI',system-ui,sans-serif;
-  --body:'Be Vietnam Pro','Segoe UI',system-ui,sans-serif;
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0}
-body{
-  font-family:var(--body);color:var(--ink);background-color:var(--paper);
-  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
-  background-size:28px 28px;min-height:100vh;
-}
-#app{max-width:980px;margin:0 auto;padding:14px 14px 60px}
-button{font-family:inherit;color:inherit;cursor:pointer}
-h1,h2,h3{font-family:var(--head);margin:0;line-height:1.1}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Học Mà Chơi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1c1b3a;
+      --paper: #fbf8ef;
+      --line: #e6e0cc;
+      --sun: #ffc93c;
+      --tomato: #ff6b57;
+      --mint: #2fc9a5;
+      --sky: #4b9dff;
+      --lilac: #a184ff;
+      --ok: #22b573;
+      --bad: #f0483e;
+      --shadow: 4px 4px 0 var(--ink);
+      --head: 'Baloo 2', 'Nunito', 'Segoe UI', system-ui, sans-serif;
+      --body: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+    }
 
-/* header */
-.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-.logo{font-family:var(--head);font-weight:800;font-size:30px;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
-.logo i{font-style:normal;display:grid;place-items:center;width:42px;height:42px;background:var(--sun);border:3px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);transform:rotate(-6deg)}
-.me{margin-left:auto;display:flex;align-items:center;gap:10px}
-.lvl{font-family:var(--head);font-weight:800;background:var(--ink);color:#fff;border-radius:999px;padding:4px 14px;font-size:17px}
-.xp{width:130px;height:16px;border:3px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden}
-.xp i{display:block;height:100%;width:0;background:var(--mint);transition:width .6s cubic-bezier(.2,.9,.3,1.2)}
-.snd{width:40px;height:40px;border-radius:12px;border:3px solid var(--ink);background:#fff;font-size:18px}
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent
+    }
 
-/* hub */
-.hero{display:flex;gap:18px;align-items:end;justify-content:space-between;flex-wrap:wrap;margin:6px 0 20px}
-.hero h2{font-size:clamp(30px,6vw,52px);font-weight:800;letter-spacing:-1px;max-width:14ch}
-.hero p{margin:0;max-width:34ch;font-size:15px;line-height:1.5;color:#4b4a6b}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
-.tile{
-  text-align:left;border:3px solid var(--ink);border-radius:22px;padding:18px;box-shadow:var(--shadow);
-  display:flex;flex-direction:column;gap:8px;min-height:190px;position:relative;transition:transform .12s,box-shadow .12s;background:#fff
-}
-.tile:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--ink)}
-.tile:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
-.tile .ic{font-size:44px;line-height:1}
-.tile h3{font-size:26px;font-weight:800}
-.tile p{margin:0;font-size:14px;line-height:1.45}
-.tile .meta{margin-top:auto;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700}
-.tag{background:var(--ink);color:#fff;border-radius:999px;padding:3px 11px;font-size:12px;font-weight:700}
-.badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px;align-items:center}
-.badges b{font-family:var(--head);font-size:20px;margin-right:4px}
-.bd{display:flex;align-items:center;gap:6px;border:2.5px solid var(--ink);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;background:#fff}
-.bd.off{opacity:.38;filter:grayscale(1);border-style:dashed}
+    html,
+    body {
+      margin: 0
+    }
 
-/* game shell */
-.bar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.back{border:3px solid var(--ink);background:#fff;border-radius:14px;padding:8px 14px;font-weight:700;box-shadow:3px 3px 0 var(--ink)}
-.bar h2{font-size:28px;font-weight:800}
-.stage{max-width:640px;margin:0 auto}
-.panel{background:#fff;border:3px solid var(--ink);border-radius:22px;padding:20px;box-shadow:var(--shadow)}
-.center{text-align:center}
-.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
-.btn{border:3px solid var(--ink);background:var(--sun);border-radius:14px;padding:12px 20px;font-weight:700;font-size:16px;box-shadow:3px 3px 0 var(--ink);transition:transform .1s,box-shadow .1s}
-.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
-.btn.alt{background:#fff}
-.btn.sky{background:var(--sky);color:#fff}
-.hud{display:flex;justify-content:space-between;gap:8px;font-weight:700;margin-bottom:10px;font-size:16px}
-.hud span{background:#fff;border:2.5px solid var(--ink);border-radius:12px;padding:5px 12px}
-.timebar{height:14px;border:3px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden;margin-bottom:14px}
-.timebar i{display:block;height:100%;width:100%;background:var(--tomato);transition:width .1s linear}
-.qbox{background:var(--ink);color:#fff;border-radius:20px;padding:22px 16px;text-align:center;font-family:var(--head);font-weight:800;font-size:clamp(34px,9vw,56px);margin-bottom:14px;min-height:96px;display:grid;place-items:center}
-.qbox.txt{font-size:clamp(20px,4.6vw,26px);font-weight:600;line-height:1.3;font-family:var(--body);text-align:left;place-items:center start;padding:18px}
-.qbox small{display:block;font-size:14px;font-weight:500;opacity:.75;margin-top:4px;font-family:var(--body)}
-.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.opts.one{grid-template-columns:1fr}
-.opt{border:3px solid var(--ink);background:#fff;border-radius:16px;padding:16px 10px;font-family:var(--head);font-weight:800;font-size:clamp(22px,5vw,30px);box-shadow:3px 3px 0 var(--ink);transition:transform .1s,background .15s}
-.opts.one .opt{font-family:var(--body);font-weight:600;font-size:17px;text-align:left;padding:14px 16px}
-.opt:active{transform:translate(3px,3px)}
-.opt.ok{background:var(--ok);color:#fff}
-.opt.bad{background:var(--bad);color:#fff;animation:shake .3s}
-.opt.gone{opacity:.25;pointer-events:none}
-@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-.explain{margin-top:14px;background:#fff7d6;border:3px solid var(--ink);border-radius:16px;padding:12px 14px;font-size:15px;line-height:1.5}
-.pop{animation:pop .35s}
-@keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+    body {
+      font-family: var(--body);
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 28px 28px;
+      min-height: 100vh;
+    }
 
-/* memory */
-.mem{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.mc{perspective:700px;aspect-ratio:1/1.05;border:0;background:none;padding:0}
-.mc .in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .35s}
-.mc.flip .in{transform:rotateY(180deg)}
-.mc .f,.mc .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:3px solid var(--ink);border-radius:14px;display:grid;place-items:center;padding:4px;text-align:center}
-.mc .f{background:var(--lilac);font-size:28px;box-shadow:3px 3px 0 var(--ink)}
-.mc .b{transform:rotateY(180deg);font-family:var(--head);font-weight:800;font-size:clamp(14px,3.6vw,20px);line-height:1.1;word-break:break-word}
-.mc .b.en{background:#cfe4ff}.mc .b.vi{background:#c6f3e6}
-.mc.done .b{background:var(--ok);color:#fff}
+    #app {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px 14px 60px
+    }
 
-/* scramble */
-.slots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0 18px}
-.slot{width:46px;height:56px;border:3px dashed var(--ink);border-radius:12px;display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:28px;background:#fff;padding:0}
-.slot.fill{border-style:solid;background:var(--sun);box-shadow:2px 2px 0 var(--ink)}
-.slots.win .slot{background:var(--ok);color:#fff}
-.slots.err{animation:shake .35s}
-.tiles{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
-.tl{width:52px;height:58px;border:3px solid var(--ink);border-radius:12px;background:#fff;font-family:var(--head);font-weight:800;font-size:28px;box-shadow:3px 3px 0 var(--ink)}
-.tl:disabled{opacity:.2;box-shadow:none}
+    button {
+      font-family: inherit;
+      color: inherit;
+      cursor: pointer
+    }
 
-/* snake */
-canvas{display:block;margin:0 auto;border:3px solid var(--ink);border-radius:16px;touch-action:none;background:#fff;max-width:100%}
-.dpad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,58px);gap:8px;justify-content:center;margin-top:14px}
-.dpad button{border:3px solid var(--ink);border-radius:14px;background:#fff;font-size:22px;box-shadow:3px 3px 0 var(--ink)}
-.dpad button:active{transform:translate(2px,2px)}
-.dpad .u{grid-column:2}.dpad .l{grid-row:2;grid-column:1}.dpad .d{grid-row:2;grid-column:2}.dpad .r{grid-row:2;grid-column:3}
-.hint{text-align:center;font-size:13px;color:#5b5a7a;margin:10px 0 0}
+    h1,
+    h2,
+    h3 {
+      font-family: var(--head);
+      margin: 0;
+      line-height: 1.1
+    }
 
-/* modal + toast */
-#modal{position:fixed;inset:0;background:rgba(28,27,58,.6);display:none;place-items:center;padding:18px;z-index:20}
-#modal.on{display:grid}
-.result{max-width:400px;width:100%;text-align:center;animation:pop .4s}
-.result h2{font-size:34px;font-weight:800}
-.big{font-family:var(--head);font-weight:800;font-size:64px;line-height:1;margin:8px 0}
-.stats{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px 0}
-.stats span{background:var(--paper);border:2.5px solid var(--ink);border-radius:999px;padding:4px 12px;font-weight:700;font-size:14px}
-#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,120px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;font-weight:700;z-index:30;transition:transform .4s;max-width:90vw;text-align:center}
-#toast.on{transform:translate(-50%,0)}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-button:focus-visible{outline:4px solid var(--sky);outline-offset:2px}
-</style>
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px
+    }
+
+    .logo {
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: 30px;
+      letter-spacing: -.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .logo i {
+      font-style: normal;
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      background: var(--sun);
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      box-shadow: 3px 3px 0 var(--ink);
+      transform: rotate(-6deg)
+    }
+
+    .me {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .lvl {
+      font-family: var(--head);
+      font-weight: 800;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 999px;
+      padding: 4px 14px;
+      font-size: 17px
+    }
+
+    .xp {
+      width: 130px;
+      height: 16px;
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      background: #fff;
+      overflow: hidden
+    }
+
+    .xp i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--mint);
+      transition: width .6s cubic-bezier(.2, .9, .3, 1.2)
+    }
+
+    .snd {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 3px solid var(--ink);
+      background: #fff;
+      font-size: 18px
+    }
+
+    .hero {
+      display: flex;
+      gap: 18px;
+      align-items: end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin: 6px 0 20px
+    }
+
+    .hero h2 {
+      font-size: clamp(30px, 6vw, 52px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      max-width: 14ch
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 34ch;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #4b4a6b
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px
+    }
+
+    .tile {
+      text-align: left;
+      border: 3px solid var(--ink);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 190px;
+      position: relative;
+      transition: transform .12s, box-shadow .12s;
+      background: #fff
+    }
+
+    .tile:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0 var(--ink)
+    }
+
+    .tile:active {
+      transform: translate(3px, 3px);
+      box-shadow: 1px 1px 0 var(--ink)
+    }
+
+    .tile .ic {
+      font-size: 44px;
+      line-height: 1
+    }
+
+    .tile h3 {
+      font-size: 26px;
+      font-weight: 800
+    }
+
+    .tile p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.45
+    }
+
+    .tile .meta {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 700
+    }
+
+    .tag {
+      background: var(--ink);
+      color: #fff;
+      border-radius: 999px;
+      padding: 3px 11px;
+      font-size: 12px;
+      font-weight: 700
+    }
+
+    .badges {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 26px;
+      align-items: center
+    }
+
+    .badges b {
+      font-family: var(--head);
+      font-size: 20px;
+      margin-right: 4px
+    }
+
+    .bd {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 2.5px solid var(--ink);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #fff
+    }
+
+    .bd.off {
+      opacity: .38;
+      filter: grayscale(1);
+      border-style: dashed
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px
+    }
+
+    .back {
+      border: 3px solid var(--ink);
+      background: #fff;
+      border-radius: 14px;
+      padding: 8px 14px;
+      font-weight: 700;
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .bar h2 {
+      font-size: 28px;
+      font-weight: 800
+    }
+
+    .stage {
+      max-width: 640px;
+      margin: 0 auto
+    }
+
+    .panel {
+      background: #fff;
+      border: 3px solid var(--ink);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: var(--shadow)
+    }
+
+    .center {
+      text-align: center
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 14px
+    }
+
+    .btn {
+      border: 3px solid var(--ink);
+      background: var(--sun);
+      border-radius: 14px;
+      padding: 12px 20px;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform .1s, box-shadow .1s
+    }
+
+    .btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--ink)
+    }
+
+    .btn.alt,
+    .btn.ghost {
+      background: #fff
+    }
+
+    .btn.sky {
+      background: var(--sky);
+      color: #fff
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      font-size: 16px
+    }
+
+    .hud span {
+      background: #fff;
+      border: 2.5px solid var(--ink);
+      border-radius: 12px;
+      padding: 5px 12px
+    }
+
+    .timebar {
+      height: 14px;
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      background: #fff;
+      overflow: hidden;
+      margin-bottom: 14px
+    }
+
+    .timebar i {
+      display: block;
+      height: 100%;
+      width: 100%;
+      background: var(--tomato);
+      transition: width .1s linear
+    }
+
+    .qbox {
+      background: var(--ink);
+      color: #fff;
+      border-radius: 20px;
+      padding: 22px 16px;
+      text-align: center;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(34px, 9vw, 56px);
+      margin-bottom: 14px;
+      min-height: 96px;
+      display: grid;
+      place-items: center
+    }
+
+    .qbox.txt {
+      font-size: clamp(20px, 4.6vw, 26px);
+      font-weight: 600;
+      line-height: 1.3;
+      font-family: var(--body);
+      text-align: left;
+      place-items: center start;
+      padding: 18px
+    }
+
+    .qbox small {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: .75;
+      margin-top: 4px;
+      font-family: var(--body)
+    }
+
+    .opts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px
+    }
+
+    .opts.one {
+      grid-template-columns: 1fr
+    }
+
+    .opt {
+      border: 3px solid var(--ink);
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px 10px;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(22px, 5vw, 30px);
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform .1s, background .15s
+    }
+
+    .opts.one .opt {
+      font-family: var(--body);
+      font-weight: 600;
+      font-size: 17px;
+      text-align: left;
+      padding: 14px 16px
+    }
+
+    .opt:active {
+      transform: translate(3px, 3px)
+    }
+
+    .opt.ok {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .opt.bad {
+      background: var(--bad);
+      color: #fff;
+      animation: shake .3s
+    }
+
+    .opt.gone {
+      opacity: .25;
+      pointer-events: none
+    }
+
+    @keyframes shake {
+      25% {
+        transform: translateX(-6px)
+      }
+
+      75% {
+        transform: translateX(6px)
+      }
+    }
+
+    .explain {
+      margin-top: 14px;
+      background: #fff7d6;
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 15px;
+      line-height: 1.5
+    }
+
+    .pop {
+      animation: pop .35s
+    }
+
+    @keyframes pop {
+      0% {
+        transform: scale(.8)
+      }
+
+      60% {
+        transform: scale(1.08)
+      }
+
+      100% {
+        transform: scale(1)
+      }
+    }
+
+    .mem {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px
+    }
+
+    .mc {
+      perspective: 700px;
+      aspect-ratio: 1/1.05;
+      border: 0;
+      background: none;
+      padding: 0
+    }
+
+    .mc .in {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform .35s
+    }
+
+    .mc.flip .in {
+      transform: rotateY(180deg)
+    }
+
+    .mc .f,
+    .mc .b {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      padding: 4px;
+      text-align: center
+    }
+
+    .mc .f {
+      background: var(--lilac);
+      font-size: 28px;
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .mc .b {
+      transform: rotateY(180deg);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(14px, 3.6vw, 20px);
+      line-height: 1.1;
+      word-break: break-word
+    }
+
+    .mc .b.en {
+      background: #cfe4ff
+    }
+
+    .mc .b.vi {
+      background: #c6f3e6
+    }
+
+    .mc.done .b {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .slots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 6px 0 18px
+    }
+
+    .slot {
+      width: 46px;
+      height: 56px;
+      border: 3px dashed var(--ink);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: 28px;
+      background: #fff;
+      padding: 0
+    }
+
+    .slot.fill {
+      border-style: solid;
+      background: var(--sun);
+      box-shadow: 2px 2px 0 var(--ink)
+    }
+
+    .slots.win .slot {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .slots.err {
+      animation: shake .35s
+    }
+
+    .tiles {
+      display: flex;
+      gap: 9px;
+      justify-content: center;
+      flex-wrap: wrap
+    }
+
+    .tl {
+      width: 52px;
+      height: 58px;
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      background: #fff;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: 28px;
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .tl:disabled {
+      opacity: .2;
+      box-shadow: none
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      touch-action: none;
+      background: #fff;
+      max-width: 100%
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 64px);
+      grid-template-rows: repeat(2, 58px);
+      gap: 8px;
+      justify-content: center;
+      margin-top: 14px
+    }
+
+    .dpad button {
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: #fff;
+      font-size: 22px;
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .dpad button:active {
+      transform: translate(2px, 2px)
+    }
+
+    .dpad .u {
+      grid-column: 2
+    }
+
+    .dpad .l {
+      grid-row: 2;
+      grid-column: 1
+    }
+
+    .dpad .d {
+      grid-row: 2;
+      grid-column: 2
+    }
+
+    .dpad .r {
+      grid-row: 2;
+      grid-column: 3
+    }
+
+    .hint {
+      text-align: center;
+      font-size: 13px;
+      color: #5b5a7a;
+      margin: 10px 0 0
+    }
+
+    #modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(28, 27, 58, .6);
+      display: none;
+      place-items: center;
+      padding: 18px;
+      z-index: 20
+    }
+
+    #modal.on {
+      display: grid
+    }
+
+    .result {
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      animation: pop .4s
+    }
+
+    .result h2 {
+      font-size: 34px;
+      font-weight: 800
+    }
+
+    .big {
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: 64px;
+      line-height: 1;
+      margin: 8px 0
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0
+    }
+
+    .stats span {
+      background: var(--paper);
+      border: 2.5px solid var(--ink);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-weight: 700;
+      font-size: 14px
+    }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 120px);
+      background: var(--ink);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      z-index: 30;
+      transition: transform .4s;
+      max-width: 90vw;
+      text-align: center
+    }
+
+    #toast.on {
+      transform: translate(-50%, 0)
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+      * {
+        animation: none !important;
+        transition: none !important
+      }
+    }
+
+    button:focus-visible {
+      outline: 4px solid var(--sky);
+      outline-offset: 2px
+    }
+  </style>
 </head>
+
 <body>
-<div id="app">
-  <div class="top">
-    <div class="logo"><i>🎓</i>Học Mà Chơi</div>
-    <div class="me">
-      <span class="lvl" id="lvl">Cấp 1</span>
-      <div class="xp" title="Kinh nghiệm"><i id="xpb"></i></div>
-      <button class="snd" id="snd" aria-label="Bật tắt âm thanh">🔊</button>
+  <div id="app">
+    <div class="top">
+      <div class="logo"><i>🎓</i>Học Mà Chơi</div>
+      <div class="me">
+        <span class="lvl" id="lvl">Cấp 1</span>
+        <div class="xp" title="Kinh nghiệm"><i id="xpb"></i></div>
+        <button class="snd" id="snd" aria-label="Bật tắt âm thanh">🔊</button>
+      </div>
+    </div>
+    <div id="hub"></div>
+    <div id="game" hidden>
+      <div class="bar"><button class="back" id="back">← Về sảnh</button>
+        <h2 id="gt"></h2>
+      </div>
+      <div class="stage" id="stage"></div>
     </div>
   </div>
-  <div id="hub"></div>
-  <div id="game" hidden>
-    <div class="bar"><button class="back" id="back">← Về sảnh</button><h2 id="gt"></h2></div>
-    <div class="stage" id="stage"></div>
-  </div>
-</div>
-<div id="modal"></div>
-<div id="toast"></div>
+  <div id="modal"></div>
+  <div id="toast"></div>
 
-<script>
-/* ============ Tiện ích ============ */
-const $=s=>document.querySelector(s);
-const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
-const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
-const S={xp:0,games:0,best:{},flags:{},played:new Set(),unlocked:new Set()};
-const XP_PER_LVL=120;
-const lvl=()=>Math.floor(S.xp/XP_PER_LVL)+1;
+  <!-- ① Cấu hình API — đặt trước khi load api.js -->
+  <script>
+    window.GAME_API_BASE = 'https://educational-games-lp4z.onrender.com';          /* VD: 'https://api.example.com' */
+    window.GAME_API_TOKEN_FN = () => localStorage.getItem('token');
+  </script>
+  <script src="api.js"></script>
+  <script src="game-core.js"></script>
 
-let soundOn=true,actx;
-function beep(f,d=.12,type='sine',v=.07){
-  if(!soundOn)return;
-  try{
-    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
-    const o=actx.createOscillator(),g=actx.createGain();
-    o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(actx.destination);
-    o.start();g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+d);o.stop(actx.currentTime+d);
-  }catch(e){}
-}
-const sfx={
-  ok(){beep(660,.1);setTimeout(()=>beep(880,.14),90)},
-  bad(){beep(150,.25,'sawtooth',.05)},
-  win(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.18),i*110))},
-  tick(){beep(520,.05,'square',.03)}
-};
-function speak(t){
-  if(!soundOn||!('speechSynthesis' in window))return;
-  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.85;speechSynthesis.speak(u)}catch(e){}
-}
-$('#snd').onclick=()=>{soundOn=!soundOn;$('#snd').textContent=soundOn?'🔊':'🔇'};
+  <script>
+    /* ============ Hàm speak (chỉ game1 cần) ============ */
+    function speak(t) {
+      if (!soundOn || !('speechSynthesis' in window)) return;
+      try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = .85; speechSynthesis.speak(u) } catch (e) { }
+    }
 
-let toastT;
-function toast(msg){
-  const t=$('#toast');t.textContent=msg;t.classList.add('on');
-  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2600);
-}
+    /* ============ Dữ liệu từ vựng & quiz ============ */
+    const WORDS = [
+      ['apple', 'quả táo'], ['book', 'quyển sách'], ['teacher', 'giáo viên'], ['school', 'trường học'], ['friend', 'bạn bè'],
+      ['water', 'nước'], ['happy', 'vui vẻ'], ['family', 'gia đình'], ['house', 'ngôi nhà'], ['cat', 'con mèo'],
+      ['dog', 'con chó'], ['sun', 'mặt trời'], ['moon', 'mặt trăng'], ['tree', 'cái cây'], ['flower', 'bông hoa'],
+      ['river', 'dòng sông'], ['mountain', 'ngọn núi'], ['computer', 'máy tính'], ['bicycle', 'xe đạp'], ['breakfast', 'bữa sáng'],
+      ['rainbow', 'cầu vồng'], ['elephant', 'con voi'], ['library', 'thư viện'], ['umbrella', 'cái ô'], ['window', 'cửa sổ'],
+      ['chicken', 'con gà'], ['orange', 'quả cam'], ['yellow', 'màu vàng'], ['garden', 'khu vườn'], ['kitchen', 'nhà bếp'],
+      ['pencil', 'bút chì'], ['bridge', 'cây cầu'], ['planet', 'hành tinh'], ['butterfly', 'con bướm'], ['holiday', 'kỳ nghỉ']
+    ].map(([en, vi]) => ({ en, vi }));
 
-/* Bộ hẹn giờ + phím: dọn sạch khi thoát game */
-const T={ids:[],ints:[],
-  set(fn,ms){const id=setTimeout(fn,ms);this.ids.push(id);return id},
-  int(fn,ms){const id=setInterval(fn,ms);this.ints.push(id);return id},
-  clear(){this.ids.forEach(clearTimeout);this.ints.forEach(clearInterval);this.ids=[];this.ints=[]}
-};
-let onKey=null;
-window.addEventListener('keydown',e=>{if(onKey)onKey(e)});
-function cleanup(){T.clear();onKey=null;const s=$('#stage');s.onclick=null;s.ontouchstart=null;try{speechSynthesis.cancel()}catch(e){}}
+    const QUIZ = [
+      { q: 'Hành tinh nào gần Mặt Trời nhất?', o: ['Sao Thủy', 'Sao Kim', 'Trái Đất', 'Sao Hỏa'], e: 'Sao Thủy cách Mặt Trời trung bình khoảng 58 triệu km.' },
+      { q: 'Nước tinh khiết sôi ở bao nhiêu độ C (ở mực nước biển)?', o: ['100°C', '90°C', '80°C', '120°C'], e: 'Ở áp suất khí quyển bình thường, nước sôi ở 100°C.' },
+      { q: 'Cơ quan nào bơm máu đi khắp cơ thể?', o: ['Tim', 'Phổi', 'Gan', 'Thận'], e: 'Tim co bóp liên tục để đẩy máu đến mọi bộ phận.' },
+      { q: 'Khí nào cây xanh hấp thụ để quang hợp?', o: ['Khí cacbonic (CO₂)', 'Khí oxi (O₂)', 'Khí nitơ (N₂)', 'Khí hiđro (H₂)'], e: 'Cây dùng CO₂, nước và ánh sáng để tạo chất dinh dưỡng và thải ra oxi.' },
+      { q: 'Đại dương nào lớn nhất thế giới?', o: ['Thái Bình Dương', 'Đại Tây Dương', 'Ấn Độ Dương', 'Bắc Băng Dương'], e: 'Thái Bình Dương chiếm khoảng một phần ba diện tích bề mặt Trái Đất.' },
+      { q: 'Trái Đất quay quanh Mặt Trời một vòng mất khoảng bao lâu?', o: ['1 năm', '1 tháng', '1 tuần', '1 ngày'], e: 'Một vòng quanh Mặt Trời khoảng 365 ngày, tức là một năm.' },
+      { q: 'Động vật nào sau đây là động vật có vú sống dưới nước?', o: ['Cá voi', 'Cá mập', 'Cá ngừ', 'Cá chép'], e: 'Cá voi thở bằng phổi và nuôi con bằng sữa nên là động vật có vú.' },
+      { q: 'Đỉnh núi nào cao nhất Việt Nam?', o: ['Fansipan', 'Bà Nà', 'Tam Đảo', 'Yên Tử'], e: 'Fansipan cao khoảng 3.143 m, được gọi là "nóc nhà Đông Dương".' },
+      { q: 'Kim loại nào ở thể lỏng ở nhiệt độ phòng?', o: ['Thủy ngân', 'Sắt', 'Đồng', 'Nhôm'], e: 'Thủy ngân nóng chảy ở khoảng -39°C nên luôn lỏng ở nhiệt độ thường.' },
+      { q: 'Di sản thiên nhiên thế giới nào nằm ở tỉnh Quảng Ninh?', o: ['Vịnh Hạ Long', 'Phong Nha - Kẻ Bàng', 'Vịnh Nha Trang', 'Đảo Phú Quốc'], e: 'Vịnh Hạ Long nổi tiếng với hàng nghìn đảo đá vôi.' },
+      { q: 'Số nguyên tố nhỏ nhất là số nào?', o: ['2', '1', '3', '0'], e: 'Số nguyên tố có đúng hai ước là 1 và chính nó. Số 2 là số nguyên tố nhỏ nhất và cũng là số nguyên tố chẵn duy nhất.' },
+      { q: 'Ánh sáng hay âm thanh truyền nhanh hơn?', o: ['Ánh sáng', 'Âm thanh', 'Bằng nhau', 'Tùy ngày'], e: 'Vì vậy ta thấy tia chớp trước rồi mới nghe tiếng sấm.' },
+      { q: 'Bộ phận nào của cây hút nước và muối khoáng từ đất?', o: ['Rễ', 'Lá', 'Thân', 'Hoa'], e: 'Rễ có nhiều lông hút giúp cây hút nước và muối khoáng.' },
+      { q: 'Công thức hóa học của nước là gì?', o: ['H₂O', 'CO₂', 'O₂', 'NaCl'], e: 'Mỗi phân tử nước gồm 2 nguyên tử hiđro và 1 nguyên tử oxi.' },
+      { q: 'Hành tinh nào được gọi là "hành tinh đỏ"?', o: ['Sao Hỏa', 'Sao Mộc', 'Sao Thổ', 'Sao Thiên Vương'], e: 'Bề mặt Sao Hỏa chứa nhiều oxit sắt nên có màu đỏ gỉ.' },
+      { q: 'Ai là tác giả của Truyện Kiều?', o: ['Nguyễn Du', 'Nguyễn Trãi', 'Hồ Xuân Hương', 'Nguyễn Đình Chiểu'], e: 'Nguyễn Du (1765-1820) là đại thi hào của dân tộc.' },
+      { q: 'Xương nào dài nhất trong cơ thể người?', o: ['Xương đùi', 'Xương sườn', 'Xương cánh tay', 'Xương sống'], e: 'Xương đùi vừa dài vừa chắc, chịu sức nặng của cả cơ thể.' },
+      { q: 'Loài chim nào không biết bay và sống ở vùng cực Nam?', o: ['Chim cánh cụt', 'Đà điểu', 'Chim én', 'Chim bồ câu'], e: 'Chim cánh cụt dùng đôi cánh như mái chèo để bơi rất giỏi.' },
+      { q: 'Tổng ba góc trong một tam giác bằng bao nhiêu độ?', o: ['180°', '90°', '360°', '270°'], e: 'Với mọi tam giác, tổng ba góc luôn bằng 180°.' },
+      { q: 'Cầu vồng thường được nói là có mấy màu?', o: ['7 màu', '5 màu', '6 màu', '9 màu'], e: 'Đỏ, cam, vàng, lục, lam, chàm, tím.' },
+      { q: 'Đơn vị đo lực trong hệ SI là gì?', o: ['Niutơn (N)', 'Kilôgam (kg)', 'Mét (m)', 'Giây (s)'], e: 'Đơn vị được đặt theo tên nhà khoa học Isaac Newton.' },
+      { q: 'Mặt Trăng là gì của Trái Đất?', o: ['Vệ tinh tự nhiên', 'Một ngôi sao', 'Một hành tinh', 'Một sao chổi'], e: 'Mặt Trăng quay quanh Trái Đất và phản chiếu ánh sáng Mặt Trời.' }
+    ];
 
-/* ============ Huy hiệu & XP ============ */
-const BADGES=[
-  {id:'first',n:'Khởi động',i:'🌱',ok:()=>S.games>=1},
-  {id:'all',n:'Thử đủ 5 game',i:'🧭',ok:()=>S.played.size>=5},
-  {id:'combo',n:'Chuỗi 10 câu',i:'🔥',ok:()=>S.flags.combo10},
-  {id:'mem',n:'Trí nhớ vàng',i:'🧠',ok:()=>S.flags.memGold},
-  {id:'perfect',n:'Đúng 10/10',i:'💯',ok:()=>S.flags.perfect},
-  {id:'lv3',n:'Đạt cấp 3',i:'⭐',ok:()=>lvl()>=3}
-];
-function checkBadges(){
-  BADGES.forEach(b=>{
-    if(!S.unlocked.has(b.id)&&b.ok()){S.unlocked.add(b.id);setTimeout(()=>toast(`${b.i} Huy hiệu mới: ${b.n}`),900)}
-  });
-}
-function renderMe(){
-  $('#lvl').textContent='Cấp '+lvl();
-  $('#xpb').style.width=((S.xp%XP_PER_LVL)/XP_PER_LVL*100)+'%';
-}
-
-/* ============ Dữ liệu ============ */
-const WORDS=[
- ['apple','quả táo'],['book','quyển sách'],['teacher','giáo viên'],['school','trường học'],['friend','bạn bè'],
- ['water','nước'],['happy','vui vẻ'],['family','gia đình'],['house','ngôi nhà'],['cat','con mèo'],
- ['dog','con chó'],['sun','mặt trời'],['moon','mặt trăng'],['tree','cái cây'],['flower','bông hoa'],
- ['river','dòng sông'],['mountain','ngọn núi'],['computer','máy tính'],['bicycle','xe đạp'],['breakfast','bữa sáng'],
- ['rainbow','cầu vồng'],['elephant','con voi'],['library','thư viện'],['umbrella','cái ô'],['window','cửa sổ'],
- ['chicken','con gà'],['orange','quả cam'],['yellow','màu vàng'],['garden','khu vườn'],['kitchen','nhà bếp'],
- ['pencil','bút chì'],['bridge','cây cầu'],['planet','hành tinh'],['butterfly','con bướm'],['holiday','kỳ nghỉ']
-].map(([en,vi])=>({en,vi}));
-
-const QUIZ=[
- {q:'Hành tinh nào gần Mặt Trời nhất?',o:['Sao Thủy','Sao Kim','Trái Đất','Sao Hỏa'],e:'Sao Thủy cách Mặt Trời trung bình khoảng 58 triệu km.'},
- {q:'Nước tinh khiết sôi ở bao nhiêu độ C (ở mực nước biển)?',o:['100°C','90°C','80°C','120°C'],e:'Ở áp suất khí quyển bình thường, nước sôi ở 100°C.'},
- {q:'Cơ quan nào bơm máu đi khắp cơ thể?',o:['Tim','Phổi','Gan','Thận'],e:'Tim co bóp liên tục để đẩy máu đến mọi bộ phận.'},
- {q:'Khí nào cây xanh hấp thụ để quang hợp?',o:['Khí cacbonic (CO₂)','Khí oxi (O₂)','Khí nitơ (N₂)','Khí hiđro (H₂)'],e:'Cây dùng CO₂, nước và ánh sáng để tạo chất dinh dưỡng và thải ra oxi.'},
- {q:'Đại dương nào lớn nhất thế giới?',o:['Thái Bình Dương','Đại Tây Dương','Ấn Độ Dương','Bắc Băng Dương'],e:'Thái Bình Dương chiếm khoảng một phần ba diện tích bề mặt Trái Đất.'},
- {q:'Trái Đất quay quanh Mặt Trời một vòng mất khoảng bao lâu?',o:['1 năm','1 tháng','1 tuần','1 ngày'],e:'Một vòng quanh Mặt Trời khoảng 365 ngày, tức là một năm.'},
- {q:'Động vật nào sau đây là động vật có vú sống dưới nước?',o:['Cá voi','Cá mập','Cá ngừ','Cá chép'],e:'Cá voi thở bằng phổi và nuôi con bằng sữa nên là động vật có vú.'},
- {q:'Đỉnh núi nào cao nhất Việt Nam?',o:['Fansipan','Bà Nà','Tam Đảo','Yên Tử'],e:'Fansipan cao khoảng 3.143 m, được gọi là "nóc nhà Đông Dương".'},
- {q:'Kim loại nào ở thể lỏng ở nhiệt độ phòng?',o:['Thủy ngân','Sắt','Đồng','Nhôm'],e:'Thủy ngân nóng chảy ở khoảng -39°C nên luôn lỏng ở nhiệt độ thường.'},
- {q:'Di sản thiên nhiên thế giới nào nằm ở tỉnh Quảng Ninh?',o:['Vịnh Hạ Long','Phong Nha - Kẻ Bàng','Vịnh Nha Trang','Đảo Phú Quốc'],e:'Vịnh Hạ Long nổi tiếng với hàng nghìn đảo đá vôi.'},
- {q:'Số nguyên tố nhỏ nhất là số nào?',o:['2','1','3','0'],e:'Số nguyên tố có đúng hai ước là 1 và chính nó. Số 2 là số nguyên tố nhỏ nhất và cũng là số nguyên tố chẵn duy nhất.'},
- {q:'Ánh sáng hay âm thanh truyền nhanh hơn?',o:['Ánh sáng','Âm thanh','Bằng nhau','Tùy ngày'],e:'Vì vậy ta thấy tia chớp trước rồi mới nghe tiếng sấm.'},
- {q:'Bộ phận nào của cây hút nước và muối khoáng từ đất?',o:['Rễ','Lá','Thân','Hoa'],e:'Rễ có nhiều lông hút giúp cây hút nước và muối khoáng.'},
- {q:'Công thức hóa học của nước là gì?',o:['H₂O','CO₂','O₂','NaCl'],e:'Mỗi phân tử nước gồm 2 nguyên tử hiđro và 1 nguyên tử oxi.'},
- {q:'Hành tinh nào được gọi là "hành tinh đỏ"?',o:['Sao Hỏa','Sao Mộc','Sao Thổ','Sao Thiên Vương'],e:'Bề mặt Sao Hỏa chứa nhiều oxit sắt nên có màu đỏ gỉ.'},
- {q:'Ai là tác giả của Truyện Kiều?',o:['Nguyễn Du','Nguyễn Trãi','Hồ Xuân Hương','Nguyễn Đình Chiểu'],e:'Nguyễn Du (1765-1820) là đại thi hào của dân tộc.'},
- {q:'Xương nào dài nhất trong cơ thể người?',o:['Xương đùi','Xương sườn','Xương cánh tay','Xương sống'],e:'Xương đùi vừa dài vừa chắc, chịu sức nặng của cả cơ thể.'},
- {q:'Loài chim nào không biết bay và sống ở vùng cực Nam?',o:['Chim cánh cụt','Đà điểu','Chim én','Chim bồ câu'],e:'Chim cánh cụt dùng đôi cánh như mái chèo để bơi rất giỏi.'},
- {q:'Tổng ba góc trong một tam giác bằng bao nhiêu độ?',o:['180°','90°','360°','270°'],e:'Với mọi tam giác, tổng ba góc luôn bằng 180°.'},
- {q:'Cầu vồng thường được nói là có mấy màu?',o:['7 màu','5 màu','6 màu','9 màu'],e:'Đỏ, cam, vàng, lục, lam, chàm, tím.'},
- {q:'Đơn vị đo lực trong hệ SI là gì?',o:['Niutơn (N)','Kilôgam (kg)','Mét (m)','Giây (s)'],e:'Đơn vị được đặt theo tên nhà khoa học Isaac Newton.'},
- {q:'Mặt Trăng là gì của Trái Đất?',o:['Vệ tinh tự nhiên','Một ngôi sao','Một hành tinh','Một sao chổi'],e:'Mặt Trăng quay quanh Trái Đất và phản chiếu ánh sáng Mặt Trời.'}
-];
-
-/* Tạo phép tính + đáp án gây nhiễu */
-function genMath(level){
-  let a,b,c,text,ans;
-  if(level===0){
-    if(rnd(0,1)){a=rnd(2,20);b=rnd(1,20);text=`${a} + ${b}`;ans=a+b}
-    else{a=rnd(5,25);b=rnd(1,a);text=`${a} − ${b}`;ans=a-b}
-  }else if(level===1){
-    const t=rnd(0,3);
-    if(t===0){a=rnd(2,10);b=rnd(2,10);text=`${a} × ${b}`;ans=a*b}
-    else if(t===1){a=rnd(20,99);b=rnd(10,60);text=`${a} + ${b}`;ans=a+b}
-    else if(t===2){a=rnd(40,99);b=rnd(10,a);text=`${a} − ${b}`;ans=a-b}
-    else{b=rnd(2,9);ans=rnd(2,10);a=b*ans;text=`${a} ÷ ${b}`}
-  }else{
-    const t=rnd(0,3);
-    if(t===0){a=rnd(6,15);b=rnd(3,12);text=`${a} × ${b}`;ans=a*b}
-    else if(t===1){b=rnd(3,12);ans=rnd(4,15);a=b*ans;text=`${a} ÷ ${b}`}
-    else if(t===2){a=rnd(2,20);b=rnd(2,9);c=rnd(2,9);text=`${a} + ${b} × ${c}`;ans=a+b*c}
-    else{a=rnd(2,9);b=rnd(2,9);c=rnd(1,20);text=`${a} × ${b} − ${c}`;ans=a*b-c;if(ans<0){text=`${a} × ${b} + ${c}`;ans=a*b+c}}
-  }
-  return {text,ans};
-}
-function makeOpts(ans,n){
-  const set=new Set([ans]);
-  const spread=Math.max(3,Math.round(Math.abs(ans)*.2));
-  let guard=0;
-  while(set.size<n&&guard++<200){
-    let d=rnd(1,spread)*(rnd(0,1)?1:-1);
-    const v=ans+d;
-    if(v>=0)set.add(v);
-  }
-  let k=1;while(set.size<n)set.add(ans+k++);
-  return shuffle([...set]);
-}
-
-/* ============ GAME 1: ĐUA TOÁN ============ */
-function mathGame(root){
-  root.innerHTML=`<div class="panel center"><h2>Chọn độ khó</h2>
+    /* ============ GAME 1: ĐUA TOÁN ============ */
+    function mathGame(root) {
+      root.innerHTML = `<div class="panel center"><h2>Chọn độ khó</h2>
     <p class="hint">60 giây. Đúng liên tiếp để nhân điểm và được cộng thêm giờ.</p>
     <div class="row" style="flex-direction:column">
       <button class="btn" data-l="0">Dễ · Cộng trừ trong 25</button>
       <button class="btn sky" data-l="1">Vừa · Nhân chia bảng cửu chương</button>
       <button class="btn" style="background:var(--tomato);color:#fff" data-l="2">Khó · Phép tính nhiều bước</button>
     </div></div>`;
-  root.onclick=e=>{const b=e.target.closest('[data-l]');if(b)run(+b.dataset.l)};
-  function run(level){
-    root.onclick=null;
-    let score=0,combo=0,maxCombo=0,right=0,total=0,time=60,q,lock=false;
-    root.innerHTML=`<div class="hud"><span>⭐ <b id="sc">0</b></span><span id="cb">🔥 x1</span><span>⏱ <b id="tm">60</b>s</span></div>
+      root.onclick = e => { const b = e.target.closest('[data-l]'); if (b) run(+b.dataset.l) };
+      function run(level) {
+        root.onclick = null;
+        let score = 0, combo = 0, maxCombo = 0, right = 0, total = 0, time = 60, q, lock = false;
+        root.innerHTML = `<div class="hud"><span>⭐ <b id="sc">0</b></span><span id="cb">🔥 x1</span><span>⏱ <b id="tm">60</b>s</span></div>
       <div class="timebar"><i id="tb"></i></div><div class="qbox" id="q"></div><div class="opts" id="o"></div>`;
-    const next=()=>{
-      q=genMath(level);const opts=makeOpts(q.ans,4);
-      $('#q').textContent=q.text+' = ?';$('#q').classList.remove('pop');void $('#q').offsetWidth;$('#q').classList.add('pop');
-      $('#o').innerHTML=opts.map(v=>`<button class="opt" data-v="${v}">${v}</button>`).join('');
-      lock=false;
-    };
-    const mult=()=>Math.min(4,1+Math.floor(combo/5));
-    const hud=()=>{$('#sc').textContent=score;$('#cb').textContent=`🔥 x${mult()} (${combo})`;$('#tm').textContent=Math.ceil(time);$('#tb').style.width=Math.min(100,time/60*100)+'%'};
-    root.onclick=e=>{
-      const b=e.target.closest('.opt');if(!b||lock)return;lock=true;total++;
-      if(+b.dataset.v===q.ans){
-        right++;combo++;maxCombo=Math.max(maxCombo,combo);score+=10*mult();sfx.ok();b.classList.add('ok');
-        if(combo%5===0){time=Math.min(75,time+2);toast('⏱ +2 giây! Chuỗi '+combo)}
-        if(combo>=10)S.flags.combo10=true;
-      }else{
-        combo=0;time=Math.max(0,time-2);sfx.bad();b.classList.add('bad');
-        [...root.querySelectorAll('.opt')].find(x=>+x.dataset.v===q.ans).classList.add('ok');
+        const next = () => {
+          q = genMath(level); const opts = makeOpts(q.ans, 4);
+          $('#q').textContent = q.text + ' = ?'; $('#q').classList.remove('pop'); void $('#q').offsetWidth; $('#q').classList.add('pop');
+          $('#o').innerHTML = opts.map(v => `<button class="opt" data-v="${v}">${v}</button>`).join('');
+          lock = false;
+        };
+        const mult = () => Math.min(4, 1 + Math.floor(combo / 5));
+        const hud = () => { $('#sc').textContent = score; $('#cb').textContent = `🔥 x${mult()} (${combo})`; $('#tm').textContent = Math.ceil(time); $('#tb').style.width = Math.min(100, time / 60 * 100) + '%' };
+        root.onclick = e => {
+          const b = e.target.closest('.opt'); if (!b || lock) return; lock = true; total++;
+          if (+b.dataset.v === q.ans) {
+            right++; combo++; maxCombo = Math.max(maxCombo, combo); score += 10 * mult(); sfx.ok(); b.classList.add('ok');
+            if (combo % 5 === 0) { time = Math.min(75, time + 2); toast('⏱ +2 giây! Chuỗi ' + combo) }
+            if (combo >= 10) S.flags.combo10 = true;
+          } else {
+            combo = 0; time = Math.max(0, time - 2); sfx.bad(); b.classList.add('bad');
+            [...root.querySelectorAll('.opt')].find(x => +x.dataset.v === q.ans).classList.add('ok');
+          }
+          hud(); T.set(next, combo ? 250 : 600);
+        };
+        T.int(() => {
+          time -= .1; hud();
+          if (time <= 0) {
+            T.clear();
+            finish({
+              id: 'math', score, xp: Math.round(score / 8) + (right ? 5 : 0),
+              lines: [`Đúng ${right}/${total} câu`, `Chuỗi dài nhất ${maxCombo}`],
+              replay: mathGame,
+              details: { level, right, total, maxCombo }
+            });
+          }
+        }, 100);
+        next(); hud();
       }
-      hud();T.set(next,combo?250:600);
-    };
-    T.int(()=>{
-      time-=.1;hud();
-      if(time<=0){T.clear();finish({id:'math',score,xp:Math.round(score/8)+(right?5:0),lines:[`Đúng ${right}/${total} câu`,`Chuỗi dài nhất ${maxCombo}`],replay:mathGame})}
-    },100);
-    next();hud();
-  }
-}
+    }
 
-/* ============ GAME 2: LẬT THẺ ANH – VIỆT ============ */
-function memoryGame(root){
-  const pairs=shuffle(WORDS).slice(0,8);
-  const cards=shuffle(pairs.flatMap((w,i)=>[{p:i,t:w.en,l:'en'},{p:i,t:w.vi,l:'vi'}]));
-  let open=[],lock=false,moves=0,matched=0,secs=0;
-  root.innerHTML=`<div class="hud"><span>👣 <b id="mv">0</b> lượt</span><span>🧩 <b id="pr">0</b>/8</span><span>⏱ <b id="tm">0</b>s</span></div>
-    <div class="mem" id="mem">${cards.map((c,i)=>`<button class="mc" data-i="${i}" aria-label="Thẻ ${i+1}"><div class="in"><div class="f">❓</div><div class="b ${c.l}">${c.t}</div></div></button>`).join('')}</div>
+    /* ============ GAME 2: LẬT THẺ ANH – VIỆT ============ */
+    function memoryGame(root) {
+      const pairs = shuffle(WORDS).slice(0, 8);
+      const cards = shuffle(pairs.flatMap((w, i) => [{ p: i, t: w.en, l: 'en' }, { p: i, t: w.vi, l: 'vi' }]));
+      let open = [], lock = false, moves = 0, matched = 0, secs = 0;
+      root.innerHTML = `<div class="hud"><span>👣 <b id="mv">0</b> lượt</span><span>🧩 <b id="pr">0</b>/8</span><span>⏱ <b id="tm">0</b>s</span></div>
+    <div class="mem" id="mem">${cards.map((c, i) => `<button class="mc" data-i="${i}" aria-label="Thẻ ${i + 1}"><div class="in"><div class="f">❓</div><div class="b ${c.l}">${c.t}</div></div></button>`).join('')}</div>
     <p class="hint">Tìm cặp từ tiếng Anh và nghĩa tiếng Việt. Chạm thẻ tiếng Anh để nghe phát âm.</p>`;
-  const els=[...root.querySelectorAll('.mc')];
-  T.int(()=>{secs++;$('#tm').textContent=secs},1000);
-  root.onclick=e=>{
-    const el=e.target.closest('.mc');if(!el||lock)return;
-    const i=+el.dataset.i;
-    if(el.classList.contains('flip')||el.classList.contains('done'))return;
-    el.classList.add('flip');sfx.tick();
-    if(cards[i].l==='en')speak(cards[i].t);
-    open.push(i);
-    if(open.length===2){
-      moves++;$('#mv').textContent=moves;lock=true;
-      const [a,b]=open;
-      if(cards[a].p===cards[b].p&&cards[a].l!==cards[b].l){
-        T.set(()=>{els[a].classList.add('done');els[b].classList.add('done');matched++;$('#pr').textContent=matched;sfx.ok();open=[];lock=false;
-          if(matched===8){
-            const score=Math.max(20,300-moves*8-secs);
-            if(moves<=11)S.flags.memGold=true;
-            T.clear();finish({id:'memory',score,xp:Math.round(score/5)+10,lines:[`${moves} lượt lật`,`${secs} giây`],replay:memoryGame});
-          }},450);
-      }else{
-        T.set(()=>{els[a].classList.remove('flip');els[b].classList.remove('flip');open=[];lock=false},900);
+      const els = [...root.querySelectorAll('.mc')];
+      T.int(() => { secs++; $('#tm').textContent = secs }, 1000);
+      root.onclick = e => {
+        const el = e.target.closest('.mc'); if (!el || lock) return;
+        const i = +el.dataset.i;
+        if (el.classList.contains('flip') || el.classList.contains('done')) return;
+        el.classList.add('flip'); sfx.tick();
+        if (cards[i].l === 'en') speak(cards[i].t);
+        open.push(i);
+        if (open.length === 2) {
+          moves++; $('#mv').textContent = moves; lock = true;
+          const [a, b] = open;
+          if (cards[a].p === cards[b].p && cards[a].l !== cards[b].l) {
+            T.set(() => {
+              els[a].classList.add('done'); els[b].classList.add('done'); matched++; $('#pr').textContent = matched; sfx.ok(); open = []; lock = false;
+              if (matched === 8) {
+                const score = Math.max(20, 300 - moves * 8 - secs);
+                if (moves <= 11) S.flags.memGold = true;
+                T.clear();
+                finish({
+                  id: 'memory', score, xp: Math.round(score / 5) + 10,
+                  lines: [`${moves} lượt lật`, `${secs} giây`],
+                  replay: memoryGame,
+                  details: { moves, secs }
+                });
+              }
+            }, 450);
+          } else {
+            T.set(() => { els[a].classList.remove('flip'); els[b].classList.remove('flip'); open = []; lock = false }, 900);
+          }
+        }
+      };
+    }
+
+    /* ============ GAME 3: XẾP CHỮ ============ */
+    function scrambleGame(root) {
+      const words = shuffle(WORDS).slice(0, 8);
+      let i = 0, score = 0, solved = 0, w, tiles, ans, hintsWord = 0, busy = false;
+      function load() {
+        w = words[i]; const L = [...w.en.toUpperCase()];
+        let t; do { t = shuffle(L) } while (t.join('') === L.join(''));
+        tiles = t.map(ch => ({ ch, used: false })); ans = []; hintsWord = 0; busy = false; render();
       }
-    }
-  };
-}
-
-/* ============ GAME 3: XẾP CHỮ ============ */
-function scrambleGame(root){
-  const words=shuffle(WORDS).slice(0,8);
-  let i=0,score=0,solved=0,w,tiles,ans,hintsWord=0,busy=false;
-  function load(){
-    w=words[i];const L=[...w.en.toUpperCase()];
-    let t;do{t=shuffle(L)}while(t.join('')===L.join(''));
-    tiles=t.map(ch=>({ch,used:false}));ans=[];hintsWord=0;busy=false;render();
-  }
-  function render(){
-    root.innerHTML=`<div class="hud"><span>Từ <b>${i+1}/${words.length}</b></span><span>⭐ <b>${score}</b></span></div>
+      function render() {
+        root.innerHTML = `<div class="hud"><span>Từ <b>${i + 1}/${words.length}</b></span><span>⭐ <b>${score}</b></span></div>
       <div class="qbox txt"><div>Nghĩa tiếng Việt<small></small><span style="font-family:var(--head);font-size:1.5em;font-weight:800">${w.vi}</span><small>${w.en.length} chữ cái. Sắp xếp thành từ tiếng Anh.</small></div></div>
-      <div class="slots" id="slots">${[...w.en].map((_,k)=>{const t=ans[k]!==undefined?tiles[ans[k]].ch:'';return `<button class="slot ${t?'fill':''}" data-s="${k}">${t}</button>`}).join('')}</div>
-      <div class="tiles">${tiles.map((t,k)=>`<button class="tl" data-t="${k}" ${t.used?'disabled':''}>${t.ch}</button>`).join('')}</div>
+      <div class="slots" id="slots">${[...w.en].map((_, k) => { const t = ans[k] !== undefined ? tiles[ans[k]].ch : ''; return `<button class="slot ${t ? 'fill' : ''}" data-s="${k}">${t}</button>` }).join('')}</div>
+      <div class="tiles">${tiles.map((t, k) => `<button class="tl" data-t="${k}" ${t.used ? 'disabled' : ''}>${t.ch}</button>`).join('')}</div>
       <div class="row"><button class="btn alt" data-a="hint">💡 Gợi ý (−4 điểm)</button><button class="btn alt" data-a="skip">Bỏ qua</button></div>`;
-  }
-  function add(k){
-    if(busy||tiles[k].used||ans.length>=w.en.length)return;
-    tiles[k].used=true;ans.push(k);sfx.tick();render();
-    if(ans.length===w.en.length)check();
-  }
-  function check(){
-    const guess=ans.map(k=>tiles[k].ch).join('').toLowerCase();
-    busy=true;
-    if(guess===w.en){
-      const pts=Math.max(5,15-hintsWord*4);score+=pts;solved++;sfx.ok();speak(w.en);
-      $('#slots').classList.add('win');
-      T.set(()=>{i++;i<words.length?load():end()},1100);
-    }else{
-      sfx.bad();$('#slots').classList.add('err');
-      T.set(()=>{tiles.forEach(t=>t.used=false);ans=[];busy=false;render()},450);
+      }
+      function add(k) {
+        if (busy || tiles[k].used || ans.length >= w.en.length) return;
+        tiles[k].used = true; ans.push(k); sfx.tick(); render();
+        if (ans.length === w.en.length) check();
+      }
+      function check() {
+        const guess = ans.map(k => tiles[k].ch).join('').toLowerCase();
+        busy = true;
+        if (guess === w.en) {
+          const pts = Math.max(5, 15 - hintsWord * 4); score += pts; solved++; sfx.ok(); speak(w.en);
+          $('#slots').classList.add('win');
+          T.set(() => { i++; i < words.length ? load() : end() }, 1100);
+        } else {
+          sfx.bad(); $('#slots').classList.add('err');
+          T.set(() => { tiles.forEach(t => t.used = false); ans = []; busy = false; render() }, 450);
+        }
+      }
+      function hint() {
+        if (busy) return;
+        const target = [...w.en.toUpperCase()];
+        let ok = ans.every((k, n) => tiles[k].ch === target[n]);
+        if (!ok) { tiles.forEach(t => t.used = false); ans = [] }
+        const need = target[ans.length];
+        const k = tiles.findIndex(t => !t.used && t.ch === need);
+        if (k < 0) return;
+        hintsWord++; score = Math.max(0, score - 4); add(k);
+      }
+      function end() {
+        finish({
+          id: 'scramble', score, xp: Math.round(score / 3) + solved,
+          lines: [`Giải được ${solved}/${words.length} từ`],
+          replay: scrambleGame,
+          details: { solved }
+        });
+      }
+      root.onclick = e => {
+        const t = e.target.closest('[data-t]'), s = e.target.closest('[data-s]'), a = e.target.closest('[data-a]');
+        if (t) add(+t.dataset.t);
+        else if (s && !busy) { const k = +s.dataset.s; if (ans[k] !== undefined) { const idx = ans.splice(k, 1)[0]; tiles[idx].used = false; render() } }
+        else if (a) {
+          if (a.dataset.a === 'hint') hint();
+          else if (!busy) { i++; i < words.length ? load() : end() }
+        }
+      };
+      onKey = e => {
+        if (busy) return;
+        if (e.key === 'Backspace' && ans.length) { const idx = ans.pop(); tiles[idx].used = false; render(); return }
+        if (/^[a-zA-Z]$/.test(e.key)) { const k = tiles.findIndex(t => !t.used && t.ch === e.key.toUpperCase()); if (k >= 0) add(k) }
+      };
+      load();
     }
-  }
-  function hint(){
-    if(busy)return;
-    const target=[...w.en.toUpperCase()];
-    let ok=ans.every((k,n)=>tiles[k].ch===target[n]);
-    if(!ok){tiles.forEach(t=>t.used=false);ans=[]}
-    const need=target[ans.length];
-    const k=tiles.findIndex(t=>!t.used&&t.ch===need);
-    if(k<0)return;
-    hintsWord++;score=Math.max(0,score-4);add(k);
-  }
-  function end(){
-    if(solved===words.length)S.flags.perfect=S.flags.perfect||false;
-    finish({id:'scramble',score,xp:Math.round(score/3)+solved,lines:[`Giải được ${solved}/${words.length} từ`],replay:scrambleGame});
-  }
-  root.onclick=e=>{
-    const t=e.target.closest('[data-t]'),s=e.target.closest('[data-s]'),a=e.target.closest('[data-a]');
-    if(t)add(+t.dataset.t);
-    else if(s&&!busy){const k=+s.dataset.s;if(ans[k]!==undefined){const idx=ans.splice(k,1)[0];tiles[idx].used=false;
-        // các ô đứng sau bị đẩy lên: giữ nguyên thứ tự
-        render()}}
-    else if(a){
-      if(a.dataset.a==='hint')hint();
-      else if(!busy){i++;i<words.length?load():end()}
-    }
-  };
-  onKey=e=>{
-    if(busy)return;
-    if(e.key==='Backspace'&&ans.length){const idx=ans.pop();tiles[idx].used=false;render();return}
-    if(/^[a-zA-Z]$/.test(e.key)){const k=tiles.findIndex(t=>!t.used&&t.ch===e.key.toUpperCase());if(k>=0)add(k)}
-  };
-  load();
-}
 
-/* ============ GAME 4: ĐỐ VUI KHOA HỌC ============ */
-function quizGame(root){
-  const qs=shuffle(QUIZ).slice(0,10).map(q=>({...q,opts:shuffle(q.o.map((t,k)=>({t,c:k===0})))}));
-  let i=0,score=0,right=0,streak=0,fifty=true,time=15,done=false;
-  function show(){
-    const q=qs[i];done=false;time=15;
-    root.innerHTML=`<div class="hud"><span>Câu <b>${i+1}/10</b></span><span>⭐ <b>${score}</b></span><span>🔥 ${streak}</span></div>
+    /* ============ GAME 4: ĐỐ VUI KHOA HỌC ============ */
+    function quizGame(root) {
+      const qs = shuffle(QUIZ).slice(0, 10).map(q => ({ ...q, opts: shuffle(q.o.map((t, k) => ({ t, c: k === 0 }))) }));
+      let i = 0, score = 0, right = 0, streak = 0, fifty = true, time = 15, done = false;
+      function show() {
+        const q = qs[i]; done = false; time = 15;
+        root.innerHTML = `<div class="hud"><span>Câu <b>${i + 1}/10</b></span><span>⭐ <b>${score}</b></span><span>🔥 ${streak}</span></div>
       <div class="timebar"><i id="tb"></i></div>
       <div class="qbox txt">${q.q}</div>
-      <div class="opts one" id="o">${q.opts.map((o,k)=>`<button class="opt" data-k="${k}">${o.t}</button>`).join('')}</div>
-      <div class="row" id="ll"><button class="btn alt" data-ll="1" ${fifty?'':'disabled'}>✂️ 50:50</button></div>
+      <div class="opts one" id="o">${q.opts.map((o, k) => `<button class="opt" data-k="${k}">${o.t}</button>`).join('')}</div>
+      <div class="row" id="ll"><button class="btn alt" data-ll="1" ${fifty ? '' : 'disabled'}>✂️ 50:50</button></div>
       <div id="ex"></div>`;
-  }
-  function answer(k){
-    if(done)return;done=true;
-    const q=qs[i],btns=[...root.querySelectorAll('.opt')];
-    btns.forEach(b=>b.classList.remove('gone'));
-    const ci=q.opts.findIndex(o=>o.c);
-    btns[ci].classList.add('ok');
-    if(k===ci){
-      right++;streak++;score+=10+Math.ceil(time)+(streak>=3?5:0);sfx.ok();
-    }else{
-      streak=0;sfx.bad();if(k>=0)btns[k].classList.add('bad');
+      }
+      function answer(k) {
+        if (done) return; done = true;
+        const q = qs[i], btns = [...root.querySelectorAll('.opt')];
+        btns.forEach(b => b.classList.remove('gone'));
+        const ci = q.opts.findIndex(o => o.c);
+        btns[ci].classList.add('ok');
+        if (k === ci) { right++; streak++; score += 10 + Math.ceil(time) + (streak >= 3 ? 5 : 0); sfx.ok(); }
+        else { streak = 0; sfx.bad(); if (k >= 0) btns[k].classList.add('bad'); }
+        $('#ll').innerHTML = `<button class="btn" data-next="1">${i < 9 ? 'Câu tiếp theo' : 'Xem kết quả'}</button>`;
+        $('#ex').innerHTML = `<div class="explain">💡 ${k === -1 ? 'Hết giờ! ' : ''}${q.e}</div>`;
+      }
+      root.onclick = e => {
+        const o = e.target.closest('.opt'), l = e.target.closest('[data-ll]'), n = e.target.closest('[data-next]');
+        if (o) answer(+o.dataset.k);
+        else if (l && fifty && !done) {
+          fifty = false; const q = qs[i];
+          const wrong = shuffle(q.opts.map((x, k) => k).filter(k => !q.opts[k].c)).slice(0, 2);
+          const btns = [...root.querySelectorAll('.opt')]; wrong.forEach(k => btns[k].classList.add('gone'));
+          l.disabled = true;
+        } else if (n) {
+          i++;
+          if (i < 10) show();
+          else {
+            if (right === 10) S.flags.perfect = true;
+            T.clear();
+            finish({
+              id: 'quiz', score, xp: Math.round(score / 4),
+              lines: [`Đúng ${right}/10 câu`],
+              replay: quizGame,
+              details: { right }
+            });
+          }
+        }
+      };
+      T.int(() => {
+        if (done) return;
+        time -= .1; const tb = $('#tb'); if (tb) tb.style.width = Math.max(0, time / 15 * 100) + '%';
+        if (time <= 0) answer(-1);
+      }, 100);
+      show();
     }
-    $('#ll').innerHTML=`<button class="btn" data-next="1">${i<9?'Câu tiếp theo':'Xem kết quả'}</button>`;
-    $('#ex').innerHTML=`<div class="explain">💡 ${k===-1?'Hết giờ! ':''}${q.e}</div>`;
-  }
-  root.onclick=e=>{
-    const o=e.target.closest('.opt'),l=e.target.closest('[data-ll]'),n=e.target.closest('[data-next]');
-    if(o)answer(+o.dataset.k);
-    else if(l&&fifty&&!done){
-      fifty=false;const q=qs[i];
-      const wrong=shuffle(q.opts.map((x,k)=>k).filter(k=>!q.opts[k].c)).slice(0,2);
-      const btns=[...root.querySelectorAll('.opt')];wrong.forEach(k=>btns[k].classList.add('gone'));
-      l.disabled=true;
-    }else if(n){
-      i++;
-      if(i<10)show();
-      else{if(right===10)S.flags.perfect=true;T.clear();finish({id:'quiz',score,xp:Math.round(score/4),lines:[`Đúng ${right}/10 câu`],replay:quizGame})}
-    }
-  };
-  T.int(()=>{
-    if(done)return;
-    time-=.1;const tb=$('#tb');if(tb)tb.style.width=Math.max(0,time/15*100)+'%';
-    if(time<=0)answer(-1);
-  },100);
-  show();
-}
 
-/* ============ GAME 5: RẮN SĂN ĐÁP ÁN ============ */
-function snakeGame(root){
-  const N=15;
-  root.innerHTML=`<div class="hud"><span>⭐ <b id="sc">0</b></span><span id="lv">❤️❤️❤️</span><span>Dài <b id="ln">3</b></span></div>
+    /* ============ GAME 5: RẮN SĂN ĐÁP ÁN ============ */
+    function snakeGame(root) {
+      const N = 15;
+      root.innerHTML = `<div class="hud"><span>⭐ <b id="sc">0</b></span><span id="lv">❤️❤️❤️</span><span>Dài <b id="ln">3</b></span></div>
     <div class="qbox" id="q" style="min-height:74px;font-size:clamp(28px,7vw,44px)"></div>
     <canvas id="cv"></canvas>
     <div class="dpad"><button class="u" data-d="u">▲</button><button class="l" data-d="l">◀</button><button class="d" data-d="d">▼</button><button class="r" data-d="r">▶</button></div>
     <p class="hint">Điều khiển rắn ăn đáp án đúng. Vuốt, dùng phím mũi tên hoặc bấm nút.</p>`;
-  const cv=$('#cv'),ctx=cv.getContext('2d');
-  const size=Math.floor(Math.min(root.clientWidth-8,450)/N)*N;
-  cv.width=cv.height=size;cv.style.width=cv.style.height=size+'px';
-  const cell=size/N;
-  let snake,dir,queue,started,foods,q,score=0,lives=3,correct=0,speed=190;
-  const level=()=>correct<6?0:1;
-  function reset(){snake=[{x:4,y:7},{x:3,y:7},{x:2,y:7}];dir={x:1,y:0};queue=[];started=false;placeFoods()}
-  function free(x,y){return !snake.some(s=>s.x===x&&s.y===y)&&!(foods||[]).some(f=>f.x===x&&f.y===y)}
-  function newQ(){
-    q=genMath(level());
-    const opts=makeOpts(q.ans,3);
-    $('#q').textContent=q.text+' = ?';
-    return opts;
-  }
-  function placeFoods(opts){
-    if(!opts){if(!q)opts=newQ();else opts=foods?foods.map(f=>f.v):newQ()}
-    foods=[];
-    opts.forEach(v=>{
-      let x,y,g=0;
-      do{x=rnd(0,N-1);y=rnd(0,N-1);g++}while((!free(x,y)||Math.abs(x-snake[0].x)+Math.abs(y-snake[0].y)<4)&&g<300);
-      foods.push({x,y,v,c:v===q.ans});
-    });
-  }
-  function setDir(dx,dy){
-    const last=queue.length?queue[queue.length-1]:dir;
-    if((last.x===-dx&&last.y===-dy)||(last.x===dx&&last.y===dy))return;
-    if(queue.length<2)queue.push({x:dx,y:dy});
-    started=true;
-  }
-  const DIRS={u:[0,-1],d:[0,1],l:[-1,0],r:[1,0]};
-  root.onclick=e=>{const b=e.target.closest('[data-d]');if(b)setDir(...DIRS[b.dataset.d])};
-  onKey=e=>{
-    const m={ArrowUp:'u',ArrowDown:'d',ArrowLeft:'l',ArrowRight:'r',w:'u',s:'d',a:'l',d:'r'}[e.key];
-    if(m){e.preventDefault();setDir(...DIRS[m])}
-  };
-  let sx,sy;
-  cv.ontouchstart=e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY};
-  cv.ontouchend=e=>{
-    const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
-    if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;
-    if(Math.abs(dx)>Math.abs(dy))setDir(dx>0?1:-1,0);else setDir(0,dy>0?1:-1);
-  };
-  function loseLife(){
-    lives--;sfx.bad();$('#lv').textContent=lives>0?'❤️'.repeat(lives):'💔';
-    if(lives<=0){T.clear();finish({id:'snake',score,xp:Math.round(score/6),lines:[`Ăn đúng ${correct} đáp án`,`Rắn dài ${snake.length}`],replay:snakeGame});return false}
-    return true;
-  }
-  function tick(){
-    if(started){
-      if(queue.length)dir=queue.shift();
-      const h={x:(snake[0].x+dir.x+N)%N,y:(snake[0].y+dir.y+N)%N};
-      if(snake.some(s=>s.x===h.x&&s.y===h.y)){
-        if(!loseLife())return;
-        reset();
-      }else{
-        snake.unshift(h);
-        const fi=foods.findIndex(f=>f.x===h.x&&f.y===h.y);
-        if(fi>=0){
-          if(foods[fi].c){
-            score+=15;correct++;sfx.ok();speed=Math.max(95,speed-6);
-            placeFoods(newQ());
-          }else{
-            foods.splice(fi,1);snake.pop();
-            if(!loseLife())return;
-          }
-        }else snake.pop();
+      const cv = $('#cv'), ctx = cv.getContext('2d');
+      const size = Math.floor(Math.min(root.clientWidth - 8, 450) / N) * N;
+      cv.width = cv.height = size; cv.style.width = cv.style.height = size + 'px';
+      const cell = size / N;
+      let snake, dir, queue, started, foods, q, score = 0, lives = 3, correct = 0, speed = 190;
+      const level = () => correct < 6 ? 0 : 1;
+      function reset() { snake = [{ x: 4, y: 7 }, { x: 3, y: 7 }, { x: 2, y: 7 }]; dir = { x: 1, y: 0 }; queue = []; started = false; placeFoods() }
+      function free(x, y) { return !snake.some(s => s.x === x && s.y === y) && !(foods || []).some(f => f.x === x && f.y === y) }
+      function newQ() {
+        q = genMath(level());
+        const opts = makeOpts(q.ans, 3);
+        $('#q').textContent = q.text + ' = ?';
+        return opts;
       }
-      $('#sc').textContent=score;$('#ln').textContent=snake.length;
+      function placeFoods(opts) {
+        if (!opts) { if (!q) opts = newQ(); else opts = foods ? foods.map(f => f.v) : newQ() }
+        foods = [];
+        opts.forEach(v => {
+          let x, y, g = 0;
+          do { x = rnd(0, N - 1); y = rnd(0, N - 1); g++ } while ((!free(x, y) || Math.abs(x - snake[0].x) + Math.abs(y - snake[0].y) < 4) && g < 300);
+          foods.push({ x, y, v, c: v === q.ans });
+        });
+      }
+      function setDir(dx, dy) {
+        const last = queue.length ? queue[queue.length - 1] : dir;
+        if ((last.x === -dx && last.y === -dy) || (last.x === dx && last.y === dy)) return;
+        if (queue.length < 2) queue.push({ x: dx, y: dy });
+        started = true;
+      }
+      const DIRS = { u: [0, -1], d: [0, 1], l: [-1, 0], r: [1, 0] };
+      root.onclick = e => { const b = e.target.closest('[data-d]'); if (b) setDir(...DIRS[b.dataset.d]) };
+      onKey = e => {
+        const m = { ArrowUp: 'u', ArrowDown: 'd', ArrowLeft: 'l', ArrowRight: 'r', w: 'u', s: 'd', a: 'l', d: 'r' }[e.key];
+        if (m) { e.preventDefault(); setDir(...DIRS[m]) }
+      };
+      let sx, sy;
+      cv.ontouchstart = e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY };
+      cv.ontouchend = e => {
+        const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+        if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0); else setDir(0, dy > 0 ? 1 : -1);
+      };
+      function loseLife() {
+        lives--; sfx.bad(); $('#lv').textContent = lives > 0 ? '❤️'.repeat(lives) : '💔';
+        if (lives <= 0) {
+          T.clear();
+          finish({
+            id: 'snake', score, xp: Math.round(score / 6),
+            lines: [`Ăn đúng ${correct} đáp án`, `Rắn dài ${snake.length}`],
+            replay: snakeGame,
+            details: { correct, length: snake.length }
+          });
+          return false;
+        }
+        return true;
+      }
+      function tick() {
+        if (started) {
+          if (queue.length) dir = queue.shift();
+          const h = { x: (snake[0].x + dir.x + N) % N, y: (snake[0].y + dir.y + N) % N };
+          if (snake.some(s => s.x === h.x && s.y === h.y)) { if (!loseLife()) return; reset(); }
+          else {
+            snake.unshift(h);
+            const fi = foods.findIndex(f => f.x === h.x && f.y === h.y);
+            if (fi >= 0) {
+              if (foods[fi].c) { score += 15; correct++; sfx.ok(); speed = Math.max(95, speed - 6); placeFoods(newQ()); }
+              else { foods.splice(fi, 1); snake.pop(); if (!loseLife()) return; }
+            } else snake.pop();
+          }
+          $('#sc').textContent = score; $('#ln').textContent = snake.length;
+        }
+        draw(); T.set(tick, speed);
+      }
+      function draw() {
+        for (let y = 0; y < N; y++)for (let x = 0; x < N; x++) { ctx.fillStyle = (x + y) % 2 ? '#fff6d9' : '#fffdf3'; ctx.fillRect(x * cell, y * cell, cell, cell) }
+        foods.forEach((f, k) => {
+          const cx = f.x * cell + cell / 2, cy = f.y * cell + cell / 2;
+          ctx.fillStyle = ['#4b9dff', '#a184ff', '#ff6b57'][k % 3]; ctx.strokeStyle = '#1c1b3a'; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.arc(cx, cy, cell * .46, 0, 7); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#fff'; ctx.font = `800 ${cell * (String(f.v).length > 2 ? .42 : .52)}px Baloo 2,system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(f.v, cx, cy + 1);
+        });
+        snake.forEach((s, k) => {
+          const pad = k ? cell * .1 : cell * .04;
+          ctx.fillStyle = k ? (k % 2 ? '#2fc9a5' : '#27b393') : '#1c1b3a'; ctx.strokeStyle = '#1c1b3a'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(s.x * cell + pad, s.y * cell + pad, cell - pad * 2, cell - pad * 2, cell * .28); ctx.fill(); if (k) ctx.stroke();
+        });
+        const h = snake[0]; ctx.fillStyle = '#fff';
+        [[.3, .35], [.7, .35]].forEach(([ex, ey]) => { ctx.beginPath(); ctx.arc(h.x * cell + cell * ex, h.y * cell + cell * ey, cell * .12, 0, 7); ctx.fill() });
+        if (!started) {
+          ctx.fillStyle = 'rgba(28,27,58,.78)'; ctx.fillRect(0, size / 2 - 28, size, 56);
+          ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.max(14, size / 24)}px Be Vietnam Pro,system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('Vuốt hoặc bấm mũi tên để bắt đầu', size / 2, size / 2);
+        }
+      }
+      reset(); draw(); T.set(tick, speed);
     }
-    draw();
-    T.set(tick,speed);
-  }
-  function draw(){
-    for(let y=0;y<N;y++)for(let x=0;x<N;x++){ctx.fillStyle=(x+y)%2?'#fff6d9':'#fffdf3';ctx.fillRect(x*cell,y*cell,cell,cell)}
-    foods.forEach((f,k)=>{
-      const cx=f.x*cell+cell/2,cy=f.y*cell+cell/2;
-      ctx.fillStyle=['#4b9dff','#a184ff','#ff6b57'][k%3];ctx.strokeStyle='#1c1b3a';ctx.lineWidth=2.5;
-      ctx.beginPath();ctx.arc(cx,cy,cell*.46,0,7);ctx.fill();ctx.stroke();
-      ctx.fillStyle='#fff';ctx.font=`800 ${cell*(String(f.v).length>2?.42:.52)}px Baloo 2,system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(f.v,cx,cy+1);
+
+    /* ============ Khởi động ============ */
+    const GAMES = [
+      { id: 'math', name: 'Đua Toán', tag: 'Toán', color: 'var(--sun)', icon: '🚀', desc: '60 giây tính nhẩm. Chuỗi đúng liên tiếp nhân điểm và cộng thêm giờ.', fn: mathGame },
+      { id: 'memory', name: 'Lật Thẻ Anh – Việt', tag: 'Tiếng Anh', color: '#bfe0ff', icon: '🃏', desc: 'Ghép từ tiếng Anh với nghĩa tiếng Việt, có phát âm khi lật thẻ.', fn: memoryGame },
+      { id: 'scramble', name: 'Xếp Chữ', tag: 'Tiếng Anh', color: '#ffd0c9', icon: '🔤', desc: 'Sắp xếp các chữ cái bị xáo trộn thành từ đúng. Gõ bàn phím hoặc chạm.', fn: scrambleGame },
+      { id: 'quiz', name: 'Đố Vui Khoa Học', tag: 'Khoa học', color: '#d6ccff', icon: '🔬', desc: '10 câu hỏi kiến thức, có 50:50 và lời giải thích sau mỗi câu.', fn: quizGame },
+      { id: 'snake', name: 'Rắn Săn Đáp Án', tag: 'Toán · Phản xạ', color: '#c6f3e6', icon: '🐍', desc: 'Điều khiển rắn ăn đúng đáp án của phép tính. Ăn sai mất tim.', fn: snakeGame },
+    ];
+
+    initCore({
+      games: GAMES,
+      hubTitle: 'Chơi một ván, học một điều.',
+      hubDesc: 'Năm trò chơi ngắn về Toán, Tiếng Anh và Khoa học. Chơi để kiếm XP, lên cấp và mở huy hiệu.',
+      badges: [
+        { id: 'first', n: 'Khởi động', i: '🌱', ok: () => S.games >= 1 },
+        { id: 'all', n: 'Thử đủ 5 game', i: '🧭', ok: () => S.played.size >= 5 },
+        { id: 'combo', n: 'Chuỗi 10 câu', i: '🔥', ok: () => S.flags.combo10 },
+        { id: 'mem', n: 'Trí nhớ vàng', i: '🧠', ok: () => S.flags.memGold },
+        { id: 'perfect', n: 'Đúng 10/10', i: '💯', ok: () => S.flags.perfect },
+        { id: 'lv3', n: 'Đạt cấp 3', i: '⭐', ok: () => lvl() >= 3 },
+      ],
     });
-    snake.forEach((s,k)=>{
-      const pad=k?cell*.1:cell*.04;
-      ctx.fillStyle=k?(k%2?'#2fc9a5':'#27b393'):'#1c1b3a';ctx.strokeStyle='#1c1b3a';ctx.lineWidth=2;
-      ctx.beginPath();ctx.roundRect(s.x*cell+pad,s.y*cell+pad,cell-pad*2,cell-pad*2,cell*.28);ctx.fill();if(k)ctx.stroke();
-    });
-    const h=snake[0];ctx.fillStyle='#fff';
-    [[.3,.35],[.7,.35]].forEach(([ex,ey])=>{ctx.beginPath();ctx.arc(h.x*cell+cell*ex,h.y*cell+cell*ey,cell*.12,0,7);ctx.fill()});
-    if(!started){
-      ctx.fillStyle='rgba(28,27,58,.78)';ctx.fillRect(0,size/2-28,size,56);
-      ctx.fillStyle='#fff';ctx.font=`700 ${Math.max(14,size/24)}px Be Vietnam Pro,system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText('Vuốt hoặc bấm mũi tên để bắt đầu',size/2,size/2);
-    }
-  }
-  reset();draw();T.set(tick,speed);
-}
-
-/* ============ Danh sách game & màn hình chính ============ */
-const GAMES=[
-  {id:'math',name:'Đua Toán',tag:'Toán',color:'var(--sun)',icon:'🚀',desc:'60 giây tính nhẩm. Chuỗi đúng liên tiếp nhân điểm và cộng thêm giờ.',fn:mathGame},
-  {id:'memory',name:'Lật Thẻ Anh – Việt',tag:'Tiếng Anh',color:'#bfe0ff',icon:'🃏',desc:'Ghép từ tiếng Anh với nghĩa tiếng Việt, có phát âm khi lật thẻ.',fn:memoryGame},
-  {id:'scramble',name:'Xếp Chữ',tag:'Tiếng Anh',color:'#ffd0c9',icon:'🔤',desc:'Sắp xếp các chữ cái bị xáo trộn thành từ đúng. Gõ bàn phím hoặc chạm.',fn:scrambleGame},
-  {id:'quiz',name:'Đố Vui Khoa Học',tag:'Khoa học',color:'#d6ccff',icon:'🔬',desc:'10 câu hỏi kiến thức, có 50:50 và lời giải thích sau mỗi câu.',fn:quizGame},
-  {id:'snake',name:'Rắn Săn Đáp Án',tag:'Toán · Phản xạ',color:'#c6f3e6',icon:'🐍',desc:'Điều khiển rắn ăn đúng đáp án của phép tính. Ăn sai mất tim.',fn:snakeGame}
-];
-let cur=null;
-
-function renderHub(){
-  cleanup();cur=null;
-  $('#game').hidden=true;$('#hub').hidden=false;
-  $('#hub').innerHTML=`
-    <div class="hero"><h2>Chơi một ván, học một điều.</h2><p>Năm trò chơi ngắn về Toán, Tiếng Anh và Khoa học. Chơi để kiếm XP, lên cấp và mở huy hiệu.</p></div>
-    <div class="grid">${GAMES.map(g=>`
-      <button class="tile" data-g="${g.id}" style="background:${g.color}">
-        <span class="ic">${g.icon}</span>
-        <h3>${g.name}</h3>
-        <p>${g.desc}</p>
-        <span class="meta"><span class="tag">${g.tag}</span><span>${S.best[g.id]?'Kỷ lục '+S.best[g.id]:'Chưa chơi'}</span></span>
-      </button>`).join('')}</div>
-    <div class="badges"><b>Huy hiệu</b>${BADGES.map(b=>`<span class="bd ${S.unlocked.has(b.id)?'':'off'}">${b.i} ${b.n}</span>`).join('')}</div>`;
-  renderMe();
-}
-function openGame(id){
-  cleanup();
-  const g=GAMES.find(x=>x.id===id);cur=g;
-  $('#hub').hidden=true;$('#game').hidden=false;$('#gt').textContent=g.name;
-  $('#modal').classList.remove('on');
-  g.fn($('#stage'));
-  window.scrollTo(0,0);
-}
-$('#hub').onclick=e=>{const t=e.target.closest('[data-g]');if(t)openGame(t.dataset.g)};
-$('#back').onclick=renderHub;
-
-function finish({id,score,xp,lines,replay}){
-  cleanup();
-  const before=lvl();
-  S.xp+=xp;S.games++;S.played.add(id);
-  const isBest=score>(S.best[id]||0);if(isBest)S.best[id]=score;
-  checkBadges();renderMe();
-  const up=lvl()>before;
-  sfx.win();
-  $('#modal').innerHTML=`<div class="panel result">
-    <h2>${up?'Lên cấp '+lvl()+'!':'Hoàn thành!'}</h2>
-    <div class="big">${score}</div>
-    <div class="stats">${isBest?'<span>🏆 Kỷ lục mới</span>':''}${lines.map(l=>`<span>${l}</span>`).join('')}<span>+${xp} XP</span></div>
-    <div class="row"><button class="btn" id="again">Chơi lại</button><button class="btn alt" id="home">Về sảnh</button></div></div>`;
-  $('#modal').classList.add('on');
-  $('#again').onclick=()=>{$('#modal').classList.remove('on');openGame(id)};
-  $('#home').onclick=()=>{$('#modal').classList.remove('on');renderHub()};
-}
-
-renderHub();
-</script>
+  </script>
 </body>
+
 </html>

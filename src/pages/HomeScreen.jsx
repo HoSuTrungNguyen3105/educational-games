@@ -67,6 +67,11 @@ const FEATURED_GAME = {
   grad: "from-emerald-400 to-green-600",
 };
 
+// Game tạo từ API có thể chưa điền môn học — gom về nhóm "Chung" để không bị lọc mất
+const NO_SUBJECT = "Chung";
+const subjectLabel = (subject) => (subject && subject.trim()) || NO_SUBJECT;
+const PREVIEW_GAMES = 8;
+
 // Menu sidebar (desktop) — 8 mục chính theo giao diện mới
 const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
@@ -364,15 +369,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const pendingTaskCount = (dailyTasks || []).filter(t => !t.claimed).length;
 
-  const subjects = useMemo(() => {
+const subjects = useMemo(() => {
     if (!games) return [];
-    return [...new Set(games.map(g => g.subject).filter(Boolean))];
+    return [...new Set(games.map(g => subjectLabel(g.subject)))];
   }, [games]);
 
   const visibleGames = useMemo(() => {
     if (!games) return [];
     if (activeSubject === "all") return games;
-    return games.filter(g => g.subject === activeSubject);
+    return games.filter(g => subjectLabel(g.subject) === activeSubject);
   }, [games, activeSubject]);
 
   const goTo = (path) => {
@@ -712,7 +717,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                     {/* Game ghim */}
                     <FeaturedGameCard />
-                    {(showAllGames ? visibleGames : visibleGames.slice(0, 3)).map((g, i) => (
+                    {(showAllGames ? visibleGames : visibleGames.slice(0, PREVIEW_GAMES)).map((g, i) => (
                       <GameCard key={g._id || g.id} game={g} index={i}
                         template={templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid))}
                         onSelect={onSelectGame} />
@@ -720,9 +725,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   </div>
                 )}
 
-                {showAllGames && visibleGames.length > 3 && (
+                {showAllGames && visibleGames.length > PREVIEW_GAMES && (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mt-4">
-                    {visibleGames.slice(3).map((g, i) => (
+                    {visibleGames.slice(PREVIEW_GAMES).map((g, i) => (
                       <GameCard key={g._id || g.id} game={g} index={i}
                         template={templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid))}
                         onSelect={onSelectGame} />
@@ -1006,7 +1011,7 @@ function FeaturedGameCard() {
 }
 
 function GameCard({ game, template, onSelect, index = 0 }) {
-  const color = colorForSubject(game.subject);
+  const color = colorForSubject(subjectLabel(game.subject));
   return (
     <button
       onClick={() => onSelect(game)}
@@ -1028,7 +1033,7 @@ function GameCard({ game, template, onSelect, index = 0 }) {
       <div className="px-1 pt-2 pb-0.5">
         <p className="font-display font-bold text-[13px] text-ink truncate">{game.name}</p>
         <p className="text-[10.5px] text-slate-400 truncate">
-          {game.subject}{game.questionsCount ? ` · ${game.questionsCount} câu` : ""}
+          {subjectLabel(game.subject)}{game.questionsCount ? ` · ${game.questionsCount} câu` : ""}
         </p>
         <span className="mt-2 w-full inline-flex items-center justify-center gap-1 bg-gradient-to-r from-emerald-400 to-green-600 text-white text-[11.5px] font-extrabold rounded-full py-1.5 shadow-sm group-hover:from-emerald-500 group-hover:to-green-700 transition">
           Chơi ngay <ChevronRight className="w-3.5 h-3.5" />

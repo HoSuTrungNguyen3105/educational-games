@@ -151,9 +151,11 @@ export default defineConfig({
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+              // Danh sách game / cấu hình đổi thường xuyên — cache ngắn lại
+              // để trang chủ và trang cấu hình không bị kẹt dữ liệu cũ.
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 10 },
               cacheableResponse: { statuses: [0, 200] },
-              networkTimeoutSeconds: 5,
+              networkTimeoutSeconds: 15,
             },
           },
         ],
