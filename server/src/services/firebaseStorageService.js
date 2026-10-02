@@ -1,14 +1,19 @@
 // services/firebaseStorageService.js
 //
-// Lưu HTML game lên Firebase Storage thay vì nhúng trong Mongo.
-// Template trong Mongo chỉ giữ metadata + `htmlTemplateUrl` (xem setupService.js).
+// Lưu HTML game lên Firebase Storage.
+// `templates.htmlTemplate` lưu LUÔN link tải của file trên Firebase —
+// không nhúng HTML vào Mongo.
 //
-// Quy ước đường dẫn:  templates/<templateId>.html
+// Đường dẫn:  templates/<templateId>.html
 //
-// Mọi hàm đều "best-effort": nếu Firebase chưa cấu hình / lỗi mạng thì trả về
-// null thay vì ném lỗi, để API vẫn lưu được template (fallback về Mongo).
+// Link trả về dùng endpoint `firebasestorage.googleapis.com/v0/b/...?alt=media`
+// vì endpoint này có header CORS, để máy khách fetch trực tiếp được
+// (link storage.googleapis.com thuần không có CORS).
+//
+// Mọi hàm đều best-effort: Firebase lỗi thì trả null / false, API vẫn chạy được
+// và fallback giữ HTML thô trong Mongo.
 
-import { bucket } from '../config/firebase.js';
+import { getBucket, isFirebaseConfigured, missingFirebaseKeys } from '../config/firebase.js';
 
 const PREFIX = 'templates';
 
@@ -21,31 +26,34 @@ export function htmlPath(templateId) {
   return `${PREFIX}/${safeKey(templateId)}.html`;
 }
 
-/** Firebase đã có đủ biến môi trường chưa. */
-export function isStorageReady() {
-  return Boolean(
-    process.env.FIREBASE_PROJECT_ID &&
-    process.env.FIREBASE_CLIENT_EMAIL &&
-    process.env.FIREBASE_PRIVATE_KEY &&
-    process.env.FIREBASE_STORAGE_BUCKET
-  );
+/** Link tải trực tiếp (có CORS) của 1 file trong bucket. */
+export function downloadUrl(filePath) {
+  return `https://firebasestorage.googleapis.com/v0/b/${getBucket().name}/o/${encodeURIComponent(filePath)}?alt=media`;
 }
 
-function publicUrl(filePath) {
-  return `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+/** Firebase đã cấu hình đủ chưa. */
+export { isFirebaseConfigured };
+
+/** Thông báo lỗi cấu hình (dùng khi muốn log ra cho dễ hiểu). */
+export function configErrorHint() {
+  return `Thiếu: ${missingFirebaseKeys().join(', ')}`;
 }
 
 /**
  * Upload HTML game lên Firebase Storage.
- * @returns {Promise<{url, path, size}|null>} null nếu Firebase lỗi / chưa cấu hình
+ * @param {string} templateId
+ * @param {string} html
+ * @returns {Promise<string|null>} link tải, hoặc null nếu lỗi / chưa cấu hình
  */
 export const saveHtmlTemplate = async (templateId, html) => {
+  if (!isFirebaseConfigured()) {
+    console.warn(`[firebaseStorage] Chưa cấu hình Firebase (${configErrorHint()}) — tạo server/src/config/firebase.local.js hoặc điền server/.env`);
+    return null;
+  }
   const filePath = htmlPath(templateId);
   try {
-    const file = bucket.file(filePath);
-    const content = Buffer.from(String(html ?? ''), 'utf-8');
-
-    await file.save(content, {
+    const file = getBucket().file(filePath);
+    await file.save(Buffer.from(String(html ?? ''), 'utf-8'), {
       resumable: false,
       metadata: {
         contentType: 'text/html; charset=utf-8',
@@ -53,50 +61,32 @@ export const saveHtmlTemplate = async (templateId, html) => {
       },
     });
 
-    // Bucket mới của Firebase thường bị khoá public → makePublic() sẽ 403.
-    // Không chặn lưu: client đọc qua API proxy nên không cần public.
-    let isPublic = false;
+    // Bucket mới của Firebase thường khoá public → makePublic() sẽ 403.
+    // Không chặn lưu: client đọc bằng link download nên file cần public.
     try {
       await file.makePublic();
-      isPublic = true;
     } catch (e) {
-      console.warn('[firebaseStorage] makePublic bị từ chối (không sao, client đọc qua API):', e.message);
+      console.warn('[firebaseStorage] makePublic bị từ chối — bật "All users: read" trong Firebase Console > Storage:', e.message);
     }
 
-    return { url: publicUrl(filePath), path: filePath, size: content.length, isPublic };
+    return downloadUrl(filePath);
   } catch (e) {
     console.error('[firebaseStorage] Lỗi upload HTML template:', e.message);
     return null;
   }
 };
 
-/**
- * Tải HTML game từ Firebase Storage.
- * @returns {Promise<string|null>}
- */
-export const getHtmlTemplate = async (templateId) => {
-  if (!isStorageReady()) return null;
+/** Xoá file theo đường dẫn đầy đủ (best-effort). */
+export const deleteHtmlPath = async (filePath) => {
+  if (!isFirebaseConfigured() || !filePath) return false;
   try {
-    const [contents] = await bucket.file(htmlPath(templateId)).download();
-    return contents.toString('utf-8');
-  } catch (e) {
-    const missing = e.code === 404 || /not found/i.test(e.message || '');
-    if (!missing) console.error('[firebaseStorage] Lỗi tải HTML template:', e.message);
-    return null;
-  }
-};
-
-/**
- * Xoá file HTML trên Firebase (best-effort).
- * Dùng khi template bị xoá hoặc HTML được xoá.
- */
-export const deleteHtmlTemplate = async (templateId) => {
-  if (!isStorageReady()) return false;
-  try {
-    await bucket.file(htmlPath(templateId)).delete({ ignoreNotFound: true });
+    await getBucket().file(filePath).delete({ ignoreNotFound: true });
     return true;
   } catch (e) {
-    console.error('[firebaseStorage] Lỗi xoá HTML template:', e.message);
+    console.error('[firebaseStorage] Lỗi xoá file:', e.message);
     return false;
   }
 };
+
+/** Xoá file HTML của 1 template (best-effort). */
+export const deleteHtmlTemplate = (templateId) => deleteHtmlPath(htmlPath(templateId));
