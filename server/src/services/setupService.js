@@ -1,10 +1,15 @@
 import { getCollection } from "../db.js";
 import { ObjectId } from "mongodb";
+import * as firebaseStorage from "./firebaseStorageService.js";
 
 // Schema mới — chỉ các trường này được trả về cho frontend
+// `htmlTemplateUrl` / `htmlTemplatePath` / `htmlTemplateInFirebase` là FIELD MỚI:
+// HTML game nằm trên Firebase Storage, Mongo chỉ giữ link + metadata.
 const TEMPLATE_FIELDS = [
   "name", "description", "type", "category", "icon", "ring",
-  "htmlTemplate", "thumbnail", "version", "status", "playMode", "createdAt", "updatedAt",
+  "htmlTemplate", "htmlTemplateUrl", "htmlTemplatePath", "htmlTemplateInFirebase",
+  "htmlTemplateUpdatedAt",
+  "thumbnail", "version", "status", "playMode", "createdAt", "updatedAt",
 ];
 
 // Chuẩn hóa về schema mới: bỏ trường cũ (id/slug/categoryLabel)
