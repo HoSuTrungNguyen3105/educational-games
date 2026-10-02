@@ -3,6 +3,7 @@ import { navigate } from '../../lib/router.js'
 import { templateService } from '../../services/api.js'
 import { injectApiBridge, detectApiMarkers } from '../../lib/apiBridge.js'
 import { processGameHtml } from '../../game-html/injectTaskBridge.js'
+import { loadTemplateHtml } from '../../lib/hooks.js'
 import { PrimaryButton, GhostButton, Field } from '../../components/ui.jsx'
 
 const CATEGORY_OPTIONS = [
@@ -30,14 +31,23 @@ export default function TemplateFormPage({ showToast, route }) {
 
   useEffect(() => {
     if (!isEdit) return;
-    templateService.list().then(list => {
-      const t = list.find(x => x._id === templateId);
-      if (t) {
-        setForm({ name: t.name || "", description: t.description || "", type: t.type || "play-to-learn", category: t.category || "quiz", icon: t.icon || "🎲", ring: t.ring || "#1D2E4A", htmlTemplate: t.htmlTemplate || "", thumbnail: t.thumbnail || "", status: t.status || "draft", playMode: t.playMode || "solo" });
-      } else {
-        setError("Không tìm thấy template");
+    let active = true;
+    (async () => {
+      try {
+        const list = await templateService.list();
+        const t = list.find(x => x._id === templateId);
+        if (!t) { setError("Không tìm thấy template"); return; }
+        // htmlTemplate có thể là link Firebase → tải nội dung về để sửa
+        const html = await loadTemplateHtml(t, templateId);
+        if (!active) return;
+        setForm({ name: t.name || "", description: t.description || "", type: t.type || "play-to-learn", category: t.category || "quiz", icon: t.icon || "🎲", ring: t.ring || "#1D2E4A", htmlTemplate: html, thumbnail: t.thumbnail || "", status: t.status || "draft", playMode: t.playMode || "solo" });
+      } catch (e) {
+        if (active) setError(e.message);
+      } finally {
+        if (active) setLoading(false);
       }
-    }).catch(e => setError(e.message)).finally(() => setLoading(false));
+    })();
+    return () => { active = false; };
   }, [templateId, isEdit]);
 
   const onChange = (name, val) => { setForm(f => ({ ...f, [name]: val })); setError(null); };
@@ -48,13 +58,16 @@ export default function TemplateFormPage({ showToast, route }) {
     try {
       const markers = detectApiMarkers(form.htmlTemplate);
       const payload = { ...form, htmlTemplate: processGameHtml(injectApiBridge(form.htmlTemplate)) };
-      if (isEdit) {
-        await templateService.update(templateId, payload);
-        showToast(markers.length > 0 ? `Đã cập nhật (auto-inject: ${markers.join(", ")})` : "Đã cập nhật template");
-      } else {
-        await templateService.create(payload);
-        showToast(markers.length > 0 ? `Đã tạo mới (auto-inject: ${markers.join(", ")})` : "Đã tạo template mới");
-      }
+      // Server tự upload HTML lên Firebase rồi lưu link vào templates.htmlTemplate
+      const saved = isEdit
+        ? await templateService.update(templateId, payload)
+        : await templateService.create(payload);
+      const stored = saved?.htmlTemplate;
+      const onFirebase = typeof stored === "string" && /^https?:\/\//i.test(stored);
+      showToast(
+        (markers.length > 0 ? `Auto-inject: ${markers.join(", ")} · ` : "") +
+        (onFirebase ? "Đã lưu HTML lên Firebase Storage" : "Đã lưu (Firebase lỗi — HTML lưu trong DB)")
+      );
       navigate("/admin/templates");
     } catch (err) {
       setError(err.message || "Không thể lưu template");

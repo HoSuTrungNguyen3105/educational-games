@@ -14,6 +14,7 @@ import {
   validateValues,
 } from "../../games/gameConfigSchema.js";
 import { injectGameConfig } from "../../games/injectGameConfig.js";
+import { loadTemplateHtml } from "../../lib/hooks.js";
 
 const EMPTY_EDITOR = { gameId: null, key: null, values: {}, dirty: false };
 
@@ -610,7 +611,8 @@ export default function GameConfigEditor({ showToast }) {
       if (game?.templateId) {
         try {
           const tpl = await templateService.get(game.templateId);
-          html = tpl?.htmlTemplate || "";
+          // htmlTemplate có thể là HTML thô hoặc link Firebase
+          html = await loadTemplateHtml(tpl, `${game.templateId}:preview`);
         } catch { /* ignore */ }
       }
       if (!html && def?.file) {

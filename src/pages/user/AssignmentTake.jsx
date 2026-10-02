@@ -302,10 +302,13 @@ export default function AssignmentTake({ code: codeOrId }) {
 
   // Bài giao có gameId → tải game để chạy HTML template tương ứng.
   //
-  // CHỈ bật chế độ game khi template thật sự có `htmlTemplate`. Lý do:
-  // nếu không có HTML, GamePlayRouter rơi về PlayGameScreen (React), mà màn
-  // hình đó so sánh `q.correctAnswer` — field này bị API cắt khỏi response cho
-  // học sinh → mọi câu đều sai. Trường hợp đó phải giữ nguyên form trắc nghiệm.
+  // CHỈ bật chế độ game khi template thật sự CÓ HTML. `htmlTemplate` có thể là
+  // HTML thô (template cũ) hoặc link Firebase (template mới) — hai dạng đều tính
+  // là "có HTML".
+  //
+  // Lý do phải kiểm tra: nếu template không có HTML, GamePlayRouter rơi về
+  // PlayGameScreen (React), mà màn hình đó so sánh `q.correctAnswer` — field này
+  // bị API cắt khỏi response cho học sinh → mọi câu đều bị chấm sai.
   useEffect(() => {
     const gid = assignment?.gameId;
     if (!gid) return;
@@ -319,7 +322,7 @@ export default function AssignmentTake({ code: codeOrId }) {
         if (!tid) { setGame(null); return; }
         const tpl = await templateService.get(tid);
         if (!active) return;
-        setGame(tpl?.htmlTemplate?.trim() ? g : null);
+        setGame(String(tpl?.htmlTemplate || "").trim() ? g : null);
       } catch {
         if (active) setGame(null);
       }

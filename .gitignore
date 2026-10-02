@@ -17,6 +17,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Firebase credentials dạng literal (sinh từ server/.env)
+server/src/config/firebase.local.js
+server/.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

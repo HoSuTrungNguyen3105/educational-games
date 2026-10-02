@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, lazy, Suspense } from 'react'
 import { gameService, templateService } from '../services/api.js'
 import { Loader } from '../components/ui.jsx'
 import { resolveGameKey } from './gameConfigSchema.js'
+import { useTemplateHtml } from '../lib/hooks.js'
 
 const PlayGameScreen = lazy(() => import('./PlayGameScreen.jsx'));
 const HtmlGameLoader = lazy(() => import('./HtmlGameLoader.jsx'));
@@ -52,7 +53,10 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
     return () => { active = false; };
   }, [requestKey, gameId, gameKey]);
 
-  if (loading || configLoading) {
+  // htmlTemplate có thể là HTML thô (template cũ) hoặc link Firebase (template mới)
+  const { html: htmlContent, loading: htmlLoading } = useTemplateHtml(tpl);
+
+  if (loading || configLoading || htmlLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-paper py-16">
         <Loader label="Đang tải trò chơi..." />
@@ -60,10 +64,10 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
     );
   }
 
-  if (tpl?.htmlTemplate && tpl.htmlTemplate.trim() !== "") {
+  if (htmlContent && htmlContent.trim() !== "") {
     return (
       <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-paper py-16"><Loader label="Đang tải trò chơi..." /></div>}>
-        <HtmlGameLoader htmlContent={tpl.htmlTemplate} game={game} questions={questions} players={players} playerName={playerName} playMode={coopSession ? "multiplayer" : (tpl.playMode || "solo")} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} userAuth={userAuth} coopSessionId={coopSession?.sessionId} coopOpponent={coopSession ? { acceptedBy: coopSession.fromUserId, acceptedByName: coopSession.fromName } : null} gameKey={gameKey} gameConfig={gameConfig} />
+        <HtmlGameLoader htmlContent={htmlContent} game={game} questions={questions} players={players} playerName={playerName} playMode={coopSession ? "multiplayer" : (tpl.playMode || "solo")} onFinish={onFinish} onQuit={onQuit} onStateUpdate={onStateUpdate} userAuth={userAuth} coopSessionId={coopSession?.sessionId} coopOpponent={coopSession ? { acceptedBy: coopSession.fromUserId, acceptedByName: coopSession.fromName } : null} gameKey={gameKey} gameConfig={gameConfig} />
       </Suspense>
     );
   }

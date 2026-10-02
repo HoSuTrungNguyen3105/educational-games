@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { gameService, questionService, uid } from '../../services/api.js'
 import { THEMES } from '../../lib/setupConstants.js'
-import { useTemplates, useSubjects, useCategories } from '../../lib/hooks.js'
+import { useTemplates, useSubjects, useCategories, useTemplateHtml } from '../../lib/hooks.js'
 import { emptyQuestion } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, IconButton, Loader, Modal } from '../../components/ui.jsx'
 import Field, { StampToken } from './fields.jsx'
@@ -716,7 +716,8 @@ function StepCustomize({ form, setForm }) {
 function StepPreview({ form, questions, templates, isPlayToWin, configKey, configPayload, configDef, configIssues }) {
   const tpl = templates.find(t => t._id === form.templateId);
   const themeColor = (THEMES.find(t => t.id === form.theme) || THEMES[0]).color;
-  const rawHtml = tpl?.htmlTemplate || "";
+  // htmlTemplate có thể là HTML thô (template cũ) hoặc link Firebase (template mới)
+  const { html: rawHtml, loading: htmlLoading } = useTemplateHtml(tpl);
   const hasHtml = rawHtml.trim() !== "";
   const previewHtml = useMemo(() => {
     if (!hasHtml || !configKey || !configPayload) return rawHtml;

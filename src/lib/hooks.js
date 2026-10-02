@@ -47,6 +47,67 @@ export function useTemplate(game, refreshKey) {
   return templates.find((t) => t.slug === game.template || t.id === game.template) || FALLBACK_TEMPLATE;
 }
 
+/* ── HTML game: nhúng trong Mongo (cũ) hoặc là link Firebase (mới) ───────────
+   `templates.htmlTemplate` có 2 dạng:
+     • HTML thô   → dùng luôn
+     • link https://…  → tải nội dung về rồi dùng
+   Hàm này chuẩn hoá về HTML thô để mọi nơi chỉ cần 1 kiểu dữ liệu.            */
+
+const htmlCache = new Map();   // url|key -> Promise<string>
+
+export function isHtmlUrl(value) {
+  return /^https?:\/\//i.test(String(value || "").trim());
+}
+
+/** Lấy HTML thô của 1 template. Trả "" nếu không có. */
+export async function loadTemplateHtml(tpl, cacheKey) {
+  const raw = String(tpl?.htmlTemplate || "").trim();
+  if (!raw) return "";
+  if (!isHtmlUrl(raw)) return raw;               // HTML thô (template cũ)
+
+  const key = cacheKey || raw;
+  if (htmlCache.has(key)) return htmlCache.get(key);
+  const p = fetch(raw, { headers: { Accept: "text/html" } })
+    .then((res) => (res.ok ? res.text() : ""))
+    .catch(() => "");
+  htmlCache.set(key, p);
+  return p;
+}
+
+export function clearTemplateHtmlCache(key) {
+  if (key) htmlCache.delete(key);
+  else htmlCache.clear();
+}
+
+/**
+ * Hook lấy HTML thô của template.
+ * @returns {{ html: string, loading: boolean, error: boolean }}
+ */
+export function useTemplateHtml(tpl) {
+  const raw = String(tpl?.htmlTemplate || "").trim();
+  const [html, setHtml] = useState(() => (raw && !isHtmlUrl(raw) ? raw : ""));
+  const [loading, setLoading] = useState(() => Boolean(raw) && isHtmlUrl(raw));
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const value = String(tpl?.htmlTemplate || "").trim();
+    if (!value) { setHtml(""); setLoading(false); setError(false); return; }
+    if (!isHtmlUrl(value)) { setHtml(value); setLoading(false); setError(false); return; }
+
+    let active = true;
+    setLoading(true); setError(false);
+    loadTemplateHtml(tpl).then((text) => {
+      if (!active) return;
+      setHtml(text || "");
+      setError(!text);
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, [raw, tpl?._id]);
+
+  return { html, loading, error };
+}
+
 export function useMediaQuery(query) {
   const subscribe = useCallback((onChange) => {
     const mql = window.matchMedia(query);
