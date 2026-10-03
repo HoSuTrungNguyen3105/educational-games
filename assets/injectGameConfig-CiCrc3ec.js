@@ -1,5 +1,0 @@
-import{l as e,r as t,t as n}from"./gameConfigSchema-BFlqIFtE.js";var r=`<!-- EG_CONFIG_START -->`,i=`<!-- EG_CONFIG_END -->`,a=e=>e.replace(/</g,`\\u003c`).replace(/\u2028/g,`\\u2028`).replace(/\u2029/g,`\\u2029`);function o(e,o,s=[]){let c=t(e,o,s);return[r,`<script>`,`window.EG_CONFIG=Object.assign({},window.EG_CONFIG||{},${a(JSON.stringify(c))});`,`window.EG=window.EG_CONFIG;`,`window.EG_GAME_KEY=${JSON.stringify(e)};`,`window.EG_GAME_CONFIG=window.EG_CONFIG[${JSON.stringify(e)}]||{};`,`window.EG_CONFIG_SCHEMA=${JSON.stringify(n)};`,`<\/script>`,i].join(`
-`)}function s(e){if(!e||typeof e!=`string`)return e;let t=e.indexOf(r),n=e.indexOf(i);return t===-1||n===-1||n<t?e:e.slice(0,t)+e.slice(n+22)}function c(t,{key:n,config:r,aliasKeys:i}={}){if(!t||typeof t!=`string`||!n)return t;let a=s(t),c=o(n,e(r).values,i),l=a.match(/<head[^>]*>/i);if(l){let e=l.index+l[0].length;return a.slice(0,e)+`
-`+c+`
-`+a.slice(e)}return c+`
-`+a}export{c as t};
