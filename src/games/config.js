@@ -4,6 +4,67 @@
   const SCHEMA_VERSION = 2;
 
   const GAME_DEFS = [
+    // ── Học Mà Chơi (bản bridge) ───────────────────────────────────────
+    // gameMode = "custom": game KHÔNG dùng collection `questions`, mọi nội
+    // dung đến từ JSON config dưới đây (gồm cả câu hỏi của "Đố Vui").
+    // Mở #/admin/game-config để sửa, hoặc #/admin/create để gán vào game.
+    {
+      key: "hocmachoi",
+      name: "Học Mà Chơi",
+      icon: "🎪",
+      desc: "5 mini-game: Đua Toán, Lật Thẻ, Xếp Chữ, Đố Vui, Chọn Nhanh. Nội dung lấy từ JSON cấu hình.",
+      file: "src/games/hocmachoi-bridge.html",
+      templateNames: ["Học Mà Chơi", "Hoc Ma Choi", "hocmachoi", "hoc-ma-choi", "game1"],
+      settings: [
+        { key: "totalQ", label: "Số câu mỗi màn", type: "number", default: 10, min: 3, max: 30, step: 1 },
+        { key: "timeLimit", label: "Thời gian mỗi câu (giây)", type: "number", default: 20, min: 5, max: 60, step: 1, format: "seconds" },
+        { key: "lives", label: "Số mạng", type: "number", default: 3, min: 1, max: 5, step: 1 },
+        { key: "levelStep", label: "Đúng N câu thì lên màn", type: "number", default: 3, min: 1, max: 10, step: 1, help: "Cũng là số câu đúng cần để vượt màn hiện tại. Đủ số này thì mức chơi tăng 1 và được lưu lên server." },
+        { key: "mathMax", label: "Số lớn nhất (Đua Toán)", type: "number", default: 20, min: 5, max: 99, step: 1 }
+      ],
+      lists: [
+        {
+          key: "quiz", title: "🔬 Câu hỏi Đố Vui (JSON)", kind: "json", requiredType: "array", min: 1,
+          help: 'Mỗi câu: { q, a: ["đáp án A", ...], c: chỉ số đáp án đúng, why }. Đây là nguồn câu hỏi DUY NHẤT — game không đọc collection `questions`.',
+          rows: [
+            { q: "Mặt Trời là ngôi sao nào?", a: ["Sao Thủy", "Sao Mặt Trời", "Sao Sao"], c: 1, why: "Mặt Trời là một ngôi sao vàng." },
+            { q: "Nước sôi ở 100°C ở điều kiện khí quyển.", a: ["Đúng", "Sai"], c: 0, why: "Ở mực nước biển nước sôi ở 100°C." },
+            { q: "Hành tinh lớn nhất hệ Mặt Trời?", a: ["Trái Đất", "Sao Thổ", "Sao Mộc"], c: 2, why: "Sao Mộc là hành tích lớn nhất." }
+          ]
+        },
+        {
+          key: "words", title: "📚 Từ vựng (Lật Thẻ + Xếp Chữ)", kind: "rows", itemType: "object", min: 2,
+          help: "Mỗi dòng: { e: emoji, en: tiếng Anh, vi: nghĩa tiếng Việt }.",
+          fields: [
+            { key: "e", placeholder: "🍎", cls: "em" },
+            { key: "en", placeholder: "apple", cls: "wide" },
+            { key: "vi", placeholder: "quả táo", cls: "wide" }
+          ],
+          newItem: { e: "", en: "", vi: "" },
+          rows: [
+            { e: "🍎", en: "apple", vi: "quả táo" },
+            { e: "🐶", en: "dog", vi: "con chó" },
+            { e: "📚", en: "book", vi: "quyển sách" },
+            { e: "☀️", en: "sun", vi: "mặt trời" },
+            { e: "🎒", en: "bag", vi: "cái cặp" },
+            { e: "🚗", en: "car", vi: "ô tô" },
+            { e: "🌸", en: "flower", vi: "bông hoa" },
+            { e: "🎵", en: "song", vi: "bài hát" }
+          ]
+        },
+        {
+          key: "praise", title: "🎉 Lời khen", kind: "rows", itemType: "string", min: 1,
+          help: "Thông điệp khi bé làm đúng.", newItem: "", rows: ["Giỏi quá!", "Tuyệt vời!", "Chuẩn luôn!", "Bé thông minh quá!"] },
+        {
+          key: "retry", title: "💪 Lời động viên", kind: "rows", itemType: "string", min: 1,
+          help: "Thông điệp khi bé làm sai.", newItem: "", rows: ["Thử lại nhé!", "Gần đúng rồi, cố lên!", "Ổ, thử cái khác nào!"] },
+        {
+          key: "mathOps", title: "➕ Phép tính (Đua Toán)", kind: "rows", itemType: "string", min: 1,
+          help: "Nhập đúng ký hiệu: +   −   ×",
+          newItem: "", rows: ["+", "−", "×"] },
+      ]
+    },
+
     {
       key: "bongbay",
       name: "Bóng Bay Vui",

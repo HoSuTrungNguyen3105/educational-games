@@ -16,7 +16,9 @@ import { injectAnswerBridge } from "./injectAnswerBridge.js";
  *
  * Communication via postMessage:
  *
- * React → iframe: { type: "init", data: { gameId, playerName, questions, apiBase, userCoins, authToken, playMode } }
+ * React → iframe: { type: "init", data: { gameId, playerName, questions, apiBase, userCoins, authToken, playMode, gameMode, gameConfig, savedProgress, loggedIn } }
+ * React → iframe: { type: "progress", data: { level, progress, state } | null }
+ * React → iframe: { type: "progress-saved", data: { ok, level } }
  * React → iframe: { type: "opponent-move", data: { ... } }
  * React → iframe: { type: "invite-accepted", data: { acceptedBy, acceptedByName, sessionId } }
  * React → iframe: { type: "multiplayer-start", data: { opponent, sessionId } }
@@ -25,6 +27,9 @@ import { injectAnswerBridge } from "./injectAnswerBridge.js";
  * iframe → React: { type: "ready" }
  * iframe → React: { type: "bridge-ready" }
  * iframe → React: { type: "show-coop-panel" }
+ * iframe → React: { type: "answer-recorded", data: { questionId } }
+ * iframe → React: { type: "save-progress", data: { level, progress, state } }   ← lưu màn chơi
+ * iframe → React: { type: "get-progress" }                                    ← xin tiến độ
  * iframe → React: { type: "search-user", data: { query } }
  * iframe → React: { type: "invite-user", data: { toUserId, gameId, gameName, gameCode } }
  * iframe → React: { type: "game-move", data: { ... } }
@@ -96,17 +101,32 @@ export default function HtmlGameLoader({
     let userId = null;
     let loadout = null;
     let avatarSvg = null;
+    // Tiến độ đã lưu (màn chơi hiện tại + state tuỳ chọn) để game render đúng màn
+    let savedProgress = null;
+
     try {
-      if (userAuth?.token) {
+      if (gameId) {
+        const progress = await gameProgressService.getGame(gameId);
+        if (progress?.loadout) loadout = progress.loadout;
+        if (progress && (progress.level > 1 || progress.gameState)) {
+          savedProgress = {
+            level: Number(progress.level) || 1,
+            progress: Number(progress.progress) || 0,
+            gamesPlayed: Number(progress.gamesPlayed) || 0,
+            state: progress.gameState || null,
+            lastPlayedAt: progress.lastPlayedAt || null,
+          };
+        }
+      }
+    } catch { /* ignore */ }
+
+    if (userAuth?.token) {
+      try {
         authToken = userAuth.token;
         userId = userAuth.user?.id;
         const coinData = await coinService.get();
         userCoins = coinData?.coins || 0;
         setHudCoins(userCoins);
-        if (gameId) {
-          const progress = await gameProgressService.getGame(gameId);
-          if (progress?.loadout) loadout = progress.loadout;
-        }
         try {
           const starsResp = await fetch(`${API_BASE}/api/auth/me/stars`, {
             headers: { Authorization: `Bearer ${userAuth.token}` },
@@ -153,8 +173,8 @@ export default function HtmlGameLoader({
           const svgContent = renderAvatarFull(state, bodyHtml);
           if (svgContent) avatarSvg = svgContent;
         } catch { /* ignore */ }
-      }
-    } catch { /* ignore */ }
+      } catch { /* ignore */ }
+    }
 
     const effectivePlayMode = coopMode || playMode || "solo";
 
@@ -184,6 +204,11 @@ export default function HtmlGameLoader({
           opponent: pendingOpponent || null,
           gameKey: gameKey || null,
           gameConfig: gameConfig || null,
+          // Game tự sinh nội dung từ config (gameMode = "custom") không dùng questions
+          gameMode: game?.gameMode || "quiz",
+          // Tiến độ đã lưu → game render đúng màn đang chơi dở
+          savedProgress,
+          loggedIn: !!userAuth?.token,
         }
       },
       "*"
@@ -315,6 +340,37 @@ export default function HtmlGameLoader({
       } else if (msg.type === "answers") {
         const list = Array.isArray(msg.data?.answers) ? msg.data.answers : [];
         for (const a of list) recordAnswer(a?.questionId, a?.value, a?.timeSpent);
+      } else if (msg.type === "save-progress") {
+        // Game báo "đang ở màn nào" → lưu để vào lại render đúng màn.
+        // payload: { level, progress, state, experience?, gamesPlayedDelta? }
+        const d = msg.data || {};
+        if (!gameId || !userAuth?.token) {
+          postToIframe({ type: "progress-saved", data: { ok: false, reason: "not-logged-in" } });
+        } else {
+          const patch = {};
+          if (d.level != null) patch.level = Math.max(1, Math.floor(Number(d.level) || 1));
+          if (d.progress != null) patch.progress = Math.max(0, Math.min(1, Number(d.progress) || 0));
+          if (d.experience != null) patch.experience = Math.max(0, Math.floor(Number(d.experience) || 0));
+          if (d.state !== undefined) patch.gameState = d.state;
+          gameProgressService.upsertGame(gameId, patch)
+            .then(() => postToIframe({ type: "progress-saved", data: { ok: true, level: patch.level } }))
+            .catch((e) => {
+              console.error("[HtmlGameLoader] Lưu tiến độ lỗi:", e);
+              postToIframe({ type: "progress-saved", data: { ok: false, reason: e.message } });
+            });
+        }
+      } else if (msg.type === "get-progress") {
+        // Game chủ động hỏi lại tiến độ (dùng khi chuyển màn)
+        if (!gameId || !userAuth?.token) {
+          postToIframe({ type: "progress", data: null });
+        } else {
+          gameProgressService.getGame(gameId)
+            .then((p) => postToIframe({
+              type: "progress",
+              data: p ? { level: Number(p.level) || 1, progress: Number(p.progress) || 0, state: p.gameState || null } : null
+            }))
+            .catch(() => postToIframe({ type: "progress", data: null }));
+        }
       } else if (msg.type === "add-coins") {
         const amount = msg.data?.amount || 0;
         if (amount > 0 && userAuth?.token) {
@@ -411,7 +467,7 @@ export default function HtmlGameLoader({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleXoMove, handleXoRematch, handleJoinByCode, handleRequestClasses, handleRequestStudents, userAuth, postToIframe, gameId, recordAnswer, questions]);
+  }, [handleInit, onFinish, onQuit, onStateUpdate, handleSearchUser, handleInviteUser, handleGameMove, handleXoMove, handleXoRematch, handleJoinByCode, handleRequestClasses, handleRequestStudents, userAuth, postToIframe, gameId, recordAnswer, questions, postToIframe]);
 
   useEffect(() => {
     const onOpponentMove = (data) => {

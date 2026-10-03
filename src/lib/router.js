@@ -54,6 +54,9 @@ const ROUTES = [
   { name: "assignment-join", pattern: "/assignment" },
   { name: "assignment-take", pattern: "/assignment/:code" },
   { name: "math-adventure", pattern: "/math-adventure" },
+  { name: "hmc-game1", pattern: "/hmc-game1" },
+  { name: "hmc-game2", pattern: "/hmc-game2" },
+  { name: "hmc-game3", pattern: "/hmc-game3" },
 
   // ── Home (fallback) ──
   { name: "home", pattern: "/" },

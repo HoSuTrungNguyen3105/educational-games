@@ -5,8 +5,9 @@ import { initSocket } from "./socket.js";
 import { setGameInviteIO } from "./routes/gameInvites.js";
 import { setChatIO } from "./routes/chat.js";
 import { initDatabase, close } from "./db.js";
-import { initPlantTypes } from "./services/plantTypeService.js";
+import { initPlantTypes } from "./services/plantTypesService.js";
 import { checkDeadlineReminders, setNotificationIO } from "./services/notificationService.js";
+import { isFirebaseConfigured, missingFirebaseKeys, getFirebaseConfig } from "./config/firebase.js";
 
 const DEADLINE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
 

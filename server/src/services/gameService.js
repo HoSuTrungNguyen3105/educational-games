@@ -9,8 +9,14 @@ const COLLECTION = "games";
 const GAME_FIELDS = [
   "name", "description", "subject", "topic", "language",
   "templateId", "type", "status", "playMode", "questionsCount", "playersCount",
-  "code", "config", "createdAt", "updatedAt",
+  "code", "config", "gameMode", "createdAt", "updatedAt",
 ];
+
+// Chế độ chạy của game:
+//   quiz   — dùng câu hỏi trong collection `questions` (mặc định, như cũ)
+//   custom — game tự sinh nội dung từ JSON `config`, KHÔNG dùng câu hỏi
+export const GAME_MODES = ["quiz", "custom"];
+export const DEFAULT_GAME_MODE = "quiz";
 
 // Config là chuỗi JSON riêng cho từng game (không dùng chung key giữa các game).
 // Game cũ / game không cần cấu hình → trả về `null` để client biết rõ là không có
@@ -61,6 +67,7 @@ function serialize(doc, { configMode = "summary" } = {}) {
   if (!out.type) out.type = "play-to-learn";
   if (!out.status) out.status = "draft";
   if (!out.playMode) out.playMode = "solo";
+  if (!GAME_MODES.includes(out.gameMode)) out.gameMode = DEFAULT_GAME_MODE;
   return out;
 }
 
@@ -189,6 +196,7 @@ export async function create(data) {
     type: data.type || "play-to-learn",
     status: data.status || "draft",
     playMode: ["solo", "classroom"].includes(data.playMode) ? data.playMode : "solo",
+    gameMode: GAME_MODES.includes(data.gameMode) ? data.gameMode : DEFAULT_GAME_MODE,
     questionsCount: data.questionsCount || 0,
     playersCount: 0,
     config: sanitizeConfig(data.config),

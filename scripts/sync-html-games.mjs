@@ -22,8 +22,21 @@ import { SCHEMA_VERSION, defaultValuesFor } from "../src/games/gameConfigSchema.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 
-// ── Manifest: 7 game trong src/games/timed-games ─────────────────
+// ── Manifest: các game HTML trong src/games ──────────────────────
+// gameMode: "quiz"   → dùng câu hỏi trong collection `questions` (mặc định)
+//           "custom" → game tự sinh nội dung từ JSON `config`, KHÔNG dùng câu hỏi
 const MANIFEST = [
+  {
+    file: "hocmachoi-bridge.html",
+    name: "Học Mà Chơi",
+    aliases: ["học mà chơi", "hoc ma choi", "hocmachoi", "hoc-ma-choi", "game1"],
+    configKey: "hocmachoi",
+    gameMode: "custom",
+    description: "5 mini-game: Đua Toán, Lật Thẻ, Xếp Chữ, Đố Vui, Chọn Nhanh.",
+    icon: "🎪",
+    ring: "#F4B942",
+    category: "adventure",
+  },
   {
     file: "timed-games/Ballon.html",
     name: "Bóng Bay Vui",
@@ -222,6 +235,7 @@ async function main() {
         type: "play-to-learn",
         status: "published",
         playMode: "solo",
+        gameMode: item.gameMode || "quiz",
         questionsCount: 0,
         config: configPayload || {},
       };
@@ -229,11 +243,12 @@ async function main() {
       gameAction = DRY ? "sẽ tạo game" : "tạo game";
     }
 
-    rows.push({ game: item.name, template: tplAction, gameAction, htmlKB: (html.length / 1024).toFixed(1), config: item.configKey || "—" });
+    rows.push({ game: item.name, template: tplAction, gameAction, htmlKB: (html.length / 1024).toFixed(1), mode: item.gameMode || "quiz", config: item.configKey || "—" });
   }
 
   console.table(rows);
   console.log(DRY ? "\nDRY-RUN: chưa ghi gì lên API." : "\nXong. Mở #/admin/game-config để chỉnh cấu hình từng game.");
+  console.log('Game "custom" nhận JSON config, không dùng câu hỏi trong DB.');
 }
 
 main().catch((e) => {

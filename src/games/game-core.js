@@ -37,13 +37,42 @@ const shuffle = a => {
   return a;
 };
 
-/* ============ Trạng thái người chơi (bộ nhớ, mất khi reload) ============ */
+/* ============ Trạng thái người chơi (lưu localStorage) ============ */
 const S = {
   xp: 0, games: 0, best: {}, flags: {},
   played: new Set(), unlocked: new Set()
 };
 const XP_PER_LVL = 120;
 const lvl = () => Math.floor(S.xp / XP_PER_LVL) + 1;
+
+/* ============ localStorage persistence ============ */
+let _storageKey = '';
+
+function _saveState() {
+  if (!_storageKey) return;
+  try {
+    const data = {
+      xp: S.xp, games: S.games, best: S.best, flags: S.flags,
+      played: [...S.played], unlocked: [...S.unlocked]
+    };
+    localStorage.setItem(_storageKey, JSON.stringify(data));
+  } catch (e) { /* quota exceeded hoặc private mode */ }
+}
+
+function _loadState() {
+  if (!_storageKey) return;
+  try {
+    const raw = localStorage.getItem(_storageKey);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (typeof data.xp === 'number') S.xp = data.xp;
+    if (typeof data.games === 'number') S.games = data.games;
+    if (data.best && typeof data.best === 'object') S.best = data.best;
+    if (data.flags && typeof data.flags === 'object') S.flags = data.flags;
+    if (Array.isArray(data.played)) S.played = new Set(data.played);
+    if (Array.isArray(data.unlocked)) S.unlocked = new Set(data.unlocked);
+  } catch (e) { /* parse error — bỏ qua */ }
+}
 
 /* ============ Âm thanh ============ */
 let soundOn = true, actx;
@@ -254,6 +283,7 @@ function finish({ id, score, xp, lines, replay, details = {} }) {
   if (isBest) S.best[id] = score;
   checkBadges();
   renderMe();
+  _saveState(); // ← Lưu tiến độ vào localStorage
   const up = lvl() > before;
   sfx.win();
 
@@ -281,11 +311,13 @@ function finish({ id, score, xp, lines, replay, details = {} }) {
     // Cập nhật lại từ server (XP, cấp, huy hiệu)
     if (typeof serverData.totalXp === 'number') S.xp = serverData.totalXp;
     renderMe();
+    _saveState();
     if (Array.isArray(serverData.newBadges)) {
       serverData.newBadges.forEach(b => {
         S.unlocked.add(b.id);
         setTimeout(() => toast(`${b.icon} Huy hiệu mới: ${b.name}`), 900);
       });
+      _saveState();
     }
   }).catch(() => { /* lỗi mạng đã được xử lý trong api.js */ });
 }
@@ -424,11 +456,15 @@ let _hubTitle = '', _hubDesc = '';
  * @param {string} opts.hubDesc  — mô tả sảnh
  * @param {Array}  [opts.badges] — huy hiệu bổ sung (merge vào BADGES chung)
  */
-function initCore({ games, hubTitle = '', hubDesc = '', badges = [] }) {
+function initCore({ games, hubTitle = '', hubDesc = '', badges = [], storageKey = '' }) {
   _GAMES    = games;
   _hubTitle = hubTitle;
   _hubDesc  = hubDesc;
   BADGES    = badges;
+  _storageKey = storageKey || '';
+
+  // Khôi phục tiến độ từ localStorage
+  _loadState();
 
   _bindSoundBtn();
 

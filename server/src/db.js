@@ -113,6 +113,8 @@ async function _runHeavyInit(database) {
           language: { bsonType: "string" },
           templateId: { bsonType: "objectId" },
           type: { enum: ["play-to-learn", "play-to-win"] },
+          // Field mới: quiz = dùng collection `questions`; custom = tự sinh từ `config`
+          gameMode: { enum: ["quiz", "custom"] },
           status: { enum: ["published", "draft"] },
           code: { bsonType: "string" },
           createdAt: { bsonType: "string" },

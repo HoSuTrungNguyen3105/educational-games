@@ -27,6 +27,9 @@ const LoginScreen = lazy(() => import("./pages/LoginScreen.jsx"));
 const UserLoginScreen = lazy(() => import("./pages/user/UserLoginScreen.jsx"));
 const UserRegisterScreen = lazy(() => import("./pages/user/UserRegisterScreen.jsx"));
 const MathAdventurePage = lazy(() => import("./pages/MathAdventurePage.jsx"));
+const HmcGame1Page = lazy(() => import("./pages/HmcGame1Page.jsx"));
+const HmcGame2Page = lazy(() => import("./pages/HmcGame2Page.jsx"));
+const HmcGame3Page = lazy(() => import("./pages/HmcGame3Page.jsx"));
 
 function App() {
   const route = useRoute();
@@ -127,6 +130,9 @@ function App() {
     "assignment-join": () => <AssignmentJoin />,
     "assignment-take": () => <AssignmentTake code={route.params?.code} />,
     "math-adventure": () => <MathAdventurePage />,
+    "hmc-game1": () => <HmcGame1Page />,
+    "hmc-game2": () => <HmcGame2Page />,
+    "hmc-game3": () => <HmcGame3Page />,
   };
 
   const renderScreen = () => {

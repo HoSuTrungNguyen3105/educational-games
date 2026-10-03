@@ -145,6 +145,8 @@ export default function StudentApp({ initialGame, coopSession, onExit, toast, us
   const handleStart = async () => {
     const gid = game?._id?.toString() || game?.id;
     if (isPlayToWin) { setScreen("play"); return; }
+    // Game custom tự sinh nội dung từ config → không gọi API câu hỏi
+    if (game?.gameMode === "custom") { setQuestions([]); setScreen("play"); return; }
     const qs = await questionService.listByGame(gid); setQuestions(qs); setScreen("play");
   };
 
@@ -264,7 +266,7 @@ export default function StudentApp({ initialGame, coopSession, onExit, toast, us
           <WaitingRoomScreen game={game} playerName={playerName}
             onStart={handleStart} userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} />
         )}
-        {screen === "play" && game && (isPlayToWin || questions.length > 0) && (
+        {screen === "play" && game && (isPlayToWin || game?.gameMode === "custom" || questions.length > 0) && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Loader label="Đang tải trò chơi..." /></div>}>
             <GamePlayRouter game={game} questions={questions} players={players} playerName={playerName} onQuit={restart} onFinish={handleFinish} onStateUpdate={handleStateUpdate} template={template} userAuth={userAuth} coopSession={activeCoopSession} />
             {/* <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} /> */}

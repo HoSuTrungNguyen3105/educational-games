@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Học Mà Chơi — Bản Bridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       Học Mà Chơi — bản BRIDGE
+       ───────────────────────────────────────────────────────────────────
+       • Giao diện lấy từ game1.html (giấy + lưới + viền đậm)
+       • Bridge postMessage lấy từ DungeonQuest2.html
+       • NỘI DUNG đến từ JSON `config` (window.EG_CONFIG[key]) — KHÔNG dùng
+         collection `questions`. Câu hỏi của game "Đố Vui" nằm trong config.
+       • Nhớ/nạp tiến độ qua save-progress → vào lại render đúng màn.
+
+       ⚠ File này phải SELF-CONTAINED: HtmlGameLoader nạp bằng iframe
+         srcDoc nên <script src="..."> SẼ KHÔNG chạy. Mọi thứ nằm trong đây.
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      --ink: #1c1b3a;
+      --paper: #fbf8ef;
+      --panel: #ffffff;
+      --line: #e6e0cc;
+      --sun: #ffc93c;
+      --tomato: #ff6b57;
+      --mint: #2fc9a5;
+      --sky: #4b9dff;
+      --lilac: #a184ff;
+      --ok: #22b573;
+      --bad: #f0483e;
+      --shadow: 4px 4px 0 var(--ink);
+      --head: 'Baloo 2', 'Nunito', 'Segoe UI', system-ui, sans-serif;
+      --body: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent
+    }
+
+    html,
+    body {
+      margin: 0
+    }
+
+    body {
+      font-family: var(--body);
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 28px 28px;
+      min-height: 100vh;
+      padding-bottom: 84px;
+    }
+
+    button {
+      font-family: inherit;
+      color: inherit;
+      cursor: pointer;
+      border: none;
+      background: none
+    }
+
+    #app {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px 14px 20px
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px
+    }
+
+    .top h1 {
+      font-family: var(--head);
+      font-size: 26px;
+      margin: 0
+    }
+
+    .chip {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #fff;
+      border: 2px solid var(--ink)
+    }
+
+    .chip.lv {
+      background: var(--sun)
+    }
+
+    .chip.coin {
+      background: #ffe9a8
+    }
+
+    .chip.xp {
+      background: #d9f5e8
+    }
+
+    .grow {
+      flex: 1
+    }
+
+    .hero {
+      background: var(--panel);
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+      margin-bottom: 18px
+    }
+
+    .hero h2 {
+      font-family: var(--head);
+      font-size: 20px;
+      margin: 0 0 4px
+    }
+
+    .hero p {
+      margin: 0;
+      color: #6b6a86;
+      font-size: 14px
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 14px
+    }
+
+    .tile {
+      position: relative;
+      text-align: left;
+      padding: 16px;
+      border-radius: 16px;
+      border: 3px solid var(--ink);
+      box-shadow: var(--shadow);
+      transition: transform .12s, box-shadow .12s;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tile:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 var(--ink)
+    }
+
+    .tile:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 var(--ink)
+    }
+
+    .tile .ic {
+      font-size: 30px
+    }
+
+    .tile h3 {
+      font-family: var(--head);
+      font-size: 18px;
+      margin: 0
+    }
+
+    .tile p {
+      margin: 0;
+      font-size: 13px;
+      opacity: .8
+    }
+
+    .tile .meta {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 11px;
+      font-weight: 700
+    }
+
+    .tag {
+      background: rgba(255, 255, 255, .7);
+      border: 1.5px solid var(--ink);
+      border-radius: 999px;
+      padding: 2px 8px
+    }
+
+    .tile.locked {
+      filter: grayscale(1);
+      opacity: .55
+    }
+
+    /* ── Stage ── */
+    .stage {
+      background: var(--panel);
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 18px
+    }
+
+    .hud {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px
+    }
+
+    .hud b {
+      font-family: var(--head)
+    }
+
+    .tbar {
+      height: 12px;
+      background: #efe9d8;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 14px
+    }
+
+    .tbar i {
+      display: block;
+      height: 100%;
+      background: var(--mint);
+      transition: width .1s linear
+    }
+
+    .qbox {
+      font-family: var(--head);
+      font-size: clamp(22px, 5vw, 34px);
+      text-align: center;
+      padding: 18px 10px;
+      margin-bottom: 14px;
+      word-break: break-word
+    }
+
+    .opts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px
+    }
+
+    .opt {
+      padding: 14px;
+      border-radius: 14px;
+      border: 3px solid var(--ink);
+      background: #fff;
+      font-size: 17px;
+      font-weight: 700;
+      text-align: center;
+      transition: transform .1s
+    }
+
+    .opt:hover {
+      transform: translateY(-2px)
+    }
+
+    .opt.ok {
+      background: #b9f2d6
+    }
+
+    .opt.bad {
+      background: #ffc9c4
+    }
+
+    .opt.dim {
+      opacity: .4
+    }
+
+    .explain {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #fff7dc;
+      border: 2px dashed var(--ink);
+      font-size: 14px
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 16px
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: 12px;
+      border: 3px solid var(--ink);
+      box-shadow: var(--shadow);
+      font-weight: 700;
+      background: var(--sun)
+    }
+
+    .btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 var(--ink)
+    }
+
+    .btn.alt {
+      background: #fff
+    }
+
+    .btn.ghost {
+      background: transparent;
+      box-shadow: none
+    }
+
+    /* ── Kết quả ── */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(28, 27, 58, .55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 40
+    }
+
+    .modal.on {
+      display: flex
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 3px solid var(--ink);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      max-width: 460px;
+      width: 100%;
+      text-align: center
+    }
+
+    .panel h2 {
+      font-family: var(--head);
+      margin: 0 0 4px;
+      font-size: 24px
+    }
+
+    .panel .big {
+      font-family: var(--head);
+      font-size: 52px;
+      line-height: 1.1
+    }
+
+    .panel .stats {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 10px 0 4px;
+      font-size: 13px;
+      font-weight: 700
+    }
+
+    .panel .stats span {
+      background: #f3f0e4;
+      border-radius: 999px;
+      padding: 4px 10px
+    }
+
+    /* ═══ DASHBOARD ═══════════════════════════════════════════════════
+       Bật/tắt bằng nút ⚙︎ hoặc phím D. Chỉ để test — không bắt buộc. */
+    .dash {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: #14131f;
+      color: #d8dcec;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      border-top: 3px solid var(--sun);
+      z-index: 50
+    }
+
+    .dash-tab {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      z-index: 51;
+      background: var(--sun);
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      font-weight: 700;
+      padding: 8px 14px;
+      font-size: 13px
+    }
+
+    .dash.open .dash-tab {
+      display: none
+    }
+
+    .dash-h {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid #2a2838;
+      flex-wrap: wrap
+    }
+
+    .dash-h strong {
+      color: var(--sun)
+    }
+
+    .dash-btn {
+      background: #232135;
+      color: #d8dcec;
+      border: 1px solid #37344c;
+      border-radius: 7px;
+      padding: 4px 9px;
+      font-size: 11px;
+      cursor: pointer
+    }
+
+    .dash-btn:hover {
+      background: #2e2b42
+    }
+
+    .dash-b {
+      display: none;
+      max-height: 46vh;
+      overflow: auto;
+      padding: 10px 12px
+    }
+
+    .dash.open .dash-b {
+      display: block
+    }
+
+    .dash-cols {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px
+    }
+
+    .dash-card {
+      background: #1b1a29;
+      border: 1px solid #2a2838;
+      border-radius: 10px;
+      padding: 9px 11px
+    }
+
+    .dash-card h4 {
+      margin: 0 0 7px;
+      font-size: 11px;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      color: var(--mint)
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 116px 1fr;
+      gap: 3px 8px
+    }
+
+    .kv span:nth-child(odd) {
+      color: #8b93ad
+    }
+
+    .log {
+      max-height: 190px;
+      overflow: auto;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-size: 11px;
+      line-height: 1.5
+    }
+
+    .log .t {
+      color: #6b7490
+    }
+
+    .log .in {
+      color: #63b3ff
+    }
+
+    .log .out {
+      color: #5fd39a
+    }
+
+    .log .err {
+      color: #ff8b93
+    }
+
+    .status {
+      margin-top: 8px;
+      font-size: 12px;
+      min-height: 18px;
+      color: #6b6a86
+    }
+
+    .status.err {
+      color: var(--bad)
+    }
+
+    .hidden {
+      display: none !important
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="top">
+      <button class="btn alt" id="btnHome">← Sảnh</button>
+      <h1 id="gameTitle">Học Mà Chơi</h1>
+      <span class="grow"></span>
+      <span class="chip lv" id="chipLevel">Cấp 1</span>
+      <span class="chip xp" id="chipXp">0 XP</span>
+      <span class="chip coin" id="chipCoin">🪙 0</span>
+    </div>
+
+    <div class="hero">
+      <h2 id="hubTitle">Chơi một ván, học một điều.</h2>
+      <p id="hubDesc">Nội dung lấy từ JSON cấu hình của game (config), không dùng bộ câu hỏi trong DB.</p>
+    </div>
+
+    <div id="hub">
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div id="play" class="hidden">
+      <div class="stage">
+        <div class="hud">
+          <span>Màn <b id="hudLevel">1</b></span>
+          <span>Điểm <b id="hudScore">0</b></span>
+          <span class="grow"></span>
+          <span>⏱ <b id="hudTime">0</b>s</span>
+        </div>
+        <div class="tbar"><i id="tbar" style="width:100%"></i></div>
+        <div class="qbox" id="qbox"></div>
+        <div class="opts" id="opts"></div>
+        <div class="explain hidden" id="explain"></div>
+        <div class="status" id="status"></div>
+        <div class="row">
+          <button class="btn alt" id="btnQuit">Thoát</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="modal">
+      <div class="panel" id="panel"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ DASHBOARD TEST ══════════ -->
+  <button class="dash-tab" id="dashTab">⚙︎ Test</button>
+  <div class="dash" id="dash">
+    <div class="dash-h">
+      <strong>⚙︎ DASHBOARD BRIDGE</strong>
+      <span id="dashMode">standalone</span>
+      <span class="grow"></span>
+      <button class="dash-btn" data-t="init">gửi init (mô phỏng)</button>
+      <button class="dash-btn" data-t="save">save-progress</button>
+      <button class="dash-btn" data-t="progress">get-progress</button>
+      <button class="dash-btn" data-t="coin">add-coins 10</button>
+      <button class="dash-btn" data-t="over">game-over</button>
+      <button class="dash-btn" data-t="clear">xoá log</button>
+      <button class="dash-btn" data-t="close">đóng</button>
+    </div>
+    <div class="dash-b">
+      <div class="dash-cols">
+        <div class="dash-card">
+          <h4>Trạng thái game</h4>
+          <div class="kv" id="dashState"></div>
+        </div>
+        <div class="dash-card">
+          <h4>Nhận từ React</h4>
+          <div class="kv" id="dashInit"></div>
+        </div>
+        <div class="dash-card">
+          <h4>Config (EG_CONFIG)</h4>
+          <div class="kv" id="dashConfig"></div>
+        </div>
+        <div class="dash-card">
+          <h4>Bridge log</h4>
+          <pre class="log" id="dashLog"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* ═══════════════════════════════════════════════════════════════════
+         1. CẤU HÌNH MẶC ĐỊNH
+         Đây là nội dung game. Khi chạy trong app, EG_CONFIG[key] sẽ GHI ĐÈ
+         phần này (HtmlGameLoader injectGameConfig). Giá trị mặc định để file
+         chạy được khi mở trực tiếp để test.
+         ═══════════════════════════════════════════════════════════════ */
+      var CONFIG_KEY = "hocmachoi";
+
+      var DEFAULT_CONFIG = {
+        // ── Cài đặt chung ──
+        totalQ: 10,          // số câu mỗi màn
+        timeLimit: 20,       // giây mỗi câu
+        lives: 3,            // số mạng
+        levelStep: 3,        // cứ đúng N câu thì lên màn
+        mathMax: 20,         // số lớn nhất trong phép tính
+        mathOps: ["+", "-", "×"],
+
+        // ── Đố Vui: câu hỏi NẰM TRONG CONFIG, không nằm trong DB ──
+        quiz: [
+          { q: "Mặt Trời là ngôi sao nào trong hệ Mặt Trời?", a: ["Sao Thủy", "Sao Mặt Trời", "Sao Sao", "Sao Thiên Vương"], c: 1, why: "Mặt Trời là một ngôi sao vàng." },
+          { q: "Nước sôi ở 100°C ở điều kiện áp suất khí quyển.", a: ["Đúng", "Sai"], c: 0, why: "Ở mực nước biển nước sôi ở 100°C." },
+          { q: "Cơ quan nào của người chứa hemoglobin?", a: ["Phổi", "Tim", "Gan", "Thận"], c: 1, why: "Hemoglobin nằm trong hồng cầu ở máu." },
+          { q: "Hành tinh lớn nhất hệ Mặt Trời là hành tinh nào?", a: ["Trái Đất", "Sao Thổ", "Sao Mộc", "Sao Thiên Vương"], c: 2, why: "Sao Mộc là hành tinh lớn nhất." },
+          { q: "1 kg nước ấm hơn 1 kg nước lạnh ở điều kiện nào?", a: ["Không", "Luôn"], c: 0, why: "Chỉ sự chênh lệch nhiệt lượng mới quyết định nhiệt độ lớn hơn." }
+        ],
+
+        // ── Từ vựng (dùng cho Memory + Xếp Chữ) ──
+        words: [
+          { e: "🍎", en: "apple", vi: "quả táo" },
+          { e: "🐶", en: "dog", vi: "con chó" },
+          { e: "📚", en: "book", vi: "quyển sách" },
+          { e: "☀️", en: "sun", vi: "mặt trời" },
+          { e: "🎒", en: "bag", vi: "cái cặp" },
+          { e: "🚗", en: "car", vi: "ô tô" },
+          { e: "🌸", en: "flower", vi: "bông hoa" },
+          { e: "🎵", en: "song", vi: "bài hát" }
+        ],
+
+        // ── Lời khen / động viên ──
+        praise: ["Giỏi quá!", "Tuyệt vời!", "Chuẩn luôn!", "Bé thông minh quá!"],
+        retry: ["Thử lại nhé!", "Gần đúng rồi, cố lên!", "Ổ, thử bóng khác nào!"]
+      };
+
+      /* ═══════════════════════════════════════════════════════════════════
+         2. BRIDGE — giao tiếp với React frame qua postMessage
+         (theo khuôn của DungeonQuest2.html)
+         ═══════════════════════════════════════════════════════════════ */
+      var BRIDGE = {
+        // true khi đang chạy trong iframe của HtmlGameLoader
+        embedded: window.parent !== window,
+        // payload nhận được từ message `init`
+        init: null,
+
+        post: function (type, data) {
+          try {
+            window.parent.postMessage({ type: type, data: data || {} }, "*");
+            dash.log("out", type, data);
+          } catch (e) {
+            dash.log("err", "postMessage lỗi: " + e.message);
+          }
+        },
+
+        /** Báo đã sẵn sàng → React gửi `init`. */
+        ready: function () {
+          this.post("ready");
+          // Bridge EG_ANSWER (nếu có) cũng tự báo ready; tránh báo 2 lần
+          if (window.EG_ANSWER && typeof window.EG_ANSWER.markReady === "function") {
+            try { window.EG_ANSWER.markReady(); } catch (e) { /* ignore */ }
+          }
+        },
+
+        /** Ghi 1 câu trả lời (nếu React đã tiêm EG_ANSWER thì dùng luôn). */
+        answer: function (questionId, value, timeSpent) {
+          if (window.EG_ANSWER && typeof window.EG_ANSWER.answer === "function") {
+            window.EG_ANSWER.answer(questionId, value, timeSpent);
+          }
+          this.post("answer-recorded", { questionId: questionId, value: value, timeSpent: timeSpent });
+        },
+
+        /** Lưu "đang ở màn nào" để vào lại render đúng màn. */
+        saveProgress: function (payload) {
+          this.post("save-progress", {
+            level: state.level,
+            progress: progressRatio(),
+            state: payload || stateSnapshot()
+          });
+        },
+
+        askProgress: function () { this.post("get-progress"); },
+
+        addCoins: function (amount) { this.post("add-coins", { amount: amount }); },
+
+        stateUpdate: function (extra) {
+          this.post("state-update", {
+            type: "play-to-learn",
+            coins: state.coins,
+            score: state.score,
+            level: state.level,
+            unlocked: Object.keys(state.unlocked).filter(function (k) { return state.unlocked[k]; }),
+            extra: extra || null
+          });
+        },
+
+        gameOver: function (extra) {
+          var payload = {
+            score: state.score,
+            correct: state.correct,
+            totalQuestions: state.answered,
+            timeUsed: state.timeUsed,
+            level: state.level,
+            coinReward: 0,
+            answers: (window.EG_ANSWER && window.EG_ANSWER.getAnswers)
+              ? window.EG_ANSWER.getAnswers()
+              : state.answers
+          };
+          if (extra) for (var k in extra) payload[k] = extra[k];
+          this.post("game-over", payload);
+        },
+
+        quit: function () { this.post("quit"); },
+
+        /** Đọc config do React tiêm vào (window.EG_CONFIG[key]). */
+        resolveConfig: function () {
+          var global = window.EG_CONFIG || window.EG || {};
+          var cfg = global[CONFIG_KEY];
+          return cfg && typeof cfg === "object" ? cfg : DEFAULT_CONFIG;
+        },
+
+        handle: function (msg) {
+          if (!msg || typeof msg !== "object") return;
+          dash.log("in", msg.type, msg.data);
+          switch (msg.type) {
+            case "init":
+              onInit(msg.data || {});
+              break;
+            case "progress":
+              applyProgress(msg.data);
+              break;
+            case "progress-saved":
+              setStatus(msg.data && msg.data.ok
+                ? "💾 Đã lưu tiến độ màn " + (state.level)
+                : "⚠ Không lưu được tiến độ (cần đăng nhập)");
+              break;
+            case "coins-added":
+              if (msg.data && msg.data.coins != null) state.coins = msg.data.coins;
+              renderTop();
+              break;
+          }
+        }
+      };
+
+      window.addEventListener("message", function (e) { BRIDGE.handle(e.data); });
+
+      /* ═══════════════════════════════════════════════════════════════════
+         3. STATE
+         ═══════════════════════════════════════════════════════════════ */
+      var cfg = DEFAULT_CONFIG;
+      var state = {
+        screen: "hub",          // hub | play
+        gameId: null,
+        gameCode: "",
+        gameName: "Học Mà Chơi",
+        playerName: "Player",
+        mode: "quiz",           // game.mode của game trên API
+        coins: 0,
+        level: 1,
+        best: 0,
+        unlocked: {},           // id game → đã mở khoá
+        game: null,             // mini-game đang chơi
+        score: 0,
+        correct: 0,
+        answered: 0,
+        lives: 3,
+        levelIndex: 0,          // câu trong màn
+        timeUsed: 0,
+        answers: [],            // fallback khi không có EG_ANSWER
+        timer: null,
+        timeLeft: 20,
+        locked: false,
+        resume: null            // tiến độ lúc init
+      };
+
+      var GAMES = [
+        {
+          id: "math", name: "Đua Toán", tag: "Toán", color: "#ffe9a8", icon: "🚀",
+          desc: "Tính nhẩm trong thời gian. Chuỗi đúng liên tiếp cộng điểm.",
+          levels: 3
+        },
+        {
+          id: "memory", name: "Lật Thẻ Anh – Việt", tag: "Tiếng Anh", color: "#bfe0ff", icon: "🃏",
+          desc: "Ghép từ tiếng Anh với nghĩa tiếng Việt.",
+          levels: 3
+        },
+        {
+          id: "scramble", name: "Xếp Chữ", tag: "Tiếng Anh", color: "#ffd0c9", icon: "🔤",
+          desc: "Sắp xếp chữ cái bị xáo trộn thành từ đúng.",
+          levels: 3
+        },
+        {
+          id: "quiz", name: "Đố Vui Khoa Học", tag: "Khoa học", color: "#d6ccff", icon: "🔬",
+          desc: "Câu hỏi lấy từ cấu hình JSON của game (không lấy từ DB).",
+          levels: 3
+        },
+        {
+          id: "pick", name: "Chọn Nhanh", tag: "Phản xạ", color: "#c6f3e6", icon: "⚡",
+          desc: "Chọn đúng số lớn nhất trước khi hết giờ.",
+          levels: 3
+        }
+      ];
+
+      /* ═══════════════════════════════════════════════════════════════════
+         4. TIỆN ÍCH
+         ═══════════════════════════════════════════════════════════════ */
+      function el(id) { return document.getElementById(id); }
+
+      function rnd(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
+      function shuffle(a) {
+        a = a.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+          var j = rnd(0, i), t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+        return a;
+      }
+
+      function pick(a) { return a[rnd(0, a.length - 1)]; }
+
+      function setStatus(msg, isErr) {
+        var s = el("status");
+        s.textContent = msg || "";
+        s.className = "status" + (isErr ? " err" : "");
+      }
+
+      function num(v, fallback) {
+        var n = Number(v);
+        return Number.isFinite(n) ? n : fallback;
+      }
+
+      function listOf(key, fallback) {
+        var v = cfg[key];
+        return Array.isArray(v) && v.length ? v : (fallback || []);
+      }
+
+      function praise() {
+        return pick(listOf("praise", DEFAULT_CONFIG.praise));
+      }
+
+      function encourage() {
+        return pick(listOf("retry", DEFAULT_CONFIG.retry));
+      }
+
+      /** Tổng câu đã trả lời trong màn / tổng câu của màn. */
+      function progressRatio() {
+        var total = Math.max(1, num(cfg.totalQ, 10));
+        return Math.max(0, Math.min(1, state.answered / total));
+      }
+
+      /** Ảnh chụp state để lưu. */
+      function stateSnapshot() {
+        return {
+          game: state.game,
+          score: state.score,
+          correct: state.correct,
+          answered: state.answered,
+          level: state.level,
+          lives: state.lives,
+          best: state.best,
+          unlocked: state.unlocked,
+          savedAt: new Date().toISOString()
+        };
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════
+         5. TIẾN ĐỘ
+         ═══════════════════════════════════════════════════════════════ */
+      function applyProgress(p) {
+        if (!p) return;
+        if (p.level) state.level = Math.max(1, num(p.level, 1));
+        if (p.state) {
+          var s = p.state;
+          if (s.score != null) state.score = num(s.score, 0);
+          if (s.correct != null) state.correct = num(s.correct, 0);
+          if (s.answered != null) state.answered = num(s.answered, 0);
+          if (s.lives != null) state.lives = num(s.lives, 3);
+          if (s.best != null) state.best = num(s.best, 0);
+          if (s.unlocked) state.unlocked = s.unlocked;
+          state.resume = s;
+        }
+        state.resume = state.resume || p;
+        renderTop();
+        renderHub();
+      }
+
+      /**
+       * Màn nào đang mở?
+       *
+       * Mô hình: có MỘT mức chơi chung (`state.level`), nạp lại từ server.
+       * Mọi game đều chơi được ở màn hiện tại — nên vào lại game là thấy đúng
+       * màn đang dở, không phải màn 1.
+       * Nếu vượt quá số màn của game → báo "đã chinh phục hết", vẫn chơi lại
+       * được để phá kỷ lục.
+       */
+      function levelOf(g) {
+        return Math.min(state.level, g.levels);
+      }
+
+      function isCompleted(g) {
+        return state.level > g.levels;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════
+         6. RENDER
+         ═══════════════════════════════════════════════════════════════ */
+      function renderTop() {
+        el("chipLevel").textContent = "Cấp " + state.level;
+        el("chipXp").textContent = state.score + " XP";
+        el("chipCoin").textContent = "🪙 " + state.coins;
+        el("gameTitle").textContent = state.gameName || "Học Mà Chơi";
+      }
+
+      function renderHub() {
+        var html = GAMES.map(function (g) {
+          var done = isCompleted(g);
+          var lv = levelOf(g);
+          var best = state.unlocked["best:" + g.id] || 0;
+          return '<button class="tile' + (done ? " locked" : "") + '" data-game="' + g.id +
+            '" style="background:' + g.color + '">' +
+            '<span class="ic">' + g.icon + "</span>" +
+            '<h3>' + g.name + "</h3>" +
+            "<p>" + g.desc + "</p>" +
+            '<span class="meta"><span class="tag">' + g.tag + "</span>" +
+            '<span class="tag">Màn ' + lv + "/" + g.levels + "</span>" +
+            (best ? '<span class="tag">🏅 ' + best + "</span>" : "") +
+            (done ? '<span class="tag">✔ Đã chinh phục hết</span>' : "") +
+            "</span></button>";
+        }).join("");
+        el("grid").innerHTML = html;
+      }
+
+      function renderTopOfPlay() {
+        el("hudLevel").textContent = state.level;
+        el("hudScore").textContent = state.score;
+        el("hudTime").textContent = state.timeLeft;
+        el("tbar").style.width = Math.max(0, (state.timeLeft / Math.max(1, num(cfg.timeLimit, 20))) * 100) + "%";
+      }
+
+      function showScreen(name) {
+        state.screen = name;
+        el("hub").classList.toggle("hidden", name !== "hub");
+        el("play").classList.toggle("hidden", name !== "play");
+        el("hubTitle").parentElement?.classList.toggle("hidden", name !== "hub");
+        if (name === "hub") renderHub();
+        renderTop();
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════
+         7. ĐỒNG HỒ
+         ═══════════════════════════════════════════════════════════════ */
+      function startTimer(onTimeout) {
+        stopTimer();
+        state.locked = false;
+        state.timeLeft = num(cfg.timeLimit, 20);
+        state.timer = setInterval(function () {
+          state.timeLeft = Math.max(0, state.timeLeft - 1);
+          state.timeUsed += 1;
+          renderTopOfPlay();
+          if (state.timeLeft <= 0) { stopTimer(); onTimeout(); }
+        }, 1000);
+      }
+
+      function stopTimer() {
+        if (state.timer) { clearInterval(state.timer); state.timer = null; }
+      }
+
+      function lock() { state.locked = true; stopTimer(); }
+
+      /* ═══════════════════════════════════════════════════════════════════
+         8. CÁC MINI-GAME — nội dung đến từ config
+         ═══════════════════════════════════════════════════════════════ */
+      function startGame(id) {
+        var g = GAMES.filter(function (x) { return x.id === id; })[0];
+        if (!g) return;
+        state.game = g;
+        state.levelIndex = 0;
+        state.answered = 0;
+        state.correct = 0;
+        state.score = 0;
+        state.lives = num(cfg.lives, 3);
+        state.answers = [];
+        state.timeUsed = 0;
+        state.resume = null;                 // vào ván mới thì bỏ state đã lưu
+        showScreen("play");
+        setStatus("");
+        renderNext();
+      }
+
+      /** Câu hỏi kế tiếp — mỗi mini-game có cách sinh riêng. */
+      function renderNext() {
+        var g = state.game;
+        if (!g) return;
+        el("explain").classList.add("hidden");
+        if (g.id === "math") return nextMath();
+        if (g.id === "quiz") return nextQuiz();
+        if (g.id === "pick") return nextPick();
+        if (g.id === "memory") return nextMemory();
+        if (g.id === "scramble") return nextScramble();
+      }
+
+      /* ── 8.1 Đua Toán ── */
+      function nextMath() {
+        var ops = listOf("mathOps", ["+", "-", "×"]);
+        var max = num(cfg.mathMax, 20);
+        var op = pick(ops);
+        var a, b, ans;
+        do {
+          a = rnd(1, max); b = rnd(1, Math.min(max, 12));
+          ans = op === "+" ? a + b : op === "-" ? a - b : a * b;
+        } while (ans < 0);
+        var opts = new Set([ans]);
+        var guard = 0;
+        while (opts.size < 4 && guard++ < 60) {
+          var d = ans + rnd(-4, 4) * (Math.max(2, Math.round(ans * 0.2)) || 1);
+          if (d >= 0) opts.add(d);
+        }
+        var list = shuffle(Array.from(opts)).map(String);
+        askQuestion(a + " " + op + " " + b + " = ?", list, ans.toString(),
+          "Chính xác là " + ans + ".", function (correct) { scoreFor(correct, 10); });
+      }
+
+      /* ── 8.2 Đố Vui — câu hỏi LẤY TỪ CONFIG ── */
+      function nextQuiz() {
+        var bank = listOf("quiz", DEFAULT_CONFIG.quiz);
+        if (!bank.length) { finishRound("Không có câu hỏi nào trong cấu hình."); return; }
+        var item = bank[state.levelIndex % bank.length];
+        var answers = (item.a || []).map(String);
+        var correct = answers[num(item.c, 0)];
+        askQuestion(item.q || "", answers, correct, item.why || "", function (ok) {
+          scoreFor(ok, 15);
+        });
+      }
+
+      /* ── 8.3 Chọn Nhanh ── */
+      function nextPick() {
+        var n = rnd(2, 99);
+        var opts = new Set([n]);
+        var guard = 0;
+        while (opts.size < 4 && guard++ < 80) opts.add(rnd(2, 99));
+        askQuestion("Chọn số lớn nhất", shuffle(Array.from(opts)).map(String), String(n),
+          "Số lớn nhất là " + n + ".", function (ok) { scoreFor(ok, 10); });
+      }
+
+      /* ── 8.4 Lật Thẻ ── */
+      var memDeck = [], memFlip = [], memLock = false;
+
+      function nextMemory() {
+        var words = listOf("words", DEFAULT_CONFIG.words);
+        if (!words.length) { finishRound("Chưa cấu hình danh sách từ vựng."); return; }
+        var size = Math.min(6, Math.max(2, Math.floor(words.length / 2)));
+        var chosen = shuffle(words).slice(0, size);
+        memDeck = chosen.map(function (w, i) { return { key: w.en + "|" + i, label: w.e + " " + w.en }; })
+          .concat(chosen.map(function (w, i) { return { key: w.en + "|" + i, label: w.vi }; }));
+        memDeck = shuffle(memDeck);
+        memFlip = [];
+        memLock = false;
+
+        el("qbox").textContent = "Ghép hình với nghĩa tiếng Việt";
+        el("opts").innerHTML = memDeck.map(function (c, i) {
+          return '<button class="opt" data-mem="' + i + '">' + c.label + "</button>";
+        }).join("");
+        startTimer(function () {
+          setStatus("Hết giờ! " + memFlip.length + "/" + (memDeck.length / 2) + " cặp.", true);
+          afterAnswer(memFlip.length >= Math.ceil(memDeck.length / 2));
+        });
+      }
+
+      function onMemoryPick(idx) {
+        if (memLock || state.locked) return;
+        if (memFlip.indexOf(idx) >= 0) return;
+        memFlip.push(idx);
+        var btns = el("opts").querySelectorAll(".opt");
+        btns[idx].classList.add("ok");
+        var first = memFlip[0];
+        if (memFlip.length === 2) {
+          var i = memFlip[0], j = memFlip[1];
+          var match = memDeck[i].key === memDeck[j].key;
+          if (match) {
+            state.correct += 1;
+            scoreFor(true, 10);
+          } else {
+            state.lives -= 1;
+            scoreFor(false, 5);
+          }
+          memLock = true;
+          setTimeout(function () {
+            memFlip = [];
+            memLock = false;
+            if (!match) btns[i].classList.remove("ok"), btns[j].classList.remove("ok");
+            afterAnswer(match);
+          }, 700);
+        }
+      }
+
+      /* ── 8.5 Xếp Chữ ── */
+      var scrWord = null;
+
+      function nextScramble() {
+        var words = listOf("words", DEFAULT_CONFIG.words);
+        if (!words.length) { finishRound("Chưa cấu hình danh sách từ vựng."); return; }
+        scrWord = pick(words);
+        var letters = shuffle(scrWord.en.toUpperCase().replace(/[^A-Z]/g, "").split(""));
+        el("qbox").textContent = "Xếp lại từ: " + scrWord.e + " " + scrWord.vi;
+        el("opts").innerHTML = '<button class="btn" id="btnScramble">Đáp án: <b id="scrTyped">_</b> (bấm để lộp chữ)</button>' +
+          '<button class="btn alt" id="btnHint">Gợi ý (-5)</button>';
+        el("btnScramble").onclick = function () {
+          if (state.locked) return;
+          var typed = (el("scrTyped").textContent === "_" ? "" : el("scrTyped").textContent) +
+            letters[rnd(0, letters.length - 1)];
+          el("scrTyped").textContent = typed;
+          checkScramble();
+        };
+        el("btnHint").onclick = function () {
+          if (state.locked) return;
+          el("scrTyped").textContent = scrWord.en.toUpperCase();
+          checkScramble(true);
+        };
+        startTimer(function () {
+          setStatus("Hết giờ! Đáp án là " + scrWord.en + ".", true);
+          afterAnswer(false);
+        });
+      }
+
+      function checkScramble(revealed) {
+        var typed = el("scrTyped").textContent;
+        var ok = typed === scrWord.en.toUpperCase();
+        if (!ok && !revealed) return;
+        lock();
+        if (ok) { state.correct += 1; scoreFor(true, 15); }
+        else { state.lives -= 1; scoreFor(false, 5); }
+        el("explain").textContent = ok ? "✅ Chính xác!" : "Đáp án là " + scrWord.en + ".";
+        el("explain").classList.remove("hidden");
+        setTimeout(function () { afterAnswer(ok); }, 900);
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════
+         9. HỎI – CHỌN – ĐÁNH GIÁ
+         ═══════════════════════════════════════════════════════════════ */
+      var current = null;
+
+      function askQuestion(text, options, correct, explain, onDone) {
+        current = { correct: String(correct), onDone: onDone };
+        el("qbox").textContent = text;
+        el("opts").innerHTML = options.map(function (o) {
+          return '<button class="opt" data-opt="' + String(o).replace(/"/g, "&quot;") + '">' + o + "</button>";
+        }).join("");
+        startTimer(function () {
+          if (state.locked) return;
+          lock();
+          state.lives -= 1;
+          markAnswers(null);
+          setStatus("⏰ " + encourage());
+          onDone(false);
+        });
+      }
+
+      function onAnswer(value) {
+        if (state.locked) return;
+        lock();
+        var ok = String(value) === String(current.correct);
+        markAnswers(value);
+        el("explain").textContent = current.why || "";
+        el("explain").classList.remove("hidden");
+        state.answered += 1;
+        setStatus(ok ? praise() : encourage(), !ok);
+        BRIDGE.answer(current.qid || (state.game ? state.game.id + ":" + state.level + ":" + state.answered : "q"),
+          value, num(cfg.timeLimit, 20) - state.timeLeft);
+        setTimeout(function () { current.onDone(ok); }, 1100);
+      }
+
+      function markAnswers(value) {
+        var btns = el("opts").querySelectorAll(".opt");
+        for (var i = 0; i < btns.length; i++) {
+          var v = btns[i].getAttribute("data-opt");
+          if (v === String(current.correct)) btns[i].classList.add("ok");
+          else if (value != null && v === String(value)) btns[i].classList.add("bad");
+          else btns[i].classList.add("dim");
+        }
+      }
+
+      function scoreFor(correct, base) {
+        if (correct) {
+          var bonus = Math.round((state.timeLeft / Math.max(1, num(cfg.timeLimit, 20))) * 40);
+          state.score += base + bonus;
+        } else {
+          state.lives -= 1;
+        }
+        renderTopOfPlay();
+        renderTop();
+      }
+
+      /** Sau mỗi câu: lưu tiến độ rồi sang câu/màn kế tiếp. */
+      function afterAnswer(correct) {
+        renderTop();
+        // Lưu sau mỗi câu → vào lại game vẫn đúng màn, không mất tiến độ
+        BRIDGE.saveProgress();
+
+        if (state.lives <= 0) return finishRound("Hết mạng!");
+        if (state.answered >= num(cfg.totalQ, 10)) return winRound();
+
+        if (state.game.id === "memory" || state.game.id === "scramble") {
+          setTimeout(function () {
+            state.levelIndex += 1;
+            renderNext();
+          }, 400);
+        } else {
+          state.levelIndex += 1;
+          renderNext();
+        }
+      }
+
+      function winRound() {
+        var g = state.game;
+        state.unlocked[g.id + ":" + state.level] = true;
+        state.unlocked["best:" + g.id] = Math.max(state.unlocked["best:" + g.id] || 0, state.score);
+        state.best = Math.max(state.best, state.score);
+
+        // Lên màn khi đủ số câu đúng — levelStep chỉ dùng cho việc này
+        var step = Math.max(1, num(cfg.levelStep, 3));
+        var maxLevel = Math.max.apply(null, GAMES.map(function (x) { return x.levels; }));
+        var gained = 0;
+        if (state.correct >= step && state.level < maxLevel) {
+          state.level += 1;
+          gained = 1;
+          setStatus("🎉 Đủ " + step + " câu đúng — lên màn " + state.level + "!");
+        } else {
+          setStatus(gained ? "" : "🏁 Đạt màn " + state.level + " rồi!");
+        }
+        BRIDGE.saveProgress();
+        showResult({
+          title: gained ? "LÊN MÀN " + state.level + "!" : "ĐẠT MÀN " + state.level + "!",
+          icon: gained ? "🎉" : "🏆",
+          score: state.score,
+          lines: [
+            "Đúng " + state.correct + "/" + state.answered + " câu",
+            "Còn " + state.lives + " mạng",
+            "Tổng XP: " + state.score
+          ]
+        });
+      }
+
+      function finishRound(reason) {
+        BRIDGE.saveProgress();
+        showResult({
+          title: reason || "Hết ván",
+          icon: "💪",
+          score: state.score,
+          lines: ["Đúng " + state.correct + "/" + state.answered + " câu"]
+        });
+      }
+
+      function showResult(r) {
+        stopTimer();
+        el("panel").innerHTML =
+          "<h2>" + r.title + "</h2>" +
+          '<div class="big">' + r.icon + "</div>" +
+          '<div style="font-family:var(--head);font-size:34px">' + r.score + "</div>" +
+          '<div class="stats">' + r.lines.map(function (l) { return "<span>" + l + "</span>"; }).join("") + "</div>" +
+          '<div class="row">' +
+          '<button class="btn" id="btnAgain">↻ Chơi lại màn này</button>' +
+          '<button class="btn alt" id="btnNext">Màn sau ▶</button>' +
+          '<button class="btn ghost" id="btnHub2">Về sảnh</button>' +
+          "</div>";
+        el("modal").classList.add("on");
+        el("btnAgain").onclick = function () { el("modal").classList.remove("on"); startGame(state.game.id); };
+        el("btnNext").onclick = function () {
+          el("modal").classList.remove("on");
+          state.level += 1;
+          BRIDGE.saveProgress();
+          startGame(state.game.id);
+        };
+        el("btnHub2").onclick = function () { el("modal").classList.remove("on"); showScreen("hub"); };
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════
+         10. INIT — nhận payload từ React
+         ═══════════════════════════════════════════════════════════════ */
+      function onInit(d) {
+        BRIDGE.init = d;
+        cfg = BRIDGE.resolveConfig();
+
+        state.gameId = d.gameId || null;
+        state.gameCode = d.gameCode || "";
+        state.gameName = d.gameName || "Học Mà Chơi";
+        state.playerName = d.playerName || "Player";
+        state.mode = d.gameMode || "quiz";
+        state.coins = num(d.coins != null ? d.coins : d.userCoins, 0);
+        if (d.savedProgress) applyProgress(d.savedProgress);
+        if (Array.isArray(d.loadout)) { /* game mẫu không dùng loadout */ }
+
+        // Game custom: không có câu hỏi từ DB → dùng config làm nội dung
+        if (d.questions && d.questions.length) {
+          // Vẫn hỗ trợ câu hỏi DB nếu có: dùng cho "Đố Vui"
+          var extra = d.questions.map(function (q) {
+            var opts = (q.options || []).map(function (o) { return o.content || o.text || o.id; });
+            return { q: q.content, a: opts, c: Math.max(0, opts.indexOf(q.correctAnswer)), why: q.explanation || "" };
+          });
+          cfg.quiz = extra;
+        }
+
+        renderTop();
+        renderHub();
+        showScreen("hub");
+        setStatus(d.savedProgress
+          ? "↩ Đã nạp tiến độ: màn " + state.level + (state.resume && state.resume.game ? " (" + state.resume.game + ")" : "")
+          : "🆕 Bắt đầu từ màn 1");
+        dash.render();
+
+        if (window.GameTaskBridge) {
+          try { window.GameTaskBridge.emit("GAME_PLAYED", { gameId: state.gameId }); } catch (e) { /* ignore */ }
+        }
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════
+         11. SỰ KIỆN
+         ═══════════════════════════════════════════════════════════════ */
+      el("grid").addEventListener("click", function (e) {
+        var t = e.target.closest("[data-game]");
+        if (t) startGame(t.getAttribute("data-game"));
+      });
+
+      el("opts").addEventListener("click", function (e) {
+        var mem = e.target.closest("[data-mem]");
+        if (mem) return onMemoryPick(Number(mem.getAttribute("data-mem")));
+        var opt = e.target.closest("[data-opt]");
+        if (opt) return onAnswer(opt.getAttribute("data-opt"));
+      });
+
+      el("btnHome").onclick = function () { showScreen("hub"); };
+      el("btnQuit").onclick = function () {
+        BRIDGE.saveProgress();
+        BRIDGE.quit();
+        showScreen("hub");
+      };
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "d" || e.key === "D") el("dash").classList.toggle("open");
+      });
+
+      /* ═══════════════════════════════════════════════════════════════════
+         12. DASHBOARD (chỉ để test)
+         ═══════════════════════════════════════════════════════════════ */
+      var dash = {
+        logs: [],
+        el: el("dash"),
+        log: function (dir, type, data) {
+          var time = new Date().toLocaleTimeString();
+          var cls = dir === "in" ? "in" : dir === "out" ? "out" : dir === "err" ? "err" : "t";
+          var brief = "";
+          try {
+            brief = data === undefined ? "" : JSON.stringify(data);
+            if (brief && brief.length > 160) brief = brief.slice(0, 160) + "…";
+          } catch (e) { brief = "(không serialize được)"; }
+          this.logs.push('<span class="' + cls + '">[' + time + "] " + dir.toUpperCase() + " " +
+            type + (brief ? " " + brief : "") + "</span>");
+          if (this.logs.length > 120) this.logs.shift();
+          this.paint();
+        },
+        paint: function () { el("dashLog").innerHTML = this.logs.join("\n"); },
+        kv: function (id, obj) {
+          el(id).innerHTML = Object.keys(obj).map(function (k) {
+            var v = obj[k];
+            return "<span>" + k + "</span><span>" + (typeof v === "object" ? JSON.stringify(v) : String(v)) + "</span>";
+          }).join("");
+        },
+        render: function () {
+          el("dashMode").textContent = BRIDGE.embedded ? "in-frame (bridge thật)" : "standalone (mở file trực tiếp)";
+          this.kv("dashState", {
+            "screen": state.screen,
+            "game": state.game ? state.game.id : "—",
+            "level": state.level,
+            "score": state.score,
+            "correct": state.correct + "/" + state.answered,
+            "lives": state.lives,
+            "coins": state.coins,
+            "gameMode": state.mode,
+            "configKey": CONFIG_KEY,
+            "đã lưu": state.resume ? "màn " + state.level : "chưa"
+          });
+          var d = BRIDGE.init || {};
+          this.kv("dashInit", {
+            "gameId": d.gameId || "—",
+            "gameMode": d.gameMode || "—",
+            "questions": d.questions ? d.questions.length : 0,
+            "config.values": d.gameConfig && d.gameConfig.values ? Object.keys(d.gameConfig.values).length + " khoá" : "—",
+            "savedProgress": d.savedProgress ? JSON.stringify(d.savedProgress).slice(0, 60) : "null",
+            "loggedIn": d.loggedIn === undefined ? "—" : d.loggedIn,
+            "coins": d.coins != null ? d.coins : "—"
+          });
+          this.kv("dashConfig", {
+            "nguồn": BRIDGE.init ? "EG_CONFIG / config từ API" : "DEFAULT_CONFIG (fallback)",
+            "totalQ": cfg.totalQ,
+            "timeLimit": cfg.timeLimit,
+            "lives": cfg.lives,
+            "levelStep": cfg.levelStep,
+            "mathMax": cfg.mathMax,
+            "words": (cfg.words || []).length,
+            "quiz (trong config)": (cfg.quiz || []).length
+          });
+        }
+      };
+
+      el("dashTab").onclick = function () { el("dash").classList.add("open"); dash.render(); };
+
+      el("dash").addEventListener("click", function (e) {
+        var t = e.target.closest("[data-t]");
+        if (!t) return;
+        var what = t.getAttribute("data-t");
+        if (what === "clear") { dash.logs = []; dash.paint(); return; }
+        if (what === "close") { el("dash").classList.remove("open"); return; }
+        if (what === "init") {
+          // Mô phỏng payload React gửi để test khi không chạy trong app
+          onInit({
+            gameId: "demo-game-id", gameName: "Học Mà Chơi (demo)", gameCode: "DEMO1",
+            playerName: "Bé Test", gameMode: "custom", questions: [],
+            coins: 120, loggedIn: true,
+            gameConfig: { key: CONFIG_KEY, values: DEFAULT_CONFIG },
+            savedProgress: { level: 2, progress: 0.4, state: { score: 250, correct: 4, answered: 6, lives: 2, unlocked: { "math:1": true }, best: 250 } }
+          });
+          dash.log("in", "init (mô phỏng)", { gameMode: "custom", savedProgress: "màn 2" });
+          dash.render();
+          return;
+        }
+        if (what === "save") { BRIDGE.saveProgress(); dash.render(); return; }
+        if (what === "progress") { BRIDGE.askProgress(); return; }
+        if (what === "coin") { BRIDGE.addCoins(10); return; }
+        if (what === "over") { BRIDGE.gameOver(); return; }
+      });
+
+      /* ═══════════════════════════════════════════════════════════════════
+         13. KHỞI ĐỘNG
+         ═══════════════════════════════════════════════════════════════ */
+      cfg = BRIDGE.resolveConfig();
+      renderTop();
+      renderHub();
+      showScreen("hub");
+      dash.render();
+
+      // Chạy trong iframe → báo ready, chờ React gửi init.
+      // Mở file trực tiếp → tự dựng dữ liệu mẫu để test ngay.
+      if (BRIDGE.embedded) {
+        BRIDGE.ready();
+      } else {
+        setStatus("⚠ Đang mở file trực tiếp — chưa có React frame. Bấm ⚙︎ Test → “gửi init” để nạp dữ liệu mẫu.");
+        dash.render();
+      }
+    })();
+  </script>
+</body>
+
+</html>

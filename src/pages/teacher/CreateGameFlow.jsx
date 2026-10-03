@@ -32,7 +32,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const [loading, setLoading] = useState(!!gameId);
   const [stepIdx, setStepIdx] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [form, setForm] = useState({ name: "", description: "", subject: "", topic: "", templateId: null, theme: "gold", status: "draft" });
+  const [form, setForm] = useState({ name: "", description: "", subject: "", topic: "", templateId: null, theme: "gold", status: "draft", gameMode: "quiz" });
   const [questions, setQuestions] = useState([]);
   const [savingStatus, setSavingStatus] = useState(null);
   const [configKey, setConfigKey] = useState(null);
@@ -45,6 +45,9 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const selectedTemplate = useMemo(() => templates.find(t => t._id === form.templateId), [templates, form.templateId]);
   const isPlayToWin = selectedTemplate?.type === "play-to-win";
   const playMode = selectedTemplate?.playMode || "solo";
+  // quiz = dùng câu hỏi trong DB · custom = game tự sinh từ JSON config
+  const gameMode = form.gameMode === "custom" ? "custom" : "quiz";
+  const isCustomGame = gameMode === "custom";
 
   // Cấu hình sẽ gửi lên API: giữ nguyên dữ liệu đã chỉnh nếu khoá không đổi,
   // còn đổi khoá (hoặc tạo game mới) thì lấy bộ mặc định của game đó.
@@ -74,9 +77,10 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   }, [selectedTemplate]);
 
   const steps = useMemo(() => {
-    if (isPlayToWin) return ALL_STEPS.filter(s => s.id !== "questions");
+    // play-to-win và game custom đều không dùng bước "Câu hỏi"
+    if (isPlayToWin || isCustomGame) return ALL_STEPS.filter(s => s.id !== "questions");
     return ALL_STEPS;
-  }, [isPlayToWin]);
+  }, [isPlayToWin, isCustomGame]);
 
   useEffect(() => {
     setRefreshKey(k => k + 1);
@@ -85,7 +89,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
       const g = await gameService.get(gameId);
       if (g) {
         const tid = g.templateId ? (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid || g.templateId) : null;
-        setForm({ name: g.name || g.title || "", description: g.description, subject: g.subject, topic: g.topic, templateId: tid, theme: g.theme || "gold", status: g.status || "draft" });
+        setForm({ name: g.name || g.title || "", description: g.description, subject: g.subject, topic: g.topic, templateId: tid, theme: g.theme || "gold", status: g.status || "draft", gameMode: g.gameMode || "quiz" });
         setLoadedConfig(g.config || null);
         const savedKey = readGameConfig(g.config).key;
         if (savedKey) { keyTouchedRef.current = true; setConfigKey(savedKey); }
@@ -125,12 +129,14 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
       status,
       type: isPlayToWin ? "play-to-win" : "play-to-learn",
       playMode,
-      questionsCount: isPlayToWin ? 0 : questions.length,
+      gameMode,
+      questionsCount: gameMode === "custom" ? 0 : (isPlayToWin ? 0 : questions.length),
     };
     if (configPayload) payload.config = configPayload;
     if (id) await gameService.update(id, payload);
     else { const created = await gameService.create(payload); id = created._id?.toString() || created.id; }
-    if (!isPlayToWin) await questionService.save(id, questions);
+    // Game custom tự sinh nội dung từ config → không lưu câu hỏi
+    if (!isPlayToWin && gameMode !== "custom") await questionService.save(id, questions);
     setSavingStatus(null);
     showToast(status === "published" ? "Đã xuất bản trò chơi" : "Đã lưu bản nháp", "success");
     onDone();
@@ -259,6 +265,9 @@ function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, 
   const savedValues = readGameConfig(savedConfig).values || {};
   const listCount = (configDef?.lists || []).length;
   const settingCount = (configDef?.settings || []).length;
+  const gameMode = form.gameMode === "custom" ? "custom" : "quiz";
+  const isCustomGame = gameMode === "custom";
+  const onForm = (key, val) => setForm(f => ({ ...f, [key]: val }));
   return (
     <div>
       <h2 className="font-display text-xl text-ink mb-6">Nhập thông tin trò chơi</h2>
@@ -285,6 +294,22 @@ function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, 
           {currentTpl?.playMode === "classroom" && (
             <p className="text-xs text-ticket mt-1.5 font-semibold">🎓 Chế độ lớp học — giáo viên điều khiển, học sinh lên chơi</p>
           )}
+          <div className="mt-4">
+            <Field
+              label="🧩 Nguồn nội dung game"
+              hint="Quiz dùng bộ câu hỏi trong DB. Game tự chơi (custom) nhận JSON cấu hình và tự sinh câu hỏi — không cần nhập câu hỏi."
+            >
+              <select className={inputCls} value={gameMode} onChange={e => onForm?.("gameMode", e.target.value)}>
+                <option value="quiz">📝 Quiz — dùng câu hỏi trong DB</option>
+                <option value="custom">🧩 Game tự chơi — nhận JSON cấu hình</option>
+              </select>
+            </Field>
+            {isCustomGame && (
+              <p className="text-xs text-teal mt-1.5">
+                ✓ Game sẽ nhận <code>config</code> trong <code>init</code> và tự sinh nội dung. Bước "Câu hỏi" sẽ bỏ qua.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
