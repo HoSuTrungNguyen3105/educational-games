@@ -1,3 +1,4 @@
+
 /**
  * api.js — Module giao tiếp với backend cho 16 mini-game
  *
@@ -15,8 +16,8 @@
  *   <script>
  *     window.GAME_API_BASE     = 'https://api.example.com';
  *     window.GAME_API_TOKEN_FN = () => localStorage.getItem('token');
- *   </script>
- *   <script src="api.js"></script>
+ *   <\/script>
+ *   <script src="api.js"><\/script>
  */
 
 const GameAPI = (() => {

@@ -68,12 +68,18 @@ const FEATURED_GAME = {
 };
 
 
-const OFFLINE_GAMES = [
-  { key: "hmc-game1", path: "/hmc-game1", name: "Học Mà Chơi", description: "5 trò chơi ngắn", icon: "🎮", grad: "from-orange-400 to-amber-500" },
-  { key: "hmc-game2", path: "/hmc-game2", name: "Học Mà Chơi LAB", description: "Toán, Hóa, Logic", icon: "🧪", grad: "from-indigo-400 to-violet-500" },
-  { key: "hmc-game3", path: "/hmc-game3", name: "Học Mà Chơi LAB 2", description: "Toán, Hóa, Logic 2", icon: "🔬", grad: "from-cyan-400 to-blue-500" },
-  { key: "hmc-game4", path: "/hmc-game4", name: "Học Mà Chơi OFFLINE", description: "Tiến độ lưu trên máy", icon: "💾", grad: "from-emerald-400 to-teal-600" },
-];
+import { OFFLINE_GAME_MANIFEST } from "../games/src/manifest.js";
+
+// 17 game offline. Nguon su that: src/games/src/manifest.js (sinh boi scripts/build-offline-games.mjs)
+// Moi game la MOT file HTML rieng trong src/games/offline/<id>.html
+const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
+  key: g.id,
+  path: `/offline/${g.id}`,
+  name: g.name,
+  description: g.tag,
+  icon: g.icon,
+  grad: g.grad,
+}));
 
 
 // Game tạo từ API có thể chưa điền môn học — gom về nhóm "Chung" để không bị lọc mất
@@ -701,6 +707,23 @@ const subjects = useMemo(() => {
                 </div>
               </section>
 
+              {/* ─── GAME OFFLINE: mỗi game một ô riêng, bấm là vào thẳng game đó ─── */}
+              <section id="offline-games-section" className="scroll-mt-20">
+                <SectionTitle
+                  icon={Gamepad2}
+                  iconTint="from-emerald-400 to-teal-600"
+                  title={`Game offline (${OFFLINE_GAMES.length})`}
+                />
+                <p className="-mt-1 mb-2.5 text-[11.5px] text-slate-400">
+                  Chơi không cần mạng · Tiến độ lưu ngay trên máy
+                </p>
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 lg:gap-2.5">
+                  {OFFLINE_GAMES.map((g) => (
+                    <OfflineGameTile key={g.key} game={g} />
+                  ))}
+                </div>
+              </section>
+
               {/* ─── GAME ĐỀ XUẤT ─── */}
               <section id="games-section" className="scroll-mt-20">
                 <SectionTitle icon={Gamepad2} iconTint="from-sky-400 to-blue-500" title="Game đề xuất"
@@ -726,7 +749,6 @@ const subjects = useMemo(() => {
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                     {/* Game ghim */}
                     <FeaturedGameCard />
-                    {OFFLINE_GAMES.map(g => <OfflineGameCard key={g.key} game={g} />)}
                     {(showAllGames ? visibleGames : visibleGames.slice(0, PREVIEW_GAMES)).map((g, i) => (
                       <GameCard key={g._id || g.id} game={g} index={i}
                         template={templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid))}
@@ -1021,20 +1043,28 @@ function FeaturedGameCard() {
 }
 
 
-function OfflineGameCard({ game }) {
+/**
+ * Một ô nhỏ cho từng game offline.
+ * Bấm vào → đi thẳng vào game (không có màn chọn trung gian).
+ * Mỗi game là 1 file HTML riêng: src/games/offline/<id>.html
+ */
+function OfflineGameTile({ game }) {
   return (
-    <button onClick={() => navigate(game.path)} className="group bg-white rounded-3xl p-2.5 shadow-[0_6px_18px_rgba(15,60,120,.08)] hover:-translate-y-1 hover:shadow-[0_12px_26px_rgba(15,60,120,.14)] transition-all text-left">
-      <div className={`relative aspect-[16/11] rounded-2xl overflow-hidden bg-gradient-to-br ${game.grad} flex items-center justify-center`}>
-        <span className="text-5xl lg:text-6xl drop-shadow-lg group-hover:scale-110 transition-transform">{game.icon}</span>
-        <span className="absolute top-1.5 left-1.5 bg-amber-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow">OFFLINE</span>
-      </div>
-      <div className="px-1 pt-2 pb-0.5">
-        <p className="font-display font-bold text-[13px] text-ink truncate">{game.name}</p>
-        <p className="text-[10.5px] text-slate-400 truncate">{game.description}</p>
-        <span className="mt-2 w-full inline-flex items-center justify-center gap-1 bg-slate-100 text-slate-600 text-[11.5px] font-extrabold rounded-full py-1.5 shadow-sm group-hover:bg-slate-200 transition">
-          Chơi ngay <ChevronRight className="w-3.5 h-3.5" />
-        </span>
-</div>
+    <button
+      onClick={() => navigate(game.path)}
+      title={game.name}
+      className="group relative flex flex-col items-center gap-1 rounded-2xl bg-white p-2 shadow-[0_4px_12px_rgba(15,60,120,.07)] hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(15,60,120,.13)] active:scale-95 transition-all"
+    >
+      <span className={`grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br ${game.grad} text-xl shadow-sm group-hover:scale-105 transition-transform`}>
+        {game.icon}
+      </span>
+      <span className="w-full text-center font-display text-[11px] font-bold leading-tight text-ink line-clamp-2">
+        {game.name}
+      </span>
+      <span className="w-full text-center text-[9.5px] leading-tight text-slate-400 truncate">
+        {game.description}
+      </span>
+      <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-emerald-400 ring-2 ring-white" />
     </button>
   );
 }

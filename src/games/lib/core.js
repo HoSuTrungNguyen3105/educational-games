@@ -1,3 +1,4 @@
+
 /**
  * game-core.js — Thư viện dùng chung cho 3 bộ mini-game
  *
@@ -16,13 +17,13 @@
  *   - renderHub(), openGame() — để từng file override sau khi include
  *
  * Cách dùng trong mỗi HTML:
- *   <script src="game-core.js"></script>
+ *   <script src="game-core.js"><\/script>
  *   <script>
  *     // Khai báo GAMES riêng của file
  *     const GAMES = [...];
  *     // Gọi khởi động
  *     initCore({ games: GAMES, hubTitle: '...', hubDesc: '...' });
- *   </script>
+ *   <\/script>
  */
 
 /* ============ Tiện ích ============ */
