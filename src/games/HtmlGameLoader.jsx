@@ -4,7 +4,7 @@ import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
 import { renderAvatarFull } from "../lib/avatarRenderer.js";
-import { addPetExp } from "../lib/pet.js";
+import { addPetExp } from "../lib/petApi.js";
 import CoopInvitePanel from "../components/CoopInvitePanel.jsx";
 import GameHud from "./GameHud.jsx";
 import { injectGameConfig } from "./injectGameConfig.js";
@@ -379,7 +379,8 @@ export default function HtmlGameLoader({
             postToIframe({ type: "coins-added", data: { success: true, coins: res?.coins ?? 0 } });
             setHudCoins(res?.coins ?? 0);
             setPetMessage(`🎉 Tuyệt vời! +${amount} coin`);
-            addPetExp(Math.min(10, amount));
+            // Pet: cộng EXP qua API (petApi tự lưu cache + fallback offline)
+            addPetExp(Math.min(10, amount), { correct: 1 });
             onStateUpdate?.({ coins: res?.coins ?? 0 });
           }).catch(() => {
             postToIframe({ type: "coins-added", data: { success: false } });

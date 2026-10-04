@@ -441,6 +441,34 @@ async function _runHeavyInit(database) {
     },
 
     /**
+     * userPets — thú cưng của học sinh (1 doc / user).
+     * Diện mạo (species/color/outfits) được petService kiểm tra theo petCatalog
+     * trước khi ghi; validator ở đây chỉ chống trường sai kiểu.
+     */
+    userPets: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["userId", "species", "name", "color", "outfits", "level", "exp"],
+        properties: {
+          userId: { bsonType: "string" },
+          species: { bsonType: "string" },
+          name: { bsonType: "string" },
+          color: { bsonType: "string" },
+          outfits: { bsonType: "object" },
+          level: { bsonType: "int", minimum: 1 },
+          exp: { bsonType: "int", minimum: 0 },
+          expNeeded: { bsonType: "int", minimum: 1 },
+          mood: { bsonType: "string" },
+          bonded: { bsonType: "int", minimum: 0, maximum: 100 },
+          totalCorrect: { bsonType: "int" },
+          totalWrong: { bsonType: "int" },
+          updatedAt: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+        },
+      }
+    },
+
+    /**
      * user_badges — lịch sử mở huy hiệu.
      */
     user_badges: {

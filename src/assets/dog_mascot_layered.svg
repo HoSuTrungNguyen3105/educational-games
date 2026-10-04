@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700" width="600" height="700">
+  <title>Dog Mascot - Layered Editable SVG</title>
+  <desc>Editable mascot dog with separate body, face, collar and optional accessory layers.</desc>
+
+  <defs>
+    <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6B45C"/>
+      <stop offset="1" stop-color="#D98232"/>
+    </linearGradient>
+    <linearGradient id="shirtBlue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5DA9FF"/>
+      <stop offset="1" stop-color="#2878D6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- =========================================================
+       LAYER: BODY
+       ========================================================= -->
+  <g id="layer-body">
+    <!-- tail -->
+    <path id="tail" d="M128 495 C55 465 50 570 125 590 C92 550 102 520 151 535 Z"
+          fill="url(#fur)" stroke="#B96828" stroke-width="7" stroke-linejoin="round"/>
+
+    <!-- torso -->
+    <path id="body" d="M177 405 C135 455 135 600 205 635
+                       C270 668 375 666 432 625
+                       C475 594 463 467 418 410
+                       C365 347 229 347 177 405 Z"
+          fill="url(#fur)" stroke="#B96828" stroke-width="8"/>
+
+    <!-- chest -->
+    <path id="chest" d="M270 423 C245 478 248 584 300 624
+                         C350 582 354 478 326 423 Z"
+          fill="#FFF1D7"/>
+
+    <!-- left paw -->
+    <path id="left-paw" d="M185 565 C151 574 150 629 188 645
+                            C216 657 251 646 250 620
+                            C249 587 220 557 185 565 Z"
+          fill="#FFF1D7" stroke="#B96828" stroke-width="7"/>
+
+    <!-- right paw -->
+    <path id="right-paw" d="M373 565 C340 574 337 618 356 639
+                             C381 660 428 650 432 619
+                             C436 589 405 558 373 565 Z"
+          fill="#FFF1D7" stroke="#B96828" stroke-width="7"/>
+  </g>
+
+  <!-- =========================================================
+       LAYER: HEAD
+       ========================================================= -->
+  <g id="layer-head">
+    <!-- ears -->
+    <path id="ear-left" d="M175 175 C95 155 76 235 107 302
+                           C125 340 166 332 190 291 L217 208 Z"
+          fill="#C8752E" stroke="#A95C24" stroke-width="8"/>
+    <path id="ear-right" d="M425 175 C505 155 524 235 493 302
+                            C475 340 434 332 410 291 L383 208 Z"
+          fill="#C8752E" stroke="#A95C24" stroke-width="8"/>
+
+    <!-- head -->
+    <path id="head" d="M178 142 C224 89 376 89 422 142
+                       C464 190 459 305 419 354
+                       C382 399 218 399 181 354
+                       C141 305 136 190 178 142 Z"
+          fill="url(#fur)" stroke="#B96828" stroke-width="9"/>
+
+    <!-- muzzle -->
+    <path id="muzzle" d="M218 282 C228 247 372 247 382 282
+                         C395 327 354 361 300 361
+                         C246 361 205 327 218 282 Z"
+          fill="#FFF1D7"/>
+
+    <!-- forehead blaze -->
+    <path id="blaze" d="M280 121 C266 160 270 221 287 258
+                        C294 270 306 270 313 258
+                        C330 220 334 160 320 121 Z"
+          fill="#FFF1D7"/>
+  </g>
+
+  <!-- =========================================================
+       LAYER: FACE
+       ========================================================= -->
+  <g id="layer-face">
+    <!-- eyes -->
+    <g id="eye-left">
+      <ellipse cx="235" cy="232" rx="37" ry="44" fill="#FFF"/>
+      <ellipse cx="238" cy="238" rx="24" ry="30" fill="#51301F"/>
+      <ellipse cx="241" cy="240" rx="13" ry="18" fill="#17110E"/>
+      <circle cx="248" cy="225" r="7" fill="#FFF"/>
+    </g>
+
+    <g id="eye-right">
+      <ellipse cx="365" cy="232" rx="37" ry="44" fill="#FFF"/>
+      <ellipse cx="362" cy="238" rx="24" ry="30" fill="#51301F"/>
+      <ellipse cx="359" cy="240" rx="13" ry="18" fill="#17110E"/>
+      <circle cx="352" cy="225" r="7" fill="#FFF"/>
+    </g>
+
+    <!-- eyebrows -->
+    <path id="brow-left" d="M207 184 Q235 164 260 183" fill="none"
+          stroke="#914B20" stroke-width="10" stroke-linecap="round"/>
+    <path id="brow-right" d="M340 183 Q365 164 393 184" fill="none"
+          stroke="#914B20" stroke-width="10" stroke-linecap="round"/>
+
+    <!-- nose -->
+    <path id="nose" d="M276 278 Q300 259 324 278
+                       Q329 293 300 305 Q271 293 276 278 Z"
+          fill="#4A2A20"/>
+
+    <!-- mouth -->
+    <path id="mouth" d="M300 302 L300 321
+                        M300 321 Q275 346 248 326
+                        M300 321 Q325 346 352 326"
+          fill="none" stroke="#4A2A20" stroke-width="7" stroke-linecap="round"/>
+
+    <!-- tongue -->
+    <path id="tongue" d="M282 337 Q300 323 318 337
+                         Q320 367 300 374 Q280 367 282 337 Z"
+          fill="#F06D72"/>
+  </g>
+
+  <!-- =========================================================
+       LAYER: COLLAR
+       ========================================================= -->
+  <g id="layer-collar">
+    <path id="collar" d="M202 372 Q300 410 398 372
+                          L388 407 Q300 442 212 407 Z"
+          fill="#E33D3D" stroke="#B52D2D" stroke-width="7"/>
+    <circle id="tag" cx="300" cy="421" r="24"
+            fill="#F5C84B" stroke="#B8871E" stroke-width="6"/>
+    <path id="paw-tag" d="M291 423 a8 8 0 1 0 18 0
+                           a9 9 0 1 0 -18 0
+                           M289 433 q11 12 22 0"
+          fill="#8B641B"/>
+  </g>
+
+  <!-- =========================================================
+       OPTIONAL ACCESSORY LAYER: GLASSES
+       Set display="none" to hide.
+       ========================================================= -->
+  <g id="accessory-glasses" display="none">
+    <circle cx="235" cy="238" r="48" fill="none" stroke="#242B35" stroke-width="11"/>
+    <circle cx="365" cy="238" r="48" fill="none" stroke="#242B35" stroke-width="11"/>
+    <path d="M283 234 Q300 223 317 234" fill="none"
+          stroke="#242B35" stroke-width="11" stroke-linecap="round"/>
+    <path d="M187 226 Q160 214 145 224" fill="none"
+          stroke="#242B35" stroke-width="10" stroke-linecap="round"/>
+    <path d="M413 226 Q440 214 455 224" fill="none"
+          stroke="#242B35" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <!-- =========================================================
+       OPTIONAL ACCESSORY LAYER: SHIRT
+       Set display="none" to hide.
+       ========================================================= -->
+  <g id="accessory-shirt" display="none">
+    <path d="M174 430 Q300 478 426 430
+             L458 590 Q390 630 300 626
+             Q210 630 142 590 Z"
+          fill="url(#shirtBlue)" stroke="#1E5FAF" stroke-width="9"/>
+    <!-- shirt collar -->
+    <path d="M258 450 Q300 476 342 450 L330 492 Q300 510 270 492 Z"
+          fill="#D9ECFF" stroke="#1E5FAF" stroke-width="6"/>
+    <!-- buttons -->
+    <circle cx="300" cy="527" r="6" fill="#FFF"/>
+    <circle cx="300" cy="550" r="6" fill="#FFF"/>
+  </g>
+
+  <!-- =========================================================
+       OPTIONAL ACCESSORY LAYER: CAP
+       ========================================================= -->
+  <g id="accessory-cap" display="none">
+    <path d="M205 145 Q300 65 395 145
+             Q365 115 300 113 Q235 115 205 145 Z"
+          fill="#4C8BF5" stroke="#2861B7" stroke-width="8"/>
+    <path d="M205 145 Q270 125 350 140 Q405 151 431 169
+             Q365 177 300 166 Q250 158 205 145 Z"
+          fill="#3978DC" stroke="#2861B7" stroke-width="7"/>
+  </g>
+
+  <!-- =========================================================
+       OPTIONAL ACCESSORY LAYER: BACKPACK
+       ========================================================= -->
+  <g id="accessory-backpack" display="none">
+    <path d="M150 415 Q110 430 112 520 L150 570 L190 545
+             L180 440 Z"
+          fill="#8B5CF6" stroke="#6338B8" stroke-width="8"/>
+    <path d="M145 458 L178 468" stroke="#D8C5FF" stroke-width="7"
+          stroke-linecap="round"/>
+  </g>
+
+  <!-- =========================================================
+       EDITOR NOTES:
+       - Toggle accessories by changing display="none" to display="inline".
+       - Each major part has a stable id for JS/CSS manipulation.
+       - Recommended game customization:
+           document.getElementById("accessory-glasses").style.display = "inline";
+           document.getElementById("accessory-shirt").style.display = "inline";
+       ========================================================= -->
+</svg>

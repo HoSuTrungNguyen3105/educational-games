@@ -46,6 +46,7 @@ const ROUTES = [
   // ── User / Social ──
   { name: "chat",         pattern: "/chat" },
   { name: "profile",      pattern: "/profile" },
+  { name: "pet",          pattern: "/pet" },
   { name: "find-friends", pattern: "/find-friends" },
   { name: "my-coins",     pattern: "/my-coins" },
   { name: "daily-tasks",  pattern: "/daily-tasks" },

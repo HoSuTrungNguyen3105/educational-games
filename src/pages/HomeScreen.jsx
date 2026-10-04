@@ -10,7 +10,7 @@ import { Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx
 import { AvatarPreviewSmall } from '../components/avatar/AvatarPreview.jsx'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import { PetSvg, PetAvatar } from '../components/PetAvatar.jsx'
-import { usePet } from '../lib/pet.js'
+import { usePet, loadPet, moodLabel } from '../lib/petApi.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
 import {
@@ -678,8 +678,7 @@ const subjects = useMemo(() => {
           <div className="px-3 lg:px-6 pb-6 lg:flex lg:gap-5 lg:items-start">
             <main className="flex-1 min-w-0 space-y-4 lg:space-y-5 pt-3 lg:pt-4">
 
-              {/* ─── HERO: khu vườn ─── */}
-              <section className="relative rounded-3xl overflow-hidden shadow-[0_10px_30px_rgba(15,80,140,.15)] bg-gradient-to-b from-sky-300 to-emerald-200 min-h-[230px] lg:min-h-[320px] flex flex-col justify-between">
+                            <section className="relative rounded-3xl overflow-hidden shadow-[0_10px_30px_rgba(15,80,140,.15)] bg-gradient-to-b from-sky-300 to-emerald-200 min-h-[230px] lg:min-h-[320px] flex flex-col justify-between">
                 <img src={`${import.meta.env.BASE_URL}banner.png`} alt="Khu vườn" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-black/10" />
 
@@ -707,7 +706,7 @@ const subjects = useMemo(() => {
                 </div>
               </section>
 
-              {/* ─── GAME OFFLINE: mỗi game một ô riêng, bấm là vào thẳng game đó ─── */}
+              {/* ─── HERO: khu vườn ─── */}
               <section id="offline-games-section" className="scroll-mt-20">
                 <SectionTitle
                   icon={Gamepad2}
@@ -723,6 +722,8 @@ const subjects = useMemo(() => {
                   ))}
                 </div>
               </section>
+
+              {/* ─── GAME OFFLINE: mỗi game một ô riêng, bấm là vào thẳng game đó ─── */}
 
               {/* ─── GAME ĐỀ XUẤT ─── */}
               <section id="games-section" className="scroll-mt-20">
@@ -826,16 +827,16 @@ const subjects = useMemo(() => {
                 icon={<PawPrint className="w-4 h-4" />}
                 iconTint="from-emerald-400 to-green-600"
                 title="Thú cưng"
-                actionLabel="Xem thêm ›"
-                onAction={() => goTo("/garden")}
+                actionLabel="Tùy chỉnh ›"
+                onAction={() => goTo("/pet")}
               >
-                <button onClick={() => goTo("/garden")} className="w-full flex items-center gap-3.5 text-left group">
+                <button onClick={() => goTo("/pet")} className="w-full flex items-center gap-3.5 text-left group">
                   <PetAvatar size={76} level={pet.level} className="group-hover:scale-105 transition" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-display font-bold text-ink truncate">{pet.name}</p>
                       <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full whitespace-nowrap">
-                        💗 {pet.moodLabel}
+                        💗 {moodLabel(pet.mood)}
                       </span>
                     </div>
                     <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1">
