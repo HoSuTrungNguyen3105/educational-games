@@ -8,9 +8,12 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "initdb": "node bin/init-db.mjs",
-    "extract": "node scripts/extract-data.mjs"
+"extract": "node scripts/extract-data.mjs",
+      "check:storage": "node scripts/check-storage.mjs",
+      "migrate:storage": "node scripts/migrate-templates-to-storage.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1146.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.11.0",
     "cors": "^2.8.5",

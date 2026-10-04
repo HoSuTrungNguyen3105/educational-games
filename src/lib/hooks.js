@@ -55,8 +55,19 @@ export function useTemplate(game, refreshKey) {
 
 const htmlCache = new Map();   // url|key -> Promise<string>
 
+/**
+ * `htmlTemplate` có 3 dạng:
+ *   1. HTML thô            → "<!DOCTYPE html>..."  (template cũ)
+ *   2. URL tuyệt đối       → "https://firebasestorage.googleapis.com/..."
+ *   3. Đường dẫn cùng-origin → "/games/hocmachoi-bridge.html" (file tĩnh do
+ *                             chính Vite/Render phục vụ — không cần Firebase)
+ * Dạng 3 chỉ nhận đường dẫn bắt đầu bằng "/" và kết thúc bằng .html/.htm
+ * nên không bao giờ nhầm với HTML thô.
+ */
 export function isHtmlUrl(value) {
-  return /^https?:\/\//i.test(String(value || "").trim());
+  const v = String(value || "").trim();
+  if (/^https?:\/\//i.test(v)) return true;
+  return /^\/[\w\-./%]*\.html?$/i.test(v);
 }
 
 /** Lấy HTML thô của 1 template. Trả "" nếu không có. */

@@ -1,6 +1,6 @@
 import { getCollection } from "../db.js";
 import { ObjectId } from "mongodb";
-import * as firebaseStorage from "./firebaseStorageService.js";
+import * as storage from "./templateStorageService.js";
 
 // Schema mới — chỉ các trường này được trả về cho frontend
 const TEMPLATE_FIELDS = [
@@ -98,22 +98,22 @@ export async function updateTemplate(id, data) {
 }
 
 /**
- * Đưa HTML game lên Firebase Storage và trả về link.
+ * Đưa HTML game lên dịch vụ lưu trữ (Cloudflare R2 / Firebase) và trả về link.
  *
  * @param {string} id       templateId
- * @param {string} html     HTML game (rỗng = xoá file trên Firebase)
- * @returns {Promise<string|null>} link Firebase, hoặc null nếu upload lỗi
+ * @param {string} html     HTML game (rỗng = xoá file trên storage)
+ * @returns {Promise<string|null>} link tải, hoặc null nếu upload lỗi
  *                                   (khi đó caller giữ nguyên HTML trong Mongo)
  */
 async function saveTemplateHtml(id, html) {
   if (!String(html || "").trim()) {
-    await firebaseStorage.deleteHtmlTemplate(id);
+    await storage.deleteHtmlTemplate(id);
     return "";
   }
-  const url = await firebaseStorage.saveHtmlTemplate(id, html);
+  const url = await storage.saveHtmlTemplate(id, html);
   if (!url) {
-    // Firebase lỗi → giữ HTML thô trong Mongo để game vẫn chạy được
-    console.warn("[setupService] Firebase lỗi — tạm giữ HTML thô trong Mongo");
+    // Storage lỗi → giữ HTML thô trong Mongo để game vẫn chạy được
+    console.warn(`[setupService] ${storage.providerLabel()} lỗi — tạm giữ HTML thô trong Mongo`);
     return null;
   }
   return url;
@@ -126,7 +126,7 @@ export async function removeTemplate(id) {
     await getCollection("templates").updateOne({ _id: oid }, { $set: { status: "inactive" } });
     return { deactivated: true, gamesCount: gamesUsing };
   }
-  await firebaseStorage.deleteHtmlTemplate(id);
+  await storage.deleteHtmlTemplate(id);
   const result = await getCollection("templates").deleteOne({ _id: oid });
   if (result.deletedCount === 0) throw new Error("Không tìm thấy template");
   return { deleted: true };
@@ -135,10 +135,18 @@ export async function removeTemplate(id) {
 // Xóa TẤT CẢ templates
 export async function removeAllTemplates() {
   const coll = getCollection("templates");
-  const docs = await coll.find({ htmlTemplate: /firebasestorage|storage\.googleapis\.com/ }).toArray();
+  const docs = await coll.find({ htmlTemplate: /^https?:\/\// }).toArray();
   for (const d of docs) {
-    const m = String(d.htmlTemplate || "").match(/\/o\/([^?]+)\?/);
-    if (m) await firebaseStorage.deleteHtmlPath(decodeURIComponent(m[1]));
+    const url = String(d.htmlTemplate || "");
+    // Firebase: .../o/templates%2Fx.html?alt=media  → rút ra key
+    const fb = url.match(/\/o\/([^?]+)\?/);
+    if (fb) {
+      await storage.deleteHtmlPath(decodeURIComponent(fb[1]));
+      continue;
+    }
+    // R2 / CDN: https://pub-xxx.r2.dev/templates/x.html → rút key
+    const cdn = url.match(/\/templates\/([^/?#]+)\.html(?:[?#]|$)/);
+    if (cdn) await storage.deleteHtmlPath(`templates/${cdn[1]}.html`);
   }
   const count = await coll.countDocuments();
   await coll.deleteMany({});

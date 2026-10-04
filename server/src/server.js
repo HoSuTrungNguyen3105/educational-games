@@ -5,9 +5,9 @@ import { initSocket } from "./socket.js";
 import { setGameInviteIO } from "./routes/gameInvites.js";
 import { setChatIO } from "./routes/chat.js";
 import { initDatabase, close } from "./db.js";
-import { initPlantTypes } from "./services/plantTypesService.js";
+import { initPlantTypes } from "./services/plantTypeService.js";
 import { checkDeadlineReminders, setNotificationIO } from "./services/notificationService.js";
-import { isFirebaseConfigured, missingFirebaseKeys, getFirebaseConfig } from "./config/firebase.js";
+import * as templateStorage from "./services/templateStorageService.js";
 
 const DEADLINE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
 
@@ -23,6 +23,16 @@ async function main() {
   httpServer.listen(config.port, () => {
     console.log(`[server] API chạy tại http://localhost:${config.port}/api`);
     console.log(`[server] Socket.IO sẵn sàng tại ws://localhost:${config.port}`);
+
+    // Chỉ log trạng thái, KHÔNG in khoá bí mật. Nếu provider lỗi thì
+    // templates.htmlTemplate tự giữ HTML thô trong Mongo.
+    console.log(`[server] Lưu trữ HTML: ${templateStorage.providerLabel()}`);
+    if (!templateStorage.activeProvider()) {
+      console.warn(
+        "[server] Chưa cấu hình nhà cung cấp lưu trữ — htmlTemplate sẽ lưu HTML thô, không lưu link. " +
+          "Xem server/.env hoặc tạo server/src/config/r2.local.js"
+      );
+    }
   });
 
   initDatabase()

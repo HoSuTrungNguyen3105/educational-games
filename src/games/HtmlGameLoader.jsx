@@ -581,7 +581,17 @@ export default function HtmlGameLoader({
       <iframe
         ref={iframeRef}
         srcDoc={injectedHtml}
-        sandbox="allow-scripts"
+        /* PHẢI có allow-same-origin: nếu không, iframe chạy ở "opaque origin" và
+           mọi thao tác localStorage bên trong game đều ném SecurityError. Điều đó
+           làm hỏng 2 thứ cùng lúc:
+             1. game-core.js gọi _loadState() lúc initCore() → lỗi ngay, không render card nào
+             2. _saveState() không lưu được tiến độ
+           Đánh đổi: game có cùng origin với trang cha nên script trong game về lý
+           thuyết đọc được localStorage của app (chứa token). Chấp nhận được vì
+           HTML game do admin tự soạn, cùng nguồn với app.
+           allow-same-origin + allow-scripts là combo nguy hiểm với nội dung
+           không tin cậy — không dùng 2 điều này cho template tải từ bên thứ ba. */
+        sandbox="allow-scripts allow-same-origin allow-modals allow-pointer-lock"
         className="flex-1 w-full h-full border-0"
         title={game?.title || "Game"}
       />

@@ -1492,352 +1492,511 @@ function initCore({ games, hubTitle = '', hubDesc = '', badges = [], storageKey 
 }
 </script>
 
+    <!-- GAME 4 — noi dung rieng cua tung file -->
     <script>
-        /* ============ GAME 1: CHIM BAY QUA CỔNG ============ */
-        function flapGame(root) {
-            const W = Math.min(root.clientWidth, 420), H = Math.round(W * 1.4), s = H / 560;
-            root.innerHTML = `<div class="hud"><span>⭐ <b id="sc">0</b></span><span id="lv">❤️❤️❤️</span><span id="cb">🔥 0</span></div><canvas id="cv"></canvas>
-    <p class="hint">Chạm màn hình (hoặc phím cách) để vỗ cánh. Chỉ bay qua khe có đáp án đúng!</p>`;
-            const cv = $('#cv'), ctx = fitCanvas(cv, W, H);
-            const br = 15 * s, bx = W * .26, GY = H - 34 * s, TOP = 76 * s;
-            let y = H / 2, vy = 0, ready = true, score = 0, lives = 3, combo = 0, best = 0, n = 0, q, wall, t = 0, flash = 0;
-            const clouds = Array.from({ length: 5 }, () => ({ x: Math.random() * W, y: Math.random() * (H * .6) + 70 * s, r: 20 + Math.random() * 24, v: 8 + Math.random() * 14 }));
-            const speed = () => (115 + Math.min(n, 15) * 4) * s;
-            function hud() { $('#sc').textContent = score; $('#lv').textContent = lives > 0 ? '❤️'.repeat(lives) : '💔'; $('#cb').textContent = '🔥 ' + combo }
-            function newWall() {
-                const m = genMath(n < 4 ? 0 : n < 10 ? 1 : 2); q = { text: m.text + ' = ?', ans: m.ans };
-                const opts = makeOpts(m.ans, 3), zone = (GY - TOP) / 3, gh = Math.min(zone * .68, 120 * s);
-                wall = { x: W + 20, w: 64 * s, done: false, gaps: opts.map((v, k) => { const cy = TOP + zone * k + zone / 2 + (Math.random() - .5) * zone * .16; return { v, top: cy - gh / 2, bot: cy + gh / 2, c: v === m.ans } }) };
-            }
-            function hurt() {
-                lives--; combo = 0; sfx.bad(); flash = .3; hud();
-                if (lives <= 0) { finish({ id: 'flap', score, xp: Math.round(score / 6), lines: [`Qua ${n} cổng đúng`, `Chuỗi tốt nhất ${best}`], replay: flapGame, details: { gates: n, bestCombo: best } }); return true }
-                ready = true; y = H / 2; vy = 0; newWall(); return false;
-            }
-            function flap() { if (ready) ready = false; vy = -430 * s; sfx.flap() }
-            cv.addEventListener('pointerdown', e => { e.preventDefault(); flap() });
-            onKey = e => { if (e.code === 'Space' || e.key === 'ArrowUp') { e.preventDefault(); flap() } };
-            newWall(); hud();
-            T.loop(dt => {
-                t += dt; clouds.forEach(c => { c.x -= c.v * dt; if (c.x < -60) c.x = W + 60 });
-                if (flash > 0) flash -= dt;
-                if (ready) { y = H / 2 + Math.sin(t * 5) * 8 * s; draw(); return }
-                vy += 1500 * s * dt; y += vy * dt; if (y < br) { y = br; vy = Math.max(vy, 0) }
-                wall.x -= speed() * dt;
-                if (y + br > GY) { if (hurt()) return; draw(); return }
-                if (bx + br > wall.x && bx - br < wall.x + wall.w) {
-                    if (!wall.gaps.find(g => y - br > g.top && y + br < g.bot)) { if (hurt()) return; draw(); return }
-                }
-                if (!wall.done && bx > wall.x + wall.w / 2) {
-                    wall.done = true; const g = wall.gaps.find(g => y > g.top && y < g.bot);
-                    if (g && g.c) { combo++; best = Math.max(best, combo); n++; score += 10 + Math.min(combo, 10) * 2; sfx.ok(); if (n >= 10) S.flags.flap = true; hud() }
-                    else { if (hurt()) return; draw(); return }
-                }
-                if (wall.x + wall.w < -10) newWall();
-                draw();
-            });
-            function draw() {
-                const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#5ec2ff'); g.addColorStop(1, '#d8f5ff');
-                ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-                ctx.fillStyle = 'rgba(255,255,255,.85)'; clouds.forEach(c => { ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, 7); ctx.arc(c.x + c.r * .9, c.y + 4, c.r * .75, 0, 7); ctx.arc(c.x - c.r * .9, c.y + 6, c.r * .65, 0, 7); ctx.fill() });
-                const segs = []; let prev = 0;
-                wall.gaps.forEach(g => { segs.push([prev, g.top]); prev = g.bot }); segs.push([prev, GY]);
-                segs.forEach(([a, b]) => {
-                    if (b - a <= 0) return;
-                    ctx.fillStyle = '#2fbf71'; ctx.strokeStyle = '#14683b'; ctx.lineWidth = 3;
-                    ctx.beginPath(); ctx.roundRect(wall.x, a - 6, wall.w, b - a + 12, 8); ctx.fill(); ctx.stroke();
-                    ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.fillRect(wall.x + 8, a, 7, b - a);
-                });
-                wall.gaps.forEach(g => {
-                    const cy = (g.top + g.bot) / 2;
-                    ctx.fillStyle = 'rgba(12,42,48,.78)'; ctx.beginPath(); ctx.roundRect(wall.x + 2, cy - 16 * s, wall.w - 4, 32 * s, 10); ctx.fill();
-                    ctx.fillStyle = '#fff'; ctx.font = `800 ${Math.round(22 * s)}px Baloo 2,system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillText(g.v, wall.x + wall.w / 2, cy + 1);
-                });
-                ctx.fillStyle = '#d9a441'; ctx.fillRect(0, GY, W, H - GY); ctx.fillStyle = '#4caf50'; ctx.fillRect(0, GY, W, 8 * s);
-                ctx.save(); ctx.translate(bx, y); ctx.rotate(Math.max(-.5, Math.min(.9, vy / (700 * s))));
-                ctx.fillStyle = '#ffc233'; ctx.strokeStyle = '#0b2227'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, br, 0, 7); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = '#ff9a3c'; ctx.beginPath(); ctx.ellipse(-br * .3, br * .15 + Math.sin(t * 25) * 3, br * .55, br * .32, -.3, 0, 7); ctx.fill();
-                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(br * .35, -br * .3, br * .34, 0, 7); ctx.fill(); ctx.fillStyle = '#0b2227'; ctx.beginPath(); ctx.arc(br * .45, -br * .3, br * .15, 0, 7); ctx.fill();
-                ctx.fillStyle = '#ff6f59'; ctx.beginPath(); ctx.moveTo(br * .8, 0); ctx.lineTo(br * 1.5, br * .15); ctx.lineTo(br * .8, br * .4); ctx.fill();
-                ctx.restore();
-                ctx.fillStyle = 'rgba(12,42,48,.88)'; ctx.beginPath(); ctx.roundRect(12, 10, W - 24, 54 * s + 6, 16); ctx.fill();
-                ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                let fs = 34; do { ctx.font = `800 ${fs}px Baloo 2,system-ui,sans-serif`; fs-- } while (ctx.measureText(q.text).width > W - 60 && fs > 14);
-                ctx.fillText(q.text, W / 2, 10 + (54 * s + 6) / 2);
-                if (ready) { ctx.fillStyle = 'rgba(12,42,48,.7)'; ctx.beginPath(); ctx.roundRect(W / 2 - 100, H / 2 + 40 * s, 200, 40, 20); ctx.fill(); ctx.fillStyle = '#ffc233'; ctx.font = '700 16px Lexend,system-ui,sans-serif'; ctx.fillText('Chạm để bay', W / 2, H / 2 + 40 * s + 21) }
-                if (flash > 0) { ctx.fillStyle = `rgba(255,93,108,${flash * 1.3})`; ctx.fillRect(0, 0, W, H) }
-            }
+    /* ══════════════════════════════════════════════════════════════════════════
+       TIẾN ĐỘ OFFLINE — lưu & khôi phục bằng localStorage
+       ──────────────────────────────────────────────────────────────────────────
+       Game này nằm hoàn toàn trong HTML nên không có API để hỏi "bạn chơi tới
+       đâu". Vì vậy mọi thay đổi trong ván đều ghi xuống localStorage:
+         • sau MỖI câu trả lời (đúng/sai, tăng/giảm mạng)
+         • khi lên màn, khi trừ mạng
+         • khi người chơi đóng tab (beforeunload)
+       Khi mở lại game, hub hiện bảng "Tiến độ đang lưu" kèm nút Tiếp tục để
+       nhảy thẳng vào đúng màn đang dở — kể cả khi tải lại trang.
+       ══════════════════════════════════════════════════════════════════════ */
+
+    const PROGRESS_KEY = 'hmc_game4_progress_v1';
+    const PROGRESS_TTL = 30 * 24 * 60 * 60 * 1000; // bỏ qua tiến độ cũ hơn 30 ngày
+
+    const HP = {
+      data: null,
+
+      /** Đọc tiến độ từ localStorage. Trả null nếu chưa có / hỏng / quá hạn. */
+      read() {
+        try {
+          const raw = localStorage.getItem(PROGRESS_KEY);
+          if (!raw) return null;
+          const d = JSON.parse(raw);
+          if (!d || typeof d !== 'object' || !d.game) return null;
+          if (d.updatedAt && Date.now() - d.updatedAt > PROGRESS_TTL) { this.clear(); return null; }
+          return d;
+        } catch { return null; }
+      },
+
+      /** Đọc lại từ đĩa (dùng cho nút "Kiểm tra tiến độ"). */
+      refresh() { this.data = this.read(); return this.data; },
+
+      /** Ghi đè toàn bộ. */
+      write(d) {
+        d.updatedAt = Date.now();
+        this.data = d;
+        try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(d)); } catch (e) { /* private mode / đầy bộ nhớ đệm */ }
+        return d;
+      },
+
+      /** Ghi đè một phần (merge vào tiến độ hiện tại). */
+      save(patch) { return this.write({ ...(this.data || {}), ...patch }); },
+
+      /** Xoá tiến độ (khi hoàn thành ván, hoặc người chơi bấm Xoá). */
+      clear() {
+        this.data = null;
+        try { localStorage.removeItem(PROGRESS_KEY); } catch (e) { /* ignore */ }
+      },
+
+      /** "vừa xong" / "3 giờ trước" */
+      ago() {
+        if (!this.data?.updatedAt) return '';
+        const m = Math.floor((Date.now() - this.data.updatedAt) / 60000);
+        if (m < 1) return 'vừa xong';
+        if (m < 60) return `${m} phút trước`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `${h} giờ trước`;
+        return `${Math.floor(h / 24)} ngày trước`;
+      },
+    };
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       BỘ CÂU HỎI
+       ══════════════════════════════════════════════════════════════════════ */
+
+    const WORDS = [
+      ['apple', 'quả táo'], ['dog', 'con chó'], ['book', 'quyển sách'], ['sun', 'mặt trời'],
+      ['bag', 'cái cặp'], ['car', 'ô tô'], ['fish', 'con cá'], ['bird', 'con chim'],
+      ['milk', 'sữa'], ['tree', 'cây'], ['star', 'ngôi sao'], ['rain', 'mưa'],
+      ['snow', 'tuyết'], ['cake', 'bánh'], ['duck', 'vịt'], ['moon', 'mặt trăng'],
+      ['ship', 'con thuyền'], ['frog', 'con ếch'], ['lion', 'sư tử'], ['leaf', 'chiếc lá'],
+      ['clock', 'đồng hồ'], ['desk', 'bàn học'], ['hand', 'bàn tay'], ['king', 'vua'],
+    ];
+    const COLORS = { 'Đỏ': '#ef4444', 'Xanh dương': '#3b82f6', 'Vàng': '#eab308', 'Xanh lá': '#22c55e', 'Tím': '#a855f7', 'Cam': '#f97316' };
+    const RIDDLES = [
+      ['Con gì có cổ dài nhất?', ['Hươu cao cổ', 'Cổ voi', 'Rắn', 'Cò'], 'Hươu cao cổ', 'Cổ hươu cao cổ dài hơn cả chiếc xe!'],
+      ['1 + 1 bằng mấy?', ['1', '2', '3', '11'], '2', 'Hai.'],
+      ['Sông nào dài nhất thế giới?', ['Amazon', 'Sông Nile', 'Sông Đà', 'Sông Hồng'], 'Amazon', 'Amazon dài hơn Nile.'],
+      ['Mặt trời mọc từ hướng nào?', ['Đông', 'Tây', 'Bắc', 'Nam'], 'Đông', 'Mặt trời mọc ở hướng Đông.'],
+      ['Tháng nào có ít ngày nhất?', ['Tháng 2', 'Tháng 1', 'Tháng 4', 'Tháng 6'], 'Tháng 2', 'Tháng 2 thường có 28 ngày.'],
+      ['Cành cây nào to nhất?', ['Rễ', 'Cành', 'Lá', 'Hạt'], 'Rễ', 'Rễ cây to bằng thân hoặc hơn.'],
+      ['Vịt con kêu gì?', ['Vít', 'Bíp', 'Kẹt', 'Héc'], 'Vít', 'Tiếng vịt con là “vít”.'],
+      ['Hành tinh nào gần Mặt Trời nhất?', ['Trái Đất', 'Sao Thiên Vương', 'Sao Thủy', 'Sao Sao'], 'Sao Thủy', 'Sao Thủy là hành tinh gần Mặt Trời nhất.'],
+      ['Cá sống ở đâu?', ['Dưới nước', 'Trên cây', 'Trên trời', 'Trong đất'], 'Dưới nước', 'Cá sống dưới nước.'],
+      ['Ba số 2 cộng 2 số 2 bằng mấy?', ['4', '6', '8', '22'], '8', '2+2+2+2 = 8.'],
+      ['Hình vuông có mấy cạnh?', ['3', '4', '5', '6'], '4', 'Hình vuông có 4 cạnh.'],
+      ['Bạn nào giỏ toán nhất?', ['Tim', 'Cẩn', 'Lan', 'Mỹ'], 'Mỹ', 'Chơi cùng “Mỹ” ở trường học Việt Nam.'],
+    ];
+    const NAMES = ['An', 'Bình', 'Chi', 'Dũng', 'Giang', 'Hà', 'Huy', 'Lan', 'Mai', 'Nam', 'Phúc', 'Quân'];
+
+    /** Xáo trộn ký tự, luôn khác với từ gốc (dài ≥ 3). */
+    function scramble(word) {
+      if (word.length < 3) return word;
+      for (let i = 0; i < 12; i++) {
+        const a = shuffle(word.split('')).join('');
+        if (a !== word) return a;
+      }
+      return word.split('').reverse().join('');
+    }
+
+    /** Chọn 1 phần tử ngẫu nhiên. Tên riêng để không đụng hàm tiện ích của game-core. */
+    function pickOne(arr) { return arr[rnd(0, arr.length - 1)]; }
+
+    /** Lấy n phần tử ngẫu nhiên không trùng nhau. */
+    function sample(arr, n) { return shuffle([...arr]).slice(0, n); }
+
+    /** Sinh 3 đáp án sai cho 1 đáp án đúng. */
+    function distractors(pool, right, n = 3) {
+      return sample([...new Set(pool.filter(x => x !== right))], n);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       CÁC MINI-GAME — mỗi game có make(level) trả về 1 câu hỏi
+       ══════════════════════════════════════════════════════════════════════ */
+
+    const MAKERS = {
+
+      anagram(level) {
+        const pool = WORDS.slice(0, Math.min(WORDS.length, 6 + level * 4));
+        const [en, vi] = pickOne(pool);
+        const all = WORDS.map(w => w[0]);
+        const opts = shuffle([en, ...distractors(all, en)]);
+        return {
+          html: `<div style="font-size:11px;opacity:.7">XẾP LẠI TỪ</div>
+                 <div style="font-size:34px;letter-spacing:8px;font-weight:800">${scramble(en)}</div>
+                 <div style="font-size:14px;opacity:.85;margin-top:6px">Nghĩa: ${vi}</div>`,
+          opts, ans: en,
+          exp: `Từ đúng là <b>${en}</b> — ${vi}.`,
+        };
+      },
+
+      stroop(level) {
+        const names = Object.keys(COLORS);
+        const say = pickOne(names);                              // chữ trong câu lệnh
+        const wrong = names.filter(n => n !== say);
+        const answerColor = pickOne(names);                      // màu cần tìm
+        const grid = shuffle([answerColor, ...sample(wrong, 3)]);
+        const idx = grid.indexOf(answerColor);
+        return {
+          html: `<div style="font-size:11px;opacity:.7">ĐUỔI MÀU</div>
+                 <div style="font-size:22px;margin-top:8px">Chọn ô có màu
+                   <b style="color:${COLORS[say]};text-shadow:0 0 6px ${COLORS[say]}">${say}</b></div>
+                 <div style="font-size:12px;opacity:.6;margin-top:6px">Đọc CHỮ, đừng nhìn màu ô</div>`,
+          opts: grid.map((_, i) => String(i + 1)),
+          style: grid.map(g => `background:${COLORS[g]};color:#fff;border:0;font-size:20px;font-weight:900;height:74px`),
+          ans: String(idx + 1),
+          exp: `Ô <b>${idx + 1}</b> mới là màu <b>${answerColor}</b>.`,
+        };
+      },
+
+      sumseq(level) {
+        const kind = rnd(4);
+        const step = rnd(2, 6 + level);
+        const start = rnd(1, 20);
+        let seq, ans, exp;
+        if (kind === 0) {                      // cộng đều
+          seq = [start, start + step, start + step * 2, start + step * 3];
+          ans = start + step * 4;
+          exp = `Mỗi số cộng thêm ${step}.`;
+        } else if (kind === 1) {               // giảm đều
+          seq = [20 + step * 3, 20 + step * 2, 20 + step, 20];
+          ans = Math.max(0, 20 - step);
+          exp = `Mỗi số trừ ${step}.`;
+        } else if (kind === 2) {               // chính phương
+          const b = rnd(2, 3 + level);
+          seq = [b * b, (b + 1) * (b + 1), (b + 2) * (b + 2), (b + 3) * (b + 3)];
+          ans = (b + 4) * (b + 4);
+          exp = `Là các số chính phương liên tiếp từ ${b}.`;
+        } else {                               // nhân 2
+          seq = [2, 4, 8, 16];
+          ans = 32;
+          exp = 'Mỗi số nhân đôi.';
         }
+        const wrong = distractors([ans - 1, ans + 1, ans + step, ans - step, ans + 10, ans - 10, ans + 2], String(ans)).map(Number);
+        const opts = shuffle([String(ans), ...wrong.slice(0, 3).map(String)]);
+        return {
+          html: `<div style="font-size:11px;opacity:.7">CHUỖI SỐ</div>
+                 <div style="font-size:28px;font-weight:800;margin-top:8px">${seq.join('  ·  ')}  ·  ?</div>
+                 <div style="font-size:12px;opacity:.6;margin-top:6px">Điền số tiếp theo</div>`,
+          opts, ans: String(ans), exp,
+        };
+      },
 
-        /* ============ GAME 2: 2048 LŨY THỪA ============ */
-        function game2048(root) {
-            let b = Array(16).fill(0), score = 0, over = false, newIdx = -1;
-            const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
-            const sup = k => String(k).split('').map(d => SUP[+d]).join('');
-            const PAL = ['#a8e6cf', '#dcedc1', '#ffd3b6', '#ffaaa5', '#ff8b94', '#b5d8ff', '#8fb8ff', '#c3a6ff', '#ff9de2', '#ffd166', '#ffc233'];
-            function add() { const e = b.map((v, i) => v ? -1 : i).filter(i => i >= 0); if (!e.length) return; const p = e[rnd(0, e.length - 1)]; b[p] = Math.random() < .9 ? 2 : 4; newIdx = p }
-            function slide(line) {
-                const a = line.filter(v => v); let gain = 0;
-                for (let i = 0; i < a.length - 1; i++)if (a[i] === a[i + 1]) { a[i] *= 2; gain += a[i]; a.splice(i + 1, 1) }
-                while (a.length < 4) a.push(0); return { a, gain };
-            }
-            function canMove() {
-                if (b.includes(0)) return true;
-                for (let r = 0; r < 4; r++)for (let c = 0; c < 4; c++) { const v = b[r * 4 + c]; if ((c < 3 && b[r * 4 + c + 1] === v) || (r < 3 && b[(r + 1) * 4 + c] === v)) return true }
-                return false;
-            }
-            function move(dir) {
-                if (over) return;
-                let moved = false, gain = 0; const nb = [...b];
-                for (let k = 0; k < 4; k++) {
-                    const idx = [0, 1, 2, 3].map(j => dir < 2 ? k * 4 + j : j * 4 + k); if (dir % 2 === 1) idx.reverse();
-                    const { a, gain: g } = slide(idx.map(i => b[i]));
-                    idx.forEach((i, j) => { if (nb[i] !== a[j]) moved = true; nb[i] = a[j] }); gain += g;
-                }
-                if (!moved) return;
-                b = nb; score += gain; add(); sfx.tick(); render();
-                if (Math.max(...b) >= 256) S.flags.t256 = true;
-                if (!canMove()) { over = true; T.set(end, 900) }
-            }
-            function end() {
-                const mx = Math.max(...b);
-                finish({ id: 'g2048', score, xp: Math.min(80, Math.round(score / 25)) + Math.round(Math.log2(mx)) * 2, lines: [`Ô lớn nhất ${mx} = 2${sup(Math.round(Math.log2(mx)))}`], replay: game2048, details: { maxTile: mx } });
-            }
-            function render() {
-                $('#sc').textContent = score;
-                $('#bd').innerHTML = b.map((v, i) => {
-                    if (!v) return '<div class="t48"></div>';
-                    const k = Math.round(Math.log2(v)), fs = v < 100 ? 34 : v < 1000 ? 28 : v < 10000 ? 22 : 18;
-                    return `<div class="t48 ${i === newIdx ? 'n' : ''}" style="background:${PAL[Math.min(k - 1, PAL.length - 1)]};font-size:${fs}px">${v}<small>2${sup(k)}</small></div>`;
-                }).join('');
-                newIdx = -1;
-            }
-            root.innerHTML = `<div class="hud"><span>⭐ <b id="sc">0</b></span><span>Gộp hai ô giống nhau</span></div>
-    <div class="b48" id="bd"></div>
-    <p class="hint">Vuốt hoặc dùng phím mũi tên. Mỗi ô ghi thêm dạng lũy thừa của 2 ở góc dưới.</p>
-    <div class="row"><button class="btn ghost" id="stop">Kết thúc &amp; nhận XP</button></div>`;
-            add(); add(); render();
-            onKey = e => { const m = { ArrowLeft: 0, ArrowRight: 1, ArrowUp: 2, ArrowDown: 3 }[e.key]; if (m !== undefined) { e.preventDefault(); move(m) } };
-            const bd = $('#bd'); let sx, sy;
-            bd.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY }, { passive: true });
-            bd.addEventListener('touchend', e => {
-                const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
-                if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
-                if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : 0); else move(dy > 0 ? 3 : 2);
-            });
-            let px, py;
-            bd.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') { px = e.clientX; py = e.clientY } });
-            bd.addEventListener('pointerup', e => {
-                if (e.pointerType !== 'mouse' || px === undefined) return;
-                const dx = e.clientX - px, dy = e.clientY - py; px = undefined;
-                if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
-                if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : 0); else move(dy > 0 ? 3 : 2);
-            });
-            root.onclick = e => { if (e.target.closest('#stop') && !over) { over = true; end() } };
-        }
+      compare(level) {
+        const a = rnd(10, 99 * level), b = rnd(10, 99 * level);
+        const who = pickOne(NAMES);
+        const wantBigger = rnd(2) === 0;
+        const pool = [a, b];
+        const target = wantBigger ? Math.max(a, b) : Math.min(a, b);
+        const ans = String(target);
+        const opts = shuffle([ans, ...distractors([String(Math.max(10, target + rnd(1, 9))), String(Math.max(1, target - rnd(1, 9))), String(target + 10), String(Math.max(1, target - 10))], ans).slice(0, 3)]);
+        return {
+          html: `<div style="font-size:11px;opacity:.7">AI NHIỀU HƠN?</div>
+                 <div style="font-size:22px;margin-top:8px">Trong <b>${pool.join(' và ')}</b>, số nào
+                   ${wantBigger ? '<b>LỚN</b>' : '<b>NHỎ</b>'} hơn?</div>
+                 <div style="font-size:12px;opacity:.6;margin-top:6px">Người chơi tên: ${who}</div>`,
+          opts, ans,
+          exp: `${target} là số ${wantBigger ? 'lớn nhất' : 'nhỏ nhất'} trong ${pool.join(' và ')}.`,
+        };
+      },
 
-        /* ============ GAME 3: NHÀ HÓA HỌC NHÍ ============ */
-        function chemGame(root) {
-            const ATOMS = [['H', '#eaf0ff', '#0b2227'], ['O', '#ff6f59', '#0b2227'], ['C', '#3d4a55', '#ffffff'], ['N', '#6ec6ff', '#0b2227'], ['Na', '#b18cff', '#0b2227'], ['Cl', '#b7e34a', '#0b2227']];
-            const MOLS = [
-                { name: 'Nước', f: { H: 2, O: 1 }, s: 'H₂O' },
-                { name: 'Khí cacbonic', f: { C: 1, O: 2 }, s: 'CO₂' },
-                { name: 'Khí metan (khí biogas)', f: { C: 1, H: 4 }, s: 'CH₄' },
-                { name: 'Khí amoniac', f: { N: 1, H: 3 }, s: 'NH₃' },
-                { name: 'Muối ăn', f: { Na: 1, Cl: 1 }, s: 'NaCl' },
-                { name: 'Axit clohiđric', f: { H: 1, Cl: 1 }, s: 'HCl' },
-                { name: 'Khí oxi', f: { O: 2 }, s: 'O₂' },
-                { name: 'Khí hiđro', f: { H: 2 }, s: 'H₂' },
-                { name: 'Hiđro peroxit (nước oxi già)', f: { H: 2, O: 2 }, s: 'H₂O₂' },
-                { name: 'Khí nitơ', f: { N: 2 }, s: 'N₂' },
-                { name: 'Khí cacbon monoxit', f: { C: 1, O: 1 }, s: 'CO' }
-            ];
-            const list = shuffle(MOLS).slice(0, 8), col = Object.fromEntries(ATOMS.map(a => [a[0], a]));
-            let i = 0, score = 0, solved = 0, wrong = 0, totalWrong = 0, flask = [], busy = false;
-            const total = m => Object.values(m.f).reduce((a, b) => a + b, 0);
-            const chip = (a, k) => `<button class="atom" data-r="${k}" style="background:${col[a][1]};color:${col[a][2]}" aria-label="Bỏ ${a}">${a}</button>`;
-            function render(msg) {
-                const m = list[i];
-                root.innerHTML = `<div class="hud"><span>Chất <b>${i + 1}/8</b></span><span>⭐ <b>${score}</b></span><span>${wrong < 3 ? '❤️'.repeat(3 - wrong) : '💔'}</span></div>
-      <div class="qbox"><small style="color:var(--mute)">Hãy tạo ra</small><br><b style="font-family:var(--head);font-size:28px">${m.name}</b>
-      ${wrong >= 1 ? `<br><span class="pill" style="margin-top:8px">Gợi ý: có tất cả ${total(m)} nguyên tử</span>` : ''}</div>
-      <div class="flask" id="fl">${flask.map(chip).join('') || '<span class="hint">Chạm nguyên tử bên dưới để thả vào bình</span>'}</div>
-      <div class="row atoms">${ATOMS.map(([s, bg, fg]) => `<button class="atom big" data-a="${s}" style="background:${bg};color:${fg}" aria-label="Nguyên tử ${s}">${s}</button>`).join('')}</div>
-      ${msg || `<div class="row"><button class="btn ghost" data-x="clear">Đổ đi</button><button class="btn" data-x="mix">🧪 Trộn!</button></div><p class="hint">Chạm nguyên tử trong bình để bỏ ra.</p>`}`;
-            }
-            function next() {
-                i++;
-                if (i >= 8) {
-                    if (totalWrong === 0) S.flags.chem = true;
-                    finish({ id: 'chem', score, xp: Math.round(score / 3) + solved * 2, lines: [`Tạo đúng ${solved}/8 chất`, `${totalWrong} lần sai`], replay: chemGame, details: { solved, totalWrong } }); return;
-                }
-                flask = []; wrong = 0; busy = false; render();
-            }
-            function mix() {
-                const m = list[i], cnt = {}; flask.forEach(a => cnt[a] = (cnt[a] || 0) + 1);
-                const keys = new Set([...Object.keys(cnt), ...Object.keys(m.f)]);
-                const good = [...keys].every(k => (cnt[k] || 0) === (m.f[k] || 0));
-                busy = true;
-                if (good) {
-                    const pts = Math.max(8, 20 - wrong * 6); score += pts; solved++; sfx.ok();
-                    render(`<div class="qbox pop" style="margin-top:14px"><b style="font-family:var(--head);font-size:30px;color:var(--lime)">${m.s}</b><br>Chính xác! +${pts} điểm</div>`);
-                    T.set(next, 1600);
-                } else {
-                    wrong++; totalWrong++; sfx.bad();
-                    if (wrong >= 3) {
-                        render(`<div class="qbox" style="margin-top:14px">Công thức đúng là <b style="font-family:var(--head);font-size:28px;color:var(--amber)">${m.s}</b></div>`);
-                        T.set(next, 2200);
-                    } else { busy = false; render(); $('#fl').classList.add('shake'); }
-                }
-            }
-            root.onclick = e => {
-                if (busy) return;
-                const a = e.target.closest('[data-a]'), r = e.target.closest('[data-r]'), x = e.target.closest('[data-x]');
-                if (a) { if (flask.length < 6) { flask.push(a.dataset.a); sfx.tick(); render() } }
-                else if (r) { flask.splice(+r.dataset.r, 1); render() }
-                else if (x) { if (x.dataset.x === 'clear') { flask = []; render() } else if (flask.length) mix(); else toast('Hãy thả nguyên tử vào bình trước') }
-            };
-            render();
-        }
+      riddle(level) {
+        const [q, opts, ans, exp] = pickOne(RIDDLES);
+        return {
+          html: `<div style="font-size:11px;opacity:.7">ĐỐ VUI NHANH</div>
+                 <div style="font-size:22px;margin-top:8px">${q}</div>`,
+          opts: [...opts], ans, exp,
+        };
+      },
 
-        /* ============ GAME 4: ĐỒNG HỒ THỜI GIAN ============ */
-        function clockGame(root) {
-            const fmt = (h, m) => `${h}:${String(m).padStart(2, '0')}`;
-            const qs = Array.from({ length: 10 }, (_, i) => {
-                const h = rnd(1, 12);
-                const m = i < 4 ? [0, 30][rnd(0, 1)] : i < 7 ? [0, 15, 30, 45][rnd(0, 3)] : rnd(0, 11) * 5;
-                return { h, m };
-            });
-            function options(h, m) {
-                const set = new Set([fmt(h, m)]), c = [];
-                c.push(fmt(h, (m + 30) % 60), fmt(h === 12 ? 1 : h + 1, m), fmt(h === 1 ? 12 : h - 1, m), fmt(h, (m + 5) % 60), fmt(h, (m + 55) % 60), fmt(h, (m + 15) % 60));
-                c.push(fmt(m / 5 || 12, (h % 12) * 5));
-                shuffle(c).forEach(x => { if (set.size < 4) set.add(x) });
-                while (set.size < 4) set.add(fmt(rnd(1, 12), rnd(0, 11) * 5));
-                return shuffle([...set]);
-            }
-            function draw(cv, h, m) {
-                const S_ = 240, ctx = fitCanvas(cv, S_, S_), c = S_ / 2, R = 108;
-                ctx.fillStyle = '#fff6df'; ctx.strokeStyle = '#0b2227'; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(c, c, R, 0, 7); ctx.fill(); ctx.stroke();
-                for (let k = 0; k < 60; k++) { const a = k * 6 * Math.PI / 180, l = k % 5 ? 5 : 11; ctx.lineWidth = k % 5 ? 1.5 : 3; ctx.strokeStyle = '#0b2227'; ctx.beginPath(); ctx.moveTo(c + Math.sin(a) * (R - 6), c - Math.cos(a) * (R - 6)); ctx.lineTo(c + Math.sin(a) * (R - 6 - l), c - Math.cos(a) * (R - 6 - l)); ctx.stroke() }
-                ctx.fillStyle = '#0b2227'; ctx.font = '800 22px Baloo 2,system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                for (let k = 1; k <= 12; k++) { const a = k * 30 * Math.PI / 180; ctx.fillText(k, c + Math.sin(a) * R * .74, c - Math.cos(a) * R * .74 + 1) }
-                const hand = (ang, len, w, col) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(c, c); ctx.lineTo(c + Math.sin(ang) * len, c - Math.cos(ang) * len); ctx.stroke() };
-                hand(((h % 12) + m / 60) * 30 * Math.PI / 180, R * .47, 9, '#15434b');
-                hand(m * 6 * Math.PI / 180, R * .74, 5, '#ff6f59');
-                ctx.fillStyle = '#0b2227'; ctx.beginPath(); ctx.arc(c, c, 7, 0, 7); ctx.fill();
-            }
-            root.innerHTML = '';
-            runMC(root, {
-                id: 'clock', replay: clockGame, count: 10, secs: 15,
-                make(i) {
-                    const { h, m } = qs[i], ans = fmt(h, m);
-                    return {
-                        html: `<canvas id="ck"></canvas><div class="hint" style="margin-top:10px">Đồng hồ đang chỉ mấy giờ? (kim ngắn chỉ giờ, kim dài chỉ phút)</div>`,
-                        after() { draw($('#ck'), h, m) },
-                        opts: options(h, m), ans,
-                        exp: m === 0 ? `Kim dài chỉ số 12 nên là ${h} giờ đúng: ${ans}.` : `Kim ngắn chỉ gần số ${h} nên là ${h} giờ. Kim dài chỉ số ${m / 5} nên là ${m} phút. Vậy là ${ans}.`
-                    };
-                },
-                onEnd(r) { if (r === 10) S.flags.clock = true }
-            });
-        }
+      shapecount(level) {
+        const shape = pickOne(['🔺', '🔵', '🟨', '🟩', '🟥', '⬛', '🔶']);
+        const total = rnd(5, 8 + level * 2);
+        const oddAt = rnd(total);
+        const noise = sample(['⭐', '❤️', '🌙', '⚡', '🎈', '🍀'].filter(s => s !== shape), 1)[0];
+        const cells = shuffle(Array.from({ length: total }, (_, i) => (i === oddAt ? shape : noise)));
+        const right = cells.filter(c => c === shape).length;
+        const opts = shuffle([String(right), ...distractors([String(right + 1), String(right - 1), String(right + 2), String(right + 3), 1, 0].map(String), String(right)).slice(0, 3)]);
+        return {
+          html: `<div style="font-size:11px;opacity:.7">ĐẾM NHANH</div>
+                 <div style="font-size:12px;opacity:.7;margin-top:6px">Có bao nhiêu biểu tượng
+                   <b style="font-size:20px">${shape}</b>?</div>
+                 <div style="font-size:26px;letter-spacing:6px;line-height:1.7;margin-top:10px">${cells.join(' ')}</div>`,
+          opts, ans: String(right),
+          exp: `Có <b>${right}</b> biểu tượng ${shape}.`,
+        };
+      },
+    };
 
-        /* ============ GAME 5: QUY LUẬT SỐ ============ */
-        function patternGame(root) {
-            function genSeq(n) {
-                const t = n < 3 ? rnd(0, 1) : n < 7 ? rnd(0, 4) : rnd(0, 6);
-                let seq = [], rule = '';
-                if (t === 0) { const a = rnd(1, 20), d = rnd(2, 9); seq = [...Array(6)].map((_, i) => a + d * i); rule = `Mỗi số bằng số đứng trước cộng ${d}.` }
-                else if (t === 1) { const d = rnd(2, 8), a = rnd(40, 70); seq = [...Array(6)].map((_, i) => a - d * i); rule = `Mỗi số bằng số đứng trước trừ ${d}.` }
-                else if (t === 2) { const r = rnd(2, 3), a = rnd(1, 3); seq = [...Array(6)].map((_, i) => a * r ** i); rule = `Mỗi số bằng số đứng trước nhân ${r}.` }
-                else if (t === 3) { const o = rnd(0, 3); seq = [...Array(6)].map((_, i) => (i + 1) ** 2 + o); rule = o ? `Đây là dãy số chính phương 1, 4, 9, 16, ... cộng thêm ${o}.` : 'Đây là dãy số chính phương: 1², 2², 3², 4², ...' }
-                else if (t === 4) { const a = rnd(1, 5), d0 = rnd(1, 3); let v = a; seq = [v]; for (let i = 1; i < 6; i++) { v += d0 + i - 1; seq.push(v) } rule = `Hiệu hai số liên tiếp tăng dần: +${d0}, +${d0 + 1}, +${d0 + 2}, ...` }
-                else if (t === 5) { const a = rnd(1, 4), b = rnd(2, 6); seq = [a, b]; for (let i = 2; i < 6; i++)seq.push(seq[i - 1] + seq[i - 2]); rule = 'Mỗi số bằng tổng của hai số đứng ngay trước nó.' }
-                else { const a = rnd(20, 30), p = rnd(4, 9), m = rnd(1, p - 2); seq = [a]; for (let i = 1; i < 6; i++)seq.push(seq[i - 1] + (i % 2 ? p : -m)); rule = `Luân phiên cộng ${p} rồi trừ ${m}.` }
-                return { seq, h: rnd(2, 5), rule };
-            }
-            root.innerHTML = '';
-            runMC(root, {
-                id: 'pattern', replay: patternGame, count: 10, secs: 20,
-                make(i) {
-                    const { seq, h, rule } = genSeq(i), ans = seq[h];
-                    return {
-                        html: `<div class="hint" style="margin:0 0 12px">Tìm số còn thiếu theo quy luật</div>
-          <div class="seq">${seq.map((v, k) => `<div class="chip ${k === h ? 'q' : ''}">${k === h ? '?' : v}</div>`).join('')}</div>`,
-                        opts: makeOpts(ans, 4), ans,
-                        exp: `${rule} Số cần tìm là ${ans}.`
-                    };
-                },
-                onEnd(r) { if (r === 10) S.flags.pat = true }
-            });
-        }
+    /* ══════════════════════════════════════════════════════════════════════════
+       ENGINE VÁN CHƠI — lưu tiến độ sau mỗi hành động
+       ══════════════════════════════════════════════════════════════════════ */
 
-        /* ============ GAME 6: NHỚ DÃY MÀU ============ */
-        function simonGame(root) {
-            const PADS = [['var(--sky)', '▲', 392], ['var(--coral)', '●', 494], ['var(--amber)', '■', 587], ['var(--lime)', '★', 698]];
-            let seq = [], step = 0, phase = 'show', score = 0;
-            root.innerHTML = `<div class="hud"><span>Vòng <b id="rd">1</b></span><span>⭐ <b id="sc">0</b></span></div>
-    <div class="qbox" id="st" style="font-family:var(--head);font-size:24px;font-weight:800">Sẵn sàng?</div>
-    <div class="simon">${PADS.map((p, i) => `<button class="pd" data-p="${i}" style="background:${p[0]}" aria-label="Ô ${i + 1}">${p[1]}</button>`).join('')}</div>
-    <p class="hint">Xem dãy sáng lên, rồi bấm lại đúng thứ tự. Mỗi vòng thêm một bước.</p>`;
-            const pads = [...root.querySelectorAll('.pd')];
-            const flash = (i, ms) => { pads[i].classList.add('on'); beep(PADS[i][2], ms / 1000, 'triangle', .09); T.set(() => pads[i].classList.remove('on'), ms) };
-            function round() {
-                seq.push(rnd(0, 3)); step = 0; phase = 'show';
-                $('#rd').textContent = seq.length; $('#st').textContent = 'Xem kỹ...';
-                const gap = Math.max(230, 520 - seq.length * 22), on = Math.max(160, gap * .6);
-                seq.forEach((p, k) => T.set(() => flash(p, on), 700 + k * gap));
-                T.set(() => { phase = 'input'; $('#st').textContent = 'Đến lượt bạn!' }, 700 + seq.length * gap);
-            }
-            root.onclick = e => {
-                const b = e.target.closest('[data-p]'); if (!b || phase !== 'input') return;
-                const i = +b.dataset.p; flash(i, 180);
-                if (i !== seq[step]) {
-                    phase = 'over'; sfx.bad(); $('#st').textContent = 'Sai rồi!';
-                    const rounds = seq.length - 1;
-                    if (rounds >= 8) S.flags.simon = true;
-                    T.set(() => finish({ id: 'simon', score, xp: Math.round(score / 4) + rounds, lines: [`Nhớ được ${rounds} bước`], replay: simonGame, details: { rounds } }), 900);
-                    return;
-                }
-                step++;
-                if (step === seq.length) {
-                    phase = 'wait'; score += seq.length * 10; $('#sc').textContent = score; $('#st').textContent = 'Chính xác!';
-                    T.set(sfx.ok, 200); T.set(round, 1100);
-                }
-            };
-            T.set(round, 700);
-        }
+    const LEVEL_STEP = 3;   // số câu đúng để lên màn
+    const RUN_SECS = 25;    // giây cho mỗi câu
+    const START_LIVES = 3;
 
-        /* ============ Khởi động ============ */
-        const GAMES = [
-            { id: 'flap', name: 'Chim Bay Qua Cổng', tag: 'Toán · Phản xạ', c: 'var(--amber)', icon: '🐦', desc: 'Vỗ cánh bay qua đúng khe có đáp án của phép tính. Chạm sai là mất tim.', fn: flapGame },
-            { id: 'g2048', name: '2048 Lũy Thừa', tag: 'Logic · Lũy thừa', c: 'var(--violet)', icon: '🔢', desc: 'Gộp các ô giống nhau để đạt số lớn, mỗi ô hiện thêm dạng 2 mũ k.', fn: game2048 },
-            { id: 'chem', name: 'Nhà Hóa Học Nhí', tag: 'Hóa học', c: 'var(--lime)', icon: '⚗️', desc: 'Ghép các nguyên tử H, O, C, N, Na, Cl thành đúng phân tử theo tên chất.', fn: chemGame },
-            { id: 'clock', name: 'Đồng Hồ Thời Gian', tag: 'Toán · Xem giờ', c: 'var(--coral)', icon: '🕒', desc: 'Nhìn đồng hồ kim và chọn đúng giờ. Từ giờ chẵn đến từng 5 phút.', fn: clockGame },
-            { id: 'pattern', name: 'Thám Tử Quy Luật', tag: 'Toán · Tư duy', c: 'var(--sky)', icon: '🕵️', desc: 'Tìm số còn thiếu trong dãy: cộng, nhân, chính phương, Fibonacci...', fn: patternGame },
-            { id: 'simon', name: 'Nhớ Dãy Màu', tag: 'Trí nhớ', c: '#ff9de2', icon: '🎵', desc: 'Ghi nhớ dãy ô sáng và âm thanh, rồi lặp lại đúng thứ tự. Mỗi vòng dài thêm.', fn: simonGame },
-        ];
+    let run = null;
 
-        initCore({
-            games: GAMES,
-            storageKey: 'hmc_game3',
-            hubTitle: 'Phòng thí nghiệm trò chơi.',
-            hubDesc: 'Sáu thử thách: Toán, Hóa học, Logic và Trí nhớ. Chơi để kiếm XP, lên cấp và mở huy hiệu.',
-            badges: [
-                { id: 'first', n: 'Khởi động', i: '🌱', ok: () => S.games >= 1 },
-                { id: 'all', n: 'Thử đủ 6 game', i: '🧭', ok: () => S.played.size >= 6 },
-                { id: 'flap', n: 'Chim bay 10 cổng', i: '🐦', ok: () => S.flags.flap },
-                { id: 't256', n: 'Đạt ô 256', i: '🔢', ok: () => S.flags.t256 },
-                { id: 'chem', n: 'Nhà hóa học', i: '⚗️', ok: () => S.flags.chem },
-                { id: 'clock', n: 'Xem giờ 10/10', i: '🕒', ok: () => S.flags.clock },
-                { id: 'pat', n: 'Thám tử quy luật', i: '🕵️', ok: () => S.flags.pat },
-                { id: 'simon', n: 'Nhớ 8 vòng', i: '🧠', ok: () => S.flags.simon },
-                { id: 'lv3', n: 'Đạt cấp 3', i: '⭐', ok: () => lvl() >= 3 },
-            ],
-        });
+    /** Ghi tiến độ ván hiện tại xuống localStorage. */
+    function persist() {
+      if (!run) return;
+      HP.save({
+        game: run.id, name: run.def.name, icon: run.def.icon,
+        level: run.level, score: run.score, correct: run.correct,
+        answered: run.answered, lives: run.lives,
+      });
+    }
+
+    /**
+     * Bắt đầu (hoặc tiếp tục) một ván.
+     *
+     * KHÔNG được tin `HP.data` ở đây — nó chỉ có giá trị sau khi sảnh đã gọi
+     * HP.refresh(). Nếu người chơi vào thẳng URL game (bookmark, F5, mở link
+     * chia sẻ) thì HP.data còn null và tiến độ sẽ bị bỏ qua. Vì vậy luôn tự
+     * đọc lại từ localStorage khi không được truyền vào.
+     *
+     * @param {object} def  entry trong GAMES
+     * @param {object|null} saved  tiến độ đã lưu (bỏ trống = tự đọc từ đĩa)
+     */
+    function startRun(def, saved) {
+      const data = saved && typeof saved === 'object' ? saved : HP.refresh();
+      const keep = data && data.game === def.id;
+      run = {
+        def, id: def.id,
+        level: keep ? Math.max(1, data.level || 1) : 1,
+        score: keep ? (data.score || 0) : 0,
+        correct: keep ? (data.correct || 0) : 0,
+        answered: keep ? (data.answered || 0) : 0,
+        lives: keep && Number.isFinite(data.lives) ? Math.max(1, data.lives) : START_LIVES,
+        streak: 0, locked: false, cur: null, time: RUN_SECS,
+        justResumed: !!keep,
+      };
+      persist();
+      nextQuestion();
+    }
+
+    /** Màn tiếp theo (đã lưu tiến độ). */
+    function nextQuestion() {
+      if (!run) return;
+
+      while (run.correct >= LEVEL_STEP) {
+        run.correct -= LEVEL_STEP;
+        run.level += 1;
+        run.score += 25;
+        sfx.win();
+        toast(`🎉 Lên màn ${run.level}!`);
+      }
+      if (run.lives <= 0) { endRun(); return; }
+
+      run.locked = false;
+      run.time = RUN_SECS;
+      run.cur = run.def.make(run.level);
+      persist();
+      renderQuestion();
+      startTimer();
+    }
+
+    function startTimer() {
+      T.int(() => {
+        if (!run || run.locked) return;
+        run.time -= 0.1;
+        const bar = $('#tb');
+        if (bar) bar.style.width = Math.max(0, (run.time / RUN_SECS) * 100) + '%';
+        if (run.time <= 0) onAnswer(-1);          // hết giờ = trả lời sai
+      }, 100);
+    }
+
+    /** Hien so mang: toi da 5 trai tim, vuot qua thi ghi them so du. */
+    function hearts(n) {
+      const v = Math.max(0, Math.floor(n) || 0);
+      return "❤️".repeat(Math.min(5, v)) + (v > 5 ? ` <b>+${v - 5}</b>` : "");
+    }
+
+    function renderQuestion() {
+      const c = run.cur;
+      const resumed = run.justResumed;
+      run.justResumed = false;
+
+      $('#stage').innerHTML = `
+        <div class="hud">
+          <span>Màn <b>${run.level}</b></span>
+          <span>⭐ <b>${run.score}</b></span>
+          <span>💗 ${hearts(run.lives) || '—'}</span>
+          <span>🔥 <b>${run.correct}/${LEVEL_STEP}</b></span>
+        </div>
+        <div class="tbar"><i id="tb" style="width:100%"></i></div>
+        ${resumed ? `<div class="explain" style="border-left:3px solid var(--amber)">
+            ▶ Đã khôi phục tiến độ từ localStorage — màn ${run.level}, ${run.score} ⭐</div>` : ''}
+        <div class="qbox">${c.html}</div>
+        <div class="opts" id="opts">
+          ${c.opts.map((o, k) => `<button class="opt" data-k="${k}" ${c.style ? `style="${c.style[k]}"` : ''}>${o}</button>`).join('')}
+        </div>
+        <div id="ex"></div>
+        <div class="row" id="nx"></div>`;
+
+      $('#opts').onclick = e => {
+        const b = e.target.closest('.opt');
+        if (b) onAnswer(+b.dataset.k);
+      };
+    }
+
+    /** Trả lời. k = -1 nghĩa là hết giờ. */
+    function onAnswer(k) {
+      if (!run || run.locked) return;
+      run.locked = true;
+
+      const c = run.cur;
+      const btns = [...document.querySelectorAll('#opts .opt')];
+      const right = k >= 0 && String(c.opts[k]) === String(c.ans);
+      const ci = c.opts.findIndex(o => String(o) === String(c.ans));
+
+      if (ci >= 0 && btns[ci]) btns[ci].classList.add('ok');
+      if (right) {
+        run.correct++; run.streak++;
+        run.score += 10 + Math.ceil(run.time) + (run.streak >= 3 ? 5 : 0);
+        S.flags.answerRight = (S.flags.answerRight || 0) + 1;
+        sfx.ok();
+      } else {
+        run.streak = 0;
+        run.lives -= 1;
+        S.flags.answerWrong = (S.flags.answerWrong || 0) + 1;
+        sfx.bad();
+        if (k >= 0 && btns[k]) btns[k].classList.add('bad');
+      }
+      run.answered += 1;
+
+      const ex = $('#ex'), nx = $('#nx');
+      if (ex) ex.innerHTML = `<div class="explain">${right ? '✅ Chính xác!' : (k < 0 ? '⏰ Hết giờ!' : '❌ Chưa đúng.')} ${c.exp}</div>`;
+      if (nx) {
+        const over = run.lives <= 0;
+        nx.innerHTML = over
+          ? `<button class="btn" data-next="1">Xem kết quả</button>`
+          : `<button class="btn" data-next="1">${run.correct >= LEVEL_STEP ? 'Lên màn! →' : 'Câu tiếp theo →'}</button>`;
+        nx.onclick = () => { if (run) nextQuestion(); };
+      }
+
+      persist();          // ← lưu sau MỖI câu
+    }
+
+    function endRun() {
+      if (!run) return;
+      const snap = run;
+      run = null;
+      HP.clear();          // hết ván → không cần giữ tiến độ dang dở
+      sfx.win();
+      finish({
+        id: snap.id,
+        score: snap.score,
+        xp: snap.answered * 5,
+        lines: [`Màn cao nhất: ${snap.level}`, `Câu đúng: ${snap.correct}`, `Đã trả lời: ${snap.answered} câu`],
+        replay: false,
+        details: { level: snap.level, answered: snap.answered },
+      });
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       BẢNG TIẾN ĐỘ TRÊN SẢNH
+       ══════════════════════════════════════════════════════════════════════ */
+
+    function progressPanel() {
+      const d = HP.refresh();
+      const hub = $('#hub');
+      if (!hub) return;
+
+      if (d) {
+        const g = _GAMES.find(x => x.id === d.game);
+        const box = document.createElement('div');
+        box.className = 'panel';
+        box.style.cssText = 'max-width:680px;margin:0 auto 16px;text-align:left;border-left:4px solid var(--amber)';
+        box.innerHTML = `
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div style="font-size:28px">${d.icon || g?.icon || '💾'}</div>
+            <div style="flex:1;min-width:180px">
+              <div style="font-size:11px;opacity:.7;letter-spacing:.5px">TIẾN ĐỘ ĐANG LƯU TRONG LOCALSTORAGE</div>
+              <div style="font-size:17px;font-weight:800;margin-top:2px">${d.name || g?.name || 'Ván đang chơi'}</div>
+              <div style="font-size:13px;opacity:.85;margin-top:3px">
+                Màn <b>${d.level || 1}</b> · ⭐ <b>${d.score || 0}</b> ·
+                💗 ${hearts(d.lives ?? START_LIVES)} ·
+                <span style="opacity:.7">lưu ${HP.ago()}</span>
+              </div>
+            </div>
+            <div class="row" style="margin:0">
+              <button class="btn" data-resume>▶ Tiếp tục</button>
+              <button class="btn alt ghost" data-check>🔍 Kiểm tra</button>
+              <button class="btn alt ghost" data-clear>🗑 Xoá</button>
+            </div>
+          </div>`;
+        box.querySelector('[data-resume]').onclick = () => openGame(d.game);
+        box.querySelector('[data-check]').onclick = () => {
+          const again = HP.refresh();
+          if (!again) { toast('🗑 Không còn tiến độ nào được lưu'); }
+          else toast(`🔍 localStorage["${PROGRESS_KEY}"] → màn ${again.level}, ${again.score} ⭐`);
+          renderHub();
+        };
+        box.querySelector('[data-clear]').onclick = () => {
+          HP.clear();
+          toast('🗑 Đã xoá tiến độ');
+          renderHub();
+        };
+        hub.prepend(box);
+      } else {
+        const box = document.createElement('div');
+        box.className = 'panel';
+        box.style.cssText = 'max-width:680px;margin:0 auto 16px;text-align:center;opacity:.85';
+        box.innerHTML = `<div style="font-size:13px">
+            💾 Chưa có tiến độ lưu. Mọi câu trả lời sẽ tự động lưu vào
+            <code style="font-size:12px;background:#000;padding:2px 6px;border-radius:6px">${PROGRESS_KEY}</code>
+            — đóng tab rồi mở lại vẫn chơi tiếp được.
+          </div>`;
+        hub.append(box);
+      }
+    }
+
+    // Bọc renderHub của game-core để chèn bảng tiến độ sau mỗi lần vẽ sảnh
+    const _renderHub = renderHub;
+    renderHub = function () { _renderHub(); progressPanel(); };
+
+    // Lưu nốt khi người chơi đóng tab / đổi trang
+    window.addEventListener('beforeunload', () => { if (run) persist(); });
+    window.addEventListener('pagehide', () => { if (run) persist(); });
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       DANH SÁCH GAME + KHỞI ĐỘNG
+       ══════════════════════════════════════════════════════════════════════ */
+
+    const GAMES = [
+      { id: 'anagram', name: 'Đảo Chữ Nhí', tag: 'Tiếng Anh', c: 'var(--amber)', icon: '🧩', desc: 'Chữ bị xáo trộn, nghĩa cho sẵn. Xếp lại từ tiếng Anh đúng nghĩa.', make: MAKERS.anagram, fn: () => startRun(GAMES[0], HP.data) },
+      { id: 'stroop', name: 'Đuổi Màu', tag: 'Tập trung', c: 'var(--violet)', icon: '🎨', desc: 'Câu lệnh nói một màu, hãy chọn đúng ô mang màu đó chứ không phải màu chữ.', make: MAKERS.stroop, fn: () => startRun(GAMES[1], HP.data) },
+      { id: 'sumseq', name: 'Chuỗi Số', tag: 'Toán', c: 'var(--sky)', icon: '➕', desc: 'Điền số tiếp theo: cộng đều, giảm đều, chính phương hay nhân đôi.', make: MAKERS.sumseq, fn: () => startRun(GAMES[2], HP.data) },
+      { id: 'compare', name: 'Ai Nhiều Hơn?', tag: 'So sánh', c: 'var(--lime)', icon: '⚖️', desc: 'Trong hai số hãy chọn số lớn nhất hoặc nhỏ nhất. Càng lên màn số càng to.', make: MAKERS.compare, fn: () => startRun(GAMES[3], HP.data) },
+      { id: 'riddle', name: 'Đố Vui Nhanh', tag: 'Kiến thức', c: 'var(--coral)', icon: '💡', desc: 'Câu đố vui đầu tiên nghĩ ra là đáp án.', make: MAKERS.riddle, fn: () => startRun(GAMES[4], HP.data) },
+      { id: 'shapecount', name: 'Đếm Nhanh', tag: 'Tập trung', c: '#ff9de2', icon: '🔷', desc: 'Lưới biểu tượng lẫn lộn nhiều loại. Đếm đúng số lượng cần tìm.', make: MAKERS.shapecount, fn: () => startRun(GAMES[5], HP.data) },
+    ];
+
+    initCore({
+      games: GAMES,
+      storageKey: 'hmc_game4',
+      hubTitle: 'Tiến độ lưu ngay trên máy.',
+      hubDesc: 'Sáu thử thách Toán · Tiếng Anh · Tập trung. Tiến độ tự lưu vào localStorage — đóng tab rồi mở lại vẫn chơi tiếp đúng chỗ.',
+      badges: [
+        { id: 'first', n: 'Khởi động', i: '🌱', ok: () => S.games >= 1 },
+        { id: 'all', n: 'Thử đủ 6 game', i: '🧭', ok: () => S.played.size >= 6 },
+        { id: 'right10', n: 'Đúng 10 câu', i: '✅', ok: () => (S.flags.answerRight || 0) >= 10 },
+        { id: 'lv3', n: 'Đạt cấp 3', i: '⭐', ok: () => lvl() >= 3 },
+        { id: 'lv5', n: 'Đạt cấp 5', i: '🌟', ok: () => lvl() >= 5 },
+        { id: 'flawless', n: 'Một mạng thôi', i: '💎', ok: () => (S.flags.answerWrong || 0) === 0 && (S.flags.answerRight || 0) >= 5 },
+        { id: 'comeback', n: 'Quay lại sau khi hết mạng', i: '🔁', ok: () => (S.flags.answerWrong || 0) > 0 && (S.flags.answerRight || 0) > (S.flags.answerWrong || 0) },
+      ],
+    });
+
+    /* Tiện ích nhỏ: bảng điều khiển tiến độ (nhấn phím P hoặc gõ trong console) */
+    window.HP = HP;
+    window.HP.info = () => {
+      const d = HP.refresh();
+      console.log('%cTiến độ offline', 'font-weight:bold', d || '(chưa có)');
+      console.table([d || { game: '—', level: 0, score: 0, answered: 0, lives: 0 }]);
+      return d;
+    };
+    onKey = e => {
+      if (e.key === 'p' || e.key === 'P') { e.preventDefault(); window.HP.info(); }
+    };
     </script>
 </body>
-
 </html>

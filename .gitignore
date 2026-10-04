@@ -21,6 +21,13 @@ dist-ssr
 server/src/config/firebase.local.js
 server/.env
 
+# Cloudflare R2 credentials dạng literal
+server/src/config/r2.local.js
+
+# Service account JSON tải từ Firebase console
+server/*firebase-adminsdk*.json
+*firebase-adminsdk*.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

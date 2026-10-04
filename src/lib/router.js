@@ -57,6 +57,7 @@ const ROUTES = [
   { name: "hmc-game1", pattern: "/hmc-game1" },
   { name: "hmc-game2", pattern: "/hmc-game2" },
   { name: "hmc-game3", pattern: "/hmc-game3" },
+  { name: "hmc-game4", pattern: "/hmc-game4" },
 
   // ── Home (fallback) ──
   { name: "home", pattern: "/" },

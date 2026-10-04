@@ -21,11 +21,14 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { existsSync } from 'node:fs';
 import dotenv from 'dotenv';
 import { cert, initializeApp, getApps } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 
 const require_ = createRequire(import.meta.url);
+
+const LOCAL_FILE = new URL('./firebase.local.js', import.meta.url);
 
 // Nạp .env ngay tại đây để không phụ thuộc thứ tự import
 dotenv.config({ path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.env') });
@@ -34,9 +37,19 @@ const REQUIRED_KEYS = ['projectId', 'clientEmail', 'privateKey', 'storageBucket'
 
 let cachedBucket = null;
 
-/** Đọc file literal tuỳ chọn (không có thì trả null). */
+/**
+ * Đọc file literal tuỳ chọn (không có thì trả null).
+ *
+ * ⚠ `existsSync` đi thẳng ra filesystem, còn `require`/`require.resolve` của
+ * Node CACHE LẠI cả kết quả thất bại. Nếu chỉ dùng require, thì lần gọi đầu
+ * tiên khi file chưa tồn tại sẽ khiến mọi lần gọi sau vĩnh viễn trả "không có
+ * file" — tạo file lúc đang chạy cũng không được nhận.
+ */
 function readLocalFile() {
+  if (!existsSync(LOCAL_FILE)) return null;
   try {
+    const abs = require_.resolve('./firebase.local.js');
+    delete require_.cache[abs];
     const mod = require_('./firebase.local.js');
     return mod?.firebaseConfig || mod?.default || mod || null;
   } catch {
