@@ -6,6 +6,7 @@ import { emptyQuestion } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, IconButton, Loader, Modal } from '../../components/ui.jsx'
 import Field, { StampToken } from './fields.jsx'
 import QuestionImportModal from './QuestionImportModal.jsx'
+import AiQuestionPanel from '../../components/AiQuestionPanel.jsx'
 import { navigate } from '../../lib/router.js'
 import { injectGameConfig } from '../../games/injectGameConfig.js'
 import {
@@ -163,7 +164,9 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
             savedConfig={loadedConfig} gameId={gameId}
           />
         )}
-        {step.id === "questions" && <StepQuestions questions={questions} setQuestions={setQuestions} />}
+        {step.id === "questions" && (
+          <StepQuestions questions={questions} setQuestions={setQuestions} form={form} showToast={showToast} />
+        )}
         {step.id === "customize" && <StepCustomize form={form} setForm={setForm} />}
         {step.id === "preview" && (
           <StepPreview
@@ -398,7 +401,7 @@ function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, 
   );
 }
 
-function StepQuestions({ questions, setQuestions }) {
+function StepQuestions({ questions, setQuestions, form, showToast }) {
   const [openIdx, setOpenIdx] = useState(0);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -452,6 +455,14 @@ function StepQuestions({ questions, setQuestions }) {
         <h2 className="font-display text-xl text-ink">Quản lý câu hỏi</h2>
         <span className="text-xs font-mono text-[#8A7C63]">{questions.length} câu hỏi</span>
       </div>
+      <AiQuestionPanel
+        form={form}
+        showToast={showToast}
+        onAdd={(qs) => {
+          setQuestions((prev) => (prev.length === 1 && prev[0].content === "" ? qs : [...prev, ...qs]));
+          setOpenIdx(questions.length === 1 && questions[0].content === "" ? 0 : questions.length);
+        }}
+      />
       <div className="flex gap-3 mb-4">
         <GhostButton onClick={addQuestion} className="flex-1">+ Thêm câu hỏi</GhostButton>
         <PrimaryButton onClick={() => setShowPicker(true)} className="flex-1">Chọn từ câu hỏi có sẵn</PrimaryButton>

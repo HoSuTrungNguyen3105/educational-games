@@ -4,6 +4,18 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### JDK / Java — KHÔNG commit vào repo ###
+# JDK quá lớn (~330MB) và mỗi máy cài ở vị trí riêng qua JAVA_HOME.
+# Chỉ chứa source và cấu hình build.
+.jdk/
+jdk/
+jdk-*/
+*.jdk/
+jdk-*.zip
+jdk-*.tar.gz
+*.jre/
+release
+
 ### STS ###
 .apt_generated
 .classpath
