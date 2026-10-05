@@ -780,234 +780,7 @@
   <div id="toast"></div>
 
 
-    <!-- ① Cấu hình API — đặt trước khi load api.js -->
-    <script>
-        window.GAME_API_BASE = 'https://educational-games-lp4z.onrender.com';
-        window.GAME_API_TOKEN_FN = () => localStorage.getItem('token');
-    </script>
-
-    <!-- ② api.js: giao tiếp backend (nhúng trực tiếp vì iframe srcDoc không tải được file ngoài) -->
-    <script>
-const GameAPI = (() => {
-  /* ── Cấu hình ────────────────────────────────────────────────────────── */
-
-  /** Base URL của backend. Gán qua window.GAME_API_BASE trước khi load. */
-  const BASE = () =>
-    (window.GAME_API_BASE || '').replace(/\/$/, '');
-
-  /** Hàm lấy JWT token. Gán qua window.GAME_API_TOKEN_FN. */
-  const getToken = () =>
-    typeof window.GAME_API_TOKEN_FN === 'function'
-      ? window.GAME_API_TOKEN_FN()
-      : localStorage.getItem('token') || sessionStorage.getItem('token') || null;
-
-  const OFFLINE_KEY   = 'miniGame_pendingResults';
-  const SESSION_KEY   = 'miniGame_currentSession';
-
-  /* ── Helpers HTTP ────────────────────────────────────────────────────── */
-
-  function _headers() {
-    const h = { 'Content-Type': 'application/json' };
-    const tok = getToken();
-    if (tok) h['Authorization'] = `Bearer ${tok}`;
-    return h;
-  }
-
-  /** GET với auth */
-  async function _get(path) {
-    const res = await fetch(BASE() + path, { headers: _headers() });
-    if (!res.ok) throw new Error(`GET ${path} → ${res.status}`);
-    return res.json();
-  }
-
-  /** POST với auth */
-  async function _post(path, body) {
-    const res = await fetch(BASE() + path, {
-      method:  'POST',
-      headers: _headers(),
-      body:    JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw Object.assign(new Error(err.msg || `POST ${path} → ${res.status}`), { status: res.status, body: err });
-    }
-    return res.json();
-  }
-
-  /* ── Session ─────────────────────────────────────────────────────────── */
-
-  let _currentSession = null;  // { sessionId, game, startedAt }
-
-  /** Gọi khi openGame(id) — tạo session anti-cheat trên server. */
-  async function startSession(game) {
-    if (!BASE()) return null;  // chưa cấu hình API
-    const tok = getToken();
-    if (!tok) return null;     // chưa đăng nhập
-
-    try {
-      const res = await _post('/api/mini/sessions', { game });
-      _currentSession = { sessionId: res.data.sessionId, game, startedAt: res.data.startedAt };
-      // Lưu vào sessionStorage để phục hồi nếu tab bị tải lại giữa chừng
-      try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch { /* ignore */ }
-      return _currentSession;
-    } catch (e) {
-      console.warn('[GameAPI] Không tạo được session:', e.message);
-      _currentSession = null;
-      return null;
-    }
-  }
-
-  /** Khôi phục session từ sessionStorage (nếu tab bị reload) */
-  function _restoreSession(game) {
-    if (_currentSession?.game === game) return _currentSession;
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
-      if (saved?.game === game) { _currentSession = saved; return saved; }
-    } catch { /* ignore */ }
-    return null;
-  }
-
-  /* ── Submit result ────────────────────────────────────────────────────── */
-
-  /**
-   * Gửi kết quả ván chơi. Tự động xử lý offline.
-   *
-   * @param {{ game: string, score: number, details?: object }} payload
-   * @returns {object|null} response data từ server hoặc null nếu lỗi
-   */
-  async function submitResult({ game, score, details = {} }) {
-    if (!BASE()) return null;
-    const tok = getToken();
-    if (!tok) return null;
-
-    const session = _restoreSession(game);
-    const sessionId = session?.sessionId ?? null;
-
-    const body = { game, score, details };
-    if (sessionId) body.sessionId = sessionId;
-
-    try {
-      const res = await _post('/api/mini/results', body);
-      // Xóa session đã dùng
-      _currentSession = null;
-      try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-      // Thử gửi hàng đợi offline
-      _flushPendingResults();
-      return res.data;
-    } catch (e) {
-      // Lỗi mạng → đưa vào hàng đợi
-      if (!e.status || e.status >= 500) {
-        _enqueuePending({ game, score, details, sessionId, queuedAt: new Date().toISOString() });
-        _showOfflineToast();
-      }
-      // Lỗi 4xx (score vượt trần, session sai, ...) → không xếp hàng
-      return null;
-    }
-  }
-
-  /* ── Offline queue ────────────────────────────────────────────────────── */
-
-  function _getPending() {
-    try { return JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]'); }
-    catch { return []; }
-  }
-
-  function _savePending(queue) {
-    try { localStorage.setItem(OFFLINE_KEY, JSON.stringify(queue)); }
-    catch { /* storage đầy hoặc không có */ }
-  }
-
-  function _enqueuePending(item) {
-    const queue = _getPending();
-    // Giới hạn 50 ván chờ gửi
-    if (queue.length >= 50) queue.shift();
-    queue.push(item);
-    _savePending(queue);
-  }
-
-  /** Thử gửi lại tất cả kết quả còn trong hàng đợi. */
-  async function _flushPendingResults() {
-    if (!BASE() || !getToken()) return;
-    const queue = _getPending();
-    if (!queue.length) return;
-
-    const remaining = [];
-    for (const item of queue) {
-      try {
-        await _post('/api/mini/results', {
-          sessionId: item.sessionId ?? undefined,
-          game:      item.game,
-          score:     item.score,
-          details:   item.details ?? {},
-        });
-        // Gửi thành công → không giữ lại
-      } catch (e) {
-        if (!e.status || e.status >= 500) {
-          remaining.push(item);  // lỗi mạng → giữ lại
-        }
-        // 4xx → bỏ luôn (sessionId hết hạn, score không hợp lệ...)
-      }
-    }
-    _savePending(remaining);
-  }
-
-  function _showOfflineToast() {
-    // toast() được khai báo trong game-core.js (cùng scope window)
-    if (typeof toast === 'function') {
-      toast('📶 Không có mạng — kết quả sẽ được gửi lại sau');
-    }
-  }
-
-  /* ── Load profile ─────────────────────────────────────────────────────── */
-
-  /**
-   * Tải hồ sơ người chơi và nạp vào S (object trạng thái của game-core.js).
-   * Gọi khi trang vừa tải xong.
-   */
-  async function loadProfile() {
-    if (!BASE() || !getToken()) return null;
-    try {
-      const res = await _get('/api/mini/me');
-      const p   = res.data;
-      if (!p) return null;
-
-      // Nạp vào S (game-core.js khai báo S ở global scope của script)
-      if (typeof S !== 'undefined') {
-        S.xp     = p.xp    ?? 0;
-        S.best   = p.best  ?? {};
-        S.played = new Set(p.played ?? []);
-        S.unlocked = new Set((p.badges ?? []).map(b => b.id ?? b));
-      }
-
-      // Thử gửi lại kết quả còn trong hàng đợi offline
-      _flushPendingResults();
-
-      return p;
-    } catch (e) {
-      console.warn('[GameAPI] Không tải được hồ sơ:', e.message);
-      return null;
-    }
-  }
-
-  /* ── Public API ───────────────────────────────────────────────────────── */
-
-  // Gắn vào online event để tự flush khi có lại mạng
-  window.addEventListener('online', () => {
-    _flushPendingResults();
-  });
-
-  return {
-    loadProfile,
-    startSession,
-    submitResult,
-    flushPending: _flushPendingResults,
-    /** Dùng nội bộ bởi game-core.js (leaderboard) */
-    _get,
-  };
-})();
-    </script>
-
-    <!-- ③ core.js: thư viện dùng chung (XP, huy hiệu, âm thanh, bộ đếm, canvas) -->
+    <!-- core.js: tiện ích, tiến độ localStorage, âm thanh, bộ đếm, canvas -->
     <script>
 /* ============ Tiện ích ============ */
 const $ = s => document.querySelector(s);
@@ -1056,6 +829,45 @@ function _loadState() {
     if (Array.isArray(data.played)) S.played = new Set(data.played);
     if (Array.isArray(data.unlocked)) S.unlocked = new Set(data.unlocked);
   } catch (e) { /* parse error — bỏ qua */ }
+}
+
+const _runPrefix = 'offline_run_';
+function saveOfflineRun(id, state) {
+  if (!id || !state || typeof state !== 'object') throw new TypeError('Tiến độ game không hợp lệ');
+  try {
+    localStorage.setItem(_runPrefix + id, JSON.stringify({ version: 1, updatedAt: Date.now(), state }));
+  } catch (e) {
+    toast('Không thể lưu ván chơi trên thiết bị này.');
+    console.error(`[offline] Không thể lưu tiến độ "${id}"`, e);
+  }
+}
+
+function loadOfflineRun(id) {
+  if (!id) return null;
+  try {
+    const raw = localStorage.getItem(_runPrefix + id);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (saved?.version !== 1 || !saved.state || typeof saved.state !== 'object') {
+      localStorage.removeItem(_runPrefix + id);
+      return null;
+    }
+    return saved.state;
+  } catch (e) {
+    toast('Không thể đọc tiến độ đã lưu.');
+    console.error(`[offline] Không thể đọc tiến độ "${id}"`, e);
+    return null;
+  }
+}
+
+function clearOfflineRun(id) {
+  if (!id) return;
+  try {
+    localStorage.removeItem(_runPrefix + id);
+  } catch (e) {
+    toast('Không thể xóa tiến độ trên thiết bị này.');
+    console.error(`[offline] Không thể xóa tiến độ "${id}"`, e);
+  }
 }
 
 /* ============ Âm thanh ============ */
@@ -1250,7 +1062,7 @@ function runMC(root, cfg) {
   show();
 }
 
-/* ============ finish() — kết thúc ván & gọi API ============ */
+/* ============ finish() — kết thúc ván ============ */
 /**
  * Gọi khi một ván kết thúc.
  * @param {{ id, score, xp, lines, replay, details? }} opts
@@ -1289,21 +1101,7 @@ function finish({ id, score, xp, lines, replay, details = {} }) {
   $('#again').onclick = () => { $('#modal').classList.remove('on'); openGame(id); };
   $('#home').onclick  = () => { $('#modal').classList.remove('on'); renderHub(); };
 
-  // Gửi kết quả lên server (không block UI)
-  GameAPI.submitResult({ game: id, score, details }).then(serverData => {
-    if (!serverData) return;
-    // Cập nhật lại từ server (XP, cấp, huy hiệu)
-    if (typeof serverData.totalXp === 'number') S.xp = serverData.totalXp;
-    renderMe();
-    _saveState();
-    if (Array.isArray(serverData.newBadges)) {
-      serverData.newBadges.forEach(b => {
-        S.unlocked.add(b.id);
-        setTimeout(() => toast(`${b.icon} Huy hiệu mới: ${b.name}`), 900);
-      });
-      _saveState();
-    }
-  }).catch(() => { /* lỗi mạng đã được xử lý trong api.js */ });
+  clearOfflineRun(id);
 }
 
 /* ============ renderHub & openGame (được override bởi mỗi file) ============ */
@@ -1365,8 +1163,6 @@ function openGame(id) {
   $('#modal').classList.remove('on');
   g.fn($('#stage'));
   window.scrollTo(0, 0);
-  // Báo server bắt đầu ván mới
-  GameAPI.startSession(id);
 }
 
 /* ============ Bảng xếp hạng ============ */
@@ -1400,23 +1196,17 @@ function _openLeaderboard() {
     activeKey = key; renderTabs();
     $('#lb-body').innerHTML = 'Đang tải...';
     try {
-      let rows;
-      if (key === 'xp') {
-        const r = await GameAPI._get('/api/mini/leaderboard/xp?limit=20');
-        rows = (r.data || []).map((x, i) =>
-          `<tr><td>${x.rank ?? i + 1}</td><td>${x.displayName}</td><td>${x.xp} XP</td><td>Cấp ${x.level}</td></tr>`
-        );
-      } else {
-        const r = await GameAPI._get(`/api/mini/leaderboard/${key}?limit=20`);
-        rows = (r.data || []).map((x, i) =>
-          `<tr><td>${x.rank ?? i + 1}</td><td>${x.displayName}</td><td>${x.best} điểm</td><td></td></tr>`
-        );
-      }
+      const rows = key === 'xp'
+        ? [`<tr><td>1</td><td>Bạn</td><td>${S.xp} XP</td><td>Cấp ${lvl()}</td></tr>`]
+        : S.best[key] !== undefined
+          ? [`<tr><td>1</td><td>Bạn</td><td>${S.best[key]} điểm</td><td></td></tr>`]
+          : [];
       $('#lb-body').innerHTML = rows.length
         ? `<table style="width:100%;border-collapse:collapse">${rows.join('')}</table>`
-        : '<p style="opacity:.6">Chưa có dữ liệu.</p>';
-    } catch {
-      $('#lb-body').innerHTML = '<p style="opacity:.6">Không thể tải bảng xếp hạng.</p>';
+        : '<p style="opacity:.6">Chưa có kỷ lục trên thiết bị này.</p>';
+    } catch (e) {
+      console.error('[offline] Không thể hiển thị kỷ lục cục bộ', e);
+      $('#lb-body').innerHTML = '<p style="opacity:.6">Không thể hiển thị kỷ lục.</p>';
     }
   }
 
@@ -1463,12 +1253,11 @@ function initCore({ games, hubTitle = '', hubDesc = '', badges = [], storageKey 
     if (e.target.closest('#lb-btn')) _openLeaderboard();
   });
 
-  // Tải hồ sơ từ server rồi render sảnh
-  GameAPI.loadProfile().then(() => renderHub()).catch(() => renderHub());
+  renderHub();
 }
     </script>
 
-    <!-- ④ Điểm vào: khởi động game, nối nút thoát, lưu tiến độ -->
+    <!-- Điểm vào: khởi động game, nối nút thoát, lưu tiến độ -->
     <script>
 // lib/single.js — điểm vào cho file HTML chỉ chứa MỘT game.
 //
@@ -1557,306 +1346,118 @@ if (typeof window !== "undefined") {
 }
     </script>
 
-    <!-- ⑤ Engine chung cho các game dạng câu hỏi (tiến độ lưu sau từng câu) -->
+    <!-- Game: sumseq — nội dung riêng của file này -->
     <script>
-// lib/mcengine.js — engine chung cho các game dạng "trả lời câu hỏi theo màn".
-//
-// 6 game (đảo chữ, đuổi màu, chuỗi số, so sánh, đố vui, đếm nhanh) dùng chung
-// engine này. Mỗi file game chỉ cần đăng ký đúng 1 maker:
-//
-//   MC_MAKERS.<id> = function (level) { return { html, opts, ans, exp, style }; };
-//   startMcGame('<id>', { name, icon, badges });
-//
-// Engine đảm nhiệm: vòng lặp màn, điểm, mạng, thanh thời gian và —
-// QUAN TRỌNG — ghi/nhận tiến độ vào localStorage sau TỪNG câu để đóng tab
-// rồi mở lại vẫn chơi tiếp đúng chỗ (game offline, không có API để hỏi).
+// src/games/src/sumseq.js — Nhịp Điệu Ánh Sáng
 
-const MC_LEVEL_STEP = 3;    // số câu đúng để lên màn
-const MC_RUN_SECS = 25;     // giây cho mỗi câu
-const MC_START_LIVES = 3;
-const MC_PROGRESS_TTL = 30 * 24 * 60 * 60 * 1000;
-
-/** Registry maker, mỗi file game tự đăng ký 1 hàm. */
-const MC_MAKERS = {};
-
-/** Game đang chại + metadata, dùng để dựng khoá tiến độ. */
-let MC_META = { id: "mc", name: "Game", icon: "🎮" };
-let mcRun = null;
-
-function mcProgressKey() { return `offline_${MC_META.id}_progress`; }
-
-// ── Lớp tiến độ ─────────────────────────────────────────────────────────────
-const MC_PROGRESS = {
-  data: null,
-
-  read() {
-    try {
-      const raw = localStorage.getItem(mcProgressKey());
-      if (!raw) return null;
-      const d = JSON.parse(raw);
-      if (!d || typeof d !== "object" || !d.game) return null;
-      if (d.updatedAt && Date.now() - d.updatedAt > MC_PROGRESS_TTL) { this.clear(); return null; }
-      return d;
-    } catch { return null; }
-  },
-
-  refresh() { this.data = this.read(); return this.data; },
-
-  write(d) {
-    d.updatedAt = Date.now();
-    this.data = d;
-    try { localStorage.setItem(mcProgressKey(), JSON.stringify(d)); } catch (e) { /* private mode */ }
-    return d;
-  },
-
-  save(patch) { return this.write({ ...(this.data || {}), ...patch }); },
-
-  clear() {
-    this.data = null;
-    try { localStorage.removeItem(mcProgressKey()); } catch (e) { /* ignore */ }
-  },
-
-  ago() {
-    if (!this.data?.updatedAt) return "";
-    const m = Math.floor((Date.now() - this.data.updatedAt) / 60000);
-    if (m < 1) return "vừa xong";
-    if (m < 60) return `${m} phút trước`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h} giờ trước`;
-    return `${Math.floor(h / 24)} ngày trước`;
-  },
-};
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-/** Chọn 1 phần tử ngẫu nhiên. */
-function pickOne(arr) { return arr[rnd(0, arr.length - 1)]; }
-
-/** Lấy n phần tử ngẫu nhiên không trùng nhau. */
-function sample(arr, n) { return shuffle([...arr]).slice(0, n); }
-
-/** Sinh n đáp án sai khác đáp án đúng. */
-function distractors(pool, right, n = 3) {
-  return sample([...new Set(pool.filter((x) => x !== right))], n);
-}
-
-/** Hiện số mạng: tối đa 5 tim, vượt quá thì ghi thêm số. */
-function mcHearts(n) {
-  const v = Math.max(0, Math.floor(n) || 0);
-  return "❤️".repeat(Math.min(5, v)) + (v > 5 ? ` <b>+${v - 5}</b>` : "");
-}
-
-/** Ghi tiến độ ván hiện tại xuống localStorage. */
-function mcPersist() {
-  if (!mcRun) return;
-  MC_PROGRESS.save({
-    game: mcRun.id, name: MC_META.name, icon: MC_META.icon,
-    level: mcRun.level, score: mcRun.score, correct: mcRun.correct,
-    answered: mcRun.answered, lives: mcRun.lives,
-  });
-}
-
-// ── Vòng lặp ván ────────────────────────────────────────────────────────────
-function mcNextQuestion() {
-  if (!mcRun) return;
-
-  while (mcRun.correct >= MC_LEVEL_STEP) {
-    mcRun.correct -= MC_LEVEL_STEP;
-    mcRun.level += 1;
-    mcRun.score += 25;
-    sfx.win();
-    toast(`🎉 Lên màn ${mcRun.level}!`);
-  }
-  if (mcRun.lives <= 0) { mcEndRun(); return; }
-
-  mcRun.locked = false;
-  mcRun.time = MC_RUN_SECS;
-  mcRun.cur = MC_MAKERS[mcRun.id](mcRun.level);
-  mcPersist();
-  mcRender();
-  mcStartTimer();
-}
-
-function mcStartTimer() {
-  T.int(() => {
-    if (!mcRun || mcRun.locked) return;
-    mcRun.time -= 0.1;
-    const bar = $("#tb");
-    if (bar) bar.style.width = Math.max(0, (mcRun.time / MC_RUN_SECS) * 100) + "%";
-    if (mcRun.time <= 0) mcAnswer(-1);       // hết giờ = trả lời sai
-  }, 100);
-}
-
-function mcRender() {
-  const c = mcRun.cur;
-  const resumed = mcRun.justResumed;
-  mcRun.justResumed = false;
-
-  $("#stage").innerHTML = `
-    <div class="hud">
-      <span>Màn <b>${mcRun.level}</b></span>
-      <span>⭐ <b>${mcRun.score}</b></span>
-      <span>💗 ${mcHearts(mcRun.lives)}</span>
-      <span>🔥 <b>${mcRun.correct}/${MC_LEVEL_STEP}</b></span>
-    </div>
-    <div class="tbar"><i id="tb" style="width:100%"></i></div>
-    ${resumed ? `<div class="explain" style="border-left:3px solid var(--amber)">
-        ▶ Đã khôi phục tiến độ từ localStorage — màn ${mcRun.level}, ${mcRun.score} ⭐</div>` : ""}
-    <div class="qbox">${c.html}</div>
-    <div class="opts" id="opts">
-      ${c.opts.map((o, k) => `<button class="opt" data-k="${k}" ${c.style ? `style="${c.style[k]}"` : ""}>${o}</button>`).join("")}
-    </div>
-    <div id="ex"></div>
-    <div class="row" id="nx"></div>`;
-
-  $("#opts").onclick = (e) => {
-    const b = e.target.closest(".opt");
-    if (b) mcAnswer(+b.dataset.k);
-  };
-}
-
-/** Trả lời. k = -1 nghĩa là hết giờ. */
-function mcAnswer(k) {
-  if (!mcRun || mcRun.locked) return;
-  mcRun.locked = true;
-
-  const c = mcRun.cur;
-  const btns = [...document.querySelectorAll("#opts .opt")];
-  const right = k >= 0 && String(c.opts[k]) === String(c.ans);
-  const ci = c.opts.findIndex((o) => String(o) === String(c.ans));
-
-  if (ci >= 0 && btns[ci]) btns[ci].classList.add("ok");
-  if (right) {
-    mcRun.correct++; mcRun.streak++;
-    mcRun.score += 10 + Math.ceil(mcRun.time) + (mcRun.streak >= 3 ? 5 : 0);
-    S.flags.mcRight = (S.flags.mcRight || 0) + 1;
-    sfx.ok();
-  } else {
-    mcRun.streak = 0;
-    mcRun.lives -= 1;
-    S.flags.mcWrong = (S.flags.mcWrong || 0) + 1;
-    sfx.bad();
-    if (k >= 0 && btns[k]) btns[k].classList.add("bad");
-  }
-  mcRun.answered += 1;
-
-  const ex = $("#ex"), nx = $("#nx");
-  if (ex) ex.innerHTML = `<div class="explain">${right ? "✅ Chính xác!" : (k < 0 ? "⏰ Hết giờ!" : "❌ Chưa đúng.")} ${c.exp}</div>`;
-  if (nx) {
-    const over = mcRun.lives <= 0;
-    nx.innerHTML = over
-      ? `<button class="btn" data-next="1">Xem kết quả</button>`
-      : `<button class="btn" data-next="1">${mcRun.correct >= MC_LEVEL_STEP ? "Lên màn! →" : "Câu tiếp theo →"}</button>`;
-    nx.onclick = () => { if (mcRun) mcNextQuestion(); };
-  }
-
-  mcPersist();          // ← lưu sau MỖI câu
-}
-
-function mcEndRun() {
-  if (!mcRun) return;
-  const snap = mcRun;
-  mcRun = null;
-  MC_PROGRESS.clear();   // hết ván → không cần giữ tiến độ dang dở
-  sfx.win();
-  finish({
-    id: snap.id,
-    score: snap.score,
-    xp: snap.answered * 5,
-    lines: [`Màn cao nhất: ${snap.level}`, `Câu đúng: ${snap.correct}`, `Đã trả lời: ${snap.answered} câu`],
-    replay: false,
-    details: { level: snap.level, answered: snap.answered },
-  });
-}
-
-/**
- * Khởi động game dạng MC.
- * @param {string} id     khoá trong MC_MAKERS
- * @param {object} meta   { name, icon, badges }
- */
-function startMcGame(id, meta) {
-  if (typeof MC_MAKERS[id] !== "function") {
-    console.error(`[mcengine] chưa đăng ký maker cho "${id}"`);
-    return;
-  }
-  MC_META = { id, name: meta.name, icon: meta.icon || "🎮" };
-
-  // Đọc tiến độ TỪ ĐĨA — không tin biến trong bộ nhớ, để vào thẳng URL game
-  // (F5, bookmark) vẫn khôi phục được.
-  const saved = MC_PROGRESS.refresh();
-  const keep = saved && saved.game === id;
-
-  mcRun = {
-    id,
-    level: keep ? Math.max(1, saved.level || 1) : 1,
-    score: keep ? (saved.score || 0) : 0,
-    correct: keep ? (saved.correct || 0) : 0,
-    answered: keep ? (saved.answered || 0) : 0,
-    lives: keep && Number.isFinite(saved.lives) ? Math.max(1, saved.lives) : MC_START_LIVES,
-    streak: 0, locked: false, cur: null, time: MC_RUN_SECS,
-    justResumed: !!keep,
-  };
-
-  startSingleGame({
-    id, name: meta.name, icon: meta.icon,
-    storageKey: `offline_${id}`,
-    mount: () => { mcPersist(); mcNextQuestion(); },
-    badges: meta.badges || [],
-  });
-}
-
-// Lưu nốt khi đóng tab / đổi trang
-window.addEventListener("beforeunload", () => { if (mcRun) mcPersist(); });
-window.addEventListener("pagehide", () => { if (mcRun) mcPersist(); });
-
-/** Kiểm tra tiến độ trong console: MC_PROGRESS.refresh() */
-if (typeof window !== "undefined") window.MC_PROGRESS = MC_PROGRESS;
-    </script>
-
-    <!-- ⑥ Game: sumseq — nội dung riêng của file này -->
-    <script>
-// src/games/src/sumseq.js — Chuỗi Số (Toán)
-// Sinh tự động từ game4.html bởi scripts/split-offline-games.mjs.
-// Sửa file này, KHÔNG sửa game4.html.
-
-MC_MAKERS.sumseq = function sumseq(level) {
-        const kind = rnd(4);
-        const step = rnd(2, 6 + level);
-        const start = rnd(1, 20);
-        let seq, ans, exp;
-        if (kind === 0) {                      // cộng đều
-          seq = [start, start + step, start + step * 2, start + step * 3];
-          ans = start + step * 4;
-          exp = `Mỗi số cộng thêm ${step}.`;
-        } else if (kind === 1) {               // giảm đều
-          seq = [20 + step * 3, 20 + step * 2, 20 + step, 20];
-          ans = Math.max(0, 20 - step);
-          exp = `Mỗi số trừ ${step}.`;
-        } else if (kind === 2) {               // chính phương
-          const b = rnd(2, 3 + level);
-          seq = [b * b, (b + 1) * (b + 1), (b + 2) * (b + 2), (b + 3) * (b + 3)];
-          ans = (b + 4) * (b + 4);
-          exp = `Là các số chính phương liên tiếp từ ${b}.`;
-        } else {                               // nhân 2
-          seq = [2, 4, 8, 16];
-          ans = 32;
-          exp = 'Mỗi số nhân đôi.';
+    function lightRhythmGame(root) {
+      const id = 'sumseq';
+      const pads = [['🍓', '#ff6f59'], ['🍋', '#ffd166'], ['🍇', '#b18cff'], ['🍀', '#b7e34a']];
+      const saved = loadOfflineRun(id);
+      const valid = saved && Array.isArray(saved.beats) && saved.beats.length > 0 &&
+        saved.beats.every(i => Number.isInteger(i) && i >= 0 && i < pads.length) &&
+        Number.isInteger(saved.step) && saved.step >= 0 && saved.step < saved.beats.length &&
+        Number.isInteger(saved.score) && Number.isInteger(saved.misses) && saved.misses >= 0 &&
+        ['show', 'input'].includes(saved.phase);
+      let game = valid ? saved : fresh();
+      let closed = false;
+      root.innerHTML = `<div class="hud"><span>🎶 Nhịp <b id="rhythmRound">1</b></span><span>⭐ <b id="rhythmScore">0</b></span><span>💫 <b id="rhythmMiss">0</b>/3</span></div>
+        <div class="qbox center" id="rhythmStatus">Đón nhịp ánh sáng!</div>
+        <div class="opts" style="grid-template-columns:repeat(2,1fr)">${pads.map(([icon, color], i) =>
+          `<button class="opt" data-pad="${i}" style="min-height:100px;font-size:36px;background:${color}">${icon}</button>`).join('')}</div>
+        <p class="hint">Nhìn nhịp sáng lên rồi chạm lại theo đúng nhịp.</p>
+        <div class="row"><button class="btn alt" data-restart="1">🔄 Chơi lại</button></div>`;
+      const padEls = [...root.querySelectorAll('[data-pad]')];
+      const status = $('#rhythmStatus');
+      function fresh() {
+        clearOfflineRun(id);
+        return { beats: [rnd(0, pads.length - 1)], step: 0, score: 0, misses: 0, phase: 'show' };
+      }
+      function save() { saveOfflineRun(id, game); }
+      function flash(index, duration = 320) {
+        padEls[index].style.filter = 'brightness(1.6)';
+        beep([392, 494, 587, 698][index], duration / 1000, 'triangle', .08);
+        T.set(() => { padEls[index].style.filter = ''; }, duration);
+      }
+      function showBeat() {
+        if (closed) return;
+        game.phase = 'show';
+        game.step = 0;
+        status.textContent = 'Nhìn và nghe nhịp…';
+        save();
+        const gap = Math.max(260, 520 - game.beats.length * 10);
+        game.beats.forEach((beat, i) => T.set(() => flash(beat), 350 + i * gap));
+        T.set(() => {
+          if (closed) return;
+          game.phase = 'input';
+          status.textContent = 'Đến lượt bạn!';
+          save();
+        }, 350 + game.beats.length * gap);
+      }
+      function updateHud() {
+        $('#rhythmRound').textContent = game.beats.length;
+        $('#rhythmScore').textContent = game.score;
+        $('#rhythmMiss').textContent = game.misses;
+      }
+      function finishRun() {
+        if (closed) return;
+        closed = true;
+        T.clear();
+        clearOfflineRun(id);
+        finish({ id, score: game.score, lines: [`Giữ được ${game.beats.length - 1} nhịp`, `${game.score} điểm`],
+          replay: lightRhythmGame, details: { rounds: game.beats.length - 1, score: game.score } });
+      }
+      function restart() {
+        closed = false;
+        T.clear();
+        game = fresh();
+        updateHud();
+        showBeat();
+      }
+      root.onclick = e => {
+        if (e.target.closest('[data-restart]')) { restart(); return; }
+        const button = e.target.closest('[data-pad]');
+        if (!button || closed || game.phase !== 'input') return;
+        const chosen = +button.dataset.pad;
+        flash(chosen, 160);
+        if (chosen !== game.beats[game.step]) {
+          game.misses++;
+          updateHud();
+          sfx.bad();
+          if (game.misses >= 3) { finishRun(); return; }
+          game.step = 0;
+          game.phase = 'show';
+          save();
+          status.textContent = 'Nhịp trượt — nghe lại!';
+          T.set(showBeat, 650);
+          return;
         }
-        const wrong = distractors([ans - 1, ans + 1, ans + step, ans - step, ans + 10, ans - 10, ans + 2], String(ans)).map(Number);
-        const opts = shuffle([String(ans), ...wrong.slice(0, 3).map(String)]);
-        return {
-          html: `<div style="font-size:11px;opacity:.7">CHUỖI SỐ</div>
-                 <div style="font-size:28px;font-weight:800;margin-top:8px">${seq.join('  ·  ')}  ·  ?</div>
-                 <div style="font-size:12px;opacity:.6;margin-top:6px">Điền số tiếp theo</div>`,
-          opts, ans: String(ans), exp,
-        };
-      },
-startMcGame('sumseq', {
-  name: 'Chuỗi Số',
-  icon: '➕',
-  badges: [
+        game.step++;
+        sfx.tick();
+        if (game.step === game.beats.length) {
+          game.score += game.beats.length * 10;
+          game.beats.push(rnd(0, pads.length - 1));
+          game.step = 0;
+          updateHud();
+          status.textContent = 'Tuyệt! Nhịp mới…';
+          save();
+          T.set(showBeat, 650);
+        } else save();
+      };
+      if (!valid && saved) clearOfflineRun(id);
+      updateHud();
+      save();
+      if (game.phase === 'show') showBeat();
+      else status.textContent = 'Đến lượt bạn!';
+    }
 
-  ],
-});
+    startSingleGame({
+      id: 'sumseq',
+      name: 'Nhịp Điệu Ánh Sáng',
+      icon: '🎆',
+      storageKey: 'offline_sumseq',
+      mount: lightRhythmGame,
+    });
     </script>
 </body>
 </html>

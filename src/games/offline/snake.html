@@ -780,234 +780,7 @@
   <div id="toast"></div>
 
 
-    <!-- ① Cấu hình API — đặt trước khi load api.js -->
-    <script>
-        window.GAME_API_BASE = 'https://educational-games-lp4z.onrender.com';
-        window.GAME_API_TOKEN_FN = () => localStorage.getItem('token');
-    </script>
-
-    <!-- ② api.js: giao tiếp backend (nhúng trực tiếp vì iframe srcDoc không tải được file ngoài) -->
-    <script>
-const GameAPI = (() => {
-  /* ── Cấu hình ────────────────────────────────────────────────────────── */
-
-  /** Base URL của backend. Gán qua window.GAME_API_BASE trước khi load. */
-  const BASE = () =>
-    (window.GAME_API_BASE || '').replace(/\/$/, '');
-
-  /** Hàm lấy JWT token. Gán qua window.GAME_API_TOKEN_FN. */
-  const getToken = () =>
-    typeof window.GAME_API_TOKEN_FN === 'function'
-      ? window.GAME_API_TOKEN_FN()
-      : localStorage.getItem('token') || sessionStorage.getItem('token') || null;
-
-  const OFFLINE_KEY   = 'miniGame_pendingResults';
-  const SESSION_KEY   = 'miniGame_currentSession';
-
-  /* ── Helpers HTTP ────────────────────────────────────────────────────── */
-
-  function _headers() {
-    const h = { 'Content-Type': 'application/json' };
-    const tok = getToken();
-    if (tok) h['Authorization'] = `Bearer ${tok}`;
-    return h;
-  }
-
-  /** GET với auth */
-  async function _get(path) {
-    const res = await fetch(BASE() + path, { headers: _headers() });
-    if (!res.ok) throw new Error(`GET ${path} → ${res.status}`);
-    return res.json();
-  }
-
-  /** POST với auth */
-  async function _post(path, body) {
-    const res = await fetch(BASE() + path, {
-      method:  'POST',
-      headers: _headers(),
-      body:    JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw Object.assign(new Error(err.msg || `POST ${path} → ${res.status}`), { status: res.status, body: err });
-    }
-    return res.json();
-  }
-
-  /* ── Session ─────────────────────────────────────────────────────────── */
-
-  let _currentSession = null;  // { sessionId, game, startedAt }
-
-  /** Gọi khi openGame(id) — tạo session anti-cheat trên server. */
-  async function startSession(game) {
-    if (!BASE()) return null;  // chưa cấu hình API
-    const tok = getToken();
-    if (!tok) return null;     // chưa đăng nhập
-
-    try {
-      const res = await _post('/api/mini/sessions', { game });
-      _currentSession = { sessionId: res.data.sessionId, game, startedAt: res.data.startedAt };
-      // Lưu vào sessionStorage để phục hồi nếu tab bị tải lại giữa chừng
-      try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch { /* ignore */ }
-      return _currentSession;
-    } catch (e) {
-      console.warn('[GameAPI] Không tạo được session:', e.message);
-      _currentSession = null;
-      return null;
-    }
-  }
-
-  /** Khôi phục session từ sessionStorage (nếu tab bị reload) */
-  function _restoreSession(game) {
-    if (_currentSession?.game === game) return _currentSession;
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
-      if (saved?.game === game) { _currentSession = saved; return saved; }
-    } catch { /* ignore */ }
-    return null;
-  }
-
-  /* ── Submit result ────────────────────────────────────────────────────── */
-
-  /**
-   * Gửi kết quả ván chơi. Tự động xử lý offline.
-   *
-   * @param {{ game: string, score: number, details?: object }} payload
-   * @returns {object|null} response data từ server hoặc null nếu lỗi
-   */
-  async function submitResult({ game, score, details = {} }) {
-    if (!BASE()) return null;
-    const tok = getToken();
-    if (!tok) return null;
-
-    const session = _restoreSession(game);
-    const sessionId = session?.sessionId ?? null;
-
-    const body = { game, score, details };
-    if (sessionId) body.sessionId = sessionId;
-
-    try {
-      const res = await _post('/api/mini/results', body);
-      // Xóa session đã dùng
-      _currentSession = null;
-      try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-      // Thử gửi hàng đợi offline
-      _flushPendingResults();
-      return res.data;
-    } catch (e) {
-      // Lỗi mạng → đưa vào hàng đợi
-      if (!e.status || e.status >= 500) {
-        _enqueuePending({ game, score, details, sessionId, queuedAt: new Date().toISOString() });
-        _showOfflineToast();
-      }
-      // Lỗi 4xx (score vượt trần, session sai, ...) → không xếp hàng
-      return null;
-    }
-  }
-
-  /* ── Offline queue ────────────────────────────────────────────────────── */
-
-  function _getPending() {
-    try { return JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]'); }
-    catch { return []; }
-  }
-
-  function _savePending(queue) {
-    try { localStorage.setItem(OFFLINE_KEY, JSON.stringify(queue)); }
-    catch { /* storage đầy hoặc không có */ }
-  }
-
-  function _enqueuePending(item) {
-    const queue = _getPending();
-    // Giới hạn 50 ván chờ gửi
-    if (queue.length >= 50) queue.shift();
-    queue.push(item);
-    _savePending(queue);
-  }
-
-  /** Thử gửi lại tất cả kết quả còn trong hàng đợi. */
-  async function _flushPendingResults() {
-    if (!BASE() || !getToken()) return;
-    const queue = _getPending();
-    if (!queue.length) return;
-
-    const remaining = [];
-    for (const item of queue) {
-      try {
-        await _post('/api/mini/results', {
-          sessionId: item.sessionId ?? undefined,
-          game:      item.game,
-          score:     item.score,
-          details:   item.details ?? {},
-        });
-        // Gửi thành công → không giữ lại
-      } catch (e) {
-        if (!e.status || e.status >= 500) {
-          remaining.push(item);  // lỗi mạng → giữ lại
-        }
-        // 4xx → bỏ luôn (sessionId hết hạn, score không hợp lệ...)
-      }
-    }
-    _savePending(remaining);
-  }
-
-  function _showOfflineToast() {
-    // toast() được khai báo trong game-core.js (cùng scope window)
-    if (typeof toast === 'function') {
-      toast('📶 Không có mạng — kết quả sẽ được gửi lại sau');
-    }
-  }
-
-  /* ── Load profile ─────────────────────────────────────────────────────── */
-
-  /**
-   * Tải hồ sơ người chơi và nạp vào S (object trạng thái của game-core.js).
-   * Gọi khi trang vừa tải xong.
-   */
-  async function loadProfile() {
-    if (!BASE() || !getToken()) return null;
-    try {
-      const res = await _get('/api/mini/me');
-      const p   = res.data;
-      if (!p) return null;
-
-      // Nạp vào S (game-core.js khai báo S ở global scope của script)
-      if (typeof S !== 'undefined') {
-        S.xp     = p.xp    ?? 0;
-        S.best   = p.best  ?? {};
-        S.played = new Set(p.played ?? []);
-        S.unlocked = new Set((p.badges ?? []).map(b => b.id ?? b));
-      }
-
-      // Thử gửi lại kết quả còn trong hàng đợi offline
-      _flushPendingResults();
-
-      return p;
-    } catch (e) {
-      console.warn('[GameAPI] Không tải được hồ sơ:', e.message);
-      return null;
-    }
-  }
-
-  /* ── Public API ───────────────────────────────────────────────────────── */
-
-  // Gắn vào online event để tự flush khi có lại mạng
-  window.addEventListener('online', () => {
-    _flushPendingResults();
-  });
-
-  return {
-    loadProfile,
-    startSession,
-    submitResult,
-    flushPending: _flushPendingResults,
-    /** Dùng nội bộ bởi game-core.js (leaderboard) */
-    _get,
-  };
-})();
-    </script>
-
-    <!-- ③ core.js: thư viện dùng chung (XP, huy hiệu, âm thanh, bộ đếm, canvas) -->
+    <!-- core.js: tiện ích, tiến độ localStorage, âm thanh, bộ đếm, canvas -->
     <script>
 /* ============ Tiện ích ============ */
 const $ = s => document.querySelector(s);
@@ -1056,6 +829,45 @@ function _loadState() {
     if (Array.isArray(data.played)) S.played = new Set(data.played);
     if (Array.isArray(data.unlocked)) S.unlocked = new Set(data.unlocked);
   } catch (e) { /* parse error — bỏ qua */ }
+}
+
+const _runPrefix = 'offline_run_';
+function saveOfflineRun(id, state) {
+  if (!id || !state || typeof state !== 'object') throw new TypeError('Tiến độ game không hợp lệ');
+  try {
+    localStorage.setItem(_runPrefix + id, JSON.stringify({ version: 1, updatedAt: Date.now(), state }));
+  } catch (e) {
+    toast('Không thể lưu ván chơi trên thiết bị này.');
+    console.error(`[offline] Không thể lưu tiến độ "${id}"`, e);
+  }
+}
+
+function loadOfflineRun(id) {
+  if (!id) return null;
+  try {
+    const raw = localStorage.getItem(_runPrefix + id);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (saved?.version !== 1 || !saved.state || typeof saved.state !== 'object') {
+      localStorage.removeItem(_runPrefix + id);
+      return null;
+    }
+    return saved.state;
+  } catch (e) {
+    toast('Không thể đọc tiến độ đã lưu.');
+    console.error(`[offline] Không thể đọc tiến độ "${id}"`, e);
+    return null;
+  }
+}
+
+function clearOfflineRun(id) {
+  if (!id) return;
+  try {
+    localStorage.removeItem(_runPrefix + id);
+  } catch (e) {
+    toast('Không thể xóa tiến độ trên thiết bị này.');
+    console.error(`[offline] Không thể xóa tiến độ "${id}"`, e);
+  }
 }
 
 /* ============ Âm thanh ============ */
@@ -1250,7 +1062,7 @@ function runMC(root, cfg) {
   show();
 }
 
-/* ============ finish() — kết thúc ván & gọi API ============ */
+/* ============ finish() — kết thúc ván ============ */
 /**
  * Gọi khi một ván kết thúc.
  * @param {{ id, score, xp, lines, replay, details? }} opts
@@ -1289,21 +1101,7 @@ function finish({ id, score, xp, lines, replay, details = {} }) {
   $('#again').onclick = () => { $('#modal').classList.remove('on'); openGame(id); };
   $('#home').onclick  = () => { $('#modal').classList.remove('on'); renderHub(); };
 
-  // Gửi kết quả lên server (không block UI)
-  GameAPI.submitResult({ game: id, score, details }).then(serverData => {
-    if (!serverData) return;
-    // Cập nhật lại từ server (XP, cấp, huy hiệu)
-    if (typeof serverData.totalXp === 'number') S.xp = serverData.totalXp;
-    renderMe();
-    _saveState();
-    if (Array.isArray(serverData.newBadges)) {
-      serverData.newBadges.forEach(b => {
-        S.unlocked.add(b.id);
-        setTimeout(() => toast(`${b.icon} Huy hiệu mới: ${b.name}`), 900);
-      });
-      _saveState();
-    }
-  }).catch(() => { /* lỗi mạng đã được xử lý trong api.js */ });
+  clearOfflineRun(id);
 }
 
 /* ============ renderHub & openGame (được override bởi mỗi file) ============ */
@@ -1365,8 +1163,6 @@ function openGame(id) {
   $('#modal').classList.remove('on');
   g.fn($('#stage'));
   window.scrollTo(0, 0);
-  // Báo server bắt đầu ván mới
-  GameAPI.startSession(id);
 }
 
 /* ============ Bảng xếp hạng ============ */
@@ -1400,23 +1196,17 @@ function _openLeaderboard() {
     activeKey = key; renderTabs();
     $('#lb-body').innerHTML = 'Đang tải...';
     try {
-      let rows;
-      if (key === 'xp') {
-        const r = await GameAPI._get('/api/mini/leaderboard/xp?limit=20');
-        rows = (r.data || []).map((x, i) =>
-          `<tr><td>${x.rank ?? i + 1}</td><td>${x.displayName}</td><td>${x.xp} XP</td><td>Cấp ${x.level}</td></tr>`
-        );
-      } else {
-        const r = await GameAPI._get(`/api/mini/leaderboard/${key}?limit=20`);
-        rows = (r.data || []).map((x, i) =>
-          `<tr><td>${x.rank ?? i + 1}</td><td>${x.displayName}</td><td>${x.best} điểm</td><td></td></tr>`
-        );
-      }
+      const rows = key === 'xp'
+        ? [`<tr><td>1</td><td>Bạn</td><td>${S.xp} XP</td><td>Cấp ${lvl()}</td></tr>`]
+        : S.best[key] !== undefined
+          ? [`<tr><td>1</td><td>Bạn</td><td>${S.best[key]} điểm</td><td></td></tr>`]
+          : [];
       $('#lb-body').innerHTML = rows.length
         ? `<table style="width:100%;border-collapse:collapse">${rows.join('')}</table>`
-        : '<p style="opacity:.6">Chưa có dữ liệu.</p>';
-    } catch {
-      $('#lb-body').innerHTML = '<p style="opacity:.6">Không thể tải bảng xếp hạng.</p>';
+        : '<p style="opacity:.6">Chưa có kỷ lục trên thiết bị này.</p>';
+    } catch (e) {
+      console.error('[offline] Không thể hiển thị kỷ lục cục bộ', e);
+      $('#lb-body').innerHTML = '<p style="opacity:.6">Không thể hiển thị kỷ lục.</p>';
     }
   }
 
@@ -1463,12 +1253,11 @@ function initCore({ games, hubTitle = '', hubDesc = '', badges = [], storageKey 
     if (e.target.closest('#lb-btn')) _openLeaderboard();
   });
 
-  // Tải hồ sơ từ server rồi render sảnh
-  GameAPI.loadProfile().then(() => renderHub()).catch(() => renderHub());
+  renderHub();
 }
     </script>
 
-    <!-- ④ Điểm vào: khởi động game, nối nút thoát, lưu tiến độ -->
+    <!-- Điểm vào: khởi động game, nối nút thoát, lưu tiến độ -->
     <script>
 // lib/single.js — điểm vào cho file HTML chỉ chứa MỘT game.
 //
@@ -1557,47 +1346,59 @@ if (typeof window !== "undefined") {
 }
     </script>
 
-    <!-- ⑥ Game: snake — nội dung riêng của file này -->
+    <!-- Game: snake — nội dung riêng của file này -->
     <script>
-// src/games/src/snake.js — Rắn Săn Đáp Án (Toán · Phản xạ)
-// Sinh tự động từ game1.html bởi scripts/split-offline-games.mjs.
-// Sửa file này, KHÔNG sửa game1.html.
+// src/games/src/snake.js — Neon Snake
 
     function snakeGame(root) {
       const N = 15;
       root.innerHTML = `<div class="hud"><span>⭐ <b id="sc">0</b></span><span id="lv">❤️❤️❤️</span><span>Dài <b id="ln">3</b></span></div>
-    <div class="qbox" id="q" style="min-height:74px;font-size:clamp(28px,7vw,44px)"></div>
     <canvas id="cv"></canvas>
     <div class="dpad"><button class="u" data-d="u">▲</button><button class="l" data-d="l">◀</button><button class="d" data-d="d">▼</button><button class="r" data-d="r">▶</button></div>
-    <p class="hint">Điều khiển rắn ăn đáp án đúng. Vuốt, dùng phím mũi tên hoặc bấm nút.</p>`;
+    <p class="hint">Ăn trái cây phát sáng để rắn dài thêm, tránh tự cắn vào mình. Vuốt, dùng phím mũi tên hoặc chạm nút điều hướng.</p>`;
       const cv = $('#cv'), ctx = cv.getContext('2d');
       const size = Math.floor(Math.min(root.clientWidth - 8, 450) / N) * N;
       cv.width = cv.height = size; cv.style.width = cv.style.height = size + 'px';
       const cell = size / N;
-      let snake, dir, queue, started, foods, q, score = 0, lives = 3, correct = 0, speed = 190;
-      const level = () => correct < 6 ? 0 : 1;
-      function reset() { snake = [{ x: 4, y: 7 }, { x: 3, y: 7 }, { x: 2, y: 7 }]; dir = { x: 1, y: 0 }; queue = []; started = false; placeFoods() }
-      function free(x, y) { return !snake.some(s => s.x === x && s.y === y) && !(foods || []).some(f => f.x === x && f.y === y) }
-      function newQ() {
-        q = genMath(level());
-        const opts = makeOpts(q.ans, 3);
-        $('#q').textContent = q.text + ' = ?';
-        return opts;
+      const saved = loadOfflineRun('snake');
+      let snake, dir, queue, started, food, score, lives, speed;
+
+      function spawnFood() {
+        const open = [];
+        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+          if (!snake.some(s => s.x === x && s.y === y)) open.push({ x, y });
+        }
+        return open.length ? open[rnd(0, open.length - 1)] : null;
       }
-      function placeFoods(opts) {
-        if (!opts) { if (!q) opts = newQ(); else opts = foods ? foods.map(f => f.v) : newQ() }
-        foods = [];
-        opts.forEach(v => {
-          let x, y, g = 0;
-          do { x = rnd(0, N - 1); y = rnd(0, N - 1); g++ } while ((!free(x, y) || Math.abs(x - snake[0].x) + Math.abs(y - snake[0].y) < 4) && g < 300);
-          foods.push({ x, y, v, c: v === q.ans });
-        });
+      function freshSnake() {
+        snake = [{ x: 4, y: 7 }, { x: 3, y: 7 }, { x: 2, y: 7 }];
+        dir = { x: 1, y: 0 }; queue = []; started = false; food = spawnFood();
+      }
+      function saveRun() {
+        saveOfflineRun('snake', { snake, dir, queue, started, food, score, lives, speed });
+      }
+      if (saved && Array.isArray(saved.snake) && saved.snake.length &&
+          saved.snake.every(s => Number.isInteger(s.x) && Number.isInteger(s.y) && s.x >= 0 && s.x < N && s.y >= 0 && s.y < N) &&
+          saved.dir && Number.isInteger(saved.score) && Number.isInteger(saved.lives)) {
+        snake = saved.snake; dir = saved.dir; queue = Array.isArray(saved.queue) ? saved.queue : [];
+        started = !!saved.started; food = saved.food; score = saved.score; lives = saved.lives;
+        speed = Number.isFinite(saved.speed) ? saved.speed : 190;
+        if (!food || !Number.isInteger(food.x) || !Number.isInteger(food.y) ||
+            snake.some(s => s.x === food.x && s.y === food.y)) food = spawnFood();
+      } else {
+        score = 0; lives = 3; speed = 190; freshSnake();
+      }
+
+      const $sc = $('#sc'), $lv = $('#lv'), $ln = $('#ln');
+      function hud() {
+        $sc.textContent = score; $lv.textContent = lives > 0 ? '❤️'.repeat(lives) : '💔';
+        $ln.textContent = snake.length;
       }
       function setDir(dx, dy) {
         const last = queue.length ? queue[queue.length - 1] : dir;
         if ((last.x === -dx && last.y === -dy) || (last.x === dx && last.y === dy)) return;
         if (queue.length < 2) queue.push({ x: dx, y: dy });
-        started = true;
+        started = true; saveRun();
       }
       const DIRS = { u: [0, -1], d: [0, 1], l: [-1, 0], r: [1, 0] };
       root.onclick = e => { const b = e.target.closest('[data-d]'); if (b) setDir(...DIRS[b.dataset.d]) };
@@ -1612,46 +1413,43 @@ if (typeof window !== "undefined") {
         if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
         if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0); else setDir(0, dy > 0 ? 1 : -1);
       };
+
+      function finishRun() {
+        T.clear(); clearOfflineRun('snake');
+        finish({ id: 'snake', score, lines: [`Rắn dài ${snake.length}`, `${score} điểm`],
+          replay: snakeGame, details: { length: snake.length } });
+      }
       function loseLife() {
-        lives--; sfx.bad(); $('#lv').textContent = lives > 0 ? '❤️'.repeat(lives) : '💔';
-        if (lives <= 0) {
-          T.clear();
-          finish({
-            id: 'snake', score, xp: Math.round(score / 6),
-            lines: [`Ăn đúng ${correct} đáp án`, `Rắn dài ${snake.length}`],
-            replay: snakeGame,
-            details: { correct, length: snake.length }
-          });
-          return false;
-        }
-        return true;
+        lives--; sfx.bad();
+        if (lives <= 0) { finishRun(); return false; }
+        freshSnake(); hud(); saveRun(); return true;
       }
       function tick() {
         if (started) {
           if (queue.length) dir = queue.shift();
           const h = { x: (snake[0].x + dir.x + N) % N, y: (snake[0].y + dir.y + N) % N };
-          if (snake.some(s => s.x === h.x && s.y === h.y)) { if (!loseLife()) return; reset(); }
-          else {
+          if (snake.some(s => s.x === h.x && s.y === h.y)) {
+            if (!loseLife()) return;
+          } else {
             snake.unshift(h);
-            const fi = foods.findIndex(f => f.x === h.x && f.y === h.y);
-            if (fi >= 0) {
-              if (foods[fi].c) { score += 15; correct++; sfx.ok(); speed = Math.max(95, speed - 6); placeFoods(newQ()); }
-              else { foods.splice(fi, 1); snake.pop(); if (!loseLife()) return; }
+            if (food && h.x === food.x && h.y === food.y) {
+              score += 10; sfx.ok(); speed = Math.max(95, speed - 4); food = spawnFood();
             } else snake.pop();
+            hud(); saveRun();
           }
-          $('#sc').textContent = score; $('#ln').textContent = snake.length;
         }
         draw(); T.set(tick, speed);
       }
       function draw() {
-        for (let y = 0; y < N; y++)for (let x = 0; x < N; x++) { ctx.fillStyle = (x + y) % 2 ? '#fff6d9' : '#fffdf3'; ctx.fillRect(x * cell, y * cell, cell, cell) }
-        foods.forEach((f, k) => {
-          const cx = f.x * cell + cell / 2, cy = f.y * cell + cell / 2;
-          ctx.fillStyle = ['#4b9dff', '#a184ff', '#ff6b57'][k % 3]; ctx.strokeStyle = '#1c1b3a'; ctx.lineWidth = 2.5;
-          ctx.beginPath(); ctx.arc(cx, cy, cell * .46, 0, 7); ctx.fill(); ctx.stroke();
-          ctx.fillStyle = '#fff'; ctx.font = `800 ${cell * (String(f.v).length > 2 ? .42 : .52)}px Baloo 2,system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText(f.v, cx, cy + 1);
-        });
+        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+          ctx.fillStyle = (x + y) % 2 ? '#fff6d9' : '#fffdf3'; ctx.fillRect(x * cell, y * cell, cell, cell);
+        }
+        if (food) {
+          const cx = food.x * cell + cell / 2, cy = food.y * cell + cell / 2;
+          ctx.fillStyle = '#ff6b57'; ctx.strokeStyle = '#1c1b3a'; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.arc(cx, cy, cell * .38, 0, 7); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#56bd72'; ctx.fillRect(cx - 2, cy - cell * .48, 4, cell * .18);
+        }
         snake.forEach((s, k) => {
           const pad = k ? cell * .1 : cell * .04;
           ctx.fillStyle = k ? (k % 2 ? '#2fc9a5' : '#27b393') : '#1c1b3a'; ctx.strokeStyle = '#1c1b3a'; ctx.lineWidth = 2;
@@ -1662,23 +1460,19 @@ if (typeof window !== "undefined") {
         if (!started) {
           ctx.fillStyle = 'rgba(28,27,58,.78)'; ctx.fillRect(0, size / 2 - 28, size, 56);
           ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.max(14, size / 24)}px Be Vietnam Pro,system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('Vuốt hoặc bấm mũi tên để bắt đầu', size / 2, size / 2);
+          ctx.fillText('Vuốt hoặc bấm hướng để bắt đầu', size / 2, size / 2);
         }
       }
-      reset(); draw(); T.set(tick, speed);
+      hud(); draw(); saveRun(); T.set(tick, speed);
     }
 
-    /* ============ Khởi động ============ */
-startSingleGame({
-  id: 'snake',
-  name: 'Rắn Săn Đáp Án',
-  icon: '🐍',
-  storageKey: 'offline_snake',
-  mount: snakeGame,
-  badges: [
-      { id: 'snake20', n: 'Ăn 20 món', i: '🐍', ok: () => (S.flags.snakeEat || 0) >= 20 },
-  ],
-});
+    startSingleGame({
+      id: 'snake',
+      name: 'Rắn Săn Mồi',
+      icon: '🐍',
+      storageKey: 'offline_snake',
+      mount: snakeGame,
+    });
     </script>
 </body>
 </html>

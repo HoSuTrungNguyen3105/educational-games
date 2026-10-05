@@ -1,7 +1,5 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { navigate } from "../lib/router.js";
-import { useUserAuthStore } from "../stores/userAuth.store.js";
-import HtmlGameLoader from "../games/HtmlGameLoader.jsx";
 
 // Mỗi game = MỘT file HTML tự chứa trong src/games/offline/.
 // Vite cần import tĩnh để bundle, nên khai báo tay bảng này.
@@ -23,6 +21,7 @@ import sumseqHtml from "../games/offline/sumseq.html?raw";
 import compareHtml from "../games/offline/compare.html?raw";
 import riddleHtml from "../games/offline/riddle.html?raw";
 import shapecountHtml from "../games/offline/shapecount.html?raw";
+import plantvsanimalHtml from "../games/offline/plantvsanimal.html?raw";
 
 import { findOfflineGame } from "../games/src/manifest.js";
 
@@ -49,17 +48,26 @@ const HTML_BY_ID = {
   compare: compareHtml,
   riddle: riddleHtml,
   shapecount: shapecountHtml,
+  plantvsanimal: plantvsanimalHtml,
 };
 
 /**
- * Trang chơi 1 game offline. Dùng chung cho cả 17 game —
+ * Trang chơi 1 game offline. Dùng chung cho cả 18 game —
  * mỗi game là 1 file HTML riêng, không còn trang gộp nhiều game.
  */
 export default function OfflineGamePage({ gameId }) {
-  const { user, token } = useUserAuthStore();
-  const userAuth = user ? { user, token } : null;
+  const iframeRef = useRef(null);
   const meta = useMemo(() => findOfflineGame(gameId), [gameId]);
   const html = HTML_BY_ID[gameId];
+
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      if (event.data?.type === "quit") navigate("/");
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   if (!meta || !html) {
     return (
@@ -81,17 +89,12 @@ export default function OfflineGamePage({ gameId }) {
 
   return (
     <div className="fixed inset-0 bg-[#0c2a30]">
-      <HtmlGameLoader
-        key={`offline-${gameId}`}
-        htmlContent={html}
-        game={{ id: `offline_${gameId}`, code: `offline_${gameId}`, name: meta.name, title: meta.name, subject: meta.tag }}
-        questions={[]}
-        playerName={user?.fullName || user?.username || "An Nhiên"}
-        playMode="solo"
-        userAuth={userAuth}
-        onFinish={() => {}}
-        onQuit={() => navigate("/")}
-        onStateUpdate={() => {}}
+      <iframe
+        ref={iframeRef}
+        title={meta.name}
+        srcDoc={html}
+        sandbox="allow-scripts allow-same-origin"
+        className="h-full w-full border-0"
       />
     </div>
   );

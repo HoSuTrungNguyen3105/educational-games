@@ -780,234 +780,7 @@
   <div id="toast"></div>
 
 
-    <!-- ① Cấu hình API — đặt trước khi load api.js -->
-    <script>
-        window.GAME_API_BASE = 'https://educational-games-lp4z.onrender.com';
-        window.GAME_API_TOKEN_FN = () => localStorage.getItem('token');
-    </script>
-
-    <!-- ② api.js: giao tiếp backend (nhúng trực tiếp vì iframe srcDoc không tải được file ngoài) -->
-    <script>
-const GameAPI = (() => {
-  /* ── Cấu hình ────────────────────────────────────────────────────────── */
-
-  /** Base URL của backend. Gán qua window.GAME_API_BASE trước khi load. */
-  const BASE = () =>
-    (window.GAME_API_BASE || '').replace(/\/$/, '');
-
-  /** Hàm lấy JWT token. Gán qua window.GAME_API_TOKEN_FN. */
-  const getToken = () =>
-    typeof window.GAME_API_TOKEN_FN === 'function'
-      ? window.GAME_API_TOKEN_FN()
-      : localStorage.getItem('token') || sessionStorage.getItem('token') || null;
-
-  const OFFLINE_KEY   = 'miniGame_pendingResults';
-  const SESSION_KEY   = 'miniGame_currentSession';
-
-  /* ── Helpers HTTP ────────────────────────────────────────────────────── */
-
-  function _headers() {
-    const h = { 'Content-Type': 'application/json' };
-    const tok = getToken();
-    if (tok) h['Authorization'] = `Bearer ${tok}`;
-    return h;
-  }
-
-  /** GET với auth */
-  async function _get(path) {
-    const res = await fetch(BASE() + path, { headers: _headers() });
-    if (!res.ok) throw new Error(`GET ${path} → ${res.status}`);
-    return res.json();
-  }
-
-  /** POST với auth */
-  async function _post(path, body) {
-    const res = await fetch(BASE() + path, {
-      method:  'POST',
-      headers: _headers(),
-      body:    JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw Object.assign(new Error(err.msg || `POST ${path} → ${res.status}`), { status: res.status, body: err });
-    }
-    return res.json();
-  }
-
-  /* ── Session ─────────────────────────────────────────────────────────── */
-
-  let _currentSession = null;  // { sessionId, game, startedAt }
-
-  /** Gọi khi openGame(id) — tạo session anti-cheat trên server. */
-  async function startSession(game) {
-    if (!BASE()) return null;  // chưa cấu hình API
-    const tok = getToken();
-    if (!tok) return null;     // chưa đăng nhập
-
-    try {
-      const res = await _post('/api/mini/sessions', { game });
-      _currentSession = { sessionId: res.data.sessionId, game, startedAt: res.data.startedAt };
-      // Lưu vào sessionStorage để phục hồi nếu tab bị tải lại giữa chừng
-      try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch { /* ignore */ }
-      return _currentSession;
-    } catch (e) {
-      console.warn('[GameAPI] Không tạo được session:', e.message);
-      _currentSession = null;
-      return null;
-    }
-  }
-
-  /** Khôi phục session từ sessionStorage (nếu tab bị reload) */
-  function _restoreSession(game) {
-    if (_currentSession?.game === game) return _currentSession;
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
-      if (saved?.game === game) { _currentSession = saved; return saved; }
-    } catch { /* ignore */ }
-    return null;
-  }
-
-  /* ── Submit result ────────────────────────────────────────────────────── */
-
-  /**
-   * Gửi kết quả ván chơi. Tự động xử lý offline.
-   *
-   * @param {{ game: string, score: number, details?: object }} payload
-   * @returns {object|null} response data từ server hoặc null nếu lỗi
-   */
-  async function submitResult({ game, score, details = {} }) {
-    if (!BASE()) return null;
-    const tok = getToken();
-    if (!tok) return null;
-
-    const session = _restoreSession(game);
-    const sessionId = session?.sessionId ?? null;
-
-    const body = { game, score, details };
-    if (sessionId) body.sessionId = sessionId;
-
-    try {
-      const res = await _post('/api/mini/results', body);
-      // Xóa session đã dùng
-      _currentSession = null;
-      try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-      // Thử gửi hàng đợi offline
-      _flushPendingResults();
-      return res.data;
-    } catch (e) {
-      // Lỗi mạng → đưa vào hàng đợi
-      if (!e.status || e.status >= 500) {
-        _enqueuePending({ game, score, details, sessionId, queuedAt: new Date().toISOString() });
-        _showOfflineToast();
-      }
-      // Lỗi 4xx (score vượt trần, session sai, ...) → không xếp hàng
-      return null;
-    }
-  }
-
-  /* ── Offline queue ────────────────────────────────────────────────────── */
-
-  function _getPending() {
-    try { return JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]'); }
-    catch { return []; }
-  }
-
-  function _savePending(queue) {
-    try { localStorage.setItem(OFFLINE_KEY, JSON.stringify(queue)); }
-    catch { /* storage đầy hoặc không có */ }
-  }
-
-  function _enqueuePending(item) {
-    const queue = _getPending();
-    // Giới hạn 50 ván chờ gửi
-    if (queue.length >= 50) queue.shift();
-    queue.push(item);
-    _savePending(queue);
-  }
-
-  /** Thử gửi lại tất cả kết quả còn trong hàng đợi. */
-  async function _flushPendingResults() {
-    if (!BASE() || !getToken()) return;
-    const queue = _getPending();
-    if (!queue.length) return;
-
-    const remaining = [];
-    for (const item of queue) {
-      try {
-        await _post('/api/mini/results', {
-          sessionId: item.sessionId ?? undefined,
-          game:      item.game,
-          score:     item.score,
-          details:   item.details ?? {},
-        });
-        // Gửi thành công → không giữ lại
-      } catch (e) {
-        if (!e.status || e.status >= 500) {
-          remaining.push(item);  // lỗi mạng → giữ lại
-        }
-        // 4xx → bỏ luôn (sessionId hết hạn, score không hợp lệ...)
-      }
-    }
-    _savePending(remaining);
-  }
-
-  function _showOfflineToast() {
-    // toast() được khai báo trong game-core.js (cùng scope window)
-    if (typeof toast === 'function') {
-      toast('📶 Không có mạng — kết quả sẽ được gửi lại sau');
-    }
-  }
-
-  /* ── Load profile ─────────────────────────────────────────────────────── */
-
-  /**
-   * Tải hồ sơ người chơi và nạp vào S (object trạng thái của game-core.js).
-   * Gọi khi trang vừa tải xong.
-   */
-  async function loadProfile() {
-    if (!BASE() || !getToken()) return null;
-    try {
-      const res = await _get('/api/mini/me');
-      const p   = res.data;
-      if (!p) return null;
-
-      // Nạp vào S (game-core.js khai báo S ở global scope của script)
-      if (typeof S !== 'undefined') {
-        S.xp     = p.xp    ?? 0;
-        S.best   = p.best  ?? {};
-        S.played = new Set(p.played ?? []);
-        S.unlocked = new Set((p.badges ?? []).map(b => b.id ?? b));
-      }
-
-      // Thử gửi lại kết quả còn trong hàng đợi offline
-      _flushPendingResults();
-
-      return p;
-    } catch (e) {
-      console.warn('[GameAPI] Không tải được hồ sơ:', e.message);
-      return null;
-    }
-  }
-
-  /* ── Public API ───────────────────────────────────────────────────────── */
-
-  // Gắn vào online event để tự flush khi có lại mạng
-  window.addEventListener('online', () => {
-    _flushPendingResults();
-  });
-
-  return {
-    loadProfile,
-    startSession,
-    submitResult,
-    flushPending: _flushPendingResults,
-    /** Dùng nội bộ bởi game-core.js (leaderboard) */
-    _get,
-  };
-})();
-    </script>
-
-    <!-- ③ core.js: thư viện dùng chung (XP, huy hiệu, âm thanh, bộ đếm, canvas) -->
+    <!-- core.js: tiện ích, tiến độ localStorage, âm thanh, bộ đếm, canvas -->
     <script>
 /* ============ Tiện ích ============ */
 const $ = s => document.querySelector(s);
@@ -1056,6 +829,45 @@ function _loadState() {
     if (Array.isArray(data.played)) S.played = new Set(data.played);
     if (Array.isArray(data.unlocked)) S.unlocked = new Set(data.unlocked);
   } catch (e) { /* parse error — bỏ qua */ }
+}
+
+const _runPrefix = 'offline_run_';
+function saveOfflineRun(id, state) {
+  if (!id || !state || typeof state !== 'object') throw new TypeError('Tiến độ game không hợp lệ');
+  try {
+    localStorage.setItem(_runPrefix + id, JSON.stringify({ version: 1, updatedAt: Date.now(), state }));
+  } catch (e) {
+    toast('Không thể lưu ván chơi trên thiết bị này.');
+    console.error(`[offline] Không thể lưu tiến độ "${id}"`, e);
+  }
+}
+
+function loadOfflineRun(id) {
+  if (!id) return null;
+  try {
+    const raw = localStorage.getItem(_runPrefix + id);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (saved?.version !== 1 || !saved.state || typeof saved.state !== 'object') {
+      localStorage.removeItem(_runPrefix + id);
+      return null;
+    }
+    return saved.state;
+  } catch (e) {
+    toast('Không thể đọc tiến độ đã lưu.');
+    console.error(`[offline] Không thể đọc tiến độ "${id}"`, e);
+    return null;
+  }
+}
+
+function clearOfflineRun(id) {
+  if (!id) return;
+  try {
+    localStorage.removeItem(_runPrefix + id);
+  } catch (e) {
+    toast('Không thể xóa tiến độ trên thiết bị này.');
+    console.error(`[offline] Không thể xóa tiến độ "${id}"`, e);
+  }
 }
 
 /* ============ Âm thanh ============ */
@@ -1250,7 +1062,7 @@ function runMC(root, cfg) {
   show();
 }
 
-/* ============ finish() — kết thúc ván & gọi API ============ */
+/* ============ finish() — kết thúc ván ============ */
 /**
  * Gọi khi một ván kết thúc.
  * @param {{ id, score, xp, lines, replay, details? }} opts
@@ -1289,21 +1101,7 @@ function finish({ id, score, xp, lines, replay, details = {} }) {
   $('#again').onclick = () => { $('#modal').classList.remove('on'); openGame(id); };
   $('#home').onclick  = () => { $('#modal').classList.remove('on'); renderHub(); };
 
-  // Gửi kết quả lên server (không block UI)
-  GameAPI.submitResult({ game: id, score, details }).then(serverData => {
-    if (!serverData) return;
-    // Cập nhật lại từ server (XP, cấp, huy hiệu)
-    if (typeof serverData.totalXp === 'number') S.xp = serverData.totalXp;
-    renderMe();
-    _saveState();
-    if (Array.isArray(serverData.newBadges)) {
-      serverData.newBadges.forEach(b => {
-        S.unlocked.add(b.id);
-        setTimeout(() => toast(`${b.icon} Huy hiệu mới: ${b.name}`), 900);
-      });
-      _saveState();
-    }
-  }).catch(() => { /* lỗi mạng đã được xử lý trong api.js */ });
+  clearOfflineRun(id);
 }
 
 /* ============ renderHub & openGame (được override bởi mỗi file) ============ */
@@ -1365,8 +1163,6 @@ function openGame(id) {
   $('#modal').classList.remove('on');
   g.fn($('#stage'));
   window.scrollTo(0, 0);
-  // Báo server bắt đầu ván mới
-  GameAPI.startSession(id);
 }
 
 /* ============ Bảng xếp hạng ============ */
@@ -1400,23 +1196,17 @@ function _openLeaderboard() {
     activeKey = key; renderTabs();
     $('#lb-body').innerHTML = 'Đang tải...';
     try {
-      let rows;
-      if (key === 'xp') {
-        const r = await GameAPI._get('/api/mini/leaderboard/xp?limit=20');
-        rows = (r.data || []).map((x, i) =>
-          `<tr><td>${x.rank ?? i + 1}</td><td>${x.displayName}</td><td>${x.xp} XP</td><td>Cấp ${x.level}</td></tr>`
-        );
-      } else {
-        const r = await GameAPI._get(`/api/mini/leaderboard/${key}?limit=20`);
-        rows = (r.data || []).map((x, i) =>
-          `<tr><td>${x.rank ?? i + 1}</td><td>${x.displayName}</td><td>${x.best} điểm</td><td></td></tr>`
-        );
-      }
+      const rows = key === 'xp'
+        ? [`<tr><td>1</td><td>Bạn</td><td>${S.xp} XP</td><td>Cấp ${lvl()}</td></tr>`]
+        : S.best[key] !== undefined
+          ? [`<tr><td>1</td><td>Bạn</td><td>${S.best[key]} điểm</td><td></td></tr>`]
+          : [];
       $('#lb-body').innerHTML = rows.length
         ? `<table style="width:100%;border-collapse:collapse">${rows.join('')}</table>`
-        : '<p style="opacity:.6">Chưa có dữ liệu.</p>';
-    } catch {
-      $('#lb-body').innerHTML = '<p style="opacity:.6">Không thể tải bảng xếp hạng.</p>';
+        : '<p style="opacity:.6">Chưa có kỷ lục trên thiết bị này.</p>';
+    } catch (e) {
+      console.error('[offline] Không thể hiển thị kỷ lục cục bộ', e);
+      $('#lb-body').innerHTML = '<p style="opacity:.6">Không thể hiển thị kỷ lục.</p>';
     }
   }
 
@@ -1463,12 +1253,11 @@ function initCore({ games, hubTitle = '', hubDesc = '', badges = [], storageKey 
     if (e.target.closest('#lb-btn')) _openLeaderboard();
   });
 
-  // Tải hồ sơ từ server rồi render sảnh
-  GameAPI.loadProfile().then(() => renderHub()).catch(() => renderHub());
+  renderHub();
 }
     </script>
 
-    <!-- ④ Điểm vào: khởi động game, nối nút thoát, lưu tiến độ -->
+    <!-- Điểm vào: khởi động game, nối nút thoát, lưu tiến độ -->
     <script>
 // lib/single.js — điểm vào cho file HTML chỉ chứa MỘT game.
 //
@@ -1557,65 +1346,77 @@ if (typeof window !== "undefined") {
 }
     </script>
 
-    <!-- ⑥ Game: scramble — nội dung riêng của file này -->
+    <!-- Game: scramble — nội dung riêng của file này -->
     <script>
-// src/games/src/scramble.js — Xếp Chữ (Tiếng Anh)
+// src/games/src/scramble.js — Săn Kho Báu
 // Sinh tự động từ game1.html bởi scripts/split-offline-games.mjs.
 // Sửa file này, KHÔNG sửa game1.html.
 
-    function speak(t) {
-      if (!soundOn || !('speechSynthesis' in window)) return;
-      try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = .85; speechSynthesis.speak(u) } catch (e) { }
-    }
-
-    /* ============ Dữ liệu từ vựng & quiz ============ */
-
-    const WORDS = [
-      ['apple', 'quả táo'], ['book', 'quyển sách'], ['teacher', 'giáo viên'], ['school', 'trường học'], ['friend', 'bạn bè'],
-      ['water', 'nước'], ['happy', 'vui vẻ'], ['family', 'gia đình'], ['house', 'ngôi nhà'], ['cat', 'con mèo'],
-      ['dog', 'con chó'], ['sun', 'mặt trời'], ['moon', 'mặt trăng'], ['tree', 'cái cây'], ['flower', 'bông hoa'],
-      ['river', 'dòng sông'], ['mountain', 'ngọn núi'], ['computer', 'máy tính'], ['bicycle', 'xe đạp'], ['breakfast', 'bữa sáng'],
-      ['rainbow', 'cầu vồng'], ['elephant', 'con voi'], ['library', 'thư viện'], ['umbrella', 'cái ô'], ['window', 'cửa sổ'],
-      ['chicken', 'con gà'], ['orange', 'quả cam'], ['yellow', 'màu vàng'], ['garden', 'khu vườn'], ['kitchen', 'nhà bếp'],
-      ['pencil', 'bút chì'], ['bridge', 'cây cầu'], ['planet', 'hành tinh'], ['butterfly', 'con bướm'], ['holiday', 'kỳ nghỉ']
-    ].map(([en, vi]) => ({ en, vi }));
-
+    const WORDS = ['kẹo', 'mèo', 'nhạc', 'mưa', 'kem', 'phim', 'vui', 'gấu', 'bánh', 'trà', 'sóng', 'mơ', 'chơi', 'cười', 'nắng', 'mây', 'sách', 'cá', 'hoa', 'đêm'];
 
     function scrambleGame(root) {
-      const words = shuffle(WORDS).slice(0, 8);
-      let i = 0, score = 0, solved = 0, w, tiles, ans, hintsWord = 0, busy = false;
-      function load() {
-        w = words[i]; const L = [...w.en.toUpperCase()];
+      const saved = typeof loadOfflineRun === 'function' ? loadOfflineRun('scramble') : null;
+      const resumable = saved && saved.version === 1 && Array.isArray(saved.words) &&
+        saved.words.length === 8 && Number.isInteger(saved.i) && saved.i >= 0 && saved.i < 8 &&
+          Array.isArray(saved.tiles) && saved.tiles.every(tile => tile && typeof tile.ch === 'string' && typeof tile.used === 'boolean') &&
+          Array.isArray(saved.ans) && Number.isFinite(saved.score) && Number.isFinite(saved.solved);
+      const words = resumable ? saved.words : shuffle(WORDS).slice(0, 8);
+      let i = resumable ? saved.i : 0;
+      let score = resumable ? saved.score : 0;
+      let solved = resumable ? saved.solved : 0;
+      let w, tiles, ans, hintsWord = 0, busy = false;
+
+      function checkpoint() {
+        if (typeof saveOfflineRun === 'function') {
+          saveOfflineRun('scramble', {
+            version: 1, words, i, score, solved, tiles, ans, hintsWord,
+          });
+        }
+      }
+      function newRound() {
+        w = words[i]; const L = [...w.toLocaleUpperCase('vi')];
         let t; do { t = shuffle(L) } while (t.join('') === L.join(''));
         tiles = t.map(ch => ({ ch, used: false })); ans = []; hintsWord = 0; busy = false; render();
+        checkpoint();
       }
       function render() {
         root.innerHTML = `<div class="hud"><span>Từ <b>${i + 1}/${words.length}</b></span><span>⭐ <b>${score}</b></span></div>
-      <div class="qbox txt"><div>Nghĩa tiếng Việt<small></small><span style="font-family:var(--head);font-size:1.5em;font-weight:800">${w.vi}</span><small>${w.en.length} chữ cái. Sắp xếp thành từ tiếng Anh.</small></div></div>
-      <div class="slots" id="slots">${[...w.en].map((_, k) => { const t = ans[k] !== undefined ? tiles[ans[k]].ch : ''; return `<button class="slot ${t ? 'fill' : ''}" data-s="${k}">${t}</button>` }).join('')}</div>
+      <div class="qbox txt"><div>XẾP CHỮ VUI<small></small><span style="font-family:var(--head);font-size:1.5em;font-weight:800">${[...w].length} chữ cái</span><small>Xếp các ô chữ thành một từ quen thuộc.</small></div></div>
+      <div class="slots" id="slots">${[...w].map((_, k) => { const t = ans[k] !== undefined ? tiles[ans[k]].ch : ''; return `<button class="slot ${t ? 'fill' : ''}" data-s="${k}">${t}</button>` }).join('')}</div>
       <div class="tiles">${tiles.map((t, k) => `<button class="tl" data-t="${k}" ${t.used ? 'disabled' : ''}>${t.ch}</button>`).join('')}</div>
       <div class="row"><button class="btn alt" data-a="hint">💡 Gợi ý (−4 điểm)</button><button class="btn alt" data-a="skip">Bỏ qua</button></div>`;
       }
       function add(k) {
-        if (busy || tiles[k].used || ans.length >= w.en.length) return;
+        if (busy || tiles[k].used || ans.length >= [...w].length) return;
         tiles[k].used = true; ans.push(k); sfx.tick(); render();
-        if (ans.length === w.en.length) check();
+        if (ans.length === [...w].length) check();
+        else checkpoint();
       }
       function check() {
-        const guess = ans.map(k => tiles[k].ch).join('').toLowerCase();
+        const guess = ans.map(k => tiles[k].ch).join('').toLocaleLowerCase('vi');
         busy = true;
-        if (guess === w.en) {
-          const pts = Math.max(5, 15 - hintsWord * 4); score += pts; solved++; sfx.ok(); speak(w.en);
+        if (guess === w) {
+          const pts = Math.max(5, 15 - hintsWord * 4); score += pts; solved++; sfx.ok();
           $('#slots').classList.add('win');
-          T.set(() => { i++; i < words.length ? load() : end() }, 1100);
+          if (i + 1 < words.length) {
+            i++;
+            w = words[i]; const L = [...w.toLocaleUpperCase('vi')];
+            let t; do { t = shuffle(L) } while (t.join('') === L.join(''));
+            tiles = t.map(ch => ({ ch, used: false })); ans = []; hintsWord = 0;
+            checkpoint();
+            T.set(() => { busy = false; render() }, 1100);
+          } else {
+            if (typeof clearOfflineRun === 'function') clearOfflineRun('scramble');
+            T.set(end, 1100);
+          }
         } else {
           sfx.bad(); $('#slots').classList.add('err');
-          T.set(() => { tiles.forEach(t => t.used = false); ans = []; busy = false; render() }, 450);
+          T.set(() => { tiles.forEach(t => t.used = false); ans = []; busy = false; checkpoint(); render() }, 450);
         }
       }
       function hint() {
         if (busy) return;
-        const target = [...w.en.toUpperCase()];
+        const target = [...w.toLocaleUpperCase('vi')];
         let ok = ans.every((k, n) => tiles[k].ch === target[n]);
         if (!ok) { tiles.forEach(t => t.used = false); ans = [] }
         const need = target[ans.length];
@@ -1624,6 +1425,7 @@ if (typeof window !== "undefined") {
         hintsWord++; score = Math.max(0, score - 4); add(k);
       }
       function end() {
+        if (typeof clearOfflineRun === 'function') clearOfflineRun('scramble');
         finish({
           id: 'scramble', score, xp: Math.round(score / 3) + solved,
           lines: [`Giải được ${solved}/${words.length} từ`],
@@ -1634,29 +1436,38 @@ if (typeof window !== "undefined") {
       root.onclick = e => {
         const t = e.target.closest('[data-t]'), s = e.target.closest('[data-s]'), a = e.target.closest('[data-a]');
         if (t) add(+t.dataset.t);
-        else if (s && !busy) { const k = +s.dataset.s; if (ans[k] !== undefined) { const idx = ans.splice(k, 1)[0]; tiles[idx].used = false; render() } }
+        else if (s && !busy) { const k = +s.dataset.s; if (ans[k] !== undefined) { const idx = ans.splice(k, 1)[0]; tiles[idx].used = false; checkpoint(); render() } }
         else if (a) {
           if (a.dataset.a === 'hint') hint();
-          else if (!busy) { i++; i < words.length ? load() : end() }
+          else if (!busy) { i++; i < words.length ? newRound() : end() }
         }
       };
       onKey = e => {
         if (busy) return;
-        if (e.key === 'Backspace' && ans.length) { const idx = ans.pop(); tiles[idx].used = false; render(); return }
-        if (/^[a-zA-Z]$/.test(e.key)) { const k = tiles.findIndex(t => !t.used && t.ch === e.key.toUpperCase()); if (k >= 0) add(k) }
+        if (e.key === 'Backspace' && ans.length) { const idx = ans.pop(); tiles[idx].used = false; checkpoint(); render(); return }
+        if ([...e.key].length === 1) { const key = e.key.toLocaleUpperCase('vi'); const k = tiles.findIndex(t => !t.used && t.ch === key); if (k >= 0) add(k) }
       };
-      load();
+      if (resumable) {
+        w = words[i];
+        tiles = saved.tiles;
+        ans = saved.ans;
+        hintsWord = saved.hintsWord || 0;
+        render();
+      } else {
+        if (saved && typeof clearOfflineRun === 'function') clearOfflineRun('scramble');
+        newRound();
+      }
     }
 
-    /* ============ GAME 4: ĐỐ VUI KHOA HỌC ============ */
+    /* ============ GAME: XẾP CHỮ VUI ============ */
 startSingleGame({
   id: 'scramble',
-  name: 'Xếp Chữ',
-  icon: '🔤',
+  name: 'Săn Kho Báu',
+  icon: '🗺️',
   storageKey: 'offline_scramble',
   mount: scrambleGame,
   badges: [
-      { id: 'word10', n: 'Xếp 10 từ', i: '🔤', ok: () => !!S.flags.w10 },
+      { id: 'word10', n: 'Xếp 8 từ', i: '🧩', ok: () => !!S.flags.w10 },
   ],
 });
     </script>

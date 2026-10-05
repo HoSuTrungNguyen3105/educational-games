@@ -1,51 +1,63 @@
-// src/games/src/memory.js — Lật Thẻ Anh – Việt (Tiếng Anh)
+// src/games/src/memory.js — Ghép Cặp Hình
 // Sinh tự động từ game1.html bởi scripts/split-offline-games.mjs.
 // Sửa file này, KHÔNG sửa game1.html.
 
-    function speak(t) {
-      if (!soundOn || !('speechSynthesis' in window)) return;
-      try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = .85; speechSynthesis.speak(u) } catch (e) { }
-    }
-
-    /* ============ Dữ liệu từ vựng & quiz ============ */
-
-    const WORDS = [
-      ['apple', 'quả táo'], ['book', 'quyển sách'], ['teacher', 'giáo viên'], ['school', 'trường học'], ['friend', 'bạn bè'],
-      ['water', 'nước'], ['happy', 'vui vẻ'], ['family', 'gia đình'], ['house', 'ngôi nhà'], ['cat', 'con mèo'],
-      ['dog', 'con chó'], ['sun', 'mặt trời'], ['moon', 'mặt trăng'], ['tree', 'cái cây'], ['flower', 'bông hoa'],
-      ['river', 'dòng sông'], ['mountain', 'ngọn núi'], ['computer', 'máy tính'], ['bicycle', 'xe đạp'], ['breakfast', 'bữa sáng'],
-      ['rainbow', 'cầu vồng'], ['elephant', 'con voi'], ['library', 'thư viện'], ['umbrella', 'cái ô'], ['window', 'cửa sổ'],
-      ['chicken', 'con gà'], ['orange', 'quả cam'], ['yellow', 'màu vàng'], ['garden', 'khu vườn'], ['kitchen', 'nhà bếp'],
-      ['pencil', 'bút chì'], ['bridge', 'cây cầu'], ['planet', 'hành tinh'], ['butterfly', 'con bướm'], ['holiday', 'kỳ nghỉ']
-    ].map(([en, vi]) => ({ en, vi }));
-
+    const ICONS = ['🐱', '🐶', '🐸', '🐼', '🦊', '🐵', '🐰', '🐻', '🍓', '🍋', '🍇', '🍉', '🚀', '🎈', '🎸', '🎧', '⚽', '🎲', '🌙', '⭐'];
 
     function memoryGame(root) {
-      const pairs = shuffle(WORDS).slice(0, 8);
-      const cards = shuffle(pairs.flatMap((w, i) => [{ p: i, t: w.en, l: 'en' }, { p: i, t: w.vi, l: 'vi' }]));
-      let open = [], lock = false, moves = 0, matched = 0, secs = 0;
+      const saved = typeof loadOfflineRun === 'function' ? loadOfflineRun('memory') : null;
+      const resumable = saved && saved.version === 1 && Array.isArray(saved.pairs) &&
+        saved.pairs.length === 8 && Array.isArray(saved.cards) && saved.cards.length === 16 &&
+        saved.cards.every(card => card && Number.isInteger(card.p) && typeof card.t === 'string') &&
+        Array.isArray(saved.open) && saved.open.length <= 1 && saved.open.every(i => Number.isInteger(i) && i >= 0 && i < 16) &&
+        Array.isArray(saved.matched) && Number.isFinite(saved.moves) && Number.isFinite(saved.secs);
+      const pairs = resumable ? saved.pairs : shuffle(ICONS).slice(0, 8);
+      const cards = resumable ? saved.cards : shuffle(pairs.flatMap((icon, i) => [{ p: i, t: icon }, { p: i, t: icon }]));
+      let open = resumable ? saved.open : [];
+      let moves = resumable ? saved.moves : 0;
+      let matchedPairs = new Set(resumable ? saved.matched : []);
+      let matched = matchedPairs.size, secs = resumable ? saved.secs : 0, lock = false;
+
+      function checkpoint() {
+        if (typeof saveOfflineRun === 'function') {
+          saveOfflineRun('memory', {
+            version: 1, pairs, cards, open, matched: [...matchedPairs], moves, secs,
+          });
+        }
+      }
       root.innerHTML = `<div class="hud"><span>👣 <b id="mv">0</b> lượt</span><span>🧩 <b id="pr">0</b>/8</span><span>⏱ <b id="tm">0</b>s</span></div>
-    <div class="mem" id="mem">${cards.map((c, i) => `<button class="mc" data-i="${i}" aria-label="Thẻ ${i + 1}"><div class="in"><div class="f">❓</div><div class="b ${c.l}">${c.t}</div></div></button>`).join('')}</div>
-    <p class="hint">Tìm cặp từ tiếng Anh và nghĩa tiếng Việt. Chạm thẻ tiếng Anh để nghe phát âm.</p>`;
+    <div class="mem" id="mem">${cards.map((c, i) => `<button class="mc" data-i="${i}" aria-label="Thẻ ${i + 1}"><div class="in"><div class="f">❓</div><div class="b">${c.t}</div></div></button>`).join('')}</div>
+    <p class="hint">Lật hai thẻ để tìm các biểu tượng giống nhau.</p>`;
       const els = [...root.querySelectorAll('.mc')];
-      T.int(() => { secs++; $('#tm').textContent = secs }, 1000);
+      $('#mv').textContent = moves;
+      $('#pr').textContent = matched;
+      $('#tm').textContent = secs;
+      els.forEach((el, i) => {
+        if (matchedPairs.has(cards[i].p)) el.classList.add('done');
+        else if (open.includes(i)) el.classList.add('flip');
+      });
+      if (!resumable && saved && typeof clearOfflineRun === 'function') clearOfflineRun('memory');
+      checkpoint();
+      T.int(() => { secs++; $('#tm').textContent = secs; checkpoint() }, 1000);
       root.onclick = e => {
         const el = e.target.closest('.mc'); if (!el || lock) return;
         const i = +el.dataset.i;
         if (el.classList.contains('flip') || el.classList.contains('done')) return;
         el.classList.add('flip'); sfx.tick();
-        if (cards[i].l === 'en') speak(cards[i].t);
         open.push(i);
+        if (open.length === 1) checkpoint();
         if (open.length === 2) {
           moves++; $('#mv').textContent = moves; lock = true;
           const [a, b] = open;
-          if (cards[a].p === cards[b].p && cards[a].l !== cards[b].l) {
+          if (cards[a].p === cards[b].p) {
             T.set(() => {
-              els[a].classList.add('done'); els[b].classList.add('done'); matched++; $('#pr').textContent = matched; sfx.ok(); open = []; lock = false;
+              els[a].classList.add('done'); els[b].classList.add('done'); matchedPairs.add(cards[a].p); matched = matchedPairs.size; $('#pr').textContent = matched; sfx.ok(); open = []; lock = false;
+              checkpoint();
               if (matched === 8) {
                 const score = Math.max(20, 300 - moves * 8 - secs);
                 if (moves <= 11) S.flags.memGold = true;
                 T.clear();
+                if (typeof clearOfflineRun === 'function') clearOfflineRun('memory');
                 finish({
                   id: 'memory', score, xp: Math.round(score / 5) + 10,
                   lines: [`${moves} lượt lật`, `${secs} giây`],
@@ -55,7 +67,7 @@
               }
             }, 450);
           } else {
-            T.set(() => { els[a].classList.remove('flip'); els[b].classList.remove('flip'); open = []; lock = false }, 900);
+            T.set(() => { els[a].classList.remove('flip'); els[b].classList.remove('flip'); open = []; lock = false; checkpoint() }, 900);
           }
         }
       };
@@ -64,7 +76,7 @@
     /* ============ GAME 3: XẾP CHỮ ============ */
 startSingleGame({
   id: 'memory',
-  name: 'Lật Thẻ Anh – Việt',
+  name: 'Ghép Cặp Hình',
   icon: '🃏',
   storageKey: 'offline_memory',
   mount: memoryGame,

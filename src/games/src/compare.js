@@ -1,30 +1,91 @@
-// src/games/src/compare.js — Ai Nhiều Hơn? (So sánh)
-// Sinh tự động từ game4.html bởi scripts/split-offline-games.mjs.
-// Sửa file này, KHÔNG sửa game4.html.
+// src/games/src/compare.js — Đấu Trường Bong Bóng
 
-    const NAMES = ['An', 'Bình', 'Chi', 'Dũng', 'Giang', 'Hà', 'Huy', 'Lan', 'Mai', 'Nam', 'Phúc', 'Quân'];
+    function bubbleDuelGame(root) {
+      const id = 'compare';
+      const moves = ['✊', '✋', '✌️'];
+      const beats = [2, 0, 1];
+      const saved = loadOfflineRun(id);
+      const valid = saved && Number.isInteger(saved.round) && saved.round >= 0 && saved.round < 10 &&
+        Number.isInteger(saved.wins) && Number.isInteger(saved.ties) && Number.isInteger(saved.losses) &&
+        Number.isInteger(saved.cpu) && saved.cpu >= 0 && saved.cpu < moves.length &&
+        (saved.lastCpu === undefined || (Number.isInteger(saved.lastCpu) && saved.lastCpu >= 0 && saved.lastCpu < moves.length)) &&
+        ['ready', 'reveal'].includes(saved.phase);
+      let game = valid ? saved : fresh();
+      let closed = false;
 
-MC_MAKERS.compare = function compare(level) {
-        const a = rnd(10, 99 * level), b = rnd(10, 99 * level);
-        const who = pickOne(NAMES);
-        const wantBigger = rnd(2) === 0;
-        const pool = [a, b];
-        const target = wantBigger ? Math.max(a, b) : Math.min(a, b);
-        const ans = String(target);
-        const opts = shuffle([ans, ...distractors([String(Math.max(10, target + rnd(1, 9))), String(Math.max(1, target - rnd(1, 9))), String(target + 10), String(Math.max(1, target - 10))], ans).slice(0, 3)]);
-        return {
-          html: `<div style="font-size:11px;opacity:.7">AI NHIỀU HƠN?</div>
-                 <div style="font-size:22px;margin-top:8px">Trong <b>${pool.join(' và ')}</b>, số nào
-                   ${wantBigger ? '<b>LỚN</b>' : '<b>NHỎ</b>'} hơn?</div>
-                 <div style="font-size:12px;opacity:.6;margin-top:6px">Người chơi tên: ${who}</div>`,
-          opts, ans,
-          exp: `${target} là số ${wantBigger ? 'lớn nhất' : 'nhỏ nhất'} trong ${pool.join(' và ')}.`,
-        };
-      },
-startMcGame('compare', {
-  name: 'Ai Nhiều Hơn?',
-  icon: '⚖️',
-  badges: [
+      function fresh() {
+        clearOfflineRun(id);
+        return { round: 0, wins: 0, ties: 0, losses: 0, cpu: rnd(0, 2), phase: 'ready', message: 'Ra đòn!' };
+      }
+      function save() { saveOfflineRun(id, game); }
+      function render() {
+        root.innerHTML = `<div class="hud"><span>🥊 Trận <b>${game.round + 1}</b>/10</span><span>🏆 <b>${game.wins}</b></span></div>
+          <div class="qbox center"><div style="font-size:14px;opacity:.7">ĐẤU TRƯỜNG BONG BÓNG</div>
+            <div style="font-size:54px;margin:12px 0">${game.phase === 'ready' ? '🫧' : moves[game.lastCpu]}</div>
+            <div id="duelMessage">${game.message}</div>
+            <p class="hint">Thắng ${game.wins} · Hòa ${game.ties} · Thua ${game.losses}</p></div>
+          <div class="opts" style="grid-template-columns:repeat(3,1fr)">${moves.map((move, i) =>
+            `<button class="opt" data-move="${i}" style="min-height:86px;font-size:36px">${move}</button>`).join('')}</div>
+          <p class="hint">Oẳn tù tì đấu với máy — chọn biểu tượng của bạn.</p>
+          <div class="row">${game.phase === 'reveal' ? '<button class="btn" data-next="1">Trận tiếp theo ➡️</button>' : ''}
+            <button class="btn alt" data-restart="1">🔄 Chơi lại</button></div>`;
+        root.querySelectorAll('[data-move]').forEach(button => { button.disabled = game.phase !== 'ready'; });
+        save();
+      }
+      function finishRun() {
+        if (closed) return;
+        closed = true;
+        clearOfflineRun(id);
+        const score = game.wins * 10 + game.ties * 3;
+        finish({ id, score, lines: [`Thắng ${game.wins} · Hòa ${game.ties} · Thua ${game.losses}`],
+          replay: bubbleDuelGame, details: { wins: game.wins, ties: game.ties, losses: game.losses } });
+      }
+      root.onclick = e => {
+        if (e.target.closest('[data-restart]')) {
+          T.clear();
+          closed = false;
+          game = fresh();
+          render();
+          return;
+        }
+        if (closed) return;
+        if (e.target.closest('[data-next]') && game.phase === 'reveal') {
+          game.phase = 'ready';
+          game.message = 'Ra đòn!';
+          render();
+          return;
+        }
+        const button = e.target.closest('[data-move]');
+        if (!button || game.phase !== 'ready') return;
+        const player = +button.dataset.move;
+        game.lastCpu = game.cpu;
+        if (player === game.cpu) {
+          game.ties++;
+          game.message = `Hòa! Cả hai ra ${moves[player]}.`;
+          sfx.tick();
+        } else if (beats[player] === game.cpu) {
+          game.wins++;
+          game.message = `Bạn thắng! ${moves[player]} đánh bại ${moves[game.cpu]}.`;
+          sfx.ok();
+        } else {
+          game.losses++;
+          game.message = `Máy thắng lượt này.`;
+          sfx.bad();
+        }
+        game.round++;
+        game.phase = 'reveal';
+        if (game.round >= 10) { finishRun(); return; }
+        game.cpu = rnd(0, 2);
+        render();
+      };
+      if (!valid && saved) clearOfflineRun(id);
+      render();
+    }
 
-  ],
-});
+    startSingleGame({
+      id: 'compare',
+      name: 'Đấu Trường Bong Bóng',
+      icon: '🫧',
+      storageKey: 'offline_compare',
+      mount: bubbleDuelGame,
+    });

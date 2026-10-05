@@ -70,7 +70,7 @@ const FEATURED_GAME = {
 
 import { OFFLINE_GAME_MANIFEST } from "../games/src/manifest.js";
 
-// 17 game offline. Nguon su that: src/games/src/manifest.js (sinh boi scripts/build-offline-games.mjs)
+// Game offline. Nguon su that: src/games/src/manifest.js (sinh boi scripts/build-offline-games.mjs)
 // Moi game la MOT file HTML rieng trong src/games/offline/<id>.html
 const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   key: g.id,

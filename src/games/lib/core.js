@@ -13,7 +13,7 @@
  *   - Sinh câu hỏi toán (genMath, makeOpts)
  *   - Canvas helper (fitCanvas)
  *   - Trắc nghiệm dùng chung (runMC)
- *   - finish() — xử lý kết thúc ván + gọi API
+ *   - finish() — xử lý kết thúc ván và lưu kết quả cục bộ
  *   - renderHub(), openGame() — để từng file override sau khi include
  *
  * Cách dùng trong mỗi HTML:
@@ -73,6 +73,45 @@ function _loadState() {
     if (Array.isArray(data.played)) S.played = new Set(data.played);
     if (Array.isArray(data.unlocked)) S.unlocked = new Set(data.unlocked);
   } catch (e) { /* parse error — bỏ qua */ }
+}
+
+const _runPrefix = 'offline_run_';
+function saveOfflineRun(id, state) {
+  if (!id || !state || typeof state !== 'object') throw new TypeError('Tiến độ game không hợp lệ');
+  try {
+    localStorage.setItem(_runPrefix + id, JSON.stringify({ version: 1, updatedAt: Date.now(), state }));
+  } catch (e) {
+    toast('Không thể lưu ván chơi trên thiết bị này.');
+    console.error(`[offline] Không thể lưu tiến độ "${id}"`, e);
+  }
+}
+
+function loadOfflineRun(id) {
+  if (!id) return null;
+  try {
+    const raw = localStorage.getItem(_runPrefix + id);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (saved?.version !== 1 || !saved.state || typeof saved.state !== 'object') {
+      localStorage.removeItem(_runPrefix + id);
+      return null;
+    }
+    return saved.state;
+  } catch (e) {
+    toast('Không thể đọc tiến độ đã lưu.');
+    console.error(`[offline] Không thể đọc tiến độ "${id}"`, e);
+    return null;
+  }
+}
+
+function clearOfflineRun(id) {
+  if (!id) return;
+  try {
+    localStorage.removeItem(_runPrefix + id);
+  } catch (e) {
+    toast('Không thể xóa tiến độ trên thiết bị này.');
+    console.error(`[offline] Không thể xóa tiến độ "${id}"`, e);
+  }
 }
 
 /* ============ Âm thanh ============ */
@@ -267,7 +306,7 @@ function runMC(root, cfg) {
   show();
 }
 
-/* ============ finish() — kết thúc ván & gọi API ============ */
+/* ============ finish() — kết thúc ván ============ */
 /**
  * Gọi khi một ván kết thúc.
  * @param {{ id, score, xp, lines, replay, details? }} opts
@@ -306,21 +345,7 @@ function finish({ id, score, xp, lines, replay, details = {} }) {
   $('#again').onclick = () => { $('#modal').classList.remove('on'); openGame(id); };
   $('#home').onclick  = () => { $('#modal').classList.remove('on'); renderHub(); };
 
-  // Gửi kết quả lên server (không block UI)
-  GameAPI.submitResult({ game: id, score, details }).then(serverData => {
-    if (!serverData) return;
-    // Cập nhật lại từ server (XP, cấp, huy hiệu)
-    if (typeof serverData.totalXp === 'number') S.xp = serverData.totalXp;
-    renderMe();
-    _saveState();
-    if (Array.isArray(serverData.newBadges)) {
-      serverData.newBadges.forEach(b => {
-        S.unlocked.add(b.id);
-        setTimeout(() => toast(`${b.icon} Huy hiệu mới: ${b.name}`), 900);
-      });
-      _saveState();
-    }
-  }).catch(() => { /* lỗi mạng đã được xử lý trong api.js */ });
+  clearOfflineRun(id);
 }
 
 /* ============ renderHub & openGame (được override bởi mỗi file) ============ */
@@ -382,8 +407,6 @@ function openGame(id) {
   $('#modal').classList.remove('on');
   g.fn($('#stage'));
   window.scrollTo(0, 0);
-  // Báo server bắt đầu ván mới
-  GameAPI.startSession(id);
 }
 
 /* ============ Bảng xếp hạng ============ */
@@ -417,23 +440,17 @@ function _openLeaderboard() {
     activeKey = key; renderTabs();
     $('#lb-body').innerHTML = 'Đang tải...';
     try {
-      let rows;
-      if (key === 'xp') {
-        const r = await GameAPI._get('/api/mini/leaderboard/xp?limit=20');
-        rows = (r.data || []).map((x, i) =>
-          `<tr><td>${x.rank ?? i + 1}</td><td>${x.displayName}</td><td>${x.xp} XP</td><td>Cấp ${x.level}</td></tr>`
-        );
-      } else {
-        const r = await GameAPI._get(`/api/mini/leaderboard/${key}?limit=20`);
-        rows = (r.data || []).map((x, i) =>
-          `<tr><td>${x.rank ?? i + 1}</td><td>${x.displayName}</td><td>${x.best} điểm</td><td></td></tr>`
-        );
-      }
+      const rows = key === 'xp'
+        ? [`<tr><td>1</td><td>Bạn</td><td>${S.xp} XP</td><td>Cấp ${lvl()}</td></tr>`]
+        : S.best[key] !== undefined
+          ? [`<tr><td>1</td><td>Bạn</td><td>${S.best[key]} điểm</td><td></td></tr>`]
+          : [];
       $('#lb-body').innerHTML = rows.length
         ? `<table style="width:100%;border-collapse:collapse">${rows.join('')}</table>`
-        : '<p style="opacity:.6">Chưa có dữ liệu.</p>';
-    } catch {
-      $('#lb-body').innerHTML = '<p style="opacity:.6">Không thể tải bảng xếp hạng.</p>';
+        : '<p style="opacity:.6">Chưa có kỷ lục trên thiết bị này.</p>';
+    } catch (e) {
+      console.error('[offline] Không thể hiển thị kỷ lục cục bộ', e);
+      $('#lb-body').innerHTML = '<p style="opacity:.6">Không thể hiển thị kỷ lục.</p>';
     }
   }
 
@@ -480,6 +497,5 @@ function initCore({ games, hubTitle = '', hubDesc = '', badges = [], storageKey 
     if (e.target.closest('#lb-btn')) _openLeaderboard();
   });
 
-  // Tải hồ sơ từ server rồi render sảnh
-  GameAPI.loadProfile().then(() => renderHub()).catch(() => renderHub());
+  renderHub();
 }

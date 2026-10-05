@@ -1,34 +1,107 @@
-// src/games/src/riddle.js — Đố Vui Nhanh (Kiến thức)
-// Sinh tự động từ game4.html bởi scripts/split-offline-games.mjs.
-// Sửa file này, KHÔNG sửa game4.html.
+// src/games/src/riddle.js — Cuộc Đua Tốc Độ
 
-    const RIDDLES = [
-      ['Con gì có cổ dài nhất?', ['Hươu cao cổ', 'Cổ voi', 'Rắn', 'Cò'], 'Hươu cao cổ', 'Cổ hươu cao cổ dài hơn cả chiếc xe!'],
-      ['1 + 1 bằng mấy?', ['1', '2', '3', '11'], '2', 'Hai.'],
-      ['Sông nào dài nhất thế giới?', ['Amazon', 'Sông Nile', 'Sông Đà', 'Sông Hồng'], 'Amazon', 'Amazon dài hơn Nile.'],
-      ['Mặt trời mọc từ hướng nào?', ['Đông', 'Tây', 'Bắc', 'Nam'], 'Đông', 'Mặt trời mọc ở hướng Đông.'],
-      ['Tháng nào có ít ngày nhất?', ['Tháng 2', 'Tháng 1', 'Tháng 4', 'Tháng 6'], 'Tháng 2', 'Tháng 2 thường có 28 ngày.'],
-      ['Cành cây nào to nhất?', ['Rễ', 'Cành', 'Lá', 'Hạt'], 'Rễ', 'Rễ cây to bằng thân hoặc hơn.'],
-      ['Vịt con kêu gì?', ['Vít', 'Bíp', 'Kẹt', 'Héc'], 'Vít', 'Tiếng vịt con là “vít”.'],
-      ['Hành tinh nào gần Mặt Trời nhất?', ['Trái Đất', 'Sao Thiên Vương', 'Sao Thủy', 'Sao Sao'], 'Sao Thủy', 'Sao Thủy là hành tinh gần Mặt Trời nhất.'],
-      ['Cá sống ở đâu?', ['Dưới nước', 'Trên cây', 'Trên trời', 'Trong đất'], 'Dưới nước', 'Cá sống dưới nước.'],
-      ['Ba số 2 cộng 2 số 2 bằng mấy?', ['4', '6', '8', '22'], '8', '2+2+2+2 = 8.'],
-      ['Hình vuông có mấy cạnh?', ['3', '4', '5', '6'], '4', 'Hình vuông có 4 cạnh.'],
-      ['Bạn nào giỏ toán nhất?', ['Tim', 'Cẩn', 'Lan', 'Mỹ'], 'Mỹ', 'Chơi cùng “Mỹ” ở trường học Việt Nam.'],
-    ];
+    function speedRaceGame(root) {
+      const id = 'riddle';
+      const saved = loadOfflineRun(id);
+      const valid = saved && Number.isInteger(saved.score) && Number.isInteger(saved.lives) &&
+        saved.lives > 0 && saved.lives <= 3 && Number.isFinite(saved.remaining) &&
+        saved.remaining > 0 && ['red', 'green'].includes(saved.light) &&
+        Number.isFinite(saved.greenAt) && Number.isFinite(saved.changeAt);
+      let game = valid ? saved : fresh();
+      let ended = false;
 
-MC_MAKERS.riddle = function riddle(level) {
-        const [q, opts, ans, exp] = pickOne(RIDDLES);
-        return {
-          html: `<div style="font-size:11px;opacity:.7">ĐỐ VUI NHANH</div>
-                 <div style="font-size:22px;margin-top:8px">${q}</div>`,
-          opts: [...opts], ans, exp,
-        };
-      },
-startMcGame('riddle', {
-  name: 'Đố Vui Nhanh',
-  icon: '💡',
-  badges: [
+      function fresh() {
+        clearOfflineRun(id);
+        const now = Date.now();
+        return { score: 0, lives: 3, remaining: 30, light: 'red', greenAt: 0, changeAt: now + nextDelay() };
+      }
+      function nextDelay() { return 700 + Math.floor(Math.random() * 1500); }
+      function save() { saveOfflineRun(id, game); }
+      root.innerHTML = `<div class="hud"><span>🏁 <b id="raceScore">0</b></span><span>⏱ <b id="raceTime">30</b>s</span><span>❤️ <b id="raceLives">3</b></span></div>
+        <div class="qbox center" style="padding:24px 12px">
+          <div style="font-size:14px;opacity:.7">CUỘC ĐUA TỐC ĐỘ</div>
+          <div id="trafficLight" style="width:100px;height:100px;border-radius:50%;margin:18px auto;background:#f44336;border:8px solid #ffffff55;box-shadow:0 0 30px #f4433670"></div>
+          <div id="raceStatus" style="font-size:20px;font-weight:800">Chờ đèn xanh!</div>
+        </div>
+        <button class="btn" data-react="1" style="width:100%;min-height:78px;font-size:20px">🏎️ NHẤN ĐỂ ĐUA</button>
+        <p class="hint">Phản xạ thật nhanh khi đèn xanh bật. Đèn đỏ thì chờ!</p>
+        <div class="row"><button class="btn alt" data-restart="1">🔄 Chơi lại</button></div>`;
+      const light = $('#trafficLight'), status = $('#raceStatus');
+      function paint() {
+        $('#raceScore').textContent = game.score;
+        $('#raceTime').textContent = Math.max(0, Math.ceil(game.remaining));
+        $('#raceLives').textContent = game.lives;
+        const green = game.light === 'green';
+        light.style.background = green ? '#32d583' : '#f44336';
+        light.style.boxShadow = `0 0 30px ${green ? '#32d583' : '#f44336'}70`;
+        status.textContent = green ? 'GO! GO! GO!' : 'Chờ đèn xanh!';
+      }
+      function finishRun() {
+        if (ended) return;
+        ended = true;
+        T.clear();
+        clearOfflineRun(id);
+        finish({ id, score: game.score, lines: [`${game.score} phản xạ`, `Còn ${game.lives} mạng`],
+          replay: speedRaceGame, details: { score: game.score, lives: game.lives } });
+      }
+      function tick() {
+        if (ended) return;
+        const now = Date.now();
+        const elapsed = (now - game.lastTick) / 1000;
+        game.lastTick = now;
+        game.remaining = Math.max(0, game.remaining - elapsed);
+        if (game.light === 'red' && now >= game.changeAt) {
+          game.light = 'green';
+          game.greenAt = now;
+        } else if (game.light === 'green' && now - game.greenAt >= 850) {
+          game.light = 'red';
+          game.changeAt = now + nextDelay();
+        }
+        paint();
+        if (game.remaining <= 0 || game.lives <= 0) { finishRun(); return; }
+        save();
+        T.set(tick, 100);
+      }
+      root.onclick = e => {
+        if (e.target.closest('[data-restart]')) {
+          T.clear();
+          ended = false;
+          game = fresh();
+          game.lastTick = Date.now();
+          paint();
+          save();
+          T.set(tick, 100);
+          return;
+        }
+        if (!e.target.closest('[data-react]') || ended) return;
+        const now = Date.now();
+        if (game.light === 'green') {
+          const reaction = now - game.greenAt;
+          game.score += reaction < 280 ? 5 : reaction < 500 ? 3 : 1;
+          game.light = 'red';
+          game.changeAt = now + nextDelay();
+          sfx.ok();
+          status.textContent = `Xuất phát! ${reaction} ms`;
+        } else {
+          game.lives--;
+          game.changeAt = now + nextDelay();
+          sfx.bad();
+          status.textContent = 'Xuất phát sớm! Chờ đèn xanh.';
+        }
+        paint();
+        save();
+      };
+      if (!valid && saved) clearOfflineRun(id);
+      game.lastTick = Date.now();
+      paint();
+      save();
+      T.set(tick, 100);
+    }
 
-  ],
-});
+    startSingleGame({
+      id: 'riddle',
+      name: 'Cuộc Đua Tốc Độ',
+      icon: '🏁',
+      storageKey: 'offline_riddle',
+      mount: speedRaceGame,
+    });

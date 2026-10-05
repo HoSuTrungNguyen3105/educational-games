@@ -118,7 +118,7 @@ const manifest = fs.readFileSync("src/games/src/manifest.js", "utf8");
 const entries = [...manifest.matchAll(/\{ id: '([^']+)', name: '([^']+)', icon: '([^']*)', tag: '([^']+)', grad: '([^']+)', engine: '([^']+)'/g)]
   .map((m) => ({ id: m[1], name: m[2], icon: m[3], tag: m[4], grad: m[5], engine: m[6] }));
 
-if (entries.length !== 17) { console.log(`✖ manifest có ${entries.length} game, mong đợi 17`); process.exit(1); }
+if (entries.length !== 18) { console.log(`✖ manifest có ${entries.length} game, mong đợi 18`); process.exit(1); }
 
 let bad = 0;
 const ok = (c, m) => { if (!c) { bad++; console.log("   ✖ " + m); } };
@@ -134,8 +134,21 @@ for (const e of entries) {
 
   // 1. Cấu trúc
   let jsBad = 0;
-  for (const b of bs) { try { new vm.Script(b.body, { filename: e.id }); } catch { jsBad++; } }
+  for (const b of bs) {
+    if (/type=["']application\/json["']/i.test(b.attrs)) continue;
+    try { new vm.Script(b.body, { filename: e.id }); } catch { jsBad++; }
+  }
   const ext = bs.filter((b) => /\bsrc\s*=/.test(b.attrs)).length;
+
+  if (e.engine === "standalone") {
+    const pass = jsBad === 0 && ext === 0 && !/\bGameAPI\b|GAME_API_BASE|educational-games-lp4z\.onrender\.com/.test(html)
+      && html.includes("localStorage")
+      && html.includes("vuon-thu-ho-run-v1") && html.includes("resumeSavedBtn");
+    if (!pass) console.log(`   ${e.id}: jsLoi=${jsBad} ext=${ext} standalone HTML chưa độc lập/localStorage/API-free`);
+    ok(pass, e.id);
+    console.log(e.id.padEnd(12) + (Buffer.byteLength(html) / 1024).toFixed(0).padStart(3) + "KB standalone      " + (pass ? "✓" : "✖"));
+    continue;
+  }
 
   // 2. Boot
   const a = boot(html);
@@ -144,6 +157,12 @@ for (const e of entries) {
   const hubHidden = a.doc.get("#hub").hidden === true;
   const title = a.doc.get("#gt").textContent;
   const hasReady = a.posted.some((m) => m.type === "ready");
+  let localRunStorageOK = false;
+  try {
+    a.sandbox.saveOfflineRun("__probe", { level: 3, round: 4 });
+    localRunStorageOK = a.sandbox.loadOfflineRun("__probe")?.round === 4;
+    a.sandbox.clearOfflineRun("__probe");
+  } catch { /* reported by progressOK below */ }
 
   // 3. Tiến độ: XP/điểm tốt nhất nằm ở key offline_<id> (single) hoặc offline_<id>_progress (mc)
   const keys = [...a.saved.keys()];
@@ -206,7 +225,8 @@ for (const e of entries) {
     if (!progressOK) detail = `lvl="${lvlText}" back=${backOk}`;
   }
 
-  const pass = jsBad === 0 && ext === 0 && !a.err && gameVisible && hubHidden && stage.length > 0
+  const pass = jsBad === 0 && ext === 0 && !/\bGameAPI\b|GAME_API_BASE|educational-games-lp4z\.onrender\.com/.test(html)
+    && localRunStorageOK && !a.err && gameVisible && hubHidden && stage.length > 0
     && title === e.name && hasReady && progressOK;
 
   if (!pass) {
@@ -230,5 +250,5 @@ for (const e of entries) {
 }
 
 console.log("-".repeat(86));
-console.log(bad === 0 ? "✔ Cả 17 game: boot được, render game, có tiến độ, không script ngoài" : `✖ ${bad} game lỗi`);
+console.log(bad === 0 ? "✔ Cả 18 game: boot được, render game, có tiến độ cục bộ, không script ngoài/API" : `✖ ${bad} game lỗi`);
 process.exit(bad ? 1 : 0);

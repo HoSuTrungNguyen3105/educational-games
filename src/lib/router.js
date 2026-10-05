@@ -55,7 +55,7 @@ const ROUTES = [
   { name: "assignment-join", pattern: "/assignment" },
   { name: "assignment-take", pattern: "/assignment/:code" },
   { name: "math-adventure", pattern: "/math-adventure" },
-  // 17 game offline, mỗi game 1 file HTML riêng → /offline/<gameId>
+  // 18 game offline, mỗi game 1 file HTML riêng → /offline/<gameId>
   { name: "offline-game", pattern: "/offline/:gameId" },
 
   // ── Home (fallback) ──

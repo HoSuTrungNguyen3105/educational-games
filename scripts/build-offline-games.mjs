@@ -20,7 +20,6 @@ const G = (p) => path.resolve(process.cwd(), p);
 const read = (p) => fs.readFileSync(G(p), "utf8").replace(/\r\n/g, "\n");
 
 const shell = read("src/games/lib/shell.html");
-const api = read("src/games/lib/api.js").replace(/\s+$/, "");
 const core = read("src/games/lib/core.js").replace(/\s+$/, "");
 const single = read("src/games/lib/single.js").replace(/\s+$/, "");
 const mcengine = read("src/games/lib/mcengine.js").replace(/\s+$/, "");
@@ -44,30 +43,23 @@ function tidy(js) {
 }
 
 function build(id) {
-  const game = read(`src/games/src/${id}.js`);
   const meta = manifestSrc.match(new RegExp(`\\{ id: '${id}',[\\s\\S]*?file: '[^']+' \\}`));
+  if (/engine: 'standalone'/.test(meta ? meta[0] : "")) {
+    return read("src/games/plantvsanimal.html");
+  }
+
+  const game = read(`src/games/src/${id}.js`);
   const usesMc = /engine: 'mc'/.test(meta ? meta[0] : "");
 
   const parts = [
     shell,
     "",
-    "    <!-- ① Cấu hình API — đặt trước khi load api.js -->",
-    "    <script>",
-    "        window.GAME_API_BASE = 'https://educational-games-lp4z.onrender.com';",
-    "        window.GAME_API_TOKEN_FN = () => localStorage.getItem('token');",
-    "    </script>",
-    "",
-    "    <!-- ② api.js: giao tiếp backend (nhúng trực tiếp vì iframe srcDoc không tải được file ngoài) -->",
-    "    <script>",
-    tidy(api),
-    "    </script>",
-    "",
-    "    <!-- ③ core.js: thư viện dùng chung (XP, huy hiệu, âm thanh, bộ đếm, canvas) -->",
+    "    <!-- core.js: tiện ích, tiến độ localStorage, âm thanh, bộ đếm, canvas -->",
     "    <script>",
     tidy(core),
     "    </script>",
     "",
-    "    <!-- ④ Điểm vào: khởi động game, nối nút thoát, lưu tiến độ -->",
+    "    <!-- Điểm vào: khởi động game, nối nút thoát, lưu tiến độ -->",
     "    <script>",
     tidy(single),
     "    </script>",
@@ -76,7 +68,7 @@ function build(id) {
   if (usesMc) {
     parts.push(
       "",
-      "    <!-- ⑤ Engine chung cho các game dạng câu hỏi (tiến độ lưu sau từng câu) -->",
+      "    <!-- Engine chung cho game arcade có tiến độ theo lượt -->",
       "    <script>",
       tidy(mcengine),
       "    </script>"
@@ -85,7 +77,7 @@ function build(id) {
 
   parts.push(
     "",
-    `    <!-- ⑥ Game: ${id} — nội dung riêng của file này -->`,
+    `    <!-- Game: ${id} — nội dung riêng của file này -->`,
     "    <script>",
     tidy(game),
     "    </script>",

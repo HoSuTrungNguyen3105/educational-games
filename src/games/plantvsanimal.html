@@ -149,6 +149,8 @@
     <div class="logo">VƯỜN<br>THỦ HỘ</div>
     <div class="tag">Trồng cây, thu nắng, đuổi sâu bọ khỏi vườn!</div>
     <div class="row" style="margin-top:6px">
+      <button class="btn sm" id="resumeSavedBtn" hidden>▶ Tiếp tục ván đang chơi</button>
+      <button class="btn dark sm" id="exitAppBtn">← Về danh sách game</button>
       <button class="btn gold sm" id="btnCfg">⚙️ Cấu hình JSON</button>
       <button class="btn dark sm" id="btnMusic">🎵 Nhạc: Bật</button>
       <button class="btn dark sm" id="btnSfx">🔊 Âm: Bật</button>
@@ -318,9 +320,9 @@ const EMO = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
 const COLS = 9;
 
 /* ================= Lưu trữ ================= */
-const CK = 'vuon-thu-ho-cfg-v1', PK = 'vuon-thu-ho-prog-v1'; const memS = {};
+const CK = 'vuon-thu-ho-cfg-v1', PK = 'vuon-thu-ho-prog-v1', RK = 'vuon-thu-ho-run-v1'; const memS = {};
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return memS[k] || null; } };
-const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { memS[k] = v; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { memS[k] = v; console.error('Không thể lưu dữ liệu game vào localStorage.', e); } };
 
 /* ================= Cấu hình JSON ================= */
 const DEF = JSON.parse($('cfgDefault').textContent);
@@ -382,16 +384,9 @@ function validate(u) {
   });
   return er;
 }
-/* Nguồn cấu hình theo thứ tự ưu tiên:
-   1. window.EG_CONFIG.plantvsanimal  → app tiêm từ API (nút "Cấu hình game" của giáo viên)
-   2. localStorage                    → chỉnh nhanh trong game (⚙️ Cấu hình JSON)
-   3. #cfgDefault                     → mặc định nằm ngay trong file này */
-let userCfg = DEF, CFG, cfgFromAPI = false;
+/* Cấu hình chỉnh trong game được lưu cục bộ; nếu chưa có thì dùng mặc định. */
+let userCfg = DEF, CFG;
 (function loadCfg() {
-  try {
-    const api = window.EG_CONFIG && (window.EG_CONFIG.plantvsanimal || (window.EG && window.EG.plantvsanimal));
-    if (api && typeof api === 'object' && validate(api).length === 0) { userCfg = api; cfgFromAPI = true; return; }
-  } catch (e) {}
   const s = lsGet(CK);
   if (s) { try { const u = JSON.parse(s); if (!validate(u).length) { userCfg = u; return; } } catch (e) {} }
   userCfg = DEF;
@@ -502,6 +497,10 @@ let prog = { cleared: {} };
 { const s = lsGet(PK); if (s) { try { prog = JSON.parse(s); } catch (e) {} } }
 const THEME_ICON = { day: '☀️', dusk: '🌇', night: '🌙' };
 function buildMenu() {
+  const savedRun = readRunCheckpoint();
+  const continueBtn = $('resumeSavedBtn');
+  continueBtn.hidden = !savedRun;
+  continueBtn.onclick = savedRun ? resumeSavedRun : null;
   const box = $('cards'); box.innerHTML = '';
   CFG.levels.forEach((L, i) => {
     const unlocked = CFG.unlockAll || i === 0 || prog.cleared[i - 1] || prog.cleared[i];
@@ -520,6 +519,53 @@ function buildMenu() {
 const cv = $('c'), ctx = cv.getContext('2d'), bg = document.createElement('canvas');
 let W = 0, H = 0, DPR = 1, cw = 60, ch = 60, ox = 60, oy = 60, safeL = 0, safeR = 0, ROWS = 5;
 let G = null, ptr = { x: 0, y: 0, down: false, type: 'touch' }, drag = null, T = 0;
+let saveAcc = 0;
+function readRunCheckpoint() {
+  const raw = lsGet(RK);
+  if (!raw) return null;
+  try {
+    const saved = JSON.parse(raw);
+    const state = saved?.state;
+    if (saved?.version === 1 && Number.isInteger(saved.li) && saved.li >= 0 &&
+        saved.li < CFG.levels.length && state && state.phase !== 'done' &&
+        Number.isFinite(state.time) && Array.isArray(state.plants) &&
+        state.plants.length >= 3 && state.plants.length <= 6 &&
+        state.plants.every(row => Array.isArray(row) && row.length === COLS) &&
+        Array.isArray(state.monsters) && Array.isArray(state.bullets) &&
+        Array.isArray(state.suns) && Array.isArray(state.events) &&
+        Array.isArray(state.queue) && Array.isArray(state.timers)) return saved;
+  } catch (e) { console.error('Không thể đọc tiến độ Vườn Thủ Hộ.', e); }
+  try { localStorage.removeItem(RK); } catch (e) { console.error('Không thể xóa tiến độ lỗi.', e); }
+  return null;
+}
+function saveRunCheckpoint() {
+  if (!G || G.phase === 'done') return;
+  try { localStorage.setItem(RK, JSON.stringify({ version: 1, li: G.li, state: G })); }
+  catch (e) { console.error('Không thể lưu ván Vườn Thủ Hộ vào localStorage.', e); toast('Không thể lưu ván chơi trên thiết bị này.'); }
+}
+function resumeSavedRun() {
+  const saved = readRunCheckpoint();
+  if (!saved) return;
+  const state = saved.state;
+  state.L = CFG.levels[saved.li];
+  state.paused = false;
+  state.autoPaused = false;
+  state.plants = (state.plants || []).map(row => row.map(p => p ? { ...p, d: CFG.plants[p.id] } : null));
+  state.monsters = (state.monsters || []).map(m => ({ ...m, d: CFG.monsters[m.id] }));
+  if (state.plants.some(row => row.some(p => p && !p.d)) || state.monsters.some(m => !m.d)) {
+    try { localStorage.removeItem(RK); } catch (e) { console.error('Không thể xóa tiến độ không tương thích.', e); }
+    buildMenu();
+    toast('Ván đã lưu không còn tương thích với cấu hình hiện tại.');
+    return;
+  }
+  G = state;
+  ROWS = state.plants.length;
+  $('top').classList.add('on');
+  $('speedBtn').textContent = G.speed + '×';
+  $('shovel').classList.toggle('on', !!G.shovel);
+  layout(); buildPackets(); buildBg(); showScreen(null); checkOrient();
+  hint(`Đã khôi phục màn ${G.li + 1} từ lần chơi trước.`);
+}
 const THEMES = {
   day:   { c1: '#63b24f', c2: '#74c25c', base: ['#3f8a37', '#2d6e2c'], wall: '#d9b98c', tuft: 'rgba(30,100,35,.35)' },
   dusk:  { c1: '#58a24f', c2: '#66b25e', base: ['#37753a', '#25572c'], wall: '#c9a77d', tuft: 'rgba(25,85,40,.4)' },
@@ -669,7 +715,7 @@ function updatePlant(p, dt) {
     const has = G.monsters.some(m => m.row === p.row && !m.dying && m.u > p.col + .4 && m.u < COLS + .6);
     if (has && p.cdT <= 0) {
       p.cdT = d.every; p.recoil = 1;
-      for (let k = 0; k < (d.shots || 1); k++) G.timers.push({ at: G.time + k * .13, fn: () => { if (!p.alive) return; G.bullets.push({ row: p.row, u: p.col + .78, pu: p.col + .78, dmg: d.damage, slow: d.slow || 0, slowT: d.slowTime || 3, style: d.slow ? 'ice' : ((d.shots || 1) > 1 ? 'spike' : 'seed') }); sfx.shoot(); } });
+      for (let k = 0; k < (d.shots || 1); k++) G.timers.push({ at: G.time + k * .13, row: p.row, col: p.col });
     }
   } else if (d.kind === 'bomb') {
     p.fuse -= dt; if (p.fuse <= 0) { const cu = p.col + .5, r = p.row; removePlant(p, true); blast(cu, r, d.radius || 1.5, Math.round(d.radius || 1.5) > 1 ? 1 : 0, d.damage); }
@@ -751,7 +797,14 @@ function update(dt) {
   for (let i = G.queue.length - 1; i >= 0; i--) {
     const q = G.queue[i]; if (G.time >= q.due) { spawnMonster(q.monster, q.row < 0 ? Math.floor(Math.random() * ROWS) : q.row); G.queue.splice(i, 1); }
   }
-  for (let i = G.timers.length - 1; i >= 0; i--) if (G.time >= G.timers[i].at) { const t = G.timers[i]; G.timers.splice(i, 1); t.fn(); }
+  for (let i = G.timers.length - 1; i >= 0; i--) if (G.time >= G.timers[i].at) {
+    const t = G.timers[i]; G.timers.splice(i, 1);
+    const p = G.plants[t.row]?.[t.col];
+    if (!p?.alive) continue;
+    const d = p.d;
+    G.bullets.push({ row: p.row, u: p.col + .78, pu: p.col + .78, dmg: d.damage, slow: d.slow || 0, slowT: d.slowTime || 3, style: d.slow ? 'ice' : ((d.shots || 1) > 1 ? 'spike' : 'seed') });
+    sfx.shoot();
+  }
   // nắng từ trời
   const ss = G.L.skySun;
   if (ss && ss.every > 0) { G.skyT -= dt; if (G.skyT <= 0) { G.skyT = ss.every * rand(.85, 1.15); addSun(rand(.4, COLS - .4), 0, ss.amount || 25, 'sky'); } }
@@ -789,9 +842,12 @@ function update(dt) {
   updateFx(dt);
   // thắng / thua
   if (G.ei >= G.events.length && !G.queue.length && !G.monsters.length && G.readyT <= 0) { G.endDelay += dt; if (G.endDelay > 1.2) endGame(true); } else G.endDelay = 0;
+  saveAcc += dt;
+  if (saveAcc >= 1) { saveAcc = 0; saveRunCheckpoint(); }
 }
 function endGame(win) {
   if (!G || G.phase === 'done') return; G.phase = 'done'; G.sel = null; drag = null;
+  try { localStorage.removeItem(RK); } catch (e) { console.error('Không thể xóa checkpoint Vườn Thủ Hộ.', e); }
   if (win) {
     confetti(); sfx.win(); prog.cleared[G.li] = true; lsSet(PK, JSON.stringify(prog));
     const last = G.li + 1 >= CFG.levels.length;
@@ -947,12 +1003,14 @@ function updateUi(dt) {
 /* ================= Vào / thoát trận ================= */
 function play(li) {
   const L = CFG.levels[li]; if (!L) return; G = newGame(li);
+  saveAcc = 0;
   $('top').classList.add('on'); $('speedBtn').textContent = '1×'; $('shovel').classList.remove('on');
   layout(); buildPackets(); buildBg(); showScreen(null); checkOrient();
+  saveRunCheckpoint();
   if (li === 0) hint('Chạm gói hạt phía trên, rồi chạm ô cỏ để trồng. Nhớ nhặt ☀️ nắng nhé!', 9000);
   else if (!(L.skySun && L.skySun.every > 0)) hint('Màn này không có nắng rơi từ trời. Hãy trồng thật nhiều hướng dương!', 8000);
 }
-function toMenu() { G = null; $('top').classList.remove('on'); $('hint').classList.remove('show'); buildMenu(); showScreen('menu'); }
+function toMenu() { saveRunCheckpoint(); G = null; $('top').classList.remove('on'); $('hint').classList.remove('show'); buildMenu(); showScreen('menu'); }
 
 /* ================= Nhập liệu ================= */
 cv.addEventListener('pointerdown', e => {
@@ -973,12 +1031,17 @@ window.addEventListener('pointercancel', () => { ptr.down = false; drag = null; 
 $('packets').addEventListener('pointerdown', e => { const b = e.target.closest('.packet'); if (!b || !G) return; e.preventDefault(); ensureAudio(); pickPacket(b.dataset.id, e); });
 $('shovel').onclick = () => { if (!G || G.paused || G.phase === 'done') return; ensureAudio(); G.shovel = !G.shovel; G.sel = null; $('shovel').classList.toggle('on', G.shovel); sfx.tap(); if (G.shovel) toast('Chạm vào cây để nhổ bỏ'); };
 $('speedBtn').onclick = () => { if (!G) return; ensureAudio(); G.speed = G.speed === 1 ? 2 : 1; $('speedBtn').textContent = G.speed + '×'; sfx.tap(); };
-$('pauseBtn').onclick = () => { if (!G || G.phase === 'done') return; ensureAudio(); G.paused = true; syncSoundBtns(); showScreen('pause'); };
+$('pauseBtn').onclick = () => { if (!G || G.phase === 'done') return; ensureAudio(); G.paused = true; saveRunCheckpoint(); syncSoundBtns(); showScreen('pause'); };
 $('resumeBtn').onclick = () => { if (G) G.paused = false; showScreen(null); };
 $('restartBtn').onclick = () => { play(G.li); };
 $('retryBtn').onclick = () => { play(G.li); };
 $('nextBtn').onclick = () => { play(G.li + 1); };
 $('menuBtn').onclick = $('winMenu').onclick = $('loseMenu').onclick = toMenu;
+$('exitAppBtn').onclick = () => {
+  if (G && G.phase !== 'done') saveRunCheckpoint();
+  if (window.parent !== window) window.parent.postMessage({ type: 'quit' }, '*');
+  else window.location.href = '/';
+};
 
 /* ================= Trình sửa JSON ================= */
 function cfgErr(msg) { $('cfgErr').textContent = msg; }
@@ -988,7 +1051,7 @@ $('cfgApply').onclick = () => {
   let u; try { u = JSON.parse($('cfgText').value); } catch (e) { cfgErr('JSON sai cú pháp: ' + e.message); return; }
   const er = validate(u); if (er.length) { cfgErr(er.slice(0, 6).join('\n') + (er.length > 6 ? `\n... và ${er.length - 6} lỗi nữa` : '')); return; }
   userCfg = u; CFG = resolve(u); lsSet(CK, JSON.stringify(u)); buildMenu(); showScreen('menu');
-  toast(cfgFromAPI ? '⚠️ Đã lưu bản này, nhưng game đang dùng cấu hình từ máy chủ' : '✅ Đã áp dụng cấu hình mới');
+  toast('✅ Đã áp dụng cấu hình mới');
 };
 $('cfgReset').onclick = () => { $('cfgText').value = pretty(DEF); cfgErr('Đã nạp cấu hình mặc định. Bấm "Áp dụng" để dùng.'); };
 $('cfgCopy').onclick = async () => { try { await navigator.clipboard.writeText($('cfgText').value); toast('Đã sao chép JSON'); } catch (e) { $('cfgText').select(); toast('Hãy chọn và sao chép thủ công'); } };
@@ -1003,7 +1066,9 @@ function checkOrient() {
   if (G && G.phase !== 'done') { if (portrait && !G.paused) { G.paused = true; G.autoPaused = true; } else if (!portrait && G.autoPaused) { G.paused = false; G.autoPaused = false; } }
 }
 window.addEventListener('resize', () => { layout(); checkOrient(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && G && G.phase !== 'done' && !G.paused && !$('rotate').classList.contains('show')) { G.paused = true; syncSoundBtns(); showScreen('pause'); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden && G && G.phase !== 'done' && !G.paused && !$('rotate').classList.contains('show')) { G.paused = true; saveRunCheckpoint(); syncSoundBtns(); showScreen('pause'); } });
+window.addEventListener('beforeunload', saveRunCheckpoint);
+window.addEventListener('pagehide', saveRunCheckpoint);
 
 /* ================= Vòng lặp ================= */
 let last = performance.now();

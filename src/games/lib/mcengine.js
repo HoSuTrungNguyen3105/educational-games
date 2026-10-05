@@ -13,7 +13,6 @@
 const MC_LEVEL_STEP = 3;    // số câu đúng để lên màn
 const MC_RUN_SECS = 25;     // giây cho mỗi câu
 const MC_START_LIVES = 3;
-const MC_PROGRESS_TTL = 30 * 24 * 60 * 60 * 1000;
 
 /** Registry maker, mỗi file game tự đăng ký 1 hàm. */
 const MC_MAKERS = {};
@@ -34,7 +33,6 @@ const MC_PROGRESS = {
       if (!raw) return null;
       const d = JSON.parse(raw);
       if (!d || typeof d !== "object" || !d.game) return null;
-      if (d.updatedAt && Date.now() - d.updatedAt > MC_PROGRESS_TTL) { this.clear(); return null; }
       return d;
     } catch { return null; }
   },
@@ -44,7 +42,8 @@ const MC_PROGRESS = {
   write(d) {
     d.updatedAt = Date.now();
     this.data = d;
-    try { localStorage.setItem(mcProgressKey(), JSON.stringify(d)); } catch (e) { /* private mode */ }
+    try { localStorage.setItem(mcProgressKey(), JSON.stringify(d)); }
+    catch (e) { console.error(`[mcengine] Không thể lưu tiến độ "${MC_META.id}"`, e); toast("Không thể lưu ván chơi trên thiết bị này."); }
     return d;
   },
 
@@ -90,7 +89,8 @@ function mcPersist() {
   MC_PROGRESS.save({
     game: mcRun.id, name: MC_META.name, icon: MC_META.icon,
     level: mcRun.level, score: mcRun.score, correct: mcRun.correct,
-    answered: mcRun.answered, lives: mcRun.lives,
+    answered: mcRun.answered, lives: mcRun.lives, streak: mcRun.streak,
+    cur: mcRun.cur, time: mcRun.time, locked: mcRun.locked, lastAnswer: mcRun.lastAnswer || null,
   });
 }
 
@@ -108,6 +108,7 @@ function mcNextQuestion() {
   if (mcRun.lives <= 0) { mcEndRun(); return; }
 
   mcRun.locked = false;
+  mcRun.lastAnswer = null;
   mcRun.time = MC_RUN_SECS;
   mcRun.cur = MC_MAKERS[mcRun.id](mcRun.level);
   mcPersist();
@@ -151,6 +152,16 @@ function mcRender() {
     const b = e.target.closest(".opt");
     if (b) mcAnswer(+b.dataset.k);
   };
+
+  if (mcRun.locked && mcRun.lastAnswer) {
+    const btns = [...document.querySelectorAll("#opts .opt")];
+    const ci = c.opts.findIndex((o) => String(o) === String(c.ans));
+    if (ci >= 0 && btns[ci]) btns[ci].classList.add("ok");
+    if (!mcRun.lastAnswer.right && mcRun.lastAnswer.k >= 0 && btns[mcRun.lastAnswer.k]) btns[mcRun.lastAnswer.k].classList.add("bad");
+    $("#ex").innerHTML = `<div class="explain">${mcRun.lastAnswer.right ? "✅ Chính xác!" : (mcRun.lastAnswer.k < 0 ? "⏰ Hết giờ!" : "❌ Chưa đúng.")} ${c.exp}</div>`;
+    $("#nx").innerHTML = `<button class="btn" data-next="1">${mcRun.lives <= 0 ? "Xem kết quả" : mcRun.correct >= MC_LEVEL_STEP ? "Lên màn! →" : "Câu tiếp theo →"}</button>`;
+    $("#nx").onclick = () => { if (mcRun) mcNextQuestion(); };
+  }
 }
 
 /** Trả lời. k = -1 nghĩa là hết giờ. */
@@ -177,6 +188,7 @@ function mcAnswer(k) {
     if (k >= 0 && btns[k]) btns[k].classList.add("bad");
   }
   mcRun.answered += 1;
+  mcRun.lastAnswer = { k, right };
 
   const ex = $("#ex"), nx = $("#nx");
   if (ex) ex.innerHTML = `<div class="explain">${right ? "✅ Chính xác!" : (k < 0 ? "⏰ Hết giờ!" : "❌ Chưa đúng.")} ${c.exp}</div>`;
@@ -188,7 +200,7 @@ function mcAnswer(k) {
     nx.onclick = () => { if (mcRun) mcNextQuestion(); };
   }
 
-  mcPersist();          // ← lưu sau MỖI câu
+  mcPersist();
 }
 
 function mcEndRun() {
@@ -231,14 +243,27 @@ function startMcGame(id, meta) {
     correct: keep ? (saved.correct || 0) : 0,
     answered: keep ? (saved.answered || 0) : 0,
     lives: keep && Number.isFinite(saved.lives) ? Math.max(1, saved.lives) : MC_START_LIVES,
-    streak: 0, locked: false, cur: null, time: MC_RUN_SECS,
+    streak: keep ? (saved.streak || 0) : 0,
+    locked: keep && !!saved.locked && !!saved.lastAnswer,
+    lastAnswer: keep ? saved.lastAnswer || null : null,
+    cur: keep && saved.cur && Array.isArray(saved.cur.opts) ? saved.cur : null,
+    time: keep && Number.isFinite(saved.time) ? Math.max(0, saved.time) : MC_RUN_SECS,
     justResumed: !!keep,
   };
 
   startSingleGame({
     id, name: meta.name, icon: meta.icon,
     storageKey: `offline_${id}`,
-    mount: () => { mcPersist(); mcNextQuestion(); },
+    mount: () => {
+      if (mcRun.cur) {
+        mcRun.justResumed = true;
+        mcRender();
+        mcStartTimer();
+      } else {
+        mcPersist();
+        mcNextQuestion();
+      }
+    },
     badges: meta.badges || [],
   });
 }

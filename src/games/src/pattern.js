@@ -1,73 +1,120 @@
-// src/games/src/pattern.js — Thám Tử Quy Luật (Toán · Tư duy)
-// Sinh tự động từ game2.html bởi scripts/split-offline-games.mjs.
-// Sửa file này, KHÔNG sửa game2.html.
+// src/games/src/pattern.js — Săn Sao
 
     function patternGame(root) {
-      function genSeq(n) {
-        const t = n < 3 ? rnd(0, 1) : n < 7 ? rnd(0, 4) : rnd(0, 6);
-        let seq = [], rule = '';
+      const id = 'pattern';
+      const colors = [
+        ['🍓', '#ff6f59'], ['🍋', '#ffd166'], ['🍇', '#b18cff'], ['🍀', '#b7e34a']
+      ];
+      let saved = loadOfflineRun(id);
 
-        if (t === 0) {
-          const a = rnd(1, 20), d = rnd(2, 9);
-          seq = [...Array(6)].map((_, i) => a + d * i);
-          rule = `Mỗi số bằng số đứng trước cộng ${d}.`;
-        } else if (t === 1) {
-          const d = rnd(2, 8), a = rnd(40, 70);
-          seq = [...Array(6)].map((_, i) => a - d * i);
-          rule = `Mỗi số bằng số đứng trước trừ ${d}.`;
-        } else if (t === 2) {
-          const r = rnd(2, 3), a = rnd(1, 3);
-          seq = [...Array(6)].map((_, i) => a * r ** i);
-          rule = `Mỗi số bằng số đứng trước nhân ${r}.`;
-        } else if (t === 3) {
-          const o = rnd(0, 3);
-          seq = [...Array(6)].map((_, i) => (i + 1) ** 2 + o);
-          rule = o ? `Đây là dãy số chính phương 1, 4, 9, 16, ... cộng thêm ${o}.` : 'Đây là dãy số chính phương: 1², 2², 3², 4², ...';
-        } else if (t === 4) {
-          const a = rnd(1, 5), d0 = rnd(1, 3);
-          let v = a; seq = [v];
-          for (let i = 1; i < 6; i++) { v += d0 + i - 1; seq.push(v); }
-          rule = `Hiệu hai số liên tiếp tăng dần: +${d0}, +${d0 + 1}, +${d0 + 2}, ...`;
-        } else if (t === 5) {
-          const a = rnd(1, 4), b = rnd(2, 6);
-          seq = [a, b];
-          for (let i = 2; i < 6; i++) seq.push(seq[i - 1] + seq[i - 2]);
-          rule = 'Mỗi số bằng tổng của hai số đứng ngay trước nó.';
-        } else {
-          const a = rnd(20, 30), p = rnd(4, 9), m = rnd(1, p - 2);
-          seq = [a];
-          for (let i = 1; i < 6; i++) seq.push(seq[i - 1] + (i % 2 ? p : -m));
-          rule = `Luân phiên cộng ${p} rồi trừ ${m}.`;
-        }
-        return { seq, h: rnd(2, 5), rule };
+      function fresh() {
+        clearOfflineRun(id);
+        return { sequence: [rnd(0, 3)], inputIndex: 0, lives: 3, score: 0, phase: 'showing' };
       }
 
-      root.innerHTML = '';
-      runMC(root, {
-        id: 'pattern', replay: patternGame, count: 10, secs: 20,
-        make(i) {
-          const { seq, h, rule } = genSeq(i);
-          const ans = seq[h];
-          return {
-            html: `<div class="hint" style="margin:0 0 12px">Tìm số còn thiếu theo quy luật</div>
-          <div class="seq">${seq.map((v, k) => `<div class="chip ${k === h ? 'q' : ''}">${k === h ? '?' : v}</div>`).join('')}</div>`,
-            opts: makeOpts(ans, 4), ans,
-            exp: `${rule} Số cần tìm là ${ans}.`
+      function intro() {
+        root.innerHTML = `<div class="panel center"><h2>Săn Sao</h2>
+          <p class="hint">Nhìn các ô sáng lên rồi chạm theo nhịp. Xem chuỗi dài bao nhiêu bạn giữ được!</p>
+          <button class="btn" data-start="1">Bắt đầu chơi</button></div>`;
+        root.onclick = e => { if (e.target.closest('[data-start]')) start(fresh()); };
+      }
+
+      function start(game) {
+        T.clear();
+        const save = () => saveOfflineRun(id, game);
+        function paint() {
+          const status = game.phase === 'input' ? 'Đến lượt bạn!' : 'Nhìn theo nhịp…';
+          root.innerHTML = `<div class="hud"><span>🎵 Nhịp <b>${game.sequence.length}</b></span><span>⭐ <b>${game.score}</b></span><span>${'❤️'.repeat(game.lives)}</span></div>
+            <div class="qbox" id="status">${status}</div>
+            <div class="opts" style="grid-template-columns:repeat(2,1fr)">${colors.map(([icon, color], i) => `<button class="opt" data-pad="${i}" style="min-height:100px;font-size:36px;background:${color}">${icon}</button>`).join('')}</div>`;
+        }
+        function light(index, on) {
+          const pad = root.querySelector(`[data-pad="${index}"]`);
+          if (pad) pad.style.filter = on ? 'brightness(1.45)' : '';
+        }
+        function finishGame() {
+          T.clear();
+          clearOfflineRun(id);
+          S.flags.pat = true;
+          finish({
+            id, score: game.score, xp: 0,
+            lines: [`Bạn đã giữ được ${game.sequence.length - 1} nhịp`, `Điểm: ${game.score}`],
+            replay: patternGame, details: { rounds: game.sequence.length - 1, score: game.score }
+          });
+        }
+        function playSequence() {
+          T.clear();
+          game.phase = 'showing';
+          game.inputIndex = 0;
+          save();
+          let index = 0;
+          const pulse = () => {
+            if (index >= game.sequence.length) {
+              game.phase = 'input';
+              save();
+              const status = root.querySelector('#status');
+              if (status) status.textContent = 'Đến lượt bạn!';
+              return;
+            }
+            const padIndex = game.sequence[index];
+            light(padIndex, true);
+            sfx.tick();
+            T.set(() => {
+              light(padIndex, false);
+              index++;
+              T.set(pulse, 180);
+            }, 360);
           };
-        },
-        onEnd(r) { if (r === 10) S.flags.pat = true; },
-        details(right) { return { right }; }
-      });
+          T.set(pulse, 350);
+        }
+        root.onclick = e => {
+          const button = e.target.closest('[data-pad]');
+          if (!button || game.phase !== 'input') return;
+          const picked = +button.dataset.pad;
+          light(picked, true);
+          light(picked, false);
+          if (picked !== game.sequence[game.inputIndex]) {
+            game.lives--;
+            sfx.bad();
+            if (game.lives <= 0) { finishGame(); return; }
+            game.phase = 'showing';
+            save();
+            const status = root.querySelector('#status');
+            if (status) status.textContent = 'Tập trung — nghe lại nhịp!';
+            T.set(playSequence, 450);
+            return;
+          }
+          game.inputIndex++;
+          sfx.ok();
+          if (game.inputIndex === game.sequence.length) {
+            game.score += game.sequence.length * 10;
+            game.sequence.push(rnd(0, 3));
+            game.inputIndex = 0;
+            game.phase = 'showing';
+            save();
+            const status = root.querySelector('#status');
+            if (status) status.textContent = 'Tuyệt! Chuỗi mới…';
+            T.set(playSequence, 400);
+          } else save();
+        };
+        paint();
+        if (game.phase === 'input') save();
+        else playSequence();
+      }
+
+      if (saved && Array.isArray(saved.sequence) && saved.sequence.length > 0 &&
+          saved.sequence.every(n => Number.isInteger(n) && n >= 0 && n < 4) &&
+          Number.isInteger(saved.lives) && saved.lives > 0) start(saved);
+      else intro();
     }
 
-    /* ============ GAME 6: NHỚ DÃY MÀU ============ */
 startSingleGame({
   id: 'pattern',
-  name: 'Thám Tử Quy Luật',
-  icon: '🕵️',
+  name: 'Săn Sao',
+  icon: '⭐',
   storageKey: 'offline_pattern',
   mount: patternGame,
   badges: [
-      { id: 'pat', n: 'Tìm ra quy luật', i: '🕵️', ok: () => !!S.flags.pat },
+      { id: 'pat', n: 'Nhớ nhịp', i: '🎵', ok: () => !!S.flags.pat },
   ],
 });
