@@ -81,8 +81,8 @@
 
 startSingleGame({
   id: 'quiz',
-  name: 'Bắn Bong Bóng',
-  icon: '🫧',
+  name: 'Chọn Một Vui',
+  icon: '🎉',
   storageKey: 'offline_quiz',
   mount: quizGame,
   badges: [

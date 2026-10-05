@@ -106,8 +106,8 @@
 
 startSingleGame({
   id: 'clock',
-  name: 'Chạy Trốn Đồng Hồ',
-  icon: '⏳',
+  name: 'Chạm Đúng Nhịp',
+  icon: '🚦',
   storageKey: 'offline_clock',
   mount: clockGame,
   badges: [

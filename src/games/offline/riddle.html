@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Học Mà Chơi</title>
+  <title>Góc Giải Trí</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
     href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap"
@@ -761,7 +761,7 @@
 <body>
   <div id="app">
     <div class="top">
-      <div class="logo"><i>🎓</i>Học Mà Chơi</div>
+      <div class="logo"><i>🎮</i>Góc Giải Trí</div>
       <div class="me">
         <span class="lvl" id="lvl">Cấp 1</span>
         <div class="xp" title="Kinh nghiệm"><i id="xpb"></i></div>
@@ -975,7 +975,7 @@ function checkBadges() {
 /* ============ XP & Cấp ============ */
 function renderMe() {
   const lvlEl = $('#lvl'), xpEl = $('#xpb');
-  if (lvlEl) lvlEl.textContent = 'Cấp ' + lvl();
+  if (lvlEl) lvlEl.textContent = 'Hạng ' + lvl();
   if (xpEl)  xpEl.style.width  = ((S.xp % XP_PER_LVL) / XP_PER_LVL * 100) + '%';
 }
 
@@ -1067,7 +1067,7 @@ function runMC(root, cfg) {
  * Gọi khi một ván kết thúc.
  * @param {{ id, score, xp, lines, replay, details? }} opts
  */
-function finish({ id, score, xp, lines, replay, details = {} }) {
+function finish({ id, score, xp = 0, lines, replay, details = {} }) {
   cleanup();
 
   // Cập nhật state client ngay (không chờ mạng)
@@ -1348,7 +1348,7 @@ if (typeof window !== "undefined") {
 
     <!-- Game: riddle — nội dung riêng của file này -->
     <script>
-// src/games/src/riddle.js — Cuộc Đua Tốc Độ
+// src/games/src/riddle.js — Phản Xạ Đèn Xanh
 
     function speedRaceGame(root) {
       const id = 'riddle';
@@ -1369,7 +1369,7 @@ if (typeof window !== "undefined") {
       function save() { saveOfflineRun(id, game); }
       root.innerHTML = `<div class="hud"><span>🏁 <b id="raceScore">0</b></span><span>⏱ <b id="raceTime">30</b>s</span><span>❤️ <b id="raceLives">3</b></span></div>
         <div class="qbox center" style="padding:24px 12px">
-          <div style="font-size:14px;opacity:.7">CUỘC ĐUA TỐC ĐỘ</div>
+          <div style="font-size:14px;opacity:.7">PHẢN XẠ ĐÈN XANH</div>
           <div id="trafficLight" style="width:100px;height:100px;border-radius:50%;margin:18px auto;background:#f44336;border:8px solid #ffffff55;box-shadow:0 0 30px #f4433670"></div>
           <div id="raceStatus" style="font-size:20px;font-weight:800">Chờ đèn xanh!</div>
         </div>
@@ -1450,8 +1450,8 @@ if (typeof window !== "undefined") {
 
     startSingleGame({
       id: 'riddle',
-      name: 'Cuộc Đua Tốc Độ',
-      icon: '🏁',
+      name: 'Phản Xạ Đèn Xanh',
+      icon: '🚦',
       storageKey: 'offline_riddle',
       mount: speedRaceGame,
     });

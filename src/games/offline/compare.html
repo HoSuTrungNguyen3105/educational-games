@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Học Mà Chơi</title>
+  <title>Góc Giải Trí</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
     href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap"
@@ -761,7 +761,7 @@
 <body>
   <div id="app">
     <div class="top">
-      <div class="logo"><i>🎓</i>Học Mà Chơi</div>
+      <div class="logo"><i>🎮</i>Góc Giải Trí</div>
       <div class="me">
         <span class="lvl" id="lvl">Cấp 1</span>
         <div class="xp" title="Kinh nghiệm"><i id="xpb"></i></div>
@@ -975,7 +975,7 @@ function checkBadges() {
 /* ============ XP & Cấp ============ */
 function renderMe() {
   const lvlEl = $('#lvl'), xpEl = $('#xpb');
-  if (lvlEl) lvlEl.textContent = 'Cấp ' + lvl();
+  if (lvlEl) lvlEl.textContent = 'Hạng ' + lvl();
   if (xpEl)  xpEl.style.width  = ((S.xp % XP_PER_LVL) / XP_PER_LVL * 100) + '%';
 }
 
@@ -1067,7 +1067,7 @@ function runMC(root, cfg) {
  * Gọi khi một ván kết thúc.
  * @param {{ id, score, xp, lines, replay, details? }} opts
  */
-function finish({ id, score, xp, lines, replay, details = {} }) {
+function finish({ id, score, xp = 0, lines, replay, details = {} }) {
   cleanup();
 
   // Cập nhật state client ngay (không chờ mạng)
@@ -1348,7 +1348,7 @@ if (typeof window !== "undefined") {
 
     <!-- Game: compare — nội dung riêng của file này -->
     <script>
-// src/games/src/compare.js — Đấu Trường Bong Bóng
+// src/games/src/compare.js — Oẳn Tù Tì
 
     function bubbleDuelGame(root) {
       const id = 'compare';
@@ -1370,7 +1370,7 @@ if (typeof window !== "undefined") {
       function save() { saveOfflineRun(id, game); }
       function render() {
         root.innerHTML = `<div class="hud"><span>🥊 Trận <b>${game.round + 1}</b>/10</span><span>🏆 <b>${game.wins}</b></span></div>
-          <div class="qbox center"><div style="font-size:14px;opacity:.7">ĐẤU TRƯỜNG BONG BÓNG</div>
+          <div class="qbox center"><div style="font-size:14px;opacity:.7">OẲN TÙ TÌ</div>
             <div style="font-size:54px;margin:12px 0">${game.phase === 'ready' ? '🫧' : moves[game.lastCpu]}</div>
             <div id="duelMessage">${game.message}</div>
             <p class="hint">Thắng ${game.wins} · Hòa ${game.ties} · Thua ${game.losses}</p></div>
@@ -1434,8 +1434,8 @@ if (typeof window !== "undefined") {
 
     startSingleGame({
       id: 'compare',
-      name: 'Đấu Trường Bong Bóng',
-      icon: '🫧',
+      name: 'Oẳn Tù Tì',
+      icon: '✊',
       storageKey: 'offline_compare',
       mount: bubbleDuelGame,
     });

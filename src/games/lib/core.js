@@ -219,7 +219,7 @@ function checkBadges() {
 /* ============ XP & Cấp ============ */
 function renderMe() {
   const lvlEl = $('#lvl'), xpEl = $('#xpb');
-  if (lvlEl) lvlEl.textContent = 'Cấp ' + lvl();
+  if (lvlEl) lvlEl.textContent = 'Hạng ' + lvl();
   if (xpEl)  xpEl.style.width  = ((S.xp % XP_PER_LVL) / XP_PER_LVL * 100) + '%';
 }
 
@@ -311,7 +311,7 @@ function runMC(root, cfg) {
  * Gọi khi một ván kết thúc.
  * @param {{ id, score, xp, lines, replay, details? }} opts
  */
-function finish({ id, score, xp, lines, replay, details = {} }) {
+function finish({ id, score, xp = 0, lines, replay, details = {} }) {
   cleanup();
 
   // Cập nhật state client ngay (không chờ mạng)

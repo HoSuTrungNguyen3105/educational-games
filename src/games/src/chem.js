@@ -74,8 +74,8 @@
 
 startSingleGame({
   id: 'chem',
-  name: 'Phòng Thí Nghiệm Vui',
-  icon: '🧪',
+  name: 'Tiệc Ánh Sáng',
+  icon: '✨',
   storageKey: 'offline_chem',
   mount: chemGame,
   badges: [

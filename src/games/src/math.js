@@ -1,4 +1,4 @@
-// src/games/src/math.js — Né Bóng
+// src/games/src/math.js — Săn Trái Cây
 
     function mathGame(root) {
       const id = 'math';
@@ -14,7 +14,7 @@
       }
 
       function renderIntro() {
-        root.innerHTML = `<div class="panel center"><h2>Né Bóng</h2>
+        root.innerHTML = `<div class="panel center"><h2>Săn Trái Cây 🍓</h2>
           <p class="hint">Tìm và chạm thật nhanh vào món ăn đang được gọi. Chơi trong 45 giây!</p>
           <button class="btn" data-start="1">Bắt đầu chơi</button></div>`;
         root.onclick = e => {

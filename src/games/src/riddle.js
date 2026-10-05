@@ -1,4 +1,4 @@
-// src/games/src/riddle.js — Cuộc Đua Tốc Độ
+// src/games/src/riddle.js — Phản Xạ Đèn Xanh
 
     function speedRaceGame(root) {
       const id = 'riddle';
@@ -19,7 +19,7 @@
       function save() { saveOfflineRun(id, game); }
       root.innerHTML = `<div class="hud"><span>🏁 <b id="raceScore">0</b></span><span>⏱ <b id="raceTime">30</b>s</span><span>❤️ <b id="raceLives">3</b></span></div>
         <div class="qbox center" style="padding:24px 12px">
-          <div style="font-size:14px;opacity:.7">CUỘC ĐUA TỐC ĐỘ</div>
+          <div style="font-size:14px;opacity:.7">PHẢN XẠ ĐÈN XANH</div>
           <div id="trafficLight" style="width:100px;height:100px;border-radius:50%;margin:18px auto;background:#f44336;border:8px solid #ffffff55;box-shadow:0 0 30px #f4433670"></div>
           <div id="raceStatus" style="font-size:20px;font-weight:800">Chờ đèn xanh!</div>
         </div>
@@ -100,8 +100,8 @@
 
     startSingleGame({
       id: 'riddle',
-      name: 'Cuộc Đua Tốc Độ',
-      icon: '🏁',
+      name: 'Phản Xạ Đèn Xanh',
+      icon: '🚦',
       storageKey: 'offline_riddle',
       mount: speedRaceGame,
     });

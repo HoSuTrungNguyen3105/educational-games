@@ -1,4 +1,4 @@
-// src/games/src/compare.js — Đấu Trường Bong Bóng
+// src/games/src/compare.js — Oẳn Tù Tì
 
     function bubbleDuelGame(root) {
       const id = 'compare';
@@ -20,7 +20,7 @@
       function save() { saveOfflineRun(id, game); }
       function render() {
         root.innerHTML = `<div class="hud"><span>🥊 Trận <b>${game.round + 1}</b>/10</span><span>🏆 <b>${game.wins}</b></span></div>
-          <div class="qbox center"><div style="font-size:14px;opacity:.7">ĐẤU TRƯỜNG BONG BÓNG</div>
+          <div class="qbox center"><div style="font-size:14px;opacity:.7">OẲN TÙ TÌ</div>
             <div style="font-size:54px;margin:12px 0">${game.phase === 'ready' ? '🫧' : moves[game.lastCpu]}</div>
             <div id="duelMessage">${game.message}</div>
             <p class="hint">Thắng ${game.wins} · Hòa ${game.ties} · Thua ${game.losses}</p></div>
@@ -84,8 +84,8 @@
 
     startSingleGame({
       id: 'compare',
-      name: 'Đấu Trường Bong Bóng',
-      icon: '🫧',
+      name: 'Oẳn Tù Tì',
+      icon: '✊',
       storageKey: 'offline_compare',
       mount: bubbleDuelGame,
     });
