@@ -36,11 +36,11 @@ export const PET_DEFAULT = {
 /** Catalog dự phòng khi API chưa trả về (chặn mạng, server lỗi). */
 export const CATALOG_FALLBACK = {
   species: [
-    { id: "dog", name: "Chó", emoji: "🐶", minLevel: 1, trait: "Nhanh nhẹn · Trung thành", desc: "Bạn đồng hành trung thành." },
-    { id: "cat", name: "Mèo", emoji: "🐱", minLevel: 1, trait: "Nhanh nhẹn · Độc lập", desc: "Kiêu ngạo nhưng mê ngủ." },
-    { id: "bird", name: "Chim", emoji: "🐦", minLevel: 4, trait: "Giọng hát · Sức bật", desc: "Hót hay, thích được khen." },
-    { id: "fish", name: "Cá", emoji: "🐟", minLevel: 6, trait: "Bình tĩnh · Kiên nhẫn", desc: "Luôn bình tĩnh." },
-    { id: "monkey", name: "Khỉ", emoji: "🐵", minLevel: 8, trait: "Nghịch ngợm · Tò mò", desc: "Tò mò, thích bắt chước." },
+    { id: "dog", name: "Chó", emoji: "🐶", art: "svg", minLevel: 1, trait: "Nhanh nhẹn · Trung thành", desc: "Bạn đồng hành trung thành." },
+    { id: "cat", name: "Mèo", emoji: "🐱", art: null, minLevel: 1, trait: "Nhanh nhẹn · Độc lập", desc: "Kiêu ngạo nhưng mê ngủ." },
+    { id: "bird", name: "Chim", emoji: "🐦", art: null, minLevel: 4, trait: "Giọng hát · Sức bật", desc: "Hót hay, thích được khen." },
+    { id: "fish", name: "Cá", emoji: "🐟", art: null, minLevel: 6, trait: "Bình tĩnh · Kiên nhẫn", desc: "Luôn bình tĩnh." },
+    { id: "monkey", name: "Khỉ", emoji: "🐵", art: null, minLevel: 8, trait: "Nghịch ngợm · Tò mò", desc: "Tò mò, thích bắt chước." },
   ],
   colors: [
     { id: "cream", name: "Kem", body: "#F4AF66" }, { id: "brown", name: "Nâu", body: "#A9714B" },

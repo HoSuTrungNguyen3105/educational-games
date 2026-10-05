@@ -66,8 +66,11 @@ export async function getByUser(userId) {
 /** Bỏ trường private trước khi trả về cho client. */
 export function serialize(doc) {
   if (!doc) return null;
-  const { userId, _id, createdAt, ...rest } = doc;
-  return { id: String(_id), ...rest };
+  // Bỏ các trường nội bộ trước khi trả về cho client.
+  const out = { ...doc, id: String(doc._id) };
+  delete out._id;
+  delete out.userId;
+  return out;
 }
 
 /**
@@ -186,12 +189,11 @@ export async function reset(userId) {
 
 /** Danh mục đã lọc theo cấp của người chơi. */
 export async function catalogFor(userId) {
-  let pet = null;
   try {
-    pet = await getByUser(userId);
-  } catch (e) {
+    const pet = await getByUser(userId);
+    return catalog.fullCatalog(pet?.level || 1);
+  } catch {
     // Người chưa đăng nhập / lỗi DB vẫn xem được toàn bộ danh mục ở cấp 1
     return catalog.fullCatalog(1);
   }
-  return catalog.fullCatalog(pet?.level || 1);
 }

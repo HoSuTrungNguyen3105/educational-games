@@ -96,10 +96,27 @@ function paintAccessory(svg, layerId, color) {
  * @param {number} size   chiều rộng (chiều cao tự tính theo tỉ lệ 600×700)
  * @param {string} color  id màu trong petCatalog
  * @param {object} outfits { hat, scarf, glasses, shirt, bow, backpack }
+ * @param {string} mood   happy | excited | hungry | sleepy | sad — quyết định lưỡi
+ *                        (SVG có sẵn lớp `#tongue`)
  */
-export default function MascotDog({ size = 64, className = "", color, outfits = {}, ariaLabel = "Thú cưng" }) {
+export default function MascotDog({ size = 64, className = "", color, outfits = {}, mood = "happy", ariaLabel = "Thú cưng" }) {
+  // Khoá phụ thuộc dạng chuỗi để không tính lại khi `outfits` là object mới mỗi lần render
+  const outfitKey = ["hat", "scarf", "glasses", "shirt", "bow", "backpack"]
+    .map((s) => {
+      const v = outfits?.[s];
+      if (!v) return "-";
+      return typeof v === "object" ? `${v.id}:${v.color || ""}` : String(v);
+    })
+    .join("|");
+
   const html = useMemo(() => {
     const c = paletteFor(color);
+    const fit = Object.fromEntries(outfitKey === "" ? [] : outfitKey.split("|").map((e, i) => {
+      const slot = ["hat", "scarf", "glasses", "shirt", "bow", "backpack"][i];
+      if (e === "-") return [slot, null];
+      const [id, col] = e.split(":");
+      return [slot, { id, color: col || null }];
+    }));
     let svg = svgRaw;
 
     // 0) Bỏ kích thước cứng 600×700 của file gốc, ép co giãn theo khung bọc.
@@ -128,15 +145,21 @@ export default function MascotDog({ size = 64, className = "", color, outfits = 
 
     // 2) bật/tắt + tô từng lớp phụ kiện
     for (const [slot, layerId] of Object.entries(LAYER_BY_SLOT)) {
-      const entry = outfits[slot];
+      const entry = fit[slot];
       svg = toggleLayer(svg, layerId, !!entry);
       if (entry) {
-        const chosen = typeof entry === "object" && entry.color ? entry.color : null;
-        svg = paintAccessory(svg, layerId, chosen || DEFAULT_LAYER_COLOR[layerId]);
+        svg = paintAccessory(svg, layerId, entry.color || DEFAULT_LAYER_COLOR[layerId]);
       }
     }
+
+    // 3) tâm tính → lưỡi (SVG có sẵn path id="tongue")
+    const tongueOut = mood === "excited" || mood === "hungry" || mood === "happy";
+    svg = svg.replace(/(<path id="tongue"[^>]*?)(\/?>)/, (_, head, close) =>
+      `${head}${tongueOut ? "" : ' display="none"'}${close}`
+    );
+
     return svg;
-  }, [color, outfits?.hat, outfits?.scarf, outfits?.glasses, outfits?.shirt, outfits?.bow, outfits?.backpack]);
+  }, [color, outfitKey, mood]);
 
   return (
     <span

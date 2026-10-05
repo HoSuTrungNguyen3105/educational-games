@@ -19,8 +19,8 @@ const EMOJI = {
   monkey: "🐵",
 };
 
-/** Màu mặc định khi chưa có pet nào trong store. */
-export const PET_FALLBACK = {
+/** Mặc định khi chưa có pet nào trong store. */
+const PET_FALLBACK = {
   species: "dog",
   color: "cream",
   outfits: { hat: null, scarf: null, glasses: null, shirt: null, bow: null, cape: null },
@@ -54,6 +54,7 @@ export default function PetSvg({
         className={`${className} ${bounce ? "float-slow" : ""}`}
         color={col}
         outfits={fit || {}}
+        mood={mood ?? pet?.mood ?? "happy"}
         ariaLabel={ariaLabel || pet?.name || "Chó"}
       />
     );
@@ -71,5 +72,3 @@ export default function PetSvg({
     </span>
   );
 }
-
-export { EMOJI as PET_EMOJI };
