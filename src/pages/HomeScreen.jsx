@@ -6,11 +6,12 @@ import { SOCKET_EVENTS } from '../socket/socket.events.js'
 import { getLevelProgress } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
+import './home-theme.css'
 import { Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
 import { AvatarPreviewSmall } from '../components/avatar/AvatarPreview.jsx'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import { PetSvg, PetAvatar } from '../components/PetAvatar.jsx'
-import { usePet, loadPet, moodLabel } from '../lib/petApi.js'
+import { usePet, moodLabel } from '../lib/petApi.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
 import {
@@ -72,11 +73,27 @@ import { OFFLINE_GAME_MANIFEST } from "../games/src/manifest.js";
 
 // Game offline. Nguon su that: src/games/src/manifest.js (sinh boi scripts/build-offline-games.mjs)
 // Moi game la MOT file HTML rieng trong src/games/offline/<id>.html
+// Màu rèm/nút cho từng game — khai tường minh để không phải đoán từ class gradient.
+const TILE_COLORS = Object.fromEntries(
+  OFFLINE_GAME_MANIFEST.map((g) => [
+    g.id,
+    ({
+      "math": "#F2B632", "memory": "#3D6FD8", "scramble": "#EE7FA6", "quiz": "#7C5CE0", "snake": "#2A9D8F",
+      "flap": "#F2B632", "g2048": "#7C5CE0", "chem": "#2A9D8F", "clock": "#E5533D", "pattern": "#3D6FD8",
+      "simon": "#EE7FA6", "anagram": "#F2B632", "stroop": "#7C5CE0", "sumseq": "#3D6FD8", "compare": "#2A9D8F",
+      "riddle": "#E5533D", "shapecount": "#EE7FA6",
+      "chem-trai-cay": "#E5533D", "hu-trai-cay": "#F2B632", "xep-khoi": "#3D6FD8", "pha-gach": "#7C5CE0",
+      "nhay-xoay": "#3D6FD8", "nong-trai-vui": "#2A9D8F", "goc-thu-gian": "#2A9D8F", "trung-tam-game": "#7C8AA0",
+    })[g.id] || "#F2B632",
+  ])
+);
+
 const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   key: g.id,
   path: `/offline/${g.id}`,
   name: g.name,
   description: g.tag,
+  needsNet: g.needsNet,
   icon: g.icon,
   grad: g.grad,
 }));
@@ -102,6 +119,13 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "assignment", icon: FileText, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
+
+// Chia sidebar thanh nhom de mat 'bi lan' hon phan trang chinh.
+const SIDEBAR_GROUPS = [
+  { title: "Chính", keys: ["home", "games", "subjects", "achievements"] },
+  { title: "Học tập", keys: ["tasks", "assignment", "shop", "garden"] },
+  { title: "Kết nối", keys: ["chat", "friends", "spin", "profile"] },
+];
 
 const BOTTOM_NAV = (userAuth) => [
   { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
@@ -438,7 +462,7 @@ const subjects = useMemo(() => {
   );
 
   return (
-    <div className="min-h-screen bg-[#E9F5FF] text-ink">
+    <div className="nb-home min-h-screen text-ink">
 
       {dueReminder && (
         <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-white border border-amber-200 rounded-2xl shadow-2xl p-4 animate-[popIn_.3s_ease]">
@@ -461,87 +485,104 @@ const subjects = useMemo(() => {
       <div className="lg:flex">
 
         {/* ═══════════ SIDEBAR (desktop) ═══════════ */}
-        <aside className="hidden lg:flex flex-col w-[218px] shrink-0 sticky top-0 h-screen bg-white border-r border-sky-100 px-4 py-5 z-30">
-          <a href="#/" onClick={() => navigate("/")} className="block mb-5 px-1">
-            <img src={`${import.meta.env.BASE_URL}eduplay-logo.png`} alt="EduPlay" className="h-11 w-auto object-contain" draggable={false} />
-          </a>
+          <aside className="nb-side hidden lg:flex flex-col w-[236px] shrink-0 sticky top-0 h-screen overflow-y-auto no-scrollbar">
+            {/* Thuong hieu */}
+            <div className="nb-side__brand">
+              <span className="grid place-items-center w-9 h-9 rounded-xl bg-[#F2B632] border-[3px] border-black text-lg shrink-0">🎪</span>
+              <span className="leading-tight">
+                <span className="block">Lớp Học Vui</span>
+                <span className="block text-[10px] font-semibold text-[#F2B632] tracking-widest">EDUGAMES</span>
+              </span>
+            </div>
 
-          <nav className="flex flex-col gap-1.5 overflow-y-auto no-scrollbar -mx-1 px-1">
-            {navItems.map(item => {
-              const Icon = item.icon;
-              const active = item.type === "path" && item.path === "/";
-              return (
-                <button
-                  key={item.key}
-                  onClick={() => handleNavClick(item)}
-                  className={`group relative flex items-center gap-3 text-[13.5px] font-bold px-3 py-2.5 rounded-2xl text-left transition-all ${active
-                    ? "bg-emerald-50 text-emerald-600 shadow-[inset_3px_0_0_#22C55E]"
-                    : "text-slate-500 hover:bg-sky-50 hover:text-sky-600"
-                    }`}
-                >
-                  <span className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center transition ${active ? "bg-emerald-500 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-sky-100 group-hover:text-sky-500"}`}>
-                    <Icon className="w-4 h-4" />
-                  </span>
-                  <span className="flex-1 truncate">{item.label}</span>
-                  {item.badge && pendingTaskCount > 0 && (
-                    <span className="min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-extrabold flex items-center justify-center">
-                      {pendingTaskCount}
-                    </span>
-                  )}
+            {/* Menu theo nhom */}
+            <nav className="flex-1 px-3 pb-3">
+              {SIDEBAR_GROUPS.map((group) => {
+                const items = navItems.filter((it) => group.keys.includes(it.key));
+                if (!items.length) return null;
+                return (
+                  <div key={group.title}>
+                    <p className="nb-side__group">{group.title}</p>
+                    <div className="flex flex-col gap-1">
+                      {items.map((item) => {
+                        const Icon = item.icon;
+                        const active = item.type === "path" && item.path === "/";
+                        return (
+                          <button
+                            key={item.key}
+                            onClick={() => handleNavClick(item)}
+                            aria-current={active ? "page" : undefined}
+                            className="nb-side__item"
+                          >
+                            <span className="nb-side__ico"><Icon className="w-[15px] h-[15px]" /></span>
+                            <span className="flex-1 truncate">{item.label}</span>
+                            {item.badge && pendingTaskCount > 0 && (
+                              <span className="min-w-[20px] h-5 px-1 rounded-full bg-[#E5533D] text-white text-[10px] font-extrabold flex items-center justify-center">
+                                {pendingTaskCount}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {(userAuth?.user?.role === "admin" || userAuth?.user?.role === "teacher") && (
+                <>
+                  <p className="nb-side__group">Quản trị</p>
+                  <button onClick={() => goTo("/admin")} className="nb-side__item">
+                    <span className="nb-side__ico"><GraduationCap className="w-[15px] h-[15px]" /></span>
+                    <span className="flex-1 truncate">Trang giáo viên</span>
+                  </button>
+                </>
+              )}
+
+              <p className="nb-side__group">Tài khoản</p>
+              {userAuth?.user ? (
+                <button onClick={onUserLogout} className="nb-side__item">
+                  <span className="nb-side__ico"><LogOut className="w-[15px] h-[15px]" /></span>
+                  <span className="flex-1 truncate">Đăng xuất</span>
                 </button>
-              );
-            })}
+              ) : (
+                <>
+                  <button onClick={onUserLogin} className="nb-side__item">
+                    <span className="nb-side__ico"><KeyRound className="w-[15px] h-[15px]" /></span>
+                    <span className="flex-1 truncate">Đăng nhập</span>
+                  </button>
+                  <button onClick={onUserRegister} className="nb-side__item">
+                    <span className="nb-side__ico"><Sparkles className="w-[15px] h-[15px]" /></span>
+                    <span className="flex-1 truncate">Đăng ký</span>
+                  </button>
+                </>
+              )}
+            </nav>
 
-            {(userAuth?.user?.role === 'admin' || userAuth?.user?.role === 'teacher') && (
-              <button onClick={() => goTo("/admin")} className="flex items-center gap-3 text-[13.5px] font-bold text-slate-500 px-3 py-2.5 rounded-2xl hover:bg-indigo-50 hover:text-indigo-600 transition text-left">
-                <span className="w-8 h-8 shrink-0 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center"><GraduationCap className="w-4 h-4" /></span>
-                Trang giáo viên
-              </button>
-            )}
-
-            {userAuth?.user ? (
-              <button onClick={onUserLogout} className="flex items-center gap-3 text-[13.5px] font-bold text-rose-500 px-3 py-2.5 rounded-2xl hover:bg-rose-50 transition text-left">
-                <span className="w-8 h-8 shrink-0 rounded-xl bg-rose-50 text-rose-400 flex items-center justify-center"><LogOut className="w-4 h-4" /></span>
-                Đăng xuất
-              </button>
-            ) : (
-              <>
-                <button onClick={onUserLogin} className="flex items-center gap-3 text-[13.5px] font-bold text-emerald-600 px-3 py-2.5 rounded-2xl hover:bg-emerald-50 transition text-left">
-                  <span className="w-8 h-8 shrink-0 rounded-xl bg-emerald-50 flex items-center justify-center"><KeyRound className="w-4 h-4" /></span>
-                  Đăng nhập
-                </button>
-                <button onClick={onUserRegister} className="flex items-center gap-3 text-[13.5px] font-bold text-slate-500 px-3 py-2.5 rounded-2xl hover:bg-sky-50 transition text-left">
-                  <span className="w-8 h-8 shrink-0 rounded-xl bg-slate-50 flex items-center justify-center"><Sparkles className="w-4 h-4" /></span>
-                  Đăng ký
-                </button>
-              </>
-            )}
-          </nav>
-
-          {/* Khối thú cưng ở cuối sidebar */}
-          <div className="mt-auto pt-4">
-            <div className="relative rounded-3xl bg-gradient-to-b from-emerald-50 to-teal-50 border border-emerald-100 p-3 pt-8 text-center">
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-                <div className="w-16 h-16 rounded-full bg-white shadow-md flex items-center justify-center">
-                  <PetSvg size={50} bounce />
+            {/* Thú cưng */}
+            <button onClick={() => goTo("/pet")} className="nb-pet block w-[calc(100%-24px)] text-left hover:-translate-y-0.5 transition">
+              <div className="flex items-center gap-2.5">
+                <div className="w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-black grid place-items-center overflow-hidden">
+                  <PetSvg size={40} bounce />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-extrabold truncate">{pet.name}</p>
+                  <p className="text-[10px] font-semibold text-[#2A9D8F]">Cấp {pet.level}</p>
+                  <div className="mt-1 h-1.5 rounded-full bg-[#1D2E4A]/15 overflow-hidden">
+                    <div className="h-full rounded-full bg-[#F2B632]"
+                      style={{ width: `${Math.min(100, Math.round((pet.exp / (pet.expNeeded || 1)) * 100))}%` }} />
+                  </div>
                 </div>
               </div>
-              <div className="absolute -top-2 left-2 right-2 mx-auto w-fit max-w-full bg-white border border-amber-200 rounded-xl px-2.5 py-1 text-[10px] font-bold text-amber-700 shadow-sm">
-                Cùng nhau khám phá thế giới tri thức!
-              </div>
-              <p className="mt-6 text-[11px] font-bold text-emerald-700 truncate">{pet.name} · Lv {pet.level}</p>
-              <button onClick={() => goTo("/garden")} className="mt-1.5 w-full text-[11px] font-bold text-white bg-gradient-to-r from-emerald-400 to-green-600 rounded-full py-1.5 hover:from-emerald-500 hover:to-green-700 transition">
-                Chăm pet →
-              </button>
-            </div>
-          </div>
-        </aside>
+              <p className="mt-2 text-[10px] font-bold text-[#1D2E4A]/60 truncate">{moodLabel(pet.mood)}</p>
+            </button>
+          </aside>
 
         {/* ═══════════ CỘT PHẢI CỦA SIDEBAR ═══════════ */}
         <div className="flex-1 min-w-0 flex flex-col">
 
           {/* ═══════════ TOPBAR (desktop) ═══════════ */}
-          <header className="hidden lg:flex sticky top-0 z-20 items-center gap-4 px-6 h-16 bg-[#E9F5FF]/92 backdrop-blur-md">
+          <header className="nb-topbar hidden lg:flex">
             <p className="font-display italic text-sky-700 text-sm leading-tight select-none">
               Học mà chơi<br />Chơi mà tiến bộ!
             </p>
@@ -716,7 +757,7 @@ const subjects = useMemo(() => {
                 <p className="-mt-1 mb-2.5 text-[11.5px] text-slate-400">
                   Chơi không cần mạng · Tiến độ lưu ngay trên máy
                 </p>
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 lg:gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {OFFLINE_GAMES.map((g) => (
                     <OfflineGameTile key={g.key} game={g} />
                   ))}
@@ -781,7 +822,7 @@ const subjects = useMemo(() => {
                   </div>
                 </div>
 
-                <div className="rounded-3xl bg-white p-3 shadow-[0_6px_18px_rgba(15,60,120,.08)] grid grid-cols-4 gap-2 content-start">
+                <div className="nb-card p-3 grid grid-cols-4 gap-2 content-start">
                   {QUICK_ACTIONS.map(item => {
                     const Icon = item.icon;
                     return (
@@ -886,13 +927,13 @@ const subjects = useMemo(() => {
 
               {/* Nhắc đăng nhập (chưa có tài khoản) */}
               {!userAuth?.user && (
-                <div className="rounded-3xl bg-white p-4 text-center shadow-[0_6px_18px_rgba(15,60,120,.08)]">
+                <div className="nb-card p-4 text-center">
                   <PartyPopper className="w-7 h-7 mx-auto text-emerald-400 mb-1.5" />
                   <p className="text-xs text-slate-500 mb-3">Đăng nhập để lưu điểm, coin và nuôi pet của bạn nhé!</p>
                   <button onClick={onUserLogin} className="w-full text-sm bg-gradient-to-r from-emerald-400 to-green-600 text-white font-bold px-4 py-2.5 rounded-full hover:from-emerald-500 hover:to-green-700 transition mb-2">
                     <KeyRound className="w-4 h-4 inline mr-1" /> Đăng nhập
                   </button>
-                  <button onClick={onUserRegister} className="w-full text-sm bg-white border border-emerald-200 text-emerald-600 font-bold px-4 py-2.5 rounded-full hover:bg-emerald-50 transition">
+                  <button onClick={onUserRegister} className="w-full nb-btn nb-btn--mustard">
                     <Sparkles className="w-4 h-4 inline mr-1" /> Đăng ký
                   </button>
                 </div>
@@ -903,7 +944,7 @@ const subjects = useMemo(() => {
       </div>
 
       {/* ═══════════ BOTTOM NAV (mobile) ═══════════ */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-sky-100 shadow-[0_-4px_16px_rgba(15,60,120,.08)]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#1D2E4A] border-t-[3px] border-black" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="flex justify-around items-center h-16">
           {BOTTOM_NAV(userAuth).filter(i => i.show).map(item => {
             const Icon = item.icon;
@@ -935,15 +976,15 @@ function StatPill({ children, onClick, wide = false }) {
 
 function SectionTitle({ icon: Icon, iconTint, title, actionLabel, onAction }) {
   return (
-    <div className="flex items-center justify-between mb-3">
-      <h2 className="font-display font-bold text-ink text-lg flex items-center gap-2">
-        <span className={`w-7 h-7 rounded-xl bg-gradient-to-br ${iconTint} text-white flex items-center justify-center shadow-sm`}>
-          <Icon className="w-4 h-4" />
+    <div className="flex items-center justify-between gap-3 mb-3">
+      <h2 className="nb-h2 flex items-center gap-2.5">
+        <span className={`w-8 h-8 rounded-xl border-[3px] border-[#1D2E4A] bg-gradient-to-br ${iconTint} flex items-center justify-center shrink-0`}>
+          <Icon className="w-4 h-4 text-white" />
         </span>
         {title}
       </h2>
       {actionLabel && (
-        <button onClick={onAction} className="text-xs font-bold text-sky-600 hover:text-sky-700 transition">{actionLabel}</button>
+        <button onClick={onAction} className="nb-chip shrink-0">{actionLabel}</button>
       )}
     </div>
   );
@@ -951,7 +992,7 @@ function SectionTitle({ icon: Icon, iconTint, title, actionLabel, onAction }) {
 
 function PanelCard({ icon, iconTint, title, badge, actionLabel, onAction, children, id }) {
   return (
-    <section id={id} className="rounded-3xl bg-white p-4 shadow-[0_6px_18px_rgba(15,60,120,.08)] scroll-mt-24">
+    <section id={id} className="nb-card p-4 scroll-mt-24">
       <div className="flex items-center justify-between gap-2 mb-3">
         <h3 className="font-display font-bold text-ink text-sm flex items-center gap-2">
           <span className={`w-7 h-7 rounded-xl bg-gradient-to-br ${iconTint} text-white flex items-center justify-center shadow-sm`}>
@@ -973,10 +1014,7 @@ function PanelCard({ icon, iconTint, title, badge, actionLabel, onAction, childr
 
 function Chip({ active, onClick, children }) {
   return (
-    <button onClick={onClick} className={`px-4 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all border ${active
-      ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm'
-      : 'bg-white border-slate-100 text-slate-500 hover:border-emerald-200 hover:text-emerald-600'
-      }`}>
+    <button onClick={onClick} aria-pressed={active} className="nb-chip">
       {children}
     </button>
   );
@@ -1024,7 +1062,7 @@ function QuestRow({ task, index, onClaim }) {
 
 function FeaturedGameCard() {
   return (
-    <button onClick={() => navigate(FEATURED_GAME.path)} className="group bg-white rounded-3xl p-2.5 shadow-[0_6px_18px_rgba(15,60,120,.08)] hover:-translate-y-1 hover:shadow-[0_12px_26px_rgba(15,60,120,.14)] transition-all text-left">
+    <button onClick={() => navigate(FEATURED_GAME.path)} style={{ "--tile-c": "#E5533D" }} className="nb-tile">
       <div className={`relative aspect-[16/11] rounded-2xl overflow-hidden bg-gradient-to-br ${FEATURED_GAME.grad} flex items-center justify-center`}>
         <span className="text-5xl lg:text-6xl drop-shadow-lg group-hover:scale-110 transition-transform">{FEATURED_GAME.icon}</span>
         <span className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-white/95 text-amber-500 flex items-center justify-center shadow">
@@ -1045,27 +1083,32 @@ function FeaturedGameCard() {
 
 
 /**
- * Một ô nhỏ cho từng game offline.
+ * Một ô game offline.
  * Bấm vào → đi thẳng vào game (không có màn chọn trung gian).
  * Mỗi game là 1 file HTML riêng: src/games/offline/<id>.html
+ *
+ * Cỡ chữ/pad thu nhỏ lại một chút vì manifest giờ có 26 game.
  */
 function OfflineGameTile({ game }) {
+  // Màu dùng cho rèm + nút chơi, lấy từ class gradient của manifest.
+  const tileColor = TILE_COLORS[game.id] || "#F2B632";
+  const needsNet = !!game.needsNet;
   return (
     <button
       onClick={() => navigate(game.path)}
       title={game.name}
-      className="group relative flex flex-col items-center gap-1 rounded-2xl bg-white p-2 shadow-[0_4px_12px_rgba(15,60,120,.07)] hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(15,60,120,.13)] active:scale-95 transition-all"
+      style={{ "--tile-c": tileColor }}
+      className={`nb-tile ${needsNet ? "nb-tile--net" : ""}`}
     >
-      <span className={`grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br ${game.grad} text-xl shadow-sm group-hover:scale-105 transition-transform`}>
-        {game.icon}
+      <span className="nb-tile__awning" />
+      <span className="nb-tile__thumb">
+        <span aria-hidden="true">{game.icon}</span>
       </span>
-      <span className="w-full text-center font-display text-[11px] font-bold leading-tight text-ink line-clamp-2">
-        {game.name}
+      <span className="nb-tile__body">
+        <span className="nb-tile__name">{game.name}</span>
+        <span className="nb-tile__tag">{game.tag}</span>
+        <span className="nb-tile__play">{needsNet ? "Cần mạng · Vào →" : "Chơi ngay →"}</span>
       </span>
-      <span className="w-full text-center text-[9.5px] leading-tight text-slate-400 truncate">
-        {game.description}
-      </span>
-      <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-emerald-400 ring-2 ring-white" />
     </button>
   );
 }
@@ -1076,7 +1119,7 @@ function GameCard({ game, template, onSelect, index = 0 }) {
     <button
       onClick={() => onSelect(game)}
       aria-label={`Chơi ${game.name}`}
-      className="group bg-white rounded-3xl p-2.5 text-left shadow-[0_6px_18px_rgba(15,60,120,.08)] hover:-translate-y-1 hover:shadow-[0_12px_26px_rgba(15,60,120,.14)] transition-all animate-fade-in-up focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+      style={{ "--tile-c": "#2A9D8F" }} className="nb-tile animate-fade-in-up focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
       style={{ animationDelay: `${index * 0.06}s` }}
     >
       <div className={`relative w-full aspect-[16/11] rounded-2xl bg-gradient-to-br ${color.grad} flex items-center justify-center overflow-hidden`}>
