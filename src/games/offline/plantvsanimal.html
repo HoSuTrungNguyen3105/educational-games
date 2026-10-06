@@ -125,6 +125,28 @@
   #cfgErr{color:#ff9d8f;font-size:13px;font-weight:600;white-space:pre-line;max-height:64px;overflow:auto;min-height:0}
   @media (max-width:640px){.edDoc{display:none}.menuL{flex-basis:36%}}
   @media (prefers-reduced-motion:reduce){#banner.show{animation:none;opacity:1;transform:translate(-50%,-50%)}#rotate .em{animation:none}}
+
+  /* ===== Nâng cấp giao diện ===== */
+  #top{background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px 38px),linear-gradient(#7a4c2a,#3a2414);border-bottom:4px solid #e0b25f;box-shadow:0 6px 18px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.18)}
+  .packet{border-radius:12px;border:2px solid #b07a3c;background:linear-gradient(#fffdf0,#f1dba0 70%,#e2c27a);box-shadow:0 4px 0 #2a170a,inset 0 2px 0 #fff}
+  .packet:hover{transform:translateY(-2px)}
+  .packet .pc{background:linear-gradient(#ffe98a,#f2b634);color:#4a2a00;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+  #sunBox{background:radial-gradient(circle at 30% 20%,#3a2410,#170b04);box-shadow:inset 0 2px 8px #000,0 0 14px rgba(255,200,60,.35)}
+  #progFill{background:linear-gradient(#d4ff8a,#58b43f 60%,#3c8c2c);box-shadow:0 0 10px rgba(150,240,90,.6)}
+  .btn{letter-spacing:.3px;border:2px solid rgba(255,255,255,.28);position:relative;overflow:hidden}
+  .btn::after{content:"";position:absolute;left:8%;right:8%;top:3px;height:38%;border-radius:99px;background:linear-gradient(rgba(255,255,255,.4),rgba(255,255,255,0))}
+  .card{border:3px solid #a06b30;border-radius:18px;background:linear-gradient(#fffdf0,#f0d9a2);transition:transform .15s,box-shadow .15s}
+  .card:hover{transform:translateY(-3px) rotate(-.4deg);box-shadow:0 7px 0 #3a2414,0 14px 18px rgba(0,0,0,.3)}
+  .card.grave .num{background:radial-gradient(circle at 35% 30%,#8fd0a0,#2d6a4a);border-color:#173a2a}
+  .card.castle .num{background:radial-gradient(circle at 35% 30%,#d070a0,#5a1f5a);border-color:#2e0f34}
+  .card .ci span img{width:22px;height:22px;margin-right:2px;vertical-align:middle;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+  .logo{animation:logoFloat 3.2s ease-in-out infinite}
+  @keyframes logoFloat{50%{transform:translateY(-6px) rotate(-1deg)}}
+  .panel{border:5px solid #b07a3c;border-radius:28px;background:linear-gradient(#fffbe6,#efd49a);box-shadow:0 0 0 4px #3a2414,0 18px 50px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes pop{from{transform:scale(.7);opacity:0}}
+  #banner{font-size:clamp(30px,7vw,54px);letter-spacing:1px}
+  #banner.warn{color:#ffd0c8;text-shadow:0 3px 0 #5a0f0f,0 0 28px rgba(255,40,40,.9),0 6px 14px rgba(0,0,0,.7)}
+  #toast,#hint{border-radius:16px;box-shadow:0 6px 16px rgba(0,0,0,.4)}
 </style>
 </head>
 <body>
@@ -202,7 +224,12 @@
     "locust": {"name": "Châu Chấu",    "hp": 90,   "speed": 0.42, "dps": 16, "size": 0.95},
     "rat":    {"name": "Chuột Nhảy",   "hp": 150,  "speed": 0.30, "dps": 20, "size": 1.0, "jump": true},
     "snail":  {"name": "Ốc Sên Khiên", "hp": 520,  "speed": 0.09, "dps": 25, "size": 1.1},
-    "boss":   {"name": "Bọ Cạp Chúa",  "hp": 3200, "speed": 0.06, "dps": 80, "size": 1.7}
+    "boss":   {"name": "Bọ Cạp Chúa",  "hp": 3200, "speed": 0.06, "dps": 80, "size": 1.7},
+    "zombie":     {"name": "Zombie",             "hp": 220,  "speed": 0.16, "dps": 22, "size": 1.1},
+    "zombieCone": {"name": "Zombie Nón Cối",     "hp": 520,  "speed": 0.15, "dps": 24, "size": 1.15},
+    "bat":        {"name": "Dơi Quỷ",            "hp": 70,   "speed": 0.55, "dps": 14, "size": 0.9},
+    "vampire":    {"name": "Ma Cà Rồng",         "hp": 480,  "speed": 0.20, "dps": 30, "size": 1.1, "jump": true},
+    "vampLord":   {"name": "Bá Tước Ma Cà Rồng", "hp": 4500, "speed": 0.06, "dps": 90, "size": 1.75}
   },
 
   "plants": {
@@ -213,7 +240,8 @@
     "ice":       {"name": "Việt Quất Băng", "kind": "shooter",  "cost": 175, "hp": 80,  "cooldown": 6,  "damage": 20, "every": 1.5, "shots": 1, "slow": 0.5, "slowTime": 4},
     "mine":      {"name": "Khoai Bẫy",      "kind": "mine",     "cost": 25,  "hp": 50,  "cooldown": 18, "damage": 500, "arm": 8},
     "repeater":  {"name": "Xương Rồng Đôi", "kind": "shooter",  "cost": 200, "hp": 80,  "cooldown": 7,  "damage": 20, "every": 1.5, "shots": 2},
-    "chili":     {"name": "Ớt Lửa",         "kind": "lane",     "cost": 125, "hp": 50,  "cooldown": 25, "damage": 400, "fuse": 0.8}
+    "chili":     {"name": "Ớt Lửa",         "kind": "lane",     "cost": 125, "hp": 50, "cooldown": 25, "damage": 400, "fuse": 0.8},
+    "garlic":    {"name": "Tỏi Xua Quỷ",    "kind": "wall",     "cost": 75,  "hp": 1000, "cooldown": 16}
   },
 
   "levels": [
@@ -303,6 +331,65 @@
           {"monster": "worm", "row": "random", "count": 6, "gap": 2, "delay": 10}
         ]}
       ]
+    },
+    {
+      "name": "Nghĩa Địa Zombie", "theme": "grave", "rows": 5, "startSun": 250,
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili"],
+      "skySun": {"first": 10, "every": 12, "amount": 25},
+      "timeline": [
+        {"t": 15, "monster": "zombie", "row": "random"},
+        {"t": 32, "monster": "zombie", "row": "random", "count": 2, "gap": 4},
+        {"t": 52, "monster": "zombieCone", "row": "random"},
+        {"t": 70, "monster": "zombie", "row": "random", "count": 3, "gap": 3},
+        {"t": 90, "banner": "Zombie trỗi dậy từ mộ!", "flag": true, "spawn": [
+          {"monster": "zombie", "row": "all"},
+          {"monster": "zombieCone", "row": "random", "count": 2, "gap": 5, "delay": 4}
+        ]},
+        {"t": 120, "banner": "Đợt cuối: bầy zombie kéo đến!", "flag": true, "spawn": [
+          {"monster": "zombie", "row": "all", "count": 2, "gap": 6},
+          {"monster": "zombieCone", "row": "random", "count": 3, "gap": 4, "delay": 3},
+          {"monster": "bat", "row": "random", "count": 4, "gap": 2, "delay": 8}
+        ]}
+      ]
+    },
+    {
+      "name": "Lâu Đài Ma Cà Rồng", "theme": "castle", "rows": 5, "startSun": 300,
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili"],
+      "skySun": {"first": 12, "every": 14, "amount": 25},
+      "timeline": [
+        {"t": 15, "monster": "bat", "row": "random", "count": 3, "gap": 2},
+        {"t": 35, "monster": "vampire", "row": "random"},
+        {"t": 55, "monster": "zombieCone", "row": "random", "count": 2, "gap": 4},
+        {"t": 75, "monster": "vampire", "row": "random", "count": 2, "gap": 5},
+        {"t": 100, "banner": "Bầy dơi đang tràn vào lâu đài!", "flag": true, "spawn": [
+          {"monster": "bat", "row": "all", "count": 2, "gap": 3},
+          {"monster": "vampire", "row": "random", "count": 2, "gap": 6, "delay": 4}
+        ]},
+        {"t": 135, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [
+          {"monster": "vampire", "row": "all", "count": 2, "gap": 7},
+          {"monster": "zombieCone", "row": "random", "count": 3, "gap": 4, "delay": 3},
+          {"monster": "bat", "row": "random", "count": 6, "gap": 1.5, "delay": 6}
+        ]}
+      ]
+    },
+    {
+      "name": "Bá Tước Ma Cà Rồng", "theme": "castle", "rows": 5, "startSun": 350,
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili"],
+      "skySun": {"first": 10, "every": 12, "amount": 25},
+      "timeline": [
+        {"t": 15, "monster": "zombie", "row": "random", "count": 3, "gap": 3},
+        {"t": 35, "monster": "vampire", "row": "random", "count": 2, "gap": 5},
+        {"t": 60, "monster": "bat", "row": "random", "count": 5, "gap": 2},
+        {"t": 85, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [
+          {"monster": "zombieCone", "row": "all"},
+          {"monster": "vampire", "row": "random", "count": 3, "gap": 5, "delay": 4}
+        ]},
+        {"t": 120, "banner": "BÁ TƯỚC MA CÀ RỒNG XUẤT HIỆN!", "flag": true, "spawn": [
+          {"monster": "vampLord", "row": 3},
+          {"monster": "bat", "row": "all", "delay": 6},
+          {"monster": "zombie", "row": "random", "count": 6, "gap": 2, "delay": 10}
+        ]}
+      ]
     }
   ]
 }
@@ -329,8 +416,8 @@ const DEF = JSON.parse($('cfgDefault').textContent);
 
 /* Icon nằm ở đây, KHÔNG nằm trong JSON config — config chỉ gửi id + số liệu.
    Thêm quái/cây mới: thêm id vào config, icon tự lấy theo id (thêm id mới thì thêm ở bảng dưới). */
-const MON_ICON = { worm: '🐛', beetle: '🪲', locust: '🦗', rat: '🐀', snail: '🐌', boss: '🦂' };
-const PLANT_ICON = { sunflower: '🌻', shooter: '🥦', wall: '🥥', bomb: '🍒', ice: '🫐', mine: '🥔', repeater: '🌵', chili: '🌶️' };
+const MON_ICON = { worm: '🐛', beetle: '🪲', locust: '🦗', rat: '🐀', snail: '🐌', boss: '🦂', zombie: '🧟', zombieCone: '🧟', bat: '🦇', vampire: '🧛', vampLord: '🧛' };
+const PLANT_ICON = { sunflower: '🌻', shooter: '🥦', wall: '🥥', bomb: '🍒', ice: '🫐', mine: '🥔', repeater: '🌵', chili: '🌶️', garlic: '🧄' };
 const M_BASE = { icon: '👾', name: 'Quái', hp: 100, speed: .2, dps: 20, size: 1 };
 const P_BASE = { icon: '🌱', name: 'Cây', kind: 'wall', cost: 50, hp: 80, cooldown: 5 };
 const KIND_DEF = {
@@ -417,7 +504,7 @@ function docHtml() {
   <h4>Cây có sẵn</h4>${Object.entries(c.plants).map(([id, p]) => `${p.icon} <code>${id}</code> ${p.name}`).join('<br>')}
   <h4>Tạo quái / cây mới</h4>Thêm id mới vào <code>monsters</code> hoặc <code>plants</code> (đủ name, hp, speed…) rồi dùng trong timeline. Tốc độ <b>speed</b> tính bằng ô/giây.
   <b>Icon không nằm trong JSON</b> — game lấy icon theo id từ bảng <code>MON_ICON</code> / <code>PLANT_ICON</code> trong file plantvsanimal.html.
-  <h4>Nguồn cấu hình</h4>1) Cấu hình giáo viên gán trên máy chủ (<code>window.EG_CONFIG.plantvsanimal</code>) → 2) bản sửa trong máy học sinh → 3) mặc định trong file này.
+  <h4>Nguồn cấu hình</h4>Cấu hình mặc định được đồng bộ từ <code>src/games/plantandanimal.json</code> và nhúng trong game để vẫn chơi được offline. Bản áp dụng trên thiết bị được lưu trong localStorage; dùng <b>Mặc định</b> rồi <b>Áp dụng</b> để nạp cấu hình mới.
   <h4>Sao chép ra ngoài</h4>Dùng nút Sao chép hoặc Tải xuống để lưu file plantvsanimal.json.`;
 }
 
@@ -495,7 +582,7 @@ function bumpEl(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.cla
 /* ================= Menu ================= */
 let prog = { cleared: {} };
 { const s = lsGet(PK); if (s) { try { prog = JSON.parse(s); } catch (e) {} } }
-const THEME_ICON = { day: '☀️', dusk: '🌇', night: '🌙' };
+const THEME_ICON = { day: '☀️', dusk: '🌇', night: '🌙', grave: '🪦', castle: '🏰' };
 function buildMenu() {
   const savedRun = readRunCheckpoint();
   const continueBtn = $('resumeSavedBtn');
@@ -508,7 +595,7 @@ function buildMenu() {
     b.disabled = !unlocked; if (!unlocked) b.style.opacity = .55;
     const mons = new Set(); (L.timeline || []).forEach(e => (Array.isArray(e.spawn) ? e.spawn : (e.monster ? [e] : [])).forEach(s => mons.add(s.monster)));
     b.innerHTML = `<div class="num">${i + 1}</div><div class="ci"><b>${L.name || 'Màn ' + (i + 1)}</b>
-      <span>${[...mons].map(m => (CFG.monsters[m] || {}).icon || '').join('')}</span><small>${THEME_ICON[L.theme] || '☀️'} ${(L.plants || []).length} loại cây</small></div>
+      <span>${[...mons].map(monImg).join('')}</span><small>${THEME_ICON[L.theme] || '☀️'} ${(L.plants || []).length} loại cây</small></div>
       <div class="st">${prog.cleared[i] ? '⭐' : unlocked ? '▶️' : '🔒'}</div>`;
     b.onclick = () => { ensureAudio(); sfx.tap(); play(i); };
     box.appendChild(b);
@@ -569,7 +656,9 @@ function resumeSavedRun() {
 const THEMES = {
   day:   { c1: '#63b24f', c2: '#74c25c', base: ['#3f8a37', '#2d6e2c'], wall: '#d9b98c', tuft: 'rgba(30,100,35,.35)' },
   dusk:  { c1: '#58a24f', c2: '#66b25e', base: ['#37753a', '#25572c'], wall: '#c9a77d', tuft: 'rgba(25,85,40,.4)' },
-  night: { c1: '#2f6b4a', c2: '#37785a', base: ['#1d4433', '#12301f'], wall: '#8f8a96', tuft: 'rgba(10,50,30,.5)' }
+  night: { c1: '#2f6b4a', c2: '#37785a', base: ['#1d4433', '#12301f'], wall: '#8f8a96', tuft: 'rgba(10,50,30,.5)' },
+  grave: { c1: '#4a6b4a', c2: '#547a54', base: ['#2a3d33', '#16241d'], wall: '#6f7a74', tuft: 'rgba(10,40,25,.5)' },
+  castle: { c1: '#4b3f5c', c2: '#564a6b', base: ['#2a1f3a', '#150e22'], wall: '#6a5a7a', tuft: 'rgba(20,10,40,.5)' }
 };
 
 function normEvents(tl) {
@@ -648,6 +737,47 @@ function emoji(e, x, y, size, o = {}) {
 const shadow = (x, y, rx, ry, a = .28) => { ctx.fillStyle = `rgba(0,0,0,${a})`; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 6.283); ctx.fill(); };
 const px = u => ox + u * cw, py = v => oy + v * ch;
 
+/* ================= SVG quái ================= */
+const svgWrap = body => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${body}</svg>`;
+const OUTLINE = '#2a1a10';
+const SVG_SPRITES = {
+  zombie: svgWrap(`<ellipse cx="50" cy="94" rx="26" ry="4" fill="#000" opacity=".2"/><path d="M44 70v20M58 70v20" stroke="#34456b" stroke-width="11" stroke-linecap="round"/><path d="M40 92h10M56 92h10" stroke="${OUTLINE}" stroke-width="7" stroke-linecap="round"/><path d="M34 46q16-6 30 0l4 28-8-4-6 6-6-6-6 6-6-6-6 4z" fill="#7a4fa0" stroke="${OUTLINE}" stroke-width="3"/><path d="M38 52L10 56M40 62L14 68" stroke="#8fbf6a" stroke-width="9" stroke-linecap="round"/><circle cx="46" cy="30" r="18" fill="#a6d67f" stroke="${OUTLINE}" stroke-width="3"/><path d="M34 16l4 6 5-7 5 7 6-5" fill="#4a3320" stroke="${OUTLINE}" stroke-width="2"/><circle cx="39" cy="30" r="6" fill="white"/><circle cx="53" cy="29" r="4.5" fill="white"/><circle cx="38" cy="31" r="2.5"/><circle cx="52" cy="30" r="2"/><path d="M34 41l4-3 4 3 4-3 4 3 4-3" stroke="${OUTLINE}" stroke-width="2.5" fill="#5a1a1a"/>`),
+  zombieCone: svgWrap(`<path d="M29 20L46 0l20 20z" fill="#f08a2a" stroke="${OUTLINE}" stroke-width="3"/><path d="M35 13h24M32 18h29" stroke="white" stroke-width="3"/><ellipse cx="47" cy="20" rx="20" ry="4" fill="#d46a14" stroke="${OUTLINE}" stroke-width="2.5"/><g transform="translate(0,8)">${'<path d="M44 70v20M58 70v20" stroke="#34456b" stroke-width="11" stroke-linecap="round"/><path d="M34 46q16-6 30 0l4 28-8-4-6 6-6-6-6 6-6-6-6 4z" fill="#7a4fa0" stroke="#2a1a10" stroke-width="3"/><circle cx="46" cy="30" r="18" fill="#a6d67f" stroke="#2a1a10" stroke-width="3"/><circle cx="39" cy="30" r="6" fill="white"/><circle cx="53" cy="29" r="4.5" fill="white"/><path d="M34 41l4-3 4 3 4-3 4 3" stroke="#2a1a10" stroke-width="2.5"/>'}</g>`),
+  bat: svgWrap(`<ellipse cx="50" cy="94" rx="20" ry="3" fill="#000" opacity=".18"/><path d="M50 52L22 28 4 40l10 6-6 14 14-4 8 10 8-6zM50 52l28-24 18 12-10 6 6 14-14-4-8 10-8-6z" fill="#5a3a8a" stroke="${OUTLINE}" stroke-width="3" stroke-linejoin="round"/><ellipse cx="50" cy="56" rx="15" ry="17" fill="#3a2460" stroke="${OUTLINE}" stroke-width="3"/><path d="M38 44l-3-14 10 8M62 44l3-14-10 8" fill="#3a2460" stroke="${OUTLINE}" stroke-width="3"/><circle cx="44" cy="52" r="4" fill="#ff3a4a"/><circle cx="56" cy="52" r="4" fill="#ff3a4a"/><path d="M44 62q6 5 12 0" stroke="${OUTLINE}" stroke-width="2.5" fill="white"/>`),
+  vampire: svgWrap(`<ellipse cx="50" cy="94" rx="26" ry="4" fill="#000" opacity=".22"/><path d="M34 44L14 92h66L66 44z" fill="#1c1428" stroke="${OUTLINE}" stroke-width="3"/><path d="M44 50l6 30 6-30z" fill="#e8dfe8"/><path d="M36 46l14 8-4-14zM64 46L50 54l4-14z" fill="#b0123a" stroke="${OUTLINE}" stroke-width="2"/><circle cx="48" cy="30" r="17" fill="#ece3f0" stroke="${OUTLINE}" stroke-width="3"/><path d="M31 28q2-18 18-17 14 0 16 14-8-8-18-8-8 0-16 11z" fill="#14101c" stroke="${OUTLINE}" stroke-width="2.5"/><ellipse cx="41" cy="30" rx="4.5" ry="5.5" fill="white"/><circle cx="40" cy="31" r="2.6" fill="#d40f2e"/><ellipse cx="55" cy="29" rx="4" ry="5" fill="white"/><circle cx="54" cy="30" r="2.4" fill="#d40f2e"/><path d="M37 40q8 5 16 0M40 40l2 6 2-5M49 41l2 6 2-6" stroke="${OUTLINE}" stroke-width="2.5" fill="#fff"/>`),
+  vampLord: svgWrap(`<path d="M32 16l4-10 7 7 6-10 6 10 7-7 3 10z" fill="#f5c542" stroke="${OUTLINE}" stroke-width="2.5"/><circle cx="49" cy="10" r="2.5" fill="#d40f2e"/><g transform="translate(0,3)"><path d="M34 44L14 92h66L66 44z" fill="#7a0f2a" stroke="${OUTLINE}" stroke-width="3"/><path d="M44 50l6 30 6-30z" fill="#e8dfe8"/><path d="M36 46l14 8-4-14zM64 46L50 54l4-14z" fill="#b0123a" stroke="${OUTLINE}" stroke-width="2"/><circle cx="48" cy="30" r="17" fill="#ece3f0" stroke="${OUTLINE}" stroke-width="3"/><path d="M31 28q2-18 18-17 14 0 16 14-8-8-18-8-8 0-16 11z" fill="#14101c" stroke="${OUTLINE}" stroke-width="2.5"/><circle cx="41" cy="30" r="4" fill="#d40f2e"/><circle cx="55" cy="29" r="4" fill="#d40f2e"/></g>`)
+};
+const SVG_IMAGES = {};
+function svgImage(id) {
+  if (!SVG_SPRITES[id]) return null;
+  if (!SVG_IMAGES[id]) {
+    const image = new Image();
+    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(SVG_SPRITES[id])}`;
+    SVG_IMAGES[id] = image;
+  }
+  return SVG_IMAGES[id];
+}
+function monImg(id) {
+  const image = svgImage(id);
+  return image ? `<img alt="" src="${image.src}">` : (CFG.monsters[id] || {}).icon || '';
+}
+function drawMonsterSprite(id, icon, x, y, size, options) {
+  const image = svgImage(id);
+  if (!image || !image.complete || !image.naturalWidth) { emoji(icon, x, y, size, options); return; }
+  ctx.save(); ctx.translate(x, y); if (options.rot) ctx.rotate(options.rot);
+  ctx.scale(options.sx || 1, options.sy || 1); ctx.globalAlpha = options.alpha === undefined ? 1 : options.alpha;
+  const spriteSize = size * 1.3;
+  if (options.tint) {
+    const pixels = Math.ceil(spriteSize * DPR); tc.width = tc.height = pixels;
+    tx.setTransform(DPR, 0, 0, DPR, 0, 0); tx.clearRect(0, 0, spriteSize, spriteSize);
+    tx.drawImage(image, 0, 0, spriteSize, spriteSize); tx.globalCompositeOperation = 'source-atop';
+    tx.globalAlpha = options.tintA || .5; tx.fillStyle = options.tint; tx.fillRect(0, 0, spriteSize, spriteSize);
+    tx.globalAlpha = 1; tx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(tc, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
+  } else ctx.drawImage(image, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
+  ctx.restore();
+}
+
 /* ================= Hiệu ứng ================= */
 function part(x, y, n, cols, spd = 120, up = 60, life = .7, r = 3.5, grav = 260) {
   for (let i = 0; i < n; i++) { const a = rand(0, 6.283), s = rand(.3, 1) * spd; G.fx.push({ k: 'p', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - up, life: life * rand(.7, 1.1), max: life, c: pick(cols), r: rand(r * .6, r * 1.3), g: grav }); }
@@ -696,6 +826,7 @@ function plantAt(row, col, id) {
   G.sun -= d.cost; G.cd[id] = d.cooldown; G.planted++;
   G.plants[row][col] = { id, d, row, col, hp: d.hp, maxHp: d.hp, alive: true, ph: rand(0, 6), flash: 0, recoil: 0, cdT: (d.every || 1) * .5, tt: d.first === undefined ? d.every : d.first, fuse: d.fuse, armT: d.arm, armed: false, wob: 0, born: 0 };
   part(px(col + .5), py(row + .85), 10, ['#7a5230', '#5b3b22', '#8fdc63'], 90, 50, .5, 3); sfx.plant();
+  G.fx.push({ k: 'r', x: px(col + .5), y: py(row + .85), rad: cw * .5, life: .4, max: .4, c: '#d9ffb0' });
   G.sel = null; drag = null; $('hint').classList.remove('show'); return true;
 }
 function removePlant(p, silent) {
@@ -743,6 +874,7 @@ function dmgMonster(m, amt, o = {}) {
 }
 function killMonster(m, o = {}) {
   m.dying = .7; m.hp = 0; G.killed++; m.fling = !!o.fling;
+  G.fx.push({ k: 'r', x: px(m.u), y: py(m.row + .5), rad: cw * .6, life: .45, max: .45, c: '#fff3a0' });
   part(px(m.u), py(m.row + .5), 14, ['#9ad14b', '#f4e04d', '#fff', '#c7e86b'], 170, 80, .7, 4); sfx.splat();
 }
 function updateMonster(m, dt) {
@@ -896,7 +1028,8 @@ function drawMonster(m) {
   if (m.dying > 0) { const k = 1 - m.dying / .7; alpha = 1 - k; rot = m.fling ? k * 9 : k * 1.4; y -= m.fling ? Math.sin(k * Math.PI) * size * .8 : -k * size * .12; xo = m.fling ? k * cw * 1.5 : 0; }
   const o = { rot, alpha };
   if (m.flash > 0) { o.tint = '#ffffff'; o.tintA = .65; } else if (m.slowT > 0) { o.tint = '#59b8ff'; o.tintA = .4; }
-  emoji(m.d.icon, x + xo, y, size, o);
+  if (m.dying <= 0 && !m.eat && m.state !== 'jump') { const w = Math.sin(m.ph * 2); o.sx = 1 + w * .04; o.sy = 1 - w * .04; }
+  drawMonsterSprite(m.id, m.d.icon, x + xo, y, size, o);
   if (m.dying <= 0) {
     if (m.slowT > 0) emoji('❄️', x, y - size * .55, size * .28, { alpha: .9 });
     if (m.hp < m.maxHp && (m.maxHp >= 200 || m.maxHp >= 1000)) {
@@ -943,6 +1076,7 @@ function drawFx() {
     } else if (f.k === 'l') {
       const k = 1 - f.life / f.max, y = py(f.row + .5), front = COLS * clamp(k * 1.6, 0, 1);
       for (let c = 0; c <= front; c += .55) emoji('🔥', px(c), y - Math.abs(Math.sin(T * 14 + c * 3)) * 6, ch * (.9 + .15 * Math.sin(T * 20 + c)), { alpha: clamp(f.life / f.max * 1.5, 0, 1) });
+    } else if (f.k === 'r') { const k = 1 - f.life / f.max; ctx.globalAlpha = 1 - k; ctx.strokeStyle = f.c; ctx.lineWidth = 1 + 4 * (1 - k); ctx.beginPath(); ctx.ellipse(f.x, f.y, f.rad * (.3 + k), f.rad * (.3 + k) * .45, 0, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1;
     } else if (f.k === 'c') { ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.r); ctx.globalAlpha = clamp(f.life, 0, 1); ctx.fillStyle = f.c; ctx.fillRect(-f.s / 2, -f.s / 4, f.s, f.s / 2); ctx.restore(); }
   });
 }
@@ -970,7 +1104,21 @@ function render() {
     G.flies.forEach(f => { const x = (f.x + Math.sin(T * .3 + f.p) * .02) * W, y = oy + (f.y + Math.cos(T * .4 + f.p) * .02) * lh, a = .3 + .7 * Math.abs(Math.sin(T * 1.6 + f.p));
       const g = ctx.createRadialGradient(x, y, 0, x, y, 11); g.addColorStop(0, `rgba(255,240,140,${a})`); g.addColorStop(1, 'rgba(255,240,140,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 11, 0, 6.283); ctx.fill(); });
     ctx.globalCompositeOperation = 'source-over';
-  } else if (th === 'dusk') { ctx.fillStyle = 'rgba(255,120,50,.12)'; ctx.fillRect(0, 0, W, H); }
+  } else if (th === 'dusk') { ctx.fillStyle = 'rgba(255,120,50,.12)'; ctx.fillRect(0, 0, W, H);
+  } else if (th === 'grave' || th === 'castle') {
+    const gv = th === 'grave';
+    ctx.fillStyle = gv ? 'rgba(10,40,30,.34)' : 'rgba(40,10,50,.4)'; ctx.fillRect(0, 0, W, H);
+    for (let i = 0; i < 4; i++) {
+      const x = ((T * .02 * (i + 1) + i * .27) % 1.5 - .25) * W, y = oy + (.15 + i * .24) * lh;
+      const fog = ctx.createRadialGradient(x, y, 0, x, y, cw * 3);
+      fog.addColorStop(0, gv ? 'rgba(190,230,210,.2)' : 'rgba(230,190,230,.17)'); fog.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = fog; ctx.fillRect(x - cw * 3, y - cw * 3, cw * 6, cw * 6);
+    }
+    const mx = W - cw * .9, my = oy + ch * .6, mist = ctx.createRadialGradient(mx, my, 2, mx, my, cw * 1.4);
+    mist.addColorStop(0, gv ? 'rgba(255,255,230,.9)' : 'rgba(255,170,190,.85)');
+    mist.addColorStop(.25, gv ? 'rgba(255,255,230,.35)' : 'rgba(255,120,160,.3)'); mist.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = mist; ctx.beginPath(); ctx.arc(mx, my, cw * 1.4, 0, 6.283); ctx.fill();
+  }
   G.suns.forEach(drawSun);
   if (drag && drag.moved && G.sel) emoji(CFG.plants[G.sel].icon, ptr.x, ptr.y - 20, Math.min(cw, ch) * 1.05, { alpha: .9 });
   drawFx();

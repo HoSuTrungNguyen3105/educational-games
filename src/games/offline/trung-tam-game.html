@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trung Tâm Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1d1340}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{min-height:100%;color:#fff;font-family:"Baloo 2","Nunito","Segoe UI",system-ui,sans-serif;
+    background:radial-gradient(ellipse at 20% 0%,#5b34c9 0,transparent 55%),radial-gradient(ellipse at 90% 10%,#ff4d8d 0,transparent 45%),linear-gradient(#1d1048,#0e0824) fixed}
+  body{padding:calc(env(safe-area-inset-top) + 18px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 28px) calc(env(safe-area-inset-left) + 16px)}
+  .wrap{max-width:980px;margin:0 auto}
+  header{text-align:center;margin-bottom:18px}
+  h1{font-size:clamp(40px,10vw,68px);font-weight:800;font-style:italic;line-height:.95;transform:skewX(-5deg);
+    text-shadow:0 3px 0 #ffb300,0 6px 0 #ff7a00,0 9px 0 #c2410c,0 14px 24px rgba(0,0,0,.5)}
+  .sub{font-size:17px;font-weight:600;opacity:.85;margin-top:12px}
+  .sum{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:16px 0 6px}
+  .chip{padding:8px 16px;border-radius:99px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);font-weight:800;font-size:15px;backdrop-filter:blur(6px)}
+  .chip b{color:#ffe066;font-size:18px}
+  .cont{display:none;margin:14px auto 4px;width:min(100%,420px)}
+  .cont.on{display:flex}
+  .cont a{flex:1;text-align:center;text-decoration:none;color:#241250;font-weight:800;font-size:22px;font-style:italic;padding:12px 20px;border-radius:18px;
+    background:linear-gradient(#a6ff6b,#38c92b);box-shadow:0 6px 0 #1f8f16,0 12px 20px rgba(0,0,0,.35)}
+  .cont a:active{transform:translateY(4px);box-shadow:0 2px 0 #1f8f16}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:18px}
+  .card{position:relative;display:flex;flex-direction:column;gap:6px;padding:16px 16px 14px;border-radius:24px;text-decoration:none;color:#fff;overflow:hidden;
+    border:2px solid rgba(255,255,255,.2);box-shadow:0 10px 24px rgba(0,0,0,.35);transition:transform .15s;min-height:168px}
+  .card:active{transform:scale(.97)}
+  @media (hover:hover){.card:hover{transform:translateY(-4px)}}
+  .card::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12)}
+  .card .ic{font-size:44px;line-height:1;filter:drop-shadow(0 4px 4px rgba(0,0,0,.3))}
+  .card h3{font-size:22px;font-weight:800;line-height:1.05}
+  .card .tag{align-self:flex-start;font-size:11.5px;font-weight:800;padding:1px 9px;border-radius:99px;background:rgba(0,0,0,.28);letter-spacing:.3px}
+  .card p{font-size:14px;font-weight:600;opacity:.92;line-height:1.25;flex:1}
+  .card .st{font-size:14px;font-weight:800;padding:5px 10px;border-radius:12px;background:rgba(0,0,0,.3);align-self:stretch}
+  .card .st.none{opacity:.6;font-weight:600}
+  .new{position:absolute;top:12px;right:12px;z-index:2;font-size:11px;font-weight:800;padding:2px 9px;border-radius:99px;background:#ffe066;color:#3a2200}
+  .tools{margin-top:26px;padding:16px;border-radius:22px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);text-align:center}
+  .tools h2{font-size:20px;font-weight:800;margin-bottom:4px}
+  .tools p{font-size:14px;opacity:.8;font-weight:600;margin-bottom:10px;line-height:1.3}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .btn{border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:16px;color:#241250;padding:9px 18px;border-radius:14px;background:linear-gradient(#ffe37a,#f5b52c);box-shadow:0 4px 0 #b8781a}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b8781a}
+  .btn.alt{background:linear-gradient(#e6dcff,#b7a2f0);box-shadow:0 4px 0 #7a63c0}
+  .btn.red{background:linear-gradient(#ffb0a8,#ff6b5e);box-shadow:0 4px 0 #b3362b;color:#3a0500}
+  #msg{margin-top:10px;font-weight:700;font-size:14px;min-height:20px;color:#9bffb8}
+  footer{text-align:center;opacity:.6;font-size:13px;margin-top:20px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>TRUNG TÂM<br>GAME</h1>
+    <div class="sub">Chơi, thư giãn, lập kỷ lục. Tiến trình tự lưu trong trình duyệt của bạn.</div>
+    <div class="sum" id="sum"></div>
+    <div class="cont" id="cont"><a id="contA" href="#">▶ Chơi tiếp</a></div>
+  </header>
+  <div class="grid" id="grid"></div>
+
+  <div class="tools">
+    <h2>💾 Sao lưu tiến trình</h2>
+    <p>Tiến trình lưu theo từng trình duyệt. Hãy tải file sao lưu để chuyển sang máy khác hoặc phòng khi lỡ xóa dữ liệu trình duyệt.</p>
+    <div class="row">
+      <button class="btn" id="bExport">⬇️ Tải file sao lưu</button>
+      <button class="btn alt" id="bImport">📂 Khôi phục từ file</button>
+      <button class="btn red" id="bReset">🗑 Xóa toàn bộ</button>
+      <input type="file" id="file" accept=".json,application/json" hidden>
+    </div>
+    <div id="msg" role="status"></div>
+  </div>
+  <footer>Mở các file game cùng một thư mục để các nút bên trên hoạt động.</footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const HUB = 'trung-tam-game-v1';
+const rd = k => { try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : null; } catch (e) { return null; } };
+const raw = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const n = v => (v || 0).toLocaleString('vi-VN');
+const sumStars = o => Object.values((o && o.lv) || {}).reduce((a, b) => a + (b.stars || 0), 0);
+
+const GAMES = [
+  { f: 'chem-trai-cay.html', ic: '🍉', n: 'Chém Trái Cây', tag: 'HÀNH ĐỘNG', c: ['#ff7a45', '#e8312f'], d: 'Vuốt nhanh để chém trái cây, né bom, mở khóa các loại dao.', isNew: 1,
+    k: 'chem-trai-cay-v1', st: s => `🏆 ${n(Math.max(s.best?.classic, s.best?.zen))} · ${n(s.total)} trái đã chém`, score: s => Math.max(s.best?.classic || 0, s.best?.zen || 0) },
+  { f: 'xep-khoi.html', ic: '🧩', n: 'Xếp Khối Màu', tag: 'GIẢI ĐỐ', c: ['#8b5cf6', '#ec4899'], d: 'Kéo thả khối vào bảng 8×8, lấp đầy hàng cột để nổ combo.', isNew: 1,
+    k: 'xep-khoi-v1', st: s => `🏆 ${n(s.best)} · ${n(s.games)} ván${s.save ? ' · đang chơi dở' : ''}`, score: s => s.best || 0 },
+  { f: 'pha-gach.html', ic: '🧱', n: 'Phá Gạch Neon', tag: '12 MÀN', c: ['#06b6d4', '#4f46e5'], d: 'Đỡ bóng, phá gạch, hứng vật phẩm, thu đủ 3 sao mỗi màn.', isNew: 1,
+    k: 'pha-gach-v1', st: s => `⭐ ${sumStars(s)}/${12 * 3} · mở tới màn ${s.unlocked || 1}`, score: s => s.best || 0 },
+  { f: 'metro-rush.html', ic: '🚆', n: 'Metro Rush', tag: '3D · CHẠY VÔ TẬN', c: ['#f97316', '#9333ea'], d: 'Chạy trốn bảo vệ, nhảy qua tàu, thu xu và mở khóa nhân vật.',
+    k: 'metro-rush-v1', st: s => `🏆 ${n(s.best)} · 🪙 ${n(s.coins)}`, score: s => s.best || 0 },
+  { f: 'vuon-thu-ho.html', ic: '🌻', n: 'Vườn Thủ Hộ', tag: 'PHÒNG THỦ', c: ['#65a30d', '#15803d'], d: 'Trồng cây đuổi sâu bọ. Cấu hình quái bằng JSON theo ý bạn.',
+    k: 'vuon-thu-ho-prog-v1', st: s => `⭐ đã thắng ${Object.keys(s.cleared || {}).length} màn`, score: () => 0 },
+  { f: 'nhay-xoay.html', ic: '🌀', n: 'Nhảy Xoáy', tag: '3D · ARCADE', c: ['#22d3ee', '#ec4899'], d: 'Xoay tháp cho bóng rơi xuyên khe hở, né vùng đỏ.',
+    k: 'nhay-xoay-v1', st: s => `🏆 ${n(s.best)} · màn ${s.level || 1}`, score: s => s.best || 0 },
+  { f: 'nong-trai-vui.html', ic: '🚜', n: 'Nông Trại Vui', tag: 'NÔNG TRẠI', c: ['#84cc16', '#ca8a04'], d: 'Trồng 10 loại quả, mua bán, nuôi thú, giao đơn hàng.',
+    k: 'nong-trai-vui-v1', st: s => `Cấp ${s.lv || 1} · 🪙 ${n(s.coins)}`, score: () => 0 },
+  { f: 'hu-trai-cay.html', ic: '🍇', n: 'Hũ Trái Cây', tag: 'XẾP & GỘP', c: ['#fb7185', '#f59e0b'], d: 'Thả trái cây, hai quả giống nhau gộp thành quả lớn hơn.',
+    k: 'hu-trai-cay-v1', st: s => `🏆 ${n(s.best)}`, score: s => s.best || 0 },
+  { f: 'noi-ong-nuoc.html', ic: '🚰', n: 'Nối Ống Nước', tag: 'GIẢI ĐỐ', c: ['#38bdf8', '#34d399'], d: 'Xoay ống dẫn nước tưới cây, màn chơi vô hạn.',
+    k: 'noi-ong-nuoc-v1', st: s => `Màn ${s.level || 1}`, score: () => 0 },
+  { f: 'goc-thu-gian.html', ic: '🌿', n: 'Góc Thư Giãn', tag: 'THƯ GIÃN', c: ['#6366f1', '#14b8a6'], d: 'Vườn đêm, bong bóng, hít thở. Nghỉ ngơi sau giờ học.',
+    k: null, st: () => '', score: () => 0 }
+];
+
+function render() {
+  const g = $('grid'); g.innerHTML = ''; let totalBest = 0, played = 0;
+  GAMES.forEach(x => {
+    const s = x.k ? rd(x.k) : null; if (s) { played++; totalBest += x.score(s); }
+    let stat = ''; if (x.k) { try { stat = s ? x.st(s) : ''; } catch (e) { stat = ''; } }
+    const a = document.createElement('a'); a.className = 'card'; a.href = x.f; a.style.background = `linear-gradient(145deg,${x.c[0]},${x.c[1]})`;
+    a.innerHTML = `${x.isNew ? '<span class="new">MỚI</span>' : ''}<div class="ic">${x.ic}</div><h3>${x.n}</h3><span class="tag">${x.tag}</span><p>${x.d}</p>
+      ${x.k ? `<div class="st ${stat ? '' : 'none'}">${stat || 'Chưa chơi · bắt đầu thôi!'}</div>` : ''}`;
+    a.addEventListener('click', () => { try { localStorage.setItem(HUB, JSON.stringify({ last: x.f, name: x.n })); } catch (e) {} });
+    g.appendChild(a);
+  });
+  $('sum').innerHTML = `<div class="chip">🎮 <b>${GAMES.length}</b> trò chơi</div><div class="chip">✅ Đã chơi <b>${played}</b></div>`;
+  const h = rd(HUB); if (h && h.last) { $('cont').classList.add('on'); $('contA').href = h.last; $('contA').textContent = '▶ Chơi tiếp: ' + h.name; }
+}
+const msg = (t, bad) => { const m = $('msg'); m.textContent = t; m.style.color = bad ? '#ffb0a8' : '#9bffb8'; };
+$('bExport').onclick = () => {
+  const data = {}; GAMES.forEach(x => { if (x.k) { const r = raw(x.k); if (r) data[x.k] = r; } });
+  ['vuon-thu-ho-cfg-v1', HUB].forEach(k => { const r = raw(k); if (r) data[k] = r; });
+  if (!Object.keys(data).length) { msg('Chưa có tiến trình nào để sao lưu.', true); return; }
+  const blob = new Blob([JSON.stringify({ app: 'trung-tam-game', v: 1, at: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tien-trinh-game.json'; document.body.appendChild(a); a.click(); a.remove(); msg('Đã tạo file sao lưu.');
+};
+$('bImport').onclick = () => $('file').click();
+$('file').onchange = e => {
+  const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+  r.onload = () => {
+    try { const j = JSON.parse(r.result); if (!j || j.app !== 'trung-tam-game' || !j.data) throw new Error('bad'); let c = 0; Object.entries(j.data).forEach(([k, v]) => { if (typeof v === 'string') { localStorage.setItem(k, v); c++; } }); msg(`Đã khôi phục ${c} mục tiến trình.`); render(); }
+    catch (er) { msg('File không hợp lệ hoặc trình duyệt chặn lưu trữ.', true); }
+  }; r.readAsText(f); e.target.value = '';
+};
+$('bReset').onclick = () => {
+  if (!confirm('Xóa toàn bộ tiến trình của tất cả game? Không thể hoàn tác.')) return;
+  try { GAMES.forEach(x => x.k && localStorage.removeItem(x.k)); ['vuon-thu-ho-cfg-v1', HUB, 'xep-khoi-v1'].forEach(k => localStorage.removeItem(k)); msg('Đã xóa toàn bộ tiến trình.'); render(); } catch (e) { msg('Không xóa được.', true); }
+};
+render();
+})();
+</script>
+</body>
+</html>

@@ -13,6 +13,7 @@ import MascotDog from "./MascotDog.jsx";
 
 /** Loài dùng emoji (không có SVG). */
 const EMOJI = {
+  dog: "🐶",
   cat: "🐱",
   bird: "🐦",
   fish: "🐟",

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Góc thư giãn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#1b2142; --dusk:#2c2a5a; --peach:#ffb98a; --mint:#8fd6b5;
+    --lav:#bfa8f0; --moon:#fff3cf; --pink:#ff9ec0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;background:var(--night);color:var(--moon);
+    font-family:"Baloo 2","Nunito","Segoe UI",system-ui,sans-serif}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  .top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;
+    padding:calc(env(safe-area-inset-top) + 14px) 16px 0;pointer-events:none}
+  .brand h1{font-size:22px;font-weight:700;line-height:1.1;letter-spacing:.2px}
+  .brand p{font-size:15px;opacity:.75;margin-top:2px}
+  #sound{pointer-events:auto;width:44px;height:44px;border-radius:50%;border:0;cursor:pointer;
+    background:rgba(255,243,207,.14);color:var(--moon);font-size:20px;backdrop-filter:blur(6px)}
+  .bottom{position:fixed;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:12px;
+    padding:0 12px calc(env(safe-area-inset-bottom) + 14px);pointer-events:none}
+  #hint{font-size:16px;padding:7px 16px;border-radius:99px;background:rgba(27,33,66,.55);
+    backdrop-filter:blur(6px);text-align:center;max-width:92vw}
+  nav{pointer-events:auto;display:flex;gap:4px;padding:5px;border-radius:99px;
+    background:rgba(255,243,207,.12);backdrop-filter:blur(8px)}
+  nav button{border:0;cursor:pointer;font:inherit;font-size:16px;font-weight:500;color:var(--moon);
+    padding:9px 16px;border-radius:99px;background:transparent;transition:background .25s,color .25s}
+  nav button[aria-selected="true"]{background:var(--peach);color:var(--night);font-weight:700}
+  button:focus-visible{outline:3px solid var(--mint);outline-offset:2px}
+  #toast{position:fixed;left:50%;top:22%;transform:translate(-50%,10px);opacity:0;pointer-events:none;
+    max-width:min(86vw,420px);text-align:center;font-size:20px;line-height:1.35;padding:16px 22px;border-radius:22px;
+    background:rgba(255,243,207,.92);color:var(--night);transition:opacity .5s,transform .5s;font-weight:500}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+  @media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="top">
+  <div class="brand">
+    <h1>Góc thư giãn</h1>
+    <p id="stat"></p>
+  </div>
+  <button id="sound" aria-label="Bật hoặc tắt âm thanh">🔊</button>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<div class="bottom">
+  <div id="hint"></div>
+  <nav role="tablist" aria-label="Chọn trò chơi">
+    <button role="tab" data-g="garden" aria-selected="true">Vườn đêm</button>
+    <button role="tab" data-g="bubbles" aria-selected="false">Bong bóng</button>
+    <button role="tab" data-g="breathe" aria-selected="false">Hít thở</button>
+  </nav>
+</div>
+
+<script>
+(() => {
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const statEl = document.getElementById('stat');
+const hintEl = document.getElementById('hint');
+const toastEl = document.getElementById('toast');
+let W = 0, H = 0, DPR = 1, T = 0, current = null;
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const easeSine = x => (1 - Math.cos(Math.PI * x)) / 2;
+const easeBack = x => 1 + 2.70158 * Math.pow(x - 1, 3) + 1.70158 * Math.pow(x - 1, 2);
+
+/* ---------- Âm thanh (nốt ngũ cung, êm dịu) ---------- */
+const SC = [261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99, 880];
+let ac = null, soundOn = true, padGain = null;
+function initAudio() {
+  if (ac) return;
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  padGain = ac.createGain();
+  padGain.gain.value = soundOn ? 0.03 : 0;
+  padGain.connect(ac.destination);
+  [130.81, 196, 261.63, 329.63].forEach((f, i) => {
+    const o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+    const g = ac.createGain(); const base = 0.5 / (i + 1); g.gain.value = base;
+    const l = ac.createOscillator(); l.frequency.value = 0.07 + i * 0.03;
+    const lg = ac.createGain(); lg.gain.value = base * 0.5;
+    l.connect(lg); lg.connect(g.gain); o.connect(g); g.connect(padGain);
+    o.start(); l.start();
+  });
+}
+function note(f, d = 1.2, v = 0.11) {
+  if (!ac || !soundOn) return;
+  const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'sine'; o.frequency.value = f;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(v, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(g); g.connect(ac.destination);
+  o.start(t); o.stop(t + d + 0.05);
+}
+document.getElementById('sound').addEventListener('click', e => {
+  initAudio();
+  soundOn = !soundOn;
+  if (padGain) padGain.gain.value = soundOn ? 0.03 : 0;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+});
+
+/* ---------- Lời nhắn nhẹ nhàng ---------- */
+let toastTimer;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4200);
+}
+const TIPS = [
+  'Bạn đã cố gắng rất nhiều hôm nay.',
+  'Uống một ngụm nước nhé.',
+  'Nhìn ra xa 20 giây để mắt được nghỉ.',
+  'Vươn vai một cái thật dài nào.',
+  'Hít sâu… rồi thở ra thật chậm.',
+  'Nghỉ ngơi cũng là một phần của việc học.',
+  'Ngồi thẳng lưng, thả lỏng đôi vai.',
+  'Mỉm cười một chút, không cần lý do.'
+];
+
+/* ---------- GAME 1: Vườn đêm ---------- */
+const garden = {
+  plants: [], flies: [], stars: [], count: 0, attract: null, lastX: -999, lastY: -999,
+  hint: 'Chạm vào đất để gieo hạt. Kéo ngón tay để trồng cả luống hoa.',
+  groundY() { return H * 0.62; },
+  init() {
+    this.flies = Array.from({ length: 26 }, () => ({
+      x: rand(0, W), y: rand(H * 0.3, H * 0.9), vx: 0, vy: 0, ph: rand(0, 6.28)
+    }));
+    this.stars = Array.from({ length: 80 }, () => ({ x: Math.random(), y: Math.random() * 0.55, r: rand(.3, 1.4), ph: rand(0, 6) }));
+  },
+  addPlant(x, y) {
+    const gy = this.groundY();
+    const depth = (y - gy) / (H - gy);
+    this.plants.push({
+      x, y, type: Math.floor(Math.random() * 4), hue: pick([340, 30, 270, 190, 50, 310]),
+      h: rand(50, 100) * (0.6 + depth * 0.7), t: 0, ph: rand(0, 6.28), petals: 5 + Math.floor(Math.random() * 4)
+    });
+    if (this.plants.length > 70) this.plants.shift();
+    this.count++;
+    note(pick(SC), 1.8);
+  },
+  down(x, y) {
+    if (y < this.groundY()) { this.attract = { x, y, t: 2.5 }; note(SC[7], 1.4, .06); return; }
+    this.addPlant(x, y); this.lastX = x; this.lastY = y;
+  },
+  move(x, y, isDown) {
+    this.attract = { x, y, t: 0.6 };
+    if (isDown && y > this.groundY() && Math.hypot(x - this.lastX, y - this.lastY) > 46) {
+      this.addPlant(x, y); this.lastX = x; this.lastY = y;
+    }
+  },
+  update(dt) {
+    this.plants.forEach(p => p.t += dt);
+    if (this.attract) { this.attract.t -= dt; if (this.attract.t <= 0) this.attract = null; }
+    this.flies.forEach(f => {
+      f.vx += rand(-.5, .5) * 0.6; f.vy += rand(-.5, .5) * 0.6;
+      if (this.attract) {
+        const dx = this.attract.x - f.x, dy = this.attract.y - f.y, d = Math.hypot(dx, dy) + 1;
+        f.vx += dx / d * 0.9; f.vy += dy / d * 0.9;
+      }
+      f.vx *= 0.96; f.vy *= 0.96;
+      f.x += f.vx * 60 * dt * 0.5; f.y += f.vy * 60 * dt * 0.5;
+      if (f.x < 0) f.x = W; if (f.x > W) f.x = 0;
+      f.y = Math.max(H * 0.15, Math.min(H * 0.95, f.y));
+    });
+    return '🌼 ' + this.count + ' bông hoa';
+  },
+  draw() {
+    const gy = this.groundY();
+    let g = ctx.createLinearGradient(0, 0, 0, gy);
+    g.addColorStop(0, '#141a3a'); g.addColorStop(.6, '#2c2a5a'); g.addColorStop(1, '#5a4a7a');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    this.stars.forEach(s => {
+      ctx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(T * 0.8 + s.ph));
+      ctx.fillStyle = '#fff3cf';
+      ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, 6.283); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    // trăng
+    const mx = W * 0.78, my = H * 0.16, mr = Math.min(W, H) * 0.06;
+    let mg = ctx.createRadialGradient(mx, my, mr * .5, mx, my, mr * 4);
+    mg.addColorStop(0, 'rgba(255,243,207,.35)'); mg.addColorStop(1, 'rgba(255,243,207,0)');
+    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr * 4, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#fff3cf'; ctx.beginPath(); ctx.arc(mx, my, mr, 0, 6.283); ctx.fill();
+    // đồi xa
+    ctx.fillStyle = '#3b3570';
+    ctx.beginPath(); ctx.moveTo(0, gy);
+    for (let x = 0; x <= W; x += 12) ctx.lineTo(x, gy - 34 - Math.sin(x * 0.008 + 1) * 26 - Math.sin(x * 0.02) * 8);
+    ctx.lineTo(W, gy + 2); ctx.lineTo(0, gy + 2); ctx.fill();
+    // đất
+    g = ctx.createLinearGradient(0, gy, 0, H);
+    g.addColorStop(0, '#2f5b57'); g.addColorStop(1, '#173a3c');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(0, gy);
+    for (let x = 0; x <= W; x += 12) ctx.lineTo(x, gy - Math.sin(x * 0.012 + 2) * 8);
+    ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+    // cây theo độ sâu
+    [...this.plants].sort((a, b) => a.y - b.y).forEach(p => this.drawPlant(p));
+    // đom đóm
+    ctx.globalCompositeOperation = 'lighter';
+    this.flies.forEach(f => {
+      const a = 0.45 + 0.45 * Math.sin(T * 2 + f.ph);
+      const rg = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, 14);
+      rg.addColorStop(0, `rgba(255,240,150,${a})`); rg.addColorStop(1, 'rgba(255,240,150,0)');
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(f.x, f.y, 14, 0, 6.283); ctx.fill();
+    });
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  drawPlant(p) {
+    const e = 1 - Math.pow(1 - Math.min(1, p.t / 2.4), 3);
+    const b = Math.min(1, Math.max(0, (p.t - 1.5) / 1.3));
+    const eb = b > 0 ? easeBack(b) : 0;
+    const sway = Math.sin(T * 1.1 + p.ph) * 5 * e;
+    const tx = p.x + sway, ty = p.y - p.h * e;
+    // gò đất
+    ctx.fillStyle = '#25443f';
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, 9, 3.5, 0, 0, 6.283); ctx.fill();
+    // thân
+    ctx.strokeStyle = '#6fbf8f'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    ctx.quadraticCurveTo(p.x + sway * 0.2, p.y - p.h * e * 0.55, tx, ty); ctx.stroke();
+    // lá
+    const lx = p.x + sway * 0.12, ly = p.y - p.h * e * 0.42, ls = 7 * e;
+    ctx.fillStyle = '#7fd0a0';
+    [-1, 1].forEach(s => { ctx.beginPath(); ctx.ellipse(lx + s * ls, ly, ls, ls * .45, s * -0.5, 0, 6.283); ctx.fill(); });
+    if (eb <= 0) return;
+    const s = eb * (0.8 + p.h / 130);
+    ctx.save(); ctx.translate(tx, ty);
+    ctx.rotate(sway * 0.02);
+    if (p.type === 0) {
+      ctx.fillStyle = `hsl(${p.hue},85%,80%)`;
+      for (let i = 0; i < p.petals; i++) {
+        ctx.save(); ctx.rotate(i * 6.283 / p.petals);
+        ctx.beginPath(); ctx.ellipse(0, -10 * s, 4.5 * s, 10 * s, 0, 0, 6.283); ctx.fill(); ctx.restore();
+      }
+      ctx.fillStyle = '#ffd86b'; ctx.beginPath(); ctx.arc(0, 0, 5 * s, 0, 6.283); ctx.fill();
+    } else if (p.type === 1) {
+      ctx.fillStyle = `hsl(${p.hue},80%,70%)`;
+      [-1, 1].forEach(d => { ctx.beginPath(); ctx.ellipse(d * 5 * s, -8 * s, 5 * s, 10 * s, d * 0.25, 0, 6.283); ctx.fill(); });
+      ctx.fillStyle = `hsl(${p.hue},85%,78%)`;
+      ctx.beginPath(); ctx.ellipse(0, -10 * s, 5.5 * s, 11.5 * s, 0, 0, 6.283); ctx.fill();
+    } else if (p.type === 2) {
+      ctx.globalCompositeOperation = 'lighter';
+      const rg = ctx.createRadialGradient(0, 0, 0, 0, 0, 30 * s);
+      rg.addColorStop(0, `hsla(${p.hue},95%,75%,.95)`);
+      rg.addColorStop(.4, `hsla(${p.hue},90%,65%,.35)`);
+      rg.addColorStop(1, `hsla(${p.hue},90%,60%,0)`);
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(0, 0, 30 * s, 0, 6.283); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#fff8e0'; ctx.beginPath(); ctx.arc(0, 0, 5 * s, 0, 6.283); ctx.fill();
+    } else {
+      ctx.fillStyle = `hsl(${p.hue},75%,76%)`;
+      for (let i = 0; i < 6; i++) {
+        const a = i * 6.283 / 6;
+        ctx.beginPath(); ctx.arc(Math.cos(a) * 8 * s, Math.sin(a) * 8 * s, 5.5 * s, 0, 6.283); ctx.fill();
+      }
+      ctx.fillStyle = '#fff3cf'; ctx.beginPath(); ctx.arc(0, 0, 4.5 * s, 0, 6.283); ctx.fill();
+    }
+    ctx.restore();
+  }
+};
+
+/* ---------- GAME 2: Bong bóng ---------- */
+const bubbles = {
+  list: [], parts: [], popped: 0, spawn: 0,
+  hint: 'Chạm hoặc lướt qua bong bóng. Bong bóng có ✦ giấu một lời nhắn nhỏ.',
+  init() { this.list = []; this.parts = []; for (let i = 0; i < 9; i++) this.add(true); },
+  add(initial) {
+    const r = rand(24, 60);
+    this.list.push({
+      x: rand(r, Math.max(r + 1, W - r)), y: initial ? rand(0, H) : H + r, r,
+      vy: rand(18, 46), ph: rand(0, 6.28), hue: pick([190, 280, 330, 160, 40, 220]),
+      special: Math.random() < 0.13
+    });
+  },
+  hit(x, y) {
+    for (let i = this.list.length - 1; i >= 0; i--) {
+      const b = this.list[i];
+      if (Math.hypot(x - b.x, y - b.y) < b.r) { this.pop(i); return true; }
+    }
+    return false;
+  },
+  down(x, y) { this.hit(x, y); },
+  move(x, y, isDown) { if (isDown) this.hit(x, y); },
+  pop(i) {
+    const b = this.list.splice(i, 1)[0];
+    for (let k = 0; k < 12; k++) {
+      const a = rand(0, 6.283), v = rand(40, 120);
+      this.parts.push({ x: b.x, y: b.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, hue: b.hue });
+    }
+    this.popped++;
+    const idx = Math.max(0, Math.min(9, Math.round(9 - (b.r - 24) / 36 * 9)));
+    note(SC[idx], 1.4, .1);
+    if (b.special) toast(pick(TIPS));
+  },
+  update(dt) {
+    this.spawn -= dt;
+    if (this.spawn <= 0 && this.list.length < 18) { this.add(false); this.spawn = rand(.5, 1.1); }
+    this.list.forEach(b => { b.y -= b.vy * dt; b.x += Math.sin(T * .8 + b.ph) * 14 * dt; });
+    this.list = this.list.filter(b => b.y > -b.r * 2);
+    this.parts.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .95; p.vy *= .95; p.life -= dt * 1.6; });
+    this.parts = this.parts.filter(p => p.life > 0);
+    return '🫧 ' + this.popped + ' bong bóng';
+  },
+  draw() {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#1f3f6b'); g.addColorStop(.55, '#2b6a86'); g.addColorStop(1, '#3f9a9a');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // tia sáng mờ
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 3; i++) {
+      const x = W * (0.2 + i * 0.3) + Math.sin(T * .2 + i) * 30;
+      const lg = ctx.createLinearGradient(x, 0, x + 80, H * .8);
+      lg.addColorStop(0, 'rgba(200,255,240,.10)'); lg.addColorStop(1, 'rgba(200,255,240,0)');
+      ctx.fillStyle = lg;
+      ctx.beginPath(); ctx.moveTo(x - 30, 0); ctx.lineTo(x + 40, 0); ctx.lineTo(x + 160, H * .8); ctx.lineTo(x + 20, H * .8); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    this.list.forEach(b => {
+      const rg = ctx.createRadialGradient(b.x - b.r * .3, b.y - b.r * .3, b.r * .1, b.x, b.y, b.r);
+      rg.addColorStop(0, 'rgba(255,255,255,.45)');
+      rg.addColorStop(.6, `hsla(${b.hue},80%,80%,.12)`);
+      rg.addColorStop(1, `hsla(${b.hue},85%,75%,.38)`);
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = `hsla(${b.hue},90%,88%,.65)`; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ctx.beginPath(); ctx.ellipse(b.x - b.r * .42, b.y - b.r * .42, b.r * .2, b.r * .11, -0.7, 0, 6.283); ctx.fill();
+      if (b.special) {
+        ctx.fillStyle = '#ffd9a8'; ctx.font = `700 ${b.r * .8}px "Baloo 2",sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('✦', b.x, b.y + 2);
+      }
+    });
+    this.parts.forEach(p => {
+      ctx.fillStyle = `hsla(${p.hue},90%,88%,${Math.max(0, p.life)})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3 * p.life + .5, 0, 6.283); ctx.fill();
+    });
+  }
+};
+
+/* ---------- GAME 3: Hít thở ---------- */
+const breathe = {
+  t: 0, lastPh: -1, cycles: 0, motes: [],
+  hint: 'Nhìn vào vòng tròn. Hít vào khi nó nở ra, thở ra khi nó thu lại.',
+  init() { this.motes = Array.from({ length: 34 }, () => ({ x: Math.random(), y: Math.random(), s: rand(.4, 1.6), v: rand(.006, .02), ph: rand(0, 6) })); },
+  state() {
+    const t = this.t % 14;
+    if (t < 4) return { ph: 0, lvl: easeSine(t / 4), rem: 4 - t };
+    if (t < 8) return { ph: 1, lvl: 1, rem: 8 - t };
+    return { ph: 2, lvl: 1 - easeSine((t - 8) / 6), rem: 14 - t };
+  },
+  down() {}, move() {},
+  update(dt) {
+    this.t += dt;
+    const s = this.state();
+    if (s.ph !== this.lastPh) {
+      if (s.ph === 0 && this.lastPh === 2) {
+        this.cycles++;
+        if (this.cycles % 5 === 0) toast('Tuyệt lắm! Bạn vừa hít thở đều ' + this.cycles + ' nhịp.');
+      }
+      note([SC[2], SC[4], SC[0]][s.ph], 2.5, .09);
+      this.lastPh = s.ph;
+    }
+    this.motes.forEach(m => { m.y -= m.v * dt; if (m.y < -0.02) { m.y = 1.02; m.x = Math.random(); } });
+    return '🌬️ ' + this.cycles + ' nhịp thở';
+  },
+  draw() {
+    const { ph, lvl, rem } = this.state();
+    const cx = W / 2, cy = H * 0.44, m = Math.min(W, H);
+    const r = m * 0.13 + (m * 0.30 - m * 0.13) * lvl;
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, `hsl(${235 + lvl * 20},45%,${14 + lvl * 6}%)`);
+    g.addColorStop(1, `hsl(${262 - lvl * 40},40%,${24 + lvl * 8}%)`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,243,207,.5)';
+    this.motes.forEach(mo => {
+      ctx.globalAlpha = .25 + .35 * Math.abs(Math.sin(T + mo.ph));
+      ctx.beginPath(); ctx.arc(mo.x * W, mo.y * H, mo.s, 0, 6.283); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 4; i >= 0; i--) {
+      ctx.fillStyle = `hsla(${170 + i * 25},70%,65%,${0.15 - i * 0.026})`;
+      ctx.beginPath(); ctx.arc(cx, cy, r * (1 + i * 0.22), 0, 6.283); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    const cg = ctx.createRadialGradient(cx - r * .25, cy - r * .3, r * .1, cx, cy, r);
+    cg.addColorStop(0, 'hsla(190,75%,86%,.95)'); cg.addColorStop(1, 'hsla(255,65%,76%,.85)');
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#1b2142'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `700 ${Math.max(22, m * 0.06)}px "Baloo 2",sans-serif`;
+    ctx.fillText(['Hít vào', 'Giữ nhẹ', 'Thở ra'][ph], cx, cy - m * 0.015);
+    ctx.font = `500 ${Math.max(16, m * 0.04)}px "Baloo 2",sans-serif`;
+    ctx.globalAlpha = .7; ctx.fillText(Math.ceil(rem), cx, cy + m * 0.045); ctx.globalAlpha = 1;
+  }
+};
+
+/* ---------- Điều khiển chung ---------- */
+const games = { garden, bubbles, breathe };
+const inited = {};
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+function select(name) {
+  current = games[name];
+  if (!inited[name]) { current.init(); inited[name] = true; }
+  hintEl.textContent = current.hint;
+  document.querySelectorAll('nav button').forEach(b =>
+    b.setAttribute('aria-selected', b.dataset.g === name ? 'true' : 'false'));
+  toastEl.classList.remove('show');
+}
+document.querySelectorAll('nav button').forEach(b =>
+  b.addEventListener('click', () => { initAudio(); select(b.dataset.g); }));
+
+let isDown = false;
+cv.addEventListener('pointerdown', e => { initAudio(); isDown = true; current.down(e.clientX, e.clientY); });
+cv.addEventListener('pointermove', e => current.move(e.clientX, e.clientY, isDown));
+window.addEventListener('pointerup', () => isDown = false);
+window.addEventListener('pointercancel', () => isDown = false);
+window.addEventListener('resize', resize);
+
+let last = performance.now(), lastStat = '';
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; T += dt;
+  const s = current.update(dt);
+  if (s !== lastStat) { statEl.textContent = s; lastStat = s; }
+  current.draw();
+  requestAnimationFrame(loop);
+}
+
+resize();
+select('garden');
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

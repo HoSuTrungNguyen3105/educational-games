@@ -43,6 +43,42 @@
       "speed": 0.06,
       "dps": 80,
       "size": 1.7
+    },
+    "zombie": {
+      "name": "Zombie",
+      "hp": 220,
+      "speed": 0.16,
+      "dps": 22,
+      "size": 1.1
+    },
+    "zombieCone": {
+      "name": "Zombie Nón Cối",
+      "hp": 520,
+      "speed": 0.15,
+      "dps": 24,
+      "size": 1.15
+    },
+    "bat": {
+      "name": "Dơi Quỷ",
+      "hp": 70,
+      "speed": 0.55,
+      "dps": 14,
+      "size": 0.9
+    },
+    "vampire": {
+      "name": "Ma Cà Rồng",
+      "hp": 480,
+      "speed": 0.2,
+      "dps": 30,
+      "size": 1.1,
+      "jump": true
+    },
+    "vampLord": {
+      "name": "Bá Tước Ma Cà Rồng",
+      "hp": 4500,
+      "speed": 0.06,
+      "dps": 90,
+      "size": 1.75
     }
   },
   "plants": {
@@ -122,6 +158,13 @@
       "cooldown": 25,
       "damage": 400,
       "fuse": 0.8
+    },
+    "garlic": {
+      "name": "Tỏi Xua Quỷ",
+      "kind": "wall",
+      "cost": 75,
+      "hp": 1000,
+      "cooldown": 16
     }
   },
   "levels": [
@@ -506,6 +549,86 @@
             }
           ]
         }
+      ]
+    },
+    {
+      "name": "Nghĩa Địa Zombie",
+      "theme": "grave",
+      "rows": 5,
+      "startSun": 250,
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili"],
+      "skySun": {
+        "first": 10,
+        "every": 12,
+        "amount": 25
+      },
+      "timeline": [
+        {"t": 15, "monster": "zombie", "row": "random"},
+        {"t": 32, "monster": "zombie", "row": "random", "count": 2, "gap": 4},
+        {"t": 52, "monster": "zombieCone", "row": "random"},
+        {"t": 70, "monster": "zombie", "row": "random", "count": 3, "gap": 3},
+        {"t": 90, "banner": "Zombie trỗi dậy từ mộ!", "flag": true, "spawn": [
+          {"monster": "zombie", "row": "all"},
+          {"monster": "zombieCone", "row": "random", "count": 2, "gap": 5, "delay": 4}
+        ]},
+        {"t": 120, "banner": "Đợt cuối: bầy zombie kéo đến!", "flag": true, "spawn": [
+          {"monster": "zombie", "row": "all", "count": 2, "gap": 6},
+          {"monster": "zombieCone", "row": "random", "count": 3, "gap": 4, "delay": 3},
+          {"monster": "bat", "row": "random", "count": 4, "gap": 2, "delay": 8}
+        ]}
+      ]
+    },
+    {
+      "name": "Lâu Đài Ma Cà Rồng",
+      "theme": "castle",
+      "rows": 5,
+      "startSun": 300,
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili"],
+      "skySun": {
+        "first": 12,
+        "every": 14,
+        "amount": 25
+      },
+      "timeline": [
+        {"t": 15, "monster": "bat", "row": "random", "count": 3, "gap": 2},
+        {"t": 35, "monster": "vampire", "row": "random"},
+        {"t": 55, "monster": "zombieCone", "row": "random", "count": 2, "gap": 4},
+        {"t": 75, "monster": "vampire", "row": "random", "count": 2, "gap": 5},
+        {"t": 100, "banner": "Bầy dơi đang tràn vào lâu đài!", "flag": true, "spawn": [
+          {"monster": "bat", "row": "all", "count": 2, "gap": 3},
+          {"monster": "vampire", "row": "random", "count": 2, "gap": 6, "delay": 4}
+        ]},
+        {"t": 135, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [
+          {"monster": "vampire", "row": "all", "count": 2, "gap": 7},
+          {"monster": "zombieCone", "row": "random", "count": 3, "gap": 4, "delay": 3},
+          {"monster": "bat", "row": "random", "count": 6, "gap": 1.5, "delay": 6}
+        ]}
+      ]
+    },
+    {
+      "name": "Bá Tước Ma Cà Rồng",
+      "theme": "castle",
+      "rows": 5,
+      "startSun": 350,
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili"],
+      "skySun": {
+        "first": 10,
+        "every": 12,
+        "amount": 25
+      },
+      "timeline": [
+        {"t": 15, "monster": "zombie", "row": "random", "count": 3, "gap": 3},
+        {"t": 35, "monster": "vampire", "row": "random", "count": 2, "gap": 5},
+        {"t": 60, "monster": "bat", "row": "random", "count": 5, "gap": 2},
+        {"t": 85, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [
+          {"monster": "zombieCone", "row": "all"},
+          {"monster": "vampire", "row": "random", "count": 3, "gap": 5, "delay": 4}
+        ]},
+        {"t": 120, "banner": "BÁ TƯỚC MA CÀ RỒNG XUẤT HIỆN!", "flag": true, "spawn": [
+          {"monster": "vampLord", "row": 3},
+          {"monster": "bat", "row": "all", "delay": 6},
+          {"monster": "zombie", "row": "random", "count": 6, "gap": 2, "delay": 10}
+        ]}
       ]
     }
   ]
