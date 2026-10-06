@@ -8,7 +8,7 @@ import {
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import RangePagination from '../../components/RangePagination.jsx'
-import { Gamepad2, Pencil, Trash2, Copy, Ticket, Play, Search, Layers, Rocket, FileEdit, TrendingUp } from 'lucide-react'
+import { Gamepad2, Pencil, Trash2, Copy, Ticket, Play, Search, Layers, Rocket, FileEdit, TrendingUp, Database } from 'lucide-react'
 
 const PAGE_SIZE = 12;
 
@@ -156,11 +156,64 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
   const handlePrev = () => setFrom(f => Math.max(1, f - PAGE_SIZE));
   const handleNext = () => setFrom(f => Math.min(f + PAGE_SIZE, total));
 
+  /**
+   * Nạp dữ liệu mẫu từ server/data/*.json (templates, games, câu hỏi...).
+   * POST /api/seed chạy idempotent — bỏ qua bản ghi đã có, nên bấm nhiều lần
+   * cũng an toàn. Dùng để bổ sung template + game solo/coop còn thiếu.
+   */
+  const [seeding, setSeeding] = useState(false);
+  const handleSeed = async () => {
+    if (seeding) return;
+    setSeeding(true);
+    try {
+      const r = await gameService.seed();
+      // Server trả { templates:{total,added,updated}, games:{...}, questions:{...} }
+      const tpl = r?.templates || {};
+      const addedGames = r?.games?.added ?? 0;
+      const addedAll = ["templates", "categories", "subjects", "games", "questions", "players"]
+        .reduce((s, k) => s + (r?.[k]?.added ?? 0), 0);
+      const updatedAll = Object.values(r || {})
+        .reduce((s, v) => s + (v?.updated ?? 0), 0);
+
+      let msg;
+      if (addedAll === 0 && updatedAll === 0) {
+        msg = "Dữ liệu đã đầy đủ và khớp với server — không có gì để nạp.";
+      } else {
+        const bits = [];
+        if (addedAll) bits.push(`${addedAll} mục mới`);
+        if (updatedAll) bits.push(`${updatedAll} mục được cập nhật`);
+        msg = `Đã nạp: ${bits.join(", ")}.`;
+        if (tpl.updated) msg += ` Trong đó ${tpl.updated} template được ghi lại.`;
+        if (addedGames) msg += ` Game mới: ${addedGames}.`;
+      }
+      showToast(msg, "success");
+      await load();
+      loadStats();
+      onChanged?.();
+    } catch (e) {
+      showToast(e?.message || "Không nạp được dữ liệu mẫu.", "error");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <ManagementHeader subtitle="Quản lý nội dung" title="Trò chơi" />
-        <PrimaryButton onClick={onCreate}>+ Tạo trò chơi</PrimaryButton>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSeed}
+            disabled={seeding}
+            title="Nạp template + trò chơi solo/coop mẫu từ server/data"
+            className="note-card px-4 py-2.5 text-sm font-semibold text-ink flex items-center gap-2
+                       hover:bg-[#FFF8E7] disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            <Database className={`w-4 h-4 ${seeding ? "animate-spin" : ""}`} />
+            {seeding ? "Đang nạp..." : "Nạp dữ liệu mẫu"}
+          </button>
+          <PrimaryButton onClick={onCreate}>+ Tạo trò chơi</PrimaryButton>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

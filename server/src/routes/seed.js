@@ -10,18 +10,33 @@ router.post("/seed", authenticate, requireRoles("admin", "teacher"), async (req,
   try {
     const results = {};
 
-    // 1. Templates — skip if name already exists
+    // 1. Templates — thêm nếu chưa có, UPDATE nếu đã có.
+    //
+    // Trước đây `if (existing) continue` khiến seed không bao giờ sửa được
+    // template cũ: sửa templates.json (kể cả htmlTemplate) thì bấm seed cũng
+    // không có gì xảy ra. Nay nếu bản ghi đã có mà nguồn thay đổi thì cập nhật.
     const templatesColl = getCollection("templates");
     const rawTemplates = seedData.templates();
-    let templatesAdded = 0;
+    let templatesAdded = 0, templatesUpdated = 0;
     for (const t of rawTemplates) {
       const existing = await templatesColl.findOne({ name: t.name });
       if (!existing) {
         await templatesColl.insertOne(t);
         templatesAdded++;
+        continue;
+      }
+      // Chỉ cập nhật những field có trong nguồn, và chỉ khi khác đi
+      const patch = {};
+      for (const k of ["description", "type", "category", "icon", "ring",
+                       "htmlTemplate", "thumbnail", "version", "status", "playMode"]) {
+        if (t[k] !== undefined && t[k] !== "" && t[k] !== existing[k]) patch[k] = t[k];
+      }
+      if (Object.keys(patch).length) {
+        await templatesColl.updateOne({ _id: existing._id }, { $set: patch });
+        templatesUpdated++;
       }
     }
-    results.templates = { total: rawTemplates.length, added: templatesAdded };
+    results.templates = { total: rawTemplates.length, added: templatesAdded, updated: templatesUpdated };
 
     // 2. Categories — skip if id already exists
     const categoriesColl = getCollection("categories");

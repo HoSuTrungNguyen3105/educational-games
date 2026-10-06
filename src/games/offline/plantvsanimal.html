@@ -240,6 +240,8 @@
     "ice":       {"name": "Việt Quất Băng", "kind": "shooter",  "cost": 175, "hp": 80,  "cooldown": 6,  "damage": 20, "every": 1.5, "shots": 1, "slow": 0.5, "slowTime": 4},
     "mine":      {"name": "Khoai Bẫy",      "kind": "mine",     "cost": 25,  "hp": 50,  "cooldown": 18, "damage": 500, "arm": 8},
     "repeater":  {"name": "Xương Rồng Đôi", "kind": "shooter",  "cost": 200, "hp": 80,  "cooldown": 7,  "damage": 20, "every": 1.5, "shots": 2},
+    "gatling":    {"name":"Súp Lơ Bắn Liên Hồi", "kind":"shooter", "cost": 250, "hp": 80, "cooldown": 7,  "damage": 20, "every": 1.2, "shots": 4},
+    "threepeater":{"name":"Tam Thủ Súng", "kind":"shooter", "cost": 300, "hp": 80, "cooldown": 8,  "damage": 20, "every": 1.6, "shots": 1, "lanes": 3},
     "chili":     {"name": "Ớt Lửa",         "kind": "lane",     "cost": 125, "hp": 50, "cooldown": 25, "damage": 400, "fuse": 0.8},
     "garlic":    {"name": "Tỏi Xua Quỷ",    "kind": "wall",     "cost": 75,  "hp": 1000, "cooldown": 16}
   },
@@ -334,7 +336,7 @@
     },
     {
       "name": "Nghĩa Địa Zombie", "theme": "grave", "rows": 5, "startSun": 250,
-      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili"],
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater"],
       "skySun": {"first": 10, "every": 12, "amount": 25},
       "timeline": [
         {"t": 15, "monster": "zombie", "row": "random"},
@@ -354,7 +356,7 @@
     },
     {
       "name": "Lâu Đài Ma Cà Rồng", "theme": "castle", "rows": 5, "startSun": 300,
-      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili"],
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater"],
       "skySun": {"first": 12, "every": 14, "amount": 25},
       "timeline": [
         {"t": 15, "monster": "bat", "row": "random", "count": 3, "gap": 2},
@@ -374,7 +376,7 @@
     },
     {
       "name": "Bá Tước Ma Cà Rồng", "theme": "castle", "rows": 5, "startSun": 350,
-      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili"],
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater"],
       "skySun": {"first": 10, "every": 12, "amount": 25},
       "timeline": [
         {"t": 15, "monster": "zombie", "row": "random", "count": 3, "gap": 3},
@@ -417,7 +419,7 @@ const DEF = JSON.parse($('cfgDefault').textContent);
 /* Icon nằm ở đây, KHÔNG nằm trong JSON config — config chỉ gửi id + số liệu.
    Thêm quái/cây mới: thêm id vào config, icon tự lấy theo id (thêm id mới thì thêm ở bảng dưới). */
 const MON_ICON = { worm: '🐛', beetle: '🪲', locust: '🦗', rat: '🐀', snail: '🐌', boss: '🦂', zombie: '🧟', zombieCone: '🧟', bat: '🦇', vampire: '🧛', vampLord: '🧛' };
-const PLANT_ICON = { sunflower: '🌻', shooter: '🥦', wall: '🥥', bomb: '🍒', ice: '🫐', mine: '🥔', repeater: '🌵', chili: '🌶️', garlic: '🧄' };
+const PLANT_ICON = { sunflower: '🌻', shooter: '🥦', wall: '🥥', bomb: '🍒', ice: '🫐', mine: '🥔', repeater: '🌵', chili: '🌶️', garlic: '🧄', gatling: '🫒', threepeater: '🪻' };
 const M_BASE = { icon: '👾', name: 'Quái', hp: 100, speed: .2, dps: 20, size: 1 };
 const P_BASE = { icon: '🌱', name: 'Cây', kind: 'wall', cost: 50, hp: 80, cooldown: 5 };
 const KIND_DEF = {
@@ -630,6 +632,10 @@ const BOOM_SPRITE = (() => {
 })();
 
 let W = 0, H = 0, DPR = 1, cw = 60, ch = 60, ox = 60, oy = 60, safeL = 0, safeR = 0, ROWS = 5;
+/* Map gom hạt theo màu cho drawFx — dùng lại mỗi khung để không cấp phát mới */
+const fxBuckets = new Map();
+/* Trần số hiệu ứng: nhiều quả bom nổ cùng lúc không được phép làm khung hình tụt */
+const FX_MAX = 260;
 let G = null, ptr = { x: 0, y: 0, down: false, type: 'touch' }, drag = null, T = 0;
 let saveAcc = 0;
 function readRunCheckpoint() {
@@ -808,7 +814,7 @@ function part(x, y, n, cols, spd = 120, up = 60, life = .7, r = 3.5, grav = 260)
   for (let i = 0; i < n; i++) { const a = rand(0, 6.283), s = rand(.3, 1) * spd; G.fx.push({ k: 'p', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - up, life: life * rand(.7, 1.1), max: life, c: pick(cols), r: rand(r * .6, r * 1.3), g: grav }); }
 }
 const floatText = (x, y, t, c = '#fff') => G.fx.push({ k: 't', x, y, t, c, life: 1.1, max: 1.1 });
-function boom(x, y, rad, col = '#ffb43a') { G.fx.push({ k: 'b', x, y, rad, life: .55, max: .55, c: col }); part(x, y, 22, ['#ffdd66', '#ff9a3a', '#ff5a2a', '#fff'], 260, 80, .8, 4.5); G.shake = Math.max(G.shake, 9); sfx.boom(); }
+function boom(x, y, rad, col = '#ffb43a') { G.fx.push({ k: 'b', x, y, rad, life: .55, max: .55, c: col }); part(x, y, 14, ['#ffdd66', '#ff9a3a', '#ff5a2a', '#fff'], 260, 80, .8, 4.5); G.shake = Math.max(G.shake, 9); sfx.boom(); }
 function confetti() { for (let i = 0; i < 90; i++) G.fx.push({ k: 'c', x: rand(0, W), y: rand(-60, -5), vx: rand(-50, 50), vy: rand(80, 220), r: rand(0, 6), vr: rand(-8, 8), s: rand(6, 10), life: 4, max: 4, c: pick(['#ff8fb1', '#ffe066', '#9be16d', '#6fc8ff', '#c9a8ff', '#ff9d5c']) }); }
 
 /* ================= Nắng ================= */
@@ -868,10 +874,15 @@ function updatePlant(p, dt) {
     p.tt -= dt; if (p.tt <= 0) { p.tt = d.every; addSun(p.col + .5 + rand(-.1, .1), p.row + .35, d.amount, 'flower'); }
   } else if (d.kind === 'shooter') {
     p.cdT -= dt;
-    const has = G.monsters.some(m => m.row === p.row && !m.dying && m.u > p.col + .4 && m.u < COLS + .6);
-    if (has && p.cdT <= 0) {
+    // lanes: 1 = chỉ hàng của cây (mặc định) · 3 = bắn cả hàng trên và dưới (Tam Thủ Súng)
+    const rows = d.lanes >= 3 ? [p.row - 1, p.row, p.row + 1] : [p.row];
+    const targets = rows.filter(r =>
+      r >= 0 && r < ROWS && G.monsters.some(m => m.row === r && !m.dying && m.u > p.col + .4 && m.u < COLS + .6));
+    if (targets.length && p.cdT <= 0) {
       p.cdT = d.every; p.recoil = 1;
-      for (let k = 0; k < (d.shots || 1); k++) G.timers.push({ at: G.time + k * .13, row: p.row, col: p.col });
+      const n = d.shots || 1;
+      let seq = 0;
+      for (const r of targets) for (let k = 0; k < n; k++) G.timers.push({ at: G.time + (seq++) * .1, row: p.row, col: p.col, trow: r });
     }
   } else if (d.kind === 'bomb') {
     p.fuse -= dt; if (p.fuse <= 0) { const cu = p.col + .5, r = p.row; removePlant(p, true); blast(cu, r, d.radius || 1.5, Math.round(d.radius || 1.5) > 1 ? 1 : 0, d.damage); }
@@ -923,6 +934,8 @@ function updateMonster(m, dt) {
 
 /* ================= Vòng cập nhật ================= */
 function updateFx(dt) {
+  // Cắt bớt hiệu ứng cũ nhất nếu vượt trần (nổ liên tiếp bằng Anh Đào/Ớt Lửa)
+  if (G.fx.length > FX_MAX) G.fx.splice(0, G.fx.length - FX_MAX);
   for (let i = G.fx.length - 1; i >= 0; i--) {
     const f = G.fx[i]; f.life -= dt;
     if (f.k === 'p') { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += f.g * dt; }
@@ -959,7 +972,9 @@ function update(dt) {
     const p = G.plants[t.row]?.[t.col];
     if (!p?.alive) continue;
     const d = p.d;
-    G.bullets.push({ row: p.row, u: p.col + .78, pu: p.col + .78, dmg: d.damage, slow: d.slow || 0, slowT: d.slowTime || 3, style: d.slow ? 'ice' : ((d.shots || 1) > 1 ? 'spike' : 'seed') });
+    // trow = hàng đích (khác hàng của cây khi cây bắn nhiều hàng)
+    const tr = t.trow === undefined ? p.row : t.trow;
+    G.bullets.push({ row: tr, u: p.col + .78, pu: p.col + .78, dmg: d.damage, slow: d.slow || 0, slowT: d.slowTime || 3, style: d.slow ? 'ice' : ((d.shots || 1) > 1 ? 'spike' : (d.lanes >= 3 ? 'pea' : 'seed')) });
     sfx.shoot();
   }
   // nắng từ trời
@@ -1063,11 +1078,35 @@ function drawMonster(m) {
     }
   }
 }
+/*
+ * Sprite đạn — cùng lý do với vụ nổ: gradient tạo lại mỗi khung cho từng viên
+ * làm nghẽn khi nhiều cây bắn cùng lúc. Dựng sẵn 2 hình rồi chỉ drawImage().
+ */
+const BULLET_SPRITES = (() => {
+  const mk = (S, stops) => {
+    const c = document.createElement('canvas'); c.width = c.height = S;
+    const g = c.getContext('2d'), r = S / 2, gr = g.createRadialGradient(r - 2, r - 2, 1, r, r, r);
+    for (const [o, col] of stops) gr.addColorStop(o, col);
+    g.fillStyle = gr; g.beginPath(); g.arc(r, r, r - 1, 0, 6.283); g.fill();
+    return c;
+  };
+  const ice = mk(20, [[0, '#fff'], [.5, '#7cc8ff'], [1, 'rgba(90,170,255,0)']]);
+  const seed = mk(16, [[0, '#e6ffc0'], [1, '#4fa93a']]);
+  return { ice, seed };
+})();
+
 function drawBullet(b) {
   const x = px(b.u), y = py(b.row + .5) - ch * .12;
-  if (b.style === 'ice') { const g = ctx.createRadialGradient(x, y, 1, x, y, 9); g.addColorStop(0, '#fff'); g.addColorStop(.5, '#7cc8ff'); g.addColorStop(1, 'rgba(90,170,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 9, 0, 6.283); ctx.fill(); }
-  else if (b.style === 'spike') { ctx.save(); ctx.translate(x, y); ctx.fillStyle = '#f6f0a8'; ctx.strokeStyle = '#7a8a2a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, -3.5); ctx.lineTo(-3, 0); ctx.lineTo(-5, 3.5); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
-  else { const g = ctx.createRadialGradient(x - 2, y - 2, 1, x, y, 7); g.addColorStop(0, '#e6ffc0'); g.addColorStop(1, '#4fa93a'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 6.5, 0, 6.283); ctx.fill(); ctx.strokeStyle = 'rgba(30,90,20,.6)'; ctx.lineWidth = 1; ctx.stroke(); }
+  if (b.style === 'ice') {
+    ctx.drawImage(BULLET_SPRITES.ice, x - 9, y - 9, 18, 18);
+  } else if (b.style === 'spike') {
+    ctx.save(); ctx.translate(x, y); ctx.fillStyle = '#f6f0a8'; ctx.strokeStyle = '#7a8a2a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, -3.5); ctx.lineTo(-3, 0); ctx.lineTo(-5, 3.5); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+  } else {
+    // 'seed' và 'pea' (Tam Thủ Súng) dùng chung hạt xanh
+    ctx.drawImage(BULLET_SPRITES.seed, x - 7, y - 7, 14, 14);
+    ctx.strokeStyle = 'rgba(30,90,20,.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(x, y, 6.5, 0, 6.283); ctx.stroke();
+  }
 }
 function drawMower(mw) {
   if (mw.state === 2) return; const x = px(mw.u), y = py(mw.row + .55), s = Math.min(cw, ch) * .62, sh = mw.state === 1 ? Math.sin(T * 60) * 1.5 : 0;

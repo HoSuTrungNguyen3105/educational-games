@@ -104,6 +104,13 @@ export async function apiFetch(path, options = {}) {
 }
 
 export const gameService = {
+  /**
+   * Nạp dữ liệu mẫu (templates / games / câu hỏi / môn học) từ server/data/*.json.
+   * POST /api/seed — idempotent: bỏ qua bản ghi đã tồn tại nên chạy lại không tạo trùng.
+   * Cần role admin hoặc teacher (xem server/src/routes/seed.js).
+   */
+  async seed() { return apiFetch("/seed", { method: "POST" }); },
+
   async list(filters = {}) {
     const params = new URLSearchParams();
     if (filters.query) params.set("query", filters.query);

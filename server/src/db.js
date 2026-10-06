@@ -113,9 +113,11 @@ async function _runHeavyInit(database) {
           language: { bsonType: "string" },
           templateId: { bsonType: "objectId" },
           type: { enum: ["play-to-learn", "play-to-win"] },
-          // Field mới: quiz = dùng collection `questions`; custom = tự sinh từ `config`
-          gameMode: { enum: ["quiz", "custom"] },
-          status: { enum: ["published", "draft"] },
+            // Field mới: quiz = dùng collection `questions`; custom = tự sinh từ `config`
+            gameMode: { enum: ["quiz", "custom"] },
+            // Chế độ chơi: solo = một mình, classroom = chơi với người (coop)
+            playMode: { enum: ["solo", "classroom"] },
+            status: { enum: ["published", "draft"] },
           code: { bsonType: "string" },
           createdAt: { bsonType: "string" },
           updatedAt: { bsonType: "string" },
@@ -677,6 +679,9 @@ async function _runHeavyInit(database) {
         templateId: tplId,
         type: g.type || "play-to-learn",
         status: g.status || "draft",
+        // solo = một mình, classroom = chơi với người (coop).
+        // Thiếu field thì mặc định solo cho khớp gameService.js.
+        playMode: ["solo", "classroom"].includes(g.playMode) ? g.playMode : "solo",
         questionsCount: g.questionsCount || 0,
         playersCount: g.playersCount || 0,
         code: g.code || "",
