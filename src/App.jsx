@@ -15,6 +15,7 @@ import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
 const TeacherApp = lazy(() => import("./pages/teacher/TeacherApp.jsx"));
 const StudentApp = lazy(() => import("./pages/student/StudentApp.jsx"));
 const GardenPage = lazy(() => import("./pages/user/GardenPage.jsx"));
+const InventoryPage = lazy(() => import("./pages/user/InventoryPage.jsx"));
 const ProfileScreen = lazy(() => import("./pages/user/ProfileScreen.jsx"));
 const MyCoins = lazy(() => import("./pages/user/MyCoins.jsx"));
 const FindFriendsScreen = lazy(() => import("./pages/user/FindFriendsScreen.jsx"));
@@ -124,6 +125,11 @@ function App() {
     garden: () => (
       <RouteShell toast={toast} showBack={false}>
         <GardenPage userAuth={userAuth} onBack={() => navigate("/")} />
+      </RouteShell>
+    ),
+    inventory: () => (
+      <RouteShell toast={toast} showBack={false}>
+        <InventoryPage userAuth={userAuth} onBack={() => navigate("/")} />
       </RouteShell>
     ),
     "assignment-join": () => <AssignmentJoin />,
