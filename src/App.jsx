@@ -16,6 +16,8 @@ const TeacherApp = lazy(() => import("./pages/teacher/TeacherApp.jsx"));
 const StudentApp = lazy(() => import("./pages/student/StudentApp.jsx"));
 const GardenPage = lazy(() => import("./pages/user/GardenPage.jsx"));
 const InventoryPage = lazy(() => import("./pages/user/InventoryPage.jsx"));
+const LeaderboardPage = lazy(() => import("./pages/user/LeaderboardPage.jsx"));
+const AchievementsPage = lazy(() => import("./pages/user/AchievementsPage.jsx"));
 const ProfileScreen = lazy(() => import("./pages/user/ProfileScreen.jsx"));
 const MyCoins = lazy(() => import("./pages/user/MyCoins.jsx"));
 const FindFriendsScreen = lazy(() => import("./pages/user/FindFriendsScreen.jsx"));
@@ -130,6 +132,16 @@ function App() {
     inventory: () => (
       <RouteShell toast={toast} showBack={false}>
         <InventoryPage userAuth={userAuth} onBack={() => navigate("/")} />
+      </RouteShell>
+    ),
+    leaderboard: () => (
+      <RouteShell toast={toast} showBack={false}>
+        <LeaderboardPage userAuth={userAuth} onBack={() => navigate("/")} />
+      </RouteShell>
+    ),
+    achievements: () => (
+      <RouteShell toast={toast} showBack={false}>
+        <AchievementsPage userAuth={userAuth} onBack={() => navigate("/")} />
       </RouteShell>
     ),
     "assignment-join": () => <AssignmentJoin />,

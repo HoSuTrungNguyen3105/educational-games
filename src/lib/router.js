@@ -53,6 +53,8 @@ const ROUTES = [
   { name: "spin-wheel",   pattern: "/spin-wheel" },
   { name: "garden",       pattern: "/garden" },
   { name: "inventory",    pattern: "/inventory" },
+  { name: "leaderboard",  pattern: "/leaderboard" },
+  { name: "achievements", pattern: "/achievements" },
   { name: "assignment-join", pattern: "/assignment" },
   { name: "assignment-take", pattern: "/assignment/:code" },
   { name: "math-adventure", pattern: "/math-adventure" },

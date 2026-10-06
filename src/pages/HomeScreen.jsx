@@ -39,6 +39,7 @@ import {
   FileText,
   Sprout,
   PawPrint,
+  Crown,
 } from 'lucide-react'
 
 // Bảng màu theo môn học
@@ -112,7 +113,8 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: true, badge: true },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
-  { key: "achievements", icon: Trophy, label: "Thành tựu", type: "scroll", target: "achievements-section", show: true },
+  { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
+  { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
   { key: "profile", icon: User, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
@@ -122,7 +124,7 @@ const SIDEBAR_ITEMS = (userAuth) => ([
 
 // Chia sidebar thanh nhom de mat 'bi lan' hon phan trang chinh.
 const SIDEBAR_GROUPS = [
-  { title: "Chính", keys: ["home", "games", "subjects", "achievements"] },
+  { title: "Chính", keys: ["home", "games", "subjects", "achievements", "leaderboard"] },
   { title: "Học tập", keys: ["tasks", "assignment", "shop", "garden"] },
   { title: "Kết nối", keys: ["chat", "friends", "spin", "profile"] },
 ];
@@ -913,7 +915,7 @@ const subjects = useMemo(() => {
                 title="Thành tích nổi bật"
                 id="achievements-section"
                 actionLabel="Xem tất cả ›"
-                onAction={() => goTo("/profile")}
+                onAction={() => goTo("/achievements")}
               >
                 <div className="space-y-3">
                   {ACHIEVEMENTS.map((a, i) => (
