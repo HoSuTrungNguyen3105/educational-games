@@ -1119,8 +1119,7 @@ function GameCard({ game, template, onSelect, index = 0 }) {
     <button
       onClick={() => onSelect(game)}
       aria-label={`Chơi ${game.name}`}
-      style={{ "--tile-c": "#2A9D8F" }} className="nb-tile animate-fade-in-up focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-      style={{ animationDelay: `${index * 0.06}s` }}
+      style={{ animationDelay: `${index * 0.06}s`, "--tile-c": "#2A9D8F" }} className="nb-tile animate-fade-in-up focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
     >
       <div className={`relative w-full aspect-[16/11] rounded-2xl bg-gradient-to-br ${color.grad} flex items-center justify-center overflow-hidden`}>
         <StampToken icon={template ? template.icon : <Gamepad2 className="w-7 h-7" />} ring="#ffffff" size={46} fontSize={20} />

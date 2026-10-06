@@ -20,6 +20,9 @@ export default defineConfig({
     },
     VitePWA({
       registerType: 'autoUpdate',
+      // Đăng ký SW thủ công trong src/main.jsx để kiểm soát chặt chẽ.
+      // Mặc định 'auto' tự chèn thêm 1 script vào index.html -> đăng ký 2 lần.
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'icons.svg', 'eduplay-icon.svg', 'eduplay-icon-192x192.png', 'eduplay-icon-512x512.svg', 'eduplay-logo.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Educational Games - Trò chơi giáo dục',
@@ -104,6 +107,13 @@ export default defineConfig({
         },
       },
       workbox: {
+        // Dọn cache Workbox cũ không còn dùng sau mỗi lần deploy (mục 4).
+        // Không có dòng này thì cache tích tụ theo từng phiên bản.
+        cleanupOutdatedCaches: true,
+        // SW mới phải chiếm quyền (clientsClaim) các tab đang mở, nếu không
+        // tab cũ vẫn chạy SW cũ tới lần F12/đóng tab kế tiếp -> user thấy
+        // bản cũ dù deploy đã lên (đúng triệu chứng mục 14 mô tả).
+        clientsClaim: true,
         importScripts: ['firebase-messaging-sw.js'],
         globPatterns: ['**/*.{js,css,html}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
@@ -147,6 +157,35 @@ export default defineConfig({
             },
           },
           {
+            // ── HTML GAME / TEMPLATE ĐỘNG (mục 6, 9, 10, 18) ─────────────
+            // Admin sửa HTML trên Storage/API là người dùng phải nhận bản mới
+            // NGAY, không cần build lại frontend. Vì vậy tuyệt đối KHÔNG dùng
+            // CacheFirst cho nhóm này — chỉ dùng cache khi mất mạng.
+            //
+            // Khớp được mọi nguồn HTML động của hệ thống:
+            //   · Firebase : https://firebasestorage.googleapis.com/.../x.html?alt=media
+            //   · R2 / CDN  : https://pub-xxx.r2.dev/templates/x.html
+            //   · API       : https://api.hiweb.vn/templates/x.html
+            //   · Cùng origin: /educational-games/index.html
+            //
+            // Phải khai trước rule /\/api\/.* bên dưới vì Workbox dừng ở
+            // rule khớp đầu tiên.
+            urlPattern: /\.html?(\?.*)?$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'game-html-cache',
+              cacheableResponse: { statuses: [0, 200] },
+              // Online: luôn chờ mạng tối đa 5s để lấy HTML mới nhất.
+              // Quá 5s (mạng chậm/yếu) thì dùng bản cache để game vẫn mở được.
+              networkTimeoutSeconds: 5,
+              expiration: {
+                maxEntries: 40,
+                maxAgeSeconds: 60 * 60 * 24 * 7,
+                purgeOnQuotaError: true,
+              },
+            },
+          },
+          {
             urlPattern: /\/api\/.*/i,
             handler: 'NetworkFirst',
             options: {
@@ -155,7 +194,9 @@ export default defineConfig({
               // để trang chủ và trang cấu hình không bị kẹt dữ liệu cũ.
               expiration: { maxEntries: 60, maxAgeSeconds: 60 * 10 },
               cacheableResponse: { statuses: [0, 200] },
-              networkTimeoutSeconds: 15,
+              // 15s là quá dài: người dùng sẽ nhận dữ liệu cũ khi mạng chậm.
+              // 5s đủ để đọc, quá ngưỡng thì fallback cache cho chịu mạng yếu.
+              networkTimeoutSeconds: 5,
             },
           },
         ],

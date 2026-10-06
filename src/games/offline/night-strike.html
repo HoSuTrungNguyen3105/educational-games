@@ -58,9 +58,11 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:none}
 /* nút điều khiển */
 .cb{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,.55);background:rgba(10,12,22,.45);color:#fff;display:grid;place-items:center;padding:0;font-size:24px;line-height:1;box-shadow:inset 0 0 12px rgba(255,255,255,.08)}
 .cb:active,.cb.dn{background:rgba(224,36,60,.55);border-color:#fff}
+.cb.on{background:rgba(255,182,39,.55);border-color:#ffd35a}
 .cb small{position:absolute;right:-2px;bottom:-2px;background:var(--red);border-radius:9px;font-size:12px;font-weight:800;min-width:20px;height:20px;display:grid;place-items:center;padding:0 4px}
 .cb.off{opacity:.35}
 #bFire{width:98px;height:98px;right:calc(88px + var(--sa-r));bottom:calc(34px + var(--sa-b));font-size:40px;border-color:rgba(255,120,120,.85)}
+#bAds{width:58px;height:58px;right:calc(112px + var(--sa-r));bottom:calc(146px + var(--sa-b));font-size:26px}
 #bRel{width:56px;height:56px;right:calc(196px + var(--sa-r));bottom:calc(46px + var(--sa-b))}
 #bSpr{width:52px;height:52px;right:calc(206px + var(--sa-r));bottom:calc(112px + var(--sa-b));font-size:22px}
 #bG{width:60px;height:60px;right:calc(18px + var(--sa-r));bottom:calc(34px + var(--sa-b))}
@@ -131,6 +133,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:none}
   </div>
   <div id="stick"><i></i></div>
   <button class="cb" id="bFire" aria-label="Bắn">◎</button>
+  <button class="cb" id="bAds" aria-label="Ngắm (zoom)">🎯</button>
   <button class="cb" id="bRel" aria-label="Nạp đạn">↻</button>
   <button class="cb" id="bSpr" aria-label="Chạy nhanh">🏃</button>
   <button class="cb" id="bSw" aria-label="Đổi súng">🔫</button>
@@ -145,6 +148,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:none}
 'use strict';
 /* =====================================================================
    NIGHT STRIKE – FPS Zombie & Ma Cà Rồng (raycasting, chạy offline)
+   v2: ngắm 3D (nhìn lên/xuống), ADS zoom, nòng súng chỉ đúng tâm ngắm,
+       hitbox khớp hình, bắn đầu x2, tự bắn khi trúng, kéo nút bắn để ngắm.
    Lưu tiến độ bằng localStorage (khóa: night_strike_save_v1)
    ===================================================================== */
 const $=s=>document.querySelector(s);
@@ -157,7 +162,7 @@ function seeded(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=M
 /* ============================ LƯU TRỮ ============================ */
 const KEY='night_strike_save_v1';
 const DEF=()=>({coins:0,best:{score:0,wave:0,time:0},stats:{kills:0,zk:0,vk:0,runs:0,play:0},
-  up:{hp:0,dmg:0,rel:0,arm:0},unlock:{shotgun:false},set:{sens:1,sound:true,assist:true,res:1,vib:true},run:null});
+  up:{hp:0,dmg:0,rel:0,arm:0},unlock:{shotgun:false},set:{sens:1,sound:true,assist:true,auto:true,res:1,vib:true},run:null});
 let SAVE=DEF(),storageOK=true,memSave=null;
 function mergeDeep(t,s){for(const k in s){if(s[k]&&typeof s[k]==='object'&&!Array.isArray(s[k])&&t[k]&&typeof t[k]==='object')mergeDeep(t[k],s[k]);else t[k]=s[k]}return t}
 function loadSave(){
@@ -209,6 +214,7 @@ const A={ctx:null,m:null,nb:null,amb:null,
       case'reload':this.tone(900,700,.04,'square',.1);this.tone(500,400,.05,'square',.1,.35);this.tone(1100,800,.04,'square',.12,.75);break;
       case'empty':this.tone(1200,900,.03,'square',.1);break;
       case'hit':this.tone(240,110,.07,'sawtooth',.14*k);break;
+      case'head':this.tone(1400,700,.09,'triangle',.25);this.tone(900,500,.08,'square',.1,.02);break;
       case'growl':this.tone(95,55,.7,'sawtooth',.2*k,0,320);break;
       case'hiss':this.noise(.55,.28*k,3500,'highpass');break;
       case'screech':this.tone(1700,2600,.16,'square',.07*k);this.tone(2200,1500,.12,'square',.05*k,.12);break;
@@ -221,6 +227,7 @@ const A={ctx:null,m:null,nb:null,amb:null,
       case'throw':this.noise(.25,.2,1400,'bandpass');break;
       case'glass':this.noise(.3,.4*k,6000,'highpass');this.tone(2000,1200,.1,'triangle',.12*k);break;
       case'click':this.tone(700,500,.04,'square',.08);break;
+      case'ads':this.tone(500,800,.06,'triangle',.08);break;
       case'lvl':[392,494,587,784].forEach((f,i)=>this.tone(f,f*1.01,.2,'triangle',.2,i*.1));break;
     }
   },
@@ -513,14 +520,16 @@ function buildTextures(){
 }
 
 /* ============================ DỮ LIỆU GAME ============================ */
+/* hw = nửa bề rộng hitbox (khớp hình), v0/v1 = phần chiều cao thực của hình (0..1 của size), nohead = không có đòn đầu */
 const ED={
-  zombie:{name:'Zombie',hp:60,sp:1.15,dmg:12,r:.3,size:.9,score:10,coin:2,reach:.75,cd:1.0,drop:.18,grp:'z'},
-  runner:{name:'Zombie chạy',hp:36,sp:2.5,dmg:8,r:.26,size:.88,score:15,coin:2,reach:.7,cd:.7,drop:.2,grp:'z'},
-  brute:{name:'Zombie khổng lồ',hp:260,sp:.85,dmg:30,r:.42,size:1.12,score:45,coin:6,reach:1.0,cd:1.4,drop:.9,grp:'z'},
-  bat:{name:'Dơi quỷ',hp:20,sp:3.3,dmg:7,r:.22,size:.5,score:12,coin:1,reach:.6,cd:.8,drop:.08,grp:'v',fly:true},
-  vampire:{name:'Ma cà rồng',hp:120,sp:1.7,dmg:20,r:.3,size:.95,score:50,coin:5,reach:.8,cd:1.1,drop:.5,grp:'v',ranged:true},
-  boss:{name:'Vua ma cà rồng',hp:1100,sp:1.35,dmg:35,r:.5,size:1.3,score:500,coin:40,reach:1.1,cd:1.2,drop:1,grp:'v',ranged:true,boss:true}
+  zombie:{name:'Zombie',hp:60,sp:1.15,dmg:12,r:.3,size:.9,hw:.27,score:10,coin:2,reach:.75,cd:1.0,drop:.18,grp:'z'},
+  runner:{name:'Zombie chạy',hp:36,sp:2.5,dmg:8,r:.26,size:.88,hw:.23,score:15,coin:2,reach:.7,cd:.7,drop:.2,grp:'z'},
+  brute:{name:'Zombie khổng lồ',hp:260,sp:.85,dmg:30,r:.42,size:1.12,hw:.38,score:45,coin:6,reach:1.0,cd:1.4,drop:.9,grp:'z'},
+  bat:{name:'Dơi quỷ',hp:20,sp:3.3,dmg:7,r:.22,size:.5,hw:.2,v0:.22,v1:.8,nohead:true,score:12,coin:1,reach:.6,cd:.8,drop:.08,grp:'v',fly:true},
+  vampire:{name:'Ma cà rồng',hp:120,sp:1.7,dmg:20,r:.3,size:.95,hw:.28,score:50,coin:5,reach:.8,cd:1.1,drop:.5,grp:'v',ranged:true},
+  boss:{name:'Vua ma cà rồng',hp:1100,sp:1.35,dmg:35,r:.5,size:1.3,hw:.4,score:500,coin:40,reach:1.1,cd:1.2,drop:1,grp:'v',ranged:true,boss:true}
 };
+for(const k in ED){const d=ED[k];if(d.v0===undefined)d.v0=.03;if(d.v1===undefined)d.v1=.96}
 const WD={
   pistol:{id:'pistol',name:'GLOCK-18',dmg:30,mag:15,rate:.26,rel:1.0,spread:.012,pel:1,max:150,start:60},
   rifle:{id:'rifle',name:'AK-47',dmg:21,mag:30,rate:.095,rel:1.7,spread:.022,pel:1,max:240,start:90},
@@ -533,6 +542,7 @@ const UPS=[
   {k:'arm',name:'Giáp khởi đầu',desc:'+15 giáp mỗi cấp khi vào trận',max:5}
 ];
 const upCost=lv=>50+lv*50,SHOTGUN_COST=150;
+const PITCH_MAX=.22;
 
 let P,G,E=[],PK=[],OR=[],GR=[],POOL=[],EXP=[],PART=[];
 let state='menu';
@@ -541,19 +551,20 @@ const ISTOUCH=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
 function wlist(){return['pistol','rifle'].concat(SAVE.unlock.shotgun?['shotgun']:[])}
 function newPlayer(){
   const hp=100+SAVE.up.hp*10;
-  P={x:START.x,y:START.y,a:-Math.PI/2,hp,maxhp:hp,armor:SAVE.up.arm*15,bobT:0,bobAmt:0,recoil:0,hurt:0,cd:0,reload:0,reloading:false,cur:1,spr:false,
+  P={x:START.x,y:START.y,a:-Math.PI/2,pitch:0,ads:0,hp,maxhp:hp,armor:SAVE.up.arm*15,bobT:0,bobAmt:0,recoil:0,hurt:0,hdirT:0,hdirW:0,cd:0,reload:0,reloading:false,cur:1,spr:false,
      w:{},flash:0,punch:0};
   wlist().forEach(id=>{P.w[id]={mag:WD[id].mag,res:WD[id].start}});
 }
 function newGame(cont){
   newPlayer();
-  G={wave:1,score:0,kills:0,zk:0,vk:0,time:0,combo:0,comboT:0,phase:'intro',queue:[],spawnT:0,breakT:0,gren:2,holy:1,coins:0,shake:0,hit:0,kill:0,flowT:0,boss:null,over:false,intro:0};
+  G={wave:1,score:0,kills:0,zk:0,vk:0,time:0,combo:0,comboT:0,phase:'intro',queue:[],spawnT:0,breakT:0,gren:2,holy:1,coins:0,shake:0,hit:0,kill:0,flowT:0,boss:null,over:false,intro:0,aim:null,headT:0,headHit:0};
   if(cont&&SAVE.run){
     const r=SAVE.run;G.wave=r.wave;G.score=r.score;G.kills=r.kills;G.zk=r.zk;G.vk=r.vk;G.time=r.time;G.gren=r.gren;G.holy=r.holy;G.coins=r.coins;
     P.hp=Math.max(40,r.hp);P.armor=r.armor;P.cur=Math.min(r.cur,wlist().length-1);
     for(const id in r.w)if(P.w[id])P.w[id]=r.w[id];
   }
   E=[];PK=[];OR=[];GR=[];POOL=[];EXP=[];PART=[];
+  IN.ads=false;$('#bAds').classList.remove('on');$('#bSpr').classList.remove('dn');
   state='play';
   $('#hud').classList.add('on');$('#scr').innerHTML='';
   $('#boss').style.display='none';
@@ -570,7 +581,7 @@ function snapshot(){
 let tipShown=false;
 function tipOnce(){
   if(tipShown)return;tipShown=true;
-  setTimeout(()=>msg(ISTOUCH?'Joystick trái: di chuyển · Vuốt bên phải: xoay · ◎ bắn':'WASD di chuyển · Chuột ngắm/bắn · R nạp đạn · G lựu đạn · F thánh thủy',5000),1800);
+  setTimeout(()=>msg(ISTOUCH?'Trái: di chuyển · Vuốt phải: xoay/nhìn lên xuống · 🎯 ngắm zoom · Bắn đầu = x2':'WASD di chuyển · Chuột ngắm/bắn · Chuột phải: ngắm zoom · R nạp · G lựu đạn · F thánh thủy',6000),1800);
 }
 
 /* ---------- Đợt ---------- */
@@ -610,26 +621,40 @@ function addEnemy(type,x,y){
 }
 
 /* ============================ ĐIỀU KHIỂN ============================ */
-const IN={mx:0,my:0,fire:false,keys:{},stickId:null,lookId:null,lastX:0,ox:0,oy:0};
+const IN={mx:0,my:0,fire:false,ads:false,keys:{},stickId:null,lookId:null,lastX:0,lastY:0,ox:0,oy:0,fireLook:false};
 const touchEl=$('#touch'),stickEl=$('#stick'),stickKnob=stickEl.querySelector('i');
 const STICK_R=52;
 function stickHome(){stickEl.style.left='';stickEl.style.top='';stickEl.style.bottom='';stickEl.style.opacity='.7';stickKnob.style.transform='translate(0,0)'}
+/* hệ số nhạy: giảm khi zoom ngắm và khi đang trúng mục tiêu (ngắm dính) */
+function lookK(){
+  const zoom=PLANE/.72;
+  const stick=(SAVE.set.assist&&G&&G.aim&&G.aim.e)?.62:1;
+  return zoom*stick*SAVE.set.sens;
+}
+function lookBy(dx,dy,mouse){
+  if(!P)return;
+  const k=lookK();
+  P.a+=dx*(mouse?.0026:.0052)*k;
+  P.pitch=clamp(P.pitch-dy*(mouse?.0022:.0034)*k,-PITCH_MAX,PITCH_MAX);
+}
 touchEl.addEventListener('pointerdown',e=>{
   e.preventDefault();A.init();A.resume();
   if(state!=='play')return;
   if(e.pointerType==='mouse'){
     if(document.pointerLockElement!==touchEl){try{touchEl.requestPointerLock()}catch(er){}}
-    if(e.button===0)IN.fire=true;return;
+    if(e.button===0)IN.fire=true;
+    if(e.button===2){IN.ads=true;A.play('ads')}
+    return;
   }
   if(e.clientX<innerWidth*.42&&IN.stickId===null){
     IN.stickId=e.pointerId;IN.ox=e.clientX;IN.oy=e.clientY;
     const r=stickEl.offsetWidth/2;stickEl.style.left=(e.clientX-r)+'px';stickEl.style.top=(e.clientY-r)+'px';stickEl.style.bottom='auto';stickEl.style.opacity='1';
     touchEl.setPointerCapture(e.pointerId);
-  }else if(IN.lookId===null){IN.lookId=e.pointerId;IN.lastX=e.clientX;touchEl.setPointerCapture(e.pointerId)}
+  }else if(IN.lookId===null){IN.lookId=e.pointerId;IN.lastX=e.clientX;IN.lastY=e.clientY;touchEl.setPointerCapture(e.pointerId)}
 });
 touchEl.addEventListener('pointermove',e=>{
   if(state!=='play')return;
-  if(e.pointerType==='mouse'){if(document.pointerLockElement===touchEl||(e.buttons&1))P.a+=e.movementX*.0026*SAVE.set.sens;return}
+  if(e.pointerType==='mouse'){if(document.pointerLockElement===touchEl||(e.buttons&1))lookBy(e.movementX,e.movementY,true);return}
   if(e.pointerId===IN.stickId){
     let dx=e.clientX-IN.ox,dy=e.clientY-IN.oy;const d=Math.hypot(dx,dy);
     if(d>STICK_R){dx*=STICK_R/d;dy*=STICK_R/d}
@@ -637,11 +662,11 @@ touchEl.addEventListener('pointermove',e=>{
     const nx=dx/STICK_R,ny=dy/STICK_R,m=Math.hypot(nx,ny);
     if(m<.12){IN.mx=0;IN.my=0}else{IN.mx=nx;IN.my=ny}
   }else if(e.pointerId===IN.lookId){
-    P.a+=(e.clientX-IN.lastX)*.0052*SAVE.set.sens;IN.lastX=e.clientX;
+    lookBy(e.clientX-IN.lastX,e.clientY-IN.lastY,false);IN.lastX=e.clientX;IN.lastY=e.clientY;
   }
 });
 function endPtr(e){
-  if(e.pointerType==='mouse'){if(e.button===0)IN.fire=false;return}
+  if(e.pointerType==='mouse'){if(e.button===0)IN.fire=false;if(e.button===2)IN.ads=false;return}
   if(e.pointerId===IN.stickId){IN.stickId=null;IN.mx=0;IN.my=0;stickHome()}
   if(e.pointerId===IN.lookId)IN.lookId=null;
 }
@@ -654,12 +679,29 @@ function bindBtn(id,down,up){
   const u=e=>{b.classList.remove('dn');if(up)up()};
   b.addEventListener('pointerup',u);b.addEventListener('pointercancel',u);
 }
-bindBtn('#bFire',()=>{IN.fire=true},()=>{IN.fire=false});
+bindBtn('#bFire',()=>{IN.fire=true},()=>{IN.fire=false;IN.fireLook=false});
+/* kéo ngón tay trên nút bắn để vừa bắn vừa xoay/nhìn lên xuống */
+(function(){
+  const bf=$('#bFire');let lp=null;
+  bf.addEventListener('pointerdown',e=>{lp={id:e.pointerId,x:e.clientX,y:e.clientY};IN.fireLook=true});
+  bf.addEventListener('pointermove',e=>{
+    if(!lp||e.pointerId!==lp.id||state!=='play')return;
+    lookBy(e.clientX-lp.x,e.clientY-lp.y,false);lp.x=e.clientX;lp.y=e.clientY;
+  });
+  const end=()=>{lp=null;IN.fireLook=false};
+  bf.addEventListener('pointerup',end);bf.addEventListener('pointercancel',end);
+})();
 bindBtn('#bRel',()=>startReload());
 bindBtn('#bSw',()=>swapWeapon(1));
-bindBtn('#bSpr',()=>{P.spr=!P.spr;$('#bSpr').classList.toggle('dn',P.spr)});
+bindBtn('#bSpr',()=>{P.spr=!P.spr;if(P.spr)setAds(false);$('#bSpr').classList.toggle('dn',P.spr)});
 bindBtn('#bG',()=>throwGren('gren'));
 bindBtn('#bH',()=>throwGren('holy'));
+function setAds(v){IN.ads=v;$('#bAds').classList.toggle('on',v)}
+$('#bAds').addEventListener('pointerdown',e=>{
+  e.preventDefault();e.stopPropagation();A.init();A.resume();
+  if(state!=='play')return;
+  setAds(!IN.ads);if(IN.ads){P.spr=false;$('#bSpr').classList.remove('dn')}A.play('ads');
+});
 $('#pause').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(state==='play')pauseGame()});
 
 window.addEventListener('keydown',e=>{
@@ -668,6 +710,7 @@ window.addEventListener('keydown',e=>{
     if(k==='r')startReload();else if(k==='g')throwGren('gren');else if(k==='f')throwGren('holy');
     else if(k==='1'||k==='2'||k==='3'){const i=+k-1;if(i<wlist().length)selectWeapon(i)}
     else if(k==='q')swapWeapon(1);
+    else if(k==='z'&&!e.repeat){setAds(!IN.ads);A.play('ads')}
     else if(k==='escape'||k==='p')pauseGame();
     if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
     if(k===' ')IN.fire=true;
@@ -689,7 +732,7 @@ function resumeGame(){
   if(!ISTOUCH){try{touchEl.requestPointerLock()}catch(e){}}
 }
 
-/* ============================ VŨ KHÍ ============================ */
+/* ============================ VŨ KHÍ & NGẮM BẮN ============================ */
 const cw=()=>WD[wlist()[P.cur]];
 const cws=()=>P.w[wlist()[P.cur]];
 function selectWeapon(i){if(i===P.cur)return;P.cur=i;P.reloading=false;P.cd=.25;P.punch=1;A.play('click')}
@@ -699,6 +742,26 @@ function startReload(){
   if(P.reloading||s.mag>=w.mag||s.res<=0)return;
   P.reloading=true;P.reload=w.rel*(1-SAVE.up.rel*.08);P.reloadMax=P.reload;A.play('reload');
 }
+/* tiêu cự (pixel) của khung hình hiện tại, phụ thuộc zoom */
+const getF=()=>(RW/2)/PLANE;
+/* độ dốc đường đạn theo hướng nhìn lên/xuống (đơn vị chiều cao tường / đơn vị khoảng cách) */
+const baseSlope=()=>(P.pitch*RH)/getF();
+/* Bắn tia: trả về mục tiêu trúng (kiểm tra cả ngang lẫn độ cao), có phải đầu không, khoảng cách tới tường */
+function traceShot(a,slope){
+  const dx=Math.cos(a),dy=Math.sin(a),wd=castDist(P.x,P.y,a,40);
+  let be=null,bd=wd,head=false;
+  for(const e of E){
+    if(e.dying)continue;
+    const d=e.def,vx=e.x-P.x,vy=e.y-P.y,al=vx*dx+vy*dy;
+    if(al<.15||al>bd)continue;
+    if(Math.abs(vx*dy-vy*dx)>d.hw)continue;
+    const bz=.5+slope*al,z0=e.z+d.size*d.v0,z1=e.z+d.size*d.v1;
+    if(bz<z0||bz>z1)continue;
+    be=e;bd=al;head=!d.nohead&&(bz-z0)/(z1-z0)>.72;
+  }
+  return{e:be,d:bd,wd,head,hz:.5+slope*bd};
+}
+function angDiff(a){return Math.atan2(Math.sin(a),Math.cos(a))}
 function fireWeapon(){
   const w=cw(),s=cws();
   if(P.cd>0||P.reloading)return;
@@ -707,48 +770,57 @@ function fireWeapon(){
   A.play(w.id);
   if(SAVE.set.vib&&navigator.vibrate)try{navigator.vibrate(w.id==='shotgun'?25:8)}catch(e){}
   const dmgM=1+SAVE.up.dmg*.08;
-  let assistAng=null;
+  const slope0=baseSlope();
+  const spreadM=(P.spr?1.6:1)*(1-.6*P.ads)*(P.bobAmt>.3?1.12:1);
+  // hỗ trợ ngắm: kéo nhẹ viên đạn về phía thân mục tiêu gần tâm nhất (không ghi đè nếu bạn đã ngắm đầu)
+  let aAng=null,aSlope=null;
   if(SAVE.set.assist&&w.pel===1){
-    let bd=.05;
-    for(const e of E){if(e.dying)continue;const dx=e.x-P.x,dy=e.y-P.y;let da=Math.atan2(dy,dx)-P.a;da=Math.atan2(Math.sin(da),Math.cos(da));
-      const lim=.05+(.35/Math.max(Math.hypot(dx,dy),1))*.1;
-      if(Math.abs(da)<lim&&Math.abs(da)<bd&&los(P.x,P.y,e.x,e.y)){bd=Math.abs(da);assistAng=P.a+da}}
-  }
-  for(let p=0;p<w.pel;p++){
-    let a=P.a+(Math.random()-.5)*2*w.spread*(P.spr?1.6:1);
-    if(assistAng!==null&&p===0)a=assistAng*.65+a*.35;
-    const wd=castDist(P.x,P.y,a,40),dx=Math.cos(a),dy=Math.sin(a);
-    let bestE=null,bestD=wd;
+    let bd=9;
     for(const e of E){
       if(e.dying)continue;
-      const vx=e.x-P.x,vy=e.y-P.y,al=vx*dx+vy*dy;
-      if(al<.15||al>bestD)continue;
-      const perp=Math.abs(vx*dy-vy*dx);
-      if(perp<e.r*1.05+.04){bestE=e;bestD=al}
+      const d=e.def,dx=e.x-P.x,dy=e.y-P.y,dist=Math.hypot(dx,dy)||.01;
+      const da=angDiff(Math.atan2(dy,dx)-P.a);
+      const lim=Math.atan2(d.hw*1.7,Math.max(dist,.5))+.025;
+      if(Math.abs(da)>=lim||Math.abs(da)>=bd||!los(P.x,P.y,e.x,e.y))continue;
+      const z0=e.z+d.size*d.v0,z1=e.z+d.size*d.v1,zc=z0+(z1-z0)*.5;
+      const sc=(zc-.5)/dist;
+      if(Math.abs(sc-slope0)*dist>(z1-z0)*.75)continue;
+      const bz=.5+slope0*dist,frac=(bz-z0)/(z1-z0);
+      bd=Math.abs(da);aAng=P.a+da;
+      aSlope=(!d.nohead&&frac>.72&&frac<1)?slope0:sc;
     }
-    if(bestE){
-      let dm=w.dmg*dmgM;if(w.pel>1)dm*=clamp(1.3-bestD/7,.2,1);
-      damageEnemy(bestE,dm,Math.cos(a),Math.sin(a),w.id==='shotgun'?3:.6);
-      const hx=P.x+dx*bestD,hy=P.y+dy*bestD;spawnBlood(hx,hy,.45,3);
-    }else{const hx=P.x+dx*wd,hy=P.y+dy*wd;spawnSpark(hx,hy)}
+  }
+  for(let p=0;p<w.pel;p++){
+    let a=P.a+(Math.random()-.5)*2*w.spread*spreadM;
+    let sl=slope0+(Math.random()-.5)*2*w.spread*spreadM*.9;
+    if(aAng!==null&&p===0){a=a*.3+aAng*.7;sl=sl*.3+aSlope*.7}
+    const tr=traceShot(a,sl),dx=Math.cos(a),dy=Math.sin(a);
+    if(tr.e){
+      let dm=w.dmg*dmgM;if(w.pel>1)dm*=clamp(1.3-tr.d/7,.2,1);
+      if(tr.head)dm*=tr.e.def.boss?1.5:2;
+      damageEnemy(tr.e,dm,dx,dy,w.id==='shotgun'?3:.6,tr.head);
+      spawnBlood(P.x+dx*tr.d,P.y+dy*tr.d,clamp(tr.hz,.05,1),tr.head?6:3);
+    }else{spawnSpark(P.x+dx*tr.wd,P.y+dy*tr.wd,clamp(tr.hz,.08,.95))}
   }
   if(s.mag<=0&&s.res>0)setTimeout(()=>{if(state==='play')startReload()},180);
 }
-function damageEnemy(e,dm,dx,dy,kb){
+function damageEnemy(e,dm,dx,dy,kb,head){
   if(e.dying)return;
-  e.hp-=dm;e.flash=.09;G.hit=.18;A.play('hit',Math.hypot(e.x-P.x,e.y-P.y));
+  e.hp-=dm;e.flash=.09;G.hit=.18;
+  const dist=Math.hypot(e.x-P.x,e.y-P.y);
+  if(head){G.headT=.8;A.play('head')}else A.play('hit',dist);
   e.kx+=dx*kb;e.ky+=dy*kb;
-  if(e.hp<=0)killEnemy(e);
+  if(e.hp<=0)killEnemy(e,head);
 }
-function killEnemy(e){
+function killEnemy(e,head){
   e.dying=true;e.dieT=0;A.play('die',Math.hypot(e.x-P.x,e.y-P.y));
   const d=e.def;
   G.combo++;G.comboT=3.2;const mult=1+Math.min(4,Math.floor(G.combo/5));
-  G.score+=d.score*mult;G.kills++;G.coins+=d.coin;G.kill=.45;
+  G.score+=Math.round(d.score*mult*(head?1.5:1));G.kills++;G.coins+=d.coin+(head?1:0);G.kill=.45;
   if(d.grp==='z')G.zk++;else G.vk++;
   if(d.boss){G.boss=null;$('#boss').style.display='none';banner('CHIẾN THẮNG!','Vua ma cà rồng đã bị hạ gục',2200);for(let i=0;i<4;i++)dropPickup(e.x+rnd(-.6,.6),e.y+rnd(-.6,.6),true)}
   else if(Math.random()<d.drop)dropPickup(e.x,e.y);
-  feed(`${d.grp==='z'?'🧟':'🧛'} ${d.name}${G.combo>=5?' ×'+mult:''}`);
+  feed(`${head?'💀 ':''}${d.grp==='z'?'🧟':'🧛'} ${d.name}${head?' (đầu)':''}${G.combo>=5?' ×'+mult:''}`);
   spawnBlood(e.x,e.y,.5,10);
 }
 function dropPickup(x,y,force){
@@ -761,7 +833,8 @@ function throwGren(kind){
   if(kind==='gren'){if(G.gren<=0){msg('Hết lựu đạn',800);return}G.gren--}
   else{if(G.holy<=0){msg('Hết thánh thủy',800);return}G.holy--}
   A.play('throw');
-  GR.push({x:P.x+Math.cos(P.a)*.4,y:P.y+Math.sin(P.a)*.4,vx:Math.cos(P.a)*6.5,vy:Math.sin(P.a)*6.5,z:.45,vz:2.2,kind,fuse:kind==='gren'?1.6:2});
+  const lift=P.pitch*5;
+  GR.push({x:P.x+Math.cos(P.a)*.4,y:P.y+Math.sin(P.a)*.4,vx:Math.cos(P.a)*6.5,vy:Math.sin(P.a)*6.5,z:.45,vz:2.2+lift,kind,fuse:kind==='gren'?1.6:2});
   P.punch=.6;
 }
 function explode(x,y,R,dmg,kind){
@@ -769,10 +842,10 @@ function explode(x,y,R,dmg,kind){
   A.play('boom',Math.hypot(x-P.x,y-P.y));
   for(const e of E){
     if(e.dying)continue;const d=Math.hypot(e.x-x,e.y-y);
-    if(d<R&&los(x,y,e.x,e.y)){damageEnemy(e,dmg*(1-d/R*.65),(e.x-x)/(d||1),(e.y-y)/(d||1),4)}
+    if(d<R&&los(x,y,e.x,e.y)){damageEnemy(e,dmg*(1-d/R*.65),(e.x-x)/(d||1),(e.y-y)/(d||1),4,false)}
   }
   const dp=Math.hypot(P.x-x,P.y-y);
-  if(dp<R*.8)hurtPlayer(32*(1-dp/(R*.8)));
+  if(dp<R*.8)hurtPlayer(32*(1-dp/(R*.8)),x,y);
   G.shake=Math.max(G.shake,clamp(1.2-dp/10,.1,1));
   for(let i=0;i<14;i++)spawnSpark(x+rnd(-.4,.4),y+rnd(-.4,.4));
 }
@@ -784,17 +857,18 @@ function holyBreak(x,y){
 
 /* ============================ HIỆU ỨNG ============================ */
 function spawnBlood(x,y,z,n){for(let i=0;i<n;i++)PART.push({x,y,z:z+rnd(-.1,.1),vx:rnd(-1.2,1.2),vy:rnd(-1.2,1.2),vz:rnd(.5,2),l:rnd(.4,.8),c:[150+ri(0,80),0,ri(0,20)],s:.04})}
-function spawnSpark(x,y){for(let i=0;i<3;i++)PART.push({x,y,z:.5+rnd(-.2,.2),vx:rnd(-1,1),vy:rnd(-1,1),vz:rnd(.5,1.8),l:rnd(.25,.5),c:[255,200+ri(0,50),90],s:.03})}
+function spawnSpark(x,y,z){for(let i=0;i<3;i++)PART.push({x,y,z:(z===undefined?.5:z)+rnd(-.1,.1),vx:rnd(-1,1),vy:rnd(-1,1),vz:rnd(.5,1.8),l:rnd(.25,.5),c:[255,200+ri(0,50),90],s:.03})}
 let msgT=0,bannerT=0;
 function msg(t,ms){const m=$('#msg');m.textContent=t;m.classList.add('on');clearTimeout(msgT);msgT=setTimeout(()=>m.classList.remove('on'),ms||1500)}
 function banner(t,s,ms){$('#bt').textContent=t;$('#bs').textContent=s||'';const b=$('#banner');b.classList.add('on');clearTimeout(bannerT);bannerT=setTimeout(()=>b.classList.remove('on'),ms||2000)}
 function feed(t){const f=$('#feed'),d=document.createElement('div');d.textContent='🔫 → '+t;f.appendChild(d);while(f.children.length>4)f.removeChild(f.firstChild);setTimeout(()=>d.remove(),3300)}
 
 /* ============================ CẬP NHẬT ============================ */
-function hurtPlayer(d){
+function hurtPlayer(d,sx,sy){
   if(P.hp<=0||G.over)return;
   if(P.armor>0){const ab=Math.min(P.armor,d*.6);P.armor-=ab;d-=ab}
   P.hp-=d;P.hurt=.55;G.shake=Math.max(G.shake,.35);A.play('hurt');G.combo=0;
+  if(sx!==undefined){P.hdirW=Math.atan2(sy-P.y,sx-P.x);P.hdirT=1}
   if(SAVE.set.vib&&navigator.vibrate)try{navigator.vibrate(60)}catch(e){}
   if(P.hp<=0){P.hp=0;gameOver()}
 }
@@ -802,20 +876,25 @@ function playerUpdate(dt){
   let f=0,s=0;const K=IN.keys;
   f=-IN.my;s=IN.mx;
   if(K.w||K.arrowup)f+=1;if(K.s||K.arrowdown)f-=1;if(K.a)s-=1;if(K.d)s+=1;
-  if(K.arrowleft)P.a-=2.2*dt;if(K.arrowright)P.a+=2.2*dt;
+  if(K.arrowleft)P.a-=2.2*dt*(PLANE/.72);if(K.arrowright)P.a+=2.2*dt*(PLANE/.72);
   const m=Math.hypot(f,s);if(m>1){f/=m;s/=m}
   const sprint=(P.spr||K.shift)&&f>0;
-  const sp=3.3*(sprint?1.55:1);
+  if(sprint&&IN.ads)setAds(false);
+  P.ads+=((IN.ads?1:0)-P.ads)*Math.min(1,dt*11);
+  const sp=3.3*(sprint?1.55:1)*(1-.35*P.ads);
   const dx=Math.cos(P.a),dy=Math.sin(P.a);
   const vx=(dx*f-dy*s)*sp*dt,vy=(dy*f+dx*s)*sp*dt;
   tryMove(P,vx,vy,.24);
   const moving=Math.hypot(vx,vy)/dt;
   P.bobAmt+=((moving>.2?1:0)-P.bobAmt)*Math.min(1,dt*8);
   P.bobT+=dt*(sprint?13:9)*(moving>.2?1:0);
-  P.recoil=Math.max(0,P.recoil-dt*7);P.hurt=Math.max(0,P.hurt-dt);P.flash=Math.max(0,P.flash-dt);P.punch=Math.max(0,P.punch-dt*3);
+  P.recoil=Math.max(0,P.recoil-dt*7);P.hurt=Math.max(0,P.hurt-dt);P.hdirT=Math.max(0,P.hdirT-dt);P.flash=Math.max(0,P.flash-dt);P.punch=Math.max(0,P.punch-dt*3);
+  // trên điện thoại: tầm nhìn tự về ngang khi không chạm xoay
+  if(ISTOUCH&&IN.lookId===null&&!IN.fireLook)P.pitch*=Math.max(0,1-dt*.9);
   if(P.cd>0)P.cd-=dt;
   if(P.reloading){P.reload-=dt;if(P.reload<=0){const w=cw(),s2=cws(),need=w.mag-s2.mag,take=Math.min(need,s2.res);s2.mag+=take;s2.res-=take;P.reloading=false}}
   if(IN.fire)fireWeapon();
+  else if(ISTOUCH&&SAVE.set.auto&&G.aim&&G.aim.e&&!sprint)fireWeapon(); // tự bắn khi tâm ngắm đang trúng quái
 }
 function enemyUpdate(e,dt){
   e.t+=dt;if(e.flash>0)e.flash-=dt;if(e.atkAnim>0)e.atkAnim-=dt;if(e.slowT>0)e.slowT-=dt;
@@ -844,7 +923,7 @@ function enemyUpdate(e,dt){
   e.kx*=Math.max(0,1-dt*8);e.ky*=Math.max(0,1-dt*8);
   // tấn công
   e.atkCd-=dt;
-  if(d<d0.reach+e.r&&e.atkCd<=0){hurtPlayer(d0.dmg);e.atkCd=d0.cd;e.atkAnim=.3;if(d0.grp==='v')A.play('hiss',d)}
+  if(d<d0.reach+e.r&&e.atkCd<=0){hurtPlayer(d0.dmg,e.x,e.y);e.atkCd=d0.cd;e.atkAnim=.3;if(d0.grp==='v')A.play('hiss',d)}
   if(d0.ranged&&e.los&&d>2.4&&d<12){
     e.orbCd-=dt;
     if(e.orbCd<=0){
@@ -865,7 +944,7 @@ function projUpdate(dt){
   for(let i=OR.length-1;i>=0;i--){
     const o=OR[i];o.x+=o.vx*dt;o.y+=o.vy*dt;o.life-=dt;
     if(o.life<=0||solid(o.x,o.y)){OR.splice(i,1);continue}
-    if(Math.hypot(o.x-P.x,o.y-P.y)<.35){hurtPlayer(o.dmg);OR.splice(i,1)}
+    if(Math.hypot(o.x-P.x,o.y-P.y)<.35){hurtPlayer(o.dmg,o.x-o.vx*.2,o.y-o.vy*.2);OR.splice(i,1)}
   }
   for(let i=GR.length-1;i>=0;i--){
     const g=GR[i];g.fuse-=dt;g.vz-=7*dt;g.z+=g.vz*dt;
@@ -878,7 +957,7 @@ function projUpdate(dt){
   for(let i=POOL.length-1;i>=0;i--){
     const p=POOL[i];p.t+=dt;if(p.t>=p.life){POOL.splice(i,1);continue}
     for(const e of E){if(e.dying)continue;if(Math.hypot(e.x-p.x,e.y-p.y)<1.5){
-      const m=e.def.grp==='v'?2.2:1.4;e.hp-=38*m*dt;e.slowT=.4;e.flash=Math.max(e.flash,.04);if(e.hp<=0)killEnemy(e)}}
+      const m=e.def.grp==='v'?2.2:1.4;e.hp-=38*m*dt;e.slowT=.4;e.flash=Math.max(e.flash,.04);if(e.hp<=0)killEnemy(e,false)}}
   }
   for(let i=EXP.length-1;i>=0;i--){EXP[i].t+=dt;if(EXP[i].t>.55)EXP.splice(i,1)}
   for(let i=PART.length-1;i>=0;i--){const p=PART[i];p.l-=dt;p.vz-=5*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;if(p.l<=0||p.z<0)PART.splice(i,1)}
@@ -920,11 +999,13 @@ function update(dt){
   for(let i=E.length-1;i>=0;i--)if(E[i].dying&&E[i].dieT>.8)E.splice(i,1);
   projUpdate(dt);waveUpdate(dt);
   if(G.comboT>0){G.comboT-=dt;if(G.comboT<=0)G.combo=0}
-  G.shake=Math.max(0,G.shake-dt*2.2);G.hit=Math.max(0,G.hit-dt);G.kill=Math.max(0,G.kill-dt);
+  G.shake=Math.max(0,G.shake-dt*2.2);G.hit=Math.max(0,G.hit-dt);G.kill=Math.max(0,G.kill-dt);G.headT=Math.max(0,G.headT-dt);
+  // theo dõi thứ đang nằm dưới tâm ngắm (dùng cho tâm đỏ, thanh máu, tự bắn)
+  G.aim=P.hp>0?traceShot(P.a,baseSlope()):null;
 }
 function gameOver(){
   if(G.over)return;G.over=true;state='over';
-  IN.fire=false;IN.mx=IN.my=0;IN.stickId=IN.lookId=null;stickHome();
+  IN.fire=false;IN.mx=IN.my=0;IN.stickId=IN.lookId=null;stickHome();setAds(false);
   if(document.pointerLockElement)document.exitPointerLock();
   A.stopAmb();A.play('die');
   const st=SAVE.stats;st.kills+=G.kills;st.zk+=G.zk;st.vk+=G.vk;st.runs++;st.play+=G.time;
@@ -938,7 +1019,7 @@ function gameOver(){
 
 /* ============================ RENDER (RAYCASTING) ============================ */
 let RW=320,RH=216,vctx,vimg,vbuf,zbuf,colU;
-const PLANE=.72;
+let PLANE=.72;
 const FR=10,FG=14,FB=32;
 let LB=0;
 const view=$('#view'),fx=$('#fx'),fctx=fx.getContext('2d'),mini=$('#mini'),mctx=mini.getContext('2d');
@@ -950,6 +1031,7 @@ function resize(){
   zbuf=new Float32Array(RW);colU=new Int32Array(RW);
   DPR=Math.min(devicePixelRatio||1,1.5);fx.width=Math.round(innerWidth*DPR);fx.height=Math.round(innerHeight*DPR);
 }
+const horizonY=()=>(RH>>1)+Math.round(P.pitch*RH);
 const fogB=d=>{const b=1/(1+d*d*.014)+LB;return b<.12?.12:b>1.3?1.3:b};
 function pix(c,bi){
   let r=(((c&255)-FR)*bi>>8)+FR,g=((((c>>8)&255)-FG)*bi>>8)+FG,b=((((c>>16)&255)-FB)*bi>>8)+FB;
@@ -957,20 +1039,20 @@ function pix(c,bi){
   return 0xff000000|(b<<16)|(g<<8)|r;
 }
 function renderWorld(cx,cy,ang,list){
-  const W=RW,H=RH,hor=H>>1;
+  const W=RW,H=RH,hor=horizonY();
   const dirX=Math.cos(ang),dirY=Math.sin(ang),plX=-dirY*PLANE,plY=dirX*PLANE,f=(W/2)/PLANE;
   const sky=TEX.sky;
   for(let x=0;x<W;x++){
     const cam=2*x/W-1,a=Math.atan2(dirY+plY*cam,dirX+plX*cam);
     colU[x]=((((a/TAU)%1)+1)%1*SKYW)|0;
   }
-  for(let y=0;y<hor;y++){
-    const row=((y*SKYH/hor)|0)*SKYW,o=y*W;
+  for(let y=0;y<hor&&y<H;y++){
+    const row=Math.min(SKYH-1,((y*SKYH/hor)|0))*SKYW,o=y*W;
     for(let x=0;x<W;x++)vbuf[o+x]=sky[row+colU[x]];
   }
   // sàn
   const rx0=dirX-plX,ry0=dirY-plY,rx1=dirX+plX,ry1=dirY+plY,fl=TEX.floors;
-  for(let y=hor+1;y<H;y++){
+  for(let y=Math.max(0,hor+1);y<H;y++){
     const rd=.5*f/(y-hor),bi=(fogB(rd)*256)|0;
     const sx=rd*(rx1-rx0)/W,sy=rd*(ry1-ry0)/W;
     let fx_=cx+rd*rx0,fy_=cy+rd*ry0;const o=y*W;
@@ -1067,7 +1149,7 @@ function buildSprites(cx,cy){
   return L;
 }
 function drawParticles(cx,cy,ang){
-  const dirX=Math.cos(ang),dirY=Math.sin(ang),plX=-dirY*PLANE,plY=dirX*PLANE,f=(RW/2)/PLANE,hor=RH>>1,invDet=1/(plX*dirY-dirX*plY);
+  const dirX=Math.cos(ang),dirY=Math.sin(ang),plX=-dirY*PLANE,plY=dirX*PLANE,f=(RW/2)/PLANE,hor=horizonY(),invDet=1/(plX*dirY-dirX*plY);
   for(const p of PART){
     const sx=p.x-cx,sy=p.y-cy,tx=invDet*(dirY*sx-dirX*sy),ty=invDet*(-plY*sx+plX*sy);
     if(ty<.2)continue;
@@ -1088,6 +1170,7 @@ function glove(c,x,y,rx,ry,rot){
   c.restore();
 }
 function sleeve(c,pts){P_(c,pts,'#4b4636','#2b2820',2);c.strokeStyle='rgba(255,255,255,.07)';c.lineWidth=3;c.beginPath();c.moveTo(pts[0][0]+8,pts[0][1]+4);c.lineTo(pts[3][0]+10,pts[3][1]-10);c.stroke()}
+/* Mọi khẩu súng vẽ với trục nòng nằm trên y=0, đầu nòng ở x=TIPS[id] (âm), báng về phía x dương */
 const GUNS={
   rifle(c,k){
     sleeve(c,[[20,24],[75,18],[250,175],[175,225]]);
@@ -1127,42 +1210,83 @@ const GUNS={
   }
 };
 const TIPS={rifle:-240,pistol:-175,shotgun:-272};
+const GSCALE={rifle:1.05,pistol:1.25,shotgun:1.0};
 function drawFx(){
   const w=fx.width,h=fx.height,c=fctx;
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);
   if(!G)return;
-  const id=wlist()[P.cur],u=Math.min(w,h)/360;
-  const kick=P.recoil,bobx=Math.sin(P.bobT)*7*P.bobAmt*u,boby=Math.abs(Math.cos(P.bobT))*6*P.bobAmt*u;
+  const id=wlist()[P.cur],u=Math.min(w,h)/360,cx=w/2,cy=h/2,ads=P.ads,playing=state==='play';
+  const kick=P.recoil,calm=1-ads*.85;
+  const bobx=Math.sin(P.bobT)*6*P.bobAmt*u*calm,boby=Math.abs(Math.cos(P.bobT))*5*P.bobAmt*u*calm;
   let rel=0;if(P.reloading){const p=1-P.reload/P.reloadMax;rel=Math.sin(p*Math.PI)}
   const sw=P.punch*50*u;
+
+  // ---- ADS: tối viền như nhìn qua ống ngắm ----
+  if(ads>.02){
+    const g=c.createRadialGradient(cx,cy,Math.min(w,h)*.28,cx,cy,Math.max(w,h)*.62);
+    g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,`rgba(0,0,0,${.6*ads})`);c.fillStyle=g;c.fillRect(0,0,w,h);
+  }
+
+  // ---- Súng: đầu nòng đặt ở điểm T, trục nòng xoay chính xác hướng thẳng tới tâm ngắm ----
+  const hipX=cx+u*(66-(id==='pistol'?10:0)),hipY=cy+u*56,adsX=cx+u*20,adsY=cy+u*40;
+  const Tx=hipX+(adsX-hipX)*ads+bobx+kick*6*u*0,Ty=hipY+(adsY-hipY)*ads+boby+rel*150*u+sw;
+  const phi=Math.atan2(cy-Ty,cx-Tx),rot=phi+Math.PI-kick*.03+rel*.35;
+  const gs=(GSCALE[id]||1)*u,tip=TIPS[id];
   c.save();
-  const gp=id==='pistol'?{x:.74,y:.9,r:.3,s:1.45}:{x:.76,y:.84,r:.5,s:1.25};
-  c.translate(w*gp.x+bobx+kick*14*u,h*gp.y+boby+kick*20*u+rel*150*u+sw);
-  c.rotate(gp.r-kick*.05+rel*.5);
-  c.scale(u*gp.s,u*gp.s);
+  c.translate(Tx,Ty);c.rotate(rot);c.scale(gs,gs);
+  c.translate(-tip+kick*18,0);
   GUNS[id](c,kick);
   if(P.flash>0){
     c.globalCompositeOperation='lighter';
-    const tx=TIPS[id],g=c.createRadialGradient(tx,0,2,tx,0,90);g.addColorStop(0,'rgba(255,250,200,1)');g.addColorStop(.35,'rgba(255,170,50,.8)');g.addColorStop(1,'rgba(255,90,0,0)');
-    c.fillStyle=g;c.fillRect(tx-100,-100,200,200);
-    c.fillStyle='rgba(255,240,170,.95)';c.beginPath();const sp=id==='shotgun'?12:8,rot=Math.random()*3;
-    for(let i=0;i<sp*2;i++){const a=rot+i*Math.PI/sp,r=i%2?18:(id==='shotgun'?80:55);c.lineTo(tx+Math.cos(a)*r,Math.sin(a)*r)}c.fill();
+    const g=c.createRadialGradient(tip,0,2,tip,0,90);g.addColorStop(0,'rgba(255,250,200,1)');g.addColorStop(.35,'rgba(255,170,50,.8)');g.addColorStop(1,'rgba(255,90,0,0)');
+    c.fillStyle=g;c.fillRect(tip-100,-100,200,200);
+    c.fillStyle='rgba(255,240,170,.95)';c.beginPath();const sp=id==='shotgun'?12:8,r0=Math.random()*3;
+    for(let i=0;i<sp*2;i++){const a=r0+i*Math.PI/sp,r=i%2?18:(id==='shotgun'?80:55);c.lineTo(tip+Math.cos(a)*r,Math.sin(a)*r)}c.fill();
     c.globalCompositeOperation='source-over';
   }
   c.restore();
-  // tâm ngắm
-  const cx=w/2,cy=h/2,s=u*7,gap=u*5+(IN.fire?u*4:0)+P.bobAmt*u*3;
-  c.strokeStyle=G.hit>0?'rgba(255,60,60,.95)':'rgba(255,255,255,.85)';c.lineWidth=Math.max(1.5,u*1.2);
+  // vệt đạn từ nòng tới tâm ngắm
+  if(P.flash>0&&playing){
+    const k=P.flash/.07;c.save();c.globalCompositeOperation='lighter';
+    const g=c.createLinearGradient(Tx,Ty,cx,cy);g.addColorStop(0,`rgba(255,230,150,${.75*k})`);g.addColorStop(1,'rgba(255,200,90,0)');
+    c.strokeStyle=g;c.lineWidth=Math.max(1.5,u*2.2);c.beginPath();c.moveTo(Tx,Ty);c.lineTo(cx,cy);c.stroke();c.restore();
+  }
+
+  // ---- Chỉ hướng bị tấn công ----
+  if(playing&&P.hdirT>0){
+    const rel2=P.hdirW-P.a,sa=rel2-Math.PI/2,R=Math.min(w,h)*.36;
+    c.strokeStyle=`rgba(255,30,50,${Math.min(1,P.hdirT)*.85})`;c.lineWidth=u*9;c.lineCap='round';
+    c.beginPath();c.arc(cx,cy,R,sa-.32,sa+.32);c.stroke();
+  }
+
+  // ---- Tâm ngắm ----
+  const aim=playing?G.aim:null,onT=!!(aim&&aim.e),onHead=!!(aim&&aim.head);
+  const s=u*(ads>.5?5:7),gap=u*(ads>.5?3:5)+(IN.fire?u*3.5:0)+P.bobAmt*u*2.5*calm+(P.spr?u*3:0);
+  const col=G.hit>0||onHead?'rgba(255,211,90,.98)':onT?'rgba(255,60,60,.98)':'rgba(255,255,255,.88)';
+  c.strokeStyle=col;c.lineWidth=Math.max(1.5,u*1.2);
   c.beginPath();c.moveTo(cx-gap-s,cy);c.lineTo(cx-gap,cy);c.moveTo(cx+gap,cy);c.lineTo(cx+gap+s,cy);c.moveTo(cx,cy-gap-s);c.lineTo(cx,cy-gap);c.moveTo(cx,cy+gap);c.lineTo(cx,cy+gap+s);c.stroke();
+  c.fillStyle=col;c.beginPath();c.arc(cx,cy,Math.max(1.2,u*1.1),0,TAU);c.fill();
   if(G.hit>0||G.kill>0){
     const k=G.kill>0?1.8:1,d=u*(8+(.2-G.hit)*20)*k;
     c.strokeStyle=G.kill>0?'#ff2a2a':'#fff';c.lineWidth=u*2;c.beginPath();
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>{c.moveTo(cx+a*d,cy+b*d);c.lineTo(cx+a*(d+u*6),cy+b*(d+u*6))});c.stroke();
   }
+  // thanh máu + tên của mục tiêu đang nằm dưới tâm
+  if(onT){
+    const e=aim.e,bw=u*74,bh=u*5,by=cy+u*26;
+    c.fillStyle='rgba(0,0,0,.6)';c.fillRect(cx-bw/2-1,by-1,bw+2,bh+2);
+    c.fillStyle=e.def.grp==='v'?'#c06bff':'#58e05a';c.fillRect(cx-bw/2,by,bw*clamp(e.hp/e.maxhp,0,1),bh);
+    c.font=`800 ${Math.round(u*9)}px system-ui,sans-serif`;c.textAlign='center';c.fillStyle='rgba(255,255,255,.92)';c.shadowColor='#000';c.shadowBlur=4;
+    c.fillText(e.def.name+(onHead?'  ·  ĐẦU x2':''),cx,by-u*4);c.shadowBlur=0;
+  }
+  if(G.headT>0){
+    const k=G.headT/.8;c.font=`900 ${Math.round(u*14)}px system-ui,sans-serif`;c.textAlign='center';c.fillStyle=`rgba(255,211,90,${Math.min(1,k*1.6)})`;c.shadowColor='#ff6a00';c.shadowBlur=8;
+    c.fillText('HEADSHOT!',cx,cy-u*40-(1-k)*u*22);c.shadowBlur=0;
+  }
   // viền máu
   const low=P.hp<30?.25+.15*Math.sin(G.time*6):0,hv=Math.max(P.hurt*.9,low);
   if(hv>0){const g=c.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.7);g.addColorStop(0,'rgba(160,0,10,0)');g.addColorStop(1,`rgba(160,0,10,${hv})`);c.fillStyle=g;c.fillRect(0,0,w,h)}
-  if(P.reloading){c.fillStyle='rgba(0,0,0,.55)';const bw=u*90,bh=u*7;c.fillRect(cx-bw/2,cy+u*34,bw,bh);c.fillStyle='#ffb627';c.fillRect(cx-bw/2,cy+u*34,bw*(1-P.reload/P.reloadMax),bh)}
+  if(P.reloading){c.fillStyle='rgba(0,0,0,.55)';const bw=u*90,bh=u*7;c.fillRect(cx-bw/2,cy+u*56,bw,bh);c.fillStyle='#ffb627';c.fillRect(cx-bw/2,cy+u*56,bw*(1-P.reload/P.reloadMax),bh)}
 }
 
 /* Mini-map */
@@ -1213,6 +1337,7 @@ function showScreen(name,d){
         <div class="mb row"><button class="b g" data-act="rec">🏆 Kỷ lục</button><button class="b g" data-act="set">⚙ Cài đặt</button></div>
       </div>
       <div class="info">🪙 ${SAVE.coins} xu &nbsp;·&nbsp; Kỷ lục: Đợt ${SAVE.best.wave} &nbsp;·&nbsp; ${SAVE.best.score} điểm</div>
+      <div class="hint">🎯 Ngắm zoom · 💀 Bắn trúng đầu sát thương x2 · Kéo ngón tay trên nút bắn để vừa bắn vừa ngắm</div>
       <div class="rot">↻ Xoay ngang màn hình để chơi tốt nhất</div>${warn}</div>`;
   }else if(name==='pause'){
     h=`<div class="scr"><h2>TẠM DỪNG</h2><div class="mb"><button class="b a" data-act="resume">▶ Tiếp tục</button><button class="b g" data-act="set2">⚙ Cài đặt</button><button class="b g" data-act="menu">Về menu (đã tự lưu)</button></div></div>`;
@@ -1249,10 +1374,11 @@ function showScreen(name,d){
     h=`<div class="scr"><h2>⚙ CÀI ĐẶT</h2>
       <div class="set"><span>Độ nhạy xoay</span><input type="range" min="0.4" max="2.2" step="0.1" value="${S.sens}" data-set="sens"></div>
       <div class="set"><span>Âm thanh</span><input type="checkbox" ${S.sound?'checked':''} data-set="sound"></div>
-      <div class="set"><span>Hỗ trợ ngắm</span><input type="checkbox" ${S.assist?'checked':''} data-set="assist"></div>
+      <div class="set"><span>Hỗ trợ ngắm (hút đạn + ngắm dính)</span><input type="checkbox" ${S.assist?'checked':''} data-set="assist"></div>
+      <div class="set"><span>Tự bắn khi tâm trúng quái (cảm ứng)</span><input type="checkbox" ${S.auto?'checked':''} data-set="auto"></div>
       <div class="set"><span>Rung khi trúng đòn</span><input type="checkbox" ${S.vib?'checked':''} data-set="vib"></div>
       <div class="set"><span>Chất lượng hình</span><select data-set="res"><option value="0" ${S.res===0?'selected':''}>Thấp (mượt)</option><option value="1" ${S.res===1?'selected':''}>Vừa</option><option value="2" ${S.res===2?'selected':''}>Cao</option></select></div>
-      <div class="hint">Dữ liệu được lưu tự động trên thiết bị.</div>
+      <div class="hint">Dữ liệu được lưu tự động trên thiết bị.<br>Bàn phím: WASD · Chuột phải / Z = ngắm zoom · R nạp · G/F ném · 1-3 đổi súng</div>
       <div class="mb" style="margin-top:12px"><button class="b g" data-act="${name==='set2'?'pause':'menu'}">← Quay lại</button></div></div>`;
   }
   el.innerHTML=h;
@@ -1288,13 +1414,14 @@ $('#scr').addEventListener('input',e=>{
 });
 function leaveToMenu(){
   $('#hud').classList.remove('on');$('#boss').style.display='none';
+  setAds(false);
   E=[];PK=[];OR=[];GR=[];POOL=[];EXP=[];PART=[];G=null;initScene();
 }
 
 /* ============================ CẢNH MENU ============================ */
 function initScene(){
   newPlayer();P.x=START.x;P.y=START.y;P.a=-1.9;
-  G={wave:1,score:0,kills:0,zk:0,vk:0,time:0,combo:0,comboT:0,phase:'menu',queue:[],gren:0,holy:0,coins:0,shake:0,hit:0,kill:0,boss:null,flowT:0,over:false};
+  G={wave:1,score:0,kills:0,zk:0,vk:0,time:0,combo:0,comboT:0,phase:'menu',queue:[],gren:0,holy:0,coins:0,shake:0,hit:0,kill:0,boss:null,flowT:0,over:false,aim:null,headT:0,headHit:0};
   E=[];PK=[];OR=[];GR=[];POOL=[];EXP=[];PART=[];
   const spots=[['zombie',12.5,17.6],['zombie',16.3,18.4],['vampire',14.3,17.2],['runner',10.5,19.4],['brute',17.8,17.4],['bat',13.2,19.3],['zombie',15.6,15.8]];
   for(const [t,x,y] of spots)if(!solid(x,y)){const e=addEnemy(t,x,y);e.menu=true}
@@ -1309,7 +1436,7 @@ function frame(t){
   const dt=Math.min(.05,(t-last)/1000||.016);last=t;
   if(!G)return;
   if(state==='play')update(dt);
-  else if(state==='over'){for(const e of E)enemyDying(e,dt);projUpdate(dt);P.hurt=Math.max(0,P.hurt-dt)}
+  else if(state==='over'){for(const e of E)enemyDying(e,dt);projUpdate(dt);P.hurt=Math.max(0,P.hurt-dt);P.ads*=Math.max(0,1-dt*8)}
   else if(state==='menu')menuTick(dt);
   draw(dt);
 }
@@ -1322,8 +1449,9 @@ function menuTick(dt){
 }
 function draw(dt){
   LB=P.flash>0?.28:0;
+  PLANE=.72*(1-.45*(P.ads||0));
   let ca=P.a,cx=P.x,cy=P.y;
-  if(G.shake>0){const s=G.shake*.03;ca+=rnd(-s,s)}
+  if(G.shake>0){const s=G.shake*.03*(1-.5*P.ads);ca+=rnd(-s,s)}
   const list=buildSprites(cx,cy);
   renderWorld(cx,cy,ca,list);
   drawParticles(cx,cy,ca);
@@ -1341,7 +1469,7 @@ function boot(){
   initScene();showScreen('menu');
   requestAnimationFrame(frame);
 }
-window.NS={boot,get G(){return G},get P(){return P},get E(){return E},get state(){return state},update,draw,newGame,showScreen,SAVE:()=>SAVE,fireWeapon,IN,wlist};
+window.NS={boot,get G(){return G},get P(){return P},get E(){return E},get state(){return state},update,draw,newGame,showScreen,SAVE:()=>SAVE,fireWeapon,IN,wlist,traceShot};
 boot();
 </script>
 </body>
