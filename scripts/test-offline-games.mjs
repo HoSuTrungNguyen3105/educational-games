@@ -118,16 +118,23 @@ const manifest = fs.readFileSync("src/games/src/manifest.js", "utf8");
 const entries = [...manifest.matchAll(/\{ id: '([^']+)', name: '([^']+)', icon: '([^']*)', tag: '([^']+)', grad: '([^']+)', engine: '([^']+)'/g)]
   .map((m) => ({ id: m[1], name: m[2], icon: m[3], tag: m[4], grad: m[5], engine: m[6] }));
 
-if (entries.length !== 18) { console.log(`✖ manifest có ${entries.length} game, mong đợi 18`); process.exit(1); }
+// Không hardcode số game: manifest là nguồn sự thật, thêm/bớt game là
+// bản thân nó phải hợp lệ. Chỉ cần đảm bảo không rỗng.
+if (!entries.length) { console.log("✖ manifest không có game nào"); process.exit(1); }
+
+// Chỉ test được những game sinh từ lib/ (boot được trong vm).
+// Game tự viết tay không dùng shell nên không chạy được test tự động này.
+const generated = entries.filter((e) => fs.existsSync(`src/games/src/${e.id}.js`) || fs.existsSync(`src/games/${e.id}.html`));
+console.log(`(${entries.length} game trong manifest · ${generated.length} game sinh từ lib/ đủ điều kiện test)\n`);
 
 let bad = 0;
 const ok = (c, m) => { if (!c) { bad++; console.log("   ✖ " + m); } };
 
-console.log(`=== Test ${entries.length} game offline ===\n`);
+console.log(`=== Test game offline ===\n`);
 console.log("id".padEnd(12) + "KB    block  ext  boot  #game  stage  tiến độ        kết quả");
 console.log("-".repeat(86));
 
-for (const e of entries) {
+for (const e of generated) {
   const file = `src/games/offline/${e.id}.html`;
   const html = fs.readFileSync(file, "utf8");
   const bs = blocks(html);
@@ -250,5 +257,5 @@ for (const e of entries) {
 }
 
 console.log("-".repeat(86));
-console.log(bad === 0 ? "✔ Cả 18 game: boot được, render game, có tiến độ cục bộ, không script ngoài/API" : `✖ ${bad} game lỗi`);
+console.log(bad === 0 ? `[32m✔ ${generated.length} game sinh từ lib/: boot được, render game, có tiến độ cập nhật, không script ngoài/API[0m` : `✖ ${bad} game lỗi`);
 process.exit(bad ? 1 : 0);

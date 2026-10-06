@@ -24,10 +24,9 @@ export const OFFLINE_GAME_MANIFEST = [
   { id: 'hu-trai-cay', name: 'Hũ Trái Cây', icon: '🫙', tag: 'Vui vẻ', grad: 'from-amber-400 to-orange-500', engine: 'single', file: 'src/games/offline/hu-trai-cay.html' },
   { id: 'xep-khoi', name: 'Xếp Khối Màu', icon: '🧊', tag: 'Logic', grad: 'from-cyan-400 to-sky-500', engine: 'single', file: 'src/games/offline/xep-khoi.html' },
   { id: 'pha-gach', name: 'Phá Gạch Neon', icon: '🧱', tag: 'Giải trí', grad: 'from-fuchsia-400 to-purple-600', engine: 'single', file: 'src/games/offline/pha-gach.html' },
-  { id: 'nhay-xoay', name: 'Nhảy Xoáy', icon: '🌀', tag: '3D · Cần mạng', grad: 'from-indigo-400 to-blue-600', engine: 'single', needsNet: true, file: 'src/games/offline/nhay-xoay.html' },
-  { id: 'nong-trai-vui', name: 'Nông Trại Vui', icon: '🌾', tag: 'Mô phỏng', grad: 'from-lime-400 to-green-600', engine: 'single', file: 'src/games/offline/nong-trai-vui.html' },
+  { id: 'nhay-xoay', name: 'Nhảy Xoáy', icon: '🌀', tag: 'Game 3D', grad: 'from-indigo-400 to-blue-600', engine: 'single', file: 'src/games/offline/nhay-xoay.html' },
   { id: 'goc-thu-gian', name: 'Góc Thư Giãn', icon: '🧘', tag: 'Thư giãn', grad: 'from-teal-400 to-emerald-600', engine: 'single', file: 'src/games/offline/goc-thu-gian.html' },
-  { id: 'trung-tam-game', name: 'Trung Tâm Game', icon: '💾', tag: 'Sao lưu', grad: 'from-slate-400 to-slate-600', engine: 'single', file: 'src/games/offline/trung-tam-game.html' },
+  // { id: 'trung-tam-game', name: 'Trung Tâm Game', icon: '💾', tag: 'Sao lưu', grad: 'from-slate-400 to-slate-600', engine: 'single', file: 'src/games/offline/trung-tam-game.html' },
   { id: 'night-strike', name: 'Săn zombie', icon: '🧟', tag: 'Phản xạ', grad: 'from-red-400 to-rose-600', engine: 'single', file: 'src/games/offline/night-strike.html' },
 
 ];
@@ -98,7 +97,6 @@ export function makeFallbackMeta(id, html = '') {
     grad: FALLBACK_GRADS[idx],
     engine: 'single',
     file: `src/games/offline/${id}.html`,
-    needsNet: /<script[^>]*\bsrc=["']https?:/i.test(html),
   };
 }
 

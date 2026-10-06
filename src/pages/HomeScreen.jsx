@@ -71,6 +71,12 @@ const FEATURED_GAME = {
 
 import { OFFLINE_GAME_MANIFEST } from "../games/src/manifest.js";
 
+// Game tạo từ API có thể chưa điền môn học — gom về nhóm "Chung" để không bị lọc mất
+// Game tạo từ API có thể chưa điền môn học — gom về nhóm "Chung" để không bị lọc mất
+const NO_SUBJECT = "Chung";
+const subjectLabel = (subject) => (subject && subject.trim()) || NO_SUBJECT;
+const PREVIEW_GAMES = 8;
+
 // Game offline. Nguon su that: src/games/src/manifest.js (sinh boi scripts/build-offline-games.mjs)
 // Moi game la MOT file HTML rieng trong src/games/offline/<id>.html
 // Màu rèm/nút cho từng game — khai tường minh để không phải đoán từ class gradient.
@@ -83,7 +89,7 @@ const TILE_COLORS = Object.fromEntries(
       "simon": "#EE7FA6", "anagram": "#F2B632", "stroop": "#7C5CE0", "sumseq": "#3D6FD8", "compare": "#2A9D8F",
       "riddle": "#E5533D", "shapecount": "#EE7FA6",
       "chem-trai-cay": "#E5533D", "hu-trai-cay": "#F2B632", "xep-khoi": "#3D6FD8", "pha-gach": "#7C5CE0",
-      "nhay-xoay": "#3D6FD8", "nong-trai-vui": "#2A9D8F", "goc-thu-gian": "#2A9D8F", "trung-tam-game": "#7C8AA0",
+      "nhay-xoay": "#3D6FD8", "goc-thu-gian": "#2A9D8F", "trung-tam-game": "#7C8AA0",
     })[g.id] || "#F2B632",
   ])
 );
@@ -92,17 +98,13 @@ const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   key: g.id,
   path: `/offline/${g.id}`,
   name: g.name,
+  tag: g.tag,
   description: g.tag,
-  needsNet: g.needsNet,
   icon: g.icon,
   grad: g.grad,
+  color: TILE_COLORS[g.id] || "#F2B632",
 }));
 
-
-// Game tạo từ API có thể chưa điền môn học — gom về nhóm "Chung" để không bị lọc mất
-const NO_SUBJECT = "Chung";
-const subjectLabel = (subject) => (subject && subject.trim()) || NO_SUBJECT;
-const PREVIEW_GAMES = 8;
 
 // Menu sidebar (desktop) — 8 mục chính theo giao diện mới
 const SIDEBAR_ITEMS = (userAuth) => ([
@@ -408,7 +410,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const pendingTaskCount = (dailyTasks || []).filter(t => !t.claimed).length;
 
-const subjects = useMemo(() => {
+  const subjects = useMemo(() => {
     if (!games) return [];
     return [...new Set(games.map(g => subjectLabel(g.subject)))];
   }, [games]);
@@ -583,10 +585,6 @@ const subjects = useMemo(() => {
 
           {/* ═══════════ TOPBAR (desktop) ═══════════ */}
           <header className="nb-topbar hidden lg:flex">
-            <p className="font-display italic text-sky-700 text-sm leading-tight select-none">
-              Học mà chơi<br />Chơi mà tiến bộ!
-            </p>
-
             <div className="flex items-center gap-2.5 ml-auto">
               {userAuth?.user && (
                 <>
@@ -620,7 +618,11 @@ const subjects = useMemo(() => {
                       <Bell className="w-5 h-5" />
                       {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />}
                     </button>
-                    {showNotifications && notificationDropdown("lg:absolute lg:top-12 lg:right-0")}
+                    {/* Bắt buộc phải có lg:w-[...]: với position:absolute thì khung
+                        chứa là div.relative này — chỉ rộng 40px bằng nút chuông.
+                        Không khai width, panel co lại đúng 40px (bị bóp).
+                        max-w để không tràn ra ngoài màn hình ở màn hình vừa. */}
+                    {showNotifications && notificationDropdown("lg:absolute lg:top-12 lg:right-0 lg:w-[400px] lg:max-w-[calc(100vw-2rem)]")}
                   </div>
                 </>
               )}
@@ -716,7 +718,7 @@ const subjects = useMemo(() => {
           </header>
 
           {/* ═══════════ NỘI DUNG ═══════════ */}
-          <div className="px-3 lg:px-6 pb-6 lg:flex lg:gap-5 lg:items-start">
+            <div className="nb-page px-3 lg:px-6 lg:flex lg:gap-5 lg:items-start">
             <main className="flex-1 min-w-0 space-y-4 lg:space-y-5 pt-3 lg:pt-4">
 
                             <section className="relative rounded-3xl overflow-hidden shadow-[0_10px_30px_rgba(15,80,140,.15)] bg-gradient-to-b from-sky-300 to-emerald-200 min-h-[230px] lg:min-h-[320px] flex flex-col justify-between">
@@ -747,7 +749,7 @@ const subjects = useMemo(() => {
                 </div>
               </section>
 
-              {/* ─── HERO: khu vườn ─── */}
+              {/* ─── GAME OFFLINE: style lưới ô lớn (giống trung-tam-game.html) ─── */}
               <section id="offline-games-section" className="scroll-mt-20">
                 <SectionTitle
                   icon={Gamepad2}
@@ -757,16 +759,14 @@ const subjects = useMemo(() => {
                 <p className="-mt-1 mb-2.5 text-[11.5px] text-slate-400">
                   Chơi không cần mạng · Tiến độ lưu ngay trên máy
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                <div className="nbg-grid">
                   {OFFLINE_GAMES.map((g) => (
-                    <OfflineGameTile key={g.key} game={g} />
+                    <OfflineGameCard key={g.key} game={g} />
                   ))}
                 </div>
               </section>
 
-              {/* ─── GAME OFFLINE: mỗi game một ô riêng, bấm là vào thẳng game đó ─── */}
-
-              {/* ─── GAME ĐỀ XUẤT ─── */}
+              {/* ─── GAME HỌC TẬP: giữ nguyên style gốc ─── */}
               <section id="games-section" className="scroll-mt-20">
                 <SectionTitle icon={Gamepad2} iconTint="from-sky-400 to-blue-500" title="Game đề xuất"
                   actionLabel="Xem tất cả ›" onAction={() => { setShowAllGames(v => !v); if (showAllGames) scrollTo('games-section'); }} />
@@ -1083,35 +1083,33 @@ function FeaturedGameCard() {
 
 
 /**
- * Một ô game offline.
+ * Một ô game offline — DÙNG STYLE MỚI (lưới ô lớn).
+ * Bám sát src/games/offline/trung-tam-game.html:
+ *   nền gradient · emoji 44px · tiêu đề 22px · pill tag · thanh trạng thái bám đáy
  * Bấm vào → đi thẳng vào game (không có màn chọn trung gian).
  * Mỗi game là 1 file HTML riêng: src/games/offline/<id>.html
  *
- * Cỡ chữ/pad thu nhỏ lại một chút vì manifest giờ có 26 game.
+ * KHÔNG hiện cờ "cần mạng": đây là game offline, hiển thị mạng ở đây chỉ gây
+ * hiểu nhầm rằng phần lớn game phải cần Internet.
  */
-function OfflineGameTile({ game }) {
-  // Màu dùng cho rèm + nút chơi, lấy từ class gradient của manifest.
-  const tileColor = TILE_COLORS[game.id] || "#F2B632";
-  const needsNet = !!game.needsNet;
+function OfflineGameCard({ game }) {
   return (
     <button
       onClick={() => navigate(game.path)}
+      aria-label={`Chơi ${game.name}`}
       title={game.name}
-      style={{ "--tile-c": tileColor }}
-      className={`nb-tile ${needsNet ? "nb-tile--net" : ""}`}
+      style={{ background: game.color }}
+      className="nbg-card"
     >
-      <span className="nb-tile__awning" />
-      <span className="nb-tile__thumb">
-        <span aria-hidden="true">{game.icon}</span>
-      </span>
-      <span className="nb-tile__body">
-        <span className="nb-tile__name">{game.name}</span>
-        <span className="nb-tile__tag">{game.tag}</span>
-        <span className="nb-tile__play">{needsNet ? "Cần mạng · Vào →" : "Chơi ngay →"}</span>
-      </span>
+      <span className="nbg-card__ic" aria-hidden="true">{game.icon}</span>
+      <h3 className="nbg-card__title">{game.name}</h3>
+      <span className="nbg-card__tag">{game.tag}</span>
+      <p className="nbg-card__desc">Chơi offline · không cần mạng</p>
+      <span className="nbg-card__st">▶ Chơi ngay</span>
     </button>
   );
 }
+
 
 function GameCard({ game, template, onSelect, index = 0 }) {
   const color = colorForSubject(subjectLabel(game.subject));

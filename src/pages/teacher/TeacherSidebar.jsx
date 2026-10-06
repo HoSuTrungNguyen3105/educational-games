@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { navigate } from '../../lib/router.js'
 import { hasPermission } from '../../config/roles.js'
-import { Modal } from '../../components/ui.jsx'
 import {
   LayoutDashboard,
   Library,
@@ -176,40 +175,14 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
 
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-ink border-t border-white/10" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="flex items-center justify-around h-16 px-2">
-          {visibleMobileMain.map((t, i) => {
-            if (i === 2) {
+          {visibleMobileMain.map((t) => {
+            // Nút giữa là "+". Dò vào id chứ không dựa vào thứ tự index:
+            // nếu giáo viên thiếu quyền games.manage thì mảng bị lọc ngắn lại,
+            // index===2 sẽ trỏ nhầm sang "Trang chủ" và nó mọc thành nút +.
+            if (t.id === "admin-create") {
               return (
                 <div key="center-group" className="relative flex items-center justify-center">
-                  {moreOpen && (
-                    <Modal
-                      onClose={() => setMoreOpen(false)}
-                      align="bottom"
-                      unstyled
-                      overlayClassName="bg-ink/40 backdrop-blur-sm pb-20 px-4 sm:hidden"
-                      contentClassName="note-card p-4 anim-pop shadow-2xl w-full max-w-md"
-                    >
-                      <p className="text-[10px] font-mono uppercase text-[#8A7C63] mb-3 text-center">Quản lý thêm</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {visibleMobileMore.map(m => {
-                          const Icon = m.icon;
-                          return (
-                            <button key={m.id} onClick={() => { navigate(m.route); setMoreOpen(false); }}
-                              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition
-                                ${activeId === m.id ? "border-gold bg-gold/10 text-gold" : "border-ink/10 bg-paper2 text-ink hover:border-ink/25"}`}>
-                              <Icon className="w-6 h-6" />
-                              <span className="text-xs font-body font-medium">{m.label}</span>
-                            </button>
-                          );
-                        })}
-                        <button onClick={() => { onLogout?.(); setMoreOpen(false); }}
-                          className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition">
-                          <LogOut className="w-6 h-6" />
-                          <span className="text-xs font-body font-medium">Đăng xuất</span>
-                        </button>
-                      </div>
-                    </Modal>
-                  )}
-                  <button onClick={() => setMoreOpen(v => !v)}
+                  <button onClick={() => setMoreOpen(v => !v)} aria-label="Mở bảng quản lý"
                     className={`w-14 h-14 -mt-5 rounded-full flex items-center justify-center text-2xl shadow-lg transition
                       ${moreOpen ? "bg-ticket text-white rotate-45" : "bg-ink text-paper"}`}>
                     <Plus className="w-7 h-7" />
@@ -236,6 +209,54 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
           )}
         </div>
       </nav>
+
+      {/*
+        Bấm "+" mở panel FULL TRÀNG ngay, không phải bottom-sheet nhỏ.
+        Đặt ngoài <nav> và z-index cao hơn để phủ kín thanh điều hướng.
+        Lưới nhiều cột + ô nhỏ để thấy hết mục mà không phải cuộn nhiều.
+      */}
+      {moreOpen && (
+        <div
+          className="sm:hidden fixed inset-0 z-[60] bg-paper flex flex-col anim-pop"
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        >
+          <header className="shrink-0 flex items-center gap-3 px-4 h-14 bg-ink text-paper">
+            <button onClick={() => setMoreOpen(false)} aria-label="Đóng"
+              className="w-9 h-9 rounded-full grid place-items-center bg-white/10 hover:bg-white/20 transition">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-display font-bold leading-tight">Quản lý</p>
+              <p className="text-[10px] text-paper/60 leading-tight">
+                {visibleMobileMore.length} mục
+              </p>
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-y-auto overscroll-contain p-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+              {visibleMobileMore.map(m => {
+                const Icon = m.icon;
+                return (
+                  <button key={m.id} onClick={() => { navigate(m.route); setMoreOpen(false); }}
+                    className={`flex flex-col items-center justify-center gap-1 p-2 min-h-[74px] rounded-xl border transition active:scale-95
+                      ${activeId === m.id
+                        ? "border-gold bg-gold/10 text-gold"
+                        : "border-ink/10 bg-paper2 text-ink hover:border-ink/25"}`}>
+                    <Icon className="w-5 h-5" />
+                    <span className="text-[10px] font-body font-medium leading-tight text-center line-clamp-2">{m.label}</span>
+                  </button>
+                );
+              })}
+              <button onClick={() => { onLogout?.(); setMoreOpen(false); }}
+                className="flex flex-col items-center justify-center gap-1 p-2 min-h-[74px] rounded-xl border border-red-200 bg-red-50 text-red-500 active:scale-95 transition">
+                <LogOut className="w-5 h-5" />
+                <span className="text-[10px] font-body font-medium leading-tight text-center line-clamp-2">Đăng xuất</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

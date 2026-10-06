@@ -176,8 +176,28 @@ $('sndBtn').onclick = () => { audio(); soundOn = !soundOn; $('sndBtn').textConte
 
 /* ---------- Three.js ---------- */
 const stage = $('stage');
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance', stencil: false });
+
+/*
+ * Tự hạ chất lượng khi máy không kịp.
+ *
+ * Canvas phủ kín màn hình nên chi phí lớn nhất là SỐ PIXEL, không phải số vật thể
+ * (cả cảnh chỉ ~130 mesh). Với devicePixelRatio = 2 trên điện thoại, diện tích
+ * vẽ tăng 4 lần so với DPR = 1 — đó là lý do máy yếu bị tụt khung hình.
+ *
+ * Cách xử lý: khởi đầu dè chừng (điện thoại 1.5, máy tính 2), đo FPS thật, nếu
+ * dưới 45 fps thì bớt 0.25 mỗi giây xuống tới 0.75. FPS lên lại thì không tăng
+ * lại để tránh dao động. Hình ảnh vẫn giữ nguyên, chỉ dãn/mịn hơn một chút.
+ */
+const IS_TOUCH = matchMedia('(hover: none)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const DPR_MAX = IS_TOUCH ? 1.5 : 2, DPR_MIN = .75;
+let dprCap = DPR_MAX;
+let vw = 0, vh = 0;
+function applySize() {
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
+  renderer.setSize(vw, vh);
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
 stage.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, 1, .1, 200);
@@ -187,8 +207,9 @@ const dl2 = new THREE.DirectionalLight(0xffd6f0, .25); dl2.position.set(-8, 4, -
 
 let camDist = 18;
 function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
-  renderer.setSize(w, h); camera.aspect = w / h;
+  vw = window.innerWidth; vh = window.innerHeight;
+  applySize();
+  camera.aspect = vw / vh;
   const hf = 2 * Math.atan(Math.tan(camera.fov * Math.PI / 360) * camera.aspect);
   camDist = Math.max(13, 3.6 / Math.tan(hf / 2));
   camera.updateProjectionMatrix();
@@ -203,12 +224,12 @@ for (let k = 0; k < N; k++) {
   s.absarc(0, 0, R, a0, a1, false);
   s.lineTo(Math.cos(a1) * RI, Math.sin(a1) * RI);
   s.absarc(0, 0, RI, a1, a0, true);
-  const g = new THREE.ExtrudeGeometry(s, { depth: TH, bevelEnabled: false, curveSegments: 8 });
+  const g = new THREE.ExtrudeGeometry(s, { depth: TH, bevelEnabled: false, curveSegments: 5 });
   g.rotateX(-Math.PI / 2); g.translate(0, -TH, 0); segGeo.push(g);
 }
 const dangerMat = new THREE.MeshPhongMaterial({ color: 0xe8384f, emissive: 0x3a0008, shininess: 80, specular: 0x666666 });
 const ballMat = new THREE.MeshPhongMaterial({ color: 0xff4d6d, shininess: 120, specular: 0xffffff });
-const ball = new THREE.Mesh(new THREE.SphereGeometry(BR, 32, 24), ballMat);
+const ball = new THREE.Mesh(new THREE.SphereGeometry(BR, 20, 14), ballMat);
 ball.position.z = RBALL; scene.add(ball);
 const splatGeo = new THREE.CircleGeometry(1, 20); splatGeo.rotateX(-Math.PI / 2);
 
@@ -394,8 +415,21 @@ $('restartBtn').onclick = () => { sfx.tap(); hideAll(); startLevel(true); };
 
 /* ---------- Vòng lặp ---------- */
 let last = performance.now();
+let fpsN = 0, lastQ = performance.now();
 function frame(now) {
-  const dt = Math.min(1 / 30, (now - last) / 1000); last = now; T += dt;
+const dt = Math.min(1 / 30, (now - last) / 1000); last = now; T += dt;
+
+/* Đo FPS thật và hạ dần pixel ratio nếu máy không kịp (xem applySize ở trên) */
+if (now - lastQ > 1000) {
+  const fps = 1000 * fpsN / Math.max(1, now - lastQ);
+  if (fps < 45 && dprCap > DPR_MIN) {
+    dprCap = Math.max(DPR_MIN, dprCap - .25);
+    applySize();
+  }
+  fpsN = 0; lastQ = now;
+}
+fpsN++;
+
   if (keyDir && (state === 'play' || state === 'menu')) rot += keyDir * 3.2 * dt;
   if (state === 'menu') { rot += .5 * dt; menuPhase += dt;
     vy += G * dt; ball.position.y += vy * dt;
@@ -433,6 +467,56 @@ buildLevel(); resetBall(false); hud();
 $('menuBest').textContent = sv.best ? 'Cao nhất: ' + sv.best + ' · Màn ' + sv.level : '';
 requestAnimationFrame(frame);
 })();
+</script>
+
+<!-- Nút "Về trang chủ" — thêm bởi scripts/add-offline-back-button.mjs -->
+<style>
+  #homeBackBtn {
+    position: fixed;
+    z-index: 2147483000;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    left: calc(env(safe-area-inset-left, 0px) + 10px);
+    width: 42px; height: 42px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 20px; font-weight: 800; line-height: 1;
+    color: #241250;
+    background: #ffffff;
+    border: 3px solid #241250;
+    box-shadow: 0 4px 0 #241250, 0 8px 14px rgba(0, 0, 0, .22);
+    transition: transform .12s, box-shadow .12s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+  }
+  #homeBackBtn:hover { filter: brightness(1.06); }
+  #homeBackBtn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #241250, 0 3px 6px rgba(0, 0, 0, .22);
+  }
+  #homeBackBtn:focus-visible { outline: 3px solid #2f9bff; outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
+</style>
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">
+  <span aria-hidden="true">&#8592;</span>
+</button>
+<script>
+  // Nút dùng chung cho mọi game offline: báo ngược lên React (OfflineGamePage)
+  // để quay về trang chủ. Mở file .html trực tiếp thì tự điều hướng.
+  (function () {
+    var btn = document.getElementById("homeBackBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: "quit", data: {} }, "*");
+          return;
+        }
+      } catch (e) { /* rơi xuống cách tự điều hướng */ }
+      try { window.location.href = "/"; } catch (e) { /* ignore */ }
+    });
+  })();
 </script>
 </body>
 </html>

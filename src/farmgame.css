@@ -593,3 +593,268 @@
     border-width: 2px;
   }
 }
+
+/* ============================================================
+   THEME "NÔNG TRẠI VUI" — bám sát src/games/offline/nong-trai-vui.html
+   Ghi đè lớp style cũ ở trên để đổi diện mạo, không phá layout sẵn có.
+   Bảng màu lấy nguyên :root của file HTML:
+     --wood #8a5a3c · --woodD #5e3b25 · --paper #fff7e0 · --paperD #f0dcae
+     --ink  #4a2f1d · --grass #5dbb4a · --gold #ffcf4a · --red #e9584b
+   ============================================================ */
+
+.farm-wrap {
+  --wood: #8a5a3c;
+  --woodD: #5e3b25;
+  --paper: #fff7e0;
+  --paperD: #f0dcae;
+  --ink: #4a2f1d;
+  --grass: #5dbb4a;
+  --grassD: #37872f;
+  --gold: #ffcf4a;
+  --goldD: #d39420;
+  --red: #e9584b;
+  --redD: #b23a30;
+  --cream: var(--paper);
+  --cream-2: var(--paperD);
+  --sun: var(--gold);
+  --barn-red: var(--red);
+  --shadow: rgba(94, 59, 37, 0.35);
+}
+
+/* ---------- pill (HUD): nền kem sóng, viền gỗ, đổ bóng cứng ---------- */
+.farm-wrap .hud-pill {
+  background: linear-gradient(#fffaf0, #fff0c8);
+  border: 3px solid var(--wood);
+  box-shadow: 0 4px 0 var(--woodD), 0 8px 14px rgba(0, 0, 0, 0.18);
+  color: var(--ink);
+  font-weight: 800;
+}
+.farm-wrap .hud-icon {
+  background: radial-gradient(circle at 35% 30%, #ffec95, #ffb52e);
+  border: 3px solid #b9791f;
+  color: #7a4300;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.12);
+}
+.farm-wrap .hud-title {
+  background: linear-gradient(#fffaf0, #fff0c8);
+  color: var(--ink);
+  text-shadow: none;
+  border: 3px solid var(--wood);
+  box-shadow: 0 4px 0 var(--woodD);
+  font-weight: 800;
+}
+
+/* ---------- thanh gợi ý: dạng pill bo tròn như file HTML ---------- */
+.farm-wrap .hint-bubble {
+  background: rgba(255, 250, 235, 0.92);
+  border: 2px solid var(--wood);
+  border-radius: 999px;
+  padding: 6px 16px;
+  box-shadow: 0 3px 0 rgba(94, 59, 37, 0.5);
+  font-weight: 600;
+}
+.farm-wrap .hint-bubble b { color: var(--redD); }
+
+/* ---------- nút tròn (thoát) ---------- */
+.farm-wrap .round-btn {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--wood);
+  background: linear-gradient(#fffaf0, #fff0c8);
+  box-shadow: 0 3px 0 var(--woodD);
+  color: var(--ink);
+}
+.farm-wrap .round-btn:active { box-shadow: 0 1px 0 var(--woodD); }
+
+/* ---------- rail nút bên phải: giống #side / .fab trong file HTML ---------- */
+.farm-wrap .g-rail {
+  position: absolute;
+  right: 10px;
+  top: calc(150px + env(safe-area-inset-top, 0px));
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.farm-wrap .g-fab {
+  pointer-events: auto;
+  position: relative;
+  width: 60px;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  color: var(--ink);
+}
+.farm-wrap .g-fab .ic {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  background: linear-gradient(#ffe487, #ffbd35);
+  border: 3px solid #b9791f;
+  box-shadow: 0 4px 0 #8a5a12, 0 8px 12px rgba(0, 0, 0, 0.18);
+  transition: transform 0.12s;
+}
+.farm-wrap .g-fab:active .ic { transform: translateY(3px); box-shadow: 0 1px 0 #8a5a12; }
+.farm-wrap .g-fab .tx {
+  font-size: 12.5px;
+  font-weight: 800;
+  margin-top: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(255, 250, 235, 0.92);
+  border: 2px solid var(--wood);
+  white-space: nowrap;
+}
+.farm-wrap .g-fab .dot {
+  position: absolute;
+  top: -4px;
+  right: 0;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: none;
+  place-items: center;
+  border: 2px solid #fff;
+}
+.farm-wrap .g-fab .dot.on { display: grid; }
+
+/* ---------- thanh dưới + dải ô đất: giống #bar / .slot ---------- */
+.farm-wrap .g-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  padding: 14px 8px calc(10px + env(safe-area-inset-bottom, 0px));
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 46px),
+    linear-gradient(#a6714a, #7d4d2f);
+  border-top: 5px solid #c99b6b;
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.farm-wrap .g-slots {
+  display: flex;
+  gap: 9px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+.farm-wrap .g-slots::-webkit-scrollbar { display: none; }
+
+.farm-wrap .g-slot {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 76px;
+  border-radius: 17px;
+  border: 3px solid #b98b5e;
+  background: linear-gradient(#fff9e6, #f6e3b8);
+  box-shadow: 0 4px 0 #5e3b25;
+  position: relative;
+  cursor: pointer;
+  color: var(--ink);
+  padding: 4px 2px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  scroll-snap-align: center;
+}
+.farm-wrap .g-slot .em { font-size: 26px; line-height: 1; }
+.farm-wrap .g-slot .lb { font-size: 11px; font-weight: 700; line-height: 1.05; text-align: center; }
+.farm-wrap .g-slot.sel {
+  transform: translateY(-9px);
+  border-color: var(--grass);
+  box-shadow: 0 4px 0 var(--grassD), 0 0 0 4px rgba(122, 214, 90, 0.45);
+}
+.farm-wrap .g-slot.lock { filter: grayscale(1) brightness(0.92); opacity: 0.75; }
+.farm-wrap .g-slot .cnt {
+  position: absolute;
+  top: -8px;
+  right: -7px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+}
+.farm-wrap .g-slot .meter {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 6px;
+  height: 6px;
+  border-radius: 6px;
+  background: #cfe6f5;
+  overflow: hidden;
+}
+.farm-wrap .g-slot .meter b {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(#7fd4ff, #2f9bff);
+}
+
+/* ---------- bảng chọn: kéo từ dưới lên như #sheet / .panel ---------- */
+.farm-wrap .modal-overlay {
+  align-items: flex-end;
+  background: rgba(40, 25, 10, 0);
+  transition: background 0.3s;
+  padding: 0;
+}
+.farm-wrap .modal-card {
+  background: var(--paper);
+  border: 4px solid var(--wood);
+  border-bottom: 0;
+  border-radius: 28px 28px 0 0;
+  max-width: 560px;
+  width: 100%;
+  padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35);
+  animation: g-sheet 0.34s cubic-bezier(0.2, 0.9, 0.25, 1.05);
+}
+@keyframes g-sheet {
+  from { transform: translateY(105%); }
+  to { transform: none; }
+}
+
+/* ---------- chừa chỗ cho thanh dưới + d-pad ---------- */
+.farm-wrap .farm-canvas-wrap { padding-bottom: 108px; }
+.farm-wrap .farm-canvas-svg { max-height: 100%; }
+.farm-wrap .mobile-dpad,
+.farm-wrap .desktop-dpad { bottom: 118px; }
+
+@media (max-width: 640px) {
+  .farm-wrap .g-rail { top: calc(132px + env(safe-area-inset-top, 0px)); }
+  .farm-wrap .g-fab .ic { width: 50px; height: 50px; font-size: 23px; }
+  .farm-wrap .g-fab { width: 54px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .farm-wrap .modal-card { animation: none; }
+  .farm-wrap .g-slot { transition: none; }
+}

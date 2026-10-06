@@ -10,23 +10,23 @@
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{min-height:100%;color:#fff;font-family:"Baloo 2","Nunito","Segoe UI",system-ui,sans-serif;
     background:radial-gradient(ellipse at 20% 0%,#5b34c9 0,transparent 55%),radial-gradient(ellipse at 90% 10%,#ff4d8d 0,transparent 45%),linear-gradient(#1d1048,#0e0824) fixed}
-  body{padding:calc(env(safe-area-inset-top) + 18px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 28px) calc(env(safe-area-inset-left) + 16px)}
+  body{padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 16px)}
   .wrap{max-width:980px;margin:0 auto}
-  header{text-align:center;margin-bottom:18px}
-  h1{font-size:clamp(40px,10vw,68px);font-weight:800;font-style:italic;line-height:.95;transform:skewX(-5deg);
+  header{text-align:center;margin-bottom:10px}
+  h1{font-size:clamp(30px,7vw,48px);font-weight:800;font-style:italic;line-height:.95;transform:skewX(-5deg);
     text-shadow:0 3px 0 #ffb300,0 6px 0 #ff7a00,0 9px 0 #c2410c,0 14px 24px rgba(0,0,0,.5)}
-  .sub{font-size:17px;font-weight:600;opacity:.85;margin-top:12px}
-  .sum{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:16px 0 6px}
+  .sub{font-size:14px;font-weight:600;opacity:.85;margin-top:6px}
+  .sum{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:9px 0 4px}
   .chip{padding:8px 16px;border-radius:99px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);font-weight:800;font-size:15px;backdrop-filter:blur(6px)}
   .chip b{color:#ffe066;font-size:18px}
-  .cont{display:none;margin:14px auto 4px;width:min(100%,420px)}
+  .cont{display:none;margin:9px auto 3px;width:min(100%,420px)}
   .cont.on{display:flex}
   .cont a{flex:1;text-align:center;text-decoration:none;color:#241250;font-weight:800;font-size:22px;font-style:italic;padding:12px 20px;border-radius:18px;
     background:linear-gradient(#a6ff6b,#38c92b);box-shadow:0 6px 0 #1f8f16,0 12px 20px rgba(0,0,0,.35)}
   .cont a:active{transform:translateY(4px);box-shadow:0 2px 0 #1f8f16}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:10px}
   .card{position:relative;display:flex;flex-direction:column;gap:6px;padding:16px 16px 14px;border-radius:24px;text-decoration:none;color:#fff;overflow:hidden;
-    border:2px solid rgba(255,255,255,.2);box-shadow:0 10px 24px rgba(0,0,0,.35);transition:transform .15s;min-height:168px}
+    border:2px solid rgba(255,255,255,.2);box-shadow:0 10px 24px rgba(0,0,0,.35);transition:transform .15s;min-height:150px}
   .card:active{transform:scale(.97)}
   @media (hover:hover){.card:hover{transform:translateY(-4px)}}
   .card::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12)}
@@ -142,6 +142,56 @@ $('bReset').onclick = () => {
 };
 render();
 })();
+</script>
+
+<!-- Nút "Về trang chủ" — thêm bởi scripts/add-offline-back-button.mjs -->
+<style>
+  #homeBackBtn {
+    position: fixed;
+    z-index: 2147483000;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    left: calc(env(safe-area-inset-left, 0px) + 10px);
+    width: 42px; height: 42px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 20px; font-weight: 800; line-height: 1;
+    color: #1d1340;
+    background: #fffaf0;
+    border: 3px solid #1d1340;
+    box-shadow: 0 4px 0 #1d1340, 0 8px 14px rgba(0, 0, 0, .22);
+    transition: transform .12s, box-shadow .12s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+  }
+  #homeBackBtn:hover { filter: brightness(1.06); }
+  #homeBackBtn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #1d1340, 0 3px 6px rgba(0, 0, 0, .22);
+  }
+  #homeBackBtn:focus-visible { outline: 3px solid #2f9bff; outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
+</style>
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">
+  <span aria-hidden="true">&#8592;</span>
+</button>
+<script>
+  // Nút dùng chung cho mọi game offline: báo ngược lên React (OfflineGamePage)
+  // để quay về trang chủ. Mở file .html trực tiếp thì tự điều hướng.
+  (function () {
+    var btn = document.getElementById("homeBackBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: "quit", data: {} }, "*");
+          return;
+        }
+      } catch (e) { /* rơi xuống cách tự điều hướng */ }
+      try { window.location.href = "/"; } catch (e) { /* ignore */ }
+    });
+  })();
 </script>
 </body>
 </html>

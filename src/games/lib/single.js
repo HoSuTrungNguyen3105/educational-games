@@ -50,6 +50,11 @@ function startSingleGame(cfg) {
   _loadState();
 
   _bindSoundBtn();
+  // Đánh dấu chế độ 1-game để CSS ẩn thanh header của sảnh (xem shell.html).
+  // Không có dòng này thì header "Góc Giải Trí" vẫn chiếm chỗ ở trên và
+  // người chơi phải cuộn xuống mới thấy game.
+  document.body.classList.add("single");
+
   renderMe();
   checkBadges();
 

@@ -93,7 +93,23 @@ fs.mkdirSync(G("src/games/offline"), { recursive: true });
 
 let total = 0;
 const rows = [];
+const skipped = [];
 for (const id of ids) {
+  const metaLine = (manifestSrc.match(new RegExp(`\\{ id: '${id}',[\\s\\S]*?file: '[^']+' \\}`)) || [""])[0];
+  // Nguồn để sinh lại file offline:
+  //   · engine 'standalone' → bản gốc src/games/<id>.html
+  //   · còn lại             → src/games/src/<id>.js
+  // Game tự viết tay (chem-trai-cay, xep-khoi, night-strike…) không có nguồn
+  // nào trong repo — chúng là HTML độc lập, KHÔNG sinh lại. Không có nhánh
+  // này thì read() ném ENOENT và cả lệnh build chết.
+  const srcFile = /engine: 'standalone'/.test(metaLine)
+    ? `src/games/${id}.html`
+    : `src/games/src/${id}.js`;
+  if (!fs.existsSync(G(srcFile))) {
+    skipped.push(id);
+    continue;
+  }
+
   const html = build(id);
   const out = `src/games/offline/${id}.html`;
   fs.writeFileSync(G(out), html, "utf8");
@@ -104,4 +120,8 @@ for (const id of ids) {
 }
 
 console.table(rows);
-console.log(`\n✔ ${ids.length} file → src/games/offline/  (tổng ${(total / 1024).toFixed(2)} MB)`);
+console.log(`\n✔ ${rows.length} file → src/games/offline/  (tổng ${(total / 1024).toFixed(2)} MB)`);
+if (skipped.length) {
+  console.log(`⏭  Bỏ qua ${skipped.length} game viết tay (không có src/games/src/<id>.js):`);
+  console.log(`   ${skipped.join(", ")}`);
+}

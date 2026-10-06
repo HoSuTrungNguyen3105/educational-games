@@ -1,46 +1,9 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { gardenService, API_BASE } from '../../services/api.js';
+import GardenCanvas from '../../components/garden/GardenCanvas.jsx';
+// SeedShop và HarvestModal vẫn hiển thị cây bằng PlantArt.
 import { PlantArt } from '../../components/garden/PlantArt.jsx';
-import { useAvatarData } from '../../components/avatar/GardenerAvatar.jsx';
-import { renderAvatarFull } from '../../lib/avatarRenderer.js';
 import '../../farmgame.css';
-
-/* ============================================================
-   FARM LAYOUT — mirrors Farmgame.html BLUEPRINT 16×12
-   . = grass  T = tree  B = bush  R = rock  F = flower
-   C = crop plot  P = path  W = water  S = scarecrow
-   L = well  A = barn  O = coop  X = animal
-============================================================ */
-const COLS = 16, ROWS = 12, TILE = 48;
-const FARM = [
-  'T T . A A A . . . . . . . T T',
-  'T . . A A A . B . . . O O . T',
-  'T . L . . F . . . . . . . . T',
-  '. F . . . . . . R . . . X . .',
-  '. . . C C C C C S . F . . F .',
-  '. . . C C C C C . . . . . . .',
-  '. X . . . . . . . . . . . . .',
-  '. . . . . . . . P P P P P P P',
-  '. . . . . . . . . . W W . . .',
-  '. . B . . . . . . . W W . . .',
-  '. . . F . . . . . . . . . . .',
-  'T T . . . . . . . . . . . T T',
-];
-
-// which cells are walkable
-function tileAt(x, y) { return FARM[y]?.[x] || '.'; }
-function isWalkable(x, y) {
-  if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return false;
-  const t = tileAt(x, y);
-  return t === '.' || t === 'P' || t === 'C' || t === 'F';
-}
-function isCrop(x, y) { return tileAt(x, y) === 'C'; }
-
-const PLAYER_START = { x: 7, y: 6 };
-
-// map crop tiles to slot indices
-const CROP_POSITIONS = [];
-for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (tileAt(x, y) === 'C') CROP_POSITIONS.push({ x, y });
 
 /* ============================================================
    CONSTANTS
@@ -89,88 +52,6 @@ function saveWater(userId,n) { try{localStorage.setItem(`garden_water_${userId||
 const WATER_MAX = 50;
 const WATER_REGEN_MS = 5 * 60 * 1000;
 function fmtTime(ms) { const s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60),d=Math.floor(h/24); if(d>0)return`${d}d ${h%24}h`; if(h>0)return`${h}h ${m%60}m`; if(ms<=0)return'Sẵn sàng!'; return`${m}p ${s%60}s`; }
-function fmtClock(ms) { if(ms<=0)return'00:00'; const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60; return h>0?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
-
-/* ============================================================
-   SVG FARM DECORATIONS — drawn inline, no external deps
-============================================================ */
-function FarmTileSVG({ type, x, y }) {
-  const px = x * TILE + TILE / 2, py = y * TILE + TILE / 2;
-  const seed = (x * 31 + y * 17) % 9;
-  if (type === 'T') return (<g>
-    <ellipse cx={px} cy={py+14} rx={14} ry={5} fill="rgba(0,0,0,0.12)" />
-    <rect x={px-3} y={py-2} width={6} height={14} rx={2} fill="#7a5230" />
-    <circle cx={px} cy={py-8} r={14} fill="#4c8c3a" />
-    <circle cx={px-6} cy={py-3} r={9} fill="#5fa347" />
-    <circle cx={px+6} cy={py-3} r={9} fill="#5fa347" />
-  </g>);
-  if (type === 'B') return (<g>
-    <ellipse cx={px} cy={py+10} rx={11} ry={3.5} fill="rgba(0,0,0,0.1)" />
-    <circle cx={px-7} cy={py+2} r={8} fill="#4f8e3c" />
-    <circle cx={px+7} cy={py+2} r={8} fill="#4f8e3c" />
-    <circle cx={px} cy={py-3} r={9} fill="#69a851" />
-  </g>);
-  if (type === 'R') return (<g>
-    <ellipse cx={px} cy={py+10} rx={10} ry={3} fill="rgba(0,0,0,0.12)" />
-    <path d={`M${px-10},${py+6} L${px-6},${py-7} L${px+4},${py-9} L${px+10},${py+2} L${px+6},${py+7} Z`} fill="#9a9a92" stroke="#77776e" strokeWidth={1.2} />
-    <path d={`M${px-4},${py-4} L${px},${py-7} L${px-2},${py-1} Z`} fill="rgba(255,255,255,0.3)" />
-  </g>);
-  if (type === 'F') { const emojis = ['🌷','🌼','🌻','🌸']; return <text x={px} y={py+5} textAnchor="middle" fontSize={16}>{emojis[(x+y)%4]}</text>; }
-  if (type === 'W') return (<g>
-    <ellipse cx={px} cy={py} rx={TILE/2-2} ry={TILE/2-2} fill="#5aa7c9" stroke="#3f83a3" strokeWidth={1.5} />
-    <ellipse cx={px-4} cy={py-2} rx={4} ry={2} fill="rgba(255,255,255,0.3)" />
-    <text x={px+6} y={py+4} fontSize={11}>🐟</text>
-  </g>);
-  if (type === 'P') return (<g>
-    {seed===0 && <ellipse cx={px} cy={py+2} rx={5} ry={3} fill="rgba(120,86,50,0.2)" />}
-  </g>);
-  if (type === 'S') return <text x={px} y={py+6} textAnchor="middle" fontSize={20}>🎃</text>;
-  if (type === 'L') return <text x={px} y={py+5} textAnchor="middle" fontSize={14}>🪣</text>;
-  if (type === 'A') return (<g>
-    <rect x={px-18} y={py-4} width={36} height={20} rx={2} fill="#e8dcc0" stroke="#40301d" strokeWidth={1.5} />
-    <path d={`M${px-22},${py-2} L${px},${py-18} L${px+22},${py-2} Z`} fill="#c1443a" stroke="#40301d" strokeWidth={1.5} />
-    <rect x={px-5} y={py+6} width={10} height={12} rx={1} fill="#fff6e2" stroke="#40301d" strokeWidth={1} />
-  </g>);
-  if (type === 'O') return (<g>
-    <rect x={px-12} y={py-2} width={24} height={14} rx={2} fill="#f5efe0" stroke="#40301d" strokeWidth={1.2} />
-    <path d={`M${px-15},${py} L${px},${py-10} L${px+15},${py} Z`} fill="#9c332a" stroke="#40301d" strokeWidth={1.2} />
-  </g>);
-  if (type === 'X') return <text x={px} y={py+6} textAnchor="middle" fontSize={16}>{(x+y)%3===0?'🐑':(x+y)%3===1?'🐔':'🐓'}</text>;
-  return null; // '.' = grass drawn by parent
-}
-
-/* ============================================================
-   AVATAR PLAYER SVG
-============================================================ */
-function AvatarPlayer({ moving, userAuth }) {
-  const { loadout, items } = useAvatarData(userAuth);
-  const state = {};
-  let bodyHtml = null;
-  for (const [cat, id] of Object.entries(loadout)) {
-    if (!id) continue;
-    const item = items.find(i => i.code === id);
-    if (!item) continue;
-    if (cat === 'body') bodyHtml = item.html || null;
-    else if (cat === 'skin') state.skin = item.params?.hex || '#FFDFC4';
-    else if (cat === 'face') state.face = item.params?.style || 'gentle';
-    else if (cat === 'hair') state.hair = { style: item.params?.style || 'spiky', color: item.params?.color || '#6B4226' };
-    else if (cat === 'shirt') state.shirt = { style: item.params?.style || 'tee', color: item.params?.color || '#F5F5F5' };
-    else if (cat === 'pants') state.pants = { style: item.params?.style || 'shorts', color: item.params?.color || '#241F1C' };
-    else if (cat === 'shoes') state.shoes = { style: item.params?.style || 'sneaker', color: item.params?.color || '#3B5EA6' };
-    else if (cat === 'hat') state.hat = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
-    else if (cat === 'glasses') state.glasses = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
-    else if (cat === 'accessory') state.accessory = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
-  }
-  const svg = renderAvatarFull(state, bodyHtml);
-  if (!svg) return <span className="text-2xl select-none">🧑‍🌾</span>;
-  const isFull = svg.includes('<svg') || (svg.includes('id="head"') && svg.includes('id="body"'));
-  const vb = isFull ? '0 0 512 700' : '0 0 300 440';
-  return <svg viewBox={vb} width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" dangerouslySetInnerHTML={{ __html: svg }} />;
-}
-
-/* ============================================================
-   SEED SHOP MODAL
-============================================================ */
 function SeedShop({ userCoins, onSelect, onClose, plantConfig }) {
   const seeds = Object.entries(plantConfig).map(([id, c]) => ({ id, ...c }));
   return (
@@ -334,17 +215,7 @@ export default function GardenPage({ userAuth, onBack }) {
   const [toast, setToast] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
 
-  // player (smooth pixel-based movement)
-  const SPEED = 150; // px/s
-  const playerPosRef = useRef({ x: PLAYER_START.x * TILE + TILE / 2, y: PLAYER_START.y * TILE + TILE / 2 });
-  const playerDirRef = useRef('down');
-  const playerGroupRef = useRef(null);
-  const playerInnerRef = useRef(null);
-  const [isMoving, setIsMoving] = useState(false);
-  const facingCoordRef = useRef(`${PLAYER_START.x},${PLAYER_START.y+1}`);
-  const [, setFacingRender] = useState(0);
-  const keysHeld = useRef(new Set());
-  const dpadDir = useRef(null);
+  // Đồng bộ mốc thời gian đếm tiến độ cây từ server
   const sync = useRef({});
   const uid = userAuth?.user?.id;
 
@@ -399,13 +270,6 @@ export default function GardenPage({ userAuth, onBack }) {
 
   const slots = garden?.slots || [];
 
-  // map crop positions to slots
-  const cropMap = useMemo(() => {
-    const m = {};
-    CROP_POSITIONS.forEach((cp, i) => { if (slots[i]) m[`${cp.x},${cp.y}`] = slots[i]; });
-    return m;
-  }, [slots]);
-
   const getDisplay = useCallback((slot) => {
     const plant = slot?.plant; if (!plant) return { progress:0, remainingMs:0 };
     const c = cfg[plant.plantType]; if (!c) return { progress:plant.progress||0, remainingMs:0 };
@@ -416,30 +280,25 @@ export default function GardenPage({ userAuth, onBack }) {
     return { progress, remainingMs: Math.max(0, c.growthTime*(1-progress/100)) };
   }, [cfg]);
 
-  // facing — derive grid cell from pixel position + direction
-  const facing = useCallback(() => {
-    const gx = Math.floor(playerPosRef.current.x / TILE);
-    const gy = Math.floor(playerPosRef.current.y / TILE);
-    switch (playerDirRef.current) {
-      case 'up':    return { x: gx, y: gy - 1 };
-      case 'down':  return { x: gx, y: gy + 1 };
-      case 'left':  return { x: gx - 1, y: gy };
-      case 'right': return { x: gx + 1, y: gy };
-      default:      return { x: gx, y: gy + 1 };
-    }
-  }, []);
-
-  const facingSlot = (() => { const f = facing(); return cropMap[`${f.x},${f.y}`] || null; })();
-
-  const interact = useCallback(() => {
-    const f = facing(); const slot = cropMap[`${f.x},${f.y}`];
-    if (!slot) return;
+  // Chạm vào ô đất: trồng / tưới / thu hoạch — tương tác theo ô, không cần đi bộ
+  const onPlotTap = useCallback((slot) => {
+    setSelSlot(slot);
     const { progress } = getDisplay(slot);
-    if (!slot.plant) { setSelSlot(slot); setShowShop(true); }
+    if (!slot.plant) setShowShop(true);
     else if (progress >= 100) doHarvest(slot.index);
     else if (drops > 0) doWater(slot.index);
     else setShowQuiz(true);
-  }, [facing, cropMap, getDisplay, drops]);
+  }, [getDisplay, drops]);
+
+  // Phím E tác động ô đang chọn (tương đương chạm)
+  const interact = useCallback(() => {
+    if (!selSlot) return;
+    const { progress } = getDisplay(selSlot);
+    if (!selSlot.plant) setShowShop(true);
+    else if (progress >= 100) doHarvest(selSlot.index);
+    else if (drops > 0) doWater(selSlot.index);
+    else setShowQuiz(true);
+  }, [selSlot, getDisplay, drops]);
 
   // keyboard
   useEffect(() => {
@@ -447,93 +306,11 @@ export default function GardenPage({ userAuth, onBack }) {
       const k = e.key.toLowerCase();
       if (showShop || showInv || showQuiz || harvestR || confirmDel) return;
       if (k === 'e' || k === ' ') { e.preventDefault(); interact(); return; }
-      keysHeld.current.add(k);
     };
-    const onU = (e) => keysHeld.current.delete(e.key.toLowerCase());
     window.addEventListener('keydown', onK);
-    window.addEventListener('keyup', onU);
-    return () => { window.removeEventListener('keydown', onK); window.removeEventListener('keyup', onU); };
+    return () => window.removeEventListener('keydown', onK);
   }, [interact, showShop, showInv, showQuiz, harvestR, confirmDel]);
 
-  // smooth movement game loop (pixel-based, no grid snap)
-  useEffect(() => {
-    let raf;
-    let lastTime = performance.now();
-    const loop = (now) => {
-      const dt = Math.min((now - lastTime) / 1000, 0.1);
-      lastTime = now;
-
-      if (showShop || showInv || showQuiz || harvestR || confirmDel) {
-        setIsMoving(false);
-        raf = requestAnimationFrame(loop);
-        return;
-      }
-
-      let dx = 0, dy = 0;
-      if (dpadDir.current) {
-        dx = dpadDir.current.x;
-        dy = dpadDir.current.y;
-      } else {
-        const k = keysHeld.current;
-        if (k.has('arrowup') || k.has('w')) dy = -1;
-        else if (k.has('arrowdown') || k.has('s')) dy = 1;
-        if (k.has('arrowleft') || k.has('a')) dx = -1;
-        else if (k.has('arrowright') || k.has('d')) dx = 1;
-      }
-
-      const currentlyMoving = (dx !== 0 || dy !== 0);
-      setIsMoving(prev => { if (prev !== currentlyMoving) return currentlyMoving; return prev; });
-
-      if (dx || dy) {
-        const len = Math.sqrt(dx * dx + dy * dy);
-        dx /= len; dy /= len;
-
-        let newDir = playerDirRef.current;
-        if (Math.abs(dx) >= Math.abs(dy)) newDir = dx > 0 ? 'right' : 'left';
-        else newDir = dy > 0 ? 'down' : 'up';
-        
-        playerDirRef.current = newDir;
-
-        const newX = playerPosRef.current.x + dx * SPEED * dt;
-        const newY = playerPosRef.current.y + dy * SPEED * dt;
-        const curGx = Math.floor(playerPosRef.current.x / TILE);
-        const curGy = Math.floor(playerPosRef.current.y / TILE);
-        const newGx = Math.floor(newX / TILE);
-        const newGy = Math.floor(newY / TILE);
-        let fx = playerPosRef.current.x, fy = playerPosRef.current.y;
-        if (isWalkable(newGx, newGy)) { fx = newX; fy = newY; }
-        else if (isWalkable(newGx, curGy)) { fx = newX; }
-        else if (isWalkable(curGx, newGy)) { fy = newY; }
-        
-        playerPosRef.current = { x: fx, y: fy };
-
-        if (playerGroupRef.current) {
-          playerGroupRef.current.setAttribute('transform', `translate(${fx - TILE/2},${fy - TILE/2})`);
-        }
-        if (playerInnerRef.current) {
-          playerInnerRef.current.style.transform = newDir === 'left' ? 'scaleX(-1)' : 'none';
-        }
-
-        // check if facing changed
-        const fgx = Math.floor(fx / TILE);
-        const fgy = Math.floor(fy / TILE);
-        let tx = fgx, ty = fgy;
-        if (newDir === 'up') ty--;
-        else if (newDir === 'down') ty++;
-        else if (newDir === 'left') tx--;
-        else if (newDir === 'right') tx++;
-        const newFacingStr = `${tx},${ty}`;
-        if (facingCoordRef.current !== newFacingStr) {
-          facingCoordRef.current = newFacingStr;
-          setFacingRender(r => r + 1);
-        }
-      }
-
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [showShop, showInv, showQuiz, harvestR, confirmDel]);
 
   // actions
   const doPlant = async (plantType) => {
@@ -588,18 +365,18 @@ export default function GardenPage({ userAuth, onBack }) {
   const ready = slots.filter(s=>s.plant&&getDisplay(s).progress>=100).length;
   const hasFert = inv.basic_fertilizer>0||inv.premium_fertilizer>0||inv.miracle_fertilizer>0;
 
-  const fp = facingSlot?.plant; const fc = fp?cfg[fp.plantType]:null; const fd = facingSlot?getDisplay(facingSlot):null;
+  const fp = selSlot?.plant; const fc = fp?cfg[fp.plantType]:null; const fd = selSlot?getDisplay(selSlot):null;
   const hint = fertMode
-    ? `Đi đến ô cây, nhấn E để bón`
-    : facingSlot && fp
+    ? `Chọn ô cây để bón phân 🌱`
+    : selSlot && fp
       ? (fd?.progress >= 100
-          ? `${fc?.name} — nhấn E thu hoạch! 🎉`
+          ? `${fc?.name} — chạm để thu hoạch! 🎉`
           : drops > 0
-            ? `${fc?.name} — nhấn E tưới nước 💧`
+            ? `${fc?.name} — chạm để tưới nước 💧`
             : `${fc?.name} — hết nước, làm quiz để nhận 💧`)
-    : facingSlot && !fp
-      ? 'Nhấn E để trồng cây 🌱'
-    : 'WASD di chuyển · E tương tác';
+    : selSlot && !fp
+      ? 'Chạm ô đất để trồng cây 🌱'
+    : 'Chạm vào ô đất để trồng · tưới · thu hoạch';
 
   if (!userAuth?.user) return (<div className="farm-wrap"><div id="sky"><div className="sky-cloud" style={{'--cy':'8%','--dur':'52s','--delay':'0s'}}/><div className="sky-cloud" style={{'--cy':'16%','--dur':'70s','--delay':'-20s'}}/><div className="sky-cloud" style={{'--cy':'4%','--dur':'60s','--delay':'-40s'}}/></div><div style={{position:'relative',zIndex:5,display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}><div className="modal-card"><h1>🌱 Chưa đăng nhập</h1><p className="lang-sub">Đăng nhập để chơi!</p><button className="primary-btn" onClick={onBack}>Về trang chủ</button></div></div></div>);
   if (error) return (<div className="farm-wrap"><div id="sky"/><div style={{position:'relative',zIndex:5,display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}><div className="modal-card"><p style={{color:'var(--barn-red)'}}>{error}</p><button className="primary-btn" onClick={load}>Thử lại</button></div></div></div>);
@@ -613,94 +390,32 @@ export default function GardenPage({ userAuth, onBack }) {
         <div className="sky-cloud" style={{'--cy':'4%','--dur':'60s','--delay':'-40s'}}/>
       </div>
 
-      {/* Farm canvas (CSS grid代替canvas) */}
-      <div className="farm-canvas-wrap">
-        <svg viewBox={`0 0 ${COLS*TILE} ${ROWS*TILE}`} className="farm-canvas-svg">
-          {/* Ground tiles */}
-          {Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>{
-            const t=tileAt(x,y); const px=x*TILE, py=y*TILE;
-            if(t==='C') return <rect key={`${x},${y}`} x={px} y={py} width={TILE} height={TILE} fill="#6d4c33" stroke="#4a3220" strokeWidth={1.5}/>;
-            if(t==='P') return <rect key={`${x},${y}`} x={px} y={py} width={TILE} height={TILE} fill="#d8b384"/>;
-            const variant = (x*7+y*13)%5===0;
-            return <rect key={`${x},${y}`} x={px} y={py} width={TILE} height={TILE} fill={variant?'#83c04a':'#8fc94e'}/>;
-          })).flat()}
+      {/* Ruộng đồng isometric — trang bịa y theo nong-trai-vui.html */}
+      <GardenCanvas
+        slots={slots}
+        cfg={cfg}
+        getDisplay={getDisplay}
+        selectedIndex={selSlot?.index ?? null}
+        onSelectPlot={onPlotTap}
+        onLockedPlot={() => toast_('Ô đất này chưa mở khoá 🔒')}
+      />
 
-          {/* Grass tufts */}
-          {Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>{
-            if(tileAt(x,y)==='C'||tileAt(x,y)==='P')return null;
-            const seed=(x*31+y*17)%9; if(seed!==0)return null;
-            const px=x*TILE, py=y*TILE;
-            return <g key={`tuft-${x}-${y}`} opacity={0.4}>
-              {[0,1,2].map(i=>{const bx=px+10+i*8;return <path key={i} d={`M${bx},${py+TILE-6} Q${bx+2},${py+TILE-16} ${bx+(i-1)*3},${py+TILE-22}`} stroke="rgba(48,90,30,0.45)" strokeWidth={2} fill="none"/>;})}
-            </g>;
-          })).flat()}
-
-          {/* Decorations */}
-          {Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>{
-            const t=tileAt(x,y); if(t==='.'||t==='P'||t==='C')return null;
-            return <FarmTileSVG key={`deco-${x}-${y}`} type={t} x={x} y={y}/>;
-          })).flat()}
-
-          {/* Crop plot lines */}
-          {Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>{
-            if(tileAt(x,y)!=='C')return null;
-            const px=x*TILE+TILE/2, py=y*TILE+TILE/2;
-            return <g key={`plot-${x}-${y}`} opacity={0.5}>
-              {[0,1,2].map(i=><line key={i} x1={px-16} y1={py+i*6-6} x2={px+16} y2={py+i*6-6} stroke="#4a3220" strokeWidth={1}/>)}
-            </g>;
-          })).flat()}
-
-          {/* Plants on crop plots */}
-          {CROP_POSITIONS.map((cp, i) => {
-            const slot = cropMap[`${cp.x},${cp.y}`];
-            if (!slot?.plant) return null;
-            const { progress } = getDisplay(slot);
-            const c = cfg[slot.plant.plantType]; if (!c) return null;
-            const isReady = progress >= 100;
-            const si = isReady ? c.stageCount-1 : Math.min(c.stageCount-1, Math.floor((progress/100)*(c.stageCount-1)));
-            const cx = cp.x*TILE+TILE/2, cy = cp.y*TILE+TILE/2;
-            // PlantArt viewBox 120×140, explicit width/height 120×140
-            // Scale 0.34 → 40.8×47.6px (fits 48px tile)
-            // Soil at viewBox (60,123.5) → screen: 60*0.34+tx=cx, 123.5*0.34+ty=cy+4
-            const s = 0.34, tx = cx - 20, ty = cy - 38;
-            return <g key={`plant-${i}`}>
-              <g transform={`translate(${tx},${ty}) scale(${s})`}>
-                <PlantArt plantId={slot.plant.plantType} stageIdx={si} totalStages={c.stageCount} isReady={isReady} plantConfig={cfg} />
-              </g>
-              {/* progress bar — in tile coords */}
-              {!isReady && <g transform={`translate(${cx-20},${cy+16})`}>
-                <rect x={0} y={0} width={40} height={4} rx={2} fill="#4a3220"/>
-                <rect x={0} y={0} width={Math.max(2,progress*0.4)} height={4} rx={2} fill="#4c8c3a"/>
-              </g>}
-              {isReady && <text x={cx} y={cy-16} textAnchor="middle" fontSize={10} fill="#fff" fontWeight="bold">✅</text>}
-            </g>;
-          })}
-
-          {/* Fence */}
-          <rect x={2} y={2} width={COLS*TILE-4} height={ROWS*TILE-4} fill="none" stroke="#8a5a34" strokeWidth={3} rx={4}/>
-
-          {/* Player */}
-          <g ref={playerGroupRef} transform={`translate(${playerPosRef.current.x - TILE/2},${playerPosRef.current.y - TILE/2})`}>
-            <ellipse cx={TILE/2} cy={TILE-4} rx={12} ry={4} fill="rgba(0,0,0,0.18)"/>
-            <foreignObject x={0} y={-8} width={TILE} height={TILE+8} style={{overflow:'visible'}}>
-              <div ref={playerInnerRef} xmlns="http://www.w3.org/1999/xhtml" style={{width:TILE,height:TILE,transform:playerDirRef.current==='left'?'scaleX(-1)':'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <AvatarPlayer moving={isMoving} userAuth={userAuth}/>
-              </div>
-            </foreignObject>
-          </g>
-        </svg>
-      </div>
-
-      {/* HUD — exact Farmgame.html style */}
+      {/* HUD — bám sát nong-trai-vui.html: pill bên trái, tiền + nước bên phải */}
       <header id="hud">
-        <div className="hud-pill" id="coin-pill">
-          <span className="hud-icon">🌾</span>
-          <span>{userCoins.toLocaleString()}</span>
+        <div className="hud-pill" id="lvl-pill">
+          <span className="hud-icon">🌱</span>
+          <span>{planted}/{slots.length}</span>
+          <span style={{ opacity: 0.7, fontSize: '0.8em' }}>đã trồng</span>
         </div>
-        <div className="hud-title">🌿 Khu vườn</div>
-        <div className="hud-pill" id="energy-pill">
-          <span className="hud-icon">💧</span>
-          <span>{drops}</span>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="hud-pill" id="coin-pill">
+            <span className="hud-icon">🌾</span>
+            <span>{userCoins.toLocaleString()}</span>
+          </div>
+          <div className="hud-pill" id="energy-pill">
+            <span className="hud-icon">💧</span>
+            <span>{drops}</span>
+          </div>
         </div>
       </header>
 
@@ -709,81 +424,53 @@ export default function GardenPage({ userAuth, onBack }) {
         <div className="hint-bubble" style={{ display:'block' }}>{hint}</div>
       </div>
 
-      {/* Action bar — Farmgame.html style + exit button */}
-      <footer id="action-bar">
+      {/* Rail nút bên phải — giống #side / .fab của nong-trai-vui.html */}
+      <div className="g-rail">
         <button className="round-btn" onClick={onBack} title="Thoát">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
-        <button className="round-btn" onClick={()=>setShowInv(true)} title="Kho đồ">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <button className="g-fab" onClick={()=>setShowShop(true)} title="Cửa hàng hạt giống">
+          <span className="ic">🌱</span>
+          <span className="tx">Hạt</span>
         </button>
-        <button className="round-btn" onClick={()=>setShowQuiz(true)} title="Quiz nhận nước">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
+        <button className="g-fab" onClick={()=>setShowInv(true)} title="Kho đồ">
+          <span className="ic">🎒</span>
+          <span className="tx">Kho</span>
+          {hasFert && <span className="dot on" aria-hidden="true" />}
         </button>
-        <button className="round-btn" onClick={()=>setShowShop(true)} title="Cửa hàng">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+        <button className="g-fab" onClick={()=>setShowQuiz(true)} title="Quiz nhận nước">
+          <span className="ic">🧠</span>
+          <span className="tx">Quiz</span>
+          {drops <= 0 && <span className="dot on" aria-hidden="true" />}
         </button>
+      </div>
+
+      {/* Thanh dưới: dải ô đất — dữ liệu cây lấy thẳng từ API (garden.slots) */}
+      <footer className="g-bar">
+        <div className="g-slots">
+          {slots.map((slot) => {
+            const d = getDisplay(slot);
+            const c = slot.plant ? cfg[slot.plant.plantType] : null;
+            const isReady = !!slot.plant && d.progress >= 100;
+            const sel = selSlot?.index === slot.index;
+            return (
+              <button
+                key={slot.index}
+                className={`g-slot${sel ? ' sel' : ''}${!slot.plant ? ' lock' : ''}`}
+                title={c ? `${c.name}${isReady ? ' — sẵn sàng thu hoạch' : ` — ${fmtTime(d.remainingMs)}`}` : 'Ô trống'}
+                onClick={() => { setSelSlot(slot); if (!slot.plant) setShowShop(true); }}
+              >
+                <span className="em">{isReady ? '✅' : (slot.plant ? '🌿' : '🕳')}</span>
+                <span className="lb">{c ? c.name : `Ô ${slot.index + 1}`}</span>
+                {slot.plant && !isReady && (
+                  <span className="meter"><b style={{ width: `${d.progress}%` }} /></span>
+                )}
+              </button>
+            );
+          })}
+          {slots.length === 0 && <p style={{ color: 'var(--paper)', fontWeight: 700, padding: '10px 6px' }}>Đang tải ô đất…</p>}
+        </div>
       </footer>
-
-      {/* Mobile d-pad */}
-      <div className="mobile-dpad">
-        <div className="mobile-dpad-grid">
-          <div/>
-          <button className="mobile-dpad-btn mobile-dpad-up"
-            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:0,y:-1};}}
-            onPointerUp={()=>{dpadDir.current=null;}}
-            onPointerLeave={()=>{dpadDir.current=null;}}
-            onPointerCancel={()=>{dpadDir.current=null;}}>▲</button>
-          <div/>
-          <button className="mobile-dpad-btn mobile-dpad-left"
-            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:-1,y:0};}}
-            onPointerUp={()=>{dpadDir.current=null;}}
-            onPointerLeave={()=>{dpadDir.current=null;}}
-            onPointerCancel={()=>{dpadDir.current=null;}}>◀</button>
-          <button className="mobile-dpad-btn mobile-dpad-center"
-            onPointerDown={(e)=>{e.preventDefault();interact();}}>E</button>
-          <button className="mobile-dpad-btn mobile-dpad-right"
-            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:1,y:0};}}
-            onPointerUp={()=>{dpadDir.current=null;}}
-            onPointerLeave={()=>{dpadDir.current=null;}}
-            onPointerCancel={()=>{dpadDir.current=null;}}>▶</button>
-          <div/>
-          <button className="mobile-dpad-btn mobile-dpad-down"
-            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:0,y:1};}}
-            onPointerUp={()=>{dpadDir.current=null;}}
-            onPointerLeave={()=>{dpadDir.current=null;}}
-            onPointerCancel={()=>{dpadDir.current=null;}}>▼</button>
-          <div/>
-        </div>
-      </div>
-
-      {/* Desktop d-pad */}
-      <div className="desktop-dpad">
-        <div className="desktop-dpad-grid">
-          <div/>
-          <button className="desktop-dpad-btn desktop-dpad-up"
-            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:0,y:-1};}}
-            onPointerUp={()=>{dpadDir.current=null;}}
-            onPointerLeave={()=>{dpadDir.current=null;}}>▲</button>
-          <div/>
-          <button className="desktop-dpad-btn desktop-dpad-left"
-            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:-1,y:0};}}
-            onPointerUp={()=>{dpadDir.current=null;}}
-            onPointerLeave={()=>{dpadDir.current=null;}}>◀</button>
-          <button className="desktop-dpad-btn desktop-dpad-center"
-            onPointerDown={(e)=>{e.preventDefault();interact();}}>E</button>
-          <button className="desktop-dpad-btn desktop-dpad-right"
-            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:1,y:0};}}
-            onPointerUp={()=>{dpadDir.current=null;}}
-            onPointerLeave={()=>{dpadDir.current=null;}}>▶</button>
-          <div/>
-          <button className="desktop-dpad-btn desktop-dpad-down"
-            onPointerDown={(e)=>{e.preventDefault();dpadDir.current={x:0,y:1};}}
-            onPointerUp={()=>{dpadDir.current=null;}}
-            onPointerLeave={()=>{dpadDir.current=null;}}>▼</button>
-          <div/>
-        </div>
-      </div>
 
       {/* Modals */}
       {showShop && <SeedShop userCoins={userCoins} onSelect={doPlant} onClose={()=>{setShowShop(false);setSelSlot(null);}} plantConfig={cfg}/>}

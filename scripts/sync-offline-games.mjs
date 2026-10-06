@@ -67,16 +67,15 @@ for (const file of files) {
   const rawTitle = decodeEntities(html.match(/<title>([\s\S]*?)<\/title>/i)?.[1]?.trim() || titleCase(id));
   const icon = rawTitle.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u)?.[0] || "🎮";
   const name = rawTitle.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "").trim() || titleCase(id);
-  const needsNet = /<script[^>]*\bsrc=["']https?:/i.test(html);
   const grad = GRADS[Math.abs(hash(id)) % GRADS.length];
 
   const line =
     `  { id: '${esc(id)}', name: '${esc(name)}', icon: '${icon}', tag: 'Offline', ` +
-    `grad: '${grad}', engine: 'single',${needsNet ? " needsNet: true," : ""} ` +
+    `grad: '${grad}', engine: 'single' ` +
     `file: 'src/games/offline/${id}.html' },`;
 
-  added.push({ line, id, name, icon, needsNet, grad });
-  rows.push({ id, "tên lấy từ": name, icon, "cần mạng": needsNet ? "có" : "không" });
+  added.push({ line, id, name, icon, grad });
+  rows.push({ id, "tên lấy từ": name, icon });
 }
 
 const missing = [...inManifest].filter((id) => !files.some((f) => f.replace(/\.html$/, "") === id));

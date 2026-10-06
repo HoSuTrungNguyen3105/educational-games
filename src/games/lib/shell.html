@@ -755,6 +755,82 @@
       outline: 4px solid var(--sky);
       outline-offset: 2px
     }
+
+    /* ============================================================
+       CHẾ ĐỘ 1 GAME (body.single)
+       File offline chỉ chơi 1 game, không có sảnh. Thanh `.top`
+       (logo + cấp + XP + âm thanh) là header của SẢNH nên thừa —
+       nó chiếm ~80px và đẩy game xuống, buộc người chơi phải cuộn.
+       Ẩn đi và nới lỏng padding để game nằm sát mép trên, vào là chơi.
+       ============================================================ */
+    body.single .top {
+      display: none
+    }
+
+    body.single #app {
+      padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px))
+    }
+
+    /* Thanh tiêu đề còn lại (nút "Về sảnh" + tên game) gọn lại */
+    body.single .bar {
+      margin-bottom: 8px;
+      gap: 8px;
+      flex-wrap: nowrap
+    }
+
+    body.single .bar h2 {
+      font-size: 20px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    body.single .back {
+      padding: 6px 11px;
+      font-size: 14px;
+      white-space: nowrap;
+      flex: none
+    }
+
+    /* Bỏ khoảng trắng cuối trang: #app có padding-bottom 60px dư thừa */
+    body.single .badges,
+    body.single .hint {
+      margin-top: 8px
+    }
+
+    /* Màn hình thấp (mobile ngang / desktop nhỏ): bỏ bớt khoảng đệm dọc
+       để phần lớn game vừa 1 màn hình, không phải cuộn xuống. */
+    @media (max-height: 720px) {
+      body.single .qbox {
+        min-height: 64px;
+        margin-bottom: 10px;
+        padding: 14px 12px;
+        font-size: clamp(26px, 7vw, 42px)
+      }
+
+      body.single .opt {
+        padding: 11px 8px;
+        font-size: clamp(19px, 4.4vw, 26px)
+      }
+
+      body.single .opts {
+        gap: 9px
+      }
+
+      body.single .explain {
+        margin-top: 9px;
+        padding: 9px 11px
+      }
+
+      body.single .row {
+        margin-top: 9px
+      }
+
+      body.single .dpad {
+        margin-top: 9px;
+        grid-template-rows: repeat(2, 48px)
+      }
+    }
   </style>
 </head>
 

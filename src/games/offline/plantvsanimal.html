@@ -604,6 +604,31 @@ function buildMenu() {
 
 /* ================= Trạng thái trận đấu ================= */
 const cv = $('c'), ctx = cv.getContext('2d'), bg = document.createElement('canvas');
+
+/*
+ * Sprite vụ nổ — dựng SẴN MỘT LẦN rồi tái sử dụng.
+ *
+ * Cách cũ: mỗi vụ nổ, mỗi khung hình lại gọi ctx.createRadialGradient() +
+ * 3 addColorStop() rồi fill với globalCompositeOperation='lighter'. Tấn công
+ * diện rộng (Anh Đào Nổ, Ớt Lửa) bung ra nhiều vụ nổ cùng lúc, mỗi cái lại
+ * tạo gradient mới + bắt GPU chuyển sang phép cộng → tụt khung hình rõ rệt.
+ *
+ * Cách mới: vẽ sẵn một vòng gradient lên canvas phụ, mỗi khung chỉ drawImage()
+ * theo kích thước cần. Không còn tạo gradient lúc chơi, không còn phép cộng.
+ */
+const BOOM_SPRITE = (() => {
+  const S = 160, c2 = document.createElement('canvas');
+  c2.width = c2.height = S;
+  const g2 = c2.getContext('2d');
+  const gr = g2.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  gr.addColorStop(0, 'rgba(255,240,180,1)');
+  gr.addColorStop(.5, 'rgba(255,140,50,.8)');
+  gr.addColorStop(1, 'rgba(255,60,20,0)');
+  g2.fillStyle = gr;
+  g2.fillRect(0, 0, S, S);
+  return c2;
+})();
+
 let W = 0, H = 0, DPR = 1, cw = 60, ch = 60, ox = 60, oy = 60, safeL = 0, safeR = 0, ROWS = 5;
 let G = null, ptr = { x: 0, y: 0, down: false, type: 'touch' }, drag = null, T = 0;
 let saveAcc = 0;
@@ -1066,19 +1091,65 @@ function drawSun(s) {
   ctx.restore();
 }
 function drawFx() {
-  G.fx.forEach(f => {
-    if (f.k === 'p') { ctx.globalAlpha = clamp(f.life / f.max, 0, 1); ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * clamp(f.life / f.max, .2, 1), 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; }
-    else if (f.k === 't') { ctx.globalAlpha = clamp(f.life * 1.5, 0, 1); ctx.font = '800 20px "Baloo 2",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,20,5,.85)'; ctx.strokeText(f.t, f.x, f.y); ctx.fillStyle = f.c; ctx.fillText(f.t, f.x, f.y); ctx.globalAlpha = 1; }
-    else if (f.k === 'b') {
-      const k = 1 - f.life / f.max, r = f.rad * (.35 + k * .9); ctx.globalCompositeOperation = 'lighter';
-      const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r); g.addColorStop(0, `rgba(255,240,180,${1 - k})`); g.addColorStop(.5, `rgba(255,140,50,${(1 - k) * .8})`); g.addColorStop(1, 'rgba(255,60,20,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, 6.283); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+  /*
+   * Gộp hạt theo màu: gom tất cả hạt 'p' vào MỘT đường dạt cho mỗi màu rồi
+   * fill một lần. Cách cũ vẽ từng hạt (beginPath + arc + fill) nên 1 quả bom
+   * 22 hạt = 22 lần gọi vẽ; vài vụ nổ cùng lúc là hàng trăm lệnh mỗi khung.
+   */
+  const buckets = fxBuckets;
+  buckets.clear();
+  for (let i = 0; i < G.fx.length; i++) {
+    const f = G.fx[i];
+    if (f.k !== 'p') continue;
+    let b = buckets.get(f.c);
+    if (!b) { b = []; buckets.set(f.c, b); }
+    b.push(f);
+  }
+  for (const [col, list] of buckets) {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const f = list[i];
+      const a = clamp(f.life / f.max, .2, 1);
+      ctx.moveTo(f.x + f.r * a, f.y);
+      ctx.arc(f.x, f.y, f.r * a, 0, 6.283);
+    }
+    ctx.fill();
+  }
+
+  for (let i = 0; i < G.fx.length; i++) {
+    const f = G.fx[i];
+    if (f.k === 'p') continue;                     // đã vẽ ở trên
+    if (f.k === 't') {
+      ctx.font = '800 20px "Baloo 2",sans-serif';  // đặt 1 lần, không lặp mỗi hạt
+      ctx.textAlign = 'center'; ctx.lineWidth = 5;
+      ctx.strokeStyle = 'rgba(40,20,5,.85)';
+      ctx.globalAlpha = clamp(f.life * 1.5, 0, 1);
+      ctx.strokeText(f.t, f.x, f.y);
+      ctx.fillStyle = f.c; ctx.fillText(f.t, f.x, f.y);
+      ctx.globalAlpha = 1;
+    } else if (f.k === 'b') {
+      // Vẽ bằng sprite dựng sẵn — không tạo gradient, không dùng phép cộng
+      const k = 1 - f.life / f.max, r = f.rad * (.35 + k * .9);
+      ctx.globalAlpha = clamp(1 - k, 0, 1);
+      ctx.drawImage(BOOM_SPRITE, f.x - r, f.y - r, r * 2, r * 2);
+      ctx.globalAlpha = 1;
     } else if (f.k === 'l') {
       const k = 1 - f.life / f.max, y = py(f.row + .5), front = COLS * clamp(k * 1.6, 0, 1);
-      for (let c = 0; c <= front; c += .55) emoji('🔥', px(c), y - Math.abs(Math.sin(T * 14 + c * 3)) * 6, ch * (.9 + .15 * Math.sin(T * 20 + c)), { alpha: clamp(f.life / f.max * 1.5, 0, 1) });
-    } else if (f.k === 'r') { const k = 1 - f.life / f.max; ctx.globalAlpha = 1 - k; ctx.strokeStyle = f.c; ctx.lineWidth = 1 + 4 * (1 - k); ctx.beginPath(); ctx.ellipse(f.x, f.y, f.rad * (.3 + k), f.rad * (.3 + k) * .45, 0, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1;
-    } else if (f.k === 'c') { ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.r); ctx.globalAlpha = clamp(f.life, 0, 1); ctx.fillStyle = f.c; ctx.fillRect(-f.s / 2, -f.s / 4, f.s, f.s / 2); ctx.restore(); }
-  });
+      // Bỏ bớt ô lửa: .55 → .9 là giảm ~40% số lệnh vẽ mà hiệu ứng gần như y như cũ
+      for (let c = 0; c <= front; c += .9) emoji('🔥', px(c), y - Math.abs(Math.sin(T * 14 + c * 3)) * 6, ch * (.9 + .15 * Math.sin(T * 20 + c)), { alpha: clamp(f.life / f.max * 1.5, 0, 1) });
+    } else if (f.k === 'r') {
+      const k = 1 - f.life / f.max;
+      ctx.globalAlpha = 1 - k; ctx.strokeStyle = f.c; ctx.lineWidth = 1 + 4 * (1 - k);
+      ctx.beginPath(); ctx.ellipse(f.x, f.y, f.rad * (.3 + k), f.rad * (.3 + k) * .45, 0, 0, 6.283); ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (f.k === 'c') {
+      ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.r);
+      ctx.globalAlpha = clamp(f.life, 0, 1); ctx.fillStyle = f.c;
+      ctx.fillRect(-f.s / 2, -f.s / 4, f.s, f.s / 2);
+      ctx.restore();
+    }
+  }
 }
 function render() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); if (!G) return;
@@ -1227,6 +1298,56 @@ function loop(now) {
 buildMenu(); syncSoundBtns(); layout(); checkOrient();
 requestAnimationFrame(loop);
 })();
+</script>
+
+<!-- Nút "Về trang chủ" — thêm bởi scripts/add-offline-back-button.mjs -->
+<style>
+  #homeBackBtn {
+    position: fixed;
+    z-index: 2147483000;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    left: calc(env(safe-area-inset-left, 0px) + 10px);
+    width: 42px; height: 42px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 20px; font-weight: 800; line-height: 1;
+    color: #5b3b22;
+    background: #fff7dc;
+    border: 3px solid #5b3b22;
+    box-shadow: 0 4px 0 #5b3b22, 0 8px 14px rgba(0, 0, 0, .22);
+    transition: transform .12s, box-shadow .12s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+  }
+  #homeBackBtn:hover { filter: brightness(1.06); }
+  #homeBackBtn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #5b3b22, 0 3px 6px rgba(0, 0, 0, .22);
+  }
+  #homeBackBtn:focus-visible { outline: 3px solid #2f9bff; outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
+</style>
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">
+  <span aria-hidden="true">&#8592;</span>
+</button>
+<script>
+  // Nút dùng chung cho mọi game offline: báo ngược lên React (OfflineGamePage)
+  // để quay về trang chủ. Mở file .html trực tiếp thì tự điều hướng.
+  (function () {
+    var btn = document.getElementById("homeBackBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: "quit", data: {} }, "*");
+          return;
+        }
+      } catch (e) { /* rơi xuống cách tự điều hướng */ }
+      try { window.location.href = "/"; } catch (e) { /* ignore */ }
+    });
+  })();
 </script>
 </body>
 </html>
