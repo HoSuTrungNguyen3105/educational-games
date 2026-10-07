@@ -1,0 +1,57 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><title>Ghép Cặp Vườn</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet"><style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:"Baloo 2",system-ui,sans-serif;color:#fff;touch-action:none;background:linear-gradient(#ffb56b,#f88f5a 18%,#6cb857 55%,#2e6b2f)}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#hud{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 60px;background:linear-gradient(#7a4c2a,#3a2414);border-bottom:4px solid #e0b25f;box-shadow:0 5px 14px rgba(0,0,0,.5)}
+#hud h1{font-size:18px;font-weight:800;flex:1;text-shadow:0 2px 0 #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{background:#1f1108;border:2px solid #c9964f;border-radius:14px;padding:2px 12px;font-weight:800;font-size:16px;color:#ffe066;min-width:72px;text-align:center;white-space:nowrap}
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px}
+.btn{border:2px solid rgba(255,255,255,.3);font-family:inherit;font-weight:800;font-size:18px;color:#fff;padding:9px 24px;border-radius:99px;background:linear-gradient(#8fdc63,#4aa33a);box-shadow:0 5px 0 #2d6b23,0 9px 14px rgba(0,0,0,.3);cursor:pointer}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #2d6b23}
+#over{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(20,10,0,.62);backdrop-filter:blur(3px);padding:12px}
+#over.h{display:none}
+.panel{background:linear-gradient(#fffbe6,#efd49a);color:#3b2412;border:5px solid #b07a3c;border-radius:28px;padding:18px 30px;text-align:center;max-width:420px;box-shadow:0 0 0 4px #3a2414,0 18px 50px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+.panel h2{font-size:32px;line-height:1}.panel p{font-size:16px;font-weight:600;margin:8px 0 14px}
+#homeBackBtn{position:fixed;z-index:30;top:calc(env(safe-area-inset-top,0px) + 8px);left:calc(env(safe-area-inset-left,0px) + 8px);width:42px;height:42px;border-radius:14px;display:grid;place-items:center;cursor:pointer;font-family:inherit;font-size:20px;font-weight:800;color:#5b3b22;background:#fff7dc;border:3px solid #5b3b22;box-shadow:0 4px 0 #5b3b22}
+#homeBackBtn:active{transform:translateY(3px);box-shadow:0 1px 0 #5b3b22}
+#grid{display:grid;grid-template-columns:repeat(4,var(--s));gap:min(1.8vh,10px);--s:min(19vw,23vh)}
+.card{width:var(--s);height:var(--s);perspective:600px;cursor:pointer}
+.in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .4s}
+.card.on .in{transform:rotateY(180deg)}.card.ok .in{animation:ok .5s .35s}
+@keyframes ok{50%{transform:rotateY(180deg) scale(1.12)}}
+.f{position:absolute;inset:0;border-radius:16px;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:3px solid #e0b25f;box-shadow:0 4px 0 #2a170a}
+.b{background:repeating-linear-gradient(45deg,#7a5230 0 8px,#6b4526 8px 16px);display:grid;place-items:center;font-size:32px;font-weight:800;color:#e0b25f}
+.fr{transform:rotateY(180deg);background:linear-gradient(#fffdf0,#f1dba0);padding:12%}.card.ok .fr{background:linear-gradient(#e6ffc8,#b6e88a);border-color:#4aa33a}
+.f svg{width:100%;height:100%}</style></head><body>
+<div id="hud"><h1>Ghép Cặp Vườn</h1><div class="st">Lượt <b id="mv">0</b></div><div class="st">⏱ <b id="tm">0</b></div><div class="st">Kỷ lục <b id="hi">0</b></div></div><div id="stage"><div id="grid"></div></div>
+<div id="over"><div class="panel"><h2 id="oT"></h2><p id="oP"></p><button class="btn" id="oB"></button></div></div>
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ">&#8592;</button>
+<script>
+const $=id=>document.getElementById(id);let hi=0;const HK='vuon-thu-ho-memory-hi';
+try{hi=+localStorage.getItem(HK)||0}catch(e){}
+function saveHi(v){if(v>hi){hi=v;try{localStorage.setItem(HK,v)}catch(e){}return true}return false}
+function over(t,p,b){$('oT').textContent=t;$('oP').textContent=p;$('oB').textContent=b||'↺ Chơi lại';$('over').classList.remove('h')}
+$('oB').onclick=()=>{$('over').classList.add('h');start()};
+$('homeBackBtn').onclick=()=>{try{if(parent!==window){parent.postMessage({type:"quit",data:{}},"*");return}}catch(e){}location.href="/"};
+const SV=b=>`<svg viewBox="0 0 100 100">${b}</svg>`;
+const sun=SV([...Array(8)].map((_,i)=>{const a=i*Math.PI/4;return `<circle cx="${50+28*Math.cos(a)}" cy="${50+28*Math.sin(a)}" r="14" fill="#ffd23a" stroke="#b8781a" stroke-width="3"/>`}).join('')+'<circle cx="50" cy="50" r="19" fill="#6b4526" stroke="#3a2414" stroke-width="3"/>');
+const IC=[sun,
+SV('<path d="M34 64Q40 30 62 16M66 66Q64 36 62 16" stroke="#3f8a37" stroke-width="5" fill="none"/><circle cx="34" cy="70" r="16" fill="#e0483d" stroke="#7a1d12" stroke-width="3"/><circle cx="68" cy="72" r="16" fill="#e0483d" stroke="#7a1d12" stroke-width="3"/><path d="M62 16q16-6 24 6-14 4-24-6z" fill="#4fb43a" stroke="#1f4d1a" stroke-width="2"/>'),
+SV('<circle cx="50" cy="52" r="36" fill="#8a5a2c" stroke="#3a2414" stroke-width="4"/><circle cx="40" cy="42" r="5" fill="#2a170a"/><circle cx="60" cy="42" r="5" fill="#2a170a"/><circle cx="50" cy="58" r="5" fill="#2a170a"/>'),
+SV('<circle cx="50" cy="54" r="34" fill="#3f4fb0" stroke="#1a2260" stroke-width="4"/><path d="M38 28l12 8 12-8-5 14H43z" fill="#2a3480" stroke="#1a2260" stroke-width="2"/><ellipse cx="38" cy="52" rx="7" ry="10" fill="#fff" opacity=".25"/>'),
+SV('<ellipse cx="50" cy="54" rx="38" ry="28" fill="#c9964f" stroke="#6b4526" stroke-width="4"/><circle cx="36" cy="48" r="3" fill="#6b4526"/><circle cx="58" cy="62" r="3" fill="#6b4526"/><circle cx="64" cy="44" r="3" fill="#6b4526"/>'),
+SV('<g fill="#5fb84a" stroke="#1f4d1a" stroke-width="4"><rect x="36" y="16" width="28" height="72" rx="14"/><rect x="14" y="36" width="14" height="30" rx="7"/><rect x="72" y="28" width="14" height="30" rx="7"/></g><path d="M28 58h10M62 50h10" stroke="#1f4d1a" stroke-width="4"/>'),
+SV('<path d="M30 30q50-10 46 30t-30 24q30-16 14-40q-10-8-30-14z" fill="#e0483d" stroke="#7a1d12" stroke-width="3"/><path d="M30 30l-10-10" stroke="#3f8a37" stroke-width="7" stroke-linecap="round"/>'),
+SV('<rect x="42" y="56" width="16" height="34" rx="6" fill="#9bd44a" stroke="#1f4d1a" stroke-width="3"/><g fill="#2f8a3a" stroke="#1f4d1a" stroke-width="3"><circle cx="30" cy="46" r="18"/><circle cx="50" cy="32" r="20"/><circle cx="70" cy="46" r="18"/><circle cx="50" cy="52" r="16"/></g>')];
+let a,b,lock,moves,found,secs,tid,t0;const gr=$('grid');
+function upd(){$('mv').textContent=moves||0;$('tm').textContent=secs||0;$('hi').textContent=hi}
+function start(){const d=[...IC.keys(),...IC.keys()].sort(()=>Math.random()-.5);gr.innerHTML='';a=b=null;lock=0;moves=0;found=0;secs=0;t0=0;clearInterval(tid);
+d.forEach(k=>{const c=document.createElement('div');c.className='card';c.innerHTML=`<div class="in"><div class="f b">?</div><div class="f fr">${IC[k]}</div></div>`;c.k=k;c.onpointerdown=()=>flip(c);gr.appendChild(c)});upd()}
+function flip(c){if(lock||c.classList.contains('on'))return;if(!t0){t0=1;tid=setInterval(()=>{secs++;upd()},1000)}
+c.classList.add('on');if(!a){a=c;return}b=c;moves++;upd();
+if(a.k===b.k){a.classList.add('ok');b.classList.add('ok');a=b=null;if(++found===8){clearInterval(tid);const s=Math.max(100,1000-moves*25-secs*5),nw=saveHi(s);upd();setTimeout(()=>over('Hoàn thành! 🎉',`${moves} lượt · ${secs} giây · ${s} điểm${nw?' · Kỷ lục mới! 🏆':''}`),700)}}
+else{lock=1;setTimeout(()=>{a.classList.remove('on');b.classList.remove('on');a=b=null;lock=0},750)}}
+upd();over('Ghép Cặp Vườn','Lật các thẻ để tìm 8 cặp cây giống nhau. Càng ít lượt và càng nhanh, điểm càng cao!','▶ Bắt đầu');
+</script></body></html>

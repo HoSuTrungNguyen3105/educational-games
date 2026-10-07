@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><title>Sâu Ăn Táo</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet"><style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:"Baloo 2",system-ui,sans-serif;color:#fff;touch-action:none;background:linear-gradient(#ffb56b,#f88f5a 18%,#6cb857 55%,#2e6b2f)}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#hud{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 60px;background:linear-gradient(#7a4c2a,#3a2414);border-bottom:4px solid #e0b25f;box-shadow:0 5px 14px rgba(0,0,0,.5)}
+#hud h1{font-size:18px;font-weight:800;flex:1;text-shadow:0 2px 0 #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{background:#1f1108;border:2px solid #c9964f;border-radius:14px;padding:2px 12px;font-weight:800;font-size:16px;color:#ffe066;min-width:72px;text-align:center;white-space:nowrap}
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px}
+.btn{border:2px solid rgba(255,255,255,.3);font-family:inherit;font-weight:800;font-size:18px;color:#fff;padding:9px 24px;border-radius:99px;background:linear-gradient(#8fdc63,#4aa33a);box-shadow:0 5px 0 #2d6b23,0 9px 14px rgba(0,0,0,.3);cursor:pointer}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #2d6b23}
+#over{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(20,10,0,.62);backdrop-filter:blur(3px);padding:12px}
+#over.h{display:none}
+.panel{background:linear-gradient(#fffbe6,#efd49a);color:#3b2412;border:5px solid #b07a3c;border-radius:28px;padding:18px 30px;text-align:center;max-width:420px;box-shadow:0 0 0 4px #3a2414,0 18px 50px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+.panel h2{font-size:32px;line-height:1}.panel p{font-size:16px;font-weight:600;margin:8px 0 14px}
+#homeBackBtn{position:fixed;z-index:30;top:calc(env(safe-area-inset-top,0px) + 8px);left:calc(env(safe-area-inset-left,0px) + 8px);width:42px;height:42px;border-radius:14px;display:grid;place-items:center;cursor:pointer;font-family:inherit;font-size:20px;font-weight:800;color:#5b3b22;background:#fff7dc;border:3px solid #5b3b22;box-shadow:0 4px 0 #5b3b22}
+#homeBackBtn:active{transform:translateY(3px);box-shadow:0 1px 0 #5b3b22}
+canvas{border:4px solid #3a2414;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.45)}</style></head><body>
+<div id="hud"><h1>Sâu Ăn Táo</h1><div class="st">Điểm <b id="sc">0</b></div><div class="st">Kỷ lục <b id="hi">0</b></div></div><div id="stage"></div>
+<div id="over"><div class="panel"><h2 id="oT"></h2><p id="oP"></p><button class="btn" id="oB"></button></div></div>
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ">&#8592;</button>
+<script>
+const $=id=>document.getElementById(id);let hi=0;const HK='vuon-thu-ho-snake-hi';
+try{hi=+localStorage.getItem(HK)||0}catch(e){}
+function saveHi(v){if(v>hi){hi=v;try{localStorage.setItem(HK,v)}catch(e){}return true}return false}
+function over(t,p,b){$('oT').textContent=t;$('oP').textContent=p;$('oB').textContent=b||'↺ Chơi lại';$('over').classList.remove('h')}
+$('oB').onclick=()=>{$('over').classList.add('h');start()};
+$('homeBackBtn').onclick=()=>{try{if(parent!==window){parent.postMessage({type:"quit",data:{}},"*");return}}catch(e){}location.href="/"};
+const SV=b=>`<svg viewBox="0 0 100 100">${b}</svg>`;
+const C=18,R=12,cv=document.createElement('canvas'),g=cv.getContext('2d');$('stage').appendChild(cv);
+let cs,sn,dir,nd,food,score,alive=false,tid;
+function fit(){const s=$('stage');cs=Math.max(12,Math.floor(Math.min((s.clientWidth-24)/C,(s.clientHeight-24)/R)));cv.width=C*cs;cv.height=R*cs;if(sn)draw()}
+function upd(){$('sc').textContent=score||0;$('hi').textContent=hi}
+function spawn(){do{food={x:Math.random()*C|0,y:Math.random()*R|0}}while(sn.some(p=>p.x===food.x&&p.y===food.y))}
+function start(){sn=[{x:5,y:6},{x:4,y:6},{x:3,y:6}];dir=nd={x:1,y:0};score=0;alive=true;spawn();upd();draw();clearTimeout(tid);loop()}
+function loop(){step();if(alive)tid=setTimeout(loop,Math.max(70,150-Math.floor(score/4)*8))}
+function step(){dir=nd;const h={x:sn[0].x+dir.x,y:sn[0].y+dir.y};
+if(h.x<0||h.y<0||h.x>=C||h.y>=R||sn.some(p=>p.x===h.x&&p.y===h.y)){alive=false;const nw=saveHi(score);upd();draw();over('Sâu bị vấp! 😵',`Điểm: ${score}${nw?' · Kỷ lục mới! 🏆':''} (cao nhất ${hi})`);return}
+sn.unshift(h);if(h.x===food.x&&h.y===food.y){score++;spawn();upd()}else sn.pop();draw()}
+function draw(){for(let y=0;y<R;y++)for(let x=0;x<C;x++){g.fillStyle=(x+y)%2?'#63b24f':'#74c25c';g.fillRect(x*cs,y*cs,cs,cs)}
+const fx=(food.x+.5)*cs,fy=(food.y+.55)*cs,r=cs*.36;g.fillStyle='#e0483d';g.strokeStyle='#7a1d12';g.lineWidth=2;g.beginPath();g.arc(fx-r*.3,fy,r*.75,0,6.283);g.arc(fx+r*.3,fy,r*.75,0,6.283);g.fill();g.stroke();
+g.strokeStyle='#5b3b22';g.lineWidth=3;g.beginPath();g.moveTo(fx,fy-r*.5);g.lineTo(fx+r*.2,fy-r*1.2);g.stroke();g.fillStyle='#4fb43a';g.beginPath();g.ellipse(fx+r*.7,fy-r*1,r*.5,r*.25,-.5,0,6.283);g.fill();
+for(let i=sn.length-1;i>=0;i--){const p=sn[i],x=(p.x+.5)*cs,y=(p.y+.5)*cs,hd=i===0,rr=cs*(hd?.5:.44-Math.min(i,10)*.008);
+g.fillStyle=hd?'#b4e45a':i%2?'#7fbf34':'#92d142';g.strokeStyle='#2b3a14';g.lineWidth=2.5;g.beginPath();g.arc(x,y,rr,0,6.283);g.fill();g.stroke();
+if(hd){const px=-dir.y*cs*.2,py=dir.x*cs*.2,ex=dir.x*cs*.12,ey=dir.y*cs*.12;[1,-1].forEach(s=>{g.fillStyle='#fff';g.beginPath();g.arc(x+ex+px*s,y+ey+py*s,cs*.15,0,6.283);g.fill();g.stroke();g.fillStyle='#222';g.beginPath();g.arc(x+ex*2+px*s,y+ey*2+py*s,cs*.07,0,6.283);g.fill()})}}}
+function turn(dx,dy){if(!alive||(dx===-dir.x&&dy===-dir.y)||(dx&&dir.x)||(dy&&dir.y))return;nd={x:dx,y:dy}}
+addEventListener('keydown',e=>{const m={ArrowUp:[0,-1],w:[0,-1],ArrowDown:[0,1],s:[0,1],ArrowLeft:[-1,0],a:[-1,0],ArrowRight:[1,0],d:[1,0]}[e.key];if(m){e.preventDefault();turn(...m)}});
+let sx,sy,dn=0;document.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;dn=1});addEventListener('pointerup',()=>dn=0);
+document.addEventListener('pointermove',e=>{if(!dn)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.hypot(dx,dy)<22)return;sx=e.clientX;sy=e.clientY;Math.abs(dx)>Math.abs(dy)?turn(dx>0?1:-1,0):turn(0,dy>0?1:-1)});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(tid);else if(alive){clearTimeout(tid);loop()}});
+addEventListener('resize',fit);fit();sn=[{x:5,y:6},{x:4,y:6},{x:3,y:6}];dir={x:1,y:0};food={x:12,y:6};upd();draw();
+over('Sâu Ăn Táo','Vuốt hoặc dùng phím mũi tên để điều khiển. Ăn táo để dài ra, đừng đâm tường hay chính mình!','▶ Bắt đầu');
+</script></body></html>

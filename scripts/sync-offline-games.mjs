@@ -71,7 +71,7 @@ for (const file of files) {
 
   const line =
     `  { id: '${esc(id)}', name: '${esc(name)}', icon: '${icon}', tag: 'Offline', ` +
-    `grad: '${grad}', engine: 'single' ` +
+    `grad: '${grad}', engine: 'single', ` +
     `file: 'src/games/offline/${id}.html' },`;
 
   added.push({ line, id, name, icon, grad });

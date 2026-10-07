@@ -147,6 +147,7 @@
   #banner{font-size:clamp(30px,7vw,54px);letter-spacing:1px}
   #banner.warn{color:#ffd0c8;text-shadow:0 3px 0 #5a0f0f,0 0 28px rgba(255,40,40,.9),0 6px 14px rgba(0,0,0,.7)}
   #toast,#hint{border-radius:16px;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+  .packet .pe img{width:32px;height:32px;margin-top:1px;filter:drop-shadow(0 2px 1px rgba(0,0,0,.35))}
 </style>
 </head>
 <body>
@@ -243,13 +244,16 @@
     "gatling":    {"name":"Súp Lơ Bắn Liên Hồi", "kind":"shooter", "cost": 250, "hp": 80, "cooldown": 7,  "damage": 20, "every": 1.2, "shots": 4},
     "threepeater":{"name":"Tam Thủ Súng", "kind":"shooter", "cost": 300, "hp": 80, "cooldown": 8,  "damage": 20, "every": 1.6, "shots": 1, "lanes": 3},
     "chili":     {"name": "Ớt Lửa",         "kind": "lane",     "cost": 125, "hp": 50, "cooldown": 25, "damage": 400, "fuse": 0.8},
-    "garlic":    {"name": "Tỏi Xua Quỷ",    "kind": "wall",     "cost": 75,  "hp": 1000, "cooldown": 16}
+    "garlic":    {"name": "Tỏi Xua Quỷ",    "kind": "wall",     "cost": 75,  "hp": 1000, "cooldown": 16},
+    "peashooter": {"name": "Đậu Hà Lan",    "kind": "shooter", "cost": 100, "hp": 100, "cooldown": 5,  "damage": 20,  "every": 1.5, "shots": 1, "bullet": "pea"},
+    "firepea":    {"name": "Đậu Lửa",       "kind": "shooter", "cost": 225, "hp": 80,  "cooldown": 8,  "damage": 40,  "every": 1.5, "shots": 1, "bullet": "fire"},
+    "sniper":     {"name": "Đậu Bắn Tỉa",   "kind": "shooter", "cost": 250, "hp": 80,  "cooldown": 10, "damage": 160, "every": 4,   "shots": 1, "bullet": "snipe", "bspeed": 18, "pierce": 2}
   },
 
   "levels": [
     {
       "name": "Vườn Trước Nhà", "theme": "day", "rows": 5, "startSun": 150,
-      "plants": ["sunflower", "shooter"],
+      "plants": ["sunflower", "shooter", "peashooter"],
       "skySun": {"first": 6, "every": 9, "amount": 25},
       "timeline": [
         {"t": 20, "monster": "worm", "row": "random"},
@@ -297,7 +301,7 @@
     },
     {
       "name": "Đêm Sương Mù", "theme": "night", "rows": 5, "startSun": 250,
-      "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili"],
+      "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili", "peashooter", "sniper"],
       "skySun": {"first": 0, "every": 0, "amount": 25},
       "timeline": [
         {"t": 20, "monster": "worm", "row": "random", "count": 2, "gap": 3},
@@ -317,7 +321,7 @@
     },
     {
       "name": "Bọ Cạp Chúa", "theme": "dusk", "rows": 5, "startSun": 300,
-      "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili"],
+      "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili", "peashooter", "sniper"],
       "skySun": {"first": 8, "every": 10, "amount": 25},
       "timeline": [
         {"t": 15, "monster": "worm", "row": "random", "count": 3, "gap": 3},
@@ -336,7 +340,7 @@
     },
     {
       "name": "Nghĩa Địa Zombie", "theme": "grave", "rows": 5, "startSun": 250,
-      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater"],
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 10, "every": 12, "amount": 25},
       "timeline": [
         {"t": 15, "monster": "zombie", "row": "random"},
@@ -356,7 +360,7 @@
     },
     {
       "name": "Lâu Đài Ma Cà Rồng", "theme": "castle", "rows": 5, "startSun": 300,
-      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater"],
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 12, "every": 14, "amount": 25},
       "timeline": [
         {"t": 15, "monster": "bat", "row": "random", "count": 3, "gap": 2},
@@ -376,7 +380,7 @@
     },
     {
       "name": "Bá Tước Ma Cà Rồng", "theme": "castle", "rows": 5, "startSun": 350,
-      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater"],
+      "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 10, "every": 12, "amount": 25},
       "timeline": [
         {"t": 15, "monster": "zombie", "row": "random", "count": 3, "gap": 3},
@@ -419,7 +423,7 @@ const DEF = JSON.parse($('cfgDefault').textContent);
 /* Icon nằm ở đây, KHÔNG nằm trong JSON config — config chỉ gửi id + số liệu.
    Thêm quái/cây mới: thêm id vào config, icon tự lấy theo id (thêm id mới thì thêm ở bảng dưới). */
 const MON_ICON = { worm: '🐛', beetle: '🪲', locust: '🦗', rat: '🐀', snail: '🐌', boss: '🦂', zombie: '🧟', zombieCone: '🧟', bat: '🦇', vampire: '🧛', vampLord: '🧛' };
-const PLANT_ICON = { sunflower: '🌻', shooter: '🥦', wall: '🥥', bomb: '🍒', ice: '🫐', mine: '🥔', repeater: '🌵', chili: '🌶️', garlic: '🧄', gatling: '🫒', threepeater: '🪻' };
+const PLANT_ICON = { sunflower: '🌻', shooter: '🥦', wall: '🥥', bomb: '🍒', ice: '🫐', mine: '🥔', repeater: '🌵', chili: '🌶️', garlic: '🧄', gatling: '🫒', threepeater: '🪻', peashooter: '🫛', firepea: '🔥', sniper: '🎯' };
 const M_BASE = { icon: '👾', name: 'Quái', hp: 100, speed: .2, dps: 20, size: 1 };
 const P_BASE = { icon: '🌱', name: 'Cây', kind: 'wall', cost: 50, hp: 80, cooldown: 5 };
 const KIND_DEF = {
@@ -778,6 +782,28 @@ const SVG_SPRITES = {
   vampire: svgWrap(`<ellipse cx="50" cy="94" rx="26" ry="4" fill="#000" opacity=".22"/><path d="M34 44L14 92h66L66 44z" fill="#1c1428" stroke="${OUTLINE}" stroke-width="3"/><path d="M44 50l6 30 6-30z" fill="#e8dfe8"/><path d="M36 46l14 8-4-14zM64 46L50 54l4-14z" fill="#b0123a" stroke="${OUTLINE}" stroke-width="2"/><circle cx="48" cy="30" r="17" fill="#ece3f0" stroke="${OUTLINE}" stroke-width="3"/><path d="M31 28q2-18 18-17 14 0 16 14-8-8-18-8-8 0-16 11z" fill="#14101c" stroke="${OUTLINE}" stroke-width="2.5"/><ellipse cx="41" cy="30" rx="4.5" ry="5.5" fill="white"/><circle cx="40" cy="31" r="2.6" fill="#d40f2e"/><ellipse cx="55" cy="29" rx="4" ry="5" fill="white"/><circle cx="54" cy="30" r="2.4" fill="#d40f2e"/><path d="M37 40q8 5 16 0M40 40l2 6 2-5M49 41l2 6 2-6" stroke="${OUTLINE}" stroke-width="2.5" fill="#fff"/>`),
   vampLord: svgWrap(`<path d="M32 16l4-10 7 7 6-10 6 10 7-7 3 10z" fill="#f5c542" stroke="${OUTLINE}" stroke-width="2.5"/><circle cx="49" cy="10" r="2.5" fill="#d40f2e"/><g transform="translate(0,3)"><path d="M34 44L14 92h66L66 44z" fill="#7a0f2a" stroke="${OUTLINE}" stroke-width="3"/><path d="M44 50l6 30 6-30z" fill="#e8dfe8"/><path d="M36 46l14 8-4-14zM64 46L50 54l4-14z" fill="#b0123a" stroke="${OUTLINE}" stroke-width="2"/><circle cx="48" cy="30" r="17" fill="#ece3f0" stroke="${OUTLINE}" stroke-width="3"/><path d="M31 28q2-18 18-17 14 0 16 14-8-8-18-8-8 0-16 11z" fill="#14101c" stroke="${OUTLINE}" stroke-width="2.5"/><circle cx="41" cy="30" r="4" fill="#d40f2e"/><circle cx="55" cy="29" r="4" fill="#d40f2e"/></g>`)
 };
+/* ===== Cây bắn đạn: SVG (quay mặt phải) + sprite đạn dựng sẵn ===== */
+const peaSvg = (head, extra = '', bl = 30) => svgWrap(`<ellipse cx="44" cy="94" rx="24" ry="4" fill="#000" opacity=".2"/>
+<path d="M40 92V62" stroke="#2f7a2a" stroke-width="8" stroke-linecap="round"/>
+<path d="M40 84q-24-2-30-22 18-2 30 22zM40 80q20 0 28-18-18-4-28 18z" fill="#4fb43a" stroke="#1f4d1a" stroke-width="3" stroke-linejoin="round"/>
+<rect x="56" y="33" width="${bl}" height="18" rx="9" fill="${head}" stroke="#1f4d1a" stroke-width="3"/>
+<ellipse cx="${56 + bl - 3}" cy="42" rx="4" ry="7" fill="#1f3d18" stroke="#1f4d1a" stroke-width="2"/>
+<circle cx="38" cy="42" r="25" fill="${head}" stroke="#1f4d1a" stroke-width="3"/>
+<path d="M20 34q6-12 18-12" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" opacity=".5"/>
+<circle cx="44" cy="42" r="8" fill="#fff" stroke="#1f4d1a" stroke-width="2"/><circle cx="47" cy="42" r="4" fill="#1a1a1a"/>${extra}`);
+Object.assign(SVG_SPRITES, {
+  peashooter: peaSvg('#7fd45a'),
+  firepea: peaSvg('#f0632a', '<path d="M24 22q-6-14 4-22 0 9 7 9 0-8 6-9 4 12-2 22z" fill="#ffd23a" stroke="#c4380f" stroke-width="2.5" stroke-linejoin="round"/>'),
+  sniper: peaSvg('#4a7a3a', '<path d="M13 38q0-26 25-26t25 26z" fill="#5a6b3a" stroke="#2a1a10" stroke-width="3"/><path d="M16 30h44" stroke="#3a4a24" stroke-width="3"/><rect x="64" y="24" width="20" height="8" rx="3" fill="#2a2a2a" stroke="#000" stroke-width="2"/><circle cx="84" cy="28" r="4" fill="#ff3a3a" stroke="#000" stroke-width="1.5"/>', 40)
+});
+function plantImg(id, d) { const im = svgImage(id); return im ? `<img alt="" src="${im.src}">` : d.icon; }
+const BX = (() => {
+  const mk = (w, h, f) => { const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d'), w, h); return c; };
+  const pea = mk(20, 20, (g, w) => { const r = w / 2, gr = g.createRadialGradient(r - 3, r - 3, 1, r, r, r); gr.addColorStop(0, '#eaffc8'); gr.addColorStop(.55, '#78d24a'); gr.addColorStop(1, '#2f8a24'); g.fillStyle = gr; g.beginPath(); g.arc(r, r, r - 1, 0, 6.283); g.fill(); g.strokeStyle = '#1f5a18'; g.lineWidth = 1.5; g.stroke(); });
+  const fire = mk(28, 28, (g, w) => { const r = w / 2, gr = g.createRadialGradient(r, r, 1, r, r, r); gr.addColorStop(0, '#fff6c0'); gr.addColorStop(.4, '#ffb030'); gr.addColorStop(.75, '#ff4a1a'); gr.addColorStop(1, 'rgba(255,60,20,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, w); });
+  const snipe = mk(64, 10, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, 'rgba(255,240,150,0)'); gr.addColorStop(.7, 'rgba(255,230,120,.85)'); gr.addColorStop(1, '#fff'); g.fillStyle = gr; g.beginPath(); g.moveTo(0, h / 2); g.lineTo(w - 8, h / 2 - 3); g.lineTo(w, h / 2); g.lineTo(w - 8, h / 2 + 3); g.closePath(); g.fill(); });
+  return { pea, fire, snipe };
+})();
 const SVG_IMAGES = {};
 function svgImage(id) {
   if (!SVG_SPRITES[id]) return null;
@@ -901,7 +927,7 @@ function updatePlant(p, dt) {
 /* ================= Quái ================= */
 function spawnMonster(id, row) {
   const d = CFG.monsters[id]; if (!d) return;
-  G.monsters.push({ id, d, row, u: COLS + .75 + rand(0, .2), hp: d.hp, maxHp: d.hp, slow: 0, slowT: 0, state: 'walk', jumped: false, ph: rand(0, 6), flash: 0, dying: 0, eat: false, size: d.size || 1, jt: 0, ju0: 0, ju1: 0 });
+  G.monsters.push({ uid: Math.random(), id, d, row, u: COLS + .75 + rand(0, .2), hp: d.hp, maxHp: d.hp, slow: 0, slowT: 0, state: 'walk', jumped: false, ph: rand(0, 6), flash: 0, dying: 0, eat: false, size: d.size || 1, jt: 0, ju0: 0, ju1: 0 });
 }
 function dmgMonster(m, amt, o = {}) {
   if (m.dying) return; m.hp -= amt; m.flash = .1;
@@ -974,8 +1000,8 @@ function update(dt) {
     const d = p.d;
     // trow = hàng đích (khác hàng của cây khi cây bắn nhiều hàng)
     const tr = t.trow === undefined ? p.row : t.trow;
-    G.bullets.push({ row: tr, u: p.col + .78, pu: p.col + .78, dmg: d.damage, slow: d.slow || 0, slowT: d.slowTime || 3, style: d.slow ? 'ice' : ((d.shots || 1) > 1 ? 'spike' : (d.lanes >= 3 ? 'pea' : 'seed')) });
-    sfx.shoot();
+    G.bullets.push({ row: tr, u: p.col + .78, pu: p.col + .78, dmg: d.damage, slow: d.slow || 0, slowT: d.slowTime || 3, pierce: d.pierce || 0, spd: d.bspeed || 5.5, style: d.bullet ? d.bullet : d.slow ? 'ice' : ((d.shots || 1) > 1 ? 'spike' : (d.lanes >= 3 ? 'pea' : 'seed')) });
+    sfx.shoot(); if (d.bullet === 'snipe') { G.shake = Math.max(G.shake, 2.5); G.fx.push({ k: 'r', x: px(p.col + .95), y: py(p.row + .42), rad: cw * .35, life: .25, max: .25, c: '#ffe08a' }); }
   }
   // nắng từ trời
   const ss = G.L.skySun;
@@ -989,12 +1015,12 @@ function update(dt) {
   G.monsters = G.monsters.filter(m => !(m.hp <= 0 && m.dying <= 0));
   // đạn
   for (let i = G.bullets.length - 1; i >= 0; i--) {
-    const b = G.bullets[i]; b.pu = b.u; b.u += 5.5 * dt; let tg = null;
+    const b = G.bullets[i]; b.pu = b.u; b.u += (b.spd || 5.5) * dt; let tg = null;
     for (const m of G.monsters) {
-      if (m.row !== b.row || m.dying) continue; const lo = m.u - .3 * m.size, hi = m.u + .3 * m.size;
+      if (m.row !== b.row || m.dying || (b.hits && b.hits.includes(m.uid))) continue; const lo = m.u - .3 * m.size, hi = m.u + .3 * m.size;
       if (b.u >= lo && b.pu <= hi && (!tg || m.u < tg.u)) tg = m;
     }
-    if (tg) { dmgMonster(tg, b.dmg, { slow: b.slow, slowT: b.slowT }); part(px(b.u), py(b.row + .5), 5, b.style === 'ice' ? ['#bfe6ff', '#fff'] : ['#b6f26f', '#fff'], 80, 30, .3, 2.5); sfx.hit(); G.bullets.splice(i, 1); }
+    if (tg) { dmgMonster(tg, b.dmg, { slow: b.slow, slowT: b.slowT }); part(px(b.u), py(b.row + .5), 5, b.style === 'ice' ? ['#bfe6ff', '#fff'] : ['#b6f26f', '#fff'], 80, 30, .3, 2.5); sfx.hit(); if (b.pierce > 0) { b.pierce--; (b.hits = b.hits || []).push(tg.uid); } else G.bullets.splice(i, 1); }
     else if (b.u > COLS + 1.2) G.bullets.splice(i, 1);
   }
   // máy cắt cỏ
@@ -1051,7 +1077,11 @@ function drawPlant(p) {
     sy *= 1 + Math.abs(Math.sin(T * 6)) * .06; if (Math.sin(T * 8) > 0) { ctx.fillStyle = '#ff3a2a'; ctx.beginPath(); ctx.arc(x + s * .18, y - s * .15, 3, 0, 6.283); ctx.fill(); }
   }
   if (p.flash > 0) { o.tint = '#ffffff'; o.tintA = .55; }
-  emoji(d.icon, x, y + dy - s * .04, s, Object.assign({ rot, sx, sy }, o));
+  drawMonsterSprite(p.id, d.icon, x, y + dy - s * .04, s, Object.assign({ rot, sx, sy }, o));
+  if (d.bullet === 'snipe' && p.cdT < 1 && G.monsters.some(m => m.row === p.row && !m.dying && m.u > p.col + .4 && m.u < COLS + .6)) {
+    ctx.save(); ctx.strokeStyle = `rgba(255,50,50,${.35 + .4 * Math.abs(Math.sin(T * 18))})`; ctx.lineWidth = 1.5; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(x + s * .42, y - ch * .12); ctx.lineTo(px(COLS + .5), y - ch * .12); ctx.stroke(); ctx.restore();
+  }
   if (d.kind === 'wall') {
     const r = p.hp / p.maxHp; ctx.strokeStyle = 'rgba(60,35,15,.75)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
     if (r < .66) { ctx.beginPath(); ctx.moveTo(x - s * .1, y - s * .3); ctx.lineTo(x - s * .02, y - s * .1); ctx.lineTo(x - s * .14, y + s * .05); ctx.stroke(); }
@@ -1099,6 +1129,9 @@ function drawBullet(b) {
   const x = px(b.u), y = py(b.row + .5) - ch * .12;
   if (b.style === 'ice') {
     ctx.drawImage(BULLET_SPRITES.ice, x - 9, y - 9, 18, 18);
+  } else if (b.style === 'pea') { ctx.drawImage(BX.pea, x - 8, y - 8, 16, 16);
+  } else if (b.style === 'fire') { const fs = 26 + Math.sin(T * 30 + b.u * 5) * 3; ctx.drawImage(BX.fire, x - fs / 2, y - fs / 2, fs, fs);
+  } else if (b.style === 'snipe') { ctx.drawImage(BX.snipe, x - 50, y - 5, 64, 10);
   } else if (b.style === 'spike') {
     ctx.save(); ctx.translate(x, y); ctx.fillStyle = '#f6f0a8'; ctx.strokeStyle = '#7a8a2a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, -3.5); ctx.lineTo(-3, 0); ctx.lineTo(-5, 3.5); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
   } else {
@@ -1207,7 +1240,7 @@ function render() {
     G.monsters.filter(m => m.row === r).sort((a, b) => b.u - a.u).forEach(drawMonster);
     G.bullets.forEach(b => { if (b.row === r) drawBullet(b); });
   }
-  if (hc && G.sel && !G.plants[hc.row][hc.col]) emoji(CFG.plants[G.sel].icon, px(hc.col + .5), py(hc.row + .5), Math.min(cw, ch) * .88, { alpha: .55 });
+  if (hc && G.sel && !G.plants[hc.row][hc.col]) drawMonsterSprite(G.sel, CFG.plants[G.sel].icon, px(hc.col + .5), py(hc.row + .5), Math.min(cw, ch) * .88, { alpha: .55 });
   if (th === 'night') {
     ctx.fillStyle = 'rgba(8,16,60,.38)'; ctx.fillRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
@@ -1230,7 +1263,7 @@ function render() {
     ctx.fillStyle = mist; ctx.beginPath(); ctx.arc(mx, my, cw * 1.4, 0, 6.283); ctx.fill();
   }
   G.suns.forEach(drawSun);
-  if (drag && drag.moved && G.sel) emoji(CFG.plants[G.sel].icon, ptr.x, ptr.y - 20, Math.min(cw, ch) * 1.05, { alpha: .9 });
+  if (drag && drag.moved && G.sel) drawMonsterSprite(G.sel, CFG.plants[G.sel].icon, ptr.x, ptr.y - 20, Math.min(cw, ch) * 1.05, { alpha: .9 });
   drawFx();
   ctx.restore();
 }
@@ -1240,7 +1273,7 @@ function buildPackets() {
   const box = $('packets'); box.innerHTML = '';
   G.L.plants.forEach(id => {
     const d = CFG.plants[id], b = document.createElement('button'); b.className = 'packet'; b.dataset.id = id; b.setAttribute('aria-label', `${d.name}, ${d.cost} nắng`);
-    b.innerHTML = `<span class="pe">${d.icon}</span><span class="pc">${d.cost}</span><i class="cd"></i>`; box.appendChild(b);
+    b.innerHTML = `<span class="pe">${plantImg(id, d)}</span><span class="pc">${d.cost}</span><i class="cd"></i>`; box.appendChild(b);
   });
   $('lvName').textContent = `Màn ${G.li + 1}: ${G.L.name || ''}`;
   const fl = $('flags'); fl.innerHTML = '';

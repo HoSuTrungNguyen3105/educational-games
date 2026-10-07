@@ -92,6 +92,7 @@ const TILE_COLORS = Object.fromEntries(
       "riddle": "#E5533D", "shapecount": "#EE7FA6",
       "chem-trai-cay": "#E5533D", "hu-trai-cay": "#F2B632", "xep-khoi": "#3D6FD8", "pha-gach": "#7C5CE0",
       "nhay-xoay": "#3D6FD8", "goc-thu-gian": "#2A9D8F", "trung-tam-game": "#7C8AA0",
+      "dap-sau-bo": "#E5533D", "ghep-cap-vuon": "#EE7FA6", "sau-an-la": "#F2B632",
     })[g.id] || "#F2B632",
   ])
 );

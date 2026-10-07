@@ -1,0 +1,57 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><title>Đập Sâu Bọ</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet"><style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:"Baloo 2",system-ui,sans-serif;color:#fff;touch-action:none;background:linear-gradient(#ffb56b,#f88f5a 18%,#6cb857 55%,#2e6b2f)}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#hud{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 60px;background:linear-gradient(#7a4c2a,#3a2414);border-bottom:4px solid #e0b25f;box-shadow:0 5px 14px rgba(0,0,0,.5)}
+#hud h1{font-size:18px;font-weight:800;flex:1;text-shadow:0 2px 0 #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{background:#1f1108;border:2px solid #c9964f;border-radius:14px;padding:2px 12px;font-weight:800;font-size:16px;color:#ffe066;min-width:72px;text-align:center;white-space:nowrap}
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px}
+.btn{border:2px solid rgba(255,255,255,.3);font-family:inherit;font-weight:800;font-size:18px;color:#fff;padding:9px 24px;border-radius:99px;background:linear-gradient(#8fdc63,#4aa33a);box-shadow:0 5px 0 #2d6b23,0 9px 14px rgba(0,0,0,.3);cursor:pointer}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #2d6b23}
+#over{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(20,10,0,.62);backdrop-filter:blur(3px);padding:12px}
+#over.h{display:none}
+.panel{background:linear-gradient(#fffbe6,#efd49a);color:#3b2412;border:5px solid #b07a3c;border-radius:28px;padding:18px 30px;text-align:center;max-width:420px;box-shadow:0 0 0 4px #3a2414,0 18px 50px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+.panel h2{font-size:32px;line-height:1}.panel p{font-size:16px;font-weight:600;margin:8px 0 14px}
+#homeBackBtn{position:fixed;z-index:30;top:calc(env(safe-area-inset-top,0px) + 8px);left:calc(env(safe-area-inset-left,0px) + 8px);width:42px;height:42px;border-radius:14px;display:grid;place-items:center;cursor:pointer;font-family:inherit;font-size:20px;font-weight:800;color:#5b3b22;background:#fff7dc;border:3px solid #5b3b22;box-shadow:0 4px 0 #5b3b22}
+#homeBackBtn:active{transform:translateY(3px);box-shadow:0 1px 0 #5b3b22}
+#grid{display:grid;grid-template-columns:repeat(3,var(--s));gap:min(2.5vh,14px);--s:min(25vw,27vh)}
+.hole{position:relative;width:var(--s);height:var(--s);overflow:hidden;cursor:pointer;border-radius:0 0 50% 50%/0 0 22% 22%}
+.crit{position:absolute;left:8%;right:8%;top:6%;bottom:20%;transform:translateY(105%);transition:transform .12s ease-out}
+.crit.up{transform:none}.crit svg{width:100%;height:100%;transition:transform .1s}.crit.hit svg{transform:scale(1.15,.55) translateY(14%);filter:brightness(1.5)}
+.dirt{position:absolute;left:-4%;right:-4%;bottom:0;height:36%;background:radial-gradient(ellipse at 50% 0,#2a170a 0 52%,#6b4526 54% 70%,#8a5a2c 72%);border-radius:50%/60% 60% 40% 40%}
+.fl{position:absolute;left:50%;top:8%;transform:translateX(-50%);font-weight:800;font-size:24px;color:#ffe066;text-shadow:0 2px 0 #000;animation:fl .6s forwards;pointer-events:none;z-index:3}
+@keyframes fl{to{transform:translate(-50%,-34px);opacity:0}}</style></head><body>
+<div id="hud"><h1>Đập Sâu Bọ</h1><div class="st">Điểm <b id="sc">0</b></div><div class="st">⏱ <b id="tm">0</b></div><div class="st">Kỷ lục <b id="hi">0</b></div></div><div id="stage"><div id="grid"></div></div>
+<div id="over"><div class="panel"><h2 id="oT"></h2><p id="oP"></p><button class="btn" id="oB"></button></div></div>
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ">&#8592;</button>
+<script>
+const $=id=>document.getElementById(id);let hi=0;const HK='vuon-thu-ho-whack-hi';
+try{hi=+localStorage.getItem(HK)||0}catch(e){}
+function saveHi(v){if(v>hi){hi=v;try{localStorage.setItem(HK,v)}catch(e){}return true}return false}
+function over(t,p,b){$('oT').textContent=t;$('oP').textContent=p;$('oB').textContent=b||'↺ Chơi lại';$('over').classList.remove('h')}
+$('oB').onclick=()=>{$('over').classList.add('h');start()};
+$('homeBackBtn').onclick=()=>{try{if(parent!==window){parent.postMessage({type:"quit",data:{}},"*");return}}catch(e){}location.href="/"};
+const SV=b=>`<svg viewBox="0 0 100 100">${b}</svg>`;
+const E=(x,y)=>`<circle cx="${x}" cy="${y}" r="8" fill="#fff" stroke="#222" stroke-width="2.5"/><circle cx="${x+1}" cy="${y+1}" r="4" fill="#222"/>`;
+const TY=[
+{p:10,s:SV(`<circle cx="50" cy="56" r="34" fill="#9bd44a" stroke="#2b3a14" stroke-width="4"/>${E(38,50)}${E(62,50)}<path d="M38 70q12 10 24 0" stroke="#2b3a14" stroke-width="4" fill="none"/><path d="M36 26l-6-14M64 26l6-14" stroke="#2b3a14" stroke-width="4" stroke-linecap="round"/>`)},
+{p:20,s:SV(`<path d="M14 80q0-62 36-62t36 62z" fill="#3f6fb5" stroke="#2a1a10" stroke-width="4"/><path d="M50 18v30" stroke="#2a1a10" stroke-width="3"/>${E(38,62)}${E(62,62)}<path d="M44 20l6-14 6 14z" fill="#c9a04a" stroke="#2a1a10" stroke-width="3"/>`)},
+{p:30,s:SV(`<circle cx="26" cy="32" r="14" fill="#f2a0b0" stroke="#2a1a10" stroke-width="4"/><circle cx="74" cy="32" r="14" fill="#f2a0b0" stroke="#2a1a10" stroke-width="4"/><circle cx="50" cy="58" r="32" fill="#9a9aa8" stroke="#2a1a10" stroke-width="4"/>${E(38,52)}${E(62,52)}<ellipse cx="50" cy="70" rx="6" ry="5" fill="#f08aa0"/>`)},
+{p:-15,f:1,s:SV(`<path d="M14 80q0-62 36-62t36 62z" fill="#e0483d" stroke="#2a1a10" stroke-width="4"/><circle cx="32" cy="44" r="6" fill="#222"/><circle cx="68" cy="44" r="6" fill="#222"/><circle cx="50" cy="30" r="5" fill="#222"/>${E(40,64)}${E(60,64)}`)}];
+const H=[],gr=$('grid');let score,time,combo,alive=false,iv,sp;
+for(let i=0;i<9;i++){const d=document.createElement('div');d.className='hole';d.innerHTML='<div class="crit"></div><div class="dirt"></div>';gr.appendChild(d);const h={d,c:d.firstChild,t:null,hit:0,tm:0};H.push(h);d.onpointerdown=()=>whack(h)}
+function down(h){clearTimeout(h.tm);h.c.classList.remove('up','hit');h.t=null}
+function upd(){$('sc').textContent=score||0;$('tm').textContent=Math.max(0,Math.ceil(time||0));$('hi').textContent=hi}
+function pop(){const f=H.filter(h=>!h.t);if(!f.length)return;const h=f[Math.random()*f.length|0],r=Math.random(),t=r<.2?TY[3]:TY[r<.6?0:r<.87?1:2];
+h.t=t;h.hit=0;h.c.innerHTML=t.s;h.c.classList.add('up');h.tm=setTimeout(()=>{if(!t.f&&!h.hit)combo=0;down(h)},Math.max(560,1000-(45-time)*8))}
+function nxt(){if(!alive)return;sp=setTimeout(()=>{pop();nxt()},Math.max(320,760-(45-time)*9))}
+function whack(h){if(!alive||!h.t||h.hit)return;h.hit=1;h.c.classList.add('hit');let v;
+if(h.t.f){v=-15;combo=0;score=Math.max(0,score-15)}else{combo++;v=Math.round(h.t.p*(1+Math.floor(combo/5)*.5));score+=v}
+const s=document.createElement('span');s.className='fl';s.textContent=(v>0?'+':'')+v+(combo>=5&&v>0?' 🔥':'');if(v<0)s.style.color='#ff9d8f';h.d.appendChild(s);setTimeout(()=>s.remove(),600);
+setTimeout(()=>down(h),170);upd()}
+function end(){alive=false;clearInterval(iv);clearTimeout(sp);H.forEach(down);const nw=saveHi(score);upd();over('Hết giờ!',`Điểm: ${score}${nw?' · Kỷ lục mới! 🏆':''} (cao nhất ${hi})`)}
+function start(){score=0;time=45;combo=0;alive=true;H.forEach(down);upd();clearInterval(iv);clearTimeout(sp);iv=setInterval(()=>{time-=.1;if(time<=0)end();else upd()},100);nxt()}
+upd();over('Đập Sâu Bọ','Chạm vào sâu bọ để đập điểm. Đừng đập bọ rùa, nó là bạn của vườn!','▶ Bắt đầu');
+</script></body></html>
