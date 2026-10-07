@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { reminderService } from "../../services/api.js";
-import { Loader } from "../../components/ui.jsx";
+import { Loader, ConfirmModal } from "../../components/ui.jsx";
+import { useConfirm } from "../../hooks/useConfirm.js";
 import { Bell, Plus, Trash2, Clock, RotateCcw, CheckCircle, AlertCircle } from "lucide-react";
 
 const REPEAT_OPTIONS = [
@@ -44,6 +45,7 @@ export default function ReminderManagement({ showToast }) {
   const [form, setForm] = useState({ title: "", message: "", remindAt: "", repeat: "none", vibrate: true, sound: true, vibratePattern: "" });
   const [saving, setSaving] = useState(false);
   const [dueAlert, setDueAlert] = useState(null);
+  const { askConfirm, confirmProps } = useConfirm();
 
   const load = useCallback(async () => {
     try {
@@ -90,15 +92,20 @@ export default function ReminderManagement({ showToast }) {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Xóa nhắc nhở này?")) return;
-    try {
-      await reminderService.delete_(id);
-      showToast?.("Đã xóa", "success");
-      load();
-    } catch (e) {
-      showToast?.("Lỗi xóa", "error");
-    }
+  const handleDelete = (id, title) => {
+    askConfirm({
+      title: "Xóa nhắc nhở",
+      message: title ? `Xóa nhắc nhở "${title}"?` : "Xóa nhắc nhở này?",
+      onConfirm: async () => {
+        try {
+          await reminderService.delete_(id);
+          showToast?.("Đã xóa", "success");
+          load();
+        } catch (e) {
+          showToast?.("Lỗi xóa", "error");
+        }
+      },
+    });
   };
 
   const handleDismissDue = async () => {
@@ -281,7 +288,7 @@ export default function ReminderManagement({ showToast }) {
                       <span className="text-xs">{r.vibrate !== false ? "📱" : ""}{r.sound !== false ? "🔔" : ""}</span>
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(r.id)} className="text-gray-300 hover:text-red-500 transition p-1">
+                  <button onClick={() => handleDelete(r.id, r.title)} className="text-gray-300 hover:text-red-500 transition p-1">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -304,7 +311,7 @@ export default function ReminderManagement({ showToast }) {
                   <p className="font-medium text-ink text-sm truncate line-through">{r.title}</p>
                   <span className="text-xs text-gray-400">{formatDateTime(r.remindAt)}</span>
                 </div>
-                <button onClick={() => handleDelete(r.id)} className="text-gray-300 hover:text-red-500 transition p-1">
+                <button onClick={() => handleDelete(r.id, r.title)} className="text-gray-300 hover:text-red-500 transition p-1">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -312,6 +319,8 @@ export default function ReminderManagement({ showToast }) {
           </div>
         </div>
       )}
+
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }

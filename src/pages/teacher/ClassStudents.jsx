@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { ArrowLeft, Users, Search, UserCircle2, Mail, Hash } from 'lucide-react';
+import { ArrowLeft, Users, UserCircle2, Mail, Hash } from 'lucide-react';
+import { Loader, EmptyState, SearchInput } from '../../components/ui.jsx';
 
 export default function ClassStudents({ classId }) {
   const [cls, setCls] = useState(null);
@@ -75,34 +76,17 @@ export default function ClassStudents({ classId }) {
 
       {/* Search */}
       {!loading && students.length > 0 && (
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/30" />
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Tìm học sinh..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl border border-ink/10 bg-paper2 text-ink font-body text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-          />
-        </div>
+        <SearchInput value={search} onChange={setSearch} placeholder="Tìm học sinh..." className="max-w-sm" />
       )}
 
       {/* Content */}
       {loading ? (
-        <div className="text-center py-16 text-ink/40 font-body">Đang tải...</div>
+        <Loader label="Đang tải danh sách học sinh..." />
       ) : students.length === 0 ? (
-        <div className="text-center py-16 space-y-3">
-          <Users className="w-12 h-12 text-ink/20 mx-auto" />
-          <p className="font-body text-ink/40">Lớp chưa có học sinh nào.</p>
-          <p className="text-sm font-body text-ink/30">
-            Học sinh tham gia bằng mã lớp:{' '}
-            <span className="font-mono text-gold">{cls?.code}</span>
-          </p>
-        </div>
+        <EmptyState icon="🏫" title="Lớp chưa có học sinh nào."
+          subtitle={<>Học sinh tham gia bằng mã lớp: <span className="font-mono text-gold">{cls?.code}</span></>} />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-ink/40 font-body">
-          Không tìm thấy học sinh phù hợp.
-        </div>
+        <EmptyState icon="🔍" title="Không tìm thấy học sinh phù hợp." />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((s, i) => (

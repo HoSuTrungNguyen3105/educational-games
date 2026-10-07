@@ -3,18 +3,21 @@ import { assignmentService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import {
   ArrowLeft, Copy, Check, Users, BarChart3, Pencil,
-  Search, Trophy, Clock, FileQuestion, Lock, Repeat, Link2,
+  Trophy, Clock, FileQuestion, Lock, Repeat, Link2,
 } from 'lucide-react';
+import { ConfirmModal, SearchInput } from '../../components/ui.jsx';
+import { useConfirm } from '../../hooks/useConfirm.js';
+import { useCopy } from '../../hooks/useCopy.js';
 
 export default function AssignmentDetail({ assignmentId }) {
   const [assignment, setAssignment] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [stats, setStats] = useState(null);
-  const [copied, setCopied] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [sortDesc, setSortDesc] = useState(true);
+  const { askConfirm, confirmProps } = useConfirm();
+  const [copiedKey, copy] = useCopy();
 
   useEffect(() => {
     if (!assignmentId) return;
@@ -37,28 +40,36 @@ export default function AssignmentDetail({ assignmentId }) {
   }
 
   function copyCode() {
-    navigator.clipboard.writeText(assignment?.code || '').catch(() => { });
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
+    copy(assignment?.code || '', 'code');
   }
 
   function copyLink() {
     const url = `${window.location.origin}/#/assignment/${assignment?.code || assignment?.id}`;
-    navigator.clipboard.writeText(url).catch(() => { });
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 1800);
+    copy(url, 'link');
   }
 
-  async function handleClose() {
-    if (!confirm('Đóng bài giao? Học sinh sẽ không thể nộp thêm.')) return;
-    await assignmentService.close(assignmentId);
-    load();
+  function handleClose() {
+    askConfirm({
+      title: 'Đóng bài tập',
+      message: 'Đóng bài giao? Học sinh sẽ không thể nộp thêm.',
+      confirmLabel: 'Đóng',
+      danger: false,
+      onConfirm: async () => {
+        await assignmentService.close(assignmentId);
+        load();
+      },
+    });
   }
 
-  async function handleDelete() {
-    if (!confirm('Xóa bài giao? Hành động này không thể hoàn tác.')) return;
-    await assignmentService.delete_(assignmentId);
-    navigate('/admin');
+  function handleDelete() {
+    askConfirm({
+      title: 'Xóa bài tập',
+      message: 'Xóa bài giao? Hành động này không thể hoàn tác.',
+      onConfirm: async () => {
+        await assignmentService.delete_(assignmentId);
+        navigate('/admin');
+      },
+    });
   }
 
   const filteredSubmissions = useMemo(() => {
@@ -135,7 +146,7 @@ export default function AssignmentDetail({ assignmentId }) {
             className="font-mono text-lg font-bold text-gold flex items-center gap-1.5 hover:opacity-70 transition"
           >
             {assignment.code}
-            {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+            {copiedKey === 'code' ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </InfoCard>
         <InfoCard label="Link bài tập" accent>
@@ -144,7 +155,7 @@ export default function AssignmentDetail({ assignmentId }) {
             className="text-xs font-body font-semibold text-gold flex items-center gap-1.5 hover:opacity-70 transition truncate max-w-[160px]"
           >
             <Link2 className="w-3.5 h-3.5 shrink-0" />
-            {copiedLink ? 'Đã copy!' : 'Copy link'}
+            {copiedKey === 'link' ? 'Đã copy!' : 'Copy link'}
           </button>
         </InfoCard>
         <InfoCard label="Câu hỏi">
@@ -196,15 +207,7 @@ export default function AssignmentDetail({ assignmentId }) {
             <h3 className="font-display text-sm text-ink">Danh sách nộp bài ({submissions.length})</h3>
           </div>
           {submissions.length > 0 && (
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-ink/30 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Tìm học sinh..."
-                className="pl-8 pr-3 py-1.5 text-sm font-body bg-ink/5 rounded-lg outline-none focus:ring-2 focus:ring-gold/30 w-48"
-              />
-            </div>
+            <SearchInput value={query} onChange={setQuery} placeholder="Tìm học sinh..." className="w-48" />
           )}
         </div>
 
@@ -261,6 +264,8 @@ export default function AssignmentDetail({ assignmentId }) {
           </div>
         )}
       </div>
+
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }

@@ -1,57 +1,30 @@
-import { useCallback, useEffect, useState } from 'react'
 import { setupService } from '../../services/setupService.js'
 import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui.jsx'
+import { useCrudList } from '../../hooks/useCrudList.js'
 
 const FIELDS = [{ name: "name", label: "Tên môn học", placeholder: "VD: Toán, Văn, Anh..." }];
 
 export default function SubjectManagement({ showToast }) {
-  const [subjects, setSubjects] = useState(null);
-  const [error, setError] = useState(null);
-  const [form, setForm] = useState({ name: "" });
-  const [editingItem, setEditingItem] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [confirm, setConfirm] = useState({ open: false, item: null });
-
-  const load = useCallback(() => {
-    setSubjects(null); setError(null);
-    setupService.listSubjects().then(setSubjects).catch(e => setError(e.message));
-  }, []);
-  useEffect(() => { load(); }, [load]);
-
-  const openCreate = () => { setForm({ name: "" }); setEditingItem(null); setError(null); setModalOpen(true); };
-  const openEdit = (item) => { setForm({ name: item.name }); setEditingItem(item); setError(null); setModalOpen(true); };
-  const closeModal = () => { setModalOpen(false); setError(null); };
-
-  const onChange = (name, val) => { setForm(f => ({ ...f, [name]: val })); setError(null); };
-
-  const submit = async () => {
-    if (!form.name.trim()) { setError("Vui lòng nhập tên môn học"); return; }
-    setSaving(true); setError(null);
-    try {
-      if (editingItem) {
-        await setupService.updateSubject(editingItem.name, form.name.trim());
-        showToast("Đã cập nhật môn học");
-      } else {
-        await setupService.addSubject(form.name.trim());
-        showToast("Đã thêm môn học");
-      }
-      closeModal(); load();
-    } catch (err) {
-      setError(err.message || "Lỗi lưu môn học");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const confirmRemove = (item) => setConfirm({ open: true, item });
-  const doRemove = async () => {
-    try {
-      await setupService.removeSubject(confirm.item.name);
-      showToast("Đã xóa môn học");
-      setConfirm({ open: false, item: null }); load();
-    } catch (err) { showToast(err.message || "Lỗi xóa", "error"); }
-  };
+  const {
+    items: subjects, error, load,
+    form, setField, editingId, saving, modalOpen,
+    openCreate, openEdit, closeModal, submit,
+    confirmProps, askRemove,
+  } = useCrudList({
+    fetchList: () => setupService.listSubjects(),
+    onSave: (form, editingId) => editingId
+      ? setupService.updateSubject(editingId, form.name.trim())
+      : setupService.addSubject(form.name.trim()),
+    onRemove: (item) => setupService.removeSubject(item.name),
+    emptyForm: { name: "" },
+    toForm: (item) => ({ name: item.name }),
+    idOf: (item) => item.name,
+    validate: (form) => form.name.trim() ? null : "Vui lòng nhập tên môn học",
+    describe: (item) => `môn học "${item.name}"`,
+    removeTitle: "Xóa môn học",
+    messages: { created: "Đã thêm môn học", updated: "Đã cập nhật môn học", removed: "Đã xóa môn học" },
+    showToast,
+  });
 
   return (
     <div>
@@ -73,7 +46,7 @@ export default function SubjectManagement({ showToast }) {
                 <IconButton title="Chỉnh sửa" onClick={() => openEdit(item)}>
                   ✏️
                 </IconButton>
-                <IconButton title="Xóa" onClick={() => confirmRemove(item)}>
+                <IconButton title="Xóa" onClick={() => askRemove(item)}>
                   🗑️
                 </IconButton>
               </div>
@@ -82,12 +55,10 @@ export default function SubjectManagement({ showToast }) {
         )}
       />
 
-      <FormModal open={modalOpen} title="Môn học" fields={FIELDS} values={form} onChange={onChange}
-        onSubmit={submit} onClose={closeModal} error={error} saving={saving} editId={editingItem ? "edit" : null} />
+      <FormModal open={modalOpen} title="Môn học" fields={FIELDS} values={form} onChange={setField}
+        onSubmit={submit} onClose={closeModal} error={error} saving={saving} editId={editingId} />
 
-      <ConfirmModal open={confirm.open} title="Xóa môn học"
-        message={confirm.item ? `Xóa môn học "${confirm.item.name}"?` : ""}
-        onConfirm={doRemove} onClose={() => setConfirm({ open: false, item: null })} />
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }
