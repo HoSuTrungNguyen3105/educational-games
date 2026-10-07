@@ -2,18 +2,23 @@ import { useState, useEffect } from 'react';
 import { assignmentService, gameService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { Plus, Clock, Users, CheckCircle, XCircle, Eye, Link2 } from 'lucide-react';
+import { ManagementHeader, PrimaryButton, Loader, EmptyState, ConfirmModal } from '../../components/ui.jsx';
+import { useConfirm } from '../../hooks/useConfirm.js';
+import { useCopy } from '../../hooks/useCopy.js';
 
 export default function AssignmentList() {
-  const [assignments, setAssignments] = useState([]);
+  const [assignments, setAssignments] = useState(null);
   const [games, setGames] = useState({});
   const [classes, setClasses] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState(null);
+  const [error, setError] = useState(null);
+  const { askConfirm, confirmProps } = useConfirm();
+  const [copiedKey, copy] = useCopy();
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    setLoading(true);
+    setAssignments(null);
+    setError(null);
     try {
       const [all, allGames, allClasses] = await Promise.all([
         assignmentService.list(),
@@ -25,38 +30,51 @@ export default function AssignmentList() {
       const cMap = {}; allClasses.forEach(c => { cMap[c.id] = c.name; });
       setGames(gMap);
       setClasses(cMap);
-    } catch {}
-    setLoading(false);
+    } catch (e) {
+      setError(e.message || 'Lỗi tải danh sách bài tập');
+    }
   }
 
-  async function handleClose(id) {
-    if (!confirm('Đóng bài giao này?')) return;
-    await assignmentService.close(id);
-    load();
+  function handleClose(a) {
+    askConfirm({
+      title: 'Đóng bài tập',
+      message: `Đóng bài "${a.title}"? Học sinh sẽ không thể nộp thêm.`,
+      confirmLabel: 'Đóng',
+      danger: false,
+      onConfirm: async () => {
+        await assignmentService.close(a.id);
+        load();
+      },
+    });
   }
 
   function copyLink(assignment) {
     const url = `${window.location.origin}/#/assignment/${assignment.code || assignment.id}`;
-    navigator.clipboard.writeText(url).catch(() => {});
-    setCopiedId(assignment.id);
-    setTimeout(() => setCopiedId(null), 1800);
+    copy(url, assignment.id);
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl text-ink">Bài tập đã giao</h1>
-        <button onClick={() => navigate('/admin/assignments/new')}
-          className="px-4 py-2 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition flex items-center gap-2">
+        <ManagementHeader subtitle="Quản lý bài tập" title="Bài tập đã giao" />
+        <PrimaryButton onClick={() => navigate('/admin/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm flex items-center gap-2">
           <Plus className="w-4 h-4" /> Tạo bài tập
-        </button>
+        </PrimaryButton>
       </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-ink/40 font-body">Đang tải...</div>
-      ) : assignments.length === 0 ? (
-        <div className="text-center py-12 text-ink/40 font-body">Chưa có bài tập nào</div>
-      ) : (
+      {error && !assignments && (
+        <div className="p-4 rounded-xl bg-red-50 text-red-600 text-sm font-body flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={load} className="font-semibold hover:underline">Thử lại</button>
+        </div>
+      )}
+      {!error && !assignments && <Loader label="Đang tải bài tập..." />}
+      {!error && assignments && assignments.length === 0 && (
+        <EmptyState icon="📝" title="Chưa có bài tập nào"
+          subtitle="Tạo bài tập đầu tiên để giao cho học sinh."
+          action={<PrimaryButton onClick={() => navigate('/admin/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm">+ Tạo bài tập</PrimaryButton>} />
+      )}
+      {!error && assignments && assignments.length > 0 && (
         <div className="space-y-3">
           {assignments.map(a => (
             <div key={a.id} className="note-card p-4 flex items-center gap-4">
@@ -82,17 +100,18 @@ export default function AssignmentList() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button onClick={() => copyLink(a)}
-                  className={`p-2 rounded-lg hover:bg-ink/5 transition ${copiedId === a.id ? 'text-green-500' : 'text-ink/40 hover:text-gold'}`}
+                  className={`p-2 rounded-lg hover:bg-ink/5 transition ${copiedKey === a.id ? 'text-green-500' : 'text-ink/40 hover:text-gold'}`}
                   title="Copy link bài tập">
-                  {copiedId === a.id ? <CheckCircle className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                  {copiedKey === a.id ? <CheckCircle className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
                 </button>
                 <button onClick={() => navigate(`/admin/assignments/${a.id}`)}
                   className="p-2 rounded-lg hover:bg-ink/5 transition text-ink/40 hover:text-gold">
                   <Eye className="w-4 h-4" />
                 </button>
                 {a.status === 'ACTIVE' && (
-                  <button onClick={() => handleClose(a.id)}
-                    className="p-2 rounded-lg hover:bg-red-50 transition text-ink/30 hover:text-red-500">
+                  <button onClick={() => handleClose(a)}
+                    className="p-2 rounded-lg hover:bg-red-50 transition text-ink/30 hover:text-red-500"
+                    title="Đóng bài tập">
                     <XCircle className="w-4 h-4" />
                   </button>
                 )}
@@ -101,6 +120,8 @@ export default function AssignmentList() {
           ))}
         </div>
       )}
+
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }

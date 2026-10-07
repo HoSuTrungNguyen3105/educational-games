@@ -253,8 +253,7 @@ export function FormModal({ open, title, fields, values, onChange, onSubmit, onC
   );
 }
 
-export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, onRemoveAll, removeAllLabel, onCreate, createLabel, onImport, importLabel }) {
-  return (
+export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, onRemoveAll, removeAllLabel, onCreate, createLabel, onImport, importLabel }) {  return (
     <div>
       <div className="flex items-end justify-between mb-3">
         <h2 className="font-display text-lg text-ink">{title}{count !== undefined ? ` (${count})` : ""}</h2>
@@ -282,6 +281,55 @@ export function ManagementTable({ title, count, data, error, onRetry, emptyLabel
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+export function SearchInput({ value, onChange, placeholder = "Tìm kiếm...", className = "", ...rest }) {
+  return (
+    <div className={`relative ${className}`}>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/30">🔍</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full pl-9 pr-8 py-2 rounded-xl border border-ink/10 bg-paper2 text-ink font-body text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+        {...rest}
+      />
+      {value && (
+        <button
+          onClick={() => onChange("")}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink text-sm transition"
+          title="Xóa tìm kiếm"
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function StatCard({ icon, value, label, ring, className = "" }) {
+  return (
+    <div className={`note-card p-4 ${className}`}>
+      {ring ? (
+        <StampToken icon={icon} ring={ring} size={36} fontSize={16} />
+      ) : (
+        <div className="text-2xl mb-1">{icon}</div>
+      )}
+      <div className="font-display text-xl text-ink mt-1">{value}</div>
+      <div className="text-[10px] text-[#8A7C63] font-mono uppercase">{label}</div>
+    </div>
+  );
+}
+
+export function StatGrid({ stats, className = "" }) {
+  return (
+    <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 ${className}`}>
+      {stats.map((s) => (
+        <StatCard key={s.label} {...s} />
+      ))}
     </div>
   );
 }

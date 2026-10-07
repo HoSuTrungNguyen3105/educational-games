@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { adminGameProgressService, userService } from '../../services/api.js'
 import { getLevelProgress, getLevelTitle, getLevelEmoji } from '../../lib/utils.js'
 import { getRoleLabel } from '../../config/roles.js'
-import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton } from '../../components/ui.jsx'
+import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from '../../components/ui.jsx'
+import { useConfirm } from '../../hooks/useConfirm.js'
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
@@ -47,6 +48,7 @@ export default function CoinManagement({ showToast }) {
   const [filterUser, setFilterUser] = useState("");
   const [filterGame, setFilterGame] = useState("");
   const [tab, setTab] = useState("users");
+  const { askConfirm, confirmProps } = useConfirm();
 
   const load = useCallback(() => {
     setProgress(null); setError(null);
@@ -95,15 +97,20 @@ export default function CoinManagement({ showToast }) {
     }
   };
 
-  const handleDelete = async (item) => {
-    if (!confirm(`Xóa tiến trình của "${userMap[item.userId] || item.userId}" trong game "${getGameName(item.gameId)}"?`)) return;
-    try {
-      await adminGameProgressService.removeProgress(item._id);
-      showToast("Đã xóa", "success");
-      load();
-    } catch (e) {
-      showToast(e.message || "Lỗi xóa", "error");
-    }
+  const handleDelete = (item) => {
+    askConfirm({
+      title: "Xóa tiến trình",
+      message: `Xóa tiến trình của "${userMap[item.userId] || item.userId}" trong game "${getGameName(item.gameId)}"?`,
+      onConfirm: async () => {
+        try {
+          await adminGameProgressService.removeProgress(item._id);
+          showToast("Đã xóa", "success");
+          load();
+        } catch (e) {
+          showToast(e.message || "Lỗi xóa", "error");
+        }
+      },
+    });
   };
 
   const userHeaders = ["Người dùng", "Vai trò", "💰 Coin", "Hạng"];
@@ -180,20 +187,12 @@ export default function CoinManagement({ showToast }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Người dùng", value: users.length, icon: "\u{1F465}" },
-          { label: "Tổng Coin", value: totalGlobalCoins.toLocaleString(), icon: "\u{1F4B0}" },
-          { label: "Bản ghi tiến trình", value: filtered.length, icon: "\u{1F4CB}" },
-          { label: "Tổng lượt chơi", value: totalPlays.toLocaleString(), icon: "\u{1F3AE}" },
-        ].map(s => (
-          <div key={s.label} className="note-card p-4">
-            <div className="text-2xl mb-1">{s.icon}</div>
-            <div className="font-display text-xl text-ink">{s.value}</div>
-            <div className="text-[10px] text-[#8A7C63] font-mono uppercase">{s.label}</div>
-          </div>
-        ))}
-      </div>
+      <StatGrid stats={[
+        { label: "Người dùng", value: users.length, icon: "\u{1F465}" },
+        { label: "Tổng Coin", value: totalGlobalCoins.toLocaleString(), icon: "\u{1F4B0}" },
+        { label: "Bản ghi tiến trình", value: filtered.length, icon: "\u{1F4CB}" },
+        { label: "Tổng lượt chơi", value: totalPlays.toLocaleString(), icon: "\u{1F3AE}" },
+      ]} />
 
       {tab === "users" && (
         <ManagementTable
@@ -275,6 +274,8 @@ export default function CoinManagement({ showToast }) {
           </div>
         </Modal>
       )}
+
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }

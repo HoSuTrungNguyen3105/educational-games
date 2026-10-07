@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Download, Eye, EyeOff, Play, RefreshCw, RotateCcw, Save, Upload } from "lucide-react";
 import { API_BASE, gameService, templateService } from "../../services/api.js";
-import { ManagementHeader, Loader, EmptyState } from "../../components/ui.jsx";
+import { ManagementHeader, Loader, EmptyState, ConfirmModal } from "../../components/ui.jsx";
+import { useConfirm } from "../../hooks/useConfirm.js";
 import {
   SCHEMA_VERSION,
   buildConfigPayload,
@@ -489,6 +490,7 @@ export default function GameConfigEditor({ showToast }) {
   const [configBusy, setConfigBusy] = useState(false);
   const previewRef = useRef(null);
   const fileRef = useRef(null);
+  const { askConfirm, confirmProps } = useConfirm();
 
   const defs = useMemo(() => listGameDefs(), []);
   const def = getGameDef(editor.key);
@@ -542,9 +544,14 @@ export default function GameConfigEditor({ showToast }) {
 
   const resetValues = useCallback(() => {
     if (!editor.key) return;
-    if (!window.confirm(`Đặt toàn bộ cấu hình “${def?.name || editor.key}” về mặc định?`)) return;
-    setEditor((prev) => ({ ...prev, values: defaultValuesFor(prev.key), dirty: true }));
-  }, [editor.key, def]);
+    askConfirm({
+      title: "Đặt lại cấu hình",
+      message: `Đặt toàn bộ cấu hình "${def?.name || editor.key}" về mặc định?`,
+      confirmLabel: "Đặt lại",
+      danger: false,
+      onConfirm: () => setEditor((prev) => ({ ...prev, values: defaultValuesFor(prev.key), dirty: true })),
+    });
+  }, [editor.key, def, askConfirm]);
 
   const save = useCallback(async () => {
     if (!game || !editor.key) return;
@@ -878,6 +885,8 @@ export default function GameConfigEditor({ showToast }) {
           </div>
         </div>
       )}
+
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }
