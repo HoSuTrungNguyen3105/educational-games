@@ -39,6 +39,7 @@ import {
   FileText,
   Sprout,
   PawPrint,
+  Crown,
 } from 'lucide-react'
 
 // Bảng màu theo môn học
@@ -113,8 +114,9 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "subjects", icon: BookOpen, label: "Học tập", type: "scroll", target: "subjects-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: true, badge: true },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
-  { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/my-coins", show: !!userAuth?.user },
-  { key: "achievements", icon: Trophy, label: "Thành tựu", type: "scroll", target: "achievements-section", show: true },
+  { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
+  { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
+  { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
   { key: "profile", icon: User, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
@@ -124,7 +126,7 @@ const SIDEBAR_ITEMS = (userAuth) => ([
 
 // Chia sidebar thanh nhom de mat 'bi lan' hon phan trang chinh.
 const SIDEBAR_GROUPS = [
-  { title: "Chính", keys: ["home", "games", "subjects", "achievements"] },
+  { title: "Chính", keys: ["home", "games", "subjects", "achievements", "leaderboard"] },
   { title: "Học tập", keys: ["tasks", "assignment", "shop", "garden"] },
   { title: "Kết nối", keys: ["chat", "friends", "spin", "profile"] },
 ];
@@ -426,9 +428,22 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     setMobileMenuOpen(false);
   };
 
+  // Cuộn tới section trên trang chủ.
+  // Dùng window.scrollTo với vị trí tuyệt đối thay vì scrollIntoView để tránh
+  // silent-fail khi target render có điều kiện hoặc khi <html> bị height:100%.
+  // Nếu không tìm thấy target, fallback về section Game đề xuất rồi về đầu trang.
   const scrollTo = (id) => {
     setMobileMenuOpen(false);
-    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+    setTimeout(() => {
+      let el = document.getElementById(id);
+      if (!el && id === "subjects-section") el = document.getElementById("games-section");
+      if (!el) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      const top = el.getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }, 60);
   };
 
   const handleNavClick = (item) => {
@@ -771,15 +786,17 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 <SectionTitle icon={Gamepad2} iconTint="from-sky-400 to-blue-500" title="Game đề xuất"
                   actionLabel="Xem tất cả ›" onAction={() => { setShowAllGames(v => !v); if (showAllGames) scrollTo('games-section'); }} />
 
-                {/* chip môn học */}
-                {subjects.length > 0 && (
-                  <div id="subjects-section" className="flex gap-2 overflow-x-auto no-scrollbar pb-3 scroll-mt-20">
-                    <Chip active={activeSubject === 'all'} onClick={() => setActiveSubject('all')}>Tất cả</Chip>
-                    {subjects.map(sub => (
-                      <Chip key={sub} active={activeSubject === sub} onClick={() => setActiveSubject(sub)}>{sub}</Chip>
-                    ))}
-                  </div>
-                )}
+                {/* chip môn học — luôn render wrapper để nút "Học tập" trên sidebar không bị chết khi chưa có dữ liệu */}
+                <div id="subjects-section" className="flex gap-2 overflow-x-auto no-scrollbar pb-3 scroll-mt-20">
+                  {subjects.length > 0 && (
+                    <>
+                      <Chip active={activeSubject === 'all'} onClick={() => setActiveSubject('all')}>Tất cả</Chip>
+                      {subjects.map(sub => (
+                        <Chip key={sub} active={activeSubject === sub} onClick={() => setActiveSubject(sub)}>{sub}</Chip>
+                      ))}
+                    </>
+                  )}
+                </div>
 
                 {games === null ? (
                   <Loader label="Đang tải trò chơi..." />
@@ -898,7 +915,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 title="Thành tích nổi bật"
                 id="achievements-section"
                 actionLabel="Xem tất cả ›"
-                onAction={() => goTo("/profile")}
+                onAction={() => goTo("/achievements")}
               >
                 <div className="space-y-3">
                   {ACHIEVEMENTS.map((a, i) => (
