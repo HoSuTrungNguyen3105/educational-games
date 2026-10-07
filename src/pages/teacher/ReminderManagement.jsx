@@ -1,8 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { reminderService } from "../../services/api.js";
-import { Loader, ConfirmModal } from "../../components/ui.jsx";
+import { Loader, ConfirmModal, EmptyState } from "../../components/ui.jsx";
 import { useConfirm } from "../../hooks/useConfirm.js";
-import { Bell, Plus, Trash2, Clock, RotateCcw, CheckCircle, AlertCircle } from "lucide-react";
+import DateTimePicker from "../../components/DateTimePicker.jsx";
+import VibratePatternPicker from "../../components/VibratePatternPicker.jsx";
+import {
+  localDatetimeToISO,
+  isoToLocalDatetimeValue,
+  formatDateTime,
+} from "../../lib/reminderUtils.js";
+import { Bell, Plus, Trash2, Clock, RotateCcw, CheckCircle, AlertCircle, Pencil } from "lucide-react";
 
 const REPEAT_OPTIONS = [
   { value: "none", label: "Không lặp" },
@@ -10,18 +17,7 @@ const REPEAT_OPTIONS = [
   { value: "weekly", label: "Hàng tuần" },
 ];
 
-function formatDateTime(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
-function toLocalDatetimeValue(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+const EMPTY_FORM = { title: "", message: "", remindAt: "", repeat: "none", vibrate: true, sound: true, vibratePattern: "" };
 
 function getRepeatLabel(v) {
   return REPEAT_OPTIONS.find((o) => o.value === v)?.label || "Không lặp";
@@ -38,11 +34,27 @@ function getTimeStatus(remindAt, triggered) {
   return { label: `Còn ${Math.floor(diff / 86400000)} ngày`, color: "text-gray-600 bg-gray-50", icon: Clock };
 }
 
+function Toggle({ checked, onChange, label }) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer select-none">
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative w-10 h-5 rounded-full transition-colors ${checked ? "bg-gold" : "bg-gray-300"}`}
+      >
+        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${checked ? "translate-x-5" : ""}`} />
+      </button>
+      <span className="text-sm text-ink">{label}</span>
+    </label>
+  );
+}
+
 export default function ReminderManagement({ showToast }) {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", message: "", remindAt: "", repeat: "none", vibrate: true, sound: true, vibratePattern: "" });
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [dueAlert, setDueAlert] = useState(null);
   const { askConfirm, confirmProps } = useConfirm();
@@ -72,21 +84,62 @@ export default function ReminderManagement({ showToast }) {
     return () => clearInterval(interval);
   }, [dueAlert]);
 
-  const handleCreate = async () => {
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setShowForm(true);
+  };
+
+  const openEdit = (r) => {
+    setEditingId(r.id);
+    setForm({
+      title: r.title || "",
+      message: r.message || "",
+      // ISO (UTC) từ backend → giờ địa phương để điền vào picker
+      remindAt: isoToLocalDatetimeValue(r.remindAt),
+      repeat: r.repeat || "none",
+      vibrate: r.vibrate !== false,
+      sound: r.sound !== false,
+      vibratePattern: r.vibratePattern || "",
+    });
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
     if (!form.title.trim() || !form.remindAt) {
       showToast?.("Vui lòng nhập tên và thời gian nhắc", "error");
       return;
     }
+    // Giờ địa phương user chọn → ISO UTC rõ ràng, không phụ thuộc browser parse
+    const remindAt = localDatetimeToISO(form.remindAt);
+    if (!remindAt) {
+      showToast?.("Thời gian nhắc không hợp lệ", "error");
+      return;
+    }
     setSaving(true);
     try {
-      const remindAt = new Date(form.remindAt).toISOString();
-      await reminderService.create({ title: form.title.trim(), message: form.message.trim(), remindAt, repeat: form.repeat, vibrate: form.vibrate, sound: form.sound, vibratePattern: form.vibratePattern });
-      showToast?.("Đã tạo nhắc nhở!", "success");
-      setForm({ title: "", message: "", remindAt: "", repeat: "none", vibrate: true, sound: true, vibratePattern: "" });
+      const payload = {
+        title: form.title.trim(),
+        message: form.message.trim(),
+        remindAt,
+        repeat: form.repeat,
+        vibrate: form.vibrate,
+        sound: form.sound,
+        vibratePattern: form.vibratePattern,
+      };
+      if (editingId) {
+        await reminderService.update(editingId, payload);
+        showToast?.("Đã cập nhật nhắc nhở!", "success");
+      } else {
+        await reminderService.create(payload);
+        showToast?.("Đã tạo nhắc nhở!", "success");
+      }
+      setForm(EMPTY_FORM);
+      setEditingId(null);
       setShowForm(false);
       load();
     } catch (e) {
-      showToast?.("Lỗi tạo nhắc nhở: " + (e.message || ""), "error");
+      showToast?.("Lỗi lưu nhắc nhở: " + (e.message || ""), "error");
     } finally {
       setSaving(false);
     }
@@ -153,7 +206,7 @@ export default function ReminderManagement({ showToast }) {
           </h1>
           <p className="text-sm text-gray-500 mt-1">Quản lý thời gian biểu và nhắc nhở cá nhân</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2.5 bg-gold text-white rounded-xl font-semibold text-sm hover:bg-gold/90 transition">
+        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2.5 bg-gold text-white rounded-xl font-semibold text-sm hover:bg-gold/90 transition">
           <Plus className="w-4 h-4" />
           Tạo nhắc nhở
         </button>
@@ -161,7 +214,7 @@ export default function ReminderManagement({ showToast }) {
 
       {showForm && (
         <div className="bg-white rounded-2xl border border-ink/10 p-6 space-y-4">
-          <h3 className="font-bold text-ink">Thêm nhắc nhở mới</h3>
+          <h3 className="font-bold text-ink">{editingId ? "Sửa nhắc nhở" : "Thêm nhắc nhở mới"}</h3>
           <div>
             <label className="block text-sm font-medium text-ink mb-1">Tiêu đề *</label>
             <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -174,11 +227,15 @@ export default function ReminderManagement({ showToast }) {
               className="w-full px-3 py-2 border border-ink/10 rounded-xl text-sm focus:border-gold outline-none resize-none"
               rows={2} placeholder="Chi tiết (tùy chọn)..." />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-ink mb-1">Thời gian nhắc *</label>
-              <input type="datetime-local" value={form.remindAt} onChange={(e) => setForm({ ...form, remindAt: e.target.value })}
-                className="w-full px-3 py-2 border border-ink/10 rounded-xl text-sm focus:border-gold outline-none" />
+              <DateTimePicker
+                value={form.remindAt}
+                onChange={(v) => setForm({ ...form, remindAt: v })}
+                placeholder="Chọn ngày giờ nhắc"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Theo giờ trên thiết bị của bạn.</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-ink mb-1">Lặp lại</label>
@@ -189,78 +246,30 @@ export default function ReminderManagement({ showToast }) {
             </div>
           </div>
           <div className="flex items-center gap-6 pt-1">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <button type="button" onClick={() => setForm({ ...form, vibrate: !form.vibrate })}
-                className={`relative w-10 h-5 rounded-full transition-colors ${form.vibrate ? 'bg-gold' : 'bg-gray-300'}`}>
-                <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.vibrate ? 'translate-x-5' : ''}`} />
-              </button>
-              <span className="text-sm text-ink">📱 Rung</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <button type="button" onClick={() => setForm({ ...form, sound: !form.sound })}
-                className={`relative w-10 h-5 rounded-full transition-colors ${form.sound ? 'bg-gold' : 'bg-gray-300'}`}>
-                <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.sound ? 'translate-x-5' : ''}`} />
-              </button>
-              <span className="text-sm text-ink">🔔 Âm thanh</span>
-            </label>
+            <Toggle checked={form.vibrate} onChange={(v) => setForm({ ...form, vibrate: v })} label="📱 Rung" />
+            <Toggle checked={form.sound} onChange={(v) => setForm({ ...form, sound: v })} label="🔔 Âm thanh" />
           </div>
-          {form.vibrate && (
-            <div className="pt-2 space-y-2">
-              <label className="block text-sm font-medium text-ink">Nhịp rung</label>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  { label: "Mặc định", value: "" },
-                  { label: "Nhẹ nhàng", value: "100,50,100" },
-                  { label: "Rung nhanh", value: "50,30,50,30,50,30,50" },
-                  { label: "SOS", value: "100,50,100,50,100,150,300,100,300,100,300,150,100,50,100,50,100" },
-                  { label: "Tim đập", value: "80,80,80,300,80,80,80,300" },
-                  { label: "Vô hạn", value: "repeat" },
-                ].map((p) => (
-                  <button key={p.value} type="button"
-                    onClick={() => setForm({ ...form, vibratePattern: p.value })}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition ${
-                      form.vibratePattern === p.value
-                        ? "bg-gold text-white border-gold"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-gold/50"
-                    }`}>
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input value={form.vibratePattern} onChange={(e) => setForm({ ...form, vibratePattern: e.target.value })}
-                  placeholder="200,100,200,100,200"
-                  className="flex-1 px-3 py-1.5 border border-ink/10 rounded-xl text-xs font-mono focus:border-gold outline-none" />
-                <button type="button" onClick={() => {
-                  if (navigator.vibrate) {
-                    const p = form.vibratePattern;
-                    if (p === "repeat") { navigator.vibrate([300,100,300,100,300]); }
-                    else if (p) { const nums = p.split(",").map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n)); navigator.vibrate(nums); }
-                    else { navigator.vibrate([200,100,200]); }
-                  }
-                }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-medium text-gray-600 transition">
-                  📳 Test
-                </button>
-              </div>
-              <p className="text-[10px] text-gray-400">Nhập nhịp rung: <code>rung,nghỉ,rung,nghỉ...</code> (ms). Chọn "Vô hạn" để rung liên tục 30s.</p>
-            </div>
-          )}
+          <VibratePatternPicker
+            value={form.vibratePattern}
+            onChange={(v) => setForm({ ...form, vibratePattern: v })}
+            enabled={form.vibrate}
+          />
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-ink transition">Hủy</button>
-            <button onClick={handleCreate} disabled={saving}
+            <button onClick={() => { setShowForm(false); setEditingId(null); }} className="px-4 py-2 text-sm text-gray-500 hover:text-ink transition">Hủy</button>
+            <button onClick={handleSave} disabled={saving}
               className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold hover:bg-gold/90 transition disabled:opacity-50">
-              {saving ? "Đang lưu..." : "Tạo nhắc nhở"}
+              {saving ? "Đang lưu..." : editingId ? "Cập nhật" : "Tạo nhắc nhở"}
             </button>
           </div>
         </div>
       )}
 
       {activeReminders.length === 0 && pastReminders.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
-          <Bell className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Chưa có nhắc nhở nào</p>
-          <p className="text-sm mt-1">Nhấn "Tạo nhắc nhở" để bắt đầu</p>
-        </div>
+        <EmptyState
+          icon="🔔"
+          title="Chưa có nhắc nhở nào"
+          subtitle='Nhấn "Tạo nhắc nhở" để bắt đầu'
+        />
       )}
 
       {activeReminders.length > 0 && (
@@ -288,7 +297,10 @@ export default function ReminderManagement({ showToast }) {
                       <span className="text-xs">{r.vibrate !== false ? "📱" : ""}{r.sound !== false ? "🔔" : ""}</span>
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(r.id, r.title)} className="text-gray-300 hover:text-red-500 transition p-1">
+                  <button onClick={() => openEdit(r)} className="text-gray-300 hover:text-gold transition p-1" title="Sửa">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDelete(r.id, r.title)} className="text-gray-300 hover:text-red-500 transition p-1" title="Xóa">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -311,7 +323,7 @@ export default function ReminderManagement({ showToast }) {
                   <p className="font-medium text-ink text-sm truncate line-through">{r.title}</p>
                   <span className="text-xs text-gray-400">{formatDateTime(r.remindAt)}</span>
                 </div>
-                <button onClick={() => handleDelete(r.id, r.title)} className="text-gray-300 hover:text-red-500 transition p-1">
+                <button onClick={() => handleDelete(r.id, r.title)} className="text-gray-300 hover:text-red-500 transition p-1" title="Xóa">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

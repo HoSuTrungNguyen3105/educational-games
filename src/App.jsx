@@ -18,6 +18,7 @@ const GardenPage = lazy(() => import("./pages/user/GardenPage.jsx"));
 const InventoryPage = lazy(() => import("./pages/user/InventoryPage.jsx"));
 const LeaderboardPage = lazy(() => import("./pages/user/LeaderboardPage.jsx"));
 const AchievementsPage = lazy(() => import("./pages/user/AchievementsPage.jsx"));
+const RemindersPage = lazy(() => import("./pages/user/RemindersPage.jsx"));
 const ProfileScreen = lazy(() => import("./pages/user/ProfileScreen.jsx"));
 const MyCoins = lazy(() => import("./pages/user/MyCoins.jsx"));
 const FindFriendsScreen = lazy(() => import("./pages/user/FindFriendsScreen.jsx"));
@@ -142,6 +143,11 @@ function App() {
     achievements: () => (
       <RouteShell toast={toast} showBack={false}>
         <AchievementsPage userAuth={userAuth} onBack={() => navigate("/")} />
+      </RouteShell>
+    ),
+    reminders: () => (
+      <RouteShell toast={toast} showBack={false}>
+        <RemindersPage userAuth={userAuth} onBack={() => navigate("/")} showToast={showToast} />
       </RouteShell>
     ),
     "assignment-join": () => <AssignmentJoin />,
