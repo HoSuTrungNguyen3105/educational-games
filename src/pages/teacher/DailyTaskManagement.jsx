@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { taskService } from "../../services/taskService.js";
-import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton } from "../../components/ui.jsx";
+import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from "../../components/ui.jsx";
+import { useConfirm } from "../../hooks/useConfirm.js";
 
 const TASK_TYPES = [
   { value: "GAME_PLAYED", label: "Chơi game" },
@@ -29,6 +30,7 @@ export default function DailyTaskManagement({ showToast }) {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const { askConfirm, confirmProps } = useConfirm();
 
   const load = useCallback(() => {
     setStats(null);
@@ -68,13 +70,18 @@ export default function DailyTaskManagement({ showToast }) {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (task) => {
-    if (!confirm(`Xóa nhiệm vụ "${task.name}"?`)) return;
-    try {
-      await taskService.adminDeleteTask(task.id);
-      showToast("Đã xóa!", "success");
-      load();
-    } catch (e) { showToast(e.message || "Lỗi xóa", "error"); }
+  const handleDelete = (task) => {
+    askConfirm({
+      title: "Xóa nhiệm vụ",
+      message: `Xóa nhiệm vụ "${task.name}"?`,
+      onConfirm: async () => {
+        try {
+          await taskService.adminDeleteTask(task.id);
+          showToast("Đã xóa!", "success");
+          load();
+        } catch (e) { showToast(e.message || "Lỗi xóa", "error"); }
+      },
+    });
   };
 
   const taskHeaders = ["Nhiệm vụ", "Loại", "Phạm vi", "Mục tiêu", "Thưởng", "Hoàn thành", "Đã nhận", "Thao tác"];
@@ -117,20 +124,12 @@ export default function DailyTaskManagement({ showToast }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Người tham gia", value: stats?.totalParticipants ?? "...", icon: "👥" },
-          { label: "Lượt nhận thưởng", value: stats?.totalClaimed ?? "...", icon: "✅" },
-          { label: "Xu đã phát", value: stats?.totalCoinsAwarded != null ? stats.totalCoinsAwarded.toLocaleString() : "...", icon: "💰" },
-          { label: "Nhiệm vụ", value: stats?.totalTasks ?? "...", icon: "📝" },
-        ].map((s) => (
-          <div key={s.label} className="note-card p-4">
-            <div className="text-2xl mb-1">{s.icon}</div>
-            <div className="font-display text-xl text-ink">{s.value}</div>
-            <div className="text-[10px] text-[#8A7C63] font-mono uppercase">{s.label}</div>
-          </div>
-        ))}
-      </div>
+      <StatGrid stats={[
+        { label: "Người tham gia", value: stats?.totalParticipants ?? "...", icon: "👥" },
+        { label: "Lượt nhận thưởng", value: stats?.totalClaimed ?? "...", icon: "✅" },
+        { label: "Xu đã phát", value: stats?.totalCoinsAwarded != null ? stats.totalCoinsAwarded.toLocaleString() : "...", icon: "💰" },
+        { label: "Nhiệm vụ", value: stats?.totalTasks ?? "...", icon: "📝" },
+      ]} />
 
       {tab === "tasks" && (
         <ManagementTable
@@ -227,6 +226,8 @@ export default function DailyTaskManagement({ showToast }) {
           </div>
         </Modal>
       )}
+
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }

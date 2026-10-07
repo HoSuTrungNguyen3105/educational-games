@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { imageService, API_BASE } from "../../services/api.js";
-import { Loader, EmptyState, Modal } from "../../components/ui.jsx";
-import { Image, Upload, Search, Trash2, Copy, X, FolderOpen, Grid, List } from "lucide-react";
-
-function loadAuth() {
-  try { return JSON.parse(localStorage.getItem("edu_games_auth") || "{}"); } catch { return {}; }
-}
+import { imageService } from "../../services/api.js";
+import { Loader, EmptyState, Modal, ConfirmModal, SearchInput } from "../../components/ui.jsx";
+import { Image, Upload, Trash2, Copy, X, FolderOpen, Grid, List } from "lucide-react";
+import { useConfirm } from "../../hooks/useConfirm.js";
 
 function formatBytes(bytes) {
   if (bytes < 1024) return bytes + " B";
@@ -28,6 +25,7 @@ export default function ImageLibrary({ showToast }) {
   const [selected, setSelected] = useState([]);
   const [preview, setPreview] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
+  const { askConfirm, confirmProps } = useConfirm();
   const [folder, setFolder] = useState("edu-game");
   const fileInput = useRef(null);
   const multiInput = useRef(null);
@@ -67,24 +65,36 @@ export default function ImageLibrary({ showToast }) {
     finally { setSearching(false); }
   };
 
-  const handleDelete = async (img) => {
-    if (!confirm(`Xóa ảnh "${img.publicId}"?`)) return;
-    try {
-      await imageService.remove(img.publicId);
-      setImages(prev => prev.filter(i => i.publicId !== img.publicId));
-      setSelected(prev => prev.filter(id => id !== img.publicId));
-      showToast("Đã xóa", "success");
-    } catch (e) { showToast(e.message || "Lỗi xóa", "error"); }
+  const handleDelete = (img) => {
+    askConfirm({
+      title: "Xóa ảnh",
+      message: `Xóa ảnh "${img.publicId}"?`,
+      onConfirm: async () => {
+        try {
+          await imageService.remove(img.publicId);
+          setImages(prev => prev.filter(i => i.publicId !== img.publicId));
+          setSelected(prev => prev.filter(id => id !== img.publicId));
+          showToast("Đã xóa", "success");
+        } catch (e) { showToast(e.message || "Lỗi xóa", "error"); }
+      },
+    });
   };
 
-  const handleDeleteSelected = async () => {
-    if (!selected.length || !confirm(`Xóa ${selected.length} ảnh đã chọn?`)) return;
-    try {
-      await imageService.removeMany(selected);
-      setImages(prev => prev.filter(i => !selected.includes(i.publicId)));
-      setSelected([]);
-      showToast(`Đã xóa ${selected.length} ảnh`, "success");
-    } catch (e) { showToast(e.message || "Lỗi xóa", "error"); }
+  const handleDeleteSelected = () => {
+    if (!selected.length) return;
+    askConfirm({
+      title: "Xóa nhiều ảnh",
+      message: `Xóa ${selected.length} ảnh đã chọn? Hành động này không thể hoàn tác.`,
+      confirmLabel: "Xóa tất cả",
+      onConfirm: async () => {
+        try {
+          await imageService.removeMany(selected);
+          setImages(prev => prev.filter(i => !selected.includes(i.publicId)));
+          setSelected([]);
+          showToast(`Đã xóa ${selected.length} ảnh`, "success");
+        } catch (e) { showToast(e.message || "Lỗi xóa", "error"); }
+      },
+    });
   };
 
   const toggleSelect = (publicId) => {
@@ -123,13 +133,10 @@ export default function ImageLibrary({ showToast }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/40" />
-          <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSearch()}
-            placeholder="Tìm ảnh theo tag, folder..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-ink/15 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-400/30 outline-none" />
-        </div>
+        <SearchInput value={searchQuery} onChange={setSearchQuery}
+          onKeyDown={e => e.key === "Enter" && handleSearch()}
+          placeholder="Tìm ảnh theo tag, folder..."
+          className="flex-1" />
         <button onClick={handleSearch} disabled={searching}
           className="px-4 py-2.5 bg-ink/5 rounded-xl text-sm font-medium hover:bg-ink/10 transition disabled:opacity-50">
           {searching ? "Đang tìm..." : "Tìm kiếm"}
@@ -264,6 +271,8 @@ export default function ImageLibrary({ showToast }) {
           </div>
         </Modal>
       )}
+
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }
