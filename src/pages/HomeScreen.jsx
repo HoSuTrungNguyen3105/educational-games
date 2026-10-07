@@ -14,6 +14,7 @@ import { PetSvg, PetAvatar } from '../components/PetAvatar.jsx'
 import { usePet, moodLabel } from '../lib/petApi.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
+import { playVibration, playReminderSound, stopVibrationLoop } from '../lib/reminderUtils.js'
 import {
   Home,
   ClipboardList,
@@ -113,6 +114,7 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "games", icon: Gamepad2, label: "Chơi game", type: "scroll", target: "games-section", show: true },
   { key: "subjects", icon: BookOpen, label: "Học tập", type: "scroll", target: "subjects-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: true, badge: true },
+  { key: "reminders", icon: Bell, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
   { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
@@ -127,7 +129,7 @@ const SIDEBAR_ITEMS = (userAuth) => ([
 // Chia sidebar thanh nhom de mat 'bi lan' hon phan trang chinh.
 const SIDEBAR_GROUPS = [
   { title: "Chính", keys: ["home", "games", "subjects", "achievements", "leaderboard"] },
-  { title: "Học tập", keys: ["tasks", "assignment", "shop", "garden"] },
+  { title: "Học tập", keys: ["tasks", "reminders", "assignment", "shop", "garden"] },
   { title: "Kết nối", keys: ["chat", "friends", "spin", "profile"] },
 ];
 
@@ -166,6 +168,20 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [showNotifications, setShowNotifications] = useState(false);
   const templates = useTemplates();
   const { dueReminder, dismissDue } = useReminderCheck(userAuth?.token);
+
+  // Khi nhắc nhở tới giờ: rung + phát chuông theo đúng cấu hình của reminder đó.
+  // (Trước đây modal hiện lên im lặng — đây chính là bug "cấu hình rung không có tác dụng".)
+  useEffect(() => {
+    if (!dueReminder) return;
+    playVibration(dueReminder.vibratePattern, dueReminder.vibrate);
+    if (dueReminder.sound !== false) playReminderSound();
+    return () => stopVibrationLoop();
+  }, [dueReminder]);
+
+  const handleDismissDue = () => {
+    stopVibrationLoop();
+    dismissDue();
+  };
 
   const [avatarLoadout, setAvatarLoadout] = useState({});
   const [avatarItems, setAvatarItems] = useState([]);
@@ -492,7 +508,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <p className="font-semibold text-ink">{dueReminder.title}</p>
               {dueReminder.message && <p className="text-xs text-gray-500 mt-0.5">{dueReminder.message}</p>}
             </div>
-            <button onClick={dismissDue} className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-amber-600 transition flex-shrink-0">
+            <button onClick={handleDismissDue} className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-amber-600 transition flex-shrink-0">
               OK
             </button>
           </div>

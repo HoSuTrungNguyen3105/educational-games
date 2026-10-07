@@ -10,6 +10,7 @@ import {
 import AvatarPreview from "../../components/avatar/AvatarPreview.jsx";
 import { Loader } from "../../components/ui.jsx";
 import { getPushSupportStatus, requestNotificationPermission, onForegroundMessage } from "../../firebase/messaging.js";
+import { playVibration } from "../../lib/reminderUtils.js";
 
 const AvatarCustomizer = lazy(() => import("../../components/avatar/AvatarCustomizer.jsx"));
 
@@ -166,16 +167,9 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           });
         }
       } catch { /* ignore */ }
-      // vibration & sound (chuẩn SW)
-      if (data.vibrate !== "false" && navigator.vibrate) {
-        const pat = data.vibratePattern;
-        let vibrateArr = [200, 100, 200];
-        if (pat && pat !== "repeat") {
-          const nums = pat.split(",").map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
-          if (nums.length) vibrateArr = nums;
-        }
-        if (pat === "repeat") navigator.vibrate([300, 100, 300, 100, 300]);
-        else navigator.vibrate(vibrateArr);
+      // vibration theo đúng pattern đã cấu hình (dùng chung logic với SW)
+      if (data.vibrate !== "false") {
+        playVibration(data.vibratePattern, true);
       }
     });
     return unsubscribe;
