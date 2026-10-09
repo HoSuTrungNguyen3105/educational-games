@@ -32,6 +32,7 @@ export const OFFLINE_GAME_MANIFEST = [
   { id: 'dap-sau-bo', name: 'Đập Sâu Bọ', icon: '🪲', tag: 'Đập côn trùng', grad: 'from-teal-400 to-emerald-600', engine: 'single', file: 'src/games/offline/dap-sau-bo.html' },
   { id: 'ghep-cap-vuon', name: 'Ghép Cặp Vườn', icon: '🧩', tag: 'Ghép đôi', grad: 'from-pink-400 to-rose-500', engine: 'single', file: 'src/games/offline/ghep-cap-vuon.html' },
   { id: 'sau-an-la', name: 'Sâu Ăn Táo', icon: '🐛', tag: 'Bảo vệ vườn', grad: 'from-indigo-400 to-blue-600', engine: 'single', file: 'src/games/offline/sau-an-la.html' },
+  { id: 'parkour', name: 'Parkour Tri Thức 3D', icon: '🏃', tag: 'Parkour 3D', grad: 'from-pink-400 to-rose-500', engine: 'single', file: 'src/games/offline/parkour.html' },
 ];
 
 export const offlineGameIds = OFFLINE_GAME_MANIFEST.map((g) => g.id);
