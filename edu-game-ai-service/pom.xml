@@ -12,11 +12,17 @@
 	<artifactId>edu-game-ai-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>edu-game-ai-service</name>
-	<description>AI Service for Edu Game - generates educational questions via Ollama</description>
+	<description>AI Service for Edu Game - chatbot, question generation and learning analysis via Ollama</description>
 
 	<properties>
 		<java.version>21</java.version>
+		<!--
+			Giữ BOM của Spring AI để khi cần đổi provider có thể chỉ cần thêm dependency,
+			không phải tra lại version. Xem README mục "Vì sao không dùng spring-ai-starter-model-ollama".
+		-->
+		<spring-ai.version>1.0.0</spring-ai.version>
 	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -27,13 +33,18 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
@@ -48,7 +59,7 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-bom</artifactId>
-				<version>1.0.0</version>
+				<version>${spring-ai.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -60,6 +71,14 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
