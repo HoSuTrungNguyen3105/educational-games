@@ -1,8 +1,16 @@
 package com.example.edugameai.dto;
 
 import java.util.List;
+
 import lombok.Data;
 
+/**
+ * Câu hỏi theo shape CŨ của {@code POST /api/ai/generate-question}.
+ *
+ * <p>Giữ nguyên để không phá hợp đồng cũ. Endpoint mới {@code /api/ai/quizzes/generate}
+ * trả {@link com.example.edugameai.dto.quiz.GeneratedQuestion} — đúng schema mà backend
+ * chính đang lưu.
+ */
 @Data
 public class QuestionDto {
     private String content;

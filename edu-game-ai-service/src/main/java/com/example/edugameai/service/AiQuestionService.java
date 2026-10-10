@@ -1,47 +1,52 @@
 package com.example.edugameai.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.example.edugameai.dto.QuestionRequest;
 import com.example.edugameai.dto.QuestionResponse;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.converter.BeanOutputConverter;
+import com.example.edugameai.dto.quiz.AiQuizGenerateRequest;
+import com.example.edugameai.dto.quiz.AiQuizGenerateResponse;
+import com.example.edugameai.dto.quiz.GeneratedQuestion;
+import com.example.edugameai.security.AuthenticatedUser;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
+/**
+ * Bọc {@link AiQuizGenerationService} cho endpoint CŨ {@code /api/ai/generate-question}.
+ *
+ * <p>Trước đây service này tự dựng prompt và gọi thẳng model, không validate gì cả —
+ * chính vì vậy đôi khi AI trả về JSON hỏng làm cả request lỗi 500. Nay nó chuyển tiếp
+ * toàn bộ việc cho pipeline đã kiểm tra nghiêm ngặt rồi CHUYỂN ĐỔI kết quả về shape cũ,
+ * nên hợp đồng API được giữ nguyên mà chất lượng ổn định hơn nhiều.
+ */
 @Service
 public class AiQuestionService {
 
-    private final ChatClient chatClient;
+    private final AiQuizGenerationService quizGenerationService;
 
-    public AiQuestionService(ChatClient.Builder chatClientBuilder) {
-        this.chatClient = chatClientBuilder.build();
+    public AiQuestionService(AiQuizGenerationService quizGenerationService) {
+        this.quizGenerationService = quizGenerationService;
     }
 
-    public QuestionResponse generateQuestions(QuestionRequest request) {
-        BeanOutputConverter<QuestionResponse> converter = new BeanOutputConverter<>(QuestionResponse.class);
+    public QuestionResponse generateQuestions(QuestionRequest request, AuthenticatedUser user, String remoteIp) {
+        AiQuizGenerateRequest modern = new AiQuizGenerateRequest(
+                request.getSubject(), request.getGrade(), request.getTopic(),
+                request.getDifficulty(), request.getQuantity(), null, null);
 
-        String promptText = """
-                Bạn là một giáo viên chuyên nghiệp. Hãy tạo các câu hỏi trắc nghiệm dựa trên yêu cầu sau:
-                Môn học: {subject}
-                Lớp: {grade}
-                Chủ đề: {topic}
-                Độ khó: {difficulty}
-                Số lượng: {quantity}
-                
-                {format}
-                """;
+        AiQuizGenerateResponse generated = quizGenerationService.generate(modern, user, remoteIp);
 
-        PromptTemplate template = new PromptTemplate(promptText);
-        template.add("subject", request.getSubject());
-        template.add("grade", request.getGrade());
-        template.add("topic", request.getTopic());
-        template.add("difficulty", request.getDifficulty());
-        template.add("quantity", request.getQuantity());
-        template.add("format", converter.getFormat());
-
-        String response = chatClient.prompt(template.create()).call().content();
-        
-        return converter.convert(response);
+        List<com.example.edugameai.dto.QuestionDto> questions = new ArrayList<>(generated.questions().size());
+        for (GeneratedQuestion q : generated.questions()) {
+            List<String> options = new ArrayList<>(q.options().size());
+            String correctText = null;
+            for (GeneratedQuestion.Option o : q.options()) {
+                options.add(o.content());
+                if (o.id().equals(q.correctAnswer())) {
+                    correctText = o.content();
+                }
+            }
+            questions.add(new com.example.edugameai.dto.QuestionDto(q.content(), options, correctText, q.points()));
+        }
+        return new QuestionResponse(questions);
     }
 }
