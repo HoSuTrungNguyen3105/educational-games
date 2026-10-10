@@ -1,13 +1,101 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
+  error:
+    # Không bao giờ trả stack trace ra ngoài; thông điệp đã lọc sạch ở GlobalExceptionHandler.
+    include-stacktrace: never
+    include-message: never
+    include-exception: false
 
 spring:
   application:
     name: edu-game-ai-service
+  jackson:
+    default-property-inclusion: non_null
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AI / Ollama
+#
+# Mọi giá trị đến từ biến môi trường hoặc file .env (edu.ai.env-file).
+# KHÔNG hardcode endpoint, model name hay API key trong mã nguồn.
+# ─────────────────────────────────────────────────────────────────────────────
+edu:
   ai:
-    ollama:
-      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-      chat:
-        options:
-          model: ${OLLAMA_MODEL:llama3}
-          temperature: 0.7
+    # File .env để nạp khi chạy local. Biến môi trường hệ thống LUÔN được ưu tiên cao hơn.
+    # Đặt EDU_AI_ENV_FILE=- (hoặc để trống) để tắt, ví dụ khi deploy dùng secrets của nền tảng.
+    env-file: ${EDU_AI_ENV_FILE:.env}
+
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    model: ${OLLAMA_MODEL:llama3}
+
+    # Rỗng = không gắn header Authorization (Ollama local không cần key).
+    # Điền khi endpoint là dịch vụ từ xa yêu cầu key (ví dụ ollama.com).
+    # Không bao giờ đưa giá trị này ra frontend hoặc vào log.
+    api-key: ${OLLAMA_KEY:}
+
+    connect-timeout: ${OLLAMA_CONNECT_TIMEOUT:10s}
+    # Model local sinh câu hỏi có thể mất 30–90 giây.
+    read-timeout: ${OLLAMA_READ_TIMEOUT:120s}
+
+    auth:
+      # true = mọi endpoint /api/ai/** trừ health đều cần Bearer token do backend chính xác thực.
+      # Đặt false CHỈ để chạy thử nhanh khi chưa có backend.
+      required: ${EDU_AI_AUTH_REQUIRED:true}
+      # Chỉ giáo viên/admin được sinh câu hỏi.
+      quiz-requires-staff: ${EDU_AI_QUIZ_REQUIRES_STAFF:true}
+
+    web:
+      allowed-origins: ${EDU_AI_ALLOWED_ORIGINS:}
+
+    limits:
+      max-message-length: 2000
+      max-history-turn-length: 1000
+      max-history-turns: 10
+      max-source-content-length: 2000
+      max-questions-per-request: 20
+      min-options-per-question: 4
+      max-options-per-question: 6
+      max-question-content-length: 500
+      max-option-content-length: 200
+      max-analysis-item-length: 400
+      max-analysis-items: 5
+      max-prompt-length: 8000
+
+    rate-limit:
+      enabled: ${EDU_AI_RATE_LIMIT_ENABLED:true}
+      chat-per-minute: ${EDU_AI_RATE_LIMIT_CHAT:20}
+      quiz-per-minute: ${EDU_AI_RATE_LIMIT_QUIZ:10}
+      analysis-per-minute: ${EDU_AI_RATE_LIMIT_ANALYSIS:10}
+
+    generation:
+      temperature: ${OLLAMA_TEMPERATURE:0.4}
+      json-retry-attempts: ${EDU_AI_JSON_RETRY:1}
+      min-questions-for-conclusion: 5
+      min-plays-for-conclusion: 2
+
+  # ── Backend nghiệp vụ hiện tại (Node/Express) ───────────────────────────────
+  # AI Service KHÔNG có database riêng; nó chỉ đọc dữ liệu qua các API này.
+  core:
+    base-url: ${CORE_API_BASE:http://localhost:5000/api}
+    connect-timeout: 5s
+    read-timeout: 20s
+    enabled: ${EDU_CORE_ENABLED:true}
+    max-game-pages: 20
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+    com.example.edugameai: INFO

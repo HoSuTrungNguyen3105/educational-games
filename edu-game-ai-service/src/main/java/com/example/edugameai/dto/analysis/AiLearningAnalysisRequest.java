@@ -3,6 +3,7 @@ package com.example.edugameai.dto.analysis;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 /**
  * Yêu cầu phân tích kết quả học tập.
