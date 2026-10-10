@@ -1,5 +1,6 @@
 package com.example.edugameai;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.when;
@@ -64,8 +65,8 @@ class AiApiIntegrationTest {
         when(coreBackendClient.listResults()).thenReturn(List.of());
         when(coreBackendClient.gameIndex()).thenReturn(java.util.Map.of());
 
-        when(aiChatGateway.complete(anyString(), any())).thenReturn("Câu trả lời từ AI.");
-        when(aiChatGateway.completeJson(anyString(), any()))
+        when(aiChatGateway.complete(any(AiChatGateway.AiMessage.class), any())).thenReturn("Câu trả lời từ AI.");
+        when(aiChatGateway.completeJson(any(AiChatGateway.AiMessage.class), any()))
                 .thenReturn("{\"questions\":[{\"content\":\"Câu?\",\"options\":[\"a\",\"b\",\"c\",\"d\"],"
                         + "\"correctAnswer\":\"a\"}]}");
         when(aiChatGateway.health()).thenReturn(AiChatGateway.HealthStatus.ok("Ollama sẵn sàng"));

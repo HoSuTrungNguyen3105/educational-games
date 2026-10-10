@@ -19,6 +19,7 @@ const InventoryPage = lazy(() => import("./pages/user/InventoryPage.jsx"));
 const LeaderboardPage = lazy(() => import("./pages/user/LeaderboardPage.jsx"));
 const AchievementsPage = lazy(() => import("./pages/user/AchievementsPage.jsx"));
 const RemindersPage = lazy(() => import("./pages/user/RemindersPage.jsx"));
+const AiLearningAnalysisPage = lazy(() => import("./pages/user/AiLearningAnalysisPage.jsx"));
 const ProfileScreen = lazy(() => import("./pages/user/ProfileScreen.jsx"));
 const MyCoins = lazy(() => import("./pages/user/MyCoins.jsx"));
 const FindFriendsScreen = lazy(() => import("./pages/user/FindFriendsScreen.jsx"));
@@ -150,6 +151,21 @@ function App() {
         <RemindersPage userAuth={userAuth} onBack={() => navigate("/")} showToast={showToast} />
       </RouteShell>
     ),
+    // Trang phân tích học tập bằng AI — yêu cầu đăng nhập vì AI Service xác thực token.
+    "ai-learning": () => {
+      if (!userAuth) {
+        return (
+          <RouteShell toast={toast}>
+            <LoginScreen onBack={() => navigate("/")} onLogin={handleLogin} showToast={showToast} />
+          </RouteShell>
+        );
+      }
+      return (
+        <RouteShell toast={toast}>
+          <AiLearningAnalysisPage />
+        </RouteShell>
+      );
+    },
     "assignment-join": () => <AssignmentJoin />,
     "assignment-take": () => <AssignmentTake code={route.params?.code} />,
     "math-adventure": () => <MathAdventurePage />,

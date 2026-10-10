@@ -106,7 +106,7 @@ async function aiFetch(path, { body, timeoutMs = TIMEOUT_MS, signal, method } = 
     clearTimeout(timer);
   }
 
-  let payload = null;
+  let payload;
   try {
     payload = await res.json();
   } catch {

@@ -12,15 +12,16 @@ const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 function errText(e) {
   switch (e?.kind) {
     case "offline":
-      return e.message;
     case "timeout":
+    case "auth":
+    case "forbidden":
+    case "rateLimit":
+    case "badResponse":
       return e.message;
     case "badRequest":
       return `AI Service không nhận yêu cầu: ${e.message}`;
     case "server":
-      return `AI Service lỗi (${e.status}). Có thể Ollama chưa chạy — kiểm tra OLLAMA_BASE_URL.`;
-    case "badResponse":
-      return e.message;
+      return `${e.message} Kiểm tra Ollama có đang chạy và OLLAMA_MODEL đã được tải chưa.`;
     default:
       return e?.message || "Không sinh được câu hỏi.";
   }
@@ -61,7 +62,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
         grade,
         topic: topic || form?.topic,
         difficulty,
-        quantity,
+        count: quantity,
         signal: ctrl.signal,
       });
       setResult(res);
@@ -72,7 +73,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
       if (!res.questions.length) {
         setError("AI không sinh được câu hỏi nào đúng cấu trúc. Thử đổi chủ đề hoặc độ khó.");
       } else if (showToast) {
-        showToast(`AI đã sinh ${res.questions.length} câu`, "ok");
+        showToast(`AI đã sinh ${res.questions.length} câu`, "success");
       }
     } catch (e) {
       if (e?.kind !== "timeout" || !ctrl.signal.aborted) setError(errText(e));
@@ -91,7 +92,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
     const qs = (result?.questions || []).filter((q) => picked[q.id]);
     if (!qs.length) return;
     onAdd(qs);
-    if (showToast) showToast(`Đã thêm ${qs.length} câu từ AI`, "ok");
+    if (showToast) showToast(`Đã thêm ${qs.length} câu từ AI`, "success");
     setResult(null);
     setPicked({});
   }

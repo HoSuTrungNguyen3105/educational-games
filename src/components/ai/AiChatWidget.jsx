@@ -10,23 +10,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AI_BASE, chat } from "../../services/aiApi.js";
-
-/** Thông báo tiếng Việt theo loại lỗi của AI Service. */
-export function aiErrorText(e) {
-  switch (e?.kind) {
-    case "offline":
-    case "timeout":
-    case "badRequest":
-    case "auth":
-    case "forbidden":
-    case "rateLimit":
-    case "server":
-    case "badResponse":
-      return e.message;
-    default:
-      return e?.message || "Không kết nối được trợ lý AI.";
-  }
-}
+import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
 
 const MAX_LOCAL_TURNS = 12;
 
@@ -42,6 +26,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [hint, setHint] = useState(null);
   const [conversationId, setConversationId] = useState(null);
   const abortRef = useRef(null);
   const bottomRef = useRef(null);
@@ -62,6 +47,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
     if (!content || busy) return;
 
     setError(null);
+    setHint(null);
     setInput("");
     setBusy(true);
 
@@ -90,6 +76,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
       // Huỷ thủ công thì im lặng, không báo lỗi.
       if (e?.kind !== "timeout" || !ctrl.signal.aborted) {
         setError(aiErrorText(e));
+        setHint(aiErrorHint(e));
       }
     } finally {
       setBusy(false);
@@ -106,6 +93,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
     abortRef.current?.abort();
     setMessages([]);
     setError(null);
+    setHint(null);
     setBusy(false);
     setConversationId(null);
   }
@@ -203,6 +191,9 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
             {error && (
               <div className="rounded-xl bg-ticket/10 border border-ticket/20 px-3 py-2">
                 <p className="text-[11px] text-ticket leading-relaxed">{error}</p>
+                {hint && (
+                  <p className="text-[10px] text-[#8A7C63] leading-relaxed mt-1">{hint}</p>
+                )}
               </div>
             )}
 

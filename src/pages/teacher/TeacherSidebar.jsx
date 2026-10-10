@@ -27,6 +27,7 @@ Palette,
   Image,
   Bell,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react'
 
 const MENU = [
@@ -46,6 +47,7 @@ const MENU = [
   { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
   { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
   { id: "admin-reminders", label: "Nhắc nhở", icon: Bell, route: "/admin/reminders", permission: null },
+  { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/admin/ai-analysis", permission: "reports.view" },
   { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
   { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/admin/avatar-template", permission: null },
   { id: "admin-body-custom", label: "Body Custom", icon: Move, route: "/admin/body-custom", permission: null },
@@ -80,6 +82,7 @@ const MOBILE_MORE = [
   { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
   { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
   { id: "admin-reminders", label: "Nhắc nhở", icon: Bell, route: "/admin/reminders", permission: null },
+  { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/admin/ai-analysis", permission: "reports.view" },
   { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
   { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/admin/avatar-template", permission: null },
   { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/admin/images", permission: null },

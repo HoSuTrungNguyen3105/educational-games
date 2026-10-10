@@ -9,8 +9,8 @@
 
 import { useState } from "react";
 import { analyzeLearning } from "../../services/aiApi.js";
-import { aiErrorText } from "./AiChatWidget.jsx";
-import { ErrorState, GhostButton, Loader, PrimaryButton, StatGrid } from "../ui.jsx";
+import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
+import { GhostButton, Loader, PrimaryButton, StatGrid } from "../ui.jsx";
 
 const TREND_LABEL = {
   improving: { text: "Đang tiến bộ", cls: "bg-teal/10 text-teal border-teal/20" },
@@ -28,17 +28,20 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
   const [report, setReport] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [hint, setHint] = useState(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
   async function load() {
     setError(null);
+    setHint(null);
     setBusy(true);
     try {
       const res = await analyzeLearning({ studentId: studentId || undefined, from, to });
       setReport(res);
     } catch (e) {
       setError(aiErrorText(e));
+      setHint(aiErrorHint(e));
     } finally {
       setBusy(false);
     }
@@ -87,7 +90,15 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
         </div>
       </div>
 
-      {error && <ErrorState title="Không phân tích được" subtitle={error} onRetry={load} />}
+      {error && (
+        <div className="note-card p-6 text-center">
+          <p className="font-display text-lg text-ticket">{error}</p>
+          {hint && <p className="text-sm text-[#8A7C63] mt-1">{hint}</p>}
+          <div className="mt-4 flex justify-center">
+            <PrimaryButton onClick={load} disabled={busy}>Thử lại</PrimaryButton>
+          </div>
+        </div>
+      )}
 
       {busy && !report && (
         <div className="flex justify-center py-10">
