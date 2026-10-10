@@ -14,4 +14,23 @@ export const config = {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
+
+  // ── AI Service (Java, mặc định :8081) ────────────────────────────────────
+  // Kiến trúc: Frontend → Backend chính (chỗ này) → AI Service. Frontend KHÔNG
+  // bao giờ gọi thẳng AI Service.
+  //
+  // LƯU Ý QUAN TRỌNG khi deploy: `localhost` trong container KHÔNG phải máy
+  // chạy Backend chính. Phải trỏ AI_BACKEND_URL vào hostname/URL thật của AI
+  // Service, và đặt AI Service trong mạng nội bộ nếu có thể.
+  aiBackend: {
+    url: (process.env.AI_BACKEND_URL || "http://localhost:8081").replace(/\/+$/, ""),
+    // Shared secret gửi qua header X-Ai-Internal-Token. PHẢI khớp với
+    // EDU_AI_INTERNAL_TOKEN của AI Service. Rỗng = không xác thực được, các
+    // chức năng AI sẽ trả lỗi 503 kèm hướng dẫn cấu hình.
+    token: process.env.AI_BACKEND_TOKEN || "",
+    // Model local sinh nội dung chậm nên timeout mặc định phải rộng.
+    timeoutMs: Number(process.env.AI_BACKEND_TIMEOUT_MS) || 120_000,
+    // Bật/tắt toàn bộ tính năng AI (hữu ích khi deploy môi trường không có AI Service).
+    enabled: process.env.AI_BACKEND_ENABLED !== "false",
+  },
 };

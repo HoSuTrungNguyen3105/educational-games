@@ -21,6 +21,34 @@ export function correctKeyOf(question) {
   return question?.correctAnswer ?? question?.answer ?? null;
 }
 
+/** Danh sách phương án của câu hỏi, đã chuẩn hoá về `{ id, content }`. */
+export function normalizedOptions(question) {
+  const raw = question?.options ?? question?.answers;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((opt) => {
+      if (opt == null) return null;
+      if (typeof opt === "string") return { id: opt, content: opt };
+      const id = opt.id ?? opt.key ?? opt.value ?? null;
+      const content = opt.content ?? opt.text ?? opt.label ?? opt.value ?? String(id ?? "");
+      return id == null ? null : { id, content };
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Đổi key của phương án (id/key) thành nội dung hiển thị.
+ * Trả về nguyên chuỗi đã gửi nếu không khớp phương án nào (câu tự điền).
+ */
+export function resolveOptionText(question, optionKey) {
+  if (optionKey == null) return null;
+  if (isTextQuestion(question)) return String(optionKey);
+  const hit = normalizedOptions(question).find(
+    (o) => o.id === optionKey || String(o.id).toLowerCase() === String(optionKey).toLowerCase()
+  );
+  return hit ? hit.content : String(optionKey);
+}
+
 /** So sánh 1 đáp án với đáp án đúng của câu hỏi. */
 export function isAnswerCorrect(question, value) {
   const expected = correctKeyOf(question);

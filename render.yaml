@@ -18,3 +18,15 @@ services:
         generateValue: true
       - key: MONGODB_URI
         sync: false
+      # ── AI Service (Java) ──────────────────────────────────────────
+      # Frontend gọi /api/ai/* của Backend chính này; Backend chính mới gọi AI Service.
+      # KHI DEPLOY: localhost KHÔNG phải máy chạy AI Service — phải trỏ URL thật,
+      # tốt nhất đặt AI Service trong cùng mạng nội bộ.
+      - key: AI_BACKEND_URL
+        sync: false
+      # Shared secret gửi qua header X-Ai-Internal-Token.
+      # PHẢI khớp với EDU_AI_INTERNAL_TOKEN của AI Service.
+      - key: AI_BACKEND_TOKEN
+        generateValue: true
+      - key: AI_BACKEND_TIMEOUT_MS
+        value: 120000

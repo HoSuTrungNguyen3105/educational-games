@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
-import { generateQuestions, DIFFICULTIES, AI_BASE } from "../services/aiApi.js";
+import { API_BASE } from "../services/api.js";
+import { generateQuestions, DIFFICULTIES } from "../services/aiApi.js";
 import { GhostButton } from "./ui.jsx";
 import Field from "../pages/teacher/fields.jsx";
 
 const inputCls =
-  "w-full rounded-xl border border-ink/15 px-3 py-2 text-sm font-body outline-none focus:border-ink/40 bg-white";
+  "w-full rounded-xl border border-ink/15 px-3 py-2 text-base sm:text-sm font-body outline-none focus:border-ink/40 bg-white";
 
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -102,15 +103,15 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 min-h-[44px] text-left"
       >
         <span className="flex items-center gap-2 min-w-0">
-          <span className="text-lg">✨</span>
+          <span className="text-lg shrink-0" aria-hidden>✨</span>
           <span className="font-display text-sm font-bold text-violet-900 truncate">
             Sinh câu hỏi bằng AI
           </span>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-violet-200/70 text-violet-800 shrink-0">
-            {AI_BASE.replace(/^https?:\/\//, "")}
+          <span className="hidden sm:inline text-[10px] font-mono px-1.5 py-0.5 rounded bg-violet-200/70 text-violet-800 shrink-0">
+            {API_BASE.replace(/^https?:\/\//, "")}
           </span>
         </span>
         <span className="text-violet-400 text-xs shrink-0">{open ? "▲" : "▼"}</span>
@@ -137,7 +138,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
             </Field>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <Field label="Lớp">
               <select className={inputCls} value={grade} onChange={(e) => setGrade(Number(e.target.value))}>
                 {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
@@ -148,16 +149,19 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
                 {DIFFICULTIES.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
               </select>
             </Field>
-            <Field label="Số câu">
-              <input
-                type="number"
-                min={1}
-                max={20}
-                className={inputCls}
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
-              />
-            </Field>
+            <div className="col-span-2 sm:col-span-1">
+              <Field label="Số câu">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={20}
+                  className={inputCls}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                />
+              </Field>
+            </div>
           </div>
 
           <div className="flex gap-2">
@@ -167,7 +171,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
               <button
                 type="button"
                 onClick={run}
-                className="flex-1 rounded-xl bg-violet-600 text-white px-4 py-2 text-sm font-bold shadow-sm hover:bg-violet-700 transition active:scale-[.98]"
+                className="flex-1 min-h-[44px] rounded-xl bg-violet-600 text-white px-4 py-2 text-sm font-bold shadow-sm hover:bg-violet-700 transition active:scale-[.98]"
               >
                 ✨ Sinh câu hỏi
               </button>
@@ -221,11 +225,11 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
                 </p>
               )}
 
-              <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-72 sm:max-h-96 overflow-y-auto overscroll-contain pr-1">
                 {result.questions.map((q) => (
                   <label
                     key={q.id}
-                    className={`flex gap-2.5 rounded-xl border px-3 py-2 cursor-pointer transition ${
+                    className={`flex gap-2.5 rounded-xl border px-3 py-3 cursor-pointer transition ${
                       picked[q.id] ? "border-violet-300 bg-violet-50" : "border-ink/10 bg-white hover:border-ink/25"
                     }`}
                   >
@@ -233,15 +237,15 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
                       type="checkbox"
                       checked={!!picked[q.id]}
                       onChange={(e) => setPicked((s) => ({ ...s, [q.id]: e.target.checked }))}
-                      className="mt-0.5 accent-violet-600 shrink-0"
+                      className="mt-1 w-4 h-4 accent-violet-600 shrink-0"
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[13px] font-semibold text-ink leading-snug">{q.content}</span>
-                      <span className="mt-1 flex flex-wrap gap-1">
+                      <span className="block text-[13px] font-semibold text-ink leading-snug break-words">{q.content}</span>
+                      <span className="mt-1.5 flex flex-wrap gap-1">
                         {q.options.map((o) => (
                           <span
                             key={o.id}
-                            className={`text-[11px] px-1.5 py-0.5 rounded ${
+                            className={`text-[11px] px-1.5 py-1 rounded break-words ${
                               o.id === q.correctAnswer
                                 ? "bg-emerald-100 text-emerald-700 font-semibold"
                                 : "bg-ink/5 text-slate-600"
@@ -261,19 +265,19 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
                 ))}
               </div>
 
-              <div className="flex gap-2 pt-1">
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
                 <button
                   type="button"
                   onClick={addSelected}
                   disabled={!chosenIds.length}
-                  className="flex-1 rounded-xl bg-ink text-paper px-4 py-2 text-sm font-bold shadow-sm hover:opacity-90 transition disabled:opacity-35"
+                  className="flex-1 min-h-[44px] rounded-xl bg-ink text-paper px-4 py-2 text-sm font-bold shadow-sm hover:opacity-90 transition disabled:opacity-35"
                 >
                   + Thêm {chosenIds.length || ""} câu đã chọn
                 </button>
                 <button
                   type="button"
                   onClick={() => { setResult(null); setPicked({}); }}
-                  className="rounded-xl border border-ink/15 px-4 py-2 text-sm font-semibold text-ink/60 hover:bg-ink/5"
+                  className="min-h-[44px] rounded-xl border border-ink/15 px-4 py-2 text-sm font-semibold text-ink/60 hover:bg-ink/5"
                 >
                   Bỏ qua
                 </button>

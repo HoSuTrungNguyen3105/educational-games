@@ -1,34 +1,25 @@
 // services/aiApi.js
 //
-// Client cho Java AI Service (edu-game-ai-service).
-// Theo EDU_GAME_AI_INTEGRATION.md: React gọi thẳng AI Service, không đi qua
-// backend Node — vì AI Service chỉ sở hữu "sinh nội dung AI", còn
-// User/Game/Question vẫn thuộc backend Node.
+// Client cho chức năng AI của EduPlay.
 //
-//   React ──> Java AI Service (8081) ──> Ollama / LLM
-//   React ──> Backend Node (Render)  ──> MongoDB   (lưu câu hỏi đã sinh)
+//   React ──> Backend chính (API_BASE) ──> AI Service (Java) ──> LLM
 //
-// BA NGYÊN TẮC của file này:
-//  1. Gửi kèm Bearer token — AI Service xác thực bằng cách hỏi lại backend Node.
-//  2. Bóc envelope {status, code, msg, data} giống api.js, lỗi lấy từ `msg`.
-//  3. OLLAMA_KEY chỉ nằm trong backend. Frontend không bao giờ biết, không cần biết.
+// Frontend KHÔNG biết và KHÔNG cần biết AI Service nằm ở đâu, chạy cổng nào, dùng
+// API key nào. Mọi request đi qua Backend chính, nơi xác thực + phân quyền + dựng dữ liệu,
+// rồi mới gọi AI Service.
+//
+// BA NGUYÊN TẮC của file này:
+//  1. Dùng CHUNG `API_BASE` và `apiFetch` của services/api.js — không tự dựng fetch,
+//     không hard-code địa chỉ của AI Service.
+//  2. `AiServiceError` với `kind` giữ nguyên để UI hiện đúng thông báo tiếng Việt.
+//  3. Ollama key / service token chỉ nằm ở backend, frontend không bao giờ thấy.
 
-import { loadAuth, uid } from "./api.js";
+import { API_BASE, apiFetch, uid } from "./api.js";
 
-/**
- * Gốc của AI Service.
- * - window.AI_BASE_URL : override lúc runtime (không cần build lại)
- * - VITE_AI_BASE       : đặt trong .env
- * Mặc định khớp `server.port` trong edu-game-ai-service/src/main/resources/application.yml
- */
-export const AI_BASE =
-  (typeof window !== "undefined" && window.AI_BASE_URL) ||
-  import.meta.env?.VITE_AI_BASE ||
-  "http://localhost:8081";
-
+/** Model local sinh nội dung chậm nên timeout rộng hơn API thường. */
 const TIMEOUT_MS = Number(import.meta.env?.VITE_AI_TIMEOUT_MS) || 120_000;
 
-/** Độ khó mà Java service nhận. */
+/** Độ khó mà AI Service nhận. */
 export const DIFFICULTIES = [
   { id: "easy", label: "Dễ" },
   { id: "medium", label: "Trung bình" },
@@ -39,23 +30,24 @@ export class AiServiceError extends Error {
   constructor(message, { kind = "unknown", status = 0 } = {}) {
     super(message);
     this.name = "AiServiceError";
-    this.kind = kind;          // offline | timeout | auth | forbidden | rateLimit | badRequest | server | badResponse
+    this.kind = kind;          // offline|timeout|auth|forbidden|rateLimit|badRequest|server|badResponse
     this.status = status;
   }
 }
 
-/** Map mã HTTP sang thông điệp tiếng Việt để UI hiện đúng nguyên nhân. */
+/** Map mã HTTP sang thông báo tiếng Việt để UI hiện đúng nguyên nhân. */
 function messageForStatus(status, payload) {
   const fromServer = payload?.msg || payload?.message;
   switch (status) {
-    case 400: return fromServer || "AI Service không nhận yêu cầu này.";
+    case 400: return fromServer || "Không nhận được yêu cầu AI này.";
     case 401: return "Bạn cần đăng nhập lại để dùng chức năng AI.";
     case 403: return fromServer || "Bạn không có quyền dùng chức năng AI này.";
-    case 404: return "Không tìm thấy endpoint AI. Kiểm tra VITE_AI_BASE.";
+    case 404: return fromServer || "Không tìm thấy chức năng AI. Vui lòng thử lại sau.";
     case 429: return fromServer || "Bạn hỏi AI hơi nhiều. Vui lòng đợi một lát rồi thử lại.";
     case 502: return fromServer || "AI trả về dữ liệu không hợp lệ. Hãy thử lại.";
-    case 503: return fromServer || "Dịch vụ AI đang không khả dụng. Hãy kiểm tra Ollama.";
-    default: return fromServer || `AI Service lỗi (HTTP ${status}).`;
+    case 503: return fromServer || "Dịch vụ AI đang không khả dụng. Hãy thử lại sau.";
+    case 504: return fromServer || "AI đang phản hồi chậm. Vui lòng thử lại sau.";
+    default: return fromServer || `Lỗi AI (HTTP ${status}).`;
   }
 }
 
@@ -65,70 +57,51 @@ function kindForStatus(status) {
   if (status === 403) return "forbidden";
   if (status === 429) return "rateLimit";
   if (status === 502) return "badResponse";
-  if (status === 503) return "server";
+  if (status === 503 || status === 504) return "server";
   return "server";
 }
 
 /**
- * fetch có timeout + Bearer token + bóc envelope.
- * Trả về `data` (đã bóc khỏi envelope) để caller dùng thẳng, giống `apiFetch`.
+ * `API_BASE` đã chứa hậu tố `/api` (…/api), nên path phải bỏ tiền tố `/api` để không
+ * dựng thành `/api/api/ai/…`. Hàm này chuẩn hoá một lần, mọi path viết "/api/ai/…"
+ * như tài liệu vẫn dùng được.
+ */
+function aiPath(path) {
+  return path.replace(/^\/api(?=\/)/, "");
+}
+
+/**
+ * Gọi API AI qua Backend chính.
+ * Bọc `apiFetch` để: (1) dùng chung token/envelope, (2) giữ `AiServiceError` cho UI.
+ *
+ * `_retries: 0` — 503 ở đây nghĩa là AI Service chưa sẵn sàng, retry chỉ làm người dùng
+ * chờ thêm (mỗi lượt gọi AI đều tốn chi phí).
  */
 async function aiFetch(path, { body, timeoutMs = TIMEOUT_MS, signal, method } = {}) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  // Cho phép huỷ từ bên ngoài (người dùng bấm "Huỷ")
-  if (signal) signal.addEventListener("abort", () => ctrl.abort(), { once: true });
-
-  const auth = loadAuth();
-  const verb = method || (body ? "POST" : "GET");
-
-  let res;
   try {
-    res = await fetch(`${AI_BASE}${path}`, {
-      method: verb,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...(auth?.token ? { Authorization: `Bearer ${auth.token}` } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-      signal: ctrl.signal,
+    return await apiFetch(aiPath(path), {
+      method: method || "POST",
+      body,
+      signal,
+      timeoutMs,
+      _retries: 0,
     });
   } catch (e) {
-    if (e.name === "AbortError") {
-      throw new AiServiceError("AI Service quá thời gian chờ. Thử giảm số câu hoặc thử lại.", { kind: "timeout" });
+    if (e?.name === "AbortError" || signal?.aborted) {
+      throw new AiServiceError("AI phản hồi quá lâu. Vui lòng thử lại.", { kind: "timeout" });
     }
-    throw new AiServiceError(
-      `Không kết nối được AI Service (${AI_BASE}). Hãy khởi động edu-game-ai-service hoặc kiểm tra VITE_AI_BASE.`,
-      { kind: "offline" }
-    );
-  } finally {
-    clearTimeout(timer);
-  }
-
-  let payload;
-  try {
-    payload = await res.json();
-  } catch {
-    if (!res.ok) {
-      throw new AiServiceError(messageForStatus(res.status, null), {
-        kind: kindForStatus(res.status),
-        status: res.status,
+    // apiFetch đã gắn .status và .data cho lỗi HTTP; lỗi mạng thì không có .status.
+    if (e?.status) {
+      throw new AiServiceError(messageForStatus(e.status, e.data), {
+        kind: kindForStatus(e.status),
+        status: e.status,
       });
     }
-    throw new AiServiceError("AI Service trả về dữ liệu không đọc được.", { kind: "badResponse" });
+    throw new AiServiceError(
+      `Không kết nối được máy chủ (${API_BASE}). Vui lòng kiểm tra kết nối rồi thử lại.`,
+      { kind: "offline" }
+    );
   }
-
-  if (!res.ok || payload?.status === false) {
-    throw new AiServiceError(messageForStatus(res.status, payload), {
-      kind: kindForStatus(res.status),
-      status: res.status,
-    });
-  }
-
-  // Bóc envelope {status, code, msg, data}. Chấp nhận cả response thô (không envelope)
-  // để tương thích nếu AI Service được cấu hình cũ.
-  return payload && typeof payload === "object" && "data" in payload ? payload.data : payload;
 }
 
 /**
@@ -322,22 +295,65 @@ export async function analyzeLearning({ studentId, from, to, gameId, signal } = 
 }
 
 /**
- * Kiểm tra AI Service còn sống không (dùng cho trạng thái nút).
+ * Nhờ AI Bạn Học giải thích câu hỏi vừa trả lời (giai đoạn 1 — MVP).
+ *
+ * Client KHÔNG gửi `isCorrect` cũng không gửi đáp án đúng, và cũng không tự biết câu nào
+ * sai: AI Service chuyển tiếp token xuống backend Node, nơi chấm lại bằng đúng hàm
+ * `isAnswerCorrect` dùng cho việc chấm điểm game. Đáp án đúng chỉ nằm trong prompt
+ * của LLM và KHÔNG BAO GIỜ được trả về cho trình duyệt — UI chỉ biết cờ `revealed`.
+ *
+ * @param {object} p
+ * @param {string}  p.questionId   bắt buộc
+ * @param {string} [p.gameId]
+ * @param {string|null} [p.answer]  giá trị đã chọn; null = hết giờ / không trả lời
+ * @param {boolean} [p.reveal]      true = học sinh yêu cầu lời giải đầy đủ
+ * @param {string} [p.followUp]     câu hỏi bổ sung (tối đa 500 ký tự)
+ * @param {AbortSignal} [p.signal]
+ * @returns {Promise<{answer: string, questionId: string, isCorrect: boolean, answered: boolean,
+ *                    revealed: boolean, subject: string|null, truncated: boolean}>}
+ */
+export async function explain({ questionId, gameId, answer, reveal = false, followUp, signal } = {}) {
+  const qid = String(questionId || "").trim();
+  if (!qid) {
+    throw new AiServiceError("Thiếu mã câu hỏi cần giải thích.", { kind: "badRequest" });
+  }
+
+  const body = {
+    questionId: qid.slice(0, 80),
+    reveal: !!reveal,
+  };
+  if (gameId) body.gameId = String(gameId).slice(0, 64);
+  if (answer != null && answer !== "") body.answer = String(answer).slice(0, 200);
+  if (followUp) body.followUp = String(followUp).trim().slice(0, 500);
+
+  const json = await aiFetch("/api/ai/explain", { body, signal });
+
+  if (!json || typeof json.answer !== "string" || !json.answer.trim()) {
+    throw new AiServiceError("AI không giải thích được. Hãy thử lại.", { kind: "badResponse" });
+  }
+  return {
+    answer: json.answer,
+    questionId: json.questionId || qid,
+    isCorrect: json.isCorrect === true,
+    answered: json.answered === true,
+    revealed: json.revealed === true,
+    subject: json.subject || null,
+    truncated: json.truncated === true,
+  };
+}
+
+/**
+ * Kiểm tra AI có sẵn sàng không (dùng cho trạng thái nút).
  * Endpoint này không cần token và không bao giờ trả về API key.
  */
 export async function ping({ timeoutMs = 2500 } = {}) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const json = await aiFetch("/api/ai/health", {
+    const data = await aiFetch("/api/ai/health", {
       method: "GET",
       timeoutMs,
-      signal: ctrl.signal,
     });
-    return { online: true, ...json };
+    return { online: true, ...data };
   } catch {
-    return { online: false, status: false, detail: "Không kết nối được AI Service." };
-  } finally {
-    clearTimeout(timer);
+    return { online: false, status: false, detail: "Không kết nối được dịch vụ AI." };
   }
 }

@@ -47,6 +47,25 @@ async function fetchWithRetry(url, init, attempts = 5) {
   return res;
 }
 
+/**
+ * `signal` + `timeoutMs` + `_retries` là tuỳ chọn, mặc định giữ nguyên hành vi cũ.
+ * - `_retries: 0`  : tắt retry (dùng cho gọi AI — 503 nghĩa là AI Service chưa sẵn sàng,
+ *                    retry lại chỉ làm user chờ thêm mà không giúp ích).
+ * - `timeoutMs`     : tự hủy sau N ms.
+ */
+function buildSignal(options) {
+  const signals = [];
+  if (options.signal) signals.push(options.signal);
+  let timer = null;
+  if (options.timeoutMs > 0) {
+    const ctrl = new AbortController();
+    timer = setTimeout(() => ctrl.abort(), options.timeoutMs);
+    signals.push(ctrl.signal);
+  }
+  const anySignal = signals.length ? AbortSignal.any(signals) : undefined;
+  return { anySignal, timer };
+}
+
 export async function apiFetch(path, options = {}) {
   let auth;
   if (options._token) {
@@ -56,6 +75,7 @@ export async function apiFetch(path, options = {}) {
   }
   const url = `${API_BASE}${path}`;
   const method = (options.method || "GET").toUpperCase();
+  const { anySignal, timer } = buildSignal(options);
   const init = {
     headers: {
       "Content-Type": "application/json",
@@ -63,12 +83,20 @@ export async function apiFetch(path, options = {}) {
       ...(options.headers || {}),
     },
     ...options,
+    signal: anySignal,
     body: options.body ? JSON.stringify(options.body) : undefined,
   };
   delete init._token;
   delete init._withPagination;
+  delete init._retries;
+  delete init.timeoutMs;
   const withPagination = options._withPagination;
-  const res = await fetchWithRetry(url, init);
+  let res;
+  try {
+    res = await fetchWithRetry(url, init, options._retries === undefined ? 5 : options._retries);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
   if (res.status === 401 && !path.startsWith("/auth/")) {
     clearAuth();
     window.dispatchEvent(new Event("edu-auth-expired"));

@@ -36,6 +36,7 @@ import gameInvitesRouter from "./routes/gameInvites.js";
 import remindersRouter from "./routes/reminders.js";
 import permissionsRouter from "./routes/permissions.js";
 import miniGamesRouter from "./routes/miniGames.js";
+import aiRouter from "./routes/ai.js";
 import * as reminderService from "./services/reminderService.js";
 import { verifyToken } from "./services/authService.js";
 
@@ -103,6 +104,8 @@ app.use("/api/mini", miniGamesRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);
+// API trung gian cho AI — Frontend chỉ gọi vào đây, Backend chính mới gọi AI Service :8081.
+app.use("/api/ai", aiRouter);
 app.use("/api", setupRouter);
 app.use("/api", seedRouter);
 

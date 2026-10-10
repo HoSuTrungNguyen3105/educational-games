@@ -6,6 +6,7 @@ import { SOCKET_EVENTS } from "../socket/socket.events.js";
 import { renderAvatarFull } from "../lib/avatarRenderer.js";
 import { addPetExp } from "../lib/petApi.js";
 import CoopInvitePanel from "../components/CoopInvitePanel.jsx";
+import AiExplainTrigger from "../components/ai/AiExplainTrigger.jsx";
 import GameHud from "./GameHud.jsx";
 import { injectGameConfig } from "./injectGameConfig.js";
 import { injectAnswerBridge } from "./injectAnswerBridge.js";
@@ -60,6 +61,10 @@ export default function HtmlGameLoader({
   const gameName = game?.name || "Trò chơi";
   const gameCode = game?.code || "";
 
+  // Câu vừa trả lời, để học sinh mở được phần giải thích của AI ngay trong game.
+  // Không chặn game: game HTML trong iframe vẫn chạy bình thường.
+  const [aiQuestion, setAiQuestion] = useState(null);
+
   // Đáp án do EG_ANSWER trong iframe gửi lên. Game cũ không dùng bridge thì
   // mảng này rỗng → server chấm từ answers rỗng (không câu nào đúng).
   const recordAnswer = useCallback((questionId, value, timeSpent) => {
@@ -70,7 +75,14 @@ export default function HtmlGameLoader({
     const entry = { questionId: id, value: value ?? null, timeSpent: typeof timeSpent === "number" ? timeSpent : undefined };
     if (idx >= 0) list[idx] = entry;
     else list.push(entry);
-  }, []);
+
+    const q = (questions || []).find(x => String(x?.id) === id);
+    setAiQuestion({
+      questionId: id,
+      value: entry.value,
+      content: q?.content || q?.question || null,
+    });
+  }, [questions]);
 
   // Nhúng config của riêng game này vào HTML trước khi nạp vào iframe
   const injectedHtml = useMemo(() => {
@@ -92,6 +104,7 @@ export default function HtmlGameLoader({
     // Mỗi lần game nạp lại = 1 lượt chơi mới → reset đáp án và khóa idempotency.
     answersRef.current = [];
     playIdRef.current = uid("play");
+    setAiQuestion(null);
     const playerNames = (players || []).map(p => (typeof p === "string" ? p : p?.name)).filter(Boolean);
 
     let userCoins = 0;
@@ -615,6 +628,20 @@ export default function HtmlGameLoader({
         onGameJoined={handleCoopGameJoined}
         onClose={() => setShowCoopPanel(false)}
       />
+
+      {/* AI Bạn Học: nút nổi xuất hiện sau khi học sinh đã trả lời ít nhất một câu.
+          Không chặn game — iframe vẫn chạy, học sinh mở panel bất cứ lúc nào. */}
+      {aiQuestion && !hudHidden && (
+        <AiExplainTrigger
+          gameId={gameId}
+          questionId={aiQuestion.questionId}
+          answer={aiQuestion.value}
+          questionText={aiQuestion.content}
+          label="🤖"
+          className="fixed bottom-24 right-4 z-40 w-12 h-12 p-0 rounded-full text-xl
+                     bg-ink text-paper border-0 shadow-xl hover:bg-ink2"
+        />
+      )}
     </div>
   );
 }

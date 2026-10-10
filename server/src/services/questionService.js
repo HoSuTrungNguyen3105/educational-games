@@ -1,5 +1,12 @@
 import { getCollection } from "../db.js";
 import { ObjectId } from "mongodb";
+import {
+  correctKeyOf,
+  isAnswerCorrect,
+  isTextQuestion,
+  normalizedOptions,
+  resolveOptionText,
+} from "../lib/gradeAnswer.js";
 
 const COLLECTION = "questions";
 
@@ -40,6 +47,50 @@ export async function add(gameId, question) {
 
 export async function getById(questionId) {
   return getCollection(COLLECTION).findOne({ id: questionId });
+}
+
+/** Bỏ ký tự điều khiển trong text do giáo viên soạn, trước khi đưa sang dịch vụ AI. */
+function safeText(value, max = 500) {
+  if (value == null) return null;
+  const s = String(value).replace(/[\u0000-\u001F\u007F]/g, " ").trim();
+  return s.length ? (s.length > max ? s.slice(0, max) : s) : null;
+}
+
+/**
+ * Dựng ngữ cảnh giải thích cho MỘT câu hỏi mà học sinh vừa trả lời.
+ *
+ * Mục đích: học sinh KHÔNG được biết đáp án đúng trước khi trả lời (xem `routes/questions.js`
+ * — `correctAnswer` bị strip khỏi mọi response cho non-staff). Endpoint này chỉ mở đáp án
+ * đúng cho chính backend và cho dịch vụ AI, sau khi học sinh đã nộp câu trả lời.
+ *
+ * Chấm điểm dùng CHUNG `isAnswerCorrect` với `gradeAnswers` / `gamePlayService` — không nhân
+ * bản logic chấm, không ảnh hưởng điểm/xu/thành tích.
+ *
+ * @returns {Promise<object|null>} `null` nếu không tìm thấy câu hỏi (hoặc sai game).
+ */
+export async function buildExplainContext({ gameId, questionId, answer } = {}) {
+  if (!questionId) return null;
+  const question = await getById(questionId);
+  if (!question) return null;
+  if (gameId && String(question.gameId ?? "") !== String(gameId)) return null;
+
+  const answered = answer !== undefined && answer !== null && String(answer) !== "";
+  const correctKey = correctKeyOf(question);
+  const textMode = isTextQuestion(question);
+
+  return {
+    questionId: question.id,
+    content: safeText(question.content ?? question.question, 500),
+    subject: safeText(question.subject, 80),
+    topic: safeText(question.topic, 120),
+    inputMode: question.inputMode === "input" || textMode ? "input" : "choice",
+    options: normalizedOptions(question),
+    answered,
+    selectedAnswerText: answered ? safeText(resolveOptionText(question, answer), 200) : null,
+    isCorrect: answered && isAnswerCorrect(question, answer),
+    correctAnswerText: safeText(resolveOptionText(question, correctKey), 200),
+    explanation: safeText(question.explanation, 400),
+  };
 }
 
 export async function removeAll() {

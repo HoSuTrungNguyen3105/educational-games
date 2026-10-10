@@ -26,13 +26,13 @@ export function aiErrorText(e) {
   }
 }
 
-/** Gợi ý bổ sung cho trường hợp AI Service không chạy (hiển thị dạng chữ nhỏ). */
+/** Gợi ý bổ sung cho trường hợp dịch vụ AI không sẵn sàng (hiển thị dạng chữ nhỏ). */
 export function aiErrorHint(e) {
   if (e?.kind === "offline") {
-    return "Khởi động edu-game-ai-service rồi thử lại, hoặc kiểm tra VITE_AI_BASE trong .env.";
+    return "Kiểm tra kết nối máy chủ rồi thử lại. Nếu vẫn lỗi, hãy liên hệ quản trị viên.";
   }
   if (e?.kind === "server") {
-    return "Kiểm tra Ollama có đang chạy và OLLAMA_MODEL đã được tải chưa (ollama pull <model>).";
+    return "Dịch vụ AI có thể đang tạm thời không khả dụng. Bạn vẫn chơi game bình thường nhé.";
   }
   return null;
 }

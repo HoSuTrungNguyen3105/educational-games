@@ -42,6 +42,38 @@ router.get("/game/:gameId", optionalAuth, async (req, res, next) => {
   }
 });
 
+/**
+ * POST /api/questions/explain-context
+ *
+ * Ngữ cảnh để AI giải thích MỘT câu hỏi mà học sinh vừa trả lời.
+ *
+ * Vì sao cần endpoint này: `correctAnswer` bị strip khỏi mọi response cho non-staff, nên
+ * frontend không thể biết câu nào sai — và cũng không được biết đáp án đúng trước khi
+ * trả lời. Endpoint này chấm lại ở server (dùng chung `isAnswerCorrect`) rồi trả về
+ * ngữ cảnh tối thiểu cho dịch vụ AI.
+ *
+ * Chỉ BỔ SUNG, không đổi contract của endpoint cũ, không đổi schema `questions`,
+ * không cấp điểm/xu/thành tích.
+ *
+ * Body: { gameId?, questionId, answer? }  (answer = id phương án, hoặc text nếu câu tự điền;
+ *                                            bỏ trống = học sinh hết giờ / không trả lời)
+ */
+router.post("/explain-context", authenticate, async (req, res, next) => {
+  try {
+    const { gameId, questionId, answer } = req.body || {};
+    if (!questionId) return sendError(res, "questionId là bắt buộc", 400);
+    if (answer != null && typeof answer !== "string" && typeof answer !== "number") {
+      return sendError(res, "answer phải là chuỗi hoặc số", 400);
+    }
+
+    const ctx = await questionService.buildExplainContext({ gameId, questionId, answer });
+    if (!ctx) return sendError(res, "Không tìm thấy câu hỏi", 404);
+    sendSuccess(res, ctx);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.put("/game/:gameId", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     if (!Array.isArray(req.body)) {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTemplate } from '../lib/hooks.js'
 import { StampToken } from '../components/ui.jsx'
+import AiExplainTrigger from '../components/ai/AiExplainTrigger.jsx'
 import { AnswerExplain } from './shared.jsx'
 import { uid } from '../services/api.js'
 
@@ -10,23 +11,44 @@ export default function PlayGameScreen({ game, questions, onFinish }) {
   const [timeLeft, setTimeLeft] = useState(q.timeLimit);
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const startRef = useRef(Date.now());
   const playIdRef = useRef(null);
   const answersRef = useRef([]);
+  // Được giữ lại khi panel AI mở để câu hỏi không bị cuộn qua trước khi học sinh đọc xong.
+  const advanceTimerRef = useRef(null);
+  const advanceRef = useRef(null);
   const tpl = useTemplate(game);
+  const gameId = game?._id?.toString() || game?.id || null;
 
   if (playIdRef.current === null) playIdRef.current = uid('play');
 
-  useEffect(() => { setTimeLeft(q.timeLimit); setSelected(null); setRevealed(false); }, [idx]);
+  useEffect(() => { setTimeLeft(q.timeLimit); setSelected(null); setRevealed(false); setAiOpen(false); }, [idx]);
 
   useEffect(() => {
-    if (revealed) return;
+    if (revealed || aiOpen) return;
     if (timeLeft <= 0) { handleAnswer(null); return; }
     const t = setTimeout(() => setTimeLeft(s => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [timeLeft, revealed]);
+  }, [timeLeft, revealed, aiOpen]);
+
+  useEffect(() => () => clearTimeout(advanceTimerRef.current), []);
+
+  function runAdvance() {
+    const go = advanceRef.current;
+    advanceRef.current = null;
+    go?.();
+  }
+
+  function scheduleAdvance(delayMs) {
+    clearTimeout(advanceTimerRef.current);
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null;
+      runAdvance();
+    }, delayMs);
+  }
 
   function handleAnswer(optionId) {
     if (revealed) return;
@@ -44,13 +66,19 @@ export default function PlayGameScreen({ game, questions, onFinish }) {
       setScore(s => s + q.points + bonus);
       setCorrectCount(c => c + 1);
     }
-    setTimeout(() => {
+
+    // Chụp lại số điểm tại thời điểm trả lời: lượt chuyển câu có thể bị trì hoãn khi
+    // học sinh đang đọc phần giải thích của AI, nên không đọc được state cập nhật.
+    const finalScore = score + (isCorrect ? q.points + Math.round((timeLeft / q.timeLimit) * 40) : 0);
+    const finalCorrect = correctCount + (isCorrect ? 1 : 0);
+
+    advanceRef.current = () => {
       if (idx + 1 < questions.length) { setIdx(i => i + 1); }
       else {
         const timeUsed = Math.round((Date.now() - startRef.current) / 1000);
         onFinish({
-          score: score + (isCorrect ? q.points + Math.round((timeLeft / q.timeLimit) * 40) : 0),
-          correct: correctCount + (isCorrect ? 1 : 0),
+          score: finalScore,
+          correct: finalCorrect,
           totalQuestions: questions.length,
           timeUsed,
           answers: answersRef.current,
@@ -58,7 +86,19 @@ export default function PlayGameScreen({ game, questions, onFinish }) {
           questionIds: questions.map(x => x?.id).filter(Boolean),
         });
       }
-    }, 1300);
+    };
+    scheduleAdvance(1300);
+  }
+
+  // Học sinh mở panel AI → tạm dừng chuyển câu; đóng panel → chuyển tiếp ngay.
+  function handleAiOpenChange(next) {
+    setAiOpen(next);
+    if (next) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    } else if (advanceRef.current) {
+      scheduleAdvance(0);
+    }
   }
 
   const pct = (timeLeft / q.timeLimit) * 100;
@@ -106,6 +146,16 @@ export default function PlayGameScreen({ game, questions, onFinish }) {
             {selected === q.correctAnswer ? "Chính xác! 🎉" : selected === null ? "Hết giờ! ⏰" : "Chưa đúng rồi 😅"}
           </p>
           <AnswerExplain q={q} />
+          <div className="mt-4 flex justify-center">
+            <AiExplainTrigger
+              open={aiOpen}
+              onOpenChange={handleAiOpenChange}
+              gameId={gameId}
+              questionId={q.id}
+              answer={selected}
+              questionText={q.content}
+            />
+          </div>
           </>
         )}
       </div>

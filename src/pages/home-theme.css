@@ -181,25 +181,9 @@
 .nb-tile--net { border-style: dashed; }
 .nb-tile--net .nb-tile__play { background: transparent; color: var(--nb-muted); border: 2px dashed #9aa6bb; }
 
-/* ── Sidebar trái ─────────────────────────────────────────────────── */
-.nb-side {
-  background: var(--nb-ink);
-  color: var(--nb-cream);
-  border-right: 3px solid #000;
-}
-
-.nb-side__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 800;
-  font-size: 19px;
-  letter-spacing: -0.01em;
-  color: var(--nb-cream);
-  padding: 14px 14px 12px;
-  border-bottom: 3px solid rgba(255, 253, 246, 0.22);
-}
-
+/* ── Mục trong menu dropdown "Thêm" ────────────────────────────────── */
+/* Tái sử dụng class cũ của sidebar: nền dropdown giờ là trắng nên màu chữ
+   chuyển từ kem sang mực. Giữ tên class để không phải sửa cả hai nơi. */
 .nb-side__item {
   display: flex;
   align-items: center;
@@ -209,19 +193,15 @@
   border-radius: 12px;
   font-weight: 600;
   font-size: 14.5px;
-  color: rgba(255, 253, 246, 0.82);
+  color: var(--nb-ink-soft);
   text-align: left;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, transform 0.08s;
 }
-.nb-side__item:hover { background: rgba(255, 253, 246, 0.1); color: #fff; }
+.nb-side__item:hover { background: rgba(29, 46, 74, 0.06); color: var(--nb-ink); }
 .nb-side__item:active { transform: translate(1px, 1px); }
-.nb-side__item[aria-current="page"] {
-  background: var(--nb-mustard);
-  color: var(--nb-ink);
-  font-weight: 800;
-  box-shadow: 3px 3px 0 #000;
-}
+.nb-side__item[aria-current="page"] { background: var(--nb-mustard); color: var(--nb-ink); font-weight: 800; }
+.nb-side__item:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: -3px; }
 .nb-side__item .nb-side__ico {
   display: grid;
   place-items: center;
@@ -229,65 +209,51 @@
   flex: 0 0 auto;
   border-radius: 8px;
   border: 2px solid currentColor;
+  opacity: 0.75;
 }
-.nb-side__item[aria-current="page"] .nb-side__ico { border-color: var(--nb-ink); }
+.nb-side__item[aria-current="page"] .nb-side__ico { opacity: 1; }
 
-/* nhóm tiêu đề trong sidebar */
-.nb-side__group {
-  padding: 14px 13px 6px;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--nb-mustard);
-}
-
-/* thẻ thú cưng trong sidebar */
-.nb-pet {
-  margin: 12px;
-  padding: 12px;
-  border-radius: 16px;
-  border: 3px solid #000;
-  background: var(--nb-cream);
-  color: var(--nb-ink);
-  text-align: center;
-  box-shadow: 4px 4px 0 #000;
-}
-
-/* ── Thanh trên cùng (mobile) ──────────────────────────────────────── */
+/* ── Thanh trên cùng ───────────────────────────────────────────────── */
 /*
- * KHÔNG đặt `display` ở rule gốc.
+ * Một thanh duy nhất cho mọi kích thước màn hình — đã bỏ sidebar trái.
  *
- * JSX dùng `className="nb-topbar hidden lg:flex"`. Nếu rule gốc có
- * `display: flex` thì nó ĐÈ LÊN `.hidden` của Tailwind (cùng specificity,
- * file này nạp sau) → topbar desktop lọt ra trên mobile.
- *
- * Bù lại bằng media query tường minh: dưới lg luôn ẩn, từ lg mới hiện.
- * Không phụ thuộc thứ tự nạp Tailwind, và `!important` là không cần.
+ * KHÔNG đặt `display` ở rule gốc: JSX dùng class `nb-topbar` trần, nếu khai
+ * `display:flex` ở đây thì các rule ẩn theo breakpoint của Tailwind có thể
+ * bị đè (cùng specificity, file này nạp sau). Thay vào đó bố cục dùng
+ * flex-wrap + `overflow-x:auto` nên không cần media query ẩn/hiện.
  */
 .nb-topbar {
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: 40;
+  display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: var(--nb-ink);
-  color: var(--nb-cream);
-  border-bottom: 3px solid #000;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  color: var(--nb-ink);
+  border-bottom: 2px solid rgba(29, 46, 74, 0.08);
 }
 
-@media (max-width: 1023px) {
-  .nb-topbar {
-    display: none;
-  }
+/* Mục menu ngang trên thanh */
+.nb-navitem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--nb-ink-soft);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
-
-@media (min-width: 1024px) {
-  .nb-topbar {
-    display: flex;
-  }
-}
+.nb-navitem:hover { background: rgba(29, 46, 74, 0.06); color: var(--nb-ink); }
+.nb-navitem[aria-current="page"] { background: var(--nb-mustard); color: var(--nb-ink); }
+.nb-navitem:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 2px; }
 
 /*
  * Chừa chỗ cho thanh điều hướng dưới ở mobile.
@@ -307,6 +273,288 @@
   .nb-page {
     padding-bottom: 24px;
   }
+}
+
+/* Khung nội dung — mọi section canh theo cùng một lề ngang */
+.nb-page {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding-left: clamp(14px, 3vw, 40px);
+  padding-right: clamp(14px, 3vw, 40px);
+}
+
+/* ── Hero: banner tràn viền ─────────────────────────────────────────── */
+/*
+ * Ảnh tràn từ mép trang (không nằm trong .nb-page) nên .nb-hero__body vẫn
+ * dùng .nb-page ở trong — chữ canh đúng lề với section bên dưới.
+ */
+.nb-hero {
+  position: relative;
+  isolation: isolate;
+  margin-top: -1px;
+  /* bo cong đáy kiểu "lõm lên" như banner trong mockup */
+  border-radius: 0 0 46% 46% / 0 0 9% 9%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #7ec8f0 0%, #bfe9b6 100%);
+}
+
+.nb-hero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+  z-index: -2;
+}
+
+/* Lớp tối nhẹ ở chân banner để chữ trắng luôn đủ tương phản */
+.nb-hero__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(100deg, rgba(10, 40, 80, 0.62) 0%, rgba(10, 40, 80, 0.34) 42%, rgba(10, 40, 80, 0.05) 70%),
+    linear-gradient(to top, rgba(10, 40, 80, 0.35), transparent 45%);
+}
+
+.nb-hero__body {
+  display: flex;
+  align-items: center;
+  min-height: clamp(240px, 34vw, 440px);
+  padding-top: clamp(28px, 5vw, 60px);
+  padding-bottom: clamp(56px, 8vw, 96px);
+}
+
+.nb-hero__copy { max-width: 560px; color: #fff; }
+
+.nb-hero__eyebrow {
+  margin: 0 0 6px;
+  font-size: clamp(12px, 1.4vw, 14px);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+
+.nb-hero__title {
+  margin: 0;
+  font-family: "Lexend", "Be Vietnam Pro", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(28px, 4.6vw, 54px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.45);
+}
+
+.nb-hero__sub {
+  margin: 10px 0 0;
+  font-size: clamp(13px, 1.5vw, 16px);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+}
+
+.nb-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: clamp(16px, 2.4vw, 26px);
+}
+
+.nb-hero__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 26px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd75e, #f2b632);
+  color: #4a3200;
+  font-weight: 800;
+  font-size: clamp(14px, 1.5vw, 17px);
+  border: 3px solid #1d2e4a;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, filter 0.15s;
+}
+.nb-hero__btn:hover { filter: brightness(1.06); }
+.nb-hero__btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35); }
+.nb-hero__btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+.nb-hero__play {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #1d2e4a;
+  color: #ffd75e;
+}
+
+.nb-hero__ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(13px, 1.4vw, 15px);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.15s, transform 0.12s;
+}
+.nb-hero__ghost:hover { background: rgba(255, 255, 255, 0.28); }
+.nb-hero__ghost:active { transform: scale(0.97); }
+.nb-hero__ghost:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+/* ── Nút chuyển nhóm: Game học tập / Game offline ──────────────────── */
+.nb-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(29, 46, 74, 0.06);
+}
+
+.nb-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--nb-ink-soft);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.nb-tab:hover { color: var(--nb-ink); }
+.nb-tab--on {
+  background: #fff;
+  color: var(--nb-blue);
+  box-shadow: 0 2px 8px rgba(29, 46, 74, 0.14);
+}
+.nb-tab:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 2px; }
+
+/*
+ * ── Hàng card ngang: các môn học + Game Offline ──────────────────────
+ *
+ * `display:flex` + `overflow-x:auto` thay cho grid: đúng nghĩa "nằm thành
+ * hàng ngang", nhiều môn vẫn nằm cùng một hàng và cuộn ngang khi tràn.
+ * Mỗi card có `flex: 1 0 <bề rộng>` nên 4–6 môn vừa khít cả màn rộng.
+ */
+.nb-rail {
+  display: flex;
+  gap: 14px;
+  margin: 18px 0 20px;
+  padding: 4px 2px 8px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+.nb-rail::-webkit-scrollbar { height: 6px; }
+.nb-rail::-webkit-scrollbar-thumb { background: rgba(29, 46, 74, 0.18); border-radius: 99px; }
+.nb-rail::-webkit-scrollbar-track { background: transparent; }
+
+.nb-subj {
+  position: relative;
+  flex: 1 0 clamp(178px, 19vw, 218px);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 186px;
+  padding: 18px 18px 16px;
+  border: 3px solid var(--nb-ink);
+  border-radius: 22px;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 5px 5px 0 var(--nb-ink);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+/* Vòng sáng góc phải cho card có chiều sâu */
+.nb-subj::after {
+  content: "";
+  position: absolute;
+  right: -32px;
+  top: -32px;
+  width: 116px;
+  height: 116px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+.nb-subj > * { position: relative; z-index: 1; }
+
+.nb-subj:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--nb-ink); }
+.nb-subj:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--nb-ink); }
+.nb-subj:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 3px; }
+
+/* Card đang chọn: viền trắng + nhấc lên */
+.nb-subj--on {
+  box-shadow: 0 0 0 3px #fff, 6px 6px 0 var(--nb-ink), 0 0 0 9px var(--nb-ink);
+}
+
+.nb-subj__ic {
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+  transition: transform 0.15s;
+}
+.nb-subj:hover .nb-subj__ic { transform: scale(1.1) rotate(-5deg); }
+
+.nb-subj__name {
+  font-family: "Lexend", "Be Vietnam Pro", system-ui, sans-serif;
+  font-size: clamp(16px, 1.5vw, 19px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+}
+
+.nb-subj__desc {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.nb-subj__play {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.26);
+  font-size: 12px;
+  font-weight: 800;
+  transition: background 0.15s;
+}
+.nb-subj:hover .nb-subj__play { background: rgba(0, 0, 0, 0.42); }
+
+@media (max-width: 640px) {
+  .nb-subj {
+    flex-basis: 158px;
+    min-height: 154px;
+    padding: 13px 13px 12px;
+    gap: 4px;
+    border-width: 2.5px;
+    border-radius: 18px;
+  }
+  .nb-subj::after { width: 80px; height: 80px; right: -22px; top: -22px; }
+  .nb-subj__ic { font-size: 24px; }
+  .nb-subj__desc { font-size: 11px; }
+  .nb-subj__play { font-size: 11px; padding: 4px 10px; }
 }
 
 /* ── Hàng kết quả ─────────────────────────────────────────────────── */
@@ -492,7 +740,10 @@
 /* Game offline không cần mạng — không còn viền đứt/cờ mạng nào cả. */
 
 @media (prefers-reduced-motion: reduce) {
-  .nb-tile, .nb-btn, .nb-side__item, .nbg-card { transition: none; }
-  .nb-tile:hover, .nb-tile:active, .nbg-card:hover, .nbg-card:active { transform: none; }
-  .nbg-card:hover .nbg-card__ic { transform: none; }
+  .nb-tile, .nb-btn, .nb-side__item, .nbg-card,
+  .nb-navitem, .nb-tab, .nb-subj, .nb-hero__btn, .nb-hero__ghost { transition: none; }
+  .nb-tile:hover, .nb-tile:active, .nbg-card:hover, .nbg-card:active,
+  .nb-subj:hover, .nb-subj:active, .nb-hero__btn:active, .nb-hero__ghost:active { transform: none; }
+  .nbg-card:hover .nbg-card__ic, .nb-subj:hover .nb-subj__ic { transform: none; }
+  .nb-rail { scroll-behavior: auto; }
 }

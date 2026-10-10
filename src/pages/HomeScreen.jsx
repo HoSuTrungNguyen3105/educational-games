@@ -10,7 +10,8 @@ import './home-theme.css'
 import { Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
 import { AvatarPreviewSmall } from '../components/avatar/AvatarPreview.jsx'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
-import { PetSvg, PetAvatar } from '../components/PetAvatar.jsx'
+import AiChatWidget from '../components/ai/AiChatWidget.jsx'
+import { PetAvatar } from '../components/PetAvatar.jsx'
 import { usePet, moodLabel } from '../lib/petApi.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
@@ -79,6 +80,10 @@ const NO_SUBJECT = "Chung";
 const subjectLabel = (subject) => (subject && subject.trim()) || NO_SUBJECT;
 const PREVIEW_GAMES = 8;
 
+// Giá trị `activeSubject` đặc biệt: xem nhóm game offline thay vì môn học.
+const OFFLINE_TAB = "__offline__";
+const ALL_TAB = "all";
+
 // Game offline. Nguon su that: src/games/src/manifest.js (sinh boi scripts/build-offline-games.mjs)
 // Moi game la MOT file HTML rieng trong src/games/offline/<id>.html
 // Màu rèm/nút cho từng game — khai tường minh để không phải đoán từ class gradient.
@@ -109,8 +114,69 @@ const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   color: TILE_COLORS[g.id] || "#F2B632",
 }));
 
+// ─── Card môn học trên hàng ngang ────────────────────────────────────
+// Mỗi môn lấy từ API (`games[].subject`) nên tên tuỳ ý. Bảng dưới khớp
+// theo từ khoá; môn không khớp thì nhận màu theo thứ tự băm, và câu mô
+// tả luôn nhắc lại tên môn nên không bao giờ hiện sai nội dung.
+const SUBJECT_META = [
+  { keys: ["toan", "math", "so"], icon: "🧮", grad: "from-amber-400 to-yellow-500", desc: "Rèn luyện tư duy và kỹ năng tính toán" },
+  { keys: ["tieng viet", "ngu van", "van"], icon: "📖", grad: "from-sky-400 to-blue-500", desc: "Luyện đọc, viết và mở rộng vốn từ" },
+  { keys: ["khoa hoc", "sinh", "hoa", "vat ly", "science"], icon: "🔬", grad: "from-emerald-400 to-green-600", desc: "Khám phá thế giới xung quanh" },
+  { keys: ["lich su", "dia ly", "history", "geography"], icon: "🌍", grad: "from-violet-400 to-purple-600", desc: "Khám phá về hóa và các cùng miền" },
+  { keys: ["tieng anh", "english"], icon: "🗣️", grad: "from-rose-400 to-pink-600", desc: "Luyện nói và từ vựng tiếng Anh" },
+  { keys: ["tin hoc", "lap trinh", "computer"], icon: "💻", grad: "from-indigo-400 to-blue-600", desc: "Lập trình và tư duy máy tính" },
+  { keys: ["the duc", "pe"], icon: "⚽", grad: "from-lime-400 to-emerald-600", desc: "Vận động và rèn luyện sức khoẻ" },
+  { keys: ["am nhac", "music"], icon: "🎵", grad: "from-fuchsia-400 to-purple-600", desc: "Khám phá thế giới âm nhạc" },
+];
 
-// Menu sidebar (desktop) — 8 mục chính theo giao diện mới
+// Băm chuỗi về số nguyên để màu ổn định giữa các lần render.
+function hashString(s = "") {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (s.charCodeAt(i) + ((h << 5) - h)) | 0;
+  return Math.abs(h);
+}
+
+function metaForSubject(subject = "") {
+  const slug = subject.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const hit = SUBJECT_META.find((m) => m.keys.some((k) => slug.includes(k)));
+  if (hit) return hit;
+  return { ...SUBJECT_META[hashString(subject) % SUBJECT_META.length], desc: `Thử thách môn ${subject} với những câu hỏi thú vị` };
+}
+
+// Card cuối cùng của hàng ngang — đại diện cho toàn bộ game offline.
+const OFFLINE_RAIL_CARD = {
+  key: OFFLINE_TAB,
+  icon: "🎮",
+  grad: "from-rose-500 to-red-600",
+  desc: "Chơi vui mọi lúc, không cần mạng",
+};
+
+
+// Menu chính hiện ngang trên header (desktop).
+// KHÔNG phải "tất cả mục" — chỉ những mục người dùng vào thường xuyên.
+// Phần còn lại nằm trong menu "Thêm" (dropdown) để header không bị chật.
+const HEADER_NAV = (userAuth) => ([
+  { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
+  { key: "games", icon: Gamepad2, label: "Chơi game", type: "scroll", target: "games-section", show: true },
+  { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: !!userAuth?.user, badge: true },
+  { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
+  { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
+  { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
+]);
+
+// Mọi mục còn lại + quản trị + tài khoản → nút "Thêm" trên header.
+const MORE_ITEMS = (userAuth) => ([
+  { key: "reminders", icon: Bell, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
+  { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
+  { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
+  { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
+  { key: "assignment", icon: FileText, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
+  { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
+  { key: "pet", icon: PawPrint, label: "Thú cưng", type: "path", path: "/pet", show: !!userAuth?.user },
+  { key: "profile", icon: User, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
+]);
+
+// Menu đầy đủ (dùng cho dropdown "Thêm" + menu hamburger mobile)
 const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
   { key: "games", icon: Gamepad2, label: "Chơi game", type: "scroll", target: "games-section", show: true },
@@ -127,13 +193,6 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "assignment", icon: FileText, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
-
-// Chia sidebar thanh nhom de mat 'bi lan' hon phan trang chinh.
-const SIDEBAR_GROUPS = [
-  { title: "Chính", keys: ["home", "games", "subjects", "achievements", "leaderboard"] },
-  { title: "Học tập", keys: ["tasks", "reminders", "assignment", "shop", "garden"] },
-  { title: "Kết nối", keys: ["chat", "friends", "spin", "profile"] },
-];
 
 const BOTTOM_NAV = (userAuth) => [
   { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
@@ -163,9 +222,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [games, setGames] = useState(null);
   const [error, setError] = useState(null);
   const [showCodeModal, setShowCodeModal] = useState(false);
-  const [activeSubject, setActiveSubject] = useState("all");
+  const [activeSubject, setActiveSubject] = useState(ALL_TAB);
   const [userCoins, setUserCoins] = useState(0);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const templates = useTemplates();
@@ -189,7 +248,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [avatarItems, setAvatarItems] = useState([]);
   const [dailyTasks, setDailyTasks] = useState(null);
   const [showAllGames, setShowAllGames] = useState(false);
-  const [hearts] = useState(100);
   const pet = usePet();
 
   const loadGames = async () => {
@@ -435,15 +493,42 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     return [...new Set(games.map(g => subjectLabel(g.subject)))];
   }, [games]);
 
+  // Hàng card ngang: mọi môn học (kèm số game) + card Game Offline ở cuối.
+  // Số game đếm trước để card tự biết mình còn bao nhiêu nội dung.
+  const railItems = useMemo(() => {
+    const count = {};
+    for (const g of games || []) {
+      const s = subjectLabel(g.subject);
+      count[s] = (count[s] || 0) + 1;
+    }
+    return [
+      ...subjects.map((s) => {
+        const meta = metaForSubject(s);
+        return { key: s, name: s, icon: meta.icon, grad: meta.grad, desc: meta.desc, count: count[s] || 0 };
+      }),
+      { ...OFFLINE_RAIL_CARD, name: "Game Offline", count: OFFLINE_GAMES.length },
+    ];
+  }, [subjects, games]);
+
   const visibleGames = useMemo(() => {
     if (!games) return [];
-    if (activeSubject === "all") return games;
+    if (activeSubject === ALL_TAB) return games;
     return games.filter(g => subjectLabel(g.subject) === activeSubject);
   }, [games, activeSubject]);
 
+  const isOfflineTab = activeSubject === OFFLINE_TAB;
+
+  // Game học tập: ghim game nổi bật rồi tới danh sách của môn đang chọn.
+  // Offline: bấm card trên hàng ngang → nhảy thẳng vào game luôn, không cần
+  // bước chọn trung gian (mỗi game là 1 file HTML riêng).
+  const learningGames = useMemo(() => {
+    const list = visibleGames.map((g, i) => ({ game: g, index: i, template: templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid)) }));
+    return showAllGames ? list : list.slice(0, PREVIEW_GAMES);
+  }, [visibleGames, templates, showAllGames]);
+
   const goTo = (path) => {
     navigate(path);
-    setMobileMenuOpen(false);
+    setMoreOpen(false);
   };
 
   // Cuộn tới section trên trang chủ.
@@ -451,7 +536,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   // silent-fail khi target render có điều kiện hoặc khi <html> bị height:100%.
   // Nếu không tìm thấy target, fallback về section Game đề xuất rồi về đầu trang.
   const scrollTo = (id) => {
-    setMobileMenuOpen(false);
+    setMoreOpen(false);
     setTimeout(() => {
       let el = document.getElementById(id);
       if (!el && id === "subjects-section") el = document.getElementById("games-section");
@@ -475,6 +560,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     if (next) loadNotifications();
   };
 
+  const headerNav = HEADER_NAV(userAuth).filter(i => i.show);
+  const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
   const navItems = SIDEBAR_ITEMS(userAuth).filter(i => i.show);
 
   const notificationDropdown = (posClass) => (
@@ -517,365 +604,346 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         </div>
       )}
 
-      <div className="lg:flex">
+      {/* ═══════════ HEADER: logo · nav ngang · coin/lv/avatar ═══════════ */}
+      {/* Không còn sidebar trái — toàn bộ menu nằm trên một thanh duy nhất. */}
+      <header className="nb-topbar">
+        <div className="flex items-center gap-3 min-w-0">
+          <a href="#/" onClick={() => navigate("/")} className="flex items-center gap-2.5 shrink-0">
+            <span className="grid place-items-center w-9 h-9 rounded-xl bg-[#F2B632] border-[3px] border-[#1D2E4A] text-lg leading-none">🎪</span>
+            <span className="hidden sm:block leading-tight">
+              <span className="block text-[17px] font-extrabold tracking-tight text-[#1D2E4A]">Lớp Học Vui</span>
+              <span className="block text-[10px] font-bold text-[#F2B632] tracking-[0.22em]">EDUGAMES</span>
+            </span>
+          </a>
+        </div>
 
-        {/* ═══════════ SIDEBAR (desktop) ═══════════ */}
-          <aside className="nb-side hidden lg:flex flex-col w-[236px] shrink-0 sticky top-0 h-screen overflow-y-auto no-scrollbar">
-            {/* Thuong hieu */}
-            <div className="nb-side__brand">
-              <span className="grid place-items-center w-9 h-9 rounded-xl bg-[#F2B632] border-[3px] border-black text-lg shrink-0">🎪</span>
-              <span className="leading-tight">
-                <span className="block">Lớp Học Vui</span>
-                <span className="block text-[10px] font-semibold text-[#F2B632] tracking-widest">EDUGAMES</span>
-              </span>
-            </div>
-
-            {/* Menu theo nhom */}
-            <nav className="flex-1 px-3 pb-3">
-              {SIDEBAR_GROUPS.map((group) => {
-                const items = navItems.filter((it) => group.keys.includes(it.key));
-                if (!items.length) return null;
-                return (
-                  <div key={group.title}>
-                    <p className="nb-side__group">{group.title}</p>
-                    <div className="flex flex-col gap-1">
-                      {items.map((item) => {
-                        const Icon = item.icon;
-                        const active = item.type === "path" && item.path === "/";
-                        return (
-                          <button
-                            key={item.key}
-                            onClick={() => handleNavClick(item)}
-                            aria-current={active ? "page" : undefined}
-                            className="nb-side__item"
-                          >
-                            <span className="nb-side__ico"><Icon className="w-[15px] h-[15px]" /></span>
-                            <span className="flex-1 truncate">{item.label}</span>
-                            {item.badge && pendingTaskCount > 0 && (
-                              <span className="min-w-[20px] h-5 px-1 rounded-full bg-[#E5533D] text-white text-[10px] font-extrabold flex items-center justify-center">
-                                {pendingTaskCount}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {(userAuth?.user?.role === "admin" || userAuth?.user?.role === "teacher") && (
-                <>
-                  <p className="nb-side__group">Quản trị</p>
-                  <button onClick={() => goTo("/admin")} className="nb-side__item">
-                    <span className="nb-side__ico"><GraduationCap className="w-[15px] h-[15px]" /></span>
-                    <span className="flex-1 truncate">Trang giáo viên</span>
-                  </button>
-                </>
-              )}
-
-              <p className="nb-side__group">Tài khoản</p>
-              {userAuth?.user ? (
-                <button onClick={onUserLogout} className="nb-side__item">
-                  <span className="nb-side__ico"><LogOut className="w-[15px] h-[15px]" /></span>
-                  <span className="flex-1 truncate">Đăng xuất</span>
-                </button>
-              ) : (
-                <>
-                  <button onClick={onUserLogin} className="nb-side__item">
-                    <span className="nb-side__ico"><KeyRound className="w-[15px] h-[15px]" /></span>
-                    <span className="flex-1 truncate">Đăng nhập</span>
-                  </button>
-                  <button onClick={onUserRegister} className="nb-side__item">
-                    <span className="nb-side__ico"><Sparkles className="w-[15px] h-[15px]" /></span>
-                    <span className="flex-1 truncate">Đăng ký</span>
-                  </button>
-                </>
-              )}
-            </nav>
-
-            {/* Thú cưng */}
-            <button onClick={() => goTo("/pet")} className="nb-pet block w-[calc(100%-24px)] text-left hover:-translate-y-0.5 transition">
-              <div className="flex items-center gap-2.5">
-                <div className="w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-black grid place-items-center overflow-hidden">
-                  <PetSvg size={40} bounce />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-extrabold truncate">{pet.name}</p>
-                  <p className="text-[10px] font-semibold text-[#2A9D8F]">Cấp {pet.level}</p>
-                  <div className="mt-1 h-1.5 rounded-full bg-[#1D2E4A]/15 overflow-hidden">
-                    <div className="h-full rounded-full bg-[#F2B632]"
-                      style={{ width: `${Math.min(100, Math.round((pet.exp / (pet.expNeeded || 1)) * 100))}%` }} />
-                  </div>
-                </div>
-              </div>
-              <p className="mt-2 text-[10px] font-bold text-[#1D2E4A]/60 truncate">{moodLabel(pet.mood)}</p>
-            </button>
-          </aside>
-
-        {/* ═══════════ CỘT PHẢI CỦA SIDEBAR ═══════════ */}
-        <div className="flex-1 min-w-0 flex flex-col">
-
-          {/* ═══════════ TOPBAR (desktop) ═══════════ */}
-          <header className="nb-topbar hidden lg:flex">
-            <div className="flex items-center gap-2.5 ml-auto">
-              {userAuth?.user && (
-                <>
-                  <StatPill onClick={() => goTo("/my-coins")}>
-                    <span className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-sm">
-                      <Star className="w-3.5 h-3.5" fill="currentColor" />
-                    </span>
-                    <span className="font-extrabold text-slate-700">{userCoins.toLocaleString()}</span>
-                    <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold leading-none">+</span>
-                  </StatPill>
-
-                  <StatPill wide>
-                    <span className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 text-white flex items-center justify-center shadow-sm">
-                      <Star className="w-3.5 h-3.5" fill="currentColor" />
-                    </span>
-                    <span className="font-extrabold text-slate-700 whitespace-nowrap">Lv {lv.level}</span>
-                    <span className="w-24 h-2 rounded-full bg-slate-100 overflow-hidden">
-                      <span className="block h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all" style={{ width: `${lv.percent ?? 0}%` }} />
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{lv.earned ?? 0} / {lv.needed ?? 0}</span>
-                  </StatPill>
-
-                  <StatPill onClick={() => goTo("/garden")}>
-                    <span className="text-base leading-none">❤️</span>
-                    <span className="font-extrabold text-slate-700">{hearts}</span>
-                    <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold leading-none">+</span>
-                  </StatPill>
-
-                  <div className="relative">
-                    <button onClick={() => showNotificationPanel(!showNotifications)} className="relative w-10 h-10 rounded-full bg-white shadow-sm hover:shadow transition text-slate-500 hover:text-sky-600 flex items-center justify-center">
-                      <Bell className="w-5 h-5" />
-                      {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />}
-                    </button>
-                    {/* Bắt buộc phải có lg:w-[...]: với position:absolute thì khung
-                        chứa là div.relative này — chỉ rộng 40px bằng nút chuông.
-                        Không khai width, panel co lại đúng 40px (bị bóp).
-                        max-w để không tràn ra ngoài màn hình ở màn hình vừa. */}
-                    {showNotifications && notificationDropdown("lg:absolute lg:top-12 lg:right-0 lg:w-[400px] lg:max-w-[calc(100vw-2rem)]")}
-                  </div>
-                </>
-              )}
-
-              {userAuth?.user ? (
-                <button onClick={() => goTo("/profile")} className="flex items-center gap-2 bg-white shadow-sm hover:shadow transition rounded-full pl-1.5 pr-3 py-1.5">
-                  <span className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-sky-400 to-indigo-400 text-white flex items-center justify-center">
-                    {avatarItems.length > 0 ? <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={36} /> : <User className="w-5 h-5" />}
+        {/* Menu ngang — ẩn dưới lg vì màn hẹp thì nút "Thêm" + hamburger đủ dùng */}
+        <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
+          {headerNav.map((item) => {
+            const Icon = item.icon;
+            const active = item.type === "path" && item.path === "/";
+            return (
+              <button
+                key={item.key}
+                onClick={() => handleNavClick(item)}
+                aria-current={active ? "page" : undefined}
+                className="nb-navitem"
+              >
+                <Icon className="w-[15px] h-[15px]" />
+                {item.label}
+                {item.badge && pendingTaskCount > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#E5533D] text-white text-[10px] font-extrabold flex items-center justify-center">
+                    {pendingTaskCount}
                   </span>
-                  <span className="text-sm font-bold text-slate-700 max-w-[110px] truncate">{userAuth.user.name}</span>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button onClick={onUserRegister} className="text-sm font-bold text-sky-600 px-4 py-2 rounded-full hover:bg-white transition">
-                    Đăng ký
-                  </button>
-                  <button onClick={onUserLogin} className="text-sm bg-gradient-to-r from-emerald-400 to-green-600 text-white font-bold px-5 py-2.5 rounded-full hover:from-emerald-500 hover:to-green-700 transition shadow-md shadow-emerald-200">
-                    Đăng nhập
-                  </button>
-                </div>
-              )}
-            </div>
-          </header>
+                )}
+              </button>
+            );
+          })}
+        </nav>
 
-          {/* ═══════════ TOPBAR (mobile) ═══════════ */}
-          <header className="lg:hidden sticky top-[var(--sat)] z-30 bg-white/95 backdrop-blur-md border-b border-sky-100 shadow-sm">
-            <div className="px-3 h-14 flex items-center justify-between gap-2">
-              <a href="#/" onClick={() => navigate("/")} className="shrink-0">
-                <img src={`${import.meta.env.BASE_URL}eduplay-logo.png`} alt="EduPlay" className="h-8 w-auto object-contain" draggable={false} />
-              </a>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {userAuth?.user && (
-                  <>
-                    <span onClick={() => goTo("/my-coins")} className="inline-flex items-center gap-1 text-xs font-extrabold text-slate-600 bg-white border border-slate-100 rounded-full px-2 py-1 shadow-sm">
-                      <span className="w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center"><Star className="w-2.5 h-2.5" fill="currentColor" /></span>
-                      {userCoins.toLocaleString()}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs font-extrabold text-slate-600 bg-white border border-slate-100 rounded-full px-2 py-1 shadow-sm">
-                      ⭐ Lv {lv.level}
-                    </span>
-                    <div className="relative">
-                      <button onClick={() => showNotificationPanel(!showNotifications)} className="relative p-1.5 rounded-full bg-white shadow-sm text-slate-500">
-                        <Bell className="w-5 h-5" />
-                        {unreadCount > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />}
-                      </button>
-                      {showNotifications && notificationDropdown("fixed right-2 top-14 w-[400px] max-w-[calc(100vw-1rem)]")}
-                    </div>
-                  </>
-                )}
-                {userAuth?.user ? (
-                  <a href="#/profile" onClick={() => navigate("/profile")} className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white shadow">
-                    {avatarItems.length > 0 ? <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={32} /> : (
-                      <span className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 to-indigo-400 text-white flex items-center justify-center"><User className="w-4 h-4" /></span>
-                    )}
-                  </a>
-                ) : (
-                  <button onClick={onUserLogin} className="bg-gradient-to-r from-emerald-400 to-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
-                    Vào
-                  </button>
-                )}
+        <div className="flex items-center gap-2 ml-auto shrink-0">
+          {userAuth?.user && (
+            <>
+              {/* Ở màn hẹp chỉ giữ coin + cấp độ, các pill khác gộp vào menu "Thêm" */}
+              <StatPill onClick={() => goTo("/my-coins")}>
+                <span className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-sm">
+                  <Star className="w-3 h-3" fill="currentColor" />
+                </span>
+                <span className="font-extrabold text-slate-700">{userCoins.toLocaleString()}</span>
+              </StatPill>
+
+              <StatPill onClick={() => goTo("/profile")}>
+                <span className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 text-white flex items-center justify-center shadow-sm">
+                  <Star className="w-3 h-3" fill="currentColor" />
+                </span>
+                <span className="font-extrabold text-slate-700 whitespace-nowrap">Lv {lv.level}</span>
+                <span className="hidden xl:block w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                  <span className="block h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all" style={{ width: `${lv.percent ?? 0}%` }} />
+                </span>
+              </StatPill>
+
+              <div className="relative">
                 <button
-                  onClick={() => setMobileMenuOpen(v => !v)}
-                  aria-label="Thêm tuỳ chọn"
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm text-slate-500"
+                  onClick={() => showNotificationPanel(!showNotifications)}
+                  aria-label="Thông báo"
+                  className="relative w-9 h-9 rounded-full bg-white shadow-sm hover:shadow transition text-slate-500 hover:text-sky-600 flex items-center justify-center"
                 >
-                  {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                  <Bell className="w-[18px] h-[18px]" />
+                  {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />}
+                </button>
+                {/* Bắt buộc phải khai width: panel position:absolute bám vào
+                    div.relative này — không khai thì panel bị bóp về 36px. */}
+                {showNotifications && notificationDropdown("lg:absolute lg:top-12 lg:right-0 lg:w-[400px] lg:max-w-[calc(100vw-2rem)]")}
+              </div>
+            </>
+          )}
+
+          {/* Nút "Thêm" — luôn hiện, kể cả khách chưa đăng nhập.
+              Mobile dùng nút này làm menu chính (nav ngang bị ẩn dưới lg). */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setMoreOpen(v => !v)}
+              aria-label="Thêm tuỳ chọn"
+              aria-expanded={moreOpen}
+              className="w-9 h-9 rounded-full bg-white shadow-sm hover:shadow transition text-slate-500 flex items-center justify-center"
+            >
+              {moreOpen ? <X className="w-[18px] h-[18px]" /> : <Menu className="w-[18px] h-[18px]" />}
+            </button>
+            {moreOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
+                <div className="absolute right-0 top-11 z-50 w-60 bg-white rounded-2xl border-[3px] border-[#1D2E4A] shadow-[6px_6px_0_#1D2E4A] py-2 overflow-y-auto max-h-[70vh]">
+                  {/* Mobile: nav ngang bị ẩn nên phải có đầy đủ ở đây */}
+                  <div className="lg:hidden">
+                    {navItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button key={item.key} onClick={() => handleNavClick(item)} className="nb-side__item w-auto rounded-none">
+                          <span className="nb-side__ico"><Icon className="w-[15px] h-[15px]" /></span>
+                          <span className="flex-1 truncate text-left">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                    <div className="my-2 border-t-2 border-[#1D2E4A]/10" />
+                  </div>
+                  {moreItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button key={item.key} onClick={() => handleNavClick(item)} className="nb-side__item w-auto rounded-none">
+                        <span className="nb-side__ico"><Icon className="w-[15px] h-[15px]" /></span>
+                        <span className="flex-1 truncate text-left">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                  {(userAuth?.user?.role === "admin" || userAuth?.user?.role === "teacher") && (
+                    <button onClick={() => goTo("/admin")} className="nb-side__item w-auto rounded-none">
+                      <span className="nb-side__ico"><GraduationCap className="w-[15px] h-[15px]" /></span>
+                      <span className="flex-1 truncate text-left">Trang giáo viên</span>
+                    </button>
+                  )}
+                  <div className="my-2 border-t-2 border-[#1D2E4A]/10" />
+                  {userAuth?.user ? (
+                    <button onClick={() => { onUserLogout(); setMoreOpen(false); }} className="nb-side__item w-auto rounded-none text-rose-500">
+                      <span className="nb-side__ico"><LogOut className="w-[15px] h-[15px]" /></span>
+                      <span className="flex-1 truncate text-left">Đăng xuất</span>
+                    </button>
+                  ) : (
+                    <>
+                      <button onClick={onUserLogin} className="nb-side__item w-auto rounded-none">
+                        <span className="nb-side__ico"><KeyRound className="w-[15px] h-[15px]" /></span>
+                        <span className="flex-1 truncate text-left">Đăng nhập</span>
+                      </button>
+                      <button onClick={onUserRegister} className="nb-side__item w-auto rounded-none">
+                        <span className="nb-side__ico"><Sparkles className="w-[15px] h-[15px]" /></span>
+                        <span className="flex-1 truncate text-left">Đăng ký</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {userAuth?.user ? (
+            <button
+              onClick={() => goTo("/profile")}
+              aria-label="Hồ sơ"
+              className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-gradient-to-br from-sky-400 to-indigo-400 text-white flex items-center justify-center ring-2 ring-white shadow"
+            >
+              {avatarItems.length > 0
+                ? <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={32} />
+                : <User className="w-[18px] h-[18px]" />}
+            </button>
+          ) : (
+            <button onClick={onUserLogin} className="text-sm bg-gradient-to-r from-emerald-400 to-green-600 text-white font-bold px-4 py-2 rounded-full hover:from-emerald-500 hover:to-green-700 transition shadow-md shadow-emerald-200 shrink-0">
+              Đăng nhập
+            </button>
+          )}
+        </div>
+      </header>
+
+      <div className="flex-1 min-w-0 flex flex-col">
+
+        {/* ═══════════ HERO: banner tràn viền, bo cong đáy ═══════════ */}
+        {/* Nằm NGOÀI .nb-page để ảnh tràn từ mép trang — nội dung chữ bên
+            trong vẫn canh theo khung .nb-page để thẳng hàng với section dưới. */}
+        <section className="nb-hero">
+          <img
+            src={`${import.meta.env.BASE_URL}banner.png`}
+            alt="EduPlay — học chơi khám phá cùng EduPlay"
+            className="nb-hero__img"
+            draggable={false}
+          />
+          <div className="nb-hero__scrim" />
+
+          <div className="nb-page nb-hero__body">
+            <div className="nb-hero__copy">
+              <p className="nb-hero__eyebrow">Chào {userAuth?.user?.name ? userAuth.user.name.split(" ")[0] : "bạn"} 👋</p>
+              <h1 className="nb-hero__title">
+                Biến giờ học thành<br />cuộc phiêu lưu!
+              </h1>
+              <p className="nb-hero__sub">Học mà chơi, chơi mà giỏi — tiến độ lưu ngay trên máy.</p>
+
+              <div className="nb-hero__cta">
+                <button onClick={() => scrollTo("games-section")} className="nb-hero__btn">
+                  <span className="nb-hero__play"><ChevronRight className="w-4 h-4 rotate-90" strokeWidth={3} /></span>
+                  Bắt đầu ngay
+                </button>
+                <button onClick={() => goTo("/garden")} className="nb-hero__ghost">
+                  <Sprout className="w-[18px] h-[18px]" />
+                  Khu vườn
                 </button>
               </div>
             </div>
-            {mobileMenuOpen && (
-              <div className="border-t border-sky-100 px-3 py-2 grid grid-cols-2 gap-1 bg-white">
-                {navItems.map(item => {
-                  const Icon = item.icon;
+          </div>
+        </section>
+
+        {/* ═══════════ NỘI DUNG ═══════════ */}
+        <div className="nb-page">
+          <main className="space-y-5 lg:space-y-7">
+
+            {/* ─── DANH SÁCH GAME: card môn học xếp thành hàng ngang ─── */}
+            <section id="games-section" className="scroll-mt-24">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white flex items-center justify-center shadow-md shrink-0">
+                    <Gamepad2 className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <h2 className="nb-h2">Danh sách game</h2>
+                    <p className="text-[11.5px] text-slate-400 -mt-0.5">Chơi không cần mạng · Tiến độ lưu ngay trên máy</p>
+                  </div>
+                </div>
+
+                {/* Chuyển nhanh giữa game học tập và game offline */}
+                <div className="nb-tabs" role="tablist">
+                  <button
+                    role="tab"
+                    aria-selected={!isOfflineTab}
+                    onClick={() => setActiveSubject(ALL_TAB)}
+                    className={`nb-tab ${!isOfflineTab ? "nb-tab--on" : ""}`}
+                  >
+                    <BookOpen className="w-4 h-4" /> Game học tập
+                  </button>
+                  <button
+                    role="tab"
+                    aria-selected={isOfflineTab}
+                    onClick={() => setActiveSubject(OFFLINE_TAB)}
+                    className={`nb-tab ${isOfflineTab ? "nb-tab--on" : ""}`}
+                  >
+                    <Gamepad2 className="w-4 h-4" /> Game offline
+                  </button>
+                </div>
+              </div>
+
+              {/* Hàng card ngang: mọi môn học + Game Offline ở cuối.
+                  Cuộn ngang trên màn hẹp, tràn viền phải trên desktop. */}
+              <div id="subjects-section" className="nb-rail" role="tablist" aria-label="Môn học">
+                {railItems.map((item) => {
+                  const on = activeSubject === item.key;
                   return (
-                    <button key={item.key} onClick={() => handleNavClick(item)} className="flex items-center gap-2 text-[13px] font-bold text-slate-600 px-2.5 py-2 rounded-xl hover:bg-sky-50 text-left">
-                      <Icon className="w-4 h-4 text-slate-400" /> {item.label}
+                    <button
+                      key={item.key}
+                      role="tab"
+                      aria-selected={on}
+                      onClick={() => {
+                        setActiveSubject(item.key);
+                        setShowAllGames(false);
+                      }}
+                      className={`nb-subj bg-gradient-to-br ${item.grad} ${on ? "nb-subj--on" : ""}`}
+                    >
+                      <span className="nb-subj__ic" aria-hidden="true">{item.icon}</span>
+                      <span className="nb-subj__name">{item.name}</span>
+                      <span className="nb-subj__desc">{item.desc}</span>
+                      <span className="nb-subj__play">
+                        {item.count} game <ChevronRight className="w-3.5 h-3.5" />
+                      </span>
                     </button>
                   );
                 })}
-                {(userAuth?.user?.role === 'admin' || userAuth?.user?.role === 'teacher') && (
-                  <button onClick={() => goTo("/admin")} className="flex items-center gap-2 text-[13px] font-bold text-slate-600 px-2.5 py-2 rounded-xl hover:bg-sky-50 text-left">
-                    <GraduationCap className="w-4 h-4 text-slate-400" /> Trang giáo viên
-                  </button>
-                )}
-                {userAuth?.user && (
-                  <button onClick={() => { onUserLogout(); setMobileMenuOpen(false); }} className="flex items-center gap-2 text-[13px] font-bold text-rose-500 px-2.5 py-2 rounded-xl hover:bg-rose-50 text-left">
-                    <LogOut className="w-4 h-4" /> Đăng xuất
-                  </button>
-                )}
               </div>
-            )}
-          </header>
 
-          {/* ═══════════ NỘI DUNG ═══════════ */}
-            <div className="nb-page px-3 lg:px-6 lg:flex lg:gap-5 lg:items-start">
-            <main className="flex-1 min-w-0 space-y-4 lg:space-y-5 pt-3 lg:pt-4">
-
-                            <section className="relative rounded-3xl overflow-hidden shadow-[0_10px_30px_rgba(15,80,140,.15)] bg-gradient-to-b from-sky-300 to-emerald-200 min-h-[230px] lg:min-h-[320px] flex flex-col justify-between">
-                <img src={`${import.meta.env.BASE_URL}banner.png`} alt="Khu vườn" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-black/10" />
-
-                <div className="relative p-3 lg:p-4">
-                  <button onClick={() => goTo("/garden")} className="inline-flex items-center gap-2 bg-amber-50/95 hover:bg-amber-50 border-2 border-amber-300 text-amber-800 font-extrabold text-sm rounded-2xl px-3.5 py-2 shadow-md transition active:scale-95">
-                    <span className="text-lg leading-none">🏠</span>
-                    <span className="max-w-[46vw] lg:max-w-none truncate">Vườn của {userAuth?.user?.name || 'bạn'}</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="relative p-3 lg:p-4 flex flex-wrap items-center justify-center gap-3">
-                  <button onClick={() => goTo("/garden")} className="flex-1 min-w-[190px] max-w-[300px] bg-emerald-500/95 hover:bg-emerald-600 text-white rounded-2xl px-3.5 py-2.5 shadow-lg transition active:scale-95 text-left">
-                    <span className="flex items-center gap-2 font-extrabold text-sm">
-                      <Sprout className="w-4 h-4" /> Khu vườn cấp 2
-                    </span>
-                    <span className="mt-1.5 block h-2 rounded-full bg-white/30 overflow-hidden">
-                      <span className="block h-full rounded-full bg-white" style={{ width: '58%' }} />
-                    </span>
-                  </button>
-                  <button onClick={() => goTo("/garden")} className="flex-1 min-w-[190px] max-w-[300px] bg-emerald-600/90 hover:bg-emerald-700 text-white rounded-2xl px-3.5 py-2.5 shadow-lg transition active:scale-95 flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">🔒</span>
-                    <span className="font-extrabold text-sm text-left leading-tight">Mở khóa khu<br className="hidden sm:block" /> vực mới</span>
-                  </button>
-                </div>
-              </section>
-
-              {/* ─── GAME OFFLINE: style lưới ô lớn (giống trung-tam-game.html) ─── */}
-              <section id="offline-games-section" className="scroll-mt-20">
-                <SectionTitle
-                  icon={Gamepad2}
-                  iconTint="from-emerald-400 to-teal-600"
-                  title={`Game offline (${OFFLINE_GAMES.length})`}
-                />
-                <p className="-mt-1 mb-2.5 text-[11.5px] text-slate-400">
-                  Chơi không cần mạng · Tiến độ lưu ngay trên máy
-                </p>
+              {/* ─── Lưới game chi tiết của nhóm đang chọn ─── */}
+              {isOfflineTab ? (
                 <div className="nbg-grid">
                   {OFFLINE_GAMES.map((g) => (
                     <OfflineGameCard key={g.key} game={g} />
                   ))}
                 </div>
-              </section>
-
-              {/* ─── GAME HỌC TẬP: giữ nguyên style gốc ─── */}
-              <section id="games-section" className="scroll-mt-20">
-                <SectionTitle icon={Gamepad2} iconTint="from-sky-400 to-blue-500" title="Game đề xuất"
-                  actionLabel="Xem tất cả ›" onAction={() => { setShowAllGames(v => !v); if (showAllGames) scrollTo('games-section'); }} />
-
-                {/* chip môn học — luôn render wrapper để nút "Học tập" trên sidebar không bị chết khi chưa có dữ liệu */}
-                <div id="subjects-section" className="flex gap-2 overflow-x-auto no-scrollbar pb-3 scroll-mt-20">
-                  {subjects.length > 0 && (
-                    <>
-                      <Chip active={activeSubject === 'all'} onClick={() => setActiveSubject('all')}>Tất cả</Chip>
-                      {subjects.map(sub => (
-                        <Chip key={sub} active={activeSubject === sub} onClick={() => setActiveSubject(sub)}>{sub}</Chip>
-                      ))}
-                    </>
-                  )}
+              ) : games === null ? (
+                <Loader label="Đang tải trò chơi..." />
+              ) : error ? (
+                <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
+              ) : visibleGames.length === 0 ? (
+                <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thử chọn môn khác hoặc nhập mã vé từ thầy cô nhé!" />
+              ) : (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                  {/* Game ghim */}
+                  <FeaturedGameCard />
+                  {learningGames.map(({ game, index, template }) => (
+                    <GameCard key={game._id || game.id} game={game} index={index} template={template} onSelect={onSelectGame} />
+                  ))}
                 </div>
+              )}
 
-                {games === null ? (
-                  <Loader label="Đang tải trò chơi..." />
-                ) : error ? (
-                  <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
-                ) : visibleGames.length === 0 ? (
-                  <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thử chọn môn khác hoặc nhập mã vé từ thầy cô nhé!" />
-                ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-                    {/* Game ghim */}
-                    <FeaturedGameCard />
-                    {(showAllGames ? visibleGames : visibleGames.slice(0, PREVIEW_GAMES)).map((g, i) => (
-                      <GameCard key={g._id || g.id} game={g} index={i}
-                        template={templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid))}
-                        onSelect={onSelectGame} />
-                    ))}
-                  </div>
-                )}
-
-                {showAllGames && visibleGames.length > PREVIEW_GAMES && (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mt-4">
-                    {visibleGames.slice(PREVIEW_GAMES).map((g, i) => (
-                      <GameCard key={g._id || g.id} game={g} index={i}
-                        template={templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid))}
-                        onSelect={onSelectGame} />
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* ─── BANNER THƯỞNG + SHORTCUT ─── */}
-              <section className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-4">
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 text-white p-4 lg:p-5 flex items-center gap-3 shadow-lg">
-                  <span className="text-4xl lg:text-5xl float-slow shrink-0">🎁</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-base lg:text-lg leading-tight">Hoàn thành nhiệm vụ<br />Nhận ngay phần thưởng!</p>
-                    <button onClick={() => goTo("/daily-tasks")} className="mt-2.5 bg-gradient-to-r from-amber-300 to-yellow-500 text-amber-900 text-xs font-extrabold rounded-full px-4 py-2 shadow hover:from-amber-400 hover:to-yellow-600 transition active:scale-95">
-                      Xem nhiệm vụ →
-                    </button>
-                  </div>
+              {/* Nút "xem tất cả" chỉ có ý nghĩa với nhóm game học tập.
+                  Khi bấm lần hai thì thu gọn về PREVIEW_GAMES. */}
+              {!isOfflineTab && !error && visibleGames.length > PREVIEW_GAMES && (
+                <div className="flex justify-center mt-4">
+                  <button onClick={() => setShowAllGames(v => !v)} className="nb-chip">
+                    {showAllGames ? "Thu gọn" : `Xem tất cả ${visibleGames.length} game`}
+                  </button>
                 </div>
+              )}
 
-                <div className="nb-card p-3 grid grid-cols-4 gap-2 content-start">
-                  {QUICK_ACTIONS.map(item => {
-                    const Icon = item.icon;
-                    return (
-                      <button key={item.key} onClick={() => goTo(item.path)} className="flex flex-col items-center gap-1.5 group">
-                        <span className={`w-11 h-11 lg:w-12 lg:h-12 rounded-2xl bg-gradient-to-br ${item.tint} text-white flex items-center justify-center shadow-md group-hover:-translate-y-0.5 group-active:scale-95 transition-all`}>
-                          <Icon className="w-5 h-5" />
-                        </span>
-                        <span className="text-[10px] lg:text-[11px] font-bold text-slate-600 text-center leading-tight">{item.label}</span>
-                        <span className="hidden lg:block text-[9px] text-slate-400 text-center leading-tight -mt-1">{item.sub}</span>
-                      </button>
-                    );
-                  })}
+              {/* Khi đang xem offline, nhảy thẳng vào game offline nổi bật */}
+              {isOfflineTab && (
+                <div className="flex justify-center mt-4">
+                  <button onClick={() => navigate("/offline/trung-tam-game")} className="nb-chip">
+                    Mở trung tâm game <ChevronRight className="w-3.5 h-3.5 inline" />
+                  </button>
                 </div>
-              </section>
-            </main>
+              )}
+            </section>
 
-            {/* ═══════════ CỘT PHẢI ═══════════ */}
-            <aside className="w-full lg:w-[336px] shrink-0 space-y-4 pt-1 lg:pt-4">
+              {/* ─── NHẮC ĐĂNG NHẬP + SHORTCUT (chỉ khi chưa có tài khoản) ─── */}
+              {!userAuth?.user && (
+                <section className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-4">
+                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 text-white p-4 lg:p-5 flex items-center gap-3 shadow-lg">
+                    <span className="text-4xl lg:text-5xl float-slow shrink-0">🎁</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-base lg:text-lg leading-tight">Đăng nhập để lưu điểm, coin và nuôi pet nhé!</p>
+                      <div className="mt-2.5 flex flex-wrap gap-2">
+                        <button onClick={onUserLogin} className="bg-white/95 text-sky-700 text-xs font-extrabold rounded-full px-4 py-2 shadow hover:bg-white transition active:scale-95">
+                          <KeyRound className="w-3.5 h-3.5 inline mr-1" /> Đăng nhập
+                        </button>
+                        <button onClick={onUserRegister} className="bg-gradient-to-r from-amber-300 to-yellow-500 text-amber-900 text-xs font-extrabold rounded-full px-4 py-2 shadow hover:from-amber-400 hover:to-yellow-600 transition active:scale-95">
+                          <Sparkles className="w-3.5 h-3.5 inline mr-1" /> Đăng ký miễn phí
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="nb-card p-3 grid grid-cols-4 gap-2 content-start">
+                    {QUICK_ACTIONS.map(item => {
+                      const Icon = item.icon;
+                      return (
+                        <button key={item.key} onClick={() => goTo(item.path)} className="flex flex-col items-center gap-1.5 group">
+                          <span className={`w-11 h-11 lg:w-12 lg:h-12 rounded-2xl bg-gradient-to-br ${item.tint} text-white flex items-center justify-center shadow-md group-hover:-translate-y-0.5 group-active:scale-95 transition-all`}>
+                            <Icon className="w-5 h-5" />
+                          </span>
+                          <span className="text-[10px] lg:text-[11px] font-bold text-slate-600 text-center leading-tight">{item.label}</span>
+                          <span className="hidden lg:block text-[9px] text-slate-400 text-center leading-tight -mt-1">{item.sub}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {/* ─── PANEL: Nhiệm vụ · Thú cưng · Thành tựu ───
+                  Không còn cột phải — ba panel nằm ngang dưới danh sách game. */}
+              <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {/* Nhiệm vụ hôm nay */}
               <PanelCard
                 icon={<ClipboardList className="w-4 h-4" />}
@@ -959,22 +1027,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   ))}
                 </div>
               </PanelCard>
-
-              {/* Nhắc đăng nhập (chưa có tài khoản) */}
-              {!userAuth?.user && (
-                <div className="nb-card p-4 text-center">
-                  <PartyPopper className="w-7 h-7 mx-auto text-emerald-400 mb-1.5" />
-                  <p className="text-xs text-slate-500 mb-3">Đăng nhập để lưu điểm, coin và nuôi pet của bạn nhé!</p>
-                  <button onClick={onUserLogin} className="w-full text-sm bg-gradient-to-r from-emerald-400 to-green-600 text-white font-bold px-4 py-2.5 rounded-full hover:from-emerald-500 hover:to-green-700 transition mb-2">
-                    <KeyRound className="w-4 h-4 inline mr-1" /> Đăng nhập
-                  </button>
-                  <button onClick={onUserRegister} className="w-full nb-btn nb-btn--mustard">
-                    <Sparkles className="w-4 h-4 inline mr-1" /> Đăng ký
-                  </button>
-                </div>
-              )}
-            </aside>
-          </div>
+            </section>
+          </main>
         </div>
       </div>
 
@@ -995,33 +1049,23 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       </nav>
 
       <EnterCodeModal open={showCodeModal} onClose={() => setShowCodeModal(false)} onFound={onSelectGame} />
+
+      {/* ═══════════ AI BẠN HỌC (nút nổi) ═══════════
+          Nút nổi của AiChatWidget tự bố trí: `bottom-24` trên mobile để không bị
+          chồng lên bottom nav, `lg:bottom-6` trên desktop. Không ảnh hưởng layout
+          (fixed, ngoài luồng) nên hero full-width và danh sách game giữ nguyên. */}
+      <AiChatWidget title="AI Bạn Học" />
     </div>
   );
 }
 
 // ═══════════════ COMPONENT PHỤ ═══════════════
 
-function StatPill({ children, onClick, wide = false }) {
+function StatPill({ children, onClick }) {
   return (
-    <button onClick={onClick} className={`flex items-center gap-2 bg-white shadow-sm hover:shadow transition rounded-full px-3 py-1.5 ${wide ? "" : ""}`}>
+    <button onClick={onClick} className="flex items-center gap-1.5 bg-white shadow-sm hover:shadow transition rounded-full px-2.5 py-1.5">
       {children}
     </button>
-  );
-}
-
-function SectionTitle({ icon: Icon, iconTint, title, actionLabel, onAction }) {
-  return (
-    <div className="flex items-center justify-between gap-3 mb-3">
-      <h2 className="nb-h2 flex items-center gap-2.5">
-        <span className={`w-8 h-8 rounded-xl border-[3px] border-[#1D2E4A] bg-gradient-to-br ${iconTint} flex items-center justify-center shrink-0`}>
-          <Icon className="w-4 h-4 text-white" />
-        </span>
-        {title}
-      </h2>
-      {actionLabel && (
-        <button onClick={onAction} className="nb-chip shrink-0">{actionLabel}</button>
-      )}
-    </div>
   );
 }
 
@@ -1044,14 +1088,6 @@ function PanelCard({ icon, iconTint, title, badge, actionLabel, onAction, childr
       </div>
       {children}
     </section>
-  );
-}
-
-function Chip({ active, onClick, children }) {
-  return (
-    <button onClick={onClick} aria-pressed={active} className="nb-chip">
-      {children}
-    </button>
   );
 }
 
