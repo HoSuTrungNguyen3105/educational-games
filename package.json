@@ -14,9 +14,10 @@
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
     "sync:games": "node scripts/sync-html-games.mjs",
-    "games:build": "node scripts/build-offline-games.mjs",
+    "games:build": "node scripts/build-offline-games.mjs && node scripts/build-parkour-tri-thuc.mjs",
     "games:test": "node scripts/test-offline-games.mjs",
-    "games:sync": "node scripts/sync-offline-games.mjs"
+    "games:sync": "node scripts/sync-offline-games.mjs",
+    "games:build:parkour": "node scripts/build-parkour-tri-thuc.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

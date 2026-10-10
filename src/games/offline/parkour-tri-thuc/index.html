@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Parkour Tri Thức 3D Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <div class="hud-tl">
+      <div class="avatar">😎</div>
+      <div class="coin-pill"><span class="i">💎</span><span id="gemN">0</span></div>
+      <div class="coin-pill gem"><span class="i">🪙</span><span id="coinN">0</span></div>
+    </div>
+    <div id="progressWrap"><div id="progressFill"></div><span id="progressIcon" style="left:0">🏃</span></div>
+    <div class="challenge-pill" id="challengePill" style="display:none"></div>
+    <div class="hud-tr"><button class="icon-btn" id="pauseBtn">⏸</button></div>
+  </div>
+  <div id="say"></div>
+  <div id="tip"></div>
+  <div id="ctrl">
+    <div class="dpad">
+      <button class="cbtn" id="btnU">▲</button>
+      <button class="cbtn" id="btnL">◀</button>
+      <button class="cbtn" id="btnR">▶</button>
+      <button class="cbtn" id="btnD">▼</button>
+    </div>
+    <div class="actions">
+      <button class="cbtn slide" id="btnS">⬇</button>
+      <button class="cbtn jump" id="btnJ">⬆</button>
+    </div>
+  </div>
+  <div class="screen bgp on" id="home">
+    <div class="row"><div class="chip" id="hStreak">🔥 0 ngày</div><div class="chip" id="hWallet">⭐ 0</div><div class="chip" id="hBest">🏆 0</div></div>
+    <div class="logo">Parkour<br>Tri Thức<small>Wall Jump · Slide · Moving Platforms</small></div>
+    <h3 class="sec">⚔️ CHỌN THỬ THÁCH</h3>
+    <div class="scroller" id="challenges"></div>
+    <h3 class="sec">📚 CHỌN MÔN</h3>
+    <div class="scroller" id="subjects"></div>
+    <button class="btn g big" id="playBtn">CHƠI NGAY! 🎮</button>
+    <div class="row">
+      <button class="btn w sm" id="repBtn">📊 Báo cáo</button>
+      <button class="btn w sm" id="edBtn">🧑‍🏫 Câu hỏi</button>
+      <button class="btn w sm" id="sndBtn">🔊 Bật</button>
+    </div>
+  </div>
+  <div class="screen" id="qm"><div class="qcard">
+    <div class="qtop"><span class="qchip" id="qChip"></span></div>
+    <div class="qrow"><div class="qhero" id="qHero">🏃</div><div class="qtext" id="qText"></div></div>
+    <div class="qicon" id="qIcon"></div>
+    <div class="qtools"><button id="qSpeak">🔊 Nghe</button><button id="qHint">💡 Gợi ý (3⭐)</button></div>
+    <div class="qans" id="qAns"></div>
+    <div class="qfb" id="qFb"></div>
+  </div></div>
+  <div class="screen" id="result">
+    <div class="panel"><h2 id="rTitle">Về đích!</h2>
+      <div class="res">
+        <div><b id="rCoin">0</b>🪙 xu</div>
+        <div><b id="rGem">0</b>💎 ngọc</div>
+        <div><b id="rAcc">0%</b>đúng</div>
+        <div><b id="rDist">0</b>m</div>
+      </div>
+      <div class="reward-row" id="rReward" style="display:none"></div>
+      <div class="col">
+        <button class="btn g" id="rRetry">↺ Chơi lại</button>
+        <button class="btn w sm" id="rHome">🏠 Trang chủ</button>
+      </div>
+    </div>
+  </div>
+  <div class="screen" id="pause">
+    <div class="panel"><h2>Tạm dừng</h2><div class="col">
+      <button class="btn g" id="resumeBtn">Tiếp tục ▶</button>
+      <button class="btn w sm" id="pRetry">↺ Chơi lại</button>
+      <button class="btn w sm" id="pHome">🏠 Trang chủ</button>
+    </div></div>
+  </div>
+  <div class="screen bgp" id="report">
+    <div class="panel"><h2>📊 Báo cáo</h2>
+      <div id="repBars" style="width:100%;display:flex;flex-direction:column;gap:6px"></div>
+      <div style="width:100%;max-height:120px;overflow-y:auto;text-align:left;font-size:12px;font-weight:600;display:flex;flex-direction:column;gap:5px" id="repWrong"></div>
+      <button class="btn w sm" id="repBack">◀ Quay lại</button>
+    </div>
+  </div>
+  <div class="screen" id="editor" style="background:#1a0d4a">
+    <div class="panel" style="background:#0a0525;color:#fff;border-color:#ffd43b;width:min(100%,740px);max-height:95vh">
+      <h2 style="color:#ffd43b;font-size:20px">🧑‍🏫 Bộ câu hỏi + Challenge (JSON)</h2>
+      <div style="font-size:11px;opacity:.85;text-align:left;line-height:1.35">Cấu trúc: <code>challenges[]</code> + các môn <code>viet/eng/sci/geo/custom[]</code>. Mỗi challenge: <code>id, name, icon, desc, reward</code> + điều kiện (<code>timeLimit, collectCoins, correctAnswers, minDistance, noWrong, noFall, minCorrect</code>).</div>
+      <textarea id="bankText" spellcheck="false"></textarea>
+      <div id="bankErr" style="color:#ff9a9a;font-size:12px;min-height:14px;width:100%;text-align:left"></div>
+      <div class="row">
+        <button class="btn g sm" id="bkApply">✅ Áp dụng</button>
+        <button class="btn w sm" id="bkReset">↺ Mặc định</button>
+        <button class="btn w sm" id="bkDown">⬇️ Tải</button>
+        <button class="btn w sm" id="bkLoad">📂 Nạp</button>
+        <input type="file" id="bkFile" accept=".json" hidden>
+      </div>
+      <button class="btn w sm" id="edBack">◀ Quay lại</button>
+    </div>
+  </div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/level.js"></script>
+<script src="js/player.js"></script>
+<script src="js/render.js"></script>
+<script src="js/controls.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+<style>
+  #homeBackBtn{position:fixed;z-index:2147483000;top:calc(env(safe-area-inset-top,0px) + 10px);left:calc(env(safe-area-inset-left,0px) + 10px);width:42px;height:42px;border-radius:14px;display:grid;place-items:center;cursor:pointer;font-family:inherit;font-size:20px;font-weight:800;line-height:1;color:#1d1340;background:#fffaf0;border:3px solid #1d1340;box-shadow:0 4px 0 #1d1340,0 8px 14px rgba(0,0,0,.22);transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  #homeBackBtn:active{transform:translateY(3px);box-shadow:0 1px 0 #1d1340}
+</style>
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ"><span aria-hidden="true">&#8592;</span></button>
+<script>
+  (function(){
+    var b=document.getElementById('homeBackBtn');
+    if(!b)return;
+    b.addEventListener('click',function(){
+      try{ if(window.parent&&window.parent!==window){ window.parent.postMessage({type:'quit',data:{}},'*'); return; } }catch(e){}
+      try{ window.location.href='/'; }catch(e){}
+    });
+  })();
+</script>
+</body>
+</html>
