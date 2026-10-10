@@ -54,7 +54,7 @@ public class RestClientConfig {
     }
 
     private ClientHttpRequestFactory requestFactory(Duration connect, Duration read) {
-        return ClientHttpRequestFactoryBuilder.detect().build(ClientHttpRequestFactorySettings.DEFAULTS
+        return ClientHttpRequestFactoryBuilder.detect().build(ClientHttpRequestFactorySettings.defaults()
                 .withConnectTimeout(connect)
                 .withReadTimeout(read));
     }

@@ -40,6 +40,7 @@ const ROUTES = [
   { name: "admin-images", pattern: "/admin/images" },
   { name: "admin-upload-items", pattern: "/admin/upload-items" },
   { name: "admin-chat", pattern: "/admin/chat" },
+  { name: "admin-ai-analysis", pattern: "/admin/ai-analysis" },
   { name: "admin-reminders", pattern: "/admin/reminders" },
   { name: "admin-profile", pattern: "/admin/profile" },
 
@@ -56,6 +57,7 @@ const ROUTES = [
   { name: "leaderboard",  pattern: "/leaderboard" },
   { name: "achievements", pattern: "/achievements" },
   { name: "reminders",    pattern: "/reminders" },
+  { name: "ai-learning",  pattern: "/ai-learning" },
   { name: "assignment-join", pattern: "/assignment" },
   { name: "assignment-take", pattern: "/assignment/:code" },
   { name: "math-adventure", pattern: "/math-adventure" },

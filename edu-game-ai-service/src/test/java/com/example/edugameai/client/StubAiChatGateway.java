@@ -40,7 +40,12 @@ public class StubAiChatGateway implements AiChatGateway {
         if (system != null) {
             lastSystemPrompt.add(system);
         }
-        prompts.add(messages.isEmpty() ? "" : messages.get(messages.size() - 1).content());
+        // Ghi lại TOÀN BỘ hội thoại để test có thể assert cả phần lịch sử.
+        StringBuilder joined = new StringBuilder();
+        for (AiMessage m : messages) {
+            joined.append('[').append(m.role()).append("] ").append(m.content()).append('\n');
+        }
+        prompts.add(joined.toString());
         if (error != null) {
             throw error;
         }

@@ -165,10 +165,11 @@ public class AiPromptFactory {
 
         sb.append("TỔNG QUAN\n");
         sb.append("- Số lượt chơi: ").append(metrics.totalPlays()).append('\n');
-        sb.append("- Tổng số câu đã trả lời: ").append(metrics.totalQuestionsAnswered()).append('\n');
+        sb.append("- Tổng số câu hệ thống đã đưa ra: ").append(metrics.totalQuestionsOffered()).append('\n');
         sb.append("- Số câu đúng: ").append(metrics.totalCorrectAnswers()).append('\n');
-        sb.append("- Số câu sai: ").append(metrics.totalWrongAnswers()).append('\n');
-        sb.append("- Tỷ lệ đúng: ").append(metrics.accuracy()).append("%\n");
+        sb.append("- Tỷ lệ đúng (đúng / tổng số câu đưa ra): ").append(metrics.accuracy()).append("%\n");
+        sb.append("- Tỷ lệ đúng trung bình mỗi lượt (theo cách hệ thống chấm): ")
+          .append(metrics.averagePlayAccuracy()).append("%\n");
         sb.append("- Điểm trung bình: ").append(round1(metrics.averageScore())).append('\n');
         sb.append("- Tổng XP: ").append(metrics.totalXp()).append('\n');
         sb.append("- Thời gian trung bình mỗi lượt: ")
@@ -179,7 +180,7 @@ public class AiPromptFactory {
               .append(" đến ").append(metrics.periodTo()).append('\n');
         }
 
-        sb.append("\nTHEO CHỦ ĐỀ (tối đa 10 mục, theo số câu đã trả lời giảm dần)\n");
+        sb.append("\nTHEO CHỦ ĐỀ (tối đa 10 mục, theo số câu giảm dần)\n");
         List<TopicMetric> topics = metrics.topics();
         if (topics.isEmpty()) {
             sb.append("- (chưa có dữ liệu chủ đề)\n");
@@ -188,7 +189,7 @@ public class AiPromptFactory {
                 sb.append("- ").append(t.displayName()).append(" | ")
                   .append("môn: ").append(t.subject() == null || t.subject().isBlank() ? "không rõ" : t.subject())
                   .append(" | lượt chơi: ").append(t.plays())
-                  .append(" | câu đã trả lời: ").append(t.questionsAnswered())
+                  .append(" | số câu đưa ra: ").append(t.questionsOffered())
                   .append(" | câu đúng: ").append(t.correctAnswers())
                   .append(" | tỷ lệ đúng: ").append(t.accuracy()).append("%\n");
             }

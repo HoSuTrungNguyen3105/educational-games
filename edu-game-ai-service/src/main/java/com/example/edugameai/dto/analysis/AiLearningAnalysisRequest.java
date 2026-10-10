@@ -1,7 +1,9 @@
 package com.example.edugameai.dto.analysis;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
+import com.example.edugameai.exception.AiErrors;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -30,10 +32,25 @@ public record AiLearningAnalysisRequest(
         String gameId) {
 
     public LocalDate fromDate() {
-        return from == null || from.isBlank() ? null : LocalDate.parse(from);
+        return parseDate(from, "from");
     }
 
     public LocalDate toDate() {
-        return to == null || to.isBlank() ? null : LocalDate.parse(to);
+        return parseDate(to, "to");
+    }
+
+    /**
+     * Chuyển chuỗi ngày thành {@link LocalDate}. Ném lỗi nghiệp vụ thay vì
+     * {@code DateTimeParseException} để không bao giờ rơi vào nhánh lỗi 500.
+     */
+    private static LocalDate parseDate(String value, String field) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value.strip());
+        } catch (DateTimeParseException e) {
+            throw new AiErrors.InvalidRequest(field + " phải có định dạng yyyy-MM-dd.");
+        }
     }
 }

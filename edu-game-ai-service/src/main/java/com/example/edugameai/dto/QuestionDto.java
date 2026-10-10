@@ -2,7 +2,9 @@ package com.example.edugameai.dto;
 
 import java.util.List;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Câu hỏi theo shape CŨ của {@code POST /api/ai/generate-question}.
@@ -12,6 +14,8 @@ import lombok.Data;
  * chính đang lưu.
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class QuestionDto {
     private String content;
     private List<String> options;
