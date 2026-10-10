@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.example.edugameai.config.CoreApiProperties;
+import com.example.edugameai.dto.core.CoreExplainContext;
 import com.example.edugameai.dto.core.CoreGame;
 import com.example.edugameai.dto.core.CoreResult;
 import com.example.edugameai.dto.core.CoreUser;
@@ -86,6 +87,64 @@ public class CoreBackendClient {
         requireEnabled();
         return getList("/results", new TypeReference<List<CoreResult>>() {
         });
+    }
+
+    /**
+     * Lấy ngữ cảnh giải thích cho một câu hỏi mà học sinh vừa trả lời.
+     *
+     * <p>Chấm điểm và dựng ngữ cảnh đều do backend chính làm — AI Service KHÔNG tự chấm và
+     * không bao giờ tin {@code isCorrect} do client khai. Token của chính học sinh được gửi
+     * kèm để backend xác thực người gọi, đúng cơ chế xác thực hiện có.
+     *
+     * @throws AiErrors.InvalidRequest nếu backend không tìm thấy câu hỏi
+     */
+    public CoreExplainContext explainContext(String bearerToken, String gameId, String questionId, String answer) {
+        requireEnabled();
+        Map<String, String> body = new HashMap<>();
+        if (gameId != null && !gameId.isBlank()) {
+            body.put("gameId", gameId);
+        }
+        body.put("questionId", questionId);
+        if (answer != null) {
+            body.put("answer", answer);
+        }
+
+        String raw;
+        try {
+            raw = restClient.post()
+                    .uri("/questions/explain-context")
+                    .headers(h -> applyBearer(h, bearerToken))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientResponseException e) {
+            throw explainTranslate(e);
+        } catch (ResourceAccessException e) {
+            throw unavailable(e, "/questions/explain-context");
+        }
+
+        JsonNode data = unwrapEnvelope(raw, "/questions/explain-context");
+        if (data == null || !data.isObject()) {
+            throw new AiErrors.CoreBackendUnavailable("Hệ thống dữ liệu trả về ngữ cảnh không đọc được.");
+        }
+        return objectMapper.convertValue(data, CoreExplainContext.class);
+    }
+
+    private RuntimeException explainTranslate(RestClientResponseException e) {
+        int code = e.getStatusCode().value();
+        log.warn("Backend chính trả HTTP {} tại /questions/explain-context", code);
+        if (code == 401 || code == 403) {
+            return new AiErrors.Unauthenticated("Phiên đăng nhập không hợp lệ hoặc đã hết hạn.");
+        }
+        if (code == 404) {
+            return new AiErrors.InvalidRequest("Không tìm thấy câu hỏi này trong hệ thống.");
+        }
+        if (code == 503) {
+            return new AiErrors.CoreBackendUnavailable("Hệ thống dữ liệu đang khởi động. Vui lòng thử lại sau.");
+        }
+        return new AiErrors.CoreBackendUnavailable("Hệ thống dữ liệu đang không khả dụng.");
     }
 
     /** Map {@code gameId} (có thể là {@code _id} hoặc {@code code}) → game. */

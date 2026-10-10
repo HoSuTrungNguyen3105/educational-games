@@ -13,7 +13,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** AI phân tích kết quả học tập của học sinh. */
+/**
+ * AI phân tích kết quả học tập của học sinh.
+ *
+ * <p>Kiến trúc đích: Backend chính đã xác thực người dùng và đã truyền kèm dữ liệu lượt
+ * chơi đã lọc trong {@code results}/{@code games}. AI Service vẫn lọc lại và kiểm tra quyền
+ * theo danh tính nhận được qua service token.
+ */
 @RestController
 @RequestMapping("/api/ai")
 public class AiLearningAnalysisController {
@@ -30,7 +36,7 @@ public class AiLearningAnalysisController {
             AuthenticatedUser user,
             HttpServletRequest httpRequest) {
         AiLearningAnalysisRequest body = request == null
-                ? new AiLearningAnalysisRequest(null, null, null, null)
+                ? new AiLearningAnalysisRequest(null, null, null, null, null, null)
                 : request;
         AiLearningAnalysisResponse response = analysisService.analyze(body, user, AiChatController.clientIp(httpRequest));
         return ResponseEntity.ok(ApiResponse.ok(response));

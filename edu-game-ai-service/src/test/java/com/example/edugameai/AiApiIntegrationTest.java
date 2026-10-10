@@ -13,7 +13,10 @@ import java.util.Optional;
 
 import com.example.edugameai.client.AiChatGateway;
 import com.example.edugameai.client.CoreBackendClient;
+import com.example.edugameai.dto.core.CoreExplainContext;
+import com.example.edugameai.dto.core.CoreOption;
 import com.example.edugameai.dto.core.CoreUser;
+import com.example.edugameai.exception.AiErrors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -239,5 +242,82 @@ class AiApiIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(false))
                 .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    @DisplayName("giải thích câu sai: thiếu token thì 401")
+    void explainRequiresToken() throws Exception {
+        mockMvc.perform(post("/api/ai/explain")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"questionId\":\"q-1\",\"answer\":\"a\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401));
+    }
+
+    @Test
+    @DisplayName("giải thích câu sai: trả 200 và KHÔNG kèm đáp án đúng")
+    void explainWrongAnswerHidesCorrectAnswer() throws Exception {
+        when(coreBackendClient.explainContext(any(), any(), any(), any())).thenReturn(new CoreExplainContext(
+                "q-1", "2 + 3 = ?", "Toán", "Cộng", "choice",
+                List.of(new CoreOption("a", "4"), new CoreOption("b", "5")),
+                Boolean.TRUE, "4", Boolean.FALSE, "5", null));
+
+        mockMvc.perform(post("/api/ai/explain")
+                        .header("Authorization", "Bearer " + VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"gameId\":\"g1\",\"questionId\":\"q-1\",\"answer\":\"a\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.answer").isNotEmpty())
+                .andExpect(jsonPath("$.data.questionId").value("q-1"))
+                .andExpect(jsonPath("$.data.isCorrect").value(false))
+                .andExpect(jsonPath("$.data.revealed").value(false))
+                .andExpect(jsonPath("$.data.correctAnswerText").doesNotExist())
+                .andExpect(jsonPath("$.data.correctAnswer").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("giải thích: thiếu questionId bị chặn bằng validation 400")
+    void explainRejectsBlankQuestionId() throws Exception {
+        mockMvc.perform(post("/api/ai/explain")
+                        .header("Authorization", "Bearer " + VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"answer\":\"a\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    @DisplayName("giải thích: backend chính trả 404 thì thành 400 dễ hiểu, không lộ chi tiết")
+    void explainMapsCoreNotFound() throws Exception {
+        when(coreBackendClient.explainContext(any(), any(), any(), any()))
+                .thenThrow(new AiErrors.InvalidRequest("Không tìm thấy câu hỏi này trong hệ thống."));
+
+        mockMvc.perform(post("/api/ai/explain")
+                        .header("Authorization", "Bearer " + VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"questionId\":\"khong-ton-tai\",\"answer\":\"a\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    @DisplayName("giải thích: AI hỏng vẫn trả lỗi có cấu trúc để game chơi tiếp được")
+    void explainHandlesProviderFailure() throws Exception {
+        when(coreBackendClient.explainContext(any(), any(), any(), any())).thenReturn(new CoreExplainContext(
+                "q-1", "2 + 3 = ?", null, null, "choice", List.of(),
+                Boolean.TRUE, "4", Boolean.FALSE, "5", null));
+        when(aiChatGateway.complete(any(AiChatGateway.AiMessage.class), any()))
+                .thenThrow(new AiErrors.ProviderUnavailable("Không kết nối được dịch vụ AI."));
+
+        mockMvc.perform(post("/api/ai/explain")
+                        .header("Authorization", "Bearer " + VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"questionId\":\"q-1\",\"answer\":\"a\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.code").value(503))
+                .andExpect(jsonPath("$.data").doesNotExist());
     }
 }

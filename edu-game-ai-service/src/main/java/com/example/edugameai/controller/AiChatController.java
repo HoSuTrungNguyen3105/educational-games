@@ -4,6 +4,8 @@ import com.example.edugameai.dto.ApiResponse;
 import com.example.edugameai.dto.chat.AiChatRequest;
 import com.example.edugameai.dto.chat.AiChatResponse;
 import com.example.edugameai.security.AuthenticatedUser;
+import com.example.edugameai.security.BearerToken;
+import com.example.edugameai.security.CurrentUserArgumentResolver;
 import com.example.edugameai.service.AiChatService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -38,6 +40,12 @@ public class AiChatController {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
             return forwarded.split(",")[0].strip();
+        }
+        // Backend chính làm trung gian nên IP thật của người dùng được chuyển tiếp qua
+        // header này. Chỉ có ý nghĩa khi service token đã được kiểm chứng ở argument resolver.
+        String viaBackend = request.getHeader(CurrentUserArgumentResolver.INTERNAL_CLIENT_IP_HEADER);
+        if (viaBackend != null && !viaBackend.isBlank()) {
+            return viaBackend.split(",")[0].strip();
         }
         return request.getRemoteAddr();
     }

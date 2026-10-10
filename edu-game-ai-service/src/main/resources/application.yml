@@ -42,13 +42,31 @@ edu:
     read-timeout: ${OLLAMA_READ_TIMEOUT:120s}
 
     auth:
-      # true = mọi endpoint /api/ai/** trừ health đều cần Bearer token do backend chính xác thực.
-      # Đặt false CHỈ để chạy thử nhanh khi chưa có backend.
+      # Kiến trúc đích: Frontend → Backend chính (:5000) → AI Service.
+      # Xác thực thật diễn ra ở Backend chính; AI Service nhận service token + danh tính
+      # đã kiểm chứng qua header, không gọi ngược lại /api/auth/me.
+      #
+      # `required` chỉ áp dụng cho CHẾ ĐỘ LEGACY (Bearer token của người dùng).
+      # Đặt false CHỈ để chạy thử nhanh khi chưa có Backend chính.
       required: ${EDU_AI_AUTH_REQUIRED:true}
+
       # Chỉ giáo viên/admin được sinh câu hỏi.
       quiz-requires-staff: ${EDU_AI_QUIZ_REQUIRES_STAFF:true}
 
+    # ── Xác thực service-to-service với Backend chính ──────────────────────
+    internal:
+      # Shared secret giữa Backend chính và AI Service. Rỗng = TẮT chế độ internal
+      # (chỉ còn chế độ legacy Bearer). TUYỆT ĐỐI lấy từ biến môi trường, không
+      # hard-code, không đưa vào log, không trả về cho client.
+      token: ${EDU_AI_INTERNAL_TOKEN:}
+      # Cho phép xác thực bằng Bearer token người dùng (cách cũ, chỉ để dev/test).
+      # Đặt false ở production để AI Service chỉ nhận request từ Backend chính.
+      legacy-bearer-auth-enabled: ${EDU_AI_LEGACY_BEARER_AUTH:true}
+
     web:
+      # Origin gọi TRỰC TIẾP vào AI Service. Kiến trúc đích không còn Frontend gọi
+      # thẳng, nên mặc định chỉ cho phép Backend chính (same-machine). Production
+      # nên đặt AI Service trong mạng nội bộ, CORS chỉ là lớp phụ.
       allowed-origins: ${EDU_AI_ALLOWED_ORIGINS:}
 
     limits:
@@ -68,6 +86,7 @@ edu:
     rate-limit:
       enabled: ${EDU_AI_RATE_LIMIT_ENABLED:true}
       chat-per-minute: ${EDU_AI_RATE_LIMIT_CHAT:20}
+      explain-per-minute: ${EDU_AI_RATE_LIMIT_EXPLAIN:30}
       quiz-per-minute: ${EDU_AI_RATE_LIMIT_QUIZ:10}
       analysis-per-minute: ${EDU_AI_RATE_LIMIT_ANALYSIS:10}
 
@@ -77,8 +96,10 @@ edu:
       min-questions-for-conclusion: 5
       min-plays-for-conclusion: 2
 
-  # ── Backend nghiệp vụ hiện tại (Node/Express) ───────────────────────────────
-  # AI Service KHÔNG có database riêng; nó chỉ đọc dữ liệu qua các API này.
+  # ── Backend nghiện vụ hiện tại (Node/Express) ───────────────────────────────
+  # AI Service KHÔNG có database riêng.
+  # Trong kiến trúc đích, Backend chính truyền dữ liệu xuống qua request, nên các
+  # endpoint dưới đây CHỈ còn dùng cho chế độ legacy (gọi trực tiếp khi dev).
   core:
     base-url: ${CORE_API_BASE:http://localhost:5000/api}
     connect-timeout: 5s

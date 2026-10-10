@@ -13,10 +13,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Trạng thái AI Service — KHÔNG yêu cầu token, để frontend kiểm tra nhanh khi bật/tắt nút.
+ * Trạng thái AI Service — KHÔNG yêu cầu token, để Backend chính kiểm tra nhanh.
  *
- * <p>TUYỆT ĐỐI không trả về {@code apiKey} hay bất kỳ giá trị bí mật nào; chỉ có cờ
- * {@code hasApiKey} để chẩn đoán cấu hình.
+ * <p>Kiến trúc đích: Frontend không gọi endpoint này; {@code Backend chính :5000} gọi và
+ * chuyển kết quả (đã lọc) cho frontend.
+ *
+ * <p>TUYỆT ĐỐI không trả về {@code apiKey}, service token hay bất kỳ giá trị bí mật nào;
+ * chỉ có cờ {@code hasApiKey} để chẩn đoán cấu hình.
  */
 @RestController
 @RequestMapping("/api/ai")
@@ -43,6 +46,8 @@ public class AiStatusController {
         data.put("baseUrlConfigured", aiProperties.baseUrl() != null && !aiProperties.baseUrl().isBlank());
         data.put("hasApiKey", aiProperties.apiKey() != null && !aiProperties.apiKey().isBlank());
         data.put("authRequired", aiProperties.auth().required());
+        // Chỉ có cờ bật/tắt, TUYỆT ĐỐI không trả giá trị service token.
+        data.put("internalAuthEnabled", aiProperties.internal().enabled());
         data.put("coreBackendEnabled", coreProperties.enabled());
         data.put("detail", provider.detail());
 

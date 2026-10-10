@@ -34,7 +34,7 @@ public class AiRateLimiter {
      * Ghi một lượt dùng và ném lỗi 429 nếu vượt hạn mức.
      *
      * @param key     định danh người dùng/IP đã gắn tiền tố bởi {@code AuthenticatedUser.rateLimitKey}
-     * @param bucket  nhóm hạn mức: {@code chat}, {@code quiz} hoặc {@code analysis}
+     * @param bucket  nhóm hạn mức: {@code chat}, {@code explain}, {@code quiz} hoặc {@code analysis}
      */
     public void check(String key, Bucket bucket) {
         if (!properties.rateLimit().enabled()) {
@@ -42,6 +42,7 @@ public class AiRateLimiter {
         }
         int limit = switch (bucket) {
             case CHAT -> properties.rateLimit().chatPerMinute();
+            case EXPLAIN -> properties.rateLimit().explainPerMinute();
             case QUIZ -> properties.rateLimit().quizPerMinute();
             case ANALYSIS -> properties.rateLimit().analysisPerMinute();
         };
@@ -77,7 +78,7 @@ public class AiRateLimiter {
 
     /** Nhóm hạn mức. */
     public enum Bucket {
-        CHAT, QUIZ, ANALYSIS
+        CHAT, EXPLAIN, QUIZ, ANALYSIS
     }
 
     private static final class Window {

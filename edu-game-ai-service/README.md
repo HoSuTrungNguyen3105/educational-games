@@ -6,26 +6,33 @@ trắc nghiệm**, **phân tích kết quả học tập**.
 ## 1. Ranh giới trách nhiệm
 
 ```text
-React Edu Game
-   ├──> Backend Node (Render)  ──> MongoDB     ← user / game / question / coin (KHÔNG đổi)
-   └──> AI Service (8081)       ──> Ollama/LLM  ← chỉ sinh nội dung + diễn giải
-                    │
-                    └──> đọc dữ liệu qua API của backend Node (không có DB riêng)
+React Edu Game  ──HTTP──>  Backend Node/Express (:5000)  ──service token──>  AI Service (8081)
+                                │                                            └──> Ollama/LLM
+                                └──> MongoDB  ← user / game / question / coin / XP (KHÔNG đổi)
 ```
 
-**AI Service không có database riêng.** Nó xác thực token và đọc kết quả học tập bằng cách
-gọi API sẵn có của backend Node. Nhờ vậy không phải nhân bản schema, không phải sửa API cũ,
-và nguồn sự thật vẫn là một chỗ duy nhất.
+**Frontend chỉ gọi Backend chính.** Không có đường đi trực tiếp nào từ trình duyệt tới AI
+Service. Backend chính xác thực, phân quyền, lấy đúng phần dữ liệu cần thiết, rồi mới gọi
+AI Service qua header `X-Ai-Internal-Token` kèm danh tính đã kiểm chứng.
+
+**AI Service không có database riêng.** Ở luồng chuẩn nó nhận sẵn dữ liệu trong request
+(`results`/`games` cho phân tích, `context` cho giải thích câu sai) nên **không gọi vòng
+ngược lại Backend chính**. `CoreBackendClient` chỉ còn là đường dự phòng cho chế độ legacy
+(gọi thẳng khi dev, hoặc khi chưa bật service token).
 
 ## 2. Nguyên tắc bất di bất dịch
 
 | Nguyên tắc | Thực hiện ở đâu |
 |---|---|
+| Frontend không gọi thẳng AI Service | `aiApi.js` chỉ dùng `API_BASE` + `apiFetch` của Backend chính |
+| Không tin request từ bên ngoài | `CurrentUserArgumentResolver` chỉ đọc header `X-Ai-User-*` khi service token khớp (so sánh constant-time) |
+| Không dùng token người dùng làm service token | `BearerToken` luôn rỗng ở đường internal; đường Bearer chỉ bật khi `EDU_AI_LEGACY_BEARER_AUTH=true` |
 | Java/database là nguồn sự thật, LLM chỉ diễn giải | `LearningMetricsCalculator` tính mọi chỉ số; prompt chỉ nhận số tổng hợp |
 | AI không tự sửa điểm / không ghi database | Không service nào có `MongoTemplate`/repository; quiz chỉ trả bản nháp |
-| Không tin `studentId` từ client | `AiLearningAnalysisService.resolveTargetUser` chốt lại từ token |
+| Không tin `studentId` từ client | `AiLearningAnalysisService.resolveTargetUser` chốt lại từ danh tính đã xác thực |
 | Output của LLM là dữ liệu không tin cậy | `AiQuizGenerationService.validate` + `fromModel` cắt ngắn mọi trường |
-| Không log/đưa `OLLAMA_KEY` ra ngoài | Chỉ đọc trong `OllamaChatGateway`, `AiStatusController` chỉ trả cờ `hasApiKey` |
+| Không log/đưa `OLLAMA_KEY` hay service token ra ngoài | Chỉ đọc trong `OllamaChatGateway`; `AiStatusController` chỉ trả cờ `hasApiKey`, `internalAuthEnabled` |
+| CORS không phải cơ chế bảo vệ | Mặc định chỉ mở `localhost:5000`; ràng buộc thật là service token + mạng nội bộ |
 
 ## 3. Cấu trúc
 
@@ -84,7 +91,17 @@ cp .env.example .env       # sửa OLLAMA_MODEL / OLLAMA_KEY nếu cần
 npm run dev                # http://localhost:5173
 ```
 
-Kiểm tra nhanh:
+**Bắt buộc cho luồng chuẩn:** `EDU_AI_INTERNAL_TOKEN` (AI Service) phải bằng
+`AI_BACKEND_TOKEN` (Backend chính, đặt trong `server/.env`). Hai giá trị phải **khớp nhau**,
+nếu không mọi chức năng AI sẽ trả 503.
+
+Kiểm tra nhanh — qua Backend chính (đúng đường đi của Frontend):
+
+```bash
+curl http://localhost:5000/api/ai/health
+```
+
+Kiểm tra trực tiếp AI Service (chỉ để debug, không phải đường chính):
 
 ```bash
 curl http://localhost:8081/api/ai/health
@@ -99,9 +116,12 @@ Xem `edu-game-ai-service/.env.example` (đã chú thích đầy đủ). Tóm t�
 | `OLLAMA_BASE_URL` | có | `http://localhost:11434` | endpoint Ollama |
 | `OLLAMA_MODEL` | có | `qwen3:8b` | tên model phải có sẵn ở endpoint |
 | `OLLAMA_KEY` | tùy | *(rỗng)* | để trống = không xác thực (Ollama local) |
-| `CORE_API_BASE` | có | `http://localhost:5000/api` | gốc API backend Node |
-| `EDU_AI_AUTH_REQUIRED` | nên | `true` | `false` **chỉ** để test local |
-| `EDU_AI_ALLOWED_ORIGINS` | khi deploy | localhost | origin React được gọi |
+| **`EDU_AI_INTERNAL_TOKEN`** | **có (production)** | *(rỗng)* | **shared secret với Backend chính; khớp `AI_BACKEND_TOKEN`. Rỗng = tắt chế độ service-to-service** |
+| `EDU_AI_LEGACY_BEARER_AUTH` | không | `true` | đặt `false` ở production để chỉ nhận request có service token |
+| `CORE_API_BASE` | chỉ legacy | `http://localhost:5000/api` | gốc API backend Node (chỉ dùng khi chạy chế độ legacy) |
+| `EDU_AI_AUTH_REQUIRED` | chỉ legacy | `true` | `false` **chỉ** để test local |
+| `EDU_AI_ALLOWED_ORIGINS` | khi deploy | localhost | origin gọi **trực tiếp** AI Service |
+| `EDU_AI_RATE_LIMIT_EXPLAIN` | không | `30` | số lần gọi `/api/ai/explain` mỗi phút |
 | `EDU_AI_ENV_FILE` | không | `.env` | đặt `-` để tắt nạp file |
 
 **Cấp quyền ưu tiên:** biến môi trường hệ thống > `application.yml` > file `.env` > default.
@@ -190,6 +210,41 @@ thay thế toàn bộ câu hỏi của game nên tuyệt đối không tự đ�
 Cùng chức năng nhưng trả shape cũ: `options` là mảng chuỗi, `correctAnswer` là **nội dung**
 đáp án. Nay đã đi qua pipeline kiểm tra mới. Response được bọc trong envelope (client đã cập
 nhật để bóc).
+
+### `POST /api/ai/explain` — cần token — **AI Bạn Học (giai đoạn 1)**
+
+Giải thích câu hỏi học sinh vừa trả lời sai. AI **không tự chấm**: token của học sinh được
+chuyển tiếp xuống `POST /api/questions/explain-context` của backend Node, nơi chấm lại bằng
+đúng hàm `isAnswerCorrect` dùng cho `gradeAnswers` và dựng ngữ cảnh.
+
+```json
+// request — KHÔNG có isCorrect, KHÔNG có correctAnswer
+{ "gameId": "6a1f…", "questionId": "question-abc", "answer": "opt-2",
+  "reveal": false, "followUp": "sao vậy ạ?" }
+```
+
+```json
+// response 200
+{
+  "status": true, "code": 200, "msg": "success",
+  "data": {
+    "answer": "Trước tiên mình nhìn mẫu số nhé …",
+    "questionId": "question-abc", "isCorrect": false, "answered": true,
+    "revealed": false, "subject": "Toán", "truncated": false
+  }
+}
+```
+
+**Quy tắc bất di bất dịch:**
+
+| Quy tắc | Cách thực thi |
+|---|---|
+| Học sinh không biết đáp án trước khi trả lời | `correctAnswer` bị strip ở `server/src/routes/questions.js`; chỉ endpoint `explain-context` mở, và chỉ sau khi đã có câu trả lời |
+| AI không tự chấm | `isCorrect` lấy từ backend Node, không bao giờ tin client |
+| Đáp án đúng không về tới trình duyệt | `correctAnswerText` chỉ nằm trong **prompt**; response trả `revealed` (bool) chứ không trả giá trị đáp án |
+| Gợi ý trước, đáp án sau | `reveal=false` → prompt bắt model đưa gợi ý từng bước và hỏi "có xem lời giải không"; `reveal=true` mới nói thẳng, kèm giải thích từng bước |
+| AI không cộng điểm/xu/thành tự | Endpoint này chỉ trả văn bản; mọi thay đổi điểm vẫn do `gamePlayService` quyết định |
+| Chống spam | Bucket rate limit riêng `explain` (mặc định 30/phút) |
 
 ### `POST /api/ai/learning-analysis` — cần token
 

@@ -12,16 +12,22 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * Đăng ký {@link CurrentUserArgumentResolver} cho toàn bộ controller và mở CORS có kiểm soát.
  *
- * <p>Mặc định chỉ cho phép localhost (các cổng Vite/AI Service thường dùng khi dev).
- * Khi deploy, khai báo {@code EDU_AI_ALLOWED_ORIGINS=https://<domain-frontend>,...}.
+ * <p>Kiến trúc đích: chỉ Backend chính gọi AI Service, nên mặc định CORS chỉ mở cho
+ * {@code http://localhost:5000} (và 127.0.0.1) — nơi Backend chính chạy khi dev.
+ * Khai báo {@code EDU_AI_ALLOWED_ORIGINS=https://<domain-backend>,...} khi deploy.
+ *
+ * <p>Lưu ý: CORS KHÔNG phải cơ chế bảo vệ API giữa hai backend. Ràng buộc thật sự là
+ * service token {@code X-Ai-Internal-Token}; production nên đặt AI Service trong mạng nội bộ.
  */
 @Configuration(proxyBeanMethods = false)
 public class AiWebConfig implements WebMvcConfigurer {
 
     private static final List<String> DEV_ORIGINS = List.of(
+            // Backend chính — đường gọi chuẩn
+            "http://localhost:5000", "http://127.0.0.1:5000",
+            // Vite dev / preview — chỉ để chạy thử chế độ legacy
             "http://localhost:5173", "http://127.0.0.1:5173",
-            "http://localhost:4173", "http://127.0.0.1:4173",
-            "http://localhost:8081", "http://127.0.0.1:8081");
+            "http://localhost:4173", "http://127.0.0.1:4173");
 
     private final CurrentUserArgumentResolver currentUserArgumentResolver;
     private final List<String> allowedOrigins;

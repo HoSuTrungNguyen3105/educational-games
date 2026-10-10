@@ -3,6 +3,7 @@ package com.example.edugameai.service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -80,28 +81,9 @@ public class AiLearningAnalysisService {
         LocalDate to = request.toDate();
         LearningMetricsCalculator.validatePeriod(from, to);
 
-        List<CoreResult> all = coreBackendClient.listResults();
-        Map<String, CoreGame> games = coreBackendClient.gameIndex();
+        List<CoreResult> scoped = scope(request, user, targetUserId, from, to);
 
-        List<CoreResult> scoped = new ArrayList<>();
-        for (CoreResult r : all) {
-            if (!r.isServerGraded()) {
-                continue;
-            }
-            if (!targetUserId.equals(r.userId())) {
-                continue;
-            }
-            if (request.gameId() != null && !request.gameId().isBlank()
-                    && !request.gameId().equals(r.gameId())) {
-                continue;
-            }
-            if (!calculator.withinPeriod(r, from, to)) {
-                continue;
-            }
-            scoped.add(r);
-        }
-
-        Result computed = calculator.compute(scoped, games, from, to);
+        Result computed = calculator.compute(scoped, gameIndex(request), from, to);
         LearningMetrics metrics = computed.metrics();
 
         log.info("Phân tích học tập: {} lượt chơi, {} câu đưa ra, {} câu đúng, đủ dữ liệu={}",
@@ -118,6 +100,73 @@ public class AiLearningAnalysisService {
                 narrative.encouragement(),
                 computed.dataSufficient(),
                 computed.note() == null ? DISCLAIMER : computed.note() + " " + DISCLAIMER);
+    }
+
+    /**
+     * Chốt danh sách lượt chơi dùng để tính chỉ số.
+     *
+     * <p>Kiến trúc đích: Backend chính đã lọc sẵn, AI Service vẫn lọc LẠI ở đây theo
+     * {@code targetUserId} — không tin dữ liệu do bên ngoài gửi, kể cả trong đường internal.
+     * Việc lọc trùng là rẻ (so sánh chuỗi) nhưng giữ đúng nguyên tắc "không bao giờ tin
+     * request cho việc suy ra quyền hay dữ liệu".
+     */
+    private List<CoreResult> scope(AiLearningAnalysisRequest request, AuthenticatedUser user,
+                                   String targetUserId, LocalDate from, LocalDate to) {
+        List<CoreResult> source = request.hasInlineData()
+                ? request.results()
+                : coreBackendClient.listResults();
+
+        List<CoreResult> scoped = new ArrayList<>();
+        for (CoreResult r : source) {
+            if (r == null || !r.isServerGraded()) {
+                continue;
+            }
+            if (!targetUserId.equals(r.userId())) {
+                continue;
+            }
+            if (request.gameId() != null && !request.gameId().isBlank()
+                    && !request.gameId().equals(r.gameId())) {
+                continue;
+            }
+            if (!calculator.withinPeriod(r, from, to)) {
+                continue;
+            }
+            scoped.add(r);
+        }
+        return scoped;
+    }
+
+    /**
+     * Danh sách game để đổi {@code gameId} thành tên/môn/chủ đề.
+     *
+     * <p>Chỉ gọi vòng lại Backend chính khi Backend chính KHÔNG truyền dữ liệu xuống
+     * (chế độ legacy). Nếu đã có {@code results} trong request thì coi như dữ liệu đến
+     * từ Backend chính — kể cả khi danh sách rỗng — tuyệt đối không gọi thêm.
+     */
+    private Map<String, CoreGame> gameIndex(AiLearningAnalysisRequest request) {
+        if (!request.hasInlineData()) {
+            return coreBackendClient.gameIndex();
+        }
+        List<CoreGame> inline = request.games();
+        if (inline == null || inline.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, CoreGame> index = new HashMap<>();
+        for (CoreGame g : inline) {
+            if (g == null) {
+                continue;
+            }
+            put(index, g.mongoId(), g);
+            put(index, g.id(), g);
+            put(index, g.code(), g);
+        }
+        return index;
+    }
+
+    private void put(Map<String, CoreGame> map, String key, CoreGame game) {
+        if (key != null && !key.isBlank()) {
+            map.put(key, game);
+        }
     }
 
     /**
