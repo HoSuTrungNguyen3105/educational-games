@@ -1,7 +1,6 @@
 package com.example.edugameai;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -56,12 +55,11 @@ class AiApiIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        when(coreBackendClient.authenticate(anyString())).thenReturn(Optional.empty());
+        when(coreBackendClient.authenticate(any(String.class))).thenReturn(Optional.empty());
         when(coreBackendClient.authenticate(startsWith("token-hoc-sinh")))
                 .thenReturn(Optional.of(new CoreUser("u1", "binh", "Bình", "student")));
         when(coreBackendClient.authenticate(startsWith("token-giao-vien")))
                 .thenReturn(Optional.of(new CoreUser("t1", "lan", "Cô Lan", "teacher")));
-        when(coreBackendClient.properties().baseUrl()).thenReturn("http://localhost:5000/api");
         when(coreBackendClient.listResults()).thenReturn(List.of());
         when(coreBackendClient.gameIndex()).thenReturn(java.util.Map.of());
 
