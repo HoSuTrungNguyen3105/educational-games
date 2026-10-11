@@ -8,6 +8,9 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Send, Trash2, RefreshCw, Info, Share2, PlusSquare, MoreVertical
 } from "lucide-react";
 import AvatarPreview from "../../components/avatar/AvatarPreview.jsx";
+import PetAvatar from "../../components/pet/PetAvatar.jsx";
+import { usePet, petSummary, loadPet } from "../../services/petService.js";
+import { navigate } from "../../lib/router.js";
 import { Loader } from "../../components/ui.jsx";
 import { getPushSupportStatus, requestNotificationPermission, onForegroundMessage } from "../../firebase/messaging.js";
 import { playVibration } from "../../lib/reminderUtils.js";
@@ -18,6 +21,12 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Pet đọc từ store dùng chung → tự khớp với Kho trang phục, không cần fetch riêng.
+  const pet = usePet();
+  const petSummaryView = useMemo(() => petSummary(pet), [pet]);
+
+  useEffect(() => { loadPet(); }, []);
   const [showGames, setShowGames] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
@@ -80,10 +89,13 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           const raw = loadoutRes.data.loadout || {};
           const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
           const itemCodes = new Set(items.map(i => i.code));
-          const defaults = { body: null, skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
+          const defaults = { body: 'body_boy_01', skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
           const cleaned = {};
           for (const k of VALID_LAYERS) {
             const v = raw[k];
+            // Body không nằm trong `items` (nó là code frontend) nên không
+            // kiểm tra membership — lấy thẳng code rồi registry tự fallback.
+            if (k === 'body') { cleaned.body = v || defaults.body; continue; }
             if (v && typeof v === 'object' && v.code && itemCodes.has(v.code)) cleaned[k] = v.code;
             else if (typeof v === 'string' && itemCodes.has(v)) cleaned[k] = v;
             else cleaned[k] = defaults[k] ?? null;
@@ -435,6 +447,28 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             <button onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setShowCustomizer(true); }}
               className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-body font-semibold hover:bg-gold/80 transition">
               Tùy chỉnh Avatar
+            </button>
+          </div>
+
+          {/* ── Thú cưng ──────────────────────────────────────────────────
+              Avatar người và pet là hai thứ độc lập: đổi trang phục pet KHÔNG
+              được đụng vào avatar. Dùng chung `PetRenderer` với Kho trang phục
+              nên hai nơi luôn hiện cùng một diện mạo. */}
+          <div className="mt-4 rounded-2xl border border-dashed border-ink/10 p-3">
+            <div className="flex items-center gap-3">
+              <PetAvatar size={72} ring ariaLabel={`Thú cưng ${pet.name}`} />
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-sm text-ink truncate">{pet.name}</p>
+                <p className="text-[11px] text-ink/50">
+                  {petSummaryView.equippedCount}/{petSummaryView.totalSlots} ô đang mặc · Cấp {pet.level}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate("/pet-wardrobe")}
+              className="mt-3 w-full rounded-xl border border-ink/10 px-4 py-2 text-xs font-body font-semibold text-ink/70 transition hover:bg-ink/5"
+            >
+              👕 Mở Kho trang phục
             </button>
           </div>
         </div>

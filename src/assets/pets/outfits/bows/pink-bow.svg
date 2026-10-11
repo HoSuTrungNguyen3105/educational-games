@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    bow_pink_01 · Nơ hồng
+    Gắn lệch sang góc trên phải của đầu, KHÔNG che mắt/mũi.
+    Đầu pet: ellipse (256, ~200) r ~100×92 → điểm gắn (348, 118).
+  -->
+  <g id="bow_pink_01">
+    <!-- vòng giữa -->
+    <ellipse cx="348" cy="120" rx="13" ry="13" fill="{{dark}}"/>
+    <!-- cánh trái -->
+    <path d="M336 118c-22-18-50-24-62-12-12 12-6 34 10 42 16 8 38 4 52-8z" fill="{{main}}"/>
+    <path d="M330 116c-16-12-36-16-44-9-6 6-4 16 2 22 10-8 26-11 42-13z" fill="{{light}}" opacity=".55"/>
+    <!-- cánh phải -->
+    <path d="M360 118c22-18 50-24 62-12 12 12 6 34-10 42-16 8-38 4-52-8z" fill="{{main}}"/>
+    <path d="M366 116c16-12 36-16 44-9 6 6 4 16-2 22-10-8-26-11-42-13z" fill="{{light}}" opacity=".55"/>
+    <!-- tua chúc xuống -->
+    <path d="M344 130c-2 14-8 26-16 34l12 8c8-10 14-22 16-36z" fill="{{main}}"/>
+    <path d="M356 130c2 14 8 26 16 34l-12 8c-8-10-14-22-16-36z" fill="{{main}}"/>
+  </g>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    cape_hero_01 · Áo choàng anh hùng
+    Nằm PHÍA SAU thân (zIndex thấp hơn pet-body). Mép áo chỉ lệch ra ngoài thân
+    vài chừng — để lộ phần thân/áo bên dưới, tránh bị áo choàng nuốt hết thân.
+  -->
+  <g id="cape_hero_01">
+    <!-- tạp dề sau lưng -->
+    <path d="M256 292c50 0 92 30 106 74 9 28 12 56 12 76 0 8-6 14-14 14H152c-8 0-14-6-14-14 0-20 3-48 12-76 14-44 56-74 106-74z"
+          fill="{{dark}}"/>
+    <!-- hai mép trước vắt lên vai -->
+    <path d="M256 302c-40 0-76 22-92 58-10 22-14 44-16 62l34 6c2-20 6-40 16-56 12-20 32-34 56-38z" fill="{{main}}"/>
+    <path d="M256 302c40 0 76 22 92 58 10 22 14 44 16 62l-34 6c-2-20-6-40-16-56-12-20-32-34-56-38z" fill="{{main}}"/>
+    <!-- viền sáng -->
+    <path d="M256 298c-42 0-80 24-97 64-10 23-15 47-17 64" stroke="{{light}}" stroke-width="7" fill="none" opacity=".6"/>
+    <path d="M256 298c42 0 80 24 97 64 10 23 15 47 17 64" stroke="{{light}}" stroke-width="7" fill="none" opacity=".6"/>
+    <!-- cài vai -->
+    <circle cx="200" cy="304" r="10" fill="{{accent}}"/>
+    <circle cx="312" cy="304" r="10" fill="{{accent}}"/>
+  </g>
+</svg>

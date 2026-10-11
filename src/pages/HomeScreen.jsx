@@ -156,7 +156,7 @@ const OFFLINE_RAIL_CARD = {
 // KHÔNG phải "tất cả mục" — chỉ những mục người dùng vào thường xuyên.
 // Phần còn lại nằm trong menu "Thêm" (dropdown) để header không bị chật.
 const HEADER_NAV = (userAuth) => ([
-  { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
+  // { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
   { key: "games", icon: Gamepad2, label: "Chơi game", type: "scroll", target: "games-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: !!userAuth?.user, badge: true },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
@@ -608,7 +608,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       {/* Không còn sidebar trái — toàn bộ menu nằm trên một thanh duy nhất. */}
       <header className="nb-topbar">
         <div className="flex items-center gap-3 min-w-0">
-          <a href="#/" onClick={() => navigate("/")} className="flex items-center gap-2.5 shrink-0">
+          <a href="#/" onClick={() => navigate("/")} className="flex items-center gap-2.5 shrink-0 ml-[-80px]">
             <span className="grid place-items-center w-9 h-9 rounded-xl bg-[#F2B632] border-[3px] border-[#1D2E4A] text-lg leading-none">🎪</span>
             <span className="hidden sm:block leading-tight">
               <span className="block text-[17px] font-extrabold tracking-tight text-[#1D2E4A]">Lớp Học Vui</span>
@@ -800,23 +800,23 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ═══════════ NỘI DUNG ═══════════ */}
         <div className="nb-page">
-          <main className="space-y-5 lg:space-y-7">
+          <main className="nb-stack">
 
             {/* ─── DANH SÁCH GAME: card môn học xếp thành hàng ngang ─── */}
             <section id="games-section" className="scroll-mt-24">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white flex items-center justify-center shadow-md shrink-0">
+              <div className="nb-sechead">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="nb-sechead__icon bg-gradient-to-br from-sky-400 to-blue-600">
                     <Gamepad2 className="w-5 h-5" />
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <h2 className="nb-h2">Danh sách game</h2>
                     <p className="text-[11.5px] text-slate-400 -mt-0.5">Chơi không cần mạng · Tiến độ lưu ngay trên máy</p>
                   </div>
                 </div>
 
                 {/* Chuyển nhanh giữa game học tập và game offline */}
-                <div className="nb-tabs" role="tablist">
+                <div className="nb-tabs nb-sechead__tabs" role="tablist">
                   <button
                     role="tab"
                     aria-selected={!isOfflineTab}
@@ -839,7 +839,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               {/* Hàng card ngang: mọi môn học + Game Offline ở cuối.
                   Cuộn ngang trên màn hẹp, tràn viền phải trên desktop. */}
               <div id="subjects-section" className="nb-rail" role="tablist" aria-label="Môn học">
-                {railItems.map((item) => {
+                {railItems.map((item, i) => {
                   const on = activeSubject === item.key;
                   return (
                     <button
@@ -850,6 +850,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                         setActiveSubject(item.key);
                         setShowAllGames(false);
                       }}
+                      style={{ "--i": i }}
                       className={`nb-subj bg-gradient-to-br ${item.grad} ${on ? "nb-subj--on" : ""}`}
                     >
                       <span className="nb-subj__ic" aria-hidden="true">{item.icon}</span>
@@ -866,8 +867,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               {/* ─── Lưới game chi tiết của nhóm đang chọn ─── */}
               {isOfflineTab ? (
                 <div className="nbg-grid">
-                  {OFFLINE_GAMES.map((g) => (
-                    <OfflineGameCard key={g.key} game={g} />
+                  {OFFLINE_GAMES.map((g, i) => (
+                    <OfflineGameCard key={g.key} game={g} index={i} />
                   ))}
                 </div>
               ) : games === null ? (
@@ -877,7 +878,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               ) : visibleGames.length === 0 ? (
                 <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thử chọn môn khác hoặc nhập mã vé từ thầy cô nhé!" />
               ) : (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                <div className="nb-gamegrid">
                   {/* Game ghim */}
                   <FeaturedGameCard />
                   {learningGames.map(({ game, index, template }) => (
@@ -908,8 +909,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
               {/* ─── NHẮC ĐĂNG NHẬP + SHORTCUT (chỉ khi chưa có tài khoản) ─── */}
               {!userAuth?.user && (
-                <section className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-4">
-                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 text-white p-4 lg:p-5 flex items-center gap-3 shadow-lg">
+                <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-4">
+                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 text-white p-4 lg:p-5 flex items-center gap-3 sm:gap-4 shadow-lg border-[3px] border-[#1D2E4A]">
                     <span className="text-4xl lg:text-5xl float-slow shrink-0">🎁</span>
                     <div className="min-w-0 flex-1">
                       <p className="font-display text-base lg:text-lg leading-tight">Đăng nhập để lưu điểm, coin và nuôi pet nhé!</p>
@@ -924,11 +925,11 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     </div>
                   </div>
 
-                  <div className="nb-card p-3 grid grid-cols-4 gap-2 content-start">
+                  <div className="nb-card p-3 nb-quickgrid content-start">
                     {QUICK_ACTIONS.map(item => {
                       const Icon = item.icon;
                       return (
-                        <button key={item.key} onClick={() => goTo(item.path)} className="flex flex-col items-center gap-1.5 group">
+                        <button key={item.key} onClick={() => goTo(item.path)} className="nb-quickbtn group">
                           <span className={`w-11 h-11 lg:w-12 lg:h-12 rounded-2xl bg-gradient-to-br ${item.tint} text-white flex items-center justify-center shadow-md group-hover:-translate-y-0.5 group-active:scale-95 transition-all`}>
                             <Icon className="w-5 h-5" />
                           </span>
@@ -943,7 +944,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
               {/* ─── PANEL: Nhiệm vụ · Thú cưng · Thành tựu ───
                   Không còn cột phải — ba panel nằm ngang dưới danh sách game. */}
-              <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <section className="nb-panels">
               {/* Nhiệm vụ hôm nay */}
               <PanelCard
                 icon={<ClipboardList className="w-4 h-4" />}
@@ -1033,15 +1034,26 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       </div>
 
       {/* ═══════════ BOTTOM NAV (mobile) ═══════════ */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#1D2E4A] border-t-[3px] border-black" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <div className="flex justify-around items-center h-16">
+      {/* z-40 nhưng nằm DƯỚI nút nổi AI (z-40) — khoảng chừa phía dưới nội dung
+          đã tính ở .nb-page (--nb-bottom-inset) nên không có gì bị nav che. */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#1D2E4A] border-t-[3px] border-black"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        aria-label="Điều hướng chính"
+      >
+        <div className="flex justify-around items-stretch gap-1 px-1.5 h-16">
           {BOTTOM_NAV(userAuth).filter(i => i.show).map(item => {
             const Icon = item.icon;
             const isActive = item.key === 'home';
             return (
-              <button key={item.key} onClick={() => handleNavClick(item)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all ${isActive ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-sky-500'}`}>
-                <Icon className="w-5 h-5" />
-                <span className="text-[10px] font-bold">{item.label}</span>
+              <button
+                key={item.key}
+                onClick={() => handleNavClick(item)}
+                aria-current={isActive ? "page" : undefined}
+                className={`nb-btnnav ${isActive ? "nb-btnnav--on" : ""}`}
+              >
+                <span className="nb-btnnav__ico"><Icon className="w-5 h-5" /></span>
+                <span className="text-[10px] font-bold leading-none">{item.label}</span>
               </button>
             );
           })}
@@ -1133,9 +1145,9 @@ function QuestRow({ task, index, onClaim }) {
 
 function FeaturedGameCard() {
   return (
-    <button onClick={() => navigate(FEATURED_GAME.path)} style={{ "--tile-c": "#E5533D" }} className="nb-tile">
+    <button onClick={() => navigate(FEATURED_GAME.path)} style={{ "--tile-c": "#E5533D", "--i": 0 }} className="nb-tile">
       <div className={`relative aspect-[16/11] rounded-2xl overflow-hidden bg-gradient-to-br ${FEATURED_GAME.grad} flex items-center justify-center`}>
-        <span className="text-5xl lg:text-6xl drop-shadow-lg group-hover:scale-110 transition-transform">{FEATURED_GAME.icon}</span>
+        <span className="text-5xl lg:text-6xl drop-shadow-lg transition-transform duration-200">{FEATURED_GAME.icon}</span>
         <span className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-white/95 text-amber-500 flex items-center justify-center shadow">
           <Star className="w-4 h-4" fill="currentColor" />
         </span>
@@ -1163,13 +1175,13 @@ function FeaturedGameCard() {
  * KHÔNG hiện cờ "cần mạng": đây là game offline, hiển thị mạng ở đây chỉ gây
  * hiểu nhầm rằng phần lớn game phải cần Internet.
  */
-function OfflineGameCard({ game }) {
+function OfflineGameCard({ game, index = 0 }) {
   return (
     <button
       onClick={() => navigate(game.path)}
       aria-label={`Chơi ${game.name}`}
       title={game.name}
-      style={{ background: game.color }}
+      style={{ background: game.color, "--i": index }}
       className="nbg-card"
     >
       <span className="nbg-card__ic" aria-hidden="true">{game.icon}</span>
@@ -1188,7 +1200,8 @@ function GameCard({ game, template, onSelect, index = 0 }) {
     <button
       onClick={() => onSelect(game)}
       aria-label={`Chơi ${game.name}`}
-      style={{ animationDelay: `${index * 0.06}s`, "--tile-c": "#2A9D8F" }} className="nb-tile animate-fade-in-up focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+      style={{ "--i": index, "--tile-c": "#2A9D8F" }}
+      className="nb-tile focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
     >
       <div className={`relative w-full aspect-[16/11] rounded-2xl bg-gradient-to-br ${color.grad} flex items-center justify-center overflow-hidden`}>
         <StampToken icon={template ? template.icon : <Gamepad2 className="w-7 h-7" />} ring="#ffffff" size={46} fontSize={20} />

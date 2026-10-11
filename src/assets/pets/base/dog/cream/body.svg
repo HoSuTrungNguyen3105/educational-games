@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    Chó kem · lớp THÂN + ĐẦU
+    Đây là lớp nền của pet. Các trang phục áo/áo choàng/ba lô vẽ đè lên.
+    Xem ears.svg để biết quy ước hệ toạ độ.
+  -->
+  <g id="pet-body">
+    <!-- thân -->
+    <path d="M256 292c52 0 94 36 100 86 3 26 4 50 4 64 0 16-13 28-29 28H181c-16 0-29-12-29-28 0-14 1-38 4-64 6-50 48-86 100-86z"
+          fill="{{body}}"/>
+    <!-- bụng sáng -->
+    <ellipse cx="256" cy="404" rx="60" ry="58" fill="{{accent}}" opacity=".55"/>
+    <!-- chân trước -->
+    <ellipse cx="212" cy="452" rx="34" ry="26" fill="{{dark}}"/>
+    <ellipse cx="300" cy="452" rx="34" ry="26" fill="{{dark}}"/>
+    <ellipse cx="212" cy="448" rx="24" ry="16" fill="{{accent}}" opacity=".5"/>
+    <ellipse cx="300" cy="448" rx="24" ry="16" fill="{{accent}}" opacity=".5"/>
+    <!-- cổ: dải nối thân với đầu -->
+    <path d="M196 278c0-16 27-26 60-26s60 10 60 26c0 18-27 30-60 30s-60-12-60-30z"
+          fill="{{dark}}"/>
+    <!-- đầu -->
+    <ellipse cx="256" cy="198" rx="104" ry="94" fill="{{body}}"/>
+    <!-- sáng nhẹ trên trán cho khối -->
+    <ellipse cx="232" cy="158" rx="54" ry="36" fill="{{accent}}" opacity=".35"/>
+  </g>
+</svg>

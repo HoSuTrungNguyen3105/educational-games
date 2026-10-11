@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    glasses_round_01 · Kính tròn
+    Đúng vị trí mắt: chó (222/290, 192), mèo (220/292, 200).
+    Vẽ TRÊN mắt (zIndex cao hơn lớp eyes) nhưng DƯỚI mũ.
+  -->
+  <g id="glasses_round_01">
+    <!-- gọng kính -->
+    <circle cx="220" cy="194" r="38" fill="#fff" fill-opacity=".22" stroke="{{main}}" stroke-width="11"/>
+    <circle cx="292" cy="194" r="38" fill="#fff" fill-opacity=".22" stroke="{{main}}" stroke-width="11"/>
+    <!-- cầu nối -->
+    <path d="M258 194h-0M254 190h4" stroke="{{main}}" stroke-width="11" stroke-linecap="round"/>
+    <path d="M254 192h4" stroke="{{main}}" stroke-width="11" stroke-linecap="round"/>
+    <!-- càng kính -->
+    <path d="M182 186c-14-6-26-4-36 4" stroke="{{main}}" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <path d="M330 186c14-6 26-4 36 4" stroke="{{main}}" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <!-- lóe sáng trên mặt kính -->
+    <path d="M196 178c6-10 18-14 28-10" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none" opacity=".55"/>
+    <path d="M268 178c6-10 18-14 28-10" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none" opacity=".55"/>
+  </g>
+</svg>

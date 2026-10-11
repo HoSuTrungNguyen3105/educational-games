@@ -1,43 +1,25 @@
 import { useState, useEffect, useMemo } from 'react';
 import AvatarPreview from './AvatarPreview.jsx';
-import { renderAvatarFull } from '../../lib/avatarRenderer.js';
+import { composeAvatar, buildLayersFromLoadout } from '../../lib/avatarRenderer.js';
+import { AVATAR_BODIES } from '../../data/avatarBodies.js';
 import { API_BASE } from '../../services/api.js';
 import { Modal } from '../ui.jsx';
 import { X, Check, ShoppingBag } from 'lucide-react';
 
-function ItemThumbnail({ item, selected, preview, onClick, owned, allItems }) {
-  if (!item) return null;
-
+function ItemThumbnail({ item, selected, preview, onClick, owned, loadout, items }) {
+  // Hook phải gọi vô điều kiện → tách thành component con và return sớm ở
+  // component cha. Trước đây `if (!item) return null` nằm TRƯỚC useMemo khiến
+  // số hook gọi mỗi lần render là khác nhau.
   const fullAvatarSvg = useMemo(() => {
-    if (!item.html) return null;
+    if (!item) return null;
     if (item.category === 'skin') return null;
 
-    if (item.category === 'body') {
-      return item.html;
-    }
+    // Ghép bộ đồ đang chọn, thay đúng layer này bằng item đang xem.
+    const draft = { ...loadout, [item.category]: item.code };
+    return composeAvatar(buildLayersFromLoadout(draft, items));
+  }, [item, loadout, items]);
 
-    const defaultItems = {};
-    let bodyHtml = null;
-    for (const it of allItems) {
-      if (it.default && !defaultItems[it.category]) {
-        defaultItems[it.category] = it;
-      }
-      if (it.category === 'body' && it.default) {
-        bodyHtml = it.html || null;
-      }
-    }
-    const state = {};
-    for (const [cat, it] of Object.entries(defaultItems)) {
-      if (cat === 'body') continue;
-      if (cat === 'skin') state.skin = it.params?.hex || '#FFDFC4';
-      else if (cat === 'face') state.face = it.params?.style || 'gentle';
-      else state[cat] = { style: it.params?.style || 'none', color: it.params?.color || '#000' };
-    }
-    if (item.category === 'skin') state.skin = item.params?.hex || '#FFDFC4';
-    else if (item.category === 'face') state.face = item.params?.style || 'gentle';
-    else state[item.category] = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
-    return renderAvatarFull(state, bodyHtml);
-  }, [item, allItems]);
+  if (!item) return null;
 
   const getSwatchStyle = () => {
     if (item.category === 'skin') return { background: item.params?.hex || '#ddd' };
@@ -47,15 +29,12 @@ function ItemThumbnail({ item, selected, preview, onClick, owned, allItems }) {
     return { background: '#ddd' };
   };
 
-  const isFullSvg = fullAvatarSvg && (fullAvatarSvg.includes('<svg') || (fullAvatarSvg.includes('id="head"') && fullAvatarSvg.includes('id="body"')));
-  const thumbViewBox = isFullSvg ? '0 0 512 700' : '0 0 300 440';
-
   const getContent = () => {
     if (item.category === 'face') return <span>{item.params?.emoji || '🙂'}</span>;
     if (item.params?.style === 'none') return <span className="text-lg font-bold text-ink/20">–</span>;
     if (fullAvatarSvg) {
       return (
-        <svg viewBox={thumbViewBox} width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
+        <svg viewBox="0 0 512 700" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
           dangerouslySetInnerHTML={{ __html: fullAvatarSvg }} />
       );
     }
@@ -84,6 +63,26 @@ function ItemThumbnail({ item, selected, preview, onClick, owned, allItems }) {
   );
 }
 
+/** Body gốc nằm trong mã frontend nên không đến từ API. */
+function BodyThumbnail({ body, selected, onClick }) {
+  const svg = useMemo(() => body.render?.('#FFDFC4') || '', [body]);
+  return (
+    <button
+      onClick={onClick}
+      className={`relative w-16 h-16 rounded-xl border-2 overflow-hidden transition shrink-0 flex items-center justify-center
+        ${selected ? 'border-pink shadow-md' : 'border-ink/10 hover:border-ink/20'}`}
+    >
+      <svg viewBox="0 0 512 700" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
+        dangerouslySetInnerHTML={{ __html: svg }} />
+      {selected && (
+        <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-pink flex items-center justify-center">
+          <Check className="w-2.5 h-2.5 text-white" />
+        </div>
+      )}
+    </button>
+  );
+}
+
 export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, onSave, onClose, token }) {
   const [draft, setDraft] = useState({ ...loadout });
   const [activeTab, setActiveTab] = useState('hair');
@@ -102,14 +101,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
           const fetchedItems = json.data.items || [];
           setItems(fetchedItems);
           setCategories(json.data.categories);
-          setDraft(prev => {
-            const next = { ...prev };
-            if (!next.body) {
-              const defaultBody = fetchedItems.find(it => it.category === 'body' && it.default);
-              if (defaultBody) next.body = defaultBody.code;
-            }
-            return next;
-          });
+          setDraft(prev => ({ ...prev, body: prev.body || 'body_boy_01' }));
         }
       })
       .catch(() => { });
@@ -154,7 +146,10 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
         setDraft(prev => ({ ...prev, [item.category]: item.code }));
         setPreviewItem(null);
       }
-    } catch { }
+    } catch {
+      // Mua hỏng (mất mạng / hết coin): giữ nguyên bộ đồ đang chọn, người
+      // chơi thử lại được. Không set state trong nhánh lỗi để tránh kẹt busy.
+    }
     setBuying(null);
   }
 
@@ -208,6 +203,10 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
       )}
 
       <div className="flex gap-1 mb-3 overflow-x-auto">
+        <button onClick={() => { setActiveTab('__body'); setPreviewItem(null); }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-body font-semibold whitespace-nowrap transition ${activeTab === '__body' ? 'bg-pink text-white' : 'bg-ink/5 text-ink/50 hover:bg-ink/10'}`}>
+          Thân
+        </button>
         {categories.map(cat => (
           <button key={cat.id} onClick={() => { setActiveTab(cat.id); setPreviewItem(null); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-body font-semibold whitespace-nowrap transition ${activeTab === cat.id ? 'bg-pink text-white' : 'bg-ink/5 text-ink/50 hover:bg-ink/10'
@@ -218,37 +217,54 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
       </div>
 
       <div className="max-h-60 overflow-y-auto mb-3">
-        <div className="flex flex-wrap gap-2">
-          {tabItems.map(item => {
-            const owned = isOwned(item.code);
-            const isPreviewing = previewItem?.code === item.code;
-            const isSelected = draft[activeTab] === item.code;
-            return (
-              <div key={item.code} className="flex flex-col items-center gap-1">
-                <ItemThumbnail
-                  item={item}
-                  selected={isSelected}
-                  preview={isPreviewing && !isSelected}
-                  owned={owned}
-                  allItems={items}
-                  onClick={() => previewItemClick(item)}
-                />
-                {!owned && item.price > 0 && (
-                  <button
-                    onClick={() => handleBuy(item)}
-                    disabled={buying === item.code || localCoins < item.price}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-pink/10 text-pink text-xs font-mono font-bold hover:bg-pink/20 transition disabled:opacity-40"
-                  >
-                    <ShoppingBag className="w-3 h-3" />
-                    {buying === item.code ? '...' : `${item.price}`}
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {tabItems.length === 0 && (
-          <p className="text-sm text-ink/40 text-center py-8">Chưa có item nào</p>
+        {/* Thân: chọn trong mã frontend, miễn phí, không cần sở hữu. */}
+        {activeTab === '__body' ? (
+          <div className="flex flex-wrap gap-2">
+            {AVATAR_BODIES.map(b => (
+              <BodyThumbnail
+                key={b.code}
+                body={b}
+                selected={draft.body === b.code}
+                onClick={() => setDraft(prev => ({ ...prev, body: b.code }))}
+              />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {tabItems.map(item => {
+                const owned = isOwned(item.code);
+                const isPreviewing = previewItem?.code === item.code;
+                const isSelected = draft[activeTab] === item.code;
+                return (
+                  <div key={item.code} className="flex flex-col items-center gap-1">
+                    <ItemThumbnail
+                      item={item}
+                      selected={isSelected}
+                      preview={isPreviewing && !isSelected}
+                      owned={owned}
+                      loadout={draft}
+                      items={items}
+                      onClick={() => previewItemClick(item)}
+                    />
+                    {!owned && item.price > 0 && (
+                      <button
+                        onClick={() => handleBuy(item)}
+                        disabled={buying === item.code || localCoins < item.price}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-pink/10 text-pink text-xs font-mono font-bold hover:bg-pink/20 transition disabled:opacity-40"
+                      >
+                        <ShoppingBag className="w-3 h-3" />
+                        {buying === item.code ? '...' : `${item.price}`}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {tabItems.length === 0 && (
+              <p className="text-sm text-ink/40 text-center py-8">Chưa có item nào</p>
+            )}
+          </>
         )}
       </div>
 

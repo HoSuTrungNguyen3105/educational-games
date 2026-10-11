@@ -3,7 +3,7 @@ import { API_BASE, apiFetch, coinService, userService, gameProgressService, clas
 import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
-import { renderAvatarFull } from "../lib/avatarRenderer.js";
+import { composeAvatar, buildLayersFromLoadout } from "../lib/avatarRenderer.js";
 import { addPetExp } from "../lib/petApi.js";
 import CoopInvitePanel from "../components/CoopInvitePanel.jsx";
 import AiExplainTrigger from "../components/ai/AiExplainTrigger.jsx";
@@ -165,25 +165,13 @@ export default function HtmlGameLoader({
           const itemsJson = await itemsResp.json();
           const rawLoadout = loadoutJson?.data?.loadout || {};
           const allItems = itemsJson?.data?.items || [];
-          const itemMap = new Map(allItems.map(i => [i.code, i]));
-          const state = {};
-          let bodyHtml = null;
-          for (const [layer, itemId] of Object.entries(rawLoadout)) {
-            if (!itemId) continue;
-            const item = typeof itemId === 'object' ? itemId : itemMap.get(itemId);
-            if (!item) continue;
-            if (layer === 'body') bodyHtml = item.html || null;
-            else if (layer === 'skin') state.skin = item.params?.hex || '#FFDFC4';
-            else if (layer === 'face') state.face = item.params?.style || 'gentle';
-            else if (layer === 'hair') state.hair = { style: item.params?.style || 'spiky', color: item.params?.color || '#6B4226' };
-            else if (layer === 'shirt') state.shirt = { style: item.params?.style || 'tee', color: item.params?.color || '#F5F5F5' };
-            else if (layer === 'pants') state.pants = { style: item.params?.style || 'shorts', color: item.params?.color || '#241F1C' };
-            else if (layer === 'shoes') state.shoes = { style: item.params?.style || 'sneaker', color: item.params?.color || '#3B5EA6' };
-            else if (layer === 'hat') state.hat = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
-            else if (layer === 'glasses') state.glasses = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
-            else if (layer === 'accessory') state.accessory = { style: item.params?.style || 'none', color: item.params?.color || '#000' };
+          // Body là code frontend, các layer còn lại tra qua danh sách item.
+          const flatLoadout = {};
+          for (const [layer, value] of Object.entries(rawLoadout)) {
+            if (layer === 'body') { flatLoadout.body = value || 'body_boy_01'; continue; }
+            flatLoadout[layer] = (value && typeof value === 'object' && value.code) ? value.code : value;
           }
-          const svgContent = renderAvatarFull(state, bodyHtml);
+          const svgContent = composeAvatar(buildLayersFromLoadout(flatLoadout, allItems));
           if (svgContent) avatarSvg = svgContent;
         } catch { /* ignore */ }
       } catch { /* ignore */ }

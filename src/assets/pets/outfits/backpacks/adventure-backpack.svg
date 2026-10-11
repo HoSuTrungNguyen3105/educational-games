@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    backpack_adventure_01 · Ba lô phiêu lưu
+    Nằm PHÍA SAU thân (zIndex thấp hơn pet-body) — dây vắt qua vai trước.
+    Thân pet: ellipse trục (256, ~390) r ~92×98, vai ở y ≈ 300.
+  -->
+  <g id="backpack_adventure_01">
+    <!-- quai ba lô vắt sau vai -->
+    <path d="M200 296c-22 12-34 40-34 74" stroke="{{dark}}" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <path d="M312 296c22 12 34 40 34 74" stroke="{{dark}}" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <!-- thân ba lô -->
+    <path d="M360 332c30 0 54 22 54 50v78c0 18-14 32-32 32h-44c-18 0-32-14-32-32v-78c0-28 24-50 54-50z"
+          fill="{{main}}"/>
+    <!-- nắp ba lô -->
+    <path d="M354 344c32 0 58 24 58 52v10c-18-10-38-15-58-15s-40 5-58 15v-10c0-28 26-52 58-52z"
+          fill="{{light}}"/>
+    <!-- túi phụ + khóa -->
+    <rect x="356" y="416" width="72" height="48" rx="14" fill="{{dark}}"/>
+    <rect x="378" y="436" width="28" height="12" rx="6" fill="{{accent}}"/>
+    <!-- dây kéo bên -->
+    <path d="M306 392c-12 6-20 20-20 36" stroke="{{dark}}" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- huy hiệu phiêu lưu -->
+    <circle cx="384" cy="382" r="15" fill="{{accent}}"/>
+    <path d="M384 372l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z" fill="{{dark}}"/>
+  </g>
+</svg>

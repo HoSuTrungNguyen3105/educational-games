@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    scarf_red_01 · Khăn quàng đỏ
+    Quấn quanh cổ (y ≈ 300), đuôi khăn rơi xuống vai phải.
+    Vẽ SAU lớp đầu nên không che mặt.
+  -->
+  <g id="scarf_red_01">
+    <!-- vòng quanh cổ -->
+    <path d="M198 296c0-18 26-28 58-28s58 10 58 28-26 26-58 26-58-8-58-26z" fill="{{main}}"/>
+    <path d="M198 300c0 14 26 24 58 24s58-10 58-24" fill="{{dark}}" opacity=".55"/>
+    <!-- tua rua -->
+    <path d="M226 314h10v14h-10zM242 314h10v14h-10zM258 314h10v14h-10zM274 314h10v14h-10zM290 314h10v14h-10z"
+          fill="{{dark}}" opacity=".6"/>
+    <!-- đuôi khăn rơi bên phải -->
+    <path d="M312 312c16 10 22 34 18 58-2 14-8 26-16 34l-26-12c10-8 16-20 18-34 2-18 0-32-8-40z"
+          fill="{{main}}"/>
+    <path d="M308 326c10 10 13 26 10 42-2 12-7 21-13 28l-12-6c7-7 12-16 13-28 2-14 0-24-5-31z"
+          fill="{{light}}" opacity=".4"/>
+    <!-- tua đuôi -->
+    <path d="M288 388h9v16h-9zM299 386h9v16h-9zM310 382h9v16h-9z" fill="{{dark}}" opacity=".7"/>
+  </g>
+</svg>

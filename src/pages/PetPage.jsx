@@ -1,22 +1,23 @@
+// pages/PetPage.jsx
+//
+// Trang "Thú cưng của tôi": chọn LOÀI, MÀU, và đổi trang phục.
+//
+// Toàn bộ hình ảnh đi qua components/pet/PetRenderer.jsx — không có logic vẽ
+// riêng trong file này. Ô trang phục đổi trên trang này được chuyển sang
+// Kho trang phục (`/pet-wardrobe`) để có chỗ xem trước trước khi lưu.
+
 import { useEffect, useState } from "react";
 import { navigate } from "../lib/router.js";
-import PetSvg from "../components/PetSvg.jsx";
-import MascotDog, { MASCOT_PALETTE } from "../components/MascotDog.jsx";
+import PetAvatar from "../components/pet/PetAvatar.jsx";
+import PetRenderer from "../components/pet/PetRenderer.jsx";
 import {
-  usePet, getCatalog, loadPet, updateLook, resetPet,
-  unlockedFor, randomPetTip, moodLabel, OUTFIT_SLOTS,
-} from "../lib/petApi.js";
+  usePet, loadPet, updateLook, resetPet,
+  catalogView, randomPetTip, moodLabel,
+} from "../services/petService.js";
+import { getPetBase } from "../data/petAssets.js";
 
-/** Nhãn tiếng Việt cho từng ô trang phục. */
-const SLOT_LABELS = {
-  hat: "Mũ", scarf: "Khăn quàng", glasses: "Kính",
-  shirt: "Áo", bow: "Cà vút", cape: "Áo choàng", backpack: "Ba lô",
-};
-
-/** Emoji đại diện cho từng ô. */
-const SLOT_EMOJI = {
-  hat: "🎩", scarf: "🧣", glasses: "🕶️", shirt: "👕", bow: "🎀", cape: "🧥", backpack: "🎒",
-};
+/** Loài có bộ SVG thật trong data/petAssets.js. */
+const hasArt = (s) => !!getPetBase(s.id);
 
 export default function PetPage() {
   const pet = usePet();
@@ -25,33 +26,24 @@ export default function PetPage() {
   const [msg, setMsg] = useState(null);
   const [nameDraft, setNameDraft] = useState(pet.name || "");
 
-  useEffect(() => {
-    loadPet();
-  }, []);
+  useEffect(() => { loadPet(); }, []);
 
   // Đồng bộ ô nhập tên theo pet từ store, nhưng không phá chữ đang gõ.
-  // Làm lúc render thay vì trong effect (React khuyến nghị cho state chỉnh theo props).
   const [lastName, setLastName] = useState(pet.name || "");
   if (pet.name && pet.name !== lastName) {
     setLastName(pet.name);
     setNameDraft(pet.name);
   }
 
-  const catalog = getCatalog();
-  const { species, colors, outfits } = unlockedFor(pet);
-
-  const totalOutfits = catalog.outfits?.length ?? 0;
+  const { species, colors } = catalogView();
+  const openIds = catalogView().openSpeciesIds;
 
   async function save(patch, successMsg) {
     setBusy(true);
     setMsg(null);
     const res = await updateLook(patch);
     setBusy(false);
-    if (res.ok) {
-      setMsg({ type: "ok", text: successMsg });
-    } else {
-      setMsg({ type: "err", text: res.error || "Không lưu được" });
-    }
+    setMsg(res.ok ? { type: "ok", text: successMsg } : { type: "err", text: res.error || "Không lưu được" });
     return res.ok;
   }
 
@@ -61,10 +53,12 @@ export default function PetPage() {
     await save({ name: n }, `Đặt tên "${n}" xong!`);
   }
 
+  const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+  const wearing = Object.values(pet.outfits || {}).filter(Boolean).length;
+
   return (
     <div className="min-h-full bg-paper pb-24">
-      {/* đầu trang */}
-      <header className="sticky top-0 z-20 flex items-center gap-3 bg-paper/95 backdrop-blur px-4 py-3 shadow-[0_2px_10px_rgba(15,60,120,.06)]">
+      <header className="sticky top-0 z-20 flex items-center gap-3 bg-paper/95 px-4 py-3 backdrop-blur shadow-[0_2px_10px_rgba(15,60,120,.06)]">
         <button
           onClick={() => navigate("/")}
           className="grid h-9 w-9 place-items-center rounded-full bg-white text-slate-600 shadow-sm hover:bg-slate-100"
@@ -76,32 +70,20 @@ export default function PetPage() {
       </header>
 
       <div className="mx-auto w-full max-w-3xl px-4">
-        {/* thẻ xem trước */}
+        {/* Thẻ xem trước */}
         <section className="mt-3 rounded-3xl bg-white p-4 shadow-[0_6px_18px_rgba(15,60,120,.08)]">
           <div className="flex items-center gap-4">
-            <div
-              className="relative grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-100 to-orange-50"
-              style={{ width: 104, height: 104, boxShadow: "0 0 0 3px #FFD257, 0 4px 10px rgba(0,0,0,.12)" }}
-            >
-              <PetSvg
-                size={82}
-                bounce
-                species={pet.species}
-                color={pet.color}
-                outfits={pet.outfits}
-                mood={pet.mood}
-                ariaLabel={`${pet.name} loài ${pet.species}`}
-              />
-              <span className="absolute -bottom-1 -right-1 rounded-full border-2 border-amber-300 bg-white px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-amber-600 shadow-sm">
-                Lv {pet.level}
-              </span>
-            </div>
+            <PetAvatar
+              size={104}
+              bounce
+              ariaLabel={`${pet.name} loài ${pet.species}`}
+            />
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="truncate font-display text-xl font-extrabold text-ink">{pet.name}</p>
                 <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-bold text-amber-700">
-                  {moodLabel(pet.mood)} {getCatalog().moods?.[pet.mood]?.emoji || "💛"}
+                  {moodLabel(pet.mood)} {catalogView().moods?.[pet.mood]?.emoji || "💛"}
                 </span>
               </div>
               <p className="mt-0.5 text-xs text-slate-500">
@@ -126,7 +108,7 @@ export default function PetPage() {
           </p>
         </section>
 
-        {/* tên */}
+        {/* Tên */}
         <section className="mt-3 rounded-3xl bg-white p-4 shadow-[0_6px_18px_rgba(15,60,120,.08)]">
           <h2 className="font-display text-sm font-extrabold text-ink">Tên của bé</h2>
           <div className="mt-2 flex gap-2">
@@ -147,13 +129,9 @@ export default function PetPage() {
           </div>
         </section>
 
-        {/* tab */}
+        {/* Tab */}
         <nav className="mt-4 flex gap-2">
-          {[
-            ["species", "Loài"],
-            ["color", "Màu"],
-            ["outfits", "Trang phục"],
-          ].map(([k, label]) => (
+          {[["species", "Loài"], ["color", "Màu"]].map(([k, label]) => (
             <button
               key={k}
               onClick={() => setTab(k)}
@@ -164,9 +142,15 @@ export default function PetPage() {
               {label}
             </button>
           ))}
+          <button
+            onClick={() => navigate("/pet-wardrobe")}
+            className="flex-1 rounded-2xl py-2 text-sm font-extrabold text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+          >
+            👕 Kho trang phục ({wearing})
+          </button>
         </nav>
 
-        {/* nội dung tab */}
+        {/* Nội dung tab */}
         <section className="mt-3 rounded-3xl bg-white p-4 shadow-[0_6px_18px_rgba(15,60,120,.08)]">
           {tab === "species" && (
             <>
@@ -174,32 +158,27 @@ export default function PetPage() {
                 Chọn loài bạn muốn nuôi. Loài có hình vẽ đầy đủ mới bấm chọn được.
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {(catalog.species || []).map((s) => {
-                  const unlocked = species.some((x) => x.id === s.id);
-                  // Chỉ loài đã có SVG mới dùng được; loài khác khoá nút.
-                  const hasArt = s.art === "svg";
+                {species.map((s) => {
+                  const unlocked = openIds.has(s.id);
+                  const art = hasArt(s);
                   const on = pet.species === s.id;
-                  const disabled = !hasArt || !unlocked || busy;
-                  const reason = !hasArt
-                    ? "Chưa có hình"
-                    : `Mở ở cấp ${s.minLevel}`;
+                  const disabled = !art || !unlocked || busy;
                   return (
                     <button
                       key={s.id}
                       disabled={disabled}
                       onClick={() => save({ species: s.id }, `Đã chọn ${s.name}!`)}
-                      title={hasArt ? s.name : `${s.name} — ${reason.toLowerCase()}`}
+                      title={art ? s.name : `${s.name} — chưa có hình vẽ`}
                       className={`relative rounded-2xl border-2 p-2 text-left transition disabled:cursor-not-allowed ${
-                        on
-                          ? "border-amber-400 bg-amber-50"
-                          : "border-slate-100 bg-white hover:border-amber-200 disabled:opacity-50"
+                        on ? "border-amber-400 bg-amber-50" : "border-slate-100 bg-white hover:border-amber-200 disabled:opacity-50"
                       }`}
                     >
                       <div className="flex h-[62px] items-center justify-center">
-                        {hasArt ? (
-                          <MascotDog
+                        {art ? (
+                          <PetRenderer
+                            species={s.id}
+                            color={on ? pet.color : (s.defaultColor || "cream")}
                             size={54}
-                            color={on ? pet.color : (MASCOT_PALETTE[s.defaultColor] ? s.defaultColor : "cream")}
                             ariaLabel={s.name}
                           />
                         ) : (
@@ -209,12 +188,12 @@ export default function PetPage() {
                       <p className="mt-1 font-display text-[13px] font-extrabold text-ink">{s.name}</p>
                       <p className="text-[10.5px] leading-tight text-slate-400">{s.trait}</p>
 
-                      {!hasArt && (
+                      {!art && (
                         <span className="absolute inset-x-1.5 bottom-1 rounded-full bg-slate-100 py-0.5 text-[9.5px] font-bold text-slate-500">
                           Chưa có hình
                         </span>
                       )}
-                      {hasArt && !unlocked && (
+                      {art && !unlocked && (
                         <span className="absolute right-2 top-2 rounded-full bg-slate-200 px-1.5 py-0.5 text-[9.5px] font-bold text-slate-500">
                           🔒 Cấp {s.minLevel}
                         </span>
@@ -231,7 +210,7 @@ export default function PetPage() {
             <>
               <p className="text-xs text-slate-500">Đổi màu lông cho bé. Màu áp dụng cho mọi loài.</p>
               <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-6">
-                {(colors || []).map((c) => {
+                {colors.map((c) => {
                   const on = pet.color === c.id;
                   return (
                     <button
@@ -249,100 +228,13 @@ export default function PetPage() {
               </div>
             </>
           )}
-
-          {tab === "outfits" && (
-            <>
-              <p className="text-xs text-slate-500">
-                Mặc đồ cho bé. Mỗi loại có nhiều màu — bấm lần nữa để đổi màu.
-              </p>
-              <p className="mt-1 text-[11px] text-slate-400">
-                Đã mở {outfits.length}/{totalOutfits} món.
-              </p>
-
-              {OUTFIT_SLOTS.map((slot) => {
-                const items = (catalog.outfits || []).filter((o) => o.slot === slot);
-                const openItems = outfits.filter((o) => o.slot === slot);
-                const current = pet.outfits?.[slot] || null;
-                return (
-                  <div key={slot} className="mt-3 border-t border-slate-100 pt-3 first:border-0 first:pt-0">
-                    <p className="text-[12px] font-extrabold text-slate-600">{SLOT_LABELS[slot]}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {/* cởi đồ ở ô này */}
-                      <button
-                        disabled={busy || !current}
-                        onClick={() => save({ outfits: { [slot]: null } }, `Đã cởi ${SLOT_LABELS[slot].toLowerCase()}.`)}
-                        className="grid h-12 w-12 place-items-center rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 transition hover:border-slate-300 disabled:opacity-35"
-                        title={`Không mặc ${SLOT_LABELS[slot].toLowerCase()}`}
-                      >
-                        ∅
-                      </button>
-
-                      {items.map((o) => {
-                        const open = openItems.some((x) => x.id === o.id);
-                        const on = current?.id === o.id;
-                        const palette = o.colors?.length ? o.colors : ["#CBD5E1"];
-                        // Màu đang hiển thị: món này có nhiều màu và đang mặc → lấy màu đã chọn
-                        const shown = on && current?.color ? current.color : palette[0];
-                        const swatches = palette.length > 1 && on ? (
-                          <span className="absolute -bottom-1 -right-1 flex gap-0.5">
-                            {palette.map((cc) => (
-                              <span
-                                key={cc}
-                                className={`h-2 w-2 rounded-full ring-1 ${current.color === cc ? "ring-amber-500" : "ring-white"}`}
-                                style={{ background: cc }}
-                              />
-                            ))}
-                          </span>
-                        ) : null;
-
-                        return (
-                          <button
-                            key={o.id}
-                            disabled={!open || busy}
-                            onClick={() => {
-                              if (!open) return;
-                              // Đang mặc món này → bấm tiếp sẽ chuyển màu; bấm lần cuối thì cởi
-                              if (!on) {
-                                save({ outfits: { [slot]: { id: o.id, color: palette[0] } } }, `Đã mặc ${o.name}!`);
-                              } else if (palette.length > 1) {
-                                const i = palette.indexOf(current.color);
-                                const next = palette[(i + 1) % palette.length];
-                                if (i === palette.length - 1) {
-                                  save({ outfits: { [slot]: null } }, `Đã cởi ${o.name}.`);
-                                } else {
-                                  save({ outfits: { [slot]: { id: o.id, color: next } } }, `Đổi màu ${o.name}.`);
-                                }
-                              } else {
-                                save({ outfits: { [slot]: null } }, `Đã cởi ${o.name}.`);
-                              }
-                            }}
-                            title={`${o.name}${open ? (palette.length > 1 ? " — bấm để đổi màu" : "") : ` — mở ở cấp ${o.minLevel}`}`}
-                            className={`relative grid h-12 w-12 place-items-center rounded-2xl text-xl transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                              on ? "border-2 border-amber-400 bg-amber-50 shadow-md" : "border-2 border-white hover:scale-105"
-                            }`}
-                            style={{ boxShadow: `inset 0 -13px 0 -2px ${shown}` }}
-                          >
-                            {SLOT_EMOJI[slot]}
-                            {swatches}
-                            {!open && <span className="absolute -right-1 -top-1 text-[10px]">🔒</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </>
-          )}
         </section>
 
-        {/* thông báo + reset */}
+        {/* Thông báo + reset */}
         {msg && (
-          <div
-            className={`mt-3 rounded-2xl px-4 py-2.5 text-sm font-bold ${
-              msg.type === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
-            }`}
-          >
+          <div className={`mt-3 rounded-2xl px-4 py-2.5 text-sm font-bold ${
+            msg.type === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+          }`}>
             {msg.text}
           </div>
         )}
@@ -357,12 +249,9 @@ export default function PetPage() {
 
         <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-400">
           Thú cưng được lưu trên máy chủ nên đổi thiết bị vẫn giữ nguyên.
-          {userOffline && " Đang offline nên thay đổi chỉ lưu trên máy này."}
+          {offline && " Đang offline nên thay đổi chỉ lưu trên máy này."}
         </p>
       </div>
     </div>
   );
 }
-
-// Bật cảnh báo khi đang offline (không chặn gì)
-const userOffline = typeof navigator !== "undefined" && navigator.onLine === false;

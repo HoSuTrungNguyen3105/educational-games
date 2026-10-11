@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    Chó kem · lớp MẮT
+    Vẽ giữa body và face. Mỗi mắt gồm tròng trắng + đồng tử + lông mi.
+    PetRenderer đổi biến pet-eye để mắt mở to/nhe theo tâm tính.
+  -->
+  <g id="pet-eyes">
+    <!-- lông mày -->
+    <path d="M206 160c8-6 20-6 28-2" stroke="{{dark}}" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <path d="M278 158c8-4 20-4 28 2" stroke="{{dark}}" stroke-width="6" stroke-linecap="round" fill="none"/>
+
+    <!-- mắt trái -->
+    <ellipse cx="222" cy="192" rx="17" ry="18" fill="#fff"/>
+    <circle cx="224" cy="194" r="9" fill="{{eye}}"/>
+    <circle cx="220" cy="190" r="3.2" fill="#fff" opacity=".9"/>
+    <!-- mắt phải -->
+    <ellipse cx="290" cy="192" rx="17" ry="18" fill="#fff"/>
+    <circle cx="288" cy="194" r="9" fill="{{eye}}"/>
+    <circle cx="284" cy="190" r="3.2" fill="#fff" opacity=".9"/>
+
+    <!-- group mắt nhe (mood buồn) — PetRenderer bật thay cho group trên -->
+    <g id="pet-eyes-closed" display="none">
+      <path d="M206 192c6 8 14 8 20 0" stroke="{{eye}}" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <path d="M286 192c6 8 14 8 20 0" stroke="{{eye}}" stroke-width="6" stroke-linecap="round" fill="none"/>
+    </g>
+  </g>
+</svg>

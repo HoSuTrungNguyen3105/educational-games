@@ -1,37 +1,18 @@
 // components/PetSvg.jsx
 //
-// Hiển thị thú cưng theo loài:
-//   • dog    → dùng SVG mascot có sẵn của dự án (assets/dog_mascot_layered.svg),
-//              đổi màu lông và bật/tắt 4 lớp phụ kiện theo pet.
-//   • mèm/chim/cá/khỉ → emoji, không cần file ảnh.
+// THINH LƯỜNG GIỮ LẠI từ bản cũ — không xoá.
 //
-// Bỏ trống species/color/outfits/mood → tự lấy pet đang nuôi từ store,
-// nên mọi nơi gọi (HUD game, thẻ trang chủ, bong bóng) đều hiện pet thật.
+// Lý do: HomeScreen, GameHud, PetPage… đang import `PetSvg` từ đây. Xoá file
+// này sẽ làm hỏng hàng chục chỗ gọi. Thay vào đó nó chuyển tiếp sang
+// `components/pet/PetRenderer.jsx` — component ghép lớp DUY NHẤT của dự án.
+//
+// Toàn bộ logic vẽ pet đã dọn vào PetRenderer. File này chỉ giữ tương thích:
+//   • `PetSvg`      → vẽ pet ở mọi kích thước
+//   • `PetAvatar`   → alias của components/pet/PetAvatar.jsx
+//   • `PetBubble`   → bong bóng thoại (không liên quan render pet)
 
-import { usePet } from "../lib/petApi.js";
-import MascotDog from "./MascotDog.jsx";
-
-/** Loài dùng emoji (không có SVG). */
-const EMOJI = {
-  dog: "🐶",
-  cat: "🐱",
-  bird: "🐦",
-  fish: "🐟",
-  monkey: "🐵",
-};
-
-/** Mặc định khi chưa có pet nào trong store. */
-const PET_FALLBACK = {
-  species: "dog",
-  color: "cream",
-  outfits: { hat: null, scarf: null, glasses: null, shirt: null, bow: null, cape: null },
-};
-
-/** Bảng màu dự phòng — khớp petCatalog.COLORS (chỉ dùng body cho emoji tint). */
-const EMOJI_TINT = {
-  cream: "", brown: "", black: "", white: "", orange: "",
-  gray: "", pink: "", yellow: "", mint: "", sky: "",
-};
+import PetRenderer from "./pet/PetRenderer.jsx";
+import PetAvatar from "./pet/PetAvatar.jsx";
 
 export default function PetSvg({
   size = 64,
@@ -43,33 +24,40 @@ export default function PetSvg({
   mood,
   ariaLabel,
 }) {
-  const pet = usePet();
-  const sp = (species ?? pet?.species) || PET_FALLBACK.species;
-  const col = color ?? pet?.color ?? PET_FALLBACK.color;
-  const fit = outfits ?? pet?.outfits ?? PET_FALLBACK.outfits;
-
-  if (sp === "dog") {
-    return (
-      <MascotDog
-        size={size}
-        className={`${className} ${bounce ? "float-slow" : ""}`}
-        color={col}
-        outfits={fit || {}}
-        mood={mood ?? pet?.mood ?? "happy"}
-        ariaLabel={ariaLabel || pet?.name || "Chó"}
-      />
-    );
-  }
-
-  const emoji = EMOJI[sp] || "🐾";
   return (
-    <span
-      role="img"
-      aria-label={ariaLabel || pet?.name || sp}
-      className={`inline-grid place-items-center leading-none ${className} ${bounce ? "float-slow" : ""}`}
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.82), filter: EMOJI_TINT[col] || undefined }}
+    <PetRenderer
+      species={species}
+      color={color}
+      outfits={outfits}
+      mood={mood}
+      size={size}
+      className={`${className} ${bounce ? "float-slow" : ""}`}
+      ariaLabel={ariaLabel}
+    />
+  );
+}
+
+export { PetAvatar };
+
+/** Bong bóng thoại của pet. */
+export function PetBubble({ message, onClose, compact = false }) {
+  if (!message) return null;
+  return (
+    <div
+      className={`relative rounded-2xl rounded-bl-sm border-2 border-amber-200 bg-white px-3 py-2 text-ink shadow-lg ${
+        compact ? "text-[11px]" : "text-xs"
+      } font-semibold`}
     >
-      {emoji}
-    </span>
+      {message}
+      {onClose && (
+        <button
+          onClick={onClose}
+          aria-label="Đóng"
+          className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full border border-amber-200 bg-white text-[11px] text-slate-400 hover:text-slate-700"
+        >
+          ×
+        </button>
+      )}
+    </div>
   );
 }

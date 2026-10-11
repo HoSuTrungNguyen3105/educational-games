@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    hat_wizard_01 · Mũ phù thủy
+    Mũ có vành rộng và chóp cong — hợp với cả chó và mèo.
+  -->
+  <g id="hat_wizard_01">
+    <!-- vành mũ: hình bầu dục rộng, ngồi cân đối trên đỉnh đầu -->
+    <ellipse cx="256" cy="130" rx="106" ry="26" fill="{{dark}}"/>
+    <ellipse cx="256" cy="124" rx="106" ry="26" fill="{{main}}"/>
+    <!-- chóp mũ cong sang phải -->
+    <path d="M186 116c-4-46 12-82 44-92 34-10 68 2 84 26 10 15 12 34 6 52-10-22-32-38-58-40-34-3-62 16-76 54z"
+          fill="{{main}}"/>
+    <path d="M212 104c0-30 10-52 30-60 22-9 46 0 60 18-18-8-40-6-56 6-12 9-24 20-34 36z"
+          fill="{{light}}" opacity=".5"/>
+    <!-- vành sao + ngôi sao đầu chóp -->
+    <path d="M150 126c0 14 47 26 106 26s106-12 106-26" stroke="{{accent}}" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M320 52l9 22 22 9-22 9-9 22-9-22-22-9 22-9z" fill="{{accent}}"/>
+  </g>
+</svg>

@@ -1,5 +1,29 @@
 # Edu Game — AI Integration Architecture
 
+> ## ⚠️ Kiến trúc ĐÃ TRIỂN KHAI (đọc trước tài liệu này)
+>
+> Tài liệu này là **bản thiết kế gốc**. Trạng thái **đang chạy thật** đã được tái cấu trúc
+> theo `server/Connect_AI_Backend.md`:
+>
+> ```text
+> FRONTEND REACT  ──►  BACKEND CHÍNH :5000  ──(X-Ai-Internal-Token)──►  AI BACKEND :8081
+>                        xác thực · phân quyền                            xử lý AI
+>                        lấy & lọc dữ liệu                                  └──► Ollama / LLM
+>                        quản lý xu · XP · game
+> ```
+>
+> | Mã | Điểm khác biệt so với bản thiết kế gốc |
+> |---|---|
+> | 12 | **Frontend KHÔNG gọi thẳng AI Service.** Mọi chức năng AI đi qua `/api/ai/*` của Backend chính (`server/src/routes/ai.js`). Không còn biến `VITE_AI_BASE`. |
+> | 12 | **Xác thực service-to-service.** Backend chính gửi `X-Ai-Internal-Token` + `X-Ai-User-{Id,Name,Role}`. AI Service chỉ tin các header này khi token khớp (so sánh constant-time). |
+> | 13 | **Không còn request vòng.** Backend chính truyền sẵn dữ liệu (`results`/`games`, `context`) xuống AI Service. `CoreBackendClient` chỉ còn là đường legacy khi `EDU_AI_LEGACY_BEARER_AUTH=true`. |
+> | 14 | CORS của AI Service mặc định chỉ mở `localhost:5000`. CORS không phải cơ chế bảo vệ — service token + mạng nội bộ mới là ràng buộc thật. |
+> | 11 | Endpoint AI Service giữ nguyên contract (`/api/ai/chat`, `/api/ai/quizzes/generate`, `/api/ai/generate-question`, `/api/ai/learning-analysis`, `/api/ai/explain`, `/api/ai/health`) — chỉ thêm hai trường tuỳ chọn. |
+>
+> Chi tiết vận hành: `edu-game-ai-service/README.md`.
+
+---
+
 ## 1. Mục tiêu
 
 Tích hợp AI vào hệ thống Edu Game hiện tại theo hướng:

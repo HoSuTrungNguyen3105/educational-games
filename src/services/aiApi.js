@@ -97,6 +97,15 @@ async function aiFetch(path, { body, timeoutMs = TIMEOUT_MS, signal, method } = 
         status: e.status,
       });
     }
+    // Chỉ coi là mất kết nối khi `fetch` thực sự ném ra (TypeError/NetworkError).
+    // Lỗi kiểu khác là lỗi code — báo "không kết nối" sẽ khiến debug sai hướng.
+    const isNetwork = e instanceof TypeError || e?.name === "TypeError" || e?.name === "NetworkError";
+    if (!isNetwork) {
+      console.error("[ai] Lỗi ngoài dự kiến:", e);
+      throw new AiServiceError(e?.message || "Có lỗi xảy ra khi gọi chức năng AI.", {
+        kind: "badResponse",
+      });
+    }
     throw new AiServiceError(
       `Không kết nối được máy chủ (${API_BASE}). Vui lòng kiểm tra kết nối rồi thử lại.`,
       { kind: "offline" }
@@ -348,10 +357,11 @@ export async function explain({ questionId, gameId, answer, reveal = false, foll
  */
 export async function ping({ timeoutMs = 2500 } = {}) {
   try {
-    const data = await aiFetch("/api/ai/health", {
-      method: "GET",
-      timeoutMs,
-    });
+    const data = await aiFetch("/api/ai/health", { method: "GET", timeoutMs });
+    // apiFetch trả `null` cho GET 404 (quy ước của services/api.js) — coi như offline.
+    if (!data || typeof data !== "object") {
+      return { online: false, status: false, detail: "Không tìm thấy dịch vụ AI." };
+    }
     return { online: true, ...data };
   } catch {
     return { online: false, status: false, detail: "Không kết nối được dịch vụ AI." };

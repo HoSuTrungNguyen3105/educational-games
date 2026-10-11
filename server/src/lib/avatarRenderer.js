@@ -1,3 +1,17 @@
+// lib/avatarRenderer.js  (SERVER)
+//
+// Sinh markup SVG cho PHỤ KIỆN avatar (mặt, tóc, áo, quần, giày, mũ, kính,
+// phụ kiện). Kết quả được ghi vào `avatarItems.html` trong Mongo và frontend
+// chỉ ghép, không tự sinh lại.
+//
+// BODY GỐC KHÔNG Ở ĐÂY. Thân avatar nằm trong mã frontend
+// (src/data/avatarBodies.js + src/lib/avatarRenderer.js) vì đó là phần nền
+// tĩnh, không phải dữ liệu người chơi sở hữu.
+//
+// Trước đây có hai bản renderer (file này và src/lib/avatarRenderer.js) đã
+// TRƯỞC nhau nên avatar hiển thị khác nhau tuỳ nơi sinh ra. Nay chỉ còn một
+// nơi sinh markup phụ kiện: đây.
+
 function pt(cx, cy, r, deg) {
   const a = deg * Math.PI / 180;
   return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
@@ -62,87 +76,6 @@ function heartShape(cx, cy, size, color) {
   return `<path transform="translate(${cx - 16 * s},${cy - 14 * s}) scale(${s})" d="M16,28 C4,20 0,12 0,7 C0,2 4,-2 8,-2 C12,-2 16,1 16,6 C16,1 20,-2 24,-2 C28,-2 32,2 32,7 C32,12 28,20 16,28 Z" fill="${color}" fill-opacity="0.9"/>`;
 }
 
-function bodyBase(skin) {
-  const s = skin || '#FFDFC4';
-  const skinLight = shade(s, 20);
-  const skinDark = shade(s, -12);
-  const earColor = shade(s, -8);
-  const neckShadow = shade(s, -18);
-  return `
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="700" viewBox="0 0 512 700" fill="none">
-  <defs>
-    <linearGradient id="skinGradient" x1="180" y1="150" x2="330" y2="420">
-      <stop offset="0%" stop-color="${skinLight}"/><stop offset="100%" stop-color="${skinDark}"/>
-    </linearGradient>
-    <linearGradient id="hairGradient" x1="180" y1="90" x2="330" y2="210">
-      <stop offset="0%" stop-color="#6B4228"/><stop offset="100%" stop-color="#432716"/>
-    </linearGradient>
-    <linearGradient id="shirtGradient" x1="170" y1="330" x2="340" y2="500">
-      <stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#E9ECF2"/>
-    </linearGradient>
-    <linearGradient id="pantsGradient" x1="190" y1="475" x2="330" y2="650">
-      <stop offset="0%" stop-color="#4D6FB5"/><stop offset="100%" stop-color="#294B8D"/>
-    </linearGradient>
-    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="7"/>
-    </filter>
-    <filter id="objectShadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000000" flood-opacity="0.12"/>
-    </filter>
-  </defs>
-  <g id="avatar">
-    <g id="shadow"><ellipse cx="256" cy="665" rx="105" ry="22" fill="#000000" opacity="0.10" filter="url(#softShadow)"/></g>
-    <g id="hair-back"><path d="M172 207 C145 180 151 124 184 99 C204 83 230 77 256 78 C291 77 322 91 340 116 C365 151 359 193 337 216 L310 234 L201 230 Z" fill="url(#hairGradient)"/></g>
-    <g id="head" filter="url(#objectShadow)">
-      <path d="M226 292 L226 329 C226 345 286 345 286 329 L286 292 Z" fill="url(#skinGradient)"/>
-      <path d="M226 293 C238 307 272 309 286 293 L286 317 C268 326 242 326 226 316 Z" fill="${neckShadow}" opacity="0.45"/>
-      <path d="M179 164 C179 115 213 91 256 91 C299 91 333 115 333 164 L333 216 C333 263 299 301 256 301 C213 301 179 263 179 216 Z" fill="url(#skinGradient)"/>
-      <ellipse cx="180" cy="213" rx="12" ry="23" fill="${earColor}"/>
-      <ellipse cx="332" cy="213" rx="12" ry="23" fill="${earColor}"/>
-      <ellipse cx="224" cy="143" rx="40" ry="25" fill="#FFFFFF" opacity="0.16"/>
-    </g>
-    <g id="face">
-      <path d="M207 188 Q224 177 240 187" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>
-      <path d="M272 187 Q288 177 305 188" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>
-      <ellipse cx="224" cy="210" rx="13" ry="17" fill="#28203A"/>
-      <circle cx="229" cy="204" r="4" fill="#FFFFFF"/>
-      <ellipse cx="288" cy="210" rx="13" ry="17" fill="#28203A"/>
-      <circle cx="293" cy="204" r="4" fill="#FFFFFF"/>
-      <ellipse cx="205" cy="244" rx="21" ry="11" fill="#FF8FA0" opacity="0.42"/>
-      <ellipse cx="307" cy="244" rx="21" ry="11" fill="#FF8FA0" opacity="0.42"/>
-      <path d="M256 218 Q249 239 257 241" stroke="#D99172" stroke-width="4" stroke-linecap="round"/>
-      <path d="M235 258 Q256 278 277 258" stroke="#30213E" stroke-width="6" stroke-linecap="round"/>
-    </g>
-    <g id="hair-front">
-      <path d="M170 165 C165 127 186 94 220 83 C245 74 278 78 303 91 C332 106 347 136 342 168 L320 153 L303 176 L285 148 L262 173 L240 145 L214 175 L195 150 Z" fill="url(#hairGradient)"/>
-      <path d="M195 124 C213 101 238 94 259 94" stroke="#96623F" stroke-width="9" stroke-linecap="round" opacity="0.55"/>
-      <path d="M280 98 C300 105 316 117 326 136" stroke="#8A5635" stroke-width="7" stroke-linecap="round" opacity="0.45"/>
-    </g>
-    <g id="body">
-      <path d="M190 354 C166 354 157 371 158 395 L162 465 C163 480 175 490 188 486 C201 482 205 470 204 456 L201 386 Z" fill="url(#skinGradient)"/>
-      <path d="M322 354 C346 354 355 371 354 395 L350 465 C349 480 337 490 324 486 C311 482 307 470 308 456 L311 386 Z" fill="url(#skinGradient)"/>
-      <path d="M209 326 C221 318 237 314 256 314 C275 314 291 318 303 326 C327 331 342 349 340 372 L334 470 C333 489 320 501 301 501 L211 501 C192 501 179 489 178 470 L172 372 C170 349 185 331 209 326 Z" fill="url(#shirtGradient)" filter="url(#objectShadow)"/>
-      <path d="M225 324 C232 344 280 344 287 324" stroke="#D6D9DE" stroke-width="7" stroke-linecap="round"/>
-      <path d="M201 361 C195 389 196 438 201 465" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.5"/>
-    </g>
-    <g id="pants">
-      <path d="M194 492 L256 492 L256 632 C256 647 246 655 230 655 L203 655 C190 655 184 645 186 631 Z" fill="url(#pantsGradient)" filter="url(#objectShadow)"/>
-      <path d="M256 492 L318 492 L326 631 C328 645 320 655 307 655 L280 655 C264 655 256 647 256 632 Z" fill="url(#pantsGradient)" filter="url(#objectShadow)"/>
-      <path d="M256 500 L256 633" stroke="#203E78" stroke-width="5" opacity="0.7"/>
-      <path d="M211 510 L208 620" stroke="#6C8DCC" stroke-width="8" stroke-linecap="round" opacity="0.35"/>
-    </g>
-    <g id="shoes">
-      <path d="M188 642 C202 637 224 637 243 642 C254 645 260 654 255 663 C251 671 236 674 213 674 C193 674 180 669 180 660 C180 652 183 646 188 642 Z" fill="#FFFFFF" filter="url(#objectShadow)"/>
-      <path d="M269 642 C288 637 310 637 324 642 C329 646 332 652 332 660 C332 669 319 674 299 674 C276 674 261 671 257 663 C252 654 258 645 269 642 Z" fill="#FFFFFF" filter="url(#objectShadow)"/>
-      <path d="M190 664 Q220 674 251 664" stroke="#D8DDE5" stroke-width="5" stroke-linecap="round"/>
-      <path d="M261 664 Q292 674 322 664" stroke="#D8DDE5" stroke-width="5" stroke-linecap="round"/>
-    </g>
-    <g id="glasses" opacity="0"><circle cx="224" cy="210" r="24" stroke="#333333" stroke-width="6" fill="none"/><circle cx="288" cy="210" r="24" stroke="#333333" stroke-width="6" fill="none"/><path d="M248 210 L264 210" stroke="#333333" stroke-width="6" stroke-linecap="round"/></g>
-    <g id="hat" opacity="0"><path d="M180 145 L195 105 L222 115 L245 83 L267 112 L294 91 L319 117 L337 148 Z" fill="#D94F65"/><path d="M170 145 Q256 125 342 145 L335 165 Q256 148 177 165 Z" fill="#B93850"/></g>
-  </g>
-</svg>`;
-}
-
 function drawFace(style) {
   const ink = '#241934';
   let eyes = '', brows = '', mouth = '', blush = '';
@@ -179,6 +112,10 @@ function drawFace(style) {
   return blush + brows + eyes + mouth;
 }
 
+/**
+ * Tóc trả về { back, front }: `back` vẽ SAU thân (tóc dài, tóc bím), `front`
+ * vẽ TRƯỚC mặt (phần mái). Tách 2 phần vì thứ tự vẽ khác nhau.
+ */
 function hairMarkup(h) {
   const c = h.color;
   let back = '', front = '';
@@ -204,7 +141,7 @@ function hairMarkup(h) {
       front = `<path d="${capPath(150, 95, 58, 4, 6, 185, 355, 0)}" fill="${c}"/>`;
       break;
   }
-  return back + front;
+  return { back, front };
 }
 
 function shirtMarkup(o) {
@@ -307,113 +244,59 @@ function glassesMarkup(o) {
 }
 
 function accessoryMarkup(o) {
+  if (o.style === 'none') return { back: '', front: '' };
   const c = o.color, d = shade(c, -20);
   switch (o.style) {
     case 'headphones':
-      return `<path d="M100,70 Q150,18 200,70" stroke="${c}" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="100" cy="98" r="15" fill="${c}"/><circle cx="200" cy="98" r="15" fill="${c}"/><circle cx="100" cy="98" r="7" fill="#241934"/><circle cx="200" cy="98" r="7" fill="#241934"/>`;
+      return { back: '', front: `<path d="M100,70 Q150,18 200,70" stroke="${c}" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="100" cy="98" r="15" fill="${c}"/><circle cx="200" cy="98" r="15" fill="${c}"/><circle cx="100" cy="98" r="7" fill="#241934"/><circle cx="200" cy="98" r="7" fill="#241934"/>` };
     case 'scarf':
-      return `<rect x="118" y="130" width="64" height="24" rx="12" fill="${c}"/><rect x="146" y="148" width="20" height="52" rx="8" fill="${d}"/>`;
+      return { back: '', front: `<rect x="118" y="130" width="64" height="24" rx="12" fill="${c}"/><rect x="146" y="148" width="20" height="52" rx="8" fill="${d}"/>` };
     case 'mask':
-      return `<rect x="121" y="100" width="58" height="26" rx="13" fill="${c}"/><line x1="121" y1="108" x2="90" y2="96" stroke="${c}" stroke-width="3"/><line x1="179" y1="108" x2="210" y2="96" stroke="${c}" stroke-width="3"/>`;
+      return { back: '', front: `<rect x="121" y="100" width="58" height="26" rx="13" fill="${c}"/><line x1="121" y1="108" x2="90" y2="96" stroke="${c}" stroke-width="3"/><line x1="179" y1="108" x2="210" y2="96" stroke="${c}" stroke-width="3"/>` };
     case 'backpack':
-      return `<rect x="118" y="140" width="64" height="26" rx="10" fill="${c}"/><rect x="132" y="148" width="8" height="40" rx="4" fill="${d}"/><rect x="160" y="148" width="8" height="40" rx="4" fill="${d}"/>`;
+      return { back: `<rect x="118" y="140" width="64" height="26" rx="10" fill="${c}"/>`, front: `<rect x="132" y="148" width="8" height="40" rx="4" fill="${d}"/><rect x="160" y="148" width="8" height="40" rx="4" fill="${d}"/>` };
     case 'ears':
-      return `<path d="M118,42 L128,4 L146,36 Z" fill="${c}"/><path d="M182,42 L172,4 L154,36 Z" fill="${c}"/><path d="M122,38 L129,14 L140,34 Z" fill="#F2A6C6"/><path d="M178,38 L171,14 L160,34 Z" fill="#F2A6C6"/>`;
+      return { back: '', front: `<path d="M118,42 L128,4 L146,36 Z" fill="${c}"/><path d="M182,42 L172,4 L154,36 Z" fill="${c}"/><path d="M122,38 L129,14 L140,34 Z" fill="#F2A6C6"/><path d="M178,38 L171,14 L160,34 Z" fill="#F2A6C6"/>` };
     case 'wings':
-      return `<path d="M92,170 Q40,180 46,240 Q70,220 96,225 Q80,195 92,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M208,170 Q260,180 254,240 Q230,220 204,225 Q220,195 208,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/>`;
+      return { back: `<path d="M92,170 Q40,180 46,240 Q70,220 96,225 Q80,195 92,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M208,170 Q260,180 254,240 Q230,220 204,225 Q220,195 208,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/>`, front: '' };
   }
-  return '';
+  return { back: '', front: '' };
 }
 
-function overlayTransform() {
-  return 'translate(0,42) scale(1.7067,1.5909)';
-}
-
-function splitBackFront(html) {
-  if (!html) return { back: '', front: '' };
-  const gEnd = html.lastIndexOf('</g>');
-  if (gEnd !== -1) {
-    const splitAt = gEnd + 4;
-    return { back: html.slice(0, splitAt), front: html.slice(splitAt) };
+/**
+ * Sinh markup cho 1 phụ kiện.
+ *
+ * @returns {{ back: string, front: string }} `back` vẽ sau thân, `front` vẽ
+ *   sau mặt. Ghép `back + front` lại thành `avatarItems.html`.
+ *
+ * `skin` không sinh markup — màu da được frontend đổi thẳng vào body gốc.
+ */
+export function renderItemParts(category, params = {}) {
+  switch (category) {
+    case 'skin': return { back: '', front: '' };
+    case 'face': return { back: '', front: drawFace(params.style || 'gentle') };
+    case 'hair': return hairMarkup({ style: params.style || 'spiky', color: params.color || '#6B4226' });
+    case 'shirt': return { back: '', front: shirtMarkup({ style: params.style || 'tee', color: params.color || '#F5F5F5' }) };
+    case 'pants': return { back: '', front: pantsMarkup({ style: params.style || 'shorts', color: params.color || '#241F1C' }) };
+    case 'shoes': return { back: '', front: shoesMarkup({ style: params.style || 'sneaker', color: params.color || '#3B5EA6' }) };
+    case 'hat': return { back: '', front: hatMarkup({ style: params.style || 'none', color: params.color || '#000' }) };
+    case 'glasses': return { back: '', front: glassesMarkup({ style: params.style || 'none', color: params.color || '#000' }) };
+    case 'accessory': return accessoryMarkup({ style: params.style || 'none', color: params.color || '#000' });
+    default: return { back: '', front: '' };
   }
-  return { back: '', front: html };
 }
 
-function renderAvatarFull(state, bodyHtml) {
-  const skin = state.skin || '#FFDFC4';
-  const faceStyle = state.face || 'gentle';
-  const hairOpt = state.hair || { style: 'spiky', color: '#6B4226' };
-  const shirtOpt = state.shirt || { style: 'tee', color: '#F5F5F5' };
-  const pantsOpt = state.pants || { style: 'shorts', color: '#241F1C' };
-  const shoesOpt = state.shoes || { style: 'sneaker', color: '#3B5EA6' };
-  const hatOpt = state.hat || { style: 'none' };
-  const glassesOpt = state.glasses || { style: 'none' };
-  const accOpt = state.accessory || { style: 'none' };
-
-  const bodySvg = bodyHtml || bodyBase(skin);
-
-  const isStandardBody = bodySvg.includes('id="head"') && bodySvg.includes('id="body"');
-  const isFullSvg = bodySvg.includes('<svg') || isStandardBody;
-
-  if (isFullSvg && !isStandardBody) {
-    return bodySvg;
-  }
-
-  if (isFullSvg) {
-    const t = overlayTransform();
-    const hairHtml = hairMarkup(hairOpt);
-    const accFull = accessoryMarkup(accOpt);
-    const hairSp = splitBackFront(hairHtml);
-    const accSp = splitBackFront(accFull);
-    return bodySvg +
-      `<g transform="${t}">` + accSp.back + hairSp.back + `</g>` +
-      `<g transform="${t}">` +
-      drawFace(faceStyle) + hairSp.front + hatMarkup(hatOpt) + glassesMarkup(glassesOpt) + accSp.front +
-      `</g>`;
-  }
-
-  const hairBack = (() => {
-    const c = hairOpt.color;
-    switch (hairOpt.style) {
-      case 'long': return `<path d="${girlLongHair(150, 95, 60, 300, 4)}" fill="${c}"/>`;
-      case 'twin': return `<g transform="rotate(-10 88 175)"><ellipse cx="88" cy="175" rx="16" ry="82" fill="${c}"/></g><g transform="rotate(10 212 175)"><ellipse cx="212" cy="175" rx="16" ry="82" fill="${c}"/></g>`;
-      case 'wavy': return `<path d="${girlLongHair(150, 95, 52, 255, 7)}" fill="${c}"/>`;
-      case 'braid': return `<g transform="rotate(14 198 190)"><ellipse cx="198" cy="190" rx="14" ry="92" fill="${c}"/><rect x="190" y="150" width="16" height="6" rx="3" fill="${shade(c, -25)}"/><rect x="190" y="185" width="16" height="6" rx="3" fill="${shade(c, -25)}"/><rect x="190" y="220" width="16" height="6" rx="3" fill="${shade(c, -25)}"/></g>`;
-      default: return '';
-    }
-  })();
-
-  const accBack = (() => {
-    const c = accOpt.color, d = shade(c, -20);
-    switch (accOpt.style) {
-      case 'backpack': return `<rect x="118" y="140" width="64" height="26" rx="10" fill="${c}"/>`;
-      case 'wings': return `<path d="M92,170 Q40,180 46,240 Q70,220 96,225 Q80,195 92,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M208,170 Q260,180 254,240 Q230,220 204,225 Q220,195 208,170 Z" fill="${c}" stroke="${d}" stroke-width="2"/>`;
-      default: return '';
-    }
-  })();
-
-  return accBack + hairBack + (bodyHtml || bodyBase(skin)) + pantsMarkup(pantsOpt) +
-    shirtMarkup(shirtOpt) + shoesMarkup(shoesOpt) + drawFace(faceStyle) +
-    hairMarkup(hairOpt) + hatMarkup(hatOpt) + glassesMarkup(glassesOpt) + accessoryMarkup(accOpt);
+/** Markup phụ kiện dạng chuỗi đơn (back + front) — lưu vào `avatarItems.html`. */
+export function renderItemHtml(category, params = {}) {
+  const { back, front } = renderItemParts(category, params);
+  return back + front;
 }
 
-function renderItemHtml(category, params) {
-  if (category === 'skin') return '';
-  if (category === 'body') return bodyBase(params?.skin || '#FFDFC4');
-  if (category === 'face') return drawFace(params.style || 'gentle');
-  if (category === 'hair') { const h = hairMarkup({ style: params.style || 'spiky', color: params.color || '#6B4226' }); return h.back + h.front; }
-  if (category === 'shirt') return shirtMarkup({ style: params.style || 'tee', color: params.color || '#F5F5F5' });
-  if (category === 'pants') return pantsMarkup({ style: params.style || 'shorts', color: params.color || '#241F1C' });
-  if (category === 'shoes') return shoesMarkup({ style: params.style || 'sneaker', color: params.color || '#3B5EA6' });
-  if (category === 'hat') return hatMarkup({ style: params.style || 'none', color: params.color || '#000' });
-  if (category === 'glasses') return glassesMarkup({ style: params.style || 'none', color: params.color || '#000' });
-  if (category === 'accessory') { const a = accessoryMarkup({ style: params.style || 'none', color: params.color || '#000' }); return a.back + a.front; }
-  return '';
-}
+/** Category hợp lệ — KHÔNG gồm `body` (body nằm ở mã frontend). */
+export const ACCESSORY_CATEGORIES = ["skin", "face", "hair", "shirt", "pants", "shoes", "hat", "glasses", "accessory"];
 
 export {
   shade, capPath, girlLongHair, starShape, heartShape,
-  bodyBase, drawFace, hairMarkup, shirtMarkup, pantsMarkup,
+  drawFace, hairMarkup, shirtMarkup, pantsMarkup,
   shoesMarkup, hatMarkup, glassesMarkup, accessoryMarkup,
-  renderAvatarFull, renderItemHtml,
 };

@@ -8,11 +8,19 @@
 //   POST   /api/pet/exp             cộng EXP khi trả lời đúng (game gọi)
 //   POST   /api/pet/mood            đổi tâm tính
 //   POST   /api/pet/reset           đặt lại mặc định
+//
+//   ── Admin (giáo viên + quản trị) ───────────────────────────────────────
+//   GET    /api/pet/admin/catalog        toàn bộ danh mục + số pet đang dùng
+//   POST   /api/pet/admin/:kind          thêm loài / màu / trang phục
+//   PUT    /api/pet/admin/:kind/:id      sửa
+//   DELETE /api/pet/admin/:kind/:id      xoá (tự dọn pet đang dùng)
+//   POST   /api/pet/admin/reset-catalog  khôi phục danh mục mặc định
 
 import { Router } from "express";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 import * as petService from "../services/petService.js";
+import * as catalog from "../services/petCatalog.js";
 
 const router = Router();
 
@@ -20,8 +28,7 @@ const router = Router();
 router.get("/catalog", async (req, res, next) => {
   try {
     const userId = req.user?.sub || null;
-    const data = userId ? await petService.catalogFor(userId) : await petService.catalogFor(null);
-    sendSuccess(res, data);
+    sendSuccess(res, await petService.catalogFor(userId));
   } catch (e) {
     next(e);
   }
@@ -44,7 +51,7 @@ router.put("/", async (req, res, next) => {
   try {
     const result = await petService.updateLook(req.user.sub, req.body || {});
     if (!result.ok) {
-      return sendError(res, 400, result.errors?.join("; ") || "Dữ liệu không hợp lệ");
+      return sendError(res, result.errors?.join("; ") || "Dữ liệu không hợp lệ", 400);
     }
     sendSuccess(res, result.pet);
   } catch (e) {
@@ -71,7 +78,7 @@ router.post("/exp", async (req, res, next) => {
 router.post("/mood", async (req, res, next) => {
   try {
     const result = await petService.setMood(req.user.sub, req.body?.mood);
-    if (!result.ok) return sendError(res, 400, result.errors?.join("; ") || "mood không hợp lệ");
+    if (!result.ok) return sendError(res, result.errors?.join("; ") || "mood không hợp lệ", 400);
     sendSuccess(res, result.pet);
   } catch (e) {
     next(e);
@@ -86,6 +93,71 @@ router.post("/reset", async (req, res, next) => {
   } catch (e) {
     next(e);
   }
+});
+
+// ─── ADMIN: quản lý danh mục ────────────────────────────────────────────
+
+const adminOnly = [authenticate, requireRoles("teacher", "admin")];
+
+/**
+ * Toàn bộ danh mục cho trang admin, kèm `usage` = số pet đang dùng mỗi mục
+ * để admin biết xoá đi sẽ ảnh hưởng bao nhiêu người trước khi bấm nút.
+ */
+router.get("/admin/catalog", ...adminOnly, async (_req, res, next) => {
+  try {
+    await catalog.ensureLoaded();
+    const [species, colors, outfits] = [
+      catalog.listSpecies(),
+      catalog.listColors(),
+      catalog.listOutfits(),
+    ];
+
+    const usage = {};
+    for (const s of species) usage[`species:${s.id}`] = await catalog.countPetsUsing("species", s.id);
+    for (const c of colors) usage[`color:${c.id}`] = await catalog.countPetsUsing("color", c.id);
+    for (const o of outfits) usage[`outfit:${o.id}`] = await catalog.countPetsUsing("outfit", o.id);
+
+    sendSuccess(res, {
+      species, colors, outfits,
+      slots: catalog.SLOTS,
+      slotLabels: catalog.SLOT_LABEL,
+      moods: catalog.MOOD_LIST,
+      usage,
+    });
+  } catch (e) { next(e); }
+});
+
+/** Khôi phục danh mục mặc định — xoá sạch collection rồi seed lại. */
+router.post("/admin/reset-catalog", ...adminOnly, async (_req, res, next) => {
+  try {
+    const result = await catalog.resetToSeed();
+    sendSuccess(res, result);
+  } catch (e) { next(e); }
+});
+
+// Đặt TRƯỚC `/:kind/:id` để "reset-catalog" không bị nuốt vào :kind.
+router.post("/admin/:kind", ...adminOnly, async (req, res, next) => {
+  try {
+    const result = await catalog.createItem(req.params.kind, req.body || {});
+    if (!result.ok) return sendError(res, result.errors?.join("; ") || "Không tạo được", 400);
+    sendSuccess(res, result.item);
+  } catch (e) { next(e); }
+});
+
+router.put("/admin/:kind/:id", ...adminOnly, async (req, res, next) => {
+  try {
+    const result = await catalog.updateItem(req.params.kind, req.params.id, req.body || {});
+    if (!result.ok) return sendError(res, result.errors?.join("; ") || "Không cập nhật được", 400);
+    sendSuccess(res, result.item);
+  } catch (e) { next(e); }
+});
+
+router.delete("/admin/:kind/:id", ...adminOnly, async (req, res, next) => {
+  try {
+    const result = await catalog.deleteItem(req.params.kind, req.params.id);
+    if (!result.ok) return sendError(res, result.errors?.join("; ") || "Không xoá được", 400);
+    sendSuccess(res, { deleted: req.params.id, affectedPets: result.affectedPets || 0 });
+  } catch (e) { next(e); }
 });
 
 export default router;

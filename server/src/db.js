@@ -471,6 +471,41 @@ async function _runHeavyInit(database) {
     },
 
     /**
+     * petCatalog — danh mục thú cưng (loài / màu / trang phục).
+     * Admin sửa trực tiếp trên web; collection rỗng thì petCatalog.js tự seed
+     * từ petCatalogSeed.js. KHÔNG lưu SVG ở đây — hình vẽ nằm ở frontend.
+     */
+    petCatalog: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["kind", "id", "name", "minLevel"],
+        properties: {
+          kind: { enum: ["species", "color", "outfit"] },
+          id: { bsonType: "string" },
+          name: { bsonType: "string" },
+          minLevel: { bsonType: "int", minimum: 1 },
+          order: { bsonType: "int" },
+          // species
+          emoji: { bsonType: "string" },
+          shape: { bsonType: "string" },
+          art: { bsonType: ["string", "null"] },
+          desc: { bsonType: "string" },
+          trait: { bsonType: "string" },
+          likes: { bsonType: "array" },
+          defaultColor: { bsonType: ["string", "null"] },
+          // color
+          body: { bsonType: "string" },
+          accent: { bsonType: "string" },
+          // outfit
+          slot: { bsonType: "string" },
+          colors: { bsonType: "array" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+
+    /**
      * user_badges — lịch sử mở huy hiệu.
      */
     user_badges: {
@@ -518,6 +553,9 @@ async function _runHeavyInit(database) {
     ["games", { templateId: 1 }],
     ["games", { status: 1 }],
     ["games", { updatedAt: -1 }],
+    ["userPets", { userId: 1 }, { unique: true }],
+    ["petCatalog", { kind: 1, id: 1 }, { unique: true }],
+    ["petCatalog", { kind: 1, order: 1 }],
     ["templates", { name: 1 }],
     ["questions", { id: 1 }, { unique: true }],
     ["questions", { gameId: 1 }],

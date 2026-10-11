@@ -54,6 +54,20 @@ export const CATALOG_FALLBACK = {
     hungry: { label: "Đói rồi", emoji: "🍽️" }, sleepy: { label: "Muốn ngủ", emoji: "😴" },
     sad: { label: "Buồn", emoji: "💙" },
   },
+  // Danh mục trang phục dự phòng — khớp id trong data/petAssets.js.
+  // Chỉ gồm món có SVG thật; `minLevel` vẫn áp dụng để khách không "mở khoá" hết.
+  outfits: [
+    { id: "hat-cap",            slot: "hat",      name: "Mũ lưỡi trai",      minLevel: 1 },
+    { id: "backpack_adventure_01", slot: "backpack", name: "Ba lô phiêu lưu", minLevel: 3 },
+    { id: "bow_pink_01",         slot: "bow",      name: "Nơ hồng",           minLevel: 4 },
+    { id: "scarf_red_01",        slot: "scarf",    name: "Khăn quàng đỏ",    minLevel: 5 },
+    { id: "glasses_round_01",    slot: "glasses",  name: "Kính tròn",         minLevel: 6 },
+    { id: "shirt_student_01",    slot: "shirt",    name: "Áo học sinh",       minLevel: 7 },
+    { id: "hat_crown_01",        slot: "hat",      name: "Vương miện",        minLevel: 8 },
+    { id: "hat_wizard_01",       slot: "hat",      name: "Mũ phù thủy",       minLevel: 10 },
+    { id: "cape_hero_01",        slot: "cape",     name: "Áo choàng anh hùng", minLevel: 11 },
+  ],
+  slots: OUTFIT_SLOTS,
 };
 
 const MOOD_LABELS = {
@@ -248,13 +262,39 @@ export async function resetPet() {
   return state;
 }
 
-/** Danh sách loài / trang phục đã mở khoá theo cấp hiện tại. */
+/**
+ * Danh sách loài / trang phục đã mở khoá theo cấp hiện tại.
+ *
+ * Server mới trả kèm `catalog.unlocked`; catalog cũ thì `outfits` đã là phần
+ * đã lọc sẵn. Xử lý cả hai để không phụ thuộc vào version server đang chạy.
+ */
 export function unlockedFor(pet = state) {
   const lv = Math.max(1, pet.level || 1);
+  const openSpecies = catalog.unlocked?.species;
+  const openOutfits = catalog.unlocked?.outfits;
   return {
-    species: (catalog.species || []).filter((s) => s.minLevel <= lv),
+    species: openSpecies || (catalog.species || []).filter((s) => s.minLevel <= lv),
     colors: catalog.colors || [],
-    outfits: (catalog.outfits || []).filter((o) => o.minLevel <= lv),
+    outfits: openOutfits || (catalog.outfits || []).filter((o) => o.minLevel <= lv),
+  };
+}
+
+/**
+ * Catalog server giờ trả kèm `unlocked` (đã lọc theo cấp) bên cạnh danh mục
+ * đầy đủ. Hàm này chuẩn hoá về một shape để PetPage không phải biết chi tiết
+ * server trả gì — catalog cũ (chỉ có phần đã lọc) vẫn chạy được.
+ */
+export function catalogView() {
+  const full = catalog.outfits || [];
+  const open = catalog.unlocked?.outfits || full;
+  return {
+    species: catalog.species || [],
+    colors: catalog.colors || [],
+    outfits: full,
+    moods: catalog.moods || CATALOG_FALLBACK.moods,
+    slots: catalog.slots || OUTFIT_SLOTS,
+    openSpeciesIds: new Set((catalog.unlocked?.species || catalog.species || []).map((s) => s.id)),
+    openOutfitIds: new Set(open.map((o) => o.id)),
   };
 }
 

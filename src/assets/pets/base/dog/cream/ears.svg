@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    Chó kem · lớp TAI
+    Tai chó RỦ: bám ở đỉnh bên đầu rồi xõa dọc xuống, dưới đáy đầu một đoạn
+    để nhìn ra tai chứ không phải mào. Vẽ sau (z thấp hơn) lớp thân-đầu.
+
+    Hệ toạ độ dùng chung:
+      đầu  : ellipse (256, 198) r 104×94  → x 152..360, y 104..292
+      thân : y 296 → 470
+      mắt  : (224, 190) và (288, 190)
+      mũi  : (256, 232)
+  -->
+  <g id="pet-ears">
+    <!-- tai trái: mép trên bám ở (175,125), xõa ra trái rồi rủ xuống tới y=322 -->
+    <path d="M175 125C145 131 122 175 120 240c-2 48 18 82 46 82 20 0 34-22 36-54 3-58 2-118-2-138-4-12-14-7-25-5z"
+          fill="{{dark}}"/>
+    <path d="M176 139c-22 8-38 46-38 102-1 40 15 66 32 66 12 0 21-16 23-42 2-48 1-102-1-118-2-10-8-9-16-8z"
+          fill="{{body}}" opacity=".5"/>
+    <!-- tai phải: lật ngang -->
+    <path d="M337 125c30 6 53 50 55 115 2 48-18 82-46 82-20 0-34-22-36-54-3-58-2-118 2-138 4-12 14-7 25-5z"
+          fill="{{dark}}"/>
+    <path d="M336 139c22 8 38 46 38 102 1 40-15 66-32 66-12 0-21-16-23-42-2-48-1-102 1-118 2-10 8-9 16-8z"
+          fill="{{body}}" opacity=".5"/>
+  </g>
+</svg>

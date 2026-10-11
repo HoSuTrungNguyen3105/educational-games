@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    hat_crown_01 · Vương miện
+    Ngồi trên đỉnh đầu (đầu pet: ellipse (256, ~200) r ~100×92).
+    Màu do item-color; item-dark là sắc đậm hơn.
+  -->
+  <g id="hat_crown_01">
+    <!-- vành đế -->
+    <path d="M170 152h172l-8 26H178z" fill="{{dark}}"/>
+    <rect x="166" y="146" width="180" height="18" rx="9" fill="{{main}}"/>
+    <!-- 3 nhọn + 2 nhọn nhỏ -->
+    <path d="M176 148l22-46 30 40 28-58 28 58 30-40 22 46z" fill="{{main}}"/>
+    <path d="M186 148l14-30 18 24 15-30 15 30 18-24 14 30z" fill="{{light}}" opacity=".55"/>
+    <!-- đá trên đỉnh -->
+    <circle cx="256" cy="96" r="9" fill="{{accent}}"/>
+    <circle cx="206" cy="112" r="6" fill="{{accent}}"/>
+    <circle cx="306" cy="112" r="6" fill="{{accent}}"/>
+  </g>
+</svg>

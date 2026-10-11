@@ -34,6 +34,7 @@ const UserRegisterScreen = lazy(() => import("./pages/user/UserRegisterScreen.js
 const MathAdventurePage = lazy(() => import("./pages/MathAdventurePage.jsx"));
 const OfflineGamePage = lazy(() => import("./pages/OfflineGamePage.jsx"));
 const PetPage = lazy(() => import("./pages/PetPage.jsx"));
+const PetWardrobePage = lazy(() => import("./pages/user/PetWardrobePage.jsx"));
 
 function App() {
   const route = useRoute();
@@ -170,6 +171,7 @@ function App() {
     "assignment-take": () => <AssignmentTake code={route.params?.code} />,
     "math-adventure": () => <MathAdventurePage />,
     pet: () => <PetPage />,
+    "pet-wardrobe": () => <PetWardrobePage />,
     // 17 game offline — mỗi game 1 file HTML riêng
     "offline-game": () => <OfflineGamePage gameId={route.params?.gameId} />,
   };

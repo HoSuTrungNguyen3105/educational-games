@@ -1,16 +1,18 @@
-/* src/pages/home-theme.css
+/* src/pages/home-theme.css  (bản nâng cấp)
  *
- * Theme "neobrutalist" cho trang chủ — bám theo src/pages/Trangchu.html:
- *   • viền dày 3px màu mực (--ink)
- *   • shadow cứng KHÔNG blur (vd 6px 6px 0 var(--nb-ink))
- *   • nền kem + chấm bi
- *   • bo góc lớn, nút "nhấn được" khi active
- *
- * Chỉ dùng cho HomeScreen (scope .nb-home) để không đổi các trang khác.
+ * Theme "neobrutalist" cho trang chủ — scope .nb-home.
+ * Thay đổi chính so với bản cũ:
+ *   • Khung trang hẹp lại: --nb-max = 1240px (cũ 1600px), header canh theo cùng khung
+ *   • Bỏ backdrop-filter (nguyên nhân giật khi cuộn trên mobile + làm các
+ *     phần tử `fixed` con của header bị lệch containing block)
+ *   • Bỏ filter: drop-shadow / shadow blur lớn → dùng shadow cứng cho nhẹ
+ *   • Hover chỉ bật trên thiết bị có chuột (không bị "dính" hover trên cảm ứng)
+ *   • Vùng chạm tối thiểu 40px, tương phản chữ tốt hơn, focus-visible rõ ràng
+ *   • Animation chỉ dùng transform/opacity, tắt khi prefers-reduced-motion
  */
 
 .nb-home {
-  /* ── Design tokens, lấy từ Trangchu.html ─────────────────────────── */
+  /* ── Design tokens ───────────────────────────────────────────────── */
   --nb-paper: #fbf5e6;
   --nb-cream: #fffdf6;
   --nb-ink: #1d2e4a;
@@ -22,11 +24,28 @@
   --nb-blue: #3d6fd8;
   --nb-pink: #ee7fa6;
 
+  --nb-max: 1240px;                       /* bề rộng khung nội dung */
+  --nb-gutter: clamp(14px, 3vw, 36px);    /* lề ngang */
+  --nb-shadow: 5px 5px 0 var(--nb-ink);
+  --nb-shadow-hover: 8px 8px 0 var(--nb-ink);
+  --nb-shadow-press: 1px 1px 0 var(--nb-ink);
+
+  /* ── Chừa chỗ cho lớp phủ công cố định ──────────────────────────────────
+     Mọi phần tử `fixed` (bottom nav mobile, nút nổi AI Bạn Học) đều nằm ngoài
+     luồng nội dung. Nếu .nb-page không chừa đúng khoảng này thì hàng cuối sẽ bị
+     chúng che. Dùng biến để một nơi kiểm soát, không hard-code ở nhiều chỗ. */
+  --nb-nav-h: 64px;                                                   /* h-16 */
+  --nb-bottom-nav: calc(var(--nb-nav-h) + env(safe-area-inset-bottom, 0px));
+  --nb-fab-h: 48px;                                                   /* nút nổi 48px */
+  /* Mobile: nút nổi đứng ngay trên bottom nav. Desktop: nằm ở góc phải. */
+  --nb-bottom-inset: calc(var(--nb-bottom-nav) + var(--nb-fab-h) + 18px);
+
   background-color: var(--nb-paper);
   background-image: radial-gradient(rgba(29, 46, 74, 0.08) 1px, transparent 1.3px);
   background-size: 18px 18px;
   color: var(--nb-ink);
   font-family: "Lexend", "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nb-home .font-display { font-family: "Lexend", "Be Vietnam Pro", system-ui, sans-serif; }
@@ -51,9 +70,10 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-height: 44px;
   border: 3px solid var(--nb-ink);
   border-radius: 14px;
-  padding: 11px 20px;
+  padding: 10px 20px;
   font: inherit;
   font-weight: 700;
   font-size: 15px;
@@ -62,10 +82,9 @@
   background: var(--nb-red);
   color: #fff;
   box-shadow: 4px 4px 0 var(--nb-ink);
-  transition: transform 0.08s, box-shadow 0.08s, background 0.15s;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
-.nb-btn:hover { filter: brightness(1.05); }
-.nb-btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--nb-ink); }
+.nb-btn:active { transform: translate(3px, 3px); box-shadow: var(--nb-shadow-press); }
 .nb-btn:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 3px; }
 .nb-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: 2px 2px 0 var(--nb-ink); }
 .nb-btn:disabled:active { transform: none; box-shadow: 2px 2px 0 var(--nb-ink); }
@@ -77,50 +96,97 @@
 
 /* ── Chip / pill lọc ──────────────────────────────────────────────── */
 .nb-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 42px;
   border: 2px solid var(--nb-ink);
-  background: transparent;
+  background: var(--nb-cream);
   border-radius: 999px;
-  padding: 5px 15px;
+  padding: 6px 20px;
   font: inherit;
-  font-weight: 600;
-  font-size: 13.5px;
+  font-weight: 700;
+  font-size: 14px;
   color: var(--nb-ink);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
+  box-shadow: 3px 3px 0 var(--nb-ink);
+  transition: transform 0.1s, box-shadow 0.1s, background 0.15s, color 0.15s;
 }
-.nb-chip:hover { background: rgba(29, 46, 74, 0.08); }
+.nb-chip:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--nb-ink); }
+.nb-chip:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 3px; }
 .nb-chip[aria-pressed="true"] { background: var(--nb-ink); color: var(--nb-cream); }
 
 /* ── Tiêu đề section ───────────────────────────────────────────────── */
 .nb-h2 {
   font-family: "Lexend", system-ui, sans-serif;
   font-weight: 800;
-  font-size: clamp(19px, 2.4vw, 25px);
+  font-size: clamp(19px, 2.4vw, 26px);
   line-height: 1.1;
   letter-spacing: -0.02em;
   color: var(--nb-ink);
 }
 
-/* ── Ô game offline ───────────────────────────────────────────────── */
+/* ── Ô game (game học tập + game nổi bật) ──────────────────────────── */
 .nb-tile {
   position: relative;
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  padding: 8px;                       /* khung ảnh nằm gọn trong viền thẻ */
   background: var(--nb-cream);
   border: 3px solid var(--nb-ink);
   border-radius: 18px;
   overflow: hidden;
   text-align: left;
   cursor: pointer;
-  box-shadow: 5px 5px 0 var(--nb-ink);
-  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: var(--nb-shadow);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s;
+  /* --i: chỉ số thứ tự → card "bật" lần lượt khi vào trang, không giật cả trang */
+  animation: nb-rise 0.4s ease-out backwards;
+  animation-delay: calc(var(--i, 0) * 55ms);
 }
-.nb-tile:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--nb-ink); }
-.nb-tile:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--nb-ink); }
+
+/* Vệt sáng quét qua khi hover — chỉ bật ở thiết bị có chuột (mousedown cảm ứng) */
+.nb-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.5) 50%, transparent 62%);
+  transform: translateX(-130%);
+}
+
+.nb-tile:active { transform: translate(2px, 2px); box-shadow: var(--nb-shadow-press); animation: none; }
 .nb-tile:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 3px; }
 
-/* dải + rèm awning trên đầu ô */
+/* Ảnh thumbnail: viền mực + bo vừa phải cho khớp padding thẻ */
+.nb-tile > div:first-child {
+  border: 2px solid var(--nb-ink);
+  border-radius: 12px;
+}
+
+/* Nút "Chơi ngay" trong thẻ (thêm class nb-tile__cta ở JSX) */
+.nb-home .nb-tile__cta {
+  border: 2px solid var(--nb-ink);
+  box-shadow: 2px 2px 0 var(--nb-ink);
+  min-height: 32px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nb-tile:hover { transform: translate(-3px, -3px); box-shadow: var(--nb-shadow-hover); }
+  .nb-tile:hover::after { transform: translateX(130%); transition: transform 0.55s ease; }
+  .nb-tile:hover .nb-tile__thumb span { transform: scale(1.12) rotate(-5deg); }
+  .nb-subj:hover { transform: translate(-3px, -3px); box-shadow: var(--nb-shadow-hover); }
+  .nb-subj:hover .nb-subj__ic { transform: scale(1.12) rotate(-6deg); }
+  .nbg-card:hover { transform: translate(-3px, -3px); box-shadow: var(--nb-shadow-hover); }
+  .nbg-card:hover .nbg-card__ic { transform: scale(1.12) rotate(-5deg); }
+  .nbg-card:hover .nbg-card__st { background: var(--nb-cream); color: var(--nb-ink); }
+}
+
+/* Biến thể cũ (giữ lại để không vỡ nơi khác nếu có dùng) */
 .nb-tile__awning {
   position: relative;
   height: 16px;
@@ -144,7 +210,6 @@
   background: linear-gradient(160deg, rgba(29, 46, 74, 0.05), rgba(29, 46, 74, 0.02));
 }
 .nb-tile__thumb span { font-size: 40px; line-height: 1; transition: transform 0.15s; }
-.nb-tile:hover .nb-tile__thumb span { transform: scale(1.1) rotate(-4deg); }
 .nb-tile__body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .nb-tile__name {
   font-family: "Lexend", system-ui, sans-serif;
@@ -176,51 +241,47 @@
   transition: background 0.15s;
 }
 .nb-tile:hover .nb-tile__play { background: var(--tile-c); }
-
-/* ô cần mạng */
 .nb-tile--net { border-style: dashed; }
 .nb-tile--net .nb-tile__play { background: transparent; color: var(--nb-muted); border: 2px dashed #9aa6bb; }
 
 /* ── Mục trong menu dropdown "Thêm" ────────────────────────────────── */
-/* Tái sử dụng class cũ của sidebar: nền dropdown giờ là trắng nên màu chữ
-   chuyển từ kem sang mực. Giữ tên class để không phải sửa cả hai nơi. */
 .nb-side__item {
   display: flex;
   align-items: center;
   gap: 11px;
   width: 100%;
-  padding: 10px 13px;
+  min-height: 44px;
+  padding: 10px 14px;
   border-radius: 12px;
   font-weight: 600;
   font-size: 14.5px;
   color: var(--nb-ink-soft);
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.08s;
+  transition: background 0.15s, color 0.15s;
 }
-.nb-side__item:hover { background: rgba(29, 46, 74, 0.06); color: var(--nb-ink); }
-.nb-side__item:active { transform: translate(1px, 1px); }
+.nb-side__item:hover { background: rgba(29, 46, 74, 0.07); color: var(--nb-ink); }
+.nb-side__item:active { background: rgba(29, 46, 74, 0.12); }
 .nb-side__item[aria-current="page"] { background: var(--nb-mustard); color: var(--nb-ink); font-weight: 800; }
 .nb-side__item:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: -3px; }
 .nb-side__item .nb-side__ico {
   display: grid;
   place-items: center;
-  width: 26px; height: 26px;
+  width: 28px; height: 28px;
   flex: 0 0 auto;
-  border-radius: 8px;
+  border-radius: 9px;
   border: 2px solid currentColor;
-  opacity: 0.75;
+  opacity: 0.8;
 }
 .nb-side__item[aria-current="page"] .nb-side__ico { opacity: 1; }
 
 /* ── Thanh trên cùng ───────────────────────────────────────────────── */
 /*
- * Một thanh duy nhất cho mọi kích thước màn hình — đã bỏ sidebar trái.
+ * Nền đặc (cream) thay cho kính mờ: backdrop-filter rất tốn GPU khi cuộn và
+ * còn biến header thành containing block của mọi phần tử `position:fixed`
+ * bên trong (overlay đóng menu, panel thông báo mobile).
  *
- * KHÔNG đặt `display` ở rule gốc: JSX dùng class `nb-topbar` trần, nếu khai
- * `display:flex` ở đây thì các rule ẩn theo breakpoint của Tailwind có thể
- * bị đè (cùng specificity, file này nạp sau). Thay vào đó bố cục dùng
- * flex-wrap + `overflow-x:auto` nên không cần media query ẩn/hiện.
+ * Padding ngang canh theo --nb-max để logo/nút thẳng hàng với nội dung.
  */
 .nb-topbar {
   position: sticky;
@@ -229,12 +290,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  padding-top: calc(10px + env(safe-area-inset-top, 0px));
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
+  padding: 8px 0;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
+  padding-left: max(var(--nb-gutter), calc((100% - var(--nb-max)) / 2 + var(--nb-gutter)));
+  padding-right: max(var(--nb-gutter), calc((100% - var(--nb-max)) / 2 + var(--nb-gutter)));
+  background: var(--nb-cream);
   color: var(--nb-ink);
-  border-bottom: 2px solid rgba(29, 46, 74, 0.08);
+  border-bottom: 3px solid var(--nb-ink);
 }
 
 /* Mục menu ngang trên thanh */
@@ -242,61 +304,105 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 13px;
+  min-height: 40px;
+  padding: 6px 13px;
+  border: 2px solid transparent;      /* giữ chỗ để không xô lệch khi active */
   border-radius: 999px;
   font-weight: 700;
   font-size: 14px;
   color: var(--nb-ink-soft);
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.nb-navitem:hover { background: rgba(29, 46, 74, 0.06); color: var(--nb-ink); }
-.nb-navitem[aria-current="page"] { background: var(--nb-mustard); color: var(--nb-ink); }
+.nb-navitem:hover { background: rgba(29, 46, 74, 0.07); color: var(--nb-ink); }
+.nb-navitem[aria-current="page"] {
+  background: var(--nb-mustard);
+  color: var(--nb-ink);
+  border-color: var(--nb-ink);
+  box-shadow: 2px 2px 0 var(--nb-ink);
+}
 .nb-navitem:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 2px; }
 
-/*
- * Chừa chỗ cho thanh điều hướng dưới ở mobile.
- *
- * Thanh đó là `fixed` cao 64px (h-16) + viền trên 3px + safe-area. Wrapper
- * nội dung trước đây chỉ có `pb-6` (24px) nên ~43px cuối trang bị nav đè lên —
- * nội dung bị che mà lại thừa khoảng trắng. Đặt khoảng đệm theo đúng chiều
- * cao thật của nav, và trên desktop (không có nav) trả về padding cũ.
- */
-@media (max-width: 1023px) {
-  .nb-page {
-    padding-bottom: calc(67px + env(safe-area-inset-bottom, 0px) + 16px);
-  }
+/* Nút tròn (chuông, menu) + pill thống kê (xu, cấp độ) trên header.
+   Thêm class `nb-iconbtn` / `nb-pill` ở JSX. */
+.nb-home .nb-iconbtn,
+.nb-home .nb-pill {
+  background: var(--nb-cream);
+  border: 2px solid var(--nb-ink);
+  box-shadow: 2px 2px 0 var(--nb-ink);
+  transition: transform 0.1s, box-shadow 0.1s, background 0.15s;
 }
-
-@media (min-width: 1024px) {
-  .nb-page {
-    padding-bottom: 24px;
-  }
+.nb-home .nb-iconbtn { width: 40px; height: 40px; }
+.nb-home .nb-pill { min-height: 40px; }
+.nb-home .nb-iconbtn:active,
+.nb-home .nb-pill:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--nb-ink); }
+.nb-home .nb-iconbtn:focus-visible,
+.nb-home .nb-pill:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .nb-home .nb-iconbtn:hover,
+  .nb-home .nb-pill:hover { background: #fff; }
 }
 
 /* Khung nội dung — mọi section canh theo cùng một lề ngang */
 .nb-page {
   width: 100%;
-  max-width: 1600px;
+  max-width: var(--nb-max);
   margin: 0 auto;
-  padding-left: clamp(14px, 3vw, 40px);
-  padding-right: clamp(14px, 3vw, 40px);
+  padding-left: var(--nb-gutter);
+  padding-right: var(--nb-gutter);
+  /* Mặc định (desktop): chừa chỗ cho nút nổi AI Bạn Học ở góc phải. */
+  padding-bottom: calc(var(--nb-fab-h) + 44px);
+}
+
+/*
+ * Mobile: chừa đủ cho CẢ bottom nav (fixed) và nút nổi AI nằm ngay trên nó.
+ * Nếu thiếu, hàng game/panel cuối sẽ bị nav đè và nút nổi đè lên nút "Xem tất cả".
+ */
+@media (max-width: 1023px) {
+  .nb-page {
+    padding-bottom: calc(var(--nb-bottom-inset) + 16px);
+  }
+}
+
+/* Khoảng hở giữa các section — dùng chung để không lệch nhịp */
+.nb-stack > * + * { margin-top: clamp(18px, 2.6vw, 30px); }
+
+/* ── Lưới dùng chung ───────────────────────────────────────────────────
+   Ô vuông bằng nhau ở mọi khổ; bề rộng tự co theo khung, không bao giờ tràn. */
+.nb-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+}
+
+/* Lưới thẻ game: 2 cột trên mobile, 3 tablet, 4 desktop */
+.nb-gamegrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* gap phải ≥ shadow cứng (8px) + 2px hover để thẻ không chạm nhau */
+  gap: 16px 12px;
+  /* 2px/10px chừa chỗ cho shadow và vệt sáng khi hover */
+  padding: 4px 10px 12px 2px;
+}
+
+@media (min-width: 560px) {
+  .nb-gamegrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 18px; padding-right: 12px; }
+}
+@media (min-width: 1024px) {
+  .nb-gamegrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 26px 22px; padding-right: 12px; }
 }
 
 /* ── Hero: banner tràn viền ─────────────────────────────────────────── */
-/*
- * Ảnh tràn từ mép trang (không nằm trong .nb-page) nên .nb-hero__body vẫn
- * dùng .nb-page ở trong — chữ canh đúng lề với section bên dưới.
- */
 .nb-hero {
   position: relative;
   isolation: isolate;
-  margin-top: -1px;
-  /* bo cong đáy kiểu "lõm lên" như banner trong mockup */
+  /* bo cong đáy kiểu "lõm lên" */
   border-radius: 0 0 46% 46% / 0 0 9% 9%;
   overflow: hidden;
   background: linear-gradient(180deg, #7ec8f0 0%, #bfe9b6 100%);
+  /* shadow cứng bám theo đường cong đáy → viền mực dưới banner */
+  box-shadow: 0 5px 0 var(--nb-ink);
 }
 
 .nb-hero__img {
@@ -309,50 +415,57 @@
   z-index: -2;
 }
 
-/* Lớp tối nhẹ ở chân banner để chữ trắng luôn đủ tương phản */
+/* Lớp tối nhẹ để chữ trắng luôn đủ tương phản */
 .nb-hero__scrim {
   position: absolute;
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(100deg, rgba(10, 40, 80, 0.62) 0%, rgba(10, 40, 80, 0.34) 42%, rgba(10, 40, 80, 0.05) 70%),
-    linear-gradient(to top, rgba(10, 40, 80, 0.35), transparent 45%);
+    linear-gradient(100deg, rgba(10, 40, 80, 0.66) 0%, rgba(10, 40, 80, 0.36) 42%, rgba(10, 40, 80, 0.04) 70%),
+    linear-gradient(to top, rgba(10, 40, 80, 0.32), transparent 45%);
 }
 
 .nb-hero__body {
   display: flex;
   align-items: center;
-  min-height: clamp(240px, 34vw, 440px);
-  padding-top: clamp(28px, 5vw, 60px);
-  padding-bottom: clamp(56px, 8vw, 96px);
+  min-height: clamp(220px, 30vw, 380px);   /* thấp hơn bản cũ (440px) */
+  padding-top: clamp(24px, 4vw, 48px);
+  padding-bottom: clamp(48px, 7vw, 84px);
 }
 
-.nb-hero__copy { max-width: 560px; color: #fff; }
+.nb-hero__copy { max-width: 540px; color: #fff; }
 
+/* Lời chào dạng "sticker" */
 .nb-hero__eyebrow {
-  margin: 0 0 6px;
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 4px 14px;
   font-size: clamp(12px, 1.4vw, 14px);
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  font-weight: 800;
+  color: var(--nb-ink);
+  background: var(--nb-cream);
+  border: 2px solid var(--nb-ink);
+  border-radius: 999px;
+  box-shadow: 3px 3px 0 var(--nb-ink);
+  transform: rotate(-2deg);
 }
 
 .nb-hero__title {
   margin: 0;
   font-family: "Lexend", "Be Vietnam Pro", system-ui, sans-serif;
   font-weight: 800;
-  font-size: clamp(28px, 4.6vw, 54px);
-  line-height: 1.05;
+  font-size: clamp(27px, 4.2vw, 50px);
+  line-height: 1.08;
   letter-spacing: -0.02em;
-  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 3px 0 rgba(10, 30, 60, 0.45);
 }
 
 .nb-hero__sub {
   margin: 10px 0 0;
   font-size: clamp(13px, 1.5vw, 16px);
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
 }
 
 .nb-hero__cta {
@@ -367,19 +480,19 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 13px 26px;
+  min-height: 48px;
+  padding: 11px 26px;
   border-radius: 999px;
   background: linear-gradient(135deg, #ffd75e, #f2b632);
   color: #4a3200;
   font-weight: 800;
   font-size: clamp(14px, 1.5vw, 17px);
-  border: 3px solid #1d2e4a;
-  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.35);
+  border: 3px solid var(--nb-ink);
+  box-shadow: 5px 5px 0 var(--nb-ink);
   cursor: pointer;
-  transition: transform 0.12s, box-shadow 0.12s, filter 0.15s;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
-.nb-hero__btn:hover { filter: brightness(1.06); }
-.nb-hero__btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35); }
+.nb-hero__btn:active { transform: translate(3px, 3px); box-shadow: var(--nb-shadow-press); }
 .nb-hero__btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 
 .nb-hero__play {
@@ -388,28 +501,33 @@
   width: 26px;
   height: 26px;
   border-radius: 999px;
-  background: #1d2e4a;
+  background: var(--nb-ink);
   color: #ffd75e;
 }
 
+/* Nền đặc thay backdrop-filter → mượt hơn, chữ vẫn rõ */
 .nb-hero__ghost {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
+  min-height: 48px;
+  padding: 10px 20px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(10, 40, 80, 0.42);
   color: #fff;
   font-weight: 700;
   font-size: clamp(13px, 1.4vw, 15px);
-  border: 2px solid rgba(255, 255, 255, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.75);
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  transition: background 0.15s, transform 0.12s;
+  transition: background 0.15s, transform 0.1s;
 }
-.nb-hero__ghost:hover { background: rgba(255, 255, 255, 0.28); }
 .nb-hero__ghost:active { transform: scale(0.97); }
 .nb-hero__ghost:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .nb-hero__btn:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 var(--nb-ink); }
+  .nb-hero__ghost:hover { background: rgba(10, 40, 80, 0.62); }
+}
 
 /* ── Nút chuyển nhóm: Game học tập / Game offline ──────────────────── */
 .nb-tabs {
@@ -417,69 +535,88 @@
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(29, 46, 74, 0.06);
+  background: var(--nb-cream);
+  border: 3px solid var(--nb-ink);
+  box-shadow: 3px 3px 0 var(--nb-ink);
 }
 
 .nb-tab {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 9px 18px;
+  min-height: 38px;
+  padding: 6px 16px;
   border-radius: 999px;
   font-weight: 700;
   font-size: 13.5px;
   color: var(--nb-ink-soft);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-.nb-tab:hover { color: var(--nb-ink); }
-.nb-tab--on {
-  background: #fff;
-  color: var(--nb-blue);
-  box-shadow: 0 2px 8px rgba(29, 46, 74, 0.14);
+.nb-tab:hover { color: var(--nb-ink); background: rgba(29, 46, 74, 0.06); }
+.nb-tab--on,
+.nb-tab--on:hover {
+  background: var(--nb-ink);
+  color: var(--nb-cream);
 }
 .nb-tab:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 2px; }
 
 /*
  * ── Hàng card ngang: các môn học + Game Offline ──────────────────────
  *
- * `display:flex` + `overflow-x:auto` thay cho grid: đúng nghĩa "nằm thành
- * hàng ngang", nhiều môn vẫn nằm cùng một hàng và cuộn ngang khi tràn.
- * Mỗi card có `flex: 1 0 <bề rộng>` nên 4–6 môn vừa khít cả màn rộng.
+ * overflow-x:auto buộc overflow-y thành auto → vùng đệm phải đủ rộng ở CẢ bốn
+ * cạnh, nếu không shadow cứng và vệt sáng của card cuối sẽ bị cắt (đây chính là
+ * lý do card "dính" vào mép và trông như bị đè lên nhau).
+ *   - margin âm  → tràn viền, tạo cảm giác hàng trượt ra khỏi khung
+ *   - padding    → đẩy nội dung về lại đúng lề, đồng thời chừa chỗ cho shadow
  */
 .nb-rail {
   display: flex;
   gap: 14px;
-  margin: 18px 0 20px;
-  padding: 4px 2px 8px;
+  margin: 6px calc(var(--nb-gutter) * -0.55) 0;
+  padding: 12px calc(var(--nb-gutter) * 0.55) 20px;
+  padding-right: calc(var(--nb-gutter) * 0.55 + 14px);
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
+  scroll-padding-inline-start: calc(var(--nb-gutter) * 0.55);
   scrollbar-width: thin;
+  scrollbar-color: rgba(29, 46, 74, 0.3) transparent;
+  -webkit-overflow-scrolling: touch;
 }
 .nb-rail::-webkit-scrollbar { height: 6px; }
-.nb-rail::-webkit-scrollbar-thumb { background: rgba(29, 46, 74, 0.18); border-radius: 99px; }
+.nb-rail::-webkit-scrollbar-thumb { background: rgba(29, 46, 74, 0.25); border-radius: 99px; }
 .nb-rail::-webkit-scrollbar-track { background: transparent; }
 
 .nb-subj {
   position: relative;
-  flex: 1 0 clamp(178px, 19vw, 218px);
+  flex: 1 0 clamp(172px, 18vw, 208px);
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   gap: 5px;
-  min-height: 186px;
-  padding: 18px 18px 16px;
+  min-height: 176px;
+  padding: 16px 16px 14px;
   border: 3px solid var(--nb-ink);
   border-radius: 22px;
   color: #fff;
   text-align: left;
   cursor: pointer;
   overflow: hidden;
-  box-shadow: 5px 5px 0 var(--nb-ink);
+  box-shadow: var(--nb-shadow);
   transition: transform 0.15s, box-shadow 0.15s;
 }
-/* Vòng sáng góc phải cho card có chiều sâu */
+/* Lớp tối đáy card → chữ trắng đọc rõ cả trên nền vàng/cam */
+.nb-subj::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(29, 46, 74, 0.34), transparent 62%);
+  pointer-events: none;
+}
+/* Vòng sáng góc phải */
 .nb-subj::after {
   content: "";
   position: absolute;
@@ -488,27 +625,28 @@
   width: 116px;
   height: 116px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.16);
   pointer-events: none;
 }
 .nb-subj > * { position: relative; z-index: 1; }
 
-.nb-subj:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--nb-ink); }
-.nb-subj:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--nb-ink); }
+.nb-subj:active { transform: translate(2px, 2px); box-shadow: var(--nb-shadow-press); }
 .nb-subj:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 3px; }
 
-/* Card đang chọn: viền trắng + nhấc lên */
-.nb-subj--on {
-  box-shadow: 0 0 0 3px #fff, 6px 6px 0 var(--nb-ink), 0 0 0 9px var(--nb-ink);
+/* Card đang chọn: nhấc lên + vòng trắng BÊN TRONG (không bị rail cắt) */
+.nb-subj--on,
+.nb-subj--on:active {
+  transform: translate(-2px, -2px);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.9), var(--nb-shadow-hover);
 }
+.nb-subj--on .nb-subj__play { background: #fff; color: var(--nb-ink); }
 
 .nb-subj__ic {
   font-size: 30px;
   line-height: 1;
-  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.18);
   transition: transform 0.15s;
 }
-.nb-subj:hover .nb-subj__ic { transform: scale(1.1) rotate(-5deg); }
 
 .nb-subj__name {
   font-family: "Lexend", "Be Vietnam Pro", system-ui, sans-serif;
@@ -516,7 +654,7 @@
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.01em;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
 }
 
 .nb-subj__desc {
@@ -524,7 +662,8 @@
   font-size: 12.5px;
   font-weight: 600;
   line-height: 1.35;
-  color: rgba(255, 255, 255, 0.92);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .nb-subj__play {
@@ -535,20 +674,24 @@
   margin-top: 2px;
   padding: 5px 13px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.26);
+  background: rgba(29, 46, 74, 0.55);
   font-size: 12px;
   font-weight: 800;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-.nb-subj:hover .nb-subj__play { background: rgba(0, 0, 0, 0.42); }
+
+@media (hover: hover) and (pointer: fine) {
+  .nb-subj--on:hover { box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.9), var(--nb-shadow-hover); }
+  .nb-subj:hover .nb-subj__play { background: rgba(29, 46, 74, 0.8); }
+  .nb-subj--on:hover .nb-subj__play { background: #fff; }
+}
 
 @media (max-width: 640px) {
   .nb-subj {
-    flex-basis: 158px;
-    min-height: 154px;
+    flex-basis: 156px;
+    min-height: 150px;
     padding: 13px 13px 12px;
     gap: 4px;
-    border-width: 2.5px;
     border-radius: 18px;
   }
   .nb-subj::after { width: 80px; height: 80px; right: -22px; top: -22px; }
@@ -557,7 +700,7 @@
   .nb-subj__play { font-size: 11px; padding: 4px 10px; }
 }
 
-/* ── Hàng kết quả ─────────────────────────────────────────────────── */
+/* ── Trạng thái rỗng ──────────────────────────────────────────────── */
 .nb-empty {
   grid-column: 1 / -1;
   border: 3px dashed var(--nb-ink);
@@ -566,81 +709,18 @@
   text-align: center;
   font-weight: 600;
   color: var(--nb-ink-soft);
-  background: rgba(255, 253, 246, 0.5);
+  background: rgba(255, 253, 246, 0.6);
 }
 
-/* ── Lưới game kiểu "Trung tâm game" ──────────────────────────────────
-   Bám sát src/games/offline/trung-tam-game.html:
-   ô vuông lớn tự co giãn, nền gradient, emoji to, thanh trạng thái
-   bám đáy. Dùng chung cho game offline lẫn game từ API.              */
-
+/* ── Lưới game kiểu "Trung tâm game" ───────────────────────────────── */
 .nbg-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 14px;
+  /* Tự co theo khung: không bao giờ tạo ô quá hẹp, cũng không tràn ngang */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: 18px 16px;
   margin-top: 18px;
-}
-
-/*
- * Mobile: 2 ô mỗi hàng, ngang hàng như lưới 2 cột.
- *
- * `minmax(250px, 1fr)` trên màn 390px chỉ vừa ĐÚNG 1 cột (366px khả dụng <
- * 2×250) → thẻ to full width rất dài và phải cuộn nhiều. Ép 2 cột ở ≤640px
- * và thu nhỏ kích thước bên trong cho vừa bề ngang ~179px.
- */
-@media (max-width: 640px) {
-  .nbg-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
-    margin-top: 12px;
-  }
-
-  .nbg-card {
-    min-height: 132px;
-    padding: 11px 11px 10px;
-    border-radius: 18px;
-    gap: 4px;
-    border-width: 2.5px;
-  }
-
-  .nbg-card::after {
-    width: 84px;
-    height: 84px;
-    right: -24px;
-    top: -24px;
-  }
-
-  .nbg-card__ic {
-    font-size: 30px;
-  }
-
-  .nbg-card__title {
-    font-size: 14px;
-    line-height: 1.15;
-  }
-
-  .nbg-card__tag {
-    font-size: 9px;
-    padding: 1px 7px;
-  }
-
-  .nbg-card__desc {
-    font-size: 10.5px;
-    line-height: 1.3;
-  }
-
-  .nbg-card__st {
-    font-size: 10.5px;
-    padding: 4px 6px;
-    border-radius: 9px;
-  }
-
-  .nbg-card__badge {
-    top: 8px;
-    right: 8px;
-    font-size: 9px;
-    padding: 1px 6px;
-  }
+  /* Chừa chỗ cho shadow cứng + vệt sáng khi hover, không để thẻ chạm mép */
+  padding: 4px 10px 12px 2px;
 }
 
 .nbg-card {
@@ -648,18 +728,27 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-height: 168px;
-  padding: 16px 16px 14px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 24px;
+  min-height: 164px;
+  padding: 15px 15px 13px;
+  border: 3px solid var(--nb-ink);
+  border-radius: 20px;
   text-align: left;
-  color: #fff;
+  color: var(--fg, #fff);       /* JSX có thể đặt --fg tối cho nền sáng (vàng) */
   overflow: hidden;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-  transition: transform 0.15s;
+  cursor: pointer;
+  box-shadow: var(--nb-shadow);
+  transition: transform 0.15s, box-shadow 0.15s;
+  animation: nb-rise 0.34s ease-out backwards;   /* chỉ transform + opacity */
+  animation-delay: calc(var(--i, 0) * 45ms);
 }
 
-/* Vòng tròn sáng cho card có chiều sâu, giống ::after của file HTML */
+.nbg-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(29, 46, 74, 0.22), transparent 60%);
+  pointer-events: none;
+}
 .nbg-card::after {
   content: "";
   position: absolute;
@@ -668,28 +757,31 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.16);
+  pointer-events: none;
 }
-
-.nbg-card:hover { transform: translateY(-4px); }
-.nbg-card:active { transform: scale(0.97); }
-.nbg-card:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 3px; }
-
-/* Emoji + chữ phải nằm trên vòng tròn ::after */
 .nbg-card > * { position: relative; z-index: 1; }
 
-.nbg-card__ic {
-  font-size: 44px;
-  line-height: 1;
-  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3));
+.nbg-card:active { transform: translate(2px, 2px); box-shadow: var(--nb-shadow-press); }
+.nbg-card:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 3px; }
+
+@media (hover: hover) and (pointer: fine) {
+  /* Nâng + đổi nền nút đã gộp ở khối hover chung phía trên (.nb-tile/.nb-subj/.nbg-card) */
+  .nbg-card:hover .nbg-card__st { background: var(--nb-cream); color: var(--nb-ink); }
 }
-.nbg-card:hover .nbg-card__ic { transform: scale(1.08) rotate(-4deg); transition: transform 0.15s; }
+
+.nbg-card__ic {
+  font-size: 42px;
+  line-height: 1;
+  text-shadow: 0 4px 0 rgba(0, 0, 0, 0.16);
+  transition: transform 0.15s;
+}
 
 .nbg-card__title {
   font-family: "Lexend", "Be Vietnam Pro", system-ui, sans-serif;
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 800;
-  line-height: 1.05;
+  line-height: 1.08;
   margin: 0;
 }
 
@@ -698,17 +790,19 @@
   font-size: 11.5px;
   font-weight: 800;
   letter-spacing: 0.3px;
-  padding: 1px 9px;
+  padding: 1px 10px;
   border-radius: 99px;
-  background: rgba(0, 0, 0, 0.28);
+  background: var(--nb-cream);
+  color: var(--nb-ink);
+  border: 2px solid var(--nb-ink);
 }
 
 .nbg-card__desc {
   flex: 1;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
-  line-height: 1.25;
-  opacity: 0.92;
+  line-height: 1.3;
+  opacity: 0.95;
 }
 
 .nbg-card__st {
@@ -717,11 +811,14 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: 34px;
   font-size: 14px;
   font-weight: 800;
   padding: 5px 10px;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.3);
+  border-radius: 11px;
+  background: var(--nb-ink);
+  color: var(--nb-cream);
+  transition: background 0.15s, color 0.15s;
 }
 
 .nbg-card__badge {
@@ -735,15 +832,148 @@
   border-radius: 99px;
   background: #ffe066;
   color: #3a2200;
+  border: 2px solid var(--nb-ink);
 }
 
-/* Game offline không cần mạng — không còn viền đứt/cờ mạng nào cả. */
+/* Mobile: 2 ô mỗi hàng, vừa vặn và không tràn */
+@media (max-width: 640px) {
+  .nbg-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 10px;
+    margin-top: 14px;
+    padding: 4px 8px 10px 2px;
+  }
+  .nbg-card {
+    min-height: 136px;
+    padding: 11px 11px 10px;
+    border-radius: 16px;
+    gap: 4px;
+    box-shadow: 4px 4px 0 var(--nb-ink);
+  }
+  .nbg-card::after { width: 84px; height: 84px; right: -24px; top: -24px; }
+  .nbg-card__ic { font-size: 30px; }
+  .nbg-card__title { font-size: 14px; line-height: 1.15; }
+  .nbg-card__tag { font-size: 9px; padding: 0 7px; }
+  .nbg-card__desc { font-size: 10.5px; line-height: 1.3; }
+  .nbg-card__st { font-size: 11px; min-height: 28px; padding: 3px 6px; border-radius: 9px; }
+  .nbg-card__badge { top: 8px; right: 8px; font-size: 9px; padding: 0 6px; }
+}
 
+/* ── Ô lưới dùng chung (panel nhiệm vụ / thú cưng / thành tích) ─────── */
+.nb-panels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 700px)  { .nb-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; } }
+@media (min-width: 1180px) { .nb-panels { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+
+/* ── Bottom nav (mobile) ────────────────────────────────────────────
+   Nền đậm nằm ngoài .nb-home nên token phải viết tường minh. Ô trong nav có
+   nền tương phản cao + trạng thái nhấn rõ, tránh kiểu "dính" chữ mờ trên nền tối. */
+.nb-btnnav {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px;
+  border-radius: 16px;
+  color: rgba(255, 246, 231, 0.72);
+  transition: background 0.15s, color 0.15s, transform 0.12s;
+}
+.nb-btnnav:active { transform: scale(0.92); }
+.nb-btnnav:focus-visible { outline: 3px solid var(--nb-mustard); outline-offset: -3px; }
+.nb-btnnav__ico {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  border-radius: 9px;
+  transition: background 0.15s;
+}
+.nb-btnnav--on {
+  color: #1d2e4a;
+  background: var(--nb-mustard);
+  font-weight: 800;
+}
+.nb-btnnav--on .nb-btnnav__ico { background: rgba(29, 46, 74, 0.14); }
+@media (hover: hover) and (pointer: fine) {
+  .nb-btnnav:not(.nb-btnnav--on):hover { color: var(--nb-cream); background: rgba(255, 246, 231, 0.12); }
+}
+
+/* ── Lưới ô tắt ngắn (khách chưa đăng nhập) ────────────────────────── */
+.nb-quickgrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 700px) { .nb-quickgrid { gap: 12px; } }
+
+.nb-quickbtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 4px;
+  border-radius: 14px;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.16s;
+}
+@media (hover: hover) and (pointer: fine) {
+  .nb-quickbtn:hover { transform: translateY(-3px); background: rgba(29, 46, 74, 0.05); }
+}
+.nb-quickbtn:active { transform: scale(0.95); }
+.nb-quickbtn:focus-visible { outline: 3px solid var(--nb-blue); outline-offset: 2px; }
+
+/* ── Tiêu đề section ────────────────────────────────────────────────── */
+.nb-sechead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* Tránh dồn cục khi hẹp: tiêu đề luôn chiếm hàng riêng trên mobile */
+  margin-bottom: 14px;
+}
+.nb-sechead__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: 16px;
+  color: #fff;
+  box-shadow: 3px 3px 0 var(--nb-ink);
+}
+.nb-sechead__tabs { margin-left: auto; }
+@media (max-width: 520px) {
+  .nb-sechead__tabs {
+    margin-left: 0;
+    width: 100%;
+    display: flex;
+  }
+  .nb-tabs { flex: 1; }
+  .nb-tab { flex: 1; justify-content: center; }
+}
+
+@keyframes nb-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+}
+
+/* ── Giảm chuyển động ─────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .nb-tile, .nb-btn, .nb-side__item, .nbg-card,
-  .nb-navitem, .nb-tab, .nb-subj, .nb-hero__btn, .nb-hero__ghost { transition: none; }
+  .nb-tile, .nb-btn, .nb-chip, .nb-side__item, .nbg-card, .nbg-card__ic,
+  .nb-navitem, .nb-tab, .nb-subj, .nb-subj__ic, .nb-hero__btn, .nb-hero__ghost,
+  .nb-quickbtn, .nb-home .nb-iconbtn, .nb-home .nb-pill { transition: none; }
+  .nbg-card, .nb-tile { animation: none; }
+  .nb-tile:hover::after { transform: none; }
   .nb-tile:hover, .nb-tile:active, .nbg-card:hover, .nbg-card:active,
-  .nb-subj:hover, .nb-subj:active, .nb-hero__btn:active, .nb-hero__ghost:active { transform: none; }
+  .nb-subj:hover, .nb-subj:active, .nb-quickbtn:hover, .nb-quickbtn:active,
+  .nb-hero__btn:active, .nb-hero__ghost:active { transform: none; }
   .nbg-card:hover .nbg-card__ic, .nb-subj:hover .nb-subj__ic { transform: none; }
   .nb-rail { scroll-behavior: auto; }
 }

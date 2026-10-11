@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    Mũ sinh nhật — phục vụ id catalog cũ "hat-party".
+    Giữ để người chơi đang mặc món này không bị mất hình khi tái cấu trúc.
+  -->
+  <g id="hat-party">
+    <!-- chóp -->
+    <path d="M256 40l58 118H198z" fill="{{main}}"/>
+    <path d="M256 40l26 118h-26z" fill="{{light}}" opacity=".6"/>
+    <!-- sọc trên chóp -->
+    <path d="M232 96l-10 22M280 96l10 22M222 130l-12 26M290 130l12 26" stroke="{{dark}}" stroke-width="9" stroke-linecap="round" opacity=".7"/>
+    <!-- vành -->
+    <ellipse cx="256" cy="158" rx="66" ry="18" fill="{{dark}}"/>
+    <ellipse cx="256" cy="154" rx="66" ry="18" fill="{{main}}"/>
+    <!-- búp bê đầu chóp -->
+    <circle cx="256" cy="36" r="17" fill="{{accent}}"/>
+    <path d="M256 24l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z" fill="{{main}}"/>
+  </g>
+</svg>

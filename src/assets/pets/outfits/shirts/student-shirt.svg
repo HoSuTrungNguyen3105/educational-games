@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    shirt_student_01 · Áo học sinh
+    Khoác lên thân (y 300 → 440), cổ áo ở y ≈ 300. Không che mặt.
+  -->
+  <g id="shirt_student_01">
+    <!-- tay áo + thân áo: bo tròn bám theo thân pet -->
+    <path d="M256 300c50 0 90 30 96 74 3 20 4 38 4 50 0 13-10 22-24 22H180c-14 0-24-9-24-22 0-12 1-30 4-50 6-44 46-74 96-74z"
+          fill="{{main}}"/>
+    <!-- cổ áo trắng -->
+    <path d="M228 300c0 12 12 20 28 20s28-8 28-20l-10-6c-2 8-8 12-18 12s-16-4-18-12z" fill="{{light}}"/>
+    <path d="M228 298l28 18 28-18-8-4-20 13-20-13z" fill="{{dark}}"/>
+    <!-- nút áo + cà vút trường -->
+    <circle cx="256" cy="352" r="6" fill="{{light}}" opacity=".9"/>
+    <circle cx="256" cy="386" r="6" fill="{{light}}" opacity=".9"/>
+    <path d="M212 322l-14-14 14-10 10 14-10 10z" fill="{{accent}}"/>
+    <!-- tay áo dưới cùng -->
+    <path d="M186 428c-12 2-24 0-34-4l4-20c10 6 22 8 34 6z" fill="{{main}}"/>
+    <path d="M326 428c12 2 24 0 34-4l-4-20c-10 6-22 8-34 6z" fill="{{main}}"/>
+  </g>
+</svg>

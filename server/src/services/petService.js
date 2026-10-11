@@ -3,6 +3,10 @@
 // Lưu thú cưng trên server (collection `userPets`) — mỗi người dùng 1 pet.
 // Màu / trang phục / loài đều kiểm tra theo petCatalog nên không thể gán giá trị
 // bừa. Loài và đồ mới thêm vào catalog là dùng được, không phải sửa file này.
+//
+// petCatalog giờ đọc từ Mongo (`petCatalog`) và nạp vào cache ở RAM, nên mọi
+// hàm ở đây phải `await catalog.ensureLoaded()` TRƯỚC khi đọc catalog — nếu
+// không, `getSpecies`/`validateLook` sẽ trả null và chặn nhầm người chơi.
 
 import { getCollection } from "../db.js";
 import * as catalog from "./petCatalog.js";
@@ -12,6 +16,11 @@ const COLLECTION = "userPets";
 const uid = () => `upet-${Math.random().toString(36).slice(2, 9)}`;
 const nowIso = () => new Date().toISOString();
 
+/** 7 ô trang phục, dùng khi tạo pet mới và khi reset. */
+function emptyOutfits() {
+  return Object.fromEntries(catalog.SLOTS.map((s) => [s, null]));
+}
+
 /** EXP cần để lên cấp tiếp theo. */
 export function expNeededFor(level) {
   return Math.round(200 * Math.pow(1.18, Math.max(0, level - 1)));
@@ -19,15 +28,15 @@ export function expNeededFor(level) {
 
 /** Pet mặc định: chó, màu kem, chưa mặc gì. */
 export function buildDefault(userId, name = "Bồng") {
-  const sp = catalog.getSpecies("dog");
-  const col = catalog.defaultColorFor("dog");
+  const sp = catalog.getSpecies("dog") || { id: "dog" };
+  const col = catalog.defaultColorFor("dog") || { id: "cream" };
   return {
     _id: uid(),
     userId,
     species: sp.id,
     name: String(name || "Bồng").slice(0, 24),
     color: col.id,
-    outfits: { hat: null, scarf: null, glasses: null, shirt: null, bow: null, cape: null, backpack: null },
+    outfits: emptyOutfits(),
     level: 1,
     exp: 0,
     expNeeded: expNeededFor(1),
@@ -42,6 +51,7 @@ export function buildDefault(userId, name = "Bồng") {
 
 /** Bảo đảm luôn có 1 document pet cho user (tạo nếu chưa có). */
 export async function getOrCreate(userId, name) {
+  await catalog.ensureLoaded();
   const col = getCollection(COLLECTION);
   let doc = await col.findOne({ userId });
   if (doc) return doc;
@@ -118,7 +128,6 @@ export async function updateLook(userId, patch = {}) {
     set.color = check.value.color;
     set.outfits = check.value.outfits;
   }
-
   await getCollection(COLLECTION).updateOne({ _id: current._id }, { $set: set });
   return { ok: true, pet: serialize({ ...current, ...set }) };
 }
@@ -164,7 +173,7 @@ export async function addExp(userId, amount = 5, stats = {}) {
 
 /** Đổi tâm tính (mood). */
 export async function setMood(userId, mood) {
-  if (!catalog.MOODS[mood]) return { ok: false, errors: [`mood không hợp lệ: ${mood}`] };
+  if (!catalog.MOOD_LIST[mood]) return { ok: false, errors: [`mood không hợp lệ: ${mood}`] };
   const pet = await getOrCreate(userId);
   const set = { mood, updatedAt: nowIso() };
   await getCollection(COLLECTION).updateOne({ _id: pet._id }, { $set: set });
@@ -173,13 +182,14 @@ export async function setMood(userId, mood) {
 
 /** Đặt lại về mặc định (giữ nguyên tên và cấp độ). */
 export async function reset(userId) {
+  await catalog.ensureLoaded();
   const pet = await getOrCreate(userId);
-  const sp = catalog.getSpecies("dog");
-  const col = catalog.defaultColorFor("dog");
+  const sp = catalog.getSpecies("dog") || { id: "dog" };
+  const col = catalog.defaultColorFor("dog") || { id: "cream" };
   const set = {
     species: sp.id,
     color: col.id,
-    outfits: { hat: null, scarf: null, glasses: null, shirt: null, bow: null, cape: null, backpack: null },
+    outfits: emptyOutfits(),
     mood: "happy",
     updatedAt: nowIso(),
   };
@@ -187,13 +197,21 @@ export async function reset(userId) {
   return { ok: true, pet: serialize({ ...pet, ...set }) };
 }
 
-/** Danh mục đã lọc theo cấp của người chơi. */
+/**
+ * Danh mục cho frontend, kèm phần đã mở khoá theo cấp.
+ *
+ * `userId` rỗng (chưa đăng nhập) thì KHÔNG gọi getByUser — hàm đó sẽ tạo
+ * document pet mới, mà userId lúc này là null → mọi lượt gọi /catalog của
+ * khách đều bỏ lại một pet rác trong collection.
+ */
 export async function catalogFor(userId) {
+  await catalog.ensureLoaded();
   try {
+    if (!userId) return catalog.fullCatalog(1);
     const pet = await getByUser(userId);
     return catalog.fullCatalog(pet?.level || 1);
   } catch {
-    // Người chưa đăng nhập / lỗi DB vẫn xem được toàn bộ danh mục ở cấp 1
+    // Lỗi DB vẫn trả danh mục cấp 1 để app không trắng màn hình
     return catalog.fullCatalog(1);
   }
 }

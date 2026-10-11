@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { ManagementHeader } from '../../components/ui.jsx';
 import { Save, RotateCcw, ArrowUp, ArrowDown } from 'lucide-react';
-import { renderAvatarFull, CATEGORY_LIST } from '../../lib/avatarRenderer.js';
+import { composeAvatar, CATEGORY_LIST } from '../../lib/avatarRenderer.js';
 
-const DEFAULT_LAYER_ORDER = ['skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
+const DEFAULT_LAYER_ORDER = CATEGORY_LIST.map(c => c.key);
 
 function getAuthToken() {
   try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; }
@@ -32,23 +32,31 @@ export default function AvatarTemplateEditor({ showToast }) {
 
   useEffect(() => { load(); }, [load]);
 
-  function buildPreviewState() {
-    const state = {};
-    let bodyHtml = null;
-    for (const cat of layerOrder) {
+  /**
+   * Preview dùng đúng bộ item mặc định, nhưng vẽ theo `layerOrder` đang chỉnh.
+   * `body` không có trong `items` (nằm ở mã frontend) → dùng body mặc định.
+   */
+  function buildPreviewSvg(order) {
+    const loadout = { body: 'body_boy_01' };
+    for (const cat of order) {
       const defaultItem = items.find(i => i.category === cat && i.default);
-      if (!defaultItem) continue;
-      if (cat === 'body') {
-        bodyHtml = defaultItem.html || null;
-      } else if (cat === 'skin') {
-        state.skin = defaultItem.params?.hex || '#FFDFC4';
-      } else if (cat === 'face') {
-        state.face = defaultItem.params?.style || 'gentle';
-      } else {
-        state[cat] = { style: defaultItem.params?.style || 'none', color: defaultItem.params?.color || '#000' };
-      }
+      if (defaultItem) loadout[cat] = defaultItem.code;
     }
-    return { state, bodyHtml };
+    return composeAvatar({ ...buildPreviewLayers(loadout), order });
+  }
+
+  function buildPreviewLayers(loadout) {
+    const map = new Map(items.map(i => [i.code, i]));
+    const layers = {};
+    let skin = '#FFDFC4';
+    for (const [cat, code] of Object.entries(loadout)) {
+      if (cat === 'body' || !code) continue;
+      const item = map.get(code);
+      if (!item) continue;
+      if (cat === 'skin') { skin = item.params?.hex || skin; continue; }
+      layers[cat] = item;
+    }
+    return { bodyCode: loadout.body, skin, layers };
   }
 
   function moveLayer(index, dir) {
@@ -89,9 +97,7 @@ export default function AvatarTemplateEditor({ showToast }) {
     );
   }
 
-  const { state: previewState, bodyHtml } = buildPreviewState();
-  const svgContent = renderAvatarFull(previewState, bodyHtml);
-
+  const svgContent = buildPreviewSvg(layerOrder);
   return (
     <div>
       <ManagementHeader subtitle="Thứ tự layer của Avatar" title="Avatar Template" />

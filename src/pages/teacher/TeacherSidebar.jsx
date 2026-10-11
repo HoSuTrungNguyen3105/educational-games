@@ -28,6 +28,7 @@ Palette,
   Bell,
   ShieldCheck,
   Sparkles,
+  PawPrint,
 } from 'lucide-react'
 
 const MENU = [
@@ -37,7 +38,7 @@ const MENU = [
   { id: "admin-roles", label: "Phân quyền", icon: ShieldCheck, route: "/admin/roles", permission: "users.view" },
   { id: "admin-coins", label: "Coin & Progress", icon: Coins, route: "/admin/coins", permission: "coins.manage" },
   { id: "admin-daily-tasks", label: "Nhiệm vụ ngày", icon: ClipboardList, route: "/admin/daily-tasks", permission: "daily-tasks.manage" },
-{ id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
+  { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
   { id: "admin-game-config", label: "Cấu hình game", icon: SlidersHorizontal, route: "/admin/game-config", permission: "games.manage" },
   { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories", permission: "categories.manage" },
   { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects", permission: "subjects.manage" },
@@ -50,7 +51,8 @@ const MENU = [
   { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/admin/ai-analysis", permission: "reports.view" },
   { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
   { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/admin/avatar-template", permission: null },
-  { id: "admin-body-custom", label: "Body Custom", icon: Move, route: "/admin/body-custom", permission: null },
+  { id: "admin-pet-catalog", label: "Danh mục Pet", icon: PawPrint, route: "/admin/pet-catalog", permission: null },
+  { id: "admin-body-custom", label: "Thân Avatar", icon: Move, route: "/admin/body-custom", permission: null },
   { id: "admin-plant-types", label: "Loại cây (Garden)", icon: Move, route: "/admin/plant-types", permission: null },
   { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/admin/images", permission: null },
   { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/admin/upload-items", permission: null },
@@ -70,10 +72,14 @@ const MOBILE_MAIN = [
 ];
 
 const MOBILE_MORE = [
+  { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin", permission: null },
+  { id: "admin-library", label: "Trò chơi", icon: Library, route: "/admin/library", permission: "games.manage" },
   { id: "admin-users", label: "Người dùng", icon: Users, route: "/admin/users", permission: "users.view" },
   { id: "admin-roles", label: "Phân quyền", icon: ShieldCheck, route: "/admin/roles", permission: "users.view" },
-  { id: "admin-coins", label: "Coins", icon: Coins, route: "/admin/coins", permission: "coins.manage" },
-  { id: "admin-daily-tasks", label: "Nhiệm vụ", icon: ClipboardList, route: "/admin/daily-tasks", permission: "daily-tasks.manage" },
+  { id: "admin-coins", label: "Coin & Progress", icon: Coins, route: "/admin/coins", permission: "coins.manage" },
+  { id: "admin-daily-tasks", label: "Nhiệm vụ ngày", icon: ClipboardList, route: "/admin/daily-tasks", permission: "daily-tasks.manage" },
+  { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
+  { id: "admin-game-config", label: "Cấu hình game", icon: SlidersHorizontal, route: "/admin/game-config", permission: "games.manage" },
   { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories", permission: "categories.manage" },
   { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects", permission: "subjects.manage" },
   { id: "admin-questions", label: "Câu hỏi", icon: HelpCircle, route: "/admin/questions", permission: "questions.manage" },
@@ -85,6 +91,9 @@ const MOBILE_MORE = [
   { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/admin/ai-analysis", permission: "reports.view" },
   { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
   { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/admin/avatar-template", permission: null },
+  { id: "admin-pet-catalog", label: "Danh mục Pet", icon: PawPrint, route: "/admin/pet-catalog", permission: null },
+  { id: "admin-body-custom", label: "Thân Avatar", icon: Move, route: "/admin/body-custom", permission: null },
+  { id: "admin-plant-types", label: "Loại cây (Garden)", icon: Move, route: "/admin/plant-types", permission: null },
   { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/admin/images", permission: null },
   { id: "admin-upload-items", label: "Trích xuất", icon: Scissors, route: "/admin/upload-items", permission: null },
 ];

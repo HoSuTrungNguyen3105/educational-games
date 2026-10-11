@@ -29,6 +29,7 @@ const AssignmentDetail = lazy(() => import('./AssignmentDetail.jsx'));
 const AssignmentList = lazy(() => import('./AssignmentList.jsx'));
 const AvatarItemManagement = lazy(() => import('./AvatarItemManagement.jsx'));
 const AvatarTemplateEditor = lazy(() => import('./AvatarTemplateEditor.jsx'));
+const PetCatalogManagement = lazy(() => import('./PetCatalogManagement.jsx'));
 const UploadItems = lazy(() => import('./UploadItems.jsx'));
 const PlantTypeManagement = lazy(() => import('./PlantTypeManagement.jsx'));
 const BodyCustomImport = lazy(() => import('./BodyCustomImport.jsx'));
@@ -76,6 +77,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
         {page === "admin-assignment-detail" && <AssignmentDetail assignmentId={route.params?.assignmentId} />}
         {page === "admin-avatar-items" && <AvatarItemManagement showToast={showToast} />}
         {page === "admin-avatar-template" && <AvatarTemplateEditor showToast={showToast} />}
+        {page === "admin-pet-catalog" && <PetCatalogManagement showToast={showToast} />}
         {page === "admin-plant-types" && <PlantTypeManagement showToast={showToast} />}
         {page === "admin-body-custom" && <BodyCustomImport showToast={showToast} />}
         {page === "admin-images" && <ImageLibrary showToast={showToast} />}

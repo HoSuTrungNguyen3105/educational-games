@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    Mũ lưỡi trai — phục vụ id catalog cũ "hat-cap".
+    Giữ để người chơi đang mặc món này không bị mất hình khi tái cấu trúc.
+  -->
+  <g id="hat-cap">
+    <!-- vành mũ trước -->
+    <path d="M150 138c0-16 48-28 106-28s106 12 106 28c0 8-6 14-14 14H164c-8 0-14-6-14-14z" fill="{{dark}}"/>
+    <path d="M256 110c-58 0-106 12-106 28 0 8 6 14 14 14h184c8 0 14-6 14-14 0-16-48-28-106-28z" fill="{{main}}"/>
+    <!-- chóp mũ -->
+    <path d="M166 112c0-36 40-62 90-62s90 26 90 62c0 8-6 12-14 12H180c-8 0-14-4-14-12z" fill="{{main}}"/>
+    <path d="M186 96c6-22 32-40 66-42-22 10-38 28-44 50z" fill="{{light}}" opacity=".55"/>
+    <!-- nút chóp -->
+    <circle cx="256" cy="50" r="8" fill="{{dark}}"/>
+    <!-- cột logo -->
+    <rect x="246" y="86" width="20" height="34" rx="6" fill="{{light}}" opacity=".9"/>
+  </g>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!--
+    Mèo cam · lớp MẮT
+    Mắt hình lá (almond) đặc trưng mèo. PetRenderer bật group "nhe" khi mood buồn.
+  -->
+  <g id="pet-eyes">
+    <!-- mốc mắt hình lá -->
+    <ellipse cx="220" cy="200" rx="22" ry="19" fill="#fff"/>
+    <ellipse cx="292" cy="200" rx="22" ry="19" fill="#fff"/>
+    <!-- đồng tử dọc kiểu mèo -->
+    <ellipse cx="222" cy="200" rx="6" ry="15" fill="{{eye}}"/>
+    <ellipse cx="290" cy="200" rx="6" ry="15" fill="{{eye}}"/>
+    <circle cx="218" cy="194" r="3.4" fill="#fff" opacity=".9"/>
+    <circle cx="286" cy="194" r="3.4" fill="#fff" opacity=".9"/>
+
+    <!-- mắt nhe (mood buồn / buồn ngủ) -->
+    <g id="pet-eyes-closed" display="none">
+      <path d="M202 204c6 8 30 8 36 0" stroke="{{eye}}" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      <path d="M274 204c6 8 30 8 36 0" stroke="{{eye}}" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+    </g>
+  </g>
+</svg>

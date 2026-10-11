@@ -32,15 +32,18 @@ export function loadAuth() {
 export function saveAuth(auth) { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); }
 export function clearAuth() { localStorage.removeItem(AUTH_KEY); }
 
-// Lặp lại khi backend đang cold-start (503 / lỗi mạng), tránh request đầu tiên chết
+// Lặp lại khi backend đang cold-start (503 / lỗi mạng), tránh request đầu tiên chết.
+// `attempts` là TỔNG số lần thử (kể cả lần đầu) và luôn ≥ 1 — nếu để 0, vòng lặp
+// không chạy lần nào và hàm trả `undefined`, khiến caller báo nhầm "không kết nối được".
 async function fetchWithRetry(url, init, attempts = 5) {
+  const total = Math.max(1, Number(attempts) || 1);
   let res;
-  for (let i = 0; i < attempts; i++) {
+  for (let i = 0; i < total; i++) {
     try {
       res = await fetch(url, init);
-      if (res.status !== 503 || i === attempts - 1) return res;
+      if (res.status !== 503 || i === total - 1) return res;
     } catch (e) {
-      if (i === attempts - 1) throw e;
+      if (i === total - 1) throw e;
     }
     await new Promise((r) => setTimeout(r, Math.min(800 * 2 ** i, 5000)));
   }
@@ -52,18 +55,30 @@ async function fetchWithRetry(url, init, attempts = 5) {
  * - `_retries: 0`  : tắt retry (dùng cho gọi AI — 503 nghĩa là AI Service chưa sẵn sàng,
  *                    retry lại chỉ làm user chờ thêm mà không giúp ích).
  * - `timeoutMs`     : tự hủy sau N ms.
+ * - `signal`        : cho phép huỷ từ bên ngoài (nút "Huỷ", đóng panel…).
  */
 function buildSignal(options) {
-  const signals = [];
-  if (options.signal) signals.push(options.signal);
-  let timer = null;
-  if (options.timeoutMs > 0) {
-    const ctrl = new AbortController();
-    timer = setTimeout(() => ctrl.abort(), options.timeoutMs);
-    signals.push(ctrl.signal);
+  const external = options.signal;
+  const timeoutMs = options.timeoutMs;
+
+  if (!timeoutMs) {
+    return { signal: external, timer: null };
   }
-  const anySignal = signals.length ? AbortSignal.any(signals) : undefined;
-  return { anySignal, timer };
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  if (!external) {
+    return { signal: ctrl.signal, timer };
+  }
+
+  // Gộp tín hiệu huỷ. `AbortSignal.any` chưa có ở trình duyệt cũ → tự nối tay.
+  if (typeof AbortSignal.any === "function") {
+    return { signal: AbortSignal.any([external, ctrl.signal]), timer };
+  }
+  const onAbort = () => ctrl.abort();
+  if (external.aborted) ctrl.abort();
+  else external.addEventListener("abort", onAbort, { once: true });
+  return { signal: ctrl.signal, timer, detach: () => external.removeEventListener("abort", onAbort) };
 }
 
 export async function apiFetch(path, options = {}) {
@@ -75,7 +90,7 @@ export async function apiFetch(path, options = {}) {
   }
   const url = `${API_BASE}${path}`;
   const method = (options.method || "GET").toUpperCase();
-  const { anySignal, timer } = buildSignal(options);
+  const { signal, timer, detach } = buildSignal(options);
   const init = {
     headers: {
       "Content-Type": "application/json",
@@ -83,7 +98,7 @@ export async function apiFetch(path, options = {}) {
       ...(options.headers || {}),
     },
     ...options,
-    signal: anySignal,
+    signal,
     body: options.body ? JSON.stringify(options.body) : undefined,
   };
   delete init._token;
@@ -91,11 +106,15 @@ export async function apiFetch(path, options = {}) {
   delete init._retries;
   delete init.timeoutMs;
   const withPagination = options._withPagination;
+  // `_retries` = SỐ LẦN THỬ LẠI (không tính lần đầu). Mặc định 4 → tổng 5 lần,
+  // giữ đúng hành vi cũ. `_retries: 0` → thử đúng 1 lần rồi trả về.
+  const retries = Math.max(0, Number(options._retries ?? 4) || 0);
   let res;
   try {
-    res = await fetchWithRetry(url, init, options._retries === undefined ? 5 : options._retries);
+    res = await fetchWithRetry(url, init, retries + 1);
   } finally {
     if (timer) clearTimeout(timer);
+    detach?.();
   }
   if (res.status === 401 && !path.startsWith("/auth/")) {
     clearAuth();
