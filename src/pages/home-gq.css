@@ -21,13 +21,24 @@
   background-color: var(--gq-paper);
   background-image: radial-gradient(rgba(29, 46, 74, 0.08) 1px, transparent 1.3px);
   background-size: 18px 18px;
-  overflow-x: hidden;
+  /* `clip` chứ không phải `hidden`: `overflow-x:hidden` khiến overflow-y bị
+     tính thành `auto` → dựng thêm một scroll container lồng nhau (2 thanh cuộn). */
+  overflow-x: clip;
 }
 
-/* họa tiết confetti cố định phía sau mọi nội dung */
+/*
+ * Confetti: một dải cố định ôm lấy phần đầu trang.
+ * `position: fixed` + chiều cao cố định + `overflow: hidden` để các hoạ tiết
+ * KHÔNG bao giờ kéo dài chiều cao tài liệu (trước đây đặt `top` theo % của cả
+ * trang làm trang cao gấp ~2.4 lần → sinh thanh cuộn thừa).
+ */
 .gq-confetti {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  overflow: hidden;
   pointer-events: none;
   z-index: 0;
 }
@@ -318,6 +329,8 @@
   display: flex;
   gap: 12px;
   overflow-x: auto;
+  /* khai báo rõ trục y để không bị tính ngầm thành `auto` (dựng scroll lồng) */
+  overflow-y: hidden;
   padding: 4px 2px 10px;
   scroll-snap-type: x proximity;
   scrollbar-width: thin;

@@ -108,7 +108,7 @@ export default function MyCoins({ userAuth, onBack }) {
   const totalPlays = (games || []).reduce((s, g) => s + (g.gamesPlayed || 0), 0);
 
   return (
-    <div className="flex-1 px-4 sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto w-full">
+    <div className="flex-1 px-4 sm:px-6 py-6 sm:py-10 w-full w-full">
       {/* Header */}
       <button
         onClick={onBack}

@@ -34,6 +34,10 @@ export const OFFLINE_GAME_MANIFEST = [
   { id: 'sau-an-la', name: 'Sâu Ăn Táo', icon: '🐛', tag: 'Bảo vệ vườn', grad: 'from-indigo-400 to-blue-600', engine: 'single', file: 'src/games/offline/sau-an-la.html' },
   { id: 'parkour', name: 'Parkour Tri Thức 3D', icon: '🏃', tag: 'Parkour 3D', grad: 'from-pink-400 to-rose-500', engine: 'single', file: 'src/games/offline/parkour.html' },
   { id: 'parkour-tri-thuc', name: 'Parkour Tri Thức Pro', icon: '🧗', tag: 'Parkour 3D', grad: 'from-fuchsia-500 to-violet-700', engine: 'standalone', file: 'src/games/offline/parkour-tri-thuc.html' },
+  { id: 'nong-trai-moi', name: 'Nông Trại Vui Vẻ', icon: '🚜', tag: 'Mô phỏng', grad: 'from-green-400 to-lime-500', engine: 'standalone', file: 'src/games/offline/nong-trai-moi.html' },
+  { id: 'fieldrunner', name: 'Phòng thủ cánh đồng', icon: '🌾', tag: 'Phòng thủ', grad: 'from-lime-400 to-green-600', engine: 'standalone', file: 'src/games/offline/fieldrunner.html' },
+  { id: 'cargo', name: 'Xe tải ra chợ', icon: '🚚', tag: 'Arcade', grad: 'from-amber-400 to-orange-500', engine: 'standalone', file: 'src/games/offline/cargo.html' },
+  { id: 'Excel', name: 'Bảng Tính Bé', icon: '📊', tag: 'Học tập', grad: 'from-emerald-400 to-green-600', engine: 'standalone', file: 'src/games/offline/Excel.html' },
 ];
 
 export const offlineGameIds = OFFLINE_GAME_MANIFEST.map((g) => g.id);

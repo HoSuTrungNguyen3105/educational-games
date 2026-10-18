@@ -14,7 +14,7 @@ import AiLearningAnalysisPanel from "../../components/ai/AiLearningAnalysisPanel
 export default function AiLearningAnalysisPage() {
   return (
     <div className="flex-1 w-full">
-      <div className="px-4 sm:px-6 py-5 sm:py-8 max-w-4xl mx-auto">
+      <div className="px-4 sm:px-6 py-5 sm:py-8 w-full">
         <div className="mb-4 sm:mb-6">
           <h1 className="font-display text-2xl sm:text-3xl text-ink flex items-center gap-2">
             <span aria-hidden>📚</span>

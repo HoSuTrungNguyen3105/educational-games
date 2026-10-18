@@ -579,7 +579,7 @@ export default function AssignmentTake({ code: codeOrId }) {
         totalQuestions={questions.length}
       />
 
-      <div className="flex-1 flex overflow-hidden max-w-6xl mx-auto w-full">
+      <div className="flex-1 flex overflow-hidden w-full w-full">
         {/* Desktop sidebar */}
         <div className="hidden lg:block w-64 shrink-0 p-4">
           <div className="sticky top-4 space-y-4">

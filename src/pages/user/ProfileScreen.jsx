@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import DressUpAvatar, { DressUpAvatarSmall } from "../../components/avatar/DressUpAvatar.jsx";
 import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
+import KidSettingsCard from "../../components/profile/KidSettingsCard.jsx";
 import { resolveOutfit, outfitName, describeOutfit } from "../../lib/dressUpAvatar.js";
 import { getPushSupportStatus, requestNotificationPermission, onForegroundMessage } from "../../firebase/messaging.js";
 import { playVibration } from "../../lib/reminderUtils.js";
@@ -332,7 +333,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const className = user.className || null;
 
   return (
-    <div className="flex-1 px-4 py-4 max-w-6xl mx-auto w-full space-y-4">
+    <div className="flex-1 px-4 py-4 w-full w-full space-y-4">
       {/* foreground toast */}
       {fgToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm rounded-2xl shadow-xl border bg-white p-4 animate-[popIn_.25s_ease]" style={{ borderColor: "var(--line)" }}>
@@ -506,6 +507,20 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           </div>
         </div>
       </div>
+
+      {/* ─────────── CÀI ĐẶT DÀNH CHO PHỤ HUYNH ─────────── */}
+      <div className="flex items-center gap-3 pt-2">
+        <button onClick={onBack} aria-label="Quay lại"
+          className="w-10 h-10 rounded-full grid place-items-center shadow-sm shrink-0"
+          style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div>
+          <h2 className="font-display text-lg font-extrabold text-ink leading-tight">Cài đặt</h2>
+          <p className="text-xs text-ink/50">Dành cho phụ huynh</p>
+        </div>
+      </div>
+      <KidSettingsCard />
 
       {/* ─── PWA Installation + Push Notifications ─── (chuẩn hiweb, cải thiện tone EduPlay) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -271,7 +271,7 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
   );
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+    <div className="w-full px-4 py-6 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

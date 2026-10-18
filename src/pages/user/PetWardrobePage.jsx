@@ -109,7 +109,7 @@ export default function PetWardrobePage() {
         </button>
       </header>
 
-      <div className="mx-auto grid w-full max-w-4xl gap-4 px-4 md:grid-cols-[280px_1fr]">
+      <div className="mx-auto grid w-full gap-4 px-4 sm:px-6 md:grid-cols-[280px_1fr]">
         {/* ── Cột xem trước ── */}
         <aside className="md:sticky md:top-20 md:self-start">
           <div className="mt-3 rounded-3xl bg-white p-4 text-center shadow-[0_6px_18px_rgba(15,60,120,.08)]">

@@ -69,7 +69,7 @@ export default function PetPage() {
         <h1 className="font-display text-lg font-extrabold text-ink">Thú cưng của tôi</h1>
       </header>
 
-      <div className="mx-auto w-full max-w-3xl px-4">
+      <div className="mx-auto w-full px-4 sm:px-6">
         {/* Thẻ xem trước */}
         <section className="mt-3 rounded-3xl bg-white p-4 shadow-[0_6px_18px_rgba(15,60,120,.08)]">
           <div className="flex items-center gap-4">

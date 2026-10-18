@@ -69,7 +69,7 @@ export default function InventoryPage({ userAuth, onBack }) {
   const owned = Object.entries(ITEM_CONFIG).filter(([id]) => (inventory?.[id] || 0) > 0);
 
   return (
-    <div className="flex-1 px-4 sm:px-6 py-6 sm:py-10 max-w-4xl mx-auto w-full">
+    <div className="flex-1 px-4 sm:px-6 py-6 sm:py-10 w-full w-full">
       <button onClick={onBack} className="text-sm text-[#8A7C63] hover:text-ink transition inline-flex items-center gap-1 mb-6">
         ← Về trang chủ
       </button>

@@ -13,6 +13,7 @@ import AiChatWidget from '../components/ai/AiChatWidget.jsx'
 import { PetAvatar } from '../components/PetAvatar.jsx'
 import { usePet, moodLabel } from '../lib/petApi.js'
 import DailyGiftModal from '../components/home/DailyGiftModal.jsx'
+import { useKidSettings, ageBandLabel } from '../lib/kidSettings.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
 import { playVibration, playReminderSound, stopVibrationLoop } from '../lib/reminderUtils.js'
@@ -41,10 +42,9 @@ import {
   Trash2,
 } from 'lucide-react'
 
-// ── Nhóm tuổi dùng cho badge trên header và cho pill "2–8 tuổi" ở mỗi ô game.
-// Đổi 3 hằng số này là đổi được cả nhóm tuổi của trang.
-const CHILD_AGE = 7
-const AGE_BAND = { label: 'Tiểu học', range: '6–8 tuổi' }
+// ── Nhóm tuổi hiển thị ở badge header. Mặc định khi chưa cài gì; người dùng
+// đổi ở "Cài đặt · Dành cho phụ huynh" trong trang hồ sơ → trang chủ đổi ngay.
+const AGE_DEFAULT = 7
 
 // Game nổi bật được ghim lên đầu (chơi ngay, không cần qua API)
 const FEATURED_GAME = {
@@ -90,6 +90,7 @@ const TILE_COLORS = Object.fromEntries(
       "nhay-xoay": "#3D6FD8", "goc-thu-gian": "#2A9D8F", "trung-tam-game": "#7C8AA0",
       "dap-sau-bo": "#E5533D", "ghep-cap-vuon": "#EE7FA6", "sau-an-la": "#F2B632",
       "parkour": "#2A9D8F",
+      "nong-trai-moi": "#7AC74F", "fieldrunner": "#8BC34A", "cargo": "#F2A03D", "Excel": "#3FA97A",
     })[g.id] || "#F2B632",
   ])
 );
@@ -201,6 +202,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [pwaVisible, setPwaVisible] = useState(() => {
     try { return localStorage.getItem('gq_pwa_closed') !== '1'; } catch { return true; }
   });
+  // Tuổi/lớp do phụ huynh đặt ở trang hồ sơ → tự đồng bộ sang trang này.
+  const kidSettings = useKidSettings();
   const [notifications, setNotifications] = useState([]);
   const templates = useTemplates();
   const { dueReminder, dismissDue } = useReminderCheck(userAuth?.token);
@@ -639,11 +642,11 @@ const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
             </span>
           </div>
 
-          <div className="gq-age" title={`Nhóm tuổi: ${AGE_BAND.label}`}>
-            <span className="gq-age__num">{CHILD_AGE}</span>
+          <div className="gq-age" title={`Lớp ${ageBandLabel(kidSettings.age)}`}>
+            <span className="gq-age__num">{kidSettings.age}</span>
             <span className="gq-age__txt">
-              <span className="gq-age__lbl">Bé {CHILD_AGE} tuổi</span>
-              <span className="gq-age__sub">{AGE_BAND.label} · {AGE_BAND.range}</span>
+              <span className="gq-age__lbl">Bé {kidSettings.age} tuổi</span>
+              <span className="gq-age__sub">{ageBandLabel(kidSettings.age)} · {AGE_DEFAULT - 1}–{AGE_DEFAULT + 1} tuổi</span>
             </span>
           </div>
 
@@ -1108,22 +1111,26 @@ function MiniQuestRow({ task, onClaim }) {
 }
 
 /**
- * Confetti nền — danh sách vị trí cố định để không nhảy mỗi lần render.
- * Chỉ trang trí, pointer-events: none nên không chặn thao tác.
+ * Confetti — dải hoạ tiết ôm lấy phần đầu trang (đằng sau header).
+ *
+ * Vị trí tính theo PIXEL trong khung cao cố định (xem `.gq-confetti`), không
+ * tính theo % của chiều cao trang — nếu tính theo % thì trang bị kéo dài và
+ * sinh thanh cuộn thứ hai. Danh sách vị trí cố định để không nhảy mỗi lần render.
  */
 function Confetti() {
   const bits = useMemo(() => {
     const marks = ["★", "♥", "●", "★", "♥", "★", "●", "♥"];
     const colors = ["#ffd45e", "#ff8a8a", "#7fd18a", "#8fb8ff", "#ffb3d1", "#c8a6ff"];
-    return Array.from({ length: 46 }, (_, i) => {
+    const H = 200; // khớp height của .gq-confetti
+    return Array.from({ length: 34 }, (_, i) => {
       const n = hashString(`confetti-${i}`);
       return {
         left: `${(n % 970) / 10}%`,
-        top: `${(n % 2400) / 10}%`,
-        size: 9 + (n % 16),
+        top: `${(n % (H - 24)) + 4}px`,
+        size: 9 + (n % 15),
         color: colors[n % colors.length],
         char: marks[n % marks.length],
-        op: 0.35 + ((n % 5) / 10),
+        op: 0.3 + ((n % 5) / 10),
       };
     });
   }, []);

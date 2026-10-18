@@ -45,7 +45,7 @@ export default function FindFriendsScreen({ userAuth }) {
 
   return (
     <div className="flex-1 px-6 py-10">
-      <div className="max-w-2xl mx-auto anim-pop">
+      <div className="w-full anim-pop">
         <h1 className="font-display text-2xl text-ink mb-6">🔍 Tìm bạn</h1>
 
         {/* Search input */}
