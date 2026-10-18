@@ -15,6 +15,7 @@ import {
 } from "../../lib/kidSettings.js";
 import { navigate } from "../../lib/router.js";
 import DonateModal from "./DonateModal.jsx";
+import { ToggleSwitch } from "../ui";
 
 /** Ô chủ đề dưới thanh tuổi — bấm để mở thẳng game tương ứng.
  *  `id` phải có trong src/games/src/manifest.js (route là /offline/:gameId). */
@@ -90,8 +91,8 @@ export default function KidSettingsCard() {
             <h3 className="font-display text-base font-extrabold text-ink">Song ngữ Anh-Việt</h3>
             <p className="text-xs text-ink/55">Chữ tiếng Anh hiện ngay dưới chữ Việt</p>
           </div>
-          <Toggle
-            on={s.bilingual}
+          <ToggleSwitch
+            checked={s.bilingual}
             onChange={(v) => setKidSettings({ bilingual: v })}
             label="Song ngữ Anh-Việt"
           />
@@ -161,22 +162,6 @@ function AgeSlider({ age }) {
         })}
       </div>
     </div>
-  );
-}
-
-/** Nút công tắc xanh/trắng. */
-function Toggle({ on, onChange, label }) {
-  return (
-    <button
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={() => onChange(!on)}
-      className="shrink-0 w-[54px] h-[30px] rounded-full p-1 flex items-center transition"
-      style={{ background: on ? "#3dbf8f" : "#d7dbe4", justifyContent: on ? "flex-end" : "flex-start" }}
-    >
-      <span className="w-6 h-6 rounded-full bg-white shadow transition-transform" />
-    </button>
   );
 }
 

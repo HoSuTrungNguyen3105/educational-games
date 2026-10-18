@@ -13,7 +13,8 @@
 import { useState } from "react";
 import { analyzeLearning } from "../../services/aiApi.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
-import { GhostButton, Loader, PrimaryButton, StatGrid } from "../ui.jsx";
+import { GhostButton, Loader, PrimaryButton, StatGrid } from "../ui";
+import { Input } from "../ui";
 
 const TREND_LABEL = {
   improving: { text: "Đang tiến bộ", cls: "bg-teal/10 text-teal border-teal/20" },
@@ -21,10 +22,6 @@ const TREND_LABEL = {
   stable: { text: "Ổn định", cls: "bg-gold/15 text-[#8a6a10] border-gold/40" },
   unknown: { text: "Chưa đủ dữ liệu", cls: "bg-ink/5 text-[#8A7C63] border-ink/10" },
 };
-
-/** text-base trên mobile để iOS không tự zoom khi focus vào input. */
-const inputCls =
-  "w-full note-card px-3 py-2 text-base sm:text-sm border-ink/10 focus:border-ticket";
 
 /**
  * @param {object} p
@@ -77,22 +74,24 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
           <label className="block min-w-0">
             <span className="block text-[11px] font-mono uppercase text-[#8A7C63] mb-1">Từ ngày</span>
-            <input
+            <Input
               type="date"
               value={from}
               max={to || undefined}
               onChange={(e) => setFrom(e.target.value)}
-              className={inputCls}
+              className="w-full note-card px-3 py-2 text-base sm:text-sm border-ink/10 focus:border-ticket"
+              variant="default"
             />
           </label>
           <label className="block min-w-0">
             <span className="block text-[11px] font-mono uppercase text-[#8A7C63] mb-1">Đến ngày</span>
-            <input
+            <Input
               type="date"
               value={to}
               min={from || undefined}
               onChange={(e) => setTo(e.target.value)}
-              className={inputCls}
+              className="w-full note-card px-3 py-2 text-base sm:text-sm border-ink/10 focus:border-ticket"
+              variant="default"
             />
           </label>
           {(from || to) && (

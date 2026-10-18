@@ -77,12 +77,23 @@ function read() {
 let state = read();
 const listeners = new Set();
 
+/** Gắn `age` tính sẵn từ `grade`. */
+const withAge = (s) => ({ ...s, age: ageForGrade(s.grade) });
+
+/**
+ * Snapshot phải được CACHE lại, không tạo mới mỗi lần gọi.
+ * `useSyncExternalStore` so sánh kết quả cũ/mới bằng `Object.is`; nếu mỗi
+ * lần gọi đều ra object khác nhau thì React tưởng store vừa đổi → render
+ * lại → gọi lại tiếp → vòng lặp vô hạn (React error #185).
+ */
+let snapshot = withAge(state);
+
 const emit = () => { for (const fn of listeners) fn(); };
 const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
 
 /** Object cài đặt kèm `age` tính sẵn từ `grade`. */
 export function getKidSettings() {
-  return { ...state, age: ageForGrade(state.grade) };
+  return snapshot;
 }
 
 export function setKidSettings(patch) {
@@ -90,6 +101,7 @@ export function setKidSettings(patch) {
   // Nhận `age` thì tự quy ra lớp để hai chiều không lệch nhau.
   if (next.age !== undefined && next.grade === undefined) next.grade = gradeForAge(next.age);
   state = { ...state, ...next, grade: next.grade !== undefined ? clampGrade(next.grade) : state.grade };
+  snapshot = withAge(state);
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch { /* localStorage bị chặn — vẫn dùng trong phiên này */ }

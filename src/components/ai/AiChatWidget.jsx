@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../../services/api.js";
 import { chat } from "../../services/aiApi.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
+import { Input } from "../ui";
 
 const MAX_LOCAL_TURNS = 12;
 
@@ -247,7 +248,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
             className="flex items-end gap-2 p-2 bg-white border-t border-ink/10 shrink-0
                        pb-[max(env(safe-area-inset-bottom),8px)]"
           >
-            <textarea
+            <Input
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -257,6 +258,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                   send();
                 }
               }}
+              type="textarea"
               rows={1}
               maxLength={2000}
               enterKeyHint="send"
@@ -264,6 +266,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
               className="flex-1 resize-none bg-paper rounded-xl px-3 py-2 text-base sm:text-sm font-body
                          text-ink placeholder:text-[#B7A987] outline-none focus:ring-2 focus:ring-ink/10
                          max-h-28 min-h-[44px]"
+              variant="default"
             />
             {busy ? (
               <button

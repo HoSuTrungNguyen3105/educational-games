@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { userService, apiFetch } from "../services/api.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
+import { Input } from "./ui";
 
 function generateGameCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -200,13 +201,14 @@ export default function CoopInvitePanel({
           <>
             <h2 className="text-[1.5rem] font-bold mb-2">👥 Tìm người chơi</h2>
             <p className="text-[0.9rem] opacity-70 mb-4">Nhập tên để tìm và mời bạn cùng chơi</p>
-            <input
+            <Input
               ref={inputRef}
               type="text"
               placeholder="Tìm kiếm người chơi..."
               value={searchQuery}
               onChange={handleSearchInput}
-              className="w-full py-2.5 px-3.5 rounded-[10px] border border-white/20 bg-white/8 text-white text-[0.9rem] outline-none box-border focus:border-[#4ecdc4] mb-3"
+              variant="dark"
+              className="py-2.5 px-3.5 rounded-[10px] text-[0.9rem] mb-3 focus:border-[#4ecdc4]"
             />
             <div className="max-h-[200px] overflow-y-auto text-left mb-3">
               {searching && (
@@ -252,14 +254,15 @@ export default function CoopInvitePanel({
           <>
             <h2 className="text-[1.5rem] font-bold mb-2">🔑 Nhập mã phòng</h2>
             <p className="text-[0.9rem] opacity-70 mb-4">Nhập mã 6 ký tự từ bạn bè để vào phòng</p>
-            <input
+            <Input
               type="text"
               maxLength={6}
               placeholder="MÃ PHÒNG"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && handleJoinByCode()}
-              className="w-full py-3.5 rounded-[10px] border-2 border-white/15 font-mono text-[1.5rem] font-bold text-center tracking-[8px] uppercase bg-white/5 text-white outline-none box-border focus:border-[#4ecdc4]"
+              variant="dark"
+              className="py-3.5 border-2 font-mono text-[1.5rem] font-bold text-center tracking-[8px] uppercase focus:border-[#4ecdc4]"
             />
             {joinError && <div className="text-[#e94560] text-[0.85rem] mt-2 min-h-[1.2em]">{joinError}</div>}
             <button

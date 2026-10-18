@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { gameService } from '../services/api.js'
-import { Modal, PrimaryButton, TicketStub } from './ui.jsx'
+import { Modal, PrimaryButton, TicketStub } from './ui'
 import { Ticket, KeyRound } from 'lucide-react'
+import { Input } from "./ui"
 
 export function EnterCodeModal({ open, onClose, onFound }) {
     const [code, setCode] = useState("");
@@ -43,7 +44,7 @@ export function EnterCodeModal({ open, onClose, onFound }) {
                 <p className="text-sm text-[#8A7C63] mb-4">Nhập mã vé giáo viên đã cung cấp</p>
                 <form onSubmit={submitCode}>
                     <TicketStub icon={<KeyRound className="w-5 h-5 text-ink" />} code={code || "______"} />
-                    <input
+                    <Input
                         value={code}
                         onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
                         placeholder="VD: TOAN101"
@@ -57,6 +58,7 @@ export function EnterCodeModal({ open, onClose, onFound }) {
                         }}
                         style={{ scrollMarginBottom: '20px' }}
                         className="w-full text-center font-mono text-lg tracking-[0.2em] note-card px-4 py-3 mt-4 border-ink/10 focus:border-ticket uppercase"
+                        variant="default"
                     />
                     {error && <p className="text-ticket text-sm mt-3">{error}</p>}
                     <div className="flex gap-3 mt-5">

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useChatStore } from "../../stores/chat.store.js";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
+import { Input } from "../ui";
 
 export default function MessageComposer({ userAuth, onUserLogin }) {
   const [text, setText] = useState("");
@@ -52,13 +53,14 @@ export default function MessageComposer({ userAuth, onUserLogin }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex items-end gap-2 p-2 bg-white border-t border-ink/10 shrink-0 pb-[max(env(safe-area-inset-bottom),8px)]">
-      <input
+      <Input
         ref={inputRef}
         value={text}
         onChange={(e) => { setText(e.target.value); handleTyping(); }}
         placeholder="Nhập tin nhắn..."
         maxLength={500}
         className="flex-1 bg-paper rounded-xl px-3 py-2 text-sm font-body text-ink placeholder:text-[#B7A987] outline-none focus:ring-2 focus:ring-ink/10 min-h-[36px]"
+        variant="default"
       />
       <button
         type="submit"

@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { Check, Copy, Heart, RefreshCw } from "lucide-react";
 import { DONATION, donationPayload } from "../../config/donation.js";
 import { useMathQuestions } from "../../lib/mathGate.js";
+import { Input } from "../ui";
 
 export default function DonateModal({ onClose }) {
   const questions = useMathQuestions(DONATION.questionCount);
@@ -83,7 +84,7 @@ export default function DonateModal({ onClose }) {
                     style={{ background: "var(--bg)" }}>
                     {i + 1}. {q.q} =
                   </span>
-                  <input
+                  <Input
                     type="number"
                     inputMode="numeric"
                     value={answers[i] ?? ""}
@@ -99,6 +100,7 @@ export default function DonateModal({ onClose }) {
                       background: errors[i] ? "#fff1f1" : "var(--card)",
                       color: "var(--ink)",
                     }}
+                    variant="default"
                   />
                 </label>
                 {errors[i] && <p className="mt-1 text-xs font-semibold text-red-500">Chưa đúng, thử lại nha!</p>}

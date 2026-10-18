@@ -6,21 +6,38 @@
  *   ② Bé là bạn trai hay bạn gái?
  *   ③ Bé tên gì?  (họ tên)
  *
+ * Dùng chung bộ màu + kiểu "dán nhãn" (viền navy, bóng cứng) với trang chủ:
+ * xem biến `--nb-*` ở `src/pages/home-theme.css` và bảng màu Tailwind
+ * trong `index.html` (ink / paper / gold / teal…).
+ *
  * Kết quả lưu ở `src/lib/kidSettings.js` (localStorage), không gọi API —
  * sau khi đăng ký/đăng nhập thì dùng tiếp cài đặt này.
  */
 
 import { useState } from "react";
-import Mascot from "../components/Mascot.jsx";
+import "./onboarding.css";
 import {
   completeOnboarding,
   GRADE_MIN, GRADE_MAX, gradeLabel, ageForGrade,
 } from "../lib/kidSettings.js";
 
 const GENDERS = [
-  { id: "boy", label: "Bạn trai", face: "👦" },
-  { id: "girl", label: "Bạn gái", face: "👧" },
+  { id: "boy", label: "Bạn trai", face: "👦", tone: "#3d6fd8" },
+  { id: "girl", label: "Bạn gái", face: "👧", tone: "#ee7fa6" },
 ];
+
+/** Nhân vật của web (ảnh trong `public/`). */
+const CHARACTER = "/edu_character.png";
+
+/** Bảng màu rút từ trang chủ — đặt ở scope `.gq-home` cho gọn. */
+const S = {
+  ink: "#1d2e4a",
+  paper: "#fbf5e6",
+  gold: "#f2b632",
+  blue: "#3d6fd8",
+  red: "#e5533d",
+  cream: "#fffdf6",
+};
 
 export default function OnboardingScreen() {
   const [grade, setGrade] = useState(null);
@@ -30,6 +47,7 @@ export default function OnboardingScreen() {
 
   const grades = Array.from({ length: GRADE_MAX - GRADE_MIN + 1 }, (_, i) => GRADE_MIN + i);
   const ready = grade !== null && gender !== null && name.trim().length > 0;
+  const missing = touched && !ready;
 
   function submit(e) {
     e.preventDefault();
@@ -40,37 +58,54 @@ export default function OnboardingScreen() {
 
   return (
     <div
-      className="min-h-screen w-full overflow-y-auto"
+      className="gq-onb min-h-screen w-full overflow-y-auto"
       style={{
-        background: "linear-gradient(180deg,#FDF6E9 0%,#FAEEDA 40%,#F7E7CE 100%)",
-        color: "var(--ink)",
+        "--nb-ink": S.ink,
+        "--nb-paper": S.paper,
+        "--nb-cream": "#fffdf6",
       }}
     >
-      <form onSubmit={submit} className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-14 space-y-6">
+      <form onSubmit={submit} className="w-full max-w-xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-5">
 
-        {/* ─────────── Chào ─────────── */}
-        <div className="flex items-center gap-4">
-          <Mascot size={96} />
-          <div className="flex-1 min-w-0 rounded-3xl bg-white px-5 py-4 shadow-sm">
-            <p className="font-display text-lg font-extrabold leading-tight">Chào bạn! Mình là Gạo.</p>
-            <p className="text-sm text-ink/60 mt-0.5">Cho Gạo làm quen với bé một chút nhé!</p>
+        {/* ─────────── Nhân vật chào ─────────── */}
+        <header className="flex items-center gap-4">
+          <img
+            src={CHARACTER}
+            alt=""
+            width={112}
+            height={112}
+            className="o-float shrink-0 select-none"
+            style={{ filter: "drop-shadow(0 6px 10px rgba(29,46,74,.18))" }}
+          />
+          <div className="min-w-0 flex-1">
+            <p
+              className="font-display font-bold text-ink inline-block px-3.5 py-1.5 rounded-2xl text-white text-base sm:text-lg"
+              style={{ background: S.blue, boxShadow: `4px 4px 0 ${S.ink}` }}
+            >
+              Chào bạn! Mình là Gạo.
+            </p>
+            <p className="text-sm sm:text-base font-medium text-[#5b6b85] mt-2.5">
+              Cho Gạo làm quen bé một chút nha!
+            </p>
           </div>
-        </div>
+        </header>
 
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold">Bé của mình là ai nhỉ?</h1>
+        <h1 className="font-display font-bold text-2xl sm:text-3xl text-ink text-center">
+          Bé của mình là ai nhỉ?
+        </h1>
 
         {/* ─────────── ① Lớp ─────────── */}
         <Card n={1} title="Bé học lớp mấy?"
           hint="Lớp quyết định độ khó của trò chơi (trừ Thế học). Đổi được sau trong Cài đặt.">
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-5 gap-2 sm:gap-2.5">
             {grades.map((g) => (
-              <Option
+              <GradeChip
                 key={g}
                 selected={grade === g}
+                error={missing && grade === null}
                 onClick={() => setGrade(g)}
-                error={touched && grade === null}
-                title={gradeLabel(g)}
-                sub={`${ageForGrade(g)} tuổi`}
+                label={gradeLabel(g)}
+                age={ageForGrade(g)}
               />
             ))}
           </div>
@@ -79,28 +114,30 @@ export default function OnboardingScreen() {
         {/* ─────────── ② Giới tính ─────────── */}
         <Card n={2} title="Bé là bạn trai hay bạn gái?"
           hint="Giúp Gạo chọn đồ và mặt mỹ hơn cho bé.">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {GENDERS.map((g) => (
               <button
                 key={g.id}
                 type="button"
                 onClick={() => setGender(g.id)}
                 aria-pressed={gender === g.id}
-                className="rounded-2xl py-4 px-3 flex flex-col items-center gap-2 border-2 transition hover:brightness-[.98] active:scale-[.98]"
+                className="o-chip group"
                 style={{
-                  background: gender === g.id ? "#FDF0D8" : "#FBF1E1",
-                  borderColor: gender === g.id ? "#F2A93B" : "transparent",
+                  background: gender === g.id ? g.tone : S.cream,
+                  borderColor: S.ink,
+                  color: gender === g.id ? "#fff" : S.ink,
+                  boxShadow: gender === g.id ? `4px 4px 0 ${S.ink}` : `4px 4px 0 rgba(29,46,74,.18)`,
                 }}
               >
-                <span className="text-5xl leading-none" aria-hidden="true">{g.face}</span>
-                <span className="font-display font-extrabold text-ink">{g.label}</span>
+                <span className="text-4xl sm:text-5xl leading-none" aria-hidden="true">{g.face}</span>
+                <span className="font-display font-bold text-sm sm:text-base mt-1.5">{g.label}</span>
               </button>
             ))}
           </div>
         </Card>
 
         {/* ─────────── ③ Họ tên ─────────── */}
-        <Card title="Bé tên gì?" hint="Tên bé sẽ hiện ở trang chủ và trang hồ sơ.">
+        <Card n={3} title="Bé tên gì?" hint="Tên bé sẽ hiện ở trang chủ và trang hồ sơ.">
           <input
             type="text"
             value={name}
@@ -108,20 +145,24 @@ export default function OnboardingScreen() {
             placeholder="Nhập họ tên bé…"
             aria-label="Họ tên bé"
             maxLength={60}
-            className="w-full rounded-2xl border-2 px-4 py-3 font-display font-bold text-base focus:outline-none"
+            className="o-input font-display font-semibold text-base sm:text-lg"
             style={{
-              borderColor: touched && !name.trim() ? "#e8443c" : "var(--line)",
-              background: "#fff",
-              color: "var(--ink)",
+              borderColor: missing && !name.trim() ? S.red : S.ink,
+              background: S.cream,
+              color: S.ink,
+              boxShadow: missing && !name.trim() ? `4px 4px 0 ${S.red}` : `4px 4px 0 rgba(29,46,74,.18)`,
             }}
           />
-          {touched && !name.trim() && (
-            <p className="mt-1.5 text-xs font-semibold text-red-500">Bé chưa có tên nha!</p>
+          {missing && !name.trim() && (
+            <p className="mt-2 text-sm font-semibold" style={{ color: S.red }}>Bé chưa có tên nha!</p>
           )}
         </Card>
 
-        {touched && !ready && (
-          <p className="text-center text-sm font-semibold text-red-500">
+        {missing && (
+          <p
+            className="o-banner font-display font-bold text-sm sm:text-base"
+            style={{ background: "#fdecea", borderColor: S.red, color: S.red }}
+          >
             Bé chọn đủ lớp, giới tính và tên rồi mình chơi tiếp nha!
           </p>
         )}
@@ -130,35 +171,46 @@ export default function OnboardingScreen() {
         <button
           type="submit"
           disabled={!ready}
-          className="w-full rounded-2xl py-4 font-display text-base font-extrabold transition active:scale-[.99] disabled:cursor-not-allowed"
+          className="o-btn w-full font-display font-bold text-base sm:text-lg"
           style={{
-            background: ready ? "var(--ink)" : "#E6D9C4",
-            color: ready ? "var(--paper)" : "#A99578",
-            boxShadow: ready ? "0 5px 0 rgba(0,0,0,.18)" : "none",
+            background: ready ? S.gold : "#e4e8ef",
+            color: ready ? S.ink : "#9aa6ba",
+            borderColor: S.ink,
+            boxShadow: ready ? `6px 6px 0 ${S.ink}` : `3px 3px 0 ${S.ink}`,
           }}
         >
           {ready ? "Chọn xong rồi, vào chơi nào!" : "Chọn xong 3 câu nhé"}
         </button>
+
+        <p className="text-center text-xs text-[#7c8aa0] pb-2">
+          Thông tin chỉ lưu trên máy bé, phụ huynh có thể đổi trong Cài đặt.
+        </p>
       </form>
     </div>
   );
 }
 
-/** Khung câu hỏi có số thứ tự (bỏ số nếu không truyền). */
+/** Khung câu hỏi: số thứ tự trong huy hiệu tròn + tiêu đề + gợi ý. */
 function Card({ n, title, hint, children }) {
   return (
-    <section className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm"
-      style={{ border: "1px solid var(--line)" }}>
-      <div className="flex gap-3 mb-3">
-        {n && (
-          <span className="w-8 h-8 rounded-full grid place-items-center font-display font-extrabold text-sm shrink-0"
-            style={{ background: "#FDF0D8", color: "#C9853B" }}>
-            {n}
-          </span>
-        )}
+    <section
+      className="o-card"
+      style={{
+        background: "var(--nb-cream, #fffdf6)",
+        borderColor: S.ink,
+        boxShadow: `5px 5px 0 ${S.ink}`,
+      }}
+    >
+      <div className="flex gap-3 mb-3.5">
+        <span
+          className="w-8 h-8 shrink-0 grid place-items-center rounded-full font-display font-bold text-sm"
+          style={{ background: S.gold, color: S.ink, border: `2px solid ${S.ink}` }}
+        >
+          {n}
+        </span>
         <div className="min-w-0">
-          <h2 className="font-display text-base sm:text-lg font-extrabold leading-tight">{title}</h2>
-          {hint && <p className="text-xs text-ink/50 mt-0.5 leading-relaxed">{hint}</p>}
+          <h2 className="font-display font-bold text-base sm:text-lg text-ink leading-tight">{title}</h2>
+          {hint && <p className="text-xs sm:text-[13px] text-[#7c8aa0] mt-1 leading-relaxed">{hint}</p>}
         </div>
       </div>
       {children}
@@ -166,21 +218,23 @@ function Card({ n, title, hint, children }) {
   );
 }
 
-/** Một ô lựa chọn kiểu lưới (dùng cho lớp). */
-function Option({ selected, onClick, title, sub, error }) {
+/** Ô chọn lớp: "Lớp 1" + tuổi tương ứng. */
+function GradeChip({ selected, onClick, label, age, error }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className="rounded-2xl px-2 py-3.5 flex flex-col items-center gap-0.5 border-2 transition hover:brightness-[.98] active:scale-[.98]"
+      className="o-chip px-1 py-2.5 sm:py-3"
       style={{
-        background: selected ? "#FDF0D8" : "#FBF1E1",
-        borderColor: error ? "#e8443c" : selected ? "#F2A93B" : "transparent",
+        background: selected ? S.gold : S.cream,
+        borderColor: error ? S.red : S.ink,
+        color: S.ink,
+        boxShadow: selected ? `4px 4px 0 ${S.ink}` : `4px 4px 0 rgba(29,46,74,.15)`,
       }}
     >
-      <span className="font-display text-lg font-extrabold text-ink leading-tight">{title}</span>
-      <span className="text-[11px] font-semibold text-ink/50 mt-0.5">{sub}</span>
+      <span className="font-display font-bold text-[13px] sm:text-base leading-tight">{label}</span>
+      <span className="text-[10px] sm:text-[11px] font-semibold opacity-65 mt-0.5 leading-tight">{age} tuổi</span>
     </button>
   );
 }

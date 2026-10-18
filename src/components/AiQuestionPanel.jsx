@@ -1,11 +1,11 @@
 import { useState, useRef } from "react";
 import { API_BASE } from "../services/api.js";
 import { generateQuestions, DIFFICULTIES } from "../services/aiApi.js";
-import { GhostButton } from "./ui.jsx";
+import { GhostButton } from "./ui";
 import Field from "../pages/teacher/fields.jsx";
-
-const inputCls =
-  "w-full rounded-xl border border-ink/15 px-3 py-2 text-base sm:text-sm font-body outline-none focus:border-ink/40 bg-white";
+import { Input } from "./ui";
+import { Checkbox } from "./ui";
+import { Select } from "./ui";
 
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -121,18 +121,16 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
         <div className="px-4 pb-4 space-y-3 border-t border-violet-100">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <Field label="Môn học">
-              <input
-                className={inputCls}
+              <Input
                 value={subject}
-                onChange={(e) => setSubject(e.target.value)}
+                onChange={setSubject}
                 placeholder={form?.subject || "Toán"}
               />
             </Field>
             <Field label="Chủ đề">
-              <input
-                className={inputCls}
+              <Input
                 value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                onChange={setTopic}
                 placeholder={form?.topic || "Phân số"}
               />
             </Field>
@@ -140,25 +138,28 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <Field label="Lớp">
-              <select className={inputCls} value={grade} onChange={(e) => setGrade(Number(e.target.value))}>
-                {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
-              </select>
+              <Select
+                value={grade}
+                onChange={(v) => setGrade(Number(v))}
+                options={GRADES.map((g) => ({ value: g, label: String(g) }))}
+              />
             </Field>
             <Field label="Độ khó">
-              <select className={inputCls} value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                {DIFFICULTIES.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
-              </select>
+              <Select
+                value={difficulty}
+                onChange={setDifficulty}
+                options={DIFFICULTIES.map((d) => ({ value: d.id, label: d.label }))}
+              />
             </Field>
             <div className="col-span-2 sm:col-span-1">
               <Field label="Số câu">
-                <input
+                <Input
                   type="number"
                   inputMode="numeric"
                   min={1}
                   max={20}
-                  className={inputCls}
                   value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                  onChange={(v) => setQuantity(Math.max(1, Math.min(20, Number(v) || 1)))}
                 />
               </Field>
             </div>
@@ -233,11 +234,10 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
                       picked[q.id] ? "border-violet-300 bg-violet-50" : "border-ink/10 bg-white hover:border-ink/25"
                     }`}
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={!!picked[q.id]}
-                      onChange={(e) => setPicked((s) => ({ ...s, [q.id]: e.target.checked }))}
-                      className="mt-1 w-4 h-4 accent-violet-600 shrink-0"
+                      onChange={(checked) => setPicked((s) => ({ ...s, [q.id]: checked }))}
+                      className="mt-1"
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block text-[13px] font-semibold text-ink leading-snug break-words">{q.content}</span>

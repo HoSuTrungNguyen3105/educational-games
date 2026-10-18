@@ -1,0 +1,67 @@
+/* =====================================================================
+   Onboarding (màn chào lần đầu) — cùng chất "dán nhãn" với trang chủ:
+   nền kem lưới chấm, thẻ viền navy + bóng cứng lệch góc.
+   ===================================================================== */
+
+.gq-onb {
+  color: var(--nb-ink, #1d2e4a);
+  background-color: var(--nb-paper, #fbf5e6);
+  background-image: radial-gradient(rgba(29, 46, 74, 0.07) 1px, transparent 1.3px);
+  background-size: 18px 18px;
+  /* `clip` thay vì `hidden`: `hidden` làm overflow-y thành `auto` → sinh
+     thêm một thanh cuộn lồng nhau (xem ghi chú cùng kiểu ở home-gq.css). */
+  overflow-x: clip;
+}
+
+/* Thẻ câu hỏi */
+.gq-onb .o-card {
+  border: 3px solid;
+  border-radius: 20px;
+  padding: 16px;
+}
+
+/* Ô bấm dán nhãn: bấm xuống thì "lõm" vào — giống .nb-btn của trang chủ. */
+.gq-onb .o-chip,
+.gq-onb .o-btn {
+  border: 3px solid;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.gq-onb .o-btn { border-radius: 18px; padding: 16px; }
+.gq-onb .o-chip:hover:not(:active) { filter: brightness(1.02); }
+.gq-onb .o-chip:active,
+.gq-onb .o-btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 currentColor; }
+.gq-onb .o-btn:disabled { opacity: 0.75; cursor: not-allowed; }
+.gq-onb .o-btn:disabled:active { transform: none; }
+
+/* Ô nhập tên */
+.gq-onb .o-input {
+  width: 100%;
+  border: 3px solid;
+  border-radius: 16px;
+  padding: 13px 16px;
+  outline: none;
+  transition: box-shadow 0.1s, border-color 0.15s;
+}
+.gq-onb .o-input::placeholder { color: #9aa6ba; font-weight: 500; }
+
+/* Băng cảnh báo khi bấm nút mà chưa điền đủ */
+.gq-onb .o-banner {
+  border: 3px solid;
+  border-radius: 16px;
+  padding: 11px 14px;
+  text-align: center;
+}
+
+/* Nhân vật nhún nhẹ để trang không bị tĩnh */
+.gq-onb .o-float { animation: o-float 3.4s ease-in-out infinite; }
+@keyframes o-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-9px) rotate(2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gq-onb .o-float { animation: none; }
+}

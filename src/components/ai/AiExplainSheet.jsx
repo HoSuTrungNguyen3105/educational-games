@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { explain } from "../../services/aiApi.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
+import { Input } from "../ui";
 
 /** Số lượt hỏi bổ sung tối đa trong một phiên mở panel. */
 const MAX_FOLLOW_UPS = 4;
@@ -254,7 +255,7 @@ export default function AiExplainSheet({
             }}
             className="flex items-center gap-2"
           >
-            <input
+            <Input
               value={followUp}
               onChange={(e) => setFollowUp(e.target.value)}
               maxLength={500}
@@ -266,6 +267,7 @@ export default function AiExplainSheet({
               className="flex-1 bg-paper rounded-xl px-3 py-2 text-base sm:text-sm font-body text-ink
                          placeholder:text-[#B7A987] outline-none focus:ring-2 focus:ring-ink/10
                          min-h-[44px] disabled:opacity-50"
+              variant="default"
             />
             <button
               type="submit"
