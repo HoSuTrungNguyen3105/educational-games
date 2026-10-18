@@ -535,6 +535,8 @@
         gameOver: false
       };
 
+      var aiTimeout = null;
+
       function toast(msg) {
         var t = document.getElementById('toast');
         t.textContent = msg;
@@ -586,6 +588,7 @@
       }
 
       function startGame() {
+         clearTimeout(aiTimeout);
         state.words = [];
         state.currentIdx = 0;
         state.score = 0;
@@ -703,41 +706,45 @@
         if (state.aiActive && state.currentPlayer === 2) scheduleAIAnswer();
       }
 
-      function scheduleAIAnswer() {
-        setTimeout(function() {
-          if (state.screen !== 'playing' || state.gameOver) return;
-          var prev = state.words[state.words.length - 1];
-          var lastChar = prev.slice(-1);
-          var matches = Object.keys(WORD_DICT).filter(function(k) { return k.startsWith(lastChar); });
-          var answer;
-          if (matches.length > 0) {
-            answer = matches[Math.floor(Math.random() * matches.length)];
-          } else {
-            answer = prev + 'ĐỜI';
-          }
-          state.words.push(answer);
-          state.score += 5;
-          state.totalWords = state.words.length;
-          state.currentPlayer = 1;
-          toast('🤖 AI nối: ' + answer);
-          if (state.totalWords >= TARGET_WORDS) {
-            state.gameOver = true;
-            state.screen = 'result';
-            clearInterval(state.timerInterval);
-            postToParent('game-over', {
-              score: state.score,
-              correct: state.totalWords,
-              totalQuestions: state.totalWords,
-              timeUsed: 0,
-              coinReward: Math.floor(state.score / 10)
-            });
-            render();
-            return;
-          }
-          render();
-          startTimer();
-        }, 1500 + Math.random() * 2000);
-      }
+     function scheduleAIAnswer() {
+  clearTimeout(aiTimeout);              // hủy lịch cũ nếu có
+  var turnLen = state.words.length;     // đánh dấu lượt hiện tại
+  aiTimeout = setTimeout(function() {
+    aiTimeout = null;
+    if (state.screen !== 'playing' || state.gameOver) return;
+    if (state.currentPlayer !== 2 || state.words.length !== turnLen) return; // lượt đã đổi thì bỏ qua
+
+    var prev = state.words[state.words.length - 1];
+    var lastChar = prev.slice(-1);
+    var matches = Object.keys(WORD_DICT).filter(function(k) { return k.startsWith(lastChar); });
+    var answer = matches.length > 0
+      ? matches[Math.floor(Math.random() * matches.length)]
+      : prev + 'ĐỜI';
+
+    state.words.push(answer);
+    state.score += 5;
+    state.totalWords = state.words.length;
+    state.currentPlayer = 1;
+    toast('🤖 AI nối: ' + answer);
+
+    if (state.totalWords >= TARGET_WORDS) {
+      state.gameOver = true;
+      state.screen = 'result';
+      clearInterval(state.timerInterval);
+      postToParent('game-over', {
+        score: state.score,
+        correct: state.totalWords,
+        totalQuestions: state.totalWords,
+        timeUsed: 0,
+        coinReward: Math.floor(state.score / 10)
+      });
+      render();
+      return;
+    }
+    render();
+    startTimer();
+  }, 1500 + Math.random() * 2000);
+}
 
       function shakeInput() {
         var inp = document.getElementById('word-input');
@@ -841,7 +848,7 @@
           if (inp2) submitWord(inp2.value);
         };
 
-        if (state.aiActive && state.currentPlayer === 2) scheduleAIAnswer();
+        // if (state.aiActive && state.currentPlayer === 2) scheduleAIAnswer();
       }
 
       function renderResult() {
@@ -901,6 +908,7 @@
           if (om.playerId && om.playerId !== (state._userId || '')) {
             state.coopMode = true;
             state.aiActive = false;
+            clearTimeout(aiTimeout);
             state.player2.name = om.playerName || 'Bạn';
             if (om.word) {
               state.words.push(om.word.toUpperCase());

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tiệm thời trang cho Bé</title>
+<!-- EG_DRESSUP_HOST — data SVG + lớp lưu trữ được inject từ src/games/injectDressUpAvatar.js -->
+<style>
+:root{--bg:#fff;--stage:#f6f6f7;--card:#f1f2f5;--ink:#1c2a4a;--line:#e3e6ee;--accent:#4a72b8;--onaccent:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171b26;--stage:#222836;--card:#2a3142;--ink:#e8ecf7;--line:#3a4358;--accent:#7a9fe0;--onaccent:#10182b}}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100%;padding:16px 16px 28px}
+.wrap{max-width:520px;margin:0 auto}
+h1{font-size:22px;font-weight:600;margin-bottom:12px}
+.stage{background:var(--stage);border-radius:20px;padding:12px 0 6px}
+#stage svg{width:min(60vw,240px);height:auto;display:block;margin:0 auto}
+.tabs{display:flex;gap:6px;margin:14px 0 10px;overflow-x:auto;padding-bottom:6px}
+.tab{flex:none;font:inherit;font-size:15px;color:var(--ink);background:var(--card);border:0;border-radius:999px;padding:8px 14px;cursor:pointer}
+.tab[aria-selected=true]{background:var(--accent);color:var(--onaccent)}
+.opts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.opt{aspect-ratio:1;background:var(--stage);border:2px solid transparent;border-radius:14px;cursor:pointer;display:grid;place-items:center;font:inherit;color:var(--ink);font-size:22px;padding:6px}
+.opt svg{width:100%;height:100%}
+.opt .dot{width:58%;aspect-ratio:1;border-radius:50%;border:1px solid #0002}
+.opt[aria-pressed=true]{border-color:var(--accent);background:var(--card)}
+.row{display:flex;gap:8px;margin-top:14px}
+.btn{flex:1;font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:0;border-radius:12px;padding:11px;cursor:pointer}
+.btn:active{opacity:.7}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.types{display:flex;gap:6px;margin-bottom:12px}.types .tab{flex:1;padding:10px 6px;text-align:center}
+#egSync{margin-top:12px;font-size:13px;font-weight:600;text-align:center;color:var(--ink);opacity:.65}
+#egSync[data-kind=ok]{opacity:1;color:#2e9e5b}
+#egSync[data-kind=err]{opacity:1;color:#d9534f}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tiệm thời trang cho Bé</h1>
+  <div class="types" id="types"></div>
+  <div class="stage"><div id="stage"></div></div>
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <div class="opts" id="opts"></div>
+  <div class="row">
+    <button class="btn" id="rnd">🎲 Ngẫu nhiên</button>
+    <button class="btn" id="rst">↺ Mặc lại từ đầu</button>
+  </div>
+  <div id="egSync" hidden></div>
+</div>
+<script>
+/*
+ * Toàn bộ SVG nằm ở src/games/lib/dressUpAvatarData.js, được inject vào <head>
+ * qua injectDressUpAvatar() (HtmlGameLoader gọi hàm đó trước khi nạp vào iframe).
+ * File này chỉ lo UI + logic chọn đồ.
+ *
+ *   D = window.EG_DRESSUP  → data SVG + renderKid()/sanitizeKid()/kidTabs()
+ *   O = window.EG_OUTFIT   → lưu client (localStorage) + đồng bộ PUT /api/auth/me
+ *
+ * Backend lưu `avatar` = state này (kèm `id` là loại nhân vật), `pet` = thú cưng
+ * ở game kia — cùng nằm trong hồ sơ GET/PUT /api/auth/me.
+ */
+const $=s=>document.querySelector(s);
+const D=window.EG_DRESSUP, O=window.EG_OUTFIT;
+if(!D){document.body.innerHTML='<p style="padding:24px;text-align:center">Không nạp được dữ liệu avatar. Hãy chơi game từ trong hệ thống.</p>';throw new Error('EG_DRESSUP missing');}
+
+let st=D.sanitizeKid((O.get('avatar')||{}).value||D.kid.defaults.boy);
+let tab=D.kidTabs(st)[0].k;
+
+function save(){O.set('avatar',st);}
+function redraw(){drawTypes();drawTabs();drawStage();drawOpts();}
+
+function drawTypes(){$('#types').innerHTML=D.kid.types.map(([k,l])=>`<button class="tab" data-ty="${k}" aria-selected="${st.type===k}">${l}</button>`).join('');}
+function drawTabs(){$('#tabs').innerHTML=D.kidTabs(st).map(t=>`<button class="tab" role="tab" data-t="${t.k}" aria-selected="${tab===t.k}">${t.l}</button>`).join('');}
+function drawStage(){$('#stage').innerHTML=D.renderKid(st);}
+function drawOpts(){
+ const list=D.kidTabs(st), t=list.find(x=>x.k===tab)||list[0];
+ const cfg=t.map(st);
+ let h=cfg.none?`<button class="opt" data-v="" aria-pressed="${!st[t.k]}" aria-label="Không dùng">🚫</button>`:'';
+ h+=cfg.ids.map(id=>`<button class="opt" data-v="${id}" aria-pressed="${st[t.k]===id}" aria-label="${id}">`
+  +(cfg.dot?`<span class="dot" style="background:${cfg.dot(id)}"></span>`
+          :`<svg viewBox="${cfg.vb}">${t.k==='acc'?D.kid.accPreview(id,st):cfg.pv(id)}</svg>`)
+  +'</button>').join('');
+ $('#opts').innerHTML=h;
+}
+document.addEventListener('click',e=>{
+ const t=e.target.closest('.tab[data-t]'),o=e.target.closest('.opt'),y=e.target.closest('[data-ty]');
+ if(y){st=D.sanitizeKid(D.kid.defaults[y.dataset.ty]);tab=D.kidTabs(st)[0].k;save();redraw();}
+ else if(t){tab=t.dataset.t;drawTabs();drawOpts();}
+ else if(o){st=D.sanitizeKid(Object.assign({},st,{[tab]:o.dataset.v||null}));save();drawStage();drawOpts();}
+});
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+$('#rnd').onclick=()=>{
+ st=D.sanitizeKid(Object.assign({},st));
+ D.kidTabs(st).forEach(t=>{const cfg=t.map(st);st[t.k]=pick(cfg.none?[null,...cfg.ids]:cfg.ids);});
+ st=D.sanitizeKid(st);save();drawStage();drawOpts();
+};
+$('#rst').onclick=()=>{st=D.sanitizeKid(D.kid.defaults[st.type]);save();drawStage();drawOpts();};
+
+redraw();
+
+/* Hồ sơ trên server có bản mới hơn → nhận lại và vẽ lại. */
+addEventListener('eg-outfit',e=>{
+ if(e.detail.scope!=='avatar'||e.detail.source!=='server')return;
+ st=e.detail.value;
+ if(!D.kidTabs(st).some(t=>t.k===tab))tab=D.kidTabs(st)[0].k;
+ redraw();
+});
+
+/* Rời trang → đẩy nốt thay đổi đang chờ debounce lên hồ sơ. */
+addEventListener('pagehide',()=>O.syncAll());
+addEventListener('beforeunload',()=>O.syncAll());
+</script>
+</body>
+</html>

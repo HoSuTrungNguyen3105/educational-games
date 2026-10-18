@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getCollection } from "../db.js";
 import { config } from "../config.js";
+import { sanitizeAvatar, sanitizePet } from "../lib/outfitCatalog.js";
 
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -42,6 +43,9 @@ export function publicUser(user) {
     name: user.name, role: user.role, coins: user.coins || 0, stars: user.stars || 0,
     xp: user.xp || 0, level: levelFromXp(user.xp || 0),
     avatarLoadout: user.avatarLoadout || null, inventory: user.inventory || [],
+    // Bộ đồ avatar + thú cưng chọn trong game "Tiệm thời trang cho Bé" /
+    // "Tiệm thay đồ thú cưng". Client cũng cache bản này ở localStorage.
+    avatar: user.avatar || null, pet: user.pet || null,
   };
 }
 
@@ -98,7 +102,7 @@ export async function listUsers() {
   });
 }
 
-export async function updateProfile(userId, { name, email, password, currentPassword, avatarLoadout }) {
+export async function updateProfile(userId, { name, email, password, currentPassword, avatarLoadout, avatar, pet }) {
   const user = await getCollection(COLLECTION).findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");
 
@@ -121,6 +125,18 @@ export async function updateProfile(userId, { name, email, password, currentPass
   }
   if (avatarLoadout && typeof avatarLoadout === "object") {
     updates.avatarLoadout = avatarLoadout;
+  }
+  // Bộ đồ avatar / thú cưng: chỉ nhận id hợp lệ, `updatedAt` do server đóng dấu.
+  const now = new Date().toISOString();
+  const cleanAvatar = avatar === undefined ? undefined : sanitizeAvatar(avatar);
+  const cleanPet = pet === undefined ? undefined : sanitizePet(pet);
+  if (avatar !== undefined) {
+    if (!cleanAvatar) throw new Error("Bộ đồ avatar không hợp lệ");
+    updates.avatar = { ...cleanAvatar, updatedAt: now };
+  }
+  if (pet !== undefined) {
+    if (!cleanPet) throw new Error("Bộ đồ thú cưng không hợp lệ");
+    updates.pet = { ...cleanPet, updatedAt: now };
   }
 
   if (Object.keys(updates).length === 0) throw new Error("Không có gì để cập nhật");

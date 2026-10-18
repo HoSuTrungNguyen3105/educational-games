@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Quản trị Game</title>
+<style>
+  :root{--bg:#0e1124;--bg2:#141836;--card:#1a1f45;--card2:#222859;--line:#303668;--tx:#e9ecff;--mut:#9aa3d6;--ac:#6c8cff;--ac2:#8f6bff;--ok:#34d399;--wa:#fbbf24;--er:#f87171;--r:14px}
+  [data-theme=light]{--bg:#f2f4ff;--bg2:#fff;--card:#fff;--card2:#eef0ff;--line:#d6daf5;--tx:#1b1f45;--mut:#5d6599;--ac:#4a68e8;--ac2:#7a55e8;--ok:#10a874;--wa:#c98a05;--er:#dc3f3f}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  a{color:var(--ac)}
+  :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+  .hide{display:none!important}
+
+  /* ===== khóa PIN ===== */
+  #lock{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;
+    background:radial-gradient(ellipse at 30% 10%,#34308f 0,transparent 55%),var(--bg)}
+  .lbox{width:min(100%,380px);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  .lbox .ic{font-size:44px}
+  .lbox h1{font-size:22px;margin:6px 0 4px}
+  .lbox p{color:var(--mut);font-size:13.5px;margin-bottom:14px}
+  .lbox input{width:100%;text-align:center;letter-spacing:.5em;font-size:24px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);margin-bottom:10px}
+  #lockErr{color:var(--er);min-height:20px;font-size:13.5px;margin-bottom:6px}
+
+  /* ===== khung chính ===== */
+  #app{display:grid;grid-template-columns:240px 1fr;min-height:100%}
+  #nav{background:var(--bg2);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 14px;font-weight:800;font-size:17px}
+  .brand i{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--ac),var(--ac2));display:grid;place-items:center;font-style:normal;font-size:19px}
+  .nb{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:0;background:none;text-align:left;color:var(--mut);font-weight:600;width:100%}
+  .nb:hover{background:var(--card)}
+  .nb.on{background:linear-gradient(135deg,rgba(108,140,255,.25),rgba(143,107,255,.25));color:var(--tx);box-shadow:inset 0 0 0 1px var(--ac)}
+  .nb .n{margin-left:auto;font-size:11px;background:var(--er);color:#fff;border-radius:99px;padding:0 7px;line-height:18px}
+  .grow{flex:1}
+  .meter{margin:10px 6px 4px;font-size:12px;color:var(--mut)}
+  .meter div{height:6px;border-radius:6px;background:var(--card2);margin-top:5px;overflow:hidden}
+  .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--wa));width:0}
+  main{padding:20px clamp(14px,3vw,34px) 60px;min-width:0}
+  .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+  .head h2{font-size:24px}
+  .head p{color:var(--mut);font-size:13.5px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+  .grid{display:grid;gap:14px}
+  .g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .stat{display:flex;flex-direction:column;gap:2px}
+  .stat b{font-size:28px;line-height:1.1}
+  .stat span{color:var(--mut);font-size:13px}
+  .stat small{color:var(--ok);font-size:12px}
+  .btn{border:1px solid var(--line);background:var(--card2);padding:8px 14px;border-radius:10px;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .btn:hover{border-color:var(--ac)}
+  .btn.p{background:linear-gradient(135deg,var(--ac),var(--ac2));border-color:transparent;color:#fff}
+  .btn.d{background:rgba(248,113,113,.14);border-color:rgba(248,113,113,.5);color:var(--er)}
+  .btn.s{padding:5px 10px;font-size:13px;border-radius:8px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .tag{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 9px;border-radius:99px;background:var(--card2);border:1px solid var(--line);color:var(--mut)}
+  .tag.ok{color:var(--ok);border-color:var(--ok)}.tag.er{color:var(--er);border-color:var(--er)}.tag.wa{color:var(--wa);border-color:var(--wa)}
+  .alert{padding:10px 14px;border-radius:12px;font-size:13.5px;border:1px solid;margin-bottom:12px}
+  .alert.wa{background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.5);color:var(--wa)}
+  .alert.er{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.5);color:var(--er)}
+  .alert.ok{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.5);color:var(--ok)}
+  .alert.in{background:rgba(108,140,255,.1);border-color:rgba(108,140,255,.5);color:var(--ac)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+  .tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
+  .bar{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:14px}
+  .bar .n{flex:0 0 130px;color:var(--mut)}.bar .tr{flex:1;height:14px;border-radius:14px;background:var(--card2);overflow:hidden}.bar .tr i{display:block;height:100%;border-radius:14px}.bar .p{flex:0 0 76px;text-align:right}
+
+  /* form */
+  label.f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mut);font-weight:600}
+  input[type=text],input[type=number],input[type=password],input[type=search],select,textarea{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--tx);width:100%;min-width:0}
+  textarea{resize:vertical;min-height:90px}
+  textarea.code{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre;min-height:360px;tab-size:2}
+  input[type=color]{width:100%;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);padding:2px}
+  .fg{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+  .chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--tx)}
+  .chk input{width:18px;height:18px;accent-color:var(--ac)}
+  .sw{position:relative;width:42px;height:24px;flex:none}
+  .sw input{opacity:0;position:absolute;inset:0;cursor:pointer;z-index:2;width:100%;height:100%;margin:0}
+  .sw i{position:absolute;inset:0;border-radius:24px;background:var(--card2);border:1px solid var(--line);transition:.2s}
+  .sw i::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:var(--mut);transition:.2s}
+  .sw input:checked+i{background:var(--ok);border-color:var(--ok)}.sw input:checked+i::after{left:21px;background:#fff}
+
+  /* danh sách game */
+  .gl{display:flex;flex-direction:column;gap:10px}
+  .gi{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+  .gi.off{opacity:.55}
+  .gi .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:26px;flex:none}
+  .gi .mt{flex:1;min-width:0}
+  .gi .mt b{display:block;font-size:15.5px}
+  .gi .mt small{color:var(--mut);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gi .ac{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+  /* ngân hàng câu hỏi */
+  .qi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+  .qi.bad{border-color:var(--er)}
+  .qi .qt{font-weight:600}
+  .qi ol{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px;margin-top:2px}
+  .qi li{font-size:13.5px;padding:3px 9px;border-radius:8px;background:var(--card2)}
+  .qi li.ok{background:rgba(52,211,153,.18);color:var(--ok);font-weight:700}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chp{padding:5px 12px;border-radius:99px;border:1px solid var(--line);background:var(--card2);font-size:13px;font-weight:600;color:var(--mut)}
+  .chp.on{background:var(--ac);border-color:var(--ac);color:#fff}
+  .mx td.z{color:var(--er);font-weight:700}
+  /* vth */
+  .ev{border:1px solid var(--line);border-radius:12px;background:var(--bg2);padding:10px;margin-bottom:10px}
+  .ev .eh{display:grid;gap:8px;grid-template-columns:90px 1fr auto auto;align-items:end}
+  .sp{display:grid;gap:6px;grid-template-columns:1.4fr 1fr .7fr .7fr .7fr auto;align-items:end;margin-top:8px}
+  .sp label.f{font-size:11px}
+  svg.tl{width:100%;height:auto;background:var(--bg2);border:1px solid var(--line);border-radius:12px}
+  /* modal */
+  #mod{position:fixed;inset:0;z-index:90;background:rgba(5,6,20,.7);display:none;align-items:flex-start;justify-content:center;padding:4vh 14px;overflow-y:auto;backdrop-filter:blur(3px)}
+  #mod.show{display:flex}
+  .mbox{width:min(100%,640px);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .mbox.w{width:min(100%,900px)}
+  .mbox h3{font-size:18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .mf{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+  #toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:120;background:var(--card2);border:1px solid var(--ac);padding:10px 18px;border-radius:12px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.4);transition:.25s;max-width:92vw;text-align:center}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+  #toast.er{border-color:var(--er)}#toast.ok{border-color:var(--ok)}
+
+  @media (max-width:860px){
+    #app{grid-template-columns:1fr}
+    #nav{position:sticky;top:0;z-index:20;height:auto;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:8px;border-right:0;border-bottom:1px solid var(--line);gap:4px}
+    .brand,.meter,.grow{display:none}
+    .nb{width:auto;white-space:nowrap;padding:8px 12px}
+    .nb span.tx{font-size:13px}
+    .sp{grid-template-columns:1fr 1fr 1fr}
+    .ev .eh{grid-template-columns:80px 1fr}
+    .bar .n{flex-basis:96px}
+  }
+</style>
+</head>
+<body>
+
+<div id="lock" class="hide">
+  <div class="lbox">
+    <div class="ic">🔐</div><h1 id="lockT">Khu vực quản trị</h1>
+    <p id="lockP">Nhập mã PIN để tiếp tục.</p>
+    <input id="pin1" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" aria-label="Mã PIN">
+    <input id="pin2" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Nhập lại PIN" class="hide" aria-label="Nhập lại mã PIN" style="font-size:18px">
+    <div id="lockErr" role="alert"></div>
+    <button class="btn p" id="lockBtn" style="width:100%;justify-content:center;padding:11px">Mở khóa</button>
+    <p style="margin:12px 0 0;font-size:12px">Mã PIN chỉ ngăn người dùng thường mở nhầm trang này trên thiết bị. Đây không phải bảo mật máy chủ.</p>
+  </div>
+</div>
+
+<div id="app" class="hide">
+  <nav id="nav" aria-label="Điều hướng quản trị"></nav>
+  <main><div id="view"></div></main>
+</div>
+<div id="mod"><div class="mbox" id="mbox"></div></div>
+<div id="toast" role="status"></div>
+
+<script type="application/json" id="defBank">{
+  "viet": [
+    {"q": "Từ nào chỉ con vật?", "a": ["mèo", "bàn", "sách", "bút"], "c": 0, "g": 1, "icon": "🐱", "e": "Mèo là con vật."},
+    {"q": "Từ nào có vần \"an\"?", "a": ["bàn", "bóng", "bút", "bánh"], "c": 0, "g": 1, "e": "\"bàn\" có vần an."},
+    {"q": "Từ trái nghĩa với \"to\" là:", "a": ["nhỏ", "cao", "dài", "rộng"], "c": 0, "g": 1, "e": "To trái nghĩa với nhỏ."},
+    {"q": "Chọn từ viết đúng chính tả:", "a": ["giúp đỡ", "dúp đỡ", "giúp đở", "dúp đở"], "c": 0, "g": 2},
+    {"q": "Chọn từ viết đúng chính tả:", "a": ["chăm chỉ", "trăm chỉ", "chăm chĩ", "chăm trỉ"], "c": 0, "g": 2},
+    {"q": "Từ nào là từ chỉ hoạt động?", "a": ["chạy", "đẹp", "xanh", "cao"], "c": 0, "g": 2, "e": "Chạy là hoạt động."},
+    {"q": "Từ nào chỉ màu sắc?", "a": ["xanh", "chạy", "bàn", "cười"], "c": 0, "g": 2},
+    {"q": "Cuối câu hỏi ta đặt dấu gì?", "a": ["Dấu chấm hỏi", "Dấu chấm", "Dấu phẩy", "Dấu chấm than"], "c": 0, "g": 2},
+    {"q": "Từ đồng nghĩa với \"chăm chỉ\" là:", "a": ["siêng năng", "lười biếng", "ham chơi", "mệt mỏi"], "c": 0, "g": 3},
+    {"q": "Trong câu \"Bé đang đọc sách\", từ chỉ hoạt động là:", "a": ["đọc", "Bé", "sách", "đang"], "c": 0, "g": 3},
+    {"q": "Từ nào là từ láy?", "a": ["long lanh", "bàn ghế", "xe cộ", "học hành"], "c": 0, "g": 3},
+    {"q": "Câu \"Trời mưa như trút nước\" dùng biện pháp nào?", "a": ["So sánh", "Nhân hóa", "Điệp từ", "Ẩn dụ"], "c": 0, "g": 4},
+    {"q": "Từ trái nghĩa với \"dũng cảm\" là:", "a": ["hèn nhát", "gan dạ", "anh hùng", "kiên cường"], "c": 0, "g": 4},
+    {"q": "Từ nào là từ ghép?", "a": ["xe đạp", "đẹp đẽ", "xanh xanh", "nho nhỏ"], "c": 0, "g": 5},
+    {"q": "Câu \"Ăn quả nhớ kẻ trồng cây\" khuyên ta điều gì?", "a": ["Biết ơn người đã giúp mình", "Trồng thật nhiều cây", "Ăn nhiều trái cây", "Chăm làm vườn"], "c": 0, "g": 5}
+  ],
+  "eng": [
+    {"q": "\"Apple\" nghĩa là gì?", "a": ["Quả táo", "Quả cam", "Quả chuối", "Quả nho"], "c": 0, "g": 1, "icon": "🍎", "lang": "en-US"},
+    {"q": "Con mèo tiếng Anh là gì?", "a": ["Cat", "Dog", "Bird", "Fish"], "c": 0, "g": 1, "icon": "🐱"},
+    {"q": "\"Red\" là màu gì?", "a": ["Màu đỏ", "Màu xanh", "Màu vàng", "Màu trắng"], "c": 0, "g": 1},
+    {"q": "What color is the sky?", "a": ["Blue", "Red", "Green", "Black"], "c": 0, "g": 1, "lang": "en-US", "icon": "🌤️"},
+    {"q": "\"Book\" nghĩa là gì?", "a": ["Quyển sách", "Cái bàn", "Cái ghế", "Cây bút"], "c": 0, "g": 2, "icon": "📘"},
+    {"q": "I ___ a student.", "a": ["am", "is", "are", "be"], "c": 0, "g": 2, "lang": "en-US", "e": "I đi với am."},
+    {"q": "Trái nghĩa của \"happy\" là:", "a": ["sad", "big", "fast", "hot"], "c": 0, "g": 2},
+    {"q": "What day comes after Monday?", "a": ["Tuesday", "Sunday", "Friday", "Wednesday"], "c": 0, "g": 3, "lang": "en-US"},
+    {"q": "She ___ to school every day.", "a": ["goes", "go", "going", "gone"], "c": 0, "g": 3, "lang": "en-US", "e": "She đi với goes."},
+    {"q": "\"Thursday\" là thứ mấy?", "a": ["Thứ Năm", "Thứ Tư", "Thứ Sáu", "Thứ Ba"], "c": 0, "g": 3},
+    {"q": "Số nhiều của \"child\" là:", "a": ["children", "childs", "childes", "childrens"], "c": 0, "g": 4},
+    {"q": "Quá khứ của \"go\" là:", "a": ["went", "goed", "gone", "going"], "c": 0, "g": 4},
+    {"q": "I have learned English ___ three years.", "a": ["for", "since", "at", "in"], "c": 0, "g": 5, "lang": "en-US"},
+    {"q": "Từ nào là động từ?", "a": ["run", "blue", "table", "happy"], "c": 0, "g": 5}
+  ],
+  "sci": [
+    {"q": "Con vật nào sống dưới nước?", "a": ["Cá", "Gà", "Chó", "Mèo"], "c": 0, "g": 1, "icon": "🐟"},
+    {"q": "Mặt Trời mọc ở hướng nào?", "a": ["Đông", "Tây", "Nam", "Bắc"], "c": 0, "g": 1, "icon": "🌅"},
+    {"q": "Chúng ta nhìn bằng bộ phận nào?", "a": ["Mắt", "Tai", "Mũi", "Tay"], "c": 0, "g": 1, "icon": "👀"},
+    {"q": "Cây cần gì để lớn lên?", "a": ["Nước và ánh sáng", "Chỉ bóng tối", "Kẹo", "Đá"], "c": 0, "g": 2, "icon": "🌱"},
+    {"q": "Một tuần có bao nhiêu ngày?", "a": ["7 ngày", "5 ngày", "6 ngày", "8 ngày"], "c": 0, "g": 2},
+    {"q": "Con vật nào đẻ trứng?", "a": ["Gà", "Chó", "Mèo", "Bò"], "c": 0, "g": 2, "icon": "🥚"},
+    {"q": "Nước đóng băng ở bao nhiêu độ C?", "a": ["0°C", "10°C", "50°C", "100°C"], "c": 0, "g": 3, "icon": "🧊"},
+    {"q": "Hành tinh nào gần Mặt Trời nhất?", "a": ["Sao Thủy", "Sao Hỏa", "Trái Đất", "Sao Kim"], "c": 0, "g": 3, "icon": "🪐"},
+    {"q": "Bộ phận nào bơm máu đi khắp cơ thể?", "a": ["Tim", "Phổi", "Dạ dày", "Gan"], "c": 0, "g": 3, "icon": "❤️"},
+    {"q": "Cây xanh hấp thụ khí nào để quang hợp?", "a": ["Khí cacbonic", "Khí oxi", "Khí ni-tơ", "Khí heli"], "c": 0, "g": 4},
+    {"q": "Nước sôi ở bao nhiêu độ C (ở mực nước biển)?", "a": ["100°C", "50°C", "0°C", "200°C"], "c": 0, "g": 4, "icon": "♨️"},
+    {"q": "Trái Đất quay quanh Mặt Trời hết khoảng bao lâu?", "a": ["Khoảng 365 ngày", "Khoảng 30 ngày", "Khoảng 24 giờ", "Khoảng 7 ngày"], "c": 0, "g": 5, "icon": "🌍"},
+    {"q": "Nhật thực xảy ra khi nào?", "a": ["Mặt Trăng che Mặt Trời", "Trái Đất che Mặt Trăng", "Mặt Trời che Mặt Trăng", "Một ngôi sao che Mặt Trời"], "c": 0, "g": 5},
+    {"q": "Kim loại nào dẫn điện tốt, hay dùng làm dây điện?", "a": ["Đồng", "Gỗ", "Nhựa", "Thủy tinh"], "c": 0, "g": 5, "icon": "🔌"}
+  ],
+  "geo": [
+    {"q": "Thủ đô của Việt Nam là:", "a": ["Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Huế"], "c": 0, "g": 1, "icon": "🏛️"},
+    {"q": "Biển của nước ta nằm ở phía nào?", "a": ["Phía Đông", "Phía Tây", "Phía Bắc", "Nước ta không có biển"], "c": 0, "g": 1, "icon": "🌊"},
+    {"q": "Giữa quốc kỳ Việt Nam có hình gì?", "a": ["Ngôi sao vàng năm cánh", "Mặt trời", "Hoa sen", "Con rồng"], "c": 0, "g": 2, "icon": "🇻🇳"},
+    {"q": "Việt Nam nằm ở châu lục nào?", "a": ["Châu Á", "Châu Âu", "Châu Phi", "Châu Mỹ"], "c": 0, "g": 2},
+    {"q": "Đồng bằng lớn nhất miền Nam nước ta là:", "a": ["Đồng bằng sông Cửu Long", "Đồng bằng sông Hồng", "Đồng bằng duyên hải miền Trung", "Tây Nguyên"], "c": 0, "g": 3},
+    {"q": "Vịnh Hạ Long thuộc tỉnh nào?", "a": ["Quảng Ninh", "Hải Phòng", "Thanh Hóa", "Nghệ An"], "c": 0, "g": 3, "icon": "⛵"},
+    {"q": "Cố đô Huế thuộc miền nào của nước ta?", "a": ["Miền Trung", "Miền Bắc", "Miền Nam", "Tây Nguyên"], "c": 0, "g": 3},
+    {"q": "Ngày Quốc khánh của nước ta là ngày nào?", "a": ["2 tháng 9", "30 tháng 4", "1 tháng 5", "19 tháng 8"], "c": 0, "g": 4},
+    {"q": "Đỉnh núi cao nhất Việt Nam là:", "a": ["Phan-xi-păng", "Bà Đen", "Ngọc Linh", "Lang Biang"], "c": 0, "g": 4, "icon": "⛰️"},
+    {"q": "Ai lãnh đạo khởi nghĩa Lam Sơn chống quân Minh?", "a": ["Lê Lợi", "Quang Trung", "Trần Hưng Đạo", "Ngô Quyền"], "c": 0, "g": 5},
+    {"q": "Chiến thắng Bạch Đằng năm 938 do ai chỉ huy?", "a": ["Ngô Quyền", "Lý Thường Kiệt", "Lê Hoàn", "Đinh Bộ Lĩnh"], "c": 0, "g": 5}
+  ],
+  "custom": []
+}</script>
+<script type="application/json" id="defVth">{
+  "unlockAll": true,
+
+  "monsters": {
+    "worm":   {"name": "Sâu Bò",        "emoji": "🐛", "hp": 100,  "speed": 0.20, "dps": 20, "size": 1.0},
+    "beetle": {"name": "Bọ Giáp",       "emoji": "🪲", "hp": 260,  "speed": 0.17, "dps": 22, "size": 1.05},
+    "locust": {"name": "Châu Chấu",     "emoji": "🦗", "hp": 90,   "speed": 0.42, "dps": 16, "size": 0.95},
+    "rat":    {"name": "Chuột Nhảy",    "emoji": "🐀", "hp": 150,  "speed": 0.30, "dps": 20, "size": 1.0, "jump": true},
+    "snail":  {"name": "Ốc Sên Khiên",  "emoji": "🐌", "hp": 520,  "speed": 0.09, "dps": 25, "size": 1.1},
+    "boss":   {"name": "Bọ Cạp Chúa",   "emoji": "🦂", "hp": 3200, "speed": 0.06, "dps": 80, "size": 1.7}
+  },
+
+  "plants": {
+    "sunflower": {"name": "Hướng Dương",    "emoji": "🌻", "kind": "producer", "cost": 50,  "hp": 80,  "cooldown": 5,  "amount": 25, "every": 9, "first": 5},
+    "shooter":   {"name": "Súp Lơ Bắn Hạt", "emoji": "🥦", "kind": "shooter",  "cost": 100, "hp": 80,  "cooldown": 5,  "damage": 20, "every": 1.5, "shots": 1},
+    "wall":      {"name": "Dừa Tường",      "emoji": "🥥", "kind": "wall",     "cost": 50,  "hp": 600, "cooldown": 14},
+    "bomb":      {"name": "Anh Đào Nổ",     "emoji": "🍒", "kind": "bomb",     "cost": 150, "hp": 50,  "cooldown": 25, "damage": 400, "radius": 1.5, "fuse": 1},
+    "ice":       {"name": "Việt Quất Băng", "emoji": "🫐", "kind": "shooter",  "cost": 175, "hp": 80,  "cooldown": 6,  "damage": 20, "every": 1.5, "shots": 1, "slow": 0.5, "slowTime": 4},
+    "mine":      {"name": "Khoai Bẫy",      "emoji": "🥔", "kind": "mine",     "cost": 25,  "hp": 50,  "cooldown": 18, "damage": 500, "arm": 8},
+    "repeater":  {"name": "Xương Rồng Đôi", "emoji": "🌵", "kind": "shooter",  "cost": 200, "hp": 80,  "cooldown": 7,  "damage": 20, "every": 1.5, "shots": 2},
+    "chili":     {"name": "Ớt Lửa",         "emoji": "🌶️", "kind": "lane",     "cost": 125, "hp": 50,  "cooldown": 25, "damage": 400, "fuse": 0.8}
+  },
+
+  "levels": [
+    {
+      "name": "Vườn Trước Nhà", "theme": "day", "rows": 5, "startSun": 150,
+      "plants": ["sunflower", "shooter"],
+      "skySun": {"first": 6, "every": 9, "amount": 25},
+      "timeline": [
+        {"t": 20, "monster": "worm", "row": "random"},
+        {"t": 40, "monster": "worm", "row": "random"},
+        {"t": 58, "monster": "worm", "row": "random", "count": 2, "gap": 5},
+        {"t": 85, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [
+          {"monster": "worm", "row": "all"},
+          {"monster": "worm", "row": "random", "count": 3, "gap": 3, "delay": 4}
+        ]}
+      ]
+    },
+    {
+      "name": "Vườn Sau Nhà", "theme": "day", "rows": 5, "startSun": 150,
+      "plants": ["sunflower", "shooter", "wall", "bomb"],
+      "skySun": {"first": 6, "every": 9, "amount": 25},
+      "timeline": [
+        {"t": 15, "monster": "worm", "row": "random"},
+        {"t": 28, "monster": "worm", "row": "random", "count": 2, "gap": 4},
+        {"t": 45, "monster": "beetle", "row": "random"},
+        {"t": 62, "monster": "worm", "row": "random", "count": 3, "gap": 3},
+        {"t": 80, "monster": "beetle", "row": "random", "count": 2, "gap": 6},
+        {"t": 100, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [
+          {"monster": "beetle", "row": "all"},
+          {"monster": "worm", "row": "random", "count": 4, "gap": 2.5, "delay": 3}
+        ]}
+      ]
+    },
+    {
+      "name": "Hoàng Hôn Bên Hàng Rào", "theme": "dusk", "rows": 5, "startSun": 200,
+      "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine"],
+      "skySun": {"first": 8, "every": 11, "amount": 25},
+      "timeline": [
+        {"t": 12, "monster": "worm", "row": "random"},
+        {"t": 22, "monster": "locust", "row": "random"},
+        {"t": 34, "monster": "rat", "row": "random"},
+        {"t": 46, "monster": "worm", "row": "random", "count": 2, "gap": 3},
+        {"t": 60, "monster": "locust", "row": "random", "count": 3, "gap": 2},
+        {"t": 76, "monster": "beetle", "row": "random", "count": 2, "gap": 5},
+        {"t": 92, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [
+          {"monster": "rat", "row": "all"},
+          {"monster": "locust", "row": "random", "count": 4, "gap": 1.5, "delay": 3},
+          {"monster": "beetle", "row": "random", "count": 2, "gap": 6, "delay": 5}
+        ]}
+      ]
+    },
+    {
+      "name": "Đêm Sương Mù", "theme": "night", "rows": 5, "startSun": 250,
+      "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili"],
+      "skySun": {"first": 0, "every": 0, "amount": 25},
+      "timeline": [
+        {"t": 20, "monster": "worm", "row": "random", "count": 2, "gap": 3},
+        {"t": 35, "monster": "snail", "row": "random"},
+        {"t": 55, "monster": "rat", "row": "random", "count": 2, "gap": 4},
+        {"t": 75, "monster": "beetle", "row": "random", "count": 2, "gap": 3},
+        {"t": 95, "banner": "Quái đang kéo đến từ trong sương!", "flag": true, "spawn": [
+          {"monster": "snail", "row": "random", "count": 2, "gap": 8},
+          {"monster": "locust", "row": "all", "delay": 2}
+        ]},
+        {"t": 125, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [
+          {"monster": "worm", "row": "all", "count": 2, "gap": 6},
+          {"monster": "beetle", "row": "random", "count": 4, "gap": 3, "delay": 3},
+          {"monster": "snail", "row": "random", "count": 2, "gap": 10, "delay": 5}
+        ]}
+      ]
+    },
+    {
+      "name": "Bọ Cạp Chúa", "theme": "dusk", "rows": 5, "startSun": 300,
+      "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili"],
+      "skySun": {"first": 8, "every": 10, "amount": 25},
+      "timeline": [
+        {"t": 15, "monster": "worm", "row": "random", "count": 3, "gap": 3},
+        {"t": 35, "monster": "beetle", "row": "random", "count": 2, "gap": 4},
+        {"t": 55, "monster": "rat", "row": "random", "count": 3, "gap": 3},
+        {"t": 80, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [
+          {"monster": "locust", "row": "all", "count": 2, "gap": 4},
+          {"monster": "snail", "row": "random", "count": 2, "gap": 6, "delay": 4}
+        ]},
+        {"t": 115, "banner": "BỌ CẠP CHÚA XUẤT HIỆN!", "flag": true, "spawn": [
+          {"monster": "boss", "row": 3},
+          {"monster": "beetle", "row": "all", "delay": 6},
+          {"monster": "worm", "row": "random", "count": 6, "gap": 2, "delay": 10}
+        ]}
+      ]
+    }
+  ]
+}</script>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const fmtB = n => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(2) + ' MB';
+const num = (v, d = 0) => { const n = parseFloat(v); return isFinite(n) ? n : d; };
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+/* ================= Lưu trữ (có dự phòng bộ nhớ tạm) ================= */
+let storeOk = true; try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); } catch (e) { storeOk = false; }
+const memS = {};
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return memS[k] == null ? null : memS[k]; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { memS[k] = v; } };
+const lsDel = k => { try { localStorage.removeItem(k); } catch (e) { delete memS[k]; } };
+const lsKeys = () => { try { return Object.keys(localStorage); } catch (e) { return Object.keys(memS); } };
+function rdJ(k) { const s = lsGet(k); if (s == null) return { raw: null, val: null }; try { return { raw: s, val: JSON.parse(s) }; } catch (e) { return { raw: s, val: undefined, err: e.message }; } }
+const wrJ = (k, v) => lsSet(k, JSON.stringify(v));
+
+const AUTH = 'tt-admin-auth-v1', LOG = 'tt-admin-log-v1', REG = 'tt-registry-v1', HUB = 'trung-tam-game-v1', ADMIN_KEYS = [AUTH, LOG];
+const DEF_BANK = JSON.parse($('defBank').textContent), DEF_VTH = JSON.parse($('defVth').textContent);
+
+/* ================= Dữ liệu mặc định: danh sách game ================= */
+const DEFAULT_GAMES = [
+  { id: 'chem-trai-cay', file: 'chem-trai-cay.html', icon: '🍉', name: 'Chém Trái Cây', tag: 'HÀNH ĐỘNG', desc: 'Vuốt nhanh để chém trái cây, né bom, mở khóa các loại dao.', c: ['#ff7a45', '#e8312f'], isNew: true, key: 'chem-trai-cay-v1' },
+  { id: 'xep-khoi', file: 'xep-khoi.html', icon: '🧩', name: 'Xếp Khối Màu', tag: 'GIẢI ĐỐ', desc: 'Kéo thả khối vào bảng 8×8, lấp đầy hàng cột để nổ combo.', c: ['#8b5cf6', '#ec4899'], isNew: true, key: 'xep-khoi-v1' },
+  { id: 'pha-gach', file: 'pha-gach.html', icon: '🧱', name: 'Phá Gạch Neon', tag: '12 MÀN', desc: 'Đỡ bóng, phá gạch, hứng vật phẩm, thu đủ 3 sao mỗi màn.', c: ['#06b6d4', '#4f46e5'], isNew: true, key: 'pha-gach-v1' },
+  { id: 'phieu-luu-hoc-gioi', file: 'phieu-luu-hoc-gioi.html', icon: '🎓', name: 'Phiêu Lưu Học Giỏi', tag: 'HỌC TẬP', desc: 'Chạy, nhảy, đập khối ❓ và đánh boss bằng câu hỏi Toán, Tiếng Việt, Tiếng Anh.', c: ['#7b5cf0', '#ff7eb3'], isNew: true, key: 'phieu-luu-hoc-gioi-v1' },
+  { id: 'bong-vong', file: 'bong-vong.html', icon: '👻', name: 'Bóng Vọng', tag: 'GIẢI ĐỐ LẠ', desc: 'Cái bóng lặp lại bước đi của bạn. Dùng nó giữ nút để mở cửa.', c: ['#5b34c9', '#0ea5c6'], isNew: true, key: 'bong-vong-v1' },
+  { id: 'metro-rush', file: 'metro-rush.html', icon: '🚆', name: 'Metro Rush', tag: '3D · CHẠY VÔ TẬN', desc: 'Chạy trốn bảo vệ, nhảy qua tàu, thu xu và mở khóa nhân vật.', c: ['#f97316', '#9333ea'], key: 'metro-rush-v1' },
+  { id: 'vuon-thu-ho', file: 'vuon-thu-ho.html', icon: '🌻', name: 'Vườn Thủ Hộ', tag: 'PHÒNG THỦ', desc: 'Trồng cây đuổi sâu bọ. Cấu hình quái bằng JSON theo ý bạn.', c: ['#65a30d', '#15803d'], key: 'vuon-thu-ho-prog-v1' },
+  { id: 'nhay-xoay', file: 'nhay-xoay.html', icon: '🌀', name: 'Nhảy Xoáy', tag: '3D · ARCADE', desc: 'Xoay tháp cho bóng rơi xuyên khe hở, né vùng đỏ.', c: ['#22d3ee', '#ec4899'], key: 'nhay-xoay-v1' },
+  { id: 'nong-trai-vui', file: 'nong-trai-vui.html', icon: '🚜', name: 'Nông Trại Vui', tag: 'NÔNG TRẠI', desc: 'Trồng 10 loại quả, mua bán, nuôi thú, giao đơn hàng.', c: ['#84cc16', '#ca8a04'], key: 'nong-trai-vui-v1' },
+  { id: 'hu-trai-cay', file: 'hu-trai-cay.html', icon: '🍇', name: 'Hũ Trái Cây', tag: 'XẾP & GỘP', desc: 'Thả trái cây, hai quả giống nhau gộp thành quả lớn hơn.', c: ['#fb7185', '#f59e0b'], key: 'hu-trai-cay-v1' },
+  { id: 'noi-ong-nuoc', file: 'noi-ong-nuoc.html', icon: '🚰', name: 'Nối Ống Nước', tag: 'GIẢI ĐỐ', desc: 'Xoay ống dẫn nước tưới cây, màn chơi vô hạn.', c: ['#38bdf8', '#34d399'], key: 'noi-ong-nuoc-v1' },
+  { id: 'goc-thu-gian', file: 'goc-thu-gian.html', icon: '🌿', name: 'Góc Thư Giãn', tag: 'THƯ GIÃN', desc: 'Vườn đêm, bong bóng, hít thở. Nghỉ ngơi sau giờ học.', c: ['#6366f1', '#14b8a6'], key: null }
+];
+// các khóa lưu trữ theo game: [khóa, nhãn]
+const GAME_KEYS = { 'vuon-thu-ho': [['vuon-thu-ho-prog-v1', 'Tiến trình'], ['vuon-thu-ho-cfg-v1', 'Cấu hình quái & màn']], 'phieu-luu-hoc-gioi': [['phieu-luu-hoc-gioi-v1', 'Tiến trình + ngân hàng câu hỏi']] };
+const SUMMARY = {
+  'chem-trai-cay': s => `Kỷ lục ${Math.max((s.best || {}).classic || 0, (s.best || {}).zen || 0)} · ${s.total || 0} trái đã chém`,
+  'xep-khoi': s => `Kỷ lục ${s.best || 0} · ${s.games || 0} ván${s.save ? ' · có ván dở' : ''}`,
+  'pha-gach': s => `${Object.values(s.lv || {}).reduce((a, b) => a + (b.stars || 0), 0)}/36 sao · mở tới màn ${s.unlocked || 1}`,
+  'phieu-luu-hoc-gioi': s => `Lớp ${s.grade || '?'} · ⭐ ${s.wallet || 0} · ${Object.values(s.stats || {}).reduce((a, b) => a + (b.a || 0), 0)} câu đã trả lời`,
+  'bong-vong': s => `${Object.values(s.stars || {}).reduce((a, b) => a + b, 0)}/90 sao`,
+  'metro-rush': s => `Kỷ lục ${s.best || 0} · 🪙 ${s.coins || 0}`,
+  'vuon-thu-ho': s => `Đã thắng ${Object.keys(s.cleared || {}).length} màn`,
+  'nhay-xoay': s => `Kỷ lục ${s.best || 0} · màn ${s.level || 1}`,
+  'nong-trai-vui': s => `Cấp ${s.lv || 1} · 🪙 ${Math.floor(s.coins || 0)}`,
+  'hu-trai-cay': s => `Kỷ lục ${s.best || 0}`, 'noi-ong-nuoc': s => `Màn ${s.level || 1}`
+};
+
+/* ================= Nhật ký ================= */
+function log(action, detail) { const l = rdJ(LOG).val || []; l.unshift({ t: new Date().toISOString(), a: action, d: detail || '' }); wrJ(LOG, l.slice(0, 150)); }
+
+/* ================= Tiện ích giao diện ================= */
+let toastT;
+function toast(m, t) { const e = $('toast'); e.textContent = m; e.className = 'show ' + (t || ''); clearTimeout(toastT); toastT = setTimeout(() => { e.className = ''; }, 2600); }
+function modal(title, body, actions, wide) {
+  $('mbox').className = 'mbox' + (wide ? ' w' : ''); $('mbox').innerHTML = `<h3><span>${title}</span><button class="btn s" data-mc="x" aria-label="Đóng">✕</button></h3><div id="mbody">${body}</div><div class="mf" id="mf"></div>`;
+  const f = $('mf'); (actions || []).forEach((a, i) => { const b = document.createElement('button'); b.className = 'btn ' + (a.cls || ''); b.textContent = a.label; b.onclick = () => { if (a.fn) { if (a.fn() === false) return; } if (!a.keep) closeModal(); }; f.appendChild(b); });
+  $('mod').classList.add('show'); const first = $('mbox').querySelector('input,textarea,select'); if (first && !wide) setTimeout(() => first.focus(), 30);
+}
+function closeModal() { $('mod').classList.remove('show'); $('mbox').innerHTML = ''; }
+$('mod').addEventListener('click', e => { if (e.target.id === 'mod' || e.target.closest('[data-mc="x"]')) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('mod').classList.contains('show')) closeModal(); });
+function confirmBox(msg, okLabel = 'Xác nhận', danger = true) { return new Promise(res => { let done = false; modal('Xác nhận', `<p style="line-height:1.5">${msg}</p>`, [{ label: 'Hủy', fn: () => { done = true; res(false); } }, { label: okLabel, cls: danger ? 'd' : 'p', fn: () => { done = true; res(true); } }]); const obs = new MutationObserver(() => { if (!$('mod').classList.contains('show') && !done) { done = true; res(false); obs.disconnect(); } }); obs.observe($('mod'), { attributes: true }); }); }
+function download(name, text, type = 'application/json') { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+function pickFile(accept, cb) { const i = document.createElement('input'); i.type = 'file'; i.accept = accept; i.onchange = () => { const f = i.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => cb(String(r.result), f.name); r.readAsText(f); }; i.click(); }
+const copyText = async t => { try { await navigator.clipboard.writeText(t); toast('Đã sao chép', 'ok'); } catch (e) { toast('Không sao chép được, hãy chọn và sao chép thủ công', 'er'); } };
+const stateDirty = { reg: false, bank: false, vth: false };
+window.addEventListener('beforeunload', e => { if (stateDirty.reg || stateDirty.bank || stateDirty.vth) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ================= Khóa PIN ================= */
+async function sha(s) {
+  try { if (window.crypto && crypto.subtle) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); } } catch (e) {}
+  let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return 'f' + (h >>> 0).toString(16);
+}
+const sessGet = () => { try { return sessionStorage.getItem('tt-admin-ok'); } catch (e) { return memS.__ok; } };
+const sessSet = () => { try { sessionStorage.setItem('tt-admin-ok', '1'); } catch (e) { memS.__ok = '1'; } };
+const sessClr = () => { try { sessionStorage.removeItem('tt-admin-ok'); } catch (e) { delete memS.__ok; } };
+let fails = 0, lockUntil = 0;
+async function initAuth() {
+  const a = rdJ(AUTH).val;
+  if (sessGet() || (a && a.off)) { enter(); return; }
+  $('lock').classList.remove('hide'); const setup = !a || !a.hash;
+  $('lockT').textContent = setup ? 'Tạo mã PIN quản trị' : 'Khu vực quản trị'; $('lockP').textContent = setup ? 'Chọn mã PIN 4–8 chữ số để bảo vệ trang này.' : 'Nhập mã PIN để tiếp tục.'; $('pin2').classList.toggle('hide', !setup); $('lockBtn').textContent = setup ? 'Tạo PIN & vào' : 'Mở khóa'; $('pin1').focus();
+  const go = async () => {
+    const e = $('lockErr'); const p = $('pin1').value;
+    if (setup) {
+      if (!/^\d{4,8}$/.test(p)) { e.textContent = 'PIN phải gồm 4–8 chữ số.'; return; } if (p !== $('pin2').value) { e.textContent = 'Hai lần nhập chưa khớp.'; return; }
+      const salt = Math.random().toString(36).slice(2); wrJ(AUTH, { salt, hash: await sha(salt + p) }); log('Tạo mã PIN quản trị'); sessSet(); $('lock').classList.add('hide'); enter();
+    } else {
+      if (Date.now() < lockUntil) { e.textContent = `Thử lại sau ${Math.ceil((lockUntil - Date.now()) / 1000)} giây.`; return; }
+      if (await sha(a.salt + p) === a.hash) { sessSet(); fails = 0; log('Đăng nhập quản trị'); $('lock').classList.add('hide'); enter(); } else { fails++; $('pin1').value = ''; e.textContent = 'Sai mã PIN.'; if (fails >= 5) { lockUntil = Date.now() + 30000; fails = 0; e.textContent = 'Nhập sai quá nhiều. Khóa 30 giây.'; } }
+    }
+  };
+  $('lockBtn').onclick = go; $('lock').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+}
+
+/* ================= Điều hướng ================= */
+const VIEWS = [['dash', '📊', 'Tổng quan'], ['games', '🎮', 'Quản lý game'], ['data', '🗄️', 'Dữ liệu game'], ['bank', '🧠', 'Ngân hàng câu hỏi'], ['vth', '🌻', 'Cấu hình Vườn Thủ Hộ'], ['backup', '💾', 'Sao lưu & khôi phục'], ['log', '🧾', 'Nhật ký'], ['set', '⚙️', 'Cài đặt']];
+let view = 'dash';
+function enter() { $('app').classList.remove('hide'); loadAll(); buildNav(); go(location.hash.slice(1) || 'dash'); }
+function buildNav() {
+  $('nav').innerHTML = `<div class="brand"><i>🎮</i>Quản trị Game</div>` + VIEWS.map(v => `<button class="nb ${v[0] === view ? 'on' : ''}" data-v="${v[0]}"><span>${v[1]}</span><span class="tx">${v[2]}</span>${badge(v[0])}</button>`).join('') +
+    `<div class="grow"></div><div class="meter" id="meter"></div><button class="nb" data-v="__out"><span>🚪</span><span class="tx">Khóa lại</span></button>`; meter();
+}
+function badge(v) { const d = v === 'games' && stateDirty.reg || v === 'bank' && stateDirty.bank || v === 'vth' && stateDirty.vth; return d ? '<span class="n">●</span>' : ''; }
+function meter() { const m = $('meter'); if (!m) return; let tot = 0; lsKeys().forEach(k => { tot += (k.length + (lsGet(k) || '').length) * 2; }); m.innerHTML = `Dung lượng lưu trữ: ${fmtB(tot)} / ~5 MB<div><i style="width:${Math.min(100, tot / 5242880 * 100)}%"></i></div>`; }
+$('nav').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (!b) return; if (b.dataset.v === '__out') { sessClr(); location.reload(); return; } go(b.dataset.v); });
+function go(v) { view = VIEWS.some(x => x[0] === v) ? v : 'dash'; try { history.replaceState(null, '', '#' + view); } catch (e) {} buildNav(); render(); window.scrollTo(0, 0); }
+function render() { const el = $('view'); const f = { dash: vDash, games: vGames, data: vData, bank: vBank, vth: vVth, backup: vBackup, log: vLog, set: vSet }[view]; el.innerHTML = f(); const b = { games: bindGames, data: bindData, bank: bindBank, vth: bindVth, backup: bindBackup, log: bindLog, set: bindSet }[view]; if (b) b(); }
+function head(t, sub, actions) { return `<div class="head"><div><h2>${t}</h2><p>${sub || ''}</p></div><div class="row">${actions || ''}</div></div>`; }
+const storeWarn = () => storeOk ? '' : '<div class="alert er">Trình duyệt đang chặn lưu trữ (localStorage). Mọi thay đổi chỉ giữ trong phiên này. Hãy mở trang qua một địa chỉ http(s) hoặc cho phép lưu trữ.</div>';
+
+/* ================= Nạp dữ liệu làm việc ================= */
+let reg, bank, vth, vthLvl = 0, vthTab = 'visual', bankF = { s: 'all', g: 0, q: '', bad: false, limit: 40 };
+function loadAll() { loadReg(); loadBank(); loadVth(); }
+function loadReg() { const r = rdJ(REG).val; reg = (r && Array.isArray(r.games)) ? clone(r.games) : clone(DEFAULT_GAMES); stateDirty.reg = false; }
+const SK = { viet: 'Tiếng Việt', eng: 'Tiếng Anh', sci: 'Khoa học', geo: 'Địa lí – Lịch sử', custom: 'Thầy cô ra đề' };
+function loadBank() { const sv = rdJ('phieu-luu-hoc-gioi-v1').val; const src = sv && sv.bank && !validateBank(sv.bank).length ? sv.bank : DEF_BANK; bank = clone(src); Object.keys(SK).forEach(k => { if (!Array.isArray(bank[k])) bank[k] = []; }); stateDirty.bank = false; }
+function loadVth() { const r = rdJ('vuon-thu-ho-cfg-v1').val; const src = r && !validateVth(r).length ? r : DEF_VTH; vth = clone(src); vth.levels = (vth.levels || []).map(canonLevel); vthLvl = Math.min(vthLvl, vth.levels.length - 1); stateDirty.vth = false; }
+
+/* ================= 1. Tổng quan ================= */
+function gameData(g) {
+  const keys = (GAME_KEYS[g.id] || (g.key ? [[g.key, 'Tiến trình']] : [])); let size = 0, has = false, sum = '', bad = false;
+  keys.forEach(([k], i) => { const r = rdJ(k); if (r.raw != null) { has = true; size += (k.length + r.raw.length) * 2; } if (r.val === undefined) bad = true; if (i === 0 && r.val && SUMMARY[g.id]) { try { sum = SUMMARY[g.id](r.val); } catch (e) { sum = ''; } } });
+  return { size, has, sum, bad, keys };
+}
+function vDash() {
+  const rows = reg.map(g => ({ g, d: gameData(g) })), vis = reg.filter(g => !g.hidden).length, withData = rows.filter(r => r.d.has).length, totSize = rows.reduce((a, r) => a + r.d.size, 0);
+  const qCount = Object.keys(SK).reduce((a, k) => a + (bank[k] || []).length, 0), plg = rdJ('phieu-luu-hoc-gioi-v1').val || {}, st = plg.stats || {}, answered = Object.values(st).reduce((a, b) => a + (b.a || 0), 0), correct = Object.values(st).reduce((a, b) => a + (b.c || 0), 0);
+  const badKeys = rows.filter(r => r.d.bad).length, cols = { math: '#ff758c', viet: '#7ed957', eng: '#ffb347', sci: '#8e9bff', geo: '#ffd43b', custom: '#4cd6b3' }, names = Object.assign({ math: 'Toán' }, SK);
+  const bars = Object.keys(names).map(k => { const s = st[k]; if (!s && k === 'custom') return ''; const a = s ? s.a : 0, p = a ? Math.round(s.c / a * 100) : 0; return `<div class="bar"><span class="n">${names[k]}</span><div class="tr"><i style="width:${p}%;background:${cols[k]}"></i></div><span class="p">${a ? p + '% (' + a + ')' : '—'}</span></div>`; }).join('');
+  return head('Tổng quan', 'Tình hình dữ liệu của tất cả game trên thiết bị này.') + storeWarn() +
+    (badKeys ? `<div class="alert er">Có ${badKeys} game có dữ liệu JSON bị lỗi. Vào mục <b>Dữ liệu game</b> để sửa.</div>` : '') +
+    (!withData ? '<div class="alert in">Chưa thấy dữ liệu game nào. Hãy mở admin cùng thư mục/địa chỉ với các game (cùng một nguồn gốc trình duyệt), hoặc dùng mục <b>Sao lưu</b> để nhập file.</div>' : '') +
+    `<div class="grid g4"><div class="card stat"><b>${vis}/${reg.length}</b><span>Game đang hiển thị</span></div><div class="card stat"><b>${withData}</b><span>Game có dữ liệu lưu</span></div>
+    <div class="card stat"><b>${fmtB(totSize)}</b><span>Dung lượng dữ liệu game</span></div><div class="card stat"><b>${qCount}</b><span>Câu hỏi trong ngân hàng</span></div></div>
+    <div class="grid g2" style="margin-top:14px"><div class="card"><h3 style="margin-bottom:8px">📚 Kết quả học tập (Phiêu Lưu Học Giỏi)</h3>${answered ? `<p style="color:var(--mut);margin-bottom:6px">${answered} câu đã trả lời · ${Math.round(correct / answered * 100)}% đúng</p>${bars}` : '<p style="color:var(--mut)">Chưa có dữ liệu trả lời.</p>'}</div>
+    <div class="card"><h3 style="margin-bottom:8px">🎮 Tình trạng từng game</h3><div style="max-height:360px;overflow:auto">${rows.map(({ g, d }) => `<div class="bar" style="margin:9px 0"><span style="font-size:22px;flex:none">${esc(g.icon)}</span><span style="flex:1;min-width:0"><b>${esc(g.name)}</b>${g.hidden ? ' <span class="tag wa">ẩn</span>' : ''}<br><small style="color:var(--mut)">${d.has ? esc(d.sum || 'Có dữ liệu') : 'Chưa có dữ liệu'}</small></span>${d.bad ? '<span class="tag er">JSON lỗi</span>' : d.has ? `<span class="tag ok">${fmtB(d.size)}</span>` : '<span class="tag">trống</span>'}</div>`).join('')}</div></div></div>`;
+}
+
+/* ================= 2. Quản lý game (registry cho Trung Tâm Game) ================= */
+function vGames() {
+  return head('Quản lý game', 'Danh sách này điều khiển trang Trung Tâm Game: tên, thứ tự, ẩn/hiện, thêm game mới.',
+    `<button class="btn" data-a="add">+ Thêm game</button><button class="btn" data-a="check">🔎 Kiểm tra liên kết</button><button class="btn" data-a="json">{ } JSON</button><button class="btn d" data-a="reset">Mặc định</button><button class="btn p" data-a="save" ${stateDirty.reg ? '' : 'disabled'}>💾 Lưu thay đổi</button>`) + storeWarn() +
+    (stateDirty.reg ? '<div class="alert wa">Có thay đổi chưa lưu.</div>' : '') +
+    `<div class="gl" id="gl">${reg.map((g, i) => `<div class="gi ${g.hidden ? 'off' : ''}" data-i="${i}"><div class="ic" style="background:linear-gradient(135deg,${esc(g.c[0])},${esc(g.c[1])})">${esc(g.icon)}</div>
+      <div class="mt"><b>${esc(g.name)} ${g.isNew ? '<span class="tag ok">MỚI</span>' : ''} ${g.custom ? '<span class="tag">tự thêm</span>' : ''}</b><small>${esc(g.file)} · ${esc(g.tag)}</small><small>${esc(g.desc)}</small><small class="lk" id="lk${i}"></small></div>
+      <div class="ac"><label class="sw" title="Hiển thị trong Trung Tâm Game"><input type="checkbox" data-a="vis" ${g.hidden ? '' : 'checked'} aria-label="Hiển thị ${esc(g.name)}"><i></i></label>
+      <button class="btn s" data-a="up" ${i === 0 ? 'disabled' : ''} aria-label="Lên">↑</button><button class="btn s" data-a="dn" ${i === reg.length - 1 ? 'disabled' : ''} aria-label="Xuống">↓</button>
+      <button class="btn s" data-a="edit">Sửa</button><a class="btn s" href="${esc(g.file)}" target="_blank" rel="noopener">Mở</a>${g.custom ? '<button class="btn s d" data-a="del">Xóa</button>' : ''}</div></div>`).join('')}</div>`;
+}
+function bindGames() {
+  $('view').onclick = async e => {
+    const b = e.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a, it = b.closest('.gi'), i = it ? +it.dataset.i : -1;
+    if (a === 'vis') { reg[i].hidden = !b.checked; stateDirty.reg = true; render(); buildNav(); }
+    else if (a === 'up' || a === 'dn') { const j = a === 'up' ? i - 1 : i + 1; [reg[i], reg[j]] = [reg[j], reg[i]]; stateDirty.reg = true; render(); buildNav(); }
+    else if (a === 'edit') editGame(i); else if (a === 'add') editGame(-1);
+    else if (a === 'del') { if (await confirmBox(`Xóa game <b>${esc(reg[i].name)}</b> khỏi danh sách? (Không xóa file.)`)) { reg.splice(i, 1); stateDirty.reg = true; render(); buildNav(); } }
+    else if (a === 'save') { wrJ(REG, { v: 1, games: reg, updated: new Date().toISOString() }); stateDirty.reg = false; log('Lưu danh sách game', reg.length + ' game'); toast('Đã lưu. Trung Tâm Game sẽ dùng danh sách này.', 'ok'); render(); buildNav(); }
+    else if (a === 'reset') { if (await confirmBox('Khôi phục danh sách game về mặc định? Thay đổi chưa lưu sẽ mất.')) { reg = clone(DEFAULT_GAMES); lsDel(REG); stateDirty.reg = false; log('Khôi phục danh sách game mặc định'); render(); buildNav(); toast('Đã khôi phục mặc định', 'ok'); } }
+    else if (a === 'json') regJson(); else if (a === 'check') checkLinks();
+  };
+}
+function editGame(i) {
+  const g = i >= 0 ? reg[i] : { id: '', file: '', icon: '🎮', name: '', tag: 'GAME', desc: '', c: ['#6c8cff', '#8f6bff'], key: '', custom: true, isNew: false, hidden: false };
+  modal(i >= 0 ? 'Sửa game' : 'Thêm game mới', `<div class="fg"><label class="f">Tên game<input type="text" id="g_name" value="${esc(g.name)}"></label><label class="f">Biểu tượng (emoji)<input type="text" id="g_icon" value="${esc(g.icon)}" maxlength="4"></label>
+    <label class="f">Tên tệp (.html)<input type="text" id="g_file" value="${esc(g.file)}" placeholder="vi-du.html"></label><label class="f">Nhóm / nhãn<input type="text" id="g_tag" value="${esc(g.tag)}"></label>
+    <label class="f">Màu 1<input type="color" id="g_c1" value="${esc(g.c[0])}"></label><label class="f">Màu 2<input type="color" id="g_c2" value="${esc(g.c[1])}"></label>
+    <label class="f">Khóa lưu trữ (tuỳ chọn)<input type="text" id="g_key" value="${esc(g.key || '')}" placeholder="vi-du-v1"></label></div>
+    <label class="f" style="margin-top:10px">Mô tả<textarea id="g_desc" style="min-height:70px">${esc(g.desc)}</textarea></label>
+    <div class="row" style="margin-top:10px"><label class="chk"><input type="checkbox" id="g_new" ${g.isNew ? 'checked' : ''}> Gắn nhãn MỚI</label><label class="chk"><input type="checkbox" id="g_hid" ${g.hidden ? 'checked' : ''}> Ẩn khỏi Trung Tâm Game</label></div><div id="g_err" class="alert er hide" style="margin:10px 0 0"></div>`,
+    [{ label: 'Hủy' }, { label: 'Lưu', cls: 'p', fn: () => {
+      const v = { name: $('g_name').value.trim(), icon: $('g_icon').value.trim() || '🎮', file: $('g_file').value.trim(), tag: $('g_tag').value.trim() || 'GAME', desc: $('g_desc').value.trim(), key: $('g_key').value.trim(), isNew: $('g_new').checked, hidden: $('g_hid').checked, c: [$('g_c1').value, $('g_c2').value] };
+      const er = []; if (!v.name) er.push('Chưa nhập tên game.'); if (!/^[\w\-./]+\.html?$/i.test(v.file)) er.push('Tên tệp phải kết thúc bằng .html và không chứa khoảng trắng.'); if (reg.some((x, k) => k !== i && x.file === v.file)) er.push('Tệp này đã có trong danh sách.');
+      if (er.length) { const e = $('g_err'); e.classList.remove('hide'); e.innerHTML = er.join('<br>'); return false; }
+      if (i >= 0) Object.assign(reg[i], v); else reg.push(Object.assign({ id: v.file.replace(/\.html?$/i, '').replace(/[^\w-]/g, '-'), custom: true }, v));
+      stateDirty.reg = true; render(); buildNav();
+    } }]);
+}
+function regJson() {
+  modal('Danh sách game (JSON)', `<textarea class="code" id="rj" style="min-height:320px" spellcheck="false">${esc(JSON.stringify(reg, null, 2))}</textarea><div id="rje" class="alert er hide" style="margin-top:8px"></div>`,
+    [{ label: 'Sao chép', fn: () => { copyText($('rj').value); return false; } }, { label: 'Hủy' }, { label: 'Áp dụng', cls: 'p', fn: () => {
+      let v; try { v = JSON.parse($('rj').value); } catch (e) { const x = $('rje'); x.classList.remove('hide'); x.textContent = 'JSON sai cú pháp: ' + e.message; return false; }
+      const er = validateReg(v); if (er.length) { const x = $('rje'); x.classList.remove('hide'); x.innerHTML = er.slice(0, 6).map(esc).join('<br>'); return false; }
+      reg = v; stateDirty.reg = true; render(); buildNav();
+    } }], true);
+}
+function validateReg(v) { const er = []; if (!Array.isArray(v) || !v.length) return ['Phải là mảng có ít nhất 1 game.']; const seen = new Set(); v.forEach((g, i) => { const p = `Game #${i + 1}`; if (!g || typeof g.name !== 'string' || !g.name) er.push(`${p}: thiếu "name"`); if (typeof g.file !== 'string' || !/\.html?$/i.test(g.file)) er.push(`${p}: "file" phải là tên tệp .html`); else if (seen.has(g.file)) er.push(`${p}: trùng tệp ${g.file}`); else seen.add(g.file); if (!Array.isArray(g.c) || g.c.length !== 2) er.push(`${p}: "c" cần 2 màu`); }); return er; }
+async function checkLinks() {
+  if (location.protocol === 'file:') { toast('Mở bằng file:// nên không kiểm tra được. Hãy dùng máy chủ http(s).', 'er'); return; }
+  toast('Đang kiểm tra...'); await Promise.all(reg.map(async (g, i) => { const el = $('lk' + i); if (!el) return; try { const r = await fetch(g.file, { method: 'HEAD', cache: 'no-store' }); el.innerHTML = r.ok ? '<span style="color:var(--ok)">✔ Tệp tồn tại</span>' : `<span style="color:var(--er)">✖ Lỗi ${r.status}</span>`; } catch (e) { el.innerHTML = '<span style="color:var(--er)">✖ Không truy cập được</span>'; } })); toast('Đã kiểm tra xong', 'ok');
+}
+
+/* ================= 3. Dữ liệu game (localStorage) ================= */
+const QUICK = [
+  { id: 'pg', label: 'Phá Gạch: mở khóa tất cả 12 màn', key: 'pha-gach-v1', fn: s => { s.unlocked = 12; return s; } },
+  { id: 'bv', label: 'Bóng Vọng: mở khóa tất cả màn', key: 'bong-vong-v1', fn: s => { s.stars = s.stars || {}; for (let i = 0; i < 29; i++) s.stars[i] = Math.max(s.stars[i] || 0, 1); return s; } },
+  { id: 'vth', label: 'Vườn Thủ Hộ: đánh dấu đã thắng 5 màn', key: 'vuon-thu-ho-prog-v1', fn: s => { s.cleared = s.cleared || {}; for (let i = 0; i < 5; i++) s.cleared[i] = true; return s; } },
+  { id: 'plg', label: 'Phiêu Lưu Học Giỏi: +500 ⭐', key: 'phieu-luu-hoc-gioi-v1', fn: s => { s.wallet = (s.wallet || 0) + 500; return s; } },
+  { id: 'plg2', label: 'Phiêu Lưu Học Giỏi: mở tất cả nhân vật', key: 'phieu-luu-hoc-gioi-v1', fn: s => { s.owned = [0, 1, 2, 3, 4, 5]; return s; } },
+  { id: 'plg3', label: 'Phiêu Lưu Học Giỏi: xóa thống kê & câu sai', key: 'phieu-luu-hoc-gioi-v1', fn: s => { s.stats = {}; s.wrong = []; return s; } },
+  { id: 'mr', label: 'Metro Rush: +1000 xu', key: 'metro-rush-v1', fn: s => { s.coins = (s.coins || 0) + 1000; return s; } },
+  { id: 'mr2', label: 'Metro Rush: mở tất cả nhân vật', key: 'metro-rush-v1', fn: s => { s.owned = [0, 1, 2, 3, 4]; return s; } },
+  { id: 'nt', label: 'Nông Trại Vui: +5000 xu', key: 'nong-trai-vui-v1', fn: s => { s.coins = (s.coins || 0) + 5000; return s; } },
+  { id: 'xk', label: 'Xếp Khối: xóa ván đang chơi dở', key: 'xep-khoi-v1', fn: s => { s.save = null; return s; } }
+];
+function trackedKeys() { const m = new Map(); reg.forEach(g => (GAME_KEYS[g.id] || (g.key ? [[g.key, 'Tiến trình']] : [])).forEach(([k, l]) => m.set(k, { game: g.name, icon: g.icon, label: l }))); DEFAULT_GAMES.forEach(g => (GAME_KEYS[g.id] || (g.key ? [[g.key, 'Tiến trình']] : [])).forEach(([k, l]) => { if (!m.has(k)) m.set(k, { game: g.name, icon: g.icon, label: l }); })); m.set(HUB, { game: 'Trung Tâm Game', icon: '🏠', label: 'Game chơi gần nhất' }); m.set(REG, { game: 'Quản trị', icon: '🧭', label: 'Danh sách game' }); return m; }
+function vData() {
+  const tk = trackedKeys(), all = lsKeys().filter(k => !ADMIN_KEYS.includes(k)), known = [...tk.keys()].filter(k => all.includes(k)), other = all.filter(k => !tk.has(k));
+  const row = (k, meta) => { const r = rdJ(k), size = (k.length + (r.raw || '').length) * 2; return `<tr data-k="${esc(k)}"><td>${meta ? esc(meta.icon) + ' <b>' + esc(meta.game) + '</b><br><small style="color:var(--mut)">' + esc(meta.label) + '</small>' : '<b>Khóa khác</b>'}</td><td><code style="font-size:12.5px;word-break:break-all">${esc(k)}</code></td><td>${fmtB(size)}</td><td>${r.val === undefined ? '<span class="tag er">JSON lỗi</span>' : '<span class="tag ok">hợp lệ</span>'}</td>
+    <td style="white-space:nowrap"><button class="btn s" data-a="view">Xem/Sửa</button> <button class="btn s" data-a="dl">Tải</button> <button class="btn s d" data-a="rm">Xóa</button></td></tr>`; };
+  return head('Dữ liệu game', 'Xem, sửa, xuất hoặc xóa dữ liệu lưu trong trình duyệt của từng game.', `<button class="btn" data-a="refresh">↻ Làm mới</button>`) + storeWarn() +
+    `<div class="tw"><table><thead><tr><th>Game</th><th>Khóa</th><th>Kích thước</th><th>Trạng thái</th><th></th></tr></thead><tbody>${known.length || other.length ? known.map(k => row(k, tk.get(k))).join('') + other.map(k => row(k, null)).join('') : '<tr><td colspan="5" style="color:var(--mut);text-align:center;padding:24px">Chưa có dữ liệu nào trong trình duyệt này.</td></tr>'}</tbody></table></div>
+    <h3 style="margin:22px 0 10px">⚡ Công cụ nhanh cho admin</h3><div class="grid g2">${QUICK.map(q => `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span>${esc(q.label)}</span><button class="btn s p" data-q="${q.id}">Chạy</button></div>`).join('')}</div>
+    <h3 style="margin:22px 0 10px">🗑 Đặt lại tiến trình một game</h3><div class="row">${reg.filter(g => (GAME_KEYS[g.id] || g.key)).map(g => `<button class="btn s d" data-r="${esc(g.id)}">${esc(g.icon)} ${esc(g.name)}</button>`).join('')}</div>`;
+}
+function bindData() {
+  $('view').onclick = async e => {
+    const b = e.target.closest('[data-a],[data-q],[data-r]'); if (!b) return;
+    if (b.dataset.a === 'refresh') { render(); return; }
+    if (b.dataset.q) { const q = QUICK.find(x => x.id === b.dataset.q), r = rdJ(q.key); if (r.val === undefined) { toast('Dữ liệu game đang lỗi JSON, hãy sửa trước.', 'er'); return; } if (!(await confirmBox(`${esc(q.label)}?`, 'Chạy', false))) return; wrJ(q.key, q.fn(r.val || {})); log('Công cụ nhanh', q.label); toast('Đã thực hiện', 'ok'); render(); meter(); return; }
+    if (b.dataset.r) { const g = DEFAULT_GAMES.concat(reg).find(x => x.id === b.dataset.r), ks = (GAME_KEYS[g.id] || [[g.key]]).map(x => x[0]).filter(k => !k.endsWith('-cfg-v1')); if (!(await confirmBox(`Xóa toàn bộ tiến trình của <b>${esc(g.name)}</b>? Không thể hoàn tác.`))) return; ks.forEach(lsDel); log('Đặt lại tiến trình game', g.name); toast('Đã đặt lại', 'ok'); render(); meter(); return; }
+    const k = b.closest('tr').dataset.k, a = b.dataset.a;
+    if (a === 'dl') { const r = rdJ(k); download(k + '.json', r.raw || ''); }
+    else if (a === 'rm') { if (await confirmBox(`Xóa khóa <code>${esc(k)}</code>? Không thể hoàn tác.`)) { lsDel(k); log('Xóa khóa dữ liệu', k); render(); meter(); toast('Đã xóa', 'ok'); loadAll(); } }
+    else if (a === 'view') editKey(k);
+  };
+}
+function editKey(k) {
+  const r = rdJ(k); let text = r.raw == null ? '' : r.val !== undefined ? JSON.stringify(r.val, null, 2) : r.raw;
+  modal('Sửa dữ liệu', `<p style="color:var(--mut);margin-bottom:8px"><code>${esc(k)}</code></p>${r.val === undefined ? `<div class="alert er">JSON đang lỗi: ${esc(r.err || '')}. Hãy sửa lại rồi lưu.</div>` : ''}<textarea class="code" id="ek" spellcheck="false">${esc(text)}</textarea><div id="eke" class="alert er hide" style="margin-top:8px"></div>`,
+    [{ label: 'Sao chép', fn: () => { copyText($('ek').value); return false; } }, { label: 'Hủy' }, { label: 'Lưu', cls: 'p', fn: () => {
+      let v; try { v = JSON.parse($('ek').value); } catch (e) { const x = $('eke'); x.classList.remove('hide'); x.textContent = 'JSON sai cú pháp: ' + e.message; return false; }
+      wrJ(k, v); log('Sửa dữ liệu', k); toast('Đã lưu', 'ok'); loadAll(); render(); meter();
+    } }], true);
+}
+
+/* ================= 4. Ngân hàng câu hỏi ================= */
+function validateBank(b) {
+  const er = []; if (!b || typeof b !== 'object' || Array.isArray(b)) return ['JSON gốc phải là object'];
+  ['viet', 'eng', 'sci', 'geo', 'custom'].forEach(k => { if (b[k] === undefined) return; if (!Array.isArray(b[k])) { er.push(`"${k}" phải là mảng`); return; } b[k].forEach((q, i) => er.push(...qIssues(q).map(m => `${k} #${i + 1}: ${m}`))); });
+  return er;
+}
+function qIssues(q) { const er = []; if (!q || typeof q.q !== 'string' || !q.q.trim()) er.push('thiếu câu hỏi'); if (!Array.isArray(q.a) || q.a.length < 2 || q.a.length > 4 || q.a.some(x => typeof x !== 'string' || !x.trim())) er.push('cần 2–4 đáp án không rỗng'); else { if (!Number.isInteger(q.c) || q.c < 0 || q.c >= q.a.length) er.push('đáp án đúng không hợp lệ'); if (new Set(q.a.map(x => x.trim().toLowerCase())).size < q.a.length) er.push('có đáp án trùng nhau'); } if (q.g !== undefined && !(Number.isInteger(q.g) && q.g >= 1 && q.g <= 5)) er.push('lớp phải từ 1 đến 5'); return er; }
+function flat() { const out = []; Object.keys(SK).forEach(s => (bank[s] || []).forEach((q, i) => out.push({ s, i, q, bad: qIssues(q).length > 0 }))); return out; }
+function vBank() {
+  const all = flat(), badN = all.filter(x => x.bad).length, ql = bankF.q.trim().toLowerCase();
+  let list = all.filter(x => (bankF.s === 'all' || x.s === bankF.s) && (!bankF.g || (x.q.g || 1) === bankF.g) && (!bankF.bad || x.bad) && (!ql || (x.q.q + ' ' + (x.q.a || []).join(' ')).toLowerCase().includes(ql)));
+  const dup = new Map(); all.forEach(x => { const k = (x.q.q || '').trim().toLowerCase(); dup.set(k, (dup.get(k) || 0) + 1); }); const dupN = [...dup.values()].filter(v => v > 1).length;
+  const mx = Object.keys(SK).map(s => `<tr><td>${SK[s]}</td>${[1, 2, 3, 4, 5].map(g => { const n = (bank[s] || []).filter(q => (q.g || 1) === g).length; return `<td class="${n ? '' : 'z'}">${n}</td>`; }).join('')}<td><b>${(bank[s] || []).length}</b></td></tr>`).join('');
+  const shown = list.slice(0, bankF.limit);
+  return head('Ngân hàng câu hỏi', 'Dành cho game <b>Phiêu Lưu Học Giỏi</b>. Môn Toán tự sinh số theo lớp nên không cần nhập.',
+    `<button class="btn" data-a="add">+ Thêm câu</button><button class="btn" data-a="imp">⬆ Nhập</button><button class="btn" data-a="exp">⬇ Xuất</button><button class="btn d" data-a="revert">Hoàn tác</button><button class="btn p" data-a="apply" ${badN ? 'disabled' : ''}>🚀 Áp dụng vào game</button>`) + storeWarn() +
+    (stateDirty.bank ? '<div class="alert wa">Có thay đổi chưa áp dụng vào game.</div>' : '') + (badN ? `<div class="alert er">${badN} câu có lỗi. Sửa hết lỗi mới áp dụng được. <button class="btn s" data-a="onlybad">Chỉ hiện câu lỗi</button></div>` : '') + (dupN ? `<div class="alert wa">${dupN} câu hỏi bị trùng nội dung.</div>` : '') +
+    `<div class="card" style="margin-bottom:14px"><h3 style="margin-bottom:8px;font-size:15px">Số câu theo môn và lớp <small style="color:var(--mut);font-weight:400">(số 0 màu đỏ là còn thiếu)</small></h3><div class="tw" style="border:0"><table class="mx"><thead><tr><th>Môn</th><th>Lớp 1</th><th>Lớp 2</th><th>Lớp 3</th><th>Lớp 4</th><th>Lớp 5</th><th>Tổng</th></tr></thead><tbody>${mx}</tbody></table></div></div>
+    <div class="row" style="margin-bottom:12px"><div class="chips">${['all', ...Object.keys(SK)].map(s => `<button class="chp ${bankF.s === s ? 'on' : ''}" data-s="${s}">${s === 'all' ? 'Tất cả' : SK[s]}</button>`).join('')}</div>
+    <select id="bf_g" style="width:auto"><option value="0">Mọi lớp</option>${[1, 2, 3, 4, 5].map(g => `<option value="${g}" ${bankF.g === g ? 'selected' : ''}>Lớp ${g}</option>`).join('')}</select>
+    <input type="search" id="bf_q" placeholder="Tìm câu hỏi..." value="${esc(bankF.q)}" style="flex:1;min-width:160px"><span style="color:var(--mut)">${list.length} câu</span></div>
+    <div class="grid" id="ql">${shown.map(x => qCard(x)).join('') || '<div class="card" style="text-align:center;color:var(--mut)">Không có câu hỏi phù hợp.</div>'}</div>${list.length > shown.length ? `<div style="text-align:center;margin-top:12px"><button class="btn" data-a="more">Hiện thêm (${list.length - shown.length})</button></div>` : ''}`;
+}
+function qCard(x) {
+  const q = x.q, er = qIssues(q);
+  return `<div class="qi ${x.bad ? 'bad' : ''}" data-s="${x.s}" data-i="${x.i}"><div class="row"><span class="tag">${SK[x.s]}</span><span class="tag">Lớp ${q.g || 1}</span>${q.icon ? `<span>${esc(q.icon)}</span>` : ''}${q.lang === 'en-US' ? '<span class="tag">🔊 EN</span>' : ''}<span style="flex:1"></span>
+    <button class="btn s" data-a="edit">Sửa</button><button class="btn s" data-a="dup">Nhân bản</button><button class="btn s d" data-a="del">Xóa</button></div><div class="qt">${esc(q.q)}</div>
+    <ol>${(q.a || []).map((t, k) => `<li class="${k === q.c ? 'ok' : ''}">${'ABCD'[k]}. ${esc(t)}${k === q.c ? ' ✓' : ''}</li>`).join('')}</ol>${q.e ? `<small style="color:var(--mut)">💬 ${esc(q.e)}</small>` : ''}${er.length ? `<small style="color:var(--er)">⚠ ${esc(er.join('; '))}</small>` : ''}</div>`;
+}
+function bindBank() {
+  $('view').onclick = async e => {
+    const c = e.target.closest('[data-s]:not(.qi)'); if (c && c.classList.contains('chp')) { bankF.s = c.dataset.s; bankF.limit = 40; render(); return; }
+    const b = e.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a, it = b.closest('.qi'), s = it && it.dataset.s, i = it && +it.dataset.i;
+    if (a === 'add') editQ(null, null); else if (a === 'edit') editQ(s, i);
+    else if (a === 'dup') { bank[s].splice(i + 1, 0, clone(bank[s][i])); stateDirty.bank = true; render(); buildNav(); }
+    else if (a === 'del') { if (await confirmBox('Xóa câu hỏi này?')) { bank[s].splice(i, 1); stateDirty.bank = true; render(); buildNav(); } }
+    else if (a === 'more') { bankF.limit += 60; render(); } else if (a === 'onlybad') { bankF.bad = true; render(); }
+    else if (a === 'imp') impBank(); else if (a === 'exp') expBank();
+    else if (a === 'revert') { if (await confirmBox('Bỏ thay đổi và nạp lại ngân hàng từ game?')) { loadBank(); render(); buildNav(); } }
+    else if (a === 'apply') applyBank();
+  };
+  $('view').onchange = e => { if (e.target.id === 'bf_g') { bankF.g = +e.target.value; bankF.limit = 40; render(); } };
+  const q = $('bf_q'); if (q) q.oninput = () => { bankF.q = q.value; bankF.limit = 40; const pos = q.selectionStart; render(); const n = $('bf_q'); n.focus(); n.setSelectionRange(pos, pos); };
+}
+function editQ(s, i) {
+  const q = s ? clone(bank[s][i]) : { q: '', a: ['', '', '', ''], c: 0, g: 3, icon: '', e: '', lang: 'vi-VN' }; while (q.a.length < 4) q.a.push('');
+  modal(s ? 'Sửa câu hỏi' : 'Thêm câu hỏi', `<div class="fg"><label class="f">Môn<select id="q_s">${Object.keys(SK).map(k => `<option value="${k}" ${k === (s || bankF.s !== 'all' && bankF.s || 'viet') ? 'selected' : ''}>${SK[k]}</option>`).join('')}</select></label>
+    <label class="f">Lớp<select id="q_g">${[1, 2, 3, 4, 5].map(g => `<option value="${g}" ${g === (q.g || 1) ? 'selected' : ''}>Lớp ${g}</option>`).join('')}</select></label>
+    <label class="f">Biểu tượng (emoji, tuỳ chọn)<input type="text" id="q_icon" value="${esc(q.icon || '')}" maxlength="4"></label>
+    <label class="f">Giọng đọc<select id="q_lang"><option value="vi-VN" ${q.lang !== 'en-US' ? 'selected' : ''}>Tiếng Việt</option><option value="en-US" ${q.lang === 'en-US' ? 'selected' : ''}>Tiếng Anh</option></select></label></div>
+    <label class="f" style="margin-top:10px">Câu hỏi<textarea id="q_q" style="min-height:70px">${esc(q.q)}</textarea></label>
+    <div style="margin-top:10px;display:grid;gap:8px">${[0, 1, 2, 3].map(k => `<div class="row" style="flex-wrap:nowrap"><label class="chk" style="flex:none"><input type="radio" name="q_c" value="${k}" ${k === q.c ? 'checked' : ''} aria-label="Đáp án ${'ABCD'[k]} là đúng"> <b>${'ABCD'[k]}</b></label><input type="text" id="q_a${k}" value="${esc(q.a[k] || '')}" placeholder="Đáp án ${'ABCD'[k]}${k < 2 ? '' : ' (tuỳ chọn)'}"></div>`).join('')}<small style="color:var(--mut)">Chọn nút tròn ở đáp án đúng. Game tự xáo thứ tự đáp án.</small></div>
+    <label class="f" style="margin-top:10px">Giải thích (hiện sau khi trả lời, tuỳ chọn)<input type="text" id="q_e" value="${esc(q.e || '')}"></label><div id="q_err" class="alert er hide" style="margin:10px 0 0"></div>`,
+    [{ label: 'Hủy' }, { label: 'Lưu', cls: 'p', fn: () => {
+      const a = [0, 1, 2, 3].map(k => $('q_a' + k).value.trim()), ci = +(document.querySelector('input[name=q_c]:checked') || { value: 0 }).value, keep = a.map((t, k) => ({ t, k })).filter(x => x.t); const nq = { q: $('q_q').value.trim(), a: keep.map(x => x.t), c: keep.findIndex(x => x.k === ci), g: +$('q_g').value };
+      const ic = $('q_icon').value.trim(), ex = $('q_e').value.trim(); if (ic) nq.icon = ic; if (ex) nq.e = ex; if ($('q_lang').value === 'en-US') nq.lang = 'en-US';
+      const er = qIssues(nq); if (!a[ci]) er.push('đáp án được chọn là đúng đang để trống'); if (er.length) { const x = $('q_err'); x.classList.remove('hide'); x.innerHTML = er.map(esc).join('<br>'); return false; }
+      const ns = $('q_s').value; if (s) { if (ns === s) bank[s][i] = nq; else { bank[s].splice(i, 1); bank[ns].push(nq); } } else bank[ns].push(nq); stateDirty.bank = true; render(); buildNav();
+    } }], true);
+}
+function applyBank() {
+  const er = validateBank(bank); if (er.length) { toast('Còn lỗi, chưa áp dụng được', 'er'); return; }
+  const r = rdJ('phieu-luu-hoc-gioi-v1'); if (r.val === undefined) { toast('Dữ liệu game đang lỗi JSON, hãy sửa trong mục Dữ liệu game.', 'er'); return; }
+  const sv = r.val || {}; sv.bank = clone(bank); wrJ('phieu-luu-hoc-gioi-v1', sv); stateDirty.bank = false; log('Áp dụng ngân hàng câu hỏi', Object.keys(SK).map(k => k + ':' + bank[k].length).join(' ')); toast('Đã áp dụng vào game Phiêu Lưu Học Giỏi', 'ok'); render(); buildNav(); meter();
+}
+const CSVH = ['mon', 'lop', 'cau_hoi', 'dap_an_dung', 'sai_1', 'sai_2', 'sai_3', 'bieu_tuong', 'giai_thich', 'ngon_ngu'];
+const csvQ = v => /[",\n]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+function toCSV() { const rows = [CSVH.join(',')]; flat().forEach(x => { const q = x.q, ans = q.a || [], right = ans[q.c] || '', wr = ans.filter((_, k) => k !== q.c); rows.push([x.s, q.g || 1, q.q, right, wr[0] || '', wr[1] || '', wr[2] || '', q.icon || '', q.e || '', q.lang || 'vi-VN'].map(csvQ).join(',')); }); return '\ufeff' + rows.join('\r\n'); }
+function parseCSV(t) { t = t.replace(/^\ufeff/, ''); const rows = []; let row = [], f = '', q = false; for (let i = 0; i < t.length; i++) { const c = t[i]; if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; } else if (c === '"') q = true; else if (c === ',') { row.push(f); f = ''; } else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; row.push(f); f = ''; rows.push(row); row = []; } else f += c; } if (f !== '' || row.length) { row.push(f); rows.push(row); } return rows.filter(r => r.some(x => x.trim())); }
+function fromCSV(text) {
+  const rows = parseCSV(text); if (rows.length < 2) throw new Error('File CSV trống hoặc thiếu dòng dữ liệu.'); const h = rows[0].map(x => x.trim().toLowerCase()); const idx = n => h.indexOf(n); if (idx('cau_hoi') < 0 || idx('dap_an_dung') < 0) throw new Error('Thiếu cột "cau_hoi" hoặc "dap_an_dung". Hãy dùng mẫu CSV.');
+  const name2id = {}; Object.keys(SK).forEach(k => { name2id[k] = k; name2id[SK[k].toLowerCase()] = k; }); const out = { viet: [], eng: [], sci: [], geo: [], custom: [] }, skipped = [];
+  rows.slice(1).forEach((r, n) => { const g = nm => (r[idx(nm)] || '').trim(), s = name2id[g('mon').toLowerCase()] || 'custom', right = g('dap_an_dung'), wr = [g('sai_1'), g('sai_2'), g('sai_3')].filter(Boolean), a = [right, ...wr]; if (!g('cau_hoi') || !right || wr.length < 1) { skipped.push(n + 2); return; } const q = { q: g('cau_hoi'), a, c: 0, g: Math.min(5, Math.max(1, parseInt(g('lop')) || 1)) }; if (g('bieu_tuong')) q.icon = g('bieu_tuong'); if (g('giai_thich')) q.e = g('giai_thich'); if (g('ngon_ngu') === 'en-US') q.lang = 'en-US'; out[s].push(q); });
+  return { out, skipped };
+}
+function expBank() {
+  modal('Xuất ngân hàng câu hỏi', '<p style="margin-bottom:10px">Chọn định dạng tệp muốn tải.</p>', [{ label: 'Đóng' }, { label: '⬇ CSV (Excel)', fn: () => { download('ngan-hang-cau-hoi.csv', toCSV(), 'text/csv;charset=utf-8'); log('Xuất ngân hàng CSV'); return false; }, keep: true }, { label: '⬇ JSON', cls: 'p', fn: () => { download('ngan-hang-cau-hoi.json', JSON.stringify(bank, null, 2)); log('Xuất ngân hàng JSON'); return false; }, keep: true }]);
+}
+function impBank() {
+  modal('Nhập câu hỏi', `<p style="margin-bottom:10px;line-height:1.5">Chọn tệp <b>JSON</b> (đúng cấu trúc ngân hàng) hoặc <b>CSV</b>. Cột CSV: <code>${CSVH.join(', ')}</code>.</p><div class="row"><button class="btn" id="im_tpl">⬇ Tải mẫu CSV</button><button class="btn p" id="im_file">📂 Chọn tệp...</button></div>
+    <div class="row" style="margin-top:12px"><label class="chk"><input type="radio" name="im_m" value="merge" checked> Thêm vào (giữ câu cũ)</label><label class="chk"><input type="radio" name="im_m" value="replace"> Thay thế toàn bộ</label></div><div id="im_r" style="margin-top:10px"></div>`, [{ label: 'Đóng' }]);
+  $('im_tpl').onclick = () => download('mau-cau-hoi.csv', '\ufeff' + CSVH.join(',') + '\r\nviet,2,"Từ nào chỉ con vật?",mèo,bàn,sách,bút,🐱,"Mèo là con vật.",vi-VN\r\n', 'text/csv;charset=utf-8');
+  $('im_file').onclick = () => pickFile('.json,.csv,text/csv,application/json', (text, name) => {
+    const r = $('im_r'); let inc, note = '';
+    try { if (/\.csv$/i.test(name)) { const x = fromCSV(text); inc = x.out; if (x.skipped.length) note = `Bỏ qua ${x.skipped.length} dòng thiếu dữ liệu (dòng ${x.skipped.slice(0, 8).join(', ')}).`; } else { inc = JSON.parse(text); } } catch (e) { r.innerHTML = `<div class="alert er">${esc(e.message)}</div>`; return; }
+    const er = validateBank(inc); if (er.length) { r.innerHTML = `<div class="alert er">Dữ liệu có lỗi:<br>${er.slice(0, 6).map(esc).join('<br>')}${er.length > 6 ? `<br>... và ${er.length - 6} lỗi nữa` : ''}</div>`; return; }
+    const n = Object.keys(SK).reduce((a, k) => a + (inc[k] || []).length, 0); r.innerHTML = `<div class="alert ok">Hợp lệ: ${n} câu hỏi. ${esc(note)}</div><button class="btn p" id="im_go">Nhập ${n} câu</button>`;
+    $('im_go').onclick = () => { const mode = document.querySelector('input[name=im_m]:checked').value; Object.keys(SK).forEach(k => { bank[k] = mode === 'replace' ? clone(inc[k] || []) : bank[k].concat(clone(inc[k] || [])); }); stateDirty.bank = true; log('Nhập ngân hàng câu hỏi', n + ' câu (' + mode + ')'); closeModal(); render(); buildNav(); toast(`Đã nhập ${n} câu. Nhớ bấm "Áp dụng vào game".`, 'ok'); };
+  });
+}
+
+/* ================= 5. Cấu hình Vườn Thủ Hộ ================= */
+const M_BASE = { emoji: '👾', name: 'Quái', hp: 100, speed: .2, dps: 20, size: 1 }, P_BASE = { emoji: '🌱', name: 'Cây', kind: 'wall', cost: 50, hp: 80, cooldown: 5 };
+const KIND_DEF = { producer: { amount: 25, every: 9, first: 5 }, shooter: { damage: 20, every: 1.5, shots: 1 }, bomb: { damage: 400, radius: 1.5, fuse: 1 }, lane: { damage: 400, fuse: .8 }, mine: { damage: 500, arm: 8 }, wall: {} };
+function vResolve(u) {
+  const cfg = { monsters: {}, plants: {}, levels: Array.isArray(u.levels) ? u.levels : [] };
+  new Set([...Object.keys(DEF_VTH.monsters), ...Object.keys(u.monsters || {})]).forEach(id => { cfg.monsters[id] = Object.assign({}, M_BASE, DEF_VTH.monsters[id] || {}, (u.monsters || {})[id] || {}); });
+  new Set([...Object.keys(DEF_VTH.plants), ...Object.keys(u.plants || {})]).forEach(id => { const p = Object.assign({}, P_BASE, DEF_VTH.plants[id] || {}, (u.plants || {})[id] || {}), kd = KIND_DEF[p.kind] || {}; Object.keys(kd).forEach(k => { if (p[k] === undefined) p[k] = kd[k]; }); cfg.plants[id] = p; });
+  return cfg;
+}
+function validateVth(u) {
+  const er = []; if (!u || typeof u !== 'object' || Array.isArray(u)) return ['JSON gốc phải là object { ... }']; if (!Array.isArray(u.levels) || !u.levels.length) er.push('"levels" phải là mảng có ít nhất 1 màn'); const c = vResolve(u);
+  Object.entries(c.monsters).forEach(([id, m]) => { if (!(m.hp > 0)) er.push(`Quái "${id}": "hp" phải > 0`); if (!(m.speed > 0)) er.push(`Quái "${id}": "speed" phải > 0 (ô/giây)`); });
+  Object.entries(c.plants).forEach(([id, p]) => { if (!KIND_DEF[p.kind]) er.push(`Cây "${id}": "kind" không hợp lệ`); if (!(p.cost >= 0)) er.push(`Cây "${id}": "cost" phải >= 0`); });
+  (u.levels || []).forEach((L, i) => {
+    const n = 'Màn ' + (i + 1), rows = L.rows === undefined ? 5 : L.rows; if (!Number.isInteger(rows) || rows < 3 || rows > 6) er.push(`${n}: "rows" phải là số nguyên 3–6`);
+    if (!Array.isArray(L.plants) || !L.plants.length) er.push(`${n}: thiếu "plants"`); else L.plants.forEach(p => { if (!c.plants[p]) er.push(`${n}: cây "${p}" không tồn tại`); });
+    if (!Array.isArray(L.timeline) || !L.timeline.length) { er.push(`${n}: thiếu "timeline"`); return; }
+    L.timeline.forEach((e, j) => { const nn = `${n}, sự kiện #${j + 1}`; if (typeof e.t !== 'number' || e.t < 0) er.push(`${nn}: "t" phải là số giây >= 0`); const specs = Array.isArray(e.spawn) ? e.spawn : (e.monster ? [e] : null); if (!specs && !e.banner) er.push(`${nn}: cần "monster" hoặc "spawn"`);
+      (specs || []).forEach(s => { if (!c.monsters[s.monster]) er.push(`${nn}: quái "${s.monster}" không tồn tại`); const r = s.row; if (r !== undefined && !(r === 'random' || r === 'all' || (Number.isInteger(r) && r >= 1 && r <= rows))) er.push(`${nn}: "row" phải là 1..${rows}, "random" hoặc "all"`); }); });
+  });
+  return er;
+}
+const THEMES = { day: 'Ban ngày', dusk: 'Hoàng hôn', night: 'Ban đêm' };
+function canonLevel(L) { const o = clone(L); o.timeline = (o.timeline || []).map(e => { const specs = Array.isArray(e.spawn) ? e.spawn : (e.monster ? [{ monster: e.monster, row: e.row, count: e.count, gap: e.gap, delay: e.delay }] : []); const n = { t: e.t }; if (e.banner) n.banner = e.banner; if (e.flag) n.flag = true; n.spawn = specs.map(s => ({ monster: s.monster, row: s.row === undefined ? 'random' : s.row, count: s.count || 1, gap: s.gap === undefined ? 1.5 : s.gap, delay: s.delay || 0 })); return n; }).sort((a, b) => a.t - b.t); o.skySun = o.skySun || { first: 6, every: 9, amount: 25 }; o.rows = o.rows || 5; o.theme = o.theme || 'day'; return o; }
+function compactLevel(L) { const o = clone(L); o.timeline = L.timeline.map(e => { if (e.spawn.length === 1 && !e.banner && !e.flag) { const s = e.spawn[0], n = { t: e.t, monster: s.monster, row: s.row }; if (s.count > 1) n.count = s.count; if (s.count > 1 && s.gap !== 1.5) n.gap = s.gap; if (s.delay) n.delay = s.delay; return n; } const n = { t: e.t }; if (e.banner) n.banner = e.banner; if (e.flag) n.flag = true; n.spawn = e.spawn.map(s => { const r = { monster: s.monster, row: s.row }; if (s.count > 1) r.count = s.count; if (s.count > 1 || s.gap !== 1.5) r.gap = s.gap; if (s.delay) r.delay = s.delay; return r; }); return n; }); return o; }
+function vthOut() { const o = clone(vth); o.levels = vth.levels.map(compactLevel); return o; }
+const prettyJ = (v, ind = '') => { const one = x => x === null || typeof x !== 'object' ? JSON.stringify(x) : Array.isArray(x) ? '[' + x.map(one).join(', ') + ']' : '{' + Object.keys(x).map(k => JSON.stringify(k) + ': ' + one(x[k])).join(', ') + '}'; const s = one(v); if (s.length + ind.length <= 118 || v === null || typeof v !== 'object') return s; const n = ind + '  '; return Array.isArray(v) ? '[\n' + v.map(x => n + prettyJ(x, n)).join(',\n') + '\n' + ind + ']' : '{\n' + Object.keys(v).map(k => n + JSON.stringify(k) + ': ' + prettyJ(v[k], n)).join(',\n') + '\n' + ind + '}'; };
+const MCOL = ['#ff758c', '#7ed957', '#ffb347', '#8e9bff', '#ffd43b', '#4cd6b3', '#f783ac', '#74c0fc'];
+function vVth() {
+  const er = validateVth(vthOut()), L = vth.levels[vthLvl], c = vResolve(vth);
+  const tabs = `<div class="chips" style="margin-bottom:14px"><button class="chp ${vthTab === 'visual' ? 'on' : ''}" data-t="visual">🎛 Trực quan</button><button class="chp ${vthTab === 'json' ? 'on' : ''}" data-t="json">{ } JSON</button></div>`;
+  const top = head('Cấu hình Vườn Thủ Hộ', 'Chỉnh thứ tự quái ra, cây khả dụng và nắng của từng màn. Lưu xong, game đọc cấu hình mới ngay.', `<button class="btn d" data-a="revert">Hoàn tác</button><button class="btn" data-a="reset">Mặc định</button><button class="btn p" data-a="save" ${er.length ? 'disabled' : ''}>🚀 Lưu vào game</button>`) + storeWarn() + (stateDirty.vth ? '<div class="alert wa">Có thay đổi chưa lưu vào game.</div>' : '') + (er.length ? `<div class="alert er"><b>${er.length} lỗi:</b><br>${er.slice(0, 5).map(esc).join('<br>')}</div>` : '') + tabs;
+  if (vthTab === 'json') return top + `<textarea class="code" id="vj" spellcheck="false">${esc(prettyJ(vthOut()))}</textarea><div class="row" style="margin-top:10px"><button class="btn p" data-a="fromjson">Cập nhật từ JSON</button><button class="btn" data-a="copy">📋 Sao chép</button><button class="btn" data-a="dl">⬇ Tải xuống</button><button class="btn" data-a="load">📂 Nạp file</button></div><div id="vje" class="alert er hide" style="margin-top:10px"></div>`;
+  if (!L) return top + '<div class="card">Chưa có màn nào.</div><button class="btn p" data-a="addlvl" style="margin-top:10px">+ Thêm màn</button>';
+  const mons = Object.keys(c.monsters), rowsN = L.rows || 5;
+  const stat = (() => { let cnt = 0, hp = 0, last = 0, boss = false; L.timeline.forEach(e => e.spawn.forEach(s => { const m = c.monsters[s.monster]; if (!m) return; const n = (s.count || 1) * (s.row === 'all' ? rowsN : 1); cnt += n; hp += n * m.hp; last = Math.max(last, e.t + (s.delay || 0) + (s.gap || 0) * ((s.count || 1) - 1)); if (m.hp >= 1500) boss = true; })); return { cnt, hp, last, boss }; })();
+  return top + `<div class="chips" style="margin-bottom:12px">${vth.levels.map((l, i) => `<button class="chp ${i === vthLvl ? 'on' : ''}" data-l="${i}">Màn ${i + 1}</button>`).join('')}<button class="chp" data-a="addlvl">+ Thêm</button></div>
+  <div class="card" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h3>Màn ${vthLvl + 1}</h3><div class="row"><button class="btn s" data-a="duplvl">Nhân bản</button><button class="btn s d" data-a="dellvl" ${vth.levels.length < 2 ? 'disabled' : ''}>Xóa màn</button></div></div>
+  <div class="fg"><label class="f">Tên màn<input type="text" data-lf="name" value="${esc(L.name || '')}"></label><label class="f">Bối cảnh<select data-lf="theme">${Object.keys(THEMES).map(k => `<option value="${k}" ${L.theme === k ? 'selected' : ''}>${THEMES[k]}</option>`).join('')}</select></label>
+  <label class="f">Số hàng cỏ (3–6)<input type="number" min="3" max="6" data-lf="rows" value="${rowsN}"></label><label class="f">Nắng ban đầu<input type="number" min="0" data-lf="startSun" value="${L.startSun === undefined ? 150 : L.startSun}"></label>
+  <label class="f">Nắng rơi: lần đầu (giây)<input type="number" min="0" data-sf="first" value="${L.skySun.first}"></label><label class="f">Nắng rơi: mỗi (giây, 0 = không có)<input type="number" min="0" data-sf="every" value="${L.skySun.every}"></label><label class="f">Nắng mỗi lần<input type="number" min="1" data-sf="amount" value="${L.skySun.amount}"></label></div>
+  <div style="margin-top:12px"><small style="color:var(--mut);font-weight:600">Cây được dùng trong màn này</small><div class="row" style="margin-top:6px">${Object.keys(c.plants).map(p => `<label class="chk" style="background:var(--bg2);border:1px solid var(--line);padding:5px 10px;border-radius:99px"><input type="checkbox" data-pl="${p}" ${(L.plants || []).includes(p) ? 'checked' : ''}> ${esc(c.plants[p].emoji)} ${esc(c.plants[p].name)}</label>`).join('')}</div></div></div>
+  <div class="grid g4" style="margin-bottom:14px"><div class="card stat"><b>${stat.cnt}</b><span>Tổng số quái</span></div><div class="card stat"><b>${stat.hp.toLocaleString('vi-VN')}</b><span>Tổng máu quái</span></div><div class="card stat"><b>${Math.round(stat.last)}s</b><span>Quái cuối ra lúc</span></div><div class="card stat"><b>${stat.boss ? 'Có' : 'Không'}</b><span>Có boss</span></div></div>
+  <div class="card" style="margin-bottom:14px"><h3 style="margin-bottom:8px;font-size:15px">Biểu đồ thứ tự quái ra</h3>${vthChart(L, c, mons)}</div>
+  <div class="row" style="justify-content:space-between;margin-bottom:8px"><h3>Danh sách sự kiện</h3><button class="btn s p" data-a="addev">+ Thêm sự kiện</button></div>
+  <div id="evs">${L.timeline.map((e, i) => evCard(e, i, mons, c, rowsN)).join('')}</div>`;
+}
+function vthChart(L, c, mons) {
+  const pts = []; let maxT = 30; L.timeline.forEach((e, ei) => e.spawn.forEach(s => { for (let k = 0; k < (s.count || 1); k++) { const t = e.t + (s.delay || 0) + k * (s.gap || 0); pts.push({ t, m: s.monster, all: s.row === 'all', ei }); maxT = Math.max(maxT, t); } })); maxT = Math.ceil((maxT + 5) / 10) * 10;
+  const used = [...new Set(pts.map(p => p.m))], lw = 92, rh = 28, W = 760, H = used.length * rh + 34, sx = t => lw + t / maxT * (W - lw - 14);
+  let s = `<svg class="tl" viewBox="0 0 ${W} ${Math.max(H, 80)}" role="img" aria-label="Biểu đồ thời điểm quái xuất hiện">`;
+  for (let t = 0; t <= maxT; t += 10) s += `<line x1="${sx(t)}" y1="8" x2="${sx(t)}" y2="${H - 22}" stroke="var(--line)"/><text x="${sx(t)}" y="${H - 6}" fill="var(--mut)" font-size="11" text-anchor="middle">${t}s</text>`;
+  L.timeline.forEach(e => { if (e.flag) s += `<line x1="${sx(e.t)}" y1="8" x2="${sx(e.t)}" y2="${H - 22}" stroke="var(--er)" stroke-dasharray="4 3"/><text x="${sx(e.t)}" y="12" font-size="12" text-anchor="middle">🚩</text>`; });
+  used.forEach((m, i) => { const y = 22 + i * rh, col = MCOL[mons.indexOf(m) % MCOL.length], em = (c.monsters[m] || {}).emoji || '?'; s += `<text x="6" y="${y + 5}" fill="var(--tx)" font-size="13">${esc(em)} ${esc(m)}</text>`; pts.filter(p => p.m === m).forEach(p => { s += `<circle cx="${sx(p.t)}" cy="${y}" r="${p.all ? 8 : 5.5}" fill="${col}" stroke="${p.all ? '#fff' : 'none'}" stroke-width="1.5"><title>${esc(m)} · ${p.t.toFixed(1)}s${p.all ? ' · tất cả hàng' : ''}</title></circle>`; }); });
+  return s + '</svg><small style="color:var(--mut)">Chấm to viền trắng = quái ra ở tất cả các hàng. Đường đỏ nét đứt = đợt có cờ.</small>';
+}
+function evCard(e, i, mons, c, rowsN) {
+  return `<div class="ev" data-e="${i}"><div class="eh"><label class="f">Giây<input type="number" min="0" step="0.5" data-ef="t" value="${e.t}"></label><label class="f">Thông báo giữa màn hình (tuỳ chọn)<input type="text" data-ef="banner" value="${esc(e.banner || '')}" placeholder="Ví dụ: Đợt quái lớn!"></label>
+    <label class="chk" style="padding-bottom:8px"><input type="checkbox" data-ef="flag" ${e.flag ? 'checked' : ''}> 🚩 Cờ</label><button class="btn s d" data-a="delev" style="margin-bottom:4px">Xóa</button></div>
+    ${e.spawn.map((s, j) => `<div class="sp" data-sp="${j}"><label class="f">Quái<select data-sf2="monster">${mons.map(m => `<option value="${esc(m)}" ${s.monster === m ? 'selected' : ''}>${esc(c.monsters[m].emoji)} ${esc(c.monsters[m].name)} (${esc(m)})</option>`).join('')}</select></label>
+    <label class="f">Hàng<select data-sf2="row"><option value="random" ${s.row === 'random' ? 'selected' : ''}>Ngẫu nhiên</option><option value="all" ${s.row === 'all' ? 'selected' : ''}>Tất cả hàng</option>${Array.from({ length: rowsN }, (_, r) => `<option value="${r + 1}" ${s.row === r + 1 ? 'selected' : ''}>Hàng ${r + 1}</option>`).join('')}</select></label>
+    <label class="f">Số con<input type="number" min="1" data-sf2="count" value="${s.count}"></label><label class="f">Cách nhau (s)<input type="number" min="0" step="0.5" data-sf2="gap" value="${s.gap}"></label><label class="f">Chờ thêm (s)<input type="number" min="0" step="0.5" data-sf2="delay" value="${s.delay}"></label><button class="btn s d" data-a="delsp" ${e.spawn.length < 2 ? 'disabled' : ''} aria-label="Xóa dòng quái">✕</button></div>`).join('')}
+    <button class="btn s" data-a="addsp" style="margin-top:8px">+ Thêm loại quái vào đợt này</button></div>`;
+}
+function vthDirty() { stateDirty.vth = true; buildNav(); }
+function bindVth() {
+  const refresh = () => { const sc = window.scrollY; render(); window.scrollTo(0, sc); };
+  $('view').onclick = async e => {
+    const t = e.target.closest('[data-t]'); if (t) { vthTab = t.dataset.t; render(); return; } const l = e.target.closest('[data-l]'); if (l) { vthLvl = +l.dataset.l; render(); return; }
+    const b = e.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a, L = vth.levels[vthLvl], ev = b.closest('.ev'), ei = ev ? +ev.dataset.e : -1, sp = b.closest('.sp'), si = sp ? +sp.dataset.sp : -1;
+    if (a === 'addlvl') { vth.levels.push(canonLevel({ name: 'Màn mới', theme: 'day', rows: 5, startSun: 150, plants: ['sunflower', 'shooter'], skySun: { first: 6, every: 9, amount: 25 }, timeline: [{ t: 20, monster: 'worm', row: 'random' }] })); vthLvl = vth.levels.length - 1; vthDirty(); render(); }
+    else if (a === 'duplvl') { const n = clone(L); n.name = (n.name || 'Màn') + ' (bản sao)'; vth.levels.splice(vthLvl + 1, 0, n); vthLvl++; vthDirty(); render(); }
+    else if (a === 'dellvl') { if (await confirmBox(`Xóa màn ${vthLvl + 1}?`)) { vth.levels.splice(vthLvl, 1); vthLvl = Math.max(0, vthLvl - 1); vthDirty(); render(); } }
+    else if (a === 'addev') { const last = L.timeline.length ? L.timeline[L.timeline.length - 1].t : 10; L.timeline.push({ t: last + 15, spawn: [{ monster: Object.keys(vResolve(vth).monsters)[0], row: 'random', count: 1, gap: 1.5, delay: 0 }] }); L.timeline.sort((x, y) => x.t - y.t); vthDirty(); refresh(); }
+    else if (a === 'delev') { L.timeline.splice(ei, 1); vthDirty(); refresh(); } else if (a === 'addsp') { L.timeline[ei].spawn.push({ monster: Object.keys(vResolve(vth).monsters)[0], row: 'random', count: 1, gap: 1.5, delay: 0 }); vthDirty(); refresh(); }
+    else if (a === 'delsp') { L.timeline[ei].spawn.splice(si, 1); vthDirty(); refresh(); }
+    else if (a === 'save') { const o = vthOut(), er = validateVth(o); if (er.length) { toast('Còn lỗi, chưa lưu được', 'er'); return; } wrJ('vuon-thu-ho-cfg-v1', o); stateDirty.vth = false; log('Lưu cấu hình Vườn Thủ Hộ', vth.levels.length + ' màn'); toast('Đã lưu vào game Vườn Thủ Hộ', 'ok'); render(); buildNav(); meter(); }
+    else if (a === 'revert') { if (await confirmBox('Bỏ thay đổi và nạp lại cấu hình từ game?')) { loadVth(); render(); buildNav(); } }
+    else if (a === 'reset') { if (await confirmBox('Dùng cấu hình mặc định? (Chưa lưu vào game cho đến khi bấm Lưu.)')) { vth = clone(DEF_VTH); vth.levels = vth.levels.map(canonLevel); vthLvl = 0; vthDirty(); render(); } }
+    else if (a === 'fromjson') { let v; const err = $('vje'); try { v = JSON.parse($('vj').value); } catch (x) { err.classList.remove('hide'); err.textContent = 'JSON sai cú pháp: ' + x.message; return; } const er = validateVth(v); if (er.length) { err.classList.remove('hide'); err.innerHTML = er.slice(0, 6).map(esc).join('<br>'); return; } vth = clone(v); vth.levels = vth.levels.map(canonLevel); vthLvl = Math.min(vthLvl, vth.levels.length - 1); vthDirty(); vthTab = 'visual'; render(); toast('Đã cập nhật từ JSON', 'ok'); }
+    else if (a === 'copy') copyText($('vj').value); else if (a === 'dl') download('levels.json', $('vj').value);
+    else if (a === 'load') pickFile('.json,application/json', t => { $('vj').value = t; toast('Đã nạp file. Bấm "Cập nhật từ JSON".'); });
+  };
+  $('view').onchange = e => {
+    const el = e.target, L = vth.levels[vthLvl]; if (!L) return;
+    if (el.dataset.lf) { const f = el.dataset.lf; L[f] = (f === 'rows' || f === 'startSun') ? Math.round(num(el.value, f === 'rows' ? 5 : 150)) : el.value; if (f === 'rows') L.rows = Math.min(6, Math.max(3, L.rows)); vthDirty(); render(); }
+    else if (el.dataset.sf) { L.skySun[el.dataset.sf] = num(el.value); vthDirty(); render(); }
+    else if (el.dataset.pl) { const s = new Set(L.plants || []); el.checked ? s.add(el.dataset.pl) : s.delete(el.dataset.pl); L.plants = Object.keys(vResolve(vth).plants).filter(p => s.has(p)); vthDirty(); render(); }
+    else if (el.dataset.ef) { const ev = L.timeline[+el.closest('.ev').dataset.e], f = el.dataset.ef; if (f === 't') { ev.t = Math.max(0, num(el.value)); L.timeline.sort((x, y) => x.t - y.t); } else if (f === 'flag') ev.flag = el.checked || undefined; else { if (el.value.trim()) ev.banner = el.value; else delete ev.banner; } vthDirty(); render(); }
+    else if (el.dataset.sf2) { const ev = L.timeline[+el.closest('.ev').dataset.e], s = ev.spawn[+el.closest('.sp').dataset.sp], f = el.dataset.sf2; if (f === 'monster') s.monster = el.value; else if (f === 'row') s.row = /^\d+$/.test(el.value) ? +el.value : el.value; else s[f] = f === 'count' ? Math.max(1, Math.round(num(el.value, 1))) : Math.max(0, num(el.value)); vthDirty(); render(); }
+  };
+}
+
+/* ================= 6. Sao lưu & khôi phục ================= */
+function allBackupKeys() { const set = new Set(trackedKeys().keys()); set.add('vuon-thu-ho-cfg-v1'); lsKeys().forEach(k => { if (!ADMIN_KEYS.includes(k)) set.add(k); }); return [...set].filter(k => lsGet(k) != null); }
+function vBackup() {
+  const keys = allBackupKeys(), tot = keys.reduce((a, k) => a + (k.length + lsGet(k).length) * 2, 0);
+  return head('Sao lưu & khôi phục', 'Xuất toàn bộ dữ liệu game ra một tệp, hoặc nhập lại từ tệp (tương thích trang Trung Tâm Game).') + storeWarn() +
+    `<div class="grid g2"><div class="card"><h3 style="margin-bottom:6px">⬇ Sao lưu</h3><p style="color:var(--mut);margin-bottom:12px">${keys.length} mục dữ liệu · ${fmtB(tot)}</p><div class="row"><button class="btn p" data-a="export">Tải file sao lưu</button><button class="btn" data-a="copy">📋 Sao chép JSON</button></div></div>
+    <div class="card"><h3 style="margin-bottom:6px">⬆ Khôi phục</h3><p style="color:var(--mut);margin-bottom:12px">Chọn tệp sao lưu, xem trước rồi mới ghi vào trình duyệt.</p><div class="row"><button class="btn p" data-a="import">Chọn tệp sao lưu...</button></div></div></div>
+    <div class="card" style="margin-top:14px;border-color:var(--er)"><h3 style="margin-bottom:6px;color:var(--er)">⚠ Vùng nguy hiểm</h3><p style="color:var(--mut);margin-bottom:12px">Xóa toàn bộ dữ liệu game trong trình duyệt này (không xóa mã PIN và nhật ký).</p><button class="btn d" data-a="wipe">Xóa toàn bộ dữ liệu game</button></div>`;
+}
+const buildBackup = () => { const data = {}; allBackupKeys().forEach(k => { data[k] = lsGet(k); }); return { app: 'trung-tam-game', v: 1, at: new Date().toISOString(), data }; };
+function bindBackup() {
+  $('view').onclick = async e => {
+    const b = e.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a;
+    if (a === 'export') { download('tien-trinh-game-' + new Date().toISOString().slice(0, 10) + '.json', JSON.stringify(buildBackup(), null, 2)); log('Xuất sao lưu toàn bộ'); toast('Đã tạo file sao lưu', 'ok'); }
+    else if (a === 'copy') copyText(JSON.stringify(buildBackup(), null, 2));
+    else if (a === 'wipe') { if (!(await confirmBox('Xóa <b>toàn bộ</b> dữ liệu game? Hãy sao lưu trước. Không thể hoàn tác.', 'Xóa hết'))) return; allBackupKeys().forEach(lsDel); log('Xóa toàn bộ dữ liệu game'); loadAll(); render(); meter(); toast('Đã xóa', 'ok'); }
+    else if (a === 'import') pickFile('.json,application/json', text => {
+      let j; try { j = JSON.parse(text); } catch (x) { toast('File không phải JSON hợp lệ', 'er'); return; } if (!j || j.app !== 'trung-tam-game' || !j.data || typeof j.data !== 'object') { toast('Không đúng định dạng sao lưu của Trung Tâm Game', 'er'); return; }
+      const ents = Object.entries(j.data).filter(([k, v]) => typeof v === 'string' && !ADMIN_KEYS.includes(k)), tk = trackedKeys();
+      modal('Xem trước khi khôi phục', `<p style="margin-bottom:8px;color:var(--mut)">Tệp tạo lúc ${esc(j.at || '?')} · ${ents.length} mục</p><div class="tw" style="max-height:260px;overflow:auto"><table><thead><tr><th>Khóa</th><th>Kích thước</th><th>Hiện tại</th></tr></thead><tbody>${ents.map(([k, v]) => { let ok = true; try { JSON.parse(v); } catch (x) { ok = false; } return `<tr><td><code style="font-size:12px">${esc(k)}</code>${tk.has(k) ? '<br><small style="color:var(--mut)">' + esc(tk.get(k).game) + '</small>' : ''}${ok ? '' : ' <span class="tag er">JSON lỗi</span>'}</td><td>${fmtB((k.length + v.length) * 2)}</td><td>${lsGet(k) != null ? '<span class="tag wa">sẽ ghi đè</span>' : '<span class="tag ok">mới</span>'}</td></tr>`; }).join('')}</tbody></table></div>
+        <div class="row" style="margin-top:12px"><label class="chk"><input type="radio" name="rs_m" value="merge" checked> Gộp (chỉ ghi các mục trong tệp)</label><label class="chk"><input type="radio" name="rs_m" value="replace"> Thay thế (xóa dữ liệu game không có trong tệp)</label></div>`,
+        [{ label: 'Hủy' }, { label: 'Khôi phục', cls: 'p', fn: () => { const mode = document.querySelector('input[name=rs_m]:checked').value; if (mode === 'replace') { const inc = new Set(ents.map(x => x[0])); allBackupKeys().forEach(k => { if (!inc.has(k)) lsDel(k); }); } ents.forEach(([k, v]) => lsSet(k, v)); log('Khôi phục từ sao lưu', ents.length + ' mục (' + mode + ')'); loadAll(); render(); meter(); toast(`Đã khôi phục ${ents.length} mục`, 'ok'); } }], true);
+    });
+  };
+}
+
+/* ================= 7. Nhật ký ================= */
+function vLog() {
+  const l = rdJ(LOG).val || [];
+  return head('Nhật ký thao tác', 'Ghi lại các thay đổi admin đã thực hiện trên thiết bị này (tối đa 150 dòng).', `<button class="btn" data-a="exp">⬇ Xuất</button><button class="btn d" data-a="clr" ${l.length ? '' : 'disabled'}>Xóa nhật ký</button>`) +
+    `<div class="tw"><table><thead><tr><th>Thời gian</th><th>Thao tác</th><th>Chi tiết</th></tr></thead><tbody>${l.length ? l.map(x => `<tr><td style="white-space:nowrap;color:var(--mut)">${esc(new Date(x.t).toLocaleString('vi-VN'))}</td><td><b>${esc(x.a)}</b></td><td>${esc(x.d)}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--mut);padding:24px">Chưa có thao tác nào.</td></tr>'}</tbody></table></div>`;
+}
+function bindLog() { $('view').onclick = async e => { const b = e.target.closest('[data-a]'); if (!b) return; if (b.dataset.a === 'exp') download('nhat-ky-admin.json', JSON.stringify(rdJ(LOG).val || [], null, 2)); else if (b.dataset.a === 'clr' && await confirmBox('Xóa toàn bộ nhật ký?')) { lsDel(LOG); render(); } }; }
+
+/* ================= 8. Cài đặt ================= */
+function vSet() {
+  const a = rdJ(AUTH).val || {};
+  return head('Cài đặt', 'Mã PIN, giao diện và dữ liệu quản trị.') + storeWarn() +
+    `<div class="grid g2"><div class="card"><h3 style="margin-bottom:10px">🔐 Mã PIN</h3>${a.off ? '<p style="color:var(--wa);margin-bottom:10px">Khóa PIN đang tắt.</p>' : ''}<div class="fg"><label class="f">PIN hiện tại<input type="password" id="s_old" inputmode="numeric" maxlength="8" autocomplete="off"></label><label class="f">PIN mới (4–8 số)<input type="password" id="s_new" inputmode="numeric" maxlength="8" autocomplete="off"></label></div>
+      <div class="row" style="margin-top:10px"><button class="btn p" data-a="pin">Đổi PIN</button>${a.off ? '' : '<button class="btn d" data-a="pinoff">Tắt khóa PIN</button>'}</div><div id="s_msg" style="margin-top:8px;min-height:20px"></div></div>
+    <div class="card"><h3 style="margin-bottom:10px">🎨 Giao diện</h3><div class="row"><button class="btn" data-a="th" data-th="dark">🌙 Tối</button><button class="btn" data-a="th" data-th="light">☀️ Sáng</button></div>
+      <h3 style="margin:18px 0 10px">🧹 Dữ liệu quản trị</h3><p style="color:var(--mut);margin-bottom:10px">Xóa danh sách game đã lưu để Trung Tâm Game quay về mặc định.</p><button class="btn d" data-a="regclr">Xóa danh sách game đã lưu</button></div></div>`;
+}
+function bindSet() {
+  $('view').onclick = async e => {
+    const b = e.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a, msg = t => { $('s_msg').innerHTML = t; };
+    if (a === 'th') { document.documentElement.dataset.theme = b.dataset.th; lsSet('tt-admin-theme', b.dataset.th); }
+    else if (a === 'regclr') { if (await confirmBox('Xóa danh sách game đã lưu?')) { lsDel(REG); loadReg(); log('Xóa danh sách game đã lưu'); toast('Đã xóa', 'ok'); } }
+    else if (a === 'pin') { const au = rdJ(AUTH).val || {}, old = $('s_old').value, nw = $('s_new').value; if (au.hash && await sha(au.salt + old) !== au.hash) { msg('<span style="color:var(--er)">PIN hiện tại chưa đúng.</span>'); return; } if (!/^\d{4,8}$/.test(nw)) { msg('<span style="color:var(--er)">PIN mới phải gồm 4–8 chữ số.</span>'); return; } const salt = Math.random().toString(36).slice(2); wrJ(AUTH, { salt, hash: await sha(salt + nw) }); log('Đổi mã PIN'); msg('<span style="color:var(--ok)">Đã đổi PIN.</span>'); }
+    else if (a === 'pinoff') { const au = rdJ(AUTH).val || {}, old = $('s_old').value; if (au.hash && await sha(au.salt + old) !== au.hash) { msg('<span style="color:var(--er)">Hãy nhập PIN hiện tại để tắt khóa.</span>'); return; } wrJ(AUTH, { off: true }); log('Tắt khóa PIN'); render(); }
+  };
+}
+
+/* ================= Khởi động ================= */
+{ const th = lsGet('tt-admin-theme'); if (th) document.documentElement.dataset.theme = th; }
+initAuth();
+})();
+</script>
+</body>
+</html>

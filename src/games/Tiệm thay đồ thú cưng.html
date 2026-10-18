@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tiệm thay đồ thú cưng</title>
+<!-- EG_DRESSUP_HOST — data SVG + lớp lưu trữ được inject từ src/games/injectDressUpAvatar.js -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#8fd0ff;--bg2:#d9f0ff;--card:#fff;--ink:#23305a;--mute:#6b7aa6;--line:#d6e4f5;--accent:#ffd36b;--shadow:#9bb8d6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#1d3558;--bg2:#2b4a73;--card:#2a3558;--ink:#f1f4ff;--mute:#a9b6e0;--line:#44507e;--accent:#e0a93b;--shadow:#121a33}}
+*{box-sizing:border-box;margin:0}
+html,body{min-height:100%}
+body{font-family:"Baloo 2","Nunito","Segoe UI",system-ui,sans-serif;color:var(--ink);background:linear-gradient(var(--bg1),var(--bg2) 55%,#cfe9c4);background-attachment:fixed;padding:14px 14px 28px}
+.wrap{max-width:560px;margin:0 auto}
+h1{font-size:26px;font-weight:800;text-align:center;margin-bottom:10px}
+.pets{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px}
+.pet{background:var(--card);border:3px solid transparent;border-radius:18px;padding:4px 2px 2px;cursor:pointer;box-shadow:0 4px 0 var(--shadow);font:inherit;color:var(--ink);text-align:center}
+.pet svg{width:100%;height:auto;display:block}
+.pet span{font-size:11px;font-weight:700;display:block;line-height:1.1;padding-bottom:4px}
+.pet[aria-pressed=true]{border-color:var(--accent);transform:translateY(2px);box-shadow:0 2px 0 var(--shadow)}
+.stage{background:var(--card);border-radius:32px;box-shadow:0 6px 0 var(--shadow);padding:10px 10px 4px;text-align:center}
+#stage svg{width:min(78vw,340px);height:auto;animation:bob 2.6s ease-in-out infinite}
+#name{font-size:22px;font-weight:800}
+@keyframes bob{50%{transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){#stage svg{animation:none}}
+.tabs{display:flex;gap:6px;margin:12px 0 8px}
+.tab{flex:1;font:inherit;font-weight:700;font-size:15px;color:var(--ink);background:var(--card);border:3px solid transparent;border-radius:16px;padding:6px 2px;cursor:pointer;box-shadow:0 3px 0 var(--shadow)}
+.tab[aria-selected=true]{background:var(--accent);color:#3a2a00}
+.opts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.opt{aspect-ratio:1;background:var(--card);border:3px solid var(--line);border-radius:18px;cursor:pointer;display:grid;place-items:center;font:inherit;color:var(--ink);font-size:24px;padding:4px}
+.opt svg{width:100%;height:100%}
+.opt .dot{width:56%;aspect-ratio:1;border-radius:50%;border:2px solid #0002}
+.opt[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent)}
+.row{display:flex;gap:8px;margin-top:12px}
+.btn{flex:1;font:inherit;font-weight:700;font-size:16px;color:var(--ink);background:var(--card);border:0;border-radius:16px;padding:10px;cursor:pointer;box-shadow:0 4px 0 var(--shadow)}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.btn:active,.pet:active{transform:translateY(3px);box-shadow:none}
+#egSync{margin-top:10px;font-size:13px;font-weight:700;text-align:center;color:var(--mute)}
+#egSync[data-kind=ok]{color:#2e9e5b}
+#egSync[data-kind=err]{color:#d9534f}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tiệm thay đồ thú cưng</h1>
+  <div class="pets" id="pets"></div>
+  <div class="stage"><div id="stage"></div><div id="name"></div></div>
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <div class="opts" id="opts"></div>
+  <div class="row">
+    <button class="btn" id="rnd">🎲 Ngẫu nhiên</button>
+    <button class="btn" id="clr">🧹 Cởi hết</button>
+  </div>
+  <div id="egSync" hidden></div>
+</div>
+<script>
+/*
+ * Toàn bộ SVG nằm ở src/games/lib/dressUpAvatarData.js, được inject vào <head>
+ * qua injectDressUpAvatar() (HtmlGameLoader gọi hàm đó trước khi nạp vào iframe).
+ * File này chỉ lo UI + logic chọn đồ.
+ *
+ *   D = window.EG_DRESSUP  → data SVG + renderPet()/sanitizePet()
+ *   O = window.EG_OUTFIT   → lưu client (localStorage) + đồng bộ PUT /api/auth/me
+ */
+const $=s=>document.querySelector(s);
+const D=window.EG_DRESSUP, O=window.EG_OUTFIT;
+if(!D){document.body.innerHTML='<p style="padding:24px;text-align:center">Không nạp được dữ liệu avatar. Hãy chơi game từ trong hệ thống.</p>';throw new Error('EG_DRESSUP missing');}
+const ANIMALS=D.pet.animals, TABS=D.pet.tabs, OPTS=D.pet.opts;
+
+let st=D.sanitizePet((O.get('pet')||{}).value||D.pet.defaults);
+let tab='shirt';
+
+function renderPet(k,s){return D.renderPet(k,s);}
+function save(){O.set('pet',st);}
+function redraw(){drawPets();drawStage();drawTabs();drawOpts();}
+
+function drawPets(){
+ $('#pets').innerHTML=Object.keys(ANIMALS).map(k=>`<button class="pet" data-k="${k}" aria-pressed="${st.animal===k}" aria-label="${ANIMALS[k].n}">${renderPet(k,null)}<span>${ANIMALS[k].n}</span></button>`).join('');
+}
+function drawStage(){$('#stage').innerHTML=renderPet(st.animal,st);$('#name').textContent=ANIMALS[st.animal].n;}
+function drawTabs(){$('#tabs').innerHTML=TABS.map(t=>`<button class="tab" role="tab" data-t="${t.k}" aria-selected="${tab===t.k}">${t.l}</button>`).join('');}
+function drawOpts(){
+ const cfg=OPTS[tab];
+ let h=`<button class="opt" data-v="" aria-pressed="${!st[tab]}" aria-label="Không dùng">🚫</button>`;
+ if(cfg.colors){
+  h+=cfg.ids.map(k=>`<button class="opt" data-v="${k}" aria-pressed="${st[tab]===k}" aria-label="Áo ${k}"><span class="dot" style="background:${k==='stripe'?'linear-gradient(#5aa9e6 50%,#fff 50%)':cfg.map[k]}"></span></button>`).join('');
+ }else{
+  h+=cfg.ids.map(k=>`<button class="opt" data-v="${k}" aria-pressed="${st[tab]===k}" aria-label="${k}"><svg viewBox="${cfg.vb}">${cfg.map[k]}</svg></button>`).join('');
+ }
+ $('#opts').innerHTML=h;
+}
+document.addEventListener('click',e=>{
+ const p=e.target.closest('.pet'),t=e.target.closest('.tab'),o=e.target.closest('.opt');
+ if(p){st=D.sanitizePet(Object.assign({},st,{animal:p.dataset.k}));save();drawPets();drawStage();}
+ else if(t){tab=t.dataset.t;drawTabs();drawOpts();}
+ else if(o){st=D.sanitizePet(Object.assign({},st,{[tab]:o.dataset.v||null}));save();drawStage();drawOpts();}
+});
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+$('#rnd').onclick=()=>{
+ st=D.sanitizePet({
+  animal:pick(Object.keys(ANIMALS)),
+  shirt:pick(OPTS.shirt.ids),
+  glasses:pick([null,...OPTS.glasses.ids]),
+  hat:pick([null,...OPTS.hat.ids]),
+  neck:pick([null,...OPTS.neck.ids])
+ });
+ save();drawStage();drawOpts();
+};
+$('#clr').onclick=()=>{st=D.sanitizePet(Object.assign({},st,{shirt:null,glasses:null,hat:null,neck:null}));save();drawStage();drawOpts();};
+
+redraw();
+
+/* Hồ sơ trên server có bản mới hơn → nhận lại và vẽ lại. */
+addEventListener('eg-outfit',e=>{
+ if(e.detail.scope!=='pet'||e.detail.source!=='server')return;
+ st=e.detail.value;redraw();
+});
+
+/* Rời trang → đẩy nốt thay đổi đang chờ debounce lên hồ sơ. */
+addEventListener('pagehide',()=>O.syncAll());
+addEventListener('beforeunload',()=>O.syncAll());
+</script>
+</body>
+</html>

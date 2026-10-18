@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
-import { API_BASE, apiFetch, coinService, userService, gameProgressService, classService, gamePlayService, uid } from "../services/api.js";
+import { API_BASE, apiFetch, authService, coinService, userService, gameProgressService, classService, gamePlayService, uid } from "../services/api.js";
 import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
@@ -10,6 +10,7 @@ import AiExplainTrigger from "../components/ai/AiExplainTrigger.jsx";
 import GameHud from "./GameHud.jsx";
 import { injectGameConfig } from "./injectGameConfig.js";
 import { injectAnswerBridge } from "./injectAnswerBridge.js";
+import { injectDressUpAvatar } from "./injectDressUpAvatar.js";
 
 /**
  * HtmlGameLoader - Renders a self-contained HTML game in an iframe.
@@ -36,7 +37,12 @@ import { injectAnswerBridge } from "./injectAnswerBridge.js";
  * iframe → React: { type: "game-move", data: { ... } }
  * iframe → React: { type: "game-over", data: { score, timeUsed, coinReward } }
  * iframe → React: { type: "state-update", data: { ... } }
+ * iframe → React: { type: "outfit-save", data: { scope: "avatar"|"pet", value, updatedAt } }
+ * React → iframe: { type: "outfit-saved", data: { ok, scope, value, updatedAt } }
  * iframe → React: { type: "quit" }
+ *
+ * init còn mang `avatar` + `pet` (bộ đồ đã lưu trong hồ sơ /api/auth/me) để game
+ * tạo avatar nạp vào.
  */
 export default function HtmlGameLoader({
   htmlContent, game, questions, players, playerName,
@@ -88,7 +94,9 @@ export default function HtmlGameLoader({
   const injectedHtml = useMemo(() => {
     if (!htmlContent) return htmlContent;
     const withConfig = gameKey ? injectGameConfig(htmlContent, { key: gameKey, config: gameConfig }) : htmlContent;
-    return injectAnswerBridge(withConfig);
+    const withBridge = injectAnswerBridge(withConfig);
+    // Chỉ 2 game tạo avatar mới có marker EG_DRESSUP_HOST nên mới được tiêm data SVG.
+    return injectDressUpAvatar(withBridge);
   }, [htmlContent, gameKey, gameConfig]);
 
   useEffect(() => {
@@ -114,6 +122,9 @@ export default function HtmlGameLoader({
     let userId = null;
     let loadout = null;
     let avatarSvg = null;
+    // Bộ đồ avatar + thú cưng đã lưu trong hồ sơ (PUT/GET /api/auth/me).
+    let profileAvatar = null;
+    let profilePet = null;
     // Tiến độ đã lưu (màn chơi hiện tại + state tuỳ chọn) để game render đúng màn
     let savedProgress = null;
 
@@ -174,6 +185,11 @@ export default function HtmlGameLoader({
           const svgContent = composeAvatar(buildLayersFromLoadout(flatLoadout, allItems));
           if (svgContent) avatarSvg = svgContent;
         } catch { /* ignore */ }
+        try {
+          const me = await authService.me();
+          profileAvatar = me?.avatar || null;
+          profilePet = me?.pet || null;
+        } catch { /* ignore */ }
       } catch { /* ignore */ }
     }
 
@@ -199,6 +215,8 @@ export default function HtmlGameLoader({
           userId,
           loadout,
           avatarSvg,
+          avatar: profileAvatar,
+          pet: profilePet,
           gameName,
           gameCode,
           sessionId: coopSessionId || null,
@@ -417,6 +435,34 @@ export default function HtmlGameLoader({
         const loadoutData = msg.data?.loadout;
         if (loadoutData && gameId && userAuth?.token) {
           gameProgressService.upsertGame(gameId, { loadout: loadoutData }).catch(() => {});
+        }
+      } else if (msg.type === "outfit-save") {
+        // Game tạo avatar (Tiệm thời trang cho Bé / Tiệm thay đồ thú cưng) đã lưu
+        // bộ đồ vào máy, xin đẩy lên hồ sơ. Token nằm ở frame cha nên iframe
+        // không cần tự gọi API.
+        const d = msg.data || {};
+        if (!userAuth?.token) {
+          postToIframe({ type: "outfit-saved", data: { ok: false, scope: d.scope, reason: "not-logged-in" } });
+        } else {
+          const scope = d.scope === "pet" ? "pet" : "avatar";
+          const body = { [scope]: d.value };
+          apiFetch("/auth/me", { method: "PUT", body })
+            .then((updated) => {
+              const saved = updated?.[scope];
+              postToIframe({
+                type: "outfit-saved",
+                data: {
+                  ok: true,
+                  scope,
+                  value: saved?.value ?? d.value,
+                  updatedAt: saved?.updatedAt ?? null,
+                },
+              });
+            })
+            .catch((e) => {
+              console.error("[HtmlGameLoader] Lưu avatar lỗi:", e);
+              postToIframe({ type: "outfit-saved", data: { ok: false, scope, reason: e.message } });
+            });
         }
       } else if (msg.type === "game-over") {
         const data = msg.data || {};

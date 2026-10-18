@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Xếp Khối Màu</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  html,body{height:100%;overflow:hidden;color:#fff;font-family:"Baloo 2","Nunito","Segoe UI",system-ui,sans-serif;touch-action:none;
+    background:radial-gradient(ellipse at 50% 0%,#4b2a8f 0,#27144f 55%,#150a30 100%)}
+  canvas{position:fixed;inset:0;display:block;touch-action:none}
+  button{font-family:inherit;cursor:pointer}
+  button:focus-visible{outline:3px solid #ffe066;outline-offset:2px}
+  #top{position:fixed;top:0;left:0;right:0;display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none;z-index:5;
+    padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 14px) 0 calc(env(safe-area-inset-left) + 14px)}
+  .side{width:84px;font-weight:800;line-height:1.05}
+  .side small{display:block;font-size:12px;opacity:.7;font-weight:700}
+  .side b{font-size:22px;color:#ffe066}
+  .mid{text-align:center;line-height:1}
+  #score{font-size:58px;font-weight:800;text-shadow:0 4px 0 rgba(0,0,0,.35),0 0 24px rgba(180,140,255,.55);transition:transform .15s}
+  #score.b{transform:scale(1.16)}
+  #combo{height:24px;font-size:18px;font-weight:800;color:#ff9be8;opacity:0;transition:opacity .2s}
+  #combo.on{opacity:1}
+  #menuBtn{pointer-events:auto;width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;font-size:18px;float:right}
+  .screen{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(10,4,28,.62);backdrop-filter:blur(4px);padding:20px}
+  .screen.show{display:flex;animation:fade .3s}
+  @keyframes fade{from{opacity:0}}
+  .card{width:min(100%,360px);padding:22px 24px;border-radius:28px;text-align:center;background:linear-gradient(#3a2278,#241250);border:2px solid rgba(255,255,255,.2);
+    box-shadow:0 16px 50px rgba(0,0,0,.55);display:flex;flex-direction:column;gap:8px;align-items:center}
+  .card h2{font-size:34px;font-weight:800;line-height:1;font-style:italic;color:#ffd84a;text-shadow:0 3px 0 rgba(0,0,0,.4)}
+  .card .big{font-size:60px;font-weight:800;line-height:1}
+  .card .sm{font-size:16px;font-weight:600;opacity:.85}
+  .col{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:6px}
+  .btn{border:0;font-weight:800;font-size:22px;color:#241250;padding:11px 26px;border-radius:16px;background:linear-gradient(#ffe37a,#f5b52c);box-shadow:0 5px 0 #b8781a,0 9px 14px rgba(0,0,0,.35);font-style:italic}
+  .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #b8781a}
+  .btn.alt{background:linear-gradient(#e6dcff,#b7a2f0);box-shadow:0 5px 0 #7a63c0,0 9px 14px rgba(0,0,0,.35)}
+  .btn.alt:active{box-shadow:0 1px 0 #7a63c0}
+  .btn.sm{font-size:16px;padding:8px 18px}
+  .stats{display:flex;gap:14px;font-size:13px;font-weight:700;opacity:.9}
+  .stats b{display:block;font-size:20px;color:#ffe066}
+  @media (max-height:560px){#score{font-size:40px}.card{padding:14px 18px}.card .big{font-size:40px}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="top">
+  <div class="side"><small>KỶ LỤC</small><b id="best">0</b></div>
+  <div class="mid"><div id="score">0</div><div id="combo"></div></div>
+  <div class="side"><button id="menuBtn" aria-label="Menu">☰</button></div>
+</div>
+
+<div class="screen" id="start">
+  <div class="card"><h2>Xếp Khối Màu</h2><div class="sm">Kéo khối vào bảng, lấp đầy hàng hoặc cột để xóa!</div>
+    <div class="stats"><div><b id="stBest">0</b>kỷ lục</div><div><b id="stGames">0</b>ván</div><div><b id="stLines">0</b>hàng xóa</div></div>
+    <div class="col"><button class="btn" id="contBtn">▶ Tiếp tục (<span id="contScore">0</span> điểm)</button><button class="btn alt" id="newBtn">Ván mới</button></div></div>
+</div>
+<div class="screen" id="over">
+  <div class="card"><h2 id="oTitle">Hết chỗ rồi!</h2><div class="sm">Điểm của bạn</div><div class="big" id="oScore">0</div><div class="sm" id="oInfo"></div>
+    <div class="col"><button class="btn" id="againBtn">CHƠI LẠI</button></div></div>
+</div>
+<div class="screen" id="menu">
+  <div class="card"><h2>Tạm dừng</h2>
+    <div class="col"><button class="btn" id="resumeBtn">Tiếp tục</button><button class="btn alt sm" id="restartBtn">↺ Ván mới</button><button class="btn alt sm" id="sndBtn">🔊 Âm thanh: Bật</button></div></div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const lerp = (a, b, t) => a + (b - a) * t;
+const N = 8;
+
+/* ---------- Lưu ---------- */
+const KEY = 'xep-khoi-v1'; let mem = null;
+const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {} return mem ? JSON.parse(mem) : {}; };
+const S = Object.assign({ best: 0, games: 0, lines: 0, maxCombo: 0, sfx: true, save: null }, load());
+const persist = () => { const s = JSON.stringify(S); try { localStorage.setItem(KEY, s); } catch (e) { mem = s; } };
+
+/* ---------- Khối ---------- */
+const SHAPES = [
+  ['X'], ['XX'], ['XXX'], ['XXXX'], ['XXXXX'], ['X', 'X'], ['X', 'X', 'X'], ['X', 'X', 'X', 'X'], ['X', 'X', 'X', 'X', 'X'],
+  ['XX', 'XX'], ['XXX', 'XXX', 'XXX'], ['XXX', 'XXX'], ['XX', 'XX', 'XX'],
+  ['X.', 'XX'], ['.X', 'XX'], ['XX', 'X.'], ['XX', '.X'],
+  ['X..', 'X..', 'XXX'], ['..X', '..X', 'XXX'], ['XXX', 'X..', 'X..'], ['XXX', '..X', '..X'],
+  ['XXX', '.X.'], ['.X.', 'XXX'], ['X.', 'XX', 'X.'], ['.X', 'XX', '.X'],
+  ['XX.', '.XX'], ['.XX', 'XX.'], ['.X', 'XX', 'X.'], ['X.', 'XX', '.X']
+].map(rows => { const cells = []; rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === 'X') cells.push([y, x]); })); return { rows, cells, h: rows.length, w: rows[0].length }; });
+const COLORS = ['#ff5d73', '#ff9f43', '#ffd93d', '#4cd964', '#2dd4bf', '#4dabf7', '#9775fa', '#f06595'];
+
+/* ---------- Âm thanh ---------- */
+let ac = null;
+const audio = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (ac && ac.state === 'suspended') ac.resume(); };
+function tone(f, d = .15, v = .1, type = 'sine', delay = 0, slide = 0) {
+  if (!ac || !S.sfx) return; const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f + slide), t + d);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(v, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d + .05);
+}
+const sfx = {
+  pick: () => tone(500, .06, .05, 'triangle'),
+  place: () => { tone(200, .12, .12, 'triangle', 0, -60); tone(300, .1, .06, 'sine', .03); },
+  bad: () => tone(160, .15, .08, 'sawtooth', 0, -50),
+  clear: (n, c) => { for (let i = 0; i < Math.min(5, n + 2); i++) tone(520 * Math.pow(1.122, i * 2 + Math.min(c, 5)), .25, .1, 'triangle', i * .06); },
+  over: () => [330, 262, 196].forEach((f, i) => tone(f, .4, .12, 'sawtooth', i * .2)),
+  best: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, .4, .1, 'triangle', i * .1))
+};
+const vib = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+/* ---------- Trạng thái ---------- */
+let grid, tray, score = 0, combo = 0, noClear = 0, over = false, newBest = false;
+let drag = null, parts = [], cellFx = [], floats = [], shake = 0, flashLines = [];
+const cv = $('c'), ctx = cv.getContext('2d'); let W = 0, H = 0, DPR = 1, cell = 40, bx = 0, by = 0, trayY = 0, trayH = 0, trayCell = 24;
+
+function newGame() {
+  grid = Array.from({ length: N }, () => Array(N).fill(-1)); score = 0; combo = 0; noClear = 0; over = false; newBest = false; parts = []; cellFx = []; floats = [];
+  tray = genTray(); S.games++; hudUpdate(); persistGame();
+}
+function persistGame() { S.save = over ? null : { grid, tray: tray.map(t => t && { s: t.s, c: t.c }), score, combo, noClear }; persist(); }
+function restore(sv) { grid = sv.grid; tray = sv.tray.map(t => t && { s: t.s, c: t.c }); score = sv.score; combo = sv.combo || 0; noClear = sv.noClear || 0; over = false; hudUpdate(); }
+
+/* ---------- Sinh khối công bằng ---------- */
+const occupied = () => grid.reduce((a, r) => a + r.filter(v => v >= 0).length, 0);
+function canPlace(sh, gy, gx) { return SHAPES[sh].cells.every(([y, x]) => { const r = gy + y, c = gx + x; return r >= 0 && c >= 0 && r < N && c < N && grid[r][c] < 0; }); }
+function fitsAnywhere(sh) { for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (canPlace(sh, y, x)) return true; return false; }
+function randShape() {
+  const fill = occupied() / 64, w = SHAPES.map(s => Math.pow(s.cells.length, -fill * 1.5) * (s.cells.length === 1 ? .6 : 1)), sum = w.reduce((a, b) => a + b, 0);
+  let r = Math.random() * sum; for (let i = 0; i < w.length; i++) { r -= w[i]; if (r <= 0) return i; } return 0;
+}
+function genTray() {
+  let t; for (let k = 0; k < 40; k++) { t = [0, 1, 2].map(() => ({ s: randShape(), c: Math.floor(Math.random() * COLORS.length) })); if (t.some(p => fitsAnywhere(p.s))) return t; }
+  return t;
+}
+
+/* ---------- Bố cục ---------- */
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2); W = window.innerWidth; H = window.innerHeight; cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const top = ($('top').offsetHeight || 96) + 4;
+  cell = Math.floor(Math.min((W - 24) / N, (H - top - 150) / N, 78)); cell = Math.max(cell, 26);
+  bx = Math.round((W - cell * N) / 2); by = Math.round(top + 8 + Math.max(0, (H - top - 150 - cell * N) / 3));
+  trayY = by + cell * N + 12; trayH = H - trayY - 8; trayCell = Math.max(14, Math.min(cell * .62, (W / 3 - 18) / 5, (trayH - 12) / 5));
+}
+window.addEventListener('resize', resize); resize();
+
+/* ---------- Vẽ khối ---------- */
+function shade(hex, k) { const n = parseInt(hex.slice(1), 16), f = v => clamp(Math.round(v + (k > 0 ? (255 - v) * k : v * k)), 0, 255); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function block(x, y, s, col, a = 1, scale = 1) {
+  const p = s * (1 - scale) / 2, q = s * scale, g = Math.max(1, s * .05); ctx.globalAlpha = a;
+  const gr = ctx.createLinearGradient(0, y, 0, y + s); gr.addColorStop(0, shade(col, .35)); gr.addColorStop(.5, col); gr.addColorStop(1, shade(col, -.28));
+  ctx.fillStyle = gr; rr(x + p + g, y + p + g, q - 2 * g, q - 2 * g, s * .2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.38)'; rr(x + p + s * .14, y + p + s * .1, q - s * .28, q * .22, s * .1); ctx.fill();
+  ctx.strokeStyle = shade(col, -.45); ctx.lineWidth = 1.2; rr(x + p + g, y + p + g, q - 2 * g, q - 2 * g, s * .2); ctx.stroke(); ctx.globalAlpha = 1;
+}
+
+/* ---------- Đặt khối ---------- */
+function anchor() {
+  const sh = SHAPES[tray[drag.i].s], off = cell * 2.0, tx = drag.x - sh.w * cell / 2, ty = drag.y - off - sh.h * cell / 2;
+  return { gx: Math.round((tx - bx) / cell), gy: Math.round((ty - by) / cell), px: tx, py: ty };
+}
+function linesIf(sh, gy, gx) {
+  const g2 = grid.map(r => r.slice()); SHAPES[sh].cells.forEach(([y, x]) => { g2[gy + y][gx + x] = 99; });
+  const rows = [], cols = []; for (let i = 0; i < N; i++) { if (g2[i].every(v => v >= 0)) rows.push(i); if (g2.every(r => r[i] >= 0)) cols.push(i); } return { rows, cols };
+}
+function place(i, gy, gx) {
+  const t = tray[i], sh = SHAPES[t.s]; sh.cells.forEach(([y, x]) => { grid[gy + y][gx + x] = t.c; });
+  tray[i] = null; let gained = sh.cells.length; sfx.place();
+  const rows = [], cols = []; for (let k = 0; k < N; k++) { if (grid[k].every(v => v >= 0)) rows.push(k); if (grid.every(r => r[k] >= 0)) cols.push(k); }
+  const L = rows.length + cols.length;
+  if (L > 0) {
+    combo = noClear < 3 && combo > 0 ? combo + 1 : 1; noClear = 0;
+    const set = new Set(); rows.forEach(r => { for (let c = 0; c < N; c++) set.add(r * N + c); }); cols.forEach(c => { for (let r = 0; r < N; r++) set.add(r * N + c); });
+    set.forEach(k => { const r = (k / N) | 0, c = k % N; cellFx.push({ r, c, col: COLORS[grid[r][c]] || '#fff', t: 0 }); for (let q = 0; q < 3; q++) parts.push({ x: bx + (c + .5) * cell, y: by + (r + .5) * cell, vx: rand(-260, 260), vy: rand(-380, 60), life: rand(.5, 1), max: 1, s: rand(4, 9) * cell / 44, col: COLORS[grid[r][c]] || '#fff', rot: rand(0, 6) }); });
+    set.forEach(k => { grid[(k / N) | 0][k % N] = -1; });
+    const bonus = Math.round(L * (L + 1) / 2 * 10 * (1 + .5 * (combo - 1))); gained += bonus; S.lines += L; S.maxCombo = Math.max(S.maxCombo, combo);
+    sfx.clear(L, combo); vib(L > 1 ? 40 : 20); shake = Math.min(14, 3 + L * 2.5);
+    const words = L >= 4 ? 'HUYỀN THOẠI!' : L === 3 ? 'SIÊU HẠNG!' : L === 2 ? 'TUYỆT VỜI!' : combo >= 3 ? 'LIÊN HOÀN!' : '';
+    floats.push({ x: bx + cell * N / 2, y: by + cell * N * .42, t: '+' + bonus, s: 1, life: 1.2, c: '#fff' });
+    if (words) floats.push({ x: bx + cell * N / 2, y: by + cell * N * .28, t: words, s: 1.25, life: 1.4, c: '#ffd84a' });
+    if (combo >= 2) floats.push({ x: bx + cell * N / 2, y: by + cell * N * .58, t: 'Combo x' + combo, s: .9, life: 1.2, c: '#ff9be8' });
+    if (grid.every(r => r.every(v => v < 0))) { gained += 100; floats.push({ x: bx + cell * N / 2, y: by + cell * N * .7, t: 'SẠCH BẢNG +100', s: 1.1, life: 1.6, c: '#7dffb0' }); }
+  } else { noClear++; if (noClear >= 3) combo = 0; }
+  score += gained; if (score > S.best && !newBest && S.best > 0) { newBest = true; sfx.best(); floats.push({ x: W / 2, y: by - 6, t: '🏆 KỶ LỤC MỚI!', s: 1, life: 1.6, c: '#ffe066' }); }
+  if (tray.every(t => !t)) tray = genTray();
+  hudUpdate(); const dead = !tray.some(t => t && fitsAnywhere(t.s));
+  if (dead) { setTimeout(gameOver, 650); over = true; } persistGame();
+}
+function gameOver() {
+  sfx.over(); if (score > S.best) S.best = score; S.save = null; persist(); hudUpdate();
+  $('oTitle').textContent = newBest && score > 0 ? '🏆 Kỷ lục mới!' : 'Hết chỗ rồi!'; $('oScore').textContent = score.toLocaleString('vi-VN'); $('oInfo').textContent = `Kỷ lục: ${S.best.toLocaleString('vi-VN')}`;
+  $('over').classList.add('show');
+}
+function hudUpdate() {
+  $('score').textContent = score.toLocaleString('vi-VN'); $('best').textContent = Math.max(S.best, score).toLocaleString('vi-VN');
+  const c = $('combo'); c.textContent = combo >= 2 ? `🔥 Combo x${combo}` : ''; c.classList.toggle('on', combo >= 2);
+  const s = $('score'); s.classList.add('b'); setTimeout(() => s.classList.remove('b'), 130);
+}
+
+/* ---------- Nhập liệu ---------- */
+cv.addEventListener('pointerdown', e => {
+  audio(); if (over || document.querySelector('.screen.show')) return;
+  if (e.clientY >= trayY - 10) { const i = Math.min(2, Math.floor(e.clientX / (W / 3))); if (tray[i]) { drag = { i, x: e.clientX, y: e.clientY, k: 0 }; sfx.pick(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} } }
+});
+cv.addEventListener('pointermove', e => { if (drag) { drag.x = e.clientX; drag.y = e.clientY; } });
+function drop() {
+  if (!drag) return; const a = anchor(), t = tray[drag.i];
+  if (t && canPlace(t.s, a.gy, a.gx)) place(drag.i, a.gy, a.gx); else if (drag.y < trayY - 20) { sfx.bad(); floats.push({ x: drag.x, y: drag.y - cell * 2, t: 'Không đặt được', s: .7, life: .9, c: '#ff9a9a' }); }
+  drag = null;
+}
+cv.addEventListener('pointerup', drop); cv.addEventListener('pointercancel', () => { drag = null; });
+
+/* ---------- Menu ---------- */
+function showStart() {
+  $('stBest').textContent = S.best; $('stGames').textContent = S.games; $('stLines').textContent = S.lines;
+  if (S.save && S.save.score >= 0) { $('contScore').textContent = S.save.score; $('contBtn').style.display = ''; } else $('contBtn').style.display = 'none';
+  $('start').classList.add('show');
+}
+$('contBtn').onclick = () => { audio(); restore(S.save); $('start').classList.remove('show'); };
+$('newBtn').onclick = () => { audio(); newGame(); $('start').classList.remove('show'); };
+$('againBtn').onclick = () => { audio(); $('over').classList.remove('show'); newGame(); };
+$('menuBtn').onclick = () => { audio(); $('sndBtn').textContent = '🔊 Âm thanh: ' + (S.sfx ? 'Bật' : 'Tắt'); $('menu').classList.add('show'); };
+$('resumeBtn').onclick = () => $('menu').classList.remove('show');
+$('restartBtn').onclick = () => { $('menu').classList.remove('show'); S.save = null; newGame(); };
+$('sndBtn').onclick = () => { S.sfx = !S.sfx; persist(); $('sndBtn').textContent = '🔊 Âm thanh: ' + (S.sfx ? 'Bật' : 'Tắt'); };
+
+/* ---------- Vẽ & vòng lặp ---------- */
+function draw(dt) {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); ctx.save(); if (shake > .2) { ctx.translate(rand(-shake, shake), rand(-shake, shake)); shake *= .88; }
+  // bảng
+  const pad = 8; ctx.fillStyle = 'rgba(10,5,30,.55)'; rr(bx - pad, by - pad, cell * N + pad * 2, cell * N + pad * 2, 18); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 2; rr(bx - pad, by - pad, cell * N + pad * 2, cell * N + pad * 2, 18); ctx.stroke();
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { ctx.fillStyle = (r + c) % 2 ? 'rgba(255,255,255,.055)' : 'rgba(255,255,255,.1)'; rr(bx + c * cell + 2, by + r * cell + 2, cell - 4, cell - 4, cell * .16); ctx.fill(); }
+  // xem trước
+  let prev = null;
+  if (drag && tray[drag.i]) { const a = anchor(), t = tray[drag.i]; if (canPlace(t.s, a.gy, a.gx)) { prev = { a, t, l: linesIf(t.s, a.gy, a.gx) }; } }
+  if (prev) {
+    ctx.fillStyle = 'rgba(255,255,255,.22)'; prev.l.rows.forEach(r => { rr(bx, by + r * cell, cell * N, cell, 8); ctx.fill(); }); prev.l.cols.forEach(c => { rr(bx + c * cell, by, cell, cell * N, 8); ctx.fill(); });
+  }
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c] >= 0) block(bx + c * cell, by + r * cell, cell, COLORS[grid[r][c]]);
+  if (prev) SHAPES[prev.t.s].cells.forEach(([y, x]) => block(bx + (prev.a.gx + x) * cell, by + (prev.a.gy + y) * cell, cell, COLORS[prev.t.c], .5));
+  // hiệu ứng xóa
+  cellFx.forEach(f => { f.t += dt; const k = clamp(f.t / .38, 0, 1); ctx.globalAlpha = 1 - k; block(bx + f.c * cell, by + f.r * cell, cell, '#ffffff', 1 - k, 1 + k * .35); ctx.globalAlpha = 1; }); cellFx = cellFx.filter(f => f.t < .38);
+  // khay
+  for (let i = 0; i < 3; i++) {
+    const t = tray[i]; if (!t) continue; const sh = SHAPES[t.s], isDrag = drag && drag.i === i, cx = (i + .5) * W / 3, cy = trayY + trayH / 2;
+    if (isDrag) { ctx.globalAlpha = .25; }
+    const s = trayCell; sh.cells.forEach(([y, x]) => block(cx - sh.w * s / 2 + x * s, cy - sh.h * s / 2 + y * s, s, COLORS[t.c], isDrag ? .3 : 1)); ctx.globalAlpha = 1;
+  }
+  if (drag && tray[drag.i]) {
+    drag.k = Math.min(1, drag.k + dt * 10); const t = tray[drag.i], sh = SHAPES[t.s], a = anchor(), s = lerp(trayCell, cell, drag.k);
+    ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 8;
+    sh.cells.forEach(([y, x]) => block(drag.x - sh.w * s / 2 + x * s, drag.y - cell * 2 - sh.h * s / 2 + y * s, s, COLORS[t.c], .96)); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  }
+  // hạt
+  parts.forEach(p => { p.vy += 1100 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; p.rot += dt * 8; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s); ctx.restore(); });
+  parts = parts.filter(p => p.life > 0); ctx.globalAlpha = 1;
+  floats.forEach(f => { f.life -= dt; f.y -= 34 * dt; ctx.globalAlpha = clamp(f.life * 1.6, 0, 1); ctx.font = `800 ${Math.round(cell * .62 * f.s)}px "Baloo 2",sans-serif`; ctx.textAlign = 'center'; ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(30,10,70,.9)'; ctx.strokeText(f.t, f.x, f.y); ctx.fillStyle = f.c; ctx.fillText(f.t, f.x, f.y); });
+  floats = floats.filter(f => f.life > 0); ctx.globalAlpha = 1; ctx.restore();
+}
+let last = performance.now();
+function loop(now) { const dt = Math.min(.04, (now - last) / 1000); last = now; draw(dt); requestAnimationFrame(loop); }
+
+grid = Array.from({ length: N }, () => Array(N).fill(-1)); tray = [null, null, null];
+if (S.save && S.save.grid) restore(S.save);
+hudUpdate(); showStart(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

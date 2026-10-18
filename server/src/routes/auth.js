@@ -80,6 +80,9 @@ router.get("/me", authenticate, async (req, res) => {
       classId: userDoc?.classId || null,
       className: classInfo?.name || null,
       classCode: classInfo?.code || null,
+      // Bộ đồ avatar + thú cưng do game tạo avatar lưu (không phải avatarLoadout).
+      avatar: userDoc?.avatar || null,
+      pet: userDoc?.pet || null,
       stats: {
         totalPlays,
         totalXP,
@@ -113,7 +116,7 @@ router.get("/me", authenticate, async (req, res) => {
       }),
     });
   } catch {
-    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, coins: 0, createdAt: null, classId: null, className: null, classCode: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 }, games: [] });
+    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, coins: 0, createdAt: null, classId: null, className: null, classCode: null, avatar: null, pet: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 }, games: [] });
   }
 });
 

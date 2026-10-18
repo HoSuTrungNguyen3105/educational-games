@@ -193,6 +193,9 @@ async function _runHeavyInit(database) {
           classId: { bsonType: "string" },
           avatarLoadout: { bsonType: "object" },
           inventory: { bsonType: "array" },
+          // Bộ đồ avatar / thú cưng do game tạo avatar lưu (chỉ id, không lưu SVG).
+          avatar: { bsonType: "object" },
+          pet: { bsonType: "object" },
           // Field mới — XP/Level tích luỹ (optional, user cũ không có vẫn OK)
           xp: { bsonType: ["int", "double", "long"] },
           coinsEarnedOn: { bsonType: "string" },
