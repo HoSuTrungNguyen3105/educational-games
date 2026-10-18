@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
 import { navigate } from "../lib/router.js";
 import { useUserAuthStore } from "../stores/userAuth.store.js";
-import HtmlGameLoader from "../games/HtmlGameLoader.jsx";
-import mathAdventureHtml from "../games/math-adventure.html?raw";
+import HtmlGameLoader from "../games/_shared/HtmlGameLoader.jsx";
+import mathAdventureHtml from "../games/math/math-adventure/MathAdventure.html?raw";
 
 const GAME = {
   id: "math-adventure",

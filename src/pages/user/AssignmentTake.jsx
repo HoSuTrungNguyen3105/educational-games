@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { assignmentService, questionService, gameService, gamePlayService, templateService } from '../../services/api.js';
 import { useUserAuthStore } from '../../stores/userAuth.store.js';
 import { navigate } from '../../lib/router.js';
-import GamePlayRouter from '../../games/GamePlayRouter.jsx';
+import GamePlayRouter from '../../games/_shared/GamePlayRouter.jsx';
 import { Clock, AlertTriangle, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Send, User, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const TIMER_WARN = 60;

@@ -12,7 +12,7 @@ import { useChatStore } from '../../stores/chat.store.js'
 import ChatPanel from '../../components/chat/ChatPanel.jsx'
 import ChatBubble from '../../components/chat/ChatBubble.jsx'
 
-const GamePlayRouter = lazy(() => import('../../games/GamePlayRouter.jsx'));
+const GamePlayRouter = lazy(() => import('../../games/_shared/GamePlayRouter.jsx'));
 
 export default function StudentApp({ initialGame, coopSession, onExit, toast, userAuth, onUserLogin, onUserLogout }) {
   const [screen, setScreen] = useState(() => {

@@ -6,8 +6,8 @@
 //
 //   npm run games:build
 //
-// Nguồn:  src/games/lib/{shell.html, api.js, core.js, single.js, mcengine.js}
-//         src/games/src/<id>.js
+// Nguồn:  src/games/offline/lib/{shell.html, api.js, core.js, single.js, mcengine.js}
+//         src/games/offline/games-src/<id>.js
 // Kết quả: src/games/offline/<id>.html
 //
 // File sinh ra ĐÃ được commit để app chạy được ngay sau khi clone. Khi sửa
@@ -19,15 +19,15 @@ import path from "node:path";
 const G = (p) => path.resolve(process.cwd(), p);
 const read = (p) => fs.readFileSync(G(p), "utf8").replace(/\r\n/g, "\n");
 
-const shell = read("src/games/lib/shell.html");
-const core = read("src/games/lib/core.js").replace(/\s+$/, "");
-const single = read("src/games/lib/single.js").replace(/\s+$/, "");
-const mcengine = read("src/games/lib/mcengine.js").replace(/\s+$/, "");
+const shell = read("src/games/offline/lib/shell.html");
+const core = read("src/games/offline/lib/core.js").replace(/\s+$/, "");
+const single = read("src/games/offline/lib/single.js").replace(/\s+$/, "");
+const mcengine = read("src/games/offline/lib/mcengine.js").replace(/\s+$/, "");
 
 // Lấy danh mục từ manifest.js mà không cần import ESM (nó dùng export)
-const manifestSrc = read("src/games/src/manifest.js");
+const manifestSrc = read("src/games/offline/games-src/manifest.js");
 const ids = [...manifestSrc.matchAll(/\{ id: '([^']+)',/g)].map((m) => m[1]);
-if (!ids.length) throw new Error("không đọc được danh sách id từ src/games/src/manifest.js");
+if (!ids.length) throw new Error("không đọc được danh sách id từ src/games/offline/games-src/manifest.js");
 
 /**
  * Escape "</script>" trong JS.
@@ -48,7 +48,7 @@ function build(id) {
     return read("src/games/plantvsanimal.html");
   }
 
-  const game = read(`src/games/src/${id}.js`);
+  const game = read(`src/games/offline/games-src/${id}.js`);
   const usesMc = /engine: 'mc'/.test(meta ? meta[0] : "");
 
   const parts = [
@@ -98,13 +98,13 @@ for (const id of ids) {
   const metaLine = (manifestSrc.match(new RegExp(`\\{ id: '${id}',[\\s\\S]*?file: '[^']+' \\}`)) || [""])[0];
   // Nguồn để sinh lại file offline:
   //   · engine 'standalone' → bản gốc src/games/<id>.html
-  //   · còn lại             → src/games/src/<id>.js
+  //   · còn lại             → src/games/offline/games-src/<id>.js
   // Game tự viết tay (chem-trai-cay, xep-khoi, night-strike…) không có nguồn
   // nào trong repo — chúng là HTML độc lập, KHÔNG sinh lại. Không có nhánh
   // này thì read() ném ENOENT và cả lệnh build chết.
   const srcFile = /engine: 'standalone'/.test(metaLine)
     ? `src/games/${id}.html`
-    : `src/games/src/${id}.js`;
+    : `src/games/offline/games-src/${id}.js`;
   if (!fs.existsSync(G(srcFile))) {
     skipped.push(id);
     continue;
@@ -122,6 +122,6 @@ for (const id of ids) {
 console.table(rows);
 console.log(`\n✔ ${rows.length} file → src/games/offline/  (tổng ${(total / 1024).toFixed(2)} MB)`);
 if (skipped.length) {
-  console.log(`⏭  Bỏ qua ${skipped.length} game viết tay (không có src/games/src/<id>.js):`);
+  console.log(`⏭  Bỏ qua ${skipped.length} game viết tay (không có src/games/offline/games-src/<id>.js):`);
   console.log(`   ${skipped.join(", ")}`);
 }

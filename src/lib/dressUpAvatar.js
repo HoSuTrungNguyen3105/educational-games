@@ -2,7 +2,7 @@
  * dressUpAvatar.js — cầu nối giữa React và data SVG dùng chung của 2 game
  * tạo avatar ("Tiệm thời trang cho Bé" và "Tiệm thay đồ thú cưng").
  *
- * Data SVG nằm ở `src/games/lib/dressUpAvatarData.js`, vốn là script thuần để
+ * Data SVG nằm ở `src/games/_shared/lib/dressUpAvatarData.js`, vốn là script thuần để
  * `injectDressUpAvatar.js` nạp bằng `?raw` rồi tiêm vào HTML game. Ở đây ta
  * nạp đúng file đó và chạy một lần trong một scope riêng → không nhân bản SVG,
  * không phải deploy lại app khi thêm item mới, và profile hiện đúng bộ đồ mà
@@ -16,8 +16,8 @@
  *   outfitKey(scope)                 → key localStorage (khớp EG_OUTFIT)
  */
 
-import dragonSource from "../games/lib/dressUpDragon.js?raw";
-import rawSource from "../games/lib/dressUpAvatarData.js?raw";
+import dragonSource from "../games/_shared/lib/dressUpDragon.js?raw";
+import rawSource from "../games/_shared/lib/dressUpAvatarData.js?raw";
 
 const SCOPE_AVATAR = "avatar";
 const SCOPE_PET = "pet";

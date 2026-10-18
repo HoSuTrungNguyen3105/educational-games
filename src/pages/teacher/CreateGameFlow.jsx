@@ -8,7 +8,7 @@ import Field, { StampToken } from './fields.jsx'
 import QuestionImportModal from './QuestionImportModal.jsx'
 import AiQuestionPanel from '../../components/AiQuestionPanel.jsx'
 import { navigate } from '../../lib/router.js'
-import { injectGameConfig } from '../../games/injectGameConfig.js'
+import { injectGameConfig } from '../../games/_shared/injectGameConfig.js'
 import {
   SCHEMA_VERSION,
   buildConfigPayload,
@@ -19,7 +19,7 @@ import {
   normalizeValues,
   readGameConfig,
   validateValues,
-} from '../../games/gameConfigSchema.js'
+} from '../../games/_shared/gameConfigSchema.js'
 
 const ALL_STEPS = [
   { id: "template", label: "Chọn mẫu" },

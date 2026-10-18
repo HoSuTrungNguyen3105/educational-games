@@ -114,7 +114,7 @@ function boot(html, savedMap) {
 }
 
 // ── Test ────────────────────────────────────────────────────────────────────
-const manifest = fs.readFileSync("src/games/src/manifest.js", "utf8");
+const manifest = fs.readFileSync("src/games/offline/games-src/manifest.js", "utf8");
 const entries = [...manifest.matchAll(/\{ id: '([^']+)', name: '([^']+)', icon: '([^']*)', tag: '([^']+)', grad: '([^']+)', engine: '([^']+)'/g)]
   .map((m) => ({ id: m[1], name: m[2], icon: m[3], tag: m[4], grad: m[5], engine: m[6] }));
 
@@ -124,7 +124,7 @@ if (!entries.length) { console.log("✖ manifest không có game nào"); process
 
 // Chỉ test được những game sinh từ lib/ (boot được trong vm).
 // Game tự viết tay không dùng shell nên không chạy được test tự động này.
-const generated = entries.filter((e) => fs.existsSync(`src/games/src/${e.id}.js`) || fs.existsSync(`src/games/${e.id}.html`));
+const generated = entries.filter((e) => fs.existsSync(`src/games/offline/games-src/${e.id}.js`) || fs.existsSync(`src/games/${e.id}.html`));
 console.log(`(${entries.length} game trong manifest · ${generated.length} game sinh từ lib/ đủ điều kiện test)\n`);
 
 let bad = 0;

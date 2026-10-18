@@ -55,7 +55,7 @@ const FEATURED_GAME = {
 };
 
 
-import { OFFLINE_GAME_MANIFEST } from "../games/src/manifest.js";
+import { OFFLINE_GAME_MANIFEST } from "../games/offline/games-src/manifest.js";
 
 
 const NO_SUBJECT = "Chung";

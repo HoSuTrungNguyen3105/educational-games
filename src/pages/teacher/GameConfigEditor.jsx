@@ -13,8 +13,8 @@ import {
   readGameConfig,
   suggestGameKey,
   validateValues,
-} from "../../games/gameConfigSchema.js";
-import { injectGameConfig } from "../../games/injectGameConfig.js";
+} from "../../games/_shared/gameConfigSchema.js";
+import { injectGameConfig } from "../../games/_shared/injectGameConfig.js";
 import { loadTemplateHtml } from "../../lib/hooks.js";
 
 const EMPTY_EDITOR = { gameId: null, key: null, values: {}, dirty: false };

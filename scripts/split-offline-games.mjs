@@ -5,8 +5,8 @@
 //
 //   game1.html  ─┐
 //   game2.html  ─┼─> src/games/lib/    (shell.html, api.js, core.js)  — dùng chung
-//   game3.html  ─┤   src/games/src/<id>.js                          — 1 file = 1 game
-//   game4.html  ─┘   src/games/src/manifest.js
+//   game3.html  ─┤   src/games/offline/games-src/<id>.js                          — 1 file = 1 game
+//   game4.html  ─┘   src/games/offline/games-src/manifest.js
 //
 // Sau khi script này chạy xong, các file hub cũ có thể xoá. Từ đó dùng
 // `npm run games:build` để sinh src/games/offline/<id>.html từ lib + src.
@@ -132,11 +132,11 @@ function main() {
       ? `\nstartMcGame('${id}', {\n  name: '${m.name}',\n  icon: '${m.icon}',\n  badges: [\n${badgeList}\n  ],\n});\n`
       : `\nstartSingleGame({\n  id: '${id}',\n  name: '${m.name.replace(/'/g, "\\'")}',\n  icon: '${m.icon}',\n  storageKey: 'offline_${id}',\n  mount: ${m.src === "game1" ? id + "Game" : { flap: "flapGame", g2048: "game2048", chem: "chemGame", clock: "clockGame", pattern: "patternGame", simon: "simonGame" }[id]},\n  badges: [\n${badgeList}\n  ],\n});\n`;
 
-    const header = `// src/games/src/${id}.js — ${m.name} (${m.tag})\n`
+    const header = `// src/games/offline/games-src/${id}.js — ${m.name} (${m.tag})\n`
       + `// Sinh tự động từ ${m.src}.html bởi scripts/split-offline-games.mjs.\n`
       + `// Sửa file này, KHÔNG sửa ${m.src}.html.\n\n`;
 
-    write(`src/games/src/${id}.js`, header + body.replace(/\s+$/, "") + tail);
+    write(`src/games/offline/games-src/${id}.js`, header + body.replace(/\s+$/, "") + tail);
     count++;
   }
   console.log(`src/*.js                  ${count} file game`);
@@ -147,7 +147,7 @@ function main() {
     (m.maker ? ` engine: 'mc', maker: '${m.maker}',` : ` engine: 'single',`) +
     ` file: 'src/games/offline/${id}.html' },`
   ).join("\n");
-  write("src/games/src/manifest.js",
+  write("src/games/offline/games-src/manifest.js",
     `// Danh mục 17 game offline. Đây là nguồn sự thật cho trang Home và route /offline/:id.\n`
     + `// Sinh tự động bởi scripts/split-offline-games.mjs.\n\nexport const OFFLINE_GAME_MANIFEST = [\n${entries}\n];\n\n`
     + `export const offlineGameIds = OFFLINE_GAME_MANIFEST.map((g) => g.id);\n\n`

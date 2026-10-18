@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { navigate } from "../lib/router.js";
-import { findOfflineGame, makeFallbackMeta } from "../games/src/manifest.js";
+import { findOfflineGame, makeFallbackMeta } from "../games/offline/games-src/manifest.js";
 
 /**
  * MỖI GAME = MỘT FILE HTML trong src/games/offline/.

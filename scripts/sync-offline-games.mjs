@@ -17,7 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const DIR = path.resolve(process.cwd(), "src/games/offline");
-const MANIFEST = path.resolve(process.cwd(), "src/games/src/manifest.js");
+const MANIFEST = path.resolve(process.cwd(), "src/games/offline/games-src/manifest.js");
 const DRY = process.argv.includes("--dry-run");
 
 const GRADS = [
@@ -92,7 +92,7 @@ if (!added.length) {
     const out = src.replace(/\n\];\n/, `\n${added.map((a) => a.line).join("\n")}\n];\n`);
     fs.writeFileSync(MANIFEST, out, "utf8");
     console.log(`✔ Đã thêm ${added.length} game vào manifest: ${added.map((a) => a.id).join(", ")}`);
-    console.log("  Sửa tên/emoji/màu trong src/games/src/manifest.js nếu muốn.");
+    console.log("  Sửa tên/emoji/màu trong src/games/offline/games-src/manifest.js nếu muốn.");
   } else {
     console.log(`(DRY-RUN) sẽ thêm ${added.length} game. Bỏ --dry-run để ghi file.`);
   }
