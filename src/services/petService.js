@@ -10,12 +10,14 @@
 //   các thao tác cấp cao, mọi request vẫn đi qua petApi.
 //
 // API backend đang dùng (xem server/src/routes/pet.js):
-//   GET  /api/pet/catalog  → danh mục loài / màu / trang phục (mở khoá theo cấp)
 //   GET  /api/pet          → pet hiện tại
-//   PUT  /api/pet          → đổi tên / loài / màu / trang phục (tháo = gửi null)
+//   PUT  /api/pet          → đổi tên / loài / màu / trang phục (thẻ = gửi null)
 //   POST /api/pet/exp      → cộng EXP
-//   POST /api/pet/mood     → đổi tâm tính
+//   POST /api/pet/mood     → đổi tâm trạng
 //   POST /api/pet/reset    → đưa về mặc định
+//
+// GET /api/pet/catalog đã bị gỡ: danh mục loài / màu / trang phục nằm sẵn trong
+// CATALOG_FALLBACK (src/lib/petApi.js) nên app không gọi mạng cho phần này.
 //
 // "Sở hữu" trong hệ này = đã mở khoá theo cấp pet (server tự chặn nếu chưa đủ
 // cấp, trả 400 kèm errors). Không tạo thêm endpoint sở hữu riêng.

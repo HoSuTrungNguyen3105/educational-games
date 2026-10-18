@@ -138,309 +138,577 @@
     return out;
   }
 
-  /* ===================================================================== *
-   *  PHẦN 2 — BÉ / QUÁI VẬT  (nguồn: Tiệm thời trang cho Bé.html)
+/* ===================================================================== *
+   *  PHẦN 2 — NHÂN VẬT  (nguồn: body.html ở thư mục gốc, hệ toạ độ 512×700)
+   *
+   *  Toàn bộ lớp ở đây được vẽ trên đúng hệ 512×700 của `body.html`:
+   *    đầu 179–333 × 91–301 · thân 172–340 × 314–501
+   *    chân 186–326 × 492–655 · giày 180–332 × 637–674
+   *  Không scale từ hệ 200×290 cũ — tỉ lệ đầu/thân khác hẳn nên đồ sẽ méo.
    * ===================================================================== */
 
-  var SKIN = { s1: ['#fdfaf2', '#ecc9a8'], s2: ['#f6d9bc', '#e5b88f'], s3: ['#dcab7c', '#c48f60'], s4: ['#a97048', '#8c5a37'] };
+  var KID_W = 512, KID_H = 700;
 
-  var HAIR = {
-    spikyBrown: ['spiky', '#6b4226'], spikyBlack: ['spiky', '#25252e'],
-    shortBrown: ['short', '#8a5a2f'], shortBlack: ['short', '#25252e'],
-    longBlack: ['long', '#25252e'], longBlonde: ['long', '#f0c14b'], longBrown: ['long', '#7a4a2a'],
-    pigtail: ['pigtail', '#c2703a'], bun: ['bun', '#25252e'],
-    bob: ['bob', '#f48fb1'], ponytail: ['pony', '#7a4a2a'], twinbun: ['twinbun', '#25252e']
-  };
-  var HAIR_BOY = ['spikyBrown', 'spikyBlack', 'shortBrown', 'shortBlack'];
-  var HAIR_GIRL = ['longBlack', 'longBlonde', 'longBrown', 'pigtail', 'bun', 'bob', 'ponytail', 'twinbun'];
-
-  var DRESS = { pink: '#f48fb1', red: '#ef5350', yellow: '#ffd54f', blue: '#4aa3df', purple: '#b48be0', stripe: 'url(#egStKid)' };
-
-  var MONSTER_COLORS = { purple: '#9b6dd6', green: '#6fbf5f', blue: '#5aa9e6', orange: '#f59a4a', pink: '#f48fb1', teal: '#4fc3b0' };
-
-  /** horns: { svg, usesColor } — `{{c}}` được thay bằng màu thân quái vật. */
-  var HORNS = {
-    none: { svg: '', usesColor: false },
-    horns: { svg: '<path d="M62 54L50 12 86 42ZM138 54L150 12 114 42Z" fill="#fff3c4" stroke="#e0c46a" stroke-width="2" stroke-linejoin="round"/>', usesColor: false },
-    antenna: { svg: '<path d="M80 46Q70 22 76 10M120 46Q130 22 124 10" stroke="#5a4a6a" stroke-width="3" fill="none"/><circle cx="76" cy="10" r="6" fill="#ffd54f"/><circle cx="124" cy="10" r="6" fill="#ffd54f"/>', usesColor: false },
-    ears: { svg: '<g fill="{{c}}"><circle cx="48" cy="60" r="14"/><circle cx="152" cy="60" r="14"/></g><g fill="#0002"><circle cx="48" cy="60" r="7"/><circle cx="152" cy="60" r="7"/></g>', usesColor: true },
-    spikes: { svg: '<path d="M58 56L64 22 80 42 92 14 106 42 120 20 130 44 142 56Z" fill="#ffcf5c" stroke="#e0a82e" stroke-width="2" stroke-linejoin="round"/>', usesColor: false }
+  /* ---- màu da: 4 tone, offset lấy nguyên từ body.html ---- */
+  var SKIN_TONES = { s1: '#FFDFC4', s2: '#E8B98D', s3: '#C98C5E', s4: '#8D5A3B' };
+  var SKIN_OFFSETS = {
+    light: [0, 10, 14], dark: [0, -18, -26], shadow: [-22, -49, -56], ear: [0, -14, -19]
   };
 
-  var EYES = { one: [[100, 72, 16]], two: [[82, 72, 11], [118, 72, 11]], three: [[74, 78, 9], [126, 78, 9], [100, 56, 9]] };
+  function hexToRgb(hex) {
+    var h = String(hex || '').replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    if (!/^[0-9a-fA-F]{6}$/.test(h)) h = 'FFDFC4';
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  function tone(hex, off) {
+    var rgb = hexToRgb(hex);
+    var to = function (v, d) { return Math.max(0, Math.min(255, v + d)).toString(16).toUpperCase().padStart(2, '0'); };
+    return '#' + to(rgb[0], off[0]) + to(rgb[1], off[1]) + to(rgb[2], off[2]);
+  }
+  function skinVars(id) {
+    var s = SKIN_TONES[id] || SKIN_TONES.s1;
+    return {
+      base: s,
+      light: tone(s, SKIN_OFFSETS.light),
+      dark: tone(s, SKIN_OFFSETS.dark),
+      shadow: tone(s, SKIN_OFFSETS.shadow),
+      ear: tone(s, SKIN_OFFSETS.ear)
+    };
+  }
 
-  var MOUTH = {
-    smile: '<path d="M84 100Q100 116 116 100" stroke="#3a2040" stroke-width="3" fill="none" stroke-linecap="round"/>',
-    fangs: '<path d="M82 98Q100 120 118 98Z" fill="#4a1d3a"/><path d="M88 100L92 109 96 101ZM104 101L108 109 112 100Z" fill="#fff"/>',
-    tongue: '<path d="M84 98Q100 118 116 98Z" fill="#4a1d3a"/><ellipse cx="100" cy="110" rx="8" ry="6" fill="#f06292"/>',
-    teeth: '<path d="M78 98Q100 122 122 98Z" fill="#fff" stroke="#3a2040" stroke-width="2.5"/><path d="M89 103V111M100 105V116M111 103V111" stroke="#3a2040" stroke-width="1.8"/>'
+  /* ---- màu tóc ---- */
+  var HAIR_COLORS = {
+    nâu: '#6B4228', đen: '#25252E', vàng: '#F0C14B', nâuSáng: '#8A5A2F', đỏ: '#C2452F', xanh: '#3E7BB6', tím: '#8B5CC7', bạc: '#B9BEC7'
   };
 
-  var KID_SHIRT = { white: '#ffffff', red: '#ef5350', blue: '#4aa3df', yellow: '#ffd54f', green: '#66bb6a', pink: '#f48fb1', stripe: 'url(#egStKid)' };
-
-  var PANTS = {
-    jeans: ['long', '#4d71b8'], black: ['long', '#3a3a48'], khaki: ['short', '#d8b87a'],
-    redshort: ['short', '#ef5350'], pinkskirt: ['skirt', '#f48fb1'], greenskirt: ['skirt', '#66bb6a']
+  /* ===================================================================== *
+   *  THÂN — `body_01` là thân người lấy nguyên văn từ body.html.
+   *  `body_dragon_01` đã khắc sẵn mặt/sừng nên overlays = false.
+   * ===================================================================== */
+  var BODIES = {
+    body_01: { n: 'Người', overlays: true },
+    body_dragon_01: { n: 'Rồng xanh', overlays: false }
   };
 
-  var SHOES = { white: '#ffffff', red: '#ef5350', blue: '#4aa3df', black: '#3a3a48', yellow: '#ffd54f' };
-
-  var KID_GLASSES = {
-    round: '<g fill="#fff" fill-opacity=".3" stroke="#333" stroke-width="2.5"><circle cx="84" cy="71" r="10.5"/><circle cx="116" cy="71" r="10.5"/></g><path d="M94.5 69Q100 65 105.5 69" stroke="#333" stroke-width="2.5" fill="none"/>',
-    square: '<g fill="#fff" fill-opacity=".3" stroke="#2f7fb5" stroke-width="3"><rect x="72" y="62" width="24" height="19" rx="4"/><rect x="104" y="62" width="24" height="19" rx="4"/></g><path d="M96 67H104" stroke="#2f7fb5" stroke-width="3"/>',
-    sun: '<g fill="#222"><rect x="71" y="62" width="26" height="18" rx="8"/><rect x="103" cy="62" width="26" height="18" rx="8"/></g><path d="M97 66H103" stroke="#222" stroke-width="2.5"/><path d="M76 67l7-2.5M108 67l7-2.5" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/>',
-    heart: '<g fill="#ff5d8f" stroke="#c2185b" stroke-width="2"><path d="M84 82C72 73 75 62 84 67 93 62 96 73 84 82Z"/><path d="M116 82C104 73 107 62 116 67 125 62 128 73 116 82Z"/></g>'
-  };
-
-  var KID_HAT = {
-    cap: '<path d="M56 64Q58 22 100 22T144 64Z" fill="#4aa3df"/><path d="M54 63Q100 72 146 63L144 58Q100 52 56 58Z" fill="#2f7fb5"/><circle cx="100" cy="23" r="4" fill="#2f7fb5"/>',
-    beanie: '<path d="M54 62Q56 14 100 14T146 62Z" fill="#ef5350"/><rect x="52" y="52" width="96" height="13" rx="6.5" fill="#b8312e"/><circle cx="100" cy="13" r="8" fill="#fff"/>',
-    party: '<path d="M78 62L100 4 122 62Z" fill="#ff7eb6"/><g fill="#fff"><circle cx="95" cy="38" r="3"/><circle cx="106" cy="28" r="3"/><circle cx="104" cy="48" r="3"/></g><circle cx="100" cy="4" r="6" fill="#ffd54f"/>',
-    crown: '<path d="M70 66L74 32 88 48 100 26 112 48 126 32 130 66Z" fill="#ffc929" stroke="#d99a00" stroke-width="2.5" stroke-linejoin="round"/><circle cx="100" cy="52" r="4" fill="#ef5350"/>',
-    straw: '<ellipse cx="100" cy="58" rx="68" ry="8" fill="#f0cf7a" stroke="#c9a24a" stroke-width="2"/><path d="M68 56Q70 20 100 20T132 56Z" fill="#f0cf7a" stroke="#c9a24a" stroke-width="2"/><rect x="68" y="46" width="64" height="9" fill="#ef5350"/>',
-    flower: '<g transform="translate(138 54)"><g fill="#ff8fb3"><circle cy="-8" r="6.5"/><circle cx="8" cy="-2.5" r="6.5"/><circle cx="5" cy="7" r="6.5"/><circle cx="-5" cy="7" r="6.5"/><circle cx="-8" cy="-2.5" r="6.5"/></g><circle r="4.5" fill="#ffd54f"/></g>'
-  };
-
-  var ACC = {
-    bow: { f: '<path d="M100 131L84 121V141ZM100 131L116 121V141Z" fill="#e8453c"/><circle cx="100" cy="131" r="4.5" fill="#b8271f"/>' },
-    scarf: { f: '<path d="M66 124Q100 142 134 124V137Q100 155 66 137Z" fill="#f5a623"/><path d="M110 145L118 172 104 174 98 149Z" fill="#e8921a"/>' },
-    necklace: { f: '<path d="M80 125Q100 150 120 125" stroke="#d99a00" stroke-width="2.5" fill="none"/><path d="M100 160C93 153 95 147 100 151 105 147 107 153 100 160Z" fill="#ff5d8f"/>' },
-    phones: { f: '<path d="M64 78Q58 26 100 26T136 78" stroke="#333" stroke-width="5" fill="none"/><rect x="57" y="68" width="14" height="24" rx="6" fill="#ef5350"/><rect x="129" y="68" width="14" height="24" rx="6" fill="#ef5350"/>' },
-    bag: { b: '<rect x="58" y="134" width="84" height="58" rx="12" fill="#ef8a3c"/>', f: '<path d="M78 128V190M122 128V190" stroke="#c2651f" stroke-width="6"/>' },
-    cape: { b: '<path d="M66 126H134L152 262H48Z" fill="#e8453c"/>', f: '<circle cx="100" cy="128" r="5" fill="#ffc929" stroke="#d99a00" stroke-width="2"/>' }
-  };
-
-  var KID_BASE = {
-    skin: 's1', hair: 'spikyBrown', dress: null, shirt: 'white', pants: 'jeans',
-    shoes: 'white', glasses: null, hat: null, acc: null,
-    mcolor: 'purple', horns: 'horns', eyes: 'two', mouth: 'fangs'
-  };
-
-  var KID_DEFAULTS = {
-    boy: assign({ type: 'boy' }, KID_BASE),
-    girl: assign({ type: 'girl', hair: 'longBlack', dress: 'pink', shoes: 'red' }, KID_BASE),
-    monster: assign({ type: 'monster', shirt: null, shoes: 'red' }, KID_BASE)
-  };
-
-  var KID_TYPES = [['boy', '👦 Bé trai'], ['girl', '👧 Bé gái'], ['monster', '👾 Quái vật']];
-
-  function assign(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var src = arguments[i] || {};
-      for (var k in src) if (Object.prototype.hasOwnProperty.call(src, k)) target[k] = src[k];
+  /* ===================================================================== *
+   *  MẶT — bám đúng toạ độ `#face` của body.html:
+   *  mắt 224/288 × 210 · lông mày y≈186 · má 205/307 × 244
+   *  mũi 256 × 218–241 · miệng y≈258–280
+   * ===================================================================== */
+  var FACES = {
+    face_01: {
+      n: 'Cười',
+      svg: '<path d="M207 188 Q224 177 240 187" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>'
+        + '<path d="M272 187 Q288 177 305 188" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>'
+        + '<ellipse cx="224" cy="210" rx="13" ry="17" fill="#28203A"/><circle cx="229" cy="204" r="4" fill="#FFFFFF"/>'
+        + '<ellipse cx="288" cy="210" rx="13" ry="17" fill="#28203A"/><circle cx="293" cy="204" r="4" fill="#FFFFFF"/>'
+        + '<ellipse cx="205" cy="244" rx="21" ry="11" fill="#FF8FA0" opacity="0.42"/>'
+        + '<ellipse cx="307" cy="244" rx="21" ry="11" fill="#FF8FA0" opacity="0.42"/>'
+        + '<path d="M256 218 Q249 239 257 241" stroke="#D99172" stroke-width="4" stroke-linecap="round"/>'
+        + '<path d="M235 258 Q256 278 277 258" stroke="#30213E" stroke-width="6" stroke-linecap="round"/>'
+    },
+    face_02: {
+      n: 'Mắt to',
+      svg: '<path d="M202 182 Q224 166 244 180" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>'
+        + '<path d="M268 180 Q288 166 310 182" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>'
+        + '<ellipse cx="224" cy="210" rx="18" ry="22" fill="#28203A"/><circle cx="231" cy="201" r="6" fill="#FFFFFF"/>'
+        + '<circle cx="224" cy="218" r="3" fill="#FFFFFF" opacity="0.7"/>'
+        + '<ellipse cx="288" cy="210" rx="18" ry="22" fill="#28203A"/><circle cx="295" cy="201" r="6" fill="#FFFFFF"/>'
+        + '<circle cx="288" cy="218" r="3" fill="#FFFFFF" opacity="0.7"/>'
+        + '<ellipse cx="203" cy="246" rx="24" ry="13" fill="#FF8FA0" opacity="0.5"/>'
+        + '<ellipse cx="309" cy="246" rx="24" ry="13" fill="#FF8FA0" opacity="0.5"/>'
+        + '<path d="M256 220 Q248 242 257 244" stroke="#D99172" stroke-width="4" stroke-linecap="round"/>'
+        + '<path d="M238 260 Q256 276 274 260" stroke="#30213E" stroke-width="6" stroke-linecap="round"/>'
+    },
+    face_03: {
+      n: 'Cười toe',
+      svg: '<path d="M206 186 Q224 176 242 186" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>'
+        + '<path d="M270 186 Q288 176 306 186" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>'
+        + '<path d="M208 212 Q224 192 240 212" stroke="#28203A" stroke-width="8" stroke-linecap="round" fill="none"/>'
+        + '<path d="M272 212 Q288 192 304 212" stroke="#28203A" stroke-width="8" stroke-linecap="round" fill="none"/>'
+        + '<ellipse cx="203" cy="242" rx="23" ry="13" fill="#FF8FA0" opacity="0.5"/>'
+        + '<ellipse cx="309" cy="242" rx="23" ry="13" fill="#FF8FA0" opacity="0.5"/>'
+        + '<path d="M256 220 Q248 240 257 242" stroke="#D99172" stroke-width="4" stroke-linecap="round"/>'
+        + '<path d="M228 258 Q256 292 284 258 Z" fill="#4A1D3A"/>'
+        + '<path d="M236 262 Q256 280 276 262 Z" fill="#FF7B9C"/>'
+    },
+    face_04: {
+      n: 'Ngơ ngác',
+      svg: '<path d="M205 184 Q224 172 244 184" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>'
+        + '<path d="M270 180 Q288 168 308 180" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>'
+        + '<ellipse cx="222" cy="208" rx="11" ry="15" fill="#FFFFFF" stroke="#39271E" stroke-width="4"/>'
+        + '<circle cx="223" cy="209" r="6" fill="#28203A"/>'
+        + '<ellipse cx="290" cy="212" rx="17" ry="21" fill="#FFFFFF" stroke="#39271E" stroke-width="4"/>'
+        + '<circle cx="291" cy="213" r="9" fill="#28203A"/><circle cx="295" cy="208" r="3.5" fill="#FFFFFF"/>'
+        + '<path d="M256 222 Q249 241 257 243" stroke="#D99172" stroke-width="4" stroke-linecap="round"/>'
+        + '<ellipse cx="256" cy="266" rx="11" ry="13" fill="#4A1D3A"/>'
+        + '<ellipse cx="256" cy="262" rx="8" ry="7" fill="#FF7B9C"/>'
+    },
+    face_05: {
+      n: 'Ngoắc',
+      svg: '<path d="M204 184 Q224 170 244 184" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>'
+        + '<path d="M268 184 Q288 170 308 184" stroke="#39271E" stroke-width="7" stroke-linecap="round"/>'
+        + '<ellipse cx="224" cy="210" rx="15" ry="19" fill="#28203A"/><circle cx="230" cy="202" r="5.5" fill="#FFFFFF"/>'
+        + '<ellipse cx="288" cy="210" rx="15" ry="19" fill="#28203A"/><circle cx="294" cy="202" r="5.5" fill="#FFFFFF"/>'
+        + '<ellipse cx="202" cy="246" rx="25" ry="14" fill="#FF8FA0" opacity="0.5"/>'
+        + '<ellipse cx="310" cy="246" rx="25" ry="14" fill="#FF8FA0" opacity="0.5"/>'
+        + '<path d="M256 220 Q248 241 257 243" stroke="#D99172" stroke-width="4" stroke-linecap="round"/>'
+        + '<path d="M224 254 Q256 300 288 254 Z" fill="#4A1D3A"/>'
+        + '<path d="M232 260 Q256 284 280 260 Z" fill="#FFFFFF"/>'
     }
-    return target;
+  };
+
+  /* ===================================================================== *
+   *  TÓC — `back` vẽ sau thân, `front` vẽ sau mặt.
+   *  Màu đổi bằng `fill="currentColor"` nên một path cho mọi màu.
+   * ===================================================================== */
+  var HAIRS = {
+    hair_01: {
+      n: 'Ngắn gọn',
+      back: '<path d="M172 207 C145 180 151 124 184 99 C204 83 230 77 256 78 C291 77 322 91 340 116 C365 151 359 193 337 216 L310 234 L201 230 Z"/>',
+      front: '<path d="M170 165 C165 127 186 94 220 83 C245 74 278 78 303 91 C332 106 347 136 342 168 L320 153 L303 176 L285 148 L262 173 L240 145 L214 175 L195 150 Z"/>'
+        + '<path d="M198 124 C214 103 238 95 258 95" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.22"/>'
+        + '<path d="M282 100 C300 107 314 119 324 137" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.16"/>'
+    },
+    hair_02: {
+      n: 'Dài',
+      back: '<path d="M174 206 C142 178 150 118 186 96 C208 81 232 76 256 77 C292 76 324 92 342 118 C368 156 362 202 340 228 C352 300 358 386 352 456 C296 484 216 484 160 456 C154 386 160 300 172 228 Z"/>',
+      front: '<path d="M170 165 C165 127 186 94 220 83 C245 74 278 78 303 91 C332 106 347 136 342 168 L320 153 L303 176 L285 148 L262 173 L240 145 L214 175 L195 150 Z"/>'
+        + '<path d="M198 124 C214 103 238 95 258 95" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.22"/>'
+        + '<path d="M176 250 C168 320 166 392 172 448" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.14"/>'
+        + '<path d="M336 250 C344 320 346 392 340 448" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.14"/>'
+    },
+    hair_03: {
+      n: 'Đuôi ngựa',
+      back: '<path d="M172 207 C145 180 151 124 184 99 C204 83 230 77 256 78 C291 77 322 91 340 116 C365 151 359 193 337 216 L310 234 L201 230 Z"/>'
+        + '<path d="M334 150 C396 140 428 186 416 250 C408 290 384 310 362 300 C388 258 386 198 336 186 Z"/>'
+        + '<ellipse cx="337" cy="169" rx="13" ry="10" transform="rotate(28 337 169)"/>',
+      front: '<path d="M170 165 C165 127 186 94 220 83 C245 74 278 78 303 91 C332 106 347 136 342 168 L320 153 L303 176 L285 148 L262 173 L240 145 L214 175 L195 150 Z"/>'
+        + '<path d="M198 124 C214 103 238 95 258 95" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.22"/>'
+    },
+    hair_04: {
+      n: 'Búi',
+      back: '<path d="M172 207 C145 180 151 124 184 99 C204 83 230 77 256 78 C291 77 322 91 340 116 C365 151 359 193 337 216 L310 234 L201 230 Z"/>'
+        + '<circle cx="256" cy="54" r="50"/><circle cx="232" cy="42" r="30" opacity="0.18" fill="#FFFFFF"/>',
+      front: '<path d="M170 165 C165 127 186 94 220 83 C245 74 278 78 303 91 C332 106 347 136 342 168 L320 153 L303 176 L285 148 L262 173 L240 145 L214 175 L195 150 Z"/>'
+        + '<path d="M198 124 C214 103 238 95 258 95" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.22"/>'
+    },
+    hair_05: {
+      n: 'Xoăn',
+      back: '<path d="M160 208 C126 174 136 108 182 84 C206 68 232 64 256 66 C292 64 330 82 346 112 C378 152 366 206 340 232 L310 250 L200 250 Z"/>'
+        + '<circle cx="164" cy="150" r="38"/><circle cx="348" cy="150" r="38"/>'
+        + '<circle cx="182" cy="96" r="34"/><circle cx="330" cy="96" r="34"/><circle cx="256" cy="72" r="36"/>',
+      front: '<path d="M170 165 C165 127 186 94 220 83 C245 74 278 78 303 91 C332 106 347 136 342 168 L320 153 L303 176 L285 148 L262 173 L240 145 L214 175 L195 150 Z"/>'
+        + '<circle cx="190" cy="140" r="26" opacity="0.92"/><circle cx="322" cy="140" r="26" opacity="0.92"/>'
+        + '<circle cx="256" cy="92" r="30" opacity="0.92"/>'
+        + '<path d="M198 124 C214 103 238 95 258 95" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.2"/>'
+    },
+    hair_06: {
+      n: 'Hai bên',
+      back: '<path d="M172 207 C145 180 151 124 184 99 C204 83 230 77 256 78 C291 77 322 91 340 116 C365 151 359 193 337 216 L310 234 L201 230 Z"/>'
+        + '<ellipse cx="152" cy="300" rx="36" ry="80" transform="rotate(9 152 300)"/>'
+        + '<ellipse cx="360" cy="300" rx="36" ry="80" transform="rotate(-9 360 300)"/>'
+        + '<ellipse cx="176" cy="230" rx="14" ry="11" transform="rotate(-18 176 230)"/>'
+        + '<ellipse cx="336" cy="230" rx="14" ry="11" transform="rotate(18 336 230)"/>',
+      front: '<path d="M170 165 C165 127 186 94 220 83 C245 74 278 78 303 91 C332 106 347 136 342 168 L320 153 L303 176 L285 148 L262 173 L240 145 L214 175 L195 150 Z"/>'
+        + '<path d="M198 124 C214 103 238 95 258 95" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.22"/>'
+    }
+  };
+
+  /* ===================================================================== *
+   *  ÁO — vẽ đè lên thân của body.html (172–340 × 314–501)
+   * ===================================================================== */
+  var TORSO = 'M209 326 C221 318 237 314 256 314 C275 314 291 318 303 326 C327 331 342 349 340 372 L334 470 C333 489 320 501 301 501 L211 501 C192 501 179 489 178 470 L172 372 C170 349 185 331 209 326 Z';
+
+  function shirtSvg(color) {
+    return '<path d="' + TORSO + '" fill="' + color + '" filter="url(#kidShadow)"/>'
+      + '<path d="M225 324 C232 344 280 344 287 324" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="7" stroke-linecap="round" fill="none"/>'
+      + '<path d="M201 361 C195 389 196 438 201 465" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.35" fill="none"/>';
   }
 
-  /* ---- các mảnh SVG của bé ---- */
+  var SHIRT_COLORS = {
+    white: '#F4F6FA', red: '#E8453C', blue: '#3D7BD1', yellow: '#F5C63C',
+    green: '#4CAF50', pink: '#F07CA8', purple: '#8B5CC7', orange: '#F08A3C'
+  };
 
-  function dressSvg(id) {
-    var f = DRESS[id];
-    if (!f) return '';
-    return '<g fill="' + f + '" stroke="#0001" stroke-width="1"><circle cx="62" cy="136" r="10"/><circle cx="138" cy="136" r="10"/><path d="M63 140Q63 125 80 125H120Q137 125 137 140L139 168 150 240Q100 252 50 240L61 168Z"/></g>'
-      + '<path d="M61 168H139" stroke="#0002" stroke-width="3"/>'
-      + '<path d="M84 126Q100 139 116 126" stroke="#fff" stroke-opacity=".7" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  /* ===================================================================== *
+   *  VÁY — phủ thân + quần
+   * ===================================================================== */
+  var DRESS_BODY = 'M203 322 C219 312 236 308 256 308 C276 308 293 312 309 322 C334 328 350 348 348 372 L342 452 C352 500 358 552 360 596 C304 622 208 622 152 596 C154 552 160 500 170 452 L164 372 C162 348 178 328 203 322 Z';
+
+  function dressSvg(color) {
+    return '<path d="' + DRESS_BODY + '" fill="' + color + '" filter="url(#kidShadow)"/>'
+      + '<path d="M228 318 C236 342 276 342 284 318" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="7" stroke-linecap="round" fill="none"/>'
+      + '<path d="M172 452 L340 452" stroke="#000000" stroke-opacity=".12" stroke-width="6"/>'
+      + '<path d="M188 500 Q256 528 324 500" stroke="#FFFFFF" stroke-opacity=".25" stroke-width="9" fill="none" stroke-linecap="round"/>';
   }
 
-  function mheadSvg(c) { return '<ellipse cx="100" cy="86" rx="54" ry="48" fill="' + c + '"/>'; }
+  var DRESS_COLORS = {
+    pink: '#F07CA8', red: '#E8453C', yellow: '#F5C63C', blue: '#3D7BD1', purple: '#8B5CC7', mint: '#4FC3A1'
+  };
 
-  function hornSvg(id, c) {
-    var h = HORNS[id];
-    if (!h) return '';
-    return h.usesColor ? h.svg.split('{{c}}').join(c) : h.svg;
-  }
-
-  function eyeSvg(x, y, r) {
-    return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#fff" stroke="#0002"/>'
-      + '<circle cx="' + x + '" cy="' + (y + r * 0.1) + '" r="' + (r * 0.5) + '" fill="#1f1a33"/>'
-      + '<circle cx="' + (x + r * 0.2) + '" cy="' + (y - r * 0.2) + '" r="' + (r * 0.18) + '" fill="#fff"/>';
-  }
-
-  function eyesSvg(id) { return (EYES[id] || EYES.two).map(function (e) { return eyeSvg(e[0], e[1], e[2]); }).join(''); }
-
-  function headSvg(sk, girl) {
-    var f = SKIN[sk][0], e = SKIN[sk][1];
-    return '<ellipse cx="66.5" cy="79" rx="5" ry="10.5" fill="' + e + '"/><ellipse cx="133.5" cy="79" rx="5" ry="10.5" fill="' + e + '"/>'
-      + '<path d="M66 60V88Q68 118 100 118T134 88V60Z" fill="' + f + '"/>'
-      + '<circle cx="73.5" cy="77" r="7" fill="#f7a8b8" opacity=".65"/><circle cx="126.5" cy="77" r="7" fill="#f7a8b8" opacity=".65"/>'
-      + '<g fill="#1f1a33"><ellipse cx="84" cy="67" rx="5.8" ry="5.2"/><ellipse cx="116" cy="67" rx="5.8" ry="5.2"/></g>'
-      + '<g fill="#fff"><circle cx="86" cy="64.5" r="1.7"/><circle cx="118" cy="64.5" r="1.7"/></g>'
-      + '<path d="M91 85Q100 91 109 85" stroke="#1f1a33" stroke-width="2.4" stroke-linecap="round" fill="none"/>'
-      + (girl
-        ? '<path d="M78.5 69.5L74 67.5M121.5 69.5L126 67.5" stroke="#1f1a33" stroke-width="1.8" stroke-linecap="round"/>'
-          + '<path d="M95.5 86Q100 89 104.5 86" stroke="#f06292" stroke-width="2" fill="none" stroke-linecap="round"/>'
-        : '');
-  }
-
-  function legsSvg(sk) {
-    var c = SKIN[sk][0];
-    return '<g fill="' + c + '"><rect x="74" y="198" width="24" height="68" rx="8"/><rect x="102" y="198" width="24" height="68" rx="8"/></g>';
-  }
-
+  /* ===================================================================== *
+   *  QUẦN — 186–326 × 492–655
+   * ===================================================================== */
   function pantsSvg(id) {
-    var p = PANTS[id];
-    if (!p) return '';
-    var t = p[0], c = p[1];
-    if (t === 'skirt') return '<path d="M68 198H132L140 236H60Z" fill="' + c + '"/>';
-    var L = t === 'long', b = L ? 265 : 232;
-    return '<path d="M72 198H100V' + b + 'H' + (L ? 69 : 71) + 'ZM100 198H128L' + (L ? 131 : 129) + ' ' + b + 'H100Z" fill="' + c + '"/>'
-      + '<path d="M100 200V' + b + '" stroke="#0003" stroke-width="1.5"/>'
-      + (L ? '<path d="M80 208V244" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".28"/>' : '');
+    if (id === 'skirt_pink') {
+      return '<path d="M192 492 L320 492 L342 616 L170 616 Z" fill="#F07CA8" filter="url(#kidShadow)"/>'
+        + '<path d="M196 512 L316 512" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="7" fill="none"/>';
+    }
+    if (id === 'skirt_mint') {
+      return '<path d="M192 492 L320 492 L342 616 L170 616 Z" fill="#4FC3A1" filter="url(#kidShadow)"/>'
+        + '<path d="M196 512 L316 512" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="7" fill="none"/>';
+    }
+    var c = id === 'jeans' ? '#3D63A8' : id === 'black' ? '#2E2E38' : id === 'khaki' ? '#D8B87A' : '#E8453C';
+    if (id === 'khaki' || id === 'redshort') {
+      return '<path d="M192 492 L256 492 L256 604 L204 604 C192 604 186 594 188 580 Z" fill="' + c + '" filter="url(#kidShadow)"/>'
+        + '<path d="M256 492 L320 492 L324 580 C326 594 320 604 308 604 L256 604 Z" fill="' + c + '" filter="url(#kidShadow)"/>'
+        + '<path d="M256 500 L256 600" stroke="#000000" stroke-opacity=".25" stroke-width="5"/>';
+    }
+    return '<path d="M194 492 L256 492 L256 632 C256 647 246 655 230 655 L203 655 C190 655 184 645 186 631 Z" fill="' + c + '" filter="url(#kidShadow)"/>'
+      + '<path d="M256 492 L318 492 L326 631 C328 645 320 655 307 655 L280 655 C264 655 256 647 256 632 Z" fill="' + c + '" filter="url(#kidShadow)"/>'
+      + '<path d="M256 500 L256 633" stroke="#000000" stroke-opacity=".22" stroke-width="5"/>'
+      + '<path d="M211 510 L208 620" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="8" stroke-linecap="round" opacity="0.5"/>';
+  }
+  var PANT_OPTIONS = {
+    jeans: { n: 'Quần jean' }, black: { n: 'Quần đen' }, khaki: { n: 'Quần kaki' },
+    redshort: { n: 'Quần đỏ' }, skirt_pink: { n: 'Váy hồng' }, skirt_mint: { n: 'Váy mint' }
+  };
+
+  /* ===================================================================== *
+   *  GIÀY — 180–332 × 637–674
+   * ===================================================================== */
+  function shoesSvg(color) {
+    return '<path d="M188 642 C202 637 224 637 243 642 C254 645 260 654 255 663 C251 671 236 674 213 674 C193 674 180 669 180 660 C180 652 183 646 188 642 Z" fill="' + color + '" filter="url(#kidShadow)"/>'
+      + '<path d="M269 642 C288 637 310 637 324 642 C329 646 332 652 332 660 C332 669 319 674 299 674 C276 674 261 671 257 663 C252 654 258 645 269 642 Z" fill="' + color + '" filter="url(#kidShadow)"/>'
+      + '<path d="M190 664 Q220 674 251 664" stroke="#00000022" stroke-width="5" stroke-linecap="round" fill="none"/>'
+      + '<path d="M261 664 Q292 674 322 664" stroke="#00000022" stroke-width="5" stroke-linecap="round" fill="none"/>';
+  }
+  var SHOE_OPTIONS = { white: { n: 'Trắng', c: '#FFFFFF' }, red: { n: 'Đỏ', c: '#E8453C' }, blue: { n: 'Xanh', c: '#3D7BD1' }, black: { n: 'Đen', c: '#2E2E38' }, pink: { n: 'Hồng', c: '#F07CA8' } };
+
+  /* ===================================================================== *
+   *  MŨ — ngồi trên đỉnh đầu, quanh 150–362 × 60–190
+   * ===================================================================== */
+  var HATS = {
+    hat_01: {
+      n: 'Mũ lưỡi trai',
+      svg: '<path d="M158 176 C154 108 196 62 256 62 C316 62 358 108 354 176 Z" fill="#3D7BD1"/>'
+        + '<path d="M154 172 C206 196 306 196 358 172 L350 200 C300 220 212 220 162 200 Z" fill="#2A5FA8"/>'
+        + '<circle cx="256" cy="66" r="8" fill="#2A5FA8"/>'
+        + '<path d="M188 116 C206 92 232 84 252 84" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="9" fill="none" stroke-linecap="round"/>'
+    },
+    hat_02: {
+      n: 'Mũ len',
+      svg: '<path d="M162 178 C154 100 198 56 256 56 C314 56 358 100 350 178 Z" fill="#E8453C"/>'
+        + '<rect x="152" y="158" width="208" height="34" rx="17" fill="#B83029"/>'
+        + '<circle cx="256" cy="52" r="26" fill="#FFFFFF"/>'
+        + '<path d="M240 42 Q256 34 272 42" stroke="#E2E6EE" stroke-width="6" fill="none" stroke-linecap="round"/>'
+    },
+    hat_03: {
+      n: 'Mũ sinh nhật',
+      svg: '<path d="M170 180 L256 46 L342 180 Z" fill="#F07CA8"/>'
+        + '<g fill="#FFFFFF"><circle cx="238" cy="118" r="8"/><circle cx="272" cy="98" r="7"/><circle cx="266" cy="146" r="7"/></g>'
+        + '<circle cx="256" cy="40" r="14" fill="#F5C63C"/>'
+        + '<path d="M256 14 L256 26" stroke="#E8453C" stroke-width="7" stroke-linecap="round"/>'
+    },
+    hat_04: {
+      n: 'Vương miện',
+      svg: '<path d="M164 184 L172 90 L212 136 L256 66 L300 136 L340 90 L348 184 Z" fill="#F5C63C" stroke="#C99A10" stroke-width="6" stroke-linejoin="round"/>'
+        + '<circle cx="256" cy="140" r="12" fill="#E8453C"/><circle cx="206" cy="152" r="9" fill="#3D7BD1"/><circle cx="306" cy="152" r="9" fill="#4FC3A1"/>'
+        + '<rect x="160" y="180" width="192" height="22" rx="11" fill="#E0AE14"/>'
+    },
+    hat_05: {
+      n: 'Nón lá',
+      svg: '<ellipse cx="256" cy="180" rx="152" ry="26" fill="#EFCF82" stroke="#C9A24A" stroke-width="6"/>'
+        + '<path d="M182 176 C186 106 214 70 256 70 C298 70 326 106 330 176 Z" fill="#EFCF82" stroke="#C9A24A" stroke-width="6"/>'
+        + '<path d="M186 150 L326 150" stroke="#E8453C" stroke-width="18"/>'
+        + '<path d="M200 116 C214 94 234 84 252 84" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="8" fill="none" stroke-linecap="round"/>'
+    },
+    hat_06: {
+      n: 'Hoa khoang trang',
+      svg: '<g transform="translate(352 118)"><g fill="#F07CA8"><circle cy="-26" r="20"/><circle cx="24" cy="-8" r="20"/>'
+        + '<circle cx="15" cy="23" r="20"/><circle cx="-15" cy="23" r="20"/><circle cx="-24" cy="-8" r="20"/></g>'
+        + '<circle r="14" fill="#F5C63C"/></g>'
+        + '<path d="M348 128 C330 106 306 96 282 96" stroke="#4FC3A1" stroke-width="9" fill="none" stroke-linecap="round"/>'
+        + '<path d="M256 150 C276 152 296 166 308 186" stroke="#4FC3A1" stroke-width="9" fill="none" stroke-linecap="round"/>'
+    }
+  };
+
+  /* ===================================================================== *
+   *  KÍNH — quanh mắt 224/288 × 210
+   * ===================================================================== */
+  var GLASSES = {
+    glasses_01: {
+      n: 'Tròn',
+      svg: '<circle cx="224" cy="212" r="38" fill="#FFFFFF" fill-opacity=".22" stroke="#2E2E38" stroke-width="9"/>'
+        + '<circle cx="288" cy="212" r="38" fill="#FFFFFF" fill-opacity=".22" stroke="#2E2E38" stroke-width="9"/>'
+        + '<path d="M262 212 L250 212" stroke="#2E2E38" stroke-width="9" stroke-linecap="round"/>'
+    },
+    glasses_02: {
+      n: 'Vuông',
+      svg: '<rect x="184" y="180" width="82" height="66" rx="18" fill="#FFFFFF" fill-opacity=".22" stroke="#2A5FA8" stroke-width="9"/>'
+        + '<rect x="246" y="180" width="82" height="66" rx="18" fill="#FFFFFF" fill-opacity=".22" stroke="#2A5FA8" stroke-width="9"/>'
+        + '<path d="M266 212 L246 212" stroke="#2A5FA8" stroke-width="9" stroke-linecap="round"/>'
+    },
+    glasses_03: {
+      n: 'Kính râm',
+      svg: '<rect x="182" y="184" width="84" height="56" rx="24" fill="#26262E"/>'
+        + '<rect x="246" y="184" width="84" height="56" rx="24" fill="#26262E"/>'
+        + '<path d="M266 212 L246 212" stroke="#26262E" stroke-width="9" stroke-linecap="round"/>'
+        + '<path d="M196 196 L232 196" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="8" stroke-linecap="round"/>'
+    },
+    glasses_04: {
+      n: 'Tim',
+      svg: '<path d="M224 254 C176 214 188 174 224 192 C260 174 272 214 224 254 Z" fill="#FF6E9C" stroke="#C2185B" stroke-width="7"/>'
+        + '<path d="M288 254 C240 214 252 174 288 192 C324 174 336 214 288 254 Z" fill="#FF6E9C" stroke="#C2185B" stroke-width="7"/>'
+        + '<path d="M252 206 L276 206" stroke="#C2185B" stroke-width="7" stroke-linecap="round"/>'
+    }
+  };
+
+  /* ===================================================================== *
+   *  PHỤ KIỆN — `b` vẽ sau thân (cờ đuôi, túi), `f` vẽ đè lên trên
+   * ===================================================================== */
+  var ACCS = {
+    acc_01: {
+      n: 'Nơ',
+      f: '<g transform="translate(256 352)"><path d="M0 -6 L-56 -34 L-56 30 Z M0 -6 L56 -34 L56 30 Z" fill="#E8453C"/>'
+        + '<circle r="14" fill="#B83029"/></g>'
+    },
+    acc_02: {
+      n: 'Khăn quàng',
+      f: '<path d="M192 336 C230 372 282 372 320 336 L320 368 C282 402 230 402 192 368 Z" fill="#F5A623"/>'
+        + '<path d="M296 396 L318 470 L282 476 L266 408 Z" fill="#E8921A"/>'
+    },
+    acc_03: {
+      n: 'Dây chuyền',
+      f: '<path d="M212 338 C230 388 282 388 300 338" stroke="#D99A00" stroke-width="8" fill="none" stroke-linecap="round"/>'
+        + '<path d="M256 404 C236 380 242 358 256 372 C270 358 276 380 256 404 Z" fill="#FF6E9C"/>'
+    },
+    acc_04: {
+      n: 'Tai nghe',
+      f: '<path d="M180 210 C168 108 218 60 256 60 C294 60 344 108 332 210" stroke="#2E2E38" stroke-width="14" fill="none" stroke-linecap="round"/>'
+        + '<rect x="158" y="188" width="42" height="72" rx="21" fill="#E8453C"/>'
+        + '<rect x="312" y="188" width="42" height="72" rx="21" fill="#E8453C"/>'
+    },
+    acc_05: {
+      n: 'Túi',
+      b: '<rect x="336" y="392" width="140" height="150" rx="30" fill="#F08A3C" filter="url(#kidShadow)"/>'
+        + '<path d="M376 392 L376 542 M436 392 L436 542" stroke="#C2651F" stroke-width="12"/>'
+        + '<rect x="352" y="440" width="108" height="52" rx="16" fill="#C2651F"/>',
+      f: ''
+    },
+    acc_06: {
+      n: 'Áo choàng',
+      b: '<path d="M192 336 L320 336 L392 626 L120 626 Z" fill="#B83029" filter="url(#kidShadow)"/>'
+        + '<path d="M198 348 L314 348" stroke="#E8453C" stroke-width="10"/>',
+      f: '<circle cx="256" cy="340" r="16" fill="#F5C63C" stroke="#C99A10" stroke-width="6"/>'
+    }
+  };
+
+  /* ===================================================================== *
+   *  THÂN NGƯỜI — chép nguyên văn `body.html`, tách phần có thể thay thế
+   * ===================================================================== */
+  function humanBody(sv) {
+    return '<ellipse cx="256" cy="665" rx="105" ry="22" fill="#000000" opacity="0.10" filter="url(#kidBlur)"/>'
+      /* tay */
+      + '<path d="M190 354 C166 354 157 371 158 395 L162 465 C163 480 175 490 188 486 C201 482 205 470 204 456 L201 386 Z" fill="url(#kidSkin)"/>'
+      + '<path d="M322 354 C346 354 355 371 354 395 L350 465 C349 480 337 490 324 486 C311 482 307 470 308 456 L311 386 Z" fill="url(#kidSkin)"/>'
+      /* cổ + đầu */
+      + '<path d="M226 292 L226 329 C226 345 286 345 286 329 L286 292 Z" fill="url(#kidSkin)"/>'
+      + '<path d="M226 293 C238 307 272 309 286 293 L286 317 C268 326 242 326 226 316 Z" fill="' + sv.shadow + '" opacity="0.45"/>'
+      + '<g filter="url(#kidShadow)"><path d="M179 164 C179 115 213 91 256 91 C299 91 333 115 333 164 L333 216 C333 263 299 301 256 301 C213 301 179 263 179 216 Z" fill="url(#kidSkin)"/>'
+      + '<ellipse cx="180" cy="213" rx="12" ry="23" fill="' + sv.ear + '"/>'
+      + '<ellipse cx="332" cy="213" rx="12" ry="23" fill="' + sv.ear + '"/>'
+      + '<ellipse cx="224" cy="143" rx="40" ry="25" fill="#FFFFFF" opacity="0.16"/></g>';
   }
 
-  function shoesSvg(id) {
-    var c = SHOES[id];
-    if (!c) return '';
-    return '<g fill="' + c + '" stroke="#0002" stroke-width="1.5"><path d="M67 276Q66 264 76 264H100V276Q100 281 94 281H73Q67 281 67 276Z"/><path d="M133 276Q134 264 124 264H100V276Q100 281 106 281H127Q133 281 133 276Z"/></g>'
-      + '<path d="M71 277H96M104 277H129" stroke="#0002" stroke-width="2" stroke-linecap="round"/>';
-  }
+  /* ---- quần + giày mặc định (dùng khi người chơi bỏ chọn) ---- */
+  var DEFAULT_PANTS = pantsSvg('jeans');
+  var DEFAULT_SHOES = shoesSvg('#FFFFFF');
 
-  function shirtSvg(id) {
-    var f = KID_SHIRT[id];
-    if (!f) return '';
-    return '<g fill="' + f + '" stroke="#0001" stroke-width="1"><rect x="57" y="130" width="14" height="28" rx="7"/><rect x="129" y="130" width="14" height="28" rx="7"/><path d="M63 140Q63 125 80 125H120Q137 125 137 140V196Q137 202 131 202H69Q63 202 63 196Z"/></g>'
-      + '<path d="M84 126Q100 139 116 126" stroke="#c4c9d6" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-  }
-
-  function hairBackSvg(id) {
-    var h = HAIR[id];
-    if (!h) return '';
-    var s = h[0], f = 'fill="' + h[1] + '"';
-    if (s === 'long') return '<path d="M50 60Q42 130 56 150H144Q158 130 150 60Z" ' + f + '/>';
-    if (s === 'bob') return '<path d="M52 62Q46 112 62 122H138Q154 112 148 62Z" ' + f + '/>';
-    if (s === 'pigtail') return '<ellipse cx="50" cy="98" rx="9" ry="21" ' + f + ' transform="rotate(8 50 98)"/><ellipse cx="150" cy="98" rx="9" ry="21" ' + f + ' transform="rotate(-8 150 98)"/>';
-    if (s === 'bun') return '<circle cx="100" cy="22" r="14" ' + f + '/>';
-    if (s === 'pony') return '<path d="M138 58Q176 66 168 134Q156 104 134 92Z" ' + f + '/>';
-    if (s === 'twinbun') return '<circle cx="60" cy="36" r="13" ' + f + '/><circle cx="140" cy="36" r="13" ' + f + '/>';
-    return '';
-  }
-
-  function hairFrontSvg(id) {
-    var h = HAIR[id];
-    if (!h) return '';
-    var s = h[0], c = h[1];
-    if (s === 'spiky') return '<polygon points="47,53 63,32 79,34 86,20 100,29 113,20 121,34 137,32 137,53 153,53 145,66 57,66" fill="' + c + '"/>';
-    var o = '<path d="M52 66Q50 28 100 26T148 66L136 62 124 67 110 62 100 67 88 62 76 67 64 62Z" fill="' + c + '"/>';
-    if (s === 'pigtail') o += '<circle cx="54" cy="72" r="4.5" fill="#ef5350"/><circle cx="146" cy="72" r="4.5" fill="#ef5350"/>';
-    if (s === 'pony') o += '<circle cx="139" cy="62" r="4.5" fill="#ef5350"/>';
-    return o;
-  }
-
-  /* ---- defs dùng chung (màu sọc + blur) ---- */
-
-  function kidDefs() {
+  function kidDefs(sv, hairColor, clothColor) {
     return '<defs>'
-      + '<pattern id="egStKid" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#fff"/><rect width="12" height="6" fill="#4a72b8"/></pattern>'
-      + '<filter id="egBlur" x="-40%" y="-100%" width="180%" height="300%"><feGaussianBlur stdDeviation="2.5"/></filter>'
+      + '<linearGradient id="kidSkin" x1="180" y1="150" x2="330" y2="420"><stop offset="0%" stop-color="' + sv.light + '"/><stop offset="100%" stop-color="' + sv.dark + '"/></linearGradient>'
+      + '<linearGradient id="kidHair" x1="180" y1="90" x2="330" y2="210"><stop offset="0%" stop-color="' + hairColor + '" stop-opacity="0.82"/><stop offset="100%" stop-color="' + hairColor + '"/></linearGradient>'
+      + '<filter id="kidBlur" x="-50%" y="-200%" width="200%" height="500%"><feGaussianBlur stdDeviation="7"/></filter>'
+      + '<filter id="kidShadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000000" flood-opacity="0.12"/></filter>'
       + '</defs>';
   }
 
-  /* ---- render nhân vật ---- */
+  /* ===================================================================== *
+   *  RENDER
+   * ===================================================================== */
+  function renderKid(raw) {
+    var s = sanitizeKid(raw);
+    if (s.body === 'body_dragon_01') {
+      return '<svg viewBox="0 0 ' + KID_W + ' ' + KID_H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rồng xanh" color="'
+        + (HAIR_COLORS[s.hairColor] || HAIR_COLORS['nâu']) + '">'
+        + (root.EG_DRAGON_SVG || '') + '</svg>';
+    }
 
-  function personSvg(s) {
-    var f = SKIN[s.skin][0], e = SKIN[s.skin][1];
-    var a = ACC[s.acc] || {}, girl = s.type === 'girl', dr = girl && s.dress;
-    var o = '<svg viewBox="0 0 200 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nhân vật Bé">' + kidDefs();
-    o += '<ellipse cx="100" cy="277" rx="48" ry="6" fill="#000" opacity=".12" filter="url(#egBlur)"/>'
-      + (a.b || '') + hairBackSvg(s.hair) + legsSvg(s.skin) + (dr ? '' : pantsSvg(s.pants)) + shoesSvg(s.shoes);
-    o += '<g fill="' + f + '"><rect x="57" y="140" width="12" height="58" rx="6"/><rect x="131" y="140" width="12" height="58" rx="6"/></g><rect x="86" y="108" width="28" height="20" fill="' + e + '"/>';
-    o += (dr ? dressSvg(s.dress) : shirtSvg(s.shirt))
-      + headSvg(s.skin, girl) + hairFrontSvg(s.hair) + (a.f || '')
-      + (s.glasses ? KID_GLASSES[s.glasses] || '' : '')
-      + (s.hat ? KID_HAT[s.hat] || '' : '');
+    var sv = skinVars(s.skin);
+    var hairColor = HAIR_COLORS[s.hairColor] || HAIR_COLORS['nâu'];
+    var hair = HAIRS[s.hair] || HAIRS.hair_01;
+    var acc = ACCS[s.acc] || null;
+    var o = '<svg viewBox="0 0 ' + KID_W + ' ' + KID_H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'
+      + (FACES[s.face] ? FACES[s.face].n : 'Nhân vật Bé') + '" color="' + hairColor + '">';
+    o += kidDefs(sv, hairColor);
+
+    /* 1. phụ kiện nằm sau thân (áo choàng, túi) */
+    if (acc && acc.b) o += acc.b;
+    /* 2. tóc sau */
+    o += '<g fill="url(#kidHair)">' + hair.back + '</g>';
+    /* 3. thân: tay + cổ + đầu */
+    o += humanBody(sv);
+    /* 4. mặt */
+    o += FACES[s.face] ? FACES[s.face].svg : FACES.face_01.svg;
+    /* 5. tóc trước */
+    o += '<g fill="url(#kidHair)">' + hair.front + '</g>';
+    /* 6. áo hoặc váy phủ thân */
+    if (s.dress) o += dressSvg(DRESS_COLORS[s.dress]);
+    else if (s.shirt) o += shirtSvg(SHIRT_COLORS[s.shirt]);
+    /* 7. quần (váy thì không cần) */
+    if (!s.dress) o += s.pants ? pantsSvg(s.pants) : DEFAULT_PANTS;
+    /* 8. giày */
+    o += s.shoes ? shoesSvg(SHOE_OPTIONS[s.shoes].c) : DEFAULT_SHOES;
+    /* 9. phụ kiện đè lên trên */
+    if (acc && acc.f) o += acc.f;
+    /* 10. kính + mũ */
+    o += GLASSES[s.glasses] ? GLASSES[s.glasses].svg : '';
+    o += HATS[s.hat] ? HATS[s.hat].svg : '';
+
     return o + '</svg>';
   }
 
-  function monsterSvg(s) {
-    var c = MONSTER_COLORS[s.mcolor], a = ACC[s.acc] || {};
-    var o = '<svg viewBox="0 0 200 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Quái vật">' + kidDefs();
-    o += '<ellipse cx="100" cy="277" rx="50" ry="6" fill="#000" opacity=".12" filter="url(#egBlur)"/>'
-      + (a.b || '') + hornSvg(s.horns, c);
-    o += '<g fill="' + c + '"><rect x="70" y="236" width="24" height="34" rx="11"/><rect x="106" y="236" width="24" height="34" rx="11"/><ellipse cx="54" cy="188" rx="10" ry="24" transform="rotate(14 54 188)"/><ellipse cx="146" cy="188" rx="10" ry="24" transform="rotate(-14 146 188)"/><ellipse cx="100" cy="196" rx="44" ry="62"/></g>'
-      + '<ellipse cx="100" cy="208" rx="28" ry="38" fill="#fff" opacity=".25"/>';
-    o += shoesSvg(s.shoes) + shirtSvg(s.shirt) + mheadSvg(c)
-      + '<circle cx="62" cy="98" r="7" fill="#f7a8b8" opacity=".55"/><circle cx="138" cy="98" r="7" fill="#f7a8b8" opacity=".55"/>'
-      + eyesSvg(s.eyes) + (MOUTH[s.mouth] || '');
-    return o + (a.f || '')
-      + (s.glasses ? KID_GLASSES[s.glasses] || '' : '')
-      + (s.hat ? KID_HAT[s.hat] || '' : '') + '</svg>';
+  /* ===================================================================== *
+   *  STATE + TAB
+   * ===================================================================== */
+  var KID_DEFAULTS = {
+    body: 'body_01', skin: 's1', hairColor: 'nâu', face: 'face_01', hair: 'hair_01',
+    shirt: 'white', dress: null, pants: 'jeans', shoes: 'white',
+    glasses: null, hat: null, acc: null
+  };
+
+  var KID_FIELD_IDS = {
+    body: Object.keys(BODIES),
+    skin: Object.keys(SKIN_TONES),
+    hairColor: Object.keys(HAIR_COLORS),
+    face: Object.keys(FACES),
+    hair: Object.keys(HAIRS),
+    shirt: Object.keys(SHIRT_COLORS).concat([null]),
+    dress: Object.keys(DRESS_COLORS).concat([null]),
+    pants: Object.keys(PANT_OPTIONS).concat([null]),
+    shoes: Object.keys(SHOE_OPTIONS).concat([null]),
+    glasses: Object.keys(GLASSES).concat([null]),
+    hat: Object.keys(HATS).concat([null]),
+    acc: Object.keys(ACCS).concat([null])
+  };
+
+  /** Kiểu hiển thị của từng tab: dot = màu, svg = vẽ preview.
+   *  `nullable: true` → hiện nút 🚫 và cho phép bỏ lớp đó. */
+  function idsOf(k) {
+    return KID_FIELD_IDS[k].filter(function (id) { return id !== null; });
   }
 
-  function renderKid(src) {
-    var s = sanitizeKid(src);
-    return s.type === 'monster' ? monsterSvg(s) : personSvg(s);
+  function tabCfg(k, s) {
+      switch (k) {
+      case 'body': return {
+        kind: 'svg',
+        vb: '110 30 292 650',
+        ids: idsOf('body'),
+        nullable: false,
+        /* Ô Thân = chính nhân vật với thân đang xem, không phải một path rời. */
+        pv: function (id) {
+          var svg = renderKid(Object.assign({}, s, { body: id }));
+          return svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+        }
+      };
+      case 'skin': return { kind: 'dot', ids: idsOf('skin'), dot: function (id) { return SKIN_TONES[id]; } };
+      case 'hairColor': return { kind: 'dot', ids: idsOf('hairColor'), dot: function (id) { return HAIR_COLORS[id]; } };
+      case 'face': return { kind: 'svg', vb: '166 150 180 150', ids: idsOf('face'), nullable: false, pv: function (id) { return FACES[id] ? FACES[id].svg : ''; } };
+      case 'hair': return { kind: 'svg', vb: '110 34 292 460', ids: idsOf('hair'), nullable: false, pv: function (id) { return hairPreview(id, s); } };
+      case 'shirt': return { kind: 'dot', ids: idsOf('shirt'), nullable: true, dot: function (id) { return SHIRT_COLORS[id]; } };
+      case 'dress': return { kind: 'dot', ids: idsOf('dress'), nullable: true, dot: function (id) { return DRESS_COLORS[id]; } };
+      case 'pants': return { kind: 'svg', vb: '150 480 212 150', ids: idsOf('pants'), nullable: true, pv: function (id) { return pantsSvg(id); } };
+      case 'shoes': return { kind: 'dot', ids: idsOf('shoes'), nullable: true, dot: function (id) { return SHOE_OPTIONS[id].c; } };
+      case 'glasses': return { kind: 'svg', vb: '150 170 212 90', ids: idsOf('glasses'), nullable: true, pv: function (id) { return GLASSES[id] ? GLASSES[id].svg : ''; } };
+      case 'hat': return { kind: 'svg', vb: '100 30 312 210', ids: idsOf('hat'), nullable: true, pv: function (id) { return HATS[id] ? HATS[id].svg : ''; } };
+      case 'acc': return { kind: 'svg', vb: '100 300 312 340', ids: idsOf('acc'), nullable: true, pv: function (id) { return accPreview(id); } };
+      default: return { kind: 'list', ids: [], nullable: false };
+    }
   }
 
-  /* ---- tab + state hợp lệ ---- */
+  function hairPreview(id, s) {
+    var h = HAIRS[id];
+    if (!h) return '';
+    return '<g fill="url(#kidHair)" color="'
+      + (HAIR_COLORS[(s && s.hairColor) || 'nâu'] || '#6B4228') + '">'
+      + '<defs><linearGradient id="kidHairPV" x1="180" y1="90" x2="330" y2="210">'
+      + '<stop offset="0%" stop-color="#6B4228" stop-opacity="0.82"/><stop offset="100%" stop-color="#6B4228"/></linearGradient></defs>'
+      + h.back + h.front + '</g>';
+  }
 
-  /** ty: ký tự đầu của loại nhân vật được phép mở tab (b/g/m). */
+  function accPreview(id) {
+    var a = ACCS[id];
+    if (!a) return '';
+    return (a.b || '') + (a.f || '');
+  }
+
   var KID_TABS = [
-    { k: 'hair', l: '💇 Tóc', ty: 'bg', map: function () { return { kind: 'list', ids: null }; } },
-    { k: 'skin', l: '🧑 Da', ty: 'bg', map: function () { return { kind: 'dot', ids: Object.keys(SKIN), dot: function (id) { return SKIN[id][0]; } }; } },
-    { k: 'dress', l: '👗 Váy', ty: 'g', map: function () { return { kind: 'svg', ids: Object.keys(DRESS), pv: dressSvg, vb: '46 118 108 136', none: true }; } },
-    { k: 'mcolor', l: '🎨 Màu', ty: 'm', map: function () { return { kind: 'dot', ids: Object.keys(MONSTER_COLORS), dot: function (id) { return MONSTER_COLORS[id]; } }; } },
-    { k: 'horns', l: '😈 Sừng', ty: 'm', map: function (st) { return { kind: 'svg', ids: Object.keys(HORNS), pv: function (id) { return hornSvg(id, MONSTER_COLORS[st.mcolor]) + mheadSvg(MONSTER_COLORS[st.mcolor]); }, vb: '40 6 120 92' }; } },
-    { k: 'eyes', l: '👁 Mắt', ty: 'm', map: function (st) { return { kind: 'svg', ids: Object.keys(EYES), pv: function (id) { return mheadSvg(MONSTER_COLORS[st.mcolor]) + eyesSvg(id); }, vb: '46 40 108 76' }; } },
-    { k: 'mouth', l: '👄 Miệng', ty: 'm', map: function (st) { return { kind: 'svg', ids: Object.keys(MOUTH), pv: function (id) { return mheadSvg(MONSTER_COLORS[st.mcolor]) + MOUTH[id]; }, vb: '60 76 80 50' }; } },
-    { k: 'shirt', l: '👕 Áo', ty: 'bgm', map: function (st) { return { kind: 'svg', ids: Object.keys(KID_SHIRT), pv: shirtSvg, vb: '50 120 100 86', none: st.type === 'monster' }; } },
-    { k: 'pants', l: '👖 Quần', ty: 'bg', map: function (st) { return { kind: 'svg', ids: Object.keys(PANTS), pv: function (id) { return legsSvg(st.skin) + pantsSvg(id); }, vb: '58 192 84 80' }; } },
-    { k: 'shoes', l: '👟 Giày', ty: 'bgm', map: function () { return { kind: 'svg', ids: Object.keys(SHOES), pv: shoesSvg, vb: '60 258 80 28' }; } },
-    { k: 'glasses', l: '👓 Kính', ty: 'bgm', map: function () { return { kind: 'svg', ids: Object.keys(KID_GLASSES), pv: function (id) { return KID_GLASSES[id]; }, vb: '66 56 68 32', none: true }; } },
-    { k: 'hat', l: '🎩 Mũ', ty: 'bgm', map: function () { return { kind: 'svg', ids: Object.keys(KID_HAT), pv: function (id) { return KID_HAT[id]; }, vb: '44 2 112 76', none: true }; } },
-    { k: 'acc', l: '🎒 Phụ kiện', ty: 'bgm', map: function () { return { kind: 'svg', ids: Object.keys(ACC), pv: accPreview, vb: '40 14 120 170', none: true }; } }
+    { k: 'body', l: '🧍 Thân' },
+    { k: 'face', l: '😀 Mặt' },
+    { k: 'hair', l: '💇 Tóc' },
+    { k: 'hairColor', l: '🎨 Màu tóc' },
+    { k: 'skin', l: '🧑 Da' },
+    { k: 'shirt', l: '👕 Áo' },
+    { k: 'dress', l: '👗 Váy' },
+    { k: 'pants', l: '👖 Quần' },
+    { k: 'shoes', l: '👟 Giày' },
+    { k: 'glasses', l: '👓 Kính' },
+    { k: 'hat', l: '🎩 Mũ' },
+    { k: 'acc', l: '🎒 Phụ kiện' }
   ];
 
-  /** Tóc khác nhau theo giới — preview cần state hiện tại nên nhận tham số. */
-  KID_TABS[0].map = function (st) {
-    return {
-      kind: 'svg',
-      ids: st.type === 'girl' ? HAIR_GIRL : HAIR_BOY,
-      pv: function (id) { return hairBackSvg(id) + headSvg(st.skin, st.type === 'girl') + hairFrontSvg(id); },
-      vb: '40 12 120 112'
-    };
-  };
-
-  function accPreview(id, st) {
-    var a = ACC[id] || {};
-    return (a.b || '') + shirtSvg('white') + headSvg(st.skin, st.type === 'girl') + (a.f || '');
-  }
-
+  /** Chỉ nhân vật người mới có mặt/tóc/da; váy thì ẩn quần. */
   function kidTabs(st) {
-    var type = sanitizeKid(st).type;
-    return KID_TABS.filter(function (t) { return t.ty.indexOf(type.charAt(0)) >= 0; });
+    var s = sanitizeKid(st);
+    var human = BODIES[s.body].overlays !== false;
+    return KID_TABS.filter(function (t) {
+      if (!human && t.k !== 'body') return false;
+      if (t.k === 'pants' && s.dress) return false;
+      return true;
+    });
   }
-
-  var KID_IDS = {
-    hair: HAIR, skin: SKIN, dress: DRESS, mcolor: MONSTER_COLORS, horns: HORNS,
-    eyes: EYES, mouth: MOUTH, shirt: KID_SHIRT, pants: PANTS, shoes: SHOES,
-    glasses: KID_GLASSES, hat: KID_HAT, acc: ACC
-  };
 
   function sanitizeKid(src) {
     var o = src && typeof src === 'object' ? src : {};
-    var base = KID_DEFAULTS[Object.prototype.hasOwnProperty.call(KID_DEFAULTS, o.type) ? o.type : 'boy'];
-    var out = { type: base.type };
-    Object.keys(KID_IDS).forEach(function (k) {
+    var out = {};
+    Object.keys(KID_FIELD_IDS).forEach(function (k) {
       var v = o[k];
-      var ok = v != null && Object.prototype.hasOwnProperty.call(KID_IDS[k], v);
-      out[k] = ok ? v : base[k];
+      var allowed = KID_FIELD_IDS[k];
+      var ok = allowed.indexOf(v) >= 0 && v !== undefined;
+      out[k] = ok ? v : KID_DEFAULTS[k];
     });
-    /* quái vật không mặc váy */
-    if (out.type === 'monster') out.dress = null;
+    /* không có body người thì không có lớp mặt/tóc/da */
+    if (BODIES[out.body].overlays === false) {
+      out.skin = KID_DEFAULTS.skin;
+      out.face = KID_DEFAULTS.face;
+      out.hair = KID_DEFAULTS.hair;
+    }
+    /* mặc váy thì không có quần — giữ state sạch để profile và server khớp */
+    if (out.dress) out.pants = null;
     return out;
   }
 
-  /* ===================================================================== *
-   *  XUẤT RA
-   * ===================================================================== */
-
   root.EG_DRESSUP = {
-    version: 1,
+    version: 2,
     renderPet: petSvg,
     renderKid: renderKid,
     sanitizePet: sanitizePet,
     sanitizeKid: sanitizeKid,
     kidTabs: kidTabs,
+    kidTabCfg: tabCfg,
 
     pet: {
       animals: ANIMALS, tabs: PET_TABS, opts: PET_OPTS, defaults: PET_DEFAULTS,
@@ -448,9 +716,13 @@
     },
 
     kid: {
-      base: KID_BASE, defaults: KID_DEFAULTS, types: KID_TYPES,
-      tabs: KID_TABS, ids: KID_IDS,
-      accPreview: accPreview
+      size: { w: KID_W, h: KID_H },
+      defaults: KID_DEFAULTS,
+      tabCfg: tabCfg,
+      bodies: BODIES, faces: FACES, hairs: HAIRS, hats: HATS,
+      glasses: GLASSES, accs: ACCS, pants: PANT_OPTIONS, shoes: SHOE_OPTIONS,
+      shirtColors: SHIRT_COLORS, dressColors: DRESS_COLORS,
+      hairColors: HAIR_COLORS, skinTones: SKIN_TONES
     }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,6 +1,6 @@
 // routes/pet.js
 //
-// API thú cưng. Mọi route đều yêu cầu đăng nhập, trừ GET /catalog.
+// API thú cưng. Mọi route đều yêu cầu đăng nhập.
 //
 //   GET    /api/pet/catalog        danh mục loài / màu / trang phục (đã lọc theo cấp)
 //   GET    /api/pet                 pet hiện tại (tự tạo nếu chưa có)
@@ -24,15 +24,9 @@ import * as catalog from "../services/petCatalog.js";
 
 const router = Router();
 
-// Danh mục công khai — không cần đăng nhập (app cần hiển thị trước khi login)
-router.get("/catalog", async (req, res, next) => {
-  try {
-    const userId = req.user?.sub || null;
-    sendSuccess(res, await petService.catalogFor(userId));
-  } catch (e) {
-    next(e);
-  }
-});
+// GET /api/pet/catalog đã bị gỡ: danh mục pet (loài / màu / trang phục) nằm sẵn
+// trong `CATALOG_FALLBACK` của `src/lib/petApi.js` nên app không cần gọi mạng.
+// API chỉ còn phần "diện mạo của bé" (GET/PUT /api/pet).
 
 router.use(authenticate);
 

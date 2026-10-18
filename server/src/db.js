@@ -200,6 +200,8 @@ async function _runHeavyInit(database) {
           xp: { bsonType: ["int", "double", "long"] },
           coinsEarnedOn: { bsonType: "string" },
           coinsEarnedToday: { bsonType: ["int", "double", "long"] },
+          // Ngày đã nhận quà sao hằng ngày (YYYY-MM-DD) — chặn nhận trùng.
+          lastStarGiftOn: { bsonType: "string" },
           createdAt: { bsonType: "string" },
         },
       }

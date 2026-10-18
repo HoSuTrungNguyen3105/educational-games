@@ -197,21 +197,3 @@ export async function reset(userId) {
   return { ok: true, pet: serialize({ ...pet, ...set }) };
 }
 
-/**
- * Danh mục cho frontend, kèm phần đã mở khoá theo cấp.
- *
- * `userId` rỗng (chưa đăng nhập) thì KHÔNG gọi getByUser — hàm đó sẽ tạo
- * document pet mới, mà userId lúc này là null → mọi lượt gọi /catalog của
- * khách đều bỏ lại một pet rác trong collection.
- */
-export async function catalogFor(userId) {
-  await catalog.ensureLoaded();
-  try {
-    if (!userId) return catalog.fullCatalog(1);
-    const pet = await getByUser(userId);
-    return catalog.fullCatalog(pet?.level || 1);
-  } catch {
-    // Lỗi DB vẫn trả danh mục cấp 1 để app không trắng màn hình
-    return catalog.fullCatalog(1);
-  }
-}

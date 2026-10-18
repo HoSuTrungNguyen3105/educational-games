@@ -18,6 +18,7 @@
  *   stage.innerHTML = D.renderPet(out.get('pet')?.value || D.pet.defaults);
  */
 
+import dragonSrc from "./lib/dressUpDragon.js?raw";
 import avatarDataSrc from "./lib/dressUpAvatarData.js?raw";
 import outfitBridgeSrc from "./lib/dressUpBridge.js?raw";
 
@@ -31,6 +32,8 @@ function buildBlock() {
   return [
     DRESSUP_START,
     "<script>",
+    "/* --- thân rồng (từ src/games/lib/dressUpDragon.js) --- */",
+    dragonSrc.trim(),
     "/* --- dữ liệu SVG dùng chung (inject từ src/games/lib/dressUpAvatarData.js) --- */",
     avatarDataSrc.trim(),
     "/* --- lớp lưu trữ client + đồng bộ hồ sơ (inject từ src/games/lib/dressUpBridge.js) --- */",

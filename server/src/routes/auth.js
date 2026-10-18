@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, addCoins, getStars, addStars, exchangeStarsForCoins, getXp } from "../services/authService.js";
+import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, addCoins, getStars, addStars, exchangeStarsForCoins, getXp, claimDailyStarGift } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { getByUser } from "../services/gameProgressService.js";
@@ -172,6 +172,16 @@ router.post("/me/stars", authenticate, async (req, res, next) => {
     }
     const stars = await addStars(req.user.sub, amount);
     sendSuccess(res, { stars });
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+// POST /api/auth/me/stars/daily-gift — nhận quà sao, mỗi ngày 1 lần.
+// Đặt TRƯỚC /me/stars/exchange để không bị route "exchange" bắt mất.
+router.post("/me/stars/daily-gift", authenticate, async (req, res, next) => {
+  try {
+    sendSuccess(res, await claimDailyStarGift(req.user.sub));
   } catch (e) {
     sendError(res, e.message, 400);
   }

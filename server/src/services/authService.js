@@ -296,3 +296,46 @@ export async function exchangeStarsForCoins(userId) {
   );
   return { coins: newCoins, stars: 0, exchanged: coinsToAdd };
 }
+
+/** Quà ngày: ngẫu nhiên trong khoảng này (đổi ở đây nếu muốn cố định). */
+export const DAILY_GIFT_MIN = 5;
+export const DAILY_GIFT_MAX = 10;
+
+/** Ngày UTC theo chuẩn YYYY-MM-DD — dùng làm mốc "đã nhận quà hôm nay". */
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Tặng sao mỗi ngày, mỗi người 1 lần.
+ *
+ * Dùng `updateOne` có điều kiện `lastStarGiftOn != hôm nay` + `$inc` nên an toàn
+ * kể cả khi gọi song song nhiều lần (chỉ 1 request nhận được quà).
+ *
+ * @returns {{claimed: boolean, alreadyClaimed?: boolean, amount?: number, stars: number, date: string}}
+ */
+export async function claimDailyStarGift(userId) {
+  const col = getCollection(COLLECTION);
+  const user = await col.findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+
+  const date = todayKey();
+  if (user.lastStarGiftOn === date) {
+    return { claimed: false, alreadyClaimed: true, stars: user.stars || 0, date };
+  }
+
+  const amount = DAILY_GIFT_MIN + Math.floor(Math.random() * (DAILY_GIFT_MAX - DAILY_GIFT_MIN + 1));
+  const res = await col.updateOne(
+    { id: userId, lastStarGiftOn: { $ne: date } },
+    { $inc: { stars: amount }, $set: { lastStarGiftOn: date } }
+  );
+
+  if (res.modifiedCount === 0) {
+    // Request song song đã " giành" quà trước → coi như đã nhận.
+    const after = await col.findOne({ id: userId });
+    return { claimed: false, alreadyClaimed: true, stars: after?.stars || 0, date };
+  }
+
+  const after = await col.findOne({ id: userId });
+  return { claimed: true, amount, stars: after?.stars || 0, date };
+}

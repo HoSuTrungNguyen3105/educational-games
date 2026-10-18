@@ -14,7 +14,7 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(
 .wrap{max-width:520px;margin:0 auto}
 h1{font-size:22px;font-weight:600;margin-bottom:12px}
 .stage{background:var(--stage);border-radius:20px;padding:12px 0 6px}
-#stage svg{width:min(60vw,240px);height:auto;display:block;margin:0 auto}
+#stage svg{width:min(70vw,260px);height:auto;display:block;margin:0 auto}
 .tabs{display:flex;gap:6px;margin:14px 0 10px;overflow-x:auto;padding-bottom:6px}
 .tab{flex:none;font:inherit;font-size:15px;color:var(--ink);background:var(--card);border:0;border-radius:999px;padding:8px 14px;cursor:pointer}
 .tab[aria-selected=true]{background:var(--accent);color:var(--onaccent)}
@@ -22,12 +22,12 @@ h1{font-size:22px;font-weight:600;margin-bottom:12px}
 .opt{aspect-ratio:1;background:var(--stage);border:2px solid transparent;border-radius:14px;cursor:pointer;display:grid;place-items:center;font:inherit;color:var(--ink);font-size:22px;padding:6px}
 .opt svg{width:100%;height:100%}
 .opt .dot{width:58%;aspect-ratio:1;border-radius:50%;border:1px solid #0002}
+.opt .none{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;border:2px dashed var(--line)}
 .opt[aria-pressed=true]{border-color:var(--accent);background:var(--card)}
 .row{display:flex;gap:8px;margin-top:14px}
 .btn{flex:1;font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:0;border-radius:12px;padding:11px;cursor:pointer}
 .btn:active{opacity:.7}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.types{display:flex;gap:6px;margin-bottom:12px}.types .tab{flex:1;padding:10px 6px;text-align:center}
 #egSync{margin-top:12px;font-size:13px;font-weight:600;text-align:center;color:var(--ink);opacity:.65}
 #egSync[data-kind=ok]{opacity:1;color:#2e9e5b}
 #egSync[data-kind=err]{opacity:1;color:#d9534f}
@@ -36,7 +36,6 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 <body>
 <div class="wrap">
   <h1>Tiệm thời trang cho Bé</h1>
-  <div class="types" id="types"></div>
   <div class="stage"><div id="stage"></div></div>
   <div class="tabs" id="tabs" role="tablist"></div>
   <div class="opts" id="opts"></div>
@@ -48,61 +47,63 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 </div>
 <script>
 /*
- * Toàn bộ SVG nằm ở src/games/lib/dressUpAvatarData.js, được inject vào <head>
- * qua injectDressUpAvatar() (HtmlGameLoader gọi hàm đó trước khi nạp vào iframe).
- * File này chỉ lo UI + logic chọn đồ.
+ * Toàn bộ SVG nằm ở src/games/lib/dressUpAvatarData.js (thân người chép từ
+ * body.html, hệ 512×700) và src/games/lib/dressUpDragon.js — được inject vào
+ * <head> qua injectDressUpAvatar() (HtmlGameLoader gọi hàm đó trước khi nạp
+ * vào iframe). File này chỉ lo UI + logic chọn đồ.
  *
- *   D = window.EG_DRESSUP  → data SVG + renderKid()/sanitizeKid()/kidTabs()
+ *   D = window.EG_DRESSUP  → data SVG + renderKid()/sanitizeKid()/kidTabs()/kidTabCfg()
  *   O = window.EG_OUTFIT   → lưu client (localStorage) + đồng bộ PUT /api/auth/me
  *
- * Backend lưu `avatar` = state này (kèm `id` là loại nhân vật), `pet` = thú cưng
- * ở game kia — cùng nằm trong hồ sơ GET/PUT /api/auth/me.
+ * State: { body, skin, face, hair, hairColor, shirt, dress, pants, shoes,
+ *          glasses, hat, acc } — server lưu nguyên object này vào `avatar`
+ * của hồ sơ GET/PUT /api/auth/me.
  */
 const $=s=>document.querySelector(s);
 const D=window.EG_DRESSUP, O=window.EG_OUTFIT;
 if(!D){document.body.innerHTML='<p style="padding:24px;text-align:center">Không nạp được dữ liệu avatar. Hãy chơi game từ trong hệ thống.</p>';throw new Error('EG_DRESSUP missing');}
 
-let st=D.sanitizeKid((O.get('avatar')||{}).value||D.kid.defaults.boy);
+let st=D.sanitizeKid((O.get('avatar')||{}).value||D.kid.defaults);
 let tab=D.kidTabs(st)[0].k;
 
 function save(){O.set('avatar',st);}
-function redraw(){drawTypes();drawTabs();drawStage();drawOpts();}
+function tabs(){return D.kidTabs(st);}
+function keepTab(){const list=tabs();if(!list.some(t=>t.k===tab))tab=list[0].k;}
+function redraw(){keepTab();drawTabs();drawStage();drawOpts();}
 
-function drawTypes(){$('#types').innerHTML=D.kid.types.map(([k,l])=>`<button class="tab" data-ty="${k}" aria-selected="${st.type===k}">${l}</button>`).join('');}
-function drawTabs(){$('#tabs').innerHTML=D.kidTabs(st).map(t=>`<button class="tab" role="tab" data-t="${t.k}" aria-selected="${tab===t.k}">${t.l}</button>`).join('');}
+function drawTabs(){$('#tabs').innerHTML=tabs().map(t=>`<button class="tab" role="tab" data-t="${t.k}" aria-selected="${tab===t.k}">${t.l}</button>`).join('');}
 function drawStage(){$('#stage').innerHTML=D.renderKid(st);}
 function drawOpts(){
- const list=D.kidTabs(st), t=list.find(x=>x.k===tab)||list[0];
- const cfg=t.map(st);
- let h=cfg.none?`<button class="opt" data-v="" aria-pressed="${!st[t.k]}" aria-label="Không dùng">🚫</button>`:'';
+ const list=tabs(), t=list.find(x=>x.k===tab)||list[0], cfg=D.kidTabCfg(t.k,st);
+ let h=cfg.nullable?`<button class="opt" data-v="" aria-pressed="${!st[t.k]}" aria-label="Không dùng"><span class="none">🚫</span></button>`:'';
  h+=cfg.ids.map(id=>`<button class="opt" data-v="${id}" aria-pressed="${st[t.k]===id}" aria-label="${id}">`
-  +(cfg.dot?`<span class="dot" style="background:${cfg.dot(id)}"></span>`
-          :`<svg viewBox="${cfg.vb}">${t.k==='acc'?D.kid.accPreview(id,st):cfg.pv(id)}</svg>`)
+  +(cfg.kind==='dot'?`<span class="dot" style="background:${cfg.dot(id)}"></span>`
+   :`<svg viewBox="${cfg.vb}">${cfg.pv(id)}</svg>`)
   +'</button>').join('');
  $('#opts').innerHTML=h;
 }
 document.addEventListener('click',e=>{
- const t=e.target.closest('.tab[data-t]'),o=e.target.closest('.opt'),y=e.target.closest('[data-ty]');
- if(y){st=D.sanitizeKid(D.kid.defaults[y.dataset.ty]);tab=D.kidTabs(st)[0].k;save();redraw();}
- else if(t){tab=t.dataset.t;drawTabs();drawOpts();}
- else if(o){st=D.sanitizeKid(Object.assign({},st,{[tab]:o.dataset.v||null}));save();drawStage();drawOpts();}
+ const t=e.target.closest('.tab[data-t]'),o=e.target.closest('.opt');
+ if(t){tab=t.dataset.t;drawTabs();drawOpts();}
+ else if(o){st=D.sanitizeKid(Object.assign({},st,{[tab]:o.dataset.v||null}));save();redraw();}
 });
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 $('#rnd').onclick=()=>{
- st=D.sanitizeKid(Object.assign({},st));
- D.kidTabs(st).forEach(t=>{const cfg=t.map(st);st[t.k]=pick(cfg.none?[null,...cfg.ids]:cfg.ids);});
- st=D.sanitizeKid(st);save();drawStage();drawOpts();
+ const next=Object.assign({},st);
+tabs().forEach(t=>{
+   const cfg=D.kidTabCfg(t.k,next);
+   next[t.k]=pick(cfg.nullable?[null,...cfg.ids]:cfg.ids);
+  });
+ st=D.sanitizeKid(next);save();redraw();
 };
-$('#rst').onclick=()=>{st=D.sanitizeKid(D.kid.defaults[st.type]);save();drawStage();drawOpts();};
+$('#rst').onclick=()=>{st=D.sanitizeKid(D.kid.defaults);tab=D.kidTabs(st)[0].k;save();redraw();};
 
 redraw();
 
 /* Hồ sơ trên server có bản mới hơn → nhận lại và vẽ lại. */
 addEventListener('eg-outfit',e=>{
  if(e.detail.scope!=='avatar'||e.detail.source!=='server')return;
- st=e.detail.value;
- if(!D.kidTabs(st).some(t=>t.k===tab))tab=D.kidTabs(st)[0].k;
- redraw();
+ st=D.sanitizeKid(e.detail.value);redraw();
 });
 
 /* Rời trang → đẩy nốt thay đổi đang chờ debounce lên hồ sơ. */

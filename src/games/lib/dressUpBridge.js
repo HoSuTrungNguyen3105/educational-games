@@ -21,6 +21,11 @@
  *   window.addEventListener('eg-outfit', e => {
  *     // e.detail = { scope, value, source: 'local' | 'server' }
  *   });
+ *
+ * Hợp đồng với frame cha (/api/auth/me):
+ *   gửi  { scope, value }                 value = object phẳng (đã sanitize)
+ *   nhận { ok, scope, value, updatedAt }  value = object phẳng + updatedAt
+ *   init  data.avatar / data.pet          object phẳng + updatedAt
  */
 (function (root) {
   'use strict';
@@ -152,14 +157,15 @@
 
       if (msg.type === 'init') {
         var d = msg.data || {};
-        /* Hồ sơ trên server mới hơn bản local thì thắng. */
+        /* d.pet / d.avatar là object phẳng + updatedAt, đúng như trả về của GET
+           /api/auth/me. Hồ sơ trên server mới hơn bản local thì thắng. */
         ['pet', 'avatar'].forEach(function (scope) {
           var server = d[scope];
-          if (!server || !server.value) return;
+          if (!server || typeof server !== 'object') return;
           var mine = get(scope);
           var mineTs = mine && mine.updatedAt ? Date.parse(mine.updatedAt) : 0;
           var srvTs = server.updatedAt ? Date.parse(server.updatedAt) : 0;
-          if (!mine || srvTs >= mineTs) set(scope, server.value, { updatedAt: server.updatedAt, fromServer: true });
+          if (!mine || srvTs >= mineTs) set(scope, server, { updatedAt: server.updatedAt, fromServer: true });
         });
         return;
       }

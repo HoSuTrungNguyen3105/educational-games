@@ -658,7 +658,6 @@ const CATALOG = [
  E('chat.send','POST','/api/chat/:conversationId/messages',{auth:'any',sum:'Gửi tin nhắn',
    pp:[{k:'conversationId',t:'text',req:1,v:''}],bd:[{k:'content',t:'text',req:1,v:'Xin chào'},{k:'clientMessageId',t:'text'},{k:'type',t:'text',v:'text'}]}),
  E('players','GET','/api/players',{auth:'none',sum:'⚠ Danh sách người chơi — không cần auth'}),
- E('av.loadout','GET','/api/avatar/loadout',{auth:'any',sum:'Trang bị avatar của tôi'}),
  E('av.items','GET','/api/avatar/items',{auth:'any',sum:'Kho vật phẩm avatar'}),
  E('av.save','POST','/api/avatar/save',{auth:'any',sum:'Lưu trang bị',bd:[{k:'loadout',t:'json',req:1,d:'vd {"hat":"hat_01","shirt":"shirt_02"}'}]}),
  E('av.buy','POST','/api/avatar/buy',{auth:'any',sum:'Mua vật phẩm (trừ coin)',

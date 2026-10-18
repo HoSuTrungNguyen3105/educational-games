@@ -106,7 +106,7 @@ function normalize(p) {
 }
 
 let state = typeof localStorage !== "undefined" ? readCache() : { ...PET_DEFAULT };
-let catalog = CATALOG_FALLBACK;
+// Danh mục nằm sẵn trong file này — không gọi API.
 const listeners = new Set();
 
 function emit() { for (const fn of listeners) fn(state); }
@@ -147,7 +147,7 @@ async function call(path, options = {}) {
 // ── API công khai ───────────────────────────────────────────────────────────
 
 export function getPet() { return state; }
-export function getCatalog() { return catalog; }
+export function getCatalog() { return CATALOG_FALLBACK; }
 export function subscribePet(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 
 /** Hook đọc pet, tự re-render khi pet đổi. */
@@ -166,15 +166,13 @@ export function moodLabel(mood = state.mood) {
 }
 
 /**
- * Nạp pet + danh mục từ server.
- * - Có token  → gọi API; nếu lỗi thì giữ cache, không ném ra ngoài.
- * - Chưa đăng nhập → chỉ lấy catalog công khai.
+ * Nạp pet từ server.
+ *
+ * Danh mục (loài / màu / trang phục) KHÔNG gọi API nữa — luôn dùng
+ * `CATALOG_FALLBACK` ngay trong file này. Chỉ còn `GET /api/pet/` cho phần
+ * "diện mạo của bé" lưu trên server.
  */
 export async function loadPet() {
-  try {
-    catalog = { ...CATALOG_FALLBACK, ...(await call("/catalog")) };
-  } catch { /* giữ catalog dự phòng */ }
-
   try {
     const remote = await call("/");
     if (remote) setState(remote);
@@ -203,8 +201,8 @@ export async function updateLook(patch) {
     // Offline hoặc chưa đăng nhập: vẫn cho sửa trên máy, sẽ gửi lên sau
     if (!useUserAuthStore.getState?.()?.token) {
       if (isLookOnly) {
-        const sp = catalog.species.find((s) => s.id === (patch.species ?? state.species));
-        const col = catalog.colors.find((c) => c.id === (patch.color ?? state.color));
+        const sp = CATALOG_FALLBACK.species.find((s) => s.id === (patch.species ?? state.species));
+        const col = CATALOG_FALLBACK.colors.find((c) => c.id === (patch.color ?? state.color));
         if (!sp || !col) return { ok: false, error: "Loài hoặc màu không hợp lệ" };
       }
       setState({ ...state, ...patch, outfits: { ...state.outfits, ...(patch.outfits || {}) } });
@@ -270,12 +268,12 @@ export async function resetPet() {
  */
 export function unlockedFor(pet = state) {
   const lv = Math.max(1, pet.level || 1);
-  const openSpecies = catalog.unlocked?.species;
-  const openOutfits = catalog.unlocked?.outfits;
+  const openSpecies = CATALOG_FALLBACK.unlocked?.species;
+  const openOutfits = CATALOG_FALLBACK.unlocked?.outfits;
   return {
-    species: openSpecies || (catalog.species || []).filter((s) => s.minLevel <= lv),
-    colors: catalog.colors || [],
-    outfits: openOutfits || (catalog.outfits || []).filter((o) => o.minLevel <= lv),
+    species: openSpecies || (CATALOG_FALLBACK.species || []).filter((s) => s.minLevel <= lv),
+    colors: CATALOG_FALLBACK.colors || [],
+    outfits: openOutfits || (CATALOG_FALLBACK.outfits || []).filter((o) => o.minLevel <= lv),
   };
 }
 
@@ -285,15 +283,15 @@ export function unlockedFor(pet = state) {
  * server trả gì — catalog cũ (chỉ có phần đã lọc) vẫn chạy được.
  */
 export function catalogView() {
-  const full = catalog.outfits || [];
-  const open = catalog.unlocked?.outfits || full;
+  const full = CATALOG_FALLBACK.outfits || [];
+  const open = CATALOG_FALLBACK.unlocked?.outfits || full;
   return {
-    species: catalog.species || [],
-    colors: catalog.colors || [],
+    species: CATALOG_FALLBACK.species || [],
+    colors: CATALOG_FALLBACK.colors || [],
     outfits: full,
-    moods: catalog.moods || CATALOG_FALLBACK.moods,
-    slots: catalog.slots || OUTFIT_SLOTS,
-    openSpeciesIds: new Set((catalog.unlocked?.species || catalog.species || []).map((s) => s.id)),
+    moods: CATALOG_FALLBACK.moods,
+    slots: CATALOG_FALLBACK.slots || OUTFIT_SLOTS,
+    openSpeciesIds: new Set((CATALOG_FALLBACK.unlocked?.species || CATALOG_FALLBACK.species || []).map((s) => s.id)),
     openOutfitIds: new Set(open.map((o) => o.id)),
   };
 }

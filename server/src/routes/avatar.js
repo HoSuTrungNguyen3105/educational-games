@@ -346,29 +346,10 @@ router.get("/inventory", authenticate, async (req, res, next) => {
 });
 
 /**
- * Loadout hiện tại, đã làm giàu với item + markup.
- *
- * `loadout.body` trả về nguyên `code` dạng chuỗi (không kèm html) vì body là
- * code frontend; các layer còn lại trả về object item đầy đủ.
+ * `GET /api/avatar/loadout` đã bị gỡ: bộ đồ avatar + thú cưng giờ nằm trong hồ
+ * sơ (`GET/PUT /api/auth/me` → `avatar`, `pet`) và được cache ở localStorage.
+ * Game nhận SVG avatar qua postMessage `init` (xem `HtmlGameLoader.jsx`).
  */
-router.get("/loadout", authenticate, async (req, res, next) => {
-  try {
-    const user = await getCollection(USERS).findOne({ id: req.user.sub });
-    if (!user) return sendError(res, "Không tìm thấy người dùng", 404);
-    const rawLoadout = user.avatarLoadout || DEFAULT_LOADOUT;
-    await ensureSeeded();
-    const allItems = await getCollection(ITEMS).find({}).toArray();
-    const itemMap = new Map(allItems.map(i => [i.code, i]));
-    const enriched = {};
-    for (const [layer, code] of Object.entries(rawLoadout)) {
-      if (layer === "body") { enriched.body = code || DEFAULT_LOADOUT.body; continue; }
-      if (!code) { enriched[layer] = null; continue; }
-      const item = itemMap.get(code);
-      enriched[layer] = item || { code, html: null, name: null, params: {} };
-    }
-    sendSuccess(res, { loadout: enriched });
-  } catch (e) { next(e); }
-});
 
 router.post("/buy", authenticate, async (req, res, next) => {
   try {

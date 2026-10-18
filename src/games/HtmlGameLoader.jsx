@@ -3,7 +3,6 @@ import { API_BASE, apiFetch, authService, coinService, userService, gameProgress
 import { trackTaskEvent, taskService } from "../services/taskService.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
-import { composeAvatar, buildLayersFromLoadout } from "../lib/avatarRenderer.js";
 import { addPetExp } from "../lib/petApi.js";
 import CoopInvitePanel from "../components/CoopInvitePanel.jsx";
 import AiExplainTrigger from "../components/ai/AiExplainTrigger.jsx";
@@ -11,6 +10,7 @@ import GameHud from "./GameHud.jsx";
 import { injectGameConfig } from "./injectGameConfig.js";
 import { injectAnswerBridge } from "./injectAnswerBridge.js";
 import { injectDressUpAvatar } from "./injectDressUpAvatar.js";
+import { renderDressUpSvg, resolveOutfit } from "../lib/dressUpAvatar.js";
 
 /**
  * HtmlGameLoader - Renders a self-contained HTML game in an iframe.
@@ -164,31 +164,18 @@ export default function HtmlGameLoader({
           if (spinTask) spinsLeft = taskData.spinsLeft ?? Math.max(0, spinTask.target - (spinTask.progress || 0));
         } catch { /* ignore */ }
         try {
-          const [loadoutResp, itemsResp] = await Promise.all([
-            fetch(`${API_BASE}/api/avatar/loadout`, {
-              headers: { Authorization: `Bearer ${userAuth.token}` },
-            }),
-            fetch(`${API_BASE}/api/avatar/items`, {
-              headers: { Authorization: `Bearer ${userAuth.token}` },
-            }),
-          ]);
-          const loadoutJson = await loadoutResp.json();
-          const itemsJson = await itemsResp.json();
-          const rawLoadout = loadoutJson?.data?.loadout || {};
-          const allItems = itemsJson?.data?.items || [];
-          // Body là code frontend, các layer còn lại tra qua danh sách item.
-          const flatLoadout = {};
-          for (const [layer, value] of Object.entries(rawLoadout)) {
-            if (layer === 'body') { flatLoadout.body = value || 'body_boy_01'; continue; }
-            flatLoadout[layer] = (value && typeof value === 'object' && value.code) ? value.code : value;
-          }
-          const svgContent = composeAvatar(buildLayersFromLoadout(flatLoadout, allItems));
-          if (svgContent) avatarSvg = svgContent;
-        } catch { /* ignore */ }
-        try {
           const me = await authService.me();
           profileAvatar = me?.avatar || null;
           profilePet = me?.pet || null;
+        } catch { /* ignore */ }
+        // Avatar gửi cho game = SVG bộ đồ trong hồ sơ, KHÔNG gọi /api/avatar/*.
+        // Bỏ vỏ <svg> để game bọc lại bằng viewBox 512×700 như trước.
+        try {
+          const outfit = resolveOutfit(profileAvatar, profilePet);
+          const inner = renderDressUpSvg("avatar", outfit.avatar.value)
+            .replace(/^<svg[^>]*>/, "")
+            .replace(/<\/svg>$/, "");
+          if (inner) avatarSvg = inner;
         } catch { /* ignore */ }
       } catch { /* ignore */ }
     }
@@ -448,13 +435,14 @@ export default function HtmlGameLoader({
           const body = { [scope]: d.value };
           apiFetch("/auth/me", { method: "PUT", body })
             .then((updated) => {
+              // Server trả về `avatar` / `pet` dạng object phẳng kèm updatedAt.
               const saved = updated?.[scope];
               postToIframe({
                 type: "outfit-saved",
                 data: {
                   ok: true,
                   scope,
-                  value: saved?.value ?? d.value,
+                  value: saved ?? d.value,
                   updatedAt: saved?.updatedAt ?? null,
                 },
               });

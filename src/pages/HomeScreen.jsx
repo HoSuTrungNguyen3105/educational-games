@@ -1,18 +1,18 @@
-import { useEffect, useMemo, useState, useRef } from 'react'
-import { gameService, coinService, notificationService, API_BASE } from '../services/api.js'
+import { useEffect, useMemo, useState } from 'react'
+import { gameService, coinService, notificationService, starService } from '../services/api.js'
 import { taskService } from '../services/taskService.js'
 import { socket } from '../socket/socket.js'
 import { SOCKET_EVENTS } from '../socket/socket.events.js'
 import { getLevelProgress } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
-import './home-theme.css'
-import { Loader, ErrorState, EmptyState, StampToken } from '../components/ui.jsx'
-import { AvatarPreviewSmall } from '../components/avatar/AvatarPreview.jsx'
+import './home-gq.css'
+import { Loader, ErrorState, EmptyState } from '../components/ui.jsx'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import AiChatWidget from '../components/ai/AiChatWidget.jsx'
 import { PetAvatar } from '../components/PetAvatar.jsx'
 import { usePet, moodLabel } from '../lib/petApi.js'
+import DailyGiftModal from '../components/home/DailyGiftModal.jsx'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
 import { playVibration, playReminderSound, stopVibrationLoop } from '../lib/reminderUtils.js'
@@ -30,35 +30,21 @@ import {
   KeyRound,
   Sparkles,
   PartyPopper,
-  Menu,
-  X,
-  Star,
-  ChevronRight,
   Gift,
-  Users,
   Bell,
   ShipWheel,
   FileText,
   Sprout,
   PawPrint,
   Crown,
+  Send,
+  Trash2,
 } from 'lucide-react'
 
-// Bảng màu theo môn học
-const SUBJECT_PALETTE = [
-  { grad: "from-purple-400 to-fuchsia-400", chip: "bg-purple-100 text-purple-700 border-purple-200", solid: "bg-purple-500", soft: "bg-purple-50", hover: "hover:bg-purple-50 hover:border-purple-400 hover:text-purple-700" },
-  { grad: "from-orange-400 to-amber-400", chip: "bg-amber-100 text-amber-700 border-amber-200", solid: "bg-amber-500", soft: "bg-amber-50", hover: "hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700" },
-  { grad: "from-cyan-400 to-blue-400", chip: "bg-cyan-100 text-cyan-700 border-cyan-200", solid: "bg-cyan-500", soft: "bg-cyan-50", hover: "hover:bg-cyan-50 hover:border-cyan-400 hover:text-cyan-700" },
-  { grad: "from-emerald-400 to-teal-400", chip: "bg-emerald-100 text-emerald-700 border-emerald-200", solid: "bg-emerald-500", soft: "bg-emerald-50", hover: "hover:bg-emerald-50 hover:border-emerald-400 hover:text-emerald-700" },
-  { grad: "from-pink-400 to-rose-400", chip: "bg-pink-100 text-pink-700 border-pink-200", solid: "bg-pink-500", soft: "bg-pink-50", hover: "hover:bg-pink-50 hover:border-pink-400 hover:text-pink-700" },
-  { grad: "from-indigo-400 to-violet-400", chip: "bg-indigo-100 text-indigo-700 border-indigo-200", solid: "bg-indigo-500", soft: "bg-indigo-50", hover: "hover:bg-indigo-50 hover:border-indigo-400 hover:text-indigo-700" },
-];
-
-function colorForSubject(subject = "") {
-  let hash = 0;
-  for (let i = 0; i < subject.length; i++) hash = (subject.charCodeAt(i) + ((hash << 5) - hash)) | 0;
-  return SUBJECT_PALETTE[Math.abs(hash) % SUBJECT_PALETTE.length];
-}
+// ── Nhóm tuổi dùng cho badge trên header và cho pill "2–8 tuổi" ở mỗi ô game.
+// Đổi 3 hằng số này là đổi được cả nhóm tuổi của trang.
+const CHILD_AGE = 7
+const AGE_BAND = { label: 'Tiểu học', range: '6–8 tuổi' }
 
 // Game nổi bật được ghim lên đầu (chơi ngay, không cần qua API)
 const FEATURED_GAME = {
@@ -74,16 +60,21 @@ const FEATURED_GAME = {
 
 import { OFFLINE_GAME_MANIFEST } from "../games/src/manifest.js";
 
-// Game tạo từ API có thể chưa điền môn học — gom về nhóm "Chung" để không bị lọc mất
-// Game tạo từ API có thể chưa điền môn học — gom về nhóm "Chung" để không bị lọc mất
+
 const NO_SUBJECT = "Chung";
 const subjectLabel = (subject) => (subject && subject.trim()) || NO_SUBJECT;
 const PREVIEW_GAMES = 8;
 
-// Giá trị `activeSubject` đặc biệt: xem nhóm game offline thay vì môn học.
-const OFFLINE_TAB = "__offline__";
-const ALL_TAB = "all";
+/* Bảng màu gradient cho ô tròn của mỗi game. Băm theo tên game nên màu giữ
+   nguyên giữa các lần render và giữa các lần F5. */
+const CARD_TINTS = [
+  ["#8fd3f4", "#4aa8e0"], ["#ffc9a3", "#f78b4a"], ["#c2e9c8", "#4fae63"],
+  ["#dcc7f5", "#8b5cd6"], ["#ffe08a", "#f0a500"], ["#bfe6f5", "#3d9fd0"],
+  ["#f9bcd6", "#e05a9c"], ["#cfe0ff", "#5b7ce0"],
+];
+const tintFor = (key = "") => CARD_TINTS[hashString(key) % CARD_TINTS.length];
 
+// Giá trị `activeSubject` đặc biệt: xem nhóm game offline thay vì môn học.
 // Game offline. Nguon su that: src/games/src/manifest.js (sinh boi scripts/build-offline-games.mjs)
 // Moi game la MOT file HTML rieng trong src/games/offline/<id>.html
 // Màu rèm/nút cho từng game — khai tường minh để không phải đoán từ class gradient.
@@ -118,15 +109,17 @@ const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
 // Mỗi môn lấy từ API (`games[].subject`) nên tên tuỳ ý. Bảng dưới khớp
 // theo từ khoá; môn không khớp thì nhận màu theo thứ tự băm, và câu mô
 // tả luôn nhắc lại tên môn nên không bao giờ hiện sai nội dung.
+// Bảng màu + nhóm tuổi gợi ý theo môn học.
+// `kind` quyết định badge trên ô game (Học/Chơi); `age` là pill "2–8 tuổi".
 const SUBJECT_META = [
-  { keys: ["toan", "math", "so"], icon: "🧮", grad: "from-amber-400 to-yellow-500", desc: "Rèn luyện tư duy và kỹ năng tính toán" },
-  { keys: ["tieng viet", "ngu van", "van"], icon: "📖", grad: "from-sky-400 to-blue-500", desc: "Luyện đọc, viết và mở rộng vốn từ" },
-  { keys: ["khoa hoc", "sinh", "hoa", "vat ly", "science"], icon: "🔬", grad: "from-emerald-400 to-green-600", desc: "Khám phá thế giới xung quanh" },
-  { keys: ["lich su", "dia ly", "history", "geography"], icon: "🌍", grad: "from-violet-400 to-purple-600", desc: "Khám phá về hóa và các cùng miền" },
-  { keys: ["tieng anh", "english"], icon: "🗣️", grad: "from-rose-400 to-pink-600", desc: "Luyện nói và từ vựng tiếng Anh" },
-  { keys: ["tin hoc", "lap trinh", "computer"], icon: "💻", grad: "from-indigo-400 to-blue-600", desc: "Lập trình và tư duy máy tính" },
-  { keys: ["the duc", "pe"], icon: "⚽", grad: "from-lime-400 to-emerald-600", desc: "Vận động và rèn luyện sức khoẻ" },
-  { keys: ["am nhac", "music"], icon: "🎵", grad: "from-fuchsia-400 to-purple-600", desc: "Khám phá thế giới âm nhạc" },
+  { keys: ["toan", "math", "so"], kind: "learn", age: "2–8 tuổi", icon: "🧮", desc: "Rèn luyện tư duy và kỹ năng tính toán" },
+  { keys: ["tieng viet", "ngu van", "van"], kind: "learn", age: "3–7 tuổi", icon: "📖", desc: "Luyện đọc, viết và mở rộng vốn từ" },
+  { keys: ["tieng anh", "english"], kind: "learn", age: "4–8 tuổi", icon: "🗣️", desc: "Luyện nói và từ vựng tiếng Anh" },
+  { keys: ["khoa hoc", "sinh", "hoa", "vat ly", "science"], kind: "learn", age: "5–8 tuổi", icon: "🔬", desc: "Khám phá thế giới xung quanh" },
+  { keys: ["lich su", "dia ly", "history", "geography"], kind: "learn", age: "6–8 tuổi", icon: "🌍", desc: "Khám phá về hóa và các cùng miền" },
+  { keys: ["tin hoc", "lap trinh", "computer"], kind: "play", age: "6–8 tuổi", icon: "💻", desc: "Lập trình và tư duy máy tính" },
+  { keys: ["the duc", "pe"], kind: "play", age: "5–8 tuổi", icon: "⚽", desc: "Vận động và rèn luyện sức khoẻ" },
+  { keys: ["am nhac", "music"], kind: "play", age: "4–8 tuổi", icon: "🎵", desc: "Khám phá thế giới âm nhạc" },
 ];
 
 // Băm chuỗi về số nguyên để màu ổn định giữa các lần render.
@@ -143,26 +136,9 @@ function metaForSubject(subject = "") {
   return { ...SUBJECT_META[hashString(subject) % SUBJECT_META.length], desc: `Thử thách môn ${subject} với những câu hỏi thú vị` };
 }
 
-// Card cuối cùng của hàng ngang — đại diện cho toàn bộ game offline.
-const OFFLINE_RAIL_CARD = {
-  key: OFFLINE_TAB,
-  icon: "🎮",
-  grad: "from-rose-500 to-red-600",
-  desc: "Chơi vui mọi lúc, không cần mạng",
-};
-
-
 // Menu chính hiện ngang trên header (desktop).
 // KHÔNG phải "tất cả mục" — chỉ những mục người dùng vào thường xuyên.
 // Phần còn lại nằm trong menu "Thêm" (dropdown) để header không bị chật.
-const HEADER_NAV = (userAuth) => ([
-  // { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
-  { key: "games", icon: Gamepad2, label: "Chơi game", type: "scroll", target: "games-section", show: true },
-  { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: !!userAuth?.user, badge: true },
-  { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
-  { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
-  { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
-]);
 
 // Mọi mục còn lại + quản trị + tài khoản → nút "Thêm" trên header.
 const MORE_ITEMS = (userAuth) => ([
@@ -210,42 +186,47 @@ const ACHIEVEMENTS = [
   { icon: "🐉", title: "Hạ gục Boss đầu tiên", progress: 0, target: 1, reward: "+200", type: "coin", tint: "from-rose-400 to-red-500" },
 ];
 
-const QUICK_ACTIONS = [
-  { key: "shop", icon: Gift, label: "Shop", sub: "Mua vật phẩm", path: "/my-coins", tint: "from-amber-400 to-yellow-500" },
-  { key: "map", icon: Sprout, label: "Bản đồ", sub: "Khám phá", path: "/garden", tint: "from-emerald-400 to-green-600" },
-  { key: "gift", icon: PartyPopper, label: "Hộp quà", sub: "Nhận thưởng", path: "/daily-tasks", tint: "from-pink-400 to-rose-500" },
-  { key: "spin", icon: ShipWheel, label: "Vòng quay", sub: "Quay quà", path: "/spin-wheel", tint: "from-indigo-400 to-violet-500" },
-];
-
 export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUserRegister, onUserLogout }) {
   // ─── STATE / LOGIC (giữ nguyên từ bản cũ) ───
   const [games, setGames] = useState(null);
   const [error, setError] = useState(null);
   const [showCodeModal, setShowCodeModal] = useState(false);
-  const [activeSubject, setActiveSubject] = useState(ALL_TAB);
   const [userCoins, setUserCoins] = useState(0);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [userStars, setUserStars] = useState(0);
+  const [gift, setGift] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [soundOn, setSoundOn] = useState(() => {
+    try { return localStorage.getItem('gq_sound') !== '0'; } catch { return true; }
+  });
+  const [pwaVisible, setPwaVisible] = useState(() => {
+    try { return localStorage.getItem('gq_pwa_closed') !== '1'; } catch { return true; }
+  });
   const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
   const templates = useTemplates();
   const { dueReminder, dismissDue } = useReminderCheck(userAuth?.token);
+
+  const toggleSound = () => {
+    setSoundOn((v) => {
+      try { localStorage.setItem('gq_sound', v ? '0' : '1'); } catch { /* ignore */ }
+      return !v;
+    });
+  };
 
   // Khi nhắc nhở tới giờ: rung + phát chuông theo đúng cấu hình của reminder đó.
   // (Trước đây modal hiện lên im lặng — đây chính là bug "cấu hình rung không có tác dụng".)
   useEffect(() => {
     if (!dueReminder) return;
     playVibration(dueReminder.vibratePattern, dueReminder.vibrate);
-    if (dueReminder.sound !== false) playReminderSound();
+    // Nút 🔊 trên header tắt/bật chuông báo nhắc nhở.
+    if (dueReminder.sound !== false && soundOn) playReminderSound();
     return () => stopVibrationLoop();
-  }, [dueReminder]);
+  }, [dueReminder, soundOn]);
 
   const handleDismissDue = () => {
     stopVibrationLoop();
     dismissDue();
   };
 
-  const [avatarLoadout, setAvatarLoadout] = useState({});
-  const [avatarItems, setAvatarItems] = useState([]);
   const [dailyTasks, setDailyTasks] = useState(null);
   const [showAllGames, setShowAllGames] = useState(false);
   const pet = usePet();
@@ -281,15 +262,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     loadTasks();
     if (userAuth?.user) {
       coinService.get().then(c => setUserCoins(c?.coins || 0)).catch(() => { });
-
-      // Load avatar
-      Promise.all([
-        fetch(`${API_BASE}/avatar/items`).then(r => r.json()),
-        fetch(`${API_BASE}/avatar/loadout`, { headers: { Authorization: `Bearer ${userAuth.token}` } }).then(r => r.json()),
-      ]).then(([itemsRes, loadoutRes]) => {
-        if (itemsRes.status) setAvatarItems(itemsRes.data.items || []);
-        if (loadoutRes.status) setAvatarLoadout(loadoutRes.data.loadout || {});
-      }).catch(() => { });
 
       // Register FCM token if permission is already granted
       if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
@@ -488,35 +460,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const pendingTaskCount = (dailyTasks || []).filter(t => !t.claimed).length;
 
-  const subjects = useMemo(() => {
-    if (!games) return [];
-    return [...new Set(games.map(g => subjectLabel(g.subject)))];
-  }, [games]);
-
-  // Hàng card ngang: mọi môn học (kèm số game) + card Game Offline ở cuối.
-  // Số game đếm trước để card tự biết mình còn bao nhiêu nội dung.
-  const railItems = useMemo(() => {
-    const count = {};
-    for (const g of games || []) {
-      const s = subjectLabel(g.subject);
-      count[s] = (count[s] || 0) + 1;
-    }
-    return [
-      ...subjects.map((s) => {
-        const meta = metaForSubject(s);
-        return { key: s, name: s, icon: meta.icon, grad: meta.grad, desc: meta.desc, count: count[s] || 0 };
-      }),
-      { ...OFFLINE_RAIL_CARD, name: "Game Offline", count: OFFLINE_GAMES.length },
-    ];
-  }, [subjects, games]);
-
-  const visibleGames = useMemo(() => {
-    if (!games) return [];
-    if (activeSubject === ALL_TAB) return games;
-    return games.filter(g => subjectLabel(g.subject) === activeSubject);
-  }, [games, activeSubject]);
-
-  const isOfflineTab = activeSubject === OFFLINE_TAB;
+  const visibleGames = useMemo(() => games || [], [games]);
 
   // Game học tập: ghim game nổi bật rồi tới danh sách của môn đang chọn.
   // Offline: bấm card trên hàng ngang → nhảy thẳng vào game luôn, không cần
@@ -528,7 +472,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const goTo = (path) => {
     navigate(path);
-    setMoreOpen(false);
+    setMenuOpen(false);
   };
 
   // Cuộn tới section trên trang chủ.
@@ -536,7 +480,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   // silent-fail khi target render có điều kiện hoặc khi <html> bị height:100%.
   // Nếu không tìm thấy target, fallback về section Game đề xuất rồi về đầu trang.
   const scrollTo = (id) => {
-    setMoreOpen(false);
+    setMenuOpen(false);
     setTimeout(() => {
       let el = document.getElementById(id);
       if (!el && id === "subjects-section") el = document.getElementById("games-section");
@@ -555,504 +499,358 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     if (item.path) return goTo(item.path);
   };
 
-  const showNotificationPanel = (next) => {
-    setShowNotifications(next);
-    if (next) loadNotifications();
-  };
-
-  const headerNav = HEADER_NAV(userAuth).filter(i => i.show);
-  const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
+const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
   const navItems = SIDEBAR_ITEMS(userAuth).filter(i => i.show);
 
-  const notificationDropdown = (posClass) => (
-    <NotificationDropdown
-      notifications={notifications}
-      unreadCount={unreadCount}
-      onMarkAsRead={handleMarkAsRead}
-      onMarkAllAsRead={handleMarkAllAsRead}
-      onDeleteAll={handleDeleteAll}
-      onClose={() => setShowNotifications(false)}
-      onSelectGame={onSelectGame}
-      pushStatus={pushStatus}
-      onEnablePush={handleEnablePush}
-      onTestPush={handleTestPush}
-      onResetDevices={handleResetDevices}
-      testingPush={testingPush}
-      pushMessage={pushMessage}
-      posClass={posClass}
-    />
+  /* ══════════════════════════════════════════════════════════════════════
+     GIAO DIỆN MỚI — theo bản mẫu: header nhẹ, banner PWA, hàng nút tròn +
+     nút "Chơi ngẫu nhiên", rồi các dải game cuộn ngang theo chủ đề.
+     Toàn bộ menu cũ + nhiệm vụ + thú cưng + thành tựu chuyển vào sheet ⚙️.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  // ── sao + quà hằng ngày ──────────────────────────────────────────────
+  // Server tự chặn nhận trùng trong ngày nên gọi mỗi lần vào cũng an toàn.
+  useEffect(() => {
+    if (!userAuth?.token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const s = await starService.get();
+        if (!cancelled) setUserStars(s?.stars || 0);
+      } catch { /* ignore */ }
+      try {
+        const res = await starService.claimDailyGift();
+        if (cancelled || !res?.claimed) return;
+        setUserStars(res.stars || 0);
+        setGift({ amount: res.amount, total: res.stars });
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [userAuth?.token]);
+
+  // Bảo đảm dữ liệu nạp được ngay khi mở sheet (nếu chưa từng nạp).
+  const openMenu = () => {
+    setMenuOpen(true);
+    if (!userAuth?.user) return;
+    loadNotifications();
+    loadTasks();
+  };
+
+  /* Bảng màu ô tròn trong dải card: băm theo tên để giữ ổn định giữa các lần
+     render (không đổi màu mỗi lần F5). */
+
+  /* "Hôm nay của bé": lấy tối đa 8 game, ưu tiên game mới nhất rồi tới game có
+     nhiều người chơi — không phụ thuộc môn để mỗi ngày có chút đổi mới. */
+  const todayGames = useMemo(() => {
+    const list = (games || []).map((game, i) => {
+      const t = templates.find((x) => x._id === (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid));
+      const subject = subjectLabel(game.subject);
+      const meta = metaForSubject(subject);
+      return {
+        key: String(game._id || game.id || i),
+        name: game.name,
+        icon: t?.icon || "🎮",
+        grad: tintFor(game.name || String(i)),
+        border: tintFor(game.name || String(i))[1],
+        badge: meta.kind === "learn" ? "Học" : "Chơi",
+        age: meta.age,
+        play: () => onSelectGame(game),
+      };
+    });
+    return [...list].sort((a, b) => hashString(b.key) - hashString(a.key)).slice(0, 8);
+  }, [games, templates, onSelectGame]);
+
+  const mathGames = useMemo(() => {
+    return (games || [])
+      .filter((g) => /toan|math|so\b/i.test(subjectLabel(g.subject)))
+      .map((game, i) => {
+        const t = templates.find((x) => x._id === (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid));
+        const tint = tintFor(game.name || `m${i}`);
+        return {
+          key: String(game._id || game.id || i),
+          name: game.name,
+          icon: t?.icon || "🧮",
+          grad: tint,
+          border: tint[1],
+          badge: "Học",
+          age: metaForSubject(subjectLabel(game.subject)).age,
+          play: () => onSelectGame(game),
+        };
+      });
+  }, [games, templates, onSelectGame]);
+
+  const offlineCards = useMemo(
+    () => OFFLINE_GAMES.map((g) => ({
+      key: g.key,
+      name: g.name,
+      icon: g.icon || "🎮",
+      grad: tintFor(g.key),
+      border: g.color || "#F2B632",
+      badge: "Chơi",
+      age: g.tag || "Mọi lứa tuổi",
+      play: () => navigate(g.path),
+    })),
+    []
   );
 
+  /* Nút "Chơi ngẫu nhiên" — bốc ngẫu nhiên trong toàn bộ game (API + offline). */
+  const handleRandomPlay = () => {
+    const pool = [
+      ...(games || []).map((g) => ({ label: g.name, run: () => onSelectGame(g) })),
+      ...OFFLINE_GAMES.map((g) => ({ label: g.name, run: () => navigate(g.path) })),
+    ];
+    if (!pool.length) return;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    pick.run();
+  };
+
+  const closePwaBanner = () => {
+    setPwaVisible(false);
+    try { localStorage.setItem("gq_pwa_closed", "1"); } catch { /* ignore */ }
+  };
+
   return (
-    <div className="nb-home min-h-screen text-ink">
+    <div className="gq-home">
+      <Confetti />
 
       {dueReminder && (
-        <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-white border border-amber-200 rounded-2xl shadow-2xl p-4 animate-[popIn_.3s_ease]">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-              <span className="text-xl">🔔</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-ink text-sm">Nhắc nhở!</p>
-              <p className="font-semibold text-ink">{dueReminder.title}</p>
-              {dueReminder.message && <p className="text-xs text-gray-500 mt-0.5">{dueReminder.message}</p>}
-            </div>
-            <button onClick={handleDismissDue} className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-amber-600 transition flex-shrink-0">
-              OK
-            </button>
+        <div className="gq-reminder">
+          <div className="w-10 h-10 rounded-full bg-amber-100 grid place-items-center text-xl flex-shrink-0">🔔</div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm">Nhắc nhở!</p>
+            <p className="font-semibold text-sm">{dueReminder.title}</p>
+            {dueReminder.message && <p className="text-xs text-slate-500 mt-0.5">{dueReminder.message}</p>}
           </div>
+          <button onClick={handleDismissDue}
+            className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-amber-600 transition flex-shrink-0">
+            OK
+          </button>
         </div>
       )}
 
-      {/* ═══════════ HEADER: logo · nav ngang · coin/lv/avatar ═══════════ */}
-      {/* Không còn sidebar trái — toàn bộ menu nằm trên một thanh duy nhất. */}
-      <header className="nb-topbar">
-        <div className="flex items-center gap-3 min-w-0">
-          <a href="#/" onClick={() => navigate("/")} className="flex items-center gap-2.5 shrink-0 ml-[-80px]">
-            <span className="grid place-items-center w-9 h-9 rounded-xl bg-[#F2B632] border-[3px] border-[#1D2E4A] text-lg leading-none">🎪</span>
-            <span className="hidden sm:block leading-tight">
-              <span className="block text-[17px] font-extrabold tracking-tight text-[#1D2E4A]">Lớp Học Vui</span>
-              <span className="block text-[10px] font-bold text-[#F2B632] tracking-[0.22em]">EDUGAMES</span>
+      <div className="gq-page">
+        {/* ─────────── HEADER ─────────── */}
+        <header className="gq-top">
+          <div className="gq-logo">
+            <span className="gq-logo__mark" aria-hidden="true">🎪</span>
+            <span>
+              <span className="gq-logo__name">Lớp Học Vui</span>
+              <span className="gq-logo__sub">EDUGAMES</span>
             </span>
-          </a>
-        </div>
-
-        {/* Menu ngang — ẩn dưới lg vì màn hẹp thì nút "Thêm" + hamburger đủ dùng */}
-        <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
-          {headerNav.map((item) => {
-            const Icon = item.icon;
-            const active = item.type === "path" && item.path === "/";
-            return (
-              <button
-                key={item.key}
-                onClick={() => handleNavClick(item)}
-                aria-current={active ? "page" : undefined}
-                className="nb-navitem"
-              >
-                <Icon className="w-[15px] h-[15px]" />
-                {item.label}
-                {item.badge && pendingTaskCount > 0 && (
-                  <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#E5533D] text-white text-[10px] font-extrabold flex items-center justify-center">
-                    {pendingTaskCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-2 ml-auto shrink-0">
-          {userAuth?.user && (
-            <>
-              {/* Ở màn hẹp chỉ giữ coin + cấp độ, các pill khác gộp vào menu "Thêm" */}
-              <StatPill onClick={() => goTo("/my-coins")}>
-                <span className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-sm">
-                  <Star className="w-3 h-3" fill="currentColor" />
-                </span>
-                <span className="font-extrabold text-slate-700">{userCoins.toLocaleString()}</span>
-              </StatPill>
-
-              <StatPill onClick={() => goTo("/profile")}>
-                <span className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 text-white flex items-center justify-center shadow-sm">
-                  <Star className="w-3 h-3" fill="currentColor" />
-                </span>
-                <span className="font-extrabold text-slate-700 whitespace-nowrap">Lv {lv.level}</span>
-                <span className="hidden xl:block w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                  <span className="block h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all" style={{ width: `${lv.percent ?? 0}%` }} />
-                </span>
-              </StatPill>
-
-              <div className="relative">
-                <button
-                  onClick={() => showNotificationPanel(!showNotifications)}
-                  aria-label="Thông báo"
-                  className="relative w-9 h-9 rounded-full bg-white shadow-sm hover:shadow transition text-slate-500 hover:text-sky-600 flex items-center justify-center"
-                >
-                  <Bell className="w-[18px] h-[18px]" />
-                  {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />}
-                </button>
-                {/* Bắt buộc phải khai width: panel position:absolute bám vào
-                    div.relative này — không khai thì panel bị bóp về 36px. */}
-                {showNotifications && notificationDropdown("lg:absolute lg:top-12 lg:right-0 lg:w-[400px] lg:max-w-[calc(100vw-2rem)]")}
-              </div>
-            </>
-          )}
-
-          {/* Nút "Thêm" — luôn hiện, kể cả khách chưa đăng nhập.
-              Mobile dùng nút này làm menu chính (nav ngang bị ẩn dưới lg). */}
-          <div className="relative shrink-0">
-            <button
-              onClick={() => setMoreOpen(v => !v)}
-              aria-label="Thêm tuỳ chọn"
-              aria-expanded={moreOpen}
-              className="w-9 h-9 rounded-full bg-white shadow-sm hover:shadow transition text-slate-500 flex items-center justify-center"
-            >
-              {moreOpen ? <X className="w-[18px] h-[18px]" /> : <Menu className="w-[18px] h-[18px]" />}
-            </button>
-            {moreOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
-                <div className="absolute right-0 top-11 z-50 w-60 bg-white rounded-2xl border-[3px] border-[#1D2E4A] shadow-[6px_6px_0_#1D2E4A] py-2 overflow-y-auto max-h-[70vh]">
-                  {/* Mobile: nav ngang bị ẩn nên phải có đầy đủ ở đây */}
-                  <div className="lg:hidden">
-                    {navItems.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <button key={item.key} onClick={() => handleNavClick(item)} className="nb-side__item w-auto rounded-none">
-                          <span className="nb-side__ico"><Icon className="w-[15px] h-[15px]" /></span>
-                          <span className="flex-1 truncate text-left">{item.label}</span>
-                        </button>
-                      );
-                    })}
-                    <div className="my-2 border-t-2 border-[#1D2E4A]/10" />
-                  </div>
-                  {moreItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button key={item.key} onClick={() => handleNavClick(item)} className="nb-side__item w-auto rounded-none">
-                        <span className="nb-side__ico"><Icon className="w-[15px] h-[15px]" /></span>
-                        <span className="flex-1 truncate text-left">{item.label}</span>
-                      </button>
-                    );
-                  })}
-                  {(userAuth?.user?.role === "admin" || userAuth?.user?.role === "teacher") && (
-                    <button onClick={() => goTo("/admin")} className="nb-side__item w-auto rounded-none">
-                      <span className="nb-side__ico"><GraduationCap className="w-[15px] h-[15px]" /></span>
-                      <span className="flex-1 truncate text-left">Trang giáo viên</span>
-                    </button>
-                  )}
-                  <div className="my-2 border-t-2 border-[#1D2E4A]/10" />
-                  {userAuth?.user ? (
-                    <button onClick={() => { onUserLogout(); setMoreOpen(false); }} className="nb-side__item w-auto rounded-none text-rose-500">
-                      <span className="nb-side__ico"><LogOut className="w-[15px] h-[15px]" /></span>
-                      <span className="flex-1 truncate text-left">Đăng xuất</span>
-                    </button>
-                  ) : (
-                    <>
-                      <button onClick={onUserLogin} className="nb-side__item w-auto rounded-none">
-                        <span className="nb-side__ico"><KeyRound className="w-[15px] h-[15px]" /></span>
-                        <span className="flex-1 truncate text-left">Đăng nhập</span>
-                      </button>
-                      <button onClick={onUserRegister} className="nb-side__item w-auto rounded-none">
-                        <span className="nb-side__ico"><Sparkles className="w-[15px] h-[15px]" /></span>
-                        <span className="flex-1 truncate text-left">Đăng ký</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
           </div>
 
-          {userAuth?.user ? (
+          <div className="gq-age" title={`Nhóm tuổi: ${AGE_BAND.label}`}>
+            <span className="gq-age__num">{CHILD_AGE}</span>
+            <span className="gq-age__txt">
+              <span className="gq-age__lbl">Bé {CHILD_AGE} tuổi</span>
+              <span className="gq-age__sub">{AGE_BAND.label} · {AGE_BAND.range}</span>
+            </span>
+          </div>
+
+          <div className="gq-actions">
+            <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Sao: ${userStars}`}>
+              ⭐<span className="gq-iconbtn__n">{userStars}</span>
+            </button>
             <button
-              onClick={() => goTo("/profile")}
-              aria-label="Hồ sơ"
-              className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-gradient-to-br from-sky-400 to-indigo-400 text-white flex items-center justify-center ring-2 ring-white shadow"
+              className={`gq-iconbtn ${soundOn ? "" : "gq-iconbtn--on"}`}
+              onClick={toggleSound}
+              aria-label={soundOn ? "Tắt âm thanh" : "Bật âm thanh"}
+              title={soundOn ? "Tắt âm thanh" : "Bật âm thanh"}
             >
-              {avatarItems.length > 0
-                ? <AvatarPreviewSmall loadout={avatarLoadout} items={avatarItems} size={32} />
-                : <User className="w-[18px] h-[18px]" />}
+              {soundOn ? "🔊" : "🔇"}
             </button>
-          ) : (
-            <button onClick={onUserLogin} className="text-sm bg-gradient-to-r from-emerald-400 to-green-600 text-white font-bold px-4 py-2 rounded-full hover:from-emerald-500 hover:to-green-700 transition shadow-md shadow-emerald-200 shrink-0">
-              Đăng nhập
+            <button className="gq-iconbtn" onClick={() => goTo("/profile")} aria-label="Hồ sơ của bé">
+              ❤️
             </button>
-          )}
+            <button
+              className="gq-iconbtn"
+              onClick={openMenu}
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+            >
+              ⚙️
+              {unreadCount > 0 && <span className="gq-iconbtn__n">{unreadCount}</span>}
+            </button>
+          </div>
+        </header>
+
+        {/* ─────────── BANNER CÀI APP ─────────── */}
+        {pwaVisible && (
+          <div className="gq-pwa">
+            <button className="gq-pwa__x" onClick={closePwaBanner} aria-label="Đóng">✕</button>
+            <p className="gq-pwa__t">Có app Lớp Học Vui cho điện thoại</p>
+            <p className="gq-pwa__s">Tải về để bé chơi mượt hơn trên điện thoại và máy tính bảng.</p>
+            <div className="gq-pwa__row">
+              <button className="gq-store" onClick={() => setPushMessage("Trên iPhone: dùng Safari → Chia sẻ → Thêm vào Màn hình chính")}>
+                <small>↓ Tải trên</small><b>App Store</b>
+              </button>
+              <button className="gq-store" onClick={() => setPushMessage("Trên Android: dùng Chrome → ⋮ → Thêm vào Màn hình chính")}>
+                <small>↓ Tải trên</small><b>Google Play</b>
+              </button>
+            </div>
+          </div>
+        )}
+        {pushMessage && (
+          <p className="text-xs text-center bg-white rounded-2xl py-2 px-3 shadow mb-3">{pushMessage}</p>
+        )}
+
+        {/* ─────────── NÚT TRÒN + CHƠI NGẪU NHIÊN ─────────── */}
+        <div className="gq-playbar">
+          <button className="gq-mini" style={{ borderBottomColor: "#4fae63" }} onClick={() => goTo("/pet")}>
+            <span className="gq-mini__ico" aria-hidden="true">🐔</span>
+            <span className="gq-mini__lbl">Vườn thú</span>
+            {pendingTaskCount > 0 && <span className="gq-mini__dot" aria-label={`${pendingTaskCount} nhiệm vụ`} />}
+          </button>
+          <button className="gq-mini" style={{ borderBottomColor: "#f0a500" }} onClick={() => goTo("/achievements")}>
+            <span className="gq-mini__ico" aria-hidden="true">🏆</span>
+            <span className="gq-mini__lbl">Cúp</span>
+          </button>
+          <button className="gq-random" onClick={handleRandomPlay}>
+            <span className="gq-random__ico" aria-hidden="true">🎲</span>
+            Chơi ngẫu nhiên
+          </button>
         </div>
-      </header>
 
-      <div className="flex-1 min-w-0 flex flex-col">
+        {/* ─────────── HÔM NAY CỦA BÉ ─────────── */}
+        <section className="gq-sect">
+          <div className="gq-sect__head">
+            <span className="gq-sect__ico" aria-hidden="true">⭐</span>
+            <div>
+              <h2 className="gq-sect__t">Hôm nay của bé</h2>
+              <p className="gq-sect__s">Học xen chơi · đổi mới ngày</p>
+            </div>
+          </div>
 
-        {/* ═══════════ HERO: banner tràn viền, bo cong đáy ═══════════ */}
-        {/* Nằm NGOÀI .nb-page để ảnh tràn từ mép trang — nội dung chữ bên
-            trong vẫn canh theo khung .nb-page để thẳng hàng với section dưới. */}
-        <section className="nb-hero">
-          <img
-            src={`${import.meta.env.BASE_URL}banner.png`}
-            alt="EduPlay — học chơi khám phá cùng EduPlay"
-            className="nb-hero__img"
-            draggable={false}
-          />
-          <div className="nb-hero__scrim" />
+          {games === null ? (
+            <Loader label="Đang tải trò chơi..." />
+          ) : error ? (
+            <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
+          ) : todayGames.length === 0 ? (
+            <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thầy cô thêm game vào nhé!" />
+          ) : (
+            <div className="gq-rail">
+              <GqGameCard
+                name={FEATURED_GAME.name}
+                icon={FEATURED_GAME.icon}
+                grad={["#ffd45e", "#f0a500"]}
+                border="#f0a500"
+                badge="Mới"
+                age="2–8 tuổi"
+                play={() => navigate(FEATURED_GAME.path)}
+              />
+              {todayGames.slice(2).map((g) => (
+                <GqGameCard key={g.key} {...g} />
+              ))}
+            </div>
+          )}
+        </section>
 
-          <div className="nb-page nb-hero__body">
-            <div className="nb-hero__copy">
-              <p className="nb-hero__eyebrow">Chào {userAuth?.user?.name ? userAuth.user.name.split(" ")[0] : "bạn"} 👋</p>
-              <h1 className="nb-hero__title">
-                Biến giờ học thành<br />cuộc phiêu lưu!
-              </h1>
-              <p className="nb-hero__sub">Học mà chơi, chơi mà giỏi — tiến độ lưu ngay trên máy.</p>
-
-              <div className="nb-hero__cta">
-                <button onClick={() => scrollTo("games-section")} className="nb-hero__btn">
-                  <span className="nb-hero__play"><ChevronRight className="w-4 h-4 rotate-90" strokeWidth={3} /></span>
-                  Bắt đầu ngay
-                </button>
-                <button onClick={() => goTo("/garden")} className="nb-hero__ghost">
-                  <Sprout className="w-[18px] h-[18px]" />
-                  Khu vườn
-                </button>
+        {/* ─────────── SỐ & TOÁN (nền xanh lá) ─────────── */}
+        {mathGames.length > 0 && (
+          <section className="gq-sect gq-sect--green" id="subjects-section">
+            <div className="gq-sect__head">
+              <span className="gq-sect__ico" aria-hidden="true">💯</span>
+              <div>
+                <h2 className="gq-sect__t">Số &amp; toán <span className="gq-sect__n">{mathGames.length}</span></h2>
+                <p className="gq-sect__s">Học số · tập đếm · so sánh · chia đều · đồng hồ · công trừ</p>
               </div>
             </div>
+            <div className="gq-rail">
+              {mathGames.map((g) => <GqGameCard key={g.key} {...g} />)}
+            </div>
+          </section>
+        )}
+
+        {/* ─────────── GAME OFFLINE ─────────── */}
+        <section className="gq-sect">
+          <div className="gq-sect__head">
+            <span className="gq-sect__ico" aria-hidden="true">🎮</span>
+            <div>
+              <h2 className="gq-sect__t">Chơi không cần mạng</h2>
+              <p className="gq-sect__s">Tiến độ lưu ngay trên máy</p>
+            </div>
+          </div>
+          <div className="gq-rail">
+            {offlineCards.map((g) => <GqGameCard key={g.key} {...g} />)}
           </div>
         </section>
 
-        {/* ═══════════ NỘI DUNG ═══════════ */}
-        <div className="nb-page">
-          <main className="nb-stack">
+        {/* ─────────── TẤT CẢ GAME ─────────── */}
+        <section className="gq-sect" id="games-section">
+          <div className="gq-sect__head">
+            <span className="gq-sect__ico" aria-hidden="true">🕹️</span>
+            <div>
+              <h2 className="gq-sect__t">Tất cả trò chơi <span className="gq-sect__n">{visibleGames.length}</span></h2>
+              <p className="gq-sect__s">{showAllGames ? "Đang xem tất cả" : `Xem trước ${PREVIEW_GAMES} game`}</p>
+            </div>
+          </div>
 
-            {/* ─── DANH SÁCH GAME: card môn học xếp thành hàng ngang ─── */}
-            <section id="games-section" className="scroll-mt-24">
-              <div className="nb-sechead">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="nb-sechead__icon bg-gradient-to-br from-sky-400 to-blue-600">
-                    <Gamepad2 className="w-5 h-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <h2 className="nb-h2">Danh sách game</h2>
-                    <p className="text-[11.5px] text-slate-400 -mt-0.5">Chơi không cần mạng · Tiến độ lưu ngay trên máy</p>
-                  </div>
-                </div>
+          <div className="gq-grid">
+            {learningGames.map(({ game, index }) => {
+              const t = templates.find((x) => x._id === (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid));
+              const subject = subjectLabel(game.subject);
+              const meta = metaForSubject(subject);
+              const tint = tintFor(game.name || String(index));
+              return (
+                <GqGameCard
+                  key={game._id || game.id || index}
+                  name={game.name}
+                  icon={t?.icon || "🎮"}
+                  grad={tint}
+                  border={tint[1]}
+                  badge={meta.kind === "learn" ? "Học" : "Chơi"}
+                  age={meta.age}
+                  play={() => onSelectGame(game)}
+                />
+              );
+            })}
+          </div>
 
-                {/* Chuyển nhanh giữa game học tập và game offline */}
-                <div className="nb-tabs nb-sechead__tabs" role="tablist">
-                  <button
-                    role="tab"
-                    aria-selected={!isOfflineTab}
-                    onClick={() => setActiveSubject(ALL_TAB)}
-                    className={`nb-tab ${!isOfflineTab ? "nb-tab--on" : ""}`}
-                  >
-                    <BookOpen className="w-4 h-4" /> Game học tập
-                  </button>
-                  <button
-                    role="tab"
-                    aria-selected={isOfflineTab}
-                    onClick={() => setActiveSubject(OFFLINE_TAB)}
-                    className={`nb-tab ${isOfflineTab ? "nb-tab--on" : ""}`}
-                  >
-                    <Gamepad2 className="w-4 h-4" /> Game offline
-                  </button>
-                </div>
-              </div>
+          {visibleGames.length > PREVIEW_GAMES && (
+            <div className="flex justify-center mt-3">
+              <button onClick={() => setShowAllGames((v) => !v)}
+                className="rounded-full bg-white px-5 py-2 text-sm font-bold shadow">
+                {showAllGames ? "Thu gọn" : `Xem tất cả ${visibleGames.length} game`}
+              </button>
+            </div>
+          )}
+        </section>
 
-              {/* Hàng card ngang: mọi môn học + Game Offline ở cuối.
-                  Cuộn ngang trên màn hẹp, tràn viền phải trên desktop. */}
-              <div id="subjects-section" className="nb-rail" role="tablist" aria-label="Môn học">
-                {railItems.map((item, i) => {
-                  const on = activeSubject === item.key;
-                  return (
-                    <button
-                      key={item.key}
-                      role="tab"
-                      aria-selected={on}
-                      onClick={() => {
-                        setActiveSubject(item.key);
-                        setShowAllGames(false);
-                      }}
-                      style={{ "--i": i }}
-                      className={`nb-subj bg-gradient-to-br ${item.grad} ${on ? "nb-subj--on" : ""}`}
-                    >
-                      <span className="nb-subj__ic" aria-hidden="true">{item.icon}</span>
-                      <span className="nb-subj__name">{item.name}</span>
-                      <span className="nb-subj__desc">{item.desc}</span>
-                      <span className="nb-subj__play">
-                        {item.count} game <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* ─── Lưới game chi tiết của nhóm đang chọn ─── */}
-              {isOfflineTab ? (
-                <div className="nbg-grid">
-                  {OFFLINE_GAMES.map((g, i) => (
-                    <OfflineGameCard key={g.key} game={g} index={i} />
-                  ))}
-                </div>
-              ) : games === null ? (
-                <Loader label="Đang tải trò chơi..." />
-              ) : error ? (
-                <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
-              ) : visibleGames.length === 0 ? (
-                <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thử chọn môn khác hoặc nhập mã vé từ thầy cô nhé!" />
-              ) : (
-                <div className="nb-gamegrid">
-                  {/* Game ghim */}
-                  <FeaturedGameCard />
-                  {learningGames.map(({ game, index, template }) => (
-                    <GameCard key={game._id || game.id} game={game} index={index} template={template} onSelect={onSelectGame} />
-                  ))}
-                </div>
-              )}
-
-              {/* Nút "xem tất cả" chỉ có ý nghĩa với nhóm game học tập.
-                  Khi bấm lần hai thì thu gọn về PREVIEW_GAMES. */}
-              {!isOfflineTab && !error && visibleGames.length > PREVIEW_GAMES && (
-                <div className="flex justify-center mt-4">
-                  <button onClick={() => setShowAllGames(v => !v)} className="nb-chip">
-                    {showAllGames ? "Thu gọn" : `Xem tất cả ${visibleGames.length} game`}
-                  </button>
-                </div>
-              )}
-
-              {/* Khi đang xem offline, nhảy thẳng vào game offline nổi bật */}
-              {isOfflineTab && (
-                <div className="flex justify-center mt-4">
-                  <button onClick={() => navigate("/offline/trung-tam-game")} className="nb-chip">
-                    Mở trung tâm game <ChevronRight className="w-3.5 h-3.5 inline" />
-                  </button>
-                </div>
-              )}
-            </section>
-
-              {/* ─── NHẮC ĐĂNG NHẬP + SHORTCUT (chỉ khi chưa có tài khoản) ─── */}
-              {!userAuth?.user && (
-                <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-4">
-                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 text-white p-4 lg:p-5 flex items-center gap-3 sm:gap-4 shadow-lg border-[3px] border-[#1D2E4A]">
-                    <span className="text-4xl lg:text-5xl float-slow shrink-0">🎁</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-display text-base lg:text-lg leading-tight">Đăng nhập để lưu điểm, coin và nuôi pet nhé!</p>
-                      <div className="mt-2.5 flex flex-wrap gap-2">
-                        <button onClick={onUserLogin} className="bg-white/95 text-sky-700 text-xs font-extrabold rounded-full px-4 py-2 shadow hover:bg-white transition active:scale-95">
-                          <KeyRound className="w-3.5 h-3.5 inline mr-1" /> Đăng nhập
-                        </button>
-                        <button onClick={onUserRegister} className="bg-gradient-to-r from-amber-300 to-yellow-500 text-amber-900 text-xs font-extrabold rounded-full px-4 py-2 shadow hover:from-amber-400 hover:to-yellow-600 transition active:scale-95">
-                          <Sparkles className="w-3.5 h-3.5 inline mr-1" /> Đăng ký miễn phí
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="nb-card p-3 nb-quickgrid content-start">
-                    {QUICK_ACTIONS.map(item => {
-                      const Icon = item.icon;
-                      return (
-                        <button key={item.key} onClick={() => goTo(item.path)} className="nb-quickbtn group">
-                          <span className={`w-11 h-11 lg:w-12 lg:h-12 rounded-2xl bg-gradient-to-br ${item.tint} text-white flex items-center justify-center shadow-md group-hover:-translate-y-0.5 group-active:scale-95 transition-all`}>
-                            <Icon className="w-5 h-5" />
-                          </span>
-                          <span className="text-[10px] lg:text-[11px] font-bold text-slate-600 text-center leading-tight">{item.label}</span>
-                          <span className="hidden lg:block text-[9px] text-slate-400 text-center leading-tight -mt-1">{item.sub}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-
-              {/* ─── PANEL: Nhiệm vụ · Thú cưng · Thành tựu ───
-                  Không còn cột phải — ba panel nằm ngang dưới danh sách game. */}
-              <section className="nb-panels">
-              {/* Nhiệm vụ hôm nay */}
-              <PanelCard
-                icon={<ClipboardList className="w-4 h-4" />}
-                iconTint="from-amber-400 to-orange-500"
-                title="Nhiệm vụ hôm nay"
-                badge={pendingTaskCount}
-                actionLabel="Xem tất cả ›"
-                onAction={() => goTo("/daily-tasks")}
-              >
-                {dailyTasks === null ? (
-                  <p className="text-xs text-slate-400 py-4 text-center animate-pulse">Đang tải nhiệm vụ...</p>
-                ) : dailyTasks.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-4 text-center">Không có nhiệm vụ nào hôm nay</p>
-                ) : (
-                  <div className="divide-y divide-slate-50">
-                    {dailyTasks.slice(0, 4).map((t, i) => (
-                      <QuestRow key={t.id} task={t} index={i} onClaim={handleClaimTask} />
-                    ))}
-                  </div>
-                )}
-              </PanelCard>
-
-              {/* Thú cưng */}
-              <PanelCard
-                icon={<PawPrint className="w-4 h-4" />}
-                iconTint="from-emerald-400 to-green-600"
-                title="Thú cưng"
-                actionLabel="Tùy chỉnh ›"
-                onAction={() => goTo("/pet")}
-              >
-                <button onClick={() => goTo("/pet")} className="w-full flex items-center gap-3.5 text-left group">
-                  <PetAvatar size={76} level={pet.level} className="group-hover:scale-105 transition" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-display font-bold text-ink truncate">{pet.name}</p>
-                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full whitespace-nowrap">
-                        💗 {moodLabel(pet.mood)}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1">
-                      <span className="text-emerald-600">Lv {pet.level}</span>
-                      <span>{pet.exp} / {pet.expNeeded}</span>
-                    </div>
-                    <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                      <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all" style={{ width: `${Math.min(100, (pet.exp / pet.expNeeded) * 100)}%` }} />
-                    </div>
-                  </div>
-                </button>
-              </PanelCard>
-
-              {/* Thành tích nổi bật */}
-              <PanelCard
-                icon={<Trophy className="w-4 h-4" />}
-                iconTint="from-violet-400 to-purple-500"
-                title="Thành tích nổi bật"
-                id="achievements-section"
-                actionLabel="Xem tất cả ›"
-                onAction={() => goTo("/achievements")}
-              >
-                <div className="space-y-3">
-                  {ACHIEVEMENTS.map((a, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <span className={`w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br ${a.tint} text-white flex items-center justify-center text-base shadow-sm`}>
-                        {a.icon}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-[11.5px] font-bold text-slate-600 truncate">{a.title}</p>
-                          <span className="flex items-center gap-0.5 text-[10px] font-extrabold text-amber-600 whitespace-nowrap">
-                            {a.type === "star" ? <Star className="w-3 h-3" fill="currentColor" /> : <span>🪙</span>} {a.reward}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex items-center gap-2">
-                          <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
-                            <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500" style={{ width: `${Math.round((a.progress / a.target) * 100)}%` }} />
-                          </div>
-                          <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{a.progress}/{a.target}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </PanelCard>
-            </section>
-          </main>
-        </div>
+        {/* ─────────── NHẮC ĐĂNG NHẬP ─────────── */}
+        {!userAuth?.user && (
+          <div className="gq-login">
+            <p>Đăng nhập để lưu điểm, sao và nhận quà mỗi ngày nhé!</p>
+            <button onClick={onUserLogin}
+              className="rounded-full bg-[#2f7fd6] text-white text-xs font-extrabold px-4 py-2 shadow hover:opacity-90 transition">
+              🔑 Đăng nhập
+            </button>
+            <button onClick={onUserRegister}
+              className="rounded-full bg-[#ffd45e] text-[#6b4a00] text-xs font-extrabold px-4 py-2 shadow hover:opacity-90 transition">
+              ✨ Đăng ký miễn phí
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* ═══════════ BOTTOM NAV (mobile) ═══════════ */}
-      {/* z-40 nhưng nằm DƯỚI nút nổi AI (z-40) — khoảng chừa phía dưới nội dung
-          đã tính ở .nb-page (--nb-bottom-inset) nên không có gì bị nav che. */}
+      {/* ─────────── BOTTOM NAV (mobile) ─────────── */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#1D2E4A] border-t-[3px] border-black"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white shadow-[0_-2px_14px_rgba(29,43,82,.1)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         aria-label="Điều hướng chính"
       >
-        <div className="flex justify-around items-stretch gap-1 px-1.5 h-16">
-          {BOTTOM_NAV(userAuth).filter(i => i.show).map(item => {
+        <div className="flex justify-around items-center gap-1 px-2 h-16">
+          {BOTTOM_NAV(userAuth).filter((i) => i.show).map((item) => {
             const Icon = item.icon;
-            const isActive = item.key === 'home';
+            const isActive = item.key === "home";
             return (
               <button
                 key={item.key}
                 onClick={() => handleNavClick(item)}
                 aria-current={isActive ? "page" : undefined}
-                className={`nb-btnnav ${isActive ? "nb-btnnav--on" : ""}`}
+                className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl"
+                style={{ color: isActive ? "#ef7d18" : "#7d89ab" }}
               >
-                <span className="nb-btnnav__ico"><Icon className="w-5 h-5" /></span>
+                <Icon className="w-5 h-5" />
                 <span className="text-[10px] font-bold leading-none">{item.label}</span>
               </button>
             );
@@ -1061,343 +859,293 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       </nav>
 
       <EnterCodeModal open={showCodeModal} onClose={() => setShowCodeModal(false)} onFound={onSelectGame} />
-
-      {/* ═══════════ AI BẠN HỌC (nút nổi) ═══════════
-          Nút nổi của AiChatWidget tự bố trí: `bottom-24` trên mobile để không bị
-          chồng lên bottom nav, `lg:bottom-6` trên desktop. Không ảnh hưởng layout
-          (fixed, ngoài luồng) nên hero full-width và danh sách game giữ nguyên. */}
       <AiChatWidget title="AI Bạn Học" />
-    </div>
-  );
-}
 
-// ═══════════════ COMPONENT PHỤ ═══════════════
+      {/* ─────────── SHEET MENU ⚙️ ─────────── */}
+      {menuOpen && (
+        <div className="gq-scrim" onClick={() => setMenuOpen(false)}>
+          <div className="gq-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="gq-sheet__head">
+              <div>
+                <span className="gq-sheet__t">Menu</span>
+                {userAuth?.user && (
+                  <span className="block text-[11px] font-semibold text-slate-400">
+                    {userAuth.user.name} · Lv {lv.level} · ⭐ {userStars}
+                  </span>
+                )}
+              </div>
+              <button onClick={() => setMenuOpen(false)} className="text-xl text-slate-400 leading-none" aria-label="Đóng">✕</button>
+            </div>
+            <div className="gq-sheet__body">
+              {/* Nhiệm vụ hôm nay */}
+              {userAuth?.user && (
+                <>
+                  <p className="px-3 pt-2 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                    Nhiệm vụ hôm nay{pendingTaskCount ? ` · ${pendingTaskCount}` : ""}
+                  </p>
+                  {dailyTasks === null ? (
+                    <p className="px-3 py-2 text-xs text-slate-400 animate-pulse">Đang tải nhiệm vụ...</p>
+                  ) : dailyTasks.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-slate-400">Không có nhiệm vụ hôm nay</p>
+                  ) : (
+                    dailyTasks.slice(0, 4).map((t) => (
+                      <MiniQuestRow key={t.id} task={t} onClaim={handleClaimTask} />
+                    ))
+                  )}
+                  <div className="gq-sheet__sep" />
+                </>
+              )}
 
-function StatPill({ children, onClick }) {
-  return (
-    <button onClick={onClick} className="flex items-center gap-1.5 bg-white shadow-sm hover:shadow transition rounded-full px-2.5 py-1.5">
-      {children}
-    </button>
-  );
-}
+              {/* Thú cưng */}
+              {userAuth?.user && (
+                <>
+                  <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Thú cưng</p>
+                  <button onClick={() => goTo("/pet")} className="gq-link">
+                    <span className="gq-link__ico"><PetAvatar size={26} level={pet.level} /></span>
+                    <span className="flex-1">
+                      <span className="block">{pet.name}</span>
+                      <span className="block text-[11px] font-semibold text-slate-400">
+                        Cấp {pet.level} · {moodLabel(pet.mood)}
+                      </span>
+                    </span>
+                  </button>
+                  <div className="gq-sheet__sep" />
+                </>
+              )}
 
-function PanelCard({ icon, iconTint, title, badge, actionLabel, onAction, children, id }) {
-  return (
-    <section id={id} className="nb-card p-4 scroll-mt-24">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <h3 className="font-display font-bold text-ink text-sm flex items-center gap-2">
-          <span className={`w-7 h-7 rounded-xl bg-gradient-to-br ${iconTint} text-white flex items-center justify-center shadow-sm`}>
-            {icon}
-          </span>
-          {title}
-          {badge > 0 && (
-            <span className="min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-extrabold flex items-center justify-center">{badge}</span>
-          )}
-        </h3>
-        {actionLabel && (
-          <button onClick={onAction} className="text-[11px] font-bold text-sky-500 hover:text-sky-700 transition whitespace-nowrap">{actionLabel}</button>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
+              {/* Thông báo */}
+              {userAuth?.user && (
+                <>
+                  <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                    Thông báo{unreadCount ? ` · ${unreadCount} chưa đọc` : ""}
+                  </p>
+                  {notifications.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-slate-400">Chưa có thông báo</p>
+                  ) : (
+                    <>
+                      {notifications.slice(0, 5).map((n) => (
+                        <button
+                          key={n.id}
+                          onClick={() => { if (!n.read) handleMarkAsRead(n.id); }}
+                          className="gq-link"
+                          style={n.read ? { opacity: 0.55 } : undefined}
+                        >
+                          <span className="gq-link__ico">🔔</span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block truncate">{n.title}</span>
+                            <span className="block text-[11px] font-semibold text-slate-400 truncate">{n.body}</span>
+                          </span>
+                        </button>
+                      ))}
+                      <button onClick={handleMarkAllAsRead} className="gq-link text-xs text-slate-500">Đánh dấu đã đọc tất cả</button>
+                      <button onClick={handleDeleteAll} className="gq-link text-xs text-rose-500">Xoá tất cả thông báo</button>
+                    </>
+                  )}
+                  <div className="gq-sheet__sep" />
+                </>
+              )}
 
-function QuestRow({ task, index, onClaim }) {
-  const tints = [
-    "from-emerald-400 to-green-600",
-    "from-sky-400 to-blue-500",
-    "from-amber-400 to-orange-500",
-    "from-violet-400 to-purple-500",
-  ];
-  const pct = task.target > 0 ? Math.min(100, Math.round((task.progress / task.target) * 100)) : 0;
-  const isDone = task.completed && !task.claimed;
-  return (
-    <div className="py-2.5 first:pt-0 last:pb-0 flex items-start gap-3">
-      <span className={`w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br ${tints[index % tints.length]} text-white flex items-center justify-center text-base shadow-sm relative`}>
-        {task.completed ? "✓" : task.icon || "🎯"}
-      </span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[12.5px] font-bold text-slate-600 truncate">{task.name}</p>
-          <span className="flex items-center gap-0.5 text-[10.5px] font-extrabold text-amber-600 whitespace-nowrap">
-            <span className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-[8px]">★</span>
-            +{task.rewardCoin || 0}
-          </span>
-        </div>
-        <div className="mt-1.5 flex items-center gap-2">
-          <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
-            <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all" style={{ width: `${pct}%` }} />
+              <div className="gq-sheet__sep" />
+
+              {/* Thành tựu nổi bật */}
+              <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Thành tựu</p>
+              {ACHIEVEMENTS.map((a, i) => (
+                <div key={i} className="gq-link" style={{ cursor: "default" }}>
+                  <span className="gq-link__ico">{a.icon}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block truncate">{a.title}</span>
+                    <span className="mt-1 block h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <span
+                        className="block h-full rounded-full bg-emerald-400"
+                        style={{ width: `${Math.min(100, (a.progress / a.target) * 100)}%` }}
+                      />
+                    </span>
+                  </span>
+                  <span className="text-[11px] font-extrabold text-amber-600">{a.progress}/{a.target}</span>
+                </div>
+              ))}
+              <button onClick={() => goTo("/achievements")} className="gq-link text-xs text-slate-500">Xem tất cả thành tựu</button>
+
+              {/* Điều hướng */}
+              <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Điều hướng</p>
+              {[...navItems, ...moreItems.filter((i) => !navItems.some((n) => n.key === i.key))]
+                .map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button key={item.key} onClick={() => handleNavClick(item)} className="gq-link">
+                      <span className="gq-link__ico"><Icon className="w-4 h-4" /></span>
+                      <span className="flex-1">{item.label}</span>
+                      {item.badge && pendingTaskCount > 0 && (
+                        <span className="gq-iconbtn__n" style={{ position: "static" }}>{pendingTaskCount}</span>
+                      )}
+                    </button>
+                  );
+                })}
+
+              {(userAuth?.user?.role === "admin" || userAuth?.user?.role === "teacher") && (
+                <button onClick={() => goTo("/admin")} className="gq-link">
+                  <span className="gq-link__ico"><GraduationCap className="w-4 h-4" /></span>
+                  <span className="flex-1">Trang giáo viên</span>
+                </button>
+              )}
+
+              {/* Bật thông báo đẩy */}
+              {userAuth?.user && (
+                <>
+                  <div className="gq-sheet__sep" />
+                  <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Thông báo đẩy</p>
+                  <button onClick={handleEnablePush} disabled={testingPush} className="gq-link">
+                    <span className="gq-link__ico"><Bell className="w-4 h-4" /></span>
+                    <span className="flex-1">
+                      {testingPush ? "Đang bật..." : pushStatus.permission === "granted" ? "Đã bật thông báo" : "Bật thông báo"}
+                    </span>
+                  </button>
+                  {pushStatus.permission === "granted" && (
+                    <>
+                      <button onClick={handleTestPush} disabled={testingPush} className="gq-link">
+                        <span className="gq-link__ico"><Send className="w-4 h-4" /></span>
+                        <span className="flex-1">{testingPush ? "Đang gửi..." : "Gửi thử"}</span>
+                      </button>
+                      <button onClick={handleResetDevices} disabled={testingPush} className="gq-link">
+                        <span className="gq-link__ico"><Trash2 className="w-4 h-4" /></span>
+                        <span className="flex-1">Reset thiết bị</span>
+                      </button>
+                    </>
+                  )}
+                  {pushMessage && <p className="px-3 pb-2 text-[11px] text-slate-500">{pushMessage}</p>}
+                  <div className="gq-sheet__sep" />
+                </>
+              )}
+
+              {/* Tài khoản */}
+              {userAuth?.user ? (
+                <button onClick={() => { onUserLogout(); setMenuOpen(false); }} className="gq-link gq-link--danger">
+                  <span className="gq-link__ico"><LogOut className="w-4 h-4" /></span>
+                  <span className="flex-1">Đăng xuất</span>
+                </button>
+              ) : (
+                <>
+                  <button onClick={onUserLogin} className="gq-link">
+                    <span className="gq-link__ico"><KeyRound className="w-4 h-4" /></span>
+                    <span className="flex-1">Đăng nhập</span>
+                  </button>
+                  <button onClick={onUserRegister} className="gq-link">
+                    <span className="gq-link__ico"><Sparkles className="w-4 h-4" /></span>
+                    <span className="flex-1">Đăng ký</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-          <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{task.progress}/{task.target}</span>
-          {task.claimed ? (
-            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-full">✓</span>
-          ) : isDone ? (
-            <button onClick={() => onClaim(task.id)} className="text-[10px] font-extrabold text-white bg-gradient-to-r from-amber-400 to-orange-500 px-2.5 py-1 rounded-full hover:from-amber-500 hover:to-orange-600 transition active:scale-95">
-              Nhận
-            </button>
-          ) : null}
         </div>
-      </div>
+      )}
+
+      {/* ─────────── HỘP QUÀ ─────────── */}
+      {gift && (
+        <DailyGiftModal
+          amount={gift.amount}
+          totalStars={gift.total}
+          onClose={() => setGift(null)}
+        />
+      )}
     </div>
   );
 }
 
-function FeaturedGameCard() {
+/* ═══════════════════════ COMPONENT PHỤ ═══════════════════════ */
+
+/** Ô game dùng chung cho cả dải ngang lẫn lưới. */
+function GqGameCard({ icon, name, grad, border, badge, age, play }) {
   return (
-    <button onClick={() => navigate(FEATURED_GAME.path)} style={{ "--tile-c": "#E5533D", "--i": 0 }} className="nb-tile">
-      <div className={`relative aspect-[16/11] rounded-2xl overflow-hidden bg-gradient-to-br ${FEATURED_GAME.grad} flex items-center justify-center`}>
-        <span className="text-5xl lg:text-6xl drop-shadow-lg transition-transform duration-200">{FEATURED_GAME.icon}</span>
-        <span className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-white/95 text-amber-500 flex items-center justify-center shadow">
-          <Star className="w-4 h-4" fill="currentColor" />
+    <button
+      onClick={play}
+      aria-label={`Chơi ${name}`}
+      title={name}
+      className="gq-card"
+      style={{ borderBottomColor: border, position: "relative" }}
+    >
+      {badge && (
+        <span className={`gq-card__badge gq-card__badge--${badge === "Mới" ? "new" : badge === "Học" ? "learn" : "play"}`}>
+          {badge}
         </span>
-        <span className="absolute top-1.5 left-1.5 bg-rose-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow">MỚI</span>
-      </div>
-      <div className="px-1 pt-2 pb-0.5">
-        <p className="font-display font-bold text-[13px] text-ink truncate">{FEATURED_GAME.name}</p>
-        <p className="text-[10.5px] text-slate-400 truncate">{FEATURED_GAME.description}</p>
-        <span className="mt-2 w-full inline-flex items-center justify-center gap-1 bg-gradient-to-r from-emerald-400 to-green-600 text-white text-[11.5px] font-extrabold rounded-full py-1.5 shadow-sm group-hover:from-emerald-500 group-hover:to-green-700 transition">
-          Chơi ngay <ChevronRight className="w-3.5 h-3.5" />
-        </span>
-      </div>
+      )}
+      <span
+        className="gq-card__ring"
+        style={{ background: `linear-gradient(140deg, ${grad[0]}, ${grad[1]})` }}
+        aria-hidden="true"
+      >
+        {icon}
+      </span>
+      <span className="gq-card__name">{name}</span>
+      {age && <span className="gq-card__age">{age}</span>}
     </button>
   );
 }
 
+/** Một dòng nhiệm vụ gọn cho sheet menu. */
+function MiniQuestRow({ task, onClaim }) {
+  return (
+    <div className="gq-link" style={{ cursor: "default" }}>
+      <span className="gq-link__ico">{task.icon || "🎯"}</span>
+      <span className="flex-1 min-w-0">
+        <span className="block truncate">{task.title}</span>
+        <span className="block text-[11px] font-semibold text-slate-400">
+          {Math.min(task.progress || 0, task.target || 0)}/{task.target || 0}
+        </span>
+      </span>
+      {task.claimed ? (
+        <span className="text-xs font-bold text-emerald-500">✔ Đã nhận</span>
+      ) : (
+        <button
+          onClick={() => onClaim(task.id)}
+          className="rounded-full bg-emerald-500 text-white text-[11px] font-bold px-3 py-1"
+        >
+          Nhận
+        </button>
+      )}
+    </div>
+  );
+}
 
 /**
- * Một ô game offline — DÙNG STYLE MỚI (lưới ô lớn).
- * Bám sát src/games/offline/trung-tam-game.html:
- *   nền gradient · emoji 44px · tiêu đề 22px · pill tag · thanh trạng thái bám đáy
- * Bấm vào → đi thẳng vào game (không có màn chọn trung gian).
- * Mỗi game là 1 file HTML riêng: src/games/offline/<id>.html
- *
- * KHÔNG hiện cờ "cần mạng": đây là game offline, hiển thị mạng ở đây chỉ gây
- * hiểu nhầm rằng phần lớn game phải cần Internet.
+ * Confetti nền — danh sách vị trí cố định để không nhảy mỗi lần render.
+ * Chỉ trang trí, pointer-events: none nên không chặn thao tác.
  */
-function OfflineGameCard({ game, index = 0 }) {
-  return (
-    <button
-      onClick={() => navigate(game.path)}
-      aria-label={`Chơi ${game.name}`}
-      title={game.name}
-      style={{ background: game.color, "--i": index }}
-      className="nbg-card"
-    >
-      <span className="nbg-card__ic" aria-hidden="true">{game.icon}</span>
-      <h3 className="nbg-card__title">{game.name}</h3>
-      <span className="nbg-card__tag">{game.tag}</span>
-      <p className="nbg-card__desc">Chơi offline · không cần mạng</p>
-      <span className="nbg-card__st">▶ Chơi ngay</span>
-    </button>
-  );
-}
+function Confetti() {
+  const bits = useMemo(() => {
+    const marks = ["★", "♥", "●", "★", "♥", "★", "●", "♥"];
+    const colors = ["#ffd45e", "#ff8a8a", "#7fd18a", "#8fb8ff", "#ffb3d1", "#c8a6ff"];
+    return Array.from({ length: 46 }, (_, i) => {
+      const n = hashString(`confetti-${i}`);
+      return {
+        left: `${(n % 970) / 10}%`,
+        top: `${(n % 2400) / 10}%`,
+        size: 9 + (n % 16),
+        color: colors[n % colors.length],
+        char: marks[n % marks.length],
+        op: 0.35 + ((n % 5) / 10),
+      };
+    });
+  }, []);
 
-
-function GameCard({ game, template, onSelect, index = 0 }) {
-  const color = colorForSubject(subjectLabel(game.subject));
   return (
-    <button
-      onClick={() => onSelect(game)}
-      aria-label={`Chơi ${game.name}`}
-      style={{ "--i": index, "--tile-c": "#2A9D8F" }}
-      className="nb-tile focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-    >
-      <div className={`relative w-full aspect-[16/11] rounded-2xl bg-gradient-to-br ${color.grad} flex items-center justify-center overflow-hidden`}>
-        <StampToken icon={template ? template.icon : <Gamepad2 className="w-7 h-7" />} ring="#ffffff" size={46} fontSize={20} />
-        <span className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-white/95 text-amber-500 flex items-center justify-center shadow">
-          <Star className="w-4 h-4" fill="currentColor" />
+    <div className="gq-confetti" aria-hidden="true">
+      {bits.map((b, i) => (
+        <span
+          key={i}
+          style={{
+            position: "absolute",
+            left: b.left,
+            top: b.top,
+            fontSize: b.size,
+            color: b.color,
+            opacity: b.op,
+            lineHeight: 1,
+          }}
+        >
+          {b.char}
         </span>
-        {game.playersCount > 0 && (
-          <span className="absolute bottom-1.5 left-1.5 bg-black/40 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-            <Users className="w-2.5 h-2.5" /> {game.playersCount}
-          </span>
-        )}
-      </div>
-      <div className="px-1 pt-2 pb-0.5">
-        <p className="font-display font-bold text-[13px] text-ink truncate">{game.name}</p>
-        <p className="text-[10.5px] text-slate-400 truncate">
-          {subjectLabel(game.subject)}{game.questionsCount ? ` · ${game.questionsCount} câu` : ""}
-        </p>
-        <span className="mt-2 w-full inline-flex items-center justify-center gap-1 bg-gradient-to-r from-emerald-400 to-green-600 text-white text-[11.5px] font-extrabold rounded-full py-1.5 shadow-sm group-hover:from-emerald-500 group-hover:to-green-700 transition">
-          Chơi ngay <ChevronRight className="w-3.5 h-3.5" />
-        </span>
-      </div>
-    </button>
-  );
-}
-
-function NotificationDropdown({
-  notifications,
-  unreadCount,
-  onMarkAsRead,
-  onMarkAllAsRead,
-  onDeleteAll,
-  onClose,
-  onSelectGame,
-  pushStatus,
-  onEnablePush,
-  onTestPush,
-  onResetDevices,
-  testingPush,
-  pushMessage,
-  posClass = "fixed right-2 top-14 w-[400px] max-w-[calc(100vw-1rem)]",
-}) {
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) onClose();
-    };
-    document.addEventListener('pointerdown', handleClickOutside);
-    return () => document.removeEventListener('pointerdown', handleClickOutside);
-  }, [onClose]);
-
-  return (
-    <>
-      <div className="fixed inset-0 z-40 lg:hidden" onClick={onClose} />
-      <div
-        ref={ref}
-        onPointerDown={(e) => e.stopPropagation()}
-        className={`${posClass} bg-white rounded-2xl shadow-2xl border border-sky-100 overflow-hidden z-50`}
-      >
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-sky-50 bg-sky-50/70">
-          <h3 className="font-bold text-ink">Thông báo</h3>
-          <div className="flex items-center gap-2">
-            {notifications.length > 0 && (
-              <button onClick={onDeleteAll} className="text-[11px] text-rose-400 hover:text-rose-600 font-medium">
-                Xóa tất cả
-              </button>
-            )}
-            {unreadCount > 0 && (
-              <button onClick={onMarkAllAsRead} className="text-xs text-sky-600 hover:text-sky-800 font-medium">
-                Đánh dấu đã đọc
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Push notification settings */}
-        <div className="p-3.5 bg-gradient-to-r from-sky-50/80 to-emerald-50/80 border-b border-sky-100 text-xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="font-semibold text-slate-700 flex items-center gap-1">
-              📱 Thông báo đẩy (Push)
-            </span>
-            {pushStatus?.permission === "granted" ? (
-              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
-                ✓ Đã bật
-              </span>
-            ) : (
-              <span className="text-[11px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                Chưa bật
-              </span>
-            )}
-          </div>
-
-          {pushStatus?.reason === "ios_not_standalone" ? (
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-2.5 text-[11px] leading-relaxed mb-2">
-              💡 <strong>Dành cho iPhone/iPad:</strong> Safari chỉ cho phép thông báo khi cài đặt PWA:
-              <br />Nhấn nút <strong>Chia sẻ (Share)</strong> ở thanh dưới Safari ➔ Chọn <strong>&quot;Thêm vào MH chính&quot;</strong> ➔ Mở lại từ màn hình chính.
-            </div>
-          ) : pushStatus?.permission !== "granted" ? (
-            <button
-              onClick={onEnablePush}
-              className="w-full py-2 px-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl shadow-sm hover:opacity-90 active:scale-95 transition text-center mb-1.5"
-            >
-              🔔 Cho phép thông báo trên điện thoại
-            </button>
-          ) : (
-            <button
-              disabled={testingPush}
-              onClick={onTestPush}
-              className="w-full py-1.5 px-3 bg-sky-100 hover:bg-sky-200 text-sky-700 font-bold rounded-xl transition text-center disabled:opacity-50"
-            >
-              {testingPush ? "Đang gửi..." : "🧪 Gửi thử thông báo tới điện thoại"}
-            </button>
-          )}
-
-          {pushStatus?.permission === "granted" && (
-            <button
-              onClick={onResetDevices}
-              className="w-full mt-1.5 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium rounded-xl transition text-center text-[11px]"
-            >
-              🔄 Reset device token (sau khi cài lại PWA)
-            </button>
-          )}
-
-          {pushMessage && (
-            <div className="mt-1.5 p-2 bg-white/90 rounded-lg text-[11px] text-gray-700 font-medium border border-sky-100 break-words">
-              {pushMessage}
-            </div>
-          )}
-        </div>
-
-        {/* Notification list */}
-        <div className="max-h-96 overflow-y-auto">
-          {notifications.length === 0 ? (
-            <div className="p-6 text-center text-sm text-slate-400">
-              <Bell className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-              Không có thông báo nào
-            </div>
-          ) : (
-            notifications.map(notif => (
-              <div
-                key={notif.id}
-                onClick={() => { if (!notif.read) onMarkAsRead(notif.id); }}
-                className={`px-5 py-3.5 border-b border-sky-50/60 hover:bg-sky-50/40 cursor-pointer transition ${!notif.read ? 'bg-sky-50/20' : ''}`}
-              >
-                <div className="flex gap-3">
-                  <div className="mt-0.5 shrink-0">
-                    {notif.type === 'chat_message'
-                      ? <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center"><MessageCircle className="w-4 h-4 text-blue-500" /></div>
-                      : <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center"><Gamepad2 className="w-4 h-4 text-emerald-500" /></div>
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-800 leading-snug">
-                      <span className="font-semibold">{notif.fromName}</span>
-                      {notif.type === 'chat_message' ? ' đã gửi một tin nhắn' : ` mời bạn chơi ${notif.gameName || 'trò chơi'}`}
-                    </p>
-                    {notif.gameCode && (
-                      <p className="text-xs text-sky-600 mt-1 font-mono font-semibold">Mã phòng: {notif.gameCode}</p>
-                    )}
-                    {notif.message && <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{notif.message}</p>}
-                    <p className="text-[10px] text-slate-400 mt-1">{new Date(notif.createdAt).toLocaleString('vi-VN')}</p>
-                    {notif.type === 'game_invite' && notif.gameId && (
-                      <button onClick={async (e) => {
-                        e.stopPropagation();
-                        onClose();
-                        try {
-                          const g = await gameService.get(notif.gameId);
-                          if (g) {
-                            const coopData = notif.data?.sessionId ? {
-                              sessionId: notif.data.sessionId,
-                              gameCode: notif.gameCode,
-                              fromUserId: notif.fromUserId,
-                              fromName: notif.fromName,
-                            } : null;
-                            onSelectGame(g, coopData);
-                          } else navigate('/play');
-                        } catch { navigate('/play'); }
-                      }}
-                        className="mt-2 px-3 py-1.5 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 transition">
-                        Vào chơi ngay →
-                      </button>
-                    )}
-                    {notif.type === 'chat_message' && (
-                      <button onClick={(e) => { e.stopPropagation(); onClose(); navigate('/chat'); }}
-                        className="mt-2 px-3 py-1.5 bg-blue-500 text-white text-xs font-semibold rounded-lg hover:bg-blue-600 transition">
-                        Xem tin nhắn →
-                      </button>
-                    )}
-                  </div>
-                  {!notif.read && <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full mt-1.5 ml-auto shrink-0" />}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </>
+      ))}
+    </div>
   );
 }

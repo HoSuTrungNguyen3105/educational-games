@@ -418,6 +418,10 @@ export const starService = {
   async exchange() {
     return apiFetch("/auth/me/stars/exchange", { method: "POST" });
   },
+  /** Quà sao hằng ngày — server tự chặn nhận trùng trong cùng 1 ngày. */
+  async claimDailyGift() {
+    return apiFetch("/auth/me/stars/daily-gift", { method: "POST" });
+  },
 };
 
 export const imageService = {

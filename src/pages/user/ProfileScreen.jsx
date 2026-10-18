@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo, lazy, Suspense } from "react";
-import { authService, classService, API_BASE, notificationService } from "../../services/api.js";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { authService, classService, API_BASE, notificationService, userService } from "../../services/api.js";
 import { getLevelProgress } from "../../lib/utils.js";
 import { getRoleLabel } from "../../config/roles.js";
 import {
@@ -7,36 +7,25 @@ import {
   Download, Smartphone, Monitor, Apple, Bell, BellRing, BellOff,
   CheckCircle2, XCircle, AlertTriangle, Send, Trash2, RefreshCw, Info, Share2, PlusSquare, MoreVertical
 } from "lucide-react";
-import AvatarPreview from "../../components/avatar/AvatarPreview.jsx";
-import PetAvatar from "../../components/pet/PetAvatar.jsx";
-import { usePet, petSummary, loadPet } from "../../services/petService.js";
-import { navigate } from "../../lib/router.js";
-import { Loader } from "../../components/ui.jsx";
+import DressUpAvatar, { DressUpAvatarSmall } from "../../components/avatar/DressUpAvatar.jsx";
+import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
+import { resolveOutfit, outfitName, describeOutfit } from "../../lib/dressUpAvatar.js";
 import { getPushSupportStatus, requestNotificationPermission, onForegroundMessage } from "../../firebase/messaging.js";
 import { playVibration } from "../../lib/reminderUtils.js";
-
-const AvatarCustomizer = lazy(() => import("../../components/avatar/AvatarCustomizer.jsx"));
 
 export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Pet đọc từ store dùng chung → tự khớp với Kho trang phục, không cần fetch riêng.
-  const pet = usePet();
-  const petSummaryView = useMemo(() => petSummary(pet), [pet]);
-
-  useEffect(() => { loadPet(); }, []);
   const [showGames, setShowGames] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
   const [copied, setCopied] = useState(null);
-  const [showCustomizer, setShowCustomizer] = useState(false);
-  const [avatarLoadout, setAvatarLoadout] = useState({});
-  const [avatarItems, setAvatarItems] = useState([]);
-  const [inventory, setInventory] = useState([]);
-  const [template, setTemplate] = useState({});
+  const [customizer, setCustomizer] = useState(null); // null | "avatar" | "pet"
+  // Bản đang hiển thị — sửa tức thì khi modal lưu xong, không cần tải lại trang.
+  const [outfitPatch, setOutfitPatch] = useState({});
 
   // ── PWA states (theo hiweb/ProfileView.jsx, chuẩn PWA 2026) ──
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -63,46 +52,31 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [pushMessage, setPushMessage] = useState("");
   const [fgToast, setFgToast] = useState(null);
 
+  // Avatar + thú cưng lấy thẳng từ hồ sơ (/api/auth/me), dựng SVG bằng đúng
+  // data mà 2 game "Tiệm thời trang cho Bé" / "Tiệm thay đồ thú cưng" dùng.
+  // `outfitPatch` là bản vừa sửa ở modal — chỉ ghi đè phần tương ứng.
+  const outfit = useMemo(() => {
+    const base = resolveOutfit(profile?.avatar, profile?.pet);
+    return { avatar: outfitPatch.avatar ?? base.avatar, pet: outfitPatch.pet ?? base.pet };
+  }, [outfitPatch, profile?.avatar, profile?.pet]);
+
+  /** Modal tùy chỉnh gửi lên hồ sơ rồi cập nhật ngay phần hiển thị. */
+  const handleSaveOutfit = useCallback(async (kind, value) => {
+    const updated = await userService.updateProfile({ [kind]: value });
+    setOutfitPatch((prev) => ({
+      ...prev,
+      [kind]: { value, updatedAt: updated?.[kind]?.updatedAt ?? new Date().toISOString() },
+    }));
+    setProfile((prev) => (prev ? { ...prev, [kind]: updated?.[kind] ?? value } : prev));
+  }, []);
+
   useEffect(() => {
     if (!userAuth?.user) return;
     setLoading(true);
-    Promise.all([
-      authService.me(),
-      fetch(`${API_BASE}/avatar/items`).then(r => r.json()),
-      fetch(`${API_BASE}/avatar/loadout`, {
-        headers: { Authorization: `Bearer ${userAuth.token}` },
-      }).then(r => r.json()),
-      fetch(`${API_BASE}/avatar/inventory`, {
-        headers: { Authorization: `Bearer ${userAuth.token}` },
-      }).then(r => r.json()),
-    ])
-      .then(([userData, itemsRes, loadoutRes, invRes]) => {
+    authService.me()
+      .then((userData) => {
         setProfile(userData);
         setError(null);
-        let items = [];
-        if (itemsRes.status) {
-          items = itemsRes.data.items || [];
-          setAvatarItems(items);
-          if (itemsRes.data.template) setTemplate(itemsRes.data.template);
-        }
-        if (loadoutRes.status) {
-          const raw = loadoutRes.data.loadout || {};
-          const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
-          const itemCodes = new Set(items.map(i => i.code));
-          const defaults = { body: 'body_boy_01', skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
-          const cleaned = {};
-          for (const k of VALID_LAYERS) {
-            const v = raw[k];
-            // Body không nằm trong `items` (nó là code frontend) nên không
-            // kiểm tra membership — lấy thẳng code rồi registry tự fallback.
-            if (k === 'body') { cleaned.body = v || defaults.body; continue; }
-            if (v && typeof v === 'object' && v.code && itemCodes.has(v.code)) cleaned[k] = v.code;
-            else if (typeof v === 'string' && itemCodes.has(v)) cleaned[k] = v;
-            else cleaned[k] = defaults[k] ?? null;
-          }
-          setAvatarLoadout(cleaned);
-        }
-        if (invRes.status) setInventory(invRes.data.inventory);
       })
       .catch((e) => setError(e.message || "Lỗi tải profile"))
       .finally(() => setLoading(false));
@@ -387,16 +361,13 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         <div className="h-1.5" style={{ background: "linear-gradient(90deg, var(--accent), var(--purple, #8b5cf6))" }} />
         <div className="p-4 flex items-center gap-4">
           <div className="relative shrink-0">
-            {avatarItems.length > 0 ? (
-              <div className="w-16 h-16 rounded-full overflow-hidden shadow-lg ring-2 ring-white">
-                <AvatarPreview loadout={avatarLoadout} items={avatarItems} template={template} size={64} />
-              </div>
-            ) : (
-              <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl text-white font-display shadow-lg"
-                style={{ background: "linear-gradient(135deg, var(--accent), var(--purple, #8b5cf6))" }}>
-                {user.name?.charAt(0)?.toUpperCase() || "?"}
-              </div>
-            )}
+            <DressUpAvatarSmall
+              kind="avatar"
+              state={outfit.avatar.value}
+              size={64}
+              label={`Avatar ${outfitName("avatar", outfit.avatar.value)}`}
+              className="shadow-lg ring-2 ring-white"
+            />
             <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center text-sm shadow ring-2 ring-white"
               style={{ background: "var(--card)" }}>
               {lv.level >= 10 ? "👑" : lv.level >= 5 ? "⭐" : "🌱"}
@@ -440,37 +411,41 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
           <div className="flex items-center gap-2 mb-3">
             <Palette className="w-4 h-4 text-gold" />
-            <span className="font-display text-sm text-ink">Avatar của tôi</span>
-          </div>
-          <div className="flex flex-col items-center gap-3">
-            <AvatarPreview loadout={avatarLoadout} items={avatarItems} template={template} size={160} />
-            <button onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setShowCustomizer(true); }}
-              className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-body font-semibold hover:bg-gold/80 transition">
-              Tùy chỉnh Avatar
-            </button>
+            <span className="font-display text-sm text-ink">Avatar &amp; thú cưng</span>
           </div>
 
-          {/* ── Thú cưng ──────────────────────────────────────────────────
-              Avatar người và pet là hai thứ độc lập: đổi trang phục pet KHÔNG
-              được đụng vào avatar. Dùng chung `PetRenderer` với Kho trang phục
-              nên hai nơi luôn hiện cùng một diện mạo. */}
-          <div className="mt-4 rounded-2xl border border-dashed border-ink/10 p-3">
-            <div className="flex items-center gap-3">
-              <PetAvatar size={72} ring ariaLabel={`Thú cưng ${pet.name}`} />
-              <div className="min-w-0 flex-1">
-                <p className="font-display text-sm text-ink truncate">{pet.name}</p>
-                <p className="text-[11px] text-ink/50">
-                  {petSummaryView.equippedCount}/{petSummaryView.totalSlots} ô đang mặc · Cấp {pet.level}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => navigate("/pet-wardrobe")}
-              className="mt-3 w-full rounded-xl border border-ink/10 px-4 py-2 text-xs font-body font-semibold text-ink/70 transition hover:bg-ink/5"
-            >
-              👕 Mở Kho trang phục
-            </button>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { kind: "avatar", icon: "👕", title: "Nhân vật", btn: "Tùy chỉnh Avatar" },
+              { kind: "pet", icon: "🐾", title: "Thú cưng", btn: "Tùy chỉnh Pet" },
+            ].map(({ kind, icon, title, btn }) => {
+              const state = outfit[kind].value;
+              const parts = describeOutfit(kind, state);
+              return (
+                <div key={kind} className="rounded-2xl p-3 flex flex-col items-center gap-1.5"
+                  style={{ background: "var(--bg)", border: "1px solid var(--line)" }}>
+                  <DressUpAvatar kind={kind} state={state} size={104}
+                    label={`${outfitName(kind, state)} — ${title}`} />
+                  <p className="font-display text-sm text-ink text-center leading-tight">
+                    {icon} {outfitName(kind, state) || title}
+                  </p>
+                  <p className="text-[11px] text-ink/45 text-center leading-tight min-h-[28px] px-1">
+                    {parts.length ? parts.join(" · ") : "Chưa mặc gì"}
+                  </p>
+                  <button
+                    onClick={() => setCustomizer(kind)}
+                    className="mt-1 w-full rounded-xl bg-gold text-white py-2 text-xs font-body font-semibold hover:bg-gold/80 transition"
+                  >
+                    ✏️ {btn}
+                  </button>
+                </div>
+              );
+            })}
           </div>
+
+          <p className="text-[11px] text-ink/40 text-center mt-3 leading-snug">
+            Bộ đồ lưu trong hồ sơ, dùng chung với game <b>Tiệm thời trang cho Bé</b> và <b>Tiệm thay đồ thú cưng</b>.
+          </p>
         </div>
 
         <div className="space-y-4">
@@ -738,39 +713,14 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         </div>
       )}
 
-      {showCustomizer && (
-        <Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"><Loader label="Đang tải tùy chỉnh avatar..." /></div>}>
-          <AvatarCustomizer
-            loadout={avatarLoadout}
-            inventory={inventory}
-            coins={user.coins || 0}
-            token={userAuth.token}
-            onSave={async (newLoadout) => {
-              const itemIds = new Set(avatarItems.map(i => i.code));
-              const VALID_LAYERS = ['body', 'skin', 'face', 'hair', 'shirt', 'pants', 'shoes', 'hat', 'glasses', 'accessory'];
-              const defaults = { body: null, skin: 'skin_01', face: 'face_01', hair: 'hair_boy_01', shirt: 'shirt_boy_01', pants: 'pants_boy_01', shoes: 'shoes_boy_01', hat: null, glasses: null, accessory: null };
-              const cleaned = {};
-              for (const k of VALID_LAYERS) {
-                const v = newLoadout[k];
-                if (v && itemIds.has(v)) cleaned[k] = v;
-                else cleaned[k] = defaults[k] ?? null;
-              }
-              setAvatarLoadout(cleaned);
-              setShowCustomizer(false);
-              try {
-                await fetch(`${API_BASE}/avatar/save`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${userAuth.token}`,
-                  },
-                  body: JSON.stringify({ loadout: cleaned }),
-                });
-              } catch { }
-            }}
-            onClose={() => setShowCustomizer(false)}
-          />
-        </Suspense>
+      {/* ─── Modal tùy chỉnh avatar / thú cưng ─── */}
+      {customizer && (
+        <DressUpCustomizer
+          kind={customizer}
+          initial={outfit[customizer].value}
+          onSave={handleSaveOutfit}
+          onClose={() => setCustomizer(null)}
+        />
       )}
     </div>
   );
