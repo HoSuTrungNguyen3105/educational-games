@@ -41,9 +41,20 @@ const DEFAULTS = {
   onboarded: false,
 };
 
-export const clampGrade = (g) => Math.min(GRADE_MAX, Math.max(GRADE_MIN, Number(g) || 2));
+/** Kẹp lớp về 1–5. Giá trị không phải số thì lấy Lớp 2 (mặc định).
+ *  Dùng `Number.isFinite` chứ không phải `||` — vì `0 || 2` sẽ ra 2. */
+export const clampGrade = (g) => {
+  const n = Number(g);
+  if (!Number.isFinite(n)) return 2;
+  return Math.min(GRADE_MAX, Math.max(GRADE_MIN, n));
+};
 export const ageForGrade = (g) => AGE_BY_GRADE[clampGrade(g)];
-export const gradeForAge = (a) => GRADE_BY_AGE[Number(a)] ?? clampGrade(Number(a) || 2);
+/** Tuổi ngoài 6–10 thì chọn lớp biên (thấp nhất / cao nhất), không nhảy về Lớp 2. */
+export const gradeForAge = (a) => {
+  const n = Number(a);
+  if (!Number.isFinite(n)) return 2;
+  return GRADE_BY_AGE[n] ?? (n < AGE_BY_GRADE[GRADE_MIN] ? GRADE_MIN : GRADE_MAX);
+};
 export const gradeLabel = (g) => `Lớp ${clampGrade(g)}`;
 /** Nhãn lớp hiển thị cạnh tuổi — luôn lấy từ tuổi đang chọn. */
 export const ageBandLabel = (age) => gradeLabel(gradeForAge(age));

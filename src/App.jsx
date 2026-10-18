@@ -8,6 +8,8 @@ import { useSocketManager } from "./hooks/useSocketManager.js";
 import { useGameLoader } from "./hooks/useGameLoader.js";
 import RouteShell from "./components/RouteShell.jsx";
 import HomeScreen from "./pages/HomeScreen.jsx";
+import OnboardingScreen from "./pages/OnboardingScreen.jsx";
+import { isOnboarded } from "./lib/kidSettings.js";
 import PageLoading from "./components/PageLoading.jsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
 
@@ -56,6 +58,14 @@ function App() {
     setShowUserRegister(false);
     return u;
   };
+
+  // Khách chưa đăng nhập và chưa làm màn chào → chặn ở OnboardingScreen.
+  // Tính thẳng (không dùng state/effect): hoàn tất màn chào sẽ đổi
+  // `isOnboarded()` nên App tự render lại sang trang chủ ngay.
+  const skipOnboarding =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("skipOnboarding");
+  const needOnboarding = !user && !isOnboarded() && !skipOnboarding;
 
   const handleRegister = async (data) => {
     const u = await register(data);
@@ -177,6 +187,8 @@ function App() {
   };
 
   const renderScreen = () => {
+    if (needOnboarding && !user) return <OnboardingScreen />;
+
     if (showUserLogin) {
       return (
         <UserLoginScreen

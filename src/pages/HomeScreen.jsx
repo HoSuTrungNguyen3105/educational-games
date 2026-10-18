@@ -13,7 +13,7 @@ import AiChatWidget from '../components/ai/AiChatWidget.jsx'
 import { PetAvatar } from '../components/PetAvatar.jsx'
 import { usePet, moodLabel } from '../lib/petApi.js'
 import DailyGiftModal from '../components/home/DailyGiftModal.jsx'
-import { useKidSettings, ageBandLabel } from '../lib/kidSettings.js'
+import { useKidSettings, ageBandLabel, kidShortName } from '../lib/kidSettings.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
 import { playVibration, playReminderSound, stopVibrationLoop } from '../lib/reminderUtils.js'
@@ -42,9 +42,6 @@ import {
   Trash2,
 } from 'lucide-react'
 
-// ── Nhóm tuổi hiển thị ở badge header. Mặc định khi chưa cài gì; người dùng
-// đổi ở "Cài đặt · Dành cho phụ huynh" trong trang hồ sơ → trang chủ đổi ngay.
-const AGE_DEFAULT = 7
 
 // Game nổi bật được ghim lên đầu (chơi ngay, không cần qua API)
 const FEATURED_GAME = {
@@ -642,11 +639,11 @@ const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
             </span>
           </div>
 
-          <div className="gq-age" title={`Lớp ${ageBandLabel(kidSettings.age)}`}>
+          <div className="gq-age" title={`${kidShortName(kidSettings.name)} · ${kidSettings.age} tuổi · ${ageBandLabel(kidSettings.age)}`}>
             <span className="gq-age__num">{kidSettings.age}</span>
             <span className="gq-age__txt">
-              <span className="gq-age__lbl">Bé {kidSettings.age} tuổi</span>
-              <span className="gq-age__sub">{ageBandLabel(kidSettings.age)} · {AGE_DEFAULT - 1}–{AGE_DEFAULT + 1} tuổi</span>
+              <span className="gq-age__lbl">{kidShortName(kidSettings.name)}</span>
+              <span className="gq-age__sub">{kidSettings.age} tuổi · {ageBandLabel(kidSettings.age)}</span>
             </span>
           </div>
 

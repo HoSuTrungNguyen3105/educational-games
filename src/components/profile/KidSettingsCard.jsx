@@ -11,7 +11,7 @@
 import { useState } from "react";
 import {
   useKidSettings, setKidSettings, ageBandLabel,
-  AGE_MIN, AGE_MAX, BILINGUAL_SAMPLES,
+  AGE_RANGE, BILINGUAL_SAMPLES,
 } from "../../lib/kidSettings.js";
 import { navigate } from "../../lib/router.js";
 import DonateModal from "./DonateModal.jsx";
@@ -26,7 +26,7 @@ const TOPIC_SHORTCUTS = [
 
 export default function KidSettingsCard() {
   const s = useKidSettings();
-  const age = Math.min(AGE_MAX, Math.max(AGE_MIN, Number(s.age) || DEFAULTS_AGE));
+  const age = s.age;
   const [showDonate, setShowDonate] = useState(false);
 
   return (
@@ -58,7 +58,7 @@ export default function KidSettingsCard() {
           <div>
             <h3 className="font-display text-base font-extrabold text-ink">Tuổi của bé</h3>
             <p className="text-xs text-ink/55">
-              {age} tuổi · {ageBandLabel(age)} · áp dụng từ màn chơi tiếp theo
+              {s.name?.trim() ? `${s.name.trim()} · ` : ""}{age} tuổi · {ageBandLabel(age)} · áp dụng từ màn chơi tiếp theo
             </p>
           </div>
         </div>
@@ -120,11 +120,11 @@ export default function KidSettingsCard() {
   );
 }
 
-const DEFAULTS_AGE = 7;
-
-/** Thanh chọn tuổi 2 → 8, giống hình minh hoạ: các nút tròn, giá trị đang chọn viền vàng. */
+/** Thanh chọn tuổi 6 → 10 (tương ứng Lớp 1 → Lớp 5): nút tròn, giá trị đang chọn viền vàng. */
 function AgeSlider({ age }) {
-  const years = Array.from({ length: AGE_MAX - AGE_MIN + 1 }, (_, i) => AGE_MIN + i);
+  const years = AGE_RANGE;
+  const min = years[0];
+  const max = years[years.length - 1];
   return (
     <div className="mt-4">
       {/* đường ray */}
@@ -134,7 +134,7 @@ function AgeSlider({ age }) {
           style={{
             background: "linear-gradient(90deg,#f7ab2e,#ef7d18)",
             left: 0,
-            right: `${100 - ((age - AGE_MIN) / (AGE_MAX - AGE_MIN)) * 100}%`,
+            right: `${100 - ((age - min) / (max - min)) * 100}%`,
           }} />
       </div>
 
