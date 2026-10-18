@@ -69,7 +69,7 @@ export default function OnboardingScreen() {
                 selected={grade === g}
                 onClick={() => setGrade(g)}
                 error={touched && grade === null}
-                title={gradeLabel(g).replace("Lớp ", "")}
+                title={gradeLabel(g)}
                 sub={`${ageForGrade(g)} tuổi`}
               />
             ))}
@@ -179,8 +179,8 @@ function Option({ selected, onClick, title, sub, error }) {
         borderColor: error ? "#e8443c" : selected ? "#F2A93B" : "transparent",
       }}
     >
-      <span className="font-display text-xl font-extrabold text-ink">{title}</span>
-      <span className="text-[11px] font-semibold text-ink/50">{sub}</span>
+      <span className="font-display text-lg font-extrabold text-ink leading-tight">{title}</span>
+      <span className="text-[11px] font-semibold text-ink/50 mt-0.5">{sub}</span>
     </button>
   );
 }
