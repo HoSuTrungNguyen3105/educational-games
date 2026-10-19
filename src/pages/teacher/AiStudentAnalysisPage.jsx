@@ -10,7 +10,7 @@
 import { useState } from "react";
 import AiChatWidget from "../../components/ai/AiChatWidget.jsx";
 import AiLearningAnalysisPanel from "../../components/ai/AiLearningAnalysisPanel.jsx";
-import { GhostButton, PrimaryButton } from "../../components/ui.jsx";
+import { GhostButton, PrimaryButton } from "../../components/ui";
 import { userService } from "../../services/api.js";
 
 export default function AiStudentAnalysisPage() {

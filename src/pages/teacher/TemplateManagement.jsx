@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { navigate } from '../../lib/router.js'
 import { templateService } from '../../services/api.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal } from '../../components/ui.jsx'
+import { IconButton, ManagementHeader, ManagementTable, ConfirmModal } from '../../components/ui'
 
 export default function TemplateManagement({ showToast }) {
   const [templates, setTemplates] = useState(null);

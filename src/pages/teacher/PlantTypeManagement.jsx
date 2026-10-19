@@ -4,7 +4,7 @@ import { useConfirm } from "../../hooks/useConfirm.js";
 import {
   ManagementHeader, ManagementTable, Modal, ConfirmModal,
   PrimaryButton, GhostButton, Field, Loader, ErrorState,
-} from "../../components/ui.jsx";
+} from "../../components/ui";
 
 const RARITY_OPTIONS = [
   { value: "common", label: "Thường" },

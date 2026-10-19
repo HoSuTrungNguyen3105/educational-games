@@ -1,5 +1,5 @@
 import { navigate } from "../lib/router.js";
-import { Toast } from "../components/ui.jsx";
+import { Toast } from "../components/ui";
 
 /**
  * Layout wrapper cho các user-facing screens.

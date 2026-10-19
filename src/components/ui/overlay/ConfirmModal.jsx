@@ -1,5 +1,5 @@
-import Modal from "./Modal.jsx";
-import GhostButton from "../buttons/GhostButton.jsx";
+import { Modal } from "./Modal.jsx";
+import { GhostButton } from "../buttons/GhostButton.jsx";
 
 export function ConfirmModal({ open, title, message, onConfirm, onClose, confirmLabel = "Xóa", danger = true }) {
   if (!open) return null;

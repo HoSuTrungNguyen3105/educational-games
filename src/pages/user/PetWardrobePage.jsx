@@ -13,7 +13,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { navigate } from "../../lib/router.js";
-import { Loader } from "../../components/ui.jsx";
+import { Loader } from "../../components/ui";
 import PetPreview from "../../components/pet/PetPreview.jsx";
 import { useOutfitDraft } from "../../lib/useOutfitDraft.js";
 import PetRenderer from "../../components/pet/PetRenderer.jsx";

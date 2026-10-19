@@ -424,6 +424,18 @@ export const starService = {
   },
 };
 
+export const ticketService = {
+  async get() {
+    return apiFetch("/auth/me/tickets");
+  },
+  async add(amount) {
+    return apiFetch("/auth/me/tickets", { method: "POST", body: { amount } });
+  },
+  async use(ticketId) {
+    return apiFetch(`/auth/me/tickets/${encodeURIComponent(ticketId)}/use`, { method: "POST" });
+  },
+};
+
 export const imageService = {
   async upload(file, folder = "edu-game") {
     const auth = loadAuth();

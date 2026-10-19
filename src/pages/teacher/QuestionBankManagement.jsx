@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { gameService, questionBankService } from '../../services/api.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton } from '../../components/ui.jsx'
+import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton } from '../../components/ui'
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`
 const EMPTY_Q = { content: "", options: [{ id: uid("ans"), content: "" }, { id: uid("ans"), content: "" }], correctAnswer: "", timeLimit: 15, points: 100, subject: "", category: "", difficulty: "medium", tags: [] }

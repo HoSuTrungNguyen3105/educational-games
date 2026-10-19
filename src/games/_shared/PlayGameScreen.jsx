@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTemplate } from '../../lib/hooks.js'
-import { StampToken } from '../../components/ui.jsx'
+import { StampToken } from '../../components/ui'
 import AiExplainTrigger from '../../components/ai/AiExplainTrigger.jsx'
 import { AnswerExplain } from './shared.jsx'
 import { uid } from '../../services/api.js'

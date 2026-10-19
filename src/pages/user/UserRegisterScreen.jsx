@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PasswordInput, PrimaryButton } from "../../components/ui.jsx";
+import { PasswordInput, PrimaryButton } from "../../components/ui";
 
 export default function UserRegisterScreen({ onBack, onRegistered, onGoLogin, showToast }) {
   const [form, setForm] = useState({ username: "", email: "", password: "", confirmPassword: "", name: "" });

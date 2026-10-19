@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { imageService } from "../../services/api.js";
-import { Loader, EmptyState, Modal, ConfirmModal, SearchInput } from "../../components/ui.jsx";
+import { Loader, EmptyState, Modal, ConfirmModal, SearchInput } from "../../components/ui";
 import { Image, Upload, Trash2, Copy, X, FolderOpen, Grid, List } from "lucide-react";
 import { useConfirm } from "../../hooks/useConfirm.js";
 

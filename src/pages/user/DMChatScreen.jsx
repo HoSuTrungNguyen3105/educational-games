@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { chatApi } from "../../services/chatApi.js";
-import { Loader } from "../../components/ui.jsx";
+import { Loader } from "../../components/ui";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
 import { ArrowLeft, Send, Smile } from "lucide-react";

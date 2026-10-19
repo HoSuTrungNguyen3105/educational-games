@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { adminGameProgressService, userService } from '../../services/api.js'
 import { getLevelProgress, getLevelTitle, getLevelEmoji } from '../../lib/utils.js'
 import { getRoleLabel } from '../../config/roles.js'
-import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from '../../components/ui.jsx'
+import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from '../../components/ui'
 import { useConfirm } from '../../hooks/useConfirm.js'
 
 /* eslint-disable react-hooks/set-state-in-effect */

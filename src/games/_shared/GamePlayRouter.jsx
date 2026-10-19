@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, lazy, Suspense } from 'react'
 import { gameService, templateService } from '../../services/api.js'
-import { Loader } from '../../components/ui.jsx'
+import { Loader } from '../../components/ui'
 import { resolveGameKey } from './gameConfigSchema.js'
 import { useTemplateHtml } from '../../lib/hooks.js'
 

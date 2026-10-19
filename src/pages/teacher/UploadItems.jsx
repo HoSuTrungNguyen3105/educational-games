@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
-import { ManagementHeader } from '../../components/ui.jsx';
+import { ManagementHeader } from '../../components/ui';
 import { Upload, Play, Save, Plus, Loader2, Download } from 'lucide-react';
 
 function getAuthToken() {

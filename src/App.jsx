@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useRoute, navigate } from "./lib/router.js";
 import { useToast } from "./lib/hooks.js";
-import { Loader } from "./components/ui.jsx";
+import { Loader } from "./components/ui";
 import { useUserAuthStore } from "./stores/userAuth.store.js";
 import { canAccessDashboard } from "./config/roles.js";
 import { useSocketManager } from "./hooks/useSocketManager.js";

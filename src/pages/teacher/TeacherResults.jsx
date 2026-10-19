@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService, resultService } from '../../services/api.js'
-import { StampToken, StatusBadge, Loader, ErrorState, EmptyState } from '../../components/ui.jsx'
+import { StampToken, StatusBadge, Loader, ErrorState, EmptyState } from '../../components/ui'
 import { rankMedal } from '../../lib/utils.js'
 
 export default function TeacherResults({ gameId, onBack }) {

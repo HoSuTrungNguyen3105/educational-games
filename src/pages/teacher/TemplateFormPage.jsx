@@ -4,7 +4,7 @@ import { templateService } from '../../services/api.js'
 import { injectApiBridge, detectApiMarkers } from '../../lib/apiBridge.js'
 import { processGameHtml } from '../../game-html/injectTaskBridge.js'
 import { loadTemplateHtml } from '../../lib/hooks.js'
-import { PrimaryButton, GhostButton, Field } from '../../components/ui.jsx'
+import { PrimaryButton, GhostButton, Field } from '../../components/ui'
 
 const CATEGORY_OPTIONS = [
   { value: "quiz", label: "Trắc nghiệm" }, { value: "reflex", label: "Phản xạ" },

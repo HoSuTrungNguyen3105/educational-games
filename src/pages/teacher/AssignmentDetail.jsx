@@ -5,7 +5,7 @@ import {
   ArrowLeft, Copy, Check, Users, BarChart3, Pencil,
   Trophy, Clock, FileQuestion, Lock, Repeat, Link2,
 } from 'lucide-react';
-import { ConfirmModal, SearchInput } from '../../components/ui.jsx';
+import { ConfirmModal, SearchInput } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
 

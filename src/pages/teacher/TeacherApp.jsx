@@ -1,7 +1,7 @@
 import { useState, lazy, Suspense } from 'react'
 import { navigate } from '../../lib/router.js'
 import TeacherLayout from './TeacherLayout.jsx'
-import { Loader } from '../../components/ui.jsx'
+import { Loader } from '../../components/ui'
 
 // Lazy-loaded teacher subpages & tools
 const TeacherDashboard = lazy(() => import('./TeacherDashboard.jsx'));

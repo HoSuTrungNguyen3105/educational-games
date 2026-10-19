@@ -65,27 +65,27 @@
 .gq-logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 .gq-logo__mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
-  font-size: 22px;
+  font-size: 19px;
   background: linear-gradient(140deg, #ffd45e, #f7a825);
-  box-shadow: 0 4px 0 #d98f0f;
+  box-shadow: 0 3px 0 #d98f0f;
 }
 .gq-logo__name {
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
 .gq-logo__sub {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--gq-mute);
   font-weight: 600;
 }
@@ -97,16 +97,16 @@
   gap: 0;
   background: #fff;
   border-radius: 999px;
-  padding: 4px 14px 4px 4px;
+  padding: 3px 12px 3px 3px;
   box-shadow: var(--gq-shadow);
 }
 .gq-age__num {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   display: grid;
   place-items: center;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
   color: #fff;
   background: linear-gradient(150deg, #ff8a5c, #e8443c);
@@ -114,16 +114,16 @@
 }
 .gq-age__txt {
   line-height: 1.15;
-  padding-left: 9px;
+  padding-left: 8px;
 }
 .gq-age__lbl {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
 }
 .gq-age__sub {
   display: block;
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--gq-mute);
   font-weight: 600;
 }
@@ -136,13 +136,13 @@
   gap: 8px;
 }
 .gq-iconbtn {
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   background: #fff;
   display: grid;
   place-items: center;
-  font-size: 19px;
+  font-size: 17px;
   box-shadow: var(--gq-shadow);
   border: 0;
   cursor: pointer;
@@ -152,15 +152,15 @@
 .gq-iconbtn:active { transform: scale(0.92); }
 .gq-iconbtn__n {
   position: absolute;
-  top: -3px;
-  right: -3px;
-  min-width: 21px;
-  height: 21px;
-  padding: 0 5px;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
   border-radius: 999px;
   background: #ffd45e;
   color: #6b4a00;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   display: grid;
   place-items: center;
@@ -235,17 +235,17 @@
 }
 .gq-mini {
   flex-shrink: 0;
-  width: 74px;
+  width: 64px;
   background: #fff;
-  border-radius: 18px;
-  padding: 10px 4px 8px;
+  border-radius: 16px;
+  padding: 8px 3px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   box-shadow: var(--gq-shadow);
   border: 0;
-  border-bottom: 4px solid transparent;
+  border-bottom: 3px solid transparent;
   cursor: pointer;
   font: inherit;
   color: inherit;
@@ -253,8 +253,8 @@
   transition: transform 0.15s ease;
 }
 .gq-mini:active { transform: translateY(2px); }
-.gq-mini__ico { font-size: 26px; line-height: 1; }
-.gq-mini__lbl { font-size: 11px; font-weight: 700; }
+.gq-mini__ico { font-size: 22px; line-height: 1; }
+.gq-mini__lbl { font-size: 10px; font-weight: 700; }
 .gq-mini__dot {
   position: absolute;
   top: 8px;
@@ -644,17 +644,31 @@
   .gq-card__age { font-size: 11px; padding: 3px 11px; }
   .gq-sect__t { font-size: 24px; }
   .gq-sect__s { font-size: 14px; }
-  .gq-mini { width: 92px; padding: 14px 6px 10px; }
-  .gq-mini__ico { font-size: 32px; }
-  .gq-mini__lbl { font-size: 12.5px; }
+  .gq-mini { width: 80px; padding: 12px 5px 8px; }
+  .gq-mini__ico { font-size: 28px; }
+  .gq-mini__lbl { font-size: 11px; }
   .gq-random { font-size: 20px; }
-  .gq-logo__name { font-size: 25px; }
-  .gq-logo__sub { font-size: 12.5px; }
+  .gq-logo__name { font-size: 22px; }
+  .gq-logo__sub { font-size: 11px; }
+  .gq-iconbtn { width: 40px; height: 40px; font-size: 18px; }
+  .gq-iconbtn__n { min-width: 20px; height: 20px; font-size: 11px; }
+  .gq-age { padding: 4px 14px 4px 4px; }
+  .gq-age__num { width: 36px; height: 36px; font-size: 18px; }
+  .gq-age__lbl { font-size: 13px; }
+  .gq-age__sub { font-size: 10.5px; }
 }
 
 @media (max-width: 640px) {
   .gq-sect__t { font-size: 18px; }
-  .gq-logo__name { font-size: 17px; }
+  .gq-logo__name { font-size: 16px; }
+  .gq-logo__sub { font-size: 9px; }
   .gq-age__sub { display: none; }
-  .gq-mini { width: 66px; }
+  .gq-mini { width: 58px; padding: 7px 2px 5px; }
+  .gq-mini__ico { font-size: 20px; }
+  .gq-mini__lbl { font-size: 9px; }
+  .gq-iconbtn { width: 32px; height: 32px; font-size: 16px; }
+  .gq-iconbtn__n { min-width: 16px; height: 16px; font-size: 9px; }
+  .gq-age { padding: 3px 10px 3px 3px; }
+  .gq-age__num { width: 28px; height: 28px; font-size: 14px; }
+  .gq-age__lbl { font-size: 11px; }
 }

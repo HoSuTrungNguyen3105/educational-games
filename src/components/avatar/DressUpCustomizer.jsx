@@ -14,7 +14,7 @@ import {
   getDressUp, sanitizeFor, renderDressUpSvg, outfitAspect,
   itemLabel, outfitKey,
 } from "../../lib/dressUpAvatar.js";
-import { PrimaryButton, GhostButton } from "../ui.jsx";
+import { PrimaryButton, GhostButton } from "../ui";
 
 const SCOPES = {
   avatar: {

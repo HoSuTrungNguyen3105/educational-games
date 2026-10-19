@@ -8,7 +8,7 @@ import {
   Loader,
   ErrorState,
   ConfirmModal,
-} from "../../components/ui.jsx";
+} from "../../components/ui";
 import { Shield, Check, X, Plus, MoreHorizontal, Crown, GraduationCap, User } from "lucide-react";
 
 const COLS = [

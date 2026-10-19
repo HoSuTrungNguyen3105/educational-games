@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { ArrowLeft, Users, UserCircle2, Mail, Hash } from 'lucide-react';
-import { Loader, EmptyState, SearchInput } from '../../components/ui.jsx';
+import { Loader, EmptyState, SearchInput } from '../../components/ui';
 
 export default function ClassStudents({ classId }) {
   const [cls, setCls] = useState(null);

@@ -1,4 +1,4 @@
-import { Loader } from "./ui.jsx";
+import { Loader } from "./ui";
 
 export default function PageLoading({ label = "Đang tải trang..." }) {
   return (

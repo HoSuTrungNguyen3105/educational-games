@@ -4,7 +4,7 @@ import { useConfirm } from '../../hooks/useConfirm.js';
 import {
   ManagementHeader, ManagementTable, Modal, ConfirmModal,
   PrimaryButton, GhostButton, Field, Loader, ErrorState, StatGrid,
-} from '../../components/ui.jsx';
+} from '../../components/ui';
 import { Plus, Search, Save, X, ListChecks, Check, RotateCcw } from 'lucide-react';
 import { composeAvatar, partsOf } from '../../lib/avatarRenderer.js';
 import { AVATAR_BODIES, DEFAULT_BODY_CODE } from '../../data/avatarBodies.js';

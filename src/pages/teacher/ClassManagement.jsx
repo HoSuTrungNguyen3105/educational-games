@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { Plus, Copy, Users, Trash2, X, Check } from 'lucide-react';
-import { Modal, ConfirmModal, PrimaryButton, Loader, EmptyState } from '../../components/ui.jsx';
+import { Modal, ConfirmModal, PrimaryButton, Loader, EmptyState } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
 

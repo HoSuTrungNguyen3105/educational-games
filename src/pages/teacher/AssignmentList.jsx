@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { assignmentService, gameService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { Plus, Clock, Users, CheckCircle, XCircle, Eye, Link2 } from 'lucide-react';
-import { ManagementHeader, PrimaryButton, Loader, EmptyState, ConfirmModal } from '../../components/ui.jsx';
+import { ManagementHeader, PrimaryButton, Loader, EmptyState, ConfirmModal } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
 

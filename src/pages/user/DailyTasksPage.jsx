@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { taskService } from "../../services/taskService.js";
 import { coinService } from "../../services/api.js";
 import { getLevelProgress, getLevelEmoji, getLevelTitle } from "../../lib/utils.js";
-import { PrimaryButton, Loader } from "../../components/ui.jsx";
+import { PrimaryButton, Loader } from "../../components/ui";
 import { TaskList } from "../../components/tasks/index.js";
 
 export default function DailyTasksPage({ userAuth, onBack }) {

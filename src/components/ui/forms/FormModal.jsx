@@ -1,8 +1,8 @@
-import Modal from "../overlay/Modal.jsx";
-import Field from "./Field.jsx";
-import FormField from "./FormField.jsx";
-import GhostButton from "../buttons/GhostButton.jsx";
-import PrimaryButton from "../buttons/PrimaryButton.jsx";
+import { Modal } from "../overlay/Modal.jsx";
+import { Field } from "./Field.jsx";
+import { FormField } from "./FormField.jsx";
+import { GhostButton } from "../buttons/GhostButton.jsx";
+import { PrimaryButton } from "../buttons/PrimaryButton.jsx";
 
 export function FormModal({ open, title, fields, values, onChange, onSubmit, onClose, error, saving, editId, savingLabel, wide, extraButtons }) {
   if (!open) return null;

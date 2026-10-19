@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Download, Eye, EyeOff, Play, RefreshCw, RotateCcw, Save, Upload } from "lucide-react";
 import { API_BASE, gameService, templateService } from "../../services/api.js";
-import { ManagementHeader, Loader, EmptyState, ConfirmModal } from "../../components/ui.jsx";
+import { ManagementHeader, Loader, EmptyState, ConfirmModal } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import {
   SCHEMA_VERSION,

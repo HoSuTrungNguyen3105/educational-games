@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService, statsService, templateService, seedService } from '../../services/api.js'
 import { useTemplates } from '../../lib/hooks.js'
-import { StampToken, StatusBadge, IconButton, Loader, ErrorState, EmptyState, PrimaryButton, GhostButton, Modal, TicketStub } from '../../components/ui.jsx'
+import { StampToken, StatusBadge, IconButton, Loader, ErrorState, EmptyState, PrimaryButton, GhostButton, Modal, TicketStub } from '../../components/ui'
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import {

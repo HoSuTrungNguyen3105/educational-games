@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { coinService } from "../../services/api.js";
 import { taskService, trackTaskEvent } from "../../services/taskService.js";
-import { Loader, Modal } from "../../components/ui.jsx";
+import { Loader, Modal } from "../../components/ui";
 // Optional: nếu muốn confetti, cài đặt canvas-confetti và import
 // import confetti from "canvas-confetti";
 

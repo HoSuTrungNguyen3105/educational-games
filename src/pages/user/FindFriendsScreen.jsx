@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { userService } from "../../services/api.js";
-import { Loader } from "../../components/ui.jsx";
+import { Loader } from "../../components/ui";
 import DMChatScreen from "./DMChatScreen.jsx";
 
 export default function FindFriendsScreen({ userAuth }) {

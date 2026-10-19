@@ -1,4 +1,4 @@
-import StatCard from "./StatCard.jsx";
+import { StatCard } from "./StatCard.jsx";
 
 export function StatGrid({ stats, className = "" }) {
   return (

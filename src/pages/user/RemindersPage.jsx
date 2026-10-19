@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { reminderService } from "../../services/api.js";
-import { Loader, EmptyState, ErrorState, ConfirmModal, PrimaryButton } from "../../components/ui.jsx";
+import { Loader, EmptyState, ErrorState, ConfirmModal, PrimaryButton } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import DateTimePicker from "../../components/DateTimePicker.jsx";
 import VibratePatternPicker from "../../components/VibratePatternPicker.jsx";

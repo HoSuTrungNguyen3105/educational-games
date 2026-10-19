@@ -29,7 +29,7 @@ import {
 } from 'lucide-react'
 import { gameProgressService, coinService, starService } from '../../services/api.js'
 import { getLevelProgress, getLevelTitle, getLevelEmoji } from '../../lib/utils.js'
-import { PrimaryButton, Loader, ErrorState } from '../../components/ui.jsx'
+import { PrimaryButton, Loader, ErrorState } from '../../components/ui'
 import { navigate } from '../../lib/router.js'
 
 /* eslint-disable react-hooks/set-state-in-effect */

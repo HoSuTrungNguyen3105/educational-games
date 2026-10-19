@@ -7,7 +7,7 @@ import {
   dailyTaskService,
 } from "../../services/api.js";
 import { ACHIEVEMENT_DEFS, evaluateAchievements } from "../../data/achievements.js";
-import { PrimaryButton, Loader, ErrorState } from "../../components/ui.jsx";
+import { PrimaryButton, Loader, ErrorState } from "../../components/ui";
 
 function asNumber(v) {
   if (typeof v === "number") return v;

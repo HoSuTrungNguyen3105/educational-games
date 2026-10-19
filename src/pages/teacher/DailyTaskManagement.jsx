@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { taskService } from "../../services/taskService.js";
-import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from "../../components/ui.jsx";
+import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm.js";
 
 const TASK_TYPES = [

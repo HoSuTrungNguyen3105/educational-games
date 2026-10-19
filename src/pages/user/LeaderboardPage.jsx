@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Trophy, Coins } from "lucide-react";
 import { userService } from "../../services/api.js";
 import { getLevelProgress, getLevelTitle } from "../../lib/utils.js";
-import { PrimaryButton, Loader, ErrorState, EmptyState } from "../../components/ui.jsx";
+import { PrimaryButton, Loader, ErrorState, EmptyState } from "../../components/ui";
 
 const TOP_N = 50;
 const RANK_MEDAL = ["🥇", "🥈", "🥉"];

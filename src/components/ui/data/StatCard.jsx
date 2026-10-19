@@ -1,4 +1,4 @@
-import StampToken from "../layout/StampToken.jsx";
+import { StampToken } from "../layout/StampToken.jsx";
 
 export function StatCard({ icon, value, label, ring, className = "" }) {
   return (

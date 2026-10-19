@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PasswordInput, PrimaryButton } from '../components/ui.jsx'
+import { PasswordInput, PrimaryButton } from '../components/ui'
 
 export default function LoginScreen({ onBack, onLogin, showToast }) {
   const [username, setUsername] = useState("");

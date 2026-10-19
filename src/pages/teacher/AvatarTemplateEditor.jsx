@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
-import { ManagementHeader } from '../../components/ui.jsx';
+import { ManagementHeader } from '../../components/ui';
 import { Save, RotateCcw, ArrowUp, ArrowDown } from 'lucide-react';
 import { composeAvatar, CATEGORY_LIST } from '../../lib/avatarRenderer.js';
 

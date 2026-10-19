@@ -4,7 +4,7 @@ import { useConfirm } from '../../hooks/useConfirm.js';
 import {
   ManagementHeader, ManagementTable, Modal, ConfirmModal,
   PrimaryButton, GhostButton, Field, Loader, ErrorState, StatGrid,
-} from '../../components/ui.jsx';
+} from '../../components/ui';
 import PetRenderer, { OutfitPreview } from '../../components/pet/PetRenderer.jsx';
 import { getOutfitAsset } from '../../data/petAssets.js';
 import { RotateCcw, Save, X } from 'lucide-react';

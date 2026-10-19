@@ -3,7 +3,7 @@ import AvatarPreview from './AvatarPreview.jsx';
 import { composeAvatar, buildLayersFromLoadout } from '../../lib/avatarRenderer.js';
 import { AVATAR_BODIES } from '../../data/avatarBodies.js';
 import { API_BASE } from '../../services/api.js';
-import { Modal } from '../ui.jsx';
+import { Modal } from '../ui';
 import { X, Check, ShoppingBag } from 'lucide-react';
 
 function ItemThumbnail({ item, selected, preview, onClick, owned, loadout, items }) {

@@ -4,7 +4,7 @@ import { useSubjects, useCategories, useTemplates } from '../../lib/hooks.js'
 import {
   PrimaryButton, GhostButton, Modal, TicketStub, Loader, ErrorState, EmptyState,
   ManagementHeader, StatusBadge, StampToken, IconButton,
-} from '../../components/ui.jsx'
+} from '../../components/ui'
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import RangePagination from '../../components/RangePagination.jsx'

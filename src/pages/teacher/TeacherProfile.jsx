@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { statsService, userService, coinService } from '../../services/api.js'
-import { StampToken, Loader, ErrorState, PrimaryButton, GhostButton } from '../../components/ui.jsx'
+import { StampToken, Loader, ErrorState, PrimaryButton, GhostButton } from '../../components/ui'
 import { navigate } from '../../lib/router.js'
 import { getRoleLabel } from '../../config/roles.js'
 import {

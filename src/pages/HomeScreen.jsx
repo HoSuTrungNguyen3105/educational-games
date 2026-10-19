@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { gameService, coinService, notificationService, starService } from '../services/api.js'
+import { gameService, coinService, notificationService, starService, ticketService } from '../services/api.js'
 import { taskService } from '../services/taskService.js'
 import { socket } from '../socket/socket.js'
 import { SOCKET_EVENTS } from '../socket/socket.events.js'
@@ -7,7 +7,7 @@ import { getLevelProgress } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
 import './home-gq.css'
-import { Loader, ErrorState, EmptyState } from '../components/ui.jsx'
+import { Loader, ErrorState, EmptyState } from '../components/ui'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import AiChatWidget from '../components/ai/AiChatWidget.jsx'
 import { PetAvatar } from '../components/PetAvatar.jsx'
@@ -520,9 +520,40 @@ const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
       } catch { /* ignore */ }
       try {
         const res = await starService.claimDailyGift();
-        if (cancelled || !res?.claimed) return;
-        setUserStars(res.stars || 0);
-        setGift({ amount: res.amount, total: res.stars });
+        if (cancelled) return;
+        // Nếu API trả về claimed = true, hiển thị modal quà
+        if (res?.claimed) {
+          setUserStars(res.stars || 0);
+          // Random loại quà: sao, xu, hoặc vé
+          const rewardTypes = ['stars', 'coins', 'tickets'];
+          const randomType = rewardTypes[Math.floor(Math.random() * rewardTypes.length)];
+          const rewardAmounts = {
+            stars: res.amount || 5,
+            coins: Math.floor(Math.random() * 20) + 10, // 10-30 xu
+            tickets: 1 // 1 vé
+          };
+
+          // Nếu random ra xu hoặc vé, gọi API để cộng thêm
+          if (randomType === 'coins') {
+            try {
+              await coinService.add(rewardAmounts.coins);
+            } catch (e) {
+              console.error("[DailyGift] Failed to add coins:", e);
+            }
+          } else if (randomType === 'tickets') {
+            try {
+              await ticketService.add(rewardAmounts.tickets);
+            } catch (e) {
+              console.error("[DailyGift] Failed to add tickets:", e);
+            }
+          }
+
+          setGift({
+            type: randomType,
+            amount: rewardAmounts[randomType],
+            total: res.stars || 0
+          });
+        }
       } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
@@ -1043,6 +1074,7 @@ const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
       {/* ─────────── HỘP QUÀ ─────────── */}
       {gift && (
         <DailyGiftModal
+          type={gift.type}
           amount={gift.amount}
           totalStars={gift.total}
           onClose={() => setGift(null)}

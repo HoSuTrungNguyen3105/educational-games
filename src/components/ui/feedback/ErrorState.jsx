@@ -1,4 +1,4 @@
-import PrimaryButton from "../buttons/PrimaryButton.jsx";
+import { PrimaryButton } from "../buttons/PrimaryButton.jsx";
 
 export function ErrorState({ title = "Đã có lỗi xảy ra", subtitle, onRetry }) {
   return (

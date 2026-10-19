@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ManagementHeader, GhostButton, PrimaryButton } from '../../components/ui.jsx';
+import { ManagementHeader, GhostButton, PrimaryButton } from '../../components/ui';
 import { AVATAR_BODIES } from '../../data/avatarBodies.js';
 
 /** Một thẻ body. Tách riêng vì `useMemo` không được gọi trong vòng `.map()`. */

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Coins } from "lucide-react";
 import { gardenService, coinService } from "../../services/api.js";
 import { navigate } from "../../lib/router.js";
-import { PrimaryButton, Loader } from "../../components/ui.jsx";
+import { PrimaryButton, Loader } from "../../components/ui";
 
 /* Metadata vật phẩm — đồng bộ với ITEM_CONFIG trong GardenPage */
 const ITEM_CONFIG = {

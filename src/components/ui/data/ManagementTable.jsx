@@ -1,7 +1,7 @@
-import ErrorState from "../feedback/ErrorState.jsx";
-import Loader from "../feedback/Loader.jsx";
-import GhostButton from "../buttons/GhostButton.jsx";
-import PrimaryButton from "../buttons/PrimaryButton.jsx";
+import { ErrorState } from "../feedback/ErrorState.jsx";
+import { Loader } from "../feedback/Loader.jsx";
+import { GhostButton } from "../buttons/GhostButton.jsx";
+import { PrimaryButton } from "../buttons/PrimaryButton.jsx";
 
 export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, onRemoveAll, removeAllLabel, onCreate, createLabel, onImport, importLabel }) {  return (
     <div>

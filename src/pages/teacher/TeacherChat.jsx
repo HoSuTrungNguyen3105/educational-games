@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { conversationApi } from "../../services/conversationApi.js";
 import { userService } from "../../services/api.js";
-import { Loader, ErrorState } from "../../components/ui.jsx";
+import { Loader, ErrorState } from "../../components/ui";
 import DMChatScreen from "../user/DMChatScreen.jsx";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
-import { API_BASE, apiFetch, authService, coinService, userService, gameProgressService, classService, gamePlayService, uid } from "../../services/api.js";
+import { API_BASE, apiFetch, authService, coinService, userService, gameProgressService, classService, gamePlayService, ticketService, uid } from "../../services/api.js";
 import { trackTaskEvent, taskService } from "../../services/taskService.js";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
@@ -460,11 +460,18 @@ export default function HtmlGameLoader({
           : answersRef.current;
         const total = data.totalQuestions || answers.length || 0;
         const correct = data.correct ?? 0;
+        const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
         setPetMessage(
           total > 0 && correct / total >= 0.8
             ? "🌟 Giỏi quá! Tui tự hào về bạn!"
             : "💪 Khéo lắm! Hẹn gặp lại nha~"
         );
+
+        // Ticket reward: cộng 1 vé khi thắng (accuracy >= 80%)
+        if (userAuth?.token && total > 0 && accuracy >= 80) {
+          ticketService.add(1).catch(e => console.error("[Ticket] Failed to add ticket:", e));
+        }
+
         onFinish?.({
           score: data.score || 0,
           correct,

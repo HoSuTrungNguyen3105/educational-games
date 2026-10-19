@@ -1,8 +1,8 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
-import { uid, resultService, questionService, gameService, gameProgressService, gamePlayService, coinService, gameEventService } from '../../services/api.js'
+import { uid, resultService, questionService, gameService, gameProgressService, gamePlayService, coinService, gameEventService, ticketService } from '../../services/api.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
-import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui.jsx'
+import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui'
 import { EnterCodeModal } from '../../components/EnterCodeModal.jsx'
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
@@ -223,6 +223,15 @@ export default function StudentApp({ initialGame, coopSession, onExit, toast, us
         await gameProgressService.incrementPlay(game.code);
       } catch (e) {
         console.error("[Coin] Failed to save coin reward:", e);
+      }
+    }
+
+    // Ticket reward: cộng 1 vé khi thắng (đúng > 0 và accuracy >= 80% hoặc play-to-win thắng)
+    if (userAuth?.user && ((total > 0 && accuracy >= 80) || (isPlayToWin && sessionResult.score > 0))) {
+      try {
+        await ticketService.add(1);
+      } catch (e) {
+        console.error("[Ticket] Failed to add ticket reward:", e);
       }
     }
 
