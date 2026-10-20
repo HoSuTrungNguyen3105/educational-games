@@ -1,11 +1,12 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { authService, classService, API_BASE, notificationService, userService } from "../../services/api.js";
 import { getLevelProgress } from "../../lib/utils.js";
-import { getRoleLabel } from "../../config/roles.js";
+import { getRoleLabel, hasPermission } from "../../config/roles.js";
+import { navigate } from "../../lib/router.js";
 import {
   ArrowLeft, LogOut, GraduationCap, ChevronDown, ChevronUp, Copy, Check, Palette,
   Download, Smartphone, Monitor, Apple, Bell, BellRing, BellOff,
-  CheckCircle2, XCircle, AlertTriangle, Send, Trash2, RefreshCw, Info, Share2, PlusSquare, MoreVertical
+  CheckCircle2, XCircle, AlertTriangle, Send, Trash2, RefreshCw, Info, Share2, PlusSquare, MoreVertical, Calendar, UserCheck
 } from "lucide-react";
 import DressUpAvatar, { DressUpAvatarSmall } from "../../components/avatar/DressUpAvatar.jsx";
 import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
@@ -483,6 +484,31 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             )}
             {joinError && <p className="text-xs text-red-500 mt-1.5">{joinError}</p>}
           </div>
+
+          {/* Chấm công - chỉ hiện khi có quyền */}
+          {hasPermission(user.role, 'attendance.view') && (
+            <button
+              onClick={() => navigate('/attendance')}
+              className="w-full rounded-2xl p-4 flex items-center gap-3 hover:bg-ink/3 transition"
+              style={{ background: "var(--card)", border: "1px solid var(--line)" }}
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #6C3BF5, #8b5cf6)" }}>
+                <UserCheck className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 text-left">
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-sm text-ink">Chấm công</span>
+                  {hasPermission(user.role, 'attendance.checkin') && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
+                      Có quyền
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-ink/40">Xem lịch sử và chấm công đi học</p>
+              </div>
+              <Calendar className="w-5 h-5 text-ink/40" />
+            </button>
+          )}
 
           <div className="rounded-2xl overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
             <button onClick={() => setShowGames(!showGames)}

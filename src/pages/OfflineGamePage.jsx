@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate } from "../lib/router.js";
 import { findOfflineGame, makeFallbackMeta } from "../games/offline/games-src/manifest.js";
+import { useGameVersion } from "../hooks/useGameVersion.js";
+import { gameVersionService } from "../services/gameVersionService.js";
 
 /**
  * MỖI GAME = MỘT FILE HTML trong src/games/offline/.
@@ -34,6 +36,7 @@ const HTML_BY_ID = Object.fromEntries(
 export default function OfflineGamePage({ gameId }) {
   const iframeRef = useRef(null);
   const html = HTML_BY_ID[gameId];
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
 
   // Manifest giữ tên/emoji/màu đẹp. Nếu game mới chưa có trong manifest thì
   // tự dựng metadata từ <title> trong file để vẫn chơi được ngay.
@@ -41,6 +44,12 @@ export default function OfflineGamePage({ gameId }) {
     if (!html) return null;
     return findOfflineGame(gameId) || makeFallbackMeta(gameId, html);
   }, [gameId, html]);
+
+  // Kiểm tra phiên bản game nếu có playMode trong meta
+  const { hasUpdate, checkForUpdate, markAsUpdated } = useGameVersion(
+    meta?.playMode === 'offline' ? gameId : null,
+    meta?.version || 1
+  );
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -50,6 +59,29 @@ export default function OfflineGamePage({ gameId }) {
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, []);
+
+  // Hiển thị thông báo cập nhật khi có phiên bản mới
+  useEffect(() => {
+    if (hasUpdate && meta?.playMode === 'offline') {
+      setShowUpdateNotification(true);
+    }
+  }, [hasUpdate, meta]);
+
+  // Xử lý cập nhật game
+  const handleUpdateGame = async () => {
+    if (!meta || meta.playMode !== 'offline') return;
+
+    try {
+      // Reload trang để tải lại game từ API (không dùng cache)
+      // Trong thực tế, backend cần có endpoint để tải data mới
+      // Ở đây chúng ta chỉ reload trang đơn giản
+      markAsUpdated();
+      setShowUpdateNotification(false);
+      window.location.reload();
+    } catch (error) {
+      console.error('Lỗi cập nhật game:', error);
+    }
+  };
 
   if (!html) {
     return (
@@ -84,6 +116,37 @@ export default function OfflineGamePage({ gameId }) {
         sandbox="allow-scripts allow-same-origin"
         className="h-full w-full border-0"
       />
+
+      {/* Thông báo cập nhật phiên bản mới */}
+      {showUpdateNotification && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm">
+          <div className="bg-white rounded-lg shadow-lg p-4 border-2 border-blue-500">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">🎮</div>
+              <div className="flex-1">
+                <h3 className="font-bold text-sm text-gray-900">Có phiên bản mới!</h3>
+                <p className="text-xs text-gray-600 mt-1">
+                  Game "{meta.name}" đã có phiên bản mới. Cập nhật để trải nghiệm tốt hơn.
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleUpdateGame}
+                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded"
+                  >
+                    Cập nhật ngay
+                  </button>
+                  <button
+                    onClick={() => setShowUpdateNotification(false)}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 px-3 rounded"
+                  >
+                    Để sau
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

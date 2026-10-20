@@ -28,7 +28,7 @@ const LEGACY_CELLS = {
 };
 
 // Quyền mặc định của mọi vai trò (chat, hồ sơ, chơi game...)
-export const BASE_PERMISSIONS = ["chat", "profile", "friends", "coins.view", "daily-tasks"];
+export const BASE_PERMISSIONS = ["chat", "profile", "friends", "coins.view", "daily-tasks", "attendance.view"];
 
 // permission string -> [featureKey, action]
 const CELL_BY_PERMISSION = (() => {
@@ -81,6 +81,9 @@ export const ROLES = {
       "daily-tasks.manage",
       "coins.view",
       "daily-tasks",
+      // chấm công
+      "attendance.view",
+      "attendance.checkin",
       // cơ bản
       "chat",
       "profile",

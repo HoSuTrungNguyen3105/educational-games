@@ -12,6 +12,7 @@ import OnboardingScreen from "./pages/OnboardingScreen.jsx";
 import { isOnboarded } from "./lib/kidSettings.js";
 import PageLoading from "./components/PageLoading.jsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
+import { GameVersionProvider } from "./components/GameVersionProvider.jsx";
 
 // Lazy-loaded Pages / Screens
 const TeacherApp = lazy(() => import("./pages/teacher/TeacherApp.jsx"));
@@ -37,6 +38,7 @@ const MathAdventurePage = lazy(() => import("./pages/MathAdventurePage.jsx"));
 const OfflineGamePage = lazy(() => import("./pages/OfflineGamePage.jsx"));
 const PetPage = lazy(() => import("./pages/PetPage.jsx"));
 const PetWardrobePage = lazy(() => import("./pages/user/PetWardrobePage.jsx"));
+const AttendancePage = lazy(() => import("./pages/AttendancePage.jsx"));
 
 function App() {
   const route = useRoute();
@@ -182,6 +184,7 @@ function App() {
     "math-adventure": () => <MathAdventurePage />,
     pet: () => <PetPage />,
     "pet-wardrobe": () => <PetWardrobePage />,
+    attendance: () => <AttendancePage userAuth={userAuth} />,
     // 17 game offline — mỗi game 1 file HTML riêng
     "offline-game": () => <OfflineGamePage gameId={route.params?.gameId} />,
   };
@@ -254,12 +257,12 @@ function App() {
   };
 
   return (
-    <>
+    <GameVersionProvider>
       <Suspense fallback={<PageLoading />}>
         {renderScreen()}
       </Suspense>
       <PWAInstallPrompt />
-    </>
+    </GameVersionProvider>
   );
 }
 
