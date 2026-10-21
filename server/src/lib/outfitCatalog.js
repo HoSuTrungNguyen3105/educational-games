@@ -16,7 +16,7 @@
  * trống (không mặc item đó).
  */
 export const AVATAR_FIELDS = {
-  body: ["body_01", "body_dragon_01"],
+  body: ["body_01", "body_girl_01", "body_dragon_01"],
   skin: ["s1", "s2", "s3", "s4"],
   face: ["face_01", "face_02", "face_03", "face_04", "face_05"],
   hair: ["hair_01", "hair_02", "hair_03", "hair_04", "hair_05", "hair_06"],
@@ -49,6 +49,9 @@ export const AVATAR_DEFAULT = {
 /** Thân không nhận lớp mặt/tóc/da (rồng đã khắc sẵn). */
 export const AVATAR_NO_OVERLAY_BODIES = ["body_dragon_01"];
 
+/** Thân vẽ sẵn eo + chân trần → được phép bỏ áo/quần/giày. */
+export const AVATAR_BARE_SKIN_BODIES = ["body_girl_01"];
+
 /** id hợp lệ cho từng trường của pet. */
 export const PET_FIELDS = {
   animal: ["dog", "cat", "rabbit", "hamster", "panda", "fox"],
@@ -70,7 +73,9 @@ function cleanByFields(src, fields, defaults, withAvatar) {
   const out = {};
   for (const [key, allowed] of Object.entries(fields)) {
     const v = src[key];
-    out[key] = typeof v === "string" && allowed.includes(v) ? v : defaults[key];
+    /* null chỉ giữ khi allowlist cho phép bỏ trống lớp đó. */
+    const ok = v === null ? allowed.includes(null) : typeof v === "string" && allowed.includes(v);
+    out[key] = ok ? v : defaults[key];
   }
   if (!withAvatar) return out;
 
@@ -80,6 +85,14 @@ function cleanByFields(src, fields, defaults, withAvatar) {
   }
   /* Mặc váy thì không có quần. */
   if (out.dress) out.pants = null;
+  /* body_01 không vẽ thân/chân bằng da → bỏ trống là hồ sơ thành nhân vật khuyết. */
+  if (!AVATAR_BARE_SKIN_BODIES.includes(out.body)) {
+    if (out.shoes === null) out.shoes = defaults.shoes;
+    if (!out.dress) {
+      if (out.shirt === null) out.shirt = defaults.shirt;
+      if (out.pants === null) out.pants = defaults.pants;
+    }
+  }
   return out;
 }
 

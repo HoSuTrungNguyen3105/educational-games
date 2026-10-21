@@ -184,10 +184,13 @@
 
   /* ===================================================================== *
    *  THÂN — `body_01` là thân người lấy nguyên văn từ body.html.
+   *  `body_girl_01` cùng khung đầu/tay nhưng có eo gọn + thân + chân trần
+   *  (body_01 không vẽ thân/chân nên bé gái bị "thiếu body").
    *  `body_dragon_01` đã khắc sẵn mặt/sừng nên overlays = false.
    * ===================================================================== */
   var BODIES = {
-    body_01: { n: 'Người', overlays: true },
+    body_01: { n: 'Bé trai', overlays: true },
+    body_girl_01: { n: 'Bé gái', overlays: true },
     body_dragon_01: { n: 'Rồng xanh', overlays: false }
   };
 
@@ -523,6 +526,33 @@
       + '<ellipse cx="224" cy="143" rx="40" ry="25" fill="#FFFFFF" opacity="0.16"/></g>';
   }
 
+  /* ---- hàng mi — chỉ vẽ cho thân bé gái ---- */
+  function lashes() {
+    return '<path d="M237 199 L249 193" stroke="#39271E" stroke-width="4" stroke-linecap="round"/>'
+      + '<path d="M245 196 L253 190" stroke="#39271E" stroke-width="4" stroke-linecap="round"/>'
+      + '<path d="M301 199 L289 193" stroke="#39271E" stroke-width="4" stroke-linecap="round"/>'
+      + '<path d="M293 196 L285 190" stroke="#39271E" stroke-width="4" stroke-linecap="round"/>';
+  }
+
+  /* ===================================================================== *
+   *  THÂN BÉ GÁI — cùng khung đầu/tay/cổ với `humanBody` (nên mũ, kính, tóc
+   *  và mặt vẫn khớp tọa độ), khác ở chỗ có thân eo gọn + hai chân trần,
+   *  phần mà `body_01` không bao giờ vẽ.
+   * ===================================================================== */
+  function femaleBody(sv) {
+    return humanBody(sv)
+      /* thân: eo gọn, hông nở */
+      + '<path d="M209 326 C221 318 237 314 256 314 C275 314 291 318 303 326'
+      + ' C321 343 328 361 322 381 C315 404 310 419 313 436 C323 460 331 480 331 497'
+      + ' C331 505 325 509 316 509 L196 509 C187 509 181 505 181 497'
+      + ' C181 480 189 460 199 436 C202 419 197 404 190 381'
+      + ' C184 361 191 343 209 326 Z" fill="url(#kidSkin)"/>'
+      /* chân trần — váy / quần / giày đè lên theo thứ tự render */
+      + '<path d="M216 505 L248 505 L246 632 C246 646 238 654 228 654 C216 654 210 645 212 632 Z" fill="url(#kidSkin)"/>'
+      + '<path d="M264 505 L296 505 L300 632 C302 645 296 654 284 654 C273 654 266 646 266 632 Z" fill="url(#kidSkin)"/>'
+      + lashes();
+  }
+
   /* ---- quần + giày mặc định (dùng khi người chơi bỏ chọn) ---- */
   var DEFAULT_PANTS = pantsSvg('jeans');
   var DEFAULT_SHOES = shoesSvg('#FFFFFF');
@@ -551,16 +581,17 @@
     var hairColor = HAIR_COLORS[s.hairColor] || HAIR_COLORS['nâu'];
     var hair = HAIRS[s.hair] || HAIRS.hair_01;
     var acc = ACCS[s.acc] || null;
+    var bodyName = (BODIES[s.body] && BODIES[s.body].n) || 'Nhân vật Bé';
     var o = '<svg viewBox="0 0 ' + KID_W + ' ' + KID_H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'
-      + (FACES[s.face] ? FACES[s.face].n : 'Nhân vật Bé') + '" color="' + hairColor + '">';
+      + bodyName + '" color="' + hairColor + '">';
     o += kidDefs(sv, hairColor);
 
     /* 1. phụ kiện nằm sau thân (áo choàng, túi) */
     if (acc && acc.b) o += acc.b;
     /* 2. tóc sau */
     o += '<g fill="url(#kidHair)">' + hair.back + '</g>';
-    /* 3. thân: tay + cổ + đầu */
-    o += humanBody(sv);
+    /* 3. thân: tay + cổ + đầu (+ thân & chân trần cho bé gái) */
+    o += s.body === 'body_girl_01' ? femaleBody(sv) : humanBody(sv);
     /* 4. mặt */
     o += FACES[s.face] ? FACES[s.face].svg : FACES.face_01.svg;
     /* 5. tóc trước */
@@ -568,10 +599,14 @@
     /* 6. áo hoặc váy phủ thân */
     if (s.dress) o += dressSvg(DRESS_COLORS[s.dress]);
     else if (s.shirt) o += shirtSvg(SHIRT_COLORS[s.shirt]);
-    /* 7. quần (váy thì không cần) */
-    if (!s.dress) o += s.pants ? pantsSvg(s.pants) : DEFAULT_PANTS;
+    /* 7. quần — bé gái có chân trần nên bỏ trống được, thân kia bắt buộc có quần */
+    if (!s.dress) {
+      if (s.pants) o += pantsSvg(s.pants);
+      else if (s.body !== 'body_girl_01') o += DEFAULT_PANTS;
+    }
     /* 8. giày */
-    o += s.shoes ? shoesSvg(SHOE_OPTIONS[s.shoes].c) : DEFAULT_SHOES;
+    if (s.shoes) o += shoesSvg(SHOE_OPTIONS[s.shoes].c);
+    else if (s.body !== 'body_girl_01') o += DEFAULT_SHOES;
     /* 9. phụ kiện đè lên trên */
     if (acc && acc.f) o += acc.f;
     /* 10. kính + mũ */
@@ -681,13 +716,15 @@
     });
   }
 
+  /* `KID_FIELD_IDS` đã chứa null cho các lớp tuỳ chọn → bé chọn 🚫 là bỏ thật.
+   * Riêng `shirt`/`pants`/`shoes` của `body_01` bị ép lại bên dưới vì thân đó
+   * không vẽ eo/chân, bỏ trống là nhân vật mất nửa người. */
   function sanitizeKid(src) {
     var o = src && typeof src === 'object' ? src : {};
     var out = {};
     Object.keys(KID_FIELD_IDS).forEach(function (k) {
       var v = o[k];
-      var allowed = KID_FIELD_IDS[k];
-      var ok = allowed.indexOf(v) >= 0 && v !== undefined;
+      var ok = KID_FIELD_IDS[k].indexOf(v) >= 0 && v !== undefined;
       out[k] = ok ? v : KID_DEFAULTS[k];
     });
     /* không có body người thì không có lớp mặt/tóc/da */
@@ -698,6 +735,15 @@
     }
     /* mặc váy thì không có quần — giữ state sạch để profile và server khớp */
     if (out.dress) out.pants = null;
+    /* body_01 không vẽ thân/chân bằng da → bắt buộc có giày, và áo/quần khi
+     * không mặc váy, nếu không nhân vật sẽ khuyết nửa người. */
+    if (out.body !== 'body_girl_01') {
+      if (!SHOE_OPTIONS[out.shoes]) out.shoes = KID_DEFAULTS.shoes;
+      if (!out.dress) {
+        if (!SHIRT_COLORS[out.shirt]) out.shirt = KID_DEFAULTS.shirt;
+        if (!PANT_OPTIONS[out.pants]) out.pants = KID_DEFAULTS.pants;
+      }
+    }
     return out;
   }
 

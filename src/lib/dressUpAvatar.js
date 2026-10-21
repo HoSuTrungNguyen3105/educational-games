@@ -60,7 +60,7 @@ export function sanitizeFor(scope, value) {
 
 function defaultsFor(scope) {
   const api = getDressUp();
-  return scope === SCOPE_PET ? api.pet.defaults : api.kid.defaults.boy;
+  return scope === SCOPE_PET ? api.pet.defaults : api.kid.defaults;
 }
 
 export function readLocalOutfit(scope) {
@@ -83,6 +83,19 @@ export function writeLocalOutfit(scope, value, updatedAt) {
 }
 
 /* ── render ────────────────────────────────────────────────────────────── */
+
+const STYLE_ID = "eg-dressup-svg-css";
+
+/** SVG từ EG_DRESSUP không có width/height → cần CSS cho nó phủ đúng khung
+ *  (`.eg-du`) ở cả avatar nhỏ lẫn sân khấu full-screen của modal tuỳ chỉnh. */
+export function ensureDressUpCss() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = STYLE_ID;
+  style.textContent = ".eg-du svg{width:100%;height:100%;display:block}";
+  document.head.appendChild(style);
+}
 
 export const KID_VIEW_ASPECT = 700 / 512;
 export const PET_VIEW_ASPECT = 200 / 200;

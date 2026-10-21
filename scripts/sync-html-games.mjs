@@ -235,6 +235,7 @@ async function main() {
         type: "play-to-learn",
         status: "published",
         playMode: "solo",
+        deliveryMode: item.deliveryMode || "offline",
         gameMode: item.gameMode || "quiz",
         questionsCount: 0,
         config: configPayload || {},

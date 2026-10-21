@@ -30,6 +30,14 @@ Danh sách game offline với metadata đầy đủ:
 - `playMode`: Chế độ vận hành (`offline` hoặc `online`)
 - `version`: Phiên bản hiện tại của game
 
+> **Lưu ý (server):** Trên document game của backend, `playMode` đang mang
+> nghĩa lớp học (`solo` / `classroom`) và đã có từ trước, nên refactor_game.md
+> mục 4 dùng field riêng **`deliveryMode`** (`offline` / `online`) để biểu thị
+> cách tải dữ liệu. `deliveryMode` mặc định `online` với dữ liệu cũ; game HTML
+> offline do `scripts/sync-html-games.mjs` tạo ra mang `deliveryMode: "offline"`.
+> Manifest client ở `src/games/offline/` vẫn dùng `playMode: "offline"` vì đó
+> là catalog tĩnh riêng của trang `/offline/:id`.
+
 ### 2. Services Layer
 
 #### `gameDataService.js` - Quản lý dữ liệu game

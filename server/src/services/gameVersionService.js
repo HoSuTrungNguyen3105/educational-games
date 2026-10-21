@@ -30,6 +30,7 @@ async function buildLiveData(game) {
     type: game.type || "play-to-learn",
     gameMode: game.gameMode || "quiz",
     playMode: game.playMode || "solo",
+    deliveryMode: game.deliveryMode || "online",
     config: sanitizeConfig(game.config),
     questions,
   };
@@ -90,6 +91,7 @@ export async function getData(gameId) {
     type: d.type,
     gameMode: d.gameMode,
     playMode: d.playMode,
+    deliveryMode: d.deliveryMode || "online",
     config: d.config || null,
     questions: (d.questions || []).map(stripAnswer),
   };
@@ -151,6 +153,10 @@ export async function restore(gameId, version, user) {
       $set: {
         name: d.name || "Game",
         description: d.description || "",
+        type: d.type || "play-to-learn",
+        gameMode: d.gameMode || "quiz",
+        playMode: d.playMode || "solo",
+        deliveryMode: d.deliveryMode || "online",
         config: sanitizeConfig(d.config),
         updatedAt: new Date().toISOString(),
       },

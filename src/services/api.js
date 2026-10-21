@@ -164,6 +164,9 @@ export const gameService = {
     if (filters.status && filters.status !== "all") params.set("status", filters.status);
     if (filters.subject && filters.subject !== "all") params.set("subject", filters.subject);
     if (filters.category && filters.category !== "all") params.set("category", filters.category);
+    if (filters.type && filters.type !== "all") params.set("type", filters.type);
+    if (filters.playMode && filters.playMode !== "all") params.set("playMode", filters.playMode);
+    if (filters.deliveryMode && filters.deliveryMode !== "all") params.set("deliveryMode", filters.deliveryMode);
     const hasPaging = filters.from || filters.to;
     if (filters.from) params.set("from", filters.from);
     if (filters.to) params.set("to", filters.to);
@@ -206,6 +209,19 @@ export const gameService = {
   },
   async duplicate(id) {
     return apiFetch(`/games/${id}/duplicate`, { method: "POST" });
+  },
+  // Quản lý phiên bản (refactor_game.md GĐ2) — server/src/routes/games.js
+  async publish(id) {
+    return apiFetch(`/games/${id}/publish`, { method: "POST" });
+  },
+  async listVersions(id) {
+    return apiFetch(`/games/${id}/versions`) || [];
+  },
+  async getVersionSnapshot(id, version) {
+    return apiFetch(`/games/${id}/versions/${version}`);
+  },
+  async restoreVersion(id, version) {
+    return apiFetch(`/games/${id}/versions/${version}/restore`, { method: "POST" });
   },
   async answer(questionId, answerId) {
     return apiFetch("/games/answer", { method: "POST", body: { questionId, answerId } });

@@ -51,13 +51,13 @@ export default function BodyCustomImport({ showToast }) {
       overlays: bodies.body_01?.overlays,
     },
     {
-      name: 'Bé gái',
-      code: 'body_01',
-      note: 'Cùng thân người, đổi tóc dài + váy hồng + giày hồng.',
+      name: bodies.body_girl_01?.n || 'Bé gái',
+      code: 'body_girl_01',
+      note: 'Eo gọn + chân trần, tóc dài, váy hồng, giày hồng. Bỏ được áo/quần/giày.',
       badge: 'Mẫu bé gái',
       state: kidPreset('girl'),
-      copyValue: 'body_01',
-      overlays: bodies.body_01?.overlays,
+      copyValue: 'body_girl_01',
+      overlays: bodies.body_girl_01?.overlays,
     },
     {
       name: bodies.body_dragon_01?.n || 'Rồng xanh',

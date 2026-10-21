@@ -23,6 +23,7 @@ export function kidPreset(kind = 'boy') {
   if (kind === 'girl') {
     return sanitizeFor('avatar', {
       ...base,
+      body: 'body_girl_01',
       hair: 'hair_02',
       dress: 'pink',
       pants: null,
@@ -32,7 +33,7 @@ export function kidPreset(kind = 'boy') {
   if (kind === 'dragon') {
     return sanitizeFor('avatar', { ...base, body: 'body_dragon_01' });
   }
-  return sanitizeFor('avatar', base);
+  return sanitizeFor('avatar', { ...base, body: 'body_01' });
 }
 
 export function sanitizeKid(state) {

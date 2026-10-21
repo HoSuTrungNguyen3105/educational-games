@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService, statsService } from '../../services/api.js'
+import { gameDataService } from '../../services/gameDataService.js'
 import { useSubjects, useCategories, useTemplates } from '../../lib/hooks.js'
 import {
   PrimaryButton, GhostButton, Modal, TicketStub, Loader, ErrorState, EmptyState,
@@ -8,7 +9,7 @@ import {
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import RangePagination from '../../components/RangePagination.jsx'
-import { Gamepad2, Pencil, Trash2, Copy, Ticket, Play, Search, Layers, Rocket, FileEdit, TrendingUp, Database } from 'lucide-react'
+import { Gamepad2, Pencil, Trash2, Copy, Ticket, Play, Search, Layers, Rocket, FileEdit, TrendingUp, Database, History, WifiOff, Wifi } from 'lucide-react'
 
 const PAGE_SIZE = 12;
 
@@ -32,7 +33,7 @@ function StatCard({ icon: Icon, label, value, tone = "ink" }) {
   );
 }
 
-function ManagementGameCard({ game, templates, onEdit, onResults, onDuplicate, onDelete, onShare, onLive }) {
+function ManagementGameCard({ game, templates, publishedVersion, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onPublish, onVersions }) {
   const tplId = game.templateId
     ? (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || game.templateId)
     : null;
@@ -55,6 +56,18 @@ function ManagementGameCard({ game, templates, onEdit, onResults, onDuplicate, o
           <span className="text-[11px] font-mono text-[#8A7C63]">
             {game.questionsCount || 0} câu hỏi
           </span>
+          {game.deliveryMode && (
+            <span
+              title={game.deliveryMode === "offline" ? "Học sinh chơi được khi mất mạng (cache IndexedDB)" : "Luôn tải dữ liệu từ server khi chơi"}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase border ${game.deliveryMode === "offline" ? "bg-gold/15 text-[#8a6a10] border-gold/40" : "bg-ticket/10 text-ticket border-ticket/30"}`}
+            >
+              {game.deliveryMode === "offline" ? <WifiOff className="w-3 h-3" /> : <Wifi className="w-3 h-3" />}
+              {game.deliveryMode}
+            </span>
+          )}
+          {publishedVersion > 0 && (
+            <span className="text-[11px] font-mono text-[#8A7C63]" title="Phiên bản đã xuất bản mới nhất">v{publishedVersion}</span>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2 text-xs text-[#8A7C63] font-mono">
@@ -66,6 +79,8 @@ function ManagementGameCard({ game, templates, onEdit, onResults, onDuplicate, o
         <div className="flex flex-wrap gap-1.5">
           <IconButton title="Chỉnh sửa" onClick={onEdit}><Pencil className="w-5 h-5" /></IconButton>
           <IconButton title="Nhân bản" onClick={onDuplicate}><Copy className="w-5 h-5" /></IconButton>
+          <IconButton title="Xuất bản phiên bản mới" onClick={onPublish}><Rocket className="w-5 h-5" /></IconButton>
+          <IconButton title="Lịch sử phiên bản" onClick={onVersions}><History className="w-5 h-5" /></IconButton>
           {onShare && game.status === "published" && (
             <IconButton title="Chia sẻ" onClick={onShare}><Ticket className="w-5 h-5" /></IconButton>
           )}
@@ -94,6 +109,13 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
   const [error, setError] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [shareGame, setShareGame] = useState(null);
+  const [publishGame, setPublishGame] = useState(null);
+  const [publishing, setPublishing] = useState(false);
+  const [versionsGame, setVersionsGame] = useState(null);
+  const [versions, setVersions] = useState(null);
+  const [versionsError, setVersionsError] = useState(null);
+  const [restoring, setRestoring] = useState(null);
+  const [publishedVersions, setPublishedVersions] = useState({});
   const [from, setFrom] = useState(1);
   const [total, setTotal] = useState(0);
   const subjects = useSubjects();
@@ -137,6 +159,70 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
 
   useEffect(() => { const t = setTimeout(load, 250); return () => clearTimeout(t); }, [load]);
   useEffect(() => { loadStats(); }, [loadStats]);
+
+  // Số phiên bản đã publish (GĐ2) — đọc từ API version nhẹ, hiển thị v{n} trên card.
+  useEffect(() => {
+    if (!games || games.length === 0) return;
+    let cancelled = false;
+    Promise.all(
+      games.map(g => {
+        const gid = g._id?.toString() || g.id;
+        return gameDataService.getVersion(gid)
+          .then(info => [gid, info?.version || 0])
+          .catch(() => [gid, 0]);
+      })
+    ).then(pairs => {
+      if (!cancelled) setPublishedVersions(Object.fromEntries(pairs));
+    });
+    return () => { cancelled = true; };
+  }, [games]);
+
+  const handlePublish = async () => {
+    if (!publishGame || publishing) return;
+    setPublishing(true);
+    try {
+      const gid = publishGame._id?.toString() || publishGame.id;
+      const info = await gameService.publish(gid);
+      showToast(`Đã xuất bản "${publishGame.name}" phiên bản ${info.version}`, "success");
+      setPublishGame(null);
+      setPublishedVersions(v => ({ ...v, [gid]: info.version }));
+      loadStats();
+    } catch (e) {
+      showToast(e?.message || "Không xuất bản được trò chơi.", "error");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const openVersions = async (g) => {
+    setVersionsGame(g);
+    setVersions(null);
+    setVersionsError(null);
+    try {
+      const gid = g._id?.toString() || g.id;
+      setVersions(await gameService.listVersions(gid));
+    } catch (e) {
+      setVersionsError(e?.message || "Không tải được lịch sử phiên bản.");
+    }
+  };
+
+  const handleRestore = async (version) => {
+    if (!versionsGame || restoring) return;
+    setRestoring(version);
+    try {
+      const gid = versionsGame._id?.toString() || versionsGame.id;
+      const info = await gameService.restoreVersion(gid, version);
+      showToast(`Đã khôi phục v${version} thành phiên bản ${info.version}`, "success");
+      setVersionsGame(null);
+      setPublishedVersions(v => ({ ...v, [gid]: info.version }));
+      load();
+      loadStats();
+    } catch (e) {
+      showToast(e?.message || "Không khôi phục được phiên bản.", "error");
+    } finally {
+      setRestoring(null);
+    }
+  };
 
   const handleDelete = async (id) => { await gameService.remove(id); showToast("Đã xóa trò chơi", "success"); setConfirmDelete(null); onChanged(); load(); loadStats(); };
   const handleDuplicate = async (id) => { await gameService.duplicate(id); showToast("Đã sao chép trò chơi vào Bản nháp", "success"); onChanged(); load(); loadStats(); };
@@ -265,12 +351,15 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
                   key={gid}
                   game={g}
                   templates={templates}
+                  publishedVersion={publishedVersions[gid] || 0}
                   onEdit={() => onEdit(gid)}
                   onResults={() => onResults(gid)}
                   onDuplicate={() => handleDuplicate(gid)}
                   onDelete={() => setConfirmDelete(g)}
                   onShare={() => setShareGame(g)}
                   onLive={() => handleLive(g)}
+                  onPublish={() => setPublishGame(g)}
+                  onVersions={() => openVersions(g)}
                 />
               );
             })}
@@ -307,6 +396,62 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
           <TicketStub icon="🎟️" code={shareGame.code} notchBg="#FFFBF2" />
           <div className="flex justify-end mt-6">
             <PrimaryButton onClick={() => setShareGame(null)}>Đã hiểu</PrimaryButton>
+          </div>
+        </Modal>
+      )}
+      {publishGame && (
+        <Modal onClose={() => !publishing && setPublishGame(null)}>
+          <h3 className="font-display text-xl text-ink mb-2">Xuất bản "{publishGame.name}"?</h3>
+          <p className="text-sm text-[#8A7C63] mb-2">
+            Bản current ({publishGame.questionsCount || 0} câu hỏi) sẽ được chốt thành một phiên bản mới.
+            Học sinh đang online sẽ nhận được thông báo cập nhật và tải bản mới cho lượt chơi kế tiếp.
+          </p>
+          <p className="text-sm text-[#8A7C63] mb-6">Ván đang chơi vẫn dùng phiên bản cũ cho tới khi kết thúc.</p>
+          <div className="flex justify-end gap-3">
+            <GhostButton onClick={() => setPublishGame(null)} disabled={publishing}>Hủy</GhostButton>
+            <PrimaryButton onClick={handlePublish} disabled={publishing} className="!bg-teal">
+              {publishing ? "Đang xuất bản..." : "Xuất bản"}
+            </PrimaryButton>
+          </div>
+        </Modal>
+      )}
+      {versionsGame && (
+        <Modal onClose={() => setVersionsGame(null)}>
+          <h3 className="font-display text-xl text-ink mb-4">Lịch sử phiên bản "{versionsGame.name}"</h3>
+          {versionsError && <ErrorState subtitle={versionsError} onRetry={() => openVersions(versionsGame)} />}
+          {!versionsError && !versions && <Loader label="Đang tải lịch sử..." />}
+          {!versionsError && versions && versions.length === 0 && (
+            <EmptyState icon="🗂️" title="Chưa có phiên bản nào" subtitle="Bấm nút Xuất bản trên thẻ trò chơi để tạo phiên bản đầu tiên." />
+          )}
+          {!versionsError && versions && versions.length > 0 && (
+            <div className="max-h-[50vh] overflow-y-auto space-y-2 mb-4">
+              {versions.map(v => (
+                <div key={v.id || v._id} className="note-card p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-display text-base text-ink">
+                      v{v.version}
+                      {publishedVersions[versionsGame._id?.toString() || versionsGame.id] === v.version && (
+                        <span className="ml-2 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-full bg-teal/15 text-teal border border-teal/30 align-middle">hiện hành</span>
+                      )}
+                    </p>
+                    <p className="text-[11px] font-mono text-[#8A7C63]">
+                      {v.questionsCount || 0} câu hỏi · {v.publishedAt ? new Date(v.publishedAt).toLocaleString("vi-VN") : "—"}
+                      {v.publishedBy?.name ? ` · ${v.publishedBy.name}` : ""}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleRestore(v.version)}
+                    disabled={restoring !== null}
+                    className="text-xs sm:text-sm font-semibold text-ticket hover:underline whitespace-nowrap disabled:opacity-50"
+                  >
+                    {restoring === v.version ? "Đang khôi phục..." : "Khôi phục"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end">
+            <GhostButton onClick={() => setVersionsGame(null)}>Đóng</GhostButton>
           </div>
         </Modal>
       )}

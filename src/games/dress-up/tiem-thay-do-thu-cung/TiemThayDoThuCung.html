@@ -99,14 +99,14 @@ document.addEventListener('click',e=>{
  else if(o){st=D.sanitizePet(Object.assign({},st,{[tab]:o.dataset.v||null}));save();drawStage();drawOpts();}
 });
 const pick=a=>a[Math.floor(Math.random()*a.length)];
+/* Giữ đúng loài thú cưng đang chọn — 🎲 chỉ thay đồ + phụ kiện. */
 $('#rnd').onclick=()=>{
- st=D.sanitizePet({
-  animal:pick(Object.keys(ANIMALS)),
+ st=D.sanitizePet(Object.assign({},st,{
   shirt:pick(OPTS.shirt.ids),
   glasses:pick([null,...OPTS.glasses.ids]),
   hat:pick([null,...OPTS.hat.ids]),
   neck:pick([null,...OPTS.neck.ids])
- });
+ }));
  save();drawStage();drawOpts();
 };
 $('#clr').onclick=()=>{st=D.sanitizePet(Object.assign({},st,{shirt:null,glasses:null,hat:null,neck:null}));save();drawStage();drawOpts();};

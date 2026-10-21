@@ -8,9 +8,15 @@ const COLLECTION = "games";
 // Schema mới — chỉ các trường này được trả về cho frontend
 const GAME_FIELDS = [
   "name", "description", "subject", "topic", "language",
-  "templateId", "type", "status", "playMode", "questionsCount", "playersCount",
+  "templateId", "type", "status", "playMode", "deliveryMode", "questionsCount", "playersCount",
   "code", "config", "gameMode", "createdAt", "updatedAt",
 ];
+
+// Cách vận hành dữ liệu (refactor_game.md mục 4 — tách khỏi playMode solo/classroom):
+//   offline — client cache JSON vào IndexedDB, chơi được khi mất mạng
+//   online  — luôn tải dữ liệu từ API mỗi lượt chơi
+export const DELIVERY_MODES = ["offline", "online"];
+export const DEFAULT_DELIVERY_MODE = "online";
 
 // Chế độ chạy của game:
 //   quiz   — dùng câu hỏi trong collection `questions` (mặc định, như cũ)
@@ -68,6 +74,7 @@ function serialize(doc, { configMode = "summary" } = {}) {
   if (!out.type) out.type = "play-to-learn";
   if (!out.status) out.status = "draft";
   if (!out.playMode) out.playMode = "solo";
+  if (!DELIVERY_MODES.includes(out.deliveryMode)) out.deliveryMode = DEFAULT_DELIVERY_MODE;
   if (!GAME_MODES.includes(out.gameMode)) out.gameMode = DEFAULT_GAME_MODE;
   return out;
 }
@@ -77,6 +84,10 @@ export async function list(filters = {}) {
   const query = {};
   if (filters.status && filters.status !== "all") query.status = filters.status;
   if (filters.subject && filters.subject !== "all") query.subject = filters.subject;
+  // Lọc theo field có default: doc cũ có thể KHÔNG chứa key (trước khi thêm
+  // type/deliveryMode) → $in:[value, null] để match cả doc thiếu field.
+  if (filters.type && filters.type !== "all") query.type = { $in: [filters.type, null] };
+  if (filters.playMode && filters.playMode !== "all") query.playMode = { $in: [filters.playMode, null] };
   if (filters.templateId && filters.templateId !== "all") {
     try { query.templateId = new ObjectId(filters.templateId); } catch { /* ignore */ }
   }
@@ -85,6 +96,11 @@ export async function list(filters = {}) {
   const games = await cursor.toArray();
 
   let result = games.map((g) => serialize(g));
+  // Lọc sau serialize: doc cũ chưa có deliveryMode được default "online" nên
+  // không thể match bằng query Mongo trực tiếp.
+  if (filters.deliveryMode && filters.deliveryMode !== "all") {
+    result = result.filter((g) => g.deliveryMode === filters.deliveryMode);
+  }
   if (filters.query) {
     const q = filters.query.trim().toLowerCase();
     result = result.filter(
@@ -197,6 +213,7 @@ export async function create(data) {
     type: data.type || "play-to-learn",
     status: data.status || "draft",
     playMode: ["solo", "classroom"].includes(data.playMode) ? data.playMode : "solo",
+    deliveryMode: DELIVERY_MODES.includes(data.deliveryMode) ? data.deliveryMode : DEFAULT_DELIVERY_MODE,
     gameMode: GAME_MODES.includes(data.gameMode) ? data.gameMode : DEFAULT_GAME_MODE,
     questionsCount: data.questionsCount || 0,
     playersCount: 0,
@@ -212,6 +229,9 @@ export async function create(data) {
 export async function update(id, data) {
   const { _id, ...rest } = data;
   if (rest.templateId) rest.templateId = new ObjectId(rest.templateId);
+  if (rest.deliveryMode !== undefined && !DELIVERY_MODES.includes(rest.deliveryMode)) {
+    rest.deliveryMode = DEFAULT_DELIVERY_MODE;
+  }
   if (rest.config !== undefined) rest.config = sanitizeConfig(rest.config);
   rest.updatedAt = new Date().toISOString();
   const result = await getCollection(COLLECTION).findOneAndUpdate(

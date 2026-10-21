@@ -10,19 +10,7 @@
  */
 
 import { useMemo } from "react";
-import { renderDressUpSvg, outfitAspect } from "../../lib/dressUpAvatar.js";
-
-const STYLE_ID = "eg-dressup-svg-css";
-
-/** SVG trả về không có width/height → cần CSS cho nó phủ đúng khung. */
-function ensureCss() {
-  if (typeof document === "undefined") return;
-  if (document.getElementById(STYLE_ID)) return;
-  const style = document.createElement("style");
-  style.id = STYLE_ID;
-  style.textContent = ".eg-du svg{width:100%;height:100%;display:block}";
-  document.head.appendChild(style);
-}
+import { renderDressUpSvg, outfitAspect, ensureDressUpCss } from "../../lib/dressUpAvatar.js";
 
 export default function DressUpAvatar({
   kind = "avatar",
@@ -35,7 +23,7 @@ export default function DressUpAvatar({
   const aspect = outfitAspect(kind);
 
   if (!svg) return null;
-  ensureCss();
+  ensureDressUpCss();
 
   return (
     <div

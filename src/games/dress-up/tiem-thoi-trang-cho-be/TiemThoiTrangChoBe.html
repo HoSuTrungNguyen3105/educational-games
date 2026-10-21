@@ -88,9 +88,13 @@ document.addEventListener('click',e=>{
  else if(o){st=D.sanitizeKid(Object.assign({},st,{[tab]:o.dataset.v||null}));save();redraw();}
 });
 const pick=a=>a[Math.floor(Math.random()*a.length)];
+/* Giữ nguyên nhân vật (thân/da/mặt/tóc) — bé trai vẫn là bé trai, bé gái vẫn là
+ * bé gái — 🎲 chỉ thay áo/váy/quần/giày/kính/mũ/phụ kiện. */
+const IDENTITY=['body','skin','face','hair','hairColor'];
 $('#rnd').onclick=()=>{
  const next=Object.assign({},st);
-tabs().forEach(t=>{
+ tabs().forEach(t=>{
+   if(IDENTITY.includes(t.k))return;
    const cfg=D.kidTabCfg(t.k,next);
    next[t.k]=pick(cfg.nullable?[null,...cfg.ids]:cfg.ids);
   });

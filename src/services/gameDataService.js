@@ -20,6 +20,7 @@ export const gameDataService = {
     const params = new URLSearchParams();
     if (filters.type) params.set('type', filters.type);
     if (filters.playMode) params.set('playMode', filters.playMode);
+    if (filters.deliveryMode) params.set('deliveryMode', filters.deliveryMode);
     if (filters.status) params.set('status', filters.status);
     const qs = params.toString();
     return apiFetch(`/games${qs ? `?${qs}` : ''}`) || [];

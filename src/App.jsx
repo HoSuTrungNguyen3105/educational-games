@@ -133,6 +133,9 @@ function App() {
     await logout();
     setShowUserLogin(false);
     setShowUserRegister(false);
+    /* Đăng xuất là phải rời trang đang ở (profile/chat/admin) về trang chủ —
+     * ở lại sẽ kẹt trên màn hình "chưa đăng nhập" vì dữ liệu đã bị xoá. */
+    navigate("/");
   };
 
   const userAuth = user ? { user, token } : null;

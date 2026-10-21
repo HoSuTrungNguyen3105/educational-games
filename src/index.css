@@ -2,6 +2,19 @@
   --line:#E7D9BE;
   --muted:#8A7C63;
   --text-dark:#20283A;
+  /* Bảng màu trang web (khớp `tailwind.config` trong index.html) dạng CSS var,
+   * để các trang dùng `style={{ background: "var(--card)" }}` — profile,
+   * modal tuỳ chỉnh avatar, điểm danh, quyên góp — có nền thật. */
+  --ink:#1D2E4A;
+  --bg:#FFF3DE;
+  --card:#FFFBF2;
+  --stage:#FFF6E7;
+  --accent:#1B998B;
+  --accent-bg:#DBF1EE;
+  --onaccent:#FFFFFF;
+  --gold:#F4B942;
+  --purple:#8B5CF6;
+  --pink:#FF6F91;
   --sat: env(safe-area-inset-top);
   --sab: env(safe-area-inset-bottom);
   --sal: env(safe-area-inset-left);
