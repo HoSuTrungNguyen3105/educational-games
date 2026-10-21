@@ -2,8 +2,13 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { registerSW } from 'virtual:pwa-register'
+import { startSchoolMissionSync } from './lib/schoolMissionSync.js'
 
 createRoot(document.getElementById('root')).render(<App />)
+
+// Gửi tiến độ "Trường Vui Vẻ" còn kẹt từ phiên offline trước, kể cả khi người
+// chơi mở app ở trang khác (hàng đợi nằm trong localStorage).
+startSchoolMissionSync()
 
 /**
  * Đăng ký Service Worker (mục 5 của Update_PWA.md).
