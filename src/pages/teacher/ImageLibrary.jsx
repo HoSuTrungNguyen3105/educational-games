@@ -195,8 +195,37 @@ export default function ImageLibrary({ showToast }) {
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--line)" }}>
-          <table className="w-full text-sm">
+        <>
+          {/* Mobile: mỗi ảnh một card ngang */}
+          <div className="md:hidden space-y-2">
+            {images.map(img => (
+              <div key={img.publicId} className="bg-paper border border-ink/10 rounded-xl p-2.5 flex items-center gap-3 cursor-pointer"
+                onClick={() => setPreview(img)}>
+                <input type="checkbox" checked={selected.includes(img.publicId)}
+                  onChange={e => { e.stopPropagation(); toggleSelect(img.publicId); }}
+                  onClick={e => e.stopPropagation()}
+                  className="w-4 h-4 rounded accent-blue-500 cursor-pointer shrink-0" />
+                <img src={img.url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" loading="lazy" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-mono text-xs text-ink truncate">{img.format} · {formatBytes(img.bytes)} · {img.width}×{img.height}</p>
+                  <p className="font-mono text-[10px] text-ink/45 truncate">{img.publicId}</p>
+                  <p className="text-[10px] text-ink/40">{formatDate(img.createdAt)}</p>
+                </div>
+                <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => copyUrl(img.url)} className="w-8 h-8 grid place-items-center rounded-lg bg-ink/5 hover:bg-ink/10 text-ink/60 transition">
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => handleDelete(img)} className="w-8 h-8 grid place-items-center rounded-lg bg-red-50 hover:bg-red-100 text-red-500 transition">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: bảng danh sách */}
+          <div className="hidden md:block rounded-xl border overflow-hidden" style={{ borderColor: "var(--line)" }}>
+            <table className="w-full text-sm">
             <thead>
               <tr className="bg-ink/5 text-left text-ink/60 text-xs font-semibold">
                 <th className="px-3 py-2 w-8">
@@ -240,7 +269,8 @@ export default function ImageLibrary({ showToast }) {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       {preview && (

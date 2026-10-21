@@ -39,34 +39,57 @@ export default function TeacherResults({ gameId, onBack }) {
 export function LeaderboardTable({ results }) {
   const hasAccuracy = results.some(r => r.totalQuestions > 0);
   return (
-    <div className="note-card overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">
-            <th className="px-5 py-3">Hạng</th><th className="px-5 py-3">Học sinh</th><th className="px-5 py-3">Điểm</th>
-            {hasAccuracy && <th className="px-5 py-3">Độ chính xác</th>}
-            <th className="px-5 py-3 hidden sm:table-cell">Thời gian</th>
-          </tr>
-        </thead>
-        <tbody>
-          {results.map((r, i) => {
-            const medal = rankMedal(i + 1);
-            return (
-              <tr key={r.id} className="border-b border-ink/5 last:border-0">
-                <td className="px-5 py-3"><StampToken icon={medal.icon} ring={medal.ring} size={34} fontSize={i < 3 ? 16 : 13} /></td>
-                <td className="px-5 py-3 font-body text-ink">{r.playerName}</td>
-                <td className="px-5 py-3 font-display text-ink">{r.score}</td>
-                {hasAccuracy && (
-                  <td className="px-5 py-3 text-[#8A7C63]">
-                    {r.totalQuestions > 0 ? `${r.correctAnswers}/${r.totalQuestions} (${r.accuracy}%)` : "—"}
-                  </td>
-                )}
-                <td className="px-5 py-3 hidden sm:table-cell text-[#8A7C63] font-mono">{r.completionTime}s</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Mobile: mỗi học sinh một card ngang */}
+      <div className="md:hidden space-y-2">
+        {results.map((r, i) => {
+          const medal = rankMedal(i + 1);
+          return (
+            <div key={r.id} className="note-card p-3 flex items-center gap-3 anim-pop">
+              <StampToken icon={medal.icon} ring={medal.ring} size={36} fontSize={i < 3 ? 16 : 13} />
+              <div className="flex-1 min-w-0">
+                <p className="font-body text-sm text-ink truncate">{r.playerName}</p>
+                <p className="text-[11px] font-mono text-[#8A7C63] truncate">
+                  {hasAccuracy && r.totalQuestions > 0 ? `${r.correctAnswers}/${r.totalQuestions} (${r.accuracy}%)` : "—"}
+                  {" · "}{r.completionTime}s
+                </p>
+              </div>
+              <span className="font-display text-lg text-ink shrink-0">{r.score}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: bảng xếp hạng */}
+      <div className="hidden md:block note-card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">
+              <th className="px-5 py-3">Hạng</th><th className="px-5 py-3">Học sinh</th><th className="px-5 py-3">Điểm</th>
+              {hasAccuracy && <th className="px-5 py-3">Độ chính xác</th>}
+              <th className="px-5 py-3">Thời gian</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.map((r, i) => {
+              const medal = rankMedal(i + 1);
+              return (
+                <tr key={r.id} className="border-b border-ink/5 last:border-0">
+                  <td className="px-5 py-3"><StampToken icon={medal.icon} ring={medal.ring} size={34} fontSize={i < 3 ? 16 : 13} /></td>
+                  <td className="px-5 py-3 font-body text-ink">{r.playerName}</td>
+                  <td className="px-5 py-3 font-display text-ink">{r.score}</td>
+                  {hasAccuracy && (
+                    <td className="px-5 py-3 text-[#8A7C63]">
+                      {r.totalQuestions > 0 ? `${r.correctAnswers}/${r.totalQuestions} (${r.accuracy}%)` : "—"}
+                    </td>
+                  )}
+                  <td className="px-5 py-3 text-[#8A7C63] font-mono">{r.completionTime}s</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

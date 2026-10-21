@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   Play,
   Plus,
+  Library,
 } from 'lucide-react'
 
 /* eslint-disable react-hooks/set-state-in-effect */
@@ -59,11 +60,6 @@ export function GameCard({ game, onEdit, onResults, onDelete, onShare }) {
           {onDelete && <IconButton title="Xóa" onClick={onDelete}><Trash2 className="w-5 h-5" /></IconButton>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* {onLive && game.status === "published" && (
-            <button onClick={onLive} className="text-xs sm:text-sm font-semibold text-teal hover:underline whitespace-nowrap">
-              Phát trực tiếp <Play className="w-4 h-4 inline ml-1" />
-            </button>
-          )} */}
           <button onClick={onResults} className="text-xs sm:text-sm font-semibold text-ticket hover:underline whitespace-nowrap">
             Kết quả →
           </button>
@@ -81,6 +77,15 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
   const [confirmReset, setConfirmReset] = useState(null);
   const [resetting, setResetting] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [live, setLive] = useState(socket.connected);
+
+  useEffect(() => {
+    const on = () => setLive(true);
+    const off = () => setLive(false);
+    socket.on("connect", on);
+    socket.on("disconnect", off);
+    return () => { socket.off("connect", on); socket.off("disconnect", off); };
+  }, []);
 
   const load = useCallback(() => {
     setGames(null); setStats(null); setError(null);
@@ -146,135 +151,189 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
   const t = stats || { totals: {}, activity: [], topPlayers: [], topGames: [], subjects: [], attention: { drafts: [], neverPlayed: [] } };
   const draftGames = (stats ? stats.attention.drafts : []).map(d => ({ ...d, raw: games?.find(g => (g._id?.toString() || g.id) === d.id) }));
   const neverPlayedGames = (stats ? stats.attention.neverPlayed : []).map(n => ({ ...n, raw: games?.find(g => (g._id?.toString() || g.id) === n.id) }));
+  const todoCount = draftGames.length + neverPlayedGames.length;
+
+  const statItems = [
+    { label: "Tổng trò chơi", value: t.totals.games, Icon: Ticket, chip: "bg-[#1D2E4A]/10 text-[#1D2E4A]" },
+    { label: "Đã xuất bản", value: t.totals.published, Icon: CheckCircle2, chip: "bg-teal/15 text-teal" },
+    { label: "Bản nháp", value: t.totals.drafts, Icon: Pencil, chip: "bg-gold/20 text-[#B07D10]" },
+    { label: "Lượt chơi", value: t.totals.plays, Icon: Gamepad2, chip: "bg-pink/15 text-pink" },
+    { label: "Học sinh tham gia", value: t.totals.players, Icon: Users, chip: "bg-[#7C6FF1]/15 text-[#7C6FF1]" },
+    { label: "HS trong hệ thống", value: t.totals.students, Icon: School, chip: "bg-[#38BDF8]/15 text-[#0284C7]" },
+    { label: "Điểm trung bình", value: t.totals.avgScore, Icon: Target, chip: "bg-ticket/10 text-ticket" },
+    { label: "Độ chính xác TB", value: `${t.totals.avgAccuracy ?? 0}%`, Icon: BarChart3, chip: "bg-[#10B981]/15 text-[#059669]" },
+  ];
 
   return (
-    <div className="space-y-3 sm:space-y-5">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[#8A7C63] text-xs sm:text-sm font-mono">Xin chào,</p>
-          <h1 className="font-display text-2xl sm:text-3xl text-ink">{user ? user.name : "Giáo viên"}</h1>
-          {/* <button onClick={() => navigate("/admin/profile")} className="text-xs text-ticket font-semibold hover:underline mt-1">
-            <User className="w-4 h-4 inline mr-1" /> Xem hồ sơ
-          </button> */}
-        </div>
-        <button onClick={handleSeed} disabled={seeding}
-          className="text-xs font-mono px-3 py-1.5 rounded-lg border border-ink/15 text-[#8A7C63] hover:bg-ink/5 transition disabled:opacity-50">
-          {seeding ? <Loader2 className="w-4 h-4 inline animate-spin mr-1" /> : <Package className="w-4 h-4 inline mr-1" />}
-          {seeding ? "Đang inject..." : "Inject dữ liệu"}
-        </button>
-      </div>
-
+    <div>
       {error && <ErrorState subtitle="Không thể tải dữ liệu Dashboard." onRetry={load} />}
       {!error && !games && <Loader label="Đang tải dashboard..." />}
 
       {!error && games && (
-        <div className="space-y-6 sm:space-y-8">
-          {/* Thống kê */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {[
-              { label: "Tổng trò chơi", value: t.totals.games, icon: <Ticket className="w-5 h-5" />, ring: "#1D2E4A" },
-              { label: "Đã xuất bản", value: t.totals.published, icon: <CheckCircle2 className="w-5 h-5" />, ring: "#1B998B" },
-              { label: "Bản nháp", value: t.totals.drafts, icon: <Pencil className="w-5 h-5" />, ring: "#F4B942" },
-              { label: "Lượt chơi đã chơi", value: t.totals.plays, icon: <Gamepad2 className="w-5 h-5" />, ring: "#FF6F91" },
-              { label: "Học sinh đã tham gia", value: t.totals.players, icon: <Users className="w-5 h-5" />, ring: "#7C6FF1" },
-              { label: "Học sinh trong hệ thống", value: t.totals.students, icon: <School className="w-5 h-5" />, ring: "#38BDF8" },
-              { label: "Điểm trung bình", value: t.totals.avgScore, icon: <Target className="w-5 h-5" />, ring: "#F4B942" },
-              { label: "Độ chính xác TB", value: `${t.totals.avgAccuracy ?? 0}%`, icon: <BarChart3 className="w-5 h-5" />, ring: "#10B981" },
-            ].map(s => (
-              <div key={s.label} className="note-card p-4 sm:p-5">
-                <StampToken icon={s.icon} ring={s.ring} size={36} fontSize={16} />
-                <div className="font-display text-xl sm:text-2xl text-ink mt-2 sm:mt-3">{s.value ?? 0}</div>
-                <div className="text-[10px] sm:text-xs text-[#8A7C63] font-mono uppercase mt-0.5 sm:mt-1 leading-tight">{s.label}</div>
+        <div className="flex flex-col xl:flex-row gap-4 sm:gap-5 items-start">
+          {/* Cột chính */}
+          <div className="flex-1 min-w-0 w-full space-y-4 sm:space-y-6">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[#8A7C63] text-xs sm:text-sm font-mono">Xin chào,</p>
+                <h2 className="font-display text-2xl sm:text-3xl text-ink">{user ? user.name : "Giáo viên"}</h2>
+                <p className="text-xs sm:text-sm text-[#8A7C63] mt-1">Hôm nay lớp bạn có gì vui nào?</p>
               </div>
-            ))}
-          </div>
+              <button onClick={handleSeed} disabled={seeding}
+                className="text-xs font-mono px-3 py-1.5 rounded-lg border border-ink/15 text-[#8A7C63] hover:bg-ink/5 transition disabled:opacity-50 shrink-0">
+                {seeding ? <Loader2 className="w-4 h-4 inline animate-spin mr-1" /> : <Package className="w-4 h-4 inline mr-1" />}
+                {seeding ? "Đang inject..." : "Inject dữ liệu"}
+              </button>
+            </div>
 
-          {/* Việc cần làm */}
-          {(draftGames.length > 0 || neverPlayedGames.length > 0) && (
-            <section className="note-card p-4 sm:p-5 bg-paper2 border-l-4 border-l-ticket space-y-4 sm:space-y-5">
-              <h2 className="font-display text-lg sm:text-xl text-ink"><CheckCircle2 className="w-5 h-5 inline mr-2 text-ticket" /> Việc cần làm</h2>
-              <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
-                <div>
-                  <h4 className="text-xs sm:text-sm font-mono text-[#8A7C63] uppercase mb-3"><Pencil className="w-4 h-4 inline mr-1" /> Bản nháp chưa xuất bản ({draftGames.length})</h4>
-                  {draftGames.length === 0 ? (
-                    <p className="text-sm text-[#8A7C63]">Không có bản nháp nào tồn đọng.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {draftGames.map(d => (
-                        <li key={d.id} className="flex items-center justify-between gap-3 bg-paper rounded-xl px-3 py-2">
-                          <span className="text-sm font-body text-ink truncate">{d.name}</span>
-                          <button onClick={() => onEdit(d.id)} className="text-xs font-semibold text-ticket hover:underline shrink-0">Chỉnh sửa →</button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+            {/* Thống kê */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {statItems.map(({ label, value, Icon, chip }) => (
+                <div key={label} className="note-card p-3.5 sm:p-4 flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl grid place-items-center shrink-0 ${chip}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-display text-lg sm:text-xl text-ink leading-tight">{value ?? 0}</div>
+                    <div className="text-[9px] sm:text-[10px] text-[#8A7C63] font-mono uppercase leading-tight truncate">{label}</div>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm font-mono text-[#8A7C63] uppercase mb-3"><TrendingUp className="w-4 h-4 inline mr-1" /> Đã xuất bản nhưng chưa có lượt chơi ({neverPlayedGames.length})</h4>
-                  {neverPlayedGames.length === 0 ? (
-                    <p className="text-sm text-[#8A7C63]">Tất cả đã có học sinh chơi.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {neverPlayedGames.map(n => (
-                        <li key={n.id} className="flex items-center justify-between gap-3 bg-paper rounded-xl px-3 py-2">
-                          <span className="text-sm font-body text-ink truncate">{n.name}</span>
-                          <button onClick={() => handleLive(n.raw)} className="text-xs font-semibold text-teal hover:underline shrink-0">Phát trực tiếp <Play className="w-3 h-3 inline ml-1" /></button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+              ))}
+            </div>
+
+            {/* Biểu đồ + Bảng xếp hạng */}
+            <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
+              <ActivityChart data={t.activity} />
+              <TopPlayers data={t.topPlayers} />
+            </div>
+
+            {/* Top games + Phân môn */}
+            <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
+              <TopGames data={t.topGames} onResults={onResults} onLive={handleLive} />
+              <SubjectBreakdown data={t.subjects} onCreate={onCreate} />
+            </div>
+
+            {/* Trò chơi gần đây */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-lg sm:text-xl text-ink">Trò chơi gần đây</h2>
+                <button onClick={onOpenLibrary} className="text-sm text-ticket font-semibold hover:underline">Xem tất cả →</button>
+              </div>
+              {games.length === 0 ? (
+                <EmptyState icon={<Gamepad2 className="w-10 h-10 text-purple-400" />} title="Chưa có trò chơi nào" subtitle="Tạo trò chơi đầu tiên để bắt đầu ôn tập cùng học sinh."
+                  action={<PrimaryButton onClick={onCreate} className="mt-2"><Plus className="w-4 h-4 inline mr-1" /> Tạo trò chơi</PrimaryButton>} />
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                  {games.slice(0, 3).map(g => {
+                    const gid = g._id?.toString() || g.id;
+                    return <GameCard key={gid} game={g} onEdit={() => onEdit(gid)} onResults={() => onResults(gid)} onShare={() => setShareGame(g)} />;
+                  })}
                 </div>
+              )}
+            </div>
+
+            {/* Vùng nguy hiểm */}
+            <section className="note-card p-4 sm:p-5 border-l-4 border-l-red-400 space-y-3 sm:space-y-4">
+              <h2 className="font-display text-lg sm:text-xl text-ink"><AlertTriangle className="w-5 h-5 inline mr-2 text-red-500" /> Vùng nguy hiểm</h2>
+              <p className="text-sm text-[#8A7C63]">Xóa toàn bộ dữ liệu để tạo lại từ đầu. Thao tác không thể hoàn tác.</p>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => setConfirmReset("games")}
+                  className="px-4 py-2 rounded-xl border-2 border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 transition">
+                  <Trash2 className="w-4 h-4 inline mr-1" /> Xóa tất cả trò chơi
+                </button>
+                <button onClick={() => setConfirmReset("templates")}
+                  className="px-4 py-2 rounded-xl border-2 border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 transition">
+                  <Trash2 className="w-4 h-4 inline mr-1" /> Xóa tất cả template
+                </button>
               </div>
             </section>
-          )}
-
-          {/* Biểu đồ + Bảng xếp hạng */}
-          <div className="grid lg:grid-cols-2 gap-5 sm:gap-6">
-            <ActivityChart data={t.activity} />
-            <TopPlayers data={t.topPlayers} />
           </div>
 
-          {/* Top games + Phân môn */}
-          <div className="grid lg:grid-cols-2 gap-5 sm:gap-6">
-            <TopGames data={t.topGames} onResults={onResults} onLive={handleLive} />
-            <SubjectBreakdown data={t.subjects} onCreate={onCreate} />
-          </div>
-
-          {/* Trò chơi gần đây */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-lg sm:text-xl text-ink">Trò chơi gần đây</h2>
-              <button onClick={onOpenLibrary} className="text-sm text-ticket font-semibold hover:underline">Xem tất cả →</button>
-            </div>
-            {games.length === 0 ? (
-              <EmptyState icon={<Gamepad2 className="w-10 h-10 text-purple-400" />} title="Chưa có trò chơi nào" subtitle="Tạo trò chơi đầu tiên để bắt đầu ôn tập cùng học sinh."
-                action={<PrimaryButton onClick={onCreate} className="mt-2"><Plus className="w-4 h-4 inline mr-1" /> Tạo trò chơi</PrimaryButton>} />
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                {games.slice(0, 3).map(g => {
-                  const gid = g._id?.toString() || g.id;
-                  return <GameCard key={gid} game={g} onEdit={() => onEdit(gid)} onResults={() => onResults(gid)} onLive={() => handleLive(g)} onShare={() => setShareGame(g)} />;
-                })}
+          {/* Panel phải — trên mobile đưa lên đầu để thấy việc cần làm ngay */}
+          <aside className="w-full xl:w-[300px] shrink-0 space-y-4 order-first xl:order-last xl:sticky xl:top-[72px]">
+            {/* Việc cần làm */}
+            <section className="note-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-display text-base text-ink"><CheckCircle2 className="w-4 h-4 inline mr-1.5 text-ticket" /> Việc cần làm</h3>
+                {todoCount > 0 && (
+                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-ticket/10 text-ticket">{todoCount}</span>
+                )}
               </div>
-            )}
-          </div>
+              {todoCount === 0 ? (
+                <p className="text-sm text-[#8A7C63]">Mọi thứ đều sẵn sàng!</p>
+              ) : (
+                <>
+                  {draftGames.length > 0 && (
+                    <div>
+                      <h4 className="text-[10px] font-mono uppercase tracking-wider text-[#8A7C63] mb-2"><Pencil className="w-3 h-3 inline mr-1" /> Bản nháp ({draftGames.length})</h4>
+                      <ul className="space-y-1.5">
+                        {draftGames.slice(0, 4).map(d => (
+                          <li key={d.id} className="flex items-center justify-between gap-2 bg-paper rounded-xl px-3 py-2">
+                            <span className="text-sm font-body text-ink truncate">{d.name}</span>
+                            <button onClick={() => onEdit(d.id)} className="text-xs font-semibold text-ticket hover:underline shrink-0">Sửa →</button>
+                          </li>
+                        ))}
+                      </ul>
+                      {draftGames.length > 4 && <p className="text-[10px] font-mono text-[#B7A987] mt-1.5">+{draftGames.length - 4} bản nháp khác</p>}
+                    </div>
+                  )}
+                  {neverPlayedGames.length > 0 && (
+                    <div>
+                      <h4 className="text-[10px] font-mono uppercase tracking-wider text-[#8A7C63] mb-2"><TrendingUp className="w-3 h-3 inline mr-1" /> Chưa ai chơi ({neverPlayedGames.length})</h4>
+                      <ul className="space-y-1.5">
+                        {neverPlayedGames.slice(0, 4).map(n => (
+                          <li key={n.id} className="flex items-center justify-between gap-2 bg-paper rounded-xl px-3 py-2">
+                            <span className="text-sm font-body text-ink truncate">{n.name}</span>
+                            <button onClick={() => handleLive(n.raw)} className="text-xs font-semibold text-teal hover:underline shrink-0">Phát ▶</button>
+                          </li>
+                        ))}
+                      </ul>
+                      {neverPlayedGames.length > 4 && <p className="text-[10px] font-mono text-[#B7A987] mt-1.5">+{neverPlayedGames.length - 4} trò chơi khác</p>}
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
 
-          {/* Vùng nguy hiểm */}
-          <section className="note-card p-4 sm:p-5 border-l-4 border-l-red-400 space-y-3 sm:space-y-4">
-            <h2 className="font-display text-lg sm:text-xl text-ink"><AlertTriangle className="w-5 h-5 inline mr-2 text-red-500" /> Vùng nguy hiểm</h2>
-            <p className="text-sm text-[#8A7C63]">Xóa toàn bộ dữ liệu để tạo lại từ đầu. Thao tác không thể hoàn tác.</p>
-            <div className="flex flex-wrap gap-3">
-              <button onClick={() => setConfirmReset("games")}
-                className="px-4 py-2 rounded-xl border-2 border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 transition">
-                <Trash2 className="w-4 h-4 inline mr-1" /> Xóa tất cả trò chơi
-              </button>
-              <button onClick={() => setConfirmReset("templates")}
-                className="px-4 py-2 rounded-xl border-2 border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 transition">
-                <Trash2 className="w-4 h-4 inline mr-1" /> Xóa tất cả template
-              </button>
-            </div>
-          </section>
+            {/* Thao tác nhanh */}
+            <section className="note-card p-4 space-y-2">
+              <h3 className="font-display text-base text-ink mb-1"><Plus className="w-4 h-4 inline mr-1.5 text-ticket" /> Thao tác nhanh</h3>
+              <PrimaryButton onClick={onCreate} className="w-full"><Plus className="w-4 h-4 inline mr-1" /> Tạo trò chơi</PrimaryButton>
+              <GhostButton onClick={onOpenLibrary} className="w-full"><Library className="w-4 h-4 inline mr-1" /> Xem thư viện</GhostButton>
+            </section>
+
+            {/* Trạng thái hệ thống */}
+            <section className="note-card p-4 space-y-2.5">
+              <h3 className="font-display text-base text-ink"><BarChart3 className="w-4 h-4 inline mr-1.5 text-ticket" /> Trạng thái</h3>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#8A7C63] font-body">API dữ liệu</span>
+                <span className="flex items-center gap-1.5 font-mono text-[#059669]">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981]" /> Đang hoạt động
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#8A7C63] font-body">Realtime (Socket)</span>
+                {live ? (
+                  <span className="flex items-center gap-1.5 font-mono text-[#059669]">
+                    <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" /> Đã kết nối
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 font-mono text-red-500">
+                    <span className="w-2 h-2 rounded-full bg-red-400" /> Chưa kết nối
+                  </span>
+                )}
+              </div>
+              <hr className="dash-rule" />
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#8A7C63] font-body">Tỉ lệ xuất bản</span>
+                <span className="font-mono text-ink">{t.totals.published || 0}/{t.totals.games || 0}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#8A7C63] font-body">Điểm trung bình</span>
+                <span className="font-mono text-ink">{t.totals.avgScore ?? 0}</span>
+              </div>
+            </section>
+          </aside>
         </div>
       )}
 

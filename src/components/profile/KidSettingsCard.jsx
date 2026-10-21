@@ -1,7 +1,7 @@
 /**
  * KidSettingsCard.jsx — khối "Cài đặt · Dành cho phụ huynh" trong trang hồ sơ.
  *
- *   · Thẻ hồ ợ Gạo (nút ứng hộ trong ngày)
+ *   · Thẻ hồ ợ (nút ứng hộ trong ngày)
  *   · Thanh chọn tuổi của bé (áp dụng từ màn chơi tiếp theo)
  *   · Bật/tắt chế độ Song ngữ Anh–Việt
  *

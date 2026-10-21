@@ -207,7 +207,15 @@ export default function AssignmentDetail({ assignmentId }) {
             <h3 className="font-display text-sm text-ink">Danh sách nộp bài ({submissions.length})</h3>
           </div>
           {submissions.length > 0 && (
-            <SearchInput value={query} onChange={setQuery} placeholder="Tìm học sinh..." className="w-48" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSortDesc((v) => !v)}
+                className="md:hidden px-2.5 py-1.5 rounded-lg bg-ink/5 text-ink/60 text-xs font-body hover:bg-ink/10 transition"
+              >
+                Điểm {sortDesc ? '↓' : '↑'}
+              </button>
+              <SearchInput value={query} onChange={setQuery} placeholder="Tìm học sinh..." className="w-36 sm:w-48" />
+            </div>
           )}
         </div>
 
@@ -216,7 +224,36 @@ export default function AssignmentDetail({ assignmentId }) {
         ) : filteredSubmissions.length === 0 ? (
           <EmptyState text={`Không tìm thấy học sinh khớp với "${query}"`} />
         ) : (
-          <div className="overflow-x-auto -mx-5">
+          <>
+            {/* Mobile: mỗi học sinh một card ngang */}
+            <div className="md:hidden space-y-2">
+            {filteredSubmissions.map((s) => (
+              <div key={s.id} className="bg-paper border border-ink/5 rounded-xl px-3 py-2.5 flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="w-8 h-8 rounded-full bg-gold/10 text-gold text-xs font-semibold flex items-center justify-center shrink-0">
+                    {String(s.studentId).slice(0, 2).toUpperCase()}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-body text-ink truncate flex items-center gap-1.5">
+                      {s.score != null && s.score === topScore && (
+                        <Trophy className="w-3.5 h-3.5 text-gold shrink-0" />
+                      )}
+                      {s.studentId}
+                    </p>
+                    <p className="text-[11px] font-body text-ink/40 truncate">
+                      Lần {s.attemptNumber || 1} · {s.submittedAt ? new Date(s.submittedAt).toLocaleString('vi') : '-'}
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0">
+                  <ScoreBadge score={s.score} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: bảng */}
+          <div className="hidden md:block overflow-x-auto -mx-5">
             <table className="w-full text-sm font-body">
               <thead>
                 <tr className="text-left text-ink/40 text-xs border-b border-ink/10">
@@ -261,7 +298,8 @@ export default function AssignmentDetail({ assignmentId }) {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
 

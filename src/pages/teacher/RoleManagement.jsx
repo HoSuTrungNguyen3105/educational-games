@@ -271,7 +271,43 @@ export default function RoleManagement({ user, showToast }) {
             <p className="text-xs text-[#8A7C63] font-mono mb-3">Đang lưu...</p>
           )}
 
-          <div className="overflow-x-auto -mx-1 px-1">
+          {/* Mobile: mỗi chức năng một card ngang với 3 nút bật/tắt */}
+          <div className="md:hidden space-y-2">
+            {features.map((f) => {
+              const row = selected?.matrix?.[f.key] || {};
+              const locked = !isAdmin || selected?.key === "admin";
+              return (
+                <div key={f.key} className="bg-paper border border-ink/5 rounded-xl px-3.5 py-3">
+                  <p className="font-body text-sm text-ink mb-2">{f.label}</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {COLS.map((c) => {
+                      const on = !!row[c.key];
+                      return (
+                        <button
+                          key={c.key}
+                          type="button"
+                          disabled={locked || saving}
+                          onClick={() => toggleCell(f.key, c.key)}
+                          aria-label={`${c.label} ${f.label}: ${on ? "bật" : "tắt"}`}
+                          className={`flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border transition ${
+                            on
+                              ? "border-teal/40 bg-teal/10 text-teal"
+                              : "border-ink/10 bg-paper2 text-ink/30"
+                          } ${locked ? "opacity-80 cursor-default" : "active:scale-95 cursor-pointer"}`}
+                        >
+                          {on ? <Check className="w-4 h-4" strokeWidth={2.5} /> : <X className="w-3.5 h-3.5" />}
+                          <span className="text-[10px] font-mono uppercase tracking-wide">{c.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: bảng ma trận */}
+          <div className="hidden md:block overflow-x-auto -mx-1 px-1">
             <table className="w-full min-w-[420px]">
               <thead>
                 <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">
