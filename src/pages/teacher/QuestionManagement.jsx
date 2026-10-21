@@ -194,6 +194,21 @@ export default function QuestionManagement({ showToast }) {
           onImport={() => setImportOpen(true)}
           onRemoveAll={questions && questions.length > 0 ? confirmRemoveAll : null}
           headers={["#", "Nội dung", "Đáp án đúng", "Thời gian", "Điểm", ""]}
+          renderCard={(q, idx) => (
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xs text-[#8A7C63] w-5 text-right shrink-0">{idx + 1}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-ink font-body truncate">{q.content}</p>
+                <p className="text-[11px] text-[#8A7C63] truncate mt-0.5">
+                  ✓ {q.options?.find(o => o.id === q.correctAnswer)?.content || "—"} · {q.timeLimit}s · {q.points}đ
+                </p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <IconButton title="Chỉnh sửa" onClick={() => openEdit(q, idx)}>✏️</IconButton>
+                <IconButton title="Xóa" onClick={() => confirmRemove(q, idx)}>🗑️</IconButton>
+              </div>
+            </div>
+          )}
           renderRow={(q, idx) => (
             <tr key={q.id || idx} className="border-b border-ink/5 last:border-0">
               <td className="px-4 py-2 text-sm text-[#8A7C63]">{idx + 1}</td>

@@ -29,7 +29,7 @@ export const DONATION = {
   /** Lời nhắn hiện dưới nút. */
   note: "Cảm ơn bé! Mọi khoản ủng hộ đều giúp thêm game mới cho các bé khác.",
   /** Số câu đố trong thử thách. */
-  questionCount: 5,
+  questionCount: 2,
 };
 
 /** Chuỗi người dùng thực sự sao chép (ưu tiên nội dung QR nếu có). */

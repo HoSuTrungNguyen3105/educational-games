@@ -8,6 +8,10 @@ import {
   Loader,
   ErrorState,
   ConfirmModal,
+  ViewToggle,
+  useViewMode,
+  cardGridClass,
+  tableWrapClass,
 } from "../../components/ui";
 import { Shield, Check, X, Plus, MoreHorizontal, Crown, GraduationCap, User } from "lucide-react";
 
@@ -45,6 +49,7 @@ export default function RoleManagement({ user, showToast }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({ ...EMPTY_FORM });
   const [createError, setCreateError] = useState("");
+  const [viewMode, setViewMode] = useViewMode("role-matrix");
   const [creating, setCreating] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, item: null });
   const [menuOpen, setMenuOpen] = useState(false);
@@ -265,14 +270,15 @@ export default function RoleManagement({ user, showToast }) {
             >
               {badgeLabel}
             </span>
+            <ViewToggle mode={viewMode} onChange={setViewMode} />
           </div>
 
           {saving && (
             <p className="text-xs text-[#8A7C63] font-mono mb-3">Đang lưu...</p>
           )}
 
-          {/* Mobile: mỗi chức năng một card ngang với 3 nút bật/tắt */}
-          <div className="md:hidden space-y-2">
+          {/* Mobile + desktop mode lưới: mỗi chức năng một card với 3 nút bật/tắt */}
+          <div className={cardGridClass(viewMode)}>
             {features.map((f) => {
               const row = selected?.matrix?.[f.key] || {};
               const locked = !isAdmin || selected?.key === "admin";
@@ -306,8 +312,8 @@ export default function RoleManagement({ user, showToast }) {
             })}
           </div>
 
-          {/* Desktop: bảng ma trận */}
-          <div className="hidden md:block overflow-x-auto -mx-1 px-1">
+          {/* Desktop mode bảng ma trận */}
+          <div className={`${tableWrapClass(viewMode)} -mx-1 px-1`}>
             <table className="w-full min-w-[420px]">
               <thead>
                 <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">

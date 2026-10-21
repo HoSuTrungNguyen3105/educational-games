@@ -31,12 +31,26 @@ export default function SubjectManagement({ showToast }) {
       <ManagementHeader subtitle="Quản lý môn học" title="Môn học" />
 
       <ManagementTable
+        viewKey="subjects"
         data={subjects}
         error={error && !subjects ? error : null}
         onRetry={load}
         emptyLabel="Chưa có môn học nào."
         onCreate={openCreate}
         headers={["STT", "Tên môn học", ""]}
+        renderCard={(item, idx) => (
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xs text-[#8A7C63] w-6 shrink-0 text-right">{idx + 1}</span>
+            <div className="w-9 h-9 rounded-full bg-teal/15 text-ink flex items-center justify-center font-display text-sm shrink-0">
+              {item.name?.[0]?.toUpperCase() || "?"}
+            </div>
+            <p className="min-w-0 flex-1 font-body text-sm text-ink truncate">{item.name}</p>
+            <div className="flex items-center gap-1 shrink-0">
+              <IconButton title="Chỉnh sửa" onClick={() => openEdit(item)}>✏️</IconButton>
+              <IconButton title="Xóa" onClick={() => askRemove(item)}>🗑️</IconButton>
+            </div>
+          </div>
+        )}
         renderRow={(item, idx) => (
           <tr key={item._id || idx} className="border-b border-ink/5 last:border-0">
             <td className="px-5 py-3 font-mono text-[#8A7C63]">{idx + 1}</td>

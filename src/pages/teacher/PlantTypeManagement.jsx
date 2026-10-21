@@ -160,6 +160,30 @@ export default function PlantTypeManagement({ showToast }) {
           createLabel="+ Thêm loại cây"
           headers={headers}
           renderRow={renderRow}
+          renderCard={(t) => {
+            const rc = RARITY_COLORS[t.rarity] || RARITY_COLORS.common;
+            return (
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-ink truncate">{t.name}</p>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0" style={{ background: rc.bg, color: rc.text }}>
+                      {RARITY_OPTIONS.find(r => r.value === t.rarity)?.label || t.rarity}
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-mono text-[#8A7C63] truncate">{t.id} · {t.kind || "bloom"} · {t.stages} giai đoạn · {formatMs(t.growthTime)}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-xs font-bold font-mono text-gold">{t.seedPrice} 💰</p>
+                  <p className="text-xs font-bold font-mono text-green-600">+{t.harvestCoin}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={() => openEdit(t)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
+                  <button onClick={() => handleDelete(t)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
+                </div>
+              </div>
+            );
+          }}
         />
       )}
 

@@ -15,6 +15,11 @@ function randomEmail(name) {
   return slug + num + "@" + randomItem(RANDOM_DOMAINS);
 }
 
+const rolePillCls = (role) =>
+  role === "admin" ? "bg-pink/15 text-pink border-pink/30"
+    : role === "teacher" ? "bg-ticket/15 text-ticket border-ticket/30"
+      : "bg-teal/15 text-teal border-teal/30";
+
 export default function UserManagement({ user, showToast }) {
   const [users, setUsers] = useState(null);
   const [error, setError] = useState(null);
@@ -156,12 +161,39 @@ export default function UserManagement({ user, showToast }) {
       <ManagementHeader subtitle="Quản lý tài khoản" title="Người dùng" />
 
       <ManagementTable
+        viewKey="users"
         data={users}
         error={error && !users ? error : null}
         onRetry={load}
         emptyLabel="Chưa có tài khoản nào."
         onCreate={openCreate}
         headers={["Họ tên", "Mật khẩu", "Tên đăng nhập", "Email", "Lớp", "Vai trò", "Ngày tạo", ""]}
+        renderCard={(u) => (
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-ink/10 text-ink flex items-center justify-center font-display text-sm shrink-0">
+              {(u.name || u.username || "?").charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="font-body text-sm text-ink truncate">{u.name}</p>
+                <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border shrink-0 ${rolePillCls(u.role)}`}>
+                  {getRoleLabel(u.role)}
+                </span>
+              </div>
+              <p className="font-mono text-[11px] text-[#8A7C63] truncate">
+                {u.username}{u.email ? ` · ${u.email}` : ""}{u.className ? ` · ${u.className}${u.classCode ? ` (${u.classCode})` : ""}` : ""}
+              </p>
+            </div>
+            {u.username !== (user && user.username) && (
+              <div className="flex items-center gap-1 shrink-0">
+                {isAdmin && u.id !== "user-001" && <IconButton title="Chỉnh sửa" onClick={() => openEdit(u)}>✏️</IconButton>}
+                {isAdmin && u.id !== "user-001" && <IconButton title="Đổi vai trò" onClick={() => openRoleChange(u)}>🔄</IconButton>}
+                <IconButton title="Đổi mật khẩu" onClick={() => openReset(u)}>🔑</IconButton>
+                {(isAdmin || u.role !== "admin") && <IconButton title="Xóa tài khoản" onClick={() => confirmRemove(u)}>🗑️</IconButton>}
+              </div>
+            )}
+          </div>
+        )}
         renderRow={(u) => (
           <tr key={u.id} className="border-b border-ink/5 last:border-0">
             <td className="px-5 py-3 font-body text-ink">{u.name}</td>
@@ -190,10 +222,7 @@ export default function UserManagement({ user, showToast }) {
               )}
             </td>
             <td className="px-5 py-3">
-              <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${u.role === "admin" ? "bg-pink/15 text-pink border-pink/30"
-                : u.role === "teacher" ? "bg-ticket/15 text-ticket border-ticket/30"
-                  : "bg-teal/15 text-teal border-teal/30"
-                }`}>
+              <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${rolePillCls(u.role)}`}>
                 {getRoleLabel(u.role)}
               </span>
             </td>

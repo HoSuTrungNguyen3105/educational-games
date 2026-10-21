@@ -88,9 +88,9 @@ export default function DonateModal({ onClose }) {
                     type="number"
                     inputMode="numeric"
                     value={answers[i] ?? ""}
-                    onChange={(e) => setAnswers((prev) => {
+                    onChange={(val) => setAnswers((prev) => {
                       const next = [...prev];
-                      next[i] = e.target.value;
+                      next[i] = val;
                       return next;
                     })}
                     aria-invalid={errors[i] ? "true" : undefined}

@@ -11,7 +11,12 @@ import {
 const COLLECTION = "roles";
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
-const none = () => permissionsToMatrix([]);
+// Ma trận cũ gộp nhiều trang vào một ô (content/settings). Khi đọc dữ liệu cũ,
+// mở rộng sang các trang con để không mất quyền đã cấp trước đây.
+const LEGACY_MATRIX_GROUPS = {
+  content: ["questions", "question_bank", "subjects", "categories", "templates"],
+  settings: ["coins", "daily_tasks", "reminders", "settings"],
+};
 
 // Built-in roles seeded into the `roles` collection — defined once in src/config/roles.js
 export const BUILTIN_ROLES = Object.entries(ROLES).map(([key, role]) => ({
@@ -72,6 +77,7 @@ async function countByRole() {
 }
 
 function toApi(role, counts = {}) {
+  const matrix = normalizeMatrix(role.matrix);
   return {
     id: role.id,
     key: role.key,
@@ -79,9 +85,9 @@ function toApi(role, counts = {}) {
     description: role.description || "",
     isBuiltIn: !!role.isBuiltIn,
     dashboardAccess: !!role.dashboardAccess,
-    matrix: role.matrix || none(),
+    matrix,
     accountCount: counts[role.key] || 0,
-    permissions: matrixToPermissions(role.matrix),
+    permissions: matrixToPermissions(matrix),
   };
 }
 
@@ -185,6 +191,19 @@ function normalizeMatrix(matrix) {
       delete: !!m.delete,
     };
   }
+
+  for (const [legacyKey, targets] of Object.entries(LEGACY_MATRIX_GROUPS)) {
+    const legacy = matrix?.[legacyKey];
+    if (!legacy) continue;
+    for (const key of targets) {
+      const cell = out[key];
+      if (!cell) continue;
+      if (legacy.view) cell.view = true;
+      if (legacy.edit) cell.edit = true;
+      if (legacy.delete) cell.delete = true;
+    }
+  }
+
   return out;
 }
 

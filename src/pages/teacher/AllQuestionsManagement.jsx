@@ -177,6 +177,23 @@ export default function AllQuestionsManagement({ showToast }) {
         onRetry={loadAll}
         emptyLabel="Không có câu hỏi nào."
         headers={["#", "Game", "Nội dung", "Đáp án đúng", "Thời gian", "Điểm", ""]}
+        renderCard={(q, idx) => (
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xs text-[#8A7C63] w-6 text-right shrink-0">{idx + 1}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-ink font-body truncate">{q.content}</p>
+              <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[11px]">
+                <span className="px-1.5 py-0.5 rounded-full bg-teal/10 text-teal max-w-[130px] truncate">{gameMap[q.gameId] || "—"}</span>
+                <span className="text-[#8A7C63] max-w-[160px] truncate">✓ {q.options?.find(o => o.id === q.correctAnswer)?.content || "—"}</span>
+                <span className="font-mono text-[#8A7C63]">{q.timeLimit}s · {q.points}đ</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <IconButton title="Chỉnh sửa" onClick={() => openEdit(q)}>✏️</IconButton>
+              <IconButton title="Xóa" onClick={() => confirmRemove(q)}>🗑️</IconButton>
+            </div>
+          </div>
+        )}
         renderRow={(q, idx) => (
           <tr key={q.id || idx} className="border-b border-ink/5 last:border-0 hover:bg-ink/[.02]">
             <td className="px-4 py-2 text-sm text-[#8A7C63]">{idx + 1}</td>

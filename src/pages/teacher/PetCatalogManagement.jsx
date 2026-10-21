@@ -291,6 +291,42 @@ export default function PetCatalogManagement({ showToast }) {
             createLabel={`+ Thêm ${TABS.find(t => t.kind === tab).label.toLowerCase()}`}
             headers={headers}
             renderRow={renderRow}
+            renderCard={(entry) => {
+              const used = usageOf(entry);
+              const noArt = tab === 'outfit' && !getOutfitAsset(entry.id);
+              return (
+                <div className="flex items-center gap-3">
+                  {tab === 'outfit' ? (
+                    <OutfitPreview id={entry.id} color={firstColor(entry)} size={40} />
+                  ) : tab === 'color' ? (
+                    <span className="block w-9 h-9 rounded-lg border border-ink/10 shrink-0" style={{ background: entry.body }} />
+                  ) : (
+                    <span className="text-2xl shrink-0">{entry.emoji || '🐾'}</span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm text-ink truncate">{entry.name}</span>
+                      {noArt && <span className="text-[10px] font-bold text-amber-700 shrink-0">chưa có hình</span>}
+                    </div>
+                    <p className="font-mono text-[11px] text-ink/50 truncate">
+                      {entry.id}
+                      {tab === 'outfit' ? ` · ${data.slotLabels?.[entry.slot] || entry.slot}` : ''}
+                      {tab === 'species' && entry.trait ? ` · ${entry.trait}` : ''}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${(entry.minLevel || 1) === 1 ? 'bg-teal/15 text-teal' : 'bg-gold/20 text-[#8a6a10]'}`}>
+                      Cấp {entry.minLevel || 1}
+                    </span>
+                    <p className={`text-[11px] font-mono mt-0.5 ${used > 0 ? 'text-ink/70' : 'text-ink/25'}`}>{used} dùng</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => openEdit(entry)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
+                    <button onClick={() => handleDelete(entry)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
+                  </div>
+                </div>
+              );
+            }}
           />
         </>
       )}

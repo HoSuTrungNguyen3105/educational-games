@@ -42,6 +42,7 @@ export { StatusBadge } from "./data/StatusBadge.jsx";
 export { StatCard } from "./data/StatCard.jsx";
 export { StatGrid } from "./data/StatGrid.jsx";
 export { ManagementTable } from "./data/ManagementTable.jsx";
+export { useViewMode, ViewToggle, cardGridClass, tableWrapClass } from "./data/ViewToggle.jsx";
 
 // ── layout ──
 export { StampToken } from "./layout/StampToken.jsx";

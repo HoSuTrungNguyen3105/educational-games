@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { imageService } from "../../services/api.js";
-import { Loader, EmptyState, Modal, ConfirmModal, SearchInput } from "../../components/ui";
-import { Image, Upload, Trash2, Copy, X, FolderOpen, Grid, List } from "lucide-react";
+import { Loader, EmptyState, Modal, ConfirmModal, SearchInput, ViewToggle, useViewMode } from "../../components/ui";
+import { Image, Upload, Trash2, Copy, X, FolderOpen } from "lucide-react";
 import { useConfirm } from "../../hooks/useConfirm.js";
 
 function formatBytes(bytes) {
@@ -24,7 +24,7 @@ export default function ImageLibrary({ showToast }) {
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState([]);
   const [preview, setPreview] = useState(null);
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode, setViewMode] = useViewMode("image-library", "grid");
   const { askConfirm, confirmProps } = useConfirm();
   const [folder, setFolder] = useState("edu-game");
   const fileInput = useRef(null);
@@ -118,10 +118,7 @@ export default function ImageLibrary({ showToast }) {
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg text-ink">Thư viện ảnh</h2>
         <div className="flex items-center gap-2">
-          <button onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}
-            className="px-3 py-2 rounded-xl border border-ink/15 text-ink/60 hover:bg-ink/5 transition">
-            {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
-          </button>
+          <ViewToggle mode={viewMode} onChange={setViewMode} className="inline-flex" />
           <button onClick={() => fileInput.current?.click()} disabled={uploading}
             className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2">
             <Upload className="w-4 h-4" />

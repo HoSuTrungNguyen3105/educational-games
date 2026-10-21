@@ -36,6 +36,7 @@ export default function CategoryManagement({ showToast }) {
       <ManagementHeader subtitle="Quản lý danh mục" title="Categories" />
 
       <ManagementTable
+        viewKey="categories"
         data={categories}
         error={error && !categories ? error : null}
         onRetry={load}
@@ -43,6 +44,21 @@ export default function CategoryManagement({ showToast }) {
         onCreate={openCreate}
         onRemoveAll={categories && categories.length > 0 ? () => askRemoveAll("TẤT CẢ category") : null}
         headers={["ID", "Tên hiển thị", ""]}
+        renderCard={(cat) => (
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-gold/20 text-ink flex items-center justify-center font-display text-sm shrink-0">
+              {cat.label?.[0]?.toUpperCase() || "?"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-body text-sm text-ink truncate">{cat.label}</p>
+              <p className="font-mono text-[11px] text-[#8A7C63] truncate">{cat.id}</p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <IconButton title="Chỉnh sửa" onClick={() => openEdit(cat)}>✏️</IconButton>
+              <IconButton title="Xóa" onClick={() => askRemove(cat)}>🗑️</IconButton>
+            </div>
+          </div>
+        )}
         renderRow={(cat) => (
           <tr key={cat.id} className="border-b border-ink/5 last:border-0">
             <td className="px-5 py-3 font-mono text-ink">{cat.id}</td>

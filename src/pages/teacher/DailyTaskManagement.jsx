@@ -141,6 +141,25 @@ export default function DailyTaskManagement({ showToast }) {
           emptyLabel="Chưa có dữ liệu"
           headers={taskHeaders}
           renderRow={renderTaskRow}
+          renderCard={(task) => (
+            <div className="flex items-center gap-3">
+              <span className="text-lg shrink-0">{task.icon}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold font-body text-ink truncate">{task.name}</p>
+                <p className="text-[11px] text-[#8A7C63] font-mono truncate">
+                  {TASK_TYPES.find(t => t.value === task.type)?.label || task.type} · {TASK_SCOPES.find(s => s.value === task.scope)?.label || task.scope} · {task.target} lần · +{task.rewardCoin} 💰
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-xs font-mono text-ink">{task.completedCount ?? 0} ✓</p>
+                <p className="text-xs font-mono text-teal">{task.claimedCount ?? 0} 🎁</p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button onClick={() => openEdit(task)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
+                <button onClick={() => handleDelete(task)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
+              </div>
+            </div>
+          )}
         />
       )}
 

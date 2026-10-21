@@ -28,6 +28,7 @@ export default function TemplateManagement({ showToast }) {
       <ManagementHeader subtitle="Quản lý template trò chơi" title="Templates" />
 
       <ManagementTable
+        viewKey="templates"
         count={templates ? templates.length : 0}
         data={templates}
         error={error && !templates ? error : null}
@@ -35,6 +36,28 @@ export default function TemplateManagement({ showToast }) {
         emptyLabel="Chưa có template nào."
         onCreate={() => navigate("/admin/templates/new")}
         headers={["Icon", "Tên", "Loại", "Thể loại", "Trạng thái", "Cập nhật", ""]}
+        renderCard={(t) => (
+          <div className="flex items-center gap-3">
+            <span className="text-xl shrink-0">{t.icon}</span>
+            <div className="min-w-0 flex-1">
+              <p className="font-body text-sm text-ink truncate">{t.name}</p>
+              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-full border ${t.type === "play-to-win" ? "bg-teal/15 text-teal border-teal/30" : "bg-ticket/15 text-ticket border-ticket/30"}`}>
+                  {t.type === "play-to-win" ? "Win" : "Learn"}
+                </span>
+                <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-full border"
+                  style={{ color: t.ring, borderColor: t.ring + "40", backgroundColor: t.ring + "15" }}>{t.category}</span>
+                <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-full border ${t.status === "published" ? "bg-teal/15 text-teal border-teal/30"
+                  : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20" : "bg-gold/15 text-gold border-gold/30"
+                  }`}>{t.status}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <IconButton title="Sửa" onClick={() => navigate(`/admin/templates/${t._id}`)}>✏️</IconButton>
+              <IconButton title="Xóa" onClick={() => confirmRemove(t)}>🗑️</IconButton>
+            </div>
+          </div>
+        )}
         renderRow={(t) => (
           <tr key={t._id} className="border-b border-ink/5 last:border-0">
             <td className="px-5 py-3 text-xl">{t.icon}</td>

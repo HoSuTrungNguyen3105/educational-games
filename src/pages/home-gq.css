@@ -829,7 +829,22 @@
   .gq-sect__t { font-size: 18px; }
   .gq-top { gap: 10px; }
   .gq-logo__name { font-size: 16px; }
-  .gq-logo__sub { font-size: 9px; }
+  /* Header một hàng gọn trên màn hình hẹp: ẩn chip tuổi (tên + tuổi bé đã có
+     trong lời chào hero và trang hồ sơ) và chữ phụ "EDUGAMES", cho tên logo
+     co giãn có dấu … — trước đây hàng header tràn khỏi màn hình khiến cụm nút
+     ⭐ 🔊 ⚙️ nằm ngoài tầm với. */
+  .gq-age { display: none; }
+  .gq-logo { flex-shrink: 1; min-width: 0; }
+  .gq-logo > span:last-child { min-width: 0; }
+  .gq-logo__name {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gq-logo__sub { display: none; }
+  .gq-actions { flex-shrink: 0; }
   .gq-age__sub { display: none; }
   /* Nút tim trùng "Cá nhân" ở thanh dưới + mục Hồ sơ trong menu → ẩn đi
      để các nút còn lại không bị co nhỏ trên màn hình hẹp. */

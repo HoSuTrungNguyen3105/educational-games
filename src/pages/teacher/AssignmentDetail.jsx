@@ -5,7 +5,7 @@ import {
   ArrowLeft, Copy, Check, Users, BarChart3, Pencil,
   Trophy, Clock, FileQuestion, Lock, Repeat, Link2,
 } from 'lucide-react';
-import { ConfirmModal, SearchInput } from '../../components/ui';
+import { ConfirmModal, SearchInput, ViewToggle, useViewMode, cardGridClass, tableWrapClass } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
 
@@ -16,6 +16,7 @@ export default function AssignmentDetail({ assignmentId }) {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [sortDesc, setSortDesc] = useState(true);
+  const [viewMode, setViewMode] = useViewMode("assignment-detail");
   const { askConfirm, confirmProps } = useConfirm();
   const [copiedKey, copy] = useCopy();
 
@@ -215,6 +216,7 @@ export default function AssignmentDetail({ assignmentId }) {
                 Điểm {sortDesc ? '↓' : '↑'}
               </button>
               <SearchInput value={query} onChange={setQuery} placeholder="Tìm học sinh..." className="w-36 sm:w-48" />
+              <ViewToggle mode={viewMode} onChange={setViewMode} />
             </div>
           )}
         </div>
@@ -225,8 +227,8 @@ export default function AssignmentDetail({ assignmentId }) {
           <EmptyState text={`Không tìm thấy học sinh khớp với "${query}"`} />
         ) : (
           <>
-            {/* Mobile: mỗi học sinh một card ngang */}
-            <div className="md:hidden space-y-2">
+            {/* Mobile + desktop mode lưới: mỗi học sinh một card ngang */}
+            <div className={cardGridClass(viewMode)}>
             {filteredSubmissions.map((s) => (
               <div key={s.id} className="bg-paper border border-ink/5 rounded-xl px-3 py-2.5 flex items-center gap-3">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -252,8 +254,8 @@ export default function AssignmentDetail({ assignmentId }) {
             ))}
           </div>
 
-          {/* Desktop: bảng */}
-          <div className="hidden md:block overflow-x-auto -mx-5">
+          {/* Desktop mode bảng */}
+          <div className={`${tableWrapClass(viewMode)} -mx-5`}>
             <table className="w-full text-sm font-body">
               <thead>
                 <tr className="text-left text-ink/40 text-xs border-b border-ink/10">

@@ -204,6 +204,24 @@ export default function CoinManagement({ showToast }) {
           emptyLabel="Chưa có người dùng nào"
           headers={userHeaders}
           renderRow={renderUserRow}
+          renderCard={(u) => {
+            const lv = getLevelProgress(u.coins || 0);
+            return (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold shrink-0">
+                  {(u.name || "?").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold font-body text-ink truncate">{u.name || u.username}</p>
+                  <p className="text-[11px] text-[#8A7C63] font-mono truncate">@{u.username} · {getRoleLabel(u.role)}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold font-mono text-gold">{(u.coins || 0).toLocaleString()} 💰</p>
+                  <p className="text-[11px] text-[#8A7C63] truncate">{getLevelEmoji(lv.level)} Lv.{lv.level} · {getLevelTitle(lv.level)}</p>
+                </div>
+              </div>
+            );
+          }}
         />
       )}
 
@@ -238,6 +256,25 @@ export default function CoinManagement({ showToast }) {
             emptyLabel="Chưa có dữ liệu tiến trình nào"
             headers={progressHeaders}
             renderRow={renderProgressRow}
+            renderCard={(item) => (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold shrink-0">
+                  {(userMap[item.userId] || "?").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold font-body text-ink truncate">{userMap[item.userId] || item.userId}</p>
+                  <p className="text-[11px] text-[#8A7C63] truncate">{getGameIcon(item.gameId)} {getGameName(item.gameId)} · Lv.{item.level || 1} · {(item.experience || 0).toLocaleString()} XP</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-xs font-mono text-ink">{item.gamesPlayed || 0} lượt</p>
+                  <p className="text-xs font-mono text-[#8A7C63]">{item.questsCompleted || 0} NV</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button onClick={() => openEdit(item)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
+                  <button onClick={() => handleDelete(item)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
+                </div>
+              </div>
+            )}
           />
         </>
       )}

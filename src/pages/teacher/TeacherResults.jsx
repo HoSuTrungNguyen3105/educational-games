@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService, resultService } from '../../services/api.js'
-import { StampToken, StatusBadge, Loader, ErrorState, EmptyState } from '../../components/ui'
+import { StampToken, StatusBadge, Loader, ErrorState, EmptyState, ViewToggle, useViewMode, cardGridClass, tableWrapClass } from '../../components/ui'
 import { rankMedal } from '../../lib/utils.js'
 
 export default function TeacherResults({ gameId, onBack }) {
@@ -38,10 +38,15 @@ export default function TeacherResults({ gameId, onBack }) {
 
 export function LeaderboardTable({ results }) {
   const hasAccuracy = results.some(r => r.totalQuestions > 0);
+  const [mode, setMode] = useViewMode("results");
   return (
-    <>
-      {/* Mobile: mỗi học sinh một card ngang */}
-      <div className="md:hidden space-y-2">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-mono uppercase tracking-wide text-[#A79A80]">{results.length} lượt chơi</p>
+        <ViewToggle mode={mode} onChange={setMode} />
+      </div>
+      {/* Mobile + desktop mode lưới: mỗi học sinh một card ngang */}
+      <div className={cardGridClass(mode)}>
         {results.map((r, i) => {
           const medal = rankMedal(i + 1);
           return (
@@ -60,8 +65,8 @@ export function LeaderboardTable({ results }) {
         })}
       </div>
 
-      {/* Desktop: bảng xếp hạng */}
-      <div className="hidden md:block note-card overflow-x-auto">
+      {/* Desktop mode bảng */}
+      <div className={`note-card ${tableWrapClass(mode)}`}>
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[#8A7C63] font-mono text-xs uppercase border-b border-ink/10">
@@ -90,6 +95,6 @@ export function LeaderboardTable({ results }) {
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }
