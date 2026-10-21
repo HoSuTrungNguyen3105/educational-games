@@ -91,6 +91,12 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
 
   function pick(id) {
     if (!field) return;
+    /* Chọn Thân = chọn trai/gái → kèm "diện" chuẩn của thân đó (tóc + áo quần),
+     * giống nút preset bên admin; các lớp khác vẫn giữ đồ bé đang mặc. */
+    if (kind === "avatar" && field === "body") {
+      setDraft(getDressUp().applyBody(draft, id));
+      return;
+    }
     setDraft(cfg.sanitize({ ...draft, [field]: id || null }));
   }
 

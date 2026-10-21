@@ -12,6 +12,16 @@
  */
 
 /**
+ * Mã body của hệ avatar cũ (`/api/avatar/categories`, `src/data/avatarBodies.js`)
+ * đặt tên khác hệ mới. Hồ sơ mang mã cũ phải quy về mã mới, nếu không
+ * `cleanByFields` rơi về mặc định body_01 → bé gái/bé rồng thành bé trai.
+ */
+export const AVATAR_BODY_ALIASES = {
+  body_boy_01: "body_01",
+  body_custom_01: "body_dragon_01",
+};
+
+/**
  * Allowlist cho từng trường của avatar. `null` trong danh sách = cho phép bỏ
  * trống (không mặc item đó).
  */
@@ -72,7 +82,8 @@ export const PET_DEFAULT = {
 function cleanByFields(src, fields, defaults, withAvatar) {
   const out = {};
   for (const [key, allowed] of Object.entries(fields)) {
-    const v = src[key];
+    let v = src[key];
+    if (withAvatar && key === "body" && AVATAR_BODY_ALIASES[v]) v = AVATAR_BODY_ALIASES[v];
     /* null chỉ giữ khi allowlist cho phép bỏ trống lớp đó. */
     const ok = v === null ? allowed.includes(null) : typeof v === "string" && allowed.includes(v);
     out[key] = ok ? v : defaults[key];

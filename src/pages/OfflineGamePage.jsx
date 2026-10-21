@@ -5,6 +5,7 @@ import { useGameVersion } from "../hooks/useGameVersion.js";
 import { gameCache } from "../lib/gameCache.js";
 import { gameDataService } from "../services/gameDataService.js";
 import { Loader } from "../components/ui";
+import TOKENS_CSS from "../games/offline/lib/tokens.css?raw";
 
 /**
  * MỖI GAME = MỘT FILE HTML trong src/games/offline/.
@@ -35,6 +36,12 @@ const HTML_BY_ID = Object.fromEntries(
 );
 
 /**
+ * Nạp bộ UI dùng chung (lib/tokens.css) vào mọi game — kể cả game viết tay.
+ *
+ * Tiêm ở ĐẦU <head>, trước <style> của game: game giữ được theme riêng (nếu có
+ * tự khai báo --ink/--paper…) nhưng vẫn dùng được biến mới (--card, --gq-*) và
+ * có cùng hình dạng nút về / HUD / panel với các game khác.
+ *
  * Game chạy trong app (iframe) thì React đã vẽ sẵn nút "← Trang chủ" ở góc
  * trên trái — đúng chỗ game tự đặt nút về của nó nên 2 nút đè lên nhau.
  * Cắm class "gq-embedded" vào <html> của game để:
@@ -44,11 +51,18 @@ const HTML_BY_ID = Object.fromEntries(
  * Mở file .html trực tiếp (không có iframe) thì không có class → game giữ
  * nguyên nút riêng của nó.
  */
-function injectEmbeddedMode(html) {
-  const snippet = `<style>html.gq-embedded #homeBackBtn,html.gq-embedded .bar>.back{display:none!important}html.gq-embedded #app{padding-top:56px!important}html.gq-embedded .sq#back{top:64px!important}</style><script>try{if(window.parent&&window.parent!==window)document.documentElement.classList.add("gq-embedded")}catch(e){}<\/script>`;
-  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${snippet}</body>`);
-  return html + snippet;
+const EMBEDDED_SNIPPET = `<style>html.gq-embedded #homeBackBtn,html.gq-embedded .bar>.back{display:none!important}html.gq-embedded #app{padding-top:56px!important}html.gq-embedded .sq#back{top:64px!important}</style><script>try{if(window.parent&&window.parent!==window)document.documentElement.classList.add("gq-embedded")}catch(e){}</script>`;
+
+function injectGameUi(html) {
+  const tokens = `<style id="gq-tokens">${TOKENS_CSS}</style>`;
+  const withTokens = /<head[^>]*>/i.test(html)
+    ? html.replace(/<head[^>]*>/i, (m) => `${m}${tokens}`)
+    : `${tokens}${html}`;
+  return /<\/body>/i.test(withTokens)
+    ? withTokens.replace(/<\/body>/i, () => `${EMBEDDED_SNIPPET}</body>`)
+    : withTokens + EMBEDDED_SNIPPET;
 }
+
 
 /** Trang chơi 1 game offline — dùng chung cho mọi game trong thư mục offline. */
 export default function OfflineGamePage({ gameId }) {
@@ -186,16 +200,16 @@ export default function OfflineGamePage({ gameId }) {
         <div className="text-center max-w-md px-5">
           <div className="text-5xl">🤔</div>
           <p className="mt-3 font-display text-lg font-bold text-ink">Không tìm thấy game</p>
-          <p className="mt-1 text-sm text-slate-500">id: {String(gameId || "(rỗng)")}</p>
-          <p className="mt-3 text-xs text-slate-400">
-            Kiểm tra file <code className="bg-black/5 px-1.5 py-0.5 rounded">
+          <p className="mt-1 text-sm text-ink/60">id: {String(gameId || "(rỗng)")}</p>
+          <p className="mt-3 text-xs text-ink/45">
+            Kiểm tra file <code className="rounded bg-black/5 px-1.5 py-0.5">
               src/games/offline/{String(gameId)}.html
             </code>{" "}
             có tồn tại không. Nếu vừa thêm file, hãy tải lại trang (F5).
           </p>
           <button
             onClick={() => navigate("/")}
-            className="mt-4 rounded-full bg-slate-100 px-4 py-2 text-sm font-extrabold text-slate-600 shadow-sm hover:bg-slate-200"
+            className="mt-4 rounded-full border-2 border-ink/10 bg-paper2 px-4 py-2 text-sm font-extrabold text-ink/70 shadow-sm hover:bg-ink/5"
           >
             ← Về trang chủ
           </button>
@@ -205,11 +219,11 @@ export default function OfflineGamePage({ gameId }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-[#0c2a30]">
+    <div className="fixed inset-0 bg-paper">
       <button
         type="button"
         onClick={() => navigate("/")}
-        className="absolute top-3 left-3 z-20 rounded-full bg-white/90 px-3 py-1.5 text-sm font-extrabold text-slate-700 shadow hover:bg-white"
+        className="absolute top-3 left-3 z-20 rounded-full border-2 border-ink bg-paper2 px-3 py-1.5 text-sm font-extrabold text-ink shadow hover:bg-white"
         aria-label="Về trang chủ"
       >
         ← Trang chủ
@@ -217,7 +231,7 @@ export default function OfflineGamePage({ gameId }) {
       <iframe
         ref={iframeRef}
         title={meta.name}
-        srcDoc={injectEmbeddedMode(html)}
+        srcDoc={injectGameUi(html)}
         onLoad={() => pushDataRef.current?.()}
         sandbox="allow-scripts allow-same-origin"
         className="h-full w-full border-0"
@@ -225,7 +239,7 @@ export default function OfflineGamePage({ gameId }) {
 
       {/* Đang chơi offline bằng dữ liệu đã cache */}
       {offlineInfo && (
-        <div className="fixed bottom-3 left-3 z-20 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+        <div className="fixed bottom-3 left-3 z-20 rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-white shadow-lg">
           📴 Ngoại tuyến — đang dùng dữ liệu đã lưu (bản v{offlineInfo.version})
         </div>
       )}
@@ -233,24 +247,24 @@ export default function OfflineGamePage({ gameId }) {
       {/* Thông báo cập nhật phiên bản mới */}
       {showUpdateNotification && (
         <div className="fixed top-4 right-4 z-50 max-w-sm">
-          <div className="bg-white rounded-lg shadow-lg p-4 border-2 border-blue-500">
+          <div className="rounded-xl border-2 border-teal bg-paper2 p-4 shadow-lg">
             <div className="flex items-start gap-3">
               <div className="text-2xl">🎮</div>
               <div className="flex-1">
-                <h3 className="font-bold text-sm text-gray-900">Có phiên bản mới!</h3>
-                <p className="text-xs text-gray-600 mt-1">
+                <h3 className="font-display text-sm font-bold text-ink">Có phiên bản mới!</h3>
+                <p className="mt-1 text-xs text-ink/60">
                   Game "{meta.name}" đã có phiên bản mới. Cập nhật để trải nghiệm tốt hơn.
                 </p>
-                <div className="flex gap-2 mt-3">
+                <div className="mt-3 flex gap-2">
                   <button
                     onClick={handleUpdateGame}
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded"
+                    className="flex-1 rounded-lg bg-teal px-3 py-2 text-xs font-bold text-white hover:bg-teal/90"
                   >
                     Cập nhật ngay
                   </button>
                   <button
                     onClick={() => setShowUpdateNotification(false)}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 px-3 rounded"
+                    className="flex-1 rounded-lg border-2 border-ink/10 bg-white px-3 py-2 text-xs font-bold text-ink/70 hover:bg-ink/5"
                   >
                     Để sau
                   </button>
@@ -260,6 +274,7 @@ export default function OfflineGamePage({ gameId }) {
           </div>
         </div>
       )}
+
     </div>
   );
 }

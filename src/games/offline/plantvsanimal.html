@@ -1383,7 +1383,7 @@ requestAnimationFrame(loop);
     border-radius: 14px;
     display: grid; place-items: center;
     cursor: pointer;
-    font-family: inherit;
+    font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);
     font-size: 20px; font-weight: 800; line-height: 1;
     color: #5b3b22;
     background: #fff7dc;
@@ -1398,7 +1398,7 @@ requestAnimationFrame(loop);
     transform: translateY(3px);
     box-shadow: 0 1px 0 #5b3b22, 0 3px 6px rgba(0, 0, 0, .22);
   }
-  #homeBackBtn:focus-visible { outline: 3px solid #2f9bff; outline-offset: 2px; }
+  #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
 </style>
 <button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">

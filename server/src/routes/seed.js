@@ -28,7 +28,7 @@ router.post("/seed", authenticate, requireRoles("admin", "teacher"), async (req,
       // Chỉ cập nhật những field có trong nguồn, và chỉ khi khác đi
       const patch = {};
       for (const k of ["description", "type", "category", "icon", "ring",
-                       "htmlTemplate", "thumbnail", "version", "status", "playMode"]) {
+                       "htmlTemplate", "version", "status", "playMode"]) {
         if (t[k] !== undefined && t[k] !== "" && t[k] !== existing[k]) patch[k] = t[k];
       }
       if (Object.keys(patch).length) {

@@ -96,19 +96,19 @@
         }
         if (food) {
           const cx = food.x * cell + cell / 2, cy = food.y * cell + cell / 2;
-          ctx.fillStyle = '#ff6b57'; ctx.strokeStyle = '#1c1b3a'; ctx.lineWidth = 2.5;
+          ctx.fillStyle = '#e4572e'; ctx.strokeStyle = '#1d2e4a'; ctx.lineWidth = 2.5;
           ctx.beginPath(); ctx.arc(cx, cy, cell * .38, 0, 7); ctx.fill(); ctx.stroke();
           ctx.fillStyle = '#56bd72'; ctx.fillRect(cx - 2, cy - cell * .48, 4, cell * .18);
         }
         snake.forEach((s, k) => {
           const pad = k ? cell * .1 : cell * .04;
-          ctx.fillStyle = k ? (k % 2 ? '#2fc9a5' : '#27b393') : '#1c1b3a'; ctx.strokeStyle = '#1c1b3a'; ctx.lineWidth = 2;
+          ctx.fillStyle = k ? (k % 2 ? '#1b998b' : '#157f74') : '#1d2e4a'; ctx.strokeStyle = '#1d2e4a'; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.roundRect(s.x * cell + pad, s.y * cell + pad, cell - pad * 2, cell - pad * 2, cell * .28); ctx.fill(); if (k) ctx.stroke();
         });
         const h = snake[0]; ctx.fillStyle = '#fff';
         [[.3, .35], [.7, .35]].forEach(([ex, ey]) => { ctx.beginPath(); ctx.arc(h.x * cell + cell * ex, h.y * cell + cell * ey, cell * .12, 0, 7); ctx.fill() });
         if (!started) {
-          ctx.fillStyle = 'rgba(28,27,58,.78)'; ctx.fillRect(0, size / 2 - 28, size, 56);
+          ctx.fillStyle = 'rgba(29,46,74,.78)'; ctx.fillRect(0, size / 2 - 28, size, 56);
           ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.max(14, size / 24)}px Be Vietnam Pro,system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText('Vuốt hoặc bấm hướng để bắt đầu', size / 2, size / 2);
         }

@@ -10,21 +10,158 @@
     href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap"
     rel="stylesheet">
   <style>
-    :root {
-      --ink: #1c1b3a;
-      --paper: #fbf8ef;
-      --line: #e6e0cc;
-      --sun: #ffc93c;
-      --tomato: #ff6b57;
-      --mint: #2fc9a5;
-      --sky: #4b9dff;
-      --lilac: #a184ff;
-      --ok: #22b573;
-      --bad: #f0483e;
-      --shadow: 4px 4px 0 var(--ink);
-      --head: 'Baloo 2', 'Nunito', 'Segoe UI', system-ui, sans-serif;
-      --body: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
-    }
+    /* ============================================================================
+   tokens.css — NGUỒN SỰ THẬT DUY NHẤT về màu + font của game offline.
+   Được nạp 2 nơi:
+     · scripts/build-offline-games.mjs chèn vào <style> của lib/shell.html
+       → 17 game sinh tự động dùng đúng biến này.
+     · OfflineGamePage.jsx đọc bằng ?raw rồi tiêm vào <head> của MỌI game
+       (kể cả game viết tay) → chạy trong app là cùng một bộ màu/font.
+   Vì vậy file này CHỈ được chứa: biến :root, class .gq-*, và #homeBackBtn.
+   Không viết selector trần (body, h1, .btn…) — tiêm vào game viết tay sẽ đè
+   lên nền/tông màu riêng của chúng và làm hỏng theme.
+   ========================================================================== */
+
+:root {
+  /* Bảng màu lấy từ ứng dụng (index.html + src/index.css) để game không lệch
+     khỏi phần còn lại của trang khi nằm trong khung iframe. */
+  --ink: #1d2e4a;
+  --ink2: #16233a;
+  --paper: #fff6e7;
+  --card: #fffbf2;
+  --bg: #fff3de;
+  --stage: #fff6e7;
+  --line: #e6dcc4;
+  --sun: #f4b942;
+  --gold: #f4b942;
+  --tomato: #e4572e;
+  --ticket: #e4572e;
+  --mint: #1b998b;
+  --teal: #1b998b;
+  --accent: #1b998b;
+  --onaccent: #ffffff;
+  --sky: #4b9dff;
+  --lilac: #8b5cf6;
+  --purple: #8b5cf6;
+  --pink: #ff6f91;
+  --ok: #22b573;
+  --bad: #f0483e;
+  --shadow: 4px 4px 0 var(--ink);
+
+  /* Font: Baloo 2 có weight 800 (shell + đa số game viết tay đang dùng),
+     Be Vietnam Pro cho chữ thường — thống nhất toàn bộ thư mục offline. */
+  --head: "Baloo 2", "Fredoka", "Nunito", "Segoe UI", system-ui, sans-serif;
+  --body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+}
+
+/* Nút "về trang chủ" mà mọi game tự đặt ở góc trên-trái. Trong app thì React
+   đã vẽ nút riêng nên CSS .gq-embedded ẩn cái này đi (xem OfflineGamePage). */
+.gq-home-btn,
+#homeBackBtn {
+  position: fixed;
+  z-index: 2147483000;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: calc(env(safe-area-inset-left, 0px) + 10px);
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-family: var(--head);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--card);
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink), 0 8px 14px rgba(0, 0, 0, .22);
+  transition: transform .12s, box-shadow .12s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.gq-home-btn:hover,
+#homeBackBtn:hover {
+  filter: brightness(1.06);
+}
+
+.gq-home-btn:active,
+#homeBackBtn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink), 0 3px 6px rgba(0, 0, 0, .22);
+}
+
+.gq-home-btn:focus-visible,
+#homeBackBtn:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 2px;
+}
+
+/* HUD / panel / toast dùng chung cho game viết tay chưa có style riêng. */
+.gq-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.gq-panel {
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-family: var(--body);
+}
+
+.gq-btn {
+  font-family: var(--head);
+  font-weight: 800;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--sun);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+}
+
+.gq-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.gq-btn.alt {
+  background: var(--card);
+}
+
+/* Nút "chơi lại" của game nằm cùng góc với nút của app → game nào tự đặt
+   #back thì dời xuống dưới --gq-topbar (56px) để không đè lên nhau. */
+:root {
+  --gq-topbar: 56px;
+  --gq-home-offset: calc(var(--gq-topbar) + 8px);
+}
+
+@media (prefers-reduced-motion:reduce) {
+
+  .gq-home-btn,
+  #homeBackBtn,
+  .gq-btn {
+    transition: none;
+  }
+}
 
     * {
       box-sizing: border-box;
@@ -118,7 +255,7 @@
       height: 16px;
       border: 3px solid var(--ink);
       border-radius: 999px;
-      background: #fff;
+      background: var(--card);
       overflow: hidden
     }
 
@@ -135,7 +272,7 @@
       height: 40px;
       border-radius: 12px;
       border: 3px solid var(--ink);
-      background: #fff;
+      background: var(--card);
       font-size: 18px
     }
 
@@ -160,7 +297,7 @@
       max-width: 34ch;
       font-size: 15px;
       line-height: 1.5;
-      color: #4b4a6b
+      color: var(--ink2)
     }
 
     .grid {
@@ -181,7 +318,7 @@
       min-height: 190px;
       position: relative;
       transition: transform .12s, box-shadow .12s;
-      background: #fff
+      background: var(--card)
     }
 
     .tile:hover {
@@ -251,7 +388,7 @@
       padding: 5px 12px;
       font-size: 13px;
       font-weight: 700;
-      background: #fff
+      background: var(--card)
     }
 
     .bd.off {
@@ -269,7 +406,7 @@
 
     .back {
       border: 3px solid var(--ink);
-      background: #fff;
+      background: var(--card);
       border-radius: 14px;
       padding: 8px 14px;
       font-weight: 700;
@@ -287,7 +424,7 @@
     }
 
     .panel {
-      background: #fff;
+      background: var(--card);
       border: 3px solid var(--ink);
       border-radius: 22px;
       padding: 20px;
@@ -324,7 +461,7 @@
 
     .btn.alt,
     .btn.ghost {
-      background: #fff
+      background: var(--card)
     }
 
     .btn.sky {
@@ -342,22 +479,22 @@
     }
 
     .hud span {
-      background: #fff;
+      background: var(--card);
       border: 2.5px solid var(--ink);
       border-radius: 12px;
       padding: 5px 12px
     }
 
-    .timebar {
+    .tbar {
       height: 14px;
       border: 3px solid var(--ink);
       border-radius: 999px;
-      background: #fff;
+      background: var(--card);
       overflow: hidden;
       margin-bottom: 14px
     }
 
-    .timebar i {
+    .tbar i {
       display: block;
       height: 100%;
       width: 100%;
@@ -411,7 +548,7 @@
 
     .opt {
       border: 3px solid var(--ink);
-      background: #fff;
+      background: var(--card);
       border-radius: 16px;
       padding: 16px 10px;
       font-family: var(--head);
@@ -461,7 +598,7 @@
 
     .explain {
       margin-top: 14px;
-      background: #fff7d6;
+      background: var(--bg);
       border: 3px solid var(--ink);
       border-radius: 16px;
       padding: 12px 14px;
@@ -573,7 +710,7 @@
       font-family: var(--head);
       font-weight: 800;
       font-size: 28px;
-      background: #fff;
+      background: var(--card);
       padding: 0
     }
 
@@ -604,7 +741,7 @@
       height: 58px;
       border: 3px solid var(--ink);
       border-radius: 12px;
-      background: #fff;
+      background: var(--card);
       font-family: var(--head);
       font-weight: 800;
       font-size: 28px;
@@ -622,7 +759,7 @@
       border: 3px solid var(--ink);
       border-radius: 16px;
       touch-action: none;
-      background: #fff;
+      background: var(--card);
       max-width: 100%
     }
 
@@ -638,7 +775,7 @@
     .dpad button {
       border: 3px solid var(--ink);
       border-radius: 14px;
-      background: #fff;
+      background: var(--card);
       font-size: 22px;
       box-shadow: 3px 3px 0 var(--ink)
     }
@@ -669,14 +806,14 @@
     .hint {
       text-align: center;
       font-size: 13px;
-      color: #5b5a7a;
+      color: var(--ink2);
       margin: 10px 0 0
     }
 
     #modal {
       position: fixed;
       inset: 0;
-      background: rgba(28, 27, 58, .6);
+      background: rgba(29, 46, 74, .6);
       display: none;
       place-items: center;
       padding: 18px;
@@ -1527,19 +1664,19 @@ if (typeof window !== "undefined") {
         }
         if (food) {
           const cx = food.x * cell + cell / 2, cy = food.y * cell + cell / 2;
-          ctx.fillStyle = '#ff6b57'; ctx.strokeStyle = '#1c1b3a'; ctx.lineWidth = 2.5;
+          ctx.fillStyle = '#e4572e'; ctx.strokeStyle = '#1d2e4a'; ctx.lineWidth = 2.5;
           ctx.beginPath(); ctx.arc(cx, cy, cell * .38, 0, 7); ctx.fill(); ctx.stroke();
           ctx.fillStyle = '#56bd72'; ctx.fillRect(cx - 2, cy - cell * .48, 4, cell * .18);
         }
         snake.forEach((s, k) => {
           const pad = k ? cell * .1 : cell * .04;
-          ctx.fillStyle = k ? (k % 2 ? '#2fc9a5' : '#27b393') : '#1c1b3a'; ctx.strokeStyle = '#1c1b3a'; ctx.lineWidth = 2;
+          ctx.fillStyle = k ? (k % 2 ? '#1b998b' : '#157f74') : '#1d2e4a'; ctx.strokeStyle = '#1d2e4a'; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.roundRect(s.x * cell + pad, s.y * cell + pad, cell - pad * 2, cell - pad * 2, cell * .28); ctx.fill(); if (k) ctx.stroke();
         });
         const h = snake[0]; ctx.fillStyle = '#fff';
         [[.3, .35], [.7, .35]].forEach(([ex, ey]) => { ctx.beginPath(); ctx.arc(h.x * cell + cell * ex, h.y * cell + cell * ey, cell * .12, 0, 7); ctx.fill() });
         if (!started) {
-          ctx.fillStyle = 'rgba(28,27,58,.78)'; ctx.fillRect(0, size / 2 - 28, size, 56);
+          ctx.fillStyle = 'rgba(29,46,74,.78)'; ctx.fillRect(0, size / 2 - 28, size, 56);
           ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.max(14, size / 24)}px Be Vietnam Pro,system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText('Vuốt hoặc bấm hướng để bắt đầu', size / 2, size / 2);
         }

@@ -5,7 +5,7 @@ import * as storage from "./templateStorageService.js";
 // Schema mới — chỉ các trường này được trả về cho frontend
 const TEMPLATE_FIELDS = [
   "name", "description", "type", "category", "icon", "ring",
-  "htmlTemplate", "thumbnail", "version", "status", "playMode", "createdAt", "updatedAt",
+  "htmlTemplate", "version", "status", "playMode", "createdAt", "updatedAt",
 ];
 
 // Chuẩn hóa về schema mới: bỏ trường cũ (id/slug/categoryLabel)
@@ -54,7 +54,6 @@ export async function createTemplate(data) {
     ring: data.ring || "#1D2E4A",
     // htmlTemplate: HTML game → link Firebase Storage (xem saveTemplateHtml)
     htmlTemplate: data.htmlTemplate || "",
-    thumbnail: data.thumbnail || "",
     version: 1,
     status: ["published", "draft", "inactive"].includes(data.status) ? data.status : "draft",
     playMode: ["solo", "classroom"].includes(data.playMode) ? data.playMode : "solo",

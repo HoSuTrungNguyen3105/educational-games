@@ -94,7 +94,6 @@ async function _runHeavyInit(database) {
           icon: { bsonType: "string" },
           ring: { bsonType: "string" },
           htmlTemplate: { bsonType: "string" },
-          thumbnail: { bsonType: "string" },
           status: { enum: ["published", "draft", "inactive"] },
           createdAt: { bsonType: "string" },
           updatedAt: { bsonType: "string" },
@@ -935,11 +934,11 @@ async function migrateTemplates(database) {
   const now = new Date().toISOString();
   await templatesColl.updateMany(
     { type: { $exists: false } },
-    { $set: { type: "play-to-learn", htmlTemplate: "", thumbnail: "", version: 1, status: "draft", createdAt: now, updatedAt: now } }
+    { $set: { type: "play-to-learn", htmlTemplate: "", version: 1, status: "draft", createdAt: now, updatedAt: now } }
   );
 
   // Remove old fields
   await templatesColl.updateMany({}, {
-    $unset: { id: "", slug: "", categoryLabel: "" }
+    $unset: { id: "", slug: "", categoryLabel: "", thumbnail: "" }
   });
 }

@@ -507,6 +507,14 @@
   border: 3px solid rgba(255, 255, 255, 0.9);
   box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.35);
 }
+/* Thumbnail từ public/ — lấp đầy vòng tròn, hết ảnh thì vẫn dùng emoji */
+.gq-card__ring img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  display: block;
+}
 .gq-card__name {
   font-size: 12.5px;
   font-weight: 800;

@@ -17,7 +17,7 @@ const CATEGORY_OPTIONS = [
   { value: "adventure", label: "Phiêu lưu" },
 ];
 
-const EMPTY = { name: "", description: "", type: "play-to-learn", category: "quiz", icon: "🎲", ring: "#1D2E4A", htmlTemplate: "", thumbnail: "", status: "draft", playMode: "solo" };
+const EMPTY = { name: "", description: "", type: "play-to-learn", category: "quiz", icon: "🎲", ring: "#1D2E4A", htmlTemplate: "", status: "draft", playMode: "solo" };
 
 export default function TemplateFormPage({ showToast, route }) {
   const templateId = route?.params?.templateId;
@@ -40,7 +40,7 @@ export default function TemplateFormPage({ showToast, route }) {
         // htmlTemplate có thể là link Firebase → tải nội dung về để sửa
         const html = await loadTemplateHtml(t, templateId);
         if (!active) return;
-        setForm({ name: t.name || "", description: t.description || "", type: t.type || "play-to-learn", category: t.category || "quiz", icon: t.icon || "🎲", ring: t.ring || "#1D2E4A", htmlTemplate: html, thumbnail: t.thumbnail || "", status: t.status || "draft", playMode: t.playMode || "solo" });
+        setForm({ name: t.name || "", description: t.description || "", type: t.type || "play-to-learn", category: t.category || "quiz", icon: t.icon || "🎲", ring: t.ring || "#1D2E4A", htmlTemplate: html, status: t.status || "draft", playMode: t.playMode || "solo" });
       } catch (e) {
         if (active) setError(e.message);
       } finally {
@@ -150,10 +150,6 @@ export default function TemplateFormPage({ showToast, route }) {
           <Field label="Mô tả" className="sm:col-span-2 lg:col-span-3">
             <textarea value={form.description} onChange={e => onChange("description", e.target.value)}
               className="w-full note-card px-3 py-1.5 mt-0.5 border-ink/10 focus:border-ticket min-h-[80px] text-sm" />
-          </Field>
-          <Field label="Ảnh thumbnail" className="sm:col-span-2 lg:col-span-3">
-            <input value={form.thumbnail} onChange={e => onChange("thumbnail", e.target.value)} placeholder="/uploads/templates/example.png"
-              className="w-full note-card px-3 py-1.5 mt-0.5 border-ink/10 focus:border-ticket text-sm" autoComplete="off" />
           </Field>
         </div>
       )}

@@ -1,0 +1,152 @@
+/* ============================================================================
+   tokens.css — NGUỒN SỰ THẬT DUY NHẤT về màu + font của game offline.
+   Được nạp 2 nơi:
+     · scripts/build-offline-games.mjs chèn vào <style> của lib/shell.html
+       → 17 game sinh tự động dùng đúng biến này.
+     · OfflineGamePage.jsx đọc bằng ?raw rồi tiêm vào <head> của MỌI game
+       (kể cả game viết tay) → chạy trong app là cùng một bộ màu/font.
+   Vì vậy file này CHỈ được chứa: biến :root, class .gq-*, và #homeBackBtn.
+   Không viết selector trần (body, h1, .btn…) — tiêm vào game viết tay sẽ đè
+   lên nền/tông màu riêng của chúng và làm hỏng theme.
+   ========================================================================== */
+
+:root {
+  /* Bảng màu lấy từ ứng dụng (index.html + src/index.css) để game không lệch
+     khỏi phần còn lại của trang khi nằm trong khung iframe. */
+  --ink: #1d2e4a;
+  --ink2: #16233a;
+  --paper: #fff6e7;
+  --card: #fffbf2;
+  --bg: #fff3de;
+  --stage: #fff6e7;
+  --line: #e6dcc4;
+  --sun: #f4b942;
+  --gold: #f4b942;
+  --tomato: #e4572e;
+  --ticket: #e4572e;
+  --mint: #1b998b;
+  --teal: #1b998b;
+  --accent: #1b998b;
+  --onaccent: #ffffff;
+  --sky: #4b9dff;
+  --lilac: #8b5cf6;
+  --purple: #8b5cf6;
+  --pink: #ff6f91;
+  --ok: #22b573;
+  --bad: #f0483e;
+  --shadow: 4px 4px 0 var(--ink);
+
+  /* Font: Baloo 2 có weight 800 (shell + đa số game viết tay đang dùng),
+     Be Vietnam Pro cho chữ thường — thống nhất toàn bộ thư mục offline. */
+  --head: "Baloo 2", "Fredoka", "Nunito", "Segoe UI", system-ui, sans-serif;
+  --body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+}
+
+/* Nút "về trang chủ" mà mọi game tự đặt ở góc trên-trái. Trong app thì React
+   đã vẽ nút riêng nên CSS .gq-embedded ẩn cái này đi (xem OfflineGamePage). */
+.gq-home-btn,
+#homeBackBtn {
+  position: fixed;
+  z-index: 2147483000;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: calc(env(safe-area-inset-left, 0px) + 10px);
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-family: var(--head);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--card);
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink), 0 8px 14px rgba(0, 0, 0, .22);
+  transition: transform .12s, box-shadow .12s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.gq-home-btn:hover,
+#homeBackBtn:hover {
+  filter: brightness(1.06);
+}
+
+.gq-home-btn:active,
+#homeBackBtn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink), 0 3px 6px rgba(0, 0, 0, .22);
+}
+
+.gq-home-btn:focus-visible,
+#homeBackBtn:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 2px;
+}
+
+/* HUD / panel / toast dùng chung cho game viết tay chưa có style riêng. */
+.gq-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.gq-panel {
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-family: var(--body);
+}
+
+.gq-btn {
+  font-family: var(--head);
+  font-weight: 800;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--sun);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+}
+
+.gq-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.gq-btn.alt {
+  background: var(--card);
+}
+
+/* Nút "chơi lại" của game nằm cùng góc với nút của app → game nào tự đặt
+   #back thì dời xuống dưới --gq-topbar (56px) để không đè lên nhau. */
+:root {
+  --gq-topbar: 56px;
+  --gq-home-offset: calc(var(--gq-topbar) + 8px);
+}
+
+@media (prefers-reduced-motion:reduce) {
+
+  .gq-home-btn,
+  #homeBackBtn,
+  .gq-btn {
+    transition: none;
+  }
+}

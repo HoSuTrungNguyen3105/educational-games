@@ -279,10 +279,10 @@ hudUpdate(); showStart(); requestAnimationFrame(loop);
     border-radius: 14px;
     display: grid; place-items: center;
     cursor: pointer;
-    font-family: inherit;
+    font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);
     font-size: 20px; font-weight: 800; line-height: 1;
     color: #241250;
-    background: #fffaf0;
+    background: var(--card,#fffbf2);
     border: 3px solid #241250;
     box-shadow: 0 4px 0 #241250, 0 8px 14px rgba(0, 0, 0, .22);
     transition: transform .12s, box-shadow .12s;
@@ -294,7 +294,7 @@ hudUpdate(); showStart(); requestAnimationFrame(loop);
     transform: translateY(3px);
     box-shadow: 0 1px 0 #241250, 0 3px 6px rgba(0, 0, 0, .22);
   }
-  #homeBackBtn:focus-visible { outline: 3px solid #2f9bff; outline-offset: 2px; }
+  #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
 </style>
 <button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">

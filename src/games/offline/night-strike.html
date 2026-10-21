@@ -1484,12 +1484,12 @@ boot();
     border-radius: 14px;
     display: grid; place-items: center;
     cursor: pointer;
-    font-family: inherit;
+    font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);
     font-size: 20px; font-weight: 800; line-height: 1;
-    color: #05060d;
-    background: #fffaf0;
-    border: 3px solid #05060d;
-    box-shadow: 0 4px 0 #05060d, 0 8px 14px rgba(0, 0, 0, .22);
+    color: var(--ink,#1d2e4a);
+    background: var(--card,#fffbf2);
+    border: 3px solid var(--ink,#1d2e4a);
+    box-shadow: 0 4px 0 var(--ink,#1d2e4a), 0 8px 14px rgba(0, 0, 0, .22);
     transition: transform .12s, box-shadow .12s;
     -webkit-tap-highlight-color: transparent;
     user-select: none; -webkit-user-select: none;
@@ -1497,9 +1497,9 @@ boot();
   #homeBackBtn:hover { filter: brightness(1.06); }
   #homeBackBtn:active {
     transform: translateY(3px);
-    box-shadow: 0 1px 0 #05060d, 0 3px 6px rgba(0, 0, 0, .22);
+    box-shadow: 0 1px 0 var(--ink,#1d2e4a), 0 3px 6px rgba(0, 0, 0, .22);
   }
-  #homeBackBtn:focus-visible { outline: 3px solid #2f9bff; outline-offset: 2px; }
+  #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
 </style>
 <button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">

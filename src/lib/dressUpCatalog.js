@@ -18,22 +18,13 @@ export function kidDefaults() {
   return { ...getDressUp().kid.defaults };
 }
 
+const PRESET_BODIES = { boy: 'body_01', girl: 'body_girl_01', dragon: 'body_dragon_01' };
+
+/** Preset "Bé trai / Bé gái / Rồng" — lấy đúng "diện" chuẩn của thân đó
+ *  từ `EG_DRESSUP.kid.looks` (một nguồn duy nhất với modal tuỳ chỉnh). */
 export function kidPreset(kind = 'boy') {
-  const base = kidDefaults();
-  if (kind === 'girl') {
-    return sanitizeFor('avatar', {
-      ...base,
-      body: 'body_girl_01',
-      hair: 'hair_02',
-      dress: 'pink',
-      pants: null,
-      shoes: 'pink',
-    });
-  }
-  if (kind === 'dragon') {
-    return sanitizeFor('avatar', { ...base, body: 'body_dragon_01' });
-  }
-  return sanitizeFor('avatar', { ...base, body: 'body_01' });
+  const code = PRESET_BODIES[kind] || PRESET_BODIES.boy;
+  return getDressUp().applyBody(kidDefaults(), code);
 }
 
 export function sanitizeKid(state) {

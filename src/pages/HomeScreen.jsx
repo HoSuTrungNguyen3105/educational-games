@@ -59,6 +59,7 @@ const FEATURED_GAME = {
 
 
 import { OFFLINE_GAME_MANIFEST } from "../games/offline/games-src/manifest.js";
+import { gameThumbnail } from "../lib/gameThumbnail.js";
 
 
 const NO_SUBJECT = "Chung";
@@ -98,6 +99,7 @@ const TILE_COLORS = Object.fromEntries(
 // Game thư giãn offline (loại trừ nhập vai — nằm ở SCHOOL_RPG_GAME)
 const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   key: g.id,
+  id: g.id,
   path: `/offline/${g.id}`,
   name: g.name,
   tag: g.tag,
@@ -105,6 +107,7 @@ const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   icon: g.icon,
   grad: g.grad,
   color: TILE_COLORS[g.id] || "#F2B632",
+  thumb: gameThumbnail(g.id, g.name),
 }));
 
 /** Dạng 3: Game nhập vai trường học — file gốc src/games/school_mission/ */
@@ -632,6 +635,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         key: String(game._id || game.id || i),
         name: game.name,
         icon: t?.icon || "🎮",
+        thumb: gameThumbnail(t?.slug || t?.id || t?._id, game.name),
         grad: tintFor(game.name || String(i)),
         border: tintFor(game.name || String(i))[1],
         badge: meta.kind === "learn" ? "Học" : "Chơi",
@@ -652,6 +656,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           key: String(game._id || game.id || i),
           name: game.name,
           icon: t?.icon || "🧮",
+          thumb: gameThumbnail(t?.slug || t?.id || t?._id, game.name),
           grad: tint,
           border: tint[1],
           badge: "Học",
@@ -663,9 +668,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const offlineCards = useMemo(
     () => OFFLINE_GAMES.map((g) => ({
-      key: g.key,
+      key: g.id,
       name: g.name,
       icon: g.icon || "🎮",
+      thumb: g.thumb,
       grad: tintFor(g.key),
       border: g.color || "#F2B632",
       badge: "Offline",
@@ -679,6 +685,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     () => ({
       name: SCHOOL_RPG_GAME.name,
       icon: SCHOOL_RPG_GAME.icon,
+      thumb: gameThumbnail(SCHOOL_RPG_GAME.key, SCHOOL_RPG_GAME.name),
       grad: ["#8be59b", "#3FA97A"],
       border: SCHOOL_RPG_GAME.color,
       badge: "Nhập vai",
@@ -855,6 +862,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <GqGameCard
                 name={FEATURED_GAME.name}
                 icon={FEATURED_GAME.icon}
+                thumb={gameThumbnail(FEATURED_GAME.key, FEATURED_GAME.name)}
                 grad={["#ffd45e", "#f0a500"]}
                 border="#f0a500"
                 badge="Mới"
@@ -933,6 +941,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   key={game._id || game.id || index}
                   name={game.name}
                   icon={t?.icon || "🎮"}
+                  thumb={gameThumbnail(t?.slug || t?.id || t?._id, game.name)}
                   grad={tint}
                   border={tint[1]}
                   badge={meta.kind === "learn" ? "Học" : "Chơi"}
@@ -1204,7 +1213,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 /* ═══════════════════════ COMPONENT PHỤ ═══════════════════════ */
 
 /** Ô game dùng chung cho cả dải ngang lẫn lưới. */
-function GqGameCard({ icon, name, grad, border, badge, age, play }) {
+function GqGameCard({ icon, name, grad, border, badge, age, thumb, play }) {
   return (
     <button
       onClick={play}
@@ -1223,7 +1232,7 @@ function GqGameCard({ icon, name, grad, border, badge, age, play }) {
         style={{ background: `linear-gradient(140deg, ${grad[0]}, ${grad[1]})` }}
         aria-hidden="true"
       >
-        {icon}
+        {thumb ? <img src={thumb} alt="" loading="lazy" /> : icon}
       </span>
       <span className="gq-card__name">{name}</span>
       {age && <span className="gq-card__age">{age}</span>}

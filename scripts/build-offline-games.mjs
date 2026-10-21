@@ -20,6 +20,7 @@ const G = (p) => path.resolve(process.cwd(), p);
 const read = (p) => fs.readFileSync(G(p), "utf8").replace(/\r\n/g, "\n");
 
 const shell = read("src/games/offline/lib/shell.html");
+const tokens = read("src/games/offline/lib/tokens.css").replace(/\s+$/, "");
 const core = read("src/games/offline/lib/core.js").replace(/\s+$/, "");
 const single = read("src/games/offline/lib/single.js").replace(/\s+$/, "");
 const mcengine = read("src/games/offline/lib/mcengine.js").replace(/\s+$/, "");
@@ -42,6 +43,21 @@ function tidy(js) {
   return esc(js.replace(/^\s*(?:\/\*[\s\S]*?\*\/\s*)?/, "").replace(/\s+$/, ""));
 }
 
+/**
+ * Chèn lib/tokens.css vào placeholder trong shell.html.
+ * Tokens là nguồn màu/font duy nhất: game sinh ra mang nó trong file, game viết
+ * tay thì OfflineGamePage tiêm cùng nội dung đó lúc nạp iframe → cả hai nhóm
+ * nhìn giống nhau. Thiếu placeholder là fail build chứ không im lặng lệch màu.
+ */
+function applyTokens(html) {
+  if (!html.includes("/*__EG_TOKENS__*/")) {
+    throw new Error("lib/shell.html thiếu placeholder /*__EG_TOKENS__*/ — không chèn được lib/tokens.css");
+  }
+  return html.replace("/*__EG_TOKENS__*/", () => tokens);
+}
+
+const shellDoc = applyTokens(shell);
+
 function build(id) {
   const meta = manifestSrc.match(new RegExp(`\\{ id: '${id}',[\\s\\S]*?file: '[^']+' \\}`));
   if (/engine: 'standalone'/.test(meta ? meta[0] : "")) {
@@ -52,7 +68,7 @@ function build(id) {
   const usesMc = /engine: 'mc'/.test(meta ? meta[0] : "");
 
   const parts = [
-    shell,
+    shellDoc,
     "",
     "    <!-- core.js: tiện ích, tiến độ localStorage, âm thanh, bộ đếm, canvas -->",
     "    <script>",

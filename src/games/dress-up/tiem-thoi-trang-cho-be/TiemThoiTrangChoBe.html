@@ -85,7 +85,10 @@ function drawOpts(){
 document.addEventListener('click',e=>{
  const t=e.target.closest('.tab[data-t]'),o=e.target.closest('.opt');
  if(t){tab=t.dataset.t;drawTabs();drawOpts();}
- else if(o){st=D.sanitizeKid(Object.assign({},st,{[tab]:o.dataset.v||null}));save();redraw();}
+ else if(o){const v=o.dataset.v||null;
+  /* Chọn Thân = chuyển trai/gái kèm tóc + áo quần chuẩn của thân đó (BODY_LOOKS). */
+  st=(tab==='body'&&D.applyBody)?D.applyBody(st,v):D.sanitizeKid(Object.assign({},st,{[tab]:v}));
+  save();redraw();}
 });
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 /* Giữ nguyên nhân vật (thân/da/mặt/tóc) — bé trai vẫn là bé trai, bé gái vẫn là

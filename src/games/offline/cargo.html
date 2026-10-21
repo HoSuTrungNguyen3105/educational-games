@@ -4,40 +4,55 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Xe tải ra chợ</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-  html,body{margin:0;height:100%;overflow:hidden;background:#8fd3ff;font-family:"Segoe UI",Arial,sans-serif}
+  html,body{margin:0;height:100%;overflow:hidden;background:#8fd3ff;
+    font-family:var(--body,"Be Vietnam Pro","Segoe UI",Arial,sans-serif);color:var(--ink,#1d2e4a)}
   canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
-  .sq{position:fixed;top:14px;width:54px;height:54px;border-radius:14px;background:#fff;border:0;
-      box-shadow:0 3px 8px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5}
+  .sq{position:fixed;top:14px;width:54px;height:54px;border-radius:16px;background:var(--card,#fffbf2);
+      border:3px solid var(--ink,#1d2e4a);box-shadow:3px 3px 0 var(--ink,#1d2e4a);
+      display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;transition:transform .1s,box-shadow .1s}
+  .sq:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink,#1d2e4a)}
   .sq svg{width:26px;height:26px}
   #back{left:18px}#music{right:18px}
-  #bar{position:fixed;top:32px;left:90px;right:100px;height:18px;border-radius:9px;background:rgba(255,255,255,.85);z-index:4}
-  #fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:9px}
-  #knob{position:absolute;top:-6px;width:42px;height:30px;border-radius:15px;background:#ff6a5c;
-        border:3px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.3);left:0;transform:translateX(-50%)}
-  #home{position:fixed;top:24px;right:68px;font-size:30px;z-index:4;cursor:pointer;line-height:1}
-  #slots{position:fixed;top:78px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.85);
-         border-radius:30px;padding:8px 16px;display:flex;gap:12px;z-index:4}
-  .slot{width:30px;height:30px;border-radius:50%;border:2px solid #ccc;background:#fff;font-size:20px;
+  #bar{position:fixed;top:32px;left:90px;right:100px;height:18px;border-radius:9px;background:var(--card,#fffbf2);
+       border:3px solid var(--ink,#1d2e4a);box-shadow:2px 2px 0 rgba(29,46,74,.35);z-index:4}
+  #fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:9px;background:var(--sun,#f4b942)}
+  #knob{position:absolute;top:-9px;width:42px;height:30px;border-radius:15px;background:#ff6a5c;
+        border:3px solid var(--ink,#1d2e4a);box-shadow:2px 2px 0 var(--ink,#1d2e4a);left:0;transform:translateX(-50%)}
+  #home{position:fixed;top:24px;right:68px;font-size:30px;z-index:4;cursor:pointer;line-height:1;
+        filter:drop-shadow(2px 2px 0 rgba(29,46,74,.5))}
+  #slots{position:fixed;top:78px;left:50%;transform:translateX(-50%);background:var(--card,#fffbf2);
+         border:3px solid var(--ink,#1d2e4a);border-radius:30px;padding:8px 16px;display:flex;gap:12px;
+         box-shadow:3px 3px 0 var(--ink,#1d2e4a);z-index:4}
+  .slot{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--ink,#1d2e4a);background:var(--card,#fffbf2);font-size:20px;
         display:flex;align-items:center;justify-content:center;filter:grayscale(1);opacity:.35;transition:.25s}
-  .slot.on{filter:none;opacity:1;border-color:#7bd77b;transform:scale(1.15)}
-  #stars{position:fixed;top:78px;left:22px;background:rgba(255,255,255,.85);border-radius:20px;padding:8px 14px;
-         font-weight:700;color:#d79a00;z-index:4;font-size:18px}
-  .ctl{position:fixed;bottom:24px;width:120px;height:120px;border-radius:50%;border:6px solid #fff;color:#fff;
-       z-index:5;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer;padding:0}
+  .slot.on{filter:none;opacity:1;border-color:var(--ok,#22b573);transform:scale(1.15)}
+  #stars{position:fixed;top:78px;left:22px;background:var(--card,#fffbf2);border:2.5px solid var(--ink,#1d2e4a);border-radius:20px;padding:8px 14px;
+         font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-weight:800;color:var(--ink,#1d2e4a);
+         box-shadow:3px 3px 0 var(--ink,#1d2e4a);z-index:4;font-size:18px}
+  .ctl{position:fixed;bottom:24px;width:120px;height:120px;border-radius:50%;border:4px solid var(--ink,#1d2e4a);color:#fff;
+       z-index:5;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer;padding:0;
+       transition:transform .08s,box-shadow .08s}
   .ctl svg{width:56px;height:56px}
-  #left{left:22px;background:#4aa3f5;box-shadow:0 8px 0 #2f7bc4}
-  #right{right:22px;background:#34c46a;box-shadow:0 8px 0 #1f9a4e}
-  .ctl:active,.ctl.down{transform:translateY(5px)}
-  #over{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:10}
-  #card{background:#fff;border-radius:26px;padding:30px 44px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  #card h1{margin:0 0 6px;color:#e8473a;font-size:34px}
-  #card p{margin:6px 0;font-size:20px;color:#444}
-  #card button{margin-top:16px;border:0;border-radius:30px;padding:14px 34px;font-size:20px;font-weight:700;
-               color:#fff;background:#34c46a;box-shadow:0 5px 0 #1f9a4e;cursor:pointer}
-  #hint{position:fixed;bottom:150px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.9);
-        padding:8px 18px;border-radius:20px;font-size:16px;color:#555;z-index:4;transition:opacity .6s}
+  #left{left:22px;background:#4aa3f5;box-shadow:3px 6px 0 var(--ink,#1d2e4a)}
+  #right{right:22px;background:#34c46a;box-shadow:3px 6px 0 var(--ink,#1d2e4a)}
+  .ctl:active,.ctl.down{transform:translate(3px,6px);box-shadow:0 0 0 var(--ink,#1d2e4a)}
+  #over{position:fixed;inset:0;background:rgba(29,46,74,.6);display:none;align-items:center;justify-content:center;z-index:10}
+  #card{background:var(--card,#fffbf2);color:var(--ink,#1d2e4a);border:3px solid var(--ink,#1d2e4a);border-radius:22px;padding:30px 44px;
+        text-align:center;box-shadow:4px 4px 0 var(--ink,#1d2e4a)}
+  #card h1{margin:0 0 6px;font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-weight:800;
+           color:var(--tomato,#e4572e);font-size:34px}
+  #card p{margin:6px 0;font-size:20px;color:var(--ink2,#16233a)}
+  #card button{margin-top:16px;border:3px solid var(--ink,#1d2e4a);border-radius:16px;padding:14px 34px;font-size:20px;font-weight:800;
+               font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);
+               color:var(--ink,#1d2e4a);background:var(--sun,#f4b942);box-shadow:3px 3px 0 var(--ink,#1d2e4a);cursor:pointer;
+               transition:transform .1s,box-shadow .1s}
+  #card button:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink,#1d2e4a)}
+  #hint{position:fixed;bottom:150px;left:50%;transform:translateX(-50%);background:var(--card,#fffbf2);
+        border:2.5px solid var(--ink,#1d2e4a);box-shadow:3px 3px 0 var(--ink,#1d2e4a);
+        padding:8px 18px;border-radius:20px;font-size:16px;color:var(--ink,#1d2e4a);z-index:4;transition:opacity .6s}
 </style>
 </head>
 <body>

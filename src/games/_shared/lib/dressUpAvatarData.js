@@ -625,6 +625,29 @@
     glasses: null, hat: null, acc: null
   };
 
+  /* Mã body của hệ avatar CŨ (src/data/avatarBodies.js + /api/avatar/categories)
+   * khác tên với hệ mới — nếu hồ sơ còn mang mã cũ thì quy về mã mới, đừng để
+   * `sanitizeKid` rơi về mặc định là bé trai (bé gái thành bé trai). */
+  var BODY_ALIASES = {
+    body_boy_01: 'body_01',
+    body_custom_01: 'body_dragon_01'
+  };
+
+  /* "Diện" của từng thân: chọn thân là ra hình con trai/con gái rõ ràng, chứ
+   * không chỉ đổi mỗi phần da thịt. Modal tuỳ chỉnh + tab Thân + preset admin
+   * cùng dùng bảng này (một nguồn duy nhất). */
+  var BODY_LOOKS = {
+    body_01: { hair: 'hair_01', shirt: 'white', dress: null, pants: 'jeans', shoes: 'white' },
+    body_girl_01: { hair: 'hair_02', shirt: null, dress: 'pink', pants: null, shoes: 'pink' },
+    body_dragon_01: {}
+  };
+
+  /** Gán thân + "diện" của thân đó, giữ da/màu tóc/kính/mũ/phụ kiện đang chọn. */
+  function applyBody(st, id) {
+    var look = BODY_LOOKS[id] || {};
+    return sanitizeKid(Object.assign({}, st, look, { body: id }));
+  }
+
   var KID_FIELD_IDS = {
     body: Object.keys(BODIES),
     skin: Object.keys(SKIN_TONES),
@@ -653,9 +676,12 @@
         vb: '110 30 292 650',
         ids: idsOf('body'),
         nullable: false,
-        /* Ô Thân = chính nhân vật với thân đang xem, không phải một path rời. */
+        /* Ô Thân = chính nhân vật với thân đang xem, không phải một path rời.
+         * Ghép thêm "diện" của thân đó (BODY_LOOKS) để ô Bé gái ra tóc dài +
+         * váy hồng, nhìn là biết con gái — nếu chỉ đổi mỗi body thì thumbnail
+         * vẫn mang tóc ngắn + áo quần con trai. */
         pv: function (id) {
-          var svg = renderKid(Object.assign({}, s, { body: id }));
+          var svg = renderKid(Object.assign({}, s, BODY_LOOKS[id] || {}, { body: id }));
           return svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
         }
       };
@@ -721,6 +747,7 @@
    * không vẽ eo/chân, bỏ trống là nhân vật mất nửa người. */
   function sanitizeKid(src) {
     var o = src && typeof src === 'object' ? src : {};
+    if (BODY_ALIASES[o.body]) o = Object.assign({}, o, { body: BODY_ALIASES[o.body] });
     var out = {};
     Object.keys(KID_FIELD_IDS).forEach(function (k) {
       var v = o[k];
@@ -748,13 +775,14 @@
   }
 
   root.EG_DRESSUP = {
-    version: 2,
+    version: 3,
     renderPet: petSvg,
     renderKid: renderKid,
     sanitizePet: sanitizePet,
     sanitizeKid: sanitizeKid,
     kidTabs: kidTabs,
     kidTabCfg: tabCfg,
+    applyBody: applyBody,
 
     pet: {
       animals: ANIMALS, tabs: PET_TABS, opts: PET_OPTS, defaults: PET_DEFAULTS,
@@ -768,7 +796,11 @@
       bodies: BODIES, faces: FACES, hairs: HAIRS, hats: HATS,
       glasses: GLASSES, accs: ACCS, pants: PANT_OPTIONS, shoes: SHOE_OPTIONS,
       shirtColors: SHIRT_COLORS, dressColors: DRESS_COLORS,
-      hairColors: HAIR_COLORS, skinTones: SKIN_TONES
+      hairColors: HAIR_COLORS, skinTones: SKIN_TONES,
+      /** "diện" chuẩn của từng thân — preset admin và modal cùng dùng bảng này */
+      looks: BODY_LOOKS,
+      /** mã body hệ cũ → mã hệ mới (body_boy_01 → body_01 …) */
+      bodyAliases: BODY_ALIASES
     }
   };
 })(typeof window !== 'undefined' ? window : globalThis);
