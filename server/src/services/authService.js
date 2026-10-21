@@ -54,7 +54,7 @@ function normalizeRole(role) {
   return "teacher";
 }
 
-export async function createUser({ username, email, password, name, role }) {
+export async function createUser({ username, email, password, name, role, generatedPassword }) {
   const uname = String(username || "").trim().toLowerCase();
   const eml = String(email || "").trim().toLowerCase();
   const pwd = String(password || "");
@@ -70,6 +70,8 @@ export async function createUser({ username, email, password, name, role }) {
     if (emailExists) throw new Error("Email đã được sử dụng");
   }
 
+  const generated = String(generatedPassword || "").trim();
+
   const user = {
     id: uid("user"),
     username: uname,
@@ -77,14 +79,15 @@ export async function createUser({ username, email, password, name, role }) {
     name: displayName,
     role: normalizeRole(role),
     passwordHash: bcrypt.hashSync(pwd, 10),
+    ...(generated && generated === pwd ? { generatedPassword: generated } : {}),
     createdAt: new Date().toISOString(),
   };
   await getCollection(COLLECTION).insertOne(user);
   return publicUser(user);
 }
 
-export async function registerUser({ username, email, password, name }) {
-  const user = await createUser({ username, email, password, name, role: "student" });
+export async function registerUser({ username, email, password, name, generatedPassword }) {
+  const user = await createUser({ username, email, password, name, role: "student", generatedPassword });
   // Auto-login: trả về token sau khi register
   const fullUser = await findByUsername(username);
   const token = signToken(fullUser);
@@ -98,7 +101,12 @@ export async function listUsers() {
   const classMap = new Map(classes.map(c => [c.id, c]));
   return docs.map(({ _id, passwordHash, ...rest }) => {
     const cls = rest.classId ? classMap.get(rest.classId) : null;
-    return { ...rest, className: cls?.name || null, classCode: cls?.code || null };
+    return {
+      ...rest,
+      generatedPassword: rest.generatedPassword || null,
+      className: cls?.name || null,
+      classCode: cls?.code || null,
+    };
   });
 }
 
@@ -122,6 +130,7 @@ export async function updateProfile(userId, { name, email, password, currentPass
     const ok = user.passwordHash && (await bcrypt.compare(currentPassword, user.passwordHash));
     if (!ok) throw new Error("Mật khẩu hiện tại không đúng");
     updates.passwordHash = bcrypt.hashSync(password, 10);
+    updates.generatedPassword = null;
   }
   if (avatarLoadout && typeof avatarLoadout === "object") {
     updates.avatarLoadout = avatarLoadout;
@@ -158,7 +167,10 @@ export async function resetPassword(userId, newPassword) {
   const pwd = String(newPassword || "").trim();
   if (!pwd) throw new Error("Mật khẩu không được để trống");
   if (pwd.length < 6) throw new Error("Mật khẩu phải có ít nhất 6 ký tự");
-  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { passwordHash: bcrypt.hashSync(pwd, 10) } });
+  await getCollection(COLLECTION).updateOne(
+    { id: userId },
+    { $set: { passwordHash: bcrypt.hashSync(pwd, 10), generatedPassword: null } }
+  );
   return true;
 }
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate } from "../lib/router.js";
 import { findOfflineGame, makeFallbackMeta } from "../games/offline/games-src/manifest.js";
 import { useGameVersion } from "../hooks/useGameVersion.js";
-import { gameVersionService } from "../services/gameVersionService.js";
+import { Loader } from "../components/ui";
 
 /**
  * MỖI GAME = MỘT FILE HTML trong src/games/offline/.
@@ -35,7 +35,15 @@ const HTML_BY_ID = Object.fromEntries(
 /** Trang chơi 1 game offline — dùng chung cho mọi game trong thư mục offline. */
 export default function OfflineGamePage({ gameId }) {
   const iframeRef = useRef(null);
-  const html = HTML_BY_ID[gameId];
+  const isSchoolMissionRedirect =
+    gameId === "School_mission" || gameId === "school-mission";
+
+  // Link cũ /offline/School_mission → chuyển sang game nhập vai
+  useEffect(() => {
+    if (isSchoolMissionRedirect) navigate("/school-mission");
+  }, [isSchoolMissionRedirect]);
+
+  const html = isSchoolMissionRedirect ? null : HTML_BY_ID[gameId];
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
 
   // Manifest giữ tên/emoji/màu đẹp. Nếu game mới chưa có trong manifest thì
@@ -83,6 +91,14 @@ export default function OfflineGamePage({ gameId }) {
     }
   };
 
+  if (isSchoolMissionRedirect) {
+    return (
+      <div className="fixed inset-0 grid place-items-center bg-paper">
+        <Loader label="Đang mở Trường Vui Vẻ..." />
+      </div>
+    );
+  }
+
   if (!html) {
     return (
       <div className="fixed inset-0 grid place-items-center bg-paper">
@@ -109,6 +125,14 @@ export default function OfflineGamePage({ gameId }) {
 
   return (
     <div className="fixed inset-0 bg-[#0c2a30]">
+      <button
+        type="button"
+        onClick={() => navigate("/")}
+        className="absolute top-3 left-3 z-20 rounded-full bg-white/90 px-3 py-1.5 text-sm font-extrabold text-slate-700 shadow hover:bg-white"
+        aria-label="Về trang chủ"
+      >
+        ← Trang chủ
+      </button>
       <iframe
         ref={iframeRef}
         title={meta.name}

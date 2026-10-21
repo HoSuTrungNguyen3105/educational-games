@@ -161,10 +161,22 @@ export default function UserManagement({ user, showToast }) {
         onRetry={load}
         emptyLabel="Chưa có tài khoản nào."
         onCreate={openCreate}
-        headers={["Họ tên", "Tên đăng nhập", "Email", "Lớp", "Vai trò", "Ngày tạo", ""]}
+        headers={["Họ tên", "Mật khẩu", "Tên đăng nhập", "Email", "Lớp", "Vai trò", "Ngày tạo", ""]}
         renderRow={(u) => (
           <tr key={u.id} className="border-b border-ink/5 last:border-0">
             <td className="px-5 py-3 font-body text-ink">{u.name}</td>
+            <td className="px-5 py-3">
+              {u.generatedPassword ? (
+                <code
+                  className="inline-block rounded-lg bg-amber-50 border border-amber-200 px-2 py-1 text-xs font-mono text-amber-800"
+                  title="Mật khẩu ngẫu nhiên được tạo tự động khi đăng ký"
+                >
+                  {u.generatedPassword}
+                </code>
+              ) : (
+                <span className="text-[#8A7C63] text-xs">—</span>
+              )}
+            </td>
             <td className="px-5 py-3 font-mono text-[#8A7C63]">{u.username}</td>
             <td className="px-5 py-3 font-mono text-[#8A7C63] text-sm">{u.email || "—"}</td>
             <td className="px-5 py-3 text-sm">

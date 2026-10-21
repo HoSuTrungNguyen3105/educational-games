@@ -135,6 +135,28 @@
   align-items: center;
   gap: 8px;
 }
+.gq-adminbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(140deg, #4f8ef7, #2f6fd6);
+  box-shadow: 0 4px 0 #1f55ad, var(--gq-shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.gq-adminbtn:hover { filter: brightness(1.04); }
+.gq-adminbtn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #1f55ad, var(--gq-shadow);
+}
 .gq-iconbtn {
   width: 36px;
   height: 36px;
@@ -663,6 +685,8 @@
   .gq-logo__name { font-size: 16px; }
   .gq-logo__sub { font-size: 9px; }
   .gq-age__sub { display: none; }
+  .gq-adminbtn { width: 32px; height: 32px; padding: 0; justify-content: center; }
+  .gq-adminbtn span { display: none; }
   .gq-mini { width: 58px; padding: 7px 2px 5px; }
   .gq-mini__ico { font-size: 20px; }
   .gq-mini__lbl { font-size: 9px; }

@@ -46,10 +46,10 @@ export const useUserAuthStore = create((set, get) => ({
     }
   },
 
-  register: async ({ username, email, password, name }) => {
+  register: async ({ username, email, password, name, generatedPassword }) => {
     set({ isLoading: true, error: null });
     try {
-      const { token, user } = await authService.register({ username, email, password, name });
+      const { token, user } = await authService.register({ username, email, password, name, generatedPassword });
       saveAuth({ token, user });
       set({ user, token, isLoading: false });
       socket.auth = { token };

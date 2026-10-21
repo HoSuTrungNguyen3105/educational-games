@@ -6,6 +6,7 @@ import { SOCKET_EVENTS } from '../socket/socket.events.js'
 import { getLevelProgress } from '../lib/utils.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
+import { canAccessDashboard } from '../config/roles.js'
 import './home-gq.css'
 import { Loader, ErrorState, EmptyState } from '../components/ui'
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
@@ -40,6 +41,8 @@ import {
   Crown,
   Send,
   Trash2,
+  RefreshCw,
+  LayoutDashboard,
 } from 'lucide-react'
 
 
@@ -92,6 +95,7 @@ const TILE_COLORS = Object.fromEntries(
   ])
 );
 
+// Game thư giãn offline (loại trừ nhập vai — nằm ở SCHOOL_RPG_GAME)
 const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   key: g.id,
   path: `/offline/${g.id}`,
@@ -102,6 +106,18 @@ const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   grad: g.grad,
   color: TILE_COLORS[g.id] || "#F2B632",
 }));
+
+/** Dạng 3: Game nhập vai trường học — file gốc src/games/school_mission/ */
+const SCHOOL_RPG_GAME = {
+  key: "school-mission",
+  path: "/school-mission",
+  name: "Trường Vui Vẻ",
+  tag: "Nhập vai",
+  description: "Khám phá trường học, học từng lớp, làm bài thi",
+  icon: "🏫",
+  grad: "from-emerald-400 to-green-600",
+  color: "#3FA97A",
+};
 
 // ─── Card môn học trên hàng ngang ────────────────────────────────────
 // Mỗi môn lấy từ API (`games[].subject`) nên tên tuỳ ý. Bảng dưới khớp
@@ -153,8 +169,10 @@ const MORE_ITEMS = (userAuth) => ([
 // Menu đầy đủ (dùng cho dropdown "Thêm" + menu hamburger mobile)
 const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
-  { key: "games", icon: Gamepad2, label: "Chơi game", type: "scroll", target: "games-section", show: true },
-  { key: "subjects", icon: BookOpen, label: "Học tập", type: "scroll", target: "subjects-section", show: true },
+  { key: "games", icon: Gamepad2, label: "Game học tập", type: "scroll", target: "games-section", show: true },
+  { key: "offline", icon: Sparkles, label: "Thư giãn", type: "scroll", target: "offline-section", show: true },
+  { key: "rpg", icon: GraduationCap, label: "Nhập vai", type: "scroll", target: "rpg-section", show: true },
+  { key: "subjects", icon: BookOpen, label: "Môn học", type: "scroll", target: "subjects-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: true, badge: true },
   { key: "reminders", icon: Bell, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
@@ -229,6 +247,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const [dailyTasks, setDailyTasks] = useState(null);
   const [showAllGames, setShowAllGames] = useState(false);
+  const [resettingCache, setResettingCache] = useState(false);
   const pet = usePet();
 
   const loadGames = async () => {
@@ -327,6 +346,38 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       setPushStatus(getPushSupportStatus());
     } catch (err) {
       setPushMessage("❌ Lỗi reset: " + (err.message || "Thất bại"));
+    }
+  };
+
+  const handleResetCache = async () => {
+    setResettingCache(true);
+    try {
+      // Clear all caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+
+      // Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(registration => registration.unregister()));
+      }
+
+      // Clear localStorage (optional - only specific keys)
+      localStorage.removeItem('gq_pwa_closed');
+      localStorage.removeItem('gq_sound');
+
+      setPushMessage("✅ Đã xóa cache thành công! Trang sẽ tự reload...");
+
+      // Reload after 1 second
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      setPushMessage("❌ Lỗi xóa cache: " + (err.message || "Thất bại"));
+    } finally {
+      setResettingCache(false);
     }
   };
 
@@ -499,7 +550,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     if (item.path) return goTo(item.path);
   };
 
-const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
+  const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
   const navItems = SIDEBAR_ITEMS(userAuth).filter(i => i.show);
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -617,18 +668,33 @@ const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
       icon: g.icon || "🎮",
       grad: tintFor(g.key),
       border: g.color || "#F2B632",
-      badge: "Chơi",
+      badge: "Offline",
       age: g.tag || "Mọi lứa tuổi",
       play: () => navigate(g.path),
     })),
     []
   );
 
-  /* Nút "Chơi ngẫu nhiên" — bốc ngẫu nhiên trong toàn bộ game (API + offline). */
+  const schoolRpgCard = useMemo(
+    () => ({
+      key: SCHOOL_RPG_GAME.key,
+      name: SCHOOL_RPG_GAME.name,
+      icon: SCHOOL_RPG_GAME.icon,
+      grad: ["#8be59b", "#3FA97A"],
+      border: SCHOOL_RPG_GAME.color,
+      badge: "Nhập vai",
+      age: SCHOOL_RPG_GAME.tag,
+      play: () => navigate(SCHOOL_RPG_GAME.path),
+    }),
+    []
+  );
+
+  /* Nút "Chơi ngẫu nhiên" — bốc trong 3 dạng: học tập + thư giãn + nhập vai. */
   const handleRandomPlay = () => {
     const pool = [
       ...(games || []).map((g) => ({ label: g.name, run: () => onSelectGame(g) })),
       ...OFFLINE_GAMES.map((g) => ({ label: g.name, run: () => navigate(g.path) })),
+      { label: SCHOOL_RPG_GAME.name, run: () => navigate(SCHOOL_RPG_GAME.path) },
     ];
     if (!pool.length) return;
     const pick = pool[Math.floor(Math.random() * pool.length)];
@@ -679,6 +745,17 @@ const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
           </div>
 
           <div className="gq-actions">
+            {canAccessDashboard(userAuth?.user?.role) && (
+              <button
+                className="gq-adminbtn"
+                onClick={() => goTo("/admin")}
+                aria-label="Admin Dashboard"
+                title="Admin Dashboard"
+              >
+                <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
+                <span>Admin Dashboard</span>
+              </button>
+            )}
             <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Sao: ${userStars}`}>
               ⭐<span className="gq-iconbtn__n">{userStars}</span>
             </button>
@@ -792,13 +869,13 @@ const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
           </section>
         )}
 
-        {/* ─────────── GAME OFFLINE ─────────── */}
-        <section className="gq-sect">
+        {/* ─────────── 2. GAME THƯ GIÃN (OFFLINE) ─────────── */}
+        <section className="gq-sect" id="offline-section">
           <div className="gq-sect__head">
             <span className="gq-sect__ico" aria-hidden="true">🎮</span>
             <div>
-              <h2 className="gq-sect__t">Chơi không cần mạng</h2>
-              <p className="gq-sect__s">Tiến độ lưu ngay trên máy</p>
+              <h2 className="gq-sect__t">Game thư giãn <span className="gq-sect__n">{offlineCards.length}</span></h2>
+              <p className="gq-sect__s">Chơi không cần mạng · tiến độ lưu trên máy</p>
             </div>
           </div>
           <div className="gq-rail">
@@ -806,13 +883,27 @@ const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
           </div>
         </section>
 
-        {/* ─────────── TẤT CẢ GAME ─────────── */}
+        {/* ─────────── 3. GAME NHẬP VAI TRƯỜNG HỌC ─────────── */}
+        <section className="gq-sect gq-sect--green" id="rpg-section">
+          <div className="gq-sect__head">
+            <span className="gq-sect__ico" aria-hidden="true">🏫</span>
+            <div>
+              <h2 className="gq-sect__t">Game nhập vai trường học</h2>
+              <p className="gq-sect__s">Khám phá trường · học từng lớp · làm bài thi</p>
+            </div>
+          </div>
+          <div className="gq-rail">
+            <GqGameCard {...schoolRpgCard} />
+          </div>
+        </section>
+
+        {/* ─────────── 1. GAME HỌC TẬP (API) ─────────── */}
         <section className="gq-sect" id="games-section">
           <div className="gq-sect__head">
-            <span className="gq-sect__ico" aria-hidden="true">🕹️</span>
+            <span className="gq-sect__ico" aria-hidden="true">📚</span>
             <div>
-              <h2 className="gq-sect__t">Tất cả trò chơi <span className="gq-sect__n">{visibleGames.length}</span></h2>
-              <p className="gq-sect__s">{showAllGames ? "Đang xem tất cả" : `Xem trước ${PREVIEW_GAMES} game`}</p>
+              <h2 className="gq-sect__t">Game học tập <span className="gq-sect__n">{visibleGames.length}</span></h2>
+              <p className="gq-sect__s">{showAllGames ? "Đồng bộ điểm &amp; tiến trình khi có mạng" : `Xem trước ${PREVIEW_GAMES} game · lưu kết quả lên máy chủ`}</p>
             </div>
           </div>
 
@@ -1016,7 +1107,7 @@ const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
               {(userAuth?.user?.role === "admin" || userAuth?.user?.role === "teacher") && (
                 <button onClick={() => goTo("/admin")} className="gq-link">
                   <span className="gq-link__ico"><GraduationCap className="w-4 h-4" /></span>
-                  <span className="flex-1">Trang giáo viên</span>
+                  <span className="flex-1">Admin Dashboard</span>
                 </button>
               )}
 
@@ -1047,6 +1138,14 @@ const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
                   <div className="gq-sheet__sep" />
                 </>
               )}
+
+              {/* Cài đặt */}
+              <div className="gq-sheet__sep" />
+              <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Cài đặt</p>
+              <button onClick={handleResetCache} disabled={resettingCache} className="gq-link">
+                <span className="gq-link__ico"><RefreshCw className={`w-4 h-4 ${resettingCache ? 'animate-spin' : ''}`} /></span>
+                <span className="flex-1">{resettingCache ? "Đang xóa cache..." : "Xóa cache"}</span>
+              </button>
 
               {/* Tài khoản */}
               {userAuth?.user ? (

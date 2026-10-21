@@ -128,6 +128,14 @@ export function completeOnboarding({ name, grade, gender }) {
   });
 }
 
+export function skipOnboarding({ name, grade, gender } = {}) {
+  const patch = { onboarded: true };
+  if (name !== undefined && String(name).trim()) patch.name = String(name).trim();
+  if (grade !== undefined && grade !== null) patch.grade = clampGrade(grade);
+  if (gender) patch.gender = gender;
+  setKidSettings(patch);
+}
+
 /** Tên gọi tắt của bé (lấy chữ đầu của họ + tên). */
 export function kidShortName(name = state.name) {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);

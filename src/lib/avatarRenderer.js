@@ -101,10 +101,9 @@ function injectOverlaysIntoSvg(svg, backHtml, frontHtml) {
  */
 export function composeAvatar({ bodyCode, skin, layers = {}, order } = {}) {
   const body = getAvatarBody(bodyCode);
-  const bodySvg = body.render?.(skin || '#FFDFC4') || '';
 
   // Body tự khắc sẵn chi tiết (rồng) → vẽ nguyên trạng, không ghép phụ kiện.
-  if (!acceptsOverlays(body)) return bodySvg;
+  if (!acceptsOverlays(body)) return body.render?.(skin || '#FFDFC4') || '';
 
   let back = '';
   let front = '';
@@ -115,6 +114,9 @@ export function composeAvatar({ bodyCode, skin, layers = {}, order } = {}) {
     back += parts.back;
     front += parts.front;
   }
+
+  const hasClothing = ['shirt', 'pants', 'shoes'].some((key) => layers[key]);
+  const bodySvg = body.render?.(skin || '#FFDFC4', { clean: hasClothing }) || '';
 
   if (!back && !front) return bodySvg;
 

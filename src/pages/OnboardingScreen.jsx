@@ -18,6 +18,7 @@ import { useState } from "react";
 import "./onboarding.css";
 import {
   completeOnboarding,
+  skipOnboarding,
   GRADE_MIN, GRADE_MAX, gradeLabel, ageForGrade,
 } from "../lib/kidSettings.js";
 
@@ -39,21 +40,41 @@ const S = {
   cream: "#fffdf6",
 };
 
-export default function OnboardingScreen() {
+export default function OnboardingScreen({ onComplete }) {
   const [grade, setGrade] = useState(null);
   const [gender, setGender] = useState(null);
   const [name, setName] = useState("");
   const [touched, setTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const grades = Array.from({ length: GRADE_MAX - GRADE_MIN + 1 }, (_, i) => GRADE_MIN + i);
   const ready = grade !== null && gender !== null && name.trim().length > 0;
   const missing = touched && !ready;
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     setTouched(true);
-    if (!ready) return;
-    completeOnboarding({ name, grade, gender });
+    if (!ready || submitting) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const payload = { name: name.trim(), grade, gender };
+      if (onComplete) await onComplete(payload);
+      else completeOnboarding(payload);
+    } catch (err) {
+      setError(err?.message || "Không thể tạo tài khoản. Bé thử lại hoặc bấm Bỏ qua nhé!");
+      setSubmitting(false);
+    }
+  }
+
+  function handleSkip() {
+    if (submitting) return;
+    skipOnboarding({
+      name: name.trim() || undefined,
+      grade: grade ?? undefined,
+      gender: gender || undefined,
+    });
   }
 
   return (
@@ -167,23 +188,52 @@ export default function OnboardingScreen() {
           </p>
         )}
 
+        {error && (
+          <p
+            className="o-banner font-display font-bold text-sm sm:text-base"
+            style={{ background: "#fdecea", borderColor: S.red, color: S.red }}
+            role="alert"
+          >
+            {error}
+          </p>
+        )}
+
         {/* ─────────── Nút ─────────── */}
         <button
           type="submit"
-          disabled={!ready}
+          disabled={!ready || submitting}
           className="o-btn w-full font-display font-bold text-base sm:text-lg"
           style={{
-            background: ready ? S.gold : "#e4e8ef",
-            color: ready ? S.ink : "#9aa6ba",
+            background: ready && !submitting ? S.gold : "#e4e8ef",
+            color: ready && !submitting ? S.ink : "#9aa6ba",
             borderColor: S.ink,
-            boxShadow: ready ? `6px 6px 0 ${S.ink}` : `3px 3px 0 ${S.ink}`,
+            boxShadow: ready && !submitting ? `6px 6px 0 ${S.ink}` : `3px 3px 0 ${S.ink}`,
           }}
         >
-          {ready ? "Chọn xong rồi, vào chơi nào!" : "Chọn xong 3 câu nhé"}
+          {submitting
+            ? "Đang tạo tài khoản cho bé..."
+            : ready
+              ? "Chọn xong rồi, vào chơi nào!"
+              : "Chọn xong 3 câu nhé"}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSkip}
+          disabled={submitting}
+          className="o-btn w-full font-display font-bold text-sm sm:text-base"
+          style={{
+            background: S.cream,
+            color: S.ink,
+            borderColor: S.ink,
+            boxShadow: `4px 4px 0 rgba(29,46,74,.18)`,
+          }}
+        >
+          Bỏ qua
         </button>
 
         <p className="text-center text-xs text-[#7c8aa0] pb-2">
-          Thông tin chỉ lưu trên máy bé, phụ huynh có thể đổi trong Cài đặt.
+          Tài khoản của bé được tạo tự động khi điền đủ thông tin. Phụ huynh có thể đổi lại trong Cài đặt.
         </p>
       </form>
     </div>

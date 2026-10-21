@@ -9,10 +9,39 @@ import { useGameLoader } from "./hooks/useGameLoader.js";
 import RouteShell from "./components/RouteShell.jsx";
 import HomeScreen from "./pages/HomeScreen.jsx";
 import OnboardingScreen from "./pages/OnboardingScreen.jsx";
-import { isOnboarded } from "./lib/kidSettings.js";
+import { useKidSettings, completeOnboarding } from "./lib/kidSettings.js";
 import PageLoading from "./components/PageLoading.jsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
 import { GameVersionProvider } from "./components/GameVersionProvider.jsx";
+
+const USERNAME_SAFE = "abcdefghijklmnopqrstuvwxyz0123456789";
+const PASSWORD_SAFE = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+
+function randomString(length, alphabet) {
+  const out = [];
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const buf = new Uint32Array(length);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < length; i++) out.push(alphabet[buf[i] % alphabet.length]);
+    return out.join("");
+  }
+  for (let i = 0; i < length; i++) out.push(alphabet[Math.floor(Math.random() * alphabet.length)]);
+  return out.join("");
+}
+
+function usernameFromName(name) {
+  const base = String(name || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 14) || "hocsinh";
+  return `${base}_${randomString(6, USERNAME_SAFE)}`;
+}
+
+function randomPassword() {
+  return randomString(10, PASSWORD_SAFE);
+}
 
 // Lazy-loaded Pages / Screens
 const TeacherApp = lazy(() => import("./pages/teacher/TeacherApp.jsx"));
@@ -35,6 +64,7 @@ const LoginScreen = lazy(() => import("./pages/LoginScreen.jsx"));
 const UserLoginScreen = lazy(() => import("./pages/user/UserLoginScreen.jsx"));
 const UserRegisterScreen = lazy(() => import("./pages/user/UserRegisterScreen.jsx"));
 const MathAdventurePage = lazy(() => import("./pages/MathAdventurePage.jsx"));
+const SchoolMissionPage = lazy(() => import("./pages/SchoolMissionPage.jsx"));
 const OfflineGamePage = lazy(() => import("./pages/OfflineGamePage.jsx"));
 const PetPage = lazy(() => import("./pages/PetPage.jsx"));
 const PetWardrobePage = lazy(() => import("./pages/user/PetWardrobePage.jsx"));
@@ -47,6 +77,7 @@ function App() {
   const { user, token, login, register, logout, init } = useUserAuthStore();
   const [showUserLogin, setShowUserLogin] = useState(false);
   const [showUserRegister, setShowUserRegister] = useState(false);
+  const kidSettings = useKidSettings();
 
   useEffect(() => { init(); }, [init]);
 
@@ -61,19 +92,41 @@ function App() {
     return u;
   };
 
-  // Khách chưa đăng nhập và chưa làm màn chào → chặn ở OnboardingScreen.
-  // Tính thẳng (không dùng state/effect): hoàn tất màn chào sẽ đổi
-  // `isOnboarded()` nên App tự render lại sang trang chủ ngay.
   const skipOnboarding =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).has("skipOnboarding");
-  const needOnboarding = !user && !isOnboarded() && !skipOnboarding;
+  const needOnboarding = !user && !kidSettings.onboarded && !skipOnboarding;
 
   const handleRegister = async (data) => {
     const u = await register(data);
     setShowUserLogin(false);
     setShowUserRegister(false);
     return u;
+  };
+
+  const handleOnboardingComplete = async ({ name, grade, gender }) => {
+    const displayName = String(name || "").trim();
+    const password = randomPassword();
+    let lastError = null;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        const u = await register({
+          username: usernameFromName(displayName),
+          password,
+          generatedPassword: password,
+          name: displayName,
+        });
+        completeOnboarding({ name: displayName, grade, gender });
+        setShowUserLogin(false);
+        setShowUserRegister(false);
+        return u;
+      } catch (err) {
+        lastError = err;
+        const message = err?.message || "";
+        if (!/tồn tại|đã được sử dụng/i.test(message)) throw err;
+      }
+    }
+    throw lastError;
   };
 
   const handleLogout = async () => {
@@ -182,15 +235,16 @@ function App() {
     "assignment-join": () => <AssignmentJoin />,
     "assignment-take": () => <AssignmentTake code={route.params?.code} />,
     "math-adventure": () => <MathAdventurePage />,
+    "school-mission": () => <SchoolMissionPage />,
     pet: () => <PetPage />,
     "pet-wardrobe": () => <PetWardrobePage />,
     attendance: () => <AttendancePage userAuth={userAuth} />,
-    // 17 game offline — mỗi game 1 file HTML riêng
+    // Game offline thư giãn — mỗi game 1 file HTML riêng
     "offline-game": () => <OfflineGamePage gameId={route.params?.gameId} />,
   };
 
   const renderScreen = () => {
-    if (needOnboarding && !user) return <OnboardingScreen />;
+    if (needOnboarding && !user) return <OnboardingScreen onComplete={handleOnboardingComplete} />;
 
     if (showUserLogin) {
       return (

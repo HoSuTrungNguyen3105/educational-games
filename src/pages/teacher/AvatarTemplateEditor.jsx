@@ -1,190 +1,73 @@
-import { useCallback, useEffect, useState } from 'react';
-import { API_BASE } from '../../services/api.js';
-import { ManagementHeader } from '../../components/ui';
-import { Save, RotateCcw, ArrowUp, ArrowDown } from 'lucide-react';
-import { composeAvatar, CATEGORY_LIST } from '../../lib/avatarRenderer.js';
+import { useState } from 'react';
+import { ManagementHeader, GhostButton } from '../../components/ui';
+import { KID_LAYERS, kidPreset, renderKid } from '../../lib/dressUpCatalog.js';
 
-const DEFAULT_LAYER_ORDER = CATEGORY_LIST.map(c => c.key);
+const PRESETS = [
+  { kind: 'boy', label: 'Bé trai' },
+  { kind: 'girl', label: 'Bé gái' },
+  { kind: 'dragon', label: 'Rồng xanh' },
+];
 
-function getAuthToken() {
-  try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; }
-}
+export default function AvatarTemplateEditor() {
+  const [kind, setKind] = useState('boy');
+  const svg = renderKid(kidPreset(kind));
 
-export default function AvatarTemplateEditor({ showToast }) {
-  const [items, setItems] = useState([]);
-  const [layerOrder, setLayerOrder] = useState(DEFAULT_LAYER_ORDER);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    fetch(`${API_BASE}/avatar/items`)
-      .then(r => r.json())
-      .then(json => {
-        if (json.status) {
-          setItems(json.data.items);
-          if (json.data.layerOrder) setLayerOrder(json.data.layerOrder);
-        }
-      })
-      .catch(() => { })
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  /**
-   * Preview dùng đúng bộ item mặc định, nhưng vẽ theo `layerOrder` đang chỉnh.
-   * `body` không có trong `items` (nằm ở mã frontend) → dùng body mặc định.
-   */
-  function buildPreviewSvg(order) {
-    const loadout = { body: 'body_boy_01' };
-    for (const cat of order) {
-      const defaultItem = items.find(i => i.category === cat && i.default);
-      if (defaultItem) loadout[cat] = defaultItem.code;
-    }
-    return composeAvatar({ ...buildPreviewLayers(loadout), order });
-  }
-
-  function buildPreviewLayers(loadout) {
-    const map = new Map(items.map(i => [i.code, i]));
-    const layers = {};
-    let skin = '#FFDFC4';
-    for (const [cat, code] of Object.entries(loadout)) {
-      if (cat === 'body' || !code) continue;
-      const item = map.get(code);
-      if (!item) continue;
-      if (cat === 'skin') { skin = item.params?.hex || skin; continue; }
-      layers[cat] = item;
-    }
-    return { bodyCode: loadout.body, skin, layers };
-  }
-
-  function moveLayer(index, dir) {
-    const newOrder = [...layerOrder];
-    const target = index + dir;
-    if (target < 0 || target >= newOrder.length) return;
-    [newOrder[index], newOrder[target]] = [newOrder[target], newOrder[index]];
-    setLayerOrder(newOrder);
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      const token = getAuthToken();
-      const res = await fetch(`${API_BASE}/avatar/template`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ categories: {}, layerOrder }),
-      });
-      const json = await res.json();
-      if (json.status) showToast('Đã lưu template');
-      else showToast(json.msg || 'Lỗi lưu', 'error');
-    } catch (err) { showToast(err.message, 'error'); }
-    setSaving(false);
-  }
-
-  function handleReset() {
-    setLayerOrder(DEFAULT_LAYER_ORDER);
-    showToast('Đã reset về mặc định');
-  }
-
-  if (loading) {
-    return (
-      <div>
-        <ManagementHeader subtitle="Thứ tự layer của Avatar" title="Avatar Template" />
-        <div className="text-center py-10 text-ink/40 text-sm animate-pulse">Đang tải...</div>
-      </div>
-    );
-  }
-
-  const svgContent = buildPreviewSvg(layerOrder);
   return (
-    <div>
-      <ManagementHeader subtitle="Thứ tự layer của Avatar" title="Avatar Template" />
+    <div className="space-y-4">
+      <ManagementHeader subtitle="Thứ tự lớp cố định của hệ DressUp" title="Avatar Template" />
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start max-w-6xl mx-auto mt-6">
-        {/* Left: Avatar Preview - chiếm phần lớn không gian */}
-        <div className="flex-1 flex flex-col items-center min-w-0">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-ink/5 p-6 flex flex-col items-center">
-            <div className="text-[10px] font-mono uppercase text-ink/40 tracking-wider mb-3">Preview Avatar</div>
-            <div className="w-full aspect-[512/700] max-h-[440px] flex items-center justify-center bg-gradient-to-br from-ink/[0.02] to-ink/[0.06] rounded-xl p-2">
-              <svg
-                viewBox="0 0 512 700"
-                width="100%"
-                height="100%"
-                preserveAspectRatio="xMidYMid meet"
-                xmlns="http://www.w3.org/2000/svg"
-                dangerouslySetInnerHTML={{ __html: svgContent }}
-                className="drop-shadow-sm"
-              />
-            </div>
+      <div className="note-card p-3 text-xs text-ink/60">
+        Thứ tự lớp được render cố định trong <code className="font-mono text-[11px]">renderKid</code>.
+        Mắt, mũi, miệng nằm trong lớp <strong>Mặt</strong>; kính và mũ luôn vẽ trên cùng.
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[320px_1fr] items-start">
+        <div className="note-card p-4 space-y-3">
+          <div className="rounded-xl overflow-hidden" style={{ background: 'var(--stage, #f7f1e7)' }}>
+            <svg viewBox="0 0 512 700" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
+              dangerouslySetInnerHTML={{ __html: svg }} />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {PRESETS.map((preset) => (
+              <button
+                key={preset.kind}
+                onClick={() => setKind(preset.kind)}
+                className={`px-2 py-1.5 rounded-lg text-[11px] font-semibold transition ${
+                  kind === preset.kind ? 'bg-pink text-white' : 'bg-ink/5 text-ink/60 hover:bg-ink/10'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Right: Layer Order - chiều rộng cố định, nhỏ hơn avatar */}
-        <div className="w-[280px] shrink-0 space-y-4">
-          <div className="bg-white rounded-2xl border border-ink/5 shadow-lg p-5">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-mono uppercase text-ink/50 tracking-wider">Thứ tự layer</span>
-              <span className="text-[10px] font-mono text-ink/30">trên → dưới</span>
-            </div>
-            <div className="space-y-2">
-              {layerOrder.map((catId, index) => {
-                const cat = CATEGORY_LIST.find(c => c.key === catId);
-                const itemCount = items.filter(i => i.category === catId).length;
-                return (
-                  <div
-                    key={catId}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-ink/[0.03] border border-ink/5 hover:border-ink/10 transition"
-                  >
-                    <span className="text-[10px] font-mono text-ink/30 w-5 text-right font-semibold">
-                      {index + 1}
-                    </span>
-                    <span className="flex-1 text-sm font-medium text-ink/80 truncate">{cat?.label || catId}</span>
-                    <span className="text-[10px] font-mono text-ink/30 bg-ink/5 px-2 py-0.5 rounded-full shrink-0">
-                      {itemCount}
-                    </span>
-                    <div className="flex gap-0.5 shrink-0">
-                      <button
-                        onClick={() => moveLayer(index, -1)}
-                        disabled={index === 0}
-                        className="p-1 rounded-lg hover:bg-ink/10 transition disabled:opacity-20 disabled:hover:bg-transparent"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5 text-ink/50" />
-                      </button>
-                      <button
-                        onClick={() => moveLayer(index, 1)}
-                        disabled={index === layerOrder.length - 1}
-                        className="p-1 rounded-lg hover:bg-ink/10 transition disabled:opacity-20 disabled:hover:bg-transparent"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5 text-ink/50" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={handleReset}
-              className="flex-1 px-3 py-2.5 bg-ink/5 hover:bg-ink/10 text-ink/70 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex-1 px-3 py-2.5 bg-gradient-to-r from-pink to-pink/80 text-white rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-pink/20 transition disabled:opacity-50 disabled:hover:shadow-none flex items-center justify-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              {saving ? 'Đang lưu...' : 'Lưu'}
-            </button>
+        <div className="note-card p-4">
+          <h3 className="font-display text-sm text-ink mb-3">Thứ tự vẽ</h3>
+          <div className="space-y-2">
+            {KID_LAYERS.map((layer, index) => (
+              <div key={layer.key} className="flex items-start gap-3 px-3 py-2 rounded-xl bg-ink/[0.03]">
+                <span className="w-5 text-right font-mono text-[11px] text-ink/30 font-semibold">
+                  {index + 1}
+                </span>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-ink/80">{layer.name}</div>
+                  <div className="text-[11px] text-ink/40">{layer.detail}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+
+      <div className="note-card p-4 text-xs text-ink/60 leading-relaxed">
+        <p><strong>Mắt:</strong> <code className="font-mono">x=224 / 288, y=210</code> · <strong>Mũi:</strong> <code className="font-mono">x=256, y=218–241</code> · <strong>Miệng:</strong> <code className="font-mono">y≈258–280</code>.</p>
+        <p className="mt-1">Body rồng bỏ qua toàn bộ lớp phụ kiện. Mặc váy sẽ tự ẩn lớp quần.</p>
+      </div>
+
+      <GhostButton onClick={() => window.location.hash = '#/admin/avatar-items'}>
+        Mở Avatar Items
+      </GhostButton>
     </div>
   );
 }

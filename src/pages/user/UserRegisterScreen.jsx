@@ -26,20 +26,15 @@ export default function UserRegisterScreen({ onBack, onRegistered, onGoLogin, sh
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${window.API_BASE_URL || "https://educational-games-lp4z.onrender.com/api"}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), email: email.trim() || undefined, password, name: name.trim() }),
+      const created = await onRegistered({
+        username: username.trim(),
+        email: email.trim() || undefined,
+        password,
+        name: name.trim(),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Đăng ký thất bại");
-      const USER_AUTH_KEY = "edu_games_user_auth";
-      localStorage.setItem(USER_AUTH_KEY, JSON.stringify({ token: data.token, user: data.user }));
-      showToast(`Đăng ký thành công! Xin chào, ${data.user.name}!`);
-      onRegistered(data.user, data.token);
+      showToast(`Đăng ký thành công! Xin chào, ${created?.name || name.trim()}!`);
     } catch (err) {
       setError(err.message || "Đăng ký thất bại");
-    } finally {
       setLoading(false);
     }
   };

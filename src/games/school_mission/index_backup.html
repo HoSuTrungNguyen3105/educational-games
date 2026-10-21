@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trường Vui Vẻ</title>
+<link rel="stylesheet" href="css/style.css">
+</head><body>
+<canvas id="c"></canvas>
+<div class="pill" id="lv"><span id="lvt"></span><div id="bar"><i></i></div></div>
+<div class="pill" id="cur"><span id="coin"></span><span id="gem"></span></div>
+<div class="pill" id="qp"></div>
+<div class="pill" id="en" style="top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);min-width:130px">⚡ Năng lượng<div id="bar2" style="height:7px;background:#fff3;border-radius:5px;margin-top:4px;overflow:hidden"><i style="display:block;height:100%;background:#5be37d;width:100%"></i></div></div>
+<div class="pill" id="loc" style="top:calc(46px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);font-size:12px"></div>
+<button id="cfg">⚙️ Dữ liệu</button>
+<button id="sched" type="button">📅 Thời khóa biểu</button>
+<button id="quit" type="button">← Thoát</button>
+<div class="pill" id="clk">🕒 --:--</div>
+<div id="bell"></div>
+<div id="joy"><div id="knob"></div></div>
+<button id="act">Vào</button>
+<div id="fd" style="position:fixed;inset:0;background:#000;opacity:0;pointer-events:none"></div><div id="toast"></div>
+<div id="modal"><div id="box"></div></div>
+<div id="rot">📱 Hãy xoay ngang điện thoại để chơi nhé!</div>
+
+<!-- Thứ tự nạp file quan trọng: file sau dùng biến/hàm của file trước -->
+<script src="js/core.js"></script>
+<script src="data/questions.js"></script>
+<script src="data/schedule.js"></script>
+<script src="js/schedule.js"></script>
+<script src="js/state.js"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/questions.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/activities.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/world.js"></script>
+<script src="js/input.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/render.js"></script>
+<script src="js/main.js"></script>
+</body></html>

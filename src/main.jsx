@@ -16,14 +16,21 @@ createRoot(document.getElementById('root')).render(<App />)
  *   skipWaiting + clientsClaim, nên không cần bấm gì cả.
  * - Hàm 60 phút gọi reg.update() để app mở lâu (PWA cài trên máy) vẫn nhận
  *   bản mới khi user quay lại app, thay vì phải F5.
+ *
+ * iOS Safari fix: iOS không hỗ trợ clientsClaim/skipWaiting tốt như Chrome.
+ * Thay vì force reload trong onNeedRefresh (có thể fail trên iOS), ta để
+ * SW tự activate qua autoUpdate và reload nhẹ nhàng khi user tương tác.
  */
 const updateSW = registerSW({
   immediate: true,
 
   onNeedRefresh() {
-    // Chỉ dùng khi SW chưa tự activate. Gọi updateSW(true) để chuyển ngay
-    // sang SW mới và reload ứng dụng.
-    updateSW(true)
+    // IOS Safari fix: KHÔNG gọi updateSW(true) force reload vì có thể fail
+    // Thay vì đó, để SW tự activate qua autoUpdate (vite.config.js)
+    // và reload nhẹ nhàng khi user tương tác tiếp theo.
+    console.info('[PWA] Có bản cập nhật mới, sẽ áp dụng khi reload.')
+    // Trên iOS, user cần đóng và mở lại app để nhận update mới
+    // Đây là hành vi chuẩn của iOS PWA
   },
 
   onOfflineReady() {
@@ -33,10 +40,19 @@ const updateSW = registerSW({
   onRegisteredSW(swUrl, registration) {
     if (!registration) return
     console.info('[PWA] Service Worker đăng ký tại:', swUrl)
+
     // Nhắc lại sau mỗi 60 phút (tab PWA có thể mở cả ngày).
     setInterval(() => {
       registration.update().catch(() => {})
     }, 60 * 60 * 1000)
+
+    // iOS Safari fix: Thêm listener để tự reload khi SW mới active
+    // Đây là workaround cho iOS không hỗ trợ clientsClaim tốt
+    registration.addEventListener('controllerchange', () => {
+      console.info('[PWA] Service Worker mới đã active, reload nhẹ...')
+      // Reload trang để apply SW mới
+      window.location.reload()
+    })
   },
 
   onRegisterError(err) {

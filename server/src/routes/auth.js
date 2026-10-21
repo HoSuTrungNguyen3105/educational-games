@@ -31,14 +31,14 @@ router.post("/login", async (req, res, next) => {
 
 router.post("/register", async (req, res, next) => {
   try {
-    const { username, email, password, name } = req.body || {};
+    const { username, email, password, name, generatedPassword } = req.body || {};
     if (!username || !password || !name) {
       return sendError(res, "Vui lòng nhập đầy đủ thông tin", 400);
     }
     if (password.length < 6) {
       return sendError(res, "Mật khẩu phải có ít nhất 6 ký tự", 400);
     }
-    const result = await registerUser({ username, email, password, name });
+    const result = await registerUser({ username, email, password, name, generatedPassword });
     sendCreated(res, result);
   } catch (e) {
     const msg = e.message || "Đăng ký thất bại";
