@@ -27,7 +27,14 @@ function buildDemoTimetable(){
     {day,start:fmtHM(base+25),end:fmtHM(base+32),subject:"math",type:"exam",examId:"thi_toan_1",title:"Thi Toán (demo)"}
   ];
 }
-function activeTimetable(){return CFG.demoMode?buildDemoTimetable():(CFG.timetable||[])}
+// Lịch DEMO dựng 1 lần/buổi chơi (không dựng lại mỗi giây — nếu không key tiết
+// sẽ đổi liên tục và game báo chuông + dẫn bé về lớp mỗi phút).
+let _demoTable=null;
+function activeTimetable(){
+  if(!CFG.demoMode)return CFG.timetable||[];
+  if(!_demoTable)_demoTable=buildDemoTimetable();
+  return _demoTable;
+}
 function periodKey(p){return[p.day,p.start,p.end,p.subject,p.type,p.examId||""].join("|")}
 function periodsForDay(day){return activeTimetable().filter(p=>(p.days||[p.day]).includes(day)).sort((a,b)=>parseHM(a.start)-parseHM(b.start))}
 function findCurrentPeriod(){
@@ -50,7 +57,7 @@ function periodInSession(p){
   if(!(p.days||[p.day]).includes(day))return false;
   return now>=parseHM(p.start)-(CFG.earlyMinutes||0)&&now<parseHM(p.end)+(CFG.graceMinutes||0);
 }
-let _lastPeriodKey="",_notifiedKeys={},_classPrompted=false;
+let _lastPeriodKey="",_notifiedKeys={};
 function canStartLesson(type,{force}={}){
   if(force||!CFG.requireOnTimeForLesson)return true;
   const cur=findCurrentPeriod();
@@ -67,16 +74,13 @@ function canStartExam(ex,{force}={}){
   toast("⏰ Bài thi này chưa đến giờ theo thời khóa biểu!");
   return false;
 }
+/* Tới giờ: đưa tiết hiện tại vào PEND rồi tự dẫn bé về lớp.
+   Bé ngồi vào bàn (world.js seatAt) là học/thi bắt đầu luôn — không bấm gì cả. */
 function startPeriodActivity(p,{force}={}){
   if(!p)return;
-  go("room",500,540,p.subject);
-  setTimeout(()=>{
-    if(p.type==="exam"){
-      const ex=(DATA.exams||[]).find(e=>e.id===p.examId)||(DATA.exams||[]).find(e=>e.subject===p.subject);
-      if(ex)runExam(ex,{force:true});
-      else examMenu();
-    }else quiz(p.subject,{force:true});
-  },450);
+  PEND=p;
+  if(sc!="room"||rk!=p.subject)go("room",500,545,p.subject);
+  toast(p.type==="exam"?"📝 Ngồi vào bàn là bài thi bắt đầu!":"📖 Ngồi vào bàn là học luôn nhé!");
 }
 function tickSchedule(){
   const d=nowDate(),hm=pad2(d.getHours())+":"+pad2(d.getMinutes())+":"+pad2(d.getSeconds());
@@ -96,13 +100,16 @@ function tickSchedule(){
     if(!_notifiedKeys[key]){
       _notifiedKeys[key]=1;
       toast((cur.type==="exam"?"📝 Đến giờ thi: ":"🔔 Đến giờ học: ")+cur.title);
-      if(CFG.autoEnterClass&&!open_&&!_classPrompted){
-        _classPrompted=true;
-        promptClassStart(cur);
+      if(CFG.autoEnterClass&&!open_&&!climb){
+        PEND=cur;
+        if(sc!="room"||rk!=cur.subject)go("room",500,545,cur.subject);
+        toast("🪑 Ngồi vào bàn là bắt đầu ngay!");
       }
     }
   }
-  if(!cur){_lastPeriodKey="";_classPrompted=false}
+  if(!cur){_lastPeriodKey="";PEND=null}
+  // Vào lớp giữa giờ: vẫn còn thời gian thì chờ bé ngồi vào bàn
+  else if(!PEND&&!_doneKeys[key]&&!open_&&!climb&&sc=="room"&&rk==cur.subject&&periodInSession(cur))PEND=cur;
   // báo trước
   if(!cur&&nxt&&!nxt._futureDay){
     const left=parseHM(nxt.start)-nowMins();
@@ -112,12 +119,6 @@ function tickSchedule(){
       toast("⏳ Sắp đến giờ "+nxt.title+" ("+nxt.start+")");
     }
   }
-}
-function promptClassStart(p){
-  if(open_)return;
-  modal(`<h2>🔔 Đến giờ học!</h2><div class="q">${p.title}</div><p>${SUB_LABEL[p.subject]||p.subject} · ${p.start} – ${p.end}<br>${p.type==="exam"?"📝 Bài thi":"📖 Học bài"} theo thời khóa biểu</p><button class="btn" id="goClass">Vào học đúng giờ</button> <button class="btn" id="later" style="background:#ddd;box-shadow:0 3px 0 #aaa">Để sau</button>`);
-  $("goClass").onclick=()=>{close_();startPeriodActivity(p,{force:true})};
-  $("later").onclick=()=>{_classPrompted=false;close_()};
 }
 function showSchedule(){
   if(open_)return;
@@ -143,6 +144,7 @@ ${cur?`<p style="background:#fff3c4;padding:8px;border-radius:12px;font-weight:8
   if($("joinNow"))$("joinNow").onclick=()=>{close_();startPeriodActivity(cur,{force:true})};
   $("togDemo").onclick=()=>{
     CFG.demoMode=!CFG.demoMode;
+    _demoTable=null;
     try{localStorage.setItem("tvv_demo",CFG.demoMode?"1":"0")}catch(e){}
     _notifiedKeys={};_lastPeriodKey="";
     close_();showSchedule();

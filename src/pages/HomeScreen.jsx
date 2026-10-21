@@ -677,7 +677,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const schoolRpgCard = useMemo(
     () => ({
-      key: SCHOOL_RPG_GAME.key,
       name: SCHOOL_RPG_GAME.name,
       icon: SCHOOL_RPG_GAME.icon,
       grad: ["#8be59b", "#3FA97A"],
@@ -688,6 +687,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     }),
     []
   );
+
+  // Tổng số trò chơi đang chờ bé (học tập + thư giãn + nhập vai) cho câu chào.
+  const gameCount = visibleGames.length + OFFLINE_GAMES.length + 1;
 
   /* Nút "Chơi ngẫu nhiên" — bốc trong 3 dạng: học tập + thư giãn + nhập vai. */
   const handleRandomPlay = () => {
@@ -767,7 +769,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             >
               {soundOn ? "🔊" : "🔇"}
             </button>
-            <button className="gq-iconbtn" onClick={() => goTo("/profile")} aria-label="Hồ sơ của bé">
+            <button className="gq-iconbtn gq-heart" onClick={() => goTo("/profile")} aria-label="Hồ sơ của bé">
               ❤️
             </button>
             <button
@@ -781,6 +783,19 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             </button>
           </div>
         </header>
+
+        {/* ─────────── HERO CHÀO BÉ ─────────── */}
+        <section className="gq-hero" aria-label="Lời chào của ........">
+          <img src={`${import.meta.env.BASE_URL}edu_character.png`} alt="" aria-hidden="true" className="gq-hero__mascot" />
+          <div className="gq-hero__bubble">
+            <p className="gq-hero__hi">Chào {kidShortName(kidSettings.name)}! 👋</p>
+            <p className="gq-hero__ask">
+              {games === null
+                ? "........ đang mời trò chơi ra đây rồi…"
+                : `Hôm nay có ${gameCount} trò chơi đang chờ bé đó!`}
+            </p>
+          </div>
+        </section>
 
         {/* ─────────── BANNER CÀI APP ─────────── */}
         {pwaVisible && (
@@ -846,8 +861,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 age="2–8 tuổi"
                 play={() => navigate(FEATURED_GAME.path)}
               />
-              {todayGames.slice(2).map((g) => (
-                <GqGameCard key={g.key} {...g} />
+              {todayGames.slice(2).map(({ key, ...card }) => (
+                <GqGameCard key={key} {...card} />
               ))}
             </div>
           )}
@@ -864,7 +879,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </div>
             </div>
             <div className="gq-rail">
-              {mathGames.map((g) => <GqGameCard key={g.key} {...g} />)}
+              {mathGames.map(({ key, ...card }) => <GqGameCard key={key} {...card} />)}
             </div>
           </section>
         )}
@@ -879,7 +894,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             </div>
           </div>
           <div className="gq-rail">
-            {offlineCards.map((g) => <GqGameCard key={g.key} {...g} />)}
+            {offlineCards.map(({ key, ...card }) => <GqGameCard key={key} {...card} />)}
           </div>
         </section>
 
@@ -903,7 +918,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             <span className="gq-sect__ico" aria-hidden="true">📚</span>
             <div>
               <h2 className="gq-sect__t">Game học tập <span className="gq-sect__n">{visibleGames.length}</span></h2>
-              <p className="gq-sect__s">{showAllGames ? "Đồng bộ điểm &amp; tiến trình khi có mạng" : `Xem trước ${PREVIEW_GAMES} game · lưu kết quả lên máy chủ`}</p>
+              <p className="gq-sect__s">{showAllGames ? "Đồng bộ điểm & tiến trình khi có mạng" : `Xem trước ${PREVIEW_GAMES} game · lưu kết quả lên máy chủ`}</p>
             </div>
           </div>
 
@@ -930,9 +945,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
           {visibleGames.length > PREVIEW_GAMES && (
             <div className="flex justify-center mt-3">
-              <button onClick={() => setShowAllGames((v) => !v)}
-                className="rounded-full bg-white px-5 py-2 text-sm font-bold shadow">
-                {showAllGames ? "Thu gọn" : `Xem tất cả ${visibleGames.length} game`}
+              <button onClick={() => setShowAllGames((v) => !v)} className="gq-more">
+                {showAllGames ? "Thu gọn ▲" : `Xem tất cả ${visibleGames.length} game ▼`}
               </button>
             </div>
           )}
@@ -941,6 +955,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {/* ─────────── NHẮC ĐĂNG NHẬP ─────────── */}
         {!userAuth?.user && (
           <div className="gq-login">
+            <span className="gq-login__face" aria-hidden="true">🎁</span>
             <p>Đăng nhập để lưu điểm, sao và nhận quà mỗi ngày nhé!</p>
             <button onClick={onUserLogin}
               className="rounded-full bg-[#2f7fd6] text-white text-xs font-extrabold px-4 py-2 shadow hover:opacity-90 transition">
@@ -960,7 +975,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         aria-label="Điều hướng chính"
       >
-        <div className="flex justify-around items-center gap-1 px-2 h-16">
+        <div className="flex justify-around items-center gap-1 px-2 h-[68px]">
           {BOTTOM_NAV(userAuth).filter((i) => i.show).map((item) => {
             const Icon = item.icon;
             const isActive = item.key === "home";
@@ -969,11 +984,14 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 key={item.key}
                 onClick={() => handleNavClick(item)}
                 aria-current={isActive ? "page" : undefined}
-                className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl"
-                style={{ color: isActive ? "#ef7d18" : "#7d89ab" }}
+                className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-2xl transition-colors"
+                style={{
+                  color: isActive ? "#ef7d18" : "#7d89ab",
+                  background: isActive ? "rgba(247, 171, 46, 0.14)" : "transparent",
+                }}
               >
-                <Icon className="w-5 h-5" />
-                <span className="text-[10px] font-bold leading-none">{item.label}</span>
+                <Icon className="w-6 h-6" strokeWidth={isActive ? 2.6 : 2} />
+                <span className="text-[11px] font-extrabold leading-none">{item.label}</span>
               </button>
             );
           })}

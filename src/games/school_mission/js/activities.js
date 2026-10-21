@@ -62,46 +62,91 @@ function quiz(type, opts = {}) {
     nx();
 }
 
-function examMenu() {
-    const ex = (DATA.exams || []).filter(e => e.subject == rk);
-    if (!ex.length) {
-        toast("Lớp này chưa có bài thi");
+/* Thư viện tầng 2: đứng gần Thủ thư là mở truyện đọc (2 câu văn) */
+function readBook() {
+    const T = ST();
+    if (S.en < T.energyPerLesson) {
+        toast("⚡ Hết năng lượng! Xuống Căng tin ăn nhé");
         return;
     }
-    
-    const cur = findCurrentPeriod();
-    
-    modal(
-        `<h2>📝 Bài thi - ${RM[rk].n}</h2>` +
-        (cur && cur.type === "exam" ? `<p style="font-size:13px">⏰ Đang trong giờ: <b>${cur.title}</b></p>` : "") +
-        ex.map((e, i) => {
-            const r = S.exam[e.id];
-            const onTime = cur && cur.type === "exam" && (cur.examId === e.id || cur.subject === e.subject);
-            return `
-                <button class="btn" data-i="${i}" style="display:block;width:100%">
-                    ${onTime ? "🔔 " : ""}${e.title}<br>
-                    <small>${e.questions.length} câu • đạt từ ${e.passPercent || 60}%${r ? ` • tốt nhất ${r.best}%${r.pass ? " ✅" : ""}` : ""}</small>
-                </button>
-            `;
-        }).join("") +
-        `<button class="btn" id="b3" style="background:#ddd;box-shadow:0 3px 0 #aaa">Đóng</button>`
-    );
-    
-    document.querySelectorAll("[data-i]").forEach(b => b.onclick = () => runExam(ex[+b.dataset.i]));
-    $("b3").onclick = close_;
+
+    S.en -= T.energyPerLesson;
+    let n = 0, ok = 0;
+    const N = 2;
+
+    function nx() {
+        if (n >= N) {
+            const c = ok * 3, x = ok * 4;
+            gain(c, x);
+            modal(`
+                <h2>📚 Đọc sách vui vẻ</h2>
+                <div class="q">Đúng ${ok}/${N} câu 🎯</div>
+                <p>+${c} 🪙 &nbsp; +${x} XP — Đọc sách mỗi ngày nhé!</p>
+                <button class="btn" id="b3" style="background:#ddd;box-shadow:0 3px 0 #aaa">Đóng</button>
+            `);
+            $("b3").onclick = close_;
+            return;
+        }
+
+        const q = mk("van");
+        modal(`
+            <h2>📖 Đọc hiểu (${n + 1}/${N})</h2>
+            <div class="q">${q.q}</div>
+            <div class="opts">
+                ${q.o.map((o, i) => `<button class="opt" data-i="${i}">${o}</button>`).join("")}
+            </div>
+        `);
+
+        document.querySelectorAll(".opt").forEach(b => b.onclick = () => {
+            const i = +b.dataset.i;
+            document.querySelectorAll(".opt").forEach(x => x.onclick = null);
+
+            if (i == q.a) { b.classList.add("ok"); ok++; }
+            else { b.classList.add("no"); document.querySelectorAll(".opt")[q.a].classList.add("ok"); }
+
+            if (q.x) $("box").insertAdjacentHTML("beforeend", `<p>💡 ${q.x}</p>`);
+
+            n++;
+            setTimeout(nx, q.x ? 2200 : 900);
+        });
+    }
+    nx();
+}
+
+/* Gửi kết quả bài thi lên trang cha (trang cha gọi API /users/me/exam-results) */
+function reportExam(e, pc, pass, ok, qs, startedAt) {
+    try {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+                type: "school-exam-result",
+                data: {
+                    examId: e.id,
+                    examTitle: e.title,
+                    subject: e.subject,
+                    score: pc,
+                    passed: pass,
+                    correct: ok,
+                    total: qs.length,
+                    durationSec: Math.max(1, Math.round((Date.now() - startedAt) / 1000)),
+                    takenAt: new Date().toISOString(),
+                },
+            }, "*");
+        }
+    } catch (err) { /* iframe bị chặn — kết quả vẫn còn trong S.exam khi sync */ }
 }
 
 function runExam(e, opts = {}) {
     if (!canStartExam(e, opts)) return;
     const T = ST();
-    
+
     if (S.en < T.energyPerExam) {
         toast("⚡ Cần " + T.energyPerExam + " năng lượng để thi!");
         return;
     }
-    
+
     S.en -= T.energyPerExam;
     const qs = sh(e.questions).map(shq), pp = e.passPercent || 60;
+    const startedAt = Date.now();
     let n = 0, ok = 0, tm;
 
     function end() {
@@ -109,28 +154,27 @@ function runExam(e, opts = {}) {
         const pc = Math.round(ok / qs.length * 100), pass = pc >= pp;
         const r = S.exam[e.id] || { best: 0, pass: false };
         let msg = "";
-        
+
         if (pass && !r.pass) {
             const w = e.reward || {};
             S.gems += w.gems || 0;
             gain(w.coins || 0, w.xp || 0);
             msg = `🎁 Thưởng lần đầu đạt: +${w.coins || 0}🪙 +${w.gems || 0}💎 +${w.xp || 0}XP`;
         }
-        
+
         r.best = Math.max(r.best, pc);
         r.pass = r.pass || pass;
         S.exam[e.id] = r;
         save();
+        reportExam(e, pc, pass, ok, qs, startedAt);
 
         modal(`
             <h2>${e.title}</h2>
             <div class="q">${ok}/${qs.length} câu • ${pc}% ${pass ? "🎉 ĐẠT" : "😢 Chưa đạt"}</div>
             <p>${msg || (pass ? "" : "Cần đạt " + pp + "% — cố lên!")}</p>
-            <button class="btn" id="b1">Thi lại</button> 
             <button class="btn" id="b3" style="background:#ddd;box-shadow:0 3px 0 #aaa">Đóng</button>
         `);
-        
-        $("b1").onclick = () => { close_(); runExam(e, { force: true }) };
+
         $("b3").onclick = close_;
     }
 

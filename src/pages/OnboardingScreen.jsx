@@ -27,8 +27,8 @@ const GENDERS = [
   { id: "girl", label: "Bạn gái", face: "👧", tone: "#ee7fa6" },
 ];
 
-/** Nhân vật của web (ảnh trong `public/`). */
-const CHARACTER = "/edu_character.png";
+/** Nhân vật của web (ảnh trong `public/`). BASE_URL để khớp base path deploy. */
+const CHARACTER = `${import.meta.env.BASE_URL}edu_character.png`;
 
 /** Bảng màu rút từ trang chủ — đặt ở scope `.gq-home` cho gọn. */
 const S = {
@@ -103,10 +103,10 @@ export default function OnboardingScreen({ onComplete }) {
               className="font-display font-bold text-ink inline-block px-3.5 py-1.5 rounded-2xl text-white text-base sm:text-lg"
               style={{ background: S.blue, boxShadow: `4px 4px 0 ${S.ink}` }}
             >
-              Chào bạn! Mình là Gạo.
+              Chào bạn! Mình là ........
             </p>
             <p className="text-sm sm:text-base font-medium text-[#5b6b85] mt-2.5">
-              Cho Gạo làm quen bé một chút nha!
+              Cho ........ làm quen bé một chút nha!
             </p>
           </div>
         </header>
@@ -134,7 +134,7 @@ export default function OnboardingScreen({ onComplete }) {
 
         {/* ─────────── ② Giới tính ─────────── */}
         <Card n={2} title="Bé là bạn trai hay bạn gái?"
-          hint="Giúp Gạo chọn đồ và mặt mỹ hơn cho bé.">
+          hint="Giúp ........ chọn đồ và mặt mỹ hơn cho bé.">
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {GENDERS.map((g) => (
               <button

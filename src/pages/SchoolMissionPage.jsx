@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate } from "../lib/router.js";
 import { useUserAuthStore } from "../stores/userAuth.store.js";
-import { authService, gameProgressService } from "../services/api.js";
+import { authService, gameProgressService, examResultService } from "../services/api.js";
 import { renderDressUpSvg, resolveOutfit } from "../lib/dressUpAvatar.js";
 import {
   flushSchoolMissionSave,
@@ -169,6 +169,11 @@ export default function SchoolMissionPage() {
         if (token) queueSchoolMissionSave(msg.data);
       } else if (msg.type === "school-ready") {
         if (token) flushSchoolMissionSave();
+      } else if (msg.type === "school-exam-result") {
+        // Làm xong bài thi → lưu kết quả lên API (bỏ qua khi chưa đăng nhập/mất mạng)
+        if (token && msg.data) {
+          examResultService.create({ gameId: GAME_ID, ...msg.data }).catch(() => {});
+        }
       }
     };
 

@@ -1,5 +1,5 @@
 /* =====================================================================
-   home-gq.css — giao diện trang chủ kiểu "Gạo's Home" (ảnh mẫu)
+   home-gq.css — giao diện trang chủ kiểu "........'s Home" (ảnh mẫu)
    Màu nhạt, bo tròn, confetti rải rác; nền cảnh xanh bầu trời.
    ===================================================================== */
 
@@ -79,10 +79,11 @@
   box-shadow: 0 3px 0 #d98f0f;
 }
 .gq-logo__name {
+  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 .gq-logo__sub {
   font-size: 10px;
@@ -139,13 +140,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
-  padding: 0 14px;
+  height: 42px;
+  padding: 0 16px;
   border-radius: 999px;
   border: 0;
   cursor: pointer;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
   color: #fff;
   background: linear-gradient(140deg, #4f8ef7, #2f6fd6);
@@ -158,18 +159,21 @@
   box-shadow: 0 2px 0 #1f55ad, var(--gq-shadow);
 }
 .gq-iconbtn {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
   background: #fff;
   display: grid;
   place-items: center;
-  font-size: 17px;
+  font-size: 19px;
   box-shadow: var(--gq-shadow);
   border: 0;
   cursor: pointer;
   position: relative;
   transition: transform 0.15s ease;
+}
+@media (hover: hover) {
+  .gq-iconbtn:hover { transform: scale(1.08); }
 }
 .gq-iconbtn:active { transform: scale(0.92); }
 .gq-iconbtn__n {
@@ -189,6 +193,63 @@
   border: 2px solid #fff;
 }
 .gq-iconbtn--on { background: #ffd45e; }
+
+/* ─────────────────── HERO CHÀO BÉ ─────────────────── */
+
+.gq-hero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+.gq-hero__mascot {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 8px 14px rgba(29, 46, 74, 0.16));
+  animation: gqFloat 3.4s ease-in-out infinite;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+@keyframes gqFloat {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+.gq-hero__bubble {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  border-radius: 22px;
+  padding: 14px 18px;
+  box-shadow: var(--gq-shadow);
+}
+/* đuôi bong bóng thoại chỉ về phía nhân vật */
+.gq-hero__bubble::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  width: 15px;
+  height: 15px;
+  background: #fff;
+  transform: translateY(-50%) rotate(45deg);
+  border-radius: 3px;
+}
+.gq-hero__hi {
+  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gq-ink);
+  line-height: 1.2;
+}
+.gq-hero__ask {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--gq-mute);
+  margin-top: 3px;
+}
 
 /* ─────────────────── BANNER CÀI APP (PWA) ─────────────────── */
 
@@ -257,10 +318,10 @@
 }
 .gq-mini {
   flex-shrink: 0;
-  width: 64px;
+  width: 68px;
   background: #fff;
   border-radius: 16px;
-  padding: 8px 3px 6px;
+  padding: 10px 3px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -274,9 +335,13 @@
   position: relative;
   transition: transform 0.15s ease;
 }
-.gq-mini:active { transform: translateY(2px); }
-.gq-mini__ico { font-size: 22px; line-height: 1; }
-.gq-mini__lbl { font-size: 10px; font-weight: 700; }
+@media (hover: hover) {
+  .gq-mini:hover { transform: translateY(-3px); }
+  .gq-mini:hover .gq-mini__ico { animation: gqBob 0.5s ease; }
+}
+.gq-mini:active { transform: translateY(2px) scale(0.96); }
+.gq-mini__ico { font-size: 24px; line-height: 1; }
+.gq-mini__lbl { font-size: 10.5px; font-weight: 700; }
 .gq-mini__dot {
   position: absolute;
   top: 8px;
@@ -297,16 +362,34 @@
   border: 0;
   border-radius: 18px;
   color: #fff;
+  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
   font-size: 17px;
-  font-weight: 800;
-  font-family: inherit;
+  font-weight: 700;
   cursor: pointer;
   background: linear-gradient(120deg, var(--gq-orange1), var(--gq-orange2));
   box-shadow: 0 4px 0 #cf6a12;
   transition: transform 0.15s ease;
+  /* ánh sáng mềm nhấp nhô để thu hút bé bấm vào */
+  animation: gqGlow 2.4s ease-in-out infinite;
+}
+@keyframes gqGlow {
+  0%, 100% { box-shadow: 0 4px 0 #cf6a12, 0 0 0 0 rgba(247, 171, 46, 0.32); }
+  50% { box-shadow: 0 4px 0 #cf6a12, 0 0 0 10px rgba(247, 171, 46, 0); }
+}
+@media (hover: hover) {
+  .gq-random:hover { transform: translateY(-2px); }
+  .gq-random:hover .gq-random__ico { animation: gqTumble 0.6s ease; }
 }
 .gq-random:active { transform: translateY(3px); box-shadow: 0 1px 0 #cf6a12; }
 .gq-random__ico { font-size: 24px; }
+@keyframes gqTumble {
+  40% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+@keyframes gqBob {
+  35% { transform: translateY(-5px) rotate(-6deg); }
+  70% { transform: translateY(0) rotate(4deg); }
+}
 
 /* ───────────────────────── SECTION ───────────────────────── */
 
@@ -329,8 +412,9 @@
   flex-shrink: 0;
 }
 .gq-sect__t {
+  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
   font-size: 21px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.15;
   display: flex;
   align-items: center;
@@ -379,10 +463,22 @@
   font: inherit;
   color: inherit;
   scroll-snap-align: start;
-  transition: transform 0.16s ease;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
   text-align: center;
 }
-.gq-card:active { transform: translateY(3px); }
+@media (hover: hover) {
+  .gq-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(29, 43, 82, 0.14);
+  }
+  .gq-card:hover .gq-card__ring { animation: gqWiggle 0.55s ease; }
+}
+.gq-card:active { transform: translateY(1px) scale(0.96); }
+@keyframes gqWiggle {
+  25% { transform: rotate(-8deg) scale(1.08); }
+  55% { transform: rotate(6deg) scale(1.05); }
+  80% { transform: rotate(-3deg) scale(1.02); }
+}
 
 .gq-card__badge {
   position: absolute;
@@ -412,10 +508,10 @@
   box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.35);
 }
 .gq-card__name {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
   line-height: 1.2;
-  min-height: 29px;
+  min-height: 30px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -462,6 +558,49 @@
   box-shadow: var(--gq-shadow);
 }
 .gq-login p { font-size: 14px; font-weight: 700; margin: 0; }
+.gq-login__face { font-size: 30px; line-height: 1; }
+
+/* nút "Xem tất cả" giữa lưới game */
+.gq-more {
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--gq-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 11px 24px;
+  cursor: pointer;
+  box-shadow: var(--gq-shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+@media (hover: hover) {
+  .gq-more:hover { transform: translateY(-2px); box-shadow: 0 9px 20px rgba(29, 43, 82, 0.13); }
+}
+.gq-more:active { transform: translateY(1px); }
+
+/* vòng sáng khi điều hướng bằng bàn phím — bé dùng remote/keyboard vẫn thấy rõ */
+.gq-home :focus-visible {
+  outline: 3px solid #f7ab2e;
+  outline-offset: 2px;
+}
+
+/* tôn trọng người dùng giảm chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  .gq-hero__mascot,
+  .gq-random,
+  .gq-gift__rays,
+  .gq-gift__star {
+    animation: none !important;
+  }
+  .gq-card,
+  .gq-mini,
+  .gq-iconbtn,
+  .gq-random,
+  .gq-more {
+    transition: none !important;
+  }
+}
 
 /* ───────────────────────── MODAL / SHEET ───────────────────────── */
 
@@ -666,33 +805,51 @@
   .gq-card__age { font-size: 11px; padding: 3px 11px; }
   .gq-sect__t { font-size: 24px; }
   .gq-sect__s { font-size: 14px; }
-  .gq-mini { width: 80px; padding: 12px 5px 8px; }
-  .gq-mini__ico { font-size: 28px; }
-  .gq-mini__lbl { font-size: 11px; }
+  .gq-mini { width: 84px; padding: 13px 5px 9px; }
+  .gq-mini__ico { font-size: 30px; }
+  .gq-mini__lbl { font-size: 11.5px; }
   .gq-random { font-size: 20px; }
   .gq-logo__name { font-size: 22px; }
   .gq-logo__sub { font-size: 11px; }
-  .gq-iconbtn { width: 40px; height: 40px; font-size: 18px; }
+  .gq-iconbtn { width: 46px; height: 46px; font-size: 21px; }
   .gq-iconbtn__n { min-width: 20px; height: 20px; font-size: 11px; }
+  .gq-adminbtn { height: 46px; }
   .gq-age { padding: 4px 14px 4px 4px; }
   .gq-age__num { width: 36px; height: 36px; font-size: 18px; }
   .gq-age__lbl { font-size: 13px; }
   .gq-age__sub { font-size: 10.5px; }
+  .gq-hero { gap: 16px; margin-bottom: 22px; }
+  .gq-hero__mascot { width: 120px; height: 120px; }
+  .gq-hero__bubble { padding: 18px 24px; border-radius: 26px; }
+  .gq-hero__hi { font-size: 25px; }
+  .gq-hero__ask { font-size: 15.5px; }
 }
 
 @media (max-width: 640px) {
   .gq-sect__t { font-size: 18px; }
+  .gq-top { gap: 10px; }
   .gq-logo__name { font-size: 16px; }
   .gq-logo__sub { font-size: 9px; }
   .gq-age__sub { display: none; }
-  .gq-adminbtn { width: 32px; height: 32px; padding: 0; justify-content: center; }
+  /* Nút tim trùng "Cá nhân" ở thanh dưới + mục Hồ sơ trong menu → ẩn đi
+     để các nút còn lại không bị co nhỏ trên màn hình hẹp. */
+  .gq-heart { display: none; }
+  .gq-adminbtn { width: 36px; height: 36px; padding: 0; justify-content: center; }
   .gq-adminbtn span { display: none; }
-  .gq-mini { width: 58px; padding: 7px 2px 5px; }
-  .gq-mini__ico { font-size: 20px; }
-  .gq-mini__lbl { font-size: 9px; }
-  .gq-iconbtn { width: 32px; height: 32px; font-size: 16px; }
-  .gq-iconbtn__n { min-width: 16px; height: 16px; font-size: 9px; }
+  .gq-actions { gap: 6px; }
+  .gq-hero { gap: 8px; margin-bottom: 13px; }
+  .gq-hero__mascot { width: 70px; height: 70px; }
+  .gq-hero__bubble { padding: 11px 14px; border-radius: 18px; }
+  .gq-hero__hi { font-size: 16px; }
+  .gq-hero__ask { font-size: 12px; }
+  .gq-mini { width: 62px; padding: 8px 2px 6px; }
+  .gq-mini__ico { font-size: 22px; }
+  .gq-mini__lbl { font-size: 9.5px; }
+  .gq-iconbtn { width: 36px; height: 36px; font-size: 17px; }
+  .gq-iconbtn__n { min-width: 17px; height: 17px; font-size: 9.5px; }
   .gq-age { padding: 3px 10px 3px 3px; }
   .gq-age__num { width: 28px; height: 28px; font-size: 14px; }
   .gq-age__lbl { font-size: 11px; }
+  .gq-card__name { font-size: 12px; }
+  .gq-more { font-size: 12.5px; padding: 10px 20px; }
 }

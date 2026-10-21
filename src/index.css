@@ -8,6 +8,11 @@
   --sar: env(safe-area-inset-right);
 }
 *{ -webkit-tap-highlight-color: transparent; }
+/* Nút bấm phản hồi tức thì trên cảm ứng + chặn double-tap-zoom làm gián đoạn bé chơi. */
+button, a, [role="button"], input[type="submit"]{ touch-action: manipulation; }
+/* Vòng sáng vàng khi điều hướng bằng bàn phím/remote — bé vẫn thấy rõ đang ở đâu. */
+:focus-visible{ outline: 3px solid #f7ab2e; outline-offset: 2px; }
+::selection{ background: #ffd45e; color: #1d2e4a; }
 html{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; overflow-y:scroll; overscroll-behavior:none; }
 body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; background:#FFF6E7; color:var(--text-dark); font-family:'Be Vietnam Pro', sans-serif; padding-top: var(--sat); padding-left: var(--sal); padding-right: var(--sar); overscroll-behavior:none; }
 #root{ min-height:100vh; min-height:100dvh; width:100%; max-width:100%; }

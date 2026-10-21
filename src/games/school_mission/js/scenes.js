@@ -381,16 +381,16 @@ function drawOut() {
     }
 }
 
-function drawHall() {
+function drawHall(f = 1) {
     const w = 1700;
-    
+
     // Sàn nhà
     const fl = g.createLinearGradient(0, 170, 0, 420);
     fl.addColorStop(0, "#ecdfc6");
     fl.addColorStop(1, "#d9c7a4");
     g.fillStyle = fl;
     g.fillRect(0, 170, w, 250);
-    
+
     g.fillStyle = "rgba(0,0,0,.05)";
     for (let i = 0; i < 29; i++) {
         for (let j = 0; j < 5; j++) {
@@ -404,48 +404,71 @@ function drawHall() {
     wl.addColorStop(1, "#f0e2c2");
     g.fillStyle = wl;
     g.fillRect(0, 0, w, 170);
-    
+
     rr(0, 112, w, 58, 0, "#7fb2e5");
     g.fillStyle = "rgba(255,255,255,.3)";
     g.fillRect(0, 112, w, 5);
     g.fillStyle = "#8b6b4a";
     g.fillRect(0, 166, w, 8);
 
+    // Tầng 2: cửa sổ lớn nhìn ra sân trường
+    if (f == 2) {
+        [140, 340, 1290, 1490].forEach(wx => {
+            rr(wx, 36, 130, 72, 8, "#fff");
+            rr(wx + 8, 44, 114, 56, 5, "#9fd8ff");
+            g.fillStyle = "#fff";
+            g.fillRect(wx + 61, 44, 4, 56);
+            g.fillRect(wx + 8, 69, 114, 4);
+            g.font = "18px serif";
+            g.fillText("☁️", wx + 28 + ((wx / 100 | 0) % 2) * 46, 66);
+        });
+    }
+
     // Các cửa lớp học
-    KS.forEach((k, i) => {
+    (f == 1 ? KS : KS2).forEach((k, i) => {
         const dx = DX[k], r = RM[k];
-        
+
         // Cửa
         for (let j = 0; j < 3; j++) {
             rg(dx + 110 + j * 30, 80, 26, 88, 4, ["#e17055", "#fdcb6e", "#74b9ff"][(i + j) % 3]);
         }
-        
+
         // Bảng hiệu lớp
         rr(dx - 56, 34, 112, 136, 8, "#fff");
         rg(dx - 46, 44, 92, 126, 5, "#9a6236");
         rr(dx - 24, 58, 48, 40, 5, "#bfe6ff");
-        
+
         g.fillStyle = "#ffd23f";
         g.beginPath();
         g.arc(dx + 32, 118, 4, 0, 7);
         g.fill();
-        
+
         rr(dx - 66, 4, 132, 26, 8, "#2c3e66");
         tx(r.e + " " + r.n, dx, 23, 14, "#fff");
     });
 
-    tx("Chào mừng đến Trường Vui Vẻ 🎒", 850, 62, 22, "#c0504d");
+    tx(f == 1 ? "Chào mừng đến Trường Vui Vẻ 🎒" : "Góc Thư Viện — Tầng 2 📚", 850, 62, 22, f == 1 ? "#c0504d" : "#8e5a1e");
 
     // Chậu cây cảnh
     g.font = "40px serif";
     [170, 500, 820, 1180, 1500].forEach(x => g.fillText("🪴", x, 170));
-    
-    // Cửa ra sân
-    rr(0, 200, 22, 190, 4, "#9fd8ff");
-    g.fillStyle = "#fff8";
-    g.fillRect(4, 200, 5, 190);
-    tx("Ra sân", 50, 180, 12, "#223");
-    
+
+    // Cầu thang ở cuối hành lang
+    g.fillStyle = "rgba(0,0,0,.1)";
+    g.fillRect(1560, 170, 140, 250);
+    for (let i = 0; i < 6; i++) {
+        rg(1566 + i * 9, 176 + i * 26, 128 - i * 18, 24, 4, i % 2 ? "#b98a55" : "#a5763f");
+    }
+    tx(f == 1 ? "▲ Lên Tầng 2" : "▼ Xuống Tầng 1", 1630, 152, 12, "#fff");
+
+    // Cửa ra sân (chỉ tầng 1)
+    if (f == 1) {
+        rr(0, 200, 22, 190, 4, "#9fd8ff");
+        g.fillStyle = "#fff8";
+        g.fillRect(4, 200, 5, 190);
+        tx("Ra sân", 50, 180, 12, "#223");
+    }
+
     // Ánh sáng chiếu vào
     for (let i = 0; i < 7; i++) {
         g.fillStyle = "rgba(255,240,170,.35)";
@@ -540,10 +563,20 @@ function drawRoom() {
         rr(d[0] + 30, d[1] + 16, 28, 16, 3, "#fff");
     });
 
-    // Nút Bài Thi
-    rg(790, 225, 150, 42, 8, "#6c5ce7");
-    tx("📝 BÀI THI", 865, 253, 16, "#fff");
-    
+    // Kệ sách (trang trí Thư viện tầng 2)
+    if (rk == "lib") {
+        [70, 810].forEach(bx => {
+            rr(bx, 150, 120, 140, 6, "#8b5a2b");
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 6; j++) {
+                    rr(bx + 10 + j * 17, 160 + i * 62, 13, 44, 2,
+                        ["#e17055", "#fdcb6e", "#74b9ff", "#55b36a", "#e07aa8", "#8f7ae0"][(i + j) % 6]);
+                }
+                rr(bx + 6, 212 + i * 62, 108, 8, 2, "#6d4520");
+            }
+        });
+    }
+
     // Táo để bàn
     rg(430, 236, 140, 32, 6, "#9c6b3f");
     g.font = "22px serif";

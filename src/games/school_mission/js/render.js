@@ -22,7 +22,8 @@ function draw() {
 
     // Vẽ cảnh nền (Ngoài trời, Hành lang, hoặc Trong phòng)
     if (sc == "out") drawOut();
-    else if (sc == "hall") drawHall();
+    else if (sc == "hall") drawHall(1);
+    else if (sc == "hall2") drawHall(2);
     else drawRoom();
 
     // --- BẮT ĐẦU VẼ HOA (Tính năng hái hoa) ---

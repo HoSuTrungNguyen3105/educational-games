@@ -399,6 +399,15 @@ export const adminGameProgressService = {
   },
 };
 
+export const examResultService = {
+  async create(data) {
+    return apiFetch("/users/me/exam-results", { method: "POST", body: data });
+  },
+  async mine() {
+    return apiFetch("/users/me/exam-results") || [];
+  },
+};
+
 export const coinService = {
   async get() {
     return apiFetch("/auth/me/coins");
