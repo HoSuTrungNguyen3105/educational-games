@@ -49,4 +49,7 @@ export const SOCKET_EVENTS = {
 
   // Notification events
   NOTIFICATION_NEW: "notification:new",
+
+  // Game version — server bắn khi giáo viên publish bản mới (refactor_game.md GĐ4)
+  GAME_VERSION_UPDATED: "game.version.updated",
 };

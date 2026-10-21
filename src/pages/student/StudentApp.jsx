@@ -1,5 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { uid, resultService, questionService, gameService, gameProgressService, gamePlayService, coinService, gameEventService, ticketService } from '../../services/api.js'
+import { gameResultService } from '../../services/gameResultService.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui'
@@ -159,17 +160,42 @@ export default function StudentApp({ initialGame, coopSession, onExit, toast, us
     if (userAuth?.user) {
       // Đã đăng nhập → chấm điểm ở server (không tin score/answers từ client).
       // playId giữ nguyên khi bấm chơi lại để không cộng XP hai lần cho 1 lượt.
-      entry = await gamePlayService.complete({
-        gameId: gameGid,
-        playerName,
-        playId: sessionResult.playId,
-        answers: sessionResult.answers || [],
-        questionIds: sessionResult.questionIds || null,
-        clientScore: sessionResult.score,
-        timeUsed: sessionResult.timeUsed,
-        gameType: isPlayToWin ? "play-to-win" : "play-to-learn",
-        playMode: activeCoopSession ? "multiplayer" : (game?.playMode || "solo"),
-      });
+      try {
+        entry = await gamePlayService.complete({
+          gameId: gameGid,
+          playerName,
+          playId: sessionResult.playId,
+          answers: sessionResult.answers || [],
+          questionIds: sessionResult.questionIds || null,
+          clientScore: sessionResult.score,
+          timeUsed: sessionResult.timeUsed,
+          gameType: isPlayToWin ? "play-to-win" : "play-to-learn",
+          playMode: activeCoopSession ? "multiplayer" : (game?.playMode || "solo"),
+        });
+      } catch (err) {
+        // Mất mạng giữa chừng (GĐ5): đưa kết quả vào hàng đợi offline để sync sau.
+        // attemptId RIÊNG biệt với playId — nếu tái dùng playId, dòng verified:false
+        // trong results sẽ nuốt luôn lượt chơi lại online của gamePlayService.
+        if (!err.status || err.status >= 500) {
+          gameResultService
+            .submit({
+              attemptId: `attempt-${sessionResult.playId}`,
+              templateId: gameGid,
+              gameVersion: 0,
+              score: sessionResult.score || 0,
+              details: {
+                correct,
+                total,
+                durationMs: sessionResult.timeUsed || 0,
+                completedAt: new Date().toISOString(),
+              },
+            })
+            .catch(() => {});
+          entry = { offlineQueued: true };
+        } else {
+          throw err;
+        }
+      }
       entry = entry || {};
       setFinalResult({
         ...entry,

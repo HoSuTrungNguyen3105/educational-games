@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate } from "../lib/router.js";
 import { findOfflineGame, makeFallbackMeta } from "../games/offline/games-src/manifest.js";
 import { useGameVersion } from "../hooks/useGameVersion.js";
+import { gameCache } from "../lib/gameCache.js";
+import { gameDataService } from "../services/gameDataService.js";
 import { Loader } from "../components/ui";
 
 /**
@@ -61,6 +63,11 @@ export default function OfflineGamePage({ gameId }) {
 
   const html = isSchoolMissionRedirect ? null : HTML_BY_ID[gameId];
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+  // undefined = chưa đọc xong IndexedDB; số = version đang cache cho game này
+  const [cachedVersion, setCachedVersion] = useState(undefined);
+  const [offlineInfo, setOfflineInfo] = useState(null);
+  const gameDataRef = useRef(null);
+  const pushDataRef = useRef(null);
 
   // Manifest giữ tên/emoji/màu đẹp. Nếu game mới chưa có trong manifest thì
   // tự dựng metadata từ <title> trong file để vẫn chơi được ngay.
@@ -69,11 +76,64 @@ export default function OfflineGamePage({ gameId }) {
     return findOfflineGame(gameId) || makeFallbackMeta(gameId, html);
   }, [gameId, html]);
 
-  // Kiểm tra phiên bản game nếu có playMode trong meta
+  // So sánh version server với bản đang cache (không phải meta tĩnh) để
+  // banner "Có phiên bản mới" chỉ hiện đúng khi thật sự có bản chưa tải.
   const { hasUpdate, checkForUpdate, markAsUpdated } = useGameVersion(
-    meta?.playMode === 'offline' ? gameId : null,
-    meta?.version || 1
+    meta?.playMode === "offline" && cachedVersion !== undefined ? gameId : null,
+    cachedVersion || 0
   );
+
+  // GĐ3: làm ấm cache IndexedDB — mở game khi online thì tải bản mới nhất về
+  // lưu sẵn; mất mạng thì chơi tiếp bằng bản đã lưu và báo cho người chơi biết.
+  useEffect(() => {
+    if (!html) return;
+    let cancelled = false;
+
+    const pushDataToFrame = () => {
+      const win = iframeRef.current?.contentWindow;
+      if (win && gameDataRef.current) {
+        win.postMessage({ type: "gq:gameData", ...gameDataRef.current }, "*");
+      }
+    };
+    pushDataRef.current = pushDataToFrame;
+
+    (async () => {
+      const record = await gameCache.getRecord(gameId).catch(() => null);
+      if (cancelled) return;
+      setCachedVersion(record?.version || 0);
+      if (record) {
+        gameDataRef.current = { data: record.data, version: record.version };
+        pushDataToFrame();
+        if (!navigator.onLine) {
+          setOfflineInfo({ version: record.version, cachedAt: record.cachedAt });
+        }
+      }
+
+      if (!navigator.onLine) return;
+      try {
+        const [data, versionInfo] = await Promise.all([
+          gameDataService.getData(gameId),
+          gameDataService.getVersion(gameId),
+        ]);
+        if (cancelled) return;
+        if (data) {
+          const v = versionInfo?.version || 0;
+          await gameCache.save(gameId, data, v).catch(() => {});
+          gameDataRef.current = { data, version: v };
+          pushDataToFrame();
+          setCachedVersion(v);
+          setOfflineInfo(null);
+        }
+      } catch {
+        // API lỗi nhưng vẫn còn cache cũ → chơi tiếp, không cần báo lỗi
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      pushDataRef.current = null;
+    };
+  }, [gameId, html]);
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -96,15 +156,20 @@ export default function OfflineGamePage({ gameId }) {
     if (!meta || meta.playMode !== 'offline') return;
 
     try {
-      // Reload trang để tải lại game từ API (không dùng cache)
-      // Trong thực tế, backend cần có endpoint để tải data mới
-      // Ở đây chúng ta chỉ reload trang đơn giản
-      markAsUpdated();
-      setShowUpdateNotification(false);
-      window.location.reload();
+      // Tải bản mới nhất về cache rồi mới reload để lần mở sau chơi bản mới
+      const [data, versionInfo] = await Promise.all([
+        gameDataService.getData(gameId),
+        gameDataService.getVersion(gameId),
+      ]);
+      if (data) {
+        await gameCache.save(gameId, data, versionInfo?.version || 0).catch(() => {});
+      }
     } catch (error) {
       console.error('Lỗi cập nhật game:', error);
     }
+    markAsUpdated();
+    setShowUpdateNotification(false);
+    window.location.reload();
   };
 
   if (isSchoolMissionRedirect) {
@@ -153,9 +218,17 @@ export default function OfflineGamePage({ gameId }) {
         ref={iframeRef}
         title={meta.name}
         srcDoc={injectEmbeddedMode(html)}
+        onLoad={() => pushDataRef.current?.()}
         sandbox="allow-scripts allow-same-origin"
         className="h-full w-full border-0"
       />
+
+      {/* Đang chơi offline bằng dữ liệu đã cache */}
+      {offlineInfo && (
+        <div className="fixed bottom-3 left-3 z-20 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+          📴 Ngoại tuyến — đang dùng dữ liệu đã lưu (bản v{offlineInfo.version})
+        </div>
+      )}
 
       {/* Thông báo cập nhật phiên bản mới */}
       {showUpdateNotification && (

@@ -7,6 +7,7 @@ import { setChatIO } from "./routes/chat.js";
 import { initDatabase, close } from "./db.js";
 import { initPlantTypes } from "./services/plantTypeService.js";
 import { checkDeadlineReminders, setNotificationIO } from "./services/notificationService.js";
+import { setGameVersionIO } from "./services/gameVersionService.js";
 import * as templateStorage from "./services/templateStorageService.js";
 
 const DEADLINE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -16,6 +17,7 @@ async function main() {
   const io = initSocket(httpServer);
   setGameInviteIO(io);
   setNotificationIO(io);
+  setGameVersionIO(io);
   setChatIO(io);
 
   // Listen TRƯỚC khi init DB: /api/health phản hồi ngay trong lúc khởi động,

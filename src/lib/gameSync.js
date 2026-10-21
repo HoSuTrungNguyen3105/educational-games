@@ -133,16 +133,8 @@ class GameSync {
 // Export singleton instance
 export const gameSync = new GameSync();
 
-// Tự động bắt đầu đồng bộ khi có mạng
+// Tự động đồng bộ khi có mạng (vòng lặp 30s do main.jsx khởi động)
 window.addEventListener('online', () => {
   console.log('[gameSync] Có mạng trở lại, bắt đầu đồng bộ');
   gameSync.sync();
 });
-
-// Tự động bắt đầu đồng bộ khi trang tải xong
-if (typeof window !== 'undefined') {
-  // Đợi một chút để tránh xung đột với các khởi tạo khác
-  setTimeout(() => {
-    gameSync.startAutoSync(30000); // Mỗi 30 giây
-  }, 1000);
-}

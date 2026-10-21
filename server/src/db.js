@@ -180,6 +180,23 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Snapshot dữ liệu game đã publish (GĐ1-2 refactor_game.md) — phục vụ
+    // version check, cache offline và restore lịch sử phiên bản
+    game_versions: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "gameId", "version", "data", "publishedAt"],
+        properties: {
+          id: { bsonType: "string" },
+          gameId: { bsonType: "string" },
+          version: { bsonType: ["int", "double", "long"] },
+          questionsCount: { bsonType: ["int", "double", "long"] },
+          data: { bsonType: "object" },
+          publishedAt: { bsonType: "string" },
+          publishedBy: { bsonType: "object" },
+        },
+      }
+    },
     users: {
       $jsonSchema: {
         bsonType: "object",
@@ -558,6 +575,8 @@ async function _runHeavyInit(database) {
     ["games", { templateId: 1 }],
     ["games", { status: 1 }],
     ["games", { updatedAt: -1 }],
+    // Version snapshot: mới nhất theo gameId, version tăng dần không trùng
+    ["game_versions", { gameId: 1, version: -1 }, { unique: true }],
     ["userPets", { userId: 1 }, { unique: true }],
     ["petCatalog", { kind: 1, id: 1 }, { unique: true }],
     ["petCatalog", { kind: 1, order: 1 }],
@@ -575,6 +594,8 @@ async function _runHeavyInit(database) {
     ["results", { gameId: 1, score: -1 }],
     // Ván chơi đã chốt (có userId) — dùng cho idempotency theo playId
     ["results", { userId: 1, playId: 1 }],
+    // Dedupe sync kết quả offline theo playId (attemptId)
+    ["results", { playId: 1 }, { sparse: true }],
     ["results", { userId: 1, gameId: 1, createdAt: -1 }],
     ["users", { id: 1 }, { unique: true }],
     ["users", { username: 1 }, { unique: true }],

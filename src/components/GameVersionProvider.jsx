@@ -3,11 +3,13 @@
  *
  * Chức năng:
  * - Kiểm tra phiên bản game định kỳ
- * - Lắng nghe WebSocket events
+ * - Lắng nghe socket event `game.version.updated` (server bắn khi publish)
  * - Cung cấp context cho các component con
  */
 
 import { createContext, useContext, useEffect, useState } from 'react';
+import { socket } from '../socket/socket.js';
+import { SOCKET_EVENTS } from '../socket/socket.events.js';
 import { gameVersionService } from '../services/gameVersionService.js';
 
 const GameVersionContext = createContext(null);
@@ -16,32 +18,22 @@ export function GameVersionProvider({ children }) {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Khởi tạo gameVersionService
+    // Kiểm tra định kỳ vẫn chạy dự phòng cho client không giữ socket
     gameVersionService.startPeriodicCheck();
     setIsInitialized(true);
 
-    // Xử lý WebSocket events (nếu có socket integration)
-    const handleWebSocketMessage = (event) => {
-      try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        gameVersionService.handleWebSocketEvent(data);
-      } catch (error) {
-        // Bỏ qua nếu không phải JSON hoặc không đúng format
-      }
-    };
-
-    // Nếu có WebSocket, lắng nghe events
-    // Cần tích hợp với socket.js hiện tại của project
-    if (window.socket) {
-      window.socket.on('game.version.updated', (data) => {
-        gameVersionService.handleWebSocketEvent({
-          event: 'game.version.updated',
-          ...data,
-        });
+    // Socket singleton do userAuth store connect/disconnect khi đăng nhập —
+    // ở đây chỉ gắn listener; socket.on hoạt động cả khi chưa connected.
+    const handleVersionUpdated = (data = {}) => {
+      gameVersionService.handleWebSocketEvent({
+        event: SOCKET_EVENTS.GAME_VERSION_UPDATED,
+        ...data,
       });
-    }
+    };
+    socket.on(SOCKET_EVENTS.GAME_VERSION_UPDATED, handleVersionUpdated);
 
     return () => {
+      socket.off(SOCKET_EVENTS.GAME_VERSION_UPDATED, handleVersionUpdated);
       gameVersionService.stopPeriodicCheck();
     };
   }, []);

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as gameService from "../services/gameService.js";
 import * as questionService from "../services/questionService.js";
+import * as gameVersionService from "../services/gameVersionService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
 
@@ -54,6 +55,64 @@ router.get("/:id", async (req, res, next) => {
     const game = await gameService.get(req.params.id);
     if (!game) return sendError(res, "Không tìm thấy trò chơi", 404);
     sendSuccess(res, game);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Phiên bản mới nhất — công khai vì client chơi game cần check update (GĐ4).
+// Chưa publish lần nào → { version: 0, publishedAt: null }.
+router.get("/:id/version", async (req, res, next) => {
+  try {
+    sendSuccess(res, await gameVersionService.getInfo(req.params.id));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Dữ liệu chơi được (config + questions, đã strip correctAnswer) — công khai
+// cho học sinh load/cache offline (GĐ3). Ưu tiên bản publish, chưa có thì bản live.
+router.get("/:id/data", async (req, res, next) => {
+  try {
+    const data = await gameVersionService.getData(req.params.id);
+    if (!data) return sendError(res, "Không tìm thấy trò chơi", 404);
+    sendSuccess(res, data);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/:id/publish", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const info = await gameVersionService.publish(req.params.id, req.user);
+    sendCreated(res, info, `Đã xuất bản phiên bản ${info.version}`);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get("/:id/versions", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    sendSuccess(res, await gameVersionService.listVersions(req.params.id));
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get("/:id/versions/:version", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const snap = await gameVersionService.getVersion(req.params.id, req.params.version);
+    if (!snap) return sendError(res, "Không tìm thấy phiên bản", 404);
+    sendSuccess(res, snap);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/:id/versions/:version/restore", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const info = await gameVersionService.restore(req.params.id, req.params.version, req.user);
+    sendSuccess(res, info, `Đã khôi phục phiên bản ${req.params.version} thành phiên bản ${info.version}`);
   } catch (e) {
     next(e);
   }

@@ -21,7 +21,8 @@ export const DEFAULT_GAME_MODE = "quiz";
 // Config là chuỗi JSON riêng cho từng game (không dùng chung key giữa các game).
 // Game cũ / game không cần cấu hình → trả về `null` để client biết rõ là không có
 // config, tuyệt đối không tự bịa dữ liệu hay gán nhầm config của game khác.
-function sanitizeConfig(value) {
+// Export để gameVersionService tái dùng khi snapshot/restore config
+export function sanitizeConfig(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const { key, schemaVersion, values, ...rest } = value;
   const trimmedKey = typeof key === "string" ? key.trim() : "";
