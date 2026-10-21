@@ -32,6 +32,22 @@ const HTML_BY_ID = Object.fromEntries(
   ])
 );
 
+/**
+ * Game chạy trong app (iframe) thì React đã vẽ sẵn nút "← Trang chủ" ở góc
+ * trên trái — đúng chỗ game tự đặt nút về của nó nên 2 nút đè lên nhau.
+ * Cắm class "gq-embedded" vào <html> của game để:
+ *   - ẩn nút về của game (injected `#homeBackBtn`, `.bar > .back` của shell)
+ *   - đẩy nội dung sảnh shell (`#app`) xuống dưới nút của app
+ *   - nút "chơi lại" dạng `.sq#back` (cargo) dời xuống dưới nút của app
+ * Mở file .html trực tiếp (không có iframe) thì không có class → game giữ
+ * nguyên nút riêng của nó.
+ */
+function injectEmbeddedMode(html) {
+  const snippet = `<style>html.gq-embedded #homeBackBtn,html.gq-embedded .bar>.back{display:none!important}html.gq-embedded #app{padding-top:56px!important}html.gq-embedded .sq#back{top:64px!important}</style><script>try{if(window.parent&&window.parent!==window)document.documentElement.classList.add("gq-embedded")}catch(e){}<\/script>`;
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${snippet}</body>`);
+  return html + snippet;
+}
+
 /** Trang chơi 1 game offline — dùng chung cho mọi game trong thư mục offline. */
 export default function OfflineGamePage({ gameId }) {
   const iframeRef = useRef(null);
@@ -136,7 +152,7 @@ export default function OfflineGamePage({ gameId }) {
       <iframe
         ref={iframeRef}
         title={meta.name}
-        srcDoc={html}
+        srcDoc={injectEmbeddedMode(html)}
         sandbox="allow-scripts allow-same-origin"
         className="h-full w-full border-0"
       />
