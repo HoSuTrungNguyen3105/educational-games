@@ -60,6 +60,7 @@ const FEATURED_GAME = {
 
 import { OFFLINE_GAME_MANIFEST } from "../games/offline/games-src/manifest.js";
 import { gameThumbnail } from "../lib/gameThumbnail.js";
+import { subscribeWallet } from "../lib/coinWallet.js";
 
 
 const NO_SUBJECT = "Chung";
@@ -293,6 +294,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       }
     }
   }, [userAuth?.user]);
+
+  // Số xu đổi khi chơi game offline (ví ở src/lib/coinWallet.js) → trang chủ
+  // cập nhật luôn, không phải tải lại.
+  useEffect(() => subscribeWallet((w) => setUserCoins(w.coins)), []);
 
   const [pushStatus, setPushStatus] = useState(() => getPushSupportStatus());
   const [testingPush, setTestingPush] = useState(false);

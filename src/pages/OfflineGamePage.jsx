@@ -3,6 +3,7 @@ import { navigate } from "../lib/router.js";
 import { findOfflineGame, makeFallbackMeta } from "../games/offline/games-src/manifest.js";
 import { useGameVersion } from "../hooks/useGameVersion.js";
 import { gameCache } from "../lib/gameCache.js";
+import { addCoins, loadWallet, readWallet, subscribeWallet } from "../lib/coinWallet.js";
 import { gameDataService } from "../services/gameDataService.js";
 import { Loader } from "../components/ui";
 import TOKENS_CSS from "../games/offline/lib/tokens.css?raw";
@@ -83,6 +84,12 @@ export default function OfflineGamePage({ gameId }) {
   const gameDataRef = useRef(null);
   const pushDataRef = useRef(null);
 
+  /** Gửi số xu hiện có vào game (chỉ dùng iframeRef nên an toàn khi gọi sớm). */
+  const postWallet = (wallet) => {
+    const win = iframeRef.current?.contentWindow;
+    if (win) win.postMessage({ type: "gq:wallet", ...wallet, online: navigator.onLine }, "*");
+  };
+
   // Manifest giữ tên/emoji/màu đẹp. Nếu game mới chưa có trong manifest thì
   // tự dựng metadata từ <title> trong file để vẫn chơi được ngay.
   const meta = useMemo(() => {
@@ -153,9 +160,37 @@ export default function OfflineGamePage({ gameId }) {
     const handleMessage = (event) => {
       if (event.source !== iframeRef.current?.contentWindow) return;
       if (event.data?.type === "quit") navigate("/");
+      // Túi tiền = xu tài khoản: game chỉ báo CHÊNH LỆCH, host mới là nơi
+      // lưu localStorage và gọi API (xem src/lib/coinWallet.js).
+      if (event.data?.type === "gq:walletGet") {
+        postWallet(readWallet());
+        loadWallet().then(postWallet);
+      }
+      if (event.data?.type === "gq:walletDelta") {
+        postWallet(addCoins(Number(event.data.data?.amount) || 0));
+      }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  // Mở trang là lấy xu từ API (có mạng) hoặc từ localStorage (mất mạng), rồi
+  // đẩy vào iframe. Mỗi lần ví đổi (đổi vì chơi, vì sync API, vì có mạng lại)
+  // thì game nhận số mới — game không tự gọi API nên không lo token/spam request.
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => loadWallet().then((w) => { if (!cancelled) postWallet(w); });
+    const pushCache = () => postWallet(readWallet());
+    refresh();
+    const off = subscribeWallet(pushCache);
+    window.addEventListener("online", refresh);
+    window.addEventListener("offline", pushCache);
+    return () => {
+      cancelled = true;
+      off();
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("offline", pushCache);
+    };
   }, []);
 
   // Hiển thị thông báo cập nhật khi có phiên bản mới
@@ -232,7 +267,7 @@ export default function OfflineGamePage({ gameId }) {
         ref={iframeRef}
         title={meta.name}
         srcDoc={injectGameUi(html)}
-        onLoad={() => pushDataRef.current?.()}
+        onLoad={() => { pushDataRef.current?.(); postWallet(readWallet()); }}
         sandbox="allow-scripts allow-same-origin"
         className="h-full w-full border-0"
       />

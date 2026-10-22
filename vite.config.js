@@ -16,6 +16,20 @@ export default defineConfig({
           const p = path.resolve(__dirname, f);
           if (fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });
         });
+
+        // import.meta.glob('public/*') bản sao ảnh vào dist/assets kèm hash,
+        // trong khi src/lib/gameThumbnail.js luôn trỏ về bản gốc ở gốc dist
+        // (public/). Xóa bản sao để không tải trùng ~2MB ảnh.
+        const assets = path.resolve(__dirname, 'dist/assets');
+        if (fs.existsSync(assets)) {
+          const publicNames = new Set(
+            fs.readdirSync(path.resolve(__dirname, 'public')).filter(f => /\.(png|webp|jpe?g|svg)$/i.test(f))
+          );
+          for (const f of fs.readdirSync(assets)) {
+            const match = f.match(/^(.+)-[A-Za-z0-9_-]{8}\.(png|webp|jpe?g|svg)$/i);
+            if (match && publicNames.has(`${match[1]}.${match[2]}`)) fs.rmSync(path.join(assets, f));
+          }
+        }
       }
     },
     VitePWA({

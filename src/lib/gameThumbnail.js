@@ -1,9 +1,9 @@
 /**
- * Ảnh thumbnail game đặt trong public/ (512x512 PNG), render phía client.
+ * Ảnh thumbnail game đặt trong public/, render phía client.
  *
- * API /api/templates không còn mang field thumbnail — server chỉ trả id/slug/name,
+ * API /api/templates không còn mang field thumbnail — server chỉ trả tên game,
  * client tự tra ảnh theo tên file trong public/. Tra theo thứ tự:
- *   id → slug(id) → alias[id] → slug(name) → alias[slug(name)]
+ *   id → slug(id) → name → slug(name) (mỗi bước qua bảng alias)
  * Không có ảnh thì trả null để thẻ game giữ emoji làm hình đại diện.
  */
 const files = import.meta.glob("../../public/*.{png,webp,jpg,jpeg,svg}", {
@@ -12,11 +12,16 @@ const files = import.meta.glob("../../public/*.{png,webp,jpg,jpeg,svg}", {
   eager: true,
 });
 
+const base = import.meta.env.BASE_URL || "/";
 const byKey = new Map();
-for (const url of Object.values(files)) {
-  const file = url.split("/").pop();
+for (const path of Object.keys(files)) {
+  // Key của glob là đường dẫn tới file trong public/ → giữ đúng tên gốc, còn
+  // URL do Vite sinh có thêm "?url" (dev) hoặc hậu tố hash (build). Bỏ cả hai
+  // rồi trỏ thẳng về bản trong public/ để ảnh chỉ tải một bản, không phụ thuộc
+  // tên hash thay đổi theo từng lần build.
+  const file = path.split("/").pop();
   const key = file.replace(/\.[a-z0-9]+$/i, "").toLowerCase();
-  if (!byKey.has(key)) byKey.set(key, url);
+  if (!byKey.has(key)) byKey.set(key, `${base}${file}`);
 }
 
 // Ảnh đặt tên theo cụm từ khác id/name game.
@@ -31,18 +36,18 @@ const ALIASES = {
 
 const slug = (s = "") => {
   const t = s
+    .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/g, "d")
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
+    .replace(/^-+|-+$/g, "");
   return ALIASES[t] || t;
 };
 
 export function gameThumbnail(id, name = "") {
-  for (const key of [id, slug(id), slug(name)]) {
-    if (key && byKey.has(key.toLowerCase())) return byKey.get(key.toLowerCase());
+  for (const key of [id, slug(id), name, slug(name)]) {
+    if (key && byKey.has(String(key).toLowerCase())) return byKey.get(String(key).toLowerCase());
   }
   return null;
 }
