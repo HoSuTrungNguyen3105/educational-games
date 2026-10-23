@@ -92,6 +92,7 @@ const TILE_COLORS = Object.fromEntries(
       "nhay-xoay": "#3D6FD8", "goc-thu-gian": "#2A9D8F", "trung-tam-game": "#7C8AA0",
       "dap-sau-bo": "#E5533D", "ghep-cap-vuon": "#EE7FA6", "sau-an-la": "#F2B632",
       "parkour": "#2A9D8F",
+      "GenshinUIReplica": "#7C5CE0",
       "nong-trai-moi": "#7AC74F", "fieldrunner": "#8BC34A", "cargo": "#F2A03D", "Excel": "#3FA97A",
     })[g.id] || "#F2B632",
   ])

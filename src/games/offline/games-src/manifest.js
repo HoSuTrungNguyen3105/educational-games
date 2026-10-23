@@ -38,6 +38,8 @@ export const OFFLINE_GAME_MANIFEST = [
   { id: 'fieldrunner', name: 'Phòng thủ cánh đồng', icon: '🌾', tag: 'Phòng thủ', grad: 'from-lime-400 to-green-600', engine: 'standalone', file: 'src/games/offline/fieldrunner/index.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'cargo', name: 'Xe tải ra chợ', icon: '🚚', tag: 'Arcade', grad: 'from-amber-400 to-orange-500', engine: 'standalone', file: 'src/games/offline/cargo.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'Excel', name: 'Bảng Tính Bé', icon: '📊', tag: 'Học tập', grad: 'from-emerald-400 to-green-600', engine: 'standalone', file: 'src/games/offline/Excel.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'GenshinUIReplica', name: 'Bảng Tính Bé', icon: '📊', tag: 'Học tập', grad: 'from-emerald-400 to-green-600', engine: 'standalone', file: 'src/games/offline/GenshinUIReplica.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+
   // School_mission KHÔNG thuộc offline — xem route /school-mission và src/games/school_mission/
 ];
 
