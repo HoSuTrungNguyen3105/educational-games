@@ -4,6 +4,7 @@ import { findOfflineGame, makeFallbackMeta } from "../games/offline/games-src/ma
 import { useGameVersion } from "../hooks/useGameVersion.js";
 import { gameCache } from "../lib/gameCache.js";
 import { addCoins, loadWallet, readWallet, subscribeWallet } from "../lib/coinWallet.js";
+import { startGameSync, endGameSync } from "../lib/offlineGameSync.js";
 import { gameDataService } from "../services/gameDataService.js";
 import { Loader } from "../components/ui";
 import TOKENS_CSS from "../games/offline/lib/tokens.css?raw";
@@ -81,6 +82,7 @@ export default function OfflineGamePage({ gameId }) {
   // undefined = chưa đọc xong IndexedDB; số = version đang cache cho game này
   const [cachedVersion, setCachedVersion] = useState(undefined);
   const [offlineInfo, setOfflineInfo] = useState(null);
+  const [syncedFor, setSyncedFor] = useState(null);
   const gameDataRef = useRef(null);
   const pushDataRef = useRef(null);
 
@@ -96,6 +98,23 @@ export default function OfflineGamePage({ gameId }) {
     if (!html) return null;
     return findOfflineGame(gameId) || makeFallbackMeta(gameId, html);
   }, [gameId, html]);
+
+  // Sync save với API phải XONG trước khi iframe chạy — game đọc localStorage
+  // ngay lúc boot, khôi phục trễ thì tiến độ server ghi đè mất lượt chơi local.
+  useEffect(() => {
+    if (!html) return undefined;
+    let cancelled = false;
+    startGameSync(gameId, meta?.name).finally(() => {
+      if (!cancelled) setSyncedFor(gameId);
+    });
+    return () => {
+      cancelled = true;
+      endGameSync();
+    };
+  }, [gameId, html, meta?.name]);
+
+  // Chỉ render iframe khi save của game này đã được sync xong trước mắt.
+  const saveReady = syncedFor === gameId;
 
   // So sánh version server với bản đang cache (không phải meta tĩnh) để
   // banner "Có phiên bản mới" chỉ hiện đúng khi thật sự có bản chưa tải.
@@ -263,14 +282,20 @@ export default function OfflineGamePage({ gameId }) {
       >
         ← Trang chủ
       </button>
-      <iframe
-        ref={iframeRef}
-        title={meta.name}
-        srcDoc={injectGameUi(html)}
-        onLoad={() => { pushDataRef.current?.(); postWallet(readWallet()); }}
-        sandbox="allow-scripts allow-same-origin"
-        className="h-full w-full border-0"
-      />
+      {saveReady ? (
+        <iframe
+          ref={iframeRef}
+          title={meta.name}
+          srcDoc={injectGameUi(html)}
+          onLoad={() => { pushDataRef.current?.(); postWallet(readWallet()); }}
+          sandbox="allow-scripts allow-same-origin"
+          className="h-full w-full border-0"
+        />
+      ) : (
+        <div className="fixed inset-0 grid place-items-center bg-paper">
+          <Loader label="Đang tải dữ liệu đã lưu..." />
+        </div>
+      )}
 
       {/* Đang chơi offline bằng dữ liệu đã cache */}
       {offlineInfo && (

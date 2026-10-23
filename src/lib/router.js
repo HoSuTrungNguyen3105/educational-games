@@ -59,6 +59,7 @@ const ROUTES = [
   { name: "leaderboard",  pattern: "/leaderboard" },
   { name: "achievements", pattern: "/achievements" },
   { name: "reminders",    pattern: "/reminders" },
+  { name: "attendance",   pattern: "/attendance" },
   { name: "ai-learning",  pattern: "/ai-learning" },
   { name: "assignment-join", pattern: "/assignment" },
   { name: "assignment-take", pattern: "/assignment/:code" },
