@@ -324,11 +324,28 @@
    * ===================================================================== */
   var TORSO = 'M209 326 C221 318 237 314 256 314 C275 314 291 318 303 326 C327 331 342 349 340 372 L334 470 C333 489 320 501 301 501 L211 501 C192 501 179 489 178 470 L172 372 C170 349 185 331 209 326 Z';
 
-  function shirtSvg(color) {
-    return '<path d="' + TORSO + '" fill="' + color + '" filter="url(#kidShadow)"/>'
-      + '<path d="M225 324 C232 344 280 344 287 324" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="7" stroke-linecap="round" fill="none"/>'
-      + '<path d="M201 361 C195 389 196 438 201 465" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.35" fill="none"/>';
+  /* Thân bé gái có eo gọn + hông nở (xem femaleBody) nên áo phải bo theo đúng
+   * đường thân đó. Dùng chung TORSO cũ sẽ rộng hơn thân ~30px mỗi bên. */
+  var TORSO_GIRL = 'M204 325 C219 316 237 312 256 312 C275 312 293 316 308 325 C322 333 329 346 329 362 L326 384 C319 405 313 420 316 439 C325 462 333 483 333 499 C333 506 328 510 319 510 L193 510 C184 510 179 506 179 499 C179 483 187 462 196 439 C199 420 193 405 186 384 L183 362 C183 346 190 333 204 325 Z';
+
+  function isGirlBody(body) {
+    return body === 'body_girl_01';
   }
+
+  function shirtSvg(color, body) {
+    var girl = isGirlBody(body);
+    var torso = girl ? TORSO_GIRL : TORSO;
+    var collar = girl
+      ? 'M226 322 C234 342 278 342 286 322'
+      : 'M225 324 C232 344 280 344 287 324';
+    var shine = girl
+      ? 'M199 360 C193 388 194 440 199 468'
+      : 'M201 361 C195 389 196 438 201 465';
+    return '<path d="' + torso + '" fill="' + color + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + collar + '" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="7" stroke-linecap="round" fill="none"/>'
+      + '<path d="' + shine + '" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.35" fill="none"/>';
+  }
+
 
   var SHIRT_COLORS = {
     white: '#F4F6FA', red: '#E8453C', blue: '#3D7BD1', yellow: '#F5C63C',
@@ -340,10 +357,19 @@
    * ===================================================================== */
   var DRESS_BODY = 'M203 322 C219 312 236 308 256 308 C276 308 293 312 309 322 C334 328 350 348 348 372 L342 452 C352 500 358 552 360 596 C304 622 208 622 152 596 C154 552 160 500 170 452 L164 372 C162 348 178 328 203 322 Z';
 
-  function dressSvg(color) {
-    return '<path d="' + DRESS_BODY + '" fill="' + color + '" filter="url(#kidShadow)"/>'
-      + '<path d="M228 318 C236 342 276 342 284 318" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="7" stroke-linecap="round" fill="none"/>'
-      + '<path d="M172 452 L340 452" stroke="#000000" stroke-opacity=".12" stroke-width="6"/>'
+  /* Váy bé gái: vai bo theo TORSO_GIRL, sườn ôm eo rồi mới xoè ra ở gấu. */
+  var DRESS_BODY_GIRL = 'M204 321 C219 311 237 307 256 307 C275 307 293 311 308 321 C322 329 329 342 327 360 L321 386 C329 408 336 430 340 452 C348 500 352 552 354 596 C300 620 212 620 158 596 C160 552 164 500 172 452 C176 430 183 408 191 386 L185 360 C183 342 190 329 204 321 Z';
+
+  function dressSvg(color, body) {
+    var girl = isGirlBody(body);
+    var skirt = girl ? DRESS_BODY_GIRL : DRESS_BODY;
+    var collar = girl
+      ? 'M226 320 C234 342 278 342 286 320'
+      : 'M228 318 C236 342 276 342 284 318';
+    var waistY = 452;
+    return '<path d="' + skirt + '" fill="' + color + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + collar + '" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="7" stroke-linecap="round" fill="none"/>'
+      + '<path d="M172 ' + waistY + ' L340 ' + waistY + '" stroke="#000000" stroke-opacity=".12" stroke-width="6"/>'
       + '<path d="M188 500 Q256 528 324 500" stroke="#FFFFFF" stroke-opacity=".25" stroke-width="9" fill="none" stroke-linecap="round"/>';
   }
 
@@ -354,16 +380,36 @@
   /* ===================================================================== *
    *  QUẦN — 186–326 × 492–655
    * ===================================================================== */
-  function pantsSvg(id) {
-    if (id === 'skirt_pink') {
-      return '<path d="M192 492 L320 492 L342 616 L170 616 Z" fill="#F07CA8" filter="url(#kidShadow)"/>'
+  function pantsSvg(id, body) {
+    var girl = isGirlBody(body);
+
+    if (id === 'skirt_pink' || id === 'skirt_mint') {
+      var skirtColor = id === 'skirt_pink' ? '#F07CA8' : '#4FC3A1';
+      /* Bé gái có hông 216–296 nên cạp váy phải nằm đúng khoảng đó. */
+      /* Bé gái có hông rộng hơn chân: cạp quần/váy phải phủ hết hông
+       * (181–331 ở y≈500) rồi mới thu về hai ống chân 216–248 / 264–296. */
+      if (girl) {
+        return '<path d="M190 498 L324 498 L342 616 L170 616 Z" fill="' + skirtColor + '" filter="url(#kidShadow)"/>'
+          + '<path d="M196 518 L318 518" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="7" fill="none"/>';
+      }
+      return '<path d="M192 492 L320 492 L342 616 L170 616 Z" fill="' + skirtColor + '" filter="url(#kidShadow)"/>'
         + '<path d="M196 512 L316 512" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="7" fill="none"/>';
     }
-    if (id === 'skirt_mint') {
-      return '<path d="M192 492 L320 492 L342 616 L170 616 Z" fill="#4FC3A1" filter="url(#kidShadow)"/>'
-        + '<path d="M196 512 L316 512" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="7" fill="none"/>';
-    }
+
     var c = id === 'jeans' ? '#3D63A8' : id === 'black' ? '#2E2E38' : id === 'khaki' ? '#D8B87A' : '#E8453C';
+
+    if (girl) {
+      if (id === 'khaki' || id === 'redshort') {
+        return '<path d="M190 498 L256 498 L256 600 L200 600 C193 600 189 596 190 589 L192 548 Z" fill="' + c + '" filter="url(#kidShadow)"/>'
+          + '<path d="M256 498 L322 498 L320 548 L322 589 C323 596 319 600 312 600 L256 600 Z" fill="' + c + '" filter="url(#kidShadow)"/>'
+          + '<path d="M256 506 L256 596" stroke="#000000" stroke-opacity=".25" stroke-width="5"/>';
+      }
+      return '<path d="M190 498 L256 498 L255 566 L254 630 C254 645 245 654 233 654 L220 654 C209 654 204 645 205 630 L201 566 Z" fill="' + c + '" filter="url(#kidShadow)"/>'
+        + '<path d="M256 498 L322 498 L321 566 L303 630 C304 645 298 654 287 654 L274 654 C263 654 258 645 257 630 L256 566 Z" fill="' + c + '" filter="url(#kidShadow)"/>'
+        + '<path d="M256 504 L256 634" stroke="#000000" stroke-opacity=".22" stroke-width="5"/>'
+        + '<path d="M214 516 L211 620" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="7" stroke-linecap="round" opacity="0.5"/>';
+    }
+
     if (id === 'khaki' || id === 'redshort') {
       return '<path d="M192 492 L256 492 L256 604 L204 604 C192 604 186 594 188 580 Z" fill="' + c + '" filter="url(#kidShadow)"/>'
         + '<path d="M256 492 L320 492 L324 580 C326 594 320 604 308 604 L256 604 Z" fill="' + c + '" filter="url(#kidShadow)"/>'
@@ -382,7 +428,14 @@
   /* ===================================================================== *
    *  GIÀY — 180–332 × 637–674
    * ===================================================================== */
-  function shoesSvg(color) {
+  function shoesSvg(color, body) {
+    if (isGirlBody(body)) {
+      /* Bàn chân bé gái: 212–246 và 266–300 (y 632–654). */
+      return '<path d="M206 636 C216 631 234 631 248 636 C255 640 256 649 250 655 C243 661 230 661 219 657 C209 653 202 644 206 636 Z" fill="' + color + '" filter="url(#kidShadow)"/>'
+        + '<path d="M264 636 C276 631 292 631 306 636 C311 640 313 648 308 654 C301 661 288 661 277 657 C267 653 260 645 264 636 Z" fill="' + color + '" filter="url(#kidShadow)"/>'
+        + '<path d="M208 650 Q226 658 250 650" stroke="#00000022" stroke-width="5" stroke-linecap="round" fill="none"/>'
+        + '<path d="M262 650 Q282 658 306 650" stroke="#00000022" stroke-width="5" stroke-linecap="round" fill="none"/>';
+    }
     return '<path d="M188 642 C202 637 224 637 243 642 C254 645 260 654 255 663 C251 671 236 674 213 674 C193 674 180 669 180 660 C180 652 183 646 188 642 Z" fill="' + color + '" filter="url(#kidShadow)"/>'
       + '<path d="M269 642 C288 637 310 637 324 642 C329 646 332 652 332 660 C332 669 319 674 299 674 C276 674 261 671 257 663 C252 654 258 645 269 642 Z" fill="' + color + '" filter="url(#kidShadow)"/>'
       + '<path d="M190 664 Q220 674 251 664" stroke="#00000022" stroke-width="5" stroke-linecap="round" fill="none"/>'
@@ -596,17 +649,17 @@
     o += FACES[s.face] ? FACES[s.face].svg : FACES.face_01.svg;
     /* 5. tóc trước */
     o += '<g fill="url(#kidHair)">' + hair.front + '</g>';
-    /* 6. áo hoặc váy phủ thân */
-    if (s.dress) o += dressSvg(DRESS_COLORS[s.dress]);
-    else if (s.shirt) o += shirtSvg(SHIRT_COLORS[s.shirt]);
+    /* 6. áo hoặc váy phủ thân — mỗi body có đường may riêng */
+    if (s.dress) o += dressSvg(DRESS_COLORS[s.dress], s.body);
+    else if (s.shirt) o += shirtSvg(SHIRT_COLORS[s.shirt], s.body);
     /* 7. quần — bé gái có chân trần nên bỏ trống được, thân kia bắt buộc có quần */
     if (!s.dress) {
-      if (s.pants) o += pantsSvg(s.pants);
-      else if (s.body !== 'body_girl_01') o += DEFAULT_PANTS;
+      if (s.pants) o += pantsSvg(s.pants, s.body);
+      else if (!isGirlBody(s.body)) o += DEFAULT_PANTS;
     }
     /* 8. giày */
-    if (s.shoes) o += shoesSvg(SHOE_OPTIONS[s.shoes].c);
-    else if (s.body !== 'body_girl_01') o += DEFAULT_SHOES;
+    if (s.shoes) o += shoesSvg(SHOE_OPTIONS[s.shoes].c, s.body);
+    else if (!isGirlBody(s.body)) o += DEFAULT_SHOES;
     /* 9. phụ kiện đè lên trên */
     if (acc && acc.f) o += acc.f;
     /* 10. kính + mũ */
@@ -691,7 +744,7 @@
       case 'hair': return { kind: 'svg', vb: '110 34 292 460', ids: idsOf('hair'), nullable: false, pv: function (id) { return hairPreview(id, s); } };
       case 'shirt': return { kind: 'dot', ids: idsOf('shirt'), nullable: true, dot: function (id) { return SHIRT_COLORS[id]; } };
       case 'dress': return { kind: 'dot', ids: idsOf('dress'), nullable: true, dot: function (id) { return DRESS_COLORS[id]; } };
-      case 'pants': return { kind: 'svg', vb: '150 480 212 150', ids: idsOf('pants'), nullable: true, pv: function (id) { return pantsSvg(id); } };
+      case 'pants': return { kind: 'svg', vb: '150 480 212 150', ids: idsOf('pants'), nullable: true, pv: function (id) { return pantsSvg(id, s.body); } };
       case 'shoes': return { kind: 'dot', ids: idsOf('shoes'), nullable: true, dot: function (id) { return SHOE_OPTIONS[id].c; } };
       case 'glasses': return { kind: 'svg', vb: '150 170 212 90', ids: idsOf('glasses'), nullable: true, pv: function (id) { return GLASSES[id] ? GLASSES[id].svg : ''; } };
       case 'hat': return { kind: 'svg', vb: '100 30 312 210', ids: idsOf('hat'), nullable: true, pv: function (id) { return HATS[id] ? HATS[id].svg : ''; } };

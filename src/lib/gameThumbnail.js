@@ -51,3 +51,27 @@ export function gameThumbnail(id, name = "") {
   }
   return null;
 }
+
+/**
+ * Ghép base URL của app (Vite BASE_URL) với tên file trong public/.
+ * Manifest offline lưu tên file trần (`san-trai-cay.png`) để không hard-code
+ * `/educational-games/`; hàm này dùng khi hiển thị.
+ *
+ * @param {string} [file] tên file ảnh trong public/
+ * @returns {string} URL đầy đủ, hoặc "" nếu không có file
+ */
+export function publicImage(file = "") {
+  const name = String(file).trim().replace(/^\/+/, "");
+  if (!name) return "";
+  return `${base}${name}`;
+}
+
+/**
+ * Ảnh đại diện của một game offline: ưu tiên `thumbnail` khai báo trong
+ * manifest, sau đó mới tra theo id/tên như cũ.
+ *
+ * @param {{ id?: string, name?: string, thumbnail?: string }} game
+ */
+export function thumbnailForGame(game = {}) {
+  return publicImage(game.thumbnail) || gameThumbnail(game.id, game.name);
+}

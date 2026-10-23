@@ -27,6 +27,11 @@ export function kidPreset(kind = 'boy') {
   return getDressUp().applyBody(kidDefaults(), code);
 }
 
+/** Đổi thân + "diện" chuẩn của thân đó (cùng logic với modal Tùy chỉnh Avatar). */
+export function kidApplyBody(state, code) {
+  return getDressUp().applyBody(state, code);
+}
+
 export function sanitizeKid(state) {
   return sanitizeFor('avatar', state);
 }

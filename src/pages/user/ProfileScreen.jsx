@@ -368,10 +368,10 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               state={outfit.avatar.value}
               size={64}
               label={`Avatar ${outfitName("avatar", outfit.avatar.value)}`}
-              className="shadow-lg ring-2 ring-white"
+              style={{ boxShadow: "0 0 0 3px var(--card), 0 0 0 5px var(--accent-bg)" }}
             />
-            <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center text-sm shadow ring-2 ring-white"
-              style={{ background: "var(--card)" }}>
+            <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center text-sm"
+              style={{ background: "var(--card)", boxShadow: "0 0 0 2px var(--card)" }}>
               {lv.level >= 10 ? "👑" : lv.level >= 5 ? "⭐" : "🌱"}
             </div>
           </div>
@@ -412,7 +412,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
           <div className="flex items-center gap-2 mb-3">
-            <Palette className="w-4 h-4 text-gold" />
+            <Palette className="w-4 h-4" style={{ color: "var(--accent)" }} />
             <span className="font-display text-sm text-ink">Avatar &amp; thú cưng</span>
           </div>
 
@@ -424,10 +424,18 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               const state = outfit[kind].value;
               const parts = describeOutfit(kind, state);
               return (
-                <div key={kind} className="rounded-2xl p-3 flex flex-col items-center gap-1.5"
-                  style={{ background: "var(--bg)", border: "1px solid var(--line)" }}>
-                  <DressUpAvatar kind={kind} state={state} size={104}
-                    label={`${outfitName(kind, state)} — ${title}`} />
+                <div key={kind}
+                  className="rounded-2xl p-3 flex flex-col items-center gap-1.5 transition hover:-translate-y-0.5"
+                  style={{
+                    background: "linear-gradient(180deg, var(--stage) 0%, var(--bg) 100%)",
+                    border: "1px solid var(--line)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,.65), 0 2px 6px rgba(29,46,74,.05)",
+                  }}>
+                  <div className="w-full rounded-xl flex items-center justify-center py-2"
+                    style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+                    <DressUpAvatar kind={kind} state={state} size={104}
+                      label={`${outfitName(kind, state)} — ${title}`} />
+                  </div>
                   <p className="font-display text-sm text-ink text-center leading-tight">
                     {icon} {outfitName(kind, state) || title}
                   </p>
@@ -436,7 +444,8 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                   </p>
                   <button
                     onClick={() => setCustomizer(kind)}
-                    className="mt-1 w-full rounded-xl bg-gold text-white py-2 text-xs font-body font-semibold hover:bg-gold/80 transition"
+                    className="mt-1 w-full rounded-xl text-white py-2 text-xs font-body font-semibold transition active:scale-[0.98]"
+                    style={{ background: "linear-gradient(135deg, var(--accent), var(--purple, #8b5cf6))" }}
                   >
                     ✏️ {btn}
                   </button>

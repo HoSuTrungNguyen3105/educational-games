@@ -18,6 +18,7 @@ export default function DressUpAvatar({
   size = 120,
   className = "",
   label,
+  style,
 }) {
   const svg = useMemo(() => renderDressUpSvg(kind, state), [kind, state]);
   const aspect = outfitAspect(kind);
@@ -28,7 +29,7 @@ export default function DressUpAvatar({
   return (
     <div
       className={`eg-du shrink-0 ${className}`}
-      style={{ width: size, height: Math.round(size * aspect), lineHeight: 0 }}
+      style={{ width: size, height: Math.round(size * aspect), lineHeight: 0, ...style }}
       role="img"
       aria-label={label}
       dangerouslySetInnerHTML={{ __html: svg }}
@@ -37,7 +38,7 @@ export default function DressUpAvatar({
 }
 
 /** Avatar nhỏ dạng tròn, vừa khung — dùng ở header profile. */
-export function DressUpAvatarSmall({ kind = "avatar", state, size = 40, className = "", label }) {
+export function DressUpAvatarSmall({ kind = "avatar", state, size = 40, className = "", label, style }) {
   const aspect = outfitAspect(kind);
   // Nhân vật cao hơn rộng → co theo chiều cao cho vừa tròn.
   const boxH = Math.round(size * 0.94);
@@ -45,7 +46,7 @@ export function DressUpAvatarSmall({ kind = "avatar", state, size = 40, classNam
   return (
     <div
       className={`overflow-hidden rounded-full shrink-0 flex items-center justify-center ${className}`}
-      style={{ width: size, height: size, background: "var(--bg)" }}
+      style={{ width: size, height: size, background: "var(--bg)", ...style }}
     >
       <DressUpAvatar kind={kind} state={state} size={Math.min(boxW, boxH)} label={label} />
     </div>

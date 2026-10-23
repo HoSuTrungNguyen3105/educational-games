@@ -59,7 +59,7 @@ const FEATURED_GAME = {
 
 
 import { OFFLINE_GAME_MANIFEST } from "../games/offline/games-src/manifest.js";
-import { gameThumbnail } from "../lib/gameThumbnail.js";
+import { gameThumbnail, thumbnailForGame } from "../lib/gameThumbnail.js";
 import { subscribeWallet } from "../lib/coinWallet.js";
 
 
@@ -109,7 +109,7 @@ const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   icon: g.icon,
   grad: g.grad,
   color: TILE_COLORS[g.id] || "#F2B632",
-  thumb: gameThumbnail(g.id, g.name),
+  thumb: thumbnailForGame(g),
 }));
 
 /** Dạng 3: Game nhập vai trường học — file gốc src/games/school_mission/ */

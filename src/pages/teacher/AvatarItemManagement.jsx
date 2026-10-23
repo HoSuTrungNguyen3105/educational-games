@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ManagementHeader, GhostButton, PrimaryButton, StatGrid } from '../../components/ui';
 import { Check, RotateCcw, Sparkles } from 'lucide-react';
 import {
-  KID_LAYERS, kidBodies, kidCatalogStats, kidDefaults, kidItemLabel,
+  KID_LAYERS, kidApplyBody, kidBodies, kidCatalogStats, kidDefaults, kidItemLabel,
   kidPreset, kidTabCfg, kidTabs, renderKid, sanitizeKid,
 } from '../../lib/dressUpCatalog.js';
 
@@ -48,6 +48,12 @@ export default function AvatarItemManagement({ showToast }) {
   const pick = (id) => {
     const field = activeTab?.k;
     if (!field) return;
+    /* Chọn thân = đổi luôn "diện" chuẩn (tóc, áo/váy, giày) giống modal ở
+     * client, để admin nhìn đúng bộ đồ mà bé sẽ nhận. */
+    if (field === 'body') {
+      setState((current) => kidApplyBody(current, id));
+      return;
+    }
     setState((current) => sanitizeKid({ ...current, [field]: id }));
   };
 
@@ -79,6 +85,8 @@ export default function AvatarItemManagement({ showToast }) {
         <span>
           Đây là danh mục phụ kiện của hệ avatar mới. Mắt, mũi, miệng, lông mày, má nằm trong tab <strong>Mặt</strong>.
           Dữ liệu nằm trong mã frontend <code className="font-mono text-[11px]">{DATA_FILE}</code>, không lưu database.
+          Hồ sơ người chơi chỉ lưu <strong>ID</strong> món đồ; client tự render bằng đúng bộ dữ liệu này nên
+          admin và trang cá nhân luôn khớp nhau — không phụ thuộc markup từ backend.
         </span>
       </div>
 
