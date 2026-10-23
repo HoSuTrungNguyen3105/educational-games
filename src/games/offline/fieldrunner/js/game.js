@@ -120,24 +120,53 @@ function update(dt) {
   }
 }
 
-/** Kết thúc ván chơi */
+/** Điểm đang có — HUD hiển thị liên tục và kết quả cuối ván dùng lại công thức này */
+function scoreNow(win) {
+  const mult = [1, 1.5, 2, 3][GC.i];
+  return Math.round((wave * 100 + lives * 20 + kills * 2 + (win ? 600 : 0)) * mult);
+}
+
+/** Kết thúc ván chơi: lưu tiến độ màn và hiện hộp kết quả */
 function endGame(win) {
   if (over) return;
   over = true;
 
-  const mult = [1, 1.5, 2, 3][GC.i];
-  const score = Math.round((wave * 100 + lives * 20 + kills * 2 + (win ? 600 : 0)) * mult);
+  const score = scoreNow(win);
+  const stars = win ? starsFor(lives, D.lives) : 0;
+  const rec = commitMapResult(level, { win, score, stars });
+
+  const lines = [
+    win ? 'Giữ vững ' + TOTAL + ' đợt ở ' + level.name : 'Cầm cự đến đợt ' + wave + '/' + TOTAL,
+    'Hạ ' + kills + ' địch',
+    '❤️ còn ' + lives + ' mạng',
+    win ? '⭐ ' + stars + '/3 sao' : '⭐ ' + mapStars(level.id) + '/3 sao tốt nhất'
+  ];
+
+  if (rec.unlockedNext) {
+    const nx = LEVELS[levelIdx + 1];
+    lines.push('🔓 Mở khoá cánh đồng ' + nx.icon + ' ' + nx.name);
+  }
 
   setTimeout(() => {
     GC.result({
       win,
-      title: win ? '🏆 Chiến thắng!' : '💥 Thua rồi!',
+      title: win ? '🏆 ' + level.name + ' bình yên!' : '💥 ' + level.name + ' bị tràn!',
       score,
-      lines: [
-        win ? 'Giữ vững ' + TOTAL + ' đợt' : 'Cầm cự đến đợt ' + wave + '/' + TOTAL,
-        'Hạ ' + kills + ' địch',
-        '❤️ còn ' + lives
-      ]
+      lines,
+      onAgain: playAgain,
+      onChange: changeDifficulty
     });
   }, 650);
+}
+
+/** Chơi lại đúng màn này ở cùng độ khó */
+function playAgain() {
+  setAutoMap(level.id);
+  GC.again();
+}
+
+/** Quay lại màn chọn độ khó */
+function changeDifficulty() {
+  clearAutoMap();
+  GC.change();
 }

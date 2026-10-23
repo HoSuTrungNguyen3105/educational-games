@@ -54,7 +54,6 @@ const FEATURED_GAME = {
   subject: "Toán học",
   description: "Giải bài tập, nhận thưởng!",
   icon: "🧮",
-  grad: "from-emerald-400 to-green-600",
 };
 
 
@@ -67,19 +66,18 @@ const NO_SUBJECT = "Chung";
 const subjectLabel = (subject) => (subject && subject.trim()) || NO_SUBJECT;
 const PREVIEW_GAMES = 8;
 
-/* Bảng màu gradient cho ô tròn của mỗi game. Băm theo tên game nên màu giữ
-   nguyên giữa các lần render và giữa các lần F5. */
+/* Màu nền ô tròn của mỗi game. Băm theo tên game nên màu giữ nguyên giữa các
+   lần render và giữa các lần F5. */
 const CARD_TINTS = [
-  ["#8fd3f4", "#4aa8e0"], ["#ffc9a3", "#f78b4a"], ["#c2e9c8", "#4fae63"],
-  ["#dcc7f5", "#8b5cd6"], ["#ffe08a", "#f0a500"], ["#bfe6f5", "#3d9fd0"],
-  ["#f9bcd6", "#e05a9c"], ["#cfe0ff", "#5b7ce0"],
+  "#8fd3f4", "#ffc9a3", "#c2e9c8", "#dcc7f5",
+  "#ffe08a", "#bfe6f5", "#f9bcd6", "#cfe0ff",
 ];
 const tintFor = (key = "") => CARD_TINTS[hashString(key) % CARD_TINTS.length];
 
 // Giá trị `activeSubject` đặc biệt: xem nhóm game offline thay vì môn học.
 // Game offline. Nguon su that: src/games/src/manifest.js (sinh boi scripts/build-offline-games.mjs)
 // Moi game la MOT file HTML rieng trong src/games/offline/<id>.html
-// Màu rèm/nút cho từng game — khai tường minh để không phải đoán từ class gradient.
+// Màu nhận diện cho từng game — khai tường minh để không phải đoán từ class gradient.
 const TILE_COLORS = Object.fromEntries(
   OFFLINE_GAME_MANIFEST.map((g) => [
     g.id,
@@ -107,8 +105,7 @@ const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   tag: g.tag,
   description: g.tag,
   icon: g.icon,
-  grad: g.grad,
-  color: TILE_COLORS[g.id] || "#F2B632",
+  tint: TILE_COLORS[g.id] || "#F2B632",
   thumb: thumbnailForGame(g),
 }));
 
@@ -120,8 +117,7 @@ const SCHOOL_RPG_GAME = {
   tag: "Nhập vai",
   description: "Khám phá trường học, học từng lớp, làm bài thi",
   icon: "🏫",
-  grad: "from-emerald-400 to-green-600",
-  color: "#3FA97A",
+  tint: "#3FA97A",
 };
 
 // ─── Card môn học trên hàng ngang ────────────────────────────────────
@@ -642,8 +638,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         name: game.name,
         icon: t?.icon || "🎮",
         thumb: gameThumbnail(t?.slug || t?.id || t?._id, game.name),
-        grad: tintFor(game.name || String(i)),
-        border: tintFor(game.name || String(i))[1],
+        tint: tintFor(game.name || String(i)),
         badge: meta.kind === "learn" ? "Học" : "Chơi",
         age: meta.age,
         play: () => onSelectGame(game),
@@ -657,14 +652,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       .filter((g) => /toan|math|so\b/i.test(subjectLabel(g.subject)))
       .map((game, i) => {
         const t = templates.find((x) => x._id === (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid));
-        const tint = tintFor(game.name || `m${i}`);
         return {
           key: String(game._id || game.id || i),
           name: game.name,
           icon: t?.icon || "🧮",
           thumb: gameThumbnail(t?.slug || t?.id || t?._id, game.name),
-          grad: tint,
-          border: tint[1],
+          tint: tintFor(game.name || `m${i}`),
           badge: "Học",
           age: metaForSubject(subjectLabel(game.subject)).age,
           play: () => onSelectGame(game),
@@ -678,8 +671,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       name: g.name,
       icon: g.icon || "🎮",
       thumb: g.thumb,
-      grad: tintFor(g.key),
-      border: g.color || "#F2B632",
+      tint: g.tint,
       badge: "Offline",
       age: g.tag || "Mọi lứa tuổi",
       play: () => navigate(g.path),
@@ -692,8 +684,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       name: SCHOOL_RPG_GAME.name,
       icon: SCHOOL_RPG_GAME.icon,
       thumb: gameThumbnail(SCHOOL_RPG_GAME.key, SCHOOL_RPG_GAME.name),
-      grad: ["#8be59b", "#3FA97A"],
-      border: SCHOOL_RPG_GAME.color,
+      tint: SCHOOL_RPG_GAME.tint,
       badge: "Nhập vai",
       age: SCHOOL_RPG_GAME.tag,
       play: () => navigate(SCHOOL_RPG_GAME.path),
@@ -772,7 +763,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </button>
             )}
             <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Sao: ${userStars}`}>
-              ⭐<span className="gq-iconbtn__n">{userStars}</span>
+              ⭐{userStars > 0 && <span className="gq-iconbtn__n">{userStars}</span>}
             </button>
             <button
               className={`gq-iconbtn ${soundOn ? "" : "gq-iconbtn--on"}`}
@@ -830,16 +821,20 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           <p className="text-xs text-center bg-white rounded-2xl py-2 px-3 shadow mb-3">{pushMessage}</p>
         )}
 
-        {/* ─────────── NÚT TRÒN + CHƠI NGẪU NHIÊN ─────────── */}
+        {/* ─────────── NÚT TẮT + CHƠI NGẪU NHIÊN ─────────── */}
         <div className="gq-playbar">
-          <button className="gq-mini" style={{ borderBottomColor: "#4fae63" }} onClick={() => goTo("/pet")}>
+          <button className="gq-mini" onClick={() => goTo("/pet")}>
             <span className="gq-mini__ico" aria-hidden="true">🐔</span>
             <span className="gq-mini__lbl">Vườn thú</span>
             {pendingTaskCount > 0 && <span className="gq-mini__dot" aria-label={`${pendingTaskCount} nhiệm vụ`} />}
           </button>
-          <button className="gq-mini" style={{ borderBottomColor: "#f0a500" }} onClick={() => goTo("/achievements")}>
+          <button className="gq-mini" onClick={() => goTo("/achievements")}>
             <span className="gq-mini__ico" aria-hidden="true">🏆</span>
             <span className="gq-mini__lbl">Cúp</span>
+          </button>
+          <button className="gq-mini" onClick={() => setShowCodeModal(true)}>
+            <span className="gq-mini__ico" aria-hidden="true">🎟️</span>
+            <span className="gq-mini__lbl">Nhập mã</span>
           </button>
           <button className="gq-random" onClick={handleRandomPlay}>
             <span className="gq-random__ico" aria-hidden="true">🎲</span>
@@ -864,13 +859,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           ) : todayGames.length === 0 ? (
             <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thầy cô thêm game vào nhé!" />
           ) : (
-            <div className="gq-rail">
+            <div className="gq-rail gq-board">
               <GqGameCard
                 name={FEATURED_GAME.name}
                 icon={FEATURED_GAME.icon}
                 thumb={gameThumbnail(FEATURED_GAME.key, FEATURED_GAME.name)}
-                grad={["#ffd45e", "#f0a500"]}
-                border="#f0a500"
+                tint="#ffd45e"
                 badge="Mới"
                 age="2–8 tuổi"
                 play={() => navigate(FEATURED_GAME.path)}
@@ -892,7 +886,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 <p className="gq-sect__s">Học số · tập đếm · so sánh · chia đều · đồng hồ · công trừ</p>
               </div>
             </div>
-            <div className="gq-rail">
+            <div className="gq-rail gq-board">
               {mathGames.map(({ key, ...card }) => <GqGameCard key={key} {...card} />)}
             </div>
           </section>
@@ -907,7 +901,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <p className="gq-sect__s">Chơi không cần mạng · tiến độ lưu trên máy</p>
             </div>
           </div>
-          <div className="gq-rail">
+          <div className="gq-rail gq-board">
             {offlineCards.map(({ key, ...card }) => <GqGameCard key={key} {...card} />)}
           </div>
         </section>
@@ -921,7 +915,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <p className="gq-sect__s">Khám phá trường · học từng lớp · làm bài thi</p>
             </div>
           </div>
-          <div className="gq-rail">
+          <div className="gq-rail gq-board">
             <GqGameCard {...schoolRpgCard} />
           </div>
         </section>
@@ -936,7 +930,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             </div>
           </div>
 
-          <div className="gq-grid">
+          <div className="gq-grid gq-board">
             {learningGames.map(({ game, index }) => {
               const t = templates.find((x) => x._id === (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid));
               const subject = subjectLabel(game.subject);
@@ -948,8 +942,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   name={game.name}
                   icon={t?.icon || "🎮"}
                   thumb={gameThumbnail(t?.slug || t?.id || t?._id, game.name)}
-                  grad={tint}
-                  border={tint[1]}
+                  tint={tint}
                   badge={meta.kind === "learn" ? "Học" : "Chơi"}
                   age={meta.age}
                   play={() => onSelectGame(game)}
@@ -1219,14 +1212,13 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 /* ═══════════════════════ COMPONENT PHỤ ═══════════════════════ */
 
 /** Ô game dùng chung cho cả dải ngang lẫn lưới. */
-function GqGameCard({ icon, name, grad, border, badge, age, thumb, play }) {
+function GqGameCard({ icon, name, tint, badge, age, thumb, play }) {
   return (
     <button
       onClick={play}
       aria-label={`Chơi ${name}`}
       title={name}
       className="gq-card"
-      style={{ borderBottomColor: border, position: "relative" }}
     >
       {badge && (
         <span className={`gq-card__badge gq-card__badge--${badge === "Mới" ? "new" : badge === "Học" ? "learn" : "play"}`}>
@@ -1235,7 +1227,7 @@ function GqGameCard({ icon, name, grad, border, badge, age, thumb, play }) {
       )}
       <span
         className="gq-card__ring"
-        style={{ background: `linear-gradient(140deg, ${grad[0]}, ${grad[1]})` }}
+        style={{ backgroundColor: tint }}
         aria-hidden="true"
       >
         {thumb ? <img src={thumb} alt="" loading="lazy" /> : icon}

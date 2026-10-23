@@ -7,10 +7,12 @@ let ctx = cv.getContext('2d');
 
 /* ---------- Cấu hình theo độ khó (được gán trong main.js) ---------- */
 let D;
-let TOTAL = 25;
+let TOTAL = 15;
+let level = null;          // màn đang chơi (levels.js)
+let noBuild;               // lưới ô không xây được (địa hình + cầu)
 
 /* ---------- Trạng thái ván chơi ---------- */
-let blocked;               // lưới ô đã có tháp
+let blocked;               // lưới ô đã có tháp hoặc địa hình chặn
 let towers;
 let enemies;
 let projs;                 // đạn
@@ -39,6 +41,9 @@ let started = false;
 let shake = 0;             // độ rung màn hình
 
 let strikes = [];
+let waveSpawn = 0;   // số địch của đợt đang chạy (vẽ thanh tiến trình)
+let waveDone = 0;    // số địch đã diệt hoặc đã lọt
+let gfx = true;      // hiệu ứng môi trường (mây, phấn hoa) — bật/tắt trong cài đặt
 
 const skill = {
   strike: { cd: 0, max: 40 },
@@ -108,7 +113,8 @@ if (HOSTED) {
    Đặt lại ván chơi
    ===================================================== */
 function reset() {
-  blocked = Array.from({ length: COLS }, () => Array(ROWS).fill(false));
+  // Dựng lại lưới từ địa hình của màn (xoá hết tháp đã xây)
+  applyLevel(level);
 
   towers = [];
   enemies = [];
@@ -131,17 +137,19 @@ function reset() {
   aim = null;
   kills = 0;
   shake = 0;
+  waveSpawn = 0;
+  waveDone = 0;
 
   skill.strike.cd = 0;
   skill.freeze.cd = 0;
 
-  setDist(bfs(blocked));
-
   $('go').textContent = '▶ Bắt đầu đợt 1';
   $('go').disabled = false;
   $('pause').textContent = '⏸';
+  $('speed').textContent = 'x' + speed;
 
   document.querySelectorAll('.tw').forEach(b => b.classList.remove('sel'));
+  closeSettings();
 
   const modal = document.getElementById('gc-modal');
   if (modal) modal.remove();

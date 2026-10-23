@@ -8,8 +8,9 @@ const CH = 600;            // chiều cao canvas
 const CS = 40;             // kích thước 1 ô
 const COLS = 24;
 const ROWS = 15;
-const SR = 7;              // hàng cổng vào (bên trái)
-const GR = 7;              // hàng cổng ra (bên phải)
+/* Hàng cổng vào (bên trái) và cổng ra (bên phải) — từng màn chỉnh trong levels.js */
+let SR = 7;
+let GR = 7;
 const GOALC = COLS - 1;    // cột cổng ra
 
 const MAXLV = 5;           // cấp tháp tối đa

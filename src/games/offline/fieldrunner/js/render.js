@@ -424,7 +424,7 @@ function draw(dt) {
   }
 
   ctx.drawImage(bg, 0, 0);
-  drawClouds(dt);
+  if (gfx) drawClouds(dt);
   drawPath();
   drawGates();
 
@@ -449,7 +449,7 @@ function draw(dt) {
   drawEffects();
   drawStrikes();
   drawAim();
-  drawAmbient(dt);
+  if (gfx) drawAmbient(dt);
 
   ctx.restore();
 

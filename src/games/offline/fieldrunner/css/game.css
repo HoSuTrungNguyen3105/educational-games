@@ -35,40 +35,227 @@ button {
   cursor: pointer;
 }
 
-/* ---------- Thanh trên ---------- */
+/* ---------- HUD trên ---------- */
 #top {
+  position: relative;
   width: 100%;
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  padding: 8px 10px 8px 60px;
+  padding: 7px 10px 6px 60px;
   background: #fff;
   border-bottom: 3px solid var(--gc-ink);
 }
 
-.stat {
+.hud__l,
+.hud__r {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.hud__c {
+  flex: 1 1 auto;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Xu · nhà còn mạng */
+.hud__coin,
+.hud__body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: var(--gc-paper);
   border: 2.5px solid var(--gc-ink);
   border-radius: 12px;
-  padding: 4px 11px;
+  padding: 3px 12px;
   font-family: var(--gc-head);
   font-weight: 800;
-  font-size: 17px;
+  font-size: 18px;
+  line-height: 1.2;
   box-shadow: 2px 2px 0 var(--gc-ink);
   white-space: nowrap;
 }
 
-.stat.pulse {
+.hud__coin {
+  border-radius: 999px;
+  background: #fff3c6;
+}
+
+.hud__house {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hud__roof {
+  width: 100%;
+  max-width: 76px;
+  height: 15px;
+  margin-bottom: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+.hud__body {
+  min-width: 66px;
+  justify-content: center;
+  background: #fff;
+}
+
+/* Điểm · đợt · thanh tiến trình */
+.hud__round {
+  font-family: var(--gc-head);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.1;
+  color: #55547a;
+  white-space: nowrap;
+}
+
+.hud__round b {
+  font-size: 15px;
+  color: var(--gc-ink);
+}
+
+.hud__score {
+  font-family: var(--gc-head);
+  font-weight: 800;
+  font-size: 29px;
+  line-height: 1;
+  letter-spacing: -.5px;
+}
+
+.hud__meter {
+  width: 100%;
+  max-width: 250px;
+  height: 9px;
+  background: var(--gc-paper);
+  border: 2px solid var(--gc-ink);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.hud__meter i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--gc-sky);
+  border-radius: 999px;
+  transition: width .25s;
+}
+
+/* Nút vuông nhỏ */
+.hud__sq {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: var(--gc-ink);
+  border: 2.5px solid var(--gc-ink);
+  border-radius: 11px;
+  box-shadow: 2px 2px 0 var(--gc-ink);
+  font-family: var(--gc-head);
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1;
+  transition: transform .1s, box-shadow .1s, background .15s;
+}
+
+.hud__sq:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--gc-ink);
+}
+
+.hud__sq.on {
+  background: var(--gc-sun);
+}
+
+.hud__sq.danger {
+  background: var(--gc-bad);
+  color: #fff;
+}
+
+.hud__ctrl {
+  display: flex;
+  gap: 5px;
+}
+
+.pulse {
   animation: pulse .35s;
 }
 
 @keyframes pulse {
   50% { transform: scale(1.15); background: #fff1c2; }
+}
+
+/* Menu cài đặt (bánh răng) */
+.hud__menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  left: 58px;
+  width: 264px;
+  display: none;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px;
+  background: #fff;
+  border: 3px solid var(--gc-ink);
+  border-radius: 16px;
+  box-shadow: var(--gc-shadow);
+  font-family: var(--gc-body);
+}
+
+.hud__menu.open {
+  display: flex;
+}
+
+.hud__menu h3 {
+  margin: 0;
+  font-family: var(--gc-head);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.hud__menu .sub {
+  margin: -6px 0 0;
+  font-size: 12px;
+  color: #6a6990;
+  line-height: 1.35;
+}
+
+.hud__menu .row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hud__menu .btn {
+  font-size: 13.5px;
+  padding: 6px 11px;
+}
+
+.hud__menu .btn.sel {
+  background: var(--gc-sun);
+}
+
+.hud__menu label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* Xem trước đợt kế tiếp */
@@ -316,7 +503,7 @@ canvas#c {
 /* ---------- Thông báo nổi ---------- */
 #msg {
   position: fixed;
-  top: 64px;
+  top: 88px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--gc-ink);
@@ -338,10 +525,23 @@ canvas#c {
     padding: 6px 8px 6px 56px;
   }
 
-  .stat {
-    font-size: 14px;
-    padding: 3px 8px;
+  .hud__l,
+  .hud__r {
+    gap: 5px;
   }
+
+  .hud__coin,
+  .hud__body {
+    font-size: 15px;
+    padding: 2px 9px;
+  }
+
+  .hud__score { font-size: 22px; }
+  .hud__round { font-size: 11.5px; }
+  .hud__meter { max-width: 170px; height: 8px; }
+  .hud__sq { width: 31px; height: 31px; font-size: 13px; }
+  .hud__menu { left: 8px; right: 8px; width: auto; }
+  #mapName { display: none; }
 
   .btn {
     font-size: 13px;
@@ -400,4 +600,205 @@ canvas#c {
   #preview {
     display: none;
   }
+
+  #msg {
+    top: 152px;
+  }
+}
+
+/* ---------- Màn chọn cánh đồng ---------- */
+.fr-maps {
+  position: fixed;
+  inset: 0;
+  z-index: 2147482100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding: 62px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+  font-family: var(--gc-body);
+  color: var(--gc-ink);
+  background-color: var(--gc-paper);
+  background-image:
+    linear-gradient(var(--gc-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--gc-line) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fr-maps__card {
+  width: 100%;
+  max-width: 860px;
+  margin: auto;
+  background: #fff;
+  border: 3px solid var(--gc-ink);
+  border-radius: 24px;
+  box-shadow: var(--gc-shadow);
+  padding: 16px 16px 14px;
+  animation: gcPop .4s cubic-bezier(.2, 1.2, .4, 1);
+}
+
+.fr-maps__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fr-maps__head h2 {
+  margin: 0;
+  font-family: var(--gc-head);
+  font-weight: 800;
+  font-size: 27px;
+  line-height: 1.05;
+}
+
+.fr-maps__sub {
+  margin: 6px 0 12px;
+  font-size: 13px;
+  color: #6a6990;
+}
+
+.fr-maps__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(252px, 1fr));
+  gap: 10px;
+}
+
+.fr-map {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: var(--gc-ink);
+  cursor: pointer;
+  background: #fff;
+  border: 3px solid var(--gc-ink);
+  border-radius: 16px;
+  padding: 8px 10px;
+  box-shadow: 2px 2px 0 var(--gc-ink);
+  transition: transform .1s, box-shadow .1s, background .15s;
+}
+
+.fr-map:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--gc-ink);
+}
+
+.fr-map .no {
+  flex: none;
+  width: 18px;
+  font-family: var(--gc-head);
+  font-weight: 800;
+  font-size: 14px;
+  color: #8a89a8;
+}
+
+.fr-map .e {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 23px;
+  background: var(--c);
+  border: 2.5px solid var(--gc-ink);
+  border-radius: 13px;
+}
+
+.fr-map .t {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fr-map .t b {
+  font-family: var(--gc-head);
+  font-weight: 800;
+  font-size: 16.5px;
+  line-height: 1.1;
+}
+
+.fr-map .t small {
+  font-size: 12px;
+  line-height: 1.3;
+  color: #55547a;
+}
+
+.fr-map .meta {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #6a6990;
+}
+
+.fr-map .pips {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fr-map .pips i {
+  width: 13px;
+  height: 13px;
+  background: #e7e3d1;
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.fr-map .pips i.on {
+  background: var(--gc-sun);
+}
+
+.fr-map .lk {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 14px;
+}
+
+.fr-map.lock {
+  cursor: not-allowed;
+  background: var(--gc-paper);
+  opacity: .72;
+}
+
+.fr-map.lock .e {
+  filter: grayscale(.7);
+}
+
+.fr-map.shake {
+  animation: frShake .35s;
+}
+
+@keyframes frShake {
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.fr-maps__row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+@media (max-width: 560px) {
+  .fr-maps { padding-top: 56px; }
+  .fr-maps__card { padding: 12px; border-radius: 18px; }
+  .fr-maps__head h2 { font-size: 22px; }
+  .fr-maps__grid { grid-template-columns: 1fr; }
+  .fr-map .e { width: 38px; height: 38px; font-size: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fr-maps__card { animation: none; }
+  .fr-map,
+  .hud__meter i { transition: none; }
+  .fr-map.shake { animation: none; }
 }

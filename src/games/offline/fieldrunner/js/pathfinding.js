@@ -70,8 +70,10 @@ function setDist(d) {
 /** Kiểm tra có đặt được tháp ở ô (c,r) không. Trả về null nếu được, hoặc lý do. */
 function canPlace(c, r) {
   if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return 'Ngoài bản đồ';
-  if (blocked[c][r]) return 'Ô đã có tháp';
+  if (towers.some(t => t.c === c && t.r === r)) return 'Ô đã có tháp';
   if ((c === 0 && r === SR) || (c === GOALC && r === GR)) return 'Không thể xây ở cổng';
+  if (blocked[c][r]) return 'Chỗ này có vật cản';
+  if (noBuild[c][r]) return 'Không xây được ở đây';
 
   blocked[c][r] = true;
   const d = bfs(blocked);

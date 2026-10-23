@@ -107,6 +107,7 @@ function pickNext(e) {
 /** Kẻ địch lọt vào cánh đồng */
 function leak(e) {
   e.dead = true;
+  waveDone++;
   lives -= (e.def.dmg || 1);
 
   fx.push({ k: 'flash', life: 0.35 });
@@ -285,6 +286,7 @@ function killEnemy(e) {
 
   e.dead = true;
   kills++;
+  waveDone++;
 
   const rw = Math.round(e.def.rw * D.rw * (e.rwMul || 1));
   earn(rw);

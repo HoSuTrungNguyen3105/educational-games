@@ -9,6 +9,17 @@ function updUI() {
   $('money').textContent = money;
   $('wave').textContent = wave;
   $('total').textContent = TOTAL;
+  $('score').textContent = scoreNow(false).toLocaleString('vi-VN');
+  $('mapName').textContent = level ? level.icon + ' ' + level.name : '';
+
+  // Thanh tiến trình: trong đợt = tỉ lệ địch đã xử lý, giữa đợt = tiến bộ cả màn
+  const p = waveActive && waveSpawn
+    ? clamp(waveDone / waveSpawn, 0, 1)
+    : (TOTAL ? wave / TOTAL : 0);
+
+  const fill = $('meterFill');
+  fill.style.width = (p * 100).toFixed(1) + '%';
+  fill.parentElement.setAttribute('aria-valuenow', Math.round(p * 100));
 
   // Làm mờ tháp mà bé chưa đủ tiền mua
   document.querySelectorAll('.tw').forEach(b => {
@@ -18,6 +29,117 @@ function updUI() {
   updSkills();
 
   if (sel) showInfo();
+}
+
+/* =====================================================
+   MENU CÁI ĐẶT (nút bánh răng)
+   ===================================================== */
+function buildSettings() {
+  if ($('hudMenu')) return;
+
+  const m = document.createElement('div');
+  m.className = 'hud__menu';
+  m.id = 'hudMenu';
+  m.innerHTML =
+    '<h3>Cài đặt</h3>' +
+    '<p class="sub" id="setSub"></p>' +
+    '<div class="row">' +
+      '<button class="btn alt" data-a="pause">⏸ Tạm dừng</button>' +
+      '<button class="btn alt" data-a="s1">x1</button>' +
+      '<button class="btn alt" data-a="s2">x2</button>' +
+      '<button class="btn alt" data-a="s3">x3</button>' +
+    '</div>' +
+    '<label>Hiệu ứng mây, phấn hoa' +
+      '<input type="checkbox" id="setFx" checked></label>' +
+    '<div class="row">' +
+      '<button class="btn mint" data-a="map">🗺️ Chọn cánh đồng</button>' +
+      '<button class="btn alt" data-a="again">↺ Chơi lại màn này</button>' +
+    '</div>' +
+    '<div class="row">' +
+      '<button class="btn alt" data-a="diff">🎚 Đổi độ khó</button>' +
+      '<button class="btn red" data-a="home">🏠 Về sảnh</button>' +
+    '</div>';
+
+  $('top').appendChild(m);
+
+  m.querySelector('#setFx').addEventListener('change', e => {
+    gfx = e.target.checked;
+  });
+
+  m.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]');
+    if (!b) return;
+
+    const a = b.dataset.a;
+
+    if (a === 'pause') $('pause').click();
+    else if (a === 's1' || a === 's2' || a === 's3') setSpeed(+a[1]);
+    else if (a === 'map') { closeSettings(); openMapPicker(); }
+    else if (a === 'again') playAgain();
+    else if (a === 'diff') changeDifficulty();
+    else if (a === 'home') GC.quit();
+  });
+}
+
+function setSpeed(v) {
+  speed = v;
+  $('speed').textContent = 'x' + speed;
+  $('speed').classList.toggle('on', speed > 1);
+  syncSettings();
+}
+
+function syncSettings() {
+  const m = $('hudMenu');
+  if (!m) return;
+
+  $('setSub').textContent = (level ? level.icon + ' ' + level.name + ' · ' : '') +
+    GC.diff.label + ' · ' + TOTAL + ' đợt';
+
+  m.querySelector('[data-a="pause"]').textContent = paused ? '▶ Tiếp tục' : '⏸ Tạm dừng';
+  m.querySelector('#setFx').checked = gfx;
+
+  m.querySelectorAll('[data-a^="s"]').forEach(b => {
+    b.classList.toggle('sel', b.dataset.a === 's' + speed);
+  });
+}
+
+function closeSettings() {
+  const m = $('hudMenu');
+  if (m) m.classList.remove('open');
+  const g = $('gear');
+  if (g) g.classList.remove('on');
+}
+
+function toggleSettings() {
+  const m = $('hudMenu');
+  if (!m) return;
+
+  const open = m.classList.toggle('open');
+  $('gear').classList.toggle('on', open);
+  if (open) syncSettings();
+}
+
+/** Nút 🗺️ / menu: mở màn chọn cánh đồng, tạm dừng ván đang chơi */
+function openMapPicker() {
+  closeSettings();
+
+  if (!started) {
+    showMapSelect({ onPick: startMap });
+    return;
+  }
+
+  const before = paused;
+  paused = true;
+  $('pause').textContent = '▶';
+
+  showMapSelect({
+    onPick: startMap,
+    onDiff: changeDifficulty,
+    onResume: () => {
+      paused = before;
+      $('pause').textContent = paused ? '▶' : '⏸';
+    }
+  });
 }
 
 /** Cập nhật độ phủ hồi chiêu của 2 kỹ năng */
@@ -95,7 +217,8 @@ function showInfo() {
   } else if (aim) {
     el.innerHTML = '<b>🚀 Không kích</b><br>Chạm vào khu vực muốn ném bom (sát thương 260 × 6 quả, xuyên giáp).';
   } else {
-    el.innerHTML = 'Chọn một loại vũ khí rồi nhấn vào cánh đồng để xây. ' +
+    el.innerHTML = '<b>' + (level ? level.icon + ' ' + level.name : 'Cánh đồng') + '</b><br>' +
+      'Chọn vũ khí rồi nhấn vào đồng để xây. Không xây được lên ao, đá, cây, nhà kho và cầu. ' +
       'Địch đi vòng quanh tháp – hãy xây mê cung để kéo dài đường đi! ' +
       'Nhấn vào tháp để nâng cấp (tối đa ' + MAXLV + ' sao) hoặc bán.' +
       '<br>⚠️ Từ đợt ' + HARD_WAVE + ' có kẻ địch <b>tinh anh ⭐</b> rất trâu!';
@@ -321,12 +444,16 @@ cv.addEventListener('click', e => {
 
 /* ---------- Bàn phím ---------- */
 addEventListener('keydown', e => {
-  if (!started || document.getElementById('gc-start')) return;
+  if (!started || document.getElementById('gc-start') || document.getElementById('fr-maps')) return;
+
+  if (e.key === 'Escape') {
+    if ($('hudMenu') && $('hudMenu').classList.contains('open')) closeSettings();
+    else clearPick();
+    return;
+  }
 
   const k = KEYS.indexOf(e.key);
   if (k >= 0 && k < Object.keys(TYPES).length) pickBuild(Object.keys(TYPES)[k]);
-
-  if (e.key === 'Escape') clearPick();
 
   if (e.key === ' ') {
     e.preventDefault();
@@ -335,24 +462,35 @@ addEventListener('keydown', e => {
 
   if (e.key === 'q' || e.key === 'Q') toggleStrike();
   if (e.key === 'e' || e.key === 'E') castFreeze();
+  if (e.key === 'p' || e.key === 'P') $('pause').click();
 });
 
-/* ---------- Các nút trên thanh trên ---------- */
+/* ---------- Các nút trên HUD ---------- */
 $('go').onclick = startWave;
 
 $('pause').onclick = () => {
   paused = !paused;
   $('pause').textContent = paused ? '▶' : '⏸';
+  $('pause').classList.toggle('on', paused);
+  syncSettings();
 };
 
-$('speed').onclick = () => {
-  speed = speed % 3 + 1;
-  $('speed').textContent = 'x' + speed;
-};
+$('speed').onclick = () => setSpeed(speed % 3 + 1);
 
 $('restart').onclick = () => {
-  if (confirm('Chơi lại từ đầu ở độ khó ' + GC.diff.label + '?')) reset();
+  if (confirm('Chơi lại từ đầu màn ' + level.name + ' ở độ khó ' + GC.diff.label + '?')) reset();
 };
+
+$('gear').onclick = toggleSettings;
+$('mapBtn').onclick = openMapPicker;
+
+// Đóng menu cài đặt khi bấm ra ngoài
+document.addEventListener('click', e => {
+  const m = $('hudMenu');
+  if (!m || !m.classList.contains('open')) return;
+  if (m.contains(e.target) || (e.target.closest && e.target.closest('#gear'))) return;
+  closeSettings();
+});
 
 $('skStrike').onclick = toggleStrike;
 $('skFreeze').onclick = castFreeze;

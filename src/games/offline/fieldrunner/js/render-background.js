@@ -62,10 +62,17 @@ function makeBg() {
   const g = bg.getContext('2d');
   const rand = seededRandom(12345);
 
+  /** Ô địa hình (đá/nước/cây/nhà) — không rải cỏ dại, hoa, nấm lên trên */
+  const onProp = (x, y) => {
+    const c = (x / CS) | 0;
+    const r = (y / CS) | 0;
+    return !!(blocked && blocked[c] && blocked[c][r]);
+  };
+
   /* ----- Ô cỏ caro nhẹ + đốm màu ----- */
   for (let c = 0; c < COLS; c++) {
     for (let r = 0; r < ROWS; r++) {
-      g.fillStyle = (c + r) % 2 ? '#72b650' : '#7ac258';
+      g.fillStyle = (c + r) % 2 ? PAL.grass[0] : PAL.grass[1];
       g.fillRect(c * CS, r * CS, CS, CS);
     }
   }
@@ -81,14 +88,11 @@ function makeBg() {
     g.fill();
   }
 
-  /* ----- Ao nước nhỏ ----- */
-  drawPond(g, 130, 120, 54, 30);
-  drawPond(g, 830, 500, 48, 26);
-
   /* ----- Cỏ dại ----- */
   for (let i = 0; i < 320; i++) {
     const x = rand() * CW;
     const y = rand() * CH;
+    if (onProp(x, y)) continue;
 
     g.strokeStyle = rand() < 0.5 ? '#58a041' : '#8ed86c';
     g.lineWidth = 1.4;
@@ -108,6 +112,7 @@ function makeBg() {
   for (let i = 0; i < 90; i++) {
     const x = rand() * CW;
     const y = rand() * CH;
+    if (onProp(x, y)) continue;
 
     g.fillStyle = colors[(rand() * 4) | 0];
     for (let k = 0; k < 5; k++) {
@@ -126,6 +131,7 @@ function makeBg() {
   for (let i = 0; i < 34; i++) {
     const x = rand() * CW;
     const y = rand() * CH;
+    if (onProp(x, y)) continue;
 
     g.fillStyle = 'rgba(0,0,0,.15)';
     g.beginPath();
@@ -144,12 +150,19 @@ function makeBg() {
 
   /* ----- Bụi cây & nấm ----- */
   for (let i = 0; i < 26; i++) {
-    drawBush(g, rand() * CW, rand() * CH, 7 + rand() * 6);
+    const x = rand() * CW;
+    const y = rand() * CH;
+    if (!onProp(x, y)) drawBush(g, x, y, 7 + rand() * 6);
   }
 
   for (let i = 0; i < 16; i++) {
-    drawMushroom(g, rand() * CW, rand() * CH);
+    const x = rand() * CW;
+    const y = rand() * CH;
+    if (!onProp(x, y)) drawMushroom(g, x, y);
   }
+
+  /* ----- Địa hình của màn (cây, đá, ao, sông, rào, nhà kho) ----- */
+  drawTerrain(g);
 
   /* ----- Hàng cây viền trên & dưới bản đồ ----- */
   for (let x = 14; x < CW; x += 38 + rand() * 26) {
@@ -169,42 +182,6 @@ function lg2(g, x0, y0, x1, y1, a, b) {
   gr.addColorStop(0, a);
   gr.addColorStop(1, b);
   return gr;
-}
-
-function drawPond(g, x, y, rx, ry) {
-  g.fillStyle = 'rgba(0,0,0,.14)';
-  g.beginPath();
-  g.ellipse(x + 2, y + 4, rx + 5, ry + 5, 0, 0, 7);
-  g.fill();
-
-  g.fillStyle = '#b79b62';
-  g.beginPath();
-  g.ellipse(x, y, rx + 5, ry + 5, 0, 0, 7);
-  g.fill();
-
-  const water = g.createRadialGradient(x - rx * 0.3, y - ry * 0.4, 2, x, y, rx);
-  water.addColorStop(0, '#9fe3f5');
-  water.addColorStop(1, '#3f9fd0');
-  g.fillStyle = water;
-  g.beginPath();
-  g.ellipse(x, y, rx, ry, 0, 0, 7);
-  g.fill();
-
-  g.strokeStyle = 'rgba(255,255,255,.55)';
-  g.lineWidth = 1.6;
-  g.beginPath();
-  g.ellipse(x - 6, y - 3, rx * 0.5, ry * 0.35, 0, 3.5, 5.6);
-  g.stroke();
-
-  // Lá sen
-  g.fillStyle = '#4fae4a';
-  g.beginPath();
-  g.ellipse(x + rx * 0.35, y + ry * 0.2, 8, 5, 0.3, 0, 7);
-  g.fill();
-  g.fillStyle = '#ff9fc0';
-  g.beginPath();
-  g.arc(x + rx * 0.35, y + ry * 0.2 - 2, 2.6, 0, 7);
-  g.fill();
 }
 
 function drawBush(g, x, y, r) {
@@ -278,6 +255,12 @@ function makeLightLayer() {
 
   const g = lightLayer.getContext('2d');
 
+  // Màu riêng của từng cánh đồng (hoàng hôn, mùa gặt…)
+  if (PAL.wash) {
+    g.fillStyle = PAL.wash;
+    g.fillRect(0, 0, CW, CH);
+  }
+
   const sun = g.createRadialGradient(CW * 0.2, -40, 20, CW * 0.2, -40, CW * 0.9);
   sun.addColorStop(0, 'rgba(255,240,170,.28)');
   sun.addColorStop(1, 'rgba(255,240,170,0)');
@@ -311,25 +294,25 @@ function drawPath() {
 
   // Viền đất tối
   strokePath();
-  ctx.strokeStyle = '#8a6a38';
+  ctx.strokeStyle = PAL.soil[0];
   ctx.lineWidth = 34;
   ctx.stroke();
 
   // Viền sáng
   strokePath();
-  ctx.strokeStyle = '#b8935a';
+  ctx.strokeStyle = PAL.soil[1];
   ctx.lineWidth = 30;
   ctx.stroke();
 
   // Mặt đường
   strokePath();
-  ctx.strokeStyle = '#dcbc84';
+  ctx.strokeStyle = PAL.soil[2];
   ctx.lineWidth = 26;
   ctx.stroke();
 
   // Lòng đường sáng hơn
   strokePath();
-  ctx.strokeStyle = '#ecd29c';
+  ctx.strokeStyle = PAL.soil[3];
   ctx.lineWidth = 16;
   ctx.stroke();
 

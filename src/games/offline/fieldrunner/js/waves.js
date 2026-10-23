@@ -87,6 +87,8 @@ function startWave() {
   waveActive = true;
   spawnQ = makeWave(wave);
   spawnT = 0;
+  waveSpawn = spawnQ.length;
+  waveDone = 0;
 
   $('go').disabled = true;
   updUI();
