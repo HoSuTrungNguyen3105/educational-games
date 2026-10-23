@@ -1,0 +1,152 @@
+/**
+ * charts.css — chủ đề Chartist cho dashboard giáo viên.
+ *
+ * Chartist vẽ SVG và để việc làm đẹp lại cho CSS (không theme engine), nên toàn
+ * bộ màu chữ/đường/lưới đi qua biến --ct-*. Đặt biến trên .gq-chart là biểu đồ
+ * tự khớp nền giấy + mực của trang, không cần sửa JS khi đổi palette.
+ */
+
+.gq-chart {
+  --ct-label-color: #8a7c63;
+  --ct-label-size: 11px;
+  --ct-grid-color: rgba(29, 46, 74, 0.12);
+  --ct-grid-width: 1px;
+  --ct-grid-dasharray: 3px;
+  --ct-grid-background-fill: none;
+  --ct-line-width: 3px;
+  --ct-point-size: 9px;
+  --ct-area-opacity: 0.15;
+  --ct-bar-width: 16px;
+  --ct-donut-width: 26px;
+  /* Thứ tự khớp SERIES_COLORS trong palette.js */
+  --ct-series-a: #e4572e;
+  --ct-series-b: #1b998b;
+  --ct-series-c: #f4b942;
+  --ct-series-d: #8b5cf6;
+  --ct-series-e: #ff6f91;
+  --ct-series-f: #1d2e4a;
+  --ct-series-g: #38bdf8;
+  --ct-series-h: #10b981;
+
+  position: relative;
+  font-family: "Be Vietnam Pro", sans-serif;
+}
+
+.gq-chart svg {
+  display: block;
+  width: 100%;
+  overflow: visible; /* nhãn trục sát mép khỏi bị cắt */
+}
+
+/* Đầu điểm to lên khi rê vào — biến --ct-point-size được Chartist dùng trực tiếp. */
+.gq-chart .ct-point,
+.gq-chart .ct-bar,
+.gq-chart .ct-slice-donut,
+.gq-chart .ct-slice-pie {
+  cursor: pointer;
+  transition: stroke-width 0.15s ease, stroke-opacity 0.15s ease, opacity 0.2s ease;
+}
+.gq-chart .ct-point:hover { --ct-point-size: 15px; }
+.gq-chart .ct-bar:hover { stroke-opacity: 0.75; }
+.gq-chart .ct-slice-donut:hover,
+.gq-chart .ct-slice-pie:hover { stroke-opacity: 0.8; opacity: 0.92; }
+
+/* Tâm donut: số to đặt giữa bằng HTML, không vẽ chữ trong SVG. */
+.gq-chart__center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+.gq-chart__center b {
+  display: block;
+  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
+  font-size: 26px;
+  line-height: 1.1;
+  color: #1d2e4a;
+}
+.gq-chart__center span {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a7c63;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Tooltip theo con trỏ: Chartist không có sẵn, tự làm bằng HTML phủ ngoài. */
+.gq-chart__tip {
+  position: fixed;
+  z-index: 60;
+  transform: translate(-50%, -130%);
+  padding: 6px 9px;
+  border-radius: 10px;
+  background: #1d2e4a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(29, 46, 74, 0.28);
+  pointer-events: none;
+  opacity: 0;
+}
+.gq-chart__tip.is-on { opacity: 1; }
+.gq-chart__tip i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+/* Legend vuông góc với biểu đồ, đổi màu khi hover series tương ứng. */
+.gq-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 10px;
+}
+.gq-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #8a7c63;
+  font-weight: 600;
+}
+.gq-legend__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: none;
+}
+.gq-legend__num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #1d2e4a;
+}
+
+.gq-chart__empty {
+  display: grid;
+  place-content: center;
+  min-height: 120px;
+  text-align: center;
+  font-size: 12px;
+  color: #8a7c63;
+  border: 2px dashed rgba(29, 46, 74, 0.14);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+@media (max-width: 480px) {
+  .gq-chart { --ct-label-size: 10px; --ct-bar-width: 12px; --ct-point-size: 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gq-chart .ct-point,
+  .gq-chart .ct-bar,
+  .gq-chart .ct-slice-donut,
+  .gq-chart .ct-slice-pie { transition: none; }
+}

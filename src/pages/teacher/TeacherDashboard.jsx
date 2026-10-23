@@ -13,7 +13,6 @@ import {
   Loader2,
   CheckCircle2,
   Users,
-  School,
   Target,
   BarChart3,
   TrendingUp,
@@ -24,7 +23,13 @@ import {
   Play,
   Plus,
   Library,
+  Activity,
+  PieChart,
+  CalendarCheck,
+  Clock,
+  Layers,
 } from 'lucide-react'
+import { ChartCard, TrendChart, BarsChart, DonutChart, ChartLegend, seriesColor } from '../../components/charts'
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
@@ -72,6 +77,7 @@ export function GameCard({ game, onEdit, onResults, onDelete, onShare }) {
 export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit, onResults, showToast }) {
   const [games, setGames] = useState(null);
   const [stats, setStats] = useState(null);
+  const [days, setDays] = useState(14);
   const [error, setError] = useState(null);
   const [shareGame, setShareGame] = useState(null);
   const [confirmReset, setConfirmReset] = useState(null);
@@ -89,10 +95,10 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
 
   const load = useCallback(() => {
     setGames(null); setStats(null); setError(null);
-    Promise.all([statsService.get(), gameService.list()])
+    Promise.all([statsService.get(days), gameService.list()])
       .then(([s, g]) => { setStats(s); setGames(g); })
       .catch(e => setError(e.message || "Lỗi tải dữ liệu Dashboard"));
-  }, []);
+  }, [days]);
   useEffect(() => { load(); }, [load]);
 
   const handleLive = (g) => {
@@ -153,17 +159,6 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
   const neverPlayedGames = (stats ? stats.attention.neverPlayed : []).map(n => ({ ...n, raw: games?.find(g => (g._id?.toString() || g.id) === n.id) }));
   const todoCount = draftGames.length + neverPlayedGames.length;
 
-  const statItems = [
-    { label: "Tổng trò chơi", value: t.totals.games, Icon: Ticket, chip: "bg-[#1D2E4A]/10 text-[#1D2E4A]" },
-    { label: "Đã xuất bản", value: t.totals.published, Icon: CheckCircle2, chip: "bg-teal/15 text-teal" },
-    { label: "Bản nháp", value: t.totals.drafts, Icon: Pencil, chip: "bg-gold/20 text-[#B07D10]" },
-    { label: "Lượt chơi", value: t.totals.plays, Icon: Gamepad2, chip: "bg-pink/15 text-pink" },
-    { label: "Học sinh tham gia", value: t.totals.players, Icon: Users, chip: "bg-[#7C6FF1]/15 text-[#7C6FF1]" },
-    { label: "HS trong hệ thống", value: t.totals.students, Icon: School, chip: "bg-[#38BDF8]/15 text-[#0284C7]" },
-    { label: "Điểm trung bình", value: t.totals.avgScore, Icon: Target, chip: "bg-ticket/10 text-ticket" },
-    { label: "Độ chính xác TB", value: `${t.totals.avgAccuracy ?? 0}%`, Icon: BarChart3, chip: "bg-[#10B981]/15 text-[#059669]" },
-  ];
-
   return (
     <div>
       {error && <ErrorState subtitle="Không thể tải dữ liệu Dashboard." onRetry={load} />}
@@ -186,32 +181,11 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
               </button>
             </div>
 
-            {/* Thống kê */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {statItems.map(({ label, value, Icon, chip }) => (
-                <div key={label} className="note-card p-3.5 sm:p-4 flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl grid place-items-center shrink-0 ${chip}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-display text-lg sm:text-xl text-ink leading-tight">{value ?? 0}</div>
-                    <div className="text-[9px] sm:text-[10px] text-[#8A7C63] font-mono uppercase leading-tight truncate">{label}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Phân tích lớp học */}
+            <TeacherAnalytics stats={stats} days={days} onDays={setDays} onResults={onResults} onLive={handleLive} />
 
-            {/* Biểu đồ + Bảng xếp hạng */}
-            <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
-              <ActivityChart data={t.activity} />
-              <TopPlayers data={t.topPlayers} />
-            </div>
-
-            {/* Top games + Phân môn */}
-            <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
-              <TopGames data={t.topGames} onResults={onResults} onLive={handleLive} />
-              <SubjectBreakdown data={t.subjects} onCreate={onCreate} />
-            </div>
+            {/* Bảng xếp hạng học sinh */}
+            <TopPlayers data={t.topPlayers} />
 
             {/* Trò chơi gần đây */}
             <div className="space-y-4">
@@ -379,34 +353,284 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
   );
 }
 
-function ActivityChart({ data }) {
-  const max = Math.max(1, ...(data || []).map(d => d.count));
-  const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+/* ── Phân tích lớp học (biểu đồ Chartist) ─────────────────────── */
+
+const RANGES = [
+  { days: 7, label: "7 ngày" },
+  { days: 14, label: "14 ngày" },
+  { days: 30, label: "30 ngày" },
+  { days: 90, label: "90 ngày" },
+];
+
+const KPI_ICONS = {
+  plays: Gamepad2,
+  activeStudents: Users,
+  avgAccuracy: Target,
+  published: CheckCircle2,
+  submissions: CalendarCheck,
+  avgTime: Clock,
+};
+
+/** "2026-10-09" → "9/10" để ghi chú cửa sổ ngày gọn. */
+const dmy = (iso) => {
+  const parts = String(iso || "").split("-");
+  return parts.length === 3 ? `${+parts[2]}/${+parts[1]}` : String(iso || "");
+};
+
+function TrendChip({ change }) {
+  const c = change || {};
+  if (!c.trend || c.trend === "none") {
+    return <span className="text-[9px] sm:text-[10px] font-mono text-[#B7A987]">chưa so sánh được</span>;
+  }
+  const up = c.trend === "up" || c.trend === "new";
+  const flat = c.trend === "flat";
+  const cls = flat ? "text-[#8A7C63] bg-ink/5" : up ? "text-[#059669] bg-[#10B981]/10" : "text-red-600 bg-red-500/10";
+  const icon = flat
+    ? <span className="w-3 text-center leading-none">–</span>
+    : <TrendingUp className={`w-3 h-3 ${up ? "" : "rotate-180"}`} />;
+  const text = c.pct === null
+    ? (up ? "kỳ trước bằng 0" : "bằng 0")
+    : `${c.pct > 0 ? "+" : ""}${c.pct.toLocaleString("vi-VN")}%`;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] sm:text-[10px] font-mono font-semibold ${cls}`}>
+      {icon}{text}
+    </span>
+  );
+}
+
+function KpiCard({ kpi }) {
+  const Icon = KPI_ICONS[kpi.key] || BarChart3;
+  return (
+    <div className="note-card p-3 sm:p-4 flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wide text-[#8A7C63] truncate">{kpi.label}</span>
+        <Icon className="w-4 h-4 shrink-0 text-ticket" />
+      </div>
+      <div className="flex items-end gap-1">
+        <span className="font-display text-xl sm:text-2xl text-ink leading-none">{kpi.value ?? 0}</span>
+        {kpi.unit && <span className="text-[10px] sm:text-xs font-mono text-[#8A7C63] mb-0.5">{kpi.unit}</span>}
+      </div>
+      <TrendChip change={kpi.change} />
+      {kpi.hint && <p className="text-[9px] sm:text-[10px] font-mono text-[#B7A987] leading-tight">{kpi.hint}</p>}
+    </div>
+  );
+}
+
+function RangePicker({ days, onChange }) {
+  return (
+    <div className="flex items-center gap-1 rounded-xl border border-ink/10 bg-paper p-0.5">
+      {RANGES.map((r) => (
+        <button key={r.days} onClick={() => onChange(r.days)}
+          className={`px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-mono transition ${days === r.days ? "bg-ink text-paper font-semibold" : "text-[#8A7C63] hover:bg-ink/5"}`}>
+          {r.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TeacherAnalytics({ stats, days, onDays, onResults, onLive }) {
+  const s = stats?.series;
+  if (!s) return null;
+
+  const labels = s.days.map((d) => d.label);
+  const windowNote = `${dmy(stats.meta?.window.from)} – ${dmy(stats.meta?.window.to)}`;
+  const eventSeries = s.events.slice(0, 4).map((e) => ({ name: e.label, values: e.values }));
+  const statusSlices = s.status.labels
+    .map((name, i) => ({ name, value: s.status.values[i] }))
+    .filter((x) => x.value > 0);
+  const accuracySubjects = s.subjects.accuracies.map((v) => (v === null ? null : v));
 
   return (
-    <section className="note-card p-4 sm:p-5">
-      <h2 className="font-display text-lg sm:text-xl text-ink mb-4 sm:mb-5"><TrendingUp className="w-5 h-5 inline mr-2 text-ticket" /> Hoạt động 7 ngày gần nhất</h2>
-      {!data || data.every(d => d.count === 0) ? (
-        <p className="text-sm text-[#8A7C63]">Chưa có lượt chơi nào trong tuần này. Học sinh chơi xong bạn sẽ thấy số liệu tại đây.</p>
-      ) : (
-        <div className="flex items-end justify-between gap-1 sm:gap-2 h-36 sm:h-40">
-          {data.map(d => {
-            const date = new Date(`${d.date}T00:00:00`);
-            const label = days[date.getDay()];
-            const h = d.count ? Math.max(8, Math.round((d.count / max) * 100)) : 4;
-            return (
-              <div key={d.date} className="flex flex-col items-center gap-1 flex-1 min-w-0">
-                <span className="text-[9px] sm:text-[10px] font-mono text-[#8A7C63]">{d.count || ""}</span>
-                <div className="w-full max-w-8 sm:max-w-10 bg-gradient-to-t from-ticket to-orange-300 rounded-t-md transition-all duration-500 anim-pop"
-                  style={{ height: `${h}px` }} title={d.date}></div>
-                <span className="text-[9px] sm:text-[10px] font-mono text-[#8A7C63]">{label}</span>
-                <span className="text-[8px] sm:text-[9px] font-mono text-[#B7A987] hidden sm:block">{d.date.slice(5)}</span>
-              </div>
-            );
-          })}
+    <div className="space-y-4 sm:space-y-5">
+      {/* Dải chỉ số chính */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+        {(stats.kpis || []).map((kpi) => <KpiCard key={kpi.key} kpi={kpi} />)}
+      </div>
+
+      {stats.meta?.warnings?.length > 0 && (
+        <div className="note-card p-3 sm:p-4 border-l-4 border-l-gold bg-gold/5">
+          <p className="text-[11px] sm:text-xs font-semibold text-[#B07D10] mb-1">
+            <AlertTriangle className="w-3.5 h-3.5 inline mr-1" /> Lưu ý về nguồn số liệu
+          </p>
+          <ul className="space-y-0.5 text-[10px] sm:text-[11px] font-mono text-[#8A7C63] leading-relaxed list-disc pl-4">
+            {stats.meta.warnings.map((w) => <li key={w}>{w}</li>)}
+          </ul>
         </div>
       )}
-    </section>
+
+      {/* Xu hướng + cơ cấu thư viện */}
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-5">
+        <ChartCard
+          className="lg:col-span-2"
+          title="Nhịp chơi của lớp"
+          icon={<Activity className="w-5 h-5" />}
+          actions={<RangePicker days={days} onChange={onDays} />}
+          footer={<ChartLegend items={[
+            { label: "Lượt chơi", value: s.plays.reduce((a, b) => a + b, 0), color: seriesColor(0) },
+            { label: "Học sinh hoạt động", value: `cao nhất ${Math.max(0, ...s.activeStudents)} bạn`, color: seriesColor(1) },
+          ]} />}
+          caption={`Cửa sổ ${windowNote} · tính từ sự kiện chơi game và tiến độ nhiệm vụ ngày, không tính phiếu kết quả cũ thiếu mốc thời gian.`}
+        >
+          <TrendChart
+            labels={labels}
+            series={[
+              { name: "Lượt chơi", values: s.plays },
+              { name: "Học sinh hoạt động", values: s.activeStudents },
+            ]}
+            format={(v) => `${v} lượt`}
+            empty="Chưa có lượt chơi nào trong khoảng ngày này."
+            ariaLabel="Lượt chơi và số học sinh hoạt động theo ngày"
+          />
+        </ChartCard>
+
+        <ChartCard
+          title="Thư viện trò chơi"
+          icon={<PieChart className="w-5 h-5" />}
+          footer={<ChartLegend items={statusSlices.map((x, i) => ({ label: x.name, value: x.value, color: seriesColor(i) }))} />}
+          caption={`${stats.totals.games} trò chơi · ${stats.totals.students} học sinh trong hệ thống · ${stats.totals.players} bạn từng chơi.`}
+        >
+          <DonutChart
+            slices={statusSlices}
+            height={188}
+            centerValue={stats.totals.games}
+            centerLabel="trò chơi"
+            empty="Thư viện chưa có trò chơi nào."
+            ariaLabel="Cơ cấu trạng thái trò chơi"
+          />
+        </ChartCard>
+      </div>
+
+      {/* Loại hoạt động + trò chơi hot */}
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
+        <ChartCard
+          title="Hoạt động theo loại"
+          icon={<Layers className="w-5 h-5" />}
+          footer={<ChartLegend items={eventSeries.map((e, i) => ({ label: e.name, value: e.values.reduce((a, b) => a + b, 0), color: seriesColor(i) }))} />}
+          caption={`Cột chồng cho ${eventSeries.length} loại sự kiện hay xảy ra nhất trong ${windowNote} · rê chuột vào từng đoạn để xem số của ngày đó.`}
+        >
+          <BarsChart
+            labels={labels}
+            series={eventSeries}
+            stack
+            height={220}
+            format={(v) => `${v} sự kiện`}
+            empty="Chưa ghi nhận sự kiện nào trong khoảng ngày này."
+            ariaLabel="Số sự kiện mỗi ngày theo loại"
+          />
+        </ChartCard>
+
+        <ChartCard
+          title="Trò chơi được chơi nhiều nhất"
+          icon={<Gamepad2 className="w-5 h-5" />}
+          footer={<TopGameActions games={stats.topGames} onResults={onResults} onLive={onLive} />}
+          caption="Toàn thời gian · tính cả phiếu kết quả lẫn sự kiện chơi game."
+        >
+          <BarsChart
+            labels={s.topGames.labels}
+            series={[{ name: "Lượt chơi", values: s.topGames.values }]}
+            horizontal
+            height={Math.max(160, s.topGames.labels.length * 30)}
+            format={(v) => `${v} lượt`}
+            empty="Chưa có trò chơi nào được chơi."
+            ariaLabel="Xếp hạng trò chơi theo lượt chơi"
+          />
+        </ChartCard>
+      </div>
+
+      {/* Môn học + chất lượng */}
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
+        <ChartCard
+          title="Thư viện theo môn"
+          icon={<BookOpen className="w-5 h-5" />}
+          footer={<ChartLegend items={[{ label: "Tổng trò chơi" }, { label: "Đã xuất bản" }]} />}
+          caption="Mỗi môn hai cột: tổng số và số đã xuất bản."
+        >
+          <BarsChart
+            labels={s.subjects.labels}
+            series={[
+              { name: "Tổng trò chơi", values: s.subjects.counts },
+              { name: "Đã xuất bản", values: s.subjects.published },
+            ]}
+            height={210}
+            format={(v) => `${v} trò chơi`}
+            empty="Chưa có trò chơi nào để phân môn."
+            ariaLabel="Số trò chơi theo môn học"
+          />
+        </ChartCard>
+
+        <ChartCard
+          title="Độ chính xác theo môn"
+          icon={<Target className="w-5 h-5" />}
+          caption="Chỉ tính phiếu kết quả khớp được với trò chơi trong thư viện; môn trống cột là chưa có dữ liệu."
+        >
+          <BarsChart
+            labels={s.subjects.labels}
+            series={[{ name: "Độ chính xác TB", values: accuracySubjects }]}
+            height={210}
+            format={(v) => `${v}%`}
+            tickFormat={(v) => `${v}%`}
+            empty="Chưa có phiếu kết quả nào gắn với môn học."
+            ariaLabel="Độ chính xác trung bình theo môn"
+          />
+        </ChartCard>
+      </div>
+
+      {/* Chất lượng phân bố + nhịp tuần */}
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
+        <ChartCard
+          title="Phân bố độ chính xác"
+          icon={<BarChart3 className="w-5 h-5" />}
+          caption={`${stats.meta?.sources?.results ?? 0} phiếu kết quả · cột dồn về phía phải nghĩa là lớp làm chắc bài hơn.`}
+        >
+          <BarsChart
+            labels={s.accuracyBands.map((b) => b.label)}
+            series={[{ name: "Số phiếu", values: s.accuracyBands.map((b) => b.count) }]}
+            height={200}
+            format={(v) => `${v} phiếu`}
+            empty="Chưa có phiếu kết quả nào."
+            ariaLabel="Số phiếu kết quả chia theo dải độ chính xác"
+          />
+        </ChartCard>
+
+        <ChartCard
+          title="Ngày nào lớp năng nổ"
+          icon={<CalendarCheck className="w-5 h-5" />}
+          caption={`Trung bình lượt chơi mỗi thứ trong ${windowNote}.`}
+        >
+          <BarsChart
+            labels={s.weekday.map((w) => w.label)}
+            series={[{ name: "Lượt chơi TB/ngày", values: s.weekday.map((w) => w.avg) }]}
+            height={200}
+            format={(v) => `${v} lượt/ngày`}
+            empty="Chưa đủ dữ liệu ngày để tính nhịp trong tuần."
+            ariaLabel="Lượt chơi trung bình theo thứ trong tuần"
+          />
+        </ChartCard>
+      </div>
+
+      {/* Giao đề */}
+      {s.assignments.labels.length > 0 && (
+        <ChartCard
+          title="Tiến độ giao đề"
+          icon={<Ticket className="w-5 h-5" />}
+          footer={<ChartLegend items={[{ label: "Đã nộp" }, { label: "Đã chấm" }]} />}
+          caption="6 giao đề gần đây nhất · điểm TB của phần đã chấm hiển thị trong tooltip từng cột."
+        >
+          <BarsChart
+            labels={s.assignments.labels}
+            series={[
+              { name: "Đã nộp", values: s.assignments.submitted },
+              { name: "Đã chấm", values: s.assignments.graded },
+            ]}
+            height={210}
+            format={(v, i) => `${v} bài · điểm TB ${s.assignments.avgScores[i] ?? 0}`}
+            empty="Chưa có giao đề nào."
+            ariaLabel="Số bài đã nộp và đã chấm theo giao đề"
+          />
+        </ChartCard>
+      )}
+    </div>
   );
 }
 
@@ -433,57 +657,25 @@ function TopPlayers({ data }) {
   );
 }
 
-function TopGames({ data, onResults, onLive }) {
+/**
+ * Bảng thao tác nhanh dưới biểu đồ "Trò chơi được chơi nhiều nhất":
+ * mở kết quả hoặc phát trực tiếp ngay tại chỗ, khỏi phải vào thư viện.
+ */
+function TopGameActions({ games, onResults, onLive }) {
+  const list = (games || []).filter((g) => g.playedCount > 0).slice(0, 3);
+  if (list.length === 0) return null;
   return (
-    <section className="note-card p-4 sm:p-5">
-      <h2 className="font-display text-lg sm:text-xl text-ink mb-4 sm:mb-5"><Gamepad2 className="w-5 h-5 inline mr-2 text-ticket" /> Trò chơi được chơi nhiều nhất</h2>
-      {!data || data.length === 0 || data.every(g => g.playedCount === 0) ? (
-        <p className="text-sm text-[#8A7C63]">Chưa có lượt chơi nào.</p>
-      ) : (
-        <div className="space-y-2">
-          {data.filter(g => g.playedCount > 0).map((g, i) => (
-            <div key={g.id} className="flex flex-wrap items-center gap-2 p-2 rounded-xl hover:bg-ink/5 transition">
-              <span className="font-display text-base sm:text-lg text-[#B7A987] w-5 sm:w-6 text-center shrink-0">{i + 1}</span>
-              <span className="flex-1 min-w-0 text-sm sm:text-base font-body text-ink truncate">{g.name}</span>
-              <span className="text-[10px] sm:text-xs font-mono text-[#8A7C63] shrink-0">{g.playedCount} lượt</span>
-              <div className="flex gap-2 ml-auto sm:ml-0">
-                <button onClick={() => onResults(g.id)} className="text-xs sm:text-sm text-ticket font-semibold hover:underline shrink-0">Kết quả</button>
-                {g.status === "published" && <button onClick={() => onLive(g)} className="text-xs sm:text-sm text-teal font-semibold hover:underline shrink-0">Phát <Play className="w-3 h-3 inline ml-1" /></button>}
-              </div>
-            </div>
-          ))}
+    <div className="mt-1 space-y-1.5">
+      {list.map((g) => (
+        <div key={g.id} className="flex items-center gap-2 text-xs sm:text-sm">
+          <span className="flex-1 min-w-0 font-body text-ink truncate">{g.name}</span>
+          <span className="font-mono text-[10px] sm:text-xs text-[#8A7C63] shrink-0">{g.playedCount} lượt</span>
+          <button onClick={() => onResults(g.id)} className="text-ticket font-semibold hover:underline shrink-0">Kết quả</button>
+          {g.status === "published" && (
+            <button onClick={() => onLive(g)} className="text-teal font-semibold hover:underline shrink-0">Phát <Play className="w-3 h-3 inline ml-0.5" /></button>
+          )}
         </div>
-      )}
-    </section>
-  );
-}
-
-function SubjectBreakdown({ data, onCreate }) {
-  const max = Math.max(1, ...(data || []).map(s => s.count));
-  return (
-    <section className="note-card p-4 sm:p-5">
-      <div className="flex items-center justify-between mb-4 sm:mb-5">
-        <h2 className="font-display text-lg sm:text-xl text-ink"><BookOpen className="w-5 h-5 inline mr-2 text-ticket" /> Phân theo môn học</h2>
-        <button onClick={onCreate} className="text-xs sm:text-sm text-ticket font-semibold hover:underline"><Plus className="w-4 h-4 inline mr-1" /> Tạo trò chơi</button>
-      </div>
-      {!data || data.length === 0 ? (
-        <p className="text-sm text-[#8A7C63]">Chưa có trò chơi nào.</p>
-      ) : (
-        <div className="space-y-3 sm:space-y-4">
-          {data.map(s => (
-            <div key={s.name}>
-              <div className="flex items-center justify-between text-xs sm:text-sm mb-1">
-                <span className="font-body text-ink">{s.name}</span>
-                <span className="font-mono text-[#8A7C63]">{s.count} trò chơi</span>
-              </div>
-              <div className="h-2 bg-ink/5 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-purple-400 to-ticket rounded-full transition-all duration-500"
-                  style={{ width: `${(s.count / max) * 100}%` }}></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+      ))}
+    </div>
   );
 }

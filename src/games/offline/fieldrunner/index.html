@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Phòng thủ cánh đồng</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Giao diện -->
+  <link rel="stylesheet" href="css/gc-kit.css">
+  <link rel="stylesheet" href="css/game.css">
+</head>
+
+<body>
+  <div id="app">
+
+    <!-- Thanh trên: mạng, tiền, đợt, nút điều khiển -->
+    <div id="top">
+      <div class="stat" id="stLives">❤️ <span id="lives">20</span></div>
+      <div class="stat" id="stMoney" title="Xu trong túi tiền tài khoản của bé">💰 <span id="money">200</span></div>
+      <div class="stat">🌊 Đợt <span id="wave">0</span>/<span id="total">25</span></div>
+      <div id="chipSlot"></div>
+      <button class="btn" id="go">▶ Bắt đầu đợt 1</button>
+      <button class="btn alt" id="pause">⏸</button>
+      <button class="btn alt" id="speed">x1</button>
+      <button class="btn red" id="restart" title="Chơi lại">↺</button>
+      <div id="preview"></div>
+    </div>
+
+    <!-- Cánh đồng -->
+    <div id="field">
+      <canvas id="c" width="960" height="600"></canvas>
+    </div>
+
+    <!-- Thanh dưới: danh sách tháp, thông tin, kỹ năng -->
+    <div id="bottom">
+      <div id="towers"></div>
+      <div id="side">
+        <div id="info"></div>
+        <div id="skills">
+          <button class="btn sk" id="skStrike">🚀 Không kích <small>(Q)</small><div class="cd"></div></button>
+          <button class="btn sk" id="skFreeze">❄️ Đóng băng <small>(E)</small><div class="cd"></div></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="msg"></div>
+  <button id="homeBackBtn" type="button" aria-label="Về sảnh">←</button>
+
+  <!-- Thứ tự nạp script rất quan trọng (các file dùng chung biến toàn cục) -->
+  <script src="js/gc-kit.js"></script>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/pathfinding.js"></script>
+  <script src="js/waves.js"></script>
+  <script src="js/enemies.js"></script>
+  <script src="js/towers.js"></script>
+  <script src="js/skills.js"></script>
+  <script src="js/game.js"></script>
+
+  <script src="js/render-background.js"></script>
+  <script src="js/render-towers.js"></script>
+  <script src="js/render-enemies.js"></script>
+  <script src="js/render.js"></script>
+
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+
+</html>

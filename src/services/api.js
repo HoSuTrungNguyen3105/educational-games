@@ -344,8 +344,10 @@ export const userService = {
 };
 
 export const statsService = {
-  async get() {
-    return apiFetch("/stats");
+  /** days = cửa sổ ngày muốn xem (7/14/30/90) — server kẹp trong khoảng 7..180. */
+  async get(days) {
+    const q = days ? `?days=${encodeURIComponent(days)}` : "";
+    return apiFetch(`/stats${q}`);
   },
 };
 
