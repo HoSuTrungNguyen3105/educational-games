@@ -2251,6 +2251,10 @@ function starsFor(livesLeft, livesMax) {
 function commitMapResult(lv, res) {
   const rec = mapRec(lv.id);
   const isBest = res.score > (rec.best || 0);
+  const idx = LEVELS.indexOf(lv);
+  // Phải hỏi TRƯỚC khi ghi: mapUnlocked(idx+1) đọc đúng màn vừa thắng,
+  // ghi xong rồi mới hỏi thì lúc nào cũng ra "đã mở".
+  const nextWasLocked = !mapUnlocked(idx + 1);
 
   const patch = {
     best: Math.max(rec.best || 0, res.score),
@@ -2260,8 +2264,7 @@ function commitMapResult(lv, res) {
 
   mapsSet(lv.id, patch);
 
-  const unlockedNext = res.win && !mapUnlocked(levelIdx + 1) && levelIdx + 1 < LEVELS.length;
-  return { isBest, stars: patch.stars, unlockedNext };
+  return { isBest, stars: patch.stars, unlockedNext: res.win && nextWasLocked && idx + 1 < LEVELS.length };
 }
 
 function setAutoMap(id) {

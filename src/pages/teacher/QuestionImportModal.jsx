@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useQuestionImportStore } from '../../store/questionImportStore';
+import { useQuestionImportStore } from '../../stores/questionImportStore';
 import { parseExcel } from '../../services/question-import/excel.parser';
 import { parseWord } from '../../services/question-import/word.parser';
 import { validateQuestion } from '../../services/question-import/question.validator';
