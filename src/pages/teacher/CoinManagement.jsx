@@ -26,6 +26,10 @@ const GAME_NAMES = {
 };
 
 function getGameName(gameId) { return GAME_NAMES[gameId] || gameId; }
+/** Tên hiển thị: ưu tiên gameName đã lưu trên bản ghi (save offline game…). */
+function itemGameName(item) { return GAME_NAMES[item.gameId] || item.gameName || item.gameId; }
+function tryPretty(s) { try { return JSON.stringify(JSON.parse(s), null, 2); } catch { return s; } }
+function minifyOrRaw(s) { try { return JSON.stringify(JSON.parse(s)); } catch { return s; } }
 function getGameIcon(gameId) {
   const icons = {
     "TOAN101": "\u{1F9EE}", "VUTRU22": "\u{1F30C}", "TONGHOP9": "\u{1F4DA}",
@@ -38,13 +42,17 @@ function getGameIcon(gameId) {
   return icons[gameId] || "\u{1F3AE}";
 }
 
-export default function CoinManagement({ showToast }) {
+export default function CoinManagement({ user, showToast }) {
+  const isAdmin = user?.role === "admin";
   const [progress, setProgress] = useState(null);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [saveItem, setSaveItem] = useState(null);
+  const [saveDraft, setSaveDraft] = useState([]);
+  const [savingSave, setSavingSave] = useState(false);
   const [filterUser, setFilterUser] = useState("");
   const [filterGame, setFilterGame] = useState("");
   const [tab, setTab] = useState("users");
@@ -100,7 +108,7 @@ export default function CoinManagement({ showToast }) {
   const handleDelete = (item) => {
     askConfirm({
       title: "Xóa tiến trình",
-      message: `Xóa tiến trình của "${userMap[item.userId] || item.userId}" trong game "${getGameName(item.gameId)}"?`,
+      message: `Xóa tiến trình của "${userMap[item.userId] || item.userId}" trong game "${itemGameName(item)}"?`,
       onConfirm: async () => {
         try {
           await adminGameProgressService.removeProgress(item._id);
@@ -111,6 +119,45 @@ export default function CoinManagement({ showToast }) {
         }
       },
     });
+  };
+
+  const openSave = (item) => {
+    setSaveItem(item);
+    const entries = item.gameState?.entries || {};
+    setSaveDraft(Object.entries(entries).map(([key, e]) => ({
+      key,
+      at: e?.at || 0,
+      origText: tryPretty(String(e?.val ?? "")),
+      text: tryPretty(String(e?.val ?? "")),
+    })));
+  };
+
+  const handleSaveState = async () => {
+    if (!saveItem) return;
+    setSavingSave(true);
+    try {
+      for (const d of saveDraft) {
+        let origValid = true;
+        try { JSON.parse(d.origText); } catch { origValid = false; }
+        if (origValid) {
+          try { JSON.parse(d.text); } catch { throw new Error(`JSON không hợp lệ ở key "${d.key}"`); }
+        }
+      }
+      const entries = {};
+      for (const d of saveDraft) {
+        const changed = d.text !== d.origText;
+        entries[d.key] = { at: changed ? Date.now() : d.at, val: minifyOrRaw(d.text) };
+      }
+      const gameState = { ...(saveItem.gameState || {}), v: saveItem.gameState?.v || 1, entries };
+      await adminGameProgressService.updateSaveState(saveItem._id, gameState);
+      showToast("Đã cập nhật save của người chơi", "success");
+      setSaveItem(null);
+      load();
+    } catch (e) {
+      showToast(e.message || "Lỗi cập nhật save", "error");
+    } finally {
+      setSavingSave(false);
+    }
   };
 
   const userHeaders = ["Người dùng", "Vai trò", "💰 Coin", "Hạng"];
@@ -156,7 +203,7 @@ export default function CoinManagement({ showToast }) {
       <td className="py-2.5 px-3 text-sm font-body text-ink">
         <span className="inline-flex items-center gap-1">
           <span>{getGameIcon(item.gameId)}</span>
-          <span className="truncate max-w-[120px]">{getGameName(item.gameId)}</span>
+          <span className="truncate max-w-[120px]">{itemGameName(item)}</span>
         </span>
       </td>
       <td className="py-2.5 px-3 text-sm font-mono text-ink">{item.level || 1}</td>
@@ -166,6 +213,9 @@ export default function CoinManagement({ showToast }) {
       <td className="py-2.5 px-3">
         <div className="flex items-center gap-1.5">
           <button onClick={() => openEdit(item)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
+          {item.gameState?.entries && Object.keys(item.gameState.entries).length
+            ? <button onClick={() => openSave(item)} className="text-xs font-semibold text-violet-500 hover:underline">💾 Save</button>
+            : <span className="text-[10px] text-ink/30">chưa có save</span>}
           <button onClick={() => handleDelete(item)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
         </div>
       </td>
@@ -263,7 +313,7 @@ export default function CoinManagement({ showToast }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold font-body text-ink truncate">{userMap[item.userId] || item.userId}</p>
-                  <p className="text-[11px] text-[#8A7C63] truncate">{getGameIcon(item.gameId)} {getGameName(item.gameId)} · Lv.{item.level || 1} · {(item.experience || 0).toLocaleString()} XP</p>
+                  <p className="text-[11px] text-[#8A7C63] truncate">{getGameIcon(item.gameId)} {itemGameName(item)} · Lv.{item.level || 1} · {(item.experience || 0).toLocaleString()} XP</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs font-mono text-ink">{item.gamesPlayed || 0} lượt</p>
@@ -271,6 +321,9 @@ export default function CoinManagement({ showToast }) {
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button onClick={() => openEdit(item)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
+                  {item.gameState?.entries && Object.keys(item.gameState.entries).length
+                    ? <button onClick={() => openSave(item)} className="text-xs font-semibold text-violet-500 hover:underline">💾 Save</button>
+                    : <span className="text-[10px] text-ink/30">chưa có save</span>}
                   <button onClick={() => handleDelete(item)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
                 </div>
               </div>
@@ -307,6 +360,52 @@ export default function CoinManagement({ showToast }) {
               <PrimaryButton onClick={handleSave} disabled={saving}>
                 {saving ? "Đang lưu..." : "Lưu thay đổi"}
               </PrimaryButton>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {saveItem && (
+        <Modal onClose={() => { if (!savingSave) setSaveItem(null); }}>
+          <div className="space-y-4 w-full">
+            <div>
+              <h3 className="font-display text-xl text-ink">{"\u{1F4BE}"} Save — {itemGameName(saveItem)}</h3>
+              <p className="text-sm text-[#8A7C63]">
+                {userMap[saveItem.userId] || saveItem.userId} · <span className="font-mono text-xs">{saveItem.gameId}</span>
+                {saveItem.lastPlayedAt ? ` · chơi gần nhất: ${new Date(saveItem.lastPlayedAt).toLocaleString("vi-VN")}` : ""}
+              </p>
+              {!isAdmin && (
+                <p className="mt-1 text-xs font-semibold text-ticket">Chỉ quản trị mới sửa được dữ liệu save — bạn đang xem.</p>
+              )}
+            </div>
+            <div className="max-h-[55vh] overflow-y-auto space-y-3 pr-1">
+              {saveDraft.map((d, i) => (
+                <div key={d.key} className="rounded-xl border border-ink/10 bg-paper p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-mono font-bold text-ink truncate">{d.key}</span>
+                    <span className="text-[10px] text-[#8A7C63] shrink-0 ml-2">
+                      {d.at ? new Date(d.at).toLocaleString("vi-VN") : "—"}
+                      {d.text !== d.origText && <span className="text-violet-500 font-bold"> · đã sửa</span>}
+                    </span>
+                  </div>
+                  <textarea
+                    value={d.text}
+                    readOnly={!isAdmin}
+                    onChange={(e) => setSaveDraft((prev) => prev.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))}
+                    rows={8}
+                    spellCheck={false}
+                    className={`w-full rounded-lg border border-ink/10 p-2.5 font-mono text-[11px] leading-relaxed text-ink focus:outline-none focus:border-ticket ${isAdmin ? "bg-white" : "bg-ink/5 text-ink/70"}`}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap justify-end gap-3 pt-2">
+              <GhostButton onClick={() => setSaveItem(null)} disabled={savingSave}>Đóng</GhostButton>
+              {isAdmin && (
+                <PrimaryButton onClick={handleSaveState} disabled={savingSave}>
+                  {savingSave ? "Đang lưu..." : "Lưu save"}
+                </PrimaryButton>
+              )}
             </div>
           </div>
         </Modal>

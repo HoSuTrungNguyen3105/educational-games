@@ -203,6 +203,36 @@ adminRouter.put("/game-progress/:id", async (req, res, next) => {
   }
 });
 
+// PUT /api/users/game-progress/:id/state — admin sửa JSON save (gameState)
+// của một bản ghi tiến trình. Chỉ role admin — teacher chỉ xem.
+adminRouter.put("/game-progress/:id/state", requireRoles("admin"), async (req, res, next) => {
+  try {
+    const { gameState } = req.body || {};
+    if (gameState === undefined || gameState === null || typeof gameState !== "object") {
+      return sendError(res, "Thiếu dữ liệu gameState (object)", 400);
+    }
+    const entries = gameState.entries;
+    if (entries !== undefined && (typeof entries !== "object" || Array.isArray(entries))) {
+      return sendError(res, "gameState.entries phải là object", 400);
+    }
+    if (entries) {
+      for (const [k, e] of Object.entries(entries)) {
+        if (typeof e?.val !== "string") return sendError(res, `entries["${k}"].val phải là chuỗi`, 400);
+      }
+    }
+    const { getCollection } = await import("../db.js");
+    const doc = await getCollection("userGameProgress").findOne({ _id: req.params.id });
+    if (!doc) return sendError(res, "Not found", 404);
+    await getCollection("userGameProgress").updateOne(
+      { _id: req.params.id },
+      { $set: { gameState, updatedAt: new Date().toISOString() } }
+    );
+    sendSuccess(res, { ...doc, gameState }, "Đã cập nhật dữ liệu save");
+  } catch (e) {
+    next(e);
+  }
+});
+
 // DELETE /api/users/game-progress/:id — admin delete progress entry
 adminRouter.delete("/game-progress/:id", async (req, res, next) => {
   try {

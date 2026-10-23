@@ -412,6 +412,10 @@ export const adminGameProgressService = {
   async updateProgress(id, data) {
     return apiFetch(`/users/game-progress/${encodeURIComponent(id)}`, { method: "PUT", body: data });
   },
+  /** Chỉ admin — thay toàn bộ JSON save (gameState) của bản ghi tiến trình. */
+  async updateSaveState(id, gameState) {
+    return apiFetch(`/users/game-progress/${encodeURIComponent(id)}/state`, { method: "PUT", body: { gameState } });
+  },
   async removeProgress(id) {
     return apiFetch(`/users/game-progress/${encodeURIComponent(id)}`, { method: "DELETE" });
   },

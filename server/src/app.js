@@ -63,13 +63,15 @@ app.use("/api", (_req, res, next) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
-app.use("/api/users", usersSearchRouter);
 app.use("/api/users", gameProgressRouter);
 // Router học sinh phải mounts TRƯỚC các adminRouter — adminRouter dùng
 // router.use(requireRoles) nên chặn mọi request student đi sau nó.
 app.use("/api/users", examResultsRouter);
 app.use("/api/users", adminRouter);
 app.use("/api/users", examResultsAdminRouter);
+// usersSearchRouter có GET "/:id" — phải mount SAU các route admin có path
+// tĩnh (/game-progress…), nếu không "game-progress" bị nuốt thành userId → 404.
+app.use("/api/users", usersSearchRouter);
 
 // GET /api/users/me — current user profile
 app.get("/api/users/me", (req, res, next) => {
