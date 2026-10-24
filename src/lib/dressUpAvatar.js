@@ -14,10 +14,13 @@
  *   describeOutfit(kind, state)      → ["Tóc", "Váy", "Mũ"] (phần đang mặc)
  *   resolveOutfit(serverAvatar, serverPet) → { avatar, pet } đã chọn nguồn
  *   outfitKey(scope)                 → key localStorage (khớp EG_OUTFIT)
+ *   currentOwner()                   → id đang đăng nhập ("" = khách); bộ đồ cache
+ *                                      của tài khoản khác bị bỏ qua khi vẽ.
  */
 
 import dragonSource from "../games/_shared/lib/dressUpDragon.js?raw";
 import rawSource from "../games/_shared/lib/dressUpAvatarData.js?raw";
+import { useUserAuthStore } from "../stores/userAuth.store.js";
 
 const SCOPE_AVATAR = "avatar";
 const SCOPE_PET = "pet";
@@ -49,6 +52,24 @@ export function outfitKey(scope) {
   return `eg-outfit-${scope}-v1`;
 }
 
+/**
+ * Chủ nhân của bộ đồ đang cache trên máy.
+ *
+ * Cache này vốn KHÔNG phân biệt tài khoản: đăng xuất rồi đăng nhập bằng hồ sơ
+ * khác thì `pickScope()` vẫn thấy bản cache "mới hơn" hồ sơ trên server (hoặc
+ * hồ sơ mới chưa có gì) → vẽ đúng avatar của người dùng trước. Gắn `owner` là
+ * id người đang đăng nhập ("": khách chưa đăng nhập) để bộ đồ của A không bao
+ * giờ hiển thị ở tài khoản B.
+ */
+export function currentOwner() {
+  try {
+    const id = useUserAuthStore.getState?.()?.user?.id;
+    return id == null ? "" : String(id);
+  } catch {
+    return "";
+  }
+}
+
 export function sanitizeFor(scope, value) {
   const api = getDressUp();
   try {
@@ -63,23 +84,38 @@ function defaultsFor(scope) {
   return scope === SCOPE_PET ? api.pet.defaults : api.kid.defaults;
 }
 
-export function readLocalOutfit(scope) {
+export function readLocalOutfit(scope, uid = currentOwner()) {
   try {
     const box = JSON.parse(localStorage.getItem(outfitKey(scope)) || "null");
     const value = sanitizeFor(scope, box?.value);
-    return value ? { value, updatedAt: box.updatedAt || null } : null;
+    if (!value) return null;
+    const owner = box.owner == null ? "" : String(box.owner);
+    if (owner && owner !== uid) return null;
+    return { value, updatedAt: box.updatedAt || null, owner };
   } catch {
     return null;
   }
 }
 
-export function writeLocalOutfit(scope, value, updatedAt) {
+export function writeLocalOutfit(scope, value, updatedAt, uid = currentOwner()) {
   const clean = sanitizeFor(scope, value);
   if (!clean) return null;
   try {
-    localStorage.setItem(outfitKey(scope), JSON.stringify({ v: 1, value: clean, updatedAt: updatedAt || null }));
+    localStorage.setItem(
+      outfitKey(scope),
+      JSON.stringify({ v: 1, value: clean, updatedAt: updatedAt || null, owner: uid || "" })
+    );
   } catch { /* localStorage bị chặn — bỏ qua */ }
   return clean;
+}
+
+/** Nhận bộ đồdo khách để lại trên máy làm của mình (không ai khác dùng được nữa). */
+function claimLocalOutfit(scope, uid) {
+  try {
+    const box = JSON.parse(localStorage.getItem(outfitKey(scope)) || "null");
+    if (!box || (box.owner == null ? "" : String(box.owner)) !== "") return;
+    localStorage.setItem(outfitKey(scope), JSON.stringify({ ...box, owner: uid }));
+  } catch { /* ignore */ }
 }
 
 /* ── render ────────────────────────────────────────────────────────────── */
@@ -191,12 +227,16 @@ export function resolveOutfit(serverAvatar, serverPet) {
 }
 
 function pickScope(scope, server) {
+  const uid = currentOwner();
   const fallback = { value: sanitizeFor(scope, defaultsFor(scope)), updatedAt: null };
-  const local = readLocalOutfit(scope);
+  const local = readLocalOutfit(scope, uid);
   const serverValue = server && typeof server === "object" ? sanitizeFor(scope, server) : null;
   const remote = serverValue ? { value: serverValue, updatedAt: server.updatedAt || null } : null;
 
   if (!local) return remote || fallback;
+  // Khách tự chọn bộ đồ trên máy rồi mới đăng nhập: bộ đó thành của tài khoản
+  // này, các tài khoản khác đăng nhập sau không dùng chung được nữa.
+  if (!local.owner && uid) claimLocalOutfit(scope, uid);
   if (!remote) return local;
   const localTs = Date.parse(local.updatedAt || "") || 0;
   const remoteTs = Date.parse(remote.updatedAt || "") || 0;

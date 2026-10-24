@@ -3,8 +3,8 @@
 // Thú cưng: đồng bộ với API, fallback về localStorage khi chưa đăng nhập / mất mạng.
 //
 //   server : GET/PUT /api/pet, POST /api/pet/exp|mood|reset  (cấp / EXP / tâm tính)
-//   client : localStorage `edu_pet_v2` — cache để mở app tức thì, và chỗ lưu
-//            khi offline / khách chưa đăng nhập.
+//   client : localStorage `edu_pet_v2` (khách) / `edu_pet_v2.u<id>` (theo tài
+//            khoản) — cache để mở app tức thì, và chỗ lưu khi offline.
 //
 // HAI NGUỒN DỮ LIỆU, MỘT NGUỒN HIỂN THỊ.
 //   `species` / `color` / `outfits` là phần "nurture" cũ trong `userPets`, vẫn
@@ -101,9 +101,23 @@ const PET_TIPS = [
 
 // ── State ───────────────────────────────────────────────────────────────────
 
+/**
+ * Cache theo từng tài khoản.
+ *
+ * Một key dùng chung cho cả máy nghĩa là đăng xuất rồi đăng nhập hồ sơ khác vẫn
+ * thấy Lv/EXP/tên thú cưng của người trước (chờ `GET /api/pet` về mới đổi).
+ * Khách (chưa đăng nhập) giữ nguyên key cũ `edu_pet_v2`.
+ */
+const ownerUid = (authState) => {
+  const id = authState?.user?.id;
+  return id == null ? "" : String(id);
+};
+let _uid = "";
+const cacheKey = () => (_uid ? `${KEY}.u${_uid}` : KEY);
+
 function readCache() {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(cacheKey());
     if (raw) return normalize(JSON.parse(raw));
   } catch { /* ignore */ }
   return { ...PET_DEFAULT, outfits: emptyOutfits() };
@@ -153,7 +167,7 @@ const listeners = new Set();
 function emit() { for (const fn of listeners) fn(state); }
 
 function cache() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* ignore */ }
+  try { localStorage.setItem(cacheKey(), JSON.stringify(state)); } catch { /* ignore */ }
 }
 
 function setState(next) {
@@ -161,6 +175,25 @@ function setState(next) {
   cache();
   emit();
   return state;
+}
+
+/**
+ * Đổi tài khoản (đăng nhập / đăng xuất / đổi máy) → bỏ bản cache của người cũ
+ * ngay lập tức, rồi hỏi server cho người mới. Không làm bước này thì avatar và
+ * badge Lv ở góc vẫn là của tài khoản trước trong vài giây đầu.
+ */
+function rebindOwner(uid) {
+  const next = uid == null ? "" : String(uid);
+  if (next === _uid) return;
+  _uid = next;
+  state = readCache();
+  emit();
+  if (_uid) loadPet();
+}
+
+if (typeof window !== "undefined") {
+  rebindOwner(ownerUid(useUserAuthStore.getState?.()));
+  useUserAuthStore.subscribe?.((s) => rebindOwner(ownerUid(s)));
 }
 
 // ── HTTP ────────────────────────────────────────────────────────────────────

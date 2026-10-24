@@ -37,6 +37,17 @@
   var _timers = {};
   var _pending = {};
 
+  /**
+   * id tài khoản đang chơi (frame cha gửi trong message `init`), '' khi là khách.
+   * Box nào mang owner khác thì coi như không tồn tại — đăng xuất rồi đăng nhập
+   * bằng hồ sơ khác sẽ không thấy avatar của người dùng trước, và quan trọng hơn
+   * là không đẩy ngược bộ đồ của người khác lên hồ sơ mới.
+   */
+  var _owner = '';
+
+  function boxOwner(box) { return box && box.owner != null ? String(box.owner) : ''; }
+  function ownedHere(box) { var o = boxOwner(box); return !o || o === _owner; }
+
   function storeKey(scope) { return PREFIX + scope + '-' + VERSION; }
 
   function sanitize(scope, value) {
@@ -69,6 +80,7 @@
     if (!raw) return null;
     try {
       var box = JSON.parse(raw);
+      if (!ownedHere(box)) return null;
       var clean = sanitize(scope, box && box.value);
       if (!clean) return null;
       return { value: clean, updatedAt: (box && box.updatedAt) || null };
@@ -91,7 +103,7 @@
     if (!clean) return null;
     var fromServer = !!(opts && opts.fromServer);
     var stamp = (opts && opts.updatedAt) || new Date().toISOString();
-    lsWrite(scope, { v: 1, value: clean, updatedAt: stamp });
+    lsWrite(scope, { v: 1, value: clean, updatedAt: stamp, owner: _owner });
     /* Nội dung lấy từ hồ sơ thì không đẩy ngược lại, tránh ping-pong vô hạn. */
     if (!fromServer) scheduleSync(scope, stamp);
     emit(scope, clean, fromServer ? 'server' : 'local');
@@ -157,6 +169,7 @@
 
       if (msg.type === 'init') {
         var d = msg.data || {};
+        _owner = d.userId == null ? '' : String(d.userId);
         /* d.pet / d.avatar là object phẳng + updatedAt, đúng như trả về của GET
            /api/auth/me. Hồ sơ trên server mới hơn bản local thì thắng. */
         ['pet', 'avatar'].forEach(function (scope) {
@@ -173,7 +186,7 @@
       if (msg.type === 'outfit-saved') {
         var r = msg.data || {};
         if (r.ok) {
-          if (r.value && r.scope) lsWrite(r.scope, { v: 1, value: sanitize(r.scope, r.value) || r.value, updatedAt: r.updatedAt || null });
+          if (r.value && r.scope) lsWrite(r.scope, { v: 1, value: sanitize(r.scope, r.value) || r.value, updatedAt: r.updatedAt || null, owner: _owner });
           status('✔ Đã lưu vào hồ sơ', 'ok');
         } else {
           status('⚠ Đã lưu trên máy, chưa lên được hồ sơ', 'err');

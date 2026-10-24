@@ -24,7 +24,7 @@ src/games/
 | `_tools/admin.html` | Trang quản trị game, mở trực tiếp bằng file://. |
 | `_tools/samples/index.html` | Game mẫu tối giản nhất, dùng làm khuôn khi viết game mới. |
 | `_tools/design/` | Bản dự Phaser (game "Bounce"), **đang dang dở** — import `../../utils/` bị gãy. |
-| `offline/` | 35 game `.html` được **sinh tự động**. Đừng sửa tay — sửa ở `offline/games-src/` rồi chạy `npm run games:build`. |
+| `offline/` | 37 file `.html` — phần lớn được **sinh tự động**. Đừng sửa tay: 17 game `single` sửa ở `offline/games-src/`, game standalone sửa ở thư mục nguồn của nó rồi chạy `npm run games:build`. |
 
 ## Bộ sinh game offline
 
@@ -35,13 +35,17 @@ src/games/
 | `offline/<id>.html` | **Kết quả sinh ra** — Vite tự quét bằng `import.meta.glob` trong `OfflineGamePage.jsx`. |
 
 ```bash
-npm run games:build    # offline/lib + offline/games-src  ->  offline/*.html
+npm run games:build    # offline/lib + offline/games-src + các game standalone -> offline/*.html
 npm run games:sync     # cập nhật manifest từ các file .html có sẵn
 npm run games:test     # kiểm tra manifest khớp với file trên đĩa
 ```
 
 > Thêm game offline: tạo `offline/games-src/<id>.js` theo khuôn `anagram.js`, thêm entry vào
 > `offline/games-src/manifest.js`, rồi chạy `npm run games:build`.
+>
+> Game standalone tự chứa (một file HTML duy nhất) thì giữ nguồn ở thư mục riêng và thêm bước
+> sao chép vào `games:build`, ví dụ `parkour/parkour-tri-thuc-3d/ParkourTriThuc3D.html`
+> → `offline/parkour-tri-thuc-3d.html` bằng `npm run games:build:parkour-fps`.
 
 ## Danh mục game
 
@@ -49,6 +53,7 @@ npm run games:test     # kiểm tra manifest khớp với file trên đĩa
 |---|---|---|---|
 | 3d | — (file viết tay) | `vung-dat-gio.html` | Vùng Đất Gió |
 | 3d | — (file viết tay) | `coi-phong-linh.html` | 🗡️ Cõi Phong Linh |
+| parkour | `parkour/parkour-tri-thuc-3d/` | `parkour-tri-thuc-3d.html` | 🏃 Parkour Góc Nhìn Thứ Nhất |
 | 3d | `labyrinth/` | `Labyrinth.html` | 🌀 Labyrinth - Cực Khó |
 | 3d | `pixel-party-catcher/` | `PixelPartyCatcher.html` | 🎂 Pixel Party Catcher |
 | 3d | `pixel-platform-jump/` | `PixelPlatformJump.html` | 🎮 Pixel Platform Jump |

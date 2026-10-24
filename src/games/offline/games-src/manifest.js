@@ -41,13 +41,15 @@ export const OFFLINE_GAME_MANIFEST = [
   { id: 'dap-sau-bo', name: 'Đập Sâu Bọ', icon: '🪲', tag: 'Đập côn trùng', grad: 'from-teal-400 to-emerald-600', engine: 'standalone', thumbnail: 'dap-sau-bo.png', file: 'src/games/offline/dap-sau-bo.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'ghep-cap-vuon', name: 'Ghép Cặp Vườn', icon: '🧩', tag: 'Ghép đôi', grad: 'from-pink-400 to-rose-500', engine: 'standalone', thumbnail: 'ghep-cap-vuon.png', file: 'src/games/offline/ghep-cap-vuon.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'sau-an-la', name: 'Sâu Ăn Táo', icon: '🐛', tag: 'Bảo vệ vườn', grad: 'from-indigo-400 to-blue-600', engine: 'standalone', file: 'src/games/offline/sau-an-la.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'parkour-tri-thuc', name: 'Parkour Tri Thức', icon: '🧗', tag: 'Parkour 3D', grad: 'from-fuchsia-500 to-violet-700', engine: 'standalone', file: 'src/games/offline/parkour-tri-thuc.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  // { id: 'parkour-tri-thuc', name: 'Parkour Tri Thức', icon: '🧗', tag: 'Parkour 3D', grad: 'from-fuchsia-500 to-violet-700', engine: 'standalone', file: 'src/games/offline/parkour-tri-thuc.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'nong-trai-moi', name: 'Nông Trại Vui Vẻ', icon: '🚜', tag: 'Mô phỏng', grad: 'from-green-400 to-lime-500', engine: 'standalone', thumbnail: 'nong-trai-nang-cap.png', file: 'src/games/offline/nong-trai-moi.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'fieldrunner', name: 'Phòng Thủ Cánh Đồng', icon: '🌾', tag: 'Chiến thuật', grad: 'from-lime-400 to-green-600', engine: 'standalone', file: 'src/games/offline/fieldrunner.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'cargo', name: 'Xe Tải Ra Chợ', icon: '🚚', tag: 'Phiêu lưu', grad: 'from-amber-400 to-orange-500', engine: 'standalone', file: 'src/games/offline/cargo.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'bang-tinh', name: 'Bảng Tính Bé', icon: '📊', tag: 'Học tập', grad: 'from-emerald-400 to-green-600', engine: 'standalone', file: 'src/games/offline/bang-tinh.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'vung-dat-gio', name: 'Vùng Đất Gió', icon: '🍃', tag: 'Thế giới mở', grad: 'from-teal-400 to-sky-600', engine: 'standalone', file: 'src/games/offline/vung-dat-gio.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'coi-phong-linh', name: 'Cõi Phong Linh', icon: '🗡️', tag: 'Thế giới mở', grad: 'from-indigo-400 to-violet-600', engine: 'standalone', file: 'src/games/offline/coi-phong-linh.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  // Nguồn: src/games/parkour/parkour-tri-thuc-3d/ParkourTriThuc3D.html — chạy `npm run games:build:parkour-fps` để cập nhật.
+  { id: 'parkour-tri-thuc-3d', name: 'Parkour Góc Nhìn Thứ Nhất', icon: '🏃', tag: 'Parkour 3D', grad: 'from-cyan-400 to-blue-600', engine: 'standalone', file: 'src/games/offline/parkour-tri-thuc-3d.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
 
   // School_mission KHÔNG thuộc offline — xem route /school-mission và src/games/school_mission/
 ];

@@ -98,7 +98,7 @@ const TILE_COLORS = Object.fromEntries(
       "nhay-xoay": "#3D6FD8", "goc-thu-gian": "#2A9D8F", "trung-tam-game": "#7C8AA0",
       "dap-sau-bo": "#E5533D", "ghep-cap-vuon": "#EE7FA6", "sau-an-la": "#F2B632",
       "parkour-tri-thuc": "#2A9D8F", "plantvsanimal": "#7AC74F", "night-strike": "#C0392B",
-      "vung-dat-gio": "#7C5CE0", "coi-phong-linh": "#4A72B8",
+      "vung-dat-gio": "#7C5CE0", "coi-phong-linh": "#4A72B8", "parkour-tri-thuc-3d": "#2AA8C8",
       "nong-trai-moi": "#7AC74F", "fieldrunner": "#8BC34A", "cargo": "#F2A03D", "bang-tinh": "#3FA97A",
     })[g.id] || "#F2B632",
   ])
@@ -116,6 +116,34 @@ const OFFLINE_GAMES = OFFLINE_GAME_MANIFEST.map((g) => ({
   tint: TILE_COLORS[g.id] || "#F2B632",
   thumb: thumbnailForGame(g),
 }));
+
+/* ───────── GIỮ VỊ TRÍ CUỘN KHI ĐI CHƠI GAME RỒI QUAY LẠI ─────────
+ * Rời trang là unmount HomeScreen, và router.js luôn scrollTo(0) khi điều
+ * hướng → mất cả cuộn dọc của trang lẫn cuộn ngang của từng hàng game.
+ * Trên điện thoại mỗi hàng là một thanh cuộn ngang, nên chơi game ở cuối hàng
+ * xong quay về là hàng bị kéo về đầu, phải vuốt lại — khối này ghi nhớ cả hai.
+ * sessionStorage (chỉ sống trong tab hiện tại): mở app lần sau vẫn vào đầu trang. */
+const SCROLL_MEMO_KEY = "gq:home:scroll:v1";
+
+function readScrollMemo() {
+  try {
+    return JSON.parse(sessionStorage.getItem(SCROLL_MEMO_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function writeScrollMemo() {
+  try {
+    const rails = {};
+    document.querySelectorAll("[data-rail]").forEach((el) => {
+      rails[el.dataset.rail] = Math.round(el.scrollLeft);
+    });
+    sessionStorage.setItem(SCROLL_MEMO_KEY, JSON.stringify({ y: Math.round(window.scrollY), rails }));
+  } catch {
+    /* sessionStorage bị chặn (private mode…) — chỉ là tiện ích, không phá trang */
+  }
+}
 
 /** Dạng 3: Game nhập vai trường học — file gốc src/games/school_mission/ */
 const SCHOOL_RPG_GAME = {
@@ -257,6 +285,85 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     if (dueReminder.sound !== false && soundOn) playReminderSound();
     return () => stopVibrationLoop();
   }, [dueReminder, soundOn]);
+
+  /* Khôi phục + ghi nhớ vị trí cuộn (bộ nhớ ở SCROLL_MEMO_KEY phía trên).
+   * Gộp chung MỘT effect: tách làm hai thì effect ghi dễ chạy trước khi các hàng
+   * ngang kịp nhận scrollLeft, xoá mất vị trí vừa khôi phục. */
+  useEffect(() => {
+    const saved = readScrollMemo();
+    // Số hàng từng cuộn ngang (scrollLeft > 0) — phải khôi phục đủ mới xong.
+    const targets = Object.entries(saved?.rails || {}).filter(([, x]) => x > 0);
+    let restoring = targets.length > 0 || (saved?.y || 0) > 0;
+    let finished = false;
+    let timer = 0;
+    let tries = 0;
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      restoring = false;
+      writeScrollMemo();
+    };
+
+    const apply = () => {
+      tries += 1;
+      const present = new Set();
+      let restored = 0;
+      document.querySelectorAll("[data-rail]").forEach((el) => {
+        const key = el.dataset.rail;
+        present.add(key);
+        const want = saved?.rails?.[key] || 0;
+        if (want <= 0) return;
+        // So sánh có dung sai: scrollLeft trả về số lẻ (12.4) trong khi bộ nhớ
+        // đã làm tròn (12), so bằng tuyệt đối thì khôi phục không bao giờ "xong".
+        if (Math.abs(el.scrollLeft - want) > 2) el.scrollLeft = want;
+        if (Math.abs(el.scrollLeft - want) <= 2) restored += 1;
+      });
+      const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      const wantY = Math.min(saved?.y || 0, maxY);
+      if (wantY - window.scrollY > 2) window.scrollTo(0, wantY);
+      // Hàng chưa kịp render (đang tải game/ảnh) thì còn chờ; sau ~1 giây thì
+      // bỏ qua, kẻo khóa luôn việc ghi nhớ cuộn của lần kế tiếp.
+      const waiting = targets.filter(([key]) => present.has(key) || tries < 7);
+      const pending = restored < waiting.length || wantY - window.scrollY > 2;
+      if (!pending || tries >= 20) {
+        finish();
+        return;
+      }
+      timer = window.setTimeout(apply, 150);
+    };
+
+    const remember = () => {
+      // Không throttle: ghi trực tiếp ~100 byte mỗi lần scroll rẻ hơn để trễ,
+      // và trễ (rAF/setTimeout) sẽ mất vị trí nếu người dùng cuộn rồi bấm ngay.
+      if (restoring || Date.now() < leavingUntil) return;
+      writeScrollMemo();
+    };
+    // router.js gọi scrollTo(0) NGAY khi đổi hash, lúc HomeScreen chưa unmount →
+    // cú nhảy đó kích hoạt remember và ghi đè y=900 thành 0. Bấm/cúc phím nghĩa là
+    // sắp rời trang: chốt vị trí tại đây rồi làm ngơ mọi scroll trong ~0,8 giây kế
+    // (đủ cho React unmount, không đủ để người dùng kịp cuộn lại).
+    let leavingUntil = 0;
+    const onInput = () => {
+      finish();
+      leavingUntil = Date.now() + 800;
+      writeScrollMemo();
+    };
+    const INPUT_EVENTS = ["pointerdown", "wheel", "keydown", "touchstart"];
+    INPUT_EVENTS.forEach((ev) => window.addEventListener(ev, onInput, { capture: true, passive: true }));
+
+    if (restoring) apply();
+    else writeScrollMemo();
+    window.addEventListener("scroll", remember, { passive: true });
+    document.addEventListener("scroll", remember, true);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("scroll", remember);
+      document.removeEventListener("scroll", remember, true);
+      INPUT_EVENTS.forEach((ev) => window.removeEventListener(ev, onInput, { capture: true }));
+    };
+  }, []);
 
   const handleDismissDue = () => {
     stopVibrationLoop();
@@ -766,6 +873,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   // Tổng số trò chơi đang chờ bé (học tập + thư giãn + nhập vai) cho câu chào.
   const gameCount = visibleGames.length + OFFLINE_GAMES.length + 1;
 
+  /* Tên để gọi ở lời chào + chip hồ sơ.
+   * kidSettings.name nằm trong localStorage của MÁY, không đổi theo tài khoản,
+   * nên lấy tên người đang đăng nhập trước — nếu không thì đăng nhập tài khoản B
+   * mà trang chủ vẫn gọi "Chào A". Chưa đăng nhập thì để trống, hero hiện lời
+   * mời đăng nhập chứ không chào một em bé không có thật. */
+  const heroName = userAuth?.user
+    ? kidShortName(userAuth.user.name || userAuth.user.username || kidSettings.name)
+    : "";
+
   /* Nút "Chơi ngẫu nhiên" — bốc trong 3 dạng: học tập + thư giãn + nhập vai. */
   const handleRandomPlay = () => {
     const pool = [
@@ -814,10 +930,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </span>
             </div>
 
-            <div className="gq-age" title={`${kidShortName(kidSettings.name)} · ${kidSettings.age} tuổi · ${ageBandLabel(kidSettings.age)}`}>
+            <div className="gq-age" title={`${heroName || "Bé"} · ${kidSettings.age} tuổi · ${ageBandLabel(kidSettings.age)}`}>
               <span className="gq-age__num">{kidSettings.age}</span>
               <span className="gq-age__txt">
-                <span className="gq-age__lbl">{kidShortName(kidSettings.name)}</span>
+                <span className="gq-age__lbl">{heroName || "Bé"}</span>
                 <span className="gq-age__sub">{kidSettings.age} tuổi · {ageBandLabel(kidSettings.age)}</span>
               </span>
             </div>
@@ -854,11 +970,11 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 <button
                   className="gq-kidchip"
                   onClick={() => goTo("/profile")}
-                  aria-label={`Hồ sơ của ${kidShortName(kidSettings.name)}`}
+                  aria-label={`Hồ sơ của ${heroName}`}
                   title="Hồ sơ của bé"
                 >
                   <span className="gq-kidchip__ava" aria-hidden="true"><User className="w-4 h-4" /></span>
-                  <span className="gq-kidchip__name">{kidShortName(kidSettings.name)}</span>
+                  <span className="gq-kidchip__name">{heroName}</span>
                 </button>
               )}
               <button
@@ -885,7 +1001,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </button>
             )}
 
-            <div className="gq-navtabs">
+            <div className="gq-navtabs" data-rail="navtabs">
               {headerTabs.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -941,12 +1057,17 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         <section className="gq-hero" aria-label="Lời chào của ........">
           <img src={`${import.meta.env.BASE_URL}edu_character.png`} alt="" aria-hidden="true" className="gq-hero__mascot" />
           <div className="gq-hero__bubble">
-            <p className="gq-hero__hi">Chào {kidShortName(kidSettings.name)}! 👋</p>
+            <p className="gq-hero__hi">{userAuth?.user ? `Chào ${heroName}! 👋` : "Chào bạn! 👋"}</p>
             <p className="gq-hero__ask">
               {games === null
                 ? "........ đang mời trò chơi ra đây rồi…"
-                : `Hôm nay có ${gameCount} trò chơi đang chờ bé đó!`}
+                : `Hôm nay có ${gameCount} trò chơi đang chờ ${userAuth?.user ? "bé đó" : "bạn"}!`}
             </p>
+            {/* Chưa đăng nhập thì không chào ai cả — tên bé trong kidSettings là của
+                máy này, có thể là của tài khoản khác dùng chung thiết bị. */}
+            {!userAuth?.user && (
+              <button className="gq-hero__login" onClick={onUserLogin}>Hãy đăng nhập</button>
+            )}
           </div>
         </section>
 
@@ -1008,7 +1129,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           ) : todayGames.length === 0 ? (
             <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thầy cô thêm game vào nhé!" />
           ) : (
-            <div className="gq-rail gq-board">
+            <div className="gq-rail gq-board" data-rail="today">
               <GqGameCard
                 name={FEATURED_GAME.name}
                 icon={FEATURED_GAME.icon}
@@ -1035,7 +1156,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 <p className="gq-sect__s">Học số · tập đếm · so sánh · chia đều · đồng hồ · công trừ</p>
               </div>
             </div>
-            <div className="gq-rail gq-board">
+            <div className="gq-rail gq-board" data-rail="math">
               {mathGames.map(({ key, ...card }) => <GqGameCard key={key} {...card} />)}
             </div>
           </section>
@@ -1050,7 +1171,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <p className="gq-sect__s">Chơi không cần mạng · tiến độ lưu trên máy</p>
             </div>
           </div>
-          <div className="gq-rail gq-board">
+          <div className="gq-rail gq-board" data-rail="offline">
             {offlineCards.map(({ key, ...card }) => <GqGameCard key={key} {...card} />)}
           </div>
         </section>
@@ -1064,7 +1185,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <p className="gq-sect__s">Khám phá trường · học từng lớp · làm bài thi</p>
             </div>
           </div>
-          <div className="gq-rail gq-board">
+          <div className="gq-rail gq-board" data-rail="school">
             <GqGameCard {...schoolRpgCard} />
           </div>
         </section>
