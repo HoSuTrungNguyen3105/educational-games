@@ -3,12 +3,19 @@
 // Avatar pet ở kích thước nhỏ — dùng chung cho trang chủ, Profile, bảng xếp
 // hạng, HUD game… Không nơi nào tự vẽ lại pet.
 //
-// Bỏ trống species/color/outfits/mood → tự lấy pet đang nuôi từ store, nên mọi
-// nơi gọi đều hiện đúng diện mạo hiện tại mà không phải truyền thủ công.
+// VẼ BẰNG `look` (bộ đồ DressUp trong hồ sơ) qua `DressUpAvatar` — cùng nguồn
+// SVG với trang Profile và game "Tiệm thay đồ thú cưng". Trước đây component này
+// ghép lớp theo `species`/`color`/`outfits` của `userPets` (hệ cũ, id trang phục
+// không trùng hệ mới) nên sửa pet ở Profile xong ra home vẫn thấy con thú mặc
+// định. Bỏ trống `look` → DressUpAvatar tự về bộ mặc định của EG_DRESSUP, giống
+// hệt cách trang Profile hiện.
+//
+// Cấp / EXP / tâm tính vẫn lấy từ store pet (`lib/petApi.js`), chỉ diện mạo là
+// đổi nguồn.
 
 import { useEffect } from "react";
 import { usePet, loadPet } from "../../lib/petApi.js";
-import PetRenderer from "./PetRenderer.jsx";
+import DressUpAvatar from "../avatar/DressUpAvatar.jsx";
 
 /** Kích thước có sẵn → px. Vẫn nhận `size` số bất kỳ. */
 const SIZES = { xs: 32, sm: 48, md: 72, lg: 104, xl: 140 };
@@ -18,10 +25,6 @@ export default function PetAvatar({
   className = "",
   ring = true,
   bounce = false,
-  species,
-  color,
-  outfits,
-  mood,
   ariaLabel,
 }) {
   const pet = usePet();
@@ -30,20 +33,14 @@ export default function PetAvatar({
   useEffect(() => { loadPet(); }, []);
 
   const px = typeof size === "number" ? size : (SIZES[size] ?? SIZES.md);
-  const sp = species ?? pet?.species;
-  const col = color ?? pet?.color;
-  const fit = outfits ?? pet?.outfits;
-  const md = mood ?? pet?.mood;
 
   const body = (
-    <PetRenderer
-      species={sp}
-      color={col}
-      outfits={fit}
-      mood={md}
+    <DressUpAvatar
+      kind="pet"
+      state={pet?.look}
       size={px}
       className={bounce ? "float-slow" : ""}
-      ariaLabel={ariaLabel || pet?.name || "Thú cưng"}
+      label={ariaLabel || pet?.name || "Thú cưng"}
     />
   );
 

@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import { ManagementHeader, GhostButton } from '../../components/ui';
-import { KID_LAYERS, kidPreset, renderKid } from '../../lib/dressUpCatalog.js';
-
-const PRESETS = [
-  { kind: 'boy', label: 'Bé trai' },
-  { kind: 'girl', label: 'Bé gái' },
-  { kind: 'dragon', label: 'Rồng xanh' },
-];
+import { KID_LAYERS, kidPresets, kidPreset, renderKid } from '../../lib/dressUpCatalog.js';
 
 export default function AvatarTemplateEditor() {
   const [kind, setKind] = useState('boy');
@@ -27,8 +21,9 @@ export default function AvatarTemplateEditor() {
             <svg viewBox="0 0 512 700" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
               dangerouslySetInnerHTML={{ __html: svg }} />
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {PRESETS.map((preset) => (
+          <div className="flex flex-wrap gap-2">
+            {/* Preset lấy thẳng từ BODIES (slug) → thêm thân mới là nút tự xuất hiện */}
+            {kidPresets().map((preset) => (
               <button
                 key={preset.kind}
                 onClick={() => setKind(preset.kind)}

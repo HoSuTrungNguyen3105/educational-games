@@ -1,4 +1,5 @@
-// Tệp kiểm tra tạm thời (xoá sau khi chạy) — boot src/games/offline/fieldrunner.html
+// scripts/test-fieldrunner.mjs — kiểm tra hệ thống 8 cánh đồng của fieldrunner:
+// boot src/games/offline/fieldrunner.html
 // trong vm + DOM giả, rồi chơi thật: chọn màn → xây trụ → đánh đợt → thắng → mở khoá màn.
 import fs from "node:fs";
 import vm from "node:vm";
@@ -345,8 +346,7 @@ check(rec.orchard?.cleared === true, "commitMapResult ghi orchard đã thắng")
 check((rec.orchard?.stars ?? 0) >= 1, `nhận sao: ${rec.orchard?.stars}★ best=${rec.orchard?.best}`);
 check(run("mapUnlocked(2)") === true && run("mapUnlocked(3)") === false, "mở khoá đúng màn kế tiếp");
 check(!!doc.getElementById("gc-modal"), "GC.result hiện modal kết quả");
-const modalHtml = doc.getElementById("gc-modal")._html + doc.getElementById("gc-modal").children.map((c) => c._html).join("");
-console.log("     modal _html =", JSON.stringify(modalHtml.slice(0, 400)));
+const modalHtml = doc.getElementById("gc-modal")._html;
 check(/sao|⭐/.test(modalHtml), "modal hiện thông tin sao");
 check(/Mở khoá/.test(modalHtml), "modal báo mở khoá cánh đồng mới");
 

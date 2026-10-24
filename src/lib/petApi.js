@@ -2,16 +2,27 @@
 //
 // Thú cưng: đồng bộ với API, fallback về localStorage khi chưa đăng nhập / mất mạng.
 //
-//   server : GET/PUT /api/pet, POST /api/pet/exp|mood|reset  (nguồn sự thật)
+//   server : GET/PUT /api/pet, POST /api/pet/exp|mood|reset  (cấp / EXP / tâm tính)
 //   client : localStorage `edu_pet_v2` — cache để mở app tức thì, và chỗ lưu
 //            khi offline / khách chưa đăng nhập.
 //
-// Mọi thay đổi diện mạo đều đi qua updateLook() → gọi API trước (nếu có token)
-// rồi mới cập nhật state, nên server luôn là nơi quyết định.
+// HAI NGUỒN DỮ LIỆU, MỘT NGUỒN HIỂN THỊ.
+//   `species` / `color` / `outfits` là phần "nurture" cũ trong `userPets`, vẫn
+//   về từ API cho trang quản lý danh mục. Cái mà app VẼ là `look` — bộ đồ
+//   DressUp (animal + shirt/glasses/hat/neck) mà trang Profile và game
+//   "Tiệm thay đồ thú cưng" lưu vào hồ sơ. Trước đây hai bên không biết nhau nên
+//   sửa pet trong Profile xong ra home vẫn thấy con chó mặc định.
+//
+//   • GET /api/pet trả kèm `look` (đọc từ `users.pet`) → lưu vào `lookRemote`.
+//   • `look` = bản chọn ra từ `lookRemote` và cache máy `eg-outfit-pet-v1`, theo
+//     đúng `resolveOutfit()` của trang Profile → hai nơi không thể hiện khác nhau.
+//   • Đổi diện mạo: saveLook() → PUT /api/auth/me { pet } + cache máy.
+//   • Đổi tên / loài legacy: updateLook() → PUT /api/pet.
 
 import { useSyncExternalStore } from "react";
-import { API_BASE } from "../services/api.js";
+import { API_BASE, userService } from "../services/api.js";
 import { useUserAuthStore } from "../stores/userAuth.store.js";
+import { resolveOutfit, sanitizeFor, writeLocalOutfit } from "./dressUpAvatar.js";
 
 const KEY = "edu_pet_v2";
 const OUTFIT_SLOTS = ["hat", "scarf", "glasses", "shirt", "bow", "cape", "backpack"];
@@ -31,6 +42,10 @@ export const PET_DEFAULT = {
   bonded: 10,
   totalCorrect: 0,
   totalWrong: 0,
+  // `lookRemote`: hồ sơ server trả về; `look`: bản đang hiển thị (null = chưa
+  // chọn gì, chỗ vẽ tự rơi về bộ mặc định của EG_DRESSUP).
+  lookRemote: null,
+  look: null,
 };
 
 /** Catalog dự phòng khi API chưa trả về (chặn mạng, server lỗi). */
@@ -94,14 +109,40 @@ function readCache() {
   return { ...PET_DEFAULT, outfits: emptyOutfits() };
 }
 
-function normalize(p) {
+/**
+ * Chọn bản diện mạo để hiển thị: hồ sơ server hay cache máy — bản mới hơn thắng.
+ * Dùng luôn `resolveOutfit()` của trang Profile nên hai màn hình không thể hiện
+ * hai con thú khác nhau được nữa.
+ */
+function resolveLook(remote) {
+  try {
+    return resolveOutfit(null, remote).pet.value;
+  } catch {
+    // Chưa nạp được data SVG → để null, chỗ vẽ tự về bộ mặc định.
+    return null;
+  }
+}
+
+/**
+ * @param {object} p      payload mới (response API hoặc state đang có)
+ * @param {object} [prev] state trước — `look` không đổi ở các response không có
+ *                        trường này (PUT tên, exp, mood) nên phải giữ bản cũ.
+ */
+function normalize(p, prev) {
+  const raw = p || {};
+  const hasRemote = Object.prototype.hasOwnProperty.call(raw, "lookRemote");
+  const hasLook = Object.prototype.hasOwnProperty.call(raw, "look");
+  const lookRemote =
+    hasRemote ? raw.lookRemote : hasLook ? raw.look : (prev?.lookRemote ?? null) || null;
   return {
     ...PET_DEFAULT,
-    ...p,
-    outfits: { ...emptyOutfits(), ...(p?.outfits || {}) },
-    level: Number(p?.level) || 1,
-    exp: Number(p?.exp) || 0,
-    expNeeded: Number(p?.expNeeded) || PET_DEFAULT.expNeeded,
+    ...raw,
+    outfits: { ...emptyOutfits(), ...(raw.outfits || {}) },
+    level: Number(raw.level) || 1,
+    exp: Number(raw.exp) || 0,
+    expNeeded: Number(raw.expNeeded) || PET_DEFAULT.expNeeded,
+    lookRemote,
+    look: resolveLook(lookRemote),
   };
 }
 
@@ -116,7 +157,7 @@ function cache() {
 }
 
 function setState(next) {
-  state = normalize(next);
+  state = normalize(next, state);
   cache();
   emit();
   return state;
@@ -185,8 +226,11 @@ export async function loadPet() {
 }
 
 /**
- * Đổi diện mạo. Gọi server trước; nếu server từ chối (chưa mở khoá / sai dữ liệu)
- * thì trả về lỗi và KHÔNG đổi state, để UI không hiển thị sai.
+ * Đổi tên / loài legacy / màu / trang phục legacy — phần `userPets` trên server.
+ * Gọi server trước; nếu server từ chối (chưa mở khoá / sai dữ liệu) thì trả về
+ * lỗi và KHÔNG đổi state, để UI không hiển thị sai.
+ *
+ * Muốn đổi thứ mà app thực sự vẽ thì dùng saveLook().
  *
  * @param {object} patch { species?, color?, outfits?, name? }
  */
@@ -210,6 +254,47 @@ export async function updateLook(patch) {
     }
     return { ok: false, error: e.message };
   }
+}
+
+/**
+ * Đổi DIỆN MẠO hiển thị = ghi bộ đồ DressUp vào hồ sơ.
+ *
+ * Đi đúng đường trang Profile và game "Tiệm thay đồ thú cưng" vẫn dùng
+ * (`PUT /api/auth/me { pet }`) rồi mới cập nhật state — thêm `userPets` làm nơi
+ * lưu thứ hai là lại có hai con pet khác nhau như trước.
+ *
+ * Offline / chưa đăng nhập: vẫn ghi cache máy `eg-outfit-pet-v1` để lần mở sau
+ * hiện đúng bộ đã chọn (quy tắc "bản mới hơn thắng" sẽ ưu tiên nó).
+ *
+ * @param {object} value { animal, shirt, glasses, hat, neck }
+ */
+export async function saveLook(value) {
+  const clean = sanitizeFor("pet", value);
+  if (!clean) return { ok: false, error: "Bộ đồ không hợp lệ" };
+  const at = new Date().toISOString();
+  writeLocalOutfit("pet", clean, at);
+
+  const remote = async () => {
+    const updated = await userService.updateProfile({ pet: clean });
+    return { ...clean, ...(updated?.pet || {}), updatedAt: updated?.pet?.updatedAt || at };
+  };
+
+  if (!useUserAuthStore.getState?.()?.token) {
+    setState({ ...state, lookRemote: { ...clean, updatedAt: at } });
+    return { ok: true, pet: state, local: true };
+  }
+  try {
+    setState({ ...state, lookRemote: await remote() });
+    return { ok: true, pet: state };
+  } catch (e) {
+    setState({ ...state, lookRemote: { ...clean, updatedAt: at } });
+    return { ok: false, error: e.message, pet: state, local: true };
+  }
+}
+
+/** Bộ đồ DressUp đang hiển thị (null = chưa chọn, chỗ vẽ dùng mặc định). */
+export function petLook() {
+  return state.look;
 }
 
 /** Cộng EXP sau mỗi câu trả lời đúng. */
@@ -246,16 +331,6 @@ export async function setPetMood(mood) {
     if (remote) setState(remote); else setState({ ...state, mood });
   } catch {
     setState({ ...state, mood });
-  }
-  return state;
-}
-
-export async function resetPet() {
-  try {
-    const remote = await call("/reset", { method: "POST" });
-    if (remote) setState(remote);
-  } catch {
-    setState({ ...state, species: PET_DEFAULT.species, color: PET_DEFAULT.color, outfits: emptyOutfits() });
   }
   return state;
 }

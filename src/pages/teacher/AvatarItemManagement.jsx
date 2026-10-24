@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { ManagementHeader, GhostButton, PrimaryButton, StatGrid } from '../../components/ui';
-import { Check, RotateCcw, Sparkles } from 'lucide-react';
+import { Check, RotateCcw } from 'lucide-react';
 import {
   KID_LAYERS, kidApplyBody, kidBodies, kidCatalogStats, kidDefaults, kidItemLabel,
-  kidPreset, kidTabCfg, kidTabs, renderKid, sanitizeKid,
+  kidPreset, kidPresets, kidTabCfg, kidTabs, renderKid, sanitizeKid,
 } from '../../lib/dressUpCatalog.js';
 
 const DATA_FILE = 'src/games/_shared/lib/dressUpAvatarData.js';
@@ -103,24 +103,23 @@ export default function AvatarItemManagement({ showToast }) {
             <svg viewBox="0 0 512 700" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
               dangerouslySetInnerHTML={{ __html: svg }} />
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <button onClick={() => applyPreset('boy')}
-              className="px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-ink/5 text-ink/60 hover:bg-ink/10">
-              Bé trai
-            </button>
-            <button onClick={() => applyPreset('girl')}
-              className="px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-pink/10 text-pink hover:bg-pink/15">
-              Bé gái
-            </button>
+          <div className="flex flex-wrap gap-2">
+            {/* Một nút cho mỗi thân trong BODIES — thêm body mới là nút tự xuất hiện */}
+            {kidPresets().map((preset) => (
+              <button key={preset.kind} onClick={() => applyPreset(preset.kind)}
+                className={`px-2 py-1.5 rounded-lg text-[11px] font-semibold ${
+                  preset.overlays
+                    ? 'bg-ink/5 text-ink/60 hover:bg-ink/10'
+                    : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                }`}>
+                {preset.label}
+              </button>
+            ))}
             <button onClick={reset}
               className="px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-ink/5 text-ink/60 hover:bg-ink/10 flex items-center justify-center gap-1">
               <RotateCcw className="w-3 h-3" /> Mặc lại
             </button>
           </div>
-          <button onClick={() => applyPreset('dragon')}
-            className="w-full px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-100 text-amber-700 hover:bg-amber-200 flex items-center justify-center gap-1">
-            <Sparkles className="w-3 h-3" /> Xem body rồng
-          </button>
           <p className="text-[11px] text-ink/45 text-center">
             Chọn item bên phải để xem thay đổi trực tiếp
           </p>

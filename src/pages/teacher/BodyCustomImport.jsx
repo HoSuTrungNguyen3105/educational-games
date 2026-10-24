@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { ManagementHeader, GhostButton, PrimaryButton } from '../../components/ui';
-import { kidBodies, kidPreset, renderKid } from '../../lib/dressUpCatalog.js';
+import { kidPresets, kidPreset, renderKid } from '../../lib/dressUpCatalog.js';
 
 const DATA_FILE = 'src/games/_shared/lib/dressUpAvatarData.js';
 
@@ -21,6 +21,11 @@ function BodyCard({ preview, onCopy, copied }) {
             <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal/15 text-teal">
               {preview.badge}
             </span>
+            {preview.selfClothed && (
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal/10 text-teal">
+                Tự mặc đồ
+              </span>
+            )}
             {preview.overlays === false && (
               <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-600">
                 Không nhận phụ kiện
@@ -39,36 +44,18 @@ function BodyCard({ preview, onCopy, copied }) {
 
 export default function BodyCustomImport({ showToast }) {
   const [copied, setCopied] = useState(null);
-  const bodies = kidBodies();
-  const previews = [
-    {
-      name: 'Bé trai',
-      code: 'body_01',
-      note: 'Thân người + tóc ngắn, áo trắng, quần jean, giày trắng.',
-      badge: 'Mẫu bé trai',
-      state: kidPreset('boy'),
-      copyValue: 'body_01',
-      overlays: bodies.body_01?.overlays,
-    },
-    {
-      name: bodies.body_girl_01?.n || 'Bé gái',
-      code: 'body_girl_01',
-      note: 'Eo gọn + chân trần, tóc dài, váy hồng, giày hồng. Bỏ được áo/quần/giày.',
-      badge: 'Mẫu bé gái',
-      state: kidPreset('girl'),
-      copyValue: 'body_girl_01',
-      overlays: bodies.body_girl_01?.overlays,
-    },
-    {
-      name: bodies.body_dragon_01?.n || 'Rồng xanh',
-      code: 'body_dragon_01',
-      note: 'Body khắc sẵn mặt và chi tiết, không nhận phụ kiện.',
-      badge: 'Dùng chung',
-      state: kidPreset('dragon'),
-      copyValue: 'body_dragon_01',
-      overlays: bodies.body_dragon_01?.overlays,
-    },
-  ];
+  /* Danh sách thân lấy thẳng từ data (BODIES.slug/hint) → thêm body mới trong
+   * dressUpAvatarData.js là trang này có thẻ mới ngay, không phải sửa UI. */
+  const previews = kidPresets().map((preset) => ({
+    name: preset.label,
+    code: preset.code,
+    note: preset.hint,
+    badge: `Mẫu ${preset.label.toLowerCase()}`,
+    state: kidPreset(preset.kind),
+    copyValue: preset.code,
+    overlays: preset.overlays,
+    selfClothed: preset.selfClothed,
+  }));
 
   const copy = useCallback(async (value) => {
     try {
@@ -106,10 +93,11 @@ export default function BodyCustomImport({ showToast }) {
       <div className="note-card p-4">
         <h3 className="font-display text-sm text-ink mb-2">Vị trí các lớp trên body</h3>
         <ol className="list-decimal list-inside space-y-1 text-xs text-ink/60">
-          <li>Phụ kiện sau thân (áo choàng, túi) → Tóc sau → Thân (tay, cổ, đầu).</li>
+          <li>Phụ kiện sau thân (áo choàng, túi) → thứ sau lưng bộ đồ (khăn, áo choàng) → Tóc sau → Thân (tay, cổ, đầu).</li>
           <li>Mặt: mắt ở <code className="font-mono">x=224/288, y=210</code>, mũi ở <code className="font-mono">x=256, y=218–241</code>, miệng ở <code className="font-mono">y≈258–280</code>.</li>
-          <li>Tóc trước → Áo/Váy → Quần → Giày → Phụ kiện trước → Kính → Mũ.</li>
+          <li>Tóc trước → Áo/Váy → Quần → Giày → chi tiết bộ đồ (mũ, thắt lưng, phù hiệu, bốt) → Phụ kiện trước → Kính → Mũ.</li>
           <li>Mặc váy sẽ tự ẩn lớp quần; body rồng bỏ qua toàn bộ lớp phụ kiện.</li>
+          <li>Kamen Rider và Superman dùng chung khung đầu/cổ/tay và đường may của bé trai nên áo, quần, giày, mũ, kính gắn vào là đúng chỗ; bộ đồ chỉ vẽ thêm lớp ngoài.</li>
         </ol>
       </div>
 
@@ -117,10 +105,12 @@ export default function BodyCustomImport({ showToast }) {
         <h3 className="font-display text-sm text-ink mb-2">Thêm hoặc sửa avatar</h3>
         <ol className="list-decimal list-inside space-y-1 text-xs text-ink/60">
           <li>Mở <code className="font-mono">{DATA_FILE}</code>.</li>
-          <li>Thêm body vào <code className="font-mono">BODIES</code>, mặt vào <code className="font-mono">FACES</code>, tóc vào <code className="font-mono">HAIRS</code>.</li>
+          <li>Thêm body vào <code className="font-mono">BODIES</code> (kèm <code className="font-mono">slug</code>, <code className="font-mono">hint</code>, <code className="font-mono">selfClothed</code> nếu thân tự mặc đồ), mặt vào <code className="font-mono">FACES</code>, tóc vào <code className="font-mono">HAIRS</code>.</li>
+          <li>Thân có bộ đồ riêng thì thêm 3 móc <code className="font-mono">body/back/top</code> vào <code className="font-mono">HERO_SUITS</code> và "diện" chuẩn vào <code className="font-mono">BODY_LOOKS</code>.</li>
           <li>Thêm áo/váy/quần/giày/kính/mũ/phụ kiện vào đúng registry tương ứng.</li>
           <li>Thêm tab vào <code className="font-mono">KID_TABS</code> và cấu hình preview trong <code className="font-mono">tabCfg</code>.</li>
-          <li>Build lại frontend; trang hồ sơ và 2 game dress-up sẽ dùng chung thay đổi.</li>
+          <li>Thêm mã body mới vào <code className="font-mono">server/src/lib/outfitCatalog.js</code> — thiếu thì hồ sơ gửi lên bị trả về <code className="font-mono">body_01</code>.</li>
+          <li>Chạy <code className="font-mono">npm run avatars:export-bodies</code> rồi build lại frontend; trang hồ sơ, 2 game dress-up và các trang admin dùng chung thay đổi.</li>
         </ol>
       </div>
 

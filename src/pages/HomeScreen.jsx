@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { gameService, coinService, notificationService, starService, ticketService } from '../services/api.js'
 import { taskService } from '../services/taskService.js'
 import { socket } from '../socket/socket.js'
@@ -37,12 +37,13 @@ import {
   ShipWheel,
   FileText,
   Sprout,
-  PawPrint,
   Crown,
   Send,
   Trash2,
   RefreshCw,
   LayoutDashboard,
+  MoreHorizontal,
+  ChevronDown,
 } from 'lucide-react'
 
 
@@ -65,6 +66,13 @@ import { subscribeWallet } from "../lib/coinWallet.js";
 const NO_SUBJECT = "Chung";
 const subjectLabel = (subject) => (subject && subject.trim()) || NO_SUBJECT;
 const PREVIEW_GAMES = 8;
+
+/* Badge trên header chỉ chứa vài chữ số nên số lớn phải rút gọn: 1200 → 1,2k. */
+const shortCount = (n) => {
+  const v = Number(n) || 0;
+  if (v < 1000) return String(v);
+  return `${(v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(".", ",")}k`;
+};
 
 /* Màu nền ô tròn của mỗi game. Băm theo tên game nên màu giữ nguyên giữa các
    lần render và giữa các lần F5. */
@@ -155,7 +163,8 @@ function metaForSubject(subject = "") {
 // KHÔNG phải "tất cả mục" — chỉ những mục người dùng vào thường xuyên.
 // Phần còn lại nằm trong menu "Thêm" (dropdown) để header không bị chật.
 
-// Mọi mục còn lại + quản trị + tài khoản → nút "Thêm" trên header.
+// Mọi mục chưa nằm trong hàng tab → dồn vào popover "Thêm" trên header.
+// (Thú cưng không ở đây: nó có chip riêng ngay đầu hàng tab.)
 const MORE_ITEMS = (userAuth) => ([
   { key: "reminders", icon: Bell, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
@@ -163,7 +172,6 @@ const MORE_ITEMS = (userAuth) => ([
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
   { key: "assignment", icon: FileText, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
-  { key: "pet", icon: PawPrint, label: "Thú cưng", type: "path", path: "/pet", show: !!userAuth?.user },
   { key: "profile", icon: User, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
 ]);
 
@@ -186,6 +194,10 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "assignment", icon: FileText, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
+
+// Số ô tối đa trên hàng điều hướng của header. Vượt quá thì các tab còn lại
+// dồn vào ô "Thêm" (popover trỏ xuống) thay vì kéo dài hàng tab.
+const MAX_HEADER_TABS = 5;
 
 const BOTTOM_NAV = (userAuth) => [
   { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
@@ -212,6 +224,11 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [userStars, setUserStars] = useState(0);
   const [gift, setGift] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  // popover "Thêm" của hàng tab header: vị trí tính theo nút nên phải mở
+  // bằng state riêng (không dùng CSS :hover).
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [morePos, setMorePos] = useState(null);
+  const moreBtnRef = useRef(null);
   const [soundOn, setSoundOn] = useState(() => {
     try { return localStorage.getItem('gq_sound') !== '0'; } catch { return true; }
   });
@@ -529,6 +546,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const goTo = (path) => {
     navigate(path);
     setMenuOpen(false);
+    setMoreOpen(false);
   };
 
   // Cuộn tới section trên trang chủ.
@@ -537,6 +555,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   // Nếu không tìm thấy target, fallback về section Game đề xuất rồi về đầu trang.
   const scrollTo = (id) => {
     setMenuOpen(false);
+    setMoreOpen(false);
     setTimeout(() => {
       let el = document.getElementById(id);
       if (!el && id === "subjects-section") el = document.getElementById("games-section");
@@ -557,6 +576,57 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
   const navItems = SIDEBAR_ITEMS(userAuth).filter(i => i.show);
+
+  /* Hàng tab header: menu đầy đủ + các mục "Thêm" cũ, bỏ trùng key, giữ nguyên
+     thứ tự ưu tiên. Thú cưng có chip riêng nên không nằm trong danh sách. */
+  const seenNavKeys = new Set();
+  const headerNav = [...navItems, ...moreItems].filter((item) => {
+    if (seenNavKeys.has(item.key)) return false;
+    seenNavKeys.add(item.key);
+    return true;
+  });
+  const navOverflows = headerNav.length > MAX_HEADER_TABS;
+  const headerTabs = navOverflows ? headerNav.slice(0, MAX_HEADER_TABS - 1) : headerNav;
+  const moreTabs = navOverflows ? headerNav.slice(MAX_HEADER_TABS - 1) : [];
+
+  const toggleMoreNav = () => {
+    if (moreOpen) { setMoreOpen(false); return; }
+    const rect = moreBtnRef.current?.getBoundingClientRect();
+    if (rect) {
+      // `clientWidth` chứ không phải `innerWidth`: position:fixed tính từ
+      // viewport đã trừ thanh cuộn dọc, dùng innerWidth là mũi tên lệch.
+      const vw = document.documentElement.clientWidth;
+      const width = Math.min(252, vw - 20);
+      const center = rect.left + rect.width / 2;
+      const left = Math.max(10, Math.min(center - width / 2, vw - width - 10));
+      setMorePos({
+        top: rect.bottom + 8,
+        left,
+        width,
+        arrow: Math.max(16, Math.min(center - left - 6, width - 22)),
+      });
+    }
+    setMoreOpen(true);
+  };
+
+  // Popover đặt theo toạ độ nút (position: fixed) nên đóng khi trang cuộn hoặc
+  // đổi cỡ cửa sổ — nếu không nó sẽ lơ lửng lệch khỏi nút.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const close = () => setMoreOpen(false);
+    const onPointerDown = (e) => { if (!e.target.closest('.gq-navmore')) close(); };
+    const onKeyDown = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [moreOpen]);
 
   /* ══════════════════════════════════════════════════════════════════════
      GIAO DIỆN MỚI — theo bản mẫu: header nhẹ, banner PWA, hàng nút tròn +
@@ -617,6 +687,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   // Bảo đảm dữ liệu nạp được ngay khi mở sheet (nếu chưa từng nạp).
   const openMenu = () => {
+    setMoreOpen(false);
     setMenuOpen(true);
     if (!userAuth?.user) return;
     loadNotifications();
@@ -734,58 +805,136 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       <div className="gq-page">
         {/* ─────────── HEADER ─────────── */}
         <header className="gq-top">
-          <div className="gq-logo">
-            <span className="gq-logo__mark" aria-hidden="true">🎪</span>
-            <span>
-              <span className="gq-logo__name">Lớp Học Vui</span>
-              <span className="gq-logo__sub">EDUGAMES</span>
-            </span>
-          </div>
+          <div className="gq-top__row">
+            <div className="gq-logo">
+              <span className="gq-logo__mark" aria-hidden="true">🎪</span>
+              <span>
+                <span className="gq-logo__name">Lớp Học Vui</span>
+                <span className="gq-logo__sub">EDUGAMES</span>
+              </span>
+            </div>
 
-          <div className="gq-age" title={`${kidShortName(kidSettings.name)} · ${kidSettings.age} tuổi · ${ageBandLabel(kidSettings.age)}`}>
-            <span className="gq-age__num">{kidSettings.age}</span>
-            <span className="gq-age__txt">
-              <span className="gq-age__lbl">{kidShortName(kidSettings.name)}</span>
-              <span className="gq-age__sub">{kidSettings.age} tuổi · {ageBandLabel(kidSettings.age)}</span>
-            </span>
-          </div>
+            <div className="gq-age" title={`${kidShortName(kidSettings.name)} · ${kidSettings.age} tuổi · ${ageBandLabel(kidSettings.age)}`}>
+              <span className="gq-age__num">{kidSettings.age}</span>
+              <span className="gq-age__txt">
+                <span className="gq-age__lbl">{kidShortName(kidSettings.name)}</span>
+                <span className="gq-age__sub">{kidSettings.age} tuổi · {ageBandLabel(kidSettings.age)}</span>
+              </span>
+            </div>
 
-          <div className="gq-actions">
-            {canAccessDashboard(userAuth?.user?.role) && (
+            <div className="gq-actions">
+              {canAccessDashboard(userAuth?.user?.role) && (
+                <button
+                  className="gq-adminbtn"
+                  onClick={() => goTo("/admin")}
+                  aria-label="Admin Dashboard"
+                  title="Admin Dashboard"
+                >
+                  <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
+                  <span>Admin Dashboard</span>
+                </button>
+              )}
+              <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Xu: ${userCoins}`} title="Xu của bé">
+                🪙{userCoins > 0 && <span className="gq-iconbtn__n">{shortCount(userCoins)}</span>}
+              </button>
+              <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Sao: ${userStars}`} title="Sao của bé">
+                ⭐{userStars > 0 && <span className="gq-iconbtn__n">{shortCount(userStars)}</span>}
+              </button>
               <button
-                className="gq-adminbtn"
-                onClick={() => goTo("/admin")}
-                aria-label="Admin Dashboard"
-                title="Admin Dashboard"
+                className={`gq-iconbtn ${soundOn ? "" : "gq-iconbtn--on"}`}
+                onClick={toggleSound}
+                aria-label={soundOn ? "Tắt âm thanh" : "Bật âm thanh"}
+                title={soundOn ? "Tắt âm thanh" : "Bật âm thanh"}
               >
-                <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
-                <span>Admin Dashboard</span>
+                {soundOn ? "🔊" : "🔇"}
+              </button>
+              {/* Hồ sơ — trước đây chỉ là.icon ❤️ nên không ai biết bấm đi đâu.
+                  Màn hẹp ẩn vì BOTTOM_NAV đã có mục "Cá nhân". */}
+              {userAuth?.user && (
+                <button
+                  className="gq-kidchip"
+                  onClick={() => goTo("/profile")}
+                  aria-label={`Hồ sơ của ${kidShortName(kidSettings.name)}`}
+                  title="Hồ sơ của bé"
+                >
+                  <span className="gq-kidchip__ava" aria-hidden="true"><User className="w-4 h-4" /></span>
+                  <span className="gq-kidchip__name">{kidShortName(kidSettings.name)}</span>
+                </button>
+              )}
+              <button
+                className="gq-iconbtn"
+                onClick={openMenu}
+                aria-label="Menu"
+                aria-expanded={menuOpen}
+              >
+                ⚙️
+                {unreadCount > 0 && <span className="gq-iconbtn__n">{unreadCount}</span>}
+              </button>
+            </div>
+          </div>
+
+          {/* Thú cưng + tab điều hướng — trước đây nằm trong sheet ⚙️ */}
+          <nav className="gq-navrow" aria-label="Điều hướng">
+            {userAuth?.user && (
+              <button className="gq-petchip" onClick={() => goTo("/pet")} title={`${pet.name} · cấp ${pet.level}`}>
+                <PetAvatar size={30} ring={false} />
+                <span className="gq-petchip__txt">
+                  <span className="gq-petchip__name">{pet.name}</span>
+                  <span className="gq-petchip__sub">Cấp {pet.level} · {moodLabel(pet.mood)}</span>
+                </span>
               </button>
             )}
-            <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Sao: ${userStars}`}>
-              ⭐{userStars > 0 && <span className="gq-iconbtn__n">{userStars}</span>}
-            </button>
-            <button
-              className={`gq-iconbtn ${soundOn ? "" : "gq-iconbtn--on"}`}
-              onClick={toggleSound}
-              aria-label={soundOn ? "Tắt âm thanh" : "Bật âm thanh"}
-              title={soundOn ? "Tắt âm thanh" : "Bật âm thanh"}
-            >
-              {soundOn ? "🔊" : "🔇"}
-            </button>
-            <button className="gq-iconbtn gq-heart" onClick={() => goTo("/profile")} aria-label="Hồ sơ của bé">
-              ❤️
-            </button>
-            <button
-              className="gq-iconbtn"
-              onClick={openMenu}
-              aria-label="Menu"
-              aria-expanded={menuOpen}
-            >
-              ⚙️
-              {unreadCount > 0 && <span className="gq-iconbtn__n">{unreadCount}</span>}
-            </button>
-          </div>
+
+            <div className="gq-navtabs">
+              {headerTabs.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button key={item.key} className="gq-navtab" onClick={() => handleNavClick(item)}>
+                    <Icon aria-hidden="true" />
+                    <span>{item.label}</span>
+                    {item.badge && pendingTaskCount > 0 && (
+                      <span className="gq-navtab__n">{pendingTaskCount}</span>
+                    )}
+                  </button>
+                );
+              })}
+
+              {navOverflows && (
+                <div className="gq-navmore" data-open={moreOpen || undefined}>
+                  <button
+                    ref={moreBtnRef}
+                    className="gq-navtab"
+                    onClick={toggleMoreNav}
+                    aria-haspopup="true"
+                    aria-expanded={moreOpen}
+                  >
+                    <MoreHorizontal aria-hidden="true" />
+                    <span>Thêm</span>
+                    <ChevronDown className="gq-navtab__chev" aria-hidden="true" />
+                  </button>
+                  {moreOpen && morePos && (
+                    <div className="gq-navpop" style={{ top: morePos.top, left: morePos.left, width: morePos.width }}>
+                      <span className="gq-navpop__arrow" style={{ left: morePos.arrow }} aria-hidden="true" />
+                      <div className="gq-navpop__grid">
+                        {moreTabs.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <button key={item.key} className="gq-navpop__item" onClick={() => handleNavClick(item)}>
+                              <Icon aria-hidden="true" />
+                              <span>{item.label}</span>
+                              {item.badge && pendingTaskCount > 0 && (
+                                <span className="gq-navpop__n">{pendingTaskCount}</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </nav>
         </header>
 
         {/* ─────────── HERO CHÀO BÉ ─────────── */}
@@ -823,7 +972,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── NÚT TẮT + CHƠI NGẪU NHIÊN ─────────── */}
         <div className="gq-playbar">
-          <button className="gq-mini" onClick={() => goTo("/pet")}>
+          <button className="gq-mini" onClick={() => goTo("/garden")}>
             <span className="gq-mini__ico" aria-hidden="true">🐔</span>
             <span className="gq-mini__lbl">Vườn thú</span>
             {pendingTaskCount > 0 && <span className="gq-mini__dot" aria-label={`${pendingTaskCount} nhiệm vụ`} />}
@@ -1044,23 +1193,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </>
               )}
 
-              {/* Thú cưng */}
-              {userAuth?.user && (
-                <>
-                  <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Thú cưng</p>
-                  <button onClick={() => goTo("/pet")} className="gq-link">
-                    <span className="gq-link__ico"><PetAvatar size={26} level={pet.level} /></span>
-                    <span className="flex-1">
-                      <span className="block">{pet.name}</span>
-                      <span className="block text-[11px] font-semibold text-slate-400">
-                        Cấp {pet.level} · {moodLabel(pet.mood)}
-                      </span>
-                    </span>
-                  </button>
-                  <div className="gq-sheet__sep" />
-                </>
-              )}
-
               {/* Thông báo */}
               {userAuth?.user && (
                 <>
@@ -1113,22 +1245,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </div>
               ))}
               <button onClick={() => goTo("/achievements")} className="gq-link text-xs text-slate-500">Xem tất cả thành tựu</button>
-
-              {/* Điều hướng */}
-              <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Điều hướng</p>
-              {[...navItems, ...moreItems.filter((i) => !navItems.some((n) => n.key === i.key))]
-                .map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button key={item.key} onClick={() => handleNavClick(item)} className="gq-link">
-                      <span className="gq-link__ico"><Icon className="w-4 h-4" /></span>
-                      <span className="flex-1">{item.label}</span>
-                      {item.badge && pendingTaskCount > 0 && (
-                        <span className="gq-iconbtn__n" style={{ position: "static" }}>{pendingTaskCount}</span>
-                      )}
-                    </button>
-                  );
-                })}
 
               {(userAuth?.user?.role === "admin" || userAuth?.user?.role === "teacher") && (
                 <button onClick={() => goTo("/admin")} className="gq-link">

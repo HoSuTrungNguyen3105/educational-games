@@ -1,8 +1,18 @@
 // services/petService.js
 //
 // Lưu thú cưng trên server (collection `userPets`) — mỗi người dùng 1 pet.
-// Màu / trang phục / loài đều kiểm tra theo petCatalog nên không thể gán giá trị
-// bừa. Loài và đồ mới thêm vào catalog là dùng được, không phải sửa file này.
+// File này giữ phần "nurture": cấp, EXP, tâm tính, độ gắn kết, tên.
+//
+// DIỆN MẠO MÀ APP VẼ = `look` (bộ đồ DressUp trong hồ sơ `users.pet`), KHÔNG
+// phải `species`/`color`/`outfits` của `userPets`. Hai hệ này từng song song và
+// người chơi sửa trong game "Tiệm thay đồ thú cưng" / trang Profile rồi ra home
+// vẫn thấy con chó mặc định — nên GET /api/pet trả kèm `look`, client chỉ vẽ
+// `look`. `species`/`color`/`outfits` vẫn tồn tại cho trang quản lý danh mục
+// (petCatalog) và cho dữ liệu cũ, nhưng không còn là nguồn hiển thị.
+//
+// Màu / trang phục / loài legacy đều kiểm tra theo petCatalog nên không thể gán
+// giá trị bừa. Loài và đồ mới thêm vào catalog là dùng được, không phải sửa file
+// này.
 //
 // petCatalog giờ đọc từ Mongo (`petCatalog`) và nạp vào cache ở RAM, nên mọi
 // hàm ở đây phải `await catalog.ensureLoaded()` TRƯỚC khi đọc catalog — nếu
@@ -10,8 +20,10 @@
 
 import { getCollection } from "../db.js";
 import * as catalog from "./petCatalog.js";
+import { sanitizePet } from "../lib/outfitCatalog.js";
 
 const COLLECTION = "userPets";
+const USERS = "users";
 
 const uid = () => `upet-${Math.random().toString(36).slice(2, 9)}`;
 const nowIso = () => new Date().toISOString();
@@ -73,13 +85,27 @@ export async function getByUser(userId) {
   return getOrCreate(userId);
 }
 
+/**
+ * Diện mạo thật của bé = bộ đồ DressUp đã lưu trong hồ sơ (`users.pet`).
+ * Đây là field mà modal "Tùy chỉnh Thú cưng" ở trang Profile và game
+ * "Tiệm thay đồ thú cưng" ghi vào, nên lấy từ đây thì mọi màn hình khớp nhau.
+ * Trả null nếu hồ sơ chưa chọn bộ đồ nào — client khi đó dùng bộ mặc định.
+ */
+export async function getLook(userId) {
+  const user = await getCollection(USERS).findOne({ id: userId }, { projection: { pet: 1 } });
+  const clean = sanitizePet(user?.pet);
+  if (!clean) return null;
+  return { ...clean, updatedAt: user.pet.updatedAt || null };
+}
+
 /** Bỏ trường private trước khi trả về cho client. */
-export function serialize(doc) {
+export function serialize(doc, look) {
   if (!doc) return null;
   // Bỏ các trường nội bộ trước khi trả về cho client.
   const out = { ...doc, id: String(doc._id) };
   delete out._id;
   delete out.userId;
+  if (look !== undefined) out.look = look;
   return out;
 }
 

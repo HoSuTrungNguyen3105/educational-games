@@ -3,11 +3,16 @@
 // API thú cưng. Mọi route đều yêu cầu đăng nhập.
 //
 //   GET    /api/pet/catalog        danh mục loài / màu / trang phục (đã lọc theo cấp)
-//   GET    /api/pet                 pet hiện tại (tự tạo nếu chưa có)
-//   PUT    /api/pet                 đổi tên / loài / màu / trang phục
+//   GET    /api/pet                 pet hiện tại + `look` (tự tạo nếu chưa có)
+//   PUT    /api/pet                 đổi tên / loài / màu / trang phục legacy
 //   POST   /api/pet/exp             cộng EXP khi trả lời đúng (game gọi)
 //   POST   /api/pet/mood            đổi tâm tính
 //   POST   /api/pet/reset           đặt lại mặc định
+//
+//   Diện mạo MÀ APP VẼ là `look` — bộ đồ DressUp lưu trong hồ sơ (`users.pet`),
+//   cùng nguồn với modal "Tùy chỉnh Thú cưng" ở trang Profile và game
+//   "Tiệm thay đồ thú cưng". Muốn đổi thì PUT /api/auth/me { pet }; GET /api/pet
+//   chỉ việc đọc về kèm.
 //
 //   ── Admin (giáo viên + quản trị) ───────────────────────────────────────
 //   GET    /api/pet/admin/catalog        toàn bộ danh mục + số pet đang dùng
@@ -34,7 +39,8 @@ router.use(authenticate);
 router.get("/", async (req, res, next) => {
   try {
     const pet = await petService.getByUser(req.user.sub);
-    sendSuccess(res, petService.serialize(pet));
+    // `look` = bộ đồ DressUp trong hồ sơ — diện mạo thật mà app vẽ.
+    sendSuccess(res, petService.serialize(pet, await petService.getLook(req.user.sub)));
   } catch (e) {
     next(e);
   }

@@ -4,34 +4,29 @@
 //
 // Lý do: HomeScreen, GameHud, PetPage… đang import `PetSvg` từ đây. Xoá file
 // này sẽ làm hỏng hàng chục chỗ gọi. Thay vào đó nó chuyển tiếp sang
-// `components/pet/PetRenderer.jsx` — component ghép lớp DUY NHẤT của dự án.
+// `components/pet/PetAvatar.jsx` — nơi vẽ DUY NHẤT của dự án.
 //
-// Toàn bộ logic vẽ pet đã dọn vào PetRenderer. File này chỉ giữ tương thích:
-//   • `PetSvg`      → vẽ pet ở mọi kích thước
+// PetAvatar giờ vẽ bằng `look` DressUp (cùng nguồn với trang Profile và game
+// "Tiệm thay đồ thú cưng"), nên HUD game và home hiện đúng con thú đã tuỳ chỉnh
+// thay vì bộ mặc định của hệ cũ.
+//   • `PetSvg`      → avatar không viền, không badge Lv (vừa khung HUD)
 //   • `PetAvatar`   → alias của components/pet/PetAvatar.jsx
 //   • `PetBubble`   → bong bóng thoại (không liên quan render pet)
 
-import PetRenderer from "./pet/PetRenderer.jsx";
 import PetAvatar from "./pet/PetAvatar.jsx";
 
 export default function PetSvg({
   size = 64,
   className = "",
   bounce = false,
-  species,
-  color,
-  outfits,
-  mood,
   ariaLabel,
 }) {
   return (
-    <PetRenderer
-      species={species}
-      color={color}
-      outfits={outfits}
-      mood={mood}
+    <PetAvatar
       size={size}
-      className={`${className} ${bounce ? "float-slow" : ""}`}
+      className={className}
+      bounce={bounce}
+      ring={false}
       ariaLabel={ariaLabel}
     />
   );

@@ -1,27 +1,25 @@
 // pages/PetPage.jsx
 //
-// Trang "Thú cưng của tôi": chọn LOÀI, MÀU, và đổi trang phục.
+// Trang "Thú cưng của tôi": xem cấp / EXP / tâm tính, đổi tên và mở bộ tuỳ chỉnh
+// diện mạo.
 //
-// Toàn bộ hình ảnh đi qua components/pet/PetRenderer.jsx — không có logic vẽ
-// riêng trong file này. Ô trang phục đổi trên trang này được chuyển sang
-// Kho trang phục (`/pet-wardrobe`) để có chỗ xem trước trước khi lưu.
+// Diện mạo hiển thị = `pet.look` (bộ đồ DressUp trong hồ sơ), vẽ qua
+// `components/pet/PetAvatar.jsx` → `DressUpAvatar`. Cùng một nguồn với trang
+// Profile và game "Tiệm thay đồ thú cưng", nên sửa ở đâu thì home, HUD game và
+// bảng xếp hạng đều hiện giống nhau. Chỉnh thì mở `DressUpCustomizer` ở
+// `/pet-wardrobe` — không còn bộ chọn loài/màu legacy (id trang phục hệ cũ
+// không trùng hệ mới nên để hai nơi cùng sửa là lại sinh ra hai con pet).
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { navigate } from "../lib/router.js";
 import PetAvatar from "../components/pet/PetAvatar.jsx";
-import PetRenderer from "../components/pet/PetRenderer.jsx";
 import {
-  usePet, loadPet, updateLook, resetPet,
-  catalogView, randomPetTip, moodLabel,
+  usePet, loadPet, updateLook, catalogView, randomPetTip, moodLabel,
 } from "../services/petService.js";
-import { getPetBase } from "../data/petAssets.js";
-
-/** Loài có bộ SVG thật trong data/petAssets.js. */
-const hasArt = (s) => !!getPetBase(s.id);
+import { outfitName, describeOutfit } from "../lib/dressUpAvatar.js";
 
 export default function PetPage() {
   const pet = usePet();
-  const [tab, setTab] = useState("species");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [nameDraft, setNameDraft] = useState(pet.name || "");
@@ -35,8 +33,8 @@ export default function PetPage() {
     setNameDraft(pet.name);
   }
 
-  const { species, colors } = catalogView();
-  const openIds = catalogView().openSpeciesIds;
+  const wearing = useMemo(() => describeOutfit("pet", pet.look), [pet.look]);
+  const animalName = useMemo(() => outfitName("pet", pet.look) || "Thú cưng", [pet.look]);
 
   async function save(patch, successMsg) {
     setBusy(true);
@@ -54,7 +52,6 @@ export default function PetPage() {
   }
 
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
-  const wearing = Object.values(pet.outfits || {}).filter(Boolean).length;
 
   return (
     <div className="min-h-full bg-paper pb-24">
@@ -76,7 +73,7 @@ export default function PetPage() {
             <PetAvatar
               size={104}
               bounce
-              ariaLabel={`${pet.name} loài ${pet.species}`}
+              ariaLabel={`${pet.name} — ${animalName}`}
             />
 
             <div className="min-w-0 flex-1">
@@ -87,7 +84,7 @@ export default function PetPage() {
                 </span>
               </div>
               <p className="mt-0.5 text-xs text-slate-500">
-                Cấp {pet.level} · Gắn kết {pet.bonded}% · Đúng {pet.totalCorrect || 0} / Sai {pet.totalWrong || 0}
+                {animalName} · Cấp {pet.level} · Gắn kết {pet.bonded}% · Đúng {pet.totalCorrect || 0} / Sai {pet.totalWrong || 0}
               </p>
               <div className="mt-2 flex items-center gap-2">
                 <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
@@ -105,6 +102,27 @@ export default function PetPage() {
 
           <p className="mt-3 rounded-2xl bg-amber-50 px-3 py-2 text-[12.5px] italic text-amber-800">
             “{randomPetTip()}”
+          </p>
+        </section>
+
+        {/* Diện mạo */}
+        <section className="mt-3 rounded-3xl bg-white p-4 shadow-[0_6px_18px_rgba(15,60,120,.08)]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="font-display text-sm font-extrabold text-ink">Diện mạo</h2>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-slate-500">
+                {wearing.length ? `Đang mặc: ${wearing.join(" · ")}` : "Chưa mặc gì — vào tiệm thay đồ để chọn áo, mũ, kính, nơ cho bé."}
+              </p>
+            </div>
+            <button
+              onClick={() => navigate("/pet-wardrobe")}
+              className="shrink-0 rounded-2xl bg-emerald-500 px-3.5 py-2 text-[13px] font-extrabold text-white shadow-sm hover:bg-emerald-400"
+            >
+              👕 Thay đồ
+            </button>
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+            Bộ đồ lưu vào hồ sơ nên vào trang Profile hay mở game “Tiệm thay đồ thú cưng” trên máy khác cũng thấy đúng con thú này.
           </p>
         </section>
 
@@ -129,108 +147,7 @@ export default function PetPage() {
           </div>
         </section>
 
-        {/* Tab */}
-        <nav className="mt-4 flex gap-2">
-          {[["species", "Loài"], ["color", "Màu"]].map(([k, label]) => (
-            <button
-              key={k}
-              onClick={() => setTab(k)}
-              className={`flex-1 rounded-2xl py-2 text-sm font-extrabold transition ${
-                tab === k ? "bg-amber-400 text-amber-950 shadow-sm" : "bg-white text-slate-500 hover:bg-slate-50"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-          <button
-            onClick={() => navigate("/pet-wardrobe")}
-            className="flex-1 rounded-2xl py-2 text-sm font-extrabold text-emerald-700 shadow-sm transition hover:bg-emerald-50"
-          >
-            👕 Kho trang phục ({wearing})
-          </button>
-        </nav>
-
-        {/* Nội dung tab */}
-        <section className="mt-3 rounded-3xl bg-white p-4 shadow-[0_6px_18px_rgba(15,60,120,.08)]">
-          {tab === "species" && (
-            <>
-              <p className="text-xs text-slate-500">
-                Chọn loài bạn muốn nuôi. Loài có hình vẽ đầy đủ mới bấm chọn được.
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {species.map((s) => {
-                  const unlocked = openIds.has(s.id);
-                  const art = hasArt(s);
-                  const on = pet.species === s.id;
-                  const disabled = !art || !unlocked || busy;
-                  return (
-                    <button
-                      key={s.id}
-                      disabled={disabled}
-                      onClick={() => save({ species: s.id }, `Đã chọn ${s.name}!`)}
-                      title={art ? s.name : `${s.name} — chưa có hình vẽ`}
-                      className={`relative rounded-2xl border-2 p-2 text-left transition disabled:cursor-not-allowed ${
-                        on ? "border-amber-400 bg-amber-50" : "border-slate-100 bg-white hover:border-amber-200 disabled:opacity-50"
-                      }`}
-                    >
-                      <div className="flex h-[62px] items-center justify-center">
-                        {art ? (
-                          <PetRenderer
-                            species={s.id}
-                            color={on ? pet.color : (s.defaultColor || "cream")}
-                            size={54}
-                            ariaLabel={s.name}
-                          />
-                        ) : (
-                          <span className="text-[34px] leading-none grayscale" aria-hidden="true">{s.emoji}</span>
-                        )}
-                      </div>
-                      <p className="mt-1 font-display text-[13px] font-extrabold text-ink">{s.name}</p>
-                      <p className="text-[10.5px] leading-tight text-slate-400">{s.trait}</p>
-
-                      {!art && (
-                        <span className="absolute inset-x-1.5 bottom-1 rounded-full bg-slate-100 py-0.5 text-[9.5px] font-bold text-slate-500">
-                          Chưa có hình
-                        </span>
-                      )}
-                      {art && !unlocked && (
-                        <span className="absolute right-2 top-2 rounded-full bg-slate-200 px-1.5 py-0.5 text-[9.5px] font-bold text-slate-500">
-                          🔒 Cấp {s.minLevel}
-                        </span>
-                      )}
-                      {on && <span className="absolute left-2 top-2 text-sm">✅</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {tab === "color" && (
-            <>
-              <p className="text-xs text-slate-500">Đổi màu lông cho bé. Màu áp dụng cho mọi loài.</p>
-              <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-6">
-                {colors.map((c) => {
-                  const on = pet.color === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      disabled={busy}
-                      onClick={() => save({ color: c.id }, `Đã đổi sang màu ${c.name}!`)}
-                      title={c.name}
-                      className={`aspect-square rounded-2xl border-4 transition disabled:opacity-50 ${
-                        on ? "border-amber-400 shadow-md" : "border-white hover:scale-105"
-                      }`}
-                      style={{ background: c.body || c }}
-                    />
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </section>
-
-        {/* Thông báo + reset */}
+        {/* Thông báo */}
         {msg && (
           <div className={`mt-3 rounded-2xl px-4 py-2.5 text-sm font-bold ${
             msg.type === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
@@ -239,16 +156,8 @@ export default function PetPage() {
           </div>
         )}
 
-        <button
-          onClick={async () => { await resetPet(); setMsg({ type: "ok", text: "Đã đưa bé về mặc định." }); }}
-          disabled={busy}
-          className="mt-4 w-full rounded-2xl bg-white py-2.5 text-sm font-extrabold text-slate-500 shadow-sm hover:bg-slate-50 disabled:opacity-50"
-        >
-          Đặt lại diện mạo
-        </button>
-
         <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-400">
-          Thú cưng được lưu trên máy chủ nên đổi thiết bị vẫn giữ nguyên.
+          Cấp, EXP và tên lưu trên máy chủ nên đổi thiết bị vẫn giữ nguyên.
           {offline && " Đang offline nên thay đổi chỉ lưu trên máy này."}
         </p>
       </div>
