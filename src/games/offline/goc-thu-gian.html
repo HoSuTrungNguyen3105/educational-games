@@ -424,7 +424,7 @@ function select(name) {
   toastEl.classList.remove('show');
 }
 document.querySelectorAll('nav button').forEach(b =>
-  b.addEventListener('click', () => { initAudio(); select(b.dataset.g); }));
+  b.addEventListener('click', () => { initAudio(); select(b.dataset.g); saveRun(); }));
 
 let isDown = false;
 cv.addEventListener('pointerdown', e => { initAudio(); isDown = true; current.down(e.clientX, e.clientY); });
@@ -433,17 +433,52 @@ window.addEventListener('pointerup', () => isDown = false);
 window.addEventListener('pointercancel', () => isDown = false);
 window.addEventListener('resize', resize);
 
-let last = performance.now(), lastStat = '';
+let last = performance.now(), lastStat = '', lastSave = 0;
 function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; T += dt;
   const s = current.update(dt);
   if (s !== lastStat) { statEl.textContent = s; lastStat = s; }
   current.draw();
+  if (now - lastSave > 2000) { lastSave = now; saveRun(); }
   requestAnimationFrame(loop);
 }
 
+/* ---------- Lưu tiến độ ----------
+ * Ba trò ở đây là đồ chơi giải trí nên "tiến độ" = đang ở tab nào, đã trồng
+ * bao nhiêu hoa, đã chọc bao nhiêu bong bóng, đã thở bao nhiêu nhịp.
+ * App là SPA: rời trang chỉ phá iframe nên cần __gqFlush / event "gq:flush"
+ * (FLUSH_BRIDGE trong src/pages/OfflineGamePage.jsx) để ghi trước khi thoát. */
+const RK = 'goc-thu-gian-v1';
+function currentName() {
+  return Object.keys(games).find(k => games[k] === current) || 'garden';
+}
+function saveRun() {
+  try {
+    localStorage.setItem(RK, JSON.stringify({
+      v: 1, at: Date.now(), mode: currentName(),
+      plants: garden.plants.map(p => ({ x: p.x, y: p.y, type: p.type, hue: p.hue, h: p.h, t: p.t, ph: p.ph, petals: p.petals })),
+      count: garden.count, popped: bubbles.popped, cycles: breathe.cycles, bt: breathe.t
+    }));
+  } catch (e) { /* localStorage bị chặn — vẫn chơi bình thường */ }
+}
+function loadRun() {
+  try { const s = JSON.parse(localStorage.getItem(RK) || 'null'); return s && s.v === 1 ? s : null; } catch (e) { return null; }
+}
+function applyRun(s) {
+  garden.count = s.count | 0; bubbles.popped = s.popped | 0; breathe.cycles = s.cycles | 0;
+  breathe.t = s.bt || 0;
+  // t lớn → hoa hiện ra đã nở, không trồng lại animation từ đầu
+  (s.plants || []).forEach(p => garden.plants.push({ ...p, t: Math.max(p.t || 0, 9) }));
+}
+
 resize();
-select('garden');
+const savedRun = loadRun();
+select(savedRun ? (games[savedRun.mode] ? savedRun.mode : 'garden') : 'garden');
+if (savedRun) applyRun(savedRun);
+window.__gqFlush = saveRun;
+window.addEventListener('gq:flush', saveRun);
+window.addEventListener('pagehide', saveRun);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveRun(); });
 requestAnimationFrame(loop);
 })();
 </script>

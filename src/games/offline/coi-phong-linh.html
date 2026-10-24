@@ -40,6 +40,10 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 #intro h1{font-size:26px;margin-bottom:8px}#intro p{font-size:14px;line-height:1.6;margin-bottom:12px}
 .sw{display:inline-block;width:38px;height:38px;border-radius:50%;border:3px solid transparent;margin:3px;padding:0;pointer-events:auto}.sw.on{border-color:var(--ink)}
 #go{font:inherit;font-size:18px;font-weight:700;background:var(--acc);color:#fff;border:0;border-radius:14px;padding:12px 28px;margin-top:6px}
+#saved{font-size:12px;opacity:.75;margin-top:10px;min-height:1em}
+#rs{font:inherit;font-size:13px;font-weight:700;background:none;border:0;text-decoration:underline;color:var(--ink);opacity:.7;margin-top:8px}
+#saved{font-size:12px;opacity:.75;margin-top:8px}
+#rs{font:inherit;font-size:13px;font-weight:700;background:none;border:0;color:var(--acc);text-decoration:underline;margin-top:8px;padding:0}
 </style>
 </head>
 <body>
@@ -59,7 +63,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 <div id="ts"></div>
 <div id="intro"><div><h1>🗡️ Cõi Phong Linh</h1>
 <p>Thế giới mở góc nhìn thứ nhất: nói chuyện với dân làng, nhận nhiệm vụ, chém slime, dùng nguyên tố lửa và hạ Thạch Giáp.<br><b>Kéo trái:</b> di chuyển · <b>kéo phải:</b> nhìn quanh<br>⚔️ chém · 🔥 kỹ năng · 💥 tuyệt kỹ (cần năng lượng) · 💨 lướt<br><small>PC: WASD, chuột, click = chém, E/chuột phải = kỹ năng, Q = tuyệt kỹ, Shift = lướt, F = tương tác</small></p>
-<div>Chọn màu áo của bạn:</div><div id="sws"></div><button id="go">Bắt đầu</button></div></div>
+<div>Chọn màu áo của bạn:</div><div id="sws"></div><button id="go">Bắt đầu</button><div id="saved"></div><button id="rs" hidden>Chơi từ đầu</button></div></div>
 <script>
 'use strict';
 const $=s=>document.querySelector(s),M=Math,R=M.random,rnd=(a,b)=>a+R()*(b-a),ri=(a,b)=>M.floor(rnd(a,b+1)),clamp=(v,a,b)=>v<a?a:v>b?b:v,TAU=M.PI*2,pick=a=>a[ri(0,a.length-1)];
@@ -139,7 +143,7 @@ const S=[
 function say(L,cb){dl={L,i:0,cb};showDl()}
 function showDl(){const l=dl.L[dl.i];$('#dn').textContent=l[0];$('#dt').textContent=l[1];$('#dlg').style.display='block';$('#bT').style.display='none'}
 function nextDl(){if(!dl)return;dl.i++;if(dl.i>=dl.L.length){const cb=dl.cb;dl=null;$('#dlg').style.display='none';cb&&cb()}else showDl()}
-function talk(i){const s=S[G.s];if(s&&s.n===i){if(s.r())say(s.L,()=>{gain(s.rw[0]);P.mo+=s.rw[1];s.go&&s.go();G.s++;toast(`✔ Xong nhiệm vụ! +${s.rw[0]} EXP  +${s.rw[1]} 🪙`);bp(660,.2,'triangle',.15,990)});else say(s.H)}else say([[NP[i].n,pick(NP[i].s)]])}
+function talk(i){const s=S[G.s];if(s&&s.n===i){if(s.r())say(s.L,()=>{gain(s.rw[0]);P.mo+=s.rw[1];s.go&&s.go();G.s++;saveRun();toast(`✔ Xong nhiệm vụ! +${s.rw[0]} EXP  +${s.rw[1]} 🪙`);bp(660,.2,'triangle',.15,990)});else say(s.H)}else say([[NP[i].n,pick(NP[i].s)]])}
 function nearInter(){let r=null,bd=1.9;NP.forEach((n,i)=>{const d=M.hypot(n.x-P.x,n.y-P.y);if(d<bd){bd=d;r={k:'n',i,n:n.n}}});for(const it of IT)if(it.k==='x'&&!it.o){const d=M.hypot(it.x-P.x,it.y-P.y);if(d<bd&&d<1.6){bd=d;r={k:'x',it,n:'Mở rương'}}}return r}
 function interact(){if(dl){nextDl();return}const r=nearInter();if(!r)return;if(r.k==='n')talk(r.i);else{r.it.o=1;const m=ri(30,60);P.mo+=m;P.hp=M.min(P.mx,P.hp+30);gain(25);toast(`🎁 Mở rương! +${m} 🪙 +25 EXP`);bp(800,.25,'triangle',.15,1400)}}
 /* ---- chiến đấu ---- */
@@ -263,11 +267,69 @@ function hud(){
  if(tg){mc.strokeStyle='#fff';mc.lineWidth=1.5;mc.beginPath();mc.arc(tg.x*k,tg.y*k,5,0,TAU);mc.stroke()}
  mc.save();mc.translate(P.x*k,P.y*k);mc.rotate(P.a);mc.fillStyle='#fff';mc.beginPath();mc.moveTo(5,0);mc.lineTo(-3,-3.5);mc.lineTo(-3,3.5);mc.fill();mc.restore()
 }
-let last=0;function loop(t){const dt=M.min((t-last)/1000||0,.05);last=t;if(started){update(dt);if(!dl||true){render();drawFx();hud()}}else{P.a+=dt*.2;render()}requestAnimationFrame(loop)}
+let last=0,lastSave=0;function loop(t){const dt=M.min((t-last)/1000||0,.05);last=t;if(started){update(dt);if(t-lastSave>2000){lastSave=t;saveRun()}if(!dl||true){render();drawFx();hud()}}else{P.a+=dt*.2;render()}requestAnimationFrame(loop)}
 const SC=['#2f6fb3','#b3392f','#2f9a5a','#7a4fc2','#e0a020'];
 $('#sws').innerHTML=SC.map((c,i)=>`<button class="sw${i?'':' on'}" data-c="${c}" style="background:${c}" aria-label="Màu áo ${i+1}"></button>`).join('');
 $('#sws').onclick=e=>{const b=e.target.closest('.sw');if(!b)return;sleeve=b.dataset.c;document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s===b))};
-$('#go').onclick=()=>{ac();$('#intro').style.display='none';started=1;for(let i=0;i<8;i++)spawnSlime();toast('Hãy đến gặp Trưởng làng Mộc 💬 (có dấu ❗)')};
+/* ---- lưu ván đang chơi ----
+ * App là SPA: bấm "← Trang chủ" chỉ phá iframe nên pagehide của game KHÔNG chạy,
+ * mọi trạng thái chỉ nằm trong biến JS sẽ mất. Ngoài tick 2s trong loop, game
+ * đăng ký __gqFlush / event "gq:flush" để app yêu cầu ghi TRƯỚC khi thoát
+ * (xem FLUSH_BRIDGE trong src/pages/OfflineGamePage.jsx). */
+const RK='coi-phong-linh-run-v1';
+function saveRun(){
+  if(!started)return;
+  try{
+    localStorage.setItem(RK,JSON.stringify({v:1,at:Date.now(),sleeve,
+      G:{s:G.s,k:G.k,ik:G.ik,cr:G.cr,boss:G.boss},
+      P:{x:P.x,y:P.y,a:P.a,pt:P.pt,hp:P.hp,mx:P.mx,lv:P.lv,xp:P.xp,mo:P.mo},
+      IT:IT.filter(i=>i.k!=='h').map(i=>({k:i.k,x:i.x,y:i.y,o:i.o|0})),
+      E:E.map(e=>({t:e.t,x:e.x,y:e.y,hp:e.hp}))}));
+  }catch(e){/* localStorage đầy hoặc bị chặn — vẫn chơi bình thường */}
+}
+function loadRun(){
+  try{const s=JSON.parse(localStorage.getItem(RK)||'null');return s&&s.v===1&&s.G&&s.P?s:null}catch(e){return null}
+}
+function clearRun(){try{localStorage.removeItem(RK)}catch(e){}}
+function applyRun(s){
+  if(s.sleeve)sleeve=s.sleeve;
+  Object.assign(G,s.G);
+  Object.assign(P,{x:s.P.x,y:s.P.y,a:s.P.a,pt:s.P.pt||0,mx:s.P.mx,lv:s.P.lv,xp:s.P.xp,mo:s.P.mo,en:0,dead:0});
+  // máu về 0 lúc tắt máy → hồi sinh ở làng thay vì mở ra là chết
+  P.hp=s.P.hp>0?s.P.hp:s.P.mx;
+  E=[];IT.length=0;
+  (s.IT||[]).forEach(i=>IT.push({k:i.k,x:i.x,y:i.y,o:i.o|0}));
+  (s.E||[]).forEach(o=>{if(!ED[o.t])return;const e=spawn(o.t,o.x,o.y);e.hp=M.max(1,M.min(o.hp,e.mx))});
+}
+function freshRun(){
+  Object.assign(G,{s:0,k:0,ik:0,cr:0,boss:0});
+  Object.assign(P,{x:9.5,y:10.4,a:-1.8,pt:0,hp:100,mx:100,lv:1,xp:0,mo:0,en:0,dead:0});
+  E=[];IT.length=0;
+  IT.push({k:'x',x:20.5,y:14.5,o:0},{k:'x',x:6.5,y:28.5,o:0},{k:'x',x:30.5,y:18.5,o:0});
+  for(let i=0;i<8;i++)spawnSlime();
+}
+window.__gqFlush=saveRun;
+addEventListener('gq:flush',saveRun);
+addEventListener('pagehide',saveRun);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRun()});
+
+let run=loadRun();
+function paintIntro(){
+  $('#go').textContent=run?'▶ Chơi tiếp':'Bắt đầu';
+  $('#rs').hidden=!run;
+  const q=run&&S[run.G.s];
+  $('#saved').textContent=run?'Ván đang dở: '+(q?q.t():'🎉 đã xong nhiệm vụ chính')+' · Lv '+run.P.lv+' · 🪙 '+run.P.mo:'';
+  if(run){const b=document.querySelector(`.sw[data-c="${run.sleeve}"]`);if(b)b.click()}
+}
+function enter(next){
+  ac();
+  if(next)applyRun(next);else freshRun();
+  started=1;lastSave=0;$('#intro').style.display='none';
+  toast(next?'Đã tiếp tục ván cũ ✔':'Hãy đến gặp Trưởng làng Mộc 💬 (có dấu ❗)');
+}
+paintIntro();
+$('#go').onclick=()=>enter(run);
+$('#rs').onclick=()=>{clearRun();run=null;enter(null);paintIntro()};
 requestAnimationFrame(loop);
 </script>
 </body>

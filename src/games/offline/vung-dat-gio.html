@@ -294,7 +294,7 @@ const QUESTS=[
 ];
 function questTick(){
   const q=QUESTS[qi];
-  if(q.ok()){addExp(150);toast('Hoàn thành nhiệm vụ',q.t);qi++;qbase=kills}
+  if(q.ok()){addExp(150);toast('Hoàn thành nhiệm vụ',q.t);qi++;qbase=kills;saveRun()}
   const n=QUESTS[qi],t=n.tgt();$('qt').textContent=n.t;
   $('qd').textContent=n.prog?n.prog():(t?'◆ '+Math.round(near(p,t)/10)+' m':'');
 }
@@ -303,7 +303,7 @@ function questTick(){
 const K={};let joy={x:0,y:0};
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();K[k]=true;
-  if(k=='p'){paused=!paused;$('pause').classList.toggle('on',paused)}
+  if(k=='p'){paused=!paused;$('pause').classList.toggle('on',paused);saveRun()}
   if(paused)return;
   if(k=='e')skillE();if(k=='q')skillQ();if(k=='j'||k==' '){attack();e.preventDefault()}
   if(k>='1'&&k<='4')switchTo(+k-1);
@@ -501,15 +501,41 @@ function hud(){
   $('clock').textContent=(hour>6&&hour<18?'☀ ':'☾ ')+String(hh).padStart(2,'0')+':'+String(mi).padStart(2,'0');
 }
 
+/* ===================== LƯU TIẾN ĐỘ =====================
+ * App là SPA: rời trang chỉ phá iframe, pagehide của game không chạy → phải có
+ * __gqFlush / event "gq:flush" để app bảo ghi trước khi thoát
+ * (FLUSH_BRIDGE trong src/pages/OfflineGamePage.jsx) + tick định kỳ khi đang chơi. */
+const RK='vung-dat-gio-run-v1';
+function saveRun(){
+  try{localStorage.setItem(RK,JSON.stringify({v:1,at:Date.now(),lvl,exp,kills,cur,hour,qi,qbase,
+    hp:CH.map(c=>Math.round(c.hp)),p:{x:p.x,y:p.y,ang:p.ang,stam:p.stam,energy:p.energy}}))}catch(e){}
+}
+function loadRun(){
+  try{const s=JSON.parse(localStorage.getItem(RK)||'null');return s&&s.v===1&&s.hp&&s.p?s:null}catch(e){return null}
+}
+function applyRun(s){
+  lvl=s.lvl;exp=s.exp;kills=s.kills;hour=s.hour;qi=clamp(s.qi,0,QUESTS.length-1);qbase=s.qbase;
+  s.hp.forEach((h,i)=>{if(CH[i])CH[i].hp=Math.max(0,h)});
+  cur=CH.findIndex(c=>c.hp>0);
+  if(cur<0){CH.forEach(c=>c.hp=maxHp()*.5);cur=0}
+  Object.assign(p,{x:s.p.x,y:s.p.y,ang:s.p.ang||0,stam:s.p.stam||100,energy:s.p.energy||0,inv:0,cdE:0,cdQ:0});
+}
+
 /* ===================== KHỞI ĐỘNG ===================== */
+const savedRun=loadRun();
+if(savedRun)applyRun(savedRun);
 buildBG();
 for(let i=0;i<10;i++)spawnEn(true);
 cam.x=clamp(p.x-W/Z/2,0,WORLD-W/Z);cam.y=clamp(p.y-H/Z/2,0,WORLD-H/Z);
-toast('Thảo Nguyên Gió Lặng','Khu vực mới');
-let last=performance.now();
+toast(savedRun?'Tiếp tục ván cũ':'Thảo Nguyên Gió Lặng',savedRun?'Nhiệm vụ: '+QUESTS[qi].t:'Khu vực mới');
+window.__gqFlush=saveRun;
+addEventListener('gq:flush',saveRun);
+addEventListener('pagehide',saveRun);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRun()});
+let last=performance.now(),lastSave=last;
 (function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
-  if(!paused)update(dt);
+  if(!paused){update(dt);if(now-lastSave>2000){lastSave=now;saveRun()}}
   render();drawMini();hud();requestAnimationFrame(loop);
 })(last);
 </script>

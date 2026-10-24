@@ -287,7 +287,7 @@ function fakeSheet(){
   return sh;
 }
 function guideSheet(){
-  return mkText('Hướng dẫn',[
+  const sh=mkText('Hướng dẫn',[
     'HƯỚNG DẪN SỬ DỤNG','',
     'Trang tính này trông như Excel nhưng thực chất là trình đọc truyện. Mỗi dòng truyện nằm ở cột A và tràn sang các ô bên cạnh, giống hệt khi gõ chữ vào ô.','',
     '1. Nhập truyện: Tệp > Mở, hoặc thẻ Dữ liệu > Từ Văn bản/CSV, hoặc kéo thả tệp vào cửa sổ. Hỗ trợ .txt, .docx, .epub, .html, .xlsx, .csv và thư viện .json.',
@@ -296,11 +296,12 @@ function guideSheet(){
     '4. Cuộn bằng chuột, phím mũi tên, PageUp/PageDown hoặc phím Space. Thẻ Xem có cuộn tự động và chế độ tối.',
     '5. Ctrl+F để tìm trong trang tính (có tùy chọn bỏ qua dấu). Nhập vị trí như A500 vào ô Name Box rồi Enter để nhảy tới dòng đó.',
     '6. Thẻ Trang đầu: đổi phông chữ, cỡ chữ, màu chữ. Thu phóng ở góc phải dưới cùng.',
-    '7. Dữ liệu chỉ nằm trong trang này, tải lại trang là mất. Dùng Ctrl+S để xuất thư viện (kèm vị trí đang đọc) ra tệp .json, lần sau mở lại bằng Tệp > Mở.','',
+    '7. Tự lưu: nội dung và vị trí đang đọc được lưu ngay trên máy, thoát game rồi mở lại vẫn còn. Ctrl+S để xuất thư viện ra tệp .json phòng khi đổi máy.','',
     'TRUYỆN MẪU','',
     'Chiều cuối thu, ga nhỏ chỉ còn lại một chuyến tàu muộn. Bà bán nước đã dọn gần hết hàng, chỉ giữ lại ấm trà cho người nào lỡ chuyến. Minh ngồi ở băng ghế cuối sân ga, cặp sách đặt trên đùi, mắt nhìn đường ray kéo dài mãi vào sương.',
     'Anh đã hứa với mình sẽ không quay lại thành phố này nữa. Vậy mà lá thư ba dòng ấy lại đủ sức kéo anh đi hết một ngày đường.'
   ]);
+  sh.isGuide=true;return sh;
 }
 
 /* ---------- wrap ---------- */
@@ -379,6 +380,7 @@ function rowContent(sh,r,c0,c1){
   return o;
 }
 function render(){
+  dirty=true;
   const sh=cur(),{rh,cw}=D,st=sc.scrollTop,sl=sc.scrollLeft;
   const r0=Math.max(0,Math.floor(st/rh)-1),r1=Math.min(nRows(sh)-1,Math.ceil((st+sc.clientHeight)/rh)+1);
   const c0=Math.max(0,Math.floor(sl/cw)-1),c1=Math.min(NCOLS-1,Math.ceil((sl+sc.clientWidth)/cw)+1);
@@ -867,9 +869,56 @@ new ResizeObserver(()=>{
   clearTimeout(rt);rt=setTimeout(()=>{if(sc.clientWidth!==lw){lw=sc.clientWidth;relayout()}else render()},120);
 }).observe(sc);
 
+/* ---------- tự lưu tiến độ ----------
+ * Trước đây truyện đã nhập chỉ sống trong bộ nhớ: tải lại trang hay thoát game
+ * là mất sạch. App là SPA nên `pagehide` của game cũng không chạy khi rời trang
+ * → đăng ký thêm __gqFlush / event "gq:flush" (FLUSH_BRIDGE trong
+ * src/pages/OfflineGamePage.jsx) để ghi trước khi thoát.
+ * Sheet1 báo cáo (isFake) và 'Hướng dẫn' (isGuide) không lưu vì luôn được dựng lại lúc khởi động. */
+const RK='bang-tinh-lib-v1';
+let dirty=false, saveBroken=false;
+function serializeSheet(s){
+  return s.type==='grid'
+    ?{name:s.name,type:'grid',cells:[...s.cells].map(([k,v])=>[Math.floor(k/K),k%K,v]),selR:s.selR,selC:s.selC,topL:s.topL,left:s.left}
+    :{name:s.name,type:'text',paras:s.paras,topP:s.topP,selP:s.selP,selR:s.selR,topL:s.topL,left:s.left};
+}
+function saveRun(){
+  if(saveBroken)return;
+  const user=S.sheets.filter(s=>!s.isFake);
+  try{
+    localStorage.setItem(RK,JSON.stringify({v:1,at:Date.now(),active:cur().name,sheets:user.map(serializeSheet)}));
+    dirty=false;
+  }catch(e){saveBroken=true;} // hết dung lượng localStorage: ngừng tự lưu, không phá trải nghiệm
+}
+function loadRun(){
+  try{const s=JSON.parse(localStorage.getItem(RK)||'null');return s&&s.v===1&&Array.isArray(s.sheets)&&s.sheets.length?s:null}catch(e){return null}
+}
+function restoreSheet(d){
+  let sh;
+  if(d.type==='grid'){
+    sh=mkGrid(uniq(d.name));
+    (d.cells||[]).forEach(([r,c,o])=>{sh.cells.set(r*K+c,o);sh.maxRow=Math.max(sh.maxRow,r)});
+  }else{
+    sh=mkText(uniq(d.name),d.paras||[]);
+    sh.topP=d.topP||0;sh.selP=d.selP||0;
+  }
+  sh.selR=d.selR|0;sh.selC=d.selC|0;sh.topL=d.topL||0;sh.left=d.left||0;
+  return sh;
+}
+window.__gqFlush=saveRun;
+addEventListener('gq:flush',saveRun);
+addEventListener('pagehide',saveRun);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRun()});
+setInterval(()=>{if(dirty)saveRun()},4000);
+
 /* ---------- init ---------- */
-S.sheets.push(fakeSheet(),guideSheet());
-setTab('home');renderTabs();activate(1);lw=sc.clientWidth;
+const savedLib=loadRun();
+S.sheets.push(fakeSheet());
+if(savedLib)savedLib.sheets.forEach(d=>S.sheets.push(restoreSheet(d)));
+else S.sheets.push(guideSheet());
+setTab('home');renderTabs();
+activate(Math.max(1,S.sheets.findIndex(s=>s.name===(savedLib&&savedLib.active))));lw=sc.clientWidth;
+if(savedLib)$('#stmsg').textContent='Đã mở lại thư viện đã lưu';
 </script>
 </body>
 </html>

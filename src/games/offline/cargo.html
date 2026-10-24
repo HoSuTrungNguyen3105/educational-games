@@ -121,6 +121,36 @@ function reset(){
 }
 reset();
 
+/* ---------- Lưu tiến độ ----------
+ * App là SPA: rời trang chỉ phá iframe, pagehide của game không chạy.
+ * __gqFlush / event "gq:flush" để app yêu cầu ghi trước khi thoát
+ * (FLUSH_BRIDGE trong src/pages/OfflineGamePage.jsx). */
+const RK='cargo-run-v1';
+function saveRun(){
+  if(won)return;
+  try{localStorage.setItem(RK,JSON.stringify({v:1,at:Date.now(),x:truck.x,
+    items:ITEMS.map(i=>i.got?1:0),st:STARS.map(s=>s.got?1:0),stars,got}))}catch(e){}
+}
+function loadRun(){
+  try{const s=JSON.parse(localStorage.getItem(RK)||'null');return s&&s.v===1&&s.items?s:null}catch(e){return null}
+}
+function clearRun(){try{localStorage.removeItem(RK)}catch(e){}}
+function applyRun(s){
+  truck.x=clamp(s.x||200,60,MARKET_X-60);
+  (s.items||[]).forEach((f,i)=>{if(ITEMS[i])ITEMS[i].got=!!f});
+  (s.st||[]).forEach((f,i)=>{if(STARS[i])STARS[i].got=!!f});
+  stars=s.stars|0;got=s.got|0;
+  ITEMS.forEach(i=>{if(i.got)document.querySelectorAll('.slot')[i.t].classList.add('on')});
+  document.getElementById('stars').textContent='⭐ '+stars;
+  document.getElementById('knob').style.left=(clamp((truck.x-200)/(MARKET_X-260),0,1)*100)+'%';
+}
+const savedRun=loadRun();
+if(savedRun)applyRun(savedRun);
+window.__gqFlush=saveRun;
+addEventListener('gq:flush',saveRun);
+addEventListener('pagehide',saveRun);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRun()});
+
 /* ---------- Âm thanh ---------- */
 let ac=null,musicOn=true,melTimer=null,noteI=0;
 const MEL=[523,659,784,659,587,698,880,698,523,659,784,1047,988,784,659,587];
@@ -150,9 +180,10 @@ addEventListener('keyup',e=>{
   if(e.key==='ArrowRight'||e.key==='d')keyR=false;
   if(e.key==='ArrowLeft'||e.key==='a')keyL=false;});
 function hideHint(){document.getElementById('hint').style.opacity=0;}
-document.getElementById('back').onclick=reset;
-document.getElementById('home').onclick=reset;
-document.getElementById('again').onclick=reset;
+const restartGame=()=>{clearRun();reset()};
+document.getElementById('back').onclick=restartGame;
+document.getElementById('home').onclick=restartGame;
+document.getElementById('again').onclick=restartGame;
 
 /* ---------- Cập nhật ---------- */
 function update(dt){
@@ -198,6 +229,7 @@ function update(dt){
       if(o.k==='star'){stars++;document.getElementById('stars').textContent='⭐ '+stars;tone(988,.12,'square',.05);setTimeout(()=>tone(1319,.15,'square',.05),90);}
       else{got++;document.querySelectorAll('.slot')[o.t].classList.add('on');tone(659,.12,'triangle',.1);setTimeout(()=>tone(880,.2,'triangle',.1),110);}
       for(let i=0;i<8;i++)particles.push({x:o.x,y:oy,vx:(Math.random()-.5)*160,vy:(Math.random()-.5)*160,life:.8,c:'#ffd93b',r:4});
+      saveRun();
     }
   }
   cam+=((truck.x-W*0.32)-cam)*Math.min(1,dt*6);
@@ -208,6 +240,7 @@ function update(dt){
   document.getElementById('knob').style.left=(pr*100)+'%';
 }
 function finish(){
+  clearRun();
   tone(784,.2,'triangle',.12);setTimeout(()=>tone(988,.2,'triangle',.12),180);setTimeout(()=>tone(1319,.4,'triangle',.12),360);
   setTimeout(()=>{
     document.getElementById('res').innerHTML='Hàng hóa: '+got+'/4 &nbsp;|&nbsp; Số sao: ⭐ '+stars;
@@ -375,10 +408,11 @@ function drawFlowers(){
   }
 }
 
-let last=performance.now();
+let last=performance.now(),lastSave=0;
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   update(dt);
+  if(now-lastSave>1500){lastSave=now;saveRun();}
   ctx.clearRect(0,0,W,H);
   drawBg();drawGround();drawFlowers();drawMarket();drawCollectibles();drawParticles();drawTruck();
   requestAnimationFrame(loop);

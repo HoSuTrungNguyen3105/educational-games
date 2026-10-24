@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { navigate } from "../lib/router.js";
 import { findOfflineGame, makeFallbackMeta, resolveOfflineId } from "../games/offline/games-src/manifest.js";
 import { useGameVersion } from "../hooks/useGameVersion.js";
@@ -110,6 +110,43 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
     if (win) win.postMessage({ type: "gq:wallet", ...wallet, online: navigator.onLine }, "*");
   };
 
+  /**
+   * Bảo game ghi checkpoint ngay, chờ game xác nhận (tối đa 250ms).
+   * Sau đó cleanup của effect sync mới chụp snapshot localStorage → tiến độ
+   * vừa ghi nằm trong bản lưu, mở lại game là khôi phục được.
+   */
+  const flushGameSave = useCallback(
+    () =>
+      new Promise((resolve) => {
+        const win = iframeRef.current?.contentWindow;
+        if (!win) return resolve();
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          window.removeEventListener("message", onAck);
+          clearTimeout(timer);
+          resolve();
+        };
+        function onAck(event) {
+          if (event.source === win && event.data?.type === "gq:flushed") finish();
+        }
+        window.addEventListener("message", onAck);
+        const timer = setTimeout(finish, 250);
+        try {
+          win.postMessage({ type: "gq:flush" }, "*");
+        } catch {
+          finish();
+        }
+      }),
+    []
+  );
+
+  /** Đường thoát duy nhất của trang game: lưu xong mới về trang chủ. */
+  const leaveGame = useCallback(() => {
+    flushGameSave().then(() => navigate("/"));
+  }, [flushGameSave]);
+
   // Manifest giữ tên/emoji/màu đẹp. Nếu game mới chưa có trong manifest thì
   // tự dựng metadata từ <title> trong file để vẫn chơi được ngay.
   const meta = useMemo(() => {
@@ -196,7 +233,7 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.source !== iframeRef.current?.contentWindow) return;
-      if (event.data?.type === "quit") navigate("/");
+      if (event.data?.type === "quit") leaveGame();
       // Túi tiền = xu tài khoản: game chỉ báo CHÊNH LỆCH, host mới là nơi
       // lưu localStorage và gọi API (xem src/lib/coinWallet.js).
       if (event.data?.type === "gq:walletGet") {
@@ -209,7 +246,7 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [leaveGame]);
 
   // Mở trang là lấy xu từ API (có mạng) hoặc từ localStorage (mất mạng), rồi
   // đẩy vào iframe. Mỗi lần ví đổi (đổi vì chơi, vì sync API, vì có mạng lại)
@@ -294,7 +331,7 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
     <div className="fixed inset-0 bg-paper">
       <button
         type="button"
-        onClick={() => navigate("/")}
+        onClick={leaveGame}
         className="absolute top-3 left-3 z-20 rounded-full border-2 border-ink bg-paper2 px-3 py-1.5 text-sm font-extrabold text-ink shadow hover:bg-white"
         aria-label="Về trang chủ"
       >
