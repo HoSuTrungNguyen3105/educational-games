@@ -33,8 +33,8 @@ export default function KidSettingsCard() {
   return (
     <section className="space-y-4" aria-label="Cài đặt dành cho phụ huynh">
       {/* ─────────── Ứng hộ cho web ─────────── */}
-      <div className="rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center gap-4 shadow-sm"
-        style={{ background: "linear-gradient(120deg,#ff6fb5,#ff9ec7)", color: "#fff" }}>
+      <div className="rounded-xl p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+        style={{ background: "#FF6F91", color: "#fff" }}>
         <Mascot />
         <div className="flex-1 min-w-0">
           <h3 className="font-display text-lg font-extrabold leading-tight">Ứng hộ cho web</h3>
@@ -53,7 +53,7 @@ export default function KidSettingsCard() {
       {showDonate && <DonateModal onClose={() => setShowDonate(false)} />}
 
       {/* ─────────── Tuổi của bé ─────────── */}
-      <div className="rounded-3xl p-5 shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+      <div className="rounded-xl p-5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-3">
           <span className="text-2xl" aria-hidden="true">🎂</span>
           <div>
@@ -84,7 +84,7 @@ export default function KidSettingsCard() {
       </div>
 
       {/* ─────────── Song ngữ Anh–Việt ─────────── */}
-      <div className="rounded-3xl p-5 shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+      <div className="rounded-xl p-5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-3">
           <span className="text-2xl" aria-hidden="true">🈯</span>
           <div className="flex-1">
@@ -103,8 +103,8 @@ export default function KidSettingsCard() {
             style={{ background: "var(--bg)" }}>
             <button
               onClick={() => setKidSettings({ englishFirst: !s.englishFirst })}
-              className="rounded-2xl px-5 py-3 text-center font-display font-extrabold leading-tight text-white shadow transition active:scale-95"
-              style={{ background: "linear-gradient(120deg,#4aa8e0,#3d7bd1)", minWidth: 118 }}
+              className="rounded-lg px-5 py-3 text-center font-display font-extrabold leading-tight text-white transition active:scale-95"
+              style={{ background: "#3d7bd1", minWidth: 118 }}
             >
               <span className="block text-base uppercase">{s.englishFirst ? "cat" : "Con mèo"}</span>
               <span className="block text-xs font-bold opacity-90">{s.englishFirst ? "Con mèo" : "cat"}</span>
@@ -133,7 +133,7 @@ function AgeSlider({ age }) {
         style={{ background: "#f0e4cf" }} aria-hidden="true">
         <div className="absolute h-full rounded-full"
           style={{
-            background: "linear-gradient(90deg,#f7ab2e,#ef7d18)",
+            background: "#f7ab2e",
             left: 0,
             right: `${100 - ((age - min) / (max - min)) * 100}%`,
           }} />

@@ -20,7 +20,11 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [showGames, setShowGames] = useState(false);
+  // Trên desktop danh sách trò chơi mở sẵn để cột trái không trống; mobile giữ kiểu thu gọn.
+  const [showGames, setShowGames] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 1024px)").matches;
+  });
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
@@ -43,7 +47,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
     } catch { return false; }
   });
   const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
   const [platformTab, setPlatformTab] = useState("android");
   const [showIosGuide, setShowIosGuide] = useState(false);
 
@@ -91,7 +94,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1 && /Safari/.test(ua));
     const android = /Android/.test(ua);
     setIsIOS(iOS);
-    setIsAndroid(android);
     // auto chọn tab theo platform thực
     if (iOS) setPlatformTab("ios");
     else if (android) setPlatformTab("android");
@@ -334,7 +336,8 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const className = user.className || null;
 
   return (
-    <div className="flex-1 px-4 py-4 w-full w-full space-y-4">
+    // Giới hạn bề ngang trên desktop để trang không kéo giãn vô tận; mobile giữ nguyên lề cũ.
+    <div className="flex-1 w-full mx-auto max-w-[1120px] px-4 py-4 sm:px-6 lg:px-8 lg:py-8 space-y-5 lg:space-y-6">
       {/* foreground toast */}
       {fgToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm rounded-2xl shadow-xl border bg-white p-4 animate-[popIn_.25s_ease]" style={{ borderColor: "var(--line)" }}>
@@ -358,65 +361,63 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         </button>
       </div>
 
-      {/* Profile header spans full width */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
-        <div className="h-1.5" style={{ background: "linear-gradient(90deg, var(--accent), var(--purple, #8b5cf6))" }} />
-        <div className="p-4 flex items-center gap-4">
-          <div className="relative shrink-0">
-            <DressUpAvatarSmall
-              kind="avatar"
-              state={outfit.avatar.value}
-              size={64}
-              label={`Avatar ${outfitName("avatar", outfit.avatar.value)}`}
-              style={{ boxShadow: "0 0 0 3px var(--card), 0 0 0 5px var(--accent-bg)" }}
-            />
-            <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center text-sm"
-              style={{ background: "var(--card)", boxShadow: "0 0 0 2px var(--card)" }}>
-              {lv.level >= 10 ? "👑" : lv.level >= 5 ? "⭐" : "🌱"}
-            </div>
+      {/* Thẻ danh tính — trên desktop bảng xu/nến tự dồn sang phải. */}
+      <div className="rounded-xl p-4 lg:p-5 flex flex-wrap items-center gap-x-5 gap-y-3" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+        <div className="relative shrink-0">
+          <DressUpAvatarSmall
+            kind="avatar"
+            state={outfit.avatar.value}
+            size={64}
+            label={`Avatar ${outfitName("avatar", outfit.avatar.value)}`}
+            style={{ boxShadow: "0 0 0 3px var(--card), 0 0 0 5px var(--accent-bg)" }}
+          />
+          <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center text-sm"
+            style={{ background: "var(--card)", boxShadow: "0 0 0 2px var(--card)" }}>
+            {lv.level >= 10 ? "👑" : lv.level >= 5 ? "⭐" : "🌱"}
           </div>
+        </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <h1 className="font-display text-lg text-ink truncate">{user.name}</h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: "var(--accent-bg, #dbeafe)", color: "var(--accent)" }}>
-                {getRoleLabel(user.role)}
-              </span>
-            </div>
-            <p className="text-xs font-mono text-ink/40 mb-2">@{user.username}</p>
-
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold" style={{ color: "var(--accent)" }}>Lv{lv.level}</span>
-              <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--bg)" }}>
-                <div className="h-full rounded-full" style={{ width: lv.percent + "%", background: "linear-gradient(90deg, var(--accent), var(--purple, #8b5cf6))" }} />
-              </div>
-              <span className="text-[10px] font-mono text-ink/40">{lv.current}/{lv.next}</span>
-            </div>
-
-            <div className="flex items-center gap-2 mt-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold" style={{ background: "var(--bg)" }}>
-                💰 {(user.coins || 0).toLocaleString()}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold" style={{ background: "var(--bg)", color: "#d97706" }}>
-                ⭐ {(user.stars || 0).toLocaleString()}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold" style={{ background: "var(--bg)" }}>
-                🎮 {stats.totalPlays} lượt
-              </span>
-            </div>
+        <div className="flex-1 min-w-[190px]">
+          <div className="flex items-center gap-2 mb-0.5">
+            <h1 className="font-display text-lg text-ink truncate">{user.name}</h1>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0" style={{ background: "var(--accent-bg, #dbeafe)", color: "var(--accent)" }}>
+              {getRoleLabel(user.role)}
+            </span>
           </div>
+          <p className="text-xs font-mono text-ink/40">@{user.username}</p>
+
+          <div className="flex items-center gap-3 mt-2 max-w-[280px]">
+            <span className="text-xs font-bold" style={{ color: "var(--accent)" }}>Lv{lv.level}</span>
+            <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--bg)" }}>
+              <div className="h-full rounded-full" style={{ width: lv.percent + "%", background: "var(--accent)" }} />
+            </div>
+            <span className="text-[10px] font-mono text-ink/40">{lv.current}/{lv.next}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap lg:ml-auto">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: "var(--bg)" }}>
+            💰 {(user.coins || 0).toLocaleString()}
+          </span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: "var(--bg)", color: "#d97706" }}>
+            ⭐ {(user.stars || 0).toLocaleString()}
+          </span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: "var(--bg)" }}>
+            🎮 {stats.totalPlays} lượt
+          </span>
         </div>
       </div>
 
-      {/* Two-column layout on lg+ screens: avatar on the left, class + games on the right */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+      {/* Desktop: cột trái là thẻ Avatar & thú cưng, cột phải 320px gom Lớp học + Chấm công + Trò chơi.
+          Mobile vẫn xếp đúng thứ tự cũ vì thứ tự DOM không đổi. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 lg:gap-5 items-start lg:items-stretch">
+        <div className="rounded-xl p-4 lg:p-5 flex flex-col" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
           <div className="flex items-center gap-2 mb-3">
             <Palette className="w-4 h-4" style={{ color: "var(--accent)" }} />
             <span className="font-display text-sm text-ink">Avatar &amp; thú cưng</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 lg:gap-4 flex-1">
             {[
               { kind: "avatar", icon: "👕", title: "Nhân vật", btn: "Tùy chỉnh Avatar" },
               { kind: "pet", icon: "🐾", title: "Thú cưng", btn: "Tùy chỉnh Pet" },
@@ -424,16 +425,9 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               const state = outfit[kind].value;
               const parts = describeOutfit(kind, state);
               return (
-                <div key={kind}
-                  className="rounded-2xl p-3 flex flex-col items-center gap-1.5 transition hover:-translate-y-0.5"
-                  style={{
-                    background: "linear-gradient(180deg, var(--stage) 0%, var(--bg) 100%)",
-                    border: "1px solid var(--line)",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,.65), 0 2px 6px rgba(29,46,74,.05)",
-                  }}>
-                  <div className="w-full rounded-xl flex items-center justify-center py-2"
-                    style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
-                    <DressUpAvatar kind={kind} state={state} size={104}
+                <div key={kind} className="rounded-lg p-3 flex flex-col items-center gap-1.5" style={{ background: "var(--bg)" }}>
+                  <div className="w-full flex-1 grid place-items-center py-2">
+                    <DressUpAvatar kind={kind} state={state} size={132}
                       label={`${outfitName(kind, state)} — ${title}`} />
                   </div>
                   <p className="font-display text-sm text-ink text-center leading-tight">
@@ -444,8 +438,8 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                   </p>
                   <button
                     onClick={() => setCustomizer(kind)}
-                    className="mt-1 w-full rounded-xl text-white py-2 text-xs font-body font-semibold transition active:scale-[0.98]"
-                    style={{ background: "linear-gradient(135deg, var(--accent), var(--purple, #8b5cf6))" }}
+                    className="mt-1 w-full rounded-lg text-white py-2 text-xs font-body font-semibold transition active:scale-[0.98]"
+                    style={{ background: "var(--accent)" }}
                   >
                     ✏️ {btn}
                   </button>
@@ -459,8 +453,8 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           </p>
         </div>
 
-        <div className="space-y-4">
-          <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+        <div className="lg:col-start-2 lg:row-start-1 space-y-4 lg:space-y-5 min-w-0">
+          <div className="rounded-xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
             <div className="flex items-center gap-2 mb-3">
               <GraduationCap className="w-4 h-4 text-gold" />
               <span className="font-display text-sm text-ink">Lớp học</span>
@@ -484,9 +478,9 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               <form onSubmit={handleJoinClass} className="flex gap-2">
                 <input value={joinCode} onChange={e => setJoinCode(e.target.value)}
                   placeholder="Nhập mã lớp..."
-                  className="flex-1 px-3 py-2 rounded-xl bg-ink/5 border border-ink/10 text-sm font-body text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-gold/30" />
+                  className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-ink/5 border border-ink/10 text-sm font-body text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-gold/30" />
                 <button type="submit" disabled={joining || !joinCode.trim()}
-                  className="px-4 py-2 bg-gold text-white rounded-xl text-sm font-semibold hover:bg-gold/80 transition disabled:opacity-50">
+                  className="px-4 py-2 bg-gold text-white rounded-lg text-sm font-semibold hover:bg-gold/80 transition disabled:opacity-50">
                   {joining ? "..." : "Vào lớp"}
                 </button>
               </form>
@@ -498,11 +492,11 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           {hasPermission(user.role, 'attendance.view') && (
             <button
               onClick={() => navigate('/attendance')}
-              className="w-full rounded-2xl p-4 flex items-center gap-3 hover:bg-ink/3 transition"
+              className="w-full rounded-xl p-4 flex items-center gap-3 hover:bg-ink/3 transition text-left"
               style={{ background: "var(--card)", border: "1px solid var(--line)" }}
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #6C3BF5, #8b5cf6)" }}>
-                <UserCheck className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--accent-bg)" }}>
+                <UserCheck className="w-5 h-5" style={{ color: "var(--accent)" }} />
               </div>
               <div className="flex-1 text-left">
                 <div className="flex items-center gap-2">
@@ -519,7 +513,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             </button>
           )}
 
-          <div className="rounded-2xl overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+          <div className="rounded-xl overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
             <button onClick={() => setShowGames(!showGames)}
               className="w-full flex items-center justify-between p-4 hover:bg-ink/3 transition">
               <div className="flex items-center gap-2">
@@ -531,7 +525,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             </button>
 
             {showGames && (
-              <div className="px-4 pb-4 space-y-2 max-h-80 overflow-y-auto">
+              <div className="px-2 pb-2 space-y-1 max-h-80 lg:max-h-[320px] overflow-y-auto">
                 {games.length === 0 ? (
                   <p className="text-sm text-ink/40 text-center py-4">Chưa có game nào</p>
                 ) : (
@@ -543,28 +537,25 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         </div>
       </div>
 
-      {/* ─────────── CÀI ĐẶT DÀNH CHO PHỤ HUYNH ─────────── */}
-      <div className="flex items-center gap-3 pt-2">
-        <button onClick={onBack} aria-label="Quay lại"
-          className="w-10 h-10 rounded-full grid place-items-center shadow-sm shrink-0"
-          style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div>
-          <h2 className="font-display text-lg font-extrabold text-ink leading-tight">Cài đặt</h2>
-          <p className="text-xs text-ink/50">Dành cho phụ huynh</p>
-        </div>
-      </div>
-      <KidSettingsCard />
+      {/* ─────────── CÀI ĐẶT (cột trái) + ỨNG DỤNG & THÔNG BÁO (cột phải) ─────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 lg:gap-5 items-start">
+        <div className="space-y-4 min-w-0">
+          <div className="flex items-center gap-3">
+            <h2 className="font-display text-base font-extrabold text-ink leading-tight shrink-0">Cài đặt</h2>
+            <span className="text-xs text-ink/45 shrink-0">Dành cho phụ huynh</span>
+            <div className="flex-1 h-px" style={{ background: "var(--line)" }} />
+          </div>
 
-      {/* ─── PWA Installation + Push Notifications ─── (chuẩn hiweb, cải thiện tone EduPlay) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* PWA Install Card */}
-        <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6C3BF5,#8b5cf6)" }}>
-              <Download className="w-4 h-4 text-white" />
-            </div>
+          <KidSettingsCard />
+        </div>
+
+        <div className="space-y-4 min-w-0">
+          {/* PWA Install Card */}
+          <div className="rounded-xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-bg)" }}>
+                <Download className="w-4 h-4" style={{ color: "var(--accent)" }} />
+              </div>
             <div className="flex-1">
               <h3 className="font-display text-sm text-ink">Cài đặt ứng dụng</h3>
               <p className="text-[11px] text-ink/40">Truy cập nhanh như app native</p>
@@ -581,7 +572,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               <p className="text-xs text-ink/60 mb-3">Cài EduPlay về màn hình chính để mở nhanh, dùng offline và nhận thông báo đẩy.</p>
 
               {/* Platform Tabs — giữ nguyên ý tưởng hiweb */}
-              <div className="flex gap-1.5 p-1 rounded-xl mb-3" style={{ background: "var(--bg)" }}>
+              <div className="flex gap-1.5 p-1 rounded-lg mb-3" style={{ background: "var(--bg)" }}>
                 <button
                   onClick={() => setPlatformTab("android")}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition ${platformTab === "android" ? "bg-white shadow text-ink border border-ink/10" : "text-ink/50 hover:text-ink"}`}
@@ -603,34 +594,34 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               </div>
 
               {/* Steps */}
-              <div className="rounded-xl p-3 mb-3" style={{ background: "var(--bg)", border: "1px solid var(--line)" }}>
+              <div className="rounded-lg p-3 mb-3" style={{ background: "var(--bg)" }}>
                 {platformTab === "android" && (
                   <ol className="space-y-2 text-xs text-ink/70">
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span><span>Nhấn menu <MoreVertical className="w-3 h-3 inline mx-0.5" /> góc trên phải trình duyệt</span></li>
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</span><span>Chọn “Thêm vào Màn hình chính” / “Cài đặt ứng dụng”</span></li>
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</span><span>Nhấn “Cài đặt” để xác nhận</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span><span>Nhấn menu <MoreVertical className="w-3 h-3 inline mx-0.5" /> góc trên phải trình duyệt</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</span><span>Chọn “Thêm vào Màn hình chính” / “Cài đặt ứng dụng”</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</span><span>Nhấn “Cài đặt” để xác nhận</span></li>
                   </ol>
                 )}
                 {platformTab === "ios" && (
                   <ol className="space-y-2 text-xs text-ink/70">
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span><span>Nhấn nút Chia sẻ <Share2 className="w-3 h-3 inline mx-0.5 text-violet-600" /> ở thanh Safari</span></li>
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</span><span>Cuộn xuống → “Thêm vào Màn hình chính”</span></li>
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</span><span>Nhấn “Thêm” ở góc trên phải</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span><span>Nhấn nút Chia sẻ <Share2 className="w-3 h-3 inline mx-0.5 text-violet-600" /> ở thanh Safari</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</span><span>Cuộn xuống → “Thêm vào Màn hình chính”</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</span><span>Nhấn “Thêm” ở góc trên phải</span></li>
                   </ol>
                 )}
                 {platformTab === "desktop" && (
                   <ol className="space-y-2 text-xs text-ink/70">
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span><span>Tìm biểu tượng cài đặt <PlusSquare className="w-3 h-3 inline mx-0.5" /> trên thanh địa chỉ</span></li>
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</span><span>Nhấn “Cài đặt” trong popup</span></li>
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</span><span>Hoặc: Menu ⋮ → “Cài đặt EduPlay…”</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span><span>Tìm biểu tượng cài đặt <PlusSquare className="w-3 h-3 inline mx-0.5" /> trên thanh địa chỉ</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</span><span>Nhấn “Cài đặt” trong popup</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</span><span>Hoặc: Menu ⋮ → “Cài đặt EduPlay…”</span></li>
                   </ol>
                 )}
               </div>
 
               <button
                 onClick={handleInstallClick}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white shadow hover:opacity-90 transition active:scale-[0.98]"
-                style={{ background: "linear-gradient(135deg,#6C3BF5,#a78bfa)" }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold text-white hover:opacity-90 transition active:scale-[0.98]"
+                style={{ background: "var(--accent)" }}
               >
                 <Download className="w-4 h-4" /> Cài đặt ứng dụng
               </button>
@@ -649,11 +640,11 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           )}
         </div>
 
-        {/* Push Notification Card — cải thiện từ hiweb */}
-        <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+        {/* Push Notification Card */}
+        <div className="rounded-xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#F4B942,#f59e0b)" }}>
-              <Bell className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#FDF0D5" }}>
+              <Bell className="w-4 h-4 text-gold" />
             </div>
             <div className="flex-1">
               <h3 className="font-display text-sm text-ink">Thông báo đẩy</h3>
@@ -675,7 +666,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           </div>
 
           {/* Trạng thái chi tiết */}
-          <div className="rounded-xl p-3 mb-3 text-xs" style={{ background: "var(--bg)", border: "1px solid var(--line)" }}>
+          <div className="rounded-lg p-3 mb-3 text-xs" style={{ background: "var(--bg)" }}>
             <div className="flex items-center gap-2 mb-1.5">
               <Info className="w-3.5 h-3.5 text-ink/40" />
               <span className="font-semibold text-ink">Trạng thái</span>
@@ -707,8 +698,8 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             <button
               onClick={handleEnablePush}
               disabled={pushLoading || pushSupport.permission === "denied"}
-              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold text-white shadow disabled:opacity-50 transition active:scale-[0.98]"
-              style={{ background: pushSupport.permission === "granted" ? "#10b981" : "linear-gradient(135deg,#6C3BF5,#8b5cf6)" }}
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold text-white disabled:opacity-50 transition active:scale-[0.98]"
+              style={{ background: pushSupport.permission === "granted" ? "#10b981" : "var(--accent)" }}
             >
               {pushLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <BellRing className="w-3.5 h-3.5" />}
               {pushSupport.permission === "granted" ? "Đã bật" : "Bật thông báo"}
@@ -716,7 +707,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             <button
               onClick={handleTestPush}
               disabled={testingPush || pushSupport.permission !== "granted"}
-              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold border bg-white hover:bg-ink/5 transition disabled:opacity-40 active:scale-[0.98]"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold border bg-white hover:bg-ink/5 transition disabled:opacity-40 active:scale-[0.98]"
               style={{ borderColor: "var(--line)", color: "var(--ink)" }}
             >
               {testingPush ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
@@ -727,18 +718,19 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             <button
               onClick={handleResetDevices}
               disabled={pushLoading}
-              className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-semibold text-ink/60 hover:text-ink hover:bg-ink/5 transition disabled:opacity-40"
+              className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[11px] font-semibold text-ink/60 hover:text-ink hover:bg-ink/5 transition disabled:opacity-40"
             >
               <Trash2 className="w-3 h-3" /> Reset thiết bị
             </button>
             <button
               onClick={() => setPushSupport(getPushSupportStatus())}
-              className="px-3 py-2 rounded-xl text-[11px] font-semibold text-ink/60 hover:text-ink hover:bg-ink/5 transition"
+              className="px-3 py-2 rounded-lg text-[11px] font-semibold text-ink/60 hover:text-ink hover:bg-ink/5 transition"
             >
               <RefreshCw className="w-3 h-3 inline mr-1" /> Làm mới
             </button>
           </div>
           <p className="text-[11px] text-ink/30 text-center mt-2">Thông báo chạy qua Firebase Cloud Messaging. Hoạt động cả khi app đóng (SW).</p>
+        </div>
         </div>
       </div>
 
@@ -795,7 +787,7 @@ function GameRow({ game }) {
         </div>
         <div className="flex items-center gap-2 mt-1">
           <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--bg)" }}>
-            <div className="h-full rounded-full" style={{ width: progress + "%", background: "linear-gradient(90deg, var(--accent), var(--purple, #8b5cf6))" }} />
+            <div className="h-full rounded-full" style={{ width: progress + "%", background: "var(--accent)" }} />
           </div>
           <span className="text-[10px] font-mono text-ink/40">{progress}%</span>
         </div>

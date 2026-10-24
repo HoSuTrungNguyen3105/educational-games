@@ -236,6 +236,20 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* 641–767px: header vẫn dựng nút "Bảng điều khiển" đầy chữ nên không còn chỗ cho chip
+   Hồ sơ (tràn ngang ~95px) → thu nút đó về icon và ẩn chip. Tab "Cá nhân" ở thanh dưới
+   đã đủ lối vào trang hồ sơ trên màn nhỏ. */
+@media (max-width: 767px) {
+  .gq-kidchip { display: none; }
+  .gq-adminbtn { width: 36px; height: 36px; padding: 0; justify-content: center; }
+  .gq-adminbtn span { display: none; }
+  .gq-actions { gap: 6px; }
+}
+/* 768–1199px: đủ chỗ cho nút nhưng chưa đủ cho tên bé → chip chỉ còn ảnh đại diện. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .gq-kidchip { padding: 0 6px; justify-content: center; }
+  .gq-kidchip__name { display: none; }
+}
 
 /* ─────────── HÀNG THÚ CƯNG + TAB ĐIỀU HƯỚNG (header) ─────────── */
 
@@ -1075,12 +1089,6 @@
   .gq-logo__sub { display: none; }
   .gq-actions { flex-shrink: 0; }
   .gq-age__sub { display: none; }
-  /* Màn hẹp đã có "Cá nhân" ở thanh dưới + Hồ sơ trong menu → ẩn nút hồ sơ trên
-     header để các nút Xu/Sao/Âm thanh/Menu không bị co lại. */
-  .gq-kidchip { display: none; }
-  .gq-adminbtn { width: 36px; height: 36px; padding: 0; justify-content: center; }
-  .gq-adminbtn span { display: none; }
-  .gq-actions { gap: 6px; }
   .gq-hero { gap: 8px; margin-bottom: 13px; }
   .gq-hero__mascot { width: 70px; height: 70px; }
   .gq-hero__bubble { padding: 11px 14px; border-radius: 18px; }

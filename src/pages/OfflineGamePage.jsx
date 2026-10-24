@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate } from "../lib/router.js";
-import { findOfflineGame, makeFallbackMeta } from "../games/offline/games-src/manifest.js";
+import { findOfflineGame, makeFallbackMeta, resolveOfflineId } from "../games/offline/games-src/manifest.js";
 import { useGameVersion } from "../hooks/useGameVersion.js";
 import { gameCache } from "../lib/gameCache.js";
 import { addCoins, loadWallet, readWallet, subscribeWallet } from "../lib/coinWallet.js";
@@ -55,20 +55,38 @@ const HTML_BY_ID = Object.fromEntries(
  */
 const EMBEDDED_SNIPPET = `<style>html.gq-embedded #homeBackBtn,html.gq-embedded .bar>.back{display:none!important}html.gq-embedded #app{padding-top:56px!important}html.gq-embedded .sq#back{top:64px!important}</style><script>try{if(window.parent&&window.parent!==window)document.documentElement.classList.add("gq-embedded")}catch(e){}</script>`;
 
+/**
+ * Cầu "ghi tiến độ NGAY" từ app xuống game.
+ *
+ * Game giữ trạng thái đang chơi trong biến JS và chỉ ghi localStorage khi có
+ * mốc (thắng/thua/tick). App là SPA: bấm "← Trang chủ" chỉ đổi route rồi phá
+ * iframe, nên `pagehide`/`visibilitychange` của game KHÔNG chạy → ván dở bay
+ * sạch, mở lại mất nhiệm vụ đã làm.
+ *
+ * Vì vậy trước khi rời trang, app postMessage `{type:"gq:flush"}`; game nào
+ * đăng ký `window.__gqFlush = fn` hoặc `addEventListener("gq:flush", fn)` sẽ
+ * ghi checkpoint ngay, app chờ game xác nhận (tối đa 250ms) mới navigate.
+ * Game không đăng ký vẫn an toàn: snapshot localStorage hiện có vẫn được sync.
+ */
+const FLUSH_BRIDGE = `<script>(function(){window.addEventListener("message",function(ev){var d=ev.data;if(!d||d.type!=="gq:flush")return;try{if(typeof window.__gqFlush==="function")window.__gqFlush();}catch(e){}try{window.dispatchEvent(new CustomEvent("gq:flush"));}catch(e){}try{document.dispatchEvent(new CustomEvent("gq:flush"));}catch(e){}try{ev.source&&ev.source.postMessage({type:"gq:flushed"},"*");}catch(e){}});})();</script>`;
+
 function injectGameUi(html) {
   const tokens = `<style id="gq-tokens">${TOKENS_CSS}</style>`;
+  const bridge = `${EMBEDDED_SNIPPET}${FLUSH_BRIDGE}`;
   const withTokens = /<head[^>]*>/i.test(html)
     ? html.replace(/<head[^>]*>/i, (m) => `${m}${tokens}`)
     : `${tokens}${html}`;
   return /<\/body>/i.test(withTokens)
-    ? withTokens.replace(/<\/body>/i, () => `${EMBEDDED_SNIPPET}</body>`)
-    : withTokens + EMBEDDED_SNIPPET;
+    ? withTokens.replace(/<\/body>/i, () => `${bridge}</body>`)
+    : withTokens + bridge;
 }
 
 
 /** Trang chơi 1 game offline — dùng chung cho mọi game trong thư mục offline. */
-export default function OfflineGamePage({ gameId }) {
+export default function OfflineGamePage({ gameId: rawGameId }) {
   const iframeRef = useRef(null);
+  // id cũ (Excel, GenshinUIReplica, COIPhongLinh…) → id hiện tại của file HTML.
+  const gameId = resolveOfflineId(rawGameId);
   const isSchoolMissionRedirect =
     gameId === "School_mission" || gameId === "school-mission";
 

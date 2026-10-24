@@ -1,5 +1,12 @@
 // Danh mục game offline. Đây là nguồn sự thật cho trang Home và route /offline/:id.
-// Sinh tự động bởi scripts/split-offline-games.mjs.
+//
+// ID = tên file HTML (bỏ .html) trong src/games/offline/ — route /offline/<id>
+// và key save `offline:<id>` đều suy ra từ đây, nên đổi id là đổi luôn đường dẫn
+// cũ + dữ liệu đã lưu. Vì vậy file mới khai báo ở đây phải dùng kebab-case.
+//
+// 17 game đầu (engine: 'single') sinh từ scripts/build-offline-games.mjs nên
+// tên tiếng Việt nằm trong games-src/<id>.js; các game còn lại viết tay và
+// giữ metadata ngay trong danh mục này — thêm/sửa tên là làm thủ công tại đây.
 
 export const OFFLINE_GAME_MANIFEST = [
   // `thumbnail`: tên file ảnh nằm trong public/. Client tự ghép base URL
@@ -22,30 +29,45 @@ export const OFFLINE_GAME_MANIFEST = [
   { id: 'riddle', name: 'Phản Xạ Đèn Xanh', icon: '🚦', tag: 'Arcade', grad: 'from-coral-400 to-orange-500', engine: 'single', thumbnail: 'phan-xa-den-xanh.png', file: 'src/games/offline/riddle.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'shapecount', name: 'Bắt Vật Thể', icon: '🎯', tag: 'Phản xạ', grad: 'from-pink-400 to-rose-500', engine: 'single', thumbnail: 'bat-vat-the.png', file: 'src/games/offline/shapecount.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'plantvsanimal', name: 'Vườn Thủ Hộ', icon: '🌻', tag: 'Chiến thuật', grad: 'from-green-400 to-lime-600', engine: 'standalone', thumbnail: 'vuon-thu-ho.png', file: 'src/games/offline/plantvsanimal.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'chem-trai-cay', name: 'Chém Trái Cây', icon: '🍉', tag: 'Phản xạ', grad: 'from-red-400 to-rose-600', engine: 'single', thumbnail: 'chem-trai-cay.png', file: 'src/games/offline/chem-trai-cay.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'hu-trai-cay', name: 'Hũ Trái Cây', icon: '🫙', tag: 'Vui vẻ', grad: 'from-amber-400 to-orange-500', engine: 'single', thumbnail: 'hu-trai-cay.png', file: 'src/games/offline/hu-trai-cay.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'xep-khoi', name: 'Xếp Khối Màu', icon: '🧊', tag: 'Logic', grad: 'from-cyan-400 to-sky-500', engine: 'single', thumbnail: 'xep-khoi-mau.png', file: 'src/games/offline/xep-khoi.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'pha-gach', name: 'Phá Gạch Neon', icon: '🧱', tag: 'Giải trí', grad: 'from-fuchsia-400 to-purple-600', engine: 'single', thumbnail: 'pha-gach-neon.png', file: 'src/games/offline/pha-gach.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'nhay-xoay', name: 'Nhảy Xoáy', icon: '🌀', tag: 'Game 3D', grad: 'from-indigo-400 to-blue-600', engine: 'single', thumbnail: 'nhay-xoay.png', file: 'src/games/offline/nhay-xoay.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'goc-thu-gian', name: 'Góc Thư Giãn', icon: '🧘', tag: 'Thư giãn', grad: 'from-teal-400 to-emerald-600', engine: 'single', thumbnail: 'goc-thu-gian.png', file: 'src/games/offline/goc-thu-gian.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'chem-trai-cay', name: 'Chém Trái Cây', icon: '🍉', tag: 'Phản xạ', grad: 'from-red-400 to-rose-600', engine: 'standalone', thumbnail: 'chem-trai-cay.png', file: 'src/games/offline/chem-trai-cay.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'hu-trai-cay', name: 'Hũ Trái Cây', icon: '🫙', tag: 'Vui vẻ', grad: 'from-amber-400 to-orange-500', engine: 'standalone', thumbnail: 'hu-trai-cay.png', file: 'src/games/offline/hu-trai-cay.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'xep-khoi', name: 'Xếp Khối Màu', icon: '🧊', tag: 'Logic', grad: 'from-cyan-400 to-sky-500', engine: 'standalone', thumbnail: 'xep-khoi-mau.png', file: 'src/games/offline/xep-khoi.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'pha-gach', name: 'Phá Gạch Neon', icon: '🧱', tag: 'Giải trí', grad: 'from-fuchsia-400 to-purple-600', engine: 'standalone', thumbnail: 'pha-gach-neon.png', file: 'src/games/offline/pha-gach.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'nhay-xoay', name: 'Nhảy Xoáy', icon: '🌀', tag: 'Game 3D', grad: 'from-indigo-400 to-blue-600', engine: 'standalone', thumbnail: 'nhay-xoay.png', file: 'src/games/offline/nhay-xoay.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'goc-thu-gian', name: 'Góc Thư Giãn', icon: '🧘', tag: 'Thư giãn', grad: 'from-teal-400 to-emerald-600', engine: 'standalone', thumbnail: 'goc-thu-gian.png', file: 'src/games/offline/goc-thu-gian.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   // { id: 'trung-tam-game', name: 'Trung Tâm Game', icon: '💾', tag: 'Sao lưu', grad: 'from-slate-400 to-slate-600', engine: 'single', file: 'src/games/offline/trung-tam-game.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'night-strike', name: 'Săn zombie', icon: '🧟', tag: 'Phản xạ', grad: 'from-red-400 to-rose-600', engine: 'single', thumbnail: 'san-zombie.png', file: 'src/games/offline/night-strike.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'night-strike', name: 'Săn Zombie', icon: '🧟', tag: 'Phản xạ', grad: 'from-red-400 to-rose-600', engine: 'standalone', thumbnail: 'san-zombie.png', file: 'src/games/offline/night-strike.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
 
-  { id: 'dap-sau-bo', name: 'Đập Sâu Bọ', icon: '🪲', tag: 'Đập côn trùng', grad: 'from-teal-400 to-emerald-600', engine: 'single', thumbnail: 'dap-sau-bo.png', file: 'src/games/offline/dap-sau-bo.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'ghep-cap-vuon', name: 'Ghép Cặp Vườn', icon: '🧩', tag: 'Ghép đôi', grad: 'from-pink-400 to-rose-500', engine: 'single', thumbnail: 'ghep-cap-vuon.png', file: 'src/games/offline/ghep-cap-vuon.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'sau-an-la', name: 'Sâu Ăn Táo', icon: '🐛', tag: 'Bảo vệ vườn', grad: 'from-indigo-400 to-blue-600', engine: 'single', file: 'src/games/offline/sau-an-la.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'parkour', name: 'Parkour Tri Thức 3D', icon: '🏃', tag: 'Parkour 3D', grad: 'from-pink-400 to-rose-500', engine: 'single', file: 'src/games/offline/parkour.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'parkour-tri-thuc', name: 'Parkour Tri Thức Pro', icon: '🧗', tag: 'Parkour 3D', grad: 'from-fuchsia-500 to-violet-700', engine: 'standalone', file: 'src/games/offline/parkour-tri-thuc.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'dap-sau-bo', name: 'Đập Sâu Bọ', icon: '🪲', tag: 'Đập côn trùng', grad: 'from-teal-400 to-emerald-600', engine: 'standalone', thumbnail: 'dap-sau-bo.png', file: 'src/games/offline/dap-sau-bo.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'ghep-cap-vuon', name: 'Ghép Cặp Vườn', icon: '🧩', tag: 'Ghép đôi', grad: 'from-pink-400 to-rose-500', engine: 'standalone', thumbnail: 'ghep-cap-vuon.png', file: 'src/games/offline/ghep-cap-vuon.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'sau-an-la', name: 'Sâu Ăn Táo', icon: '🐛', tag: 'Bảo vệ vườn', grad: 'from-indigo-400 to-blue-600', engine: 'standalone', file: 'src/games/offline/sau-an-la.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'parkour-tri-thuc', name: 'Parkour Tri Thức', icon: '🧗', tag: 'Parkour 3D', grad: 'from-fuchsia-500 to-violet-700', engine: 'standalone', file: 'src/games/offline/parkour-tri-thuc.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'nong-trai-moi', name: 'Nông Trại Vui Vẻ', icon: '🚜', tag: 'Mô phỏng', grad: 'from-green-400 to-lime-500', engine: 'standalone', thumbnail: 'nong-trai-nang-cap.png', file: 'src/games/offline/nong-trai-moi.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'fieldrunner', name: 'Phòng thủ cánh đồng', icon: '🌾', tag: 'Phòng thủ', grad: 'from-lime-400 to-green-600', engine: 'standalone', file: 'src/games/offline/fieldrunner.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'cargo', name: 'Xe tải ra chợ', icon: '🚚', tag: 'Arcade', grad: 'from-amber-400 to-orange-500', engine: 'standalone', file: 'src/games/offline/cargo.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'Excel', name: 'Bảng Tính Bé', icon: '📊', tag: 'Học tập', grad: 'from-emerald-400 to-green-600', engine: 'standalone', file: 'src/games/offline/Excel.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
-  { id: 'GenshinUIReplica', name: 'Bảng Tính Bé', icon: '📊', tag: 'Học tập', grad: 'from-emerald-400 to-green-600', engine: 'standalone', file: 'src/games/offline/GenshinUIReplica.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'fieldrunner', name: 'Phòng Thủ Cánh Đồng', icon: '🌾', tag: 'Chiến thuật', grad: 'from-lime-400 to-green-600', engine: 'standalone', file: 'src/games/offline/fieldrunner.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'cargo', name: 'Xe Tải Ra Chợ', icon: '🚚', tag: 'Phiêu lưu', grad: 'from-amber-400 to-orange-500', engine: 'standalone', file: 'src/games/offline/cargo.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'bang-tinh', name: 'Bảng Tính Bé', icon: '📊', tag: 'Học tập', grad: 'from-emerald-400 to-green-600', engine: 'standalone', file: 'src/games/offline/bang-tinh.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'vung-dat-gio', name: 'Vùng Đất Gió', icon: '🍃', tag: 'Thế giới mở', grad: 'from-teal-400 to-sky-600', engine: 'standalone', file: 'src/games/offline/vung-dat-gio.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  { id: 'coi-phong-linh', name: 'Cõi Phong Linh', icon: '🗡️', tag: 'Thế giới mở', grad: 'from-indigo-400 to-violet-600', engine: 'standalone', file: 'src/games/offline/coi-phong-linh.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
 
   // School_mission KHÔNG thuộc offline — xem route /school-mission và src/games/school_mission/
 ];
 
 export const offlineGameIds = OFFLINE_GAME_MANIFEST.map((g) => g.id);
+
+/**
+ * id cũ → id hiện tại. Ba game viết tay đặt tên theo file gốc (ViếtHoa/KhôngDấu)
+ * đã đổi thành id kebab-case; alias giữ cho link /offline/<id-cũ> còn mở được.
+ * Save cũ không mất gì vì cả ba file trước đây đều không ghi localStorage.
+ */
+export const OFFLINE_GAME_ALIASES = {
+  COIPhongLinh: 'coi-phong-linh',
+  GenshinUIReplica: 'vung-dat-gio',
+  Excel: 'bang-tinh',
+};
+
+export function resolveOfflineId(id) {
+  return OFFLINE_GAME_ALIASES[id] || id;
+}
 
 export function findOfflineGame(id) {
   return OFFLINE_GAME_MANIFEST.find((g) => g.id === id) || null;

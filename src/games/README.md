@@ -47,7 +47,8 @@ npm run games:test     # kiểm tra manifest khớp với file trên đĩa
 
 | Chủ đề | Thư mục game | File | Tên hiển thị |
 |---|---|---|---|
-| 3d | `genshin-ui-replica/` | `GenshinUIReplica.html` | Genshin Impact UI Replica |
+| 3d | — (file viết tay) | `vung-dat-gio.html` | Vùng Đất Gió |
+| 3d | — (file viết tay) | `coi-phong-linh.html` | 🗡️ Cõi Phong Linh |
 | 3d | `labyrinth/` | `Labyrinth.html` | 🌀 Labyrinth - Cực Khó |
 | 3d | `pixel-party-catcher/` | `PixelPartyCatcher.html` | 🎂 Pixel Party Catcher |
 | 3d | `pixel-platform-jump/` | `PixelPlatformJump.html` | 🎮 Pixel Platform Jump |
