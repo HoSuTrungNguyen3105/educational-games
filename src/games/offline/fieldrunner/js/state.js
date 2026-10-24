@@ -22,9 +22,11 @@ let dist;                  // bản đồ khoảng cách tới cổng ra
 let pathPts = [];          // đường đi để vẽ
 let pendingSpawns = [];    // địch sinh ra giữa trận (phân thân, triệu hồi)
 
+// money/names được reset() gán trước khi HUD vẽ; lives/wave cần giá trị 0 để
+// updUI() lần đầu (màn chọn bản đồ) không hiện NaN trong điểm.
 let money;
-let lives;
-let wave;
+let lives = 0;
+let wave = 0;
 let spawnQ;
 let spawnT;
 let paused;

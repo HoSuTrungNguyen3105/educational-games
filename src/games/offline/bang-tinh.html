@@ -884,7 +884,7 @@ function serializeSheet(s){
 }
 function saveRun(){
   if(saveBroken)return;
-  const user=S.sheets.filter(s=>!s.isFake);
+  const user=S.sheets.filter(s=>!s.isFake&&!s.isGuide);
   try{
     localStorage.setItem(RK,JSON.stringify({v:1,at:Date.now(),active:cur().name,sheets:user.map(serializeSheet)}));
     dirty=false;
@@ -913,9 +913,8 @@ setInterval(()=>{if(dirty)saveRun()},4000);
 
 /* ---------- init ---------- */
 const savedLib=loadRun();
-S.sheets.push(fakeSheet());
-if(savedLib)savedLib.sheets.forEach(d=>S.sheets.push(restoreSheet(d)));
-else S.sheets.push(guideSheet());
+S.sheets.push(fakeSheet(),guideSheet());
+if(savedLib)savedLib.sheets.filter(d=>d.name!=='Hướng dẫn').forEach(d=>S.sheets.push(restoreSheet(d)));
 setTab('home');renderTabs();
 activate(Math.max(1,S.sheets.findIndex(s=>s.name===(savedLib&&savedLib.active))));lw=sc.clientWidth;
 if(savedLib)$('#stmsg').textContent='Đã mở lại thư viện đã lưu';
