@@ -1,0 +1,1 @@
+import{o as e}from"./petApi-Dug_i-jF.js";async function t(t){return e(t)}export{t};
