@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getCollection } from "../db.js";
 import { config } from "../config.js";
+import { REDEEM_ACHIEVEMENTS, findRedeemAchievement } from "../config/redeemCatalog.js";
 import { sanitizeAvatar, sanitizePet } from "../lib/outfitCatalog.js";
 
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -231,7 +232,8 @@ export async function updateUser(userId, { name, email, role }) {
   return publicUser(updated);
 }
 
-const STAR_TO_COIN_RATE = 10;
+/** 1 sao = 20.000 coin (sao là đơn vị lớn hơn coin). */
+export const STAR_TO_COIN_RATE = 20000;
 
 // ── XP / Level ────────────────────────────────────────────────────────────
 // Đồng nhất với XP_PER_LEVEL của miniGameService để hồ sơ không bị lệch.
@@ -281,32 +283,130 @@ export async function addXp(userId, amount) {
   };
 }
 
-export async function getStars(userId) {
-  const user = await getCollection(COLLECTION).findOne({ id: userId });
-  return user?.stars || 0;
+/**
+ * ── Wallet (coin + sao chung một API) ─────────────────────────────────────
+ * Coin và sao trước đây nằm ở hai endpoint riêng (`/me/coins`, `/me/stars`);
+ * gộp lại thành một vì mọi giao dịch (đổi sao ↔ coin, đổi thành tựu) đều chạm
+ * cả hai loại tiền và cần được ghi trong một lần update.
+ */
+function walletFrom(user) {
+  return { coins: user?.coins || 0, stars: user?.stars || 0 };
 }
 
-export async function addStars(userId, amount) {
-  if (typeof amount !== "number") throw new Error("amount must be a number");
-  const user = await getCollection(COLLECTION).findOne({ id: userId });
+/**
+ * @param {{coins?: number, stars?: number}} delta số cộng thêm (âm = trừ bớt)
+ * @returns {Promise<{coins: number, stars: number}>} số dư mới
+ */
+export async function adjustWallet(userId, delta = {}) {
+  const coins = Math.floor(Number(delta?.coins) || 0);
+  const stars = Math.floor(Number(delta?.stars) || 0);
+  if (coins === 0 && stars === 0) throw new Error("Thay đổi ví không hợp lệ");
+
+  const col = getCollection(COLLECTION);
+  const user = await col.findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");
-  const newTotal = Math.max(0, (user.stars || 0) + amount);
-  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { stars: newTotal } });
-  return newTotal;
+  if (coins < 0 && (user.coins || 0) + coins < 0) throw new Error("Không đủ coin");
+  if (stars < 0 && (user.stars || 0) + stars < 0) throw new Error("Không đủ sao");
+
+  const inc = {};
+  if (coins) inc.coins = coins;
+  if (stars) inc.stars = stars;
+  await col.updateOne({ id: userId }, { $inc: inc });
+  return walletFrom(await col.findOne({ id: userId }));
 }
 
-export async function exchangeStarsForCoins(userId) {
-  const user = await getCollection(COLLECTION).findOne({ id: userId });
+/** amount bỏ trống = đổi toàn bộ số đang có. */
+function clampAmount(raw, max) {
+  if (raw === undefined || raw === null || raw === "") return max;
+  const n = Math.floor(Number(raw));
+  return Number.isFinite(n) && n > 0 ? Math.min(n, max) : 0;
+}
+
+/**
+ * Đổi qua lại giữa coin và sao theo tỷ giá STAR_TO_COIN_RATE.
+ *coin → sao làm theo chẵn lần (coin lẻ giữ lại trong ví), sao → coin nhân thẳng.
+ *
+ * @param {"coinToStar"|"starToCoin"} direction
+ * @returns {Promise<{coins:number, stars:number, spent:number, gained:number, kept:number}>}
+ */
+export async function exchangeWallet(userId, { direction, amount } = {}) {
+  const col = getCollection(COLLECTION);
+  const user = await col.findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");
-  const stars = user.stars || 0;
-  if (stars <= 0) throw new Error("Không đủ sao để đổi");
-  const coinsToAdd = stars * STAR_TO_COIN_RATE;
-  const newCoins = (user.coins || 0) + coinsToAdd;
-  await getCollection(COLLECTION).updateOne(
-    { id: userId },
-    { $set: { stars: 0, coins: newCoins } }
+
+  const toStar = direction === "coinToStar";
+  const fromBalance = toStar ? user.coins || 0 : user.stars || 0;
+  const wanted = clampAmount(amount, fromBalance);
+
+  let spent;
+  let gained;
+  if (toStar) {
+    if (wanted <= 0) throw new Error("Bạn không có coin để đổi");
+    gained = Math.floor(wanted / STAR_TO_COIN_RATE);
+    if (gained <= 0) {
+      throw new Error(`Cần ${STAR_TO_COIN_RATE.toLocaleString("vi-VN")} coin để đổi được 1 sao`);
+    }
+    // Chỉ trừ đúng phần chẵn — coin lẻ vẫn nằm lại trong ví.
+    spent = gained * STAR_TO_COIN_RATE;
+  } else {
+    if (wanted <= 0) throw new Error("Bạn không có sao để đổi");
+    spent = wanted;
+    gained = wanted * STAR_TO_COIN_RATE;
+  }
+
+  // Điều kiện $gte trên chính loại tiền đang trừ → two request song song
+  // không thể cùng tiêu một số dư.
+  const filter = { id: userId };
+  filter[toStar ? "coins" : "stars"] = { $gte: spent };
+  const inc = toStar
+    ? { coins: -spent, stars: gained }
+    : { stars: -spent, coins: gained };
+
+  const res = await col.updateOne(filter, { $inc: inc });
+  if (res.modifiedCount === 0) throw new Error("Số dư vừa thay đổi, vui lòng thử lại");
+
+  const after = await col.findOne({ id: userId });
+  return { ...walletFrom(after), spent, gained, kept: wanted - spent };
+}
+
+/**
+ * Đổi sao lấy một thành tựu trong danh mục. Sao bị trừ vĩnh viễn, huy hiệu
+ * lưu vào `user.achievements` (id + thời điểm đổi).
+ */
+export async function redeemAchievement(userId, achievementId) {
+  const item = findRedeemAchievement(String(achievementId || ""));
+  if (!item) throw new Error("Thành tựu không tồn tại");
+
+  const col = getCollection(COLLECTION);
+  const res = await col.updateOne(
+    { id: userId, stars: { $gte: item.stars }, achievements: { $not: { $elemMatch: { id: item.id } } } },
+    { $inc: { stars: -item.stars }, $push: { achievements: { id: item.id, at: new Date().toISOString() } } }
   );
-  return { coins: newCoins, stars: 0, exchanged: coinsToAdd };
+  if (res.modifiedCount === 0) {
+    const user = await col.findOne({ id: userId });
+    if (!user) throw new Error("Không tìm thấy người dùng");
+    if ((user.achievements || []).some((a) => a.id === item.id)) {
+      throw new Error("Bạn đã sở hữu thành tựu này");
+    }
+    throw new Error(`Cần ${item.stars} sao để đổi "${item.title}"`);
+  }
+
+  const after = await col.findOne({ id: userId });
+  return { ...walletFrom(after), achievement: item };
+}
+
+/** Đọc ví: số dư, tỷ giá, catalog + thành tựu đã đổi, trạng thái quà sao hôm nay. */
+export async function getWallet(userId) {
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  const date = todayKey();
+  return {
+    ...walletFrom(user),
+    rate: { starToCoin: STAR_TO_COIN_RATE },
+    shop: REDEEM_ACHIEVEMENTS,
+    achievements: (user.achievements || []).map((a) => ({ id: a.id, at: a.at })),
+    dailyGift: { claimedToday: user.lastStarGiftOn === date, date },
+  };
 }
 
 /** Quà ngày: ngẫu nhiên trong khoảng này (đổi ở đây nếu muốn cố định). */

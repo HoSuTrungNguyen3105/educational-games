@@ -4,14 +4,14 @@
  * Luồng tiền:
  *   · load trang  → gọi API lấy xu rồi lưu localStorage, game đọc localStorage
  *                   nên mở được ngay cả khi mạng đang chậm hoặc mất mạng
- *   · có mạng     → mỗi thay đổi được POST /auth/me/coins (dương = thêm, âm = trừ)
+ *   · có mạng     → mỗi thay đổi được POST /auth/me/wallet { coins } (dương = thêm, âm = trừ)
  *   · mất mạng    → giữ chênh lệch trong `pending` và dùng waitForOnline() để đợi
  *                   có mạng rồi gửi lại, server cập nhật xu vào tài khoản
  *
  * localStorage là nguồn mà game đọc ngay; API là nguồn đúng nhất nên mỗi lần
  * sync thành công thì `coins` lấy theo số server trả về.
  */
-import { coinService, loadAuth } from "../services/api.js";
+import { walletService, loadAuth } from "../services/api.js";
 
 const KEY = "gq_coin_wallet_v1";
 const SYNC_DEBOUNCE_MS = 800;
@@ -52,11 +52,11 @@ export async function syncWallet() {
   const w = readWallet();
   try {
     if (w.pending !== 0) {
-      const res = await coinService.add(w.pending);
+      const res = await walletService.addCoins(w.pending);
       const coins = Number(res?.coins);
       writeWallet({ coins: Number.isFinite(coins) ? coins : w.coins, pending: 0 });
     } else {
-      const res = await coinService.get();
+      const res = await walletService.get();
       writeWallet({ coins: Number(res?.coins) || 0, pending: 0 });
     }
   } catch {

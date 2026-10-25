@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
-import { uid, resultService, questionService, gameService, gameProgressService, gamePlayService, coinService, gameEventService, ticketService } from '../../services/api.js'
+import { uid, resultService, questionService, gameService, gameProgressService, gamePlayService, walletService, gameEventService, ticketService } from '../../services/api.js'
 import { gameResultService } from '../../services/gameResultService.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
@@ -269,11 +269,11 @@ export default function StudentApp({ initialGame, coopSession, onExit, toast, us
     try {
       const newCoins = data.coins || 0;
       if (newCoins > 0) {
-        const current = await coinService.get();
+        const current = await walletService.get();
         const currentCoins = current?.coins || 0;
         const diff = newCoins - currentCoins;
         if (diff > 0) {
-          await coinService.add(diff);
+          await walletService.addCoins(diff);
         }
       }
     } catch (e) {

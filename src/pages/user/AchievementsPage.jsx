@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Trophy } from "lucide-react";
 import {
-  coinService,
+  walletService,
   xpService,
   gameProgressService,
   dailyTaskService,
@@ -22,7 +22,7 @@ export default function AchievementsPage({ userAuth, onBack }) {
     setError(null);
     try {
       const [coinRes, xpRes, games, tasks] = await Promise.all([
-        coinService.get().catch(() => null),
+        walletService.get().catch(() => null),
         xpService.get().catch(() => null),
         gameProgressService.listGames().catch(() => []),
         dailyTaskService.list().catch(() => []),

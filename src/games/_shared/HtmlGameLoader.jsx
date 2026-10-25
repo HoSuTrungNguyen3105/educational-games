@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
-import { API_BASE, apiFetch, authService, coinService, userService, gameProgressService, classService, gamePlayService, ticketService, uid } from "../../services/api.js";
+import { API_BASE, apiFetch, authService, walletService, userService, gameProgressService, classService, gamePlayService, ticketService, uid } from "../../services/api.js";
 import { trackTaskEvent, taskService } from "../../services/taskService.js";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
@@ -148,16 +148,10 @@ export default function HtmlGameLoader({
       try {
         authToken = userAuth.token;
         userId = userAuth.user?.id;
-        const coinData = await coinService.get();
-        userCoins = coinData?.coins || 0;
+        const wallet = await walletService.get();
+        userCoins = wallet?.coins || 0;
         setHudCoins(userCoins);
-        try {
-          const starsResp = await fetch(`${API_BASE}/api/auth/me/stars`, {
-            headers: { Authorization: `Bearer ${userAuth.token}` },
-          });
-          const starsJson = await starsResp.json();
-          userStars = starsJson?.data?.stars || starsJson?.stars || 0;
-        } catch { /* ignore */ }
+        userStars = wallet?.stars || 0;
         try {
           const taskData = await taskService.getTasks("DAILY");
           const spinTask = (taskData?.tasks || []).find(t => t.code === "SPIN_WHEEL");
@@ -404,14 +398,9 @@ export default function HtmlGameLoader({
         }
       } else if (msg.type === "exchange-stars") {
         if (userAuth?.token) {
-          fetch(`${API_BASE}/api/auth/me/stars/exchange`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${userAuth.token}` },
-          })
-            .then(r => r.json())
-            .then(res => {
-              const d = res?.data || res;
-              postToIframe({ type: "exchange-stars-result", data: { success: true, coins: d.coins || 0, stars: d.stars || 0, exchanged: d.exchanged || 0 } });
+          walletService.exchange("starToCoin")
+            .then(d => {
+              postToIframe({ type: "exchange-stars-result", data: { success: true, coins: d.coins || 0, stars: d.stars || 0, exchanged: d.gained || 0 } });
               if (d.coins) onStateUpdate?.({ coins: d.coins });
             })
             .catch(() => {

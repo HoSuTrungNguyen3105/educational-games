@@ -430,28 +430,38 @@ export const examResultService = {
   },
 };
 
-export const coinService = {
+/**
+ * Ví tiền — coin (đơn vị nhỏ) + sao (đơn vị lớn, 1 sao = 20.000 coin).
+ * Trước đây hai loại này ở 2 service riêng (`coinService`, `starService`) vì
+ * server có 2 endpoint; giờ gộp thành /auth/me/wallet.
+ */
+export const walletService = {
+  /** { coins, stars, rate:{starToCoin}, shop:[...], achievements:[{id,at}], dailyGift:{claimedToday,date} } */
   async get() {
-    return apiFetch("/auth/me/coins");
+    return apiFetch("/auth/me/wallet");
   },
-  async add(amount) {
-    return apiFetch("/auth/me/coins", { method: "POST", body: { amount } });
+  /** Cộng/trừ coin: trả về { coins, stars } số dư mới. */
+  async addCoins(amount) {
+    return apiFetch("/auth/me/wallet", { method: "POST", body: { coins: amount } });
   },
-};
-
-export const starService = {
-  async get() {
-    return apiFetch("/auth/me/stars");
+  /** Cộng/trừ sao: trả về { coins, stars }. */
+  async addStars(amount) {
+    return apiFetch("/auth/me/wallet", { method: "POST", body: { stars: amount } });
   },
-  async add(amount) {
-    return apiFetch("/auth/me/stars", { method: "POST", body: { amount } });
-  },
-  async exchange() {
-    return apiFetch("/auth/me/stars/exchange", { method: "POST" });
+  /**
+   * Đổi tiền tệ. `direction`: "coinToStar" | "starToCoin",
+   * `amount` bỏ trống = đổi toàn bộ loại đang có.
+   */
+  async exchange(direction, amount) {
+    return apiFetch("/auth/me/wallet/exchange", { method: "POST", body: { direction, amount } });
   },
   /** Quà sao hằng ngày — server tự chặn nhận trùng trong cùng 1 ngày. */
   async claimDailyGift() {
-    return apiFetch("/auth/me/stars/daily-gift", { method: "POST" });
+    return apiFetch("/auth/me/wallet/daily-gift", { method: "POST" });
+  },
+  /** Đổi sao lấy thành tựu (catalog trả về kèm trong `get()`). */
+  async redeem(achievementId) {
+    return apiFetch("/auth/me/wallet/redeem", { method: "POST", body: { achievementId } });
   },
 };
 

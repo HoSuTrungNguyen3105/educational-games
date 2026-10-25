@@ -1493,11 +1493,11 @@
           var diff = newTotal - (_backendCoins || 0);
           if (diff === 0) return;
           _backendCoins = newTotal;
-          var url = _apiBase.replace(/\/api\/?$/, '') + '/api/auth/me/coins';
+          var url = _apiBase.replace(/\/api\/?$/, '') + '/api/auth/me/wallet';
           fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _authToken },
-            body: JSON.stringify({ amount: diff })
+            body: JSON.stringify({ coins: diff })
           }).catch(function() {});
         } catch (e) {}
       }

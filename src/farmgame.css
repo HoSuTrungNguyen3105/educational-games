@@ -819,6 +819,94 @@
   background: linear-gradient(#7fd4ff, #2f9bff);
 }
 
+/* ---------- Thú cưng của bé trong vườn ---------- */
+/* Nhân vật SVG lấy thẳng từ hồ sơ (DressUpAvatar) nên con pet đứng đây luôn
+   khớp với trang Profile và 2 game Tiệm thay đồ. */
+.farm-wrap .g-pet {
+  position: absolute;
+  left: 8px;
+  bottom: calc(122px + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  /* --g-pet-col do GardenPage tính theo cỡ pet; GardenCanvas chừa đúng ngần này
+     nên không có ô đất nào nằm dưới người chơi. */
+  width: var(--g-pet-col, 110px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ink);
+}
+.farm-wrap .g-pet__art {
+  display: block;
+  filter: drop-shadow(0 7px 7px rgba(0, 0, 0, 0.28));
+  animation: g-pet-bob 2.8s ease-in-out infinite;
+}
+@keyframes g-pet-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-6px) rotate(1.5deg); }
+}
+.farm-wrap .g-pet__say {
+  max-width: 100%;
+  background: rgba(255, 250, 235, 0.95);
+  border: 2px solid var(--wood);
+  border-radius: 14px;
+  box-shadow: 0 3px 0 rgba(94, 59, 37, 0.5);
+  padding: 5px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  position: relative;
+}
+/* đuôi bong bóng chỉ xuống con pet */
+.farm-wrap .g-pet__say::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 10px;
+  height: 10px;
+  background: rgba(255, 250, 235, 0.95);
+  border-right: 2px solid var(--wood);
+  border-bottom: 2px solid var(--wood);
+  transform: translateX(-50%) rotate(45deg);
+}
+.farm-wrap .g-pet__tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  max-width: 100%;
+  background: rgba(255, 250, 235, 0.92);
+  border: 2px solid var(--wood);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 rgba(94, 59, 37, 0.5);
+  padding: 3px 11px;
+  text-align: center;
+}
+.farm-wrap .g-pet__tag b { font-size: 12.5px; font-weight: 800; }
+.farm-wrap .g-pet__tag i { font-size: 10.5px; font-style: normal; opacity: 0.72; font-weight: 700; }
+
+/* Ô thú cưng đầu dải đất: nổi hơn các ô cây một chút để dễ nhận ra */
+.farm-wrap .g-slot--pet {
+  border-color: var(--grass);
+  box-shadow: 0 4px 0 var(--grassD);
+}
+.farm-wrap .g-slot--pet .em { display: grid; place-items: center; }
+.farm-wrap .g-slot--pet .cnt {
+  background: var(--grass);
+  border-color: var(--grassD);
+  min-width: 20px;
+  height: 20px;
+  font-size: 11px;
+  top: -6px;
+  right: -5px;
+}
+
 /* ---------- bảng chọn: kéo từ dưới lên như #sheet / .panel ---------- */
 .farm-wrap .modal-overlay {
   align-items: flex-end;
@@ -857,4 +945,5 @@
 @media (prefers-reduced-motion: reduce) {
   .farm-wrap .modal-card { animation: none; }
   .farm-wrap .g-slot { transition: none; }
+  .farm-wrap .g-pet__art { animation: none; }
 }

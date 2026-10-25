@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Coins } from "lucide-react";
-import { gardenService, coinService } from "../../services/api.js";
+import { gardenService, walletService } from "../../services/api.js";
 import { navigate } from "../../lib/router.js";
 import { PrimaryButton, Loader } from "../../components/ui";
 
@@ -23,7 +23,7 @@ export default function InventoryPage({ userAuth, onBack }) {
     try {
       const [invRes, coinData] = await Promise.all([
         gardenService.getInventory(),
-        coinService.get(),
+        walletService.get(),
       ]);
       // API có thể trả { inventory: {...} } hoặc trực tiếp {...}
       const inv = invRes?.inventory || invRes || {};

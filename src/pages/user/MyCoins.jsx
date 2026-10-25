@@ -27,7 +27,7 @@ import {
   Flame,
   Compass
 } from 'lucide-react'
-import { gameProgressService, coinService, starService } from '../../services/api.js'
+import { gameProgressService, walletService } from '../../services/api.js'
 import { getLevelProgress, getLevelTitle, getLevelEmoji } from '../../lib/utils.js'
 import { PrimaryButton, Loader, ErrorState } from '../../components/ui'
 import { navigate } from '../../lib/router.js'
@@ -67,8 +67,8 @@ export default function MyCoins({ userAuth, onBack }) {
 
   const load = useCallback(() => {
     setGames(null); setError(null);
-    Promise.all([gameProgressService.listGames(), coinService.get(), starService.get()])
-      .then(([g, c, s]) => { setGames(g); setGlobalCoins(c?.coins || 0); setGlobalStars(s?.stars || 0); })
+    Promise.all([gameProgressService.listGames(), walletService.get()])
+      .then(([g, w]) => { setGames(g); setGlobalCoins(w?.coins || 0); setGlobalStars(w?.stars || 0); })
       .catch(e => setError(e.message || "Lỗi tải dữ liệu"));
   }, []);
   useEffect(() => { load(); }, [load]);

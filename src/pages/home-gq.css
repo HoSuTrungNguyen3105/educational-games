@@ -550,23 +550,26 @@
 }
 
 /* ─────────── HÀNG NÚT TẮT + NÚT CHƠI NGẪU NHIÊN ─────────── */
-/* Tất cả cùng chiều cao 52px, bo 10px, nền phẳng — hàng nút không bị lộn xộn
-   kích thước như trước (chip dọc 68px đứng cạnh một nút chiếm hết phần còn lại). */
+/* 4 nút bằng nhau theo lưới: cùng chiều cao 52px, cùng bo góc, cùng cỡ chữ.
+   "Chơi ngẫu nhiên" chỉ khác màu nền để vẫn nhận ra nút chính — không được
+   to gấp đôi 3 nút còn lại như trước. Màn hẹp xếp 2×2 cho nhãn không bị cắt. */
 .gq-playbar {
-  display: flex;
-  align-items: stretch;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 22px;
 }
+@media (min-width: 640px) {
+  .gq-playbar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 .gq-mini {
-  flex: 0 0 auto;
   min-height: 52px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 0 14px;
+  padding: 0 10px;
   background: #fff;
   border: 1px solid var(--gq-line);
   border-radius: 10px;
@@ -581,8 +584,8 @@
   .gq-mini:hover .gq-mini__ico { animation: gqBob 0.5s ease; }
 }
 .gq-mini:active { transform: translateY(1px); }
-.gq-mini__ico { font-size: 20px; line-height: 1; }
-.gq-mini__lbl { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.gq-mini__ico { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.gq-mini__lbl { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gq-mini__dot {
   position: absolute;
   top: 8px;
@@ -594,19 +597,23 @@
   border: 2px solid #fff;
 }
 
+/* Cùng kích thước .gq-mini — khác mỗi nền cam để vẫn là nút nổi bật nhất hàng. */
 .gq-random {
-  flex: 1 1 190px;
   min-height: 52px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 7px;
+  padding: 0 10px;
   border: 0;
   border-radius: 10px;
   color: #fff;
   font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
   cursor: pointer;
   background: var(--gq-orange2);
   transition: filter 0.15s ease, transform 0.15s ease;
@@ -616,7 +623,7 @@
   .gq-random:hover .gq-random__ico { animation: gqTumble 0.6s ease; }
 }
 .gq-random:active { transform: translateY(1px); }
-.gq-random__ico { font-size: 22px; }
+.gq-random__ico { font-size: 20px; line-height: 1; flex-shrink: 0; }
 @keyframes gqTumble {
   40% { transform: rotate(180deg) scale(1.15); }
   100% { transform: rotate(360deg) scale(1); }
@@ -1053,10 +1060,11 @@
   .gq-card__age { font-size: 11px; padding: 3px 11px; }
   .gq-sect__t { font-size: 24px; }
   .gq-sect__s { font-size: 14px; }
-  .gq-mini { min-height: 56px; padding: 0 18px; }
+  .gq-mini { min-height: 56px; }
   .gq-mini__ico { font-size: 24px; }
   .gq-mini__lbl { font-size: 14px; }
-  .gq-random { min-height: 56px; font-size: 18px; }
+  .gq-random { min-height: 56px; font-size: 14px; }
+  .gq-random__ico { font-size: 24px; }
   .gq-logo__name { font-size: 22px; }
   .gq-logo__sub { font-size: 11px; }
   .gq-iconbtn { width: 46px; height: 46px; font-size: 21px; }
@@ -1107,12 +1115,13 @@
   .gq-hero__bubble { padding: 11px 14px; border-radius: 18px; }
   .gq-hero__hi { font-size: 16px; }
   .gq-hero__ask { font-size: 12px; }
-  /* Hàng nút tắt trên màn hẹp: 3 chip chia đều một hàng, nút "Chơi ngẫu nhiên"
-     xuống hàng dưới và chiếm hết bề ngang — không để nút chính bị bóp gọn. */
-  .gq-mini { flex: 1 1 0; min-width: 0; padding: 0 6px; }
+  /* Hàng nút tắt trên màn hẹp: lưới 2×2, 4 nút vẫn bằng nhau — nút chính không
+     chiếm riêng một hàng. Nhãn dài ("Khu vườn của tôi") được phép cắt dấu … */
+  .gq-mini { padding: 0 8px; }
   .gq-mini__ico { font-size: 18px; }
-  .gq-mini__lbl { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
-  .gq-random { flex: 1 1 100%; }
+  .gq-mini__lbl { font-size: 12px; }
+  .gq-random { padding: 0 8px; font-size: 12px; }
+  .gq-random__ico { font-size: 18px; }
   .gq-iconbtn { width: 36px; height: 36px; font-size: 17px; }
   .gq-iconbtn__n { min-width: 17px; height: 17px; font-size: 9.5px; }
   .gq-age { padding: 3px 10px 3px 3px; }

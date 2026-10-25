@@ -48,6 +48,7 @@ const TeacherApp = lazy(() => import("./pages/teacher/TeacherApp.jsx"));
 const StudentApp = lazy(() => import("./pages/student/StudentApp.jsx"));
 const GardenPage = lazy(() => import("./pages/user/GardenPage.jsx"));
 const InventoryPage = lazy(() => import("./pages/user/InventoryPage.jsx"));
+const StorePage = lazy(() => import("./pages/user/StorePage.jsx"));
 const LeaderboardPage = lazy(() => import("./pages/user/LeaderboardPage.jsx"));
 const AchievementsPage = lazy(() => import("./pages/user/AchievementsPage.jsx"));
 const RemindersPage = lazy(() => import("./pages/user/RemindersPage.jsx"));
@@ -203,6 +204,11 @@ function App() {
     inventory: () => (
       <RouteShell toast={toast} showBack={false}>
         <InventoryPage userAuth={userAuth} onBack={() => navigate("/")} />
+      </RouteShell>
+    ),
+    store: () => (
+      <RouteShell toast={toast} showBack={false}>
+        <StorePage userAuth={userAuth} onBack={() => navigate("/")} showToast={showToast} />
       </RouteShell>
     ),
     leaderboard: () => (

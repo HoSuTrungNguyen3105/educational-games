@@ -1,7 +1,7 @@
 /**
  * DailyGiftModal.jsx — hộp quà "Quà hôm nay!" mở khi vào app mỗi ngày 1 lần.
  *
- * Quà được cộng thật ở server qua `POST /api/auth/me/stars/daily-gift`; server
+ * Quà được cộng thật ở server qua `POST /api/auth/me/wallet/daily-gift`; server
  * tự chặn nhận trùng trong ngày nên mở modal nhiều lần cũng chỉ nhận 1 lần.
  * Component này chỉ dựng giao diện và đóng lại.
  *

@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { gardenService, API_BASE } from '../../services/api.js';
+import { gardenService, walletService } from '../../services/api.js';
 import GardenCanvas from '../../components/garden/GardenCanvas.jsx';
 // SeedShop và HarvestModal vẫn hiển thị cây bằng PlantArt.
 import { PlantArt } from '../../components/garden/PlantArt.jsx';
+import DressUpAvatar from '../../components/avatar/DressUpAvatar.jsx';
+import { usePet, moodLabel, randomPetTip } from '../../lib/petApi.js';
+import { navigate } from '../../lib/router.js';
 import '../../farmgame.css';
 
 /* ============================================================
@@ -48,6 +51,9 @@ function buildPlantConfig(apiTypes) {
 }
 function loadWater(userId) { try { const r=localStorage.getItem(`garden_water_${userId||'g'}`); return r?Number(r):5; } catch{return 5;} }
 function saveWater(userId,n) { try{localStorage.setItem(`garden_water_${userId||'g'}`,String(n));}catch{} }
+
+/* Cỡ thú cưng đứng trong vườn: đủ thấy trên điện thoại, không che ruộng trên tablet. */
+const petSizeFor = (w) => Math.round(Math.min(96, Math.max(56, w * 0.14)));
 
 const WATER_MAX = 50;
 const WATER_REGEN_MS = 5 * 60 * 1000;
@@ -215,6 +221,18 @@ export default function GardenPage({ userAuth, onBack }) {
   const [toast, setToast] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
 
+  // Thú cưng của tài khoản đang đăng nhập (state trong petApi đã tách theo uid,
+  // nên logout/đổi acc là con pet trong vườn đổi theo ngay).
+  const pet = usePet();
+  const [petTip] = useState(randomPetTip);
+  const [petSize, setPetSize] = useState(() => petSizeFor(typeof window === 'undefined' ? 380 : window.innerWidth));
+  const petCol = petSize + 26;   // bề ngang cột thú cưng — ruộng chừa đúng chỗ này
+  useEffect(() => {
+    const onResize = () => setPetSize(petSizeFor(window.innerWidth));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   // Đồng bộ mốc thời gian đếm tiến độ cây từ server
   const sync = useRef({});
   const uid = userAuth?.user?.id;
@@ -234,8 +252,8 @@ export default function GardenPage({ userAuth, onBack }) {
         (g.slots||[]).forEach(s=>{ if(s.plant) stamp(s.index, s.plant.isReady?100:(s.plant.progress||0)); else delete sync.current[s.index]; });
       }
       if (pt?.types) setCfg(buildPlantConfig(pt.types));
-      const auth = JSON.parse(localStorage.getItem('edu_games_auth')||'{}');
-      if (auth?.token) { const r = await fetch(`${API_BASE}/auth/me/coins`,{headers:{Authorization:`Bearer ${auth.token}`}}).then(r=>r.json()); if(r?.status) setUserCoins(r.data.coins||0); }
+      const w = await walletService.get().catch(() => null);
+      if (w) setUserCoins(w.coins || 0);
     } catch(e) { setError(e.message||'Lỗi tải khu vườn'); }
   }, []);
   useEffect(()=>{load();},[load]);
@@ -398,7 +416,26 @@ export default function GardenPage({ userAuth, onBack }) {
         selectedIndex={selSlot?.index ?? null}
         onSelectPlot={onPlotTap}
         onLockedPlot={() => toast_('Ô đất này chưa mở khoá 🔒')}
+        petGutter={petCol + 12}
       />
+
+      {/* Thú cưng của bé đứng cạnh ruộng — bấm để mở hồ sơ, thay đồ */}
+      <button
+        type="button"
+        className="g-pet"
+        style={{ '--g-pet-col': `${petCol}px` }}
+        onClick={() => navigate('/profile')}
+        aria-label={`Thú cưng ${pet.name}, cấp ${pet.level} — mở hồ sơ để thay đồ`}
+      >
+        <span className="g-pet__say">{petTip}</span>
+        <span className="g-pet__art">
+          <DressUpAvatar kind="pet" state={pet.look} size={petSize} label={`Thú cưng ${pet.name}`} />
+        </span>
+        <span className="g-pet__tag">
+          <b>{pet.name}</b>
+          <i>Lv{pet.level} · {moodLabel(pet.mood)}</i>
+        </span>
+      </button>
 
       {/* HUD — bám sát nong-trai-vui.html: pill bên trái, tiền + nước bên phải */}
       <header id="hud">
@@ -448,6 +485,18 @@ export default function GardenPage({ userAuth, onBack }) {
       {/* Thanh dưới: dải ô đất — dữ liệu cây lấy thẳng từ API (garden.slots) */}
       <footer className="g-bar">
         <div className="g-slots">
+          {/* Ô thú cưng đứng đầu dải, cạnh các cây đã trồng */}
+          <button
+            className="g-slot g-slot--pet"
+            title={`Thú cưng ${pet.name} · cấp ${pet.level} — mở hồ sơ để thay đồ`}
+            onClick={() => navigate('/profile')}
+          >
+            <span className="em">
+              <DressUpAvatar kind="pet" state={pet.look} size={30} label={`Thú cưng ${pet.name}`} />
+            </span>
+            <span className="lb">{pet.name}</span>
+            <span className="cnt pet">{pet.level}</span>
+          </button>
           {slots.map((slot) => {
             const d = getDisplay(slot);
             const c = slot.plant ? cfg[slot.plant.plantType] : null;

@@ -56,6 +56,7 @@ const ROUTES = [
   { name: "spin-wheel",   pattern: "/spin-wheel" },
   { name: "garden",       pattern: "/garden" },
   { name: "inventory",    pattern: "/inventory" },
+  { name: "store",        pattern: "/store" },
   { name: "leaderboard",  pattern: "/leaderboard" },
   { name: "achievements", pattern: "/achievements" },
   { name: "reminders",    pattern: "/reminders" },

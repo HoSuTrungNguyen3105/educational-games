@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { statsService, userService, coinService } from '../../services/api.js'
+import { statsService, userService, walletService } from '../../services/api.js'
 import { StampToken, Loader, ErrorState, PrimaryButton, GhostButton } from '../../components/ui'
 import { navigate } from '../../lib/router.js'
 import { getRoleLabel } from '../../config/roles.js'
@@ -29,7 +29,7 @@ export default function TeacherProfile({ user, onLogout, showToast }) {
 
   const load = useCallback(() => {
     setStats(null); setCoinData(null); setError(null);
-    Promise.all([statsService.get(), coinService.get()])
+    Promise.all([statsService.get(), walletService.get()])
       .then(([s, c]) => { setStats(s); setCoinData(c); })
       .catch(e => setError(e.message));
   }, []);

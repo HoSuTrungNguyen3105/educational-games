@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { gameService, coinService, notificationService, starService, ticketService } from '../services/api.js'
+import { gameService, walletService, notificationService, ticketService } from '../services/api.js'
 import { taskService } from '../services/taskService.js'
 import { socket } from '../socket/socket.js'
 import { SOCKET_EVENTS } from '../socket/socket.events.js'
@@ -38,6 +38,7 @@ import {
   FileText,
   Sprout,
   Crown,
+  Star,
   Send,
   Trash2,
   RefreshCw,
@@ -196,6 +197,7 @@ function metaForSubject(subject = "") {
 const MORE_ITEMS = (userAuth) => ([
   { key: "reminders", icon: Bell, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
+  { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
   { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
   { key: "assignment", icon: FileText, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
@@ -214,6 +216,7 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "reminders", icon: Bell, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
+  { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
   { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
   { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
   { key: "profile", icon: User, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
@@ -405,7 +408,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     loadNotifications();
     loadTasks();
     if (userAuth?.user) {
-      coinService.get().then(c => setUserCoins(c?.coins || 0)).catch(() => { });
+      walletService.get().then(w => { setUserCoins(w?.coins || 0); setUserStars(w?.stars || 0); }).catch(() => { });
 
       // Register FCM token if permission is already granted
       if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
@@ -748,11 +751,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     let cancelled = false;
     (async () => {
       try {
-        const s = await starService.get();
-        if (!cancelled) setUserStars(s?.stars || 0);
-      } catch { /* ignore */ }
-      try {
-        const res = await starService.claimDailyGift();
+        const res = await walletService.claimDailyGift();
         if (cancelled) return;
         // Nếu API trả về claimed = true, hiển thị modal quà
         if (res?.claimed) {
@@ -769,7 +768,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           // Nếu random ra xu hoặc vé, gọi API để cộng thêm
           if (randomType === 'coins') {
             try {
-              await coinService.add(rewardAmounts.coins);
+              const w = await walletService.addCoins(rewardAmounts.coins);
+              setUserCoins(w?.coins || 0);
             } catch (e) {
               console.error("[DailyGift] Failed to add coins:", e);
             }
@@ -953,7 +953,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Xu: ${userCoins}`} title="Xu của bé">
                 🪙{userCoins > 0 && <span className="gq-iconbtn__n">{shortCount(userCoins)}</span>}
               </button>
-              <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Sao: ${userStars}`} title="Sao của bé">
+              <button className="gq-iconbtn" onClick={() => goTo("/store")} aria-label={`Sao: ${userStars} — mở cửa hàng sao`} title="Cửa hàng sao — đổi coin ⇄ sao">
                 ⭐{userStars > 0 && <span className="gq-iconbtn__n">{shortCount(userStars)}</span>}
               </button>
               <button
@@ -1095,7 +1095,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         <div className="gq-playbar">
           <button className="gq-mini" onClick={() => goTo("/garden")}>
             <span className="gq-mini__ico" aria-hidden="true">🐔</span>
-            <span className="gq-mini__lbl">Vườn thú</span>
+            <span className="gq-mini__lbl">Khu vườn của tôi</span>
             {pendingTaskCount > 0 && <span className="gq-mini__dot" aria-label={`${pendingTaskCount} nhiệm vụ`} />}
           </button>
           <button className="gq-mini" onClick={() => goTo("/achievements")}>

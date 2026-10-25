@@ -56,7 +56,7 @@ const skill = {
    TÚI TIỀN = XU TÀI KHOẢN
    Game mở trong app (iframe) thì host React giữ ví:
    localStorage là bản đọc ngay khi vào game (không chờ mạng),
-   API /auth/me/coins cập nhật số xu thật.
+   API /auth/me/wallet cập nhật số xu thật.
    Mỗi lần nhận/thu tiền trong game chỉ báo CHÊNH LỆCH cho host
    → host cộng dồn và gửi một lần; mất mạng thì host giữ lại.
    Mở file .html trực tiếp (không có host) → giữ tiền theo độ khó.

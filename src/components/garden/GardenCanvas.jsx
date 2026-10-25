@@ -50,6 +50,7 @@ export default function GardenCanvas({
   selectedIndex = null,
   onSelectPlot,
   onLockedPlot,
+  petGutter = 0,
 }) {
   const wrapRef = useRef(null);
   const cvRef = useRef(null);
@@ -79,9 +80,16 @@ export default function GardenCanvas({
     const barH = 108;              // chỗ cho thanh dưới
     const topH = 96;               // chỗ cho HUD
     const horizon = H * 0.29;
-    const tw = Math.min((W - 24) / g, 118, ((H - barH - topH - 30) / g) / 0.55);
+    let tw = Math.min((W - 24) / g, 118, ((H - barH - topH - 30) / g) / 0.55);
+    let fieldCX = W / 2;
+    // `petGutter` = bề ngang cột thú cưng đứng bên trái. Chỉ thu + dịch ruộng khi
+    // góc trái của nó thật sự lấn vào cột đó — màn rộng vẫn giữa như cũ.
+    if (petGutter > 0 && W / 2 - (g * tw) / 2 < petGutter) {
+      const usable = Math.max(1, W - petGutter - 12);
+      tw = Math.min(tw, usable / g);
+      fieldCX = petGutter + usable / 2;
+    }
     const th = tw * 0.55;
-    const fieldCX = W / 2;
     const fieldH = g * th + tw * 0.1;
     const aTop = Math.max(horizon + H * 0.04, topH + 30);
     const aBot = H - barH - 6;
@@ -95,7 +103,7 @@ export default function GardenCanvas({
     const slotAtCell = new Map(cells.map((cell, i) => [cell, i]));
 
     setLayout({ W, H, g, tw, th, horizon, fieldCX, fieldTop, slotAtCell });
-  }, [slots.length]);
+  }, [slots.length, petGutter]);
 
   useEffect(() => {
     measure();

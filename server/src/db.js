@@ -214,6 +214,18 @@ async function _runHeavyInit(database) {
           pet: { bsonType: "object" },
           // Field mới — XP/Level tích luỹ (optional, user cũ không có vẫn OK)
           xp: { bsonType: ["int", "double", "long"] },
+          // Hai loại tiền của ví (/api/auth/me/wallet): coin nhỏ, sao lớn.
+          coins: { bsonType: ["int", "double", "long"] },
+          stars: { bsonType: ["int", "double", "long"] },
+          // Thành tựu đổi bằng sao ở trang Store: [{ id, at }]
+          achievements: {
+            bsonType: "array",
+            items: {
+              bsonType: "object",
+              required: ["id"],
+              properties: { id: { bsonType: "string" }, at: { bsonType: "string" } },
+            },
+          },
           coinsEarnedOn: { bsonType: "string" },
           coinsEarnedToday: { bsonType: ["int", "double", "long"] },
           // Ngày đã nhận quà sao hằng ngày (YYYY-MM-DD) — chặn nhận trùng.

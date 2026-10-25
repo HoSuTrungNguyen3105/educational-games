@@ -41,7 +41,7 @@ export function EnterCodeModal({ open, onClose, onFound }) {
                     <Ticket className="w-16 h-16 inline-block text-ticket" />
                 </div>
                 <h2 className="font-display text-xl text-ink mb-2">Nhập mã vé</h2>
-                <p className="text-sm text-[#8A7C63] mb-4">Nhập mã vé giáo viên đã cung cấp</p>
+                {/* <p className="text-sm text-[#8A7C63] mb-4">Nhập mã vé giáo viên đã cung cấp</p> */}
                 <form onSubmit={submitCode}>
                     <TicketStub icon={<KeyRound className="w-5 h-5 text-ink" />} code={code || "______"} />
                     <Input

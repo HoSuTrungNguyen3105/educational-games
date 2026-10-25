@@ -1,6 +1,6 @@
 // Định nghĩa bộ thành tựu của EduPlay.
 // metric: nguồn số liệu dùng để tính tiến trình
-//   - "coins": số xu hiện tại (coinService.get())
+//   - "coins": số xu hiện tại (walletService.get())
 //   - "games": số trò chơi đã chơi (gameProgressService.listGames())
 //   - "xp":    điểm kinh nghiệm (xpService.get())
 //   - "tasks": số nhiệm vụ đã hoàn thành trong ngày (dailyTaskService.list() -> claimed)

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { coinService } from "../../services/api.js";
+import { walletService } from "../../services/api.js";
 import { taskService, trackTaskEvent } from "../../services/taskService.js";
 import { Loader, Modal } from "../../components/ui";
 // Optional: nếu muốn confetti, cài đặt canvas-confetti và import
@@ -74,7 +74,7 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
     try {
       const [taskData, coinData] = await Promise.all([
         taskService.getTasks("DAILY").catch(() => ({ tasks: [] })),
-        coinService.get().catch(() => ({ coins: 0 })),
+        walletService.get().catch(() => ({ coins: 0 })),
       ]);
       const taskList = taskData?.tasks || [];
       setCoins(coinData?.coins || 0);
@@ -114,7 +114,7 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
 
       if (seg.coins > 0) {
         try {
-          await coinService.add(seg.coins);
+          await walletService.addCoins(seg.coins);
           setCoins(c => c + seg.coins);
           if (seg.jackpot) {
             showToast?.(`🏆 THẮNG LỚN! +${seg.coins} xu!`, "success");

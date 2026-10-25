@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { taskService } from "../../services/taskService.js";
-import { coinService } from "../../services/api.js";
+import { walletService } from "../../services/api.js";
 import { getLevelProgress, getLevelEmoji, getLevelTitle } from "../../lib/utils.js";
 import { PrimaryButton, Loader } from "../../components/ui";
 import { TaskList } from "../../components/tasks/index.js";
@@ -16,7 +16,7 @@ export default function DailyTasksPage({ userAuth, onBack }) {
     try {
       const [taskData, coinData] = await Promise.all([
         taskService.getTasks(scope),
-        coinService.get(),
+        walletService.get(),
       ]);
       setTasks(taskData?.tasks || []);
       setCoins(coinData?.coins || 0);

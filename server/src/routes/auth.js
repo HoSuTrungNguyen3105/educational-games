@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, addCoins, getStars, addStars, exchangeStarsForCoins, getXp, claimDailyStarGift } from "../services/authService.js";
+import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, getWallet, adjustWallet, exchangeWallet, redeemAchievement, getXp, claimDailyStarGift } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { getByUser } from "../services/gameProgressService.js";
@@ -129,57 +129,33 @@ router.put("/me", authenticate, async (req, res, next) => {
   }
 });
 
-// GET /api/auth/me/coins — get global coins
-router.get("/me/coins", authenticate, async (req, res, next) => {
+// ── Ví tiền (coin + sao) ──────────────────────────────────────────────────
+// Coin và sao trước đây có 2 cặp endpoint riêng; gộp lại thành /me/wallet vì
+// mọi giao dịch đổi tiền tệ đều chạm cả hai loại cùng lúc.
+// GET /api/auth/me/wallet — số dư + tỷ giá + catalog thành tựu đổi bằng sao
+router.get("/me/wallet", authenticate, async (req, res, next) => {
   try {
-    const coins = await getCoins(req.user.sub);
-    sendSuccess(res, { coins });
+    sendSuccess(res, await getWallet(req.user.sub));
   } catch (e) {
     next(e);
   }
 });
 
-// POST /api/auth/me/coins — add/deduct coins (global)
-router.post("/me/coins", authenticate, async (req, res, next) => {
+// POST /api/auth/me/wallet — cộng/trừ coin và sao: { coins?, stars? }
+router.post("/me/wallet", authenticate, async (req, res, next) => {
   try {
-    const { amount } = req.body || {};
-    if (amount === undefined || typeof amount !== "number") {
-      return sendError(res, "amount (number) is required", 400);
+    const { coins, stars } = req.body || {};
+    if (coins === undefined && stars === undefined) {
+      return sendError(res, "Cần truyền coins hoặc stars (kiểu số)", 400);
     }
-    const coins = await addCoins(req.user.sub, amount);
-    sendSuccess(res, { coins });
+    sendSuccess(res, await adjustWallet(req.user.sub, { coins, stars }));
   } catch (e) {
     sendError(res, e.message, 400);
   }
 });
 
-// GET /api/auth/me/stars — get global stars
-router.get("/me/stars", authenticate, async (req, res, next) => {
-  try {
-    const stars = await getStars(req.user.sub);
-    sendSuccess(res, { stars });
-  } catch (e) {
-    next(e);
-  }
-});
-
-// POST /api/auth/me/stars — add stars
-router.post("/me/stars", authenticate, async (req, res, next) => {
-  try {
-    const { amount } = req.body || {};
-    if (amount === undefined || typeof amount !== "number") {
-      return sendError(res, "amount (number) is required", 400);
-    }
-    const stars = await addStars(req.user.sub, amount);
-    sendSuccess(res, { stars });
-  } catch (e) {
-    sendError(res, e.message, 400);
-  }
-});
-
-// POST /api/auth/me/stars/daily-gift — nhận quà sao, mỗi ngày 1 lần.
-// Đặt TRƯỚC /me/stars/exchange để không bị route "exchange" bắt mất.
-router.post("/me/stars/daily-gift", authenticate, async (req, res, next) => {
+// POST /api/auth/me/wallet/daily-gift — nhận quà sao, mỗi ngày 1 lần.
+router.post("/me/wallet/daily-gift", authenticate, async (req, res, next) => {
   try {
     sendSuccess(res, await claimDailyStarGift(req.user.sub));
   } catch (e) {
@@ -196,11 +172,26 @@ router.get("/me/xp", authenticate, async (req, res, next) => {
   }
 });
 
-// POST /api/auth/me/stars/exchange — exchange all stars for coins
-router.post("/me/stars/exchange", authenticate, async (req, res, next) => {
+// POST /api/auth/me/wallet/exchange — đổi qua lại coin ⇄ sao
+// body: { direction: "coinToStar" | "starToCoin", amount? } (bỏ trống = đổi hết)
+router.post("/me/wallet/exchange", authenticate, async (req, res, next) => {
   try {
-    const result = await exchangeStarsForCoins(req.user.sub);
-    sendSuccess(res, result);
+    const { direction, amount } = req.body || {};
+    if (direction !== "coinToStar" && direction !== "starToCoin") {
+      return sendError(res, 'direction phải là "coinToStar" hoặc "starToCoin"', 400);
+    }
+    sendSuccess(res, await exchangeWallet(req.user.sub, { direction, amount }));
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+// POST /api/auth/me/wallet/redeem — đổi sao lấy thành tựu: { achievementId }
+router.post("/me/wallet/redeem", authenticate, async (req, res, next) => {
+  try {
+    const { achievementId } = req.body || {};
+    if (!achievementId) return sendError(res, "achievementId là bắt buộc", 400);
+    sendSuccess(res, await redeemAchievement(req.user.sub, achievementId));
   } catch (e) {
     sendError(res, e.message, 400);
   }
