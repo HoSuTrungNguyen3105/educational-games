@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { assignmentService, questionService, gameService, gamePlayService, templateService } from '../../services/api.js';
+import { assignmentService, questionService, gamePlayService } from '../../services/api.js';
 import { useUserAuthStore } from '../../stores/userAuth.store.js';
 import { navigate } from '../../lib/router.js';
-import GamePlayRouter from '../../games/_shared/GamePlayRouter.jsx';
+import ExamPlayer from '../../games/examination/ExamPlayer.jsx';
+import { getExamTemplate } from '../../games/examination/templates.js';
 import { Clock, AlertTriangle, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Send, User, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const TIMER_WARN = 60;
@@ -260,7 +261,6 @@ function GuestNameForm({ assignmentTitle, onSubmit, loading }) {
 
 export default function AssignmentTake({ code: codeOrId }) {
   const user = useUserAuthStore(s => s.user);
-  const token = useUserAuthStore(s => s.token);
   const [assignment, setAssignment] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -275,11 +275,6 @@ export default function AssignmentTake({ code: codeOrId }) {
   const [timerRef, setTimerRef] = useState(null);
   const [resolved, setResolved] = useState(false);
   const [guestName, setGuestName] = useState(null);
-  // Bài giao gắn với 1 game → chạy HTML game thay vì form trắc nghiệm.
-  // Không có gameId thì rơi về UI cũ (xem câu hỏi + nộp bài).
-  const [game, setGame] = useState(null);
-  const [gamePlayError, setGamePlayError] = useState('');
-
   const isGuest = !user && guestName;
 
   useEffect(() => {
@@ -300,43 +295,17 @@ export default function AssignmentTake({ code: codeOrId }) {
     setLoading(false);
   }
 
-  // Bài giao có gameId → tải game để chạy HTML template tương ứng.
-  //
-  // CHỈ bật chế độ game khi template thật sự CÓ HTML. `htmlTemplate` có thể là
-  // HTML thô (template cũ) hoặc link Firebase (template mới) — hai dạng đều tính
-  // là "có HTML".
-  //
-  // Lý do phải kiểm tra: nếu template không có HTML, GamePlayRouter rơi về
-  // PlayGameScreen (React), mà màn hình đó so sánh `q.correctAnswer` — field này
-  // bị API cắt khỏi response cho học sinh → mọi câu đều bị chấm sai.
-  useEffect(() => {
-    const gid = assignment?.gameId;
-    if (!gid) return;
-    let active = true;
-    (async () => {
-      try {
-        const g = await gameService.get(gid);
-        if (!active) return;
-        if (!g) { setGame(null); return; }
-        const tid = g.templateId ? (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid || String(g.templateId)) : null;
-        if (!tid) { setGame(null); return; }
-        const tpl = await templateService.get(tid);
-        if (!active) return;
-        setGame(String(tpl?.htmlTemplate || "").trim() ? g : null);
-      } catch {
-        if (active) setGame(null);
-      }
-    })();
-    return () => { active = false; };
-  }, [assignment?.gameId]);
+  // Mẫu đề thi (templateId) do giáo viên chọn lúc giao bài, nằm trong bundle nên
+  // không cần gọi API. Không có templateId → form trắc nghiệm React bên dưới.
+  const templateId = assignment?.templateId || null;
+  const template = getExamTemplate(templateId);
+  const examMode = !!template && questions.length > 0;
 
-  const activeGame = assignment?.gameId ? game : null;
-
-  // Interval hết giờ đã đóng từ lúc render trước, nên cần ref để biết
-  // hiện đang ở chế độ game hay không mà không cần tạo lại interval.
-  const activeGameRef = useRef(null);
-  activeGameRef.current = activeGame;
-  const gameFinishRef = useRef(null);
+  // Interval hết giờ tạo ở render trước, nên cần ref để biết hiện là chế độ nào.
+  const examModeRef = useRef(false);
+  examModeRef.current = examMode;
+  const examRef = useRef(null);
+  const examSubmittingRef = useRef(false);
 
   useEffect(() => {
     if (resolved && user && assignment) { clearGuestName(); initAssignment(assignment.id); }
@@ -375,9 +344,9 @@ export default function AssignmentTake({ code: codeOrId }) {
       if (assignment.isExam && assignment.examDuration && sub) {
         const remaining = sub.remainingTime ?? Math.max(0, assignment.examDuration * 60 - Math.floor((Date.now() - new Date(sub.startedAt).getTime()) / 1000));
         setTimeLeft(remaining);
-        // Hết giờ: chế độ game nộp qua luồng game, ngược lại nộp form như cũ.
+        // Hết giờ: chế độ đề thi nộp qua iframe, ngược lại nộp form như cũ.
         const timeoutSubmit = () => {
-          if (activeGameRef.current) gameFinishRef.current?.();
+          if (examModeRef.current) examRef.current?.forceSubmit();
           else doSubmitNow();
         };
         if (remaining <= 0) { timeoutSubmit(); return; }
@@ -414,40 +383,28 @@ export default function AssignmentTake({ code: codeOrId }) {
   }
 
   /**
-   * Game HTML vừa kết thúc → nộp bài giao.
-   *
-   * - Có `answers`  → server chấm từng câu (đường chuẩn).
-   * - Không có      → game tự chấm trong UI, chỉ gửi số đúng/sai đã bị chặn trần.
+   * ExamPlayer thu thập xong đáp án trong iframe → nộp lên server chấm.
+   * Trả về {score, max} để iframe chạy animation theo điểm thật; bảng kết quả
+   * React chỉ hiện sau khi iframe báo `exam-done` (handleExamDone).
    */
-  const handleGameFinish = useCallback(async (gameResult) => {
-    if (submitted) return;
-    setSubmitted(true);
-    setGamePlayError('');
+  const handleExamFinish = useCallback(async ({ answers, playId, timeUsed }) => {
+    if (examSubmittingRef.current || submitted) throw new Error('Bài đã được nộp');
+    examSubmittingRef.current = true;
     if (timerRef) clearInterval(timerRef);
-
-    const sub = submission;
-    const submissionId = sub?.id || sub?._id;
-    const answerList = Array.isArray(gameResult?.answers) ? gameResult.answers : [];
-
     try {
+      const submissionId = submission?.id || submission?._id;
       if (!submissionId) throw new Error('Không tìm thấy submission');
 
-      await assignmentService.submit(assignment.id, submissionId, answerList, {
-        guestName,
-        gameResult: answerList.length > 0 ? null : {
-          correct: gameResult?.correct || 0,
-          wrong: Math.max(0, (gameResult?.totalQuestions || 0) - (gameResult?.correct || 0)),
-        },
-      });
+      const graded = await assignmentService.submit(assignment.id, submissionId, answers, { guestName });
 
       // Ghi result + cấp XP (chỉ khi đã đăng nhập; khách thì bỏ qua).
       if (user) {
         try {
           await gamePlayService.recordAssignment({
             submissionId,
-            playId: gameResult?.playId,
-            gameScore: gameResult?.score,
-            timeUsed: gameResult?.timeUsed,
+            playId,
+            gameScore: graded?.score,
+            timeUsed: timeUsed || undefined,
           });
         } catch (e) {
           console.error('[AssignmentTake] Ghi result thất bại:', e);
@@ -456,14 +413,13 @@ export default function AssignmentTake({ code: codeOrId }) {
 
       const full = await assignmentService.getResult(assignment.id, { guestName, showCorrectAnswer: true });
       setResult(full);
-    } catch (err) {
-      setGamePlayError(err.message || 'Không thể nộp bài');
-      setSubmitted(false);
+      return { score: graded?.correctCount ?? 0, max: graded?.totalQuestions ?? answers.length };
+    } finally {
+      examSubmittingRef.current = false;
     }
-  }, [assignment, submission, submitted, timerRef, guestName, user]);
+  }, [assignment, submission, submitted, guestName, user]);
 
-  // Cho interval hết giờ gọi được (nó được tạo ở render trước).
-  gameFinishRef.current = handleGameFinish;
+  const handleExamDone = useCallback(() => setSubmitted(true), []);
 
   const answeredCount = Object.values(answers).filter(v => v != null && v !== '').length;
 
@@ -537,9 +493,9 @@ export default function AssignmentTake({ code: codeOrId }) {
 
   const currentQuestion = questions[currentIdx];
 
-  // ── Chế độ GAME: bài giao gắn với 1 game HTML ──
-  // Game tự điều khiển câu hỏi/timer trong iframe; app chỉ giữ header + nộp bài.
-  if (activeGame && questions.length > 0) {
+  // ── Chế độ ĐỀ THI THEO MẪU: chạy HTML trong iframe, server chấm đáp án ──
+  // iframe tự điều khiển câu hỏi/animation; app giữ header và nộp bài.
+  if (examMode) {
     return (
       <div className="min-h-screen flex flex-col bg-paper">
         <Header
@@ -549,19 +505,16 @@ export default function AssignmentTake({ code: codeOrId }) {
           onBack={() => navigate('/')}
           hideProgress
         />
-        {gamePlayError && (
-          <div className="mx-4 mt-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
-            {gamePlayError}
-          </div>
-        )}
         <div className="flex-1 flex flex-col min-h-0">
-          <GamePlayRouter
-            game={activeGame}
+          <ExamPlayer
+            key={`${templateId}-${submission?.id || submission?._id || ''}`}
+            ref={examRef}
+            templateId={templateId}
             questions={questions}
             playerName={user?.name || guestName || 'Học sinh'}
-            userAuth={user && token ? { user, token } : null}
-            onFinish={handleGameFinish}
-            onQuit={() => navigate('/')}
+            title={assignment?.title}
+            onFinish={handleExamFinish}
+            onExamDone={handleExamDone}
           />
         </div>
       </div>

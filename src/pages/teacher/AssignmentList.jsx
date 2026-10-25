@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { assignmentService, gameService, classService } from '../../services/api.js';
+import { assignmentService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { Plus, Clock, Users, CheckCircle, XCircle, Eye, Link2 } from 'lucide-react';
 import { ManagementHeader, PrimaryButton, Loader, EmptyState, ConfirmModal } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
+import { templateLabel } from '../../components/exam/templateLabel.js';
 
 export default function AssignmentList() {
   const [assignments, setAssignments] = useState(null);
-  const [games, setGames] = useState({});
   const [classes, setClasses] = useState({});
   const [error, setError] = useState(null);
   const { askConfirm, confirmProps } = useConfirm();
@@ -20,15 +20,12 @@ export default function AssignmentList() {
     setAssignments(null);
     setError(null);
     try {
-      const [all, allGames, allClasses] = await Promise.all([
+      const [all, allClasses] = await Promise.all([
         assignmentService.list(),
-        gameService.list(),
         classService.list(),
       ]);
       setAssignments(all);
-      const gMap = {}; allGames.forEach(g => { gMap[g._id] = g.name; });
       const cMap = {}; allClasses.forEach(c => { cMap[c.id] = c.name; });
-      setGames(gMap);
       setClasses(cMap);
     } catch (e) {
       setError(e.message || 'Lỗi tải danh sách bài tập');
@@ -93,7 +90,7 @@ export default function AssignmentList() {
                 <div className="flex items-center gap-3 mt-1 text-xs font-body text-ink/40">
                   <span>{classes[a.classId] || a.classId}</span>
                   <span>•</span>
-                  <span>{games[a.gameId] || a.gameId}</span>
+                  <span>{templateLabel(a.templateId)}</span>
                   <span>•</span>
                   <span className="font-mono text-gold">{a.code}</span>
                 </div>

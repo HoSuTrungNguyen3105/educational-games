@@ -254,8 +254,8 @@ export async function getStats({ days = DEFAULT_DAYS } = {}) {
   const keyOf = (g) => String(g._id?.toString() || g.id);
   const playsByGame = new Map();
   const bump = (id) => playsByGame.set(id, (playsByGame.get(id) || 0) + 1);
-  for (const r of results) bump(resolveGame(r.gameId).id);
-  for (const e of eventsIn) { if (e.type === "GAME_PLAYED") bump(resolveGame(e.gameId).id); }
+  for (const r of results) { const g = resolveGame(r.gameId); if (g) bump(g.id); }
+  for (const e of eventsIn) { if (e.type === "GAME_PLAYED") { const g = resolveGame(e.gameId); if (g) bump(g.id); } }
 
   const subjectAgg = new Map();
   for (const g of games) {
@@ -270,7 +270,9 @@ export async function getStats({ days = DEFAULT_DAYS } = {}) {
   // thay vì gán nhầm vào một môn; histogram độ chính xác vẫn tính đủ mọi phiếu.
   let unmatchedResults = 0;
   for (const r of results) {
-    const s = subjectAgg.get(resolveGame(r.gameId).subject || "___none___");
+    // Result của bài kiểm tra theo template không có gameId → không gán môn nào.
+    const g = resolveGame(r.gameId);
+    const s = subjectAgg.get((g && g.subject) || "___none___");
     if (!s) { unmatchedResults += 1; continue; }
     if (typeof r.accuracy === "number") s.acc.push(r.accuracy);
     if (typeof r.score === "number") s.score.push(r.score);

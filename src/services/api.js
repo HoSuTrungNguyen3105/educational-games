@@ -624,8 +624,8 @@ export const assignmentService = {
   async start(id, { guestName } = {}) {
     return apiFetch(`/assignments/${id}/start`, { method: "POST", body: { guestName } });
   },
-  async submit(id, submissionId, answers, { guestName, gameResult } = {}) {
-    return apiFetch(`/assignments/${id}/submit`, { method: "POST", body: { submissionId, answers, guestName, gameResult } });
+  async submit(id, submissionId, answers, { guestName } = {}) {
+    return apiFetch(`/assignments/${id}/submit`, { method: "POST", body: { submissionId, answers, guestName } });
   },
   async getResult(id, { guestName, showCorrectAnswer } = {}) {
     const params = new URLSearchParams();

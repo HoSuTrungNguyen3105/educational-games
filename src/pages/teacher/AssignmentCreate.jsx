@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { classService, assignmentService, questionService, gameService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { AlertCircle, Clock, FileText, CheckSquare, Square, Search, ChevronDown } from 'lucide-react';
+import TemplatePicker from '../../components/exam/TemplatePicker.jsx';
+import { templateLabel } from '../../components/exam/templateLabel.js';
 
 const TIME_OPTIONS = [
   { value: 30, label: '30 phút' },
@@ -29,6 +31,7 @@ export default function AssignmentCreate() {
     title: '',
     description: '',
     isExam: true,
+    templateId: null,
     examDuration: 30,
     deadline: '',
     maxAttempts: 1,
@@ -287,6 +290,8 @@ export default function AssignmentCreate() {
             <span className="font-display text-sm text-ink">Cài đặt bài thi</span>
           </div>
 
+          <TemplatePicker value={form.templateId} onChange={templateId => setForm({ ...form, templateId })} />
+
           <div>
             <label className="block text-sm font-body text-ink/60 mb-2">Thời gian làm bài *</label>
             <div className="grid grid-cols-3 gap-2">
@@ -330,7 +335,7 @@ export default function AssignmentCreate() {
         {selectedQuestions.size > 0 && (
           <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
             <p className="text-sm font-body text-green-700">
-              <span className="font-semibold">Tóm tắt:</span> {form.title || '(chưa nhập tiêu đề)'} — {selectedQuestions.size} câu hỏi, {form.examDuration} phút, {form.maxAttempts === 0 ? 'không giới hạn' : `${form.maxAttempts} lần`} làm bài
+              <span className="font-semibold">Tóm tắt:</span> {form.title || '(chưa nhập tiêu đề)'} — {selectedQuestions.size} câu hỏi, {form.templateId ? `mẫu ${templateLabel(form.templateId)}` : 'danh sách câu hỏi'}, {form.examDuration} phút, {form.maxAttempts === 0 ? 'không giới hạn' : `${form.maxAttempts} lần`} làm bài
             </p>
           </div>
         )}

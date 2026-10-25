@@ -325,7 +325,6 @@ async function _runHeavyInit(database) {
           id: { bsonType: "string" },
           teacherId: { bsonType: "string" },
           templateId: { bsonType: "string" },
-          gameId: { bsonType: "string" },
           questionIds: { bsonType: "array" },
           title: { bsonType: "string" },
           description: { bsonType: "string" },
@@ -657,7 +656,7 @@ async function _runHeavyInit(database) {
     ["assignments", { code: 1 }, { unique: true }],
     ["assignments", { classId: 1 }],
     ["assignments", { teacherId: 1 }],
-    ["assignments", { gameId: 1 }],
+    ["assignments", { templateId: 1 }],
     ["assignments", { status: 1 }],
     ["assignments", { deadline: 1 }],
     // Submission system indexes

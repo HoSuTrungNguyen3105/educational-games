@@ -202,7 +202,7 @@ export async function completePlay(p) {
  *
  * Bài giao đã được chấm ở `POST /assignments/:id/submit`, nên hàm này KHÔNG
  * chấm lại — chỉ đọc kết quả đã lưu để:
- *   1. ghi vào `results` (bảng xếp hạng / analytics theo game)
+ *   1. ghi vào `results` (analytics; bài thi theo template không gắn game)
  *   2. cấp XP
  *
  * @param {object} p
@@ -228,7 +228,7 @@ export async function recordAssignmentPlay(p) {
   if (sub.status !== "SUBMITTED") throw Object.assign(new Error("Bài nộp chưa được nộp"), { status: 400 });
 
   const assignment = await getCollection("assignments").findOne({ id: sub.assignmentId });
-  const gameId = assignment?.gameId || null;
+  const templateId = assignment?.templateId || null;
 
   const correctAnswers = sub.correctCount || 0;
   const totalQuestions = sub.totalQuestions || 0;
@@ -240,17 +240,28 @@ export async function recordAssignmentPlay(p) {
     score: sub.score || 0,
     hasQuestions: totalQuestions > 0,
   });
+  // Bài giao không gắn với game nào → chặn spam XP theo số lần nộp của CHÍNH bài
+  // giao đó trong ngày (thay cho trần theo game ở `completePlay`).
   let xpGained = 0;
-  if (rawXp > 0 && gameId) {
-    const playedToday = await completedToday(userId, gameId);
-    if (playedToday < XP_DAILY_CAP_PER_GAME) xpGained = rawXp;
+  if (rawXp > 0) {
+    const since = new Date();
+    since.setHours(0, 0, 0, 0);
+    const submittedToday = await getCollection(COLLECTION).countDocuments({
+      userId,
+      source: "assignment",
+      assignmentId: sub.assignmentId,
+      createdAt: { $gte: since.toISOString() },
+    });
+    if (submittedToday < XP_DAILY_CAP_PER_GAME) xpGained = rawXp;
   }
 
   const doc = {
     id: uid("result"),
     userId,
     playId: playId || null,
-    gameId,
+    // Bài giao thi theo template, không còn gắn game → gameId bỏ trống.
+    gameId: null,
+    templateId,
     playerId: userId,
     playerName: sub.playerName || "",
     gameType: "play-to-learn",

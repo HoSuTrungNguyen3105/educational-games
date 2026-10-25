@@ -7,6 +7,16 @@ function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+/**
+ * Bài giao chọn template, không còn gắn với game. Docs cũ vẫn còn field
+ * `gameId` trong DB → bỏ khỏi mọi response để client chỉ thấy templateId.
+ */
+function withoutGame(doc) {
+  if (!doc) return doc;
+  const { gameId: _gameId, ...rest } = doc;
+  return rest;
+}
+
 // ── Assignment CRUD ──
 
 export async function createAssignment({ teacherId, templateId, questionIds, title, description, classId, isExam, examDuration, deadline, maxAttempts }) {
@@ -18,7 +28,7 @@ export async function createAssignment({ teacherId, templateId, questionIds, tit
     _id: uid("asgn"),
     id: uid("asgn"),
     teacherId,
-    // Bài giao chọn "mẫu đề thi" (template) thay vì gắn với một game.
+    // Mẫu đề thi (thithap, thithap-3d…) — bài giao không còn gắn với game.
     templateId: templateId || null,
     questionIds: questionIds || [],
     title,
@@ -38,11 +48,11 @@ export async function createAssignment({ teacherId, templateId, questionIds, tit
 }
 
 export async function getAssignmentById(id) {
-  return getCollection("assignments").findOne({ id });
+  return withoutGame(await getCollection("assignments").findOne({ id }));
 }
 
 export async function getAssignmentByCode(code) {
-  return getCollection("assignments").findOne({ code: String(code) });
+  return withoutGame(await getCollection("assignments").findOne({ code: String(code) }));
 }
 
 export async function listAssignments({ classId, teacherId, templateId, status } = {}) {
@@ -51,12 +61,16 @@ export async function listAssignments({ classId, teacherId, templateId, status }
   if (teacherId) query.teacherId = teacherId;
   if (templateId) query.templateId = templateId;
   if (status) query.status = status;
-  return getCollection("assignments").find(query).sort({ createdAt: -1 }).toArray();
+  const docs = await getCollection("assignments").find(query).sort({ createdAt: -1 }).toArray();
+  return docs.map(withoutGame);
 }
 
 export async function updateAssignment(id, data = {}) {
   const now = new Date().toISOString();
-  await getCollection("assignments").updateOne({ id }, { $set: { ...data, updatedAt: now } });
+  const update = { $set: { ...data, updatedAt: now } };
+  // Sửa bài = chuyển sang dùng template → xóa hẳn field cũ của docs trước đây.
+  if ("templateId" in data) update.$unset = { gameId: "" };
+  await getCollection("assignments").updateOne({ id }, update);
   return getAssignmentById(id);
 }
 
@@ -209,14 +223,7 @@ export async function getAssignmentResult(assignmentId, studentId, { showCorrect
 
   const latestSub = allSubs[0];
   const assignment = await getAssignmentById(assignmentId);
-
-  // Fetch questions - use questionIds if available, otherwise fallback to gameId
-  let questions = [];
-  if (assignment?.questionIds && assignment.questionIds.length > 0) {
-    questions = await getCollection("questions").find({ id: { $in: assignment.questionIds } }).toArray();
-  } else if (assignment?.gameId) {
-    questions = await getCollection("questions").find({ gameId: assignment.gameId }).toArray();
-  }
+  const questions = await loadAssignmentQuestions(assignment);
 
   const questionMap = {};
   for (const q of questions) questionMap[q.id] = q;
@@ -299,7 +306,7 @@ export async function getStudentCompletedAssignments(studentId) {
   }).toArray();
 
   const assignmentMap = {};
-  for (const a of assignments) assignmentMap[a.id] = a;
+  for (const a of assignments) assignmentMap[a.id] = withoutGame(a);
 
   // Group submissions by assignment, keep best score per assignment
   const result = [];

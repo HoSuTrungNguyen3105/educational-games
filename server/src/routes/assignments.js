@@ -30,22 +30,21 @@ function requireTeacher(req, res, next) {
 // Create assignment (teacher) → notify all students in class
 r.post("/", auth, requireTeacher, async (req, res) => {
   try {
-    const { gameId, title, description, classId, isExam, examDuration, deadline, questionIds, maxAttempts } = req.body;
+    const { templateId, title, description, classId, isExam, examDuration, deadline, questionIds, maxAttempts } = req.body;
     if (!title || !classId) {
       return sendError(res, "title, classId là bắt buộc", 400);
     }
-    if (!questionIds?.length && !gameId) {
-      return sendError(res, "Cần chọn ít nhất 1 câu hỏi hoặc chọn game", 400);
+    if (!questionIds?.length) {
+      return sendError(res, "Cần chọn ít nhất 1 câu hỏi", 400);
     }
     const assignment = await assignmentService.createAssignment({
-      teacherId: req.user.sub, gameId, title, description, classId, isExam, examDuration, deadline, questionIds, maxAttempts,
+      teacherId: req.user.sub, templateId, title, description, classId, isExam, examDuration, deadline, questionIds, maxAttempts,
     });
 
     // Notify all students in class
     try {
       const students = await classService.getClassStudents(classId);
       const fromUser = await getCollection("users").findOne({ id: req.user.sub });
-      const game = gameId ? await getCollection("games").findOne({ id: gameId }) : null;
       for (const student of students) {
         await notificationService.createNotification({
           toUserId: student.id,
@@ -54,7 +53,7 @@ r.post("/", auth, requireTeacher, async (req, res) => {
           fromName: fromUser?.name || "",
           type: "ASSIGNMENT",
           title: "📝 Bài tập mới",
-          message: `Bạn có bài tập mới: ${title} từ ${fromUser?.name || "giáo viên"}${game ? ` - ${game.name}` : ""}`,
+          message: `Bạn có bài tập mới: ${title} từ ${fromUser?.name || "giáo viên"}`,
           link: `/assignment/${assignment.code}`,
         });
       }
@@ -113,9 +112,8 @@ r.get("/resolve/:codeOrId", async (req, res) => {
       description: assignment.description,
       isExam: assignment.isExam,
       examDuration: assignment.examDuration,
-      // gameId: để client biết có nên chạy HTML game thay vì form trắc nghiệm.
-      // Field mới, không ảnh hưởng client cũ (thiếu field → fallback về UI cũ).
-      gameId: assignment.gameId || null,
+      // templateId: mẫu đề thi (thithap, thithap-3d…) quyết định cách render câu hỏi.
+      // Client không có templateId → hiện form trắc nghiệm React mặc định.
       templateId: assignment.templateId || null,
       questionIds: assignment.questionIds || [],
       questionCount: assignment.questionIds?.length || 0,
@@ -189,17 +187,16 @@ r.post("/:id/start", optionalAuth, async (req, res) => {
 // Submit answers (student/guest)
 r.post("/:id/submit", optionalAuth, async (req, res) => {
   try {
-    const { submissionId, answers, guestName, gameResult } = req.body;
+    const { submissionId, answers, guestName } = req.body;
     if (!submissionId) return sendError(res, "submissionId là bắt buộc", 400);
     const studentId = req.user?.sub || (guestName ? `guest_${guestName}_${req.params.id}` : null);
     if (!studentId) return sendError(res, "Cần đăng nhập hoặc nhập tên", 400);
 
+    // Điểm chỉ do server chấm từ từng câu trả lời — không nhận điểm tự khai.
     const result = await assignmentService.submitAnswers({
       submissionId,
       studentId,
       answers: answers || [],
-      // Bài giao chạy bằng HTML game: game tự chấm trong UI nên không gửi từng câu.
-      gameResult: gameResult && typeof gameResult === "object" ? gameResult : null,
     });
     sendSuccess(res, result);
   } catch (e) { sendError(res, e.message, 400); }
@@ -252,7 +249,7 @@ r.put("/:id", auth, requireTeacher, async (req, res) => {
     if (!existing) return sendError(res, "Không tìm thấy bài giao", 404);
     if (existing.status !== "ACTIVE") return sendError(res, "Bài giao đã đóng, không thể chỉnh sửa", 400);
 
-    const { title, description, classId, isExam, examDuration, deadline, questionIds, gameId, maxAttempts } = req.body;
+    const { title, description, classId, isExam, examDuration, deadline, questionIds, templateId, maxAttempts } = req.body;
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
@@ -261,7 +258,7 @@ r.put("/:id", auth, requireTeacher, async (req, res) => {
     if (examDuration !== undefined) updateData.examDuration = isExam ? (examDuration || 60) : null;
     if (deadline !== undefined) updateData.deadline = deadline || null;
     if (questionIds !== undefined) updateData.questionIds = questionIds;
-    if (gameId !== undefined) updateData.gameId = gameId || null;
+    if (templateId !== undefined) updateData.templateId = templateId || null;
     if (maxAttempts !== undefined) updateData.maxAttempts = maxAttempts;
 
     const updated = await assignmentService.updateAssignment(req.params.id, updateData);

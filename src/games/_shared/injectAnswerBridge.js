@@ -16,7 +16,7 @@
  *   </script>
  */
 
-export const ANSWER_BRIDGE_VERSION = "1.0.0";
+export const ANSWER_BRIDGE_VERSION = "1.1.0";
 
 export const ANSWER_BRIDGE_SCRIPT = `
 <!-- EG_ANSWER_BRIDGE_START -->
@@ -42,7 +42,9 @@ export const ANSWER_BRIDGE_SCRIPT = `
         value: value == null ? null : value,
         timeSpent: typeof timeSpent === "number" ? timeSpent : undefined
       };
-      _post("answer-recorded", { questionId: String(questionId) });
+      // Kèm cả value để frame cha theo dõi được tiến độ làm bài (trước đây chỉ
+      // có questionId nên host không biết học sinh chọn gì cho tới lúc nộp).
+      _post("answer-recorded", { questionId: String(questionId), value: _answers[String(questionId)].value, timeSpent: _answers[String(questionId)].timeSpent });
     },
 
     /** Ghi nhiều câu một lượt. */

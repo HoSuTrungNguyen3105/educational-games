@@ -66,6 +66,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 .sw{display:inline-block;width:38px;height:38px;border-radius:50%;border:3px solid transparent;margin:3px;padding:0;pointer-events:auto}.sw.on{border-color:var(--ink)}
 #go{font:inherit;font-size:18px;font-weight:700;background:var(--acc);color:#3a2e12;border:0;border-radius:12px;padding:12px 28px;margin-top:6px;pointer-events:auto}
 #saved{font-size:12px;opacity:.75;margin-top:10px;min-height:1em}
+#intro #ih{font-size:15px;font-weight:700;color:var(--acc);margin-bottom:6px}
 #rs{font:inherit;font-size:13px;font-weight:700;background:none;border:0;color:var(--acc);text-decoration:underline;margin-top:8px;padding:0;pointer-events:auto}
 
 .hide{display:none!important}
@@ -113,10 +114,10 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 <div id="qp"><div id="qh"><div id="qtn">0</div><div id="qtt"></div><div id="qpt"></div></div><div id="qbar"><i id="qbf"></i></div><div id="qo"></div><div id="qtw" class="hide"><input type="text" id="qin" placeholder="Nhập câu trả lời…" autocomplete="off"></div><button id="qgo">🔥 Tung phép</button></div>
 <div id="shop"><div id="sh"><h2 id="shopT"></h2><div id="si"></div><div id="sl"></div><div id="subErr" class="err hide"></div><button id="btnSubmit" class="hide">⚡ Nộp bài và đánh Thạch Giáp</button><button id="sx"></button></div></div>
 <div id="ts"></div>
-<div id="intro"><div><h1>🗡️ Đấu Trường Phong Linh</h1>
+<div id="intro"><div><h1>🗡️ Đấu Trường Phong Linh</h1><p id="ih"></p>
 <p>Bài thi nằm giữa thế giới 3D. Mỗi câu hỏi do một <b>thủ vệ</b> canh giữ, đứng dọc đường từ làng, qua cầu, vào thành rồi xuống hang. Tìm thủ vệ, bấm <b>F</b> để thách đấu và trả lời trong thời gian giới hạn. Hết giờ là bị bỏ qua. Vượt hết thủ vệ để đánh thức <b>Thạch Giáp</b>, nộp bài và xem điểm quyết định số máu boss mất.<br><b>Kéo trái:</b> di chuyển · <b>kéo phải:</b> nhìn quanh · ⚔️ chém cây · 💨 lướt<br><small>PC: WASD, chuột nhìn quanh, F = tương tác, Shift = lướt. Đáp án đúng chỉ hiện sau khi nộp bài.</small></p>
 <input type="text" id="name" placeholder="Tên chiến binh của bạn" maxlength="60" autocomplete="name">
-<div>Chọn màu áo của bạn:</div><div id="sws"></div><button id="go" disabled>Đang tải câu hỏi…</button><div id="saved"></div></div></div>
+<div>Chọn màu áo của bạn:</div><div id="sws"></div><button id="go" disabled>Chờ câu hỏi từ ứng dụng…</button><div id="saved"></div></div></div>
 <script>
 'use strict';
 const $=s=>document.querySelector(s),M=Math,R=M.random,rnd=(a,b)=>a+R()*(b-a),ri=(a,b)=>M.floor(rnd(a,b+1)),clamp=(v,a,b)=>v<a?a:v>b?b:v,TAU=M.PI*2,pick=a=>a[ri(0,a.length-1)];
@@ -257,45 +258,48 @@ const col=['','#6a6458','#d9b57a','#8a8a70','#7a5030','#2f7a3a','#2a2638','#e8dc
 const MMS=4,MM=document.createElement('canvas');MM.width=MM.height=N*MMS;
 (function(){const c=MM.getContext('2d'),k=MMS;c.fillStyle='#3d7a46';c.fillRect(0,0,N*k,N*k);for(let i=0;i<N*N;i++){const x=(i%N)*k,y=((i/N)|0)*k;if(FM[i]){c.fillStyle=fcol[FM[i]];c.fillRect(x,y,k+.5,k+.5)}if(map[i]){c.fillStyle=col[map[i]];c.fillRect(x,y,k+.5,k+.5)}}c.fillStyle='#1f5a2a';for(const t of TR){c.beginPath();c.arc(t.x*k,t.y*k,1.8,0,TAU);c.fill()}})();
 /* ---- trạng thái ---- */
-const CONFIG={
-  // Địa chỉ API lấy câu hỏi (GET). Có thể ghi đè bằng ?api=... trên thanh địa chỉ.
-  QUESTIONS_URL:'',
-  // Địa chỉ API nộp bài (POST JSON). Có thể ghi đè bằng ?submit=...
-  SUBMIT_URL:'',
-  // Header thêm vào mọi request. Có thể thêm token qua ?token=...
-  HEADERS:{},
-  // Nội dung gửi lên khi nộp bài. Sửa nếu backend cần tên trường khác.
-  buildPayload(ctx){
-    return{
-      student_name:ctx.name,
-      total_time:ctx.totalTime,
-      answers:ctx.answers.map(a=>({question_id:a.questionId,answer_ids:a.answerIds,text:a.text,time_spent:a.timeSpent}))
-    }
-  },
-  // Lấy điểm từ phản hồi nộp bài. Trả về {score,max} hoặc null nếu không nhận ra.
-  parseResult(res){
-    const d=res&&res.data!==undefined?res.data:res;if(!d||typeof d!=='object')return null;
-    const pick=(...k)=>{for(const x of k)if(typeof d[x]==='number')return d[x];return null};
-    const score=pick('score','total_score','points','total_points','totalScore');
-    const max=pick('max_score','maxScore','total_points_possible','max_points','maxPoints');
-    return score===null?null:{score,max}
-  }
-};
-const qs=new URLSearchParams(location.search);
-const QURL=qs.get('api')||CONFIG.QUESTIONS_URL,SURL=qs.get('submit')||CONFIG.SUBMIT_URL;
-if(qs.get('token'))CONFIG.HEADERS={...CONFIG.HEADERS,Authorization:'Bearer '+qs.get('token')};
+/* ============ CẦU NỐI VỚI APP ============
+   File này KHÔNG gọi API. Frame cha (React) đẩy câu hỏi xuống và nhận đáp án
+   ngược lên qua postMessage:
+     cha → con: {type:'init', data:{questions, playerName, title}}
+     cha → con: {type:'graded', data:{score, max}}   (server đã chấm xong)
+     con → cha: 'ready' / 'answer-recorded' / 'game-over' / 'exam-done'
+   Bridge EG_ANSWER do app tiêm vào trước khi nạp iframe (injectAnswerBridge.js). */
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-/* dữ liệu mẫu đúng định dạng API, dùng khi chưa cấu hình URL hoặc tải lỗi */
-const DEMO={status:true,code:200,msg:'success',data:[
- {_id:'1',id:'question-e2g5lj3',content:'1 + 1 bằng bao nhiêu?',inputMode:'choice',options:[{id:'answer-fu0s45m',content:'1'},{id:'answer-yu5hhwk',content:'2'},{id:'answer-3iq1kfy',content:'3'},{id:'answer-c9vd3pr',content:'4'}],timeLimit:20,points:100},
- {_id:'2',id:'question-w4zn589',content:'Thủ đô của Việt Nam là gì?',inputMode:'choice',options:[{id:'answer-y2o84w8',content:'Hà Nội'},{id:'answer-wyyckvd',content:'Huế'},{id:'answer-l5u46qs',content:'Đà Nẵng'},{id:'answer-jsrmah0',content:'TP.HCM'}],timeLimit:30,points:100},
- {_id:'3',id:'question-ywuq32z',content:'Hành tinh nào được gọi là Hành tinh Đỏ?',inputMode:'choice',options:[{id:'answer-0m0qtub',content:'Trái Đất'},{id:'answer-3am7g3x',content:'Sao Kim'},{id:'answer-t49yk0p',content:'Sao Hỏa'},{id:'answer-0wtbtyz',content:'Sao Mộc'}],timeLimit:30,points:100}]};
-const DEMO_KEY={'question-e2g5lj3':['answer-yu5hhwk'],'question-w4zn589':['answer-y2o84w8'],'question-ywuq32z':['answer-t49yk0p']};
+// Tên "bridge" đã dùng cho cầu gỗ trên bản đồ ở trên → ở đây gọi là appBridge.
+function appBridge(){return window.EG_ANSWER||null}
+function askReady(){appBridge()?appBridge().markReady():setTimeout(askReady,60)}
+// Giá trị 1 câu gửi lên server: text hoặc key phương án (nhiều key nối bằng dấu phẩy).
+const valueOf=a=>a.text?a.text:a.answerIds.join(',');
+function reportAnswer(a){appBridge()&&appBridge().answer(a.questionId,a.answered?valueOf(a):null,a.timeSpent)}
+function tellApp(t){try{window.parent.postMessage({type:t},'*')}catch(_){}}
+function submitToHost(timeout){
+  if(submitted||submitting||!Q.length)return;
+  submitting=1;ac();
+  const b=$('#btnSubmit');b.disabled=true;b.textContent=timeout?'Hết giờ — đang gửi bài…':'Đang gửi bài…';
+  $('#subErr').classList.add('hide');
+  appBridge()&&appBridge().finish({
+    answers:A.map(a=>({questionId:a.questionId,value:a.answered?valueOf(a):null,timeSpent:a.timeSpent})),
+    totalQuestions:Q.length,
+    timeUsed:M.round((Date.now()-startedAt)/1000)
+  });
+}
+addEventListener('message',e=>{
+  const m=e.data;if(!m||typeof m!=='object')return;
+  if(m.type==='init'){
+    const d=m.data||{};
+    if(d.playerName)$('#name').value=d.playerName;
+    if(d.title)$('#ih')&&($('#ih').textContent='📋 '+d.title);
+    applyQuestions(d.questions||[]);
+  }
+  else if(m.type==='graded')reveal(m.data||{});
+  else if(m.type==='time-up')submitToHost(true);
+});
 
 const P={x:9.5,y:10.4,a:-1.8,pt:0,hp:100,mx:100,ac:0,sw:0,cmb:0,cast:0,dd:0,da:0,inv:0,hurt:0,bt:0,dead:0,wpn:0,cdD:0};
 let E=[],IT=[],PR=[],EP=[],XP=[],FT=[],T=0,dl=null,started=0,shake=0,flash=0,sleeve='#2f6fb3',env=0,curZone='';
 const ED={slime:{n:'Slime',r:.3,sz:.62},gob:{n:'Goblin',r:.3,sz:.95},arch:{n:'Goblin xạ thủ',r:.3,sz:.95},bat:{n:'Dơi hang',r:.25,sz:.55},boss:{n:'Thạch Giáp',r:.65,sz:2.3}};
-let Q=[],demo=false,A=[],GD=[],boss=null,qOpen=-1,qT0=0,qLim=30,qBeep=99,tabOut=0,startedAt=0,submitting=0,submitted=0,revealing=0,shopOpen=0,doneN=0,pName='';
+let Q=[],A=[],GD=[],boss=null,qOpen=-1,qT0=0,qLim=30,qBeep=99,tabOut=0,startedAt=0,submitting=0,submitted=0,revealing=0,shopOpen=0,doneN=0,pName='';
 const aD=a=>M.atan2(M.sin(a),M.cos(a));
 function toast(m){const t=$('#ts');t.textContent=m;t.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.opacity=0,2600)}
 function fl(x,y,z,s,c){FT.push({x,y,z,s:String(s),c,t:.9})}
@@ -368,6 +372,7 @@ function finishQ(timeout){
   fl(P.x,P.y,.6,timeout?'Hết giờ!':'Bỏ qua','#ff6b81');
   if(timeout){const an=M.atan2(P.y-g.y,P.x-g.x);EP.push({x:g.x,y:g.y,vx:M.cos(an)*7,vy:M.sin(an)*7,l:2.5,d:18});bp(700,.1,'triangle',.08,300)}
   setTimeout(()=>kill(g),900)}
+ reportAnswer(a);
  if(doneN>=Q.length)setTimeout(()=>{if(boss){boss.aw=0;XP.push({x:boss.x,y:boss.y,t:0,R:4});shake=.4}toast('🐲 Thạch Giáp đã thức tỉnh! Đến buồng sâu trong hang để nộp bài.');bp(100,.6,'sawtooth',.2,40)},1000)
  else toast('✔ Đã chốt câu '+(gi+1)+'. Còn '+(Q.length-doneN)+' thủ vệ.')}
 function kill(g){if(!E.includes(g.e))return;E=E.filter(x=>x!==g.e);XP.push({x:g.x,y:g.y,t:0,R:1.6});bp(160,.2,'square',.12,60)}
@@ -387,52 +392,31 @@ function openReview(){
  $('#subErr').classList.add('hide');$('#btnSubmit').classList.remove('hide');$('#btnSubmit').disabled=false;$('#btnSubmit').textContent='⚡ Nộp bài và đánh Thạch Giáp';
  $('#sx').textContent='← Chưa nộp, quay lại';$('#sx').onclick=closeShop;$('#shop').style.display='grid'}
 function closeShop(){shopOpen=0;$('#shop').style.display='none'}
-$('#btnSubmit').onclick=async()=>{
- if(submitting||submitted)return;submitting=1;ac();
- const b=$('#btnSubmit');b.disabled=true;b.textContent='Đang nộp bài…';$('#subErr').classList.add('hide');
- const ctx={name:pName,totalTime:M.round((Date.now()-startedAt)/1000),tabOut,answers:A};
- try{
-  let res,raw;
-  if(demo||!SURL){
-   if(!demo&&!SURL)throw new Error('Chưa cấu hình địa chỉ nộp bài (SUBMIT_URL).');
-   let s=0,mx=0;Q.forEach((q,i)=>{mx+=q.points||0;const k=(DEMO_KEY[q.id]||[]).slice().sort().join(),g=A[i].answerIds.slice().sort().join();if(k&&k===g)s+=q.points||0});
-   res={score:s,max:mx,_demo:true};raw=res}
-  else{
-   const r=await fetch(SURL,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json',...CONFIG.HEADERS},body:JSON.stringify(CONFIG.buildPayload(ctx))});
-   raw=await r.json().catch(()=>null);
-   if(!r.ok||(raw&&raw.status===false))throw new Error((raw&&raw.msg)||'HTTP '+r.status);
-   res=CONFIG.parseResult(raw)}
-  submitted=1;reveal(res,raw)
- }catch(e){
-  submitting=0;b.disabled=false;b.textContent='Nộp lại';
-  const er=$('#subErr');er.classList.remove('hide');er.textContent='Nộp bài chưa thành công: '+e.message+'. Bài làm vẫn còn, bấm nộp lại.'}};
-/* tiết lộ điểm: Thạch Giáp mất máu theo điểm thật từ server */
-function reveal(res,raw){
- revealing=1;closeShop();
+$('#btnSubmit').onclick=()=>{if(submitting||submitted)return;submitToHost(false)};
+/* tiết lộ điểm: Thạch Giáp mất máu theo điểm thật do server chấm, frame cha gửi về */
+function reveal(res){
+ revealing=1;submitted=1;submitting=0;closeShop();
  const max=res&&res.max!=null?res.max:Q.reduce((s,q)=>s+(q.points||0),0);
- const ratio=res&&res.score!=null?clamp(res.score/(max||1),0,1):null,V=6;let fired=0,done=0;
+ const score=res&&typeof res.score==='number'?res.score:0;
+ const ratio=clamp(score/(max||1),0,1),V=6;let fired=0,done=0;
  const finish=()=>{if(done)return;done=1;
-  if(ratio!==null&&ratio>=.999){E=E.filter(x=>x!==boss);for(let i=0;i<6;i++)XP.push({x:boss.x+rnd(-1,1),y:boss.y+rnd(-1,1),t:-i*.12,R:3.5});shake=.8;bp(80,.9,'sawtooth',.22,25);[523,659,784,1046].forEach((f,i)=>setTimeout(()=>bp(f,.25,'triangle',.14),i*110));toast('🏆 Thạch Giáp đã gục!')}
-  else if(ratio!==null&&ratio>0)toast('Thạch Giáp còn '+M.round((1-ratio)*100)+'% máu!');
+  if(ratio>=.999){E=E.filter(x=>x!==boss);for(let i=0;i<6;i++)XP.push({x:boss.x+rnd(-1,1),y:boss.y+rnd(-1,1),t:-i*.12,R:3.5});shake=.8;bp(80,.9,'sawtooth',.22,25);[523,659,784,1046].forEach((f,i)=>setTimeout(()=>bp(f,.25,'triangle',.14),i*110));toast('🏆 Thạch Giáp đã gục!')}
+  else if(ratio>0)toast('Thạch Giáp còn '+M.round((1-ratio)*100)+'% máu!');
   else if(ratio===0){hurt(25);toast('Thạch Giáp cười nhạo…')}
-  setTimeout(()=>showResult(res,raw,ratio),1300)};
+  setTimeout(()=>{showResult(score,max,ratio);setTimeout(()=>tellApp('exam-done'),900)},1300)};
  const shoot=()=>{
-  if(ratio===null||ratio<=0){setTimeout(finish,600);return}
+  if(ratio<=0){setTimeout(finish,600);return}
   fired++;P.cast=.4;bp(300,.25,'sawtooth',.1,1100);
-  PR.push({x:P.x+M.cos(P.a)*.5,y:P.y+M.sin(P.a)*.5,tg:boss,v:11,l:3,cb:()=>{boss.fl=.2;shake=.3;XP.push({x:boss.x,y:boss.y,t:0,R:2.6});bp(140,.3,'sawtooth',.16,50);boss.hp=M.max(0,1000*(1-ratio*fired/V));fl(boss.x,boss.y,2.7,'-'+M.round(res.score/V),'#fff');if(fired>=V)setTimeout(finish,500)}});
+  PR.push({x:P.x+M.cos(P.a)*.5,y:P.y+M.sin(P.a)*.5,tg:boss,v:11,l:3,cb:()=>{boss.fl=.2;shake=.3;XP.push({x:boss.x,y:boss.y,t:0,R:2.6});bp(140,.3,'sawtooth',.16,50);boss.hp=M.max(0,1000*(1-ratio*fired/V));fl(boss.x,boss.y,2.7,'-'+M.round(score/V),'#fff');if(fired>=V)setTimeout(finish,500)}});
   if(fired<V)setTimeout(shoot,450)};
  setTimeout(shoot,700)}
-function showResult(res,raw,ratio){
+function showResult(score,max,ratio){
  shopOpen=1;$('#btnSubmit').classList.add('hide');$('#subErr').classList.add('hide');
- if(ratio===null){
-  $('#shopT').textContent='📨 Đã nộp bài';$('#si').innerHTML='Bài đã được gửi thành công. Không đọc được điểm từ phản hồi, bạn chỉnh <b>parseResult</b> trong CONFIG để hiện điểm.';
-  $('#sl').innerHTML='<pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:160px;overflow:auto;user-select:text">'+esc(JSON.stringify(raw,null,2))+'</pre>'}
- else{
-  const max=res.max!=null?res.max:Q.reduce((s,q)=>s+(q.points||0),0),rk=ratio>=.9?'S':ratio>=.75?'A':ratio>=.5?'B':'C';
-  $('#shopT').textContent=ratio>=.999?'🏆 CHIẾN THẮNG!':ratio>0?'⚔️ Trận đấu kết thúc':'💀 Thất bại';
-  $('#si').innerHTML=`<div class="big">${res.score}</div><div class="mid">trên ${max} điểm</div><div class="rank">${rk}</div><div class="mid">${ratio>=.999?'Điểm tuyệt đối, bạn hạ gục Thạch Giáp!':ratio>0?'Thạch Giáp còn '+M.round((1-ratio)*100)+'% máu. Thử lại để hạ gục nó!':'Chưa có điểm nào. Luyện tập rồi quay lại nhé!'}</div>${res._demo?'<div class="mid"><b>Điểm demo, chưa phải từ server</b></div>':''}`;
-  $('#sl').innerHTML=''}
- $('#sx').textContent='Chơi lại từ đầu';$('#sx').onclick=()=>location.reload();$('#shop').style.display='grid'}
+ const rk=ratio>=.9?'S':ratio>=.75?'A':ratio>=.5?'B':'C';
+ $('#shopT').textContent=ratio>=.999?'🏆 CHIẾN THẮNG!':ratio>0?'⚔️ Trận đấu kết thúc':'💀 Thất bại';
+ $('#si').innerHTML=`<div class="big">${score}</div><div class="mid">trên ${max} điểm</div><div class="rank">${rk}</div><div class="mid">${ratio>=.999?'Điểm tuyệt đối, bạn hạ gục Thạch Giáp!':ratio>0?'Thạch Giáp còn '+M.round((1-ratio)*100)+'% máu. Xem bảng kết quả để biết câu nào chưa đúng!':'Chưa có điểm nào. Luyện tập rồi quay lại nhé!'}</div>`;
+ $('#sl').innerHTML='';
+ $('#sx').textContent='Xem kết quả chi tiết';$('#sx').onclick=()=>tellApp('exam-done');$('#shop').style.display='grid'}
 
 /* ---- hành động ---- */
 function swing(){if(dl||shopOpen||qOpen>=0||revealing||P.ac>0||P.dead>0)return;P.ac=.36;P.sw=1;P.cmb=(P.cmb+1)%3;bp(300,.12,'sawtooth',.08,150);
@@ -579,22 +563,16 @@ const SC=['#2f6fb3','#b3392f','#2f9a5a','#7a4fc2','#e0a020'];
 $('#sws').innerHTML=SC.map((c,i)=>`<button class="sw${i?'':' on'}" data-c="${c}" style="background:${c}" aria-label="Màu áo ${i+1}"></button>`).join('');
 $('#sws').onclick=e=>{const b=e.target.closest('.sw');if(!b)return;sleeve=b.dataset.c;document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s===b))};
 
-async function load(){
- const b=$('#go');
- try{
-  if(!QURL)throw new Error('NOURL');
-  const r=await fetch(QURL,{headers:{Accept:'application/json',...CONFIG.HEADERS}});
-  if(!r.ok)throw new Error('HTTP '+r.status);
-  const j=await r.json();
-  if(j.status===false||!Array.isArray(j.data))throw new Error(j.msg||'Dữ liệu không hợp lệ');
-  Q=j.data;demo=false;
- }catch(e){
-  Q=DEMO.data;demo=true;
-  $('#saved').textContent=e.message==='NOURL'?'CHẾ ĐỘ DEMO: chưa cấu hình địa chỉ API, đang dùng 3 câu mẫu.':'CHẾ ĐỘ DEMO: không tải được câu hỏi ('+e.message+'), đang dùng 3 câu mẫu.'}
- Q=Q.filter(q=>q&&q.id&&q.content);
- if(!Q.length){b.textContent='Không có câu hỏi';return}
+/* Câu hỏi do frame cha đẩy xuống — mở file trực tiếp thì không có nguồn nào cả. */
+function applyQuestions(list){
+ Q=(Array.isArray(list)?list:[]).filter(q=>q&&q.id&&q.content);
+ const b=$('#go'),sv=$('#saved');
+ if(!Q.length){
+  b.disabled=true;b.textContent='Chờ câu hỏi từ ứng dụng…';
+  sv.textContent='Mẫu đề thi này không tự tải câu hỏi. Mở bài thi trong ứng dụng (đường dẫn /assignment/…) để nhận câu hỏi từ giáo viên đã chọn.';
+  return}
  const pts=Q.reduce((s,q)=>s+(q.points||0),0),sec=Q.reduce((s,q)=>s+(q.timeLimit||30),0);
- $('#saved').textContent=($('#saved').textContent?$('#saved').textContent+' ':'')+Q.length+' thủ vệ · '+pts+' điểm tối đa · '+sec+' giây trả lời.';
+ sv.textContent=Q.length+' thủ vệ · '+pts+' điểm tối đa · '+sec+' giây trả lời.';
  b.disabled=false;b.textContent='Vào trận';
 }
 function enter(){
@@ -609,7 +587,7 @@ function enter(){
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&!submitted&&qOpen>=0){tabOut++;toast('⚠️ Bạn đã rời khỏi trang thi '+tabOut+' lần. Việc này được ghi nhận.')}});
 addEventListener('beforeunload',e=>{if(started&&!submitted){e.preventDefault();e.returnValue=''}});
 $('#go').onclick=enter;
-load();requestAnimationFrame(loop);
+askReady();requestAnimationFrame(loop);
 </script>
 </body>
 </html>
