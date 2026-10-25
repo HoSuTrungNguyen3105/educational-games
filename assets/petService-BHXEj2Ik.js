@@ -1,1 +1,0 @@
-import{o as e}from"./petApi-CSvqW8oW.js";async function t(t){return e(t)}export{t};
