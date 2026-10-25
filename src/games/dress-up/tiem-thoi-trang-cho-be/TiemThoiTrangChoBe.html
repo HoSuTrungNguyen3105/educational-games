@@ -63,7 +63,14 @@ const $=s=>document.querySelector(s);
 const D=window.EG_DRESSUP, O=window.EG_OUTFIT;
 if(!D){document.body.innerHTML='<p style="padding:24px;text-align:center">Không nạp được dữ liệu avatar. Hãy chơi game từ trong hệ thống.</p>';throw new Error('EG_DRESSUP missing');}
 
-let st=D.sanitizeKid((O.get('avatar')||{}).value||D.kid.defaults);
+/* Giới tính bé chọn ở màn chào, đọc thẳng localStorage (iframe cùng origin với
+ * app, key `gq_kid_settings_v1` của src/lib/kidSettings.js). Không có thì mới
+ * coi là bé trai — chứ không phải mặc định trai cho mọi bé. */
+function kidGender(){
+  try { return JSON.parse(localStorage.getItem('gq_kid_settings_v1')||'{}').gender === 'girl' ? 'girl' : 'boy'; }
+  catch (e) { return 'boy'; }
+}
+let st=D.sanitizeKid((O.get('avatar')||{}).value||D.kid.defaultsFor(kidGender()));
 let tab=D.kidTabs(st)[0].k;
 
 function save(){O.set('avatar',st);}
@@ -103,7 +110,7 @@ $('#rnd').onclick=()=>{
   });
  st=D.sanitizeKid(next);save();redraw();
 };
-$('#rst').onclick=()=>{st=D.sanitizeKid(D.kid.defaults);tab=D.kidTabs(st)[0].k;save();redraw();};
+$('#rst').onclick=()=>{st=D.sanitizeKid(D.kid.defaultsFor(kidGender()));tab=D.kidTabs(st)[0].k;save();redraw();};
 
 redraw();
 

@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { getCollection } from "../db.js";
 import { config } from "../config.js";
 import { REDEEM_ACHIEVEMENTS, findRedeemAchievement } from "../config/redeemCatalog.js";
+import { normalizeAgeCode, normalizeGender } from "../config/ageCodes.js";
 import { sanitizeAvatar, sanitizePet } from "../lib/outfitCatalog.js";
 
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -47,6 +48,12 @@ export function publicUser(user) {
     // Bộ đồ avatar + thú cưng chọn trong game "Tiệm thời trang cho Bé" /
     // "Tiệm thay đồ thú cưng". Client cũng cache bản này ở localStorage.
     avatar: user.avatar || null, pet: user.pet || null,
+    /**
+     * Hồ sơ của bé. Server không biết tuổi — chỉ giữ `ageCode` (mã opaque như
+     * "kid-breeze"), bảng giải mã mã → tuổi nằm ở client `src/lib/ageCodes.js`.
+     */
+    ageCode: user.ageCode || null,
+    gender: user.gender || null,
   };
 }
 
@@ -55,7 +62,7 @@ function normalizeRole(role) {
   return "teacher";
 }
 
-export async function createUser({ username, email, password, name, role, generatedPassword }) {
+export async function createUser({ username, email, password, name, role, generatedPassword, ageCode, gender }) {
   const uname = String(username || "").trim().toLowerCase();
   const eml = String(email || "").trim().toLowerCase();
   const pwd = String(password || "");
@@ -81,14 +88,18 @@ export async function createUser({ username, email, password, name, role, genera
     role: normalizeRole(role),
     passwordHash: bcrypt.hashSync(pwd, 10),
     ...(generated && generated === pwd ? { generatedPassword: generated } : {}),
+    ageCode: normalizeAgeCode(ageCode),
+    gender: normalizeGender(gender),
     createdAt: new Date().toISOString(),
   };
   await getCollection(COLLECTION).insertOne(user);
   return publicUser(user);
 }
 
-export async function registerUser({ username, email, password, name, generatedPassword }) {
-  const user = await createUser({ username, email, password, name, role: "student", generatedPassword });
+export async function registerUser({ username, email, password, name, generatedPassword, ageCode, gender }) {
+  const user = await createUser({
+    username, email, password, name, role: "student", generatedPassword, ageCode, gender,
+  });
   // Auto-login: trả về token sau khi register
   const fullUser = await findByUsername(username);
   const token = signToken(fullUser);
@@ -111,7 +122,7 @@ export async function listUsers() {
   });
 }
 
-export async function updateProfile(userId, { name, email, password, currentPassword, avatarLoadout, avatar, pet }) {
+export async function updateProfile(userId, { name, email, password, currentPassword, avatarLoadout, avatar, pet, ageCode, gender }) {
   const user = await getCollection(COLLECTION).findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");
 
@@ -147,6 +158,25 @@ export async function updateProfile(userId, { name, email, password, currentPass
   if (pet !== undefined) {
     if (!cleanPet) throw new Error("Bộ đồ thú cưng không hợp lệ");
     updates.pet = { ...cleanPet, updatedAt: now };
+  }
+
+  // Lớp + giới tính của bé: server chỉ nhận MÃ tuổi ("kid-breeze"), không
+  // nhận tuổi thật. `null`/rỗng = xoá; mã lạ thì báo 400 cho client thấy lỗi.
+  if (ageCode !== undefined) {
+    if (ageCode === null || ageCode === "") updates.ageCode = null;
+    else {
+      const code = normalizeAgeCode(ageCode);
+      if (!code) throw new Error("Mã tuổi không hợp lệ");
+      updates.ageCode = code;
+    }
+  }
+  if (gender !== undefined) {
+    if (gender === null || gender === "") updates.gender = null;
+    else {
+      const g = normalizeGender(gender);
+      if (!g) throw new Error("Giới tính không hợp lệ");
+      updates.gender = g;
+    }
   }
 
   if (Object.keys(updates).length === 0) throw new Error("Không có gì để cập nhật");

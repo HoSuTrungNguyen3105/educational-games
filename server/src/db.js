@@ -212,6 +212,10 @@ async function _runHeavyInit(database) {
           // Bộ đồ avatar / thú cưng do game tạo avatar lưu (chỉ id, không lưu SVG).
           avatar: { bsonType: "object" },
           pet: { bsonType: "object" },
+          // Hồ sơ bé: MÃ tuổi opaque (kid-sprout … kid-summit) + giới tính.
+          // Server không lưu tuổi thật — bảng giải mã ở client src/lib/ageCodes.js.
+          ageCode: { enum: ["kid-sprout", "kid-blossom", "kid-breeze", "kid-river", "kid-summit", null] },
+          gender: { enum: ["boy", "girl", null] },
           // Field mới — XP/Level tích luỹ (optional, user cũ không có vẫn OK)
           xp: { bsonType: ["int", "double", "long"] },
           // Hai loại tiền của ví (/api/auth/me/wallet): coin nhỏ, sao lớn.

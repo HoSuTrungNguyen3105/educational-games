@@ -1,4 +1,4 @@
-import { getDressUp, itemLabel, renderDressUpSvg, sanitizeFor } from './dressUpAvatar.js';
+import { getDressUp, itemLabel, renderDressUpSvg, sanitizeFor, kidDefaultOutfit } from './dressUpAvatar.js';
 
 export const KID_LAYERS = [
   { key: 'acc-back', name: 'Phụ kiện sau thân', detail: 'Áo choàng, túi' },
@@ -17,7 +17,7 @@ export const KID_LAYERS = [
 ];
 
 export function kidDefaults() {
-  return { ...getDressUp().kid.defaults };
+  return kidDefaultOutfit();
 }
 
 const FALLBACK_BODY = 'body_01';

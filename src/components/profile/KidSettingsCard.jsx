@@ -3,9 +3,11 @@
  *
  *   · Thẻ hồ ợ (nút ứng hộ trong ngày)
  *   · Thanh chọn tuổi của bé (áp dụng từ màn chơi tiếp theo)
+ *   · Giới tính của bé — avatar vẽ theo đây
  *   · Bật/tắt chế độ Song ngữ Anh–Việt
  *
- * Mọi thay đổi lưu ở localStorage (`src/lib/kidSettings.js`) — không gọi API.
+ * Lưu ở localStorage (`src/lib/kidSettings.js`); lớp + giới tính còn được đẩy
+ * lên hồ sơ tài khoản theo dạng MÃ tuổi (`ageCode`) — xem `src/lib/kidProfileSync.js`.
  */
 
 import { useState } from "react";
@@ -23,6 +25,12 @@ const TOPIC_SHORTCUTS = [
   { icon: "🔢", name: "Đếm 1–100", sub: "Tập đếm", gameId: "shapecount" },
   { icon: "🐱", name: "Con vật", sub: "Ghép chữ", gameId: "chem" },
   { icon: "➕", name: "Cộng trừ đến 100", sub: "Tính toán", gameId: "compare" },
+];
+
+/** Giống bảng giới tính ở màn chào (`OnboardingScreen.jsx`). */
+const GENDERS = [
+  { id: "boy", label: "Bạn trai", face: "👦", tone: "#3d6fd8" },
+  { id: "girl", label: "Bạn gái", face: "👧", tone: "#ee7fa6" },
 ];
 
 export default function KidSettingsCard() {
@@ -80,6 +88,39 @@ export default function KidSettingsCard() {
               <span className="block text-[11px] text-ink/50">{t.sub}</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* ─────────── Giới tính của bé ─────────── */}
+      <div className="rounded-xl p-5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-2xl" aria-hidden="true">🧒</span>
+          <div>
+            <h3 className="font-display text-base font-extrabold text-ink">Giới tính của bé</h3>
+            <p className="text-xs text-ink/55">Avatar mở màn vẽ theo đây — bé gái không bị mặc định thành bé trai</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5">
+          {GENDERS.map((g) => {
+            const on = s.gender === g.id;
+            return (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => setKidSettings({ gender: g.id })}
+                aria-pressed={on}
+                className="rounded-lg px-3 py-3 flex items-center justify-center gap-2 font-display font-extrabold text-sm transition active:scale-95"
+                style={{
+                  background: on ? g.tone : "var(--bg)",
+                  color: on ? "#fff" : "var(--ink, #1d2e4a)",
+                  border: "1px solid var(--line)",
+                }}
+              >
+                <span className="text-xl leading-none" aria-hidden="true">{g.face}</span>
+                {g.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

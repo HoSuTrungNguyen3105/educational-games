@@ -928,6 +928,17 @@
     acc: Object.keys(ACCS).concat([null])
   };
 
+  /* Bản "trống" của bé gái: thân + váy + tóc theo bảng BODY_LOOKS. Đặt SAU
+   * KID_FIELD_IDS vì `applyBody` → `sanitizeKid` đọc bảng đó.
+   * KID_DEFAULTS chỉ có một và là bé trai, nên bé gái phải suy ra từ nó — nếu
+   * không, bé chọn "Bạn gái" ở màn chào vẫn bị vẽ thành bé trai. */
+  var KID_DEFAULTS_GIRL = applyBody(KID_DEFAULTS, 'body_girl_01');
+
+  /** Bộ đồ mở màn theo giới tính đã chọn ("boy" | "girl" | null). */
+  function kidDefaultsFor(gender) {
+    return gender === 'girl' ? KID_DEFAULTS_GIRL : KID_DEFAULTS;
+  }
+
   /** Kiểu hiển thị của từng tab: dot = màu, svg = vẽ preview.
    *  `nullable: true` → hiện nút 🚫 và cho phép bỏ lớp đó. */
   function idsOf(k) {
@@ -1058,6 +1069,10 @@
     kid: {
       size: { w: KID_W, h: KID_H },
       defaults: KID_DEFAULTS,
+      /** bộ đồ mở màn của bé gái (thân `body_girl_01` + váy) */
+      defaultsGirl: KID_DEFAULTS_GIRL,
+      /** chọn bộ đồ mở màn theo giới tính: kid.defaultsFor('girl') */
+      defaultsFor: kidDefaultsFor,
       tabCfg: tabCfg,
       bodies: BODIES, faces: FACES, hairs: HAIRS, hats: HATS,
       glasses: GLASSES, accs: ACCS, pants: PANT_OPTIONS, shoes: SHOE_OPTIONS,

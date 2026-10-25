@@ -91,6 +91,9 @@ let snapshot = withAge(state);
 const emit = () => { for (const fn of listeners) fn(); };
 const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
 
+/** Nghe mọi thay đổi cài đặt (dùng cho đồng bộ hồ sơ lên server). */
+export const onKidSettingsChange = subscribe;
+
 /** Object cài đặt kèm `age` tính sẵn từ `grade`. */
 export function getKidSettings() {
   return snapshot;

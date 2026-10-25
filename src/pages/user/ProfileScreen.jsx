@@ -12,6 +12,8 @@ import DressUpAvatar, { DressUpAvatarSmall } from "../../components/avatar/Dress
 import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
 import KidSettingsCard from "../../components/profile/KidSettingsCard.jsx";
 import { resolveOutfit, outfitName, describeOutfit } from "../../lib/dressUpAvatar.js";
+import { syncKidFromAccount } from "../../lib/ageCodes.js";
+import { useKidSettings } from "../../lib/kidSettings.js";
 import { getPushSupportStatus, requestNotificationPermission, onForegroundMessage } from "../../firebase/messaging.js";
 import { playVibration } from "../../lib/reminderUtils.js";
 
@@ -60,10 +62,13 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   // Avatar + thú cưng lấy thẳng từ hồ sơ (/api/auth/me), dựng SVG bằng đúng
   // data mà 2 game "Tiệm thời trang cho Bé" / "Tiệm thay đồ thú cưng" dùng.
   // `outfitPatch` là bản vừa sửa ở modal — chỉ ghi đè phần tương ứng.
+  // `kidGender` là phần DEP: hồ sơ chưa có bộ đồ nào thì avatar là bộ đồ mở
+  // màn THEO GIỚI TÍNH, đổi giới tính trong Cài đặt phải thấy đổi ngay.
+  const kidGender = useKidSettings().gender;
   const outfit = useMemo(() => {
     const base = resolveOutfit(profile?.avatar, profile?.pet);
     return { avatar: outfitPatch.avatar ?? base.avatar, pet: outfitPatch.pet ?? base.pet };
-  }, [outfitPatch, profile?.avatar, profile?.pet]);
+  }, [outfitPatch, profile?.avatar, profile?.pet, kidGender]);
 
   /** Modal tùy chỉnh gửi lên hồ sơ rồi cập nhật ngay phần hiển thị. */
   const handleSaveOutfit = useCallback(async (kind, value) => {
@@ -81,6 +86,9 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
     authService.me()
       .then((userData) => {
         setProfile(userData);
+        // Hồ sơ trên server quyết định lớp + giới tính của bé (ageCode là mã
+        // opaque, tuổi thật chỉ client suy ra) → điền vào cài đặt máy này.
+        syncKidFromAccount(userData);
         setError(null);
       })
       .catch((e) => setError(e.message || "Lỗi tải profile"))

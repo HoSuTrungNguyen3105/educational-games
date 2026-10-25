@@ -10,6 +10,8 @@ import RouteShell from "./components/RouteShell.jsx";
 import HomeScreen from "./pages/HomeScreen.jsx";
 import OnboardingScreen from "./pages/OnboardingScreen.jsx";
 import { useKidSettings, completeOnboarding } from "./lib/kidSettings.js";
+import { ageCodeForGrade } from "./lib/ageCodes.js";
+import { startKidProfileSync } from "./lib/kidProfileSync.js";
 import PageLoading from "./components/PageLoading.jsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
 import { GameVersionProvider } from "./components/GameVersionProvider.jsx";
@@ -82,6 +84,9 @@ function App() {
 
   useEffect(() => { init(); }, [init]);
 
+  /* Lớp + giới tính đổi ở màn chào hay Cài đặt thì tự đẩy lên hồ sơ tài khoản. */
+  useEffect(() => { startKidProfileSync(); }, []);
+
   useSocketManager(token);
 
   const { playGame, loadingGame, selectGame, coopSession } = useGameLoader(route);
@@ -116,6 +121,10 @@ function App() {
           password,
           generatedPassword: password,
           name: displayName,
+          // Server chỉ nhận mã tuổi + giới tính — avatar vẽ theo giới tính này
+          // nên bé gái không còn bị mặc định thành bé trai.
+          ageCode: ageCodeForGrade(grade),
+          gender: gender || null,
         });
         completeOnboarding({ name: displayName, grade, gender });
         setShowUserLogin(false);

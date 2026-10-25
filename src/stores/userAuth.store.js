@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { authService, notificationService, loadAuth, saveAuth, clearAuth } from "../services/api.js";
 import { socket } from "../socket/socket.js";
 import { requestNotificationPermission } from "../firebase/messaging.js";
+import { syncKidFromAccount } from "../lib/ageCodes.js";
 
 // Rebind this device's FCM token to the given (current) user.
 // Safe no-op when notification permission isn't granted.
@@ -24,6 +25,7 @@ export const useUserAuthStore = create((set, get) => ({
     const auth = loadAuth();
     if (auth && auth.token && auth.user) {
       set({ user: auth.user, token: auth.token });
+      syncKidFromAccount(auth.user);
       socket.auth = { token: auth.token };
       if (!socket.connected) socket.connect();
       syncDeviceToken();
@@ -36,6 +38,7 @@ export const useUserAuthStore = create((set, get) => ({
       const { token, user } = await authService.login(identifier, password);
       saveAuth({ token, user });
       set({ user, token, isLoading: false });
+      syncKidFromAccount(user);
       socket.auth = { token };
       if (!socket.connected) socket.connect();
       syncDeviceToken();
@@ -46,12 +49,13 @@ export const useUserAuthStore = create((set, get) => ({
     }
   },
 
-  register: async ({ username, email, password, name, generatedPassword }) => {
+  register: async ({ username, email, password, name, generatedPassword, ageCode, gender }) => {
     set({ isLoading: true, error: null });
     try {
-      const { token, user } = await authService.register({ username, email, password, name, generatedPassword });
+      const { token, user } = await authService.register({ username, email, password, name, generatedPassword, ageCode, gender });
       saveAuth({ token, user });
       set({ user, token, isLoading: false });
+      syncKidFromAccount(user);
       socket.auth = { token };
       if (!socket.connected) socket.connect();
       syncDeviceToken();
@@ -60,6 +64,15 @@ export const useUserAuthStore = create((set, get) => ({
       set({ error: e.message || "Đăng ký thất bại", isLoading: false });
       throw e;
     }
+  },
+
+  /** Điền vài trường vào hồ sơ đang cache (sau khi PUT /auth/me thành công). */
+  patchUser: (patch) => {
+    const { user } = get();
+    if (!user) return;
+    const next = { ...user, ...patch };
+    set({ user: next });
+    saveAuth({ token: get().token, user: next });
   },
 
   logout: async () => {

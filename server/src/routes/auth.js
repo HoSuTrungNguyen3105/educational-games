@@ -31,14 +31,14 @@ router.post("/login", async (req, res, next) => {
 
 router.post("/register", async (req, res, next) => {
   try {
-    const { username, email, password, name, generatedPassword } = req.body || {};
+    const { username, email, password, name, generatedPassword, ageCode, gender } = req.body || {};
     if (!username || !password || !name) {
       return sendError(res, "Vui lòng nhập đầy đủ thông tin", 400);
     }
     if (password.length < 6) {
       return sendError(res, "Mật khẩu phải có ít nhất 6 ký tự", 400);
     }
-    const result = await registerUser({ username, email, password, name, generatedPassword });
+    const result = await registerUser({ username, email, password, name, generatedPassword, ageCode, gender });
     sendCreated(res, result);
   } catch (e) {
     const msg = e.message || "Đăng ký thất bại";
@@ -83,6 +83,9 @@ router.get("/me", authenticate, async (req, res) => {
       // Bộ đồ avatar + thú cưng do game tạo avatar lưu (không phải avatarLoadout).
       avatar: userDoc?.avatar || null,
       pet: userDoc?.pet || null,
+      // Lớp + giới tính của bé. `ageCode` là mã opaque, tuổi thật chỉ client biết.
+      ageCode: userDoc?.ageCode || null,
+      gender: userDoc?.gender || null,
       stats: {
         totalPlays,
         totalXP,
@@ -116,7 +119,7 @@ router.get("/me", authenticate, async (req, res) => {
       }),
     });
   } catch {
-    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, coins: 0, createdAt: null, classId: null, className: null, classCode: null, avatar: null, pet: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 }, games: [] });
+    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, coins: 0, createdAt: null, classId: null, className: null, classCode: null, avatar: null, pet: null, ageCode: null, gender: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 }, games: [] });
   }
 });
 

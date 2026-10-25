@@ -21,6 +21,7 @@
 import dragonSource from "../games/_shared/lib/dressUpDragon.js?raw";
 import rawSource from "../games/_shared/lib/dressUpAvatarData.js?raw";
 import { useUserAuthStore } from "../stores/userAuth.store.js";
+import { getKidSettings } from "./kidSettings.js";
 
 const SCOPE_AVATAR = "avatar";
 const SCOPE_PET = "pet";
@@ -81,7 +82,19 @@ export function sanitizeFor(scope, value) {
 
 function defaultsFor(scope) {
   const api = getDressUp();
-  return scope === SCOPE_PET ? api.pet.defaults : api.kid.defaults;
+  // Thú cưng không phân biệt giới tính; bé thì CÓ — mở màn phải đúng bé trai/
+  // bé gái theo lựa chọn ở màn chào (đã lưu trong kidSettings + hồ sơ server).
+  if (scope === SCOPE_PET) return api.pet.defaults;
+  return api.kid.defaultsFor(getKidSettings().gender);
+}
+
+/**
+ * Bộ đồ mở màn của bé — theo GIỚI TÍNH đã chọn ở màn chào (đã lưu vào
+ * kidSettings + hồ sơ tài khoản), không phải lúc nào cũng bé trai như
+ * `EG_DRESSUP.kid.defaults`. Clone ra để nơi dùng sửa thoải mái.
+ */
+export function kidDefaultOutfit() {
+  return { ...defaultsFor(SCOPE_AVATAR) };
 }
 
 export function readLocalOutfit(scope, uid = currentOwner()) {

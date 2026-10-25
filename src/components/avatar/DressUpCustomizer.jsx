@@ -12,14 +12,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   getDressUp, sanitizeFor, renderDressUpSvg,
-  itemLabel, outfitKey, ensureDressUpCss,
+  itemLabel, outfitKey, ensureDressUpCss, kidDefaultOutfit,
 } from "../../lib/dressUpAvatar.js";
 import { PrimaryButton, GhostButton } from "../ui";
 
 const SCOPES = {
   avatar: {
     title: "Tùy chỉnh Avatar",
-    defaultState: () => getDressUp().kid.defaults,
+    defaultState: () => kidDefaultOutfit(),
     sanitize: (v) => sanitizeFor("avatar", v),
     tabs: (st) => getDressUp().kidTabs(st),
     cfg: (k, st) => getDressUp().kidTabCfg(k, st),

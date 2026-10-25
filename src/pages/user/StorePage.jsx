@@ -195,16 +195,26 @@ export default function StorePage({ userAuth, onBack, showToast }) {
                   <button
                     key={q}
                     type="button"
+                    disabled={q > balance}
                     onClick={() => setAmountText(String(q))}
-                    className="px-2.5 py-1 rounded-md bg-stone-100 text-xs font-bold text-stone-600 hover:bg-stone-200 transition"
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition ${
+                      q > balance
+                        ? "bg-stone-50 text-stone-300 cursor-not-allowed"
+                        : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                    }`}
                   >
                     {fmt(q)}
                   </button>
                 ))}
                 <button
                   type="button"
+                  disabled={balance <= 0}
                   onClick={() => setAmountText(String(balance))}
-                  className="px-2.5 py-1 rounded-md bg-stone-100 text-xs font-bold text-stone-600 hover:bg-stone-200 transition"
+                  className={`px-2.5 py-1 rounded-md text-xs font-bold transition ${
+                    balance <= 0
+                      ? "bg-stone-50 text-stone-300 cursor-not-allowed"
+                      : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                  }`}
                 >
                   Tất cả
                 </button>
