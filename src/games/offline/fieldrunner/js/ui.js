@@ -131,6 +131,7 @@ function openMapPicker() {
   const before = paused;
   paused = true;
   $('pause').textContent = '▶';
+  saveRun();
 
   showMapSelect({
     onPick: startMap,
@@ -278,6 +279,7 @@ function showTowerInfo(el) {
 
         particles(sel.x, sel.y, 14, '#ffd93b', 120, 0.6, 3);
         fx.push({ k: 'ring', x: sel.x, y: sel.y, life: 0.5, c: '#ffd93b', r: 40 });
+        saveRun();
       }
     };
   }
@@ -287,6 +289,7 @@ function showTowerInfo(el) {
     md.onclick = () => {
       sel.mode = ((sel.mode || 0) + 1) % 3;
       showInfo();
+      saveRun();
     };
   }
 
@@ -299,6 +302,7 @@ function showTowerInfo(el) {
     setDist(bfs(blocked));
     updUI();
     showInfo();
+    saveRun();
   };
 }
 
@@ -436,6 +440,7 @@ cv.addEventListener('click', e => {
 
     particles(c * CS + CS / 2, r * CS + CS / 2, 10, '#e8dcc0', 90, 0.45, 3);
     updUI();
+    saveRun();
   } else {
     sel = null;
     showInfo();
@@ -444,7 +449,8 @@ cv.addEventListener('click', e => {
 
 /* ---------- Bàn phím ---------- */
 addEventListener('keydown', e => {
-  if (!started || document.getElementById('gc-start') || document.getElementById('fr-maps')) return;
+  if (!started || document.getElementById('gc-start') || document.getElementById('fr-maps') ||
+      document.getElementById('fr-resume')) return;
 
   if (e.key === 'Escape') {
     if ($('hudMenu') && $('hudMenu').classList.contains('open')) closeSettings();
@@ -473,12 +479,16 @@ $('pause').onclick = () => {
   $('pause').textContent = paused ? '▶' : '⏸';
   $('pause').classList.toggle('on', paused);
   syncSettings();
+  saveRun();
 };
 
 $('speed').onclick = () => setSpeed(speed % 3 + 1);
 
 $('restart').onclick = () => {
-  if (confirm('Chơi lại từ đầu màn ' + level.name + ' ở độ khó ' + GC.diff.label + '?')) reset();
+  if (confirm('Chơi lại từ đầu màn ' + level.name + ' ở độ khó ' + GC.diff.label + '?')) {
+    clearRun();
+    reset();
+  }
 };
 
 $('gear').onclick = toggleSettings;

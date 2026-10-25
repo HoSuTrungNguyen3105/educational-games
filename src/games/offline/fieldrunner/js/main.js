@@ -2,8 +2,8 @@
    main.js · khởi động game, chọn màn & vòng lặp chính
    ===================================================== */
 
-/** Chuẩn bị số liệu và bắt đầu chơi một cánh đồng */
-function startMap(lv) {
+/** Chuẩn bị số liệu và bắt đầu chơi một cánh đồng (goOn = dựng lại ván đã lưu) */
+function startMap(lv, goOn) {
   // Thông số theo độ khó (dễ → siêu khó), nhân thêm theo màn
   D = {
     lives: Math.round(GC.by(30, 20, 12, 6) * (lv.livesMul || 1)),
@@ -23,6 +23,11 @@ function startMap(lv) {
   buildBar();
   makeBg();
   reset();
+
+  const saved = runForLevel(lv);
+  if (goOn) { if (saved) restoreRun(saved); }
+  else if (saved) askResume(saved);
+
   fit();
   runLoop();
 }
@@ -34,12 +39,18 @@ function runLoop() {
 
   let last = performance.now();
   let tick = 0;
+  let lastSave = 0;
 
   function loop(now) {
     const real = Math.min(0.1, (now - last) / 1000);
     last = now;
 
     if (started) {
+      if (now - lastSave > 2000) {
+        lastSave = now;
+        saveRun();
+      }
+
       // Chia nhỏ bước cập nhật để va chạm ổn định khi tăng tốc x2, x3
       let dt = real * speed;
       while (dt > 0) {
@@ -86,9 +97,19 @@ GC.start({
     '12 mạng · địch trâu & nhanh, thưởng ít',
     '6 mạng · địch cực trâu, thưởng rất ít'
   ],
+  resume: runResumeInfo(),
   onStart: () => {
     const auto = takeAutoMap();
     if (auto) startMap(auto);
     else showMapSelect({ onPick: startMap, onDiff: changeDifficulty });
+  },
+  onResume: () => {
+    const b = latestRun();
+    if (!b) {
+      showMapSelect({ onPick: startMap, onDiff: changeDifficulty });
+      return;
+    }
+    clearAutoMap();
+    startMap(b.lv, true);
   }
 });

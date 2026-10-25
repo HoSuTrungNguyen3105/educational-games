@@ -117,6 +117,7 @@ function update(dt) {
 
     updUI();
     showPreview();
+    saveRun();
   }
 }
 
@@ -130,6 +131,8 @@ function scoreNow(win) {
 function endGame(win) {
   if (over) return;
   over = true;
+
+  clearRun();   // ván đã ngã ngũ → không khôi phục nữa
 
   const score = scoreNow(win);
   const stars = win ? starsFor(lives, D.lives) : 0;
@@ -161,6 +164,7 @@ function endGame(win) {
 
 /** Chơi lại đúng màn này ở cùng độ khó */
 function playAgain() {
+  clearRun();
   setAutoMap(level.id);
   GC.again();
 }

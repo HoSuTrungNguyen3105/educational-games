@@ -93,6 +93,7 @@ function startWave() {
   $('go').disabled = true;
   updUI();
   showPreview();
+  saveRun();   // đánh dấu đang giữa đợt → thoát rồi vào lại chơi lại đúng đợt này
 
   if (wave === HARD_WAVE) {
     showMsg('⚠️ Tinh anh xuất hiện! Kẻ địch mạnh hơn hẳn!');

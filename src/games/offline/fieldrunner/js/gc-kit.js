@@ -227,8 +227,9 @@
           '<div class="gc-actions">' +
             '<button type="button" class="gc-btn gc-go">▶ Bắt đầu</button>' +
             (cfg.resume
-              ? '<button type="button" class="gc-btn alt gc-resume">⏯ Tiếp tục ván đang chơi · ' +
-                LV[cfg.resume.i].emoji + ' ' + LV[cfg.resume.i].label + '</button>'
+              ? '<button type="button" class="gc-btn alt gc-resume">⏯ Chơi tiếp · ' +
+                LV[cfg.resume.i].emoji + ' ' + LV[cfg.resume.i].label +
+                (cfg.resume.text ? ' — ' + esc(cfg.resume.text) : '') + '</button>'
               : '') +
           '</div>' +
         '</div>';

@@ -300,6 +300,8 @@ function showMapSelect(cfg) {
     const rec = all[lv.id] || {};
     const open = mapUnlocked(i);
     const stars = rec.stars || 0;
+    const play = open ? runAnyFor(lv) : null;
+    const otherDiff = play && play.diff !== GC.i;
 
     const pips = [1, 2, 3].map(n =>
       '<i class="' + (n <= stars ? 'on' : '') + '"' +
@@ -313,7 +315,13 @@ function showMapSelect(cfg) {
         '<span class="t">' +
           '<b>' + lv.name + '</b>' +
           '<small>' + (open ? lv.desc : 'Thắng màn trước để mở cánh đồng này') + '</small>' +
-          '<span class="meta">🌊 ' + lv.waves + ' đợt · ⭐ ' + (rec.best || 0) + '</span>' +
+          '<span class="meta">🌊 ' + lv.waves + ' đợt · ⭐ ' + (rec.best || 0) +
+          (play
+            ? ' · <b class="run">🔫 ' + play.tw.length + ' vũ khí, dở đợt ' +
+              Math.min(play.w ? play.wave : play.wave + 1, lv.waves) +
+              (otherDiff ? ' (' + GC.levels[play.diff].label + ')' : '') + '</b>'
+            : '') +
+          '</span>' +
         '</span>' +
         '<span class="pips">' + pips + '</span>' +
         (open ? '' : '<span class="lk">🔒</span>') +

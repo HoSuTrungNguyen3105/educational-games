@@ -1199,6 +1199,10 @@ canvas#c {
   color: #6a6990;
 }
 
+.fr-map .meta .run {
+  color: #d9482f;
+}
+
 .fr-map .pips {
   flex: none;
   display: flex;
@@ -1251,16 +1255,84 @@ canvas#c {
   margin-top: 14px;
 }
 
+/* ── Hộp hỏi "Chơi tiếp / Bắt đầu lại" khi màn còn ván dở ── */
+.fr-resume {
+  position: fixed;
+  inset: 0;
+  z-index: 2147482101;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  font-family: var(--gc-body);
+  color: var(--gc-ink);
+  background: rgba(28, 27, 58, .55);
+}
+
+.fr-resume__card {
+  width: 100%;
+  max-width: 430px;
+  background: #fff;
+  border: 3px solid var(--gc-ink);
+  border-radius: 22px;
+  box-shadow: var(--gc-shadow);
+  padding: 16px 16px 14px;
+  animation: gcPop .35s cubic-bezier(.2, 1.2, .4, 1);
+}
+
+.fr-resume__card h2 {
+  margin: 0;
+  font-family: var(--gc-head);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.fr-resume__sub {
+  margin: 6px 0 12px;
+  font-size: 13px;
+  color: #6a6990;
+}
+
+.fr-resume__list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  padding: 10px 12px;
+  border-top: 2px solid #eceaf6;
+  border-bottom: 2px solid #eceaf6;
+  font-size: 13.5px;
+  color: #45436a;
+}
+
+.fr-resume__list b {
+  font-family: var(--gc-head);
+  color: var(--gc-ink);
+}
+
+.fr-resume__row {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.fr-resume__row .btn {
+  flex: 1;
+}
+
 @media (max-width: 560px) {
   .fr-maps { padding-top: 56px; }
   .fr-maps__card { padding: 12px; border-radius: 18px; }
   .fr-maps__head h2 { font-size: 22px; }
   .fr-maps__grid { grid-template-columns: 1fr; }
   .fr-map .e { width: 38px; height: 38px; font-size: 20px; }
+  .fr-resume__card { padding: 13px; border-radius: 18px; }
+  .fr-resume__card h2 { font-size: 21px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fr-maps__card { animation: none; }
+  .fr-maps__card,
+  .fr-resume__card { animation: none; }
   .fr-map,
   .hud__meter i { transition: none; }
   .fr-map.shake { animation: none; }
@@ -1563,8 +1635,9 @@ canvas#c {
           '<div class="gc-actions">' +
             '<button type="button" class="gc-btn gc-go">▶ Bắt đầu</button>' +
             (cfg.resume
-              ? '<button type="button" class="gc-btn alt gc-resume">⏯ Tiếp tục ván đang chơi · ' +
-                LV[cfg.resume.i].emoji + ' ' + LV[cfg.resume.i].label + '</button>'
+              ? '<button type="button" class="gc-btn alt gc-resume">⏯ Chơi tiếp · ' +
+                LV[cfg.resume.i].emoji + ' ' + LV[cfg.resume.i].label +
+                (cfg.resume.text ? ' — ' + esc(cfg.resume.text) : '') + '</button>'
               : '') +
           '</div>' +
         '</div>';
@@ -2372,6 +2445,8 @@ function showMapSelect(cfg) {
     const rec = all[lv.id] || {};
     const open = mapUnlocked(i);
     const stars = rec.stars || 0;
+    const play = open ? runAnyFor(lv) : null;
+    const otherDiff = play && play.diff !== GC.i;
 
     const pips = [1, 2, 3].map(n =>
       '<i class="' + (n <= stars ? 'on' : '') + '"' +
@@ -2385,7 +2460,13 @@ function showMapSelect(cfg) {
         '<span class="t">' +
           '<b>' + lv.name + '</b>' +
           '<small>' + (open ? lv.desc : 'Thắng màn trước để mở cánh đồng này') + '</small>' +
-          '<span class="meta">🌊 ' + lv.waves + ' đợt · ⭐ ' + (rec.best || 0) + '</span>' +
+          '<span class="meta">🌊 ' + lv.waves + ' đợt · ⭐ ' + (rec.best || 0) +
+          (play
+            ? ' · <b class="run">🔫 ' + play.tw.length + ' vũ khí, dở đợt ' +
+              Math.min(play.w ? play.wave : play.wave + 1, lv.waves) +
+              (otherDiff ? ' (' + GC.levels[play.diff].label + ')' : '') + '</b>'
+            : '') +
+          '</span>' +
         '</span>' +
         '<span class="pips">' + pips + '</span>' +
         (open ? '' : '<span class="lk">🔒</span>') +
@@ -2454,6 +2535,251 @@ function showMapSelect(cfg) {
   };
   root.querySelector('[data-a="home"]').onclick = GC.quit;
 }
+    </script>
+    <!-- js/runsave.js -->
+    <script>
+/* =====================================================
+   runsave.js · lưu ván đang chơi (tháp đã xây, mạng, đợt)
+   Thoát giữa trận rồi vào lại đúng màn + độ khó → vũ khí còn nguyên.
+   ===================================================== */
+
+/* Một suất lưu cho mỗi cánh đồng; độ khó cất trong suất để không trộn lẫn. */
+const RUNKEY = 'gc:fieldrunner:run-v1';
+
+function runsAll() {
+  try {
+    return JSON.parse(localStorage.getItem(RUNKEY) || '{}') || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function runSlot(id) {
+  const r = runsAll()[id];
+  if (!r || r.v !== 1 || !Array.isArray(r.tw)) return null;
+  return r;
+}
+
+/** Ghi ván hiện tại; gọi sau mỗi lần xây/nâng cấp/bán/thắng đợt */
+function saveRun() {
+  if (!started || over || !level) return;
+
+  const all = runsAll();
+
+  // Ván mới tinh (chưa xây, chưa đánh đợt nào) → không có gì để lưu
+  if (!towers.length && !wave) {
+    if (all[level.id]) {
+      delete all[level.id];
+      try {
+        localStorage.setItem(RUNKEY, JSON.stringify(all));
+      } catch (e) { /* storage bị chặn */ }
+    }
+    return;
+  }
+
+  all[level.id] = {
+    v: 1,
+    at: Date.now(),
+    diff: GC.i,
+    lives,
+    wave,
+    w: waveActive ? 1 : 0,
+    kills,
+    money: HOSTED ? 0 : money,
+    tw: towers.map(t => ({ c: t.c, r: t.r, k: t.type, l: t.lvl, m: t.mode || 0, s: t.spent }))
+  };
+
+  try {
+    localStorage.setItem(RUNKEY, JSON.stringify(all));
+  } catch (e) { /* storage bị chặn */ }
+}
+
+function clearRun(id) {
+  const all = runsAll();
+  if (!all[id || (level && level.id)]) return;
+
+  delete all[id || level.id];
+  try {
+    localStorage.setItem(RUNKEY, JSON.stringify(all));
+  } catch (e) { /* bỏ qua */ }
+}
+
+/** Ván lưu mới nhất trong mọi cánh đồng → { lv, run } hoặc null */
+function latestRun() {
+  const all = runsAll();
+  let best = null;
+
+  for (const id in all) {
+    const r = runSlot(id);
+    if (!r || !(r.wave > 0 || r.tw.length)) continue;
+
+    const i = LEVELS.findIndex(l => l.id === id);
+    if (i < 0 || !mapUnlocked(i)) continue;
+    if (!best || r.at > best.run.at) best = { lv: LEVELS[i], run: r };
+  }
+  return best;
+}
+
+/** Dữ liệu cho nút "Chơi tiếp" ở màn chọn độ khó */
+function runResumeInfo() {
+  const b = latestRun();
+  if (!b) return null;
+
+  const w = Math.min(b.run.w ? b.run.wave : b.run.wave + 1, b.lv.waves);
+  return {
+    i: b.run.diff,
+    id: b.lv.id,
+    text: b.lv.icon + ' ' + b.lv.name + ' · ' + b.run.tw.length + ' vũ khí · đợt ' + w
+  };
+}
+
+/** Ván lưu cho màn lv, bất kể độ khó (dùng để dán nhãn trên màn chọn màn) */
+function runAnyFor(lv) {
+  const r = runSlot(lv.id);
+  return r && (r.wave > 0 || r.tw.length) ? r : null;
+}
+
+/** Ván lưu cho màn lv, chỉ dùng khi trùng độ khó */
+function runForLevel(lv) {
+  const r = runAnyFor(lv);
+  return r && r.diff === GC.i ? r : null;
+}
+
+function agoText(at) {
+  const s = Math.max(0, (Date.now() - at) / 1000);
+  if (s < 60) return 'vừa xong';
+  if (s < 3600) return Math.floor(s / 60) + ' phút trước';
+  if (s < 86400) return Math.floor(s / 3600) + ' giờ trước';
+  return Math.floor(s / 86400) + ' ngày trước';
+}
+
+let resumeRoot = null;
+
+function closeResume() {
+  if (resumeRoot) {
+    resumeRoot.remove();
+    resumeRoot = null;
+  }
+}
+
+/**
+ * Vào màn đang có ván dở → hỏi rõ "Chơi tiếp" hay "Bắt đầu lại",
+ * không âm thầm dựng tháp lên bàn rồi khiến bé không biết gì.
+ */
+function askResume(run) {
+  closeResume();
+
+  const nextWave = Math.min(run.w ? run.wave : run.wave + 1, TOTAL);
+  const LV = GC.levels[run.diff];
+
+  const root = document.createElement('div');
+  root.className = 'fr-resume';
+  root.id = 'fr-resume';
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-label', 'Ván đang dở');
+  root.innerHTML =
+    '<div class="fr-resume__card">' +
+      '<h2>🔫 Còn ván đang dở</h2>' +
+      '<p class="fr-resume__sub">' + GC.esc(level.icon + ' ' + level.name) + ' · ' +
+        LV.emoji + ' ' + GC.esc(LV.label) + ' · lưu ' + agoText(run.at) + '</p>' +
+      '<div class="fr-resume__list">' +
+        '<span><b>' + run.tw.length + '</b> vũ khí đã mua</span>' +
+        '<span>đang ở đợt <b>' + nextWave + '/' + TOTAL + '</b></span>' +
+        '<span>còn <b>' + (run.lives | 0) + '</b> mạng</span>' +
+        '<span>đã hạ <b>' + (run.kills | 0) + '</b> địch</span>' +
+      '</div>' +
+      '<div class="fr-resume__row">' +
+        '<button type="button" class="btn mint" data-a="go">▶ Chơi tiếp</button>' +
+        '<button type="button" class="btn red" data-a="new">↺ Bắt đầu lại</button>' +
+      '</div>' +
+    '</div>';
+
+  paused = true;
+  $('pause').textContent = '▶';
+
+  const answer = (goOn) => {
+    closeResume();
+    paused = false;
+    $('pause').textContent = '⏸';
+
+    if (goOn) restoreRun(run);
+    else {
+      clearRun(level.id);
+      updUI();
+      showMsg('↺ Bàn mới — chưa có vũ khí');
+    }
+  };
+
+  root.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]');
+    if (b) answer(b.dataset.a === 'go');
+  });
+
+  document.body.appendChild(root);
+  resumeRoot = root;
+}
+
+/** Dựng lại tháp + tiến độ sau khi reset() đã làm sạch lưới */
+function restoreRun(r) {
+  for (const t of r.tw) {
+    if (!TYPES[t.k]) continue;
+    if (t.c < 0 || t.r < 0 || t.c >= COLS || t.r >= ROWS) continue;
+    if (blocked[t.c][t.r]) continue;
+
+    blocked[t.c][t.r] = true;
+    towers.push({
+      c: t.c, r: t.r,
+      x: t.c * CS + CS / 2,
+      y: t.r * CS + CS / 2,
+      type: t.k,
+      lvl: Math.min(MAXLV, Math.max(1, t.l | 0)),
+      cd: 0,
+      ang: 0,
+      spent: t.s || TYPES[t.k].cost,
+      mode: t.m || 0,
+      rec: 0
+    });
+  }
+
+  const d = bfs(blocked);
+  // Địa hình màn chơi có thể đổi giữa 2 bản lưu — đường phải còn thông mới nhận ván
+  if (d[0 + SR * COLS] === Infinity) {
+    clearRun(level.id);
+    return false;
+  }
+
+  setDist(d);
+
+  lives = Math.min(D.lives, Math.max(1, r.lives | 0));
+  kills = Math.max(0, r.kills | 0);
+
+  // thoát giữa đợt → lần sau chơi lại đúng đợt đó, không bỏ sót đợt nào
+  wave = Math.min(TOTAL, Math.max(0, r.wave | 0));
+  if (r.w && wave > 0) wave--;
+
+  // Chơi một mình (mở file .html) thì tiền thuộc về ván lưu;
+  // trong app thì ví tài khoản mới là bản đúng, không ghi đè.
+  if (!HOSTED && typeof r.money === 'number') money = r.money;
+
+  waveActive = false;
+  $('go').disabled = false;
+  $('go').textContent = '▶ Bắt đầu đợt ' + (wave + 1);
+
+  updUI();
+  showInfo();
+  showPreview();
+
+  showMsg('↺ Tiếp tục ván cũ · ' + towers.length + ' vũ khí · đợt ' + (wave + 1));
+  return true;
+}
+
+/* ---------- Cầu nối với app: host báo ghi trước khi phá iframe ---------- */
+window.__gqFlush = saveRun;
+addEventListener('gq:flush', saveRun);
+addEventListener('pagehide', saveRun);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) saveRun();
+});
     </script>
     <!-- js/pathfinding.js -->
     <script>
@@ -2664,6 +2990,7 @@ function startWave() {
   $('go').disabled = true;
   updUI();
   showPreview();
+  saveRun();   // đánh dấu đang giữa đợt → thoát rồi vào lại chơi lại đúng đợt này
 
   if (wave === HARD_WAVE) {
     showMsg('⚠️ Tinh anh xuất hiện! Kẻ địch mạnh hơn hẳn!');
@@ -3620,6 +3947,7 @@ function update(dt) {
 
     updUI();
     showPreview();
+    saveRun();
   }
 }
 
@@ -3633,6 +3961,8 @@ function scoreNow(win) {
 function endGame(win) {
   if (over) return;
   over = true;
+
+  clearRun();   // ván đã ngã ngũ → không khôi phục nữa
 
   const score = scoreNow(win);
   const stars = win ? starsFor(lives, D.lives) : 0;
@@ -3664,6 +3994,7 @@ function endGame(win) {
 
 /** Chơi lại đúng màn này ở cùng độ khó */
 function playAgain() {
+  clearRun();
   setAutoMap(level.id);
   GC.again();
 }
@@ -6829,6 +7160,7 @@ function openMapPicker() {
   const before = paused;
   paused = true;
   $('pause').textContent = '▶';
+  saveRun();
 
   showMapSelect({
     onPick: startMap,
@@ -6976,6 +7308,7 @@ function showTowerInfo(el) {
 
         particles(sel.x, sel.y, 14, '#ffd93b', 120, 0.6, 3);
         fx.push({ k: 'ring', x: sel.x, y: sel.y, life: 0.5, c: '#ffd93b', r: 40 });
+        saveRun();
       }
     };
   }
@@ -6985,6 +7318,7 @@ function showTowerInfo(el) {
     md.onclick = () => {
       sel.mode = ((sel.mode || 0) + 1) % 3;
       showInfo();
+      saveRun();
     };
   }
 
@@ -6997,6 +7331,7 @@ function showTowerInfo(el) {
     setDist(bfs(blocked));
     updUI();
     showInfo();
+    saveRun();
   };
 }
 
@@ -7134,6 +7469,7 @@ cv.addEventListener('click', e => {
 
     particles(c * CS + CS / 2, r * CS + CS / 2, 10, '#e8dcc0', 90, 0.45, 3);
     updUI();
+    saveRun();
   } else {
     sel = null;
     showInfo();
@@ -7142,7 +7478,8 @@ cv.addEventListener('click', e => {
 
 /* ---------- Bàn phím ---------- */
 addEventListener('keydown', e => {
-  if (!started || document.getElementById('gc-start') || document.getElementById('fr-maps')) return;
+  if (!started || document.getElementById('gc-start') || document.getElementById('fr-maps') ||
+      document.getElementById('fr-resume')) return;
 
   if (e.key === 'Escape') {
     if ($('hudMenu') && $('hudMenu').classList.contains('open')) closeSettings();
@@ -7171,12 +7508,16 @@ $('pause').onclick = () => {
   $('pause').textContent = paused ? '▶' : '⏸';
   $('pause').classList.toggle('on', paused);
   syncSettings();
+  saveRun();
 };
 
 $('speed').onclick = () => setSpeed(speed % 3 + 1);
 
 $('restart').onclick = () => {
-  if (confirm('Chơi lại từ đầu màn ' + level.name + ' ở độ khó ' + GC.diff.label + '?')) reset();
+  if (confirm('Chơi lại từ đầu màn ' + level.name + ' ở độ khó ' + GC.diff.label + '?')) {
+    clearRun();
+    reset();
+  }
 };
 
 $('gear').onclick = toggleSettings;
@@ -7213,8 +7554,8 @@ addEventListener('resize', fit);
    main.js · khởi động game, chọn màn & vòng lặp chính
    ===================================================== */
 
-/** Chuẩn bị số liệu và bắt đầu chơi một cánh đồng */
-function startMap(lv) {
+/** Chuẩn bị số liệu và bắt đầu chơi một cánh đồng (goOn = dựng lại ván đã lưu) */
+function startMap(lv, goOn) {
   // Thông số theo độ khó (dễ → siêu khó), nhân thêm theo màn
   D = {
     lives: Math.round(GC.by(30, 20, 12, 6) * (lv.livesMul || 1)),
@@ -7234,6 +7575,11 @@ function startMap(lv) {
   buildBar();
   makeBg();
   reset();
+
+  const saved = runForLevel(lv);
+  if (goOn) { if (saved) restoreRun(saved); }
+  else if (saved) askResume(saved);
+
   fit();
   runLoop();
 }
@@ -7245,12 +7591,18 @@ function runLoop() {
 
   let last = performance.now();
   let tick = 0;
+  let lastSave = 0;
 
   function loop(now) {
     const real = Math.min(0.1, (now - last) / 1000);
     last = now;
 
     if (started) {
+      if (now - lastSave > 2000) {
+        lastSave = now;
+        saveRun();
+      }
+
       // Chia nhỏ bước cập nhật để va chạm ổn định khi tăng tốc x2, x3
       let dt = real * speed;
       while (dt > 0) {
@@ -7297,10 +7649,20 @@ GC.start({
     '12 mạng · địch trâu & nhanh, thưởng ít',
     '6 mạng · địch cực trâu, thưởng rất ít'
   ],
+  resume: runResumeInfo(),
   onStart: () => {
     const auto = takeAutoMap();
     if (auto) startMap(auto);
     else showMapSelect({ onPick: startMap, onDiff: changeDifficulty });
+  },
+  onResume: () => {
+    const b = latestRun();
+    if (!b) {
+      showMapSelect({ onPick: startMap, onDiff: changeDifficulty });
+      return;
+    }
+    clearAutoMap();
+    startMap(b.lv, true);
   }
 });
     </script>

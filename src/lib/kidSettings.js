@@ -103,7 +103,17 @@ export function setKidSettings(patch) {
   const next = { ...patch };
   // Nhận `age` thì tự quy ra lớp để hai chiều không lệch nhau.
   if (next.age !== undefined && next.grade === undefined) next.grade = gradeForAge(next.age);
-  state = { ...state, ...next, grade: next.grade !== undefined ? clampGrade(next.grade) : state.grade };
+  const merged = {
+    ...state,
+    ...next,
+    grade: next.grade !== undefined ? clampGrade(next.grade) : state.grade,
+  };
+  /* Không đổi gì thì PHẢI im lặng (không ghi localStorage, không emit).
+   * `syncKidFromAccount()` gọi hàm này mỗi lần tải trang hồ sơ; nếu mỗi lần
+   * đều emit thì App render lại → useEffect [userAuth] chạy lại → gọi /me →
+   * sync → emit → … thành vòng gọi API vô hạn. */
+  if (Object.keys(state).every((k) => state[k] === merged[k])) return snapshot;
+  state = merged;
   snapshot = withAge(state);
   try {
     localStorage.setItem(KEY, JSON.stringify(state));

@@ -50,14 +50,16 @@ let started = false;
 /**
  * Gọi một lần ở `App.jsx`.
  *
- * Nghe cả hai phía: đổi cài đặt (màn chào, Cài đặt) → đẩy lên hồ sơ; đăng nhập
- * bằng tài khoản chưa có mã tuổi (tạo acc trước khi bản này chạy) → bổ sung lại
- * một lần. `pushProfile` tự bỏ qua khi hai bên đã khớp nên gọi thừa không sao.
+ * Chỉ đẩy lên server khi bé/PHỤ HUYNH THỰC SỰ đổi (màn chào, thanh tuổi, chip
+ * giới tính). Không "backfill" lúc mở app hay sau khi đăng nhập:
+ * `gq_kid_settings_v1` luôn tồn tại sẵn với Lớp 2 + giới tính trống, nên nếu
+ * tự gửi thì mọi tài khoản cũ (kể cả giáo viên, quản trị) đều bị ghi đè hồ sơ
+ * bằng mã tuổi mặc định — dữ liệu rác mà không ai chọn.
+ * Tài khoản mới thì sao? `handleOnboardingComplete` đã gửi kèm ageCode + gender
+ * ngay trong POST /auth/register.
  */
 export function startKidProfileSync() {
   if (started || typeof window === "undefined") return;
   started = true;
   onKidSettingsChange(() => { pushProfile(); });
-  useUserAuthStore.subscribe(() => { pushProfile(); });
-  pushProfile();
 }

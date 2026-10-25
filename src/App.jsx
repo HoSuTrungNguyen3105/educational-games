@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { useRoute, navigate } from "./lib/router.js";
 import { useToast } from "./lib/hooks.js";
 import { Loader } from "./components/ui";
@@ -148,7 +148,12 @@ function App() {
     navigate("/");
   };
 
-  const userAuth = user ? { user, token } : null;
+  /* `userAuth` phải là một object ÔN ĐỊNH. Nhiều trang (Profile, SpinWheel,
+   * FindFriends, StudentApp, HtmlGameLoader) đặt nó làm dep của useEffect để
+   * gọi `/auth/me`; nếu mỗi lần App render đều tạo object mới thì các hiệu ứng
+   * đó chạy lại liên tục — một lần setKidSettings là đủ tạo vòng lặp
+   * render → gọi /me → setKidSettings → … */
+  const userAuth = useMemo(() => (user ? { user, token } : null), [user, token]);
 
   const renderStudent = () => {
     if (loadingGame) {

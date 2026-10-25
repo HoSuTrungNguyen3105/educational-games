@@ -15,6 +15,16 @@ async function syncDeviceToken() {
   } catch { /* ignore — push is best-effort */ }
 }
 
+/** Bản "huỷ" của syncDeviceToken — chạy nền lúc đăng xuất, không chặn UI. */
+async function removePushToken() {
+  try {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    const token = await requestNotificationPermission();
+    if (token) await notificationService.removeDevice(token);
+  } catch { /* ignore — push is best-effort */ }
+}
+
 export const useUserAuthStore = create((set, get) => ({
   user: null,
   token: null,
@@ -76,16 +86,15 @@ export const useUserAuthStore = create((set, get) => ({
   },
 
   logout: async () => {
-    // Unregister this device's push token BEFORE clearing auth (API needs the JWT).
-    try {
-      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-        const token = await requestNotificationPermission();
-        if (token) await notificationService.removeDevice(token);
-      }
-    } catch { /* best-effort */ }
+    /* Dọn token push là việc PHỤ: request cần JWT nên phải phát trước khi xoá,
+     * nhưng tuyệt đối không chờ — `requestNotificationPermission()` await cả
+     * `Notification.requestPermission()` lẫn `serviceWorker.ready`, mà hai cái
+     * đó có thể treo vĩnh viễn → bấm "Đăng xuất" màn hình đứng yên, vẫn còn
+     * tên người dùng. */
+    removePushToken();
     clearAuth();
     set({ user: null, token: null, error: null });
-    socket.disconnect();
+    try { socket.disconnect(); } catch { /* socket chưa kịp nối — coi như xong */ }
   },
 
   clearError: () => set({ error: null }),

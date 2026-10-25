@@ -9,7 +9,7 @@ function generateCode() {
 
 // ── Assignment CRUD ──
 
-export async function createAssignment({ teacherId, templateId, gameId, questionIds, title, description, classId, isExam, examDuration, deadline, maxAttempts }) {
+export async function createAssignment({ teacherId, templateId, questionIds, title, description, classId, isExam, examDuration, deadline, maxAttempts }) {
   if (!teacherId || !title || !classId) {
     throw new Error("teacherId, title, classId là bắt buộc");
   }
@@ -18,8 +18,8 @@ export async function createAssignment({ teacherId, templateId, gameId, question
     _id: uid("asgn"),
     id: uid("asgn"),
     teacherId,
+    // Bài giao chọn "mẫu đề thi" (template) thay vì gắn với một game.
     templateId: templateId || null,
-    gameId: gameId || null,
     questionIds: questionIds || [],
     title,
     description: description || null,
@@ -45,11 +45,11 @@ export async function getAssignmentByCode(code) {
   return getCollection("assignments").findOne({ code: String(code) });
 }
 
-export async function listAssignments({ classId, teacherId, gameId, status } = {}) {
+export async function listAssignments({ classId, teacherId, templateId, status } = {}) {
   const query = {};
   if (classId) query.classId = classId;
   if (teacherId) query.teacherId = teacherId;
-  if (gameId) query.gameId = gameId;
+  if (templateId) query.templateId = templateId;
   if (status) query.status = status;
   return getCollection("assignments").find(query).sort({ createdAt: -1 }).toArray();
 }
@@ -71,6 +71,13 @@ export async function deleteAssignment(id) {
 }
 
 // ── Submissions ──
+
+/** Câu hỏi của một bài giao — luôn lấy từ `questionIds` do giáo viên chọn. */
+async function loadAssignmentQuestions(assignment) {
+  const ids = assignment?.questionIds || [];
+  if (!ids.length) return [];
+  return getCollection("questions").find({ id: { $in: ids } }).toArray();
+}
 
 export async function startSubmission({ assignmentId, studentId }) {
   const assignment = await getAssignmentById(assignmentId);
@@ -127,7 +134,7 @@ export async function startSubmission({ assignmentId, studentId }) {
   throw new Error("Bạn đã hết số lần làm bài cho phép");
 }
 
-export async function submitAnswers({ submissionId, studentId, answers, gameResult = null }) {
+export async function submitAnswers({ submissionId, studentId, answers }) {
   const sub = await getCollection("submissions").findOne({ id: submissionId });
   if (!sub) throw new Error("Bài nộp không tồn tại");
   if (sub.studentId !== studentId) throw new Error("Không có quyền");
@@ -136,21 +143,15 @@ export async function submitAnswers({ submissionId, studentId, answers, gameResu
   const assignment = await getAssignmentById(sub.assignmentId);
   if (!assignment) throw new Error("Bài giao không tồn tại");
 
-  // Fetch questions - use questionIds if available, otherwise fallback to gameId
-  let questions = [];
-  if (assignment.questionIds && assignment.questionIds.length > 0) {
-    questions = await getCollection("questions").find({ id: { $in: assignment.questionIds } }).toArray();
-  } else if (assignment.gameId) {
-    questions = await getCollection("questions").find({ gameId: assignment.gameId }).toArray();
-  }
+  const questions = await loadAssignmentQuestions(assignment);
 
   let correctCount = 0;
   let wrongCount = 0;
   const totalQuestions = questions.length;
   const answerList = Array.isArray(answers) ? answers : [];
 
+  // Điểm luôn do server chấm từ từng câu trả lời — không nhận điểm tự khai.
   if (answerList.length > 0 && questions.length > 0) {
-    // Đường chuẩn: học sinh trả lời từng câu → chấm ở server như cũ.
     const questionMap = {};
     for (const q of questions) questionMap[q.id] = q;
 
@@ -161,12 +162,6 @@ export async function submitAnswers({ submissionId, studentId, answers, gameResu
       if (isAnswerCorrect(q, ans.value)) correctCount++;
       else wrongCount++;
     }
-  } else if (gameResult) {
-    // Đường bổ sung: bài giao chạy bằng HTML game, game không gửi từng câu trả lời
-    // (game tự chấm trong UI). Server chỉ nhận điểm đã bị chặn trần, không nhận
-    // đáp án đúng. Giữ nguyên công thức % để phần trăm khớp với các bài cũ.
-    correctCount = Math.max(0, Math.floor(Number(gameResult.correct) || 0));
-    wrongCount = Math.max(0, Math.floor(Number(gameResult.wrong) || 0));
   }
 
   const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
