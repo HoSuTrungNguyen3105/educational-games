@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { chatApi } from "../../services/chatApi.js";
-import { Loader } from "../../components/ui";
+import { IconBack, IconSmile, Loader } from '../../components/ui';
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
-import { ArrowLeft, Send, Smile } from "lucide-react";
+import { Send } from "lucide-react";
 
 function formatMessageTime(iso) {
   if (!iso) return "";
@@ -143,7 +143,7 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
       <div className="flex items-center gap-3 px-3 py-2.5 bg-paper border-b border-ink/8 shrink-0 pb-[max(env(safe-area-inset-top),8px)]">
         <button onClick={onBack}
           className="p-1.5 rounded-xl hover:bg-ink/5 transition text-ink/60 hover:text-ink md:hidden">
-          <ArrowLeft className="w-5 h-5" />
+          <IconBack className="w-5 h-5" />
         </button>
         <div className="relative shrink-0">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold">
@@ -165,7 +165,7 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
       ) : messages.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center px-4 py-8 gap-3">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
-            <Smile className="w-8 h-8 text-purple-300" />
+            <IconSmile className="w-8 h-8 text-purple-300" />
           </div>
           <div>
             <p className="text-sm font-body text-ink/60">Bắt đầu trò chuyện với</p>

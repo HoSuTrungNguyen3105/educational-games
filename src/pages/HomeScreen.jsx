@@ -8,7 +8,7 @@ import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
 import { canAccessDashboard } from '../config/roles.js'
 import './home-gq.css'
-import { Loader, ErrorState, EmptyState } from '../components/ui'
+import { EmptyState, ErrorState, IconChevronDown, IconFile, IconLogout, IconNotification, IconTrash, IconUser, Loader } from '../components/ui';
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import AiChatWidget from '../components/ai/AiChatWidget.jsx'
 import { PetAvatar } from '../components/PetAvatar.jsx'
@@ -23,28 +23,22 @@ import {
   ClipboardList,
   MessageCircle,
   Search,
-  User,
   Gamepad2,
   GraduationCap,
   BookOpen,
   Trophy,
-  LogOut,
   KeyRound,
   Sparkles,
   PartyPopper,
   Gift,
-  Bell,
   ShipWheel,
-  FileText,
   Sprout,
   Crown,
   Star,
   Send,
-  Trash2,
   RefreshCw,
   LayoutDashboard,
   MoreHorizontal,
-  ChevronDown,
 } from 'lucide-react'
 
 
@@ -195,14 +189,14 @@ function metaForSubject(subject = "") {
 // Mọi mục chưa nằm trong hàng tab → dồn vào popover "Thêm" trên header.
 // (Thú cưng không ở đây: nó có chip riêng ngay đầu hàng tab.)
 const MORE_ITEMS = (userAuth) => ([
-  { key: "reminders", icon: Bell, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
+  { key: "reminders", IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
   { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
-  { key: "assignment", icon: FileText, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
+  { key: "assignment", IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
-  { key: "profile", icon: User, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
+  { key: "profile", IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
 ]);
 
 // Menu đầy đủ (dùng cho dropdown "Thêm" + menu hamburger mobile)
@@ -213,16 +207,16 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "rpg", icon: GraduationCap, label: "Nhập vai", type: "scroll", target: "rpg-section", show: true },
   { key: "subjects", icon: BookOpen, label: "Môn học", type: "scroll", target: "subjects-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: true, badge: true },
-  { key: "reminders", icon: Bell, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
+  { key: "reminders", IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
   { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
   { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
-  { key: "profile", icon: User, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
+  { key: "profile", IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
-  { key: "assignment", icon: FileText, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
+  { key: "assignment", IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
 
@@ -235,7 +229,7 @@ const BOTTOM_NAV = (userAuth) => [
   { key: "games", icon: Gamepad2, label: "Game", type: "scroll", target: "games-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
-  { key: "profile", icon: User, label: "Cá nhân", type: "path", path: "/profile", show: !!userAuth?.user },
+  { key: "profile", IconUser, label: "Cá nhân", type: "path", path: "/profile", show: !!userAuth?.user },
 ];
 
 // Thành tích nổi bật (mock — sẽ nối API sau)
@@ -973,7 +967,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   aria-label={`Hồ sơ của ${heroName}`}
                   title="Hồ sơ của bé"
                 >
-                  <span className="gq-kidchip__ava" aria-hidden="true"><User className="w-4 h-4" /></span>
+                  <span className="gq-kidchip__ava" aria-hidden="true"><IconUser className="w-4 h-4" /></span>
                   <span className="gq-kidchip__name">{heroName}</span>
                 </button>
               )}
@@ -1026,7 +1020,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   >
                     <MoreHorizontal aria-hidden="true" />
                     <span>Thêm</span>
-                    <ChevronDown className="gq-navtab__chev" aria-hidden="true" />
+                    <IconChevronDown className="gq-navtab__chev" aria-hidden="true" />
                   </button>
                   {moreOpen && morePos && (
                     <div className="gq-navpop" style={{ top: morePos.top, left: morePos.left, width: morePos.width }}>
@@ -1380,7 +1374,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   <div className="gq-sheet__sep" />
                   <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Thông báo đẩy</p>
                   <button onClick={handleEnablePush} disabled={testingPush} className="gq-link">
-                    <span className="gq-link__ico"><Bell className="w-4 h-4" /></span>
+                    <span className="gq-link__ico"><IconNotification className="w-4 h-4" /></span>
                     <span className="flex-1">
                       {testingPush ? "Đang bật..." : pushStatus.permission === "granted" ? "Đã bật thông báo" : "Bật thông báo"}
                     </span>
@@ -1392,7 +1386,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                         <span className="flex-1">{testingPush ? "Đang gửi..." : "Gửi thử"}</span>
                       </button>
                       <button onClick={handleResetDevices} disabled={testingPush} className="gq-link">
-                        <span className="gq-link__ico"><Trash2 className="w-4 h-4" /></span>
+                        <span className="gq-link__ico"><IconTrash className="w-4 h-4" /></span>
                         <span className="flex-1">Reset thiết bị</span>
                       </button>
                     </>
@@ -1413,7 +1407,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               {/* Tài khoản */}
               {userAuth?.user ? (
                 <button onClick={() => { onUserLogout(); setMenuOpen(false); }} className="gq-link gq-link--danger">
-                  <span className="gq-link__ico"><LogOut className="w-4 h-4" /></span>
+                  <span className="gq-link__ico"><IconLogout className="w-4 h-4" /></span>
                   <span className="flex-1">Đăng xuất</span>
                 </button>
               ) : (

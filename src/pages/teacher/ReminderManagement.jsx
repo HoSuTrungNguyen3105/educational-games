@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { reminderService } from "../../services/api.js";
-import { Loader, ConfirmModal, EmptyState } from "../../components/ui";
+import { ConfirmModal, EmptyState, IconAdd, IconBell, IconCheckCircle, IconEdit, IconTrash, Loader } from '../../components/ui';
 import { useConfirm } from "../../hooks/useConfirm.js";
 import DateTimePicker from "../../components/DateTimePicker.jsx";
 import VibratePatternPicker from "../../components/VibratePatternPicker.jsx";
@@ -9,7 +9,7 @@ import {
   isoToLocalDatetimeValue,
   formatDateTime,
 } from "../../lib/reminderUtils.js";
-import { Bell, Plus, Trash2, Clock, RotateCcw, CheckCircle, AlertCircle, Pencil } from "lucide-react";
+import { Clock, RotateCcw, AlertCircle} from "lucide-react";
 
 const REPEAT_OPTIONS = [
   { value: "none", label: "Không lặp" },
@@ -24,7 +24,7 @@ function getRepeatLabel(v) {
 }
 
 function getTimeStatus(remindAt, triggered) {
-  if (triggered) return { label: "Đã nhắc", color: "text-green-600 bg-green-50", icon: CheckCircle };
+  if (triggered) return { label: "Đã nhắc", color: "text-green-600 bg-green-50", IconCheckCircle };
   const now = new Date();
   const target = new Date(remindAt);
   const diff = target - now;
@@ -182,7 +182,7 @@ export default function ReminderManagement({ showToast }) {
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-[popIn_.3s_ease]">
             <div className="text-center mb-4">
               <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3">
-                <Bell className="w-8 h-8 text-amber-500" />
+                <IconBell className="w-8 h-8 text-amber-500" />
               </div>
               <h3 className="text-lg font-bold text-ink">🔔 Nhắc nhở!</h3>
             </div>
@@ -201,13 +201,13 @@ export default function ReminderManagement({ showToast }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-ink flex items-center gap-2">
-            <Bell className="w-6 h-6 text-gold" />
+            <IconBell className="w-6 h-6 text-gold" />
             Nhắc nhở
           </h1>
           <p className="text-sm text-gray-500 mt-1">Quản lý thời gian biểu và nhắc nhở cá nhân</p>
         </div>
         <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2.5 bg-gold text-white rounded-xl font-semibold text-sm hover:bg-gold/90 transition">
-          <Plus className="w-4 h-4" />
+          <IconAdd className="w-4 h-4" />
           Tạo nhắc nhở
         </button>
       </div>
@@ -298,10 +298,10 @@ export default function ReminderManagement({ showToast }) {
                     </div>
                   </div>
                   <button onClick={() => openEdit(r)} className="text-gray-300 hover:text-gold transition p-1" title="Sửa">
-                    <Pencil className="w-4 h-4" />
+                    <IconEdit className="w-4 h-4" />
                   </button>
                   <button onClick={() => handleDelete(r.id, r.title)} className="text-gray-300 hover:text-red-500 transition p-1" title="Xóa">
-                    <Trash2 className="w-4 h-4" />
+                    <IconTrash className="w-4 h-4" />
                   </button>
                 </div>
               );
@@ -317,14 +317,14 @@ export default function ReminderManagement({ showToast }) {
             {pastReminders.map((r) => (
               <div key={r.id} className="flex items-center gap-3 bg-gray-50 border border-ink/5 rounded-xl p-4 opacity-60">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-green-50 text-green-600">
-                  <CheckCircle className="w-5 h-5" />
+                  <IconCheckCircle className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-ink text-sm truncate line-through">{r.title}</p>
                   <span className="text-xs text-gray-400">{formatDateTime(r.remindAt)}</span>
                 </div>
                 <button onClick={() => handleDelete(r.id, r.title)} className="text-gray-300 hover:text-red-500 transition p-1" title="Xóa">
-                  <Trash2 className="w-4 h-4" />
+                  <IconTrash className="w-4 h-4" />
                 </button>
               </div>
             ))}

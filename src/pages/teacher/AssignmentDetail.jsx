@@ -1,11 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { assignmentService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import {
-  ArrowLeft, Copy, Check, Users, BarChart3, Pencil,
-  Trophy, Clock, FileQuestion, Lock, Repeat, Link2,
-} from 'lucide-react';
-import { ConfirmModal, SearchInput, ViewToggle, useViewMode, cardGridClass, tableWrapClass } from '../../components/ui';
+import { Copy, Trophy, Clock, FileQuestion, Lock, Repeat, Link2 } from 'lucide-react';
+import { ConfirmModal, IconBack, IconChart, IconCheck, IconEdit, IconUsers, SearchInput, ViewToggle, cardGridClass, tableWrapClass, useViewMode } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
 
@@ -100,7 +97,7 @@ export default function AssignmentDetail({ assignmentId }) {
             aria-label="Quay lại"
             className="mt-1 w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-ink/40 hover:text-ink hover:bg-ink/5 transition"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <IconBack className="w-4 h-4" />
           </button>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -120,7 +117,7 @@ export default function AssignmentDetail({ assignmentId }) {
                 onClick={() => navigate(`/admin/assignments/${assignmentId}/edit`)}
                 className="px-3.5 py-2 bg-ink/5 text-ink/70 rounded-xl text-sm font-body hover:bg-ink/10 transition flex items-center gap-1.5"
               >
-                <Pencil className="w-3.5 h-3.5" /> Sửa
+                <IconEdit className="w-3.5 h-3.5" /> Sửa
               </button>
               <button
                 onClick={handleClose}
@@ -147,7 +144,7 @@ export default function AssignmentDetail({ assignmentId }) {
             className="font-mono text-lg font-bold text-gold flex items-center gap-1.5 hover:opacity-70 transition"
           >
             {assignment.code}
-            {copiedKey === 'code' ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+            {copiedKey === 'code' ? <IconCheck className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </InfoCard>
         <InfoCard label="Link bài tập" accent>
@@ -193,7 +190,7 @@ export default function AssignmentDetail({ assignmentId }) {
       {stats && stats.total > 0 && (
         <div className="note-card p-5">
           <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-4 h-4 text-gold" />
+            <IconChart className="w-4 h-4 text-gold" />
             <h3 className="font-display text-sm text-ink">Phân bố điểm</h3>
           </div>
           <ScoreSpread min={stats.minScore} avg={stats.avgScore} max={stats.maxScore} />
@@ -204,7 +201,7 @@ export default function AssignmentDetail({ assignmentId }) {
       <div className="note-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-gold" />
+            <IconUsers className="w-4 h-4 text-gold" />
             <h3 className="font-display text-sm text-ink">Danh sách nộp bài ({submissions.length})</h3>
           </div>
           {submissions.length > 0 && (

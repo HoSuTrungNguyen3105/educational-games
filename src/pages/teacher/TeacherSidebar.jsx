@@ -4,32 +4,27 @@ import { hasPermission, getRoleLabel } from '../../config/roles.js'
 import {
   LayoutDashboard,
   Library,
-  Users,
   Coins,
   ClipboardList,
   Palette,
-  SlidersHorizontal,
   Tag,
   BookOpen,
   HelpCircle,
   Database,
-  Plus,
   Home,
-  LogOut,
-  X,
   MessageCircle,
-  User,
   GraduationCap,
-  FileText,
   Shirt,
   Scissors,
   Move,
   Image,
-  Bell,
   ShieldCheck,
   Sparkles,
   PawPrint,
 } from 'lucide-react'
+import {
+  IconAdd, IconBell, IconClose, IconFile, IconLogout, IconSettings, IconUser, IconUsers,
+} from '../../components/ui/index.js'
 
 /* Menu chia nhóm theo layout mới: nhóm đầu không header, các nhóm sau có tiêu đề nhỏ. */
 const SECTIONS = [
@@ -39,20 +34,20 @@ const SECTIONS = [
     items: [
       { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin", permission: null },
       { id: "admin-library", label: "Trò chơi", icon: Library, route: "/admin/library", permission: "games.manage" },
-      { id: "admin-create", label: "Tạo trò chơi", icon: Plus, route: "/admin/create", permission: "games.manage" },
+      { id: "admin-create", label: "Tạo trò chơi", icon: IconAdd, route: "/admin/create", permission: "games.manage" },
     ],
   },
   {
     id: "manage",
     label: "Quản lý",
     items: [
-      { id: "admin-users", label: "Người dùng", icon: Users, route: "/admin/users", permission: "users.view" },
+      { id: "admin-users", label: "Người dùng", icon: IconUsers, route: "/admin/users", permission: "users.view" },
       { id: "admin-roles", label: "Phân quyền", icon: ShieldCheck, route: "/admin/roles", permission: "users.view" },
       { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
-      { id: "admin-assignments", label: "Bài tập", icon: FileText, route: "/admin/assignments", permission: null },
+      { id: "admin-assignments", label: "Bài tập", icon: IconFile, route: "/admin/assignments", permission: null },
       { id: "admin-coins", label: "Coin & Progress", icon: Coins, route: "/admin/coins", permission: "coins.manage" },
       { id: "admin-daily-tasks", label: "Nhiệm vụ ngày", icon: ClipboardList, route: "/admin/daily-tasks", permission: "daily-tasks.manage" },
-      { id: "admin-reminders", label: "Nhắc nhở", icon: Bell, route: "/admin/reminders", permission: null },
+      { id: "admin-reminders", label: "Nhắc nhở", icon: IconBell, route: "/admin/reminders", permission: null },
       { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
       { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/admin/ai-analysis", permission: "reports.view" },
     ],
@@ -66,7 +61,7 @@ const SECTIONS = [
       { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects", permission: "subjects.manage" },
       { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories", permission: "categories.manage" },
       { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
-      { id: "admin-game-config", label: "Cấu hình game", icon: SlidersHorizontal, route: "/admin/game-config", permission: "games.manage" },
+      { id: "admin-game-config", label: "Cấu hình game", icon: IconSettings, route: "/admin/game-config", permission: "games.manage" },
       { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/admin/images", permission: null },
       { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/admin/upload-items", permission: null },
     ],
@@ -190,12 +185,12 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
           <>
             <button onClick={() => { navigate("/admin/profile"); if (isMobile) setMobileOpen(false); }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-body text-ink/70 hover:bg-ink/5 hover:text-ink transition">
-              <User className="w-[18px] h-[18px]" />
+              <IconUser className="w-[18px] h-[18px]" />
               Hồ sơ
             </button>
             <button onClick={() => { onLogout?.(); if (isMobile) setMobileOpen(false); }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-body text-red-500 hover:bg-red-500/10 transition">
-              <LogOut className="w-[18px] h-[18px]" />
+              <IconLogout className="w-[18px] h-[18px]" />
               Đăng xuất
             </button>
           </>
@@ -240,7 +235,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
             <button onClick={() => setMoreOpen(v => !v)} aria-label="Mở bảng quản lý"
               className={`w-14 h-14 -mt-5 rounded-full flex items-center justify-center text-2xl shadow-lg transition
                 ${moreOpen ? "bg-ticket text-white rotate-45" : "bg-gold text-ink"}`}>
-              <Plus className="w-7 h-7" />
+              <IconAdd className="w-7 h-7" />
             </button>
           </div>
           {rightMobile.map((t) => {
@@ -257,7 +252,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
           {user && (
             <button onClick={onLogout}
               className="flex flex-col items-center justify-center gap-0.5 w-16 py-1 rounded-xl transition text-red-400">
-              <LogOut className="w-5 h-5" />
+              <IconLogout className="w-5 h-5" />
               <span className="text-[10px] font-body leading-tight">Thoát</span>
             </button>
           )}
@@ -273,7 +268,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
           <header className="shrink-0 flex items-center gap-3 px-4 h-14 bg-ink text-paper">
             <button onClick={() => setMoreOpen(false)} aria-label="Đóng"
               className="w-9 h-9 rounded-full grid place-items-center bg-white/10 hover:bg-white/20 transition">
-              <X className="w-5 h-5" />
+              <IconClose className="w-5 h-5" />
             </button>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-display font-bold leading-tight">Quản lý</p>
@@ -314,7 +309,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
                 {user && (
                   <button onClick={() => { onLogout?.(); setMoreOpen(false); }}
                     className="flex flex-col items-center justify-center gap-1 p-2 min-h-[74px] rounded-xl border border-red-200 bg-red-50 text-red-500 active:scale-95 transition">
-                    <LogOut className="w-5 h-5" />
+                    <IconLogout className="w-5 h-5" />
                     <span className="text-[10px] font-body font-medium leading-tight text-center">Đăng xuất</span>
                   </button>
                 )}

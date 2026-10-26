@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Plus, Copy, Users, Trash2, X, Check } from 'lucide-react';
-import { Modal, ConfirmModal, PrimaryButton, Loader, EmptyState } from '../../components/ui';
+import { Copy} from 'lucide-react';
+import { ConfirmModal, EmptyState, IconAdd, IconCheck, IconClose, IconTrash, IconUsers, Loader, Modal, PrimaryButton } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
 
@@ -61,7 +61,7 @@ export default function ClassManagement() {
           <h1 className="font-display text-3xl text-ink">Lớp học</h1>
         </div>
         <PrimaryButton onClick={() => setShowCreate(true)} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Tạo lớp
+          <IconAdd className="w-4 h-4" /> Tạo lớp
         </PrimaryButton>
       </div>
 
@@ -74,7 +74,7 @@ export default function ClassManagement() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-lg text-ink">Tạo lớp mới</h2>
-            <button onClick={() => setShowCreate(false)}><X className="w-5 h-5 text-ink/40" /></button>
+            <button onClick={() => setShowCreate(false)}><IconClose className="w-5 h-5 text-ink/40" /></button>
           </div>
           {formError && <p className="text-sm text-red-500 mb-3">{formError}</p>}
           <form onSubmit={handleCreate} className="space-y-4">
@@ -122,7 +122,7 @@ export default function ClassManagement() {
                   {cls.schoolYear && <p className="text-xs font-body text-ink/40 mt-0.5">{cls.schoolYear}</p>}
                 </div>
                 <button onClick={() => handleDelete(cls)} className="text-ink/30 hover:text-red-500 transition" title="Xóa lớp">
-                  <Trash2 className="w-4 h-4" />
+                  <IconTrash className="w-4 h-4" />
                 </button>
               </div>
               <div className="flex items-center gap-2">
@@ -130,13 +130,13 @@ export default function ClassManagement() {
                 <button onClick={() => copy(cls.code, cls.code)}
                   className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gold/10 text-gold text-sm font-mono hover:bg-gold/20 transition">
                   {cls.code}
-                  {copiedKey === cls.code ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedKey === cls.code ? <IconCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
                 {copiedKey === cls.code && <span className="text-xs text-green-600">Đã sao chép</span>}
               </div>
               <button onClick={() => navigate(`/admin/classes/${cls.id}/students`)}
                 className="flex items-center gap-1.5 text-xs font-body text-ink/50 hover:text-gold transition">
-                <Users className="w-4 h-4" /> Xem học sinh
+                <IconUsers className="w-4 h-4" /> Xem học sinh
               </button>
             </div>
           ))}

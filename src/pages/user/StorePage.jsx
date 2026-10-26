@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Coins, Star, Repeat, Trophy } from "lucide-react";
+import { Coins, Star, Repeat, Trophy } from "lucide-react";
 import { walletService } from "../../services/api.js";
-import { PrimaryButton, GhostButton, Loader, ErrorState } from "../../components/ui";
+import { ErrorState, GhostButton, IconBack, Loader, PrimaryButton } from '../../components/ui';
 
 const FALLBACK_RATE = 20000;
 const nf = new Intl.NumberFormat("vi-VN");
@@ -115,7 +115,7 @@ export default function StorePage({ userAuth, onBack, showToast }) {
         onClick={onBack}
         className="text-sm text-stone-500 hover:text-ink transition inline-flex items-center gap-2 mb-6"
       >
-        <ArrowLeft className="w-4 h-4" /> Về trang chủ
+        <IconBack className="w-4 h-4" /> Về trang chủ
       </button>
 
       <div className="mb-6">

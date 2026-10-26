@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../../services/api.js';
 import { useConfirm } from '../../hooks/useConfirm.js';
-import {
-  ManagementHeader, ManagementTable, Modal, ConfirmModal,
-  PrimaryButton, GhostButton, Field, Loader, ErrorState, StatGrid,
-} from '../../components/ui';
+import { ConfirmModal, ErrorState, Field, GhostButton, IconClose, Loader, ManagementHeader, ManagementTable, Modal, PrimaryButton, StatGrid } from '../../components/ui';
 import PetRenderer, { OutfitPreview } from '../../components/pet/PetRenderer.jsx';
 import { getOutfitAsset } from '../../data/petAssets.js';
-import { RotateCcw, Save, X } from 'lucide-react';
+import { RotateCcw, Save} from 'lucide-react';
 
 /**
  * Quản lý DANH MỤC PET (loài / màu / trang phục).
@@ -337,7 +334,7 @@ export default function PetCatalogManagement({ showToast }) {
             <h3 className="font-display text-lg text-ink">
               {editingId ? '✏️ Sửa' : '➕ Thêm'} {TABS.find(t => t.kind === tab).label.toLowerCase()}
             </h3>
-            <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-ink/5"><X className="w-5 h-5 text-ink/50" /></button>
+            <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-ink/5"><IconClose className="w-5 h-5 text-ink/50" /></button>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">

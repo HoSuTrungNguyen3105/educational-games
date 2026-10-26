@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ManagementHeader, GhostButton, PrimaryButton, StatGrid } from '../../components/ui';
-import { Check, RotateCcw } from 'lucide-react';
+import { GhostButton, IconCheck, ManagementHeader, PrimaryButton, StatGrid } from '../../components/ui';
+import { RotateCcw } from 'lucide-react';
 import {
   KID_LAYERS, kidApplyBody, kidBodies, kidCatalogStats, kidDefaults, kidItemLabel,
   kidPreset, kidPresets, kidTabCfg, kidTabs, renderKid, sanitizeKid,
@@ -163,7 +163,7 @@ export default function AvatarItemManagement({ showToast }) {
           </div>
 
           <div className="mt-3 flex items-center gap-2 text-xs text-ink/50">
-            <Check className="w-3.5 h-3.5 text-teal" />
+            <IconCheck className="w-3.5 h-3.5 text-teal" />
             {activeTab ? kidItemLabel(activeTab.k, state[activeTab.k]) : ''}
           </div>
         </div>

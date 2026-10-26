@@ -1,3 +1,4 @@
+import { IconBack, IconCalendar, Loader } from '../components/ui/index.js';
 /**
  * AttendancePage.jsx - Trang chấm công
  *
@@ -9,11 +10,10 @@
 
 import { useState, useEffect } from 'react';
 import { navigate } from '../lib/router.js';
-import { ArrowLeft, Calendar, UserCheck, AlertCircle } from 'lucide-react';
+import { UserCheck, AlertCircle } from 'lucide-react';
 import { AttendanceCalendar } from '../components/attendance/AttendanceCalendar.jsx';
 import { attendanceService } from '../services/attendanceService.js';
 import { hasPermission } from '../config/roles.js';
-import { Loader } from '../components/ui/index.js';
 
 export default function AttendancePage({ userAuth, studentId = null }) {
   const [loading, setLoading] = useState(true);
@@ -96,10 +96,10 @@ export default function AttendancePage({ userAuth, studentId = null }) {
           onClick={() => navigate('/profile')}
           className="flex items-center gap-1 text-sm text-ink/50 hover:text-ink transition"
         >
-          <ArrowLeft className="w-4 h-4" /> Về trang cá nhân
+          <IconBack className="w-4 h-4" /> Về trang cá nhân
         </button>
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-gold" />
+          <IconCalendar className="w-4 h-4 text-gold" />
           <span className="font-display text-sm text-ink">Chấm công</span>
         </div>
       </div>

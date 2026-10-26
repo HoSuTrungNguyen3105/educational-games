@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { assignmentService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Plus, Clock, Users, CheckCircle, XCircle, Eye, Link2 } from 'lucide-react';
-import { ManagementHeader, PrimaryButton, Loader, EmptyState, ConfirmModal } from '../../components/ui';
+import { Clock, Users, XCircle, Eye, Link2 } from 'lucide-react';
+import { ConfirmModal, EmptyState, IconAdd, IconCheckCircle, Loader, ManagementHeader, PrimaryButton } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
 import { templateLabel } from '../../components/exam/templateLabel.js';
@@ -55,7 +55,7 @@ export default function AssignmentList() {
       <div className="flex items-center justify-between">
         <ManagementHeader subtitle="Quản lý bài tập" title="Bài tập đã giao" />
         <PrimaryButton onClick={() => navigate('/admin/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Tạo bài tập
+          <IconAdd className="w-4 h-4" /> Tạo bài tập
         </PrimaryButton>
       </div>
 
@@ -99,7 +99,7 @@ export default function AssignmentList() {
                 <button onClick={() => copyLink(a)}
                   className={`p-2 rounded-lg hover:bg-ink/5 transition ${copiedKey === a.id ? 'text-green-500' : 'text-ink/40 hover:text-gold'}`}
                   title="Copy link bài tập">
-                  {copiedKey === a.id ? <CheckCircle className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                  {copiedKey === a.id ? <IconCheckCircle className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
                 </button>
                 <button onClick={() => navigate(`/admin/assignments/${a.id}`)}
                   className="p-2 rounded-lg hover:bg-ink/5 transition text-ink/40 hover:text-gold">

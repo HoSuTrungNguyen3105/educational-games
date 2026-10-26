@@ -1,5 +1,6 @@
+import { IconCalendar } from './ui/index.js';
 import { useState, useMemo, useRef, useEffect } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, X } from "lucide-react";
 import { VI_MONTHS, VI_WEEKDAYS, formatDate, formatTime } from "../lib/reminderUtils.js";
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -106,7 +107,7 @@ export default function DateTimePicker({ value, onChange, placeholder = "Chọn 
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-2 px-3 py-2 border border-ink/10 rounded-xl text-sm bg-white hover:border-gold/60 transition text-left"
       >
-        <CalendarDays className="w-4 h-4 text-gold flex-shrink-0" />
+        <IconCalendar className="w-4 h-4 text-gold flex-shrink-0" />
         <span className={display ? "text-ink font-medium" : "text-gray-400"}>{display || placeholder}</span>
       </button>
 

@@ -1,10 +1,11 @@
+import { IconBack, IconCheckCircle, IconUser } from '../../components/ui/index.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { assignmentService, questionService, gamePlayService } from '../../services/api.js';
 import { useUserAuthStore } from '../../stores/userAuth.store.js';
 import { navigate } from '../../lib/router.js';
 import ExamPlayer from '../../games/examination/ExamPlayer.jsx';
 import { getExamTemplate } from '../../games/examination/templates.js';
-import { Clock, AlertTriangle, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Send, User, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Clock, AlertTriangle, XCircle, ChevronLeft, ChevronRight, Send, ArrowRight } from 'lucide-react';
 
 const TIMER_WARN = 60;
 const GUEST_STORAGE_KEY = 'edu_assignment_guest';
@@ -26,7 +27,7 @@ function Header({ title, timeLeft, isExam, onBack, answeredCount, totalQuestions
     <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 flex items-center justify-between shrink-0 shadow-sm">
       <div className="flex items-center gap-3 min-w-0">
         <button onClick={onBack} className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-gray-700">
-          <ArrowLeft className="w-5 h-5" />
+          <IconBack className="w-5 h-5" />
         </button>
         <div className="min-w-0">
           <h1 className="font-display text-sm lg:text-base font-bold text-gray-800 truncate">{title}</h1>
@@ -138,7 +139,7 @@ function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
       <div className="max-w-lg w-full space-y-4">
         <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 text-center space-y-4">
           <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-10 h-10 text-green-500" />
+            <IconCheckCircle className="w-10 h-10 text-green-500" />
           </div>
           <h2 className="font-display text-2xl font-bold text-gray-800">Nộp bài thành công!</h2>
           <div className="space-y-2">
@@ -185,7 +186,7 @@ function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
                 <div className="text-sm space-y-1">
                   <p className={d.isCorrect ? 'text-green-600' : 'text-red-600'}>
                     Đáp án của bạn: <span className="font-semibold">{d.userAnswer || '(chưa trả lời)'}</span>
-                    {d.isCorrect ? <CheckCircle2 className="inline w-4 h-4 ml-1" /> : <XCircle className="inline w-4 h-4 ml-1" />}
+                    {d.isCorrect ? <IconCheckCircle className="inline w-4 h-4 ml-1" /> : <XCircle className="inline w-4 h-4 ml-1" />}
                   </p>
                   {!d.isCorrect && d.correctAnswer && (
                     <p className="text-green-600">
@@ -224,13 +225,13 @@ function GuestNameForm({ assignmentTitle, onSubmit, loading }) {
           onClick={() => navigate('/')}
           className="group text-sm text-gray-500 hover:text-gray-700 transition inline-flex items-center gap-2 mb-6"
         >
-          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          <IconBack className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           Về trang chủ
         </button>
 
         <div className="text-center mb-6">
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-amber-500" />
+            <IconUser className="w-8 h-8 text-amber-500" />
           </div>
           <h1 className="font-display text-2xl font-bold text-gray-800">Nhập tên để bắt đầu</h1>
           {assignmentTitle && (
@@ -588,7 +589,7 @@ export default function AssignmentTake({ code: codeOrId }) {
           <div className="flex items-center gap-3">
             <button onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))} disabled={currentIdx === 0}
               className="p-2.5 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition disabled:opacity-30 disabled:hover:bg-gray-100">
-              <ArrowLeft className="w-5 h-5" />
+              <IconBack className="w-5 h-5" />
             </button>
             <span className="text-sm font-semibold text-gray-500 min-w-[60px] text-center">{currentIdx + 1} / {questions.length}</span>
             <button onClick={() => setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1))} disabled={currentIdx === questions.length - 1}

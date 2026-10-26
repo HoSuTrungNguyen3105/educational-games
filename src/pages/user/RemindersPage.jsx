@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { reminderService } from "../../services/api.js";
-import { Loader, EmptyState, ErrorState, ConfirmModal, PrimaryButton } from "../../components/ui";
+import { ConfirmModal, EmptyState, ErrorState, IconAdd, IconBell, IconCheckCircle, IconClose, IconEdit, IconPower, IconTrash, Loader, PrimaryButton } from '../../components/ui';
 import { useConfirm } from "../../hooks/useConfirm.js";
 import DateTimePicker from "../../components/DateTimePicker.jsx";
 import VibratePatternPicker from "../../components/VibratePatternPicker.jsx";
@@ -13,10 +13,7 @@ import {
   localDateKey,
   VI_MONTHS,
 } from "../../lib/reminderUtils.js";
-import {
-  Bell, BellRing, Plus, Trash2, Pencil, Clock, RotateCcw,
-  CheckCircle2, CalendarDays, List, Power, X,
-} from "lucide-react";
+import { Clock, RotateCcw, CalendarDays, List} from "lucide-react";
 
 const REPEAT_OPTIONS = [
   { value: "none", label: "Không lặp" },
@@ -213,7 +210,7 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
       <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
         done ? "bg-green-100 text-green-600" : "bg-gradient-to-br from-amber-300 to-orange-400 text-white"
       }`}>
-        {done ? <CheckCircle2 className="w-5 h-5" /> : <BellRing className="w-5 h-5" />}
+        {done ? <IconCheckCircle className="w-5 h-5" /> : <IconBell className="w-5 h-5" />}
       </div>
       <div className="flex-1 min-w-0">
         <p className={`font-bold text-ink text-sm truncate ${done ? "line-through" : ""}`}>{r.title}</p>
@@ -243,13 +240,13 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
             title="Tắt nhắc nhở"
             className="p-2 rounded-xl text-green-500 hover:bg-green-50 transition"
           >
-            <Power className="w-4 h-4" />
+            <IconPower className="w-4 h-4" />
           </button>
           <button onClick={() => openEdit(r)} title="Sửa" className="p-2 rounded-xl text-ink/30 hover:text-gold hover:bg-gold/10 transition">
-            <Pencil className="w-4 h-4" />
+            <IconEdit className="w-4 h-4" />
           </button>
           <button onClick={() => handleDelete(r.id, r.title)} title="Xóa" className="p-2 rounded-xl text-ink/30 hover:text-red-500 hover:bg-red-50 transition">
-            <Trash2 className="w-4 h-4" />
+            <IconTrash className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -260,10 +257,10 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
             title="Bật lại"
             className="p-2 rounded-xl text-ink/30 hover:text-green-500 hover:bg-green-50 transition"
           >
-            <Power className="w-4 h-4" />
+            <IconPower className="w-4 h-4" />
           </button>
           <button onClick={() => handleDelete(r.id, r.title)} title="Xóa" className="p-2 rounded-xl text-ink/30 hover:text-red-500 hover:bg-red-50 transition">
-            <Trash2 className="w-4 h-4" />
+            <IconTrash className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -277,7 +274,7 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
         <div>
           <h1 className="font-display text-2xl text-ink flex items-center gap-2">
             <span className="w-9 h-9 rounded-2xl bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-white" />
+              <IconBell className="w-5 h-5 text-white" />
             </span>
             Nhắc nhở của tôi
           </h1>
@@ -291,7 +288,7 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
           onClick={() => openCreate()}
           className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-orange-200 hover:shadow-xl active:scale-95 transition"
         >
-          <Plus className="w-4 h-4" /> Tạo mới
+          <IconAdd className="w-4 h-4" /> Tạo mới
         </button>
       </div>
 
@@ -383,7 +380,7 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
                 {editingId ? "Sửa nhắc nhở" : "Nhắc nhở mới"}
               </h3>
               <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-ink/5 transition">
-                <X className="w-5 h-5 text-ink/40" />
+                <IconClose className="w-5 h-5 text-ink/40" />
               </button>
             </div>
 

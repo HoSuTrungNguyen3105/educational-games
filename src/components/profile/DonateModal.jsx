@@ -1,3 +1,4 @@
+import { IconCheck } from '../ui/index.js';
 /**
  * DonateModal.jsx — Ứng hộ cho web.
  *
@@ -8,7 +9,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Check, Copy, Heart, RefreshCw } from "lucide-react";
+import { Copy, Heart, RefreshCw } from "lucide-react";
 import { DONATION, donationPayload } from "../../config/donation.js";
 import { useMathQuestions } from "../../lib/mathGate.js";
 import { Input } from "../ui";
@@ -145,7 +146,7 @@ export default function DonateModal({ onClose }) {
               className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 py-2.5 text-sm font-extrabold transition hover:bg-ink/5"
               style={{ borderColor: "var(--line)", color: "var(--ink)" }}
             >
-              {copied === "qr" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copied === "qr" ? <IconCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copied === "qr" ? "Đã sao chép" : "Sao chép nội dung QR"}
             </button>
 
@@ -170,7 +171,7 @@ function Row({ label, value, onCopy, copyKey, copied }) {
       <button onClick={() => onCopy(value, copyKey)}
         aria-label={`Sao chép ${label}`}
         className="shrink-0 rounded-lg p-1.5 text-ink/40 hover:text-ink hover:bg-ink/5 transition">
-        {copied === copyKey ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+        {copied === copyKey ? <IconCheck className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
       </button>
     </div>
   );

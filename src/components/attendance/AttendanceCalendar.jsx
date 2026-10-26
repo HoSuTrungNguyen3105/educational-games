@@ -1,3 +1,4 @@
+import { IconCheck, IconClose } from '../ui/index.js';
 /**
  * AttendanceCalendar.jsx - Component hiển thị lịch chấm công
  *
@@ -8,7 +9,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Check, X, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
 export function AttendanceCalendar({
   year,
@@ -90,9 +91,9 @@ export function AttendanceCalendar({
   const getStatusIcon = (status) => {
     switch (status) {
       case 'present':
-        return <Check className="w-4 h-4" />;
+        return <IconCheck className="w-4 h-4" />;
       case 'absent':
-        return <X className="w-4 h-4" />;
+        return <IconClose className="w-4 h-4" />;
       case 'late':
         return <Clock className="w-4 h-4" />;
       default:

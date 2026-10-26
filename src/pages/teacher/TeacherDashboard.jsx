@@ -1,27 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService, statsService, templateService, seedService } from '../../services/api.js'
 import { useTemplates } from '../../lib/hooks.js'
-import { StampToken, StatusBadge, IconButton, Loader, ErrorState, EmptyState, PrimaryButton, GhostButton, Modal, TicketStub } from '../../components/ui'
+import { EmptyState, ErrorState, GhostButton, IconAdd, IconButton, IconCheckCircle, IconEdit, IconTrash, IconUsers, Loader, Modal, PrimaryButton, StampToken, StatusBadge, TicketStub, IconChart, IconCast } from '../../components/ui';
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import {
   Gamepad2,
-  Pencil,
   Ticket,
-  Trash2,
   Package,
   Loader2,
-  CheckCircle2,
-  Users,
   Target,
-  BarChart3,
-  TrendingUp,
+    TrendingUp,
   Trophy,
   Medal,
   BookOpen,
   AlertTriangle,
-  Play,
-  Plus,
   Library,
   Activity,
   PieChart,
@@ -60,9 +53,9 @@ export function GameCard({ game, onEdit, onResults, onDelete, onShare }) {
       <hr className="dash-rule my-1" />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1.5 sm:gap-2">
-          <IconButton title="Chỉnh sửa" onClick={onEdit}><Pencil className="w-5 h-5" /></IconButton>
+          <IconButton title="Chỉnh sửa" onClick={onEdit}><IconEdit className="w-5 h-5" /></IconButton>
           {onShare && game.status === "published" && <IconButton title="Chia sẻ" onClick={onShare}><Ticket className="w-5 h-5" /></IconButton>}
-          {onDelete && <IconButton title="Xóa" onClick={onDelete}><Trash2 className="w-5 h-5" /></IconButton>}
+          {onDelete && <IconButton title="Xóa" onClick={onDelete}><IconTrash className="w-5 h-5" /></IconButton>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={onResults} className="text-xs sm:text-sm font-semibold text-ticket hover:underline whitespace-nowrap">
@@ -195,7 +188,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
               </div>
               {games.length === 0 ? (
                 <EmptyState icon={<Gamepad2 className="w-10 h-10 text-purple-400" />} title="Chưa có trò chơi nào" subtitle="Tạo trò chơi đầu tiên để bắt đầu ôn tập cùng học sinh."
-                  action={<PrimaryButton onClick={onCreate} className="mt-2"><Plus className="w-4 h-4 inline mr-1" /> Tạo trò chơi</PrimaryButton>} />
+                  action={<PrimaryButton onClick={onCreate} className="mt-2"><IconAdd className="w-4 h-4 inline mr-1" /> Tạo trò chơi</PrimaryButton>} />
               ) : (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                   {games.slice(0, 3).map(g => {
@@ -213,11 +206,11 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
               <div className="flex flex-wrap gap-3">
                 <button onClick={() => setConfirmReset("games")}
                   className="px-4 py-2 rounded-xl border-2 border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 transition">
-                  <Trash2 className="w-4 h-4 inline mr-1" /> Xóa tất cả trò chơi
+                  <IconTrash className="w-4 h-4 inline mr-1" /> Xóa tất cả trò chơi
                 </button>
                 <button onClick={() => setConfirmReset("templates")}
                   className="px-4 py-2 rounded-xl border-2 border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 transition">
-                  <Trash2 className="w-4 h-4 inline mr-1" /> Xóa tất cả template
+                  <IconTrash className="w-4 h-4 inline mr-1" /> Xóa tất cả template
                 </button>
               </div>
             </section>
@@ -228,7 +221,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
             {/* Việc cần làm */}
             <section className="note-card p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-display text-base text-ink"><CheckCircle2 className="w-4 h-4 inline mr-1.5 text-ticket" /> Việc cần làm</h3>
+                <h3 className="font-display text-base text-ink"><IconCheckCircle className="w-4 h-4 inline mr-1.5 text-ticket" /> Việc cần làm</h3>
                 {todoCount > 0 && (
                   <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-ticket/10 text-ticket">{todoCount}</span>
                 )}
@@ -239,7 +232,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
                 <>
                   {draftGames.length > 0 && (
                     <div>
-                      <h4 className="text-[10px] font-mono uppercase tracking-wider text-[#8A7C63] mb-2"><Pencil className="w-3 h-3 inline mr-1" /> Bản nháp ({draftGames.length})</h4>
+                      <h4 className="text-[10px] font-mono uppercase tracking-wider text-[#8A7C63] mb-2"><IconEdit className="w-3 h-3 inline mr-1" /> Bản nháp ({draftGames.length})</h4>
                       <ul className="space-y-1.5">
                         {draftGames.slice(0, 4).map(d => (
                           <li key={d.id} className="flex items-center justify-between gap-2 bg-paper rounded-xl px-3 py-2">
@@ -271,14 +264,14 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
 
             {/* Thao tác nhanh */}
             <section className="note-card p-4 space-y-2">
-              <h3 className="font-display text-base text-ink mb-1"><Plus className="w-4 h-4 inline mr-1.5 text-ticket" /> Thao tác nhanh</h3>
-              <PrimaryButton onClick={onCreate} className="w-full"><Plus className="w-4 h-4 inline mr-1" /> Tạo trò chơi</PrimaryButton>
+              <h3 className="font-display text-base text-ink mb-1"><IconAdd className="w-4 h-4 inline mr-1.5 text-ticket" /> Thao tác nhanh</h3>
+              <PrimaryButton onClick={onCreate} className="w-full"><IconAdd className="w-4 h-4 inline mr-1" /> Tạo trò chơi</PrimaryButton>
               <GhostButton onClick={onOpenLibrary} className="w-full"><Library className="w-4 h-4 inline mr-1" /> Xem thư viện</GhostButton>
             </section>
 
             {/* Trạng thái hệ thống */}
             <section className="note-card p-4 space-y-2.5">
-              <h3 className="font-display text-base text-ink"><BarChart3 className="w-4 h-4 inline mr-1.5 text-ticket" /> Trạng thái</h3>
+              <h3 className="font-display text-base text-ink"><IconChart className="w-4 h-4 inline mr-1.5 text-ticket" /> Trạng thái</h3>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[#8A7C63] font-body">API dữ liệu</span>
                 <span className="flex items-center gap-1.5 font-mono text-[#059669]">
@@ -320,7 +313,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
             <TicketStub icon={<Ticket className="w-5 h-5" />} code={shareGame.code} notchBg="#FFFBF2" />
             <div className="flex flex-wrap justify-end gap-3 pt-2">
               <GhostButton onClick={() => setShareGame(null)}>Đóng</GhostButton>
-              <PrimaryButton onClick={() => { handleLive(shareGame); setShareGame(null); }}>Phát trực tiếp <Play className="w-4 h-4 inline ml-1" /></PrimaryButton>
+              <PrimaryButton onClick={() => { handleLive(shareGame); setShareGame(null); }}>Phát trực tiếp <IconCast className="w-4 h-4 inline ml-1" /></PrimaryButton>
             </div>
           </div>
         </Modal>
@@ -364,9 +357,9 @@ const RANGES = [
 
 const KPI_ICONS = {
   plays: Gamepad2,
-  activeStudents: Users,
+  activeStudents: IconUsers,
   avgAccuracy: Target,
-  published: CheckCircle2,
+  published: IconCheckCircle,
   submissions: CalendarCheck,
   avgTime: Clock,
 };
@@ -399,7 +392,7 @@ function TrendChip({ change }) {
 }
 
 function KpiCard({ kpi }) {
-  const Icon = KPI_ICONS[kpi.key] || BarChart3;
+  const Icon = KPI_ICONS[kpi.key] || IconChart;
   return (
     <div className="note-card p-3 sm:p-4 flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
@@ -580,7 +573,7 @@ function TeacherAnalytics({ stats, days, onDays, onResults, onLive }) {
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
         <ChartCard
           title="Phân bố độ chính xác"
-          icon={<BarChart3 className="w-5 h-5" />}
+          icon={<IconChart className="w-5 h-5" />}
           caption={`${stats.meta?.sources?.results ?? 0} phiếu kết quả · cột dồn về phía phải nghĩa là lớp làm chắc bài hơn.`}
         >
           <BarsChart
@@ -672,7 +665,7 @@ function TopGameActions({ games, onResults, onLive }) {
           <span className="font-mono text-[10px] sm:text-xs text-[#8A7C63] shrink-0">{g.playedCount} lượt</span>
           <button onClick={() => onResults(g.id)} className="text-ticket font-semibold hover:underline shrink-0">Kết quả</button>
           {g.status === "published" && (
-            <button onClick={() => onLive(g)} className="text-teal font-semibold hover:underline shrink-0">Phát <Play className="w-3 h-3 inline ml-0.5" /></button>
+            <button onClick={() => onLive(g)} className="text-teal font-semibold hover:underline shrink-0">Phát <IconCast className="w-3 h-3 inline ml-0.5" /></button>
           )}
         </div>
       ))}

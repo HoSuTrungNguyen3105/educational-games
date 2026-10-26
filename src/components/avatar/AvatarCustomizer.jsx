@@ -1,10 +1,11 @@
+import { IconCheck, IconClose } from '../ui/index.js';
 import { useState, useEffect, useMemo } from 'react';
 import AvatarPreview from './AvatarPreview.jsx';
 import { composeAvatar, buildLayersFromLoadout } from '../../lib/avatarRenderer.js';
 import { AVATAR_BODIES } from '../../data/avatarBodies.js';
 import { API_BASE } from '../../services/api.js';
 import { Modal } from '../ui';
-import { X, Check, ShoppingBag } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 
 function ItemThumbnail({ item, selected, preview, onClick, owned, loadout, items }) {
   // Hook phải gọi vô điều kiện → tách thành component con và return sớm ở
@@ -56,7 +57,7 @@ function ItemThumbnail({ item, selected, preview, onClick, owned, loadout, items
       ) : null}
       {selected && (
         <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-pink flex items-center justify-center">
-          <Check className="w-2.5 h-2.5 text-white" />
+          <IconCheck className="w-2.5 h-2.5 text-white" />
         </div>
       )}
     </button>
@@ -76,7 +77,7 @@ function BodyThumbnail({ body, selected, onClick }) {
         dangerouslySetInnerHTML={{ __html: svg }} />
       {selected && (
         <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-pink flex items-center justify-center">
-          <Check className="w-2.5 h-2.5 text-white" />
+          <IconCheck className="w-2.5 h-2.5 text-white" />
         </div>
       )}
     </button>
@@ -169,7 +170,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-display text-lg text-ink">Tùy chỉnh Avatar</h2>
         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5 transition">
-          <X className="w-5 h-5 text-ink/50" />
+          <IconClose className="w-5 h-5 text-ink/50" />
         </button>
       </div>
 
@@ -190,7 +191,7 @@ export default function AvatarCustomizer({ loadout, inventory = [], coins = 0, o
 
         {previewItem && isOwned(previewItem.code) && (
           <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-green-500 text-white text-xs font-bold shadow-lg">
-            <Check className="w-3.5 h-3.5" /> Đã sở hữu
+            <IconCheck className="w-3.5 h-3.5" /> Đã sở hữu
           </div>
         )}
       </div>

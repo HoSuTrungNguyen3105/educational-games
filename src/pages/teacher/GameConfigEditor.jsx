@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Copy, Download, Eye, EyeOff, Play, RefreshCw, RotateCcw, Save, Upload } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCw, RotateCcw, Save} from "lucide-react";
 import { API_BASE, gameService, templateService } from "../../services/api.js";
-import { ManagementHeader, Loader, EmptyState, ConfirmModal } from "../../components/ui";
+import { ConfirmModal, EmptyState, IconDownload, IconPlay, IconUpload, Loader, ManagementHeader } from '../../components/ui';
 import { useConfirm } from "../../hooks/useConfirm.js";
 import {
   SCHEMA_VERSION,
@@ -821,7 +821,7 @@ export default function GameConfigEditor({ showToast }) {
               <div className="note-card overflow-hidden">
                 <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-ink/10">
                   <span className="font-display text-sm text-ink inline-flex items-center gap-1.5">
-                    <Play size={14} /> Xem thử
+                    <IconPlay size={14} /> Xem thử
                   </span>
                   <button type="button" onClick={postPreviewInit} className="text-[11px] font-bold text-ink/60 hover:text-ticket">
                     Khởi động lại
@@ -852,10 +852,10 @@ export default function GameConfigEditor({ showToast }) {
                     <Copy size={14} />
                   </button>
                   <button type="button" onClick={downloadJson} className="w-8 h-8 rounded-lg bg-paper text-ink/60 inline-flex items-center justify-center" title="Tải file">
-                    <Download size={14} />
+                    <IconDownload size={14} />
                   </button>
                   <button type="button" onClick={() => fileRef.current?.click()} className="w-8 h-8 rounded-lg bg-paper text-ink/60 inline-flex items-center justify-center" title="Nhập từ file">
-                    <Upload size={14} />
+                    <IconUpload size={14} />
                   </button>
                 </div>
               </div>

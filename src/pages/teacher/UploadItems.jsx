@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
-import { ManagementHeader } from '../../components/ui';
-import { Upload, Play, Save, Plus, Loader2, Download } from 'lucide-react';
+import { IconDownload, IconPlay, IconUpload, ManagementHeader } from '../../components/ui';
+import { Save, Plus, Loader2} from 'lucide-react';
 
 function getAuthToken() {
   try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; }
@@ -293,7 +293,7 @@ export default function UploadItems({ showToast }) {
           onDrop={e => { e.preventDefault(); setDragOver(false); loadFile(e.dataTransfer.files[0]); }}
         >
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => loadFile(e.target.files[0])} />
-          <Upload className="w-8 h-8 mx-auto text-ink/30 mb-2" />
+          <IconUpload className="w-8 h-8 mx-auto text-ink/30 mb-2" />
           <p className="text-sm text-ink/50">Kéo thả sprite sheet vào đây hoặc bấm để chọn</p>
         </div>
 
@@ -316,11 +316,11 @@ export default function UploadItems({ showToast }) {
         <div className="flex flex-wrap items-center gap-2 mt-4">
           <button onClick={runDetection} disabled={!imgRef.current}
             className="px-4 py-2 rounded-lg bg-gold text-white text-sm font-semibold hover:bg-gold/80 transition disabled:opacity-40 flex items-center gap-1.5">
-            <Play className="w-4 h-4" /> Nhận diện
+            <IconPlay className="w-4 h-4" /> Nhận diện
           </button>
           <button onClick={downloadAll} disabled={!detectedItems.length}
             className="px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition disabled:opacity-40 flex items-center gap-1.5">
-            <Download className="w-4 h-4" /> Download all ({detectedItems.filter(i => i.canvas && i.box).length})
+            <IconDownload className="w-4 h-4" /> Download all ({detectedItems.filter(i => i.canvas && i.box).length})
           </button>
           <button onClick={saveAll} disabled={!detectedItems.length || saving}
             className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-40 flex items-center gap-1.5">

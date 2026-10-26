@@ -1,19 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { permissionService } from "../../services/api.js";
-import {
-  ManagementHeader,
-  Modal,
-  GhostButton,
-  PrimaryButton,
-  Loader,
-  ErrorState,
-  ConfirmModal,
-  ViewToggle,
-  useViewMode,
-  cardGridClass,
-  tableWrapClass,
-} from "../../components/ui";
-import { Shield, Check, X, Plus, MoreHorizontal, Crown, GraduationCap, User } from "lucide-react";
+import { ConfirmModal, ErrorState, GhostButton, IconAdd, IconCheck, IconClose, IconUser, Loader, ManagementHeader, Modal, PrimaryButton, ViewToggle, cardGridClass, tableWrapClass, useViewMode } from '../../components/ui';
+import { Shield, MoreHorizontal, Crown, GraduationCap } from "lucide-react";
 
 const COLS = [
   { key: "view", label: "Xem" },
@@ -26,7 +14,7 @@ const EMPTY_FORM = { key: "", label: "", description: "", dashboardAccess: false
 function roleIcon(key) {
   if (key === "admin") return Crown;
   if (key === "teacher") return GraduationCap;
-  if (key === "student") return User;
+  if (key === "student") return IconUser;
   return Shield;
 }
 
@@ -182,7 +170,7 @@ export default function RoleManagement({ user, showToast }) {
         <div className="relative shrink-0">
           {isAdmin && (
             <PrimaryButton onClick={openCreate} className="!px-4 !py-2.5 text-sm flex items-center gap-1.5">
-              <Plus className="w-4 h-4" />
+              <IconAdd className="w-4 h-4" />
               Tạo vai trò
             </PrimaryButton>
           )}
@@ -301,7 +289,7 @@ export default function RoleManagement({ user, showToast }) {
                               : "border-ink/10 bg-paper2 text-ink/30"
                           } ${locked ? "opacity-80 cursor-default" : "active:scale-95 cursor-pointer"}`}
                         >
-                          {on ? <Check className="w-4 h-4" strokeWidth={2.5} /> : <X className="w-3.5 h-3.5" />}
+                          {on ? <IconCheck className="w-4 h-4" strokeWidth={2.5} /> : <IconClose className="w-3.5 h-3.5" />}
                           <span className="text-[10px] font-mono uppercase tracking-wide">{c.label}</span>
                         </button>
                       );
@@ -347,7 +335,7 @@ export default function RoleManagement({ user, showToast }) {
                                   : "text-ink/25 hover:bg-ink/5"
                               } ${locked ? "cursor-default opacity-80" : "cursor-pointer"}`}
                             >
-                              {on ? <Check className="w-5 h-5" strokeWidth={2.5} /> : <X className="w-4 h-4" strokeWidth={2} />}
+                              {on ? <IconCheck className="w-5 h-5" strokeWidth={2.5} /> : <IconClose className="w-4 h-4" strokeWidth={2} />}
                             </button>
                           </td>
                         );

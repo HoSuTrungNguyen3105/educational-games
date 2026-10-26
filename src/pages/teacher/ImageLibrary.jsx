@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { imageService } from "../../services/api.js";
-import { Loader, EmptyState, Modal, ConfirmModal, SearchInput, ViewToggle, useViewMode } from "../../components/ui";
-import { Image, Upload, Trash2, Copy, X, FolderOpen } from "lucide-react";
+import { ConfirmModal, EmptyState, IconTrash, IconUpload, Loader, Modal, SearchInput, ViewToggle, useViewMode } from '../../components/ui';
+import { Image, Copy, X, FolderOpen } from "lucide-react";
 import { useConfirm } from "../../hooks/useConfirm.js";
 
 function formatBytes(bytes) {
@@ -121,7 +121,7 @@ export default function ImageLibrary({ showToast }) {
           <ViewToggle mode={viewMode} onChange={setViewMode} className="inline-flex" />
           <button onClick={() => fileInput.current?.click()} disabled={uploading}
             className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2">
-            <Upload className="w-4 h-4" />
+            <IconUpload className="w-4 h-4" />
             {uploading ? "Đang upload..." : "Upload ảnh"}
           </button>
           <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={e => handleUpload(e.target.files)} />
@@ -150,7 +150,7 @@ export default function ImageLibrary({ showToast }) {
           <span className="text-sm text-blue-700 font-medium">Đã chọn {selected.length} ảnh</span>
           <button onClick={handleDeleteSelected}
             className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 transition flex items-center gap-1">
-            <Trash2 className="w-3 h-3" /> Xóa
+            <IconTrash className="w-3 h-3" /> Xóa
           </button>
           <button onClick={() => setSelected([])} className="text-xs text-blue-500 hover:text-blue-700 transition">Bỏ chọn</button>
         </div>
@@ -183,7 +183,7 @@ export default function ImageLibrary({ showToast }) {
                     </button>
                     <button onClick={e => { e.stopPropagation(); handleDelete(img); }}
                       className="w-6 h-6 rounded bg-red-500/60 hover:bg-red-500/80 flex items-center justify-center text-white transition">
-                      <Trash2 className="w-3 h-3" />
+                      <IconTrash className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
@@ -213,7 +213,7 @@ export default function ImageLibrary({ showToast }) {
                     <Copy className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => handleDelete(img)} className="w-8 h-8 grid place-items-center rounded-lg bg-red-50 hover:bg-red-100 text-red-500 transition">
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <IconTrash className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -258,7 +258,7 @@ export default function ImageLibrary({ showToast }) {
                         <Copy className="w-3 h-3" />
                       </button>
                       <button onClick={() => handleDelete(img)} className="px-2 py-1 text-xs rounded bg-red-50 hover:bg-red-100 text-red-500 transition">
-                        <Trash2 className="w-3 h-3" />
+                        <IconTrash className="w-3 h-3" />
                       </button>
                     </div>
                   </td>
@@ -291,7 +291,7 @@ export default function ImageLibrary({ showToast }) {
                 </button>
                 <button onClick={() => { handleDelete(preview); setPreview(null); }}
                   className="w-full px-3 py-2 bg-red-50 text-red-500 rounded-xl text-sm font-medium hover:bg-red-100 transition flex items-center justify-center gap-2">
-                  <Trash2 className="w-4 h-4" /> Xóa ảnh
+                  <IconTrash className="w-4 h-4" /> Xóa ảnh
                 </button>
               </div>
             </div>

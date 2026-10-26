@@ -1,22 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { statsService, userService, walletService } from '../../services/api.js'
-import { StampToken, Loader, ErrorState, PrimaryButton, GhostButton } from '../../components/ui'
+import { ErrorState, GhostButton, IconCalendar, IconChart, IconCheckCircle, IconEdit, IconLogout, IconUser, Loader, PrimaryButton, StampToken } from '../../components/ui';
 import { navigate } from '../../lib/router.js'
 import { getRoleLabel } from '../../config/roles.js'
 import {
-  User,
   Save,
-  LogOut,
   Shield,
   Gamepad2,
   Trophy,
   Target,
-  BarChart3,
-  Coins,
-  Calendar,
-  Pencil,
+    Coins,
   TrendingUp,
-  CheckCircle2,
 } from 'lucide-react'
 
 export default function TeacherProfile({ user, onLogout, showToast }) {
@@ -107,20 +101,20 @@ export default function TeacherProfile({ user, onLogout, showToast }) {
                 </span>
                 {user?.createdAt && (
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-ink/40">
-                    <Calendar className="w-3 h-3" /> Tham gia {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                    <IconCalendar className="w-3 h-3" /> Tham gia {new Date(user.createdAt).toLocaleDateString("vi-VN")}
                   </span>
                 )}
               </div>
             </div>
             <div className="flex gap-2 shrink-0">
               {!editing ? (
-                <PrimaryButton onClick={startEdit}><Pencil className="w-4 h-4 inline mr-1" /> Chỉnh sửa</PrimaryButton>
+                <PrimaryButton onClick={startEdit}><IconEdit className="w-4 h-4 inline mr-1" /> Chỉnh sửa</PrimaryButton>
               ) : (
                 <GhostButton onClick={() => setEditing(false)}>Hủy</GhostButton>
               )}
               <button onClick={onLogout}
                 className="px-4 py-2 rounded-xl border-2 border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 transition">
-                <LogOut className="w-4 h-4 inline mr-1" /> Đăng xuất
+                <IconLogout className="w-4 h-4 inline mr-1" /> Đăng xuất
               </button>
             </div>
           </div>
@@ -128,7 +122,7 @@ export default function TeacherProfile({ user, onLogout, showToast }) {
           {/* Edit Form */}
           {editing && (
             <div className="note-card p-6 space-y-4">
-              <h3 className="font-display text-lg text-ink"><Pencil className="w-5 h-5 inline mr-2 text-ticket" /> Chỉnh sửa hồ sơ</h3>
+              <h3 className="font-display text-lg text-ink"><IconEdit className="w-5 h-5 inline mr-2 text-ticket" /> Chỉnh sửa hồ sơ</h3>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-mono text-ink/40 uppercase block mb-1">Họ tên</label>
@@ -166,12 +160,12 @@ export default function TeacherProfile({ user, onLogout, showToast }) {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
               { label: "Tổng trò chơi", value: totalGames, icon: <Gamepad2 className="w-5 h-5" />, ring: "#1D2E4A" },
-              { label: "Đã xuất bản", value: publishedCount, icon: <CheckCircle2 className="w-5 h-5" />, ring: "#1B998B" },
-              { label: "Bản nháp", value: draftCount, icon: <Pencil className="w-5 h-5" />, ring: "#F4B942" },
+              { label: "Đã xuất bản", value: publishedCount, icon: <IconCheckCircle className="w-5 h-5" />, ring: "#1B998B" },
+              { label: "Bản nháp", value: draftCount, icon: <IconEdit className="w-5 h-5" />, ring: "#F4B942" },
               { label: "Lượt chơi", value: totalPlays, icon: <TrendingUp className="w-5 h-5" />, ring: "#FF6F91" },
-              { label: "Học sinh tham gia", value: totalPlayers, icon: <User className="w-5 h-5" />, ring: "#7C6FF1" },
+              { label: "Học sinh tham gia", value: totalPlayers, icon: <IconUser className="w-5 h-5" />, ring: "#7C6FF1" },
               { label: "Điểm trung bình", value: avgScore, icon: <Target className="w-5 h-5" />, ring: "#F4B942" },
-              { label: "Độ chính xác TB", value: `${avgAccuracy}%`, icon: <BarChart3 className="w-5 h-5" />, ring: "#10B981" },
+              { label: "Độ chính xác TB", value: `${avgAccuracy}%`, icon: <IconChart className="w-5 h-5" />, ring: "#10B981" },
               { label: "Xu", value: coins, icon: <Coins className="w-5 h-5" />, ring: "#FFD700" },
             ].map(s => (
               <div key={s.label} className="note-card p-4 sm:p-5">

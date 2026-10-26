@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  ArrowLeft,
   Coins,
   Crown,
   Gamepad2,
@@ -10,14 +9,12 @@ import {
   Zap,
   Swords,
   Package,
-  BarChart3,
-  ChevronRight,
+    ChevronRight,
   Medal,
   Gem,
   TrendingUp,
   Loader2,
   AlertCircle,
-  Play,
   Layers,
   Target,
   Sparkles,
@@ -29,7 +26,7 @@ import {
 } from 'lucide-react'
 import { gameProgressService, walletService } from '../../services/api.js'
 import { getLevelProgress, getLevelTitle, getLevelEmoji } from '../../lib/utils.js'
-import { PrimaryButton, Loader, ErrorState } from '../../components/ui'
+import { ErrorState, IconBack, IconChart, IconPlay, Loader, PrimaryButton } from '../../components/ui';
 import { navigate } from '../../lib/router.js'
 
 /* eslint-disable react-hooks/set-state-in-effect */
@@ -114,7 +111,7 @@ export default function MyCoins({ userAuth, onBack }) {
         onClick={onBack}
         className="group text-sm text-stone-500 hover:text-ink transition inline-flex items-center gap-2 mb-6 hover:bg-white/60 rounded-full px-3 py-1.5 -ml-3"
       >
-        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+        <IconBack className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
         Về trang chủ
       </button>
 
@@ -211,7 +208,7 @@ export default function MyCoins({ userAuth, onBack }) {
           <h3 className="font-display text-lg text-stone-800 mb-2">Chưa có game nào</h3>
           <p className="text-sm text-stone-400 mb-5 max-w-xs mx-auto">Bạn chưa chơi game nào. Hãy bắt đầu chơi để tích lũy coin và nâng cấp nhân vật!</p>
           <PrimaryButton onClick={() => navigate("/")} className="gap-2">
-            <Play className="w-4 h-4" /> Chơi game ngay
+            <IconPlay className="w-4 h-4" /> Chơi game ngay
           </PrimaryButton>
         </div>
       )}
@@ -219,7 +216,7 @@ export default function MyCoins({ userAuth, onBack }) {
       {!error && games && games.length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-stone-700" />
+            <IconChart className="w-5 h-5 text-stone-700" />
             <h2 className="font-display text-lg text-stone-800">Tiến trình từng game</h2>
           </div>
 

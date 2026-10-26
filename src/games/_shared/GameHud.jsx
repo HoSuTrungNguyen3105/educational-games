@@ -1,5 +1,6 @@
+import { IconChevronDown, IconLogout } from '../../components/ui/index.js';
 import { useState } from "react";
-import { Star, LogOut, ChevronUp, ChevronDown, Gamepad2 } from "lucide-react";
+import { Star, ChevronUp, Gamepad2 } from "lucide-react";
 import { PetSvg, PetBubble } from "../../components/PetAvatar.jsx";
 import { getLevelProgress } from "../../lib/utils.js";
 
@@ -22,7 +23,7 @@ export default function GameHud({ coins = 0, hearts = 100, gameName = "Trò chơ
           title="Thoát game"
         >
           <span className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 text-white flex items-center justify-center">
-            <LogOut className="w-3.5 h-3.5" />
+            <IconLogout className="w-3.5 h-3.5" />
           </span>
           <span className="text-[11px] font-extrabold max-w-[120px] truncate">Thoát</span>
         </button>
@@ -72,7 +73,7 @@ export default function GameHud({ coins = 0, hearts = 100, gameName = "Trò chơ
             className="w-7 h-7 rounded-full bg-white/95 backdrop-blur shadow-[0_6px_16px_rgba(15,60,120,.16)] text-slate-400 hover:text-slate-600 flex items-center justify-center"
             aria-label="Hiện thanh trạng thái"
           >
-            <ChevronDown className="w-4 h-4" />
+            <IconChevronDown className="w-4 h-4" />
           </button>
         )}
 

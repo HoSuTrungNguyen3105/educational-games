@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { ArrowLeft, Users, UserCircle2, Mail, Hash } from 'lucide-react';
-import { Loader, EmptyState, SearchInput } from '../../components/ui';
+import { UserCircle2, Hash } from 'lucide-react';
+import { EmptyState, IconBack, IconMail, IconUsers, Loader, SearchInput } from '../../components/ui';
 
 export default function ClassStudents({ classId }) {
   const [cls, setCls] = useState(null);
@@ -49,12 +49,12 @@ export default function ClassStudents({ classId }) {
           onClick={() => navigate('/admin/classes')}
           className="flex items-center gap-1.5 text-sm font-body text-ink/50 hover:text-gold transition"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <IconBack className="w-4 h-4" />
           Quay lại
         </button>
         <div className="flex-1">
           <h1 className="font-display text-2xl text-ink flex items-center gap-2">
-            <Users className="w-6 h-6 text-gold" />
+            <IconUsers className="w-6 h-6 text-gold" />
             {loading ? 'Đang tải...' : cls ? `Học sinh — ${cls.name}` : 'Lớp học'}
           </h1>
           {cls?.schoolYear && (
@@ -112,7 +112,7 @@ export default function ClassStudents({ classId }) {
                 </p>
                 {s.email && (
                   <p className="flex items-center gap-1 text-xs font-body text-ink/40 mt-0.5 truncate">
-                    <Mail className="w-3 h-3 flex-shrink-0" />
+                    <IconMail className="w-3 h-3 flex-shrink-0" />
                     {s.email}
                   </p>
                 )}

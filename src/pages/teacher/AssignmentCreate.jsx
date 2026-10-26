@@ -1,7 +1,8 @@
+import { IconFile } from '../../components/ui/index.js';
 import { useState, useEffect, useMemo } from 'react';
 import { classService, assignmentService, questionService, gameService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { AlertCircle, Clock, FileText, CheckSquare, Square, Search, ChevronDown } from 'lucide-react';
+import { AlertCircle, Clock, CheckSquare, Square, Search, ChevronDown } from 'lucide-react';
 import TemplatePicker from '../../components/exam/TemplatePicker.jsx';
 import { templateLabel } from '../../components/exam/templateLabel.js';
 
@@ -158,7 +159,7 @@ export default function AssignmentCreate() {
     <div className="w-full px-4 md:px-6 lg:px-8 space-y-6">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
-          <FileText className="w-5 h-5 text-gold" />
+          <IconFile className="w-5 h-5 text-gold" />
         </div>
         <div>
           <h1 className="font-display text-2xl text-ink">Tạo bài thi mới</h1>

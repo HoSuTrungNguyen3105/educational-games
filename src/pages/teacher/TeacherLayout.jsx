@@ -1,4 +1,5 @@
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { IconBack } from '../../components/ui/index.js';
+import { ArrowRight } from 'lucide-react'
 import TeacherSidebar, { findPageTitle } from './TeacherSidebar.jsx'
 
 /**
@@ -19,7 +20,7 @@ export default function TeacherLayout({ screen, user, onLogout, children }) {
         <header className="sticky top-0 z-30 h-14 shrink-0 flex items-center gap-1.5 px-2 sm:px-5 bg-[#F4EEE1]/90 backdrop-blur border-b border-ink/10">
           <button onClick={() => history.back()} title="Quay lại"
             className="w-9 h-9 grid place-items-center rounded-xl text-ink/60 hover:bg-ink/10 hover:text-ink transition">
-            <ArrowLeft className="w-[18px] h-[18px]" />
+            <IconBack className="w-[18px] h-[18px]" />
           </button>
           <button onClick={() => history.forward()} title="Tiến"
             className="w-9 h-9 grid place-items-center rounded-xl text-ink/60 hover:bg-ink/10 hover:text-ink transition">

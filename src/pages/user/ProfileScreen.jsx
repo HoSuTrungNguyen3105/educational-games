@@ -1,12 +1,10 @@
+import { IconBack, IconBell, IconCalendar, IconCheck, IconCheckCircle, IconChevronDown, IconDownload, IconLogout, IconNotification, IconTrash } from '../../components/ui/index.js';
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { authService, classService, API_BASE, notificationService, userService } from "../../services/api.js";
 import { getLevelProgress } from "../../lib/utils.js";
 import { getRoleLabel, hasPermission } from "../../config/roles.js";
 import { navigate } from "../../lib/router.js";
-import {
-  ArrowLeft, LogOut, GraduationCap, ChevronDown, ChevronUp, Copy, Check, Palette,
-  Download, Smartphone, Monitor, Apple, Bell, BellRing, BellOff,
-  CheckCircle2, XCircle, AlertTriangle, Send, Trash2, RefreshCw, Info, Share2, PlusSquare, MoreVertical, Calendar, UserCheck
+import { GraduationCap, ChevronUp, Copy, Palette, Smartphone, Monitor, Apple, BellRing, BellOff, XCircle, AlertTriangle, Send, RefreshCw, Info, Share2, PlusSquare, MoreVertical, UserCheck
 } from "lucide-react";
 import DressUpAvatar, { DressUpAvatarSmall } from "../../components/avatar/DressUpAvatar.jsx";
 import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
@@ -350,7 +348,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       {fgToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm rounded-2xl shadow-xl border bg-white p-4 animate-[popIn_.25s_ease]" style={{ borderColor: "var(--line)" }}>
           <div className="flex gap-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0"><BellRing className="w-5 h-5" /></div>
+            <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0"><IconNotification className="w-5 h-5" /></div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-ink truncate">{fgToast.title}</p>
               <p className="text-xs text-ink/60 line-clamp-2">{fgToast.body}</p>
@@ -362,10 +360,10 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
 
       <div className="flex items-center justify-between">
         <button onClick={onBack} className="flex items-center gap-1 text-sm text-ink/50 hover:text-ink transition">
-          <ArrowLeft className="w-4 h-4" /> Trang chủ
+          <IconBack className="w-4 h-4" /> Trang chủ
         </button>
         <button onClick={onLogout} className="flex items-center gap-1 text-sm text-red-400 hover:text-red-500 transition">
-          <LogOut className="w-4 h-4" /> Đăng xuất
+          <IconLogout className="w-4 h-4" /> Đăng xuất
         </button>
       </div>
 
@@ -477,7 +475,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                     <button onClick={() => copyCode(user.classCode)}
                       className="flex items-center gap-1 text-xs text-green-600 font-mono hover:text-green-700">
                       Mã: {user.classCode}
-                      {copied === user.classCode ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copied === user.classCode ? <IconCheck className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                     </button>
                   )}
                 </div>
@@ -517,7 +515,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                 </div>
                 <p className="text-xs text-ink/40">Xem lịch sử và chấm công đi học</p>
               </div>
-              <Calendar className="w-5 h-5 text-ink/40" />
+              <IconCalendar className="w-5 h-5 text-ink/40" />
             </button>
           )}
 
@@ -529,7 +527,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                 <span className="font-display text-sm text-ink">Trò chơi</span>
                 <span className="text-xs font-mono text-ink/40">({games.length})</span>
               </div>
-              {showGames ? <ChevronUp className="w-4 h-4 text-ink/40" /> : <ChevronDown className="w-4 h-4 text-ink/40" />}
+              {showGames ? <ChevronUp className="w-4 h-4 text-ink/40" /> : <IconChevronDown className="w-4 h-4 text-ink/40" />}
             </button>
 
             {showGames && (
@@ -562,7 +560,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
           <div className="rounded-xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-bg)" }}>
-                <Download className="w-4 h-4" style={{ color: "var(--accent)" }} />
+                <IconDownload className="w-4 h-4" style={{ color: "var(--accent)" }} />
               </div>
             <div className="flex-1">
               <h3 className="font-display text-sm text-ink">Cài đặt ứng dụng</h3>
@@ -570,7 +568,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             </div>
             {isInstalled && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-50 text-green-600 border border-green-200">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Đã cài
+                <IconCheckCircle className="w-3.5 h-3.5" /> Đã cài
               </span>
             )}
           </div>
@@ -631,7 +629,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold text-white hover:opacity-90 transition active:scale-[0.98]"
                 style={{ background: "var(--accent)" }}
               >
-                <Download className="w-4 h-4" /> Cài đặt ứng dụng
+                <IconDownload className="w-4 h-4" /> Cài đặt ứng dụng
               </button>
               {!deferredPrompt && platformTab !== "ios" && (
                 <p className="text-[11px] text-ink/30 text-center mt-2">Mẹo: mở bằng Chrome/Edge để hiện nút cài đặt tự động</p>
@@ -639,7 +637,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             </>
           ) : (
             <div className="rounded-xl p-4 flex items-center gap-3 bg-green-50 border border-green-200">
-              <CheckCircle2 className="w-8 h-8 text-green-500 shrink-0" />
+              <IconCheckCircle className="w-8 h-8 text-green-500 shrink-0" />
               <div>
                 <p className="text-sm font-bold text-green-700">Ứng dụng đã được cài đặt</p>
                 <p className="text-xs text-green-600/80">Mở từ màn hình chính để có trải nghiệm tốt nhất.</p>
@@ -652,7 +650,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
         <div className="rounded-xl p-4" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#FDF0D5" }}>
-              <Bell className="w-4 h-4 text-gold" />
+              <IconBell className="w-4 h-4 text-gold" />
             </div>
             <div className="flex-1">
               <h3 className="font-display text-sm text-ink">Thông báo đẩy</h3>
@@ -728,7 +726,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               disabled={pushLoading}
               className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[11px] font-semibold text-ink/60 hover:text-ink hover:bg-ink/5 transition disabled:opacity-40"
             >
-              <Trash2 className="w-3 h-3" /> Reset thiết bị
+              <IconTrash className="w-3 h-3" /> Reset thiết bị
             </button>
             <button
               onClick={() => setPushSupport(getPushSupportStatus())}

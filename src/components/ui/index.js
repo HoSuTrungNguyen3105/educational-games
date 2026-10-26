@@ -48,4 +48,6 @@ export { useViewMode, ViewToggle, cardGridClass, tableWrapClass } from "./data/V
 export { StampToken } from "./layout/StampToken.jsx";
 export { TicketStub } from "./layout/TicketStub.jsx";
 export { ManagementHeader } from "./layout/ManagementHeader.jsx";
+// Icon dự án (IconClose, IconUsers, …) — xem layout/Icon.jsx
+export * from "./layout/Icon.jsx";
 
