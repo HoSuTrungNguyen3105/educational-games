@@ -86,7 +86,7 @@ export default function OnboardingScreen({ onComplete }) {
         "--nb-cream": "#fffdf6",
       }}
     >
-      <form onSubmit={submit} className="w-full max-w-xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-5">
+      <form onSubmit={submit} className="w-full px-4 sm:px-6 lg:px-10 py-6 sm:py-10 space-y-5">
 
         {/* ─────────── Nhân vật chào ─────────── */}
         <header className="flex items-center gap-4">
@@ -103,10 +103,10 @@ export default function OnboardingScreen({ onComplete }) {
               className="font-display font-bold text-ink inline-block px-3.5 py-1.5 rounded-2xl text-white text-base sm:text-lg"
               style={{ background: S.blue, boxShadow: `4px 4px 0 ${S.ink}` }}
             >
-              Chào bạn! Mình là ........
+              Chào bạn! Mình là Đô
             </p>
             <p className="text-sm sm:text-base font-medium text-[#5b6b85] mt-2.5">
-              Cho ........ làm quen bé một chút nha!
+              Cho Đô làm quen bé một chút nha!
             </p>
           </div>
         </header>
@@ -115,10 +115,12 @@ export default function OnboardingScreen({ onComplete }) {
           Bé của mình là ai nhỉ?
         </h1>
 
+        {/* ①②③ nằm kề nhau theo hàng ngang trên desktop (mobile vẫn xếp dọc như cũ) */}
+        <div className="grid gap-5 lg:grid-cols-3">
         {/* ─────────── ① Lớp ─────────── */}
         <Card n={1} title="Bé học lớp mấy?"
           hint="Lớp quyết định độ khó của trò chơi (trừ Thế học). Đổi được sau trong Cài đặt.">
-          <div className="grid grid-cols-5 gap-2 sm:gap-2.5">
+          <div className="grid grid-cols-5 gap-2 sm:gap-2.5 lg:grid-cols-3">
             {grades.map((g) => (
               <GradeChip
                 key={g}
@@ -134,7 +136,7 @@ export default function OnboardingScreen({ onComplete }) {
 
         {/* ─────────── ② Giới tính ─────────── */}
         <Card n={2} title="Bé là bạn trai hay bạn gái?"
-          hint="Giúp ........ chọn đồ và mặt mỹ hơn cho bé.">
+          hint="Giúp Đô chọn đồ và mặt mỹ hơn cho bé.">
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {GENDERS.map((g) => (
               <button
@@ -178,6 +180,7 @@ export default function OnboardingScreen({ onComplete }) {
             <p className="mt-2 text-sm font-semibold" style={{ color: S.red }}>Bé chưa có tên nha!</p>
           )}
         </Card>
+        </div>
 
         {missing && (
           <p
@@ -199,38 +202,40 @@ export default function OnboardingScreen({ onComplete }) {
         )}
 
         {/* ─────────── Nút ─────────── */}
-        <button
-          type="submit"
-          disabled={!ready || submitting}
-          className="o-btn w-full font-display font-bold text-base sm:text-lg"
-          style={{
-            background: ready && !submitting ? S.gold : "#e4e8ef",
-            color: ready && !submitting ? S.ink : "#9aa6ba",
-            borderColor: S.ink,
-            boxShadow: ready && !submitting ? `6px 6px 0 ${S.ink}` : `3px 3px 0 ${S.ink}`,
-          }}
-        >
-          {submitting
-            ? "Đang tạo tài khoản cho bé..."
-            : ready
-              ? "Chọn xong rồi, vào chơi nào!"
-              : "Chọn xong 3 câu nhé"}
-        </button>
+        <div className="o-actions">
+          <button
+            type="submit"
+            disabled={!ready || submitting}
+            className="o-btn w-full font-display font-bold text-base sm:text-lg"
+            style={{
+              background: ready && !submitting ? S.gold : "#e4e8ef",
+              color: ready && !submitting ? S.ink : "#9aa6ba",
+              borderColor: S.ink,
+              boxShadow: ready && !submitting ? `6px 6px 0 ${S.ink}` : `3px 3px 0 ${S.ink}`,
+            }}
+          >
+            {submitting
+              ? "Đang tạo tài khoản cho bé..."
+              : ready
+                ? "Chọn xong rồi, vào chơi nào!"
+                : "Chọn xong 3 câu nhé"}
+          </button>
 
-        <button
-          type="button"
-          onClick={handleSkip}
-          disabled={submitting}
-          className="o-btn w-full font-display font-bold text-sm sm:text-base"
-          style={{
-            background: S.cream,
-            color: S.ink,
-            borderColor: S.ink,
-            boxShadow: `4px 4px 0 rgba(29,46,74,.18)`,
-          }}
-        >
-          Bỏ qua
-        </button>
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={submitting}
+            className="o-btn w-full font-display font-bold text-sm sm:text-base"
+            style={{
+              background: S.cream,
+              color: S.ink,
+              borderColor: S.ink,
+              boxShadow: `4px 4px 0 rgba(29,46,74,.18)`,
+            }}
+          >
+            Bỏ qua
+          </button>
+        </div>
 
         <p className="text-center text-xs text-[#7c8aa0] pb-2">
           Tài khoản của bé được tạo tự động khi điền đủ thông tin. Phụ huynh có thể đổi lại trong Cài đặt.

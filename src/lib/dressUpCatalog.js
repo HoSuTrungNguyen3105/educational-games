@@ -33,6 +33,7 @@ export function kidPresets() {
     hint: body.hint || '',
     overlays: body.overlays !== false,
     selfClothed: body.selfClothed === true,
+    slots: (body.slots || []).slice(),
   }));
 }
 
@@ -70,6 +71,16 @@ export function renderKid(state) {
 
 export function kidBodies() {
   return getDressUp().kid.bodies;
+}
+
+/** Mọi nhóm linh kiện, theo thứ tự tab (gồm cả `body`). */
+export function kidAllTabs() {
+  return getDressUp().kid.allTabs;
+}
+
+/** Nhóm linh kiện thân đó nhận — nguồn duy nhất là `BODIES[code].slots`. */
+export function kidBodySlots(code) {
+  return getDressUp().kid.bodySlots(code);
 }
 
 export function kidCatalogStats(state = kidDefaults()) {

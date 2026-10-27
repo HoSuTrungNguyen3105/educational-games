@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { GhostButton, IconCheck, ManagementHeader, PrimaryButton, StatGrid } from '../../components/ui';
 import { RotateCcw } from 'lucide-react';
 import {
-  KID_LAYERS, kidApplyBody, kidBodies, kidCatalogStats, kidDefaults, kidItemLabel,
-  kidPreset, kidPresets, kidTabCfg, kidTabs, renderKid, sanitizeKid,
+  KID_LAYERS, kidAllTabs, kidApplyBody, kidBodies, kidBodySlots, kidCatalogStats, kidDefaults,
+  kidItemLabel, kidPreset, kidPresets, kidTabCfg, kidTabs, renderKid, sanitizeKid,
 } from '../../lib/dressUpCatalog.js';
 
 const DATA_FILE = 'src/games/_shared/lib/dressUpAvatarData.js';
@@ -45,6 +45,12 @@ export default function AvatarItemManagement({ showToast }) {
   const stats = kidCatalogStats(state);
   const svg = renderKid(state);
 
+  /* Bảng tương thích thân × linh kiện: tab chỉ hiện nhóm mà thân đang chọn
+   * nhận, các nhóm còn lại bị sanitizeKid bỏ thật khi lưu hồ sơ. */
+  const groups = kidAllTabs().filter((item) => item.k !== 'body');
+  const slots = kidBodySlots(state.body);
+  const bodyName = kidBodies()[state.body]?.n || state.body;
+
   const pick = (id) => {
     const field = activeTab?.k;
     if (!field) return;
@@ -84,6 +90,8 @@ export default function AvatarItemManagement({ showToast }) {
         <span className="text-base leading-none">💡</span>
         <span>
           Đây là danh mục phụ kiện của hệ avatar mới. Mắt, mũi, miệng, lông mày, má nằm trong tab <strong>Mặt</strong>.
+          Không phải thân nào cũng mặc được mọi thứ — bảng <strong>Linh kiện của {bodyName}</strong> bên cạnh cho biết
+          thân đang chọn nhận nhóm nào, và tab chỉ hiện đúng các nhóm đó.
           Dữ liệu nằm trong mã frontend <code className="font-mono text-[11px]">{DATA_FILE}</code>, không lưu database.
           Hồ sơ người chơi chỉ lưu <strong>ID</strong> món đồ; client tự render bằng đúng bộ dữ liệu này nên
           admin và trang cá nhân luôn khớp nhau — không phụ thuộc markup từ backend.
@@ -120,6 +128,40 @@ export default function AvatarItemManagement({ showToast }) {
               <RotateCcw className="w-3 h-3" /> Mặc lại
             </button>
           </div>
+          <div className="border-t border-ink/10 pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-display text-sm text-ink">Linh kiện của {bodyName}</h3>
+              <span className="text-[11px] font-mono text-ink/40">{slots.length}/{groups.length}</span>
+            </div>
+            <ul className="grid grid-cols-2 gap-1">
+              {groups.map((item) => {
+                const ok = slots.includes(item.k);
+                return (
+                  <li key={item.k}>
+                    <button
+                      onClick={() => ok && setTab(item.k)}
+                      disabled={!ok}
+                      aria-pressed={item.k === activeTab?.k}
+                      title={ok ? `Xem nhóm ${item.l}` : `${bodyName} không dùng nhóm ${item.l}`}
+                      className={`w-full rounded-lg px-2 py-1 text-left text-[11px] font-semibold flex items-center gap-1.5 ${
+                        ok
+                          ? 'text-ink/70 hover:bg-ink/10'
+                          : 'text-ink/30 cursor-not-allowed'
+                      }`}
+                    >
+                      <span className={ok ? 'text-teal' : 'text-ink/25'}>{ok ? '✓' : '✕'}</span>
+                      <span className="truncate">{item.l}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="text-[11px] text-ink/40 mt-2">
+              Nhóm ✕ thân này không nhận: tab ẩn và hồ sơ lưu về null/mặc định (khai báo ở
+              <code className="font-mono text-[10px]"> BODIES[code].slots</code>).
+            </p>
+          </div>
+
           <p className="text-[11px] text-ink/45 text-center">
             Chọn item bên phải để xem thay đổi trực tiếp
           </p>

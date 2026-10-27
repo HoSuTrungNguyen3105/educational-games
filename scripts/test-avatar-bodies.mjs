@@ -7,8 +7,9 @@
 //      của body_01, nên áo, quần, giày, mũ, kính để nguyên toạ độ là khớp.
 //   2. Thứ tự lớp — áo choàng sau lưng vẽ TRƯỚC thân, phù hiệu/mũ/bốt vẽ SAU
 //      áo quần (mặc áo thun lên Superman vẫn còn chữ S).
-//   3. Luật state — thân tự mặc đồ (rider/superman) được bỏ áo/quần/giày,
-//      body_01 thì bị ép lại vì thân đó không vẽ chân.
+//   3. Luật state — mỗi thân chỉ nhận các nhóm linh kiện trong `slots` (kaiju
+//      không tóc, ma không chân), tab mở đúng theo đó; thân tự mặc đồ
+//      (rider/superman/popstar/…) được bỏ áo/quần/giày, body_01 thì bị ép lại.
 //   4. Allowlist server — mọi id frontend phải có trong
 //      server/src/lib/outfitCatalog.js và sanitizeAvatar không được âm thầm
 //      trả hồ sơ về body_01.
@@ -67,10 +68,20 @@ const GEO = {
   scarf: 'M292 326 C340 350 360 408 352 468',
   shield: 'M256 322 L318 352 L256 440 L194 352 Z',
   belt: 'M180 476 C212 492 300 492 332 476',
+  faceMouth: 'M235 258 Q256 278 277 258',
+  kaijuSpike: 'M168 330 L126 284 L184 368 Z',
+  kaijuEye: 'cx="224" cy="210" rx="21" ry="15"',
+  ghostSheet: 'M212 322 C234 308 278 308 300 322',
+  popGlove: 'x="304" y="440"',
 };
 
 const SUITS = ["body_rider_01", "body_superman_01"];
 const humans = Object.keys(kid.bodies).filter((c) => kid.bodies[c].overlays !== false);
+/* bảng slots là "luật" mới: thân nào nhận nhóm linh kiện nào — test so cả
+ * frontend lẫn server với đúng bảng đó thay vì đoán theo tên thân. */
+const slotsOf = (code) => kid.bodySlots(code);
+const SELF_CLOTHED = Object.keys(kid.bodies).filter((c) => kid.bodies[c].selfClothed);
+const NEW_BODIES = ["body_kaiju_01", "body_ghost_01", "body_popstar_01"];
 
 console.log(`Nguồn: ${DATA}\n`);
 
@@ -83,12 +94,13 @@ for (const code of humans) {
   const svg = api.renderKid(api.applyBody(kid.defaults, code));
   check(`  ${code}: có khung đầu/mắt chuẩn`, svg.includes(GEO.eye));
   check(`  ${code}: có đường thân 314–501`, svg.includes(GEO.torso));
-  /* mặc quần jean + giày trắng → phải vẽ đúng hình chân/giày của thân đó */
+  /* mặc quần jean + giày trắng → phải vẽ đúng hình chân/giày của thân đó.
+   * Thân không có áo quần trong slots (ngôi sao nhạc pop) thì bỏ qua. */
   const dressed = api.renderKid(
     Object.assign(api.applyBody(kid.defaults, code), { shirt: "red", pants: "jeans", shoes: "white", dress: null }),
   );
-  check(`  ${code}: quần jean gắn đúng cạp`, dressed.includes(leg));
-  check(`  ${code}: giày gắn đúng mũi chân`, dressed.includes(foot));
+  if (slotsOf(code).includes("pants")) check(`  ${code}: quần jean gắn đúng cạp`, dressed.includes(leg));
+  if (slotsOf(code).includes("shoes")) check(`  ${code}: giày gắn đúng mũi chân`, dressed.includes(foot));
 }
 /* Bé trai là chuẩn: chỉ 1 lần mỗi hình. Bộ đồ anh hùng vẽ thêm ống chân/mũi
  * chân trùng đúng toạ độ đó → 2 lần, và đó chính là cách nó khớp. */
@@ -121,9 +133,21 @@ check("  superman: áo choàng vẽ trước thân", supFull.indexOf(GEO.cape) <
 check("  superman: phù hiệu vẽ sau áo", supFull.indexOf(GEO.shirtCollar) < supFull.indexOf(GEO.shield));
 check("  superman: quần chip vẽ sau quần jean", supFull.indexOf(GEO.leg) < supFull.indexOf("M180 472 C212 490 300 490 332 472"));
 
+/* 3 thân mới: thứ tự lớp cùng quy ước back → body → top */
+const kaijuFull = api.renderKid(api.applyBody(kid.defaults, "body_kaiju_01"));
+check("  kaiju: gai lưng vẽ trước thân", kaijuFull.indexOf(GEO.kaijuSpike) < kaijuFull.indexOf(GEO.torso));
+check("  kaiju: tự vẽ mắt đúng chỗ mắt người", kaijuFull.includes(GEO.kaijuEye));
+check("  kaiju: không vẽ mặt người đè lên", !kaijuFull.includes(GEO.faceMouth));
+const ghostFull = api.renderKid(api.applyBody(kid.defaults, "body_ghost_01"));
+check("  ma: quầng sáng vẽ sau thân", ghostFull.indexOf('filter="url(#kidBlur)"') < ghostFull.indexOf(GEO.ghostSheet));
+check("  ma: không vẽ mặt/tóc người", !ghostFull.includes(GEO.faceMouth) && !ghostFull.includes('fill="url(#kidHair)"'));
+const popFull = api.renderKid(api.applyBody(kid.defaults, "body_popstar_01"));
+check("  popstar: găng vẽ sau quần áo", popFull.indexOf(GEO.torso) < popFull.indexOf(GEO.popGlove));
+check("  popstar: giữ mặt người", popFull.includes(GEO.faceMouth));
+
 /* ================= 3. luật state ======================================== */
 console.log("3. Luật bỏ/mặc đồ theo thân");
-for (const code of SUITS.concat("body_girl_01")) {
+for (const code of SELF_CLOTHED.concat("body_girl_01")) {
   const bare = api.sanitizeKid({ body: code, shirt: null, dress: null, pants: null, shoes: null });
   check(`  ${code}: được phép bỏ áo/quần/giày`, !bare.shirt && !bare.pants && !bare.shoes);
 }
@@ -133,14 +157,16 @@ const alias = api.sanitizeKid({ body: "body_rider_khong_ton_tai" });
 eq("  body lạ → về mặc định", alias.body, kid.defaults.body);
 for (const code of Object.keys(kid.bodies)) {
   const look = api.applyBody({ ...kid.defaults, hat: "hat_02", glasses: "glasses_03", skin: "s3" }, code);
-  /* chọn thân không được xoá mũ/kính bé đang đội; riêng rồng thì da/mặt/tóc
-   * về mặc định vì rồng không nhận các lớp đó. */
-  const wantSkin = kid.bodies[code].overlays !== false ? "s3" : kid.defaults.skin;
-  check(`  applyBody(${code}): giữ mũ/kính, da ${wantSkin}`,
-    look.hat === "hat_02" && look.glasses === "glasses_03" && look.skin === wantSkin,
+  /* chọn thân không được xoá những lớp thân đó nhận; lớp không nhận thì phải
+   * bị bỏ thật (null với lớp tuỳ chọn, mặc định với da/mặt/tóc) */
+  const wantSkin = slotsOf(code).includes("skin") ? "s3" : kid.defaults.skin;
+  const wantHat = slotsOf(code).includes("hat") ? "hat_02" : null;
+  const wantGlasses = slotsOf(code).includes("glasses") ? "glasses_03" : null;
+  check(`  applyBody(${code}): mũ=${wantHat} kính=${wantGlasses} da=${wantSkin}`,
+    look.hat === wantHat && look.glasses === wantGlasses && look.skin === wantSkin,
     JSON.stringify(look));
 }
-for (const code of SUITS) {
+for (const code of SELF_CLOTHED) {
   const look = api.applyBody(kid.defaults, code);
   check(`  ${code}: "diện" chuẩn là bỏ áo quần`, !look.shirt && !look.pants && !look.shoes, JSON.stringify(look));
 }
@@ -176,10 +202,13 @@ for (const code of Object.keys(kid.bodies)) {
   check(`  ${code}: lưu lên API rồi tải về không đổi`, drift.length === 0, drift.map((k) => `${k}: ${feState[k]}→${back[k]}`).join(", "));
 }
 check("  server: thân tự mặc đồ khớp frontend",
-  SUITS.every((c) => server.AVATAR_SELF_CLOTHED_BODIES.includes(c)) &&
-  server.AVATAR_SELF_CLOTHED_BODIES.every((c) => c === "body_girl_01" || SUITS.includes(c)));
+  SELF_CLOTHED.concat("body_girl_01").every((c) => server.AVATAR_SELF_CLOTHED_BODIES.includes(c)) &&
+  server.AVATAR_SELF_CLOTHED_BODIES.every((c) => SELF_CLOTHED.concat("body_girl_01").includes(c)));
+check("  server: bảng linh kiện của từng thân khớp frontend",
+  Object.keys(kid.bodies).every((c) => JSON.stringify(server.AVATAR_BODY_SLOTS[c]) === JSON.stringify(slotsOf(c))),
+  Object.keys(kid.bodies).map((c) => `${c}: ${JSON.stringify(server.AVATAR_BODY_SLOTS[c])} vs ${JSON.stringify(slotsOf(c))}`).join(" | "));
 
-/* ================= 5. render đủ tổ hợp ================================== */
+/* ================= 5. render đủ tổ hợp + tab theo slots ================= */
 console.log("5. Render mọi thân × mọi item");
 let combos = 0;
 const dirty = [];
@@ -199,9 +228,18 @@ for (const code of Object.keys(kid.bodies)) {
   }
 }
 check(`  ${combos} tổ hợp render sạch`, combos > 150 && dirty.length === 0, dirty.join(", "));
+const tabKeys = kid.allTabs.map((t) => t.k).filter((k) => k !== "body");
+for (const code of Object.keys(kid.bodies)) {
+  const st = api.applyBody(kid.defaults, code);
+  const tabs = api.kidTabs(st).map((t) => t.k);
+  /* mặc váy thì tab Quần ẩn — đúng luật cũ, giữ nguyên cho mọi thân */
+  const want = ["body"].concat(tabKeys.filter((k) => slotsOf(code).includes(k) && !(k === "pants" && st.dress)));
+  eq(`  ${code}: tab mở đúng theo slots`, tabs.join(","), want.join(","));
+}
 const dragonTabs = api.kidTabs(api.applyBody(kid.defaults, "body_dragon_01"));
 eq("  rồng chỉ còn tab Thân", dragonTabs.length, 1);
 check("  rider/superman giữ đủ đồ", api.kidTabs(api.applyBody(kid.defaults, "body_rider_01")).length >= 11);
+check("  3 thân mới có trong danh mục", NEW_BODIES.every((c) => Object.keys(kid.bodies).includes(c)));
 
 /* ================= kết quả ============================================= */
 console.log(`\n${fails.length ? "✖" : "✔"} ${pass}/${pass + fails.length} kiểm tra avatar khớp`);

@@ -28,7 +28,7 @@ function BodyCard({ preview, onCopy, copied }) {
             )}
             {preview.overlays === false && (
               <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-600">
-                Không nhận phụ kiện
+                {preview.slots.length ? `Chỉ nhận ${preview.slots.length} nhóm linh kiện` : 'Không nhận phụ kiện'}
               </span>
             )}
           </div>

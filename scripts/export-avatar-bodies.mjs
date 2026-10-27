@@ -8,6 +8,9 @@
 //   body-girl.html       · Bé gái       (body_girl_01)
 //   body-rider.html      · Kamen Rider  (body_rider_01)
 //   body-superman.html   · Superman     (body_superman_01)
+//   body-kaiju.html      · Kaiju        (body_kaiju_01)
+//   body-ghost.html      · Bóng ma      (body_ghost_01)
+//   body-popstar.html    · Ngôi sao nhạc pop (body_popstar_01)
 //   body-dragon.html     · Rồng xanh    (body_dragon_01)
 //
 // Những hình này chính là thứ modal "Tùy chỉnh Avatar" ở trang hồ sơ và 3 trang

@@ -193,29 +193,62 @@
    *  `slug` = mã preset dùng ở modal + trang admin (kidPreset('rider')),
    *  `hint` = ghi chú cho trang "Thân Avatar" — thêm thân là admin tự có thẻ,
    *  không phải sửa giao diện.
+   *
+   *  `slots` = NHÓM LINH KIỆN thân đó nhận. Không phải body nào cũng mặc được
+   *  mọi thứ: rồng/kaiju không có tóc để gắn, ma bay không có chân đi quần.
+   *  Mọi thứ (tab, sanitize, render, trang admin) đều suy ra từ bảng này nên
+   *  thêm thân chỉ cần khai báo slots, không phải sửa giao diện. Server giữ
+   *  bản sao trong `server/src/lib/outfitCatalog.js` (AVATAR_BODY_SLOTS) và
+   *  `npm run avatars:test` so hai bên mỗi lần chạy.
    * ===================================================================== */
+  var HUMAN_SLOTS = ['skin', 'face', 'hair', 'hairColor',
+    'shirt', 'dress', 'pants', 'shoes', 'glasses', 'hat', 'acc'];
+  /* Da + mặt + tóc + kính + mũ + phụ kiện, KHÔNG áo/váy/quần/giày vì thân đã
+   * tự vẽ bộ đồ (ngôi sao nhạc pop). */
+  var HEAD_SLOTS = ['skin', 'face', 'hair', 'hairColor', 'glasses', 'hat', 'acc'];
+  /* Chỉ giữ khung đầu để đội mũ + đeo kính: không tóc, không mặc gì (kaiju). */
+  var CRITTER_SLOTS = ['glasses', 'hat', 'acc'];
+
   var BODIES = {
     body_01: {
-      n: 'Bé trai', overlays: true, slug: 'boy',
+      n: 'Bé trai', overlays: true, slug: 'boy', slots: HUMAN_SLOTS,
       hint: 'Thân người + tóc ngắn, áo trắng, quần jean, giày trắng. Bắt buộc có áo/quần/giày vì thân không vẽ chân.'
     },
     body_girl_01: {
-      n: 'Bé gái', overlays: true, slug: 'girl',
+      n: 'Bé gái', overlays: true, slug: 'girl', slots: HUMAN_SLOTS,
       hint: 'Eo gọn + chân trần, tóc dài, váy hồng, giày hồng. Bỏ được áo/quần/giày.'
     },
     body_rider_01: {
-      n: 'Kamen Rider', overlays: true, slug: 'rider', selfClothed: true,
+      n: 'Kamen Rider', overlays: true, slug: 'rider', selfClothed: true, slots: HUMAN_SLOTS,
       hint: 'Bộ đồ xanh + găng/bốt đen, thắt lưng Typhoon, mũ mắt compound và khăn bạc bay sau lưng. Mũ + áo quần thường mặc được vì bộ đồ vẽ đè lên sau giày.'
     },
     body_superman_01: {
-      n: 'Superman', overlays: true, slug: 'superman', selfClothed: true,
+      n: 'Superman', overlays: true, slug: 'superman', selfClothed: true, slots: HUMAN_SLOTS,
       hint: 'Bộ đồ xanh + quần chip đỏ, bốt đỏ, phù hiệu S và áo choàng đỏ sau lưng. Áo choàng vẽ trước thân, phù hiệu vẽ sau đồ nên không bị che.'
     },
+    body_kaiju_01: {
+      n: 'Kaiju', overlays: false, slug: 'kaiju', selfClothed: true, slots: CRITTER_SLOTS,
+      hint: 'Quái vật xanh có móng, vảy bụng và gai lưng. Mắt tự vẽ đúng chỗ 224/288 nên ĐEO KÍNH + ĐỘI MŨ + phụ kiện được, còn tóc/áo/quần thì không.'
+    },
+    body_ghost_01: {
+      n: 'Bóng ma', overlays: false, slug: 'ghost', selfClothed: true, slots: ['hat', 'acc'],
+      hint: 'Tấm vải trắng bay, không có chân nên không mặc quần/giày; không mặt mũi người nên không chọn mắt/tóc. Chỉ đội được mũ và mang phụ kiện.'
+    },
+    body_popstar_01: {
+      n: 'Ngôi sao nhạc pop', overlays: true, slug: 'popstar', selfClothed: true, slots: HEAD_SLOTS,
+      hint: 'Nhân vật sân khấu tự vẽ: áo khoác đỏ, quần tối màu, giày trắng tất cao, găng một tay. Mặc định tóc đen, chọn được mặt/tóc/da/mũ/kính/phụ kiện (đồ diễn đã là một phần của body).'
+    },
     body_dragon_01: {
-      n: 'Rồng xanh', overlays: false, slug: 'dragon',
+      n: 'Rồng xanh', overlays: false, slug: 'dragon', slots: [],
       hint: 'Body khắc sẵn mặt và chi tiết, không nhận phụ kiện.'
     }
   };
+
+  /** Nhóm linh kiện thân đó chấp nhận — `body` luôn có, không nằm trong danh sách. */
+  function bodySlots(body) {
+    var b = BODIES[body];
+    return b && b.slots ? b.slots.slice() : [];
+  }
 
   /* ===================================================================== *
    *  MẶT — bám đúng toạ độ `#face` của body.html:
@@ -792,10 +825,150 @@
       + '</g>';
   }
 
+  /* ===================================================================== *
+   *  THÂN MỚI — Kaiju / Bóng ma / Ngôi sao nhạc pop
+   *
+   *  Cả ba giữ nguyên khung đầu + cổ + tay của body.html (179–333 × 91–301,
+   *  mắt 224/288 × 210) nên mũ, kính, phụ kiện gắn vào là đúng chỗ; riêng
+   *  những lớp thân đó không có thì `slots` khai báo ở BODIES đã chặn từ
+   *  trong `sanitizeKid` → không bao giờ tới lượt render.
+   * ===================================================================== */
+  var KAIJU = {
+    skin: '#4FA35C', dark: '#2F6B3E', belly: '#DCEBA6', spike: '#C2E36B',
+    spikeDark: '#88B14A', eye: '#FFD23F', pupil: '#241A12', mouth: '#3A2030'
+  };
+
+  function kaijuBack() {
+    /* gai lưng mọc ra ngoài hai bên tay + đuôi quét sau chân — vẽ TRƯỚC thân
+     * nên không che gì, chỉ lộ ra sau vai như khăn của Kamen Rider. */
+    return '<g fill="' + KAIJU.spike + '" stroke="' + KAIJU.spikeDark + '" stroke-width="5" stroke-linejoin="round">'
+      + '<path d="M168 330 L126 284 L184 368 Z"/><path d="M166 392 L118 356 L180 426 Z"/>'
+      + '<path d="M170 452 L126 428 L184 482 Z"/>'
+      + '<path d="M344 330 L386 284 L328 368 Z"/><path d="M346 392 L394 356 L332 426 Z"/>'
+      + '<path d="M342 452 L386 428 L328 482 Z"/>'
+      + '</g>'
+      + '<path d="M300 516 C368 538 424 588 442 650 L404 630 L420 664 L370 650 L356 676 L330 624 C314 586 304 550 300 516 Z"'
+      + ' fill="' + KAIJU.dark + '" filter="url(#kidShadow)"/>';
+  }
+
+  function kaijuBody(sv) {
+    return groundShadow()
+      + limbs(KAIJU.skin)
+      + '<path d="M162 404 L202 398 M310 398 L350 404" stroke="' + KAIJU.dark + '" stroke-width="7" stroke-linecap="round" opacity="0.7"/>'
+      + '<g fill="' + KAIJU.spike + '">'
+      + '<path d="M166 474 L158 502 L178 484 Z"/><path d="M184 478 L182 508 L196 486 Z"/><path d="M202 474 L206 500 L212 480 Z"/>'
+      + '<path d="M346 474 L354 502 L334 484 Z"/><path d="M328 478 L330 508 L316 486 Z"/><path d="M310 474 L306 500 L300 480 Z"/>'
+      + '</g>'
+      + neck(sv, KAIJU.dark)
+      + head(sv, KAIJU.skin)
+      + '<path d="' + TORSO + '" fill="' + KAIJU.skin + '" filter="url(#kidShadow)"/>'
+      + '<path d="M220 352 C240 344 272 344 292 352 L288 468 C268 478 244 478 224 468 Z" fill="' + KAIJU.belly + '"/>'
+      + '<path d="M224 382 L290 382 M226 412 L288 412 M228 442 L286 442" stroke="' + KAIJU.spikeDark + '" stroke-width="6" fill="none" opacity="0.5"/>'
+      + '<path d="' + LEG_L + '" fill="' + KAIJU.skin + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + LEG_R + '" fill="' + KAIJU.skin + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + FOOT_L + '" fill="' + KAIJU.dark + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + FOOT_R + '" fill="' + KAIJU.dark + '" filter="url(#kidShadow)"/>'
+      + '<g fill="' + KAIJU.spike + '"><path d="M192 646 L190 668 L204 652 Z"/><path d="M216 648 L216 672 L228 654 Z"/>'
+      + '<path d="M240 648 L244 670 L252 652 Z"/><path d="M320 646 L322 668 L308 652 Z"/>'
+      + '<path d="M296 648 L296 672 L284 654 Z"/><path d="M272 648 L268 670 L260 652 Z"/></g>'
+      /* mắt tự vẽ nhưng đúng tọa độ 224/288 × 210 → kính râm đeo là khớp */
+      + '<ellipse cx="224" cy="210" rx="21" ry="15" fill="' + KAIJU.eye + '" transform="rotate(-10 224 210)"/>'
+      + '<ellipse cx="288" cy="210" rx="21" ry="15" fill="' + KAIJU.eye + '" transform="rotate(10 288 210)"/>'
+      + '<rect x="220" y="198" width="8" height="24" rx="4" fill="' + KAIJU.pupil + '" transform="rotate(-10 224 210)"/>'
+      + '<rect x="284" y="198" width="8" height="24" rx="4" fill="' + KAIJU.pupil + '" transform="rotate(10 288 210)"/>'
+      + '<path d="M198 182 Q224 166 250 182" stroke="' + KAIJU.dark + '" stroke-width="11" fill="none" stroke-linecap="round"/>'
+      + '<path d="M262 182 Q288 166 314 182" stroke="' + KAIJU.dark + '" stroke-width="11" fill="none" stroke-linecap="round"/>'
+      + '<circle cx="246" cy="240" r="5" fill="' + KAIJU.dark + '"/><circle cx="266" cy="240" r="5" fill="' + KAIJU.dark + '"/>'
+      + '<path d="M212 258 Q256 292 300 258" stroke="' + KAIJU.mouth + '" stroke-width="8" fill="none" stroke-linecap="round"/>'
+      + '<g fill="#FFFFFF"><path d="M228 268 L236 282 L244 268 Z"/><path d="M248 272 L256 288 L264 272 Z"/><path d="M268 268 L276 282 L284 268 Z"/></g>';
+  }
+
+  /* Kaiju không mặc gì → không có chi tiết nào phải vẽ đè lên áo quần. */
+  function kaijuTop() {
+    return '';
+  }
+
+  var GHO = {
+    sheet: '#F3F7FF', mid: '#DFE7F7', edge: '#BFCDEA',
+    eye: '#333A55', mouth: '#3A4160', glow: '#C9D8FF'
+  };
+
+  function ghostBack() {
+    return '<ellipse cx="256" cy="430" rx="126" ry="174" fill="' + GHO.glow + '" opacity="0.2" filter="url(#kidBlur)"/>';
+  }
+
+  function ghostBody() {
+    /* đầu/tay vẫn là khung người nhưng "da" đổi thành vải trắng → mũ đội đúng
+     * chỗ; thân là tấm vải bay, không có chân nên cũng không có quần/giày. */
+    var gsv = { light: GHO.sheet, dark: GHO.mid, shadow: GHO.edge, ear: GHO.mid };
+    return '<ellipse cx="256" cy="676" rx="76" ry="13" fill="#000000" opacity="0.08" filter="url(#kidBlur)"/>'
+      + limbs(GHO.sheet)
+      + neck(gsv, GHO.mid)
+      + head(gsv, GHO.sheet)
+      + '<path d="M212 322 C234 308 278 308 300 322 C330 340 344 380 342 424 L338 548'
+      + ' C337 570 320 578 306 568 L292 556 L272 582 C262 592 250 592 240 582 L220 556 L206 568'
+      + ' C192 578 175 570 174 548 L170 424 C168 380 182 340 212 322 Z" fill="' + GHO.sheet + '" filter="url(#kidShadow)"/>'
+      + '<path d="M186 424 C184 376 196 344 218 328" stroke="#FFFFFF" stroke-width="10" opacity="0.6" fill="none" stroke-linecap="round"/>'
+      + '<ellipse cx="224" cy="208" rx="15" ry="22" fill="' + GHO.eye + '"/>'
+      + '<ellipse cx="288" cy="208" rx="15" ry="22" fill="' + GHO.eye + '"/>'
+      + '<ellipse cx="256" cy="262" rx="13" ry="17" fill="' + GHO.mouth + '"/>';
+  }
+
+  function ghostTop() {
+    return '<g fill="' + GHO.sheet + '" opacity="0.8">'
+      + '<circle cx="148" cy="300" r="11"/><circle cx="376" cy="252" r="8"/><circle cx="392" cy="466" r="13"/></g>';
+  }
+
+  /* Nhân vật sân khấu tự vẽ (hình gốc, không mô tả một người thật nào): áo
+   * khoác đỏ, quần tối màu, giày trắng tất cao và một chiếc găng xanh. */
+  var POP = {
+    jacket: '#C6222B', jacketDark: '#8E151C', shirt: '#F4F6FA',
+    pants: '#2B2E44', pantsDark: '#1A1D2E', sock: '#F4F6FA',
+    shoe: '#F4F6FA', shoeDark: '#C7CEDC', gold: '#E8C25A', glove: '#2A6BD8'
+  };
+
+  function popstarBack() {
+    return '';
+  }
+
+  function popstarBody(sv) {
+    return groundShadow()
+      + limbs(POP.jacket)
+      + '<path d="M164 372 C161 404 163 436 169 458 M348 372 C351 404 349 436 343 458" stroke="' + POP.jacketDark + '" stroke-width="6" fill="none" opacity="0.5" stroke-linecap="round"/>'
+      + neck(sv, POP.shirt)
+      + head(sv, 'url(#kidSkin)')
+      + '<path d="' + TORSO + '" fill="' + POP.jacket + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + LEG_L + '" fill="' + POP.pants + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + LEG_R + '" fill="' + POP.pants + '" filter="url(#kidShadow)"/>'
+      + '<path d="M200 502 L198 630 M312 502 L316 630" stroke="' + POP.pantsDark + '" stroke-width="7" fill="none" opacity="0.6"/>'
+      + '<rect x="196" y="610" width="56" height="32" rx="11" fill="' + POP.sock + '"/>'
+      + '<rect x="260" y="610" width="56" height="32" rx="11" fill="' + POP.sock + '"/>'
+      + '<path d="' + FOOT_L + '" fill="' + POP.shoe + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + FOOT_R + '" fill="' + POP.shoe + '" filter="url(#kidShadow)"/>'
+      + '<path d="M190 664 Q220 674 251 664" stroke="' + POP.shoeDark + '" stroke-width="6" stroke-linecap="round" fill="none"/>'
+      + '<path d="M261 664 Q292 674 322 664" stroke="' + POP.shoeDark + '" stroke-width="6" stroke-linecap="round" fill="none"/>';
+  }
+
+  function popstarTop() {
+    return '<g>'
+      + '<path d="M238 320 L256 352 L274 320 Z" fill="' + POP.shirt + '"/>'
+      + '<path d="M232 316 L256 366 L216 352 Z" fill="' + POP.jacketDark + '"/>'
+      + '<path d="M280 316 L256 366 L296 352 Z" fill="' + POP.jacketDark + '"/>'
+      + '<path d="M180 476 C212 492 300 492 332 476 L332 498 C300 512 212 512 180 498 Z" fill="' + POP.pantsDark + '" filter="url(#kidShadow)"/>'
+      + '<rect x="242" y="478" width="28" height="20" rx="6" fill="' + POP.gold + '" stroke="' + POP.jacketDark + '" stroke-width="4"/>'
+      + '<path d="M162 462 L202 456" stroke="' + POP.jacketDark + '" stroke-width="9" stroke-linecap="round"/>'
+      + '<rect x="304" y="440" width="52" height="52" rx="24" fill="' + POP.glove + '" filter="url(#kidShadow)"/>'
+      + '<path d="M310 452 L348 448" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="7" stroke-linecap="round"/>'
+      + '</g>';
+  }
+
   /** 3 móc vẽ bộ đồ, tra theo mã thân. `null` = thân người thường. */
   var HERO_SUITS = {
     body_rider_01: { body: riderBody, back: riderBack, top: riderTop },
-    body_superman_01: { body: supermanBody, back: supermanBack, top: supermanTop }
+    body_superman_01: { body: supermanBody, back: supermanBack, top: supermanTop },
+    body_kaiju_01: { body: kaijuBody, back: kaijuBack, top: kaijuTop },
+    body_ghost_01: { body: ghostBody, back: ghostBack, top: ghostTop },
+    body_popstar_01: { body: popstarBody, back: popstarBack, top: popstarTop }
   };
 
   /** Thân có bộ đồ vẽ sẵn → hồ sơ được phép bỏ áo/váy/quần/giày (một nguồn: BODIES). */
@@ -835,6 +1008,7 @@
     }
 
     var sv = skinVars(s.skin);
+    var slots = bodySlots(s.body);
     var hairColor = HAIR_COLORS[s.hairColor] || HAIR_COLORS['nâu'];
     var hair = HAIRS[s.hair] || HAIRS.hair_01;
     var acc = ACCS[s.acc] || null;
@@ -847,14 +1021,14 @@
     if (acc && acc.b) o += acc.b;
     var suit = HERO_SUITS[s.body];
     if (suit) o += suit.back();
-    /* 2. tóc sau */
-    o += '<g fill="url(#kidHair)">' + hair.back + '</g>';
+    /* 2. tóc sau — thân không có tóc (kaiju, ma) thì không vẽ */
+    if (slots.indexOf('hair') >= 0) o += '<g fill="url(#kidHair)">' + hair.back + '</g>';
     /* 3. thân: tay + cổ + đầu (+ thân & chân trần cho bé gái, + bộ đồ anh hùng) */
     o += bodySvg(sv, s.body);
-    /* 4. mặt */
-    o += FACES[s.face] ? FACES[s.face].svg : FACES.face_01.svg;
+    /* 4. mặt — kaiju/ma đã tự vẽ mắt miệng trong body() */
+    if (slots.indexOf('face') >= 0) o += FACES[s.face] ? FACES[s.face].svg : FACES.face_01.svg;
     /* 5. tóc trước */
-    o += '<g fill="url(#kidHair)">' + hair.front + '</g>';
+    if (slots.indexOf('hair') >= 0) o += '<g fill="url(#kidHair)">' + hair.front + '</g>';
     /* 6. áo hoặc váy phủ thân — mỗi body có đường may riêng */
     if (s.dress) o += dressSvg(DRESS_COLORS[s.dress], s.body);
     else if (s.shirt) o += shirtSvg(SHIRT_COLORS[s.shirt], s.body);
@@ -904,7 +1078,11 @@
     /* bộ đồ đã là "quần áo" rồi → mặc định bỏ áo/váy/quần/giày để hiện nguyên hình */
     body_rider_01: { hair: 'hair_01', hairColor: 'đen', shirt: null, dress: null, pants: null, shoes: null },
     body_superman_01: { hair: 'hair_01', hairColor: 'đen', shirt: null, dress: null, pants: null, shoes: null },
-    body_dragon_01: {}
+    body_dragon_01: {},
+    /* kaiju/ghost không có áo quần trong slots → sanitize tự bỏ trống hết */
+    body_kaiju_01: {},
+    body_ghost_01: {},
+    body_popstar_01: { hair: 'hair_01', hairColor: 'đen' }
   };
 
   /** Gán thân + "diện" của thân đó, giữ da/màu tóc/kính/mũ/phụ kiện đang chọn. */
@@ -1007,12 +1185,15 @@
     { k: 'acc', l: '🎒 Phụ kiện' }
   ];
 
-  /** Chỉ nhân vật người mới có mặt/tóc/da; váy thì ẩn quần. */
+  /** Chỉ nhân vật người mới có mặt/tóc/da; váy thì ẩn quần.
+   *  Danh sách tab lấy từ `slots` của thân đang chọn — thêm thân chỉ cần khai
+   *  báo slots trong BODIES, tab + modal + trang admin tự theo đó. */
   function kidTabs(st) {
     var s = sanitizeKid(st);
-    var human = BODIES[s.body].overlays !== false;
+    var slots = bodySlots(s.body);
     return KID_TABS.filter(function (t) {
-      if (!human && t.k !== 'body') return false;
+      if (t.k === 'body') return true;
+      if (slots.indexOf(t.k) < 0) return false;
       if (t.k === 'pants' && s.dress) return false;
       return true;
     });
@@ -1030,22 +1211,23 @@
       var ok = KID_FIELD_IDS[k].indexOf(v) >= 0 && v !== undefined;
       out[k] = ok ? v : KID_DEFAULTS[k];
     });
-    /* không có body người thì không có lớp mặt/tóc/da */
-    if (BODIES[out.body].overlays === false) {
-      out.skin = KID_DEFAULTS.skin;
-      out.face = KID_DEFAULTS.face;
-      out.hair = KID_DEFAULTS.hair;
-    }
+    /* không nhận linh kiện nào thì bỏ lớp đó đi (kaiju/ma/rồng): lớp tuỳ chọn
+     * về null, lớp bắt buộc (da/mặt/tóc) về mặc định để hồ sơ sạch */
+    var slots = bodySlots(out.body);
+    Object.keys(KID_FIELD_IDS).forEach(function (k) {
+      if (k === 'body' || slots.indexOf(k) >= 0) return;
+      out[k] = KID_FIELD_IDS[k].indexOf(null) >= 0 ? null : KID_DEFAULTS[k];
+    });
     /* mặc váy thì không có quần — giữ state sạch để profile và server khớp */
     if (out.dress) out.pants = null;
     /* body_01 không vẽ thân/chân bằng da → bắt buộc có giày, và áo/quần khi
      * không mặc váy, nếu không nhân vật sẽ khuyết nửa người. Bé gái đã có chân
      * trần, bộ đồ anh hùng đã vẽ đủ thân/chân → bỏ trống được. */
     if (!isGirlBody(out.body) && !isSuitBody(out.body)) {
-      if (!SHOE_OPTIONS[out.shoes]) out.shoes = KID_DEFAULTS.shoes;
+      if (slots.indexOf('shoes') >= 0 && !SHOE_OPTIONS[out.shoes]) out.shoes = KID_DEFAULTS.shoes;
       if (!out.dress) {
-        if (!SHIRT_COLORS[out.shirt]) out.shirt = KID_DEFAULTS.shirt;
-        if (!PANT_OPTIONS[out.pants]) out.pants = KID_DEFAULTS.pants;
+        if (slots.indexOf('shirt') >= 0 && !SHIRT_COLORS[out.shirt]) out.shirt = KID_DEFAULTS.shirt;
+        if (slots.indexOf('pants') >= 0 && !PANT_OPTIONS[out.pants]) out.pants = KID_DEFAULTS.pants;
       }
     }
     return out;
@@ -1081,7 +1263,11 @@
       /** "diện" chuẩn của từng thân — preset admin và modal cùng dùng bảng này */
       looks: BODY_LOOKS,
       /** mã body hệ cũ → mã hệ mới (body_boy_01 → body_01 …) */
-      bodyAliases: BODY_ALIASES
+      bodyAliases: BODY_ALIASES,
+      /** mọi nhóm linh kiện (theo thứ tự tab) + nhóm mà từng thân nhận */
+      allTabs: KID_TABS,
+      slotKeys: HUMAN_SLOTS,
+      bodySlots: bodySlots
     }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

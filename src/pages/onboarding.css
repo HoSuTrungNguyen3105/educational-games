@@ -55,6 +55,30 @@
   text-align: center;
 }
 
+/* Hàng nút hành động. Mobile giữ nguyên như cũ (dọc, mỗi nút đầy bề ngang);
+   từ 1024px hai nút nhỏ lại, đứng sát nhau và dồn sang phải.
+   Viết tay thay vì class Tailwind `!` vì Tailwind đang nạp qua CDN, class
+   quan trọng không chắc có trong CSS build. */
+.gq-onb .o-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 1024px) {
+  .gq-onb .o-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  .gq-onb .o-actions .o-btn {
+    width: auto;
+    padding: 10px 22px;
+    font-size: 15px;
+  }
+}
+
 /* Nhân vật nhún nhẹ để trang không bị tĩnh */
 .gq-onb .o-float { animation: o-float 3.4s ease-in-out infinite; }
 @keyframes o-float {

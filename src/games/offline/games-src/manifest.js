@@ -50,6 +50,10 @@ export const OFFLINE_GAME_MANIFEST = [
   { id: 'coi-phong-linh', name: 'Cõi Phong Linh', icon: '🗡️', tag: 'Thế giới mở', grad: 'from-indigo-400 to-violet-600', engine: 'standalone', file: 'src/games/offline/coi-phong-linh.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   // Nguồn: src/games/parkour/parkour-tri-thuc-3d/ParkourTriThuc3D.html — chạy `npm run games:build:parkour-fps` để cập nhật.
   { id: 'parkour-tri-thuc-3d', name: 'Parkour Góc Nhìn Thứ Nhất', icon: '🏃', tag: 'Parkour 3D', grad: 'from-cyan-400 to-blue-600', engine: 'standalone', file: 'src/games/offline/parkour-tri-thuc-3d.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  // Nguồn: src/games/parkour/me-cung-thi.html — chạy `npm run games:build:parkour-offline` để cập nhật.
+  { id: 'me-cung-tri-thuc', name: 'Mê Cung Tri Thức', icon: '🏰', tag: 'Mê cung', grad: 'from-amber-400 to-yellow-500', engine: 'standalone', file: 'src/games/offline/me-cung-tri-thuc.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  // Nguồn: src/games/parkour/thap-may.html (three.js qua CDN, giống nhay-xoay).
+  { id: 'leo-thap-may', name: 'Leo Tháp Mây', icon: '☁️', tag: 'Leo tháp 3D', grad: 'from-sky-400 to-cyan-600', engine: 'standalone', file: 'src/games/offline/leo-thap-may.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
 
   // School_mission KHÔNG thuộc offline — xem route /school-mission và src/games/school_mission/
 ];

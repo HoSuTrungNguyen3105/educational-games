@@ -31,7 +31,8 @@ export const AVATAR_BODY_ALIASES = {
  * trống (không mặc item đó).
  */
 export const AVATAR_FIELDS = {
-  body: ["body_01", "body_girl_01", "body_rider_01", "body_superman_01", "body_dragon_01"],
+  body: ["body_01", "body_girl_01", "body_rider_01", "body_superman_01",
+    "body_kaiju_01", "body_ghost_01", "body_popstar_01", "body_dragon_01"],
   skin: ["s1", "s2", "s3", "s4"],
   face: ["face_01", "face_02", "face_03", "face_04", "face_05"],
   hair: ["hair_01", "hair_02", "hair_03", "hair_04", "hair_05", "hair_06"],
@@ -61,16 +62,35 @@ export const AVATAR_DEFAULT = {
   acc: null,
 };
 
-/** Thân không nhận lớp mặt/tóc/da (rồng đã khắc sẵn). */
-export const AVATAR_NO_OVERLAY_BODIES = ["body_dragon_01"];
+/**
+ * Nhóm linh kiện mà từng thân nhận — bản sao của `BODIES[code].slots` trong
+ * `src/games/_shared/lib/dressUpAvatarData.js` (server tự kiểm, không tin
+ * client). Thân không có mặt/tóc/da (rồng, kaiju, ma) cũng không nhận áo quần;
+ * nhân vật tự vẽ đồ (kaiju, ma, ngôi sao nhạc pop) thì áo/váy/quần/giày bị
+ * bỏ trống chứ không bị ép mặc lại.
+ */
+export const AVATAR_HUMAN_SLOTS = ["skin", "face", "hair", "hairColor",
+  "shirt", "dress", "pants", "shoes", "glasses", "hat", "acc"];
+export const AVATAR_BODY_SLOTS = {
+  body_01: AVATAR_HUMAN_SLOTS,
+  body_girl_01: AVATAR_HUMAN_SLOTS,
+  body_rider_01: AVATAR_HUMAN_SLOTS,
+  body_superman_01: AVATAR_HUMAN_SLOTS,
+  body_kaiju_01: ["glasses", "hat", "acc"],
+  body_ghost_01: ["hat", "acc"],
+  body_popstar_01: ["skin", "face", "hair", "hairColor", "glasses", "hat", "acc"],
+  body_dragon_01: [],
+};
 
 /**
  * Thân tự vẽ đủ phần người → hồ sơ được phép bỏ áo/váy/quần/giày:
  *   body_girl_01      eo + chân trần
  *   body_rider_01     bộ đồ xanh + bốt + thắt lưng
  *   body_superman_01  bộ đồ xanh + quần chip + bốt + áo choàng
+ *   body_kaiju_01 / body_ghost_01 / body_popstar_01  thân vẽ sẵn, không mặc gì thêm
  */
-export const AVATAR_SELF_CLOTHED_BODIES = ["body_girl_01", "body_rider_01", "body_superman_01"];
+export const AVATAR_SELF_CLOTHED_BODIES = ["body_girl_01", "body_rider_01", "body_superman_01",
+  "body_kaiju_01", "body_ghost_01", "body_popstar_01"];
 
 /** id hợp lệ cho từng trường của pet. */
 export const PET_FIELDS = {
@@ -100,19 +120,22 @@ function cleanByFields(src, fields, defaults, withAvatar) {
   }
   if (!withAvatar) return out;
 
-  /* Thân không nhận lớp mặt/tóc/da → trả về mặc định cho các lớp đó. */
-  if (AVATAR_NO_OVERLAY_BODIES.includes(out.body)) {
-    for (const key of ["skin", "face", "hair", "hairColor"]) out[key] = defaults[key];
+  /* Thân không nhận nhóm linh kiện nào thì xóa lớp đó: lớp tuỳ chọn về null,
+   * lớp bắt buộc (da/mặt/tóc) về mặc định — khớp `sanitizeKid` của frontend. */
+  const slots = AVATAR_BODY_SLOTS[out.body] || [];
+  for (const key of Object.keys(out)) {
+    if (key === "body" || slots.includes(key)) continue;
+    out[key] = fields[key].includes(null) ? null : defaults[key];
   }
   /* Mặc váy thì không có quần. */
   if (out.dress) out.pants = null;
   /* body_01 không vẽ thân/chân bằng da → bỏ trống là hồ sơ thành nhân vật khuyết.
    * Thân đã tự mặc đủ (chân trần / bộ đồ anh hùng) thì null là ý người chơi. */
   if (!AVATAR_SELF_CLOTHED_BODIES.includes(out.body)) {
-    if (out.shoes === null) out.shoes = defaults.shoes;
+    if (slots.includes("shoes") && out.shoes === null) out.shoes = defaults.shoes;
     if (!out.dress) {
-      if (out.shirt === null) out.shirt = defaults.shirt;
-      if (out.pants === null) out.pants = defaults.pants;
+      if (slots.includes("shirt") && out.shirt === null) out.shirt = defaults.shirt;
+      if (slots.includes("pants") && out.pants === null) out.pants = defaults.pants;
     }
   }
   return out;
