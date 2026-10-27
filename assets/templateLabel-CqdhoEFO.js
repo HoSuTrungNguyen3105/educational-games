@@ -1,0 +1,1 @@
+import{n as e}from"./templates-7fw1hs1W.js";function t(t){return t?e(t)||`Mẫu đã gỡ · ${String(t).slice(0,8)}`:`Danh sách câu hỏi`}export{t};
