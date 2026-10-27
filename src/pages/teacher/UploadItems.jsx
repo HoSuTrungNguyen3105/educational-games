@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { IconDownload, IconPlay, IconUpload, ManagementHeader } from '../../components/ui';
-import { Save, Plus, Loader2} from 'lucide-react';
+import { Save, Plus, LoaderCircle} from 'lucide-react';
 
 function getAuthToken() {
   try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; }
@@ -324,7 +324,7 @@ export default function UploadItems({ showToast }) {
           </button>
           <button onClick={saveAll} disabled={!detectedItems.length || saving}
             className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-40 flex items-center gap-1.5">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {saving ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Đang lưu...' : `Lưu tất cả (${detectedItems.length})`}
           </button>
           <span className="text-xs text-ink/40">{status}</span>

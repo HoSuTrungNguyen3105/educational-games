@@ -8,16 +8,16 @@ import {
   Gamepad2,
   Ticket,
   Package,
-  Loader2,
+  LoaderCircle,
   Target,
     TrendingUp,
   Trophy,
   Medal,
   BookOpen,
-  AlertTriangle,
+  TriangleAlert,
   Library,
   Activity,
-  PieChart,
+  ChartPie,
   CalendarCheck,
   Clock,
   Layers,
@@ -169,7 +169,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
               </div>
               <button onClick={handleSeed} disabled={seeding}
                 className="text-xs font-mono px-3 py-1.5 rounded-lg border border-ink/15 text-[#8A7C63] hover:bg-ink/5 transition disabled:opacity-50 shrink-0">
-                {seeding ? <Loader2 className="w-4 h-4 inline animate-spin mr-1" /> : <Package className="w-4 h-4 inline mr-1" />}
+                {seeding ? <LoaderCircle className="w-4 h-4 inline animate-spin mr-1" /> : <Package className="w-4 h-4 inline mr-1" />}
                 {seeding ? "Đang inject..." : "Inject dữ liệu"}
               </button>
             </div>
@@ -201,7 +201,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
 
             {/* Vùng nguy hiểm */}
             <section className="note-card p-4 sm:p-5 border-l-4 border-l-red-400 space-y-3 sm:space-y-4">
-              <h2 className="font-display text-lg sm:text-xl text-ink"><AlertTriangle className="w-5 h-5 inline mr-2 text-red-500" /> Vùng nguy hiểm</h2>
+              <h2 className="font-display text-lg sm:text-xl text-ink"><TriangleAlert className="w-5 h-5 inline mr-2 text-red-500" /> Vùng nguy hiểm</h2>
               <p className="text-sm text-[#8A7C63]">Xóa toàn bộ dữ liệu để tạo lại từ đầu. Thao tác không thể hoàn tác.</p>
               <div className="flex flex-wrap gap-3">
                 <button onClick={() => setConfirmReset("games")}
@@ -331,7 +331,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
                 ? "Sẽ xóa toàn bộ games kèm câu hỏi và kết quả liên quan."
                 : "Sẽ xóa toàn bộ templates trong hệ thống."}
             </p>
-            <p className="text-sm text-red-500 font-semibold"><AlertTriangle className="w-4 h-4 inline mr-1" /> Hành động này không thể hoàn tác!</p>
+            <p className="text-sm text-red-500 font-semibold"><TriangleAlert className="w-4 h-4 inline mr-1" /> Hành động này không thể hoàn tác!</p>
             <div className="flex flex-wrap justify-end gap-3">
               <GhostButton onClick={() => setConfirmReset(null)} disabled={resetting}>Hủy</GhostButton>
               <PrimaryButton onClick={handleReset} disabled={resetting}>
@@ -444,7 +444,7 @@ function TeacherAnalytics({ stats, days, onDays, onResults, onLive }) {
       {stats.meta?.warnings?.length > 0 && (
         <div className="note-card p-3 sm:p-4 border-l-4 border-l-gold bg-gold/5">
           <p className="text-[11px] sm:text-xs font-semibold text-[#B07D10] mb-1">
-            <AlertTriangle className="w-3.5 h-3.5 inline mr-1" /> Lưu ý về nguồn số liệu
+            <TriangleAlert className="w-3.5 h-3.5 inline mr-1" /> Lưu ý về nguồn số liệu
           </p>
           <ul className="space-y-0.5 text-[10px] sm:text-[11px] font-mono text-[#8A7C63] leading-relaxed list-disc pl-4">
             {stats.meta.warnings.map((w) => <li key={w}>{w}</li>)}
@@ -479,7 +479,7 @@ function TeacherAnalytics({ stats, days, onDays, onResults, onLive }) {
 
         <ChartCard
           title="Thư viện trò chơi"
-          icon={<PieChart className="w-5 h-5" />}
+          icon={<ChartPie className="w-5 h-5" />}
           footer={<ChartLegend items={statusSlices.map((x, i) => ({ label: x.name, value: x.value, color: seriesColor(i) }))} />}
           caption={`${stats.totals.games} trò chơi · ${stats.totals.students} học sinh trong hệ thống · ${stats.totals.players} bạn từng chơi.`}
         >

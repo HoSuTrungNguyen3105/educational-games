@@ -9,7 +9,7 @@ import {
   isoToLocalDatetimeValue,
   formatDateTime,
 } from "../../lib/reminderUtils.js";
-import { Clock, RotateCcw, AlertCircle} from "lucide-react";
+import { Clock, RotateCcw, CircleAlert} from "lucide-react";
 
 const REPEAT_OPTIONS = [
   { value: "none", label: "Không lặp" },
@@ -24,11 +24,11 @@ function getRepeatLabel(v) {
 }
 
 function getTimeStatus(remindAt, triggered) {
-  if (triggered) return { label: "Đã nhắc", color: "text-green-600 bg-green-50", IconCheckCircle };
+  if (triggered) return { label: "Đã nhắc", color: "text-green-600 bg-green-50", icon: IconCheckCircle };
   const now = new Date();
   const target = new Date(remindAt);
   const diff = target - now;
-  if (diff < 0) return { label: "Đến giờ!", color: "text-red-600 bg-red-50", icon: AlertCircle };
+  if (diff < 0) return { label: "Đến giờ!", color: "text-red-600 bg-red-50", icon: CircleAlert };
   if (diff < 3600000) return { label: `Còn ${Math.ceil(diff / 60000)} phút`, color: "text-amber-600 bg-amber-50", icon: Clock };
   if (diff < 86400000) return { label: `Còn ${Math.floor(diff / 3600000)} giờ`, color: "text-blue-600 bg-blue-50", icon: Clock };
   return { label: `Còn ${Math.floor(diff / 86400000)} ngày`, color: "text-gray-600 bg-gray-50", icon: Clock };

@@ -5,7 +5,7 @@ import { useUserAuthStore } from '../../stores/userAuth.store.js';
 import { navigate } from '../../lib/router.js';
 import ExamPlayer from '../../games/examination/ExamPlayer.jsx';
 import { getExamTemplate } from '../../games/examination/templates.js';
-import { Clock, AlertTriangle, XCircle, ChevronLeft, ChevronRight, Send, ArrowRight } from 'lucide-react';
+import { Clock, TriangleAlert, CircleX, ChevronLeft, ChevronRight, Send, ArrowRight } from 'lucide-react';
 
 const TIMER_WARN = 60;
 const GUEST_STORAGE_KEY = 'edu_assignment_guest';
@@ -186,7 +186,7 @@ function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
                 <div className="text-sm space-y-1">
                   <p className={d.isCorrect ? 'text-green-600' : 'text-red-600'}>
                     Đáp án của bạn: <span className="font-semibold">{d.userAnswer || '(chưa trả lời)'}</span>
-                    {d.isCorrect ? <IconCheckCircle className="inline w-4 h-4 ml-1" /> : <XCircle className="inline w-4 h-4 ml-1" />}
+                    {d.isCorrect ? <IconCheckCircle className="inline w-4 h-4 ml-1" /> : <CircleX className="inline w-4 h-4 ml-1" />}
                   </p>
                   {!d.isCorrect && d.correctAnswer && (
                     <p className="text-green-600">
@@ -437,7 +437,7 @@ export default function AssignmentTake({ code: codeOrId }) {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
       <div className="text-center space-y-4">
         <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-8 h-8 text-red-500" />
+          <TriangleAlert className="w-8 h-8 text-red-500" />
         </div>
         <p className="font-medium text-red-500">{error}</p>
         <button onClick={() => navigate('/')} className="px-6 py-3 bg-amber-500 text-white rounded-2xl font-semibold hover:bg-amber-600 transition shadow-md">Về trang chủ</button>
@@ -462,7 +462,7 @@ export default function AssignmentTake({ code: codeOrId }) {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
       <div className="text-center space-y-4">
         <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-8 h-8 text-red-500" />
+          <TriangleAlert className="w-8 h-8 text-red-500" />
         </div>
         <p className="font-medium text-red-500">{error}</p>
         <button onClick={() => navigate('/')} className="px-6 py-3 bg-amber-500 text-white rounded-2xl font-semibold hover:bg-amber-600 transition shadow-md">Về trang chủ</button>

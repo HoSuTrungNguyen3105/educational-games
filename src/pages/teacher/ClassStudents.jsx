@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { UserCircle2, Hash } from 'lucide-react';
+import { CircleUserRound, Hash } from 'lucide-react';
 import { EmptyState, IconBack, IconMail, IconUsers, Loader, SearchInput } from '../../components/ui';
 
 export default function ClassStudents({ classId }) {
@@ -101,7 +101,7 @@ export default function ClassStudents({ classId }) {
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center">
-                    <UserCircle2 className="w-6 h-6 text-gold/60" />
+                    <CircleUserRound className="w-6 h-6 text-gold/60" />
                   </div>
                 )}
               </div>

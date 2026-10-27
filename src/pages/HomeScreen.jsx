@@ -19,7 +19,7 @@ import { requestNotificationPermission, onForegroundMessage, getPushSupportStatu
 import useReminderCheck from '../hooks/useReminderCheck.js'
 import { playVibration, playReminderSound, stopVibrationLoop } from '../lib/reminderUtils.js'
 import {
-  Home,
+  House,
   ClipboardList,
   MessageCircle,
   Search,
@@ -38,7 +38,7 @@ import {
   Send,
   RefreshCw,
   LayoutDashboard,
-  MoreHorizontal,
+  Ellipsis,
 } from 'lucide-react'
 
 
@@ -189,34 +189,34 @@ function metaForSubject(subject = "") {
 // Mọi mục chưa nằm trong hàng tab → dồn vào popover "Thêm" trên header.
 // (Thú cưng không ở đây: nó có chip riêng ngay đầu hàng tab.)
 const MORE_ITEMS = (userAuth) => ([
-  { key: "reminders", IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
+  { key: "reminders", icon: IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
   { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
-  { key: "assignment", IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
+  { key: "assignment", icon: IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
-  { key: "profile", IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
+  { key: "profile", icon: IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
 ]);
 
 // Menu đầy đủ (dùng cho dropdown "Thêm" + menu hamburger mobile)
 const SIDEBAR_ITEMS = (userAuth) => ([
-  { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
+  { key: "home", icon: House, label: "Trang chủ", type: "path", path: "/", show: true },
   { key: "games", icon: Gamepad2, label: "Game học tập", type: "scroll", target: "games-section", show: true },
   { key: "offline", icon: Sparkles, label: "Thư giãn", type: "scroll", target: "offline-section", show: true },
   { key: "rpg", icon: GraduationCap, label: "Nhập vai", type: "scroll", target: "rpg-section", show: true },
   { key: "subjects", icon: BookOpen, label: "Môn học", type: "scroll", target: "subjects-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: true, badge: true },
-  { key: "reminders", IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
+  { key: "reminders", icon: IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
   { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
   { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
-  { key: "profile", IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
+  { key: "profile", icon: IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
-  { key: "assignment", IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
+  { key: "assignment", icon: IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
 
@@ -225,11 +225,11 @@ const SIDEBAR_ITEMS = (userAuth) => ([
 const MAX_HEADER_TABS = 5;
 
 const BOTTOM_NAV = (userAuth) => [
-  { key: "home", icon: Home, label: "Trang chủ", type: "path", path: "/", show: true },
+  { key: "home", icon: House, label: "Trang chủ", type: "path", path: "/", show: true },
   { key: "games", icon: Gamepad2, label: "Game", type: "scroll", target: "games-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
-  { key: "profile", IconUser, label: "Cá nhân", type: "path", path: "/profile", show: !!userAuth?.user },
+  { key: "profile", icon: IconUser, label: "Cá nhân", type: "path", path: "/profile", show: !!userAuth?.user },
 ];
 
 // Thành tích nổi bật (mock — sẽ nối API sau)
@@ -1018,7 +1018,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     aria-haspopup="true"
                     aria-expanded={moreOpen}
                   >
-                    <MoreHorizontal aria-hidden="true" />
+                    <Ellipsis aria-hidden="true" />
                     <span>Thêm</span>
                     <IconChevronDown className="gq-navtab__chev" aria-hidden="true" />
                   </button>

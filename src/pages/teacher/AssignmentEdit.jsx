@@ -2,7 +2,7 @@ import { IconBack, IconFile } from '../../components/ui/index.js';
 import { useState, useEffect, useMemo } from 'react';
 import { classService, assignmentService, questionService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { AlertCircle, Clock, CheckSquare, Square, Search} from 'lucide-react';
+import { CircleAlert, Clock, SquareCheck, Square, Search} from 'lucide-react';
 import TemplatePicker from '../../components/exam/TemplatePicker.jsx';
 import { templateLabel } from '../../components/exam/templateLabel.js';
 
@@ -149,7 +149,7 @@ export default function AssignmentEdit({ assignmentId }) {
 
       {error && (
         <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-          <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+          <CircleAlert className="w-4 h-4 shrink-0" /> {error}
         </div>
       )}
 
@@ -180,7 +180,7 @@ export default function AssignmentEdit({ assignmentId }) {
         <div className="p-4 bg-paper2 rounded-xl border border-ink/8 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CheckSquare className="w-4 h-4 text-gold" />
+              <SquareCheck className="w-4 h-4 text-gold" />
               <span className="font-display text-sm text-ink">Chọn câu hỏi</span>
             </div>
             <span className="text-xs font-mono text-ink/40">
@@ -198,7 +198,7 @@ export default function AssignmentEdit({ assignmentId }) {
           <button type="button" onClick={toggleAll}
             className="flex items-center gap-2 text-xs font-body text-gold hover:text-gold/80 transition">
             {selectedQuestions.size === filteredQuestions.length ? (
-              <CheckSquare className="w-4 h-4" />
+              <SquareCheck className="w-4 h-4" />
             ) : (
               <Square className="w-4 h-4" />
             )}
@@ -218,7 +218,7 @@ export default function AssignmentEdit({ assignmentId }) {
                   }`}>
                   <div className="flex items-start gap-2">
                     {selectedQuestions.has(q.id) ? (
-                      <CheckSquare className="w-4 h-4 text-gold shrink-0 mt-0.5" />
+                      <SquareCheck className="w-4 h-4 text-gold shrink-0 mt-0.5" />
                     ) : (
                       <Square className="w-4 h-4 text-ink/30 shrink-0 mt-0.5" />
                     )}

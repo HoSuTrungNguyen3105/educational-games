@@ -13,8 +13,8 @@ import {
   Medal,
   Gem,
   TrendingUp,
-  Loader2,
-  AlertCircle,
+  LoaderCircle,
+  CircleAlert,
   Layers,
   Target,
   Sparkles,
@@ -195,7 +195,7 @@ export default function MyCoins({ userAuth, onBack }) {
       {error && <ErrorState subtitle={error} onRetry={load} />}
       {!error && games === null && (
         <div className="flex items-center justify-center py-16 text-stone-400">
-          <Loader2 className="w-6 h-6 animate-spin mr-2" />
+          <LoaderCircle className="w-6 h-6 animate-spin mr-2" />
           <span className="text-sm">Đang tải dữ liệu...</span>
         </div>
       )}
@@ -273,7 +273,7 @@ export default function MyCoins({ userAuth, onBack }) {
             <div className="bg-white rounded-3xl border border-stone-100 overflow-hidden shadow-lg animate-in slide-in-from-bottom-4 duration-300">
               {loadingDetail ? (
                 <div className="flex items-center justify-center py-12 text-stone-400">
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  <LoaderCircle className="w-5 h-5 animate-spin mr-2" />
                   <span className="text-sm">Đang tải chi tiết...</span>
                 </div>
               ) : detail ? (

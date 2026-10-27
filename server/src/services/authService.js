@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getCollection } from "../db.js";
@@ -29,14 +30,24 @@ export async function verifyCredentials(identifier, password) {
 
 export function signToken(user) {
   return jwt.sign(
-    { sub: user.id, username: user.username, role: user.role, name: user.name },
+    {
+      sub: user.id, username: user.username, role: user.role, name: user.name,
+      type: "access",
+      // `jti` làm mỗi lần phát hành là một chuỗi KHÁC NHAU. Không có nó, refresh
+      // trong cùng giây với login sẽ trả về token y hệt (payload + exp bằng nhau).
+      jti: crypto.randomUUID(),
+    },
     config.jwtSecret,
     { expiresIn: config.jwtExpiresIn }
   );
 }
 
 export function verifyToken(token) {
-  return jwt.verify(token, config.jwtSecret);
+  const payload = jwt.verify(token, config.jwtSecret);
+  // Refresh token (kiểu "refresh") không được phép thế chỗ access token.
+  // Token cũ phát hành trước khi có field `type` vẫn hợp lệ → chỉ chặn khi có type khác "access".
+  if (payload.type && payload.type !== "access") throw new Error("Loại token không đúng");
+  return payload;
 }
 
 export function publicUser(user) {

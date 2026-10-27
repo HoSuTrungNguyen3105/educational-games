@@ -544,6 +544,30 @@ async function _runHeavyInit(database) {
     /**
      * user_badges — lịch sử mở huy hiệu.
      */
+    /**
+     * refresh_tokens — bản HASH của refresh token (cookie HttpOnly ở client).
+     * Một document = một phiên đăng nhập. `familyId` nhóm các token xoay vòng
+     * từ cùng một lần đăng nhập; dùng lại token `rotated` ⇒ xoá cả family.
+     * `expiresAt` là Date để TTL index của Mongo tự xoá bản ghi hết hạn.
+     */
+    refresh_tokens: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "userId", "familyId", "tokenHash", "status", "expiresAt"],
+        properties: {
+          id: { bsonType: "string" },
+          userId: { bsonType: "string" },
+          familyId: { bsonType: "string" },
+          tokenHash: { bsonType: "string" },
+          status: { enum: ["active", "rotated"] },
+          rotatedToId: { bsonType: ["string", "null"] },
+          createdAt: { bsonType: "date" },
+          updatedAt: { bsonType: "date" },
+          expiresAt: { bsonType: "date" },
+        },
+      }
+    },
+
     user_badges: {
       $jsonSchema: {
         bsonType: "object",
@@ -693,6 +717,13 @@ async function _runHeavyInit(database) {
     // leaderboard XP tổng
     ["user_mini_progress", { totalXp: -1 }],
     ["user_mini_progress", { level: -1 }],
+
+    // refresh_tokens — tra theo hash đúng những gì server đã lưu, không cần解密 JWT
+    ["refresh_tokens", { tokenHash: 1 }, { unique: true }],
+    ["refresh_tokens", { userId: 1, status: 1 }],
+    ["refresh_tokens", { familyId: 1 }],
+    // TTL: Mongo tự xoá khi expiresAt tới hạn (cần field kiểu Date)
+    ["refresh_tokens", { expiresAt: 1 }, { expireAfterSeconds: 0 }],
 
     // user_badges — unique per (userId, badgeId) để không trùng
     ["user_badges", { userId: 1, badgeId: 1 }, { unique: true }],

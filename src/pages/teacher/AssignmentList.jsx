@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { assignmentService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Clock, Users, XCircle, Eye, Link2 } from 'lucide-react';
+import { Clock, Users, CircleX, Eye, Link2 } from 'lucide-react';
 import { ConfirmModal, EmptyState, IconAdd, IconCheckCircle, Loader, ManagementHeader, PrimaryButton } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
@@ -109,7 +109,7 @@ export default function AssignmentList() {
                   <button onClick={() => handleClose(a)}
                     className="p-2 rounded-lg hover:bg-red-50 transition text-ink/30 hover:text-red-500"
                     title="Đóng bài tập">
-                    <XCircle className="w-4 h-4" />
+                    <CircleX className="w-4 h-4" />
                   </button>
                 )}
               </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { permissionService } from "../../services/api.js";
 import { ConfirmModal, ErrorState, GhostButton, IconAdd, IconCheck, IconClose, IconUser, Loader, ManagementHeader, Modal, PrimaryButton, ViewToggle, cardGridClass, tableWrapClass, useViewMode } from '../../components/ui';
-import { Shield, MoreHorizontal, Crown, GraduationCap } from "lucide-react";
+import { Shield, Ellipsis, Crown, GraduationCap } from "lucide-react";
 
 const COLS = [
   { key: "view", label: "Xem" },
@@ -179,7 +179,7 @@ export default function RoleManagement({ user, showToast }) {
             className="absolute -right-11 top-0 w-9 h-9 rounded-full border border-ink/15 flex items-center justify-center text-ink/50 hover:bg-ink/5 transition"
             title="Tuỳ chọn"
           >
-            <MoreHorizontal className="w-4 h-4" />
+            <Ellipsis className="w-4 h-4" />
           </button>
           {menuOpen && (
             <>

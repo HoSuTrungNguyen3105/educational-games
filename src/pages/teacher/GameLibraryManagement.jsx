@@ -6,7 +6,7 @@ import { EmptyState, ErrorState, GhostButton, IconButton, IconCast, IconEdit, Ic
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import RangePagination from '../../components/RangePagination.jsx'
-import { Gamepad2, Copy, Ticket, Search, Layers, Rocket, FileEdit, TrendingUp, Database, History, WifiOff, Wifi } from 'lucide-react'
+import { Gamepad2, Copy, Ticket, Search, Layers, Rocket, FilePen, TrendingUp, Database, ClockFading, WifiOff, Wifi } from 'lucide-react'
 
 const PAGE_SIZE = 12;
 
@@ -77,7 +77,7 @@ function ManagementGameCard({ game, templates, publishedVersion, onEdit, onResul
           <IconButton title="Chỉnh sửa" onClick={onEdit}><IconEdit className="w-5 h-5" /></IconButton>
           <IconButton title="Nhân bản" onClick={onDuplicate}><Copy className="w-5 h-5" /></IconButton>
           <IconButton title="Xuất bản phiên bản mới" onClick={onPublish}><Rocket className="w-5 h-5" /></IconButton>
-          <IconButton title="Lịch sử phiên bản" onClick={onVersions}><History className="w-5 h-5" /></IconButton>
+          <IconButton title="Lịch sử phiên bản" onClick={onVersions}><ClockFading className="w-5 h-5" /></IconButton>
           {onShare && game.status === "published" && (
             <IconButton title="Chia sẻ" onClick={onShare}><Ticket className="w-5 h-5" /></IconButton>
           )}
@@ -302,7 +302,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon={Layers} label="Tổng số trò chơi" value={stats ? stats.total : "—"} tone="ink" />
         <StatCard icon={Rocket} label="Đã xuất bản" value={stats ? stats.published : "—"} tone="teal" />
-        <StatCard icon={FileEdit} label="Bản nháp" value={stats ? stats.drafts : "—"} tone="gold" />
+        <StatCard icon={FilePen} label="Bản nháp" value={stats ? stats.drafts : "—"} tone="gold" />
         <StatCard icon={TrendingUp} label="Lượt chơi / tuần" value={stats ? stats.weeklyPlays.toLocaleString("vi-VN") : "—"} tone="ticket" />
       </div>
 

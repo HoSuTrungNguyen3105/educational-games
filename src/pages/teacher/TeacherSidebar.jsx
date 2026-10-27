@@ -9,9 +9,9 @@ import {
   Palette,
   Tag,
   BookOpen,
-  HelpCircle,
+  CircleQuestionMark,
   Database,
-  Home,
+  House,
   MessageCircle,
   GraduationCap,
   Shirt,
@@ -56,7 +56,7 @@ const SECTIONS = [
     id: "content",
     label: "Nội dung",
     items: [
-      { id: "admin-questions", label: "Câu hỏi", icon: HelpCircle, route: "/admin/questions", permission: "questions.manage" },
+      { id: "admin-questions", label: "Câu hỏi", icon: CircleQuestionMark, route: "/admin/questions", permission: "questions.manage" },
       { id: "admin-question-bank", label: "Ngân hàng câu hỏi", icon: Database, route: "/admin/question-bank", permission: "questions.manage" },
       { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects", permission: "subjects.manage" },
       { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories", permission: "categories.manage" },
@@ -104,7 +104,7 @@ export function findPageTitle(screen) {
 const MOBILE_MAIN = [
   { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin", permission: null },
   { id: "admin-library", label: "Trò chơi", icon: Library, route: "/admin/library", permission: "games.manage" },
-  { id: "home", label: "Trang chủ", icon: Home, route: "/", permission: null },
+  { id: "home", label: "Trang chủ", icon: House, route: "/", permission: null },
 ];
 
 function initialsOf(name) {
@@ -178,7 +178,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
       <div className="shrink-0 px-3 pb-4 pt-3 border-t border-ink/10 space-y-0.5">
         <button onClick={() => { navigate("/"); if (isMobile) setMobileOpen(false); }}
           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-body text-ink/70 hover:bg-ink/5 hover:text-ink transition">
-          <Home className="w-[18px] h-[18px]" />
+          <House className="w-[18px] h-[18px]" />
           Về trang chủ
         </button>
         {user && (
@@ -303,7 +303,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
               <div className="grid grid-cols-3 gap-2">
                 <button onClick={() => { navigate("/"); setMoreOpen(false); }}
                   className="flex flex-col items-center justify-center gap-1 p-2 min-h-[74px] rounded-xl border border-ink/10 bg-paper2 text-ink active:scale-95 transition">
-                  <Home className="w-5 h-5" />
+                  <House className="w-5 h-5" />
                   <span className="text-[10px] font-body font-medium leading-tight text-center">Về trang chủ</span>
                 </button>
                 {user && (

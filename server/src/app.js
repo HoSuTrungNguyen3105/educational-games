@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isReady } from "./db.js";
@@ -41,10 +42,25 @@ import miniGamesRouter from "./routes/miniGames.js";
 import aiRouter from "./routes/ai.js";
 import * as reminderService from "./services/reminderService.js";
 import { verifyToken } from "./services/authService.js";
+import { isAllowedOrigin } from "./services/refreshTokenService.js";
 
 const app = express();
 
-app.use(cors());
+// `Access-Control-Allow-Credentials` phải được đặt TRƯỚC cors() vì cors kết thúc
+// ngay request preflight (OPTIONS). Chỉ origin trong REFRESH_ALLOWED_ORIGINS mới
+// được gửi cookie — mở credentials cho mọi origin nghĩa là bất kỳ website nào
+// cũng đổi được access token từ cookie của người dùng.
+app.use((req, res, next) => {
+  if (isAllowedOrigin(req.headers.origin)) {
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+  next();
+});
+// `origin` là function ⇒ cors luôn phản chiếu ĐÚNG origin thay vì gửi "*".
+// Bắt buộc: trình duyệt từ chối response có `Allow-Origin: *` đi kèm credentials,
+// mà thiếu nó thì login/refresh từ frontend khác host (github.io ↔ API) chết đứng.
+app.use(cors({ origin: (origin, cb) => cb(null, origin || true) }));
+app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 
 const __filename = fileURLToPath(import.meta.url);

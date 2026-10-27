@@ -8,29 +8,64 @@ export const API_BASE =
   "https://educational-games-lp4z.onrender.com/api";
 export const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
-const AUTH_KEY = "edu_games_auth";
+// ── Token ──────────────────────────────────────────────────────────────────
+// Access token sống trong bộ nhớ (src/lib/authToken.js); refresh token là cookie
+// HttpOnly mà JS không đọc được. loadAuth/saveAuth/clearAuth giữ nguyên tên và
+// hành vi cũ vì hơn chục module (offlineGameSync, coinWallet, game iframe…) đang
+// import chúng — xem ghi chú tương thích ở đầu authToken.js.
+import {
+  getAuth, setAuth, clearAuth as clearTokenAuth, getToken, isExpired,
+  isUsable, refreshOnce,
+} from "../lib/authToken.js";
 
-function parseToken(auth) {
-  if (!auth || !auth.token) return null;
-  const parts = String(auth.token).split(".");
-  if (parts.length !== 3) return auth;
-  try {
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-    if (payload && typeof payload.exp === "number" && Date.now() / 1000 > payload.exp) {
-      return null;
-    }
-  } catch { /* invalid token */ }
-  return auth;
-}
-
+/** Bản ghi đăng nhập; `null` khi chưa đăng nhập HOẶC token đã hết hạn (như cũ). */
 export function loadAuth() {
-  try {
-    return parseToken(JSON.parse(localStorage.getItem(AUTH_KEY)));
-  } catch { return null; }
+  const auth = getAuth();
+  if (!auth?.token) return null;
+  return isExpired(auth.token) ? null : auth;
 }
 
-export function saveAuth(auth) { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); }
-export function clearAuth() { localStorage.removeItem(AUTH_KEY); }
+export function saveAuth(auth) { return setAuth(auth); }
+export function clearAuth() { clearTokenAuth(); }
+
+/**
+ * Đổi access token mới nhờ cookie refresh. Chỉ MỘT request chạy tại một thời điểm
+ * (single-flight trong authToken) và không bao giờ lặp lại vô hạn: thất bại là
+ * trả `null`, caller tự quyết (thử lại 1 lần rồi coi như phiên đã kết thúc).
+ */
+export async function refreshAccessToken() {
+  try {
+    return await refreshOnce(async () => {
+      const res = await fetchWithRetry(
+        `${API_BASE}/auth/refresh`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+          // Cookie chỉ đi kèm khi fetch bật credentials.
+          credentials: "include",
+        },
+        // Cold start (503) thì chờ; 401 nghĩa là token bị thu hồi → retry cũng vô ích.
+        2
+      );
+      if (!res.ok) return null;
+      return await res.json();
+    });
+  } catch {
+    return null; // mất mạng / backend chết — không ném để không phá luồng gọi
+  }
+}
+
+/**
+ * §4: chủ động refresh khi access token còn dưới 2 phút, thay vì chờ 401.
+ * Không có token (chưa đăng nhập) → không làm gì, không gọi API vô ích.
+ */
+export async function ensureFreshAccessToken() {
+  const token = getToken();
+  if (!token) return null;
+  if (isUsable(token)) return token;
+  return (await refreshAccessToken()) || token;
+}
 
 // Lặp lại khi backend đang cold-start (503 / lỗi mạng), tránh request đầu tiên chết.
 // `attempts` là TỔNG số lần thử (kể cả lần đầu) và luôn ≥ 1 — nếu để 0, vòng lặp
@@ -82,6 +117,9 @@ function buildSignal(options) {
 }
 
 export async function apiFetch(path, options = {}) {
+  // Token sắp hết hạn → đổi trước khi gửi, để request không chết giữa chừng.
+  if (!options._token && !path.startsWith("/auth/refresh")) await ensureFreshAccessToken();
+
   let auth;
   if (options._token) {
     auth = { token: options._token };
@@ -97,6 +135,9 @@ export async function apiFetch(path, options = {}) {
       ...(auth && auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
       ...(options.headers || {}),
     },
+    // Chỉ endpoint /auth/ mới cần cookie refresh; các API khác giữ nguyên như cũ
+    // để không bật credentials cho mọi origin một cách không cần thiết.
+    credentials: path.startsWith("/auth/") ? "include" : "omit",
     ...options,
     signal,
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -104,6 +145,7 @@ export async function apiFetch(path, options = {}) {
   delete init._token;
   delete init._withPagination;
   delete init._retries;
+  delete init._retried401;
   delete init.timeoutMs;
   const withPagination = options._withPagination;
   // `_retries` = SỐ LẦN THỬ LẠI (không tính lần đầu). Mặc định 4 → tổng 5 lần,
@@ -117,6 +159,12 @@ export async function apiFetch(path, options = {}) {
     detach?.();
   }
   if (res.status === 401 && !path.startsWith("/auth/")) {
+    // 401 thường là access token vừa kịp hết hạn: đổi một lần, thử lại đúng một lần.
+    // `_retried401` chắn vòng lặp refresh ⇄ 401 vô hạn (§4, §8).
+    if (!options._retried401) {
+      const fresh = await refreshAccessToken();
+      if (fresh) return apiFetch(path, { ...options, _token: fresh, _retried401: true });
+    }
     clearAuth();
     window.dispatchEvent(new Event("edu-auth-expired"));
   }
@@ -312,7 +360,18 @@ export const authService = {
   async me() {
     return apiFetch("/auth/me");
   },
-  logout() {
+  /** Access token mới từ cookie refresh (single-flight). null khi phiên đã kết thúc. */
+  async refresh() {
+    return refreshAccessToken();
+  },
+  /**
+   * Đăng xuất: xin server thu hồi refresh token + xoá cookie TRƯỚC khi xoá trạng
+   * thái trên máy này. Server không reachable thì vẫn phải kết thúc phiên ở client.
+   */
+  async logout() {
+    try {
+      await apiFetch("/auth/logout", { method: "POST", _retries: 0, timeoutMs: 8000 });
+    } catch { /* mất mạng — bỏ qua, dọn dẹp phía client vẫn chạy */ }
     clearAuth();
     window.dispatchEvent(new Event("edu-auth-expired"));
   },

@@ -4,7 +4,7 @@ import { authService, classService, API_BASE, notificationService, userService }
 import { getLevelProgress } from "../../lib/utils.js";
 import { getRoleLabel, hasPermission } from "../../config/roles.js";
 import { navigate } from "../../lib/router.js";
-import { GraduationCap, ChevronUp, Copy, Palette, Smartphone, Monitor, Apple, BellRing, BellOff, XCircle, AlertTriangle, Send, RefreshCw, Info, Share2, PlusSquare, MoreVertical, UserCheck
+import { GraduationCap, ChevronUp, Copy, Palette, Smartphone, Monitor, Apple, BellRing, BellOff, CircleX, TriangleAlert, Send, RefreshCw, Info, Share2, SquarePlus, EllipsisVertical, UserCheck
 } from "lucide-react";
 import DressUpAvatar, { DressUpAvatarSmall } from "../../components/avatar/DressUpAvatar.jsx";
 import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
@@ -353,7 +353,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               <p className="text-sm font-bold text-ink truncate">{fgToast.title}</p>
               <p className="text-xs text-ink/60 line-clamp-2">{fgToast.body}</p>
             </div>
-            <button onClick={() => setFgToast(null)} className="text-ink/40 hover:text-ink"><XCircle className="w-5 h-5" /></button>
+            <button onClick={() => setFgToast(null)} className="text-ink/40 hover:text-ink"><CircleX className="w-5 h-5" /></button>
           </div>
         </div>
       )}
@@ -603,7 +603,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               <div className="rounded-lg p-3 mb-3" style={{ background: "var(--bg)" }}>
                 {platformTab === "android" && (
                   <ol className="space-y-2 text-xs text-ink/70">
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span><span>Nhấn menu <MoreVertical className="w-3 h-3 inline mx-0.5" /> góc trên phải trình duyệt</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span><span>Nhấn menu <EllipsisVertical className="w-3 h-3 inline mx-0.5" /> góc trên phải trình duyệt</span></li>
                     <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</span><span>Chọn “Thêm vào Màn hình chính” / “Cài đặt ứng dụng”</span></li>
                     <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</span><span>Nhấn “Cài đặt” để xác nhận</span></li>
                   </ol>
@@ -617,7 +617,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                 )}
                 {platformTab === "desktop" && (
                   <ol className="space-y-2 text-xs text-ink/70">
-                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span><span>Tìm biểu tượng cài đặt <PlusSquare className="w-3 h-3 inline mx-0.5" /> trên thanh địa chỉ</span></li>
+                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span><span>Tìm biểu tượng cài đặt <SquarePlus className="w-3 h-3 inline mx-0.5" /> trên thanh địa chỉ</span></li>
                     <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</span><span>Nhấn “Cài đặt” trong popup</span></li>
                     <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</span><span>Hoặc: Menu ⋮ → “Cài đặt EduPlay…”</span></li>
                   </ol>
@@ -666,7 +666,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-600 border border-amber-200">
-                <AlertTriangle className="w-3 h-3" /> Chưa bật
+                <TriangleAlert className="w-3 h-3" /> Chưa bật
               </span>
             )}
           </div>

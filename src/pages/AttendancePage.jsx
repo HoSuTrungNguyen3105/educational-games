@@ -10,7 +10,7 @@ import { IconBack, IconCalendar, Loader } from '../components/ui/index.js';
 
 import { useState, useEffect } from 'react';
 import { navigate } from '../lib/router.js';
-import { UserCheck, AlertCircle } from 'lucide-react';
+import { UserCheck, CircleAlert } from 'lucide-react';
 import { AttendanceCalendar } from '../components/attendance/AttendanceCalendar.jsx';
 import { attendanceService } from '../services/attendanceService.js';
 import { hasPermission } from '../config/roles.js';
@@ -107,7 +107,7 @@ export default function AttendancePage({ userAuth, studentId = null }) {
       {/* Error message */}
       {error && (
         <div className="rounded-2xl p-4 bg-red-50 border border-red-200 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+          <CircleAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-bold text-red-700">Lỗi</p>
             <p className="text-xs text-red-600">{error}</p>

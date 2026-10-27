@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { assignmentService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Copy, Trophy, Clock, FileQuestion, Lock, Repeat, Link2 } from 'lucide-react';
+import { Copy, Trophy, Clock, FileQuestionMark, Lock, Repeat, Link2 } from 'lucide-react';
 import { ConfirmModal, IconBack, IconChart, IconCheck, IconEdit, IconUsers, SearchInput, ViewToggle, cardGridClass, tableWrapClass, useViewMode } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
@@ -161,7 +161,7 @@ export default function AssignmentDetail({ assignmentId }) {
         </InfoCard>
         <InfoCard label="Loại bài">
           <span className="text-sm font-body font-semibold text-ink flex items-center justify-center gap-1.5">
-            {assignment.isExam ? <Clock className="w-3.5 h-3.5 text-gold" /> : <FileQuestion className="w-3.5 h-3.5 text-gold" />}
+            {assignment.isExam ? <Clock className="w-3.5 h-3.5 text-gold" /> : <FileQuestionMark className="w-3.5 h-3.5 text-gold" />}
             {assignment.isExam ? `${assignment.examDuration} phút` : 'Bài tập'}
           </span>
         </InfoCard>

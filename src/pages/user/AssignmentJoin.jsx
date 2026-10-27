@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { assignmentService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { AlertCircle, LogIn, ChevronLeft } from 'lucide-react';
+import { CircleAlert, LogIn, ChevronLeft } from 'lucide-react';
 
 export default function AssignmentJoin() {
   const [code, setCode] = useState('');
@@ -47,7 +47,7 @@ export default function AssignmentJoin() {
         <div className="note-card p-6 space-y-4">
           {error && (
             <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-              <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+              <CircleAlert className="w-4 h-4 shrink-0" /> {error}
             </div>
           )}
 

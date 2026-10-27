@@ -8,6 +8,40 @@ export const config = {
   dbName: process.env.MONGODB_DB || "educational_games",
   jwtSecret: process.env.JWT_SECRET || "edu-games-dev-secret-change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+
+  // ── Refresh token ────────────────────────────────────────────────────────
+  // Access token: giới hạn ngắn (mặc định giữ "7d" = JWT_EXPIRES_IN cũ để KHÔNG
+  // làm hỏng các phiên đang chạy; muốn ngắn lại thì đặt JWT_EXPIRES_IN=15m —
+  // cơ chế silent refresh phía client đã sẵn, xem src/lib/authToken.js).
+  // Refresh token: sống dài hơn, chỉ nằm trong cookie HttpOnly + bản hash trong DB.
+  refreshSecret: process.env.REFRESH_SECRET || process.env.JWT_SECRET || "edu-games-dev-secret-change-me",
+  refreshExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "30d",
+  refreshCookieName: process.env.REFRESH_COOKIE_NAME || "edu_refresh",
+  // Cookie chỉ đường dẫn này để trình duyệt không gửi nó cho mọi endpoint /api.
+  refreshCookiePath: "/api/auth",
+  // `none` = frontend và API khác site (github.io ↔ onrender.com) ⇒ bắt buộc Secure.
+  refreshCookieSameSite: (process.env.REFRESH_COOKIE_SAMESITE || "").toLowerCase(),
+  refreshCookieSecure: process.env.REFRESH_COOKIE_SECURE || "",
+
+  // Origin được phép gọi /api/auth/refresh (so khớp tuyệt đối scheme+host+port).
+  // Thiếu cấu hình ⇒ chỉ dev localhost, KHÔNG mở toang. Domain production thật
+  // phải khai báo: REFRESH_ALLOWED_ORIGINS=https://domain-cua-ban.com
+  refreshAllowedOrigins: (
+    process.env.REFRESH_ALLOWED_ORIGINS ||
+    [
+      "http://localhost:5173",
+      "http://localhost:4173",
+      "https://ho-nguyen.github.io",
+    ].join(",")
+  )
+    .split(",")
+    .map((s) => s.trim().replace(/\/+$/, ""))
+    .filter(Boolean),
+  // Client không phải trình duyệt (curl, test script) thường không gửi Origin.
+  // Mặc định TỪ CHỐI; chỉ bật khi backend cần cho machine client.
+  refreshAllowNoOrigin: process.env.REFRESH_ALLOW_NO_ORIGIN === "true",
+
+  // ── Socket.IO ────────────────────────────────────────────────────────────
   // Danh sách origin cho phép kết nối Socket.IO (phân tách bằng dấu phẩy).
   // Mặc định bật CORS mọi origin — hạn chế bằng SOCKET_CORS_ORIGINS khi deploy.
   socketCorsOrigins: (process.env.SOCKET_CORS_ORIGINS || "")
