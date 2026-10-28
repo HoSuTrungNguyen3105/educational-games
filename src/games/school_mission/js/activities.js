@@ -17,10 +17,12 @@ function quiz(type, opts = {}) {
         if (n >= N) {
             const c = ok * T.coinsPerCorrect, x = ok * T.xpPerCorrect;
             gain(c, x);
+            const bonus = scoreBonus(ok, N, "lesson:" + type);
             modal(`
                 <h2>${d.title}</h2>
                 <div class="q">Đúng ${ok}/${N} câu 🎯</div>
                 <p>+${c} 🪙 &nbsp; +${x} XP</p>
+                ${bonus ? `<p style="color:#0a7d3c;font-weight:800">${bonus}</p>` : ""}
                 <button class="btn" id="a1">Học tiếp</button> 
                 <button class="btn" id="a2" style="background:#ddd;box-shadow:0 3px 0 #aaa">Xong</button>
             `);
@@ -78,10 +80,13 @@ function readBook() {
         if (n >= N) {
             const c = ok * 3, x = ok * 4;
             gain(c, x);
+            prog("read");
+            const bonus = scoreBonus(ok, N, "read");
             modal(`
                 <h2>📚 Đọc sách vui vẻ</h2>
                 <div class="q">Đúng ${ok}/${N} câu 🎯</div>
                 <p>+${c} 🪙 &nbsp; +${x} XP — Đọc sách mỗi ngày nhé!</p>
+                ${bonus ? `<p style="color:#0a7d3c;font-weight:800">${bonus}</p>` : ""}
                 <button class="btn" id="b3" style="background:#ddd;box-shadow:0 3px 0 #aaa">Đóng</button>
             `);
             $("b3").onclick = close_;
@@ -162,6 +167,10 @@ function runExam(e, opts = {}) {
             msg = `🎁 Thưởng lần đầu đạt: +${w.coins || 0}🪙 +${w.gems || 0}💎 +${w.xp || 0}XP`;
         }
 
+        // Điểm cao (≥80%) → coin thật vào ví; cộng luôn tiến độ nhiệm vụ thi cử.
+        const bonus = scoreBonus(ok, qs.length, "exam:" + e.id);
+        if (pc >= 80) prog("exam");
+
         r.best = Math.max(r.best, pc);
         r.pass = r.pass || pass;
         S.exam[e.id] = r;
@@ -172,6 +181,7 @@ function runExam(e, opts = {}) {
             <h2>${e.title}</h2>
             <div class="q">${ok}/${qs.length} câu • ${pc}% ${pass ? "🎉 ĐẠT" : "😢 Chưa đạt"}</div>
             <p>${msg || (pass ? "" : "Cần đạt " + pp + "% — cố lên!")}</p>
+            ${bonus ? `<p style="color:#0a7d3c;font-weight:800">${bonus}</p>` : ""}
             <button class="btn" id="b3" style="background:#ddd;box-shadow:0 3px 0 #aaa">Đóng</button>
         `);
 

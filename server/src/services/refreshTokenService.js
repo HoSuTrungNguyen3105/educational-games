@@ -205,10 +205,38 @@ export async function rotateRefreshToken(raw) {
     throw err;
   }
 
-  const refreshRaw = await issueRefreshToken(user, { familyId: row.familyId });
+  /* Chiếu token CŨ thành rotated TRƯỚC khi cấp token mới, bằng một thao tác
+   * findOneAndUpdate có điều kiện. Nếu không, hai request refresh đồng thời (2 tab,
+   * hoặc client retry) đều thấy status:"active" → cả hai xoay vòng → token mới bị
+   * đè và một phía mất phiên. Không chiếm được vé = có người đã dùng token này. */
+  const claimed = await col.findOneAndUpdate(
+    { _id: row._id, status: "active" },
+    { $set: { status: "rotated", updatedAt: new Date() } },
+    { returnDocument: "after" }
+  );
+  if (!claimed) {
+    await revokeFamily(row.familyId, "reuse_detected");
+    const err = new Error("Refresh token đã bị thu hồi");
+    err.code = "reuse_detected";
+    throw err;
+  }
+
+  let refreshRaw;
+  try {
+    refreshRaw = await issueRefreshToken(user, { familyId: row.familyId });
+  } catch (e) {
+    // Cấp token mới lỗi → trả token cũ về active, không bắt user đăng nhập lại
+    // vì một sự cố phía server.
+    await col.updateOne(
+      { _id: row._id, status: "rotated" },
+      { $set: { status: "active", updatedAt: new Date() } }
+    );
+    throw e;
+  }
+
   await col.updateOne(
-    { id: row.id },
-    { $set: { status: "rotated", rotatedToId: refreshJtiFromToken(refreshRaw), updatedAt: new Date() } }
+    { _id: row._id },
+    { $set: { status: "rotated", rotatedToId: refreshJtiFromToken(refreshRaw) } }
   );
 
   return { token: signToken(user), refreshRaw, userId: user.id };

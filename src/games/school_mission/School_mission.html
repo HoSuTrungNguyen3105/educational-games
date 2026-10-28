@@ -4,6 +4,7 @@
 <title>Trường Vui Vẻ</title>
 <link rel="stylesheet" href="css/style.css">
 </head><body>
+<div id="gl"></div>
 <canvas id="c"></canvas>
 <div class="pill" id="lv"><span id="lvt"></span><div id="bar"><i></i></div></div>
 <div class="pill" id="cur"><span id="coin"></span><span id="gem"></span></div>
@@ -36,9 +37,12 @@
 <script src="js/world.js"></script>
 <script src="js/input.js"></script>
 <script src="js/characters.js"></script>
-<script src="js/avatar.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/scenes.js"></script>
+<!-- Thư viện 3D (như Leo Tháp Mây). Không tải được => js/world3d.js trả null
+     và js/render.js tự chuyển về lối vẽ 2D cũ, game vẫn chơi được. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/world3d.js"></script>
 <script src="js/render.js"></script>
 <script src="js/main.js"></script>
 </body></html>

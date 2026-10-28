@@ -204,6 +204,29 @@ async function main() {
   const legacyMe = await fetch(`${BASE}/auth/me`, { headers: { Authorization: `Bearer ${legacy}` } });
   check("Token cũ không có type → vẫn hợp lệ (không làm hỏng phiên đang chạy)", legacyMe.status === 200, String(legacyMe.status));
 
+  // ── 9. Refresh token HẾT HẠN và ký sai secret → từ chối (§9) ──
+  const now = Math.floor(Date.now() / 1000);
+  const expiredRt = signJwt({ sub: testUser.id, jti: "rft-expired", fid: "fam-expired", type: "refresh", iat: now - 7200, exp: now - 60 }, config.refreshSecret);
+  const expiredRes = await fetch(`${BASE}/auth/refresh`, { method: "POST", headers: { "Content-Type": "application/json", Origin: OK_ORIGIN, Cookie: `edu_refresh=${expiredRt}` }, body: "{}" });
+  check("Refresh token hết hạn → 401, không cấp token", expiredRes.status === 401 && !(await expiredRes.json()).Authorization, String(expiredRes.status));
+
+  const wrongSecretRt = signJwt({ sub: testUser.id, jti: "rft-fake", fid: "fam-fake", type: "refresh", iat: now, exp: now + 3600 }, "day-gian-se-khong-bao-gio-dung");
+  const wrongSecretRes = await fetch(`${BASE}/auth/refresh`, { method: "POST", headers: { "Content-Type": "application/json", Origin: OK_ORIGIN, Cookie: `edu_refresh=${wrongSecretRt}` }, body: "{}" });
+  check("Refresh token ký bằng secret lạ → 401", wrongSecretRes.status === 401, String(wrongSecretRes.status));
+
+  // ── 10. Hai request refresh ĐỒNG THỜI bằng cùng một token: một thành công, một
+  // bị coi là dùng lại và cả family bị thu hồi (§4 chống trộm cookie). ──
+  const login3 = await fetch(`${BASE}/auth/login`, {
+    method: "POST", headers: { "Content-Type": "application/json", Origin: OK_ORIGIN },
+    body: JSON.stringify({ username: USER.username, password: USER.password }),
+  });
+  const cki3 = cookieOf(login3.headers.getSetCookie(), "edu_refresh")?.value;
+  const race = await Promise.all(Array.from({ length: 6 }, () => fetch(`${BASE}/auth/refresh`, {
+    method: "POST", headers: { "Content-Type": "application/json", Origin: OK_ORIGIN, Cookie: `edu_refresh=${cki3}` }, body: "{}",
+  }).then(async (r) => ({ s: r.status, tok: r.headers.get("authorization") || (await r.json().catch(() => null))?.Authorization }))));
+  const okOnes = race.filter((r) => r.s === 200 && r.tok).length;
+  check("2 refresh đồng thời bằng cùng token → chỉ 1 lần cấp token mới", okOnes === 1, JSON.stringify(race.map((r) => r.s)));
+
   server.close();
   await getCollection("refresh_tokens").deleteMany({ userId: testUser.id });
   await getCollection("users").deleteOne({ _id: testUser._id });
@@ -212,6 +235,8 @@ async function main() {
   const failed = results.filter((r) => !r.pass);
   console.log(`\n=== ${results.length - failed.length}/${results.length} đạt ===`);
   if (failed.length) { console.log("CHƯA ĐẠT:"); failed.forEach((f) => console.log(" - " + f.name + " — " + f.detail)); process.exit(1); }
+  // ReminderScheduler + socket giữ event loop sống → phải thoát cưỡng bức sau khi đã close db.
+  process.exit(0);
 }
 
 main().catch((e) => { console.error("Lỗi script:", e); process.exit(1); });

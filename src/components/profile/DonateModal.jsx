@@ -1,6 +1,6 @@
 import { IconCheck } from '../ui/index.js';
 /**
- * DonateModal.jsx — Ứng hộ cho web.
+ * DonateModal.jsx — Ủng hộ cho web.
  *
  *   Bước 1  Giải câu đố phép tính (khó hơn) — sai thì báo và không qua được.
  *   Bước 2  Giải đúng hết → hiện mã QR + thông tin ngân hàng để chuyển khoản.
@@ -62,7 +62,7 @@ export default function DonateModal({ onClose }) {
           <div className="flex items-center gap-2 text-white">
             <Heart className="w-5 h-5" fill="currentColor" />
             <div>
-              <p className="font-display font-extrabold leading-tight">Ứng hộ cho web</p>
+              <p className="font-display font-extrabold leading-tight">Ủng hộ cho web</p>
               <p className="text-[11px] opacity-90">
                 {step === "quiz" ? "Giải đúng để xem mã QR nhé bé!" : "Cảm ơn bé đã giúp!"}
               </p>

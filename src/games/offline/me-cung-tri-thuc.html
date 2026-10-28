@@ -131,7 +131,10 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 const $=s=>document.querySelector(s),M=Math,R=M.random,rnd=(a,b)=>a+R()*(b-a),ri=(a,b)=>M.floor(rnd(a,b+1)),clamp=(v,a,b)=>v<a?a:v>b?b:v,TAU=M.PI*2,pick=a=>a[ri(0,a.length-1)];
 const view=$('#view'),vc=view.getContext('2d'),fxc=$('#fx'),fx=fxc.getContext('2d'),mini=$('#mini'),mc=mini.getContext('2d');
 let RW,RH,u,img,buf,zb;const PL=.72,CAM={};
-function rs(){RW=M.min(240,innerWidth);RH=M.round(RW*innerHeight/innerWidth);view.width=RW;view.height=RH;const D=1;fxc.width=innerWidth*D;fxc.height=innerHeight*D;u=M.min(fxc.width,fxc.height)/360;img=vc.createImageData(RW,RH);buf=new Uint32Array(img.data.buffer);zb=new Float32Array(RW)}
+/* innerWidth/innerHeight = 0 khi iframe chưa có layout → RH=NaN, createImageData
+ * ném lỗi chết cả script, nút chơi kẹt mãi ở "Đang tải câu hỏi…". Giữ size tối
+ * thiểu để boot luôn chạy được; rs() chỉnh lại đúng tỉ lệ khi có resize. */
+function rs(){const W=M.max(innerWidth|0,160),H=M.max(innerHeight|0,160);RW=clamp(M.min(240,W),64,240);RH=clamp(M.round(RW*H/W),60,2000);view.width=RW;view.height=RH;const D=1;fxc.width=W*D;fxc.height=H*D;u=M.min(fxc.width,fxc.height)/360;img=vc.createImageData(RW,RH);buf=new Uint32Array(img.data.buffer);zb=new Float32Array(RW)}
 addEventListener('resize',rs);rs();
 /* ---- âm thanh ---- */
 let mute=0,AC=null;function ac(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}AC&&AC.state==='suspended'&&AC.resume()}

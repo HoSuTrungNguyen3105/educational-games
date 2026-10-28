@@ -1,5 +1,9 @@
 // ===== RENDER: camera, sắp xếp lớp vẽ, hiệu ứng viền tối, chuyển cảnh =====
-function draw() {
+function draw(dt) {
+    // Thế giới 3D (js/world3d.js) — nếu ba.js/WebGL không dùng được thì W3 = null
+    // và phần dưới đây vẽ lại toàn bộ game bằng 2D như bản cũ.
+    if (W3) { W3.frame(dt); W3.overlay(); return; }
+
     // 1. Cài đặt tỷ lệ và kích thước màn hình
     const z = Math.max(0.8, Math.min(1.4, H / 560));
     const [WW, WH] = D[sc]; // Lấy kích thước thế giới hiện tại (World Width, World Height)
@@ -47,10 +51,11 @@ function draw() {
         )
     }));
     
-    // Thêm nhân vật chính (Bạn) vào danh sách vẽ
+    // Thêm nhân vật chính (Bạn) vào danh sách vẽ — tạo hình của game: màu áo +
+    // mũ bé mua trong Cửa hàng, tên lấy từ tài khoản đang đăng nhập.
     L.push({
         y: me.y,
-        f: () => drawPlayer()
+        f: () => chr(me.x, me.y, S.col, S.hat, playerName, me.t, null, me.mv)
     });
     
     // Sắp xếp từ trên xuống dưới và vẽ

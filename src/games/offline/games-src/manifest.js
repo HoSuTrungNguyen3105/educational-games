@@ -54,6 +54,10 @@ export const OFFLINE_GAME_MANIFEST = [
   { id: 'me-cung-tri-thuc', name: 'Mê Cung Tri Thức', icon: '🏰', tag: 'Mê cung', grad: 'from-amber-400 to-yellow-500', engine: 'standalone', file: 'src/games/offline/me-cung-tri-thuc.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   // Nguồn: src/games/parkour/thap-may.html (three.js qua CDN, giống nhay-xoay).
   { id: 'leo-thap-may', name: 'Leo Tháp Mây', icon: '☁️', tag: 'Leo tháp 3D', grad: 'from-sky-400 to-cyan-600', engine: 'standalone', file: 'src/games/offline/leo-thap-may.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  // Nguồn: src/games/parkour/mecung-moi.html — mê cung đi tìm cổng câu hỏi, có hồ sơ
+  // riêng cho từng bạn + bảng xếp hạng. Trong game vẫn ghi tiêu đề "Mê Cung Tri Thức"
+  // nhưng để không trùng ô với me-cung-tri-thuc (bản có chiến đấu) nên đặt tên theo lối chơi.
+  { id: 'me-cung-kham-pha', name: 'Mê Cung Khám Phá', icon: '🌀', tag: 'Mê cung 3D', grad: 'from-indigo-400 to-violet-600', engine: 'standalone', file: 'src/games/offline/me-cung-kham-pha.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
 
   // School_mission KHÔNG thuộc offline — xem route /school-mission và src/games/school_mission/
 ];

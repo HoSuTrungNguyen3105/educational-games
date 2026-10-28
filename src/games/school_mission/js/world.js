@@ -5,7 +5,7 @@
    climb : trạng thái leo cầu thang */
 let PEND=null,_pendCd=0,_doneKeys={},zin={},climb=null;
 
-function go(s,x,y,r){sc=s;me.x=x;me.y=y;if(r)rk=r;fade=1;zin={};npcClose();if(s=="room")toast("Chào mừng đến "+RM[rk].n+"!")}
+function go(s,x,y,r){sc=s;me.x=x;me.y=y;if(r)rk=r;fade=1;zin={};npcClose();if(s=="room")toast("Chào mừng đến "+RM[rk].n+"!");if(W3)W3.enter()}
 
 /* Vùng TỰ KÍCH HOẠT: đi vào vùng là chạy ngay — KHÔNG có nút bấm.
    Vào cửa trường/cửa lớp/cầu thang hay bước vào nhà đều tự mở. */
@@ -47,13 +47,17 @@ function upd(dt){tt+=dt;if(fade>0)fade=Math.max(0,fade-dt*2.5);
  if(_pendCd>0)_pendCd-=dt;
 
  /* Leo cầu thang: khoá điều khiển, di chuyển lên đến khi hết bậc thì đổi cảnh */
- if(climb){climb.t+=dt;me.y-=150*dt;me.mv=1;me.t+=dt*12;
+ if(climb){climb.t+=dt;me.y-=150*dt;me.mv=1;me.t+=dt*12;me.dx=0;me.dy=-1;
   if(climb.t>=1.05){const d=climb.dir;climb=null;if(d>0)go("hall2",120,320);else go("hall",DX.math,300)}
   tickSchedule();return}
 
  const[WW,WH]=D[sc];
  if(!open_&&fade<.6){let dx=jx+((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0),dy=jy+((keys.s||keys.arrowdown)?1:0)-((keys.w||keys.arrowup)?1:0);const m=Math.hypot(dx,dy);if(m>1){dx/=m;dy/=m}
-  const sp=190*dt,nx=me.x+dx*sp,ny=me.y+dy*sp;if(!blocked(nx,me.y))me.x=Math.max(25,Math.min(WW-25,nx));if(!blocked(me.x,ny))me.y=Math.max(40,Math.min(WH-15,ny));me.mv=Math.min(1,m);if(m>.1)me.t+=dt*12}else me.mv=0;
+  /* 3D: cần câu/phiếm tính theo màn hình, phải xoay theo hướng máy quay để
+     "đẩy lên" luôn là đi ra phía trước nhân vật. */
+  if(W3){const a=W3.yaw(),c=Math.cos(a),s=Math.sin(a),rx=dx*c+dy*s,ry=-dx*s+dy*c;dx=rx;dy=ry}
+  me.dx=dx;me.dy=dy;
+  const sp=190*dt,nx=me.x+dx*sp,ny=me.y+dy*sp;if(!blocked(nx,me.y))me.x=Math.max(25,Math.min(WW-25,nx));if(!blocked(me.x,ny))me.y=Math.max(40,Math.min(WH-15,ny));me.mv=Math.min(1,m);if(m>.1)me.t+=dt*12}else {me.mv=0;me.dx=me.dy=0}
  S.en=Math.min(100,S.en+dt/3);
  npcs.forEach(n=>{n.t-=dt;if(n.t<0){n.tx=n.b[0]+Math.random()*(n.b[2]-n.b[0]);n.ty=n.b[1]+Math.random()*(n.b[3]-n.b[1]);n.t=3+Math.random()*5}const d=Math.hypot(n.tx-n.x,n.ty-n.y);n.mv=d>6?1:0;if(d>6){n.x+=(n.tx-n.x)/d*60*dt;n.y+=(n.ty-n.y)/d*60*dt}if(n.say>0)n.say-=dt;else if(!chatN&&n.sc==sc&&Math.hypot(n.x-me.x,n.y-me.y)<110&&Math.random()<.01)n.say=2.5});
  ft=ft.filter(f=>(f.t-=dt)>0);
@@ -125,7 +129,7 @@ function updChat(dt){
  if(best&&bd<95&&!(chatCd[best.n]>0)){chatT+=dt;if(chatT>.7)npcOpen(best)}else chatT=0;
 }
 function npcOpen(n){
- chatN=n;chatT=0;chatCd[n.n]=25;n.say=0;
+ chatN=n;chatT=0;chatCd[n.n]=25;n.say=0;prog("chat");
  $("npcav").textContent=n.h||"🙂";
  $("npcname").textContent=n.n;
  $("npcmsg").textContent="Chào mình là "+n.n+"! Cậu muốn nói gì nào? 😊";

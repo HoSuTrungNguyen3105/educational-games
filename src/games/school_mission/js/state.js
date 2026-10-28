@@ -5,3 +5,5 @@ S.exam=S.exam||{};function save(){S._updated=Date.now();try{localStorage.setItem
 const D={out:[1800,1100],hall:[1700,420],hall2:[1700,420],room:[1000,600]};
 let sc="out",rk="math",fade=0,open_=false,tt=0,ft=[],flowers=[],ftime=0;
 const me={x:900,y:560,mv:0,t:0};
+// Tên dán trên đầu nhân vật của bé — do app gửi vào (window.__SCHOOL_INIT__.playerName)
+var playerName="Bạn";

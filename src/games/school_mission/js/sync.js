@@ -74,9 +74,7 @@ function applySavedSchoolState(remote) {
 function initSchoolSync() {
     var init = window.__SCHOOL_INIT__ || {};
 
-    setPlayerName(init.playerName);
-    if (init.avatarSvg) setPlayerAvatar(init.avatarSvg, init.avatarViewBox);
-    else loadCachedPlayerAvatar();
+    playerName = init.playerName || "Bạn";
 
     var remote = init.savedState;
     var mergedRemote = applySavedSchoolState(remote);
@@ -85,9 +83,17 @@ function initSchoolSync() {
         var msg = event && event.data;
         if (!msg || typeof msg !== "object") return;
 
-        if (msg.type === "school-avatar" && msg.data) {
-            setPlayerName(msg.data.playerName);
-            if (msg.data.avatarSvg) setPlayerAvatar(msg.data.avatarSvg, msg.data.avatarViewBox);
+        if (msg.type === "school-name" && msg.data) {
+            playerName = msg.data.playerName || "Bạn";
+        }
+
+        // Trang cha báo lại kết quả cộng coin thật (src/lib/schoolMissionRewards.js)
+        if (msg.type === "school-coin-result" && msg.data) {
+            var r = msg.data;
+            if (r.granted) toast("💰 Đã cộng " + r.amount + " 🪙 vào ví của bạn!");
+            else if (r.code === "cap") toast("💰 Hết lượt thưởng hôm nay (trần " + r.cap + " 🪙/ngày) — mai chơi tiếp nhé!");
+            else if (r.code === "noauth") toast("💰 Đăng nhập để nhận coin thật nhé!");
+            else toast("💰 Chưa cộng được coin — cần kết nối mạng!");
         }
     });
 

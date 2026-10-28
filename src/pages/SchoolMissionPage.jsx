@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate } from "../lib/router.js";
 import { useUserAuthStore } from "../stores/userAuth.store.js";
-import { authService, gameProgressService, examResultService } from "../services/api.js";
-import { renderDressUpSvg, resolveOutfit } from "../lib/dressUpAvatar.js";
+import { gameProgressService, examResultService } from "../services/api.js";
 import {
   flushSchoolMissionSave,
   queueSchoolMissionSave,
   startSchoolMissionSync,
 } from "../lib/schoolMissionSync.js";
+import { grantSchoolCoinReward } from "../lib/schoolMissionRewards.js";
 import schoolMissionHtml from "../games/school_mission/School_mission.html?raw";
 import { SCHOOL_MISSION_CONFIG } from "../games/school_mission/config.js";
 
 const GAME_ID = "school-mission";
-const AVATAR_VIEWBOX = "0 0 512 700";
 
 /** Thứ tự nạp script y hệt School_mission.html (file sau dùng biến file trước). */
 const SCRIPT_ORDER = [
@@ -30,9 +29,9 @@ const SCRIPT_ORDER = [
   "js/world.js",
   "js/input.js",
   "js/characters.js",
-  "js/avatar.js",
   "js/sync.js",
   "js/scenes.js",
+  "js/world3d.js",
   "js/render.js",
   "js/main.js",
 ];
@@ -92,22 +91,12 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-function avatarFromProfile(profile) {
-  try {
-    const outfit = resolveOutfit(profile?.avatar, profile?.pet);
-    const svg = renderDressUpSvg("avatar", outfit.avatar.value);
-    if (!svg) return { avatarSvg: "", avatarViewBox: AVATAR_VIEWBOX };
-    const viewBox = svg.match(/viewBox="([^"]+)"/i)?.[1] || AVATAR_VIEWBOX;
-    const inner = svg.replace(/^<svg[^>]*>/i, "").replace(/<\/svg>\s*$/i, "");
-    return { avatarSvg: inner, avatarViewBox: viewBox };
-  } catch {
-    return { avatarSvg: "", avatarViewBox: AVATAR_VIEWBOX };
-  }
-}
-
 /**
  * Game nhập vai trường học — tải School_mission.html, nhúng script/CSS, tiêm
- * config + avatar trong hồ sơ + tiến độ đã lưu trên API.
+ * config + tên tài khoản + tiến độ đã lưu trên API.
+ *
+ * Nhân vật của bé là tạo hình của chính game (màu áo + mũ mua trong Cửa hàng),
+ * không dùng avatar SVG trong hồ sơ nữa.
  *
  * Game gửi `{ type: "school-save", data }` mỗi khi state đổi. Trang này ghi
  * vào hàng đợi (localStorage) rồi gửi API; mất mạng thì giữ lại và tự gửi khi
@@ -125,26 +114,19 @@ export default function SchoolMissionPage() {
 
     (async () => {
       const online = typeof navigator === "undefined" || navigator.onLine !== false;
-      let profile = null;
       let savedState = null;
 
       if (token && online) {
-        const [meResult, progressResult] = await Promise.allSettled([
-          withTimeout(authService.me(), 2500),
-          withTimeout(gameProgressService.getGame(GAME_ID), 2500),
-        ]);
-        if (meResult.status === "fulfilled") profile = meResult.value;
-        if (progressResult.status === "fulfilled") {
-          savedState = progressResult.value?.gameState || null;
+        try {
+          const progress = await withTimeout(gameProgressService.getGame(GAME_ID), 2500);
+          savedState = progress?.gameState || null;
+        } catch {
+          /* chưa đăng nhập tiến độ / mất mạng — chơi từ bản localStorage */
         }
       }
 
       if (cancelled) return;
-      setBoot({
-        ...avatarFromProfile(profile),
-        savedState,
-        playerName,
-      });
+      setBoot({ savedState, playerName });
     })();
 
     return () => {
@@ -174,6 +156,12 @@ export default function SchoolMissionPage() {
         if (token && msg.data) {
           examResultService.create({ gameId: GAME_ID, ...msg.data }).catch(() => {});
         }
+      } else if (msg.type === "school-coin") {
+        // Xong nhiệm vụ / làm bài điểm cao → coin thật vào ví, có trần mỗi ngày.
+        // Kết quả gửi lại để game báo đúng cho bé (chưa đăng nhập, hết lượt…).
+        grantSchoolCoinReward(msg.data?.amount, msg.data?.reason).then((result) => {
+          iframeRef.current?.contentWindow?.postMessage({ type: "school-coin-result", data: result }, "*");
+        });
       }
     };
 
