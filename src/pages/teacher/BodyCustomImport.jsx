@@ -55,6 +55,7 @@ export default function BodyCustomImport({ showToast }) {
     copyValue: preset.code,
     overlays: preset.overlays,
     selfClothed: preset.selfClothed,
+    slots: preset.slots,
   }));
 
   const copy = useCallback(async (value) => {
@@ -72,7 +73,7 @@ export default function BodyCustomImport({ showToast }) {
     <div className="space-y-4">
       <ManagementHeader subtitle="Thân và các lớp phụ kiện của avatar" title="Thân Avatar" />
 
-      <div className="note-card p-4 text-xs text-ink/70 leading-relaxed">
+      {/* <div className="note-card p-4 text-xs text-ink/70 leading-relaxed">
         <p>
           Avatar dùng chung dữ liệu với modal <strong>Tùy chỉnh Avatar</strong> ở trang hồ sơ:
           thân, mặt, tóc, màu tóc, da, áo, váy, quần, giày, kính, mũ và phụ kiện đều là các lớp riêng.
@@ -82,7 +83,7 @@ export default function BodyCustomImport({ showToast }) {
           Dữ liệu nằm trong mã frontend: <code className="font-mono text-[11px] bg-ink/5 px-1 rounded">{DATA_FILE}</code>.
           Không lưu trong database và không cần gọi server.
         </p>
-      </div>
+      </div> */}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {previews.map((preview) => (

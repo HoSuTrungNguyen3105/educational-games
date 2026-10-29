@@ -13,17 +13,17 @@ export default defineConfig({
       closeBundle() {
         const folders = ['dist/farmgame', 'dist/games', 'dist/src/games'];
         folders.forEach(f => {
-          const p = path.resolve(__dirname, f);
+          const p = path.resolve(import.meta.dirname, f);
           if (fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });
         });
 
         // import.meta.glob('public/*') bản sao ảnh vào dist/assets kèm hash,
         // trong khi src/lib/gameThumbnail.js luôn trỏ về bản gốc ở gốc dist
         // (public/). Xóa bản sao để không tải trùng ~2MB ảnh.
-        const assets = path.resolve(__dirname, 'dist/assets');
+        const assets = path.resolve(import.meta.dirname, 'dist/assets');
         if (fs.existsSync(assets)) {
           const publicNames = new Set(
-            fs.readdirSync(path.resolve(__dirname, 'public')).filter(f => /\.(png|webp|jpe?g|svg)$/i.test(f))
+            fs.readdirSync(path.resolve(import.meta.dirname, 'public')).filter(f => /\.(png|webp|jpe?g|svg)$/i.test(f))
           );
           for (const f of fs.readdirSync(assets)) {
             const match = f.match(/^(.+)-[A-Za-z0-9_-]{8}\.(png|webp|jpe?g|svg)$/i);
