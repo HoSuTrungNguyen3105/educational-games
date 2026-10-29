@@ -194,12 +194,12 @@ export default function DailyTaskManagement({ showToast }) {
             <div>
               <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-2">Icon</label>
               <div className="flex flex-wrap gap-2">
-                {TASK_ICONS.map((icon) => (
+                {/* {TASK_ICONS.map((icon) => (
                   <button key={icon} onClick={() => setForm({ ...form, icon })}
                     className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg border transition ${form.icon === icon ? "border-ticket bg-ticket/10 scale-110" : "border-ink/10 bg-paper hover:border-ink/25"}`}>
                     {icon}
                   </button>
-                ))}
+                ))} */}
               </div>
             </div>
 

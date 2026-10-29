@@ -75,45 +75,72 @@ export default function AssignmentList() {
         <div className="space-y-3">
           {assignments.map(a => (
             <div key={a.id} className="note-card p-4 flex items-center gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-display text-sm text-ink truncate">{a.title}</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-body font-semibold ${a.status === 'ACTIVE' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>
-                    {a.status === 'ACTIVE' ? 'Đang mở' : 'Đã đóng'}
-                  </span>
-                  {a.isExam && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-body font-semibold bg-blue-100 text-blue-600">
-                      Bài thi
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 mt-1 text-xs font-body text-ink/40">
-                  <span>{classes[a.classId] || a.classId}</span>
-                  <span>•</span>
-                  <span>{templateLabel(a.templateId)}</span>
-                  <span>•</span>
-                  <span className="font-mono text-gold">{a.code}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button onClick={() => copyLink(a)}
-                  className={`p-2 rounded-lg hover:bg-ink/5 transition ${copiedKey === a.id ? 'text-green-500' : 'text-ink/40 hover:text-gold'}`}
-                  title="Copy link bài tập">
-                  {copiedKey === a.id ? <IconCheckCircle className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-                </button>
-                <button onClick={() => navigate(`/admin/assignments/${a.id}`)}
-                  className="p-2 rounded-lg hover:bg-ink/5 transition text-ink/40 hover:text-gold">
-                  <Eye className="w-4 h-4" />
-                </button>
-                {a.status === 'ACTIVE' && (
-                  <button onClick={() => handleClose(a)}
-                    className="p-2 rounded-lg hover:bg-red-50 transition text-ink/30 hover:text-red-500"
-                    title="Đóng bài tập">
-                    <CircleX className="w-4 h-4" />
-                  </button>
-                )}
+  {/* Thông tin bài tập */}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display text-sm text-ink truncate">
+                {a.title}
+              </h3>
+
+              <div className="flex items-center gap-3 mt-1 text-xs font-body text-ink/40">
+                <span>{classes[a.classId] || a.classId}</span>
+                <span>•</span>
+                <span>{templateLabel(a.templateId)}</span>
+                <span>•</span>
+                <span className="font-mono text-gold">{a.code}</span>
               </div>
             </div>
+
+            {/* Badge và các nút action nằm cùng hàng */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-body font-semibold ${
+                  a.status === 'ACTIVE'
+                    ? 'bg-green-100 text-green-600'
+                    : 'bg-red-100 text-red-500'
+                }`}
+              >
+                {a.status === 'ACTIVE' ? 'Đang mở' : 'Đã đóng'}
+              </span>
+
+              {a.isExam && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-body font-semibold bg-blue-100 text-blue-600">
+                  Bài thi
+                </span>
+              )}
+
+              <button
+                onClick={() => copyLink(a)}
+                className={`p-2 rounded-lg hover:bg-ink/5 transition ${
+                  copiedKey === a.id
+                    ? 'text-green-500'
+                    : 'text-ink/40 hover:text-gold'
+                }`}
+                title="Copy link bài tập"
+              >
+                {copiedKey === a.id
+                  ? <IconCheckCircle className="w-4 h-4" />
+                  : <Link2 className="w-4 h-4" />}
+              </button>
+
+              <button
+                onClick={() => navigate(`/admin/assignments/${a.id}`)}
+                className="p-2 rounded-lg hover:bg-ink/5 transition text-ink/40 hover:text-gold"
+                title="Xem bài tập"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+
+              {a.status === 'ACTIVE' && (
+                <button
+                  onClick={() => handleClose(a)}
+                  className="p-2 rounded-lg hover:bg-red-50 transition text-ink/30 hover:text-red-500"
+                  title="Đóng bài tập"
+                >
+                  <CircleX className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
           ))}
         </div>
       )}

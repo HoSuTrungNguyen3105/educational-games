@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isReady } from "./db.js";
+import { permissionFilter } from "./middleware/permission.js";
 import { sendSuccess, sendError } from "./utils/response.js";
 
 import gamesRouter from "./routes/games.js";
@@ -76,6 +77,10 @@ app.use("/api", (_req, res, next) => {
   if (isReady()) return next();
   sendError(res, "Server đang khởi động, vui lòng thử lại", 503);
 });
+
+// Bước lọc thứ hai: vai trò của token phải mang quyền tương ứng với đường dẫn
+// (đúng mảng `permissions` trong GET /api/auth/me) — xem middleware/permission.js.
+app.use("/api", permissionFilter);
 
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);

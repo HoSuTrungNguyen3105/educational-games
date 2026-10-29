@@ -137,6 +137,7 @@ export async function createRole({ key, label, description, dashboardAccess = fa
     createdAt: new Date().toISOString(),
   };
   await col.insertOne(doc);
+  invalidateRolePermissions(k);
   const counts = await countByRole();
   return toApi(doc, counts);
 }
@@ -161,6 +162,7 @@ export async function updateRole(keyOrId, { label, description, dashboardAccess,
   updates.updatedAt = new Date().toISOString();
 
   await col.updateOne({ id: role.id }, { $set: updates });
+  invalidateRolePermissions(role.key);
   const updated = await col.findOne({ id: role.id });
   const counts = await countByRole();
   return toApi(updated, counts);
@@ -178,6 +180,7 @@ export async function deleteRole(keyOrId) {
     throw new Error(`Còn ${inUse} tài khoản đang dùng vai trò này — hãy chuyển họ sang vai trò khác trước`);
   }
   await col.deleteOne({ id: role.id });
+  invalidateRolePermissions(role.key);
   return { ok: true, key: role.key };
 }
 
@@ -234,6 +237,29 @@ export async function getRolePermissions(roleKey) {
     /* DB lỗi/collections trống → dùng cấu hình tĩnh bên dưới */
   }
   return [...(ROLES[key]?.permissions || [])];
+}
+
+// ── Bản nhớ quyền theo vai trò ──────────────────────────────────────────
+// Middleware quyền chạy trên MỖI request, nên không thể đọc `roles` mỗi lần.
+// Quyền chỉ đổi khi admin sửa vai trò → gọi invalidateRolePermissions() ở các
+// hàm ghi bên dưới, cộng thêm TTL để an toàn nếu có tiến trình khác sửa DB.
+const PERM_TTL_MS = 30_000;
+const permCache = new Map();
+
+export function invalidateRolePermissions(roleKey = null) {
+  if (roleKey === null) permCache.clear();
+  else permCache.delete(String(roleKey || "").trim());
+}
+
+/** Như getRolePermissions nhưng có bản nhớ 30 giây (dùng cho middleware). */
+export async function getRolePermissionsCached(roleKey) {
+  const key = String(roleKey || "").trim();
+  if (!key) return [];
+  const hit = permCache.get(key);
+  if (hit && hit.at + PERM_TTL_MS > Date.now()) return hit.perms;
+  const perms = await getRolePermissions(key);
+  permCache.set(key, { perms, at: Date.now() });
+  return perms;
 }
 
 export { FEATURES as PERMISSION_FEATURES, matrixToPermissions };

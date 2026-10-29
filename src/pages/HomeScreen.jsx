@@ -917,20 +917,25 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         <header className="gq-top">
           <div className="gq-top__row">
             <div className="gq-logo">
-              <span className="gq-logo__mark" aria-hidden="true">🎪</span>
+              {/* <span className="gq-logo__mark" aria-hidden="true"></span> */}
+              <img
+                className="gq-logo__mark"
+                src="/educational-games/eduplay-logo.png"
+                alt="EduPlay Logo"
+              />
               <span>
-                <span className="gq-logo__name">Lớp Học Vui</span>
+                <span className="gq-logo__name">Lớp Học Vui </span>
                 <span className="gq-logo__sub">EDUGAMES</span>
               </span>
             </div>
 
-            <div className="gq-age" title={`${heroName || "Bé"} · ${kidSettings.age} tuổi · ${ageBandLabel(kidSettings.age)}`}>
+            {/* <div className="gq-age" title={`${heroName || "Bé"} · ${kidSettings.age} tuổi · ${ageBandLabel(kidSettings.age)}`}>
               <span className="gq-age__num">{kidSettings.age}</span>
               <span className="gq-age__txt">
                 <span className="gq-age__lbl">{heroName || "Bé"}</span>
                 <span className="gq-age__sub">{kidSettings.age} tuổi · {ageBandLabel(kidSettings.age)}</span>
               </span>
-            </div>
+            </div> */}
 
             <div className="gq-actions">
               {canAccessDashboard(userAuth?.user?.role) && (

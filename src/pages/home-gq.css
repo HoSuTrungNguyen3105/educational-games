@@ -80,14 +80,11 @@
   flex-shrink: 0;
 }
 .gq-logo__mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  font-size: 19px;
-  background: linear-gradient(140deg, #ffd45e, #f7a825);
-  box-shadow: 0 3px 0 #d98f0f;
+  width: 150px;
+  height: 66px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
 }
 .gq-logo__name {
   font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
