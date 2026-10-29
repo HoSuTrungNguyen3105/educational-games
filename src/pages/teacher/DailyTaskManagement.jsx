@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { taskService } from "../../services/taskService.js";
 import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from "../../components/ui";
+import { TaskIcon } from "../../components/tasks/index.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 
 const TASK_TYPES = [
@@ -18,9 +19,8 @@ const TASK_SCOPES = [
   { value: "TOTAL", label: "Tổng cộng" },
 ];
 
-const TASK_ICONS = ["🎮", "🏆", "📖", "🧠", "⭐", "🌟", "🎉", "👋", "📋", "🎯", "🔥", "💪", "✅", "📝"];
-
-const emptyForm = { code: "", name: "", description: "", icon: "📋", type: "GAME_PLAYED", target: 1, rewardCoin: 10, rewardXp: 0, scope: "DAILY", gameId: null, isActive: true, sortOrder: 0 };
+// Icon không còn là dữ liệu nhập tay: mọi chỗ đều vẽ SVG theo `code` (xem TaskIcon.jsx).
+const emptyForm = { code: "", name: "", description: "", type: "GAME_PLAYED", target: 1, rewardCoin: 10, rewardXp: 0, scope: "DAILY", gameId: null, isActive: true, sortOrder: 0 };
 
 export default function DailyTaskManagement({ showToast }) {
   const [stats, setStats] = useState(null);
@@ -49,7 +49,7 @@ export default function DailyTaskManagement({ showToast }) {
 
   const openEdit = (task) => {
     setEditId(task.id);
-    setForm({ code: task.code || "", name: task.name, description: task.description || "", icon: task.icon || "📋", type: task.type, target: task.target, rewardCoin: task.rewardCoin || 0, rewardXp: task.rewardXp || 0, scope: task.scope || "DAILY", gameId: task.gameId || null, isActive: task.isActive !== false, sortOrder: task.sortOrder || 0 });
+    setForm({ code: task.code || "", name: task.name, description: task.description || "", type: task.type, target: task.target, rewardCoin: task.rewardCoin || 0, rewardXp: task.rewardXp || 0, scope: task.scope || "DAILY", gameId: task.gameId || null, isActive: task.isActive !== false, sortOrder: task.sortOrder || 0 });
     setShowForm(true);
   };
 
@@ -89,7 +89,7 @@ export default function DailyTaskManagement({ showToast }) {
     <tr key={task.id} className="border-t border-ink/5 hover:bg-ink/[0.02] transition">
       <td className="py-2.5 px-3 text-sm font-body text-ink">
         <div className="flex items-center gap-2">
-          <span className="text-lg">{task.icon}</span>
+          <TaskIcon code={task.code} type={task.type} className="w-5 h-5 shrink-0 text-ink/55" />
           <div>
             <p className="font-semibold">{task.name}</p>
             <p className="text-[10px] text-[#8A7C63]">{task.description || task.code}</p>
@@ -143,7 +143,7 @@ export default function DailyTaskManagement({ showToast }) {
           renderRow={renderTaskRow}
           renderCard={(task) => (
             <div className="flex items-center gap-3">
-              <span className="text-lg shrink-0">{task.icon}</span>
+              <TaskIcon code={task.code} type={task.type} className="w-5 h-5 shrink-0 text-ink/55" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold font-body text-ink truncate">{task.name}</p>
                 <p className="text-[11px] text-[#8A7C63] font-mono truncate">
@@ -189,18 +189,6 @@ export default function DailyTaskManagement({ showToast }) {
               <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Mô tả ngắn"
                 className="w-full px-4 py-2.5 rounded-xl border border-ink/15 bg-paper text-ink text-sm font-body focus:outline-none focus:border-ticket" />
-            </div>
-
-            <div>
-              <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-2">Icon</label>
-              <div className="flex flex-wrap gap-2">
-                {/* {TASK_ICONS.map((icon) => (
-                  <button key={icon} onClick={() => setForm({ ...form, icon })}
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg border transition ${form.icon === icon ? "border-ticket bg-ticket/10 scale-110" : "border-ink/10 bg-paper hover:border-ink/25"}`}>
-                    {icon}
-                  </button>
-                ))} */}
-              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">

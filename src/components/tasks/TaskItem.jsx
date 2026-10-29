@@ -1,5 +1,6 @@
 import TaskProgress from "./TaskProgress.jsx";
 import TaskReward from "./TaskReward.jsx";
+import TaskIcon from "./TaskIcon.jsx";
 
 const TASK_GRADIENTS = [
   "from-violet-400 to-purple-400",
@@ -21,7 +22,8 @@ export default function TaskItem({ task, index = 0, onClaim, claiming = false, c
         <span
           className={`w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br ${TASK_GRADIENTS[index % TASK_GRADIENTS.length]} text-white flex items-center justify-center text-sm shadow-sm`}
         >
-          {task.icon}
+          {/* Icon lấy theo code nhiệm vụ (PLAY_10…), không dùng field `icon` của API */}
+          <TaskIcon code={task.code} type={task.type} className="w-4 h-4" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold text-gray-700 truncate leading-tight mb-0.5">
@@ -56,7 +58,7 @@ export default function TaskItem({ task, index = 0, onClaim, claiming = false, c
       <span
         className={`w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br ${TASK_GRADIENTS[index % TASK_GRADIENTS.length]} text-white flex items-center justify-center text-xl shadow-md`}
       >
-        {task.icon}
+        <TaskIcon code={task.code} type={task.type} className="w-6 h-6" />
       </span>
 
       <div className="min-w-0 flex-1">

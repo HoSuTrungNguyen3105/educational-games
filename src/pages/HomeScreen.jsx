@@ -9,6 +9,7 @@ import { navigate } from '../lib/router.js'
 import { canAccessDashboard } from '../config/roles.js'
 import './home-gq.css'
 import { EmptyState, ErrorState, IconChevronDown, IconFile, IconLogout, IconNotification, IconTrash, IconUser, Loader } from '../components/ui';
+import TaskIcon from '../components/tasks/TaskIcon.jsx';
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import AiChatWidget from '../components/ai/AiChatWidget.jsx'
 import { PetAvatar } from '../components/PetAvatar.jsx'
@@ -1478,7 +1479,7 @@ function GqGameCard({ icon, name, tint, badge, age, thumb, play }) {
 function MiniQuestRow({ task, onClaim }) {
   return (
     <div className="gq-link" style={{ cursor: "default" }}>
-      <span className="gq-link__ico">{task.icon || "🎯"}</span>
+      <span className="gq-link__ico"><TaskIcon code={task.code} type={task.type} className="w-4 h-4" /></span>
       <span className="flex-1 min-w-0">
         <span className="block truncate">{task.title}</span>
         <span className="block text-[11px] font-semibold text-slate-400">
