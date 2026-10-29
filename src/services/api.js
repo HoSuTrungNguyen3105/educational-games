@@ -276,6 +276,27 @@ export const gameService = {
   },
 };
 
+/**
+ * Kho cấu hình JSON theo key (collection `game_configs`).
+ *
+ * Khác gameService.setConfig (ghi vào document của game trong `games`): kho này
+ * dùng cho game OFFLINE — Vườn Thủ Hộ, Săn Trái Cây… — những game chỉ tồn tại
+ * trong manifest của client, không có dòng nào trong `games` để gắn config vào.
+ * Đọc (GET) thì public, ghi (PUT) cần teacher/admin.
+ */
+export const gameConfigStore = {
+  /** `{ key, config: { key, values, updatedAt } | null }` */
+  async get(key) {
+    return apiFetch(`/game-configs/${encodeURIComponent(key)}`);
+  },
+  async set(key, values) {
+    return apiFetch(`/game-configs/${encodeURIComponent(key)}`, { method: "PUT", body: { values } });
+  },
+  async list() {
+    return apiFetch("/game-configs") || [];
+  },
+};
+
 export const questionService = {
   async listAll() {
     return apiFetch("/questions") || [];
@@ -306,6 +327,10 @@ export const questionBankService = {
   async get(id) { return apiFetch(`/question-banks/${encodeURIComponent(id)}`); },
   async stats() { return apiFetch("/question-banks/stats"); },
   async create(data) { return apiFetch("/question-banks", { method: "POST", body: data }); },
+  /** Nhập CSV/JSON hàng loạt. mode "merge" thêm + bỏ câu trùng, "replace" ghi đè cả bank. */
+  async createMany(questions, mode = "merge") {
+    return apiFetch("/question-banks/bulk", { method: "POST", body: { questions, mode } });
+  },
   async update(id, data) { return apiFetch(`/question-banks/${encodeURIComponent(id)}`, { method: "PUT", body: data }); },
   async remove(id) { return apiFetch(`/question-banks/${encodeURIComponent(id)}`, { method: "DELETE" }); },
   async removeAll() { return apiFetch("/question-banks", { method: "DELETE" }); },
@@ -359,6 +384,15 @@ export const authService = {
   },
   async me() {
     return apiFetch("/auth/me");
+  },
+  /**
+   * Đổi mật khẩu của chính tài khoản đang đăng nhập (trang Cài đặt trong khu
+   * quản trị dùng thay cho "Mã PIN" của tool admin cũ — PIN đó chỉ là hash nằm
+   * trong localStorage một trình duyệt).
+   * Server thu hồi mọi phiên khác và cấp lại cookie cho phiên này.
+   */
+  async changePassword(currentPassword, newPassword) {
+    return apiFetch("/auth/change-password", { method: "POST", body: { currentPassword, newPassword } });
   },
   /** Access token mới từ cookie refresh (single-flight). null khi phiên đã kết thúc. */
   async refresh() {

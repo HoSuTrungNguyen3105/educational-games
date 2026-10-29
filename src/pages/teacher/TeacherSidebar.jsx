@@ -21,6 +21,8 @@ import {
   ShieldCheck,
   Sparkles,
   PawPrint,
+  Sprout,
+  Settings2,
 } from 'lucide-react'
 import {
   IconAdd, IconBell, IconClose, IconFile, IconLogout, IconSettings, IconUser, IconUsers,
@@ -50,6 +52,7 @@ const SECTIONS = [
       { id: "admin-reminders", label: "Nhắc nhở", icon: IconBell, route: "/admin/reminders", permission: null },
       { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
       { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/admin/ai-analysis", permission: "reports.view" },
+      { id: "admin-settings", label: "Cài đặt", icon: Settings2, route: "/admin/settings", permission: null },
     ],
   },
   {
@@ -62,6 +65,7 @@ const SECTIONS = [
       { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories", permission: "categories.manage" },
       { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
       { id: "admin-game-config", label: "Cấu hình game", icon: IconSettings, route: "/admin/game-config", permission: "games.manage" },
+      { id: "admin-vth-config", label: "Cấu hình Vườn Thủ Hộ", icon: Sprout, route: "/admin/vth-config", permission: "games.manage" },
       { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/admin/images", permission: null },
       { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/admin/upload-items", permission: null },
     ],

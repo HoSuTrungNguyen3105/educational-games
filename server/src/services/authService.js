@@ -216,6 +216,32 @@ export async function resetPassword(userId, newPassword) {
   return true;
 }
 
+/**
+ * Đổi mật khẩu của CHÍNH tài khoản đang đăng nhập — khác resetPassword (admin ép
+ * mật khẩu mới không cần mật khẩu cũ). Người dùng phải chứng minh mật khẩu hiện
+ * tại, nên đây là chỗ thay cho "Mã PIN" mà trang quản trị cũ chỉ giữ trong
+ * localStorage của trình duyệt.
+ * Trả về document người dùng sau khi đổi để route cấp lại refresh token.
+ */
+export async function changePassword(userId, { currentPassword, newPassword } = {}) {
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  const cur = String(currentPassword || "");
+  const nw = String(newPassword || "").trim();
+  if (!user.passwordHash) throw new Error("Tài khoản này chưa có mật khẩu, hãy dùng Đăng xuất");
+  if (!cur) throw new Error("Vui lòng nhập mật khẩu hiện tại");
+  if (!nw) throw new Error("Mật khẩu mới không được để trống");
+  if (nw.length < 6) throw new Error("Mật khẩu phải có ít nhất 6 ký tự");
+  const ok = await bcrypt.compare(cur, user.passwordHash);
+  if (!ok) throw new Error("Mật khẩu hiện tại không đúng");
+  if (cur === nw) throw new Error("Mật khẩu mới trùng với mật khẩu hiện tại");
+  await getCollection(COLLECTION).updateOne(
+    { id: userId },
+    { $set: { passwordHash: bcrypt.hashSync(nw, 10), generatedPassword: null, updatedAt: new Date().toISOString() } }
+  );
+  return getCollection(COLLECTION).findOne({ id: userId });
+}
+
 export async function getCoins(userId) {
   const user = await getCollection(COLLECTION).findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");

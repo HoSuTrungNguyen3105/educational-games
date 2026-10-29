@@ -216,4 +216,24 @@ export async function getUserCounts() {
   return countByRole();
 }
 
+/**
+ * Mảng quyền của MỘT vai trò, đủ để client tự biết mình làm được gì mà không
+ * phải tải cả ma trận: ["games.view", "games.manage", "chat", ...].
+ *
+ * Đọc từ collection `roles` nên vai trò tùy chỉnh và những ô admin bật/tắt trong
+ * trang Phân quyền được phản ánh ngay. Cố ý KHÔNG gọi ensureSeeded (kẻo mỗi lần
+ * GET /auth/me là một lần ghi DB) — DB chưa seed thì rơi về cấu hình tĩnh.
+ */
+export async function getRolePermissions(roleKey) {
+  const key = String(roleKey || "").trim();
+  if (!key) return [];
+  try {
+    const doc = await getCollection(COLLECTION).findOne({ $or: [{ key }, { id: `role-${key}` }] });
+    if (doc) return matrixToPermissions(normalizeMatrix(doc.matrix));
+  } catch {
+    /* DB lỗi/collections trống → dùng cấu hình tĩnh bên dưới */
+  }
+  return [...(ROLES[key]?.permissions || [])];
+}
+
 export { FEATURES as PERMISSION_FEATURES, matrixToPermissions };

@@ -6,6 +6,7 @@ import { gameCache } from "../lib/gameCache.js";
 import { addCoins, loadWallet, readWallet, subscribeWallet } from "../lib/coinWallet.js";
 import { startGameSync, endGameSync } from "../lib/offlineGameSync.js";
 import { gameDataService } from "../services/gameDataService.js";
+import { API_BASE } from "../services/api.js";
 import { Loader } from "../components/ui";
 import TOKENS_CSS from "../games/offline/lib/tokens.css?raw";
 
@@ -70,9 +71,19 @@ const EMBEDDED_SNIPPET = `<style>html.gq-embedded #homeBackBtn,html.gq-embedded 
  */
 const FLUSH_BRIDGE = `<script>(function(){window.addEventListener("message",function(ev){var d=ev.data;if(!d||d.type!=="gq:flush")return;try{if(typeof window.__gqFlush==="function")window.__gqFlush();}catch(e){}try{window.dispatchEvent(new CustomEvent("gq:flush"));}catch(e){}try{document.dispatchEvent(new CustomEvent("gq:flush"));}catch(e){}try{ev.source&&ev.source.postMessage({type:"gq:flushed"},"*");}catch(e){}});})();</script>`;
 
+/**
+ * Địa chỉ API cho game offline.
+ *
+ * Game nào cần dữ liệu trên máy chủ (plantvsanimal lấy cấu hình JSON do trang
+ * quản trị lưu) đọc `window.EG_API_BASE`, KHÔNG hard-code URL — production đổi
+ * domain thì chỉ đổi chỗ này. Mở file .html trực tiếp thì không có biến đó và
+ * game tự chạy offline.
+ */
+const API_BASE_SNIPPET = `<script>window.EG_API_BASE=${JSON.stringify(API_BASE)};</script>`;
+
 function injectGameUi(html) {
   const tokens = `<style id="gq-tokens">${TOKENS_CSS}</style>`;
-  const bridge = `${EMBEDDED_SNIPPET}${FLUSH_BRIDGE}`;
+  const bridge = `${API_BASE_SNIPPET}${EMBEDDED_SNIPPET}${FLUSH_BRIDGE}`;
   const withTokens = /<head[^>]*>/i.test(html)
     ? html.replace(/<head[^>]*>/i, (m) => `${m}${tokens}`)
     : `${tokens}${html}`;

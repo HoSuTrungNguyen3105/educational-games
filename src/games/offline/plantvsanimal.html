@@ -208,6 +208,7 @@
     <button class="btn dark sm" id="cfgCopy">📋 Sao chép</button>
     <button class="btn dark sm" id="cfgDown">⬇️ Tải xuống</button>
     <button class="btn dark sm" id="cfgLoad">📂 Nạp file</button>
+    <button class="btn dark sm" id="cfgPull" hidden>☁️ Nạp từ máy chủ</button>
     <input type="file" id="cfgFile" accept=".json,application/json" hidden>
   </div>
 </div>
@@ -621,6 +622,32 @@ let userCfg = DEF, CFG;
 })();
 CFG = resolve(userCfg);
 
+/* ================= Cấu hình từ máy chủ =================
+   Trang "Cấu hình Vườn Thủ Hộ" trong khu quản trị lưu JSON vào /api/game-configs
+   (đọc được không cần đăng nhập). Khi có mạng, game hỏi bản đó lúc mở lên:
+   hợp lệ thì dùng ngay và ghi vào localStorage để lần sau mở offline vẫn chơi
+   đúng bản mới. Mất mạng / JSON lỗi / sai luật thì giữ nguyên bản đang dùng.
+   `window.EG_API_BASE` do OfflineGamePage tiêm vào; mở file .html trực tiếp thì
+   không có → game chạy hoàn toàn local như trước. */
+const CFG_KEY = 'plantvsanimal';
+async function pullRemoteCfg(loud) {
+  const base = window.EG_API_BASE;
+  if (!base || (typeof navigator !== 'undefined' && navigator.onLine === false)) return null;
+  try {
+    const r = await fetch(`${base}/game-configs/${CFG_KEY}`, { cache: 'no-store' });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const v = j && j.data && j.data.config ? j.data.config.values : null;
+    if (!v || typeof v !== 'object' || validate(v).length) return null;
+    const raw = JSON.stringify(v);
+    if (raw === JSON.stringify(userCfg)) { if (loud) toast('Đang dùng đúng bản cấu hình trên máy chủ'); return v; }
+    userCfg = v; CFG = resolve(v); lsSet(CK, raw);
+    if (!G) buildMenu();
+    toast(loud ? '✅ Đã nạp cấu hình từ máy chủ' : '✅ Có cấu hình mới từ máy chủ');
+    return v;
+  } catch (e) { if (loud) toast('Không kết nối được máy chủ'); return null; }
+}
+
 function one(v) {
   if (v === null || typeof v !== 'object') return JSON.stringify(v);
   if (Array.isArray(v)) return '[' + v.map(one).join(', ') + ']';
@@ -645,7 +672,7 @@ function docHtml() {
   <h4>Cây có sẵn</h4>${Object.entries(c.plants).map(([id, p]) => `${p.icon} <code>${id}</code> ${p.name}`).join('<br>')}
   <h4>Tạo quái / cây mới</h4>Thêm id mới vào <code>monsters</code> hoặc <code>plants</code> (đủ name, hp, speed…) rồi dùng trong timeline. Tốc độ <b>speed</b> tính bằng ô/giây.
   <b>Icon không nằm trong JSON</b> — game lấy icon theo id từ bảng <code>MON_ICON</code> / <code>PLANT_ICON</code> trong file plantvsanimal.html.
-  <h4>Nguồn cấu hình</h4>Cấu hình mặc định được đồng bộ từ <code>src/games/plantandanimal.json</code> và nhúng trong game để vẫn chơi được offline. Bản áp dụng trên thiết bị được lưu trong localStorage; dùng <b>Mặc định</b> rồi <b>Áp dụng</b> để nạp cấu hình mới.
+  <h4>Nguồn cấu hình</h4>Cấu hình mặc định được nhúng trong game để vẫn chơi được offline. Khi có mạng, game tự lấy bản đang lưu trên máy chủ (trang <b>Quản trị → Cấu hình Vườn Thủ Hộ</b>) và cache lại trên thiết bị. Bản sửa ở đây chỉ lưu trên máy này bằng localStorage; muốn mọi thiết bị dùng chung thì lưu qua trang quản trị. Dùng <b>Mặc định</b> rồi <b>Áp dụng</b> để quay về cấu hình gốc.
   <h4>Sao chép ra ngoài</h4>Dùng nút Sao chép hoặc Tải xuống để lưu file plantvsanimal.json.`;
 }
 
@@ -1483,6 +1510,9 @@ $('cfgReset').onclick = () => { $('cfgText').value = pretty(DEF); cfgErr('Đã n
 $('cfgCopy').onclick = async () => { try { await navigator.clipboard.writeText($('cfgText').value); toast('Đã sao chép JSON'); } catch (e) { $('cfgText').select(); toast('Hãy chọn và sao chép thủ công'); } };
 $('cfgDown').onclick = () => { const b = new Blob([$('cfgText').value], { type: 'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'plantvsanimal.json'; document.body.appendChild(a); a.click(); a.remove(); };
 $('cfgLoad').onclick = () => $('cfgFile').click();
+/* Nút "Nạp từ máy chủ" chỉ hiện khi game chạy trong app (OfflineGamePage tiêm EG_API_BASE). */
+if (window.EG_API_BASE) $('cfgPull').hidden = false;
+$('cfgPull').onclick = () => { pullRemoteCfg(true).then(v => { if (v) $('cfgText').value = pretty(userCfg); }); };
 $('cfgFile').onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { $('cfgText').value = r.result; cfgErr('Đã nạp file. Bấm "Áp dụng" để dùng.'); }; r.readAsText(f); e.target.value = ''; };
 
 /* ================= Hướng màn hình ================= */
@@ -1504,6 +1534,8 @@ function loop(now) {
 }
 buildMenu(); syncSoundBtns(); layout(); checkOrient();
 requestAnimationFrame(loop);
+pullRemoteCfg(false);            // có mạng thì lấy bản cấu hình quản trị đang lưu trên máy chủ
+window.addEventListener('online', () => pullRemoteCfg(false));
 })();
 </script>
 

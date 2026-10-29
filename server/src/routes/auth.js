@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, getCoins, getWallet, adjustWallet, exchangeWallet, redeemAchievement, getXp, claimDailyStarGift } from "../services/authService.js";
+import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, changePassword, getCoins, getWallet, adjustWallet, exchangeWallet, redeemAchievement, getXp, claimDailyStarGift } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { getByUser } from "../services/gameProgressService.js";
@@ -7,6 +7,7 @@ import { getCollection } from "../db.js";
 import { trackAction } from "../services/dailyTaskService.js";
 import { processTaskEvent } from "../services/taskEngineService.js";
 import { getClassById } from "../services/classService.js";
+import { getRolePermissions } from "../services/permissionService.js";
 import {
   checkRefreshOrigin, issueRefreshToken, rotateRefreshToken, readRefreshCookie,
   setRefreshCookie, clearRefreshCookie, revokeAllForUser, refreshUserId, REFRESH_COOKIE_NAME,
@@ -119,23 +120,17 @@ router.post("/register", async (req, res, next) => {
 
 router.get("/me", authenticate, async (req, res) => {
   try {
-    const [userDoc, coins, games] = await Promise.all([
+    const [userDoc, coins, games, permissions] = await Promise.all([
       getCollection("users").findOne({ id: req.user.sub }).catch(() => null),
       getCoins(req.user.sub).catch(() => 0),
       getByUser(req.user.sub).catch(() => []),
+      getRolePermissions(req.user.role).catch(() => []),
     ]);
 
     let classInfo = null;
     if (userDoc?.classId) {
       classInfo = await getClassById(userDoc.classId).catch(() => null);
     }
-
-    const gameIds = games.map(g => g.gameId).filter(Boolean);
-    const gameDocs = gameIds.length
-      ? await getCollection("games").find({ _id: { $in: gameIds } }).toArray().catch(() => [])
-      : [];
-    const gameDocMap = {};
-    gameDocs.forEach(d => { gameDocMap[d._id.toString()] = d; });
 
     const totalPlays = games.reduce((s, g) => s + (g.gamesPlayed || 0), 0);
     const totalXP = games.reduce((s, g) => s + (g.experience || 0), 0);
@@ -145,6 +140,10 @@ router.get("/me", authenticate, async (req, res) => {
       name: req.user.name,
       email: userDoc?.email || null,
       role: req.user.role,
+      // Quyền của vai trò này, gộp từ collection `roles` (kể cả vai trò tùy chỉnh
+      // admin tạo trong trang Phân quyền) + quyền cơ bản:
+      // ["games.view", "games.manage", "question_bank.edit", "chat", "profile", ...].
+      permissions,
       coins,
       createdAt: userDoc?.createdAt || null,
       classId: userDoc?.classId || null,
@@ -161,35 +160,11 @@ router.get("/me", authenticate, async (req, res) => {
         totalXP,
         gamesPlayed: games.length,
       },
-      games: games.map(g => {
-        const doc = gameDocMap[g.gameId] || {};
-        return {
-          gameId: g.gameId,
-          name: doc.name || g.gameName || g.gameId,
-          description: doc.description || null,
-          subject: doc.subject || null,
-          topic: doc.topic || null,
-          language: doc.language || null,
-          type: doc.type || null,
-          status: doc.status || null,
-          code: doc.code || null,
-          questionsCount: doc.questionsCount || 0,
-          playersCount: doc.playersCount || 0,
-          level: g.level || 1,
-          experience: g.experience || 0,
-          progress: g.progress || 0,
-          gamesPlayed: g.gamesPlayed || 0,
-          questsCompleted: g.questsCompleted || 0,
-          inventory: g.inventory || [],
-          loadout: g.loadout || null,
-          lastPlayedAt: g.lastPlayedAt || g.updatedAt,
-          createdAt: doc.createdAt || null,
-          updatedAt: doc.updatedAt || null,
-        };
-      }),
+      // Không còn trả danh sách game: hồ sơ chỉ cần `stats`, còn tiến độ từng
+      // game đã có GET /api/users/me/games (trang Hồ sơ gọi riêng endpoint đó).
     });
   } catch {
-    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, coins: 0, createdAt: null, classId: null, className: null, classCode: null, avatar: null, pet: null, ageCode: null, gender: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 }, games: [] });
+    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, permissions: [], coins: 0, createdAt: null, classId: null, className: null, classCode: null, avatar: null, pet: null, ageCode: null, gender: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 } });
   }
 });
 
@@ -197,6 +172,29 @@ router.put("/me", authenticate, async (req, res, next) => {
   try {
     const updated = await updateProfile(req.user.sub, req.body || {});
     sendSuccess(res, updated);
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+/**
+ * POST /api/auth/change-password — đổi mật khẩu của chính mình.
+ *
+ * Body: { currentPassword, newPassword }.
+ * Trang Cài đặt trong khu quản trị dùng endpoint này thay cho "Mã PIN" cũ
+ * (mã PIN của src/games/_tools/admin.html chỉ là chuỗi hash nằm trong
+ * localStorage của một máy, không chặn được gì).
+ *
+ * Mật khẩu đổi xong thì mọi refresh token của tài khoản bị thu hồi (máy khác
+ * phải đăng nhập lại), riêng phiên đang gọi được cấp lại cookie mới nên người
+ * quản trị không bị đá ra giữa lúc đang làm việc.
+ */
+router.post("/change-password", authenticate, async (req, res, next) => {
+  try {
+    const user = await changePassword(req.user.sub, req.body || {});
+    await revokeAllForUser(user.id);
+    setRefreshCookie(res, await issueRefreshToken(user));
+    sendSuccess(res, { changed: true, user: publicUser(user) });
   } catch (e) {
     sendError(res, e.message, 400);
   }

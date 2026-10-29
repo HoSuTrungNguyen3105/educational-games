@@ -969,7 +969,63 @@
       }
     }
   </style>
-</head>
+<style id="gq-kit-css">/* gq-kit.css — giao diện đồng bộ: màn chọn độ khó, nhãn độ khó, pháo hoa,
+   và (cho game viết tay) popup / nút cùng phong cách neo-brutalist của Góc Giải Trí. */
+#gqp { position: fixed; inset: 0; z-index: 2147483500; display: grid; place-items: center; padding: 16px; overflow: auto;
+  background-color: #fff6e7; background-image: linear-gradient(#e6dcc4 1px, transparent 1px), linear-gradient(90deg, #e6dcc4 1px, transparent 1px);
+  background-size: 28px 28px; font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif; color: #1d2e4a;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
+#gqp * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+.gqp-x { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 12px; width: 42px; height: 42px; border-radius: 14px;
+  border: 3px solid #1d2e4a; background: #fffbf2; box-shadow: 3px 3px 0 #1d2e4a; font: 800 20px 'Baloo 2', system-ui, sans-serif; color: #1d2e4a; cursor: pointer; }
+.gqp-x:active { transform: translate(3px, 3px); box-shadow: none; }
+.gqp-box { width: min(440px, 100%); background: #fffbf2; border: 3px solid #1d2e4a; border-radius: 26px; box-shadow: 5px 5px 0 #1d2e4a;
+  padding: 22px 18px 18px; text-align: center; animation: gqpop .4s cubic-bezier(.2, 1.3, .4, 1); margin-top: 36px; }
+.gqp-ic { width: 76px; height: 76px; margin: -58px auto 8px; display: grid; place-items: center; font-size: 40px; background: #f4b942;
+  border: 3px solid #1d2e4a; border-radius: 22px; box-shadow: 3px 3px 0 #1d2e4a; transform: rotate(-5deg); }
+.gqp-box h1 { margin: 0; font: 800 clamp(26px, 7vw, 34px)/1.1 'Baloo 2', system-ui, sans-serif; }
+.gqp-box p { margin: 4px 0 14px; font-size: 15px; color: #16233a; }
+.gqp-list { display: grid; gap: 10px; }
+.gqd { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 10px; text-align: left; width: 100%;
+  padding: 10px 12px 10px 10px; background: #fffbf2; border: 3px solid #1d2e4a; border-radius: 18px; box-shadow: 3px 3px 0 #1d2e4a;
+  font-family: inherit; color: #1d2e4a; cursor: pointer; transition: transform .1s, box-shadow .1s; position: relative; }
+.gqd:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #1d2e4a; }
+.gqd:active { transform: translate(3px, 3px); box-shadow: none; }
+.gqd:focus-visible { outline: 4px solid #4b9dff; outline-offset: 2px; }
+.gqd i { font-style: normal; width: 48px; height: 48px; display: grid; place-items: center; font-size: 26px; background: var(--c);
+  border: 3px solid #1d2e4a; border-radius: 14px; }
+.gqd span { min-width: 0; }
+.gqd b { display: block; font: 800 20px/1.1 'Baloo 2', system-ui, sans-serif; }
+.gqd em { display: block; font-style: normal; font-size: 12.5px; line-height: 1.3; color: #3a4a66; margin-top: 2px; }
+.gqd u { text-decoration: none; font-size: 11.5px; font-weight: 700; background: #1d2e4a; color: #fff; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.gqd.last::after { content: 'Lần trước'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
+  border-radius: 999px; padding: 0 8px; font-size: 10.5px; font-weight: 700; }
+.gqp-box small { display: block; margin-top: 14px; font-size: 12.5px; color: #3a4a66; }
+@keyframes gqpop { 0% { transform: scale(.85); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
+
+.gq-tier { position: fixed; z-index: 2147483000; top: calc(env(safe-area-inset-top, 0px) + 4px); left: 50%; transform: translateX(-50%);
+  pointer-events: none; background: var(--c, #f4b942); color: #1d2e4a; border: 2.5px solid #1d2e4a; border-radius: 999px; padding: 1px 10px;
+  font: 800 11.5px/1.5 'Baloo 2', system-ui, sans-serif; box-shadow: 2px 2px 0 #1d2e4a; white-space: nowrap; }
+.gq-conf { position: fixed; z-index: 2147483400; top: -40px; pointer-events: none; animation: gqfall 2.2s ease-in forwards; }
+@keyframes gqfall { to { transform: translate(var(--dx), 108vh) rotate(540deg); opacity: .9 } }
+@media (prefers-reduced-motion: reduce) { .gq-conf { display: none } .gqp-box { animation: none } }
+@media (max-height: 620px) { .gqd em { display: none } .gqd { padding: 6px 10px 6px 8px } .gqp-box h1 + p { margin-bottom: 8px } }
+
+/* ===== Đồng bộ popup + nút của game viết tay (chỉ khi html.gq-sa) ===== */
+html.gq-sa body .card, html.gq-sa body .panel, html.gq-sa body #card {
+  background: #fffbf2 !important; color: #1d2e4a !important; border: 3px solid #1d2e4a !important; border-radius: 22px !important;
+  box-shadow: 4px 4px 0 #1d2e4a !important; font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif; text-shadow: none !important; }
+html.gq-sa body .card h1, html.gq-sa body .card h2, html.gq-sa body .panel h1, html.gq-sa body .panel h2, html.gq-sa body #card h1 {
+  font-family: 'Baloo 2', system-ui, sans-serif !important; font-weight: 800 !important; color: #e4572e !important; text-shadow: none !important; }
+html.gq-sa body .card .big, html.gq-sa body .panel .big { font-family: 'Baloo 2', system-ui, sans-serif !important; color: #1d2e4a !important; text-shadow: none !important; }
+html.gq-sa body .card p, html.gq-sa body .card .sm, html.gq-sa body .panel p, html.gq-sa body #card p { color: #16233a !important; text-shadow: none !important; }
+html.gq-sa body .btn, html.gq-sa body #again, html.gq-sa body #card button, html.gq-sa body .card button, html.gq-sa body .panel button {
+  font-family: 'Baloo 2', system-ui, sans-serif !important; font-weight: 800 !important; color: #1d2e4a !important; background: #f4b942 !important;
+  border: 3px solid #1d2e4a !important; border-radius: 14px !important; box-shadow: 3px 3px 0 #1d2e4a !important; text-shadow: none !important; animation: none !important; }
+html.gq-sa body .btn.alt, html.gq-sa body .card button.alt, html.gq-sa body .panel button.alt { background: #fffbf2 !important; }
+html.gq-sa body .btn:active, html.gq-sa body #again:active, html.gq-sa body #card button:active, html.gq-sa body .card button:active, html.gq-sa body .panel button:active {
+  transform: translate(3px, 3px) !important; box-shadow: none !important; }
+</style></head>
 
 <body>
   <div id="app">
@@ -1565,7 +1621,137 @@ if (typeof window !== "undefined") {
     </script>
 
     <!-- Game: sumseq — nội dung riêng của file này -->
-    <script>
+    <script id="gq-kit">/* gq-kit.js — Bộ nâng cấp dùng chung cho game dọc:
+   · Màn chọn độ khó 4 mức (Dễ / Trung bình / Khó / Siêu khó) — cùng một giao diện cho mọi game
+   · Độ khó thật: nhịp game (setTimeout/setInterval/rAF/performance.now/Date.now) co giãn theo mức,
+     điểm & XP nhân hệ số (game dạng "single"), số mạng / giây mỗi câu / màn khởi đầu (mcengine)
+   · Pháo hoa khi kết thúc ván, nút "Đổi độ khó", nhãn độ khó luôn hiện trên đầu màn hình
+   MODE được build thay: 'single' (game sinh từ shell) hoặc 'standalone' (game viết tay). */
+(() => {
+  if (window.GQ) return;
+  const MODE = 'single';
+  const TIERS = [
+    { k: 'easy',   n: 'Dễ',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Chậm rãi, nhiều mạng — thoải mái làm quen' },
+    { k: 'mid',    n: 'Trung bình', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Nhịp độ chuẩn, vừa sức chơi' },
+    { k: 'hard',   n: 'Khó',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Nhanh hơn, ít thời gian suy nghĩ' },
+    { k: 'insane', n: 'Siêu khó',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Cực nhanh, ít sai sót — dành cho cao thủ' },
+  ];
+  const G = { t: TIERS[1], i: 1, locked: MODE === 'standalone', q: [] };
+
+  /* ---- Co giãn thời gian theo độ khó ---- */
+  const oT = window.setTimeout.bind(window), oC = window.clearTimeout.bind(window);
+  const oR = window.requestAnimationFrame.bind(window), oP = performance.now.bind(performance), oD = Date.now;
+  const cp = { o: 0 }, cd = { o: 0 };
+  const sc = (raw, c) => raw * G.t.s + c.o;
+  function setTier(i) {
+    const r = oP(), d = oD(), a = sc(r, cp), b = sc(d, cd);
+    G.i = i; G.t = TIERS[i];
+    cp.o = a - r * G.t.s; cd.o = b - d * G.t.s;
+  }
+  performance.now = () => sc(oP(), cp);
+  Date.now = () => sc(oD(), cd);
+  window.requestAnimationFrame = cb => {
+    if (G.locked) { G.q.push(cb); return 0; }
+    return oR(ts => cb(sc(ts, cp)));
+  };
+  window.setTimeout = (f, ms, ...a) => typeof f === 'function' ? oT(f, (ms || 0) / G.t.s, ...a) : oT(f, ms);
+  const IV = {}; let ivn = 1e9;
+  window.setInterval = (f, ms, ...a) => {
+    if (typeof f !== 'function') return 0;
+    const id = ++ivn, run = () => { IV[id] = oT(() => { if (!(id in IV)) return; if (!G.locked) f(...a); if (id in IV) run(); }, Math.max(0, (ms || 0) / G.t.s)); };
+    IV[id] = 0; run(); return id;
+  };
+  const oCI = window.clearInterval.bind(window);
+  window.clearInterval = id => { if (id > 1e9) { oC(IV[id]); delete IV[id]; } else oCI(id); };
+
+  window.GQ = {
+    tiers: TIERS, set: setTier,
+    get tier() { return G.t; }, get idx() { return G.i; },
+    get s() { return G.t.s; }, get m() { return G.t.m; },
+    get lives() { return G.t.lives; }, get secs() { return G.t.secs; }, get lvl0() { return G.t.lvl0; },
+  };
+
+  /* ---- Tiện ích ---- */
+  const $el = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstChild; };
+  const KEY = 'gq_diff:' + (location.pathname.split('/').pop() || 'game');
+  const quit = () => {
+    try { if (window.parent && window.parent !== window) { window.parent.postMessage({ type: 'quit', data: {} }, '*'); return; } } catch (e) { /* ignore */ }
+    try { location.href = '/'; } catch (e) { /* ignore */ }
+  };
+  let actx;
+  const tone = (f) => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; o.type = 'triangle'; g.gain.value = .06; o.connect(g); g.connect(actx.destination); o.start(); g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + .15); o.stop(actx.currentTime + .15); } catch (e) { /* ignore */ } };
+
+  function pill() {
+    let p = document.querySelector('.gq-tier');
+    if (!p) { p = $el('<div class="gq-tier"></div>'); document.body.appendChild(p); }
+    p.textContent = G.t.e + ' ' + G.t.n; p.style.setProperty('--c', G.t.c);
+  }
+
+  /* ---- Màn chọn độ khó (giống hệt nhau ở mọi game) ---- */
+  function pick(meta, go) {
+    let last = 1;
+    try { const v = +localStorage.getItem(KEY); if (v >= 0 && v < 4) last = v; } catch (e) { /* ignore */ }
+    const chip = t => MODE === 'single' ? `×${t.m} điểm` : `tốc độ ×${t.s}`;
+    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Thoát">←</button>
+      <div class="gqp-box"><div class="gqp-ic">${meta.icon || '🎮'}</div><h1>${meta.name}</h1>
+      <p>Chọn độ khó để bắt đầu</p>
+      <div class="gqp-list">${TIERS.map((t, i) => `<button class="gqd${i === last ? ' last' : ''}" data-i="${i}" style="--c:${t.c}">
+        <i>${t.e}</i><span><b>${t.n}</b><em>${t.d}</em></span><u>${chip(t)}</u></button>`).join('')}</div>
+      <small>Độ khó càng cao, nhịp chơi càng gấp — thưởng càng lớn 🏆</small></div></div>`);
+    box.querySelector('.gqp-x').onclick = quit;
+    box.querySelector('.gqp-list').onclick = e => {
+      const b = e.target.closest('.gqd'); if (!b) return;
+      const i = +b.dataset.i; tone(380 + i * 120);
+      try { localStorage.setItem(KEY, i); } catch (er) { /* ignore */ }
+      setTier(i); box.remove(); pill();
+      if (G.locked) { G.locked = false; G.q.splice(0).forEach(cb => window.requestAnimationFrame(cb)); }
+      go && go();
+    };
+    document.body.appendChild(box);
+    setTimeout(() => { try { box.querySelector('.last').focus({ preventScroll: true }); } catch (e) { /* ignore */ } }, 50);
+  }
+
+  /* ---- Pháo hoa ---- */
+  function boom() {
+    const em = ['🎉', '⭐', '✨', '🎊', '🍓', '💫'];
+    for (let i = 0; i < 34; i++) {
+      const s = $el(`<span class="gq-conf">${em[i % em.length]}</span>`);
+      s.style.cssText = `left:${Math.random() * 100}vw;--dx:${(Math.random() * 160 - 80) | 0}px;animation-delay:${(Math.random() * .5).toFixed(2)}s;font-size:${16 + (Math.random() * 18 | 0)}px`;
+      document.body.appendChild(s); oT(() => s.remove(), 2800);
+    }
+  }
+
+  /* ---- Gắn vào game ---- */
+  if (MODE === 'single') {
+    const o = window.startSingleGame, f = window.finish;
+    window.startSingleGame = cfg => {
+      const go = () => { o(cfg); pill(); };
+      if (document.body) pick({ name: cfg.name, icon: cfg.icon }, go);
+      else document.addEventListener('DOMContentLoaded', () => pick({ name: cfg.name, icon: cfg.icon }, go));
+    };
+    window.finish = function (opt) {
+      const t = G.t, m = t.m;
+      const r = f.call(this, Object.assign({}, opt, {
+        score: Math.round((opt.score || 0) * m), xp: Math.round((opt.xp || 0) * m),
+        lines: [`${t.e} ${t.n} ×${m}`].concat(opt.lines || []),
+      }));
+      boom();
+      const row = document.querySelector('#modal .row');
+      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Đổi độ khó</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
+      return r;
+    };
+  } else {
+    const start = () => {
+      const t = (document.title || 'Trò chơi').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
+      const ic = (document.title.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u) || ['🎮'])[0];
+      document.documentElement.classList.add('gq-sa');
+      pick({ name: t, icon: ic });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  }
+})();
+</script>
+<script>
 // src/games/src/sumseq.js — Nhịp Điệu Ánh Sáng
 
     function lightRhythmGame(root) {

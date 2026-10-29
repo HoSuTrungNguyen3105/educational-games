@@ -36,6 +36,8 @@ const BodyCustomImport = lazy(() => import('./BodyCustomImport.jsx'));
 const ImageLibrary = lazy(() => import('./ImageLibrary.jsx'));
 const ReminderManagement = lazy(() => import('./ReminderManagement.jsx'));
 const AiStudentAnalysisPage = lazy(() => import('./AiStudentAnalysisPage.jsx'));
+const VthConfigManagement = lazy(() => import('./VthConfigManagement.jsx'));
+const AdminSettings = lazy(() => import('./AdminSettings.jsx'));
 
 export default function TeacherApp({ user, route, onLogout, showToast }) {
   const [refreshFlag, setRefreshFlag] = useState(0);
@@ -62,6 +64,8 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
         {page === "admin-template-new" && <TemplateFormPage showToast={showToast} />}
         {page === "admin-template-edit" && <TemplateFormPage key={route.params.templateId} showToast={showToast} route={route} />}
         {page === "admin-game-config" && <GameConfigEditor key={refreshFlag} showToast={showToast} />}
+        {page === "admin-vth-config" && <VthConfigManagement showToast={showToast} />}
+        {page === "admin-settings" && <AdminSettings user={user} showToast={showToast} />}
         {page === "admin-categories" && <CategoryManagement showToast={showToast} />}
         {page === "admin-subjects" && <SubjectManagement showToast={showToast} />}
         {page === "admin-questions" && <UnifiedQuestionManagement showToast={showToast} />}

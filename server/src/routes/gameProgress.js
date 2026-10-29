@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 import * as gameProgressService from "../services/gameProgressService.js";
+import { getCollection } from "../db.js";
 
 const router = Router();
 
@@ -12,9 +13,16 @@ router.use(authenticate);
 router.get("/me/games", async (req, res, next) => {
   try {
     const list = await gameProgressService.getByUser(req.user.sub);
+    // Game online có document trong collection `games` → lấy tên thật từ đó;
+    // game offline (gameId là slug, không phải ObjectId) chỉ có `gameName` do
+    // cầu sync của game ghi lên. Lọc id hợp lệ trước để `$in` không ném lỗi.
+    const ids = [...new Set(list.map((p) => p.gameId).filter((id) => /^[0-9a-f]{24}$/i.test(String(id))))];
+    const docs = ids.length ? await getCollection("games").find({ _id: { $in: ids } }).toArray() : [];
+    const nameOf = {};
+    docs.forEach((d) => { nameOf[String(d._id)] = d.name; });
     const mapped = list.map((p) => ({
       gameId: p.gameId,
-      name: p.gameName || p.gameId,
+      name: nameOf[String(p.gameId)] || p.gameName || p.gameId,
       progress: p.progress || 0,
       level: p.level || 1,
       experience: p.experience || 0,

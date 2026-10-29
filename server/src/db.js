@@ -149,6 +149,12 @@ async function _runHeavyInit(database) {
           subject: { bsonType: "string" },
           category: { bsonType: "string" },
           difficulty: { bsonType: "string" },
+          // Lớp 1–5 (ma trận môn × lớp ở trang Ngân hàng câu hỏi), emoji hiển
+          // thị, giải thích sau khi trả lời, giọng đọc TTS.
+          grade: { bsonType: ["int", "double", "null"] },
+          icon: { bsonType: "string" },
+          explanation: { bsonType: "string" },
+          lang: { bsonType: "string" },
         },
       }
     },
@@ -580,6 +586,20 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Cấu hình JSON của game offline (không có document trong `games` nên
+    // không dùng được games.config). Một document cho mỗi key.
+    game_configs: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["key"],
+        properties: {
+          key: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+          updatedBy: { bsonType: ["string", "null"] },
+        },
+      }
+    },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -730,6 +750,9 @@ async function _runHeavyInit(database) {
     ["user_badges", { userId: 1 }],
     ["user_badges", { badgeId: 1 }],
     ["user_badges", { earnedAt: -1 }],
+
+    // game_configs — một document cho mỗi key cấu hình
+    ["game_configs", { key: 1 }, { unique: true }],
   ];
 
   const createdIndexes = [];

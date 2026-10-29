@@ -8,8 +8,11 @@ const router = Router();
 // Public read: list all
 router.get("/", async (req, res, next) => {
   try {
-    const { search, subject, category, limit } = req.query;
-    const questions = await bankService.listAll({ search, subject, category, limit: limit ? Number(limit) : 500 });
+    // limit mặc định 500 như cũ; trang Ngân hàng câu hỏi cần lấy toàn bộ để dựng
+    // ma trận môn × lớp nên cho phép nâng trần tới 5000.
+    const { search, subject, category, grade, limit } = req.query;
+    const cap = Math.min(5000, Math.max(1, Number(limit) || 500));
+    const questions = await bankService.listAll({ search, subject, category, grade, limit: cap });
     const pagination = buildPagination({ total: questions.length });
     sendSuccess(res, questions, "success", pagination);
   } catch (e) { next(e); }
@@ -34,6 +37,14 @@ router.post("/", authenticate, requireRoles("teacher", "admin"), async (req, res
   try {
     const q = await bankService.create(req.body);
     sendSuccess(res, q, "Đã tạo câu hỏi trong bank");
+  } catch (e) { next(e); }
+});
+
+router.post("/bulk", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const { questions, mode } = req.body || {};
+    const out = await bankService.createMany(questions, { mode: mode === "replace" ? "replace" : "merge" });
+    sendSuccess(res, out, `Đã nhập ${out.created} câu${out.skipped ? `, bỏ qua ${out.skipped}` : ""}`);
   } catch (e) { next(e); }
 });
 

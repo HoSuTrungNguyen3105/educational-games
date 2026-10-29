@@ -1,6 +1,6 @@
 import { IconBack, IconBell, IconCalendar, IconCheck, IconCheckCircle, IconChevronDown, IconDownload, IconLogout, IconNotification, IconTrash } from '../../components/ui/index.js';
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { authService, classService, API_BASE, notificationService, userService } from "../../services/api.js";
+import { authService, classService, API_BASE, notificationService, userService, gameProgressService } from "../../services/api.js";
 import { getLevelProgress } from "../../lib/utils.js";
 import { getRoleLabel, hasPermission } from "../../config/roles.js";
 import { navigate } from "../../lib/router.js";
@@ -34,6 +34,9 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(min-width: 1024px)").matches;
   });
+  // Tiến độ từng game không còn nằm trong /auth/me (endpoint chỉ trả stats +
+  // permissions) → mục "Trò chơi" tự gọi GET /users/me/games.
+  const [games, setGames] = useState([]);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
@@ -100,6 +103,16 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       })
       .catch((e) => setError(e.message || "Lỗi tải profile"))
       .finally(() => setLoading(false));
+  }, [userAuth]);
+
+  // Danh sách game cho mục "Trò chơi" — tách khỏi /auth/me để hồ sơ nhẹ.
+  useEffect(() => {
+    if (!userAuth?.user) return;
+    let alive = true;
+    gameProgressService.listGames()
+      .then((list) => { if (alive) setGames(Array.isArray(list) ? list : []); })
+      .catch(() => { if (alive) setGames([]); });
+    return () => { alive = false; };
   }, [userAuth]);
 
   // ── PWA detection giống hiweb_PROFILE ──
@@ -354,7 +367,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   }
 
   const user = profile || {};
-  const games = user.games || [];
   const stats = user.stats || { totalPlays: 0, totalXP: 0, gamesPlayed: 0 };
   const className = user.className || null;
 

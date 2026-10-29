@@ -1,0 +1,56 @@
+/* gq-kit.css — giao diện đồng bộ: màn chọn độ khó, nhãn độ khó, pháo hoa,
+   và (cho game viết tay) popup / nút cùng phong cách neo-brutalist của Góc Giải Trí. */
+#gqp { position: fixed; inset: 0; z-index: 2147483500; display: grid; place-items: center; padding: 16px; overflow: auto;
+  background-color: #fff6e7; background-image: linear-gradient(#e6dcc4 1px, transparent 1px), linear-gradient(90deg, #e6dcc4 1px, transparent 1px);
+  background-size: 28px 28px; font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif; color: #1d2e4a;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
+#gqp * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+.gqp-x { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 12px; width: 42px; height: 42px; border-radius: 14px;
+  border: 3px solid #1d2e4a; background: #fffbf2; box-shadow: 3px 3px 0 #1d2e4a; font: 800 20px 'Baloo 2', system-ui, sans-serif; color: #1d2e4a; cursor: pointer; }
+.gqp-x:active { transform: translate(3px, 3px); box-shadow: none; }
+.gqp-box { width: min(440px, 100%); background: #fffbf2; border: 3px solid #1d2e4a; border-radius: 26px; box-shadow: 5px 5px 0 #1d2e4a;
+  padding: 22px 18px 18px; text-align: center; animation: gqpop .4s cubic-bezier(.2, 1.3, .4, 1); margin-top: 36px; }
+.gqp-ic { width: 76px; height: 76px; margin: -58px auto 8px; display: grid; place-items: center; font-size: 40px; background: #f4b942;
+  border: 3px solid #1d2e4a; border-radius: 22px; box-shadow: 3px 3px 0 #1d2e4a; transform: rotate(-5deg); }
+.gqp-box h1 { margin: 0; font: 800 clamp(26px, 7vw, 34px)/1.1 'Baloo 2', system-ui, sans-serif; }
+.gqp-box p { margin: 4px 0 14px; font-size: 15px; color: #16233a; }
+.gqp-list { display: grid; gap: 10px; }
+.gqd { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 10px; text-align: left; width: 100%;
+  padding: 10px 12px 10px 10px; background: #fffbf2; border: 3px solid #1d2e4a; border-radius: 18px; box-shadow: 3px 3px 0 #1d2e4a;
+  font-family: inherit; color: #1d2e4a; cursor: pointer; transition: transform .1s, box-shadow .1s; position: relative; }
+.gqd:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #1d2e4a; }
+.gqd:active { transform: translate(3px, 3px); box-shadow: none; }
+.gqd:focus-visible { outline: 4px solid #4b9dff; outline-offset: 2px; }
+.gqd i { font-style: normal; width: 48px; height: 48px; display: grid; place-items: center; font-size: 26px; background: var(--c);
+  border: 3px solid #1d2e4a; border-radius: 14px; }
+.gqd span { min-width: 0; }
+.gqd b { display: block; font: 800 20px/1.1 'Baloo 2', system-ui, sans-serif; }
+.gqd em { display: block; font-style: normal; font-size: 12.5px; line-height: 1.3; color: #3a4a66; margin-top: 2px; }
+.gqd u { text-decoration: none; font-size: 11.5px; font-weight: 700; background: #1d2e4a; color: #fff; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.gqd.last::after { content: 'Lần trước'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
+  border-radius: 999px; padding: 0 8px; font-size: 10.5px; font-weight: 700; }
+.gqp-box small { display: block; margin-top: 14px; font-size: 12.5px; color: #3a4a66; }
+@keyframes gqpop { 0% { transform: scale(.85); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
+
+.gq-tier { position: fixed; z-index: 2147483000; top: calc(env(safe-area-inset-top, 0px) + 4px); left: 50%; transform: translateX(-50%);
+  pointer-events: none; background: var(--c, #f4b942); color: #1d2e4a; border: 2.5px solid #1d2e4a; border-radius: 999px; padding: 1px 10px;
+  font: 800 11.5px/1.5 'Baloo 2', system-ui, sans-serif; box-shadow: 2px 2px 0 #1d2e4a; white-space: nowrap; }
+.gq-conf { position: fixed; z-index: 2147483400; top: -40px; pointer-events: none; animation: gqfall 2.2s ease-in forwards; }
+@keyframes gqfall { to { transform: translate(var(--dx), 108vh) rotate(540deg); opacity: .9 } }
+@media (prefers-reduced-motion: reduce) { .gq-conf { display: none } .gqp-box { animation: none } }
+@media (max-height: 620px) { .gqd em { display: none } .gqd { padding: 6px 10px 6px 8px } .gqp-box h1 + p { margin-bottom: 8px } }
+
+/* ===== Đồng bộ popup + nút của game viết tay (chỉ khi html.gq-sa) ===== */
+html.gq-sa body .card, html.gq-sa body .panel, html.gq-sa body #card {
+  background: #fffbf2 !important; color: #1d2e4a !important; border: 3px solid #1d2e4a !important; border-radius: 22px !important;
+  box-shadow: 4px 4px 0 #1d2e4a !important; font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif; text-shadow: none !important; }
+html.gq-sa body .card h1, html.gq-sa body .card h2, html.gq-sa body .panel h1, html.gq-sa body .panel h2, html.gq-sa body #card h1 {
+  font-family: 'Baloo 2', system-ui, sans-serif !important; font-weight: 800 !important; color: #e4572e !important; text-shadow: none !important; }
+html.gq-sa body .card .big, html.gq-sa body .panel .big { font-family: 'Baloo 2', system-ui, sans-serif !important; color: #1d2e4a !important; text-shadow: none !important; }
+html.gq-sa body .card p, html.gq-sa body .card .sm, html.gq-sa body .panel p, html.gq-sa body #card p { color: #16233a !important; text-shadow: none !important; }
+html.gq-sa body .btn, html.gq-sa body #again, html.gq-sa body #card button, html.gq-sa body .card button, html.gq-sa body .panel button {
+  font-family: 'Baloo 2', system-ui, sans-serif !important; font-weight: 800 !important; color: #1d2e4a !important; background: #f4b942 !important;
+  border: 3px solid #1d2e4a !important; border-radius: 14px !important; box-shadow: 3px 3px 0 #1d2e4a !important; text-shadow: none !important; animation: none !important; }
+html.gq-sa body .btn.alt, html.gq-sa body .card button.alt, html.gq-sa body .panel button.alt { background: #fffbf2 !important; }
+html.gq-sa body .btn:active, html.gq-sa body #again:active, html.gq-sa body #card button:active, html.gq-sa body .card button:active, html.gq-sa body .panel button:active {
+  transform: translate(3px, 3px) !important; box-shadow: none !important; }
