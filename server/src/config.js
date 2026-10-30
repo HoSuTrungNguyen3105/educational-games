@@ -31,6 +31,7 @@ export const config = {
     [
       "http://localhost:5173",
       "http://localhost:4173",
+      "https://hosutrungnguyen3105.github.io",
       "https://ho-nguyen.github.io",
     ].join(",")
   )
@@ -44,7 +45,7 @@ export const config = {
   // ── Socket.IO ────────────────────────────────────────────────────────────
   // Danh sách origin cho phép kết nối Socket.IO (phân tách bằng dấu phẩy).
   // Mặc định bật CORS mọi origin — hạn chế bằng SOCKET_CORS_ORIGINS khi deploy.
-  socketCorsOrigins: (process.env.SOCKET_CORS_ORIGINS || "")
+  socketCorsOrigins: (process.env.SOCKET_CORS_ORIGINS || "https://hosutrungnguyen3105.github.io,https://ho-nguyen.github.io,http://localhost:5173,http://localhost:4173")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),

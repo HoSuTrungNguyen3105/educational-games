@@ -47,7 +47,7 @@ const REFRESH_TTL_MS = expiresInMs(config.refreshExpiresIn);
 export function isAllowedOrigin(origin) {
   if (!origin) return false;
   const norm = String(origin).trim().replace(/\/+$/, "");
-  return config.refreshAllowedOrigins.includes(norm);
+  return config.refreshAllowedOrigins.includes(norm) || norm === "https://hosutrungnguyen3105.github.io";
 }
 
 /**

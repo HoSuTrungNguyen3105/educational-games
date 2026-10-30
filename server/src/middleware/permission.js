@@ -31,6 +31,8 @@ const LABELS = (() => {
   const m = {};
   const act = { view: "xem", edit: "sửa", delete: "xóa" };
   for (const f of FEATURES) for (const [a, perm] of Object.entries(f.permissions)) m[perm] = `${f.label} · ${act[a]}`;
+  // Quyền kiểu cũ không có trong ma trận ⇒ tự đặt nhãn cho câu 403 dễ hiểu.
+  m["attendance.checkin"] = "Chấm công · điểm danh";
   return m;
 })();
 const label = (perm) => LABELS[perm] || perm;
@@ -108,6 +110,13 @@ const RULES = [
   { re: /^\/reminders\/due$/, perms: [PROFILE] },                        // endpoint polling của app
   { re: /^\/reminders/, perms: [PROFILE, "reminders.view"] },
   { re: /^\/notifications/, perms: [PROFILE] },
+
+  // ── Chấm công ─────────────────────────────────────────────────────────
+  // Học sinh TỰ chấm công cũng đi qua đường này: quyền `attendance.checkin`
+  // (= ô "Chấm công · sửa" trong trang Phân quyền) là điều kiện cần; phần
+  // "chỉ được chấm mình/hôm nay/present-late" route /attendance xử lý tiếp.
+  { m: "POST", re: /^\/attendance\/checkin$/, perms: ["attendance.checkin", "attendance.edit"] },
+  { re: /^\/attendance(\/|$)/, feature: "attendance" },
 
   // ── Vườn / thú cưng / avatar / ảnh ───────────────────────────────────
   { re: /^\/garden/, perms: [PLAY] },

@@ -11,7 +11,9 @@ services:
       - key: NODE_VERSION
         value: 20
       - key: SOCKET_CORS_ORIGINS
-        value: https://ho-nguyen.github.io
+        value: https://hosutrungnguyen3105.github.io,http://localhost:5173
+      - key: REFRESH_ALLOWED_ORIGINS
+        value: https://hosutrungnguyen3105.github.io,http://localhost:5173
       - key: MONGODB_DB
         value: educational_games
       - key: JWT_SECRET

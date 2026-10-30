@@ -2,7 +2,7 @@ import { IconBack, IconBell, IconCalendar, IconCheck, IconCheckCircle, IconChevr
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { authService, classService, API_BASE, notificationService, userService, gameProgressService } from "../../services/api.js";
 import { getLevelProgress } from "../../lib/utils.js";
-import { getRoleLabel, hasPermission } from "../../config/roles.js";
+import { getRoleLabel, hasUserPermission } from "../../config/roles.js";
 import { navigate } from "../../lib/router.js";
 import { GraduationCap, ChevronUp, Copy, Palette, Smartphone, Monitor, Apple, BellRing, BellOff, CircleX, TriangleAlert, Send, RefreshCw, Info, Share2, SquarePlus, EllipsisVertical, UserCheck, Gamepad2, Settings
 } from "lucide-react";
@@ -542,8 +542,8 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               {joinError && <p className="text-xs text-red-500 mt-1.5">{joinError}</p>}
             </div>
 
-            {/* Chấm công - chỉ hiện khi có quyền */}
-            {hasPermission(user.role, 'attendance.view') && (
+            {/* Chấm công - chỉ hiện khi tài khoản này có quyền (permissions từ /auth/me) */}
+            {hasUserPermission(user, 'attendance.view') && (
               <button
                 onClick={() => navigate('/attendance')}
                 className="w-full rounded-xl p-3.5 flex items-center gap-3 hover:bg-ink/3 transition text-left"
@@ -555,7 +555,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                 <div className="flex-1 text-left min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-display text-sm text-ink">Chấm công</span>
-                    {hasPermission(user.role, 'attendance.checkin') && (
+                    {hasUserPermission(user, 'attendance.checkin') && (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
                         Có quyền
                       </span>

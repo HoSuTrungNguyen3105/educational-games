@@ -238,6 +238,23 @@ export function hasPermission(role, permission) {
   return r.permissions.includes(permission);
 }
 
+/**
+ * Kiểm quyền của ĐÚNG tài khoản đang đăng nhập thay vì bảng tĩnh theo vai trò.
+ *
+ * GET /api/auth/me trả `permissions` đọc từ collection `roles`, nên ô admin
+ * bật/tắt ở trang Phân quyền có hiệu lực ngay — đó cũng chính là mảng mà API
+ * đối chiếu ở middleware quyền phía server. Tài khoản chưa tải profile (hoặc
+ * response cũ không có field) thì rơi về bảng tĩnh `hasPermission(role, ...)`.
+ */
+export function hasUserPermission(user, permission) {
+  if (!user) return false;
+  if (Array.isArray(user.permissions)) {
+    if (user.permissions.includes("*")) return true;
+    return user.permissions.includes(permission);
+  }
+  return hasPermission(user.role, permission);
+}
+
 export function canAccessDashboard(role) {
   return ROLES[role]?.dashboardAccess ?? false;
 }

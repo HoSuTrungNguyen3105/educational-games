@@ -156,7 +156,7 @@ export default function KidSettingsCard() {
       </div>
 
       {/* ─────────── Song ngữ Anh–Việt ─────────── */}
-      <div className="rounded-xl p-3.5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+      {/* <div className="rounded-xl p-3.5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-3">
           <span className="text-2xl" aria-hidden="true">🈯</span>
           <div className="flex-1">
@@ -188,7 +188,7 @@ export default function KidSettingsCard() {
             </div>
           </div>
         )}
-      </div>
+      </div> */}
     </section>
   );
 }

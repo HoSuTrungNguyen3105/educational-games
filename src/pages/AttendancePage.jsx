@@ -13,7 +13,8 @@ import { navigate } from '../lib/router.js';
 import { UserCheck, CircleAlert } from 'lucide-react';
 import { AttendanceCalendar } from '../components/attendance/AttendanceCalendar.jsx';
 import { attendanceService } from '../services/attendanceService.js';
-import { hasPermission } from '../config/roles.js';
+import { authService } from '../services/api.js';
+import { hasUserPermission } from '../config/roles.js';
 
 export default function AttendancePage({ userAuth, studentId = null }) {
   const [loading, setLoading] = useState(true);
@@ -23,20 +24,38 @@ export default function AttendancePage({ userAuth, studentId = null }) {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [updating, setUpdating] = useState(false);
-
-  // Kiểm tra quyền chấm công
-  const canCheckIn = userAuth?.user?.role && hasPermission(userAuth.user.role, 'attendance.checkin');
+  // Hồ sơ từ /auth/me: id thật của tài khoản + mảng `permissions` đang áp dụng
+  // cho vai trò này (admin bật/tắt ô ở trang Phân quyền là đổi ngay).
+  const [account, setAccount] = useState(null);
 
   useEffect(() => {
+    let alive = true;
+    const req = userAuth?.user ? authService.me() : Promise.resolve(null);
+    req
+      .then((data) => alive && setAccount(data || {}))
+      .catch(() => alive && setAccount({})); // không đọc được hồ sơ → xử như chưa có quyền
+    return () => {
+      alive = false;
+    };
+  }, [userAuth]);
+
+  // Kiểm tra quyền chấm công
+  const canCheckIn = hasUserPermission(account || userAuth?.user, 'attendance.checkin');
+  const myId = account?.id || userAuth?.user?.id || null;
+  // Server chỉ cho tài khoản vai trò student tự điểm danh hôm nay (present/late).
+  const isStudentAccount = (account?.role || userAuth?.user?.role) === 'student';
+
+  useEffect(() => {
+    if (!account) return; // chờ /auth/me để có id + quyền
     loadAttendanceData();
-  }, [selectedStudent, currentMonth, currentYear]);
+  }, [account, selectedStudent, currentMonth, currentYear]);
 
   async function loadAttendanceData() {
     setLoading(true);
     setError(null);
 
     try {
-      const targetStudentId = selectedStudent || userAuth?.user?._id;
+      const targetStudentId = selectedStudent || myId;
 
       if (!targetStudentId) {
         throw new Error('Không tìm thấy học sinh');
@@ -59,7 +78,7 @@ export default function AttendancePage({ userAuth, studentId = null }) {
   async function handleDateClick(date, status) {
     if (!canCheckIn) return;
 
-    const targetStudentId = selectedStudent || userAuth?.user?._id;
+    const targetStudentId = selectedStudent || myId;
 
     setUpdating(true);
     try {
@@ -126,7 +145,9 @@ export default function AttendancePage({ userAuth, studentId = null }) {
 
         {canCheckIn && (
           <p className="text-xs text-ink/60 mb-4">
-            Nhấn vào ngày để chấm công (đi học/nghỉ). Chỉ giáo viên có quyền chấm công.
+            {isStudentAccount
+              ? 'Nhấn vào ngày hôm nay để điểm danh (đi học / đi muộn).'
+              : 'Nhấn vào ngày để chấm công (đi học/nghỉ).'}
           </p>
         )}
 
@@ -136,6 +157,7 @@ export default function AttendancePage({ userAuth, studentId = null }) {
           attendanceData={attendanceData}
           onDateClick={handleDateClick}
           canCheckIn={canCheckIn}
+          checkInStatuses={isStudentAccount ? ['present', 'late'] : undefined}
         />
 
         {updating && (

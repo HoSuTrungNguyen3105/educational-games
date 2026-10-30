@@ -17,6 +17,10 @@ export function AttendanceCalendar({
   attendanceData = [],
   onDateClick,
   canCheckIn = false,
+  // Nhấn ngày sẽ chuyển vòng quanh danh sách trạng thái này. Giáo viên dùng
+  // mặc định (đi học ↔ nghỉ); học sinh tự điểm danh chỉ chấm được present/late
+  // nên trang chấm công truyền ['present', 'late'].
+  checkInStatuses = ['present', 'absent'],
 }) {
   const [currentYear, setCurrentYear] = useState(year || new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(month || new Date().getMonth() + 1);
@@ -108,8 +112,10 @@ export function AttendanceCalendar({
     const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const currentStatus = getStatus(day);
 
-    // Toggle giữa present và absent
-    const newStatus = currentStatus === 'present' ? 'absent' : 'present';
+    // Chuyển sang trạng thái kế tiếp trong `checkInStatuses`
+    // (chưa chấm công → trạng thái đầu tiên; trạng thái cuối → về đầu).
+    const idx = checkInStatuses.indexOf(currentStatus);
+    const newStatus = checkInStatuses[(idx + 1) % checkInStatuses.length];
 
     if (onDateClick) {
       onDateClick(dateStr, newStatus);

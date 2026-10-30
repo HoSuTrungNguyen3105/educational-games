@@ -135,9 +135,10 @@ export async function apiFetch(path, options = {}) {
       ...(auth && auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
       ...(options.headers || {}),
     },
-    // Chỉ endpoint /auth/ mới cần cookie refresh; các API khác giữ nguyên như cũ
-    // để không bật credentials cho mọi origin một cách không cần thiết.
-    credentials: path.startsWith("/auth/") ? "include" : "omit",
+    // Chỉ các endpoint thực sự dùng cookie HttpOnly (refresh, logout, login, register)
+    // mới cần bật credentials: "include". Các API nghiệp vụ (/auth/me, /auth/me/wallet...)
+    // xác thực bằng header Authorization (Bearer token) nên để "omit" để tránh bị chặn CORS credentials vô lý.
+    credentials: (path === "/auth/refresh" || path === "/auth/logout" || path === "/auth/login" || path === "/auth/register") ? "include" : "omit",
     ...options,
     signal,
     body: options.body ? JSON.stringify(options.body) : undefined,

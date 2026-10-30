@@ -753,6 +753,10 @@ async function _runHeavyInit(database) {
 
     // game_configs — một document cho mỗi key cấu hình
     ["game_configs", { key: 1 }, { unique: true }],
+
+    // attendance — một bản ghi chấm công cho mỗi (user, ngày); tra theo tháng
+    ["attendance", { userId: 1, date: 1 }, { unique: true }],
+    ["attendance", { date: -1 }],
   ];
 
   const createdIndexes = [];
