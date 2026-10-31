@@ -46,7 +46,7 @@ export default function AssignmentList() {
   }
 
   function copyLink(assignment) {
-    const url = `${window.location.origin}/#/assignment/${assignment.code || assignment.id}`;
+    const url = `${window.location.origin}/educational-games/#/assignment/${assignment.code || assignment.id}`;
     copy(url, assignment.id);
   }
 

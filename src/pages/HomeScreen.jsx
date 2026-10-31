@@ -1082,7 +1082,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         </section>
 
         {/* ─────────── BANNER CÀI APP ─────────── */}
-        {pwaVisible && (
+        {/* {pwaVisible && (
           <div className="gq-pwa">
             <button className="gq-pwa__x" onClick={closePwaBanner} aria-label="Đóng"><X className="w-4 h-4" /></button>
             <p className="gq-pwa__t">Có app Lớp Học Vui cho điện thoại</p>
@@ -1096,7 +1096,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </button>
             </div>
           </div>
-        )}
+        )} */}
         {pushMessage && (
           <p className="text-xs text-center bg-white rounded-2xl py-2 px-3 shadow mb-3">{pushMessage}</p>
         )}

@@ -54,7 +54,7 @@ r.post("/", auth, requireTeacher, async (req, res) => {
           type: "ASSIGNMENT",
           title: "📝 Bài tập mới",
           message: `Bạn có bài tập mới: ${title} từ ${fromUser?.name || "giáo viên"}`,
-          link: `/assignment/${assignment.code}`,
+          link: `educational-games/#/assignment/${assignment.code}`,
         });
       }
     } catch (notifyErr) {

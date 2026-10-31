@@ -208,6 +208,13 @@
   var HEAD_SLOTS = ['skin', 'face', 'hair', 'hairColor', 'glasses', 'hat', 'acc'];
   /* Chỉ giữ khung đầu để đội mũ + đeo kính: không tóc, không mặc gì (kaiju). */
   var CRITTER_SLOTS = ['glasses', 'hat', 'acc'];
+  /* Robot có khuôn mặt điện tử (mắt chuẩn 224/288 × 210) nên nhận Mặt, Kính, Mũ,
+   * Phụ kiện; không có da thật, tóc hay quần áo để thay. */
+  var ROBOT_SLOTS = ['face', 'glasses', 'hat', 'acc'];
+  /* Bộ xương không có da nhưng vẫn đội tóc, đeo kính, mặc đồ được — áo/quần
+   * vẽ đè lên khung xương như người thường. */
+  var SKELETON_SLOTS = ['face', 'hair', 'hairColor', 'glasses', 'hat', 'acc',
+    'shirt', 'dress', 'pants', 'shoes'];
 
   var BODIES = {
     body_01: {
@@ -241,6 +248,92 @@
     body_dragon_01: {
       n: 'Rồng xanh', overlays: false, slug: 'dragon', slots: [],
       hint: 'Body khắc sẵn mặt và chi tiết, không nhận phụ kiện.'
+    },
+
+    /* ---- 20 thân chủ đề: đặc biệt / nghề nghiệp / cổ tích / lễ hội ----
+     *  Thêm vào CUỐI bảng để thứ tự tab Thân và danh sách admin của các thân
+     *  cũ không đổi. Mọi thân dưới đây vẽ trên cùng khung 512×700 của
+     *  `body.html`; thân tự mặc đồ dùng `selfClothed` để bỏ trống được
+     *  áo/quần/giày mà vẫn đủ người. */
+    body_astronaut_01: {
+      n: 'Phi hành gia', overlays: true, slug: 'astronaut', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Đồ phi hành trắng, găng + bốt xám, bình khí hai bên lưng và mũ kính trong suốt. Mũ vẽ sau tóc nên tóc không xuyên kính; vẫn mặc thêm áo/quần/giày/mũ được.'
+    },
+    body_ninja_01: {
+      n: 'Ninja', overlays: true, slug: 'ninja', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Đồ đen, thắt lưng đỏ, băng đô và khăn che mũi/miệng vẽ đè sau tóc. Mắt ở đúng 224/288 nên kính vẫn khớp.'
+    },
+    body_robot_01: {
+      n: 'Robot thân thiện', overlays: true, slug: 'robot', selfClothed: true, slots: ROBOT_SLOTS,
+      hint: 'Thân kim loại xanh bạc, ăng-ten đỏ, bảng điều khiển ngực. Có Mặt (mắt điện tử) + Kính + Mũ + Phụ kiện; không có da/tóc/quần áo để thay.'
+    },
+    body_pirate_01: {
+      n: 'Cướp biển', overlays: true, slug: 'pirate', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Áo choàng đỏ sẫm, áo sơ mi trắng, thắt lưng vàng, bốt da, mũ ba sừng + băng bịt mắt. Mũ vẽ đè sau tóc nên đội thêm mũ khác vẫn được.'
+    },
+    body_vampire_01: {
+      n: 'Ma cà rồng', overlays: true, slug: 'vampire', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Áo đen, áo choàng tím sau lưng, cổ áo dựng đỏ, huân chương vàng và hai răng nanh. Áo choàng vẽ trước thân nên không che đồ.'
+    },
+    body_doctor_01: {
+      n: 'Bác sĩ', overlays: true, slug: 'doctor', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Áo blouse trắng, áo trong xanh y tế, quần xám, ống nghe và thẻ tên. Ống nghe vẽ sau áo nên mặc áo ngoài vẫn thấy.'
+    },
+    body_firefighter_01: {
+      n: 'Lính cứu hỏa', overlays: true, slug: 'firefighter', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Đồ chống cháy xanh đen, dải phản quang vàng, bốt đen, mũ đỏ có huy hiệu. Mũ vẽ trên cùng nên đội mũ khác là mũ đó nằm ngoài.'
+    },
+    body_teacher_01: {
+      n: 'Giáo viên', overlays: true, slug: 'teacher', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Áo cardigan xanh ngọc, sơ mi trắng, quần nâu, dây đeo thẻ và bút cài túi. Tóc búi là "diện" mặc định nhưng đổi tóc thoải mái.'
+    },
+    body_police_01: {
+      n: 'Cảnh sát', overlays: true, slug: 'police', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Đồng phục xanh navy, huy hiệu vàng, thắt lưng đai, bộ đàm vai và mũ kết vành. Kính + mũ chọn thêm vẫn vẽ đè đúng chỗ.'
+    },
+    body_chef_01: {
+      n: 'Đầu bếp', overlays: true, slug: 'chef', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Áo trắng hai hàng khuy, khăn đỏ, quần tối và mũ đầu bếp cao. Mũ vẽ sau tóc nên tóc không đội ra ngoài mũ.'
+    },
+    body_pilot_01: {
+      n: 'Phi công', overlays: true, slug: 'pilot', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Đồng phục navy, sơ mi trắng + cà vạt, sọc vàng tay áo, cầu vai và mũ phi công có cánh vàng.'
+    },
+    body_prince_01: {
+      n: 'Hoàng tử', overlays: true, slug: 'prince', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Áo choàng xanh hoàng gia viền vàng, dải băng trắng, quần trắng, bốt đen và vương miện nhỏ.'
+    },
+    body_princess_01: {
+      n: 'Công chúa', overlays: true, slug: 'princess', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Váy hồng dài viền vàng, tay phồng, quần tất sáng, vương miện và vòng cổ ngọc trai. Váy phủ thân nên chọn Váy khác sẽ đè lên.'
+    },
+    body_knight_01: {
+      n: 'Hiệp sĩ', overlays: true, slug: 'knight', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Giáp bạc từng mảng, khiên đỏ sau lưng, mũ giáp hở mặt có lông đỏ. Mũ chừa đúng vùng mắt nên Mặt vẫn hiện rõ.'
+    },
+    body_witch_01: {
+      n: 'Phù thủy', overlays: true, slug: 'witch', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Váy tím, thắt lưng vàng, tất sọc cam và mũ nhọn vành rộng có khoá vàng. Tóc mặc định màu tím, đổi được.'
+    },
+    body_fairy_01: {
+      n: 'Tiên', overlays: true, slug: 'fairy', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Váy mint, cánh trong suốt sau lưng, vương miện hoa và đũa phép ngôi sao. Cánh vẽ trước thân nên không che đồ.'
+    },
+    body_skeleton_01: {
+      n: 'Bộ xương', overlays: true, slug: 'skeleton', selfClothed: true, slots: SKELETON_SLOTS,
+      hint: 'Hộp sọ, lồng ngực, xương chậu và tay chân rời. Hốc mắt đặt đúng 224/288 nên Mặt vẽ vào thành mắt phát sáng; mặc áo/quần là che xương như đồ thường.'
+    },
+    body_snowman_01: {
+      n: 'Người tuyết', overlays: false, slug: 'snowman', selfClothed: true, slots: CRITTER_SLOTS,
+      hint: 'Ba quả cầu tuyết, mắt than + mũi cà rốt + khăn đỏ. Tự vẽ mặt nên chỉ nhận Kính, Mũ, Phụ kiện — mắt than đặt sát 224/288 để kính ôm đúng.'
+    },
+    body_santa_01: {
+      n: 'Ông già Noel', overlays: true, slug: 'santa', selfClothed: true, slots: HUMAN_SLOTS,
+      hint: 'Đồ đỏ viền lông trắng, thắt lưng đen khoá vàng, bốt trắng, râu + mũ đỏ có bông. Râu vẽ sau mặt nên che miệng nhưng chừa mắt; đổi Mặt vẫn thấy mắt.'
+    },
+    body_ghost_halloween_01: {
+      n: 'Ma Halloween', overlays: false, slug: 'halloween', selfClothed: true, slots: CRITTER_SLOTS,
+      hint: 'Tấm vải tím bay, mắt phát sáng và miệng bí ngô, không có chân. Tự vẽ mặt nên chỉ nhận Kính, Mũ, Phụ kiện.'
     }
   };
 
@@ -1043,14 +1136,866 @@
       + '</g>';
   }
 
+  /* ===================================================================== *
+   *  THÂN CHỦ ĐỀ — 20 nhân vật mới (đặc biệt / nghề nghiệp / cổ tích / lễ hội)
+   *
+   *  Tất cả dựng trên ĐÚNG khung của body.html: đầu 179–333 × 91–301, mắt
+   *  224/288 × 210, thân TORSO, chân LEG_L/R, bàn chân FOOT_L/R. Nhờ vậy mặt,
+   *  tóc, mũ, kính, áo, váy, quần, giày, phụ kiện dùng chung một hệ toạ độ —
+   *  đổi linh kiện chỉ đổi nét vẽ, không lệch và không xuyên hình.
+   *
+   *  Mỗi nhân vật tự vẽ sẵn bộ đồ (selfClothed) nhưng vẫn khai báo đủ `slots`
+   *  trong BODIES để người chơi mặc thêm áo/quần/giày/mũ đè lên được, đúng
+   *  cách Kamen Rider / Superman đang làm. Nhân vật không có da–tóc–quần áo
+   *  (Robot, Người tuyết, Ma Halloween) khai báo slots hẹp theo cơ chế hiện tại.
+   * ===================================================================== */
+
+  /** Thân mặc đồ kín: tay → tay áo → cổ → đầu → thân → chân → giày. */
+  function costumeFrame(sv, o) {
+    return groundShadow()
+      + limbs(o.arm)
+      + (o.armDetail || '')
+      + neck(sv, o.neck || o.torso)
+      + head(sv, o.head || 'url(#kidSkin)')
+      + '<path d="' + TORSO + '" fill="' + o.torso + '" filter="url(#kidShadow)"/>'
+      + (o.torsoDetail || '')
+      + '<path d="' + LEG_L + '" fill="' + o.leg + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + LEG_R + '" fill="' + o.leg + '" filter="url(#kidShadow)"/>'
+      + (o.legDetail || '')
+      + '<path d="' + FOOT_L + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + FOOT_R + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>'
+      + (o.footDetail || '');
+  }
+
+  /** Thân mặc váy dài: chân vẽ TRƯỚC váy để chỉ lộ phần dưới gấu. */
+  function gownFrame(sv, o) {
+    return groundShadow()
+      + limbs(o.arm)
+      + (o.armDetail || '')
+      + neck(sv, o.neck || o.dress)
+      + head(sv, o.head || 'url(#kidSkin)')
+      + (o.leg ? '<path d="' + LEG_L + '" fill="' + o.leg + '"/>' + '<path d="' + LEG_R + '" fill="' + o.leg + '"/>' : '')
+      + '<path d="' + DRESS_BODY + '" fill="' + o.dress + '" filter="url(#kidShadow)"/>'
+      + (o.dressDetail || '')
+      + '<path d="' + FOOT_L + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + FOOT_R + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>';
+  }
+
+  function belt(band, buckle, edge) {
+    return '<path d="M180 474 C212 490 300 490 332 474 L332 502 C300 516 212 516 180 502 Z" fill="' + band + '" filter="url(#kidShadow)"/>'
+      + '<rect x="238" y="478" width="36" height="26" rx="6" fill="' + buckle + '" stroke="' + (edge || buckle) + '" stroke-width="4"/>';
+  }
+
+  function bootShafts(color, trim) {
+    return '<rect x="184" y="590" width="72" height="54" rx="12" fill="' + color + '"/>'
+      + '<rect x="256" y="590" width="72" height="54" rx="12" fill="' + color + '"/>'
+      + '<path d="M190 598 L250 598 M262 598 L322 598" stroke="' + trim + '" stroke-width="7" stroke-linecap="round"/>';
+  }
+
+  /* ---- 1. Phi hành gia ------------------------------------------------ */
+  var AST = {
+    suit: '#F2F5FA', suitDark: '#DCE5F1', trim: '#8FA6C4', visor: '#8FD3FF',
+    pack: '#C7D2E3', packDark: '#93A2BA', boot: '#5D6B80', gold: '#F5C63C', red: '#E8453C'
+  };
+
+  function astronautBack() {
+    return '<g filter="url(#kidShadow)">'
+      + '<rect x="128" y="348" width="48" height="164" rx="23" fill="' + AST.pack + '" stroke="' + AST.packDark + '" stroke-width="5"/>'
+      + '<rect x="336" y="348" width="48" height="164" rx="23" fill="' + AST.pack + '" stroke="' + AST.packDark + '" stroke-width="5"/>'
+      + '</g>'
+      + '<path d="M140 380 L164 380 M348 380 L372 380" stroke="' + AST.trim + '" stroke-width="7" stroke-linecap="round"/>';
+  }
+
+  function astronautBody(sv) {
+    return costumeFrame(sv, {
+      torso: AST.suit, arm: AST.suit, neck: AST.suitDark, leg: AST.suit, foot: AST.boot,
+      armDetail: '<path d="M160 402 L206 396 M306 396 L352 402" stroke="' + AST.trim + '" stroke-width="7" stroke-linecap="round"/>'
+        + '<rect x="150" y="446" width="58" height="44" rx="21" fill="' + AST.suitDark + '" stroke="' + AST.trim + '" stroke-width="4"/>'
+        + '<rect x="304" y="446" width="58" height="44" rx="21" fill="' + AST.suitDark + '" stroke="' + AST.trim + '" stroke-width="4"/>',
+      torsoDetail: '<path d="M198 332 C206 350 306 350 314 332" stroke="#FFFFFF" stroke-opacity=".6" stroke-width="7" fill="none"/>'
+        + '<rect x="222" y="352" width="68" height="54" rx="13" fill="' + AST.suitDark + '" stroke="' + AST.trim + '" stroke-width="5"/>'
+        + '<circle cx="241" cy="370" r="8" fill="' + AST.red + '"/><circle cx="271" cy="370" r="8" fill="' + AST.gold + '"/>'
+        + '<rect x="234" y="386" width="44" height="8" rx="4" fill="' + AST.trim + '"/>'
+        + '<path d="M204 428 L308 428" stroke="' + AST.trim + '" stroke-width="6" stroke-linecap="round" opacity=".75"/>'
+        + '<path d="M212 470 L300 470" stroke="' + AST.trim + '" stroke-width="6" stroke-linecap="round" opacity=".55"/>',
+      legDetail: '<path d="M210 512 L206 592 M302 512 L306 592" stroke="' + AST.trim + '" stroke-width="7" opacity=".7"/>',
+      footDetail: bootShafts(AST.boot, AST.trim)
+        + '<path d="M190 664 Q220 674 251 664 M261 664 Q292 674 322 664" stroke="#00000022" stroke-width="5" fill="none"/>'
+    });
+  }
+
+  function astronautTop() {
+    return '<g>'
+      + '<path d="M214 300 C232 328 280 328 298 300 L304 334 C280 358 232 358 208 334 Z" fill="' + AST.suitDark + '" stroke="' + AST.trim + '" stroke-width="5"/>'
+      + '<ellipse cx="256" cy="192" rx="104" ry="119" fill="' + AST.visor + '" fill-opacity=".18" stroke="' + AST.trim + '" stroke-width="7"/>'
+      + '<ellipse cx="256" cy="192" rx="96" ry="111" fill="none" stroke="#FFFFFF" stroke-opacity=".4" stroke-width="3"/>'
+      + '<path d="M184 142 C200 106 224 88 248 82" stroke="#FFFFFF" stroke-opacity=".72" stroke-width="11" fill="none" stroke-linecap="round"/>'
+      + '<path d="M320 250 C332 232 336 214 336 196" stroke="#FFFFFF" stroke-opacity=".28" stroke-width="9" fill="none" stroke-linecap="round"/>'
+      + '</g>';
+  }
+
+  /* ---- 2. Ninja ------------------------------------------------------- */
+  var NIN = { suit: '#2B3147', dark: '#1C2132', band: '#C2352F', gold: '#F5C63C', trim: '#8E98B5' };
+
+  function ninjaBack() {
+    return '<path d="M296 330 C346 342 368 394 360 450 L344 492 L326 462 L308 496 L300 434 C296 392 282 356 264 342 Z" fill="' + NIN.band + '" filter="url(#kidShadow)"/>'
+      + '<path d="M306 362 C330 396 338 434 334 470" stroke="#8E2A25" stroke-width="7" fill="none" opacity=".6"/>';
+  }
+
+  function ninjaBody(sv) {
+    return costumeFrame(sv, {
+      torso: NIN.suit, arm: NIN.suit, neck: NIN.dark, leg: NIN.suit, foot: NIN.dark,
+      armDetail: '<path d="M160 438 L204 432 M308 432 L352 438" stroke="' + NIN.trim + '" stroke-width="7" stroke-linecap="round" opacity=".7"/>'
+        + '<rect x="152" y="446" width="54" height="46" rx="22" fill="' + NIN.dark + '"/>'
+        + '<rect x="306" y="446" width="54" height="46" rx="22" fill="' + NIN.dark + '"/>',
+      torsoDetail: '<path d="M212 330 L256 372 L300 330 L304 352 L256 398 L208 352 Z" fill="' + NIN.dark + '"/>'
+        + belt(NIN.dark, NIN.gold, '#C99A10')
+        + '<path d="M206 350 L198 456 M306 350 L314 456" stroke="' + NIN.dark + '" stroke-width="7" opacity=".85"/>',
+      legDetail: '<path d="M200 516 L196 604 M312 516 L316 604" stroke="' + NIN.dark + '" stroke-width="8" opacity=".8"/>',
+      footDetail: '<path d="M190 664 Q220 674 251 664 M261 664 Q292 674 322 664" stroke="' + NIN.band + '" stroke-width="5" fill="none"/>'
+    });
+  }
+
+  function ninjaTop() {
+    return '<g>'
+      /* mũ trùm: vòng ngoài trừ khuôn mặt (evenodd) để mắt/tóc vẫn lộ đúng chỗ */
+      + '<path fill-rule="evenodd" fill="' + NIN.suit + '" filter="url(#kidShadow)" d="'
+      + 'M173 168 C173 112 211 85 256 85 C301 85 339 112 339 168 L339 216 C339 268 301 307 256 307 C211 307 173 268 173 216 Z '
+      + 'M191 198 C191 170 218 152 256 152 C294 152 321 170 321 198 L321 216 C321 252 294 272 256 272 C218 272 191 252 191 216 Z"/>'
+      /* khăn bịt mũi/miệng */
+      + '<path d="M183 240 C200 264 226 276 256 276 C286 276 312 264 329 240 L333 272 C329 296 296 307 256 307 C216 307 183 296 179 272 Z" fill="' + NIN.suit + '"/>'
+      + '<path d="M196 264 C218 280 240 286 256 286 C272 286 294 280 316 264" stroke="' + NIN.trim + '" stroke-width="5" fill="none" opacity=".45" stroke-linecap="round"/>'
+      /* băng đô đỏ */
+      + '<path d="M175 150 C210 132 302 132 337 150 L337 172 C302 154 210 154 175 172 Z" fill="' + NIN.band + '"/>'
+      + '<path d="M256 142 L244 166 L268 164 Z" fill="' + NIN.gold + '"/>'
+      + '</g>';
+  }
+
+  /* ---- 3. Robot thân thiện -------------------------------------------- */
+  var ROB = {
+    metal: '#C2D2E6', metalLight: '#E8F1FB', metalDark: '#8DA2BE', joint: '#6C7F99',
+    panel: '#33415C', screen: '#9BE8FF', gold: '#F5C63C', red: '#E8453C'
+  };
+
+  function robotBody() {
+    var rsv = { light: ROB.metalLight, dark: ROB.metal, shadow: ROB.metalDark, ear: ROB.metalDark };
+    return groundShadow()
+      + limbs(ROB.metal)
+      + '<path d="M164 430 L200 424 M312 424 L348 430" stroke="' + ROB.metalDark + '" stroke-width="8" stroke-linecap="round"/>'
+      + '<circle cx="188" cy="466" r="13" fill="' + ROB.joint + '"/><circle cx="324" cy="466" r="13" fill="' + ROB.joint + '"/>'
+      + '<rect x="150" y="446" width="56" height="44" rx="16" fill="' + ROB.metalLight + '" stroke="' + ROB.metalDark + '" stroke-width="5"/>'
+      + '<rect x="306" y="446" width="56" height="44" rx="16" fill="' + ROB.metalLight + '" stroke="' + ROB.metalDark + '" stroke-width="5"/>'
+      + neck(rsv, ROB.metalDark)
+      + head(rsv, ROB.metal)
+      /* vành mắt sáng: lớp MẶT (mắt tối) vẽ đè lên vẫn rõ */
+      + '<ellipse cx="224" cy="210" rx="31" ry="35" fill="' + ROB.metalLight + '" stroke="' + ROB.metalDark + '" stroke-width="5"/>'
+      + '<ellipse cx="288" cy="210" rx="31" ry="35" fill="' + ROB.metalLight + '" stroke="' + ROB.metalDark + '" stroke-width="5"/>'
+      + '<circle cx="176" cy="213" r="15" fill="' + ROB.metalDark + '"/><circle cx="336" cy="213" r="15" fill="' + ROB.metalDark + '"/>'
+      + '<circle cx="176" cy="213" r="6" fill="' + ROB.metalLight + '"/><circle cx="336" cy="213" r="6" fill="' + ROB.metalLight + '"/>'
+      + '<path d="M212 258 L300 258" stroke="' + ROB.metalDark + '" stroke-width="6" stroke-linecap="round" opacity=".5"/>'
+      + '<circle cx="196" cy="176" r="6" fill="' + ROB.metalDark + '"/><circle cx="316" cy="176" r="6" fill="' + ROB.metalDark + '"/>'
+      + '<path d="' + TORSO + '" fill="' + ROB.metal + '" filter="url(#kidShadow)"/>'
+      + '<rect x="216" y="344" width="80" height="62" rx="14" fill="' + ROB.panel + '" stroke="' + ROB.metalDark + '" stroke-width="5"/>'
+      + '<path d="M226 384 L236 370 L246 384 L256 366 L266 384 L276 370 L286 384" stroke="' + ROB.screen + '" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+      + '<circle cx="232" cy="358" r="5" fill="' + ROB.gold + '"/><circle cx="280" cy="358" r="5" fill="' + ROB.red + '"/>'
+      + '<path d="M206 430 L306 430" stroke="' + ROB.metalDark + '" stroke-width="6" stroke-linecap="round" opacity=".6"/>'
+      + '<rect x="238" y="446" width="36" height="26" rx="7" fill="' + ROB.gold + '" stroke="' + ROB.metalDark + '" stroke-width="4"/>'
+      + '<path d="' + LEG_L + '" fill="' + ROB.metal + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + LEG_R + '" fill="' + ROB.metal + '" filter="url(#kidShadow)"/>'
+      + '<circle cx="221" cy="558" r="14" fill="' + ROB.joint + '"/><circle cx="291" cy="558" r="14" fill="' + ROB.joint + '"/>'
+      + '<path d="M196 520 L194 604 M316 520 L318 604" stroke="' + ROB.metalDark + '" stroke-width="7" opacity=".7"/>'
+      + '<path d="' + FOOT_L + '" fill="' + ROB.metalDark + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + FOOT_R + '" fill="' + ROB.metalDark + '" filter="url(#kidShadow)"/>'
+      + '<path d="M190 664 Q220 674 251 664 M261 664 Q292 674 322 664" stroke="#00000022" stroke-width="5" fill="none"/>';
+  }
+
+  function robotTop() {
+    return '<g>'
+      + '<path d="M256 90 L256 42" stroke="' + ROB.metalDark + '" stroke-width="8" stroke-linecap="round"/>'
+      + '<circle cx="256" cy="38" r="14" fill="' + ROB.red + '" stroke="' + ROB.metalDark + '" stroke-width="4"/>'
+      + '<circle cx="251" cy="33" r="4" fill="#FFFFFF" opacity=".6"/>'
+      + '<rect x="164" y="188" width="16" height="46" rx="8" fill="' + ROB.metalDark + '"/>'
+      + '<rect x="332" y="188" width="16" height="46" rx="8" fill="' + ROB.metalDark + '"/>'
+      + '</g>';
+  }
+
+  /* ---- 4. Cướp biển --------------------------------------------------- */
+  var PIR = {
+    coat: '#8A3A2C', coatDark: '#5F2418', shirt: '#F4F6FA', pants: '#2E2E38',
+    boot: '#3A2A22', gold: '#F5C63C', hat: '#2B2A33'
+  };
+
+  function pirateBody(sv) {
+    return costumeFrame(sv, {
+      torso: PIR.coat, arm: PIR.coat, neck: PIR.shirt, leg: PIR.pants, foot: PIR.boot,
+      armDetail: '<path d="M158 434 L204 428 M308 428 L354 434" stroke="' + PIR.coatDark + '" stroke-width="8" stroke-linecap="round"/>'
+        + '<rect x="150" y="444" width="58" height="46" rx="20" fill="' + PIR.coatDark + '"/>'
+        + '<rect x="304" y="444" width="58" height="46" rx="20" fill="' + PIR.coatDark + '"/>'
+        + '<path d="M158 454 L200 448 M312 448 L354 454" stroke="' + PIR.gold + '" stroke-width="5" stroke-linecap="round"/>',
+      torsoDetail: '<path d="M212 326 C232 352 280 352 300 326 L306 352 L256 396 L206 352 Z" fill="' + PIR.shirt + '"/>'
+        + '<path d="M256 352 L256 470" stroke="' + PIR.coatDark + '" stroke-width="6" opacity=".7"/>'
+        + '<g fill="' + PIR.gold + '"><circle cx="232" cy="382" r="6"/><circle cx="232" cy="416" r="6"/><circle cx="232" cy="450" r="6"/></g>'
+        + belt(PIR.coatDark, PIR.gold, '#C99A10')
+        + '<path d="M204 344 L196 460 M308 344 L316 460" stroke="' + PIR.coatDark + '" stroke-width="7" opacity=".55"/>',
+      footDetail: bootShafts(PIR.boot, PIR.gold)
+        + '<path d="M190 664 Q220 674 251 664 M261 664 Q292 674 322 664" stroke="' + PIR.gold + '" stroke-width="4" fill="none" opacity=".45"/>'
+    });
+  }
+
+  function pirateTop() {
+    return '<g>'
+      /* mũ ba sừng */
+      + '<path d="M126 158 C150 108 188 84 256 84 C324 84 362 108 386 158 C356 138 316 128 256 128 C196 128 156 138 126 158 Z" fill="' + PIR.hat + '" filter="url(#kidShadow)"/>'
+      + '<path d="M126 158 C176 132 336 132 386 158 C382 170 372 176 356 176 C320 166 296 162 256 162 C216 162 192 166 156 176 C140 176 130 170 126 158 Z" fill="' + PIR.hat + '"/>'
+      + '<path d="M140 152 C186 130 326 130 372 152" stroke="' + PIR.gold + '" stroke-width="6" fill="none" opacity=".9"/>'
+      + '<circle cx="256" cy="116" r="13" fill="#F4F6FA"/>'
+      + '<circle cx="251" cy="112" r="2.8" fill="' + PIR.hat + '"/><circle cx="261" cy="112" r="2.8" fill="' + PIR.hat + '"/>'
+      + '<path d="M251 122 L261 122" stroke="' + PIR.hat + '" stroke-width="2.8" stroke-linecap="round"/>'
+      /* băng bịt mắt + khuyên tai */
+      + '<path d="M198 202 L340 180" stroke="' + PIR.hat + '" stroke-width="6"/>'
+      + '<ellipse cx="224" cy="210" rx="27" ry="30" fill="' + PIR.hat + '"/>'
+      + '<path d="M208 198 C214 192 226 190 236 195" stroke="#FFFFFF" stroke-opacity=".22" stroke-width="4" fill="none" stroke-linecap="round"/>'
+      + '<circle cx="338" cy="242" r="9" fill="none" stroke="' + PIR.gold + '" stroke-width="5"/>'
+      + '</g>';
+  }
+
+  /* ---- 5. Ma cà rồng -------------------------------------------------- */
+  var VAM = {
+    cape: '#2A1B3D', capeIn: '#5B2140', suit: '#24202E', suitDark: '#171420',
+    shirt: '#F4F6FA', red: '#B3243C', gold: '#F5C63C', boot: '#171420'
+  };
+
+  function vampireBack() {
+    return '<path d="M206 322 C238 344 274 344 306 322 L366 430 L392 622 C332 656 180 656 120 622 L146 430 Z" fill="' + VAM.cape + '" filter="url(#kidShadow)"/>'
+      + '<path d="M256 344 L256 640" stroke="' + VAM.capeIn + '" stroke-width="10" fill="none" opacity=".6"/>'
+      + '<path d="M198 356 L164 614 M314 356 L348 614" stroke="' + VAM.capeIn + '" stroke-width="9" fill="none" opacity=".45"/>'
+      + '<path d="M120 622 C180 650 332 650 392 622" stroke="' + VAM.capeIn + '" stroke-width="9" fill="none" opacity=".6"/>';
+  }
+
+  function vampireBody(sv) {
+    return costumeFrame(sv, {
+      torso: VAM.suit, arm: VAM.suit, neck: VAM.shirt, leg: VAM.suitDark, foot: VAM.boot,
+      armDetail: '<path d="M160 430 L204 424 M308 424 L352 430" stroke="' + VAM.red + '" stroke-width="6" stroke-linecap="round" opacity=".8"/>'
+        + '<rect x="152" y="446" width="54" height="44" rx="20" fill="' + VAM.shirt + '"/>'
+        + '<rect x="306" y="446" width="54" height="44" rx="20" fill="' + VAM.shirt + '"/>',
+      torsoDetail: '<path d="M214 328 L256 392 L298 328 L304 352 L256 424 L208 352 Z" fill="' + VAM.shirt + '"/>'
+        + '<path d="M226 330 L256 380 L286 330" fill="' + VAM.red + '" opacity=".92"/>'
+        + '<path d="M230 364 C244 380 268 380 282 364" stroke="' + VAM.suitDark + '" stroke-width="6" fill="none" opacity=".8"/>'
+        + '<g fill="' + VAM.gold + '"><circle cx="256" cy="410" r="5"/><circle cx="256" cy="442" r="5"/><circle cx="256" cy="474" r="5"/></g>'
+        + belt(VAM.suitDark, VAM.gold, '#C99A10'),
+      legDetail: '<rect x="188" y="590" width="68" height="48" rx="11" fill="' + VAM.boot + '"/>'
+        + '<rect x="256" y="590" width="68" height="48" rx="11" fill="' + VAM.boot + '"/>'
+        + '<path d="M194 598 L250 598 M262 598 L318 598" stroke="' + VAM.red + '" stroke-width="6" stroke-linecap="round"/>'
+    });
+  }
+
+  function vampireTop() {
+    return '<g>'
+      /* cổ áo dựng */
+      + '<path d="M196 300 L214 356 L246 330 Z" fill="' + VAM.red + '"/>'
+      + '<path d="M316 300 L298 356 L266 330 Z" fill="' + VAM.red + '"/>'
+      + '<path d="M196 300 L214 356 L246 330 Z" fill="#000000" opacity=".18"/>'
+      + '<path d="M316 300 L298 356 L266 330 Z" fill="#000000" opacity=".18"/>'
+      /* huân chương */
+      + '<circle cx="256" cy="352" r="14" fill="' + VAM.gold + '" stroke="' + VAM.red + '" stroke-width="5"/>'
+      + '<circle cx="256" cy="352" r="5" fill="' + VAM.red + '"/>'
+      /* nanh */
+      + '<path d="M234 258 L240 278 L248 258 Z" fill="#FFFFFF"/>'
+      + '<path d="M264 258 L272 278 L278 258 Z" fill="#FFFFFF"/>'
+      + '</g>';
+  }
+
+  /* ---- 6. Bác sĩ ------------------------------------------------------ */
+  var DOC = {
+    coat: '#F7FAFE', coatDark: '#D9E4F2', scrub: '#7FC8DA', scrubDark: '#4FA3B8',
+    pants: '#6C7A8C', shoe: '#FFFFFF', ink: '#3E4C63'
+  };
+
+  function doctorBody(sv) {
+    return costumeFrame(sv, {
+      torso: DOC.coat, arm: DOC.coat, neck: DOC.scrub, leg: DOC.pants, foot: DOC.shoe,
+      armDetail: '<path d="M160 414 L204 408 M308 408 L352 414" stroke="' + DOC.coatDark + '" stroke-width="7" stroke-linecap="round"/>'
+        + '<rect x="152" y="448" width="54" height="42" rx="19" fill="' + DOC.coat + '" stroke="' + DOC.coatDark + '" stroke-width="4"/>'
+        + '<rect x="306" y="448" width="54" height="42" rx="19" fill="' + DOC.coat + '" stroke="' + DOC.coatDark + '" stroke-width="4"/>',
+      torsoDetail: '<path d="M214 326 L256 404 L298 326 L304 348 L256 442 L208 348 Z" fill="' + DOC.scrub + '"/>'
+        + '<path d="M232 328 L256 372 L280 328" fill="' + DOC.scrubDark + '" opacity=".55"/>'
+        + '<path d="M206 340 L198 470 M306 340 L314 470" stroke="' + DOC.coatDark + '" stroke-width="6" fill="none" opacity=".8"/>'
+        + '<path d="M218 470 C218 462 232 460 238 466 L238 500 L218 500 Z" fill="' + DOC.coatDark + '" opacity=".5"/>'
+        + '<g fill="' + DOC.ink + '"><circle cx="238" cy="392" r="6"/><circle cx="238" cy="428" r="6"/><circle cx="238" cy="464" r="6"/></g>'
+        + '<rect x="274" y="404" width="34" height="24" rx="5" fill="#FFFFFF" stroke="' + DOC.coatDark + '" stroke-width="3"/>'
+        + '<path d="M280 412 L300 412 M280 420 L296 420" stroke="' + DOC.ink + '" stroke-width="3"/>'
+    });
+  }
+
+  function doctorTop() {
+    return '<g>'
+      /* ống nghe */
+      + '<path d="M210 326 C204 372 226 404 244 424 M302 326 C308 372 286 404 268 424" stroke="#4A5568" stroke-width="8" fill="none" stroke-linecap="round"/>'
+      + '<path d="M210 326 C204 372 226 404 244 424" stroke="#8FA0B8" stroke-width="3" fill="none" stroke-linecap="round"/>'
+      + '<circle cx="256" cy="440" r="17" fill="#C9D2DE" stroke="#4A5568" stroke-width="6"/>'
+      + '<circle cx="256" cy="440" r="7" fill="#8FA0B8"/>'
+      + '</g>';
+  }
+
+  /* ---- 7. Lính cứu hỏa ------------------------------------------------ */
+  var FIRE = {
+    coat: '#2E4057', coatDark: '#1E2C3E', stripe: '#F5D24A', silver: '#DCE3EE',
+    boot: '#1B1E26', helmet: '#E8453C', helmetDark: '#B83029'
+  };
+
+  function firefighterBody(sv) {
+    return costumeFrame(sv, {
+      torso: FIRE.coat, arm: FIRE.coat, neck: FIRE.coatDark, leg: FIRE.coat, foot: FIRE.boot,
+      armDetail: '<path d="M156 442 L204 436 M308 436 L356 442" stroke="' + FIRE.stripe + '" stroke-width="12" stroke-linecap="round"/>'
+        + '<rect x="150" y="462" width="58" height="44" rx="19" fill="' + FIRE.coatDark + '"/>'
+        + '<rect x="304" y="462" width="58" height="44" rx="19" fill="' + FIRE.coatDark + '"/>'
+        + '<path d="M158 470 L200 466 M312 466 L354 470" stroke="' + FIRE.silver + '" stroke-width="5" stroke-linecap="round"/>',
+      torsoDetail: '<path d="M256 326 L256 500" stroke="' + FIRE.coatDark + '" stroke-width="8" opacity=".85"/>'
+        + '<path d="M196 392 L316 392" stroke="' + FIRE.stripe + '" stroke-width="14"/>'
+        + '<path d="M196 418 L316 418" stroke="' + FIRE.silver + '" stroke-width="8"/>'
+        + '<path d="M188 448 L324 448" stroke="' + FIRE.stripe + '" stroke-width="14"/>'
+        + '<rect x="222" y="340" width="68" height="34" rx="8" fill="' + FIRE.coatDark + '" stroke="' + FIRE.silver + '" stroke-width="4"/>'
+        + '<path d="M232 352 L250 352 M262 352 L280 352" stroke="' + FIRE.stripe + '" stroke-width="4"/>',
+      legDetail: '<path d="M196 520 L192 618 M316 520 L320 618" stroke="' + FIRE.stripe + '" stroke-width="9" opacity=".9"/>'
+        + '<rect x="184" y="592" width="72" height="50" rx="11" fill="' + FIRE.boot + '"/>'
+        + '<rect x="256" y="592" width="72" height="50" rx="11" fill="' + FIRE.boot + '"/>'
+        + '<path d="M190 600 L250 600 M262 600 L322 600" stroke="' + FIRE.silver + '" stroke-width="6" stroke-linecap="round"/>'
+    });
+  }
+
+  function firefighterTop() {
+    return '<g>'
+      + '<path d="M170 158 C170 104 208 74 256 74 C304 74 342 104 342 158 Z" fill="' + FIRE.helmet + '" filter="url(#kidShadow)"/>'
+      + '<path d="M186 112 C206 90 230 80 252 78" stroke="#FFFFFF" stroke-opacity=".28" stroke-width="10" fill="none" stroke-linecap="round"/>'
+      + '<path d="M146 152 C206 174 306 174 366 152 L356 178 C300 198 212 198 156 178 Z" fill="' + FIRE.helmetDark + '"/>'
+      + '<path d="M160 162 C212 180 300 180 352 162" stroke="#FFFFFF" stroke-opacity=".22" stroke-width="5" fill="none"/>'
+      + '<rect x="236" y="110" width="40" height="40" rx="9" fill="' + FIRE.silver + '" stroke="' + FIRE.helmetDark + '" stroke-width="4"/>'
+      + '<path d="M256 118 L256 142 M246 130 L266 130" stroke="' + FIRE.helmet + '" stroke-width="6" stroke-linecap="round"/>'
+      + '</g>';
+  }
+
+  /* ---- 8. Giáo viên ---------------------------------------------------- */
+  var TEACH = {
+    cardigan: '#4C8C7A', cardiganDark: '#33655A', blouse: '#F7FAFE',
+    pants: '#6B4F3A', shoe: '#4A3428', ink: '#2E3B4A', lace: '#E8453C'
+  };
+
+  function teacherBody(sv) {
+    return costumeFrame(sv, {
+      torso: TEACH.cardigan, arm: TEACH.cardigan, neck: TEACH.blouse, leg: TEACH.pants, foot: TEACH.shoe,
+      armDetail: '<path d="M158 424 L204 418 M308 418 L354 424" stroke="' + TEACH.cardiganDark + '" stroke-width="7" stroke-linecap="round"/>'
+        + '<rect x="152" y="448" width="54" height="42" rx="19" fill="' + TEACH.cardigan + '" stroke="' + TEACH.cardiganDark + '" stroke-width="4"/>'
+        + '<rect x="306" y="448" width="54" height="42" rx="19" fill="' + TEACH.cardigan + '" stroke="' + TEACH.cardiganDark + '" stroke-width="4"/>',
+      torsoDetail: '<path d="M214 328 L256 400 L298 328 L302 350 L256 434 L210 350 Z" fill="' + TEACH.blouse + '"/>'
+        + '<path d="M226 330 L256 376 L286 330" fill="' + TEACH.blouse + '" stroke="' + TEACH.cardiganDark + '" stroke-width="4"/>'
+        + '<path d="M206 340 L198 470 M306 340 L314 470" stroke="' + TEACH.cardiganDark + '" stroke-width="6" fill="none" opacity=".85"/>'
+        + '<rect x="268" y="420" width="38" height="30" rx="6" fill="#FFFFFF" stroke="' + TEACH.cardiganDark + '" stroke-width="4"/>'
+        + '<path d="M274 430 L300 430 M274 440 L294 440" stroke="' + TEACH.ink + '" stroke-width="3"/>'
+    });
+  }
+
+  function teacherTop() {
+    return '<g>'
+      + '<path d="M214 322 L246 402 M298 322 L266 402" stroke="' + TEACH.lace + '" stroke-width="7" fill="none" stroke-linecap="round"/>'
+      + '<rect x="232" y="400" width="48" height="62" rx="7" fill="#FFFFFF" stroke="' + TEACH.cardiganDark + '" stroke-width="4"/>'
+      + '<rect x="238" y="408" width="36" height="26" rx="4" fill="#DDEBFF"/>'
+      + '<circle cx="256" cy="415" r="7" fill="' + TEACH.ink + '"/>'
+      + '<path d="M246 429 C250 421 262 421 266 429 Z" fill="' + TEACH.ink + '"/>'
+      + '<path d="M240 444 L272 444 M240 452 L262 452" stroke="' + TEACH.cardiganDark + '" stroke-width="3"/>'
+      + '<path d="M300 414 L300 436" stroke="' + TEACH.lace + '" stroke-width="6" stroke-linecap="round"/>'
+      + '<circle cx="300" cy="412" r="6" fill="' + TEACH.lace + '"/>'
+      + '</g>';
+  }
+
+  /* ---- 9. Cảnh sát ---------------------------------------------------- */
+  var POL = {
+    jacket: '#2F3E63', jacketDark: '#1E2A45', shirt: '#9CC3E8', boot: '#171A22',
+    gold: '#F5C63C', silver: '#D7DEE9'
+  };
+
+  function policeBody(sv) {
+    return costumeFrame(sv, {
+      torso: POL.jacket, arm: POL.jacket, neck: POL.shirt, leg: POL.jacket, foot: POL.boot,
+      armDetail: '<path d="M160 424 L204 418 M308 418 L352 424" stroke="' + POL.jacketDark + '" stroke-width="7" stroke-linecap="round"/>'
+        + '<rect x="150" y="446" width="58" height="44" rx="20" fill="' + POL.jacketDark + '"/>'
+        + '<rect x="304" y="446" width="58" height="44" rx="20" fill="' + POL.jacketDark + '"/>',
+      torsoDetail: '<path d="M214 328 L256 392 L298 328 L304 350 L256 426 L208 350 Z" fill="' + POL.shirt + '"/>'
+        + '<path d="M252 330 L260 330 L266 470 L256 480 L246 470 Z" fill="' + POL.jacketDark + '" opacity=".85"/>'
+        + '<circle cx="218" cy="360" r="13" fill="' + POL.gold + '" stroke="#C99A10" stroke-width="3"/>'
+        + '<path d="M218 353 L221 361 L229 361 L223 366 L225 374 L218 369 L211 374 L213 366 L207 361 L215 361 Z" fill="#FFFFFF"/>'
+        + '<rect x="286" y="352" width="34" height="24" rx="6" fill="' + POL.jacketDark + '" stroke="' + POL.silver + '" stroke-width="3"/>'
+        + belt(POL.boot, POL.gold, '#C99A10')
+        + '<rect x="196" y="484" width="26" height="30" rx="6" fill="' + POL.jacketDark + '" stroke="' + POL.silver + '" stroke-width="3"/>'
+        + '<rect x="290" y="484" width="26" height="30" rx="6" fill="' + POL.jacketDark + '" stroke="' + POL.silver + '" stroke-width="3"/>',
+      legDetail: '<path d="M198 520 L194 618 M314 520 L318 618" stroke="' + POL.shirt + '" stroke-width="7" opacity=".8"/>',
+      footDetail: bootShafts(POL.boot, POL.silver)
+    });
+  }
+
+  function policeTop() {
+    return '<g>'
+      + '<path d="M172 156 C172 106 208 78 256 78 C304 78 340 106 340 156 Z" fill="' + POL.jacket + '" filter="url(#kidShadow)"/>'
+      + '<path d="M188 116 C208 94 232 84 254 82" stroke="#FFFFFF" stroke-opacity=".2" stroke-width="10" fill="none" stroke-linecap="round"/>'
+      + '<path d="M166 148 C210 168 302 168 346 148 L338 170 C296 190 216 190 174 170 Z" fill="' + POL.boot + '"/>'
+      + '<path d="M176 156 C216 172 296 172 336 156" stroke="' + POL.gold + '" stroke-width="7" fill="none"/>'
+      + '<circle cx="256" cy="110" r="15" fill="' + POL.gold + '" stroke="#C99A10" stroke-width="4"/>'
+      + '<path d="M256 101 L259 108 L267 108 L261 113 L263 121 L256 116 L249 121 L251 113 L245 108 L253 108 Z" fill="#FFFFFF"/>'
+      + '<rect x="300" y="318" width="22" height="38" rx="6" fill="' + POL.boot + '" stroke="' + POL.silver + '" stroke-width="3"/>'
+      + '<path d="M311 316 L311 302" stroke="' + POL.silver + '" stroke-width="5" stroke-linecap="round"/>'
+      + '</g>';
+  }
+
+  /* ---- 10. Đầu bếp ---------------------------------------------------- */
+  var CHEF = {
+    coat: '#F7FAFE', coatDark: '#DCE5F1', pants: '#33333F', shoe: '#1B1E26',
+    scarf: '#E8453C', button: '#8FA0B8'
+  };
+
+  function chefBody(sv) {
+    return costumeFrame(sv, {
+      torso: CHEF.coat, arm: CHEF.coat, neck: CHEF.coatDark, leg: CHEF.pants, foot: CHEF.shoe,
+      armDetail: '<path d="M160 416 L204 410 M308 410 L352 416" stroke="' + CHEF.coatDark + '" stroke-width="7" stroke-linecap="round"/>'
+        + '<rect x="152" y="448" width="54" height="42" rx="19" fill="' + CHEF.coat + '" stroke="' + CHEF.coatDark + '" stroke-width="4"/>'
+        + '<rect x="306" y="448" width="54" height="42" rx="19" fill="' + CHEF.coat + '" stroke="' + CHEF.coatDark + '" stroke-width="4"/>',
+      torsoDetail: '<path d="M214 328 L256 366 L298 328 L302 350 L256 400 L210 350 Z" fill="' + CHEF.scarf + '"/>'
+        + '<path d="M206 340 L198 472 M306 340 L314 472" stroke="' + CHEF.coatDark + '" stroke-width="6" fill="none"/>'
+        + '<g fill="' + CHEF.button + '"><circle cx="230" cy="372" r="6"/><circle cx="282" cy="372" r="6"/>'
+        + '<circle cx="230" cy="408" r="6"/><circle cx="282" cy="408" r="6"/>'
+        + '<circle cx="230" cy="444" r="6"/><circle cx="282" cy="444" r="6"/></g>'
+        + '<rect x="206" y="462" width="100" height="26" rx="8" fill="' + CHEF.coatDark + '" opacity=".45"/>'
+    });
+  }
+
+  function chefTop() {
+    return '<g>'
+      + '<path d="M186 148 C164 138 162 108 182 96 C180 72 206 58 226 68 C236 46 276 46 286 68 C308 58 332 72 330 96 C350 108 348 138 326 148 Z" fill="#FFFFFF" stroke="' + CHEF.coatDark + '" stroke-width="5"/>'
+      + '<path d="M196 128 C186 118 188 104 200 100" stroke="' + CHEF.coatDark + '" stroke-width="4" fill="none" opacity=".6"/>'
+      + '<path d="M316 128 C326 118 324 104 312 100" stroke="' + CHEF.coatDark + '" stroke-width="4" fill="none" opacity=".6"/>'
+      + '<rect x="182" y="140" width="148" height="30" rx="10" fill="#FFFFFF" stroke="' + CHEF.coatDark + '" stroke-width="5"/>'
+      + '<path d="M196 152 L316 152" stroke="' + CHEF.coatDark + '" stroke-width="3" opacity=".5"/>'
+      + '</g>';
+  }
+
+  /* ---- 11. Phi công --------------------------------------------------- */
+  var PIL = {
+    jacket: '#25324F', jacketDark: '#16203A', shirt: '#F4F6FA', tie: '#1B1E26',
+    boot: '#1B1E26', gold: '#F5C63C', silver: '#D7DEE9'
+  };
+
+  function pilotBody(sv) {
+    return costumeFrame(sv, {
+      torso: PIL.jacket, arm: PIL.jacket, neck: PIL.shirt, leg: PIL.jacket, foot: PIL.boot,
+      armDetail: '<g fill="' + PIL.gold + '"><rect x="158" y="416" width="46" height="7" rx="3"/><rect x="158" y="428" width="46" height="7" rx="3"/><rect x="158" y="440" width="46" height="7" rx="3"/><rect x="158" y="452" width="46" height="7" rx="3"/></g>'
+        + '<g fill="' + PIL.gold + '"><rect x="308" y="416" width="46" height="7" rx="3"/><rect x="308" y="428" width="46" height="7" rx="3"/><rect x="308" y="440" width="46" height="7" rx="3"/><rect x="308" y="452" width="46" height="7" rx="3"/></g>',
+      torsoDetail: '<path d="M214 328 L256 396 L298 328 L304 350 L256 430 L208 350 Z" fill="' + PIL.shirt + '"/>'
+        + '<path d="M248 330 L256 344 L264 330 L268 348 L256 470 L244 348 Z" fill="' + PIL.tie + '"/>'
+        + '<path d="M256 326 L256 500" stroke="' + PIL.jacketDark + '" stroke-width="7" opacity=".7"/>'
+        + '<g fill="' + PIL.gold + '"><circle cx="256" cy="392" r="5"/><circle cx="256" cy="428" r="5"/><circle cx="256" cy="464" r="5"/></g>'
+        + belt(PIL.boot, PIL.gold, '#C99A10'),
+      footDetail: bootShafts(PIL.boot, PIL.silver)
+    });
+  }
+
+  function pilotTop() {
+    return '<g>'
+      + '<rect x="182" y="320" width="52" height="20" rx="9" fill="' + PIL.gold + '" stroke="' + PIL.jacketDark + '" stroke-width="3"/>'
+      + '<rect x="278" y="320" width="52" height="20" rx="9" fill="' + PIL.gold + '" stroke="' + PIL.jacketDark + '" stroke-width="3"/>'
+      + '<path d="M192 330 L224 330 M288 330 L320 330" stroke="' + PIL.jacketDark + '" stroke-width="4"/>'
+      + '<path d="M174 158 C174 106 210 78 256 78 C302 78 338 106 338 158 Z" fill="' + PIL.jacket + '" filter="url(#kidShadow)"/>'
+      + '<path d="M188 118 C208 94 232 84 254 82" stroke="#FFFFFF" stroke-opacity=".18" stroke-width="9" fill="none" stroke-linecap="round"/>'
+      + '<path d="M172 150 C214 170 298 170 340 150 L332 170 C294 190 218 190 180 170 Z" fill="' + PIL.boot + '"/>'
+      + '<path d="M182 156 C220 172 292 172 330 156" stroke="' + PIL.gold + '" stroke-width="6" fill="none"/>'
+      + '<path d="M256 100 C238 100 226 110 226 122 C226 132 236 140 256 140 C276 140 286 132 286 122 C286 110 274 100 256 100 Z" fill="' + PIL.gold + '"/>'
+      + '<path d="M226 122 L196 112 L214 128 L196 138 L226 130 Z" fill="' + PIL.gold + '"/>'
+      + '<path d="M286 122 L316 112 L298 128 L316 138 L286 130 Z" fill="' + PIL.gold + '"/>'
+      + '</g>';
+  }
+
+  /* ---- 12. Hoàng tử --------------------------------------------------- */
+  var PRIN = {
+    coat: '#2A5FC1', coatDark: '#1E4694', trim: '#F5C63C', trimDark: '#C99A10',
+    sash: '#F4F6FA', boot: '#1B1E26', red: '#D6322E'
+  };
+
+  function princeBody(sv) {
+    return costumeFrame(sv, {
+      torso: PRIN.coat, arm: PRIN.coat, neck: PRIN.sash, leg: PRIN.sash, foot: PRIN.boot,
+      armDetail: '<path d="M158 428 L204 422 M308 422 L354 428" stroke="' + PRIN.trim + '" stroke-width="8" stroke-linecap="round"/>'
+        + '<rect x="152" y="446" width="54" height="44" rx="20" fill="' + PRIN.coatDark + '"/>'
+        + '<rect x="306" y="446" width="54" height="44" rx="20" fill="' + PRIN.coatDark + '"/>'
+        + '<path d="M158 456 L200 450 M312 450 L354 456" stroke="' + PRIN.trim + '" stroke-width="5" stroke-linecap="round"/>',
+      torsoDetail: '<path d="M256 326 L256 500" stroke="' + PRIN.coatDark + '" stroke-width="7" opacity=".8"/>'
+        + '<path d="M212 330 L256 372 L300 330" stroke="' + PRIN.trim + '" stroke-width="8" fill="none" stroke-linejoin="round"/>'
+        + '<path d="M198 332 L150 486 L194 500 L224 356 Z" fill="' + PRIN.sash + '" opacity=".95"/>'
+        + '<path d="M198 332 L150 486" stroke="' + PRIN.trim + '" stroke-width="6" fill="none"/>'
+        + '<g fill="' + PRIN.trim + '"><circle cx="234" cy="398" r="6"/><circle cx="234" cy="434" r="6"/><circle cx="234" cy="470" r="6"/></g>'
+        + belt(PRIN.trim, PRIN.red, PRIN.trimDark)
+        + '<circle cx="256" cy="490" r="16" fill="' + PRIN.trim + '" stroke="' + PRIN.trimDark + '" stroke-width="4"/>'
+        + '<path d="M256 480 L259 487 L267 487 L261 492 L263 500 L256 495 L249 500 L251 492 L245 487 L253 487 Z" fill="' + PRIN.red + '"/>',
+      legDetail: '<rect x="188" y="590" width="68" height="48" rx="11" fill="' + PRIN.boot + '"/>'
+        + '<rect x="256" y="590" width="68" height="48" rx="11" fill="' + PRIN.boot + '"/>'
+        + '<path d="M194 598 L250 598 M262 598 L318 598" stroke="' + PRIN.trim + '" stroke-width="6" stroke-linecap="round"/>'
+    });
+  }
+
+  function princeTop() {
+    return '<g>'
+      + '<path d="M196 116 L202 66 L228 92 L256 50 L284 92 L310 66 L316 116 Z" fill="' + PRIN.trim + '" stroke="' + PRIN.trimDark + '" stroke-width="5" stroke-linejoin="round"/>'
+      + '<rect x="194" y="112" width="124" height="14" rx="7" fill="' + PRIN.trimDark + '"/>'
+      + '<circle cx="256" cy="86" r="7" fill="' + PRIN.red + '"/>'
+      + '<circle cx="220" cy="100" r="5" fill="#3D7BD1"/>'
+      + '<circle cx="292" cy="100" r="5" fill="#3D7BD1"/>'
+      + '<path d="M178 322 C196 318 212 326 216 340 C198 344 182 338 178 322 Z" fill="' + PRIN.trim + '"/>'
+      + '<path d="M334 322 C316 318 300 326 296 340 C314 344 330 338 334 322 Z" fill="' + PRIN.trim + '"/>'
+      + '</g>';
+  }
+
+  /* ---- 13. Công chúa -------------------------------------------------- */
+  var PRINC = {
+    gown: '#F07CA8', gownDark: '#D6558A', trim: '#F5C63C', trimDark: '#C99A10',
+    pearl: '#FFFFFF', shoe: '#F07CA8', tight: '#FBE4EC'
+  };
+
+  function princessBody(sv) {
+    return gownFrame(sv, {
+      arm: 'url(#kidSkin)', dress: PRINC.gown, leg: PRINC.tight, foot: PRINC.shoe,
+      armDetail: '<rect x="158" y="348" width="54" height="46" rx="22" fill="' + PRINC.gown + '" stroke="' + PRINC.gownDark + '" stroke-width="4"/>'
+        + '<rect x="300" y="348" width="54" height="46" rx="22" fill="' + PRINC.gown + '" stroke="' + PRINC.gownDark + '" stroke-width="4"/>',
+      dressDetail: '<path d="M172 452 C210 470 302 470 340 452" stroke="' + PRINC.trim + '" stroke-width="9" fill="none"/>'
+        + '<path d="M163 540 C210 556 302 556 349 540" stroke="' + PRINC.gownDark + '" stroke-width="7" fill="none" opacity=".55"/>'
+        + '<path d="M186 596 C220 612 292 612 326 596" stroke="' + PRINC.trim + '" stroke-width="7" fill="none" opacity=".8"/>'
+        + '<path d="M226 320 C236 342 276 342 286 320" stroke="' + PRINC.trim + '" stroke-width="6" fill="none"/>'
+        + '<g fill="' + PRINC.trim + '"><circle cx="214" cy="380" r="5"/><circle cx="214" cy="412" r="5"/></g>'
+    });
+  }
+
+  function princessTop() {
+    return '<g>'
+      + '<path d="M206 108 L214 70 L232 92 L256 56 L280 92 L298 70 L306 108 Z" fill="' + PRINC.trim + '" stroke="' + PRINC.trimDark + '" stroke-width="5" stroke-linejoin="round"/>'
+      + '<circle cx="256" cy="86" r="6" fill="#FFFFFF"/>'
+      + '<circle cx="222" cy="98" r="5" fill="#FFFFFF"/>'
+      + '<circle cx="290" cy="98" r="5" fill="#FFFFFF"/>'
+      + '<path d="M218 322 C234 344 278 344 294 322" stroke="' + PRINC.pearl + '" stroke-width="7" fill="none" stroke-linecap="round"/>'
+      + '<g fill="' + PRINC.pearl + '"><circle cx="230" cy="332" r="5"/><circle cx="242" cy="338" r="5"/><circle cx="256" cy="340" r="6"/><circle cx="270" cy="338" r="5"/><circle cx="282" cy="332" r="5"/></g>'
+      + '</g>';
+  }
+
+  /* ---- 14. Hiệp sĩ ---------------------------------------------------- */
+  var KNI = {
+    steel: '#C9D2DE', steelLight: '#E8EEF7', steelDark: '#8A97AB', steelDeep: '#5C687C',
+    gold: '#F5C63C', cloth: '#B3243C', plume: '#D6322E'
+  };
+
+  function knightBack() {
+    return '<g filter="url(#kidShadow)">'
+      + '<path d="M136 356 C104 400 100 470 122 520 C150 538 186 538 206 526 C186 476 186 404 206 366 Z" fill="' + KNI.cloth + '" stroke="' + KNI.gold + '" stroke-width="6"/>'
+      + '<path d="M152 392 C136 428 136 482 152 512" stroke="' + KNI.steelDark + '" stroke-width="6" fill="none" opacity=".7"/>'
+      + '</g>';
+  }
+
+  function knightBody(sv) {
+    return costumeFrame(sv, {
+      torso: KNI.steel, arm: KNI.steel, neck: KNI.steelDark, leg: KNI.steel, foot: KNI.steelDeep,
+      armDetail: '<circle cx="182" cy="366" r="26" fill="' + KNI.steelLight + '" stroke="' + KNI.steelDark + '" stroke-width="6"/>'
+        + '<circle cx="330" cy="366" r="26" fill="' + KNI.steelLight + '" stroke="' + KNI.steelDark + '" stroke-width="6"/>'
+        + '<rect x="150" y="444" width="58" height="48" rx="22" fill="' + KNI.steelDark + '"/>'
+        + '<rect x="304" y="444" width="58" height="48" rx="22" fill="' + KNI.steelDark + '"/>'
+        + '<path d="M160 452 L202 446 M310 446 L352 452" stroke="' + KNI.steelLight + '" stroke-width="5" stroke-linecap="round"/>',
+      torsoDetail: '<path d="M256 326 L256 500" stroke="' + KNI.steelDark + '" stroke-width="7" opacity=".8"/>'
+        + '<path d="M208 350 C220 396 292 396 304 350" stroke="' + KNI.steelDark + '" stroke-width="8" fill="none"/>'
+        + '<path d="M204 430 C224 456 288 456 308 430" stroke="' + KNI.steelDark + '" stroke-width="8" fill="none"/>'
+        + '<path d="M212 390 L300 390" stroke="' + KNI.steelLight + '" stroke-width="6" opacity=".8"/>'
+        + '<circle cx="256" cy="404" r="18" fill="' + KNI.gold + '" stroke="' + KNI.steelDeep + '" stroke-width="5"/>'
+        + '<path d="M256 392 L256 416 M244 404 L268 404" stroke="' + KNI.cloth + '" stroke-width="7" stroke-linecap="round"/>'
+        + belt(KNI.steelDark, KNI.gold, KNI.steelDeep),
+      legDetail: '<circle cx="221" cy="556" r="18" fill="' + KNI.steelLight + '" stroke="' + KNI.steelDark + '" stroke-width="5"/>'
+        + '<circle cx="291" cy="556" r="18" fill="' + KNI.steelLight + '" stroke="' + KNI.steelDark + '" stroke-width="5"/>'
+        + '<path d="M196 516 L192 606 M316 516 L320 606" stroke="' + KNI.steelDark + '" stroke-width="7" opacity=".7"/>'
+        + '<rect x="184" y="592" width="72" height="50" rx="11" fill="' + KNI.steelDeep + '"/>'
+        + '<rect x="256" y="592" width="72" height="50" rx="11" fill="' + KNI.steelDeep + '"/>'
+        + '<path d="M190 600 L250 600 M262 600 L322 600" stroke="' + KNI.steelLight + '" stroke-width="6" stroke-linecap="round"/>'
+    });
+  }
+
+  function knightTop() {
+    return '<g>'
+      /* mũ giáp hở mặt: chỏm + hai má, chừa đúng vùng mắt 224/288 × 210 */
+      + '<path d="M177 176 C177 112 212 82 256 82 C300 82 335 112 335 176 Z" fill="' + KNI.steel + '" stroke="' + KNI.steelDark + '" stroke-width="5" filter="url(#kidShadow)"/>'
+      + '<path d="M194 172 C206 160 232 154 256 154 C280 154 306 160 318 172" stroke="' + KNI.steelDark + '" stroke-width="5" fill="none" opacity=".8"/>'
+      + '<path d="M170 172 L192 172 L192 242 C192 254 180 256 174 248 Z" fill="' + KNI.steel + '" stroke="' + KNI.steelDark + '" stroke-width="4"/>'
+      + '<path d="M342 172 L320 172 L320 242 C320 254 332 256 338 248 Z" fill="' + KNI.steel + '" stroke="' + KNI.steelDark + '" stroke-width="4"/>'
+      + '<path d="M256 82 L256 128" stroke="' + KNI.steelLight + '" stroke-width="7" stroke-linecap="round"/>'
+      + '<path d="M256 82 C250 56 264 34 288 22 C276 44 276 62 282 78 Z" fill="' + KNI.plume + '"/>'
+      + '</g>';
+  }
+
+  /* ---- 15. Phù thủy --------------------------------------------------- */
+  var WIT = {
+    gown: '#5B3A87', gownDark: '#402460', trim: '#8B5CC7', gold: '#F5C63C',
+    buckle: '#C99A10', sock: '#2E2E38', stripe: '#F08A3C', shoe: '#1B1E26'
+  };
+
+  function witchBody(sv) {
+    return gownFrame(sv, {
+      arm: WIT.gown, dress: WIT.gown, leg: WIT.sock, foot: WIT.shoe,
+      armDetail: '<path d="M158 424 L204 418 M308 418 L354 424" stroke="' + WIT.gownDark + '" stroke-width="7" stroke-linecap="round"/>'
+        + '<rect x="152" y="448" width="54" height="44" rx="20" fill="' + WIT.gownDark + '"/>'
+        + '<rect x="306" y="448" width="54" height="44" rx="20" fill="' + WIT.gownDark + '"/>',
+      dressDetail: belt(WIT.gownDark, WIT.gold, WIT.buckle)
+        + '<path d="M168 540 C210 560 302 560 344 540" stroke="' + WIT.trim + '" stroke-width="9" fill="none" opacity=".7"/>'
+        + '<path d="M190 596 C222 610 290 610 322 596" stroke="' + WIT.gold + '" stroke-width="5" fill="none" opacity=".6"/>'
+        + '<path d="M226 320 C236 342 276 342 286 320" stroke="' + WIT.gold + '" stroke-width="5" fill="none"/>',
+      legDetail: '<g fill="' + WIT.stripe + '"><rect x="206" y="606" width="40" height="9" rx="4"/><rect x="266" y="606" width="40" height="9" rx="4"/>'
+        + '<rect x="204" y="622" width="40" height="9" rx="4"/><rect x="268" y="622" width="40" height="9" rx="4"/></g>'
+    });
+  }
+
+  function witchTop() {
+    return '<g>'
+      + '<path d="M150 158 C168 112 206 78 256 44 C306 78 344 112 362 158 Z" fill="' + WIT.gown + '" filter="url(#kidShadow)"/>'
+      + '<path d="M256 44 C238 84 214 122 190 156 L214 160 C236 126 250 92 262 58 Z" fill="' + WIT.trim + '" opacity=".5"/>'
+      + '<ellipse cx="256" cy="158" rx="112" ry="22" fill="' + WIT.gownDark + '"/>'
+      + '<path d="M144 152 C198 172 314 172 368 152 L362 166 C306 186 206 186 150 166 Z" fill="' + WIT.gownDark + '"/>'
+      + '<rect x="222" y="140" width="68" height="26" rx="7" fill="' + WIT.buckle + '" stroke="' + WIT.gold + '" stroke-width="4"/>'
+      + '<rect x="244" y="146" width="24" height="14" rx="4" fill="' + WIT.gownDark + '"/>'
+      + '<path d="M198 306 L214 356 L248 330 Z" fill="' + WIT.gownDark + '"/>'
+      + '<path d="M314 306 L298 356 L264 330 Z" fill="' + WIT.gownDark + '"/>'
+      + '</g>';
+  }
+
+  /* ---- 16. Tiên -------------------------------------------------------- */
+  var FAIRY = {
+    dress: '#4FC3A1', dressDark: '#2F9C7C', trim: '#BFF3E2', gold: '#F5C63C',
+    wing: '#CFF3FF', shoe: '#4FC3A1', rose: '#F07CA8'
+  };
+
+  function fairyBack() {
+    return '<g fill="' + FAIRY.wing + '" fill-opacity=".72" stroke="#FFFFFF" stroke-width="5" stroke-opacity=".85">'
+      + '<path d="M204 340 C142 288 108 210 136 158 C168 178 200 244 214 316 Z"/>'
+      + '<path d="M308 340 C370 288 404 210 376 158 C344 178 312 244 298 316 Z"/>'
+      + '<path d="M200 400 C136 388 96 424 96 478 C142 480 192 452 208 424 Z"/>'
+      + '<path d="M312 400 C376 388 416 424 416 478 C370 480 320 452 304 424 Z"/>'
+      + '</g>';
+  }
+
+  function fairyBody(sv) {
+    return gownFrame(sv, {
+      arm: 'url(#kidSkin)', dress: FAIRY.dress, leg: 'url(#kidSkin)', foot: FAIRY.shoe,
+      armDetail: '<rect x="158" y="350" width="52" height="42" rx="20" fill="' + FAIRY.dress + '" stroke="' + FAIRY.dressDark + '" stroke-width="4"/>'
+        + '<rect x="302" y="350" width="52" height="42" rx="20" fill="' + FAIRY.dress + '" stroke="' + FAIRY.dressDark + '" stroke-width="4"/>',
+      dressDetail: '<path d="M172 456 C210 476 302 476 340 456" stroke="' + FAIRY.gold + '" stroke-width="7" fill="none"/>'
+        + '<path d="M166 536 C210 556 302 556 346 536" stroke="' + FAIRY.dressDark + '" stroke-width="7" fill="none" opacity=".6"/>'
+        + '<g fill="' + FAIRY.trim + '">'
+        + '<path d="M182 560 C196 546 214 552 214 570 C214 586 196 592 184 580 Z"/>'
+        + '<path d="M330 560 C316 546 298 552 298 570 C298 586 316 592 328 580 Z"/>'
+        + '</g>'
+        + '<path d="M226 320 C236 344 276 344 286 320" stroke="' + FAIRY.gold + '" stroke-width="5" fill="none"/>',
+      legDetail: '<path d="M198 600 L194 634 M314 600 L318 634" stroke="' + FAIRY.trim + '" stroke-width="8" opacity=".8"/>'
+    });
+  }
+
+  function fairyTop() {
+    return '<g>'
+      + '<path d="M176 120 C210 96 302 96 336 120" stroke="#3F9E7F" stroke-width="6" fill="none" stroke-linecap="round"/>'
+      + flowerCrown(206, 118, FAIRY.rose)
+      + flowerCrown(240, 100, '#FFA3BE')
+      + flowerCrown(274, 100, FAIRY.rose)
+      + flowerCrown(308, 118, '#FFA3BE')
+      + '<path d="M338 470 L392 396" stroke="#8A5A2F" stroke-width="8" stroke-linecap="round"/>'
+      + '<path d="M392 396 L400 372 L408 396 L432 404 L408 412 L400 436 L392 412 L368 404 Z" fill="' + FAIRY.gold + '" stroke="#C99A10" stroke-width="4" stroke-linejoin="round"/>'
+      + '<circle cx="400" cy="404" r="6" fill="#FFFFFF" opacity=".7"/>'
+      + '</g>';
+  }
+
+  /* ---- 17. Bộ xương --------------------------------------------------- */
+  var BONE = '#F2EFE4', BONE_D = '#D6D0BE', BONE_X = '#B8B0A0', SOCKET = '#3A3446';
+
+  function skeletonBody() {
+    var bsv = { light: BONE, dark: BONE_D, shadow: BONE_X, ear: BONE_D };
+    return groundShadow()
+      + limbs(BONE)
+      + '<circle cx="182" cy="420" r="13" fill="' + BONE_D + '"/><circle cx="330" cy="420" r="13" fill="' + BONE_D + '"/>'
+      + '<circle cx="186" cy="476" r="12" fill="' + BONE_D + '"/><circle cx="326" cy="476" r="12" fill="' + BONE_D + '"/>'
+      + neck(bsv, BONE_D)
+      + head(bsv, BONE)
+      /* hốc mắt để lớp MẶT vẽ mắt vào giữa — nhìn như mắt phát sáng */
+      + '<ellipse cx="224" cy="210" rx="20" ry="23" fill="' + SOCKET + '"/>'
+      + '<ellipse cx="288" cy="210" rx="20" ry="23" fill="' + SOCKET + '"/>'
+      + '<path d="M256 226 L246 248 L266 248 Z" fill="' + SOCKET + '"/>'
+      + '<path d="M206 262 C220 292 292 292 306 262" stroke="' + BONE_X + '" stroke-width="5" fill="none"/>'
+      + '<g fill="#FFFFFF" stroke="' + BONE_X + '" stroke-width="3">'
+      + '<rect x="228" y="270" width="11" height="15" rx="3"/><rect x="242" y="270" width="11" height="15" rx="3"/>'
+      + '<rect x="256" y="270" width="11" height="15" rx="3"/><rect x="270" y="270" width="11" height="15" rx="3"/></g>'
+      /* cột sống + xương sườn */
+      + '<path d="M256 310 L256 490" stroke="' + BONE_D + '" stroke-width="15" stroke-linecap="round"/>'
+      + '<g fill="none" stroke="' + BONE + '" stroke-width="14" stroke-linecap="round">'
+      + '<path d="M256 340 C222 332 198 340 194 358"/><path d="M256 340 C290 332 314 340 318 358"/>'
+      + '<path d="M256 374 C224 366 202 374 198 392"/><path d="M256 374 C288 366 310 374 314 392"/>'
+      + '<path d="M256 408 C226 400 206 408 202 426"/><path d="M256 408 C286 400 306 408 310 426"/>'
+      + '<path d="M256 442 C228 436 212 442 208 458"/><path d="M256 442 C284 436 300 442 304 458"/>'
+      + '</g>'
+      /* xương chậu + chân */
+      + '<path d="M212 480 C212 470 232 466 256 466 C280 466 300 470 300 480 L308 516 C302 532 280 540 256 540 C232 540 210 532 204 516 Z" fill="' + BONE + '" filter="url(#kidShadow)"/>'
+      + '<path d="M256 480 L256 534" stroke="' + BONE_D + '" stroke-width="6"/>'
+      + '<path d="' + LEG_L + '" fill="' + BONE + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + LEG_R + '" fill="' + BONE + '" filter="url(#kidShadow)"/>'
+      + '<circle cx="222" cy="558" r="17" fill="' + BONE_D + '"/><circle cx="290" cy="558" r="17" fill="' + BONE_D + '"/>'
+      + '<path d="M200 512 L198 604 M312 512 L314 604" stroke="' + BONE_X + '" stroke-width="6" opacity=".7"/>'
+      + '<path d="' + FOOT_L + '" fill="' + BONE + '" filter="url(#kidShadow)"/>'
+      + '<path d="' + FOOT_R + '" fill="' + BONE + '" filter="url(#kidShadow)"/>'
+      + '<path d="M196 668 L248 668 M264 668 L316 668" stroke="' + BONE_X + '" stroke-width="5" stroke-linecap="round"/>';
+  }
+
+  function skeletonTop() {
+    return '';
+  }
+
+  /* ---- 18. Người tuyết ------------------------------------------------- */
+  var SNOW = {
+    ball: '#F7FBFF', ballDark: '#DCE9F7', ballShade: '#C7DAEE', coal: '#33333F',
+    carrot: '#F08A3C', carrotDark: '#C2651F', scarf: '#E8453C', twig: '#8A5A2F'
+  };
+
+  function snowmanBody() {
+    return '<ellipse cx="256" cy="676" rx="118" ry="17" fill="#000000" opacity="0.10" filter="url(#kidBlur)"/>'
+      /* cành tay */
+      + '<path d="M186 432 L112 356 M150 392 L126 388 M138 372 L118 358" stroke="' + SNOW.twig + '" stroke-width="10" fill="none" stroke-linecap="round"/>'
+      + '<path d="M326 432 L400 356 M362 392 L386 388 M374 372 L394 358" stroke="' + SNOW.twig + '" stroke-width="10" fill="none" stroke-linecap="round"/>'
+      /* thân dưới + thân giữa */
+      + '<ellipse cx="256" cy="586" rx="112" ry="98" fill="' + SNOW.ball + '" stroke="' + SNOW.ballDark + '" stroke-width="6" filter="url(#kidShadow)"/>'
+      + '<path d="M170 604 C200 640 250 660 300 656" stroke="' + SNOW.ballShade + '" stroke-width="12" fill="none" opacity=".5" stroke-linecap="round"/>'
+      + '<ellipse cx="256" cy="452" rx="86" ry="80" fill="' + SNOW.ball + '" stroke="' + SNOW.ballDark + '" stroke-width="6" filter="url(#kidShadow)"/>'
+      + '<g fill="' + SNOW.coal + '"><circle cx="256" cy="424" r="10"/><circle cx="256" cy="462" r="10"/><circle cx="256" cy="500" r="10"/></g>'
+      /* đầu: mắt 224/288 × 204 để kính đeo vào vẫn khớp */
+      + '<ellipse cx="256" cy="196" rx="82" ry="84" fill="' + SNOW.ball + '" stroke="' + SNOW.ballDark + '" stroke-width="6" filter="url(#kidShadow)"/>'
+      + '<ellipse cx="226" cy="156" rx="34" ry="22" fill="#FFFFFF" opacity=".75"/>'
+      + '<circle cx="224" cy="204" r="12" fill="' + SNOW.coal + '"/>'
+      + '<circle cx="288" cy="204" r="12" fill="' + SNOW.coal + '"/>'
+      + '<circle cx="220" cy="200" r="4" fill="#FFFFFF" opacity=".8"/>'
+      + '<circle cx="284" cy="200" r="4" fill="#FFFFFF" opacity=".8"/>'
+      + '<path d="M252 216 L302 230 L252 242 Z" fill="' + SNOW.carrot + '" stroke="' + SNOW.carrotDark + '" stroke-width="3"/>'
+      + '<ellipse cx="204" cy="238" rx="18" ry="10" fill="#FF8FA0" opacity=".45"/>'
+      + '<ellipse cx="308" cy="238" rx="18" ry="10" fill="#FF8FA0" opacity=".45"/>'
+      + '<path d="M228 258 Q256 278 284 258" stroke="' + SNOW.coal + '" stroke-width="6" fill="none" stroke-linecap="round"/>'
+      + '<circle cx="256" cy="268" r="5" fill="' + SNOW.coal + '"/><circle cx="242" cy="264" r="4" fill="' + SNOW.coal + '"/><circle cx="270" cy="264" r="4" fill="' + SNOW.coal + '"/>';
+  }
+
+  function snowmanTop() {
+    return '<g>'
+      + '<path d="M186 282 C222 306 290 306 326 282 L326 306 C290 330 222 330 186 306 Z" fill="' + SNOW.scarf + '"/>'
+      + '<path d="M196 292 C228 312 284 312 316 292" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="5" fill="none"/>'
+      + '<path d="M296 322 L320 396 L294 404 L278 332 Z" fill="#C93A31"/>'
+      + '<path d="M292 336 L312 342 M300 368 L320 374" stroke="#8E1A14" stroke-width="4" opacity=".6"/>'
+      + '</g>';
+  }
+
+  /* ---- 19. Ông già Noel ------------------------------------------------ */
+  var SANTA = {
+    suit: '#D6322E', suitDark: '#A61F1C', fur: '#F7FAFE', furShade: '#DCE5F1',
+    boot: '#2E2E38', gold: '#F5C63C'
+  };
+
+  function santaBody(sv) {
+    return costumeFrame(sv, {
+      torso: SANTA.suit, arm: SANTA.suit, neck: SANTA.suitDark, leg: SANTA.suit, foot: SANTA.boot,
+      armDetail: '<rect x="150" y="446" width="58" height="44" rx="21" fill="' + SANTA.fur + '" stroke="' + SANTA.furShade + '" stroke-width="4"/>'
+        + '<rect x="304" y="446" width="58" height="44" rx="21" fill="' + SANTA.fur + '" stroke="' + SANTA.furShade + '" stroke-width="4"/>',
+      torsoDetail: '<path d="M256 326 L256 500" stroke="' + SANTA.suitDark + '" stroke-width="9" opacity=".55"/>'
+        + '<path d="M238 328 L274 328 L278 476 L234 476 Z" fill="' + SANTA.fur + '" opacity=".95"/>'
+        + belt(SANTA.boot, SANTA.gold, '#C99A10')
+        + '<rect x="186" y="588" width="70" height="54" rx="12" fill="' + SANTA.fur + '"/>'
+        + '<rect x="256" y="588" width="70" height="54" rx="12" fill="' + SANTA.fur + '"/>'
+        + '<path d="M190 598 L250 598 M262 598 L322 598" stroke="' + SANTA.furShade + '" stroke-width="6" stroke-linecap="round"/>'
+    });
+  }
+
+  function santaTop() {
+    return '<g>'
+      /* râu + ria */
+      + '<path d="M186 214 C186 262 202 300 220 316 C232 328 242 340 256 340 C270 340 280 328 292 316 C310 300 326 262 326 214 C326 244 306 254 288 248 C274 244 266 236 256 236 C246 236 238 244 224 248 C206 254 186 244 186 214 Z" fill="' + SANTA.fur + '" filter="url(#kidShadow)"/>'
+      + '<ellipse cx="236" cy="248" rx="26" ry="15" fill="' + SANTA.fur + '" transform="rotate(-12 236 248)"/>'
+      + '<ellipse cx="276" cy="248" rx="26" ry="15" fill="' + SANTA.fur + '" transform="rotate(12 276 248)"/>'
+      /* mũ đỏ + vành lông + bông */
+      + '<path d="M186 140 C186 96 216 68 256 68 C296 68 326 96 326 140 Z" fill="' + SANTA.suit + '" filter="url(#kidShadow)"/>'
+      + '<path d="M256 68 C252 52 262 34 282 26 C300 18 318 24 324 38 C310 40 300 52 296 68 Z" fill="' + SANTA.suit + '"/>'
+      + '<circle cx="326" cy="30" r="18" fill="' + SANTA.fur + '"/>'
+      + '<path d="M200 106 C214 86 234 76 252 74" stroke="#FFFFFF" stroke-opacity=".28" stroke-width="9" fill="none" stroke-linecap="round"/>'
+      + '<rect x="176" y="128" width="160" height="34" rx="17" fill="' + SANTA.fur + '" stroke="' + SANTA.furShade + '" stroke-width="4"/>'
+      + '<path d="M192 138 C214 130 298 130 320 138" stroke="#FFFFFF" stroke-width="4" fill="none" opacity=".6"/>'
+      + '</g>';
+  }
+
+  /* ---- 20. Ma Halloween ------------------------------------------------ */
+  var HALL = {
+    sheet: '#E7DBFF', mid: '#CDB9F7', edge: '#A98BF0', eye: '#3A2B6B',
+    mouth: '#5B2A6B', glow: '#B99CF2', teeth: '#FFF3C4'
+  };
+
+  function halloweenBack() {
+    return '<ellipse cx="256" cy="430" rx="132" ry="184" fill="' + HALL.glow + '" opacity="0.18" filter="url(#kidBlur)"/>'
+      + '<g fill="#FFFFFF" opacity=".7"><path d="M132 236 L138 254 L156 260 L138 266 L132 284 L126 266 L108 260 L126 254 Z"/>'
+      + '<path d="M392 330 L397 344 L411 349 L397 354 L392 368 L387 354 L373 349 L387 344 Z"/></g>';
+  }
+
+  function halloweenBody() {
+    var hsv = { light: HALL.sheet, dark: HALL.mid, shadow: HALL.edge, ear: HALL.mid };
+    return '<ellipse cx="256" cy="676" rx="74" ry="13" fill="#000000" opacity="0.08" filter="url(#kidBlur)"/>'
+      + limbs(HALL.sheet)
+      + neck(hsv, HALL.mid)
+      + head(hsv, HALL.sheet)
+      + '<path d="M212 322 C234 308 278 308 300 322 C330 340 344 380 342 424 L338 548'
+      + ' C337 570 320 578 306 568 L292 556 L272 582 C262 592 250 592 240 582 L220 556 L206 568'
+      + ' C192 578 175 570 174 548 L170 424 C168 380 182 340 212 322 Z" fill="' + HALL.sheet + '" filter="url(#kidShadow)"/>'
+      + '<path d="M186 424 C184 376 196 344 218 328" stroke="#FFFFFF" stroke-width="10" opacity=".55" fill="none" stroke-linecap="round"/>'
+      /* mắt phát sáng đúng 224/288 × 210 để kính đeo khớp */
+      + '<ellipse cx="224" cy="210" rx="17" ry="23" fill="' + HALL.eye + '"/>'
+      + '<ellipse cx="288" cy="210" rx="17" ry="23" fill="' + HALL.eye + '"/>'
+      + '<circle cx="230" cy="202" r="5" fill="' + HALL.teeth + '"/>'
+      + '<circle cx="294" cy="202" r="5" fill="' + HALL.teeth + '"/>'
+      /* miệng bí ngô */
+      + '<path d="M208 262 L304 262 L292 286 L276 272 L262 290 L250 272 L232 288 Z" fill="' + HALL.mouth + '"/>';
+  }
+
+  function halloweenTop() {
+    return '<g fill="' + HALL.edge + '" opacity=".65">'
+      + '<circle cx="150" cy="308" r="10"/><circle cx="370" cy="262" r="7"/><circle cx="386" cy="470" r="12"/></g>';
+  }
+
   /** 3 móc vẽ bộ đồ, tra theo mã thân. `null` = thân người thường. */
   var HERO_SUITS = {
     body_rider_01: { body: riderBody, back: riderBack, top: riderTop },
     body_superman_01: { body: supermanBody, back: supermanBack, top: supermanTop },
     body_kaiju_01: { body: kaijuBody, back: kaijuBack, top: kaijuTop },
     body_ghost_01: { body: ghostBody, back: ghostBack, top: ghostTop },
-    body_popstar_01: { body: popstarBody, back: popstarBack, top: popstarTop }
+    body_popstar_01: { body: popstarBody, back: popstarBack, top: popstarTop },
+    /* 20 thân chủ đề */
+    body_astronaut_01: { body: astronautBody, back: astronautBack, top: astronautTop },
+    body_ninja_01: { body: ninjaBody, back: ninjaBack, top: ninjaTop },
+    body_robot_01: { body: robotBody, back: noBack, top: robotTop },
+    body_pirate_01: { body: pirateBody, back: noBack, top: pirateTop },
+    body_vampire_01: { body: vampireBody, back: vampireBack, top: vampireTop },
+    body_doctor_01: { body: doctorBody, back: noBack, top: doctorTop },
+    body_firefighter_01: { body: firefighterBody, back: noBack, top: firefighterTop },
+    body_teacher_01: { body: teacherBody, back: noBack, top: teacherTop },
+    body_police_01: { body: policeBody, back: noBack, top: policeTop },
+    body_chef_01: { body: chefBody, back: noBack, top: chefTop },
+    body_pilot_01: { body: pilotBody, back: noBack, top: pilotTop },
+    body_prince_01: { body: princeBody, back: noBack, top: princeTop },
+    body_princess_01: { body: princessBody, back: noBack, top: princessTop },
+    body_knight_01: { body: knightBody, back: knightBack, top: knightTop },
+    body_witch_01: { body: witchBody, back: noBack, top: witchTop },
+    body_fairy_01: { body: fairyBody, back: fairyBack, top: fairyTop },
+    body_skeleton_01: { body: skeletonBody, back: noBack, top: skeletonTop },
+    body_snowman_01: { body: snowmanBody, back: noBack, top: snowmanTop },
+    body_santa_01: { body: santaBody, back: noBack, top: santaTop },
+    body_ghost_halloween_01: { body: halloweenBody, back: halloweenBack, top: halloweenTop }
   };
+
+  /** Thân không có lớp vẽ sau lưng — giữ móc rỗng để renderKid không phải rẽ nhánh. */
+  function noBack() {
+    return '';
+  }
+
 
   /** Thân có bộ đồ vẽ sẵn → hồ sơ được phép bỏ áo/váy/quần/giày (một nguồn: BODIES). */
   function isSuitBody(body) {

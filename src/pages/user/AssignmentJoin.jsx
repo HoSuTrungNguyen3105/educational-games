@@ -21,7 +21,7 @@ export default function AssignmentJoin() {
         setLoading(false);
         return;
       }
-      navigate(`/assignment/${assignment.code || assignment.id}`);
+      navigate(`educational-games/#/assignment/${assignment.code || assignment.id}`);
     } catch (err) {
       setError(err.message);
     }
