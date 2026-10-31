@@ -4,7 +4,7 @@ import { useConfirm } from '../../hooks/useConfirm.js';
 import { ConfirmModal, ErrorState, Field, GhostButton, IconClose, Loader, ManagementHeader, ManagementTable, Modal, PrimaryButton, StatGrid } from '../../components/ui';
 import PetRenderer, { OutfitPreview } from '../../components/pet/PetRenderer.jsx';
 import { getOutfitAsset } from '../../data/petAssets.js';
-import { RotateCcw, Save} from 'lucide-react';
+import { AlertTriangle, Gift, Info, Palette, PawPrint, RotateCcw, Save, Shirt } from 'lucide-react';
 
 /**
  * Quản lý DANH MỤC PET (loài / màu / trang phục).
@@ -23,9 +23,9 @@ import { RotateCcw, Save} from 'lucide-react';
  * này làm bảng rỗng im lặng.
  */
 const TABS = [
-  { kind: 'species', key: 'species', label: 'Loài', icon: '🐾' },
-  { kind: 'color', key: 'colors', label: 'Màu thân', icon: '🎨' },
-  { kind: 'outfit', key: 'outfits', label: 'Trang phục', icon: '👕' },
+  { kind: 'species', key: 'species', label: 'Loài', icon: <PawPrint className="w-4 h-4" /> },
+  { kind: 'color', key: 'colors', label: 'Màu thân', icon: <Palette className="w-4 h-4" /> },
+  { kind: 'outfit', key: 'outfits', label: 'Trang phục', icon: <Shirt className="w-4 h-4" /> },
 ];
 
 /** `kind` (số ít, gửi lên server) → key trong response (số nhiều). */
@@ -58,10 +58,11 @@ function MissingArtNote({ kind, id }) {
   if (kind !== 'outfit') return null;
   if (!id || getOutfitAsset(id)) return null;
   return (
-    <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
-      ⚠️ Chưa có hình vẽ cho id <code className="font-mono">{id}</code>. Thêm mục vào
+    <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 flex items-start gap-1.5">
+      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+      <span>Chưa có hình vẽ cho id <code className="font-mono">{id}</code>. Thêm mục vào
       <code className="font-mono"> src/data/petAssets.js </code>rồi vẽ SVG trong
-      <code className="font-mono"> src/assets/pets/outfits/</code>, nếu không người chơi sẽ không thấy món này.
+      <code className="font-mono"> src/assets/pets/outfits/</code>, nếu không người chơi sẽ không thấy món này.</span>
     </p>
   );
 }
@@ -187,10 +188,10 @@ export default function PetCatalogManagement({ showToast }) {
   };
 
   const stats = data ? [
-    { icon: '🐾', value: data.species.length, label: 'Loài' },
-    { icon: '🎨', value: data.colors.length, label: 'Màu thân' },
-    { icon: '👕', value: data.outfits.length, label: 'Trang phục' },
-    { icon: '🎁', value: rows.filter(r => (r.minLevel || 1) === 1).length, label: 'Mở khoá cấp 1' },
+    { icon: <PawPrint />, value: data.species.length, label: 'Loài' },
+    { icon: <Palette />, value: data.colors.length, label: 'Màu thân' },
+    { icon: <Shirt />, value: data.outfits.length, label: 'Trang phục' },
+    { icon: <Gift />, value: rows.filter(r => (r.minLevel || 1) === 1).length, label: 'Mở khoá cấp 1' },
   ] : [];
 
   const headers = ['Xem trước', 'Tên', 'ID', ...(tab === 'outfit' ? ['Ô'] : []), 'Mở khoá', 'Đang dùng', ''];
@@ -244,12 +245,12 @@ export default function PetCatalogManagement({ showToast }) {
 
   return (
     <div className="space-y-4">
-      <ManagementHeader subtitle="Thú cưng" title="🐾 Danh mục Pet" />
+      <ManagementHeader subtitle="Thú cưng" title="Danh mục Pet" />
 
       <StatGrid stats={stats} />
 
       <div className="note-card p-3 text-xs text-ink/60 flex items-start gap-2">
-        <span className="text-base leading-none">ℹ️</span>
+        <span className="text-base leading-none"><Info className="w-3.5 h-3.5 text-ink/40" /></span>
         <span>
           Danh mục lưu trong collection <code className="font-mono text-[11px]">petCatalog</code> trên server.
           Thêm / sửa / xoá ở đây áp dụng cho <strong>toàn bộ</strong> người chơi ngay lập tức.
@@ -267,7 +268,7 @@ export default function PetCatalogManagement({ showToast }) {
               <button key={t.kind} onClick={() => setTab(t.kind)}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition
                   ${tab === t.kind ? 'bg-pink text-white' : 'bg-ink/5 text-ink/50 hover:bg-ink/10'}`}>
-                <span>{t.icon}</span>
+                {t.icon}
                 {t.label}
                 <span className="text-[10px] font-mono opacity-70">({data[t.key]?.length ?? 0})</span>
               </button>
@@ -332,7 +333,7 @@ export default function PetCatalogManagement({ showToast }) {
         <Modal onClose={closeModal} wide>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-display text-lg text-ink">
-              {editingId ? '✏️ Sửa' : '➕ Thêm'} {TABS.find(t => t.kind === tab).label.toLowerCase()}
+              {editingId ? 'Sửa' : 'Thêm'} {TABS.find(t => t.kind === tab).label.toLowerCase()}
             </h3>
             <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-ink/5"><IconClose className="w-5 h-5 text-ink/50" /></button>
           </div>

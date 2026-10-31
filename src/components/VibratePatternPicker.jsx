@@ -1,3 +1,4 @@
+import { Vibrate } from "lucide-react";
 import { VIBRATE_PATTERNS, playVibration } from "../lib/reminderUtils.js";
 import { Input } from "./ui";
 
@@ -44,7 +45,7 @@ export default function VibratePatternPicker({ value = "", onChange, enabled = t
           onClick={testPattern}
           className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-medium text-gray-600 transition"
         >
-          📳 Test
+          <Vibrate className="mr-1 inline h-3.5 w-3.5" /> Test
         </button>
       </div>
       <p className="text-[10px] text-gray-400">

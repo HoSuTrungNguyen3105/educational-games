@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { RotateCw } from "lucide-react";
 
 const MessageItem = memo(function MessageItem({ message, isOwn, showSender }) {
   const isFailed = message.status === "failed";
@@ -25,7 +26,7 @@ const MessageItem = memo(function MessageItem({ message, isOwn, showSender }) {
           onClick={() => message._retry?.(message)}
           className="text-[10px] text-ticket font-semibold mt-0.5 hover:underline"
         >
-          Gửi lại ↻
+          <RotateCw className="mr-1 inline h-3 w-3" /> Gửi lại
         </button>
       )}
     </div>

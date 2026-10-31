@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { navigate } from '../../lib/router.js'
 import { templateService } from '../../services/api.js'
 import { IconButton, ManagementHeader, ManagementTable, ConfirmModal } from '../../components/ui'
@@ -53,8 +54,8 @@ export default function TemplateManagement({ showToast }) {
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <IconButton title="Sửa" onClick={() => navigate(`/admin/templates/${t._id}`)}>✏️</IconButton>
-              <IconButton title="Xóa" onClick={() => confirmRemove(t)}>🗑️</IconButton>
+              <IconButton title="Sửa" onClick={() => navigate(`/admin/templates/${t._id}`)}><Pencil /></IconButton>
+              <IconButton title="Xóa" tone="danger" onClick={() => confirmRemove(t)}><Trash2 /></IconButton>
             </div>
           </div>
         )}
@@ -80,8 +81,8 @@ export default function TemplateManagement({ showToast }) {
               {t.updatedAt ? new Date(t.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
             </td>
             <td className="px-5 py-3 text-right flex gap-1 justify-end">
-              <IconButton title="Sửa" onClick={() => navigate(`/admin/templates/${t._id}`)}>✏️</IconButton>
-              <IconButton title="Xóa" onClick={() => confirmRemove(t)}>🗑️</IconButton>
+              <IconButton title="Sửa" onClick={() => navigate(`/admin/templates/${t._id}`)}><Pencil /></IconButton>
+              <IconButton title="Xóa" tone="danger" onClick={() => confirmRemove(t)}><Trash2 /></IconButton>
             </td>
           </tr>
         )}

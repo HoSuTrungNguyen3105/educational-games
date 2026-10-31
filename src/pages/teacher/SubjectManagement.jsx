@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from 'lucide-react'
 import { setupService } from '../../services/setupService.js'
 import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui'
 import { useCrudList } from '../../hooks/useCrudList.js'
@@ -46,8 +47,8 @@ export default function SubjectManagement({ showToast }) {
             </div>
             <p className="min-w-0 flex-1 font-body text-sm text-ink truncate">{item.name}</p>
             <div className="flex items-center gap-1 shrink-0">
-              <IconButton title="Chỉnh sửa" onClick={() => openEdit(item)}>✏️</IconButton>
-              <IconButton title="Xóa" onClick={() => askRemove(item)}>🗑️</IconButton>
+              <IconButton title="Chỉnh sửa" onClick={() => openEdit(item)}><Pencil /></IconButton>
+              <IconButton title="Xóa" tone="danger" onClick={() => askRemove(item)}><Trash2 /></IconButton>
             </div>
           </div>
         )}
@@ -58,10 +59,10 @@ export default function SubjectManagement({ showToast }) {
             <td className="px-5 py-3">
               <div className="flex items-center justify-end gap-2">
                 <IconButton title="Chỉnh sửa" onClick={() => openEdit(item)}>
-                  ✏️
+                  <Pencil />
                 </IconButton>
-                <IconButton title="Xóa" onClick={() => askRemove(item)}>
-                  🗑️
+                <IconButton title="Xóa" tone="danger" onClick={() => askRemove(item)}>
+                  <Trash2 />
                 </IconButton>
               </div>
             </td>

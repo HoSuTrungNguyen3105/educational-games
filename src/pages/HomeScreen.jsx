@@ -33,13 +33,23 @@ import {
   PartyPopper,
   Gift,
   ShipWheel,
-  Sprout,
   Crown,
   Star,
   Send,
   RefreshCw,
   LayoutDashboard,
   Ellipsis,
+  Settings,
+  Bell,
+  Calculator,
+  Check,
+  Coins,
+  Dices,
+  School,
+  Ticket,
+  Volume2,
+  VolumeX,
+  X,
 } from 'lucide-react'
 
 
@@ -96,6 +106,7 @@ const TILE_COLORS = Object.fromEntries(
       "parkour-tri-thuc": "#2A9D8F", "plantvsanimal": "#7AC74F", "night-strike": "#C0392B",
       "vung-dat-gio": "#7C5CE0", "coi-phong-linh": "#4A72B8", "parkour-tri-thuc-3d": "#2AA8C8",
       "nong-trai-moi": "#7AC74F", "fieldrunner": "#8BC34A", "cargo": "#F2A03D", "bang-tinh": "#3FA97A",
+      "FindNumber": "#3D6FD8", "Labyrinth": "#7C5CE0", "MergeBlast": "#F2B632", "TempleRun2D": "#2AA8C8",
     })[g.id] || "#F2B632",
   ])
 );
@@ -209,7 +220,6 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "subjects", icon: BookOpen, label: "Môn học", type: "scroll", target: "subjects-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: true, badge: true },
   { key: "reminders", icon: IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
-  { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
   { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
@@ -429,12 +439,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       setPushStatus(getPushSupportStatus());
       if (token) {
         await notificationService.registerDevice(token, "WEB");
-        setPushMessage("✅ Đã bật thông báo thành công!");
+        setPushMessage("Đã bật thông báo thành công!");
       } else {
-        setPushMessage("⚠️ Chưa thể cấp quyền. Hãy kiểm tra cài đặt trình duyệt hoặc thêm vào Màn hình chính.");
+        setPushMessage("Chưa thể cấp quyền. Hãy kiểm tra cài đặt trình duyệt hoặc thêm vào Màn hình chính.");
       }
     } catch (err) {
-      setPushMessage("❌ Lỗi: " + (err.message || "Không thể bật thông báo"));
+      setPushMessage("Lỗi: " + (err.message || "Không thể bật thông báo"));
     }
   };
 
@@ -444,16 +454,16 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       setPushMessage("Đang gửi thông báo thử nghiệm...");
       const res = await notificationService.testPush();
       if (res?.sent > 0) {
-        setPushMessage(`🎉 Đã gửi thông báo thành công tới ${res.sent} thiết bị!`);
+        setPushMessage(`Đã gửi thông báo thành công tới ${res.sent} thiết bị!`);
       } else if (res?.reason === "no_registered_devices") {
-        setPushMessage("⚠️ Chưa có thiết bị nào được đăng ký. Hãy nhấn 'Bật thông báo đẩy' trước!");
+        setPushMessage("Chưa có thiết bị nào được đăng ký. Hãy nhấn 'Bật thông báo đẩy' trước!");
       } else if (res?.reason === "fcm_not_configured") {
-        setPushMessage("⚠️ Backend Render chưa cấu hình FIREBASE_SERVICE_ACCOUNT.");
+        setPushMessage("Backend Render chưa cấu hình FIREBASE_SERVICE_ACCOUNT.");
       } else {
-        setPushMessage("⚠️ Kết quả: " + JSON.stringify(res));
+        setPushMessage("Kết quả: " + JSON.stringify(res));
       }
     } catch (err) {
-      setPushMessage("❌ Lỗi gửi thông báo: " + (err.message || "Thất bại"));
+      setPushMessage("Lỗi gửi thông báo: " + (err.message || "Thất bại"));
     } finally {
       setTestingPush(false);
     }
@@ -466,13 +476,13 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       const token = await requestNotificationPermission();
       if (token) {
         await notificationService.registerDevice(token, "WEB");
-        setPushMessage("✅ Đã reset và đăng ký lại device thành công!");
+        setPushMessage("Đã reset và đăng ký lại device thành công!");
       } else {
-        setPushMessage("✅ Đã xóa token cũ. Hãy bật lại thông báo để đăng ký mới.");
+        setPushMessage("Đã xóa token cũ. Hãy bật lại thông báo để đăng ký mới.");
       }
       setPushStatus(getPushSupportStatus());
     } catch (err) {
-      setPushMessage("❌ Lỗi reset: " + (err.message || "Thất bại"));
+      setPushMessage("Lỗi reset: " + (err.message || "Thất bại"));
     }
   };
 
@@ -495,14 +505,14 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       localStorage.removeItem('gq_pwa_closed');
       localStorage.removeItem('gq_sound');
 
-      setPushMessage("✅ Đã xóa cache thành công! Trang sẽ tự reload...");
+      setPushMessage("Đã xóa cache thành công! Trang sẽ tự reload...");
 
       // Reload after 1 second
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     } catch (err) {
-      setPushMessage("❌ Lỗi xóa cache: " + (err.message || "Thất bại"));
+      setPushMessage("Lỗi xóa cache: " + (err.message || "Thất bại"));
     } finally {
       setResettingCache(false);
     }
@@ -900,7 +910,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
       {dueReminder && (
         <div className="gq-reminder">
-          <div className="w-10 h-10 rounded-full bg-amber-100 grid place-items-center text-xl flex-shrink-0">🔔</div>
+          <div className="w-10 h-10 rounded-full bg-amber-100 grid place-items-center flex-shrink-0"><Bell className="w-5 h-5 text-amber-700" /></div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-sm">Nhắc nhở!</p>
             <p className="font-semibold text-sm">{dueReminder.title}</p>
@@ -951,10 +961,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </button>
               )}
               <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Xu: ${userCoins}`} title="Xu của bé">
-                🪙{userCoins > 0 && <span className="gq-iconbtn__n">{shortCount(userCoins)}</span>}
+                <Coins className="w-5 h-5 text-amber-500" />{userCoins > 0 && <span className="gq-iconbtn__n">{shortCount(userCoins)}</span>}
               </button>
               <button className="gq-iconbtn" onClick={() => goTo("/store")} aria-label={`Sao: ${userStars} — mở cửa hàng sao`} title="Cửa hàng sao — đổi coin ⇄ sao">
-                ⭐{userStars > 0 && <span className="gq-iconbtn__n">{shortCount(userStars)}</span>}
+                <Star className="w-5 h-5 text-amber-400" fill="currentColor" />{userStars > 0 && <span className="gq-iconbtn__n">{shortCount(userStars)}</span>}
               </button>
               <button
                 className={`gq-iconbtn ${soundOn ? "" : "gq-iconbtn--on"}`}
@@ -962,7 +972,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 aria-label={soundOn ? "Tắt âm thanh" : "Bật âm thanh"}
                 title={soundOn ? "Tắt âm thanh" : "Bật âm thanh"}
               >
-                {soundOn ? "🔊" : "🔇"}
+                {soundOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
               </button>
               {/* Hồ sơ — trước đây chỉ là.icon ❤️ nên không ai biết bấm đi đâu.
                   Màn hẹp ẩn vì BOTTOM_NAV đã có mục "Cá nhân". */}
@@ -983,7 +993,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 aria-label="Menu"
                 aria-expanded={menuOpen}
               >
-                ⚙️
+                <Settings className="w-5 h-5" />
                 {unreadCount > 0 && <span className="gq-iconbtn__n">{unreadCount}</span>}
               </button>
             </div>
@@ -1074,7 +1084,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {/* ─────────── BANNER CÀI APP ─────────── */}
         {pwaVisible && (
           <div className="gq-pwa">
-            <button className="gq-pwa__x" onClick={closePwaBanner} aria-label="Đóng">✕</button>
+            <button className="gq-pwa__x" onClick={closePwaBanner} aria-label="Đóng"><X className="w-4 h-4" /></button>
             <p className="gq-pwa__t">Có app Lớp Học Vui cho điện thoại</p>
             <p className="gq-pwa__s">Tải về để bé chơi mượt hơn trên điện thoại và máy tính bảng.</p>
             <div className="gq-pwa__row">
@@ -1093,21 +1103,17 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── NÚT TẮT + CHƠI NGẪU NHIÊN ─────────── */}
         <div className="gq-playbar">
-          <button className="gq-mini" onClick={() => goTo("/garden")}>
-            <span className="gq-mini__ico" aria-hidden="true">🐔</span>
-            <span className="gq-mini__lbl">Khu vườn của tôi</span>
+          <button className="gq-mini" onClick={() => goTo("/achievements")}>
+            <span className="gq-mini__ico" aria-hidden="true"><Trophy className="w-5 h-5 text-amber-500" /></span>
+            <span className="gq-mini__lbl">Cúp</span>
             {pendingTaskCount > 0 && <span className="gq-mini__dot" aria-label={`${pendingTaskCount} nhiệm vụ`} />}
           </button>
-          <button className="gq-mini" onClick={() => goTo("/achievements")}>
-            <span className="gq-mini__ico" aria-hidden="true">🏆</span>
-            <span className="gq-mini__lbl">Cúp</span>
-          </button>
           <button className="gq-mini" onClick={() => setShowCodeModal(true)}>
-            <span className="gq-mini__ico" aria-hidden="true">🎟️</span>
+            <span className="gq-mini__ico" aria-hidden="true"><Ticket className="w-5 h-5 text-violet-500" /></span>
             <span className="gq-mini__lbl">Nhập mã</span>
           </button>
           <button className="gq-random" onClick={handleRandomPlay}>
-            <span className="gq-random__ico" aria-hidden="true">🎲</span>
+            <span className="gq-random__ico" aria-hidden="true"><Dices className="w-5 h-5" /></span>
             Chơi ngẫu nhiên
           </button>
         </div>
@@ -1115,7 +1121,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {/* ─────────── HÔM NAY CỦA BÉ ─────────── */}
         <section className="gq-sect">
           <div className="gq-sect__head">
-            <span className="gq-sect__ico" aria-hidden="true">⭐</span>
+            <span className="gq-sect__ico" aria-hidden="true"><Star className="w-5 h-5 text-amber-500" /></span>
             <div>
               <h2 className="gq-sect__t">Hôm nay của bé</h2>
               <p className="gq-sect__s">Học xen chơi · đổi mới ngày</p>
@@ -1150,7 +1156,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {mathGames.length > 0 && (
           <section className="gq-sect gq-sect--green" id="subjects-section">
             <div className="gq-sect__head">
-              <span className="gq-sect__ico" aria-hidden="true">💯</span>
+              <span className="gq-sect__ico" aria-hidden="true"><Calculator className="w-5 h-5 text-emerald-600" /></span>
               <div>
                 <h2 className="gq-sect__t">Số &amp; toán <span className="gq-sect__n">{mathGames.length}</span></h2>
                 <p className="gq-sect__s">Học số · tập đếm · so sánh · chia đều · đồng hồ · công trừ</p>
@@ -1165,7 +1171,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {/* ─────────── 2. GAME THƯ GIÃN (OFFLINE) ─────────── */}
         <section className="gq-sect" id="offline-section">
           <div className="gq-sect__head">
-            <span className="gq-sect__ico" aria-hidden="true">🎮</span>
+            <span className="gq-sect__ico" aria-hidden="true"><Gamepad2 className="w-5 h-5 text-violet-500" /></span>
             <div>
               <h2 className="gq-sect__t">Game thư giãn <span className="gq-sect__n">{offlineCards.length}</span></h2>
               <p className="gq-sect__s">Chơi không cần mạng · tiến độ lưu trên máy</p>
@@ -1179,7 +1185,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {/* ─────────── 3. GAME NHẬP VAI TRƯỜNG HỌC ─────────── */}
         <section className="gq-sect gq-sect--green" id="rpg-section">
           <div className="gq-sect__head">
-            <span className="gq-sect__ico" aria-hidden="true">🏫</span>
+            <span className="gq-sect__ico" aria-hidden="true"><School className="w-5 h-5 text-emerald-600" /></span>
             <div>
               <h2 className="gq-sect__t">Game nhập vai trường học</h2>
               <p className="gq-sect__s">Khám phá trường · học từng lớp · làm bài thi</p>
@@ -1193,7 +1199,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {/* ─────────── 1. GAME HỌC TẬP (API) ─────────── */}
         <section className="gq-sect" id="games-section">
           <div className="gq-sect__head">
-            <span className="gq-sect__ico" aria-hidden="true">📚</span>
+            <span className="gq-sect__ico" aria-hidden="true"><BookOpen className="w-5 h-5 text-sky-600" /></span>
             <div>
               <h2 className="gq-sect__t">Game học tập <span className="gq-sect__n">{visibleGames.length}</span></h2>
               <p className="gq-sect__s">{showAllGames ? "Đồng bộ điểm & tiến trình khi có mạng" : `Xem trước ${PREVIEW_GAMES} game · lưu kết quả lên máy chủ`}</p>
@@ -1233,15 +1239,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {/* ─────────── NHẮC ĐĂNG NHẬP ─────────── */}
         {!userAuth?.user && (
           <div className="gq-login">
-            <span className="gq-login__face" aria-hidden="true">🎁</span>
+            <span className="gq-login__face" aria-hidden="true"><Gift className="w-7 h-7 text-white" /></span>
             <p>Đăng nhập để lưu điểm, sao và nhận quà mỗi ngày nhé!</p>
             <button onClick={onUserLogin}
-              className="rounded-full bg-[#2f7fd6] text-white text-xs font-extrabold px-4 py-2 shadow hover:opacity-90 transition">
-              🔑 Đăng nhập
+              className="rounded-full bg-[#2f7fd6] text-white text-xs font-extrabold px-4 py-2 shadow hover:opacity-90 transition inline-flex items-center gap-1">
+              <KeyRound className="w-3.5 h-3.5" /> Đăng nhập
             </button>
             <button onClick={onUserRegister}
-              className="rounded-full bg-[#ffd45e] text-[#6b4a00] text-xs font-extrabold px-4 py-2 shadow hover:opacity-90 transition">
-              ✨ Đăng ký miễn phí
+              className="rounded-full bg-[#ffd45e] text-[#6b4a00] text-xs font-extrabold px-4 py-2 shadow hover:opacity-90 transition inline-flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5" /> Đăng ký miễn phí
             </button>
           </div>
         )}
@@ -1287,12 +1293,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <div>
                 <span className="gq-sheet__t">Menu</span>
                 {userAuth?.user && (
-                  <span className="block text-[11px] font-semibold text-slate-400">
-                    {userAuth.user.name} · Lv {lv.level} · ⭐ {userStars}
+                  <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                    {userAuth.user.name} · Lv {lv.level} · <Star className="w-3 h-3 text-amber-400" /> {userStars}
                   </span>
                 )}
               </div>
-              <button onClick={() => setMenuOpen(false)} className="text-xl text-slate-400 leading-none" aria-label="Đóng">✕</button>
+              <button onClick={() => setMenuOpen(false)} className="text-slate-400" aria-label="Đóng"><X className="w-5 h-5" /></button>
             </div>
             <div className="gq-sheet__body">
               {/* Nhiệm vụ hôm nay */}
@@ -1331,7 +1337,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                           className="gq-link"
                           style={n.read ? { opacity: 0.55 } : undefined}
                         >
-                          <span className="gq-link__ico">🔔</span>
+                          <span className="gq-link__ico"><Bell className="w-4 h-4" /></span>
                           <span className="flex-1 min-w-0">
                             <span className="block truncate">{n.title}</span>
                             <span className="block text-[11px] font-semibold text-slate-400 truncate">{n.body}</span>
@@ -1487,7 +1493,7 @@ function MiniQuestRow({ task, onClaim }) {
         </span>
       </span>
       {task.claimed ? (
-        <span className="text-xs font-bold text-emerald-500">✔ Đã nhận</span>
+        <span className="text-xs font-bold text-emerald-500 inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Đã nhận</span>
       ) : (
         <button
           onClick={() => onClaim(task.id)}

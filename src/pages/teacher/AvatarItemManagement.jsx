@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { GhostButton, IconCheck, ManagementHeader, PrimaryButton, StatGrid } from '../../components/ui';
-import { RotateCcw } from 'lucide-react';
+import { Ban, BookOpen, Check, Layers, Lightbulb, Palette, PersonStanding, RotateCcw, X } from 'lucide-react';
 import {
   KID_LAYERS, kidAllTabs, kidApplyBody, kidBodies, kidBodySlots, kidCatalogStats, kidDefaults,
   kidItemLabel, kidPreset, kidPresets, kidTabCfg, kidTabs, renderKid, sanitizeKid,
@@ -20,7 +20,7 @@ function ItemThumb({ cfg, id, selected, onClick }) {
       style={{ background: 'var(--stage, #f7f1e7)' }}
     >
       {id === null ? (
-        <span className="text-xl opacity-40">🚫</span>
+        <Ban className="w-5 h-5 text-ink/40" />
       ) : cfg.kind === 'dot' ? (
         <span
           className="w-[58%] aspect-square rounded-full border border-black/10"
@@ -87,7 +87,7 @@ export default function AvatarItemManagement({ showToast }) {
       <ManagementHeader subtitle="Dùng chung với modal Tùy chỉnh Avatar ở #/profile" title="Avatar Items" />
 
       <div className="note-card p-3 text-xs text-ink/60 flex items-start gap-2">
-        <span className="text-base leading-none">💡</span>
+        <Lightbulb className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" />
         <span>
           Đây là danh mục phụ kiện của hệ avatar mới. Mắt, mũi, miệng, lông mày, má nằm trong tab <strong>Mặt</strong>.
           Không phải thân nào cũng mặc được mọi thứ — bảng <strong>Linh kiện của {bodyName}</strong> bên cạnh cho biết
@@ -99,10 +99,10 @@ export default function AvatarItemManagement({ showToast }) {
       </div>
 
       <StatGrid stats={[
-        { icon: '🧩', value: stats.tabs.length, label: 'Nhóm phụ kiện' },
-        { icon: '🎨', value: stats.itemCount, label: 'Lựa chọn' },
-        { icon: '🧍', value: stats.bodyCount, label: 'Body' },
-        { icon: '📚', value: KID_LAYERS.length, label: 'Lớp vẽ' },
+        { icon: <Layers />, value: stats.tabs.length, label: 'Nhóm phụ kiện' },
+        { icon: <Palette />, value: stats.itemCount, label: 'Lựa chọn' },
+        { icon: <PersonStanding />, value: stats.bodyCount, label: 'Body' },
+        { icon: <BookOpen />, value: KID_LAYERS.length, label: 'Lớp vẽ' },
       ]} />
 
       <div className="grid gap-4 lg:grid-cols-[300px_1fr] items-start">
@@ -149,7 +149,7 @@ export default function AvatarItemManagement({ showToast }) {
                           : 'text-ink/30 cursor-not-allowed'
                       }`}
                     >
-                      <span className={ok ? 'text-teal' : 'text-ink/25'}>{ok ? '✓' : '✕'}</span>
+                      {ok ? <Check className="w-3 h-3 text-teal shrink-0" /> : <X className="w-3 h-3 text-ink/25 shrink-0" />}
                       <span className="truncate">{item.l}</span>
                     </button>
                   </li>
@@ -157,7 +157,7 @@ export default function AvatarItemManagement({ showToast }) {
               })}
             </ul>
             <p className="text-[11px] text-ink/40 mt-2">
-              Nhóm ✕ thân này không nhận: tab ẩn và hồ sơ lưu về null/mặc định (khai báo ở
+              Các nhóm thân này không nhận: tab ẩn và hồ sơ lưu về null/mặc định (khai báo ở
               <code className="font-mono text-[10px]"> BODIES[code].slots</code>).
             </p>
           </div>

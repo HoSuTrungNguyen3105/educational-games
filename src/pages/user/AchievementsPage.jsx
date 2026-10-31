@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Trophy } from "lucide-react";
+import { Check, Coins, Trophy } from "lucide-react";
 import {
   walletService,
   xpService,
@@ -46,7 +46,7 @@ export default function AchievementsPage({ userAuth, onBack }) {
     return (
       <div className="flex-1 flex items-center justify-center px-6 py-10">
         <div className="text-center anim-pop">
-          <div className="text-6xl mb-4">🏆</div>
+          <div className="mb-4 flex justify-center text-amber-500"><Trophy className="w-14 h-14" /></div>
           <h2 className="font-display text-xl text-ink mb-2">Chưa đăng nhập</h2>
           <p className="text-sm text-[#8A7C63] mb-4">Bạn cần đăng nhập để xem thành tựu</p>
           <PrimaryButton onClick={onBack}>← Về trang chủ</PrimaryButton>
@@ -113,12 +113,12 @@ export default function AchievementsPage({ userAuth, onBack }) {
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-bold text-ink text-sm">{a.title}</p>
                     {a.unlocked ? (
-                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5 whitespace-nowrap">
-                        ✓ Đã đạt
+                      <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5 whitespace-nowrap">
+                        <Check className="w-3 h-3" /> Đã đạt
                       </span>
                     ) : (
-                      <span className="text-[10px] font-extrabold text-amber-700 whitespace-nowrap">
-                        🪙 +{a.reward}
+                      <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-700 whitespace-nowrap">
+                        <Coins className="w-3 h-3" /> +{a.reward}
                       </span>
                     )}
                   </div>

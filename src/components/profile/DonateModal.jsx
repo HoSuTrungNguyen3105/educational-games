@@ -9,7 +9,7 @@ import { IconCheck } from '../ui/index.js';
  */
 
 import { useEffect, useState } from "react";
-import { Copy, Heart, RefreshCw } from "lucide-react";
+import { Camera, Copy, Heart, RefreshCw, X } from "lucide-react";
 import { DONATION, donationPayload } from "../../config/donation.js";
 import { useMathQuestions } from "../../lib/mathGate.js";
 import { Input } from "../ui";
@@ -69,7 +69,7 @@ export default function DonateModal({ onClose }) {
             </div>
           </div>
           <button onClick={onClose} aria-label="Đóng"
-            className="text-white/90 hover:text-white text-xl leading-none">✕</button>
+            className="text-white/90 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
 
         {step === "quiz" ? (
@@ -182,7 +182,7 @@ function QrFallback({ hidden }) {
   if (hidden) return null;
   return (
     <div className="text-center px-2">
-      <p className="text-3xl mb-1">📷</p>
+      <Camera className="w-9 h-9 mx-auto mb-1 text-ink/25" />
       <p className="text-xs font-bold text-ink/70">Chưa có ảnh QR</p>
       <p className="text-[11px] text-ink/45 mt-1 leading-snug">
         Đặt ảnh QR vào <code className="font-mono">public/donate-qr.png</code> rồi khai báo trong

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Copy} from 'lucide-react';
+import { Copy, School} from 'lucide-react';
 import { ConfirmModal, EmptyState, IconAdd, IconCheck, IconClose, IconTrash, IconUsers, Loader, Modal, PrimaryButton } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
@@ -108,7 +108,7 @@ export default function ClassManagement() {
       )}
       {!error && !classes && <Loader label="Đang tải danh sách lớp..." />}
       {!error && classes && classes.length === 0 && (
-        <EmptyState icon="🏫" title="Chưa có lớp nào"
+        <EmptyState icon={<School />} title="Chưa có lớp nào"
           subtitle="Tạo lớp đầu tiên để bắt đầu quản lý học sinh."
           action={<PrimaryButton onClick={() => setShowCreate(true)} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm">+ Tạo lớp</PrimaryButton>} />
       )}

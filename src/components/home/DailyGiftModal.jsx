@@ -9,14 +9,15 @@
  */
 
 import { useEffect, useState } from "react";
+import { Coins, Star, Ticket } from "lucide-react";
 
 /** Số sao vẽ trên dải (ảnh minh hoạ có 5 ngôi) — không phải số sao thật nhận. */
 const STRIP_STARS = 5;
 
 const REWARD_CONFIG = {
-  stars: { icon: "★", label: "sao", color: "#ffc21f" },
-  coins: { icon: "💰", label: "xu", color: "#ffd45e" },
-  tickets: { icon: "🎫", label: "vé", color: "#7C5CE0" }
+  stars: { icon: <Star size={64} strokeWidth={1.6} />, label: "sao", color: "#ffc21f" },
+  coins: { icon: <Coins size={64} strokeWidth={1.6} />, label: "xu", color: "#ffd45e" },
+  tickets: { icon: <Ticket size={64} strokeWidth={1.6} />, label: "vé", color: "#7C5CE0" }
 };
 
 export default function DailyGiftModal({ type = "stars", amount, totalStars, onClose }) {

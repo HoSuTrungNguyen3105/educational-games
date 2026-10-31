@@ -48,7 +48,6 @@ function randomPassword() {
 // Lazy-loaded Pages / Screens
 const TeacherApp = lazy(() => import("./pages/teacher/TeacherApp.jsx"));
 const StudentApp = lazy(() => import("./pages/student/StudentApp.jsx"));
-const GardenPage = lazy(() => import("./pages/user/GardenPage.jsx"));
 const InventoryPage = lazy(() => import("./pages/user/InventoryPage.jsx"));
 const StorePage = lazy(() => import("./pages/user/StorePage.jsx"));
 const LeaderboardPage = lazy(() => import("./pages/user/LeaderboardPage.jsx"));
@@ -208,11 +207,6 @@ function App() {
     "spin-wheel": () => (
       <RouteShell toast={toast} showBack={false}>
         <SpinWheel userAuth={userAuth} onBack={() => navigate("/")} showToast={showToast} />
-      </RouteShell>
-    ),
-    garden: () => (
-      <RouteShell toast={toast} showBack={false}>
-        <GardenPage userAuth={userAuth} onBack={() => navigate("/")} />
       </RouteShell>
     ),
     inventory: () => (

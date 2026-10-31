@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService, resultService } from '../../services/api.js'
 import { StampToken, StatusBadge, Loader, ErrorState, EmptyState, ViewToggle, useViewMode, cardGridClass, tableWrapClass } from '../../components/ui'
+import { BarChart3 } from 'lucide-react'
 import { rankMedal } from '../../lib/utils.js'
 
 export default function TeacherResults({ gameId, onBack }) {
@@ -26,7 +27,7 @@ export default function TeacherResults({ gameId, onBack }) {
             <StatusBadge status={game ? game.status : "draft"} />
           </div>
           {results.length === 0 ? (
-            <EmptyState icon="📊" title="Chưa có lượt chơi nào" subtitle="Chia sẻ mã vé trò chơi để học sinh tham gia và bạn sẽ thấy kết quả tại đây." />
+            <EmptyState icon={<BarChart3 />} title="Chưa có lượt chơi nào" subtitle="Chia sẻ mã vé trò chơi để học sinh tham gia và bạn sẽ thấy kết quả tại đây." />
           ) : (
             <LeaderboardTable results={results} />
           )}

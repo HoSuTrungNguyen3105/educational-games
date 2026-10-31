@@ -10,7 +10,6 @@
  */
 
 // ── buttons ──
-export { default as OptionButton } from "./buttons/OptionButton.jsx";
 export { PrimaryButton } from "./buttons/PrimaryButton.jsx";
 export { GhostButton } from "./buttons/GhostButton.jsx";
 export { IconButton } from "./buttons/IconButton.jsx";

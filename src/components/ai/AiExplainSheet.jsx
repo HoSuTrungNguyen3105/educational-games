@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { explain } from "../../services/aiApi.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
 import { Input } from "../ui";
+import { Bot, Lightbulb, X } from "lucide-react";
 
 /** Số lượt hỏi bổ sung tối đa trong một phiên mở panel. */
 const MAX_FOLLOW_UPS = 4;
@@ -143,7 +144,7 @@ export default function AiExplainSheet({
                    pt-[max(env(safe-area-inset-top),12px)] lg:pt-3"
       >
         <div className="min-w-0">
-          <p className="font-display text-sm font-bold truncate">🤖 AI Bạn Học</p>
+          <p className="font-display text-sm font-bold truncate inline-flex items-center gap-1.5"><Bot className="w-4 h-4" /> AI Bạn Học</p>
           <p className="text-[10px] text-paper/60 truncate">
             {isCorrect === true ? "Bạn đã trả lời đúng" : isCorrect === false ? "Mình cùng xem lại nhé" : "Đang chuẩn bị…"}
           </p>
@@ -161,7 +162,7 @@ export default function AiExplainSheet({
           className="w-11 h-11 rounded-full text-paper/80 hover:bg-white/10 hover:text-paper
                      transition text-lg leading-none disabled:opacity-40"
         >
-          ✕
+          <X className="w-5 h-5" />
         </button>
       </div>
 
@@ -241,9 +242,9 @@ export default function AiExplainSheet({
             type="button"
             onClick={() => ask({ reveal: true })}
             className="w-full min-h-[44px] rounded-2xl bg-teal text-white font-display font-semibold
-                       text-sm hover:brightness-95 active:scale-[0.98] transition"
+                       text-sm hover:brightness-95 active:scale-[0.98] transition inline-flex items-center justify-center gap-1.5"
           >
-            💡 Xem lời giải đầy đủ
+            <Lightbulb className="w-4 h-4" /> Xem lời giải đầy đủ
           </button>
         )}
 

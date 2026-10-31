@@ -5,6 +5,7 @@ import { Loader, ErrorState } from "../../components/ui";
 import DMChatScreen from "../user/DMChatScreen.jsx";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
+import { Inbox, MessageCircle } from "lucide-react";
 
 export default function TeacherChat({ user, showToast }) {
   const [conversations, setConversations] = useState(null);
@@ -165,7 +166,7 @@ export default function TeacherChat({ user, showToast }) {
             <ErrorState title="Lỗi" subtitle={error} onRetry={loadConversations} />
           ) : conversations.length === 0 ? (
             <div className="text-center py-8 px-4">
-              <div className="text-4xl mb-2">📭</div>
+              <div className="flex justify-center mb-2"><Inbox className="w-10 h-10 text-ink/25" /></div>
               <p className="text-xs text-ink/40">Chưa có tin nhắn</p>
             </div>
           ) : (
@@ -207,7 +208,7 @@ export default function TeacherChat({ user, showToast }) {
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-3">
-            <div className="text-6xl opacity-40">💬</div>
+            <div className="opacity-40"><MessageCircle className="w-14 h-14 text-ink/40" /></div>
             <h2 className="font-display text-xl text-ink/60">Chọn một cuộc trò chuyện</h2>
             <p className="text-sm text-ink/30 max-w-xs">
               Chọn cuộc trò chuyện từ danh sách bên trái hoặc tìm người dùng để bắt đầu nhắn tin
@@ -245,7 +246,7 @@ function ConversationItem({ conversation, currentUser, onClick, isActive }) {
           ? "bg-ticket/20 text-ticket"
           : "bg-ink/5 text-ink/50"
       }`}>
-        {otherUser?.name?.charAt(0)?.toUpperCase() || "💬"}
+        {otherUser?.name?.charAt(0)?.toUpperCase() || <MessageCircle className="w-4 h-4" />}
       </div>
       <div className="flex-1 min-w-0">
         <h3 className={`text-sm font-body truncate ${isActive ? "text-ink font-semibold" : "text-ink"}`}>

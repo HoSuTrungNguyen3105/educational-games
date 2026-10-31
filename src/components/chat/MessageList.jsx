@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback } from "react";
 import { useChatStore } from "../../stores/chat.store.js";
+import { MessageCircle } from "lucide-react";
 import MessageItem from "./MessageItem.jsx";
 
 export default function MessageList() {
@@ -60,7 +61,7 @@ export default function MessageList() {
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center px-4 py-8 gap-2">
-        <span className="text-3xl">💬</span>
+        <MessageCircle className="w-8 h-8 text-ink/25" />
         <p className="text-sm text-[#8A7C63]">Chưa có tin nhắn nào</p>
         <p className="text-xs text-[#B7A987]">Gửi tin nhắn đầu tiên để bắt đầu trò chuyện!</p>
       </div>

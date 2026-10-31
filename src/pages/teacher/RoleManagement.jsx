@@ -363,7 +363,7 @@ export default function RoleManagement({ user, showToast }) {
       {/* Create role modal */}
       {createOpen && (
         <Modal onClose={() => setCreateOpen(false)}>
-          <h3 className="font-display text-lg text-ink mb-3">➕ Tạo vai trò</h3>
+          <h3 className="font-display text-lg text-ink mb-3">Tạo vai trò</h3>
           <form
             onSubmit={(e) => {
               e.preventDefault();

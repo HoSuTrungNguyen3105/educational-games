@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AlertTriangle, Check, FileDown, FolderOpen, Link2, MessageSquare, RefreshCw, Rocket, Upload, Volume2 } from 'lucide-react'
 import { gameService, questionBankService } from '../../services/api.js'
 import { ConfirmModal, GhostButton, Loader, ManagementHeader, Modal, PrimaryButton } from '../../components/ui'
 
@@ -394,10 +395,10 @@ export default function QuestionBankManagement({ showToast }) {
 
       <div className="flex flex-wrap gap-2">
         <button onClick={openCreate} className={`${toolBtn} bg-ink text-paper border-ink font-semibold`}>+ Thêm câu</button>
-        <button onClick={() => { setImpParsed(null); setImpOpen(true) }} className={`${toolBtn} bg-white text-ink border-ink/15 hover:border-ink/35`}>⬆ Nhập CSV/JSON</button>
-        <button onClick={doExportCSV} className={`${toolBtn} bg-white text-ink border-ink/15 hover:border-ink/35`}>⬇ Xuất CSV</button>
-        <button onClick={doExportJSON} className={`${toolBtn} bg-white text-ink border-ink/15 hover:border-ink/35`}>⬇ Xuất JSON</button>
-        <button onClick={load} className={`${toolBtn} bg-white text-ink/70 border-ink/15 hover:border-ink/35`}>↻ Tải lại</button>
+        <button onClick={() => { setImpParsed(null); setImpOpen(true) }} className={`${toolBtn} inline-flex items-center gap-1.5 bg-white text-ink border-ink/15 hover:border-ink/35`}><Upload className="w-3.5 h-3.5" /> Nhập CSV/JSON</button>
+        <button onClick={doExportCSV} className={`${toolBtn} inline-flex items-center gap-1.5 bg-white text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Xuất CSV</button>
+        <button onClick={doExportJSON} className={`${toolBtn} inline-flex items-center gap-1.5 bg-white text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Xuất JSON</button>
+        <button onClick={load} className={`${toolBtn} bg-white text-ink/70 border-ink/15 hover:border-ink/35 inline-flex items-center gap-1`}><RefreshCw className="w-3.5 h-3.5" /> Tải lại</button>
         {docs.length > 0 && (
           <button onClick={() => setConfirmWipe(true)} className={`${toolBtn} bg-white text-red-600 border-red-200 hover:bg-red-50`}>Xóa tất cả</button>
         )}
@@ -482,7 +483,7 @@ export default function QuestionBankManagement({ showToast }) {
         <div className="note-card p-2.5 bg-amber-50 border-amber-200 flex flex-wrap items-center gap-2 text-sm">
           <span className="font-semibold text-amber-800">Đã chọn {sel.length} câu</span>
           <button onClick={() => { setLinkFor({ ids: sel, title: `${sel.length} câu hỏi` }); setLinkGames([]) }}
-            className={`${toolBtn} bg-ink text-paper border-ink`}>🚀 Áp dụng vào game</button>
+            className={`${toolBtn} inline-flex items-center gap-1 bg-ink text-paper border-ink`}><Rocket className="w-3.5 h-3.5" /> Áp dụng vào game</button>
           <button onClick={() => setConfirmDel({ ids: sel, label: `${sel.length} câu hỏi đã chọn` })}
             className={`${toolBtn} bg-white text-red-600 border-red-200 hover:bg-red-50`}>Xóa đã chọn</button>
           <button onClick={() => setSel([])} className={`${toolBtn} bg-white text-ink/70 border-ink/15`}>Bỏ chọn</button>
@@ -492,7 +493,7 @@ export default function QuestionBankManagement({ showToast }) {
       {/* Danh sách câu hỏi */}
       {shown.length === 0 ? (
         <div className="note-card p-6 text-center text-sm text-[#8A7C63]">
-          {rows.length ? 'Không có câu hỏi phù hợp bộ lọc.' : 'Chưa có câu hỏi nào. Bấm “+ Thêm câu” hoặc “⬆ Nhập CSV/JSON”.'}
+          {rows.length ? 'Không có câu hỏi phù hợp bộ lọc.' : 'Chưa có câu hỏi nào. Bấm “+ Thêm câu” hoặc “Nhập CSV/JSON”.'}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
@@ -503,7 +504,7 @@ export default function QuestionBankManagement({ showToast }) {
                 <span className="px-2 py-0.5 rounded-full bg-teal/10 text-teal text-[11px]">{subjLabel(s)}</span>
                 <span className="px-2 py-0.5 rounded-full bg-ink/5 text-ink/70 text-[11px]">Lớp {d.grade || 1}</span>
                 {d.icon && <span aria-hidden>{d.icon}</span>}
-                {d.lang === 'en-US' && <span className="px-2 py-0.5 rounded-full bg-gold/20 text-[#7A5B12] text-[11px]">🔊 EN</span>}
+                {d.lang === 'en-US' && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/20 text-[#7A5B12] text-[11px]"><Volume2 className="w-3 h-3" /> EN</span>}
                 <span className="flex-1" />
                 <span className="font-mono text-[10px] text-[#B7A987]">{d.points || 100}đ · {d.timeLimit || 15}s</span>
               </div>
@@ -515,21 +516,23 @@ export default function QuestionBankManagement({ showToast }) {
                   const ok = o.id === d.correctAnswer
                   return (
                     <li key={o.id || i} className={ok ? 'text-teal font-medium' : 'text-ink/75'}>
-                      {LET[i]}. {o.content}{ok ? ' ✓' : ''}
+                      <span className="inline-flex items-center gap-1">
+                        {LET[i]}. {o.content}{ok ? <Check className="w-3 h-3" /> : ''}
+                      </span>
                     </li>
                   )
                 })}
               </ol>
 
-              {d.explanation && <p className="text-[11px] text-[#8A7C63]">💬 {d.explanation}</p>}
-              {!!bad.length && <p className="text-[11px] text-red-600">⚠ {bad.join('; ')}</p>}
+              {d.explanation && <p className="text-[11px] text-[#8A7C63] inline-flex items-start gap-1"><MessageSquare className="w-3 h-3 shrink-0 mt-0.5" /> {d.explanation}</p>}
+              {!!bad.length && <p className="text-[11px] text-red-600 inline-flex items-start gap-1"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" /> {bad.join('; ')}</p>}
 
               <div className="flex flex-wrap gap-1.5 mt-auto pt-1 border-t border-ink/10">
                 <button onClick={() => openEdit(d)} className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-white border-ink/15 hover:border-ink/35`}>Sửa</button>
                 <button onClick={() => duplicate(d)} className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-white border-ink/15 hover:border-ink/35`}>Nhân bản</button>
                 <button onClick={() => { setLinkFor({ ids: [d.id], title: d.content }); setLinkGames([]) }}
-                  className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-white border-ink/15 hover:border-ink/35`}>🔗 Vào game</button>
-                <button onClick={() => syncOne(d)} className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-white border-ink/15 hover:border-ink/35`}>🔄 Đồng bộ</button>
+                  className={`${toolBtn} inline-flex items-center gap-1 !px-2.5 !py-1 !text-xs bg-white border-ink/15 hover:border-ink/35`}><Link2 className="w-3 h-3" /> Vào game</button>
+                <button onClick={() => syncOne(d)} className={`${toolBtn} inline-flex items-center gap-1 !px-2.5 !py-1 !text-xs bg-white border-ink/15 hover:border-ink/35`}><RefreshCw className="w-3 h-3" /> Đồng bộ</button>
                 <button onClick={() => setConfirmDel({ ids: [d.id], label: d.content })}
                   className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-white text-red-600 border-red-200 hover:bg-red-50`}>Xóa</button>
               </div>
@@ -665,8 +668,8 @@ export default function QuestionBankManagement({ showToast }) {
               mảng câu hỏi của trang này hay ngân hàng theo môn của tool cũ đều nhập được.
             </p>
             <div className="flex flex-wrap gap-2">
-              <button onClick={downloadTemplate} className={`${toolBtn} bg-white text-ink border-ink/15 hover:border-ink/35`}>⬇ Tải mẫu CSV</button>
-              <button onClick={pickFile} className={`${toolBtn} bg-ink text-paper border-ink`}>📂 Chọn tệp...</button>
+              <button onClick={downloadTemplate} className={`${toolBtn} inline-flex items-center gap-1.5 bg-white text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Tải mẫu CSV</button>
+              <button onClick={pickFile} className={`${toolBtn} inline-flex items-center gap-1.5 bg-ink text-paper border-ink`}><FolderOpen className="w-3.5 h-3.5" /> Chọn tệp...</button>
             </div>
             <div className="flex gap-4 text-sm">
               <label className="flex items-center gap-1.5"><input type="radio" name="impMode" checked={impMode === 'merge'} onChange={() => setImpMode('merge')} className="accent-teal" /> Thêm vào (giữ câu cũ)</label>
@@ -695,7 +698,7 @@ export default function QuestionBankManagement({ showToast }) {
         onClose={() => setConfirmDel(null)} />
 
       <ConfirmModal open={confirmWipe} title="Xóa toàn bộ ngân hàng" confirmLabel="Xóa tất cả"
-        message={`${docs.length} câu sẽ bị xóa khỏi máy chủ, mọi liên kết bankId trong game bị cắt. Không hoàn tác được — hãy “⬇ Xuất” trước.`}
+        message={`${docs.length} câu sẽ bị xóa khỏi máy chủ, mọi liên kết bankId trong game bị cắt. Không hoàn tác được — hãy “Xuất” trước.`}
         onConfirm={async () => {
           try { const r = await questionBankService.removeAll(); showToast?.(`Đã xóa ${r?.deleted ?? docs.length} câu hỏi`); setSel([]); load() }
           catch (e) { showToast?.(e.message || 'Không xóa được', 'error') }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Dices, KeyRound, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 import { userService } from '../../services/api.js'
 import { hasPermission, getRoleLabel, ROLES } from '../../config/roles.js'
 import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal, Modal } from '../../components/ui'
@@ -186,10 +187,10 @@ export default function UserManagement({ user, showToast }) {
             </div>
             {u.username !== (user && user.username) && (
               <div className="flex items-center gap-1 shrink-0">
-                {isAdmin && u.id !== "user-001" && <IconButton title="Chỉnh sửa" onClick={() => openEdit(u)}>✏️</IconButton>}
-                {isAdmin && u.id !== "user-001" && <IconButton title="Đổi vai trò" onClick={() => openRoleChange(u)}>🔄</IconButton>}
-                <IconButton title="Đổi mật khẩu" onClick={() => openReset(u)}>🔑</IconButton>
-                {(isAdmin || u.role !== "admin") && <IconButton title="Xóa tài khoản" onClick={() => confirmRemove(u)}>🗑️</IconButton>}
+                {isAdmin && u.id !== "user-001" && <IconButton title="Chỉnh sửa" onClick={() => openEdit(u)}><Pencil /></IconButton>}
+                {isAdmin && u.id !== "user-001" && <IconButton title="Đổi vai trò" onClick={() => openRoleChange(u)}><RefreshCw /></IconButton>}
+                <IconButton title="Đổi mật khẩu" onClick={() => openReset(u)}><KeyRound /></IconButton>
+                {(isAdmin || u.role !== "admin") && <IconButton title="Xóa tài khoản" tone="danger" onClick={() => confirmRemove(u)}><Trash2 /></IconButton>}
               </div>
             )}
           </div>
@@ -233,14 +234,14 @@ export default function UserManagement({ user, showToast }) {
               {u.username !== (user && user.username) && (
                 <div className="flex items-center justify-end gap-1">
                   {isAdmin && u.id !== "user-001" && (
-                    <IconButton title="Chỉnh sửa" onClick={() => openEdit(u)}>✏️</IconButton>
+                    <IconButton title="Chỉnh sửa" onClick={() => openEdit(u)}><Pencil /></IconButton>
                   )}
                   {isAdmin && u.id !== "user-001" && (
-                    <IconButton title="Đổi vai trò" onClick={() => openRoleChange(u)}>🔄</IconButton>
+                    <IconButton title="Đổi vai trò" onClick={() => openRoleChange(u)}><RefreshCw /></IconButton>
                   )}
-                  <IconButton title="Đổi mật khẩu" onClick={() => openReset(u)}>🔑</IconButton>
+                  <IconButton title="Đổi mật khẩu" onClick={() => openReset(u)}><KeyRound /></IconButton>
                   {(isAdmin || u.role !== "admin") && (
-                    <IconButton title="Xóa tài khoản" onClick={() => confirmRemove(u)}>🗑️</IconButton>
+                    <IconButton title="Xóa tài khoản" tone="danger" onClick={() => confirmRemove(u)}><Trash2 /></IconButton>
                   )}
                 </div>
               )}
@@ -253,8 +254,8 @@ export default function UserManagement({ user, showToast }) {
         onSubmit={submit} onClose={closeModal} error={error} saving={saving} savingLabel="Đang tạo..."
         extraButtons={
           <button type="button" onClick={handleRandomFill}
-            className="px-3 py-1.5 rounded-xl border border-ink/10 text-xs font-mono text-[#8A7C63] hover:bg-ink/5 transition mr-2">
-            🎲 Random
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-ink/10 text-xs font-mono text-[#8A7C63] hover:bg-ink/5 transition mr-2">
+            <Dices className="w-3.5 h-3.5" /> Random
           </button>
         } />
 
@@ -357,8 +358,8 @@ export default function UserManagement({ user, showToast }) {
             {editError && <p className="text-xs text-red-500 mt-2">{editError}</p>}
             <div className="flex gap-3 mt-5">
               <button type="button" onClick={handleRandomEdit}
-                className="px-4 py-2.5 rounded-2xl border border-ink/10 text-sm text-[#8A7C63] hover:bg-ink/5 transition">
-                🎲 Random
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-ink/10 text-sm text-[#8A7C63] hover:bg-ink/5 transition">
+                <Dices className="w-4 h-4" /> Random
               </button>
               <div className="flex-1" />
               <button onClick={closeEdit}

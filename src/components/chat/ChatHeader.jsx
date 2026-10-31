@@ -1,4 +1,5 @@
 import { useChatStore } from "../../stores/chat.store.js";
+import { MessageCircle, X } from "lucide-react";
 
 export default function ChatHeader({ userAuth, onUserLogin }) {
   const unreadCount = useChatStore((s) => s.unreadCount);
@@ -8,7 +9,7 @@ export default function ChatHeader({ userAuth, onUserLogin }) {
   return (
     <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-ink/10 shrink-0">
       <div className="flex items-center gap-2">
-        <span className="text-lg">💬</span>
+        <MessageCircle className="w-4 h-4 text-ink/60" />
         <span className="font-display text-sm text-ink">Chat</span>
         {unreadCount > 0 && !isOpen && (
           <span className="w-5 h-5 rounded-full bg-ticket text-white text-[10px] font-bold flex items-center justify-center">
@@ -32,7 +33,7 @@ export default function ChatHeader({ userAuth, onUserLogin }) {
           className="w-8 h-8 rounded-full flex items-center justify-center text-ink/50 hover:text-ink hover:bg-ink/5 transition"
           title={isOpen ? "Đóng chat" : "Mở chat"}
         >
-          {isOpen ? "✕" : "💬"}
+          {isOpen ? <X className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
         </button>
       </div>
     </div>

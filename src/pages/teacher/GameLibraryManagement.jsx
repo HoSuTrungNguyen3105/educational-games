@@ -6,7 +6,7 @@ import { EmptyState, ErrorState, GhostButton, IconButton, IconCast, IconEdit, Ic
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import RangePagination from '../../components/RangePagination.jsx'
-import { Gamepad2, Copy, Ticket, Search, Layers, Rocket, FilePen, TrendingUp, Database, ClockFading, WifiOff, Wifi } from 'lucide-react'
+import { Gamepad2, Copy, Ticket, Search, Layers, Rocket, FilePen, TrendingUp, Database, ClockFading, WifiOff, Wifi, FolderOpen } from 'lucide-react'
 
 const PAGE_SIZE = 12;
 
@@ -335,7 +335,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
       {error && <ErrorState subtitle="Không thể tải thư viện trò chơi." onRetry={load} />}
       {!error && !games && <Loader label="Đang tìm trò chơi..." />}
       {!error && games && games.length === 0 && (
-        <EmptyState icon="🔍" title="Không tìm thấy trò chơi phù hợp" subtitle="Thử đổi từ khóa tìm kiếm hoặc bộ lọc, hoặc tạo một trò chơi mới."
+        <EmptyState icon={<Search />} title="Không tìm thấy trò chơi phù hợp" subtitle="Thử đổi từ khóa tìm kiếm hoặc bộ lọc, hoặc tạo một trò chơi mới."
           action={<PrimaryButton onClick={onCreate} className="mt-2">+ Tạo trò chơi</PrimaryButton>} />
       )}
       {!error && games && games.length > 0 && (
@@ -390,7 +390,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
         <Modal onClose={() => setShareGame(null)}>
           <h3 className="font-display text-xl text-ink mb-2">Vé mời "{shareGame.name}"</h3>
           <p className="text-sm text-[#8A7C63] mb-4">Học sinh nhập mã vé sau tại màn hình "Tham gia trò chơi":</p>
-          <TicketStub icon="🎟️" code={shareGame.code} notchBg="#FFFBF2" />
+          <TicketStub icon={<Ticket className="w-4 h-4" />} code={shareGame.code} notchBg="#FFFBF2" />
           <div className="flex justify-end mt-6">
             <PrimaryButton onClick={() => setShareGame(null)}>Đã hiểu</PrimaryButton>
           </div>
@@ -418,7 +418,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
           {versionsError && <ErrorState subtitle={versionsError} onRetry={() => openVersions(versionsGame)} />}
           {!versionsError && !versions && <Loader label="Đang tải lịch sử..." />}
           {!versionsError && versions && versions.length === 0 && (
-            <EmptyState icon="🗂️" title="Chưa có phiên bản nào" subtitle="Bấm nút Xuất bản trên thẻ trò chơi để tạo phiên bản đầu tiên." />
+            <EmptyState icon={<FolderOpen />} title="Chưa có phiên bản nào" subtitle="Bấm nút Xuất bản trên thẻ trò chơi để tạo phiên bản đầu tiên." />
           )}
           {!versionsError && versions && versions.length > 0 && (
             <div className="max-h-[50vh] overflow-y-auto space-y-2 mb-4">

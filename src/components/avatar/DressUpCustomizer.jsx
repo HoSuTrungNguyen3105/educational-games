@@ -15,6 +15,7 @@ import {
   itemLabel, outfitKey, ensureDressUpCss, kidDefaultOutfit,
 } from "../../lib/dressUpAvatar.js";
 import { PrimaryButton, GhostButton } from "../ui";
+import { Ban, Dices, RotateCcw, Save, X } from "lucide-react";
 
 const SCOPES = {
   avatar: {
@@ -28,7 +29,7 @@ const SCOPES = {
     title: "Tùy chỉnh Thú cưng",
     defaultState: () => getDressUp().pet.defaults,
     sanitize: (v) => sanitizeFor("pet", v),
-    tabs: () => [{ k: "animal", l: "🐾 Loài" }, ...getDressUp().pet.tabs],
+    tabs: () => [{ k: "animal", l: "Loài" }, ...getDressUp().pet.tabs],
     // `pet.opts[k]` là { map, ids, colors?, vb } → chuẩn hoá về cùng shape với
     // `kidTabCfg()` để phần render dùng chung một nhánh.
     cfg: (k) => {
@@ -129,11 +130,11 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
       // 2) đẩy lên hồ sơ
       await onSave(kind, draft);
       setSaving(false);
-      setMessage({ ok: true, text: "✔ Đã lưu vào hồ sơ" });
+      setMessage({ ok: true, text: "Đã lưu vào hồ sơ" });
       setTimeout(onClose, 650);
     } catch {
       setSaving(false);
-      setMessage({ ok: false, text: "⚠ Đã lưu trên máy, chưa lên được hồ sơ" });
+      setMessage({ ok: false, text: "Đã lưu trên máy, chưa lên được hồ sơ" });
     }
   }
 
@@ -152,7 +153,7 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
         {/* đầu */}
         <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ background: "var(--card)", borderBottom: "1px solid var(--line)" }}>
           <h3 className="font-display text-base font-bold text-ink">{cfg.title}</h3>
-          <button onClick={onClose} aria-label="Đóng" className="text-ink/40 hover:text-ink text-2xl leading-none px-1">✕</button>
+          <button onClick={onClose} aria-label="Đóng" className="text-ink/40 hover:text-ink px-1"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col md:flex-row">
@@ -200,7 +201,7 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
                     }}
                     title="Không dùng"
                   >
-                    🚫
+                    <Ban className="w-5 h-5 text-ink/35" />
                   </button>
                 )}
                 {ids.map((id) => {
@@ -242,11 +243,11 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
                 <p className={`text-center text-xs font-semibold ${message.ok ? "text-green-600" : "text-red-500"}`}>{message.text}</p>
               )}
               <div className="flex gap-2">
-                <GhostButton onClick={randomize} className="flex-1">🎲 Ngẫu nhiên</GhostButton>
-                <GhostButton onClick={reset} className="flex-1">↺ Mặc lại</GhostButton>
+                <GhostButton onClick={randomize} className="flex-1 inline-flex items-center justify-center gap-1.5"><Dices className="w-4 h-4" /> Ngẫu nhiên</GhostButton>
+                <GhostButton onClick={reset} className="flex-1 inline-flex items-center justify-center gap-1.5"><RotateCcw className="w-4 h-4" /> Mặc lại</GhostButton>
               </div>
-              <PrimaryButton onClick={save} disabled={saving} className="w-full justify-center">
-                {saving ? "Đang lưu..." : "💾 Lưu vào hồ sơ"}
+              <PrimaryButton onClick={save} disabled={saving} className="w-full justify-center inline-flex items-center gap-1.5">
+                {saving ? "Đang lưu..." : <><Save className="w-4 h-4" /> Lưu vào hồ sơ</>}
               </PrimaryButton>
             </div>
           </div>

@@ -12,6 +12,7 @@ import { useGameStore } from '../../stores/game.store.js'
 import { useChatStore } from '../../stores/chat.store.js'
 import ChatPanel from '../../components/chat/ChatPanel.jsx'
 import ChatBubble from '../../components/chat/ChatBubble.jsx'
+import { Clapperboard, Dices, Gamepad2, KeyRound, PartyPopper, Rocket, Trophy, User } from 'lucide-react'
 
 const GamePlayRouter = lazy(() => import('../../games/_shared/GamePlayRouter.jsx'));
 
@@ -321,7 +322,7 @@ export function StudentTopBar({ onExit, userAuth, pendingInvite, onAcceptInvite,
   return (
     <div className="flex items-center justify-between px-3 md:px-6 py-2 md:py-3 border-b border-ink/5 shrink-0">
       <div className="flex items-center gap-1.5 min-w-0">
-        <span className="text-base md:text-xl">🎪</span>
+        <PartyPopper className="w-5 h-5 text-ticket" />
         <span className="font-display text-sm md:text-base text-ink truncate">Lớp Học Vui</span>
       </div>
       <div className="flex items-center gap-2">
@@ -330,7 +331,7 @@ export function StudentTopBar({ onExit, userAuth, pendingInvite, onAcceptInvite,
           <div className="relative">
             <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-ticket rounded-full animate-pulse"></div>
             <div className="note-card p-3 max-w-xs anim-pop shadow-lg border-ticket/30">
-              <p className="text-xs text-[#8A7C63] mb-1">🎮 Lời mời chơi game</p>
+              <p className="text-xs text-[#8A7C63] mb-1 inline-flex items-center gap-1"><Gamepad2 className="w-3 h-3" /> Lời mời chơi game</p>
               <p className="text-sm font-semibold text-ink mb-2">
                 <span className="text-ticket">{pendingInvite.fromName}</span> mời bạn chơi "{pendingInvite.gameName}"
               </p>
@@ -373,7 +374,7 @@ function JoinGameScreen({ onFound }) {
           </div>
           <button onClick={() => setShowCodeModal(true)}
             className="shrink-0 note-card px-4 py-2.5 text-sm font-semibold text-ink flex items-center gap-2 hover:bg-ink/5 transition">
-            🔑 Nhập mã vé
+            <KeyRound className="w-4 h-4 text-ink/50" /> Nhập mã vé
           </button>
         </div>
 
@@ -382,7 +383,7 @@ function JoinGameScreen({ onFound }) {
         ) : error ? (
           <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
         ) : games.length === 0 ? (
-          <EmptyState icon="🕹️" title="Chưa có trò chơi nào" subtitle="Giáo viên chưa xuất bản trò chơi nào. Hãy thử nhập mã vé hoặc quay lại sau nhé!" />
+          <EmptyState icon={<Gamepad2 />} title="Chưa có trò chơi nào" subtitle="Giáo viên chưa xuất bản trò chơi nào. Hãy thử nhập mã vé hoặc quay lại sau nhé!" />
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {games.map(g => {
@@ -393,7 +394,7 @@ function JoinGameScreen({ onFound }) {
                 <button key={gid} onClick={() => onFound(g)}
                   className="note-card p-5 text-left flex flex-col gap-3 hover:-translate-y-1 hover:shadow-[0_8px_0_rgba(0,0,0,0.1)] transition shadow-[0_3px_0_rgba(0,0,0,0.09)] group anim-pop bg-paper2">
                   <div className="flex items-center justify-between">
-                    <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#1D2E4A"} size={46} fontSize={22} />
+                    <StampToken icon={tpl ? tpl.icon : <Dices />} ring={tpl ? tpl.ring : "#1D2E4A"} size={46} fontSize={22} />
                     <span className="font-mono text-[11px] text-[#8A7C63] bg-ink/5 rounded-full px-2.5 py-1">{g.code}</span>
                   </div>
                   <div>
@@ -425,12 +426,12 @@ function EnterNameScreen({ game, onBack, onSubmit, userAuth }) {
   return (
     <div className="flex-1 flex items-start sm:items-center justify-center px-6 pt-[14dvh] sm:pt-10 pb-10">
       <form onSubmit={e => { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); }} className="max-w-sm w-full text-center anim-pop">
-        <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={72} fontSize={32} className="mx-auto mb-4" />
+        <StampToken icon={tpl ? tpl.icon : <Dices />} ring={tpl ? tpl.ring : "#F4B942"} size={72} fontSize={32} className="mx-auto mb-4" />
         <h1 className="font-display text-2xl text-ink mb-1">{game.name}</h1>
         <p className="text-sm text-[#8A7C63] mb-6">{game.subject} · {game.topic}</p>
         {userAuth?.user ? (
           <div className="note-card px-4 py-3 text-lg text-ink bg-ink/5 text-center">
-            👤 {userAuth.user.name}
+            <User className="mr-1 inline h-4 w-4" /> {userAuth.user.name}
           </div>
         ) : (
           <input value={name} onChange={e => setName(e.target.value)} maxLength={24} autoFocus placeholder="Nhập tên của bạn"
@@ -478,7 +479,7 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
       {/* Game area */}
       <div className="flex-1 flex items-center justify-center px-6 py-10 min-w-0">
         <div className="max-w-md w-full text-center anim-pop">
-          <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={80} fontSize={36} className="mx-auto mb-5 float-slow" />
+          <StampToken icon={tpl ? tpl.icon : <Dices />} ring={tpl ? tpl.ring : "#F4B942"} size={80} fontSize={36} className="mx-auto mb-5 float-slow" />
           <h1 className="font-display text-2xl text-ink mb-1">Phòng chờ</h1>
           <p className="text-sm text-[#8A7C63] mb-6">Chờ giáo viên bắt đầu trò chơi "{game.name}"</p>
           <div className="note-card p-5 mb-6">
@@ -488,8 +489,8 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
               {others.map(n => <span key={n} className="px-3 py-1.5 rounded-full bg-ink/5 text-ink text-sm anim-pop">{n}</span>)}
             </div>
           </div>
-          {!started && <PrimaryButton onClick={onStart} className="w-full">Vào chơi 🚀</PrimaryButton>}
-          {started && <p className="text-xs text-[#8A7C63] font-mono">Giáo viên đã bắt đầu — đang vào trò chơi... 🎬</p>}
+          {!started && <PrimaryButton onClick={onStart} className="w-full inline-flex items-center justify-center gap-1.5">Vào chơi <Rocket className="w-4 h-4" /></PrimaryButton>}
+          {started && <p className="text-xs text-[#8A7C63] font-mono inline-flex items-center gap-1">Giáo viên đã bắt đầu — đang vào trò chơi... <Clapperboard className="w-3 h-3" /></p>}
         </div>
       </div>
 
@@ -541,7 +542,7 @@ export function LeaderboardScreen({ results, playerName, onPlayAgain }) {
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-10">
       <div className="max-w-md w-full anim-pop">
-        <h1 className="font-display text-2xl text-ink text-center mb-6">🏅 Bảng xếp hạng</h1>
+        <h1 className="font-display text-2xl text-ink text-center mb-6 inline-flex items-center justify-center gap-2 w-full"><Trophy className="w-6 h-6 text-amber-500" /> Bảng xếp hạng</h1>
         <div className="note-card divide-y divide-ink/5 overflow-hidden mb-6">
           {results.map((r, i) => {
             const medal = rankMedal(i + 1);

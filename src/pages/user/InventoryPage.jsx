@@ -1,10 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
-import { Coins } from "lucide-react";
+import { Backpack, Coins, Package } from "lucide-react";
 import { gardenService, walletService } from "../../services/api.js";
-import { navigate } from "../../lib/router.js";
 import { PrimaryButton, Loader } from "../../components/ui";
 
-/* Metadata vật phẩm — đồng bộ với ITEM_CONFIG trong GardenPage */
+/* Metadata vật phẩm — đồng bộ với backend /garden/inventory */
 const ITEM_CONFIG = {
   basic_fertilizer:   { name: "Phân bón thường",    desc: "Thúc cây +15%.", icon: "🌱" },
   premium_fertilizer: { name: "Phân bón cao cấp",   desc: "Thúc cây +40%.", icon: "🌟" },
@@ -57,7 +56,7 @@ export default function InventoryPage({ userAuth, onBack }) {
     return (
       <div className="flex-1 flex items-center justify-center px-6 py-10">
         <div className="text-center anim-pop">
-          <div className="text-6xl mb-4">🎒</div>
+          <div className="mb-4 flex justify-center text-emerald-600"><Backpack className="w-14 h-14" /></div>
           <h2 className="font-display text-xl text-ink mb-2">Chưa đăng nhập</h2>
           <p className="text-sm text-[#8A7C63] mb-4">Bạn cần đăng nhập để xem kho đồ</p>
           <PrimaryButton onClick={onBack}>← Về trang chủ</PrimaryButton>
@@ -76,8 +75,10 @@ export default function InventoryPage({ userAuth, onBack }) {
 
       <div className="mb-6 flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl text-ink">🎒 Kho đồ</h1>
-          <p className="text-sm text-[#8A7C63] mt-1">Vật phẩm bạn đang sở hữu — dùng trong Khu vườn</p>
+          <h1 className="flex items-center gap-2 font-display text-2xl sm:text-3xl text-ink">
+            <Backpack className="w-7 h-7 text-emerald-600" /> Kho đồ
+          </h1>
+          <p className="text-sm text-[#8A7C63] mt-1">Vật phẩm bạn đang sở hữu</p>
         </div>
         <div className="inline-flex items-center gap-1.5 bg-white border border-slate-100 rounded-full px-3 py-1.5 shadow-sm text-sm font-extrabold text-slate-600 shrink-0">
           <Coins className="w-4 h-4 text-amber-500" /> {coins.toLocaleString()}
@@ -94,10 +95,9 @@ export default function InventoryPage({ userAuth, onBack }) {
         <div className="flex justify-center py-10"><Loader label="Đang tải kho đồ..." /></div>
       ) : owned.length === 0 ? (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">📦</div>
+          <div className="mb-4 flex justify-center text-slate-400"><Package className="w-14 h-14" /></div>
           <h2 className="font-display text-lg text-ink mb-2">Kho đồ trống</h2>
-          <p className="text-sm text-[#8A7C63] mb-4">Ghé Cửa hàng trong Khu vườn để mua vật phẩm nhé!</p>
-          <PrimaryButton onClick={() => navigate("/garden")}>🌱 Tới Khu vườn</PrimaryButton>
+          <p className="text-sm text-[#8A7C63] mb-4">Vật phẩm mua trong cửa hàng sẽ xuất hiện ở đây.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

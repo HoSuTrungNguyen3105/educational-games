@@ -1,14 +1,14 @@
 /* ============================================================
    EduPlay Admin — giao diện quản trị kiểu WordPress
    Chỉ áp dụng trong cây `.edu-admin` (TeacherApp). Không đụng UI trẻ em.
-   Màu: bar/sidebar #1d2327, nền #f0f0f1, panel #fff, viền #c3c4c7,
-   chữ #1d2327 / #646970, hành động chính #2271b1.
+   Màu: bar/sidebar #1d2327, nền kem #fffbf2 (bg-paper2), panel #fff,
+   viền #c3c4c7, chữ #1d2327 / #646970, hành động chính #2271b1.
    ============================================================ */
 
 .edu-admin {
   --edu-bar-h: 40px;
   --edu-sidebar-w: 200px;
-  --edu-bg: #f0f0f1;
+  --edu-bg: #fffbf2;
   --edu-panel: #ffffff;
   --edu-border: #c3c4c7;
   --edu-line: #dcdcde;
@@ -198,15 +198,15 @@
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
-  padding: 14px 12px calc(88px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 10px calc(84px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 640px) {
-  .edu-admin-content { padding: 20px 24px 48px; }
+  .edu-admin-content { padding: 14px 18px 40px; }
 }
 
 @media (min-width: 1400px) {
-  .edu-admin-content { padding: 24px 32px 56px; }
+  .edu-admin-content { padding: 16px 22px 48px; }
 }
 
 /* ── Tiêu đề trang kiểu WP ─────────────────────────────────── */
@@ -216,7 +216,7 @@
   justify-content: space-between;
   gap: 10px 16px;
   flex-wrap: wrap;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 .edu-page-title h1,
@@ -365,15 +365,39 @@
 }
 
 /* Nút biểu tượng trong bảng */
-.edu-admin .w-9.h-9 {
+.edu-admin .w-9.h-9.edu-icon-btn {
   width: 30px;
   height: 30px;
   border-radius: 4px;
   border-color: var(--edu-border);
+  background: #fff;
   color: var(--edu-muted);
 }
 
-.edu-admin .w-9.h-9:hover { background: #f0f0f1; color: var(--edu-text); }
+.edu-admin .w-9.h-9.edu-icon-btn.text-ink { color: var(--edu-muted); }
+
+.edu-admin .w-9.h-9.edu-icon-btn:hover {
+  background: #f0f6fc;
+  border-color: var(--edu-blue);
+  color: var(--edu-blue);
+}
+
+.edu-admin .w-9.h-9.edu-icon-btn svg { width: 15px; height: 15px; }
+
+.edu-admin .w-9.h-9.edu-icon-btn.edu-icon-danger { color: #b32d2e; }
+
+.edu-admin .w-9.h-9.edu-icon-btn.edu-icon-danger:hover {
+  background: #fcf0f1;
+  border-color: #b32d2e;
+  color: #b32d2e;
+}
+
+/* Gọn padding panel/thẻ danh sách */
+.edu-admin .note-card.p-8,
+.edu-admin .note-card.p-6 { padding: 14px; }
+
+.edu-admin .note-card.p-5,
+.edu-admin .note-card.p-4 { padding: 10px 12px; }
 
 /* Gradient cũ (modal tài khoản…) → nút xanh phẳng */
 .edu-admin [class*="bg-gradient-to"]:not([class*="from-black"]) {
@@ -487,6 +511,8 @@
   font-size: 18px;
   line-height: 1;
 }
+
+.edu-admin .edu-stat-icon svg { width: 18px; height: 18px; }
 
 .edu-admin .edu-stat-value { color: var(--edu-text); font-size: 22px; line-height: 1.2; }
 .edu-admin .edu-stat-label { color: var(--edu-muted); font-size: 12px; line-height: 1.3; }

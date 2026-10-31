@@ -8,6 +8,7 @@
 // Mobile: RouteShell đã lo nút "← Về trang chủ"; ở đây chỉ lo phần nội dung và
 // chừa chỗ cho nút nổi chat ở đáy màn hình.
 
+import { BookOpen } from "lucide-react";
 import AiChatWidget from "../../components/ai/AiChatWidget.jsx";
 import AiLearningAnalysisPanel from "../../components/ai/AiLearningAnalysisPanel.jsx";
 
@@ -17,7 +18,7 @@ export default function AiLearningAnalysisPage() {
       <div className="px-4 sm:px-6 py-5 sm:py-8 w-full">
         <div className="mb-4 sm:mb-6">
           <h1 className="font-display text-2xl sm:text-3xl text-ink flex items-center gap-2">
-            <span aria-hidden>📚</span>
+            <BookOpen className="w-7 h-7 text-teal" />
             Tiến bộ của bạn
           </h1>
           <p className="text-sm text-[#8A7C63] mt-1">

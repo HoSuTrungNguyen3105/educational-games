@@ -3,6 +3,7 @@ import { userService, apiFetch } from "../services/api.js";
 import { socket } from "../socket/socket.js";
 import { SOCKET_EVENTS } from "../socket/socket.events.js";
 import { Input } from "./ui";
+import { Bot, Gamepad2, KeyRound, Users, X } from "lucide-react";
 
 function generateGameCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -170,21 +171,21 @@ export default function CoopInvitePanel({
       <div className="bg-[#1e2a4a] rounded-[20px] p-8 max-w-[420px] w-[90%] text-center shadow-[0_20px_60px_rgba(0,0,0,0.5)] animate-[slideUp_0.3s_ease]">
         {screen === "mode" && (
           <>
-            <h2 className="text-[1.5rem] font-bold mb-2">🎮 Chọn chế độ chơi</h2>
+            <h2 className="text-[1.5rem] font-bold mb-2 inline-flex items-center gap-2"><Gamepad2 className="w-6 h-6" /> Chọn chế độ chơi</h2>
             <p className="text-[0.9rem] opacity-70 mb-5">{gameName}</p>
             <div className="flex gap-3 mb-5">
               <button
                 onClick={() => { onModeSelected?.("solo"); }}
                 className="flex-1 py-3.5 px-3 rounded-[14px] border-2 border-white/15 bg-white/5 text-white cursor-pointer transition-all hover:border-[#4ecdc4] hover:bg-[#4ecdc4]/10 hover:-translate-y-0.5"
               >
-                <span className="text-2xl block mb-1.5">🤖</span>
+                <Bot className="w-6 h-6 mx-auto mb-1.5" />
                 Chơi với máy
               </button>
               <button
                 onClick={() => setScreen("search")}
                 className="flex-1 py-3.5 px-3 rounded-[14px] border-2 border-white/15 bg-white/5 text-white cursor-pointer transition-all hover:border-[#4ecdc4] hover:bg-[#4ecdc4]/10 hover:-translate-y-0.5"
               >
-                <span className="text-2xl block mb-1.5">👥</span>
+                <Users className="w-6 h-6 mx-auto mb-1.5" />
                 Chơi với người
               </button>
             </div>
@@ -192,14 +193,14 @@ export default function CoopInvitePanel({
               onClick={() => setScreen("join-code")}
               className="w-full py-2.5 rounded-[10px] border border-white/20 bg-transparent text-white/70 cursor-pointer text-[0.85rem] hover:text-white hover:border-white/40 transition"
             >
-              🔑 Nhập mã phòng
+              <span className="inline-flex items-center gap-1.5"><KeyRound className="w-3.5 h-3.5" /> Nhập mã phòng</span>
             </button>
           </>
         )}
 
         {screen === "search" && (
           <>
-            <h2 className="text-[1.5rem] font-bold mb-2">👥 Tìm người chơi</h2>
+            <h2 className="text-[1.5rem] font-bold mb-2 inline-flex items-center gap-2"><Users className="w-6 h-6" /> Tìm người chơi</h2>
             <p className="text-[0.9rem] opacity-70 mb-4">Nhập tên để tìm và mời bạn cùng chơi</p>
             <Input
               ref={inputRef}
@@ -252,7 +253,7 @@ export default function CoopInvitePanel({
 
         {screen === "join-code" && (
           <>
-            <h2 className="text-[1.5rem] font-bold mb-2">🔑 Nhập mã phòng</h2>
+            <h2 className="text-[1.5rem] font-bold mb-2 inline-flex items-center gap-2"><KeyRound className="w-6 h-6" /> Nhập mã phòng</h2>
             <p className="text-[0.9rem] opacity-70 mb-4">Nhập mã 6 ký tự từ bạn bè để vào phòng</p>
             <Input
               type="text"
@@ -300,7 +301,7 @@ export default function CoopInvitePanel({
 
         {inviteStatus === "accepted" && (
           <div className="mt-4 p-3 rounded-[10px] bg-white/5 border-l-[3px] border-[#4ecdc4] text-[0.85rem]">
-            🎮 {opponentInfo?.acceptedByName || "Bạn"} đã tham gia!
+            <span className="inline-flex items-center gap-1.5"><Gamepad2 className="w-4 h-4" /> {opponentInfo?.acceptedByName || "Bạn"} đã tham gia!</span>
           </div>
         )}
 
@@ -308,7 +309,7 @@ export default function CoopInvitePanel({
           onClick={onClose}
           className="mt-4 py-2 px-4 rounded-lg border border-white/20 bg-transparent text-white/50 cursor-pointer text-[0.85rem] hover:text-white hover:border-white/40 transition"
         >
-          ✕ Đóng
+          <span className="inline-flex items-center gap-1"><X className="w-3.5 h-3.5" /> Đóng</span>
         </button>
       </div>
     </div>

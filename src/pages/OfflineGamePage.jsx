@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { CircleHelp, Gamepad2, WifiOff } from "lucide-react";
 import { navigate } from "../lib/router.js";
 import { findOfflineGame, makeFallbackMeta, resolveOfflineId } from "../games/offline/games-src/manifest.js";
 import { useGameVersion } from "../hooks/useGameVersion.js";
@@ -318,7 +319,7 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
     return (
       <div className="fixed inset-0 grid place-items-center bg-paper">
         <div className="text-center max-w-md px-5">
-          <div className="text-5xl">🤔</div>
+          <div className="flex justify-center text-ink/25"><CircleHelp className="w-12 h-12" /></div>
           <p className="mt-3 font-display text-lg font-bold text-ink">Không tìm thấy game</p>
           <p className="mt-1 text-sm text-ink/60">id: {String(gameId || "(rỗng)")}</p>
           <p className="mt-3 text-xs text-ink/45">
@@ -365,8 +366,8 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
 
       {/* Đang chơi offline bằng dữ liệu đã cache */}
       {offlineInfo && (
-        <div className="fixed bottom-3 left-3 z-20 rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-white shadow-lg">
-          📴 Ngoại tuyến — đang dùng dữ liệu đã lưu (bản v{offlineInfo.version})
+        <div className="fixed bottom-3 left-3 z-20 flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+          <WifiOff className="w-3.5 h-3.5" /> Ngoại tuyến — đang dùng dữ liệu đã lưu (bản v{offlineInfo.version})
         </div>
       )}
 
@@ -375,7 +376,7 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
         <div className="fixed top-4 right-4 z-50 max-w-sm">
           <div className="rounded-xl border-2 border-teal bg-paper2 p-4 shadow-lg">
             <div className="flex items-start gap-3">
-              <div className="text-2xl">🎮</div>
+              <div className="text-teal"><Gamepad2 className="w-6 h-6" /></div>
               <div className="flex-1">
                 <h3 className="font-display text-sm font-bold text-ink">Có phiên bản mới!</h3>
                 <p className="mt-1 text-xs text-ink/60">

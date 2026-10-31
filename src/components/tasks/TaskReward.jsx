@@ -1,8 +1,10 @@
+import { Check, Coins } from "lucide-react";
+
 export default function TaskReward({ rewardCoin, completed, claimed, onClaim, claiming }) {
   if (claimed) {
     return (
-      <span className="text-[10px] font-bold text-teal bg-teal/10 px-3 py-1 rounded-full">
-        ✓ Đã nhận
+      <span className="text-[10px] font-bold text-teal bg-teal/10 px-3 py-1 rounded-full inline-flex items-center gap-1">
+        <Check className="w-3 h-3" /> Đã nhận
       </span>
     );
   }
@@ -20,8 +22,8 @@ export default function TaskReward({ rewardCoin, completed, claimed, onClaim, cl
   }
 
   return (
-    <span className="text-sm font-bold text-gold">
-      +{rewardCoin} 💰
+    <span className="text-sm font-bold text-gold inline-flex items-center gap-1">
+      +{rewardCoin} <Coins className="w-3.5 h-3.5" />
     </span>
   );
 }

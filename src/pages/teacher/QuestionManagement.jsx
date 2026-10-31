@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Check, FileText, Pencil, Trash2, X } from 'lucide-react'
 import { gameService, questionService } from '../../services/api.js'
 import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
 import QuestionImportModal from './QuestionImportModal.jsx'
@@ -180,7 +181,7 @@ export default function QuestionManagement({ showToast }) {
       </div>
 
       {!selectedGame && games && (
-        <EmptyState icon="📝" title="Chọn trò chơi" subtitle="Chọn một trò chơi để quản lý câu hỏi" />
+        <EmptyState icon={<FileText />} title="Chọn trò chơi" subtitle="Chọn một trò chơi để quản lý câu hỏi" />
       )}
 
       {selectedGame && (
@@ -199,13 +200,13 @@ export default function QuestionManagement({ showToast }) {
               <span className="font-mono text-xs text-[#8A7C63] w-5 text-right shrink-0">{idx + 1}</span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-ink font-body truncate">{q.content}</p>
-                <p className="text-[11px] text-[#8A7C63] truncate mt-0.5">
-                  ✓ {q.options?.find(o => o.id === q.correctAnswer)?.content || "—"} · {q.timeLimit}s · {q.points}đ
+                <p className="text-[11px] text-[#8A7C63] truncate mt-0.5 inline-flex items-center gap-1">
+                  <Check className="w-3 h-3 text-teal shrink-0" /> {q.options?.find(o => o.id === q.correctAnswer)?.content || "—"} · {q.timeLimit}s · {q.points}đ
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <IconButton title="Chỉnh sửa" onClick={() => openEdit(q, idx)}>✏️</IconButton>
-                <IconButton title="Xóa" onClick={() => confirmRemove(q, idx)}>🗑️</IconButton>
+                <IconButton title="Chỉnh sửa" onClick={() => openEdit(q, idx)}><Pencil /></IconButton>
+                <IconButton title="Xóa" tone="danger" onClick={() => confirmRemove(q, idx)}><Trash2 /></IconButton>
               </div>
             </div>
           )}
@@ -220,8 +221,8 @@ export default function QuestionManagement({ showToast }) {
               <td className="px-4 py-2 text-sm">{q.points}</td>
               <td className="px-4 py-2">
                 <div className="flex items-center justify-end gap-1">
-                  <IconButton title="Chỉnh sửa" onClick={() => openEdit(q, idx)}>✏️</IconButton>
-                  <IconButton title="Xóa" onClick={() => confirmRemove(q, idx)}>🗑️</IconButton>
+                  <IconButton title="Chỉnh sửa" onClick={() => openEdit(q, idx)}><Pencil /></IconButton>
+                  <IconButton title="Xóa" tone="danger" onClick={() => confirmRemove(q, idx)}><Trash2 /></IconButton>
                 </div>
               </td>
             </tr>
@@ -264,7 +265,7 @@ export default function QuestionManagement({ showToast }) {
                     placeholder={`Đáp án ${i + 1}`}
                   />
                   {form.options.length > 2 && (
-                    <IconButton title="Xóa đáp án" onClick={() => removeOption(i)}>✕</IconButton>
+                    <IconButton title="Xóa đáp án" tone="danger" onClick={() => removeOption(i)}><X /></IconButton>
                   )}
                 </div>
               ))}

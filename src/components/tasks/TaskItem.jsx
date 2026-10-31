@@ -1,6 +1,7 @@
 import TaskProgress from "./TaskProgress.jsx";
 import TaskReward from "./TaskReward.jsx";
 import TaskIcon from "./TaskIcon.jsx";
+import { Check, Coins } from "lucide-react";
 
 const TASK_GRADIENTS = [
   "from-violet-400 to-purple-400",
@@ -36,11 +37,11 @@ export default function TaskItem({ task, index = 0, onClaim, claiming = false, c
             claimed={task.claimed}
           />
         </div>
-        <span className="shrink-0 text-[11px] font-bold text-amber-600 whitespace-nowrap">
-          +{task.rewardCoin}💰
+        <span className="shrink-0 text-[11px] font-bold text-amber-600 whitespace-nowrap inline-flex items-center gap-0.5">
+          +{task.rewardCoin}<Coins className="w-3 h-3" />
         </span>
         {task.claimed ? (
-          <span className="shrink-0 text-[10px] font-bold text-teal-500 bg-teal-50 px-2 py-0.5 rounded-full">✓</span>
+          <span className="shrink-0 text-teal-500 bg-teal-50 p-1.5 rounded-full"><Check className="w-3 h-3" /></span>
         ) : isDone ? (
           <button
             onClick={() => onClaim?.(task.id)}

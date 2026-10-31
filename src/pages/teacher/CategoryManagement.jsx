@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from 'lucide-react'
 import { setupService } from '../../services/setupService.js'
 import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui'
 import { useCrudList } from '../../hooks/useCrudList.js'
@@ -54,8 +55,8 @@ export default function CategoryManagement({ showToast }) {
               <p className="font-mono text-[11px] text-[#8A7C63] truncate">{cat.id}</p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <IconButton title="Chỉnh sửa" onClick={() => openEdit(cat)}>✏️</IconButton>
-              <IconButton title="Xóa" onClick={() => askRemove(cat)}>🗑️</IconButton>
+              <IconButton title="Chỉnh sửa" onClick={() => openEdit(cat)}><Pencil /></IconButton>
+              <IconButton title="Xóa" tone="danger" onClick={() => askRemove(cat)}><Trash2 /></IconButton>
             </div>
           </div>
         )}
@@ -65,8 +66,8 @@ export default function CategoryManagement({ showToast }) {
             <td className="px-5 py-3 font-body text-ink">{cat.label}</td>
             <td className="px-5 py-3">
               <div className="flex items-center justify-end gap-2">
-                <IconButton title="Chỉnh sửa" onClick={() => openEdit(cat)}>✏️</IconButton>
-                <IconButton title="Xóa" onClick={() => askRemove(cat)}>🗑️</IconButton>
+                <IconButton title="Chỉnh sửa" onClick={() => openEdit(cat)}><Pencil /></IconButton>
+                <IconButton title="Xóa" tone="danger" onClick={() => askRemove(cat)}><Trash2 /></IconButton>
               </div>
             </td>
           </tr>

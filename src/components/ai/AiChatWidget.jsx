@@ -19,6 +19,7 @@ import { API_BASE } from "../../services/api.js";
 import { chat } from "../../services/aiApi.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
 import { Input } from "../ui";
+import { Bot, X } from "lucide-react";
 
 const MAX_LOCAL_TURNS = 12;
 
@@ -132,7 +133,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                      bg-ink text-paper shadow-xl flex items-center justify-center text-xl
                      hover:bg-ink2 active:scale-95 transition"
         >
-          🤖
+          <Bot className="w-5 h-5" />
         </button>
       )}
 
@@ -172,7 +173,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                 aria-label="Đóng trợ lý AI"
                 className="w-11 h-11 rounded-full text-paper/80 hover:bg-white/10 hover:text-paper transition text-lg leading-none"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -181,7 +182,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-3 space-y-2.5">
             {messages.length === 0 && (
               <div className="flex flex-col items-center text-center px-2 py-6 gap-3">
-                <span className="text-4xl float-slow">🤖</span>
+                <Bot className="w-10 h-10 text-ink/30 float-slow" />
                 <p className="font-display text-base sm:text-sm font-semibold text-ink">
                   Hỏi gì cũng được về bài học
                 </p>
@@ -276,7 +277,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                            justify-center text-sm font-bold transition"
                 aria-label="Huỷ"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             ) : (
               <button

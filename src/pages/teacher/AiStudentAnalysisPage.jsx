@@ -8,6 +8,7 @@
 // Mobile: tìm kiếm full-width, danh sách cuộn trong khung giới hạn chiều cao, nút bấm ≥ 44px.
 
 import { useState } from "react";
+import { Bot } from "lucide-react";
 import AiChatWidget from "../../components/ai/AiChatWidget.jsx";
 import AiLearningAnalysisPanel from "../../components/ai/AiLearningAnalysisPanel.jsx";
 import { GhostButton, PrimaryButton } from "../../components/ui";
@@ -42,7 +43,7 @@ export default function AiStudentAnalysisPage() {
     <div className="space-y-4 sm:space-y-6 pb-24">
       <div>
         <h1 className="font-display text-2xl sm:text-3xl text-ink flex items-center gap-2">
-          <span aria-hidden>🤖</span>
+          <Bot className="w-6 h-6 text-teal" />
           Phân tích AI
         </h1>
         <p className="text-sm text-[#8A7C63] mt-1">

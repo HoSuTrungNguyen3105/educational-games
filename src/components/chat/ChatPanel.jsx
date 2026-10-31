@@ -1,4 +1,5 @@
 import { useChatStore } from "../../stores/chat.store.js";
+import { MessageCircle } from "lucide-react";
 import ChatHeader from "./ChatHeader.jsx";
 import MessageList from "./MessageList.jsx";
 import MessageComposer from "./MessageComposer.jsx";
@@ -26,7 +27,7 @@ export default function ChatPanel({ className = "", userAuth, onUserLogin, onUse
             className="fixed bottom-24 right-4 z-40 w-12 h-12 rounded-full bg-ink text-paper shadow-xl flex items-center justify-center text-xl hover:bg-ink2 transition active:scale-95"
             title="Mở chat"
           >
-            💬
+            <MessageCircle className="w-5 h-5" />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-ticket text-white text-[10px] font-bold flex items-center justify-center">
                 {unreadCount > 99 ? "99+" : unreadCount}

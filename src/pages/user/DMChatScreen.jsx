@@ -3,7 +3,7 @@ import { chatApi } from "../../services/chatApi.js";
 import { IconBack, IconSmile, Loader } from '../../components/ui';
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
-import { Send } from "lucide-react";
+import { Check, Send, X } from "lucide-react";
 
 function formatMessageTime(iso) {
   if (!iso) return "";
@@ -209,8 +209,8 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
                 {isLastInGroup && (
                   <span className={`text-[9px] font-mono mt-0.5 px-1 ${isOwn ? "text-ink/25" : "text-ink/25"}`}>
                     {formatMessageTime(msg.createdAt)}
-                    {isOwn && msg.status === "sent" && " ✓"}
-                    {isOwn && msg.status === "failed" && " ✗"}
+                    {isOwn && msg.status === "sent" && <Check className="ml-0.5 inline h-2.5 w-2.5" />}
+                    {isOwn && msg.status === "failed" && <X className="ml-0.5 inline h-2.5 w-2.5" />}
                   </span>
                 )}
               </div>

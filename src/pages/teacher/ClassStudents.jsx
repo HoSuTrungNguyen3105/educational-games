@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { CircleUserRound, Hash } from 'lucide-react';
+import { CircleUserRound, Hash, School, Search } from 'lucide-react';
 import { EmptyState, IconBack, IconMail, IconUsers, Loader, SearchInput } from '../../components/ui';
 
 export default function ClassStudents({ classId }) {
@@ -83,10 +83,10 @@ export default function ClassStudents({ classId }) {
       {loading ? (
         <Loader label="Đang tải danh sách học sinh..." />
       ) : students.length === 0 ? (
-        <EmptyState icon="🏫" title="Lớp chưa có học sinh nào."
+        <EmptyState icon={<School />} title="Lớp chưa có học sinh nào."
           subtitle={<>Học sinh tham gia bằng mã lớp: <span className="font-mono text-gold">{cls?.code}</span></>} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon="🔍" title="Không tìm thấy học sinh phù hợp." />
+        <EmptyState icon={<Search />} title="Không tìm thấy học sinh phù hợp." />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((s, i) => (

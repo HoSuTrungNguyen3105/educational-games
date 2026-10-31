@@ -15,6 +15,7 @@ import { analyzeLearning } from "../../services/aiApi.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
 import { GhostButton, Loader, PrimaryButton, StatGrid } from "../ui";
 import { Input } from "../ui";
+import { BarChart3, BookOpen, CheckCircle2, Gamepad2, Star, Target, TriangleAlert } from "lucide-react";
 
 const TREND_LABEL = {
   improving: { text: "Đang tiến bộ", cls: "bg-teal/10 text-teal border-teal/20" },
@@ -57,8 +58,8 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
       <div className="note-card p-4 sm:p-5 lg:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="min-w-0">
-            <h2 className="font-display text-lg sm:text-xl text-ink break-words">
-              📊 Phân tích kết quả học tập
+            <h2 className="font-display text-lg sm:text-xl text-ink break-words inline-flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-ink/50" /> Phân tích kết quả học tập
             </h2>
             <p className="text-xs sm:text-sm text-[#8A7C63] mt-0.5 break-words">
               {studentLabel
@@ -128,7 +129,7 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
 
       {report && !report.metrics.totalPlays && (
         <div className="note-card p-8 text-center">
-          <div className="text-4xl mb-2 float-slow">📚</div>
+          <BookOpen className="w-10 h-10 mx-auto mb-2 text-ink/25 float-slow" />
           <p className="font-display text-lg text-ink">Chưa có lượt chơi nào</p>
           <p className="text-sm text-[#8A7C63] mt-1">
             Hãy chơi vài ván rồi quay lại — hệ thống cần dữ liệu thật để phân tích.
@@ -149,10 +150,10 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
 
             <StatGrid
               stats={[
-                { icon: "🎮", value: report.metrics.totalPlays, label: "lượt chơi" },
-                { icon: "✅", value: `${report.metrics.accuracy}%`, label: "tỷ lệ đúng" },
-                { icon: "📚", value: report.metrics.totalQuestionsOffered, label: "câu đưa ra" },
-                { icon: "⭐", value: Math.round(report.metrics.totalXp), label: "XP" },
+                { icon: <Gamepad2 />, value: report.metrics.totalPlays, label: "lượt chơi" },
+                { icon: <CheckCircle2 />, value: `${report.metrics.accuracy}%`, label: "tỷ lệ đúng" },
+                { icon: <BookOpen />, value: report.metrics.totalQuestionsOffered, label: "câu đưa ra" },
+                { icon: <Star />, value: Math.round(report.metrics.totalXp), label: "XP" },
               ]}
             />
 
@@ -240,9 +241,9 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
             )}
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <InsightList title="Điểm mạnh" items={report.strengths} tone="teal" icon="✅" />
-              <InsightList title="Cần cải thiện" items={report.areasToImprove} tone="ticket" icon="⚠️" />
-              <InsightList title="Gợi ý ôn tập" items={report.recommendations} tone="gold" icon="🎯" />
+              <InsightList title="Điểm mạnh" items={report.strengths} tone="teal" icon={<CheckCircle2 className="w-3 h-3" />} />
+              <InsightList title="Cần cải thiện" items={report.areasToImprove} tone="ticket" icon={<TriangleAlert className="w-3 h-3" />} />
+              <InsightList title="Gợi ý ôn tập" items={report.recommendations} tone="gold" icon={<Target className="w-3 h-3" />} />
             </div>
 
             {report.encouragement && (
@@ -252,8 +253,9 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
             )}
 
             {!report.dataSufficient && (
-              <p className="mt-3 text-[11px] text-[#8a6a10] bg-gold/15 border border-gold/40 rounded-lg px-2.5 py-2 leading-relaxed">
-                ⚠ Dữ liệu còn ít — chưa nên kết luận học sinh mạnh hay yếu ở một chủ đề.
+              <p className="mt-3 flex items-start gap-1.5 text-[11px] text-[#8a6a10] bg-gold/15 border border-gold/40 rounded-lg px-2.5 py-2 leading-relaxed">
+                <TriangleAlert className="mt-0.5 w-3.5 h-3.5 shrink-0" />
+                <span>Dữ liệu còn ít — chưa nên kết luận học sinh mạnh hay yếu ở một chủ đề.</span>
               </p>
             )}
 
@@ -279,7 +281,7 @@ function InsightList({ title, items, tone, icon }) {
   const list = Array.isArray(items) ? items.filter(Boolean) : [];
   return (
     <div className={`rounded-2xl border p-3 ${TONES[tone]}`}>
-      <p className="text-[11px] font-mono uppercase font-bold mb-2">
+      <p className="text-[11px] font-mono uppercase font-bold mb-2 inline-flex items-center gap-1">
         {icon} {title}
       </p>
       {list.length === 0 ? (

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { Ban, CheckCircle2, Clover, Coins, Dices, Loader2, PartyPopper, ShipWheel, Trophy } from "lucide-react";
 import { walletService } from "../../services/api.js";
 import { taskService, trackTaskEvent } from "../../services/taskService.js";
 import { Loader, Modal } from "../../components/ui";
@@ -146,7 +147,7 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
     return (
       <div className="flex-1 flex items-center justify-center px-6">
         <div className="text-center">
-          <div className="text-5xl mb-4">🎰</div>
+          <div className="mb-4 flex justify-center text-amber-400"><Dices className="w-12 h-12" /></div>
           <p className="text-[#8A7C63] text-sm mb-4">Vui lòng đăng nhập để quay thưởng</p>
           <button onClick={onBack} className="px-6 py-2 rounded-xl bg-teal text-white font-semibold text-sm">← Quay lại</button>
         </div>
@@ -197,7 +198,7 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
         }}
       >
         <button onClick={onBack} className="text-white/60 hover:text-white text-lg transition">←</button>
-        <span className="text-2xl">🎰</span>
+        <Dices className="w-6 h-6" style={{ color: "#F4B942" }} />
         <span className="font-bold text-sm" style={{ color: "#F4B942", fontFamily: "Poppins, sans-serif" }}>
           Vòng Quay May Mắn
         </span>
@@ -210,7 +211,7 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
               fontWeight: 600,
             }}
           >
-            🪙 {coins.toLocaleString()}
+            <Coins className="w-4 h-4" /> {coins.toLocaleString()}
           </span>
         </div>
       </div>
@@ -411,7 +412,13 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
             fontFamily: "Poppins, sans-serif",
           }}
         >
-          {spinning ? "🌀 Đang quay..." : spinsLeft > 0 ? "🎡 QUAY NGAY!" : "⛔ Hết lượt"}
+          {spinning ? (
+            <span className="inline-flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Đang quay...</span>
+          ) : spinsLeft > 0 ? (
+            <span className="inline-flex items-center gap-2"><ShipWheel className="w-5 h-5" /> QUAY NGAY!</span>
+          ) : (
+            <span className="inline-flex items-center gap-2"><Ban className="w-5 h-5" /> Hết lượt</span>
+          )}
         </button>
 
         {/* Info cards */}
@@ -426,7 +433,7 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
                 boxShadow: "0 4px 12px rgba(74,222,128,0.08)",
               }}
             >
-              ✅ Bạn có <strong>{spinsLeft} lượt</strong> quay hôm nay!
+              <CheckCircle2 className="mr-1 inline h-4 w-4" /> Bạn có <strong>{spinsLeft} lượt</strong> quay hôm nay!
             </div>
           ) : (
             <div
@@ -438,11 +445,11 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
                 boxShadow: "0 4px 12px rgba(251,191,36,0.08)",
               }}
             >
-              ⛔ Hết lượt quay — quay lại ngày mai!
+              <Ban className="mr-1 inline h-4 w-4" /> Hết lượt quay — quay lại ngày mai!
             </div>
           )}
           <div className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-            🏆 PLAY_23 — Thắng lớn +100 xu (cực hiếm!)
+            <Trophy className="mr-1 inline h-3.5 w-3.5" /> PLAY_23 — Thắng lớn +100 xu (cực hiếm!)
           </div>
         </div>
 
@@ -464,7 +471,13 @@ export default function SpinWheel({ userAuth, onBack, showToast }) {
                 className="text-2xl font-bold mb-2"
                 style={{ color: "#20283A", fontFamily: "Poppins, sans-serif" }}
               >
-                {result.jackpot ? "🏆 THẮNG LỚN!" : result.coins > 0 ? "🎉 Chúc mừng!" : "🍀 Chúc may mắn!"}
+                {result.jackpot ? (
+                  <span className="inline-flex items-center gap-2"><Trophy className="w-6 h-6" /> THẮNG LỚN!</span>
+                ) : result.coins > 0 ? (
+                  <span className="inline-flex items-center gap-2"><PartyPopper className="w-6 h-6" /> Chúc mừng!</span>
+                ) : (
+                  <span className="inline-flex items-center gap-2"><Clover className="w-6 h-6" /> Chúc may mắn!</span>
+                )}
               </h3>
               <p
                 className="text-xl font-bold mb-1"

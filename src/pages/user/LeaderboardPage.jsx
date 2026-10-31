@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
-import { Trophy, Coins } from "lucide-react";
+import { Trophy, Coins, Medal } from "lucide-react";
 import { userService } from "../../services/api.js";
 import { getLevelProgress, getLevelTitle } from "../../lib/utils.js";
 import { PrimaryButton, Loader, ErrorState, EmptyState } from "../../components/ui";
 
 const TOP_N = 50;
-const RANK_MEDAL = ["🥇", "🥈", "🥉"];
+const RANK_MEDAL_COLOR = ["text-amber-400", "text-slate-400", "text-orange-700"];
 
 function displayName(u) {
   return u?.name || u?.username || u?.displayName || "Người chơi";
@@ -34,7 +34,7 @@ export default function LeaderboardPage({ userAuth, onBack }) {
     return (
       <div className="flex-1 flex items-center justify-center px-6 py-10">
         <div className="text-center anim-pop">
-          <div className="text-6xl mb-4">🏆</div>
+          <div className="mb-4 flex justify-center text-amber-500"><Trophy className="w-14 h-14" /></div>
           <h2 className="font-display text-xl text-ink mb-2">Chưa đăng nhập</h2>
           <p className="text-sm text-[#8A7C63] mb-4">Bạn cần đăng nhập để xem bảng xếp hạng</p>
           <PrimaryButton onClick={onBack}>← Về trang chủ</PrimaryButton>
@@ -67,7 +67,7 @@ export default function LeaderboardPage({ userAuth, onBack }) {
       ) : error ? (
         <ErrorState title="Không tải được bảng xếp hạng" subtitle={error} onRetry={load} />
       ) : users.length === 0 ? (
-        <EmptyState icon="🏆" title="Chưa có dữ liệu" subtitle="Hãy là người đầu tiên lên bảng xếp hạng!" />
+        <EmptyState icon={<Trophy className="w-10 h-10" />} title="Chưa có dữ liệu" subtitle="Hãy là người đầu tiên lên bảng xếp hạng!" />
       ) : (
         <div className="nb-card overflow-hidden">
           <ul className="divide-y divide-slate-100">
@@ -80,8 +80,8 @@ export default function LeaderboardPage({ userAuth, onBack }) {
                   key={u?.id ?? u?._id ?? u?.username ?? rank}
                   className={`flex items-center gap-3 px-4 py-3 ${me ? "bg-emerald-50" : ""}`}
                 >
-                  <span className="w-8 shrink-0 text-center text-lg font-extrabold text-slate-500">
-                    {RANK_MEDAL[rank - 1] || rank}
+                  <span className="flex w-8 shrink-0 items-center justify-center text-lg font-extrabold text-slate-500">
+                    {rank <= 3 ? <Medal className={`w-6 h-6 ${RANK_MEDAL_COLOR[rank - 1]}`} /> : rank}
                   </span>
                   <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 text-white flex items-center justify-center font-extrabold">
                     {displayName(u).charAt(0).toUpperCase()}

@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useEffect, useState, useCallback, useRef } from 'react'
+import { AlertTriangle, ArrowDown, ArrowUp, Check, ClipboardList, Dices, GraduationCap, Settings, SquarePen, Star, Timer, X } from 'lucide-react'
 import { gameService, questionService, uid } from '../../services/api.js'
 import { THEMES } from '../../lib/setupConstants.js'
 import { useTemplates, useSubjects, useCategories, useTemplateHtml } from '../../lib/hooks.js'
@@ -149,7 +150,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl text-ink">{gameId ? "Chỉnh sửa trò chơi" : "Tạo trò chơi mới"}</h1>
-        <button onClick={onCancel} className="text-sm text-[#8A7C63] hover:text-ink">Hủy ✕</button>
+        <button onClick={onCancel} className="text-sm text-[#8A7C63] hover:text-ink">Hủy</button>
       </div>
 
       <Stepper steps={steps} activeIdx={stepIdx} onJump={(i) => i < stepIdx && setStepIdx(i)} />
@@ -244,7 +245,7 @@ function StepTemplate({ form, setForm, templates, categories }) {
                 <span className="inline-block text-[10px] font-mono uppercase text-[#B7A987]">{t.category}</span>
                 {tplConfig && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal/10 text-teal">
-                    ⚙ {tplConfig.icon} {tplConfig.name}
+                    <Settings className="w-3 h-3" /> {tplConfig.icon} {tplConfig.name}
                   </span>
                 )}
               </div>
@@ -292,24 +293,25 @@ function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, 
             </select>
           </Field>
           {currentTpl?.htmlTemplate && (
-            <p className="text-xs text-teal mt-1.5">✓ Mẫu này có HTML template riêng (v{currentTpl.version || 1})</p>
+            <p className="text-xs text-teal mt-1.5 inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Mẫu này có HTML template riêng (v{currentTpl.version || 1})</p>
           )}
           {currentTpl?.playMode === "classroom" && (
-            <p className="text-xs text-ticket mt-1.5 font-semibold">🎓 Chế độ lớp học — giáo viên điều khiển, học sinh lên chơi</p>
+            <p className="text-xs text-ticket mt-1.5 font-semibold inline-flex items-center gap-1"><GraduationCap className="w-3.5 h-3.5" /> Chế độ lớp học — giáo viên điều khiển, học sinh lên chơi</p>
           )}
           <div className="mt-4">
             <Field
-              label="🧩 Nguồn nội dung game"
+              label="Nguồn nội dung game"
               hint="Quiz dùng bộ câu hỏi trong DB. Game tự chơi (custom) nhận JSON cấu hình và tự sinh câu hỏi — không cần nhập câu hỏi."
             >
               <select className={inputCls} value={gameMode} onChange={e => onForm?.("gameMode", e.target.value)}>
-                <option value="quiz">📝 Quiz — dùng câu hỏi trong DB</option>
-                <option value="custom">🧩 Game tự chơi — nhận JSON cấu hình</option>
+                <option value="quiz">Quiz — dùng câu hỏi trong DB</option>
+                <option value="custom">Game tự chơi — nhận JSON cấu hình</option>
               </select>
             </Field>
             {isCustomGame && (
-              <p className="text-xs text-teal mt-1.5">
-                ✓ Game sẽ nhận <code>config</code> trong <code>init</code> và tự sinh nội dung. Bước "Câu hỏi" sẽ bỏ qua.
+              <p className="text-xs text-teal mt-1.5 inline-flex items-start gap-1">
+                <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>Game sẽ nhận <code>config</code> trong <code>init</code> và tự sinh nội dung. Bước "Câu hỏi" sẽ bỏ qua.</span>
               </p>
             )}
           </div>
@@ -319,7 +321,7 @@ function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, 
       {templates.length > 0 && currentTpl?.htmlTemplate && (
         <div className="mb-6 p-4 rounded-2xl bg-ink/[0.03] border border-ink/10">
           <Field
-            label="⚙ Loại cấu hình game"
+            label="Loại cấu hình game"
             hint="Chỉ game có HTML riêng mới cần cấu hình. Mỗi loại có một chuỗi JSON riêng (luật chơi, danh sách emoji/từ vựng…) lưu riêng cho game này — game khác không bị ảnh hưởng."
           >
             <select className={inputCls} value={configKey || ""} onChange={e => onConfigKey(e.target.value || null)}>
@@ -340,17 +342,19 @@ function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, 
                 <span className="px-1.5 py-0.5 rounded bg-ink/10">key: {configDef.key}</span>
                 <span>{settingCount} luật chơi</span>
                 <span>{listCount} danh sách</span>
-                <span className={configErrorCount ? "text-ticket" : "text-teal"}>
-                  {configErrorCount ? `⚠ ${configErrorCount} mục chưa hợp lệ` : "✓ dữ liệu mặc định hợp lệ"}
+                <span className={`inline-flex items-center gap-1 ${configErrorCount ? "text-ticket" : "text-teal"}`}>
+                  {configErrorCount
+                    ? <><AlertTriangle className="w-3 h-3" /> {configErrorCount} mục chưa hợp lệ</>
+                    : <><Check className="w-3 h-3" /> dữ liệu mặc định hợp lệ</>}
                 </span>
               </div>
               {savedKey === configKey && Object.keys(savedValues).length > 0 && (
-                <p className="text-xs text-teal mt-2">
-                  ✓ Giữ nguyên cấu hình đã lưu của game này ({configDef.name})
+                <p className="text-xs text-teal mt-2 inline-flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5" /> Giữ nguyên cấu hình đã lưu của game này ({configDef.name})
                 </p>
               )}
               {configIssues.filter(i => i.level === "error").slice(0, 3).map((i, idx) => (
-                <p key={idx} className="text-xs text-ticket mt-1">✕ {i.message}</p>
+                <p key={idx} className="text-xs text-ticket mt-1 inline-flex items-start gap-1"><X className="w-3.5 h-3.5 shrink-0 mt-0.5" /> {i.message}</p>
               ))}
               <div className="flex flex-wrap gap-2 mt-3">
                 {gameId ? (
@@ -487,12 +491,12 @@ function StepQuestions({ questions, setQuestions, form, showToast }) {
                   <span className="text-sm font-semibold text-ink">Loại câu hỏi:</span>
                   <div className="flex gap-2">
                     <button onClick={() => update(idx, { inputMode: "choice", correctAnswer: null })}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${!isInputMode ? "bg-ink text-paper border-ink" : "border-ink/15 text-ink/60 hover:border-ink/35"}`}>
-                      📋 Trắc nghiệm
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${!isInputMode ? "bg-ink text-paper border-ink" : "border-ink/15 text-ink/60 hover:border-ink/35"}`}>
+                      <ClipboardList className="w-3.5 h-3.5" /> Trắc nghiệm
                     </button>
                     <button onClick={() => update(idx, { inputMode: "input", correctAnswer: "", options: [] })}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${isInputMode ? "bg-teal text-white border-teal" : "border-ink/15 text-ink/60 hover:border-ink/35"}`}>
-                      ✏️ Nhập đáp án
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${isInputMode ? "bg-teal text-white border-teal" : "border-ink/15 text-ink/60 hover:border-ink/35"}`}>
+                      <SquarePen className="w-3.5 h-3.5" /> Nhập đáp án
                     </button>
                   </div>
                 </div>
@@ -508,10 +512,10 @@ function StepQuestions({ questions, setQuestions, form, showToast }) {
                         <div key={o.id} className="flex items-center gap-2">
                           <button onClick={() => update(idx, { correctAnswer: o.id })}
                             className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition ${q.correctAnswer === o.id ? "bg-teal border-teal text-white" : "border-ink/25"}`}>
-                            {q.correctAnswer === o.id && "✓"}
+                            {q.correctAnswer === o.id && <Check className="w-3.5 h-3.5" />}
                           </button>
                           <input className={inputCls} value={o.content} onChange={e => updateOption(idx, o.id, e.target.value)} placeholder="Nội dung đáp án" />
-                          {q.options.length > 2 && <button onClick={() => removeOption(idx, o.id)} className="text-[#B7A987] hover:text-ticket px-1">✕</button>}
+                          {q.options.length > 2 && <button onClick={() => removeOption(idx, o.id)} title="Xóa đáp án" className="text-[#B7A987] hover:text-ticket px-1"><X className="w-4 h-4" /></button>}
                         </div>
                       ))}
                     </div>
@@ -533,8 +537,8 @@ function StepQuestions({ questions, setQuestions, form, showToast }) {
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <div className="flex gap-2">
-                    <IconButton title="Di chuyển lên" onClick={() => move(idx, -1)}>↑</IconButton>
-                    <IconButton title="Di chuyển xuống" onClick={() => move(idx, 1)}>↓</IconButton>
+                    <IconButton title="Di chuyển lên" onClick={() => move(idx, -1)}><ArrowUp /></IconButton>
+                    <IconButton title="Di chuyển xuống" onClick={() => move(idx, 1)}><ArrowDown /></IconButton>
                   </div>
                   {questions.length > 1 && <button onClick={() => removeQuestion(idx)} className="text-sm text-ticket font-semibold hover:underline">Xóa câu hỏi</button>}
                 </div>
@@ -711,8 +715,8 @@ function QuestionPickerModal({ onClose, onPick }) {
                       {gameMap[q.gameId] || "—"}
                     </span>
                     <span>{q.options?.length || 0} đáp án</span>
-                    <span>⏱ {q.timeLimit}s</span>
-                    <span>⭐ {q.points}</span>
+                    <span className="inline-flex items-center gap-0.5"><Timer className="w-3 h-3" /> {q.timeLimit}s</span>
+                    <span className="inline-flex items-center gap-0.5"><Star className="w-3 h-3" /> {q.points}</span>
                   </div>
                 </div>
               </label>
@@ -766,7 +770,7 @@ function StepPreview({ form, questions, templates, isPlayToWin, configKey, confi
       <h2 className="font-display text-xl text-ink mb-6">Xem trước</h2>
       <div className="rounded-3xl p-6 sm:p-8" style={{ background: `${themeColor}14` }}>
         <div className="flex items-center gap-4 mb-6">
-          <StampToken icon={tpl ? tpl.icon : "🎲"} ring={themeColor} size={56} fontSize={26} />
+          <StampToken icon={tpl ? tpl.icon : <Dices />} ring={themeColor} size={56} fontSize={26} />
           <div>
             <h3 className="font-display text-2xl text-ink">{form.name || "Tên trò chơi"}</h3>
             <p className="text-sm text-[#8A7C63]">{form.subject} · {form.topic || "Chủ đề"}</p>
@@ -775,7 +779,7 @@ function StepPreview({ form, questions, templates, isPlayToWin, configKey, confi
         <p className="text-sm text-[#8A7C63] mb-4">{form.description || "Chưa có mô tả."}</p>
         <div className="mb-6">
           <span className={`inline-block px-3 py-1 rounded-full text-xs font-mono ${form.status === "published" ? "bg-teal/15 text-teal" : "bg-ink/10 text-ink/60"}`}>
-            {form.status === "published" ? "✓ Xuất bản" : "Nháp"}
+            {form.status === "published" ? <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Xuất bản</span> : "Nháp"}
           </span>
         </div>
 
@@ -808,8 +812,10 @@ function StepPreview({ form, questions, templates, isPlayToWin, configKey, confi
               <p className="text-xs text-[#8A7C63]">
                 Lưu riêng cho game này: {(configDef.settings || []).length} luật chơi, {(configDef.lists || []).length} danh sách dữ liệu.
               </p>
-              <p className={`text-xs mt-1 ${configErrorCount ? "text-ticket" : "text-teal"}`}>
-                {configErrorCount ? `⚠ Còn ${configErrorCount} mục chưa hợp lệ — xem trang “Cấu hình game”` : "✓ Dữ liệu hợp lệ"}
+              <p className={`text-xs mt-1 inline-flex items-center gap-1 ${configErrorCount ? "text-ticket" : "text-teal"}`}>
+                {configErrorCount
+                  ? <><AlertTriangle className="w-3.5 h-3.5" /> Còn {configErrorCount} mục chưa hợp lệ — xem trang “Cấu hình game”</>
+                  : <><Check className="w-3.5 h-3.5" /> Dữ liệu hợp lệ</>}
               </p>
             </div>
           ) : (
@@ -827,7 +833,7 @@ function StepPreview({ form, questions, templates, isPlayToWin, configKey, confi
                 <div key={q.id || idx} className="note-card p-4">
                   <div className="flex justify-between items-start mb-2">
                     <span className="w-6 h-6 rounded-full bg-ink text-paper text-xs flex items-center justify-center font-mono flex-shrink-0">{idx + 1}</span>
-                    <span className="text-xs font-mono text-[#8A7C63]">⏱ {q.timeLimit}s · ⭐ {q.points}</span>
+                    <span className="inline-flex items-center gap-0.5 text-xs font-mono text-[#8A7C63]"><Timer className="w-3 h-3" /> {q.timeLimit}s · <Star className="w-3 h-3" /> {q.points}</span>
                   </div>
                   <p className="font-body text-sm text-ink mb-2">{q.content || "—"}</p>
                   <div className="grid grid-cols-2 gap-2">

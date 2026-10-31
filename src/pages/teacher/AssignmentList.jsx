@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { assignmentService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Clock, Users, CircleX, Eye, Link2 } from 'lucide-react';
+import { Clock, Users, CircleX, Eye, Link2, ClipboardList } from 'lucide-react';
 import { ConfirmModal, EmptyState, IconAdd, IconCheckCircle, Loader, ManagementHeader, PrimaryButton } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
@@ -67,7 +67,7 @@ export default function AssignmentList() {
       )}
       {!error && !assignments && <Loader label="Đang tải bài tập..." />}
       {!error && assignments && assignments.length === 0 && (
-        <EmptyState icon="📝" title="Chưa có bài tập nào"
+        <EmptyState icon={<ClipboardList />} title="Chưa có bài tập nào"
           subtitle="Tạo bài tập đầu tiên để giao cho học sinh."
           action={<PrimaryButton onClick={() => navigate('/admin/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm">+ Tạo bài tập</PrimaryButton>} />
       )}

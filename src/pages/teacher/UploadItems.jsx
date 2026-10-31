@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
 import { IconDownload, IconPlay, IconUpload, ManagementHeader } from '../../components/ui';
-import { Save, Plus, LoaderCircle} from 'lucide-react';
+import { Save, Plus, LoaderCircle, X, Coins } from 'lucide-react';
 
 function getAuthToken() {
   try { return JSON.parse(localStorage.getItem('edu_games_auth') || '{}')?.token || ''; } catch { return ''; }
@@ -367,7 +367,7 @@ export default function UploadItems({ showToast }) {
                       className="flex-1 px-2 py-1.5 rounded-lg border border-ink/10 text-xs bg-white text-ink focus:outline-none focus:ring-1 focus:ring-gold/30" placeholder="Tên item..." />
                   </div>
                   <div className="flex gap-2 items-center">
-                    <span className="text-[10px] text-ink/40">💰</span>
+                    <Coins className="w-3.5 h-3.5 text-ink/40" />
                     <input type="number" value={item.price} min={0} onChange={e => updateItem(idx, 'price', Math.max(0, Number(e.target.value) || 0))}
                       className="w-16 px-2 py-1 rounded-lg border border-ink/10 text-xs bg-white text-ink font-mono focus:outline-none" />
                     <label className="flex items-center gap-1 cursor-pointer text-[10px] text-ink/50">
@@ -393,7 +393,7 @@ export default function UploadItems({ showToast }) {
                   </div>
                 </div>
 
-                <button onClick={() => removeItem(idx)} className="p-1.5 rounded-lg hover:bg-red-50 text-ink/30 hover:text-red-500 transition shrink-0 text-xs">✕</button>
+                <button onClick={() => removeItem(idx)} title="Xóa" className="p-1.5 rounded-lg hover:bg-red-50 text-ink/30 hover:text-red-500 transition shrink-0"><X className="w-4 h-4" /></button>
               </div>
             ))}
           </div>

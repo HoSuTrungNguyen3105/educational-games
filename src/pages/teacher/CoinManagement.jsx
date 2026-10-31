@@ -4,6 +4,7 @@ import { getLevelProgress, getLevelTitle, getLevelEmoji } from '../../lib/utils.
 import { getRoleLabel } from '../../config/roles.js'
 import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from '../../components/ui'
 import { useConfirm } from '../../hooks/useConfirm.js'
+import { BarChart3, ClipboardList, Coins, Gamepad2, Save, Users } from 'lucide-react'
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
@@ -160,7 +161,7 @@ export default function CoinManagement({ user, showToast }) {
     }
   };
 
-  const userHeaders = ["Người dùng", "Vai trò", "💰 Coin", "Hạng"];
+  const userHeaders = ["Người dùng", "Vai trò", "Coin", "Hạng"];
   const renderUserRow = (u) => {
     const lv = getLevelProgress(u.coins || 0);
     return (
@@ -214,7 +215,7 @@ export default function CoinManagement({ user, showToast }) {
         <div className="flex items-center gap-1.5">
           <button onClick={() => openEdit(item)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
           {item.gameState?.entries && Object.keys(item.gameState.entries).length
-            ? <button onClick={() => openSave(item)} className="text-xs font-semibold text-violet-500 hover:underline">💾 Save</button>
+            ? <button onClick={() => openSave(item)} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-500 hover:underline"><Save className="w-3 h-3" /> Lưu</button>
             : <span className="text-[10px] text-ink/30">chưa có save</span>}
           <button onClick={() => handleDelete(item)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
         </div>
@@ -224,24 +225,24 @@ export default function CoinManagement({ user, showToast }) {
 
   return (
     <div className="space-y-5">
-      <ManagementHeader subtitle="Quản trị" title="💰 Coin & Tiến trình người chơi" />
+      <ManagementHeader subtitle="Quản trị" title="Coin & Tiến trình người chơi" />
 
       <div className="flex gap-2">
         <button onClick={() => setTab("users")}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "users" ? "bg-gold/20 text-gold" : "text-[#8A7C63] hover:bg-ink/5"}`}>
-          {"\u{1F465}"} Coin & Hạng
+          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "users" ? "bg-gold/20 text-gold" : "text-[#8A7C63] hover:bg-ink/5"}`}>
+          <Users className="w-4 h-4" /> Coin & Hạng
         </button>
         <button onClick={() => setTab("progress")}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "progress" ? "bg-gold/20 text-gold" : "text-[#8A7C63] hover:bg-ink/5"}`}>
-          {"\u{1F4CA}"} Tiến trình game
+          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "progress" ? "bg-gold/20 text-gold" : "text-[#8A7C63] hover:bg-ink/5"}`}>
+          <BarChart3 className="w-4 h-4" /> Tiến trình game
         </button>
       </div>
 
       <StatGrid stats={[
-        { label: "Người dùng", value: users.length, icon: "\u{1F465}" },
-        { label: "Tổng Coin", value: totalGlobalCoins.toLocaleString(), icon: "\u{1F4B0}" },
-        { label: "Bản ghi tiến trình", value: filtered.length, icon: "\u{1F4CB}" },
-        { label: "Tổng lượt chơi", value: totalPlays.toLocaleString(), icon: "\u{1F3AE}" },
+        { label: "Người dùng", value: users.length, icon: <Users /> },
+        { label: "Tổng Coin", value: totalGlobalCoins.toLocaleString(), icon: <Coins /> },
+        { label: "Bản ghi tiến trình", value: filtered.length, icon: <ClipboardList /> },
+        { label: "Tổng lượt chơi", value: totalPlays.toLocaleString(), icon: <Gamepad2 /> },
       ]} />
 
       {tab === "users" && (
@@ -266,7 +267,7 @@ export default function CoinManagement({ user, showToast }) {
                   <p className="text-[11px] text-[#8A7C63] font-mono truncate">@{u.username} · {getRoleLabel(u.role)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-bold font-mono text-gold">{(u.coins || 0).toLocaleString()} 💰</p>
+                  <p className="text-sm font-bold font-mono text-gold inline-flex items-center gap-1">{(u.coins || 0).toLocaleString()} <Coins className="w-3.5 h-3.5" /></p>
                   <p className="text-[11px] text-[#8A7C63] truncate">{getLevelEmoji(lv.level)} Lv.{lv.level} · {getLevelTitle(lv.level)}</p>
                 </div>
               </div>
@@ -322,7 +323,7 @@ export default function CoinManagement({ user, showToast }) {
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button onClick={() => openEdit(item)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
                   {item.gameState?.entries && Object.keys(item.gameState.entries).length
-                    ? <button onClick={() => openSave(item)} className="text-xs font-semibold text-violet-500 hover:underline">💾 Save</button>
+                    ? <button onClick={() => openSave(item)} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-500 hover:underline"><Save className="w-3 h-3" /> Lưu</button>
                     : <span className="text-[10px] text-ink/30">chưa có save</span>}
                   <button onClick={() => handleDelete(item)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
                 </div>

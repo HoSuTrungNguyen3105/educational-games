@@ -94,7 +94,7 @@ export default function AdminSettings({ user, showToast }) {
       />
 
       <div className="grid lg:grid-cols-2 gap-4 items-start">
-        <Card title="🔐 Đổi mật khẩu"
+        <Card title="Đổi mật khẩu"
           hint="Đổi xong, mọi thiết bị đang đăng nhập bằng tài khoản này bị xuất trừ máy hiện tại (server thu hồi token cũ).">
           <div className="space-y-3">
             <label>
@@ -122,7 +122,7 @@ export default function AdminSettings({ user, showToast }) {
           </div>
         </Card>
 
-        <Card title="🪪 Tài khoản quản trị">
+        <Card title="Tài khoản quản trị">
           <dl className="text-sm divide-y divide-ink/10">
             {[
               ['Họ tên', user?.name],
@@ -141,7 +141,7 @@ export default function AdminSettings({ user, showToast }) {
           </p>
         </Card>
 
-        <Card title="💾 Dữ liệu game trên máy này"
+        <Card title="Dữ liệu game trên máy này"
           hint="Tiến độ chơi và cache game đã tải nằm trong trình duyệt. Xóa cache không ảnh hưởng tiến độ đã đồng bộ lên máy chủ.">
           {!local ? (
             <p className="text-sm text-[#8A7C63]">Đang đo dung lượng…</p>

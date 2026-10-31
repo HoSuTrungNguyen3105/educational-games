@@ -1,10 +1,11 @@
 import TaskItem from "./TaskItem.jsx";
+import { MoonStar } from "lucide-react";
 
 export default function TaskList({ tasks, onClaim, claiming = false, compact = false }) {
   if (!tasks || tasks.length === 0) {
     return (
       <div className="text-center py-10">
-        <p className="text-4xl mb-3">🌙</p>
+        <MoonStar className="w-10 h-10 mx-auto mb-3 text-ink/25" />
         <p className="text-sm text-[#8A7C63]">Không có nhiệm vụ nào</p>
       </div>
     );

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { Coins, Droplet, House, RotateCcw, Star, Trophy } from "lucide-react";
 import { navigate } from "../lib/router.js";
 import { useUserAuthStore } from "../stores/userAuth.store.js";
 import HtmlGameLoader from "../games/_shared/HtmlGameLoader.jsx";
@@ -52,35 +53,35 @@ export default function MathAdventurePage() {
       {result && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4">
           <div className="w-full max-w-[420px] rounded-[26px] bg-white p-6 text-center shadow-2xl">
-            <div className="text-5xl">🎁</div>
+            <Trophy className="w-12 h-12 mx-auto text-amber-400" />
             <h2 className="mt-2 text-2xl font-display font-bold text-ink">Hoàn thành màn chơi!</h2>
             <p className="mt-1 text-sm font-semibold text-slate-500">
               {result.correct}/{result.totalQuestions} câu đúng · {mmss(result.timeUsed)}
             </p>
 
             <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 px-2 py-3 text-sm font-extrabold text-amber-700">
-                ⭐ +{result.correct * 10} EXP
+              <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 px-2 py-3 text-sm font-extrabold text-amber-700 inline-flex items-center justify-center gap-1">
+                <Star className="w-4 h-4" fill="currentColor" /> +{result.correct * 10} EXP
               </div>
-              <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 px-2 py-3 text-sm font-extrabold text-amber-700">
-                🪙 +{result.correct * 20}
+              <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 px-2 py-3 text-sm font-extrabold text-amber-700 inline-flex items-center justify-center gap-1">
+                <Coins className="w-4 h-4" /> +{result.correct * 20}
               </div>
-              <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-2 py-3 text-sm font-extrabold text-emerald-700">
-                💧 +{result.correct}
+              <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-2 py-3 text-sm font-extrabold text-emerald-700 inline-flex items-center justify-center gap-1">
+                <Droplet className="w-4 h-4" /> +{result.correct}
               </div>
             </div>
 
             <button
               onClick={again}
-              className="mt-5 w-full rounded-full bg-gradient-to-br from-sky-400 to-blue-600 px-6 py-3 text-sm font-extrabold text-white shadow-lg transition active:translate-y-0.5"
+              className="mt-5 w-full rounded-full bg-gradient-to-br from-sky-400 to-blue-600 px-6 py-3 text-sm font-extrabold text-white shadow-lg transition active:translate-y-0.5 inline-flex items-center justify-center gap-1.5"
             >
-              🔄 Chơi lại
+              <RotateCcw className="w-4 h-4" /> Chơi lại
             </button>
             <button
               onClick={() => navigate("/")}
-              className="mt-2 w-full rounded-full bg-slate-100 px-6 py-3 text-sm font-extrabold text-slate-500 shadow transition hover:bg-slate-200"
+              className="mt-2 w-full rounded-full bg-slate-100 px-6 py-3 text-sm font-extrabold text-slate-500 shadow transition hover:bg-slate-200 inline-flex items-center justify-center gap-1.5"
             >
-              🏠 Về trang chủ
+              <House className="w-4 h-4" /> Về trang chủ
             </button>
           </div>
         </div>

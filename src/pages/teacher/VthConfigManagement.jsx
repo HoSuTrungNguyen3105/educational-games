@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Copy, Download, FolderOpen, Save, SlidersHorizontal, X } from 'lucide-react'
 import { gameConfigStore } from '../../services/api.js'
 import {
   ManagementHeader, PrimaryButton, GhostButton, IconButton, ConfirmModal, Loader,
@@ -232,7 +233,7 @@ export default function VthConfigManagement({ showToast }) {
       <GhostButton onClick={revert} className="!px-4 !py-2 text-sm rounded-lg" disabled={!dirty}>Hoàn tác</GhostButton>
       <GhostButton onClick={() => setAskReset(true)} className="!px-4 !py-2 text-sm rounded-lg">Mặc định</GhostButton>
       <PrimaryButton onClick={save} disabled={!!errors.length || (!dirty && fromStore)} className="!px-4 !py-2 text-sm rounded-lg">
-        {saving ? 'Đang lưu...' : '🚀 Lưu vào game'}
+        {saving ? 'Đang lưu...' : <span className="inline-flex items-center gap-1.5"><Save className="w-3.5 h-3.5" /> Lưu vào game</span>}
       </PrimaryButton>
     </div>
   )
@@ -262,7 +263,7 @@ export default function VthConfigManagement({ showToast }) {
       )}
 
       <div className="flex gap-2">
-        <button onClick={() => setTab('visual')} className={chipCls(tab === 'visual')}>🎛 Trực quan</button>
+        <button onClick={() => setTab('visual')} className={chipCls(tab === 'visual')}><span className="inline-flex items-center gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5" /> Trực quan</span></button>
         <button onClick={() => setTab('json')} className={chipCls(tab === 'json')}>{'{ } JSON'}</button>
       </div>
 
@@ -276,9 +277,9 @@ export default function VthConfigManagement({ showToast }) {
           />
           <div className="flex flex-wrap gap-2">
             <PrimaryButton onClick={applyJson} className="!px-4 !py-2 text-sm rounded-lg">Cập nhật từ JSON</PrimaryButton>
-            <GhostButton onClick={copyJson} className="!px-4 !py-2 text-sm rounded-lg">📋 Sao chép</GhostButton>
-            <GhostButton onClick={downloadJson} className="!px-4 !py-2 text-sm rounded-lg">⬇ Tải xuống</GhostButton>
-            <GhostButton onClick={pickJson} className="!px-4 !py-2 text-sm rounded-lg">📂 Nạp file</GhostButton>
+            <GhostButton onClick={copyJson} className="!px-4 !py-2 text-sm rounded-lg"><span className="inline-flex items-center gap-1.5"><Copy className="w-3.5 h-3.5" /> Sao chép</span></GhostButton>
+            <GhostButton onClick={downloadJson} className="!px-4 !py-2 text-sm rounded-lg"><span className="inline-flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> Tải xuống</span></GhostButton>
+            <GhostButton onClick={pickJson} className="!px-4 !py-2 text-sm rounded-lg"><span className="inline-flex items-center gap-1.5"><FolderOpen className="w-3.5 h-3.5" /> Nạp file</span></GhostButton>
           </div>
           {jsonErr && <pre className="note-card p-3 bg-red-50 border-red-200 text-xs text-red-700 whitespace-pre-wrap">{jsonErr}</pre>}
         </div>
@@ -373,7 +374,7 @@ export default function VthConfigManagement({ showToast }) {
                         <input className={box} value={e.banner || ''} placeholder="Ví dụ: Đợt quái lớn!" onChange={(ev) => setEvent(i, 'banner', ev.target.value)} />
                       </F>
                       <label className="flex items-center gap-1.5 pb-2 text-sm text-ink whitespace-nowrap">
-                        <input type="checkbox" checked={!!e.flag} onChange={(ev) => setEvent(i, 'flag', ev.target.checked)} className="accent-teal" /> 🚩 Cờ
+                        <input type="checkbox" checked={!!e.flag} onChange={(ev) => setEvent(i, 'flag', ev.target.checked)} className="accent-teal" /> Cờ
                       </label>
                       <button onClick={() => patchEvents((tl) => tl.splice(i, 1))}
                         className="mb-1 px-2.5 py-1 rounded-md border border-red-200 text-xs text-red-600 hover:bg-red-50">Xóa</button>
@@ -398,7 +399,7 @@ export default function VthConfigManagement({ showToast }) {
                         <F label="Chờ thêm (s)"><input type="number" min={0} step={0.5} className={box} value={s.delay} onChange={(ev) => setSpawn(i, j, 'delay', ev.target.value)} /></F>
                         <IconButton title="Xóa dòng quái" className="!w-8 !h-8 mb-1 text-red-500"
                           onClick={() => patchEvents((tl) => { const ev2 = { ...tl[i] }; ev2.spawn = ev2.spawn.filter((_, k) => k !== j); tl[i] = ev2 })}>
-                          <span className="text-sm">{e.spawn.length < 2 ? '·' : '✕'}</span>
+                          {e.spawn.length < 2 ? <span className="text-sm">·</span> : <X className="w-4 h-4" />}
                         </IconButton>
                       </div>
                     ))}

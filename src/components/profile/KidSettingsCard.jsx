@@ -22,6 +22,7 @@ import {
 import { navigate } from "../../lib/router.js";
 import DonateModal from "./DonateModal.jsx";
 import { ToggleSwitch } from "../ui";
+import { Baby, Cake, Heart } from "lucide-react";
 
 /** Giống bảng giới tính ở màn chào (`OnboardingScreen.jsx`). */
 const GENDERS = [
@@ -52,9 +53,9 @@ export default function KidSettingsCard() {
         </div>
         <button
           onClick={() => setShowDonate(true)}
-          className="shrink-0 rounded-full bg-white text-[#e8448f] px-5 py-2.5 font-display font-extrabold text-sm shadow hover:brightness-105 active:scale-95 transition"
+          className="shrink-0 rounded-full bg-white text-[#e8448f] px-5 py-2.5 font-display font-extrabold text-sm shadow hover:brightness-105 active:scale-95 transition inline-flex items-center gap-1.5"
         >
-          ❤ Ủng hộ cho web
+          <Heart className="w-4 h-4" fill="currentColor" /> Ủng hộ cho web
         </button>
       </div>
 
@@ -63,7 +64,7 @@ export default function KidSettingsCard() {
       {/* ─────────── Tuổi của bé + chương trình theo tuổi ─────────── */}
       <div className="rounded-xl p-3.5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-3">
-          <span className="text-2xl" aria-hidden="true">🎂</span>
+          <Cake className="w-5 h-5 text-ink/45" aria-hidden="true" />
           <div>
             <h3 className="font-display text-base font-extrabold text-ink">Tuổi của bé</h3>
             <p className="text-xs text-ink/55">
@@ -125,7 +126,7 @@ export default function KidSettingsCard() {
       {/* ─────────── Giới tính của bé ─────────── */}
       <div className="rounded-xl p-3.5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-2xl" aria-hidden="true">🧒</span>
+          <Baby className="w-5 h-5 text-ink/45" aria-hidden="true" />
           <div>
             <h3 className="font-display text-base font-extrabold text-ink">Giới tính của bé</h3>
             <p className="text-xs text-ink/55">Avatar mở màn vẽ theo đây — bé gái không bị mặc định thành bé trai</p>

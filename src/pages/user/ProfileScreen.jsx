@@ -4,7 +4,7 @@ import { authService, classService, API_BASE, notificationService, userService, 
 import { getLevelProgress } from "../../lib/utils.js";
 import { getRoleLabel, hasUserPermission } from "../../config/roles.js";
 import { navigate } from "../../lib/router.js";
-import { GraduationCap, ChevronUp, Copy, Palette, Smartphone, Monitor, Apple, BellRing, BellOff, CircleX, TriangleAlert, Send, RefreshCw, Info, Share2, SquarePlus, EllipsisVertical, UserCheck, Gamepad2, Settings
+import { GraduationCap, ChevronUp, Copy, Palette, Smartphone, Monitor, Apple, BellRing, BellOff, CircleX, TriangleAlert, Send, RefreshCw, Info, Share2, SquarePlus, EllipsisVertical, UserCheck, Gamepad2, Settings, Coins, Star, Sparkles, Pencil, Sprout, Crown, PawPrint, Shirt, User, School, Target
 } from "lucide-react";
 import DressUpAvatar, { DressUpAvatarSmall } from "../../components/avatar/DressUpAvatar.jsx";
 import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
@@ -338,7 +338,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
     return (
       <div className="flex-1 flex items-center justify-center px-3">
         <div className="text-center">
-          <div className="text-5xl mb-3">👤</div>
+          <User className="w-12 h-12 mx-auto mb-3 text-ink/30" />
           <h2 className="font-display text-lg text-ink mb-2">Chưa đăng nhập</h2>
           <p className="text-sm text-ink/50 mb-4">Bạn cần đăng nhập để xem profile</p>
           <button onClick={onBack} className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold">← Về trang chủ</button>
@@ -371,10 +371,10 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const className = user.className || null;
 
   const wallet = [
-    { icon: "💰", label: "Xu", value: (user.coins || 0).toLocaleString() },
-    { icon: "⭐", label: "Sao", value: (user.stars || 0).toLocaleString() },
-    { icon: "🎮", label: "Lượt chơi", value: stats.totalPlays },
-    { icon: "✨", label: "Điểm kinh nghiệm", value: (stats.totalXP || 0).toLocaleString() },
+    { icon: <Coins className="w-3.5 h-3.5" />, label: "Xu", value: (user.coins || 0).toLocaleString() },
+    { icon: <Star className="w-3.5 h-3.5" />, label: "Sao", value: (user.stars || 0).toLocaleString() },
+    { icon: <Gamepad2 className="w-3.5 h-3.5" />, label: "Lượt chơi", value: stats.totalPlays },
+    { icon: <Sparkles className="w-3.5 h-3.5" />, label: "Điểm kinh nghiệm", value: (stats.totalXP || 0).toLocaleString() },
   ];
 
   return (
@@ -415,8 +415,8 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                 size={56}
                 label={`Avatar ${outfitName("avatar", outfit.avatar.value)}`}
               />
-              <span className="absolute -bottom-0.5 -right-0.5 text-base leading-none">
-                {lv.level >= 10 ? "👑" : lv.level >= 5 ? "⭐" : "🌱"}
+              <span className="absolute -bottom-0.5 -right-0.5 leading-none">
+                {lv.level >= 10 ? <Crown className="w-4 h-4 text-amber-500" /> : lv.level >= 5 ? <Star className="w-4 h-4 text-amber-400" fill="currentColor" /> : <Sprout className="w-4 h-4 text-emerald-500" />}
               </span>
             </div>
             <div className="flex-1 min-w-0">
@@ -444,7 +444,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
             {wallet.map((w, i) => (
               <div key={w.label} className="flex items-center justify-between gap-2 py-1.5"
                 style={i ? { borderTop: "1px solid var(--line)" } : undefined}>
-                <dt className="text-ink/55">{w.icon} {w.label}</dt>
+                <dt className="text-ink/55 inline-flex items-center gap-1">{w.icon} {w.label}</dt>
                 <dd className="font-bold font-mono text-ink">{w.value}</dd>
               </div>
             ))}
@@ -472,8 +472,8 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                { kind: "avatar", icon: "👕", title: "Nhân vật", btn: "Tùy chỉnh Avatar" },
-                { kind: "pet", icon: "🐾", title: "Thú cưng", btn: "Tùy chỉnh Pet" },
+                { kind: "avatar", icon: <Shirt className="w-3.5 h-3.5" />, title: "Nhân vật", btn: "Tùy chỉnh Avatar" },
+                { kind: "pet", icon: <PawPrint className="w-3.5 h-3.5" />, title: "Thú cưng", btn: "Tùy chỉnh Pet" },
               ].map(({ kind, icon, title, btn }) => {
                 const state = outfit[kind].value;
                 const parts = describeOutfit(kind, state);
@@ -483,7 +483,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                       <DressUpAvatar kind={kind} state={state} size={132}
                         label={`${outfitName(kind, state)} — ${title}`} />
                     </div>
-                    <p className="font-display text-sm text-ink text-center leading-tight">
+                    <p className="font-display text-sm text-ink text-center leading-tight inline-flex items-center gap-1">
                       {icon} {outfitName(kind, state) || title}
                     </p>
                     <p className="text-[11px] text-ink/45 text-center leading-tight min-h-[28px] px-1">
@@ -491,10 +491,10 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                     </p>
                     <button
                       onClick={() => setCustomizer(kind)}
-                      className="mt-1 w-full rounded-lg text-white py-2 text-xs font-body font-semibold transition active:scale-[0.98]"
+                      className="mt-1 w-full rounded-lg text-white py-2 text-xs font-body font-semibold transition active:scale-[0.98] inline-flex items-center justify-center gap-1.5"
                       style={{ background: "var(--accent)" }}
                     >
-                      ✏️ {btn}
+                      <Pencil className="w-3.5 h-3.5" /> {btn}
                     </button>
                   </div>
                 );
@@ -516,7 +516,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
 
               {className ? (
                 <div className="flex items-center gap-2 p-2.5 rounded-lg bg-green-50 border border-green-100">
-                  <span className="text-lg">🏫</span>
+                  <School className="w-5 h-5 text-green-600" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-green-700">{className}</p>
                     {user.classCode && (
@@ -833,7 +833,7 @@ function GameRow({ game }) {
     <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-ink/3 transition">
       <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0"
         style={{ background: "var(--bg)" }}>
-        🎯
+        <Target className="w-5 h-5 text-ink/45" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">

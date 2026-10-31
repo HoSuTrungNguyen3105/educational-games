@@ -11,6 +11,7 @@
 // không trùng hệ mới nên để hai nơi cùng sửa là lại sinh ra hai con pet).
 
 import { useEffect, useMemo, useState } from "react";
+import { Shirt } from "lucide-react";
 import { navigate } from "../lib/router.js";
 import PetAvatar from "../components/pet/PetAvatar.jsx";
 import {
@@ -118,7 +119,7 @@ export default function PetPage() {
               onClick={() => navigate("/pet-wardrobe")}
               className="shrink-0 rounded-2xl bg-emerald-500 px-3.5 py-2 text-[13px] font-extrabold text-white shadow-sm hover:bg-emerald-400"
             >
-              👕 Thay đồ
+              <Shirt className="w-3.5 h-3.5" /> Thay đồ
             </button>
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-slate-400">

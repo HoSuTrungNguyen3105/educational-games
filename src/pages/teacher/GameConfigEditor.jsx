@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Copy, Eye, EyeOff, RefreshCw, RotateCcw, Save} from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Gamepad2, RefreshCw, RotateCcw, Save, TriangleAlert, X} from "lucide-react";
 import { API_BASE, gameService, templateService } from "../../services/api.js";
 import { ConfirmModal, EmptyState, IconDownload, IconPlay, IconUpload, Loader, ManagementHeader } from '../../components/ui';
 import { useConfirm } from "../../hooks/useConfirm.js";
@@ -176,7 +176,7 @@ function EntitiesEditor({ list, table, onChange }) {
               />
               <button
                 type="button"
-                className="w-8 h-8 shrink-0 rounded-lg bg-paper text-ticket font-bold"
+                className="w-8 h-8 shrink-0 rounded-lg bg-paper text-ticket font-bold flex items-center justify-center"
                 title="Xoá mục này"
                 onClick={() => {
                   const out = { ...src };
@@ -184,7 +184,7 @@ function EntitiesEditor({ list, table, onChange }) {
                   onChange(out);
                 }}
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
@@ -211,7 +211,7 @@ function EntitiesEditor({ list, table, onChange }) {
           className="text-xs font-bold px-3 py-1.5 rounded-lg bg-paper text-ink/70"
           onClick={() => onChange(clone(list.rows || {}))}
         >
-          ↺ Về mẫu
+          <RotateCcw className="mr-1 inline h-3.5 w-3.5" /> Về mẫu
         </button>
       </div>
     </div>
@@ -306,7 +306,7 @@ function JsonEditor({ list, value, onChange }) {
               onChange(def);
             }}
           >
-            ↺ Về mẫu
+            <RotateCcw className="mr-1 inline h-3.5 w-3.5" /> Về mẫu
           </button>
           <button
             type="button"
@@ -342,7 +342,7 @@ function JsonEditor({ list, value, onChange }) {
       {err ? (
         <p className="text-xs text-ticket mt-1">{err}</p>
       ) : (
-        <p className="text-xs text-teal mt-1">✓ JSON hợp lệ — {Array.isArray(value) ? `${value.length} mục` : "đã cập nhật"}</p>
+        <p className="text-xs text-teal mt-1 inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> JSON hợp lệ — {Array.isArray(value) ? `${value.length} mục` : "đã cập nhật"}</p>
       )}
     </div>
   );
@@ -391,19 +391,19 @@ function RowsBlock({ list, rows, defaults, min, onChange }) {
             })}
             <button
               type="button"
-              className="w-8 h-8 shrink-0 rounded-lg bg-paper text-ink/50 hover:text-ticket"
+              className="w-8 h-8 shrink-0 rounded-lg bg-paper text-ink/50 hover:text-ticket flex items-center justify-center"
               title="Nhân bản dòng này"
               onClick={() => onChange([...arr.slice(0, i + 1), clone(item), ...arr.slice(i + 1)])}
             >
-              ⧉
+              <Copy className="w-4 h-4" />
             </button>
             <button
               type="button"
-              className="w-8 h-8 shrink-0 rounded-lg bg-ticket/10 text-ticket font-bold"
+              className="w-8 h-8 shrink-0 rounded-lg bg-ticket/10 text-ticket font-bold flex items-center justify-center"
               title="Xoá dòng này"
               onClick={() => onChange(arr.filter((_, idx) => idx !== i))}
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
         ))}
@@ -422,7 +422,7 @@ function RowsBlock({ list, rows, defaults, min, onChange }) {
           className="text-xs font-bold px-3 py-1.5 rounded-lg bg-paper text-ink/70 hover:text-ticket"
           onClick={() => onChange(clone(Array.isArray(defaults) ? defaults : []))}
         >
-          ↺ Về mẫu
+          <RotateCcw className="mr-1 inline h-3.5 w-3.5" /> Về mẫu
         </button>
       </div>
     </div>
@@ -675,7 +675,7 @@ export default function GameConfigEditor({ showToast }) {
       <div className="p-6 flex flex-col gap-3">
         <ManagementHeader title="Cấu hình game" subtitle="Dữ liệu riêng cho từng trò chơi" />
         <EmptyState
-          icon="⚠️"
+          icon={<TriangleAlert />}
           title={status.error}
           action={<button type="button" className="text-sm font-bold text-ticket" onClick={() => loadGames(editorGameId)}>Thử lại</button>}
         />
@@ -757,7 +757,7 @@ export default function GameConfigEditor({ showToast }) {
         </button>
       </div>
 
-      {!game && <EmptyState icon="🎮" title="Chưa có trò chơi nào" subtitle="Tạo trò chơi ở mục “Trò chơi” trước khi chỉnh cấu hình." />}
+      {!game && <EmptyState icon={<Gamepad2 />} title="Chưa có trò chơi nào" subtitle="Tạo trò chơi ở mục “Trò chơi” trước khi chỉnh cấu hình." />}
 
       {game && !def && (
         <div className="note-card p-4 text-sm text-ink/70">
@@ -807,8 +807,8 @@ export default function GameConfigEditor({ showToast }) {
                 <h3 className="font-display text-sm text-ink mb-2">Kiểm tra dữ liệu</h3>
                 <ul className="flex flex-col gap-1 text-xs">
                   {issues.slice(0, 40).map((i, idx) => (
-                    <li key={idx} className={i.level === "error" ? "text-ticket" : "text-[#B8791A]"}>
-                      {i.level === "error" ? "✕" : "!"} {i.message}
+                    <li key={idx} className={`inline-flex items-start gap-1 ${i.level === "error" ? "text-ticket" : "text-[#B8791A]"}`}>
+                      {i.level === "error" ? <X className="w-3.5 h-3.5 shrink-0 mt-0.5" /> : <span className="font-bold">!</span>} {i.message}
                     </li>
                   ))}
                 </ul>

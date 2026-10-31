@@ -6,6 +6,7 @@ import Field from "../pages/teacher/fields.jsx";
 import { Input } from "./ui";
 import { Checkbox } from "./ui";
 import { Select } from "./ui";
+import { ChevronDown, ChevronUp, Sparkles, TriangleAlert, X } from "lucide-react";
 
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -106,7 +107,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
         className="w-full flex items-center justify-between gap-3 px-4 py-3 min-h-[44px] text-left"
       >
         <span className="flex items-center gap-2 min-w-0">
-          <span className="text-lg shrink-0" aria-hidden>✨</span>
+          <Sparkles className="w-4 h-4 shrink-0 text-violet-600" aria-hidden />
           <span className="font-display text-sm font-bold text-violet-900 truncate">
             Sinh câu hỏi bằng AI
           </span>
@@ -114,7 +115,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
             {API_BASE.replace(/^https?:\/\//, "")}
           </span>
         </span>
-        <span className="text-violet-400 text-xs shrink-0">{open ? "▲" : "▼"}</span>
+        <span className="text-violet-400 shrink-0">{open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
       </button>
 
       {open && (
@@ -167,14 +168,14 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
 
           <div className="flex gap-2">
             {busy ? (
-              <GhostButton onClick={cancel} className="flex-1">✕ Huỷ đang sinh…</GhostButton>
+              <GhostButton onClick={cancel} className="flex-1"><X className="w-4 h-4 inline mr-1" /> Huỷ đang sinh…</GhostButton>
             ) : (
               <button
                 type="button"
                 onClick={run}
-                className="flex-1 min-h-[44px] rounded-xl bg-violet-600 text-white px-4 py-2 text-sm font-bold shadow-sm hover:bg-violet-700 transition active:scale-[.98]"
+                className="flex-1 min-h-[44px] rounded-xl bg-violet-600 text-white px-4 py-2 text-sm font-bold shadow-sm hover:bg-violet-700 transition active:scale-[.98] inline-flex items-center justify-center gap-1.5"
               >
-                ✨ Sinh câu hỏi
+                <Sparkles className="w-4 h-4" /> Sinh câu hỏi
               </button>
             )}
           </div>
@@ -221,8 +222,9 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
               </div>
 
               {result.needsManualAnswer > 0 && (
-                <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 leading-relaxed">
-                  ⚠ {result.needsManualAnswer} câu AI không nêu rõ đáp án đúng — nhớ chọn đáp án sau khi thêm.
+                <p className="flex items-start gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 leading-relaxed">
+                  <TriangleAlert className="mt-0.5 w-3.5 h-3.5 shrink-0" />
+                  <span>{result.needsManualAnswer} câu AI không nêu rõ đáp án đúng — nhớ chọn đáp án sau khi thêm.</span>
                 </p>
               )}
 

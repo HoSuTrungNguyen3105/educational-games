@@ -89,7 +89,7 @@ export default function TemplateFormPage({ showToast, route }) {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="font-display text-xl text-ink">{isEdit ? "✏️ Sửa Template" : "➕ Thêm Template"}</h1>
+        <h1 className="font-display text-xl text-ink">{isEdit ? "Sửa Template" : "Thêm Template"}</h1>
         <GhostButton onClick={() => navigate("/admin/templates")}>← Quay lại</GhostButton>
       </div>
 

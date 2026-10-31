@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Coins, Star, Repeat, Trophy } from "lucide-react";
+import { Check, Coins, Star, Repeat, Trophy } from "lucide-react";
 import { walletService } from "../../services/api.js";
 import { ErrorState, GhostButton, IconBack, Loader, PrimaryButton } from '../../components/ui';
 
@@ -266,7 +266,7 @@ export default function StorePage({ userAuth, onBack, showToast }) {
                               <Star className="w-3.5 h-3.5" /> {fmt(item.stars)}
                             </span>
                             {isOwned ? (
-                              <span className="text-[11px] font-bold text-emerald-700">✓ Đã sở hữu</span>
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700"><Check className="w-3.5 h-3.5" /> Đã sở hữu</span>
                             ) : (
                               <button
                                 type="button"

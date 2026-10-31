@@ -3,6 +3,7 @@ import { taskService } from "../../services/taskService.js";
 import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from "../../components/ui";
 import { TaskIcon } from "../../components/tasks/index.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
+import { Check, CheckCircle2, ClipboardList, Coins, Gift, Users } from "lucide-react";
 
 const TASK_TYPES = [
   { value: "GAME_PLAYED", label: "Chơi game" },
@@ -99,7 +100,9 @@ export default function DailyTaskManagement({ showToast }) {
       <td className="py-2.5 px-3 text-sm font-mono text-ink">{TASK_TYPES.find(t => t.value === task.type)?.label || task.type}</td>
       <td className="py-2.5 px-3 text-sm font-mono text-ink">{TASK_SCOPES.find(s => s.value === task.scope)?.label || task.scope}</td>
       <td className="py-2.5 px-3 text-sm font-mono text-ink">{task.target}</td>
-      <td className="py-2.5 px-3 text-sm font-mono font-bold text-gold">+{task.rewardCoin} 💰</td>
+      <td className="py-2.5 px-3 text-sm font-mono font-bold text-gold">
+        <span className="inline-flex items-center gap-1">+{task.rewardCoin} <Coins className="w-3.5 h-3.5" /></span>
+      </td>
       <td className="py-2.5 px-3 text-sm font-mono text-ink">{task.completedCount ?? 0}</td>
       <td className="py-2.5 px-3 text-sm font-mono text-teal">{task.claimedCount ?? 0}</td>
       <td className="py-2.5 px-3">
@@ -114,21 +117,21 @@ export default function DailyTaskManagement({ showToast }) {
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between">
-        <ManagementHeader subtitle="Quản trị" title="📝 Nhiệm vụ" />
+        <ManagementHeader subtitle="Quản trị" title="Nhiệm vụ" />
         <PrimaryButton onClick={openCreate}>+ Tạo nhiệm vụ</PrimaryButton>
       </div>
 
       <div className="flex gap-2">
-        <button onClick={() => setTab("tasks")} className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "tasks" ? "bg-gold/20 text-gold" : "text-[#8A7C63] hover:bg-ink/5"}`}>
-          📋 Danh sách nhiệm vụ
+        <button onClick={() => setTab("tasks")} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "tasks" ? "bg-gold/20 text-gold" : "text-[#8A7C63] hover:bg-ink/5"}`}>
+          <ClipboardList className="w-4 h-4" /> Danh sách nhiệm vụ
         </button>
       </div>
 
       <StatGrid stats={[
-        { label: "Người tham gia", value: stats?.totalParticipants ?? "...", icon: "👥" },
-        { label: "Lượt nhận thưởng", value: stats?.totalClaimed ?? "...", icon: "✅" },
-        { label: "Xu đã phát", value: stats?.totalCoinsAwarded != null ? stats.totalCoinsAwarded.toLocaleString() : "...", icon: "💰" },
-        { label: "Nhiệm vụ", value: stats?.totalTasks ?? "...", icon: "📝" },
+        { label: "Người tham gia", value: stats?.totalParticipants ?? "...", icon: <Users /> },
+        { label: "Lượt nhận thưởng", value: stats?.totalClaimed ?? "...", icon: <CheckCircle2 /> },
+        { label: "Xu đã phát", value: stats?.totalCoinsAwarded != null ? stats.totalCoinsAwarded.toLocaleString() : "...", icon: <Coins /> },
+        { label: "Nhiệm vụ", value: stats?.totalTasks ?? "...", icon: <ClipboardList /> },
       ]} />
 
       {tab === "tasks" && (
@@ -147,12 +150,12 @@ export default function DailyTaskManagement({ showToast }) {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold font-body text-ink truncate">{task.name}</p>
                 <p className="text-[11px] text-[#8A7C63] font-mono truncate">
-                  {TASK_TYPES.find(t => t.value === task.type)?.label || task.type} · {TASK_SCOPES.find(s => s.value === task.scope)?.label || task.scope} · {task.target} lần · +{task.rewardCoin} 💰
+                  {TASK_TYPES.find(t => t.value === task.type)?.label || task.type} · {TASK_SCOPES.find(s => s.value === task.scope)?.label || task.scope} · {task.target} lần · +{task.rewardCoin}
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xs font-mono text-ink">{task.completedCount ?? 0} ✓</p>
-                <p className="text-xs font-mono text-teal">{task.claimedCount ?? 0} 🎁</p>
+                <p className="text-xs font-mono text-ink inline-flex items-center gap-1">{task.completedCount ?? 0} <Check className="w-3 h-3" /></p>
+                <p className="text-xs font-mono text-teal inline-flex items-center gap-1"><Gift className="w-3 h-3" /> {task.claimedCount ?? 0}</p>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <button onClick={() => openEdit(task)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
@@ -215,12 +218,12 @@ export default function DailyTaskManagement({ showToast }) {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-1">💰 Thưởng xu</label>
+                <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-1">Thưởng xu</label>
                 <input type="number" min="0" value={form.rewardCoin} onChange={(e) => setForm({ ...form, rewardCoin: Number(e.target.value) })}
                   className="w-full px-4 py-2.5 rounded-xl border border-ink/15 bg-paper text-ink text-sm font-body focus:outline-none focus:border-ticket" />
               </div>
               <div>
-                <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-1">⭐ Thưởng XP</label>
+                <label className="text-xs font-mono text-[#8A7C63] uppercase block mb-1">Thưởng XP</label>
                 <input type="number" min="0" value={form.rewardXp} onChange={(e) => setForm({ ...form, rewardXp: Number(e.target.value) })}
                   className="w-full px-4 py-2.5 rounded-xl border border-ink/15 bg-paper text-ink text-sm font-body focus:outline-none focus:border-ticket" />
               </div>

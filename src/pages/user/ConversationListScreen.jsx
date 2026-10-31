@@ -6,7 +6,7 @@ import { navigate } from "../../lib/router.js";
 import DMChatScreen from "./DMChatScreen.jsx";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
-import { Search, ArrowLeft, MessageCircle, Users, UserPlus, RefreshCw } from "lucide-react";
+import { Search, ArrowLeft, MessageCircle, Users, UserPlus, RefreshCw, Gamepad2 } from "lucide-react";
 
 function formatTime(iso) {
   if (!iso) return "";
@@ -295,7 +295,7 @@ function ConversationItem({ conversation, currentUser, otherUser, onClick, isAct
             ? "bg-gold text-white"
             : "bg-gradient-to-br from-purple-400 to-pink-400 text-white"
         }`}>
-          {otherUser?.name?.charAt(0)?.toUpperCase() || (conversation.type === "game_room" ? "🎮" : "💬")}
+          {otherUser?.name?.charAt(0)?.toUpperCase() || (conversation.type === "game_room" ? <Gamepad2 className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />)}
         </div>
         {/* Online indicator */}
         {otherUser && (

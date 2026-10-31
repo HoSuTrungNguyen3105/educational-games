@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { GraduationCap } from 'lucide-react'
 import { PasswordInput, PrimaryButton } from '../components/ui'
 
 export default function LoginScreen({ onBack, onLogin, showToast }) {
@@ -26,7 +27,7 @@ export default function LoginScreen({ onBack, onLogin, showToast }) {
         <div className="note-card p-8 formbg bg-paper2">
           <button onClick={onBack} className="text-sm text-[#8A7C63] hover:text-ink transition inline-flex items-center gap-1">← Về trang chủ</button>
           <div className="text-center">
-            <div className="text-6xl mb-3 float-slow">🧑‍🏫</div>
+            <div className="mb-3 flex justify-center"><GraduationCap className="w-14 h-14 text-ink/60 float-slow" /></div>
             <h1 className="font-display text-2xl text-ink">Đăng nhập</h1>
             <p className="text-sm text-[#8A7C63] mt-1">Vào dashboard quản lý trò chơi</p>
           </div>

@@ -5,6 +5,7 @@ import {
   ManagementHeader, ManagementTable, Modal, ConfirmModal,
   PrimaryButton, GhostButton, Field, Loader, ErrorState,
 } from "../../components/ui";
+import { Coins } from "lucide-react";
 
 const RARITY_OPTIONS = [
   { value: "common", label: "Thường" },
@@ -146,7 +147,7 @@ export default function PlantTypeManagement({ showToast }) {
 
   return (
     <div className="space-y-4">
-      <ManagementHeader subtitle="Khu vườn" title="🌱 Loại cây" />
+      <ManagementHeader subtitle="Khu vườn" title="Loại cây" />
 
       {error && !types && <ErrorState subtitle={error} onRetry={load} />}
       {!error && !types && <Loader label="Đang tải loại cây..." />}
@@ -174,7 +175,7 @@ export default function PlantTypeManagement({ showToast }) {
                   <p className="text-[11px] font-mono text-[#8A7C63] truncate">{t.id} · {t.kind || "bloom"} · {t.stages} giai đoạn · {formatMs(t.growthTime)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs font-bold font-mono text-gold">{t.seedPrice} 💰</p>
+                  <p className="text-xs font-bold font-mono text-gold inline-flex items-center gap-1">{t.seedPrice} <Coins className="w-3.5 h-3.5" /></p>
                   <p className="text-xs font-bold font-mono text-green-600">+{t.harvestCoin}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -189,7 +190,7 @@ export default function PlantTypeManagement({ showToast }) {
 
       {showForm && (
         <Modal onClose={() => setShowForm(false)} wide>
-          <h3 className="font-display text-lg text-ink mb-3">{editId ? "✏️ Sửa loại cây" : "➕ Thêm loại cây"}</h3>
+          <h3 className="font-display text-lg text-ink mb-3">{editId ? "Sửa loại cây" : "Thêm loại cây"}</h3>
           <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
             <Field label="ID (không dấu, không khoảng trắng)">
               <input value={form.id} onChange={e => setF("id", e.target.value)} disabled={!!editId}

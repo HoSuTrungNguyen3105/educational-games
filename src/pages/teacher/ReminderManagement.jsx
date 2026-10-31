@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Bell, Smartphone } from "lucide-react";
 import { reminderService } from "../../services/api.js";
 import { ConfirmModal, EmptyState, IconAdd, IconBell, IconCheckCircle, IconEdit, IconTrash, Loader } from '../../components/ui';
 import { useConfirm } from "../../hooks/useConfirm.js";
@@ -184,7 +185,7 @@ export default function ReminderManagement({ showToast }) {
               <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3">
                 <IconBell className="w-8 h-8 text-amber-500" />
               </div>
-              <h3 className="text-lg font-bold text-ink">🔔 Nhắc nhở!</h3>
+              <h3 className="text-lg font-bold text-ink">Nhắc nhở!</h3>
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
               <p className="font-semibold text-ink">{dueAlert.title}</p>
@@ -246,8 +247,8 @@ export default function ReminderManagement({ showToast }) {
             </div>
           </div>
           <div className="flex items-center gap-6 pt-1">
-            <Toggle checked={form.vibrate} onChange={(v) => setForm({ ...form, vibrate: v })} label="📱 Rung" />
-            <Toggle checked={form.sound} onChange={(v) => setForm({ ...form, sound: v })} label="🔔 Âm thanh" />
+            <Toggle checked={form.vibrate} onChange={(v) => setForm({ ...form, vibrate: v })} label="Rung" />
+            <Toggle checked={form.sound} onChange={(v) => setForm({ ...form, sound: v })} label="Âm thanh" />
           </div>
           <VibratePatternPicker
             value={form.vibratePattern}
@@ -266,7 +267,7 @@ export default function ReminderManagement({ showToast }) {
 
       {activeReminders.length === 0 && pastReminders.length === 0 && (
         <EmptyState
-          icon="🔔"
+          icon={<Bell />}
           title="Chưa có nhắc nhở nào"
           subtitle='Nhấn "Tạo nhắc nhở" để bắt đầu'
         />
@@ -294,7 +295,10 @@ export default function ReminderManagement({ showToast }) {
                           <RotateCcw className="w-3 h-3" /> {getRepeatLabel(r.repeat)}
                         </span>
                       )}
-                      <span className="text-xs">{r.vibrate !== false ? "📱" : ""}{r.sound !== false ? "🔔" : ""}</span>
+                      <span className="text-xs flex items-center gap-1 text-ink/40">
+                        {r.vibrate !== false && <Smartphone className="w-3 h-3" />}
+                        {r.sound !== false && <Bell className="w-3 h-3" />}
+                      </span>
                     </div>
                   </div>
                   <button onClick={() => openEdit(r)} className="text-gray-300 hover:text-gold transition p-1" title="Sửa">

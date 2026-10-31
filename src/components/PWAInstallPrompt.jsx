@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Smartphone } from "lucide-react";
 
 function getIsInstalled() {
   return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
@@ -88,7 +89,7 @@ export default function PWAInstallPrompt() {
       }}
     >
       <div className="flex items-start gap-3">
-        <div className="text-3xl shrink-0">📱</div>
+        <div className="shrink-0 text-ink/50"><Smartphone className="w-7 h-7" /></div>
         <div className="flex-1 min-w-0">
           <h3 className="font-display text-sm font-bold text-ink mb-0.5">Cài đặt ứng dụng</h3>
           <p className="text-xs mb-3" style={{ color: "var(--muted, #8A7C63)" }}>

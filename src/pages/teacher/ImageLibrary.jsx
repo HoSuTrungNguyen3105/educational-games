@@ -154,7 +154,7 @@ export default function ImageLibrary({ showToast }) {
       )}
 
       {images.length === 0 ? (
-        <EmptyState icon="🖼️" title="Chưa có ảnh nào" subtitle="Upload ảnh để bắt đầu sử dụng thư viện" />
+        <EmptyState icon={<Image />} title="Chưa có ảnh nào" subtitle="Upload ảnh để bắt đầu sử dụng thư viện" />
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {images.map(img => (

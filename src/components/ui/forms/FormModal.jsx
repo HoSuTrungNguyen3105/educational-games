@@ -8,7 +8,7 @@ export function FormModal({ open, title, fields, values, onChange, onSubmit, onC
   if (!open) return null;
   return (
     <Modal onClose={onClose} wide={wide}>
-      <h3 className="font-display text-lg text-ink mb-3">{editId ? "✏️ Sửa " + title : "➕ Thêm " + title}</h3>
+      <h3 className="font-display text-lg text-ink mb-3">{editId ? "Sửa " + title : "Thêm " + title}</h3>
       <form onSubmit={e => { e.preventDefault(); onSubmit(); }}>
         <div className={`grid gap-x-4 gap-y-2 ${wide ? "sm:grid-cols-2" : ""}`}>
           {fields.map(f => (

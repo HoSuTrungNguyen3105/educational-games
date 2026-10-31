@@ -21,7 +21,7 @@ export default function AiExplainTrigger({
   questionId,
   answer,
   questionText,
-  label = "🤖 Giải thích với AI",
+  label = "Giải thích với AI",
   className = "",
 }) {
   const [selfOpen, setSelfOpen] = useState(false);

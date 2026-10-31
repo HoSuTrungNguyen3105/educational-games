@@ -1,8 +1,9 @@
+import { Search, X } from "lucide-react";
 
 export function SearchInput({ value, onChange, placeholder = "Tìm kiếm...", className = "", ...rest }) {
   return (
     <div className={`relative ${className}`}>
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/30">🔍</span>
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/30 pointer-events-none" />
       <input
         type="text"
         value={value}
@@ -14,10 +15,10 @@ export function SearchInput({ value, onChange, placeholder = "Tìm kiếm...", c
       {value && (
         <button
           onClick={() => onChange("")}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink text-sm transition"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink transition"
           title="Xóa tìm kiếm"
         >
-          ✕
+          <X className="w-4 h-4" />
         </button>
       )}
     </div>

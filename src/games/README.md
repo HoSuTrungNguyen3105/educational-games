@@ -23,7 +23,6 @@ src/games/
 | `_shared/lib/` | Dữ liệu SVG dùng chung cho game tạo avatar (dress-up). |
 | `_tools/admin.html` | Trang quản trị game, mở trực tiếp bằng file://. |
 | `_tools/samples/index.html` | Game mẫu tối giản nhất, dùng làm khuôn khi viết game mới. |
-| `_tools/design/` | Bản dự Phaser (game "Bounce"), **đang dang dở** — import `../../utils/` bị gãy. |
 | `offline/` | 37 file `.html` — phần lớn được **sinh tự động**. Đừng sửa tay: 17 game `single` sửa ở `offline/games-src/`, game standalone sửa ở thư mục nguồn của nó rồi chạy `npm run games:build`. |
 
 ## Bộ sinh game offline

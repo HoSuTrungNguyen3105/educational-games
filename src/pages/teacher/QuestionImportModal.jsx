@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Check, FolderOpen, X } from 'lucide-react';
 import { useQuestionImportStore } from '../../stores/questionImportStore';
 import { parseExcel } from '../../services/question-import/excel.parser';
 import { parseWord } from '../../services/question-import/word.parser';
@@ -163,7 +164,7 @@ export default function QuestionImportModal({ onClose, onImport, onSaveSingle, g
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <div className="text-4xl mb-2">📁</div>
+            <FolderOpen className="w-9 h-9 mx-auto mb-2 text-ink/30" />
             <p className="font-semibold text-ink">Kéo file vào đây</p>
             <p className="text-sm text-[#8A7C63]">hoặc click để chọn file</p>
             <p className="text-xs text-[#8A7C63] mt-2">Hỗ trợ .xlsx, .xls, .docx (Max: 10MB)</p>
@@ -193,8 +194,8 @@ export default function QuestionImportModal({ onClose, onImport, onSaveSingle, g
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold">Kết quả: {questions.length} câu</h3>
             <div className="text-sm">
-              <span className="text-teal mr-3">✓ {questions.filter(q => q.status === 'valid').length} hợp lệ</span>
-              <span className="text-ticket">✕ {questions.filter(q => q.status === 'invalid').length} lỗi</span>
+              <span className="text-teal mr-3 inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> {questions.filter(q => q.status === 'valid').length} hợp lệ</span>
+              <span className="text-ticket inline-flex items-center gap-1"><X className="w-3.5 h-3.5" /> {questions.filter(q => q.status === 'invalid').length} lỗi</span>
             </div>
           </div>
           

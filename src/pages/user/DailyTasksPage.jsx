@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { ClipboardList, Coins } from "lucide-react";
 import { taskService } from "../../services/taskService.js";
 import { walletService } from "../../services/api.js";
 import { getLevelProgress, getLevelEmoji, getLevelTitle } from "../../lib/utils.js";
@@ -49,7 +50,7 @@ export default function DailyTasksPage({ userAuth, onBack }) {
     return (
       <div className="flex-1 flex items-center justify-center px-6 py-10">
         <div className="text-center anim-pop">
-          <div className="text-6xl mb-4">📝</div>
+          <div className="mb-4 flex justify-center text-violet-500"><ClipboardList className="w-14 h-14" /></div>
           <h2 className="font-display text-xl text-ink mb-2">Chưa đăng nhập</h2>
           <p className="text-sm text-[#8A7C63] mb-4">Bạn cần đăng nhập để xem nhiệm vụ</p>
           <PrimaryButton onClick={onBack}>← Về trang chủ</PrimaryButton>
@@ -75,7 +76,9 @@ export default function DailyTasksPage({ userAuth, onBack }) {
       </button>
 
       <div className="mb-6">
-        <h1 className="font-display text-2xl sm:text-3xl text-ink">📝 Nhiệm vụ</h1>
+        <h1 className="flex items-center gap-2 font-display text-2xl sm:text-3xl text-ink">
+          <ClipboardList className="w-7 h-7 text-violet-500" /> Nhiệm vụ
+        </h1>
         <p className="text-sm text-[#8A7C63] mt-1">Hoàn thành nhiệm vụ — nhận coin thưởng!</p>
       </div>
 
@@ -114,13 +117,13 @@ export default function DailyTasksPage({ userAuth, onBack }) {
       <div className="note-card p-5 sm:p-6 mb-6 bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200">
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <div className="text-center">
-            <div className="text-5xl mb-1">📝</div>
+            <div className="mb-1 flex justify-center text-violet-500"><ClipboardList className="w-12 h-12" /></div>
             <div className="font-display text-3xl text-ink">{completedCount}/{tasks?.length || 0}</div>
             <div className="text-xs font-mono text-violet-600 font-bold uppercase">hoàn thành</div>
           </div>
           <div className="flex-1 w-full">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-body text-ink font-semibold">💰 {coins.toLocaleString()} Coin</span>
+              <span className="inline-flex items-center gap-1 text-sm font-body text-ink font-semibold"><Coins className="w-4 h-4 text-amber-500" /> {coins.toLocaleString()} Coin</span>
               <span className="text-xs font-mono text-[#8A7C63]">
                 +{totalReward} xu đã nhận
               </span>

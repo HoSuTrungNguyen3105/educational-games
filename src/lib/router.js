@@ -58,7 +58,6 @@ const ROUTES = [
   { name: "my-coins",     pattern: "/my-coins" },
   { name: "daily-tasks",  pattern: "/daily-tasks" },
   { name: "spin-wheel",   pattern: "/spin-wheel" },
-  { name: "garden",       pattern: "/garden" },
   { name: "inventory",    pattern: "/inventory" },
   { name: "store",        pattern: "/store" },
   { name: "leaderboard",  pattern: "/leaderboard" },

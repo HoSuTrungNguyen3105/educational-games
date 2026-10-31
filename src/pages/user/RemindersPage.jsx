@@ -13,7 +13,7 @@ import {
   localDateKey,
   VI_MONTHS,
 } from "../../lib/reminderUtils.js";
-import { Clock, RotateCcw, CalendarDays, List} from "lucide-react";
+import { Bell, Clock, RotateCcw, CalendarDays, List, Smartphone } from "lucide-react";
 
 const REPEAT_OPTIONS = [
   { value: "none", label: "Không lặp" },
@@ -96,7 +96,7 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
     return (
       <div className="flex-1 flex items-center justify-center px-6 py-10">
         <div className="text-center anim-pop">
-          <div className="text-6xl mb-4">🔔</div>
+          <div className="mb-4 flex justify-center text-amber-500"><Bell className="w-14 h-14" /></div>
           <h2 className="font-display text-xl text-ink mb-2">Chưa đăng nhập</h2>
           <p className="text-sm text-[#8A7C63] mb-4">Bạn cần đăng nhập để dùng nhắc nhở</p>
           <PrimaryButton onClick={onBack}>← Về trang chủ</PrimaryButton>
@@ -227,8 +227,9 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
             </span>
           )}
           {!done && (
-            <span className="text-[11px] text-ink/40">
-              {r.vibrate !== false ? "📱" : ""}{r.sound !== false ? "🔔" : ""}
+            <span className="inline-flex items-center gap-1 text-[11px] text-ink/40">
+              {r.vibrate !== false && <Smartphone className="w-3 h-3" />}
+              {r.sound !== false && <Bell className="w-3 h-3" />}
             </span>
           )}
         </div>
@@ -344,7 +345,7 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
         <div className="space-y-4">
           {activeReminders.length === 0 && doneReminders.length === 0 ? (
             <EmptyState
-              icon="🔔"
+              icon={<Bell className="w-10 h-10" />}
               title="Chưa có nhắc nhở nào"
               subtitle="Tạo nhắc nhở để không bỏ lỡ việc quan trọng nhé!"
               action={<PrimaryButton onClick={() => openCreate()}>+ Tạo nhắc nhở</PrimaryButton>}
@@ -436,8 +437,8 @@ export default function RemindersPage({ userAuth, onBack, showToast }) {
             </div>
 
             <div className="flex items-center gap-6 bg-ink/[0.03] rounded-2xl px-4 py-3">
-              <Toggle checked={form.vibrate} onChange={(v) => setForm({ ...form, vibrate: v })} label="📱 Rung" />
-              <Toggle checked={form.sound} onChange={(v) => setForm({ ...form, sound: v })} label="🔔 Chuông" />
+              <Toggle checked={form.vibrate} onChange={(v) => setForm({ ...form, vibrate: v })} label={<span className="inline-flex items-center gap-1"><Smartphone className="w-3.5 h-3.5" /> Rung</span>} />
+              <Toggle checked={form.sound} onChange={(v) => setForm({ ...form, sound: v })} label={<span className="inline-flex items-center gap-1"><Bell className="w-3.5 h-3.5" /> Chuông</span>} />
             </div>
             <VibratePatternPicker
               value={form.vibratePattern}
