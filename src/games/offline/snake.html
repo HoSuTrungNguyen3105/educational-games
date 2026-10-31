@@ -44,6 +44,9 @@
   --lilac: #8b5cf6;
   --purple: #8b5cf6;
   --pink: #ff6f91;
+  --lime: #9bd44a;
+  --amber: #f4b942;
+  --coral: #ff8a6a;
   --ok: #22b573;
   --bad: #f0483e;
   --shadow: 4px 4px 0 var(--ink);
@@ -624,6 +627,48 @@
       }
     }
 
+    /* Bàn 2048 — 4x4, quả gộp theo cấp. */
+    .b48 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      width: min(88vw, 380px);
+      margin: 12px auto 0;
+      padding: 8px;
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      background: var(--bg);
+      box-shadow: var(--shadow);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none
+    }
+
+    .t48 {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1/1;
+      border: 2.5px solid var(--ink);
+      border-radius: 12px;
+      background: var(--card);
+      box-shadow: 2px 2px 0 var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(22px, 7vw, 38px);
+      line-height: 1
+    }
+
+    .t48:empty {
+      border-style: dashed;
+      background: transparent;
+      box-shadow: none;
+      opacity: .4
+    }
+
+    .t48.n {
+      animation: pop .22s
+    }
+
     .mem {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -894,6 +939,497 @@
     }
 
     /* ============================================================
+       KHUNG MỞ ĐẦU DÙNG CHUNG
+       Mọi game một màn đều mở bằng cùng một tấm thiệp: icon, tên,
+       luật chơi ngắn và 3 mức nhịp độ. Nhờ vậy người chơi không phải
+       học lại cách vào game ở từng trò.
+       ============================================================ */
+    .intro {
+      text-align: center;
+      padding: 24px 18px 20px
+    }
+
+    .intro-ic {
+      width: 86px;
+      height: 86px;
+      margin: 0 auto 12px;
+      display: grid;
+      place-items: center;
+      font-size: 46px;
+      line-height: 1;
+      background: var(--sun);
+      border: 3px solid var(--ink);
+      border-radius: 24px;
+      box-shadow: 4px 4px 0 var(--ink);
+      transform: rotate(-4deg)
+    }
+
+    .intro h2 {
+      font-size: clamp(28px, 7vw, 38px);
+      font-weight: 800
+    }
+
+    .intro > p {
+      margin: 8px auto 0;
+      max-width: 36ch;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ink2)
+    }
+
+    .intro-steps {
+      margin: 12px auto 0;
+      padding: 0 0 0 20px;
+      max-width: 350px;
+      text-align: left;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: var(--ink2)
+    }
+
+    .intro-steps li + li {
+      margin-top: 2px
+    }
+
+    .intro-best {
+      margin: 12px 0 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink2)
+    }
+
+    .modes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 14px
+    }
+
+    .mode {
+      display: grid;
+      justify-items: center;
+      gap: 2px;
+      padding: 10px 4px;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink);
+      color: var(--ink);
+      font-family: var(--head);
+      transition: transform .1s, box-shadow .1s, background .15s
+    }
+
+    .mode i {
+      font-style: normal;
+      font-size: 22px;
+      line-height: 1
+    }
+
+    .mode b {
+      font-size: 14px;
+      line-height: 1.15
+    }
+
+    .mode em {
+      font-style: normal;
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1.2;
+      opacity: .62
+    }
+
+    .mode.sel {
+      background: var(--sun)
+    }
+
+    .mode:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--ink)
+    }
+
+    /* ============================================================
+       BÀN CHƠI DÙNG CHUNG
+       Cùng một kiểu ô, chữ, đèn báo và thanh tiến trình để 17 game
+       trông như các màn của MỘT bộ game, không phải 17 sản phẩm rời.
+       ============================================================ */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(var(--n, 3), 1fr);
+      gap: 8px;
+      margin: 8px 0
+    }
+
+    .cell {
+      position: relative;
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1 / 1;
+      padding: 4px;
+      overflow: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink);
+      color: var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(20px, 6vw, 30px);
+      line-height: 1;
+      transition: background .12s, transform .08s, box-shadow .08s, opacity .12s
+    }
+
+    .cell:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--ink)
+    }
+
+    .cell .ic {
+      font-size: clamp(20px, 5.4vw, 30px);
+      line-height: 1
+    }
+
+    .cell .num {
+      position: absolute;
+      right: 5px;
+      bottom: 3px;
+      padding: 0 6px;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1.35
+    }
+
+    .cell.ok,
+    .cell.found {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .cell.bad {
+      background: var(--bad);
+      color: #fff;
+      animation: shake .3s
+    }
+
+    .cell.lit {
+      background: var(--sun);
+      animation: pop .25s
+    }
+
+    .cell.dim {
+      opacity: .32
+    }
+
+    .cell.blank {
+      opacity: .18;
+      box-shadow: none
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      margin: 8px 0
+    }
+
+    .chip {
+      padding: 3px 10px;
+      border: 2.5px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card);
+      font-size: 12px;
+      font-weight: 700
+    }
+
+    .chip.on {
+      background: var(--sun)
+    }
+
+    .chip.done {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .hearts {
+      letter-spacing: 2px
+    }
+
+    .prompt {
+      margin: 6px 0 10px;
+      text-align: center;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(24px, 6.4vw, 34px);
+      line-height: 1.15
+    }
+
+    .prompt small {
+      display: block;
+      margin-top: 3px;
+      font-family: var(--body);
+      font-size: 13px;
+      font-weight: 600;
+      opacity: .65
+    }
+
+    .pattern-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin: 10px 0
+    }
+
+    .pcell {
+      display: grid;
+      place-items: center;
+      min-width: 52px;
+      min-height: 58px;
+      padding: 2px 6px;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(22px, 6vw, 30px);
+      line-height: 1
+    }
+
+    .pcell.missing {
+      background: var(--sun);
+      border-style: dashed
+    }
+
+    .rhythm {
+      position: relative;
+      height: 64px;
+      margin: 14px 0;
+      overflow: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .rhythm .zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: var(--zw, 24%);
+      transform: translateX(-50%);
+      background: rgba(34, 181, 115, .3);
+      border-left: 2px solid var(--ink);
+      border-right: 2px solid var(--ink)
+    }
+
+    .rhythm .center {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: var(--ok);
+      opacity: .75
+    }
+
+    .rhythm .marker {
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      left: 0;
+      width: 8px;
+      border-radius: 999px;
+      background: var(--ink);
+      will-change: transform
+    }
+
+    .simon {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      max-width: 360px;
+      margin: 12px auto 0
+    }
+
+    .pd {
+      aspect-ratio: 1.3 / 1;
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: 4px 4px 0 var(--ink);
+      color: #fff;
+      font-size: 34px;
+      opacity: .72;
+      transition: transform .08s, opacity .08s, filter .08s
+    }
+
+    .pd.on {
+      opacity: 1;
+      filter: brightness(1.25);
+      transform: scale(1.03)
+    }
+
+    .wordgrid {
+      display: grid;
+      gap: 6px;
+      max-width: 420px;
+      margin: 10px auto 0
+    }
+
+    .wl {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1 / 1;
+      padding: 0;
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      background: var(--card);
+      box-shadow: 2px 2px 0 var(--ink);
+      color: var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(18px, 5vw, 26px)
+    }
+
+    .wl.sel {
+      background: var(--sun)
+    }
+
+    .wl.found {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .wl.bad {
+      background: var(--bad);
+      color: #fff
+    }
+
+    .chests {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin: 2px 0 10px;
+      font-size: 20px
+    }
+
+    .chests span {
+      opacity: .28;
+      filter: grayscale(1)
+    }
+
+    .chests span.open {
+      opacity: 1;
+      filter: none
+    }
+
+    .clue {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 2.5px dashed var(--ink);
+      border-radius: 14px;
+      background: var(--paper);
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: center
+    }
+
+    .big-signal {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      min-height: 210px;
+      padding: 16px;
+      border: 3px solid var(--ink);
+      border-radius: 22px;
+      background: var(--sky);
+      box-shadow: var(--shadow);
+      color: #fff;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(26px, 7vw, 40px);
+      line-height: 1.15;
+      transition: background .15s
+    }
+
+    .big-signal.go {
+      background: var(--ok)
+    }
+
+    .big-signal.stop {
+      background: var(--bad)
+    }
+
+    .stat-line {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+      font-size: 13px;
+      font-weight: 700
+    }
+
+    .stat-line span {
+      padding: 3px 10px;
+      border: 2.5px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card)
+    }
+
+    .dots {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin: 6px 0 2px
+    }
+
+    .dots i {
+      width: 9px;
+      height: 9px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card)
+    }
+
+    .dots i.on {
+      background: var(--ok)
+    }
+
+    @media (max-height: 720px) {
+      .intro {
+        padding: 16px 14px
+      }
+
+      .intro-ic {
+        width: 66px;
+        height: 66px;
+        font-size: 34px;
+        margin-bottom: 8px
+      }
+
+      .intro-steps {
+        font-size: 12.5px;
+        line-height: 1.45
+      }
+
+      .mode em {
+        display: none
+      }
+
+      .cell {
+        border-width: 2.5px
+      }
+
+      .big-signal {
+        min-height: 160px
+      }
+    }
+
+    /* ============================================================
        CHẾ ĐỘ 1 GAME (body.single)
        File offline chỉ chơi 1 game, không có sảnh. Thanh `.top`
        (logo + cấp + XP + âm thanh) là header của SẢNH nên thừa —
@@ -969,63 +1505,7 @@
       }
     }
   </style>
-<style id="gq-kit-css">/* gq-kit.css — giao diện đồng bộ: màn chọn độ khó, nhãn độ khó, pháo hoa,
-   và (cho game viết tay) popup / nút cùng phong cách neo-brutalist của Góc Giải Trí. */
-#gqp { position: fixed; inset: 0; z-index: 2147483500; display: grid; place-items: center; padding: 16px; overflow: auto;
-  background-color: #fff6e7; background-image: linear-gradient(#e6dcc4 1px, transparent 1px), linear-gradient(90deg, #e6dcc4 1px, transparent 1px);
-  background-size: 28px 28px; font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif; color: #1d2e4a;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 16px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
-#gqp * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-.gqp-x { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 12px; width: 42px; height: 42px; border-radius: 14px;
-  border: 3px solid #1d2e4a; background: #fffbf2; box-shadow: 3px 3px 0 #1d2e4a; font: 800 20px 'Baloo 2', system-ui, sans-serif; color: #1d2e4a; cursor: pointer; }
-.gqp-x:active { transform: translate(3px, 3px); box-shadow: none; }
-.gqp-box { width: min(440px, 100%); background: #fffbf2; border: 3px solid #1d2e4a; border-radius: 26px; box-shadow: 5px 5px 0 #1d2e4a;
-  padding: 22px 18px 18px; text-align: center; animation: gqpop .4s cubic-bezier(.2, 1.3, .4, 1); margin-top: 36px; }
-.gqp-ic { width: 76px; height: 76px; margin: -58px auto 8px; display: grid; place-items: center; font-size: 40px; background: #f4b942;
-  border: 3px solid #1d2e4a; border-radius: 22px; box-shadow: 3px 3px 0 #1d2e4a; transform: rotate(-5deg); }
-.gqp-box h1 { margin: 0; font: 800 clamp(26px, 7vw, 34px)/1.1 'Baloo 2', system-ui, sans-serif; }
-.gqp-box p { margin: 4px 0 14px; font-size: 15px; color: #16233a; }
-.gqp-list { display: grid; gap: 10px; }
-.gqd { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 10px; text-align: left; width: 100%;
-  padding: 10px 12px 10px 10px; background: #fffbf2; border: 3px solid #1d2e4a; border-radius: 18px; box-shadow: 3px 3px 0 #1d2e4a;
-  font-family: inherit; color: #1d2e4a; cursor: pointer; transition: transform .1s, box-shadow .1s; position: relative; }
-.gqd:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #1d2e4a; }
-.gqd:active { transform: translate(3px, 3px); box-shadow: none; }
-.gqd:focus-visible { outline: 4px solid #4b9dff; outline-offset: 2px; }
-.gqd i { font-style: normal; width: 48px; height: 48px; display: grid; place-items: center; font-size: 26px; background: var(--c);
-  border: 3px solid #1d2e4a; border-radius: 14px; }
-.gqd span { min-width: 0; }
-.gqd b { display: block; font: 800 20px/1.1 'Baloo 2', system-ui, sans-serif; }
-.gqd em { display: block; font-style: normal; font-size: 12.5px; line-height: 1.3; color: #3a4a66; margin-top: 2px; }
-.gqd u { text-decoration: none; font-size: 11.5px; font-weight: 700; background: #1d2e4a; color: #fff; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
-.gqd.last::after { content: 'Lần trước'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
-  border-radius: 999px; padding: 0 8px; font-size: 10.5px; font-weight: 700; }
-.gqp-box small { display: block; margin-top: 14px; font-size: 12.5px; color: #3a4a66; }
-@keyframes gqpop { 0% { transform: scale(.85); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
-
-.gq-tier { position: fixed; z-index: 2147483000; top: calc(env(safe-area-inset-top, 0px) + 4px); left: 50%; transform: translateX(-50%);
-  pointer-events: none; background: var(--c, #f4b942); color: #1d2e4a; border: 2.5px solid #1d2e4a; border-radius: 999px; padding: 1px 10px;
-  font: 800 11.5px/1.5 'Baloo 2', system-ui, sans-serif; box-shadow: 2px 2px 0 #1d2e4a; white-space: nowrap; }
-.gq-conf { position: fixed; z-index: 2147483400; top: -40px; pointer-events: none; animation: gqfall 2.2s ease-in forwards; }
-@keyframes gqfall { to { transform: translate(var(--dx), 108vh) rotate(540deg); opacity: .9 } }
-@media (prefers-reduced-motion: reduce) { .gq-conf { display: none } .gqp-box { animation: none } }
-@media (max-height: 620px) { .gqd em { display: none } .gqd { padding: 6px 10px 6px 8px } .gqp-box h1 + p { margin-bottom: 8px } }
-
-/* ===== Đồng bộ popup + nút của game viết tay (chỉ khi html.gq-sa) ===== */
-html.gq-sa body .card, html.gq-sa body .panel, html.gq-sa body #card {
-  background: #fffbf2 !important; color: #1d2e4a !important; border: 3px solid #1d2e4a !important; border-radius: 22px !important;
-  box-shadow: 4px 4px 0 #1d2e4a !important; font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif; text-shadow: none !important; }
-html.gq-sa body .card h1, html.gq-sa body .card h2, html.gq-sa body .panel h1, html.gq-sa body .panel h2, html.gq-sa body #card h1 {
-  font-family: 'Baloo 2', system-ui, sans-serif !important; font-weight: 800 !important; color: #e4572e !important; text-shadow: none !important; }
-html.gq-sa body .card .big, html.gq-sa body .panel .big { font-family: 'Baloo 2', system-ui, sans-serif !important; color: #1d2e4a !important; text-shadow: none !important; }
-html.gq-sa body .card p, html.gq-sa body .card .sm, html.gq-sa body .panel p, html.gq-sa body #card p { color: #16233a !important; text-shadow: none !important; }
-html.gq-sa body .btn, html.gq-sa body #again, html.gq-sa body #card button, html.gq-sa body .card button, html.gq-sa body .panel button {
-  font-family: 'Baloo 2', system-ui, sans-serif !important; font-weight: 800 !important; color: #1d2e4a !important; background: #f4b942 !important;
-  border: 3px solid #1d2e4a !important; border-radius: 14px !important; box-shadow: 3px 3px 0 #1d2e4a !important; text-shadow: none !important; animation: none !important; }
-html.gq-sa body .btn.alt, html.gq-sa body .card button.alt, html.gq-sa body .panel button.alt { background: #fffbf2 !important; }
-html.gq-sa body .btn:active, html.gq-sa body #again:active, html.gq-sa body #card button:active, html.gq-sa body .card button:active, html.gq-sa body .panel button:active {
-  transform: translate(3px, 3px) !important; box-shadow: none !important; }
-</style></head>
+</head>
 
 <body>
   <div id="app">
@@ -1620,263 +2100,440 @@ if (typeof window !== "undefined") {
 }
     </script>
 
+    <!-- ui.js: khung mở đầu + chọn nhịp độ dùng chung -->
+    <script>
+// lib/ui.js — khung mở đầu + chọn nhịp độ dùng chung cho game một màn.
+//
+// Trước đây mỗi game tự dựng một màn intro khác nhau (có game không có),
+// còn thanh chọn độ khó thì bị nhúng rời vào file HTML sinh ra. File này
+// thay cả hai bằng MỘT khung duy nhất:
+//
+//   gqIntro(root, { id, icon, name, desc, steps }, mode => { ... });
+//
+// Mỗi mức chỉ đổi 3 thứ: pace (nhịp nhanh/chậm), lives (số mạng) và mult
+// (hệ số điểm). Game tự dùng các con số đó, KHÔNG vá setTimeout/Date.now
+// toàn cục — nhờ vậy bộ test Node vẫn boot được và không có hiệu ứng phụ.
+
+const GQ_MODES = [
+  { k: 'easy', n: 'Nhẹ nhàng', e: '🌱', pace: .8,  lives: 5, mult: 1,   d: 'Chậm, nhiều mạng' },
+  { k: 'mid',  n: 'Vừa sức',   e: '🔥', pace: 1,   lives: 3, mult: 1.5, d: 'Nhịp chuẩn' },
+  { k: 'hard', n: 'Thử thách', e: '⚡', pace: 1.3, lives: 2, mult: 2,   d: 'Nhanh, ít mạng' },
+];
+
+const GQ_MODE_KEY = 'gq_mode:';
+
+function gqReadMode(id) {
+  try {
+    const v = Number(localStorage.getItem(GQ_MODE_KEY + id));
+    return v >= 0 && v < GQ_MODES.length ? v : 1;
+  } catch (e) {
+    return 1;
+  }
+}
+
+function gqWriteMode(id, i) {
+  try { localStorage.setItem(GQ_MODE_KEY + id, String(i)); } catch (e) { /* ignore */ }
+}
+
+/** Nhân điểm gốc theo mức đã chọn. */
+function gqScore(mode, score) {
+  return Math.round((Number(score) || 0) * mode.mult);
+}
+
+/** Thời gian gốc (giây) co lại khi nhịp nhanh hơn. */
+function gqSecs(base, mode) {
+  return Math.max(8, Math.round(base / mode.pace));
+}
+
+/** Khoảng chờ gốc (ms) ngắn lại khi nhịp nhanh hơn. */
+function gqMs(base, mode) {
+  return Math.max(80, Math.round(base / mode.pace));
+}
+
+/**
+ * Vẽ màn mở đầu chung rồi gọi go(mode) khi người chơi chọn nhịp.
+ * @param {HTMLElement} root
+ * @param {{ id:string, icon:string, name:string, desc?:string, steps?:string[] }} cfg
+ * @param {(mode:object, index:number) => void} go
+ */
+function gqIntro(root, cfg, go) {
+  const last = gqReadMode(cfg.id);
+  const best = (S.best && S.best[cfg.id]) || 0;
+  root.innerHTML = `<div class="panel intro">
+    <div class="intro-ic">${cfg.icon || '🎮'}</div>
+    <h2>${cfg.name || ''}</h2>
+    ${cfg.desc ? `<p>${cfg.desc}</p>` : ''}
+    ${cfg.steps && cfg.steps.length ? `<ul class="intro-steps">${cfg.steps.map((s) => `<li>${s}</li>`).join('')}</ul>` : ''}
+    <p class="intro-best">${best ? `🏆 Kỷ lục của bạn: <b>${best}</b>` : 'Chọn nhịp độ để bắt đầu'}</p>
+    <div class="modes">${GQ_MODES.map((m, i) => `<button class="mode${i === last ? ' sel' : ''}" data-mode="${i}">
+      <i>${m.e}</i><b>${m.n}</b><em>${m.d}</em></button>`).join('')}</div>
+  </div>`;
+  root.onclick = (e) => {
+    const b = e.target.closest('[data-mode]');
+    if (!b) return;
+    const i = Number(b.dataset.mode);
+    if (!(i >= 0 && i < GQ_MODES.length)) return;
+    gqWriteMode(cfg.id, i);
+    sfx.ok();
+    go(GQ_MODES[i], i);
+  };
+}
+
+/** Một dòng HUD thống nhất: điểm · mạng · tiến độ. */
+function gqHud(score, lives, extra) {
+  return `<div class="hud">
+    <span>⭐ <b>${score}</b></span>
+    <span class="hearts">${lives > 0 ? '❤️'.repeat(lives) : '💔'}</span>
+    ${extra ? `<span>${extra}</span>` : ''}
+  </div>`;
+}
+
+/** Hàng chấm tiến độ cho game theo lượt. */
+function gqDots(total, done) {
+  return `<div class="dots">${Array.from({ length: total }, (_, i) => `<i class="${i < done ? 'on' : ''}"></i>`).join('')}</div>`;
+}
+    </script>
+
     <!-- Game: snake — nội dung riêng của file này -->
-    <script id="gq-kit">/* gq-kit.js — Bộ nâng cấp dùng chung cho game dọc:
-   · Màn chọn độ khó 4 mức (Dễ / Trung bình / Khó / Siêu khó) — cùng một giao diện cho mọi game
-   · Độ khó thật: nhịp game (setTimeout/setInterval/rAF/performance.now/Date.now) co giãn theo mức,
-     điểm & XP nhân hệ số (game dạng "single"), số mạng / giây mỗi câu / màn khởi đầu (mcengine)
-   · Pháo hoa khi kết thúc ván, nút "Đổi độ khó", nhãn độ khó luôn hiện trên đầu màn hình
-   MODE được build thay: 'single' (game sinh từ shell) hoặc 'standalone' (game viết tay). */
-(() => {
-  if (window.GQ) return;
-  const MODE = 'single';
-  const TIERS = [
-    { k: 'easy',   n: 'Dễ',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Chậm rãi, nhiều mạng — thoải mái làm quen' },
-    { k: 'mid',    n: 'Trung bình', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Nhịp độ chuẩn, vừa sức chơi' },
-    { k: 'hard',   n: 'Khó',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Nhanh hơn, ít thời gian suy nghĩ' },
-    { k: 'insane', n: 'Siêu khó',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Cực nhanh, ít sai sót — dành cho cao thủ' },
-  ];
-  const G = { t: TIERS[1], i: 1, locked: MODE === 'standalone', q: [] };
+    <script>
+// src/games/offline/games-src/snake.js — Rắn Săn Mồi
+// Rắn ăn trái cây, dài dần và leo màn. Mỗi màn thêm chướng ngại vật,
+// tốc độ nhanh hơn; có nút tạm dừng cho người chơi thở một chút.
 
-  /* ---- Co giãn thời gian theo độ khó ---- */
-  const oT = window.setTimeout.bind(window), oC = window.clearTimeout.bind(window);
-  const oR = window.requestAnimationFrame.bind(window), oP = performance.now.bind(performance), oD = Date.now;
-  const cp = { o: 0 }, cd = { o: 0 };
-  const sc = (raw, c) => raw * G.t.s + c.o;
-  function setTier(i) {
-    const r = oP(), d = oD(), a = sc(r, cp), b = sc(d, cd);
-    G.i = i; G.t = TIERS[i];
-    cp.o = a - r * G.t.s; cd.o = b - d * G.t.s;
-  }
-  performance.now = () => sc(oP(), cp);
-  Date.now = () => sc(oD(), cd);
-  window.requestAnimationFrame = cb => {
-    if (G.locked) { G.q.push(cb); return 0; }
-    return oR(ts => cb(sc(ts, cp)));
-  };
-  window.setTimeout = (f, ms, ...a) => typeof f === 'function' ? oT(f, (ms || 0) / G.t.s, ...a) : oT(f, ms);
-  const IV = {}; let ivn = 1e9;
-  window.setInterval = (f, ms, ...a) => {
-    if (typeof f !== 'function') return 0;
-    const id = ++ivn, run = () => { IV[id] = oT(() => { if (!(id in IV)) return; if (!G.locked) f(...a); if (id in IV) run(); }, Math.max(0, (ms || 0) / G.t.s)); };
-    IV[id] = 0; run(); return id;
-  };
-  const oCI = window.clearInterval.bind(window);
-  window.clearInterval = id => { if (id > 1e9) { oC(IV[id]); delete IV[id]; } else oCI(id); };
+const SNAKE_N = 15;
 
-  window.GQ = {
-    tiers: TIERS, set: setTier,
-    get tier() { return G.t; }, get idx() { return G.i; },
-    get s() { return G.t.s; }, get m() { return G.t.m; },
-    get lives() { return G.t.lives; }, get secs() { return G.t.secs; }, get lvl0() { return G.t.lvl0; },
-  };
+function snakeValid(s) {
+    return !!s && s.v === 2 &&
+        Number.isInteger(s.mode) && s.mode >= 0 && s.mode < GQ_MODES.length &&
+        Array.isArray(s.snake) && s.snake.length > 0 && s.snake.length < SNAKE_N * SNAKE_N &&
+        s.snake.every((p) => p && Number.isInteger(p.x) && Number.isInteger(p.y) &&
+            p.x >= 0 && p.x < SNAKE_N && p.y >= 0 && p.y < SNAKE_N) &&
+        s.dir && Number.isInteger(s.dir.x) && Number.isInteger(s.dir.y) &&
+        Array.isArray(s.queue) && s.queue.every((d) => d && Number.isInteger(d.x) && Number.isInteger(d.y)) &&
+        Number.isFinite(s.score) && s.score >= 0 &&
+        Number.isInteger(s.lives) && s.lives > 0 && s.lives <= 5 &&
+        Number.isFinite(s.speed) && s.speed >= 60 && s.speed <= 400 &&
+        Number.isInteger(s.level) && s.level >= 1 && s.level <= 6 &&
+        Array.isArray(s.obstacles) && s.obstacles.every((p) => p && Number.isInteger(p.x) && Number.isInteger(p.y) &&
+            p.x >= 0 && p.x < SNAKE_N && p.y >= 0 && p.y < SNAKE_N) &&
+        typeof s.paused === 'boolean' &&
+        (s.food === null || (s.food && Number.isInteger(s.food.x) && Number.isInteger(s.food.y)));
+}
 
-  /* ---- Tiện ích ---- */
-  const $el = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstChild; };
-  const KEY = 'gq_diff:' + (location.pathname.split('/').pop() || 'game');
-  const quit = () => {
-    try { if (window.parent && window.parent !== window) { window.parent.postMessage({ type: 'quit', data: {} }, '*'); return; } } catch (e) { /* ignore */ }
-    try { location.href = '/'; } catch (e) { /* ignore */ }
-  };
-  let actx;
-  const tone = (f) => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; o.type = 'triangle'; g.gain.value = .06; o.connect(g); g.connect(actx.destination); o.start(); g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + .15); o.stop(actx.currentTime + .15); } catch (e) { /* ignore */ } };
+function startSnake(root, mode, modeIndex, resume) {
+    const N = SNAKE_N;
+    const id = 'snake';
+    let snake, dir, queue, started, food, score, lives, speed, level, obstacles, paused;
+    let ended = false;
+    let tickId = null;
 
-  function pill() {
-    let p = document.querySelector('.gq-tier');
-    if (!p) { p = $el('<div class="gq-tier"></div>'); document.body.appendChild(p); }
-    p.textContent = G.t.e + ' ' + G.t.n; p.style.setProperty('--c', G.t.c);
-  }
-
-  /* ---- Màn chọn độ khó (giống hệt nhau ở mọi game) ---- */
-  function pick(meta, go) {
-    let last = 1;
-    try { const v = +localStorage.getItem(KEY); if (v >= 0 && v < 4) last = v; } catch (e) { /* ignore */ }
-    const chip = t => MODE === 'single' ? `×${t.m} điểm` : `tốc độ ×${t.s}`;
-    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Thoát">←</button>
-      <div class="gqp-box"><div class="gqp-ic">${meta.icon || '🎮'}</div><h1>${meta.name}</h1>
-      <p>Chọn độ khó để bắt đầu</p>
-      <div class="gqp-list">${TIERS.map((t, i) => `<button class="gqd${i === last ? ' last' : ''}" data-i="${i}" style="--c:${t.c}">
-        <i>${t.e}</i><span><b>${t.n}</b><em>${t.d}</em></span><u>${chip(t)}</u></button>`).join('')}</div>
-      <small>Độ khó càng cao, nhịp chơi càng gấp — thưởng càng lớn 🏆</small></div></div>`);
-    box.querySelector('.gqp-x').onclick = quit;
-    box.querySelector('.gqp-list').onclick = e => {
-      const b = e.target.closest('.gqd'); if (!b) return;
-      const i = +b.dataset.i; tone(380 + i * 120);
-      try { localStorage.setItem(KEY, i); } catch (er) { /* ignore */ }
-      setTier(i); box.remove(); pill();
-      if (G.locked) { G.locked = false; G.q.splice(0).forEach(cb => window.requestAnimationFrame(cb)); }
-      go && go();
-    };
-    document.body.appendChild(box);
-    setTimeout(() => { try { box.querySelector('.last').focus({ preventScroll: true }); } catch (e) { /* ignore */ } }, 50);
-  }
-
-  /* ---- Pháo hoa ---- */
-  function boom() {
-    const em = ['🎉', '⭐', '✨', '🎊', '🍓', '💫'];
-    for (let i = 0; i < 34; i++) {
-      const s = $el(`<span class="gq-conf">${em[i % em.length]}</span>`);
-      s.style.cssText = `left:${Math.random() * 100}vw;--dx:${(Math.random() * 160 - 80) | 0}px;animation-delay:${(Math.random() * .5).toFixed(2)}s;font-size:${16 + (Math.random() * 18 | 0)}px`;
-      document.body.appendChild(s); oT(() => s.remove(), 2800);
+    function schedule() {
+        if (tickId) clearTimeout(tickId);
+        tickId = T.set(tick, speed);
     }
-  }
 
-  /* ---- Gắn vào game ---- */
-  if (MODE === 'single') {
-    const o = window.startSingleGame, f = window.finish;
-    window.startSingleGame = cfg => {
-      const go = () => { o(cfg); pill(); };
-      if (document.body) pick({ name: cfg.name, icon: cfg.icon }, go);
-      else document.addEventListener('DOMContentLoaded', () => pick({ name: cfg.name, icon: cfg.icon }, go));
-    };
-    window.finish = function (opt) {
-      const t = G.t, m = t.m;
-      const r = f.call(this, Object.assign({}, opt, {
-        score: Math.round((opt.score || 0) * m), xp: Math.round((opt.xp || 0) * m),
-        lines: [`${t.e} ${t.n} ×${m}`].concat(opt.lines || []),
-      }));
-      boom();
-      const row = document.querySelector('#modal .row');
-      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Đổi độ khó</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
-      return r;
-    };
-  } else {
-    const start = () => {
-      const t = (document.title || 'Trò chơi').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
-      const ic = (document.title.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u) || ['🎮'])[0];
-      document.documentElement.classList.add('gq-sa');
-      pick({ name: t, icon: ic });
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
-  }
-})();
-</script>
-<script>
-// src/games/src/snake.js — Neon Snake
+    function freshSnake() {
+        snake = [{ x: 4, y: 7 }, { x: 3, y: 7 }, { x: 2, y: 7 }];
+        dir = { x: 1, y: 0 };
+        queue = [];
+        started = false;
+    }
 
-    function snakeGame(root) {
-      const N = 15;
-      root.innerHTML = `<div class="hud"><span>⭐ <b id="sc">0</b></span><span id="lv">❤️❤️❤️</span><span>Dài <b id="ln">3</b></span></div>
-    <canvas id="cv"></canvas>
-    <div class="dpad"><button class="u" data-d="u">▲</button><button class="l" data-d="l">◀</button><button class="d" data-d="d">▼</button><button class="r" data-d="r">▶</button></div>
-    <p class="hint">Ăn trái cây phát sáng để rắn dài thêm, tránh tự cắn vào mình. Vuốt, dùng phím mũi tên hoặc chạm nút điều hướng.</p>`;
-      const cv = $('#cv'), ctx = cv.getContext('2d');
-      const size = Math.floor(Math.min(root.clientWidth - 8, 450) / N) * N;
-      cv.width = cv.height = size; cv.style.width = cv.style.height = size + 'px';
-      const cell = size / N;
-      const saved = loadOfflineRun('snake');
-      let snake, dir, queue, started, food, score, lives, speed;
-
-      function spawnFood() {
+    function spawnFood() {
+        const blocked = new Set([
+            ...snake.map((p) => `${p.x},${p.y}`),
+            ...obstacles.map((p) => `${p.x},${p.y}`),
+        ]);
         const open = [];
-        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-          if (!snake.some(s => s.x === x && s.y === y)) open.push({ x, y });
+        for (let y = 0; y < N; y++) {
+            for (let x = 0; x < N; x++) {
+                if (!blocked.has(`${x},${y}`)) open.push({ x, y });
+            }
         }
         return open.length ? open[rnd(0, open.length - 1)] : null;
-      }
-      function freshSnake() {
-        snake = [{ x: 4, y: 7 }, { x: 3, y: 7 }, { x: 2, y: 7 }];
-        dir = { x: 1, y: 0 }; queue = []; started = false; food = spawnFood();
-      }
-      function saveRun() {
-        saveOfflineRun('snake', { snake, dir, queue, started, food, score, lives, speed });
-      }
-      if (saved && Array.isArray(saved.snake) && saved.snake.length &&
-          saved.snake.every(s => Number.isInteger(s.x) && Number.isInteger(s.y) && s.x >= 0 && s.x < N && s.y >= 0 && s.y < N) &&
-          saved.dir && Number.isInteger(saved.score) && Number.isInteger(saved.lives)) {
-        snake = saved.snake; dir = saved.dir; queue = Array.isArray(saved.queue) ? saved.queue : [];
-        started = !!saved.started; food = saved.food; score = saved.score; lives = saved.lives;
-        speed = Number.isFinite(saved.speed) ? saved.speed : 190;
-        if (!food || !Number.isInteger(food.x) || !Number.isInteger(food.y) ||
-            snake.some(s => s.x === food.x && s.y === food.y)) food = spawnFood();
-      } else {
-        score = 0; lives = 3; speed = 190; freshSnake();
-      }
+    }
 
-      const $sc = $('#sc'), $lv = $('#lv'), $ln = $('#ln');
-      function hud() {
-        $sc.textContent = score; $lv.textContent = lives > 0 ? '❤️'.repeat(lives) : '💔';
-        $ln.textContent = snake.length;
-      }
-      function setDir(dx, dy) {
+    function levelFor(value) {
+        return Math.min(6, 1 + Math.floor(value / 60));
+    }
+
+    function addObstacles(count) {
+        for (let k = 0; k < count; k++) {
+            for (let attempt = 0; attempt < 80; attempt++) {
+                const p = { x: rnd(0, N - 1), y: rnd(0, N - 1) };
+                if (p.y === 7 && p.x < 7) continue;
+                if (snake.some((s) => s.x === p.x && s.y === p.y)) continue;
+                if (p.x === food?.x && p.y === food?.y) continue;
+                if (obstacles.some((o) => o.x === p.x && o.y === p.y)) continue;
+                obstacles.push(p);
+                break;
+            }
+        }
+    }
+
+    if (resume) {
+        ({ snake, dir, queue, started, food, score, lives, speed, level, obstacles, paused } = {
+            ...resume,
+            queue: resume.queue.map((d) => ({ ...d })),
+            obstacles: resume.obstacles.map((p) => ({ ...p })),
+        });
+        if (!food || snake.some((s) => s.x === food.x && s.y === food.y) ||
+            obstacles.some((o) => o.x === food.x && o.y === food.y)) food = spawnFood();
+    } else {
+        score = 0;
+        lives = mode.lives;
+        speed = mode.k === 'easy' ? 215 : mode.k === 'mid' ? 190 : 165;
+        level = 1;
+        obstacles = [];
+        paused = false;
+        freshSnake();
+        food = spawnFood();
+    }
+
+    root.innerHTML = `<div class="hud">
+            <span>⭐ <b id="sc">0</b></span>
+            <span class="hearts" id="lv">❤️</span>
+            <span>📏 <b id="ln">3</b> · Màn <b id="m">1</b></span>
+        </div>
+        <canvas id="cv"></canvas>
+        <div class="dpad">
+            <button class="u" data-d="u">▲</button><button class="l" data-d="l">◀</button>
+            <button class="d" data-d="d">▼</button><button class="r" data-d="r">▶</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+            <button class="btn alt" id="pause">${paused ? '▶ Chơi tiếp' : '⏸ Tạm dừng'}</button>
+        </div>
+        <p class="hint">Ăn trái cây để dài thêm và lên màn. Mỗi màn có thêm chướng ngại vật. Vuốt, dùng phím mũi tên hoặc chạm nút.</p>`;
+
+    const cv = root.querySelector('#cv');
+    const width = Math.max(240, Math.min((root.clientWidth || 340) - 8, 450));
+    const size = Math.floor(width / N) * N;
+    const ctx = fitCanvas(cv, size, size);
+    const cell = size / N;
+
+    function hud() {
+        const sc = root.querySelector('#sc');
+        const lv = root.querySelector('#lv');
+        const ln = root.querySelector('#ln');
+        const m = root.querySelector('#m');
+        if (sc) sc.textContent = score;
+        if (lv) lv.textContent = lives > 0 ? '❤️'.repeat(lives) : '💔';
+        if (ln) ln.textContent = snake.length;
+        if (m) m.textContent = level;
+    }
+
+    function save() {
+        if (ended) return;
+        saveOfflineRun(id, {
+            v: 2, mode: modeIndex, snake, dir, queue, started, food, score, lives, speed, level, obstacles, paused,
+        });
+    }
+
+    function setDir(dx, dy) {
+        if (ended || paused) return;
         const last = queue.length ? queue[queue.length - 1] : dir;
         if ((last.x === -dx && last.y === -dy) || (last.x === dx && last.y === dy)) return;
         if (queue.length < 2) queue.push({ x: dx, y: dy });
-        started = true; saveRun();
-      }
-      const DIRS = { u: [0, -1], d: [0, 1], l: [-1, 0], r: [1, 0] };
-      root.onclick = e => { const b = e.target.closest('[data-d]'); if (b) setDir(...DIRS[b.dataset.d]) };
-      onKey = e => {
-        const m = { ArrowUp: 'u', ArrowDown: 'd', ArrowLeft: 'l', ArrowRight: 'r', w: 'u', s: 'd', a: 'l', d: 'r' }[e.key];
-        if (m) { e.preventDefault(); setDir(...DIRS[m]) }
-      };
-      let sx, sy;
-      cv.ontouchstart = e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY };
-      cv.ontouchend = e => {
-        const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
-        if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
-        if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0); else setDir(0, dy > 0 ? 1 : -1);
-      };
-
-      function finishRun() {
-        T.clear(); clearOfflineRun('snake');
-        finish({ id: 'snake', score, lines: [`Rắn dài ${snake.length}`, `${score} điểm`],
-          replay: snakeGame, details: { length: snake.length } });
-      }
-      function loseLife() {
-        lives--; sfx.bad();
-        if (lives <= 0) { finishRun(); return false; }
-        freshSnake(); hud(); saveRun(); return true;
-      }
-      function tick() {
-        if (started) {
-          if (queue.length) dir = queue.shift();
-          const h = { x: (snake[0].x + dir.x + N) % N, y: (snake[0].y + dir.y + N) % N };
-          if (snake.some(s => s.x === h.x && s.y === h.y)) {
-            if (!loseLife()) return;
-          } else {
-            snake.unshift(h);
-            if (food && h.x === food.x && h.y === food.y) {
-              score += 10; sfx.ok(); speed = Math.max(95, speed - 4); food = spawnFood();
-            } else snake.pop();
-            hud(); saveRun();
-          }
-        }
-        draw(); T.set(tick, speed);
-      }
-      function draw() {
-        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-          ctx.fillStyle = (x + y) % 2 ? '#fff6d9' : '#fffdf3'; ctx.fillRect(x * cell, y * cell, cell, cell);
-        }
-        if (food) {
-          const cx = food.x * cell + cell / 2, cy = food.y * cell + cell / 2;
-          ctx.fillStyle = '#e4572e'; ctx.strokeStyle = '#1d2e4a'; ctx.lineWidth = 2.5;
-          ctx.beginPath(); ctx.arc(cx, cy, cell * .38, 0, 7); ctx.fill(); ctx.stroke();
-          ctx.fillStyle = '#56bd72'; ctx.fillRect(cx - 2, cy - cell * .48, 4, cell * .18);
-        }
-        snake.forEach((s, k) => {
-          const pad = k ? cell * .1 : cell * .04;
-          ctx.fillStyle = k ? (k % 2 ? '#1b998b' : '#157f74') : '#1d2e4a'; ctx.strokeStyle = '#1d2e4a'; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.roundRect(s.x * cell + pad, s.y * cell + pad, cell - pad * 2, cell - pad * 2, cell * .28); ctx.fill(); if (k) ctx.stroke();
-        });
-        const h = snake[0]; ctx.fillStyle = '#fff';
-        [[.3, .35], [.7, .35]].forEach(([ex, ey]) => { ctx.beginPath(); ctx.arc(h.x * cell + cell * ex, h.y * cell + cell * ey, cell * .12, 0, 7); ctx.fill() });
-        if (!started) {
-          ctx.fillStyle = 'rgba(29,46,74,.78)'; ctx.fillRect(0, size / 2 - 28, size, 56);
-          ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.max(14, size / 24)}px Be Vietnam Pro,system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('Vuốt hoặc bấm hướng để bắt đầu', size / 2, size / 2);
-        }
-      }
-      hud(); draw(); saveRun(); T.set(tick, speed);
+        started = true;
+        save();
     }
 
-    startSingleGame({
-      id: 'snake',
-      name: 'Rắn Săn Mồi',
-      icon: '🐍',
-      storageKey: 'offline_snake',
-      mount: snakeGame,
-    });
+    function draw() {
+        for (let y = 0; y < N; y++) {
+            for (let x = 0; x < N; x++) {
+                ctx.fillStyle = (x + y) % 2 ? '#fff6d9' : '#fffdf3';
+                ctx.fillRect(x * cell, y * cell, cell, cell);
+            }
+        }
+        obstacles.forEach((o) => {
+            ctx.fillStyle = '#8a6a45';
+            ctx.strokeStyle = '#1d2e4a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(o.x * cell + 1.5, o.y * cell + 1.5, cell - 3, cell - 3, cell * .2);
+            else ctx.rect(o.x * cell + 1.5, o.y * cell + 1.5, cell - 3, cell - 3);
+            ctx.fill();
+            ctx.stroke();
+        });
+        if (food) {
+            const cx = food.x * cell + cell / 2;
+            const cy = food.y * cell + cell / 2;
+            ctx.fillStyle = '#e4572e';
+            ctx.strokeStyle = '#1d2e4a';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, cell * .38, 0, 7);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#56bd72';
+            ctx.fillRect(cx - 2, cy - cell * .48, 4, cell * .18);
+        }
+        snake.forEach((s, k) => {
+            const pad = k ? cell * .1 : cell * .04;
+            ctx.fillStyle = k ? (k % 2 ? '#1b998b' : '#157f74') : '#1d2e4a';
+            ctx.strokeStyle = '#1d2e4a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(s.x * cell + pad, s.y * cell + pad, cell - pad * 2, cell - pad * 2, cell * .28);
+            else ctx.rect(s.x * cell + pad, s.y * cell + pad, cell - pad * 2, cell - pad * 2);
+            ctx.fill();
+            if (k) ctx.stroke();
+        });
+        const h = snake[0];
+        ctx.fillStyle = '#fff';
+        [[.3, .35], [.7, .35]].forEach(([ex, ey]) => {
+            ctx.beginPath();
+            ctx.arc(h.x * cell + cell * ex, h.y * cell + cell * ey, cell * .12, 0, 7);
+            ctx.fill();
+        });
+        if (paused || !started) {
+            ctx.fillStyle = 'rgba(29,46,74,.78)';
+            ctx.fillRect(0, size / 2 - 28, size, 56);
+            ctx.fillStyle = '#fff';
+            ctx.font = `700 ${Math.max(14, Math.round(size / 24))}px Be Vietnam Pro,system-ui,sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(paused ? 'Tạm dừng — chạm để chơi tiếp' : 'Vuốt hoặc bấm hướng để bắt đầu', size / 2, size / 2);
+        }
+    }
+
+    function end() {
+        if (ended) return;
+        ended = true;
+        T.clear();
+        clearOfflineRun(id);
+        if (level >= 3) S.flags.snake = true;
+        finish({
+            id, score: gqScore(mode, score), xp: Math.round(score / 3),
+            lines: [`Rắn dài ${snake.length}`, `Lên được màn ${level}`],
+            replay: snakeGame, details: { length: snake.length, level },
+        });
+    }
+
+    function loseLife() {
+        lives--;
+        sfx.bad();
+        if (lives <= 0) { end(); return false; }
+        obstacles = obstacles.filter((o) => !(o.y === 7 && o.x < 7));
+        freshSnake();
+        food = spawnFood();
+        paused = false;
+        hud();
+        save();
+        return true;
+    }
+
+    function tick() {
+        if (ended || paused) return;
+        if (started) {
+            if (queue.length) dir = queue.shift();
+            const h = { x: (snake[0].x + dir.x + N) % N, y: (snake[0].y + dir.y + N) % N };
+            const hitWall = obstacles.some((o) => o.x === h.x && o.y === h.y);
+            if (hitWall || snake.some((s) => s.x === h.x && s.y === h.y)) {
+                if (!loseLife()) return;
+            } else {
+                snake.unshift(h);
+                if (food && h.x === food.x && h.y === food.y) {
+                    score += 10;
+                    sfx.ok();
+                    speed = Math.max(80, speed - 3);
+                    const nextLevel = levelFor(score);
+                    if (nextLevel > level) {
+                        level = nextLevel;
+                        addObstacles(2);
+                        sfx.win();
+                    }
+                    food = spawnFood();
+                } else {
+                    snake.pop();
+                }
+                hud();
+                save();
+            }
+        }
+        draw();
+        schedule();
+    }
+
+    root.onclick = (e) => {
+        const b = e.target.closest('[data-d]');
+        if (b) {
+            const DIRS = { u: [0, -1], d: [0, 1], l: [-1, 0], r: [1, 0] };
+            setDir(...DIRS[b.dataset.d]);
+            return;
+        }
+        if (e.target.closest('#pause')) {
+            paused = !paused;
+            if (tickId) { clearTimeout(tickId); tickId = null; }
+            const btn = root.querySelector('#pause');
+            if (btn) btn.textContent = paused ? '▶ Chơi tiếp' : '⏸ Tạm dừng';
+            draw();
+            save();
+            if (!paused) schedule();
+        }
+    };
+
+    const DIRS = { u: [0, -1], d: [0, 1], l: [-1, 0], r: [1, 0] };
+    onKey = (e) => {
+        if (e.key === ' ') {
+            e.preventDefault();
+            paused = !paused;
+            if (tickId) { clearTimeout(tickId); tickId = null; }
+            const btn = root.querySelector('#pause');
+            if (btn) btn.textContent = paused ? '▶ Chơi tiếp' : '⏸ Tạm dừng';
+            draw();
+            save();
+            if (!paused) schedule();
+            return;
+        }
+        const m = { ArrowUp: 'u', ArrowDown: 'd', ArrowLeft: 'l', ArrowRight: 'r', w: 'u', s: 'd', a: 'l', d: 'r' }[e.key];
+        if (m) { e.preventDefault(); setDir(...DIRS[m]); }
+    };
+
+    let sx, sy;
+    cv.ontouchstart = (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; };
+    cv.ontouchend = (e) => {
+        const dx = e.changedTouches[0].clientX - sx;
+        const dy = e.changedTouches[0].clientY - sy;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+        if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0); else setDir(0, dy > 0 ? 1 : -1);
+    };
+
+    hud();
+    draw();
+    save();
+    schedule();
+}
+
+function snakeGame(root) {
+    const saved = loadOfflineRun('snake');
+    if (snakeValid(saved)) {
+        startSnake(root, GQ_MODES[saved.mode], saved.mode, saved);
+        return;
+    }
+    if (saved) clearOfflineRun('snake');
+
+    gqIntro(root, {
+        id: 'snake', icon: '🐍', name: 'Rắn Săn Mồi',
+        desc: 'Điều khiển rắn ăn trái cây, dài thêm qua từng màn và né chướng ngại vật.',
+        steps: [
+            'Vuốt trên bàn chơi hoặc dùng nút mũi tên để đổi hướng.',
+            'Ăn trái cây để được điểm, dài thêm và lên màn mới.',
+            'Mỗi màn có thêm chướng ngại vật; đâm vào tường hay tự cắn sẽ mất mạng.',
+        ],
+    }, (mode, index) => startSnake(root, mode, index));
+}
+
+startSingleGame({
+    id: 'snake',
+    name: 'Rắn Săn Mồi',
+    icon: '🐍',
+    storageKey: 'offline_snake',
+    mount: snakeGame,
+    badges: [
+        { id: 'snake', n: 'Lên màn 3', i: '🐍', ok: () => !!S.flags.snake },
+    ],
+});
     </script>
 </body>
 </html>

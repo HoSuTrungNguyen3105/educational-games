@@ -1,110 +1,223 @@
-// src/games/src/sumseq.js — Nhịp Điệu Ánh Sáng
+// src/games/offline/games-src/sumseq.js — Chuỗi Số Vui
+// Đoán số còn thiếu trong dãy: cộng đều, trừ đều, nhân đôi, xen kẽ,
+// số chẵn/lẻ, số tròn chục, bình phương và dãy cộng dồn.
 
-    function lightRhythmGame(root) {
-      const id = 'sumseq';
-      const pads = [['🍓', '#ff6f59'], ['🍋', '#ffd166'], ['🍇', '#b18cff'], ['🍀', '#b7e34a']];
-      const saved = loadOfflineRun(id);
-      const valid = saved && Array.isArray(saved.beats) && saved.beats.length > 0 &&
-        saved.beats.every(i => Number.isInteger(i) && i >= 0 && i < pads.length) &&
-        Number.isInteger(saved.step) && saved.step >= 0 && saved.step < saved.beats.length &&
-        Number.isInteger(saved.score) && Number.isInteger(saved.misses) && saved.misses >= 0 &&
-        ['show', 'input'].includes(saved.phase);
-      let game = valid ? saved : fresh();
-      let closed = false;
-      root.innerHTML = `<div class="hud"><span>🎶 Nhịp <b id="rhythmRound">1</b></span><span>⭐ <b id="rhythmScore">0</b></span><span>💫 <b id="rhythmMiss">0</b>/3</span></div>
-        <div class="qbox center" id="rhythmStatus">Đón nhịp ánh sáng!</div>
-        <div class="opts" style="grid-template-columns:repeat(2,1fr)">${pads.map(([icon, color], i) =>
-          `<button class="opt" data-pad="${i}" style="min-height:100px;font-size:36px;background:${color}">${icon}</button>`).join('')}</div>
-        <p class="hint">Nhìn nhịp sáng lên rồi chạm lại theo đúng nhịp.</p>
-        <div class="row"><button class="btn alt" data-restart="1">🔄 Chơi lại</button></div>`;
-      const padEls = [...root.querySelectorAll('[data-pad]')];
-      const status = $('#rhythmStatus');
-      function fresh() {
-        clearOfflineRun(id);
-        return { beats: [rnd(0, pads.length - 1)], step: 0, score: 0, misses: 0, phase: 'show' };
-      }
-      function save() { saveOfflineRun(id, game); }
-      function flash(index, duration = 320) {
-        padEls[index].style.filter = 'brightness(1.6)';
-        beep([392, 494, 587, 698][index], duration / 1000, 'triangle', .08);
-        T.set(() => { padEls[index].style.filter = ''; }, duration);
-      }
-      function showBeat() {
-        if (closed) return;
-        game.phase = 'show';
-        game.step = 0;
-        status.textContent = 'Nhìn và nghe nhịp…';
-        save();
-        const gap = Math.max(260, 520 - game.beats.length * 10);
-        game.beats.forEach((beat, i) => T.set(() => flash(beat), 350 + i * gap));
-        T.set(() => {
-          if (closed) return;
-          game.phase = 'input';
-          status.textContent = 'Đến lượt bạn!';
-          save();
-        }, 350 + game.beats.length * gap);
-      }
-      function updateHud() {
-        $('#rhythmRound').textContent = game.beats.length;
-        $('#rhythmScore').textContent = game.score;
-        $('#rhythmMiss').textContent = game.misses;
-      }
-      function finishRun() {
-        if (closed) return;
-        closed = true;
-        T.clear();
-        clearOfflineRun(id);
-        finish({ id, score: game.score, lines: [`Giữ được ${game.beats.length - 1} nhịp`, `${game.score} điểm`],
-          replay: lightRhythmGame, details: { rounds: game.beats.length - 1, score: game.score } });
-      }
-      function restart() {
-        closed = false;
-        T.clear();
-        game = fresh();
-        updateHud();
-        showBeat();
-      }
-      root.onclick = e => {
-        if (e.target.closest('[data-restart]')) { restart(); return; }
-        const button = e.target.closest('[data-pad]');
-        if (!button || closed || game.phase !== 'input') return;
-        const chosen = +button.dataset.pad;
-        flash(chosen, 160);
-        if (chosen !== game.beats[game.step]) {
-          game.misses++;
-          updateHud();
-          sfx.bad();
-          if (game.misses >= 3) { finishRun(); return; }
-          game.step = 0;
-          game.phase = 'show';
-          save();
-          status.textContent = 'Nhịp trượt — nghe lại!';
-          T.set(showBeat, 650);
-          return;
+const SUMSEQ_ROUNDS = 10;
+
+function makeSequence(level) {
+    const kinds = level < 3
+        ? ['step', 'down', 'evens']
+        : level < 6
+            ? ['step', 'down', 'double', 'evens', 'odds', 'tens']
+            : level < 9
+                ? ['double', 'alt', 'tens', 'square']
+                : ['alt', 'square', 'fib', 'double'];
+    const kind = kinds[rnd(0, kinds.length - 1)];
+    const seq = [];
+    let ans = 0;
+
+    if (kind === 'step' || kind === 'down') {
+        const step = rnd(2, kind === 'down' ? 5 : 6);
+        const start = kind === 'down' ? rnd(step * 5, step * 5 + 12) : rnd(1, 9);
+        const dir = kind === 'down' ? -1 : 1;
+        for (let k = 0; k < 4; k++) seq.push(start + dir * step * k);
+        ans = start + dir * step * 4;
+    } else if (kind === 'double') {
+        const start = rnd(1, 4);
+        const ratio = rnd(2, level >= 6 ? 3 : 2);
+        for (let k = 0; k < 4; k++) seq.push(start * Math.pow(ratio, k));
+        ans = start * Math.pow(ratio, 4);
+    } else if (kind === 'alt') {
+        const start = rnd(2, 8);
+        const up = rnd(2, 5);
+        const down = rnd(1, 3);
+        let v = start;
+        for (let k = 0; k < 4; k++) {
+            seq.push(v);
+            v += k % 2 === 0 ? up : -down;
         }
-        game.step++;
-        sfx.tick();
-        if (game.step === game.beats.length) {
-          game.score += game.beats.length * 10;
-          game.beats.push(rnd(0, pads.length - 1));
-          game.step = 0;
-          updateHud();
-          status.textContent = 'Tuyệt! Nhịp mới…';
-          save();
-          T.set(showBeat, 650);
-        } else save();
-      };
-      if (!valid && saved) clearOfflineRun(id);
-      updateHud();
-      save();
-      if (game.phase === 'show') showBeat();
-      else status.textContent = 'Đến lượt bạn!';
+        ans = v;
+    } else if (kind === 'evens' || kind === 'odds') {
+        const step = rnd(2, 4) * 2;
+        const start = kind === 'evens' ? rnd(1, 4) * 2 : rnd(0, 3) * 2 + 1;
+        for (let k = 0; k < 4; k++) seq.push(start + step * k);
+        ans = start + step * 4;
+    } else if (kind === 'tens') {
+        const step = rnd(2, 6) * 10;
+        const start = rnd(1, 4) * 10;
+        for (let k = 0; k < 4; k++) seq.push(start + step * k);
+        ans = start + step * 4;
+    } else if (kind === 'square') {
+        const start = rnd(1, level >= 9 ? 6 : 4);
+        for (let k = 0; k < 4; k++) seq.push(Math.pow(start + k, 2));
+        ans = Math.pow(start + 4, 2);
+    } else {
+        let a = 1;
+        let b = rnd(1, 3);
+        for (let k = 0; k < 4; k++) {
+            seq.push(a);
+            const c = a + b;
+            a = b;
+            b = c;
+        }
+        ans = a;
     }
 
-    startSingleGame({
-      id: 'sumseq',
-      name: 'Nhịp Điệu Ánh Sáng',
-      icon: '🎆',
-      storageKey: 'offline_sumseq',
-      mount: lightRhythmGame,
-    });
+    return { seq, ans, kind };
+}
+
+function sumseqValid(s) {
+    return !!s && s.v === 2 &&
+        Number.isInteger(s.mode) && s.mode >= 0 && s.mode < GQ_MODES.length &&
+        Number.isInteger(s.round) && s.round >= 0 && s.round < SUMSEQ_ROUNDS &&
+        Number.isFinite(s.score) && s.score >= 0 &&
+        Number.isInteger(s.lives) && s.lives > 0 && s.lives <= 5 &&
+        Number.isInteger(s.correct) && s.correct >= 0 && s.correct <= SUMSEQ_ROUNDS &&
+        Number.isInteger(s.streak) && s.streak >= 0 &&
+        s.cur && Array.isArray(s.cur.seq) && s.cur.seq.length === 4 &&
+        s.cur.seq.every((n) => Number.isFinite(n)) &&
+        Number.isFinite(s.cur.ans) &&
+        Array.isArray(s.cur.opts) && s.cur.opts.length === 4 &&
+        s.cur.opts.every((n) => Number.isFinite(n)) &&
+        s.cur.opts.some((n) => n === s.cur.ans);
+}
+
+function startSumseq(root, mode, modeIndex, resume) {
+    const id = 'sumseq';
+    let round = resume ? resume.round : 0;
+    let score = resume ? resume.score : 0;
+    let lives = resume ? resume.lives : mode.lives;
+    let correct = resume ? resume.correct : 0;
+    let streak = resume ? resume.streak : 0;
+    let cur = resume ? resume.cur : null;
+    let timeLeft = 0;
+    let answered = false;
+    let ended = false;
+    const secsBase = 10;
+
+    function checkpoint() {
+        if (ended) return;
+        saveOfflineRun(id, { v: 2, mode: modeIndex, round, score, lives, correct, streak, cur });
+    }
+
+    function paint() {
+        root.innerHTML = `${gqHud(score, lives, `Câu <b>${round + 1}/${SUMSEQ_ROUNDS}</b>`)}
+            <div class="tbar"><i id="tb" style="width:100%"></i></div>
+            <div class="qbox" style="font-size:15px;font-weight:600;padding:14px 12px">
+                <div style="opacity:.7;margin-bottom:6px">Số nào còn thiếu?</div>
+                <div class="pattern-row">${cur.seq.map((n) => `<span class="pcell">${n}</span>`).join('')}
+                    <span class="pcell missing">?</span></div>
+            </div>
+            <div class="opts" id="o">
+                ${cur.opts.map((n, k) => `<button class="opt" data-k="${k}">${n}</button>`).join('')}
+            </div>
+            <p class="hint">Tìm quy luật tăng/giảm của dãy rồi chọn số đúng.</p>`;
+    }
+
+    function showQuestion() {
+        answered = false;
+        timeLeft = gqSecs(secsBase, mode);
+        if (!cur) {
+            const q = makeSequence(round);
+            cur = { seq: q.seq, ans: q.ans, opts: makeOpts(q.ans, 4) };
+        }
+        paint();
+        checkpoint();
+    }
+
+    function markAnswer(k) {
+        if (answered || ended) return;
+        answered = true;
+        const ansIndex = cur.opts.findIndex((n) => n === cur.ans);
+        const buttons = [...root.querySelectorAll('.opt')];
+        if (buttons[ansIndex]) buttons[ansIndex].classList.add('ok');
+        if (k === ansIndex) {
+            correct++;
+            streak++;
+            score += 10 + Math.ceil(Math.max(0, timeLeft)) * 2 + (streak >= 3 ? 5 : 0);
+            sfx.ok();
+        } else {
+            lives--;
+            streak = 0;
+            sfx.bad();
+            if (k >= 0 && buttons[k]) buttons[k].classList.add('bad');
+        }
+        checkpoint();
+        if (lives <= 0) { T.set(end, 800); return; }
+        T.set(nextRound, 850);
+    }
+
+    function nextRound() {
+        if (ended) return;
+        round++;
+        if (round >= SUMSEQ_ROUNDS) { end(); return; }
+        cur = null;
+        showQuestion();
+    }
+
+    function end() {
+        if (ended) return;
+        ended = true;
+        T.clear();
+        clearOfflineRun(id);
+        if (correct >= 8) S.flags.seq = true;
+        finish({
+            id, score: gqScore(mode, score), xp: Math.round(score / 6) + correct,
+            lines: [`Đúng ${correct}/${SUMSEQ_ROUNDS} dãy số`, `Chuỗi đúng dài nhất: ${streak}`],
+            replay: sumseqGame, details: { correct, score },
+        });
+    }
+
+    root.onclick = (e) => {
+        if (ended) return;
+        const b = e.target.closest('[data-k]');
+        if (b) markAnswer(Number(b.dataset.k));
+    };
+
+    T.int(() => {
+        if (answered || ended) return;
+        timeLeft -= .1;
+        const bar = root.querySelector('#tb');
+        if (bar) bar.style.width = Math.max(0, (timeLeft / gqSecs(secsBase, mode)) * 100) + '%';
+        if (timeLeft <= 0) markAnswer(-1);
+    }, 100);
+
+    if (resume) {
+        timeLeft = gqSecs(secsBase, mode);
+        answered = false;
+        paint();
+        checkpoint();
+    } else {
+        showQuestion();
+    }
+}
+
+function sumseqGame(root) {
+    const saved = loadOfflineRun('sumseq');
+    if (sumseqValid(saved)) {
+        startSumseq(root, GQ_MODES[saved.mode], saved.mode, saved);
+        return;
+    }
+    if (saved) clearOfflineRun('sumseq');
+
+    gqIntro(root, {
+        id: 'sumseq', icon: '🔢', name: 'Chuỗi Số Vui',
+        desc: 'Tìm số còn thiếu trong dãy số đang chạy theo một quy luật.',
+        steps: [
+            'Mỗi câu hiện bốn số và một dấu hỏi ở cuối dãy.',
+            'Tìm quy luật: cộng đều, trừ đều, nhân đôi, xen kẽ hay số bình phương.',
+            'Trả lời càng nhanh điểm càng cao; hết giờ hoặc chọn sai sẽ mất một mạng.',
+        ],
+    }, (mode, index) => startSumseq(root, mode, index));
+}
+
+startSingleGame({
+    id: 'sumseq',
+    name: 'Chuỗi Số Vui',
+    icon: '🔢',
+    storageKey: 'offline_sumseq',
+    mount: sumseqGame,
+    badges: [
+        { id: 'seq', n: 'Đúng 8 dãy số', i: '🔢', ok: () => !!S.flags.seq },
+    ],
+});

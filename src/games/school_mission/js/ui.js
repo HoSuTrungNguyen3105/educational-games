@@ -1,7 +1,21 @@
 // ===== UI: thông báo, popup +xu, cộng thưởng, tiến độ nhiệm vụ, hộp thoại =====
 function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display="none",2200)}
 function pop(s){ft.push({x:me.x,y:me.y-90,s,t:1.4})}
-function gain(c,x){S.coins+=c;S.xp+=x;pop("+"+c+"🪙 +"+x+"XP");const need=S.lv*50;if(S.xp>=need){S.xp-=need;S.lv++;S.gems+=2;toast("🎉 Lên cấp "+S.lv+"! "+(S.lv==2?"Mở Vườn trường 🌸":S.lv==3?"Mở Sân thể thao 🏃":"+2 💎"))}save()}
+function gain(c,x){
+    // Thú cưng cấp ≥10 có kỹ năng "Bạn đồng hành": +10% XP học tập
+    let petBonus = 0;
+    if (S.pet && S.pet.level >= 10) petBonus = Math.round(x * 0.1);
+    S.coins += c; S.xp += x + petBonus;
+    pop("+" + c + "🪙 +" + (x + petBonus) + "XP");
+    // Học bài cũng giúp thú cưng nhận EXP
+    if (typeof window.schoolPetGainExp === "function") window.schoolPetGainExp(Math.max(1, Math.round(x / 2)));
+    const need = S.lv * 50;
+    if (S.xp >= need) {
+        S.xp -= need; S.lv++; S.gems += 2;
+        toast("🎉 Lên cấp " + S.lv + "! " + (S.lv == 2 ? "Mở Vườn trường 🌸" : S.lv == 3 ? "Mở Sân thể thao 🏃" : "+2 💎"));
+    }
+    save();
+}
 function prog(k,n=1){const q=QU.find(x=>x.k==k);S.q[k]=(S.q[k]||0)+n;if(S.q[k]>=q.n){S.q[k]=0;S.coins+=q.c;S.gems+=q.g;realCoin(q.c,"quest:"+k);setTimeout(()=>toast("✅ Xong nhiệm vụ! +"+q.c+"🪙 +"+q.g+"💎"),600)}save()}
 
 /* ── Phần thưởng đổi ra coin THẬT trong ví của tài khoản ──

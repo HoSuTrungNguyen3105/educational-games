@@ -1,116 +1,166 @@
-// src/games/src/clock.js — Phản Xạ Chớp Nhoáng
+// src/games/offline/games-src/clock.js — Chạm Đúng Nhịp
+// Một thanh chạy qua lại trên đường đua; chạm khi thanh nằm trong vùng xanh.
+// Càng gần tâm vùng xanh, điểm càng cao.
 
-    function clockGame(root) {
-      const id = 'clock';
-      let saved = loadOfflineRun(id);
+const CLOCK_ROUNDS = 10;
 
-      function fresh() {
-        clearOfflineRun(id);
-        return { round: 0, score: 0, falseStarts: 0, reactions: [], phase: 'ready', waitLeft: 0, goElapsed: 0 };
-      }
+function clockValid(s) {
+    return !!s && s.v === 2 &&
+        Number.isInteger(s.mode) && s.mode >= 0 && s.mode < GQ_MODES.length &&
+        Number.isInteger(s.round) && s.round >= 0 && s.round < CLOCK_ROUNDS &&
+        Number.isFinite(s.score) && s.score >= 0 &&
+        Number.isInteger(s.lives) && s.lives > 0 && s.lives <= 5;
+}
 
-      function intro() {
-        root.innerHTML = `<div class="panel center"><h2>Phản Xạ Chớp Nhoáng</h2>
-          <p class="hint">Chờ màn hình chuyển xanh rồi chạm ngay. Chơi 5 lượt, càng nhanh càng tốt!</p>
-          <button class="btn" data-start="1">Bắt đầu chơi</button></div>`;
-        root.onclick = e => { if (e.target.closest('[data-start]')) start(fresh()); };
-      }
+function startClock(root, mode, modeIndex, resume) {
+    const id = 'clock';
+    let round = resume ? resume.round : 0;
+    let score = resume ? resume.score : 0;
+    let lives = resume ? resume.lives : mode.lives;
+    let pos = 0;
+    let dir = 1;
+    let speed = 0;
+    let elapsed = 0;
+    let tapped = false;
+    let ended = false;
 
-      function start(game) {
-        T.clear();
-        let readyAt = game.phase === 'go' ? Date.now() : 0;
-        let ticks = 0;
-        function save() {
-          const state = { ...game };
-          saveOfflineRun(id, state);
-        }
-        function paint() {
-          const waiting = game.phase === 'wait';
-          const go = game.phase === 'go';
-          root.innerHTML = `<div class="hud"><span>🏁 Lượt <b>${game.round}/5</b></span><span>⭐ <b>${game.score}</b></span><span>⚠️ Chạm sớm: ${game.falseStarts}</span></div>
-            <button class="btn" data-action="tap" style="width:100%;min-height:220px;font-size:clamp(26px,7vw,42px);background:${go ? 'var(--lime)' : 'var(--sky)'};color:#0b2227">
-              <span id="signal">${go ? 'CHẠM NGAY!' : waiting ? 'ĐỢI TÍN HIỆU…' : 'CHẠM ĐỂ BẮT ĐẦU'}</span>
-            </button>
-            <p class="hint" id="note">${go ? 'Nhanh!' : waiting ? 'Đừng chạm vội!' : 'Sẵn sàng?'}</p>`;
-        }
-        function beginWait() {
-          game.phase = 'wait';
-          game.waitLeft = rnd(8, 24) / 10;
-          game.goElapsed = 0;
-          readyAt = 0;
-          save();
-          paint();
-        }
-        root.onclick = e => {
-          if (!e.target.closest('[data-action="tap"]')) return;
-          if (game.phase === 'ready') {
-            beginWait();
-          } else if (game.phase === 'wait') {
-            game.falseStarts++;
-            game.waitLeft = rnd(10, 28) / 10;
-            sfx.bad();
-            save();
-            const note = root.querySelector('#note');
-            if (note) note.textContent = 'Quá sớm! Chờ tín hiệu xanh.';
-          } else if (game.phase === 'go') {
-            const reaction = Math.max(0, Date.now() - readyAt);
-            game.reactions.push(reaction);
-            game.score += Math.max(0, 1000 - reaction);
-            game.round++;
-            sfx.ok();
-            if (game.round >= 5) {
-              T.clear();
-              clearOfflineRun(id);
-              S.flags.clock = true;
-              const average = Math.round(game.reactions.reduce((a, b) => a + b, 0) / game.reactions.length);
-              finish({
-                id, score: game.score, xp: 0,
-                lines: [`Điểm: ${game.score}`, `Phản xạ trung bình: ${average} mili giây`],
-                replay: clockGame, details: { reactions: game.reactions, falseStarts: game.falseStarts }
-              });
-              return;
-            }
-            beginWait();
-          }
-        };
-        if (game.phase === 'go') readyAt = Date.now() - (game.goElapsed || 0);
-        paint();
-        save();
-        T.int(() => {
-          ticks++;
-          if (game.phase === 'wait') {
-            game.waitLeft -= .1;
-            if (game.waitLeft <= 0) {
-              game.phase = 'go';
-              game.goElapsed = 0;
-              readyAt = Date.now();
-              sfx.tick();
-              paint();
-              save();
-            } else {
-              const signal = root.querySelector('#signal');
-              if (signal && ticks % 5 === 0) signal.textContent = `ĐỢI... ${Math.ceil(game.waitLeft)}`;
-              if (ticks % 5 === 0) save();
-            }
-          } else if (game.phase === 'go') {
-            game.goElapsed = (game.goElapsed || 0) + 100;
-            if (ticks % 5 === 0) save();
-          }
-        }, 100);
-      }
+    const zonePct = mode.k === 'easy' ? 26 : mode.k === 'mid' ? 20 : 15;
 
-      if (saved && Number.isInteger(saved.round) && saved.round >= 0 && saved.round < 5 && Array.isArray(saved.reactions)) {
-        start(saved);
-      } else intro();
+    function save() {
+        if (ended) return;
+        saveOfflineRun(id, { v: 2, mode: modeIndex, round, score, lives });
     }
 
+    function paint(message) {
+        root.innerHTML = `${gqHud(score, lives, `Nhịp <b>${round + 1}/${CLOCK_ROUNDS}</b>`)}
+            <div class="prompt" id="st">${message || 'Chạm khi thanh vào vùng xanh'}
+                <small>${tapped ? 'Đang tính điểm…' : 'Càng gần tâm càng nhiều điểm'}</small></div>
+            <div class="rhythm" id="track" style="--zw:${zonePct}%">
+                <div class="zone"></div><div class="center"></div><div class="marker" id="mk"></div>
+            </div>
+            <button class="btn" data-hit="1" style="width:100%;min-height:76px;font-size:20px;background:${tapped ? 'var(--card)' : 'var(--sun)'}">${tapped ? '…' : 'CHẠM!'}</button>
+            <p class="hint">Thanh chạy nhanh dần qua từng nhịp. Canh đúng vùng xanh để ghi điểm.</p>`;
+        placeMarker();
+    }
+
+    function placeMarker() {
+        const track = root.querySelector('#track');
+        const mk = root.querySelector('#mk');
+        if (!track || !mk) return;
+        const w = track.clientWidth || 300;
+        mk.style.transform = `translateX(${(pos / 100) * Math.max(0, w - 8)}px)`;
+    }
+
+    function startRound() {
+        if (ended) return;
+        pos = rnd(0, 30);
+        dir = Math.random() < .5 ? 1 : -1;
+        speed = (mode.k === 'easy' ? 42 : mode.k === 'mid' ? 60 : 80) + round * (mode.k === 'hard' ? 6 : 4);
+        elapsed = 0;
+        tapped = false;
+        paint();
+        save();
+        T.loop((dt) => {
+            if (ended || tapped) return;
+            elapsed += dt;
+            pos += dir * speed * dt;
+            if (pos >= 100) { pos = 100; dir = -1; }
+            if (pos <= 0) { pos = 0; dir = 1; }
+            placeMarker();
+            if (elapsed > 8 / mode.pace) {
+                miss('Hết giờ nhịp này!');
+            }
+        });
+    }
+
+    function miss(message) {
+        if (tapped || ended) return;
+        tapped = true;
+        lives--;
+        sfx.bad();
+        T.clear();
+        if (lives <= 0) { end(); return; }
+        paint(message);
+        save();
+        T.set(nextRound, 900);
+    }
+
+    function hit() {
+        if (tapped || ended) return;
+        tapped = true;
+        const dist = Math.abs(pos - 50);
+        const half = zonePct / 2;
+        T.clear();
+        if (dist <= half) {
+            const accuracy = Math.max(0, 1 - dist / half);
+            const gain = 10 + Math.round(accuracy * 20) + (dist <= 1.5 ? 10 : 0);
+            score += gain;
+            sfx.ok();
+            paint(dist <= 1.5 ? `Hoàn hảo! +${gain} điểm` : `Chuẩn nhịp! +${gain} điểm`);
+            save();
+            T.set(nextRound, 650);
+        } else {
+            lives--;
+            sfx.bad();
+            if (lives <= 0) { end(); return; }
+            paint(`Trượt vùng xanh! Lệch ${Math.round(dist)}%`);
+            save();
+            T.set(nextRound, 850);
+        }
+    }
+
+    function nextRound() {
+        round++;
+        if (round >= CLOCK_ROUNDS) { end(); return; }
+        startRound();
+    }
+
+    function end() {
+        if (ended) return;
+        ended = true;
+        T.clear();
+        clearOfflineRun(id);
+        if (round >= CLOCK_ROUNDS) S.flags.clock = true;
+        finish({
+            id, score: gqScore(mode, score), xp: Math.round(score / 5) + round,
+            lines: [`Hoàn thành ${round}/${CLOCK_ROUNDS} nhịp`, `Còn ${lives} mạng`],
+            replay: clockGame, details: { round, score },
+        });
+    }
+
+    root.onclick = (e) => {
+        if (e.target.closest('[data-hit]')) hit();
+    };
+
+    startRound();
+}
+
+function clockGame(root) {
+    const saved = loadOfflineRun('clock');
+    if (clockValid(saved)) {
+        startClock(root, GQ_MODES[saved.mode], saved.mode, saved);
+        return;
+    }
+    if (saved) clearOfflineRun('clock');
+
+    gqIntro(root, {
+        id: 'clock', icon: '🏁', name: 'Chạm Đúng Nhịp',
+        desc: 'Canh đúng lúc thanh chạy vào vùng xanh để giữ nhịp thật chuẩn.',
+        steps: [
+            'Thanh chạy qua lại trên đường đua, vùng xanh nằm ở giữa.',
+            'Chạm khi thanh nằm trong vùng xanh — càng gần tâm điểm càng cao.',
+            'Chạm ngoài vùng xanh hoặc để hết giờ sẽ mất một mạng.',
+        ],
+    }, (mode, index) => startClock(root, mode, index));
+}
+
 startSingleGame({
-  id: 'clock',
-  name: 'Chạm Đúng Nhịp',
-  icon: '🚦',
-  storageKey: 'offline_clock',
-  mount: clockGame,
-  badges: [
-      { id: 'clock', n: 'Cao thủ phản xạ', i: '⚡', ok: () => !!S.flags.clock },
-  ],
+    id: 'clock',
+    name: 'Chạm Đúng Nhịp',
+    icon: '🏁',
+    storageKey: 'offline_clock',
+    mount: clockGame,
+    badges: [
+        { id: 'clock', n: 'Hoàn thành 10 nhịp', i: '⚡', ok: () => !!S.flags.clock },
+    ],
 });

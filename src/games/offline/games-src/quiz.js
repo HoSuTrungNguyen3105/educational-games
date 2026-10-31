@@ -1,91 +1,137 @@
-// src/games/src/quiz.js — Chọn Nhanh, Chọn Vui
+// src/games/offline/games-src/quiz.js — Chọn Một Vui
+// Mười lượt "chọn bên này hay bên kia" để đo gu của người chơi và trả về
+// một danh hiệu vui ở cuối. Không có đáp án đúng/sai, không có đồng hồ.
 
-    function quizGame(root) {
-      const id = 'quiz';
-      const picks = [
-        ['Đi biển cả ngày', 'Ở nhà thư giãn cả ngày'],
-        ['Ăn bánh pizza vào bữa sáng', 'Ăn kem vào bữa tối'],
-        ['Có một chú rồng bé xíu', 'Có một chú khủng long tí hon'],
-        ['Nhảy như robot', 'Đi bộ như cua'],
-        ['Phòng toàn gối mềm', 'Phòng toàn thú bông'],
-        ['Mưa kẹo dẻo', 'Mưa bỏng ngô'],
-        ['Du lịch bằng khinh khí cầu', 'Du lịch bằng tàu ngầm'],
-        ['Tóc đổi màu theo tâm trạng', 'Giày phát nhạc khi đi'],
-        ['Một tuần chỉ ăn món mình thích', 'Một tuần chỉ xem phim hài'],
-        ['Có cửa bí mật trong phòng', 'Có cầu trượt ngay ngoài cửa']
-      ];
-      let saved = loadOfflineRun(id);
+const QUIZ_PAIRS = [
+    ['Đi biển cả ngày', 'Ở nhà thư giãn cả ngày'],
+    ['Thử món lạ chưa từng ăn', 'Gọi món quen mỗi lần đi ăn'],
+    ['Nuôi một chú rồng con', 'Nuôi một chú mèo con'],
+    ['Nhảy theo nhạc giữa sân', 'Nghe nhạc với tai nghe một mình'],
+    ['Du lịch bằng khinh khí cầu', 'Du lịch bằng tàu hỏa'],
+    ['Mưa kẹo dẻo', 'Mưa bong bóng xà phòng'],
+    ['Có cửa bí mật trong phòng', 'Có cửa sổ nhìn ra vườn'],
+    ['Tóc đổi màu theo tâm trạng', 'Áo luôn vừa vặn hoàn hảo'],
+    ['Một tuần chỉ ăn món mình thích', 'Một tuần ngủ đủ giấc mỗi ngày'],
+    ['Có cầu trượt ngay ngoài cửa', 'Có xích đu trong vườn'],
+    ['Làm bạn với người ngoài hành tinh', 'Làm bạn với gấu bông biết nói'],
+    ['Đi học bằng ván trượt bay', 'Đi học bằng xe đạp'],
+    ['Học được phép tàng hình', 'Học được cách bay lượn'],
+    ['Thú cưng biết nói tiếng người', 'Cây cảnh biết hát mỗi sáng'],
+];
 
-      function fresh() {
-        clearOfflineRun(id);
-        return { deck: shuffle(picks.map((_, i) => i)), round: 0, score: 0, streak: 0, seconds: 60, votes: [] };
-      }
+const QUIZ_ROUNDS = 10;
 
-      function intro() {
-        root.innerHTML = `<div class="panel center"><h2>Chọn Nhanh, Chọn Vui 🎉</h2>
-          <p class="hint">Chọn nhanh bên nào hợp gu của bạn. Không có đúng hay sai — chỉ chơi cho vui!</p>
-          <button class="btn" data-start="1">Bắt đầu chơi</button></div>`;
-        root.onclick = e => { if (e.target.closest('[data-start]')) start(fresh()); };
-      }
+function quizTitle(bold) {
+    if (bold >= 9) return 'Nhà thám hiểm tí hon';
+    if (bold >= 7) return 'Bạn của gió';
+    if (bold >= 5) return 'Vừa phiêu lưu vừa an yên';
+    if (bold >= 3) return 'Người thích sự ấm áp';
+    return 'Chuyên gia thư giãn';
+}
 
-      function start(game) {
-        T.clear();
-        function save() { saveOfflineRun(id, game); }
-        function finishGame() {
-          T.clear();
-          clearOfflineRun(id);
-          S.flags.perfect = true;
-          finish({
-            id, score: game.score, xp: 0,
-            lines: [`Bạn đã chọn ${game.round} lượt`, `Chuỗi chọn liên tiếp: ${game.streak}`],
-            replay: quizGame, details: { votes: game.votes, score: game.score }
-          });
-        }
-        function paint() {
-          if (game.round >= game.deck.length || game.seconds <= 0) { finishGame(); return; }
-          const pair = picks[game.deck[game.round]];
-          root.innerHTML = `<div class="hud"><span>🎉 Lượt <b>${game.round + 1}/10</b></span><span>⭐ <b>${game.score}</b></span><span>⏱ <b>${game.seconds}</b> giây</span></div>
-            <div class="qbox txt">Bạn chọn gì?</div>
-            <div class="opts one">${pair.map((choice, i) => `<button class="opt" data-choice="${i}" style="min-height:90px;font-size:20px">${choice}</button>`).join('')}</div>
-            <p class="hint">Chọn theo gu của bạn — không cần nghĩ lâu!</p>`;
-        }
-        root.onclick = e => {
-          const button = e.target.closest('[data-choice]');
-          if (!button || game.round >= game.deck.length) return;
-          const choice = +button.dataset.choice;
-          game.votes.push(choice);
-          game.round++;
-          game.streak++;
-          game.score += 10 + Math.min(game.streak, 10);
-          sfx.ok();
-          save();
-          paint();
-        };
-        save();
-        paint();
-        T.int(() => {
-          game.seconds--;
-          if (game.seconds <= 0) finishGame();
-          else {
-            const timer = root.querySelector('.hud span:last-child b');
-            if (timer) timer.textContent = game.seconds;
-            save();
-          }
-        }, 1000);
-      }
+function quizValid(s) {
+    return !!s && s.v === 3 &&
+        Array.isArray(s.deck) && s.deck.length === QUIZ_ROUNDS &&
+        new Set(s.deck).size === QUIZ_ROUNDS &&
+        s.deck.every((k) => Number.isInteger(k) && k >= 0 && k < QUIZ_PAIRS.length) &&
+        Number.isInteger(s.round) && s.round >= 0 && s.round <= QUIZ_ROUNDS &&
+        Array.isArray(s.picks) && s.picks.length === s.round &&
+        s.picks.every((p) => p === 0 || p === 1);
+}
 
-      if (saved && Array.isArray(saved.deck) && Array.isArray(saved.votes) &&
-          saved.deck.length === picks.length && saved.seconds > 0 && saved.round >= 0 && saved.round < picks.length) start(saved);
-      else intro();
+function startQuiz(root, game) {
+    const id = 'quiz';
+    let closed = false;
+
+    function save() {
+        if (!closed) saveOfflineRun(id, game);
     }
 
+    function paint() {
+        if (closed) return;
+        if (game.round >= QUIZ_ROUNDS) { end(); return; }
+        const pair = QUIZ_PAIRS[game.deck[game.round]];
+        root.innerHTML = `${gqHud(game.round * 10, 0, `Lượt <b>${game.round + 1}/${QUIZ_ROUNDS}</b>`)}
+            ${gqDots(QUIZ_ROUNDS, game.round)}
+            <div class="qbox txt">Bạn chọn gì?</div>
+            <div class="opts one">
+                ${pair.map((choice, i) => `<button class="opt" data-choice="${i}" style="min-height:88px">${choice}</button>`).join('')}
+            </div>
+            <p class="hint">Chọn theo gu của bạn — không có đáp án đúng hay sai.</p>`;
+        save();
+    }
+
+    function end() {
+        if (closed) return;
+        closed = true;
+        T.clear();
+        clearOfflineRun(id);
+        const bold = game.picks.filter((p) => p === 0).length;
+        const title = quizTitle(bold);
+        S.flags.perfect = true;
+        finish({
+            id, score: game.picks.length * 10, xp: 20,
+            lines: [`${title}`, `Chọn ${bold} lượt phiêu lưu · ${game.picks.length - bold} lượt an yên`],
+            replay: quizGame, details: { picks: game.picks, title },
+        });
+    }
+
+    root.onclick = (e) => {
+        if (closed) return;
+        const b = e.target.closest('[data-choice]');
+        if (!b) return;
+        const choice = Number(b.dataset.choice);
+        if (choice !== 0 && choice !== 1) return;
+        game.picks.push(choice);
+        game.round++;
+        sfx.tick();
+        paint();
+    };
+
+    paint();
+}
+
+function quizGame(root) {
+    const saved = loadOfflineRun('quiz');
+    if (quizValid(saved) && saved.round < QUIZ_ROUNDS) {
+        startQuiz(root, saved);
+        return;
+    }
+    if (saved) clearOfflineRun('quiz');
+
+    const best = S.best.quiz || 0;
+    root.innerHTML = `<div class="panel intro">
+        <div class="intro-ic">🎉</div>
+        <h2>Chọn Một Vui</h2>
+        <p>Mười lượt chọn nhanh giữa hai lựa chọn — cuối cùng bạn sẽ nhận một danh hiệu theo gu của mình.</p>
+        <ul class="intro-steps">
+            <li>Mỗi lượt có hai lựa chọn, chỉ cần chọn bên bạn thích hơn.</li>
+            <li>Không có đáp án đúng sai và không có đồng hồ.</li>
+            <li>Hoàn thành đủ 10 lượt để xem danh hiệu của bạn.</li>
+        </ul>
+        <p class="intro-best">${best ? `🏆 Lần trước: <b>${best}</b> điểm` : 'Sẵn sàng chưa?'}</p>
+        <button class="btn" data-start="1" style="width:100%;margin-top:14px">Bắt đầu 10 lượt chọn</button>
+    </div>`;
+
+    root.onclick = (e) => {
+        if (!e.target.closest('[data-start]')) return;
+        sfx.ok();
+        startQuiz(root, {
+            v: 3,
+            deck: shuffle(QUIZ_PAIRS.map((_, i) => i)).slice(0, QUIZ_ROUNDS),
+            round: 0,
+            picks: [],
+        });
+    };
+}
+
 startSingleGame({
-  id: 'quiz',
-  name: 'Chọn Một Vui',
-  icon: '🎉',
-  storageKey: 'offline_quiz',
-  mount: quizGame,
-  badges: [
-      { id: 'perfect', n: 'Tay chọn nhanh', i: '🎉', ok: () => S.games >= 1 },
-  ],
+    id: 'quiz',
+    name: 'Chọn Một Vui',
+    icon: '🎉',
+    storageKey: 'offline_quiz',
+    mount: quizGame,
+    badges: [
+        { id: 'perfect', n: 'Hoàn thành 10 lượt', i: '🎉', ok: () => !!S.flags.perfect },
+    ],
 });

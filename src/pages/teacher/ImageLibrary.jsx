@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { imageService } from "../../services/api.js";
-import { ConfirmModal, EmptyState, IconTrash, IconUpload, Loader, Modal, SearchInput, ViewToggle, useViewMode } from '../../components/ui';
+import { ConfirmModal, EmptyState, IconTrash, IconUpload, Loader, ManagementHeader, Modal, SearchInput, ViewToggle, useViewMode } from '../../components/ui';
 import { Image, Copy, X, FolderOpen } from "lucide-react";
 import { useConfirm } from "../../hooks/useConfirm.js";
 
@@ -115,19 +115,16 @@ export default function ImageLibrary({ showToast }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg text-ink">Thư viện ảnh</h2>
-        <div className="flex items-center gap-2">
-          <ViewToggle mode={viewMode} onChange={setViewMode} className="inline-flex" />
-          <button onClick={() => fileInput.current?.click()} disabled={uploading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2">
-            <IconUpload className="w-4 h-4" />
-            {uploading ? "Đang upload..." : "Upload ảnh"}
-          </button>
-          <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={e => handleUpload(e.target.files)} />
-          <input ref={multiInput} type="file" accept="image/*" multiple className="hidden" onChange={e => handleUpload(e.target.files)} />
-        </div>
-      </div>
+      <ManagementHeader title="Thư viện ảnh" subtitle="Tải lên và quản lý ảnh dùng trong trò chơi">
+        <ViewToggle mode={viewMode} onChange={setViewMode} className="inline-flex" />
+        <button onClick={() => fileInput.current?.click()} disabled={uploading}
+          className="px-4 py-2 bg-ink text-paper rounded-xl text-sm font-semibold transition disabled:opacity-50 flex items-center gap-2">
+          <IconUpload className="w-4 h-4" />
+          {uploading ? "Đang upload..." : "Upload ảnh"}
+        </button>
+        <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={e => handleUpload(e.target.files)} />
+        <input ref={multiInput} type="file" accept="image/*" multiple className="hidden" onChange={e => handleUpload(e.target.files)} />
+      </ManagementHeader>
 
       <div className="flex items-center gap-3">
         <SearchInput value={searchQuery} onChange={setSearchQuery}

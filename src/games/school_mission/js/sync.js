@@ -64,7 +64,8 @@ function applySavedSchoolState(remote) {
 
     S = Object.assign({
         coins: 100, gems: 0, xp: 0, lv: 1, en: 100,
-        hat: "", col: "#ff9f43", own: ["", "#ff9f43"], q: {}, exam: {}
+        hat: "", col: "#ff9f43", own: ["", "#ff9f43"], q: {}, exam: {},
+        pet: defaultPetState()
     }, remote);
     S.exam = S.exam || {};
     try { localStorage.setItem("tvv", JSON.stringify(S)); } catch (e) { /* ignore */ }

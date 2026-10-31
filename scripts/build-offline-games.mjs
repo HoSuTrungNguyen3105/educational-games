@@ -6,12 +6,16 @@
 //
 //   npm run games:build
 //
-// Nguồn:  src/games/offline/lib/{shell.html, api.js, core.js, single.js, mcengine.js}
+// Nguồn:  src/games/offline/lib/{shell.html, core.js, single.js, ui.js}
 //         src/games/offline/games-src/<id>.js
 // Kết quả: src/games/offline/<id>.html
 //
 // File sinh ra ĐÃ được commit để app chạy được ngay sau khi clone. Khi sửa
 // lib/ hoặc src/ thì chạy lại script này.
+//
+// Chỉ game có mã nguồn games-src/<id>.js mới được sinh lại. Game standalone
+// (3D, nằm ngang, game viết tay…) do script riêng/nguồn riêng quản lý và
+// KHÔNG bị ghi đè ở đây.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -23,11 +27,12 @@ const shell = read("src/games/offline/lib/shell.html");
 const tokens = read("src/games/offline/lib/tokens.css").replace(/\s+$/, "");
 const core = read("src/games/offline/lib/core.js").replace(/\s+$/, "");
 const single = read("src/games/offline/lib/single.js").replace(/\s+$/, "");
-const mcengine = read("src/games/offline/lib/mcengine.js").replace(/\s+$/, "");
+const ui = read("src/games/offline/lib/ui.js").replace(/\s+$/, "");
 
-// Lấy danh mục từ manifest.js mà không cần import ESM (nó dùng export)
+// Lấy danh mục từ manifest.js mà không cần import ESM (nó dùng export).
+// Chỉ đọc dòng khai báo thật, bỏ qua entry bị comment để không sinh file rác.
 const manifestSrc = read("src/games/offline/games-src/manifest.js");
-const ids = [...manifestSrc.matchAll(/\{ id: '([^']+)',/g)].map((m) => m[1]);
+const ids = [...manifestSrc.matchAll(/^\s*\{ id: '([^']+)',/gm)].map((m) => m[1]);
 if (!ids.length) throw new Error("không đọc được danh sách id từ src/games/offline/games-src/manifest.js");
 
 /**
@@ -59,13 +64,7 @@ function applyTokens(html) {
 const shellDoc = applyTokens(shell);
 
 function build(id) {
-  const meta = manifestSrc.match(new RegExp(`\\{ id: '${id}',[\\s\\S]*?file: '[^']+' \\}`));
-  if (/engine: 'standalone'/.test(meta ? meta[0] : "")) {
-    return read("src/games/plantvsanimal.html");
-  }
-
   const game = read(`src/games/offline/games-src/${id}.js`);
-  const usesMc = /engine: 'mc'/.test(meta ? meta[0] : "");
 
   const parts = [
     shellDoc,
@@ -79,17 +78,12 @@ function build(id) {
     "    <script>",
     tidy(single),
     "    </script>",
+    "",
+    "    <!-- ui.js: khung mở đầu + chọn nhịp độ dùng chung -->",
+    "    <script>",
+    tidy(ui),
+    "    </script>",
   ];
-
-  if (usesMc) {
-    parts.push(
-      "",
-      "    <!-- Engine chung cho game arcade có tiến độ theo lượt -->",
-      "    <script>",
-      tidy(mcengine),
-      "    </script>"
-    );
-  }
 
   parts.push(
     "",
@@ -111,16 +105,9 @@ let total = 0;
 const rows = [];
 const skipped = [];
 for (const id of ids) {
-  const metaLine = (manifestSrc.match(new RegExp(`\\{ id: '${id}',[\\s\\S]*?file: '[^']+' \\}`)) || [""])[0];
-  // Nguồn để sinh lại file offline:
-  //   · engine 'standalone' → bản gốc src/games/<id>.html
-  //   · còn lại             → src/games/offline/games-src/<id>.js
-  // Game tự viết tay (chem-trai-cay, xep-khoi, night-strike…) không có nguồn
-  // nào trong repo — chúng là HTML độc lập, KHÔNG sinh lại. Không có nhánh
-  // này thì read() ném ENOENT và cả lệnh build chết.
-  const srcFile = /engine: 'standalone'/.test(metaLine)
-    ? `src/games/${id}.html`
-    : `src/games/offline/games-src/${id}.js`;
+  // Chỉ sinh lại game có mã nguồn trong games-src. Game standalone (3D, nằm
+  // ngang, game viết tay…) là HTML độc lập, KHÔNG bị ghi đè ở đây.
+  const srcFile = `src/games/offline/games-src/${id}.js`;
   if (!fs.existsSync(G(srcFile))) {
     skipped.push(id);
     continue;
@@ -138,6 +125,6 @@ for (const id of ids) {
 console.table(rows);
 console.log(`\n✔ ${rows.length} file → src/games/offline/  (tổng ${(total / 1024).toFixed(2)} MB)`);
 if (skipped.length) {
-  console.log(`⏭  Bỏ qua ${skipped.length} game viết tay (không có src/games/offline/games-src/<id>.js):`);
+  console.log(`⏭  Bỏ qua ${skipped.length} game không có mã nguồn games-src/<id>.js (standalone/3D/viết tay):`);
   console.log(`   ${skipped.join(", ")}`);
 }

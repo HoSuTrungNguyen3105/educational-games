@@ -240,28 +240,98 @@ function runExam(e, opts = {}) {
     nx();
 }
 
+/* ═══ NHÀ ĂN: món cho bé + thức ăn cho thú cưng ═══ */
+const CANTEEN_FOODS = [
+    { id: "banhmi", n: "Bánh mì", icon: "🥪", price: 10, en: 30, xp: 2, desc: "Nhanh gọn, đủ chất" },
+    { id: "comhop", n: "Cơm hộp", icon: "🍱", price: 25, en: 100, xp: 6, desc: "No căng bụng luôn" },
+    { id: "sua", n: "Sữa tươi", icon: "🥛", price: 15, en: 45, xp: 4, desc: "Cao lớn khỏe mạnh" },
+    { id: "traicay", n: "Trái cây", icon: "🍎", price: 20, en: 60, xp: 8, desc: "Vitamin đầy đủ" },
+    { id: "kem", n: "Kem mát lạnh", icon: "🍦", price: 12, en: 20, xp: 3, desc: "Món tráng miệng" }
+];
+
+function buyCanteenFood(id) {
+    const f = CANTEEN_FOODS.find(x => x.id === id);
+    if (!f) return;
+    if (S.coins < f.price) {
+        toast("🪙 Không đủ xu! Hãy học bài để kiếm thêm nhé!");
+        return;
+    }
+    S.coins -= f.price;
+    S.en = Math.min(100, S.en + f.en);
+    gain(0, f.xp);
+    save();
+    toast(`${f.icon} Đã thưởng thức ${f.n}: +${f.en}⚡ +${f.xp}XP`);
+    canteen();
+}
+
+function buyPetFood(id) {
+    const f = PET_FOODS[id];
+    if (!f) return;
+    if (S.coins < f.price) {
+        toast(`🪙 Cần ${f.price} coin để mua ${f.name} cho thú cưng!`);
+        return;
+    }
+    S.coins -= f.price;
+    if (!S.pet || typeof S.pet !== "object") S.pet = defaultPetState();
+    if (!S.pet.food) S.pet.food = { bone: 0, fish: 0, seed: 0, cake: 0 };
+    S.pet.food[id] = (S.pet.food[id] || 0) + 1;
+    save();
+    toast(`🛒 Đã mua ${f.icon} ${f.name} cho thú cưng! Vào 🐾 Vườn thú cưng để cho ăn nhé.`);
+    canteen();
+}
+
 function canteen() {
+    const pet = S.pet || defaultPetState();
+    const foodCards = CANTEEN_FOODS.map(f => `
+        <button class="canteen-card" onclick="buyCanteenFood('${f.id}')">
+            <span class="canteen-card-icon">${f.icon}</span>
+            <span class="canteen-card-body">
+                <b>${f.n}</b>
+                <small>${f.desc}</small>
+                <em>+${f.en}⚡ · +${f.xp}XP</em>
+            </span>
+            <span class="canteen-price">${f.price} 🪙</span>
+        </button>`).join("");
+
+    const petCards = Object.entries(PET_FOODS).map(([id, f]) => {
+        const count = (pet.food && pet.food[id]) || 0;
+        return `
+        <button class="canteen-card pet" onclick="buyPetFood('${id}')">
+            <span class="canteen-card-icon">${f.icon}</span>
+            <span class="canteen-card-body">
+                <b>${f.name}</b>
+                <small>${f.desc} · +${f.exp} EXP</small>
+                <em>Đang có: ${count}</em>
+            </span>
+            <span class="canteen-price">${f.price} 🪙</span>
+        </button>`;
+    }).join("");
+
     modal(`
-        <h2>🍔 Căng tin</h2>
-        <p>Bạn có ${S.coins} 🪙 — ⚡ ${Math.floor(S.en)}/100</p>
-        <button class="btn" id="b1">🥪 Bánh mì (10🪙) +30⚡</button><br>
-        <button class="btn" id="b2">🍱 Cơm hộp (25🪙) +100⚡</button><br>
-        <button class="btn" id="b3" style="background:#ddd;box-shadow:0 3px 0 #aaa">Đóng</button>
+        <div class="canteen-wrap">
+            <div class="canteen-hero">
+                <div class="canteen-hero-icon">🍔</div>
+                <div style="flex:1;min-width:0">
+                    <div class="canteen-title">NHÀ ĂN VUI VẺ</div>
+                    <div class="canteen-sub">Ăn no để học giỏi · mua đồ ăn cho thú cưng</div>
+                </div>
+                <div class="canteen-wallet">🪙 ${S.coins.toLocaleString()}<br><small>⚡ ${Math.floor(S.en)}/100</small></div>
+            </div>
+
+            <div class="canteen-section-title">🍽️ Món cho bé</div>
+            <div class="canteen-grid">${foodCards}</div>
+
+            <div class="canteen-section-title">🐾 Đồ ăn cho ${pet.name} <small style="font-weight:700;color:#8d6e63">(Lv ${pet.level})</small></div>
+            <div class="canteen-grid">${petCards}</div>
+
+            <div class="canteen-note">💡 Mua thức ăn cho thú cưng rồi mở 🐾 Vườn thú cưng để cho bé ăn — bé sẽ lên cấp và mở thêm nhiều tính năng!</div>
+
+            <div style="text-align:center;margin-top:12px">
+                <button class="btn" id="b3" style="background:#cfd8dc;color:#37474f;box-shadow:0 3px 0 #90a4ae">Đóng</button>
+            </div>
+        </div>
     `);
 
-    const buy = (c, e) => {
-        if (S.coins < c) {
-            toast("Không đủ xu!");
-            return;
-        }
-        S.coins -= c;
-        S.en = Math.min(100, S.en + e);
-        save();
-        canteen();
-    };
-
-    $("b1").onclick = () => buy(10, 30);
-    $("b2").onclick = () => buy(25, 100);
     $("b3").onclick = close_;
 }
 

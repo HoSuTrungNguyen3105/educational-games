@@ -93,7 +93,7 @@ export default function TeacherChat({ user, showToast }) {
   }, []);
 
   return (
-    <div className="h-[calc(100vh-16px)] flex rounded-2xl border border-ink/10 overflow-hidden bg-paper shadow-xl">
+    <div className="edu-chat-shell flex rounded-2xl border border-ink/10 overflow-hidden bg-paper2">
       {/* SIDEBAR */}
       <aside className={`w-72 lg:w-80 flex flex-col border-r border-ink/10 shrink-0 ${chatTarget ? "hidden md:flex" : "flex"}`}>
         {/* Sidebar Header */}

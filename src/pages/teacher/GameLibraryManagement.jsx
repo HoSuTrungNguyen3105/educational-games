@@ -12,19 +12,19 @@ const PAGE_SIZE = 12;
 
 function StatCard({ icon: Icon, label, value, tone = "ink" }) {
   const tones = {
-    ink: "bg-ink text-paper border-ink",
+    ink: "bg-[#f0f6fc] text-[#2271b1] border-[#c3c4c7]",
     teal: "bg-teal/10 text-teal border-teal/30",
     gold: "bg-gold/15 text-[#8a6a10] border-gold/40",
     ticket: "bg-ticket/10 text-ticket border-ticket/30",
   };
   return (
-    <div className={`note-card p-4 flex items-center gap-3 border ${tones[tone] || tones.ink}`}>
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-white/70 border border-current/20 shrink-0">
+    <div className="note-card p-3 sm:p-4 flex items-center gap-3">
+      <div className={`w-10 h-10 rounded flex items-center justify-center border shrink-0 ${tones[tone] || tones.ink}`}>
         <Icon className="w-5 h-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-[11px] font-mono uppercase text-[#8A7C63] truncate">{label}</p>
-        <p className="font-display text-2xl text-ink leading-tight">{value}</p>
+        <p className="text-[11px] text-[#8A7C63] truncate">{label}</p>
+        <p className="text-xl sm:text-2xl text-ink leading-tight">{value}</p>
       </div>
     </div>
   );

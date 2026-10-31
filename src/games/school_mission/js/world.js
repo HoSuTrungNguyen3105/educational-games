@@ -4,21 +4,25 @@
    zin   : latch các vùng — phải rời vùng rồi mới kích hoạt lại
    climb : trạng thái leo cầu thang */
 let PEND=null,_pendCd=0,_doneKeys={},zin={},climb=null;
+let worldQpCache="";
 
-function go(s,x,y,r){sc=s;me.x=x;me.y=y;if(r)rk=r;fade=1;zin={};npcClose();if(s=="room")toast("Chào mừng đến "+RM[rk].n+"!");if(W3)W3.enter()}
+function go(s,x,y,r){sc=s;me.x=x;me.y=y;if(r)rk=r;fade=1;zin={};npcClose();if(s=="room")toast("Chào mừng đến "+RM[rk].n+"!");if(s=="can")toast("🍔 Chào mừng đến Nhà ăn! Đến quầy để gọi món nhé!");if(W3)W3.enter()}
 
 /* Vùng TỰ KÍCH HOẠT: đi vào vùng là chạy ngay — KHÔNG có nút bấm.
    Vào cửa trường/cửa lớp/cầu thang hay bước vào nhà đều tự mở. */
 function ZN(){
  if(sc=="out"){
-  const z=[{id:"school",x:1120,y:356,w:160,h:110,f:()=>go("hall",140,300)}];
+  const z=[{id:"school",x:1520,y:440,w:160,h:130,f:()=>go("hall",140,300)}];
   P.forEach(p=>{if(p.lv&&S.lv<p.lv)return;
-   const f={shop,can:canteen,garden,pet:typeof petGarden==="function"?petGarden:garden,gym:typeof petGarden==="function"?petGarden:garden}[p.id];
+   const f={shop,can:()=>go("can",700,650),garden,pet:typeof petGarden==="function"?petGarden:garden,gym:typeof gym==="function"?gym:garden}[p.id];
    z.push(p.b?{id:p.id,x:p.x,y:p.y+p.h-10,w:p.w,h:60,f}:{id:p.id,x:p.x,y:p.y,w:p.w,h:p.h,f})});
   return z;
  }
+ if(sc=="can")return[
+  {id:"can-food",x:380,y:195,w:640,h:120,f:canteen},
+  {id:"can-out",x:600,y:700,w:200,h:100,f:()=>go("out",390,1680)}];
  if(sc=="hall")return[
-  {id:"out",x:0,y:195,w:70,h:210,f:()=>go("out",1200,560)},
+  {id:"out",x:0,y:195,w:70,h:210,f:()=>go("out",1600,640)},
   ...KS.map(k=>({id:"d_"+k,x:DX[k]-55,y:195,w:160,h:60,f:()=>go("room",500,505,k)})),
   {id:"stairs",x:1560,y:195,w:140,h:210,f:climbUp}];
  if(sc=="hall2")return[
@@ -39,8 +43,9 @@ function climbDown(){if(climb)return;climb={dir:-1,t:0};toast("🪜 Đi xuống 
 
 function blocked(x,y){
  if(sc=="hall"||sc=="hall2")return y<195;
+ if(sc=="can")return x<70||x>1330||y<195;
  if(sc=="room")return x<60||x>940||y<280||desks.some(d=>x>d[0]-8&&x<d[0]+98&&y>d[1]+8&&y<d[1]+52);
- return(x>820&&x<1580&&y>90&&y<352)||P.some(p=>p.b?x>p.x+5&&x<p.x+p.w-5&&y>p.y+60&&y<p.y+p.h-10:(p.lv&&S.lv<p.lv&&x>p.x&&x<p.x+p.w&&y>p.y&&y<p.y+p.h))}
+ return(x>1120&&x<2080&&y>120&&y<430)||P.some(p=>p.b?x>p.x+5&&x<p.x+p.w-5&&y>p.y+60&&y<p.y+p.h-10:(p.lv&&S.lv<p.lv&&x>p.x&&x<p.x+p.w&&y>p.y&&y<p.y+p.h))}
 
 let last=performance.now();
 function upd(dt){tt+=dt;if(fade>0)fade=Math.max(0,fade-dt*2.5);
@@ -86,10 +91,12 @@ function upd(dt){tt+=dt;if(fade>0)fade=Math.max(0,fade-dt*2.5);
 
  updChat(dt);
 
- $("loc").textContent=sc=="out"?"🌳 Sân trường":sc=="hall2"?"🏫 Hành lang — Tầng 2":sc=="hall"?"🏫 Hành lang — Tầng 1":"📍 "+RM[rk].n;
+ $("loc").textContent=sc=="out"?"🌳 Sân trường":sc=="can"?"🍔 Nhà ăn":sc=="hall2"?"🏫 Hành lang — Tầng 2":sc=="hall"?"🏫 Hành lang — Tầng 1":"📍 "+RM[rk].n;
  $("lvt").textContent="⭐ Cấp "+S.lv;document.querySelector("#bar i").style.width=(S.xp/(S.lv*50)*100)+"%";
  $("coin").textContent="🪙 "+S.coins;$("gem").textContent="💎 "+S.gems;document.querySelector("#bar2 i").style.width=S.en+"%";
- $("qp").innerHTML="<b>📋 Nhiệm vụ</b><br>"+QU.map(q=>`• ${q.t}: ${S.q[q.k]||0}/${q.n}`).join("<br>");
+ const qpNow="<b>📋 Nhiệm vụ</b><br>"+QU.map(q=>`• ${q.t}: ${S.q[q.k]||0}/${q.n}`).join("<br>");
+ if(qpNow!==worldQpCache){worldQpCache=qpNow;$("qp").innerHTML=qpNow}
+ if(typeof updatePetHud==="function")updatePetHud();
  tickSchedule()}
 
 /* ═══ TRÒ CHUYỆN VỚI HỌC SINH KHÁC ═══

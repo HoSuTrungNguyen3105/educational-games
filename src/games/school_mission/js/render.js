@@ -24,10 +24,11 @@ function draw(dt) {
     g.scale(z, z);
     g.translate(-cx, -cy);
 
-    // Vẽ cảnh nền (Ngoài trời, Hành lang, hoặc Trong phòng)
+    // Vẽ cảnh nền (Ngoài trời, Hành lang, Nhà ăn hoặc Trong phòng)
     if (sc == "out") drawOut();
     else if (sc == "hall") drawHall(1);
     else if (sc == "hall2") drawHall(2);
+    else if (sc == "can") drawCanteen();
     else drawRoom();
 
     // --- BẮT ĐẦU VẼ HOA (Tính năng hái hoa) ---

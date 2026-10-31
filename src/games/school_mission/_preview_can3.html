@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trường Vui Vẻ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head><body>
+<div id="gl"></div>
+<canvas id="c"></canvas>
+<div id="hud-top">
+  <div class="hud-group hud-left">
+    <div class="pill" id="lv"><span id="lvt"></span><div id="bar"><i></i></div></div>
+    <div class="pill" id="clk">🕒 --:--</div>
+  </div>
+  <div class="hud-group hud-center">
+    <div class="pill" id="en">⚡ Năng lượng<div id="bar2"><i id="eni"></i></div></div>
+    <div class="pill" id="loc"></div>
+  </div>
+  <div class="hud-group hud-right">
+    <div class="pill" id="cur"><span id="coin"></span><span id="gem"></span></div>
+    <div class="pill" id="petHud">🐾 Thú cưng</div>
+  </div>
+</div>
+<div id="hud-actions">
+  <button id="sched" type="button">📅 Thời khóa biểu</button>
+  <button id="btn-garden" type="button">🌸 Vườn trường</button>
+  <button id="btn-pet" type="button">🐾 Thú cưng</button>
+  <button id="btn-canteen" type="button">🍔 Nhà ăn</button>
+  <button id="cfg" type="button">⚙️ Cài đặt</button>
+  <button id="quit" type="button">← Thoát</button>
+</div>
+<div class="pill" id="qp"></div>
+<div id="bell"></div>
+<div id="joy"><div id="knob"></div></div>
+<div id="npcchat"><div id="npcav">🙂</div><div class="npcbody"><div id="npcname"></div><div id="npcmsg"></div><div id="npcrep"></div></div></div>
+<div id="fd" style="position:fixed;inset:0;background:#000;opacity:0;pointer-events:none"></div><div id="toast"></div>
+<div id="modal"><div id="box"></div></div>
+<div id="rot">📱 Hãy xoay ngang điện thoại để chơi nhé!</div>
+
+<!-- Thứ tự nạp file quan trọng: file sau dùng biến/hàm của file trước -->
+<script src="js/core.js"></script>
+<script src="data/questions.js"></script>
+<script src="data/schedule.js"></script>
+<script src="js/schedule.js"></script>
+<script src="js/state.js"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/questions.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/activities.js"></script>
+<script src="js/garden.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/world.js"></script>
+<script src="js/input.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/scenes.js"></script>
+<!-- Thư viện 3D (như Leo Tháp Mây). Không tải được => js/world3d.js trả null
+     và js/render.js tự chuyển về lối vẽ 2D cũ, game vẫn chơi được. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/world3d.js"></script>
+<script src="js/render.js"></script>
+<script src="js/main.js"></script>
+<script>setTimeout(function(){try{go("can",700,650)}catch(e){console.error(e)}},1500)</script></body></html>
+

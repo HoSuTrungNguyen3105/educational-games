@@ -1,107 +1,156 @@
-// src/games/src/riddle.js — Phản Xạ Đèn Xanh
+// src/games/offline/games-src/riddle.js — Phản Xạ Đèn Xanh
+// Chờ đèn xanh rồi chạm thật nhanh. Chạm khi đèn đỏ là phạm luật.
 
-    function speedRaceGame(root) {
-      const id = 'riddle';
-      const saved = loadOfflineRun(id);
-      const valid = saved && Number.isInteger(saved.score) && Number.isInteger(saved.lives) &&
-        saved.lives > 0 && saved.lives <= 3 && Number.isFinite(saved.remaining) &&
-        saved.remaining > 0 && ['red', 'green'].includes(saved.light) &&
-        Number.isFinite(saved.greenAt) && Number.isFinite(saved.changeAt);
-      let game = valid ? saved : fresh();
-      let ended = false;
+const RIDDLE_ROUNDS = 10;
 
-      function fresh() {
-        clearOfflineRun(id);
-        const now = Date.now();
-        return { score: 0, lives: 3, remaining: 30, light: 'red', greenAt: 0, changeAt: now + nextDelay() };
-      }
-      function nextDelay() { return 700 + Math.floor(Math.random() * 1500); }
-      function save() { saveOfflineRun(id, game); }
-      root.innerHTML = `<div class="hud"><span>🏁 <b id="raceScore">0</b></span><span>⏱ <b id="raceTime">30</b>s</span><span>❤️ <b id="raceLives">3</b></span></div>
-        <div class="qbox center" style="padding:24px 12px">
-          <div style="font-size:14px;opacity:.7">PHẢN XẠ ĐÈN XANH</div>
-          <div id="trafficLight" style="width:100px;height:100px;border-radius:50%;margin:18px auto;background:#f44336;border:8px solid #ffffff55;box-shadow:0 0 30px #f4433670"></div>
-          <div id="raceStatus" style="font-size:20px;font-weight:800">Chờ đèn xanh!</div>
-        </div>
-        <button class="btn" data-react="1" style="width:100%;min-height:78px;font-size:20px">🏎️ NHẤN ĐỂ ĐUA</button>
-        <p class="hint">Phản xạ thật nhanh khi đèn xanh bật. Đèn đỏ thì chờ!</p>
-        <div class="row"><button class="btn alt" data-restart="1">🔄 Chơi lại</button></div>`;
-      const light = $('#trafficLight'), status = $('#raceStatus');
-      function paint() {
-        $('#raceScore').textContent = game.score;
-        $('#raceTime').textContent = Math.max(0, Math.ceil(game.remaining));
-        $('#raceLives').textContent = game.lives;
-        const green = game.light === 'green';
-        light.style.background = green ? '#32d583' : '#f44336';
-        light.style.boxShadow = `0 0 30px ${green ? '#32d583' : '#f44336'}70`;
-        status.textContent = green ? 'GO! GO! GO!' : 'Chờ đèn xanh!';
-      }
-      function finishRun() {
+function riddleValid(s) {
+    return !!s && s.v === 2 &&
+        Number.isInteger(s.mode) && s.mode >= 0 && s.mode < GQ_MODES.length &&
+        Number.isInteger(s.round) && s.round >= 0 && s.round < RIDDLE_ROUNDS &&
+        Number.isFinite(s.score) && s.score >= 0 &&
+        Number.isInteger(s.lives) && s.lives > 0 && s.lives <= 5 &&
+        Array.isArray(s.reactions) && s.reactions.every((n) => Number.isFinite(n) && n >= 0);
+}
+
+function startRiddle(root, mode, modeIndex, resume) {
+    const id = 'riddle';
+    let round = resume ? resume.round : 0;
+    let score = resume ? resume.score : 0;
+    let lives = resume ? resume.lives : mode.lives;
+    let reactions = resume ? resume.reactions.slice() : [];
+    let phase = 'wait';
+    let goAt = 0;
+    let lastNote = 'Chờ đèn xanh nhé…';
+    let ended = false;
+
+    function save() {
+        if (ended) return;
+        saveOfflineRun(id, { v: 2, mode: modeIndex, round, score, lives, reactions });
+    }
+
+    function paint() {
+        const go = phase === 'go';
+        const wait = phase === 'wait';
+        const label = go ? 'ĐÈN XANH — CHẠY!' : wait ? 'ĐÈN ĐỎ — CHỜ' : 'KẾT QUẢ';
+        const icon = go ? '🟢' : wait ? '🔴' : '🏁';
+        root.innerHTML = `${gqHud(score, lives, `Lượt <b>${round + 1}/${RIDDLE_ROUNDS}</b>`)}
+            <div class="big-signal ${go ? 'go' : wait ? 'stop' : ''}">
+                <div style="font-size:56px;line-height:1">${icon}</div>
+                <div style="margin-top:8px">${label}</div>
+            </div>
+            <div class="stat-line"><span>${lastNote}</span>${reactions.length ? `<span>Gần nhất: ${Math.round(reactions[reactions.length - 1])} ms</span>` : ''}</div>
+            <button class="btn" data-go="1" style="width:100%;min-height:72px;font-size:20px">🏃 CHẠY!</button>
+            <p class="hint">Chỉ chạm khi đèn xanh. Chạm sớm sẽ mất một mạng; phản xạ càng nhanh điểm càng cao.</p>`;
+    }
+
+    function beginWait() {
+        if (ended) return;
+        phase = 'wait';
+        lastNote = round === 0 ? 'Chờ đèn xanh nhé…' : 'Lượt mới — chờ đèn xanh…';
+        paint();
+        T.set(() => {
+            if (ended || phase !== 'wait') return;
+            phase = 'go';
+            goAt = Date.now();
+            lastNote = 'Chạm ngay!';
+            sfx.tick();
+            paint();
+            T.set(() => {
+                if (ended || phase !== 'go') return;
+                lives--;
+                sfx.bad();
+                lastNote = 'Hết giờ! Đèn đã chuyển đỏ.';
+                phase = 'done';
+                if (lives <= 0) { end(); return; }
+                round++;
+                if (round >= RIDDLE_ROUNDS) { T.set(end, 700); return; }
+                paint();
+                save();
+                T.set(beginWait, 1000);
+            }, gqMs(1900, mode));
+        }, gqMs(rnd(900, 2600), mode));
+    }
+
+    function record(reaction) {
+        reactions.push(reaction);
+        const pts = reaction < 250 ? 50 : reaction < 400 ? 35 : reaction < 650 ? 20 : 10;
+        score += pts;
+        phase = 'done';
+        lastNote = reaction < 250 ? `Siêu nhanh! +${pts}` : `Tốt lắm! +${pts}`;
+        sfx.ok();
+        round++;
+        paint();
+        save();
+        if (round >= RIDDLE_ROUNDS) { T.set(end, 900); return; }
+        T.set(beginWait, 1000);
+    }
+
+    function early() {
+        phase = 'done';
+        lives--;
+        lastNote = 'Chạm sớm quá! Chờ đèn xanh đã.';
+        sfx.bad();
+        if (lives <= 0) { end(); return; }
+        round++;
+        paint();
+        save();
+        if (round >= RIDDLE_ROUNDS) { T.set(end, 900); return; }
+        T.set(beginWait, 1200);
+    }
+
+    function end() {
         if (ended) return;
         ended = true;
         T.clear();
         clearOfflineRun(id);
-        finish({ id, score: game.score, lines: [`${game.score} phản xạ`, `Còn ${game.lives} mạng`],
-          replay: speedRaceGame, details: { score: game.score, lives: game.lives } });
-      }
-      function tick() {
-        if (ended) return;
-        const now = Date.now();
-        const elapsed = (now - game.lastTick) / 1000;
-        game.lastTick = now;
-        game.remaining = Math.max(0, game.remaining - elapsed);
-        if (game.light === 'red' && now >= game.changeAt) {
-          game.light = 'green';
-          game.greenAt = now;
-        } else if (game.light === 'green' && now - game.greenAt >= 850) {
-          game.light = 'red';
-          game.changeAt = now + nextDelay();
-        }
-        paint();
-        if (game.remaining <= 0 || game.lives <= 0) { finishRun(); return; }
-        save();
-        T.set(tick, 100);
-      }
-      root.onclick = e => {
-        if (e.target.closest('[data-restart]')) {
-          T.clear();
-          ended = false;
-          game = fresh();
-          game.lastTick = Date.now();
-          paint();
-          save();
-          T.set(tick, 100);
-          return;
-        }
-        if (!e.target.closest('[data-react]') || ended) return;
-        const now = Date.now();
-        if (game.light === 'green') {
-          const reaction = now - game.greenAt;
-          game.score += reaction < 280 ? 5 : reaction < 500 ? 3 : 1;
-          game.light = 'red';
-          game.changeAt = now + nextDelay();
-          sfx.ok();
-          status.textContent = `Xuất phát! ${reaction} ms`;
-        } else {
-          game.lives--;
-          game.changeAt = now + nextDelay();
-          sfx.bad();
-          status.textContent = 'Xuất phát sớm! Chờ đèn xanh.';
-        }
-        paint();
-        save();
-      };
-      if (!valid && saved) clearOfflineRun(id);
-      game.lastTick = Date.now();
-      paint();
-      save();
-      T.set(tick, 100);
+        const avg = reactions.length ? Math.round(reactions.reduce((a, b) => a + b, 0) / reactions.length) : 0;
+        if (avg && avg < 350) S.flags.riddle = true;
+        finish({
+            id, score: gqScore(mode, score), xp: Math.round(score / 4) + round,
+            lines: [avg ? `Phản xạ trung bình ${avg} ms` : 'Chưa có lượt phản xạ nào', `Hoàn thành ${round}/${RIDDLE_ROUNDS} lượt`],
+            replay: riddleGame, details: { avg, reactions, round },
+        });
     }
 
-    startSingleGame({
-      id: 'riddle',
-      name: 'Phản Xạ Đèn Xanh',
-      icon: '🚦',
-      storageKey: 'offline_riddle',
-      mount: speedRaceGame,
-    });
+    root.onclick = (e) => {
+        if (ended) return;
+        if (!e.target.closest('[data-go]')) return;
+        if (phase === 'wait') { T.clear(); early(); return; }
+        if (phase === 'go') {
+            T.clear();
+            record(Math.max(0, Date.now() - goAt));
+        }
+    };
+
+    beginWait();
+}
+
+function riddleGame(root) {
+    const saved = loadOfflineRun('riddle');
+    if (riddleValid(saved)) {
+        startRiddle(root, GQ_MODES[saved.mode], saved.mode, saved);
+        return;
+    }
+    if (saved) clearOfflineRun('riddle');
+
+    gqIntro(root, {
+        id: 'riddle', icon: '🚦', name: 'Phản Xạ Đèn Xanh',
+        desc: 'Đèn đỏ thì chờ, đèn xanh thì chạm thật nhanh — trò chơi của những đôi tay nhanh nhất.',
+        steps: [
+            'Mỗi lượt đèn đỏ sáng lên trong một khoảng thời gian ngẫu nhiên.',
+            'Khi đèn chuyển xanh, chạm ngay để ghi điểm theo tốc độ phản xạ.',
+            'Chạm khi đèn đỏ hoặc để đèn xanh hết thời gian sẽ mất một mạng.',
+        ],
+    }, (mode, index) => startRiddle(root, mode, index));
+}
+
+startSingleGame({
+    id: 'riddle',
+    name: 'Phản Xạ Đèn Xanh',
+    icon: '🚦',
+    storageKey: 'offline_riddle',
+    mount: riddleGame,
+    badges: [
+        { id: 'riddle', n: 'Phản xạ dưới 350ms', i: '⚡', ok: () => !!S.flags.riddle },
+    ],
+});

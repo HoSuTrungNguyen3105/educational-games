@@ -9,17 +9,29 @@
 </head><body>
 <div id="gl"></div>
 <canvas id="c"></canvas>
-<div class="pill" id="lv"><span id="lvt"></span><div id="bar"><i></i></div></div>
-<div class="pill" id="cur"><span id="coin"></span><span id="gem"></span></div>
+<div id="hud-top">
+  <div class="hud-group hud-left">
+    <div class="pill" id="lv"><span id="lvt"></span><div id="bar"><i></i></div></div>
+    <div class="pill" id="clk">🕒 --:--</div>
+  </div>
+  <div class="hud-group hud-center">
+    <div class="pill" id="en">⚡ Năng lượng<div id="bar2"><i id="eni"></i></div></div>
+    <div class="pill" id="loc"></div>
+  </div>
+  <div class="hud-group hud-right">
+    <div class="pill" id="cur"><span id="coin"></span><span id="gem"></span></div>
+    <div class="pill" id="petHud">🐾 Thú cưng</div>
+  </div>
+</div>
+<div id="hud-actions">
+  <button id="sched" type="button">📅 Thời khóa biểu</button>
+  <button id="btn-garden" type="button">🌸 Vườn trường</button>
+  <button id="btn-pet" type="button">🐾 Thú cưng</button>
+  <button id="btn-canteen" type="button">🍔 Nhà ăn</button>
+  <button id="cfg" type="button">⚙️ Cài đặt</button>
+  <button id="quit" type="button">← Thoát</button>
+</div>
 <div class="pill" id="qp"></div>
-<div class="pill" id="en">⚡ Năng lượng<div id="bar2"><i id="eni"></i></div></div>
-<div class="pill" id="loc"></div>
-<button id="sched" type="button">📅 Thời khóa biểu</button>
-<button id="btn-garden" type="button">🌸 Vườn trường</button>
-<button id="btn-pet" type="button">🐾 Thú cưng</button>
-<button id="cfg" type="button">⚙️ Cài đặt</button>
-<button id="quit" type="button">← Thoát</button>
-<div class="pill" id="clk">🕒 --:--</div>
 <div id="bell"></div>
 <div id="joy"><div id="knob"></div></div>
 <div id="npcchat"><div id="npcav">🙂</div><div class="npcbody"><div id="npcname"></div><div id="npcmsg"></div><div id="npcrep"></div></div></div>

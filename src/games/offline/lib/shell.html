@@ -473,6 +473,48 @@
       }
     }
 
+    /* Bàn 2048 — 4x4, quả gộp theo cấp. */
+    .b48 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      width: min(88vw, 380px);
+      margin: 12px auto 0;
+      padding: 8px;
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      background: var(--bg);
+      box-shadow: var(--shadow);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none
+    }
+
+    .t48 {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1/1;
+      border: 2.5px solid var(--ink);
+      border-radius: 12px;
+      background: var(--card);
+      box-shadow: 2px 2px 0 var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(22px, 7vw, 38px);
+      line-height: 1
+    }
+
+    .t48:empty {
+      border-style: dashed;
+      background: transparent;
+      box-shadow: none;
+      opacity: .4
+    }
+
+    .t48.n {
+      animation: pop .22s
+    }
+
     .mem {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -740,6 +782,497 @@
     button:focus-visible {
       outline: 4px solid var(--sky);
       outline-offset: 2px
+    }
+
+    /* ============================================================
+       KHUNG MỞ ĐẦU DÙNG CHUNG
+       Mọi game một màn đều mở bằng cùng một tấm thiệp: icon, tên,
+       luật chơi ngắn và 3 mức nhịp độ. Nhờ vậy người chơi không phải
+       học lại cách vào game ở từng trò.
+       ============================================================ */
+    .intro {
+      text-align: center;
+      padding: 24px 18px 20px
+    }
+
+    .intro-ic {
+      width: 86px;
+      height: 86px;
+      margin: 0 auto 12px;
+      display: grid;
+      place-items: center;
+      font-size: 46px;
+      line-height: 1;
+      background: var(--sun);
+      border: 3px solid var(--ink);
+      border-radius: 24px;
+      box-shadow: 4px 4px 0 var(--ink);
+      transform: rotate(-4deg)
+    }
+
+    .intro h2 {
+      font-size: clamp(28px, 7vw, 38px);
+      font-weight: 800
+    }
+
+    .intro > p {
+      margin: 8px auto 0;
+      max-width: 36ch;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ink2)
+    }
+
+    .intro-steps {
+      margin: 12px auto 0;
+      padding: 0 0 0 20px;
+      max-width: 350px;
+      text-align: left;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: var(--ink2)
+    }
+
+    .intro-steps li + li {
+      margin-top: 2px
+    }
+
+    .intro-best {
+      margin: 12px 0 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink2)
+    }
+
+    .modes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 14px
+    }
+
+    .mode {
+      display: grid;
+      justify-items: center;
+      gap: 2px;
+      padding: 10px 4px;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink);
+      color: var(--ink);
+      font-family: var(--head);
+      transition: transform .1s, box-shadow .1s, background .15s
+    }
+
+    .mode i {
+      font-style: normal;
+      font-size: 22px;
+      line-height: 1
+    }
+
+    .mode b {
+      font-size: 14px;
+      line-height: 1.15
+    }
+
+    .mode em {
+      font-style: normal;
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1.2;
+      opacity: .62
+    }
+
+    .mode.sel {
+      background: var(--sun)
+    }
+
+    .mode:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--ink)
+    }
+
+    /* ============================================================
+       BÀN CHƠI DÙNG CHUNG
+       Cùng một kiểu ô, chữ, đèn báo và thanh tiến trình để 17 game
+       trông như các màn của MỘT bộ game, không phải 17 sản phẩm rời.
+       ============================================================ */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(var(--n, 3), 1fr);
+      gap: 8px;
+      margin: 8px 0
+    }
+
+    .cell {
+      position: relative;
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1 / 1;
+      padding: 4px;
+      overflow: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink);
+      color: var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(20px, 6vw, 30px);
+      line-height: 1;
+      transition: background .12s, transform .08s, box-shadow .08s, opacity .12s
+    }
+
+    .cell:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--ink)
+    }
+
+    .cell .ic {
+      font-size: clamp(20px, 5.4vw, 30px);
+      line-height: 1
+    }
+
+    .cell .num {
+      position: absolute;
+      right: 5px;
+      bottom: 3px;
+      padding: 0 6px;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1.35
+    }
+
+    .cell.ok,
+    .cell.found {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .cell.bad {
+      background: var(--bad);
+      color: #fff;
+      animation: shake .3s
+    }
+
+    .cell.lit {
+      background: var(--sun);
+      animation: pop .25s
+    }
+
+    .cell.dim {
+      opacity: .32
+    }
+
+    .cell.blank {
+      opacity: .18;
+      box-shadow: none
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      margin: 8px 0
+    }
+
+    .chip {
+      padding: 3px 10px;
+      border: 2.5px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card);
+      font-size: 12px;
+      font-weight: 700
+    }
+
+    .chip.on {
+      background: var(--sun)
+    }
+
+    .chip.done {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .hearts {
+      letter-spacing: 2px
+    }
+
+    .prompt {
+      margin: 6px 0 10px;
+      text-align: center;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(24px, 6.4vw, 34px);
+      line-height: 1.15
+    }
+
+    .prompt small {
+      display: block;
+      margin-top: 3px;
+      font-family: var(--body);
+      font-size: 13px;
+      font-weight: 600;
+      opacity: .65
+    }
+
+    .pattern-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin: 10px 0
+    }
+
+    .pcell {
+      display: grid;
+      place-items: center;
+      min-width: 52px;
+      min-height: 58px;
+      padding: 2px 6px;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(22px, 6vw, 30px);
+      line-height: 1
+    }
+
+    .pcell.missing {
+      background: var(--sun);
+      border-style: dashed
+    }
+
+    .rhythm {
+      position: relative;
+      height: 64px;
+      margin: 14px 0;
+      overflow: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .rhythm .zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: var(--zw, 24%);
+      transform: translateX(-50%);
+      background: rgba(34, 181, 115, .3);
+      border-left: 2px solid var(--ink);
+      border-right: 2px solid var(--ink)
+    }
+
+    .rhythm .center {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: var(--ok);
+      opacity: .75
+    }
+
+    .rhythm .marker {
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      left: 0;
+      width: 8px;
+      border-radius: 999px;
+      background: var(--ink);
+      will-change: transform
+    }
+
+    .simon {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      max-width: 360px;
+      margin: 12px auto 0
+    }
+
+    .pd {
+      aspect-ratio: 1.3 / 1;
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: 4px 4px 0 var(--ink);
+      color: #fff;
+      font-size: 34px;
+      opacity: .72;
+      transition: transform .08s, opacity .08s, filter .08s
+    }
+
+    .pd.on {
+      opacity: 1;
+      filter: brightness(1.25);
+      transform: scale(1.03)
+    }
+
+    .wordgrid {
+      display: grid;
+      gap: 6px;
+      max-width: 420px;
+      margin: 10px auto 0
+    }
+
+    .wl {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1 / 1;
+      padding: 0;
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      background: var(--card);
+      box-shadow: 2px 2px 0 var(--ink);
+      color: var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(18px, 5vw, 26px)
+    }
+
+    .wl.sel {
+      background: var(--sun)
+    }
+
+    .wl.found {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .wl.bad {
+      background: var(--bad);
+      color: #fff
+    }
+
+    .chests {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin: 2px 0 10px;
+      font-size: 20px
+    }
+
+    .chests span {
+      opacity: .28;
+      filter: grayscale(1)
+    }
+
+    .chests span.open {
+      opacity: 1;
+      filter: none
+    }
+
+    .clue {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 2.5px dashed var(--ink);
+      border-radius: 14px;
+      background: var(--paper);
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: center
+    }
+
+    .big-signal {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      min-height: 210px;
+      padding: 16px;
+      border: 3px solid var(--ink);
+      border-radius: 22px;
+      background: var(--sky);
+      box-shadow: var(--shadow);
+      color: #fff;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(26px, 7vw, 40px);
+      line-height: 1.15;
+      transition: background .15s
+    }
+
+    .big-signal.go {
+      background: var(--ok)
+    }
+
+    .big-signal.stop {
+      background: var(--bad)
+    }
+
+    .stat-line {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+      font-size: 13px;
+      font-weight: 700
+    }
+
+    .stat-line span {
+      padding: 3px 10px;
+      border: 2.5px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card)
+    }
+
+    .dots {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin: 6px 0 2px
+    }
+
+    .dots i {
+      width: 9px;
+      height: 9px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card)
+    }
+
+    .dots i.on {
+      background: var(--ok)
+    }
+
+    @media (max-height: 720px) {
+      .intro {
+        padding: 16px 14px
+      }
+
+      .intro-ic {
+        width: 66px;
+        height: 66px;
+        font-size: 34px;
+        margin-bottom: 8px
+      }
+
+      .intro-steps {
+        font-size: 12.5px;
+        line-height: 1.45
+      }
+
+      .mode em {
+        display: none
+      }
+
+      .cell {
+        border-width: 2.5px
+      }
+
+      .big-signal {
+        min-height: 160px
+      }
     }
 
     /* ============================================================

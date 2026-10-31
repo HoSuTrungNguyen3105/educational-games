@@ -144,7 +144,7 @@ function startW3() {
     /* ══════ SÂN TRƯỜNG ══════ */
     function buildOut() {
         scene.background = new THREE.Color(0x9fd8ff);
-        scene.fog = new THREE.Fog(0x9fd8ff, 32, 130);
+        scene.fog = new THREE.Fog(0x9fd8ff, 40, 170);
 
         ground((cx, S) => {
             const gr = cx.createLinearGradient(0, 0, 0, S);
@@ -156,24 +156,26 @@ function startW3() {
             });
             // hồ nước (vẽ vào nền: 2D cũng không chặn đi lên hồ)
             cx.fillStyle = "#d7c9a8";
-            cx.beginPath(); cx.ellipse(uX(360, S), uY(360, S), 160 / WW * S, 95 / WH * S, 0, 0, 7); cx.fill();
+            cx.beginPath(); cx.ellipse(uX(520, S), uY(560, S), 190 / WW * S, 110 / WH * S, 0, 0, 7); cx.fill();
             cx.fillStyle = "#6cc4ef";
-            cx.beginPath(); cx.ellipse(uX(360, S), uY(360, S), 145 / WW * S, 80 / WH * S, 0, 0, 7); cx.fill();
-            // đường ngang + đường dọc (sân mới 2400 x 1400: trục ngang y=650 h=140, trục dọc x=1130 w=140)
-            wrect(cx, 0, 644, WW, 152, "#b7bcc6", S);
-            wrect(cx, 0, 650, WW, 140, "#d9dde3", S);
-            wrect(cx, 1124, 0, 152, WH, "#b7bcc6", S);
-            wrect(cx, 1130, 0, 140, WH, "#d9dde3", S);
-            for (let x = 0; x < WW; x += 80) wrect(cx, x, 716, 40, 8, "rgba(255,255,255,.85)", S);
-            wrect(cx, 800, 350, 800, 16, "#c9a77c", S);
+            cx.beginPath(); cx.ellipse(uX(520, S), uY(560, S), 172 / WW * S, 95 / WH * S, 0, 0, 7); cx.fill();
+            // đường ngang + đường dọc (sân mới 3200 x 2000)
+            wrect(cx, 0, 934, WW, 152, "#b7bcc6", S);
+            wrect(cx, 0, 940, WW, 140, "#d9dde3", S);
+            wrect(cx, 1514, 0, 152, WH, "#b7bcc6", S);
+            wrect(cx, 1520, 0, 140, WH, "#d9dde3", S);
+            for (let x = 0; x < WW; x += 80) wrect(cx, x, 1000, 40, 8, "rgba(255,255,255,.85)", S);
+            // sân gạch trước cổng trường
+            wrect(cx, 1400, 430, 400, 120, "#d9c9a8", S);
+            wrect(cx, 1520, 550, 140, 384, "#c9a77c", S);
             flw.forEach(f => {
                 cx.fillStyle = f[2];
                 cx.beginPath(); cx.arc(uX(f[0], S), uY(f[1], S), 3.4, 0, 7); cx.fill();
             });
         });
 
-        // Dãy nhà trường: 2 khối ngang + tháp giữa (2D cấm đi vào 820..1580 × 90..352, tâm 1200)
-        const hi = 6.2, dTop = 90, dBot = 352;
+        // Dãy nhà trường: 2 khối ngang + tháp giữa
+        const hi = 6.2, dTop = 120, dBot = 430;
         const deep = (dBot - dTop) / W3PX;
         const zc = zOf((dTop + dBot) / 2), zS = zOf(dBot);
         const wing = (x0, x1) => {
@@ -186,9 +188,9 @@ function startW3() {
                 cube(1, 1.1, .12, 0x8fd0f0, wx, 4.2, zS - .1);
             }
         };
-        wing(820, 1120); wing(1280, 1580);
+        wing(1120, 1500); wing(1700, 2080);
 
-        const tw = (1280 - 1120) / W3PX, tx = xOf(1200);
+        const tw = (1700 - 1500) / W3PX, tx = xOf(1600);
         cube(tw, 9.4, deep, 0xc25b49, tx, 4.7, zc);
         const towerRoof = new THREE.Mesh(coneG, matOf(0x6b3a2a));
         towerRoof.rotation.y = Math.PI / 4;
@@ -201,16 +203,28 @@ function startW3() {
         cube(3.2, .3, 1, 0xcfcfd6, tx, .15, zS + .5);          // bậc thềm
         // Cột cờ trung tâm sân
         const m = new THREE.Mesh(cylG, matOf(0xdddddd));
-        m.scale.set(.08, 5.5, .08); m.position.set(xOf(1200), 2.75, zOf(570)); props.add(m);
-        cube(2.0, 1.3, .06, 0xe74c3c, xOf(1200) + 1.0, 4.8, zOf(570));
+        m.scale.set(.08, 5.5, .08); m.position.set(xOf(1600), 2.75, zOf(800)); props.add(m);
+        cube(2.0, 1.3, .06, 0xe74c3c, xOf(1600) + 1.0, 4.8, zOf(800));
 
         buildTrees();
 
         // Đài phun nước lớn bên phải sân
         const basin = new THREE.Mesh(cylG, matOf(0x4fa3d1));
-        basin.scale.set(1.6, .6, 1.6); basin.position.set(xOf(2120), .3, zOf(650)); props.add(basin);
+        basin.scale.set(1.8, .6, 1.8); basin.position.set(xOf(2780), .3, zOf(760)); props.add(basin);
         const jet = new THREE.Mesh(cylG, matOf(0x00d2ff));
-        jet.scale.set(.35, 1.6, .35); jet.position.set(xOf(2120), 1.2, zOf(650)); props.add(jet);
+        jet.scale.set(.35, 1.7, .35); jet.position.set(xOf(2780), 1.25, zOf(760)); props.add(jet);
+
+        // Ghế đá + đèn sân
+        [[900, 900], [2200, 900], [1100, 1180], [2400, 1180], [320, 1160]].forEach(([bx, by]) => {
+            cube(1.5, .16, .45, 0xb0bec5, xOf(bx), .5, zOf(by));
+            cube(.18, .45, .18, 0x78909c, xOf(bx) - .6, .22, zOf(by));
+            cube(.18, .45, .18, 0x78909c, xOf(bx) + .6, .22, zOf(by));
+        });
+        [[1480, 700], [1720, 700], [1380, 1180], [1820, 1180]].forEach(([lx, ly]) => {
+            const post = new THREE.Mesh(cylG, matOf(0x78909c));
+            post.scale.set(.07, 3, .07); post.position.set(xOf(lx), 1.5, zOf(ly)); props.add(post);
+            ball(.16, 0xfff176, xOf(lx), 3.05, zOf(ly));
+        });
 
         // Nhà / sân trong sân trường (P trong js/config.js)
         P.forEach((p) => {
@@ -226,6 +240,17 @@ function startW3() {
                 roof.scale.set(hr, 1.7, hr); roof.position.set(cx0, bodyH / W3PX + .8, zc2);
                 props.add(roof);
                 cube(1.1, 2, .18, 0x7a4a2a, cx0, 1, zOf(p.y + p.h - 12));
+                if (p.id === "can") {
+                    [["🍔", .45, .35], ["🥤", .7, .25]].forEach(([e, ox, oy]) => {
+                        const s = emojiSprite(e, .9);
+                        s.position.set(xOf(p.x + p.w * ox), bodyH / W3PX + 1.2, zOf(bodyTop + bodyH * oy));
+                        props.add(s);
+                    });
+                } else if (p.id === "shop") {
+                    const s = emojiSprite("🛍️", .9);
+                    s.position.set(xOf(p.x + p.w / 2), bodyH / W3PX + 1.2, zOf(bodyTop + 40));
+                    props.add(s);
+                }
             } else {
                 const w = p.w / W3PX, d = p.h / W3PX, zc2 = zOf(p.y + p.h / 2);
                 cube(w, .14, d, lock ? 0x8fa0a0 : hexOf(p.c), cx0, .07, zc2);
@@ -238,20 +263,109 @@ function startW3() {
                     lk.position.set(cx0, 1.3, zc2); lk.userData.y = 1.3; marks.add(lk);
                 } else if (p.id === "garden") {
                     ["🌷", "🌼", "🌻"].forEach((e, i) => {
-                        for (let j = 0; j < 5; j++) {
+                        for (let j = 0; j < 6; j++) {
                             const s = emojiSprite(e, .6);
-                            s.position.set(xOf(p.x + 50 + j * 66), .5, zOf(p.y + 80 + i * 80));
+                            s.position.set(xOf(p.x + 50 + j * 70), .5, zOf(p.y + 80 + i * 80));
                             props.add(s);
                         }
                     });
-                } else if (p.id === "gym" || p.id === "pet") {
-                    [["🐶", 80, 170], ["🐱", 290, 120], ["🐾", 190, 250]].forEach(([e, ox, oy]) => {
+                } else if (p.id === "pet") {
+                    const pet = S.pet || defaultPetState();
+                    const sp = PET_SPECIES[pet.species] || PET_SPECIES.dog;
+                    const s = emojiSprite(sp.icon, 2.1);
+                    s.position.set(xOf(p.x + p.w / 2), 1.15, zOf(p.y + 190)); props.add(s);
+                    [["🦴", .16, .62], ["🎾", .82, .56], ["🐾", .28, .28]].forEach(([e, ox, oy]) => {
+                        const d2 = emojiSprite(e, .9);
+                        d2.position.set(xOf(p.x + p.w * ox), .55, zOf(p.y + p.h * oy)); props.add(d2);
+                    });
+                    const lv = sign(`${pet.name} · Lv ${pet.level}`, "#fff3c4", 40, 512, 96, .9);
+                    lv.position.set(xOf(p.x + p.w / 2), 2.6, zOf(p.y + 60)); lv.userData.y = 2.6; marks.add(lv);
+                } else if (p.id === "gym") {
+                    [["⚽", .18, .55], ["🏀", .55, .3], ["🏃", .78, .7], ["🥇", .3, .8]].forEach(([e, ox, oy]) => {
                         const s = emojiSprite(e, 1.1);
-                        s.position.set(xOf(p.x + ox), .7, zOf(p.y + oy)); props.add(s);
+                        s.position.set(xOf(p.x + p.w * ox), .7, zOf(p.y + p.h * oy)); props.add(s);
                     });
                 }
             }
         });
+    }
+
+    /* ══════ NHÀ ĂN ══════ */
+    function buildCanteen() {
+        scene.background = new THREE.Color(0xfff2d8);
+        scene.fog = null;
+        const wallY = 195, hi = 3.4;
+
+        ground((cx, S) => {
+            const gr = cx.createLinearGradient(0, 0, 0, S);
+            gr.addColorStop(0, "#fdf3dc"); gr.addColorStop(1, "#efd9b4");
+            cx.fillStyle = gr; cx.fillRect(0, 0, S, S);
+            cx.fillStyle = "rgba(214,170,110,.16)";
+            for (let i = 0; i < 24; i++) for (let j = 0; j < 14; j++) {
+                if ((i + j) % 2) cx.fillRect(uX(i * 60, S), uY(190 + j * 45, S), 60 / WW * S, 45 / WH * S);
+            }
+            wrect(cx, 0, 0, WW, wallY, "#f7e3c0", S);
+            wrect(cx, 0, wallY - 8, WW, 8, "#8b6b4a", S);
+        });
+
+        // Tường sau + tường hai bên
+        cube(WW / W3PX, hi, wallY / W3PX, 0xf7e3c0, 0, hi / 2, zOf(wallY / 2));
+        cube(.3, hi, (WH - wallY) / W3PX, 0xeed7b0, xOf(66), hi / 2, zOf((WH + wallY) / 2));
+        cube(.3, hi, (WH - wallY) / W3PX, 0xeed7b0, xOf(WW - 66), hi / 2, zOf((WH + wallY) / 2));
+
+        // Cửa sổ
+        [150, 1250].forEach((wx) => {
+            const w = 150 / W3PX, x = xOf(wx);
+            cube(w + .2, 2.1, .2, 0xffffff, x, 2.1, zOf(wallY) - .02);
+            cube(w, 1.7, .3, 0x9fd8ff, x, 2.1, zOf(wallY) - .12);
+        });
+
+        // Biển hiệu
+        const menu = sign("🍔 NHÀ ĂN VUI VẺ 🍜", "#ffd23f", 42, 512, 104, 1.1);
+        menu.position.set(xOf(700), 2.9, zOf(wallY) - .2); menu.userData.y = 2.9; marks.add(menu);
+
+        // Quầy thức ăn
+        cube(760 / W3PX, .95, 70 / W3PX, 0xd98b4a, xOf(700), .48, zOf(235));
+        cube(740 / W3PX, .1, 78 / W3PX, 0xfff4d6, xOf(700), 1.0, zOf(235));
+        ["🍱", "🍜", "🥪", "🍎", "🥛", "🍰"].forEach((e, i) => {
+            const s = emojiSprite(e, .62);
+            s.position.set(xOf(400 + i * 120), 1.22, zOf(235)); props.add(s);
+        });
+
+        // Tủ kính + bảng thực đơn
+        cube(1.9, 2.3, .7, 0xe3f2fd, xOf(155), 1.15, zOf(300));
+        cube(2.2, 2.6, .2, 0xfffdf5, xOf(1240), 1.6, zOf(wallY) - .18);
+        const menu2 = sign("THỰC ĐƠN\n🍜 🍱 🥪 🥛", "#e65100", 34, 512, 200, .85);
+        menu2.position.set(xOf(1240), 1.7, zOf(wallY) - .35); menu2.userData.y = 1.7; marks.add(menu2);
+
+        // Đầu bếp
+        const chef = emojiSprite("👩‍🍳", 1.5);
+        chef.position.set(xOf(700), 1.2, zOf(150)); props.add(chef);
+
+        // Bàn ăn + ghế
+        [[360, 430], [760, 430], [1060, 430], [360, 620], [760, 620], [1060, 620]].forEach(([tx0, ty0], i) => {
+            const x = xOf(tx0), z = zOf(ty0);
+            cube(2.6, .16, 1.5, 0xc98a4b, x, .8, z);
+            cube(.16, .8, .16, 0x8b5a2b, x - 1, .4, z - .5);
+            cube(.16, .8, .16, 0x8b5a2b, x + 1, .4, z - .5);
+            cube(.16, .8, .16, 0x8b5a2b, x - 1, .4, z + .5);
+            cube(.16, .8, .16, 0x8b5a2b, x + 1, .4, z + .5);
+            cube(.9, .1, .6, 0x90a4ae, x - 1.9, .55, z);
+            cube(.9, .1, .6, 0x90a4ae, x + 1.9, .55, z);
+            const food = emojiSprite(i % 2 ? "🍱" : "🍜", .55);
+            food.position.set(x, 1.05, z); props.add(food);
+        });
+
+        // Cây cảnh
+        [[120, 520], [1290, 520], [120, 700], [1290, 700]].forEach(([px, py]) => {
+            const s = emojiSprite("🪴", .85);
+            s.position.set(xOf(px), .55, zOf(py)); props.add(s);
+        });
+
+        // Cửa ra sân
+        cube(220 / W3PX, 2.4, .25, 0x9fd8ff, xOf(700), 1.2, zOf(WH - 8));
+        const outSign = sign("🚪 Ra sân trường", "#fff3c4", 34, 512, 92, .8);
+        outSign.position.set(xOf(700), 1.8, zOf(WH - 30)); outSign.userData.y = 1.8; marks.add(outSign);
     }
 
     /* ══════ HÀNH LANG ══════ */
@@ -398,6 +512,8 @@ function startW3() {
     function zoneText(z) {
         if (z.id === "school") return "🏫 Vào trường";
         if (z.id === "out") return "🚪 Ra sân trường";
+        if (z.id === "can-out") return "🚪 Ra sân trường";
+        if (z.id === "can-food") return "🍔 Gọi món";
         if (z.id === "stairs") return "🪜 Lên tầng 2";
         if (z.id === "down") return "🪜 Xuống tầng 1";
         if (z.id.slice(0, 2) === "d_") return "🚪 " + RM[z.id.slice(2)].n;
@@ -559,6 +675,7 @@ function startW3() {
         WW = D[sc][0]; WH = D[sc][1];
         clearGroup(props); clearGroup(marks); clearGroup(flowerG); clearGroup(kids);
         if (sc === "out") buildOut();
+        else if (sc === "can") buildCanteen();
         else if (sc === "hall") buildHall(1);
         else if (sc === "hall2") buildHall(2);
         else buildRoom(rk);

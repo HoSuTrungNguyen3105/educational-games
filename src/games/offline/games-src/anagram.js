@@ -1,90 +1,279 @@
-// src/games/src/anagram.js — Mê Cung Ký Tự
+// src/games/offline/games-src/anagram.js — Mê Cung Ký Tự
+// Tìm các từ tiếng Việt ẩn trong lưới chữ: chạm ô đầu rồi ô cuối của từ.
 
-    function anagramGame(root) {
-      const id = 'anagram';
-      const words = ['kẹo', 'mèo', 'nhạc', 'mưa', 'kem', 'phim', 'vui', 'gấu', 'bánh', 'trà', 'sóng', 'mơ', 'chơi', 'cười', 'nắng', 'mây'];
-      const saved = loadOfflineRun(id);
-      const valid = saved && Array.isArray(saved.deck) && saved.deck.length === 8 &&
-        saved.deck.every(word => words.includes(word)) && Number.isInteger(saved.round) &&
-        saved.round >= 0 && saved.round < 8 && Number.isInteger(saved.score) &&
-        Array.isArray(saved.tiles) && saved.tiles.every(tile => typeof tile === 'string') &&
-        Array.isArray(saved.picked) && saved.picked.every(i => Number.isInteger(i) && i >= 0 && i < saved.tiles.length);
-      let game = valid ? saved : fresh();
-      let locked = false;
+const ANAGRAM_WORDS = [
+    'MÈO', 'KEM', 'HOA', 'VỊT', 'MƯA', 'MÂY', 'TRÀ', 'ĐÈN', 'GHẾ', 'CÁO',
+    'VOI', 'KHỈ', 'THỎ', 'ONG', 'BÚT', 'CẶP', 'BÀN', 'CỬA', 'NÚI', 'CẦU',
+    'TÀU', 'SÁCH', 'BÁNH', 'SÓNG', 'NẮNG', 'BIỂN', 'NGỰA', 'RỒNG', 'BƯỚM', 'KIẾN',
+    'VƯỜN', 'SÔNG', 'SUỐI', 'THÁC', 'ĐÀN', 'SÁO', 'PHIM', 'NHẠC', 'TRỐNG', 'ĐƯỜNG',
+];
+const ANAGRAM_FILL = [...'AĂÂBCDĐEÊGHIKLMNOÔƠPQRSTUƯVXY'];
+const ANAGRAM_BOARDS = 4;
 
-      function fresh() {
-        clearOfflineRun(id);
-        const deck = shuffle(words).slice(0, 8);
-        return { deck, round: 0, score: 0, tiles: anagramShuffle(deck[0]), picked: [] };
-      }
-      function anagramShuffle(word) {
-        const chars = [...word.toLocaleUpperCase('vi')];
-        let result = shuffle(chars);
-        if (result.join('') === chars.join('')) result = [...chars].reverse();
-        return result;
-      }
-      function save() { saveOfflineRun(id, game); }
-      function render() {
-        const word = game.deck[game.round];
-        root.innerHTML = `<div class="hud"><span>🗝️ <b>${game.round + 1}</b>/8</span><span>⭐ <b>${game.score}</b></span></div>
-          <div class="qbox center"><div style="font-size:30px">🧩</div><div style="font-size:20px;margin-top:6px">Mê Cung Ký Tự</div><p class="hint">Ghép các mảnh chữ để mở rương.</p>
-            <div style="font-size:14px;opacity:.7">${[...word].length} mảnh</div></div>
-          <div class="slots" id="anagramSlots">${[...word].map((_, i) => {
-            const tileIndex = game.picked[i];
-            return `<button class="slot ${tileIndex === undefined ? '' : 'fill'}" data-slot="${i}">${tileIndex === undefined ? '' : game.tiles[tileIndex]}</button>`;
-          }).join('')}</div>
-          <div class="tiles">${game.tiles.map((tile, i) => `<button class="tl" data-tile="${i}" ${game.picked.includes(i) ? 'disabled' : ''}>${tile}</button>`).join('')}</div>
-          <div class="row"><button class="btn alt" data-clear="1">↩️ Gỡ chữ</button><button class="btn alt" data-skip="1">⏭️ Bỏ qua</button><button class="btn alt" data-restart="1">🔄 Chơi lại</button></div>`;
-        save();
-      }
-      function advanceRound(solved) {
-        if (solved) game.score += 10;
-        game.round++;
-        if (game.round >= game.deck.length) {
-          clearOfflineRun(id);
-          finish({ id, score: game.score, lines: [`Đã mở ${game.deck.length} rương`, `${game.score} điểm`],
-            replay: anagramGame, details: { rounds: game.deck.length, score: game.score } });
-          return;
+function anagramDirs(mode) {
+    if (mode.k === 'easy') return [[0, 1], [1, 0]];
+    if (mode.k === 'mid') return [[0, 1], [1, 0], [1, 1], [1, -1]];
+    return [[0, 1], [1, 0], [1, 1], [1, -1], [0, -1], [-1, 0], [-1, -1], [-1, 1]];
+}
+
+function anagramSize(mode) {
+    return mode.k === 'easy' ? 5 : mode.k === 'mid' ? 6 : 7;
+}
+
+/** Đặt 3 từ vào lưới sao cho không đè ký tự khác. */
+function makeWordBoard(size, mode) {
+    const dirs = anagramDirs(mode);
+    const pool = shuffle(ANAGRAM_WORDS.filter((w) => [...w].length >= 3 && [...w].length <= size));
+    for (let attempt = 0; attempt < 30; attempt++) {
+        const grid = Array(size * size).fill('');
+        const targets = [];
+        const picked = pool.slice(0, 14);
+        while (targets.length < 3 && picked.length) {
+            const w = picked.shift();
+            const letters = [...w];
+            let placed = false;
+            for (let tryWord = 0; tryWord < 120 && !placed; tryWord++) {
+                const [dr, dc] = dirs[rnd(0, dirs.length - 1)];
+                const r0 = rnd(0, size - 1);
+                const c0 = rnd(0, size - 1);
+                const r1 = r0 + dr * (letters.length - 1);
+                const c1 = c0 + dc * (letters.length - 1);
+                if (r1 < 0 || r1 >= size || c1 < 0 || c1 >= size) continue;
+                let fits = true;
+                for (let k = 0; k < letters.length; k++) {
+                    const idx = (r0 + dr * k) * size + (c0 + dc * k);
+                    if (grid[idx] && grid[idx] !== letters[k]) { fits = false; break; }
+                }
+                if (!fits) continue;
+                for (let k = 0; k < letters.length; k++) {
+                    grid[(r0 + dr * k) * size + (c0 + dc * k)] = letters[k];
+                }
+                targets.push({ w, r: r0, c: c0, dr, dc, found: false });
+                placed = true;
+            }
+            if (!placed) continue;
         }
-        game.tiles = anagramShuffle(game.deck[game.round]);
-        game.picked = [];
-        locked = false;
-        render();
-      }
-      root.onclick = e => {
-        const restart = e.target.closest('[data-restart]');
-        if (restart) { T.clear(); game = fresh(); locked = false; render(); return; }
-        if (locked) return;
-        if (e.target.closest('[data-clear]')) { game.picked = []; sfx.tick(); render(); return; }
-        if (e.target.closest('[data-skip]')) { advanceRound(false); return; }
-        const tile = e.target.closest('[data-tile]');
-        if (!tile || game.picked.includes(+tile.dataset.tile)) return;
-        game.picked.push(+tile.dataset.tile);
-        sfx.tick();
-        render();
-        const word = game.deck[game.round].toLocaleUpperCase('vi');
-        if (game.picked.length === [...word].length) {
-          locked = true;
-          const guess = game.picked.map(i => game.tiles[i]).join('');
-          if (guess === word) {
-            sfx.ok();
-            advanceRound(true);
-          } else {
-            sfx.bad();
-            game.picked = [];
-            save();
-            T.set(() => { game.picked = []; locked = false; render(); }, 500);
-          }
+        if (targets.length < 3) continue;
+        for (let i = 0; i < grid.length; i++) {
+            if (!grid[i]) grid[i] = ANAGRAM_FILL[rnd(0, ANAGRAM_FILL.length - 1)];
         }
-      };
-      if (!valid && saved) clearOfflineRun(id);
-      render();
+        return { grid, targets };
+    }
+    // Dự phòng: xếp 3 từ theo hàng ngang để bàn chơi luôn có đáp án.
+    const grid = Array(size * size).fill('').map(() => ANAGRAM_FILL[rnd(0, ANAGRAM_FILL.length - 1)]);
+    const targets = [];
+    shuffle(ANAGRAM_WORDS.filter((w) => [...w].length <= size)).slice(0, 3).forEach((w, row) => {
+        const letters = [...w];
+        letters.forEach((ch, k) => { grid[row * size + k] = ch; });
+        targets.push({ w, r: row, c: 0, dr: 0, dc: 1, found: false });
+    });
+    return { grid, targets };
+}
+
+function anagramValid(s) {
+    if (!s || s.v !== 2) return false;
+    if (!Number.isInteger(s.mode) || s.mode < 0 || s.mode >= GQ_MODES.length) return false;
+    if (!Number.isInteger(s.board) || s.board < 0 || s.board >= ANAGRAM_BOARDS) return false;
+    if (!Number.isInteger(s.size) || s.size < 5 || s.size > 7) return false;
+    if (!Array.isArray(s.grid) || s.grid.length !== s.size * s.size) return false;
+    if (!s.grid.every((ch) => typeof ch === 'string' && ch.length > 0)) return false;
+    if (!Array.isArray(s.targets) || s.targets.length !== 3) return false;
+    if (!s.targets.every((t) => t && typeof t.w === 'string' && t.w.length > 1 &&
+        Number.isInteger(t.r) && Number.isInteger(t.c) &&
+        Number.isInteger(t.dr) && Number.isInteger(t.dc) && typeof t.found === 'boolean')) return false;
+    if (!Number.isFinite(s.score) || s.score < 0) return false;
+    if (!Number.isInteger(s.lives) || s.lives <= 0 || s.lives > 5) return false;
+    return true;
+}
+
+function startWordMaze(root, mode, modeIndex, resume) {
+    const id = 'anagram';
+    const size = resume ? resume.size : anagramSize(mode);
+    let board = resume ? resume.board : 0;
+    let grid = resume ? resume.grid : [];
+    let targets = resume ? resume.targets : [];
+    let score = resume ? resume.score : 0;
+    let lives = resume ? resume.lives : mode.lives;
+    let sel = -1;
+    let ended = false;
+    let locked = false;
+
+    function save() {
+        if (ended) return;
+        saveOfflineRun(id, { v: 2, mode: modeIndex, board, size, grid, targets, score, lives });
     }
 
-    startSingleGame({
-      id: 'anagram',
-      name: 'Mê Cung Ký Tự',
-      icon: '🧩',
-      storageKey: 'offline_anagram',
-      mount: anagramGame,
-    });
+    function cellsOf(t) {
+        const letters = [...t.w];
+        return letters.map((_, k) => (t.r + t.dr * k) * size + (t.c + t.dc * k));
+    }
+
+    function foundCells() {
+        const set = new Set();
+        targets.forEach((t) => { if (t.found) cellsOf(t).forEach((i) => set.add(i)); });
+        return set;
+    }
+
+    function render(extra = '') {
+        const found = foundCells();
+        root.innerHTML = `${gqHud(score, lives, `Bàn <b>${board + 1}/${ANAGRAM_BOARDS}</b>`)}
+            <div class="chips">${targets.map((t) => `<span class="chip ${t.found ? 'done' : ''}">${t.w}</span>`).join('')}</div>
+            <div class="wordgrid" style="grid-template-columns:repeat(${size},1fr)">${grid.map((ch, i) =>
+                `<button class="wl ${found.has(i) ? 'found' : ''} ${i === sel ? 'sel' : ''}" data-cell="${i}">${ch}</button>`).join('')}</div>
+            <div class="row" style="margin-top:12px">
+                <button class="btn alt" data-hint="1">💡 Gợi ý (−10 điểm)</button>
+            </div>
+            <p class="hint">${extra || 'Chạm ô chữ đầu rồi ô chữ cuối của từ cần tìm. Từ có thể nằm ngang, dọc hoặc chéo.'}</p>`;
+        save();
+    }
+
+    function newBoard() {
+        const made = makeWordBoard(size, mode);
+        grid = made.grid;
+        targets = made.targets;
+        sel = -1;
+        locked = false;
+        render();
+        save();
+    }
+
+    function completeBoard() {
+        score += 30;
+        board++;
+        sfx.ok();
+        if (board >= ANAGRAM_BOARDS) {
+            T.set(end, 800);
+            return;
+        }
+        T.set(newBoard, 800);
+    }
+
+    function lineBetween(a, b) {
+        const r0 = Math.floor(a / size);
+        const c0 = a % size;
+        const r1 = Math.floor(b / size);
+        const c1 = b % size;
+        const dr = Math.sign(r1 - r0);
+        const dc = Math.sign(c1 - c0);
+        const len = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0));
+        if (len === 0) return null;
+        if (!(r0 === r1 || c0 === c1 || Math.abs(r1 - r0) === Math.abs(c1 - c0))) return null;
+        const cells = [];
+        for (let k = 0; k <= len; k++) cells.push((r0 + dr * k) * size + (c0 + dc * k));
+        return cells;
+    }
+
+    function pickCell(index) {
+        if (ended || locked) return;
+        if (sel < 0) {
+            sel = index;
+            render();
+            return;
+        }
+        if (sel === index) {
+            sel = -1;
+            render();
+            return;
+        }
+        const cells = lineBetween(sel, index);
+        const start = sel;
+        sel = -1;
+        if (!cells) {
+            sfx.bad();
+            render('Hai ô phải nằm trên cùng một hàng, cột hoặc đường chéo.');
+            return;
+        }
+        const text = cells.map((i) => grid[i]).join('');
+        const rev = [...text].reverse().join('');
+        const target = targets.find((t) => !t.found && (t.w === text || t.w === rev));
+        if (target) {
+            target.found = true;
+            score += 10 + [...target.w].length * 5;
+            sfx.ok();
+            const allDone = targets.every((t) => t.found);
+            render(allDone ? 'Tìm hết cả ba từ rồi! Đang mở bàn mới…' : `Tìm thấy ${target.w}!`);
+            save();
+            if (allDone) {
+                locked = true;
+                completeBoard();
+            }
+        } else {
+            lives--;
+            sfx.bad();
+            const bad = new Set(cells);
+            const nodes = [...root.querySelectorAll('.wl')];
+            nodes.forEach((n) => { if (bad.has(Number(n.dataset.cell))) n.classList.add('bad'); });
+            if (nodes[start]) nodes[start].classList.add('bad');
+            save();
+            if (lives <= 0) { locked = true; T.set(end, 700); return; }
+            T.set(() => render('Chưa đúng từ nào — thử lại nhé!'), 500);
+        }
+    }
+
+    function hint() {
+        if (ended || locked) return;
+        const target = targets.find((t) => !t.found);
+        if (!target) return;
+        score = Math.max(0, score - 10);
+        const nodes = [...root.querySelectorAll('.wl')];
+        cellsOf(target).forEach((i) => { if (nodes[i]) nodes[i].classList.add('sel'); });
+        sfx.tick();
+        save();
+        T.set(() => render(), 700);
+    }
+
+    function end() {
+        if (ended) return;
+        ended = true;
+        T.clear();
+        clearOfflineRun(id);
+        const found = targets.filter((t) => t.found).length;
+        if (board >= ANAGRAM_BOARDS) S.flags.maze = true;
+        finish({
+            id, score: gqScore(mode, score), xp: Math.round(score / 5) + board * 5,
+            lines: [`Hoàn thành ${board}/${ANAGRAM_BOARDS} bàn`, `Tìm được ${board * 3 + found} từ`],
+            replay: anagramGame, details: { boards: board, found },
+        });
+    }
+
+    root.onclick = (e) => {
+        if (ended) return;
+        const cell = e.target.closest('[data-cell]');
+        if (cell) { pickCell(Number(cell.dataset.cell)); return; }
+        if (e.target.closest('[data-hint]')) hint();
+    };
+
+    if (!resume) newBoard();
+    else if (targets.every((t) => t.found)) newBoard();
+    else render();
+}
+
+function anagramGame(root) {
+    const saved = loadOfflineRun('anagram');
+    if (anagramValid(saved)) {
+        startWordMaze(root, GQ_MODES[saved.mode], saved.mode, saved);
+        return;
+    }
+    if (saved) clearOfflineRun('anagram');
+
+    gqIntro(root, {
+        id: 'anagram', icon: '🧩', name: 'Mê Cung Ký Tự',
+        desc: 'Tìm những từ tiếng Việt đang trốn trong lưới chữ cái.',
+        steps: [
+            'Mỗi bàn có ba từ cần tìm, hiện ở hàng ghim phía trên.',
+            'Chạm ô đầu rồi chạm ô cuối của từ — từ có thể nằm ngang, dọc hoặc chéo.',
+            'Chọn sai mất một mạng; gợi ý sẽ sáng cả từ nhưng trừ 10 điểm.',
+        ],
+    }, (mode, index) => startWordMaze(root, mode, index));
+}
+
+startSingleGame({
+    id: 'anagram',
+    name: 'Mê Cung Ký Tự',
+    icon: '🧩',
+    storageKey: 'offline_anagram',
+    mount: anagramGame,
+    badges: [
+        { id: 'maze', n: 'Phá 4 mê cung', i: '🧩', ok: () => !!S.flags.maze },
+    ],
+});

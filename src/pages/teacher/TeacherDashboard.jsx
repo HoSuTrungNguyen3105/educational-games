@@ -217,7 +217,7 @@ export default function TeacherDashboard({ user, onOpenLibrary, onCreate, onEdit
           </div>
 
           {/* Panel phải — trên mobile đưa lên đầu để thấy việc cần làm ngay */}
-          <aside className="w-full xl:w-[300px] shrink-0 space-y-4 order-first xl:order-last xl:sticky xl:top-[72px]">
+          <aside className="w-full xl:w-[300px] shrink-0 space-y-4 order-first xl:order-last xl:sticky xl:top-12">
             {/* Việc cần làm */}
             <section className="note-card p-4 space-y-3">
               <div className="flex items-center justify-between">

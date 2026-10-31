@@ -926,6 +926,16 @@
 
   window.renderGardenModal = renderGardenModal;
 
+  // Cho hệ thống Thú cưng 2.0 (nạp sau) dùng lại CSS + dừng timer của vườn
+  window.__injectGardenStyle = injectGardenStyle;
+  window.__gardenMathQuestions = MATH_QUESTIONS;
+  window.__gardenStopTimer = function () {
+    if (gardenTimer) {
+      clearInterval(gardenTimer);
+      gardenTimer = null;
+    }
+  };
+
   window.closeGardenModal = function () {
     if (gardenTimer) {
       clearInterval(gardenTimer);
@@ -1219,4 +1229,592 @@
   };
 
   console.log("✔ Đã nạp thành công hệ thống Vườn trường và Vườn thú cưng vào School Mission!");
+})();
+
+/* ============================================================
+   THÚ CƯNG 2.0 — cấp độ, kỹ năng, phụ kiện, thành tựu
+   Toàn bộ trạng thái nằm trong S.pet nên được lưu localStorage
+   VÀ đồng bộ lên backend qua school-save (gameState.pet).
+============================================================ */
+(function () {
+  const FOODS = PET_FOODS;
+  const MOODS = {
+    happy:   { label: "Đang vui",      emoji: "💛" },
+    excited: { label: "Rất hào hứng",  emoji: "🎉" },
+    hungry:  { label: "Đói bụng",      emoji: "🍽️" },
+    sleepy:  { label: "Buồn ngủ",      emoji: "😴" },
+    sad:     { label: "Hơi buồn",      emoji: "💙" }
+  };
+  const ACCESSORIES = {
+    bow:     { name: "Nơ hồng",    icon: "🎀", price: 60,  bond: 5,  desc: "Dễ thương hết nấc" },
+    glasses: { name: "Kính mát",   icon: "🕶️", price: 90,  bond: 6,  desc: "Ngầu đét" },
+    scarf:   { name: "Khăn quàng", icon: "🧣", price: 80,  bond: 6,  desc: "Ấm áp mùa đông" },
+    crown:   { name: "Vương miện", icon: "👑", price: 180, bond: 10, desc: "Thú cưng hoàng gia" }
+  };
+  const MILESTONES = [
+    { lv: 1,  icon: "🍖", name: "Cho ăn" },
+    { lv: 2,  icon: "🎾", name: "Chơi đùa" },
+    { lv: 3,  icon: "🛁", name: "Tắm rửa" },
+    { lv: 4,  icon: "📚", name: "Dạy học" },
+    { lv: 5,  icon: "🎀", name: "Phụ kiện" },
+    { lv: 7,  icon: "✨", name: "Tiến hóa" },
+    { lv: 10, icon: "🌟", name: "Kỹ năng học tập" },
+    { lv: 15, icon: "🏅", name: "Danh hiệu" },
+    { lv: 20, icon: "👑", name: "Thần thú" }
+  ];
+  const ACHIEVEMENTS = [
+    { id: "feed10", icon: "🍖", name: "Đầu bếp nhí",           desc: "Cho thú cưng ăn 10 lần",   reward: 60,  check: p => (p.totalFeeds || 0) >= 10 },
+    { id: "play10", icon: "🎾", name: "Bạn chơi thân",         desc: "Chơi đùa 10 lần",          reward: 60,  check: p => (p.totalPlays || 0) >= 10 },
+    { id: "wash10", icon: "🛁", name: "Thú cưng thơm tho",     desc: "Tắm rửa 10 lần",           reward: 50,  check: p => (p.totalWashes || 0) >= 10 },
+    { id: "bond100",icon: "❤️", name: "Đôi bạn thân",          desc: "Thân thiết đạt 100%",      reward: 150, check: p => (p.bonded || 0) >= 100 },
+    { id: "lv5",    icon: "🌟", name: "Lớn nhanh như thổi",    desc: "Thú cưng đạt cấp 5",       reward: 100, check: p => (p.level || 1) >= 5 },
+    { id: "lv10",   icon: "🏆", name: "Người bạn tri kỷ",      desc: "Thú cưng đạt cấp 10",      reward: 200, check: p => (p.level || 1) >= 10 },
+    { id: "lv20",   icon: "👑", name: "Thần thú huyền thoại",  desc: "Thú cưng đạt cấp 20",      reward: 500, check: p => (p.level || 1) >= 20 }
+  ];
+
+  let migrated = false;
+  let currentTeach = null;
+
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function speciesInfo(pet) { return PET_SPECIES[pet.species] || PET_SPECIES.dog; }
+  function accessoryInfo(pet) { return pet.equipped ? ACCESSORIES[pet.equipped] : null; }
+
+  function petStage(pet) {
+    const lv = pet.level || 1;
+    if (lv >= 20) return { name: "Thần thú",       icon: "👑", color: "#ffd54f" };
+    if (lv >= 15) return { name: "Anh hùng",       icon: "🏅", color: "#ffb300" };
+    if (lv >= 10) return { name: "Chiến binh",     icon: "🌟", color: "#7cb342" };
+    if (lv >= 5)  return { name: "Bạn nhỏ",        icon: "🌿", color: "#4fc3f7" };
+    return { name: "Bé cưng", icon: "🌱", color: "#aed581" };
+  }
+
+  function petTitle(pet) {
+    const lv = pet.level || 1;
+    if (lv >= 20) return "Thần thú huyền thoại";
+    if (lv >= 15) return "Anh hùng sân trường";
+    if (lv >= 10) return "Chiến binh tri thức";
+    if (lv >= 5)  return "Người bạn nhỏ";
+    return "Bé cưng tập sự";
+  }
+
+  function needExp(pet) {
+    return Math.max(50, Number(pet.expNeeded) || Math.round(200 * Math.pow(1.18, (pet.level || 1) - 1)));
+  }
+
+  function updateMood(pet) {
+    if ((pet.hunger ?? 80) < 30) pet.mood = "hungry";
+    else if ((pet.energy ?? 80) < 25) pet.mood = "sleepy";
+    else if ((pet.happy ?? 80) < 40) pet.mood = "sad";
+    else if ((pet.happy ?? 80) > 85 && (pet.bonded || 0) > 60) pet.mood = "excited";
+    else pet.mood = "happy";
+  }
+
+  function decayPet(pet) {
+    const now = Date.now();
+    const last = Number(pet.lastCareAt) || now;
+    const steps = Math.min(48, Math.floor((now - last) / (10 * 60 * 1000)));
+    if (steps > 0) {
+      pet.hunger = clamp((pet.hunger ?? 80) - steps * 2, 5, 100);
+      pet.happy  = clamp((pet.happy  ?? 80) - steps * 1.5, 5, 100);
+      pet.clean  = clamp((pet.clean  ?? 80) - steps * 1.2, 5, 100);
+      pet.energy = clamp((pet.energy ?? 80) - steps * 1.5, 5, 100);
+      pet.lastCareAt = now;
+    }
+    updateMood(pet);
+  }
+
+  function ensurePet() {
+    if (!S.pet || typeof S.pet !== "object") S.pet = defaultPetState();
+    const base = defaultPetState();
+    S.pet = Object.assign({}, base, S.pet);
+    S.pet.food = Object.assign({}, base.food, S.pet.food || {});
+    S.pet.claimed = Object.assign({}, S.pet.claimed || {});
+    if (!Array.isArray(S.pet.ownedAccessories)) S.pet.ownedAccessories = [];
+    if (typeof S.pet.equipped !== "string") S.pet.equipped = "";
+
+    // Lần đầu mở: nhập tiến độ thú cưng cũ (localStorage edu_pet_v2)
+    if (!migrated) {
+      migrated = true;
+      try {
+        let raw = localStorage.getItem("edu_pet_v2");
+        for (let i = 0; i < localStorage.length && !raw; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith("edu_pet_v2.u")) raw = localStorage.getItem(k);
+        }
+        if (raw) {
+          const old = JSON.parse(raw);
+          const fresh = (S.pet.level || 1) <= 1 && (S.pet.exp || 0) === 0 && (S.pet.totalFeeds || 0) === 0;
+          if (fresh && old && (Number(old.level) > 1 || Number(old.exp) > 0 || Number(old.bonded) > 10)) {
+            ["species", "name", "color", "level", "exp", "expNeeded", "mood", "bonded", "totalCorrect", "totalWrong"].forEach(k => {
+              if (old[k] != null) S.pet[k] = old[k];
+            });
+            S.pet.level = clamp(Number(S.pet.level) || 1, 1, 99);
+            S.pet.expNeeded = Number(S.pet.expNeeded) || Math.round(200 * Math.pow(1.18, S.pet.level - 1));
+          }
+        }
+      } catch (e) { /* localStorage bị chặn */ }
+    }
+
+    decayPet(S.pet);
+    return S.pet;
+  }
+
+  function savePet(pet) {
+    S.pet = pet;
+    save(); // localStorage "tvv" + postMessage school-save → backend (gameState.pet)
+    try { localStorage.setItem("edu_pet_v2", JSON.stringify(pet)); } catch (e) {}
+    updateHud();
+  }
+
+  function updateHud() {
+    const el = document.getElementById("petHud");
+    if (!el) return;
+    const pet = S.pet;
+    if (!pet) { el.textContent = "🐾 Thú cưng"; return; }
+    const sp = speciesInfo(pet);
+    const txt = `${sp.icon} ${pet.name} · Lv ${pet.level}`;
+    if (el.textContent !== txt) el.textContent = txt;
+  }
+  window.updatePetHud = updateHud;
+
+  function levelUp(pet) {
+    let leveled = 0;
+    while (pet.exp >= needExp(pet) && pet.level < 99) {
+      pet.exp -= needExp(pet);
+      pet.level += 1;
+      pet.expNeeded = Math.round(200 * Math.pow(1.18, pet.level - 1));
+      leveled++;
+    }
+    if (leveled) {
+      pet.mood = "excited";
+      const reward = pet.level * 30 + leveled * 10;
+      S.coins += reward;
+      if (pet.level % 5 === 0) S.gems += 1;
+      const unlocked = MILESTONES.filter(m => m.lv === pet.level);
+      pop(`🎉 CẤP ${pet.level}! +${reward}🪙`);
+      toast(`🎉 ${pet.name} lên CẤP ${pet.level}! +${reward}🪙${pet.level % 5 === 0 ? " +1💎" : ""}${unlocked.length ? " · Mở: " + unlocked.map(m => m.name).join(", ") : ""}`);
+    }
+    return leveled;
+  }
+
+  function requireLevel(pet, lv, name) {
+    if ((pet.level || 1) < lv) {
+      toast(`🔒 ${name} mở ở cấp ${lv} — ${pet.name} còn ${lv - (pet.level || 1)} cấp nữa!`);
+      return false;
+    }
+    return true;
+  }
+
+  /* Học bài / làm bài thi cũng cho thú cưng EXP (gọi từ ui.js gain()) */
+  window.schoolPetGainExp = function (n) {
+    n = Math.max(0, Math.round(Number(n) || 0));
+    if (!n) return;
+    const pet = ensurePet();
+    pet.exp += n;
+    levelUp(pet);
+    savePet(pet);
+  };
+
+  /* ── CSS riêng cho thú cưng ── */
+  function injectPetStyle() {
+    if (document.getElementById("pet-custom-css")) return;
+    const style = document.createElement("style");
+    style.id = "pet-custom-css";
+    style.textContent = `
+      .pet-wrap { max-width: 620px; }
+      .pet-hud { background: linear-gradient(135deg, #fff8e1, #ffe0b2) !important; border-color: #ffb74d !important; }
+      .pet-title { font-weight: 900; font-size: 16px; color: #e65100; }
+      .pet-sub { font-size: 11.5px; color: #6d4c41; }
+      .pet-hero { display: flex; gap: 14px; align-items: center; background: linear-gradient(135deg, #fffdf7, #fff3e0); border: 2px solid #ffcc80; border-radius: 20px; padding: 14px; box-shadow: 0 6px 18px rgba(255,152,0,.12); }
+      .pet-avatar { position: relative; width: 96px; height: 96px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #ffe0b2); border: 4px solid #ffb300; display: grid; place-items: center; font-size: 52px; flex: none; box-shadow: 0 6px 14px rgba(255,179,0,.35); animation: petFloat 2.6s ease-in-out infinite; }
+      @keyframes petFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+      .pet-acc { position: absolute; right: -6px; bottom: -4px; font-size: 26px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.2)); }
+      .pet-hero-info { flex: 1; min-width: 0; }
+      .pet-name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+      .pet-name { font-weight: 900; font-size: 19px; color: #bf360c; }
+      .pet-stage { font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+      .pet-meta { font-size: 11.5px; color: #78909c; font-weight: 700; margin: 3px 0 6px; }
+      .pet-expbar { height: 10px; background: #f1e4d0; border-radius: 999px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.08); }
+      .pet-expbar i { display: block; height: 100%; background: linear-gradient(90deg, #ffb300, #ff7043); border-radius: 999px; transition: width .4s; }
+      .pet-exp-line { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 800; color: #8d6e63; margin-bottom: 3px; gap: 8px; }
+      .pet-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .pet-stat { background: #fff; border: 1.5px solid #ffe0b2; border-radius: 14px; padding: 8px 10px; }
+      .pet-stat-top { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #6d4c41; margin-bottom: 4px; }
+      .pet-statbar { height: 7px; border-radius: 999px; background: #f5f5f5; overflow: hidden; }
+      .pet-statbar i { display: block; height: 100%; border-radius: 999px; transition: width .3s; }
+      .pet-section { background: #fff; border: 2px solid #ffe0b2; border-radius: 18px; padding: 12px; }
+      .pet-section-title { font-weight: 900; font-size: 13px; color: #e65100; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .pet-section-title small { font-size: 10.5px; font-weight: 700; color: #8d6e63; }
+      .pet-food-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .pet-food { display: flex; align-items: center; gap: 8px; border: 1.5px solid #ffcc80; background: #fffdf5; border-radius: 14px; padding: 8px; cursor: pointer; text-align: left; transition: transform .12s, box-shadow .12s; }
+      .pet-food:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(255,152,0,.18); }
+      .pet-food .ico { font-size: 24px; }
+      .pet-food b { display: block; font-size: 12px; color: #4e342e; }
+      .pet-food small { font-size: 10px; color: #8d6e63; font-weight: 700; }
+      .pet-food .cnt { margin-left: auto; font-size: 11px; font-weight: 900; color: #e65100; background: #fff3e0; border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
+      .pet-action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .pet-act { border: none; border-radius: 14px; padding: 10px; color: #fff; font-weight: 800; font-size: 12.5px; cursor: pointer; text-align: center; transition: transform .12s; }
+      .pet-act:active { transform: translateY(2px); }
+      .pet-act.locked { filter: grayscale(.5); opacity: .72; }
+      .pet-act small { display: block; font-size: 10px; font-weight: 700; opacity: .9; margin-top: 2px; }
+      .pet-acc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .pet-acc-item { display: flex; align-items: center; gap: 8px; border: 1.5px solid #e1bee7; background: #faf5ff; border-radius: 14px; padding: 8px; cursor: pointer; text-align: left; }
+      .pet-acc-item.owned { background: #f1f8e9; border-color: #a5d6a7; }
+      .pet-acc-item.equipped { outline: 2px solid #7cb342; }
+      .pet-acc-item b { display: block; font-size: 12px; color: #4e342e; }
+      .pet-acc-item small { display: block; font-size: 10px; color: #8d6e63; font-weight: 700; }
+      .pet-ach { display: flex; align-items: center; gap: 8px; border-bottom: 1px dashed #ffe0b2; padding: 7px 0; }
+      .pet-ach:last-child { border-bottom: none; }
+      .pet-ach .ach-ico { font-size: 22px; }
+      .pet-ach .ach-body { flex: 1; min-width: 0; text-align: left; }
+      .pet-ach b { font-size: 12px; color: #4e342e; }
+      .pet-ach small { display: block; font-size: 10.5px; color: #8d6e63; }
+      .pet-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+      .pet-chip { font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; background: #f5f5f5; color: #9e9e9e; border: 1px solid #e0e0e0; }
+      .pet-chip.on { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+      .pet-note { font-size: 10.5px; color: #8d6e63; font-weight: 700; margin-top: 8px; line-height: 1.4; }
+      .pet-sync { font-size: 10.5px; font-weight: 800; color: #1565c0; background: #e3f2fd; border: 1.5px solid #90caf9; border-radius: 12px; padding: 7px 10px; text-align: center; }
+      .pet-quiz { background: #e3f2fd; border: 2px solid #90caf9; border-radius: 16px; padding: 16px; font-size: 22px; font-weight: 900; color: #0d47a1; text-align: center; margin: 8px 0 12px; }
+      .pet-quiz-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .pet-quiz-opts button { border: none; border-radius: 12px; padding: 12px; background: #1e88e5; color: #fff; font-weight: 900; font-size: 16px; cursor: pointer; }
+      .pet-quiz-opts button:active { transform: translateY(2px); }
+      @media (max-width: 520px) {
+        .pet-stats-grid, .pet-food-grid, .pet-acc-grid, .pet-action-grid, .pet-quiz-opts { grid-template-columns: 1fr 1fr; }
+        .pet-hero { flex-direction: column; text-align: center; }
+        .pet-name-row { justify-content: center; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function statBar(icon, label, val, color) {
+    const v = clamp(Math.round(val), 0, 100);
+    return `<div class="pet-stat">
+      <div class="pet-stat-top"><span>${icon} ${label}</span><b>${v}%</b></div>
+      <div class="pet-statbar"><i style="width:${v}%;background:${color}"></i></div>
+    </div>`;
+  }
+
+  function renderPetModal() {
+    if (window.__injectGardenStyle) window.__injectGardenStyle();
+    injectPetStyle();
+
+    const pet = ensurePet();
+    const sp = speciesInfo(pet);
+    const acc = accessoryInfo(pet);
+    const stage = petStage(pet);
+    const mood = MOODS[pet.mood] || MOODS.happy;
+    const need = needExp(pet);
+    const pct = Math.min(100, Math.round(((pet.exp || 0) / need) * 100));
+    const level = pet.level || 1;
+
+    const foods = Object.entries(FOODS).map(([id, f]) => {
+      const count = (pet.food && pet.food[id]) || 0;
+      return `<button class="pet-food" onclick="window.petActionFeed('${id}')" title="Cho ăn ${f.name}">
+        <span class="ico">${f.icon}</span>
+        <span style="flex:1;min-width:0"><b>${f.name}</b><small>+${f.exp} EXP · +${f.hunger} 🍖</small></span>
+        <span class="cnt">${count > 0 ? "x" + count : f.price + "🪙"}</span>
+      </button>`;
+    }).join("");
+
+    const accessories = Object.entries(ACCESSORIES).map(([id, a]) => {
+      const owned = pet.ownedAccessories.includes(id);
+      const equipped = pet.equipped === id;
+      return `<button class="pet-acc-item ${owned ? "owned" : ""} ${equipped ? "equipped" : ""}" onclick="window.petToggleAccessory('${id}')">
+        <span style="font-size:24px">${a.icon}</span>
+        <span style="flex:1;min-width:0"><b>${a.name}</b><small>${owned ? (equipped ? "Đang đeo · bấm để bỏ" : "Đã sở hữu · bấm để đeo") : a.price + " 🪙 · " + a.desc}</small></span>
+        ${equipped ? "✅" : ""}
+      </button>`;
+    }).join("");
+
+    const achievements = ACHIEVEMENTS.map(a => {
+      const done = a.check(pet);
+      const claimed = !!pet.claimed[a.id];
+      return `<div class="pet-ach">
+        <span class="ach-ico">${a.icon}</span>
+        <div class="ach-body"><b>${a.name}</b><small>${a.desc} · thưởng ${a.reward}🪙</small></div>
+        ${claimed
+          ? `<span class="gdn-tag" style="background:#c8e6c9;color:#2e7d32">Đã nhận ✅</span>`
+          : done
+            ? `<button class="gdn-btn-sm" style="background:#43a047" onclick="window.petClaimAchievement('${a.id}')">Nhận ${a.reward}🪙</button>`
+            : `<span class="gdn-tag" style="background:#eceff1;color:#90a4ae">Chưa đạt</span>`}
+      </div>`;
+    }).join("");
+
+    const milestones = MILESTONES.map(m => {
+      const on = level >= m.lv;
+      return `<span class="pet-chip ${on ? "on" : ""}">${on ? m.icon : "🔒"} ${m.name} · Lv ${m.lv}</span>`;
+    }).join("");
+
+    const lockIcon = (lv) => level >= lv ? "" : "🔒 ";
+
+    const html = `
+      <div class="gdn-wrap pet-wrap">
+        <div class="gdn-hud pet-hud">
+          <div class="gdn-hud-stats">
+            <span style="font-size:26px;">🐾</span>
+            <div>
+              <div class="pet-title">VƯỜN THÚ CƯNG CỦA BÉ</div>
+              <div class="pet-sub">Chăm sóc · dạy học · tiến hóa cùng bé</div>
+            </div>
+          </div>
+          <div class="gdn-actions">
+            <button class="gdn-btn-sm" style="background:#43a047;" onclick="window.garden()">🌸 Vườn hoa</button>
+            <button class="gdn-btn-sm" style="background:#546e7a;" onclick="close_()">✕ Đóng</button>
+          </div>
+        </div>
+
+        <div class="pet-hero">
+          <div class="pet-avatar">${sp.icon}${acc ? `<span class="pet-acc">${acc.icon}</span>` : ""}</div>
+          <div class="pet-hero-info">
+            <div class="pet-name-row">
+              <span class="pet-name">${pet.name}</span>
+              <button class="gdn-btn-sm" style="background:#ffb74d;padding:2px 8px;font-size:11px;" onclick="window.renamePetPrompt()">✏️ Đổi tên</button>
+              <span class="pet-stage">${stage.icon} ${stage.name}</span>
+            </div>
+            <div class="pet-meta">Cấp <b>${level}</b> · ${petTitle(pet)} · ${mood.label} ${mood.emoji} · ❤️ ${pet.bonded}%</div>
+            <div class="pet-exp-line"><span>EXP ${pet.exp} / ${need}</span><span>${Math.max(0, need - pet.exp)} EXP nữa lên cấp ${level + 1}</span></div>
+            <div class="pet-expbar"><i style="width:${pct}%"></i></div>
+          </div>
+        </div>
+
+        <div class="pet-stats-grid">
+          ${statBar("🍖", "Độ no", pet.hunger, "linear-gradient(90deg,#ff8a65,#ff5722)")}
+          ${statBar("😊", "Vui vẻ", pet.happy, "linear-gradient(90deg,#ffd54f,#ffb300)")}
+          ${statBar("🫧", "Sạch sẽ", pet.clean, "linear-gradient(90deg,#81d4fa,#0288d1)")}
+          ${statBar("⚡", "Năng lượng", pet.energy, "linear-gradient(90deg,#aed581,#43a047)")}
+        </div>
+
+        <div class="pet-section">
+          <div class="pet-section-title"><span>🍖 Cho ăn</span><small>Bấm món để cho ăn · hết thì mua ngay</small></div>
+          <div class="pet-food-grid">${foods}</div>
+          <div class="pet-note">💡 Có thể mua thức ăn rẻ hơn ở 🍔 Nhà ăn. Học bài và làm bài thi cũng giúp ${pet.name} nhận EXP!</div>
+        </div>
+
+        <div class="pet-section">
+          <div class="pet-section-title"><span>🎮 Chăm sóc &amp; dạy học</span><small>Mở thêm khi lên cấp</small></div>
+          <div class="pet-action-grid">
+            <button class="pet-act" style="background:#42a5f5;box-shadow:0 3px 0 #1565c0" onclick="window.petActionPlay()">🎾 Chơi đùa<small>-10⚡ · +25 EXP · +5% ❤️</small></button>
+            <button class="pet-act ${level < 3 ? "locked" : ""}" style="background:#26a69a;box-shadow:0 3px 0 #00695c" onclick="window.petActionWash()">${lockIcon(3)}🛁 Tắm rửa<small>+15 EXP · +30% 🫧</small></button>
+            <button class="pet-act ${level < 4 ? "locked" : ""}" style="background:#7e57c2;box-shadow:0 3px 0 #4527a0" onclick="window.petActionTeach()">${lockIcon(4)}📚 Dạy học<small>Trả lời đúng +40 EXP</small></button>
+            <button class="pet-act" style="background:#ab47bc;box-shadow:0 3px 0 #6a1b9a" onclick="window.petActionRest()">💤 Nghỉ ngơi<small>+25⚡ cho bé · +30⚡ thú cưng</small></button>
+          </div>
+        </div>
+
+        <div class="pet-section">
+          <div class="pet-section-title"><span>🎀 Phụ kiện</span><small>${level < 5 ? `🔒 Mở ở cấp 5` : "Bấm để mua / đeo"}</small></div>
+          <div class="pet-acc-grid">${accessories}</div>
+        </div>
+
+        <div class="pet-section">
+          <div class="pet-section-title"><span>🏅 Thành tựu</span><small>Nhận thưởng coin</small></div>
+          ${achievements}
+        </div>
+
+        <div class="pet-section">
+          <div class="pet-section-title"><span>🔓 Mốc tính năng</span><small>Cấp ${level} / 20</small></div>
+          <div class="pet-chip-row">${milestones}</div>
+        </div>
+
+        <div class="pet-sync">☁️ Cấp ${level} · ${pet.exp} EXP của ${pet.name} được lưu vào tài khoản (backend) mỗi khi thay đổi.</div>
+      </div>
+    `;
+
+    modal(html);
+  }
+
+  /* ── Hành động chăm sóc ── */
+  window.petActionFeed = function (foodId) {
+    const pet = ensurePet();
+    let id = foodId;
+    if (!id) id = Object.keys(FOODS).find(k => (pet.food[k] || 0) > 0) || "bone";
+    const f = FOODS[id];
+    if (!f) return;
+
+    const count = pet.food[id] || 0;
+    if (count <= 0) {
+      if (S.coins < f.price) {
+        toast(`🪙 Cần ${f.price} coin để mua ${f.name}!`);
+        return;
+      }
+      S.coins -= f.price;
+      toast(`🛒 Đã mua ${f.icon} ${f.name} (-${f.price}🪙)`);
+    } else {
+      pet.food[id] = count - 1;
+    }
+
+    pet.exp = (pet.exp || 0) + f.exp;
+    pet.hunger = clamp((pet.hunger ?? 80) + f.hunger, 0, 100);
+    pet.happy = clamp((pet.happy ?? 80) + 6, 0, 100);
+    pet.energy = clamp((pet.energy ?? 80) + (f.energy || 0), 0, 100);
+    pet.bonded = clamp((pet.bonded || 0) + f.bond, 0, 100);
+    pet.totalFeeds = (pet.totalFeeds || 0) + 1;
+    pet.lastCareAt = Date.now();
+    pet.mood = "excited";
+
+    levelUp(pet);
+    savePet(pet);
+    if (typeof prog === "function") prog("pet");
+    pop(`+${f.exp} EXP ${f.icon}`);
+    toast(`${f.icon} ${pet.name} ăn ${f.name} ngon lành! +${f.exp} EXP, +${f.bond}% ❤️`);
+    renderPetModal();
+  };
+
+  window.petActionPlay = function () {
+    const pet = ensurePet();
+    if (!requireLevel(pet, 2, "Chơi đùa")) return;
+    if (S.en < 10) {
+      toast("⚡ Bạn đã hết năng lượng! Hãy nghỉ ngơi hoặc ăn uống tại Nhà ăn!");
+      return;
+    }
+    S.en -= 10;
+    const exp = 25 + Math.floor((pet.level || 1) * 1.5);
+    pet.exp = (pet.exp || 0) + exp;
+    pet.happy = clamp((pet.happy ?? 80) + 15, 0, 100);
+    pet.energy = clamp((pet.energy ?? 80) - 10, 0, 100);
+    pet.bonded = clamp((pet.bonded || 0) + 5, 0, 100);
+    pet.totalPlays = (pet.totalPlays || 0) + 1;
+    pet.lastCareAt = Date.now();
+    pet.mood = "happy";
+    levelUp(pet);
+    savePet(pet);
+    if (typeof prog === "function") prog("pet");
+    pop(`+${exp} EXP 🎾`);
+    toast(`🎾 Bạn cùng ${pet.name} chơi bóng thật vui! (+${exp} EXP, +5% ❤️)`);
+    renderPetModal();
+  };
+
+  window.petActionWash = function () {
+    const pet = ensurePet();
+    if (!requireLevel(pet, 3, "Tắm rửa")) return;
+    pet.exp = (pet.exp || 0) + 15;
+    pet.clean = clamp((pet.clean ?? 80) + 35, 0, 100);
+    pet.happy = clamp((pet.happy ?? 80) + 8, 0, 100);
+    pet.totalWashes = (pet.totalWashes || 0) + 1;
+    pet.lastCareAt = Date.now();
+    pet.mood = "excited";
+    levelUp(pet);
+    savePet(pet);
+    if (typeof prog === "function") prog("pet");
+    pop("+15 EXP 🛁");
+    toast(`🛁 ${pet.name} đã được tắm rửa sạch sẽ, thơm tho! (+15 EXP)`);
+    renderPetModal();
+  };
+
+  window.petActionRest = function () {
+    S.en = Math.min(100, S.en + 25);
+    const pet = ensurePet();
+    pet.exp = (pet.exp || 0) + 8;
+    pet.energy = clamp((pet.energy ?? 80) + 30, 0, 100);
+    pet.happy = clamp((pet.happy ?? 80) + 3, 0, 100);
+    pet.lastCareAt = Date.now();
+    levelUp(pet);
+    savePet(pet);
+    pop("+25 ⚡");
+    toast(`💤 Cả bạn và ${pet.name} đã nghỉ ngơi thật ngon! (+25⚡, +8 EXP)`);
+    renderPetModal();
+  };
+
+  window.petActionTeach = function () {
+    const pet = ensurePet();
+    if (!requireLevel(pet, 4, "Dạy học")) return;
+    const bank = window.__gardenMathQuestions || [
+      { q: "12 + 8 = ?", o: ["18", "20", "22", "19"], a: 1 },
+      { q: "6 × 7 = ?", o: ["42", "48", "36", "44"], a: 0 },
+      { q: "56 ÷ 8 = ?", o: ["6", "8", "7", "9"], a: 2 }
+    ];
+    const q = bank[Math.floor(Math.random() * bank.length)];
+    currentTeach = q;
+    modal(`
+      <div class="gdn-wrap pet-wrap">
+        <div class="gdn-hud pet-hud">
+          <div class="gdn-hud-stats">
+            <span style="font-size:24px;">📚</span>
+            <div><div class="pet-title">DẠY ${pet.name.toUpperCase()} HỌC</div><div class="pet-sub">Trả lời đúng để bé nhận +40 EXP</div></div>
+          </div>
+          <button class="gdn-btn-sm" style="background:#546e7a;" onclick="window.petGarden()">← Quay lại</button>
+        </div>
+        <div class="pet-quiz">${q.q}</div>
+        <div class="pet-quiz-opts">
+          ${q.o.map((o, i) => `<button onclick="window.petTeachAnswer(${i})">${o}</button>`).join("")}
+        </div>
+      </div>
+    `);
+  };
+
+  window.petTeachAnswer = function (i) {
+    const pet = ensurePet();
+    const q = currentTeach;
+    if (!q) return;
+    if (i === q.a) {
+      pet.exp = (pet.exp || 0) + 40;
+      pet.bonded = clamp((pet.bonded || 0) + 4, 0, 100);
+      pet.happy = clamp((pet.happy ?? 80) + 10, 0, 100);
+      pet.mood = "excited";
+      levelUp(pet);
+      savePet(pet);
+      pop("+40 EXP 📚");
+      toast(`📚 ${pet.name} hiểu bài rồi! +40 EXP, +4% ❤️`);
+    } else {
+      pet.exp = (pet.exp || 0) + 10;
+      savePet(pet);
+      toast(`💡 Chưa đúng, nhưng ${pet.name} vẫn học được +10 EXP!`);
+    }
+    setTimeout(renderPetModal, 700);
+  };
+
+  window.petToggleAccessory = function (id) {
+    const pet = ensurePet();
+    if (!requireLevel(pet, 5, "Phụ kiện")) return;
+    const a = ACCESSORIES[id];
+    if (!a) return;
+
+    if (pet.ownedAccessories.includes(id)) {
+      pet.equipped = pet.equipped === id ? "" : id;
+      savePet(pet);
+      renderPetModal();
+      return;
+    }
+    if (S.coins < a.price) {
+      toast(`🪙 Cần ${a.price} coin để mua ${a.name}!`);
+      return;
+    }
+    S.coins -= a.price;
+    pet.ownedAccessories.push(id);
+    pet.equipped = id;
+    pet.bonded = clamp((pet.bonded || 0) + a.bond, 0, 100);
+    savePet(pet);
+    toast(`🎀 Đã mua và đeo ${a.icon} ${a.name} cho ${pet.name}!`);
+    renderPetModal();
+  };
+
+  window.petClaimAchievement = function (id) {
+    const pet = ensurePet();
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    if (!a || pet.claimed[id] || !a.check(pet)) return;
+    pet.claimed[id] = true;
+    S.coins += a.reward;
+    savePet(pet);
+    pop(`+${a.reward}🪙`);
+    toast(`🏅 Thành tựu "${a.name}"! +${a.reward}🪙`);
+    renderPetModal();
+  };
+
+  window.renamePetPrompt = function () {
+    const pet = ensurePet();
+    const newName = prompt(`Nhập tên mới cho ${pet.name}:`, pet.name);
+    if (newName && newName.trim() && newName.trim() !== pet.name) {
+      pet.name = newName.trim().slice(0, 16);
+      savePet(pet);
+      toast(`Đã đổi tên thú cưng thành "${pet.name}"!`);
+      renderPetModal();
+    }
+  };
+
+  window.petGarden = function () {
+    if (window.__gardenStopTimer) window.__gardenStopTimer();
+    renderPetModal();
+  };
+
+  updateHud();
 })();

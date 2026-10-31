@@ -1,0 +1,639 @@
+/* ============================================================
+   EduPlay Admin — giao diện quản trị kiểu WordPress
+   Chỉ áp dụng trong cây `.edu-admin` (TeacherApp). Không đụng UI trẻ em.
+   Màu: bar/sidebar #1d2327, nền #f0f0f1, panel #fff, viền #c3c4c7,
+   chữ #1d2327 / #646970, hành động chính #2271b1.
+   ============================================================ */
+
+.edu-admin {
+  --edu-bar-h: 40px;
+  --edu-sidebar-w: 200px;
+  --edu-bg: #f0f0f1;
+  --edu-panel: #ffffff;
+  --edu-border: #c3c4c7;
+  --edu-line: #dcdcde;
+  --edu-text: #1d2327;
+  --edu-muted: #646970;
+  --edu-blue: #2271b1;
+  --edu-blue-dark: #135e96;
+  --edu-sidebar: #1d2327;
+  --edu-sidebar-hover: #2c3338;
+
+  min-height: 100vh;
+  background: var(--edu-bg);
+  color: var(--edu-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans,
+    Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .edu-admin { --edu-bar-h: 32px; }
+}
+
+/* ── Thanh header full chiều ngang ─────────────────────────── */
+.edu-admin-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--edu-bar-h);
+  padding: 0 10px;
+  background: var(--edu-sidebar);
+  color: #f0f0f1;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+@media (min-width: 640px) {
+  .edu-admin-bar { padding: 0 14px; }
+}
+
+.edu-bar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #f0f0f1;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.edu-bar-btn:hover,
+.edu-bar-btn:focus-visible {
+  background: #2c3338;
+  color: #72aee6;
+}
+
+.edu-bar-btn svg { width: 16px; height: 16px; flex: 0 0 16px; }
+
+.edu-bar-user {
+  color: #f0f0f1;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.edu-bar-user b { font-weight: 600; }
+
+/* ── Khung dưới header: sidebar + nội dung ─────────────────── */
+.edu-admin-body {
+  display: flex;
+  align-items: flex-start;
+  min-height: calc(100vh - var(--edu-bar-h));
+  width: 100%;
+}
+
+/* ── Sidebar tối kiểu WP ───────────────────────────────────── */
+.edu-admin-sidebar {
+  display: none;
+  width: var(--edu-sidebar-w);
+  flex: 0 0 var(--edu-sidebar-w);
+  align-self: stretch;
+  background: var(--edu-sidebar);
+  color: #f0f0f1;
+  position: sticky;
+  top: var(--edu-bar-h);
+  height: calc(100vh - var(--edu-bar-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 640px) {
+  .edu-admin-sidebar { display: flex; flex-direction: column; }
+}
+
+.edu-menu { padding: 6px 0 10px; }
+
+.edu-menu-section + .edu-menu-section {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.edu-menu-label {
+  margin: 0;
+  padding: 9px 12px 4px;
+  color: #a7aaad;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.edu-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 0;
+  background: transparent;
+  color: #f0f0f1;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.edu-menu-item:hover,
+.edu-menu-item:focus-visible {
+  background: var(--edu-sidebar-hover);
+  color: #fff;
+}
+
+.edu-menu-item.is-active {
+  background: var(--edu-blue);
+  color: #fff;
+  font-weight: 600;
+}
+
+.edu-menu-item svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  opacity: 0.85;
+}
+
+.edu-menu-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.edu-side-user {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #191e23;
+}
+
+.edu-side-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #2271b1;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.edu-side-name { color: #f0f0f1; font-size: 12px; font-weight: 600; line-height: 1.3; }
+.edu-side-role { color: #a7aaad; font-size: 11px; line-height: 1.3; }
+
+/* ── Vùng nội dung ─────────────────────────────────────────── */
+.edu-admin-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 14px 12px calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 640px) {
+  .edu-admin-content { padding: 20px 24px 48px; }
+}
+
+@media (min-width: 1400px) {
+  .edu-admin-content { padding: 24px 32px 56px; }
+}
+
+/* ── Tiêu đề trang kiểu WP ─────────────────────────────────── */
+.edu-page-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+
+.edu-page-title h1,
+.edu-admin h1 {
+  margin: 0;
+  color: var(--edu-text);
+  font-size: 23px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.edu-admin h2 {
+  color: var(--edu-text);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.edu-admin h3 {
+  color: var(--edu-text);
+  font-weight: 600;
+}
+
+.edu-page-subtitle {
+  margin: 2px 0 0;
+  color: var(--edu-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ── Panel / bảng danh sách ────────────────────────────────── */
+.edu-admin .note-card {
+  background: var(--edu-panel);
+  border: 1px solid var(--edu-border);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.edu-admin .dash-rule {
+  border: none;
+  border-top: 1px solid var(--edu-line);
+}
+
+.edu-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.edu-list-title {
+  margin: 0;
+  color: var(--edu-text);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.edu-table-wrap {
+  background: var(--edu-panel);
+  border: 1px solid var(--edu-border);
+  border-radius: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.edu-admin table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--edu-panel);
+}
+
+.edu-admin thead th {
+  padding: 8px 12px;
+  background: var(--edu-panel);
+  border-bottom: 1px solid var(--edu-border);
+  color: var(--edu-text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.edu-admin tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f1;
+  color: #2c3338;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.edu-admin tbody tr:last-child td { border-bottom: 0; }
+.edu-admin tbody tr:hover { background: #f6f7f7; }
+.edu-admin thead tr,
+.edu-admin tbody tr { border: 0; }
+
+@media (max-width: 639px) {
+  .edu-admin thead th { padding: 8px 10px; }
+  .edu-admin tbody td { padding: 8px 10px; }
+}
+
+/* ── Nút ───────────────────────────────────────────────────── */
+.edu-admin button { font-family: inherit; }
+
+/* Nút chính (PrimaryButton dùng bg-ink) → xanh WP */
+.edu-admin button.bg-ink {
+  padding: 4px 10px;
+  border: 1px solid var(--edu-blue);
+  border-radius: 4px;
+  background-color: var(--edu-blue);
+  box-shadow: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.edu-admin button.bg-ink:hover {
+  background-color: var(--edu-blue-dark);
+  border-color: var(--edu-blue-dark);
+  color: #fff;
+}
+
+/* Nút viền (GhostButton) → viền xanh, nền trắng */
+.edu-admin button.border-2:not([class*="border-red"]):not([class*="border-ticket"]) {
+  padding: 4px 10px;
+  border: 1px solid var(--edu-blue);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: none;
+  color: var(--edu-blue);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.edu-admin button.border-2:not([class*="border-red"]):not([class*="border-ticket"]):hover {
+  background: #f6f7f7;
+  border-color: var(--edu-blue-dark);
+  color: var(--edu-blue-dark);
+}
+
+/* Nút biểu tượng trong bảng */
+.edu-admin .w-9.h-9 {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  border-color: var(--edu-border);
+  color: var(--edu-muted);
+}
+
+.edu-admin .w-9.h-9:hover { background: #f0f0f1; color: var(--edu-text); }
+
+/* Gradient cũ (modal tài khoản…) → nút xanh phẳng */
+.edu-admin [class*="bg-gradient-to"]:not([class*="from-black"]) {
+  background-image: none;
+  background-color: var(--edu-blue);
+  border-color: var(--edu-blue);
+  color: #fff;
+}
+
+.edu-admin [class*="bg-gradient-to"]:not([class*="from-black"]):hover {
+  background-color: var(--edu-blue-dark);
+}
+
+.edu-admin a { color: var(--edu-blue); }
+
+/* ── Form ──────────────────────────────────────────────────── */
+.edu-admin input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]),
+.edu-admin select,
+.edu-admin textarea {
+  background: #fff;
+  border: 1px solid #8c8f94;
+  border-radius: 4px;
+  color: #2c3338;
+}
+
+.edu-admin input[type="checkbox"],
+.edu-admin input[type="radio"] { accent-color: var(--edu-blue); }
+
+.edu-admin input:focus,
+.edu-admin select:focus,
+.edu-admin textarea:focus {
+  outline: 2px solid var(--edu-blue);
+  outline-offset: -1px;
+  border-color: var(--edu-blue);
+}
+
+/* ── Chuẩn hoá chữ trong nội dung ──────────────────────────── */
+.edu-admin .font-display,
+.edu-admin .font-body,
+.edu-admin .font-mono { font-family: inherit; }
+
+.edu-admin .uppercase {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.edu-admin .badge-status {
+  font-family: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Bỏ chữ nâu/be của theme trẻ em → xám WP */
+.edu-admin [class*="text-[#8A7C63]"],
+.edu-admin [class*="text-[#B7A987]"],
+.edu-admin [class*="text-[#A79A80]"] { color: var(--edu-muted); }
+
+.edu-admin .text-ink { color: var(--edu-text); }
+.edu-admin [class*="text-ink/"] { color: var(--edu-muted); }
+.edu-admin .text-paper { color: #fff; }
+.edu-admin .border-ink { border-color: #8c8f94; }
+
+.edu-admin .bg-paper { background-color: var(--edu-bg); }
+.edu-admin .bg-paper2 { background-color: var(--edu-panel); }
+.edu-admin .bg-ink { background-color: var(--edu-sidebar); }
+
+/* Bo góc phẳng theo WP (giữ nguyên rounded-full cho avatar/chip) */
+.edu-admin .rounded-sm,
+.edu-admin .rounded,
+.edu-admin .rounded-md,
+.edu-admin .rounded-lg,
+.edu-admin .rounded-xl,
+.edu-admin .rounded-2xl,
+.edu-admin .rounded-3xl { border-radius: 4px; }
+
+/* Bỏ đổ bóng 3D của theme cũ */
+.edu-admin [class*="shadow-["],
+.edu-admin .shadow,
+.edu-admin .shadow-sm,
+.edu-admin .shadow-md,
+.edu-admin .shadow-lg,
+.edu-admin .shadow-xl,
+.edu-admin .shadow-2xl { box-shadow: none; }
+
+/* Bỏ hiệu ứng nhấc thẻ */
+.edu-admin .hover\:-translate-y-0\.5:hover { transform: none; }
+
+/* ── Lưới thẻ danh sách trên mobile ────────────────────────── */
+.edu-row-card {
+  background: var(--edu-panel);
+  border: 1px solid var(--edu-border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.edu-row-card:hover { border-color: #8c8f94; }
+
+/* ── Stat / số liệu ────────────────────────────────────────── */
+.edu-admin .edu-stat-card { display: flex; flex-direction: column; min-width: 0; }
+
+.edu-admin .edu-stat-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+  border: 1px solid var(--edu-line);
+  border-radius: 4px;
+  background: #f6f7f7;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.edu-admin .edu-stat-value { color: var(--edu-text); font-size: 22px; line-height: 1.2; }
+.edu-admin .edu-stat-label { color: var(--edu-muted); font-size: 12px; line-height: 1.3; }
+
+/* ── Toggle Lưới / Bảng ────────────────────────────────────── */
+.edu-view-toggle {
+  align-items: center;
+  gap: 1px;
+  padding: 1px;
+  border: 1px solid var(--edu-border);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.edu-view-toggle > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--edu-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.edu-view-toggle > button.is-active {
+  background: var(--edu-blue);
+  color: #fff;
+  font-weight: 600;
+}
+
+.edu-view-toggle svg { width: 13px; height: 13px; }
+
+/* ── Empty / loading trong panel ───────────────────────────── */
+.edu-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--edu-muted);
+  font-size: 13px;
+}
+
+/* ── Thanh điều hướng mobile (giữ nguyên hành vi cũ) ──────── */
+.edu-mobile-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: var(--edu-sidebar);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.edu-mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 4rem;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #a7aaad;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.edu-mobile-nav-btn.is-active { color: #72aee6; }
+.edu-mobile-nav-btn svg { width: 20px; height: 20px; }
+
+.edu-mobile-plus {
+  width: 52px;
+  height: 52px;
+  margin-top: -18px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--edu-blue);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.edu-mobile-plus.is-open { background: #d63638; transform: rotate(45deg); }
+.edu-mobile-plus svg { width: 26px; height: 26px; }
+
+/* Panel "+" toàn màn hình trên mobile */
+.edu-more-panel { background: var(--edu-bg); }
+.edu-more-head { background: var(--edu-sidebar); color: #f0f0f1; }
+.edu-more-title { font-size: 14px; font-weight: 600; line-height: 1.3; }
+.edu-more-sub { color: #a7aaad; font-size: 11px; line-height: 1.3; }
+
+.edu-more-label {
+  padding: 0 2px 6px;
+  color: var(--edu-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.edu-more-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 72px;
+  padding: 8px 4px;
+  border: 1px solid var(--edu-line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--edu-text);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.edu-more-tile svg { width: 20px; height: 20px; color: var(--edu-muted); }
+.edu-more-tile:hover { border-color: #8c8f94; }
+
+.edu-more-tile.is-active {
+  border-color: var(--edu-blue);
+  background: #f0f6fc;
+  color: var(--edu-blue);
+}
+
+.edu-more-tile.is-active svg { color: var(--edu-blue); }
+
+/* ── Gọn khoảng cách mobile ────────────────────────────────── */
+@media (max-width: 639px) {
+  .edu-admin .note-card { border-radius: 4px; }
+  .edu-page-title h1 { font-size: 20px; }
+  .edu-admin-content { padding-left: 10px; padding-right: 10px; }
+}
+
+/* ── Trang tin nhắn: cao đúng phần còn lại của màn hình ───── */
+.edu-chat-shell { height: calc(100dvh - var(--edu-bar-h) - 68px); }
+
+@media (max-width: 639px) {
+  .edu-chat-shell { height: calc(100dvh - var(--edu-bar-h) - 142px); }
+}
