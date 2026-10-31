@@ -1,5 +1,5 @@
-// src/games/offline/games-src/riddle.js — Phản Xạ Đèn Xanh
-// Chờ đèn xanh rồi chạm thật nhanh. Chạm khi đèn đỏ là phạm luật.
+// src/games/offline/games-src/riddle.js — Green Light Reflex
+// Wait for the green light, then tap as fast as you can. Tapping on red breaks the rules.
 
 const RIDDLE_ROUNDS = 10;
 
@@ -20,7 +20,7 @@ function startRiddle(root, mode, modeIndex, resume) {
     let reactions = resume ? resume.reactions.slice() : [];
     let phase = 'wait';
     let goAt = 0;
-    let lastNote = 'Chờ đèn xanh nhé…';
+    let lastNote = 'Wait for the green light…';
     let ended = false;
 
     function save() {
@@ -31,35 +31,35 @@ function startRiddle(root, mode, modeIndex, resume) {
     function paint() {
         const go = phase === 'go';
         const wait = phase === 'wait';
-        const label = go ? 'ĐÈN XANH — CHẠY!' : wait ? 'ĐÈN ĐỎ — CHỜ' : 'KẾT QUẢ';
+        const label = go ? 'GREEN LIGHT — GO!' : wait ? 'RED LIGHT — WAIT' : 'RESULT';
         const icon = go ? '🟢' : wait ? '🔴' : '🏁';
-        root.innerHTML = `${gqHud(score, lives, `Lượt <b>${round + 1}/${RIDDLE_ROUNDS}</b>`)}
+        root.innerHTML = `${gqHud(score, lives, `Round <b>${round + 1}/${RIDDLE_ROUNDS}</b>`)}
             <div class="big-signal ${go ? 'go' : wait ? 'stop' : ''}">
                 <div style="font-size:56px;line-height:1">${icon}</div>
                 <div style="margin-top:8px">${label}</div>
             </div>
-            <div class="stat-line"><span>${lastNote}</span>${reactions.length ? `<span>Gần nhất: ${Math.round(reactions[reactions.length - 1])} ms</span>` : ''}</div>
-            <button class="btn" data-go="1" style="width:100%;min-height:72px;font-size:20px">🏃 CHẠY!</button>
-            <p class="hint">Chỉ chạm khi đèn xanh. Chạm sớm sẽ mất một mạng; phản xạ càng nhanh điểm càng cao.</p>`;
+            <div class="stat-line"><span>${lastNote}</span>${reactions.length ? `<span>Last: ${Math.round(reactions[reactions.length - 1])} ms</span>` : ''}</div>
+            <button class="btn" data-go="1" style="width:100%;min-height:72px;font-size:20px">🏃 GO!</button>
+            <p class="hint">Only tap on green. Tapping too early costs a life; the faster your reflex, the more points you score.</p>`;
     }
 
     function beginWait() {
         if (ended) return;
         phase = 'wait';
-        lastNote = round === 0 ? 'Chờ đèn xanh nhé…' : 'Lượt mới — chờ đèn xanh…';
+        lastNote = round === 0 ? 'Wait for the green light…' : 'New round — wait for green…';
         paint();
         T.set(() => {
             if (ended || phase !== 'wait') return;
             phase = 'go';
             goAt = Date.now();
-            lastNote = 'Chạm ngay!';
+            lastNote = 'Tap now!';
             sfx.tick();
             paint();
             T.set(() => {
                 if (ended || phase !== 'go') return;
                 lives--;
                 sfx.bad();
-                lastNote = 'Hết giờ! Đèn đã chuyển đỏ.';
+                lastNote = 'Too slow! The light turned red.';
                 phase = 'done';
                 if (lives <= 0) { end(); return; }
                 round++;
@@ -76,7 +76,7 @@ function startRiddle(root, mode, modeIndex, resume) {
         const pts = reaction < 250 ? 50 : reaction < 400 ? 35 : reaction < 650 ? 20 : 10;
         score += pts;
         phase = 'done';
-        lastNote = reaction < 250 ? `Siêu nhanh! +${pts}` : `Tốt lắm! +${pts}`;
+        lastNote = reaction < 250 ? `Super fast! +${pts}` : `Nice! +${pts}`;
         sfx.ok();
         round++;
         paint();
@@ -88,7 +88,7 @@ function startRiddle(root, mode, modeIndex, resume) {
     function early() {
         phase = 'done';
         lives--;
-        lastNote = 'Chạm sớm quá! Chờ đèn xanh đã.';
+        lastNote = 'Too early! Wait for the green light.';
         sfx.bad();
         if (lives <= 0) { end(); return; }
         round++;
@@ -107,7 +107,7 @@ function startRiddle(root, mode, modeIndex, resume) {
         if (avg && avg < 350) S.flags.riddle = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 4) + round,
-            lines: [avg ? `Phản xạ trung bình ${avg} ms` : 'Chưa có lượt phản xạ nào', `Hoàn thành ${round}/${RIDDLE_ROUNDS} lượt`],
+            lines: [avg ? `Average reaction ${avg} ms` : 'No reaction rounds yet', `Finished ${round}/${RIDDLE_ROUNDS} rounds`],
             replay: riddleGame, details: { avg, reactions, round },
         });
     }
@@ -134,23 +134,23 @@ function riddleGame(root) {
     if (saved) clearOfflineRun('riddle');
 
     gqIntro(root, {
-        id: 'riddle', icon: '🚦', name: 'Phản Xạ Đèn Xanh',
-        desc: 'Đèn đỏ thì chờ, đèn xanh thì chạm thật nhanh — trò chơi của những đôi tay nhanh nhất.',
+        id: 'riddle', icon: '🚦', name: 'Green Light Reflex',
+        desc: 'Wait on red, tap fast on green — the game for the quickest hands around.',
         steps: [
-            'Mỗi lượt đèn đỏ sáng lên trong một khoảng thời gian ngẫu nhiên.',
-            'Khi đèn chuyển xanh, chạm ngay để ghi điểm theo tốc độ phản xạ.',
-            'Chạm khi đèn đỏ hoặc để đèn xanh hết thời gian sẽ mất một mạng.',
+            'Each round the red light stays on for a random amount of time.',
+            'When the light turns green, tap right away to score points for your speed.',
+            'Tapping on red or missing the green window costs one life.',
         ],
     }, (mode, index) => startRiddle(root, mode, index));
 }
 
 startSingleGame({
     id: 'riddle',
-    name: 'Phản Xạ Đèn Xanh',
+    name: 'Green Light Reflex',
     icon: '🚦',
     storageKey: 'offline_riddle',
     mount: riddleGame,
     badges: [
-        { id: 'riddle', n: 'Phản xạ dưới 350ms', i: '⚡', ok: () => !!S.flags.riddle },
+        { id: 'riddle', n: 'Reflex under 350ms', i: '⚡', ok: () => !!S.flags.riddle },
     ],
 });

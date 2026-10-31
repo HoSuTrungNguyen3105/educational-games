@@ -1,9 +1,9 @@
 /* =====================================================
-   runsave.js · lưu ván đang chơi (tháp đã xây, mạng, đợt)
-   Thoát giữa trận rồi vào lại đúng màn + độ khó → vũ khí còn nguyên.
+   runsave.js · save the run in progress (built towers, lives, wave)
+   Leave mid-battle and come back to the same field + difficulty → weapons stay.
    ===================================================== */
 
-/* Một suất lưu cho mỗi cánh đồng; độ khó cất trong suất để không trộn lẫn. */
+/* One save slot per field; difficulty is stored in the slot so runs never mix. */
 const RUNKEY = 'gc:fieldrunner:run-v1';
 
 function runsAll() {
@@ -20,19 +20,19 @@ function runSlot(id) {
   return r;
 }
 
-/** Ghi ván hiện tại; gọi sau mỗi lần xây/nâng cấp/bán/thắng đợt */
+/** Save the current run; call after every build/upgrade/sell/wave win */
 function saveRun() {
   if (!started || over || !level) return;
 
   const all = runsAll();
 
-  // Ván mới tinh (chưa xây, chưa đánh đợt nào) → không có gì để lưu
+  // Brand-new run (no towers, no waves played) → nothing to save
   if (!towers.length && !wave) {
     if (all[level.id]) {
       delete all[level.id];
       try {
         localStorage.setItem(RUNKEY, JSON.stringify(all));
-      } catch (e) { /* storage bị chặn */ }
+      } catch (e) { /* storage blocked */ }
     }
     return;
   }
@@ -51,7 +51,7 @@ function saveRun() {
 
   try {
     localStorage.setItem(RUNKEY, JSON.stringify(all));
-  } catch (e) { /* storage bị chặn */ }
+  } catch (e) { /* storage blocked */ }
 }
 
 function clearRun(id) {
@@ -61,10 +61,10 @@ function clearRun(id) {
   delete all[id || level.id];
   try {
     localStorage.setItem(RUNKEY, JSON.stringify(all));
-  } catch (e) { /* bỏ qua */ }
+  } catch (e) { /* ignore */ }
 }
 
-/** Ván lưu mới nhất trong mọi cánh đồng → { lv, run } hoặc null */
+/** Most recent saved run across all fields → { lv, run } or null */
 function latestRun() {
   const all = runsAll();
   let best = null;
@@ -80,7 +80,7 @@ function latestRun() {
   return best;
 }
 
-/** Dữ liệu cho nút "Chơi tiếp" ở màn chọn độ khó */
+/** Data for the "Continue" button on the difficulty picker */
 function runResumeInfo() {
   const b = latestRun();
   if (!b) return null;
@@ -89,17 +89,17 @@ function runResumeInfo() {
   return {
     i: b.run.diff,
     id: b.lv.id,
-    text: b.lv.icon + ' ' + b.lv.name + ' · ' + b.run.tw.length + ' vũ khí · đợt ' + w
+    text: b.lv.icon + ' ' + b.lv.name + ' · ' + b.run.tw.length + ' weapons · wave ' + w
   };
 }
 
-/** Ván lưu cho màn lv, bất kể độ khó (dùng để dán nhãn trên màn chọn màn) */
+/** Saved run for level lv on any difficulty (used for labels on the level picker) */
 function runAnyFor(lv) {
   const r = runSlot(lv.id);
   return r && (r.wave > 0 || r.tw.length) ? r : null;
 }
 
-/** Ván lưu cho màn lv, chỉ dùng khi trùng độ khó */
+/** Saved run for level lv, only used when the difficulty matches */
 function runForLevel(lv) {
   const r = runAnyFor(lv);
   return r && r.diff === GC.i ? r : null;
@@ -107,10 +107,10 @@ function runForLevel(lv) {
 
 function agoText(at) {
   const s = Math.max(0, (Date.now() - at) / 1000);
-  if (s < 60) return 'vừa xong';
-  if (s < 3600) return Math.floor(s / 60) + ' phút trước';
-  if (s < 86400) return Math.floor(s / 3600) + ' giờ trước';
-  return Math.floor(s / 86400) + ' ngày trước';
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + ' min ago';
+  if (s < 86400) return Math.floor(s / 3600) + ' hr ago';
+  return Math.floor(s / 86400) + ' days ago';
 }
 
 let resumeRoot = null;
@@ -123,8 +123,8 @@ function closeResume() {
 }
 
 /**
- * Vào màn đang có ván dở → hỏi rõ "Chơi tiếp" hay "Bắt đầu lại",
- * không âm thầm dựng tháp lên bàn rồi khiến bé không biết gì.
+ * Entering a field with an unfinished run → ask clearly "Continue" or "Start over",
+ * instead of quietly rebuilding the towers and leaving the player confused.
  */
 function askResume(run) {
   closeResume();
@@ -136,21 +136,21 @@ function askResume(run) {
   root.className = 'fr-resume';
   root.id = 'fr-resume';
   root.setAttribute('role', 'dialog');
-  root.setAttribute('aria-label', 'Ván đang dở');
+  root.setAttribute('aria-label', 'Unfinished run');
   root.innerHTML =
     '<div class="fr-resume__card">' +
-      '<h2>🔫 Còn ván đang dở</h2>' +
+      '<h2>🔫 Unfinished run</h2>' +
       '<p class="fr-resume__sub">' + GC.esc(level.icon + ' ' + level.name) + ' · ' +
-        LV.emoji + ' ' + GC.esc(LV.label) + ' · lưu ' + agoText(run.at) + '</p>' +
+        LV.emoji + ' ' + GC.esc(LV.label) + ' · saved ' + agoText(run.at) + '</p>' +
       '<div class="fr-resume__list">' +
-        '<span><b>' + run.tw.length + '</b> vũ khí đã mua</span>' +
-        '<span>đang ở đợt <b>' + nextWave + '/' + TOTAL + '</b></span>' +
-        '<span>còn <b>' + (run.lives | 0) + '</b> mạng</span>' +
-        '<span>đã hạ <b>' + (run.kills | 0) + '</b> địch</span>' +
+        '<span><b>' + run.tw.length + '</b> weapons bought</span>' +
+        '<span>on wave <b>' + nextWave + '/' + TOTAL + '</b></span>' +
+        '<span><b>' + (run.lives | 0) + '</b> lives left</span>' +
+        '<span><b>' + (run.kills | 0) + '</b> enemies defeated</span>' +
       '</div>' +
       '<div class="fr-resume__row">' +
-        '<button type="button" class="btn mint" data-a="go">▶ Chơi tiếp</button>' +
-        '<button type="button" class="btn red" data-a="new">↺ Bắt đầu lại</button>' +
+        '<button type="button" class="btn mint" data-a="go">▶ Continue</button>' +
+        '<button type="button" class="btn red" data-a="new">↺ Start over</button>' +
       '</div>' +
     '</div>';
 
@@ -166,7 +166,7 @@ function askResume(run) {
     else {
       clearRun(level.id);
       updUI();
-      showMsg('↺ Bàn mới — chưa có vũ khí');
+      showMsg('↺ New board — no weapons yet');
     }
   };
 
@@ -179,7 +179,7 @@ function askResume(run) {
   resumeRoot = root;
 }
 
-/** Dựng lại tháp + tiến độ sau khi reset() đã làm sạch lưới */
+/** Rebuild towers + progress after reset() has cleared the grid */
 function restoreRun(r) {
   for (const t of r.tw) {
     if (!TYPES[t.k]) continue;
@@ -202,7 +202,7 @@ function restoreRun(r) {
   }
 
   const d = bfs(blocked);
-  // Địa hình màn chơi có thể đổi giữa 2 bản lưu — đường phải còn thông mới nhận ván
+  // Level terrain may change between saves — the path must still be open to accept the run
   if (d[0 + SR * COLS] === Infinity) {
     clearRun(level.id);
     return false;
@@ -213,27 +213,27 @@ function restoreRun(r) {
   lives = Math.min(D.lives, Math.max(1, r.lives | 0));
   kills = Math.max(0, r.kills | 0);
 
-  // thoát giữa đợt → lần sau chơi lại đúng đợt đó, không bỏ sót đợt nào
+  // left mid-wave → play that same wave again next time, so no wave is skipped
   wave = Math.min(TOTAL, Math.max(0, r.wave | 0));
   if (r.w && wave > 0) wave--;
 
-  // Chơi một mình (mở file .html) thì tiền thuộc về ván lưu;
-  // trong app thì ví tài khoản mới là bản đúng, không ghi đè.
+  // Playing standalone (opening the .html file) → coins belong to the saved run;
+  // inside the app the account wallet is the source of truth, so don't overwrite it.
   if (!HOSTED && typeof r.money === 'number') money = r.money;
 
   waveActive = false;
   $('go').disabled = false;
-  $('go').textContent = '▶ Bắt đầu đợt ' + (wave + 1);
+  $('go').textContent = '▶ Start wave ' + (wave + 1);
 
   updUI();
   showInfo();
   showPreview();
 
-  showMsg('↺ Tiếp tục ván cũ · ' + towers.length + ' vũ khí · đợt ' + (wave + 1));
+  showMsg('↺ Run restored · ' + towers.length + ' weapons · wave ' + (wave + 1));
   return true;
 }
 
-/* ---------- Cầu nối với app: host báo ghi trước khi phá iframe ---------- */
+/* ---------- Bridge with the app: the host asks for a save before tearing down the iframe ---------- */
 window.__gqFlush = saveRun;
 addEventListener('gq:flush', saveRun);
 addEventListener('pagehide', saveRun);

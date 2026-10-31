@@ -1,5 +1,5 @@
-// src/games/offline/games-src/g2048.js — Vườn Trái Cây
-// 2048 phiên bản trái cây: vuốt để gộp hai quả giống nhau, mục tiêu là quả dưa 2048.
+// src/games/offline/games-src/g2048.js — Fruit Garden
+// A fruit version of 2048: swipe to merge two matching fruits; the goal is the 2048 melon.
 
 const G2048_FRUITS = ['🍒', '🍓', '🍊', '🍋', '🥝', '🍇', '🍍', '🍑', '🥭', '🍎', '🍉'];
 const G2048_COLORS = ['#ffe0e0', '#ffd6cf', '#ffe3b3', '#fff0a8', '#d8f3b0', '#c9e8ff', '#c7d9ff', '#e2ccff', '#ffcfe8', '#ffd7a1', '#b8f0d0'];
@@ -72,10 +72,10 @@ function start2048(root, mode, modeIndex, resume) {
         root.innerHTML = `${gqHud(0, 0, '')}
             <div class="b48" id="bd"></div>
             <div class="row" style="margin-top:12px">
-                <button class="btn alt" id="undo">↩ Hoàn tác (<span id="u">0</span>)</button>
-                <button class="btn alt" id="stop">Kết thúc ván</button>
+                <button class="btn alt" id="undo">↩ Undo (<span id="u">0</span>)</button>
+                <button class="btn alt" id="stop">End game</button>
             </div>
-            <p class="hint">Vuốt hoặc dùng phím mũi tên để trượt cả vườn. Hai quả giống nhau chạm vào sẽ gộp thành quả to hơn.</p>`;
+            <p class="hint">Swipe or use the arrow keys to slide the whole garden. Two matching fruits that touch merge into a bigger fruit.</p>`;
         root.onclick = (e) => {
             if (ended) return;
             if (e.target.closest('#undo')) undo();
@@ -157,7 +157,7 @@ function start2048(root, mode, modeIndex, resume) {
         clearOfflineRun(id);
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 10),
-            lines: [`Quả cao nhất: ${tier}`, `${score} điểm gộp quả`],
+            lines: [`Top fruit: ${tier}`, `${score} merge points`],
             replay: game2048, details: { top: mx },
         });
     }
@@ -201,7 +201,7 @@ function game2048(root) {
     if (g2048Valid(raw)) saved = raw;
     else if (raw && Array.isArray(raw.board) && raw.board.length === 16 &&
         raw.board.every((v) => Number.isSafeInteger(v) && v >= 0)) {
-        // Bản lưu cũ chỉ có board/score — vẫn giữ được ván đang chơi.
+        // Older saves only stored board/score — keep the game in progress.
         saved = {
             v: 2, mode: gqReadMode('g2048'), board: raw.board,
             score: Number.isSafeInteger(raw.score) && raw.score >= 0 ? raw.score : 0,
@@ -216,23 +216,23 @@ function game2048(root) {
     if (raw) clearOfflineRun('g2048');
 
     gqIntro(root, {
-        id: 'g2048', icon: '🍉', name: 'Vườn Trái Cây',
-        desc: 'Vuốt để gộp các quả giống nhau, lớn dần từ quả anh đào đến quả dưa hấu 2048.',
+        id: 'g2048', icon: '🍉', name: 'Fruit Garden',
+        desc: 'Swipe to merge matching fruits, growing from cherries all the way to the 2048 watermelon.',
         steps: [
-            'Mỗi lần vuốt, cả vườn trượt về một phía và một quả mới xuất hiện.',
-            'Hai quả giống nhau chạm nhau sẽ gộp thành quả lớn hơn.',
-            'Mức khó cho bạn số lần hoàn tác ít hơn nhưng điểm nhân cao hơn.',
+            'Every swipe slides the whole garden one way and a new fruit appears.',
+            'Two matching fruits that touch merge into a bigger fruit.',
+            'Harder modes give you fewer undos but a higher score multiplier.',
         ],
     }, (mode, index) => start2048(root, mode, index));
 }
 
 startSingleGame({
     id: 'g2048',
-    name: 'Vườn Trái Cây',
+    name: 'Fruit Garden',
     icon: '🍉',
     storageKey: 'offline_g2048',
     mount: game2048,
     badges: [
-        { id: 'vine', n: 'Chạm quả 2048', i: '🍉', ok: () => !!S.flags.f2048 },
+        { id: 'vine', n: 'Reach the 2048 fruit', i: '🍉', ok: () => !!S.flags.f2048 },
     ],
 });

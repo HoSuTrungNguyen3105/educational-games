@@ -30,8 +30,19 @@ const ALIASES = {
   "block-master": "block-master-super-puzzle",
   "block-master-super-puzzle": "block-master-super-puzzle",
   "find-number": "find-the-number-solo",
+  "find-the-number": "find-the-number-solo",
   "merge-blast": "merge-and-blast-solo",
+  "merge-and-blast": "merge-and-blast-solo",
   "nong-trai-moi": "nong-trai-nang-cap",
+  "happy-farm": "nong-trai-nang-cap",
+  "fruit-slash": "chem-trai-cay",
+  "fruit-jar": "hu-trai-cay",
+  "color-blocks": "xep-khoi-mau",
+  "neon-brick-breaker": "pha-gach-neon",
+  "spin-jump": "nhay-xoay",
+  "relax-corner": "goc-thu-gian",
+  "bug-smash": "dap-sau-bo",
+  "garden-pairs": "ghep-cap-vuon",
 };
 
 const slug = (s = "") => {

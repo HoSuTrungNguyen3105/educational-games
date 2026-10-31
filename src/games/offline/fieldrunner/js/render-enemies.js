@@ -1,11 +1,11 @@
 /* =====================================================
-   render-enemies.js · vẽ kẻ địch, hào quang tinh anh,
-   thanh máu
+   render-enemies.js · draws enemies, elite auras,
+   and health bars
    ===================================================== */
 
-/* ---------- Bộ phận dùng lại cho nhiều kẻ địch ---------- */
+/* ---------- Reusable parts shared by many enemies ---------- */
 
-/** Thân tròn có đổ bóng sáng */
+/** Rounded body with a glossy gradient */
 function blob(r, col, hl = 0.4) {
   ctx.fillStyle = rg(-r * 0.3, -r * 0.35, r * 0.1, r * 1.1, [
     [0, lighten(col, hl)],
@@ -19,7 +19,7 @@ function blob(r, col, hl = 0.4) {
   ctx.stroke();
 }
 
-/** Cặp mắt */
+/** Pair of eyes */
 function eyes(r, dx = 3, dy = -2, s = 3) {
   ctx.fillStyle = '#fff';
   ctx.beginPath();
@@ -34,7 +34,7 @@ function eyes(r, dx = 3, dy = -2, s = 3) {
   ctx.fill();
 }
 
-/** Đôi chân bước */
+/** Walking feet */
 function feet(r, bob, anim) {
   const s = Math.sin(anim * 10);
 
@@ -46,7 +46,7 @@ function feet(r, bob, anim) {
 }
 
 /* =====================================================
-   HÌNH DÁNG TỪNG LOẠI KẺ ĐỊCH
+   SHAPES FOR EACH ENEMY TYPE
    ===================================================== */
 function drawEnemyBody(e, a, bob) {
   const d = e.def;
@@ -68,7 +68,7 @@ function drawEnemyBody(e, a, bob) {
       break;
 
     case 'runner':
-      // Vệt tốc độ
+      // Speed trail
       ctx.strokeStyle = 'rgba(255,255,255,.7)';
       ctx.lineWidth = 2;
       for (let i = -1; i <= 1; i++) {
@@ -82,7 +82,7 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a * 1.6);
       blob(r, d.col);
 
-      // Băng đô
+      // Headband
       ctx.fillStyle = '#e03a3a';
       ctx.fillRect(-r, -r * 0.5, r * 2, 3);
       ctx.fillRect(-r - 5, -r * 0.5 + 1, 6, 3);
@@ -97,7 +97,7 @@ function drawEnemyBody(e, a, bob) {
       break;
 
     case 'tank':
-      // Xích
+      // Tracks
       ctx.fillStyle = '#2a2a30';
       rr(-r - 1, -r * 0.95, r * 2 + 2, r * 0.5, 3);
       ctx.fill();
@@ -113,13 +113,13 @@ function drawEnemyBody(e, a, bob) {
         ctx.fillRect(i * r * 0.28 - o * 0.3, r * 0.6, 2, 3);
       }
 
-      // Thân xe
+      // Vehicle body
       ctx.fillStyle = lg(0, -r * 0.7, 0, r * 0.7, [[0, lighten(d.col, 0.35)], [1, d.col]]);
       rr(-r * 0.85, -r * 0.62, r * 1.7, r * 1.24, 5);
       ctx.fill();
       ctx.stroke();
 
-      // Tháp pháo
+      // Turret
       ctx.fillStyle = lg(0, -r * 0.4, 0, r * 0.4, [[0, '#a07a5a'], [1, '#6a4a30']]);
       ctx.beginPath();
       ctx.arc(-1, 0, r * 0.5, 0, 7);
@@ -164,12 +164,12 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a);
       blob(r, d.col);
 
-      // Chữ thập y tế
+      // Medical cross
       ctx.fillStyle = '#fff';
       ctx.fillRect(-2, -1, 4, 10);
       ctx.fillRect(-5, 2, 10, 4);
 
-      // Vầng sáng trên đầu
+      // Glow above the head
       ctx.strokeStyle = '#ffe27a';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -214,7 +214,7 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a * 1.3);
       blob(r, d.col);
 
-      // Sừng lửa
+      // Flame horns
       ctx.fillStyle = '#ffe27a';
       ctx.beginPath();
       ctx.moveTo(-r * 0.8, -r * 0.5);
@@ -234,7 +234,7 @@ function drawEnemyBody(e, a, bob) {
 
       eyes(r, 3, -1, 2.8);
 
-      // Lông mày giận dữ
+      // Angry eyebrows
       ctx.strokeStyle = INK;
       ctx.lineWidth = 2.4;
       ctx.beginPath();
@@ -266,7 +266,7 @@ function drawEnemyBody(e, a, bob) {
       break;
 
     case 'ninja':
-      // Khăn bay
+      // Flowing scarf
       ctx.strokeStyle = '#d33';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -293,7 +293,7 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a);
       blob(r, d.col, 0.5);
 
-      // Mũ giáp
+      // Helmet
       ctx.fillStyle = lg(0, -r, 0, 0, [[0, '#e0e6ee'], [1, '#8a94a2']]);
       ctx.beginPath();
       ctx.arc(0, -r * 0.15, r * 1.04, 3.2, 6.22);
@@ -306,7 +306,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fillStyle = INK;
       ctx.fillRect(-r * 0.65, -r * 0.35, r * 1.3, 3);
 
-      // Lông mũ đỏ
+      // Red plume
       ctx.fillStyle = '#e23a3a';
       ctx.beginPath();
       ctx.moveTo(0, -r);
@@ -316,7 +316,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Khiên
+      // Shield
       ctx.fillStyle = lg(0, 0, 0, r, [[0, '#4a7ab8'], [1, '#2a4a88']]);
       ctx.beginPath();
       ctx.moveTo(r * 0.3, -r * 0.2);
@@ -335,7 +335,7 @@ function drawEnemyBody(e, a, bob) {
     case 'wizard':
       feet(r, bob, a);
 
-      // Áo choàng
+      // Cloak
       ctx.fillStyle = lg(0, -r, 0, r, [[0, '#8a78f0'], [1, '#3f2fa8']]);
       ctx.beginPath();
       ctx.moveTo(0, -r * 0.6);
@@ -345,7 +345,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Mặt
+      // Face
       ctx.fillStyle = '#f2d0a8';
       ctx.beginPath();
       ctx.arc(0, -r * 0.5, r * 0.5, 0, 7);
@@ -353,7 +353,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.stroke();
       eyes(r, 2, -r * 0.5, 1.8);
 
-      // Nón
+      // Hat
       ctx.fillStyle = '#3f2fa8';
       ctx.beginPath();
       ctx.moveTo(-r * 0.8, -r * 0.7);
@@ -368,7 +368,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(0, -r * 1.25, 1.8, 0, 7);
       ctx.fill();
 
-      // Gậy phép
+      // Magic staff
       ctx.strokeStyle = '#8a5a30';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -385,7 +385,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(r * 0.9, -r * 0.8, 6 + Math.sin(a * 8), 0, 7);
       ctx.fill();
 
-      // Vòng phép tăng tốc
+      // Speed spell ring
       ctx.strokeStyle = 'rgba(120,170,255,.35)';
       ctx.lineWidth = 2;
       ctx.setLineDash([3, 4]);
@@ -419,7 +419,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(3, -r * 0.6, 2, 0, 7);
       ctx.fill();
 
-      // Quả cầu ma quay quanh
+      // Orbiting ghost orb
       for (let i = 0; i < 3; i++) {
         const aa = a * 5 + i * 2.094;
         ctx.fillStyle = '#d65cc0';
@@ -449,19 +449,19 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Rêu
+      // Moss
       ctx.fillStyle = '#6aa84a';
       ctx.beginPath();
       ctx.arc(-r * 0.5, -r * 0.35, 3, 0, 7);
       ctx.arc(r * 0.4, r * 0.2, 3.5, 0, 7);
       ctx.fill();
 
-      // Mắt cam
+      // Orange eye
       ctx.fillStyle = '#ff9a3c';
       ctx.fillRect(-r * 0.4, -r * 0.7, 5, 4);
       ctx.fillRect(r * 0.1, -r * 0.7, 5, 4);
 
-      // Vết nứt
+      // Cracks
       ctx.strokeStyle = 'rgba(0,0,0,.35)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -480,7 +480,7 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a);
       blob(r, d.col);
 
-      // Vương miện
+      // Crown
       ctx.fillStyle = '#ffd93b';
       ctx.beginPath();
       ctx.moveTo(-r * 0.7, -r * 0.75);
@@ -505,7 +505,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.lineTo(-1, -3);
       ctx.stroke();
 
-      // Răng
+      // Teeth
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.moveTo(-6, r * 0.5);
@@ -525,7 +525,7 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a);
       blob(r, d.col, 0.25);
 
-      // Gai tinh thể
+      // Crystal spikes
       ctx.fillStyle = '#b9a3ff';
       for (let i = -2; i <= 2; i++) {
         ctx.beginPath();
@@ -537,7 +537,7 @@ function drawEnemyBody(e, a, bob) {
         ctx.stroke();
       }
 
-      // Lõi năng lượng
+      // Energy core
       ctx.fillStyle = rg(0, r * 0.35, 1, 9, [
         [0, '#fff'],
         [0.5, '#c86bff'],
@@ -552,10 +552,10 @@ function drawEnemyBody(e, a, bob) {
       ctx.fillRect(3, -r * 0.3, 6, 4);
       break;
 
-    /* ----- MỚI ----- */
+    /* ----- NEW ----- */
 
     case 'juggernaut':
-      // Xích hạng nặng
+      // Heavy chains
       ctx.fillStyle = '#23252b';
       rr(-r - 2, -r * 0.95, r * 2 + 4, r * 0.55, 4);
       ctx.fill();
@@ -564,19 +564,19 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Thân thép nhiều lớp
+      // Layered steel body
       ctx.fillStyle = lg(0, -r * 0.8, 0, r * 0.8, [[0, '#8a93a2'], [1, '#3e4552']]);
       rr(-r * 0.95, -r * 0.7, r * 1.9, r * 1.4, 6);
       ctx.fill();
       ctx.stroke();
 
-      // Tấm giáp phụ
+      // Extra armor plate
       ctx.fillStyle = '#6a7384';
       rr(-r * 0.7, -r * 0.5, r * 1.1, r, 4);
       ctx.fill();
       ctx.stroke();
 
-      // Đinh tán
+      // Rivets
       ctx.fillStyle = '#c9ced8';
       for (const [px, py] of [[-0.5, -0.35], [0.1, -0.35], [-0.5, 0.35], [0.1, 0.35]]) {
         ctx.beginPath();
@@ -584,14 +584,14 @@ function drawEnemyBody(e, a, bob) {
         ctx.fill();
       }
 
-      // Hai nòng pháo
+      // Twin cannons
       ctx.fillStyle = '#1f2228';
       ctx.fillRect(r * 0.3, -r * 0.35, r + 5, 5);
       ctx.strokeRect(r * 0.3, -r * 0.35, r + 5, 5);
       ctx.fillRect(r * 0.3, r * 0.1, r + 5, 5);
       ctx.strokeRect(r * 0.3, r * 0.1, r + 5, 5);
 
-      // Đèn đỏ nhấp nháy
+      // Blinking red light
       ctx.fillStyle = (Math.sin(a * 10) > 0) ? '#ff4a3a' : '#7a1f18';
       ctx.beginPath();
       ctx.arc(-r * 0.6, 0, 2.4, 0, 7);
@@ -601,7 +601,7 @@ function drawEnemyBody(e, a, bob) {
     case 'phoenix': {
       const w = Math.sin(a * 9);
 
-      // Đuôi lửa
+      // Fire trail
       for (let i = 0; i < 3; i++) {
         ctx.strokeStyle = ['#ff3a1a', '#ff9a2a', '#ffe07a'][i];
         ctx.lineWidth = 6 - i * 1.6;
@@ -614,7 +614,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.strokeStyle = INK;
       ctx.lineWidth = 2;
 
-      // Cánh
+      // Wings
       ctx.fillStyle = lg(0, -26, 0, 0, [[0, '#ffb347'], [1, '#e8482a']]);
       ctx.beginPath();
       ctx.moveTo(-2, 0);
@@ -632,14 +632,14 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Thân
+      // Body
       ctx.fillStyle = rg(2, -3, 2, 16, [[0, '#fff2b0'], [1, '#ff7a2a']]);
       ctx.beginPath();
       ctx.ellipse(2, 0, 14, 8, 0, 0, 7);
       ctx.fill();
       ctx.stroke();
 
-      // Đầu & mỏ
+      // Head and beak
       ctx.fillStyle = '#ffd36a';
       ctx.beginPath();
       ctx.arc(14, -2, 6, 0, 7);
@@ -660,7 +660,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(15, -4, 1.4, 0, 7);
       ctx.fill();
 
-      // Mào lửa
+      // Flame crest
       ctx.fillStyle = '#ff4a1a';
       ctx.beginPath();
       ctx.moveTo(10, -7);
@@ -668,7 +668,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.lineTo(15, -7);
       ctx.fill();
 
-      // Đã hồi sinh: tro tàn lấp lánh
+      // Reborn: sparkling ashes
       if (e.revived) {
         ctx.fillStyle = 'rgba(255,230,160,.8)';
         for (let i = 0; i < 4; i++) {
@@ -683,7 +683,7 @@ function drawEnemyBody(e, a, bob) {
     case 'warlock':
       feet(r, bob, a);
 
-      // Áo choàng tím đen
+      // Dark purple cloak
       ctx.fillStyle = lg(0, -r, 0, r, [[0, '#5a3fb8'], [1, '#1c1244']]);
       ctx.beginPath();
       ctx.moveTo(0, -r * 0.7);
@@ -693,7 +693,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Mũ trùm
+      // Hood
       ctx.fillStyle = '#241555';
       ctx.beginPath();
       ctx.arc(0, -r * 0.5, r * 0.62, Math.PI, 0);
@@ -703,14 +703,14 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Đôi mắt phát sáng trong bóng tối
+      // Eyes glowing in the dark
       ctx.fillStyle = '#ff5af0';
       ctx.beginPath();
       ctx.arc(-3, -r * 0.35, 1.8, 0, 7);
       ctx.arc(3, -r * 0.35, 1.8, 0, 7);
       ctx.fill();
 
-      // Quả cầu pha lê lơ lửng
+      // Floating crystal orb
       ctx.fillStyle = rg(r * 1.1, -r * 0.3 + Math.sin(a * 6) * 2, 1, 8, [
         [0, '#fff'],
         [0.5, '#b07bff'],
@@ -720,7 +720,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(r * 1.1, -r * 0.3 + Math.sin(a * 6) * 2, 7, 0, 7);
       ctx.fill();
 
-      // Vòng ma pháp
+      // Magic circle
       ctx.strokeStyle = 'rgba(176,123,255,.45)';
       ctx.lineWidth = 2;
       ctx.setLineDash([2, 5]);
@@ -731,7 +731,7 @@ function drawEnemyBody(e, a, bob) {
       break;
 
     case 'reaper':
-      // Áo choàng rách tả tơi
+      // Tattered cloak
       ctx.fillStyle = lg(0, -r, 0, r * 1.4, [[0, '#4a4a64'], [1, '#14141f']]);
       ctx.beginPath();
       ctx.moveTo(0, -r * 0.9);
@@ -745,7 +745,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Mặt sọ
+      // Skull face
       ctx.fillStyle = '#e8e4da';
       ctx.beginPath();
       ctx.arc(0, -r * 0.45, r * 0.5, 0, 7);
@@ -758,7 +758,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.ellipse(3, -r * 0.5, 2, 2.6, 0, 0, 7);
       ctx.fill();
 
-      // Lưỡi hái
+      // Scythe
       ctx.strokeStyle = '#6a4a2a';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -773,7 +773,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.stroke();
       break;
 
-    /* ----- Trên không ----- */
+    /* ----- In the air ----- */
 
     case 'plane':
     case 'bomber':
@@ -789,7 +789,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Buồng lái
+      // Cockpit
       ctx.fillStyle = '#4aa8ff';
       ctx.beginPath();
       ctx.ellipse(6, 0, 4, 2.6, 0, 0, 7);
@@ -829,7 +829,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(-1, -1, 1.6, 0, 7);
       ctx.fill();
 
-      // Tai nhọn
+      // Pointed ears
       ctx.fillStyle = '#8a62b0';
       ctx.beginPath();
       ctx.moveTo(-3, -r * 0.7);
@@ -845,7 +845,7 @@ function drawEnemyBody(e, a, bob) {
     case 'dragon': {
       const w = Math.sin(a * 7);
 
-      // Cánh
+      // Wings
       ctx.fillStyle = '#a8302a';
       ctx.beginPath();
       ctx.moveTo(-4, 0);
@@ -863,7 +863,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Đuôi
+      // Tail
       ctx.strokeStyle = d.col;
       ctx.lineWidth = 7;
       ctx.lineCap = 'round';
@@ -874,7 +874,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.strokeStyle = INK;
       ctx.lineWidth = 2;
 
-      // Thân
+      // Body
       ctx.fillStyle = lg(0, -16, 0, 16, [[0, '#f06a58'], [1, '#a8302a']]);
       ctx.beginPath();
       ctx.ellipse(0, 0, 19, 11, 0, 0, 7);
@@ -886,7 +886,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.ellipse(1, 4, 14, 5, 0, 0, 7);
       ctx.fill();
 
-      // Đầu
+      // Head
       ctx.fillStyle = d.col;
       ctx.beginPath();
       ctx.ellipse(20, -2, 9, 7, 0, 0, 7);
@@ -911,7 +911,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(23, -4, 1.2, 0, 7);
       ctx.fill();
 
-      // Hơi lửa
+      // Fire breath
       ctx.fillStyle = 'rgba(255,150,40,' + (0.5 + 0.3 * Math.sin(a * 12)) + ')';
       ctx.beginPath();
       ctx.moveTo(28, 0);
@@ -928,7 +928,7 @@ function drawEnemyBody(e, a, bob) {
 }
 
 /* =====================================================
-   HÀO QUANG TINH ANH (vẽ phía sau thân)
+   ELITE AURA (drawn behind the body)
    ===================================================== */
 function drawEliteAura(e) {
   const r = e.def.r;
@@ -942,7 +942,7 @@ function drawEliteAura(e) {
   ctx.arc(0, 0, r + 16, 0, 7);
   ctx.fill();
 
-  // Vòng chấm vàng xoay quanh
+  // Spinning ring of yellow dots
   ctx.strokeStyle = 'rgba(255,205,50,.9)';
   ctx.lineWidth = 2;
   ctx.setLineDash([4, 5]);
@@ -955,7 +955,7 @@ function drawEliteAura(e) {
 }
 
 /* =====================================================
-   VẼ MỘT KẺ ĐỊCH HOÀN CHỈNH
+   DRAW A COMPLETE ENEMY
    ===================================================== */
 function drawEnemy(e) {
   const d = e.def;
@@ -965,7 +965,7 @@ function drawEnemy(e) {
   ctx.save();
   ctx.translate(e.x, e.y);
 
-  /* ----- Bóng đổ ----- */
+  /* ----- Drop shadow ----- */
   if (!d.air) {
     ctx.fillStyle = rg(0, r * 0.85, 1, r, [
       [0, 'rgba(0,0,0,.34)'],
@@ -994,7 +994,7 @@ function drawEnemy(e) {
 
   ctx.filter = 'none';
 
-  /* ----- Khiên năng lượng ----- */
+  /* ----- Energy shield ----- */
   if (e.shieldMax && e.shield > 0) {
     ctx.strokeStyle = 'rgba(120,200,255,' + (0.35 + 0.5 * e.shield / e.shieldMax) + ')';
     ctx.lineWidth = 3;
@@ -1005,7 +1005,7 @@ function drawEnemy(e) {
     ctx.stroke();
   }
 
-  /* ----- Vòng cháy / độc ----- */
+  /* ----- Burning / poison ring ----- */
   let ri = 0;
   for (const dot of e.dots) {
     ctx.strokeStyle = dot.color;
@@ -1018,7 +1018,7 @@ function drawEnemy(e) {
   }
   ctx.globalAlpha = d.stealth ? 0.55 : 1;
 
-  /* ----- Bị làm chậm ----- */
+  /* ----- Slowed ----- */
   if (e.slowT > 0) {
     ctx.strokeStyle = '#8be8f5';
     ctx.fillStyle = 'rgba(140,232,245,.22)';
@@ -1029,7 +1029,7 @@ function drawEnemy(e) {
     ctx.stroke();
   }
 
-  /* ----- Được tăng tốc ----- */
+  /* ----- Hasted ----- */
   if (e.haste > 1) {
     ctx.strokeStyle = 'rgba(120,170,255,.8)';
     ctx.lineWidth = 2;
@@ -1046,7 +1046,7 @@ function drawEnemy(e) {
   drawEnemyBar(e);
 }
 
-/** Thanh máu (và khiên) phía trên đầu kẻ địch */
+/** Health bar (and shield) above an enemy's head */
 function drawEnemyBar(e) {
   const d = e.def;
   const r = d.r;
@@ -1055,17 +1055,17 @@ function drawEnemyBar(e) {
   const x = e.x - w / 2;
   const y = e.y - r - (d.air ? 14 : 10);
 
-  // Viền
+  // Border
   ctx.fillStyle = INK;
   rr(x - 1.5, y - 1.5, w + 3, 7, 3);
   ctx.fill();
 
-  // Nền đỏ
+  // Red background
   ctx.fillStyle = '#e04a4a';
   rr(x, y, w, 4, 2);
   ctx.fill();
 
-  // Máu còn lại
+  // Remaining health
   const pct = clamp(e.hp / e.max, 0, 1);
   ctx.fillStyle = pct > 0.5 ? '#4de04d' : pct > 0.25 ? '#ffd93b' : '#ff7a3a';
   if (pct > 0) {
@@ -1073,7 +1073,7 @@ function drawEnemyBar(e) {
     ctx.fill();
   }
 
-  // Khiên
+  // Shield
   if (e.shieldMax && e.shield > 0) {
     ctx.fillStyle = '#0a2a4a';
     ctx.fillRect(x - 1, y + 6, w + 2, 4);
@@ -1081,7 +1081,7 @@ function drawEnemyBar(e) {
     ctx.fillRect(x, y + 7, w * clamp(e.shield / e.shieldMax, 0, 1), 2);
   }
 
-  // Ngôi sao tinh anh
+  // Elite star
   if (e.elite) {
     ctx.fillStyle = '#ffd93b';
     ctx.strokeStyle = INK;

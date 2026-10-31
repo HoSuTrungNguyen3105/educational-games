@@ -1,9 +1,9 @@
 /* =====================================================
-   render-terrain.js · vẽ địa hình của màn chơi lên nền tĩnh
-   (cây, đá, nước, hàng rào, nhà kho, ruộng cày, khóm hoa)
+   render-terrain.js · draw the level terrain onto the static background
+   (trees, rocks, water, fences, barns, plowed fields, flower bushes)
    ===================================================== */
 
-/** Ô (c,r) có đúng loại k không — ra ngoài bản đồ coi như ô trống */
+/** Is tile (c,r) exactly type k — outside the map counts as an empty tile */
 function kAt(c, r) {
   if (c < 0 || r < 0 || c >= COLS || r >= ROWS || !kinds) return '.';
   return kinds[c][r];
@@ -11,7 +11,7 @@ function kAt(c, r) {
 
 const isK = (c, r, k) => kAt(c, r) === k;
 
-/** Duyệt mọi ô mang loại k */
+/** Visit every tile of type k */
 function eachKind(k, fn) {
   if (!kinds) return;
 
@@ -22,14 +22,14 @@ function eachKind(k, fn) {
   }
 }
 
-/** Số ngẫu nhiên cố định theo ô — nền vẽ lại vẫn giống nhau */
+/** Per-tile seeded random number — the background looks the same every redraw */
 function cellRand(c, r, i) {
   const rand = seededRandom(c * 73856093 ^ r * 19349663 ^ (i || 0) * 83492791);
   return rand();
 }
 
 /* =====================================================
-   NƯỚC (ao, sông) — các ô ghép thành một khối bo tròn, không lộ mạch
+   WATER (ponds, river) — tiles merge into one rounded block with no seams
    ===================================================== */
 function waterCellPath(path, c, r) {
   const x = c * CS - 2, y = r * CS - 2, s = CS + 4;
@@ -49,13 +49,13 @@ function drawWater(g) {
 
   if (!any) return;
 
-  // Bờ cát/đất quanh mặt nước
+  // Sandy/earthen bank around the water
   g.lineJoin = 'round';
   g.strokeStyle = '#b79b62';
   g.lineWidth = 11;
   g.stroke(path);
 
-  // Mặt nước: tô một lần cho toàn khối → không có đường nối giữa các ô
+  // Water surface: filled once for the whole block, so there are no seams between cells
   const grad = g.createLinearGradient(0, 0, CW * 0.3, CH);
   grad.addColorStop(0, PAL.water[0]);
   grad.addColorStop(1, PAL.water[1]);
@@ -65,7 +65,7 @@ function drawWater(g) {
   g.fill(path);
   g.clip(path);
 
-  // Đáy tối dần về phía dưới + bóng sát mép
+  // Bottom gets darker toward the lower edge, plus a shadow along the rim
   const deep = g.createLinearGradient(0, 0, 0, CH);
   deep.addColorStop(0, 'rgba(255,255,255,.25)');
   deep.addColorStop(1, 'rgba(10,60,90,.28)');
@@ -76,7 +76,7 @@ function drawWater(g) {
   g.lineWidth = 7;
   g.stroke(path);
 
-  // Gợn sóng + lá sen
+  // Ripples and lily pads
   eachKind('w', (c, r) => {
     const x = c * CS, y = r * CS;
 
@@ -105,7 +105,7 @@ function drawWater(g) {
 
   g.restore();
 
-  // Lau sậy mọc trên bờ, phía trên khối nước
+  // Reeds growing on the bank above the water block
   eachKind('w', (c, r) => {
     if (isK(c, r - 1, 'w') || cellRand(c, r, 4) > 0.5) return;
 
@@ -124,7 +124,7 @@ function drawWater(g) {
 }
 
 /* =====================================================
-   CẦU GỖ (ô 'j': địch đi qua, không xây được)
+   WOODEN BRIDGE ('j' tile: enemies walk over it, can't build)
    ===================================================== */
 function drawBridges(g) {
   eachKind('j', (c, r) => {
@@ -149,7 +149,7 @@ function drawBridges(g) {
 }
 
 /* =====================================================
-   RUỘNG CÀY ('o') & KHÓM HOA ('x') — ô đẹp, vẫn xây được
+   PLOWED FIELD ('o') & FLOWER BUSH ('x') — pretty tiles that can still be built on
    ===================================================== */
 function drawFields(g) {
   eachKind('o', (c, r) => {
@@ -161,7 +161,7 @@ function drawFields(g) {
     g.fillStyle = 'rgba(90,60,25,.35)';
     for (let i = 0; i < 4; i++) g.fillRect(x, y + 3 + i * 10, CS, 4);
 
-    // luống đất nổi
+    // raised soil ridges
     g.fillStyle = 'rgba(255,235,190,.25)';
     for (let i = 0; i < 4; i++) g.fillRect(x, y + 2 + i * 10, CS, 1.4);
   });
@@ -189,7 +189,7 @@ function drawFields(g) {
 }
 
 /* =====================================================
-   ĐÁ ('r') — cụm 2-3 hòn
+   ROCKS ('r') — clusters of 2-3 stones
    ===================================================== */
 function drawRocks(g) {
   eachKind('r', (c, r) => {
@@ -227,7 +227,7 @@ function drawRocks(g) {
       g.fill();
     }
 
-    // Rêu dưới chân đá
+    // Moss at the base of the rocks
     if (cellRand(c, r, 2) < 0.6) {
       g.fillStyle = 'rgba(60,150,70,.5)';
       g.beginPath();
@@ -238,7 +238,7 @@ function drawRocks(g) {
 }
 
 /* =====================================================
-   HÀNG RÀO ('f') — ray gỗ nối theo dải ngang/dọc
+   FENCE ('f') — wooden rails joining along horizontal/vertical runs
    ===================================================== */
 function drawFences(g) {
   eachKind('f', (c, r) => {
@@ -250,7 +250,7 @@ function drawFences(g) {
     g.translate(x + CS / 2, y + CS / 2);
     if (!horiz && vert) g.rotate(Math.PI / 2);
 
-    // bóng đổ
+    // drop shadow
     g.fillStyle = 'rgba(0,0,0,.2)';
     g.fillRect(-CS / 2 + 3, 6, CS - 6, 4);
 
@@ -261,7 +261,7 @@ function drawFences(g) {
     g.strokeStyle = 'rgba(28,27,58,.8)';
     g.lineWidth = 1.6;
 
-    // 2 thanh ngang
+    // 2 horizontal rails
     for (const oy of [-8, 1]) {
       g.beginPath();
       g.rect(-CS / 2 + 1, oy, CS - 2, 5);
@@ -269,7 +269,7 @@ function drawFences(g) {
       g.stroke();
     }
 
-    // cột rào
+    // fence posts
     for (const ox of [-CS / 2 + 3, CS / 2 - 8]) {
       g.beginPath();
       g.rect(ox, -13, 5, 20);
@@ -282,7 +282,7 @@ function drawFences(g) {
 }
 
 /* =====================================================
-   ĐỐNG CỎ KHÔ ('h')
+   HAYSTACK ('h')
    ===================================================== */
 function drawHay(g) {
   eachKind('h', (c, r) => {
@@ -305,7 +305,7 @@ function drawHay(g) {
     g.lineWidth = 2;
     g.stroke();
 
-    // sợi cỏ & dây buộc
+    // straw strands & binding rope
     g.strokeStyle = 'rgba(150,115,40,.7)';
     g.lineWidth = 1.2;
     for (let i = -1; i <= 1; i++) {
@@ -327,7 +327,7 @@ function drawHay(g) {
 }
 
 /* =====================================================
-   NHÀ KHO / NHÀ Ở / GIẾNG ('b') — tự chọn kiểu theo kích thước khối
+   BARN / HOUSE / WELL ('b') — style picked automatically from the block size
    ===================================================== */
 function drawBuildings(g) {
   if (!kinds) return;
@@ -335,7 +335,7 @@ function drawBuildings(g) {
   for (let c = 0; c < COLS; c++) {
     for (let r = 0; r < ROWS; r++) {
       if (kinds[c][r] !== 'b') continue;
-      if (isK(c - 1, r, 'b') || isK(c, r - 1, 'b')) continue;   // không phải góc trên-trái
+      if (isK(c - 1, r, 'b') || isK(c, r - 1, 'b')) continue;   // not the top-left corner
 
       let w = 1;
       while (isK(c + w, r, 'b')) w++;
@@ -361,7 +361,7 @@ function drawBuilding(g, x, y, w, h, area) {
   g.ellipse(x + w / 2 + 4, y + h - 2, w * 0.62, h * 0.2, 0, 0, 7);
   g.fill();
 
-  /* ----- Silo / giếng: khối nhỏ ----- */
+  /* ----- Silo / well: small block ----- */
   if (area <= 2) {
     const cx = x + w / 2;
     const rx = w * 0.34;
@@ -402,7 +402,7 @@ function drawBuilding(g, x, y, w, h, area) {
   const bodyY = y + roofH;
   const bodyH = h - roofH;
 
-  /* ----- Thân nhà ----- */
+  /* ----- House body ----- */
   const wall = g.createLinearGradient(x, bodyY, x, bodyY + bodyH);
 
   const barn = w >= 3 * CS;
@@ -422,7 +422,7 @@ function drawBuilding(g, x, y, w, h, area) {
   g.lineWidth = 2.6;
   g.stroke();
 
-  /* ----- Mái ----- */
+  /* ----- Roof ----- */
   const roof = g.createLinearGradient(x, y, x, bodyY);
   roof.addColorStop(0, barn ? '#8a2b26' : '#b7623f');
   roof.addColorStop(1, barn ? '#c0463c' : '#8a452b');
@@ -430,7 +430,7 @@ function drawBuilding(g, x, y, w, h, area) {
   g.beginPath();
 
   if (barn) {
-    // mái gambrel (nhà kho)
+    // gambrel roof (barn)
     const my = y + roofH * 0.35;
     g.moveTo(x - 3, bodyY);
     g.lineTo(x + 3, my);
@@ -447,7 +447,7 @@ function drawBuilding(g, x, y, w, h, area) {
   g.fill();
   g.stroke();
 
-  /* ----- Cửa, sổ, vạch gỗ ----- */
+  /* ----- Doors, windows, wood siding ----- */
   if (barn) {
     g.fillStyle = '#f6efdc';
     g.beginPath();
@@ -481,7 +481,7 @@ function drawBuilding(g, x, y, w, h, area) {
     }
   }
 
-  // vạch gỗ dọc thân nhà kho
+  // vertical wood siding on the barn walls
   if (barn) {
     g.strokeStyle = 'rgba(0,0,0,.18)';
     g.lineWidth = 1.4;
@@ -493,7 +493,7 @@ function drawBuilding(g, x, y, w, h, area) {
     }
   }
 
-  // ống khói
+  // chimney
   if (!barn && h >= 2 * CS) {
     g.fillStyle = '#8a452b';
     g.strokeStyle = ink;
@@ -506,7 +506,7 @@ function drawBuilding(g, x, y, w, h, area) {
 }
 
 /* =====================================================
-   CÂY CỐI ('t')
+   TREES ('t')
    ===================================================== */
 function drawMapTrees(g) {
   eachKind('t', (c, r) => {
@@ -520,7 +520,7 @@ function drawMapTrees(g) {
       drawTree(g, x, y - 2, s);
     }
 
-    // cây ăn quả: thêm vài quả đỏ
+    // fruit tree: add a few red apples
     if (cellRand(c, r, 6) < 0.35) {
       g.fillStyle = '#e0453a';
       for (let i = 0; i < 3; i++) {
@@ -533,7 +533,7 @@ function drawMapTrees(g) {
   });
 }
 
-/** Vẽ toàn bộ địa hình của màn đang chọn lên canvas nền */
+/** Draw the whole terrain of the current level onto the background canvas */
 function drawTerrain(g) {
   if (!kinds) return;
 

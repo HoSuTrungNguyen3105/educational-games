@@ -2,7 +2,7 @@
 // scripts/build-parkour-tri-thuc.mjs
 //
 // Gom src/games/offline/parkour-tri-thuc/ (css + js rời nhau) thành MỘT file
-// tự chứa: src/games/offline/parkour-tri-thuc.html
+// tự chứa: src/games/offline/parkour-3d-pro.html
 //
 //   npm run games:build:parkour
 //
@@ -14,14 +14,14 @@
 // Nguồn:   src/games/offline/parkour-tri-thuc/index.html
 //          src/games/offline/parkour-tri-thuc/css/style.css
 //          src/games/offline/parkour-tri-thuc/js/*.js
-// Kết quả: src/games/offline/parkour-tri-thuc.html  ← manifest trỏ tới đây
+// Kết quả: src/games/offline/parkour-3d-pro.html  ← manifest trỏ tới đây
 
 import fs from "node:fs";
 import path from "node:path";
 
 const G = (p) => path.resolve(process.cwd(), p);
 const SRC = "src/games/offline/parkour-tri-thuc";
-const OUT = "src/games/offline/parkour-tri-thuc.html";
+const OUT = "src/games/offline/parkour-3d-pro.html";
 const read = (p) => fs.readFileSync(G(p), "utf8").replace(/\r\n/g, "\n");
 
 // HTML parser đóng <script> ở "</script>" ĐẦU TIÊN, kể cả khi nằm trong chuỗi

@@ -1,9 +1,10 @@
-// src/games/offline/games-src/math.js — Săn Trái Cây
+// src/games/offline/games-src/math.js — Fruit Hunt
 //
-// Trước đây game chỉ yêu cầu tìm một emoji trùng với mẫu nên không có gì
-// để học. Bản này biến nó thành trò "hái quả đúng đáp án": mỗi lượt có một
-// phép tính, 9 quả mang số, chạm quả có kết quả đúng. Phép tính khó dần theo
-// số câu đã giải, nên vừa luyện tính nhẩm vừa giữ được nhịp arcade.
+// The old version only asked players to find an emoji matching a sample, so
+// there was nothing to learn. This version turns it into "pick the right
+// fruit": each round shows a math problem and 9 numbered fruits, and you tap
+// the fruit with the correct answer. Problems get harder as you solve more,
+// so it trains mental math while keeping an arcade pace.
 
 const FRUIT_TRAY = ['🍓', '🍋', '🍇', '🍉', '🍒', '🍍', '🥝', '🍑', '🍊', '🍎'];
 
@@ -53,9 +54,9 @@ function mathGame(root) {
   gqIntro(root, {
     id: 'math',
     icon: '🍓',
-    name: 'Săn Trái Cây',
-    desc: 'Giải phép tính rồi chạm thật nhanh vào quả mang kết quả đúng.',
-    steps: ['Mỗi lượt có một phép tính ở giữa màn hình.', '9 quả mang số khác nhau — chỉ một quả đúng.', 'Chạm sai bị trừ 3 giây; chuỗi đúng càng dài điểm càng cao.'],
+    name: 'Fruit Hunt',
+    desc: 'Solve the math problem, then tap the fruit with the right answer as fast as you can.',
+    steps: ['Each round shows a math problem in the middle of the screen.', '9 fruits carry different numbers — only one is correct.', 'A wrong tap costs 3 seconds; the longer your correct streak, the higher your score.'],
   }, (mode) => startMath(root, mode));
 }
 
@@ -69,7 +70,7 @@ function startMath(root, mode) {
 
   function deal() {
     q = mathQuestion(solved);
-    // makeOpts trả đúng 9 số khác nhau, luôn có q.ans và đã xáo trộn.
+    // makeOpts returns exactly 9 different numbers, always including q.ans, already shuffled.
     opts = makeOpts(q.ans, 9);
   }
 
@@ -83,7 +84,7 @@ function startMath(root, mode) {
       <div class="board" style="--n:3">${opts.map((n, i) => `<button class="cell" data-i="${i}">
         <span class="ic">${FRUITS[i % FRUITS.length]}</span><span class="num">${n}</span>
       </button>`).join('')}</div>
-      <p class="hint">Chạm quả có kết quả đúng. Chuỗi đúng càng dài, điểm càng cao.</p>`;
+      <p class="hint">Tap the fruit with the correct answer. Longer correct streaks mean more points.</p>`;
   }
 
   function tick() {
@@ -103,7 +104,7 @@ function startMath(root, mode) {
       id,
       score: gqScore(mode, score),
       xp: Math.round(score / 4),
-      lines: [`Đúng ${solved} phép tính`, `Chuỗi tốt nhất: ${bestCombo}`],
+      lines: [`Correct answers: ${solved}`, `Best streak: ${bestCombo}`],
       replay: mathGame,
       details: { solved, bestCombo },
     });
@@ -144,11 +145,11 @@ function startMath(root, mode) {
 
 startSingleGame({
   id: 'math',
-  name: 'Săn Trái Cây',
+  name: 'Fruit Hunt',
   icon: '🍓',
   storageKey: 'offline_math',
   mount: mathGame,
   badges: [
-    { id: 'f10', n: 'Chuỗi x10', i: '🫧', ok: () => !!S.flags.f10 },
+    { id: 'f10', n: '10x Streak', i: '🫧', ok: () => !!S.flags.f10 },
   ],
 });

@@ -3,9 +3,9 @@
 //
 // Sao chép 3 game parkour thành các file tự chứa trong src/games/offline/:
 //
-//   src/games/parkour/me-cung-thi.html → src/games/offline/me-cung-tri-thuc.html
-//   src/games/parkour/thap-may.html    → src/games/offline/leo-thap-may.html
-//   src/games/parkour/mecung-moi.html  → src/games/offline/me-cung-kham-pha.html
+//   src/games/parkour/me-cung-thi.html → src/games/offline/knowledge-maze.html
+//   src/games/parkour/thap-may.html    → src/games/offline/cloud-tower-climb.html
+//   src/games/parkour/mecung-moi.html  → src/games/offline/discovery-maze.html
 //
 //   npm run games:build:parkour-offline
 //
@@ -26,9 +26,9 @@ import path from "node:path";
 
 const G = (p) => path.resolve(process.cwd(), p);
 const PAIRS = [
-  ["src/games/parkour/me-cung-thi.html", "src/games/offline/me-cung-tri-thuc.html"],
-  ["src/games/parkour/thap-may.html", "src/games/offline/leo-thap-may.html"],
-  ["src/games/parkour/mecung-moi.html", "src/games/offline/me-cung-kham-pha.html"],
+  ["src/games/parkour/me-cung-thi.html", "src/games/offline/knowledge-maze.html"],
+  ["src/games/parkour/thap-may.html", "src/games/offline/cloud-tower-climb.html"],
+  ["src/games/parkour/mecung-moi.html", "src/games/offline/discovery-maze.html"],
 ];
 
 // Ngân hàng câu hỏi chuẩn của khối #defBank nằm trong src/games/_tools/admin.html.

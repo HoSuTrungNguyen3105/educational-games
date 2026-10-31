@@ -1,9 +1,9 @@
-// src/games/offline/games-src/memory.js — Ghép Cặp Hình
+// src/games/offline/games-src/memory.js — Picture Pairs
 //
-// Bản cũ luôn 8 cặp và không có gì thay đổi giữa các lần chơi. Bản này:
-//   · chọn nhịp độ quyết định số cặp (6 / 8 / 10) và số lượt gợi ý;
-//   · có nút gợi ý (mất điểm) để trẻ không bị kẹt;
-//   · tự lưu ván dở và mở lại đúng chỗ.
+// The old version always had 8 pairs and nothing changed between plays. This one:
+//   · picking a pace sets the number of pairs (6 / 8 / 10) and hints;
+//   · has a hint button (costs points) so kids never get stuck;
+//   · saves an unfinished run and reopens it exactly where it left off.
 
 const MEMORY_ICONS = [
   '🐱', '🐶', '🐸', '🐼', '🦊', '🐵', '🐰', '🐻', '🍓', '🍋', '🍇', '🍉',
@@ -21,9 +21,9 @@ function memoryGame(root) {
   gqIntro(root, {
     id: 'memory',
     icon: '🃏',
-    name: 'Ghép Cặp Hình',
-    desc: 'Lật hai thẻ mỗi lượt, tìm các cặp hình giống nhau. Ít lượt và ít thời gian hơn sẽ được điểm cao hơn.',
-    steps: ['Chạm một thẻ để lật, chạm thẻ thứ hai để so cặp.', 'Đúng thì hai thẻ biến mất; sai thì úp lại.', 'Nút 💡 Gợi ý mở một cặp nhưng bị trừ điểm.'],
+    name: 'Picture Pairs',
+    desc: 'Flip two cards each turn and find matching pairs. Fewer moves and less time earn a higher score.',
+    steps: ['Tap a card to flip it, then tap a second card to compare.', 'A match makes both cards disappear; a miss flips them back.', 'The 💡 Hint button reveals a pair but costs points.'],
   }, (mode, i) => startMemory(root, mode, i));
 }
 
@@ -55,18 +55,18 @@ function startMemory(root, mode, modeIndex, saved) {
 
   function paint() {
     root.innerHTML = `<div class="hud">
-        <span>👣 <b id="mv">${moves}</b> lượt</span>
+        <span>👣 <b id="mv">${moves}</b> moves</span>
         <span>🧩 <b id="pr">${matchedPairs.size}</b>/${pairCount}</span>
         <span>⏱ <b id="tm">${secs}</b>s</span>
       </div>
       <div class="mem" id="mem" style="grid-template-columns:repeat(4,1fr)">${cards.map((c, i) => `
-        <button class="mc" data-i="${i}" aria-label="Thẻ ${i + 1}">
+        <button class="mc" data-i="${i}" aria-label="Card ${i + 1}">
           <div class="in"><div class="f">❓</div><div class="b">${c.t}</div></div>
         </button>`).join('')}</div>
       <div class="row">
-        <button class="btn alt" data-hint="1" ${hints <= 0 ? 'disabled' : ''}>💡 Gợi ý · còn ${hints}</button>
+        <button class="btn alt" data-hint="1" ${hints <= 0 ? 'disabled' : ''}>💡 Hint · ${hints} left</button>
       </div>
-      <p class="hint">Lật hai thẻ để tìm các cặp hình giống nhau.</p>`;
+      <p class="hint">Flip two cards to find matching pairs.</p>`;
     const els = [...root.querySelectorAll('.mc')];
     els.forEach((el, i) => {
       if (matchedPairs.has(cards[i].p)) el.classList.add('done');
@@ -84,7 +84,7 @@ function startMemory(root, mode, modeIndex, saved) {
       id,
       score: gqScore(mode, base),
       xp: Math.round(base / 6) + 8,
-      lines: [`${moves} lượt lật`, `${secs} giây`, `Gợi ý dùng: ${2 - hints}`],
+      lines: [`${moves} card flips`, `${secs} seconds`, `Hints used: ${2 - hints}`],
       replay: memoryGame,
       details: { moves, secs, pairs: pairCount },
     });
@@ -105,7 +105,7 @@ function startMemory(root, mode, modeIndex, saved) {
       idx.forEach((i) => els[i].classList.remove('lit'));
       lock = false;
       const btn = root.querySelector('[data-hint]');
-      if (btn) { btn.textContent = `💡 Gợi ý · còn ${hints}`; btn.disabled = hints <= 0; }
+      if (btn) { btn.textContent = `💡 Hint · ${hints} left`; btn.disabled = hints <= 0; }
       save();
     }, 850);
   }
@@ -165,11 +165,11 @@ function startMemory(root, mode, modeIndex, saved) {
 
 startSingleGame({
   id: 'memory',
-  name: 'Ghép Cặp Hình',
+  name: 'Picture Pairs',
   icon: '🃏',
   storageKey: 'offline_memory',
   mount: memoryGame,
   badges: [
-    { id: 'memGold', n: 'Lật thẻ vàng', i: '🟡', ok: () => !!S.flags.memGold },
+    { id: 'memGold', n: 'Gold Card', i: '🟡', ok: () => !!S.flags.memGold },
   ],
 });

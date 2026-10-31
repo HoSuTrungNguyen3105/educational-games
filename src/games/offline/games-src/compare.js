@@ -1,10 +1,10 @@
-// src/games/offline/games-src/compare.js — Oẳn Tù Tì
-// Đấu 10 lượt với máy. Máy nhớ nước đi trước của bạn: càng chọn mức khó,
-// nó càng giỏi đoán và phản đòn.
+// src/games/offline/games-src/compare.js — Rock Paper Scissors
+// Play 10 rounds against the computer. The CPU remembers your previous moves:
+// the harder the level, the better it guesses and counters.
 
 const RPS_MOVES = ['✊', '✋', '✌️'];
-const RPS_NAMES = ['Búa', 'Bao', 'Kéo'];
-const RPS_BEATS = [2, 0, 1]; // búa thắng kéo, bao thắng búa, kéo thắng bao
+const RPS_NAMES = ['Rock', 'Paper', 'Scissors'];
+const RPS_BEATS = [2, 0, 1]; // rock beats scissors, paper beats rock, scissors beats paper
 const RPS_ROUNDS = 10;
 
 function compareValid(s) {
@@ -32,7 +32,7 @@ function startCompare(root, mode, modeIndex, resume) {
     let cpu = resume ? resume.cpu : rnd(0, 2);
     let player = resume ? resume.player : null;
     let phase = resume ? resume.phase : 'ready';
-    let message = phase === 'reveal' ? 'Kết quả lượt trước' : 'Chọn đòn của bạn!';
+    let message = phase === 'reveal' ? 'Last round result' : 'Pick your move!';
     let ended = false;
 
     function save() {
@@ -56,19 +56,19 @@ function startCompare(root, mode, modeIndex, resume) {
     function paint() {
         const revealed = phase === 'reveal';
         root.innerHTML = `<div class="hud">
-                <span>🥊 Trận <b>${Math.min(round + 1, RPS_ROUNDS)}/${RPS_ROUNDS}</b></span>
+                <span>🥊 Round <b>${Math.min(round + 1, RPS_ROUNDS)}/${RPS_ROUNDS}</b></span>
                 <span>⭐ <b>${score}</b></span>
                 <span>🏆 <b>${wins}</b></span>
             </div>
             <div class="qbox" style="font-size:15px;font-weight:600;padding:16px 12px">
-                <div style="font-size:13px;opacity:.7">MÁY RA</div>
+                <div style="font-size:13px;opacity:.7">CPU PLAYS</div>
                 <div style="font-size:54px;line-height:1.15;margin:4px 0">${revealed ? RPS_MOVES[cpu] : '🫧'}</div>
                 <div style="font-family:var(--body);font-size:14px;font-weight:600">${message}</div>
             </div>
             <div class="opts" style="grid-template-columns:repeat(3,1fr)">
                 ${RPS_MOVES.map((m, i) => `<button class="opt" data-move="${i}" style="min-height:84px;font-size:36px" ${revealed ? 'disabled' : ''}>${m}<small style="display:block;font-size:11px;font-family:var(--body)">${RPS_NAMES[i]}</small></button>`).join('')}
             </div>
-            <p class="hint">Thắng ${wins} · Hòa ${ties} · Thua ${losses} · Máy sẽ đoán nước đi của bạn ở mức khó.</p>`;
+            <p class="hint">Wins ${wins} · Ties ${ties} · Losses ${losses} · On hard mode the CPU predicts your moves.</p>`;
     }
 
     function end() {
@@ -76,11 +76,11 @@ function startCompare(root, mode, modeIndex, resume) {
         ended = true;
         T.clear();
         clearOfflineRun(id);
-        const title = wins > losses ? 'Bạn thắng cả trận!' : wins === losses ? 'Hòa cả trận!' : 'Máy thắng trận này';
+        const title = wins > losses ? 'You win the match!' : wins === losses ? 'The match is a tie!' : 'The CPU wins this match';
         if (wins >= 6) S.flags.rps = true;
         finish({
             id, score: gqScore(mode, score), xp: wins * 4 + ties * 2,
-            lines: [`${title}`, `Thắng ${wins} · Hòa ${ties} · Thua ${losses}`],
+            lines: [`${title}`, `Wins ${wins} · Ties ${ties} · Losses ${losses}`],
             replay: compareGame, details: { wins, ties, losses },
         });
     }
@@ -90,7 +90,7 @@ function startCompare(root, mode, modeIndex, resume) {
         cpu = pickCpu();
         player = null;
         phase = 'ready';
-        message = 'Chọn đòn của bạn!';
+        message = 'Pick your move!';
         save();
         paint();
     }
@@ -102,16 +102,16 @@ function startCompare(root, mode, modeIndex, resume) {
         if (chosen === cpu) {
             ties++;
             score += 3;
-            message = `Hòa! Cả hai ra ${RPS_NAMES[chosen]}.`;
+            message = `Tie! You both played ${RPS_NAMES[chosen]}.`;
             sfx.tick();
         } else if (RPS_BEATS[chosen] === cpu) {
             wins++;
             score += 10;
-            message = `Bạn thắng! ${RPS_NAMES[chosen]} đánh bại ${RPS_NAMES[cpu]}.`;
+            message = `You win! ${RPS_NAMES[chosen]} beats ${RPS_NAMES[cpu]}.`;
             sfx.ok();
         } else {
             losses++;
-            message = `Máy thắng! ${RPS_NAMES[cpu]} đánh bại ${RPS_NAMES[chosen]}.`;
+            message = `CPU wins! ${RPS_NAMES[cpu]} beats ${RPS_NAMES[chosen]}.`;
             sfx.bad();
         }
         round++;
@@ -141,23 +141,23 @@ function compareGame(root) {
     if (saved) clearOfflineRun('compare');
 
     gqIntro(root, {
-        id: 'compare', icon: '✊', name: 'Oẳn Tù Tì',
-        desc: 'Đấu oẳn tù tì 10 lượt với máy — máy càng khó càng biết đoán nước đi của bạn.',
+        id: 'compare', icon: '✊', name: 'Rock Paper Scissors',
+        desc: 'Play 10 rounds of rock paper scissors against the CPU — the harder the mode, the better it predicts your moves.',
         steps: [
-            'Mỗi lượt chọn Búa, Bao hoặc Kéo trước khi máy lật bài.',
-            'Búa thắng Kéo, Kéo thắng Bao, Bao thắng Búa.',
-            'Mức Thử thách cho máy phản đòn theo nước đi trước của bạn.',
+            'Each round, pick Rock, Paper or Scissors before the CPU reveals its move.',
+            'Rock beats Scissors, Scissors beats Paper, Paper beats Rock.',
+            'On Hard mode the CPU counters based on your previous moves.',
         ],
     }, (mode, index) => startCompare(root, mode, index));
 }
 
 startSingleGame({
     id: 'compare',
-    name: 'Oẳn Tù Tì',
+    name: 'Rock Paper Scissors',
     icon: '✊',
     storageKey: 'offline_compare',
     mount: compareGame,
     badges: [
-        { id: 'rps', n: 'Thắng 6 lượt', i: '🥊', ok: () => !!S.flags.rps },
+        { id: 'rps', n: 'Win 6 rounds', i: '🥊', ok: () => !!S.flags.rps },
     ],
 });

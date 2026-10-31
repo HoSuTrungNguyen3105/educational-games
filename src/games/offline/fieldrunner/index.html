@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Phòng thủ cánh đồng</title>
+  <title>Field Defender</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <!-- Giao diện -->
+  <!-- Styles -->
   <link rel="stylesheet" href="css/gc-kit.css">
   <link rel="stylesheet" href="css/game.css">
 </head>
@@ -17,35 +17,35 @@
 <body>
   <div id="app">
 
-    <!-- HUD trên: ví xu · cài đặt · điểm & đợt · điều khiển · nhà còn mạng -->
+    <!-- Top HUD: coin wallet · settings · score & wave · controls · field lives -->
     <div id="top">
       <div class="hud__l">
-        <div class="hud__coin" id="stMoney" title="Xu trong túi tiền tài khoản của bé">
+        <div class="hud__coin" id="stMoney" title="Coins in your account wallet">
           <span class="hud__coin__ic" aria-hidden="true">💰</span>
           <span id="money">200</span>
         </div>
-        <button class="hud__sq" id="gear" type="button" aria-label="Cài đặt" title="Cài đặt">⚙️</button>
-        <span class="gc-pill" id="mapName">🌱 Đồng Cỏ Non</span>
+        <button class="hud__sq" id="gear" type="button" aria-label="Settings" title="Settings">⚙️</button>
+        <span class="gc-pill" id="mapName">🌱 Little Green Meadow</span>
         <div id="chipSlot"></div>
       </div>
 
       <div class="hud__c">
-        <div class="hud__round">🌊 Đợt <b id="wave">0</b>/<span id="total">15</span></div>
+        <div class="hud__round">🌊 Wave <b id="wave">0</b>/<span id="total">15</span></div>
         <div class="hud__score" id="score">0</div>
-        <div class="hud__meter" role="progressbar" aria-label="Tiến trình đợt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="hud__meter" role="progressbar" aria-label="Wave progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           <i id="meterFill"></i>
         </div>
       </div>
 
       <div class="hud__r">
-        <button class="btn" id="go" type="button">▶ Bắt đầu đợt 1</button>
+        <button class="btn" id="go" type="button">▶ Start wave 1</button>
         <div class="hud__ctrl">
-          <button class="hud__sq" id="speed" type="button" title="Tốc độ chơi">x1</button>
-          <button class="hud__sq" id="pause" type="button" title="Tạm dừng">⏸</button>
-          <button class="hud__sq" id="mapBtn" type="button" title="Chọn cánh đồng khác">🗺️</button>
-          <button class="hud__sq danger" id="restart" type="button" title="Chơi lại màn này">↺</button>
+          <button class="hud__sq" id="speed" type="button" title="Game speed">x1</button>
+          <button class="hud__sq" id="pause" type="button" title="Pause">⏸</button>
+          <button class="hud__sq" id="mapBtn" type="button" title="Choose another field">🗺️</button>
+          <button class="hud__sq danger" id="restart" type="button" title="Play this field again">↺</button>
         </div>
-        <div class="hud__house" id="stLives" title="Mạng còn lại của cánh đồng">
+        <div class="hud__house" id="stLives" title="Field lives left">
           <svg class="hud__roof" viewBox="0 0 46 18" aria-hidden="true">
             <path d="M23 1.5 44.5 16.5H1.5Z" fill="#ff6b57" stroke="#1c1b3a" stroke-width="3" stroke-linejoin="round"/>
           </svg>
@@ -56,28 +56,28 @@
       <div id="preview"></div>
     </div>
 
-    <!-- Cánh đồng -->
+    <!-- Field -->
     <div id="field">
       <canvas id="c" width="960" height="600"></canvas>
     </div>
 
-    <!-- Thanh dưới: danh sách tháp, thông tin, kỹ năng -->
+    <!-- Bottom bar: tower list, info, skills -->
     <div id="bottom">
       <div id="towers"></div>
       <div id="side">
         <div id="info"></div>
         <div id="skills">
-          <button class="btn sk" id="skStrike">🚀 Không kích <small>(Q)</small><div class="cd"></div></button>
-          <button class="btn sk" id="skFreeze">❄️ Đóng băng <small>(E)</small><div class="cd"></div></button>
+          <button class="btn sk" id="skStrike">🚀 Airstrike <small>(Q)</small><div class="cd"></div></button>
+          <button class="btn sk" id="skFreeze">❄️ Freeze <small>(E)</small><div class="cd"></div></button>
         </div>
       </div>
     </div>
   </div>
 
   <div id="msg"></div>
-  <button id="homeBackBtn" type="button" aria-label="Về sảnh">←</button>
+  <button id="homeBackBtn" type="button" aria-label="Back to lobby">←</button>
 
-  <!-- Thứ tự nạp script rất quan trọng (các file dùng chung biến toàn cục) -->
+  <!-- Script load order matters a lot (files share global variables) -->
   <script src="js/gc-kit.js"></script>
 
   <script src="js/config.js"></script>

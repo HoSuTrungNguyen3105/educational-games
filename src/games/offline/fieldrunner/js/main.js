@@ -1,10 +1,10 @@
 /* =====================================================
-   main.js · khởi động game, chọn màn & vòng lặp chính
+   main.js · boot the game, pick a level & main loop
    ===================================================== */
 
-/** Chuẩn bị số liệu và bắt đầu chơi một cánh đồng (goOn = dựng lại ván đã lưu) */
+/** Prepare the numbers and start a field (goOn = restore the saved run) */
 function startMap(lv, goOn) {
-  // Thông số theo độ khó (dễ → siêu khó), nhân thêm theo màn
+  // Difficulty settings (easy → insane), multiplied by level modifiers
   D = {
     lives: Math.round(GC.by(30, 20, 12, 6) * (lv.livesMul || 1)),
     money: Math.round(GC.by(350, 220, 160, 110) * (lv.moneyMul || 1)),
@@ -19,7 +19,7 @@ function startMap(lv, goOn) {
 
   $('chipSlot').innerHTML = GC.chip();
 
-  applyLevel(lv);   // phải trước makeBg: nền vẽ địa hình của màn
+  applyLevel(lv);   // must run before makeBg: the background draws this level's terrain
   buildBar();
   makeBg();
   reset();
@@ -32,7 +32,7 @@ function startMap(lv, goOn) {
   runLoop();
 }
 
-/** Vòng lặp cập nhật + vẽ — chỉ chạy MỘT lần, đổi màn không nhân đôi tốc độ */
+/** Update + draw loop — runs ONLY once, so changing levels doesn't double the speed */
 function runLoop() {
   if (runLoop.on) return;
   runLoop.on = true;
@@ -51,7 +51,7 @@ function runLoop() {
         saveRun();
       }
 
-      // Chia nhỏ bước cập nhật để va chạm ổn định khi tăng tốc x2, x3
+      // Split updates into small steps so collisions stay stable at x2 and x3 speed
       let dt = real * speed;
       while (dt > 0) {
         const step = Math.min(dt, 0.025);
@@ -59,7 +59,7 @@ function runLoop() {
         dt -= step;
       }
 
-      // Cập nhật hồi chiêu kỹ năng ~10 lần/giây
+      // Refresh skill cooldowns about 10 times per second
       if (Math.floor(now / 100) !== tick) {
         tick = Math.floor(now / 100);
         updSkills();
@@ -74,7 +74,7 @@ function runLoop() {
   requestAnimationFrame(loop);
 }
 
-/* ---------- Nền tạm trong lúc chọn độ khó / chọn màn ---------- */
+/* ---------- Temporary background while picking difficulty / level ---------- */
 D = { lives: 20, money: 200, hp: 1, spd: 1, rw: 1, bonus: 1 };
 buildSettings();
 applyLevel(LEVELS[0]);
@@ -84,18 +84,18 @@ fit();
 ctx.drawImage(bg, 0, 0);
 ctx.drawImage(lightLayer, 0, 0);
 
-/* ---------- Màn chọn độ khó → màn chọn cánh đồng ---------- */
+/* ---------- Difficulty picker → field picker ---------- */
 GC.start({
   id: 'fieldrunner',
-  name: 'Phòng thủ cánh đồng',
+  name: 'Field Defender',
   icon: '🌾',
-  desc: '8 cánh đồng, 12 loại vũ khí, 25+ loại lính (có tinh anh từ đợt ' + HARD_WAVE +
-        ') và 2 kỹ năng hỗ trợ. Thắng màn này để mở cánh đồng tiếp theo.',
+  desc: '8 fields, 12 weapons, 25+ enemy types (with elites from wave ' + HARD_WAVE +
+        ') and 2 support skills. Win a field to unlock the next one.',
   levels: [
-    '30 mạng · tiền dư · địch yếu & chậm',
-    '20 mạng · 220💰 · cân bằng',
-    '12 mạng · địch trâu & nhanh, thưởng ít',
-    '6 mạng · địch cực trâu, thưởng rất ít'
+    '30 lives · extra coins · weak, slow enemies',
+    '20 lives · 220💰 · balanced',
+    '12 lives · tough, fast enemies · smaller rewards',
+    '6 lives · super-tough enemies · tiny rewards'
   ],
   resume: runResumeInfo(),
   onStart: () => {

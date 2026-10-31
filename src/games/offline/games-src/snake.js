@@ -1,6 +1,6 @@
-// src/games/offline/games-src/snake.js — Rắn Săn Mồi
-// Rắn ăn trái cây, dài dần và leo màn. Mỗi màn thêm chướng ngại vật,
-// tốc độ nhanh hơn; có nút tạm dừng cho người chơi thở một chút.
+// src/games/offline/games-src/snake.js — Hungry Snake
+// The snake eats fruit, grows longer and climbs levels. Each level adds
+// obstacles and speed; a pause button lets players take a breath.
 
 const SNAKE_N = 15;
 
@@ -95,7 +95,7 @@ function startSnake(root, mode, modeIndex, resume) {
     root.innerHTML = `<div class="hud">
             <span>⭐ <b id="sc">0</b></span>
             <span class="hearts" id="lv">❤️</span>
-            <span>📏 <b id="ln">3</b> · Màn <b id="m">1</b></span>
+            <span>📏 <b id="ln">3</b> · Level <b id="m">1</b></span>
         </div>
         <canvas id="cv"></canvas>
         <div class="dpad">
@@ -103,9 +103,9 @@ function startSnake(root, mode, modeIndex, resume) {
             <button class="d" data-d="d">▼</button><button class="r" data-d="r">▶</button>
         </div>
         <div class="row" style="margin-top:8px">
-            <button class="btn alt" id="pause">${paused ? '▶ Chơi tiếp' : '⏸ Tạm dừng'}</button>
+            <button class="btn alt" id="pause">${paused ? '▶ Resume' : '⏸ Pause'}</button>
         </div>
-        <p class="hint">Ăn trái cây để dài thêm và lên màn. Mỗi màn có thêm chướng ngại vật. Vuốt, dùng phím mũi tên hoặc chạm nút.</p>`;
+        <p class="hint">Eat fruit to grow longer and reach the next level. Each level adds more obstacles. Swipe, use the arrow keys, or tap the buttons.</p>`;
 
     const cv = root.querySelector('#cv');
     const width = Math.max(240, Math.min((root.clientWidth || 340) - 8, 450));
@@ -195,7 +195,7 @@ function startSnake(root, mode, modeIndex, resume) {
             ctx.font = `700 ${Math.max(14, Math.round(size / 24))}px Be Vietnam Pro,system-ui,sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(paused ? 'Tạm dừng — chạm để chơi tiếp' : 'Vuốt hoặc bấm hướng để bắt đầu', size / 2, size / 2);
+            ctx.fillText(paused ? 'Paused — tap to resume' : 'Swipe or press a direction to start', size / 2, size / 2);
         }
     }
 
@@ -207,7 +207,7 @@ function startSnake(root, mode, modeIndex, resume) {
         if (level >= 3) S.flags.snake = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 3),
-            lines: [`Rắn dài ${snake.length}`, `Lên được màn ${level}`],
+            lines: [`Snake length ${snake.length}`, `Reached level ${level}`],
             replay: snakeGame, details: { length: snake.length, level },
         });
     }
@@ -268,7 +268,7 @@ function startSnake(root, mode, modeIndex, resume) {
             paused = !paused;
             if (tickId) { clearTimeout(tickId); tickId = null; }
             const btn = root.querySelector('#pause');
-            if (btn) btn.textContent = paused ? '▶ Chơi tiếp' : '⏸ Tạm dừng';
+            if (btn) btn.textContent = paused ? '▶ Resume' : '⏸ Pause';
             draw();
             save();
             if (!paused) schedule();
@@ -282,7 +282,7 @@ function startSnake(root, mode, modeIndex, resume) {
             paused = !paused;
             if (tickId) { clearTimeout(tickId); tickId = null; }
             const btn = root.querySelector('#pause');
-            if (btn) btn.textContent = paused ? '▶ Chơi tiếp' : '⏸ Tạm dừng';
+            if (btn) btn.textContent = paused ? '▶ Resume' : '⏸ Pause';
             draw();
             save();
             if (!paused) schedule();
@@ -316,23 +316,23 @@ function snakeGame(root) {
     if (saved) clearOfflineRun('snake');
 
     gqIntro(root, {
-        id: 'snake', icon: '🐍', name: 'Rắn Săn Mồi',
-        desc: 'Điều khiển rắn ăn trái cây, dài thêm qua từng màn và né chướng ngại vật.',
+        id: 'snake', icon: '🐍', name: 'Hungry Snake',
+        desc: 'Guide the snake to eat fruit, grow longer each level and dodge obstacles.',
         steps: [
-            'Vuốt trên bàn chơi hoặc dùng nút mũi tên để đổi hướng.',
-            'Ăn trái cây để được điểm, dài thêm và lên màn mới.',
-            'Mỗi màn có thêm chướng ngại vật; đâm vào tường hay tự cắn sẽ mất mạng.',
+            'Swipe on the board or use the arrow buttons to change direction.',
+            'Eat fruit to score points, grow longer and move up a level.',
+            'Each level adds more obstacles; hitting a wall or biting yourself costs a life.',
         ],
     }, (mode, index) => startSnake(root, mode, index));
 }
 
 startSingleGame({
     id: 'snake',
-    name: 'Rắn Săn Mồi',
+    name: 'Hungry Snake',
     icon: '🐍',
     storageKey: 'offline_snake',
     mount: snakeGame,
     badges: [
-        { id: 'snake', n: 'Lên màn 3', i: '🐍', ok: () => !!S.flags.snake },
+        { id: 'snake', n: 'Reach Level 3', i: '🐍', ok: () => !!S.flags.snake },
     ],
 });

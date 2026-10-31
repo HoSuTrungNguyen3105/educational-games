@@ -1,6 +1,6 @@
-// src/games/offline/games-src/shapecount.js — Bắt Vật Thể
-// Mỗi màn có nhiều bản sao của một vật thể lẫn giữa các vật khác.
-// Chạm hết đúng số lượng trước khi hết giờ.
+// src/games/offline/games-src/shapecount.js — Object Hunt
+// Each level hides many copies of one object among other objects.
+// Tap all of the target copies before time runs out.
 
 const CATCH_ICONS = ['🐱', '🐶', '🐸', '🐼', '🦊', '🐵', '🐰', '🐻', '🍓', '🍋', '🍇', '🍉', '🚀', '🎈', '🎸', '🎧', '🐢', '🦉', '🍍', '🥕'];
 const CATCH_ROUNDS = 6;
@@ -56,14 +56,14 @@ function startCatch(root, mode, modeIndex, resume) {
 
     function paint(message) {
         const plan = catchPlan(round, mode);
-        root.innerHTML = `${gqHud(score, lives, `Màn <b>${round + 1}/${CATCH_ROUNDS}</b>`)}
+        root.innerHTML = `${gqHud(score, lives, `Level <b>${round + 1}/${CATCH_ROUNDS}</b>`)}
             <div class="tbar"><i id="tb" style="width:100%"></i></div>
-            <div class="prompt">${message || `Tìm đủ ${plan.copies} ${target}`}
-                <small id="cnt">Đã bắt 0/${plan.copies} · còn ${Math.ceil(secs)}s</small></div>
+            <div class="prompt">${message || `Find all ${plan.copies} ${target}`}
+                <small id="cnt">Caught 0/${plan.copies} · ${Math.ceil(secs)}s left</small></div>
             <div class="board" id="bd" style="--n:${plan.size}">
                 ${cells.map((emoji, i) => `<button class="cell" data-cell="${i}"><span class="ic">${emoji}</span></button>`).join('')}
             </div>
-            <p class="hint">Chạm đúng vật thể mục tiêu, tránh chạm nhầm. Bắt đủ trước khi hết giờ!</p>`;
+            <p class="hint">Tap only the target object and avoid the others. Catch them all before time runs out!</p>`;
     }
 
     function nextRound() {
@@ -79,7 +79,7 @@ function startCatch(root, mode, modeIndex, resume) {
         sfx.ok();
         const plan = catchPlan(round, mode);
         const cnt = root.querySelector('#cnt');
-        if (cnt) cnt.textContent = `Đủ ${plan.copies} rồi! +thời gian còn lại`;
+        if (cnt) cnt.textContent = `Got all ${plan.copies}! +time bonus`;
         save();
         T.set(nextRound, 850);
     }
@@ -92,7 +92,7 @@ function startCatch(root, mode, modeIndex, resume) {
         if (lives <= 0) { end(); return; }
         save();
         const cnt = root.querySelector('#cnt');
-        if (cnt) cnt.textContent = 'Hết giờ màn này!';
+        if (cnt) cnt.textContent = "Time's up for this level!";
         T.set(nextRound, 900);
     }
 
@@ -104,7 +104,7 @@ function startCatch(root, mode, modeIndex, resume) {
         if (round >= CATCH_ROUNDS) S.flags.catch = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 4) + round,
-            lines: [`Hoàn thành ${round}/${CATCH_ROUNDS} màn`, `Còn ${lives} mạng`],
+            lines: [`Finished ${round}/${CATCH_ROUNDS} levels`, `${lives} lives left`],
             replay: shapeCountGame, details: { round, score },
         });
     }
@@ -121,7 +121,7 @@ function startCatch(root, mode, modeIndex, resume) {
             cell.innerHTML = '<span class="ic">✅</span>';
             sfx.tick();
             const cnt = root.querySelector('#cnt');
-            if (cnt) cnt.textContent = `Đã bắt ${found}/${plan.copies} · còn ${Math.ceil(secs)}s`;
+            if (cnt) cnt.textContent = `Caught ${found}/${plan.copies} · ${Math.ceil(secs)}s left`;
             if (found >= plan.copies) completeRound();
         } else {
             lives--;
@@ -138,7 +138,7 @@ function startCatch(root, mode, modeIndex, resume) {
         const bar = root.querySelector('#tb');
         if (bar) bar.style.width = Math.max(0, (secs / gqSecs(15, mode)) * 100) + '%';
         const cnt = root.querySelector('#cnt');
-        if (cnt) cnt.textContent = `Đã bắt ${found}/${catchPlan(round, mode).copies} · còn ${Math.ceil(secs)}s`;
+        if (cnt) cnt.textContent = `Caught ${found}/${catchPlan(round, mode).copies} · ${Math.ceil(secs)}s left`;
         if (secs <= 0) timeOut();
     }, 1000);
 
@@ -154,23 +154,23 @@ function shapeCountGame(root) {
     if (saved) clearOfflineRun('shapecount');
 
     gqIntro(root, {
-        id: 'shapecount', icon: '🎯', name: 'Bắt Vật Thể',
-        desc: 'Tìm đủ số lượng một vật thể đang trốn giữa rất nhiều vật khác.',
+        id: 'shapecount', icon: '🎯', name: 'Object Hunt',
+        desc: 'Find every copy of one object hiding among lots of other objects.',
         steps: [
-            'Mỗi màn chọn một vật thể mục tiêu và số lượng cần bắt.',
-            'Chạm đúng các bản sao của nó, tránh chạm nhầm vật khác.',
-            'Bắt đủ trước khi hết giờ; chạm nhầm hoặc hết giờ sẽ mất một mạng.',
+            'Each level picks a target object and how many you need to catch.',
+            'Tap its copies and avoid tapping the other objects.',
+            'Catch them all before time runs out; a wrong tap or running out of time costs one life.',
         ],
     }, (mode, index) => startCatch(root, mode, index));
 }
 
 startSingleGame({
     id: 'shapecount',
-    name: 'Bắt Vật Thể',
+    name: 'Object Hunt',
     icon: '🎯',
     storageKey: 'offline_shapecount',
     mount: shapeCountGame,
     badges: [
-        { id: 'catch', n: 'Hoàn thành 6 màn', i: '🎯', ok: () => !!S.flags.catch },
+        { id: 'catch', n: 'Finish 6 levels', i: '🎯', ok: () => !!S.flags.catch },
     ],
 });

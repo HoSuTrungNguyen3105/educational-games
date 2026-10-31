@@ -77,12 +77,12 @@ function _loadState() {
 
 const _runPrefix = 'offline_run_';
 function saveOfflineRun(id, state) {
-  if (!id || !state || typeof state !== 'object') throw new TypeError('Tiến độ game không hợp lệ');
+  if (!id || !state || typeof state !== 'object') throw new TypeError('Invalid game progress');
   try {
     localStorage.setItem(_runPrefix + id, JSON.stringify({ version: 1, updatedAt: Date.now(), state }));
   } catch (e) {
-    toast('Không thể lưu ván chơi trên thiết bị này.');
-    console.error(`[offline] Không thể lưu tiến độ "${id}"`, e);
+    toast('Could not save this game on this device.');
+    console.error(`[offline] Could not save progress "${id}"`, e);
   }
 }
 
@@ -98,8 +98,8 @@ function loadOfflineRun(id) {
     }
     return saved.state;
   } catch (e) {
-    toast('Không thể đọc tiến độ đã lưu.');
-    console.error(`[offline] Không thể đọc tiến độ "${id}"`, e);
+    toast('Could not read saved progress.');
+    console.error(`[offline] Could not read progress "${id}"`, e);
     return null;
   }
 }
@@ -109,8 +109,8 @@ function clearOfflineRun(id) {
   try {
     localStorage.removeItem(_runPrefix + id);
   } catch (e) {
-    toast('Không thể xóa tiến độ trên thiết bị này.');
-    console.error(`[offline] Không thể xóa tiến độ "${id}"`, e);
+    toast('Could not clear progress on this device.');
+    console.error(`[offline] Could not clear progress "${id}"`, e);
   }
 }
 
@@ -211,7 +211,7 @@ function checkBadges() {
   BADGES.forEach(b => {
     if (!S.unlocked.has(b.id) && b.ok()) {
       S.unlocked.add(b.id);
-      setTimeout(() => toast(`${b.i} Huy hiệu mới: ${b.n}`), 900);
+      setTimeout(() => toast(`${b.i} New badge: ${b.n}`), 900);
     }
   });
 }
@@ -219,7 +219,7 @@ function checkBadges() {
 /* ============ XP & Cấp ============ */
 function renderMe() {
   const lvlEl = $('#lvl'), xpEl = $('#xpb');
-  if (lvlEl) lvlEl.textContent = 'Hạng ' + lvl();
+  if (lvlEl) lvlEl.textContent = 'Level ' + lvl();
   if (xpEl)  xpEl.style.width  = ((S.xp % XP_PER_LVL) / XP_PER_LVL * 100) + '%';
 }
 
@@ -267,7 +267,7 @@ function runMC(root, cfg) {
   let i = 0, score = 0, right = 0, streak = 0, time = cfg.secs, done = false, cur;
   function show() {
     cur = cfg.make(i); done = false; time = cfg.secs;
-    root.innerHTML = `<div class="hud"><span>Câu <b>${i + 1}/${cfg.count}</b></span><span>⭐ <b>${score}</b></span><span>🔥 ${streak}</span></div>
+    root.innerHTML = `<div class="hud"><span>Question <b>${i + 1}/${cfg.count}</b></span><span>⭐ <b>${score}</b></span><span>🔥 ${streak}</span></div>
       <div class="tbar"><i id="tb"></i></div>
       <div class="qbox">${cur.html}</div>
       <div class="opts" id="o">${cur.opts.map((o, k) => `<button class="opt" data-k="${k}">${o}</button>`).join('')}</div>
@@ -281,8 +281,8 @@ function runMC(root, cfg) {
     btns[ci].classList.add('ok');
     if (k === ci) { right++; streak++; score += 10 + Math.ceil(time) + (streak >= 3 ? 5 : 0); sfx.ok(); }
     else          { streak = 0; sfx.bad(); if (k >= 0) btns[k].classList.add('bad'); }
-    $('#ex').innerHTML = `<div class="explain">💡 ${k === -1 ? 'Hết giờ! ' : ''}${cur.exp}</div>`;
-    $('#nx').innerHTML = `<button class="btn" data-next="1">${i < cfg.count - 1 ? 'Câu tiếp theo' : 'Xem kết quả'}</button>`;
+    $('#ex').innerHTML = `<div class="explain">💡 ${k === -1 ? 'Time up! ' : ''}${cur.exp}</div>`;
+    $('#nx').innerHTML = `<button class="btn" data-next="1">${i < cfg.count - 1 ? 'Next question' : 'See results'}</button>`;
   }
   root.onclick = e => {
     const o = e.target.closest('.opt'), n = e.target.closest('[data-next]');
@@ -292,7 +292,7 @@ function runMC(root, cfg) {
       if (i < cfg.count) show();
       else {
         cfg.onEnd && cfg.onEnd(right);
-        finish({ id: cfg.id, score, xp: Math.round(score / 4), lines: [`Đúng ${right}/${cfg.count} câu`], replay: cfg.replay });
+        finish({ id: cfg.id, score, xp: Math.round(score / 4), lines: [`Correct ${right}/${cfg.count}`], replay: cfg.replay });
       }
     }
   };
@@ -328,16 +328,16 @@ function finish({ id, score, xp = 0, lines, replay, details = {} }) {
   sfx.win();
 
   $('#modal').innerHTML = `<div class="panel result">
-    <h2>${up ? 'Lên cấp ' + lvl() + '!' : 'Hoàn thành!'}</h2>
+    <h2>${up ? 'Level up ' + lvl() + '!' : 'Complete!'}</h2>
     <div class="big">${score}</div>
     <div class="stats">
-      ${isBest ? '<span>🏆 Kỷ lục mới</span>' : ''}
+      ${isBest ? '<span>🏆 New record</span>' : ''}
       ${lines.map(l => `<span>${l}</span>`).join('')}
       <span>+${xp} XP</span>
     </div>
     <div class="row">
-      <button class="btn" id="again">Chơi lại</button>
-      <button class="btn alt ghost" id="home">Về sảnh</button>
+      <button class="btn" id="again">Play again</button>
+      <button class="btn alt ghost" id="home">Exit</button>
     </div>
   </div>`;
   $('#modal').classList.add('on');
@@ -366,14 +366,14 @@ function renderHub() {
         <span class="orb">${g.icon}</span>
         <h3>${g.name}</h3>
         <p>${g.desc}</p>
-        <span class="meta"><span class="tag">${g.tag}</span><span>${S.best[g.id] ? 'Kỷ lục ' + S.best[g.id] : 'Chưa chơi'}</span></span>
+        <span class="meta"><span class="tag">${g.tag}</span><span>${S.best[g.id] ? 'Best ' + S.best[g.id] : 'Not played'}</span></span>
       </button>`;
     }
     return `<button class="tile" data-g="${g.id}" style="background:${g.color}">
       <span class="ic">${g.icon}</span>
       <h3>${g.name}</h3>
       <p>${g.desc}</p>
-      <span class="meta"><span class="tag">${g.tag}</span><span>${S.best[g.id] ? 'Kỷ lục ' + S.best[g.id] : 'Chưa chơi'}</span></span>
+      <span class="meta"><span class="tag">${g.tag}</span><span>${S.best[g.id] ? 'Best ' + S.best[g.id] : 'Not played'}</span></span>
     </button>`;
   }).join('');
 
@@ -388,7 +388,7 @@ function renderHub() {
     </div>
     <div class="grid">${grid}</div>
     ${_showLeaderboardBtn()}
-    <div class="badges"><b>Huy hiệu</b>${badgesHtml}</div>`;
+    <div class="badges"><b>Badges</b>${badgesHtml}</div>`;
 
   // Điền lại title/desc từ biến đã lưu
   if ($('#hub-title')) $('#hub-title').textContent = _hubTitle;
@@ -412,22 +412,22 @@ function openGame(id) {
 /* ============ Bảng xếp hạng ============ */
 function _showLeaderboardBtn() {
   return `<div style="margin:18px 0 0;text-align:center">
-    <button class="btn ghost" id="lb-btn" style="font-size:14px">🏆 Bảng xếp hạng</button>
+    <button class="btn ghost" id="lb-btn" style="font-size:14px">🏆 Leaderboard</button>
   </div>`;
 }
 
 function _openLeaderboard() {
   const modal = $('#modal');
   modal.innerHTML = `<div class="panel result" style="max-width:520px;text-align:left">
-    <h2 style="margin-bottom:12px">🏆 Bảng xếp hạng</h2>
+    <h2 style="margin-bottom:12px">🏆 Leaderboard</h2>
     <div id="lb-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
-    <div id="lb-body" style="font-size:14px">Đang tải...</div>
-    <div class="row"><button class="btn alt ghost" id="lb-close">Đóng</button></div>
+    <div id="lb-body" style="font-size:14px">Loading...</div>
+    <div class="row"><button class="btn alt ghost" id="lb-close">Close</button></div>
   </div>`;
   modal.classList.add('on');
   $('#lb-close').onclick = () => modal.classList.remove('on');
 
-  const tabs = [{ label: 'XP tổng', key: 'xp' }, ..._GAMES.map(g => ({ label: g.name.split(' ').slice(0, 2).join(' '), key: g.id }))];
+  const tabs = [{ label: 'Total XP', key: 'xp' }, ..._GAMES.map(g => ({ label: g.name.split(' ').slice(0, 2).join(' '), key: g.id }))];
   let activeKey = 'xp';
 
   function renderTabs() {
@@ -438,19 +438,19 @@ function _openLeaderboard() {
 
   async function loadTab(key) {
     activeKey = key; renderTabs();
-    $('#lb-body').innerHTML = 'Đang tải...';
+    $('#lb-body').innerHTML = 'Loading...';
     try {
       const rows = key === 'xp'
-        ? [`<tr><td>1</td><td>Bạn</td><td>${S.xp} XP</td><td>Cấp ${lvl()}</td></tr>`]
+        ? [`<tr><td>1</td><td>You</td><td>${S.xp} XP</td><td>Level ${lvl()}</td></tr>`]
         : S.best[key] !== undefined
-          ? [`<tr><td>1</td><td>Bạn</td><td>${S.best[key]} điểm</td><td></td></tr>`]
+          ? [`<tr><td>1</td><td>You</td><td>${S.best[key]} points</td><td></td></tr>`]
           : [];
       $('#lb-body').innerHTML = rows.length
         ? `<table style="width:100%;border-collapse:collapse">${rows.join('')}</table>`
-        : '<p style="opacity:.6">Chưa có kỷ lục trên thiết bị này.</p>';
+        : '<p style="opacity:.6">No records on this device yet.</p>';
     } catch (e) {
-      console.error('[offline] Không thể hiển thị kỷ lục cục bộ', e);
-      $('#lb-body').innerHTML = '<p style="opacity:.6">Không thể hiển thị kỷ lục.</p>';
+      console.error('[offline] Could not show local records', e);
+      $('#lb-body').innerHTML = '<p style="opacity:.6">Could not show records.</p>';
     }
   }
 

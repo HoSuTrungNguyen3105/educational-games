@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Parkour Tri Thức 3D Pro</title>
+<title>parkour 3d pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -256,7 +256,7 @@ window.PARKOUR_DATA=(function(){
       {id:"explorer",name:"Thám hiểm",icon:"🗺️",desc:"Đi được 100 mét",minDistance:100,reward:60},
       {id:"nomiss",name:"Không ngã",icon:"🎯",desc:"Không rơi + trả lời đúng 3 câu",noFall:true,minCorrect:3,reward:100},
       {id:"marathon",name:"Marathon",icon:"🏃",desc:"Đi 150m + đúng 5 câu + không rơi",minDistance:150,minCorrect:5,noFall:true,reward:250},
-      {id:"godspeed",name:"Thần tốc",icon:"🌟",desc:"40s + không sai + không rơi",timeLimit:40,noWrong:true,noFall:true,reward:500},
+      {id:"godspeed",name:"Thần tốc",icon:"🌟",desc:"40s + no mistakes + no falls",timeLimit:40,noWrong:true,noFall:true,reward:500},
       {id:"wallrunner",name:"Wall Runner",icon:"🧗",desc:"Dùng wall jump 5 lần + về đích",minWallJumps:5,reward:200},
       {id:"slidemaster",name:"Slide Master",icon:"🛝",desc:"Slide 10 lần + về đích",minSlides:10,reward:150},
       {id:"parkourpro",name:"Parkour Pro",icon:"🏅",desc:"Wall jump 3 + slide 5 + đúng 5 câu",minWallJumps:3,minSlides:5,minCorrect:5,reward:400}
@@ -1328,7 +1328,7 @@ const score=G.coins*10+G.gems*50+(won?200:0);
   #homeBackBtn{position:fixed;z-index:2147483000;top:calc(env(safe-area-inset-top,0px) + 10px);left:calc(env(safe-area-inset-left,0px) + 10px);width:42px;height:42px;border-radius:14px;display:grid;place-items:center;cursor:pointer;font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-size:20px;font-weight:800;line-height:1;color:var(--ink,#1d2e4a);background:var(--card,#fffbf2);border:3px solid var(--ink,#1d2e4a);box-shadow:0 4px 0 var(--ink,#1d2e4a),0 8px 14px rgba(0,0,0,.22);transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
   #homeBackBtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink,#1d2e4a)}
 </style>
-<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ"><span aria-hidden="true">&#8592;</span></button>
+<button id="homeBackBtn" type="button" aria-label="Back to home" title="Back to home"><span aria-hidden="true">&#8592;</span></button>
 <script>
   (function(){
     var b=document.getElementById('homeBackBtn');

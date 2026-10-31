@@ -1,8 +1,8 @@
 /* =====================================================
-   enemies.js · tạo kẻ địch, di chuyển, nhận sát thương
+   enemies.js · create enemies, move them, take damage
    ===================================================== */
 
-/** Tạo một kẻ địch */
+/** Create an enemy */
 function mkEnemy(type, hp, x, y) {
   const def = EDEF[type];
 
@@ -34,7 +34,7 @@ function mkEnemy(type, hp, x, y) {
   return e;
 }
 
-/** Nâng một kẻ địch lên hạng tinh anh */
+/** Upgrade an enemy to elite rank */
 function makeElite(e, n) {
   e.elite = true;
   e.max *= ELITE.hpMul;
@@ -44,7 +44,7 @@ function makeElite(e, n) {
   e.spdMul = ELITE.spdMul;
   e.rwMul = ELITE.rwMul;
 
-  // Từ đợt aegisWave: có thêm khiên năng lượng
+  // From aegisWave on: also gets an energy shield
   if (n >= ELITE.aegisWave) {
     const sh = e.max * ELITE.aegisPct;
     e.shieldMax = Math.max(e.shieldMax || 0, sh);
@@ -53,7 +53,7 @@ function makeElite(e, n) {
   }
 }
 
-/** Sinh kẻ địch từ hàng đợi của đợt */
+/** Spawn an enemy from the wave queue */
 function spawn(s) {
   const def = EDEF[s.t];
   const e = mkEnemy(s.t, def.hp * s.hpM, -20, SR * CS + CS / 2);
@@ -64,7 +64,7 @@ function spawn(s) {
   enemies.push(e);
 }
 
-/** Chọn ô kế tiếp trên đường đi */
+/** Pick the next tile along the path */
 function pickNext(e) {
   if (e.x < 0) {
     e.tx = CS / 2;
@@ -104,7 +104,7 @@ function pickNext(e) {
   }
 }
 
-/** Kẻ địch lọt vào cánh đồng */
+/** An enemy leaks through the field */
 function leak(e) {
   e.dead = true;
   waveDone++;
@@ -121,11 +121,11 @@ function leak(e) {
   updUI();
 }
 
-/** Cập nhật một kẻ địch trong khoảng dt giây */
+/** Update one enemy over dt seconds */
 function stepEnemy(e, dt) {
   if (e.slowT > 0) e.slowT -= dt;
 
-  /* ----- Khiên tự hồi ----- */
+  /* ----- Shields regenerate ----- */
   if (e.shieldMax) {
     if (e.shieldT > 0) {
       e.shieldT -= dt;
@@ -134,7 +134,7 @@ function stepEnemy(e, dt) {
     }
   }
 
-  /* ----- Y tá: hồi máu đồng đội ----- */
+  /* ----- Medic: heals teammates ----- */
   if (e.def.heal) {
     e.healCd -= dt;
     if (e.healCd <= 0) {
@@ -149,7 +149,7 @@ function stepEnemy(e, dt) {
     }
   }
 
-  /* ----- Phù thủy đen: ban khiên cho đồng đội ----- */
+  /* ----- Dark Warlock: grants shields to teammates ----- */
   if (e.def.warlock) {
     e.curseCd -= dt;
     if (e.curseCd <= 0 && e.x > 0) {
@@ -171,7 +171,7 @@ function stepEnemy(e, dt) {
     }
   }
 
-  /* ----- Triệu hồi: gọi quân con ----- */
+  /* ----- Summoner: calls in minions ----- */
   if (e.def.summon) {
     e.sumCd -= dt;
     if (e.sumCd <= 0 && e.x > 20) {
@@ -189,7 +189,7 @@ function stepEnemy(e, dt) {
     }
   }
 
-  /* ----- Tốc độ ----- */
+  /* ----- Speed ----- */
   let spd = e.def.sp * D.spd * e.haste * (e.spdMul || 1);
   if (e.def.berserk) spd *= (1 + (1 - clamp(e.hp / e.max, 0, 1)) * 1.2);
 
@@ -199,7 +199,7 @@ function stepEnemy(e, dt) {
   const oy = e.y;
   let mv = spd * (e.slowT > 0 ? e.slowF : 1) * dt;
 
-  /* ----- Kẻ địch bay: đi thẳng ----- */
+  /* ----- Flying enemies: go straight ----- */
   if (e.def.air) {
     e.x += mv;
     e.rem = CW + 20 - e.x;
@@ -210,7 +210,7 @@ function stepEnemy(e, dt) {
     return;
   }
 
-  /* ----- Kẻ địch mặt đất: đi theo đường BFS ----- */
+  /* ----- Ground enemies: follow the BFS path ----- */
   let guard = 0;
   while (mv > 0 && guard++ < 6) {
     if (e.tx === undefined) pickNext(e);
@@ -248,7 +248,7 @@ function stepEnemy(e, dt) {
   }
 }
 
-/** Tạo hạt bụi / tia lửa */
+/** Create dust particles / sparks */
 function particles(x, y, n, c, sp, life, size) {
   for (let i = 0; i < n; i++) {
     const a = Math.random() * 6.283;
@@ -266,11 +266,11 @@ function particles(x, y, n, c, sp, life, size) {
   }
 }
 
-/** Kẻ địch chết (hoặc hồi sinh nếu là phượng hoàng) */
+/** Enemy dies (or revives if it is a phoenix) */
 function killEnemy(e) {
   if (e.dead) return;
 
-  /* Phượng hoàng: hồi sinh một lần với 50% máu */
+  /* Phoenix: revives once with 50% health */
   if (e.def.revive && !e.revived) {
     e.revived = true;
     e.hp = e.max * 0.5;
@@ -279,7 +279,7 @@ function killEnemy(e) {
     e.hurt = 0.2;
 
     fx.push({ k: 'ring', x: e.x, y: e.y, life: 0.7, c: '#ffb347', r: 70 });
-    fx.push({ k: 'txt', x: e.x, y: e.y - 18, life: 0.9, t: 'Tái sinh!', c: '#ffb347' });
+    fx.push({ k: 'txt', x: e.x, y: e.y - 18, life: 0.9, t: 'Reborn!', c: '#ffb347' });
     particles(e.x, e.y, 22, '#ff9a3c', 170, 0.7, 3.6);
     return;
   }
@@ -304,7 +304,7 @@ function killEnemy(e) {
     particles(e.x, e.y, 8, '#ffd93b', 120, 0.6, 3);
   }
 
-  /* Phân thân: tách thành 2 con */
+  /* Splitter: breaks into 2 minis */
   if (e.def.split) {
     const cdef = EDEF[e.def.split];
     const chp = Math.max(cdef.hp, e.max * 0.35);
@@ -317,21 +317,21 @@ function killEnemy(e) {
   }
 }
 
-/** Gây sát thương lên kẻ địch. Trả về lượng sát thương thực tế. */
+/** Deal damage to an enemy. Returns the actual damage dealt. */
 function applyDamage(e, d, opts = {}) {
   if (e.dead || d <= 0) return 0;
 
-  /* Né đòn (ninja, tử thần) */
+  /* Dodge (ninja, reaper) */
   if (e.def.evade && !opts.dot && Math.random() < e.def.evade) {
-    fx.push({ k: 'txt', x: e.x, y: e.y - 14, life: 0.5, t: 'né!', c: '#bfe8ff' });
+    fx.push({ k: 'txt', x: e.x, y: e.y - 14, life: 0.5, t: 'dodged!', c: '#bfe8ff' });
     return 0;
   }
 
-  /* Giáp (giáp gốc + giáp tinh anh) */
+  /* Armor (base armor + elite armor) */
   const armor = (e.def.armor || 0) + (e.armorBonus || 0);
   if (armor && !opts.pierce) d = Math.max(1, d - armor);
 
-  /* Khiên hấp thụ trước */
+  /* Shields absorb damage first */
   if (e.shield > 0) {
     const ab = Math.min(e.shield, d);
     e.shield -= ab;
@@ -347,7 +347,7 @@ function applyDamage(e, d, opts = {}) {
   return d;
 }
 
-/** Thêm hiệu ứng sát thương theo thời gian (cháy, độc) */
+/** Add a damage-over-time effect (burn, poison) */
 function applyDot(e, type, dps, t) {
   if (e.dead) return;
 

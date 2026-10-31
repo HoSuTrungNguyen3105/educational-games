@@ -1,6 +1,6 @@
-// src/games/offline/games-src/sumseq.js — Chuỗi Số Vui
-// Đoán số còn thiếu trong dãy: cộng đều, trừ đều, nhân đôi, xen kẽ,
-// số chẵn/lẻ, số tròn chục, bình phương và dãy cộng dồn.
+// src/games/offline/games-src/sumseq.js — Number Patterns
+// Guess the missing number in a sequence: steady add, steady subtract, doubling,
+// alternating, even/odd, tens, squares and growing (Fibonacci-like) sequences.
 
 const SUMSEQ_ROUNDS = 10;
 
@@ -101,17 +101,17 @@ function startSumseq(root, mode, modeIndex, resume) {
     }
 
     function paint() {
-        root.innerHTML = `${gqHud(score, lives, `Câu <b>${round + 1}/${SUMSEQ_ROUNDS}</b>`)}
+        root.innerHTML = `${gqHud(score, lives, `Round <b>${round + 1}/${SUMSEQ_ROUNDS}</b>`)}
             <div class="tbar"><i id="tb" style="width:100%"></i></div>
             <div class="qbox" style="font-size:15px;font-weight:600;padding:14px 12px">
-                <div style="opacity:.7;margin-bottom:6px">Số nào còn thiếu?</div>
+                <div style="opacity:.7;margin-bottom:6px">Which number is missing?</div>
                 <div class="pattern-row">${cur.seq.map((n) => `<span class="pcell">${n}</span>`).join('')}
                     <span class="pcell missing">?</span></div>
             </div>
             <div class="opts" id="o">
                 ${cur.opts.map((n, k) => `<button class="opt" data-k="${k}">${n}</button>`).join('')}
             </div>
-            <p class="hint">Tìm quy luật tăng/giảm của dãy rồi chọn số đúng.</p>`;
+            <p class="hint">Spot how the sequence goes up or down, then pick the missing number.</p>`;
     }
 
     function showQuestion() {
@@ -163,7 +163,7 @@ function startSumseq(root, mode, modeIndex, resume) {
         if (correct >= 8) S.flags.seq = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 6) + correct,
-            lines: [`Đúng ${correct}/${SUMSEQ_ROUNDS} dãy số`, `Chuỗi đúng dài nhất: ${streak}`],
+            lines: [`Correct ${correct}/${SUMSEQ_ROUNDS} sequences`, `Longest streak: ${streak}`],
             replay: sumseqGame, details: { correct, score },
         });
     }
@@ -201,23 +201,23 @@ function sumseqGame(root) {
     if (saved) clearOfflineRun('sumseq');
 
     gqIntro(root, {
-        id: 'sumseq', icon: '🔢', name: 'Chuỗi Số Vui',
-        desc: 'Tìm số còn thiếu trong dãy số đang chạy theo một quy luật.',
+        id: 'sumseq', icon: '🔢', name: 'Number Patterns',
+        desc: 'Find the missing number in a sequence that follows a hidden rule.',
         steps: [
-            'Mỗi câu hiện bốn số và một dấu hỏi ở cuối dãy.',
-            'Tìm quy luật: cộng đều, trừ đều, nhân đôi, xen kẽ hay số bình phương.',
-            'Trả lời càng nhanh điểm càng cao; hết giờ hoặc chọn sai sẽ mất một mạng.',
+            'Each question shows four numbers with a question mark at the end.',
+            'Find the rule: steady add, steady subtract, doubling, alternating, or squares.',
+            'The faster you answer, the more points you get; running out of time or a wrong pick costs one life.',
         ],
     }, (mode, index) => startSumseq(root, mode, index));
 }
 
 startSingleGame({
     id: 'sumseq',
-    name: 'Chuỗi Số Vui',
+    name: 'Number Patterns',
     icon: '🔢',
     storageKey: 'offline_sumseq',
     mount: sumseqGame,
     badges: [
-        { id: 'seq', n: 'Đúng 8 dãy số', i: '🔢', ok: () => !!S.flags.seq },
+        { id: 'seq', n: 'Get 8 sequences right', i: '🔢', ok: () => !!S.flags.seq },
     ],
 });

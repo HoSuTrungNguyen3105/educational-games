@@ -1,13 +1,13 @@
-// src/games/offline/games-src/stroop.js — Sắc Màu Tốc Độ
-// Trò Stroop kinh điển: chữ ghi tên một màu nhưng mực lại là màu khác.
-// Nhiệm vụ là chọn đúng MÀU MỰC, không phải nghĩa của chữ.
+// src/games/offline/games-src/stroop.js — Color Rush
+// Classic Stroop game: the word names one color but the ink is a different color.
+// The task is to pick the INK COLOR, not the meaning of the word.
 
 const STROOP_COLORS = [
-    { n: 'ĐỎ', c: '#e23b3b' },
-    { n: 'XANH DƯƠNG', c: '#2f6bff' },
-    { n: 'VÀNG', c: '#c98a00' },
-    { n: 'XANH LÁ', c: '#1f9d55' },
-    { n: 'TÍM', c: '#8b5cf6' },
+    { n: 'RED', c: '#e23b3b' },
+    { n: 'BLUE', c: '#2f6bff' },
+    { n: 'YELLOW', c: '#c98a00' },
+    { n: 'GREEN', c: '#1f9d55' },
+    { n: 'PURPLE', c: '#8b5cf6' },
 ];
 
 function stroopValid(s) {
@@ -57,7 +57,7 @@ function startStroop(root, mode, modeIndex, resume) {
             </div>
             <div class="tbar"><i id="tb" style="width:${(timeLeft / total) * 100}%"></i></div>
             <div class="qbox" style="background:var(--card);color:var(--ink);border:3px solid var(--ink);box-shadow:var(--shadow)">
-                <div style="font-size:13px;font-weight:600;opacity:.65;font-family:var(--body)">Màu mực của chữ này là gì?</div>
+                <div style="font-size:13px;font-weight:600;opacity:.65;font-family:var(--body)">What color is this ink?</div>
                 <div style="color:${STROOP_COLORS[ink].c};margin-top:6px">${STROOP_COLORS[word].n}</div>
             </div>
             <div class="opts">
@@ -65,7 +65,7 @@ function startStroop(root, mode, modeIndex, resume) {
                     <span style="display:inline-block;width:16px;height:16px;border-radius:50%;border:2px solid var(--ink);background:${STROOP_COLORS[i].c};margin-right:6px;vertical-align:-2px"></span>${STROOP_COLORS[i].n}
                 </button>`).join('')}
             </div>
-            <p class="hint">Đọc màu mực, đừng đọc nghĩa của chữ. Trả lời nhanh để nhân chuỗi điểm!</p>`;
+            <p class="hint">Read the ink color, not the word. Answer fast to boost your streak bonus!</p>`;
     }
 
     function updateClock() {
@@ -83,7 +83,7 @@ function startStroop(root, mode, modeIndex, resume) {
         if (score >= 120) S.flags.stroop = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 5),
-            lines: [`Chuỗi đúng dài nhất: ${streak}`, `Còn ${lives} mạng`],
+            lines: [`Longest streak: ${streak}`, `${lives} lives left`],
             replay: stroopGame, details: { score, streak },
         });
     }
@@ -136,23 +136,23 @@ function stroopGame(root) {
     if (saved) clearOfflineRun('stroop');
 
     gqIntro(root, {
-        id: 'stroop', icon: '🎨', name: 'Sắc Màu Tốc Độ',
-        desc: 'Chữ ghi một màu, nhưng mực lại là màu khác — chọn đúng màu mực thật nhanh.',
+        id: 'stroop', icon: '🎨', name: 'Color Rush',
+        desc: 'The word names one color, but the ink is a different color — pick the real ink color as fast as you can.',
         steps: [
-            'Mỗi lượt hiện một từ chỉ màu, được viết bằng một màu mực khác.',
-            'Chọn màu của nước mực, đừng chọn theo nghĩa của từ.',
-            'Trả lời liên tiếp để tăng chuỗi điểm; chọn sai mất một mạng.',
+            'Each round shows a color word written in a different ink color.',
+            'Pick the color of the ink, not the meaning of the word.',
+            'Answer in a row to grow your streak; a wrong pick costs one life.',
         ],
     }, (mode, index) => startStroop(root, mode, index));
 }
 
 startSingleGame({
     id: 'stroop',
-    name: 'Sắc Màu Tốc Độ',
+    name: 'Color Rush',
     icon: '🎨',
     storageKey: 'offline_stroop',
     mount: stroopGame,
     badges: [
-        { id: 'stroop', n: 'Đạt 120 điểm màu', i: '🎨', ok: () => !!S.flags.stroop },
+        { id: 'stroop', n: 'Score 120 color points', i: '🎨', ok: () => !!S.flags.stroop },
     ],
 });

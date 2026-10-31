@@ -1,5 +1,5 @@
 /* =====================================================
-   Phòng thủ cánh đồng · giao diện riêng của game
+   Field Defender · the game's own interface
    ===================================================== */
 
 * {
@@ -35,7 +35,7 @@ button {
   cursor: pointer;
 }
 
-/* ---------- HUD trên ---------- */
+/* ---------- Top HUD ---------- */
 #top {
   position: relative;
   width: 100%;
@@ -66,7 +66,7 @@ button {
   gap: 2px;
 }
 
-/* Xu · nhà còn mạng */
+/* Coins · field lives */
 .hud__coin,
 .hud__body {
   display: inline-flex;
@@ -110,7 +110,7 @@ button {
   background: #fff;
 }
 
-/* Điểm · đợt · thanh tiến trình */
+/* Score · wave · progress bar */
 .hud__round {
   font-family: var(--gc-head);
   font-weight: 800;
@@ -152,7 +152,7 @@ button {
   transition: width .25s;
 }
 
-/* Nút vuông nhỏ */
+/* Small square buttons */
 .hud__sq {
   width: 36px;
   height: 36px;
@@ -198,7 +198,7 @@ button {
   50% { transform: scale(1.15); background: #fff1c2; }
 }
 
-/* Menu cài đặt (bánh răng) */
+/* Settings menu (gear) */
 .hud__menu {
   position: absolute;
   z-index: 30;
@@ -258,7 +258,7 @@ button {
   font-weight: 600;
 }
 
-/* Xem trước đợt kế tiếp */
+/* Next wave preview */
 #preview {
   display: flex;
   gap: 5px;
@@ -288,12 +288,12 @@ button {
   font-weight: 700;
 }
 
-/* Nhãn "tinh anh" trong phần xem trước */
+/* "Elite" badge in the preview */
 #preview .pv.elite {
   background: linear-gradient(135deg, #fff2b8, #ffc93c);
 }
 
-/* ---------- Nút ---------- */
+/* ---------- Buttons ---------- */
 .btn {
   padding: 7px 14px;
   border-radius: 14px;
@@ -321,7 +321,7 @@ button {
   box-shadow: none;
 }
 
-/* ---------- Cánh đồng ---------- */
+/* ---------- Field ---------- */
 #field {
   flex: 1;
   min-height: 0;
@@ -342,7 +342,7 @@ canvas#c {
   background: #7cc05a;
 }
 
-/* ---------- Thanh dưới ---------- */
+/* ---------- Bottom bar ---------- */
 #bottom {
   width: 100%;
   display: flex;
@@ -430,7 +430,7 @@ canvas#c {
   opacity: .6;
 }
 
-/* ---------- Khung thông tin & kỹ năng ---------- */
+/* ---------- Info panel & skills ---------- */
 #side {
   display: flex;
   flex-direction: column;
@@ -500,7 +500,7 @@ canvas#c {
   color: #fff;
 }
 
-/* ---------- Thông báo nổi ---------- */
+/* ---------- Floating messages ---------- */
 #msg {
   position: fixed;
   top: 88px;
@@ -518,7 +518,7 @@ canvas#c {
   white-space: nowrap;
 }
 
-/* ---------- Điện thoại ---------- */
+/* ---------- Phones ---------- */
 @media (max-width: 760px) {
   #top {
     gap: 5px;
@@ -606,7 +606,7 @@ canvas#c {
   }
 }
 
-/* ---------- Màn chọn cánh đồng ---------- */
+/* ---------- Field picker screen ---------- */
 .fr-maps {
   position: fixed;
   inset: 0;
@@ -792,7 +792,7 @@ canvas#c {
   margin-top: 14px;
 }
 
-/* ── Hộp hỏi "Chơi tiếp / Bắt đầu lại" khi màn còn ván dở ── */
+/* ── "Continue / Start over" dialog when a run is unfinished ── */
 .fr-resume {
   position: fixed;
   inset: 0;

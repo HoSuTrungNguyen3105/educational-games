@@ -19,15 +19,15 @@ export const CURRICULUM_BY_GRADE = {
     topics: [
       { icon: "🔢", name: "Đếm 1–20", sub: "Số học", gameId: "math" },
       { icon: "🔤", name: "Bảng chữ cái", sub: "Tiếng Việt", gameId: "anagram" },
-      { icon: "🧊", name: "Hình khối & màu", sub: "Logic", gameId: "xep-khoi" },
+      { icon: "🧊", name: "Hình khối & màu", sub: "Logic", gameId: "color-blocks" },
     ],
   },
   2: {
     focus: "Cộng trừ trong 100, ghi nhớ có chủ đích, tập đọc hiểu câu ngắn.",
     topics: [
-      { icon: "➕", name: "Cộng trừ trong 100", sub: "Toán", gameId: "bang-tinh" },
+      { icon: "➕", name: "Cộng trừ trong 100", sub: "Toán", gameId: "kids-spreadsheet" },
       { icon: "🃏", name: "Ghép cặp hình", sub: "Trí nhớ", gameId: "memory" },
-      { icon: "🌱", name: "Tìm cặp theo chủ đề", sub: "Quan sát", gameId: "ghep-cap-vuon" },
+      { icon: "🌱", name: "Tìm cặp theo chủ đề", sub: "Quan sát", gameId: "garden-pairs" },
     ],
   },
   3: {
@@ -42,8 +42,8 @@ export const CURRICULUM_BY_GRADE = {
     focus: "Phân số, đo lường, tính tiền — bắt đầu chơi game cần chiến thuật.",
     topics: [
       { icon: "🌻", name: "Thực vật & động vật", sub: "Khoa học", gameId: "plantvsanimal" },
-      { icon: "🚜", name: "Tính tiền, quản lý trại", sub: "Toán đời sống", gameId: "nong-trai-moi" },
-      { icon: "🏰", name: "Mê cung tri thức", sub: "Đọc hiểu", gameId: "me-cung-tri-thuc" },
+      { icon: "🚜", name: "Tính tiền, quản lý trại", sub: "Toán đời sống", gameId: "happy-farm" },
+      { icon: "🏰", name: "Mê cung tri thức", sub: "Đọc hiểu", gameId: "knowledge-maze" },
     ],
   },
   5: {
@@ -51,7 +51,7 @@ export const CURRICULUM_BY_GRADE = {
     topics: [
       { icon: "🚚", name: "Mua bán & tiền tệ", sub: "Toán áp dụng", gameId: "cargo" },
       { icon: "🌾", name: "Lập kế hoạch phòng thủ", sub: "Chiến thuật", gameId: "fieldrunner" },
-      { icon: "🌀", name: "Không gian 3D", sub: "Tư duy", gameId: "me-cung-kham-pha" },
+      { icon: "🌀", name: "Không gian 3D", sub: "Tư duy", gameId: "discovery-maze" },
     ],
   },
 };

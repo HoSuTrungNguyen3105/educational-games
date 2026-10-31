@@ -1,32 +1,32 @@
-// src/games/offline/games-src/quiz.js — Chọn Một Vui
-// Mười lượt "chọn bên này hay bên kia" để đo gu của người chơi và trả về
-// một danh hiệu vui ở cuối. Không có đáp án đúng/sai, không có đồng hồ.
+// src/games/offline/games-src/quiz.js — Pick a Side
+// Ten "this or that" rounds to measure the player's taste and return
+// a fun title at the end. No right or wrong answers, no timer.
 
 const QUIZ_PAIRS = [
-    ['Đi biển cả ngày', 'Ở nhà thư giãn cả ngày'],
-    ['Thử món lạ chưa từng ăn', 'Gọi món quen mỗi lần đi ăn'],
-    ['Nuôi một chú rồng con', 'Nuôi một chú mèo con'],
-    ['Nhảy theo nhạc giữa sân', 'Nghe nhạc với tai nghe một mình'],
-    ['Du lịch bằng khinh khí cầu', 'Du lịch bằng tàu hỏa'],
-    ['Mưa kẹo dẻo', 'Mưa bong bóng xà phòng'],
-    ['Có cửa bí mật trong phòng', 'Có cửa sổ nhìn ra vườn'],
-    ['Tóc đổi màu theo tâm trạng', 'Áo luôn vừa vặn hoàn hảo'],
-    ['Một tuần chỉ ăn món mình thích', 'Một tuần ngủ đủ giấc mỗi ngày'],
-    ['Có cầu trượt ngay ngoài cửa', 'Có xích đu trong vườn'],
-    ['Làm bạn với người ngoài hành tinh', 'Làm bạn với gấu bông biết nói'],
-    ['Đi học bằng ván trượt bay', 'Đi học bằng xe đạp'],
-    ['Học được phép tàng hình', 'Học được cách bay lượn'],
-    ['Thú cưng biết nói tiếng người', 'Cây cảnh biết hát mỗi sáng'],
+    ['A whole day at the beach', 'A cozy day at home'],
+    ['Try a food you have never eaten', 'Order your usual favorite'],
+    ['Raise a baby dragon', 'Raise a little kitten'],
+    ['Dance to music in the yard', 'Listen to music alone with headphones'],
+    ['Travel by hot-air balloon', 'Travel by train'],
+    ['A rain of gummy candy', 'A rain of soap bubbles'],
+    ['A secret door in your room', 'A window looking out at a garden'],
+    ['Hair that changes color with your mood', 'Clothes that always fit perfectly'],
+    ['Eat only your favorite food for a week', 'Get enough sleep every day for a week'],
+    ['A slide right outside your door', 'A swing in the garden'],
+    ['Befriend an alien', 'Befriend a teddy bear that can talk'],
+    ['Go to school on a flying skateboard', 'Go to school by bike'],
+    ['Learn how to turn invisible', 'Learn how to fly'],
+    ['A pet that can speak like a person', 'A plant that sings every morning'],
 ];
 
 const QUIZ_ROUNDS = 10;
 
 function quizTitle(bold) {
-    if (bold >= 9) return 'Nhà thám hiểm tí hon';
-    if (bold >= 7) return 'Bạn của gió';
-    if (bold >= 5) return 'Vừa phiêu lưu vừa an yên';
-    if (bold >= 3) return 'Người thích sự ấm áp';
-    return 'Chuyên gia thư giãn';
+    if (bold >= 9) return 'Little Explorer';
+    if (bold >= 7) return 'Friend of the Wind';
+    if (bold >= 5) return 'Adventure and Calm';
+    if (bold >= 3) return 'Warm at Heart';
+    return 'Relaxation Expert';
 }
 
 function quizValid(s) {
@@ -51,13 +51,13 @@ function startQuiz(root, game) {
         if (closed) return;
         if (game.round >= QUIZ_ROUNDS) { end(); return; }
         const pair = QUIZ_PAIRS[game.deck[game.round]];
-        root.innerHTML = `${gqHud(game.round * 10, 0, `Lượt <b>${game.round + 1}/${QUIZ_ROUNDS}</b>`)}
+        root.innerHTML = `${gqHud(game.round * 10, 0, `Round <b>${game.round + 1}/${QUIZ_ROUNDS}</b>`)}
             ${gqDots(QUIZ_ROUNDS, game.round)}
-            <div class="qbox txt">Bạn chọn gì?</div>
+            <div class="qbox txt">What do you choose?</div>
             <div class="opts one">
                 ${pair.map((choice, i) => `<button class="opt" data-choice="${i}" style="min-height:88px">${choice}</button>`).join('')}
             </div>
-            <p class="hint">Chọn theo gu của bạn — không có đáp án đúng hay sai.</p>`;
+            <p class="hint">Pick what you like — there are no right or wrong answers.</p>`;
         save();
     }
 
@@ -71,7 +71,7 @@ function startQuiz(root, game) {
         S.flags.perfect = true;
         finish({
             id, score: game.picks.length * 10, xp: 20,
-            lines: [`${title}`, `Chọn ${bold} lượt phiêu lưu · ${game.picks.length - bold} lượt an yên`],
+            lines: [`${title}`, `Picked ${bold} adventures · ${game.picks.length - bold} cozy choices`],
             replay: quizGame, details: { picks: game.picks, title },
         });
     }
@@ -102,15 +102,15 @@ function quizGame(root) {
     const best = S.best.quiz || 0;
     root.innerHTML = `<div class="panel intro">
         <div class="intro-ic">🎉</div>
-        <h2>Chọn Một Vui</h2>
-        <p>Mười lượt chọn nhanh giữa hai lựa chọn — cuối cùng bạn sẽ nhận một danh hiệu theo gu của mình.</p>
+        <h2>Pick a Side</h2>
+        <p>Ten quick choices between two options — at the end you get a fun title that matches your taste.</p>
         <ul class="intro-steps">
-            <li>Mỗi lượt có hai lựa chọn, chỉ cần chọn bên bạn thích hơn.</li>
-            <li>Không có đáp án đúng sai và không có đồng hồ.</li>
-            <li>Hoàn thành đủ 10 lượt để xem danh hiệu của bạn.</li>
+            <li>Each round has two choices; just pick the one you like more.</li>
+            <li>There are no right or wrong answers, and no timer.</li>
+            <li>Finish all 10 rounds to see your title.</li>
         </ul>
-        <p class="intro-best">${best ? `🏆 Lần trước: <b>${best}</b> điểm` : 'Sẵn sàng chưa?'}</p>
-        <button class="btn" data-start="1" style="width:100%;margin-top:14px">Bắt đầu 10 lượt chọn</button>
+        <p class="intro-best">${best ? `🏆 Last time: <b>${best}</b> points` : 'Ready to play?'}</p>
+        <button class="btn" data-start="1" style="width:100%;margin-top:14px">Start 10 Choices</button>
     </div>`;
 
     root.onclick = (e) => {
@@ -127,11 +127,11 @@ function quizGame(root) {
 
 startSingleGame({
     id: 'quiz',
-    name: 'Chọn Một Vui',
+    name: 'Pick a Side',
     icon: '🎉',
     storageKey: 'offline_quiz',
     mount: quizGame,
     badges: [
-        { id: 'perfect', n: 'Hoàn thành 10 lượt', i: '🎉', ok: () => !!S.flags.perfect },
+        { id: 'perfect', n: 'Finish 10 Rounds', i: '🎉', ok: () => !!S.flags.perfect },
     ],
 });

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Vườn Thủ Hộ</title>
+<title>garden guardians</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{--wood:#5b3b22;--woodD:#3a2414;--gold:#c9964f;--paper:#fff7dc;--ink:#3b2412;--sun:#ffe066;--grass:#6fbf55;--red:#e0483d}
@@ -13,7 +13,7 @@
   button{font-family:inherit;cursor:pointer}
   button:focus-visible{outline:3px solid #9be16d;outline-offset:2px}
 
-  /* ===== Thanh trên ===== */
+  /* ===== Top bar ===== */
   #top{position:fixed;top:0;left:0;right:0;display:none;align-items:center;gap:6px;z-index:5;
     padding:5px calc(env(safe-area-inset-right) + 8px) 5px calc(env(safe-area-inset-left) + 8px);
     background:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 2px,transparent 2px 40px),linear-gradient(#6b4527,#3a2414);
@@ -48,7 +48,7 @@
     color:#ffe9b8;font-size:17px;font-weight:800;box-shadow:0 3px 0 #2a170a}
   .ib:active{transform:translateY(2px);box-shadow:0 1px 0 #2a170a}
 
-  /* ===== Thông báo ===== */
+  /* ===== Notifications ===== */
   #banner{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;z-index:6;width:max-content;max-width:92vw;
     text-align:center;font-size:clamp(26px,6vw,46px);font-weight:800;color:#ffe9b8;letter-spacing:.5px;
     text-shadow:0 3px 0 #7a1d12,0 0 22px rgba(255,80,40,.75),0 5px 12px rgba(0,0,0,.6)}
@@ -65,7 +65,7 @@
     opacity:0;transition:opacity .25s,transform .25s;white-space:pre-line}
   #toast.show{opacity:1;transform:translate(-50%,0)}
 
-  /* ===== Màn hình phủ ===== */
+  /* ===== Overlay screens ===== */
   .screen{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;
     padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 14px) 8px calc(env(safe-area-inset-left) + 14px)}
   .screen.show{display:flex;animation:fade .3s}
@@ -111,7 +111,7 @@
   @keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
   #rotate p{font-size:22px;font-weight:700}
 
-  /* ===== Trình sửa JSON ===== */
+  /* ===== JSON editor ===== */
   #editor{background:rgba(18,10,4,.94);flex-direction:column;align-items:stretch;gap:8px;z-index:25}
   .edHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .edHead h2{font-size:20px;font-weight:800}
@@ -126,7 +126,7 @@
   @media (max-width:640px){.edDoc{display:none}.menuL{flex-basis:36%}}
   @media (prefers-reduced-motion:reduce){#banner.show{animation:none;opacity:1;transform:translate(-50%,-50%)}#rotate .em{animation:none}}
 
-  /* ===== Nâng cấp giao diện ===== */
+  /* ===== UI polish ===== */
   #top{background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px 38px),linear-gradient(#7a4c2a,#3a2414);border-bottom:4px solid #e0b25f;box-shadow:0 6px 18px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.18)}
   .packet{border-radius:12px;border:2px solid #b07a3c;background:linear-gradient(#fffdf0,#f1dba0 70%,#e2c27a);box-shadow:0 4px 0 #2a170a,inset 0 2px 0 #fff}
   .packet:hover{transform:translateY(-2px)}
@@ -157,10 +157,10 @@
 <div id="top">
   <div id="sunBox"><span class="ic">☀️</span><b id="sunNum">0</b></div>
   <div id="packets"></div>
-  <button class="tool" id="shovel" aria-label="Xẻng nhổ cây">⛏️<small>Xẻng</small></button>
+  <button class="tool" id="shovel" aria-label="Shovel: dig up plants">⛏️<small>Shovel</small></button>
   <div id="progWrap"><div id="lvName"></div><div id="prog"><div id="progFill"></div><div id="flags"></div><span id="progHead">🐛</span></div></div>
-  <button class="ib" id="speedBtn" aria-label="Tốc độ">1×</button>
-  <button class="ib" id="pauseBtn" aria-label="Tạm dừng">⏸</button>
+  <button class="ib" id="speedBtn" aria-label="Speed">1×</button>
+  <button class="ib" id="pauseBtn" aria-label="Pause">⏸</button>
 </div>
 <div id="banner"></div>
 <div id="hint"></div>
@@ -169,102 +169,102 @@
 <div class="screen show" id="menu">
   <div class="menuL">
     <div class="logoIc">🌻🥦🍒</div>
-    <div class="logo">VƯỜN<br>THỦ HỘ</div>
-    <div class="tag">Trồng cây, thu nắng, đuổi sâu bọ khỏi vườn!</div>
+    <div class="logo">GARDEN<br>GUARDIANS</div>
+    <div class="tag">Plant crops, collect sun and chase the bugs out of the garden!</div>
     <div class="row" style="margin-top:6px">
-      <button class="btn sm" id="resumeSavedBtn" hidden>▶ Tiếp tục ván đang chơi</button>
-      <button class="btn dark sm" id="exitAppBtn">← Về danh sách game</button>
-      <button class="btn gold sm" id="btnCfg">⚙️ Cấu hình JSON</button>
-      <button class="btn dark sm" id="btnMusic">🎵 Nhạc: Bật</button>
-      <button class="btn dark sm" id="btnSfx">🔊 Âm: Bật</button>
+      <button class="btn sm" id="resumeSavedBtn" hidden>▶ Resume Game</button>
+      <button class="btn dark sm" id="exitAppBtn">← Back to Games</button>
+      <button class="btn gold sm" id="btnCfg">⚙️ JSON Config</button>
+      <button class="btn dark sm" id="btnMusic">🎵 Music: On</button>
+      <button class="btn dark sm" id="btnSfx">🔊 Sound: On</button>
     </div>
   </div>
-  <div class="menuR"><h3>Chọn màn chơi</h3><div id="cards"></div></div>
+  <div class="menuR"><h3>Choose a Level</h3><div id="cards"></div></div>
 </div>
 
 <div class="screen" id="pause">
-  <div class="panel"><h2>Tạm dừng</h2><p>Vườn vẫn đợi bạn đó!</p>
-    <div class="row"><button class="btn" id="resumeBtn">▶ Tiếp tục</button><button class="btn gold" id="restartBtn">↺ Chơi lại</button></div>
-    <div class="row" style="margin-top:10px"><button class="btn dark sm" id="pMusic">🎵 Nhạc</button><button class="btn dark sm" id="pSfx">🔊 Âm</button>
-      <button class="btn dark sm" id="menuBtn">☰ Về menu</button></div></div>
+  <div class="panel"><h2>Paused</h2><p>Your garden is waiting for you!</p>
+    <div class="row"><button class="btn" id="resumeBtn">▶ Resume</button><button class="btn gold" id="restartBtn">↺ Restart</button></div>
+    <div class="row" style="margin-top:10px"><button class="btn dark sm" id="pMusic">🎵 Music</button><button class="btn dark sm" id="pSfx">🔊 Sound</button>
+      <button class="btn dark sm" id="menuBtn">☰ Menu</button></div></div>
 </div>
 <div class="screen" id="win">
-  <div class="panel"><h2>🏆 Chiến thắng!</h2><p id="winTxt"></p>
-    <div class="row"><button class="btn gold" id="nextBtn">Màn tiếp ▶</button><button class="btn dark" id="winMenu">☰ Menu</button></div></div>
+  <div class="panel"><h2>🏆 Victory!</h2><p id="winTxt"></p>
+    <div class="row"><button class="btn gold" id="nextBtn">Next Level ▶</button><button class="btn dark" id="winMenu">☰ Menu</button></div></div>
 </div>
 <div class="screen" id="lose">
-  <div class="panel"><h2>😱 Quái vào nhà rồi!</h2><p>Đừng nản, thử chọn cây khác nhé.</p>
-    <div class="row"><button class="btn gold" id="retryBtn">↺ Thử lại</button><button class="btn dark" id="loseMenu">☰ Menu</button></div></div>
+  <div class="panel"><h2>😱 The monsters got in!</h2><p>Don’t give up — try a different plant!</p>
+    <div class="row"><button class="btn gold" id="retryBtn">↺ Try Again</button><button class="btn dark" id="loseMenu">☰ Menu</button></div></div>
 </div>
 
 <div class="screen" id="editor">
-  <div class="edHead"><h2>⚙️ Cấu hình quái &amp; màn chơi (JSON)</h2><button class="btn dark sm" id="cfgClose">✕ Đóng</button></div>
+  <div class="edHead"><h2>⚙️ Monster &amp; Level Config (JSON)</h2><button class="btn dark sm" id="cfgClose">✕ Close</button></div>
   <div class="edBody"><textarea id="cfgText" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>
     <div class="edDoc" id="cfgDoc"></div></div>
   <div id="cfgErr"></div>
   <div class="row" style="justify-content:flex-start">
-    <button class="btn sm" id="cfgApply">✅ Áp dụng</button>
-    <button class="btn gold sm" id="cfgReset">↺ Mặc định</button>
-    <button class="btn dark sm" id="cfgCopy">📋 Sao chép</button>
-    <button class="btn dark sm" id="cfgDown">⬇️ Tải xuống</button>
-    <button class="btn dark sm" id="cfgLoad">📂 Nạp file</button>
-    <button class="btn dark sm" id="cfgPull" hidden>☁️ Nạp từ máy chủ</button>
+    <button class="btn sm" id="cfgApply">✅ Apply</button>
+    <button class="btn gold sm" id="cfgReset">↺ Defaults</button>
+    <button class="btn dark sm" id="cfgCopy">📋 Copy</button>
+    <button class="btn dark sm" id="cfgDown">⬇️ Download</button>
+    <button class="btn dark sm" id="cfgLoad">📂 Load File</button>
+    <button class="btn dark sm" id="cfgPull" hidden>☁️ Load from Server</button>
     <input type="file" id="cfgFile" accept=".json,application/json" hidden>
   </div>
 </div>
 
-<div class="screen" id="rotate"><div class="em">📱</div><p>Xoay ngang điện thoại để chơi nhé!</p></div>
+<div class="screen" id="rotate"><div class="em">📱</div><p>Turn your phone sideways to play!</p></div>
 
-<!-- ============ CẤU HÌNH MẶC ĐỊNH (id + số liệu, KHÔNG có emoji — icon nằm ở MON_ICON/PLANT_ICON) ============ -->
+<!-- ============ DEFAULT CONFIG (id + stats, NO emoji — icons live in MON_ICON/PLANT_ICON) ============ -->
 <script type="application/json" id="cfgDefault">
 {
   "unlockAll": true,
 
   "monsters": {
-    "worm": {"name": "Sâu Bò", "hp": 100, "speed": 0.2, "dps": 20, "size": 1.0},
-    "beetle": {"name": "Bọ Giáp", "hp": 260, "speed": 0.17, "dps": 22, "size": 1.05},
-    "locust": {"name": "Châu Chấu", "hp": 90, "speed": 0.42, "dps": 16, "size": 0.95},
-    "rat": {"name": "Chuột Nhảy", "hp": 150, "speed": 0.3, "dps": 20, "size": 1.0, "jump": true},
-    "snail": {"name": "Ốc Sên Khiên", "hp": 520, "speed": 0.09, "dps": 25, "size": 1.1},
-    "boss": {"name": "Bọ Cạp Chúa", "hp": 3200, "speed": 0.06, "dps": 80, "size": 1.7},
+    "worm": {"name": "Crawler Worm", "hp": 100, "speed": 0.2, "dps": 20, "size": 1.0},
+    "beetle": {"name": "Armored Beetle", "hp": 260, "speed": 0.17, "dps": 22, "size": 1.05},
+    "locust": {"name": "Grasshopper", "hp": 90, "speed": 0.42, "dps": 16, "size": 0.95},
+    "rat": {"name": "Hopping Rat", "hp": 150, "speed": 0.3, "dps": 20, "size": 1.0, "jump": true},
+    "snail": {"name": "Shield Snail", "hp": 520, "speed": 0.09, "dps": 25, "size": 1.1},
+    "boss": {"name": "Scorpion King", "hp": 3200, "speed": 0.06, "dps": 80, "size": 1.7},
     "zombie": {"name": "Zombie", "hp": 220, "speed": 0.16, "dps": 22, "size": 1.1},
-    "zombieCone": {"name": "Zombie Nón Cối", "hp": 520, "speed": 0.15, "dps": 24, "size": 1.15},
-    "bat": {"name": "Dơi Quỷ", "hp": 70, "speed": 0.55, "dps": 14, "size": 0.9},
-    "vampire": {"name": "Ma Cà Rồng", "hp": 480, "speed": 0.2, "dps": 30, "size": 1.1, "jump": true},
-    "vampLord": {"name": "Bá Tước Ma Cà Rồng", "hp": 4500, "speed": 0.06, "dps": 90, "size": 1.75}
+    "zombieCone": {"name": "Conehead Zombie", "hp": 520, "speed": 0.15, "dps": 24, "size": 1.15},
+    "bat": {"name": "Demon Bat", "hp": 70, "speed": 0.55, "dps": 14, "size": 0.9},
+    "vampire": {"name": "Vampire", "hp": 480, "speed": 0.2, "dps": 30, "size": 1.1, "jump": true},
+    "vampLord": {"name": "Vampire Count", "hp": 4500, "speed": 0.06, "dps": 90, "size": 1.75}
   },
 
   "plants": {
-    "sunflower": {"name": "Hướng Dương", "kind": "producer", "cost": 50, "hp": 80, "cooldown": 5, "amount": 25, "every": 9, "first": 5},
-    "shooter": {"name": "Súp Lơ Bắn Hạt", "kind": "shooter", "cost": 100, "hp": 80, "cooldown": 5, "damage": 20, "every": 1.5, "shots": 1},
-    "wall": {"name": "Dừa Tường", "kind": "wall", "cost": 50, "hp": 600, "cooldown": 14},
-    "bomb": {"name": "Anh Đào Nổ", "kind": "bomb", "cost": 150, "hp": 50, "cooldown": 25, "damage": 400, "radius": 1.5, "fuse": 1},
-    "ice": {"name": "Việt Quất Băng", "kind": "shooter", "cost": 175, "hp": 80, "cooldown": 6, "damage": 20, "every": 1.5, "shots": 1, "slow": 0.5, "slowTime": 4},
-    "mine": {"name": "Khoai Bẫy", "kind": "mine", "cost": 25, "hp": 50, "cooldown": 18, "damage": 500, "arm": 8},
-    "repeater": {"name": "Xương Rồng Đôi", "kind": "shooter", "cost": 200, "hp": 80, "cooldown": 7, "damage": 20, "every": 1.5, "shots": 2},
-    "gatling": {"name": "Súp Lơ Bắn Liên Hồi", "kind": "shooter", "cost": 250, "hp": 80, "cooldown": 7, "damage": 20, "every": 1.2, "shots": 4},
-    "threepeater": {"name": "Tam Thủ Súng", "kind": "shooter", "cost": 300, "hp": 80, "cooldown": 8, "damage": 20, "every": 1.6, "shots": 1, "lanes": 3},
-    "chili": {"name": "Ớt Lửa", "kind": "lane", "cost": 125, "hp": 50, "cooldown": 25, "damage": 400, "fuse": 0.8},
-    "garlic": {"name": "Tỏi Xua Quỷ", "kind": "wall", "cost": 75, "hp": 1000, "cooldown": 16},
-    "peashooter": {"name": "Đậu Hà Lan", "kind": "shooter", "cost": 100, "hp": 100, "cooldown": 5, "damage": 20, "every": 1.5, "shots": 1, "bullet": "pea"},
-    "firepea": {"name": "Đậu Lửa", "kind": "shooter", "cost": 225, "hp": 80, "cooldown": 8, "damage": 40, "every": 1.5, "shots": 1, "bullet": "fire"},
-    "sniper": {"name": "Đậu Bắn Tỉa", "kind": "shooter", "cost": 250, "hp": 80, "cooldown": 10, "damage": 160, "every": 4, "shots": 1, "bullet": "snipe", "bspeed": 18, "pierce": 2}
+    "sunflower": {"name": "Sunflower", "kind": "producer", "cost": 50, "hp": 80, "cooldown": 5, "amount": 25, "every": 9, "first": 5},
+    "shooter": {"name": "Broccoli Shooter", "kind": "shooter", "cost": 100, "hp": 80, "cooldown": 5, "damage": 20, "every": 1.5, "shots": 1},
+    "wall": {"name": "Coconut Wall", "kind": "wall", "cost": 50, "hp": 600, "cooldown": 14},
+    "bomb": {"name": "Cherry Bomb", "kind": "bomb", "cost": 150, "hp": 50, "cooldown": 25, "damage": 400, "radius": 1.5, "fuse": 1},
+    "ice": {"name": "Ice Blueberry", "kind": "shooter", "cost": 175, "hp": 80, "cooldown": 6, "damage": 20, "every": 1.5, "shots": 1, "slow": 0.5, "slowTime": 4},
+    "mine": {"name": "Potato Mine", "kind": "mine", "cost": 25, "hp": 50, "cooldown": 18, "damage": 500, "arm": 8},
+    "repeater": {"name": "Twin Cactus", "kind": "shooter", "cost": 200, "hp": 80, "cooldown": 7, "damage": 20, "every": 1.5, "shots": 2},
+    "gatling": {"name": "Gatling Broccoli", "kind": "shooter", "cost": 250, "hp": 80, "cooldown": 7, "damage": 20, "every": 1.2, "shots": 4},
+    "threepeater": {"name": "Triple Shooter", "kind": "shooter", "cost": 300, "hp": 80, "cooldown": 8, "damage": 20, "every": 1.6, "shots": 1, "lanes": 3},
+    "chili": {"name": "Fire Chili", "kind": "lane", "cost": 125, "hp": 50, "cooldown": 25, "damage": 400, "fuse": 0.8},
+    "garlic": {"name": "Warding Garlic", "kind": "wall", "cost": 75, "hp": 1000, "cooldown": 16},
+    "peashooter": {"name": "Peashooter", "kind": "shooter", "cost": 100, "hp": 100, "cooldown": 5, "damage": 20, "every": 1.5, "shots": 1, "bullet": "pea"},
+    "firepea": {"name": "Fire Pea", "kind": "shooter", "cost": 225, "hp": 80, "cooldown": 8, "damage": 40, "every": 1.5, "shots": 1, "bullet": "fire"},
+    "sniper": {"name": "Sniper Pea", "kind": "shooter", "cost": 250, "hp": 80, "cooldown": 10, "damage": 160, "every": 4, "shots": 1, "bullet": "snipe", "bspeed": 18, "pierce": 2}
   },
 
   "levels": [
     {
-      "name": "Vườn Trước Nhà", "theme": "day", "rows": 5, "startSun": 150,
+      "name": "Front Yard", "theme": "day", "rows": 5, "startSun": 150,
       "plants": ["sunflower", "shooter", "peashooter"],
       "skySun": {"first": 6, "every": 9, "amount": 25},
       "timeline": [
         {"t": 20, "monster": "worm", "row": "random"},
         {"t": 40, "monster": "worm", "row": "random"},
         {"t": 58, "monster": "worm", "row": "random", "count": 2, "gap": 5},
-        {"t": 85, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [{"monster": "worm", "row": "all"}, {"monster": "worm", "row": "random", "count": 3, "gap": 3, "delay": 4}]}
+        {"t": 85, "banner": "A huge monster wave is coming!", "flag": true, "spawn": [{"monster": "worm", "row": "all"}, {"monster": "worm", "row": "random", "count": 3, "gap": 3, "delay": 4}]}
       ]
     },
     {
-      "name": "Vườn Sau Nhà", "theme": "day", "rows": 5, "startSun": 150,
+      "name": "Back Yard", "theme": "day", "rows": 5, "startSun": 150,
       "plants": ["sunflower", "shooter", "wall", "bomb"],
       "skySun": {"first": 6, "every": 9, "amount": 25},
       "timeline": [
@@ -273,11 +273,11 @@
         {"t": 45, "monster": "beetle", "row": "random"},
         {"t": 62, "monster": "worm", "row": "random", "count": 3, "gap": 3},
         {"t": 80, "monster": "beetle", "row": "random", "count": 2, "gap": 6},
-        {"t": 100, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [{"monster": "beetle", "row": "all"}, {"monster": "worm", "row": "random", "count": 4, "gap": 2.5, "delay": 3}]}
+        {"t": 100, "banner": "A huge monster wave is coming!", "flag": true, "spawn": [{"monster": "beetle", "row": "all"}, {"monster": "worm", "row": "random", "count": 4, "gap": 2.5, "delay": 3}]}
       ]
     },
     {
-      "name": "Hoàng Hôn Bên Hàng Rào", "theme": "dusk", "rows": 5, "startSun": 200,
+      "name": "Sunset by the Fence", "theme": "dusk", "rows": 5, "startSun": 200,
       "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine"],
       "skySun": {"first": 8, "every": 11, "amount": 25},
       "timeline": [
@@ -287,11 +287,11 @@
         {"t": 46, "monster": "worm", "row": "random", "count": 2, "gap": 3},
         {"t": 60, "monster": "locust", "row": "random", "count": 3, "gap": 2},
         {"t": 76, "monster": "beetle", "row": "random", "count": 2, "gap": 5},
-        {"t": 92, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [{"monster": "rat", "row": "all"}, {"monster": "locust", "row": "random", "count": 4, "gap": 1.5, "delay": 3}, {"monster": "beetle", "row": "random", "count": 2, "gap": 6, "delay": 5}]}
+        {"t": 92, "banner": "A huge monster wave is coming!", "flag": true, "spawn": [{"monster": "rat", "row": "all"}, {"monster": "locust", "row": "random", "count": 4, "gap": 1.5, "delay": 3}, {"monster": "beetle", "row": "random", "count": 2, "gap": 6, "delay": 5}]}
       ]
     },
     {
-      "name": "Đêm Sương Mù", "theme": "night", "rows": 5, "startSun": 250,
+      "name": "Foggy Night", "theme": "night", "rows": 5, "startSun": 250,
       "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili", "peashooter", "sniper"],
       "skySun": {"first": 0, "every": 0, "amount": 25},
       "timeline": [
@@ -299,24 +299,24 @@
         {"t": 35, "monster": "snail", "row": "random"},
         {"t": 55, "monster": "rat", "row": "random", "count": 2, "gap": 4},
         {"t": 75, "monster": "beetle", "row": "random", "count": 2, "gap": 3},
-        {"t": 95, "banner": "Quái đang kéo đến từ trong sương!", "flag": true, "spawn": [{"monster": "snail", "row": "random", "count": 2, "gap": 8}, {"monster": "locust", "row": "all", "delay": 2}]},
-        {"t": 125, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "worm", "row": "all", "count": 2, "gap": 6}, {"monster": "beetle", "row": "random", "count": 4, "gap": 3, "delay": 3}, {"monster": "snail", "row": "random", "count": 2, "gap": 10, "delay": 5}]}
+        {"t": 95, "banner": "Monsters are coming out of the fog!", "flag": true, "spawn": [{"monster": "snail", "row": "random", "count": 2, "gap": 8}, {"monster": "locust", "row": "all", "delay": 2}]},
+        {"t": 125, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "worm", "row": "all", "count": 2, "gap": 6}, {"monster": "beetle", "row": "random", "count": 4, "gap": 3, "delay": 3}, {"monster": "snail", "row": "random", "count": 2, "gap": 10, "delay": 5}]}
       ]
     },
     {
-      "name": "Bọ Cạp Chúa", "theme": "dusk", "rows": 5, "startSun": 300,
+      "name": "Scorpion King", "theme": "dusk", "rows": 5, "startSun": 300,
       "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili", "peashooter", "sniper"],
       "skySun": {"first": 8, "every": 10, "amount": 25},
       "timeline": [
         {"t": 15, "monster": "worm", "row": "random", "count": 3, "gap": 3},
         {"t": 35, "monster": "beetle", "row": "random", "count": 2, "gap": 4},
         {"t": 55, "monster": "rat", "row": "random", "count": 3, "gap": 3},
-        {"t": 80, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [{"monster": "locust", "row": "all", "count": 2, "gap": 4}, {"monster": "snail", "row": "random", "count": 2, "gap": 6, "delay": 4}]},
-        {"t": 115, "banner": "BỌ CẠP CHÚA XUẤT HIỆN!", "flag": true, "spawn": [{"monster": "boss", "row": 3}, {"monster": "beetle", "row": "all", "delay": 6}, {"monster": "worm", "row": "random", "count": 6, "gap": 2, "delay": 10}]}
+        {"t": 80, "banner": "A huge monster wave is coming!", "flag": true, "spawn": [{"monster": "locust", "row": "all", "count": 2, "gap": 4}, {"monster": "snail", "row": "random", "count": 2, "gap": 6, "delay": 4}]},
+        {"t": 115, "banner": "THE SCORPION KING APPEARS!", "flag": true, "spawn": [{"monster": "boss", "row": 3}, {"monster": "beetle", "row": "all", "delay": 6}, {"monster": "worm", "row": "random", "count": 6, "gap": 2, "delay": 10}]}
       ]
     },
     {
-      "name": "Nghĩa Địa Zombie", "theme": "grave", "rows": 5, "startSun": 250,
+      "name": "Zombie Graveyard", "theme": "grave", "rows": 5, "startSun": 250,
       "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 10, "every": 12, "amount": 25},
       "timeline": [
@@ -324,12 +324,12 @@
         {"t": 32, "monster": "zombie", "row": "random", "count": 2, "gap": 4},
         {"t": 52, "monster": "zombieCone", "row": "random"},
         {"t": 70, "monster": "zombie", "row": "random", "count": 3, "gap": 3},
-        {"t": 90, "banner": "Zombie trỗi dậy từ mộ!", "flag": true, "spawn": [{"monster": "zombie", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 2, "gap": 5, "delay": 4}]},
-        {"t": 120, "banner": "Đợt cuối: bầy zombie kéo đến!", "flag": true, "spawn": [{"monster": "zombie", "row": "all", "count": 2, "gap": 6}, {"monster": "zombieCone", "row": "random", "count": 3, "gap": 4, "delay": 3}, {"monster": "bat", "row": "random", "count": 4, "gap": 2, "delay": 8}]}
+        {"t": 90, "banner": "Zombies are rising from their graves!", "flag": true, "spawn": [{"monster": "zombie", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 2, "gap": 5, "delay": 4}]},
+        {"t": 120, "banner": "Final wave: the zombie horde arrives!", "flag": true, "spawn": [{"monster": "zombie", "row": "all", "count": 2, "gap": 6}, {"monster": "zombieCone", "row": "random", "count": 3, "gap": 4, "delay": 3}, {"monster": "bat", "row": "random", "count": 4, "gap": 2, "delay": 8}]}
       ]
     },
     {
-      "name": "Lâu Đài Ma Cà Rồng", "theme": "castle", "rows": 5, "startSun": 300,
+      "name": "Vampire Castle", "theme": "castle", "rows": 5, "startSun": 300,
       "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 12, "every": 14, "amount": 25},
       "timeline": [
@@ -337,24 +337,24 @@
         {"t": 35, "monster": "vampire", "row": "random"},
         {"t": 55, "monster": "zombieCone", "row": "random", "count": 2, "gap": 4},
         {"t": 75, "monster": "vampire", "row": "random", "count": 2, "gap": 5},
-        {"t": 100, "banner": "Bầy dơi đang tràn vào lâu đài!", "flag": true, "spawn": [{"monster": "bat", "row": "all", "count": 2, "gap": 3}, {"monster": "vampire", "row": "random", "count": 2, "gap": 6, "delay": 4}]},
-        {"t": 135, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "vampire", "row": "all", "count": 2, "gap": 7}, {"monster": "zombieCone", "row": "random", "count": 3, "gap": 4, "delay": 3}, {"monster": "bat", "row": "random", "count": 6, "gap": 1.5, "delay": 6}]}
+        {"t": 100, "banner": "A swarm of bats invades the castle!", "flag": true, "spawn": [{"monster": "bat", "row": "all", "count": 2, "gap": 3}, {"monster": "vampire", "row": "random", "count": 2, "gap": 6, "delay": 4}]},
+        {"t": 135, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "vampire", "row": "all", "count": 2, "gap": 7}, {"monster": "zombieCone", "row": "random", "count": 3, "gap": 4, "delay": 3}, {"monster": "bat", "row": "random", "count": 6, "gap": 1.5, "delay": 6}]}
       ]
     },
     {
-      "name": "Bá Tước Ma Cà Rồng", "theme": "castle", "rows": 5, "startSun": 350,
+      "name": "Vampire Count", "theme": "castle", "rows": 5, "startSun": 350,
       "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 10, "every": 12, "amount": 25},
       "timeline": [
         {"t": 15, "monster": "zombie", "row": "random", "count": 3, "gap": 3},
         {"t": 35, "monster": "vampire", "row": "random", "count": 2, "gap": 5},
         {"t": 60, "monster": "bat", "row": "random", "count": 5, "gap": 2},
-        {"t": 85, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [{"monster": "zombieCone", "row": "all"}, {"monster": "vampire", "row": "random", "count": 3, "gap": 5, "delay": 4}]},
-        {"t": 120, "banner": "BÁ TƯỚC MA CÀ RỒNG XUẤT HIỆN!", "flag": true, "spawn": [{"monster": "vampLord", "row": 3}, {"monster": "bat", "row": "all", "delay": 6}, {"monster": "zombie", "row": "random", "count": 6, "gap": 2, "delay": 10}]}
+        {"t": 85, "banner": "A huge monster wave is coming!", "flag": true, "spawn": [{"monster": "zombieCone", "row": "all"}, {"monster": "vampire", "row": "random", "count": 3, "gap": 5, "delay": 4}]},
+        {"t": 120, "banner": "THE VAMPIRE COUNT APPEARS!", "flag": true, "spawn": [{"monster": "vampLord", "row": 3}, {"monster": "bat", "row": "all", "delay": 6}, {"monster": "zombie", "row": "random", "count": 6, "gap": 2, "delay": 10}]}
       ]
     },
     {
-      "name": "Bình Minh Trên Đồi", "theme": "day", "rows": 5, "startSun": 200,
+      "name": "Sunrise on the Hill", "theme": "day", "rows": 5, "startSun": 200,
       "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili", "peashooter", "sniper"],
       "skySun": {"first": 6, "every": 9, "amount": 25},
       "timeline": [
@@ -362,13 +362,13 @@
         {"t": 24, "monster": "beetle", "row": "random", "count": 2, "gap": 3.6},
         {"t": 36, "monster": "locust", "row": "random"},
         {"t": 49, "monster": "worm", "row": "random", "count": 2, "gap": 3.6},
-        {"t": 60, "banner": "Đợt tấn công mới! Chuẩn bị phòng thủ!", "flag": true, "spawn": [{"monster": "rat", "row": "all"}, {"monster": "locust", "row": "random", "count": 3, "gap": 3.4, "delay": 3}, {"monster": "worm", "row": "random", "count": 3, "gap": 2.5, "delay": 6}]},
+        {"t": 60, "banner": "New attack wave! Get ready to defend!", "flag": true, "spawn": [{"monster": "rat", "row": "all"}, {"monster": "locust", "row": "random", "count": 3, "gap": 3.4, "delay": 3}, {"monster": "worm", "row": "random", "count": 3, "gap": 2.5, "delay": 6}]},
         {"t": 75, "monster": "rat", "row": "random", "count": 2, "gap": 3.5},
-        {"t": 90, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "beetle", "row": "all"}, {"monster": "worm", "row": "random", "count": 3, "gap": 2.7, "delay": 3}, {"monster": "locust", "row": "random", "count": 3, "gap": 2.6, "delay": 6}]}
+        {"t": 90, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "beetle", "row": "all"}, {"monster": "worm", "row": "random", "count": 3, "gap": 2.7, "delay": 3}, {"monster": "locust", "row": "random", "count": 3, "gap": 2.6, "delay": 6}]}
       ]
     },
     {
-      "name": "Cánh Đồng Gió", "theme": "dusk", "rows": 6, "startSun": 250,
+      "name": "Windy Field", "theme": "dusk", "rows": 6, "startSun": 250,
       "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili", "peashooter", "sniper"],
       "skySun": {"first": 8, "every": 11, "amount": 25},
       "timeline": [
@@ -376,13 +376,13 @@
         {"t": 26, "monster": "locust", "row": "random", "count": 2, "gap": 2.8},
         {"t": 37, "monster": "locust", "row": "random"},
         {"t": 49, "monster": "rat", "row": "random"},
-        {"t": 63, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [{"monster": "locust", "row": "all"}, {"monster": "rat", "row": "random", "count": 3, "gap": 3.9, "delay": 3}, {"monster": "rat", "row": "random", "count": 3, "gap": 3.0, "delay": 6}]},
+        {"t": 63, "banner": "A huge monster wave is coming!", "flag": true, "spawn": [{"monster": "locust", "row": "all"}, {"monster": "rat", "row": "random", "count": 3, "gap": 3.9, "delay": 3}, {"monster": "rat", "row": "random", "count": 3, "gap": 3.0, "delay": 6}]},
         {"t": 78, "monster": "beetle", "row": "random", "count": 3, "gap": 3.1},
-        {"t": 94, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "worm", "row": "all"}, {"monster": "snail", "row": "random", "count": 3, "gap": 3.0, "delay": 3}, {"monster": "beetle", "row": "random", "count": 3, "gap": 3.4, "delay": 6}]}
+        {"t": 94, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "worm", "row": "all"}, {"monster": "snail", "row": "random", "count": 3, "gap": 3.0, "delay": 3}, {"monster": "beetle", "row": "random", "count": 3, "gap": 3.4, "delay": 6}]}
       ]
     },
     {
-      "name": "Đầm Lầy Đêm", "theme": "night", "rows": 5, "startSun": 300,
+      "name": "Night Swamp", "theme": "night", "rows": 5, "startSun": 300,
       "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili", "peashooter", "sniper"],
       "skySun": {"first": 0, "every": 0, "amount": 25},
       "timeline": [
@@ -391,13 +391,13 @@
         {"t": 37, "monster": "rat", "row": "random"},
         {"t": 50, "monster": "locust", "row": "random"},
         {"t": 63, "monster": "locust", "row": "random", "count": 3, "gap": 2.0},
-        {"t": 68, "banner": "Quái đang ùa vào vườn!", "flag": true, "spawn": [{"monster": "locust", "row": "all"}, {"monster": "worm", "row": "random", "count": 3, "gap": 3.6, "delay": 3}, {"monster": "worm", "row": "random", "count": 3, "gap": 2.7, "delay": 6}]},
+        {"t": 68, "banner": "Monsters are flooding the garden!", "flag": true, "spawn": [{"monster": "locust", "row": "all"}, {"monster": "worm", "row": "random", "count": 3, "gap": 3.6, "delay": 3}, {"monster": "worm", "row": "random", "count": 3, "gap": 2.7, "delay": 6}]},
         {"t": 85, "monster": "rat", "row": "random", "count": 3, "gap": 2.7},
-        {"t": 102, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "beetle", "row": "all"}, {"monster": "locust", "row": "random", "count": 3, "gap": 3.6, "delay": 3}, {"monster": "beetle", "row": "random", "count": 3, "gap": 3.8, "delay": 6}]}
+        {"t": 102, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "beetle", "row": "all"}, {"monster": "locust", "row": "random", "count": 3, "gap": 3.6, "delay": 3}, {"monster": "beetle", "row": "random", "count": 3, "gap": 3.8, "delay": 6}]}
       ]
     },
     {
-      "name": "Mưa Châu Chấu", "theme": "day", "rows": 6, "startSun": 250,
+      "name": "Grasshopper Rain", "theme": "day", "rows": 6, "startSun": 250,
       "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili", "peashooter", "sniper"],
       "skySun": {"first": 6, "every": 9, "amount": 25},
       "timeline": [
@@ -405,13 +405,13 @@
         {"t": 23, "monster": "locust", "row": "random"},
         {"t": 34, "monster": "rat", "row": "random"},
         {"t": 45, "monster": "locust", "row": "random", "count": 2, "gap": 2.2},
-        {"t": 57, "banner": "Một đợt quái lớn đang kéo tới!", "flag": true, "spawn": [{"monster": "locust", "row": "all"}, {"monster": "locust", "row": "random", "count": 3, "gap": 2.0, "delay": 3}, {"monster": "locust", "row": "random", "count": 3, "gap": 3.2, "delay": 6}]},
+        {"t": 57, "banner": "A huge monster wave is coming!", "flag": true, "spawn": [{"monster": "locust", "row": "all"}, {"monster": "locust", "row": "random", "count": 3, "gap": 2.0, "delay": 3}, {"monster": "locust", "row": "random", "count": 3, "gap": 3.2, "delay": 6}]},
         {"t": 71, "monster": "rat", "row": "random", "count": 3, "gap": 2.3},
-        {"t": 86, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "locust", "row": "all"}, {"monster": "locust", "row": "random", "count": 3, "gap": 3.1, "delay": 3}, {"monster": "locust", "row": "random", "count": 3, "gap": 3.5, "delay": 6}]}
+        {"t": 86, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "locust", "row": "all"}, {"monster": "locust", "row": "random", "count": 3, "gap": 3.1, "delay": 3}, {"monster": "locust", "row": "random", "count": 3, "gap": 3.5, "delay": 6}]}
       ]
     },
     {
-      "name": "Pháo Đài Ốc Sên", "theme": "dusk", "rows": 5, "startSun": 300,
+      "name": "Snail Fortress", "theme": "dusk", "rows": 5, "startSun": 300,
       "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili", "peashooter", "sniper"],
       "skySun": {"first": 8, "every": 11, "amount": 25},
       "timeline": [
@@ -420,13 +420,13 @@
         {"t": 37, "monster": "beetle", "row": "random", "count": 3, "gap": 3.4},
         {"t": 47, "monster": "snail", "row": "random", "count": 3, "gap": 3.6},
         {"t": 59, "monster": "snail", "row": "random"},
-        {"t": 71, "banner": "Đợt tấn công mới! Chuẩn bị phòng thủ!", "flag": true, "spawn": [{"monster": "snail", "row": "all"}, {"monster": "rat", "row": "random", "count": 3, "gap": 2.8, "delay": 3}, {"monster": "snail", "row": "random", "count": 3, "gap": 3.7, "delay": 6}]},
+        {"t": 71, "banner": "New attack wave! Get ready to defend!", "flag": true, "spawn": [{"monster": "snail", "row": "all"}, {"monster": "rat", "row": "random", "count": 3, "gap": 2.8, "delay": 3}, {"monster": "snail", "row": "random", "count": 3, "gap": 3.7, "delay": 6}]},
         {"t": 88, "monster": "rat", "row": "random", "count": 3, "gap": 3.4},
-        {"t": 106, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "snail", "row": "all"}, {"monster": "snail", "row": "random", "count": 3, "gap": 3.4, "delay": 3}, {"monster": "snail", "row": "random", "count": 3, "gap": 3.8, "delay": 6}]}
+        {"t": 106, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "snail", "row": "all"}, {"monster": "snail", "row": "random", "count": 3, "gap": 3.4, "delay": 3}, {"monster": "snail", "row": "random", "count": 3, "gap": 3.8, "delay": 6}]}
       ]
     },
     {
-      "name": "Đêm Trăng Máu", "theme": "night", "rows": 6, "startSun": 350,
+      "name": "Blood Moon Night", "theme": "night", "rows": 6, "startSun": 350,
       "plants": ["sunflower", "shooter", "wall", "bomb", "ice", "mine", "repeater", "chili", "peashooter", "sniper"],
       "skySun": {"first": 0, "every": 0, "amount": 25},
       "timeline": [
@@ -435,13 +435,13 @@
         {"t": 35, "monster": "rat", "row": "random", "count": 3, "gap": 2.3},
         {"t": 46, "monster": "locust", "row": "random", "count": 2, "gap": 3.3},
         {"t": 56, "monster": "rat", "row": "random", "count": 2, "gap": 2.4},
-        {"t": 67, "banner": "Cả bầy quái xông tới!", "flag": true, "spawn": [{"monster": "locust", "row": "all"}, {"monster": "beetle", "row": "random", "count": 4, "gap": 3.3, "delay": 3}, {"monster": "beetle", "row": "random", "count": 4, "gap": 2.5, "delay": 6}]},
+        {"t": 67, "banner": "The whole horde charges in!", "flag": true, "spawn": [{"monster": "locust", "row": "all"}, {"monster": "beetle", "row": "random", "count": 4, "gap": 3.3, "delay": 3}, {"monster": "beetle", "row": "random", "count": 4, "gap": 2.5, "delay": 6}]},
         {"t": 86, "monster": "locust", "row": "random", "count": 3, "gap": 2.6},
-        {"t": 105, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "beetle", "row": "all"}, {"monster": "beetle", "row": "random", "count": 4, "gap": 2.9, "delay": 3}, {"monster": "locust", "row": "random", "count": 4, "gap": 3.6, "delay": 6}]}
+        {"t": 105, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "beetle", "row": "all"}, {"monster": "beetle", "row": "random", "count": 4, "gap": 2.9, "delay": 3}, {"monster": "locust", "row": "random", "count": 4, "gap": 3.6, "delay": 6}]}
       ]
     },
     {
-      "name": "Nghĩa Trang Cổ", "theme": "grave", "rows": 5, "startSun": 250,
+      "name": "Ancient Graveyard", "theme": "grave", "rows": 5, "startSun": 250,
       "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 10, "every": 12, "amount": 25},
       "timeline": [
@@ -450,13 +450,13 @@
         {"t": 34, "monster": "zombie", "row": "random", "count": 3, "gap": 2.7},
         {"t": 45, "monster": "zombie", "row": "random"},
         {"t": 54, "monster": "zombieCone", "row": "random"},
-        {"t": 68, "banner": "Đợt tấn công mới! Chuẩn bị phòng thủ!", "flag": true, "spawn": [{"monster": "zombie", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 3, "gap": 2.6, "delay": 3}, {"monster": "zombieCone", "row": "random", "count": 3, "gap": 3.5, "delay": 6}]},
+        {"t": 68, "banner": "New attack wave! Get ready to defend!", "flag": true, "spawn": [{"monster": "zombie", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 3, "gap": 2.6, "delay": 3}, {"monster": "zombieCone", "row": "random", "count": 3, "gap": 3.5, "delay": 6}]},
         {"t": 85, "monster": "zombie", "row": "random", "count": 3, "gap": 3.0},
-        {"t": 102, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "zombie", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 3, "gap": 2.2, "delay": 3}, {"monster": "zombie", "row": "random", "count": 3, "gap": 2.2, "delay": 6}]}
+        {"t": 102, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "zombie", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 3, "gap": 2.2, "delay": 3}, {"monster": "zombie", "row": "random", "count": 3, "gap": 2.2, "delay": 6}]}
       ]
     },
     {
-      "name": "Cổng Địa Ngục Zombie", "theme": "grave", "rows": 6, "startSun": 300,
+      "name": "Zombie Hell Gate", "theme": "grave", "rows": 6, "startSun": 300,
       "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 10, "every": 12, "amount": 25},
       "timeline": [
@@ -466,13 +466,13 @@
         {"t": 40, "monster": "zombie", "row": "random", "count": 2, "gap": 2.6},
         {"t": 49, "monster": "bat", "row": "random", "count": 2, "gap": 2.6},
         {"t": 59, "monster": "zombie", "row": "random"},
-        {"t": 67, "banner": "Đợt tấn công mới! Chuẩn bị phòng thủ!", "flag": true, "spawn": [{"monster": "zombieCone", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 2.9, "delay": 3}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 2.2, "delay": 6}]},
+        {"t": 67, "banner": "New attack wave! Get ready to defend!", "flag": true, "spawn": [{"monster": "zombieCone", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 2.9, "delay": 3}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 2.2, "delay": 6}]},
         {"t": 86, "monster": "bat", "row": "random", "count": 3, "gap": 3.0},
-        {"t": 105, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "bat", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 3.9, "delay": 3}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 3.5, "delay": 6}]}
+        {"t": 105, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "bat", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 3.9, "delay": 3}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 3.5, "delay": 6}]}
       ]
     },
     {
-      "name": "Hầm Mộ Dơi", "theme": "castle", "rows": 5, "startSun": 300,
+      "name": "Bat Crypt", "theme": "castle", "rows": 5, "startSun": 300,
       "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 12, "every": 14, "amount": 25},
       "timeline": [
@@ -481,13 +481,13 @@
         {"t": 36, "monster": "bat", "row": "random", "count": 2, "gap": 3.4},
         {"t": 45, "monster": "bat", "row": "random", "count": 2, "gap": 2.7},
         {"t": 56, "monster": "bat", "row": "random", "count": 2, "gap": 2.7},
-        {"t": 68, "banner": "Cả bầy quái xông tới!", "flag": true, "spawn": [{"monster": "bat", "row": "all"}, {"monster": "bat", "row": "random", "count": 4, "gap": 2.4, "delay": 3}, {"monster": "bat", "row": "random", "count": 4, "gap": 3.1, "delay": 6}]},
+        {"t": 68, "banner": "The whole horde charges in!", "flag": true, "spawn": [{"monster": "bat", "row": "all"}, {"monster": "bat", "row": "random", "count": 4, "gap": 2.4, "delay": 3}, {"monster": "bat", "row": "random", "count": 4, "gap": 3.1, "delay": 6}]},
         {"t": 85, "monster": "vampire", "row": "random", "count": 3, "gap": 3.2},
-        {"t": 102, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "bat", "row": "all"}, {"monster": "bat", "row": "random", "count": 4, "gap": 3.1, "delay": 3}, {"monster": "bat", "row": "random", "count": 4, "gap": 3.9, "delay": 6}]}
+        {"t": 102, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "bat", "row": "all"}, {"monster": "bat", "row": "random", "count": 4, "gap": 3.1, "delay": 3}, {"monster": "bat", "row": "random", "count": 4, "gap": 3.9, "delay": 6}]}
       ]
     },
     {
-      "name": "Phòng Tiệc Ma Cà Rồng", "theme": "castle", "rows": 6, "startSun": 350,
+      "name": "Vampire Ballroom", "theme": "castle", "rows": 6, "startSun": 350,
       "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 12, "every": 14, "amount": 25},
       "timeline": [
@@ -497,13 +497,13 @@
         {"t": 40, "monster": "vampire", "row": "random", "count": 3, "gap": 3.0},
         {"t": 48, "monster": "bat", "row": "random"},
         {"t": 57, "monster": "vampire", "row": "random"},
-        {"t": 70, "banner": "Đợt tấn công mới! Chuẩn bị phòng thủ!", "flag": true, "spawn": [{"monster": "vampire", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 2.9, "delay": 3}, {"monster": "bat", "row": "random", "count": 4, "gap": 3.8, "delay": 6}]},
+        {"t": 70, "banner": "New attack wave! Get ready to defend!", "flag": true, "spawn": [{"monster": "vampire", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 2.9, "delay": 3}, {"monster": "bat", "row": "random", "count": 4, "gap": 3.8, "delay": 6}]},
         {"t": 89, "monster": "vampire", "row": "random", "count": 3, "gap": 2.9},
-        {"t": 109, "banner": "Đợt cuối! Giữ vững hàng phòng thủ!", "flag": true, "spawn": [{"monster": "vampire", "row": "all"}, {"monster": "zombie", "row": "random", "count": 4, "gap": 3.9, "delay": 3}, {"monster": "bat", "row": "random", "count": 4, "gap": 3.7, "delay": 6}]}
+        {"t": 109, "banner": "Final wave! Hold the line!", "flag": true, "spawn": [{"monster": "vampire", "row": "all"}, {"monster": "zombie", "row": "random", "count": 4, "gap": 3.9, "delay": 3}, {"monster": "bat", "row": "random", "count": 4, "gap": 3.7, "delay": 6}]}
       ]
     },
     {
-      "name": "Bọ Cạp Chúa Trở Lại", "theme": "dusk", "rows": 6, "startSun": 400,
+      "name": "Scorpion King Returns", "theme": "dusk", "rows": 6, "startSun": 400,
       "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 8, "every": 11, "amount": 25},
       "timeline": [
@@ -512,14 +512,14 @@
         {"t": 32, "monster": "locust", "row": "random", "count": 3, "gap": 3.2},
         {"t": 42, "monster": "worm", "row": "random"},
         {"t": 51, "monster": "rat", "row": "random", "count": 3, "gap": 2.2},
-        {"t": 63, "banner": "Quái đang ùa vào vườn!", "flag": true, "spawn": [{"monster": "snail", "row": "all"}, {"monster": "snail", "row": "random", "count": 4, "gap": 2.1, "delay": 3}, {"monster": "rat", "row": "random", "count": 4, "gap": 3.6, "delay": 6}]},
+        {"t": 63, "banner": "Monsters are flooding the garden!", "flag": true, "spawn": [{"monster": "snail", "row": "all"}, {"monster": "snail", "row": "random", "count": 4, "gap": 2.1, "delay": 3}, {"monster": "rat", "row": "random", "count": 4, "gap": 3.6, "delay": 6}]},
         {"t": 81, "monster": "worm", "row": "random", "count": 3, "gap": 2.4},
-        {"t": 100, "banner": "Cả bầy quái xông tới!", "flag": true, "spawn": [{"monster": "snail", "row": "all"}, {"monster": "beetle", "row": "random", "count": 4, "gap": 2.8, "delay": 3}, {"monster": "worm", "row": "random", "count": 4, "gap": 3.3, "delay": 6}]},
-        {"t": 140, "banner": "HAI BỌ CẠP CHÚA XUẤT HIỆN!", "flag": true, "spawn": [{"monster": "boss", "row": 2}, {"monster": "boss", "row": 5, "delay": 6}, {"monster": "worm", "row": "all", "delay": 8}, {"monster": "snail", "row": "random", "count": 6, "gap": 2, "delay": 12}]}
+        {"t": 100, "banner": "The whole horde charges in!", "flag": true, "spawn": [{"monster": "snail", "row": "all"}, {"monster": "beetle", "row": "random", "count": 4, "gap": 2.8, "delay": 3}, {"monster": "worm", "row": "random", "count": 4, "gap": 3.3, "delay": 6}]},
+        {"t": 140, "banner": "TWO SCORPION KINGS APPEAR!", "flag": true, "spawn": [{"monster": "boss", "row": 2}, {"monster": "boss", "row": 5, "delay": 6}, {"monster": "worm", "row": "all", "delay": 8}, {"monster": "snail", "row": "random", "count": 6, "gap": 2, "delay": 12}]}
       ]
     },
     {
-      "name": "Cuộc Chiến Cuối Cùng", "theme": "castle", "rows": 6, "startSun": 450,
+      "name": "The Final Battle", "theme": "castle", "rows": 6, "startSun": 450,
       "plants": ["sunflower", "shooter", "wall", "garlic", "bomb", "ice", "mine", "repeater", "chili", "gatling", "threepeater", "peashooter", "firepea", "sniper"],
       "skySun": {"first": 12, "every": 14, "amount": 25},
       "timeline": [
@@ -528,10 +528,10 @@
         {"t": 29, "monster": "bat", "row": "random", "count": 2, "gap": 3.5},
         {"t": 39, "monster": "bat", "row": "random", "count": 3, "gap": 3.2},
         {"t": 47, "monster": "vampire", "row": "random", "count": 3, "gap": 3.7},
-        {"t": 60, "banner": "Quái đang ùa vào vườn!", "flag": true, "spawn": [{"monster": "zombieCone", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 2.2, "delay": 3}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 3.0, "delay": 6}]},
+        {"t": 60, "banner": "Monsters are flooding the garden!", "flag": true, "spawn": [{"monster": "zombieCone", "row": "all"}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 2.2, "delay": 3}, {"monster": "zombieCone", "row": "random", "count": 4, "gap": 3.0, "delay": 6}]},
         {"t": 78, "monster": "beetle", "row": "random", "count": 3, "gap": 3.0},
-        {"t": 97, "banner": "Cả bầy quái xông tới!", "flag": true, "spawn": [{"monster": "zombieCone", "row": "all"}, {"monster": "bat", "row": "random", "count": 4, "gap": 2.2, "delay": 3}, {"monster": "beetle", "row": "random", "count": 4, "gap": 2.2, "delay": 6}]},
-        {"t": 150, "banner": "BÁ TƯỚC VÀ BỌ CẠP CHÚA CÙNG XUẤT HIỆN!", "flag": true, "spawn": [{"monster": "vampLord", "row": 3}, {"monster": "boss", "row": 5, "delay": 8}, {"monster": "beetle", "row": "all", "delay": 8}, {"monster": "zombieCone", "row": "random", "count": 6, "gap": 2, "delay": 12}]}
+        {"t": 97, "banner": "The whole horde charges in!", "flag": true, "spawn": [{"monster": "zombieCone", "row": "all"}, {"monster": "bat", "row": "random", "count": 4, "gap": 2.2, "delay": 3}, {"monster": "beetle", "row": "random", "count": 4, "gap": 2.2, "delay": 6}]},
+        {"t": 150, "banner": "THE VAMPIRE COUNT AND SCORPION KING APPEAR TOGETHER!", "flag": true, "spawn": [{"monster": "vampLord", "row": 3}, {"monster": "boss", "row": 5, "delay": 8}, {"monster": "beetle", "row": "all", "delay": 8}, {"monster": "zombieCone", "row": "random", "count": 6, "gap": 2, "delay": 12}]}
       ]
     }
   ]
@@ -548,20 +548,20 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const EMO = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
 const COLS = 9;
 
-/* ================= Lưu trữ ================= */
+/* ================= Storage ================= */
 const CK = 'vuon-thu-ho-cfg-v1', PK = 'vuon-thu-ho-prog-v1', RK = 'vuon-thu-ho-run-v1'; const memS = {};
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return memS[k] || null; } };
-const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { memS[k] = v; console.error('Không thể lưu dữ liệu game vào localStorage.', e); } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { memS[k] = v; console.error('Could not save game data to localStorage.', e); } };
 
-/* ================= Cấu hình JSON ================= */
+/* ================= JSON config ================= */
 const DEF = JSON.parse($('cfgDefault').textContent);
 
-/* Icon nằm ở đây, KHÔNG nằm trong JSON config — config chỉ gửi id + số liệu.
-   Thêm quái/cây mới: thêm id vào config, icon tự lấy theo id (thêm id mới thì thêm ở bảng dưới). */
+/* Icons live here, NOT in the JSON config — the config only sends ids + stats.
+   To add a monster/plant: add the id to the config; the icon is looked up by id (add new ids to the table below). */
 const MON_ICON = { worm: '🐛', beetle: '🪲', locust: '🦗', rat: '🐀', snail: '🐌', boss: '🦂', zombie: '🧟', zombieCone: '🧟', bat: '🦇', vampire: '🧛', vampLord: '🧛' };
 const PLANT_ICON = { sunflower: '🌻', shooter: '🥦', wall: '🥥', bomb: '🍒', ice: '🫐', mine: '🥔', repeater: '🌵', chili: '🌶️', garlic: '🧄', gatling: '🫒', threepeater: '🪻', peashooter: '🫛', firepea: '🔥', sniper: '🎯' };
-const M_BASE = { icon: '👾', name: 'Quái', hp: 100, speed: .2, dps: 20, size: 1 };
-const P_BASE = { icon: '🌱', name: 'Cây', kind: 'wall', cost: 50, hp: 80, cooldown: 5 };
+const M_BASE = { icon: '👾', name: 'Monster', hp: 100, speed: .2, dps: 20, size: 1 };
+const P_BASE = { icon: '🌱', name: 'Plant', kind: 'wall', cost: 50, hp: 80, cooldown: 5 };
 const KIND_DEF = {
   producer: { amount: 25, every: 9, first: 5 }, shooter: { damage: 20, every: 1.5, shots: 1 },
   bomb: { damage: 400, radius: 1.5, fuse: 1 }, lane: { damage: 400, fuse: .8 }, mine: { damage: 500, arm: 8 }, wall: {}
@@ -582,38 +582,38 @@ function resolve(u) {
 }
 function validate(u) {
   const er = [];
-  if (!u || typeof u !== 'object' || Array.isArray(u)) return ['JSON gốc phải là một object { ... }'];
-  if (!Array.isArray(u.levels) || !u.levels.length) er.push('"levels" phải là mảng có ít nhất 1 màn chơi');
+  if (!u || typeof u !== 'object' || Array.isArray(u)) return ['The root JSON must be an object { ... }'];
+  if (!Array.isArray(u.levels) || !u.levels.length) er.push('"levels" must be an array with at least 1 level');
   const c = resolve(u);
   Object.entries(c.monsters).forEach(([id, m]) => {
-    if (!(m.hp > 0)) er.push(`Quái "${id}": "hp" phải là số > 0`);
-    if (!(m.speed > 0)) er.push(`Quái "${id}": "speed" phải là số > 0 (đơn vị: ô/giây)`);
+    if (!(m.hp > 0)) er.push(`Monster "${id}": "hp" must be a number > 0`);
+    if (!(m.speed > 0)) er.push(`Monster "${id}": "speed" must be a number > 0 (unit: tiles/sec)`);
   });
   Object.entries(c.plants).forEach(([id, p]) => {
-    if (!KIND_DEF[p.kind]) er.push(`Cây "${id}": "kind" không hợp lệ (producer, shooter, wall, bomb, lane, mine)`);
-    if (!(p.cost >= 0)) er.push(`Cây "${id}": "cost" phải là số >= 0`);
+    if (!KIND_DEF[p.kind]) er.push(`Plant "${id}": "kind" is invalid (producer, shooter, wall, bomb, lane, mine)`);
+    if (!(p.cost >= 0)) er.push(`Plant "${id}": "cost" must be a number >= 0`);
   });
   (u.levels || []).forEach((L, i) => {
-    const n = 'Màn ' + (i + 1), rows = L.rows === undefined ? 5 : L.rows;
-    if (!Number.isInteger(rows) || rows < 3 || rows > 6) er.push(`${n}: "rows" phải là số nguyên từ 3 đến 6`);
-    if (!Array.isArray(L.plants) || !L.plants.length) er.push(`${n}: thiếu danh sách "plants"`);
-    else L.plants.forEach(p => { if (!c.plants[p]) er.push(`${n}: cây "${p}" không tồn tại`); });
-    if (!Array.isArray(L.timeline) || !L.timeline.length) { er.push(`${n}: thiếu "timeline"`); return; }
+    const n = 'Level ' + (i + 1), rows = L.rows === undefined ? 5 : L.rows;
+    if (!Number.isInteger(rows) || rows < 3 || rows > 6) er.push(`${n}: "rows" must be an integer from 3 to 6`);
+    if (!Array.isArray(L.plants) || !L.plants.length) er.push(`${n}: missing the "plants" list`);
+    else L.plants.forEach(p => { if (!c.plants[p]) er.push(`${n}: plant "${p}" does not exist`); });
+    if (!Array.isArray(L.timeline) || !L.timeline.length) { er.push(`${n}: missing "timeline"`); return; }
     L.timeline.forEach((e, j) => {
-      const nn = `${n}, sự kiện #${j + 1}`;
-      if (typeof e.t !== 'number' || e.t < 0) er.push(`${nn}: "t" phải là số giây >= 0`);
+      const nn = `${n}, event #${j + 1}`;
+      if (typeof e.t !== 'number' || e.t < 0) er.push(`${nn}: "t" must be a number of seconds >= 0`);
       const specs = Array.isArray(e.spawn) ? e.spawn : (e.monster ? [e] : null);
-      if (!specs && !e.banner) er.push(`${nn}: cần "monster" hoặc "spawn"`);
+      if (!specs && !e.banner) er.push(`${nn}: needs "monster" or "spawn"`);
       (specs || []).forEach(s => {
-        if (!c.monsters[s.monster]) er.push(`${nn}: quái "${s.monster}" không tồn tại`);
+        if (!c.monsters[s.monster]) er.push(`${nn}: monster "${s.monster}" does not exist`);
         const r = s.row;
-        if (r !== undefined && !(r === 'random' || r === 'all' || (Number.isInteger(r) && r >= 1 && r <= rows))) er.push(`${nn}: "row" phải là 1..${rows}, "random" hoặc "all"`);
+        if (r !== undefined && !(r === 'random' || r === 'all' || (Number.isInteger(r) && r >= 1 && r <= rows))) er.push(`${nn}: "row" must be 1..${rows}, "random" or "all"`);
       });
     });
   });
   return er;
 }
-/* Cấu hình chỉnh trong game được lưu cục bộ; nếu chưa có thì dùng mặc định. */
+/* Config edited in-game is saved locally; if none exists, use the default. */
 let userCfg = DEF, CFG;
 (function loadCfg() {
   const s = lsGet(CK);
@@ -622,13 +622,13 @@ let userCfg = DEF, CFG;
 })();
 CFG = resolve(userCfg);
 
-/* ================= Cấu hình từ máy chủ =================
-   Trang "Cấu hình Vườn Thủ Hộ" trong khu quản trị lưu JSON vào /api/game-configs
-   (đọc được không cần đăng nhập). Khi có mạng, game hỏi bản đó lúc mở lên:
-   hợp lệ thì dùng ngay và ghi vào localStorage để lần sau mở offline vẫn chơi
-   đúng bản mới. Mất mạng / JSON lỗi / sai luật thì giữ nguyên bản đang dùng.
-   `window.EG_API_BASE` do OfflineGamePage tiêm vào; mở file .html trực tiếp thì
-   không có → game chạy hoàn toàn local như trước. */
+/* ================= Server config =================
+   The "Garden Guardians Config" page in the admin area saves JSON to /api/game-configs
+   (publicly readable). When online, the game requests it on startup:
+   if valid it is used immediately and cached in localStorage so the next offline
+   launch still uses the new version. No network / bad JSON / invalid rules keeps
+   the current version. `window.EG_API_BASE` is injected by OfflineGamePage; opening
+   the .html file directly has none → the game runs fully local as before. */
 const CFG_KEY = 'plantvsanimal';
 async function pullRemoteCfg(loud) {
   const base = window.EG_API_BASE;
@@ -640,12 +640,12 @@ async function pullRemoteCfg(loud) {
     const v = j && j.data && j.data.config ? j.data.config.values : null;
     if (!v || typeof v !== 'object' || validate(v).length) return null;
     const raw = JSON.stringify(v);
-    if (raw === JSON.stringify(userCfg)) { if (loud) toast('Đang dùng đúng bản cấu hình trên máy chủ'); return v; }
+    if (raw === JSON.stringify(userCfg)) { if (loud) toast('Already using the server config'); return v; }
     userCfg = v; CFG = resolve(v); lsSet(CK, raw);
     if (!G) buildMenu();
-    toast(loud ? '✅ Đã nạp cấu hình từ máy chủ' : '✅ Có cấu hình mới từ máy chủ');
+    toast(loud ? '✅ Loaded the config from the server' : '✅ New config from the server');
     return v;
-  } catch (e) { if (loud) toast('Không kết nối được máy chủ'); return null; }
+  } catch (e) { if (loud) toast('Could not connect to the server'); return null; }
 }
 
 function one(v) {
@@ -662,21 +662,21 @@ function pretty(v, ind = '') {
 }
 function docHtml() {
   const c = CFG;
-  return `<h4>Thứ tự quái ra</h4>Mỗi màn có <code>timeline</code>: danh sách sự kiện, mỗi sự kiện chạy tại giây <code>t</code>. Sự kiện nhỏ nhất ra trước.
-  <h4>Một sự kiện</h4><code>{"t": 30, "monster": "worm", "row": 2, "count": 3, "gap": 2}</code><br>
-  <b>t</b>: giây kể từ khi bắt đầu<br><b>monster</b>: id quái<br><b>row</b>: 1..5 (từ trên xuống), <code>"random"</code> hoặc <code>"all"</code><br>
-  <b>count</b>: số lượng (mặc định 1)<br><b>gap</b>: giây giữa các con (mặc định 1.5)<br><b>delay</b>: chờ thêm bao nhiêu giây
-  <h4>Nhiều loại quái cùng đợt</h4><code>{"t": 90, "banner": "Đợt lớn!", "flag": true, "spawn": [ {...}, {...} ]}</code><br>
-  <b>banner</b>: chữ hiện giữa màn hình<br><b>flag</b>: đánh dấu cờ trên thanh tiến độ
-  <h4>Quái có sẵn</h4>${Object.entries(c.monsters).map(([id, m]) => `${m.icon} <code>${id}</code> ${m.name}`).join('<br>')}
-  <h4>Cây có sẵn</h4>${Object.entries(c.plants).map(([id, p]) => `${p.icon} <code>${id}</code> ${p.name}`).join('<br>')}
-  <h4>Tạo quái / cây mới</h4>Thêm id mới vào <code>monsters</code> hoặc <code>plants</code> (đủ name, hp, speed…) rồi dùng trong timeline. Tốc độ <b>speed</b> tính bằng ô/giây.
-  <b>Icon không nằm trong JSON</b> — game lấy icon theo id từ bảng <code>MON_ICON</code> / <code>PLANT_ICON</code> trong file plantvsanimal.html.
-  <h4>Nguồn cấu hình</h4>Cấu hình mặc định được nhúng trong game để vẫn chơi được offline. Khi có mạng, game tự lấy bản đang lưu trên máy chủ (trang <b>Quản trị → Cấu hình Vườn Thủ Hộ</b>) và cache lại trên thiết bị. Bản sửa ở đây chỉ lưu trên máy này bằng localStorage; muốn mọi thiết bị dùng chung thì lưu qua trang quản trị. Dùng <b>Mặc định</b> rồi <b>Áp dụng</b> để quay về cấu hình gốc.
-  <h4>Sao chép ra ngoài</h4>Dùng nút Sao chép hoặc Tải xuống để lưu file plantvsanimal.json.`;
+  return `<h4>Monster spawn order</h4>Each level has a <code>timeline</code>: a list of events, each running at second <code>t</code>. The smallest event runs first.
+  <h4>An event</h4><code>{"t": 30, "monster": "worm", "row": 2, "count": 3, "gap": 2}</code><br>
+  <b>t</b>: seconds since the start<br><b>monster</b>: monster id<br><b>row</b>: 1..5 (top to bottom), <code>"random"</code> or <code>"all"</code><br>
+  <b>count</b>: how many (default 1)<br><b>gap</b>: seconds between monsters (default 1.5)<br><b>delay</b>: extra seconds to wait
+  <h4>Several monster types in one wave</h4><code>{"t": 90, "banner": "Big wave!", "flag": true, "spawn": [ {...}, {...} ]}</code><br>
+  <b>banner</b>: text shown in the middle of the screen<br><b>flag</b>: marks a flag on the progress bar
+  <h4>Available monsters</h4>${Object.entries(c.monsters).map(([id, m]) => `${m.icon} <code>${id}</code> ${m.name}`).join('<br>')}
+  <h4>Available plants</h4>${Object.entries(c.plants).map(([id, p]) => `${p.icon} <code>${id}</code> ${p.name}`).join('<br>')}
+  <h4>Create a new monster / plant</h4>Add a new id to <code>monsters</code> or <code>plants</code> (with name, hp, speed, etc.) and use it in the timeline. <b>speed</b> is measured in tiles/sec.
+  <b>Icons are not stored in the JSON</b> — the game looks up the icon by id in the <code>MON_ICON</code> / <code>PLANT_ICON</code> tables in plantvsanimal.html.
+  <h4>Config source</h4>The default config is embedded in the game so it still works offline. When online, the game loads the version saved on the server (page <b>Admin → Garden Guardians Config</b>) and caches it on the device. Edits here are saved only on this device via localStorage; to share them with every device, save through the admin page. Use <b>Defaults</b> then <b>Apply</b> to return to the original config.
+  <h4>Export</h4>Use the Copy or Download button to save the plantvsanimal.json file.`;
 }
 
-/* ================= Âm thanh ================= */
+/* ================= Sound ================= */
 let ac = null, sfxOn = true, musicOn = true;
 function ensureAudio() {
   if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} if (ac) { mNext = ac.currentTime + .1; musicTick(); } }
@@ -731,14 +731,14 @@ function musicTick() {
   setTimeout(musicTick, 80);
 }
 function syncSoundBtns() {
-  $('btnMusic').textContent = '🎵 Nhạc: ' + (musicOn ? 'Bật' : 'Tắt'); $('btnSfx').textContent = '🔊 Âm: ' + (sfxOn ? 'Bật' : 'Tắt');
-  $('pMusic').textContent = '🎵 Nhạc: ' + (musicOn ? 'Bật' : 'Tắt'); $('pSfx').textContent = '🔊 Âm: ' + (sfxOn ? 'Bật' : 'Tắt');
+  $('btnMusic').textContent = '🎵 Music: ' + (musicOn ? 'On' : 'Off'); $('btnSfx').textContent = '🔊 Sound: ' + (sfxOn ? 'On' : 'Off');
+  $('pMusic').textContent = '🎵 Music: ' + (musicOn ? 'On' : 'Off'); $('pSfx').textContent = '🔊 Sound: ' + (sfxOn ? 'On' : 'Off');
 }
 const togMusic = () => { ensureAudio(); musicOn = !musicOn; syncSoundBtns(); };
 const togSfx = () => { ensureAudio(); sfxOn = !sfxOn; syncSoundBtns(); };
 $('btnMusic').onclick = $('pMusic').onclick = togMusic; $('btnSfx').onclick = $('pSfx').onclick = togSfx;
 
-/* ================= Giao diện chung ================= */
+/* ================= Shared UI ================= */
 let toastT;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2400); }
 function banner(msg, warn) { const b = $('banner'); b.textContent = msg; b.classList.toggle('warn', !!warn); b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
@@ -762,27 +762,27 @@ function buildMenu() {
     const b = document.createElement('button'); b.className = 'card ' + (L.theme || 'day');
     b.disabled = !unlocked; if (!unlocked) b.style.opacity = .55;
     const mons = new Set(); (L.timeline || []).forEach(e => (Array.isArray(e.spawn) ? e.spawn : (e.monster ? [e] : [])).forEach(s => mons.add(s.monster)));
-    b.innerHTML = `<div class="num">${i + 1}</div><div class="ci"><b>${L.name || 'Màn ' + (i + 1)}</b>
-      <span>${[...mons].map(monImg).join('')}</span><small>${THEME_ICON[L.theme] || '☀️'} ${(L.plants || []).length} loại cây</small></div>
+    b.innerHTML = `<div class="num">${i + 1}</div><div class="ci"><b>${L.name || 'Level ' + (i + 1)}</b>
+      <span>${[...mons].map(monImg).join('')}</span><small>${THEME_ICON[L.theme] || '☀️'} ${(L.plants || []).length} plant types</small></div>
       <div class="st">${prog.cleared[i] ? '⭐' : unlocked ? '▶️' : '🔒'}</div>`;
     b.onclick = () => { ensureAudio(); sfx.tap(); play(i); };
     box.appendChild(b);
   });
 }
 
-/* ================= Trạng thái trận đấu ================= */
+/* ================= Match state ================= */
 const cv = $('c'), ctx = cv.getContext('2d'), bg = document.createElement('canvas');
 
 /*
- * Sprite vụ nổ — dựng SẴN MỘT LẦN rồi tái sử dụng.
+ * Explosion sprite — built ONCE up front and reused.
  *
- * Cách cũ: mỗi vụ nổ, mỗi khung hình lại gọi ctx.createRadialGradient() +
- * 3 addColorStop() rồi fill với globalCompositeOperation='lighter'. Tấn công
- * diện rộng (Anh Đào Nổ, Ớt Lửa) bung ra nhiều vụ nổ cùng lúc, mỗi cái lại
- * tạo gradient mới + bắt GPU chuyển sang phép cộng → tụt khung hình rõ rệt.
+ * Old way: every explosion, every frame called ctx.createRadialGradient() +
+ * 3 addColorStop() and filled with globalCompositeOperation='lighter'. Area
+ * attacks (Cherry Bomb, Fire Chili) set off several explosions at once, each
+ * building a new gradient + forcing the GPU into additive mode → visible frame drops.
  *
- * Cách mới: vẽ sẵn một vòng gradient lên canvas phụ, mỗi khung chỉ drawImage()
- * theo kích thước cần. Không còn tạo gradient lúc chơi, không còn phép cộng.
+ * New way: pre-draw one gradient ring onto an offscreen canvas; each frame just
+ * drawImage() at the needed size. No gradient allocation during play, no additive blending.
  */
 const BOOM_SPRITE = (() => {
   const S = 160, c2 = document.createElement('canvas');
@@ -798,9 +798,9 @@ const BOOM_SPRITE = (() => {
 })();
 
 let W = 0, H = 0, DPR = 1, cw = 60, ch = 60, ox = 60, oy = 60, safeL = 0, safeR = 0, ROWS = 5;
-/* Map gom hạt theo màu cho drawFx — dùng lại mỗi khung để không cấp phát mới */
+/* Particle buckets by colour for drawFx — reused each frame to avoid allocations */
 const fxBuckets = new Map();
-/* Trần số hiệu ứng: nhiều quả bom nổ cùng lúc không được phép làm khung hình tụt */
+/* Effect cap: several bombs exploding at once must not drop the frame rate */
 const FX_MAX = 260;
 let G = null, ptr = { x: 0, y: 0, down: false, type: 'touch' }, drag = null, T = 0;
 let saveAcc = 0;
@@ -818,14 +818,14 @@ function readRunCheckpoint() {
         Array.isArray(state.monsters) && Array.isArray(state.bullets) &&
         Array.isArray(state.suns) && Array.isArray(state.events) &&
         Array.isArray(state.queue) && Array.isArray(state.timers)) return saved;
-  } catch (e) { console.error('Không thể đọc tiến độ Vườn Thủ Hộ.', e); }
-  try { localStorage.removeItem(RK); } catch (e) { console.error('Không thể xóa tiến độ lỗi.', e); }
+  } catch (e) { console.error('Could not read Garden Guardians progress.', e); }
+  try { localStorage.removeItem(RK); } catch (e) { console.error('Could not delete corrupted progress.', e); }
   return null;
 }
 function saveRunCheckpoint() {
   if (!G || G.phase === 'done') return;
   try { localStorage.setItem(RK, JSON.stringify({ version: 1, li: G.li, state: G })); }
-  catch (e) { console.error('Không thể lưu ván Vườn Thủ Hộ vào localStorage.', e); toast('Không thể lưu ván chơi trên thiết bị này.'); }
+  catch (e) { console.error('Could not save the Garden Guardians run to localStorage.', e); toast('Could not save the game on this device.'); }
 }
 function resumeSavedRun() {
   const saved = readRunCheckpoint();
@@ -837,9 +837,9 @@ function resumeSavedRun() {
   state.plants = (state.plants || []).map(row => row.map(p => p ? { ...p, d: CFG.plants[p.id] } : null));
   state.monsters = (state.monsters || []).map(m => ({ ...m, d: CFG.monsters[m.id] }));
   if (state.plants.some(row => row.some(p => p && !p.d)) || state.monsters.some(m => !m.d)) {
-    try { localStorage.removeItem(RK); } catch (e) { console.error('Không thể xóa tiến độ không tương thích.', e); }
+    try { localStorage.removeItem(RK); } catch (e) { console.error('Could not delete incompatible progress.', e); }
     buildMenu();
-    toast('Ván đã lưu không còn tương thích với cấu hình hiện tại.');
+    toast('The saved game is no longer compatible with the current config.');
     return;
   }
   G = state;
@@ -848,7 +848,7 @@ function resumeSavedRun() {
   $('speedBtn').textContent = G.speed + '×';
   $('shovel').classList.toggle('on', !!G.shovel);
   layout(); buildPackets(); buildBg(); showScreen(null); checkOrient();
-  hint(`Đã khôi phục màn ${G.li + 1} từ lần chơi trước.`);
+  hint(`Restored level ${G.li + 1} from your last game.`);
 }
 const THEMES = {
   day:   { c1: '#63b24f', c2: '#74c25c', base: ['#3f8a37', '#2d6e2c'], wall: '#d9b98c', tuft: 'rgba(30,100,35,.35)' },
@@ -879,7 +879,7 @@ function newGame(li) {
   };
 }
 
-/* ================= Bố cục & nền ================= */
+/* ================= Layout & background ================= */
 function layout() {
   DPR = Math.min(window.devicePixelRatio || 1, 2); W = window.innerWidth; H = window.innerHeight;
   cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -894,7 +894,7 @@ function buildBg() {
   const th = THEMES[G.L.theme] || THEMES.day; let s = 7331; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, th.base[0]); gr.addColorStop(1, th.base[1]); g.fillStyle = gr; g.fillRect(0, 0, W, H);
   const lh = ch * ROWS, lw = cw * COLS;
-  // nhà bên trái
+  // house on the left
   g.fillStyle = th.wall; g.fillRect(0, oy, ox, lh);
   g.strokeStyle = 'rgba(80,50,30,.25)'; g.lineWidth = 1;
   for (let y = oy; y < oy + lh; y += 16) { g.beginPath(); g.moveTo(0, y); g.lineTo(ox, y); g.stroke(); const off = ((y - oy) / 16 | 0) % 2 ? 0 : 12; for (let x = off; x < ox; x += 24) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 16); g.stroke(); } }
@@ -904,21 +904,21 @@ function buildBg() {
     else if (r % 2 === 0 || ROWS <= 3) { g.fillStyle = G.L.theme === 'night' ? '#ffdf8a' : '#9fd4f0'; g.fillRect(safeL + 10, cy - ch * .2, ox - safeL - 40, ch * .4); g.strokeStyle = '#6b3f22'; g.lineWidth = 3; g.strokeRect(safeL + 10, cy - ch * .2, ox - safeL - 40, ch * .4); }
   }
   g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(ox - 6, oy, 6, lh);
-  // cỏ
+  // grass
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     const x = ox + c * cw, y = oy + r * ch; g.fillStyle = (r + c) % 2 ? th.c1 : th.c2; g.fillRect(x, y, cw + .5, ch + .5);
     g.strokeStyle = th.tuft; g.lineWidth = 1.4;
     for (let k = 0; k < 5; k++) { const tx = x + rnd() * cw, ty = y + ch * .2 + rnd() * ch * .75; g.beginPath(); g.moveTo(tx - 3, ty); g.lineTo(tx - 1.5, ty - 6); g.moveTo(tx, ty); g.lineTo(tx, ty - 8); g.moveTo(tx + 3, ty); g.lineTo(tx + 1.5, ty - 6); g.stroke(); }
   }
   const sh = g.createLinearGradient(ox, 0, ox + cw * .5, 0); sh.addColorStop(0, 'rgba(0,0,0,.25)'); sh.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = sh; g.fillRect(ox, oy, cw * .5, lh);
-  // bên phải: đường đất + bụi cây
+  // right side: dirt path + bushes
   const rx = ox + lw; const rg = g.createLinearGradient(rx, 0, W, 0); rg.addColorStop(0, 'rgba(120,85,50,.0)'); rg.addColorStop(.4, 'rgba(120,85,50,.55)'); rg.addColorStop(1, 'rgba(90,60,35,.85)');
   g.fillStyle = rg; g.fillRect(rx, oy, W - rx, lh);
   for (let i = 0; i < ROWS * 3; i++) { const bx = rx + cw * (.9 + rnd() * 1.1), by = oy + rnd() * lh; g.fillStyle = `rgba(${30 + rnd() * 20 | 0},${90 + rnd() * 40 | 0},${35},.9)`; g.beginPath(); g.arc(bx, by, cw * (.16 + rnd() * .16), 0, 6.283); g.fill(); }
   const vg = g.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, Math.max(W, H) * .75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.4)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
 }
 
-/* ================= Vẽ emoji ================= */
+/* ================= Drawing emoji ================= */
 const tc = document.createElement('canvas'), tx = tc.getContext('2d');
 function emoji(e, x, y, size, o = {}) {
   ctx.save(); ctx.translate(x, y); if (o.rot) ctx.rotate(o.rot); if (o.sx || o.sy) ctx.scale(o.sx || 1, o.sy || 1);
@@ -934,7 +934,7 @@ function emoji(e, x, y, size, o = {}) {
 const shadow = (x, y, rx, ry, a = .28) => { ctx.fillStyle = `rgba(0,0,0,${a})`; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 6.283); ctx.fill(); };
 const px = u => ox + u * cw, py = v => oy + v * ch;
 
-/* ================= SVG quái ================= */
+/* ================= Monster SVGs ================= */
 const svgWrap = body => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${body}</svg>`;
 const OUTLINE = '#2a1a10';
 const SVG_SPRITES = {
@@ -944,7 +944,7 @@ const SVG_SPRITES = {
   vampire: svgWrap(`<ellipse cx="50" cy="94" rx="26" ry="4" fill="#000" opacity=".22"/><path d="M34 44L14 92h66L66 44z" fill="#1c1428" stroke="${OUTLINE}" stroke-width="3"/><path d="M44 50l6 30 6-30z" fill="#e8dfe8"/><path d="M36 46l14 8-4-14zM64 46L50 54l4-14z" fill="#b0123a" stroke="${OUTLINE}" stroke-width="2"/><circle cx="48" cy="30" r="17" fill="#ece3f0" stroke="${OUTLINE}" stroke-width="3"/><path d="M31 28q2-18 18-17 14 0 16 14-8-8-18-8-8 0-16 11z" fill="#14101c" stroke="${OUTLINE}" stroke-width="2.5"/><ellipse cx="41" cy="30" rx="4.5" ry="5.5" fill="white"/><circle cx="40" cy="31" r="2.6" fill="#d40f2e"/><ellipse cx="55" cy="29" rx="4" ry="5" fill="white"/><circle cx="54" cy="30" r="2.4" fill="#d40f2e"/><path d="M37 40q8 5 16 0M40 40l2 6 2-5M49 41l2 6 2-6" stroke="${OUTLINE}" stroke-width="2.5" fill="#fff"/>`),
   vampLord: svgWrap(`<path d="M32 16l4-10 7 7 6-10 6 10 7-7 3 10z" fill="#f5c542" stroke="${OUTLINE}" stroke-width="2.5"/><circle cx="49" cy="10" r="2.5" fill="#d40f2e"/><g transform="translate(0,3)"><path d="M34 44L14 92h66L66 44z" fill="#7a0f2a" stroke="${OUTLINE}" stroke-width="3"/><path d="M44 50l6 30 6-30z" fill="#e8dfe8"/><path d="M36 46l14 8-4-14zM64 46L50 54l4-14z" fill="#b0123a" stroke="${OUTLINE}" stroke-width="2"/><circle cx="48" cy="30" r="17" fill="#ece3f0" stroke="${OUTLINE}" stroke-width="3"/><path d="M31 28q2-18 18-17 14 0 16 14-8-8-18-8-8 0-16 11z" fill="#14101c" stroke="${OUTLINE}" stroke-width="2.5"/><circle cx="41" cy="30" r="4" fill="#d40f2e"/><circle cx="55" cy="29" r="4" fill="#d40f2e"/></g>`)
 };
-/* ===== Cây bắn đạn: SVG (quay mặt phải) + sprite đạn dựng sẵn ===== */
+/* ===== Shooter plants: SVG (facing right) + prebuilt bullet sprites ===== */
 const peaSvg = (head, extra = '', bl = 30) => svgWrap(`<ellipse cx="44" cy="94" rx="24" ry="4" fill="#000" opacity=".2"/>
 <path d="M40 92V62" stroke="#2f7a2a" stroke-width="8" stroke-linecap="round"/>
 <path d="M40 84q-24-2-30-22 18-2 30 22zM40 80q20 0 28-18-18-4-28 18z" fill="#4fb43a" stroke="#1f4d1a" stroke-width="3" stroke-linejoin="round"/>
@@ -997,7 +997,7 @@ function drawMonsterSprite(id, icon, x, y, size, options) {
   ctx.restore();
 }
 
-/* ================= Hiệu ứng ================= */
+/* ================= Effects ================= */
 function part(x, y, n, cols, spd = 120, up = 60, life = .7, r = 3.5, grav = 260) {
   for (let i = 0; i < n; i++) { const a = rand(0, 6.283), s = rand(.3, 1) * spd; G.fx.push({ k: 'p', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - up, life: life * rand(.7, 1.1), max: life, c: pick(cols), r: rand(r * .6, r * 1.3), g: grav }); }
 }
@@ -1005,7 +1005,7 @@ const floatText = (x, y, t, c = '#fff') => G.fx.push({ k: 't', x, y, t, c, life:
 function boom(x, y, rad, col = '#ffb43a') { G.fx.push({ k: 'b', x, y, rad, life: .55, max: .55, c: col }); part(x, y, 14, ['#ffdd66', '#ff9a3a', '#ff5a2a', '#fff'], 260, 80, .8, 4.5); G.shake = Math.max(G.shake, 9); sfx.boom(); }
 function confetti() { for (let i = 0; i < 90; i++) G.fx.push({ k: 'c', x: rand(0, W), y: rand(-60, -5), vx: rand(-50, 50), vy: rand(80, 220), r: rand(0, 6), vr: rand(-8, 8), s: rand(6, 10), life: 4, max: 4, c: pick(['#ff8fb1', '#ffe066', '#9be16d', '#6fc8ff', '#c9a8ff', '#ff9d5c']) }); }
 
-/* ================= Nắng ================= */
+/* ================= Sun ================= */
 function addSun(u, v, val, mode) {
   const s = { u, v, val, mode, age: 0, life: 9, state: mode === 'sky' ? 'fall' : 'pop', tv: 0, vu: 0, vv: 0 };
   if (mode === 'sky') { s.tv = clamp(v + rand(1.2, 3.6), .5, ROWS - .4); s.v = -.4; s.vv = .5; }
@@ -1022,13 +1022,13 @@ function collectAt(x, y) {
   return got;
 }
 
-/* ================= Cây ================= */
+/* ================= Plants ================= */
 function packetOk(id) { const d = CFG.plants[id]; return (G.cd[id] || 0) <= 0 && G.sun >= d.cost; }
 function pickPacket(id, e) {
   if (!G || G.paused || G.phase === 'done') return;
   const d = CFG.plants[id];
-  if ((G.cd[id] || 0) > 0) { sfx.err(); toast('⏳ ' + d.name + ' đang hồi'); return; }
-  if (G.sun < d.cost) { sfx.err(); bumpEl($('sunBox'), 'shake'); toast('Chưa đủ nắng ☀️'); return; }
+  if ((G.cd[id] || 0) > 0) { sfx.err(); toast('⏳ ' + d.name + ' is recharging'); return; }
+  if (G.sun < d.cost) { sfx.err(); bumpEl($('sunBox'), 'shake'); toast('Not enough sun ☀️'); return; }
   G.shovel = false; $('shovel').classList.remove('on');
   if (G.sel === id) { G.sel = null; drag = null; sfx.tap(); return; }
   G.sel = id; drag = { id, x0: e.clientX, y0: e.clientY, moved: false }; ptr.x = e.clientX; ptr.y = e.clientY; sfx.tap();
@@ -1039,8 +1039,8 @@ function cellAt(x, y) {
 }
 function plantAt(row, col, id) {
   const d = CFG.plants[id]; if (!d) return false;
-  if (G.plants[row][col]) { toast('Ô này đã có cây'); sfx.err(); return false; }
-  if (G.sun < d.cost) { sfx.err(); bumpEl($('sunBox'), 'shake'); toast('Chưa đủ nắng ☀️'); return false; }
+  if (G.plants[row][col]) { toast('This tile already has a plant'); sfx.err(); return false; }
+  if (G.sun < d.cost) { sfx.err(); bumpEl($('sunBox'), 'shake'); toast('Not enough sun ☀️'); return false; }
   if ((G.cd[id] || 0) > 0) { sfx.err(); return false; }
   G.sun -= d.cost; G.cd[id] = d.cooldown; G.planted++;
   G.plants[row][col] = { id, d, row, col, hp: d.hp, maxHp: d.hp, alive: true, ph: rand(0, 6), flash: 0, recoil: 0, cdT: (d.every || 1) * .5, tt: d.first === undefined ? d.every : d.first, fuse: d.fuse, armT: d.arm, armed: false, wob: 0, born: 0 };
@@ -1062,7 +1062,7 @@ function updatePlant(p, dt) {
     p.tt -= dt; if (p.tt <= 0) { p.tt = d.every; addSun(p.col + .5 + rand(-.1, .1), p.row + .35, d.amount, 'flower'); }
   } else if (d.kind === 'shooter') {
     p.cdT -= dt;
-    // lanes: 1 = chỉ hàng của cây (mặc định) · 3 = bắn cả hàng trên và dưới (Tam Thủ Súng)
+    // lanes: 1 = only the plant's row (default) · 3 = also shoot the rows above and below (Triple Shooter)
     const rows = d.lanes >= 3 ? [p.row - 1, p.row, p.row + 1] : [p.row];
     const targets = rows.filter(r =>
       r >= 0 && r < ROWS && G.monsters.some(m => m.row === r && !m.dying && m.u > p.col + .4 && m.u < COLS + .6));
@@ -1086,7 +1086,7 @@ function updatePlant(p, dt) {
   }
 }
 
-/* ================= Quái ================= */
+/* ================= Monsters ================= */
 function spawnMonster(id, row) {
   const d = CFG.monsters[id]; if (!d) return;
   G.monsters.push({ uid: Math.random(), id, d, row, u: COLS + .75 + rand(0, .2), hp: d.hp, maxHp: d.hp, slow: 0, slowT: 0, state: 'walk', jumped: false, ph: rand(0, 6), flash: 0, dying: 0, eat: false, size: d.size || 1, jt: 0, ju0: 0, ju1: 0 });
@@ -1120,9 +1120,9 @@ function updateMonster(m, dt) {
   if (mu < -.55 && !(mw && mw.state === 1)) endGame(false);
 }
 
-/* ================= Vòng cập nhật ================= */
+/* ================= Update loop ================= */
 function updateFx(dt) {
-  // Cắt bớt hiệu ứng cũ nhất nếu vượt trần (nổ liên tiếp bằng Anh Đào/Ớt Lửa)
+  // Drop the oldest effects when over the cap (chain explosions from Cherry Bomb/Fire Chili)
   if (G.fx.length > FX_MAX) G.fx.splice(0, G.fx.length - FX_MAX);
   for (let i = G.fx.length - 1; i >= 0; i--) {
     const f = G.fx[i]; f.life -= dt;
@@ -1138,9 +1138,9 @@ function update(dt) {
   dt *= G.speed; G.time += dt; G.shake = Math.max(0, G.shake - dt * 30);
   if (G.readyT > 0) {
     const before = G.readyT; G.readyT -= dt;
-    if (before === 2.3) banner('Sẵn sàng...'); if (before > 1.15 && G.readyT <= 1.15) banner('Trồng cây đi!');
+    if (before === 2.3) banner('Ready...'); if (before > 1.15 && G.readyT <= 1.15) banner('Plant your plants!');
   }
-  // dòng thời gian
+  // timeline
   while (G.ei < G.events.length && G.time >= G.events[G.ei].t) {
     const ev = G.events[G.ei++]; G.stage++;
     if (ev.banner) { banner(ev.banner, true); sfx.alarm(); }
@@ -1160,22 +1160,22 @@ function update(dt) {
     const p = G.plants[t.row]?.[t.col];
     if (!p?.alive) continue;
     const d = p.d;
-    // trow = hàng đích (khác hàng của cây khi cây bắn nhiều hàng)
+    // trow = target row (differs from the plant's row when it shoots multiple rows)
     const tr = t.trow === undefined ? p.row : t.trow;
     G.bullets.push({ row: tr, u: p.col + .78, pu: p.col + .78, dmg: d.damage, slow: d.slow || 0, slowT: d.slowTime || 3, pierce: d.pierce || 0, spd: d.bspeed || 5.5, style: d.bullet ? d.bullet : d.slow ? 'ice' : ((d.shots || 1) > 1 ? 'spike' : (d.lanes >= 3 ? 'pea' : 'seed')) });
     sfx.shoot(); if (d.bullet === 'snipe') { G.shake = Math.max(G.shake, 2.5); G.fx.push({ k: 'r', x: px(p.col + .95), y: py(p.row + .42), rad: cw * .35, life: .25, max: .25, c: '#ffe08a' }); }
   }
-  // nắng từ trời
+  // sun from the sky
   const ss = G.L.skySun;
   if (ss && ss.every > 0) { G.skyT -= dt; if (G.skyT <= 0) { G.skyT = ss.every * rand(.85, 1.15); addSun(rand(.4, COLS - .4), 0, ss.amount || 25, 'sky'); } }
-  // hồi chiêu
+  // cooldowns
   Object.keys(G.cd).forEach(k => { if (G.cd[k] > 0) G.cd[k] = Math.max(0, G.cd[k] - dt); });
-  // cây
+  // plants
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const p = G.plants[r][c]; if (p) updatePlant(p, dt); }
-  // quái
+  // monsters
   G.monsters.forEach(m => updateMonster(m, dt));
   G.monsters = G.monsters.filter(m => !(m.hp <= 0 && m.dying <= 0));
-  // đạn
+  // bullets
   for (let i = G.bullets.length - 1; i >= 0; i--) {
     const b = G.bullets[i]; b.pu = b.u; b.u += (b.spd || 5.5) * dt; let tg = null;
     for (const m of G.monsters) {
@@ -1185,13 +1185,13 @@ function update(dt) {
     if (tg) { dmgMonster(tg, b.dmg, { slow: b.slow, slowT: b.slowT }); part(px(b.u), py(b.row + .5), 5, b.style === 'ice' ? ['#bfe6ff', '#fff'] : ['#b6f26f', '#fff'], 80, 30, .3, 2.5); sfx.hit(); if (b.pierce > 0) { b.pierce--; (b.hits = b.hits || []).push(tg.uid); } else G.bullets.splice(i, 1); }
     else if (b.u > COLS + 1.2) G.bullets.splice(i, 1);
   }
-  // máy cắt cỏ
+  // lawn mowers
   G.mowers.forEach(mw => {
     if (mw.state !== 1) return; mw.u += 7 * dt;
     G.monsters.forEach(m => { if (m.row === mw.row && !m.dying && Math.abs(m.u - mw.u) < .65) killMonster(m, { fling: true }); });
     if (mw.u > COLS + 2) mw.state = 2;
   });
-  // nắng
+  // sun
   for (let i = G.suns.length - 1; i >= 0; i--) {
     const s = G.suns[i]; s.age += dt;
     if (s.state === 'fall') { s.v += s.vv * dt; if (s.v >= s.tv) { s.v = s.tv; s.state = 'rest'; } }
@@ -1200,23 +1200,23 @@ function update(dt) {
     else if (s.state === 'collect') { s.ct += dt / .5; if (s.ct >= 1) { G.sun += s.val; bumpEl($('sunBox'), 'bump'); G.suns.splice(i, 1); } }
   }
   updateFx(dt);
-  // thắng / thua
+  // win / lose
   if (G.ei >= G.events.length && !G.queue.length && !G.monsters.length && G.readyT <= 0) { G.endDelay += dt; if (G.endDelay > 1.2) endGame(true); } else G.endDelay = 0;
   saveAcc += dt;
   if (saveAcc >= 1) { saveAcc = 0; saveRunCheckpoint(); }
 }
 function endGame(win) {
   if (!G || G.phase === 'done') return; G.phase = 'done'; G.sel = null; drag = null;
-  try { localStorage.removeItem(RK); } catch (e) { console.error('Không thể xóa checkpoint Vườn Thủ Hộ.', e); }
+  try { localStorage.removeItem(RK); } catch (e) { console.error('Could not delete the Garden Guardians checkpoint.', e); }
   if (win) {
     confetti(); sfx.win(); prog.cleared[G.li] = true; lsSet(PK, JSON.stringify(prog));
     const last = G.li + 1 >= CFG.levels.length;
-    $('winTxt').textContent = `Bạn đã bảo vệ "${G.L.name || 'khu vườn'}" và hạ ${G.killed} con quái!`;
+    $('winTxt').textContent = `You defended "${G.L.name || 'the garden'}" and defeated ${G.killed} monsters!`;
     $('nextBtn').style.display = last ? 'none' : ''; setTimeout(() => showScreen('win'), 1400);
-  } else { sfx.lose(); banner('QUÁI VÀO NHÀ RỒI!', true); setTimeout(() => showScreen('lose'), 1600); }
+  } else { sfx.lose(); banner('THE MONSTERS GOT IN!', true); setTimeout(() => showScreen('lose'), 1600); }
 }
 
-/* ================= Vẽ ================= */
+/* ================= Drawing ================= */
 function drawPlant(p) {
   const d = p.d, x = px(p.col + .5), y = py(p.row + .5), s = Math.min(cw, ch) * .88;
   shadow(x, y + s * .34, s * .34, s * .1);
@@ -1271,8 +1271,8 @@ function drawMonster(m) {
   }
 }
 /*
- * Sprite đạn — cùng lý do với vụ nổ: gradient tạo lại mỗi khung cho từng viên
- * làm nghẽn khi nhiều cây bắn cùng lúc. Dựng sẵn 2 hình rồi chỉ drawImage().
+ * Bullet sprites — same reason as explosions: recreating a gradient every frame
+ * for every bullet stalls when many plants fire at once. Prebuild 2 images and just drawImage().
  */
 const BULLET_SPRITES = (() => {
   const mk = (S, stops) => {
@@ -1297,7 +1297,7 @@ function drawBullet(b) {
   } else if (b.style === 'spike') {
     ctx.save(); ctx.translate(x, y); ctx.fillStyle = '#f6f0a8'; ctx.strokeStyle = '#7a8a2a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, -3.5); ctx.lineTo(-3, 0); ctx.lineTo(-5, 3.5); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
   } else {
-    // 'seed' và 'pea' (Tam Thủ Súng) dùng chung hạt xanh
+    // 'seed' and 'pea' (Triple Shooter) share the green pellet
     ctx.drawImage(BULLET_SPRITES.seed, x - 7, y - 7, 14, 14);
     ctx.strokeStyle = 'rgba(30,90,20,.6)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(x, y, 6.5, 0, 6.283); ctx.stroke();
@@ -1326,9 +1326,9 @@ function drawSun(s) {
 }
 function drawFx() {
   /*
-   * Gộp hạt theo màu: gom tất cả hạt 'p' vào MỘT đường dạt cho mỗi màu rồi
-   * fill một lần. Cách cũ vẽ từng hạt (beginPath + arc + fill) nên 1 quả bom
-   * 22 hạt = 22 lần gọi vẽ; vài vụ nổ cùng lúc là hàng trăm lệnh mỗi khung.
+   * Batch particles by colour: gather all 'p' particles into ONE path per colour
+   * then fill once. The old way drew each particle (beginPath + arc + fill), so one bomb
+   * with 22 particles = 22 draw calls; a few explosions at once meant hundreds of calls per frame.
    */
   const buckets = fxBuckets;
   buckets.clear();
@@ -1353,9 +1353,9 @@ function drawFx() {
 
   for (let i = 0; i < G.fx.length; i++) {
     const f = G.fx[i];
-    if (f.k === 'p') continue;                     // đã vẽ ở trên
+    if (f.k === 'p') continue;                     // already drawn above
     if (f.k === 't') {
-      ctx.font = '800 20px "Baloo 2",sans-serif';  // đặt 1 lần, không lặp mỗi hạt
+      ctx.font = '800 20px "Baloo 2",sans-serif';  // set once, not repeated per particle
       ctx.textAlign = 'center'; ctx.lineWidth = 5;
       ctx.strokeStyle = 'rgba(40,20,5,.85)';
       ctx.globalAlpha = clamp(f.life * 1.5, 0, 1);
@@ -1363,14 +1363,14 @@ function drawFx() {
       ctx.fillStyle = f.c; ctx.fillText(f.t, f.x, f.y);
       ctx.globalAlpha = 1;
     } else if (f.k === 'b') {
-      // Vẽ bằng sprite dựng sẵn — không tạo gradient, không dùng phép cộng
+      // Draw with the prebuilt sprite — no gradient, no additive blending
       const k = 1 - f.life / f.max, r = f.rad * (.35 + k * .9);
       ctx.globalAlpha = clamp(1 - k, 0, 1);
       ctx.drawImage(BOOM_SPRITE, f.x - r, f.y - r, r * 2, r * 2);
       ctx.globalAlpha = 1;
     } else if (f.k === 'l') {
       const k = 1 - f.life / f.max, y = py(f.row + .5), front = COLS * clamp(k * 1.6, 0, 1);
-      // Bỏ bớt ô lửa: .55 → .9 là giảm ~40% số lệnh vẽ mà hiệu ứng gần như y như cũ
+      // Fewer fire tiles: .55 → .9 cuts ~40% of draw calls while looking almost the same
       for (let c = 0; c <= front; c += .9) emoji('🔥', px(c), y - Math.abs(Math.sin(T * 14 + c * 3)) * 6, ch * (.9 + .15 * Math.sin(T * 20 + c)), { alpha: clamp(f.life / f.max * 1.5, 0, 1) });
     } else if (f.k === 'r') {
       const k = 1 - f.life / f.max;
@@ -1391,7 +1391,7 @@ function render() {
   ctx.drawImage(bg, 0, 0, W, H);
   const th = G.L.theme || 'day', lh = ch * ROWS;
   if (th === 'day') { ctx.fillStyle = 'rgba(0,0,0,.05)'; G.clouds.forEach(c => { const x = ((c.x + T * .012 * c.s) % 1.4 - .2) * W, y = oy + c.y * lh; ctx.beginPath(); ctx.ellipse(x, y, cw * 2.2 * c.s, ch * .9 * c.s, 0, 0, 6.283); ctx.fill(); }); }
-  // ô đang chọn
+  // selected tile
   const hoverOk = G.sel && (ptr.type === 'mouse' || ptr.down || (drag && drag.moved)) && !G.paused;
   const hc = hoverOk ? cellAt(ptr.x, ptr.y) : null;
   if (hc) { ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fillRect(ox + hc.col * cw, oy + hc.row * ch, cw, ch); }
@@ -1430,14 +1430,14 @@ function render() {
   ctx.restore();
 }
 
-/* ================= Giao diện trong trận ================= */
+/* ================= In-game UI ================= */
 function buildPackets() {
   const box = $('packets'); box.innerHTML = '';
   G.L.plants.forEach(id => {
-    const d = CFG.plants[id], b = document.createElement('button'); b.className = 'packet'; b.dataset.id = id; b.setAttribute('aria-label', `${d.name}, ${d.cost} nắng`);
+    const d = CFG.plants[id], b = document.createElement('button'); b.className = 'packet'; b.dataset.id = id; b.setAttribute('aria-label', `${d.name}, ${d.cost} sun`);
     b.innerHTML = `<span class="pe">${plantImg(id, d)}</span><span class="pc">${d.cost}</span><i class="cd"></i>`; box.appendChild(b);
   });
-  $('lvName').textContent = `Màn ${G.li + 1}: ${G.L.name || ''}`;
+  $('lvName').textContent = `Level ${G.li + 1}: ${G.L.name || ''}`;
   const fl = $('flags'); fl.innerHTML = '';
   G.events.forEach(e => { if (e.flag) { const i = document.createElement('i'); i.textContent = '🚩'; i.style.left = clamp(e.t / G.endT * 100, 4, 96) + '%'; fl.appendChild(i); } });
 }
@@ -1453,19 +1453,19 @@ function updateUi(dt) {
   const f = clamp(G.time / G.endT, 0, 1); $('progFill').style.width = f * 100 + '%'; $('progHead').style.left = clamp(f * 100, 3, 97) + '%';
 }
 
-/* ================= Vào / thoát trận ================= */
+/* ================= Enter / leave match ================= */
 function play(li) {
   const L = CFG.levels[li]; if (!L) return; G = newGame(li);
   saveAcc = 0;
   $('top').classList.add('on'); $('speedBtn').textContent = '1×'; $('shovel').classList.remove('on');
   layout(); buildPackets(); buildBg(); showScreen(null); checkOrient();
   saveRunCheckpoint();
-  if (li === 0) hint('Chạm gói hạt phía trên, rồi chạm ô cỏ để trồng. Nhớ nhặt ☀️ nắng nhé!', 9000);
-  else if (!(L.skySun && L.skySun.every > 0)) hint('Màn này không có nắng rơi từ trời. Hãy trồng thật nhiều hướng dương!', 8000);
+  if (li === 0) hint('Tap a seed packet above, then tap a grass tile to plant. Remember to collect the ☀️ sun!', 9000);
+  else if (!(L.skySun && L.skySun.every > 0)) hint('No sun falls from the sky on this level. Plant lots of sunflowers!', 8000);
 }
 function toMenu() { saveRunCheckpoint(); G = null; $('top').classList.remove('on'); $('hint').classList.remove('show'); buildMenu(); showScreen('menu'); }
 
-/* ================= Nhập liệu ================= */
+/* ================= Input ================= */
 cv.addEventListener('pointerdown', e => {
   ensureAudio(); ptr.x = e.clientX; ptr.y = e.clientY; ptr.down = true; ptr.type = e.pointerType || 'touch';
   if (!G || G.paused || G.phase === 'done') return;
@@ -1482,7 +1482,7 @@ window.addEventListener('pointerup', e => {
 });
 window.addEventListener('pointercancel', () => { ptr.down = false; drag = null; });
 $('packets').addEventListener('pointerdown', e => { const b = e.target.closest('.packet'); if (!b || !G) return; e.preventDefault(); ensureAudio(); pickPacket(b.dataset.id, e); });
-$('shovel').onclick = () => { if (!G || G.paused || G.phase === 'done') return; ensureAudio(); G.shovel = !G.shovel; G.sel = null; $('shovel').classList.toggle('on', G.shovel); sfx.tap(); if (G.shovel) toast('Chạm vào cây để nhổ bỏ'); };
+$('shovel').onclick = () => { if (!G || G.paused || G.phase === 'done') return; ensureAudio(); G.shovel = !G.shovel; G.sel = null; $('shovel').classList.toggle('on', G.shovel); sfx.tap(); if (G.shovel) toast('Tap a plant to dig it up'); };
 $('speedBtn').onclick = () => { if (!G) return; ensureAudio(); G.speed = G.speed === 1 ? 2 : 1; $('speedBtn').textContent = G.speed + '×'; sfx.tap(); };
 $('pauseBtn').onclick = () => { if (!G || G.phase === 'done') return; ensureAudio(); G.paused = true; saveRunCheckpoint(); syncSoundBtns(); showScreen('pause'); };
 $('resumeBtn').onclick = () => { if (G) G.paused = false; showScreen(null); };
@@ -1496,26 +1496,26 @@ $('exitAppBtn').onclick = () => {
   else window.location.href = '/';
 };
 
-/* ================= Trình sửa JSON ================= */
+/* ================= JSON editor ================= */
 function cfgErr(msg) { $('cfgErr').textContent = msg; }
 $('btnCfg').onclick = () => { ensureAudio(); $('cfgText').value = pretty(userCfg); $('cfgDoc').innerHTML = docHtml(); cfgErr(''); showScreen('editor'); };
 $('cfgClose').onclick = () => showScreen('menu');
 $('cfgApply').onclick = () => {
-  let u; try { u = JSON.parse($('cfgText').value); } catch (e) { cfgErr('JSON sai cú pháp: ' + e.message); return; }
-  const er = validate(u); if (er.length) { cfgErr(er.slice(0, 6).join('\n') + (er.length > 6 ? `\n... và ${er.length - 6} lỗi nữa` : '')); return; }
+  let u; try { u = JSON.parse($('cfgText').value); } catch (e) { cfgErr('JSON syntax error: ' + e.message); return; }
+  const er = validate(u); if (er.length) { cfgErr(er.slice(0, 6).join('\n') + (er.length > 6 ? `\n... and ${er.length - 6} more errors` : '')); return; }
   userCfg = u; CFG = resolve(u); lsSet(CK, JSON.stringify(u)); buildMenu(); showScreen('menu');
-  toast('✅ Đã áp dụng cấu hình mới');
+  toast('✅ Applied the new config');
 };
-$('cfgReset').onclick = () => { $('cfgText').value = pretty(DEF); cfgErr('Đã nạp cấu hình mặc định. Bấm "Áp dụng" để dùng.'); };
-$('cfgCopy').onclick = async () => { try { await navigator.clipboard.writeText($('cfgText').value); toast('Đã sao chép JSON'); } catch (e) { $('cfgText').select(); toast('Hãy chọn và sao chép thủ công'); } };
+$('cfgReset').onclick = () => { $('cfgText').value = pretty(DEF); cfgErr('Loaded the default config. Click "Apply" to use it.'); };
+$('cfgCopy').onclick = async () => { try { await navigator.clipboard.writeText($('cfgText').value); toast('JSON copied'); } catch (e) { $('cfgText').select(); toast('Select the text and copy it manually'); } };
 $('cfgDown').onclick = () => { const b = new Blob([$('cfgText').value], { type: 'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'plantvsanimal.json'; document.body.appendChild(a); a.click(); a.remove(); };
 $('cfgLoad').onclick = () => $('cfgFile').click();
-/* Nút "Nạp từ máy chủ" chỉ hiện khi game chạy trong app (OfflineGamePage tiêm EG_API_BASE). */
+/* The "Load from Server" button only appears when the game runs in the app (OfflineGamePage injects EG_API_BASE). */
 if (window.EG_API_BASE) $('cfgPull').hidden = false;
 $('cfgPull').onclick = () => { pullRemoteCfg(true).then(v => { if (v) $('cfgText').value = pretty(userCfg); }); };
-$('cfgFile').onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { $('cfgText').value = r.result; cfgErr('Đã nạp file. Bấm "Áp dụng" để dùng.'); }; r.readAsText(f); e.target.value = ''; };
+$('cfgFile').onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { $('cfgText').value = r.result; cfgErr('File loaded. Click "Apply" to use it.'); }; r.readAsText(f); e.target.value = ''; };
 
-/* ================= Hướng màn hình ================= */
+/* ================= Screen orientation ================= */
 function checkOrient() {
   const portrait = window.innerHeight > window.innerWidth;
   $('rotate').classList.toggle('show', portrait);
@@ -1526,7 +1526,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && G &
 window.addEventListener('beforeunload', saveRunCheckpoint);
 window.addEventListener('pagehide', saveRunCheckpoint);
 
-/* ================= Vòng lặp ================= */
+/* ================= Loop ================= */
 let last = performance.now();
 function loop(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now; T += dt;
@@ -1534,12 +1534,12 @@ function loop(now) {
 }
 buildMenu(); syncSoundBtns(); layout(); checkOrient();
 requestAnimationFrame(loop);
-pullRemoteCfg(false);            // có mạng thì lấy bản cấu hình quản trị đang lưu trên máy chủ
+pullRemoteCfg(false);            // when online, fetch the admin config stored on the server
 window.addEventListener('online', () => pullRemoteCfg(false));
 })();
 </script>
 
-<!-- Nút "Về trang chủ" — thêm bởi scripts/add-offline-back-button.mjs -->
+<!-- "Back to home" button — added by scripts/add-offline-back-button.mjs -->
 <style>
   #homeBackBtn {
     position: fixed;
@@ -1568,12 +1568,12 @@ window.addEventListener('online', () => pullRemoteCfg(false));
   #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
 </style>
-<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">
+<button id="homeBackBtn" type="button" aria-label="Back to home" title="Back to home">
   <span aria-hidden="true">&#8592;</span>
 </button>
 <script>
-  // Nút dùng chung cho mọi game offline: báo ngược lên React (OfflineGamePage)
-  // để quay về trang chủ. Mở file .html trực tiếp thì tự điều hướng.
+  // Shared button for every offline game: messages back to React (OfflineGamePage)
+  // to return home. Opening the .html file directly navigates itself.
   (function () {
     var btn = document.getElementById("homeBackBtn");
     if (!btn) return;
@@ -1583,7 +1583,7 @@ window.addEventListener('online', () => pullRemoteCfg(false));
           window.parent.postMessage({ type: "quit", data: {} }, "*");
           return;
         }
-      } catch (e) { /* rơi xuống cách tự điều hướng */ }
+      } catch (e) { /* fall through to self-navigation */ }
       try { window.location.href = "/"; } catch (e) { /* ignore */ }
     });
   })();

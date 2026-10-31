@@ -1,17 +1,17 @@
-<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><script id="gq-kit">/* gq-kit.js — Bộ nâng cấp dùng chung cho game dọc:
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><script id="gq-kit">/* gq-kit.js — Bộ nâng cấp dùng chung cho game dọc:
    · Màn chọn độ khó 4 mức (Dễ / Trung bình / Khó / Siêu khó) — cùng một giao diện cho mọi game
    · Độ khó thật: nhịp game (setTimeout/setInterval/rAF/performance.now/Date.now) co giãn theo mức,
      điểm & XP nhân hệ số (game dạng "single"), số mạng / giây mỗi câu / màn khởi đầu (mcengine)
-   · Pháo hoa khi kết thúc ván, nút "Đổi độ khó", nhãn độ khó luôn hiện trên đầu màn hình
+   · Pháo hoa khi kết thúc ván, nút "Change difficulty", nhãn độ khó luôn hiện trên đầu màn hình
    MODE được build thay: 'single' (game sinh từ shell) hoặc 'standalone' (game viết tay). */
 (() => {
   if (window.GQ) return;
   const MODE = 'standalone';
   const TIERS = [
-    { k: 'easy',   n: 'Dễ',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Chậm rãi, nhiều mạng — thoải mái làm quen' },
-    { k: 'mid',    n: 'Trung bình', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Nhịp độ chuẩn, vừa sức chơi' },
-    { k: 'hard',   n: 'Khó',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Nhanh hơn, ít thời gian suy nghĩ' },
-    { k: 'insane', n: 'Siêu khó',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Cực nhanh, ít sai sót — dành cho cao thủ' },
+    { k: 'easy',   n: 'Easy',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Slow, extra lives — take it easy' },
+    { k: 'mid',    n: 'Normal', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Balanced pace' },
+    { k: 'hard',   n: 'Hard',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Faster, less thinking time' },
+    { k: 'insane', n: 'Insane',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Very fast, no room for mistakes' },
   ];
   const G = { t: TIERS[1], i: 1, locked: MODE === 'standalone', q: [] };
 
@@ -68,13 +68,13 @@
   function pick(meta, go) {
     let last = 1;
     try { const v = +localStorage.getItem(KEY); if (v >= 0 && v < 4) last = v; } catch (e) { /* ignore */ }
-    const chip = t => MODE === 'single' ? `×${t.m} điểm` : `tốc độ ×${t.s}`;
-    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Thoát">←</button>
+    const chip = t => MODE === 'single' ? `×${t.m} points` : `speed ×${t.s}`;
+    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Exit">←</button>
       <div class="gqp-box"><div class="gqp-ic">${meta.icon || '🎮'}</div><h1>${meta.name}</h1>
-      <p>Chọn độ khó để bắt đầu</p>
+      <p>Pick a difficulty to start</p>
       <div class="gqp-list">${TIERS.map((t, i) => `<button class="gqd${i === last ? ' last' : ''}" data-i="${i}" style="--c:${t.c}">
         <i>${t.e}</i><span><b>${t.n}</b><em>${t.d}</em></span><u>${chip(t)}</u></button>`).join('')}</div>
-      <small>Độ khó càng cao, nhịp chơi càng gấp — thưởng càng lớn 🏆</small></div></div>`);
+      <small>Higher difficulty, faster pace — bigger rewards 🏆</small></div></div>`);
     box.querySelector('.gqp-x').onclick = quit;
     box.querySelector('.gqp-list').onclick = e => {
       const b = e.target.closest('.gqd'); if (!b) return;
@@ -114,12 +114,12 @@
       }));
       boom();
       const row = document.querySelector('#modal .row');
-      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Đổi độ khó</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
+      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Change difficulty</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
       return r;
     };
   } else {
     const start = () => {
-      const t = (document.title || 'Trò chơi').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
+      const t = (document.title || 'Game').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
       const ic = (document.title.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u) || ['🎮'])[0];
       document.documentElement.classList.add('gq-sa');
       pick({ name: t, icon: ic });
@@ -127,7 +127,7 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   }
 })();
-</script><title>Đập Sâu Bọ</title>
+</script><title>garden pairs</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet"><style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;font-family:"Baloo 2",system-ui,sans-serif;color:#fff;touch-action:none;background:linear-gradient(#ffb56b,#f88f5a 18%,#6cb857 55%,#2e6b2f)}
@@ -148,13 +148,15 @@ body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(saf
 #homeBackBtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink,#1d2e4a),0 3px 6px rgba(0,0,0,.22)}
 #homeBackBtn:focus-visible{outline:3px solid var(--sky,#4b9dff);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){#homeBackBtn{transition:none}}
-#grid{display:grid;grid-template-columns:repeat(3,var(--s));gap:min(2.5vh,14px);--s:min(25vw,27vh)}
-.hole{position:relative;width:var(--s);height:var(--s);overflow:hidden;cursor:pointer;border-radius:0 0 50% 50%/0 0 22% 22%}
-.crit{position:absolute;left:8%;right:8%;top:6%;bottom:20%;transform:translateY(105%);transition:transform .12s ease-out}
-.crit.up{transform:none}.crit svg{width:100%;height:100%;transition:transform .1s}.crit.hit svg{transform:scale(1.15,.55) translateY(14%);filter:brightness(1.5)}
-.dirt{position:absolute;left:-4%;right:-4%;bottom:0;height:36%;background:radial-gradient(ellipse at 50% 0,#2a170a 0 52%,#6b4526 54% 70%,#8a5a2c 72%);border-radius:50%/60% 60% 40% 40%}
-.fl{position:absolute;left:50%;top:8%;transform:translateX(-50%);font-weight:800;font-size:24px;color:#ffe066;text-shadow:0 2px 0 #000;animation:fl .6s forwards;pointer-events:none;z-index:3}
-@keyframes fl{to{transform:translate(-50%,-34px);opacity:0}}</style><style id="gq-kit-css">/* gq-kit.css — giao diện đồng bộ: màn chọn độ khó, nhãn độ khó, pháo hoa,
+#grid{display:grid;grid-template-columns:repeat(4,var(--s));gap:min(1.8vh,10px);--s:min(19vw,23vh)}
+.card{width:var(--s);height:var(--s);perspective:600px;cursor:pointer}
+.in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .4s}
+.card.on .in{transform:rotateY(180deg)}.card.ok .in{animation:ok .5s .35s}
+@keyframes ok{50%{transform:rotateY(180deg) scale(1.12)}}
+.f{position:absolute;inset:0;border-radius:16px;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:3px solid #e0b25f;box-shadow:0 4px 0 #2a170a}
+.b{background:repeating-linear-gradient(45deg,#7a5230 0 8px,#6b4526 8px 16px);display:grid;place-items:center;font-size:32px;font-weight:800;color:#e0b25f}
+.fr{transform:rotateY(180deg);background:linear-gradient(#fffdf0,#f1dba0);padding:12%}.card.ok .fr{background:linear-gradient(#e6ffc8,#b6e88a);border-color:#4aa33a}
+.f svg{width:100%;height:100%}</style><style id="gq-kit-css">/* gq-kit.css — giao diện đồng bộ: màn chọn độ khó, nhãn độ khó, pháo hoa,
    và (cho game viết tay) popup / nút cùng phong cách neo-brutalist của Góc Giải Trí. */
 #gqp { position: fixed; inset: 0; z-index: 2147483500; display: grid; place-items: center; padding: 16px; overflow: auto;
   background-color: #fff6e7; background-image: linear-gradient(#e6dcc4 1px, transparent 1px), linear-gradient(90deg, #e6dcc4 1px, transparent 1px);
@@ -183,7 +185,7 @@ body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(saf
 .gqd b { display: block; font: 800 20px/1.1 'Baloo 2', system-ui, sans-serif; }
 .gqd em { display: block; font-style: normal; font-size: 12.5px; line-height: 1.3; color: #3a4a66; margin-top: 2px; }
 .gqd u { text-decoration: none; font-size: 11.5px; font-weight: 700; background: #1d2e4a; color: #fff; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
-.gqd.last::after { content: 'Lần trước'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
+.gqd.last::after { content: 'Last time'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
   border-radius: 999px; padding: 0 8px; font-size: 10.5px; font-weight: 700; }
 .gqp-box small { display: block; margin-top: 14px; font-size: 12.5px; color: #3a4a66; }
 @keyframes gqpop { 0% { transform: scale(.85); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
@@ -211,35 +213,33 @@ html.gq-sa body .btn.alt, html.gq-sa body .card button.alt, html.gq-sa body .pan
 html.gq-sa body .btn:active, html.gq-sa body #again:active, html.gq-sa body #card button:active, html.gq-sa body .card button:active, html.gq-sa body .panel button:active {
   transform: translate(3px, 3px) !important; box-shadow: none !important; }
 </style></head><body>
-<div id="hud"><h1>Đập Sâu Bọ</h1><div class="st">Điểm <b id="sc">0</b></div><div class="st">⏱ <b id="tm">0</b></div><div class="st">Kỷ lục <b id="hi">0</b></div></div><div id="stage"><div id="grid"></div></div>
+<div id="hud"><h1>Garden Pairs</h1><div class="st">Moves <b id="mv">0</b></div><div class="st">⏱ <b id="tm">0</b></div><div class="st">Best <b id="hi">0</b></div></div><div id="stage"><div id="grid"></div></div>
 <div id="over"><div class="panel"><h2 id="oT"></h2><p id="oP"></p><button class="btn" id="oB"></button></div></div>
-<button id="homeBackBtn" type="button" aria-label="Về trang chủ">&#8592;</button>
+<button id="homeBackBtn" type="button" aria-label="Back to home">&#8592;</button>
 <script>
-const $=id=>document.getElementById(id);let hi=0;const HK='vuon-thu-ho-whack-hi';
+const $=id=>document.getElementById(id);let hi=0;const HK='vuon-thu-ho-memory-hi';
 try{hi=+localStorage.getItem(HK)||0}catch(e){}
 function saveHi(v){if(v>hi){hi=v;try{localStorage.setItem(HK,v)}catch(e){}return true}return false}
-function over(t,p,b){$('oT').textContent=t;$('oP').textContent=p;$('oB').textContent=b||'↺ Chơi lại';$('over').classList.remove('h')}
+function over(t,p,b){$('oT').textContent=t;$('oP').textContent=p;$('oB').textContent=b||'↺ Play again';$('over').classList.remove('h')}
 $('oB').onclick=()=>{$('over').classList.add('h');start()};
 $('homeBackBtn').onclick=()=>{try{if(parent!==window){parent.postMessage({type:"quit",data:{}},"*");return}}catch(e){}location.href="/"};
 const SV=b=>`<svg viewBox="0 0 100 100">${b}</svg>`;
-const E=(x,y)=>`<circle cx="${x}" cy="${y}" r="8" fill="#fff" stroke="#222" stroke-width="2.5"/><circle cx="${x+1}" cy="${y+1}" r="4" fill="#222"/>`;
-const TY=[
-{p:10,s:SV(`<circle cx="50" cy="56" r="34" fill="#9bd44a" stroke="#2b3a14" stroke-width="4"/>${E(38,50)}${E(62,50)}<path d="M38 70q12 10 24 0" stroke="#2b3a14" stroke-width="4" fill="none"/><path d="M36 26l-6-14M64 26l6-14" stroke="#2b3a14" stroke-width="4" stroke-linecap="round"/>`)},
-{p:20,s:SV(`<path d="M14 80q0-62 36-62t36 62z" fill="#3f6fb5" stroke="#2a1a10" stroke-width="4"/><path d="M50 18v30" stroke="#2a1a10" stroke-width="3"/>${E(38,62)}${E(62,62)}<path d="M44 20l6-14 6 14z" fill="#c9a04a" stroke="#2a1a10" stroke-width="3"/>`)},
-{p:30,s:SV(`<circle cx="26" cy="32" r="14" fill="#f2a0b0" stroke="#2a1a10" stroke-width="4"/><circle cx="74" cy="32" r="14" fill="#f2a0b0" stroke="#2a1a10" stroke-width="4"/><circle cx="50" cy="58" r="32" fill="#9a9aa8" stroke="#2a1a10" stroke-width="4"/>${E(38,52)}${E(62,52)}<ellipse cx="50" cy="70" rx="6" ry="5" fill="#f08aa0"/>`)},
-{p:-15,f:1,s:SV(`<path d="M14 80q0-62 36-62t36 62z" fill="#e0483d" stroke="#2a1a10" stroke-width="4"/><circle cx="32" cy="44" r="6" fill="#222"/><circle cx="68" cy="44" r="6" fill="#222"/><circle cx="50" cy="30" r="5" fill="#222"/>${E(40,64)}${E(60,64)}`)}];
-const H=[],gr=$('grid');let score,time,combo,alive=false,iv,sp;
-for(let i=0;i<9;i++){const d=document.createElement('div');d.className='hole';d.innerHTML='<div class="crit"></div><div class="dirt"></div>';gr.appendChild(d);const h={d,c:d.firstChild,t:null,hit:0,tm:0};H.push(h);d.onpointerdown=()=>whack(h)}
-function down(h){clearTimeout(h.tm);h.c.classList.remove('up','hit');h.t=null}
-function upd(){$('sc').textContent=score||0;$('tm').textContent=Math.max(0,Math.ceil(time||0));$('hi').textContent=hi}
-function pop(){const f=H.filter(h=>!h.t);if(!f.length)return;const h=f[Math.random()*f.length|0],r=Math.random(),t=r<.2?TY[3]:TY[r<.6?0:r<.87?1:2];
-h.t=t;h.hit=0;h.c.innerHTML=t.s;h.c.classList.add('up');h.tm=setTimeout(()=>{if(!t.f&&!h.hit)combo=0;down(h)},Math.max(560,1000-(45-time)*8))}
-function nxt(){if(!alive)return;sp=setTimeout(()=>{pop();nxt()},Math.max(320,760-(45-time)*9))}
-function whack(h){if(!alive||!h.t||h.hit)return;h.hit=1;h.c.classList.add('hit');let v;
-if(h.t.f){v=-15;combo=0;score=Math.max(0,score-15)}else{combo++;v=Math.round(h.t.p*(1+Math.floor(combo/5)*.5));score+=v}
-const s=document.createElement('span');s.className='fl';s.textContent=(v>0?'+':'')+v+(combo>=5&&v>0?' 🔥':'');if(v<0)s.style.color='#ff9d8f';h.d.appendChild(s);setTimeout(()=>s.remove(),600);
-setTimeout(()=>down(h),170);upd()}
-function end(){alive=false;clearInterval(iv);clearTimeout(sp);H.forEach(down);const nw=saveHi(score);upd();over('Hết giờ!',`Điểm: ${score}${nw?' · Kỷ lục mới! 🏆':''} (cao nhất ${hi})`)}
-function start(){score=0;time=45;combo=0;alive=true;H.forEach(down);upd();clearInterval(iv);clearTimeout(sp);iv=setInterval(()=>{time-=.1;if(time<=0)end();else upd()},100);nxt()}
-upd();over('Đập Sâu Bọ','Chạm vào sâu bọ để đập điểm. Đừng đập bọ rùa, nó là bạn của vườn!','▶ Bắt đầu');
+const sun=SV([...Array(8)].map((_,i)=>{const a=i*Math.PI/4;return `<circle cx="${50+28*Math.cos(a)}" cy="${50+28*Math.sin(a)}" r="14" fill="#ffd23a" stroke="#b8781a" stroke-width="3"/>`}).join('')+'<circle cx="50" cy="50" r="19" fill="#6b4526" stroke="#3a2414" stroke-width="3"/>');
+const IC=[sun,
+SV('<path d="M34 64Q40 30 62 16M66 66Q64 36 62 16" stroke="#3f8a37" stroke-width="5" fill="none"/><circle cx="34" cy="70" r="16" fill="#e0483d" stroke="#7a1d12" stroke-width="3"/><circle cx="68" cy="72" r="16" fill="#e0483d" stroke="#7a1d12" stroke-width="3"/><path d="M62 16q16-6 24 6-14 4-24-6z" fill="#4fb43a" stroke="#1f4d1a" stroke-width="2"/>'),
+SV('<circle cx="50" cy="52" r="36" fill="#8a5a2c" stroke="#3a2414" stroke-width="4"/><circle cx="40" cy="42" r="5" fill="#2a170a"/><circle cx="60" cy="42" r="5" fill="#2a170a"/><circle cx="50" cy="58" r="5" fill="#2a170a"/>'),
+SV('<circle cx="50" cy="54" r="34" fill="#3f4fb0" stroke="#1a2260" stroke-width="4"/><path d="M38 28l12 8 12-8-5 14H43z" fill="#2a3480" stroke="#1a2260" stroke-width="2"/><ellipse cx="38" cy="52" rx="7" ry="10" fill="#fff" opacity=".25"/>'),
+SV('<ellipse cx="50" cy="54" rx="38" ry="28" fill="#c9964f" stroke="#6b4526" stroke-width="4"/><circle cx="36" cy="48" r="3" fill="#6b4526"/><circle cx="58" cy="62" r="3" fill="#6b4526"/><circle cx="64" cy="44" r="3" fill="#6b4526"/>'),
+SV('<g fill="#5fb84a" stroke="#1f4d1a" stroke-width="4"><rect x="36" y="16" width="28" height="72" rx="14"/><rect x="14" y="36" width="14" height="30" rx="7"/><rect x="72" y="28" width="14" height="30" rx="7"/></g><path d="M28 58h10M62 50h10" stroke="#1f4d1a" stroke-width="4"/>'),
+SV('<path d="M30 30q50-10 46 30t-30 24q30-16 14-40q-10-8-30-14z" fill="#e0483d" stroke="#7a1d12" stroke-width="3"/><path d="M30 30l-10-10" stroke="#3f8a37" stroke-width="7" stroke-linecap="round"/>'),
+SV('<rect x="42" y="56" width="16" height="34" rx="6" fill="#9bd44a" stroke="#1f4d1a" stroke-width="3"/><g fill="#2f8a3a" stroke="#1f4d1a" stroke-width="3"><circle cx="30" cy="46" r="18"/><circle cx="50" cy="32" r="20"/><circle cx="70" cy="46" r="18"/><circle cx="50" cy="52" r="16"/></g>')];
+let a,b,lock,moves,found,secs,tid,t0;const gr=$('grid');
+function upd(){$('mv').textContent=moves||0;$('tm').textContent=secs||0;$('hi').textContent=hi}
+function start(){const d=[...IC.keys(),...IC.keys()].sort(()=>Math.random()-.5);gr.innerHTML='';a=b=null;lock=0;moves=0;found=0;secs=0;t0=0;clearInterval(tid);
+d.forEach(k=>{const c=document.createElement('div');c.className='card';c.innerHTML=`<div class="in"><div class="f b">?</div><div class="f fr">${IC[k]}</div></div>`;c.k=k;c.onpointerdown=()=>flip(c);gr.appendChild(c)});upd()}
+function flip(c){if(lock||c.classList.contains('on'))return;if(!t0){t0=1;tid=setInterval(()=>{secs++;upd()},1000)}
+c.classList.add('on');if(!a){a=c;return}b=c;moves++;upd();
+if(a.k===b.k){a.classList.add('ok');b.classList.add('ok');a=b=null;if(++found===8){clearInterval(tid);const s=Math.max(100,1000-moves*25-secs*5),nw=saveHi(s);upd();setTimeout(()=>over('All matched! 🎉',`${moves} moves · ${secs}s · ${s} points${nw?' · New best! 🏆':''}`),700)}}
+else{lock=1;setTimeout(()=>{a.classList.remove('on');b.classList.remove('on');a=b=null;lock=0},750)}}
+upd();over('Garden Pairs','Flip the cards to find 8 matching plant pairs. Fewer moves and a faster time mean more points!','▶ Start');
 </script></body></html>

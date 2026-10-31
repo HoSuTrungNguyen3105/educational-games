@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>🌀 Labyrinth - Cực Khó</title>
+    <title>labyrinth</title>
     <style>
         /* ===== RESET & GLOBAL ===== */
         * {
@@ -429,30 +429,30 @@
 
             <div class="overlay show" id="startOverlay">
                 <h2>🌀 Labyrinth</h2>
-                <p>Mê cung tối tăm — lối ra chìm trong bóng tối.<br />Hãy tìm đường thoát trước khi thời gian cạn.</p>
+                <p>A dark maze — the exit is lost in the shadows.<br />Find your way out before time runs out.</p>
                 <p style="font-size:14px; color:#5a6678; margin-top:4px;">
-                    <kbd style="background:#0f141c; padding:2px 8px; border-radius:4px; border:1px solid #1c2430;">↑ ↓ ← →</kbd> hoặc kéo / chạm
+                    <kbd style="background:#0f141c; padding:2px 8px; border-radius:4px; border:1px solid #1c2430;">↑ ↓ ← →</kbd> or drag / tap
                 </p>
-                <button class="btn btn-primary" id="startBtn">▶ BẮT ĐẦU</button>
+                <button class="btn btn-primary" id="startBtn">▶ START</button>
             </div>
 
             <div class="overlay" id="winOverlay">
-                <h2>🎉 TÌM RA LỐI!</h2>
-                <p>Bạn đã vượt qua mê cung cấp <span class="highlight" id="winLevel">1</span></p>
-                <p style="font-size:14px;">Thời gian: <span class="highlight" id="winTime">0</span>s</p>
+                <h2>🎉 YOU FOUND THE EXIT!</h2>
+                <p>You beat maze level <span class="highlight" id="winLevel">1</span></p>
+                <p style="font-size:14px;">Time: <span class="highlight" id="winTime">0</span>s</p>
                 <div class="btn-group">
-                    <button class="btn btn-primary" id="nextBtn">▶ CẤP TIẾP</button>
-                    <button class="btn btn-secondary" id="retryBtn">🔄 LÀM LẠI</button>
+                    <button class="btn btn-primary" id="nextBtn">▶ NEXT LEVEL</button>
+                    <button class="btn btn-secondary" id="retryBtn">🔄 RETRY</button>
                 </div>
             </div>
 
             <div class="overlay" id="gameOverOverlay">
-                <h2>⏰ HẾT GIỜ!</h2>
-                <p>Bạn đã không tìm ra lối ra kịp lúc.</p>
-                <p style="font-size:14px;">Cấp độ <span class="highlight" id="goLevel">1</span></p>
+                <h2>⏰ TIME'S UP!</h2>
+                <p>You didn't find the exit in time.</p>
+                <p style="font-size:14px;">Level <span class="highlight" id="goLevel">1</span></p>
                 <div class="btn-group">
-                    <button class="btn btn-primary" id="retryGoBtn">🔄 THỬ LẠI</button>
-                    <button class="btn btn-secondary" id="resetGoBtn">🏠 VỀ ĐẦU</button>
+                    <button class="btn btn-primary" id="retryGoBtn">🔄 TRY AGAIN</button>
+                    <button class="btn btn-secondary" id="resetGoBtn">🏠 BACK TO START</button>
                 </div>
             </div>
         </div>
@@ -463,15 +463,15 @@
                 <span class="desktop-hint">
                     <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd>
                 </span>
-                <span class="touch-hint">🖱️ Kéo / vuốt để di chuyển</span>
+                <span class="touch-hint">🖱️ Drag / swipe to move</span>
             </div>
             <div class="level-selector">
                 <div class="difficulty-group" id="difficultyGroup">
-                    <button data-diff="easy">Dễ</button>
-                    <button data-diff="normal" class="active">Bình thường</button>
-                    <button data-diff="hard">Khó</button>
+                    <button data-diff="easy">Easy</button>
+                    <button data-diff="normal" class="active">Normal</button>
+                    <button data-diff="hard">Hard</button>
                 </div>
-                <button class="btn-icon" id="resetBtn" title="Tạo mê cung mới cùng cấp độ">⟳</button>
+                <button class="btn-icon" id="resetBtn" title="Generate a new maze at the same level">⟳</button>
             </div>
         </div>
     </div>
@@ -505,7 +505,7 @@
             const difficultyGroup = document.getElementById('difficultyGroup');
             const difficultyButtons = difficultyGroup.querySelectorAll('button');
 
-            // ===== DIFFICULTY — CỰC KHÓ =====
+            // ===== DIFFICULTY — VERY HARD =====
             const DIFFICULTY = {
                 easy: {
                     baseSize: 11,
@@ -753,7 +753,7 @@
                 resizeCanvas();
             }
 
-            // ===== DRAW — cực kỳ tối, khó nhìn =====
+            // ===== DRAW — very dark, hard to see =====
             function drawMaze() {
                 const size = state.size;
                 const cell = state.cellSize;
@@ -763,25 +763,25 @@
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Nền cực tối
+                // Very dark background
                 ctx.fillStyle = '#070b10';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Vẽ lưới với màu cực kỳ tương phản thấp
+                // Draw the grid with very low contrast
                 for (let r = 0; r < size; r++) {
                     for (let c = 0; c < size; c++) {
                         const x = c * cell;
                         const y = r * cell;
                         if (grid[r][c] === 1) {
-                            // Tường — tối, gần như hòa với nền
+                            // Wall — dark, almost blending into the background
                             ctx.fillStyle = '#0a0f16';
                             ctx.fillRect(x, y, cell, cell);
-                            // Viền cực mờ
+                            // Very faint outline
                             ctx.strokeStyle = 'rgba(20,30,44,0.15)';
                             ctx.lineWidth = 0.3;
                             ctx.strokeRect(x, y, cell, cell);
                         } else {
-                            // Đường đi — sáng hơn tường một chút xíu
+                            // Path — just a little brighter than the walls
                             ctx.fillStyle = '#0e141d';
                             ctx.fillRect(x, y, cell, cell);
                             ctx.strokeStyle = 'rgba(20,30,44,0.05)';
@@ -791,12 +791,12 @@
                     }
                 }
 
-                // === LỐI RA — cực kỳ mờ ===
+                // === EXIT — very faint ===
                 const ex = exit.col * cell + cell / 2;
                 const ey = exit.row * cell + cell / 2;
                 const rad = cell * 0.18;
 
-                // Vòng tròn mờ cực nhẹ
+                // Very soft glow
                 const grad = ctx.createRadialGradient(ex, ey, 1, ex, ey, cell * 0.5);
                 grad.addColorStop(0, 'rgba(240, 192, 64, 0.25)');
                 grad.addColorStop(1, 'rgba(240, 192, 64, 0)');
@@ -805,25 +805,25 @@
                 ctx.arc(ex, ey, cell * 0.5, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Chấm nhỏ
+                // Small dot
                 ctx.fillStyle = 'rgba(240, 192, 64, 0.5)';
                 ctx.beginPath();
                 ctx.arc(ex, ey, rad, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Biểu tượng 🚪 cực nhỏ
+                // Tiny 🚪 icon
                 ctx.fillStyle = 'rgba(240, 192, 64, 0.3)';
                 ctx.font = `${cell * 0.3}px "Segoe UI", sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText('🚪', ex, ey + cell * 0.03);
 
-                // === NGƯỜI CHƠI — cực kỳ mờ ===
+                // === PLAYER — very faint ===
                 const px = player.col * cell + cell / 2;
                 const py = player.row * cell + cell / 2;
                 const pr = cell * 0.16;
 
-                // Glow cực nhẹ
+                // Very soft glow
                 const pGrad = ctx.createRadialGradient(px, py, 1, px, py, cell * 0.5);
                 pGrad.addColorStop(0, 'rgba(88, 166, 255, 0.15)');
                 pGrad.addColorStop(1, 'rgba(88, 166, 255, 0)');
@@ -832,13 +832,13 @@
                 ctx.arc(px, py, cell * 0.5, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Chấm người chơi
+                // Player dot
                 ctx.fillStyle = 'rgba(88, 166, 255, 0.5)';
                 ctx.beginPath();
                 ctx.arc(px, py, pr, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Mắt nhỏ
+                // Small eyes
                 ctx.fillStyle = 'rgba(7,11,16,0.5)';
                 const eyeOff = pr * 0.4;
                 const eyeSize = pr * 0.25;
@@ -849,7 +849,7 @@
                 ctx.arc(px + eyeOff, py - eyeOff * 0.3, eyeSize, 0, Math.PI * 2);
                 ctx.fill();
 
-                // === VẾT ĐÃ ĐI — cực kỳ mờ ===
+                // === TRAIL — very faint ===
                 for (let r = 0; r < size; r++) {
                     for (let c = 0; c < size; c++) {
                         if (state.visited[r][c] && !(r === player.row && c === player.col) && grid[r][c] === 0) {
@@ -859,7 +859,7 @@
                     }
                 }
 
-                // Lưới phụ — vạch kẻ mờ gây rối mắt
+                // Secondary grid — faint lines to confuse the eye
                 ctx.strokeStyle = 'rgba(20,30,44,0.06)';
                 ctx.lineWidth = 0.3;
                 for (let r = 0; r <= size; r++) {
@@ -1105,7 +1105,7 @@
                     };
 
                     if (state.running) {
-                        if (confirm('Đổi độ khó sẽ bắt đầu lại ván mới. Tiếp tục?')) {
+                        if (confirm('Changing difficulty will start a new game. Continue?')) {
                             applyChange();
                         }
                     } else {

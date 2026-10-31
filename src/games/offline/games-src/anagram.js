@@ -1,13 +1,13 @@
-// src/games/offline/games-src/anagram.js — Mê Cung Ký Tự
-// Tìm các từ tiếng Việt ẩn trong lưới chữ: chạm ô đầu rồi ô cuối của từ.
+// src/games/offline/games-src/anagram.js — Letter Maze
+// Find the hidden English words in the letter grid: tap the first tile, then the last tile of a word.
 
 const ANAGRAM_WORDS = [
-    'MÈO', 'KEM', 'HOA', 'VỊT', 'MƯA', 'MÂY', 'TRÀ', 'ĐÈN', 'GHẾ', 'CÁO',
-    'VOI', 'KHỈ', 'THỎ', 'ONG', 'BÚT', 'CẶP', 'BÀN', 'CỬA', 'NÚI', 'CẦU',
-    'TÀU', 'SÁCH', 'BÁNH', 'SÓNG', 'NẮNG', 'BIỂN', 'NGỰA', 'RỒNG', 'BƯỚM', 'KIẾN',
-    'VƯỜN', 'SÔNG', 'SUỐI', 'THÁC', 'ĐÀN', 'SÁO', 'PHIM', 'NHẠC', 'TRỐNG', 'ĐƯỜNG',
+    'CAT', 'DOG', 'SUN', 'BEE', 'CUP', 'HAT', 'BED', 'KEY', 'MAP', 'PEN',
+    'BUS', 'CAR', 'COW', 'OWL', 'FOX', 'ANT', 'ICE', 'JAM', 'TOY', 'BAG',
+    'FROG', 'MOON', 'STAR', 'TREE', 'BIRD', 'FISH', 'DUCK', 'GOAT', 'LION', 'RAIN',
+    'HOUSE', 'MOUSE', 'HORSE', 'SNAKE', 'TIGER', 'ZEBRA', 'APPLE', 'MANGO', 'TRAIN', 'MUSIC',
 ];
-const ANAGRAM_FILL = [...'AĂÂBCDĐEÊGHIKLMNOÔƠPQRSTUƯVXY'];
+const ANAGRAM_FILL = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
 const ANAGRAM_BOARDS = 4;
 
 function anagramDirs(mode) {
@@ -20,7 +20,7 @@ function anagramSize(mode) {
     return mode.k === 'easy' ? 5 : mode.k === 'mid' ? 6 : 7;
 }
 
-/** Đặt 3 từ vào lưới sao cho không đè ký tự khác. */
+/** Place 3 words on the grid without overwriting other letters. */
 function makeWordBoard(size, mode) {
     const dirs = anagramDirs(mode);
     const pool = shuffle(ANAGRAM_WORDS.filter((w) => [...w].length >= 3 && [...w].length <= size));
@@ -59,7 +59,7 @@ function makeWordBoard(size, mode) {
         }
         return { grid, targets };
     }
-    // Dự phòng: xếp 3 từ theo hàng ngang để bàn chơi luôn có đáp án.
+    // Fallback: place 3 words on separate rows so the board always has answers.
     const grid = Array(size * size).fill('').map(() => ANAGRAM_FILL[rnd(0, ANAGRAM_FILL.length - 1)]);
     const targets = [];
     shuffle(ANAGRAM_WORDS.filter((w) => [...w].length <= size)).slice(0, 3).forEach((w, row) => {
@@ -116,14 +116,14 @@ function startWordMaze(root, mode, modeIndex, resume) {
 
     function render(extra = '') {
         const found = foundCells();
-        root.innerHTML = `${gqHud(score, lives, `Bàn <b>${board + 1}/${ANAGRAM_BOARDS}</b>`)}
+        root.innerHTML = `${gqHud(score, lives, `Board <b>${board + 1}/${ANAGRAM_BOARDS}</b>`)}
             <div class="chips">${targets.map((t) => `<span class="chip ${t.found ? 'done' : ''}">${t.w}</span>`).join('')}</div>
             <div class="wordgrid" style="grid-template-columns:repeat(${size},1fr)">${grid.map((ch, i) =>
                 `<button class="wl ${found.has(i) ? 'found' : ''} ${i === sel ? 'sel' : ''}" data-cell="${i}">${ch}</button>`).join('')}</div>
             <div class="row" style="margin-top:12px">
-                <button class="btn alt" data-hint="1">💡 Gợi ý (−10 điểm)</button>
+                <button class="btn alt" data-hint="1">💡 Hint (−10 points)</button>
             </div>
-            <p class="hint">${extra || 'Chạm ô chữ đầu rồi ô chữ cuối của từ cần tìm. Từ có thể nằm ngang, dọc hoặc chéo.'}</p>`;
+            <p class="hint">${extra || 'Tap the first letter tile, then the last letter tile of a word. Words can run across, down or diagonally.'}</p>`;
         save();
     }
 
@@ -180,7 +180,7 @@ function startWordMaze(root, mode, modeIndex, resume) {
         sel = -1;
         if (!cells) {
             sfx.bad();
-            render('Hai ô phải nằm trên cùng một hàng, cột hoặc đường chéo.');
+            render('The two tiles must be on the same row, column or diagonal.');
             return;
         }
         const text = cells.map((i) => grid[i]).join('');
@@ -191,7 +191,7 @@ function startWordMaze(root, mode, modeIndex, resume) {
             score += 10 + [...target.w].length * 5;
             sfx.ok();
             const allDone = targets.every((t) => t.found);
-            render(allDone ? 'Tìm hết cả ba từ rồi! Đang mở bàn mới…' : `Tìm thấy ${target.w}!`);
+            render(allDone ? 'You found all three words! Opening a new board…' : `Found ${target.w}!`);
             save();
             if (allDone) {
                 locked = true;
@@ -206,7 +206,7 @@ function startWordMaze(root, mode, modeIndex, resume) {
             if (nodes[start]) nodes[start].classList.add('bad');
             save();
             if (lives <= 0) { locked = true; T.set(end, 700); return; }
-            T.set(() => render('Chưa đúng từ nào — thử lại nhé!'), 500);
+            T.set(() => render('That is not one of the words — try again!'), 500);
         }
     }
 
@@ -231,7 +231,7 @@ function startWordMaze(root, mode, modeIndex, resume) {
         if (board >= ANAGRAM_BOARDS) S.flags.maze = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 5) + board * 5,
-            lines: [`Hoàn thành ${board}/${ANAGRAM_BOARDS} bàn`, `Tìm được ${board * 3 + found} từ`],
+            lines: [`Completed ${board}/${ANAGRAM_BOARDS} boards`, `Found ${board * 3 + found} words`],
             replay: anagramGame, details: { boards: board, found },
         });
     }
@@ -257,23 +257,23 @@ function anagramGame(root) {
     if (saved) clearOfflineRun('anagram');
 
     gqIntro(root, {
-        id: 'anagram', icon: '🧩', name: 'Mê Cung Ký Tự',
-        desc: 'Tìm những từ tiếng Việt đang trốn trong lưới chữ cái.',
+        id: 'anagram', icon: '🧩', name: 'Letter Maze',
+        desc: 'Find the English words hiding in the letter grid.',
         steps: [
-            'Mỗi bàn có ba từ cần tìm, hiện ở hàng ghim phía trên.',
-            'Chạm ô đầu rồi chạm ô cuối của từ — từ có thể nằm ngang, dọc hoặc chéo.',
-            'Chọn sai mất một mạng; gợi ý sẽ sáng cả từ nhưng trừ 10 điểm.',
+            'Each board has three words to find, shown in the chips at the top.',
+            'Tap the first tile, then the last tile of a word — it can run across, down or diagonally.',
+            'A wrong pick costs a life; a hint lights up a whole word but takes 10 points.',
         ],
     }, (mode, index) => startWordMaze(root, mode, index));
 }
 
 startSingleGame({
     id: 'anagram',
-    name: 'Mê Cung Ký Tự',
+    name: 'Letter Maze',
     icon: '🧩',
     storageKey: 'offline_anagram',
     mount: anagramGame,
     badges: [
-        { id: 'maze', n: 'Phá 4 mê cung', i: '🧩', ok: () => !!S.flags.maze },
+        { id: 'maze', n: 'Clear 4 mazes', i: '🧩', ok: () => !!S.flags.maze },
     ],
 });

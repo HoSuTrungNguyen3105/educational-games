@@ -1,15 +1,15 @@
 /* =====================================================
-   levels.js · danh sách cánh đồng (màn chơi), địa hình
-   từng màn, tiến độ mở màn & màn hình chọn cánh đồng
+   levels.js · field (level) list, per-level terrain,
+   unlock progress & field picker screen
    ===================================================== */
 
-/* Ký hiệu ô địa hình:
-   t cây · r đá · w nước · f hàng rào · b nhà kho/nhà ở · h đống cỏ khô
-   j cầu gỗ (đi được, không xây được) · x khóm hoa · o ruộng cày (đẹp, xây được) */
-const BLOCK_KINDS = 'trwfbh';   // địch không đi qua, không xây được
-const NOBUILD_KINDS = 'j';      // đi được nhưng không xây được
+/* Terrain tile symbols:
+   t tree · r rock · w water · f fence · b barn/house · h haystack
+   j wooden bridge (walkable, can't build) · x flower bush · o plowed field (pretty, buildable) */
+const BLOCK_KINDS = 'trwfbh';   // enemies can't cross, can't build
+const NOBUILD_KINDS = 'j';      // walkable but can't build
 
-/* ---------- Màu của màn đang chơi (đổi theo lv.pal) ---------- */
+/* ---------- Colors of the current level (from lv.pal) ---------- */
 let PAL = {
   grass: ['#72b650', '#7ac258'],
   soil: ['#8a6a38', '#b8935a', '#dcbc84', '#ecd29c'],
@@ -18,13 +18,13 @@ let PAL = {
 };
 
 /* =====================================================
-   8 CÁNH ĐỒNG
-   props: [loại, cột, hàng, rộng, cao] — ô ngoài lưới bị bỏ qua
+   8 FIELDS
+   props: [kind, col, row, width, height] — tiles outside the grid are skipped
    ===================================================== */
 const LEVELS = [
   {
-    id: 'meadow', name: 'Đồng Cỏ Non', icon: '🌱', waves: 15, sr: 7, gr: 7,
-    desc: 'Bãi cỏ bằng phẳng, vài cái ao. Nơi tập dựng mê cung.',
+    id: 'meadow', name: 'Little Green Meadow', icon: '🌱', waves: 15, sr: 7, gr: 7,
+    desc: 'A flat grassy field with a few ponds. A great place to practise maze-building.',
     props: [
       ['w', 3, 2, 2, 2], ['w', 8, 10, 3, 2],
       ['t', 13, 3, 2, 3], ['t', 17, 9, 2, 2], ['t', 6, 12, 2, 1],
@@ -33,8 +33,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'orchard', name: 'Vườn Cây', icon: '🍎', waves: 18, sr: 4, gr: 10,
-    desc: 'Ba hàng cây rợp bóng ép địch chạy zích zắc.',
+    id: 'orchard', name: 'Apple Orchard', icon: '🍎', waves: 18, sr: 4, gr: 10,
+    desc: 'Three shady rows of trees make enemies zig-zag.',
     hpMul: 1.05,
     props: [
       ['t', 4, 1, 1, 11], ['t', 10, 3, 1, 11], ['t', 16, 1, 1, 11],
@@ -44,8 +44,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'riverbank', name: 'Bờ Sông', icon: '🌊', waves: 20, sr: 2, gr: 12,
-    desc: 'Dòng sông chắn giữa cánh đồng, chỉ còn hai cây cầu.',
+    id: 'riverbank', name: 'Riverside', icon: '🌊', waves: 20, sr: 2, gr: 12,
+    desc: 'A river cuts across the field — only two bridges are left.',
     hpMul: 1.05, spdMul: 1.03,
     props: [
       ['w', 10, 1, 2, 4], ['j', 10, 5, 2, 1], ['w', 10, 6, 2, 5], ['j', 10, 11, 2, 1], ['w', 10, 12, 2, 2],
@@ -55,8 +55,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'homestead', name: 'Nơi Ở Nhà Nông', icon: '🏡', waves: 22, sr: 7, gr: 3,
-    desc: 'Nhà kho, giếng nước và hàng rào chia ruộng thành ô.',
+    id: 'homestead', name: 'Farm Homestead', icon: '🏡', waves: 22, sr: 7, gr: 3,
+    desc: 'Barns, a well and fences split the fields into plots.',
     hpMul: 1.1,
     props: [
       ['b', 3, 2, 3, 2], ['b', 15, 9, 2, 2], ['b', 20, 6, 1, 2],
@@ -66,8 +66,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'quarry', name: 'Mỏ Đá', icon: '🪨', waves: 25, sr: 12, gr: 2,
-    desc: 'Sỏi đá chặn khắp nơi — đường đi hẹp và dài.',
+    id: 'quarry', name: 'Stone Quarry', icon: '🪨', waves: 25, sr: 12, gr: 2,
+    desc: 'Rocks block the way everywhere — the path is narrow and long.',
     hpMul: 1.15,
     props: [
       ['r', 2, 8, 2, 2], ['r', 5, 4, 3, 2], ['r', 10, 9, 3, 2], ['r', 14, 5, 2, 3],
@@ -78,8 +78,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'marsh', name: 'Đầm Lầy', icon: '🐸', waves: 25, sr: 1, gr: 13,
-    desc: 'Ao chuôm chi chít, đất khô chỉ còn từng dải hẹp.',
+    id: 'marsh', name: 'Marshland', icon: '🐸', waves: 25, sr: 1, gr: 13,
+    desc: 'Ponds everywhere — dry land is left in thin strips.',
     hpMul: 1.15, spdMul: 0.97,
     props: [
       ['w', 2, 3, 3, 3], ['w', 8, 1, 4, 3], ['w', 7, 9, 4, 3], ['w', 13, 4, 3, 3],
@@ -89,8 +89,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'highland', name: 'Cao Nguyên Hoàng Hôn', icon: '⛰️', waves: 28, sr: 7, gr: 7,
-    desc: 'Đồi đá dựng vách dưới ánh hoàng hôn, gió lạnh.',
+    id: 'highland', name: 'Sunset Highlands', icon: '⛰️', waves: 28, sr: 7, gr: 7,
+    desc: 'Rocky hills stand tall in the sunset light, and the wind is cold.',
     hpMul: 1.2, spdMul: 1.05,
     pal: {
       grass: ['#6a9f6b', '#7bb077'],
@@ -107,8 +107,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'harvest', name: 'Mùa Gặt Cuối Cùng', icon: '🌾', waves: 30, sr: 3, gr: 11,
-    desc: 'Ruộng vàng, đá, ao, nhà kho — mọi thứ trộn vào nhau.',
+    id: 'harvest', name: 'Final Harvest', icon: '🌾', waves: 30, sr: 3, gr: 11,
+    desc: 'Golden fields, rocks, ponds and barns all mixed together.',
     hpMul: 1.3, spdMul: 1.06, livesMul: 0.85,
     pal: {
       grass: ['#c2a94f', '#d3bd61'],
@@ -127,14 +127,14 @@ const LEVELS = [
   }
 ];
 
-/* Màu nhấn trên thẻ chọn màn */
+/* Accent colors on the level picker cards */
 const MAP_CHIPS = ['#8bc34a', '#f27ba8', '#4b9dff', '#ff9d4a', '#9aa8b8', '#5fbf8a', '#a184ff', '#ffc93c'];
 
 /* =====================================================
-   TIẾN ĐỘ MÀN (localStorage — offlineGameSync đẩy lên API)
+   LEVEL PROGRESS (localStorage — offlineGameSync pushes it to the API)
    ===================================================== */
 const MAPKEY = 'gc:fieldrunner:maps';
-const AUTOKEY = 'gc:fieldrunner:map';   // sessionStorage: chơi lại đúng màn này
+const AUTOKEY = 'gc:fieldrunner:map';   // sessionStorage: replay this exact level
 
 function mapsAll() {
   try {
@@ -154,10 +154,10 @@ function mapsSet(id, patch) {
 
   try {
     localStorage.setItem(MAPKEY, JSON.stringify(all));
-  } catch (e) { /* storage bị chặn */ }
+  } catch (e) { /* storage blocked */ }
 }
 
-/** Màn thứ i mở chưa: màn 1 luôn mở, màn sau cần thắng màn trước */
+/** Is level i unlocked: level 1 is always open, later ones need the previous win */
 function mapUnlocked(i) {
   if (i <= 0) return true;
   return !!mapRec(LEVELS[i - 1].id).cleared;
@@ -171,19 +171,19 @@ function mapBest(id) {
   return mapRec(id).best || 0;
 }
 
-/** Số sao theo fraction mạng còn lại khi thắng */
+/** Star count from the fraction of lives left after a win */
 function starsFor(livesLeft, livesMax) {
   const f = livesMax > 0 ? livesLeft / livesMax : 0;
   return f >= 0.9 ? 3 : f >= 0.6 ? 2 : 1;
 }
 
-/** Ghi kết quả; trả về { best, stars, isBest, unlockedNext } */
+/** Save the result; returns { best, stars, isBest, unlockedNext } */
 function commitMapResult(lv, res) {
   const rec = mapRec(lv.id);
   const isBest = res.score > (rec.best || 0);
   const idx = LEVELS.indexOf(lv);
-  // Phải hỏi TRƯỚC khi ghi: mapUnlocked(idx+1) đọc đúng màn vừa thắng,
-  // ghi xong rồi mới hỏi thì lúc nào cũng ra "đã mở".
+  // Must ask BEFORE saving: mapUnlocked(idx+1) reads the level just won,
+  // and asking after saving would always say "unlocked".
   const nextWasLocked = !mapUnlocked(idx + 1);
 
   const patch = {
@@ -198,11 +198,11 @@ function commitMapResult(lv, res) {
 }
 
 function setAutoMap(id) {
-  try { sessionStorage.setItem(AUTOKEY, id); } catch (e) { /* bỏ qua */ }
+  try { sessionStorage.setItem(AUTOKEY, id); } catch (e) { /* ignore */ }
 }
 
 function clearAutoMap() {
-  try { sessionStorage.removeItem(AUTOKEY); } catch (e) { /* bỏ qua */ }
+  try { sessionStorage.removeItem(AUTOKEY); } catch (e) { /* ignore */ }
 }
 
 function takeAutoMap() {
@@ -210,16 +210,16 @@ function takeAutoMap() {
   try {
     id = sessionStorage.getItem(AUTOKEY);
     if (id) sessionStorage.removeItem(AUTOKEY);
-  } catch (e) { /* bỏ qua */ }
+  } catch (e) { /* ignore */ }
 
   const i = LEVELS.findIndex(l => l.id === id);
   return i >= 0 && mapUnlocked(i) ? LEVELS[i] : null;
 }
 
 /* =====================================================
-   ÁP MÀN CHƠI VÀO LƯỚI
+   APPLY THE LEVEL TO THE GRID
    ===================================================== */
-let kinds;   // kind[c][r] = ký hiệu địa hình của ô
+let kinds;   // kind[c][r] = terrain symbol of the tile
 let levelIdx = 0;
 
 function applyLevel(lv) {
@@ -239,7 +239,7 @@ function applyLevel(lv) {
     }
   }
 
-  // Trả lại ô trống sát 2 cổng để địch kịp tràn vào / tràn ra
+  // Keep tiles next to both gates empty so enemies can flow in and out
   kinds[0][SR] = '.';
   kinds[1][SR] = '.';
   kinds[GOALC][GR] = '.';
@@ -267,7 +267,7 @@ function applyLevel(lv) {
 }
 
 /* =====================================================
-   MÀN HÌNH CHỌN CÁNH ĐỒNG
+   FIELD PICKER SCREEN
    ===================================================== */
 let mapsRoot = null;
 let mapsEsc = null;
@@ -294,7 +294,7 @@ function showMapSelect(cfg) {
   root.className = 'fr-maps';
   root.id = 'fr-maps';
   root.setAttribute('role', 'dialog');
-  root.setAttribute('aria-label', 'Chọn cánh đồng');
+  root.setAttribute('aria-label', 'Choose a field');
 
   const cards = LEVELS.map((lv, i) => {
     const rec = all[lv.id] || {};
@@ -305,7 +305,7 @@ function showMapSelect(cfg) {
 
     const pips = [1, 2, 3].map(n =>
       '<i class="' + (n <= stars ? 'on' : '') + '"' +
-      ' aria-label="' + n + ' sao"></i>').join('');
+      ' aria-label="' + n + ' stars"></i>').join('');
 
     return '' +
       '<button type="button" class="fr-map' + (open ? '' : ' lock') + '" data-i="' + i + '"' +
@@ -314,10 +314,10 @@ function showMapSelect(cfg) {
         '<span class="e">' + lv.icon + '</span>' +
         '<span class="t">' +
           '<b>' + lv.name + '</b>' +
-          '<small>' + (open ? lv.desc : 'Thắng màn trước để mở cánh đồng này') + '</small>' +
-          '<span class="meta">🌊 ' + lv.waves + ' đợt · ⭐ ' + (rec.best || 0) +
+          '<small>' + (open ? lv.desc : 'Win the previous field to unlock this one') + '</small>' +
+          '<span class="meta">🌊 ' + lv.waves + ' waves · ⭐ ' + (rec.best || 0) +
           (play
-            ? ' · <b class="run">🔫 ' + play.tw.length + ' vũ khí, dở đợt ' +
+            ? ' · <b class="run">🔫 ' + play.tw.length + ' weapons, mid-wave ' +
               Math.min(play.w ? play.wave : play.wave + 1, lv.waves) +
               (otherDiff ? ' (' + GC.levels[play.diff].label + ')' : '') + '</b>'
             : '') +
@@ -331,18 +331,18 @@ function showMapSelect(cfg) {
   root.innerHTML = '' +
     '<div class="fr-maps__card">' +
       '<div class="fr-maps__head">' +
-        '<h2>Chọn cánh đồng</h2>' +
+        '<h2>Choose a Field</h2>' +
         '<span class="gc-pill gc-d' + GC.diff.i + '">' + GC.diff.emoji + ' ' + GC.diff.label + '</span>' +
       '</div>' +
-      '<p class="fr-maps__sub">Đã khai phá ' + cleared + '/' + LEVELS.length + ' cánh đồng · ' +
-        'màn mới mở khi thắng màn trước</p>' +
+      '<p class="fr-maps__sub">Explored ' + cleared + '/' + LEVELS.length + ' fields · ' +
+        'new fields unlock when you win the previous one</p>' +
       '<div class="fr-maps__grid">' + cards + '</div>' +
       '<div class="fr-maps__row">' +
         (cfg.onResume
-          ? '<button type="button" class="gc-btn sm" data-a="resume">▶ Về ván đang chơi</button>'
+          ? '<button type="button" class="gc-btn sm" data-a="resume">▶ Back to current run</button>'
           : '') +
-        '<button type="button" class="gc-btn alt sm" data-a="diff">🎚 Đổi độ khó</button>' +
-        '<button type="button" class="gc-btn alt sm" data-a="home">🏠 Về sảnh</button>' +
+        '<button type="button" class="gc-btn alt sm" data-a="diff">🎚 Change difficulty</button>' +
+        '<button type="button" class="gc-btn alt sm" data-a="home">🏠 Back to lobby</button>' +
       '</div>' +
     '</div>';
 
@@ -370,7 +370,7 @@ function showMapSelect(cfg) {
     };
   }
 
-  // Esc = quay lại ván đang chơi (nếu có)
+  // Esc = return to the run in progress (if any)
   if (cfg.onResume) {
     mapsEsc = function (e) {
       if (e.key === 'Escape') {

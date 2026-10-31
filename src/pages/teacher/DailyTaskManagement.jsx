@@ -121,11 +121,11 @@ export default function DailyTaskManagement({ showToast }) {
         <PrimaryButton onClick={openCreate}>+ Tạo nhiệm vụ</PrimaryButton>
       </div>
 
-      <div className="flex gap-2">
+      {/* <div className="flex gap-2">
         <button onClick={() => setTab("tasks")} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "tasks" ? "bg-gold/20 text-gold" : "text-[#8A7C63] hover:bg-ink/5"}`}>
           <ClipboardList className="w-4 h-4" /> Danh sách nhiệm vụ
         </button>
-      </div>
+      </div> */}
 
       <StatGrid stats={[
         { label: "Người tham gia", value: stats?.totalParticipants ?? "...", icon: <Users /> },

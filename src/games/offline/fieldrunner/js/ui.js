@@ -1,18 +1,18 @@
 /* =====================================================
-   ui.js · thanh trạng thái, bảng thông tin, chọn tháp,
-   chuột / bàn phím
+   ui.js · status bar, info panel, tower picking,
+   mouse / keyboard
    ===================================================== */
 
-/* ---------- Thanh trạng thái ---------- */
+/* ---------- Status bar ---------- */
 function updUI() {
   $('lives').textContent = lives;
   $('money').textContent = money;
   $('wave').textContent = wave;
   $('total').textContent = TOTAL;
-  $('score').textContent = scoreNow(false).toLocaleString('vi-VN');
+  $('score').textContent = scoreNow(false).toLocaleString('en-US');
   $('mapName').textContent = level ? level.icon + ' ' + level.name : '';
 
-  // Thanh tiến trình: trong đợt = tỉ lệ địch đã xử lý, giữa đợt = tiến bộ cả màn
+  // Progress bar: during a wave = share of enemies handled, between waves = level progress
   const p = waveActive && waveSpawn
     ? clamp(waveDone / waveSpawn, 0, 1)
     : (TOTAL ? wave / TOTAL : 0);
@@ -21,7 +21,7 @@ function updUI() {
   fill.style.width = (p * 100).toFixed(1) + '%';
   fill.parentElement.setAttribute('aria-valuenow', Math.round(p * 100));
 
-  // Làm mờ tháp mà bé chưa đủ tiền mua
+  // Dim towers the player can't afford yet
   document.querySelectorAll('.tw').forEach(b => {
     b.classList.toggle('poor', money < TYPES[b.dataset.t].cost);
   });
@@ -32,7 +32,7 @@ function updUI() {
 }
 
 /* =====================================================
-   MENU CÁI ĐẶT (nút bánh răng)
+   SETTINGS MENU (gear button)
    ===================================================== */
 function buildSettings() {
   if ($('hudMenu')) return;
@@ -41,23 +41,23 @@ function buildSettings() {
   m.className = 'hud__menu';
   m.id = 'hudMenu';
   m.innerHTML =
-    '<h3>Cài đặt</h3>' +
+    '<h3>Settings</h3>' +
     '<p class="sub" id="setSub"></p>' +
     '<div class="row">' +
-      '<button class="btn alt" data-a="pause">⏸ Tạm dừng</button>' +
+      '<button class="btn alt" data-a="pause">⏸ Pause</button>' +
       '<button class="btn alt" data-a="s1">x1</button>' +
       '<button class="btn alt" data-a="s2">x2</button>' +
       '<button class="btn alt" data-a="s3">x3</button>' +
     '</div>' +
-    '<label>Hiệu ứng mây, phấn hoa' +
+    '<label>Cloud and pollen effects' +
       '<input type="checkbox" id="setFx" checked></label>' +
     '<div class="row">' +
-      '<button class="btn mint" data-a="map">🗺️ Chọn cánh đồng</button>' +
-      '<button class="btn alt" data-a="again">↺ Chơi lại màn này</button>' +
+      '<button class="btn mint" data-a="map">🗺️ Choose a field</button>' +
+      '<button class="btn alt" data-a="again">↺ Replay this field</button>' +
     '</div>' +
     '<div class="row">' +
-      '<button class="btn alt" data-a="diff">🎚 Đổi độ khó</button>' +
-      '<button class="btn red" data-a="home">🏠 Về sảnh</button>' +
+      '<button class="btn alt" data-a="diff">🎚 Change difficulty</button>' +
+      '<button class="btn red" data-a="home">🏠 Back to lobby</button>' +
     '</div>';
 
   $('top').appendChild(m);
@@ -93,9 +93,9 @@ function syncSettings() {
   if (!m) return;
 
   $('setSub').textContent = (level ? level.icon + ' ' + level.name + ' · ' : '') +
-    GC.diff.label + ' · ' + TOTAL + ' đợt';
+    GC.diff.label + ' · ' + TOTAL + ' waves';
 
-  m.querySelector('[data-a="pause"]').textContent = paused ? '▶ Tiếp tục' : '⏸ Tạm dừng';
+  m.querySelector('[data-a="pause"]').textContent = paused ? '▶ Resume' : '⏸ Pause';
   m.querySelector('#setFx').checked = gfx;
 
   m.querySelectorAll('[data-a^="s"]').forEach(b => {
@@ -119,7 +119,7 @@ function toggleSettings() {
   if (open) syncSettings();
 }
 
-/** Nút 🗺️ / menu: mở màn chọn cánh đồng, tạm dừng ván đang chơi */
+/** 🗺️ button / menu: open the field picker and pause the current run */
 function openMapPicker() {
   closeSettings();
 
@@ -143,7 +143,7 @@ function openMapPicker() {
   });
 }
 
-/** Cập nhật độ phủ hồi chiêu của 2 kỹ năng */
+/** Update the cooldown overlay of both skills */
 function updSkills() {
   for (const [id, k] of [['skStrike', 'strike'], ['skFreeze', 'freeze']]) {
     const s = skill[k];
@@ -157,7 +157,7 @@ function updSkills() {
 function pulse(id) {
   const el = $(id);
   el.classList.remove('pulse');
-  void el.offsetWidth;   // buộc trình duyệt tính lại để chạy lại hoạt ảnh
+  void el.offsetWidth;   // force a browser reflow so the animation restarts
   el.classList.add('pulse');
 }
 
@@ -171,7 +171,7 @@ function showMsg(t) {
   msgT = setTimeout(() => (m.style.opacity = 0), 1800);
 }
 
-/* ---------- Xem trước đợt kế tiếp ---------- */
+/* ---------- Next wave preview ---------- */
 function showPreview() {
   const el = $('preview');
 
@@ -185,23 +185,23 @@ function showPreview() {
   const cnt = {};
   q.forEach(s => (cnt[s.t] = (cnt[s.t] || 0) + 1));
 
-  let html = '<b style="font-family:var(--gc-head)">Đợt ' + next + ':</b>';
+  let html = '<b style="font-family:var(--gc-head)">Wave ' + next + ':</b>';
 
   html += Object.entries(cnt).map(([k, v]) => {
     return '<span class="pv" title="' + EDEF[k].n + '">' + EDEF[k].ic + '×' + v + '</span>';
   }).join('');
 
-  // Từ đợt HARD_WAVE: báo tỉ lệ tinh anh
+  // From HARD_WAVE on: show the elite chance
   const ec = eliteChance(next);
   if (ec > 0) {
-    html += '<span class="pv elite" title="Tinh anh: máu trâu, giáp dày, chạy nhanh, rơi gấp đôi xu">' +
-      '⭐ Tinh anh ~' + Math.round(ec * 100) + '%</span>';
+    html += '<span class="pv elite" title="Elite: extra HP, heavy armor, faster, double coins">' +
+      '⭐ Elite ~' + Math.round(ec * 100) + '%</span>';
   }
 
   el.innerHTML = html;
 }
 
-/* ---------- Bảng thông tin ---------- */
+/* ---------- Info panel ---------- */
 function upCost(t) {
   return Math.round(TYPES[t.type].cost * 0.8 * t.lvl);
 }
@@ -214,15 +214,15 @@ function showInfo() {
   } else if (build) {
     const T = TYPES[build];
     el.innerHTML = '<b>' + T.name + '</b> – ' + T.cost + '💰<br>' + T.desc +
-      '<br>Nhấn vào cánh đồng để đặt. Chuột phải / Esc để hủy.';
+      '<br>Click the field to place it. Right-click / Esc to cancel.';
   } else if (aim) {
-    el.innerHTML = '<b>🚀 Không kích</b><br>Chạm vào khu vực muốn ném bom (sát thương 260 × 6 quả, xuyên giáp).';
+    el.innerHTML = '<b>🚀 Airstrike</b><br>Tap where you want the bombs (260 damage × 6 bombs, pierces armor).';
   } else {
-    el.innerHTML = '<b>' + (level ? level.icon + ' ' + level.name : 'Cánh đồng') + '</b><br>' +
-      'Chọn vũ khí rồi nhấn vào đồng để xây. Không xây được lên ao, đá, cây, nhà kho và cầu. ' +
-      'Địch đi vòng quanh tháp – hãy xây mê cung để kéo dài đường đi! ' +
-      'Nhấn vào tháp để nâng cấp (tối đa ' + MAXLV + ' sao) hoặc bán.' +
-      '<br>⚠️ Từ đợt ' + HARD_WAVE + ' có kẻ địch <b>tinh anh ⭐</b> rất trâu!';
+    el.innerHTML = '<b>' + (level ? level.icon + ' ' + level.name : 'Field') + '</b><br>' +
+      'Pick a weapon, then click the field to build. You can’t build on ponds, rocks, trees, barns or bridges. ' +
+      'Enemies walk around towers — build a maze to make the path longer! ' +
+      'Click a tower to upgrade it (up to ' + MAXLV + ' stars) or sell it.' +
+      '<br>⚠️ From wave ' + HARD_WAVE + ' there are super-tough <b>elite ⭐</b> enemies!';
   }
 }
 
@@ -233,39 +233,39 @@ function showTowerInfo(el) {
 
   if (T.support) {
     el.innerHTML =
-      '<b>' + T.name + '</b> – cấp ' + sel.lvl + '/' + MAXLV +
-      '<br>Tầm hỗ trợ: ' + (TYPES.radar.range + 0.25 * lv).toFixed(1) + ' ô' +
-      '<br>⚡ +' + Math.round((0.22 + 0.08 * lv) * 100) + '% sát thương · +' +
-      Math.round((0.1 + 0.04 * lv) * 100) + '% tầm' +
-      '<br>👁 Lộ diện kẻ tàng hình';
+      '<b>' + T.name + '</b> – Lv ' + sel.lvl + '/' + MAXLV +
+      '<br>Support range: ' + (TYPES.radar.range + 0.25 * lv).toFixed(1) + ' tiles' +
+      '<br>⚡ +' + Math.round((0.22 + 0.08 * lv) * 100) + '% damage · +' +
+      Math.round((0.1 + 0.04 * lv) * 100) + '% range' +
+      '<br>👁 Reveals invisible enemies';
   } else {
     let extra = '';
 
-    if (T.burnDps) extra += '<br>🔥 Cháy: ' + Math.round(T.burnDps * (1 + 0.6 * lv)) + '/giây';
-    if (T.poisonDps) extra += '<br>☠ Độc: ' + Math.round(T.poisonDps * (1 + 0.6 * lv)) + '/giây';
-    if (T.chain) extra += '<br>⚡ Lan sang ' + (T.chain + Math.floor(sel.lvl / 2)) + ' mục tiêu';
-    if (T.pierce) extra += '<br>🗡 Xuyên giáp';
-    if (T.splash) extra += '<br>💥 Nổ lan ' + Math.round(T.splash * (1 + 0.06 * lv)) + 'px';
-    if (T.slow) extra += '<br>❄ Làm chậm ' + Math.round((1 - Math.max(0.18, T.slow - 0.07 * lv)) * 100) + '%';
-    if (T.laser) extra += '<br>🔴 Càng bắn lâu càng mạnh (tối đa x4.4)';
-    if (T.rail) extra += '<br>➖ Xuyên mọi kẻ địch trên đường bắn';
-    if (sel.bD > 0) extra += '<br>📡 Buff radar: +' + Math.round(sel.bD * 100) + '% sát thương';
+    if (T.burnDps) extra += '<br>🔥 Burn: ' + Math.round(T.burnDps * (1 + 0.6 * lv)) + '/sec';
+    if (T.poisonDps) extra += '<br>☠ Poison: ' + Math.round(T.poisonDps * (1 + 0.6 * lv)) + '/sec';
+    if (T.chain) extra += '<br>⚡ Chains to ' + (T.chain + Math.floor(sel.lvl / 2)) + ' targets';
+    if (T.pierce) extra += '<br>🗡 Pierces armor';
+    if (T.splash) extra += '<br>💥 Splash ' + Math.round(T.splash * (1 + 0.06 * lv)) + 'px';
+    if (T.slow) extra += '<br>❄ Slows by ' + Math.round((1 - Math.max(0.18, T.slow - 0.07 * lv)) * 100) + '%';
+    if (T.laser) extra += '<br>🔴 Gets stronger the longer it fires (up to x4.4)';
+    if (T.rail) extra += '<br>➖ Pierces every enemy in the line of fire';
+    if (sel.bD > 0) extra += '<br>📡 Radar buff: +' + Math.round(sel.bD * 100) + '% damage';
 
     el.innerHTML =
-      '<b>' + T.name + '</b> – cấp ' + sel.lvl + '/' + MAXLV +
-      '<br>' + (T.laser ? 'DPS: ' : 'Sát thương: ') + S.dmg.toFixed(0) + (T.laser ? '/giây' : '') +
-      ' | Tầm: ' + (S.range / CS).toFixed(1) + ' ô' +
-      (T.laser ? '' : '<br>Tốc độ bắn: ' + (1 / S.rate).toFixed(1) + '/giây') +
+      '<b>' + T.name + '</b> – Lv ' + sel.lvl + '/' + MAXLV +
+      '<br>' + (T.laser ? 'DPS: ' : 'Damage: ') + S.dmg.toFixed(0) + (T.laser ? '/sec' : '') +
+      ' | Range: ' + (S.range / CS).toFixed(1) + ' tiles' +
+      (T.laser ? '' : '<br>Fire rate: ' + (1 / S.rate).toFixed(1) + '/sec') +
       extra;
   }
 
-  // Hàng nút: nâng cấp · chế độ ngắm · bán
+  // Button row: upgrade · targeting mode · sell
   el.innerHTML += '<div class="row">' +
     (sel.lvl < MAXLV
-      ? '<button class="btn mint" id="up" ' + (money < upCost(sel) ? 'disabled' : '') + '>⬆ Nâng cấp (' + upCost(sel) + '💰)</button>'
-      : '<span>⭐ Đã tối đa</span>') +
+      ? '<button class="btn mint" id="up" ' + (money < upCost(sel) ? 'disabled' : '') + '>⬆ Upgrade (' + upCost(sel) + '💰)</button>'
+      : '<span>⭐ Max level</span>') +
     (T.support ? '' : '<button class="btn alt" id="mode">🎯 ' + MODES[sel.mode || 0] + '</button>') +
-    '<button class="btn red" id="sell">Bán (+' + Math.round(sel.spent * 0.7) + ')</button>' +
+    '<button class="btn red" id="sell">Sell (+' + Math.round(sel.spent * 0.7) + ')</button>' +
     '</div>';
 
   const up = $('up');
@@ -306,7 +306,7 @@ function showTowerInfo(el) {
   };
 }
 
-/* ---------- Thanh chọn tháp ---------- */
+/* ---------- Tower picker bar ---------- */
 function buildBar() {
   const box = $('towers');
   box.innerHTML = '';
@@ -325,7 +325,7 @@ function buildBar() {
     b.onclick = () => pickBuild(k);
     box.appendChild(b);
 
-    // Icon vẽ từ chính hàm vẽ tháp (tạm đổi ctx sang canvas icon)
+    // Icon drawn by the tower drawing function (ctx temporarily points at the icon canvas)
     const icon = b.querySelector('canvas');
     const old = ctx;
 
@@ -360,7 +360,7 @@ function clearPick() {
   showInfo();
 }
 
-/* ---------- Chuột trên cánh đồng ---------- */
+/* ---------- Mouse on the field ---------- */
 function mpos(e) {
   const r = cv.getBoundingClientRect();
   return [
@@ -389,14 +389,14 @@ cv.addEventListener('click', e => {
   const r = Math.floor(y / CS);
   hover = [c, r];
 
-  // Đang ngắm không kích
+  // Aiming an airstrike
   if (aim) {
     castStrike(c * CS + CS / 2, r * CS + CS / 2);
     showInfo();
     return;
   }
 
-  // Bấm vào tháp có sẵn → chọn
+  // Click an existing tower → select it
   const t = towers.find(t => t.c === c && t.r === r);
   if (t) {
     sel = t;
@@ -406,12 +406,12 @@ cv.addEventListener('click', e => {
     return;
   }
 
-  // Đang cầm tháp → đặt xuống
+  // Holding a tower → put it down
   if (build) {
     const T = TYPES[build];
 
     if (money < T.cost) {
-      showMsg(HOSTED ? 'Không đủ xu trong túi tiền!' : 'Không đủ tiền!');
+      showMsg(HOSTED ? 'Not enough coins in your wallet!' : 'Not enough coins!');
       return;
     }
 
@@ -447,7 +447,7 @@ cv.addEventListener('click', e => {
   }
 });
 
-/* ---------- Bàn phím ---------- */
+/* ---------- Keyboard ---------- */
 addEventListener('keydown', e => {
   if (!started || document.getElementById('gc-start') || document.getElementById('fr-maps') ||
       document.getElementById('fr-resume')) return;
@@ -471,7 +471,7 @@ addEventListener('keydown', e => {
   if (e.key === 'p' || e.key === 'P') $('pause').click();
 });
 
-/* ---------- Các nút trên HUD ---------- */
+/* ---------- HUD buttons ---------- */
 $('go').onclick = startWave;
 
 $('pause').onclick = () => {
@@ -485,7 +485,7 @@ $('pause').onclick = () => {
 $('speed').onclick = () => setSpeed(speed % 3 + 1);
 
 $('restart').onclick = () => {
-  if (confirm('Chơi lại từ đầu màn ' + level.name + ' ở độ khó ' + GC.diff.label + '?')) {
+  if (confirm('Restart ' + level.name + ' from the beginning on ' + GC.diff.label + ' difficulty?')) {
     clearRun();
     reset();
   }
@@ -494,7 +494,7 @@ $('restart').onclick = () => {
 $('gear').onclick = toggleSettings;
 $('mapBtn').onclick = openMapPicker;
 
-// Đóng menu cài đặt khi bấm ra ngoài
+// Close the settings menu when clicking outside it
 document.addEventListener('click', e => {
   const m = $('hudMenu');
   if (!m || !m.classList.contains('open')) return;
@@ -506,7 +506,7 @@ $('skStrike').onclick = toggleStrike;
 $('skFreeze').onclick = castFreeze;
 $('homeBackBtn').onclick = GC.quit;
 
-/* ---------- Co giãn canvas vừa màn hình ---------- */
+/* ---------- Fit the canvas to the screen ---------- */
 function fit() {
   const f = $('field');
   const aw = f.clientWidth - 12;

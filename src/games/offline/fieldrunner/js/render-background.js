@@ -1,11 +1,11 @@
 /* =====================================================
-   render-background.js · nền cánh đồng, đường đi, cổng,
-   ánh sáng môi trường (mây, phấn hoa, lá bay)
+   render-background.js · field background, path, gates,
+   ambient lighting (clouds, pollen, drifting leaves)
    ===================================================== */
 
-/* ---------- Các hàm vẽ cơ bản dùng chung ---------- */
+/* ---------- Shared basic drawing helpers ---------- */
 
-/** Hình chữ nhật bo góc */
+/** Rounded rectangle */
 function rr(x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -16,21 +16,21 @@ function rr(x, y, w, h, r) {
   ctx.closePath();
 }
 
-/** Gradient tuyến tính từ danh sách mốc màu */
+/** Linear gradient from a list of color stops */
 function lg(x0, y0, x1, y1, stops) {
   const g = ctx.createLinearGradient(x0, y0, x1, y1);
   stops.forEach(s => g.addColorStop(s[0], s[1]));
   return g;
 }
 
-/** Gradient tròn từ danh sách mốc màu */
+/** Radial gradient from a list of color stops */
 function rg(x, y, r0, r1, stops) {
   const g = ctx.createRadialGradient(x, y, r0, x, y, r1);
   stops.forEach(s => g.addColorStop(s[0], s[1]));
   return g;
 }
 
-/** Đường zig-zag (dùng cho tia sét) */
+/** Zig-zag line (used for lightning bolts) */
 function jag(x1, y1, x2, y2, amp) {
   const n = Math.max(3, Math.floor(Math.hypot(x2 - x1, y2 - y1) / 14));
 
@@ -49,10 +49,10 @@ function jag(x1, y1, x2, y2, amp) {
 }
 
 /* =====================================================
-   NỀN TĨNH (vẽ một lần vào canvas phụ)
+   STATIC BACKGROUND (drawn once onto an offscreen canvas)
    ===================================================== */
-let bg;          // nền cỏ
-let lightLayer;  // lớp ánh sáng / bóng mờ phủ lên trên cùng
+let bg;          // grass background
+let lightLayer;  // lighting / shading layer painted on top
 
 function makeBg() {
   bg = document.createElement('canvas');
@@ -62,14 +62,14 @@ function makeBg() {
   const g = bg.getContext('2d');
   const rand = seededRandom(12345);
 
-  /** Ô địa hình (đá/nước/cây/nhà) — không rải cỏ dại, hoa, nấm lên trên */
+  /** Terrain tile (rock/water/tree/building) — don't scatter weeds, flowers or mushrooms on it */
   const onProp = (x, y) => {
     const c = (x / CS) | 0;
     const r = (y / CS) | 0;
     return !!(blocked && blocked[c] && blocked[c][r]);
   };
 
-  /* ----- Ô cỏ caro nhẹ + đốm màu ----- */
+  /* ----- Subtle checker grass + color speckles ----- */
   for (let c = 0; c < COLS; c++) {
     for (let r = 0; r < ROWS; r++) {
       g.fillStyle = (c + r) % 2 ? PAL.grass[0] : PAL.grass[1];
@@ -88,7 +88,7 @@ function makeBg() {
     g.fill();
   }
 
-  /* ----- Cỏ dại ----- */
+  /* ----- Weeds ----- */
   for (let i = 0; i < 320; i++) {
     const x = rand() * CW;
     const y = rand() * CH;
@@ -106,7 +106,7 @@ function makeBg() {
     g.stroke();
   }
 
-  /* ----- Hoa ----- */
+  /* ----- Flowers ----- */
   const colors = ['#ffffff', '#ffd93b', '#ff8fb3', '#b9a3ff'];
 
   for (let i = 0; i < 90; i++) {
@@ -127,7 +127,7 @@ function makeBg() {
     g.fill();
   }
 
-  /* ----- Đá nhỏ ----- */
+  /* ----- Small rocks ----- */
   for (let i = 0; i < 34; i++) {
     const x = rand() * CW;
     const y = rand() * CH;
@@ -148,7 +148,7 @@ function makeBg() {
     g.stroke();
   }
 
-  /* ----- Bụi cây & nấm ----- */
+  /* ----- Bushes & mushrooms ----- */
   for (let i = 0; i < 26; i++) {
     const x = rand() * CW;
     const y = rand() * CH;
@@ -161,10 +161,10 @@ function makeBg() {
     if (!onProp(x, y)) drawMushroom(g, x, y);
   }
 
-  /* ----- Địa hình của màn (cây, đá, ao, sông, rào, nhà kho) ----- */
+  /* ----- Level terrain (trees, rocks, ponds, river, fences, barns) ----- */
   drawTerrain(g);
 
-  /* ----- Hàng cây viền trên & dưới bản đồ ----- */
+  /* ----- Tree rows along the top & bottom of the map ----- */
   for (let x = 14; x < CW; x += 38 + rand() * 26) {
     drawTree(g, x, 8 + rand() * 6, 0.9 + rand() * 0.4);
   }
@@ -172,11 +172,11 @@ function makeBg() {
     drawTree(g, x, CH - 10 - rand() * 6, 0.9 + rand() * 0.4);
   }
 
-  /* ----- Lớp ánh sáng phủ ----- */
+  /* ----- Overlay light layer ----- */
   makeLightLayer();
 }
 
-/** Gradient tuyến tính trên ngữ cảnh g bất kỳ */
+/** Linear gradient on any context g */
 function lg2(g, x0, y0, x1, y1, a, b) {
   const gr = g.createLinearGradient(x0, y0, x1, y1);
   gr.addColorStop(0, a);
@@ -247,7 +247,7 @@ function drawTree(g, x, y, s) {
   g.fill();
 }
 
-/** Lớp ánh sáng: nắng ấm từ trên-trái và tối dần ở rìa */
+/** Light layer: warm sunlight from the top-left fading darker at the edges */
 function makeLightLayer() {
   lightLayer = document.createElement('canvas');
   lightLayer.width = CW;
@@ -255,7 +255,7 @@ function makeLightLayer() {
 
   const g = lightLayer.getContext('2d');
 
-  // Màu riêng của từng cánh đồng (hoàng hôn, mùa gặt…)
+  // Per-field tint (sunset, harvest…) 
   if (PAL.wash) {
     g.fillStyle = PAL.wash;
     g.fillRect(0, 0, CW, CH);
@@ -275,7 +275,7 @@ function makeLightLayer() {
 }
 
 /* =====================================================
-   ĐƯỜNG ĐI (vẽ mỗi khung vì người chơi xây mê cung)
+   PATH (redrawn every frame because the player builds mazes)
    ===================================================== */
 function strokePath() {
   ctx.beginPath();
@@ -286,37 +286,37 @@ function drawPath() {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // Bóng đổ
+  // Drop shadow
   strokePath();
   ctx.strokeStyle = 'rgba(40,25,5,.28)';
   ctx.lineWidth = 38;
   ctx.stroke();
 
-  // Viền đất tối
+  // Dark soil edge
   strokePath();
   ctx.strokeStyle = PAL.soil[0];
   ctx.lineWidth = 34;
   ctx.stroke();
 
-  // Viền sáng
+  // Light edge
   strokePath();
   ctx.strokeStyle = PAL.soil[1];
   ctx.lineWidth = 30;
   ctx.stroke();
 
-  // Mặt đường
+  // Road surface
   strokePath();
   ctx.strokeStyle = PAL.soil[2];
   ctx.lineWidth = 26;
   ctx.stroke();
 
-  // Lòng đường sáng hơn
+  // Brighter road center
   strokePath();
   ctx.strokeStyle = PAL.soil[3];
   ctx.lineWidth = 16;
   ctx.stroke();
 
-  // Sỏi nhỏ rải trên đường
+  // Small pebbles scattered on the road
   ctx.setLineDash([1, 11]);
   strokePath();
   ctx.strokeStyle = 'rgba(120,85,40,.55)';
@@ -332,7 +332,7 @@ function drawPath() {
   ctx.lineDashOffset = 0;
   ctx.setLineDash([]);
 
-  // Mũi tên chỉ hướng chạy dọc đường
+  // Direction arrows flowing along the road
   ctx.fillStyle = 'rgba(255,255,255,.6)';
 
   const off = (gtime * 40) % 80;
@@ -368,16 +368,16 @@ function drawPath() {
 }
 
 /* =====================================================
-   CỔNG VÀO / CỔNG RA
+   ENTRANCE / EXIT GATES
    ===================================================== */
 function drawGates() {
   const pulse = 0.5 + 0.5 * Math.sin(gtime * 3);
 
-  /* ----- Cổng vào (chuồng gỗ đỏ) ----- */
+  /* ----- Entrance gate (red wooden pen) ----- */
   ctx.save();
   ctx.translate(0, SR * CS);
 
-  // Vầng sáng cảnh báo
+  // Warning glow
   ctx.fillStyle = rg(CS / 2, CS / 2, 4, 44, [
     [0, 'rgba(255,90,70,' + (0.25 + pulse * 0.2) + ')'],
     [1, 'rgba(255,90,70,0)']
@@ -393,7 +393,7 @@ function drawGates() {
   ctx.lineWidth = 3;
   ctx.stroke();
 
-  // Vạch gỗ
+  // Wooden planks
   ctx.strokeStyle = 'rgba(0,0,0,.25)';
   ctx.lineWidth = 1.5;
   for (let y = 6; y < CS + 4; y += 8) {
@@ -406,10 +406,10 @@ function drawGates() {
   ctx.fillStyle = '#fff';
   ctx.font = '800 11px Baloo 2,sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('VÀO', CS / 2 - 6, CS / 2 + 4);
+  ctx.fillText('IN', CS / 2 - 6, CS / 2 + 4);
   ctx.restore();
 
-  /* ----- Cổng ra (ruộng xanh) ----- */
+  /* ----- Exit gate (green field) ----- */
   ctx.save();
   ctx.translate(GOALC * CS, GR * CS);
 
@@ -431,12 +431,12 @@ function drawGates() {
   ctx.fillStyle = '#fff';
   ctx.font = '800 11px Baloo 2,sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('RA', CS / 2 + 4, CS / 2 + 4);
+  ctx.fillText('OUT', CS / 2 + 4, CS / 2 + 4);
   ctx.restore();
 }
 
 /* =====================================================
-   MÔI TRƯỜNG: bóng mây, phấn hoa, lá bay
+   AMBIENT: cloud shadows, pollen, drifting leaves
    ===================================================== */
 const ambient = [];
 
@@ -461,7 +461,7 @@ const clouds = [
   { x: 820, y: 90,  w: 170, h: 60, sp: 8 }
 ];
 
-/** Bóng mây trôi trên cánh đồng */
+/** Cloud shadows drifting over the field */
 function drawClouds(dt) {
   ctx.fillStyle = 'rgba(20,50,30,.07)';
 
@@ -478,7 +478,7 @@ function drawClouds(dt) {
   }
 }
 
-/** Phấn hoa / lá lơ lửng */
+/** Floating pollen / leaves */
 function drawAmbient(dt) {
   for (const a of ambient) {
     a.x += a.sp * dt;

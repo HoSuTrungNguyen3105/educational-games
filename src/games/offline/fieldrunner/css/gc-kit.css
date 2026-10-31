@@ -1,5 +1,5 @@
 /* =====================================================
-   GC KIT · giao diện chung "Góc Giải Trí" (neo-brutalist)
+   GC KIT · shared "Fun Corner" interface (neo-brutalist)
    ===================================================== */
 
 :root {
@@ -32,7 +32,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ---------- Nút chung ---------- */
+/* ---------- Shared buttons ---------- */
 .gc-btn {
   font-family: var(--gc-head);
   font-weight: 800;
@@ -72,7 +72,7 @@
   outline-offset: 2px;
 }
 
-/* ---------- Nút thoát thống nhất ---------- */
+/* ---------- Unified exit button ---------- */
 #homeBackBtn,
 .gc-back {
   position: fixed;
@@ -109,7 +109,7 @@
   box-shadow: 0 0 0 var(--gc-ink);
 }
 
-/* ---------- Viên thuốc (pill) ---------- */
+/* ---------- Pills ---------- */
 .gc-pill {
   display: inline-flex;
   align-items: center;
@@ -150,7 +150,7 @@
   pointer-events: none;
 }
 
-/* ---------- Màn chọn độ khó ---------- */
+/* ---------- Difficulty picker screen ---------- */
 .gc-start {
   position: fixed;
   inset: 0;
@@ -359,7 +359,7 @@
   .gc-h     { margin: 10px 0 6px; }
 }
 
-/* ---------- Hộp kết quả ---------- */
+/* ---------- Result box ---------- */
 .gc-modal {
   position: fixed;
   inset: 0;

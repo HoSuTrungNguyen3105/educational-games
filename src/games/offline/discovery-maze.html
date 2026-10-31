@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Mê Cung Tri Thức</title>
+<title>discovery maze</title>
 <style>
 :root{--panel:rgba(40,36,64,.78);--ink:#f6efdc;--acc:#e8c872;--ring:rgba(246,239,220,.8);--bd:rgba(232,200,114,.55);--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px)}
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -91,58 +91,58 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 6px;t
 <canvas id="view"></canvas><canvas id="fx"></canvas>
 
 <div class="h" id="me"><span id="meAv"></span><div><div id="meN"></div><div id="meSt"></div></div></div>
-<div class="h" id="obj"><small>◆ NHIỆM VỤ</small><div id="ot"></div><div id="oc"></div></div>
-<div id="ico"><button class="ib" id="imap" aria-label="Bản đồ dấu chân">🗺️</button><button class="ib" id="isnd" aria-label="Âm thanh">🔊</button><button class="ib" id="iexit" aria-label="Thoát về menu">⏏</button></div>
+<div class="h" id="obj"><small>◆ MISSION</small><div id="ot"></div><div id="oc"></div></div>
+<div id="ico"><button class="ib" id="imap" aria-label="Footprint map">🗺️</button><button class="ib" id="isnd" aria-label="Sound">🔊</button><button class="ib" id="iexit" aria-label="Exit to menu">⏏</button></div>
 <div class="h" id="tm"></div>
 <div id="jz"></div><div id="jb"></div><div id="jk"></div>
 <button id="bT"><span class="kk">F</span><span id="btx"></span></button>
 
 <div id="qp"><div id="qh"><div id="qtn">0</div><div id="qtt"></div><div id="qpt"></div></div><div id="qbar"><i id="qbf"></i></div>
-  <div id="qo"></div><div id="qtw" class="hide"><input type="text" id="qin" placeholder="Nhập câu trả lời…" autocomplete="off"></div><div id="qfb"></div><button id="qgo">🔓 Chốt đáp án</button></div>
-<div id="fmap"><div id="fmc"><canvas id="mapc"></canvas><div id="fml"></div><small style="opacity:.7">Chạm để đóng · phím M</small></div></div>
+  <div id="qo"></div><div id="qtw" class="hide"><input type="text" id="qin" placeholder="Type your answer…" autocomplete="off"></div><div id="qfb"></div><button id="qgo">🔓 Lock answer</button></div>
+<div id="fmap"><div id="fmc"><canvas id="mapc"></canvas><div id="fml"></div><small style="opacity:.7">Tap to close · key M</small></div></div>
 <div id="ts"></div>
-<div id="tut"><div><b style="color:var(--acc);font-size:17px">🌀 Cách chơi</b><br>Bạn bị lạc trong mê cung. Trên đường thoát có những <b>cổng câu hỏi</b> chặn lối: đến sát cổng, bấm nút <b>F</b> để trả lời. Mở hết cổng thì cổng thoát sáng lên.<br><br><b>Kéo nửa trái:</b> đi · <b>kéo nửa phải:</b> nhìn quanh<br><b>🗺️ hoặc M:</b> bản đồ dấu chân (chỉ hiện nơi bạn đã đi)<br><small>Máy tính: WASD đi, chuột nhìn quanh, F mở cổng.</small><br><br><button class="btn" id="tutOk">Bắt đầu thôi!</button></div></div>
+<div id="tut"><div><b style="color:var(--acc);font-size:17px">🌀 How to play</b><br>You are lost in a maze. <b>Question gates</b> block the way out: walk up to a gate and press <b>F</b> to answer. Open every gate and the exit will light up.<br><br><b>Drag the left half:</b> move · <b>drag the right half:</b> look around<br><b>🗺️ or M:</b> footprint map (only shows where you have been)<br><small>On a computer: WASD to move, mouse to look, F to open gates.</small><br><br><button class="btn" id="tutOk">Let's start!</button></div></div>
 
-<!-- ============ Màn hình ============ -->
+<!-- ============ Screens ============ -->
 <div class="scr show" id="scUsers">
-  <div class="logo">🌀 MÊ CUNG TRI THỨC</div><div class="sub">Tìm đường thoát khỏi mê cung bằng trí thông minh. Mỗi bạn có hồ sơ riêng để lưu điểm và lịch sử.</div>
+  <div class="logo">🌀 KNOWLEDGE MAZE</div><div class="sub">Use your brain to find the way out of the maze. Each player has a profile that saves their score and history.</div>
   <div class="ug" id="ug"></div>
-  <div class="row" style="margin-top:14px"><button class="btn w" id="lbBtn">🏆 Bảng xếp hạng</button><button class="btn w" id="sndBtn">🔊 Âm thanh: Bật</button></div>
+  <div class="row" style="margin-top:14px"><button class="btn w" id="lbBtn">🏆 Leaderboard</button><button class="btn w" id="sndBtn">🔊 Sound: On</button></div>
   <div id="apiNote" class="mid" style="max-width:460px"></div>
 </div>
 
 <div class="scr" id="scNew">
-  <div class="logo" style="font-size:28px">Người chơi mới</div>
-  <div class="box" style="margin-top:10px"><div class="lab">Tên của bạn</div><input type="text" id="nm" maxlength="24" placeholder="Ví dụ: Minh An" autocomplete="off">
-    <div class="lab">Chọn nhân vật</div><div class="avg" id="avg"></div><div class="lab">Màu áo</div><div class="swr" id="swr"></div><div class="lab" style="margin-top:2px">Lớp (có thể đổi sau)</div><div class="grp" id="nGrade"></div><div id="nErr" class="err hide"></div></div>
-  <div class="row"><button class="btn w" id="nBack">Hủy</button><button class="btn g" id="nOk">Tạo hồ sơ</button></div>
+  <div class="logo" style="font-size:28px">New player</div>
+  <div class="box" style="margin-top:10px"><div class="lab">Your name</div><input type="text" id="nm" maxlength="24" placeholder="e.g. Alex" autocomplete="off">
+    <div class="lab">Pick an avatar</div><div class="avg" id="avg"></div><div class="lab">Shirt color</div><div class="swr" id="swr"></div><div class="lab" style="margin-top:2px">Grade (can change later)</div><div class="grp" id="nGrade"></div><div id="nErr" class="err hide"></div></div>
+  <div class="row"><button class="btn w" id="nBack">Cancel</button><button class="btn g" id="nOk">Create profile</button></div>
 </div>
 
 <div class="scr" id="scPrep">
   <div class="logo" style="font-size:26px" id="pHi"></div><div class="sub" id="pSt"></div>
   <div class="box" id="pBox"></div>
-  <div class="row"><button class="btn g" id="goBtn">🌀 Vào mê cung</button></div>
-  <div class="row"><button class="btn w" id="histBtn">📜 Lịch sử của tôi</button><button class="btn w" id="swBtn">👥 Đổi người chơi</button></div>
+  <div class="row"><button class="btn g" id="goBtn">🌀 Enter the maze</button></div>
+  <div class="row"><button class="btn w" id="histBtn">📜 My history</button><button class="btn w" id="swBtn">👥 Switch player</button></div>
 </div>
 
 <div class="scr" id="scRev">
-  <div class="logo" style="font-size:26px">🌀 Cổng thoát mê cung</div><div class="sub">Kiểm tra lại bài làm. Nộp rồi là không sửa được.</div>
+  <div class="logo" style="font-size:26px">🌀 Maze exit gate</div><div class="sub">Check your answers. Once you submit, you cannot change them.</div>
   <div class="box" id="revL"></div><div id="subErr" class="err hide"></div>
-  <div class="row"><button class="btn w" id="revBack">← Chưa nộp, quay lại</button><button class="btn g" id="subBtn">⚡ Nộp bài và thoát</button></div>
+  <div class="row"><button class="btn w" id="revBack">← Not yet, go back</button><button class="btn g" id="subBtn">⚡ Submit and exit</button></div>
 </div>
 
 <div class="scr" id="scRes"><div id="resBody" style="width:min(100%,520px)"></div></div>
 
 <div class="scr" id="scLb">
-  <div class="logo" style="font-size:28px">🏆 Bảng xếp hạng</div><div class="sub">Điểm cao nhất của các bạn trên thiết bị này.</div>
-  <div class="box"><div id="lbBody"></div></div><div class="row"><button class="btn w" id="lbBack">← Quay lại</button></div>
+  <div class="logo" style="font-size:28px">🏆 Leaderboard</div><div class="sub">The best scores of everyone on this device.</div>
+  <div class="box"><div id="lbBody"></div></div><div class="row"><button class="btn w" id="lbBack">← Back</button></div>
 </div>
 <div class="scr" id="scHist">
   <div class="logo" style="font-size:26px" id="hTitle"></div><div class="sub" id="hSum"></div>
-  <div class="box"><div id="hBody"></div></div><div class="row"><button class="btn w" id="hBack">← Quay lại</button></div>
+  <div class="box"><div id="hBody"></div></div><div class="row"><button class="btn w" id="hBack">← Back</button></div>
 </div>
 
-<script type="application/json" id="defBank">{"viet":[{"q":"Từ nào chỉ con vật?","a":["mèo","bàn","sách","bút"],"c":0,"g":1,"icon":"🐱","e":"Mèo là con vật."},{"q":"Từ nào có vần \"an\"?","a":["bàn","bóng","bút","bánh"],"c":0,"g":1,"e":"\"bàn\" có vần an."},{"q":"Từ trái nghĩa với \"to\" là:","a":["nhỏ","cao","dài","rộng"],"c":0,"g":1,"e":"To trái nghĩa với nhỏ."},{"q":"Chọn từ viết đúng chính tả:","a":["giúp đỡ","dúp đỡ","giúp đở","dúp đở"],"c":0,"g":2},{"q":"Chọn từ viết đúng chính tả:","a":["chăm chỉ","trăm chỉ","chăm chĩ","chăm trỉ"],"c":0,"g":2},{"q":"Từ nào là từ chỉ hoạt động?","a":["chạy","đẹp","xanh","cao"],"c":0,"g":2,"e":"Chạy là hoạt động."},{"q":"Từ nào chỉ màu sắc?","a":["xanh","chạy","bàn","cười"],"c":0,"g":2},{"q":"Cuối câu hỏi ta đặt dấu gì?","a":["Dấu chấm hỏi","Dấu chấm","Dấu phẩy","Dấu chấm than"],"c":0,"g":2},{"q":"Từ đồng nghĩa với \"chăm chỉ\" là:","a":["siêng năng","lười biếng","ham chơi","mệt mỏi"],"c":0,"g":3},{"q":"Trong câu \"Bé đang đọc sách\", từ chỉ hoạt động là:","a":["đọc","Bé","sách","đang"],"c":0,"g":3},{"q":"Từ nào là từ láy?","a":["long lanh","bàn ghế","xe cộ","học hành"],"c":0,"g":3},{"q":"Câu \"Trời mưa như trút nước\" dùng biện pháp nào?","a":["So sánh","Nhân hóa","Điệp từ","Ẩn dụ"],"c":0,"g":4},{"q":"Từ trái nghĩa với \"dũng cảm\" là:","a":["hèn nhát","gan dạ","anh hùng","kiên cường"],"c":0,"g":4},{"q":"Từ nào là từ ghép?","a":["xe đạp","đẹp đẽ","xanh xanh","nho nhỏ"],"c":0,"g":5},{"q":"Câu \"Ăn quả nhớ kẻ trồng cây\" khuyên ta điều gì?","a":["Biết ơn người đã giúp mình","Trồng thật nhiều cây","Ăn nhiều trái cây","Chăm làm vườn"],"c":0,"g":5}],"eng":[{"q":"\"Apple\" nghĩa là gì?","a":["Quả táo","Quả cam","Quả chuối","Quả nho"],"c":0,"g":1,"icon":"🍎","lang":"en-US"},{"q":"Con mèo tiếng Anh là gì?","a":["Cat","Dog","Bird","Fish"],"c":0,"g":1,"icon":"🐱"},{"q":"\"Red\" là màu gì?","a":["Màu đỏ","Màu xanh","Màu vàng","Màu trắng"],"c":0,"g":1},{"q":"What color is the sky?","a":["Blue","Red","Green","Black"],"c":0,"g":1,"lang":"en-US","icon":"🌤️"},{"q":"\"Book\" nghĩa là gì?","a":["Quyển sách","Cái bàn","Cái ghế","Cây bút"],"c":0,"g":2,"icon":"📘"},{"q":"I ___ a student.","a":["am","is","are","be"],"c":0,"g":2,"lang":"en-US","e":"I đi với am."},{"q":"Trái nghĩa của \"happy\" là:","a":["sad","big","fast","hot"],"c":0,"g":2},{"q":"What day comes after Monday?","a":["Tuesday","Sunday","Friday","Wednesday"],"c":0,"g":3,"lang":"en-US"},{"q":"She ___ to school every day.","a":["goes","go","going","gone"],"c":0,"g":3,"lang":"en-US","e":"She đi với goes."},{"q":"\"Thursday\" là thứ mấy?","a":["Thứ Năm","Thứ Tư","Thứ Sáu","Thứ Ba"],"c":0,"g":3},{"q":"Số nhiều của \"child\" là:","a":["children","childs","childes","childrens"],"c":0,"g":4},{"q":"Quá khứ của \"go\" là:","a":["went","goed","gone","going"],"c":0,"g":4},{"q":"I have learned English ___ three years.","a":["for","since","at","in"],"c":0,"g":5,"lang":"en-US"},{"q":"Từ nào là động từ?","a":["run","blue","table","happy"],"c":0,"g":5}],"sci":[{"q":"Con vật nào sống dưới nước?","a":["Cá","Gà","Chó","Mèo"],"c":0,"g":1,"icon":"🐟"},{"q":"Mặt Trời mọc ở hướng nào?","a":["Đông","Tây","Nam","Bắc"],"c":0,"g":1,"icon":"🌅"},{"q":"Chúng ta nhìn bằng bộ phận nào?","a":["Mắt","Tai","Mũi","Tay"],"c":0,"g":1,"icon":"👀"},{"q":"Cây cần gì để lớn lên?","a":["Nước và ánh sáng","Chỉ bóng tối","Kẹo","Đá"],"c":0,"g":2,"icon":"🌱"},{"q":"Một tuần có bao nhiêu ngày?","a":["7 ngày","5 ngày","6 ngày","8 ngày"],"c":0,"g":2},{"q":"Con vật nào đẻ trứng?","a":["Gà","Chó","Mèo","Bò"],"c":0,"g":2,"icon":"🥚"},{"q":"Nước đóng băng ở bao nhiêu độ C?","a":["0°C","10°C","50°C","100°C"],"c":0,"g":3,"icon":"🧊"},{"q":"Hành tinh nào gần Mặt Trời nhất?","a":["Sao Thủy","Sao Hỏa","Trái Đất","Sao Kim"],"c":0,"g":3,"icon":"🪐"},{"q":"Bộ phận nào bơm máu đi khắp cơ thể?","a":["Tim","Phổi","Dạ dày","Gan"],"c":0,"g":3,"icon":"❤️"},{"q":"Cây xanh hấp thụ khí nào để quang hợp?","a":["Khí cacbonic","Khí oxi","Khí ni-tơ","Khí heli"],"c":0,"g":4},{"q":"Nước sôi ở bao nhiêu độ C (ở mực nước biển)?","a":["100°C","50°C","0°C","200°C"],"c":0,"g":4,"icon":"♨️"},{"q":"Trái Đất quay quanh Mặt Trời hết khoảng bao lâu?","a":["Khoảng 365 ngày","Khoảng 30 ngày","Khoảng 24 giờ","Khoảng 7 ngày"],"c":0,"g":5,"icon":"🌍"},{"q":"Nhật thực xảy ra khi nào?","a":["Mặt Trăng che Mặt Trời","Trái Đất che Mặt Trăng","Mặt Trời che Mặt Trăng","Một ngôi sao che Mặt Trời"],"c":0,"g":5},{"q":"Kim loại nào dẫn điện tốt, hay dùng làm dây điện?","a":["Đồng","Gỗ","Nhựa","Thủy tinh"],"c":0,"g":5,"icon":"🔌"}],"geo":[{"q":"Thủ đô của Việt Nam là:","a":["Hà Nội","TP. Hồ Chí Minh","Đà Nẵng","Huế"],"c":0,"g":1,"icon":"🏛️"},{"q":"Biển của nước ta nằm ở phía nào?","a":["Phía Đông","Phía Tây","Phía Bắc","Nước ta không có biển"],"c":0,"g":1,"icon":"🌊"},{"q":"Giữa quốc kỳ Việt Nam có hình gì?","a":["Ngôi sao vàng năm cánh","Mặt trời","Hoa sen","Con rồng"],"c":0,"g":2,"icon":"🇻🇳"},{"q":"Việt Nam nằm ở châu lục nào?","a":["Châu Á","Châu Âu","Châu Phi","Châu Mỹ"],"c":0,"g":2},{"q":"Đồng bằng lớn nhất miền Nam nước ta là:","a":["Đồng bằng sông Cửu Long","Đồng bằng sông Hồng","Đồng bằng duyên hải miền Trung","Tây Nguyên"],"c":0,"g":3},{"q":"Vịnh Hạ Long thuộc tỉnh nào?","a":["Quảng Ninh","Hải Phòng","Thanh Hóa","Nghệ An"],"c":0,"g":3,"icon":"⛵"},{"q":"Cố đô Huế thuộc miền nào của nước ta?","a":["Miền Trung","Miền Bắc","Miền Nam","Tây Nguyên"],"c":0,"g":3},{"q":"Ngày Quốc khánh của nước ta là ngày nào?","a":["2 tháng 9","30 tháng 4","1 tháng 5","19 tháng 8"],"c":0,"g":4},{"q":"Đỉnh núi cao nhất Việt Nam là:","a":["Phan-xi-păng","Bà Đen","Ngọc Linh","Lang Biang"],"c":0,"g":4,"icon":"⛰️"},{"q":"Ai lãnh đạo khởi nghĩa Lam Sơn chống quân Minh?","a":["Lê Lợi","Quang Trung","Trần Hưng Đạo","Ngô Quyền"],"c":0,"g":5},{"q":"Chiến thắng Bạch Đằng năm 938 do ai chỉ huy?","a":["Ngô Quyền","Lý Thường Kiệt","Lê Hoàn","Đinh Bộ Lĩnh"],"c":0,"g":5}],"custom":[]}</script>
+<script type="application/json" id="defBank">{"viet":[{"q":"Which word names an animal?","a":["cat","table","book","pen"],"c":0,"g":1,"icon":"🐱","e":"A cat is an animal."},{"q":"Which word rhymes with \"man\"?","a":["pan","ball","pen","cake"],"c":0,"g":1,"e":"\"Pan\" rhymes with \"man\"."},{"q":"The opposite of \"big\" is:","a":["small","tall","long","wide"],"c":0,"g":1,"e":"Big is the opposite of small."},{"q":"Choose the correctly spelled word:","a":["friend","freind","frend","friennd"],"c":0,"g":2},{"q":"Choose the correctly spelled word:","a":["because","becuase","becouse","becaus"],"c":0,"g":2},{"q":"Which word is an action verb?","a":["run","pretty","blue","tall"],"c":0,"g":2,"e":"Run is an action."},{"q":"Which word is a color?","a":["green","run","table","laugh"],"c":0,"g":2},{"q":"What punctuation mark goes at the end of a question?","a":["Question mark","Period","Comma","Exclamation mark"],"c":0,"g":2},{"q":"A synonym for \"happy\" is:","a":["glad","sad","angry","tired"],"c":0,"g":3},{"q":"In \"The boy is reading a book\", the action verb is:","a":["reading","boy","book","the"],"c":0,"g":3},{"q":"Which word has a prefix?","a":["unhappy","happy","happiness","happily"],"c":0,"g":3},{"q":"The sentence \"The rain fell like a waterfall\" uses which device?","a":["Simile","Personification","Repetition","Metaphor"],"c":0,"g":4},{"q":"The opposite of \"brave\" is:","a":["cowardly","bold","heroic","strong"],"c":0,"g":4},{"q":"Which word is a compound word?","a":["sunflower","beautiful","slowly","tiny"],"c":0,"g":5},{"q":"\"Every cloud has a silver lining\" teaches us to:","a":["Look for hope in hard times","Paint clouds silver","Stay indoors when it rains","Plant more trees"],"c":0,"g":5}],"eng":[{"q":"Which word means a fruit?","a":["apple","chair","shoe","door"],"c":0,"g":1,"icon":"🍎","lang":"en-US"},{"q":"Which animal says \"meow\"?","a":["Cat","Dog","Bird","Fish"],"c":0,"g":1,"icon":"🐱"},{"q":"Which word is a color?","a":["red","run","big","cup"],"c":0,"g":1},{"q":"What color is the sky on a clear day?","a":["Blue","Red","Green","Black"],"c":0,"g":1,"lang":"en-US","icon":"🌤️"},{"q":"Which one do you read?","a":["A book","A table","A chair","A pen"],"c":0,"g":2,"icon":"📘"},{"q":"I ___ a student.","a":["am","is","are","be"],"c":0,"g":2,"lang":"en-US","e":"Use \"am\" with I."},{"q":"The opposite of \"happy\" is:","a":["sad","big","fast","hot"],"c":0,"g":2},{"q":"What day comes after Monday?","a":["Tuesday","Sunday","Friday","Wednesday"],"c":0,"g":3,"lang":"en-US"},{"q":"She ___ to school every day.","a":["goes","go","going","gone"],"c":0,"g":3,"lang":"en-US","e":"Use \"goes\" with she."},{"q":"Which day comes after Wednesday?","a":["Thursday","Tuesday","Friday","Monday"],"c":0,"g":3},{"q":"The plural of \"child\" is:","a":["children","childs","childes","childrens"],"c":0,"g":4},{"q":"The past tense of \"go\" is:","a":["went","goed","gone","going"],"c":0,"g":4},{"q":"I have learned English ___ three years.","a":["for","since","at","in"],"c":0,"g":5,"lang":"en-US"},{"q":"Which word is a verb?","a":["run","blue","table","happy"],"c":0,"g":5}],"sci":[{"q":"Which animal lives in water?","a":["Fish","Chicken","Dog","Cat"],"c":0,"g":1,"icon":"🐟"},{"q":"Where does the Sun rise?","a":["East","West","South","North"],"c":0,"g":1,"icon":"🌅"},{"q":"Which body part do we use to see?","a":["Eyes","Ears","Nose","Hands"],"c":0,"g":1,"icon":"👀"},{"q":"What do plants need to grow?","a":["Water and light","Only darkness","Candy","Rocks"],"c":0,"g":2,"icon":"🌱"},{"q":"How many days are in a week?","a":["7 days","5 days","6 days","8 days"],"c":0,"g":2},{"q":"Which animal lays eggs?","a":["Chicken","Dog","Cat","Cow"],"c":0,"g":2,"icon":"🥚"},{"q":"At what temperature does water freeze?","a":["0°C","10°C","50°C","100°C"],"c":0,"g":3,"icon":"🧊"},{"q":"Which planet is closest to the Sun?","a":["Mercury","Mars","Earth","Venus"],"c":0,"g":3,"icon":"🪐"},{"q":"Which organ pumps blood around the body?","a":["Heart","Lungs","Stomach","Liver"],"c":0,"g":3,"icon":"❤️"},{"q":"Which gas do plants take in for photosynthesis?","a":["Carbon dioxide","Oxygen","Nitrogen","Helium"],"c":0,"g":4},{"q":"At what temperature does water boil at sea level?","a":["100°C","50°C","0°C","200°C"],"c":0,"g":4,"icon":"♨️"},{"q":"How long does Earth take to orbit the Sun?","a":["About 365 days","About 30 days","About 24 hours","About 7 days"],"c":0,"g":5,"icon":"🌍"},{"q":"When does a solar eclipse happen?","a":["The Moon blocks the Sun","Earth blocks the Moon","The Sun blocks the Moon","A star blocks the Sun"],"c":0,"g":5},{"q":"Which metal conducts electricity well and is used in wires?","a":["Copper","Wood","Plastic","Glass"],"c":0,"g":5,"icon":"🔌"}],"geo":[{"q":"What is the capital of Vietnam?","a":["Hanoi","Ho Chi Minh City","Da Nang","Hue"],"c":0,"g":1,"icon":"🏛️"},{"q":"On which side of Vietnam is the sea?","a":["East","West","North","Vietnam has no sea"],"c":0,"g":1,"icon":"🌊"},{"q":"What is in the middle of Vietnam's flag?","a":["A five-pointed yellow star","The Sun","A lotus flower","A dragon"],"c":0,"g":2,"icon":"🇻🇳"},{"q":"Which continent is Vietnam in?","a":["Asia","Europe","Africa","America"],"c":0,"g":2},{"q":"What is the largest delta in southern Vietnam?","a":["Mekong Delta","Red River Delta","Central Coast Delta","Central Highlands"],"c":0,"g":3},{"q":"Ha Long Bay is in which province?","a":["Quang Ninh","Hai Phong","Thanh Hoa","Nghe An"],"c":0,"g":3,"icon":"⛵"},{"q":"The ancient capital of Hue is in which region?","a":["Central Vietnam","Northern Vietnam","Southern Vietnam","Central Highlands"],"c":0,"g":3},{"q":"When is Vietnam's National Day?","a":["September 2","April 30","May 1","August 19"],"c":0,"g":4},{"q":"What is the tallest mountain in Vietnam?","a":["Fansipan","Ba Den","Ngoc Linh","Lang Biang"],"c":0,"g":4,"icon":"⛰️"},{"q":"Who led the Lam Son uprising against the Ming?","a":["Le Loi","Quang Trung","Tran Hung Dao","Ngo Quyen"],"c":0,"g":5},{"q":"Who commanded the Bach Dang victory in 938?","a":["Ngo Quyen","Ly Thuong Kiet","Le Hoan","Dinh Bo Linh"],"c":0,"g":5}],"custom":[]}</script>
 <script>
 'use strict';
 const M=Math,TAU=M.PI*2,R=M.random,$=id=>document.getElementById(id);
@@ -151,7 +151,7 @@ const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=ri(0,i);[a[i],a[j]]=[a[j
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const DEBUG=/debug/.test(location.search);
 
-/* ================= Lưu trữ người chơi ================= */
+/* ================= Player storage ================= */
 const KEY='me-cung-tri-thuc-v1';let memS=null;
 const DSET={sfx:true,mode:'practice',subject:'mix',grade:3,gates:5,tl:30,theme:'dungeon'};
 let DB={users:[],active:null,set:{...DSET}};
@@ -160,22 +160,24 @@ DB.users=Array.isArray(DB.users)?DB.users:[];DB.set={...DSET,...(DB.set||{})};
 const save=()=>{const s=JSON.stringify(DB);try{localStorage.setItem(KEY,s)}catch(e){memS=s}};
 const meU=()=>DB.users.find(u=>u.id===DB.active)||null;
 const AVS=['🦊','🐼','🐯','🦄','🐸','🐙','🦁','🐧','🐨','🦉','🐰','🐲'],COLS=['#2f6fb3','#b3392f','#2f9a5a','#7a4fc2','#e0a020'];
-const SUBN={math:'Toán',viet:'Tiếng Việt',eng:'Tiếng Anh',sci:'Khoa học',geo:'Địa lí – Lịch sử',custom:'Thầy cô ra đề',mix:'Tổng hợp'};
+const SUBN={math:'Math',viet:'Language',eng:'English',sci:'Science',geo:'Geography – History',custom:'Teacher-made',mix:'Mixed'};
 
-/* ================= Âm thanh ================= */
+/* ================= Sound ================= */
 let AC=null;const ac=()=>{if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}AC&&AC.state==='suspended'&&AC.resume()};
 function bp(f,d,ty,v,f2){if(!AC||!DB.set.sfx)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=ty||'sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(M.max(30,f2||f),t+d);g.gain.setValueAtTime(v||.12,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
 function toast(m,ms){const t=$('ts');t.textContent=m;t.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.opacity=0,ms||2600)}
-/* confirm()/alert() bị iframe sandbox (allow-scripts allow-same-origin, không
- * allow-modals) chặn và luôn trả false → nút ⏏ và dấu ✕ xoá hồ sơ bấm không
- * ăn. Bấm hai lần liên tiếp là cách xác nhận chạy được ở mọi môi trường. */
+/* confirm()/alert() are blocked by sandboxed iframes (allow-scripts
+ * allow-same-origin, no allow-modals) and always return false, so the ⏏ button and
+ * the ✕ delete-profile button would do nothing. Tapping twice is a confirmation
+ * method that works in every environment. */
 let okAg={k:'',t:0};
-function needConfirm(key,label){const n=Date.now();if(okAg.k===key&&n-okAg.t<4000){okAg={k:'',t:0};$('ts').style.opacity=0;return true}okAg={k:key,t:n};toast('⚠ '+label+' — bấm lại lần nữa để xác nhận',4000);return false}
+function needConfirm(key,label){const n=Date.now();if(okAg.k===key&&n-okAg.t<4000){okAg={k:'',t:0};$('ts').style.opacity=0;return true}okAg={k:key,t:n};toast('⚠ '+label+' — tap again to confirm',4000);return false}
 
-/* ================= Ngân hàng câu hỏi cục bộ ================= */
-/* {"viet":[{"q":"Từ nào chỉ con vật?","a":["mèo","bàn","sách","bút"],"c":0,"g":1,"icon":"🐱","e":"Mèo là con vật."},{"q":"Từ nào có vần \"an\"?","a":["bàn","bóng","bút","bánh"],"c":0,"g":1,"e":"\"bàn\" có vần an."},{"q":"Từ trái nghĩa với \"to\" là:","a":["nhỏ","cao","dài","rộng"],"c":0,"g":1,"e":"To trái nghĩa với nhỏ."},{"q":"Chọn từ viết đúng chính tả:","a":["giúp đỡ","dúp đỡ","giúp đở","dúp đở"],"c":0,"g":2},{"q":"Chọn từ viết đúng chính tả:","a":["chăm chỉ","trăm chỉ","chăm chĩ","chăm trỉ"],"c":0,"g":2},{"q":"Từ nào là từ chỉ hoạt động?","a":["chạy","đẹp","xanh","cao"],"c":0,"g":2,"e":"Chạy là hoạt động."},{"q":"Từ nào chỉ màu sắc?","a":["xanh","chạy","bàn","cười"],"c":0,"g":2},{"q":"Cuối câu hỏi ta đặt dấu gì?","a":["Dấu chấm hỏi","Dấu chấm","Dấu phẩy","Dấu chấm than"],"c":0,"g":2},{"q":"Từ đồng nghĩa với \"chăm chỉ\" là:","a":["siêng năng","lười biếng","ham chơi","mệt mỏi"],"c":0,"g":3},{"q":"Trong câu \"Bé đang đọc sách\", từ chỉ hoạt động là:","a":["đọc","Bé","sách","đang"],"c":0,"g":3},{"q":"Từ nào là từ láy?","a":["long lanh","bàn ghế","xe cộ","học hành"],"c":0,"g":3},{"q":"Câu \"Trời mưa như trút nước\" dùng biện pháp nào?","a":["So sánh","Nhân hóa","Điệp từ","Ẩn dụ"],"c":0,"g":4},{"q":"Từ trái nghĩa với \"dũng cảm\" là:","a":["hèn nhát","gan dạ","anh hùng","kiên cường"],"c":0,"g":4},{"q":"Từ nào là từ ghép?","a":["xe đạp","đẹp đẽ","xanh xanh","nho nhỏ"],"c":0,"g":5},{"q":"Câu \"Ăn quả nhớ kẻ trồng cây\" khuyên ta điều gì?","a":["Biết ơn người đã giúp mình","Trồng thật nhiều cây","Ăn nhiều trái cây","Chăm làm vườn"],"c":0,"g":5}],"eng":[{"q":"\"Apple\" nghĩa là gì?","a":["Quả táo","Quả cam","Quả chuối","Quả nho"],"c":0,"g":1,"icon":"🍎","lang":"en-US"},{"q":"Con mèo tiếng Anh là gì?","a":["Cat","Dog","Bird","Fish"],"c":0,"g":1,"icon":"🐱"},{"q":"\"Red\" là màu gì?","a":["Màu đỏ","Màu xanh","Màu vàng","Màu trắng"],"c":0,"g":1},{"q":"What color is the sky?","a":["Blue","Red","Green","Black"],"c":0,"g":1,"lang":"en-US","icon":"🌤️"},{"q":"\"Book\" nghĩa là gì?","a":["Quyển sách","Cái bàn","Cái ghế","Cây bút"],"c":0,"g":2,"icon":"📘"},{"q":"I ___ a student.","a":["am","is","are","be"],"c":0,"g":2,"lang":"en-US","e":"I đi với am."},{"q":"Trái nghĩa của \"happy\" là:","a":["sad","big","fast","hot"],"c":0,"g":2},{"q":"What day comes after Monday?","a":["Tuesday","Sunday","Friday","Wednesday"],"c":0,"g":3,"lang":"en-US"},{"q":"She ___ to school every day.","a":["goes","go","going","gone"],"c":0,"g":3,"lang":"en-US","e":"She đi với goes."},{"q":"\"Thursday\" là thứ mấy?","a":["Thứ Năm","Thứ Tư","Thứ Sáu","Thứ Ba"],"c":0,"g":3},{"q":"Số nhiều của \"child\" là:","a":["children","childs","childes","childrens"],"c":0,"g":4},{"q":"Quá khứ của \"go\" là:","a":["went","goed","gone","going"],"c":0,"g":4},{"q":"I have learned English ___ three years.","a":["for","since","at","in"],"c":0,"g":5,"lang":"en-US"},{"q":"Từ nào là động từ?","a":["run","blue","table","happy"],"c":0,"g":5}],"sci":[{"q":"Con vật nào sống dưới nước?","a":["Cá","Gà","Chó","Mèo"],"c":0,"g":1,"icon":"🐟"},{"q":"Mặt Trời mọc ở hướng nào?","a":["Đông","Tây","Nam","Bắc"],"c":0,"g":1,"icon":"🌅"},{"q":"Chúng ta nhìn bằng bộ phận nào?","a":["Mắt","Tai","Mũi","Tay"],"c":0,"g":1,"icon":"👀"},{"q":"Cây cần gì để lớn lên?","a":["Nước và ánh sáng","Chỉ bóng tối","Kẹo","Đá"],"c":0,"g":2,"icon":"🌱"},{"q":"Một tuần có bao nhiêu ngày?","a":["7 ngày","5 ngày","6 ngày","8 ngày"],"c":0,"g":2},{"q":"Con vật nào đẻ trứng?","a":["Gà","Chó","Mèo","Bò"],"c":0,"g":2,"icon":"🥚"},{"q":"Nước đóng băng ở bao nhiêu độ C?","a":["0°C","10°C","50°C","100°C"],"c":0,"g":3,"icon":"🧊"},{"q":"Hành tinh nào gần Mặt Trời nhất?","a":["Sao Thủy","Sao Hỏa","Trái Đất","Sao Kim"],"c":0,"g":3,"icon":"🪐"},{"q":"Bộ phận nào bơm máu đi khắp cơ thể?","a":["Tim","Phổi","Dạ dày","Gan"],"c":0,"g":3,"icon":"❤️"},{"q":"Cây xanh hấp thụ khí nào để quang hợp?","a":["Khí cacbonic","Khí oxi","Khí ni-tơ","Khí heli"],"c":0,"g":4},{"q":"Nước sôi ở bao nhiêu độ C (ở mực nước biển)?","a":["100°C","50°C","0°C","200°C"],"c":0,"g":4,"icon":"♨️"},{"q":"Trái Đất quay quanh Mặt Trời hết khoảng bao lâu?","a":["Khoảng 365 ngày","Khoảng 30 ngày","Khoảng 24 giờ","Khoảng 7 ngày"],"c":0,"g":5,"icon":"🌍"},{"q":"Nhật thực xảy ra khi nào?","a":["Mặt Trăng che Mặt Trời","Trái Đất che Mặt Trăng","Mặt Trời che Mặt Trăng","Một ngôi sao che Mặt Trời"],"c":0,"g":5},{"q":"Kim loại nào dẫn điện tốt, hay dùng làm dây điện?","a":["Đồng","Gỗ","Nhựa","Thủy tinh"],"c":0,"g":5,"icon":"🔌"}],"geo":[{"q":"Thủ đô của Việt Nam là:","a":["Hà Nội","TP. Hồ Chí Minh","Đà Nẵng","Huế"],"c":0,"g":1,"icon":"🏛️"},{"q":"Biển của nước ta nằm ở phía nào?","a":["Phía Đông","Phía Tây","Phía Bắc","Nước ta không có biển"],"c":0,"g":1,"icon":"🌊"},{"q":"Giữa quốc kỳ Việt Nam có hình gì?","a":["Ngôi sao vàng năm cánh","Mặt trời","Hoa sen","Con rồng"],"c":0,"g":2,"icon":"🇻🇳"},{"q":"Việt Nam nằm ở châu lục nào?","a":["Châu Á","Châu Âu","Châu Phi","Châu Mỹ"],"c":0,"g":2},{"q":"Đồng bằng lớn nhất miền Nam nước ta là:","a":["Đồng bằng sông Cửu Long","Đồng bằng sông Hồng","Đồng bằng duyên hải miền Trung","Tây Nguyên"],"c":0,"g":3},{"q":"Vịnh Hạ Long thuộc tỉnh nào?","a":["Quảng Ninh","Hải Phòng","Thanh Hóa","Nghệ An"],"c":0,"g":3,"icon":"⛵"},{"q":"Cố đô Huế thuộc miền nào của nước ta?","a":["Miền Trung","Miền Bắc","Miền Nam","Tây Nguyên"],"c":0,"g":3},{"q":"Ngày Quốc khánh của nước ta là ngày nào?","a":["2 tháng 9","30 tháng 4","1 tháng 5","19 tháng 8"],"c":0,"g":4},{"q":"Đỉnh núi cao nhất Việt Nam là:","a":["Phan-xi-păng","Bà Đen","Ngọc Linh","Lang Biang"],"c":0,"g":4,"icon":"⛰️"},{"q":"Ai lãnh đạo khởi nghĩa Lam Sơn chống quân Minh?","a":["Lê Lợi","Quang Trung","Trần Hưng Đạo","Ngô Quyền"],"c":0,"g":5},{"q":"Chiến thắng Bạch Đằng năm 938 do ai chỉ huy?","a":["Ngô Quyền","Lý Thường Kiệt","Lê Hoàn","Đinh Bộ Lĩnh"],"c":0,"g":5}],"custom":[]} là placeholder thay lúc build. Mở file trực tiếp thì chưa được
- * thay → JSON.parse bắn lỗi làm chết cả script: #ug không render, màn hình đầu
- * tiên không còn nút nào để chơi. Fallback bank rỗng (toán tự sinh tại chỗ). */
+/* ================= Local question bank ================= */
+/* The defBank JSON above is a placeholder replaced at build time. If the file is
+ * opened directly the placeholder may not be valid JSON, so parsing is wrapped in
+ * try/catch and the game falls back to an empty bank (math questions are generated
+ * on the fly) to keep the first screen usable. */
 const EMPTY_BANK={viet:[],eng:[],sci:[],geo:[],custom:[]};
 const DEF_BANK=(()=>{try{const b=JSON.parse($('defBank').textContent);return (b&&typeof b==='object'&&['viet','eng','sci','geo'].every(k=>Array.isArray(b[k])))?{...EMPTY_BANK,...b}:EMPTY_BANK}catch(e){return EMPTY_BANK}})();
 function getBank(){try{const s=JSON.parse(localStorage.getItem('phieu-luu-hoc-gioi-v1'));const b=s&&s.bank;if(b&&typeof b==='object'&&['viet','eng','sci','geo'].every(k=>Array.isArray(b[k])&&b[k].every(q=>q&&q.q&&Array.isArray(q.a)&&q.a.length>1&&Number.isInteger(q.c))))return b}catch(e){}return DEF_BANK}
@@ -186,16 +188,16 @@ const MT={
  addsub(mx){let a,b,r,p=R()<.5;if(p){a=ri(0,mx-1);b=ri(1,mx-a);r=a+b}else{a=ri(2,mx);b=ri(1,a);r=a-b}const o=opts(r,M.max(3,M.round(mx/12)),String,0);return mq(`${a} ${p?'+':'−'} ${b} = ?`,o.a,o.c,`${a} ${p?'+':'−'} ${b} = ${r}`)},
  count(){const e=pick(['🍎','⭐','🐟','🍓','🐥']),a=ri(1,5),b=ri(1,5),o=opts(a+b,3,String,0);return mq(`${e.repeat(a)} + ${e.repeat(b)} = ?`,o.a,o.c,`${a} + ${b} = ${a+b}`)},
  times(l){const a=pick(l),b=ri(2,9),r=a*b,o=opts(r,6,String,0);return mq(`${a} × ${b} = ?`,o.a,o.c,`${a} × ${b} = ${r}`)},
- seq(){const s=ri(1,20),d=pick([2,3,5,10]),r=s+4*d,o=opts(r,4,String,0);return mq(`${s}, ${s+d}, ${s+2*d}, ${s+3*d}, … Số tiếp theo?`,o.a,o.c,`Mỗi số hơn số trước ${d}.`)},
+ seq(){const s=ri(1,20),d=pick([2,3,5,10]),r=s+4*d,o=opts(r,4,String,0);return mq(`${s}, ${s+d}, ${s+2*d}, ${s+3*d}, … What comes next?`,o.a,o.c,`Each number is ${d} more than the one before.`)},
  miss(){const x=ri(2,40),a=ri(2,40),o=opts(x,6,String,0);return mq(`? + ${a} = ${x+a}`,o.a,o.c,`${x+a} − ${a} = ${x}`)},
  div(){const b=ri(2,9),r=ri(2,9),o=opts(r,5,String,1);return mq(`${b*r} ÷ ${b} = ?`,o.a,o.c,`${b*r} ÷ ${b} = ${r}`)},
- per(){const a=ri(3,12),o=opts(4*a,6,String,1);return mq(`Hình vuông có cạnh ${a} cm. Chu vi là bao nhiêu cm?`,o.a,o.c,`Chu vi = ${a} × 4 = ${4*a} cm.`)},
+ per(){const a=ri(3,12),o=opts(4*a,6,String,1);return mq(`A square has sides of ${a} cm. What is its perimeter in cm?`,o.a,o.c,`Perimeter = ${a} × 4 = ${4*a} cm.`)},
  mul2(){const a=ri(11,49),b=ri(2,9),o=opts(a*b,12,String,1);return mq(`${a} × ${b} = ?`,o.a,o.c,`${a} × ${b} = ${a*b}`)},
- solve(){const x=ri(10,80),k=ri(10,60),o=opts(x,8,String,0);return mq(`Tìm x: x + ${k} = ${x+k}`,o.a,o.c,`x = ${x+k} − ${k} = ${x}`)},
- area(){const a=ri(5,15),b=ri(3,9),o=opts(a*b,10,String,1);return mq(`Hình chữ nhật dài ${a} cm, rộng ${b} cm. Diện tích?`,o.a,o.c,`${a} × ${b} = ${a*b} cm².`)},
+ solve(){const x=ri(10,80),k=ri(10,60),o=opts(x,8,String,0);return mq(`Find x: x + ${k} = ${x+k}`,o.a,o.c,`x = ${x+k} − ${k} = ${x}`)},
+ area(){const a=ri(5,15),b=ri(3,9),o=opts(a*b,10,String,1);return mq(`A rectangle is ${a} cm long and ${b} cm wide. What is its area?`,o.a,o.c,`${a} × ${b} = ${a*b} cm².`)},
  decAdd(){const x=ri(10,99)/10,y=ri(10,99)/10,o=opts(x+y,5,dec,0,.1);return mq(`${dec(x)} + ${dec(y)} = ?`,o.a,o.c,`${dec(x)} + ${dec(y)} = ${dec(x+y)}`)},
- pct(){const p=pick([10,20,25,50]),b=pick([40,60,80,100,120,200]),r=p*b/100,o=opts(r,6,String,1);return mq(`${p}% của ${b} là bao nhiêu?`,o.a,o.c,`${b} × ${p} ÷ 100 = ${r}`)},
- frac(){const d=pick([2,3,4,5]),n=ri(1,d-1),m=d*ri(2,8),r=n*m/d,o=opts(r,5,String,1);return mq(`${n}/${d} của ${m} là bao nhiêu?`,o.a,o.c,`${m} ÷ ${d} × ${n} = ${r}`)}
+ pct(){const p=pick([10,20,25,50]),b=pick([40,60,80,100,120,200]),r=p*b/100,o=opts(r,6,String,1);return mq(`What is ${p}% of ${b}?`,o.a,o.c,`${b} × ${p} ÷ 100 = ${r}`)},
+ frac(){const d=pick([2,3,4,5]),n=ri(1,d-1),m=d*ri(2,8),r=n*m/d,o=opts(r,5,String,1);return mq(`What is ${n}/${d} of ${m}?`,o.a,o.c,`${m} ÷ ${d} × ${n} = ${r}`)}
 };
 function genMath(g){const lv=(R()<.25&&g>1)?g-1:g;const T={1:[()=>MT.addsub(10),()=>MT.addsub(20),MT.count],2:[()=>MT.addsub(100),()=>MT.times([2,3,4,5]),MT.seq,MT.miss],3:[()=>MT.times([2,3,4,5,6,7,8,9]),MT.div,()=>MT.addsub(1000),MT.per],4:[MT.mul2,MT.solve,MT.area,MT.div],5:[MT.decAdd,MT.pct,MT.frac,()=>MT.mul2()]};return pick(T[lv])()}
 function localQuestions(n,set){
@@ -208,21 +210,21 @@ function localQuestions(n,set){
   const idx=shuffle(q.a.map((_,k)=>k));out.push({id:'L'+i,content:q.q,inputMode:'choice',options:idx.map((k,j)=>({id:'o'+j,content:q.a[k]})),correctIds:['o'+idx.indexOf(q.c)],timeLimit:set.tl,points:100,expl:q.e||'',subj:sj==='math'?'math':sj,icon:q.icon||''})}
  return out}
 
-/* ================= Cấu hình API (tuỳ chọn) ================= */
+/* ================= API config (optional) ================= */
 const CONFIG={QUESTIONS_URL:'',SUBMIT_URL:'',HEADERS:{},
  buildPayload(c){return{student_name:c.name,student_id:c.userId,class:c.cls,total_time:c.totalTime,tab_out:c.tabOut,answers:c.answers.map(a=>({question_id:a.questionId,answer_ids:a.answerIds,text:a.text,time_spent:a.timeSpent}))}},
  parseResult(res){const d=res&&res.data!==undefined?res.data:res;if(!d||typeof d!=='object')return null;const pk=(...k)=>{for(const x of k)if(typeof d[x]==='number')return d[x];return null};const score=pk('score','total_score','points','total_points','totalScore'),max=pk('max_score','maxScore','total_points_possible','max_points','maxPoints');return score===null?null:{score,max}}};
 const qs=new URLSearchParams(location.search),QURL=qs.get('api')||CONFIG.QUESTIONS_URL,SURL=qs.get('submit')||CONFIG.SUBMIT_URL;
 if(qs.get('token'))CONFIG.HEADERS={...CONFIG.HEADERS,Authorization:'Bearer '+qs.get('token')};
 let REMOTE=null,remoteErr='';
-async function loadRemote(){if(!QURL)return;try{const r=await fetch(QURL,{headers:{Accept:'application/json',...CONFIG.HEADERS}});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(j.status===false||!Array.isArray(j.data))throw new Error(j.msg||'Dữ liệu không hợp lệ');REMOTE=j.data.filter(q=>q&&q.id&&q.content);if(!REMOTE.length)throw new Error('Đề trống')}catch(e){REMOTE=null;remoteErr=e.message}renderUsers()}
+async function loadRemote(){if(!QURL)return;try{const r=await fetch(QURL,{headers:{Accept:'application/json',...CONFIG.HEADERS}});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(j.status===false||!Array.isArray(j.data))throw new Error(j.msg||'Invalid data');REMOTE=j.data.filter(q=>q&&q.id&&q.content);if(!REMOTE.length)throw new Error('No questions')}catch(e){REMOTE=null;remoteErr=e.message}renderUsers()}
 
-/* ================= Mê cung ================= */
+/* ================= Maze ================= */
 const N=72,map=new Uint8Array(N*N),visited=new Uint8Array(N*N);
 let MZ={W:0,Lg:0,sx:1.5,sy:1.5,sa:0,exit:null,pts:[]},GD=[],DEC=[];
 const THEMES={
- dungeon:{walls:[1,2,3],wts:[.6,.25,.15],fog:[14,14,28],fd:8.5,sky:false,name:'Hầm đá'},
- garden:{walls:[4,5],wts:[.75,.25],fog:[196,222,244],fd:15,sky:true,sky0:[96,168,238],sky1:[200,226,250],name:'Vườn cây'}};
+ dungeon:{walls:[1,2,3],wts:[.6,.25,.15],fog:[14,14,28],fd:8.5,sky:false,name:'Stone Dungeon'},
+ garden:{walls:[4,5],wts:[.75,.25],fog:[196,222,244],fd:15,sky:true,sky0:[96,168,238],sky1:[200,226,250],name:'Garden'}};
 let TH=THEMES.dungeon;
 const wallPick=()=>{let r=R(),s=0;for(let i=0;i<TH.walls.length;i++){s+=TH.wts[i];if(r<s)return TH.walls[i]}return TH.walls[0]};
 function genMaze(n){
@@ -242,9 +244,9 @@ function genMaze(n){
   for(let i=0;i<N*N;i++)if(map[i]===1)map[i]=wallPick();
   GD=gates.map((g,k)=>({gi:k,x:g.tx+.5,y:g.ty+.5,tx:g.tx,ty:g.ty,hz:g.hz,done:false}));for(const g of GD)map[g.ty*N+g.tx]=11;
   const[ex,ey]=tile(F);map[ey*N+ex]=12;const[sx,sy]=tile(0),[nx,ny]=tile(path[1]);
-  /* điểm tham chiếu để kiểm thử và ghim đường */
+  /* reference points for tests and path pinning */
   MZ={W,Lg,sx:sx+.5,sy:sy+.5,sa:M.atan2(ny-sy,nx-sx),exit:{x:ex+.5,y:ey+.5,tx:ex,ty:ey},path:Lp,pts:path.map(c=>{const[x,y]=tile(c);return[x+.5,y+.5]})};
-  /* trang trí */
+  /* decorations */
   const dungeon=!TH.sky;
   for(let c=1;c<C;c++){if(c===F)continue;const[x,y]=tile(c),cx=x+.5+(R()<.5?-.3:.3),cy=y+.5+(R()<.5?-.3:.3);
    if(dungeon){if(R()<.13){DEC.push({x:cx,y:cy,k:'torch',sz:.75});DEC.push({x:cx,y:cy,k:'fire',z:.42,sz:1.05,add:1,fl:1})}else if(R()<.05)DEC.push({x:cx,y:cy,k:'crys',sz:.5});else if(R()<.05)DEC.push({x:cx,y:cy,k:'mush',sz:.4})}
@@ -254,7 +256,7 @@ function genMaze(n){
   return true}
  return false}
 
-/* ================= Hoạ tiết (texture) ================= */
+/* ================= Textures ================= */
 function mk(fn,q,alpha){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');fn(x);const d=x.getImageData(0,0,64,64),p=d.data;if(q)for(let i=0;i<p.length;i+=4){p[i]=M.round(p[i]/q)*q;p[i+1]=M.round(p[i+1]/q)*q;p[i+2]=M.round(p[i+2]/q)*q}return new Uint32Array(p.buffer.slice(0))}
 const poly=(x,p,f)=>{x.fillStyle=f;x.beginPath();p.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.fill()};
 const ell=(x,cx,cy,rx,ry,f)=>{x.fillStyle=f;x.beginPath();x.ellipse(cx,cy,rx,ry,0,0,TAU);x.fill()};
@@ -266,7 +268,7 @@ const hedge=fl=>mk(x=>{x.fillStyle='#2a6a34';x.fillRect(0,0,64,64);for(let i=0;i
 WTX[4]=hedge(0);WTX[5]=hedge(1);
 WTX[11]=mk(x=>{x.fillStyle='#4a2f18';x.fillRect(0,0,64,64);for(let i=0;i<4;i++){x.fillStyle=`hsl(28,45%,${22+i*3}%)`;x.fillRect(i*16+1,3,14,58)}x.fillStyle='#e8c872';x.fillRect(0,0,64,5);x.fillRect(0,59,64,5);x.fillRect(0,0,5,64);x.fillRect(59,0,5,64);x.fillRect(29,0,6,64);x.fillStyle='#17142a';x.beginPath();x.arc(32,32,15,0,TAU);x.fill();x.fillStyle='#ffd166';x.font='bold 26px sans-serif';x.textAlign='center';x.fillText('?',32,42)},0);
 WTX[12]=mk(x=>{x.fillStyle='#3a3750';x.fillRect(0,0,64,64);x.strokeStyle='#8a86a8';x.lineWidth=3;x.strokeRect(5,5,54,54);x.beginPath();x.arc(32,32,16,0,TAU);x.stroke();x.fillStyle='#8a86a8';x.font='bold 11px sans-serif';x.textAlign='center';x.fillText('🔒',32,36)},0);
-WTX[13]=mk(x=>{const g=x.createRadialGradient(32,32,2,32,32,46);g.addColorStop(0,'#fff');g.addColorStop(.35,'#7fe9ff');g.addColorStop(1,'#2a4a9a');x.fillStyle=g;x.fillRect(0,0,64,64);x.strokeStyle='#17142a';x.lineWidth=4;x.strokeRect(2,2,60,60);x.fillStyle='#17142a';x.font='bold 14px sans-serif';x.textAlign='center';x.fillText('THOÁT',32,37)},0);
+WTX[13]=mk(x=>{const g=x.createRadialGradient(32,32,2,32,32,46);g.addColorStop(0,'#fff');g.addColorStop(.35,'#7fe9ff');g.addColorStop(1,'#2a4a9a');x.fillStyle=g;x.fillRect(0,0,64,64);x.strokeStyle='#17142a';x.lineWidth=4;x.strokeRect(2,2,60,60);x.fillStyle='#17142a';x.font='bold 14px sans-serif';x.textAlign='center';x.fillText('EXIT',32,37)},0);
 const FLR={dungeon:[mk(x=>{x.fillStyle='#4a4660';x.fillRect(0,0,64,64);for(let j=0;j<2;j++)for(let i=0;i<2;i++){x.fillStyle=`hsl(255,10%,${26+R()*10}%)`;x.fillRect(i*32+1,j*32+1,30,30)}for(let i=0;i<20;i++)ell(x,R()*64,R()*64,2+R()*4,2,`hsla(255,10%,${14+R()*12}%,.5)`)},18),mk(x=>{x.fillStyle='#403c58';x.fillRect(0,0,64,64);for(let j=0;j<2;j++)for(let i=0;i<2;i++){x.fillStyle=`hsl(255,10%,${22+R()*10}%)`;x.fillRect(i*32+1,j*32+1,30,30)}},18)],
  garden:[mk(x=>{x.fillStyle='#4f9e44';x.fillRect(0,0,64,64);for(let i=0;i<80;i++){x.fillStyle=`hsl(${95+R()*30},50%,${30+R()*24}%)`;x.fillRect(R()*64,R()*64,2,4)}for(let i=0;i<4;i++)ell(x,R()*64,R()*64,2,2,pick(['#fff','#ffd54f']))},18),mk(x=>{x.fillStyle='#5aaa4c';x.fillRect(0,0,64,64);for(let i=0;i<80;i++){x.fillStyle=`hsl(${95+R()*30},50%,${34+R()*24}%)`;x.fillRect(R()*64,R()*64,2,4)}},18)]};
 const CEIL=[mk(x=>{x.fillStyle='#2c2942';x.fillRect(0,0,64,64);for(let i=0;i<18;i++)ell(x,R()*64,R()*64,3+R()*7,2+R()*5,`hsl(255,12%,${14+R()*12}%)`)},18)];
@@ -282,12 +284,12 @@ const SPR={
  tuft:sp(x=>{for(let i=0;i<9;i++){const bx=16+i*4+R()*3,h=18+R()*26;x.strokeStyle=['#3f9a3a','#5cbb4a','#79d062'][i%3];x.lineWidth=3;x.lineCap='round';x.beginPath();x.moveTo(bx,60);x.quadraticCurveTo(bx+(R()-.5)*10,60-h*.6,bx+(R()-.5)*18,60-h);x.stroke()}}),
  lamp:sp(x=>{ell(x,32,61,8,2.5,'rgba(0,0,0,.3)');x.fillStyle='#2a2a38';x.fillRect(30,22,4,38);x.fillStyle='#ffe9a0';x.fillRect(24,8,16,16);x.strokeStyle='#2a2a38';x.lineWidth=2.5;x.strokeRect(24,8,16,16)})};
 ['#ffffff','#ffd54f','#f48fb1'].forEach((c,i)=>SPR['fl'+i]=sp(x=>{x.strokeStyle='#3f9a3a';x.lineWidth=2.5;x.beginPath();x.moveTo(32,60);x.lineTo(32,38);x.stroke();for(let k=0;k<5;k++){const a=k/5*TAU;ell(x,32+M.cos(a)*6,34+M.sin(a)*6,4.5,4.5,c)}ell(x,32,34,3.5,3.5,'#e09a20')}));
-/* ================= Chế độ hiển thị ================= */
+/* ================= View setup ================= */
 const view=$('view'),vc=view.getContext('2d'),fxc=$('fx'),fx=fxc.getContext('2d'),PL=.72,CAM={};let RW,RH,img,buf,zb,colAng,cloud,u=1;
-/* innerWidth/innerHeight = 0 khi iframe chưa có layout (iframe hidden, cửa sổ
- * headless): RW=0 và RH=NaN → createImageData ném lỗi, cả script chết giữa
- * chứng → màn hình chọn người chơi không vẽ nốt, không còn nút nào để chơi.
- * Chặn size tối thiểu để boot luôn chạy được, rs() sẽ chỉnh lại khi resize. */
+/* innerWidth/innerHeight = 0 when the iframe has no layout (hidden iframe, headless
+ * window): RW=0 and RH=NaN, createImageData throws and the whole script dies
+ * mid-boot, so the player screen never finishes drawing and there are no buttons
+ * left to play. Clamp a minimum size so boot always works; rs() fixes it on resize. */
 function rs(){const W=M.max(innerWidth|0,160),H=M.max(innerHeight|0,160);RW=clamp(M.min(256,W),64,256);RH=clamp(M.round(RW*H/W),100,560);view.width=RW;view.height=RH;fxc.width=W;fxc.height=H;u=M.min(W,H)/360;img=vc.createImageData(RW,RH);buf=new Uint32Array(img.data.buffer);zb=new Float32Array(RW);colAng=new Float32Array(RW);for(let x=0;x<RW;x++)colAng[x]=M.atan((2*x/RW-1)*PL)}
 cloud=new Uint8Array(256*16);for(let i=0;i<14;i++){const cx=R()*256,cy=3+R()*10,w=10+R()*22;for(let y=0;y<16;y++)for(let x=-w;x<=w;x++){const d=(x*x)/(w*w)+((y-cy)*(y-cy))/18;if(d<1)cloud[y*256+(((cx+x)|0)&255)]=M.max(cloud[y*256+(((cx+x)|0)&255)],(1-d)*255)}}
 addEventListener('resize',rs);rs();
@@ -297,15 +299,15 @@ function render(){
  const th=TH,f=RW/2/PL,hor=RH/2+P.pt*RH*.5,hr=clamp(hor|0,3,RH-3),dx=M.cos(P.a),dy=M.sin(P.a),px=-dy*PL,py=dx*PL;
  CAM.x=P.x;CAM.y=P.y;CAM.dx=dx;CAM.dy=dy;CAM.px=px;CAM.py=py;CAM.f=f;CAM.hor=hor;
  const fr=th.fog[0],fg=th.fog[1],fb=th.fog[2],FD=th.fd*(th.sky?1:1+.035*M.sin(flickT*7)),fl=FLR[th===THEMES.garden?'garden':'dungeon'];
- /* trần / bầu trời */
+ /* ceiling / sky */
  if(th.sky){for(let y=0;y<hr;y++){const t=y/hr,r=(th.sky0[0]+(th.sky1[0]-th.sky0[0])*t)|0,g=(th.sky0[1]+(th.sky1[1]-th.sky0[1])*t)|0,b=(th.sky0[2]+(th.sky1[2]-th.sky0[2])*t)|0,o=y*RW,cy=((y/hr)*16)|0;
    for(let x=0;x<RW;x++){const uu=(((P.a+colAng[x])/TAU*256)|0)&255,cm=cloud[cy*256+uu]*.0028*(y<hr*.9?1:0),k=cm>1?1:cm;buf[o+x]=0xff000000|((b+((255-b)*k))<<16)|((g+((255-g)*k))<<8)|(r+((255-r)*k))}}}
  else{for(let y=0;y<hr;y++){const rd=.5*f/(hor-y),fo=clamp(rd/FD,0,.94),ia=((1-fo)*256)|0,ib=(fo*256)|0,sx=rd*2*px/RW,sy=rd*2*py/RW;let fxp=P.x+rd*(dx-px),fyp=P.y+rd*(dy-py);const o=y*RW;
    for(let x=0;x<RW;x++){const mx=fxp|0,my=fyp|0,c=CEIL[0][((((fyp-my)*64)|0)&63)*64+((((fxp-mx)*64)|0)&63)];buf[o+x]=0xff000000|((((c>>16&255)*ia+fb*ib)>>8)<<16)|((((c>>8&255)*ia+fg*ib)>>8)<<8)|(((c&255)*ia+fr*ib)>>8);fxp+=sx;fyp+=sy}}}
- /* sàn */
+ /* floor */
  for(let y=hr;y<RH;y++){const rd=.5*f/M.max(.6,y-hor),fo=clamp(rd/FD,0,.94),ia=((1-fo)*256)|0,ib=(fo*256)|0,sx=rd*2*px/RW,sy=rd*2*py/RW;let fxp=P.x+rd*(dx-px),fyp=P.y+rd*(dy-py);const o=y*RW;
   for(let x=0;x<RW;x++){const mx=fxp|0,my=fyp|0,c=fl[(mx+my)&1][((((fyp-my)*64)|0)&63)*64+((((fxp-mx)*64)|0)&63)];buf[o+x]=0xff000000|((((c>>16&255)*ia+fb*ib)>>8)<<16)|((((c>>8&255)*ia+fg*ib)>>8)<<8)|(((c&255)*ia+fr*ib)>>8);fxp+=sx;fyp+=sy}}
- /* tường */
+ /* walls */
  for(let x=0;x<RW;x++){const cam=2*x/RW-1;let rdx=dx+px*cam,rdy=dy+py*cam;if(M.abs(rdx)<1e-9)rdx=1e-9;if(M.abs(rdy)<1e-9)rdy=1e-9;
   let mx=P.x|0,my=P.y|0;const ddx=M.abs(1/rdx),ddy=M.abs(1/rdy);let sx,sy,sdx,sdy,side=0,h=0;
   if(rdx<0){sx=-1;sdx=(P.x-mx)*ddx}else{sx=1;sdx=(mx+1-P.x)*ddx}if(rdy<0){sy=-1;sdy=(P.y-my)*ddy}else{sy=1;sdy=(my+1-P.y)*ddy}
@@ -338,18 +340,18 @@ function drawFx(){
  fx.restore();
  fx.fillStyle='rgba(255,255,255,.85)';fx.beginPath();fx.arc(w/2,h/2,2.6*u,0,TAU);fx.fill();
  if(shake>0){}}
-/* ================= Vòng chơi ================= */
+/* ================= Game loop ================= */
 const solid=(x,y)=>x<0||y<0||x>=N||y>=N||map[(y|0)*N+(x|0)]>0;
 const hb=(x,y,r)=>solid(x-r,y-r)||solid(x+r,y-r)||solid(x-r,y+r)||solid(x+r,y+r);
 function mv(e,dx,dy,r){if(!hb(e.x+dx,e.y,r))e.x+=dx;if(!hb(e.x,e.y+dy,r))e.y+=dy}
 const aD=a=>M.atan2(M.sin(a),M.cos(a));
-const compass=a=>['Đông','Đông Nam','Nam','Tây Nam','Tây','Tây Bắc','Bắc','Đông Bắc'][M.round((((a*180/M.PI)%360)+360)%360/45)%8];
+const compass=a=>['East','South East','South','South West','West','North West','North','North East'][M.round((((a*180/M.PI)%360)+360)%360/45)%8];
 function visit(){const cx=P.x|0,cy=P.y|0;for(let y=cy-1;y<=cy+1;y++)for(let x=cx-1;x<=cx+1;x++)if(x>=0&&y>=0&&x<N&&y<N)visited[y*N+x]=1}
 function los(x0,y0,x1,y1){const n=M.ceil(M.hypot(x1-x0,y1-y0)/.1);for(let i=1;i<n;i++){const x=x0+(x1-x0)*i/n,y=y0+(y1-y0)*i/n;if(map[(y|0)*N+(x|0)]>0&&!((x|0)===(x1|0)&&(y|0)===(y1|0)))return false}return true}
 function nearInter(){if(qOpen>=0||submitted||paused)return null;let r=null,bd=1.9;
- for(const g of GD)if(!g.done){const d=M.hypot(g.x-P.x,g.y-P.y);if(d<bd&&los(P.x,P.y,g.x,g.y)){bd=d;r={k:'g',g,n:'Mở cổng câu hỏi #'+(g.gi+1)}}}
- const e=MZ.exit,d=M.hypot(e.x-P.x,e.y-P.y);if(d<bd&&los(P.x,P.y,e.x,e.y))r={k:'x',n:doneN>=Q.length?'🌀 Thoát khỏi mê cung':'🔒 Cổng thoát bị phong ấn'};return r}
-function interact(){if(!started||paused||qOpen>=0||mapOpen)return;const r=nearInter();if(!r)return;if(r.k==='g')openQ(r.g);else if(doneN>=Q.length)openReview();else toast('🔒 Cổng thoát còn bị phong ấn. Hãy mở hết '+(Q.length-doneN)+' cổng câu hỏi.')}
+ for(const g of GD)if(!g.done){const d=M.hypot(g.x-P.x,g.y-P.y);if(d<bd&&los(P.x,P.y,g.x,g.y)){bd=d;r={k:'g',g,n:'Open question gate #'+(g.gi+1)}}}
+ const e=MZ.exit,d=M.hypot(e.x-P.x,e.y-P.y);if(d<bd&&los(P.x,P.y,e.x,e.y))r={k:'x',n:doneN>=Q.length?'🌀 Escape the maze':'🔒 The exit gate is sealed'};return r}
+function interact(){if(!started||paused||qOpen>=0||mapOpen)return;const r=nearInter();if(!r)return;if(r.k==='g')openQ(r.g);else if(doneN>=Q.length)openReview();else toast('🔒 The exit gate is still sealed. Open all '+(Q.length-doneN)+' question gates first.')}
 let lastStep=0;
 function update(dt){
  T+=dt;flickT+=dt;shake=M.max(0,shake-dt);for(const b of burstL)b.t+=dt*2.2;burstL=burstL.filter(b=>b.t<1);
@@ -360,7 +362,7 @@ function update(dt){
   if(m>.2&&T-lastStep>.42){lastStep=T;bp(90+R()*20,.05,'triangle',.03,60)}if(!IN.lid&&!K.w)P.pt*=M.max(0,1-dt*.8)}
  visit();const r=nearInter(),bt=$('bT');if(r&&!paused&&!mapOpen){bt.style.display='flex';$('btx').textContent=r.n}else bt.style.display='none';
  hud()}
-function hud(){const left=Q.length-doneN,u0=meU();$('ot').textContent=submitted?'Đã nộp bài':left>0?'Tìm lối ra. Còn '+left+' cổng câu hỏi chặn đường.':'Cổng thoát đã mở! Hãy tìm lối ra.';$('oc').textContent='🧭 '+compass(P.a)+' · 🚪 '+doneN+'/'+Q.length;
+function hud(){const left=Q.length-doneN,u0=meU();$('ot').textContent=submitted?'Submitted':left>0?'Find the way out. '+left+' question gate'+(left===1?'':'s')+' blocking the path.':'The exit gate is open! Find the way out.';$('oc').textContent='🧭 '+compass(P.a)+' · 🚪 '+doneN+'/'+Q.length;
  const s=M.floor((Date.now()-startedAt)/1000);$('tm').textContent='⏱ '+(s/60|0)+':'+String(s%60).padStart(2,'0')}
 let last=0;function loop(t){const dt=M.min((t-last)/1000||0,.05);last=t;if(started)update(dt);else{T+=dt;flickT+=dt;P.a+=dt*.15}render();drawFx();requestAnimationFrame(loop)}
 
@@ -368,7 +370,7 @@ let last=0;function loop(t){const dt=M.min((t-last)/1000||0,.05);last=t;if(start
 const isText=q=>q.inputMode==='text'||q.inputMode==='input'||q.inputMode==='essay'||!q.options||!q.options.length;
 const isMulti=q=>q.inputMode==='multiple'||q.inputMode==='multi'||q.inputMode==='checkbox';
 function openQ(g){const q=Q[g.gi];qOpen=g.gi;qState=0;qT0=Date.now();qLim=q.timeLimit||30;qBeep=99;for(const k in K)K[k]=0;IN.mx=IN.my=0;IN.sid=IN.lid=null;$('jb').style.display=$('jk').style.display='none';try{document.exitPointerLock&&document.exitPointerLock()}catch(_){}
- $('bT').style.display='none';$('qtt').textContent=(q.icon?q.icon+' ':'')+q.content;$('qpt').textContent='⭐ '+(q.points||0)+' điểm · câu '+(g.gi+1)+'/'+Q.length;$('qfb').textContent='';$('qgo').textContent='🔓 Chốt đáp án';
+ $('bT').style.display='none';$('qtt').textContent=(q.icon?q.icon+' ':'')+q.content;$('qpt').textContent='⭐ '+(q.points||0)+' pts · question '+(g.gi+1)+'/'+Q.length;$('qfb').textContent='';$('qgo').textContent='🔓 Lock answer';
  if(isText(q)){$('qo').innerHTML='';$('qtw').classList.remove('hide');$('qin').value='';setTimeout(()=>$('qin').focus(),80)}
  else{$('qtw').classList.add('hide');$('qo').innerHTML=q.options.map((x,i)=>`<button class="qo ${isMulti(q)?'multi':''}" data-id="${esc(x.id)}"><span class="k">${String.fromCharCode(65+i)}</span><span>${esc(x.content)}</span></button>`).join('')}
  $('qp').style.display='block';qTick();bp(500,.15,'triangle',.1,900)}
@@ -380,29 +382,29 @@ function finishQ(timeout){if(qOpen<0||qState)return;const gi=qOpen,q=Q[gi],a=A[g
  qState=1;ac();
  if(mode==='practice'&&q.correctIds){const ok=a.answered&&a.answerIds.slice().sort().join()===q.correctIds.slice().sort().join();a.ok=ok;
   document.querySelectorAll('.qo').forEach(x=>{x.style.pointerEvents='none';if(q.correctIds.includes(x.dataset.id))x.classList.add('good');else if(x.classList.contains('sel'))x.classList.add('bad')});
-  $('qfb').style.color=ok?'#7ff0b0':'#ff8a9b';$('qfb').textContent=(timeout&&!a.answered?'⏰ Hết giờ! ':ok?pick(['🎉 Chính xác!','✨ Giỏi quá!','👏 Đúng rồi!'])+' ':'Chưa đúng. ')+(ok?'':'Đáp án đúng: '+q.options.filter(o=>q.correctIds.includes(o.id)).map(o=>o.content).join(', ')+'. ')+(q.expl||'');
-  $('qgo').textContent='Tiếp tục ▶';ok?bp(784,.25,'triangle',.12,1175):bp(300,.25,'sawtooth',.1,160);if(DEBUG)setTimeout(closeQ,10);return}
- if(timeout&&!a.answered)toast('⏰ Hết giờ! Câu này bị bỏ qua.');closeQ()}
+  $('qfb').style.color=ok?'#7ff0b0':'#ff8a9b';$('qfb').textContent=(timeout&&!a.answered?'⏰ Time\'s up! ':ok?pick(['🎉 Correct!','✨ Nice!','👏 That\'s right!'])+' ':'Not quite. ')+(ok?'':'Correct answer: '+q.options.filter(o=>q.correctIds.includes(o.id)).map(o=>o.content).join(', ')+'. ')+(q.expl||'');
+  $('qgo').textContent='Continue ▶';ok?bp(784,.25,'triangle',.12,1175):bp(300,.25,'sawtooth',.1,160);if(DEBUG)setTimeout(closeQ,10);return}
+ if(timeout&&!a.answered)toast('⏰ Time\'s up! This question was skipped.');closeQ()}
 function closeQ(){if(qOpen<0)return;const gi=qOpen,g=GD[gi];qOpen=-1;qState=0;$('qp').style.display='none';g.done=true;doneN++;
  map[g.ty*N+g.tx]=0;burstL.push({x:g.x,y:g.y,t:0});shake=.25;bp(160,.25,'square',.14,60);bp(520,.3,'triangle',.1,1000);
- if(doneN>=Q.length){map[MZ.exit.ty*N+MZ.exit.tx]=13;setTimeout(()=>{toast('🌀 Cổng thoát đã mở! Hãy tìm lối ra rồi bấm F.');bp(100,.5,'sawtooth',.16,40)},700)}else toast('🚪 Cổng #'+(gi+1)+' đã mở. Còn '+(Q.length-doneN)+' cổng.')}
+ if(doneN>=Q.length){map[MZ.exit.ty*N+MZ.exit.tx]=13;setTimeout(()=>{toast('🌀 The exit gate is open! Find the way out, then press F.');bp(100,.5,'sawtooth',.16,40)},700)}else toast('🚪 Gate #'+(gi+1)+' is open. '+ (Q.length-doneN) +' gate'+(Q.length-doneN===1?'':'s')+' left.')}
 $('qgo').addEventListener('click',()=>{ac();qState?closeQ():finishQ(false)});
 function qKey(e){if(e.target&&e.target.id==='qin'){if(e.key==='Enter')qState?closeQ():finishQ(false);return}if(qState){if(e.key==='Enter'||e.key===' ')closeQ();return}const k=e.key.toUpperCase();let i=k.charCodeAt(0)-65;if(/^[1-9]$/.test(e.key))i=+e.key-1;const bs=document.querySelectorAll('.qo');if(e.key.length===1&&i>=0&&i<bs.length)bs[i].click();else if(e.key==='Enter')finishQ(false)}
 
-/* ================= Nộp bài & kết quả ================= */
-function ansText(q,a){if(!a.answered)return'<span class="no">Chưa trả lời</span>';if(a.text)return esc(a.text);return a.answerIds.map(id=>esc((q.options.find(o=>o.id===id)||{}).content||id)).join(', ')}
+/* ================= Submit & results ================= */
+function ansText(q,a){if(!a.answered)return'<span class="no">Not answered</span>';if(a.text)return esc(a.text);return a.answerIds.map(id=>esc((q.options.find(o=>o.id===id)||{}).content||id)).join(', ')}
 function openReview(){paused=1;for(const k in K)K[k]=0;try{document.exitPointerLock&&document.exitPointerLock()}catch(_){}$('bT').style.display='none';
- $('revL').innerHTML=Q.map((q,i)=>`<div class="rv"><b>${i+1}. ${esc(q.content)}</b><div class="yo">Bạn chọn: ${ansText(q,A[i])}</div></div>`).join('');$('subErr').classList.add('hide');$('subBtn').disabled=false;$('subBtn').textContent='⚡ Nộp bài và thoát';show('scRev')}
+ $('revL').innerHTML=Q.map((q,i)=>`<div class="rv"><b>${i+1}. ${esc(q.content)}</b><div class="yo">You chose: ${ansText(q,A[i])}</div></div>`).join('');$('subErr').classList.add('hide');$('subBtn').disabled=false;$('subBtn').textContent='⚡ Submit and exit';show('scRev')}
 $('revBack').onclick=()=>{hide('scRev');paused=0};
 function gradeLocal(){let score=0,max=0,cor=0;const rows=Q.map((q,i)=>{const a=A[i],ok=a.answered&&a.answerIds.slice().sort().join()===q.correctIds.slice().sort().join();max+=q.points||0;if(ok){score+=q.points||0;cor++}return{q,a,ok}});return{score,max,correct:cor,total:Q.length,rows}}
-$('subBtn').onclick=async()=>{if(submitting||submitted)return;submitting=1;ac();const b=$('subBtn');b.disabled=true;b.textContent='Đang nộp bài…';$('subErr').classList.add('hide');const u0=meU();
+$('subBtn').onclick=async()=>{if(submitting||submitted)return;submitting=1;ac();const b=$('subBtn');b.disabled=true;b.textContent='Submitting…';$('subErr').classList.add('hide');const u0=meU();
  try{
   if(!isRemote){const g=gradeLocal();submitted=1;finishRun({score:g.score,max:g.max,correct:g.correct,total:g.total,local:g})}
-  else{if(!SURL)throw new Error('Chưa cấu hình địa chỉ nộp bài (SUBMIT_URL).');
-   const ctx={name:u0.name,userId:u0.id,cls:'Lớp '+u0.grade,totalTime:M.round((Date.now()-startedAt)/1000),tabOut,answers:A};
+  else{if(!SURL)throw new Error('No submit URL configured (SUBMIT_URL).');
+   const ctx={name:u0.name,userId:u0.id,cls:'Grade '+u0.grade,totalTime:M.round((Date.now()-startedAt)/1000),tabOut,answers:A};
    const r=await fetch(SURL,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json',...CONFIG.HEADERS},body:JSON.stringify(CONFIG.buildPayload(ctx))});const raw=await r.json().catch(()=>null);if(!r.ok||(raw&&raw.status===false))throw new Error((raw&&raw.msg)||'HTTP '+r.status);
    const res=CONFIG.parseResult(raw);submitted=1;finishRun(res?{score:res.score,max:res.max!=null?res.max:Q.reduce((s,q)=>s+(q.points||0),0),raw}:{raw})}
- }catch(e){submitting=0;b.disabled=false;b.textContent='Nộp lại';const er=$('subErr');er.classList.remove('hide');er.textContent='Nộp bài chưa thành công: '+e.message+'. Bài làm vẫn còn, hãy nộp lại.'}};
+ }catch(e){submitting=0;b.disabled=false;b.textContent='Submit again';const er=$('subErr');er.classList.remove('hide');er.textContent='Submit failed: '+e.message+'. Your answers are still here, please try again.'}};
 function rankOf(r){return r>=.9?'S':r>=.75?'A':r>=.5?'B':'C'}
 function finishRun(res){started=0;paused=0;hide('scRev');$('ico').style.display=$('me').style.display=$('obj').style.display=$('tm').style.display='none';$('bT').style.display='none';
  const u0=meU(),secs=M.round((Date.now()-startedAt)/1000),ratio=res.score!=null&&res.max?clamp(res.score/res.max,0,1):null;
@@ -410,23 +412,23 @@ function finishRun(res){started=0;paused=0;hide('scRev');$('ico').style.display=
   if(res.local){res.local.rows.forEach(r=>{const k=r.q.subj;const s=st.subj[k]||(st.subj[k]={a:0,c:0});s.a++;if(r.ok)s.c++;st.ans++;if(r.ok)st.cor++})}
   u0.hist.unshift({t:Date.now(),mode:isRemote?'exam-server':mode,subj:isRemote?'server':DB.set.subject,grade:DB.set.grade,score:res.score,max:res.max,cor:res.correct==null?null:res.correct,tot:res.total==null?Q.length:res.total,secs,rank:ratio==null?'':rankOf(ratio),theme:DB.set.theme});u0.hist=u0.hist.slice(0,40);save()}
  let h='';
- if(ratio==null){h=`<div class="logo" style="font-size:26px">📨 Đã nộp bài</div><div class="box"><div class="mid">Bài đã được gửi. Không đọc được điểm từ phản hồi của máy chủ (chỉnh <b>parseResult</b> trong CONFIG).</div><pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:200px;overflow:auto;user-select:text;margin-top:8px">${esc(JSON.stringify(res.raw,null,2))}</pre></div>`}
- else{const rk=rankOf(ratio);h=`<div class="logo" style="font-size:26px">${ratio>=.999?'🏆 THOÁT HOÀN HẢO!':ratio>0?'🌀 Bạn đã thoát khỏi mê cung':'🌀 Bạn đã thoát, nhưng…'}</div><div class="box"><div class="big">${res.score}</div><div class="mid">trên ${res.max} điểm${res.correct!=null?' · đúng '+res.correct+'/'+res.total+' câu':''}</div><div class="rank">${rk}</div><div class="mid">⏱ ${(secs/60|0)}:${String(secs%60).padStart(2,'0')}${tabOut?' · ⚠ rời trang '+tabOut+' lần':''}<br>${ratio>=.999?'Điểm tuyệt đối!':ratio>=.5?'Làm tốt lắm, thử lại để điểm cao hơn nhé!':'Luyện thêm rồi quay lại thử thách nhé!'}</div></div>`;
-  if(res.local)h+=`<div class="box"><h3>📝 Xem lại bài làm</h3>${res.local.rows.map((r,i)=>`<div class="rv"><b>${i+1}. ${esc(r.q.content)}</b><div class="yo">Bạn chọn: ${ansText(r.q,r.a)} <span class="${r.ok?'ok':'no'}">${r.ok?'✓ Đúng':'✗ Sai'}</span></div>${r.ok?'':`<div class="ok">Đáp án đúng: ${r.q.options.filter(o=>r.q.correctIds.includes(o.id)).map(o=>esc(o.content)).join(', ')}</div>`}${r.q.expl?`<div class="yo">💡 ${esc(r.q.expl)}</div>`:''}</div>`).join('')}</div>`}
- h+=`<div class="row" style="width:100%"><button class="btn w" id="rMenu">☰ Về menu</button><button class="btn g" id="rAgain">🌀 Chơi lại</button></div>`;$('resBody').innerHTML=h;show('scRes');
+ if(ratio==null){h=`<div class="logo" style="font-size:26px">📨 Submitted</div><div class="box"><div class="mid">Your answers were sent. The score could not be read from the server response (adjust <b>parseResult</b> in CONFIG).</div><pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:200px;overflow:auto;user-select:text;margin-top:8px">${esc(JSON.stringify(res.raw,null,2))}</pre></div>`}
+ else{const rk=rankOf(ratio);h=`<div class="logo" style="font-size:26px">${ratio>=.999?'🏆 PERFECT ESCAPE!':ratio>0?'🌀 You escaped the maze':'🌀 You got out, but…'}</div><div class="box"><div class="big">${res.score}</div><div class="mid">out of ${res.max} points${res.correct!=null?' · '+res.correct+'/'+res.total+' correct':''}</div><div class="rank">${rk}</div><div class="mid">⏱ ${(secs/60|0)}:${String(secs%60).padStart(2,'0')}${tabOut?' · ⚠ left the page '+tabOut+' times':''}<br>${ratio>=.999?'A perfect score!':ratio>=.5?'Great job, try again for an even higher score!':'Practice a little more, then come back for another challenge!'}</div></div>`;
+  if(res.local)h+=`<div class="box"><h3>📝 Review your answers</h3>${res.local.rows.map((r,i)=>`<div class="rv"><b>${i+1}. ${esc(r.q.content)}</b><div class="yo">You chose: ${ansText(r.q,r.a)} <span class="${r.ok?'ok':'no'}">${r.ok?'✓ Correct':'✗ Wrong'}</span></div>${r.ok?'':`<div class="ok">Correct answer: ${r.q.options.filter(o=>r.q.correctIds.includes(o.id)).map(o=>esc(o.content)).join(', ')}</div>`}${r.q.expl?`<div class="yo">💡 ${esc(r.q.expl)}</div>`:''}</div>`).join('')}</div>`}
+ h+=`<div class="row" style="width:100%"><button class="btn w" id="rMenu">☰ Menu</button><button class="btn g" id="rAgain">🌀 Play again</button></div>`;$('resBody').innerHTML=h;show('scRes');
  $('rMenu').onclick=()=>{goPrep()};$('rAgain').onclick=()=>{startGame()};bp(523,.3,'triangle',.12,523);[523,659,784,1046].forEach((f,i)=>setTimeout(()=>bp(f,.25,'triangle',.12),i*130))}
 
-/* ================= Bản đồ dấu chân ================= */
+/* ================= Footprint map ================= */
 function openMap(){if(!started||mapOpen||qOpen>=0||paused)return;mapOpen=1;for(const k in K)K[k]=0;try{document.exitPointerLock&&document.exitPointerLock()}catch(_){}$('bT').style.display='none';$('fmap').style.display='grid';
  const S=M.floor(M.min(innerWidth*.92,innerHeight*.72)),cv2=$('mapc');cv2.width=cv2.height=S;cv2.style.width=cv2.style.height=S+'px';const c=cv2.getContext('2d'),Lg=MZ.Lg,k=S/Lg;c.fillStyle='#14121f';c.fillRect(0,0,S,S);c.textAlign='center';c.textBaseline='middle';
  for(let y=0;y<Lg;y++)for(let x=0;x<Lg;x++){if(!visited[y*N+x])continue;const t=map[y*N+x];c.fillStyle=t===0?'#d8c8a0':t===11?'#ffd166':t>=12?'#6fd6ff':'#4a4660';c.fillRect(x*k,y*k,k+.6,k+.6)}
  c.font=`900 ${M.max(6,k*1.1)}px sans-serif`;c.fillStyle='#3a1d00';GD.forEach(g=>{if(visited[g.ty*N+g.tx]&&!g.done)c.fillText('?',g.x*k,g.y*k+1)});
  c.fillStyle='#ff6b6b';c.beginPath();c.arc(MZ.sx*k,MZ.sy*k,M.max(2.5,k*.55),0,TAU);c.fill();const rr=M.max(5,k*1.1);c.save();c.translate(P.x*k,P.y*k);c.rotate(P.a);c.fillStyle='#fff';c.strokeStyle='#1a1a2e';c.lineWidth=2;c.beginPath();c.moveTo(rr*1.1,0);c.lineTo(-rr*.8,-rr*.8);c.lineTo(-rr*.4,0);c.lineTo(-rr*.8,rr*.8);c.closePath();c.fill();c.stroke();c.restore();
- $('fml').innerHTML=`<span style="color:#d8c8a0">■ Đã đi qua</span><span style="color:#ffd166">■ Cổng câu hỏi (${GD.filter(g=>!g.done).length} còn lại)</span><span style="color:#6fd6ff">■ Cổng thoát</span><span style="color:#ff6b6b">● Xuất phát</span><span>▶ Bạn</span>`}
+ $('fml').innerHTML=`<span style="color:#d8c8a0">■ Explored</span><span style="color:#ffd166">■ Question gates (${GD.filter(g=>!g.done).length} left)</span><span style="color:#6fd6ff">■ Exit gate</span><span style="color:#ff6b6b">● Start</span><span>▶ You</span>`}
 function closeMap(){mapOpen=0;$('fmap').style.display='none'}
 $('fmap').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();closeMap()});
 
-/* ================= Điều khiển ================= */
+/* ================= Controls ================= */
 const jb=$('jb'),jk=$('jk');
 function look(dx,dy,m){P.a+=dx*(m?.0026:.0055);P.pt=clamp(P.pt-dy*(m?.0022:.003),-.3,.3)}
 document.body.addEventListener('pointerdown',e=>{if(!started||paused||qOpen>=0||mapOpen)return;if(e.target.closest('button,.scr,#qp,#fmap,#tut'))return;e.preventDefault();ac();
@@ -438,49 +440,49 @@ document.body.addEventListener('pointermove',e=>{if(!started||paused||qOpen>=0||
  else if(e.pointerId===IN.lid){look(e.clientX-IN.lx,e.clientY-IN.ly,0);IN.lx=e.clientX;IN.ly=e.clientY}});
 const upP=e=>{if(e.pointerId===IN.sid){IN.sid=null;IN.mx=IN.my=0;jb.style.display=jk.style.display='none'}if(e.pointerId===IN.lid)IN.lid=null};
 document.body.addEventListener('pointerup',upP);document.body.addEventListener('pointercancel',upP);document.body.addEventListener('contextmenu',e=>e.preventDefault());
-[['#bT',interact],['#imap',openMap],['#isnd',()=>{DB.set.sfx=!DB.set.sfx;save();$('isnd').textContent=DB.set.sfx?'🔊':'🔇'}],['#iexit',()=>{if(needConfirm('exit','Thoát về menu? Bài làm hiện tại sẽ mất.'))goPrep()}]].forEach(([s,f])=>document.querySelector(s).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();ac();f()}));
+[['#bT',interact],['#imap',openMap],['#isnd',()=>{DB.set.sfx=!DB.set.sfx;save();$('isnd').textContent=DB.set.sfx?'🔊':'🔇'}],['#iexit',()=>{if(needConfirm('exit','Exit to menu? Your current answers will be lost.'))goPrep()}]].forEach(([s,f])=>document.querySelector(s).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();ac();f()}));
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!started)return;if(qOpen>=0){qKey(e);return}if(e.target&&e.target.tagName==='INPUT')return;if(k==='m'){mapOpen?closeMap():openMap();return}if(mapOpen){if(k==='escape')closeMap();return}K[k]=1;if(paused)return;if(k==='f'||k==='enter'||k===' ')interact()});
 addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&!submitted){tabOut++;if(mode==='exam'||isRemote)toast('⚠️ Bạn đã rời khỏi trang '+tabOut+' lần. Việc này được ghi nhận.')}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&!submitted){tabOut++;if(mode==='exam'||isRemote)toast('⚠️ You left the page '+tabOut+' times. This has been recorded.')}});
 addEventListener('beforeunload',e=>{if(started&&!submitted){e.preventDefault();e.returnValue=''}});
 
-/* ================= Màn hình & hồ sơ ================= */
+/* ================= Screens & profiles ================= */
 const SCRS=['scUsers','scNew','scPrep','scRev','scRes','scLb','scHist'];
 function show(id){SCRS.forEach(s=>$(s).classList.toggle('show',s===id))}function hide(id){$(id).classList.remove('show')}
-function hudUser(){const u0=meU();if(!u0)return;$('meAv').textContent=u0.av;$('meAv').style.background=COLS[u0.col%COLS.length];$('meN').textContent=u0.name;$('meSt').textContent='Cao nhất: '+u0.st.best+' điểm'}
+function hudUser(){const u0=meU();if(!u0)return;$('meAv').textContent=u0.av;$('meAv').style.background=COLS[u0.col%COLS.length];$('meN').textContent=u0.name;$('meSt').textContent='Best: '+u0.st.best+' pts'}
 function renderUsers(){
- $('ug').innerHTML=DB.users.map(u=>`<div class="uc ${u.id===DB.active?'on':''}" data-id="${u.id}"><button class="x" data-del="${u.id}" aria-label="Xóa ${esc(u.name)}">✕</button><div class="av" style="background:${COLS[u.col%COLS.length]}">${u.av}</div><b>${esc(u.name)}</b><small>Lớp ${u.grade} · ${u.st.played} lượt chơi</small><small>🏆 ${u.st.best} điểm</small></div>`).join('')+`<button class="uc add" id="addU">＋<br>Thêm người chơi</button>`;
- $('apiNote').innerHTML=QURL?(REMOTE?`📡 Đề thi từ máy chủ: ${REMOTE.length} câu.`:remoteErr?`⚠ Không tải được đề từ máy chủ (${esc(remoteErr)}).`:'📡 Đang tải đề thi từ máy chủ…'):'';
- $('sndBtn').textContent='🔊 Âm thanh: '+(DB.set.sfx?'Bật':'Tắt')}
-$('ug').addEventListener('click',e=>{ac();const d=e.target.closest('[data-del]');if(d){e.stopPropagation();const u=DB.users.find(x=>x.id===d.dataset.del);if(u&&needConfirm('del:'+u.id,'Xóa hồ sơ "'+u.name+'" cùng toàn bộ lịch sử?')){DB.users=DB.users.filter(x=>x!==u);if(DB.active===u.id)DB.active=null;save();renderUsers()}return}
+ $('ug').innerHTML=DB.users.map(u=>`<div class="uc ${u.id===DB.active?'on':''}" data-id="${u.id}"><button class="x" data-del="${u.id}" aria-label="Delete ${esc(u.name)}">✕</button><div class="av" style="background:${COLS[u.col%COLS.length]}">${u.av}</div><b>${esc(u.name)}</b><small>Grade ${u.grade} · ${u.st.played} plays</small><small>🏆 ${u.st.best} pts</small></div>`).join('')+`<button class="uc add" id="addU">＋<br>Add player</button>`;
+ $('apiNote').innerHTML=QURL?(REMOTE?`📡 Questions from server: ${REMOTE.length}.`:remoteErr?`⚠ Could not load questions from the server (${esc(remoteErr)}).`:'📡 Loading questions from the server…'):'';
+ $('sndBtn').textContent='🔊 Sound: '+(DB.set.sfx?'On':'Off')}
+$('ug').addEventListener('click',e=>{ac();const d=e.target.closest('[data-del]');if(d){e.stopPropagation();const u=DB.users.find(x=>x.id===d.dataset.del);if(u&&needConfirm('del:'+u.id,'Delete profile "'+u.name+'" and all of its history?')){DB.users=DB.users.filter(x=>x!==u);if(DB.active===u.id)DB.active=null;save();renderUsers()}return}
  if(e.target.closest('#addU')){openNew();return}const c=e.target.closest('.uc[data-id]');if(c){DB.active=c.dataset.id;save();goPrep()}});
 let nAv=0,nCol=0,nGr=3;
-function openNew(){$('nm').value='';nAv=ri(0,AVS.length-1);nCol=0;nGr=DB.set.grade;$('nErr').classList.add('hide');$('avg').innerHTML=AVS.map((a,i)=>`<button class="avb ${i===nAv?'on':''}" data-i="${i}">${a}</button>`).join('');$('swr').innerHTML=COLS.map((c,i)=>`<button class="sw ${i===nCol?'on':''}" data-i="${i}" style="background:${c}" aria-label="Màu ${i+1}"></button>`).join('');$('nGrade').innerHTML=[1,2,3,4,5].map(g=>`<button class="opt ${g===nGr?'on':''}" data-g="${g}">Lớp ${g}</button>`).join('');show('scNew');setTimeout(()=>$('nm').focus(),80)}
+function openNew(){$('nm').value='';nAv=ri(0,AVS.length-1);nCol=0;nGr=DB.set.grade;$('nErr').classList.add('hide');$('avg').innerHTML=AVS.map((a,i)=>`<button class="avb ${i===nAv?'on':''}" data-i="${i}">${a}</button>`).join('');$('swr').innerHTML=COLS.map((c,i)=>`<button class="sw ${i===nCol?'on':''}" data-i="${i}" style="background:${c}" aria-label="Color ${i+1}"></button>`).join('');$('nGrade').innerHTML=[1,2,3,4,5].map(g=>`<button class="opt ${g===nGr?'on':''}" data-g="${g}">Grade ${g}</button>`).join('');show('scNew');setTimeout(()=>$('nm').focus(),80)}
 $('avg').onclick=e=>{const b=e.target.closest('.avb');if(!b)return;nAv=+b.dataset.i;document.querySelectorAll('.avb').forEach(x=>x.classList.toggle('on',x===b))};
 $('swr').onclick=e=>{const b=e.target.closest('.sw');if(!b)return;nCol=+b.dataset.i;document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b))};
 $('nGrade').onclick=e=>{const b=e.target.closest('.opt');if(!b)return;nGr=+b.dataset.g;document.querySelectorAll('#nGrade .opt').forEach(x=>x.classList.toggle('on',x===b))};
 $('nBack').onclick=()=>{renderUsers();show('scUsers')};
-$('nOk').onclick=()=>{ac();const n=$('nm').value.trim(),er=$('nErr');if(!n){er.textContent='Hãy nhập tên của bạn.';er.classList.remove('hide');return}if(DB.users.some(u=>u.name.toLowerCase()===n.toLowerCase())){er.textContent='Tên này đã có người dùng. Hãy thêm họ hoặc tên khác.';er.classList.remove('hide');return}
+$('nOk').onclick=()=>{ac();const n=$('nm').value.trim(),er=$('nErr');if(!n){er.textContent='Please enter your name.';er.classList.remove('hide');return}if(DB.users.some(u=>u.name.toLowerCase()===n.toLowerCase())){er.textContent='That name is already taken. Please add a surname or pick another name.';er.classList.remove('hide');return}
  const u={id:'u'+Date.now().toString(36)+ri(0,99),name:n,av:AVS[nAv],col:nCol,grade:nGr,created:Date.now(),st:{played:0,best:0,bestTime:0,score:0,ans:0,cor:0,subj:{}},hist:[]};DB.users.push(u);DB.active=u.id;DB.set.grade=nGr;save();goPrep()};
 $('lbBtn').onclick=()=>{ac();renderLb();show('scLb')};$('lbBack').onclick=()=>{renderUsers();show('scUsers')};
 function renderLb(){const arr=DB.users.slice().sort((a,b)=>b.st.best-a.st.best||(a.st.bestTime||9e9)-(b.st.bestTime||9e9));
- $('lbBody').innerHTML=arr.length?`<table><thead><tr><th></th><th>Người chơi</th><th class="num">Điểm cao</th><th class="num">Đúng</th></tr></thead><tbody>${arr.map((u,i)=>`<tr><td class="rk">${['🥇','🥈','🥉'][i]||i+1}</td><td>${u.av} ${esc(u.name)}<br><small style="opacity:.7">${u.st.played} lượt</small></td><td class="num">${u.st.best}</td><td class="num">${u.st.ans?M.round(u.st.cor/u.st.ans*100)+'%':'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="mid">Chưa có người chơi nào.</div>'}
+ $('lbBody').innerHTML=arr.length?`<table><thead><tr><th></th><th>Player</th><th class="num">Best</th><th class="num">Correct</th></tr></thead><tbody>${arr.map((u,i)=>`<tr><td class="rk">${['🥇','🥈','🥉'][i]||i+1}</td><td>${u.av} ${esc(u.name)}<br><small style="opacity:.7">${u.st.played} plays</small></td><td class="num">${u.st.best}</td><td class="num">${u.st.ans?M.round(u.st.cor/u.st.ans*100)+'%':'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="mid">No players yet.</div>'}
 $('sndBtn').onclick=()=>{ac();DB.set.sfx=!DB.set.sfx;save();renderUsers()};
-/* chuẩn bị */
+/* prepare */
 function goPrep(){started=0;paused=0;submitted=0;closeMap();$('qp').style.display='none';$('bT').style.display='none';$('ico').style.display=$('me').style.display=$('obj').style.display=$('tm').style.display='none';const u0=meU();if(!u0){renderUsers();show('scUsers');return}
  DB.set.grade=u0.grade||DB.set.grade;renderPrep();show('scPrep')}
 function grp(k,label,vals){return`<div class="lab">${label}</div><div class="grp" data-k="${k}">${vals.map(([v,t])=>`<button class="opt ${String(DB.set[k])===String(v)?'on':''}" data-v="${v}">${t}</button>`).join('')}</div>`}
-function renderPrep(){const u0=meU(),srv=QURL&&REMOTE;$('pHi').textContent=u0.av+' Xin chào, '+u0.name+'!';$('pSt').textContent=`Lượt chơi: ${u0.st.played} · Điểm cao nhất: ${u0.st.best}`+(u0.st.ans?` · Đúng ${M.round(u0.st.cor/u0.st.ans*100)}%`:'');
- let h='';if(srv){h=`<div class="mid"><b>📡 Chế độ thi (máy chủ)</b><br>Đề gồm <b>${REMOTE.length}</b> câu. Điểm do máy chủ chấm sau khi nộp bài.</div>`+grp('theme','Phong cảnh',[['dungeon','🏰 Hầm đá'],['garden','🌳 Vườn cây']])}
- else{if(QURL&&!REMOTE)h+=`<div class="err">⚠ Chưa tải được đề từ máy chủ, đang dùng bộ câu hỏi trên máy này.</div>`;
-  h+=grp('mode','Chế độ',[['practice','📖 Luyện tập (xem đáp án ngay)'],['exam','📝 Thi (chấm sau khi nộp)']])+grp('subject','Môn học',Object.keys(SUBN).filter(k=>k!=='custom'||(getBank().custom||[]).length).map(k=>[k,SUBN[k]]))+grp('gates','Số cổng câu hỏi',[[3,'3'],[5,'5'],[8,'8'],[12,'12']])+grp('tl','Thời gian mỗi câu',[[20,'20 giây'],[30,'30 giây'],[45,'45 giây']])+grp('theme','Phong cảnh',[['dungeon','🏰 Hầm đá'],['garden','🌳 Vườn cây']])}
+function renderPrep(){const u0=meU(),srv=QURL&&REMOTE;$('pHi').textContent=u0.av+' Hi, '+u0.name+'!';$('pSt').textContent=`Plays: ${u0.st.played} · Best: ${u0.st.best}`+(u0.st.ans?` · ${M.round(u0.st.cor/u0.st.ans*100)}% correct`:'');
+ let h='';if(srv){h=`<div class="mid"><b>📡 Exam mode (server)</b><br>The set has <b>${REMOTE.length}</b> questions. The server grades your answers after you submit.</div>`+grp('theme','Scenery',[['dungeon','🏰 Stone Dungeon'],['garden','🌳 Garden']])}
+ else{if(QURL&&!REMOTE)h+=`<div class="err">⚠ Could not load questions from the server, using the question bank on this device.</div>`;
+  h+=grp('mode','Mode',[['practice','📖 Practice (see answers right away)'],['exam','📝 Exam (graded after submitting)']])+grp('subject','Subject',Object.keys(SUBN).filter(k=>k!=='custom'||(getBank().custom||[]).length).map(k=>[k,SUBN[k]]))+grp('gates','Number of question gates',[[3,'3'],[5,'5'],[8,'8'],[12,'12']])+grp('tl','Time per question',[[20,'20 sec'],[30,'30 sec'],[45,'45 sec']])+grp('theme','Scenery',[['dungeon','🏰 Stone Dungeon'],['garden','🌳 Garden']])}
  $('pBox').innerHTML=h;$('goBtn').disabled=!!(QURL&&!REMOTE&&!remoteErr)}
 $('pBox').addEventListener('click',e=>{const b=e.target.closest('.opt');if(!b)return;ac();const k=b.parentElement.dataset.k;DB.set[k]=['gates','tl'].includes(k)?+b.dataset.v:b.dataset.v;save();b.parentElement.querySelectorAll('.opt').forEach(x=>x.classList.toggle('on',x===b))});
 $('swBtn').onclick=()=>{renderUsers();show('scUsers')};$('histBtn').onclick=()=>{renderHist();show('scHist')};$('hBack').onclick=()=>goPrep();
-function renderHist(){const u0=meU(),s=u0.st;$('hTitle').textContent=u0.av+' '+u0.name;$('hSum').textContent=`${s.played} lượt · điểm cao nhất ${s.best} · ${s.ans?'đúng '+M.round(s.cor/s.ans*100)+'% ('+s.cor+'/'+s.ans+' câu)':'chưa có thống kê'}`;
+function renderHist(){const u0=meU(),s=u0.st;$('hTitle').textContent=u0.av+' '+u0.name;$('hSum').textContent=`${s.played} plays · best ${s.best} · ${s.ans?'correct '+M.round(s.cor/s.ans*100)+'% ('+s.cor+'/'+s.ans+' questions)':'no stats yet'}`;
  const sj=Object.keys(s.subj).map(k=>{const v=s.subj[k],p=M.round(v.c/v.a*100);return`<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><span style="flex:0 0 118px;font-size:13px">${SUBN[k]||k}</span><div style="flex:1;height:12px;border-radius:12px;background:rgba(255,255,255,.15);overflow:hidden"><i style="display:block;height:100%;width:${p}%;background:${p>=75?'#6ee7a8':p>=50?'#ffd166':'#ff8a9b'}"></i></div><b style="flex:0 0 48px;text-align:right;font-size:13px">${p}%</b></div>`}).join('');
- $('hBody').innerHTML=(sj?`<h3 style="color:var(--acc);font-size:14px;margin-bottom:4px">Độ chính xác theo môn</h3>${sj}<div style="height:10px"></div>`:'')+(u0.hist.length?`<table><thead><tr><th>Ngày</th><th>Môn</th><th class="num">Điểm</th><th class="num">Hạng</th></tr></thead><tbody>${u0.hist.map(h=>`<tr><td>${new Date(h.t).toLocaleDateString('vi-VN')}<br><small style="opacity:.7">${(h.secs/60|0)}:${String(h.secs%60).padStart(2,'0')} · ${h.mode==='exam'?'Thi':h.mode==='exam-server'?'Máy chủ':'Luyện'}</small></td><td>${SUBN[h.subj]||'Đề thi'}<br><small style="opacity:.7">Lớp ${h.grade}</small></td><td class="num">${h.score}/${h.max}</td><td class="num">${h.rank||'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="mid">Chưa có lượt chơi nào. Vào mê cung ngay thôi!</div>')}
-/* vào mê cung */
+ $('hBody').innerHTML=(sj?`<h3 style="color:var(--acc);font-size:14px;margin-bottom:4px">Accuracy by subject</h3>${sj}<div style="height:10px"></div>`:'')+(u0.hist.length?`<table><thead><tr><th>Date</th><th>Subject</th><th class="num">Score</th><th class="num">Rank</th></tr></thead><tbody>${u0.hist.map(h=>`<tr><td>${new Date(h.t).toLocaleDateString('en-US')}<br><small style="opacity:.7">${(h.secs/60|0)}:${String(h.secs%60).padStart(2,'0')} · ${h.mode==='exam'?'Exam':h.mode==='exam-server'?'Server':'Practice'}</small></td><td>${SUBN[h.subj]||'Exam'}<br><small style="opacity:.7">Grade ${h.grade}</small></td><td class="num">${h.score}/${h.max}</td><td class="num">${h.rank||'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="mid">No plays yet. Jump into the maze!</div>')}
+/* enter the maze */
 $('goBtn').onclick=()=>{ac();startGame()};
 function startGame(){
  const u0=meU(),set=DB.set;isRemote=!!(QURL&&REMOTE);mode=isRemote?'exam':set.mode;TH=THEMES[set.theme]||THEMES.dungeon;
@@ -488,13 +490,13 @@ function startGame(){
  A=Q.map(q=>({questionId:q.id,answerIds:[],text:'',timeSpent:0,answered:false}));doneN=0;tabOut=0;submitting=0;submitted=0;mapOpen=0;paused=0;burstL=[];
  genMaze(Q.length);Object.assign(P,{x:MZ.sx,y:MZ.sy,a:MZ.sa,pt:0,bt:0});for(const k in K)K[k]=0;
  started=1;startedAt=Date.now();SCRS.forEach(s=>hide(s));$('ico').style.display=$('me').style.display=$('obj').style.display=$('tm').style.display='';$('isnd').textContent=DB.set.sfx?'🔊':'🔇';hudUser();hud();
- if(!DB.seenTut){DB.seenTut=1;save();paused=1;$('tut').style.display='grid'}else toast(mode==='practice'?'Luyện tập: trả lời xong sẽ thấy đáp án ngay.':'Chế độ thi: đáp án chỉ hiện sau khi nộp bài.')}
+ if(!DB.seenTut){DB.seenTut=1;save();paused=1;$('tut').style.display='grid'}else toast(mode==='practice'?'Practice: you will see the answer right after each question.':'Exam mode: answers only appear after you submit.')}
 $('tutOk').onclick=()=>{$('tut').style.display='none';paused=0;ac()};
 
-/* ================= Khởi động ================= */
+/* ================= Boot ================= */
 rs();requestAnimationFrame(loop);
 genMaze(3);render();
-if(DB.users.length&&DB.active&&meU()){/* hiện danh sách để chọn/đổi người */}
+if(DB.users.length&&DB.active&&meU()){/* show the list so the player can pick or switch */}
 renderUsers();loadRemote();
 if(DEBUG)window.__mz={P,K,get Q(){return Q},get A(){return A},get GD(){return GD},get MZ(){return MZ},map,update,render,interact,finishQ,closeQ,openReview,get doneN(){return doneN},get qOpen(){return qOpen},get started(){return started},get submitted(){return submitted},get DB(){return DB},get TH(){return TH},THEMES,get DEC(){return DEC},startGame,goPrep,get buf(){return buf},get RW(){return RW},get RH(){return RH}};
 </script>

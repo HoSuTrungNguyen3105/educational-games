@@ -1,55 +1,55 @@
-// src/games/offline/games-src/scramble.js — Săn Kho Báu
-// Mỗi rương là một câu đố: xếp các chữ cái xáo trộn thành từ khóa để mở rương.
+// src/games/offline/games-src/scramble.js — Treasure Hunt
+// Each chest is a riddle: arrange the scrambled letters into the keyword to open it.
 
 const TREASURE_WORDS = [
-    { w: 'MÈO', c: 'Con vật nhỏ, kêu "meo meo"' },
-    { w: 'KEM', c: 'Món ngọt lạnh, ăn mùa hè' },
-    { w: 'HOA', c: 'Nở đẹp và thường có mùi thơm' },
-    { w: 'VỊT', c: 'Con vật bơi giỏi, kêu "cạp cạp"' },
-    { w: 'MƯA', c: 'Nước rơi từ trời, ra đường cần ô' },
-    { w: 'MÂY', c: 'Trắng xốp, trôi trên bầu trời' },
-    { w: 'TRÀ', c: 'Đồ uống ấm từ lá, hay dùng tiếp khách' },
-    { w: 'ĐÈN', c: 'Bật lên để soi sáng' },
-    { w: 'GHẾ', c: 'Đồ nội thất để ngồi' },
-    { w: 'CÁO', c: 'Con vật ranh mãnh, có đuôi to' },
-    { w: 'VOI', c: 'Con vật to nhất trên cạn, có vòi dài' },
-    { w: 'KHỈ', c: 'Con vật leo cây giỏi, thích ăn chuối' },
-    { w: 'THỎ', c: 'Con vật tai dài, thích cà rốt' },
-    { w: 'ONG', c: 'Côn trùng nhỏ, hút mật hoa' },
-    { w: 'BÚT', c: 'Đồ dùng để viết chữ' },
-    { w: 'CẶP', c: 'Đồ dùng đựng sách đến trường' },
-    { w: 'BÀN', c: 'Đồ nội thất để đặt sách vở' },
-    { w: 'CỬA', c: 'Chỗ ra vào của ngôi nhà' },
-    { w: 'NÚI', c: 'Cao lớn, có đỉnh và sườn' },
-    { w: 'CẦU', c: 'Bắc qua sông để đi lại' },
-    { w: 'TÀU', c: 'Chạy trên đường ray hoặc trên biển' },
-    { w: 'SÁCH', c: 'Mở ra để đọc, có nhiều trang' },
-    { w: 'BÁNH', c: 'Món ăn làm từ bột, thường tròn' },
-    { w: 'CƯỜI', c: 'Biểu cảm khi thấy vui' },
-    { w: 'SÓNG', c: 'Nước biển dâng lên rồi hạ xuống' },
-    { w: 'NẮNG', c: 'Ánh sáng mạnh, ra đường cần đội mũ' },
-    { w: 'BIỂN', c: 'Vùng nước mặn rộng lớn' },
-    { w: 'NGỰA', c: 'Con vật chạy nhanh, có bờm' },
-    { w: 'RỒNG', c: 'Con vật trong truyện cổ, biết bay' },
-    { w: 'BƯỚM', c: 'Côn trùng có cánh nhiều màu' },
-    { w: 'KIẾN', c: 'Côn trùng nhỏ, đi thành đàn' },
-    { w: 'VƯỜN', c: 'Nơi trồng cây và hoa' },
-    { w: 'SÔNG', c: 'Dòng nước chảy dài ra biển' },
-    { w: 'SUỐI', c: 'Nước chảy nhỏ giữa núi rừng' },
-    { w: 'THÁC', c: 'Nước đổ từ trên cao xuống' },
-    { w: 'ĐÀN', c: 'Nhạc cụ có dây, gảy bằng tay' },
-    { w: 'SÁO', c: 'Nhạc cụ thổi bằng hơi' },
-    { w: 'PHIM', c: 'Xem ở rạp hoặc trên tivi' },
-    { w: 'NHẠC', c: 'Nghe bằng tai, có giai điệu' },
-    { w: 'TRƯỜNG', c: 'Nơi học sinh đến học mỗi ngày' },
-    { w: 'TRỐNG', c: 'Nhạc cụ gõ, báo giờ vào lớp' },
-    { w: 'ĐƯỜNG', c: 'Lối đi dành cho xe cộ' },
-    { w: 'THUYỀN', c: 'Phương tiện đi trên mặt nước' },
-    { w: 'PHƯỢNG', c: 'Cây nở hoa đỏ báo hè về' },
-    { w: 'TUYẾT', c: 'Nước đóng băng rơi thành hạt trắng' },
+    { w: 'CAT', c: 'Small pet that says "meow"' },
+    { w: 'DOG', c: 'Loyal pet that says "woof"' },
+    { w: 'BEE', c: 'Striped insect that makes honey' },
+    { w: 'SUN', c: 'Bright ball of light in the sky' },
+    { w: 'SKY', c: 'The big blue space above us' },
+    { w: 'SEA', c: 'Huge body of salty water' },
+    { w: 'TEA', c: 'Warm drink made from leaves' },
+    { w: 'CUP', c: 'You drink from it' },
+    { w: 'BED', c: 'Furniture you sleep on' },
+    { w: 'BUS', c: 'Big vehicle that carries many people' },
+    { w: 'CAR', c: 'Vehicle with four wheels' },
+    { w: 'HAT', c: 'You wear it on your head' },
+    { w: 'KEY', c: 'It opens a lock' },
+    { w: 'OWL', c: 'Night bird with big round eyes' },
+    { w: 'FOX', c: 'Clever animal with a bushy tail' },
+    { w: 'ANT', c: 'Tiny insect that lives in a colony' },
+    { w: 'ICE', c: 'Frozen water, cold and hard' },
+    { w: 'JAM', c: 'Sweet fruit spread for bread' },
+    { w: 'PIE', c: 'Baked dessert with a crust' },
+    { w: 'MAP', c: 'Drawing that shows where places are' },
+    { w: 'PEN', c: 'Tool you write with' },
+    { w: 'BAG', c: 'You carry books in it' },
+    { w: 'EGG', c: 'Round food that comes from a hen' },
+    { w: 'CAKE', c: 'Sweet baked treat for birthdays' },
+    { w: 'MOON', c: 'It glows in the night sky' },
+    { w: 'STAR', c: 'Tiny light twinkling at night' },
+    { w: 'FISH', c: 'Animal that swims and has fins' },
+    { w: 'TREE', c: 'Tall plant with a trunk and leaves' },
+    { w: 'BOAT', c: 'Vehicle that floats on water' },
+    { w: 'ROAD', c: 'Path for cars and buses' },
+    { w: 'BIRD', c: 'Animal with wings that can fly' },
+    { w: 'DRUM', c: 'Musical instrument you hit' },
+    { w: 'FLAG', c: 'Cloth that stands for a country' },
+    { w: 'LAMP', c: 'Turn it on to get light' },
+    { w: 'MILK', c: 'White drink from a cow' },
+    { w: 'NEST', c: 'Home a bird builds for its eggs' },
+    { w: 'RING', c: 'Jewelry you wear on your finger' },
+    { w: 'RIVER', c: 'Long stream of water flowing to the sea' },
+    { w: 'TRAIN', c: 'Runs on rails and carries passengers' },
+    { w: 'APPLE', c: 'Round red or green fruit' },
+    { w: 'HOUSE', c: 'Building where a family lives' },
+    { w: 'MUSIC', c: 'You listen to it with your ears' },
+    { w: 'CLOUD', c: 'Fluffy white shape in the sky' },
+    { w: 'SNAKE', c: 'Long animal with no legs' },
+    { w: 'DRAGON', c: 'Flying beast from old stories' },
 ];
 
-/** Mỗi mức chọn từ theo độ dài để độ khó đến từ chính câu đố. */
+/** Each mode picks words by length so difficulty comes from the riddles themselves. */
 function treasureWordsFor(mode) {
     const len = (x) => [...x.w].length;
     const want = (x) =>
@@ -128,10 +128,10 @@ function startTreasure(root, mode, modeIndex, resume) {
             }).join('')}</div>
             <div class="tiles">${tiles.map((t, k) => `<button class="tl" data-t="${k}" ${t.used ? 'disabled' : ''}>${t.ch}</button>`).join('')}</div>
             <div class="row">
-                <button class="btn alt" data-a="hint">💡 Gợi ý (−15 điểm)</button>
-                <button class="btn alt" data-a="skip">⏭ Bỏ qua (−1 mạng)</button>
+                <button class="btn alt" data-a="hint">💡 Hint (−15 points)</button>
+                <button class="btn alt" data-a="skip">⏭ Skip (−1 life)</button>
             </div>
-            <p class="hint">Xếp đủ chữ cái để mở rương. Sai cả từ sẽ mất 1 mạng; gợi ý mở đúng một ô tiếp theo.</p>`;
+            <p class="hint">Fill in all the letters to open the chest. A wrong whole word costs 1 life; a hint fills the next correct letter.</p>`;
     }
 
     function updateClock() {
@@ -218,7 +218,7 @@ function startTreasure(root, mode, modeIndex, resume) {
         if (opened >= words.length) S.flags.w10 = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 4) + opened,
-            lines: [`Mở được ${opened}/${words.length} rương`, `${score} điểm thưởng`],
+            lines: [`Opened ${opened}/${words.length} chests`, `${score} bonus points`],
             replay: scrambleGame, details: { opened, hints },
         });
     }
@@ -279,23 +279,23 @@ function scrambleGame(root) {
     }
     if (saved) clearOfflineRun('scramble');
     gqIntro(root, {
-        id: 'scramble', icon: '🗺️', name: 'Săn Kho Báu',
-        desc: 'Mở từng rương bằng cách xếp các chữ cái xáo trộn thành từ khóa đúng.',
+        id: 'scramble', icon: '🗺️', name: 'Treasure Hunt',
+        desc: 'Open each chest by arranging the scrambled letters into the right keyword.',
         steps: [
-            'Mỗi rương có một câu gợi ý — tìm từ khóa còn thiếu.',
-            'Chạm các ô chữ theo đúng thứ tự để xếp thành từ.',
-            'Sai cả từ hoặc bỏ qua sẽ mất 1 mạng; hết giờ là kết thúc chuyến đi.',
+            'Each chest has a clue — find the missing keyword.',
+            'Tap the letter tiles in order to spell the word.',
+            'A wrong word or a skip costs 1 life; when time runs out, the trip ends.',
         ],
     }, (mode, index) => startTreasure(root, mode, index));
 }
 
 startSingleGame({
     id: 'scramble',
-    name: 'Săn Kho Báu',
+    name: 'Treasure Hunt',
     icon: '🗺️',
     storageKey: 'offline_scramble',
     mount: scrambleGame,
     badges: [
-        { id: 'word10', n: 'Mở 8 rương', i: '🧩', ok: () => !!S.flags.w10 },
+        { id: 'word10', n: 'Open 8 Chests', i: '🧩', ok: () => !!S.flags.w10 },
     ],
 });

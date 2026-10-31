@@ -2,7 +2,7 @@
 // scripts/build-parkour-fps.mjs
 //
 // Sao chép src/games/parkour/parkour-tri-thuc-3d/ParkourTriThuc3D.html
-// (đã tự chứa: css + js nội tuyến) thành src/games/offline/parkour-tri-thuc-3d.html
+// (đã tự chứa: css + js nội tuyến) thành src/games/offline/first-person-parkour.html
 //
 //   npm run games:build:parkour-fps
 //
@@ -16,7 +16,7 @@ import path from "node:path";
 
 const G = (p) => path.resolve(process.cwd(), p);
 const SRC = "src/games/parkour/parkour-tri-thuc-3d/ParkourTriThuc3D.html";
-const OUT = "src/games/offline/parkour-tri-thuc-3d.html";
+const OUT = "src/games/offline/first-person-parkour.html";
 
 // Không escape hàng loạt: đây đã là HTML hoàn chỉnh, thẻ </script> thật mà đổi
 // thành <\/script> thì script không đóng được nữa. Chỉ cần kiểm tra số thẻ mở/đóng

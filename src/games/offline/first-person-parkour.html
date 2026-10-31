@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Parkour Tri Thức – Góc nhìn thứ nhất</title>
+<title>first-person parkour</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none}
@@ -73,75 +73,75 @@ h3.sec{color:#fff;font-weight:800;font-size:15px;text-shadow:0 2px 4px #0006}
 
 <div class="screen bgp on" id="home">
   <div class="row"><div class="chip" id="hWallet">⭐ 0</div><div class="chip" id="hBest">🏆 0</div></div>
-  <div class="logo">Parkour Tri Thức<small>👁️ Góc nhìn thứ nhất · Nhảy · Trả lời</small></div>
-  <h3 class="sec">⚔️ CHỌN THỬ THÁCH</h3><div class="scroller" id="challenges"></div>
-  <h3 class="sec">📚 CHỌN MÔN</h3><div class="scroller" id="subjects"></div>
+  <div class="logo">Knowledge Parkour<small>👁️ First-person · Jump · Answer</small></div>
+  <h3 class="sec">⚔️ PICK A CHALLENGE</h3><div class="scroller" id="challenges"></div>
+  <h3 class="sec">📚 PICK A SUBJECT</h3><div class="scroller" id="subjects"></div>
   <div id="runInfo"></div>
-  <button class="btn g big" id="contBtn" hidden>CHƠI TIẾP ▶</button>
-  <button class="btn g big" id="playBtn">CHƠI NGAY! 🎮</button>
-  <div class="row"><button class="btn w sm" id="edBtn">🧑‍🏫 Câu hỏi</button><button class="btn w sm" id="sndBtn">🔊 Bật</button></div>
+  <button class="btn g big" id="contBtn" hidden>CONTINUE ▶</button>
+  <button class="btn g big" id="playBtn">PLAY NOW! 🎮</button>
+  <div class="row"><button class="btn w sm" id="edBtn">🧑‍🏫 Questions</button><button class="btn w sm" id="sndBtn">🔊 On</button></div>
 </div>
 
 <div class="screen" id="qm"><div class="qcard">
   <span class="qchip" id="qChip"></span><div class="qtext" id="qText"></div><div class="qicon" id="qIcon"></div>
-  <div class="qtools"><button id="qSpeak">🔊 Nghe</button><button id="qHint">💡 Gợi ý (3⭐)</button></div>
+  <div class="qtools"><button id="qSpeak">🔊 Listen</button><button id="qHint">💡 Hint (3⭐)</button></div>
   <div class="qans" id="qAns"></div><div class="qfb" id="qFb"></div>
 </div></div>
 
 <div class="screen" id="result"><div class="panel"><h2 id="rTitle"></h2>
-  <div class="res"><div><b id="rCoin">0</b>🪙 xu</div><div><b id="rAcc">0%</b>đúng</div><div><b id="rDist">0</b>m</div></div>
+  <div class="res"><div><b id="rCoin">0</b>🪙 coins</div><div><b id="rAcc">0%</b>correct</div><div><b id="rDist">0</b>m</div></div>
   <div id="rReward" style="font-weight:800;color:#7a3f00"></div>
-  <button class="btn g" id="rRetry">↺ Chơi lại</button><button class="btn w sm" id="rHome">🏠 Trang chủ</button></div></div>
+  <button class="btn g" id="rRetry">↺ Play again</button><button class="btn w sm" id="rHome">🏠 Home</button></div></div>
 
-<div class="screen" id="pause"><div class="panel"><h2>Tạm dừng</h2>
-  <button class="btn g" id="resumeBtn">Tiếp tục ▶</button><button class="btn w sm" id="pRetry">↺ Chơi lại</button><button class="btn w sm" id="pHome">🏠 Trang chủ</button></div></div>
+<div class="screen" id="pause"><div class="panel"><h2>Paused</h2>
+  <button class="btn g" id="resumeBtn">Continue ▶</button><button class="btn w sm" id="pRetry">↺ Play again</button><button class="btn w sm" id="pHome">🏠 Home</button></div></div>
 
 <div class="screen" id="editor" style="background:#1a0d4a"><div class="panel" style="background:#0a0525;color:#fff;border-color:#ffd43b;width:min(100%,740px)">
-  <h2 style="color:#ffd43b;font-size:20px">🧑‍🏫 Bộ câu hỏi + Challenge (JSON)</h2>
-  <div style="font-size:11px;opacity:.85;text-align:left">Môn: <code>viet/eng/sci/geo/custom[]</code> mỗi câu <code>{q,a[2-4],c,g,icon?,e?}</code> (c = chỉ số đáp án đúng, từ 0). Challenge: <code>id,name,icon,desc,reward</code> + <code>timeLimit, collectCoins, correctAnswers, minDistance, noWrong, noFall, minCorrect</code>.</div>
+  <h2 style="color:#ffd43b;font-size:20px">🧑‍🏫 Question bank + Challenges (JSON)</h2>
+  <div style="font-size:11px;opacity:.85;text-align:left">Subject: <code>viet/eng/sci/geo/custom[]</code>; each question <code>{q,a[2-4],c,g,icon?,e?}</code> (c = index of the correct answer, starting at 0). Challenge: <code>id,name,icon,desc,reward</code> + <code>timeLimit, collectCoins, correctAnswers, minDistance, noWrong, noFall, minCorrect</code>.</div>
   <textarea id="bankText" spellcheck="false"></textarea><div id="bankErr" style="color:#ff9a9a;font-size:12px;min-height:14px;width:100%;text-align:left"></div>
-  <div class="row"><button class="btn g sm" id="bkApply">✅ Áp dụng</button><button class="btn w sm" id="bkReset">↺ Mặc định</button><button class="btn w sm" id="bkDown">⬇️ Tải</button><button class="btn w sm" id="bkLoad">📂 Nạp</button><input type="file" id="bkFile" accept=".json" hidden></div>
-  <button class="btn w sm" id="edBack">◀ Quay lại</button></div></div>
+  <div class="row"><button class="btn g sm" id="bkApply">✅ Apply</button><button class="btn w sm" id="bkReset">↺ Defaults</button><button class="btn w sm" id="bkDown">⬇️ Download</button><button class="btn w sm" id="bkLoad">📂 Load</button><input type="file" id="bkFile" accept=".json" hidden></div>
+  <button class="btn w sm" id="edBack">◀ Back</button></div></div>
 
 <script type="application/json" id="bankDefault">
 {
   "challenges": [
-    { "id": "free",       "name": "Tự do",       "icon": "🎮", "desc": "Chơi tự do, không giới hạn",              "reward": 0 },
-    { "id": "speedrun",   "name": "Nước rút",    "icon": "⚡", "desc": "Về đích trong 60 giây",                    "timeLimit": 60,   "reward": 100 },
-    { "id": "sprint",     "name": "Siêu tốc",    "icon": "💨", "desc": "Về đích trong 40 giây",                    "timeLimit": 40,   "reward": 200 },
-    { "id": "collector",  "name": "Sưu tập",     "icon": "🪙", "desc": "Thu thập 20 xu để thắng",                  "collectCoins": 20, "reward": 80 },
-    { "id": "treasure",   "name": "Kho báu",     "icon": "💰", "desc": "Thu thập 40 xu để thắng",                  "collectCoins": 40, "reward": 180 },
-    { "id": "scholar",    "name": "Học giả",     "icon": "🎓", "desc": "Trả lời đúng 5 câu",                       "correctAnswers": 5, "reward": 120 },
-    { "id": "professor",  "name": "Giáo sư",     "icon": "🧠", "desc": "Trả lời đúng 10 câu",                      "correctAnswers": 10, "reward": 250 },
-    { "id": "perfect",    "name": "Hoàn hảo",    "icon": "💎", "desc": "Về đích không sai câu nào",                "noWrong": true,   "reward": 150 },
-    { "id": "flawless",   "name": "Vô khuyết",   "icon": "✨", "desc": "Đúng 5 câu + không sai câu nào",           "noWrong": true, "correctAnswers": 5, "reward": 300 },
-    { "id": "explorer",   "name": "Thám hiểm",   "icon": "🗺️", "desc": "Đi được 100 mét",                          "minDistance": 100, "reward": 60 },
-    { "id": "nomiss",     "name": "Không ngã",   "icon": "🎯", "desc": "Không rơi + trả lời đúng 3 câu",           "noFall": true, "minCorrect": 3, "reward": 100 },
-    { "id": "marathon",   "name": "Marathon",    "icon": "🏃", "desc": "Đi 150m + đúng 5 câu + không rơi",         "minDistance": 150, "minCorrect": 5, "noFall": true, "reward": 250 },
-    { "id": "godspeed",   "name": "Thần tốc",    "icon": "🌟", "desc": "40s + không sai + không rơi",              "timeLimit": 40, "noWrong": true, "noFall": true, "reward": 500 }
+    { "id": "free",       "name": "Free Play",    "icon": "🎮", "desc": "Play freely with no limits",              "reward": 0 },
+    { "id": "speedrun",   "name": "Sprint",       "icon": "⚡", "desc": "Reach the goal in 60 seconds",             "timeLimit": 60,   "reward": 100 },
+    { "id": "sprint",     "name": "Turbo",        "icon": "💨", "desc": "Reach the goal in 40 seconds",             "timeLimit": 40,   "reward": 200 },
+    { "id": "collector",  "name": "Collector",    "icon": "🪙", "desc": "Collect 20 coins to win",                  "collectCoins": 20, "reward": 80 },
+    { "id": "treasure",   "name": "Treasure",     "icon": "💰", "desc": "Collect 40 coins to win",                  "collectCoins": 40, "reward": 180 },
+    { "id": "scholar",    "name": "Scholar",      "icon": "🎓", "desc": "Answer 5 questions correctly",             "correctAnswers": 5, "reward": 120 },
+    { "id": "professor",  "name": "Professor",    "icon": "🧠", "desc": "Answer 10 questions correctly",            "correctAnswers": 10, "reward": 250 },
+    { "id": "perfect",    "name": "Perfect",      "icon": "💎", "desc": "Reach the goal with no wrong answers",     "noWrong": true,   "reward": 150 },
+    { "id": "flawless",   "name": "Flawless",     "icon": "✨", "desc": "5 correct answers + no mistakes",          "noWrong": true, "correctAnswers": 5, "reward": 300 },
+    { "id": "explorer",   "name": "Explorer",     "icon": "🗺️", "desc": "Travel 100 meters",                        "minDistance": 100, "reward": 60 },
+    { "id": "nomiss",     "name": "No Falls",     "icon": "🎯", "desc": "Don't fall + answer 3 questions correctly","noFall": true, "minCorrect": 3, "reward": 100 },
+    { "id": "marathon",   "name": "Marathon",     "icon": "🏃", "desc": "Travel 150m + 5 correct + no falls",       "minDistance": 150, "minCorrect": 5, "noFall": true, "reward": 250 },
+    { "id": "godspeed",   "name": "Godspeed",     "icon": "🌟", "desc": "40s + no mistakes + no falls",             "timeLimit": 40, "noWrong": true, "noFall": true, "reward": 500 }
   ],
   "viet": [
-    { "q": "Từ nào chỉ con vật?", "a": ["mèo","bàn","sách","bút"], "c": 0, "g": 1, "icon": "🐱" },
-    { "q": "Từ trái nghĩa với 'to' là:", "a": ["nhỏ","cao","dài","rộng"], "c": 0, "g": 1 },
-    { "q": "Từ nào là từ láy?", "a": ["long lanh","bàn ghế","xe cộ","học hành"], "c": 0, "g": 3 },
-    { "q": "Câu 'Trời mưa như trút nước' dùng biện pháp gì?", "a": ["So sánh","Nhân hóa","Điệp từ","Ẩn dụ"], "c": 0, "g": 4 }
+    { "q": "Which word names an animal?", "a": ["cat","table","book","pen"], "c": 0, "g": 1, "icon": "🐱" },
+    { "q": "What is the opposite of 'big'?", "a": ["small","tall","long","wide"], "c": 0, "g": 1 },
+    { "q": "Which word rhymes with 'cat'?", "a": ["hat","dog","sun","cup"], "c": 0, "g": 3 },
+    { "q": "The sentence 'It's raining cats and dogs' uses what?", "a": ["An idiom","Personification","Repetition","A metaphor"], "c": 0, "g": 4 }
   ],
   "eng": [
-    { "q": "Từ 'Apple' nghĩa là gì?", "a": ["Quả táo","Quả cam","Quả chuối","Quả nho"], "c": 0, "g": 1, "icon": "🍎", "lang": "en-US" },
-    { "q": "Con mèo trong tiếng Anh là gì?", "a": ["Cat","Dog","Bird","Fish"], "c": 0, "g": 1, "icon": "🐱" },
-    { "q": "Điền vào chỗ trống: I ___ a student.", "a": ["am","is","are","be"], "c": 0, "g": 2, "lang": "en-US" },
-    { "q": "Số nhiều của 'child' là gì?", "a": ["children","childs","childes","childrens"], "c": 0, "g": 4 }
+    { "q": "Which of these is a fruit?", "a": ["Apple","Carrot","Potato","Onion"], "c": 0, "g": 1, "icon": "🍎", "lang": "en-US" },
+    { "q": "Which animal says 'meow'?", "a": ["Cat","Dog","Bird","Fish"], "c": 0, "g": 1, "icon": "🐱" },
+    { "q": "Fill in the blank: I ___ a student.", "a": ["am","is","are","be"], "c": 0, "g": 2, "lang": "en-US" },
+    { "q": "What is the plural of 'child'?", "a": ["children","childs","childes","childrens"], "c": 0, "g": 4 }
   ],
   "sci": [
-    { "q": "Con vật nào sống dưới nước?", "a": ["Cá","Gà","Chó","Mèo"], "c": 0, "g": 1, "icon": "🐟" },
-    { "q": "Nước đóng băng ở bao nhiêu độ C?", "a": ["0°C","10°C","50°C","100°C"], "c": 0, "g": 3, "icon": "🧊" },
-    { "q": "Hành tinh nào gần Mặt Trời nhất?", "a": ["Sao Thủy","Sao Hỏa","Trái Đất","Sao Kim"], "c": 0, "g": 3, "icon": "🪐" },
-    { "q": "Trái Đất quay quanh Mặt Trời hết khoảng bao lâu?", "a": ["365 ngày","30 ngày","24 giờ","7 ngày"], "c": 0, "g": 5, "icon": "🌍" }
+    { "q": "Which animal lives in water?", "a": ["Fish","Chicken","Dog","Cat"], "c": 0, "g": 1, "icon": "🐟" },
+    { "q": "At what temperature does water freeze?", "a": ["0°C","10°C","50°C","100°C"], "c": 0, "g": 3, "icon": "🧊" },
+    { "q": "Which planet is closest to the Sun?", "a": ["Mercury","Mars","Earth","Venus"], "c": 0, "g": 3, "icon": "🪐" },
+    { "q": "How long does Earth take to orbit the Sun?", "a": ["365 days","30 days","24 hours","7 days"], "c": 0, "g": 5, "icon": "🌍" }
   ],
   "geo": [
-    { "q": "Thủ đô của Việt Nam là gì?", "a": ["Hà Nội","TP.HCM","Đà Nẵng","Huế"], "c": 0, "g": 1, "icon": "🏛️" },
-    { "q": "Vịnh Hạ Long thuộc tỉnh nào?", "a": ["Quảng Ninh","Hải Phòng","Thanh Hóa","Nghệ An"], "c": 0, "g": 3, "icon": "⛵" },
-    { "q": "Đỉnh núi cao nhất Việt Nam là đỉnh nào?", "a": ["Phan-xi-păng","Bà Đen","Ngọc Linh","Lang Biang"], "c": 0, "g": 4, "icon": "⛰️" }
+    { "q": "What is the capital of Vietnam?", "a": ["Hanoi","Ho Chi Minh City","Da Nang","Hue"], "c": 0, "g": 1, "icon": "🏛️" },
+    { "q": "Ha Long Bay is in which province?", "a": ["Quang Ninh","Hai Phong","Thanh Hoa","Nghe An"], "c": 0, "g": 3, "icon": "⛵" },
+    { "q": "What is the highest mountain in Vietnam?", "a": ["Fansipan","Ba Den","Ngoc Linh","Lang Biang"], "c": 0, "g": 4, "icon": "⛰️" }
   ],
   "custom": []
 }
@@ -152,17 +152,17 @@ h3.sec{color:#fff;font-weight:800;font-size:15px;text-shadow:0 2px 4px #0006}
 'use strict';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),ri=(a,b)=>Math.floor(rand(a,b+1)),pick=a=>a[Math.floor(Math.random()*a.length)];
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-/* ===== Lưu ===== */
+/* ===== Save ===== */
 const KEY='parkour-fps-v1';let mem=null;
 const load=()=>{try{const s=localStorage.getItem(KEY);if(s)return JSON.parse(s)}catch(e){}return mem?JSON.parse(mem):{}};
 const S=Object.assign({wallet:0,grade:3,subject:'mix',challenge:'free',sfx:true,bank:null,best:0},load());
 const persist=()=>{const s=JSON.stringify(S);try{localStorage.setItem(KEY,s)}catch(e){mem=s}};
-/* ===== Ngân hàng câu hỏi ===== */
-const SUBN={math:'Toán',viet:'Tiếng Việt',eng:'Tiếng Anh',sci:'Khoa học',geo:'Địa lí',custom:'Thầy cô',mix:'Tổng hợp'},SI={math:'🔢',viet:'📖',eng:'🔤',sci:'🔬',geo:'🗺️',mix:'🌈',custom:'🧑‍🏫'};
-function validate(b){const er=[];if(!b||typeof b!=='object')return['JSON phải là object'];
- if(b.challenges!==undefined){if(!Array.isArray(b.challenges))er.push('"challenges" phải là mảng');else b.challenges.forEach((c,i)=>{if(!c||typeof c.id!=='string'||typeof c.name!=='string')er.push(`challenges#${i+1}: thiếu id/name`)})}
- ['viet','eng','sci','geo','custom'].forEach(k=>{if(b[k]===undefined)return;if(!Array.isArray(b[k])){er.push(`"${k}" phải mảng`);return}
-  b[k].forEach((q,i)=>{const p=`${k}#${i+1}`;if(!q||typeof q.q!=='string')er.push(p+': thiếu q');else if(!Array.isArray(q.a)||q.a.length<2||q.a.length>4)er.push(p+': a cần 2-4 đáp án');else if(!Number.isInteger(q.c)||q.c<0||q.c>=q.a.length)er.push(p+': c sai')})});return er}
+/* ===== Question bank ===== */
+const SUBN={math:'Math',viet:'Language',eng:'English',sci:'Science',geo:'Geography',custom:'Teacher',mix:'Mixed'},SI={math:'🔢',viet:'📖',eng:'🔤',sci:'🔬',geo:'🗺️',mix:'🌈',custom:'🧑‍🏫'};
+function validate(b){const er=[];if(!b||typeof b!=='object')return['JSON must be an object'];
+ if(b.challenges!==undefined){if(!Array.isArray(b.challenges))er.push('"challenges" must be an array');else b.challenges.forEach((c,i)=>{if(!c||typeof c.id!=='string'||typeof c.name!=='string')er.push(`challenges#${i+1}: missing id/name`)})}
+ ['viet','eng','sci','geo','custom'].forEach(k=>{if(b[k]===undefined)return;if(!Array.isArray(b[k])){er.push(`"${k}" must be an array`);return}
+  b[k].forEach((q,i)=>{const p=`${k}#${i+1}`;if(!q||typeof q.q!=='string')er.push(p+': missing q');else if(!Array.isArray(q.a)||q.a.length<2||q.a.length>4)er.push(p+': a needs 2-4 answers');else if(!Number.isInteger(q.c)||q.c<0||q.c>=q.a.length)er.push(p+': invalid c')})});return er}
 const DEF=JSON.parse($('bankDefault').textContent);
 let bank=(S.bank&&!validate(S.bank).length)?S.bank:DEF;if(!bank.challenges)bank.challenges=DEF.challenges;
 function opts(c,sp,min){const set=new Set([c]);let g=0;while(set.size<4&&g++<90){const v=c+ri(-sp,sp);if(v!==c&&v>=min)set.add(v)}let k=1;while(set.size<4)set.add(c+k++);const a=shuffle([...set]);return{a:a.map(String),c:a.indexOf(c)}}
@@ -171,17 +171,17 @@ function genMath(g){const lv=(Math.random()<.25&&g>1)?g-1:g;let q,r,ic='🧮';
  if(lv===2){const a=ri(2,9),b=ri(2,9);r=a*b;q=`${a} × ${b} = ?`;const o=opts(r,6,0);return mq(q,o,'✖️')}
  if(lv===3){const a=ri(10,99),b=ri(10,99);r=a+b;q=`${a} + ${b} = ?`;const o=opts(r,8,0);return mq(q,o,ic)}
  if(lv===4){const a=ri(11,49),b=ri(2,9);r=a*b;q=`${a} × ${b} = ?`;const o=opts(r,12,1);return mq(q,o,'✖️')}
- const p=pick([10,20,25,50]),bb=pick([40,60,80,100]);r=p*bb/100;q=`${p}% của ${bb} = ?`;return mq(q,opts(r,6,1),'％')}
-const mq=(q,o,ic)=>({q,a:o.a,c:o.c,e:'',icon:ic,lang:'vi-VN',subj:'math'});
+ const p=pick([10,20,25,50]),bb=pick([40,60,80,100]);r=p*bb/100;q=`${p}% of ${bb} = ?`;return mq(q,opts(r,6,1),'％')}
+const mq=(q,o,ic)=>({q,a:o.a,c:o.c,e:'',icon:ic,lang:'en-US',subj:'math'});
 function pickQ(){let s=S.subject;if(s==='mix')s=pick(['math','math','viet','eng','sci','geo'].concat((bank.custom||[]).length?['custom']:[]));
  if(s==='math')return genMath(S.grade);const all=bank[s]||[];if(!all.length)return genMath(S.grade);
- const q=pick(all),idx=shuffle(q.a.map((_,i)=>i));return{q:q.q,a:idx.map(i=>q.a[i]),c:idx.indexOf(q.c),e:q.e||'',icon:q.icon||'',lang:q.lang||'vi-VN',subj:s}}
-/* ===== Âm thanh ===== */
+ const q=pick(all),idx=shuffle(q.a.map((_,i)=>i));return{q:q.q,a:idx.map(i=>q.a[i]),c:idx.indexOf(q.c),e:q.e||'',icon:q.icon||'',lang:q.lang||'en-US',subj:s}}
+/* ===== Sound ===== */
 let ac=null;const audio=()=>{if(!ac)try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}if(ac&&ac.state==='suspended')ac.resume()};
 function tone(f,d=.15,v=.09,ty='sine',dl=0,sl=0){if(!ac||!S.sfx)return;const t=ac.currentTime+dl,o=ac.createOscillator(),g=ac.createGain();o.type=ty;o.frequency.setValueAtTime(f,t);if(sl)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+sl),t+d);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.05)}
 const sfx={jump:()=>tone(440,.14,.08,'triangle',0,300),dj:()=>{tone(660,.14,.08,'triangle',0,280);tone(990,.12,.06,'triangle',.04,200)},coin:()=>{tone(988,.06,.06,'square');tone(1319,.1,.06,'square',.04)},ok:()=>[523,659,784,1046].forEach((f,i)=>tone(f,.2,.1,'triangle',i*.06)),bad:()=>{tone(260,.2,.1,'sawtooth',0,-90);tone(180,.3,.09,'sawtooth',.15,-80)},tap:()=>tone(620,.06,.06,'triangle'),block:()=>tone(180,.1,.1,'triangle',0,60),fall:()=>{tone(440,.15,.08,'triangle',0,-300);tone(220,.25,.09,'sawtooth',.1,-120)},win:()=>[523,659,784,1046,1318].forEach((f,i)=>tone(f,.3,.11,'triangle',i*.1)),lose:()=>[392,330,262,196].forEach((f,i)=>tone(f,.4,.11,'sawtooth',i*.2))};
-function speak(t,l){if(!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=l||'vi-VN';u.rate=.92;speechSynthesis.speak(u)}catch(e){}}
-/* ===== Canvas + camera góc nhìn thứ nhất ===== */
+function speak(t,l){if(!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=l||'en-US';u.rate=.92;speechSynthesis.speak(u)}catch(e){}}
+/* ===== Canvas + first-person camera ===== */
 const cv=$('c'),ctx=cv.getContext('2d',{alpha:false});let W=0,H=0,F=0;
 function resize(){const sc=Math.min(1,1000/innerWidth)*Math.min(devicePixelRatio||1,1.5);W=cv.width=Math.round(innerWidth*sc);H=cv.height=Math.round(innerHeight*sc);F=H*.92}
 addEventListener('resize',resize);resize();
@@ -208,7 +208,7 @@ function drawSky(){const hy=H/2+Math.tan(pitch)*F,h=clamp(hy,0,H);
  let g=ctx.createLinearGradient(0,0,0,h||1);g.addColorStop(0,'#4aa8f5');g.addColorStop(1,'#cdeeff');ctx.fillStyle=g;ctx.fillRect(0,0,W,h);
  if(h<H){g=ctx.createLinearGradient(0,h,0,H);g.addColorStop(0,'#7fcdff');g.addColorStop(1,'#2a86c8');ctx.fillStyle=g;ctx.fillRect(0,h,W,H-h);
   ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;for(let i=1;i<7;i++){const y=h+(H-h)*(i*i/49);if(y>H)break;ctx.beginPath();for(let x=0;x<=W;x+=24)ctx.lineTo(x,y+Math.sin(x*.02+T*1.5+i)*3);ctx.stroke()}}}
-/* ===== Trạng thái ===== */
+/* ===== State ===== */
 const COLS=['#ec4899','#3b82f6','#fbbf24','#22c55e','#a855f7','#ef4444','#06b6d4','#f97316','#84cc16','#e879f9'];
 const rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
 const G={over:false,paused:true,coins:0,asked:0,correct:0,wrong:0,falls:0,dist:0,goalZ:100,ch:null,left:0};
@@ -223,9 +223,9 @@ function genLevel(){B=[];X=[];C=[];B.push(mkB(0,0,8,8,1,'#ec4899'));let z=6,x=0,
   z+=d+rand(.6+df*.7,1.5+df);}
  const gz=z+4,gt=B[B.length-1].y1;B.push(mkB(0,gz,8,8,gt,'#22c55e'));X.push({x:0,z:gz,w:.3,d:.3,y0:gt,y1:gt+6,c:[255,80,60]});X.push({x:.6,z:gz,w:1,d:.12,y0:gt+4.6,y1:gt+5.8,c:[255,215,0]});G.goalZ=gz-3}
 function newP(){return{x:0,y:1,z:0,vx:0,vz:0,vy:0,on:true,hold:false,cy:0,jb:0,ju:0,py:1,lx:0,ly:1,lz:0,ph:0}}
-/* ===== Vòng cập nhật ===== */
+/* ===== Update loop ===== */
 function update(dt){T+=dt;if(!P||G.paused||G.over)return;const ch=G.ch,R=.3;
- if(ch.timeLimit){G.left-=dt;if(G.left<=0){G.left=0;return end(false,'⏰ Hết giờ!')}}
+ if(ch.timeLimit){G.left-=dt;if(G.left<=0){G.left=0;return end(false,'⏰ Time\'s up!')}}
  let f=-joy.y+keys.w-keys.s,s=joy.x+keys.d-keys.a;const m=Math.hypot(f,s);if(m>1){f/=m;s/=m}
  const sp=7.6,sy=Math.sin(yaw),cy=Math.cos(yaw),tx=(sy*f+cy*s)*sp,tz=(cy*f-sy*s)*sp,k=Math.min(1,dt*(P.on?14:3.5));
  P.vx+=(tx-P.vx)*k;P.vz+=(tz-P.vz)*k;
@@ -244,15 +244,15 @@ function update(dt){T+=dt;if(!P||G.paused||G.over)return;const ch=G.ch,R=.3;
  if(P.on&&m>.1)P.ph+=dt*9;
  for(const o of X)if(o.q&&!o.used&&Math.abs(P.x-o.x)<.75&&Math.abs(P.z-o.z)<.75&&P.y+1.85>o.y0&&P.y<o.y1){o.used=true;o.c=[156,163,175];sfx.block();showQ();return}
  for(const o of C)if(!o.got&&Math.hypot(P.x-o.x,P.z-o.z)<1.1&&Math.abs(P.y+.9-o.y)<1.4){o.got=true;G.coins++;sfx.coin();hudUp()}
- if(P.y<-14){G.falls++;if(ch.noFall)return end(false,'💀 Rơi xuống!');P.x=P.lx;P.z=P.lz;P.y=P.ly+.2;P.vx=P.vz=P.vy=0;P.ju=0;sfx.fall();say('🔄 Quay lại!')}
+ if(P.y<-14){G.falls++;if(ch.noFall)return end(false,'💀 You fell!');P.x=P.lx;P.z=P.lz;P.y=P.ly+.2;P.vx=P.vz=P.vy=0;P.ju=0;sfx.fall();say('🔄 Back to start!')}
  $('prog').firstChild.style.width=clamp(P.z/G.goalZ*100,0,100)+'%';
- if(ch.collectCoins&&G.coins>=ch.collectCoins)return end(true,'🪙 Đủ xu rồi!');
- if(ch.correctAnswers&&G.correct>=ch.correctAnswers)return end(true,'🎓 Đủ câu đúng!');
- if(ch.minDistance&&!ch.correctAnswers&&!ch.collectCoins&&!ch.minCorrect&&G.dist>=ch.minDistance)return end(true,'🗺️ Đủ khoảng cách!');
- if(ch.minDistance&&ch.minCorrect&&!ch.noFall&&G.dist>=ch.minDistance&&G.correct>=ch.minCorrect)return end(true,'🏆 Hoàn thành!');
- if(P.z>=G.goalZ){if(ch.noWrong&&G.wrong>0)return end(false,'💔 Đã sai câu!');if(ch.minCorrect&&G.correct<ch.minCorrect)return end(false,`📚 Cần ${ch.minCorrect} câu đúng!`);if(ch.minDistance&&G.dist<ch.minDistance)return end(false,`🗺️ Cần ${ch.minDistance}m!`);end(true,'🎉 Về đích!')}
+ if(ch.collectCoins&&G.coins>=ch.collectCoins)return end(true,'🪙 Enough coins!');
+ if(ch.correctAnswers&&G.correct>=ch.correctAnswers)return end(true,'🎓 Enough correct answers!');
+ if(ch.minDistance&&!ch.correctAnswers&&!ch.collectCoins&&!ch.minCorrect&&G.dist>=ch.minDistance)return end(true,'🗺️ Distance reached!');
+ if(ch.minDistance&&ch.minCorrect&&!ch.noFall&&G.dist>=ch.minDistance&&G.correct>=ch.minCorrect)return end(true,'🏆 Challenge complete!');
+ if(P.z>=G.goalZ){if(ch.noWrong&&G.wrong>0)return end(false,'💔 You got one wrong!');if(ch.minCorrect&&G.correct<ch.minCorrect)return end(false,`📚 Need ${ch.minCorrect} correct answers!`);if(ch.minDistance&&G.dist<ch.minDistance)return end(false,`🗺️ Need ${ch.minDistance}m!`);end(true,'🎉 Goal reached!')}
  if(((T*10)|0)%3===0)hudUp()}
-/* ===== Vẽ ===== */
+/* ===== Draw ===== */
 function draw(){ctx.setTransform(1,0,0,1,0,0);drawSky();if(!P)return;
  const bob=P.on?Math.sin(P.ph)*.045:0;ex=P.x;ey=P.y+EYE+bob;ez=P.z;cyw=Math.cos(yaw);syw=Math.sin(yaw);cpt=Math.cos(pitch);spt=Math.sin(pitch);
  const L=[],d2=o=>(o.x-ex)**2+(o.z-ez)**2;
@@ -272,28 +272,28 @@ function hudUp(){$('coinP').textContent='🪙 '+G.coins;const ch=G.ch,p=$('chP')
  else if(ch.collectCoins){t+=`${G.coins}/${ch.collectCoins} 🪙`;if(G.coins>=ch.collectCoins)p.classList.add('ok')}
  else if(ch.correctAnswers){t+=`${G.correct}/${ch.correctAnswers} 🎓`;if(G.correct>=ch.correctAnswers)p.classList.add('ok')}
  else if(ch.minDistance){t+=`${Math.floor(G.dist)}/${ch.minDistance}m`+(ch.minCorrect?` · ${G.correct}✓`:'')}
- else if(ch.noWrong){t+=G.wrong?`${G.wrong} sai ❌`:'Hoàn hảo ✨';if(G.wrong)p.classList.add('warn')}
+ else if(ch.noWrong){t+=G.wrong?`${G.wrong} wrong ❌`:'Perfect ✨';if(G.wrong)p.classList.add('warn')}
  else if(ch.noFall)t+=`${G.correct}/${ch.minCorrect||0} ✓`;else t+=ch.name;p.textContent=t}
 function say(t){const e=$('say');e.textContent=t;e.classList.remove('show');void e.offsetWidth;e.classList.add('show')}
 function tip(t,ms=6500){const e=$('tip');e.textContent=t;e.classList.add('show');clearTimeout(tip.t);tip.t=setTimeout(()=>e.classList.remove('show'),ms)}
-/* ===== Câu hỏi ===== */
+/* ===== Questions ===== */
 function closeQ(){$('qm').classList.remove('on');try{speechSynthesis.cancel()}catch(e){}}
 function showQ(){const q=pickQ();G.paused=true;G.asked++;QA={q,done:false,hint:false};try{document.exitPointerLock()}catch(e){}
- $('qChip').textContent=`${SUBN[q.subj]||''} · Lớp ${S.grade}`;$('qText').textContent=q.q;$('qIcon').textContent=q.icon||'';$('qIcon').style.display=q.icon?'':'none';
- $('qFb').textContent='';$('qFb').className='qfb';$('qHint').disabled=false;$('qHint').textContent='💡 Gợi ý (3⭐)';$('qSpeak').style.display=('speechSynthesis' in window)?'':'none';
+ $('qChip').textContent=`${SUBN[q.subj]||''} · Grade ${S.grade}`;$('qText').textContent=q.q;$('qIcon').textContent=q.icon||'';$('qIcon').style.display=q.icon?'':'none';
+ $('qFb').textContent='';$('qFb').className='qfb';$('qHint').disabled=false;$('qHint').textContent='💡 Hint (3⭐)';$('qSpeak').style.display=('speechSynthesis' in window)?'':'none';
  const box=$('qAns');box.innerHTML='';q.a.forEach((t,i)=>{const b=document.createElement('button');b.className='qa';b.dataset.i=i;b.innerHTML=`<i>${'ABCD'[i]}</i><span></span>`;b.lastChild.textContent=t;box.appendChild(b)});
  $('qm').classList.add('on');speak(q.q,q.lang)}
 $('qAns').addEventListener('click',e=>{const b=e.target.closest('.qa');if(!b||!QA||QA.done)return;audio();QA.done=true;const ok=+b.dataset.i===QA.q.c,q=QA.q;
  document.querySelectorAll('.qa').forEach(x=>{x.classList.add('lock');if(+x.dataset.i===q.c)x.classList.add('ok')});const fb=$('qFb');
- if(ok){G.correct++;sfx.ok();fb.className='qfb ok';fb.textContent=pick(['Chính xác! 🎉','Tuyệt vời! ⭐','Giỏi quá! 👏'])+(q.e?' '+q.e:'')}
- else{G.wrong++;b.classList.add('bad');sfx.bad();fb.className='qfb bad';fb.textContent=`Chưa đúng. Đáp án: ${q.a[q.c]}.`+(q.e?' '+q.e:'')}
+ if(ok){G.correct++;sfx.ok();fb.className='qfb ok';fb.textContent=pick(['Correct! 🎉','Awesome! ⭐','Nice job! 👏'])+(q.e?' '+q.e:'')}
+ else{G.wrong++;b.classList.add('bad');sfx.bad();fb.className='qfb bad';fb.textContent=`Not quite. Answer: ${q.a[q.c]}.`+(q.e?' '+q.e:'')}
  setTimeout(()=>{if(!QA)return;closeQ();QA=null;G.paused=false;if(ok){G.coins+=10;hudUp()}if(G.over)return;const ch=G.ch;
-  if(ok&&ch.correctAnswers&&G.correct>=ch.correctAnswers)end(true,'🎓 Đủ câu đúng!');else if(!ok&&ch.noWrong)end(false,'💔 Đã sai câu!')},ok?1100:1500)});
+  if(ok&&ch.correctAnswers&&G.correct>=ch.correctAnswers)end(true,'🎓 Enough correct answers!');else if(!ok&&ch.noWrong)end(false,'💔 You got one wrong!')},ok?1100:1500)});
 $('qSpeak').onclick=()=>{audio();if(QA)speak(QA.q.q+'. '+QA.q.a.map((t,i)=>'ABCD'[i]+', '+t).join('. '),QA.q.lang)};
-$('qHint').onclick=()=>{if(!QA||QA.done||QA.hint)return;audio();if(S.wallet<3){sfx.bad();$('qHint').textContent='Chưa đủ ⭐';return}
+$('qHint').onclick=()=>{if(!QA||QA.done||QA.hint)return;audio();if(S.wallet<3){sfx.bad();$('qHint').textContent='Not enough ⭐';return}
  S.wallet-=3;persist();QA.hint=true;$('qHint').disabled=true;const w=shuffle(QA.q.a.map((_,i)=>i).filter(i=>i!==QA.q.c)).slice(0,Math.min(2,QA.q.a.length-2));
  document.querySelectorAll('.qa').forEach(x=>{if(w.includes(+x.dataset.i))x.classList.add('out')})};
-/* ===== Điều khiển ===== */
+/* ===== Controls ===== */
 const jb=$('jb'),jk=$('jk'),ign='.b,.screen,#pauseBtn,#homeBackBtn';
 const playing=()=>P&&!G.paused&&!G.over;
 document.body.addEventListener('pointerdown',e=>{if(!playing()||e.target.closest(ign))return;audio();
@@ -311,40 +311,40 @@ const bj=$('btnJ');['pointerdown'].forEach(n=>bj.addEventListener(n,e=>{e.preven
 const KM={w:'w',arrowup:'w',s:'s',arrowdown:'s',a:'a',arrowleft:'a',d:'d',arrowright:'d',' ':'jump'};
 addEventListener('keydown',e=>{const k=KM[e.key.toLowerCase()];if(k){e.preventDefault();audio();keys[k]=1}if(e.key==='Escape'&&playing())pause()});
 addEventListener('keyup',e=>{const k=KM[e.key.toLowerCase()];if(k)keys[k]=0});
-/* ===== Màn hình ===== */
+/* ===== Screens ===== */
 function home(){const c=$('challenges');c.innerHTML='';const chs=bank.challenges||DEF.challenges;if(!chs.find(x=>x.id===S.challenge))S.challenge=chs[0]?chs[0].id:'free';
  chs.forEach(x=>{const b=document.createElement('button');b.className='card'+(S.challenge===x.id?' sel':'');b.innerHTML=`<span class="e">${x.icon||'⚔️'}</span><div>${x.name}</div><div class="d">${x.desc||''}</div>`+(x.reward?`<div class="d">+${x.reward}⭐</div>`:'');b.onclick=()=>{audio();S.challenge=x.id;persist();sfx.tap();home()};c.appendChild(b)});
  const s=$('subjects');s.innerHTML='';['mix','math','viet','eng','sci','geo'].concat((bank.custom||[]).length?['custom']:[]).forEach(k=>{const b=document.createElement('button');b.className='subj'+(S.subject===k?' sel':'');b.textContent=SI[k]+' '+SUBN[k];b.onclick=()=>{audio();S.subject=k;persist();sfx.tap();home()};s.appendChild(b)});
- $('hWallet').textContent='⭐ '+S.wallet;$('hBest').textContent='🏆 '+(S.best||0);$('sndBtn').textContent='🔊 '+(S.sfx?'Bật':'Tắt');refreshRunUi()}
+ $('hWallet').textContent='⭐ '+S.wallet;$('hBest').textContent='🏆 '+(S.best||0);$('sndBtn').textContent='🔊 '+(S.sfx?'On':'Off');refreshRunUi()}
 function show(id){['home','result','pause','editor','qm'].forEach(s=>$(s).classList.remove('on'));if(id)$(id).classList.add('on')}
 function start(){clearRun();genLevel();P=newP();yaw=0;pitch=-.12;Object.assign(G,{over:false,paused:false,coins:0,asked:0,correct:0,wrong:0,falls:0,dist:0});
- G.ch=bank.challenges.find(c=>c.id===S.challenge)||{id:'free',name:'Tự do',icon:'🎮',reward:0};G.left=G.ch.timeLimit||0;
+ G.ch=bank.challenges.find(c=>c.id===S.challenge)||{id:'free',name:'Free Play',icon:'🎮',reward:0};G.left=G.ch.timeLimit||0;
  show();$('hud').classList.add('on');$('ctrl').classList.add('on');hudUp();say('🏁 GO!');
- tip('Trái: di chuyển · Phải: nhìn · ⬆ nhảy (2 lần = nhảy đôi) · Nhảy đập khối ❓ vàng để trả lời!');if(G.ch.id!=='free')tip(`${G.ch.icon} ${G.ch.name} — ${G.ch.desc}`,7000);sfx.tap()}
+ tip('Left: move · Right: look · ⬆ jump (twice = double jump) · Jump into golden ❓ blocks to answer!');if(G.ch.id!=='free')tip(`${G.ch.icon} ${G.ch.name} — ${G.ch.desc}`,7000);sfx.tap()}
 function pause(){if(!playing())return;G.paused=true;try{document.exitPointerLock()}catch(e){}show('pause');$('ctrl').classList.remove('on');saveRun()}
 function toHome(){saveRun();show('home');$('hud').classList.remove('on');$('ctrl').classList.remove('on');P=null;G.paused=true;home()}
 function end(won,why){if(G.over)return;clearRun();G.over=true;G.paused=true;try{document.exitPointerLock()}catch(e){}$('ctrl').classList.remove('on');const ch=G.ch;let rw=0;
- if(won){sfx.win();say(why||'🎉 Về đích!');if(ch&&ch.reward){rw=ch.reward;S.wallet+=rw}S.wallet+=Math.floor(G.coins/2);persist()}else{sfx.lose();say(why||'💀 Thua!')}
- setTimeout(()=>{$('hud').classList.remove('on');$('rTitle').textContent=won?'🎉 Thắng!':'💪 Thử lại nhé!';$('rCoin').textContent=G.coins;$('rAcc').textContent=Math.round((G.asked?G.correct/G.asked:1)*100)+'%';$('rDist').textContent=Math.floor(G.dist)+'m';
-  $('rReward').textContent=rw?`🏆 Thưởng challenge: +${rw} ⭐`:'';const sc=G.coins*10+(won?200:0);if(sc>(S.best||0)){S.best=sc;persist()}show('result')},700)}
+ if(won){sfx.win();say(why||'🎉 Goal reached!');if(ch&&ch.reward){rw=ch.reward;S.wallet+=rw}S.wallet+=Math.floor(G.coins/2);persist()}else{sfx.lose();say(why||'💀 You lost!')}
+ setTimeout(()=>{$('hud').classList.remove('on');$('rTitle').textContent=won?'🎉 You won!':'💪 Try again!';$('rCoin').textContent=G.coins;$('rAcc').textContent=Math.round((G.asked?G.correct/G.asked:1)*100)+'%';$('rDist').textContent=Math.floor(G.dist)+'m';
+  $('rReward').textContent=rw?`🏆 Challenge reward: +${rw} ⭐`:'';const sc=G.coins*10+(won?200:0);if(sc>(S.best||0)){S.best=sc;persist()}show('result')},700)}
 $('playBtn').onclick=()=>{audio();start()};$('pauseBtn').onclick=pause;
 $('resumeBtn').onclick=()=>{G.paused=false;show();$('ctrl').classList.add('on')};$('pRetry').onclick=()=>{audio();start()};$('pHome').onclick=toHome;$('rRetry').onclick=()=>{audio();start()};$('rHome').onclick=toHome;
 $('sndBtn').onclick=()=>{audio();S.sfx=!S.sfx;persist();home()};
 const pretty=o=>{const one=v=>JSON.stringify(v).replace(/,"/g,', "').replace(/":/g,'": ');let s='{\n';const ks=Object.keys(o);ks.forEach((k,i)=>{s+=`  "${k}": [\n`+o[k].map(q=>'    '+one(q)).join(',\n')+`${o[k].length?'\n':''}  ]`+(i<ks.length-1?',\n':'\n')});return s+'}'};
 $('edBtn').onclick=()=>{audio();$('bankText').value=pretty(Object.assign({challenges:bank.challenges||[]},bank));$('bankErr').textContent='';show('editor')};
 $('edBack').onclick=()=>{show('home')};
-$('bkApply').onclick=()=>{let b;try{b=JSON.parse($('bankText').value)}catch(e){$('bankErr').textContent='JSON sai: '+e.message;return}const er=validate(b);if(er.length){$('bankErr').textContent=er.slice(0,6).join(' • ');return}bank=b;S.bank=b;persist();$('bankErr').textContent='✅ Đã áp dụng!';home()};
-$('bkReset').onclick=()=>{$('bankText').value=pretty(DEF);$('bankErr').textContent='Đã nạp mặc định (bấm Áp dụng để dùng).'};
+$('bkApply').onclick=()=>{let b;try{b=JSON.parse($('bankText').value)}catch(e){$('bankErr').textContent='Invalid JSON: '+e.message;return}const er=validate(b);if(er.length){$('bankErr').textContent=er.slice(0,6).join(' • ');return}bank=b;S.bank=b;persist();$('bankErr').textContent='✅ Applied!';home()};
+$('bkReset').onclick=()=>{$('bankText').value=pretty(DEF);$('bankErr').textContent='Defaults loaded (press Apply to use them).'};
 $('bkDown').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([$('bankText').value],{type:'application/json'}));a.download='bank.json';document.body.appendChild(a);a.click();a.remove()};
 $('bkLoad').onclick=()=>$('bkFile').click();
-$('bkFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('bankText').value=r.result;$('bankErr').textContent='Đã nạp file.'};r.readAsText(f);e.target.value=''};
-/* ===== Lưu ván đang chơi =====
- * `parkour-fps-v1` chỉ giữ cài đặt + sao/vốn (S). Khối này giữ cả VÁN đang dở:
- * địa hình, khối câu hỏi đã dùng, vị trí người chơi và camera — để bấm ⏸ rồi
- * thoát ra, mở lại vẫn chạy tiếp đúng chỗ.
- * App là SPA: rời trang chỉ phá iframe nên pagehide của game không chạy →
- * __gqFlush / event "gq:flush" để app yêu cầu ghi trước khi thoát
- * (FLUSH_BRIDGE trong src/pages/OfflineGamePage.jsx). */
+$('bkFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('bankText').value=r.result;$('bankErr').textContent='File loaded.'};r.readAsText(f);e.target.value=''};
+/* ===== Save the current run =====
+ * `parkour-fps-v1` only keeps settings + stars/wallet (S). This block also keeps the RUN in progress:
+ * terrain, used question blocks, player position and camera — so you can press ⏸, leave,
+ * and continue exactly where you left off when you come back.
+ * The app is an SPA: leaving the page only tears down the iframe, so the game's pagehide does not fire →
+ * __gqFlush / the "gq:flush" event lets the app request a save before exit
+ * (FLUSH_BRIDGE in src/pages/OfflineGamePage.jsx). */
 const RK='parkour-fps-run-v1';
 function saveRun(){
   if(!P||G.over)return;
@@ -354,14 +354,14 @@ function saveRun(){
     P:{x:P.x,y:P.y,z:P.z,vx:P.vx,vy:P.vy,vz:P.vz,lx:P.lx,ly:P.ly,lz:P.lz,ju:P.ju},
     B:B.map(b=>({x:b.x,z:b.z,w:b.w,d:b.d,y0:b.y0,y1:b.y1,c:b.c})),
     X:X.map(o=>({x:o.x,z:o.z,w:o.w,d:o.d,y0:o.y0,y1:o.y1,c:o.c,q:o.q?1:0,used:o.used?1:0})),
-    C:C.map(o=>({x:o.x,y:o.y,z:o.z,got:o.got?1:0}))}))}catch(e){/* hết dung lượng — vẫn chơi bình thường */}
+    C:C.map(o=>({x:o.x,y:o.y,z:o.z,got:o.got?1:0}))}))}catch(e){/* out of space — the game still plays normally */}
 }
 function loadRun(){try{const s=JSON.parse(localStorage.getItem(RK)||'null');return s&&s.v===1&&s.B&&s.P&&s.G?s:null}catch(e){return null}}
 function clearRun(){try{localStorage.removeItem(RK)}catch(e){}}
 function refreshRunUi(){
   const r=loadRun(),b=$('contBtn');
   b.hidden=!r;
-  $('runInfo').textContent=r?`Ván đang dở · 🪙 ${r.G.coins} · ${Math.floor(r.G.dist||0)}m · ${r.G.correct}✓/${r.G.wrong}✗`:'';
+  $('runInfo').textContent=r?`Run in progress · 🪙 ${r.G.coins} · ${Math.floor(r.G.dist||0)}m · ${r.G.correct}✓/${r.G.wrong}✗`:'';
 }
 function resumeRun(){
   const r=loadRun();if(!r)return;
@@ -372,10 +372,10 @@ function resumeRun(){
   yaw=r.cam?r.cam.yaw:0;pitch=r.cam?r.cam.pitch:-.12;
   Object.assign(G,{over:false,paused:true,coins:r.G.coins|0,asked:r.G.asked|0,correct:r.G.correct|0,
     wrong:r.G.wrong|0,falls:r.G.falls|0,dist:r.G.dist||0,goalZ:r.G.goalZ||100,left:r.G.left||0});
-  G.ch=(bank.challenges||DEF.challenges).find(c=>c.id===r.ch)||{id:'free',name:'Tự do',icon:'🎮',reward:0};
+  G.ch=(bank.challenges||DEF.challenges).find(c=>c.id===r.ch)||{id:'free',name:'Free Play',icon:'🎮',reward:0};
   show();$('hud').classList.add('on');$('ctrl').classList.add('on');hudUp();
   $('prog').firstChild.style.width=clamp(P.z/G.goalZ*100,0,100)+'%';
-  say('▶ Tiếp tục ván cũ!');lastSave=0;
+  say('▶ Resuming your run!');lastSave=0;
 }
 $('contBtn').onclick=()=>{audio();resumeRun()};
 window.__gqFlush=saveRun;
@@ -386,7 +386,7 @@ home();requestAnimationFrame(loop);
 })();
 </script>
 
-<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ"><span aria-hidden="true">&#8592;</span></button>
+<button id="homeBackBtn" type="button" aria-label="Back to home" title="Back to home"><span aria-hidden="true">&#8592;</span></button>
 <script>
 (function(){var b=document.getElementById('homeBackBtn');if(!b)return;
 b.addEventListener('click',function(){try{if(window.parent&&window.parent!==window){window.parent.postMessage({type:'quit',data:{}},'*');return}}catch(e){}try{window.location.href='/'}catch(e){}})})();

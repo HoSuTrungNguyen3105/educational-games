@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Leo Tháp Mây</title>
+<title>cloud tower climb</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
@@ -89,66 +89,66 @@
 <div id="fade"></div>
 
 <div id="hud">
-  <button class="ib" id="pauseBtn" aria-label="Tạm dừng">⏸</button>
-  <div class="mid"><div class="pill"><b id="hFloor">Tầng 1</b></div><div class="pill" style="padding:2px 12px"><small id="hAlt">0 m</small></div></div>
+  <button class="ib" id="pauseBtn" aria-label="Pause">⏸</button>
+  <div class="mid"><div class="pill"><b id="hFloor">Floor 1</b></div><div class="pill" style="padding:2px 12px"><small id="hAlt">0 m</small></div></div>
   <div class="pill"><span>⭐</span><b id="hStar">0</b></div>
 </div>
 <div id="joy"><i></i></div>
-<button id="jumpBtn" aria-label="Nhảy">⬆<small>NHẢY</small></button>
+<button id="jumpBtn" aria-label="Jump">⬆<small>JUMP</small></button>
 <div id="toast" role="status"></div><div id="big"></div>
 
 <div class="screen show" id="home">
-  <div class="row" style="width:auto"><div class="chip" id="hmStar">⭐ 0</div><div class="chip" id="hmBest">🏢 Cao nhất: tầng 1</div></div>
-  <div class="logo">LEO<br>THÁP MÂY<small>PARKOUR THƯ GIÃN · MỖI TẦNG MỘT THỬ THÁCH</small></div>
+  <div class="row" style="width:auto"><div class="chip" id="hmStar">⭐ 0</div><div class="chip" id="hmBest">🏢 Highest: floor 1</div></div>
+  <div class="logo">CLOUD<br>TOWER<small>RELAXING PARKOUR · A NEW CHALLENGE ON EVERY FLOOR</small></div>
   <div class="sheet">
-    <button class="btn g big" id="playBtn">▶ TIẾP TỤC · TẦNG 1</button>
-    <div class="row"><button class="btn w sm" id="flBtn" style="flex:1">🏢 Chọn tầng</button><button class="btn w sm" id="shBtn" style="flex:1">👕 Trang phục</button></div>
-    <div class="row"><button class="btn w sm" id="easyBtn" style="flex:1">✨ Nhẹ nhàng: Tắt</button><button class="btn w sm" id="sndBtn" style="flex:1">🔊 Âm thanh</button><button class="btn w sm" id="musBtn" style="flex:1">🎵 Nhạc</button></div>
+    <button class="btn g big" id="playBtn">▶ CONTINUE · FLOOR 1</button>
+    <div class="row"><button class="btn w sm" id="flBtn" style="flex:1">🏢 Pick a floor</button><button class="btn w sm" id="shBtn" style="flex:1">👕 Outfits</button></div>
+    <div class="row"><button class="btn w sm" id="easyBtn" style="flex:1">✨ Easy mode: Off</button><button class="btn w sm" id="sndBtn" style="flex:1">🔊 Sound</button><button class="btn w sm" id="musBtn" style="flex:1">🎵 Music</button></div>
   </div>
 </div>
 
 <div class="screen" id="floors">
-  <div class="top"><button class="bk" id="flBack" aria-label="Quay lại">◀</button><h2 class="t">Chọn tầng</h2><span class="chip" id="flStar">⭐ 0</span></div>
+  <div class="top"><button class="bk" id="flBack" aria-label="Back">◀</button><h2 class="t">Pick a floor</h2><span class="chip" id="flStar">⭐ 0</span></div>
   <div class="fl" id="flGrid"></div>
 </div>
 <div class="screen" id="shop">
-  <div class="top"><button class="bk" id="shBack" aria-label="Quay lại">◀</button><h2 class="t">Trang phục</h2><span class="chip" id="shStar">⭐ 0</span></div>
+  <div class="top"><button class="bk" id="shBack" aria-label="Back">◀</button><h2 class="t">Outfits</h2><span class="chip" id="shStar">⭐ 0</span></div>
   <div class="sk" id="skGrid"></div>
 </div>
-<div class="screen" id="pause"><div class="panel"><h2>Tạm dừng</h2><p>Cứ thong thả nhé, không ai vội cả 🌤️</p>
-  <div class="col"><button class="btn g" id="resumeBtn">Tiếp tục ▶</button><button class="btn w sm" id="respBtn" style="width:100%">↩ Về điểm hồi sinh</button><button class="btn w sm" id="homeBtn" style="width:100%">🏠 Trang chủ</button></div></div></div>
-<div class="screen" id="rest"><div class="panel"><div style="font-size:54px;line-height:1">👀</div><h2>Nghỉ mắt một chút!</h2><p>Bạn đã chơi khoảng 15 phút. Hãy nhìn ra xa 20 giây, uống ngụm nước, vươn vai rồi chơi tiếp nhé.</p>
-  <div class="col"><button class="btn g" id="restOk" disabled>Đợi 20 giây...</button></div></div></div>
+<div class="screen" id="pause"><div class="panel"><h2>Paused</h2><p>Take it easy, there's no rush 🌤️</p>
+  <div class="col"><button class="btn g" id="resumeBtn">Continue ▶</button><button class="btn w sm" id="respBtn" style="width:100%">↩ Back to checkpoint</button><button class="btn w sm" id="homeBtn" style="width:100%">🏠 Home</button></div></div></div>
+<div class="screen" id="rest"><div class="panel"><div style="font-size:54px;line-height:1">👀</div><h2>Time for a quick eye break!</h2><p>You've been playing for about 15 minutes. Look far away for 20 seconds, take a sip of water, stretch, then keep playing.</p>
+  <div class="col"><button class="btn g" id="restOk" disabled>Wait 20 seconds...</button></div></div></div>
 
 <script>
 (() => {
 'use strict';
 const $ = id => document.getElementById(id);
-if (typeof THREE === 'undefined') { $('home').innerHTML = '<div class="panel"><h2>Cần kết nối mạng</h2><p>Game 3D cần tải thư viện đồ họa.<br>Hãy bật mạng rồi mở lại nhé.</p></div>'; return; }
+if (typeof THREE === 'undefined') { $('home').innerHTML = '<div class="panel"><h2>Internet needed</h2><p>3D games need to download a graphics library.<br>Turn on your internet and open the game again.</p></div>'; return; }
 const DEBUG = /debug/.test(location.search);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const smooth = t => t * t * (3 - 2 * t);
 const rnd = (a, b) => a + Math.random() * (b - a);
 
-/* ================= Lưu tiến trình ================= */
+/* ================= Save progress ================= */
 const KEY = 'thap-may-v1'; let mem = null;
 const loadS = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {} return mem ? JSON.parse(mem) : {}; };
 const S = Object.assign({ floor: 1, cur: 1, stars: 0, got: {}, skin: 0, owned: [0], easy: false, sfx: true, music: true, falls: 0, sec: 0, best: 1 }, loadS());
 const persist = () => { const s = JSON.stringify(S); try { localStorage.setItem(KEY, s); } catch (e) { mem = s; } };
 
-/* ================= Hằng số vật lý ================= */
+/* ================= Physics constants ================= */
 const GRAV = -30, SPEED = 6.3, JV = 10.2, DJV = 9.2, PW = .3, PH = 1.05, STEP = .42, FLOOR_RISE = 5.5, TH = .6;
 const SKINS = [
-  { n: 'Kẹo Dâu', hood: 0xff7aa8, cap: 0xffffff, cost: 0 }, { n: 'Bạc Hà', hood: 0x4fe0b0, cap: 0x2b2260, cost: 12 },
-  { n: 'Nắng Mai', hood: 0xffc94d, cap: 0xff7a3d, cost: 25 }, { n: 'Mây Tím', hood: 0xa68bff, cap: 0xffd6f2, cost: 45 }, { n: 'Biển Xanh', hood: 0x4db8ff, cap: 0xffffff, cost: 70 }
+  { n: 'Strawberry Candy', hood: 0xff7aa8, cap: 0xffffff, cost: 0 }, { n: 'Mint', hood: 0x4fe0b0, cap: 0x2b2260, cost: 12 },
+  { n: 'Morning Sun', hood: 0xffc94d, cap: 0xff7a3d, cost: 25 }, { n: 'Purple Cloud', hood: 0xa68bff, cap: 0xffd6f2, cost: 45 }, { n: 'Blue Sea', hood: 0x4db8ff, cap: 0xffffff, cost: 70 }
 ];
 const PALS = [
   { top: 0xbff5d2, side: 0x7bcf9a }, { top: 0xffd1e6, side: 0xf08fb8 }, { top: 0xcfe6ff, side: 0x7fb1f0 }, { top: 0xffe8b0, side: 0xe8b34f },
   { top: 0xe3d4ff, side: 0xa58be8 }, { top: 0xffd9c4, side: 0xee9a78 }
 ];
 
-/* ================= Sinh tầng (hàm thuần, kiểm thử được) ================= */
+/* ================= Floor generation (pure, testable function) ================= */
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function genFloor(f, start, easy) {
   const rng = mulberry(f * 7919 + (easy ? 101 : 13)), R = (a, b) => a + (b - a) * rng();
@@ -183,7 +183,7 @@ function genFloor(f, start, easy) {
 }
 function chainStart(f, easy) { let st = { x: 0, y: 0, z: 0 }; for (let g = 1; g < f; g++) { const e = genFloor(g, st, easy).end; st = { x: e.x, y: e.y + FLOOR_RISE, z: e.z }; } return st; }
 
-/* ================= Âm thanh & nhạc nền ================= */
+/* ================= Sound & background music ================= */
 let ac = null, master = null, dly = null;
 function audio() {
   if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = .9; master.connect(ac.destination); dly = ac.createDelay(1); dly.delayTime.value = .45; const fb = ac.createGain(); fb.gain.value = .36; dly.connect(fb); fb.connect(dly); dly.connect(master); mNext = ac.currentTime + .2; musicTick(); } catch (e) {} }
@@ -227,7 +227,7 @@ window.addEventListener('resize', resize); resize();
 const boxG = new THREE.BoxGeometry(1, 1, 1), sphG = new THREE.SphereGeometry(1, 14, 10), cylG = new THREE.CylinderGeometry(1, 1, 1, 18);
 const lam = (c, o = {}) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o)), bas = (c, o = {}) => new THREE.MeshBasicMaterial(Object.assign({ color: c }, o));
 
-/* ================= Nhân vật ================= */
+/* ================= Character ================= */
 function makeRunner(hood, cap) {
   const root = new THREE.Group(), pivot = new THREE.Group(), model = new THREE.Group(); pivot.position.y = .6; model.position.y = -.6; root.add(pivot); pivot.add(model);
   const skin = lam(0xf3c29a), jeans = lam(0x3d5aa8), hoodM = lam(hood), capM = lam(cap), shoe = lam(0xffffff), dark = lam(0x222244);
@@ -249,7 +249,7 @@ function animRunner(r, t, mode, spd, sq) {
   else { const s = Math.sin(t * 2); r.legL.rotation.x = r.legR.rotation.x = 0; r.armL.rotation.x = s * .05; r.armR.rotation.x = -s * .05; r.body.position.y = .55 + Math.abs(s) * .01; }
 }
 
-/* ================= Thế giới ================= */
+/* ================= World ================= */
 const world = new THREE.Group(); scene.add(world);
 let floors = [], solids = [], starsA = [], windZ = [], cpPos = null, T = 0, state = 'menu', curF = 1, liftS = null, liftT = 0, liftTo = 0, liftTimer = 0, easyNow = false, camYaw = 0, camPitch = .42, camYawT = 0, camDrag = 0, shake = 0;
 const pl = { x: 0, y: 0, z: 0, vx: 0, vz: 0, vy: 0, grounded: false, support: null, jumps: 0, coyote: 0, jbuf: 0, face: 0, sq: 0, stun: 0, wasG: true, run: 0 };
@@ -284,7 +284,7 @@ function buildFloor(f, start, reuse) {
 function startPos(fl) { const s = fl.solids[0]; return { x: s.x, y: s.y, z: s.z }; }
 function spawnAt(p) { pl.x = p.x; pl.y = p.y + .02; pl.z = p.z; pl.vx = pl.vz = pl.vy = 0; pl.grounded = false; pl.support = null; pl.stun = 0; pl.jumps = 0; }
 
-/* ----- cảnh quan: mây, tháp, hạt ----- */
+/* ----- scenery: clouds, tower, dust ----- */
 const clouds = [], tower = new THREE.Mesh(new THREE.CylinderGeometry(14, 16, 4000, 24, 1, true), lam(0xffffff, { side: THREE.DoubleSide }));
 function towerTex() { const c = document.createElement('canvas'); c.width = 128; c.height = 256; const g = c.getContext('2d'); g.fillStyle = '#e9e4ff'; g.fillRect(0, 0, 128, 256); for (let y = 0; y < 256; y += 32) { g.fillStyle = '#b7aef0'; g.fillRect(0, y, 128, 6); for (let x = 8; x < 128; x += 26) { g.fillStyle = (x + y) % 3 ? '#fff2b8' : '#8fb4ff'; g.fillRect(x, y + 12, 14, 14); } } const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(8, 120); return t; }
 tower.material = new THREE.MeshLambertMaterial({ map: towerTex(), side: THREE.DoubleSide }); tower.position.set(-48, 1900, -10); scene.add(tower);
@@ -299,7 +299,7 @@ function updateSky(y) {
   const lum = (s.top[0] + s.top[1] + s.top[2]) / 765; hemi.intensity = .55 + lum * .55; hemi.color.setRGB(.5 + lum * .5, .5 + lum * .5, .6 + lum * .4);
 }
 
-/* ================= Cập nhật nền tảng ================= */
+/* ================= Update platforms ================= */
 function updatePlatforms(dt) {
   for (const s of solids) {
     const p = s.p, ox = s.x, oy = s.y, oz = s.z;
@@ -319,7 +319,7 @@ function updatePlatforms(dt) {
   }
 }
 
-/* ================= Vật lý người chơi ================= */
+/* ================= Player physics ================= */
 function overlapXZ(s, m) { return Math.abs(pl.x - s.x) < s.w / 2 + PW * m && Math.abs(pl.z - s.z) < s.d / 2 + PW * m; }
 function moveAxis(ax, d) {
   pl[ax] += d;
@@ -332,14 +332,14 @@ function moveAxis(ax, d) {
   }
 }
 function physics(h) {
-  // điều khiển
+  // controls
   const cy = camYaw, fx = -Math.sin(cy), fz = -Math.cos(cy), rx = Math.cos(cy), rz = -Math.sin(cy), mag = clamp(Math.hypot(inp.x, inp.y), 0, 1);
   let tx = 0, tz = 0; if (mag > .08 && pl.stun <= 0 && state === 'play') { const dx = rx * inp.x + fx * inp.y, dz = rz * inp.x + fz * inp.y, l = Math.hypot(dx, dz) || 1; tx = dx / l * SPEED * mag; tz = dz / l * SPEED * mag; }
   const acc = (pl.grounded ? 42 : 16) * h; pl.vx += clamp(tx - pl.vx, -acc, acc); pl.vz += clamp(tz - pl.vz, -acc, acc); if (pl.stun > 0) pl.stun -= h;
   for (const w of windZ) if (pl.z > w.z0 && pl.z < w.z1 && pl.y > w.y0 && pl.y < w.y1 && !pl.grounded) pl.vx += w.ax * h * 2.2;
-  // mang theo nền tảng
+  // ride with the platform
   if (pl.support) { pl.x += pl.support.dx; pl.z += pl.support.dz; pl.y += pl.support.dy; }
-  // nhảy
+  // jumping
   pl.jbuf -= h; if (pl.grounded) { pl.coyote = .12; pl.jumps = 0; } else pl.coyote -= h;
   if (pl.jbuf > 0 && state === 'play' && pl.stun <= 0) {
     if (pl.coyote > 0) { pl.vy = JV; pl.jumps = 1; pl.coyote = 0; pl.jbuf = 0; pl.grounded = false; pl.support = null; sfx.jump(); }
@@ -355,9 +355,9 @@ function physics(h) {
     if (!pl.wasG && impact > 5) { sfx.land(); pl.sq = Math.min(.5, impact / 24); }
     if (landed.kind === 'bounce' && impact > 1) { pl.vy = 17; pl.grounded = false; pl.support = null; pl.jumps = 1; sfx.bounce(); pl.sq = -.2; }
     else if (landed.kind === 'crumble' && landed.state === 0) { landed.state = 1; landed.tm = 0; }
-    else if (landed.kind === 'cp' || landed.kind === 'start') { const np = { x: landed.x, y: landed.y, z: landed.z }; if (!cpPos || Math.hypot(cpPos.x - np.x, cpPos.z - np.z) > 1) { cpPos = np; if (landed.kind === 'cp') { sfx.cp(); toast('🚩 Đã lưu điểm hồi sinh'); } } }
+    else if (landed.kind === 'cp' || landed.kind === 'start') { const np = { x: landed.x, y: landed.y, z: landed.z }; if (!cpPos || Math.hypot(cpPos.x - np.x, cpPos.z - np.z) > 1) { cpPos = np; if (landed.kind === 'cp') { sfx.cp(); toast('🚩 Checkpoint saved'); } } }
   } else { pl.grounded = false; pl.support = null; }
-  // thanh quét
+  // sweeper bars
   for (const s of solids) if (s.kind === 'sweep' && s.active && pl.stun <= 0) {
     const a = T * s.p.sw.sp + s.p.sw.ph, dx = pl.x - s.x, dz = pl.z - s.z, c = Math.cos(a), sn = Math.sin(a), lx = dx * c - dz * sn, lz = dx * sn + dz * c;
     if (Math.abs(lx) < s.p.sw.len / 2 + PW && Math.abs(lz) < .19 + PW && pl.y + PH > s.y + .25 && pl.y < s.y + .85) { const sg = Math.sign(s.p.sw.sp) || 1, tx2 = -dz * sg, tz2 = dx * sg, l = Math.hypot(tx2, tz2) || 1; pl.vx = tx2 / l * 8; pl.vz = tz2 / l * 8; pl.vy = Math.max(pl.vy, 5); pl.grounded = false; pl.stun = .35; sfx.knock(); shake = .35; }
@@ -365,23 +365,23 @@ function physics(h) {
   pl.wasG = pl.grounded;
 }
 
-/* ================= Trạng thái trò chơi ================= */
+/* ================= Game state ================= */
 let toastT; function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('show'), 2400); }
 function big(t) { const e = $('big'); e.textContent = t; e.classList.remove('show'); void e.offsetWidth; e.classList.add('show'); }
-function hudUpdate() { $('hFloor').textContent = 'Tầng ' + curF; $('hAlt').textContent = Math.max(0, Math.round(pl.y)) + ' m'; $('hStar').textContent = S.stars; }
+function hudUpdate() { $('hFloor').textContent = 'Floor ' + curF; $('hAlt').textContent = Math.max(0, Math.round(pl.y)) + ' m'; $('hStar').textContent = S.stars; }
 function clearWorld() { floors.forEach(f => world.remove(f.grp)); floors = []; solids = []; starsA = []; windZ = []; }
 function enterFloor(f, quiet) {
   curF = f; easyNow = S.easy; clearWorld(); const st = chainStart(f, easyNow), fl = buildFloor(f, st, null); const sp = startPos(fl); cpPos = sp; spawnAt(sp); camYaw = camYawT = fl.data.dir < 0 ? 0 : Math.PI; S.cur = f; S.floor = Math.max(S.floor, f); S.best = Math.max(S.best, f); persist(); hudUpdate();
-  if (!quiet) big('Tầng ' + f);
+  if (!quiet) big('Floor ' + f);
 }
 function respawn(fall) {
   if (!cpPos) return; if (fall) { S.falls++; sfx.fall(); } $('fade').style.opacity = 1; setTimeout(() => { spawnAt(cpPos); $('fade').style.opacity = 0; sfx.pop(); camYaw = camYawT; }, 260);
   pl.stun = .4;
 }
-function startLift(s) { state = 'lift'; liftS = s; liftTo = s.y + FLOOR_RISE; s.by = s.y; liftT = 0; sfx.lift(); toast('🛗 Thang máy đang đưa bạn lên...'); inp.x = inp.y = 0; }
+function startLift(s) { state = 'lift'; liftS = s; liftTo = s.y + FLOOR_RISE; s.by = s.y; liftT = 0; sfx.lift(); toast('🛗 The elevator is taking you up...'); inp.x = inp.y = 0; }
 function finishLift() {
   const f = curF + 1, s = liftS; s.kind = 'lift'; S.cur = f; S.floor = Math.max(S.floor, f); S.best = Math.max(S.best, f); curF = f; persist(); state = 'play'; liftS = null;
-  const fl = buildFloor(f, { x: s.x, y: s.y, z: s.z }, s); s.kind = 'start'; if (s.glow) { s.glow.visible = false; s.ring.visible = false; } s.mesh.material = matFor('static', f); s.state = 0; cpPos = { x: s.x, y: s.y, z: s.z }; camYawT = fl.data.dir < 0 ? 0 : Math.PI; sfx.up(); big('Tầng ' + f); hudUpdate(); burstStars();
+  const fl = buildFloor(f, { x: s.x, y: s.y, z: s.z }, s); s.kind = 'start'; if (s.glow) { s.glow.visible = false; s.ring.visible = false; } s.mesh.material = matFor('static', f); s.state = 0; cpPos = { x: s.x, y: s.y, z: s.z }; camYawT = fl.data.dir < 0 ? 0 : Math.PI; sfx.up(); big('Floor ' + f); hudUpdate(); burstStars();
 }
 function burstStars() { for (let i = 0; i < 40; i++) { const m = new THREE.Mesh(boxG, bas([0xffd34d, 0xff8fc2, 0x8be9a8, 0x7fd0ff][i % 4])); m.scale.setScalar(.14); m.position.set(pl.x, pl.y + 1, pl.z); scene.add(m); fx.push({ m, vx: rnd(-4, 4), vy: rnd(3, 9), vz: rnd(-4, 4), life: rnd(.8, 1.6) }); } }
 const fx = []; function updFx(dt) { for (let i = fx.length - 1; i >= 0; i--) { const o = fx[i]; o.life -= dt; o.vy -= 14 * dt; o.m.position.x += o.vx * dt; o.m.position.y += o.vy * dt; o.m.position.z += o.vz * dt; o.m.rotation.x += dt * 6; o.m.scale.multiplyScalar(1 - dt * .8); if (o.life <= 0) { scene.remove(o.m); fx.splice(i, 1); } } }
@@ -392,17 +392,17 @@ function updatePlay(dt) {
   if (state === 'lift') { liftT += dt; if (liftT >= 1.95) finishLift(); }
   else if (pl.grounded && pl.support && pl.support.kind === 'lift' && !DEBUG) { liftTimer += dt; if (liftTimer > .55) { liftTimer = 0; startLift(pl.support); } } else liftTimer = 0;
   if (DEBUG && pl.grounded && pl.support && pl.support.kind === 'lift' && state === 'play') startLift(pl.support);
-  // sao
+  // stars
   for (const s of starsA) { if (s.got) continue; s.m.rotation.y += dt * 2; s.m.position.y = s.y + Math.sin(T * 3 + s.x) * .12; if (Math.abs(s.x - pl.x) < .9 && Math.abs(s.z - pl.z) < .9 && Math.abs(s.y - (pl.y + .6)) < 1.1) { s.got = true; s.m.visible = false; S.stars++; S.got[s.f] = (S.got[s.f] || 0) | (1 << s.id); sfx.star(); persist(); hudUpdate(); burstStars(); } }
   const base = floors.length ? floors[floors.length - 1].solids[0].by - 16 : -50; if (pl.y < base - 8 && state === 'play') { respawn(true); pl.y = base + 100; }
   pl.sq *= Math.pow(.003, dt); S.sec += dt; if (S.sec - (S.restAt || 0) >= 900) { S.restAt = S.sec; restBreak(); }
   if (Math.floor(T * 2) !== Math.floor((T - dt) * 2)) hudUpdate();
 }
 let restTimer = null;
-function restBreak() { if (state !== 'play') return; state = 'pause'; $('rest').classList.add('show'); const b = $('restOk'); let n = 20; b.disabled = true; b.textContent = `Đợi ${n} giây...`; clearInterval(restTimer); restTimer = setInterval(() => { n--; if (n > 0) b.textContent = `Đợi ${n} giây...`; else { clearInterval(restTimer); b.disabled = false; b.textContent = 'Chơi tiếp ▶'; } }, 1000); persist(); }
+function restBreak() { if (state !== 'play') return; state = 'pause'; $('rest').classList.add('show'); const b = $('restOk'); let n = 20; b.disabled = true; b.textContent = `Wait ${n} seconds...`; clearInterval(restTimer); restTimer = setInterval(() => { n--; if (n > 0) b.textContent = `Wait ${n} seconds...`; else { clearInterval(restTimer); b.disabled = false; b.textContent = 'Keep playing ▶'; } }, 1000); persist(); }
 $('restOk').onclick = () => { $('rest').classList.remove('show'); state = 'play'; };
 
-/* ================= Điều khiển ================= */
+/* ================= Controls ================= */
 const joyEl = $('joy'), jumpBtn = $('jumpBtn'); let joyId = null, camId = null, joyO = null, camLast = null;
 function jump() { pl.jbuf = .14; }
 function setJoy(x, y) { const m = 52, l = Math.hypot(x, y) || 1, k = Math.min(1, l / m); inp.x = x / l * k; inp.y = -y / l * k; if (l < 6) inp.x = inp.y = 0; joyEl.firstElementChild.style.transform = `translate(${x / l * Math.min(l, m)}px,${y / l * Math.min(l, m)}px)`; }
@@ -422,19 +422,19 @@ const keys = {}; function keyIn() { inp.x = (keys.ArrowRight || keys.d || keys.D
 window.addEventListener('keydown', e => { keys[e.key] = true; if (e.key === ' ') { e.preventDefault(); audio(); jump(); } if (e.key === 'q') camYaw += .12; if (e.key === 'e') camYaw -= .12; if (state === 'play' && joyId === null) keyIn(); });
 window.addEventListener('keyup', e => { keys[e.key] = false; if (joyId === null) keyIn(); });
 
-/* ================= Màn hình ================= */
+/* ================= Screens ================= */
 const SCR = ['home', 'floors', 'shop', 'pause', 'rest'];
 function show(id) { SCR.forEach(s => $(s).classList.toggle('show', s === id)); }
 function goHome() { state = 'menu'; $('hud').classList.remove('on'); jumpBtn.style.display = 'none'; joyEl.style.display = 'none'; enterFloor(S.cur || 1, true); renderHome(); show('home'); }
-function renderHome() { $('hmStar').textContent = `⭐ ${S.stars}`; $('hmBest').textContent = `🏢 Cao nhất: tầng ${S.best}`; $('playBtn').textContent = `▶ TIẾP TỤC · TẦNG ${S.cur || 1}`; $('easyBtn').textContent = '✨ Nhẹ nhàng: ' + (S.easy ? 'Bật' : 'Tắt'); $('sndBtn').textContent = '🔊 Âm: ' + (S.sfx ? 'Bật' : 'Tắt'); $('musBtn').textContent = '🎵 Nhạc: ' + (S.music ? 'Bật' : 'Tắt'); }
-function play() { show(null); state = 'play'; $('hud').classList.add('on'); jumpBtn.style.display = 'block'; hudUpdate(); if (!S.tipDone) { S.tipDone = 1; persist(); toast('Kéo bên trái để đi · nút ⬆ để nhảy (nhảy 2 lần được!) · kéo bên phải để xoay camera'); } }
+function renderHome() { $('hmStar').textContent = `⭐ ${S.stars}`; $('hmBest').textContent = `🏢 Highest: floor ${S.best}`; $('playBtn').textContent = `▶ CONTINUE · FLOOR ${S.cur || 1}`; $('easyBtn').textContent = '✨ Easy mode: ' + (S.easy ? 'On' : 'Off'); $('sndBtn').textContent = '🔊 Sound: ' + (S.sfx ? 'On' : 'Off'); $('musBtn').textContent = '🎵 Music: ' + (S.music ? 'On' : 'Off'); }
+function play() { show(null); state = 'play'; $('hud').classList.add('on'); jumpBtn.style.display = 'block'; hudUpdate(); if (!S.tipDone) { S.tipDone = 1; persist(); toast('Drag left to move · tap ⬆ to jump (you can double jump!) · drag right to turn the camera'); } }
 $('playBtn').onclick = () => { audio(); sfx.tap(); play(); };
 $('easyBtn').onclick = () => { audio(); S.easy = !S.easy; persist(); enterFloor(S.cur || 1, true); renderHome(); sfx.tap(); };
 $('sndBtn').onclick = () => { audio(); S.sfx = !S.sfx; persist(); renderHome(); }; $('musBtn').onclick = () => { audio(); S.music = !S.music; persist(); renderHome(); };
 $('flBtn').onclick = () => { audio(); sfx.tap(); renderFloors(); show('floors'); }; $('flBack').onclick = () => { renderHome(); show('home'); };
 function renderFloors() {
   $('flStar').textContent = `⭐ ${S.stars}`; const g = $('flGrid'); g.innerHTML = ''; const max = Math.min(100, Math.max(S.floor + 4, 20));
-  for (let f = 1; f <= max; f++) { const ok = f <= S.floor, got = [0, 1, 2].filter(i => ((S.got[f] || 0) >> i) & 1).length, b = document.createElement('button'); b.className = 'fb' + (ok ? '' : ' lock') + (f === S.cur ? ' cur' : ''); b.innerHTML = `<b>${ok ? f : '🔒'}</b><span>${ok ? '⭐'.repeat(got) + '☆'.repeat(3 - got) : ''}</span>`; b.setAttribute('aria-label', 'Tầng ' + f);
+  for (let f = 1; f <= max; f++) { const ok = f <= S.floor, got = [0, 1, 2].filter(i => ((S.got[f] || 0) >> i) & 1).length, b = document.createElement('button'); b.className = 'fb' + (ok ? '' : ' lock') + (f === S.cur ? ' cur' : ''); b.innerHTML = `<b>${ok ? f : '🔒'}</b><span>${ok ? '⭐'.repeat(got) + '☆'.repeat(3 - got) : ''}</span>`; b.setAttribute('aria-label', 'Floor ' + f);
     b.onclick = () => { audio(); if (!ok) { tone(180, .15, .06, 'sawtooth'); return; } sfx.tap(); enterFloor(f, true); renderHome(); play(); }; g.appendChild(b); }
 }
 $('shBtn').onclick = () => { audio(); sfx.tap(); renderShop(); show('shop'); }; $('shBack').onclick = () => { renderHome(); show('home'); };
@@ -442,8 +442,8 @@ function hex(c) { return '#' + c.toString(16).padStart(6, '0'); }
 function renderShop() {
   $('shStar').textContent = `⭐ ${S.stars}`; const g = $('skGrid'); g.innerHTML = '';
   SKINS.forEach((k, i) => { const own = S.owned.includes(i), el = document.createElement('div'); el.className = 'sc' + (S.skin === i ? ' sel' : ''); el.innerHTML = `<div class="dot" style="background:radial-gradient(circle at 35% 30%,#fff,${hex(k.hood)} 55%);border-color:${hex(k.cap)}"></div><b>${k.n}</b>`;
-    const b = document.createElement('button'); b.className = 'btn sm w'; b.textContent = S.skin === i ? 'Đang mặc' : own ? 'Mặc' : `Mua ⭐ ${k.cost}`;
-    b.onclick = () => { audio(); if (own) { S.skin = i; persist(); setSkin(); sfx.tap(); renderShop(); return; } if (S.stars >= k.cost) { S.stars -= k.cost; S.owned.push(i); S.skin = i; persist(); setSkin(); sfx.star(); renderShop(); } else { tone(180, .15, .06, 'sawtooth'); toast('Chưa đủ ⭐, hãy leo thêm tầng nhé!'); } };
+    const b = document.createElement('button'); b.className = 'btn sm w'; b.textContent = S.skin === i ? 'Wearing' : own ? 'Wear' : `Buy ⭐ ${k.cost}`;
+    b.onclick = () => { audio(); if (own) { S.skin = i; persist(); setSkin(); sfx.tap(); renderShop(); return; } if (S.stars >= k.cost) { S.stars -= k.cost; S.owned.push(i); S.skin = i; persist(); setSkin(); sfx.star(); renderShop(); } else { tone(180, .15, .06, 'sawtooth'); toast('Not enough ⭐ yet. Climb more floors!'); } };
     el.appendChild(b); g.appendChild(el); });
 }
 function setSkin() { if (runner) scene.remove(runner.root); const k = SKINS[S.skin] || SKINS[0]; runner = makeRunner(k.hood, k.cap); scene.add(runner.root); }
@@ -452,18 +452,18 @@ $('resumeBtn').onclick = () => { show(null); state = 'play'; };
 $('respBtn').onclick = () => { show(null); state = 'play'; respawn(false); }; $('homeBtn').onclick = goHome;
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') { state = 'pause'; show('pause'); } });
 
-/* ================= Vòng lặp ================= */
+/* ================= Game loop ================= */
 let last = performance.now(), runT = 0;
 function frame(now) {
   requestAnimationFrame(frame); const dt = Math.min(.05, (now - last) / 1000); last = now; T += dt;
   if (state === 'play' || state === 'lift') { updatePlay(dt); const sp = Math.hypot(pl.vx, pl.vz); runT += dt * (6 + sp * 1.3); }
   else updatePlatforms(dt);
-  // nhân vật
+  // character
   runner.root.position.set(pl.x, pl.y, pl.z); const sp = Math.hypot(pl.vx, pl.vz);
   if (sp > .6) { const tgt = Math.atan2(-pl.vx, -pl.vz); let d = tgt - pl.face; d = Math.atan2(Math.sin(d), Math.cos(d)); pl.face += d * Math.min(1, dt * 14); } runner.root.rotation.y = pl.face;
   if (state === 'menu') animRunner(runner, T, 'idle', 0, 0); else if (!pl.grounded) animRunner(runner, runT, pl.vy > 0 ? 'jump' : 'fall', sp, pl.sq); else if (sp > .5) animRunner(runner, runT, 'run', sp, pl.sq); else animRunner(runner, T, 'idle', 0, pl.sq);
   if (pl.flip > 0) { pl.flip -= dt; runner.pivot.rotation.x = -(.5 - pl.flip) / .5 * Math.PI * 2; }
-  // bóng đổ
+  // drop shadow
   let gy = null; for (const s of solids) if (s.active && Math.abs(pl.x - s.x) < s.w / 2 + .1 && Math.abs(pl.z - s.z) < s.d / 2 + .1 && s.y <= pl.y + .3 && (gy === null || s.y > gy)) gy = s.y;
   shadow.visible = gy !== null; if (gy !== null) { shadow.position.set(pl.x, gy + .02, pl.z); const k = clamp(1 - (pl.y - gy) / 7, .35, 1); shadow.scale.setScalar(k); shadow.material.opacity = .32 * k; }
   // camera
@@ -472,14 +472,14 @@ function frame(now) {
   shake = Math.max(0, shake - dt); const tx = pl.x, ty = pl.y + 1.1, tz = pl.z;
   const cx = tx + Math.sin(yaw) * Math.cos(pit) * dist, cyy = ty + Math.sin(pit) * dist + (menu ? 0 : .6), cz = tz + Math.cos(yaw) * Math.cos(pit) * dist;
   camera.position.x = lerp(camera.position.x, cx, Math.min(1, dt * 9)) + (shake ? rnd(-.05, .05) : 0); camera.position.y = lerp(camera.position.y, cyy, Math.min(1, dt * 6)); camera.position.z = lerp(camera.position.z, cz, Math.min(1, dt * 9)); camera.lookAt(tx, ty + .2, tz);
-  // phong cảnh
+  // scenery
   tower.position.y = Math.max(1900, pl.y + 1700) - 1700 + 1900 - 1900 + pl.y * 0 + 1900 - 100; tower.position.y = 1900 - 40;
   clouds.forEach(c => { const u = c.userData; u.sx += u.sp * dt * .5; if (u.sx > 100) u.sx = -100; c.position.set(pl.x + u.sx, pl.y + u.dy - 8 + Math.sin(T * .2 + u.sz) * .5, pl.z + u.sz); });
   const dp = dustG.attributes.position.array; for (let i = 0; i < dustN; i++) { dp[i * 3 + 1] -= dt * (.4 + (i % 5) * .08); if (dp[i * 3 + 1] < -12) dp[i * 3 + 1] = 14; } dustG.attributes.position.needsUpdate = true; dust.position.set(pl.x, pl.y, pl.z);
   updateSky(pl.y); updFx(dt); renderer.render(scene, camera);
 }
 
-/* ================= Khởi động ================= */
+/* ================= Boot ================= */
 setSkin(); enterFloor(S.cur || 1, true); camera.position.set(pl.x + 2, pl.y + 3, pl.z + 6); renderHome(); show('home'); requestAnimationFrame(frame);
 if (DEBUG) window.__tm = { S, pl, inp, get state() { return state; }, get floor() { return curF; }, genFloor, chainStart, jump, enterFloor, play, get solids() { return solids; }, get stars() { return starsA; }, get camYaw() { return camYaw; }, set camYaw(v) { camYaw = v; }, T: () => T };
 })();

@@ -11,9 +11,9 @@
 // toàn cục — nhờ vậy bộ test Node vẫn boot được và không có hiệu ứng phụ.
 
 const GQ_MODES = [
-  { k: 'easy', n: 'Nhẹ nhàng', e: '🌱', pace: .8,  lives: 5, mult: 1,   d: 'Chậm, nhiều mạng' },
-  { k: 'mid',  n: 'Vừa sức',   e: '🔥', pace: 1,   lives: 3, mult: 1.5, d: 'Nhịp chuẩn' },
-  { k: 'hard', n: 'Thử thách', e: '⚡', pace: 1.3, lives: 2, mult: 2,   d: 'Nhanh, ít mạng' },
+  { k: 'easy', n: 'Easy', e: '🌱', pace: .8,  lives: 5, mult: 1,   d: 'Slow, extra lives' },
+  { k: 'mid',  n: 'Normal', e: '🔥', pace: 1,   lives: 3, mult: 1.5, d: 'Balanced pace' },
+  { k: 'hard', n: 'Hard', e: '⚡', pace: 1.3, lives: 2, mult: 2,   d: 'Fast, fewer lives' },
 ];
 
 const GQ_MODE_KEY = 'gq_mode:';
@@ -60,7 +60,7 @@ function gqIntro(root, cfg, go) {
     <h2>${cfg.name || ''}</h2>
     ${cfg.desc ? `<p>${cfg.desc}</p>` : ''}
     ${cfg.steps && cfg.steps.length ? `<ul class="intro-steps">${cfg.steps.map((s) => `<li>${s}</li>`).join('')}</ul>` : ''}
-    <p class="intro-best">${best ? `🏆 Kỷ lục của bạn: <b>${best}</b>` : 'Chọn nhịp độ để bắt đầu'}</p>
+    <p class="intro-best">${best ? `🏆 Your best: <b>${best}</b>` : 'Pick a pace to start'}</p>
     <div class="modes">${GQ_MODES.map((m, i) => `<button class="mode${i === last ? ' sel' : ''}" data-mode="${i}">
       <i>${m.e}</i><b>${m.n}</b><em>${m.d}</em></button>`).join('')}</div>
   </div>`;

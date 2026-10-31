@@ -1,15 +1,15 @@
 /* =====================================================
-   waves.js · tạo đợt địch, bắt đầu đợt
+   waves.js · build enemy waves, start a wave
    ===================================================== */
 
-/** Kẻ địch không bao giờ trở thành tinh anh (đã đủ mạnh rồi) */
+/** Enemies that never become elites (already strong enough) */
 const NO_ELITE = ['boss', 'titan', 'dragon', 'golem', 'mini'];
 
-/** Dựng danh sách kẻ địch của đợt n */
+/** Build the enemy list for wave n */
 function makeWave(n) {
   const q = [];
 
-  // Máu tăng theo đợt; từ đợt HARD_WAVE tăng thêm một nấc nữa
+  // Health rises each wave; from HARD_WAVE it climbs one extra notch
   const hpM = (1 + 0.17 * (n - 1) + 0.004 * n * n) * D.hp * lateHpMul(n);
 
   const add = (t, k, gap) => {
@@ -19,7 +19,7 @@ function makeWave(n) {
     }
   };
 
-  /* ----- Kẻ địch quen thuộc ----- */
+  /* ----- Familiar enemies ----- */
   add('grunt', Math.min(5 + n * 2, 38), 0.7);
 
   if (n >= 3) add('runner', Math.min(n * 1.3, 26), 0.45);
@@ -40,25 +40,25 @@ function makeWave(n) {
   if (n >= 19 && n % 3 === 1) add('golem', 1 + (n - 19) / 6, 3);
   if (n >= 15 && n % 10 === 5) add('dragon', 1 + Math.floor(n / 20), 4);
 
-  /* ----- MỚI: kẻ địch hạng nặng từ đợt 12 trở đi ----- */
+  /* ----- NEW: heavy enemies from wave 12 onward ----- */
   if (n >= 12) add('juggernaut', 1 + (n - 12) / 3, 2.6);
   if (n >= 15 && n % 2 === 0) add('phoenix', 1 + (n - 15) / 5, 1.6);
   if (n >= 17) add('warlock', 1 + (n - 17) / 4, 2.2);
   if (n >= 22) add('reaper', 1 + (n - 22) / 3, 0.9);
 
-  /* ----- Trùm ----- */
+  /* ----- Bosses ----- */
   if (n % 10 === 0 && n !== TOTAL) {
     add('boss', 1 + (n >= 20 ? 1 : 0) + (n >= 30 ? 1 : 0), 3);
   }
 
-  /* ----- Đợt cuối ----- */
+  /* ----- Final wave ----- */
   if (n === TOTAL) {
     add('titan', 1, 3);
     add('boss', 2, 3);
     add('dragon', 1, 4);
   }
 
-  /* ----- Biến một phần thành tinh anh (từ đợt HARD_WAVE) ----- */
+  /* ----- Turn some of them into elites (from HARD_WAVE) ----- */
   const chance = eliteChance(n);
   if (chance > 0) {
     for (const s of q) {
@@ -68,7 +68,7 @@ function makeWave(n) {
     }
   }
 
-  /* ----- Xáo trộn nhẹ thứ tự xuất hiện ----- */
+  /* ----- Shuffle the spawn order a little ----- */
   for (let i = q.length - 1; i > 0; i--) {
     if (Math.random() < 0.4) {
       const j = Math.max(0, i - Math.floor(Math.random() * 6));
@@ -79,7 +79,7 @@ function makeWave(n) {
   return q;
 }
 
-/** Bắt đầu đợt kế tiếp */
+/** Start the next wave */
 function startWave() {
   if (waveActive || over || wave >= TOTAL || !started) return;
 
@@ -93,11 +93,11 @@ function startWave() {
   $('go').disabled = true;
   updUI();
   showPreview();
-  saveRun();   // đánh dấu đang giữa đợt → thoát rồi vào lại chơi lại đúng đợt này
+  saveRun();   // mark mid-wave → leaving and returning replays this same wave
 
   if (wave === HARD_WAVE) {
-    showMsg('⚠️ Tinh anh xuất hiện! Kẻ địch mạnh hơn hẳn!');
+    showMsg('⚠️ Elite enemies are here! They are much stronger!');
   } else {
-    showMsg('🌊 Đợt ' + wave + ' bắt đầu!');
+    showMsg('🌊 Wave ' + wave + ' begins!');
   }
 }
