@@ -36,7 +36,10 @@ const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
  *   4. Hoạt động cá nhân: số liệu, biểu đồ 7 ngày, học sinh nổi bật
  */
 export default function TeacherProfile({ user, onLogout, showToast }) {
-  const [me, setMe] = useState(user || {})
+  /* Bản ghi đè cục bộ sau khi sửa hồ sơ — vẫn ưu tiên `user` mới nhất từ App. */
+  const [mePatch, setMePatch] = useState({})
+  const me = { ...(user || {}), ...mePatch }
+  const [reloadKey, setReloadKey] = useState(0)
   const [stats, setStats] = useState(null)
   const [coinData, setCoinData] = useState(null)
   const [error, setError] = useState(null)
@@ -51,15 +54,16 @@ export default function TeacherProfile({ user, onLogout, showToast }) {
 
   const load = useCallback(() => {
     setStats(null); setCoinData(null); setError(null)
-    Promise.all([statsService.get(), walletService.get()])
-      .then(([s, c]) => { setStats(s); setCoinData(c) })
-      .catch(e => setError(e.message))
+    setReloadKey(k => k + 1)
   }, [])
 
-  useEffect(() => { load() }, [load])
-
-  /* Header chỉ truyền user một lần; vẫn đồng bộ khi App đăng nhập lại / đổi hồ sơ. */
-  useEffect(() => { if (user) setMe(prev => ({ ...prev, ...user })) }, [user])
+  useEffect(() => {
+    let alive = true
+    Promise.all([statsService.get(), walletService.get()])
+      .then(([s, c]) => { if (!alive) return; setStats(s); setCoinData(c) })
+      .catch(e => { if (alive) setError(e.message) })
+    return () => { alive = false }
+  }, [reloadKey])
 
   const startEdit = () => {
     setForm({ name: me?.name || '', email: me?.email || '' })
@@ -74,7 +78,7 @@ export default function TeacherProfile({ user, onLogout, showToast }) {
       if (form.email !== (me?.email || '')) payload.email = form.email
       if (Object.keys(payload).length === 0) { setEditing(false); return }
       const updated = await userService.updateProfile(payload)
-      setMe(prev => ({ ...prev, ...updated }))
+      setMePatch(prev => ({ ...prev, ...updated }))
       const auth = JSON.parse(localStorage.getItem('edu_games_auth') || '{}')
       if (auth?.user) {
         auth.user = { ...auth.user, ...updated }

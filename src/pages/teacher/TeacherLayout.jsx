@@ -13,7 +13,7 @@ import { navigate } from '../../lib/router.js'
  *   └────────────┴─────────────────────────────────────────────┘
  * Mobile giữ thanh điều hướng dưới của TeacherSidebar.
  */
-export default function TeacherLayout({ user, onLogout, children }) {
+export default function TeacherLayout({ screen, user, onLogout, children }) {
   return (
     <div className="edu-admin min-h-screen flex flex-col">
       <header className="edu-admin-bar">

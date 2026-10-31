@@ -83,28 +83,7 @@ const SECTIONS = [
   },
 ];
 
-/* Route không có mục menu riêng (trang con) — dùng cho tiêu đề trang. */
-const EXTRA_TITLES = {
-  "admin-profile": "Hồ sơ",
-  "admin-edit": "Chỉnh sửa trò chơi",
-  "admin-results": "Kết quả trò chơi",
-  "admin-template-new": "Template mới",
-  "admin-template-edit": "Sửa template",
-  "admin-class-students": "Học sinh lớp",
-  "admin-assignment-new": "Tạo bài tập",
-  "admin-assignment-edit": "Sửa bài tập",
-  "admin-assignment-detail": "Chi tiết bài tập",
-  "admin-all-questions": "Tất cả câu hỏi",
-};
-
-export function findPageTitle(screen) {
-  for (const s of SECTIONS) {
-    const item = s.items.find(i => i.id === screen);
-    if (item) return item.label;
-  }
-  return EXTRA_TITLES[screen] || "Dashboard";
-}
-
+/* Thanh điều hướng dưới trên mobile: 2 mục chính + nút "+" + Trang chủ + Hồ sơ. */
 const MOBILE_MAIN = [
   { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin", permission: null },
   { id: "admin-library", label: "Trò chơi", icon: Library, route: "/admin/library", permission: "games.manage" },
