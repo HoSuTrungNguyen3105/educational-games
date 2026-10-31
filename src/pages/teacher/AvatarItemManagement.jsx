@@ -9,6 +9,7 @@ import {
 const DATA_FILE = 'src/games/_shared/lib/dressUpAvatarData.js';
 
 function ItemThumb({ cfg, id, selected, onClick }) {
+  const vb = cfg.vbFor ? cfg.vbFor(id) : cfg.vb;
   return (
     <button
       onClick={onClick}
@@ -27,7 +28,7 @@ function ItemThumb({ cfg, id, selected, onClick }) {
           style={{ background: cfg.dot(id) }}
         />
       ) : (
-        <svg viewBox={cfg.vb} width="100%" height="100%">
+        <svg viewBox={vb} width="100%" height="100%">
           <g dangerouslySetInnerHTML={{ __html: cfg.pv(id) }} />
         </svg>
       )}
@@ -105,9 +106,9 @@ export default function AvatarItemManagement({ showToast }) {
         { icon: <BookOpen />, value: KID_LAYERS.length, label: 'Lớp vẽ' },
       ]} />
 
-      <div className="grid gap-4 lg:grid-cols-[300px_1fr] items-start">
-        <div className="note-card p-4 space-y-3">
-          <div className="rounded-xl overflow-hidden" style={{ background: 'var(--stage, #f7f1e7)' }}>
+      <div className="grid gap-4 lg:grid-cols-[300px_1fr] items-start min-w-0">
+        <div className="note-card p-4 space-y-3 min-w-0">
+          <div className="rounded-xl overflow-hidden max-w-[340px] mx-auto lg:max-w-none lg:mx-0" style={{ background: 'var(--stage, #f7f1e7)' }}>
             <svg viewBox="0 0 512 700" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
               dangerouslySetInnerHTML={{ __html: svg }} />
           </div>
@@ -167,8 +168,8 @@ export default function AvatarItemManagement({ showToast }) {
           </p>
         </div>
 
-        <div className="note-card p-4">
-          <div className="flex gap-1.5 overflow-x-auto pb-2">
+        <div className="note-card p-4 min-w-0">
+          <div className="flex gap-1.5 overflow-x-auto pb-2 min-w-0">
             {tabs.map((item) => (
               <button
                 key={item.k}

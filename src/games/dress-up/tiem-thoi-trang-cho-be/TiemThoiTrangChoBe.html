@@ -85,7 +85,7 @@ function drawOpts(){
  let h=cfg.nullable?`<button class="opt" data-v="" aria-pressed="${!st[t.k]}" aria-label="Không dùng"><span class="none">🚫</span></button>`:'';
  h+=cfg.ids.map(id=>`<button class="opt" data-v="${id}" aria-pressed="${st[t.k]===id}" aria-label="${id}">`
   +(cfg.kind==='dot'?`<span class="dot" style="background:${cfg.dot(id)}"></span>`
-   :`<svg viewBox="${cfg.vb}">${cfg.pv(id)}</svg>`)
+   :`<svg viewBox="${cfg.vbFor?cfg.vbFor(id):cfg.vb}">${cfg.pv(id)}</svg>`)
   +'</button>').join('');
  $('#opts').innerHTML=h;
 }

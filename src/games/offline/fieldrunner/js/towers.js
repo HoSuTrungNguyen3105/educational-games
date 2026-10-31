@@ -1,8 +1,8 @@
 /* =====================================================
-   towers.js · tower stats, targeting, projectiles, explosions
+   towers.js · chỉ số tháp, ngắm bắn, đạn, nổ
    ===================================================== */
 
-/** Current tower stats by level and radar buff */
+/** Chỉ số hiện tại của tháp theo cấp và buff radar */
 function stat(t) {
   const T = TYPES[t.type];
   const l = t.lvl - 1;
@@ -14,7 +14,7 @@ function stat(t) {
   };
 }
 
-/** Pick a target for the tower based on its targeting mode */
+/** Chọn mục tiêu cho tháp theo chế độ ngắm */
 function pickTarget(t, T, S) {
   let tg = null;
   let sc = 0;
@@ -29,9 +29,9 @@ function pickTarget(t, T, S) {
     if (e.def.stealth && dd > 2.5 * CS && !t.det) continue;
 
     let s;
-    if (t.mode === 1) s = e.hp + (e.shield || 0);   // strongest
-    else if (t.mode === 2) s = -dd;                 // closest
-    else s = -e.rem;                                // first
+    if (t.mode === 1) s = e.hp + (e.shield || 0);   // mạnh nhất
+    else if (t.mode === 2) s = -dd;                 // gần nhất
+    else s = -e.rem;                                // đầu tiên
 
     if (!tg || s > sc) {
       tg = e;
@@ -41,9 +41,9 @@ function pickTarget(t, T, S) {
   return tg;
 }
 
-/** Update radar buffs, then let each tower fire */
+/** Cập nhật buff radar rồi cho từng tháp bắn */
 function updateTowers(dt) {
-  /* ----- Radar buff ----- */
+  /* ----- Buff từ radar ----- */
   for (const t of towers) {
     t.bD = 0;
     t.bR = 0;
@@ -69,7 +69,7 @@ function updateTowers(dt) {
     }
   }
 
-  /* ----- Fire ----- */
+  /* ----- Bắn ----- */
   for (const t of towers) {
     const T = TYPES[t.type];
     if (T.support) continue;
@@ -90,7 +90,7 @@ function updateTowers(dt) {
 
     t.ang = Math.atan2(tg.y - t.y, tg.x - t.x);
 
-    /* Laser: fires continuously and ramps up */
+    /* Laser: bắn liên tục, mạnh dần */
     if (T.laser) {
       fireLaser(t, T, S, tg, dt);
       continue;
@@ -109,7 +109,7 @@ function updateTowers(dt) {
   }
 }
 
-/* ---------- Fire types ---------- */
+/* ---------- Các kiểu bắn ---------- */
 
 function fireLaser(t, T, S, tg, dt) {
   if (t.lock !== tg.id) {
@@ -267,7 +267,7 @@ function fireProjectile(t, T, S, tg) {
   }
 }
 
-/* ---------- Splash damage ---------- */
+/* ---------- Nổ lan ---------- */
 function explode(x, y, R, dmg, pierce, opts = {}) {
   fx.push({ k: 'boom', x, y, r: R, life: 0.35 });
   particles(x, y, 12, '#ffb44a', 150, 0.5, 3.5);
@@ -290,11 +290,11 @@ function explode(x, y, R, dmg, pierce, opts = {}) {
   }
 }
 
-/* ---------- Flying projectiles ---------- */
+/* ---------- Đạn bay ---------- */
 function updateProjs(dt) {
   for (const p of projs) {
 
-    /* Mortar shell: arcs toward the landing spot */
+    /* Đạn cối: bay vòng cung tới điểm rơi */
     if (p.mortar) {
       p.t += dt;
       const u = Math.min(1, p.t / p.dur);
@@ -323,7 +323,7 @@ function updateProjs(dt) {
 
     p.ang = Math.atan2(dy, dx);
 
-    /* Smoke / fire trail behind the projectile */
+    /* Vệt khói / lửa phía sau đạn */
     if (p.kind === 'missile' && Math.random() < 0.9) {
       parts.push({
         x: p.x, y: p.y,
@@ -342,7 +342,7 @@ function updateProjs(dt) {
       parts.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.3, max: 0.3, s: 2.4, c: '#cfeeff' });
     }
 
-    /* Hit the target */
+    /* Trúng mục tiêu */
     if (d <= m + tg.def.r * 0.6) {
       p.dead = true;
 

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>relax corner</title>
+<title>Góc thư giãn</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -43,20 +43,20 @@
 
 <div class="top">
   <div class="brand">
-    <h1>Relax Corner</h1>
+    <h1>Góc thư giãn</h1>
     <p id="stat"></p>
   </div>
-  <button id="sound" aria-label="Toggle sound">🔊</button>
+  <button id="sound" aria-label="Bật hoặc tắt âm thanh">🔊</button>
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
 
 <div class="bottom">
   <div id="hint"></div>
-  <nav role="tablist" aria-label="Choose a game">
-    <button role="tab" data-g="garden" aria-selected="true">Night Garden</button>
-    <button role="tab" data-g="bubbles" aria-selected="false">Bubbles</button>
-    <button role="tab" data-g="breathe" aria-selected="false">Breathe</button>
+  <nav role="tablist" aria-label="Chọn trò chơi">
+    <button role="tab" data-g="garden" aria-selected="true">Vườn đêm</button>
+    <button role="tab" data-g="bubbles" aria-selected="false">Bong bóng</button>
+    <button role="tab" data-g="breathe" aria-selected="false">Hít thở</button>
   </nav>
 </div>
 
@@ -74,7 +74,7 @@ const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 const easeSine = x => (1 - Math.cos(Math.PI * x)) / 2;
 const easeBack = x => 1 + 2.70158 * Math.pow(x - 1, 3) + 1.70158 * Math.pow(x - 1, 2);
 
-/* ---------- Sound (soft pentatonic notes) ---------- */
+/* ---------- Âm thanh (nốt ngũ cung, êm dịu) ---------- */
 const SC = [261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99, 880];
 let ac = null, soundOn = true, padGain = null;
 function initAudio() {
@@ -109,7 +109,7 @@ document.getElementById('sound').addEventListener('click', e => {
   e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
 });
 
-/* ---------- Gentle messages ---------- */
+/* ---------- Lời nhắn nhẹ nhàng ---------- */
 let toastTimer;
 function toast(msg) {
   toastEl.textContent = msg;
@@ -118,20 +118,20 @@ function toast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4200);
 }
 const TIPS = [
-  'You tried really hard today.',
-  'Take a sip of water.',
-  'Look far away for 20 seconds to rest your eyes.',
-  'Stretch your arms up high.',
-  'Breathe in… then breathe out slowly.',
-  'Resting is part of learning too.',
-  'Sit up straight and relax your shoulders.',
-  'Smile a little, just because.'
+  'Bạn đã cố gắng rất nhiều hôm nay.',
+  'Uống một ngụm nước nhé.',
+  'Nhìn ra xa 20 giây để mắt được nghỉ.',
+  'Vươn vai một cái thật dài nào.',
+  'Hít sâu… rồi thở ra thật chậm.',
+  'Nghỉ ngơi cũng là một phần của việc học.',
+  'Ngồi thẳng lưng, thả lỏng đôi vai.',
+  'Mỉm cười một chút, không cần lý do.'
 ];
 
-/* ---------- GAME 1: Night Garden ---------- */
+/* ---------- GAME 1: Vườn đêm ---------- */
 const garden = {
   plants: [], flies: [], stars: [], count: 0, attract: null, lastX: -999, lastY: -999,
-  hint: 'Tap the soil to plant a seed. Drag your finger to plant a whole row of flowers.',
+  hint: 'Chạm vào đất để gieo hạt. Kéo ngón tay để trồng cả luống hoa.',
   groundY() { return H * 0.62; },
   init() {
     this.flies = Array.from({ length: 26 }, () => ({
@@ -174,7 +174,7 @@ const garden = {
       if (f.x < 0) f.x = W; if (f.x > W) f.x = 0;
       f.y = Math.max(H * 0.15, Math.min(H * 0.95, f.y));
     });
-    return '🌼 ' + this.count + ' flowers';
+    return '🌼 ' + this.count + ' bông hoa';
   },
   draw() {
     const gy = this.groundY();
@@ -187,27 +187,27 @@ const garden = {
       ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, 6.283); ctx.fill();
     });
     ctx.globalAlpha = 1;
-    // moon
+    // trăng
     const mx = W * 0.78, my = H * 0.16, mr = Math.min(W, H) * 0.06;
     let mg = ctx.createRadialGradient(mx, my, mr * .5, mx, my, mr * 4);
     mg.addColorStop(0, 'rgba(255,243,207,.35)'); mg.addColorStop(1, 'rgba(255,243,207,0)');
     ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr * 4, 0, 6.283); ctx.fill();
     ctx.fillStyle = '#fff3cf'; ctx.beginPath(); ctx.arc(mx, my, mr, 0, 6.283); ctx.fill();
-    // distant hills
+    // đồi xa
     ctx.fillStyle = '#3b3570';
     ctx.beginPath(); ctx.moveTo(0, gy);
     for (let x = 0; x <= W; x += 12) ctx.lineTo(x, gy - 34 - Math.sin(x * 0.008 + 1) * 26 - Math.sin(x * 0.02) * 8);
     ctx.lineTo(W, gy + 2); ctx.lineTo(0, gy + 2); ctx.fill();
-    // ground
+    // đất
     g = ctx.createLinearGradient(0, gy, 0, H);
     g.addColorStop(0, '#2f5b57'); g.addColorStop(1, '#173a3c');
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.moveTo(0, gy);
     for (let x = 0; x <= W; x += 12) ctx.lineTo(x, gy - Math.sin(x * 0.012 + 2) * 8);
     ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
-    // plants sorted by depth
+    // cây theo độ sâu
     [...this.plants].sort((a, b) => a.y - b.y).forEach(p => this.drawPlant(p));
-    // fireflies
+    // đom đóm
     ctx.globalCompositeOperation = 'lighter';
     this.flies.forEach(f => {
       const a = 0.45 + 0.45 * Math.sin(T * 2 + f.ph);
@@ -223,14 +223,14 @@ const garden = {
     const eb = b > 0 ? easeBack(b) : 0;
     const sway = Math.sin(T * 1.1 + p.ph) * 5 * e;
     const tx = p.x + sway, ty = p.y - p.h * e;
-    // soil mound
+    // gò đất
     ctx.fillStyle = '#25443f';
     ctx.beginPath(); ctx.ellipse(p.x, p.y, 9, 3.5, 0, 0, 6.283); ctx.fill();
-    // stem
+    // thân
     ctx.strokeStyle = '#6fbf8f'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(p.x, p.y);
     ctx.quadraticCurveTo(p.x + sway * 0.2, p.y - p.h * e * 0.55, tx, ty); ctx.stroke();
-    // leaves
+    // lá
     const lx = p.x + sway * 0.12, ly = p.y - p.h * e * 0.42, ls = 7 * e;
     ctx.fillStyle = '#7fd0a0';
     [-1, 1].forEach(s => { ctx.beginPath(); ctx.ellipse(lx + s * ls, ly, ls, ls * .45, s * -0.5, 0, 6.283); ctx.fill(); });
@@ -271,10 +271,10 @@ const garden = {
   }
 };
 
-/* ---------- GAME 2: Bubbles ---------- */
+/* ---------- GAME 2: Bong bóng ---------- */
 const bubbles = {
   list: [], parts: [], popped: 0, spawn: 0,
-  hint: 'Tap or swipe through the bubbles. Bubbles with ✦ hide a little message.',
+  hint: 'Chạm hoặc lướt qua bong bóng. Bong bóng có ✦ giấu một lời nhắn nhỏ.',
   init() { this.list = []; this.parts = []; for (let i = 0; i < 9; i++) this.add(true); },
   add(initial) {
     const r = rand(24, 60);
@@ -311,13 +311,13 @@ const bubbles = {
     this.list = this.list.filter(b => b.y > -b.r * 2);
     this.parts.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .95; p.vy *= .95; p.life -= dt * 1.6; });
     this.parts = this.parts.filter(p => p.life > 0);
-    return '🫧 ' + this.popped + ' bubbles';
+    return '🫧 ' + this.popped + ' bong bóng';
   },
   draw() {
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, '#1f3f6b'); g.addColorStop(.55, '#2b6a86'); g.addColorStop(1, '#3f9a9a');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    // soft light rays
+    // tia sáng mờ
     ctx.globalCompositeOperation = 'lighter';
     for (let i = 0; i < 3; i++) {
       const x = W * (0.2 + i * 0.3) + Math.sin(T * .2 + i) * 30;
@@ -349,10 +349,10 @@ const bubbles = {
   }
 };
 
-/* ---------- GAME 3: Breathe ---------- */
+/* ---------- GAME 3: Hít thở ---------- */
 const breathe = {
   t: 0, lastPh: -1, cycles: 0, motes: [],
-  hint: 'Watch the circle. Breathe in as it grows, breathe out as it shrinks.',
+  hint: 'Nhìn vào vòng tròn. Hít vào khi nó nở ra, thở ra khi nó thu lại.',
   init() { this.motes = Array.from({ length: 34 }, () => ({ x: Math.random(), y: Math.random(), s: rand(.4, 1.6), v: rand(.006, .02), ph: rand(0, 6) })); },
   state() {
     const t = this.t % 14;
@@ -367,13 +367,13 @@ const breathe = {
     if (s.ph !== this.lastPh) {
       if (s.ph === 0 && this.lastPh === 2) {
         this.cycles++;
-        if (this.cycles % 5 === 0) toast('Wonderful! You just took ' + this.cycles + ' calm breaths.');
+        if (this.cycles % 5 === 0) toast('Tuyệt lắm! Bạn vừa hít thở đều ' + this.cycles + ' nhịp.');
       }
       note([SC[2], SC[4], SC[0]][s.ph], 2.5, .09);
       this.lastPh = s.ph;
     }
     this.motes.forEach(m => { m.y -= m.v * dt; if (m.y < -0.02) { m.y = 1.02; m.x = Math.random(); } });
-    return '🌬️ ' + this.cycles + ' breaths';
+    return '🌬️ ' + this.cycles + ' nhịp thở';
   },
   draw() {
     const { ph, lvl, rem } = this.state();
@@ -400,13 +400,13 @@ const breathe = {
     ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.fill();
     ctx.fillStyle = '#1b2142'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = `700 ${Math.max(22, m * 0.06)}px "Baloo 2",sans-serif`;
-    ctx.fillText(['Breathe in', 'Hold', 'Breathe out'][ph], cx, cy - m * 0.015);
+    ctx.fillText(['Hít vào', 'Giữ nhẹ', 'Thở ra'][ph], cx, cy - m * 0.015);
     ctx.font = `500 ${Math.max(16, m * 0.04)}px "Baloo 2",sans-serif`;
     ctx.globalAlpha = .7; ctx.fillText(Math.ceil(rem), cx, cy + m * 0.045); ctx.globalAlpha = 1;
   }
 };
 
-/* ---------- Shared controls ---------- */
+/* ---------- Điều khiển chung ---------- */
 const games = { garden, bubbles, breathe };
 const inited = {};
 function resize() {
@@ -443,12 +443,11 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-/* ---------- Save progress ----------
- * These three are relaxing toys, so "progress" = which tab is open, how many
- * flowers were planted, how many bubbles popped, and how many breaths taken.
- * The app is a SPA: leaving the page only tears down the iframe, so we need
- * __gqFlush / the "gq:flush" event (FLUSH_BRIDGE in src/pages/OfflineGamePage.jsx)
- * to write before exiting. */
+/* ---------- Lưu tiến độ ----------
+ * Ba trò ở đây là đồ chơi giải trí nên "tiến độ" = đang ở tab nào, đã trồng
+ * bao nhiêu hoa, đã chọc bao nhiêu bong bóng, đã thở bao nhiêu nhịp.
+ * App là SPA: rời trang chỉ phá iframe nên cần __gqFlush / event "gq:flush"
+ * (FLUSH_BRIDGE trong src/pages/OfflineGamePage.jsx) để ghi trước khi thoát. */
 const RK = 'goc-thu-gian-v1';
 function currentName() {
   return Object.keys(games).find(k => games[k] === current) || 'garden';
@@ -460,7 +459,7 @@ function saveRun() {
       plants: garden.plants.map(p => ({ x: p.x, y: p.y, type: p.type, hue: p.hue, h: p.h, t: p.t, ph: p.ph, petals: p.petals })),
       count: garden.count, popped: bubbles.popped, cycles: breathe.cycles, bt: breathe.t
     }));
-  } catch (e) { /* localStorage blocked — the game still works */ }
+  } catch (e) { /* localStorage bị chặn — vẫn chơi bình thường */ }
 }
 function loadRun() {
   try { const s = JSON.parse(localStorage.getItem(RK) || 'null'); return s && s.v === 1 ? s : null; } catch (e) { return null; }
@@ -468,7 +467,7 @@ function loadRun() {
 function applyRun(s) {
   garden.count = s.count | 0; bubbles.popped = s.popped | 0; breathe.cycles = s.cycles | 0;
   breathe.t = s.bt || 0;
-  // large t → flowers appear already bloomed, skip the replant animation
+  // t lớn → hoa hiện ra đã nở, không trồng lại animation từ đầu
   (s.plants || []).forEach(p => garden.plants.push({ ...p, t: Math.max(p.t || 0, 9) }));
 }
 
@@ -484,7 +483,7 @@ requestAnimationFrame(loop);
 })();
 </script>
 
-<!-- "Back to home" button — added by scripts/add-offline-back-button.mjs -->
+<!-- Nút "Về trang chủ" — thêm bởi scripts/add-offline-back-button.mjs -->
 <style>
   #homeBackBtn {
     position: fixed;
@@ -513,12 +512,12 @@ requestAnimationFrame(loop);
   #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
 </style>
-<button id="homeBackBtn" type="button" aria-label="Back to home" title="Back to home">
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">
   <span aria-hidden="true">&#8592;</span>
 </button>
 <script>
-  // Shared button for all offline games: post a message to React (OfflineGamePage)
-  // to return home. When opening the .html file directly it navigates itself.
+  // Nút dùng chung cho mọi game offline: báo ngược lên React (OfflineGamePage)
+  // để quay về trang chủ. Mở file .html trực tiếp thì tự điều hướng.
   (function () {
     var btn = document.getElementById("homeBackBtn");
     if (!btn) return;
@@ -528,7 +527,7 @@ requestAnimationFrame(loop);
           window.parent.postMessage({ type: "quit", data: {} }, "*");
           return;
         }
-      } catch (e) { /* fall back to self-navigation */ }
+      } catch (e) { /* rơi xuống cách tự điều hướng */ }
       try { window.location.href = "/"; } catch (e) { /* ignore */ }
     });
   })();

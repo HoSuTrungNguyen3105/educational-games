@@ -1,17 +1,17 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><script id="gq-kit">/* gq-kit.js — Bộ nâng cấp dùng chung cho game dọc:
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><script id="gq-kit">/* gq-kit.js — Bộ nâng cấp dùng chung cho game dọc:
    · Màn chọn độ khó 4 mức (Dễ / Trung bình / Khó / Siêu khó) — cùng một giao diện cho mọi game
    · Độ khó thật: nhịp game (setTimeout/setInterval/rAF/performance.now/Date.now) co giãn theo mức,
      điểm & XP nhân hệ số (game dạng "single"), số mạng / giây mỗi câu / màn khởi đầu (mcengine)
-   · Pháo hoa khi kết thúc ván, nút "Change difficulty", nhãn độ khó luôn hiện trên đầu màn hình
+   · Pháo hoa khi kết thúc ván, nút "Đổi độ khó", nhãn độ khó luôn hiện trên đầu màn hình
    MODE được build thay: 'single' (game sinh từ shell) hoặc 'standalone' (game viết tay). */
 (() => {
   if (window.GQ) return;
   const MODE = 'standalone';
   const TIERS = [
-    { k: 'easy',   n: 'Easy',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Slow, extra lives — take it easy' },
-    { k: 'mid',    n: 'Normal', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Balanced pace' },
-    { k: 'hard',   n: 'Hard',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Faster, less thinking time' },
-    { k: 'insane', n: 'Insane',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Very fast, no room for mistakes' },
+    { k: 'easy',   n: 'Dễ',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Chậm rãi, nhiều mạng — thoải mái làm quen' },
+    { k: 'mid',    n: 'Trung bình', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Nhịp độ chuẩn, vừa sức chơi' },
+    { k: 'hard',   n: 'Khó',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Nhanh hơn, ít thời gian suy nghĩ' },
+    { k: 'insane', n: 'Siêu khó',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Cực nhanh, ít sai sót — dành cho cao thủ' },
   ];
   const G = { t: TIERS[1], i: 1, locked: MODE === 'standalone', q: [] };
 
@@ -68,13 +68,13 @@
   function pick(meta, go) {
     let last = 1;
     try { const v = +localStorage.getItem(KEY); if (v >= 0 && v < 4) last = v; } catch (e) { /* ignore */ }
-    const chip = t => MODE === 'single' ? `×${t.m} points` : `speed ×${t.s}`;
-    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Exit">←</button>
+    const chip = t => MODE === 'single' ? `×${t.m} điểm` : `tốc độ ×${t.s}`;
+    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Thoát">←</button>
       <div class="gqp-box"><div class="gqp-ic">${meta.icon || '🎮'}</div><h1>${meta.name}</h1>
-      <p>Pick a difficulty to start</p>
+      <p>Chọn độ khó để bắt đầu</p>
       <div class="gqp-list">${TIERS.map((t, i) => `<button class="gqd${i === last ? ' last' : ''}" data-i="${i}" style="--c:${t.c}">
         <i>${t.e}</i><span><b>${t.n}</b><em>${t.d}</em></span><u>${chip(t)}</u></button>`).join('')}</div>
-      <small>Higher difficulty, faster pace — bigger rewards 🏆</small></div></div>`);
+      <small>Độ khó càng cao, nhịp chơi càng gấp — thưởng càng lớn 🏆</small></div></div>`);
     box.querySelector('.gqp-x').onclick = quit;
     box.querySelector('.gqp-list').onclick = e => {
       const b = e.target.closest('.gqd'); if (!b) return;
@@ -114,12 +114,12 @@
       }));
       boom();
       const row = document.querySelector('#modal .row');
-      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Change difficulty</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
+      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Đổi độ khó</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
       return r;
     };
   } else {
     const start = () => {
-      const t = (document.title || 'Game').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
+      const t = (document.title || 'Trò chơi').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
       const ic = (document.title.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u) || ['🎮'])[0];
       document.documentElement.classList.add('gq-sa');
       pick({ name: t, icon: ic });
@@ -127,7 +127,7 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   }
 })();
-</script><title>apple worm</title>
+</script><title>Sâu Ăn Táo</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet"><style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;font-family:"Baloo 2",system-ui,sans-serif;color:#fff;touch-action:none;background:linear-gradient(#ffb56b,#f88f5a 18%,#6cb857 55%,#2e6b2f)}
@@ -177,7 +177,7 @@ canvas{border:4px solid #3a2414;border-radius:14px;box-shadow:0 8px 24px rgba(0,
 .gqd b { display: block; font: 800 20px/1.1 'Baloo 2', system-ui, sans-serif; }
 .gqd em { display: block; font-style: normal; font-size: 12.5px; line-height: 1.3; color: #3a4a66; margin-top: 2px; }
 .gqd u { text-decoration: none; font-size: 11.5px; font-weight: 700; background: #1d2e4a; color: #fff; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
-.gqd.last::after { content: 'Last time'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
+.gqd.last::after { content: 'Lần trước'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
   border-radius: 999px; padding: 0 8px; font-size: 10.5px; font-weight: 700; }
 .gqp-box small { display: block; margin-top: 14px; font-size: 12.5px; color: #3a4a66; }
 @keyframes gqpop { 0% { transform: scale(.85); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
@@ -205,14 +205,14 @@ html.gq-sa body .btn.alt, html.gq-sa body .card button.alt, html.gq-sa body .pan
 html.gq-sa body .btn:active, html.gq-sa body #again:active, html.gq-sa body #card button:active, html.gq-sa body .card button:active, html.gq-sa body .panel button:active {
   transform: translate(3px, 3px) !important; box-shadow: none !important; }
 </style></head><body>
-<div id="hud"><h1>Apple Worm</h1><div class="st">Score <b id="sc">0</b></div><div class="st">Best <b id="hi">0</b></div></div><div id="stage"></div>
+<div id="hud"><h1>Sâu Ăn Táo</h1><div class="st">Điểm <b id="sc">0</b></div><div class="st">Kỷ lục <b id="hi">0</b></div></div><div id="stage"></div>
 <div id="over"><div class="panel"><h2 id="oT"></h2><p id="oP"></p><button class="btn" id="oB"></button></div></div>
-<button id="homeBackBtn" type="button" aria-label="Back to home">&#8592;</button>
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ">&#8592;</button>
 <script>
 const $=id=>document.getElementById(id);let hi=0;const HK='vuon-thu-ho-snake-hi';
 try{hi=+localStorage.getItem(HK)||0}catch(e){}
 function saveHi(v){if(v>hi){hi=v;try{localStorage.setItem(HK,v)}catch(e){}return true}return false}
-function over(t,p,b){$('oT').textContent=t;$('oP').textContent=p;$('oB').textContent=b||'↺ Play again';$('over').classList.remove('h')}
+function over(t,p,b){$('oT').textContent=t;$('oP').textContent=p;$('oB').textContent=b||'↺ Chơi lại';$('over').classList.remove('h')}
 $('oB').onclick=()=>{$('over').classList.add('h');start()};
 $('homeBackBtn').onclick=()=>{try{if(parent!==window){parent.postMessage({type:"quit",data:{}},"*");return}}catch(e){}location.href="/"};
 const SV=b=>`<svg viewBox="0 0 100 100">${b}</svg>`;
@@ -224,7 +224,7 @@ function spawn(){do{food={x:Math.random()*C|0,y:Math.random()*R|0}}while(sn.some
 function start(){sn=[{x:5,y:6},{x:4,y:6},{x:3,y:6}];dir=nd={x:1,y:0};score=0;alive=true;spawn();upd();draw();clearTimeout(tid);loop()}
 function loop(){step();if(alive)tid=setTimeout(loop,Math.max(70,150-Math.floor(score/4)*8))}
 function step(){dir=nd;const h={x:sn[0].x+dir.x,y:sn[0].y+dir.y};
-if(h.x<0||h.y<0||h.x>=C||h.y>=R||sn.some(p=>p.x===h.x&&p.y===h.y)){alive=false;const nw=saveHi(score);upd();draw();over('Ouch! The worm crashed! 😵',`Score: ${score}${nw?' · New best! 🏆':''} (best ${hi})`);return}
+if(h.x<0||h.y<0||h.x>=C||h.y>=R||sn.some(p=>p.x===h.x&&p.y===h.y)){alive=false;const nw=saveHi(score);upd();draw();over('Sâu bị vấp! 😵',`Điểm: ${score}${nw?' · Kỷ lục mới! 🏆':''} (cao nhất ${hi})`);return}
 sn.unshift(h);if(h.x===food.x&&h.y===food.y){score++;spawn();upd()}else sn.pop();draw()}
 function draw(){for(let y=0;y<R;y++)for(let x=0;x<C;x++){g.fillStyle=(x+y)%2?'#63b24f':'#74c25c';g.fillRect(x*cs,y*cs,cs,cs)}
 const fx=(food.x+.5)*cs,fy=(food.y+.55)*cs,r=cs*.36;g.fillStyle='#e0483d';g.strokeStyle='#7a1d12';g.lineWidth=2;g.beginPath();g.arc(fx-r*.3,fy,r*.75,0,6.283);g.arc(fx+r*.3,fy,r*.75,0,6.283);g.fill();g.stroke();
@@ -238,5 +238,5 @@ let sx,sy,dn=0;document.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.cli
 document.addEventListener('pointermove',e=>{if(!dn)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.hypot(dx,dy)<22)return;sx=e.clientX;sy=e.clientY;Math.abs(dx)>Math.abs(dy)?turn(dx>0?1:-1,0):turn(0,dy>0?1:-1)});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(tid);else if(alive){clearTimeout(tid);loop()}});
 addEventListener('resize',fit);fit();sn=[{x:5,y:6},{x:4,y:6},{x:3,y:6}];dir={x:1,y:0};food={x:12,y:6};upd();draw();
-over('Apple Worm','Swipe or use the arrow keys to steer. Eat apples to grow — don’t crash into the walls or yourself!','▶ Start');
+over('Sâu Ăn Táo','Vuốt hoặc dùng phím mũi tên để điều khiển. Ăn táo để dài ra, đừng đâm tường hay chính mình!','▶ Bắt đầu');
 </script></body></html>

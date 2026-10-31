@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"><script id="gq-kit">/* gq-kit.js — Bộ nâng cấp dùng chung cho game dọc:
    · Màn chọn độ khó 4 mức (Dễ / Trung bình / Khó / Siêu khó) — cùng một giao diện cho mọi game
    · Độ khó thật: nhịp game (setTimeout/setInterval/rAF/performance.now/Date.now) co giãn theo mức,
      điểm & XP nhân hệ số (game dạng "single"), số mạng / giây mỗi câu / màn khởi đầu (mcengine)
-   · Pháo hoa khi kết thúc ván, nút "Change difficulty", nhãn độ khó luôn hiện trên đầu màn hình
+   · Pháo hoa khi kết thúc ván, nút "Đổi độ khó", nhãn độ khó luôn hiện trên đầu màn hình
    MODE được build thay: 'single' (game sinh từ shell) hoặc 'standalone' (game viết tay). */
 (() => {
   if (window.GQ) return;
   const MODE = 'standalone';
   const TIERS = [
-    { k: 'easy',   n: 'Easy',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Slow, extra lives — take it easy' },
-    { k: 'mid',    n: 'Normal', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Balanced pace' },
-    { k: 'hard',   n: 'Hard',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Faster, less thinking time' },
-    { k: 'insane', n: 'Insane',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Very fast, no room for mistakes' },
+    { k: 'easy',   n: 'Dễ',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Chậm rãi, nhiều mạng — thoải mái làm quen' },
+    { k: 'mid',    n: 'Trung bình', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Nhịp độ chuẩn, vừa sức chơi' },
+    { k: 'hard',   n: 'Khó',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Nhanh hơn, ít thời gian suy nghĩ' },
+    { k: 'insane', n: 'Siêu khó',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Cực nhanh, ít sai sót — dành cho cao thủ' },
   ];
   const G = { t: TIERS[1], i: 1, locked: MODE === 'standalone', q: [] };
 
@@ -72,13 +72,13 @@
   function pick(meta, go) {
     let last = 1;
     try { const v = +localStorage.getItem(KEY); if (v >= 0 && v < 4) last = v; } catch (e) { /* ignore */ }
-    const chip = t => MODE === 'single' ? `×${t.m} points` : `speed ×${t.s}`;
-    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Exit">←</button>
+    const chip = t => MODE === 'single' ? `×${t.m} điểm` : `tốc độ ×${t.s}`;
+    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Thoát">←</button>
       <div class="gqp-box"><div class="gqp-ic">${meta.icon || '🎮'}</div><h1>${meta.name}</h1>
-      <p>Pick a difficulty to start</p>
+      <p>Chọn độ khó để bắt đầu</p>
       <div class="gqp-list">${TIERS.map((t, i) => `<button class="gqd${i === last ? ' last' : ''}" data-i="${i}" style="--c:${t.c}">
         <i>${t.e}</i><span><b>${t.n}</b><em>${t.d}</em></span><u>${chip(t)}</u></button>`).join('')}</div>
-      <small>Higher difficulty, faster pace — bigger rewards 🏆</small></div></div>`);
+      <small>Độ khó càng cao, nhịp chơi càng gấp — thưởng càng lớn 🏆</small></div></div>`);
     box.querySelector('.gqp-x').onclick = quit;
     box.querySelector('.gqp-list').onclick = e => {
       const b = e.target.closest('.gqd'); if (!b) return;
@@ -118,12 +118,12 @@
       }));
       boom();
       const row = document.querySelector('#modal .row');
-      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Change difficulty</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
+      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Đổi độ khó</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
       return r;
     };
   } else {
     const start = () => {
-      const t = (document.title || 'Game').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
+      const t = (document.title || 'Trò chơi').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
       const ic = (document.title.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u) || ['🎮'])[0];
       document.documentElement.classList.add('gq-sa');
       pick({ name: t, icon: ic });
@@ -132,7 +132,7 @@
   }
 })();
 </script>
-<title>fruit jar</title>
+<title>Hũ Trái Cây</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
   :root{--ink:#3a2f5b;--pink:#ff8fb1;--sky:#8fd0ff;--mint:#a8ecc9;--lemon:#ffe08a;--grape:#b79cf5}
@@ -204,7 +204,7 @@
 .gqd b { display: block; font: 800 20px/1.1 'Baloo 2', system-ui, sans-serif; }
 .gqd em { display: block; font-style: normal; font-size: 12.5px; line-height: 1.3; color: #3a4a66; margin-top: 2px; }
 .gqd u { text-decoration: none; font-size: 11.5px; font-weight: 700; background: #1d2e4a; color: #fff; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
-.gqd.last::after { content: 'Last time'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
+.gqd.last::after { content: 'Lần trước'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
   border-radius: 999px; padding: 0 8px; font-size: 10.5px; font-weight: 700; }
 .gqp-box small { display: block; margin-top: 14px; font-size: 12.5px; color: #3a4a66; }
 @keyframes gqpop { 0% { transform: scale(.85); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
@@ -236,25 +236,25 @@ html.gq-sa body .btn:active, html.gq-sa body #again:active, html.gq-sa body #car
 <canvas id="c"></canvas>
 
 <div class="hud">
-  <div class="box"><small>Score</small><b id="score">0</b></div>
-  <div class="box next"><small>Next</small><span id="next"></span></div>
-  <div class="box"><small>Best</small><b id="best">0</b></div>
+  <div class="box"><small>Điểm</small><b id="score">0</b></div>
+  <div class="box next"><small>Tiếp theo</small><span id="next"></span></div>
+  <div class="box"><small>Cao nhất</small><b id="best">0</b></div>
 </div>
-<div id="hint">Slide your finger to aim, lift it to drop. Two matching fruits merge when they touch!</div>
+<div id="hint">Trượt ngón tay để ngắm, nhấc tay để thả. Hai quả giống nhau chạm nhau sẽ nhập lại!</div>
 <div id="pop"></div>
 
 <div class="foot">
-  <div id="evo" aria-label="Fruit evolution order"></div>
-  <button id="shake">Shake jar</button>
-  <button id="snd" aria-label="Toggle sound">🔊</button>
+  <div id="evo" aria-label="Thứ tự tiến hóa của trái cây"></div>
+  <button id="shake">Lắc hũ</button>
+  <button id="snd" aria-label="Bật hoặc tắt âm thanh">🔊</button>
 </div>
 
 <div id="over">
   <div class="card">
-    <h2>The jar is full!</h2>
+    <h2>Hũ đầy rồi!</h2>
     <div class="big" id="finalScore">0</div>
     <p id="tip"></p>
-    <button id="again">Play again</button>
+    <button id="again">Chơi lại</button>
   </div>
 </div>
 
@@ -266,16 +266,16 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 
 const FR = [
-  { e: '🫐', c: '#a9b8ff', p: 'Blueberry' }, { e: '🍓', c: '#ff9aab' }, { e: '🍇', c: '#c9a8f5' },
+  { e: '🫐', c: '#a9b8ff', p: 'Việt quất' }, { e: '🍓', c: '#ff9aab' }, { e: '🍇', c: '#c9a8f5' },
   { e: '🍊', c: '#ffbd7a' }, { e: '🍎', c: '#ff8585' }, { e: '🍐', c: '#dcef8d' },
   { e: '🍑', c: '#ffc9b0' }, { e: '🍍', c: '#ffe680' }, { e: '🍈', c: '#c4f0a0' }, { e: '🍉', c: '#7edc98' }
 ];
 const RF = [0.045, 0.058, 0.072, 0.087, 0.102, 0.12, 0.14, 0.16, 0.185, 0.21];
 const SC = [261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99, 880];
-const TIPS = ['Look far away for 20 seconds to rest your eyes.', 'Take a sip of water.', 'Stretch your arms up high.',
-  'Great job! Rest your hands for a moment, then play again.', 'Breathe in deeply, then breathe out slowly.'];
+const TIPS = ['Nhìn ra xa 20 giây để mắt được nghỉ nhé.', 'Uống một ngụm nước nào.', 'Vươn vai một cái thật dài nhé.',
+  'Chơi vui lắm! Nghỉ tay một chút rồi chơi tiếp.', 'Hít sâu, thở ra thật chậm nhé.'];
 
-/* ---- sound ---- */
+/* ---- âm thanh ---- */
 let ac = null, soundOn = true;
 function initAudio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
 function note(f, d = 0.9, v = 0.13, type = 'sine') {
@@ -288,7 +288,7 @@ function note(f, d = 0.9, v = 0.13, type = 'sine') {
 }
 $('snd').onclick = e => { initAudio(); soundOn = !soundOn; e.currentTarget.textContent = soundOn ? '🔊' : '🔇'; };
 
-/* ---- layout ---- */
+/* ---- bố cục ---- */
 let W, H, DPR, L, R, TOP, B, JW, JH, S = 0, DANGER;
 const bodies = [], parts = [], floats = [];
 const rad = l => JW * RF[l];
@@ -307,7 +307,7 @@ function layout() {
   }
 }
 
-/* ---- state ---- */
+/* ---- trạng thái ---- */
 const SKEY = 'hu-trai-cay-v1';
 const loadBest = () => { try { const o = JSON.parse(localStorage.getItem(SKEY)); return (o && o.best) || 0; } catch (e) { return 0; } };
 const saveBest = v => { try { localStorage.setItem(SKEY, JSON.stringify({ best: v })); } catch (e) {} };
@@ -331,7 +331,7 @@ function showPop(t) {
   clearTimeout(showPop.t); showPop.t = setTimeout(() => p.classList.remove('show'), 1200);
 }
 
-/* ---- drop fruit ---- */
+/* ---- thả trái cây ---- */
 function drop() {
   if (over || cd > 0) return;
   const r = rad(curL);
@@ -343,7 +343,7 @@ function drop() {
   if (++dropped === 3) $('hint').classList.add('hide');
 }
 
-/* ---- physics ---- */
+/* ---- vật lý ---- */
 const G = 1500;
 function collide(a, b, merges) {
   const dx = b.x - a.x, dy = b.y - a.y, min = a.r + b.r;
@@ -382,7 +382,7 @@ function step(dt) {
     a.dead = b.dead = true;
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
     if (a.l === FR.length - 1) {
-      addScore(500); showPop('Mega watermelon! +500');
+      addScore(500); showPop('Siêu dưa hấu! +500');
       note(SC[9], 1.6, 0.16); note(SC[7], 1.6, 0.12); note(SC[5], 1.6, 0.1);
       burst(mx, my, FR[9].c, 26); floats.push({ x: mx, y: my, t: '+500', life: 1.2 });
     } else {
@@ -390,7 +390,7 @@ function step(dt) {
       bodies.push({ x: mx, y: my, vx: (a.vx + b.vx) / 2, vy: (a.vy + b.vy) / 2, l: nl, r: rad(nl), landed: true, age: 1, pop: 1, dead: false });
       addScore(pts); burst(mx, my, FR[nl].c, 10); floats.push({ x: mx, y: my, t: '+' + pts, life: 1 });
       note(SC[nl], 1.0, 0.14); if (nl >= 5) note(SC[nl - 2], 1.2, 0.08);
-      if (nl === 9) showPop('Watermelon! 🍉');
+      if (nl === 9) showPop('Dưa hấu! 🍉');
     }
   }
   for (let i = bodies.length - 1; i >= 0; i--) if (bodies[i].dead) bodies.splice(i, 1);
@@ -402,13 +402,13 @@ function burst(x, y, c, n) {
   }
 }
 
-/* ---- update ---- */
+/* ---- cập nhật ---- */
 let shakeTxt = '';
 function update(dt) {
   if (cd > 0) cd -= dt;
   if (shakeCd > 0) {
     shakeCd -= dt;
-    const t = shakeCd > 0 ? 'Shake jar ' + Math.ceil(shakeCd) : 'Shake jar';
+    const t = shakeCd > 0 ? 'Lắc hũ ' + Math.ceil(shakeCd) : 'Lắc hũ';
     if (t !== shakeTxt) { $('shake').textContent = t; $('shake').disabled = shakeCd > 0; shakeTxt = t; }
   }
   if (!over) {
@@ -427,11 +427,11 @@ function update(dt) {
   for (let i = floats.length - 1; i >= 0; i--) if (floats[i].life <= 0) floats.splice(i, 1);
 }
 function endGame() {
-  over = true; $('finalScore').textContent = score + ' points'; $('tip').textContent = pick(TIPS);
+  over = true; $('finalScore').textContent = score + ' điểm'; $('tip').textContent = pick(TIPS);
   $('over').classList.add('show'); note(SC[2], 1.5, 0.1); note(SC[0], 2, 0.1);
 }
 
-/* ---- draw ---- */
+/* ---- vẽ ---- */
 function drawFruit(x, y, l, r, scale = 1, alpha = 1) {
   ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale); ctx.globalAlpha = alpha;
   const g = ctx.createRadialGradient(-r * .35, -r * .4, r * .1, 0, 0, r);
@@ -451,14 +451,14 @@ function jarPath() {
 let T = 0;
 function draw() {
   ctx.clearRect(0, 0, W, H);
-  // back glass
+  // kính sau
   jarPath(); ctx.lineTo(L, TOP); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fill();
-  // warning line
+  // vạch cảnh báo
   const warn = dangerT > 0;
   ctx.save(); ctx.setLineDash([10, 9]); ctx.lineWidth = 3;
   ctx.strokeStyle = warn ? `rgba(255,107,143,${0.5 + 0.5 * Math.sin(T * 10)})` : 'rgba(58,47,91,.18)';
   ctx.beginPath(); ctx.moveTo(L + 6, DANGER); ctx.lineTo(R - 6, DANGER); ctx.stroke(); ctx.restore();
-  // aim line and held fruit
+  // đường ngắm và quả đang cầm
   if (!over) {
     const r = rad(curL), x = Math.max(L + r, Math.min(R - r, aimX));
     if (cd <= 0) {
@@ -468,13 +468,13 @@ function draw() {
     drawFruit(x, TOP - r - 6, curL, r, 1, cd > 0 ? Math.max(0, 1 - cd / 0.55) : 1);
   }
   bodies.forEach(b => drawFruit(b.x, b.y, b.l, b.r, 1 + 0.2 * b.pop));
-  // front glass rim
+  // viền kính trước
   jarPath(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = 6; ctx.stroke();
   ctx.strokeStyle = 'rgba(183,156,245,.55)'; ctx.lineWidth = 2; ctx.stroke();
   ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 5;
   ctx.beginPath(); ctx.moveTo(L + 14, TOP + 30); ctx.lineTo(L + 14, TOP + JH * 0.45); ctx.stroke();
-  // particles
+  // hạt
   parts.forEach(p => { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * p.life + .5, 0, 6.283); ctx.fill(); });
   ctx.globalAlpha = 1;
   ctx.font = '800 22px "Baloo 2",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -485,7 +485,7 @@ function draw() {
   ctx.globalAlpha = 1;
 }
 
-/* ---- controls ---- */
+/* ---- điều khiển ---- */
 const setAim = e => { aimX = e.clientX; };
 cv.addEventListener('pointerdown', e => { initAudio(); setAim(e); });
 cv.addEventListener('pointermove', setAim);
@@ -502,7 +502,7 @@ $('shake').onclick = () => {
 $('again').onclick = () => { initAudio(); reset(); };
 window.addEventListener('resize', layout);
 
-/* evolution bar */
+/* thanh tiến hóa */
 $('evo').innerHTML = FR.map((f, i) => `<i>${f.e}</i>${i < FR.length - 1 ? '<u>›</u>' : ''}`).join('');
 
 layout(); reset();
@@ -514,7 +514,7 @@ let last = performance.now();
 })();
 </script>
 
-<!-- "Back to home" button — added by scripts/add-offline-back-button.mjs -->
+<!-- Nút "Về trang chủ" — thêm bởi scripts/add-offline-back-button.mjs -->
 <style>
   #homeBackBtn {
     position: fixed;
@@ -543,12 +543,12 @@ let last = performance.now();
   #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
 </style>
-<button id="homeBackBtn" type="button" aria-label="Back to home" title="Back to home">
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">
   <span aria-hidden="true">&#8592;</span>
 </button>
 <script>
-  // Shared button for all offline games: post a message to React (OfflineGamePage)
-  // to return home. When opening the .html file directly it navigates itself.
+  // Nút dùng chung cho mọi game offline: báo ngược lên React (OfflineGamePage)
+  // để quay về trang chủ. Mở file .html trực tiếp thì tự điều hướng.
   (function () {
     var btn = document.getElementById("homeBackBtn");
     if (!btn) return;
@@ -558,7 +558,7 @@ let last = performance.now();
           window.parent.postMessage({ type: "quit", data: {} }, "*");
           return;
         }
-      } catch (e) { /* fall back to self-navigation */ }
+      } catch (e) { /* rơi xuống cách tự điều hướng */ }
       try { window.location.href = "/"; } catch (e) { /* ignore */ }
     });
   })();

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>knowledge maze</title>
+<title>Mê Cung Tri Thức</title>
 <style>
 :root{--panel:rgba(46,50,70,.74);--ink:#f4ecd8;--acc:#e8c872;--ring:rgba(244,236,216,.78);--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px)}
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -109,34 +109,34 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 <canvas class="h" id="mini" width="240" height="240"></canvas>
 <div class="h" id="pl"><span id="lv"></span><span id="mo"></span></div>
 <div class="h" id="zn"></div>
-<div class="h" id="q"><small>◆ MISSION</small><div id="qt"></div><div id="cp"><span id="ar">▲</span><span id="qd"></span></div></div>
-<div id="ico"><button class="ib ui" id="imap" aria-label="Map">🗺️</button><button class="ib ui" id="isnd" aria-label="Sound">🔊</button></div>
+<div class="h" id="q"><small>◆ NHIỆM VỤ</small><div id="qt"></div><div id="cp"><span id="ar">▲</span><span id="qd"></span></div></div>
+<div id="ico"><button class="ib ui" id="imap" aria-label="Bản đồ">🗺️</button><button class="ib ui" id="isnd" aria-label="Âm thanh">🔊</button></div>
 <div class="h" id="boss"><div id="bn"></div><div class="bar"><i id="bb"></i></div></div>
 <div id="hpw"><div id="hpn"></div><div class="bar"><i id="hp"></i></div><div class="bar" style="height:4px"><i id="en"></i></div></div>
 <div id="jz"></div><div id="jb"></div><div id="jk"></div>
-<button class="b" id="bA" aria-label="Slash">⚔️</button>
-<button class="b" id="bD" data-k="⇧" aria-label="Dash">💨</button>
+<button class="b" id="bA" aria-label="Chém">⚔️</button>
+<button class="b" id="bD" data-k="⇧" aria-label="Lướt">💨</button>
 <button class="ui" id="bT"><span class="kk">F</span><span id="btx"></span></button>
-<div id="dlg"><div id="dn"></div><div id="dt"></div><div id="dg">tap to continue ▶</div></div>
-<div id="qp"><div id="qh"><div id="qtn">0</div><div id="qtt"></div><div id="qpt"></div></div><div id="qbar"><i id="qbf"></i></div><div id="qo"></div><div id="qtw" class="hide"><input type="text" id="qin" placeholder="Type your answer…" autocomplete="off"></div><button id="qgo">🔥 Cast spell</button></div>
-<div id="shop"><div id="sh"><h2 id="shopT"></h2><div id="si"></div><div id="sl"></div><div id="subErr" class="err hide"></div><button id="btnSubmit" class="hide">⚡ Submit and leave the maze</button><button id="sx"></button></div></div>
-<div id="fmap"><div id="fmc"><canvas id="mapc"></canvas><div id="fml"></div><small style="opacity:.7">Tap to close · key M</small></div></div>
+<div id="dlg"><div id="dn"></div><div id="dt"></div><div id="dg">chạm để tiếp ▶</div></div>
+<div id="qp"><div id="qh"><div id="qtn">0</div><div id="qtt"></div><div id="qpt"></div></div><div id="qbar"><i id="qbf"></i></div><div id="qo"></div><div id="qtw" class="hide"><input type="text" id="qin" placeholder="Nhập câu trả lời…" autocomplete="off"></div><button id="qgo">🔥 Tung phép</button></div>
+<div id="shop"><div id="sh"><h2 id="shopT"></h2><div id="si"></div><div id="sl"></div><div id="subErr" class="err hide"></div><button id="btnSubmit" class="hide">⚡ Nộp bài và thoát mê cung</button><button id="sx"></button></div></div>
+<div id="fmap"><div id="fmc"><canvas id="mapc"></canvas><div id="fml"></div><small style="opacity:.7">Chạm để đóng · phím M</small></div></div>
 <div id="ts"></div>
-<div id="intro"><div><h1>🌀 Knowledge Maze</h1>
-<p>You're lost in a dark maze. There's no map to guide you — only a compass and a map that records where you've been. On the way out, <b>question gates</b> block the path: stand next to a gate and press <b>F</b> to answer before time runs out. If time runs out, the gate still opens but that question is skipped. Find the exit gate to submit your answers and get a score.<br><b>Drag left:</b> move · <b>drag right:</b> look around · 🗺️ or key <b>M</b>: footprint map<br><small>PC: WASD, mouse to look around, F = open gate, M = map. Correct answers only appear after you submit.</small></p>
-<input type="text" id="name" placeholder="Your warrior name" maxlength="60" autocomplete="name">
-<div>Pick your shirt color:</div><div id="sws"></div><button id="go" disabled>Loading questions…</button><div id="saved"></div></div></div>
+<div id="intro"><div><h1>🌀 Mê Cung Tri Thức</h1>
+<p>Bạn bị lạc trong một mê cung tối. Không có bản đồ dẫn đường, chỉ có la bàn và bản đồ ghi lại nơi bạn đã đi qua. Trên đường thoát có những <b>cổng câu hỏi</b> chặn lối: đứng sát cổng, bấm <b>F</b> để trả lời trong thời gian giới hạn. Hết giờ cổng vẫn mở nhưng câu đó bị bỏ qua. Tìm được cổng thoát thì nộp bài và nhận điểm.<br><b>Kéo trái:</b> di chuyển · <b>kéo phải:</b> nhìn quanh · 🗺️ hoặc phím <b>M</b>: bản đồ dấu chân<br><small>PC: WASD, chuột nhìn quanh, F = mở cổng, M = bản đồ. Đáp án đúng chỉ hiện sau khi nộp bài.</small></p>
+<input type="text" id="name" placeholder="Tên chiến binh của bạn" maxlength="60" autocomplete="name">
+<div>Chọn màu áo của bạn:</div><div id="sws"></div><button id="go" disabled>Đang tải câu hỏi…</button><div id="saved"></div></div></div>
 <script>
 'use strict';
 const $=s=>document.querySelector(s),M=Math,R=M.random,rnd=(a,b)=>a+R()*(b-a),ri=(a,b)=>M.floor(rnd(a,b+1)),clamp=(v,a,b)=>v<a?a:v>b?b:v,TAU=M.PI*2,pick=a=>a[ri(0,a.length-1)];
 const view=$('#view'),vc=view.getContext('2d'),fxc=$('#fx'),fx=fxc.getContext('2d'),mini=$('#mini'),mc=mini.getContext('2d');
 let RW,RH,u,img,buf,zb;const PL=.72,CAM={};
-/* innerWidth/innerHeight = 0 when the iframe has no layout yet → RH=NaN, createImageData
- * throws and kills the whole script, leaving the play button stuck at "Loading questions…". Keep a
- * minimum size so boot always runs; rs() fixes the real ratio on resize. */
+/* innerWidth/innerHeight = 0 khi iframe chưa có layout → RH=NaN, createImageData
+ * ném lỗi chết cả script, nút chơi kẹt mãi ở "Đang tải câu hỏi…". Giữ size tối
+ * thiểu để boot luôn chạy được; rs() chỉnh lại đúng tỉ lệ khi có resize. */
 function rs(){const W=M.max(innerWidth|0,160),H=M.max(innerHeight|0,160);RW=clamp(M.min(240,W),64,240);RH=clamp(M.round(RW*H/W),60,2000);view.width=RW;view.height=RH;const D=1;fxc.width=W*D;fxc.height=H*D;u=M.min(fxc.width,fxc.height)/360;img=vc.createImageData(RW,RH);buf=new Uint32Array(img.data.buffer);zb=new Float32Array(RW)}
 addEventListener('resize',rs);rs();
-/* ---- sound ---- */
+/* ---- âm thanh ---- */
 let mute=0,AC=null;function ac(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}AC&&AC.state==='suspended'&&AC.resume()}
 function bp(f,d,ty,v,f2){if(!AC||mute)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=ty||'sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(M.max(30,f2||f),t+d);g.gain.setValueAtTime(v||.14,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
 /*MAPSTART*/
@@ -154,23 +154,23 @@ function genMaze(n){
    const d=nb[(R()*nb.length)|0];vis[d]=1;adj[c].push(d);adj[d].push(c);stack.push(d)}
   const tile=c=>[2*(c%W)+1,2*((c/W)|0)+1];
   for(let c=0;c<C;c++){const[x,y]=tile(c);map[y*N+x]=0;for(const d of adj[c])if(d>c){const[x2,y2]=tile(d);map[((y+y2)/2)*N+(x+x2)/2]=0}}
-  /* find the farthest cell = exit gate */
+  /* tìm ô xa nhất = cổng thoát */
   const dist=new Int32Array(C).fill(-1),par=new Int32Array(C).fill(-1),q=[0];dist[0]=0;
   for(let i=0;i<q.length;i++){const c=q[i];for(const d of adj[c])if(dist[d]<0){dist[d]=dist[c]+1;par[d]=c;q.push(d)}}
   let F=0;for(let c=0;c<C;c++)if(dist[c]>dist[F])F=c;
   const path=[];for(let c=F;c>=0;c=par[c])path.push(c);path.reverse();
   const Lp=path.length;if(Lp-1<n+2)continue;
-  /* place question gates along the exit path */
+  /* đặt cổng câu hỏi trên các đoạn nối của đường thoát */
   const used=new Set(),gates=[];let ok=true;
   for(let k=0;k<n;k++){let i=M.round((k+1)*(Lp-1)/(n+1));i=clamp(i,0,Lp-2);let t=0;while(used.has(i)&&t<Lp){i=(i+1)%(Lp-1);t++}if(used.has(i)){ok=false;break}used.add(i);
    const[ax,ay]=tile(path[i]),[bx,by]=tile(path[i+1]);gates.push({tx:(ax+bx)/2,ty:(ay+by)/2,i})}
   if(!ok)continue;
   gates.sort((a,b)=>a.i-b.i);
-  /* walls: mostly cave rock, occasionally ruins */
+  /* tường: đá hang là chính, thỉnh thoảng phế tích */
   for(let i=0;i<N*N;i++)if(map[i]===1)map[i]=R()<.14?3:6;
   for(const g of gates){map[g.ty*N+g.tx]=11;g.x=g.tx+.5;g.y=g.ty+.5}
   const[ex,ey]=tile(F);map[ey*N+ex]=12;
-  /* torches as landmarks */
+  /* đuốc làm mốc */
   for(let c=1;c<C;c++)if(c!==F&&R()<.1){const[x,y]=tile(c);DEC.push({x:x+.5,y:y+.5,k:'torch',sz:.7,r:10});DEC.push({x:x+.5,y:y+.5,k:'fire',z:.4,sz:1.1,add:1,f:1,r:10})}
   const[sx,sy]=tile(0),[nx,ny]=tile(path[1]);
   MZ={W,Lg,sx:sx+.5,sy:sy+.5,sa:M.atan2(ny-sy,nx-sx),exit:{x:ex+.5,y:ey+.5},gates,path:Lp};
@@ -193,15 +193,15 @@ const WT=[null,
  mk(x=>{x.fillStyle='#4a4a40';x.fillRect(0,0,64,64);for(let j=0;j<4;j++)for(let i=-1;i<3;i++){x.fillStyle=`hsl(40,14%,${55+R()*14}%)`;x.fillRect(i*32+(j%2)*16+1,j*16+1,30,14)}for(let k=0;k<26;k++){x.fillStyle=`rgba(60,130,60,${.3+R()*.4})`;x.beginPath();x.arc(R()*64,R()*64,2+R()*6,0,TAU);x.fill()}}),
  mk(x=>{for(let i=0;i<8;i++){x.fillStyle=`hsl(28,45%,${28+R()*14}%)`;x.fillRect(i*8,0,8,64);x.fillStyle='#2a1a0c';x.fillRect(i*8,0,1,64)}x.fillStyle='#3a2410';x.fillRect(0,18,64,5);x.fillRect(0,44,64,5)}),
  mk(x=>{x.fillStyle='#2f7a3a';x.fillRect(0,0,64,64);for(let i=0;i<70;i++){x.fillStyle=`hsl(${100+R()*30},55%,${25+R()*30}%)`;x.beginPath();x.arc(R()*64,R()*64,3+R()*5,0,TAU);x.fill()}for(let i=0;i<7;i++){x.fillStyle=pick(['#fff','#ffd54f','#f48fb1']);x.fillRect(R()*64,R()*64,3,3)}}),
- /* 6 cave rock */
+ /* 6 đá hang */
  mk(x=>rockBlobs(x,'#3b3748',255,18)),
- /* 7 town house */
+ /* 7 nhà trong thành */
  mk(x=>{x.fillStyle='#efe3c8';x.fillRect(0,0,64,64);x.fillStyle='#b5452f';x.fillRect(0,0,64,16);x.fillStyle='#8f3322';for(let i=0;i<4;i++)x.fillRect(i*16+2,10,12,4);x.fillStyle='#6a4426';x.fillRect(0,16,64,4);x.fillRect(0,58,64,6);x.fillRect(0,16,4,48);x.fillRect(60,16,4,48);x.fillRect(30,16,4,48);x.fillStyle='#7fb8e0';x.fillRect(8,28,17,18);x.fillRect(38,28,17,18);x.fillStyle='#3f7a52';x.fillRect(5,28,3,18);x.fillRect(25,28,3,18);x.fillRect(35,28,3,18);x.fillRect(55,28,3,18);x.fillStyle='#6a4426';x.fillRect(8,36,17,2);x.fillRect(38,36,17,2)},10),
- /* 8 cave crystal */
+ /* 8 tinh thạch hang */
  mk(x=>{rockBlobs(x,'#3b3748',255,18);[[14,24],[40,16],[52,44],[24,50],[34,34]].forEach(p=>{poly(x,[[p[0],p[1]-14],[p[0]+7,p[1]+6],[p[0]-7,p[1]+6]],'#6fd6ff');poly(x,[[p[0],p[1]-14],[p[0]+7,p[1]+6],[p[0],p[1]+6]],'#c8f2ff')})},12),
- /* 9 fountain */
+ /* 9 đài phun nước */
  mk(x=>{x.fillStyle='#8aa6c8';x.fillRect(0,0,64,64);x.fillStyle='#e3edf8';x.fillRect(0,0,64,10);x.fillRect(0,54,64,10);x.fillStyle='#4a9ae0';for(let i=0;i<5;i++)x.fillRect(0,14+i*8,64,4);x.fillStyle='#bfe4ff';for(let i=0;i<10;i++)x.fillRect(R()*60,14+R()*34,6,2)},10),
- /* 10 castle wall */
+ /* 10 tường thành */
  mk(x=>{x.fillStyle='#6d695f';x.fillRect(0,0,64,64);for(let j=0;j<4;j++)for(let i=-1;i<3;i++){x.fillStyle=`hsl(40,8%,${52+R()*16}%)`;x.fillRect(i*32+(j%2)*16+1,j*16+1,30,14)}x.fillStyle='#4a463e';x.fillRect(0,0,64,3)},12)];
 const ft=(base,cols)=>tx32(x=>{x.fillStyle=base;x.fillRect(0,0,64,64);for(let i=0;i<30;i++){x.fillStyle=pick(cols);x.fillRect(R()*64,R()*64,2,3)}},14);
 const FG=ft('#5aa84a',['#4a9a3c','#6bbd58','#4f9f43']),FD=ft('#c9b07a',['#b89c66','#d8c28e','#bfa56e']),FF=ft('#5aa84a',['#ffd54f','#fff','#f48fb1','#4a9a3c']);
@@ -210,7 +210,7 @@ const FB=tx32(x=>{x.fillStyle='#8a5a30';x.fillRect(0,0,64,64);for(let i=0;i<8;i+
 const FC=tx32(x=>{x.fillStyle='#4c4860';x.fillRect(0,0,64,64);for(let i=0;i<22;i++){x.fillStyle=`hsl(255,10%,${22+R()*22}%)`;x.beginPath();x.ellipse(R()*64,R()*64,3+R()*7,2+R()*5,R()*3,0,TAU);x.fill()}},16);
 const FS=tx32(x=>{x.fillStyle='#8a8478';x.fillRect(0,0,64,64);for(let j=0;j<4;j++)for(let i=-1;i<4;i++){x.fillStyle=`hsl(38,10%,${58+R()*16}%)`;x.fillRect(i*16+(j%2)*8+1,j*16+1,14,14)}},12);
 WT[11]=mk(x=>{x.fillStyle='#4a2f18';x.fillRect(0,0,64,64);for(let i=0;i<4;i++){x.fillStyle=`hsl(28,45%,${24+i*3}%)`;x.fillRect(i*16+1,3,14,58)}x.fillStyle='#e8c872';x.fillRect(0,0,64,5);x.fillRect(0,59,64,5);x.fillRect(0,0,5,64);x.fillRect(59,0,5,64);x.fillRect(29,0,6,64);x.fillStyle='#17142a';x.beginPath();x.arc(32,32,15,0,6.283);x.fill();x.fillStyle='#ffd166';x.font='bold 26px system-ui';x.textAlign='center';x.fillText('?',32,42)},0);
-WT[12]=mk(x=>{const g=x.createRadialGradient(32,32,2,32,32,46);g.addColorStop(0,'#ffffff');g.addColorStop(.35,'#7fe9ff');g.addColorStop(1,'#2a4a9a');x.fillStyle=g;x.fillRect(0,0,64,64);x.strokeStyle='#17142a';x.lineWidth=4;x.strokeRect(2,2,60,60);x.fillStyle='#17142a';x.font='bold 15px system-ui';x.textAlign='center';x.fillText('EXIT',32,37)},0);
+WT[12]=mk(x=>{const g=x.createRadialGradient(32,32,2,32,32,46);g.addColorStop(0,'#ffffff');g.addColorStop(.35,'#7fe9ff');g.addColorStop(1,'#2a4a9a');x.fillStyle=g;x.fillRect(0,0,64,64);x.strokeStyle='#17142a';x.lineWidth=4;x.strokeRect(2,2,60,60);x.fillStyle='#17142a';x.font='bold 15px system-ui';x.textAlign='center';x.fillText('THOÁT',32,37)},0);
 const FG2=ft('#6bba58',['#5fb04e','#7ac866']);
 const FX=[null,FD,FW,FB,FC,FS];
 /* ---- sprite ---- */
@@ -249,22 +249,22 @@ const mark=(t,c)=>sp(x=>{x.fillStyle=c;x.font='bold 110px system-ui';x.textAlign
 const npcS=o=>sp(x=>{shd(x);x.fillStyle=o.pants;x.fillRect(46,84,14,34);x.fillRect(68,84,14,34);x.fillStyle='#3a2a20';x.fillRect(44,114,18,7);x.fillRect(66,114,18,7);poly(x,[[42,50],[86,50],[90,90],[38,90]],o.top);x.fillStyle=o.top2;x.fillRect(38,84,52,8);x.fillRect(60,50,8,36);x.strokeStyle=o.top;x.lineWidth=11;x.lineCap='round';x.beginPath();x.moveTo(42,56);x.lineTo(32,86);x.moveTo(86,56);x.lineTo(96,86);x.stroke();ell(x,31,90,6,6,o.skin);ell(x,97,90,6,6,o.skin);ell(x,64,34,20,22,o.skin);x.fillStyle=o.hair;x.beginPath();x.arc(64,30,21,M.PI,0);x.fill();x.fillRect(43,28,6,16);ell(x,55,36,3,4,'#222');ell(x,73,36,3,4,'#222');x.strokeStyle='#7a3b2a';x.lineWidth=2;x.beginPath();x.arc(64,44,5,.3,M.PI-.3);x.stroke();if(o.beard)poly(x,[[46,42],[82,42],[64,70]],o.beard);if(o.hat){ell(x,64,16,30,6,o.hat);poly(x,[[46,16],[52,0],[76,0],[82,16]],o.hat)}if(o.gl){x.strokeStyle='#222';x.lineWidth=2;x.beginPath();x.arc(55,36,7,0,TAU);x.moveTo(69,36);x.arc(73,36,7,0,TAU);x.stroke()}if(o.helm){poly(x,[[42,30],[46,10],[82,10],[86,30],[78,26],[50,26]],o.helm);x.fillStyle='#d94a3a';x.fillRect(60,2,8,12)}});
 const SPR={sl:[slimeS('#ffb0a0','#e0442c'),slimeS('#a8e0ff','#2a7ad8'),slimeS('#c8f0a0','#4aa83a')],gob:gobS('#6fae45','#7a4a2a','club'),arch:gobS('#8ac04f','#3f5a2a','bow'),bat:batS,boss:golemS,t:[treeS('#7fd070','#2f8a3c'),treeS('#a8d85a','#4a8f2a'),pineS],stump:stumpS,chest:chestS,cry:crysS('rgba(160,230,255,.9)','rgba(80,160,255,0)','#6fd6ff','#c8f2ff','#3aa0e0'),gem:crysS('rgba(255,200,120,.9)','rgba(255,120,40,0)','#ff9a3a','#ffd9a0','#d9601a'),heart:heartS,fire:glow('rgba(255,170,40,.95)'),expl:glow('rgba(255,120,30,.9)'),ex:mark('!','#ffcc33'),qm:mark('?','#ffcc33'),torch:torchS,camp:campS,arrow:arrowS,tuft:tuftS,fl0:flwS('#ffffff'),fl1:flwS('#ffd54f'),fl2:flwS('#f48fb1')};
 const NP=[];
-/* ---- 2D style: ink outline around sprites ---- */
+/* ---- phong cách 2D: viền mực quanh nhân vật ---- */
 function outl(c){const o=document.createElement('canvas');o.width=c.width;o.height=c.height;const x=o.getContext('2d'),t=document.createElement('canvas');t.width=c.width;t.height=c.height;const tx=t.getContext('2d');tx.drawImage(c,0,0);tx.globalCompositeOperation='source-in';tx.fillStyle='#17142a';tx.fillRect(0,0,c.width,c.height);for(const[dx,dy]of[[-3,0],[3,0],[0,-3],[0,3],[-2,-2],[2,-2],[-2,2],[2,2]])x.drawImage(t,dx,dy);x.drawImage(c,0,0);return o}
 (function(){const skip=['fire','expl','arrow','ex','qm','cry','gem'];for(const k in SPR){if(skip.includes(k))continue;const v=SPR[k];SPR[k]=Array.isArray(v)?v.map(outl):outl(v)}NP.forEach(n=>{n.spr=outl(n.spr)})})();
-/* ---- minimap (pre-drawn) ---- */
+/* ---- bản đồ nhỏ (vẽ sẵn) ---- */
 const col=['','#6a6458','#d9b57a','#8a8a70','#7a5030','#2f7a3a','#2a2638','#e8dcc0','#4aa8d8','#5a8ac8','#a09a90'],fcol=['#3d7a46','#c9b07a','#3a8ad0','#8a5a30','#3a3650','#b8b0a0'];
 const MMS=4,MM=document.createElement('canvas');MM.width=MM.height=N*MMS;
 (function(){const c=MM.getContext('2d'),k=MMS;c.fillStyle='#3d7a46';c.fillRect(0,0,N*k,N*k);for(let i=0;i<N*N;i++){const x=(i%N)*k,y=((i/N)|0)*k;if(FM[i]){c.fillStyle=fcol[FM[i]];c.fillRect(x,y,k+.5,k+.5)}if(map[i]){c.fillStyle=col[map[i]];c.fillRect(x,y,k+.5,k+.5)}}c.fillStyle='#1f5a2a';for(const t of TR){c.beginPath();c.arc(t.x*k,t.y*k,1.8,0,TAU);c.fill()}})();
-/* ---- state ---- */
+/* ---- trạng thái ---- */
 const CONFIG={
-  // API endpoint for fetching questions (GET). Can be overridden with ?api=... in the address bar.
+  // Địa chỉ API lấy câu hỏi (GET). Có thể ghi đè bằng ?api=... trên thanh địa chỉ.
   QUESTIONS_URL:'',
-  // API endpoint for submitting answers (POST JSON). Can be overridden with ?submit=...
+  // Địa chỉ API nộp bài (POST JSON). Có thể ghi đè bằng ?submit=...
   SUBMIT_URL:'',
-  // Extra headers added to every request. A token can be added with ?token=...
+  // Header thêm vào mọi request. Có thể thêm token qua ?token=...
   HEADERS:{},
-  // Payload sent when submitting. Change this if the backend expects different field names.
+  // Nội dung gửi lên khi nộp bài. Sửa nếu backend cần tên trường khác.
   buildPayload(ctx){
     return{
       student_name:ctx.name,
@@ -272,7 +272,7 @@ const CONFIG={
       answers:ctx.answers.map(a=>({question_id:a.questionId,answer_ids:a.answerIds,text:a.text,time_spent:a.timeSpent}))
     }
   },
-  // Read the score from the submit response. Return {score,max} or null if it cannot be recognized.
+  // Lấy điểm từ phản hồi nộp bài. Trả về {score,max} hoặc null nếu không nhận ra.
   parseResult(res){
     const d=res&&res.data!==undefined?res.data:res;if(!d||typeof d!=='object')return null;
     const pick=(...k)=>{for(const x of k)if(typeof d[x]==='number')return d[x];return null};
@@ -285,46 +285,46 @@ const qs=new URLSearchParams(location.search);
 const QURL=qs.get('api')||CONFIG.QUESTIONS_URL,SURL=qs.get('submit')||CONFIG.SUBMIT_URL;
 if(qs.get('token'))CONFIG.HEADERS={...CONFIG.HEADERS,Authorization:'Bearer '+qs.get('token')};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-/* sample data matching the API format, used when no URL is configured or loading fails */
+/* dữ liệu mẫu đúng định dạng API, dùng khi chưa cấu hình URL hoặc tải lỗi */
 const DEMO={status:true,code:200,msg:'success',data:[
- {_id:'1',id:'question-e2g5lj3',content:'What is 1 + 1?',inputMode:'choice',options:[{id:'answer-fu0s45m',content:'1'},{id:'answer-yu5hhwk',content:'2'},{id:'answer-3iq1kfy',content:'3'},{id:'answer-c9vd3pr',content:'4'}],timeLimit:20,points:100},
- {_id:'2',id:'question-w4zn589',content:'What is the capital of Vietnam?',inputMode:'choice',options:[{id:'answer-y2o84w8',content:'Hanoi'},{id:'answer-wyyckvd',content:'Hue'},{id:'answer-l5u46qs',content:'Da Nang'},{id:'answer-jsrmah0',content:'Ho Chi Minh City'}],timeLimit:30,points:100},
- {_id:'3',id:'question-ywuq32z',content:'Which planet is called the Red Planet?',inputMode:'choice',options:[{id:'answer-0m0qtub',content:'Earth'},{id:'answer-3am7g3x',content:'Venus'},{id:'answer-t49yk0p',content:'Mars'},{id:'answer-0wtbtyz',content:'Jupiter'}],timeLimit:30,points:100}]};
+ {_id:'1',id:'question-e2g5lj3',content:'1 + 1 bằng bao nhiêu?',inputMode:'choice',options:[{id:'answer-fu0s45m',content:'1'},{id:'answer-yu5hhwk',content:'2'},{id:'answer-3iq1kfy',content:'3'},{id:'answer-c9vd3pr',content:'4'}],timeLimit:20,points:100},
+ {_id:'2',id:'question-w4zn589',content:'Thủ đô của Việt Nam là gì?',inputMode:'choice',options:[{id:'answer-y2o84w8',content:'Hà Nội'},{id:'answer-wyyckvd',content:'Huế'},{id:'answer-l5u46qs',content:'Đà Nẵng'},{id:'answer-jsrmah0',content:'TP.HCM'}],timeLimit:30,points:100},
+ {_id:'3',id:'question-ywuq32z',content:'Hành tinh nào được gọi là Hành tinh Đỏ?',inputMode:'choice',options:[{id:'answer-0m0qtub',content:'Trái Đất'},{id:'answer-3am7g3x',content:'Sao Kim'},{id:'answer-t49yk0p',content:'Sao Hỏa'},{id:'answer-0wtbtyz',content:'Sao Mộc'}],timeLimit:30,points:100}]};
 const DEMO_KEY={'question-e2g5lj3':['answer-yu5hhwk'],'question-w4zn589':['answer-y2o84w8'],'question-ywuq32z':['answer-t49yk0p']};
 
 const P={x:1.5,y:1.5,a:0,pt:0,hp:100,mx:100,ac:0,sw:0,cmb:0,cast:0,dd:0,da:0,inv:0,hurt:0,bt:0,dead:0,wpn:0,cdD:0};
 let E=[],IT=[],PR=[],EP=[],XP=[],FT=[],T=0,dl=null,started=0,shake=0,flash=0,sleeve='#2f6fb3',env=0,curZone='';
-const ED={slime:{n:'Slime',r:.3,sz:.62},gob:{n:'Goblin',r:.3,sz:.95},arch:{n:'Goblin Archer',r:.3,sz:.95},bat:{n:'Cave Bat',r:.25,sz:.55},boss:{n:'Stone Armor',r:.65,sz:2.3}};
+const ED={slime:{n:'Slime',r:.3,sz:.62},gob:{n:'Goblin',r:.3,sz:.95},arch:{n:'Goblin xạ thủ',r:.3,sz:.95},bat:{n:'Dơi hang',r:.25,sz:.55},boss:{n:'Thạch Giáp',r:.65,sz:2.3}};
 let Q=[],demo=false,A=[],GD=[],boss=null,qOpen=-1,qT0=0,qLim=30,qBeep=99,tabOut=0,startedAt=0,submitting=0,submitted=0,revealing=0,shopOpen=0,doneN=0,pName='';
 const aD=a=>M.atan2(M.sin(a),M.cos(a));
 function toast(m){const t=$('#ts');t.textContent=m;t.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.opacity=0,2600)}
 function fl(x,y,z,s,c){FT.push({x,y,z,s:String(s),c,t:.9})}
 const fmtT=s=>{s=M.max(0,M.floor(s));return (s/60|0)+':'+String(s%60).padStart(2,'0')};
 
-/* ---- question gates in the maze ---- */
+/* ---- cổng câu hỏi trong mê cung ---- */
 function placeGuards(n){
  genMaze(n);GD=MZ.gates.map((g,i)=>({gi:i,x:g.x,y:g.y,tx:g.tx,ty:g.ty,done:false,e:{x:g.x,y:g.y,r:.3,sz:1}}));E=[];boss=null}
 function visit(){const cx=P.x|0,cy=P.y|0;for(let y=cy-1;y<=cy+1;y++)for(let x=cx-1;x<=cx+1;x++)if(x>=0&&y>=0&&x<N&&y<N)visited[y*N+x]=1}
-function compass(a){const d=((a*180/M.PI)%360+360)%360;return['East','South East','South','South West','West','North West','North','North East'][M.round(d/45)%8]}
+function compass(a){const d=((a*180/M.PI)%360+360)%360;return['Đông','Đông Nam','Nam','Tây Nam','Tây','Tây Bắc','Bắc','Đông Bắc'][M.round(d/45)%8]}
 
-/* ---- NPC dialogue ---- */
+/* ---- hội thoại NPC ---- */
 function say(L,cb){dl={L,i:0,cb};showDl()}
 function showDl(){const l=dl.L[dl.i];$('#dn').textContent=l[0];$('#dt').textContent=l[1];$('#dlg').style.display='block';$('#bT').style.display='none'}
 function nextDl(){if(!dl)return;dl.i++;if(dl.i>=dl.L.length){const cb=dl.cb;dl=null;$('#dlg').style.display='none';cb&&cb()}else showDl()}
 
-/* ---- interaction ---- */
+/* ---- tương tác ---- */
 function nearInter(){
  if(qOpen>=0||revealing||submitted)return null;let r=null,bd=1.9;
- for(const g of GD)if(!g.done){const d=M.hypot(g.x-P.x,g.y-P.y);if(d<bd){bd=d;r={k:'g',g,n:'Open question gate #'+(g.gi+1)}}}
- if(MZ.exit){const d=M.hypot(MZ.exit.x-P.x,MZ.exit.y-P.y);if(d<bd){bd=d;r={k:'x',n:doneN>=Q.length?'Leave the maze':'🔒 The exit gate is sealed'}}}
+ for(const g of GD)if(!g.done){const d=M.hypot(g.x-P.x,g.y-P.y);if(d<bd){bd=d;r={k:'g',g,n:'Mở cổng câu hỏi #'+(g.gi+1)}}}
+ if(MZ.exit){const d=M.hypot(MZ.exit.x-P.x,MZ.exit.y-P.y);if(d<bd){bd=d;r={k:'x',n:doneN>=Q.length?'Thoát khỏi mê cung':'🔒 Cổng thoát bị phong ấn'}}}
  return r}
 function interact(){
  if(shopOpen||qOpen>=0||revealing)return;if(dl){nextDl();return}
  const r=nearInter();if(!r)return;
  if(r.k==='g')openQ(r.g);
- else if(doneN>=Q.length)openReview();else toast('🔒 The exit gate is still sealed. Open all '+(Q.length-doneN)+' question gates.')}
+ else if(doneN>=Q.length)openReview();else toast('🔒 Cổng thoát còn bị phong ấn, hãy mở hết '+(Q.length-doneN)+' cổng câu hỏi.')}
 
-/* ---- questions ---- */
+/* ---- câu hỏi ---- */
 const isTextMode=q=>q.inputMode==='text'||q.inputMode==='input'||q.inputMode==='essay'||!q.options||!q.options.length;
 const isMulti=q=>q.inputMode==='multiple'||q.inputMode==='multi'||q.inputMode==='checkbox';
 function openQ(g){
@@ -332,7 +332,7 @@ function openQ(g){
  for(const k in K)K[k]=0;IN.mx=IN.my=0;IN.sid=IN.lid=null;jb.style.display=jk.style.display='none';
  try{document.exitPointerLock&&document.exitPointerLock()}catch(_){}
  $('#bT').style.display='none';
- $('#qtt').textContent=q.content;$('#qpt').textContent='⭐ '+(q.points||0)+' points · question '+(g.gi+1)+'/'+Q.length;
+ $('#qtt').textContent=q.content;$('#qpt').textContent='⭐ '+(q.points||0)+' điểm · câu '+(g.gi+1)+'/'+Q.length;
  if(isTextMode(q)){$('#qo').innerHTML='';$('#qtw').classList.remove('hide');$('#qin').value='';setTimeout(()=>$('#qin').focus(),80)}
  else{$('#qtw').classList.add('hide');$('#qo').innerHTML=q.options.map((x,i)=>`<button class="qo ${isMulti(q)?'multi':''}" data-id="${esc(x.id)}"><span class="k">${String.fromCharCode(65+i)}</span><span>${esc(x.content)}</span></button>`).join('')}
  $('#qp').style.display='block';qTick();bp(500,.15,'triangle',.1,900)}
@@ -351,14 +351,14 @@ function finishQ(timeout){
  else{a.answerIds=[...document.querySelectorAll('.qo.sel')].map(x=>x.dataset.id);a.answered=a.answerIds.length>0}
  $('#qp').style.display='none';g.done=true;doneN++;ac();
  if(a.answered){
-  P.cast=.45;bp(300,.25,'sawtooth',.1,1100);fl(g.x,g.y,g.e.sz+.4,'Recorded ✓','#ffd166');
+  P.cast=.45;bp(300,.25,'sawtooth',.1,1100);fl(g.x,g.y,g.e.sz+.4,'Đã ghi nhận ✓','#ffd166');
   PR.push({x:P.x+M.cos(P.a)*.5,y:P.y+M.sin(P.a)*.5,tg:g.e,v:10,l:2.5,cb:()=>kill(g)})}
  else{
-  fl(P.x,P.y,.6,timeout?'Time\'s up!':'Skipped','#ff6b81');
+  fl(P.x,P.y,.6,timeout?'Hết giờ!':'Bỏ qua','#ff6b81');
   if(timeout){const an=M.atan2(P.y-g.y,P.x-g.x);EP.push({x:g.x,y:g.y,vx:M.cos(an)*7,vy:M.sin(an)*7,l:2.5,d:18});bp(700,.1,'triangle',.08,300)}
   setTimeout(()=>kill(g),900)}
- if(doneN>=Q.length)setTimeout(()=>{shake=.4;toast('🌀 The exit gate is unsealed! Find the way out to submit.');bp(100,.6,'sawtooth',.2,40)},1000)
- else toast('✔ Question '+(gi+1)+' locked in. '+(Q.length-doneN)+' gates left.')}
+ if(doneN>=Q.length)setTimeout(()=>{shake=.4;toast('🌀 Cổng thoát đã được giải phong ấn! Tìm lối ra để nộp bài.');bp(100,.6,'sawtooth',.2,40)},1000)
+ else toast('✔ Đã chốt câu '+(gi+1)+'. Còn '+(Q.length-doneN)+' cổng.')}
 function kill(g){map[g.ty*N+g.tx]=0;XP.push({x:g.x,y:g.y,t:0,R:1.8});shake=.2;bp(160,.25,'square',.14,60)}
 $('#qgo').addEventListener('click',()=>{ac();finishQ(false)});
 function qKey(e){
@@ -367,23 +367,23 @@ function qKey(e){
  const bs=document.querySelectorAll('.qo');
  if(e.key.length===1&&i>=0&&i<bs.length)bs[i].click();else if(e.key==='Enter')finishQ(false)}
 
-/* ---- review, submit ---- */
+/* ---- xem lại, nộp bài ---- */
 function openReview(){
  shopOpen=1;for(const k in K)K[k]=0;try{document.exitPointerLock&&document.exitPointerLock()}catch(_){}
- $('#bT').style.display='none';$('#shopT').textContent='🌀 Maze exit gate';
- $('#si').textContent='Review your answers. You cannot change them after submitting. The server will grade them after you submit.';
- $('#sl').innerHTML=Q.map((q,i)=>{const a=A[i];let t='Not answered';if(a.answered)t=a.text?esc(a.text):a.answerIds.map(id=>esc((q.options.find(o=>o.id===id)||{}).content||id)).join(', ');return`<div class="rv"><span>${i+1}. ${esc(q.content)}</span><span class="a ${a.answered?'':'none'}">${t}</span></div>`}).join('');
- $('#subErr').classList.add('hide');$('#btnSubmit').classList.remove('hide');$('#btnSubmit').disabled=false;$('#btnSubmit').textContent='⚡ Submit and leave the maze';
- $('#sx').textContent='← Not yet, go back';$('#sx').onclick=closeShop;$('#shop').style.display='grid'}
+ $('#bT').style.display='none';$('#shopT').textContent='🌀 Cổng thoát mê cung';
+ $('#si').textContent='Kiểm tra lại bài làm. Đã nộp là không sửa được. Điểm sẽ được server chấm sau khi nộp.';
+ $('#sl').innerHTML=Q.map((q,i)=>{const a=A[i];let t='Chưa trả lời';if(a.answered)t=a.text?esc(a.text):a.answerIds.map(id=>esc((q.options.find(o=>o.id===id)||{}).content||id)).join(', ');return`<div class="rv"><span>${i+1}. ${esc(q.content)}</span><span class="a ${a.answered?'':'none'}">${t}</span></div>`}).join('');
+ $('#subErr').classList.add('hide');$('#btnSubmit').classList.remove('hide');$('#btnSubmit').disabled=false;$('#btnSubmit').textContent='⚡ Nộp bài và thoát mê cung';
+ $('#sx').textContent='← Chưa nộp, quay lại';$('#sx').onclick=closeShop;$('#shop').style.display='grid'}
 function closeShop(){shopOpen=0;$('#shop').style.display='none'}
 $('#btnSubmit').onclick=async()=>{
  if(submitting||submitted)return;submitting=1;ac();
- const b=$('#btnSubmit');b.disabled=true;b.textContent='Submitting…';$('#subErr').classList.add('hide');
+ const b=$('#btnSubmit');b.disabled=true;b.textContent='Đang nộp bài…';$('#subErr').classList.add('hide');
  const ctx={name:pName,totalTime:M.round((Date.now()-startedAt)/1000),tabOut,answers:A};
  try{
   let res,raw;
   if(demo||!SURL){
-   if(!demo&&!SURL)throw new Error('No submit URL configured (SUBMIT_URL).');
+   if(!demo&&!SURL)throw new Error('Chưa cấu hình địa chỉ nộp bài (SUBMIT_URL).');
    let s=0,mx=0;Q.forEach((q,i)=>{mx+=q.points||0;const k=(DEMO_KEY[q.id]||[]).slice().sort().join(),g=A[i].answerIds.slice().sort().join();if(k&&k===g)s+=q.points||0});
    res={score:s,max:mx,_demo:true};raw=res}
   else{
@@ -393,32 +393,32 @@ $('#btnSubmit').onclick=async()=>{
    res=CONFIG.parseResult(raw)}
   submitted=1;reveal(res,raw)
  }catch(e){
-  submitting=0;b.disabled=false;b.textContent='Submit again';
-  const er=$('#subErr');er.classList.remove('hide');er.textContent='Submit failed: '+e.message+'. Your answers are still here; press Submit again.'}};
-/* reveal the score */
+  submitting=0;b.disabled=false;b.textContent='Nộp lại';
+  const er=$('#subErr');er.classList.remove('hide');er.textContent='Nộp bài chưa thành công: '+e.message+'. Bài làm vẫn còn, bấm nộp lại.'}};
+/* tiết lộ điểm */
 function reveal(res,raw){
  revealing=1;closeShop();shake=.7;bp(100,.8,'sawtooth',.2,30);
  const max=res&&res.max!=null?res.max:Q.reduce((s,q)=>s+(q.points||0),0),ratio=res&&res.score!=null?clamp(res.score/(max||1),0,1):null;
- toast('🌀 The exit gate opens…');[523,659,784,1046].forEach((f,i)=>setTimeout(()=>bp(f,.25,'triangle',.14),i*130));
+ toast('🌀 Cánh cổng thoát mở ra…');[523,659,784,1046].forEach((f,i)=>setTimeout(()=>bp(f,.25,'triangle',.14),i*130));
  setTimeout(()=>showResult(res,raw,ratio),1500)}
 function showResult(res,raw,ratio){
  shopOpen=1;$('#btnSubmit').classList.add('hide');$('#subErr').classList.add('hide');
  if(ratio===null){
-  $('#shopT').textContent='📨 Submitted';$('#si').innerHTML='Your answers were sent successfully. Could not read a score from the response; adjust <b>parseResult</b> in CONFIG to show it.';
+  $('#shopT').textContent='📨 Đã nộp bài';$('#si').innerHTML='Bài đã được gửi thành công. Không đọc được điểm từ phản hồi, bạn chỉnh <b>parseResult</b> trong CONFIG để hiện điểm.';
   $('#sl').innerHTML='<pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:160px;overflow:auto;user-select:text">'+esc(JSON.stringify(raw,null,2))+'</pre>'}
  else{
   const max=res.max!=null?res.max:Q.reduce((s,q)=>s+(q.points||0),0),rk=ratio>=.9?'S':ratio>=.75?'A':ratio>=.5?'B':'C';
-  $('#shopT').textContent=ratio>=.999?'🏆 PERFECT ESCAPE!':ratio>0?'🌀 You escaped the maze':'🌀 You escaped, but…';
-  $('#si').innerHTML=`<div class="big">${res.score}</div><div class="mid">out of ${max} points</div><div class="rank">${rk}</div><div class="mid">${ratio>=.999?'A perfect score — no maze can hold you!':ratio>0?'You scored '+M.round(ratio*100)+'% of the points. Try again to find a faster route and a higher score!':'No points yet. Practice and come back!'}</div>${res._demo?'<div class="mid"><b>Demo score, not from the server</b></div>':''}`;
+  $('#shopT').textContent=ratio>=.999?'🏆 THOÁT HOÀN HẢO!':ratio>0?'🌀 Bạn đã thoát khỏi mê cung':'🌀 Bạn đã thoát, nhưng…';
+  $('#si').innerHTML=`<div class="big">${res.score}</div><div class="mid">trên ${max} điểm</div><div class="rank">${rk}</div><div class="mid">${ratio>=.999?'Điểm tuyệt đối, không mê cung nào giữ chân được bạn!':ratio>0?'Bạn đạt '+M.round(ratio*100)+'% số điểm. Thử lại để tìm đường nhanh hơn và điểm cao hơn!':'Chưa có điểm nào. Luyện tập rồi quay lại nhé!'}</div>${res._demo?'<div class="mid"><b>Điểm demo, chưa phải từ server</b></div>':''}`;
   $('#sl').innerHTML=''}
- $('#sx').textContent='Play again from the start';$('#sx').onclick=()=>location.reload();$('#shop').style.display='grid'}
+ $('#sx').textContent='Chơi lại từ đầu';$('#sx').onclick=()=>location.reload();$('#shop').style.display='grid'}
 
-/* ---- actions ---- */
+/* ---- hành động ---- */
 function swing(){if(dl||shopOpen||qOpen>=0||revealing||P.ac>0||P.dead>0)return;P.ac=.36;P.sw=1;P.cmb=(P.cmb+1)%3;bp(300,.12,'sawtooth',.08,150);
  let bt=null,bd=1e9;for(const t of TR){if(t.cut)continue;const dx=t.x-P.x,dy=t.y-P.y,d=M.hypot(dx,dy);if(d<2.2&&d<bd&&M.abs(aD(M.atan2(dy,dx)-P.a))<.8){bd=d;bt=t}}
  if(bt){bt.hp-=P.cmb===2?2:1;bt.sh=.18;bp(150,.09,'square',.1,100);if(bt.hp<=0){bt.cut=1;bt.rt=75;fl(bt.x,bt.y,1.2,'🪵','#ffd9a0');bp(220,.2,'triangle',.14,330)}}}
 function dash(){if(dl||shopOpen||qOpen>=0||revealing||P.dd>0||P.dead>0||P.cdD>0)return;P.dd=.22;P.cdD=.9;P.inv=.3;P.da=(IN.mx||IN.my)?P.a+M.atan2(IN.mx,-IN.my):(K.d||K.a||K.w||K.s)?P.a+M.atan2((K.d?1:0)-(K.a?1:0),(K.w?1:0)-(K.s?1:0)):P.a;bp(500,.15,'sine',.08,200)}
-function hurt(d){if(P.inv>0||P.dead>0)return;P.hp-=d;P.inv=.5;P.hurt=.5;shake=.3;bp(140,.2,'sawtooth',.2,60);if(P.hp<=0){P.hp=0;P.dead=2.4;toast('💀 You are exhausted, recovering…')}}
+function hurt(d){if(P.inv>0||P.dead>0)return;P.hp-=d;P.inv=.5;P.hurt=.5;shake=.3;bp(140,.2,'sawtooth',.2,60);if(P.hp<=0){P.hp=0;P.dead=2.4;toast('💀 Bạn kiệt sức, đang hồi phục…')}}
 let mapOpen=0;
 function openMap(){if(!started||mapOpen||shopOpen||qOpen>=0||revealing||dl)return;mapOpen=1;shopOpen=1;for(const k in K)K[k]=0;try{document.exitPointerLock&&document.exitPointerLock()}catch(_){}
  $('#bT').style.display='none';$('#ts').style.opacity=0;clearTimeout(toast.t);$('#fmap').style.display='grid';
@@ -430,11 +430,11 @@ function openMap(){if(!started||mapOpen||shopOpen||qOpen>=0||revealing||dl)retur
  c.fillStyle='#2a8a5a';GD.forEach(g=>{if(g.done&&visited[g.ty*N+g.tx]){c.fillRect(g.tx*k,g.ty*k,k+.6,k+.6)}});
  c.fillStyle='#ff6b6b';c.beginPath();c.arc(MZ.sx*k,MZ.sy*k,M.max(2.5,k*.55),0,TAU);c.fill();
  const rr=M.max(5,k*1.1);c.save();c.translate(P.x*k,P.y*k);c.rotate(P.a);c.fillStyle='#fff';c.strokeStyle='#1a1a2e';c.lineWidth=2;c.beginPath();c.moveTo(rr*1.1,0);c.lineTo(-rr*.8,-rr*.8);c.lineTo(-rr*.4,0);c.lineTo(-rr*.8,rr*.8);c.closePath();c.fill();c.stroke();c.restore();
- $('#fml').innerHTML=`<span style="color:#d8c8a0">■ Explored</span><span style="color:#ffd166">■ Question gates (${GD.filter(g=>!g.done).length} left)</span><span style="color:#6fd6ff">■ Exit gate</span><span style="color:#ff6b6b">● Start</span><span>▶ You</span>`}
+ $('#fml').innerHTML=`<span style="color:#d8c8a0">■ Đã đi qua</span><span style="color:#ffd166">■ Cổng câu hỏi (${GD.filter(g=>!g.done).length} còn lại)</span><span style="color:#6fd6ff">■ Cổng thoát</span><span style="color:#ff6b6b">● Xuất phát</span><span>▶ Bạn</span>`}
 function closeMap(){mapOpen=0;shopOpen=0;$('#fmap').style.display='none'}
 $('#fmap').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();closeMap()});
 function toggleSnd(){mute=!mute;$('#isnd').textContent=mute?'🔇':'🔊'}
-/* ---- controls ---- */
+/* ---- điều khiển ---- */
 const IN={mx:0,my:0,sid:null,lid:null,ox:0,oy:0,lx:0,ly:0},K={};const tz=$('#jz'),jb=$('#jb'),jk=$('#jk');
 function look(dx,dy,m){P.a+=dx*(m?.0026:.0055);P.pt=clamp(P.pt-dy*(m?.0022:.003),-.3,.3)}
 function ptr(){document.body.addEventListener('pointerdown',e=>{if(!started||shopOpen||qOpen>=0||revealing)return;if(e.target.closest('.b,.ui,#dlg,#shop,#qp,#mini,#fmap'))return;e.preventDefault();ac();
@@ -453,16 +453,16 @@ $('#dlg').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagatio
 [['#bA',swing],['#bD',dash],['#isnd',toggleSnd],['#imap',openMap],['#mini',openMap],['#bT',interact]].forEach(([id,f])=>$(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();ac();f()}));
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!started)return;if(qOpen>=0){qKey(e);return}if(e.target&&e.target.tagName==='INPUT')return;if(k==='m'){mapOpen?closeMap():openMap();return}if(mapOpen){if(k==='escape')closeMap();return}K[k]=1;if(shopOpen||revealing)return;if(dl){if([' ','f','enter'].includes(k))nextDl();return}if(k==='shift')dash();else if(k==='f')interact();else if(k===' ')swing()});
 addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
-/* ---- zones ---- */
-function zoneAt(x,y){return'Maze'}
-/* ---- update ---- */
+/* ---- khu vực ---- */
+function zoneAt(x,y){return'Mê cung'}
+/* ---- cập nhật ---- */
 function update(dt){
  T+=dt;
  for(const k of['ac','cast','inv','hurt','cdD'])if(P[k]>0)P[k]-=dt;P.sw=M.max(0,P.sw-dt/.32);flash=M.max(0,flash-dt);shake=M.max(0,shake-dt);
  env+=((fm(P.x,P.y)===4?1:0)-env)*M.min(1,dt*3);
  for(const e of E)if(e.fl>0)e.fl-=dt;
  qTick();
- if(P.dead>0){P.dead-=dt;if(P.dead<=0){P.hp=P.mx;toast('You have recovered')}}
+ if(P.dead>0){P.dead-=dt;if(P.dead<=0){P.hp=P.mx;toast('Bạn đã hồi phục')}}
  else{
   const tgE=qOpen>=0?GD[qOpen].e:revealing?boss:null;
   if(tgE){P.a+=aD(M.atan2(tgE.y-P.y,tgE.x-P.x)-P.a)*M.min(1,dt*6);P.pt+=((qOpen>=0?-.28:0)-P.pt)*M.min(1,dt*5)}
@@ -480,7 +480,7 @@ function update(dt){
  XP=XP.filter(x=>(x.t+=dt)<.5);FT=FT.filter(f=>(f.t-=dt)>0);
  const r=nearInter(),bt=$('#bT');if(r&&!dl&&!shopOpen){bt.style.display='flex';$('#btx').textContent=(r.k==='g'?'🚪 ':r.k==='x'?'🌀 ':'')+r.n}else bt.style.display='none';
 }
-/* ---- render ---- */
+/* ---- vẽ ---- */
 const CLD=Array.from({length:9},()=>({a:R()*TAU,h:R()*.16,w:.1+R()*.1}));
 function render(){
  const hor=RH/2+P.pt*RH*.6,hr=hor|0,f=(RW/2)/PL;let sa=P.a;if(shake>0)sa+=(R()-.5)*shake*.06;
@@ -536,8 +536,8 @@ function drawFx(){
  for(const f of FT){const p=proj(f.x,f.y,f.z+(.9-f.t)*.6);if(!p)continue;fx.fillStyle=f.c;fx.globalAlpha=clamp(f.t*2,0,1);fx.strokeText(f.s,p.x,p.y);fx.fillText(f.s,p.x,p.y)}fx.globalAlpha=1;
  fx.font=`700 ${13*u}px system-ui`;fx.lineWidth=3.5*u;fx.strokeStyle='rgba(0,0,0,.6)';const kx=fxc.width/RW;
  for(const n of NP){if(M.hypot(n.x-P.x,n.y-P.y)>14)continue;const p=proj(n.x,n.y,1.22);if(!p||p.d>=zb[clamp((p.x/kx)|0,0,RW-1)])continue;fx.fillStyle=n.shop?'#ffd98a':'#fff';const t=(n.shop?'🏪 ':'')+n.n;fx.strokeText(t,p.x,p.y);fx.fillText(t,p.x,p.y)}
- for(const g of GD){if(g.done||M.hypot(g.x-P.x,g.y-P.y)>16)continue;const p=proj(g.x,g.y,g.e.sz+.6);if(!p||p.d>=zb[clamp((p.x/kx)|0,0,RW-1)])continue;fx.fillStyle='#ffd98a';const t='Gatekeeper #'+(g.gi+1);fx.strokeText(t,p.x,p.y);fx.fillText(t,p.x,p.y)}
- for(const e of E){if(e.hp<e.mx&&M.hypot(e.x-P.x,e.y-P.y)<10){const p=proj(e.x,e.y,e.sz+.08);if(p){const bw=40*u;fx.fillStyle='rgba(0,0,0,.55)';fx.fillRect(p.x-bw/2,p.y,bw,5*u);fx.fillStyle='#ef5350';fx.fillRect(p.x-bw/2,p.y,bw*e.hp/e.mx,5*u);fx.font=`700 ${11*u}px system-ui`;fx.fillStyle='#fff';fx.strokeText(ED[e.t].n,p.x,p.y-4*u);fx.fillText(ED[e.t].n,p.x,p.y-4*u)}}if(e.t==='boss'&&e.aw>0){fx.fillStyle='rgba(255,40,40,.9)';fx.font=`900 ${20*u}px system-ui`;fx.fillText('⚠ DODGE THE SLAM!',w/2,h*.3)}else if(e.t==='arch'&&e.aw>0&&M.hypot(e.x-P.x,e.y-P.y)<11){fx.fillStyle='rgba(255,170,40,.95)';fx.font=`900 ${16*u}px system-ui`;fx.fillText('🏹 ARCHER TAKING AIM!',w/2,h*.3)}}
+ for(const g of GD){if(g.done||M.hypot(g.x-P.x,g.y-P.y)>16)continue;const p=proj(g.x,g.y,g.e.sz+.6);if(!p||p.d>=zb[clamp((p.x/kx)|0,0,RW-1)])continue;fx.fillStyle='#ffd98a';const t='Thủ vệ #'+(g.gi+1);fx.strokeText(t,p.x,p.y);fx.fillText(t,p.x,p.y)}
+ for(const e of E){if(e.hp<e.mx&&M.hypot(e.x-P.x,e.y-P.y)<10){const p=proj(e.x,e.y,e.sz+.08);if(p){const bw=40*u;fx.fillStyle='rgba(0,0,0,.55)';fx.fillRect(p.x-bw/2,p.y,bw,5*u);fx.fillStyle='#ef5350';fx.fillRect(p.x-bw/2,p.y,bw*e.hp/e.mx,5*u);fx.font=`700 ${11*u}px system-ui`;fx.fillStyle='#fff';fx.strokeText(ED[e.t].n,p.x,p.y-4*u);fx.fillText(ED[e.t].n,p.x,p.y-4*u)}}if(e.t==='boss'&&e.aw>0){fx.fillStyle='rgba(255,40,40,.9)';fx.font=`900 ${20*u}px system-ui`;fx.fillText('⚠ NÉ ĐÒN ĐẬP!',w/2,h*.3)}else if(e.t==='arch'&&e.aw>0&&M.hypot(e.x-P.x,e.y-P.y)<11){fx.fillStyle='rgba(255,170,40,.95)';fx.font=`900 ${16*u}px system-ui`;fx.fillText('🏹 XẠ THỦ NGẮM BẮN!',w/2,h*.3)}}
  if(P.hurt>0){const g2=fx.createRadialGradient(w/2,h/2,M.min(w,h)*.3,w/2,h/2,M.max(w,h)*.7);g2.addColorStop(0,'rgba(200,0,20,0)');g2.addColorStop(1,`rgba(200,0,20,${P.hurt})`);fx.fillStyle=g2;fx.fillRect(0,0,w,h)}
  if(flash>0){fx.fillStyle=`rgba(255,170,60,${flash*.6})`;fx.fillRect(0,0,w,h)}
  if(fm(P.x,P.y)===2){fx.fillStyle='rgba(60,140,220,.12)';fx.fillRect(0,h*.78,w,h*.22)}
@@ -547,12 +547,12 @@ function hud(){
  const left=Q.length-doneN;
  $('#lv').textContent='🚪 '+doneN+'/'+Q.length;$('#mo').textContent='⏱ '+fmtT(started?(Date.now()-startedAt)/1000:0);
  $('#hp').style.width=100*P.hp/P.mx+'%';$('#en').style.width=(Q.length?100*doneN/Q.length:0)+'%';$('#hpn').textContent=`❤ ${M.ceil(P.hp)} / ${P.mx}`;
- $('#qt').textContent=submitted?'Submitted':left>0?'Find the way out of the maze. '+left+' question gates still block the path.':'The exit gate is open — find the way out!';
+ $('#qt').textContent=submitted?'Đã nộp bài':left>0?'Tìm lối ra khỏi mê cung. Còn '+left+' cổng câu hỏi chặn đường.':'Cổng thoát đã mở, hãy tìm lối ra!';
  $('#qd').textContent='🧭 '+compass(P.a);
 }
 let last=0;function loop(t){const dt=M.min((t-last)/1000||0,.05);last=t;if(started){update(dt);render();drawFx();hud()}else{T+=dt;P.a+=dt*.2;render()}requestAnimationFrame(loop)}
 const SC=['#2f6fb3','#b3392f','#2f9a5a','#7a4fc2','#e0a020'];
-$('#sws').innerHTML=SC.map((c,i)=>`<button class="sw${i?'':' on'}" data-c="${c}" style="background:${c}" aria-label="Shirt color ${i+1}"></button>`).join('');
+$('#sws').innerHTML=SC.map((c,i)=>`<button class="sw${i?'':' on'}" data-c="${c}" style="background:${c}" aria-label="Màu áo ${i+1}"></button>`).join('');
 $('#sws').onclick=e=>{const b=e.target.closest('.sw');if(!b)return;sleeve=b.dataset.c;document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s===b))};
 
 async function load(){
@@ -562,16 +562,16 @@ async function load(){
   const r=await fetch(QURL,{headers:{Accept:'application/json',...CONFIG.HEADERS}});
   if(!r.ok)throw new Error('HTTP '+r.status);
   const j=await r.json();
-  if(j.status===false||!Array.isArray(j.data))throw new Error(j.msg||'Invalid data');
+  if(j.status===false||!Array.isArray(j.data))throw new Error(j.msg||'Dữ liệu không hợp lệ');
   Q=j.data;demo=false;
  }catch(e){
   Q=DEMO.data;demo=true;
-  $('#saved').textContent=e.message==='NOURL'?'DEMO MODE: no API URL configured, using 3 sample questions.':'DEMO MODE: could not load questions ('+e.message+'), using 3 sample questions.'}
+  $('#saved').textContent=e.message==='NOURL'?'CHẾ ĐỘ DEMO: chưa cấu hình địa chỉ API, đang dùng 3 câu mẫu.':'CHẾ ĐỘ DEMO: không tải được câu hỏi ('+e.message+'), đang dùng 3 câu mẫu.'}
  Q=Q.filter(q=>q&&q.id&&q.content);
- if(!Q.length){b.textContent='No questions';return}
+ if(!Q.length){b.textContent='Không có câu hỏi';return}
  const pts=Q.reduce((s,q)=>s+(q.points||0),0),sec=Q.reduce((s,q)=>s+(q.timeLimit||30),0);
- $('#saved').textContent=($('#saved').textContent?$('#saved').textContent+' ':'')+Q.length+' question gates · '+pts+' max points · '+sec+' seconds to answer.';
- b.disabled=false;b.textContent='Start';
+ $('#saved').textContent=($('#saved').textContent?$('#saved').textContent+' ':'')+Q.length+' cổng câu hỏi · '+pts+' điểm tối đa · '+sec+' giây trả lời.';
+ b.disabled=false;b.textContent='Vào trận';
 }
 function enter(){
  const n=$('#name').value.trim();if(!n){$('#name').focus();$('#name').style.outline='2px solid #ff6b81';return}
@@ -580,9 +580,9 @@ function enter(){
  placeGuards(Q.length);
  Object.assign(P,{x:MZ.sx,y:MZ.sy,a:MZ.sa,pt:0,hp:100,mx:100,dead:0});
  started=1;startedAt=Date.now();env=1;curZone=zoneAt(P.x,P.y);$('#zn').textContent='📍 '+curZone;$('#intro').style.display='none';
- toast('Find the way out. When a gate blocks the path, press F to answer. Press M to see where you have been.');
+ toast('Tìm lối ra. Gặp cổng chặn đường thì bấm F để trả lời. Bấm M xem nơi đã đi qua.');
 }
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&!submitted&&qOpen>=0){tabOut++;toast('⚠️ You left the quiz page '+tabOut+' times. This has been recorded.')}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&!submitted&&qOpen>=0){tabOut++;toast('⚠️ Bạn đã rời khỏi trang thi '+tabOut+' lần. Việc này được ghi nhận.')}});
 addEventListener('beforeunload',e=>{if(started&&!submitted){e.preventDefault();e.returnValue=''}});
 $('#go').onclick=enter;
 load();requestAnimationFrame(loop);

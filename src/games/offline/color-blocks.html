@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"><script id="gq-kit">/* gq-kit.js — Bộ nâng cấp dùng chung cho game dọc:
    · Màn chọn độ khó 4 mức (Dễ / Trung bình / Khó / Siêu khó) — cùng một giao diện cho mọi game
    · Độ khó thật: nhịp game (setTimeout/setInterval/rAF/performance.now/Date.now) co giãn theo mức,
      điểm & XP nhân hệ số (game dạng "single"), số mạng / giây mỗi câu / màn khởi đầu (mcengine)
-   · Pháo hoa khi kết thúc ván, nút "Change difficulty", nhãn độ khó luôn hiện trên đầu màn hình
+   · Pháo hoa khi kết thúc ván, nút "Đổi độ khó", nhãn độ khó luôn hiện trên đầu màn hình
    MODE được build thay: 'single' (game sinh từ shell) hoặc 'standalone' (game viết tay). */
 (() => {
   if (window.GQ) return;
   const MODE = 'standalone';
   const TIERS = [
-    { k: 'easy',   n: 'Easy',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Slow, extra lives — take it easy' },
-    { k: 'mid',    n: 'Normal', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Balanced pace' },
-    { k: 'hard',   n: 'Hard',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Faster, less thinking time' },
-    { k: 'insane', n: 'Insane',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Very fast, no room for mistakes' },
+    { k: 'easy',   n: 'Dễ',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Chậm rãi, nhiều mạng — thoải mái làm quen' },
+    { k: 'mid',    n: 'Trung bình', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Nhịp độ chuẩn, vừa sức chơi' },
+    { k: 'hard',   n: 'Khó',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Nhanh hơn, ít thời gian suy nghĩ' },
+    { k: 'insane', n: 'Siêu khó',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Cực nhanh, ít sai sót — dành cho cao thủ' },
   ];
   const G = { t: TIERS[1], i: 1, locked: MODE === 'standalone', q: [] };
 
@@ -72,13 +72,13 @@
   function pick(meta, go) {
     let last = 1;
     try { const v = +localStorage.getItem(KEY); if (v >= 0 && v < 4) last = v; } catch (e) { /* ignore */ }
-    const chip = t => MODE === 'single' ? `×${t.m} points` : `speed ×${t.s}`;
-    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Exit">←</button>
+    const chip = t => MODE === 'single' ? `×${t.m} điểm` : `tốc độ ×${t.s}`;
+    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Thoát">←</button>
       <div class="gqp-box"><div class="gqp-ic">${meta.icon || '🎮'}</div><h1>${meta.name}</h1>
-      <p>Pick a difficulty to start</p>
+      <p>Chọn độ khó để bắt đầu</p>
       <div class="gqp-list">${TIERS.map((t, i) => `<button class="gqd${i === last ? ' last' : ''}" data-i="${i}" style="--c:${t.c}">
         <i>${t.e}</i><span><b>${t.n}</b><em>${t.d}</em></span><u>${chip(t)}</u></button>`).join('')}</div>
-      <small>Higher difficulty, faster pace — bigger rewards 🏆</small></div></div>`);
+      <small>Độ khó càng cao, nhịp chơi càng gấp — thưởng càng lớn 🏆</small></div></div>`);
     box.querySelector('.gqp-x').onclick = quit;
     box.querySelector('.gqp-list').onclick = e => {
       const b = e.target.closest('.gqd'); if (!b) return;
@@ -118,12 +118,12 @@
       }));
       boom();
       const row = document.querySelector('#modal .row');
-      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Change difficulty</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
+      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Đổi độ khó</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
       return r;
     };
   } else {
     const start = () => {
-      const t = (document.title || 'Game').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
+      const t = (document.title || 'Trò chơi').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
       const ic = (document.title.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u) || ['🎮'])[0];
       document.documentElement.classList.add('gq-sa');
       pick({ name: t, icon: ic });
@@ -132,7 +132,7 @@
   }
 })();
 </script>
-<title>color blocks</title>
+<title>Xếp Khối Màu</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -199,7 +199,7 @@
 .gqd b { display: block; font: 800 20px/1.1 'Baloo 2', system-ui, sans-serif; }
 .gqd em { display: block; font-style: normal; font-size: 12.5px; line-height: 1.3; color: #3a4a66; margin-top: 2px; }
 .gqd u { text-decoration: none; font-size: 11.5px; font-weight: 700; background: #1d2e4a; color: #fff; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
-.gqd.last::after { content: 'Last time'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
+.gqd.last::after { content: 'Lần trước'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
   border-radius: 999px; padding: 0 8px; font-size: 10.5px; font-weight: 700; }
 .gqp-box small { display: block; margin-top: 14px; font-size: 12.5px; color: #3a4a66; }
 @keyframes gqpop { 0% { transform: scale(.85); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
@@ -230,23 +230,23 @@ html.gq-sa body .btn:active, html.gq-sa body #again:active, html.gq-sa body #car
 <body>
 <canvas id="c"></canvas>
 <div id="top">
-  <div class="side"><small>BEST</small><b id="best">0</b></div>
+  <div class="side"><small>KỶ LỤC</small><b id="best">0</b></div>
   <div class="mid"><div id="score">0</div><div id="combo"></div></div>
   <div class="side"><button id="menuBtn" aria-label="Menu">☰</button></div>
 </div>
 
 <div class="screen" id="start">
-  <div class="card"><h2>Color Blocks</h2><div class="sm">Drag blocks onto the board, fill a row or column to clear it!</div>
-    <div class="stats"><div><b id="stBest">0</b>best</div><div><b id="stGames">0</b>games</div><div><b id="stLines">0</b>lines cleared</div></div>
-    <div class="col"><button class="btn" id="contBtn">▶ Continue (<span id="contScore">0</span> pts)</button><button class="btn alt" id="newBtn">New game</button></div></div>
+  <div class="card"><h2>Xếp Khối Màu</h2><div class="sm">Kéo khối vào bảng, lấp đầy hàng hoặc cột để xóa!</div>
+    <div class="stats"><div><b id="stBest">0</b>kỷ lục</div><div><b id="stGames">0</b>ván</div><div><b id="stLines">0</b>hàng xóa</div></div>
+    <div class="col"><button class="btn" id="contBtn">▶ Tiếp tục (<span id="contScore">0</span> điểm)</button><button class="btn alt" id="newBtn">Ván mới</button></div></div>
 </div>
 <div class="screen" id="over">
-  <div class="card"><h2 id="oTitle">No space left!</h2><div class="sm">Your score</div><div class="big" id="oScore">0</div><div class="sm" id="oInfo"></div>
-    <div class="col"><button class="btn" id="againBtn">PLAY AGAIN</button></div></div>
+  <div class="card"><h2 id="oTitle">Hết chỗ rồi!</h2><div class="sm">Điểm của bạn</div><div class="big" id="oScore">0</div><div class="sm" id="oInfo"></div>
+    <div class="col"><button class="btn" id="againBtn">CHƠI LẠI</button></div></div>
 </div>
 <div class="screen" id="menu">
-  <div class="card"><h2>Paused</h2>
-    <div class="col"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt sm" id="restartBtn">↺ New game</button><button class="btn alt sm" id="sndBtn">🔊 Sound: On</button></div></div>
+  <div class="card"><h2>Tạm dừng</h2>
+    <div class="col"><button class="btn" id="resumeBtn">Tiếp tục</button><button class="btn alt sm" id="restartBtn">↺ Ván mới</button><button class="btn alt sm" id="sndBtn">🔊 Âm thanh: Bật</button></div></div>
 </div>
 
 <script>
@@ -259,13 +259,13 @@ const pick = a => a[Math.floor(Math.random() * a.length)];
 const lerp = (a, b, t) => a + (b - a) * t;
 const N = 8;
 
-/* ---------- Save ---------- */
+/* ---------- Lưu ---------- */
 const KEY = 'xep-khoi-v1'; let mem = null;
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {} return mem ? JSON.parse(mem) : {}; };
 const S = Object.assign({ best: 0, games: 0, lines: 0, maxCombo: 0, sfx: true, save: null }, load());
 const persist = () => { const s = JSON.stringify(S); try { localStorage.setItem(KEY, s); } catch (e) { mem = s; } };
 
-/* ---------- Blocks ---------- */
+/* ---------- Khối ---------- */
 const SHAPES = [
   ['X'], ['XX'], ['XXX'], ['XXXX'], ['XXXXX'], ['X', 'X'], ['X', 'X', 'X'], ['X', 'X', 'X', 'X'], ['X', 'X', 'X', 'X', 'X'],
   ['XX', 'XX'], ['XXX', 'XXX', 'XXX'], ['XXX', 'XXX'], ['XX', 'XX', 'XX'],
@@ -276,7 +276,7 @@ const SHAPES = [
 ].map(rows => { const cells = []; rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === 'X') cells.push([y, x]); })); return { rows, cells, h: rows.length, w: rows[0].length }; });
 const COLORS = ['#ff5d73', '#ff9f43', '#ffd93d', '#4cd964', '#2dd4bf', '#4dabf7', '#9775fa', '#f06595'];
 
-/* ---------- Sound ---------- */
+/* ---------- Âm thanh ---------- */
 let ac = null;
 const audio = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (ac && ac.state === 'suspended') ac.resume(); };
 function tone(f, d = .15, v = .1, type = 'sine', delay = 0, slide = 0) {
@@ -294,7 +294,7 @@ const sfx = {
 };
 const vib = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
 
-/* ---------- State ---------- */
+/* ---------- Trạng thái ---------- */
 let grid, tray, score = 0, combo = 0, noClear = 0, over = false, newBest = false;
 let drag = null, parts = [], cellFx = [], floats = [], shake = 0, flashLines = [];
 const cv = $('c'), ctx = cv.getContext('2d'); let W = 0, H = 0, DPR = 1, cell = 40, bx = 0, by = 0, trayY = 0, trayH = 0, trayCell = 24;
@@ -306,7 +306,7 @@ function newGame() {
 function persistGame() { S.save = over ? null : { grid, tray: tray.map(t => t && { s: t.s, c: t.c }), score, combo, noClear }; persist(); }
 function restore(sv) { grid = sv.grid; tray = sv.tray.map(t => t && { s: t.s, c: t.c }); score = sv.score; combo = sv.combo || 0; noClear = sv.noClear || 0; over = false; hudUpdate(); }
 
-/* ---------- Fair block generation ---------- */
+/* ---------- Sinh khối công bằng ---------- */
 const occupied = () => grid.reduce((a, r) => a + r.filter(v => v >= 0).length, 0);
 function canPlace(sh, gy, gx) { return SHAPES[sh].cells.every(([y, x]) => { const r = gy + y, c = gx + x; return r >= 0 && c >= 0 && r < N && c < N && grid[r][c] < 0; }); }
 function fitsAnywhere(sh) { for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (canPlace(sh, y, x)) return true; return false; }
@@ -319,7 +319,7 @@ function genTray() {
   return t;
 }
 
-/* ---------- Layout ---------- */
+/* ---------- Bố cục ---------- */
 function resize() {
   DPR = Math.min(window.devicePixelRatio || 1, 2); W = window.innerWidth; H = window.innerHeight; cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const top = ($('top').offsetHeight || 96) + 4;
@@ -329,7 +329,7 @@ function resize() {
 }
 window.addEventListener('resize', resize); resize();
 
-/* ---------- Draw blocks ---------- */
+/* ---------- Vẽ khối ---------- */
 function shade(hex, k) { const n = parseInt(hex.slice(1), 16), f = v => clamp(Math.round(v + (k > 0 ? (255 - v) * k : v * k)), 0, 255); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
 function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 function block(x, y, s, col, a = 1, scale = 1) {
@@ -340,7 +340,7 @@ function block(x, y, s, col, a = 1, scale = 1) {
   ctx.strokeStyle = shade(col, -.45); ctx.lineWidth = 1.2; rr(x + p + g, y + p + g, q - 2 * g, q - 2 * g, s * .2); ctx.stroke(); ctx.globalAlpha = 1;
 }
 
-/* ---------- Place block ---------- */
+/* ---------- Đặt khối ---------- */
 function anchor() {
   const sh = SHAPES[tray[drag.i].s], off = cell * 2.0, tx = drag.x - sh.w * cell / 2, ty = drag.y - off - sh.h * cell / 2;
   return { gx: Math.round((tx - bx) / cell), gy: Math.round((ty - by) / cell), px: tx, py: ty };
@@ -361,29 +361,29 @@ function place(i, gy, gx) {
     set.forEach(k => { grid[(k / N) | 0][k % N] = -1; });
     const bonus = Math.round(L * (L + 1) / 2 * 10 * (1 + .5 * (combo - 1))); gained += bonus; S.lines += L; S.maxCombo = Math.max(S.maxCombo, combo);
     sfx.clear(L, combo); vib(L > 1 ? 40 : 20); shake = Math.min(14, 3 + L * 2.5);
-    const words = L >= 4 ? 'LEGENDARY!' : L === 3 ? 'AMAZING!' : L === 2 ? 'GREAT!' : combo >= 3 ? 'COMBO STREAK!' : '';
+    const words = L >= 4 ? 'HUYỀN THOẠI!' : L === 3 ? 'SIÊU HẠNG!' : L === 2 ? 'TUYỆT VỜI!' : combo >= 3 ? 'LIÊN HOÀN!' : '';
     floats.push({ x: bx + cell * N / 2, y: by + cell * N * .42, t: '+' + bonus, s: 1, life: 1.2, c: '#fff' });
     if (words) floats.push({ x: bx + cell * N / 2, y: by + cell * N * .28, t: words, s: 1.25, life: 1.4, c: '#ffd84a' });
     if (combo >= 2) floats.push({ x: bx + cell * N / 2, y: by + cell * N * .58, t: 'Combo x' + combo, s: .9, life: 1.2, c: '#ff9be8' });
-    if (grid.every(r => r.every(v => v < 0))) { gained += 100; floats.push({ x: bx + cell * N / 2, y: by + cell * N * .7, t: 'BOARD CLEAR +100', s: 1.1, life: 1.6, c: '#7dffb0' }); }
+    if (grid.every(r => r.every(v => v < 0))) { gained += 100; floats.push({ x: bx + cell * N / 2, y: by + cell * N * .7, t: 'SẠCH BẢNG +100', s: 1.1, life: 1.6, c: '#7dffb0' }); }
   } else { noClear++; if (noClear >= 3) combo = 0; }
-  score += gained; if (score > S.best && !newBest && S.best > 0) { newBest = true; sfx.best(); floats.push({ x: W / 2, y: by - 6, t: '🏆 NEW RECORD!', s: 1, life: 1.6, c: '#ffe066' }); }
+  score += gained; if (score > S.best && !newBest && S.best > 0) { newBest = true; sfx.best(); floats.push({ x: W / 2, y: by - 6, t: '🏆 KỶ LỤC MỚI!', s: 1, life: 1.6, c: '#ffe066' }); }
   if (tray.every(t => !t)) tray = genTray();
   hudUpdate(); const dead = !tray.some(t => t && fitsAnywhere(t.s));
   if (dead) { setTimeout(gameOver, 650); over = true; } persistGame();
 }
 function gameOver() {
   sfx.over(); if (score > S.best) S.best = score; S.save = null; persist(); hudUpdate();
-  $('oTitle').textContent = newBest && score > 0 ? '🏆 New record!' : 'No space left!'; $('oScore').textContent = score.toLocaleString('en-US'); $('oInfo').textContent = `Best: ${S.best.toLocaleString('en-US')}`;
+  $('oTitle').textContent = newBest && score > 0 ? '🏆 Kỷ lục mới!' : 'Hết chỗ rồi!'; $('oScore').textContent = score.toLocaleString('vi-VN'); $('oInfo').textContent = `Kỷ lục: ${S.best.toLocaleString('vi-VN')}`;
   $('over').classList.add('show');
 }
 function hudUpdate() {
-  $('score').textContent = score.toLocaleString('en-US'); $('best').textContent = Math.max(S.best, score).toLocaleString('en-US');
+  $('score').textContent = score.toLocaleString('vi-VN'); $('best').textContent = Math.max(S.best, score).toLocaleString('vi-VN');
   const c = $('combo'); c.textContent = combo >= 2 ? `🔥 Combo x${combo}` : ''; c.classList.toggle('on', combo >= 2);
   const s = $('score'); s.classList.add('b'); setTimeout(() => s.classList.remove('b'), 130);
 }
 
-/* ---------- Input ---------- */
+/* ---------- Nhập liệu ---------- */
 cv.addEventListener('pointerdown', e => {
   audio(); if (over || document.querySelector('.screen.show')) return;
   if (e.clientY >= trayY - 10) { const i = Math.min(2, Math.floor(e.clientX / (W / 3))); if (tray[i]) { drag = { i, x: e.clientX, y: e.clientY, k: 0 }; sfx.pick(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} } }
@@ -391,7 +391,7 @@ cv.addEventListener('pointerdown', e => {
 cv.addEventListener('pointermove', e => { if (drag) { drag.x = e.clientX; drag.y = e.clientY; } });
 function drop() {
   if (!drag) return; const a = anchor(), t = tray[drag.i];
-  if (t && canPlace(t.s, a.gy, a.gx)) place(drag.i, a.gy, a.gx); else if (drag.y < trayY - 20) { sfx.bad(); floats.push({ x: drag.x, y: drag.y - cell * 2, t: "Can't place here", s: .7, life: .9, c: '#ff9a9a' }); }
+  if (t && canPlace(t.s, a.gy, a.gx)) place(drag.i, a.gy, a.gx); else if (drag.y < trayY - 20) { sfx.bad(); floats.push({ x: drag.x, y: drag.y - cell * 2, t: 'Không đặt được', s: .7, life: .9, c: '#ff9a9a' }); }
   drag = null;
 }
 cv.addEventListener('pointerup', drop); cv.addEventListener('pointercancel', () => { drag = null; });
@@ -405,19 +405,19 @@ function showStart() {
 $('contBtn').onclick = () => { audio(); restore(S.save); $('start').classList.remove('show'); };
 $('newBtn').onclick = () => { audio(); newGame(); $('start').classList.remove('show'); };
 $('againBtn').onclick = () => { audio(); $('over').classList.remove('show'); newGame(); };
-$('menuBtn').onclick = () => { audio(); $('sndBtn').textContent = '🔊 Sound: ' + (S.sfx ? 'On' : 'Off'); $('menu').classList.add('show'); };
+$('menuBtn').onclick = () => { audio(); $('sndBtn').textContent = '🔊 Âm thanh: ' + (S.sfx ? 'Bật' : 'Tắt'); $('menu').classList.add('show'); };
 $('resumeBtn').onclick = () => $('menu').classList.remove('show');
 $('restartBtn').onclick = () => { $('menu').classList.remove('show'); S.save = null; newGame(); };
-$('sndBtn').onclick = () => { S.sfx = !S.sfx; persist(); $('sndBtn').textContent = '🔊 Sound: ' + (S.sfx ? 'On' : 'Off'); };
+$('sndBtn').onclick = () => { S.sfx = !S.sfx; persist(); $('sndBtn').textContent = '🔊 Âm thanh: ' + (S.sfx ? 'Bật' : 'Tắt'); };
 
-/* ---------- Draw & loop ---------- */
+/* ---------- Vẽ & vòng lặp ---------- */
 function draw(dt) {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); ctx.save(); if (shake > .2) { ctx.translate(rand(-shake, shake), rand(-shake, shake)); shake *= .88; }
-  // board
+  // bảng
   const pad = 8; ctx.fillStyle = 'rgba(10,5,30,.55)'; rr(bx - pad, by - pad, cell * N + pad * 2, cell * N + pad * 2, 18); ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 2; rr(bx - pad, by - pad, cell * N + pad * 2, cell * N + pad * 2, 18); ctx.stroke();
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { ctx.fillStyle = (r + c) % 2 ? 'rgba(255,255,255,.055)' : 'rgba(255,255,255,.1)'; rr(bx + c * cell + 2, by + r * cell + 2, cell - 4, cell - 4, cell * .16); ctx.fill(); }
-  // preview
+  // xem trước
   let prev = null;
   if (drag && tray[drag.i]) { const a = anchor(), t = tray[drag.i]; if (canPlace(t.s, a.gy, a.gx)) { prev = { a, t, l: linesIf(t.s, a.gy, a.gx) }; } }
   if (prev) {
@@ -425,9 +425,9 @@ function draw(dt) {
   }
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c] >= 0) block(bx + c * cell, by + r * cell, cell, COLORS[grid[r][c]]);
   if (prev) SHAPES[prev.t.s].cells.forEach(([y, x]) => block(bx + (prev.a.gx + x) * cell, by + (prev.a.gy + y) * cell, cell, COLORS[prev.t.c], .5));
-  // clear effect
+  // hiệu ứng xóa
   cellFx.forEach(f => { f.t += dt; const k = clamp(f.t / .38, 0, 1); ctx.globalAlpha = 1 - k; block(bx + f.c * cell, by + f.r * cell, cell, '#ffffff', 1 - k, 1 + k * .35); ctx.globalAlpha = 1; }); cellFx = cellFx.filter(f => f.t < .38);
-  // tray
+  // khay
   for (let i = 0; i < 3; i++) {
     const t = tray[i]; if (!t) continue; const sh = SHAPES[t.s], isDrag = drag && drag.i === i, cx = (i + .5) * W / 3, cy = trayY + trayH / 2;
     if (isDrag) { ctx.globalAlpha = .25; }
@@ -438,7 +438,7 @@ function draw(dt) {
     ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 8;
     sh.cells.forEach(([y, x]) => block(drag.x - sh.w * s / 2 + x * s, drag.y - cell * 2 - sh.h * s / 2 + y * s, s, COLORS[t.c], .96)); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
   }
-  // particles
+  // hạt
   parts.forEach(p => { p.vy += 1100 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; p.rot += dt * 8; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s); ctx.restore(); });
   parts = parts.filter(p => p.life > 0); ctx.globalAlpha = 1;
   floats.forEach(f => { f.life -= dt; f.y -= 34 * dt; ctx.globalAlpha = clamp(f.life * 1.6, 0, 1); ctx.font = `800 ${Math.round(cell * .62 * f.s)}px "Baloo 2",sans-serif`; ctx.textAlign = 'center'; ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(30,10,70,.9)'; ctx.strokeText(f.t, f.x, f.y); ctx.fillStyle = f.c; ctx.fillText(f.t, f.x, f.y); });
@@ -453,7 +453,7 @@ hudUpdate(); showStart(); requestAnimationFrame(loop);
 })();
 </script>
 
-<!-- "Back to home" button — added by scripts/add-offline-back-button.mjs -->
+<!-- Nút "Về trang chủ" — thêm bởi scripts/add-offline-back-button.mjs -->
 <style>
   #homeBackBtn {
     position: fixed;
@@ -482,12 +482,12 @@ hudUpdate(); showStart(); requestAnimationFrame(loop);
   #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
 </style>
-<button id="homeBackBtn" type="button" aria-label="Back to home" title="Back to home">
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">
   <span aria-hidden="true">&#8592;</span>
 </button>
 <script>
-  // Shared button for all offline games: post a message to React (OfflineGamePage)
-  // to return home. When opening the .html file directly it navigates itself.
+  // Nút dùng chung cho mọi game offline: báo ngược lên React (OfflineGamePage)
+  // để quay về trang chủ. Mở file .html trực tiếp thì tự điều hướng.
   (function () {
     var btn = document.getElementById("homeBackBtn");
     if (!btn) return;
@@ -497,7 +497,7 @@ hudUpdate(); showStart(); requestAnimationFrame(loop);
           window.parent.postMessage({ type: "quit", data: {} }, "*");
           return;
         }
-      } catch (e) { /* fall back to self-navigation */ }
+      } catch (e) { /* rơi xuống cách tự điều hướng */ }
       try { window.location.href = "/"; } catch (e) { /* ignore */ }
     });
   })();

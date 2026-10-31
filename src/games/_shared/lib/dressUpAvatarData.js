@@ -512,50 +512,88 @@
   var SHOE_OPTIONS = { white: { n: 'Trắng', c: '#FFFFFF' }, red: { n: 'Đỏ', c: '#E8453C' }, blue: { n: 'Xanh', c: '#3D7BD1' }, black: { n: 'Đen', c: '#2E2E38' }, pink: { n: 'Hồng', c: '#F07CA8' } };
 
   /* ===================================================================== *
-   *  MŨ — ngồi trên đỉnh đầu, quanh 150–362 × 60–190
+   *  MŨ — ngồi trên đỉnh đầu (đầu 179–333 × 91–301, chân mày y≈186).
+   *  Vành mũ giữ trên y≈195 để không che mắt 210; mũ nào cũng có viền/highlight
+   *  phẳng giống body + áo quần, không dùng filter nên preview thu nhỏ vẫn hiện.
    * ===================================================================== */
+  function flowerCrown(x, y, petal) {
+    return '<g transform="translate(' + x + ' ' + y + ')">'
+      + '<g fill="' + petal + '">'
+      + '<circle cy="-11" r="9"/><circle cx="10" cy="-4" r="9"/>'
+      + '<circle cx="7" cy="9" r="9"/><circle cx="-7" cy="9" r="9"/><circle cx="-10" cy="-4" r="9"/>'
+      + '</g>'
+      + '<circle r="6.5" fill="#F5C63C"/>'
+      + '<circle cx="-2" cy="-2" r="2.2" fill="#FFFFFF" opacity=".65"/>'
+      + '</g>';
+  }
+
   var HATS = {
     hat_01: {
       n: 'Mũ lưỡi trai',
-      svg: '<path d="M158 176 C154 108 196 62 256 62 C316 62 358 108 354 176 Z" fill="#3D7BD1"/>'
-        + '<path d="M154 172 C206 196 306 196 358 172 L350 200 C300 220 212 220 162 200 Z" fill="#2A5FA8"/>'
-        + '<circle cx="256" cy="66" r="8" fill="#2A5FA8"/>'
-        + '<path d="M188 116 C206 92 232 84 252 84" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="9" fill="none" stroke-linecap="round"/>'
+      svg: '<path d="M160 166 C156 104 198 62 256 62 C314 62 356 104 352 166 Z" fill="#3D7BD1"/>'
+        + '<path d="M256 66 L214 160 M256 66 L298 160" stroke="#2A5FA8" stroke-width="5" opacity=".55" fill="none"/>'
+        + '<path d="M188 112 C204 88 228 78 250 78" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="9" fill="none" stroke-linecap="round"/>'
+        + '<circle cx="256" cy="66" r="9" fill="#2A5FA8"/>'
+        + '<circle cx="253" cy="63" r="3" fill="#FFFFFF" opacity=".55"/>'
+        + '<path d="M148 146 C206 164 306 164 364 146 L354 170 C300 188 212 188 158 170 Z" fill="#2A5FA8"/>'
+        + '<path d="M164 160 C216 175 296 175 348 160" stroke="#1F4A88" stroke-width="4" fill="none" opacity=".5"/>'
+        + '<path d="M158 150 C210 164 302 164 354 150" stroke="#FFFFFF" stroke-opacity=".25" stroke-width="5" fill="none"/>'
     },
     hat_02: {
       n: 'Mũ len',
-      svg: '<path d="M162 178 C154 100 198 56 256 56 C314 56 358 100 350 178 Z" fill="#E8453C"/>'
-        + '<rect x="152" y="158" width="208" height="34" rx="17" fill="#B83029"/>'
-        + '<circle cx="256" cy="52" r="26" fill="#FFFFFF"/>'
-        + '<path d="M240 42 Q256 34 272 42" stroke="#E2E6EE" stroke-width="6" fill="none" stroke-linecap="round"/>'
+      svg: '<path d="M160 170 C154 100 198 54 256 54 C314 54 358 100 352 170 Z" fill="#E8453C"/>'
+        + '<path d="M180 92 C200 70 228 60 252 60" stroke="#FFFFFF" stroke-opacity=".18" stroke-width="10" fill="none" stroke-linecap="round"/>'
+        + '<rect x="150" y="152" width="212" height="32" rx="16" fill="#B83029"/>'
+        + '<path d="M162 158 L162 178 M182 156 L182 180 M202 156 L202 180 M222 156 L222 180 M242 156 L242 180 M262 156 L262 180 M282 156 L282 180 M302 156 L302 180 M322 156 L322 180 M342 156 L342 180" stroke="#8F211C" stroke-width="5" opacity=".55" stroke-linecap="round"/>'
+        + '<circle cx="256" cy="54" r="21" fill="#FFFFFF"/>'
+        + '<path d="M241 45 Q256 38 271 45" stroke="#E2E6EE" stroke-width="6" fill="none" stroke-linecap="round"/>'
+        + '<circle cx="249" cy="48" r="5" fill="#FFFFFF" opacity=".8"/>'
     },
     hat_03: {
       n: 'Mũ sinh nhật',
-      svg: '<path d="M170 180 L256 46 L342 180 Z" fill="#F07CA8"/>'
-        + '<g fill="#FFFFFF"><circle cx="238" cy="118" r="8"/><circle cx="272" cy="98" r="7"/><circle cx="266" cy="146" r="7"/></g>'
-        + '<circle cx="256" cy="40" r="14" fill="#F5C63C"/>'
-        + '<path d="M256 14 L256 26" stroke="#E8453C" stroke-width="7" stroke-linecap="round"/>'
+      svg: '<path d="M170 172 L256 58 L342 172 Z" fill="#F07CA8"/>'
+        + '<path d="M188 142 L256 58 L324 142 Z" fill="#F58FB4" opacity=".55"/>'
+        + '<path d="M197 148 L315 148" stroke="#F5C63C" stroke-width="10" opacity=".9"/>'
+        + '<path d="M182 164 L330 164" stroke="#FFFFFF" stroke-width="7" opacity=".55"/>'
+        + '<g fill="#FFFFFF"><circle cx="232" cy="118" r="7"/><circle cx="286" cy="104" r="6"/><circle cx="264" cy="134" r="6"/></g>'
+        + '<g fill="#F5C63C"><circle cx="214" cy="134" r="5"/><circle cx="302" cy="128" r="4.5"/></g>'
+        + '<ellipse cx="256" cy="172" rx="86" ry="12" fill="#D6558A"/>'
+        + '<circle cx="256" cy="44" r="13" fill="#F5C63C"/>'
+        + '<circle cx="251" cy="39" r="4" fill="#FFFFFF" opacity=".6"/>'
     },
     hat_04: {
       n: 'Vương miện',
-      svg: '<path d="M164 184 L172 90 L212 136 L256 66 L300 136 L340 90 L348 184 Z" fill="#F5C63C" stroke="#C99A10" stroke-width="6" stroke-linejoin="round"/>'
-        + '<circle cx="256" cy="140" r="12" fill="#E8453C"/><circle cx="206" cy="152" r="9" fill="#3D7BD1"/><circle cx="306" cy="152" r="9" fill="#4FC3A1"/>'
-        + '<rect x="160" y="180" width="192" height="22" rx="11" fill="#E0AE14"/>'
+      svg: '<path d="M164 170 L170 88 L212 132 L256 66 L300 132 L342 88 L348 170 Z" fill="#F5C63C" stroke="#C99A10" stroke-width="6" stroke-linejoin="round"/>'
+        + '<path d="M188 162 L192 112 L208 136 Z" fill="#FFE08A" opacity=".55"/>'
+        + '<path d="M170 152 L348 152" stroke="#E0AE14" stroke-width="4" opacity=".5"/>'
+        + '<circle cx="256" cy="128" r="11" fill="#E8453C" stroke="#C99A10" stroke-width="3"/>'
+        + '<circle cx="210" cy="146" r="8" fill="#3D7BD1" stroke="#C99A10" stroke-width="3"/>'
+        + '<circle cx="302" cy="146" r="8" fill="#4FC3A1" stroke="#C99A10" stroke-width="3"/>'
+        + '<circle cx="170" cy="88" r="6" fill="#FFFFFF"/><circle cx="256" cy="66" r="6" fill="#FFFFFF"/><circle cx="342" cy="88" r="6" fill="#FFFFFF"/>'
+        + '<rect x="160" y="168" width="192" height="18" rx="9" fill="#E0AE14"/>'
+        + '<path d="M194 176 L244 176" stroke="#FFFFFF" stroke-opacity=".4" stroke-width="4" stroke-linecap="round"/>'
     },
     hat_05: {
       n: 'Nón lá',
-      svg: '<ellipse cx="256" cy="180" rx="152" ry="26" fill="#EFCF82" stroke="#C9A24A" stroke-width="6"/>'
-        + '<path d="M182 176 C186 106 214 70 256 70 C298 70 326 106 330 176 Z" fill="#EFCF82" stroke="#C9A24A" stroke-width="6"/>'
-        + '<path d="M186 150 L326 150" stroke="#E8453C" stroke-width="18"/>'
-        + '<path d="M200 116 C214 94 234 84 252 84" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="8" fill="none" stroke-linecap="round"/>'
+      svg: '<ellipse cx="256" cy="166" rx="148" ry="20" fill="#EFCF82" stroke="#C9A24A" stroke-width="6"/>'
+        + '<path d="M184 162 C188 100 214 68 256 68 C298 68 324 100 328 162 Z" fill="#EFCF82" stroke="#C9A24A" stroke-width="6"/>'
+        + '<path d="M192 148 L320 148" stroke="#E8453C" stroke-width="16"/>'
+        + '<path d="M206 160 C226 116 242 92 256 76 M256 76 C270 92 286 116 306 160" stroke="#D8B66A" stroke-width="3" fill="none" opacity=".7"/>'
+        + '<path d="M184 166 C212 176 300 176 328 166" stroke="#C9A24A" stroke-width="4" fill="none" opacity=".6"/>'
+        + '<path d="M204 118 C216 96 234 82 250 78" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="8" fill="none" stroke-linecap="round"/>'
     },
     hat_06: {
       n: 'Hoa khoang trang',
-      svg: '<g transform="translate(352 118)"><g fill="#F07CA8"><circle cy="-26" r="20"/><circle cx="24" cy="-8" r="20"/>'
-        + '<circle cx="15" cy="23" r="20"/><circle cx="-15" cy="23" r="20"/><circle cx="-24" cy="-8" r="20"/></g>'
-        + '<circle r="14" fill="#F5C63C"/></g>'
-        + '<path d="M348 128 C330 106 306 96 282 96" stroke="#4FC3A1" stroke-width="9" fill="none" stroke-linecap="round"/>'
-        + '<path d="M256 150 C276 152 296 166 308 186" stroke="#4FC3A1" stroke-width="9" fill="none" stroke-linecap="round"/>'
+      svg: '<path d="M172 142 Q256 84 340 142" stroke="#3F9E7F" stroke-width="7" fill="none" stroke-linecap="round"/>'
+        + '<g fill="#4FC3A1"><ellipse cx="204" cy="130" rx="12" ry="7" transform="rotate(-32 204 130)"/>'
+        + '<ellipse cx="308" cy="130" rx="12" ry="7" transform="rotate(32 308 130)"/>'
+        + '<ellipse cx="240" cy="98" rx="12" ry="7" transform="rotate(-25 240 98)"/>'
+        + '<ellipse cx="272" cy="98" rx="12" ry="7" transform="rotate(25 272 98)"/></g>'
+        + flowerCrown(188, 126, '#F07CA8')
+        + flowerCrown(222, 108, '#FFA3BE')
+        + flowerCrown(256, 102, '#F07CA8')
+        + flowerCrown(290, 108, '#FFA3BE')
+        + flowerCrown(324, 126, '#F07CA8')
     }
   };
 
@@ -563,30 +601,51 @@
    *  KÍNH — quanh mắt 224/288 × 210
    * ===================================================================== */
   var GLASSES = {
+    /* Gọng kính luôn ôm đúng 2 mắt 224/288 × 210: mỗi mắt kính cách tâm mắt
+     * ~30px nên khe giữa chỉ 4–8px, không chồng lên nhau; gọng temple nối ra
+     * sát vành tai 180/332 như kính thật. */
     glasses_01: {
       n: 'Tròn',
-      svg: '<circle cx="224" cy="212" r="38" fill="#FFFFFF" fill-opacity=".22" stroke="#2E2E38" stroke-width="9"/>'
-        + '<circle cx="288" cy="212" r="38" fill="#FFFFFF" fill-opacity=".22" stroke="#2E2E38" stroke-width="9"/>'
-        + '<path d="M262 212 L250 212" stroke="#2E2E38" stroke-width="9" stroke-linecap="round"/>'
+      svg: '<g stroke="#3E2C22" fill="none" stroke-linecap="round">'
+        + '<circle cx="224" cy="210" r="30" fill="#CFE8FF" fill-opacity=".26" stroke-width="8"/>'
+        + '<circle cx="288" cy="210" r="30" fill="#CFE8FF" fill-opacity=".26" stroke-width="8"/>'
+        + '<path d="M254 207 Q256 201 258 207" stroke-width="8"/>'
+        + '<path d="M194 203 L182 198 M318 203 L330 198" stroke-width="8"/>'
+        + '</g>'
+        + '<path d="M206 197 A20 20 0 0 1 220 190" stroke="#FFFFFF" stroke-opacity=".7" stroke-width="6" fill="none" stroke-linecap="round"/>'
+        + '<path d="M270 197 A20 20 0 0 1 284 190" stroke="#FFFFFF" stroke-opacity=".7" stroke-width="6" fill="none" stroke-linecap="round"/>'
     },
     glasses_02: {
       n: 'Vuông',
-      svg: '<rect x="184" y="180" width="82" height="66" rx="18" fill="#FFFFFF" fill-opacity=".22" stroke="#2A5FA8" stroke-width="9"/>'
-        + '<rect x="246" y="180" width="82" height="66" rx="18" fill="#FFFFFF" fill-opacity=".22" stroke="#2A5FA8" stroke-width="9"/>'
-        + '<path d="M266 212 L246 212" stroke="#2A5FA8" stroke-width="9" stroke-linecap="round"/>'
+      svg: '<g stroke="#2A5FA8" fill="none" stroke-linecap="round" stroke-linejoin="round">'
+        + '<rect x="195" y="185" width="58" height="48" rx="14" fill="#DDEBFF" fill-opacity=".3" stroke-width="8"/>'
+        + '<rect x="261" y="185" width="58" height="48" rx="14" fill="#DDEBFF" fill-opacity=".3" stroke-width="8"/>'
+        + '<path d="M253 208 L261 208" stroke-width="8"/>'
+        + '<path d="M195 202 L183 197 M319 202 L331 197" stroke-width="8"/>'
+        + '</g>'
+        + '<path d="M206 198 L226 192" stroke="#FFFFFF" stroke-opacity=".75" stroke-width="6" fill="none" stroke-linecap="round"/>'
+        + '<path d="M272 198 L292 192" stroke="#FFFFFF" stroke-opacity=".75" stroke-width="6" fill="none" stroke-linecap="round"/>'
     },
     glasses_03: {
       n: 'Kính râm',
-      svg: '<rect x="182" y="184" width="84" height="56" rx="24" fill="#26262E"/>'
-        + '<rect x="246" y="184" width="84" height="56" rx="24" fill="#26262E"/>'
-        + '<path d="M266 212 L246 212" stroke="#26262E" stroke-width="9" stroke-linecap="round"/>'
-        + '<path d="M196 196 L232 196" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="8" stroke-linecap="round"/>'
+      svg: '<g stroke="#26262E" fill="#26262E" stroke-linecap="round" stroke-linejoin="round">'
+        + '<rect x="191" y="184" width="62" height="50" rx="18" stroke-width="8"/>'
+        + '<rect x="259" y="184" width="62" height="50" rx="18" stroke-width="8"/>'
+        + '<path d="M253 207 L259 207" fill="none" stroke-width="8"/>'
+        + '<path d="M191 201 L181 196 M321 201 L331 196" fill="none" stroke-width="8"/>'
+        + '</g>'
+        + '<path d="M203 196 L228 196" stroke="#FFFFFF" stroke-opacity=".4" stroke-width="7" stroke-linecap="round"/>'
+        + '<path d="M271 196 L296 196" stroke="#FFFFFF" stroke-opacity=".4" stroke-width="7" stroke-linecap="round"/>'
+        + '<path d="M272 224 L300 218" stroke="#6EC1FF" stroke-opacity=".35" stroke-width="6" stroke-linecap="round"/>'
     },
     glasses_04: {
       n: 'Tim',
-      svg: '<path d="M224 254 C176 214 188 174 224 192 C260 174 272 214 224 254 Z" fill="#FF6E9C" stroke="#C2185B" stroke-width="7"/>'
-        + '<path d="M288 254 C240 214 252 174 288 192 C324 174 336 214 288 254 Z" fill="#FF6E9C" stroke="#C2185B" stroke-width="7"/>'
-        + '<path d="M252 206 L276 206" stroke="#C2185B" stroke-width="7" stroke-linecap="round"/>'
+      svg: '<path d="M224 238 C208 224 197 211 197 201 C197 191 206 186 214 191 C218 193 222 197 224 202 C226 197 230 193 234 191 C242 186 251 191 251 201 C251 211 240 224 224 238 Z" fill="#FF6E9C" stroke="#C2185B" stroke-width="6" stroke-linejoin="round"/>'
+        + '<path d="M288 238 C272 224 261 211 261 201 C261 191 270 186 278 191 C282 193 286 197 288 202 C290 197 294 193 298 191 C306 186 315 191 315 201 C315 211 304 224 288 238 Z" fill="#FF6E9C" stroke="#C2185B" stroke-width="6" stroke-linejoin="round"/>'
+        + '<path d="M251 206 L261 206" stroke="#C2185B" stroke-width="6" stroke-linecap="round"/>'
+        + '<path d="M197 200 L185 195 M315 200 L327 195" stroke="#C2185B" stroke-width="6" stroke-linecap="round"/>'
+        + '<path d="M207 201 C209 195 214 193 218 194" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="4" fill="none" stroke-linecap="round"/>'
+        + '<path d="M271 201 C273 195 278 193 282 194" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="4" fill="none" stroke-linecap="round"/>'
     }
   };
 
@@ -596,37 +655,59 @@
   var ACCS = {
     acc_01: {
       n: 'Nơ',
-      f: '<g transform="translate(256 352)"><path d="M0 -6 L-56 -34 L-56 30 Z M0 -6 L56 -34 L56 30 Z" fill="#E8453C"/>'
-        + '<circle r="14" fill="#B83029"/></g>'
+      f: '<g transform="translate(256 350)">'
+        + '<path d="M-8 -4 C-34 -30 -58 -18 -52 6 C-48 24 -26 26 -8 10 Z" fill="#E8453C"/>'
+        + '<path d="M8 -4 C34 -30 58 -18 52 6 C48 24 26 26 8 10 Z" fill="#E8453C"/>'
+        + '<path d="M-6 8 L-16 34 L-2 28 L6 36 L12 10 Z" fill="#C93A31"/>'
+        + '<ellipse cx="0" cy="2" rx="12" ry="11" fill="#B83029"/>'
+        + '<path d="M-30 -6 C-22 -14 -12 -14 -6 -8" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="5" fill="none" stroke-linecap="round"/>'
+        + '</g>'
     },
     acc_02: {
       n: 'Khăn quàng',
-      f: '<path d="M192 336 C230 372 282 372 320 336 L320 368 C282 402 230 402 192 368 Z" fill="#F5A623"/>'
-        + '<path d="M296 396 L318 470 L282 476 L266 408 Z" fill="#E8921A"/>'
+      f: '<path d="M190 332 C228 368 284 368 322 332 L322 362 C284 396 228 396 190 362 Z" fill="#F5A623"/>'
+        + '<path d="M198 340 C234 366 278 366 314 340" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="6" fill="none" stroke-linecap="round"/>'
+        + '<path d="M298 390 L320 466 L290 472 L272 402 Z" fill="#E8921A"/>'
+        + '<path d="M272 402 L296 408 M290 464 L318 470" stroke="#C97A12" stroke-width="4" stroke-linecap="round" opacity=".7"/>'
     },
     acc_03: {
       n: 'Dây chuyền',
-      f: '<path d="M212 338 C230 388 282 388 300 338" stroke="#D99A00" stroke-width="8" fill="none" stroke-linecap="round"/>'
-        + '<path d="M256 404 C236 380 242 358 256 372 C270 358 276 380 256 404 Z" fill="#FF6E9C"/>'
+      f: '<path d="M210 336 C228 388 284 388 302 336" stroke="#D99A00" stroke-width="7" fill="none" stroke-linecap="round"/>'
+        + '<g fill="#F5C63C" stroke="#B8890A" stroke-width="2">'
+        + '<circle cx="215" cy="352" r="4"/><circle cx="223" cy="371" r="4"/><circle cx="237" cy="383" r="4"/>'
+        + '<circle cx="256" cy="388" r="4"/><circle cx="275" cy="383" r="4"/><circle cx="289" cy="371" r="4"/><circle cx="297" cy="352" r="4"/>'
+        + '</g>'
+        + '<path d="M256 414 C234 392 240 368 256 382 C272 368 278 392 256 414 Z" fill="#FF6E9C" stroke="#C2185B" stroke-width="4" stroke-linejoin="round"/>'
+        + '<circle cx="250" cy="386" r="4" fill="#FFFFFF" opacity=".6"/>'
     },
     acc_04: {
       n: 'Tai nghe',
-      f: '<path d="M180 210 C168 108 218 60 256 60 C294 60 344 108 332 210" stroke="#2E2E38" stroke-width="14" fill="none" stroke-linecap="round"/>'
-        + '<rect x="158" y="188" width="42" height="72" rx="21" fill="#E8453C"/>'
-        + '<rect x="312" y="188" width="42" height="72" rx="21" fill="#E8453C"/>'
+      f: '<path d="M180 206 C168 108 216 58 256 58 C296 58 344 108 332 206" stroke="#2E2E38" stroke-width="13" fill="none" stroke-linecap="round"/>'
+        + '<path d="M186 184 C180 116 214 74 250 70" stroke="#FFFFFF" stroke-opacity=".18" stroke-width="7" fill="none" stroke-linecap="round"/>'
+        + '<rect x="156" y="184" width="46" height="76" rx="23" fill="#E8453C"/>'
+        + '<rect x="310" y="184" width="46" height="76" rx="23" fill="#E8453C"/>'
+        + '<rect x="166" y="198" width="26" height="48" rx="13" fill="#B83029"/>'
+        + '<rect x="320" y="198" width="26" height="48" rx="13" fill="#B83029"/>'
+        + '<circle cx="178" cy="194" r="5" fill="#FFFFFF" opacity=".5"/><circle cx="332" cy="194" r="5" fill="#FFFFFF" opacity=".5"/>'
     },
     acc_05: {
       n: 'Túi',
-      b: '<rect x="336" y="392" width="140" height="150" rx="30" fill="#F08A3C" filter="url(#kidShadow)"/>'
-        + '<path d="M376 392 L376 542 M436 392 L436 542" stroke="#C2651F" stroke-width="12"/>'
-        + '<rect x="352" y="440" width="108" height="52" rx="16" fill="#C2651F"/>',
-      f: ''
+      f: '<g>'
+        + '<path d="M214 332 C230 400 300 430 352 462" stroke="#C2651F" stroke-width="9" fill="none" stroke-linecap="round"/>'
+        + '<path d="M306 468 C306 458 316 450 330 450 L362 450 C376 450 386 460 386 474 L386 556 C386 570 376 580 362 580 L330 580 C316 580 306 570 306 556 Z" fill="#F08A3C"/>'
+        + '<path d="M306 486 L386 486" stroke="#C2651F" stroke-width="7"/>'
+        + '<rect x="332" y="476" width="30" height="20" rx="5" fill="#F5C63C" stroke="#C2651F" stroke-width="3"/>'
+        + '<path d="M314 508 L378 508" stroke="#FFFFFF" stroke-opacity=".25" stroke-width="5" stroke-linecap="round"/>'
+        + '</g>'
     },
     acc_06: {
       n: 'Áo choàng',
       b: '<path d="M192 336 L320 336 L392 626 L120 626 Z" fill="#B83029" filter="url(#kidShadow)"/>'
-        + '<path d="M198 348 L314 348" stroke="#E8453C" stroke-width="10"/>',
+        + '<path d="M256 352 L256 616 M214 360 L176 600 M298 360 L336 600" stroke="#8E1A14" stroke-width="7" fill="none" opacity=".4"/>'
+        + '<path d="M124 622 C186 646 326 646 388 622" stroke="#8E1A14" stroke-width="8" fill="none" opacity=".4"/>'
+        + '<path d="M198 344 L314 344" stroke="#E8453C" stroke-width="9"/>',
       f: '<circle cx="256" cy="340" r="16" fill="#F5C63C" stroke="#C99A10" stroke-width="6"/>'
+        + '<circle cx="251" cy="335" r="4" fill="#FFFFFF" opacity=".6"/>'
     }
   };
 
@@ -1149,7 +1230,7 @@
       case 'shoes': return { kind: 'dot', ids: idsOf('shoes'), nullable: true, dot: function (id) { return SHOE_OPTIONS[id].c; } };
       case 'glasses': return { kind: 'svg', vb: '150 170 212 90', ids: idsOf('glasses'), nullable: true, pv: function (id) { return GLASSES[id] ? GLASSES[id].svg : ''; } };
       case 'hat': return { kind: 'svg', vb: '100 30 312 210', ids: idsOf('hat'), nullable: true, pv: function (id) { return HATS[id] ? HATS[id].svg : ''; } };
-      case 'acc': return { kind: 'svg', vb: '100 300 312 340', ids: idsOf('acc'), nullable: true, pv: function (id) { return accPreview(id); } };
+      case 'acc': return { kind: 'svg', vb: '100 300 312 340', vbFor: accVb, ids: idsOf('acc'), nullable: true, pv: function (id) { return accPreview(id); } };
       default: return { kind: 'list', ids: [], nullable: false };
     }
   }
@@ -1168,6 +1249,22 @@
     var a = ACCS[id];
     if (!a) return '';
     return (a.b || '') + (a.f || '');
+  }
+
+  /* Khung nhìn riêng cho từng phụ kiện: mũ tai nghe nằm trên đầu (y 58–260) còn
+   * nơ/khăn/dây chuyền ở ngực → dùng chung một viewBox sẽ cắt mất đồ. Ô preview
+   * vuông gọi `cfg.vbFor(id)` để lấy đúng vùng của món đang xem. */
+  var ACC_VB = {
+    acc_01: '190 318 130 82',
+    acc_02: '178 320 158 164',
+    acc_03: '198 324 116 104',
+    acc_04: '144 48 224 224',
+    acc_05: '202 320 196 272',
+    acc_06: '108 312 296 340'
+  };
+
+  function accVb(id) {
+    return ACC_VB[id] || '100 300 312 340';
   }
 
   var KID_TABS = [

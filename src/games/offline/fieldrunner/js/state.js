@@ -1,29 +1,29 @@
 /* =====================================================
-   state.js · canvas, run state, account coin wallet
+   state.js · canvas, trạng thái ván chơi, ví xu tài khoản
    ===================================================== */
 
 const cv = document.getElementById('c');
 let ctx = cv.getContext('2d');
 
-/* ---------- Difficulty settings (assigned in main.js) ---------- */
+/* ---------- Cấu hình theo độ khó (được gán trong main.js) ---------- */
 let D;
 let TOTAL = 15;
-let level = null;          // current level (levels.js)
-let noBuild;               // grid of tiles that can't be built on (terrain + bridges)
+let level = null;          // màn đang chơi (levels.js)
+let noBuild;               // lưới ô không xây được (địa hình + cầu)
 
-/* ---------- Run state ---------- */
-let blocked;               // grid of tiles with towers or blocking terrain
+/* ---------- Trạng thái ván chơi ---------- */
+let blocked;               // lưới ô đã có tháp hoặc địa hình chặn
 let towers;
 let enemies;
-let projs;                 // projectiles
-let fx;                    // short-lived effects
-let parts;                 // particles
-let dist;                  // distance map to the exit gate
-let pathPts = [];          // path to draw
-let pendingSpawns = [];    // enemies spawned mid-battle (splits, summons)
+let projs;                 // đạn
+let fx;                    // hiệu ứng ngắn
+let parts;                 // hạt
+let dist;                  // bản đồ khoảng cách tới cổng ra
+let pathPts = [];          // đường đi để vẽ
+let pendingSpawns = [];    // địch sinh ra giữa trận (phân thân, triệu hồi)
 
-// money/names are set by reset() before the HUD draws; lives/wave need 0 so
-// the first updUI() call (on the level picker) doesn't show NaN in the score.
+// money/names được reset() gán trước khi HUD vẽ; lives/wave cần giá trị 0 để
+// updUI() lần đầu (màn chọn bản đồ) không hiện NaN trong điểm.
 let money;
 let lives = 0;
 let wave = 0;
@@ -32,20 +32,20 @@ let spawnT;
 let paused;
 let speed = 1;
 let over;
-let sel = null;            // selected tower
-let build = null;          // tower type being placed
-let hover = null;          // tile the mouse is over
+let sel = null;            // tháp đang chọn
+let build = null;          // loại tháp đang đặt
+let hover = null;          // ô chuột đang trỏ
 let waveActive;
-let gtime = 0;             // game clock (for animations)
-let aim = null;            // aiming an airstrike
+let gtime = 0;             // đồng hồ trò chơi (cho hoạt ảnh)
+let aim = null;            // đang ngắm không kích
 let kills = 0;
 let started = false;
-let shake = 0;             // screen shake amount
+let shake = 0;             // độ rung màn hình
 
 let strikes = [];
-let waveSpawn = 0;   // enemies in the current wave (for the progress bar)
-let waveDone = 0;    // enemies killed or leaked
-let gfx = true;      // environment effects (clouds, pollen) — toggled in settings
+let waveSpawn = 0;   // số địch của đợt đang chạy (vẽ thanh tiến trình)
+let waveDone = 0;    // số địch đã diệt hoặc đã lọt
+let gfx = true;      // hiệu ứng môi trường (mây, phấn hoa) — bật/tắt trong cài đặt
 
 const skill = {
   strike: { cd: 0, max: 40 },
@@ -53,13 +53,13 @@ const skill = {
 };
 
 /* =====================================================
-   WALLET = ACCOUNT COINS
-   When the game runs inside the app (iframe), the React host owns the wallet:
-   localStorage is read right away on entry (no waiting for the network),
-   and the /auth/me/wallet API updates the real coin count.
-   Every earn/spend in the game only reports the DIFFERENCE to the host
-   → the host adds it up and sends once; if the network drops, the host keeps it.
-   Opening the .html file directly (no host) → coins follow the difficulty.
+   TÚI TIỀN = XU TÀI KHOẢN
+   Game mở trong app (iframe) thì host React giữ ví:
+   localStorage là bản đọc ngay khi vào game (không chờ mạng),
+   API /auth/me/wallet cập nhật số xu thật.
+   Mỗi lần nhận/thu tiền trong game chỉ báo CHÊNH LỆCH cho host
+   → host cộng dồn và gửi một lần; mất mạng thì host giữ lại.
+   Mở file .html trực tiếp (không có host) → giữ tiền theo độ khó.
    ===================================================== */
 const HOSTED = !!(window.parent && window.parent !== window);
 const WKEY = 'gq_coin_wallet_v1';
@@ -78,13 +78,13 @@ function purseShift(d) {
   if (HOSTED) {
     try {
       window.parent.postMessage({ type: 'gq:walletDelta', data: { amount: d } }, '*');
-    } catch (e) { /* ignore */ }
+    } catch (e) { /* bỏ qua */ }
   }
 
   updUI();
 }
 
-/** Earn coins (kill rewards, wave bonus, tower sale) → the account coin balance grows. */
+/** Nhận tiền (thưởng diệt địch, thưởng đợt, bán trụ) → xu tài khoản tăng theo. */
 function earn(d) {
   if (d > 0) {
     purseShift(d);
@@ -92,7 +92,7 @@ function earn(d) {
   }
 }
 
-/** Pay coins (building, upgrading) → deducted straight from the account coin balance. */
+/** Trả tiền (xây trụ, nâng cấp) → trừ thẳng vào xu tài khoản. */
 function pay(d) {
   if (d > 0) purseShift(-d);
 }
@@ -108,14 +108,14 @@ addEventListener('message', function (ev) {
 if (HOSTED) {
   try {
     window.parent.postMessage({ type: 'gq:walletGet', data: {} }, '*');
-  } catch (e) { /* ignore */ }
+  } catch (e) { /* bỏ qua */ }
 }
 
 /* =====================================================
-   Reset the run
+   Đặt lại ván chơi
    ===================================================== */
 function reset() {
-  // Rebuild the grid from the level terrain (removes every built tower)
+  // Dựng lại lưới từ địa hình của màn (xoá hết tháp đã xây)
   applyLevel(level);
 
   towers = [];
@@ -145,7 +145,7 @@ function reset() {
   skill.strike.cd = 0;
   skill.freeze.cd = 0;
 
-  $('go').textContent = '▶ Start wave 1';
+  $('go').textContent = '▶ Bắt đầu đợt 1';
   $('go').disabled = false;
   $('pause').textContent = '⏸';
   $('speed').textContent = 'x' + speed;

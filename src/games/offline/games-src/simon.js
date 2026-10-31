@@ -1,5 +1,5 @@
-// src/games/offline/games-src/simon.js — Color Melody
-// The classic memory game: each round adds one more note to the color and sound sequence.
+// src/games/offline/games-src/simon.js — Giai Điệu Sắc Màu
+// Trò chơi ghi nhớ cổ điển: mỗi vòng thêm một nốt vào dãy màu và âm thanh.
 
 const SIMON_PADS = [
     { color: 'var(--sky)', icon: '▲', tone: 392 },
@@ -29,10 +29,10 @@ function startSimon(root, mode, modeIndex, resume) {
     let ended = false;
 
     root.innerHTML = `${gqHud(score, lives, `<span id="rd">0</span>`)}
-        <div class="prompt" id="st">Get ready…<small>Watch and listen to the sequence</small></div>
+        <div class="prompt" id="st">Sẵn sàng…<small>Nhìn và nghe dãy tín hiệu</small></div>
         <div class="simon">${SIMON_PADS.map((p, i) =>
-            `<button class="pd" data-pad="${i}" style="background:${p.color}" aria-label="Tone ${i + 1}">${p.icon}</button>`).join('')}</div>
-        <p class="hint">Watch and listen to the sequence, then tap it back in the right order. Each round adds one more tone.</p>`;
+            `<button class="pd" data-pad="${i}" style="background:${p.color}" aria-label="Nốt ${i + 1}">${p.icon}</button>`).join('')}</div>
+        <p class="hint">Nhìn và nghe dãy tín hiệu, rồi chạm lại đúng thứ tự. Mỗi vòng sẽ thêm một nốt mới.</p>`;
 
     const pads = [...root.querySelectorAll('.pd')];
 
@@ -46,7 +46,7 @@ function startSimon(root, mode, modeIndex, resume) {
         if (el) {
             el.innerHTML = `<span>⭐ <b>${score}</b></span>
                 <span class="hearts">${'❤️'.repeat(lives)}</span>
-                <span>🎵 Round <b>${seq.length}</b></span>`;
+                <span>🎵 Vòng <b>${seq.length}</b></span>`;
         }
     }
 
@@ -69,7 +69,7 @@ function startSimon(root, mode, modeIndex, resume) {
         step = 0;
         phase = 'show';
         hud();
-        setStatus('Watch and listen…', `The sequence has ${seq.length} tones`);
+        setStatus('Nhìn và nghe…', `Dãy có ${seq.length} nốt`);
         save();
         const gap = Math.max(gqMs(430, mode), gqMs(700, mode) - seq.length * 18);
         const on = Math.max(gqMs(170, mode), gap - 130);
@@ -78,7 +78,7 @@ function startSimon(root, mode, modeIndex, resume) {
             if (ended) return;
             phase = 'input';
             step = 0;
-            setStatus('Your turn!', 'Tap in the same order');
+            setStatus('Đến lượt bạn!', 'Chạm theo đúng thứ tự');
             save();
         }, 500 + seq.length * gap);
     }
@@ -91,7 +91,7 @@ function startSimon(root, mode, modeIndex, resume) {
         if (seq.length >= 8) S.flags.simon = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 5) + seq.length,
-            lines: [`Remembered a sequence of ${Math.max(0, seq.length - 1)} tones`, `${lives} lives left`],
+            lines: [`Nhớ được dãy ${Math.max(0, seq.length - 1)} nốt`, `Còn ${lives} mạng`],
             replay: simonGame, details: { rounds: seq.length - 1, score },
         });
     }
@@ -109,7 +109,7 @@ function startSimon(root, mode, modeIndex, resume) {
             if (lives <= 0) { end(); return; }
             phase = 'show';
             save();
-            setStatus('Wrong tone!', 'Watch the sequence again…');
+            setStatus('Sai nốt rồi!', 'Xem lại dãy nhé…');
             T.set(() => showSequence(false), 900);
             return;
         }
@@ -120,7 +120,7 @@ function startSimon(root, mode, modeIndex, resume) {
             hud();
             phase = 'show';
             save();
-            setStatus('Well done!', 'Getting ready for one more tone…');
+            setStatus('Hay lắm!', 'Chuẩn bị thêm một nốt…');
             T.set(() => showSequence(true), 850);
         } else {
             save();
@@ -132,7 +132,7 @@ function startSimon(root, mode, modeIndex, resume) {
         seq = [rnd(0, SIMON_PADS.length - 1)];
         showSequence(false);
     } else if (phase === 'input' && step < seq.length) {
-        setStatus('Your turn!', 'Tap in the order you heard');
+        setStatus('Đến lượt bạn!', 'Chạm theo đúng thứ tự đã nghe');
         save();
     } else {
         showSequence(false);
@@ -148,23 +148,23 @@ function simonGame(root) {
     if (saved) clearOfflineRun('simon');
 
     gqIntro(root, {
-        id: 'simon', icon: '🎵', name: 'Color Melody',
-        desc: 'Memorize the growing sequence of colors and sounds, round after round.',
+        id: 'simon', icon: '🎵', name: 'Giai Điệu Sắc Màu',
+        desc: 'Ghi nhớ dãy màu và âm thanh đang dài dần qua từng vòng.',
         steps: [
-            'Four colored pads light up one after another in a sequence.',
-            'Tap back the sequence you just heard to pass the round — it grows by one tone.',
-            'A wrong tone costs a life; running out of lives ends the game.',
+            'Bốn ô màu lần lượt sáng lên theo một dãy.',
+            'Chạm lại đúng dãy vừa nghe để qua vòng — dãy sẽ dài thêm một nốt.',
+            'Sai một nốt sẽ mất một mạng; sai quá số mạng là kết thúc.',
         ],
     }, (mode, index) => startSimon(root, mode, index));
 }
 
 startSingleGame({
     id: 'simon',
-    name: 'Color Melody',
+    name: 'Giai Điệu Sắc Màu',
     icon: '🎵',
     storageKey: 'offline_simon',
     mount: simonGame,
     badges: [
-        { id: 'simon', n: 'Remember 8 tones', i: '🎵', ok: () => !!S.flags.simon },
+        { id: 'simon', n: 'Nhớ dãy 8 nốt', i: '🎵', ok: () => !!S.flags.simon },
     ],
 });

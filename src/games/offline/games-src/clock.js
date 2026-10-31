@@ -1,6 +1,6 @@
-// src/games/offline/games-src/clock.js — Tap the Beat
-// A bar slides back and forth along a track; tap while the bar is inside the green zone.
-// The closer to the center of the green zone, the higher the score.
+// src/games/offline/games-src/clock.js — Chạm Đúng Nhịp
+// Một thanh chạy qua lại trên đường đua; chạm khi thanh nằm trong vùng xanh.
+// Càng gần tâm vùng xanh, điểm càng cao.
 
 const CLOCK_ROUNDS = 10;
 
@@ -32,14 +32,14 @@ function startClock(root, mode, modeIndex, resume) {
     }
 
     function paint(message) {
-        root.innerHTML = `${gqHud(score, lives, `Beat <b>${round + 1}/${CLOCK_ROUNDS}</b>`)}
-            <div class="prompt" id="st">${message || 'Tap when the bar enters the green zone'}
-                <small>${tapped ? 'Scoring…' : 'The closer to the center, the more points'}</small></div>
+        root.innerHTML = `${gqHud(score, lives, `Nhịp <b>${round + 1}/${CLOCK_ROUNDS}</b>`)}
+            <div class="prompt" id="st">${message || 'Chạm khi thanh vào vùng xanh'}
+                <small>${tapped ? 'Đang tính điểm…' : 'Càng gần tâm càng nhiều điểm'}</small></div>
             <div class="rhythm" id="track" style="--zw:${zonePct}%">
                 <div class="zone"></div><div class="center"></div><div class="marker" id="mk"></div>
             </div>
-            <button class="btn" data-hit="1" style="width:100%;min-height:76px;font-size:20px;background:${tapped ? 'var(--card)' : 'var(--sun)'}">${tapped ? '…' : 'TAP!'}</button>
-            <p class="hint">The bar speeds up with every beat. Time the green zone to score points.</p>`;
+            <button class="btn" data-hit="1" style="width:100%;min-height:76px;font-size:20px;background:${tapped ? 'var(--card)' : 'var(--sun)'}">${tapped ? '…' : 'CHẠM!'}</button>
+            <p class="hint">Thanh chạy nhanh dần qua từng nhịp. Canh đúng vùng xanh để ghi điểm.</p>`;
         placeMarker();
     }
 
@@ -68,7 +68,7 @@ function startClock(root, mode, modeIndex, resume) {
             if (pos <= 0) { pos = 0; dir = 1; }
             placeMarker();
             if (elapsed > 8 / mode.pace) {
-                miss('Time is up for this beat!');
+                miss('Hết giờ nhịp này!');
             }
         });
     }
@@ -96,14 +96,14 @@ function startClock(root, mode, modeIndex, resume) {
             const gain = 10 + Math.round(accuracy * 20) + (dist <= 1.5 ? 10 : 0);
             score += gain;
             sfx.ok();
-            paint(dist <= 1.5 ? `Perfect! +${gain} points` : `Right on the beat! +${gain} points`);
+            paint(dist <= 1.5 ? `Hoàn hảo! +${gain} điểm` : `Chuẩn nhịp! +${gain} điểm`);
             save();
             T.set(nextRound, 650);
         } else {
             lives--;
             sfx.bad();
             if (lives <= 0) { end(); return; }
-            paint(`Missed the green zone! Off by ${Math.round(dist)}%`);
+            paint(`Trượt vùng xanh! Lệch ${Math.round(dist)}%`);
             save();
             T.set(nextRound, 850);
         }
@@ -123,7 +123,7 @@ function startClock(root, mode, modeIndex, resume) {
         if (round >= CLOCK_ROUNDS) S.flags.clock = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 5) + round,
-            lines: [`Completed ${round}/${CLOCK_ROUNDS} beats`, `${lives} lives left`],
+            lines: [`Hoàn thành ${round}/${CLOCK_ROUNDS} nhịp`, `Còn ${lives} mạng`],
             replay: clockGame, details: { round, score },
         });
     }
@@ -144,23 +144,23 @@ function clockGame(root) {
     if (saved) clearOfflineRun('clock');
 
     gqIntro(root, {
-        id: 'clock', icon: '🏁', name: 'Tap the Beat',
-        desc: 'Tap at exactly the right moment as the bar crosses the green zone to keep a perfect rhythm.',
+        id: 'clock', icon: '🏁', name: 'Chạm Đúng Nhịp',
+        desc: 'Canh đúng lúc thanh chạy vào vùng xanh để giữ nhịp thật chuẩn.',
         steps: [
-            'The bar slides back and forth along the track, with the green zone in the middle.',
-            'Tap while the bar is inside the green zone — the closer to the center, the higher the score.',
-            'Tapping outside the green zone or running out of time costs a life.',
+            'Thanh chạy qua lại trên đường đua, vùng xanh nằm ở giữa.',
+            'Chạm khi thanh nằm trong vùng xanh — càng gần tâm điểm càng cao.',
+            'Chạm ngoài vùng xanh hoặc để hết giờ sẽ mất một mạng.',
         ],
     }, (mode, index) => startClock(root, mode, index));
 }
 
 startSingleGame({
     id: 'clock',
-    name: 'Tap the Beat',
+    name: 'Chạm Đúng Nhịp',
     icon: '🏁',
     storageKey: 'offline_clock',
     mount: clockGame,
     badges: [
-        { id: 'clock', n: 'Complete 10 beats', i: '⚡', ok: () => !!S.flags.clock },
+        { id: 'clock', n: 'Hoàn thành 10 nhịp', i: '⚡', ok: () => !!S.flags.clock },
     ],
 });

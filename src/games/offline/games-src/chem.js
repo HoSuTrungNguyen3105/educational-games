@@ -1,6 +1,6 @@
-// src/games/offline/games-src/chem.js — Light Party
-// Tiles light up for a moment, then go dark. Remember the positions and tap
-// every tile that just lit up; a wrong tap or a miss costs a life.
+// src/games/offline/games-src/chem.js — Tiệc Ánh Sáng
+// Các ô đèn sáng lên một lát rồi tắt. Ghi nhớ vị trí và chạm lại đủ các ô
+// vừa sáng; chạm nhầm hoặc quên sẽ mất mạng.
 
 const CHEM_ROUNDS = 8;
 
@@ -33,9 +33,9 @@ function startChem(root, mode, modeIndex, resume) {
 
     function render(message) {
         const isShow = phase === 'show';
-        root.innerHTML = `${gqHud(score, lives, `Round <b>${round + 1}/${CHEM_ROUNDS}</b>`)}
-            <div class="prompt" id="st">${isShow ? 'Remember the lit tiles…' : message || `Tap the ${lights.length} tiles that just lit up`}
-                <small>${isShow ? 'The lights go out in a moment' : 'Do not tap the other tiles'}</small></div>
+        root.innerHTML = `${gqHud(score, lives, `Vòng <b>${round + 1}/${CHEM_ROUNDS}</b>`)}
+            <div class="prompt" id="st">${isShow ? 'Ghi nhớ những ô đang sáng…' : message || `Chạm lại ${lights.length} ô vừa sáng`}
+                <small>${isShow ? 'Đèn sẽ tắt sau ít giây' : 'Không chạm vào ô khác'}</small></div>
             <div class="board" style="--n:3">
                 ${Array.from({ length: 9 }, (_, i) => {
                     const lit = isShow && lights.includes(i);
@@ -43,7 +43,7 @@ function startChem(root, mode, modeIndex, resume) {
                     return `<button class="cell ${lit ? 'lit' : ''} ${ok ? 'ok' : ''}" data-cell="${i}"><span class="ic">${ok ? '✅' : lit ? '💡' : '·'}</span></button>`;
                 }).join('')}
             </div>
-            <p class="hint">Watch the tiles light up, then tap those same tiles. A wrong tap costs a life.</p>`;
+            <p class="hint">Nhìn các ô sáng lên, rồi chạm lại đúng những ô đó. Chạm nhầm sẽ mất một mạng.</p>`;
     }
 
     function startRound() {
@@ -59,7 +59,7 @@ function startChem(root, mode, modeIndex, resume) {
             render();
             T.set(() => {
                 if (ended || phase !== 'input') return;
-                roundMissed('Time is up! The lights went out.');
+                roundMissed('Hết giờ! Đèn đã tắt hẳn.');
             }, gqSecs(8, mode) * 1000);
         }, gqMs(1000, mode));
     }
@@ -84,7 +84,7 @@ function startChem(root, mode, modeIndex, resume) {
         score += lights.length * 10 + Math.round(10 / mode.pace);
         sfx.ok();
         T.clear();
-        render('Brilliant! +points');
+        render('Sáng rực! +điểm');
         save();
         T.set(nextRound, 700);
     }
@@ -97,7 +97,7 @@ function startChem(root, mode, modeIndex, resume) {
         if (round >= CHEM_ROUNDS) S.flags.chem = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 5) + round,
-            lines: [`Completed ${round}/${CHEM_ROUNDS} rounds`, `${lives} lives left`],
+            lines: [`Hoàn thành ${round}/${CHEM_ROUNDS} vòng`, `Còn ${lives} mạng`],
             replay: chemGame, details: { round, score },
         });
     }
@@ -135,23 +135,23 @@ function chemGame(root) {
     if (saved) clearOfflineRun('chem');
 
     gqIntro(root, {
-        id: 'chem', icon: '✨', name: 'Light Party',
-        desc: 'The lights flash for a moment, then go out — remember and tap every tile that just lit up.',
+        id: 'chem', icon: '✨', name: 'Tiệc Ánh Sáng',
+        desc: 'Đèn sáng lên một lát rồi tắt — hãy nhớ và chạm lại đủ các ô vừa sáng.',
         steps: [
-            'Each round, a few tiles light up for a short moment.',
-            'When the lights go out, tap the tiles that were lit to score points.',
-            'A wrong tap or running out of time costs a life; later rounds have more lights.',
+            'Mỗi vòng có vài ô đèn bật sáng trong chốc lát.',
+            'Khi đèn tắt, chạm lại đúng những ô vừa sáng để ghi điểm.',
+            'Chạm nhầm hoặc để hết giờ sẽ mất một mạng; càng về sau càng nhiều đèn.',
         ],
     }, (mode, index) => startChem(root, mode, index));
 }
 
 startSingleGame({
     id: 'chem',
-    name: 'Light Party',
+    name: 'Tiệc Ánh Sáng',
     icon: '✨',
     storageKey: 'offline_chem',
     mount: chemGame,
     badges: [
-        { id: 'chem', n: 'Complete 8 rounds', i: '✨', ok: () => !!S.flags.chem },
+        { id: 'chem', n: 'Hoàn thành 8 vòng', i: '✨', ok: () => !!S.flags.chem },
     ],
 });

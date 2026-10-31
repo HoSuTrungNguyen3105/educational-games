@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>find the number</title>
+    <title>Find The Number - 100 Màn</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -433,7 +433,7 @@
         (function() {
             'use strict';
 
-            // ---------- Mock API (localStorage) ----------
+            // ---------- API giả lập (localStorage) ----------
             const ProgressAPI = {
                 getLevel: function() {
                     return new Promise(function(resolve) {
@@ -482,7 +482,7 @@
                 try {
                     parent.postMessage({ type: 'exchange-stars', data: {} }, '*');
                 } catch (e) {}
-                showScorePopup('Exchanging stars...', false);
+                showScorePopup('Đang đổi sao...', false);
             }
 
             function handleExchangeResult(data) {
@@ -491,7 +491,7 @@
                     userStars = data.stars;
                     updateStarUI();
                     updateCoinUI();
-                    showScorePopup('+' + (data.exchanged || 0) + ' coins', false);
+                    showScorePopup('+' + (data.exchanged || 0) + ' xu', false);
                     // Disable all exchange buttons
                     var btns = ['btn-exchange', 'btn-exchange-menu', 'btn-exchange-over'];
                     btns.forEach(function(id) {
@@ -565,14 +565,14 @@
             var gameId = null;
             var userCoins = 0;
             var userStars = 0;
-            var STAR_TO_COIN_RATE = 5; // 1 star = 5 coins
+            var STAR_TO_COIN_RATE = 5; // 1 sao = 5 xu
 
             var state = {
                 screen: 'menu', // 'menu' | 'playing' | 'gameover'
                 level: 1,
-                targetNumbers: [], // numbers to find in the current level
-                foundTargets: [], // matching boolean flags
-                numbers: [], // numbers shown on the grid
+                targetNumbers: [], // mảng các số cần tìm trong màn hiện tại
+                foundTargets: [], // mảng boolean tương ứng
+                numbers: [], // mảng các số hiển thị trên lưới
                 score: 0,
                 combo: 0,
                 maxCombo: 0,
@@ -583,7 +583,7 @@
                 correctCount: 0,
                 wrongCount: 0,
                 timeUsed: 0,
-                isTransitioning: false, // waiting to move to the next level
+                isTransitioning: false, // đang chờ chuyển màn
             };
 
             var timerInterval = null;
@@ -602,12 +602,12 @@
             }
 
             function getGridSize(level) {
-                // Grid size grows with the level
+                // Tăng dần kích thước lưới theo level
                 if (level <= 3) return { cols: 3, rows: 3 };
                 if (level <= 6) return { cols: 4, rows: 4 };
                 if (level <= 9) return { cols: 5, rows: 5 };
                 if (level <= 15) return { cols: 6, rows: 6 };
-                return { cols: 7, rows: 7 }; // 7x7 max from level 16 on
+                return { cols: 7, rows: 7 }; // từ màn 16 trở đi tối đa 7x7
             }
 
             function generateLevel(level) {
@@ -615,7 +615,7 @@
                 var gridSize = getGridSize(level);
                 var totalCells = gridSize.cols * gridSize.rows;
 
-                // Generate unique random target numbers (values 1 to 99)
+                // Tạo target numbers ngẫu nhiên không trùng nhau (giá trị từ 1 đến 99)
                 var targets = [];
                 while (targets.length < numTargets) {
                     var n = Math.floor(Math.random() * 99) + 1;
@@ -624,7 +624,7 @@
                     }
                 }
 
-                // Build the numbers array from targets plus random fillers
+                // Tạo mảng numbers bao gồm targets và các số ngẫu nhiên khác
                 var nums = targets.slice();
                 while (nums.length < totalCells) {
                     var m = Math.floor(Math.random() * 99) + 1;
@@ -639,7 +639,7 @@
                 state.numbers = nums;
                 state.timer = BASE_TIMER;
                 state.maxTimer = BASE_TIMER;
-                state.combo = 0; // reset combo each level for fairness
+                state.combo = 0; // reset combo mỗi màn? có thể giữ combo xuyên màn, nhưng reset cho công bằng
                 state.isTransitioning = false;
             }
 
@@ -681,10 +681,10 @@
             function handleNumberClick(num, idx) {
                 if (state.paused || state.gameOver || state.isTransitioning) return;
 
-                // Check if this number is a target that has not been found yet
+                // Kiểm tra xem số này có phải là target chưa tìm thấy không
                 var targetIndex = state.targetNumbers.indexOf(num);
                 if (targetIndex !== -1 && !state.foundTargets[targetIndex]) {
-                    // Correct find
+                    // Tìm đúng
                     state.foundTargets[targetIndex] = true;
                     state.correctCount++;
                     state.combo++;
@@ -704,7 +704,7 @@
                         cellEl.disabled = true;
                     }
 
-                    // Check if the level is complete
+                    // Kiểm tra hoàn thành màn
                     var allFound = state.foundTargets.every(function(v) { return v; });
                     if (allFound) {
                         completeLevel();
@@ -713,9 +713,9 @@
                         updateStatsUI();
                     }
                 } else {
-                    // Wrong tap (or a number that was already found)
+                    // Bấm sai (hoặc số đã tìm thấy rồi)
                     if (targetIndex !== -1 && state.foundTargets[targetIndex]) {
-                        // Already found, so treat it as a light miss and just shake it
+                        // Đã tìm thấy rồi, coi như sai nhẹ? Không trừ nhiều, có thể chỉ rung nhẹ
                         return;
                     }
                     state.combo = 0;
@@ -747,15 +747,15 @@
                 addStars(5);
                 syncProgressToBackend(state.level);
 
-                // Show the level complete overlay
+                // Hiển thị overlay hoàn thành màn
                 showLevelCompleteOverlay();
 
-                // Save the new level (level + 1) to the API
+                // Lưu level mới (level + 1) vào API
                 var nextLevel = state.level + 1;
                 if (nextLevel > MAX_LEVEL) {
-                    // All 100 levels completed
+                    // Đã hoàn thành tất cả 100 màn
                     ProgressAPI.setLevel(MAX_LEVEL).then(function() {
-                        // Could show a special congratulations screen
+                        // Có thể hiển thị màn chúc mừng đặc biệt
                         setTimeout(function() {
                             state.screen = 'gameover';
                             state.gameOver = true;
@@ -765,10 +765,10 @@
                     });
                 } else {
                     ProgressAPI.setLevel(nextLevel).then(function() {
-                        // Wait 1.5 seconds, then move to the next level
+                        // Chờ 1.5 giây rồi chuyển màn
                         transitionTimeout = setTimeout(function() {
                             state.level = nextLevel;
-                            state.score += 500; // level complete bonus
+                            state.score += 500; // thưởng hoàn thành màn
                             state.isTransitioning = false;
                             generateLevel(state.level);
                             startTimer();
@@ -786,9 +786,9 @@
                 overlay.innerHTML =
                     '<div class="level-complete-card">' +
                     '<div style="font-size:3.75rem; margin-bottom:1rem;">🎉</div>' +
-                    '<h2 class="font-display" style="font-size:1.75rem; margin-bottom:0.5rem;">Level ' + state.level + ' complete!</h2>' +
-                    '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:1rem;">+500 bonus points</p>' +
-                    '<p class="font-body" style="font-size:0.875rem; color:rgba(32,40,58,0.5);">Moving to the next level...</p>' +
+                    '<h2 class="font-display" style="font-size:1.75rem; margin-bottom:0.5rem;">Màn ' + state.level + ' hoàn thành!</h2>' +
+                    '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:1rem;">+500 điểm thưởng</p>' +
+                    '<p class="font-body" style="font-size:0.875rem; color:rgba(32,40,58,0.5);">Đang chuyển màn tiếp theo...</p>' +
                     '</div>';
                 document.body.appendChild(overlay);
             }
@@ -823,7 +823,7 @@
                     var continueBtnHtml = '';
                     if (savedLevel > 1) {
                         continueBtnHtml =
-                            '<button id="btn-continue" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10; margin-bottom:0.75rem;">▶ Continue level ' +
+                            '<button id="btn-continue" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10; margin-bottom:0.75rem;">▶ Tiếp tục màn ' +
                             savedLevel + '</button>';
                     }
                     root.innerHTML =
@@ -831,24 +831,24 @@
                         '<div class="anim-pop note-card" style="padding:2.5rem; max-width:28rem; width:100%; text-align:center;">' +
                         '<div style="font-size:3.75rem; margin-bottom:1rem;">🔍</div>' +
                         '<h1 class="font-display" style="font-size:1.875rem; margin:0 0 0.5rem;">' +
-                        '<span style="color:#1B998B">FIND</span> <span style="color:#E4572E">NUMBERS</span>' +
+                        '<span style="color:#1B998B">TÌM</span> <span style="color:#E4572E">SỐ</span>' +
                         '</h1>' +
-                        '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:2rem;">100 challenge levels. Find all the numbers to move on!</p>' +
+                        '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:2rem;">100 màn thử thách, tìm đủ số để qua màn!</p>' +
                         '<div style="display:flex; flex-direction:column; gap:0.75rem;">' +
                         continueBtnHtml +
-                        '<button id="btn-new-game" class="menu-btn font-display" style="border-color:#E4572E; color:#E4572E; background:#E4572E10;">🔄 Start over</button>' +
+                        '<button id="btn-new-game" class="menu-btn font-display" style="border-color:#E4572E; color:#E4572E; background:#E4572E10;">🔄 Chơi mới từ đầu</button>' +
                         '</div>' +
                         '<div class="dash-rule" style="margin-top:2rem; padding-top:1.25rem;">' +
-                        '<p class="font-display" style="font-size:0.875rem; color:rgba(32,40,58,0.5); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Progress</p>' +
+                        '<p class="font-display" style="font-size:0.875rem; color:rgba(32,40,58,0.5); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Tiến trình</p>' +
                         '<div style="display:flex; justify-content:center; gap:1.5rem; flex-wrap:wrap;">' +
-                        '<div class="stat-block"><div class="stat-num" style="color:#F4B942">🏆 ' + savedLevel + '/100</div><div class="stat-label">Current level</div></div>' +
-                        '<div class="stat-block"><div class="stat-num" style="color:#F4B942">🌟 <span id="star-display-menu">' + userStars + '</span></div><div class="stat-label">Stars</div></div>' +
-                        '<div class="stat-block"><div class="stat-num" style="color:#F4B942">🪙 <span id="coin-display-menu">' + userCoins + '</span></div><div class="stat-label">Coins</div></div>' +
+                        '<div class="stat-block"><div class="stat-num" style="color:#F4B942">🏆 ' + savedLevel + '/100</div><div class="stat-label">Màn hiện tại</div></div>' +
+                        '<div class="stat-block"><div class="stat-num" style="color:#F4B942">🌟 <span id="star-display-menu">' + userStars + '</span></div><div class="stat-label">Sao</div></div>' +
+                        '<div class="stat-block"><div class="stat-num" style="color:#F4B942">🪙 <span id="coin-display-menu">' + userCoins + '</span></div><div class="stat-label">Xu hiện có</div></div>' +
                         '</div>' +
                         '<div style="margin-top:1rem;">' +
                         '<button id="btn-exchange-menu" class="menu-btn font-display" style="border-color:#F4B942; color:#F4B942; background:#F4B94210; font-size:0.9rem;"' +
-                        (userStars <= 0 ? ' disabled' : '') + '>🌟 Exchange ' + userStars + ' stars → ' + (userStars * STAR_TO_COIN_RATE) + ' coins</button>' +
-                        '<p style="font-size:0.75rem; color:rgba(32,40,58,0.4); margin-top:0.5rem;">Rate: 1 star = ' + STAR_TO_COIN_RATE + ' coins</p>' +
+                        (userStars <= 0 ? ' disabled' : '') + '>🌟 Đổi ' + userStars + ' sao → ' + (userStars * STAR_TO_COIN_RATE) + ' xu</button>' +
+                        '<p style="font-size:0.75rem; color:rgba(32,40,58,0.4); margin-top:0.5rem;">Tỷ lệ: 1 sao = ' + STAR_TO_COIN_RATE + ' xu</p>' +
                         '</div>' +
                         '</div>' +
                         '</div>' +
@@ -896,12 +896,12 @@
                 var cols = gridSize.cols;
                 var rows = gridSize.rows;
 
-                // Build the number cell HTML
+                // Tạo HTML cho các ô số
                 var numbersHtml = '';
                 for (var i = 0; i < state.numbers.length; i++) {
                     var n = state.numbers[i];
                     var isFound = false;
-                    // Check if this cell is a target that was already found
+                    // Kiểm tra xem ô này có phải target đã tìm thấy không
                     var targetIdx = state.targetNumbers.indexOf(n);
                     if (targetIdx !== -1 && state.foundTargets[targetIdx]) {
                         isFound = true;
@@ -914,7 +914,7 @@
                         '" style="font-size:' + fontSize + ';"' + disabledAttr + '>' + n + '</button>';
                 }
 
-                // Build the target badge HTML
+                // Tạo HTML cho target badges
                 var targetsHtml = '';
                 for (var j = 0; j < state.targetNumbers.length; j++) {
                     var foundClass = state.foundTargets[j] ? ' found' : '';
@@ -930,26 +930,26 @@
                     '<header class="app-header">' +
                     '<div style="display:flex; align-items:center; gap:0.75rem;">' +
                     '<span style="font-size:1.875rem;">🔍</span>' +
-                    '<h1 class="font-display" style="font-size:1.25rem; color:#1B998B; margin:0;">FIND NUMBERS</h1>' +
+                    '<h1 class="font-display" style="font-size:1.25rem; color:#1B998B; margin:0;">TÌM SỐ</h1>' +
                     '</div>' +
                     '<div class="font-body" style="display:flex; align-items:center; gap:1.25rem; font-size:0.875rem; color:rgba(32,40,58,0.7); flex-wrap:wrap;">' +
-                    '<span class="font-mono">Level ' + state.level + '/' + MAX_LEVEL + '</span>' +
+                    '<span class="font-mono">Màn ' + state.level + '/' + MAX_LEVEL + '</span>' +
                     '<span>⭐ ' + state.score + '</span>' +
                     '<span>🌟 <span id="star-display">' + userStars + '</span></span>' +
                     '<span>🪙 <span id="coin-display">' + userCoins + '</span></span>' +
                     '<button id="btn-exchange" class="action-btn" style="border-color:#F4B942; color:#F4B942; font-size:0.75rem; padding:0.25rem 0.75rem; border-radius:12px;"' +
-                    (userStars <= 0 ? ' disabled' : '') + '>Exchange stars → coins</button>' +
+                    (userStars <= 0 ? ' disabled' : '') + '>Đổi sao → xu</button>' +
                     '<span>🎯 ' + state.foundTargets.filter(function(v) { return v; }).length + '/' + state
                     .targetNumbers.length + '</span>' +
                     '</div>' +
-                    '<button id="btn-pause" class="quit-btn" style="color:var(--ink); border-color:rgba(32,40,58,0.2);">⏸ Pause</button>' +
-                    '<button id="btn-quit" class="quit-btn">Quit</button>' +
+                    '<button id="btn-pause" class="quit-btn" style="color:var(--ink); border-color:rgba(32,40,58,0.2);">⏸ Tạm dừng</button>' +
+                    '<button id="btn-quit" class="quit-btn">Thoát</button>' +
                     '</header>' +
 
                     '<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1rem; gap:1rem;">' +
 
                     '<div class="target-display anim-pop">' +
-                    '<span class="font-body" style="font-size:1rem; color:rgba(32,40,58,0.6); margin-right:0.5rem;">FIND:</span>' +
+                    '<span class="font-body" style="font-size:1rem; color:rgba(32,40,58,0.6); margin-right:0.5rem;">TÌM:</span>' +
                     targetsHtml +
                     comboHtml +
                     '</div>' +
@@ -967,11 +967,11 @@
 
                     '<div style="display:flex; gap:1rem; align-items:center; justify-content:center; margin-top:0.5rem;">' +
                     '<div class="stat-block"><div class="stat-num font-mono" style="color:#1B998B; font-size:1.1rem;">' +
-                    state.correctCount + '</div><div class="stat-label">Correct</div></div>' +
+                    state.correctCount + '</div><div class="stat-label">Đúng</div></div>' +
                     '<div class="stat-block"><div class="stat-num font-mono" style="color:#E4572E; font-size:1.1rem;">' +
-                    state.wrongCount + '</div><div class="stat-label">Wrong</div></div>' +
+                    state.wrongCount + '</div><div class="stat-label">Sai</div></div>' +
                     '<div class="stat-block"><div class="stat-num font-mono" style="color:#F4B942; font-size:1.1rem;">' +
-                    state.maxCombo + '</div><div class="stat-label">Max combo</div></div>' +
+                    state.maxCombo + '</div><div class="stat-label">Combo max</div></div>' +
                     '</div>' +
                     '</div>' +
                     '</div>' +
@@ -979,25 +979,25 @@
                     '<div id="pause-overlay" class="pause-overlay hidden">' +
                     '<div class="pause-card anim-pop">' +
                     '<div style="font-size:3rem; margin-bottom:1rem;">⏸</div>' +
-                    '<h2 class="font-display" style="font-size:1.5rem; margin-bottom:0.5rem;">Paused</h2>' +
-                    '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:1.5rem;">Level ' + state.level +
-                    ' - Score: <strong>' + state.score + '</strong></p>' +
+                    '<h2 class="font-display" style="font-size:1.5rem; margin-bottom:0.5rem;">Tạm dừng</h2>' +
+                    '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:1.5rem;">Màn ' + state.level +
+                    ' - Điểm: <strong>' + state.score + '</strong></p>' +
                     '<div style="display:flex; flex-direction:column; gap:0.75rem;">' +
-                    '<button id="btn-resume" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">▶ Resume</button>' +
-                    '<button id="btn-restart-pause" class="menu-btn font-display" style="border-color:#F4B942; color:#F4B942; background:#F4B94210;">🔄 Replay this level</button>' +
-                    '<button id="btn-quit-pause" class="menu-btn font-display" style="border-color:#E4572E; color:#E4572E; background:#E4572E10;">🏠 Quit</button>' +
+                    '<button id="btn-resume" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">▶ Tiếp tục</button>' +
+                    '<button id="btn-restart-pause" class="menu-btn font-display" style="border-color:#F4B942; color:#F4B942; background:#F4B94210;">🔄 Chơi lại màn này</button>' +
+                    '<button id="btn-quit-pause" class="menu-btn font-display" style="border-color:#E4572E; color:#E4572E; background:#E4572E10;">🏠 Thoát</button>' +
                     '</div>' +
                     '</div>' +
                     '</div>';
 
-                // Attach click handlers to the number cells
+                // Gán sự kiện click cho các ô số
                 root.querySelectorAll('.num-cell').forEach(function(btn) {
                     btn.onclick = function() {
                         handleNumberClick(parseInt(btn.dataset.num, 10), parseInt(btn.dataset.idx, 10));
                     };
                 });
 
-                // Attach handlers to the control buttons
+                // Gán sự kiện cho các nút điều khiển
                 document.getElementById('btn-pause').onclick = function() {
                     state.paused = true;
                     document.getElementById('pause-overlay').classList.remove('hidden');
@@ -1020,7 +1020,7 @@
                 document.getElementById('btn-restart-pause').onclick = function() {
                     document.getElementById('pause-overlay').classList.add('hidden');
                     state.paused = false;
-                    // Reset the current level
+                    // Reset màn hiện tại
                     state.score = 0;
                     state.maxCombo = 0;
                     state.correctCount = 0;
@@ -1054,7 +1054,7 @@
             }
 
             function updateStatsUI() {
-                // Update found / total
+                // Cập nhật số đã tìm / tổng
                 var foundCount = state.foundTargets.filter(function(v) { return v; }).length;
                 var statSpans = document.querySelectorAll('header.app-header span');
                 for (var i = 0; i < statSpans.length; i++) {
@@ -1063,14 +1063,14 @@
                         break;
                     }
                 }
-                // Update the score
+                // Cập nhật điểm
                 for (var j = 0; j < statSpans.length; j++) {
                     if (statSpans[j].textContent.indexOf('⭐') === 0) {
                         statSpans[j].textContent = '⭐ ' + state.score;
                         break;
                     }
                 }
-                // Update the combo badge (if any)
+                // Cập nhật combo badge (nếu có)
                 var comboEl = document.querySelector('.combo-badge');
                 if (state.combo > 1) {
                     if (comboEl) {
@@ -1079,7 +1079,7 @@
                 } else if (comboEl) {
                     comboEl.remove();
                 }
-                // Update the target badges
+                // Cập nhật target badges
                 renderTargetBadges();
             }
 
@@ -1099,7 +1099,7 @@
 
             function renderGameOver() {
                 var isMaxLevel = state.level >= MAX_LEVEL && state.gameOver && !state.isTransitioning;
-                var title = isMaxLevel ? 'Congratulations! You finished all 100 levels!' : "Time's up!";
+                var title = isMaxLevel ? 'Chúc mừng! Bạn đã hoàn thành tất cả 100 màn!' : 'Hết giờ!';
                 var icon = isMaxLevel ? '🏆' : '⏱️';
 
                 root.innerHTML =
@@ -1107,32 +1107,32 @@
                     '<div class="anim-pop note-card" style="padding:2.5rem; max-width:28rem; width:100%; text-align:center;">' +
                     '<div style="font-size:3.75rem; margin-bottom:1rem;">' + icon + '</div>' +
                     '<h2 class="font-display" style="font-size:1.5rem; margin:0 0 0.25rem;">' + title + '</h2>' +
-                    '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:1.5rem;">Reached level: <strong>' +
+                    '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:1.5rem;">Màn đã đạt: <strong>' +
                     state.level + '/' + MAX_LEVEL + '</strong></p>' +
                     '<div class="dash-rule" style="padding-top:1.25rem; margin:1rem 0;">' +
                     '<div style="display:flex; justify-content:center; gap:2rem; flex-wrap:wrap;">' +
                     '<div class="stat-block"><div class="stat-num" style="color:#1B998B;">' + state.score +
-                    '</div><div class="stat-label">Score</div></div>' +
+                    '</div><div class="stat-label">Điểm</div></div>' +
                     '<div class="stat-block"><div class="stat-num" style="color:#1B998B;">' + state.correctCount +
-                    '</div><div class="stat-label">Correct</div></div>' +
+                    '</div><div class="stat-label">Đúng</div></div>' +
                     '<div class="stat-block"><div class="stat-num" style="color:#E4572E;">' + state.wrongCount +
-                    '</div><div class="stat-label">Wrong</div></div>' +
+                    '</div><div class="stat-label">Sai</div></div>' +
                     '<div class="stat-block"><div class="stat-num" style="color:#F4B942;">' + state.maxCombo +
-                    '</div><div class="stat-label">Max combo</div></div>' +
+                    '</div><div class="stat-label">Combo max</div></div>' +
                     '</div>' +
                     '</div>' +
                     '<div class="dash-rule" style="padding-top:1rem; margin-bottom:1.25rem;">' +
-                    '<p class="font-body" style="font-size:0.875rem; color:rgba(32,40,58,0.5);">Play time: ' +
+                    '<p class="font-body" style="font-size:0.875rem; color:rgba(32,40,58,0.5);">Thời gian chơi: ' +
                     state.timeUsed.toFixed(1) + 's</p>' +
                     '<div style="margin-top:0.75rem; display:flex; justify-content:center; gap:1.5rem;">' +
-                    '<span style="font-size:0.875rem; color:#F4B942; font-weight:600;">🌟 ' + userStars + ' stars</span>' +
-                    '<span style="font-size:0.875rem; color:#8A7C63;">🪙 ' + userCoins + ' coins</span>' +
+                    '<span style="font-size:0.875rem; color:#F4B942; font-weight:600;">🌟 ' + userStars + ' sao</span>' +
+                    '<span style="font-size:0.875rem; color:#8A7C63;">🪙 ' + userCoins + ' xu</span>' +
                     '</div>' +
                     '<button id="btn-exchange-over" class="menu-btn font-display" style="border-color:#F4B942; color:#F4B942; background:#F4B94210; font-size:0.875rem; margin-top:0.75rem; padding:0.6rem 1rem;"' +
-                    (userStars <= 0 ? ' disabled' : '') + '>🌟 Exchange ' + userStars + ' stars → ' + (userStars * STAR_TO_COIN_RATE) + ' coins</button>' +
+                    (userStars <= 0 ? ' disabled' : '') + '>🌟 Đổi ' + userStars + ' sao → ' + (userStars * STAR_TO_COIN_RATE) + ' xu</button>' +
                     '</div>' +
                     '<div style="display:flex; flex-direction:column; gap:0.75rem;">' +
-                    '<button id="btn-retry" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">🔄 Try this level again</button>' +
+                    '<button id="btn-retry" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">🔄 Thử lại màn này</button>' +
                     '<button id="btn-home" class="menu-btn font-display" style="border-color:#8A7C6344; color:#8A7C63; background:#8A7C6308;">🏠 Menu</button>' +
                     '</div>' +
                     '</div>' +
@@ -1163,7 +1163,7 @@
                 }
             }
 
-            // ---------- Start up ----------
+            // ---------- Khởi động ----------
             render();
             parent.postMessage({ type: 'ready' }, '*');
         })();

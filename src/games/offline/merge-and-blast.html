@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>merge &amp; blast</title>
+<title>Merge & Blast</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -272,7 +272,7 @@
   var POWERUP_INTERVAL = 500;
   var POWERUPS = ['bomb', 'row', 'col', 'shuffle'];
   var POWERUP_EMOJI = { bomb: '\uD83D\uDCA3', row: '\u2194\uFE0F', col: '\u2195\uFE0F', shuffle: '\uD83D\uDD00' };
-  var POWERUP_LABEL = { bomb: 'Bomb', row: 'Row', col: 'Column', shuffle: 'Shuffle' };
+  var POWERUP_LABEL = { bomb: 'Bom', row: 'Hàng', col: 'C\u1ED9t', shuffle: 'X\u1EAFp l\u1EA1i' };
 
   var TILE_COLORS = {
     2:    { bg: '#E8F5F3', text: '#1B998B', border: '#1B998B' },
@@ -628,12 +628,12 @@
         '<h1 class="font-display" style="font-size:1.875rem; margin:0 0 0.5rem;">' +
           '<span style="color:#1B998B">MERGE</span> &amp; <span style="color:#E4572E">BLAST</span>' +
         '</h1>' +
-        '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:2rem;">Merge matching tiles, blast them, and stack up points!</p>' +
+        '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:2rem;">N\u1ED1m nh\u1EEFng \u0111\u1ED3ng lo\u1EA1i, n\u1ED9 b\u1ECFng, t\u00EDch l\u0169y \u0111i\u1EC3m!</p>' +
         '<div style="display:flex; flex-direction:column; gap:0.75rem;">' +
-          '<button id="btn-play" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">\u25B6 Play Now</button>' +
+          '<button id="btn-play" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">\u25B6 Ch\u01A1i Ngay</button>' +
         '</div>' +
         '<div class="dash-rule" style="margin-top:2rem; padding-top:1.25rem;">' +
-          '<p class="font-display" style="font-size:0.875rem; color:rgba(32,40,58,0.5); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Best score</p>' +
+          '<p class="font-display" style="font-size:0.875rem; color:rgba(32,40,58,0.5); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">\u0110i\u1EC3m cao nh\u1EA5t</p>' +
           '<div class="stat-block"><div class="stat-num" style="color:#F4B942">' + bestScore + '</div><div class="stat-label">Best Score</div></div>' +
         '</div>' +
       '</div>' +
@@ -691,14 +691,14 @@
           '<div class="font-body" style="display:flex; align-items:center; gap:1.25rem; font-size:0.875rem; color:rgba(32,40,58,0.7); flex-wrap:wrap;">' +
             '<span class="font-mono" id="timer-display">' + formatTime(state.timeUsed) + '</span>' +
           '</div>' +
-          '<button id="btn-quit" class="quit-btn">Quit</button>' +
+          '<button id="btn-quit" class="quit-btn">Tho\u00E1t</button>' +
         '</header>' +
 
         '<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1rem 1rem; gap:1rem;">' +
 
           '<div style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap; justify-content:center;">' +
             '<div style="text-align:center;">' +
-              '<div class="font-body" style="font-size:0.75rem; color:rgba(32,40,58,0.5); text-transform:uppercase; letter-spacing:0.05em;">SCORE</div>' +
+              '<div class="font-body" style="font-size:0.75rem; color:rgba(32,40,58,0.5); text-transform:uppercase; letter-spacing:0.05em;">\u0110I\u1EC2M</div>' +
               '<div class="score-display font-mono" style="color:#E4572E;">' + state.score + '</div>' +
             '</div>' +
             comboHtml +
@@ -718,7 +718,7 @@
           '<div class="buttons-row">' + powerBtnsHtml + '</div>' +
 
           '<div class="buttons-row" style="margin-top:0.5rem;">' +
-            '<button id="btn-restart" class="action-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B08;">\uD83D\uDD04 Play Again</button>' +
+            '<button id="btn-restart" class="action-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B08;">\uD83D\uDD04 Ch\u01A1i L\u1EA1i</button>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -754,19 +754,19 @@
       '<div class="anim-pop note-card" style="padding:2.5rem; max-width:28rem; width:100%; text-align:center;">' +
         '<div style="font-size:3.75rem; margin-bottom:1rem;">\uD83C\uDF1F</div>' +
         '<h2 class="font-display" style="font-size:1.5rem; margin:0 0 0.5rem; color:#E4572E;">GAME OVER</h2>' +
-        '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:1.5rem;">No more matching groups left!</p>' +
+        '<p class="font-body" style="color:rgba(32,40,58,0.6); margin-bottom:1.5rem;">Kh\u00F4ng c\u00F3 nh\u00F3m n\u00E0o th\u00EDch h\u1EE3p n\u1EEFa!</p>' +
 
         '<div class="dash-rule" style="padding-top:1.25rem; margin-bottom:1.25rem;">' +
           '<div style="display:flex; justify-content:center; gap:2rem;">' +
-            '<div class="stat-block"><div class="stat-num" style="color:#E4572E;">' + state.score + '</div><div class="stat-label">Score</div></div>' +
+            '<div class="stat-block"><div class="stat-num" style="color:#E4572E;">' + state.score + '</div><div class="stat-label">\u0110i\u1EC3m</div></div>' +
             '<div class="stat-block"><div class="stat-num" style="color:#F4B942;">' + bestScore + '</div><div class="stat-label">Best</div></div>' +
-            '<div class="stat-block"><div class="stat-num" style="color:#1B998B;">' + timeStr + '</div><div class="stat-label">Time</div></div>' +
+            '<div class="stat-block"><div class="stat-num" style="color:#1B998B;">' + timeStr + '</div><div class="stat-label">Th\u1EDDi gian</div></div>' +
           '</div>' +
         '</div>' +
 
         '<div style="display:flex; flex-direction:column; gap:0.75rem;">' +
-          '<button id="btn-retry" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">\uD83D\uDD04 Play Again</button>' +
-          '<button id="btn-home" class="menu-btn font-display" style="border-color:rgba(32,40,58,0.2); color:rgba(32,40,58,0.5); background:rgba(32,40,58,0.03);">\uD83C\uDFE0 Home</button>' +
+          '<button id="btn-retry" class="menu-btn font-display" style="border-color:#1B998B; color:#1B998B; background:#1B998B10;">\uD83D\uDD04 Ch\u01A1i L\u1EA1i</button>' +
+          '<button id="btn-home" class="menu-btn font-display" style="border-color:rgba(32,40,58,0.2); color:rgba(32,40,58,0.5); background:rgba(32,40,58,0.03);">\uD83C\uDFE0 Trang ch\u1EE7</button>' +
         '</div>' +
       '</div>' +
     '</div>';

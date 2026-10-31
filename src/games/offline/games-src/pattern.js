@@ -1,6 +1,6 @@
-// src/games/offline/games-src/pattern.js — Find the Pattern
-// Look at the shape sequence and pick the missing shape. The rules get harder
-// over time: pairs, triples, mirror and growing patterns.
+// src/games/offline/games-src/pattern.js — Tìm Quy Luật
+// Nhìn dãy hình rồi chọn hình còn thiếu. Càng về sau quy luật càng khó:
+// lặp đôi, lặp ba, đối xứng và tăng dần.
 
 const PATTERN_ICONS = ['⭐', '🌙', '🍓', '🍋', '🍇', '🍀', '🔺', '🔵', '🟡', '🟩', '🎈', '🚀', '🐱', '🐼'];
 const PATTERN_ROUNDS = 10;
@@ -78,16 +78,16 @@ function startPattern(root, mode, modeIndex, resume) {
     }
 
     function paint() {
-        root.innerHTML = `${gqHud(score, lives, `Question <b>${round + 1}/${PATTERN_ROUNDS}</b>`)}
+        root.innerHTML = `${gqHud(score, lives, `Câu <b>${round + 1}/${PATTERN_ROUNDS}</b>`)}
             <div class="tbar"><i id="tb" style="width:100%"></i></div>
             <div class="qbox" style="font-size:15px;font-weight:600;padding:14px 12px">
-                <div style="opacity:.7;margin-bottom:6px">Which shape is missing?</div>
+                <div style="opacity:.7;margin-bottom:6px">Hình nào còn thiếu?</div>
                 <div class="pattern-row">${cur.seq.map((x) => `<span class="pcell ${x === '?' ? 'missing' : ''}">${x}</span>`).join('')}</div>
             </div>
             <div class="opts" id="o">
                 ${cur.opts.map((x, k) => `<button class="opt" data-k="${k}" style="font-size:34px;min-height:72px">${x}</button>`).join('')}
             </div>
-            <p class="hint">Find the repeating rule in the sequence, then choose the right tile for the question mark.</p>`;
+            <p class="hint">Tìm quy luật lặp lại của dãy hình rồi chọn ô đúng cho dấu hỏi.</p>`;
     }
 
     function showQuestion() {
@@ -139,7 +139,7 @@ function startPattern(root, mode, modeIndex, resume) {
         if (correct >= 8) S.flags.pat = true;
         finish({
             id, score: gqScore(mode, score), xp: Math.round(score / 6) + correct,
-            lines: [`Correct ${correct}/${PATTERN_ROUNDS}`, `Missed ${lives < mode.lives ? mode.lives - lives : 0} times`],
+            lines: [`Đúng ${correct}/${PATTERN_ROUNDS} câu`, `Sai ${lives < mode.lives ? mode.lives - lives : 0} lượt`],
             replay: patternGame, details: { correct, score },
         });
     }
@@ -177,23 +177,23 @@ function patternGame(root) {
     if (saved) clearOfflineRun('pattern');
 
     gqIntro(root, {
-        id: 'pattern', icon: '⭐', name: 'Find the Pattern',
-        desc: 'Look at the shape sequence and work out the missing shape from the repeating rule.',
+        id: 'pattern', icon: '⭐', name: 'Tìm Quy Luật',
+        desc: 'Nhìn dãy hình và tìm ra hình còn thiếu theo quy luật lặp lại.',
         steps: [
-            'Each question shows a sequence of shapes, with the last tile replaced by a question mark.',
-            'Pick one of the four answers to keep all your lives.',
-            'The rules get harder: pairs, triples, mirror and growing patterns.',
+            'Mỗi câu có một dãy hình, ô cuối được thay bằng dấu hỏi.',
+            'Chọn một trong bốn đáp án đúng để giữ nguyên số mạng.',
+            'Quy luật sẽ khó dần: lặp đôi, lặp ba, đối xứng và tăng dần.',
         ],
     }, (mode, index) => startPattern(root, mode, index));
 }
 
 startSingleGame({
     id: 'pattern',
-    name: 'Find the Pattern',
+    name: 'Tìm Quy Luật',
     icon: '⭐',
     storageKey: 'offline_pattern',
     mount: patternGame,
     badges: [
-        { id: 'pat', n: 'Solve 8 patterns', i: '🔮', ok: () => !!S.flags.pat },
+        { id: 'pat', n: 'Đúng 8 quy luật', i: '🔮', ok: () => !!S.flags.pat },
     ],
 });

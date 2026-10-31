@@ -1,11 +1,11 @@
 /* =====================================================
-   utils.js · shared utility helpers
+   utils.js · hàm tiện ích dùng chung
    ===================================================== */
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const $ = id => document.getElementById(id);
 
-/** Distance from point (px,py) to the segment (x1,y1)-(x2,y2) */
+/** Khoảng cách từ điểm (px,py) đến đoạn thẳng (x1,y1)-(x2,y2) */
 function distSeg(px, py, x1, y1, x2, y2) {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -17,7 +17,7 @@ function distSeg(px, py, x1, y1, x2, y2) {
   return Math.hypot(px - (x1 + u * dx), py - (y1 + u * dy));
 }
 
-/** Tile coordinates from pixel coordinates */
+/** Tọa độ ô từ tọa độ pixel */
 function cellOf(x, y) {
   return [
     clamp(Math.floor(x / CS), 0, COLS - 1),
@@ -25,7 +25,7 @@ function cellOf(x, y) {
   ];
 }
 
-/** Lighten a hex color, returns an rgb() string */
+/** Làm sáng một màu hex, trả về chuỗi rgb() */
 function lighten(hex, a) {
   const n = parseInt(hex.slice(1), 16);
   const r = n >> 16;
@@ -35,7 +35,7 @@ function lighten(hex, a) {
   return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
 }
 
-/** Darken a hex color, returns an rgb() string */
+/** Làm tối một màu hex, trả về chuỗi rgb() */
 function darken(hex, a) {
   const n = parseInt(hex.slice(1), 16);
   const r = n >> 16;
@@ -45,7 +45,7 @@ function darken(hex, a) {
   return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
 }
 
-/** Seeded random numbers (so the background always looks the same) */
+/** Bộ số ngẫu nhiên cố định (để nền luôn giống nhau) */
 function seededRandom(seed) {
   let s = seed;
   return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>cargo market</title>
+<title>Xe tải ra chợ</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -58,26 +58,26 @@
 <body>
 <canvas id="c"></canvas>
 
-<button class="sq" id="back" title="Play again">
+<button class="sq" id="back" title="Chơi lại">
   <svg viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg>
 </button>
 <div id="bar"><div id="fill"></div><div id="knob"></div></div>
-<div id="home" title="Back to the start">🏠</div>
-<button class="sq" id="music" title="Music">
+<div id="home" title="Về đầu đường">🏠</div>
+<button class="sq" id="music" title="Nhạc">
   <svg viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
 </button>
 
 <div id="stars">⭐ 0</div>
 <div id="slots"><div class="slot">🍑</div><div class="slot">🥚</div><div class="slot">🍉</div><div class="slot">🥚</div></div>
-<div id="hint">Hold the green button (or the → key) to drive, the blue button (←) to reverse</div>
+<div id="hint">Giữ nút xanh (hoặc phím →) để chạy, nút xanh dương (←) để lùi</div>
 
 <button class="ctl" id="left"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg></button>
 <button class="ctl" id="right"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
 
 <div id="over"><div id="card">
-  <h1>🎉 Made it to the market!</h1>
+  <h1>🎉 Đến chợ rồi!</h1>
   <p id="res"></p>
-  <button id="again">Play again</button>
+  <button id="again">Chơi lại</button>
 </div></div>
 
 <script>
@@ -88,10 +88,10 @@ function resize(){DPR=Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=inne
   cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
 addEventListener('resize',resize);resize();
 
-/* ---------- World ---------- */
-const L=6400;                 // road length
+/* ---------- Thế giới ---------- */
+const L=6400;                 // chiều dài đường
 const MARKET_X=L-380;
-const MUD=[2100,2800];        // mud section
+const MUD=[2100,2800];        // đoạn bùn
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function groundY(x){
   const amp=clamp((x-500)/400,0,1)*clamp((MARKET_X+250-x)/500,0,1);
@@ -109,7 +109,7 @@ for(let x=700;x<L-900;x+=330+((x*7)%5)*40){
 }
 const clouds=[...Array(14)].map((_,i)=>({x:i*520+Math.random()*200,y:60+Math.random()*H*0.28,s:.6+Math.random()*.7}));
 
-/* ---------- Truck ---------- */
+/* ---------- Xe ---------- */
 let truck,cam,stars,got,won,keyL=false,keyR=false,btnL=false,btnR=false,time=0,particles=[];
 function reset(){
   truck={x:200,v:0,ang:0,wheel:0,y:0,bump:0};
@@ -121,10 +121,10 @@ function reset(){
 }
 reset();
 
-/* ---------- Save progress ----------
- * The app is a SPA: leaving the page only tears down the iframe, so the game's
- * pagehide never fires. __gqFlush / the "gq:flush" event let the app save
- * before exit (FLUSH_BRIDGE in src/pages/OfflineGamePage.jsx). */
+/* ---------- Lưu tiến độ ----------
+ * App là SPA: rời trang chỉ phá iframe, pagehide của game không chạy.
+ * __gqFlush / event "gq:flush" để app yêu cầu ghi trước khi thoát
+ * (FLUSH_BRIDGE trong src/pages/OfflineGamePage.jsx). */
 const RK='cargo-run-v1';
 function saveRun(){
   if(won)return;
@@ -151,7 +151,7 @@ addEventListener('gq:flush',saveRun);
 addEventListener('pagehide',saveRun);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRun()});
 
-/* ---------- Sound ---------- */
+/* ---------- Âm thanh ---------- */
 let ac=null,musicOn=true,melTimer=null,noteI=0;
 const MEL=[523,659,784,659,587,698,880,698,523,659,784,1047,988,784,659,587];
 function audio(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}return ac;}
@@ -165,7 +165,7 @@ function stopMusic(){clearInterval(melTimer);melTimer=null;}
 document.getElementById('music').onclick=()=>{audio();musicOn=!musicOn;
   document.getElementById('music').style.opacity=musicOn?1:.45;musicOn?startMusic():stopMusic();};
 
-/* ---------- Controls ---------- */
+/* ---------- Điều khiển ---------- */
 function bind(id,set){const el=document.getElementById(id);
   const on=e=>{e.preventDefault();set(true);el.classList.add('down');audio();startMusic();hideHint();};
   const off=e=>{e.preventDefault();set(false);el.classList.remove('down');};
@@ -185,7 +185,7 @@ document.getElementById('back').onclick=restartGame;
 document.getElementById('home').onclick=restartGame;
 document.getElementById('again').onclick=restartGame;
 
-/* ---------- Update ---------- */
+/* ---------- Cập nhật ---------- */
 function update(dt){
   time+=dt;
   const go=(keyR||btnR),rev=(keyL||btnL);
@@ -195,7 +195,7 @@ function update(dt){
     if(go)truck.v+=(inMud?150:260)*dt;
     else if(rev)truck.v-=(inMud?120:230)*dt;
     else truck.v*=Math.pow(.25,dt);
-    // the slope gently pulls the truck
+    // dốc ảnh hưởng nhẹ
     const slope=(groundY(truck.x+10)-groundY(truck.x-10))/20;
     truck.v-=slope*140*dt;
     truck.v=clamp(truck.v,-maxB,maxF);
@@ -211,7 +211,7 @@ function update(dt){
   truck.y=(yb+yf)/2;
   truck.bump=Math.sin(time*(8+Math.abs(truck.v)*.05))*Math.min(2.2,Math.abs(truck.v)*.01);
 
-  // smoke / mud
+  // khói / bùn
   if(Math.abs(truck.v)>20&&Math.random()<.5){
     particles.push({x:truck.x-90,y:truck.y+8,vx:-30-Math.random()*20,vy:-20-Math.random()*20,life:1,
                     c:inMud?'#6b3d1f':'#ffffff',r:6+Math.random()*5});
@@ -219,7 +219,7 @@ function update(dt){
   particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt*1.4;p.r+=dt*8;});
   particles=particles.filter(p=>p.life>0);
 
-  // pick up items
+  // nhặt đồ
   const cx=truck.x,cy=truck.y-40;
   for(const o of [...ITEMS,...STARS]){
     if(o.got)continue;
@@ -235,7 +235,7 @@ function update(dt){
   cam+=((truck.x-W*0.32)-cam)*Math.min(1,dt*6);
   cam=clamp(cam,0,MARKET_X+500-W);
 
-  // progress bar
+  // thanh tiến độ
   const pr=clamp((truck.x-200)/(MARKET_X-260),0,1);
   document.getElementById('knob').style.left=(pr*100)+'%';
 }
@@ -243,19 +243,19 @@ function finish(){
   clearRun();
   tone(784,.2,'triangle',.12);setTimeout(()=>tone(988,.2,'triangle',.12),180);setTimeout(()=>tone(1319,.4,'triangle',.12),360);
   setTimeout(()=>{
-    document.getElementById('res').innerHTML='Goods: '+got+'/4 &nbsp;|&nbsp; Stars: ⭐ '+stars;
+    document.getElementById('res').innerHTML='Hàng hóa: '+got+'/4 &nbsp;|&nbsp; Số sao: ⭐ '+stars;
     document.getElementById('over').style.display='flex';
   },900);
 }
 
-/* ---------- Drawing ---------- */
+/* ---------- Vẽ ---------- */
 function drawBg(){
   const g=ctx.createLinearGradient(0,0,0,H*0.8);g.addColorStop(0,'#8fd3ff');g.addColorStop(1,'#d8f0ff');
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  // sun
+  // mặt trời
   ctx.fillStyle='rgba(255,217,59,.25)';ctx.beginPath();ctx.arc(W*.82,H*.25,H*.1,0,7);ctx.fill();
   ctx.fillStyle='#ffd93b';ctx.beginPath();ctx.arc(W*.82,H*.25,H*.065,0,7);ctx.fill();
-  // clouds
+  // mây
   ctx.fillStyle='#fff';
   for(const c of clouds){
     let x=((c.x-cam*.15)%(W+400)+W+400)%(W+400)-200;
@@ -263,7 +263,7 @@ function drawBg(){
     ctx.beginPath();ctx.arc(x,c.y,s*.7,0,7);ctx.arc(x+s*.8,c.y-s*.25,s*.9,0,7);ctx.arc(x+s*1.6,c.y,s*.7,0,7);ctx.fill();
     ctx.fillRect(x,c.y,s*1.6,s*.7);
   }
-  // distant hills (2 layers)
+  // đồi xa (2 lớp)
   hills(.25,'#b9e3a8',H*.58,H*.07,.0042);
   hills(.5,'#98d681',H*.64,H*.06,.0065);
 }
@@ -273,17 +273,17 @@ function hills(par,col,base,amp,fr){
   ctx.lineTo(W,H);ctx.fill();
 }
 function drawGround(){
-  // ground
+  // phần đất
   ctx.beginPath();ctx.moveTo(0,H);
   for(let x=0;x<=W+8;x+=8)ctx.lineTo(x,groundY(x+cam));
   ctx.lineTo(W,H);ctx.closePath();
   ctx.fillStyle='#c98b5a';ctx.fill();
-  // grass edge
+  // viền cỏ
   ctx.lineJoin='round';ctx.lineCap='round';
   ctx.beginPath();for(let x=0;x<=W+8;x+=8){const y=groundY(x+cam);x?ctx.lineTo(x,y):ctx.moveTo(x,y);}
   ctx.strokeStyle='#5cbf6b';ctx.lineWidth=18;ctx.stroke();
   ctx.strokeStyle='#8ee08a';ctx.lineWidth=7;ctx.translate(0,-3);ctx.stroke();ctx.translate(0,3);
-  // dirt patches
+  // đốm đất
   ctx.fillStyle='rgba(120,70,40,.35)';
   for(let i=0;i<60;i++){
     const wx=i*131+((i*53)%90);const x=wx-cam;
@@ -291,7 +291,7 @@ function drawGround(){
     const y=groundY(wx)+40+((i*37)%120);
     ctx.beginPath();ctx.ellipse(x,y,14+(i%4)*5,9+(i%3)*3,0,0,7);ctx.fill();
   }
-  // mud
+  // bùn
   const x0=MUD[0]-cam,x1=MUD[1]-cam;
   if(x1>-50&&x0<W+50){
     ctx.beginPath();
@@ -309,9 +309,9 @@ function drawMarket(){
   const x=MARKET_X-cam;if(x<-300||x>W+300)return;
   const gy=groundY(MARKET_X);
   const w=330,h=100,top=gy-h-150;
-  // posts
+  // cột
   ctx.fillStyle='#8b5a2b';ctx.fillRect(x-w/2+8,top+40,10,150+h-40);ctx.fillRect(x+w/2-18,top+40,10,150+h-40);
-  // roof
+  // mái
   const n=10,sw=w/n;
   for(let i=0;i<n;i++){
     ctx.fillStyle=i%2?'#fff':'#ff5b4f';
@@ -319,20 +319,20 @@ function drawMarket(){
     ctx.lineTo(x-w/2+(i+1)*sw,top+32);ctx.arc(x-w/2+(i+.5)*sw,top+32,sw/2,0,Math.PI);ctx.closePath();ctx.fill();
     ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.stroke();
   }
-  // sign
+  // bảng
   ctx.fillStyle='#fff';ctx.strokeStyle='#222';ctx.lineWidth=3;
   roundRect(x-50,top-42,100,40,10);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#222';ctx.font='bold 26px Segoe UI, Arial';ctx.textAlign='center';ctx.fillText('Market',x,top-14);
-  // bouncing arrow
+  ctx.fillStyle='#222';ctx.font='bold 26px Segoe UI, Arial';ctx.textAlign='center';ctx.fillText('Chợ',x,top-14);
+  // mũi tên nhấp nhô
   const by=Math.sin(time*5)*8;
   ctx.fillStyle='#ffd93b';ctx.strokeStyle='#222';ctx.lineWidth=4;
   ctx.beginPath();ctx.moveTo(x-12,top-130+by);ctx.lineTo(x+12,top-130+by);ctx.lineTo(x+12,top-98+by);
   ctx.lineTo(x+28,top-98+by);ctx.lineTo(x,top-68+by);ctx.lineTo(x-28,top-98+by);ctx.lineTo(x-12,top-98+by);ctx.closePath();ctx.fill();ctx.stroke();
-  // stall
+  // quầy
   ctx.fillStyle='#e6b676';ctx.strokeStyle='#222';ctx.lineWidth=3;
   roundRect(x-w/2+10,gy-h+30,w-20,h-30,6);ctx.fill();ctx.stroke();
   ctx.fillStyle='#d9a45f';ctx.fillRect(x-w/2+12,gy-h+52,w-24,2);
-  // goods on the stall
+  // hàng hóa trên quầy
   ctx.font='36px serif';
   const em=['🍎','🥚','🍉','🥚'];
   em.forEach((e,i)=>{
@@ -375,11 +375,11 @@ function drawTruck(){
   const x=truck.x-cam,y=truck.y+truck.bump;
   ctx.save();ctx.translate(x,y);ctx.rotate(truck.ang);
   ctx.lineJoin='round';ctx.strokeStyle='#222';ctx.lineWidth=3;
-  // truck bed
+  // thùng xe
   ctx.fillStyle='#4a2c1a';roundRect(-88,-38,100,26,5);ctx.fill();ctx.stroke();
   ctx.fillStyle='#3d9be0';ctx.fillRect(-84,-34,92,10);
   ctx.fillStyle='#ffd93b';ctx.fillRect(-84,-30,92,3);
-  // collected goods (shown on the bed)
+  // hàng đã nhặt (hiện trên thùng)
   ctx.font='24px serif';ctx.textAlign='center';
   ITEMS.forEach((o,i)=>{if(o.got)ctx.fillText(o.e,-70+i*22,-42);});
   // cabin
@@ -388,10 +388,10 @@ function drawTruck(){
   ctx.fillStyle='#e5f4ff';ctx.beginPath();ctx.moveTo(16,-60);ctx.lineTo(42,-61);ctx.lineTo(60,-38);ctx.lineTo(16,-38);ctx.closePath();ctx.fill();ctx.stroke();
   ctx.fillStyle='#ffd93b';ctx.beginPath();ctx.arc(76,-26,5,0,7);ctx.fill();ctx.stroke();
   ctx.fillStyle='#ddd';ctx.fillRect(-92,-18,8,8);
-  // mud splatter
+  // bùn bám
   ctx.fillStyle='#6b3d1f';
   [[ -60,-38,9],[-40,-40,11],[-20,-36,8],[40,-20,7],[60,-18,6]].forEach(m=>{ctx.beginPath();ctx.arc(m[0],m[1],m[2],0,7);ctx.fill();});
-  // wheels
+  // bánh
   wheel(-46,0,truck.wheel);wheel(46,0,truck.wheel);
   ctx.restore();
 }

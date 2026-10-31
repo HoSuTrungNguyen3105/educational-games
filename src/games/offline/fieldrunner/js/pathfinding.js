@@ -1,8 +1,8 @@
 /* =====================================================
-   pathfinding.js · pathfinding & tower placement checks
+   pathfinding.js · tìm đường & kiểm tra đặt tháp
    ===================================================== */
 
-/** BFS spreading from the exit gate, returns a distance array for every tile */
+/** BFS lan từ cổng ra, trả về mảng khoảng cách của từng ô */
 function bfs(blk) {
   const d = new Array(COLS * ROWS).fill(Infinity);
   const q = [GOALC + GR * COLS];
@@ -29,7 +29,7 @@ function bfs(blk) {
   return d;
 }
 
-/** Store the distance map and rebuild the path for drawing */
+/** Lưu bản đồ khoảng cách và dựng lại đường đi để vẽ */
 function setDist(d) {
   dist = d;
   pathPts = [[0, SR * CS + CS / 2]];
@@ -67,19 +67,19 @@ function setDist(d) {
   );
 }
 
-/** Check whether a tower can be placed on tile (c,r). Returns null if OK, or the reason. */
+/** Kiểm tra có đặt được tháp ở ô (c,r) không. Trả về null nếu được, hoặc lý do. */
 function canPlace(c, r) {
-  if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return 'Outside the map';
-  if (towers.some(t => t.c === c && t.r === r)) return 'A tower is already here';
-  if ((c === 0 && r === SR) || (c === GOALC && r === GR)) return 'You can’t build on the gate';
-  if (blocked[c][r]) return 'Something is blocking this spot';
-  if (noBuild[c][r]) return 'You can’t build here';
+  if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return 'Ngoài bản đồ';
+  if (towers.some(t => t.c === c && t.r === r)) return 'Ô đã có tháp';
+  if ((c === 0 && r === SR) || (c === GOALC && r === GR)) return 'Không thể xây ở cổng';
+  if (blocked[c][r]) return 'Chỗ này có vật cản';
+  if (noBuild[c][r]) return 'Không xây được ở đây';
 
   blocked[c][r] = true;
   const d = bfs(blocked);
 
   let ok = d[0 + SR * COLS] !== Infinity;
-  let why = 'You can’t block the path completely';
+  let why = 'Không được chặn kín đường đi';
 
   if (ok) {
     for (const e of enemies) {
@@ -92,13 +92,13 @@ function canPlace(c, r) {
 
       if (e.x >= 0 && (onCell || headingThere)) {
         ok = false;
-        why = 'An enemy is on this spot';
+        why = 'Có kẻ địch ở ô này';
         break;
       }
 
       if (e.x >= 0 && d[ec + er * COLS] === Infinity) {
         ok = false;
-        why = 'That would trap an enemy';
+        why = 'Sẽ nhốt kẻ địch';
         break;
       }
     }

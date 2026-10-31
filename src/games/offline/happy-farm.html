@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>happy farm</title>
+<title>Nông Trại Vui Vẻ</title>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
 <style>
 :root{--purple:#8a2fb8;--purple-d:#4f1a75;--gold:#ffc83a;--gold-d:#e08f12;--ink:#3a1750;--cream:#fff4dc;--safeb:env(safe-area-inset-bottom,0px);--safet:env(safe-area-inset-top,0px)}
@@ -79,26 +79,26 @@ button{font-family:inherit;border:0;cursor:pointer;color:inherit}
   <div id="cash"><span class="bill">💵</span><b id="money">0</b></div>
   <button id="menuBtn" class="orb" aria-label="Menu">☰</button>
 </div>
-<button id="mapBtn" class="side"><span>🗺️</span><em>Map</em></button>
+<button id="mapBtn" class="side"><span>🗺️</span><em>Bản đồ</em></button>
 <button id="ffBtn" class="side"><span>⏩</span><em id="ffx">x1</em></button>
 <div id="toast"></div>
 
 <div id="sheet">
-  <div id="sheetHead"><b id="sheetTitle"></b><button id="sheetClose" aria-label="Close">✕</button></div>
+  <div id="sheetHead"><b id="sheetTitle"></b><button id="sheetClose" aria-label="Đóng">✕</button></div>
   <div id="sheetBody"></div>
 </div>
 
 <nav id="nav">
-  <button class="tab" data-tab="shop"><i>🛒</i><em>Shop</em></button>
-  <button class="tab big" data-tab="build"><i>🏠</i><em>Build</em></button>
-  <button class="tab" data-tab="quest"><i>🎮</i><em>Quests</em><u id="bq"></u></button>
-  <button class="tab" data-tab="stock"><i>📦</i><em>Storage</em></button>
-  <button class="tab" data-tab="team"><i>👥</i><em>Farmers</em><u id="bt"></u></button>
+  <button class="tab" data-tab="shop"><i>🛒</i><em>Cửa hàng</em></button>
+  <button class="tab big" data-tab="build"><i>🏠</i><em>Xây dựng</em></button>
+  <button class="tab" data-tab="quest"><i>🎮</i><em>Nhiệm vụ</em><u id="bq"></u></button>
+  <button class="tab" data-tab="stock"><i>📦</i><em>Kho hàng</em></button>
+  <button class="tab" data-tab="team"><i>👥</i><em>Nông dân</em><u id="bt"></u></button>
 </nav>
 
 <script>
 'use strict';
-/* ============================== Constants & helpers ============================== */
+/* ============================== Hằng số & tiện ích ============================== */
 const TW = 100, TH = 50, GW = 16, GH = 18;
 const LANE = [0.5, 5.5, 10.5, 15.5];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -111,17 +111,17 @@ function hex2rgb(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16
 function mix(h1, h2, t) { const a = hex2rgb(h1), b = hex2rgb(h2); return 'rgb(' + Math.round(lerp(a[0], b[0], t)) + ',' + Math.round(lerp(a[1], b[1], t)) + ',' + Math.round(lerp(a[2], b[2], t)) + ')'; }
 function pal(h) { return { t: mix(h, '#ffffff', .12), l: mix(h, '#000000', .14), r: mix(h, '#000000', .3) }; }
 
-/* ============================== Data ============================== */
+/* ============================== Dữ liệu ============================== */
 const ZDEF = [
-  { id: 'pond',    c: 0, r: 0, name: 'Fish Pond',       icon: '🐟', item: '🐟', cost: 4500,  val: 40,  rate: .14, up: 2000, lz: 56 },
-  { id: 'wheat',   c: 1, r: 0, name: 'Wheat Field', icon: '🌾', item: '🌾', cost: 0,     val: 5,   rate: .35, up: 60,   lz: 56 },
-  { id: 'bee',     c: 2, r: 0, name: 'Bee Garden',    icon: '🍯', item: '🍯', cost: 30000, val: 130, rate: .08, up: 13000, lz: 56 },
-  { id: 'coop',    c: 0, r: 1, name: 'Chicken Coop',   icon: '🐔', item: '🥚', cost: 0,     val: 9,   rate: .22, up: 140,  lz: 60 },
-  { id: 'wh',      c: 1, r: 1, name: 'Warehouse',     icon: '📦', kind: 'wh',     cost: 0, lz: 70 },
-  { id: 'orchard', c: 2, r: 1, name: 'Apple Orchard',    icon: '🍎', item: '🍎', cost: 400,   val: 14,  rate: .2,  up: 180,  lz: 104 },
-  { id: 'pig',     c: 0, r: 2, name: 'Pig Farm',    icon: '🐖', item: '🥓', cost: 12000, val: 70,  rate: .1,  up: 5400, lz: 56 },
-  { id: 'cow',     c: 1, r: 2, name: 'Dairy Pasture',  icon: '🐄', item: '🥛', cost: 1500,  val: 24,  rate: .16, up: 680,  lz: 56 },
-  { id: 'market',  c: 2, r: 2, name: 'Market',         icon: '🏪', kind: 'market', cost: 0, lz: 76 },
+  { id: 'pond',    c: 0, r: 0, name: 'Ao cá',       icon: '🐟', item: '🐟', cost: 4500,  val: 40,  rate: .14, up: 2000, lz: 56 },
+  { id: 'wheat',   c: 1, r: 0, name: 'Ruộng lúa mì', icon: '🌾', item: '🌾', cost: 0,     val: 5,   rate: .35, up: 60,   lz: 56 },
+  { id: 'bee',     c: 2, r: 0, name: 'Vườn ong',    icon: '🍯', item: '🍯', cost: 30000, val: 130, rate: .08, up: 13000, lz: 56 },
+  { id: 'coop',    c: 0, r: 1, name: 'Chuồng gà',   icon: '🐔', item: '🥚', cost: 0,     val: 9,   rate: .22, up: 140,  lz: 60 },
+  { id: 'wh',      c: 1, r: 1, name: 'Nhà kho',     icon: '📦', kind: 'wh',     cost: 0, lz: 70 },
+  { id: 'orchard', c: 2, r: 1, name: 'Vườn táo',    icon: '🍎', item: '🍎', cost: 400,   val: 14,  rate: .2,  up: 180,  lz: 104 },
+  { id: 'pig',     c: 0, r: 2, name: 'Trại heo',    icon: '🐖', item: '🥓', cost: 12000, val: 70,  rate: .1,  up: 5400, lz: 56 },
+  { id: 'cow',     c: 1, r: 2, name: 'Bãi bò sữa',  icon: '🐄', item: '🥛', cost: 1500,  val: 24,  rate: .16, up: 680,  lz: 56 },
+  { id: 'market',  c: 2, r: 2, name: 'Chợ',         icon: '🏪', kind: 'market', cost: 0, lz: 76 },
 ];
 const ZD = {}, ZGRID = [[], [], []];
 ZDEF.forEach(d => { d.x0 = 1 + 5 * d.c; d.y0 = 1 + 5 * d.r; d.reserved = 0; ZD[d.id] = d; ZGRID[d.r][d.c] = d; });
@@ -132,12 +132,12 @@ const SHIRTS = ['#e5483f', '#3b8be8', '#f2b632', '#43b86a', '#a15bd6', '#ee7aa8'
 const HATS = ['#d93a32', '#f3d36b', '#ffffff', '#3d6fd6', '#f3d36b', '#d93a32', '#ffffff', '#3d6fd6'];
 
 const QDEF = [
-  { k: 'harv', t: 'Harvest Crops', unit: 'items', base: 20, mul: 2.4, rew: t => t * 4 },
-  { k: 'sold', t: 'Sell at the Market',     unit: 'items', base: 15, mul: 2.5, rew: t => t * 8 },
-  { k: 'earn', t: 'Earn Money',          unit: '$',   base: 300, mul: 3,  rew: t => Math.round(t * .3) },
+  { k: 'harv', t: 'Thu hoạch nông sản', unit: 'món', base: 20, mul: 2.4, rew: t => t * 4 },
+  { k: 'sold', t: 'Bán hàng ở chợ',     unit: 'món', base: 15, mul: 2.5, rew: t => t * 8 },
+  { k: 'earn', t: 'Kiếm tiền',          unit: '$',   base: 300, mul: 3,  rew: t => Math.round(t * .3) },
 ];
 
-/* ============================== State ============================== */
+/* ============================== Trạng thái ============================== */
 const SAVE_KEY = 'nongtrai_v1';
 function defaultState() {
   const zones = {};
@@ -206,7 +206,7 @@ function focusZone(id, zoom, sheetOpen) {
   cam.tx = ix; cam.ty = iy + (sheetOpen ? (H * .17) / cam.tz : 0);
 }
 
-/* ============================== Basic drawing ============================== */
+/* ============================== Vẽ cơ bản ============================== */
 function poly(pts, fill, stroke, lw) {
   ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
   for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
@@ -235,7 +235,7 @@ function rrect(x, y, w, h, r, fill, stroke, lw) {
 function line(x1, y1, x2, y2, col, w) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineWidth = w; ctx.strokeStyle = col; ctx.lineCap = 'round'; ctx.stroke(); }
 const FONT = '"Lilita One","Arial Rounded MT Bold",system-ui,sans-serif';
 
-/* ============================== Ground ============================== */
+/* ============================== Nền đất ============================== */
 function zoneAt(i, j) {
   if (i < 1 || j < 1 || i > 14 || j > 14) return null;
   if ((i - 1) % 5 > 3 || (j - 1) % 5 > 3) return null;
@@ -272,7 +272,7 @@ function drawGround() {
       else if (!S.zones[d.id].u) col = (i + j) % 2 ? '#b8e29c' : '#b0dc94';
       else {
         col = floorColor(d, i, j);
-        if (col === null) { // pond water
+        if (col === null) { // nước ao
           const w = Math.sin(TIME * 1.6 + i * 1.3 + j * .9) * .5 + .5;
           col = mix('#43aee8', '#6cc9f5', w * .6);
           poly(pts, col, col, 1);
@@ -283,18 +283,18 @@ function drawGround() {
       }
     }
     poly(pts, col, col, 1);
-    if (j >= 16 && i % 2 === 0 && j === 16) { // road markings
+    if (j >= 16 && i % 2 === 0 && j === 16) { // vạch kẻ đường
       line(...P(i + .2, 17), ...P(i + .8, 17), '#f5f2e8', 3);
     }
   }
-  // dashed outline for locked zones
+  // viền đứt cho khu chưa mở
   ZDEF.forEach(d => {
     if (S.zones[d.id].u) return;
     ctx.setLineDash([12, 9]);
     poly([P(d.x0, d.y0), P(d.x0 + 4, d.y0), P(d.x0 + 4, d.y0 + 4), P(d.x0, d.y0 + 4)], null, 'rgba(255,255,255,.9)', 3);
     ctx.setLineDash([]);
   });
-  // flowers in the bee garden
+  // hoa ở vườn ong
   if (S.zones.bee.u) {
     const d = ZD.bee;
     for (let n = 0; n < 22; n++) {
@@ -304,7 +304,7 @@ function drawGround() {
       ell(p[0], p[1] - 1.5, 1.4, 1.1, '#ffb400');
     }
   }
-  // hire-farmer spot in the warehouse (tap to hire)
+  // vòng tròn thuê nông dân trong kho (nhấn để thuê)
   if (S.zones.wh.u) {
     const d = ZD.wh;
     poly([P(d.x0 + .8, d.y0 + 1.5), P(d.x0 + 2.8, d.y0 + 1.5), P(d.x0 + 2.8, d.y0 + 3.3), P(d.x0 + .8, d.y0 + 3.3)], 'rgba(60,40,75,.55)');
@@ -318,7 +318,7 @@ function drawGround() {
   }
 }
 
-/* ============================== Animals ============================== */
+/* ============================== Động vật ============================== */
 const ANI = {
   coop: { kind: 'hen',  n: z => Math.min(7, 3 + z.lv),                  r: [.5, 1.9, 3.3, 3.4], sp: .6 },
   cow:  { kind: 'cow',  n: z => Math.min(5, 2 + Math.floor(z.lv / 3)),  r: [.6, 1.5, 3.3, 3.3], sp: .3 },
@@ -399,14 +399,14 @@ function drawAnimal(kind, o) {
   }
 }
 
-/* ============================== Farmers ============================== */
+/* ============================== Nông dân ============================== */
 const farmers = [];
 function insidePos(d) { return { x: d.x0 + 3.78, y: d.y0 + 3.78 }; }
 function nodePos(d) { return { x: LANE[d.c + 1], y: LANE[d.r + 1] }; }
 function newFarmer(i) {
   const w = ZD.wh;
   return { id: i, x: w.x0 + 3.2 + rnd(-.5, .2), y: w.y0 + 3.2 + rnd(-.5, .2), at: 'wh', state: 'idle', idle: rnd(0, .8), phases: [], path: [], cargo: null, work: 0,
-    off: { x: rnd(-.2, .2), y: rnd(-.2, .2) }, ph: 0, face: 1, spd: rnd(.92, 1.08), shirt: SHIRTS[i % SHIRTS.length], hat: HATS[i % HATS.length], label: 'Resting' };
+    off: { x: rnd(-.2, .2), y: rnd(-.2, .2) }, ph: 0, face: 1, spd: rnd(.92, 1.08), shirt: SHIRTS[i % SHIRTS.length], hat: HATS[i % HATS.length], label: 'Đang nghỉ' };
 }
 function syncFarmers() { while (farmers.length < S.farmers) farmers.push(newFarmer(farmers.length)); farmers.length = S.farmers; }
 function routePoints(f, to) {
@@ -424,7 +424,7 @@ function routePoints(f, to) {
 }
 function startPhase(f) {
   const ph = f.phases[0];
-  if (!ph) { f.state = 'idle'; f.idle = .25; f.label = 'Resting'; return; }
+  if (!ph) { f.state = 'idle'; f.idle = .25; f.label = 'Đang nghỉ'; return; }
   f.path = routePoints(f, ph.to); f.state = 'move'; f.label = ph.label;
 }
 let pendingIn = 0, reservedOut = 0;
@@ -454,12 +454,12 @@ function doHarvest(f, d, n) {
   if (n <= 0) return;
   d.reserved += n; pendingIn += n;
   f.phases = [
-    { to: d.id, label: 'Harvesting ' + d.item, act() {
+    { to: d.id, label: 'Đi thu hoạch ' + d.item, act() {
         const z = S.zones[d.id]; const take = Math.min(n, Math.floor(z.ready));
         z.ready -= take; d.reserved -= n; f.cargo = { id: d.id, n: take };
         S.stats.harv += take; if (take > 0) floatAt(d.id, '+' + take + ' ' + d.item, '#fff6b8');
       } },
-    { to: 'wh', label: 'Taking ' + d.item + ' to the warehouse', act() {
+    { to: 'wh', label: 'Mang ' + d.item + ' về kho', act() {
         pendingIn -= n;
         if (f.cargo) { S.stock[f.cargo.id] = (S.stock[f.cargo.id] || 0) + f.cargo.n; f.cargo = null; }
       } },
@@ -470,7 +470,7 @@ function doSell(f, n) {
   if (n <= 0) return;
   reservedOut += n;
   f.phases = [
-    { to: 'wh', label: 'Picking up goods from the warehouse', act() {
+    { to: 'wh', label: 'Lấy hàng trong kho', act() {
         reservedOut -= n; let need = n; const items = [];
         PRODUCERS.slice().sort((a, b) => b.val - a.val).forEach(d => {
           const have = S.stock[d.id] || 0, t = Math.min(need, have);
@@ -478,7 +478,7 @@ function doSell(f, n) {
         });
         f.cargo = items.length ? { multi: items, id: items[0].id, n: n - need } : null;
       } },
-    { to: 'market', label: 'Taking goods to the market', act() {
+    { to: 'market', label: 'Mang hàng ra chợ', act() {
         if (!f.cargo) return;
         let rev = 0, cnt = 0;
         f.cargo.multi.forEach(it => { rev += it.n * ZD[it.id].val; cnt += it.n; });
@@ -527,12 +527,12 @@ function drawFarmer(f) {
   }
 }
 
-/* ============================== Truck ============================== */
+/* ============================== Xe tải ============================== */
 const truck = { x: -4, state: 'away', t: 8 };
 const PARK_X = 12.2;
 function updateTruck(dt) {
   if (truck.state === 'away') { truck.t -= dt; if (truck.t <= 0) { truck.state = 'in'; truck.x = -2.6; } }
-  else if (truck.state === 'in') { truck.x += 4.2 * dt; if (truck.x >= PARK_X) { truck.x = PARK_X; truck.state = 'park'; truck.t = 10; toast('🚚 The truck is at the market! Sell price x1.5 for 10 seconds'); } }
+  else if (truck.state === 'in') { truck.x += 4.2 * dt; if (truck.x >= PARK_X) { truck.x = PARK_X; truck.state = 'park'; truck.t = 10; toast('🚚 Xe tải đến chợ! Giá bán x1.5 trong 10 giây'); } }
   else if (truck.state === 'park') { truck.t -= dt; if (truck.t <= 0) truck.state = 'out'; }
   else if (truck.state === 'out') { truck.x += 4.2 * dt; if (truck.x > 18.5) { truck.state = 'away'; truck.t = rnd(20, 30); } }
 }
@@ -552,7 +552,7 @@ function drawTruck() {
   ctx.restore();
 }
 
-/* ============================== Drawing zones ============================== */
+/* ============================== Vẽ khu vực ============================== */
 const WOOD = pal('#b98046');
 function addFence(objs, d) {
   const wh = d.id === 'wh', Hh = wh ? 36 : 13, T = wh ? .22 : .12;
@@ -684,9 +684,9 @@ function buildWorld() {
         for (let s = 0; s < 8; s++) box(cx - .1 + s * .33, cy - .2, .33, 1.3, 5, 36, pal(s % 2 ? '#ffffff' : '#e8453c'));
       } });
     }
-    if (d.id !== 'wh' && d.id !== 'market' && d.id !== 'wheat' && d.id !== 'orchard') { /* crate already added above */ }
+    if (d.id !== 'wh' && d.id !== 'market' && d.id !== 'wheat' && d.id !== 'orchard') { /* crate đã thêm ở trên */ }
   });
-  // animals
+  // động vật
   for (const id in ANI) {
     const a = animals[id]; if (!a) continue;
     a.forEach(o => objs.push({ d: o.x + o.y + (ANI[id].kind === 'fish' ? -50 : (ANI[id].kind === 'bee' ? 2 : 0)), f: () => drawAnimal(ANI[id].kind, o) }));
@@ -697,7 +697,7 @@ function buildWorld() {
   return objs;
 }
 
-/* ============================== Labels & effects ============================== */
+/* ============================== Nhãn, hiệu ứng ============================== */
 const labelHits = [];
 function drawLabels() {
   labelHits.length = 0;
@@ -771,10 +771,10 @@ function render(dt) {
   drawLabels(); drawFloaters();
 }
 
-/* ============================== Game logic ============================== */
+/* ============================== Logic game ============================== */
 function addXp(n) {
   S.xp += n;
-  while (S.xp >= xpNeed()) { S.xp -= xpNeed(); S.lv++; const b = 100 * S.lv; S.money += b; toast('⭐ Level up ' + S.lv + '! Bonus $' + fmt(b)); }
+  while (S.xp >= xpNeed()) { S.xp -= xpNeed(); S.lv++; const b = 100 * S.lv; S.money += b; toast('⭐ Lên cấp ' + S.lv + '! Thưởng $' + fmt(b)); }
 }
 function update(dt) {
   PRODUCERS.forEach(d => {
@@ -791,7 +791,7 @@ function update(dt) {
   for (let i = floaters.length - 1; i >= 0; i--) { floaters[i].t += dt; if (floaters[i].t > 1.4) floaters.splice(i, 1); }
 }
 
-/* ============================== UI ============================== */
+/* ============================== Giao diện ============================== */
 const $ = id => document.getElementById(id);
 const sheet = $('sheet'), sheetBody = $('sheetBody');
 let ui = null, lastHTML = '', toastT = 0, resetArm = 0;
@@ -807,51 +807,51 @@ const prog = f => '<div class="prog"><i style="width:' + Math.round(clamp(f, 0, 
 
 function zoneRows(d) {
   const z = S.zones[d.id];
-  if (!z.u) return row('🔒', d.name, 'Unlock to grow crops, raise animals and sell ' + d.item + ' ($' + d.val + ' each).', btn('unlock', d.id, 'Unlock', d.cost, S.money >= d.cost, 'gold'));
-  if (d.id === 'wh') return row('📦', 'Warehouse · Lv ' + S.upg.wh, 'Holding ' + totalStock() + '/' + whCap() + ' items. Upgrade to store 30 more.', S.upg.wh >= 10 ? '' : btn('upwh', '', 'Upgrade', whCost(), S.money >= whCost()), prog(totalStock() / whCap()))
-    + '<div class="hint">Tap the farmer icon on the warehouse floor to hire more workers.</div>';
-  if (d.id === 'market') return row('🏪', 'Market · Lv ' + S.upg.market, 'Sell price x' + mkMult().toFixed(2) + '. The truck stops by every ~25s: x1.5 sales for 10 seconds.', S.upg.market >= 10 ? '' : btn('upmarket', '', 'Upgrade', mkCost(), S.money >= mkCost()));
+  if (!z.u) return row('🔒', d.name, 'Mở khoá để trồng trọt, chăn nuôi và bán ' + d.item + ' (giá $' + d.val + '/món).', btn('unlock', d.id, 'Mở khoá', d.cost, S.money >= d.cost, 'gold'));
+  if (d.id === 'wh') return row('📦', 'Nhà kho · Cấp ' + S.upg.wh, 'Đang chứa ' + totalStock() + '/' + whCap() + ' món. Nâng cấp để chứa thêm 30 món.', S.upg.wh >= 10 ? '' : btn('upwh', '', 'Nâng cấp', whCost(), S.money >= whCost()), prog(totalStock() / whCap()))
+    + '<div class="hint">Chạm vào biểu tượng nông dân trên sàn kho để thuê thêm người.</div>';
+  if (d.id === 'market') return row('🏪', 'Chợ · Cấp ' + S.upg.market, 'Giá bán x' + mkMult().toFixed(2) + '. Xe tải ghé mỗi ~25 giây: bán x1.5 trong 10 giây.', S.upg.market >= 10 ? '' : btn('upmarket', '', 'Nâng cấp', mkCost(), S.money >= mkCost()));
   const max = z.lv >= MAXLV;
-  return row(d.icon, d.name + ' · Lv ' + z.lv, d.item + ' $' + d.val + ' each · ' + (rateOf(d, z) * 60).toFixed(1) + ' items/min · holds ' + Math.floor(z.ready) + '/' + capOf(z),
-    max ? '' : btn('upz', d.id, 'Upgrade', upCost(d, z), S.money >= upCost(d, z)), prog(z.ready / capOf(z)))
-    + '<div class="hint">Each level adds 40% output and +4 capacity.</div>';
+  return row(d.icon, d.name + ' · Cấp ' + z.lv, d.item + ' $' + d.val + '/món · ' + (rateOf(d, z) * 60).toFixed(1) + ' món/phút · chứa ' + Math.floor(z.ready) + '/' + capOf(z),
+    max ? '' : btn('upz', d.id, 'Nâng cấp', upCost(d, z), S.money >= upCost(d, z)), prog(z.ready / capOf(z)))
+    + '<div class="hint">Mỗi cấp tăng 40% sản lượng và +4 sức chứa.</div>';
 }
 function farmerStatus() {
-  return farmers.map((f, i) => row('🧑‍🌾', 'Farmer ' + (i + 1), f.state === 'idle' ? 'Resting' : f.label, '', f.cargo ? '<span>Carrying ' + f.cargo.n + ' ' + ZD[f.cargo.id].item + '</span>' : '')).join('');
+  return farmers.map((f, i) => row('🧑‍🌾', 'Nông dân ' + (i + 1), f.state === 'idle' ? 'Đang nghỉ' : f.label, '', f.cargo ? '<span>Đang mang ' + f.cargo.n + ' ' + ZD[f.cargo.id].item + '</span>' : '')).join('');
 }
 function panelHTML() {
   if (!ui) return ['', ''];
   switch (ui.kind) {
     case 'zone': return [ZD[ui.arg].icon + ' ' + ZD[ui.arg].name, zoneRows(ZD[ui.arg])];
-    case 'build': return ['Build & Upgrade', ZDEF.map(d => {
+    case 'build': return ['Xây dựng & nâng cấp', ZDEF.map(d => {
       const z = S.zones[d.id];
-      if (!z.u) return row('🔒', d.name, 'Locked · $' + d.val + ' each', btn('unlock', d.id, 'Unlock', d.cost, S.money >= d.cost, 'gold'));
-      if (d.id === 'wh') return row('📦', d.name + ' · Lv ' + S.upg.wh, 'Holds ' + whCap() + ' items', S.upg.wh >= 10 ? '' : btn('upwh', '', 'Upgrade', whCost(), S.money >= whCost()));
-      if (d.id === 'market') return row('🏪', d.name + ' · Lv ' + S.upg.market, 'Sell price x' + mkMult().toFixed(2), S.upg.market >= 10 ? '' : btn('upmarket', '', 'Upgrade', mkCost(), S.money >= mkCost()));
-      return row(d.icon, d.name + ' · Lv ' + z.lv, (rateOf(d, z) * 60).toFixed(1) + ' ' + d.item + '/min', z.lv >= MAXLV ? '' : btn('upz', d.id, 'Upgrade', upCost(d, z), S.money >= upCost(d, z)));
+      if (!z.u) return row('🔒', d.name, 'Chưa mở khoá · $' + d.val + '/món', btn('unlock', d.id, 'Mở khoá', d.cost, S.money >= d.cost, 'gold'));
+      if (d.id === 'wh') return row('📦', d.name + ' · Cấp ' + S.upg.wh, 'Chứa ' + whCap() + ' món', S.upg.wh >= 10 ? '' : btn('upwh', '', 'Nâng cấp', whCost(), S.money >= whCost()));
+      if (d.id === 'market') return row('🏪', d.name + ' · Cấp ' + S.upg.market, 'Giá bán x' + mkMult().toFixed(2), S.upg.market >= 10 ? '' : btn('upmarket', '', 'Nâng cấp', mkCost(), S.money >= mkCost()));
+      return row(d.icon, d.name + ' · Cấp ' + z.lv, (rateOf(d, z) * 60).toFixed(1) + ' ' + d.item + '/phút', z.lv >= MAXLV ? '' : btn('upz', d.id, 'Nâng cấp', upCost(d, z), S.money >= upCost(d, z)));
     }).join('')];
-    case 'shop': return ['Shop', [
-      row('👟', 'Running Shoes · Lv ' + S.upg.speed, 'Farmers move faster (' + farmerSpeed().toFixed(1) + ' tiles/sec).', S.upg.speed >= 8 ? '' : btn('upspeed', '', 'Buy', spdCost(), S.money >= spdCost())),
-      row('🧺', 'Big Basket · Lv ' + S.upg.carry, 'Each trip carries ' + carryCap() + ' items.', S.upg.carry >= 10 ? '' : btn('upcarry', '', 'Buy', carryCost(), S.money >= carryCost())),
-      row('📦', 'Big Storage · Lv ' + S.upg.wh, 'Capacity: ' + whCap() + ' items.', S.upg.wh >= 10 ? '' : btn('upwh', '', 'Buy', whCost(), S.money >= whCost())),
-      row('🏪', 'Market Stall · Lv ' + S.upg.market, 'Sell price x' + mkMult().toFixed(2) + '.', S.upg.market >= 10 ? '' : btn('upmarket', '', 'Buy', mkCost(), S.money >= mkCost())),
-      row('🧑‍🌾', 'Hire Farmers (' + S.farmers + '/10)', 'Adds another worker.', S.farmers >= 10 ? '' : btn('hire', '', 'Hire', hireCost(), S.money >= hireCost(), 'gold')),
+    case 'shop': return ['Cửa hàng', [
+      row('👟', 'Giày chạy nhanh · Cấp ' + S.upg.speed, 'Nông dân đi nhanh hơn (' + farmerSpeed().toFixed(1) + ' ô/giây).', S.upg.speed >= 8 ? '' : btn('upspeed', '', 'Mua', spdCost(), S.money >= spdCost())),
+      row('🧺', 'Giỏ lớn · Cấp ' + S.upg.carry, 'Mỗi chuyến mang được ' + carryCap() + ' món.', S.upg.carry >= 10 ? '' : btn('upcarry', '', 'Mua', carryCost(), S.money >= carryCost())),
+      row('📦', 'Kho lớn · Cấp ' + S.upg.wh, 'Sức chứa ' + whCap() + ' món.', S.upg.wh >= 10 ? '' : btn('upwh', '', 'Mua', whCost(), S.money >= whCost())),
+      row('🏪', 'Quầy chợ · Cấp ' + S.upg.market, 'Giá bán x' + mkMult().toFixed(2) + '.', S.upg.market >= 10 ? '' : btn('upmarket', '', 'Mua', mkCost(), S.money >= mkCost())),
+      row('🧑‍🌾', 'Thuê nông dân (' + S.farmers + '/10)', 'Thêm một người vận chuyển.', S.farmers >= 10 ? '' : btn('hire', '', 'Thuê', hireCost(), S.money >= hireCost(), 'gold')),
     ].join('')];
-    case 'quest': return ['Quests', QDEF.map(q => {
+    case 'quest': return ['Nhiệm vụ', QDEF.map(q => {
       const t = qTarget(q), cur = Math.min(S.stats[q.k], t), ok = S.stats[q.k] >= t;
-      return row(q.k === 'harv' ? '🌾' : q.k === 'sold' ? '🛍️' : '💰', q.t, fmt(cur) + '/' + fmt(t) + ' ' + q.unit + ' · reward $' + fmt(q.rew(t)), btn('claim', q.k, ok ? 'Claim' : 'Not yet', null, ok, 'gold'), prog(cur / t));
+      return row(q.k === 'harv' ? '🌾' : q.k === 'sold' ? '🛍️' : '💰', q.t, fmt(cur) + '/' + fmt(t) + ' ' + q.unit + ' · thưởng $' + fmt(q.rew(t)), btn('claim', q.k, ok ? 'Nhận' : 'Chưa xong', null, ok, 'gold'), prog(cur / t));
     }).join('')];
     case 'stock': {
       const items = PRODUCERS.filter(d => S.zones[d.id].u);
       let val = 0; items.forEach(d => val += (S.stock[d.id] || 0) * d.val);
-      return ['Storage · ' + totalStock() + '/' + whCap(), items.map(d => row(d.item, d.name, (S.stock[d.id] || 0) + ' items · $' + d.val + ' each', '')).join('')
-        + row('💸', 'Quick Sell All', 'Get 70% of the value: $' + fmt(val * .7), btn('sellall', '', 'Sell', null, val > 0, 'gold'))];
+      return ['Kho hàng · ' + totalStock() + '/' + whCap(), items.map(d => row(d.item, d.name, (S.stock[d.id] || 0) + ' món · $' + d.val + '/món', '')).join('')
+        + row('💸', 'Bán nhanh toàn bộ', 'Nhận 70% giá trị: $' + fmt(val * .7), btn('sellall', '', 'Bán', null, val > 0, 'gold'))];
     }
-    case 'team': return ['Farmers (' + S.farmers + '/10)',
-      row('➕', 'Hire a New Farmer', 'More workers mean faster deliveries.', S.farmers >= 10 ? '' : btn('hire', '', 'Hire', hireCost(), S.money >= hireCost(), 'gold')) + farmerStatus()];
-    case 'map': return ['Farm Map', '<div class="map3">' + ZGRID.map(r => r.map(d => '<button class="' + (S.zones[d.id].u ? '' : 'lock') + '" data-act="focus" data-arg="' + d.id + '">' + (S.zones[d.id].u ? d.icon : '🔒') + '<span>' + d.name + '</span></button>').join('')).join('') + '</div>'];
-    case 'menu': return ['Settings', row('📖', 'How to Play', 'Drag to move, pinch to zoom. Tap a zone to upgrade it. Farmers harvest automatically, store goods in the warehouse and sell them at the market.', '')
-      + row('🔄', 'Restart from Scratch', resetArm ? 'Tap again to erase all progress.' : 'Erase saved progress.', btn('reset', '', resetArm ? 'Sure?' : 'Erase', null, true))];
+    case 'team': return ['Nông dân (' + S.farmers + '/10)',
+      row('➕', 'Thuê nông dân mới', 'Nhiều người hơn, vận chuyển nhanh hơn.', S.farmers >= 10 ? '' : btn('hire', '', 'Thuê', hireCost(), S.money >= hireCost(), 'gold')) + farmerStatus()];
+    case 'map': return ['Bản đồ trang trại', '<div class="map3">' + ZGRID.map(r => r.map(d => '<button class="' + (S.zones[d.id].u ? '' : 'lock') + '" data-act="focus" data-arg="' + d.id + '">' + (S.zones[d.id].u ? d.icon : '🔒') + '<span>' + d.name + '</span></button>').join('')).join('') + '</div>'];
+    case 'menu': return ['Cài đặt', row('📖', 'Cách chơi', 'Kéo để di chuyển, chụm hai ngón để thu phóng. Chạm vào khu vực để nâng cấp. Nông dân tự thu hoạch, cất vào kho rồi bán ở chợ.', '')
+      + row('🔄', 'Chơi lại từ đầu', resetArm ? 'Bấm lần nữa để xoá toàn bộ tiến trình.' : 'Xoá tiến trình đã lưu.', btn('reset', '', resetArm ? 'Chắc chắn?' : 'Xoá', null, true))];
   }
   return ['', ''];
 }
@@ -866,20 +866,20 @@ function openSheet(kind, arg) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === kind));
 }
 function closeSheet() { ui = null; sheet.classList.remove('open'); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); }
-function buy(cost) { if (S.money < cost) { toast('Not enough money — you need $' + fmt(cost)); return false; } S.money -= cost; return true; }
+function buy(cost) { if (S.money < cost) { toast('Chưa đủ tiền, cần $' + fmt(cost)); return false; } S.money -= cost; return true; }
 function doAct(a, arg) {
   switch (a) {
-    case 'unlock': { const d = ZD[arg]; if (buy(d.cost)) { S.zones[arg].u = true; toast('Unlocked ' + d.name + '!'); focusZone(arg, .8, true); } break; }
-    case 'upz': { const d = ZD[arg], z = S.zones[arg]; if (z.lv < MAXLV && buy(upCost(d, z))) { z.lv++; toast(d.name + ' reached level ' + z.lv); } break; }
-    case 'upwh': if (buy(whCost())) { S.upg.wh++; toast('Storage now holds ' + whCap() + ' items'); } break;
-    case 'upmarket': if (buy(mkCost())) { S.upg.market++; toast('Sell price increased to x' + mkMult().toFixed(2)); } break;
-    case 'upspeed': if (buy(spdCost())) { S.upg.speed++; toast('Farmers move faster!'); } break;
-    case 'upcarry': if (buy(carryCost())) { S.upg.carry++; toast('Each trip carries ' + carryCap() + ' items'); } break;
-    case 'hire': if (S.farmers < 10 && buy(hireCost())) { S.farmers++; toast('Hired a new farmer!'); } break;
-    case 'claim': { const q = QDEF.find(x => x.k === arg), t = qTarget(q); if (S.stats[arg] >= t) { const r = q.rew(t); S.money += r; S.qt[arg]++; toast('Reward claimed: $' + fmt(r)); } break; }
-    case 'sellall': { let v = 0; PRODUCERS.forEach(d => { v += (S.stock[d.id] || 0) * d.val; S.stock[d.id] = 0; }); v = Math.round(v * .7); S.money += v; S.stats.earn += v; toast('Quick sell earned $' + fmt(v)); break; }
+    case 'unlock': { const d = ZD[arg]; if (buy(d.cost)) { S.zones[arg].u = true; toast('Đã mở khoá ' + d.name + '!'); focusZone(arg, .8, true); } break; }
+    case 'upz': { const d = ZD[arg], z = S.zones[arg]; if (z.lv < MAXLV && buy(upCost(d, z))) { z.lv++; toast(d.name + ' lên cấp ' + z.lv); } break; }
+    case 'upwh': if (buy(whCost())) { S.upg.wh++; toast('Kho chứa được ' + whCap() + ' món'); } break;
+    case 'upmarket': if (buy(mkCost())) { S.upg.market++; toast('Giá bán tăng x' + mkMult().toFixed(2)); } break;
+    case 'upspeed': if (buy(spdCost())) { S.upg.speed++; toast('Nông dân đi nhanh hơn!'); } break;
+    case 'upcarry': if (buy(carryCost())) { S.upg.carry++; toast('Mỗi chuyến mang ' + carryCap() + ' món'); } break;
+    case 'hire': if (S.farmers < 10 && buy(hireCost())) { S.farmers++; toast('Đã thuê nông dân mới!'); } break;
+    case 'claim': { const q = QDEF.find(x => x.k === arg), t = qTarget(q); if (S.stats[arg] >= t) { const r = q.rew(t); S.money += r; S.qt[arg]++; toast('Nhận thưởng $' + fmt(r)); } break; }
+    case 'sellall': { let v = 0; PRODUCERS.forEach(d => { v += (S.stock[d.id] || 0) * d.val; S.stock[d.id] = 0; }); v = Math.round(v * .7); S.money += v; S.stats.earn += v; toast('Đã bán nhanh được $' + fmt(v)); break; }
     case 'focus': closeSheet(); focusZone(arg, .85, false); break;
-    case 'reset': if (!resetArm) { resetArm = 1; setTimeout(() => { resetArm = 0; }, 3000); } else { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} S = defaultState(); farmers.length = 0; pendingIn = 0; reservedOut = 0; ZDEF.forEach(d => d.reserved = 0); resetArm = 0; closeSheet(); toast('Started over!'); } break;
+    case 'reset': if (!resetArm) { resetArm = 1; setTimeout(() => { resetArm = 0; }, 3000); } else { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} S = defaultState(); farmers.length = 0; pendingIn = 0; reservedOut = 0; ZDEF.forEach(d => d.reserved = 0); resetArm = 0; closeSheet(); toast('Đã bắt đầu lại!'); } break;
   }
   renderSheet(true); updateHud();
 }
@@ -888,7 +888,7 @@ $('sheetClose').addEventListener('click', closeSheet);
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { if (ui && ui.kind === t.dataset.tab) closeSheet(); else openSheet(t.dataset.tab); }));
 $('menuBtn').addEventListener('click', () => { if (ui && ui.kind === 'menu') closeSheet(); else openSheet('menu'); });
 $('mapBtn').addEventListener('click', () => { if (ui && ui.kind === 'map') closeSheet(); else openSheet('map'); });
-$('ffBtn').addEventListener('click', () => { S.speed = S.speed % 3 + 1; updateHud(); toast('Game speed x' + S.speed); });
+$('ffBtn').addEventListener('click', () => { S.speed = S.speed % 3 + 1; updateHud(); toast('Tốc độ game x' + S.speed); });
 
 function updateHud() {
   $('money').textContent = fmt(S.money);
@@ -899,7 +899,7 @@ function updateHud() {
   const bt = $('bt'); bt.textContent = '1'; bt.classList.toggle('show', S.farmers < 10 && S.money >= hireCost());
 }
 
-/* ============================== Controls: drag, pinch, tap ============================== */
+/* ============================== Điều khiển: kéo, chụm, chạm ============================== */
 const ptrs = new Map(); let downInfo = null, pinch = null;
 cv.addEventListener('pointerdown', e => {
   try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -942,7 +942,7 @@ function tapZone(id, x, y, gx, gy) {
   openSheet('zone', id); focusZone(id, Math.max(cam.z, .7), true);
 }
 
-/* ============================== Loop ============================== */
+/* ============================== Vòng lặp ============================== */
 let last = performance.now(), hudT = 0, saveT = 0;
 function frame(now) {
   const rdt = Math.min(.05, (now - last) / 1000); last = now;
@@ -963,7 +963,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveS
 window.addEventListener('pagehide', saveState);
 if (document.fonts && document.fonts.load) document.fonts.load('20px "Lilita One"').catch(() => {});
 syncFarmers(); syncAnimals(); updateHud();
-setTimeout(() => toast('Drag to move · Pinch to zoom · Tap a zone to upgrade'), 600);
+setTimeout(() => toast('Kéo để di chuyển · Chụm để thu phóng · Chạm khu vực để nâng cấp'), 600);
 requestAnimationFrame(frame);
 </script>
 

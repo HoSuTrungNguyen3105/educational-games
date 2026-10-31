@@ -1,8 +1,8 @@
 /* =====================================================
-   game.js · main update loop & ending the run
+   game.js · vòng cập nhật chính & kết thúc ván
    ===================================================== */
 
-/** Update the whole world for dt seconds */
+/** Cập nhật toàn bộ thế giới trong dt giây */
 function update(dt) {
   if (over || paused) return;
 
@@ -13,7 +13,7 @@ function update(dt) {
     skill[k].cd = Math.max(0, skill[k].cd - dt);
   }
 
-  /* ----- Spawn enemies from the queue ----- */
+  /* ----- Sinh kẻ địch theo hàng đợi ----- */
   if (spawnQ.length) {
     spawnT -= dt;
     if (spawnT <= 0) {
@@ -23,7 +23,7 @@ function update(dt) {
     }
   }
 
-  /* ----- Wizards speed up their teammates ----- */
+  /* ----- Pháp sư tăng tốc đồng đội ----- */
   for (const e of enemies) e.haste = 1;
 
   for (const e of enemies) {
@@ -36,7 +36,7 @@ function update(dt) {
     }
   }
 
-  /* ----- Move enemies ----- */
+  /* ----- Di chuyển kẻ địch ----- */
   for (const e of enemies) {
     if (e.dead) continue;
 
@@ -44,7 +44,7 @@ function update(dt) {
     if (e.hurt > 0) e.hurt -= dt;
   }
 
-  /* ----- Damage over time (burn, poison) ----- */
+  /* ----- Sát thương theo thời gian (cháy, độc) ----- */
   for (const e of enemies) {
     if (e.dead || !e.dots.length) continue;
 
@@ -77,7 +77,7 @@ function update(dt) {
   updateProjs(dt);
   updateStrikes(dt);
 
-  /* ----- Cleanup ----- */
+  /* ----- Dọn dẹp ----- */
   enemies = enemies.filter(e => !e.dead);
   projs = projs.filter(p => !p.dead);
 
@@ -99,7 +99,7 @@ function update(dt) {
   parts = parts.filter(p => p.life > 0);
   if (parts.length > 600) parts.splice(0, parts.length - 600);
 
-  /* ----- Wave over ----- */
+  /* ----- Hết đợt ----- */
   if (waveActive && !spawnQ.length && !enemies.length) {
     waveActive = false;
 
@@ -110,10 +110,10 @@ function update(dt) {
 
     const bonus = Math.round((20 + wave * 3) * D.bonus);
     earn(bonus);
-    showMsg('✅ Wave ' + wave + ' cleared! Bonus +' + bonus + ' 💰');
+    showMsg('✅ Xong đợt ' + wave + '! Thưởng +' + bonus + ' 💰');
 
     $('go').disabled = false;
-    $('go').textContent = '▶ Start wave ' + (wave + 1);
+    $('go').textContent = '▶ Bắt đầu đợt ' + (wave + 1);
 
     updUI();
     showPreview();
@@ -121,39 +121,39 @@ function update(dt) {
   }
 }
 
-/** Current score — the HUD shows it live and the final result reuses this formula */
+/** Điểm đang có — HUD hiển thị liên tục và kết quả cuối ván dùng lại công thức này */
 function scoreNow(win) {
   const mult = [1, 1.5, 2, 3][GC.i];
   return Math.round((wave * 100 + lives * 20 + kills * 2 + (win ? 600 : 0)) * mult);
 }
 
-/** End the run: save level progress and show the result box */
+/** Kết thúc ván chơi: lưu tiến độ màn và hiện hộp kết quả */
 function endGame(win) {
   if (over) return;
   over = true;
 
-  clearRun();   // run is decided → don't restore it any more
+  clearRun();   // ván đã ngã ngũ → không khôi phục nữa
 
   const score = scoreNow(win);
   const stars = win ? starsFor(lives, D.lives) : 0;
   const rec = commitMapResult(level, { win, score, stars });
 
   const lines = [
-    win ? 'Held all ' + TOTAL + ' waves on ' + level.name : 'Survived until wave ' + wave + '/' + TOTAL,
-    'Defeated ' + kills + ' enemies',
-    '❤️ ' + lives + ' lives left',
-    win ? '⭐ ' + stars + '/3 stars' : '⭐ Best ' + mapStars(level.id) + '/3 stars'
+    win ? 'Giữ vững ' + TOTAL + ' đợt ở ' + level.name : 'Cầm cự đến đợt ' + wave + '/' + TOTAL,
+    'Hạ ' + kills + ' địch',
+    '❤️ còn ' + lives + ' mạng',
+    win ? '⭐ ' + stars + '/3 sao' : '⭐ ' + mapStars(level.id) + '/3 sao tốt nhất'
   ];
 
   if (rec.unlockedNext) {
     const nx = LEVELS[levelIdx + 1];
-    lines.push('🔓 Field unlocked: ' + nx.icon + ' ' + nx.name);
+    lines.push('🔓 Mở khoá cánh đồng ' + nx.icon + ' ' + nx.name);
   }
 
   setTimeout(() => {
     GC.result({
       win,
-      title: win ? '🏆 ' + level.name + ' is safe!' : '💥 ' + level.name + ' was overrun!',
+      title: win ? '🏆 ' + level.name + ' bình yên!' : '💥 ' + level.name + ' bị tràn!',
       score,
       lines,
       onAgain: playAgain,
@@ -162,14 +162,14 @@ function endGame(win) {
   }, 650);
 }
 
-/** Replay this exact level on the same difficulty */
+/** Chơi lại đúng màn này ở cùng độ khó */
 function playAgain() {
   clearRun();
   setAutoMap(level.id);
   GC.again();
 }
 
-/** Go back to the difficulty picker */
+/** Quay lại màn chọn độ khó */
 function changeDifficulty() {
   clearAutoMap();
   GC.change();

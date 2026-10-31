@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Field Defender</title>
+  <title>Phòng thủ cánh đồng</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <!-- Styles -->
+  <!-- Giao diện -->
 
     <style>
 /* =====================================================
-   GC KIT · shared "Fun Corner" interface (neo-brutalist)
+   GC KIT · giao diện chung "Góc Giải Trí" (neo-brutalist)
    ===================================================== */
 
 :root {
@@ -46,7 +46,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ---------- Shared buttons ---------- */
+/* ---------- Nút chung ---------- */
 .gc-btn {
   font-family: var(--gc-head);
   font-weight: 800;
@@ -86,7 +86,7 @@
   outline-offset: 2px;
 }
 
-/* ---------- Unified exit button ---------- */
+/* ---------- Nút thoát thống nhất ---------- */
 #homeBackBtn,
 .gc-back {
   position: fixed;
@@ -123,7 +123,7 @@
   box-shadow: 0 0 0 var(--gc-ink);
 }
 
-/* ---------- Pills ---------- */
+/* ---------- Viên thuốc (pill) ---------- */
 .gc-pill {
   display: inline-flex;
   align-items: center;
@@ -164,7 +164,7 @@
   pointer-events: none;
 }
 
-/* ---------- Difficulty picker screen ---------- */
+/* ---------- Màn chọn độ khó ---------- */
 .gc-start {
   position: fixed;
   inset: 0;
@@ -373,7 +373,7 @@
   .gc-h     { margin: 10px 0 6px; }
 }
 
-/* ---------- Result box ---------- */
+/* ---------- Hộp kết quả ---------- */
 .gc-modal {
   position: fixed;
   inset: 0;
@@ -462,7 +462,7 @@
 
     <style>
 /* =====================================================
-   Field Defender · the game's own interface
+   Phòng thủ cánh đồng · giao diện riêng của game
    ===================================================== */
 
 * {
@@ -498,7 +498,7 @@ button {
   cursor: pointer;
 }
 
-/* ---------- Top HUD ---------- */
+/* ---------- HUD trên ---------- */
 #top {
   position: relative;
   width: 100%;
@@ -529,7 +529,7 @@ button {
   gap: 2px;
 }
 
-/* Coins · field lives */
+/* Xu · nhà còn mạng */
 .hud__coin,
 .hud__body {
   display: inline-flex;
@@ -573,7 +573,7 @@ button {
   background: #fff;
 }
 
-/* Score · wave · progress bar */
+/* Điểm · đợt · thanh tiến trình */
 .hud__round {
   font-family: var(--gc-head);
   font-weight: 800;
@@ -615,7 +615,7 @@ button {
   transition: width .25s;
 }
 
-/* Small square buttons */
+/* Nút vuông nhỏ */
 .hud__sq {
   width: 36px;
   height: 36px;
@@ -661,7 +661,7 @@ button {
   50% { transform: scale(1.15); background: #fff1c2; }
 }
 
-/* Settings menu (gear) */
+/* Menu cài đặt (bánh răng) */
 .hud__menu {
   position: absolute;
   z-index: 30;
@@ -721,7 +721,7 @@ button {
   font-weight: 600;
 }
 
-/* Next wave preview */
+/* Xem trước đợt kế tiếp */
 #preview {
   display: flex;
   gap: 5px;
@@ -751,12 +751,12 @@ button {
   font-weight: 700;
 }
 
-/* "Elite" badge in the preview */
+/* Nhãn "tinh anh" trong phần xem trước */
 #preview .pv.elite {
   background: linear-gradient(135deg, #fff2b8, #ffc93c);
 }
 
-/* ---------- Buttons ---------- */
+/* ---------- Nút ---------- */
 .btn {
   padding: 7px 14px;
   border-radius: 14px;
@@ -784,7 +784,7 @@ button {
   box-shadow: none;
 }
 
-/* ---------- Field ---------- */
+/* ---------- Cánh đồng ---------- */
 #field {
   flex: 1;
   min-height: 0;
@@ -805,7 +805,7 @@ canvas#c {
   background: #7cc05a;
 }
 
-/* ---------- Bottom bar ---------- */
+/* ---------- Thanh dưới ---------- */
 #bottom {
   width: 100%;
   display: flex;
@@ -893,7 +893,7 @@ canvas#c {
   opacity: .6;
 }
 
-/* ---------- Info panel & skills ---------- */
+/* ---------- Khung thông tin & kỹ năng ---------- */
 #side {
   display: flex;
   flex-direction: column;
@@ -963,7 +963,7 @@ canvas#c {
   color: #fff;
 }
 
-/* ---------- Floating messages ---------- */
+/* ---------- Thông báo nổi ---------- */
 #msg {
   position: fixed;
   top: 88px;
@@ -981,7 +981,7 @@ canvas#c {
   white-space: nowrap;
 }
 
-/* ---------- Phones ---------- */
+/* ---------- Điện thoại ---------- */
 @media (max-width: 760px) {
   #top {
     gap: 5px;
@@ -1069,7 +1069,7 @@ canvas#c {
   }
 }
 
-/* ---------- Field picker screen ---------- */
+/* ---------- Màn chọn cánh đồng ---------- */
 .fr-maps {
   position: fixed;
   inset: 0;
@@ -1255,7 +1255,7 @@ canvas#c {
   margin-top: 14px;
 }
 
-/* ── "Continue / Start over" dialog when a run is unfinished ── */
+/* ── Hộp hỏi "Chơi tiếp / Bắt đầu lại" khi màn còn ván dở ── */
 .fr-resume {
   position: fixed;
   inset: 0;
@@ -1343,35 +1343,35 @@ canvas#c {
 <body>
   <div id="app">
 
-    <!-- Top HUD: coin wallet · settings · score & wave · controls · field lives -->
+    <!-- HUD trên: ví xu · cài đặt · điểm & đợt · điều khiển · nhà còn mạng -->
     <div id="top">
       <div class="hud__l">
-        <div class="hud__coin" id="stMoney" title="Coins in your account wallet">
+        <div class="hud__coin" id="stMoney" title="Xu trong túi tiền tài khoản của bé">
           <span class="hud__coin__ic" aria-hidden="true">💰</span>
           <span id="money">200</span>
         </div>
-        <button class="hud__sq" id="gear" type="button" aria-label="Settings" title="Settings">⚙️</button>
-        <span class="gc-pill" id="mapName">🌱 Little Green Meadow</span>
+        <button class="hud__sq" id="gear" type="button" aria-label="Cài đặt" title="Cài đặt">⚙️</button>
+        <span class="gc-pill" id="mapName">🌱 Đồng Cỏ Non</span>
         <div id="chipSlot"></div>
       </div>
 
       <div class="hud__c">
-        <div class="hud__round">🌊 Wave <b id="wave">0</b>/<span id="total">15</span></div>
+        <div class="hud__round">🌊 Đợt <b id="wave">0</b>/<span id="total">15</span></div>
         <div class="hud__score" id="score">0</div>
-        <div class="hud__meter" role="progressbar" aria-label="Wave progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="hud__meter" role="progressbar" aria-label="Tiến trình đợt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           <i id="meterFill"></i>
         </div>
       </div>
 
       <div class="hud__r">
-        <button class="btn" id="go" type="button">▶ Start wave 1</button>
+        <button class="btn" id="go" type="button">▶ Bắt đầu đợt 1</button>
         <div class="hud__ctrl">
-          <button class="hud__sq" id="speed" type="button" title="Game speed">x1</button>
-          <button class="hud__sq" id="pause" type="button" title="Pause">⏸</button>
-          <button class="hud__sq" id="mapBtn" type="button" title="Choose another field">🗺️</button>
-          <button class="hud__sq danger" id="restart" type="button" title="Play this field again">↺</button>
+          <button class="hud__sq" id="speed" type="button" title="Tốc độ chơi">x1</button>
+          <button class="hud__sq" id="pause" type="button" title="Tạm dừng">⏸</button>
+          <button class="hud__sq" id="mapBtn" type="button" title="Chọn cánh đồng khác">🗺️</button>
+          <button class="hud__sq danger" id="restart" type="button" title="Chơi lại màn này">↺</button>
         </div>
-        <div class="hud__house" id="stLives" title="Field lives left">
+        <div class="hud__house" id="stLives" title="Mạng còn lại của cánh đồng">
           <svg class="hud__roof" viewBox="0 0 46 18" aria-hidden="true">
             <path d="M23 1.5 44.5 16.5H1.5Z" fill="#ff6b57" stroke="#1c1b3a" stroke-width="3" stroke-linejoin="round"/>
           </svg>
@@ -1382,33 +1382,33 @@ canvas#c {
       <div id="preview"></div>
     </div>
 
-    <!-- Field -->
+    <!-- Cánh đồng -->
     <div id="field">
       <canvas id="c" width="960" height="600"></canvas>
     </div>
 
-    <!-- Bottom bar: tower list, info, skills -->
+    <!-- Thanh dưới: danh sách tháp, thông tin, kỹ năng -->
     <div id="bottom">
       <div id="towers"></div>
       <div id="side">
         <div id="info"></div>
         <div id="skills">
-          <button class="btn sk" id="skStrike">🚀 Airstrike <small>(Q)</small><div class="cd"></div></button>
-          <button class="btn sk" id="skFreeze">❄️ Freeze <small>(E)</small><div class="cd"></div></button>
+          <button class="btn sk" id="skStrike">🚀 Không kích <small>(Q)</small><div class="cd"></div></button>
+          <button class="btn sk" id="skFreeze">❄️ Đóng băng <small>(E)</small><div class="cd"></div></button>
         </div>
       </div>
     </div>
   </div>
 
   <div id="msg"></div>
-  <button id="homeBackBtn" type="button" aria-label="Back to lobby">←</button>
+  <button id="homeBackBtn" type="button" aria-label="Về sảnh">←</button>
 
-  <!-- Script load order matters a lot (files share global variables) -->
+  <!-- Thứ tự nạp script rất quan trọng (các file dùng chung biến toàn cục) -->
     <!-- js/gc-kit.js -->
     <script>
 /* =====================================================
-   GC KIT · shared logic
-   Difficulty picker, best scores per difficulty, result box
+   GC KIT · logic dùng chung
+   Chọn độ khó, kỷ lục theo độ khó, hộp kết quả
    ===================================================== */
 (function () {
   'use strict';
@@ -1416,20 +1416,20 @@ canvas#c {
   if (window.GC) return;
 
   var LV = [
-    { i: 0, key: 'easy',   label: 'Easy',   emoji: '🌱',  color: 'var(--gc-mint)' },
-    { i: 1, key: 'normal', label: 'Normal', emoji: '🌤️', color: 'var(--gc-sun)' },
-    { i: 2, key: 'hard',   label: 'Hard',   emoji: '🔥',  color: 'var(--gc-tomato)' },
-    { i: 3, key: 'insane', label: 'Insane', emoji: '💀',  color: 'var(--gc-lilac)' }
+    { i: 0, key: 'easy',   label: 'Dễ',         emoji: '🌱',  color: 'var(--gc-mint)' },
+    { i: 1, key: 'normal', label: 'Trung bình', emoji: '🌤️', color: 'var(--gc-sun)' },
+    { i: 2, key: 'hard',   label: 'Khó',        emoji: '🔥',  color: 'var(--gc-tomato)' },
+    { i: 3, key: 'insane', label: 'Siêu khó',   emoji: '💀',  color: 'var(--gc-lilac)' }
   ];
 
   var DEFAULT_LEVEL_TEXT = [
-    'Relaxed, little pressure',
-    'Balanced, fair challenge',
-    'Faster, fewer mistakes',
-    'The ultimate challenge'
+    'Thong thả, ít áp lực',
+    'Cân bằng, vừa sức',
+    'Nhanh hơn, ít sai sót',
+    'Thử thách cực đại'
   ];
 
-  /* ---------- Storage helpers (safe when storage is blocked) ---------- */
+  /* ---------- Tiện ích lưu trữ (an toàn khi bị chặn storage) ---------- */
   function ls(op, k, v) {
     try {
       return op === 'get' ? localStorage.getItem(k) : localStorage.setItem(k, v);
@@ -1460,12 +1460,12 @@ canvas#c {
     id: 'game',
     diff: LV[1],
 
-    /** Current difficulty: 0 easy · 1 normal · 2 hard · 3 insane */
+    /** Độ khó hiện tại: 0 dễ · 1 trung bình · 2 khó · 3 siêu khó */
     get i() {
       return GC.diff.i;
     },
 
-    /** GC.by(a,b,c,d) or GC.by([a,b,c,d]) → value for the selected difficulty */
+    /** GC.by(a,b,c,d) hoặc GC.by([a,b,c,d]) → giá trị theo độ khó đang chọn */
     by: function (a, b, c, d) {
       var arr = Array.isArray(a) ? a : [a, b, c, d];
       return arr[GC.diff.i];
@@ -1477,7 +1477,7 @@ canvas#c {
 
     esc: esc,
 
-    /* ---------- Best scores per difficulty ---------- */
+    /* ---------- Kỷ lục theo độ khó ---------- */
     best: {
       key: function (id, i) {
         return 'gc:' + id + ':best:' + LV[i == null ? GC.diff.i : i].key;
@@ -1487,7 +1487,7 @@ canvas#c {
         return +ls('get', GC.best.key(id || GC.id, i)) || 0;
       },
 
-      /** Save if higher. Returns true when it is a new best score. */
+      /** Lưu nếu cao hơn. Trả về true nếu là kỷ lục mới. */
       set: function (id, score, i) {
         id = id || GC.id;
         score = +score || 0;
@@ -1499,7 +1499,7 @@ canvas#c {
         return false;
       },
 
-      /** For games where "lower is better" (time, move count). */
+      /** Với game tính theo "thấp hơn là tốt hơn" (thời gian, số bước). */
       setLow: function (id, score, i) {
         id = id || GC.id;
         score = +score || 0;
@@ -1513,13 +1513,13 @@ canvas#c {
       }
     },
 
-    /** Difficulty pill HTML: "🔥 Hard" */
+    /** HTML pill độ khó: "🔥 Khó" */
     chip: function () {
-      return '<span class="gc-pill gc-d' + GC.diff.i + '" title="Difficulty">' +
+      return '<span class="gc-pill gc-d' + GC.diff.i + '" title="Độ khó">' +
         GC.diff.emoji + ' ' + GC.diff.label + '</span>';
     },
 
-    /** Mount a floating difficulty chip in the top-right corner. */
+    /** Gắn chip độ khó nổi ở góc phải trên. */
     mountChip: function () {
       var el = document.querySelector('.gc-chip');
       if (!el) {
@@ -1531,37 +1531,37 @@ canvas#c {
       return el;
     },
 
-    /** Quit to the game list (tell the React host) or to the home page when opened alone. */
+    /** Thoát về danh sách game (báo cho React host) hoặc về trang chủ nếu mở riêng. */
     quit: function () {
       try {
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({ type: 'quit', data: {} }, '*');
           return;
         }
-      } catch (e) { /* ignore */ }
+      } catch (e) { /* bỏ qua */ }
 
       try {
         window.location.href = '/';
-      } catch (e) { /* ignore */ }
+      } catch (e) { /* bỏ qua */ }
     },
 
-    /** Play again on the SAME difficulty: reload and auto-start, skipping the picker. */
+    /** Chơi lại CÙNG độ khó: nạp lại trang và tự bắt đầu, bỏ qua màn chọn. */
     again: function () {
       ss('set', 'gc:auto:' + GC.id, String(GC.diff.i));
       location.reload();
     },
 
-    /** Go back to the difficulty picker. */
+    /** Quay lại màn chọn độ khó. */
     change: function () {
       ss('del', 'gc:auto:' + GC.id);
       location.reload();
     },
 
     /**
-     * Show the difficulty picker. cfg:
+     * Hiện màn chọn độ khó. cfg:
      *   id, name, icon, desc,
-     *   levels: [4 description strings, one per difficulty],
-     *   resume: { i, text } (optional),
+     *   levels: [4 chuỗi mô tả riêng cho từng độ khó],
+     *   resume: { i, text } (tuỳ chọn),
      *   onStart(diff), onResume(diff)
      */
     start: function (cfg) {
@@ -1587,7 +1587,7 @@ canvas#c {
         else if (cfg.onStart) cfg.onStart(GC.diff);
       }
 
-      /* Playing again on the same difficulty: skip the picker */
+      /* Chơi lại cùng độ khó: bỏ qua màn chọn */
       var auto = ss('get', 'gc:auto:' + GC.id);
       if (auto != null && auto !== '') {
         ss('del', 'gc:auto:' + GC.id);
@@ -1604,7 +1604,7 @@ canvas#c {
       root.className = 'gc-start';
       root.id = 'gc-start';
       root.setAttribute('role', 'dialog');
-      root.setAttribute('aria-label', 'Choose difficulty — ' + (cfg.name || ''));
+      root.setAttribute('aria-label', 'Chọn độ khó — ' + (cfg.name || ''));
 
       var levelsHtml = LV.map(function (l) {
         var best = GC.best.get(GC.id, l.i);
@@ -1625,17 +1625,17 @@ canvas#c {
       }).join('');
 
       root.innerHTML = '' +
-        (hasBack ? '' : '<button class="gc-back" type="button" aria-label="Back to lobby">←</button>') +
+        (hasBack ? '' : '<button class="gc-back" type="button" aria-label="Về sảnh">←</button>') +
         '<div class="gc-card">' +
           '<div class="gc-ico">' + esc(cfg.icon || '🎮') + '</div>' +
-          '<h1 class="gc-title">' + esc(cfg.name || 'Game') + '</h1>' +
+          '<h1 class="gc-title">' + esc(cfg.name || 'Trò chơi') + '</h1>' +
           (cfg.desc ? '<p class="gc-desc">' + esc(cfg.desc) + '</p>' : '') +
-          '<div class="gc-h">Choose difficulty</div>' +
-          '<div class="gc-levels" role="radiogroup" aria-label="Difficulty">' + levelsHtml + '</div>' +
+          '<div class="gc-h">Chọn độ khó</div>' +
+          '<div class="gc-levels" role="radiogroup" aria-label="Độ khó">' + levelsHtml + '</div>' +
           '<div class="gc-actions">' +
-            '<button type="button" class="gc-btn gc-go">▶ Start</button>' +
+            '<button type="button" class="gc-btn gc-go">▶ Bắt đầu</button>' +
             (cfg.resume
-              ? '<button type="button" class="gc-btn alt gc-resume">⏯ Continue · ' +
+              ? '<button type="button" class="gc-btn alt gc-resume">⏯ Chơi tiếp · ' +
                 LV[cfg.resume.i].emoji + ' ' + LV[cfg.resume.i].label +
                 (cfg.resume.text ? ' — ' + esc(cfg.resume.text) : '') + '</button>'
               : '') +
@@ -1708,12 +1708,12 @@ canvas#c {
       var go = root.querySelector('.gc-go');
       try {
         go.focus({ preventScroll: true });
-      } catch (e) { /* ignore */ }
+      } catch (e) { /* bỏ qua */ }
     },
 
     /**
-     * Shared result box. cfg:
-     *   title, score, lines:[], win:boolean, low:boolean (lower = better),
+     * Hộp kết quả thống nhất. cfg:
+     *   title, score, lines:[], win:boolean, low:boolean (thấp hơn = tốt hơn),
      *   onAgain, onChange, onHome
      */
     result: function (cfg) {
@@ -1733,14 +1733,14 @@ canvas#c {
 
       modal.innerHTML = '' +
         '<div class="gc-panel" role="dialog">' +
-          '<h2>' + esc(cfg.title || (cfg.win ? 'Victory! 🎉' : 'Complete!')) + '</h2>' +
+          '<h2>' + esc(cfg.title || (cfg.win ? 'Chiến thắng! 🎉' : 'Hoàn thành!')) + '</h2>' +
           '<div style="margin-top:8px">' + GC.chip() + '</div>' +
           (cfg.score != null ? '<div class="gc-big">' + esc(cfg.score) + '</div>' : '') +
-          '<div class="gc-stats">' + (isBest ? '<span>🏆 New record</span>' : '') + lines + '</div>' +
+          '<div class="gc-stats">' + (isBest ? '<span>🏆 Kỷ lục mới</span>' : '') + lines + '</div>' +
           '<div class="gc-row">' +
-            '<button class="gc-btn" data-a="again">Play again</button>' +
-            '<button class="gc-btn alt" data-a="change">Change difficulty</button>' +
-            '<button class="gc-btn alt" data-a="home">Back to lobby</button>' +
+            '<button class="gc-btn" data-a="again">Chơi lại</button>' +
+            '<button class="gc-btn alt" data-a="change">Đổi độ khó</button>' +
+            '<button class="gc-btn alt" data-a="home">Về sảnh</button>' +
           '</div>' +
         '</div>';
 
@@ -1765,158 +1765,158 @@ canvas#c {
     <!-- js/config.js -->
     <script>
 /* =====================================================
-   config.js · constants, tower data, enemy data
+   config.js · hằng số, dữ liệu tháp, dữ liệu kẻ địch
    ===================================================== */
 
-/* ---------- Map size ---------- */
-const CW = 960;            // canvas width
-const CH = 600;            // canvas height
-const CS = 40;             // size of one tile
+/* ---------- Kích thước bản đồ ---------- */
+const CW = 960;            // chiều rộng canvas
+const CH = 600;            // chiều cao canvas
+const CS = 40;             // kích thước 1 ô
 const COLS = 24;
 const ROWS = 15;
-/* Entrance row (left) and exit row (right) — adjusted per level in levels.js */
+/* Hàng cổng vào (bên trái) và cổng ra (bên phải) — từng màn chỉnh trong levels.js */
 let SR = 7;
 let GR = 7;
-const GOALC = COLS - 1;    // exit column
+const GOALC = COLS - 1;    // cột cổng ra
 
-const MAXLV = 5;           // max tower level
-const INK = '#1c1b3a';     // main outline color
+const MAXLV = 5;           // cấp tháp tối đa
+const INK = '#1c1b3a';     // màu viền chủ đạo
 
-/* ---------- From this wave on, enemies get much stronger ---------- */
+/* ---------- Từ đợt này trở đi kẻ địch mạnh hơn hẳn ---------- */
 const HARD_WAVE = 10;
 
-/* ---------- Tower selection hotkeys ---------- */
+/* ---------- Phím tắt chọn tháp ---------- */
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
 
-/* ---------- Tower targeting modes ---------- */
-const MODES = ['First', 'Strongest', 'Closest'];
+/* ---------- Chế độ ngắm mục tiêu của tháp ---------- */
+const MODES = ['Đầu tiên', 'Mạnh nhất', 'Gần nhất'];
 
 /* =====================================================
-   TOWERS / WEAPONS
+   THÁP / VŨ KHÍ
    ===================================================== */
 const TYPES = {
   gun: {
-    name: 'Machine Gun', cost: 50, range: 3.0, dmg: 7, rate: 0.3,
+    name: 'Súng máy', cost: 50, range: 3.0, dmg: 7, rate: 0.3,
     color: '#4a90d9', air: true, ground: true,
-    desc: 'Fires fast and hits air too. Max level gives it 3 barrels.'
+    desc: 'Bắn nhanh, đánh cả trên không. Cấp cao thành 3 nòng.'
   },
   cannon: {
-    name: 'Cannon', cost: 100, range: 3.4, dmg: 30, rate: 1.3,
+    name: 'Pháo', cost: 100, range: 3.4, dmg: 30, rate: 1.3,
     color: '#e8923a', air: false, ground: true, splash: 60,
-    desc: 'Splash damage, ground targets only.'
+    desc: 'Nổ lan, chỉ bắn mặt đất.'
   },
   frost: {
-    name: 'Frost Tower', cost: 80, range: 2.8, dmg: 3, rate: 0.7,
+    name: 'Tháp băng', cost: 80, range: 2.8, dmg: 3, rate: 0.7,
     color: '#58d3e8', air: true, ground: true, slow: 0.5,
-    desc: 'Slows enemies down. Higher levels freeze harder.'
+    desc: 'Làm chậm kẻ địch. Cấp cao đóng băng mạnh hơn.'
   },
   sniper: {
-    name: 'Sniper', cost: 150, range: 7.0, dmg: 65, rate: 1.8,
+    name: 'Bắn tỉa', cost: 150, range: 7.0, dmg: 65, rate: 1.8,
     color: '#a45bd6', air: true, ground: true, hit: true, pierce: true,
-    desc: 'Long range, pierces armor, hits instantly.'
+    desc: 'Tầm xa, xuyên giáp, bắn trúng ngay.'
   },
   flame: {
-    name: 'Flamethrower', cost: 120, range: 2.3, dmg: 6, rate: 0.15,
+    name: 'Phun lửa', cost: 120, range: 2.3, dmg: 6, rate: 0.15,
     color: '#ff6a2b', air: false, ground: true, burnDps: 12,
-    desc: 'Sets enemies on fire with burning damage over time.'
+    desc: 'Thiêu đốt, gây cháy liên tục.'
   },
   tesla: {
-    name: 'Tesla Tower', cost: 180, range: 3.2, dmg: 22, rate: 0.9,
+    name: 'Tháp sét', cost: 180, range: 3.2, dmg: 22, rate: 0.9,
     color: '#f2e14c', air: true, ground: true, chain: 3,
-    desc: 'Lightning chains to several targets.'
+    desc: 'Sét lan sang nhiều mục tiêu.'
   },
   poison: {
-    name: 'Poison Tower', cost: 140, range: 3.0, dmg: 5, rate: 0.5,
+    name: 'Tháp độc', cost: 140, range: 3.0, dmg: 5, rate: 0.5,
     color: '#7ad04a', air: false, ground: true, poisonDps: 10,
-    desc: 'Poisons enemies with damage over time.'
+    desc: 'Đầu độc, sát thương theo thời gian.'
   },
   missile: {
-    name: 'Missile', cost: 200, range: 5.0, dmg: 55, rate: 1.6,
+    name: 'Tên lửa', cost: 200, range: 5.0, dmg: 55, rate: 1.6,
     color: '#ff5fa2', air: true, ground: true, splash: 70, pierce: true,
-    desc: 'Hits air, splash damage, pierces armor.'
+    desc: 'Chống không, nổ lan, xuyên giáp.'
   },
   laser: {
-    name: 'Laser Beam', cost: 260, range: 4.2, dmg: 22, rate: 0.05,
+    name: 'Tia laser', cost: 260, range: 4.2, dmg: 22, rate: 0.05,
     color: '#ff3b6b', air: true, ground: true, laser: true, pierce: true,
-    desc: 'A steady beam that gets stronger the longer it hits one target.'
+    desc: 'Tia liên tục, càng bắn lâu vào một mục tiêu càng mạnh.'
   },
   rail: {
-    name: 'Railgun', cost: 350, range: 8.5, dmg: 160, rate: 3.0,
+    name: 'Điện từ', cost: 350, range: 8.5, dmg: 160, rate: 3.0,
     color: '#46e0ff', air: true, ground: true, rail: true, pierce: true,
-    desc: 'Fires straight through a whole line and pierces armor. Super strong.'
+    desc: 'Phát bắn xuyên thẳng hàng, xuyên giáp. Cực mạnh.'
   },
   mortar: {
-    name: 'Mortar', cost: 220, range: 8.0, dmg: 85, rate: 2.4,
+    name: 'Cối', cost: 220, range: 8.0, dmg: 85, rate: 2.4,
     color: '#9aa86a', air: false, ground: true, splash: 80, mortar: true, minR: 2.2,
-    desc: 'Very long range, wide splash, ground targets only.'
+    desc: 'Tầm cực xa, nổ lan rộng, chỉ bắn mặt đất.'
   },
   radar: {
     name: 'Radar', cost: 160, range: 3.2, dmg: 0, rate: 1,
     color: '#35d0a0', air: false, ground: false, support: true,
-    desc: 'Boosts damage and range of nearby towers, and reveals invisible enemies.'
+    desc: 'Tăng sát thương & tầm bắn tháp gần đó, lộ diện kẻ tàng hình.'
   }
 };
 
 /* =====================================================
-   ENEMIES
-   n: name · ic: icon · hp: health · sp: speed · rw: coin reward
-   r: radius · armor: armor · air: flying · dmg: lives lost when it leaks
+   KẺ ĐỊCH
+   n: tên · ic: biểu tượng · hp: máu · sp: tốc độ · rw: tiền thưởng
+   r: bán kính · armor: giáp · air: bay · dmg: số mạng bị trừ khi lọt
    ===================================================== */
 const EDEF = {
-  /* ----- Basic group ----- */
-  grunt:    { n: 'Grunt',      ic: '🧟', hp: 40,   sp: 55,  rw: 5,   col: '#6cbf4a', r: 11 },
-  runner:   { n: 'Runner',     ic: '🏃', hp: 26,   sp: 105, rw: 6,   col: '#f0d03a', r: 9 },
-  tank:     { n: 'Tank',       ic: '🚜', hp: 240,  sp: 34,  rw: 14,  col: '#8a5a3a', r: 15 },
-  plane:    { n: 'Plane',      ic: '✈️', hp: 70,   sp: 75,  rw: 9,   col: '#e8e8f2', r: 12, air: true },
-  boss:     { n: 'Boss',       ic: '👹', hp: 1800, sp: 28,  rw: 150, col: '#c0392b', r: 20, dmg: 5 },
-  armored:  { n: 'Armored',    ic: '🪖', hp: 170,  sp: 45,  rw: 16,  col: '#6a7a88', r: 14, armor: 6 },
-  shielded: { n: 'Shielded',   ic: '🔰', hp: 110,  sp: 50,  rw: 14,  col: '#4a7ab8', r: 13, shield: 120 },
-  healer:   { n: 'Medic',      ic: '💊', hp: 100,  sp: 50,  rw: 20,  col: '#e05fc8', r: 12, heal: true },
-  bomber:   { n: 'Bomber',     ic: '💣', hp: 110,  sp: 90,  rw: 14,  col: '#9a6ac0', r: 13, air: true, dmg: 2 },
-  splitter: { n: 'Splitter',   ic: '🧬', hp: 160,  sp: 48,  rw: 12,  col: '#c07a3a', r: 16, split: 'mini' },
-  berserk:  { n: 'Berserker',  ic: '😡', hp: 200,  sp: 45,  rw: 22,  col: '#e03a3a', r: 14, berserk: true },
-  ghost:    { n: 'Ghost',      ic: '👻', hp: 90,   sp: 75,  rw: 16,  col: '#a0d8e8', r: 12, stealth: true },
-  mini:     { n: 'Mini',       ic: '🐛', hp: 18,   sp: 80,  rw: 2,   col: '#c07a3a', r: 7 },
+  /* ----- Nhóm cơ bản ----- */
+  grunt:    { n: 'Lính',       ic: '🧟', hp: 40,   sp: 55,  rw: 5,   col: '#6cbf4a', r: 11 },
+  runner:   { n: 'Chạy',       ic: '🏃', hp: 26,   sp: 105, rw: 6,   col: '#f0d03a', r: 9 },
+  tank:     { n: 'Xe tăng',    ic: '🚜', hp: 240,  sp: 34,  rw: 14,  col: '#8a5a3a', r: 15 },
+  plane:    { n: 'Máy bay',    ic: '✈️', hp: 70,   sp: 75,  rw: 9,   col: '#e8e8f2', r: 12, air: true },
+  boss:     { n: 'Trùm',       ic: '👹', hp: 1800, sp: 28,  rw: 150, col: '#c0392b', r: 20, dmg: 5 },
+  armored:  { n: 'Giáp',       ic: '🪖', hp: 170,  sp: 45,  rw: 16,  col: '#6a7a88', r: 14, armor: 6 },
+  shielded: { n: 'Khiên',      ic: '🔰', hp: 110,  sp: 50,  rw: 14,  col: '#4a7ab8', r: 13, shield: 120 },
+  healer:   { n: 'Y tá',       ic: '💊', hp: 100,  sp: 50,  rw: 20,  col: '#e05fc8', r: 12, heal: true },
+  bomber:   { n: 'Ném bom',    ic: '💣', hp: 110,  sp: 90,  rw: 14,  col: '#9a6ac0', r: 13, air: true, dmg: 2 },
+  splitter: { n: 'Phân thân',  ic: '🧬', hp: 160,  sp: 48,  rw: 12,  col: '#c07a3a', r: 16, split: 'mini' },
+  berserk:  { n: 'Cuồng nộ',   ic: '😡', hp: 200,  sp: 45,  rw: 22,  col: '#e03a3a', r: 14, berserk: true },
+  ghost:    { n: 'Ma',         ic: '👻', hp: 90,   sp: 75,  rw: 16,  col: '#a0d8e8', r: 12, stealth: true },
+  mini:     { n: 'Con',        ic: '🐛', hp: 18,   sp: 80,  rw: 2,   col: '#c07a3a', r: 7 },
 
-  /* ----- Advanced group ----- */
-  bat:      { n: 'Bat',        ic: '🦇', hp: 34,   sp: 120, rw: 7,   col: '#6b4a8a', r: 9, air: true },
+  /* ----- Nhóm nâng cao ----- */
+  bat:      { n: 'Dơi',        ic: '🦇', hp: 34,   sp: 120, rw: 7,   col: '#6b4a8a', r: 9, air: true },
   ninja:    { n: 'Ninja',      ic: '🥷', hp: 120,  sp: 95,  rw: 20,  col: '#2e2e48', r: 11, evade: 0.3 },
-  knight:   { n: 'Knight',     ic: '🤺', hp: 340,  sp: 38,  rw: 26,  col: '#aeb8c6', r: 15, armor: 10 },
-  wizard:   { n: 'Wizard',     ic: '🧙', hp: 130,  sp: 46,  rw: 24,  col: '#6a58d8', r: 12, haste: true },
-  summoner: { n: 'Summoner',   ic: '🧛', hp: 260,  sp: 36,  rw: 34,  col: '#7a2a66', r: 14, summon: true },
+  knight:   { n: 'Hiệp sĩ',    ic: '🤺', hp: 340,  sp: 38,  rw: 26,  col: '#aeb8c6', r: 15, armor: 10 },
+  wizard:   { n: 'Pháp sư',    ic: '🧙', hp: 130,  sp: 46,  rw: 24,  col: '#6a58d8', r: 12, haste: true },
+  summoner: { n: 'Triệu hồi',  ic: '🧛', hp: 260,  sp: 36,  rw: 34,  col: '#7a2a66', r: 14, summon: true },
   golem:    { n: 'Golem',      ic: '🗿', hp: 1000, sp: 24,  rw: 70,  col: '#8a8f98', r: 19, dmg: 2, armor: 8 },
-  dragon:   { n: 'Dragon',     ic: '🐉', hp: 3200, sp: 40,  rw: 220, col: '#d94a3a', r: 24, air: true, dmg: 8 },
+  dragon:   { n: 'Rồng',       ic: '🐉', hp: 3200, sp: 40,  rw: 220, col: '#d94a3a', r: 24, air: true, dmg: 8 },
   titan:    { n: 'Titan',      ic: '👺', hp: 7500, sp: 22,  rw: 500, col: '#4a2f6a', r: 26, dmg: 10, armor: 5 },
 
-  /* ----- NEW: heavy enemies that show up in the late waves ----- */
-  juggernaut: { n: 'Juggernaut', ic: '🛡️', hp: 900, sp: 30,  rw: 60,  col: '#58606e', r: 18, armor: 12, dmg: 2 },
-  phoenix:    { n: 'Phoenix',    ic: '🔥', hp: 650, sp: 70,  rw: 80,  col: '#ff8a2a', r: 15, air: true, revive: true, dmg: 3 },
-  warlock:    { n: 'Dark Warlock', ic: '🔮', hp: 420, sp: 40,  rw: 60,  col: '#3a2a7a', r: 13, warlock: true },
-  reaper:     { n: 'Reaper',     ic: '💀', hp: 520, sp: 100, rw: 90,  col: '#2a2a3a', r: 13, evade: 0.35, stealth: true, armor: 4 }
+  /* ----- MỚI: kẻ địch hạng nặng, xuất hiện từ các đợt cuối ----- */
+  juggernaut: { n: 'Thiết giáp',   ic: '🛡️', hp: 900, sp: 30,  rw: 60,  col: '#58606e', r: 18, armor: 12, dmg: 2 },
+  phoenix:    { n: 'Phượng hoàng', ic: '🔥', hp: 650, sp: 70,  rw: 80,  col: '#ff8a2a', r: 15, air: true, revive: true, dmg: 3 },
+  warlock:    { n: 'Phù thủy đen', ic: '🔮', hp: 420, sp: 40,  rw: 60,  col: '#3a2a7a', r: 13, warlock: true },
+  reaper:     { n: 'Tử thần',      ic: '💀', hp: 520, sp: 100, rw: 90,  col: '#2a2a3a', r: 13, evade: 0.35, stealth: true, armor: 4 }
 };
 
 /* =====================================================
-   ELITE ENEMIES · show up from HARD_WAVE onward
-   Elites have a golden glow, more health, thicker
-   armor, faster legs and drop more coins.
+   TINH ANH (ELITE) · xuất hiện từ đợt HARD_WAVE
+   Kẻ địch tinh anh có vòng sáng vàng, máu trâu hơn,
+   giáp dày hơn, chạy nhanh hơn và rơi nhiều tiền hơn.
    ===================================================== */
 const ELITE = {
-  hpMul: 1.7,       // health multiplier
-  spdMul: 1.12,     // speed multiplier
-  rwMul: 2,         // coin reward multiplier
-  baseArmor: 2,     // base bonus armor
-  armorEvery: 5,    // +1 armor every this many waves (after HARD_WAVE)
-  aegisWave: 15,    // from this wave elites also get an energy shield
-  aegisPct: 0.3     // shield = % of max health
+  hpMul: 1.7,       // nhân máu
+  spdMul: 1.12,     // nhân tốc độ
+  rwMul: 2,         // nhân tiền thưởng
+  baseArmor: 2,     // giáp cộng thêm cơ bản
+  armorEvery: 5,    // cứ mỗi bấy nhiêu đợt (sau HARD_WAVE) cộng thêm 1 giáp
+  aegisWave: 15,    // từ đợt này tinh anh có thêm khiên năng lượng
+  aegisPct: 0.3     // khiên = % máu tối đa
 };
 
-/** Chance that an enemy (not a boss) is an elite on wave n */
+/** Xác suất một kẻ địch (không phải trùm) là tinh anh ở đợt n */
 function eliteChance(n) {
   if (n < HARD_WAVE) return 0;
   return Math.min(0.55, 0.08 + (n - HARD_WAVE) * 0.03);
 }
 
-/** Extra health multiplier for waves after HARD_WAVE */
+/** Hệ số máu cộng thêm cho các đợt sau HARD_WAVE */
 function lateHpMul(n) {
   return n < HARD_WAVE ? 1 : 1 + 0.07 * (n - HARD_WAVE + 1);
 }
@@ -1924,13 +1924,13 @@ function lateHpMul(n) {
     <!-- js/utils.js -->
     <script>
 /* =====================================================
-   utils.js · shared utility helpers
+   utils.js · hàm tiện ích dùng chung
    ===================================================== */
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const $ = id => document.getElementById(id);
 
-/** Distance from point (px,py) to the segment (x1,y1)-(x2,y2) */
+/** Khoảng cách từ điểm (px,py) đến đoạn thẳng (x1,y1)-(x2,y2) */
 function distSeg(px, py, x1, y1, x2, y2) {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -1942,7 +1942,7 @@ function distSeg(px, py, x1, y1, x2, y2) {
   return Math.hypot(px - (x1 + u * dx), py - (y1 + u * dy));
 }
 
-/** Tile coordinates from pixel coordinates */
+/** Tọa độ ô từ tọa độ pixel */
 function cellOf(x, y) {
   return [
     clamp(Math.floor(x / CS), 0, COLS - 1),
@@ -1950,7 +1950,7 @@ function cellOf(x, y) {
   ];
 }
 
-/** Lighten a hex color, returns an rgb() string */
+/** Làm sáng một màu hex, trả về chuỗi rgb() */
 function lighten(hex, a) {
   const n = parseInt(hex.slice(1), 16);
   const r = n >> 16;
@@ -1960,7 +1960,7 @@ function lighten(hex, a) {
   return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
 }
 
-/** Darken a hex color, returns an rgb() string */
+/** Làm tối một màu hex, trả về chuỗi rgb() */
 function darken(hex, a) {
   const n = parseInt(hex.slice(1), 16);
   const r = n >> 16;
@@ -1970,7 +1970,7 @@ function darken(hex, a) {
   return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
 }
 
-/** Seeded random numbers (so the background always looks the same) */
+/** Bộ số ngẫu nhiên cố định (để nền luôn giống nhau) */
 function seededRandom(seed) {
   let s = seed;
   return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -1979,31 +1979,31 @@ function seededRandom(seed) {
     <!-- js/state.js -->
     <script>
 /* =====================================================
-   state.js · canvas, run state, account coin wallet
+   state.js · canvas, trạng thái ván chơi, ví xu tài khoản
    ===================================================== */
 
 const cv = document.getElementById('c');
 let ctx = cv.getContext('2d');
 
-/* ---------- Difficulty settings (assigned in main.js) ---------- */
+/* ---------- Cấu hình theo độ khó (được gán trong main.js) ---------- */
 let D;
 let TOTAL = 15;
-let level = null;          // current level (levels.js)
-let noBuild;               // grid of tiles that can't be built on (terrain + bridges)
+let level = null;          // màn đang chơi (levels.js)
+let noBuild;               // lưới ô không xây được (địa hình + cầu)
 
-/* ---------- Run state ---------- */
-let blocked;               // grid of tiles with towers or blocking terrain
+/* ---------- Trạng thái ván chơi ---------- */
+let blocked;               // lưới ô đã có tháp hoặc địa hình chặn
 let towers;
 let enemies;
-let projs;                 // projectiles
-let fx;                    // short-lived effects
-let parts;                 // particles
-let dist;                  // distance map to the exit gate
-let pathPts = [];          // path to draw
-let pendingSpawns = [];    // enemies spawned mid-battle (splits, summons)
+let projs;                 // đạn
+let fx;                    // hiệu ứng ngắn
+let parts;                 // hạt
+let dist;                  // bản đồ khoảng cách tới cổng ra
+let pathPts = [];          // đường đi để vẽ
+let pendingSpawns = [];    // địch sinh ra giữa trận (phân thân, triệu hồi)
 
-// money/names are set by reset() before the HUD draws; lives/wave need 0 so
-// the first updUI() call (on the level picker) doesn't show NaN in the score.
+// money/names được reset() gán trước khi HUD vẽ; lives/wave cần giá trị 0 để
+// updUI() lần đầu (màn chọn bản đồ) không hiện NaN trong điểm.
 let money;
 let lives = 0;
 let wave = 0;
@@ -2012,20 +2012,20 @@ let spawnT;
 let paused;
 let speed = 1;
 let over;
-let sel = null;            // selected tower
-let build = null;          // tower type being placed
-let hover = null;          // tile the mouse is over
+let sel = null;            // tháp đang chọn
+let build = null;          // loại tháp đang đặt
+let hover = null;          // ô chuột đang trỏ
 let waveActive;
-let gtime = 0;             // game clock (for animations)
-let aim = null;            // aiming an airstrike
+let gtime = 0;             // đồng hồ trò chơi (cho hoạt ảnh)
+let aim = null;            // đang ngắm không kích
 let kills = 0;
 let started = false;
-let shake = 0;             // screen shake amount
+let shake = 0;             // độ rung màn hình
 
 let strikes = [];
-let waveSpawn = 0;   // enemies in the current wave (for the progress bar)
-let waveDone = 0;    // enemies killed or leaked
-let gfx = true;      // environment effects (clouds, pollen) — toggled in settings
+let waveSpawn = 0;   // số địch của đợt đang chạy (vẽ thanh tiến trình)
+let waveDone = 0;    // số địch đã diệt hoặc đã lọt
+let gfx = true;      // hiệu ứng môi trường (mây, phấn hoa) — bật/tắt trong cài đặt
 
 const skill = {
   strike: { cd: 0, max: 40 },
@@ -2033,13 +2033,13 @@ const skill = {
 };
 
 /* =====================================================
-   WALLET = ACCOUNT COINS
-   When the game runs inside the app (iframe), the React host owns the wallet:
-   localStorage is read right away on entry (no waiting for the network),
-   and the /auth/me/wallet API updates the real coin count.
-   Every earn/spend in the game only reports the DIFFERENCE to the host
-   → the host adds it up and sends once; if the network drops, the host keeps it.
-   Opening the .html file directly (no host) → coins follow the difficulty.
+   TÚI TIỀN = XU TÀI KHOẢN
+   Game mở trong app (iframe) thì host React giữ ví:
+   localStorage là bản đọc ngay khi vào game (không chờ mạng),
+   API /auth/me/wallet cập nhật số xu thật.
+   Mỗi lần nhận/thu tiền trong game chỉ báo CHÊNH LỆCH cho host
+   → host cộng dồn và gửi một lần; mất mạng thì host giữ lại.
+   Mở file .html trực tiếp (không có host) → giữ tiền theo độ khó.
    ===================================================== */
 const HOSTED = !!(window.parent && window.parent !== window);
 const WKEY = 'gq_coin_wallet_v1';
@@ -2058,13 +2058,13 @@ function purseShift(d) {
   if (HOSTED) {
     try {
       window.parent.postMessage({ type: 'gq:walletDelta', data: { amount: d } }, '*');
-    } catch (e) { /* ignore */ }
+    } catch (e) { /* bỏ qua */ }
   }
 
   updUI();
 }
 
-/** Earn coins (kill rewards, wave bonus, tower sale) → the account coin balance grows. */
+/** Nhận tiền (thưởng diệt địch, thưởng đợt, bán trụ) → xu tài khoản tăng theo. */
 function earn(d) {
   if (d > 0) {
     purseShift(d);
@@ -2072,7 +2072,7 @@ function earn(d) {
   }
 }
 
-/** Pay coins (building, upgrading) → deducted straight from the account coin balance. */
+/** Trả tiền (xây trụ, nâng cấp) → trừ thẳng vào xu tài khoản. */
 function pay(d) {
   if (d > 0) purseShift(-d);
 }
@@ -2088,14 +2088,14 @@ addEventListener('message', function (ev) {
 if (HOSTED) {
   try {
     window.parent.postMessage({ type: 'gq:walletGet', data: {} }, '*');
-  } catch (e) { /* ignore */ }
+  } catch (e) { /* bỏ qua */ }
 }
 
 /* =====================================================
-   Reset the run
+   Đặt lại ván chơi
    ===================================================== */
 function reset() {
-  // Rebuild the grid from the level terrain (removes every built tower)
+  // Dựng lại lưới từ địa hình của màn (xoá hết tháp đã xây)
   applyLevel(level);
 
   towers = [];
@@ -2125,7 +2125,7 @@ function reset() {
   skill.strike.cd = 0;
   skill.freeze.cd = 0;
 
-  $('go').textContent = '▶ Start wave 1';
+  $('go').textContent = '▶ Bắt đầu đợt 1';
   $('go').disabled = false;
   $('pause').textContent = '⏸';
   $('speed').textContent = 'x' + speed;
@@ -2144,17 +2144,17 @@ function reset() {
     <!-- js/levels.js -->
     <script>
 /* =====================================================
-   levels.js · field (level) list, per-level terrain,
-   unlock progress & field picker screen
+   levels.js · danh sách cánh đồng (màn chơi), địa hình
+   từng màn, tiến độ mở màn & màn hình chọn cánh đồng
    ===================================================== */
 
-/* Terrain tile symbols:
-   t tree · r rock · w water · f fence · b barn/house · h haystack
-   j wooden bridge (walkable, can't build) · x flower bush · o plowed field (pretty, buildable) */
-const BLOCK_KINDS = 'trwfbh';   // enemies can't cross, can't build
-const NOBUILD_KINDS = 'j';      // walkable but can't build
+/* Ký hiệu ô địa hình:
+   t cây · r đá · w nước · f hàng rào · b nhà kho/nhà ở · h đống cỏ khô
+   j cầu gỗ (đi được, không xây được) · x khóm hoa · o ruộng cày (đẹp, xây được) */
+const BLOCK_KINDS = 'trwfbh';   // địch không đi qua, không xây được
+const NOBUILD_KINDS = 'j';      // đi được nhưng không xây được
 
-/* ---------- Colors of the current level (from lv.pal) ---------- */
+/* ---------- Màu của màn đang chơi (đổi theo lv.pal) ---------- */
 let PAL = {
   grass: ['#72b650', '#7ac258'],
   soil: ['#8a6a38', '#b8935a', '#dcbc84', '#ecd29c'],
@@ -2163,13 +2163,13 @@ let PAL = {
 };
 
 /* =====================================================
-   8 FIELDS
-   props: [kind, col, row, width, height] — tiles outside the grid are skipped
+   8 CÁNH ĐỒNG
+   props: [loại, cột, hàng, rộng, cao] — ô ngoài lưới bị bỏ qua
    ===================================================== */
 const LEVELS = [
   {
-    id: 'meadow', name: 'Little Green Meadow', icon: '🌱', waves: 15, sr: 7, gr: 7,
-    desc: 'A flat grassy field with a few ponds. A great place to practise maze-building.',
+    id: 'meadow', name: 'Đồng Cỏ Non', icon: '🌱', waves: 15, sr: 7, gr: 7,
+    desc: 'Bãi cỏ bằng phẳng, vài cái ao. Nơi tập dựng mê cung.',
     props: [
       ['w', 3, 2, 2, 2], ['w', 8, 10, 3, 2],
       ['t', 13, 3, 2, 3], ['t', 17, 9, 2, 2], ['t', 6, 12, 2, 1],
@@ -2178,8 +2178,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'orchard', name: 'Apple Orchard', icon: '🍎', waves: 18, sr: 4, gr: 10,
-    desc: 'Three shady rows of trees make enemies zig-zag.',
+    id: 'orchard', name: 'Vườn Cây', icon: '🍎', waves: 18, sr: 4, gr: 10,
+    desc: 'Ba hàng cây rợp bóng ép địch chạy zích zắc.',
     hpMul: 1.05,
     props: [
       ['t', 4, 1, 1, 11], ['t', 10, 3, 1, 11], ['t', 16, 1, 1, 11],
@@ -2189,8 +2189,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'riverbank', name: 'Riverside', icon: '🌊', waves: 20, sr: 2, gr: 12,
-    desc: 'A river cuts across the field — only two bridges are left.',
+    id: 'riverbank', name: 'Bờ Sông', icon: '🌊', waves: 20, sr: 2, gr: 12,
+    desc: 'Dòng sông chắn giữa cánh đồng, chỉ còn hai cây cầu.',
     hpMul: 1.05, spdMul: 1.03,
     props: [
       ['w', 10, 1, 2, 4], ['j', 10, 5, 2, 1], ['w', 10, 6, 2, 5], ['j', 10, 11, 2, 1], ['w', 10, 12, 2, 2],
@@ -2200,8 +2200,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'homestead', name: 'Farm Homestead', icon: '🏡', waves: 22, sr: 7, gr: 3,
-    desc: 'Barns, a well and fences split the fields into plots.',
+    id: 'homestead', name: 'Nơi Ở Nhà Nông', icon: '🏡', waves: 22, sr: 7, gr: 3,
+    desc: 'Nhà kho, giếng nước và hàng rào chia ruộng thành ô.',
     hpMul: 1.1,
     props: [
       ['b', 3, 2, 3, 2], ['b', 15, 9, 2, 2], ['b', 20, 6, 1, 2],
@@ -2211,8 +2211,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'quarry', name: 'Stone Quarry', icon: '🪨', waves: 25, sr: 12, gr: 2,
-    desc: 'Rocks block the way everywhere — the path is narrow and long.',
+    id: 'quarry', name: 'Mỏ Đá', icon: '🪨', waves: 25, sr: 12, gr: 2,
+    desc: 'Sỏi đá chặn khắp nơi — đường đi hẹp và dài.',
     hpMul: 1.15,
     props: [
       ['r', 2, 8, 2, 2], ['r', 5, 4, 3, 2], ['r', 10, 9, 3, 2], ['r', 14, 5, 2, 3],
@@ -2223,8 +2223,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'marsh', name: 'Marshland', icon: '🐸', waves: 25, sr: 1, gr: 13,
-    desc: 'Ponds everywhere — dry land is left in thin strips.',
+    id: 'marsh', name: 'Đầm Lầy', icon: '🐸', waves: 25, sr: 1, gr: 13,
+    desc: 'Ao chuôm chi chít, đất khô chỉ còn từng dải hẹp.',
     hpMul: 1.15, spdMul: 0.97,
     props: [
       ['w', 2, 3, 3, 3], ['w', 8, 1, 4, 3], ['w', 7, 9, 4, 3], ['w', 13, 4, 3, 3],
@@ -2234,8 +2234,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'highland', name: 'Sunset Highlands', icon: '⛰️', waves: 28, sr: 7, gr: 7,
-    desc: 'Rocky hills stand tall in the sunset light, and the wind is cold.',
+    id: 'highland', name: 'Cao Nguyên Hoàng Hôn', icon: '⛰️', waves: 28, sr: 7, gr: 7,
+    desc: 'Đồi đá dựng vách dưới ánh hoàng hôn, gió lạnh.',
     hpMul: 1.2, spdMul: 1.05,
     pal: {
       grass: ['#6a9f6b', '#7bb077'],
@@ -2252,8 +2252,8 @@ const LEVELS = [
     ]
   },
   {
-    id: 'harvest', name: 'Final Harvest', icon: '🌾', waves: 30, sr: 3, gr: 11,
-    desc: 'Golden fields, rocks, ponds and barns all mixed together.',
+    id: 'harvest', name: 'Mùa Gặt Cuối Cùng', icon: '🌾', waves: 30, sr: 3, gr: 11,
+    desc: 'Ruộng vàng, đá, ao, nhà kho — mọi thứ trộn vào nhau.',
     hpMul: 1.3, spdMul: 1.06, livesMul: 0.85,
     pal: {
       grass: ['#c2a94f', '#d3bd61'],
@@ -2272,14 +2272,14 @@ const LEVELS = [
   }
 ];
 
-/* Accent colors on the level picker cards */
+/* Màu nhấn trên thẻ chọn màn */
 const MAP_CHIPS = ['#8bc34a', '#f27ba8', '#4b9dff', '#ff9d4a', '#9aa8b8', '#5fbf8a', '#a184ff', '#ffc93c'];
 
 /* =====================================================
-   LEVEL PROGRESS (localStorage — offlineGameSync pushes it to the API)
+   TIẾN ĐỘ MÀN (localStorage — offlineGameSync đẩy lên API)
    ===================================================== */
 const MAPKEY = 'gc:fieldrunner:maps';
-const AUTOKEY = 'gc:fieldrunner:map';   // sessionStorage: replay this exact level
+const AUTOKEY = 'gc:fieldrunner:map';   // sessionStorage: chơi lại đúng màn này
 
 function mapsAll() {
   try {
@@ -2299,10 +2299,10 @@ function mapsSet(id, patch) {
 
   try {
     localStorage.setItem(MAPKEY, JSON.stringify(all));
-  } catch (e) { /* storage blocked */ }
+  } catch (e) { /* storage bị chặn */ }
 }
 
-/** Is level i unlocked: level 1 is always open, later ones need the previous win */
+/** Màn thứ i mở chưa: màn 1 luôn mở, màn sau cần thắng màn trước */
 function mapUnlocked(i) {
   if (i <= 0) return true;
   return !!mapRec(LEVELS[i - 1].id).cleared;
@@ -2316,19 +2316,19 @@ function mapBest(id) {
   return mapRec(id).best || 0;
 }
 
-/** Star count from the fraction of lives left after a win */
+/** Số sao theo fraction mạng còn lại khi thắng */
 function starsFor(livesLeft, livesMax) {
   const f = livesMax > 0 ? livesLeft / livesMax : 0;
   return f >= 0.9 ? 3 : f >= 0.6 ? 2 : 1;
 }
 
-/** Save the result; returns { best, stars, isBest, unlockedNext } */
+/** Ghi kết quả; trả về { best, stars, isBest, unlockedNext } */
 function commitMapResult(lv, res) {
   const rec = mapRec(lv.id);
   const isBest = res.score > (rec.best || 0);
   const idx = LEVELS.indexOf(lv);
-  // Must ask BEFORE saving: mapUnlocked(idx+1) reads the level just won,
-  // and asking after saving would always say "unlocked".
+  // Phải hỏi TRƯỚC khi ghi: mapUnlocked(idx+1) đọc đúng màn vừa thắng,
+  // ghi xong rồi mới hỏi thì lúc nào cũng ra "đã mở".
   const nextWasLocked = !mapUnlocked(idx + 1);
 
   const patch = {
@@ -2343,11 +2343,11 @@ function commitMapResult(lv, res) {
 }
 
 function setAutoMap(id) {
-  try { sessionStorage.setItem(AUTOKEY, id); } catch (e) { /* ignore */ }
+  try { sessionStorage.setItem(AUTOKEY, id); } catch (e) { /* bỏ qua */ }
 }
 
 function clearAutoMap() {
-  try { sessionStorage.removeItem(AUTOKEY); } catch (e) { /* ignore */ }
+  try { sessionStorage.removeItem(AUTOKEY); } catch (e) { /* bỏ qua */ }
 }
 
 function takeAutoMap() {
@@ -2355,16 +2355,16 @@ function takeAutoMap() {
   try {
     id = sessionStorage.getItem(AUTOKEY);
     if (id) sessionStorage.removeItem(AUTOKEY);
-  } catch (e) { /* ignore */ }
+  } catch (e) { /* bỏ qua */ }
 
   const i = LEVELS.findIndex(l => l.id === id);
   return i >= 0 && mapUnlocked(i) ? LEVELS[i] : null;
 }
 
 /* =====================================================
-   APPLY THE LEVEL TO THE GRID
+   ÁP MÀN CHƠI VÀO LƯỚI
    ===================================================== */
-let kinds;   // kind[c][r] = terrain symbol of the tile
+let kinds;   // kind[c][r] = ký hiệu địa hình của ô
 let levelIdx = 0;
 
 function applyLevel(lv) {
@@ -2384,7 +2384,7 @@ function applyLevel(lv) {
     }
   }
 
-  // Keep tiles next to both gates empty so enemies can flow in and out
+  // Trả lại ô trống sát 2 cổng để địch kịp tràn vào / tràn ra
   kinds[0][SR] = '.';
   kinds[1][SR] = '.';
   kinds[GOALC][GR] = '.';
@@ -2412,7 +2412,7 @@ function applyLevel(lv) {
 }
 
 /* =====================================================
-   FIELD PICKER SCREEN
+   MÀN HÌNH CHỌN CÁNH ĐỒNG
    ===================================================== */
 let mapsRoot = null;
 let mapsEsc = null;
@@ -2439,7 +2439,7 @@ function showMapSelect(cfg) {
   root.className = 'fr-maps';
   root.id = 'fr-maps';
   root.setAttribute('role', 'dialog');
-  root.setAttribute('aria-label', 'Choose a field');
+  root.setAttribute('aria-label', 'Chọn cánh đồng');
 
   const cards = LEVELS.map((lv, i) => {
     const rec = all[lv.id] || {};
@@ -2450,7 +2450,7 @@ function showMapSelect(cfg) {
 
     const pips = [1, 2, 3].map(n =>
       '<i class="' + (n <= stars ? 'on' : '') + '"' +
-      ' aria-label="' + n + ' stars"></i>').join('');
+      ' aria-label="' + n + ' sao"></i>').join('');
 
     return '' +
       '<button type="button" class="fr-map' + (open ? '' : ' lock') + '" data-i="' + i + '"' +
@@ -2459,10 +2459,10 @@ function showMapSelect(cfg) {
         '<span class="e">' + lv.icon + '</span>' +
         '<span class="t">' +
           '<b>' + lv.name + '</b>' +
-          '<small>' + (open ? lv.desc : 'Win the previous field to unlock this one') + '</small>' +
-          '<span class="meta">🌊 ' + lv.waves + ' waves · ⭐ ' + (rec.best || 0) +
+          '<small>' + (open ? lv.desc : 'Thắng màn trước để mở cánh đồng này') + '</small>' +
+          '<span class="meta">🌊 ' + lv.waves + ' đợt · ⭐ ' + (rec.best || 0) +
           (play
-            ? ' · <b class="run">🔫 ' + play.tw.length + ' weapons, mid-wave ' +
+            ? ' · <b class="run">🔫 ' + play.tw.length + ' vũ khí, dở đợt ' +
               Math.min(play.w ? play.wave : play.wave + 1, lv.waves) +
               (otherDiff ? ' (' + GC.levels[play.diff].label + ')' : '') + '</b>'
             : '') +
@@ -2476,18 +2476,18 @@ function showMapSelect(cfg) {
   root.innerHTML = '' +
     '<div class="fr-maps__card">' +
       '<div class="fr-maps__head">' +
-        '<h2>Choose a Field</h2>' +
+        '<h2>Chọn cánh đồng</h2>' +
         '<span class="gc-pill gc-d' + GC.diff.i + '">' + GC.diff.emoji + ' ' + GC.diff.label + '</span>' +
       '</div>' +
-      '<p class="fr-maps__sub">Explored ' + cleared + '/' + LEVELS.length + ' fields · ' +
-        'new fields unlock when you win the previous one</p>' +
+      '<p class="fr-maps__sub">Đã khai phá ' + cleared + '/' + LEVELS.length + ' cánh đồng · ' +
+        'màn mới mở khi thắng màn trước</p>' +
       '<div class="fr-maps__grid">' + cards + '</div>' +
       '<div class="fr-maps__row">' +
         (cfg.onResume
-          ? '<button type="button" class="gc-btn sm" data-a="resume">▶ Back to current run</button>'
+          ? '<button type="button" class="gc-btn sm" data-a="resume">▶ Về ván đang chơi</button>'
           : '') +
-        '<button type="button" class="gc-btn alt sm" data-a="diff">🎚 Change difficulty</button>' +
-        '<button type="button" class="gc-btn alt sm" data-a="home">🏠 Back to lobby</button>' +
+        '<button type="button" class="gc-btn alt sm" data-a="diff">🎚 Đổi độ khó</button>' +
+        '<button type="button" class="gc-btn alt sm" data-a="home">🏠 Về sảnh</button>' +
       '</div>' +
     '</div>';
 
@@ -2515,7 +2515,7 @@ function showMapSelect(cfg) {
     };
   }
 
-  // Esc = return to the run in progress (if any)
+  // Esc = quay lại ván đang chơi (nếu có)
   if (cfg.onResume) {
     mapsEsc = function (e) {
       if (e.key === 'Escape') {
@@ -2539,11 +2539,11 @@ function showMapSelect(cfg) {
     <!-- js/runsave.js -->
     <script>
 /* =====================================================
-   runsave.js · save the run in progress (built towers, lives, wave)
-   Leave mid-battle and come back to the same field + difficulty → weapons stay.
+   runsave.js · lưu ván đang chơi (tháp đã xây, mạng, đợt)
+   Thoát giữa trận rồi vào lại đúng màn + độ khó → vũ khí còn nguyên.
    ===================================================== */
 
-/* One save slot per field; difficulty is stored in the slot so runs never mix. */
+/* Một suất lưu cho mỗi cánh đồng; độ khó cất trong suất để không trộn lẫn. */
 const RUNKEY = 'gc:fieldrunner:run-v1';
 
 function runsAll() {
@@ -2560,19 +2560,19 @@ function runSlot(id) {
   return r;
 }
 
-/** Save the current run; call after every build/upgrade/sell/wave win */
+/** Ghi ván hiện tại; gọi sau mỗi lần xây/nâng cấp/bán/thắng đợt */
 function saveRun() {
   if (!started || over || !level) return;
 
   const all = runsAll();
 
-  // Brand-new run (no towers, no waves played) → nothing to save
+  // Ván mới tinh (chưa xây, chưa đánh đợt nào) → không có gì để lưu
   if (!towers.length && !wave) {
     if (all[level.id]) {
       delete all[level.id];
       try {
         localStorage.setItem(RUNKEY, JSON.stringify(all));
-      } catch (e) { /* storage blocked */ }
+      } catch (e) { /* storage bị chặn */ }
     }
     return;
   }
@@ -2591,7 +2591,7 @@ function saveRun() {
 
   try {
     localStorage.setItem(RUNKEY, JSON.stringify(all));
-  } catch (e) { /* storage blocked */ }
+  } catch (e) { /* storage bị chặn */ }
 }
 
 function clearRun(id) {
@@ -2601,10 +2601,10 @@ function clearRun(id) {
   delete all[id || level.id];
   try {
     localStorage.setItem(RUNKEY, JSON.stringify(all));
-  } catch (e) { /* ignore */ }
+  } catch (e) { /* bỏ qua */ }
 }
 
-/** Most recent saved run across all fields → { lv, run } or null */
+/** Ván lưu mới nhất trong mọi cánh đồng → { lv, run } hoặc null */
 function latestRun() {
   const all = runsAll();
   let best = null;
@@ -2620,7 +2620,7 @@ function latestRun() {
   return best;
 }
 
-/** Data for the "Continue" button on the difficulty picker */
+/** Dữ liệu cho nút "Chơi tiếp" ở màn chọn độ khó */
 function runResumeInfo() {
   const b = latestRun();
   if (!b) return null;
@@ -2629,17 +2629,17 @@ function runResumeInfo() {
   return {
     i: b.run.diff,
     id: b.lv.id,
-    text: b.lv.icon + ' ' + b.lv.name + ' · ' + b.run.tw.length + ' weapons · wave ' + w
+    text: b.lv.icon + ' ' + b.lv.name + ' · ' + b.run.tw.length + ' vũ khí · đợt ' + w
   };
 }
 
-/** Saved run for level lv on any difficulty (used for labels on the level picker) */
+/** Ván lưu cho màn lv, bất kể độ khó (dùng để dán nhãn trên màn chọn màn) */
 function runAnyFor(lv) {
   const r = runSlot(lv.id);
   return r && (r.wave > 0 || r.tw.length) ? r : null;
 }
 
-/** Saved run for level lv, only used when the difficulty matches */
+/** Ván lưu cho màn lv, chỉ dùng khi trùng độ khó */
 function runForLevel(lv) {
   const r = runAnyFor(lv);
   return r && r.diff === GC.i ? r : null;
@@ -2647,10 +2647,10 @@ function runForLevel(lv) {
 
 function agoText(at) {
   const s = Math.max(0, (Date.now() - at) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 3600) return Math.floor(s / 60) + ' min ago';
-  if (s < 86400) return Math.floor(s / 3600) + ' hr ago';
-  return Math.floor(s / 86400) + ' days ago';
+  if (s < 60) return 'vừa xong';
+  if (s < 3600) return Math.floor(s / 60) + ' phút trước';
+  if (s < 86400) return Math.floor(s / 3600) + ' giờ trước';
+  return Math.floor(s / 86400) + ' ngày trước';
 }
 
 let resumeRoot = null;
@@ -2663,8 +2663,8 @@ function closeResume() {
 }
 
 /**
- * Entering a field with an unfinished run → ask clearly "Continue" or "Start over",
- * instead of quietly rebuilding the towers and leaving the player confused.
+ * Vào màn đang có ván dở → hỏi rõ "Chơi tiếp" hay "Bắt đầu lại",
+ * không âm thầm dựng tháp lên bàn rồi khiến bé không biết gì.
  */
 function askResume(run) {
   closeResume();
@@ -2676,21 +2676,21 @@ function askResume(run) {
   root.className = 'fr-resume';
   root.id = 'fr-resume';
   root.setAttribute('role', 'dialog');
-  root.setAttribute('aria-label', 'Unfinished run');
+  root.setAttribute('aria-label', 'Ván đang dở');
   root.innerHTML =
     '<div class="fr-resume__card">' +
-      '<h2>🔫 Unfinished run</h2>' +
+      '<h2>🔫 Còn ván đang dở</h2>' +
       '<p class="fr-resume__sub">' + GC.esc(level.icon + ' ' + level.name) + ' · ' +
-        LV.emoji + ' ' + GC.esc(LV.label) + ' · saved ' + agoText(run.at) + '</p>' +
+        LV.emoji + ' ' + GC.esc(LV.label) + ' · lưu ' + agoText(run.at) + '</p>' +
       '<div class="fr-resume__list">' +
-        '<span><b>' + run.tw.length + '</b> weapons bought</span>' +
-        '<span>on wave <b>' + nextWave + '/' + TOTAL + '</b></span>' +
-        '<span><b>' + (run.lives | 0) + '</b> lives left</span>' +
-        '<span><b>' + (run.kills | 0) + '</b> enemies defeated</span>' +
+        '<span><b>' + run.tw.length + '</b> vũ khí đã mua</span>' +
+        '<span>đang ở đợt <b>' + nextWave + '/' + TOTAL + '</b></span>' +
+        '<span>còn <b>' + (run.lives | 0) + '</b> mạng</span>' +
+        '<span>đã hạ <b>' + (run.kills | 0) + '</b> địch</span>' +
       '</div>' +
       '<div class="fr-resume__row">' +
-        '<button type="button" class="btn mint" data-a="go">▶ Continue</button>' +
-        '<button type="button" class="btn red" data-a="new">↺ Start over</button>' +
+        '<button type="button" class="btn mint" data-a="go">▶ Chơi tiếp</button>' +
+        '<button type="button" class="btn red" data-a="new">↺ Bắt đầu lại</button>' +
       '</div>' +
     '</div>';
 
@@ -2706,7 +2706,7 @@ function askResume(run) {
     else {
       clearRun(level.id);
       updUI();
-      showMsg('↺ New board — no weapons yet');
+      showMsg('↺ Bàn mới — chưa có vũ khí');
     }
   };
 
@@ -2719,7 +2719,7 @@ function askResume(run) {
   resumeRoot = root;
 }
 
-/** Rebuild towers + progress after reset() has cleared the grid */
+/** Dựng lại tháp + tiến độ sau khi reset() đã làm sạch lưới */
 function restoreRun(r) {
   for (const t of r.tw) {
     if (!TYPES[t.k]) continue;
@@ -2742,7 +2742,7 @@ function restoreRun(r) {
   }
 
   const d = bfs(blocked);
-  // Level terrain may change between saves — the path must still be open to accept the run
+  // Địa hình màn chơi có thể đổi giữa 2 bản lưu — đường phải còn thông mới nhận ván
   if (d[0 + SR * COLS] === Infinity) {
     clearRun(level.id);
     return false;
@@ -2753,27 +2753,27 @@ function restoreRun(r) {
   lives = Math.min(D.lives, Math.max(1, r.lives | 0));
   kills = Math.max(0, r.kills | 0);
 
-  // left mid-wave → play that same wave again next time, so no wave is skipped
+  // thoát giữa đợt → lần sau chơi lại đúng đợt đó, không bỏ sót đợt nào
   wave = Math.min(TOTAL, Math.max(0, r.wave | 0));
   if (r.w && wave > 0) wave--;
 
-  // Playing standalone (opening the .html file) → coins belong to the saved run;
-  // inside the app the account wallet is the source of truth, so don't overwrite it.
+  // Chơi một mình (mở file .html) thì tiền thuộc về ván lưu;
+  // trong app thì ví tài khoản mới là bản đúng, không ghi đè.
   if (!HOSTED && typeof r.money === 'number') money = r.money;
 
   waveActive = false;
   $('go').disabled = false;
-  $('go').textContent = '▶ Start wave ' + (wave + 1);
+  $('go').textContent = '▶ Bắt đầu đợt ' + (wave + 1);
 
   updUI();
   showInfo();
   showPreview();
 
-  showMsg('↺ Run restored · ' + towers.length + ' weapons · wave ' + (wave + 1));
+  showMsg('↺ Tiếp tục ván cũ · ' + towers.length + ' vũ khí · đợt ' + (wave + 1));
   return true;
 }
 
-/* ---------- Bridge with the app: the host asks for a save before tearing down the iframe ---------- */
+/* ---------- Cầu nối với app: host báo ghi trước khi phá iframe ---------- */
 window.__gqFlush = saveRun;
 addEventListener('gq:flush', saveRun);
 addEventListener('pagehide', saveRun);
@@ -2784,10 +2784,10 @@ document.addEventListener('visibilitychange', () => {
     <!-- js/pathfinding.js -->
     <script>
 /* =====================================================
-   pathfinding.js · pathfinding & tower placement checks
+   pathfinding.js · tìm đường & kiểm tra đặt tháp
    ===================================================== */
 
-/** BFS spreading from the exit gate, returns a distance array for every tile */
+/** BFS lan từ cổng ra, trả về mảng khoảng cách của từng ô */
 function bfs(blk) {
   const d = new Array(COLS * ROWS).fill(Infinity);
   const q = [GOALC + GR * COLS];
@@ -2814,7 +2814,7 @@ function bfs(blk) {
   return d;
 }
 
-/** Store the distance map and rebuild the path for drawing */
+/** Lưu bản đồ khoảng cách và dựng lại đường đi để vẽ */
 function setDist(d) {
   dist = d;
   pathPts = [[0, SR * CS + CS / 2]];
@@ -2852,19 +2852,19 @@ function setDist(d) {
   );
 }
 
-/** Check whether a tower can be placed on tile (c,r). Returns null if OK, or the reason. */
+/** Kiểm tra có đặt được tháp ở ô (c,r) không. Trả về null nếu được, hoặc lý do. */
 function canPlace(c, r) {
-  if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return 'Outside the map';
-  if (towers.some(t => t.c === c && t.r === r)) return 'A tower is already here';
-  if ((c === 0 && r === SR) || (c === GOALC && r === GR)) return 'You can’t build on the gate';
-  if (blocked[c][r]) return 'Something is blocking this spot';
-  if (noBuild[c][r]) return 'You can’t build here';
+  if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return 'Ngoài bản đồ';
+  if (towers.some(t => t.c === c && t.r === r)) return 'Ô đã có tháp';
+  if ((c === 0 && r === SR) || (c === GOALC && r === GR)) return 'Không thể xây ở cổng';
+  if (blocked[c][r]) return 'Chỗ này có vật cản';
+  if (noBuild[c][r]) return 'Không xây được ở đây';
 
   blocked[c][r] = true;
   const d = bfs(blocked);
 
   let ok = d[0 + SR * COLS] !== Infinity;
-  let why = 'You can’t block the path completely';
+  let why = 'Không được chặn kín đường đi';
 
   if (ok) {
     for (const e of enemies) {
@@ -2877,13 +2877,13 @@ function canPlace(c, r) {
 
       if (e.x >= 0 && (onCell || headingThere)) {
         ok = false;
-        why = 'An enemy is on this spot';
+        why = 'Có kẻ địch ở ô này';
         break;
       }
 
       if (e.x >= 0 && d[ec + er * COLS] === Infinity) {
         ok = false;
-        why = 'That would trap an enemy';
+        why = 'Sẽ nhốt kẻ địch';
         break;
       }
     }
@@ -2896,17 +2896,17 @@ function canPlace(c, r) {
     <!-- js/waves.js -->
     <script>
 /* =====================================================
-   waves.js · build enemy waves, start a wave
+   waves.js · tạo đợt địch, bắt đầu đợt
    ===================================================== */
 
-/** Enemies that never become elites (already strong enough) */
+/** Kẻ địch không bao giờ trở thành tinh anh (đã đủ mạnh rồi) */
 const NO_ELITE = ['boss', 'titan', 'dragon', 'golem', 'mini'];
 
-/** Build the enemy list for wave n */
+/** Dựng danh sách kẻ địch của đợt n */
 function makeWave(n) {
   const q = [];
 
-  // Health rises each wave; from HARD_WAVE it climbs one extra notch
+  // Máu tăng theo đợt; từ đợt HARD_WAVE tăng thêm một nấc nữa
   const hpM = (1 + 0.17 * (n - 1) + 0.004 * n * n) * D.hp * lateHpMul(n);
 
   const add = (t, k, gap) => {
@@ -2916,7 +2916,7 @@ function makeWave(n) {
     }
   };
 
-  /* ----- Familiar enemies ----- */
+  /* ----- Kẻ địch quen thuộc ----- */
   add('grunt', Math.min(5 + n * 2, 38), 0.7);
 
   if (n >= 3) add('runner', Math.min(n * 1.3, 26), 0.45);
@@ -2937,25 +2937,25 @@ function makeWave(n) {
   if (n >= 19 && n % 3 === 1) add('golem', 1 + (n - 19) / 6, 3);
   if (n >= 15 && n % 10 === 5) add('dragon', 1 + Math.floor(n / 20), 4);
 
-  /* ----- NEW: heavy enemies from wave 12 onward ----- */
+  /* ----- MỚI: kẻ địch hạng nặng từ đợt 12 trở đi ----- */
   if (n >= 12) add('juggernaut', 1 + (n - 12) / 3, 2.6);
   if (n >= 15 && n % 2 === 0) add('phoenix', 1 + (n - 15) / 5, 1.6);
   if (n >= 17) add('warlock', 1 + (n - 17) / 4, 2.2);
   if (n >= 22) add('reaper', 1 + (n - 22) / 3, 0.9);
 
-  /* ----- Bosses ----- */
+  /* ----- Trùm ----- */
   if (n % 10 === 0 && n !== TOTAL) {
     add('boss', 1 + (n >= 20 ? 1 : 0) + (n >= 30 ? 1 : 0), 3);
   }
 
-  /* ----- Final wave ----- */
+  /* ----- Đợt cuối ----- */
   if (n === TOTAL) {
     add('titan', 1, 3);
     add('boss', 2, 3);
     add('dragon', 1, 4);
   }
 
-  /* ----- Turn some of them into elites (from HARD_WAVE) ----- */
+  /* ----- Biến một phần thành tinh anh (từ đợt HARD_WAVE) ----- */
   const chance = eliteChance(n);
   if (chance > 0) {
     for (const s of q) {
@@ -2965,7 +2965,7 @@ function makeWave(n) {
     }
   }
 
-  /* ----- Shuffle the spawn order a little ----- */
+  /* ----- Xáo trộn nhẹ thứ tự xuất hiện ----- */
   for (let i = q.length - 1; i > 0; i--) {
     if (Math.random() < 0.4) {
       const j = Math.max(0, i - Math.floor(Math.random() * 6));
@@ -2976,7 +2976,7 @@ function makeWave(n) {
   return q;
 }
 
-/** Start the next wave */
+/** Bắt đầu đợt kế tiếp */
 function startWave() {
   if (waveActive || over || wave >= TOTAL || !started) return;
 
@@ -2990,22 +2990,22 @@ function startWave() {
   $('go').disabled = true;
   updUI();
   showPreview();
-  saveRun();   // mark mid-wave → leaving and returning replays this same wave
+  saveRun();   // đánh dấu đang giữa đợt → thoát rồi vào lại chơi lại đúng đợt này
 
   if (wave === HARD_WAVE) {
-    showMsg('⚠️ Elite enemies are here! They are much stronger!');
+    showMsg('⚠️ Tinh anh xuất hiện! Kẻ địch mạnh hơn hẳn!');
   } else {
-    showMsg('🌊 Wave ' + wave + ' begins!');
+    showMsg('🌊 Đợt ' + wave + ' bắt đầu!');
   }
 }
     </script>
     <!-- js/enemies.js -->
     <script>
 /* =====================================================
-   enemies.js · create enemies, move them, take damage
+   enemies.js · tạo kẻ địch, di chuyển, nhận sát thương
    ===================================================== */
 
-/** Create an enemy */
+/** Tạo một kẻ địch */
 function mkEnemy(type, hp, x, y) {
   const def = EDEF[type];
 
@@ -3037,7 +3037,7 @@ function mkEnemy(type, hp, x, y) {
   return e;
 }
 
-/** Upgrade an enemy to elite rank */
+/** Nâng một kẻ địch lên hạng tinh anh */
 function makeElite(e, n) {
   e.elite = true;
   e.max *= ELITE.hpMul;
@@ -3047,7 +3047,7 @@ function makeElite(e, n) {
   e.spdMul = ELITE.spdMul;
   e.rwMul = ELITE.rwMul;
 
-  // From aegisWave on: also gets an energy shield
+  // Từ đợt aegisWave: có thêm khiên năng lượng
   if (n >= ELITE.aegisWave) {
     const sh = e.max * ELITE.aegisPct;
     e.shieldMax = Math.max(e.shieldMax || 0, sh);
@@ -3056,7 +3056,7 @@ function makeElite(e, n) {
   }
 }
 
-/** Spawn an enemy from the wave queue */
+/** Sinh kẻ địch từ hàng đợi của đợt */
 function spawn(s) {
   const def = EDEF[s.t];
   const e = mkEnemy(s.t, def.hp * s.hpM, -20, SR * CS + CS / 2);
@@ -3067,7 +3067,7 @@ function spawn(s) {
   enemies.push(e);
 }
 
-/** Pick the next tile along the path */
+/** Chọn ô kế tiếp trên đường đi */
 function pickNext(e) {
   if (e.x < 0) {
     e.tx = CS / 2;
@@ -3107,7 +3107,7 @@ function pickNext(e) {
   }
 }
 
-/** An enemy leaks through the field */
+/** Kẻ địch lọt vào cánh đồng */
 function leak(e) {
   e.dead = true;
   waveDone++;
@@ -3124,11 +3124,11 @@ function leak(e) {
   updUI();
 }
 
-/** Update one enemy over dt seconds */
+/** Cập nhật một kẻ địch trong khoảng dt giây */
 function stepEnemy(e, dt) {
   if (e.slowT > 0) e.slowT -= dt;
 
-  /* ----- Shields regenerate ----- */
+  /* ----- Khiên tự hồi ----- */
   if (e.shieldMax) {
     if (e.shieldT > 0) {
       e.shieldT -= dt;
@@ -3137,7 +3137,7 @@ function stepEnemy(e, dt) {
     }
   }
 
-  /* ----- Medic: heals teammates ----- */
+  /* ----- Y tá: hồi máu đồng đội ----- */
   if (e.def.heal) {
     e.healCd -= dt;
     if (e.healCd <= 0) {
@@ -3152,7 +3152,7 @@ function stepEnemy(e, dt) {
     }
   }
 
-  /* ----- Dark Warlock: grants shields to teammates ----- */
+  /* ----- Phù thủy đen: ban khiên cho đồng đội ----- */
   if (e.def.warlock) {
     e.curseCd -= dt;
     if (e.curseCd <= 0 && e.x > 0) {
@@ -3174,7 +3174,7 @@ function stepEnemy(e, dt) {
     }
   }
 
-  /* ----- Summoner: calls in minions ----- */
+  /* ----- Triệu hồi: gọi quân con ----- */
   if (e.def.summon) {
     e.sumCd -= dt;
     if (e.sumCd <= 0 && e.x > 20) {
@@ -3192,7 +3192,7 @@ function stepEnemy(e, dt) {
     }
   }
 
-  /* ----- Speed ----- */
+  /* ----- Tốc độ ----- */
   let spd = e.def.sp * D.spd * e.haste * (e.spdMul || 1);
   if (e.def.berserk) spd *= (1 + (1 - clamp(e.hp / e.max, 0, 1)) * 1.2);
 
@@ -3202,7 +3202,7 @@ function stepEnemy(e, dt) {
   const oy = e.y;
   let mv = spd * (e.slowT > 0 ? e.slowF : 1) * dt;
 
-  /* ----- Flying enemies: go straight ----- */
+  /* ----- Kẻ địch bay: đi thẳng ----- */
   if (e.def.air) {
     e.x += mv;
     e.rem = CW + 20 - e.x;
@@ -3213,7 +3213,7 @@ function stepEnemy(e, dt) {
     return;
   }
 
-  /* ----- Ground enemies: follow the BFS path ----- */
+  /* ----- Kẻ địch mặt đất: đi theo đường BFS ----- */
   let guard = 0;
   while (mv > 0 && guard++ < 6) {
     if (e.tx === undefined) pickNext(e);
@@ -3251,7 +3251,7 @@ function stepEnemy(e, dt) {
   }
 }
 
-/** Create dust particles / sparks */
+/** Tạo hạt bụi / tia lửa */
 function particles(x, y, n, c, sp, life, size) {
   for (let i = 0; i < n; i++) {
     const a = Math.random() * 6.283;
@@ -3269,11 +3269,11 @@ function particles(x, y, n, c, sp, life, size) {
   }
 }
 
-/** Enemy dies (or revives if it is a phoenix) */
+/** Kẻ địch chết (hoặc hồi sinh nếu là phượng hoàng) */
 function killEnemy(e) {
   if (e.dead) return;
 
-  /* Phoenix: revives once with 50% health */
+  /* Phượng hoàng: hồi sinh một lần với 50% máu */
   if (e.def.revive && !e.revived) {
     e.revived = true;
     e.hp = e.max * 0.5;
@@ -3282,7 +3282,7 @@ function killEnemy(e) {
     e.hurt = 0.2;
 
     fx.push({ k: 'ring', x: e.x, y: e.y, life: 0.7, c: '#ffb347', r: 70 });
-    fx.push({ k: 'txt', x: e.x, y: e.y - 18, life: 0.9, t: 'Reborn!', c: '#ffb347' });
+    fx.push({ k: 'txt', x: e.x, y: e.y - 18, life: 0.9, t: 'Tái sinh!', c: '#ffb347' });
     particles(e.x, e.y, 22, '#ff9a3c', 170, 0.7, 3.6);
     return;
   }
@@ -3307,7 +3307,7 @@ function killEnemy(e) {
     particles(e.x, e.y, 8, '#ffd93b', 120, 0.6, 3);
   }
 
-  /* Splitter: breaks into 2 minis */
+  /* Phân thân: tách thành 2 con */
   if (e.def.split) {
     const cdef = EDEF[e.def.split];
     const chp = Math.max(cdef.hp, e.max * 0.35);
@@ -3320,21 +3320,21 @@ function killEnemy(e) {
   }
 }
 
-/** Deal damage to an enemy. Returns the actual damage dealt. */
+/** Gây sát thương lên kẻ địch. Trả về lượng sát thương thực tế. */
 function applyDamage(e, d, opts = {}) {
   if (e.dead || d <= 0) return 0;
 
-  /* Dodge (ninja, reaper) */
+  /* Né đòn (ninja, tử thần) */
   if (e.def.evade && !opts.dot && Math.random() < e.def.evade) {
-    fx.push({ k: 'txt', x: e.x, y: e.y - 14, life: 0.5, t: 'dodged!', c: '#bfe8ff' });
+    fx.push({ k: 'txt', x: e.x, y: e.y - 14, life: 0.5, t: 'né!', c: '#bfe8ff' });
     return 0;
   }
 
-  /* Armor (base armor + elite armor) */
+  /* Giáp (giáp gốc + giáp tinh anh) */
   const armor = (e.def.armor || 0) + (e.armorBonus || 0);
   if (armor && !opts.pierce) d = Math.max(1, d - armor);
 
-  /* Shields absorb damage first */
+  /* Khiên hấp thụ trước */
   if (e.shield > 0) {
     const ab = Math.min(e.shield, d);
     e.shield -= ab;
@@ -3350,7 +3350,7 @@ function applyDamage(e, d, opts = {}) {
   return d;
 }
 
-/** Add a damage-over-time effect (burn, poison) */
+/** Thêm hiệu ứng sát thương theo thời gian (cháy, độc) */
 function applyDot(e, type, dps, t) {
   if (e.dead) return;
 
@@ -3370,10 +3370,10 @@ function applyDot(e, type, dps, t) {
     <!-- js/towers.js -->
     <script>
 /* =====================================================
-   towers.js · tower stats, targeting, projectiles, explosions
+   towers.js · chỉ số tháp, ngắm bắn, đạn, nổ
    ===================================================== */
 
-/** Current tower stats by level and radar buff */
+/** Chỉ số hiện tại của tháp theo cấp và buff radar */
 function stat(t) {
   const T = TYPES[t.type];
   const l = t.lvl - 1;
@@ -3385,7 +3385,7 @@ function stat(t) {
   };
 }
 
-/** Pick a target for the tower based on its targeting mode */
+/** Chọn mục tiêu cho tháp theo chế độ ngắm */
 function pickTarget(t, T, S) {
   let tg = null;
   let sc = 0;
@@ -3400,9 +3400,9 @@ function pickTarget(t, T, S) {
     if (e.def.stealth && dd > 2.5 * CS && !t.det) continue;
 
     let s;
-    if (t.mode === 1) s = e.hp + (e.shield || 0);   // strongest
-    else if (t.mode === 2) s = -dd;                 // closest
-    else s = -e.rem;                                // first
+    if (t.mode === 1) s = e.hp + (e.shield || 0);   // mạnh nhất
+    else if (t.mode === 2) s = -dd;                 // gần nhất
+    else s = -e.rem;                                // đầu tiên
 
     if (!tg || s > sc) {
       tg = e;
@@ -3412,9 +3412,9 @@ function pickTarget(t, T, S) {
   return tg;
 }
 
-/** Update radar buffs, then let each tower fire */
+/** Cập nhật buff radar rồi cho từng tháp bắn */
 function updateTowers(dt) {
-  /* ----- Radar buff ----- */
+  /* ----- Buff từ radar ----- */
   for (const t of towers) {
     t.bD = 0;
     t.bR = 0;
@@ -3440,7 +3440,7 @@ function updateTowers(dt) {
     }
   }
 
-  /* ----- Fire ----- */
+  /* ----- Bắn ----- */
   for (const t of towers) {
     const T = TYPES[t.type];
     if (T.support) continue;
@@ -3461,7 +3461,7 @@ function updateTowers(dt) {
 
     t.ang = Math.atan2(tg.y - t.y, tg.x - t.x);
 
-    /* Laser: fires continuously and ramps up */
+    /* Laser: bắn liên tục, mạnh dần */
     if (T.laser) {
       fireLaser(t, T, S, tg, dt);
       continue;
@@ -3480,7 +3480,7 @@ function updateTowers(dt) {
   }
 }
 
-/* ---------- Fire types ---------- */
+/* ---------- Các kiểu bắn ---------- */
 
 function fireLaser(t, T, S, tg, dt) {
   if (t.lock !== tg.id) {
@@ -3638,7 +3638,7 @@ function fireProjectile(t, T, S, tg) {
   }
 }
 
-/* ---------- Splash damage ---------- */
+/* ---------- Nổ lan ---------- */
 function explode(x, y, R, dmg, pierce, opts = {}) {
   fx.push({ k: 'boom', x, y, r: R, life: 0.35 });
   particles(x, y, 12, '#ffb44a', 150, 0.5, 3.5);
@@ -3661,11 +3661,11 @@ function explode(x, y, R, dmg, pierce, opts = {}) {
   }
 }
 
-/* ---------- Flying projectiles ---------- */
+/* ---------- Đạn bay ---------- */
 function updateProjs(dt) {
   for (const p of projs) {
 
-    /* Mortar shell: arcs toward the landing spot */
+    /* Đạn cối: bay vòng cung tới điểm rơi */
     if (p.mortar) {
       p.t += dt;
       const u = Math.min(1, p.t / p.dur);
@@ -3694,7 +3694,7 @@ function updateProjs(dt) {
 
     p.ang = Math.atan2(dy, dx);
 
-    /* Smoke / fire trail behind the projectile */
+    /* Vệt khói / lửa phía sau đạn */
     if (p.kind === 'missile' && Math.random() < 0.9) {
       parts.push({
         x: p.x, y: p.y,
@@ -3713,7 +3713,7 @@ function updateProjs(dt) {
       parts.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.3, max: 0.3, s: 2.4, c: '#cfeeff' });
     }
 
-    /* Hit the target */
+    /* Trúng mục tiêu */
     if (d <= m + tg.def.r * 0.6) {
       p.dead = true;
 
@@ -3746,10 +3746,10 @@ function updateProjs(dt) {
     <!-- js/skills.js -->
     <script>
 /* =====================================================
-   skills.js · support skills: Airstrike & Freeze
+   skills.js · kỹ năng hỗ trợ: Không kích & Đóng băng
    ===================================================== */
 
-/** Call an airstrike at (x,y): 6 bombs drop on the area */
+/** Gọi không kích tại (x,y): 6 quả bom rơi xuống khu vực */
 function castStrike(x, y) {
   if (skill.strike.cd > 0 || over) return;
 
@@ -3766,10 +3766,10 @@ function castStrike(x, y) {
   }
 
   fx.push({ k: 'target', x, y, life: 1.4, r: 90 });
-  showMsg('🚀 Airstrike incoming!');
+  showMsg('🚀 Không kích đang tới!');
 }
 
-/** Freeze every enemy for a few seconds */
+/** Đóng băng toàn bộ kẻ địch trong vài giây */
 function castFreeze() {
   if (skill.freeze.cd > 0 || over) return;
 
@@ -3783,10 +3783,10 @@ function castFreeze() {
   }
 
   fx.push({ k: 'frostwave', life: 0.9 });
-  showMsg('❄️ The whole horde is frozen!');
+  showMsg('❄️ Cả bầy bị đóng băng!');
 }
 
-/** Update the falling airstrike bombs */
+/** Cập nhật bom không kích đang rơi */
 function updateStrikes(dt) {
   for (const s of strikes) {
     s.t -= dt;
@@ -3810,10 +3810,10 @@ function updateStrikes(dt) {
   strikes = strikes.filter(s => !s.done);
 }
 
-/** Toggle airstrike aiming mode */
+/** Bật / tắt chế độ ngắm không kích */
 function toggleStrike() {
   if (skill.strike.cd > 0) {
-    showMsg('Airstrike is still recharging');
+    showMsg('Không kích đang hồi chiêu');
     return;
   }
 
@@ -3829,10 +3829,10 @@ function toggleStrike() {
     <!-- js/game.js -->
     <script>
 /* =====================================================
-   game.js · main update loop & ending the run
+   game.js · vòng cập nhật chính & kết thúc ván
    ===================================================== */
 
-/** Update the whole world for dt seconds */
+/** Cập nhật toàn bộ thế giới trong dt giây */
 function update(dt) {
   if (over || paused) return;
 
@@ -3843,7 +3843,7 @@ function update(dt) {
     skill[k].cd = Math.max(0, skill[k].cd - dt);
   }
 
-  /* ----- Spawn enemies from the queue ----- */
+  /* ----- Sinh kẻ địch theo hàng đợi ----- */
   if (spawnQ.length) {
     spawnT -= dt;
     if (spawnT <= 0) {
@@ -3853,7 +3853,7 @@ function update(dt) {
     }
   }
 
-  /* ----- Wizards speed up their teammates ----- */
+  /* ----- Pháp sư tăng tốc đồng đội ----- */
   for (const e of enemies) e.haste = 1;
 
   for (const e of enemies) {
@@ -3866,7 +3866,7 @@ function update(dt) {
     }
   }
 
-  /* ----- Move enemies ----- */
+  /* ----- Di chuyển kẻ địch ----- */
   for (const e of enemies) {
     if (e.dead) continue;
 
@@ -3874,7 +3874,7 @@ function update(dt) {
     if (e.hurt > 0) e.hurt -= dt;
   }
 
-  /* ----- Damage over time (burn, poison) ----- */
+  /* ----- Sát thương theo thời gian (cháy, độc) ----- */
   for (const e of enemies) {
     if (e.dead || !e.dots.length) continue;
 
@@ -3907,7 +3907,7 @@ function update(dt) {
   updateProjs(dt);
   updateStrikes(dt);
 
-  /* ----- Cleanup ----- */
+  /* ----- Dọn dẹp ----- */
   enemies = enemies.filter(e => !e.dead);
   projs = projs.filter(p => !p.dead);
 
@@ -3929,7 +3929,7 @@ function update(dt) {
   parts = parts.filter(p => p.life > 0);
   if (parts.length > 600) parts.splice(0, parts.length - 600);
 
-  /* ----- Wave over ----- */
+  /* ----- Hết đợt ----- */
   if (waveActive && !spawnQ.length && !enemies.length) {
     waveActive = false;
 
@@ -3940,10 +3940,10 @@ function update(dt) {
 
     const bonus = Math.round((20 + wave * 3) * D.bonus);
     earn(bonus);
-    showMsg('✅ Wave ' + wave + ' cleared! Bonus +' + bonus + ' 💰');
+    showMsg('✅ Xong đợt ' + wave + '! Thưởng +' + bonus + ' 💰');
 
     $('go').disabled = false;
-    $('go').textContent = '▶ Start wave ' + (wave + 1);
+    $('go').textContent = '▶ Bắt đầu đợt ' + (wave + 1);
 
     updUI();
     showPreview();
@@ -3951,39 +3951,39 @@ function update(dt) {
   }
 }
 
-/** Current score — the HUD shows it live and the final result reuses this formula */
+/** Điểm đang có — HUD hiển thị liên tục và kết quả cuối ván dùng lại công thức này */
 function scoreNow(win) {
   const mult = [1, 1.5, 2, 3][GC.i];
   return Math.round((wave * 100 + lives * 20 + kills * 2 + (win ? 600 : 0)) * mult);
 }
 
-/** End the run: save level progress and show the result box */
+/** Kết thúc ván chơi: lưu tiến độ màn và hiện hộp kết quả */
 function endGame(win) {
   if (over) return;
   over = true;
 
-  clearRun();   // run is decided → don't restore it any more
+  clearRun();   // ván đã ngã ngũ → không khôi phục nữa
 
   const score = scoreNow(win);
   const stars = win ? starsFor(lives, D.lives) : 0;
   const rec = commitMapResult(level, { win, score, stars });
 
   const lines = [
-    win ? 'Held all ' + TOTAL + ' waves on ' + level.name : 'Survived until wave ' + wave + '/' + TOTAL,
-    'Defeated ' + kills + ' enemies',
-    '❤️ ' + lives + ' lives left',
-    win ? '⭐ ' + stars + '/3 stars' : '⭐ Best ' + mapStars(level.id) + '/3 stars'
+    win ? 'Giữ vững ' + TOTAL + ' đợt ở ' + level.name : 'Cầm cự đến đợt ' + wave + '/' + TOTAL,
+    'Hạ ' + kills + ' địch',
+    '❤️ còn ' + lives + ' mạng',
+    win ? '⭐ ' + stars + '/3 sao' : '⭐ ' + mapStars(level.id) + '/3 sao tốt nhất'
   ];
 
   if (rec.unlockedNext) {
     const nx = LEVELS[levelIdx + 1];
-    lines.push('🔓 Field unlocked: ' + nx.icon + ' ' + nx.name);
+    lines.push('🔓 Mở khoá cánh đồng ' + nx.icon + ' ' + nx.name);
   }
 
   setTimeout(() => {
     GC.result({
       win,
-      title: win ? '🏆 ' + level.name + ' is safe!' : '💥 ' + level.name + ' was overrun!',
+      title: win ? '🏆 ' + level.name + ' bình yên!' : '💥 ' + level.name + ' bị tràn!',
       score,
       lines,
       onAgain: playAgain,
@@ -3992,14 +3992,14 @@ function endGame(win) {
   }, 650);
 }
 
-/** Replay this exact level on the same difficulty */
+/** Chơi lại đúng màn này ở cùng độ khó */
 function playAgain() {
   clearRun();
   setAutoMap(level.id);
   GC.again();
 }
 
-/** Go back to the difficulty picker */
+/** Quay lại màn chọn độ khó */
 function changeDifficulty() {
   clearAutoMap();
   GC.change();
@@ -4009,13 +4009,13 @@ function changeDifficulty() {
     <!-- js/render-background.js -->
     <script>
 /* =====================================================
-   render-background.js · field background, path, gates,
-   ambient lighting (clouds, pollen, drifting leaves)
+   render-background.js · nền cánh đồng, đường đi, cổng,
+   ánh sáng môi trường (mây, phấn hoa, lá bay)
    ===================================================== */
 
-/* ---------- Shared basic drawing helpers ---------- */
+/* ---------- Các hàm vẽ cơ bản dùng chung ---------- */
 
-/** Rounded rectangle */
+/** Hình chữ nhật bo góc */
 function rr(x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -4026,21 +4026,21 @@ function rr(x, y, w, h, r) {
   ctx.closePath();
 }
 
-/** Linear gradient from a list of color stops */
+/** Gradient tuyến tính từ danh sách mốc màu */
 function lg(x0, y0, x1, y1, stops) {
   const g = ctx.createLinearGradient(x0, y0, x1, y1);
   stops.forEach(s => g.addColorStop(s[0], s[1]));
   return g;
 }
 
-/** Radial gradient from a list of color stops */
+/** Gradient tròn từ danh sách mốc màu */
 function rg(x, y, r0, r1, stops) {
   const g = ctx.createRadialGradient(x, y, r0, x, y, r1);
   stops.forEach(s => g.addColorStop(s[0], s[1]));
   return g;
 }
 
-/** Zig-zag line (used for lightning bolts) */
+/** Đường zig-zag (dùng cho tia sét) */
 function jag(x1, y1, x2, y2, amp) {
   const n = Math.max(3, Math.floor(Math.hypot(x2 - x1, y2 - y1) / 14));
 
@@ -4059,10 +4059,10 @@ function jag(x1, y1, x2, y2, amp) {
 }
 
 /* =====================================================
-   STATIC BACKGROUND (drawn once onto an offscreen canvas)
+   NỀN TĨNH (vẽ một lần vào canvas phụ)
    ===================================================== */
-let bg;          // grass background
-let lightLayer;  // lighting / shading layer painted on top
+let bg;          // nền cỏ
+let lightLayer;  // lớp ánh sáng / bóng mờ phủ lên trên cùng
 
 function makeBg() {
   bg = document.createElement('canvas');
@@ -4072,14 +4072,14 @@ function makeBg() {
   const g = bg.getContext('2d');
   const rand = seededRandom(12345);
 
-  /** Terrain tile (rock/water/tree/building) — don't scatter weeds, flowers or mushrooms on it */
+  /** Ô địa hình (đá/nước/cây/nhà) — không rải cỏ dại, hoa, nấm lên trên */
   const onProp = (x, y) => {
     const c = (x / CS) | 0;
     const r = (y / CS) | 0;
     return !!(blocked && blocked[c] && blocked[c][r]);
   };
 
-  /* ----- Subtle checker grass + color speckles ----- */
+  /* ----- Ô cỏ caro nhẹ + đốm màu ----- */
   for (let c = 0; c < COLS; c++) {
     for (let r = 0; r < ROWS; r++) {
       g.fillStyle = (c + r) % 2 ? PAL.grass[0] : PAL.grass[1];
@@ -4098,7 +4098,7 @@ function makeBg() {
     g.fill();
   }
 
-  /* ----- Weeds ----- */
+  /* ----- Cỏ dại ----- */
   for (let i = 0; i < 320; i++) {
     const x = rand() * CW;
     const y = rand() * CH;
@@ -4116,7 +4116,7 @@ function makeBg() {
     g.stroke();
   }
 
-  /* ----- Flowers ----- */
+  /* ----- Hoa ----- */
   const colors = ['#ffffff', '#ffd93b', '#ff8fb3', '#b9a3ff'];
 
   for (let i = 0; i < 90; i++) {
@@ -4137,7 +4137,7 @@ function makeBg() {
     g.fill();
   }
 
-  /* ----- Small rocks ----- */
+  /* ----- Đá nhỏ ----- */
   for (let i = 0; i < 34; i++) {
     const x = rand() * CW;
     const y = rand() * CH;
@@ -4158,7 +4158,7 @@ function makeBg() {
     g.stroke();
   }
 
-  /* ----- Bushes & mushrooms ----- */
+  /* ----- Bụi cây & nấm ----- */
   for (let i = 0; i < 26; i++) {
     const x = rand() * CW;
     const y = rand() * CH;
@@ -4171,10 +4171,10 @@ function makeBg() {
     if (!onProp(x, y)) drawMushroom(g, x, y);
   }
 
-  /* ----- Level terrain (trees, rocks, ponds, river, fences, barns) ----- */
+  /* ----- Địa hình của màn (cây, đá, ao, sông, rào, nhà kho) ----- */
   drawTerrain(g);
 
-  /* ----- Tree rows along the top & bottom of the map ----- */
+  /* ----- Hàng cây viền trên & dưới bản đồ ----- */
   for (let x = 14; x < CW; x += 38 + rand() * 26) {
     drawTree(g, x, 8 + rand() * 6, 0.9 + rand() * 0.4);
   }
@@ -4182,11 +4182,11 @@ function makeBg() {
     drawTree(g, x, CH - 10 - rand() * 6, 0.9 + rand() * 0.4);
   }
 
-  /* ----- Overlay light layer ----- */
+  /* ----- Lớp ánh sáng phủ ----- */
   makeLightLayer();
 }
 
-/** Linear gradient on any context g */
+/** Gradient tuyến tính trên ngữ cảnh g bất kỳ */
 function lg2(g, x0, y0, x1, y1, a, b) {
   const gr = g.createLinearGradient(x0, y0, x1, y1);
   gr.addColorStop(0, a);
@@ -4257,7 +4257,7 @@ function drawTree(g, x, y, s) {
   g.fill();
 }
 
-/** Light layer: warm sunlight from the top-left fading darker at the edges */
+/** Lớp ánh sáng: nắng ấm từ trên-trái và tối dần ở rìa */
 function makeLightLayer() {
   lightLayer = document.createElement('canvas');
   lightLayer.width = CW;
@@ -4265,7 +4265,7 @@ function makeLightLayer() {
 
   const g = lightLayer.getContext('2d');
 
-  // Per-field tint (sunset, harvest…) 
+  // Màu riêng của từng cánh đồng (hoàng hôn, mùa gặt…)
   if (PAL.wash) {
     g.fillStyle = PAL.wash;
     g.fillRect(0, 0, CW, CH);
@@ -4285,7 +4285,7 @@ function makeLightLayer() {
 }
 
 /* =====================================================
-   PATH (redrawn every frame because the player builds mazes)
+   ĐƯỜNG ĐI (vẽ mỗi khung vì người chơi xây mê cung)
    ===================================================== */
 function strokePath() {
   ctx.beginPath();
@@ -4296,37 +4296,37 @@ function drawPath() {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // Drop shadow
+  // Bóng đổ
   strokePath();
   ctx.strokeStyle = 'rgba(40,25,5,.28)';
   ctx.lineWidth = 38;
   ctx.stroke();
 
-  // Dark soil edge
+  // Viền đất tối
   strokePath();
   ctx.strokeStyle = PAL.soil[0];
   ctx.lineWidth = 34;
   ctx.stroke();
 
-  // Light edge
+  // Viền sáng
   strokePath();
   ctx.strokeStyle = PAL.soil[1];
   ctx.lineWidth = 30;
   ctx.stroke();
 
-  // Road surface
+  // Mặt đường
   strokePath();
   ctx.strokeStyle = PAL.soil[2];
   ctx.lineWidth = 26;
   ctx.stroke();
 
-  // Brighter road center
+  // Lòng đường sáng hơn
   strokePath();
   ctx.strokeStyle = PAL.soil[3];
   ctx.lineWidth = 16;
   ctx.stroke();
 
-  // Small pebbles scattered on the road
+  // Sỏi nhỏ rải trên đường
   ctx.setLineDash([1, 11]);
   strokePath();
   ctx.strokeStyle = 'rgba(120,85,40,.55)';
@@ -4342,7 +4342,7 @@ function drawPath() {
   ctx.lineDashOffset = 0;
   ctx.setLineDash([]);
 
-  // Direction arrows flowing along the road
+  // Mũi tên chỉ hướng chạy dọc đường
   ctx.fillStyle = 'rgba(255,255,255,.6)';
 
   const off = (gtime * 40) % 80;
@@ -4378,16 +4378,16 @@ function drawPath() {
 }
 
 /* =====================================================
-   ENTRANCE / EXIT GATES
+   CỔNG VÀO / CỔNG RA
    ===================================================== */
 function drawGates() {
   const pulse = 0.5 + 0.5 * Math.sin(gtime * 3);
 
-  /* ----- Entrance gate (red wooden pen) ----- */
+  /* ----- Cổng vào (chuồng gỗ đỏ) ----- */
   ctx.save();
   ctx.translate(0, SR * CS);
 
-  // Warning glow
+  // Vầng sáng cảnh báo
   ctx.fillStyle = rg(CS / 2, CS / 2, 4, 44, [
     [0, 'rgba(255,90,70,' + (0.25 + pulse * 0.2) + ')'],
     [1, 'rgba(255,90,70,0)']
@@ -4403,7 +4403,7 @@ function drawGates() {
   ctx.lineWidth = 3;
   ctx.stroke();
 
-  // Wooden planks
+  // Vạch gỗ
   ctx.strokeStyle = 'rgba(0,0,0,.25)';
   ctx.lineWidth = 1.5;
   for (let y = 6; y < CS + 4; y += 8) {
@@ -4416,10 +4416,10 @@ function drawGates() {
   ctx.fillStyle = '#fff';
   ctx.font = '800 11px Baloo 2,sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('IN', CS / 2 - 6, CS / 2 + 4);
+  ctx.fillText('VÀO', CS / 2 - 6, CS / 2 + 4);
   ctx.restore();
 
-  /* ----- Exit gate (green field) ----- */
+  /* ----- Cổng ra (ruộng xanh) ----- */
   ctx.save();
   ctx.translate(GOALC * CS, GR * CS);
 
@@ -4441,12 +4441,12 @@ function drawGates() {
   ctx.fillStyle = '#fff';
   ctx.font = '800 11px Baloo 2,sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('OUT', CS / 2 + 4, CS / 2 + 4);
+  ctx.fillText('RA', CS / 2 + 4, CS / 2 + 4);
   ctx.restore();
 }
 
 /* =====================================================
-   AMBIENT: cloud shadows, pollen, drifting leaves
+   MÔI TRƯỜNG: bóng mây, phấn hoa, lá bay
    ===================================================== */
 const ambient = [];
 
@@ -4471,7 +4471,7 @@ const clouds = [
   { x: 820, y: 90,  w: 170, h: 60, sp: 8 }
 ];
 
-/** Cloud shadows drifting over the field */
+/** Bóng mây trôi trên cánh đồng */
 function drawClouds(dt) {
   ctx.fillStyle = 'rgba(20,50,30,.07)';
 
@@ -4488,7 +4488,7 @@ function drawClouds(dt) {
   }
 }
 
-/** Floating pollen / leaves */
+/** Phấn hoa / lá lơ lửng */
 function drawAmbient(dt) {
   for (const a of ambient) {
     a.x += a.sp * dt;
@@ -4517,11 +4517,11 @@ function drawAmbient(dt) {
     <!-- js/render-terrain.js -->
     <script>
 /* =====================================================
-   render-terrain.js · draw the level terrain onto the static background
-   (trees, rocks, water, fences, barns, plowed fields, flower bushes)
+   render-terrain.js · vẽ địa hình của màn chơi lên nền tĩnh
+   (cây, đá, nước, hàng rào, nhà kho, ruộng cày, khóm hoa)
    ===================================================== */
 
-/** Is tile (c,r) exactly type k — outside the map counts as an empty tile */
+/** Ô (c,r) có đúng loại k không — ra ngoài bản đồ coi như ô trống */
 function kAt(c, r) {
   if (c < 0 || r < 0 || c >= COLS || r >= ROWS || !kinds) return '.';
   return kinds[c][r];
@@ -4529,7 +4529,7 @@ function kAt(c, r) {
 
 const isK = (c, r, k) => kAt(c, r) === k;
 
-/** Visit every tile of type k */
+/** Duyệt mọi ô mang loại k */
 function eachKind(k, fn) {
   if (!kinds) return;
 
@@ -4540,14 +4540,14 @@ function eachKind(k, fn) {
   }
 }
 
-/** Per-tile seeded random number — the background looks the same every redraw */
+/** Số ngẫu nhiên cố định theo ô — nền vẽ lại vẫn giống nhau */
 function cellRand(c, r, i) {
   const rand = seededRandom(c * 73856093 ^ r * 19349663 ^ (i || 0) * 83492791);
   return rand();
 }
 
 /* =====================================================
-   WATER (ponds, river) — tiles merge into one rounded block with no seams
+   NƯỚC (ao, sông) — các ô ghép thành một khối bo tròn, không lộ mạch
    ===================================================== */
 function waterCellPath(path, c, r) {
   const x = c * CS - 2, y = r * CS - 2, s = CS + 4;
@@ -4567,13 +4567,13 @@ function drawWater(g) {
 
   if (!any) return;
 
-  // Sandy/earthen bank around the water
+  // Bờ cát/đất quanh mặt nước
   g.lineJoin = 'round';
   g.strokeStyle = '#b79b62';
   g.lineWidth = 11;
   g.stroke(path);
 
-  // Water surface: filled once for the whole block, so there are no seams between cells
+  // Mặt nước: tô một lần cho toàn khối → không có đường nối giữa các ô
   const grad = g.createLinearGradient(0, 0, CW * 0.3, CH);
   grad.addColorStop(0, PAL.water[0]);
   grad.addColorStop(1, PAL.water[1]);
@@ -4583,7 +4583,7 @@ function drawWater(g) {
   g.fill(path);
   g.clip(path);
 
-  // Bottom gets darker toward the lower edge, plus a shadow along the rim
+  // Đáy tối dần về phía dưới + bóng sát mép
   const deep = g.createLinearGradient(0, 0, 0, CH);
   deep.addColorStop(0, 'rgba(255,255,255,.25)');
   deep.addColorStop(1, 'rgba(10,60,90,.28)');
@@ -4594,7 +4594,7 @@ function drawWater(g) {
   g.lineWidth = 7;
   g.stroke(path);
 
-  // Ripples and lily pads
+  // Gợn sóng + lá sen
   eachKind('w', (c, r) => {
     const x = c * CS, y = r * CS;
 
@@ -4623,7 +4623,7 @@ function drawWater(g) {
 
   g.restore();
 
-  // Reeds growing on the bank above the water block
+  // Lau sậy mọc trên bờ, phía trên khối nước
   eachKind('w', (c, r) => {
     if (isK(c, r - 1, 'w') || cellRand(c, r, 4) > 0.5) return;
 
@@ -4642,7 +4642,7 @@ function drawWater(g) {
 }
 
 /* =====================================================
-   WOODEN BRIDGE ('j' tile: enemies walk over it, can't build)
+   CẦU GỖ (ô 'j': địch đi qua, không xây được)
    ===================================================== */
 function drawBridges(g) {
   eachKind('j', (c, r) => {
@@ -4667,7 +4667,7 @@ function drawBridges(g) {
 }
 
 /* =====================================================
-   PLOWED FIELD ('o') & FLOWER BUSH ('x') — pretty tiles that can still be built on
+   RUỘNG CÀY ('o') & KHÓM HOA ('x') — ô đẹp, vẫn xây được
    ===================================================== */
 function drawFields(g) {
   eachKind('o', (c, r) => {
@@ -4679,7 +4679,7 @@ function drawFields(g) {
     g.fillStyle = 'rgba(90,60,25,.35)';
     for (let i = 0; i < 4; i++) g.fillRect(x, y + 3 + i * 10, CS, 4);
 
-    // raised soil ridges
+    // luống đất nổi
     g.fillStyle = 'rgba(255,235,190,.25)';
     for (let i = 0; i < 4; i++) g.fillRect(x, y + 2 + i * 10, CS, 1.4);
   });
@@ -4707,7 +4707,7 @@ function drawFields(g) {
 }
 
 /* =====================================================
-   ROCKS ('r') — clusters of 2-3 stones
+   ĐÁ ('r') — cụm 2-3 hòn
    ===================================================== */
 function drawRocks(g) {
   eachKind('r', (c, r) => {
@@ -4745,7 +4745,7 @@ function drawRocks(g) {
       g.fill();
     }
 
-    // Moss at the base of the rocks
+    // Rêu dưới chân đá
     if (cellRand(c, r, 2) < 0.6) {
       g.fillStyle = 'rgba(60,150,70,.5)';
       g.beginPath();
@@ -4756,7 +4756,7 @@ function drawRocks(g) {
 }
 
 /* =====================================================
-   FENCE ('f') — wooden rails joining along horizontal/vertical runs
+   HÀNG RÀO ('f') — ray gỗ nối theo dải ngang/dọc
    ===================================================== */
 function drawFences(g) {
   eachKind('f', (c, r) => {
@@ -4768,7 +4768,7 @@ function drawFences(g) {
     g.translate(x + CS / 2, y + CS / 2);
     if (!horiz && vert) g.rotate(Math.PI / 2);
 
-    // drop shadow
+    // bóng đổ
     g.fillStyle = 'rgba(0,0,0,.2)';
     g.fillRect(-CS / 2 + 3, 6, CS - 6, 4);
 
@@ -4779,7 +4779,7 @@ function drawFences(g) {
     g.strokeStyle = 'rgba(28,27,58,.8)';
     g.lineWidth = 1.6;
 
-    // 2 horizontal rails
+    // 2 thanh ngang
     for (const oy of [-8, 1]) {
       g.beginPath();
       g.rect(-CS / 2 + 1, oy, CS - 2, 5);
@@ -4787,7 +4787,7 @@ function drawFences(g) {
       g.stroke();
     }
 
-    // fence posts
+    // cột rào
     for (const ox of [-CS / 2 + 3, CS / 2 - 8]) {
       g.beginPath();
       g.rect(ox, -13, 5, 20);
@@ -4800,7 +4800,7 @@ function drawFences(g) {
 }
 
 /* =====================================================
-   HAYSTACK ('h')
+   ĐỐNG CỎ KHÔ ('h')
    ===================================================== */
 function drawHay(g) {
   eachKind('h', (c, r) => {
@@ -4823,7 +4823,7 @@ function drawHay(g) {
     g.lineWidth = 2;
     g.stroke();
 
-    // straw strands & binding rope
+    // sợi cỏ & dây buộc
     g.strokeStyle = 'rgba(150,115,40,.7)';
     g.lineWidth = 1.2;
     for (let i = -1; i <= 1; i++) {
@@ -4845,7 +4845,7 @@ function drawHay(g) {
 }
 
 /* =====================================================
-   BARN / HOUSE / WELL ('b') — style picked automatically from the block size
+   NHÀ KHO / NHÀ Ở / GIẾNG ('b') — tự chọn kiểu theo kích thước khối
    ===================================================== */
 function drawBuildings(g) {
   if (!kinds) return;
@@ -4853,7 +4853,7 @@ function drawBuildings(g) {
   for (let c = 0; c < COLS; c++) {
     for (let r = 0; r < ROWS; r++) {
       if (kinds[c][r] !== 'b') continue;
-      if (isK(c - 1, r, 'b') || isK(c, r - 1, 'b')) continue;   // not the top-left corner
+      if (isK(c - 1, r, 'b') || isK(c, r - 1, 'b')) continue;   // không phải góc trên-trái
 
       let w = 1;
       while (isK(c + w, r, 'b')) w++;
@@ -4879,7 +4879,7 @@ function drawBuilding(g, x, y, w, h, area) {
   g.ellipse(x + w / 2 + 4, y + h - 2, w * 0.62, h * 0.2, 0, 0, 7);
   g.fill();
 
-  /* ----- Silo / well: small block ----- */
+  /* ----- Silo / giếng: khối nhỏ ----- */
   if (area <= 2) {
     const cx = x + w / 2;
     const rx = w * 0.34;
@@ -4920,7 +4920,7 @@ function drawBuilding(g, x, y, w, h, area) {
   const bodyY = y + roofH;
   const bodyH = h - roofH;
 
-  /* ----- House body ----- */
+  /* ----- Thân nhà ----- */
   const wall = g.createLinearGradient(x, bodyY, x, bodyY + bodyH);
 
   const barn = w >= 3 * CS;
@@ -4940,7 +4940,7 @@ function drawBuilding(g, x, y, w, h, area) {
   g.lineWidth = 2.6;
   g.stroke();
 
-  /* ----- Roof ----- */
+  /* ----- Mái ----- */
   const roof = g.createLinearGradient(x, y, x, bodyY);
   roof.addColorStop(0, barn ? '#8a2b26' : '#b7623f');
   roof.addColorStop(1, barn ? '#c0463c' : '#8a452b');
@@ -4948,7 +4948,7 @@ function drawBuilding(g, x, y, w, h, area) {
   g.beginPath();
 
   if (barn) {
-    // gambrel roof (barn)
+    // mái gambrel (nhà kho)
     const my = y + roofH * 0.35;
     g.moveTo(x - 3, bodyY);
     g.lineTo(x + 3, my);
@@ -4965,7 +4965,7 @@ function drawBuilding(g, x, y, w, h, area) {
   g.fill();
   g.stroke();
 
-  /* ----- Doors, windows, wood siding ----- */
+  /* ----- Cửa, sổ, vạch gỗ ----- */
   if (barn) {
     g.fillStyle = '#f6efdc';
     g.beginPath();
@@ -4999,7 +4999,7 @@ function drawBuilding(g, x, y, w, h, area) {
     }
   }
 
-  // vertical wood siding on the barn walls
+  // vạch gỗ dọc thân nhà kho
   if (barn) {
     g.strokeStyle = 'rgba(0,0,0,.18)';
     g.lineWidth = 1.4;
@@ -5011,7 +5011,7 @@ function drawBuilding(g, x, y, w, h, area) {
     }
   }
 
-  // chimney
+  // ống khói
   if (!barn && h >= 2 * CS) {
     g.fillStyle = '#8a452b';
     g.strokeStyle = ink;
@@ -5024,7 +5024,7 @@ function drawBuilding(g, x, y, w, h, area) {
 }
 
 /* =====================================================
-   TREES ('t')
+   CÂY CỐI ('t')
    ===================================================== */
 function drawMapTrees(g) {
   eachKind('t', (c, r) => {
@@ -5038,7 +5038,7 @@ function drawMapTrees(g) {
       drawTree(g, x, y - 2, s);
     }
 
-    // fruit tree: add a few red apples
+    // cây ăn quả: thêm vài quả đỏ
     if (cellRand(c, r, 6) < 0.35) {
       g.fillStyle = '#e0453a';
       for (let i = 0; i < 3; i++) {
@@ -5051,7 +5051,7 @@ function drawMapTrees(g) {
   });
 }
 
-/** Draw the whole terrain of the current level onto the background canvas */
+/** Vẽ toàn bộ địa hình của màn đang chọn lên canvas nền */
 function drawTerrain(g) {
   if (!kinds) return;
 
@@ -5068,15 +5068,15 @@ function drawTerrain(g) {
     <!-- js/render-towers.js -->
     <script>
 /* =====================================================
-   render-towers.js · draws towers (base, barrel, level stars)
-   Used both on the field and for icons in the tower picker.
+   render-towers.js · vẽ tháp (thân, nòng, sao cấp)
+   Dùng cả cho cánh đồng lẫn icon trong thanh chọn tháp.
    ===================================================== */
 
-/** Draw a tower's stone base */
+/** Vẽ đế đá của tháp */
 function drawTowerBase(t, x, y, lvl, time, icon) {
   const T = TYPES[t.type];
 
-  // Soft drop shadow
+  // Bóng đổ mềm
   if (!icon) {
     ctx.fillStyle = rg(x + 3, y + 9, 4, 24, [
       [0, 'rgba(0,0,0,.38)'],
@@ -5087,7 +5087,7 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
     ctx.fill();
   }
 
-  // Level 5 halo
+  // Hào quang cấp 5
   if (lvl >= 5 && !icon) {
     const a = 0.35 + 0.25 * Math.sin(time * 5);
     ctx.fillStyle = rg(x, y, 6, 30, [
@@ -5099,7 +5099,7 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
     ctx.fill();
   }
 
-  // Stone base
+  // Đế đá
   ctx.fillStyle = lg(x, y - 17, x, y + 17, [[0, '#b9c1ca'], [1, '#5a626c']]);
   rr(x - 17, y - 17, 34, 34, 8);
   ctx.fill();
@@ -5107,12 +5107,12 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // Bright top edge
+  // Mép sáng phía trên
   ctx.fillStyle = 'rgba(255,255,255,.32)';
   rr(x - 14, y - 14, 28, 6, 3);
   ctx.fill();
 
-  // Rivets
+  // Đinh tán
   ctx.fillStyle = '#3d434a';
   for (const [bx, by] of [[-12, -12], [12, -12], [-12, 12], [12, 12]]) {
     ctx.beginPath();
@@ -5120,7 +5120,7 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
     ctx.fill();
   }
 
-  // Level-colored metal rim
+  // Viền kim loại theo cấp
   if (lvl >= 3) {
     ctx.strokeStyle = lvl >= 5 ? '#ffd93b' : '#e8c24a';
     ctx.lineWidth = 2;
@@ -5128,7 +5128,7 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
     ctx.stroke();
   }
 
-  // Color ring per tower type
+  // Vòng màu theo loại tháp
   ctx.fillStyle = lg(x - 11, y - 11, x + 11, y + 11, [
     [0, lighten(T.color, 0.4)],
     [1, darken(T.color, 0.1)]
@@ -5140,14 +5140,14 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Glossy highlight
+  // Điểm sáng bóng
   ctx.fillStyle = 'rgba(255,255,255,.45)';
   ctx.beginPath();
   ctx.ellipse(x - 4, y - 5, 4, 2.2, -0.6, 0, 7);
   ctx.fill();
 }
 
-/** Draw the barrel/weapon body rotated toward the aim direction */
+/** Vẽ nòng / thân vũ khí xoay theo hướng ngắm */
 function drawTowerWeapon(t, lvl, time, icon) {
   const metal = lg(0, -6, 0, 6, [[0, '#7a828e'], [0.5, '#3a4048'], [1, '#252a30']]);
 
@@ -5264,7 +5264,7 @@ function drawTowerWeapon(t, lvl, time, icon) {
     }
 
     case 'tesla': {
-      ctx.rotate(-ang);   // lightning coil doesn't rotate toward the target
+      ctx.rotate(-ang);   // cuộn sét không xoay theo mục tiêu
 
       ctx.fillStyle = '#555d66';
       ctx.fillRect(-3, -3, 6, 12);
@@ -5433,7 +5433,7 @@ function drawTowerWeapon(t, lvl, time, icon) {
   }
 }
 
-/** Draw a tower at (x,y). icon=true when drawing the small picker icon. */
+/** Vẽ một tháp tại (x,y). icon=true khi vẽ icon nhỏ ở thanh chọn. */
 function drawTower(t, x, y, time, icon) {
   const lvl = t.lvl || 1;
   const ang = icon ? -0.5 : (t.ang || 0);
@@ -5442,7 +5442,7 @@ function drawTower(t, x, y, time, icon) {
 
   drawTowerBase(t, x, y, lvl, time, icon);
 
-  // Move the origin to the tower center, then rotate toward the aim direction
+  // Chuyển hệ tọa độ vào tâm tháp rồi xoay theo hướng ngắm
   ctx.translate(x, y);
   ctx.rotate(t.type === 'radar' ? time * 1.6 : ang);
 
@@ -5453,7 +5453,7 @@ function drawTower(t, x, y, time, icon) {
 
   ctx.restore();
 
-  // Level stars
+  // Sao hiển thị cấp
   ctx.fillStyle = '#ffd93b';
   ctx.strokeStyle = INK;
   ctx.lineWidth = 1;
@@ -5469,13 +5469,13 @@ function drawTower(t, x, y, time, icon) {
     <!-- js/render-enemies.js -->
     <script>
 /* =====================================================
-   render-enemies.js · draws enemies, elite auras,
-   and health bars
+   render-enemies.js · vẽ kẻ địch, hào quang tinh anh,
+   thanh máu
    ===================================================== */
 
-/* ---------- Reusable parts shared by many enemies ---------- */
+/* ---------- Bộ phận dùng lại cho nhiều kẻ địch ---------- */
 
-/** Rounded body with a glossy gradient */
+/** Thân tròn có đổ bóng sáng */
 function blob(r, col, hl = 0.4) {
   ctx.fillStyle = rg(-r * 0.3, -r * 0.35, r * 0.1, r * 1.1, [
     [0, lighten(col, hl)],
@@ -5489,7 +5489,7 @@ function blob(r, col, hl = 0.4) {
   ctx.stroke();
 }
 
-/** Pair of eyes */
+/** Cặp mắt */
 function eyes(r, dx = 3, dy = -2, s = 3) {
   ctx.fillStyle = '#fff';
   ctx.beginPath();
@@ -5504,7 +5504,7 @@ function eyes(r, dx = 3, dy = -2, s = 3) {
   ctx.fill();
 }
 
-/** Walking feet */
+/** Đôi chân bước */
 function feet(r, bob, anim) {
   const s = Math.sin(anim * 10);
 
@@ -5516,7 +5516,7 @@ function feet(r, bob, anim) {
 }
 
 /* =====================================================
-   SHAPES FOR EACH ENEMY TYPE
+   HÌNH DÁNG TỪNG LOẠI KẺ ĐỊCH
    ===================================================== */
 function drawEnemyBody(e, a, bob) {
   const d = e.def;
@@ -5538,7 +5538,7 @@ function drawEnemyBody(e, a, bob) {
       break;
 
     case 'runner':
-      // Speed trail
+      // Vệt tốc độ
       ctx.strokeStyle = 'rgba(255,255,255,.7)';
       ctx.lineWidth = 2;
       for (let i = -1; i <= 1; i++) {
@@ -5552,7 +5552,7 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a * 1.6);
       blob(r, d.col);
 
-      // Headband
+      // Băng đô
       ctx.fillStyle = '#e03a3a';
       ctx.fillRect(-r, -r * 0.5, r * 2, 3);
       ctx.fillRect(-r - 5, -r * 0.5 + 1, 6, 3);
@@ -5567,7 +5567,7 @@ function drawEnemyBody(e, a, bob) {
       break;
 
     case 'tank':
-      // Tracks
+      // Xích
       ctx.fillStyle = '#2a2a30';
       rr(-r - 1, -r * 0.95, r * 2 + 2, r * 0.5, 3);
       ctx.fill();
@@ -5583,13 +5583,13 @@ function drawEnemyBody(e, a, bob) {
         ctx.fillRect(i * r * 0.28 - o * 0.3, r * 0.6, 2, 3);
       }
 
-      // Vehicle body
+      // Thân xe
       ctx.fillStyle = lg(0, -r * 0.7, 0, r * 0.7, [[0, lighten(d.col, 0.35)], [1, d.col]]);
       rr(-r * 0.85, -r * 0.62, r * 1.7, r * 1.24, 5);
       ctx.fill();
       ctx.stroke();
 
-      // Turret
+      // Tháp pháo
       ctx.fillStyle = lg(0, -r * 0.4, 0, r * 0.4, [[0, '#a07a5a'], [1, '#6a4a30']]);
       ctx.beginPath();
       ctx.arc(-1, 0, r * 0.5, 0, 7);
@@ -5634,12 +5634,12 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a);
       blob(r, d.col);
 
-      // Medical cross
+      // Chữ thập y tế
       ctx.fillStyle = '#fff';
       ctx.fillRect(-2, -1, 4, 10);
       ctx.fillRect(-5, 2, 10, 4);
 
-      // Glow above the head
+      // Vầng sáng trên đầu
       ctx.strokeStyle = '#ffe27a';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -5684,7 +5684,7 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a * 1.3);
       blob(r, d.col);
 
-      // Flame horns
+      // Sừng lửa
       ctx.fillStyle = '#ffe27a';
       ctx.beginPath();
       ctx.moveTo(-r * 0.8, -r * 0.5);
@@ -5704,7 +5704,7 @@ function drawEnemyBody(e, a, bob) {
 
       eyes(r, 3, -1, 2.8);
 
-      // Angry eyebrows
+      // Lông mày giận dữ
       ctx.strokeStyle = INK;
       ctx.lineWidth = 2.4;
       ctx.beginPath();
@@ -5736,7 +5736,7 @@ function drawEnemyBody(e, a, bob) {
       break;
 
     case 'ninja':
-      // Flowing scarf
+      // Khăn bay
       ctx.strokeStyle = '#d33';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -5763,7 +5763,7 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a);
       blob(r, d.col, 0.5);
 
-      // Helmet
+      // Mũ giáp
       ctx.fillStyle = lg(0, -r, 0, 0, [[0, '#e0e6ee'], [1, '#8a94a2']]);
       ctx.beginPath();
       ctx.arc(0, -r * 0.15, r * 1.04, 3.2, 6.22);
@@ -5776,7 +5776,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fillStyle = INK;
       ctx.fillRect(-r * 0.65, -r * 0.35, r * 1.3, 3);
 
-      // Red plume
+      // Lông mũ đỏ
       ctx.fillStyle = '#e23a3a';
       ctx.beginPath();
       ctx.moveTo(0, -r);
@@ -5786,7 +5786,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Shield
+      // Khiên
       ctx.fillStyle = lg(0, 0, 0, r, [[0, '#4a7ab8'], [1, '#2a4a88']]);
       ctx.beginPath();
       ctx.moveTo(r * 0.3, -r * 0.2);
@@ -5805,7 +5805,7 @@ function drawEnemyBody(e, a, bob) {
     case 'wizard':
       feet(r, bob, a);
 
-      // Cloak
+      // Áo choàng
       ctx.fillStyle = lg(0, -r, 0, r, [[0, '#8a78f0'], [1, '#3f2fa8']]);
       ctx.beginPath();
       ctx.moveTo(0, -r * 0.6);
@@ -5815,7 +5815,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Face
+      // Mặt
       ctx.fillStyle = '#f2d0a8';
       ctx.beginPath();
       ctx.arc(0, -r * 0.5, r * 0.5, 0, 7);
@@ -5823,7 +5823,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.stroke();
       eyes(r, 2, -r * 0.5, 1.8);
 
-      // Hat
+      // Nón
       ctx.fillStyle = '#3f2fa8';
       ctx.beginPath();
       ctx.moveTo(-r * 0.8, -r * 0.7);
@@ -5838,7 +5838,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(0, -r * 1.25, 1.8, 0, 7);
       ctx.fill();
 
-      // Magic staff
+      // Gậy phép
       ctx.strokeStyle = '#8a5a30';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -5855,7 +5855,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(r * 0.9, -r * 0.8, 6 + Math.sin(a * 8), 0, 7);
       ctx.fill();
 
-      // Speed spell ring
+      // Vòng phép tăng tốc
       ctx.strokeStyle = 'rgba(120,170,255,.35)';
       ctx.lineWidth = 2;
       ctx.setLineDash([3, 4]);
@@ -5889,7 +5889,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(3, -r * 0.6, 2, 0, 7);
       ctx.fill();
 
-      // Orbiting ghost orb
+      // Quả cầu ma quay quanh
       for (let i = 0; i < 3; i++) {
         const aa = a * 5 + i * 2.094;
         ctx.fillStyle = '#d65cc0';
@@ -5919,19 +5919,19 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Moss
+      // Rêu
       ctx.fillStyle = '#6aa84a';
       ctx.beginPath();
       ctx.arc(-r * 0.5, -r * 0.35, 3, 0, 7);
       ctx.arc(r * 0.4, r * 0.2, 3.5, 0, 7);
       ctx.fill();
 
-      // Orange eye
+      // Mắt cam
       ctx.fillStyle = '#ff9a3c';
       ctx.fillRect(-r * 0.4, -r * 0.7, 5, 4);
       ctx.fillRect(r * 0.1, -r * 0.7, 5, 4);
 
-      // Cracks
+      // Vết nứt
       ctx.strokeStyle = 'rgba(0,0,0,.35)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -5950,7 +5950,7 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a);
       blob(r, d.col);
 
-      // Crown
+      // Vương miện
       ctx.fillStyle = '#ffd93b';
       ctx.beginPath();
       ctx.moveTo(-r * 0.7, -r * 0.75);
@@ -5975,7 +5975,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.lineTo(-1, -3);
       ctx.stroke();
 
-      // Teeth
+      // Răng
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.moveTo(-6, r * 0.5);
@@ -5995,7 +5995,7 @@ function drawEnemyBody(e, a, bob) {
       feet(r, bob, a);
       blob(r, d.col, 0.25);
 
-      // Crystal spikes
+      // Gai tinh thể
       ctx.fillStyle = '#b9a3ff';
       for (let i = -2; i <= 2; i++) {
         ctx.beginPath();
@@ -6007,7 +6007,7 @@ function drawEnemyBody(e, a, bob) {
         ctx.stroke();
       }
 
-      // Energy core
+      // Lõi năng lượng
       ctx.fillStyle = rg(0, r * 0.35, 1, 9, [
         [0, '#fff'],
         [0.5, '#c86bff'],
@@ -6022,10 +6022,10 @@ function drawEnemyBody(e, a, bob) {
       ctx.fillRect(3, -r * 0.3, 6, 4);
       break;
 
-    /* ----- NEW ----- */
+    /* ----- MỚI ----- */
 
     case 'juggernaut':
-      // Heavy chains
+      // Xích hạng nặng
       ctx.fillStyle = '#23252b';
       rr(-r - 2, -r * 0.95, r * 2 + 4, r * 0.55, 4);
       ctx.fill();
@@ -6034,19 +6034,19 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Layered steel body
+      // Thân thép nhiều lớp
       ctx.fillStyle = lg(0, -r * 0.8, 0, r * 0.8, [[0, '#8a93a2'], [1, '#3e4552']]);
       rr(-r * 0.95, -r * 0.7, r * 1.9, r * 1.4, 6);
       ctx.fill();
       ctx.stroke();
 
-      // Extra armor plate
+      // Tấm giáp phụ
       ctx.fillStyle = '#6a7384';
       rr(-r * 0.7, -r * 0.5, r * 1.1, r, 4);
       ctx.fill();
       ctx.stroke();
 
-      // Rivets
+      // Đinh tán
       ctx.fillStyle = '#c9ced8';
       for (const [px, py] of [[-0.5, -0.35], [0.1, -0.35], [-0.5, 0.35], [0.1, 0.35]]) {
         ctx.beginPath();
@@ -6054,14 +6054,14 @@ function drawEnemyBody(e, a, bob) {
         ctx.fill();
       }
 
-      // Twin cannons
+      // Hai nòng pháo
       ctx.fillStyle = '#1f2228';
       ctx.fillRect(r * 0.3, -r * 0.35, r + 5, 5);
       ctx.strokeRect(r * 0.3, -r * 0.35, r + 5, 5);
       ctx.fillRect(r * 0.3, r * 0.1, r + 5, 5);
       ctx.strokeRect(r * 0.3, r * 0.1, r + 5, 5);
 
-      // Blinking red light
+      // Đèn đỏ nhấp nháy
       ctx.fillStyle = (Math.sin(a * 10) > 0) ? '#ff4a3a' : '#7a1f18';
       ctx.beginPath();
       ctx.arc(-r * 0.6, 0, 2.4, 0, 7);
@@ -6071,7 +6071,7 @@ function drawEnemyBody(e, a, bob) {
     case 'phoenix': {
       const w = Math.sin(a * 9);
 
-      // Fire trail
+      // Đuôi lửa
       for (let i = 0; i < 3; i++) {
         ctx.strokeStyle = ['#ff3a1a', '#ff9a2a', '#ffe07a'][i];
         ctx.lineWidth = 6 - i * 1.6;
@@ -6084,7 +6084,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.strokeStyle = INK;
       ctx.lineWidth = 2;
 
-      // Wings
+      // Cánh
       ctx.fillStyle = lg(0, -26, 0, 0, [[0, '#ffb347'], [1, '#e8482a']]);
       ctx.beginPath();
       ctx.moveTo(-2, 0);
@@ -6102,14 +6102,14 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Body
+      // Thân
       ctx.fillStyle = rg(2, -3, 2, 16, [[0, '#fff2b0'], [1, '#ff7a2a']]);
       ctx.beginPath();
       ctx.ellipse(2, 0, 14, 8, 0, 0, 7);
       ctx.fill();
       ctx.stroke();
 
-      // Head and beak
+      // Đầu & mỏ
       ctx.fillStyle = '#ffd36a';
       ctx.beginPath();
       ctx.arc(14, -2, 6, 0, 7);
@@ -6130,7 +6130,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(15, -4, 1.4, 0, 7);
       ctx.fill();
 
-      // Flame crest
+      // Mào lửa
       ctx.fillStyle = '#ff4a1a';
       ctx.beginPath();
       ctx.moveTo(10, -7);
@@ -6138,7 +6138,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.lineTo(15, -7);
       ctx.fill();
 
-      // Reborn: sparkling ashes
+      // Đã hồi sinh: tro tàn lấp lánh
       if (e.revived) {
         ctx.fillStyle = 'rgba(255,230,160,.8)';
         for (let i = 0; i < 4; i++) {
@@ -6153,7 +6153,7 @@ function drawEnemyBody(e, a, bob) {
     case 'warlock':
       feet(r, bob, a);
 
-      // Dark purple cloak
+      // Áo choàng tím đen
       ctx.fillStyle = lg(0, -r, 0, r, [[0, '#5a3fb8'], [1, '#1c1244']]);
       ctx.beginPath();
       ctx.moveTo(0, -r * 0.7);
@@ -6163,7 +6163,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Hood
+      // Mũ trùm
       ctx.fillStyle = '#241555';
       ctx.beginPath();
       ctx.arc(0, -r * 0.5, r * 0.62, Math.PI, 0);
@@ -6173,14 +6173,14 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Eyes glowing in the dark
+      // Đôi mắt phát sáng trong bóng tối
       ctx.fillStyle = '#ff5af0';
       ctx.beginPath();
       ctx.arc(-3, -r * 0.35, 1.8, 0, 7);
       ctx.arc(3, -r * 0.35, 1.8, 0, 7);
       ctx.fill();
 
-      // Floating crystal orb
+      // Quả cầu pha lê lơ lửng
       ctx.fillStyle = rg(r * 1.1, -r * 0.3 + Math.sin(a * 6) * 2, 1, 8, [
         [0, '#fff'],
         [0.5, '#b07bff'],
@@ -6190,7 +6190,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(r * 1.1, -r * 0.3 + Math.sin(a * 6) * 2, 7, 0, 7);
       ctx.fill();
 
-      // Magic circle
+      // Vòng ma pháp
       ctx.strokeStyle = 'rgba(176,123,255,.45)';
       ctx.lineWidth = 2;
       ctx.setLineDash([2, 5]);
@@ -6201,7 +6201,7 @@ function drawEnemyBody(e, a, bob) {
       break;
 
     case 'reaper':
-      // Tattered cloak
+      // Áo choàng rách tả tơi
       ctx.fillStyle = lg(0, -r, 0, r * 1.4, [[0, '#4a4a64'], [1, '#14141f']]);
       ctx.beginPath();
       ctx.moveTo(0, -r * 0.9);
@@ -6215,7 +6215,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Skull face
+      // Mặt sọ
       ctx.fillStyle = '#e8e4da';
       ctx.beginPath();
       ctx.arc(0, -r * 0.45, r * 0.5, 0, 7);
@@ -6228,7 +6228,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.ellipse(3, -r * 0.5, 2, 2.6, 0, 0, 7);
       ctx.fill();
 
-      // Scythe
+      // Lưỡi hái
       ctx.strokeStyle = '#6a4a2a';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -6243,7 +6243,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.stroke();
       break;
 
-    /* ----- In the air ----- */
+    /* ----- Trên không ----- */
 
     case 'plane':
     case 'bomber':
@@ -6259,7 +6259,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Cockpit
+      // Buồng lái
       ctx.fillStyle = '#4aa8ff';
       ctx.beginPath();
       ctx.ellipse(6, 0, 4, 2.6, 0, 0, 7);
@@ -6299,7 +6299,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(-1, -1, 1.6, 0, 7);
       ctx.fill();
 
-      // Pointed ears
+      // Tai nhọn
       ctx.fillStyle = '#8a62b0';
       ctx.beginPath();
       ctx.moveTo(-3, -r * 0.7);
@@ -6315,7 +6315,7 @@ function drawEnemyBody(e, a, bob) {
     case 'dragon': {
       const w = Math.sin(a * 7);
 
-      // Wings
+      // Cánh
       ctx.fillStyle = '#a8302a';
       ctx.beginPath();
       ctx.moveTo(-4, 0);
@@ -6333,7 +6333,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.fill();
       ctx.stroke();
 
-      // Tail
+      // Đuôi
       ctx.strokeStyle = d.col;
       ctx.lineWidth = 7;
       ctx.lineCap = 'round';
@@ -6344,7 +6344,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.strokeStyle = INK;
       ctx.lineWidth = 2;
 
-      // Body
+      // Thân
       ctx.fillStyle = lg(0, -16, 0, 16, [[0, '#f06a58'], [1, '#a8302a']]);
       ctx.beginPath();
       ctx.ellipse(0, 0, 19, 11, 0, 0, 7);
@@ -6356,7 +6356,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.ellipse(1, 4, 14, 5, 0, 0, 7);
       ctx.fill();
 
-      // Head
+      // Đầu
       ctx.fillStyle = d.col;
       ctx.beginPath();
       ctx.ellipse(20, -2, 9, 7, 0, 0, 7);
@@ -6381,7 +6381,7 @@ function drawEnemyBody(e, a, bob) {
       ctx.arc(23, -4, 1.2, 0, 7);
       ctx.fill();
 
-      // Fire breath
+      // Hơi lửa
       ctx.fillStyle = 'rgba(255,150,40,' + (0.5 + 0.3 * Math.sin(a * 12)) + ')';
       ctx.beginPath();
       ctx.moveTo(28, 0);
@@ -6398,7 +6398,7 @@ function drawEnemyBody(e, a, bob) {
 }
 
 /* =====================================================
-   ELITE AURA (drawn behind the body)
+   HÀO QUANG TINH ANH (vẽ phía sau thân)
    ===================================================== */
 function drawEliteAura(e) {
   const r = e.def.r;
@@ -6412,7 +6412,7 @@ function drawEliteAura(e) {
   ctx.arc(0, 0, r + 16, 0, 7);
   ctx.fill();
 
-  // Spinning ring of yellow dots
+  // Vòng chấm vàng xoay quanh
   ctx.strokeStyle = 'rgba(255,205,50,.9)';
   ctx.lineWidth = 2;
   ctx.setLineDash([4, 5]);
@@ -6425,7 +6425,7 @@ function drawEliteAura(e) {
 }
 
 /* =====================================================
-   DRAW A COMPLETE ENEMY
+   VẼ MỘT KẺ ĐỊCH HOÀN CHỈNH
    ===================================================== */
 function drawEnemy(e) {
   const d = e.def;
@@ -6435,7 +6435,7 @@ function drawEnemy(e) {
   ctx.save();
   ctx.translate(e.x, e.y);
 
-  /* ----- Drop shadow ----- */
+  /* ----- Bóng đổ ----- */
   if (!d.air) {
     ctx.fillStyle = rg(0, r * 0.85, 1, r, [
       [0, 'rgba(0,0,0,.34)'],
@@ -6464,7 +6464,7 @@ function drawEnemy(e) {
 
   ctx.filter = 'none';
 
-  /* ----- Energy shield ----- */
+  /* ----- Khiên năng lượng ----- */
   if (e.shieldMax && e.shield > 0) {
     ctx.strokeStyle = 'rgba(120,200,255,' + (0.35 + 0.5 * e.shield / e.shieldMax) + ')';
     ctx.lineWidth = 3;
@@ -6475,7 +6475,7 @@ function drawEnemy(e) {
     ctx.stroke();
   }
 
-  /* ----- Burning / poison ring ----- */
+  /* ----- Vòng cháy / độc ----- */
   let ri = 0;
   for (const dot of e.dots) {
     ctx.strokeStyle = dot.color;
@@ -6488,7 +6488,7 @@ function drawEnemy(e) {
   }
   ctx.globalAlpha = d.stealth ? 0.55 : 1;
 
-  /* ----- Slowed ----- */
+  /* ----- Bị làm chậm ----- */
   if (e.slowT > 0) {
     ctx.strokeStyle = '#8be8f5';
     ctx.fillStyle = 'rgba(140,232,245,.22)';
@@ -6499,7 +6499,7 @@ function drawEnemy(e) {
     ctx.stroke();
   }
 
-  /* ----- Hasted ----- */
+  /* ----- Được tăng tốc ----- */
   if (e.haste > 1) {
     ctx.strokeStyle = 'rgba(120,170,255,.8)';
     ctx.lineWidth = 2;
@@ -6516,7 +6516,7 @@ function drawEnemy(e) {
   drawEnemyBar(e);
 }
 
-/** Health bar (and shield) above an enemy's head */
+/** Thanh máu (và khiên) phía trên đầu kẻ địch */
 function drawEnemyBar(e) {
   const d = e.def;
   const r = d.r;
@@ -6525,17 +6525,17 @@ function drawEnemyBar(e) {
   const x = e.x - w / 2;
   const y = e.y - r - (d.air ? 14 : 10);
 
-  // Border
+  // Viền
   ctx.fillStyle = INK;
   rr(x - 1.5, y - 1.5, w + 3, 7, 3);
   ctx.fill();
 
-  // Red background
+  // Nền đỏ
   ctx.fillStyle = '#e04a4a';
   rr(x, y, w, 4, 2);
   ctx.fill();
 
-  // Remaining health
+  // Máu còn lại
   const pct = clamp(e.hp / e.max, 0, 1);
   ctx.fillStyle = pct > 0.5 ? '#4de04d' : pct > 0.25 ? '#ffd93b' : '#ff7a3a';
   if (pct > 0) {
@@ -6543,7 +6543,7 @@ function drawEnemyBar(e) {
     ctx.fill();
   }
 
-  // Shield
+  // Khiên
   if (e.shieldMax && e.shield > 0) {
     ctx.fillStyle = '#0a2a4a';
     ctx.fillRect(x - 1, y + 6, w + 2, 4);
@@ -6551,7 +6551,7 @@ function drawEnemyBar(e) {
     ctx.fillRect(x, y + 7, w * clamp(e.shield / e.shieldMax, 0, 1), 2);
   }
 
-  // Elite star
+  // Ngôi sao tinh anh
   if (e.elite) {
     ctx.fillStyle = '#ffd93b';
     ctx.strokeStyle = INK;
@@ -6566,10 +6566,10 @@ function drawEnemyBar(e) {
     <!-- js/render.js -->
     <script>
 /* =====================================================
-   render.js · draws the whole scene each frame
+   render.js · vẽ toàn cảnh mỗi khung hình
    ===================================================== */
 
-/** Draw the preview shown while placing a tower */
+/** Vẽ khung xem trước khi đặt tháp */
 function drawPlacementGhost() {
   if (!build || !hover) return;
 
@@ -6594,12 +6594,12 @@ function drawPlacementGhost() {
   ctx.globalAlpha = 1;
 }
 
-/** Draw towers (sorted by y so towers behind are covered correctly) */
+/** Vẽ các tháp (sắp theo y để tháp phía sau bị che đúng) */
 function drawTowers() {
   towers.slice().sort((a, b) => a.y - b.y).forEach(t => {
     drawTower(t, t.x, t.y, gtime, false);
 
-    // Radar buff marker
+    // Dấu hiệu được radar buff
     if (t.bD > 0) {
       ctx.strokeStyle = 'rgba(53,208,160,.8)';
       ctx.lineWidth = 2;
@@ -6611,7 +6611,7 @@ function drawTowers() {
       ctx.fillRect(t.x - 1, t.y - 28, 2, 8);
     }
 
-    // Selected tower: gold outline + range
+    // Tháp đang chọn: khung vàng + tầm bắn
     if (t === sel) {
       ctx.strokeStyle = '#ffd93b';
       ctx.lineWidth = 3.5;
@@ -6634,11 +6634,11 @@ function drawTowers() {
   });
 }
 
-/** Draw flying projectiles */
+/** Vẽ đạn bay */
 function drawProjectiles() {
   for (const p of projs) {
 
-    // Mortar shell
+    // Đạn cối
     if (p.mortar) {
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       ctx.beginPath();
@@ -6655,13 +6655,13 @@ function drawProjectiles() {
       continue;
     }
 
-    // Missile
+    // Tên lửa
     if (p.kind === 'missile') {
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.ang || 0);
 
-      // Flame trailing behind
+      // Ngọn lửa phụt phía sau
       ctx.fillStyle = 'rgba(255,170,60,.85)';
       ctx.beginPath();
       ctx.moveTo(-6, -2);
@@ -6686,7 +6686,7 @@ function drawProjectiles() {
       continue;
     }
 
-    // Cannon shell
+    // Đạn pháo
     if (p.kind === 'cannon') {
       ctx.fillStyle = '#2a2a30';
       ctx.strokeStyle = INK;
@@ -6703,7 +6703,7 @@ function drawProjectiles() {
       continue;
     }
 
-    // Ice shard
+    // Mảnh băng
     if (p.kind === 'frost') {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -6723,7 +6723,7 @@ function drawProjectiles() {
       continue;
     }
 
-    // Machine gun bullet (bright streak)
+    // Đạn súng máy (vạch sáng)
     if (p.kind === 'gun') {
       const dx = Math.cos(p.ang || 0);
       const dy = Math.sin(p.ang || 0);
@@ -6744,7 +6744,7 @@ function drawProjectiles() {
       continue;
     }
 
-    // Regular projectile (poison, fire...)
+    // Đạn thường (độc, lửa...)
     ctx.fillStyle = p.c;
     ctx.strokeStyle = INK;
     ctx.lineWidth = 1.5;
@@ -6755,7 +6755,7 @@ function drawProjectiles() {
   }
 }
 
-/** Draw short-lived effects (beams, explosions, shockwaves, floating text...) */
+/** Vẽ các hiệu ứng ngắn (tia, nổ, vòng sóng, chữ bay...) */
 function drawEffects() {
   for (const f of fx) {
 
@@ -6826,7 +6826,7 @@ function drawEffects() {
       ctx.shadowBlur = 0;
 
     } else if (f.k === 'muzzle') {
-      // Muzzle flash
+      // Chớp lửa đầu nòng
       const u = clamp(f.life / 0.18, 0, 1);
       ctx.fillStyle = rg(f.x, f.y, 1, f.r, [
         [0, 'rgba(255,255,255,' + u + ')'],
@@ -6850,7 +6850,7 @@ function drawEffects() {
       ctx.arc(f.x, f.y, f.r * (0.6 + u * 0.5), 0, 7);
       ctx.fill();
 
-      // Shockwave ring
+      // Vòng sóng xung kích
       ctx.strokeStyle = 'rgba(255,230,160,' + (0.8 * (1 - u)) + ')';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -6918,7 +6918,7 @@ function drawEffects() {
   }
 }
 
-/** Draw an airstrike missile falling from above */
+/** Vẽ tên lửa không kích đang rơi từ trên xuống */
 function drawStrikes() {
   for (const s of strikes) {
     const u = clamp(1 - s.t / 0.5, 0, 1);
@@ -6932,7 +6932,7 @@ function drawStrikes() {
     ctx.translate(s.x, s.y - (1 - u) * 260);
     ctx.rotate(Math.PI / 2);
 
-    // Fire trail
+    // Đuôi lửa
     ctx.fillStyle = 'rgba(255,160,50,.8)';
     ctx.beginPath();
     ctx.moveTo(-9, -3);
@@ -6955,7 +6955,7 @@ function drawStrikes() {
   }
 }
 
-/** Airstrike targeting reticle that follows the mouse */
+/** Vòng ngắm không kích theo chuột */
 function drawAim() {
   if (!aim || !hover) return;
 
@@ -6978,11 +6978,11 @@ function drawAim() {
   ctx.stroke();
 }
 
-/** Draw everything. dt is the frame's real elapsed time (0 while paused). */
+/** Vẽ mọi thứ. dt là thời gian thật của khung hình (0 khi tạm dừng). */
 function draw(dt) {
   ctx.save();
 
-  // Screen shake on big explosions
+  // Rung màn hình khi có vụ nổ lớn
   if (shake > 0.2) {
     ctx.translate(
       (Math.random() - 0.5) * shake,
@@ -6998,12 +6998,12 @@ function draw(dt) {
   drawPlacementGhost();
   drawTowers();
 
-  // Ground enemies → projectiles → flying enemies (so planes stay on top)
+  // Kẻ địch mặt đất → đạn → kẻ địch bay (để máy bay luôn ở trên)
   for (const e of enemies) if (!e.def.air) drawEnemy(e);
   drawProjectiles();
   for (const e of enemies) if (e.def.air) drawEnemy(e);
 
-  // Particles
+  // Hạt
   for (const p of parts) {
     ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
     ctx.fillStyle = p.c;
@@ -7020,7 +7020,7 @@ function draw(dt) {
 
   ctx.restore();
 
-  // Light/shadow overlay layer (not shaken with the screen)
+  // Lớp ánh sáng / bóng mờ phủ lên cùng (không rung theo màn hình)
   ctx.drawImage(lightLayer, 0, 0);
 }
     </script>
@@ -7028,20 +7028,20 @@ function draw(dt) {
     <!-- js/ui.js -->
     <script>
 /* =====================================================
-   ui.js · status bar, info panel, tower picking,
-   mouse / keyboard
+   ui.js · thanh trạng thái, bảng thông tin, chọn tháp,
+   chuột / bàn phím
    ===================================================== */
 
-/* ---------- Status bar ---------- */
+/* ---------- Thanh trạng thái ---------- */
 function updUI() {
   $('lives').textContent = lives;
   $('money').textContent = money;
   $('wave').textContent = wave;
   $('total').textContent = TOTAL;
-  $('score').textContent = scoreNow(false).toLocaleString('en-US');
+  $('score').textContent = scoreNow(false).toLocaleString('vi-VN');
   $('mapName').textContent = level ? level.icon + ' ' + level.name : '';
 
-  // Progress bar: during a wave = share of enemies handled, between waves = level progress
+  // Thanh tiến trình: trong đợt = tỉ lệ địch đã xử lý, giữa đợt = tiến bộ cả màn
   const p = waveActive && waveSpawn
     ? clamp(waveDone / waveSpawn, 0, 1)
     : (TOTAL ? wave / TOTAL : 0);
@@ -7050,7 +7050,7 @@ function updUI() {
   fill.style.width = (p * 100).toFixed(1) + '%';
   fill.parentElement.setAttribute('aria-valuenow', Math.round(p * 100));
 
-  // Dim towers the player can't afford yet
+  // Làm mờ tháp mà bé chưa đủ tiền mua
   document.querySelectorAll('.tw').forEach(b => {
     b.classList.toggle('poor', money < TYPES[b.dataset.t].cost);
   });
@@ -7061,7 +7061,7 @@ function updUI() {
 }
 
 /* =====================================================
-   SETTINGS MENU (gear button)
+   MENU CÁI ĐẶT (nút bánh răng)
    ===================================================== */
 function buildSettings() {
   if ($('hudMenu')) return;
@@ -7070,23 +7070,23 @@ function buildSettings() {
   m.className = 'hud__menu';
   m.id = 'hudMenu';
   m.innerHTML =
-    '<h3>Settings</h3>' +
+    '<h3>Cài đặt</h3>' +
     '<p class="sub" id="setSub"></p>' +
     '<div class="row">' +
-      '<button class="btn alt" data-a="pause">⏸ Pause</button>' +
+      '<button class="btn alt" data-a="pause">⏸ Tạm dừng</button>' +
       '<button class="btn alt" data-a="s1">x1</button>' +
       '<button class="btn alt" data-a="s2">x2</button>' +
       '<button class="btn alt" data-a="s3">x3</button>' +
     '</div>' +
-    '<label>Cloud and pollen effects' +
+    '<label>Hiệu ứng mây, phấn hoa' +
       '<input type="checkbox" id="setFx" checked></label>' +
     '<div class="row">' +
-      '<button class="btn mint" data-a="map">🗺️ Choose a field</button>' +
-      '<button class="btn alt" data-a="again">↺ Replay this field</button>' +
+      '<button class="btn mint" data-a="map">🗺️ Chọn cánh đồng</button>' +
+      '<button class="btn alt" data-a="again">↺ Chơi lại màn này</button>' +
     '</div>' +
     '<div class="row">' +
-      '<button class="btn alt" data-a="diff">🎚 Change difficulty</button>' +
-      '<button class="btn red" data-a="home">🏠 Back to lobby</button>' +
+      '<button class="btn alt" data-a="diff">🎚 Đổi độ khó</button>' +
+      '<button class="btn red" data-a="home">🏠 Về sảnh</button>' +
     '</div>';
 
   $('top').appendChild(m);
@@ -7122,9 +7122,9 @@ function syncSettings() {
   if (!m) return;
 
   $('setSub').textContent = (level ? level.icon + ' ' + level.name + ' · ' : '') +
-    GC.diff.label + ' · ' + TOTAL + ' waves';
+    GC.diff.label + ' · ' + TOTAL + ' đợt';
 
-  m.querySelector('[data-a="pause"]').textContent = paused ? '▶ Resume' : '⏸ Pause';
+  m.querySelector('[data-a="pause"]').textContent = paused ? '▶ Tiếp tục' : '⏸ Tạm dừng';
   m.querySelector('#setFx').checked = gfx;
 
   m.querySelectorAll('[data-a^="s"]').forEach(b => {
@@ -7148,7 +7148,7 @@ function toggleSettings() {
   if (open) syncSettings();
 }
 
-/** 🗺️ button / menu: open the field picker and pause the current run */
+/** Nút 🗺️ / menu: mở màn chọn cánh đồng, tạm dừng ván đang chơi */
 function openMapPicker() {
   closeSettings();
 
@@ -7172,7 +7172,7 @@ function openMapPicker() {
   });
 }
 
-/** Update the cooldown overlay of both skills */
+/** Cập nhật độ phủ hồi chiêu của 2 kỹ năng */
 function updSkills() {
   for (const [id, k] of [['skStrike', 'strike'], ['skFreeze', 'freeze']]) {
     const s = skill[k];
@@ -7186,7 +7186,7 @@ function updSkills() {
 function pulse(id) {
   const el = $(id);
   el.classList.remove('pulse');
-  void el.offsetWidth;   // force a browser reflow so the animation restarts
+  void el.offsetWidth;   // buộc trình duyệt tính lại để chạy lại hoạt ảnh
   el.classList.add('pulse');
 }
 
@@ -7200,7 +7200,7 @@ function showMsg(t) {
   msgT = setTimeout(() => (m.style.opacity = 0), 1800);
 }
 
-/* ---------- Next wave preview ---------- */
+/* ---------- Xem trước đợt kế tiếp ---------- */
 function showPreview() {
   const el = $('preview');
 
@@ -7214,23 +7214,23 @@ function showPreview() {
   const cnt = {};
   q.forEach(s => (cnt[s.t] = (cnt[s.t] || 0) + 1));
 
-  let html = '<b style="font-family:var(--gc-head)">Wave ' + next + ':</b>';
+  let html = '<b style="font-family:var(--gc-head)">Đợt ' + next + ':</b>';
 
   html += Object.entries(cnt).map(([k, v]) => {
     return '<span class="pv" title="' + EDEF[k].n + '">' + EDEF[k].ic + '×' + v + '</span>';
   }).join('');
 
-  // From HARD_WAVE on: show the elite chance
+  // Từ đợt HARD_WAVE: báo tỉ lệ tinh anh
   const ec = eliteChance(next);
   if (ec > 0) {
-    html += '<span class="pv elite" title="Elite: extra HP, heavy armor, faster, double coins">' +
-      '⭐ Elite ~' + Math.round(ec * 100) + '%</span>';
+    html += '<span class="pv elite" title="Tinh anh: máu trâu, giáp dày, chạy nhanh, rơi gấp đôi xu">' +
+      '⭐ Tinh anh ~' + Math.round(ec * 100) + '%</span>';
   }
 
   el.innerHTML = html;
 }
 
-/* ---------- Info panel ---------- */
+/* ---------- Bảng thông tin ---------- */
 function upCost(t) {
   return Math.round(TYPES[t.type].cost * 0.8 * t.lvl);
 }
@@ -7243,15 +7243,15 @@ function showInfo() {
   } else if (build) {
     const T = TYPES[build];
     el.innerHTML = '<b>' + T.name + '</b> – ' + T.cost + '💰<br>' + T.desc +
-      '<br>Click the field to place it. Right-click / Esc to cancel.';
+      '<br>Nhấn vào cánh đồng để đặt. Chuột phải / Esc để hủy.';
   } else if (aim) {
-    el.innerHTML = '<b>🚀 Airstrike</b><br>Tap where you want the bombs (260 damage × 6 bombs, pierces armor).';
+    el.innerHTML = '<b>🚀 Không kích</b><br>Chạm vào khu vực muốn ném bom (sát thương 260 × 6 quả, xuyên giáp).';
   } else {
-    el.innerHTML = '<b>' + (level ? level.icon + ' ' + level.name : 'Field') + '</b><br>' +
-      'Pick a weapon, then click the field to build. You can’t build on ponds, rocks, trees, barns or bridges. ' +
-      'Enemies walk around towers — build a maze to make the path longer! ' +
-      'Click a tower to upgrade it (up to ' + MAXLV + ' stars) or sell it.' +
-      '<br>⚠️ From wave ' + HARD_WAVE + ' there are super-tough <b>elite ⭐</b> enemies!';
+    el.innerHTML = '<b>' + (level ? level.icon + ' ' + level.name : 'Cánh đồng') + '</b><br>' +
+      'Chọn vũ khí rồi nhấn vào đồng để xây. Không xây được lên ao, đá, cây, nhà kho và cầu. ' +
+      'Địch đi vòng quanh tháp – hãy xây mê cung để kéo dài đường đi! ' +
+      'Nhấn vào tháp để nâng cấp (tối đa ' + MAXLV + ' sao) hoặc bán.' +
+      '<br>⚠️ Từ đợt ' + HARD_WAVE + ' có kẻ địch <b>tinh anh ⭐</b> rất trâu!';
   }
 }
 
@@ -7262,39 +7262,39 @@ function showTowerInfo(el) {
 
   if (T.support) {
     el.innerHTML =
-      '<b>' + T.name + '</b> – Lv ' + sel.lvl + '/' + MAXLV +
-      '<br>Support range: ' + (TYPES.radar.range + 0.25 * lv).toFixed(1) + ' tiles' +
-      '<br>⚡ +' + Math.round((0.22 + 0.08 * lv) * 100) + '% damage · +' +
-      Math.round((0.1 + 0.04 * lv) * 100) + '% range' +
-      '<br>👁 Reveals invisible enemies';
+      '<b>' + T.name + '</b> – cấp ' + sel.lvl + '/' + MAXLV +
+      '<br>Tầm hỗ trợ: ' + (TYPES.radar.range + 0.25 * lv).toFixed(1) + ' ô' +
+      '<br>⚡ +' + Math.round((0.22 + 0.08 * lv) * 100) + '% sát thương · +' +
+      Math.round((0.1 + 0.04 * lv) * 100) + '% tầm' +
+      '<br>👁 Lộ diện kẻ tàng hình';
   } else {
     let extra = '';
 
-    if (T.burnDps) extra += '<br>🔥 Burn: ' + Math.round(T.burnDps * (1 + 0.6 * lv)) + '/sec';
-    if (T.poisonDps) extra += '<br>☠ Poison: ' + Math.round(T.poisonDps * (1 + 0.6 * lv)) + '/sec';
-    if (T.chain) extra += '<br>⚡ Chains to ' + (T.chain + Math.floor(sel.lvl / 2)) + ' targets';
-    if (T.pierce) extra += '<br>🗡 Pierces armor';
-    if (T.splash) extra += '<br>💥 Splash ' + Math.round(T.splash * (1 + 0.06 * lv)) + 'px';
-    if (T.slow) extra += '<br>❄ Slows by ' + Math.round((1 - Math.max(0.18, T.slow - 0.07 * lv)) * 100) + '%';
-    if (T.laser) extra += '<br>🔴 Gets stronger the longer it fires (up to x4.4)';
-    if (T.rail) extra += '<br>➖ Pierces every enemy in the line of fire';
-    if (sel.bD > 0) extra += '<br>📡 Radar buff: +' + Math.round(sel.bD * 100) + '% damage';
+    if (T.burnDps) extra += '<br>🔥 Cháy: ' + Math.round(T.burnDps * (1 + 0.6 * lv)) + '/giây';
+    if (T.poisonDps) extra += '<br>☠ Độc: ' + Math.round(T.poisonDps * (1 + 0.6 * lv)) + '/giây';
+    if (T.chain) extra += '<br>⚡ Lan sang ' + (T.chain + Math.floor(sel.lvl / 2)) + ' mục tiêu';
+    if (T.pierce) extra += '<br>🗡 Xuyên giáp';
+    if (T.splash) extra += '<br>💥 Nổ lan ' + Math.round(T.splash * (1 + 0.06 * lv)) + 'px';
+    if (T.slow) extra += '<br>❄ Làm chậm ' + Math.round((1 - Math.max(0.18, T.slow - 0.07 * lv)) * 100) + '%';
+    if (T.laser) extra += '<br>🔴 Càng bắn lâu càng mạnh (tối đa x4.4)';
+    if (T.rail) extra += '<br>➖ Xuyên mọi kẻ địch trên đường bắn';
+    if (sel.bD > 0) extra += '<br>📡 Buff radar: +' + Math.round(sel.bD * 100) + '% sát thương';
 
     el.innerHTML =
-      '<b>' + T.name + '</b> – Lv ' + sel.lvl + '/' + MAXLV +
-      '<br>' + (T.laser ? 'DPS: ' : 'Damage: ') + S.dmg.toFixed(0) + (T.laser ? '/sec' : '') +
-      ' | Range: ' + (S.range / CS).toFixed(1) + ' tiles' +
-      (T.laser ? '' : '<br>Fire rate: ' + (1 / S.rate).toFixed(1) + '/sec') +
+      '<b>' + T.name + '</b> – cấp ' + sel.lvl + '/' + MAXLV +
+      '<br>' + (T.laser ? 'DPS: ' : 'Sát thương: ') + S.dmg.toFixed(0) + (T.laser ? '/giây' : '') +
+      ' | Tầm: ' + (S.range / CS).toFixed(1) + ' ô' +
+      (T.laser ? '' : '<br>Tốc độ bắn: ' + (1 / S.rate).toFixed(1) + '/giây') +
       extra;
   }
 
-  // Button row: upgrade · targeting mode · sell
+  // Hàng nút: nâng cấp · chế độ ngắm · bán
   el.innerHTML += '<div class="row">' +
     (sel.lvl < MAXLV
-      ? '<button class="btn mint" id="up" ' + (money < upCost(sel) ? 'disabled' : '') + '>⬆ Upgrade (' + upCost(sel) + '💰)</button>'
-      : '<span>⭐ Max level</span>') +
+      ? '<button class="btn mint" id="up" ' + (money < upCost(sel) ? 'disabled' : '') + '>⬆ Nâng cấp (' + upCost(sel) + '💰)</button>'
+      : '<span>⭐ Đã tối đa</span>') +
     (T.support ? '' : '<button class="btn alt" id="mode">🎯 ' + MODES[sel.mode || 0] + '</button>') +
-    '<button class="btn red" id="sell">Sell (+' + Math.round(sel.spent * 0.7) + ')</button>' +
+    '<button class="btn red" id="sell">Bán (+' + Math.round(sel.spent * 0.7) + ')</button>' +
     '</div>';
 
   const up = $('up');
@@ -7335,7 +7335,7 @@ function showTowerInfo(el) {
   };
 }
 
-/* ---------- Tower picker bar ---------- */
+/* ---------- Thanh chọn tháp ---------- */
 function buildBar() {
   const box = $('towers');
   box.innerHTML = '';
@@ -7354,7 +7354,7 @@ function buildBar() {
     b.onclick = () => pickBuild(k);
     box.appendChild(b);
 
-    // Icon drawn by the tower drawing function (ctx temporarily points at the icon canvas)
+    // Icon vẽ từ chính hàm vẽ tháp (tạm đổi ctx sang canvas icon)
     const icon = b.querySelector('canvas');
     const old = ctx;
 
@@ -7389,7 +7389,7 @@ function clearPick() {
   showInfo();
 }
 
-/* ---------- Mouse on the field ---------- */
+/* ---------- Chuột trên cánh đồng ---------- */
 function mpos(e) {
   const r = cv.getBoundingClientRect();
   return [
@@ -7418,14 +7418,14 @@ cv.addEventListener('click', e => {
   const r = Math.floor(y / CS);
   hover = [c, r];
 
-  // Aiming an airstrike
+  // Đang ngắm không kích
   if (aim) {
     castStrike(c * CS + CS / 2, r * CS + CS / 2);
     showInfo();
     return;
   }
 
-  // Click an existing tower → select it
+  // Bấm vào tháp có sẵn → chọn
   const t = towers.find(t => t.c === c && t.r === r);
   if (t) {
     sel = t;
@@ -7435,12 +7435,12 @@ cv.addEventListener('click', e => {
     return;
   }
 
-  // Holding a tower → put it down
+  // Đang cầm tháp → đặt xuống
   if (build) {
     const T = TYPES[build];
 
     if (money < T.cost) {
-      showMsg(HOSTED ? 'Not enough coins in your wallet!' : 'Not enough coins!');
+      showMsg(HOSTED ? 'Không đủ xu trong túi tiền!' : 'Không đủ tiền!');
       return;
     }
 
@@ -7476,7 +7476,7 @@ cv.addEventListener('click', e => {
   }
 });
 
-/* ---------- Keyboard ---------- */
+/* ---------- Bàn phím ---------- */
 addEventListener('keydown', e => {
   if (!started || document.getElementById('gc-start') || document.getElementById('fr-maps') ||
       document.getElementById('fr-resume')) return;
@@ -7500,7 +7500,7 @@ addEventListener('keydown', e => {
   if (e.key === 'p' || e.key === 'P') $('pause').click();
 });
 
-/* ---------- HUD buttons ---------- */
+/* ---------- Các nút trên HUD ---------- */
 $('go').onclick = startWave;
 
 $('pause').onclick = () => {
@@ -7514,7 +7514,7 @@ $('pause').onclick = () => {
 $('speed').onclick = () => setSpeed(speed % 3 + 1);
 
 $('restart').onclick = () => {
-  if (confirm('Restart ' + level.name + ' from the beginning on ' + GC.diff.label + ' difficulty?')) {
+  if (confirm('Chơi lại từ đầu màn ' + level.name + ' ở độ khó ' + GC.diff.label + '?')) {
     clearRun();
     reset();
   }
@@ -7523,7 +7523,7 @@ $('restart').onclick = () => {
 $('gear').onclick = toggleSettings;
 $('mapBtn').onclick = openMapPicker;
 
-// Close the settings menu when clicking outside it
+// Đóng menu cài đặt khi bấm ra ngoài
 document.addEventListener('click', e => {
   const m = $('hudMenu');
   if (!m || !m.classList.contains('open')) return;
@@ -7535,7 +7535,7 @@ $('skStrike').onclick = toggleStrike;
 $('skFreeze').onclick = castFreeze;
 $('homeBackBtn').onclick = GC.quit;
 
-/* ---------- Fit the canvas to the screen ---------- */
+/* ---------- Co giãn canvas vừa màn hình ---------- */
 function fit() {
   const f = $('field');
   const aw = f.clientWidth - 12;
@@ -7551,12 +7551,12 @@ addEventListener('resize', fit);
     <!-- js/main.js -->
     <script>
 /* =====================================================
-   main.js · boot the game, pick a level & main loop
+   main.js · khởi động game, chọn màn & vòng lặp chính
    ===================================================== */
 
-/** Prepare the numbers and start a field (goOn = restore the saved run) */
+/** Chuẩn bị số liệu và bắt đầu chơi một cánh đồng (goOn = dựng lại ván đã lưu) */
 function startMap(lv, goOn) {
-  // Difficulty settings (easy → insane), multiplied by level modifiers
+  // Thông số theo độ khó (dễ → siêu khó), nhân thêm theo màn
   D = {
     lives: Math.round(GC.by(30, 20, 12, 6) * (lv.livesMul || 1)),
     money: Math.round(GC.by(350, 220, 160, 110) * (lv.moneyMul || 1)),
@@ -7571,7 +7571,7 @@ function startMap(lv, goOn) {
 
   $('chipSlot').innerHTML = GC.chip();
 
-  applyLevel(lv);   // must run before makeBg: the background draws this level's terrain
+  applyLevel(lv);   // phải trước makeBg: nền vẽ địa hình của màn
   buildBar();
   makeBg();
   reset();
@@ -7584,7 +7584,7 @@ function startMap(lv, goOn) {
   runLoop();
 }
 
-/** Update + draw loop — runs ONLY once, so changing levels doesn't double the speed */
+/** Vòng lặp cập nhật + vẽ — chỉ chạy MỘT lần, đổi màn không nhân đôi tốc độ */
 function runLoop() {
   if (runLoop.on) return;
   runLoop.on = true;
@@ -7603,7 +7603,7 @@ function runLoop() {
         saveRun();
       }
 
-      // Split updates into small steps so collisions stay stable at x2 and x3 speed
+      // Chia nhỏ bước cập nhật để va chạm ổn định khi tăng tốc x2, x3
       let dt = real * speed;
       while (dt > 0) {
         const step = Math.min(dt, 0.025);
@@ -7611,7 +7611,7 @@ function runLoop() {
         dt -= step;
       }
 
-      // Refresh skill cooldowns about 10 times per second
+      // Cập nhật hồi chiêu kỹ năng ~10 lần/giây
       if (Math.floor(now / 100) !== tick) {
         tick = Math.floor(now / 100);
         updSkills();
@@ -7626,7 +7626,7 @@ function runLoop() {
   requestAnimationFrame(loop);
 }
 
-/* ---------- Temporary background while picking difficulty / level ---------- */
+/* ---------- Nền tạm trong lúc chọn độ khó / chọn màn ---------- */
 D = { lives: 20, money: 200, hp: 1, spd: 1, rw: 1, bonus: 1 };
 buildSettings();
 applyLevel(LEVELS[0]);
@@ -7636,18 +7636,18 @@ fit();
 ctx.drawImage(bg, 0, 0);
 ctx.drawImage(lightLayer, 0, 0);
 
-/* ---------- Difficulty picker → field picker ---------- */
+/* ---------- Màn chọn độ khó → màn chọn cánh đồng ---------- */
 GC.start({
   id: 'fieldrunner',
-  name: 'Field Defender',
+  name: 'Phòng thủ cánh đồng',
   icon: '🌾',
-  desc: '8 fields, 12 weapons, 25+ enemy types (with elites from wave ' + HARD_WAVE +
-        ') and 2 support skills. Win a field to unlock the next one.',
+  desc: '8 cánh đồng, 12 loại vũ khí, 25+ loại lính (có tinh anh từ đợt ' + HARD_WAVE +
+        ') và 2 kỹ năng hỗ trợ. Thắng màn này để mở cánh đồng tiếp theo.',
   levels: [
-    '30 lives · extra coins · weak, slow enemies',
-    '20 lives · 220💰 · balanced',
-    '12 lives · tough, fast enemies · smaller rewards',
-    '6 lives · super-tough enemies · tiny rewards'
+    '30 mạng · tiền dư · địch yếu & chậm',
+    '20 mạng · 220💰 · cân bằng',
+    '12 mạng · địch trâu & nhanh, thưởng ít',
+    '6 mạng · địch cực trâu, thưởng rất ít'
   ],
   resume: runResumeInfo(),
   onStart: () => {

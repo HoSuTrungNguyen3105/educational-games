@@ -3,7 +3,7 @@
     function flapGame(root) {
       const W = Math.min(root.clientWidth, 420), H = Math.round(W * 1.4), s = H / 560;
       root.innerHTML = `<div class="hud"><span>⭐ <b id="sc">0</b></span><span id="lv">❤️❤️❤️</span><span>🔥 <b id="cb">0</b></span></div><canvas id="cv"></canvas>
-    <p class="hint">Tap the screen or press Space to flap through the gaps. See how long you can fly!</p>`;
+    <p class="hint">Chạm màn hình hoặc nhấn phím cách để vỗ cánh qua các khe. Bay được bao lâu tùy bạn!</p>`;
 
       const cv = $('#cv'), ctx = fitCanvas(cv, W, H);
       const br = 15 * s, bx = W * .26, GY = H - 34 * s, TOP = 76 * s;
@@ -39,7 +39,7 @@
 
       function finishRun() {
         clearOfflineRun('flap');
-        finish({ id: 'flap', score, lines: [`Passed ${n} gates`, `Longest streak ${best}`],
+        finish({ id: 'flap', score, lines: [`Đã vượt ${n} cổng`, `Chuỗi dài nhất ${best}`],
           replay: flapGame, details: { gates: n, bestCombo: best } });
       }
       function hurt() {
@@ -107,7 +107,7 @@
         if (ready) {
           ctx.fillStyle = 'rgba(12,42,48,.7)'; ctx.beginPath(); ctx.roundRect(W / 2 - 100, H / 2 + 40 * s, 200, 40, 20); ctx.fill();
           ctx.fillStyle = '#ffc233'; ctx.font = '700 16px Lexend,system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('Tap to fly', W / 2, H / 2 + 40 * s + 21);
+          ctx.fillText('Chạm để bay', W / 2, H / 2 + 40 * s + 21);
         }
         if (flash > 0) { ctx.fillStyle = `rgba(255,93,108,${flash * 1.3})`; ctx.fillRect(0, 0, W, H); }
       }
@@ -115,7 +115,7 @@
 
     startSingleGame({
       id: 'flap',
-      name: 'Sky Hopper',
+      name: 'Chim Bay Tự Do',
       icon: '🐦',
       storageKey: 'offline_flap',
       mount: flapGame,

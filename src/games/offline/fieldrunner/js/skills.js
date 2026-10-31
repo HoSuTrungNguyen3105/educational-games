@@ -1,8 +1,8 @@
 /* =====================================================
-   skills.js · support skills: Airstrike & Freeze
+   skills.js · kỹ năng hỗ trợ: Không kích & Đóng băng
    ===================================================== */
 
-/** Call an airstrike at (x,y): 6 bombs drop on the area */
+/** Gọi không kích tại (x,y): 6 quả bom rơi xuống khu vực */
 function castStrike(x, y) {
   if (skill.strike.cd > 0 || over) return;
 
@@ -19,10 +19,10 @@ function castStrike(x, y) {
   }
 
   fx.push({ k: 'target', x, y, life: 1.4, r: 90 });
-  showMsg('🚀 Airstrike incoming!');
+  showMsg('🚀 Không kích đang tới!');
 }
 
-/** Freeze every enemy for a few seconds */
+/** Đóng băng toàn bộ kẻ địch trong vài giây */
 function castFreeze() {
   if (skill.freeze.cd > 0 || over) return;
 
@@ -36,10 +36,10 @@ function castFreeze() {
   }
 
   fx.push({ k: 'frostwave', life: 0.9 });
-  showMsg('❄️ The whole horde is frozen!');
+  showMsg('❄️ Cả bầy bị đóng băng!');
 }
 
-/** Update the falling airstrike bombs */
+/** Cập nhật bom không kích đang rơi */
 function updateStrikes(dt) {
   for (const s of strikes) {
     s.t -= dt;
@@ -63,10 +63,10 @@ function updateStrikes(dt) {
   strikes = strikes.filter(s => !s.done);
 }
 
-/** Toggle airstrike aiming mode */
+/** Bật / tắt chế độ ngắm không kích */
 function toggleStrike() {
   if (skill.strike.cd > 0) {
-    showMsg('Airstrike is still recharging');
+    showMsg('Không kích đang hồi chiêu');
     return;
   }
 

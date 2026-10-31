@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>kids spreadsheet</title>
+<title>Book1 - Excel</title>
 <style>
 :root{--g:#217346;--gd:#185c37;--ga:#217346;--rb:#f3f3f3;--bd:#d4d4d4;--tx:#262626;--cbg:#fff;--cfg:#000;--grid:#d9d9d9;--hbg:#e6e6e6;--hfg:#444;--hsel:#d2d2d2;--hline:#ababab;--hline2:#c6c6c6;--pbg:#fff;--hov:#e1e1e1}
 .dark{--rb:#2d2d2d;--bd:#444;--tx:#e6e6e6;--cbg:#1e1e1e;--cfg:#e8e8e8;--grid:#383838;--hbg:#2b2b2b;--hfg:#bbb;--hsel:#404040;--hline:#555;--hline2:#454545;--pbg:#383838;--hov:#444;--ga:#5bd19a}
@@ -160,24 +160,24 @@ svg{display:block}
 <div id="app">
   <div id="title">
     <div class="qat">
-      <button data-act="save" title="Save (Ctrl+S)"><svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="2" fill="#fff"/><rect x="9" y="4" width="14" height="9" fill="#217346"/><rect x="9" y="18" width="14" height="10" fill="#cfe3d8"/></svg></button>
-      <button title="Undo"><svg viewBox="0 0 32 32"><path d="M6 14h14a7 7 0 010 14h-6M6 14l7-7M6 14l7 7" fill="none" stroke="#fff" stroke-width="3"/></svg></button>
-      <button title="Redo"><svg viewBox="0 0 32 32"><path d="M26 14H12a7 7 0 000 14h6M26 14l-7-7M26 14l-7 7" fill="none" stroke="#fff" stroke-width="3"/></svg></button>
+      <button data-act="save" title="Lưu (Ctrl+S)"><svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="2" fill="#fff"/><rect x="9" y="4" width="14" height="9" fill="#217346"/><rect x="9" y="18" width="14" height="10" fill="#cfe3d8"/></svg></button>
+      <button title="Hoàn tác"><svg viewBox="0 0 32 32"><path d="M6 14h14a7 7 0 010 14h-6M6 14l7-7M6 14l7 7" fill="none" stroke="#fff" stroke-width="3"/></svg></button>
+      <button title="Làm lại"><svg viewBox="0 0 32 32"><path d="M26 14H12a7 7 0 000 14h6M26 14l-7-7M26 14l-7 7" fill="none" stroke="#fff" stroke-width="3"/></svg></button>
     </div>
     <div class="ttl">Book1 - Excel</div>
     <div class="wc"><button>&#8212;</button><button>&#9633;</button><button class="x">&#10005;</button></div>
   </div>
   <div id="tabs">
-    <button class="tab file" data-tab="file">File</button>
-    <button class="tab on" data-tab="home">Home</button>
-    <button class="tab" data-tab="insert">Insert</button>
-    <button class="tab" data-tab="layout">Page Layout</button>
-    <button class="tab" data-tab="formulas">Formulas</button>
-    <button class="tab" data-tab="data">Data</button>
-    <button class="tab" data-tab="review">Review</button>
-    <button class="tab" data-tab="view">View</button>
-    <div class="tell"><svg viewBox="0 0 32 32"><path d="M16 3a9 9 0 00-5 16.5V24h10v-4.5A9 9 0 0016 3zM12 27h8" fill="none" stroke="#fff" stroke-width="2.4"/></svg><input id="tellme" placeholder="Tell me what you want to do..."></div>
-    <button class="share">Share</button>
+    <button class="tab file" data-tab="file">Tệp</button>
+    <button class="tab on" data-tab="home">Trang đầu</button>
+    <button class="tab" data-tab="insert">Chèn</button>
+    <button class="tab" data-tab="layout">Bố trí Trang</button>
+    <button class="tab" data-tab="formulas">Công thức</button>
+    <button class="tab" data-tab="data">Dữ liệu</button>
+    <button class="tab" data-tab="review">Xem lại</button>
+    <button class="tab" data-tab="view">Xem</button>
+    <div class="tell"><svg viewBox="0 0 32 32"><path d="M16 3a9 9 0 00-5 16.5V24h10v-4.5A9 9 0 0016 3zM12 27h8" fill="none" stroke="#fff" stroke-width="2.4"/></svg><input id="tellme" placeholder="Cho tôi biết bạn muốn làm gì..."></div>
+    <button class="share">Chia sẻ</button>
   </div>
   <div id="ribbon"></div>
   <div id="fbar">
@@ -192,12 +192,12 @@ svg{display:block}
     <div id="sc"><div id="sizer"><div id="rows"></div><div id="sel"></div></div></div>
   </div>
   <div id="stabs">
-    <div class="nav"><button id="tl" title="Scroll left (right-click: sheet list)">&#9664;</button><button id="tr" title="Scroll right (right-click: sheet list)">&#9654;</button></div>
+    <div class="nav"><button id="tl" title="Cuộn trái (chuột phải: danh sách)">&#9664;</button><button id="tr" title="Cuộn phải (chuột phải: danh sách)">&#9654;</button></div>
     <div id="tlist"></div>
-    <button id="tadd" title="New sheet">+</button>
+    <button id="tadd" title="Trang tính mới">+</button>
   </div>
   <div id="status">
-    <span id="stmsg">Ready</span>
+    <span id="stmsg">Sẵn sàng</span>
     <span id="prog"></span>
     <span class="sp"></span>
     <div class="vw"><span><i></i></span><span><i style="border-style:dashed"></i></span><span><i style="border-width:1px 1px 1px 3px"></i></span></div>
@@ -207,20 +207,20 @@ svg{display:block}
 
 <div id="bs" hidden>
   <nav>
-    <button class="back" data-bs="close" title="Back">&#10229;</button>
-    <button data-bs="new">New</button>
-    <button data-bs="open">Open</button>
-    <button data-bs="save">Save</button>
-    <button data-bs="paste">Paste text</button>
-    <button data-bs="close">Close</button>
+    <button class="back" data-bs="close" title="Quay lại">&#10229;</button>
+    <button data-bs="new">Mới</button>
+    <button data-bs="open">Mở</button>
+    <button data-bs="save">Lưu</button>
+    <button data-bs="paste">Dán văn bản</button>
+    <button data-bs="close">Đóng</button>
   </nav>
   <section>
-    <h1>Open</h1>
-    <p>Choose a story file to add it to the workbook. Each file (or each chapter, when auto-split is on) becomes its own sheet on the tab bar below. You can also drag and drop a file onto the window.</p>
+    <h1>Mở</h1>
+    <p>Chọn tệp truyện để thêm vào sổ làm việc. Mỗi tệp (hoặc mỗi chương nếu bật tự tách chương) sẽ thành một trang tính ở thanh tab phía dưới. Bạn cũng có thể kéo thả tệp vào cửa sổ.</p>
     <div class="cards">
-      <button class="card" data-bs="open"><b>Browse files</b>.txt .docx .epub .html .xlsx .csv and .json libraries</button>
-      <button class="card" data-bs="paste"><b>Paste text</b>Paste story content from the clipboard</button>
-      <button class="card" data-bs="save"><b>Save library</b>Export every story and reading position to a .json file</button>
+      <button class="card" data-bs="open"><b>Duyệt tệp</b>.txt .docx .epub .html .xlsx .csv và thư viện .json</button>
+      <button class="card" data-bs="paste"><b>Dán văn bản</b>Dán nội dung truyện từ clipboard</button>
+      <button class="card" data-bs="save"><b>Lưu thư viện</b>Xuất toàn bộ truyện và vị trí đang đọc ra tệp .json</button>
     </div>
   </section>
 </div>
@@ -264,10 +264,10 @@ function fakeSheet(){
   const sh=mkGrid('Sheet1');sh.isFake=true;
   const put=(r,c,v,o)=>{sh.cells.set(r*K+c,Object.assign({v:String(v)},o));sh.maxRow=Math.max(sh.maxRow,r)};
   const fmt=n=>n.toLocaleString('vi-VN',{minimumFractionDigits:1,maximumFractionDigits:1});
-  put(0,0,'QUARTER 3/2026 REVENUE REPORT',{b:1});
-  put(1,0,'Unit: million VND',{i:1,color:'#777'});
-  ['Item','July','August','September','Total','Target','% of Target'].forEach((h,c)=>put(3,c,h,{b:1,fill:'#217346',color:'#fff',num:c>0}));
-  const items=['Laptop','Mouse','Keyboard','Monitor','Headphones','Hard Drive','Webcam','Charging Cable'];
+  put(0,0,'BÁO CÁO DOANH THU QUÝ 3/2026',{b:1});
+  put(1,0,'Đơn vị tính: triệu đồng',{i:1,color:'#777'});
+  ['Mặt hàng','Tháng 7','Tháng 8','Tháng 9','Tổng','Mục tiêu','% KH'].forEach((h,c)=>put(3,c,h,{b:1,fill:'#217346',color:'#fff',num:c>0}));
+  const items=['Laptop','Chuột','Bàn phím','Màn hình','Tai nghe','Ổ cứng','Webcam','Cáp sạc'];
   let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
   const tot=[0,0,0,0,0];
   items.forEach((n,i)=>{
@@ -281,25 +281,25 @@ function fakeSheet(){
     tot[3]+=t;tot[4]+=g;
   });
   const tr=4+items.length;
-  put(tr,0,'Grand Total',{b:1});
+  put(tr,0,'Tổng cộng',{b:1});
   [0,1,2,3,4].forEach((k,i)=>{const L='BCDEF'[i];put(tr,1+i,fmt(tot[k]),{num:1,b:1,f:`SUM(${L}5:${L}${tr})`})});
   put(tr,6,Math.round(tot[3]/tot[4]*100)+'%',{num:1,b:1,f:`E${tr+1}/F${tr+1}`});
   return sh;
 }
 function guideSheet(){
-  const sh=mkText('Guide',[
-    'HOW TO USE THIS WORKBOOK','',
-    'This spreadsheet looks like Excel, but it is really a story reader. Each line of the story sits in column A and spills over into the cells beside it, exactly like typing text into a cell.','',
-    '1. Import a story: File > Open, or the Data tab > From Text/CSV, or drag and drop a file onto the window. Supports .txt, .docx, .epub, .html, .xlsx, .csv and .json libraries.',
-    '2. Auto-split chapters: turn it on in the Data tab. Every chapter becomes its own sheet; switch chapters with Ctrl+PageDown / Ctrl+PageUp.',
-    '3. Esc key: instantly jumps back to Sheet1 with the fake report. Press Esc again to return to exactly where you were reading.',
-    '4. Scroll with the mouse, the arrow keys, PageUp/PageDown or the Space bar. The View tab has auto scroll and dark mode.',
-    '5. Ctrl+F to search within the sheet (with an option to ignore diacritics). Type a position such as A500 into the Name Box and press Enter to jump to that row.',
-    '6. Home tab: change the font, font size and text color. Zoom is in the bottom-right corner.',
-    '7. Auto-save: content and reading position are stored on this device, so they are still here after you quit the game and come back. Press Ctrl+S to export the library to a .json file in case you switch devices.','',
-    'SAMPLE STORY','',
-    'On a late autumn afternoon, only one late train was left at the little station. The tea vendor had almost packed up her stall, keeping just a pot of tea for anyone who had missed their train. Minh sat on the last bench on the platform, his schoolbag on his lap, eyes fixed on the rails that stretched on and on into the mist.',
-    'He had promised himself he would never come back to this city. And yet that three-line letter was enough to pull him along a whole day\'s journey.'
+  const sh=mkText('Hướng dẫn',[
+    'HƯỚNG DẪN SỬ DỤNG','',
+    'Trang tính này trông như Excel nhưng thực chất là trình đọc truyện. Mỗi dòng truyện nằm ở cột A và tràn sang các ô bên cạnh, giống hệt khi gõ chữ vào ô.','',
+    '1. Nhập truyện: Tệp > Mở, hoặc thẻ Dữ liệu > Từ Văn bản/CSV, hoặc kéo thả tệp vào cửa sổ. Hỗ trợ .txt, .docx, .epub, .html, .xlsx, .csv và thư viện .json.',
+    '2. Tự tách chương: bật ở thẻ Dữ liệu. Mỗi chương thành một trang tính; chuyển chương bằng Ctrl+PageDown / Ctrl+PageUp.',
+    '3. Phím Esc: tức thì chuyển về Sheet1 chứa báo cáo giả. Nhấn Esc lần nữa để quay lại đúng chỗ đang đọc.',
+    '4. Cuộn bằng chuột, phím mũi tên, PageUp/PageDown hoặc phím Space. Thẻ Xem có cuộn tự động và chế độ tối.',
+    '5. Ctrl+F để tìm trong trang tính (có tùy chọn bỏ qua dấu). Nhập vị trí như A500 vào ô Name Box rồi Enter để nhảy tới dòng đó.',
+    '6. Thẻ Trang đầu: đổi phông chữ, cỡ chữ, màu chữ. Thu phóng ở góc phải dưới cùng.',
+    '7. Tự lưu: nội dung và vị trí đang đọc được lưu ngay trên máy, thoát game rồi mở lại vẫn còn. Ctrl+S để xuất thư viện ra tệp .json phòng khi đổi máy.','',
+    'TRUYỆN MẪU','',
+    'Chiều cuối thu, ga nhỏ chỉ còn lại một chuyến tàu muộn. Bà bán nước đã dọn gần hết hàng, chỉ giữ lại ấm trà cho người nào lỡ chuyến. Minh ngồi ở băng ghế cuối sân ga, cặp sách đặt trên đùi, mắt nhìn đường ray kéo dài mãi vào sương.',
+    'Anh đã hứa với mình sẽ không quay lại thành phố này nữa. Vậy mà lá thư ba dòng ấy lại đủ sức kéo anh đi hết một ngày đường.'
   ]);
   sh.isGuide=true;return sh;
 }
@@ -397,7 +397,7 @@ function render(){
 function updateFbar(){const sh=cur();$('#nb').value=colName(sh.selC)+(sh.selR+1);$('#fi').value=cellFormula(sh,sh.selR,sh.selC)}
 function updateStatus(){
   const sh=cur(),p=$('#prog');
-  if(sh.type==='text'&&sh.lines.length){const t=sh.lines.length,b=Math.min(t,Math.ceil((sc.scrollTop+sc.clientHeight)/D.rh));p.textContent=`Line ${b} / ${t}  ·  ${Math.round(b*100/t)}%`}
+  if(sh.type==='text'&&sh.lines.length){const t=sh.lines.length,b=Math.min(t,Math.ceil((sc.scrollTop+sc.clientHeight)/D.rh));p.textContent=`Dòng ${b} / ${t}  ·  ${Math.round(b*100/t)}%`}
   else p.textContent='';
 }
 let raf=0;
@@ -453,10 +453,10 @@ $('#tlist').addEventListener('contextmenu',e=>{
   const b=e.target.closest('.st');if(!b)return;e.preventDefault();
   const i=+b.dataset.i,s=S.sheets[i];
   showCtx(e.clientX,e.clientY-110,[
-    ['Rename',()=>renameSheet(i)],
-    ['Move Left',()=>moveSheet(i,-1),i===0],
-    ['Move Right',()=>moveSheet(i,1),i===S.sheets.length-1],
-    ['Delete',()=>deleteSheet(i),s.isFake||S.sheets.length<2]
+    ['Đổi tên',()=>renameSheet(i)],
+    ['Di chuyển sang trái',()=>moveSheet(i,-1),i===0],
+    ['Di chuyển sang phải',()=>moveSheet(i,1),i===S.sheets.length-1],
+    ['Xóa',()=>deleteSheet(i),s.isFake||S.sheets.length<2]
   ]);
 });
 function renameSheet(i){
@@ -472,10 +472,10 @@ function moveSheet(i,d){
 }
 function deleteSheet(i){
   const s=S.sheets[i];
-  dialog({title:'Microsoft Excel',body:`<p>Microsoft Excel will permanently delete the sheet "${esc(s.name)}". Do you want to continue?</p>`,btns:[{t:'Delete',p:1,fn:()=>{
+  dialog({title:'Microsoft Excel',body:`<p>Microsoft Excel sẽ xóa vĩnh viễn trang tính "${esc(s.name)}". Bạn có muốn tiếp tục?</p>`,btns:[{t:'Xóa',p:1,fn:()=>{
     const a=cur();S.sheets.splice(i,1);S.boss=-1;
     S.active=Math.max(0,S.sheets.indexOf(a)<0?Math.min(i,S.sheets.length-1):S.sheets.indexOf(a));relayout();renderTabs();
-  }},{t:'Cancel'}]});
+  }},{t:'Hủy'}]});
 }
 $('#tl').onclick=()=>$('#tlist').scrollBy(-160,0);
 $('#tr').onclick=()=>$('#tlist').scrollBy(160,0);
@@ -497,7 +497,7 @@ let dlg=null;
 function dialog({title,body,btns=[],cls='',modeless=false}){
   closeDialog();
   const o=document.createElement('div');o.id='ovl';if(modeless)o.className='ml';
-  o.innerHTML=`<div class="dlg ${cls}" role="dialog" aria-label="${esc(title)}"><div class="dh"><span>${esc(title)}</span><button class="dx" aria-label="Close">&#10005;</button></div><div class="db">${body}</div><div class="df"></div></div>`;
+  o.innerHTML=`<div class="dlg ${cls}" role="dialog" aria-label="${esc(title)}"><div class="dh"><span>${esc(title)}</span><button class="dx" aria-label="Đóng">&#10005;</button></div><div class="db">${body}</div><div class="df"></div></div>`;
   document.body.appendChild(o);
   const f=$('.df',o);
   btns.forEach(b=>{const x=document.createElement('button');x.textContent=b.t;if(b.p)x.className='pri';x.onclick=()=>{if(b.fn&&b.fn(o)===false)return;if(!b.keep)closeDialog()};f.appendChild(x)});
@@ -509,20 +509,20 @@ function closeDialog(){if(dlg){dlg.remove();dlg=null}}
 const msg=t=>dialog({title:'Microsoft Excel',body:`<p>${esc(t)}</p>`,btns:[{t:'OK',p:1}]});
 
 function dlgPaste(){
-  dialog({title:'Paste Story Text',cls:'big',body:`<p>Paste the story content into the box below:</p><textarea id="pt" autofocus></textarea><label style="margin-top:8px">Sheet name:&nbsp;<input type="text" id="pn" value="Story" style="flex:1"></label><label><input type="checkbox" id="ps" ${S.split?'checked':''}> Auto-split chapters</label>`,
-    btns:[{t:'OK',p:1,fn:o=>{const t=$('#pt',o).value;if(!t.trim())return false;const old=S.split;S.split=$('#ps',o).checked;try{finishImport(addText($('#pn',o).value||'Story',t))}catch(e){msg(e.message)}S.split=old;syncRibbon()}},{t:'Cancel'}]});
+  dialog({title:'Dán văn bản truyện',cls:'big',body:`<p>Dán nội dung truyện vào ô bên dưới:</p><textarea id="pt" autofocus></textarea><label style="margin-top:8px">Tên trang tính:&nbsp;<input type="text" id="pn" value="Truyện" style="flex:1"></label><label><input type="checkbox" id="ps" ${S.split?'checked':''}> Tự động tách chương</label>`,
+    btns:[{t:'OK',p:1,fn:o=>{const t=$('#pt',o).value;if(!t.trim())return false;const old=S.split;S.split=$('#ps',o).checked;try{finishImport(addText($('#pn',o).value||'Truyện',t))}catch(e){msg(e.message)}S.split=old;syncRibbon()}},{t:'Hủy'}]});
 }
 function dlgActivate(){
   const opts=S.sheets.map((s,i)=>`<option value="${i}" ${i===S.active?'selected':''}>${esc(s.name)}</option>`).join('');
-  const o=dialog({title:'Activate',body:`<p>Activate:</p><select size="12" id="al">${opts}</select>`,btns:[{t:'OK',p:1,fn:o=>{activate(+$('#al',o).value)}},{t:'Cancel'}]});
+  const o=dialog({title:'Kích hoạt',body:`<p>Kích hoạt:</p><select size="12" id="al">${opts}</select>`,btns:[{t:'OK',p:1,fn:o=>{activate(+$('#al',o).value)}},{t:'Hủy'}]});
   const l=$('#al',o);l.ondblclick=()=>{activate(+l.value);closeDialog()};
   setTimeout(()=>{const s=$('option:checked',l);s&&s.scrollIntoView({block:'center'});l.focus()});
 }
 const stripAcc=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
 let lastQ='',lastNoAcc=true;
 function dlgFind(){
-  const o=dialog({title:'Find and Replace',modeless:true,body:`<p>Find what:</p><input type="text" id="fq" autofocus value="${esc(lastQ)}"><label><input type="checkbox" id="fa" ${lastNoAcc?'checked':''}> Ignore diacritics</label><div class="fres" id="fr"></div>`,
-    btns:[{t:'Find Previous',keep:1,fn:()=>{findNext(-1);return false}},{t:'Find Next',p:1,keep:1,fn:()=>{findNext(1);return false}},{t:'Close'}]});
+  const o=dialog({title:'Tìm và Thay thế',modeless:true,body:`<p>Tìm gì:</p><input type="text" id="fq" autofocus value="${esc(lastQ)}"><label><input type="checkbox" id="fa" ${lastNoAcc?'checked':''}> Bỏ qua dấu tiếng Việt</label><div class="fres" id="fr"></div>`,
+    btns:[{t:'Tìm trước',keep:1,fn:()=>{findNext(-1);return false}},{t:'Tìm tiếp',p:1,keep:1,fn:()=>{findNext(1);return false}},{t:'Đóng'}]});
   const q=$('#fq',o);q.select();q.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){findNext(e.shiftKey?-1:1)}if(e.key==='Escape')closeDialog()};
 }
 function findNext(dir){
@@ -539,13 +539,13 @@ function findNext(dir){
     const k=order.find(k=>norm(sh.cells.get(k).v).includes(q));
     if(k!==undefined){jumpTo(Math.floor(k/K),k%K);hit=1}
   }
-  res.textContent=hit>=0?'':'We couldn\'t find the data you\'re looking for.';
+  res.textContent=hit>=0?'':'Không tìm thấy dữ liệu bạn đang tìm kiếm.';
 }
 
 /* ---------- import ---------- */
 const LIBS={xlsx:'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',mammoth:'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',jszip:'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'};
 const loaded={};
-function lib(n){return loaded[n]||(loaded[n]=new Promise((res,rej)=>{const s=document.createElement('script');s.src=LIBS[n];s.onload=res;s.onerror=()=>{delete loaded[n];rej(new Error('Could not load the file reader library (this format needs an internet connection).'))};document.head.appendChild(s)}))}
+function lib(n){return loaded[n]||(loaded[n]=new Promise((res,rej)=>{const s=document.createElement('script');s.src=LIBS[n];s.onload=res;s.onerror=()=>{delete loaded[n];rej(new Error('Không tải được thư viện đọc tệp (cần kết nối internet cho định dạng này).'))};document.head.appendChild(s)}))}
 function decode(buf){
   const u=new Uint8Array(buf);
   if(u[0]===0xFF&&u[1]===0xFE)return new TextDecoder('utf-16le').decode(buf);
@@ -572,7 +572,7 @@ function splitChapters(paras){
   const trim=a=>{let s=0,e=a.length;while(s<e&&!a[s])s++;while(e>s&&!a[e-1])e--;return a.slice(s,e)};
   const out=[],toc=[];let intro=paras.slice(0,idx[0]);
   const smallIntro=intro.filter(Boolean).length<6;
-  if(!smallIntro)out.push({title:'Introduction',paras:trim(intro)});
+  if(!smallIntro)out.push({title:'Giới thiệu',paras:trim(intro)});
   idx.forEach((s,k)=>{
     let chunk=paras.slice(s,k+1<idx.length?idx[k+1]:paras.length);
     if(k===0&&smallIntro)chunk=intro.concat(chunk);
@@ -581,12 +581,12 @@ function splitChapters(paras){
     if(body<1&&!(k===0&&smallIntro)){toc.push(paras[s]);return}
     out.push({title:paras[s],paras:chunk});
   });
-  if(toc.length>=3)out.unshift({title:'Table of Contents',paras:toc});
+  if(toc.length>=3)out.unshift({title:'Mục lục',paras:toc});
   return out;
 }
 function addText(base,text){
   const paras=clean(text);
-  if(!paras.length)throw new Error('The file contains no text content.');
+  if(!paras.length)throw new Error('Tệp không có nội dung văn bản.');
   const ch=S.split?splitChapters(paras):null,made=[];
   if(ch&&ch.length>=2)ch.forEach(c=>made.push(addSheet(mkText(uniq(c.title||base),c.paras))));
   else made.push(addSheet(mkText(uniq(base),paras)));
@@ -595,7 +595,7 @@ function addText(base,text){
 function finishImport(made){
   if(!made||!made.length)return;
   renderTabs();activate(made[0]);
-  $('#stmsg').textContent='Ready';
+  $('#stmsg').textContent='Sẵn sàng';
 }
 const baseName=n=>n.replace(/\.[^.]+$/,'');
 async function importFile(f){
@@ -611,10 +611,10 @@ async function importFile(f){
 async function importFiles(files){
   const made=[];
   for(const f of files){
-    $('#stmsg').textContent='Processing '+f.name+'...';
-    try{made.push(...await importFile(f))}catch(e){msg(`Could not open "${f.name}": ${e.message}`)}
+    $('#stmsg').textContent='Đang xử lý '+f.name+'...';
+    try{made.push(...await importFile(f))}catch(e){msg(`Không mở được "${f.name}": ${e.message}`)}
   }
-  $('#stmsg').textContent='Ready';finishImport(made);
+  $('#stmsg').textContent='Sẵn sàng';finishImport(made);
 }
 function importGrid(wb){
   const made=[];
@@ -651,11 +651,11 @@ async function importEpub(f,base){
     paras.unshift(title);
     made.push(addSheet(mkText(uniq(title),paras)));
   }
-  if(!made.length)throw new Error('No content found in the EPUB file.');
+  if(!made.length)throw new Error('Không tìm thấy nội dung trong tệp EPUB.');
   return made;
 }
 function importJSON(t){
-  const d=JSON.parse(t);if(!d||!Array.isArray(d.sheets))throw new Error('This .json file is not a valid library.');
+  const d=JSON.parse(t);if(!d||!Array.isArray(d.sheets))throw new Error('Tệp .json không phải thư viện hợp lệ.');
   return d.sheets.map(s=>{
     let sh;
     if(s.type==='grid'){sh=mkGrid(uniq(s.name));(s.cells||[]).forEach(([r,c,o])=>{sh.cells.set(r*K+c,o);sh.maxRow=Math.max(sh.maxRow,r)})}
@@ -674,7 +674,7 @@ const fp=$('#fp');
 function pick(){fp.value='';fp.click()}
 fp.onchange=()=>{if(fp.files.length)importFiles([...fp.files])};
 let dragN=0;
-addEventListener('dragenter',e=>{e.preventDefault();if(!$('#drop')&&e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){const d=document.createElement('div');d.id='drop';d.textContent='Drop files to open';document.body.appendChild(d)}dragN++});
+addEventListener('dragenter',e=>{e.preventDefault();if(!$('#drop')&&e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){const d=document.createElement('div');d.id='drop';d.textContent='Thả tệp để mở';document.body.appendChild(d)}dragN++});
 addEventListener('dragleave',()=>{if(--dragN<=0){const d=$('#drop');d&&d.remove();dragN=0}});
 addEventListener('dragover',e=>e.preventDefault());
 addEventListener('drop',e=>{e.preventDefault();dragN=0;const d=$('#drop');d&&d.remove();if(e.dataTransfer.files.length)importFiles([...e.dataTransfer.files])});
@@ -720,20 +720,20 @@ const alg=t=>`<svg viewBox="0 0 16 16" width="14" height="14"><path d="${t}" str
 const FONTS=['Calibri','Arial','Cambria','Consolas','Courier New','Georgia','Segoe UI','Tahoma','Times New Roman','Verdana'];
 const SIZES=[8,9,10,11,12,13,14,16,18,20,22,24];
 const RIB={
- home:()=>grp('Clipboard',bb('paste','Paste','clip')+col(sb('x','Cut','painter'),sb('copy','Copy','page'),sb('x','Format Painter','painter')))
-  +grp('Font',col(row(`<select data-act="family" style="width:112px">${FONTS.map(f=>`<option>${f}</option>`).join('')}</select>`,`<select data-act="size" style="width:48px;margin-left:2px">${SIZES.map(s=>`<option>${s}</option>`).join('')}</select>`,ibn('x','A&#9652;','Increase Font Size','font-weight:700;margin-left:4px'),ibn('x','A&#9662;','Decrease Font Size','font-size:11px')),
-   row(ibn('bold','B','Bold','font-weight:700'),ibn('italic','I','Italic','font-style:italic;font-family:Georgia,serif'),ibn('x','U','Underline','text-decoration:underline'),ibn('x','&#9633;','Borders'),`<label class="clr" title="Fill Color"><span>&#9632;</span><i style="background:#ffff00"></i></label>`,`<label class="clr" title="Font Color"><span>A</span><i id="clri" style="background:#c00"></i><input type="color" data-act="color" value="#808080"></label>`,ibn('colorreset','&#8634;','Automatic Font Color','font-size:14px'))))
-  +grp('Alignment',col(row(ibn('x',alg('M2 3h12M2 8h8'),'Top Align'),ibn('x',alg('M2 5h12M4 10h8'),'Middle Align'),ibn('x',alg('M2 8h12M2 13h8'),'Bottom Align'),sb('x','Wrap Text','grid')),row(ibn('x',alg('M2 3h12M2 7h8M2 11h12'),'Align Left'),ibn('x',alg('M2 3h12M4 7h8M2 11h12'),'Center'),ibn('x',alg('M2 3h12M6 7h8M2 11h12'),'Align Right'),sb('x','Merge & Center','grid'))))
-  +grp('Number',col(`<select style="width:128px"><option>General</option><option>Number</option><option>Currency</option><option>Date</option></select>`,row(ibn('x','$','Currency'),ibn('x','%','Percent'),ibn('x','000','Comma Style','font-size:10px'),ibn('x','.00','Increase Decimal','font-size:10px'))))
-  +grp('Styles',bb('x','Conditional Formatting','fmt')+bb('x','Format as Table','table')+bb('x','Cell Styles','grid'))
-  +grp('Cells',bb('x','Insert','ins')+bb('x','Delete','del')+bb('x','Format','fmt'))
-  +grp('Editing',col(sb('x','AutoSum','sigma'),sb('x','Fill','grid'),sb('x','Clear','del'))+bb('x','Sort & Filter','sort')+bb('find','Find & Select','find')),
- insert:()=>grp('Tables',bb('x','PivotTable','table')+bb('x','Table','table'))+grp('Illustrations',bb('x','Pictures','image')+bb('x','Shapes','shape'))+grp('Charts',bb('x','Column','chart')+bb('x','Line','chart')+bb('x','Pie','chart')+bb('x','Recommended Charts','chart'))+grp('Links',bb('x','Link','link'))+grp('Text',bb('x','Text Box','page')+bb('x','Header & Footer','page')),
- layout:()=>grp('Themes',bb('x','Themes','shape')+col(sb('x','Colors','shape'),sb('x','Fonts','page'),sb('x','Effects','shape')))+grp('Page Setup',bb('x','Margins','page')+bb('x','Orientation','page')+bb('x','Size','page')+bb('x','Print Area','page')+bb('x','Breaks','split'))+grp('Scale to Fit',col(sb('x','Width: Automatic','grid'),sb('x','Height: Automatic','grid'),sb('x','Scale: 100%','grid'))),
- formulas:()=>grp('Function Library',bb('x','Insert Function','fx')+bb('x','AutoSum','sigma')+bb('x','Recently Used','fx')+bb('x','Financial','fx')+bb('x','Logical','fx')+bb('x','Text','fx')+bb('x','Date & Time','fx'))+grp('Defined Names',bb('x','Name Manager','grid'))+grp('Calculation',bb('x','Calculation Options','fx')),
- data:()=>grp('Get & Transform Data',bb('import','From Text/CSV','folder')+bb('x','From Web','link')+bb('x','From Table/Range','table'))+grp('Story',bb('paste','Paste Text','clip')+bb('save','Save Library','save')+col(ck('split','Auto-split chapters')))+grp('Sort & Filter',bb('x','Sort','sort')+bb('x','Filter','filter'))+grp('Data Tools',bb('x','Text to Columns','split')+bb('x','Remove Duplicates','grid')),
- review:()=>grp('Proofing',bb('x','Spelling','page')+bb('x','Thesaurus','page'))+grp('Notes',bb('x','New Note','bubble')+bb('x','Delete','del'))+grp('Protect',bb('x','Protect Sheet','shield')+bb('x','Protect Workbook','shield')),
- view:()=>grp('Workbook Views',bb('x','Normal','grid')+bb('x','Page Break Preview','split')+bb('x','Page Layout','page'))+grp('Show',col(ck('headings','Headings'),ck('gridlines','Gridlines'))+col(ck('fbar','Formula Bar')))+grp('Zoom',bb('x','Zoom','zoom')+bb('zoom100','100%','zoom'))+grp('Story Reading',bb('auto','Auto Scroll','play')+col(`<label class="ckl">Speed&nbsp;<select data-act="speed" style="width:50px">${[1,2,3,4,5,6,8,10].map(n=>`<option>${n}</option>`).join('')}</select></label>`)+bb('dark','Dark Mode','moon'))
+ home:()=>grp('Bảng nhớ tạm',bb('paste','Dán','clip')+col(sb('x','Cắt','painter'),sb('copy','Sao chép','page'),sb('x','Chép Định dạng','painter')))
+  +grp('Phông chữ',col(row(`<select data-act="family" style="width:112px">${FONTS.map(f=>`<option>${f}</option>`).join('')}</select>`,`<select data-act="size" style="width:48px;margin-left:2px">${SIZES.map(s=>`<option>${s}</option>`).join('')}</select>`,ibn('x','A&#9652;','Tăng cỡ chữ','font-weight:700;margin-left:4px'),ibn('x','A&#9662;','Giảm cỡ chữ','font-size:11px')),
+   row(ibn('bold','B','In đậm','font-weight:700'),ibn('italic','I','In nghiêng','font-style:italic;font-family:Georgia,serif'),ibn('x','U','Gạch chân','text-decoration:underline'),ibn('x','&#9633;','Đường viền'),`<label class="clr" title="Màu tô"><span>&#9632;</span><i style="background:#ffff00"></i></label>`,`<label class="clr" title="Màu phông chữ"><span>A</span><i id="clri" style="background:#c00"></i><input type="color" data-act="color" value="#808080"></label>`,ibn('colorreset','&#8634;','Màu chữ mặc định','font-size:14px'))))
+  +grp('Căn chỉnh',col(row(ibn('x',alg('M2 3h12M2 8h8'),'Căn trên'),ibn('x',alg('M2 5h12M4 10h8'),'Căn giữa'),ibn('x',alg('M2 8h12M2 13h8'),'Căn dưới'),sb('x','Ngắt dòng','grid')),row(ibn('x',alg('M2 3h12M2 7h8M2 11h12'),'Căn trái'),ibn('x',alg('M2 3h12M4 7h8M2 11h12'),'Căn giữa'),ibn('x',alg('M2 3h12M6 7h8M2 11h12'),'Căn phải'),sb('x','Hợp nhất & Căn giữa','grid'))))
+  +grp('Số',col(`<select style="width:128px"><option>Chung</option><option>Số</option><option>Tiền tệ</option><option>Ngày</option></select>`,row(ibn('x','$','Tiền tệ'),ibn('x','%','Phần trăm'),ibn('x','000','Dấu phân cách','font-size:10px'),ibn('x','.00','Tăng số thập phân','font-size:10px'))))
+  +grp('Kiểu',bb('x','Định dạng Có Điều kiện','fmt')+bb('x','Định dạng như Bảng','table')+bb('x','Kiểu Ô','grid'))
+  +grp('Ô',bb('x','Chèn','ins')+bb('x','Xóa','del')+bb('x','Định dạng','fmt'))
+  +grp('Chỉnh sửa',col(sb('x','Tự Tính tổng','sigma'),sb('x','Điền','grid'),sb('x','Xóa','del'))+bb('x','Sắp xếp & Lọc','sort')+bb('find','Tìm & Chọn','find')),
+ insert:()=>grp('Bảng',bb('x','PivotTable','table')+bb('x','Bảng','table'))+grp('Minh họa',bb('x','Hình ảnh','image')+bb('x','Hình dạng','shape'))+grp('Biểu đồ',bb('x','Cột','chart')+bb('x','Đường','chart')+bb('x','Hình tròn','chart')+bb('x','Biểu đồ Đề xuất','chart'))+grp('Liên kết',bb('x','Liên kết','link'))+grp('Văn bản',bb('x','Hộp Văn bản','page')+bb('x','Đầu trang & Chân trang','page')),
+ layout:()=>grp('Chủ đề',bb('x','Chủ đề','shape')+col(sb('x','Màu','shape'),sb('x','Phông chữ','page'),sb('x','Hiệu ứng','shape')))+grp('Thiết lập Trang',bb('x','Lề','page')+bb('x','Hướng','page')+bb('x','Khổ giấy','page')+bb('x','Vùng in','page')+bb('x','Ngắt trang','split'))+grp('Chia tỷ lệ',col(sb('x','Chiều rộng: Tự động','grid'),sb('x','Chiều cao: Tự động','grid'),sb('x','Tỷ lệ: 100%','grid'))),
+ formulas:()=>grp('Thư viện Hàm',bb('x','Chèn Hàm','fx')+bb('x','Tự Tính tổng','sigma')+bb('x','Dùng Gần đây','fx')+bb('x','Tài chính','fx')+bb('x','Lô-gic','fx')+bb('x','Văn bản','fx')+bb('x','Ngày & Giờ','fx'))+grp('Tên Xác định',bb('x','Trình quản lý Tên','grid'))+grp('Tính toán',bb('x','Tùy chọn Tính toán','fx')),
+ data:()=>grp('Lấy & Chuyển đổi Dữ liệu',bb('import','Từ Văn bản/CSV','folder')+bb('x','Từ Web','link')+bb('x','Từ Bảng/Phạm vi','table'))+grp('Truyện',bb('paste','Dán văn bản','clip')+bb('save','Lưu thư viện','save')+col(ck('split','Tự động tách chương')))+grp('Sắp xếp & Lọc',bb('x','Sắp xếp','sort')+bb('x','Bộ lọc','filter'))+grp('Công cụ Dữ liệu',bb('x','Văn bản thành Cột','split')+bb('x','Loại bỏ Trùng lặp','grid')),
+ review:()=>grp('Kiểm lỗi',bb('x','Chính tả','page')+bb('x','Từ điển Đồng nghĩa','page'))+grp('Ghi chú',bb('x','Ghi chú Mới','bubble')+bb('x','Xóa','del'))+grp('Bảo vệ',bb('x','Bảo vệ Trang tính','shield')+bb('x','Bảo vệ Sổ làm việc','shield')),
+ view:()=>grp('Dạng xem Sổ làm việc',bb('x','Bình thường','grid')+bb('x','Xem Ngắt trang','split')+bb('x','Bố trí Trang','page'))+grp('Hiện',col(ck('headings','Tiêu đề'),ck('gridlines','Đường lưới'))+col(ck('fbar','Thanh Công thức')))+grp('Thu phóng',bb('x','Thu phóng','zoom')+bb('zoom100','100%','zoom'))+grp('Đọc truyện',bb('auto','Cuộn tự động','play')+col(`<label class="ckl">Tốc độ&nbsp;<select data-act="speed" style="width:50px">${[1,2,3,4,5,6,8,10].map(n=>`<option>${n}</option>`).join('')}</select></label>`)+bb('dark','Chế độ tối','moon'))
 };
 function setTab(t){
   S.tab=t;$$('#tabs .tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
@@ -869,12 +869,12 @@ new ResizeObserver(()=>{
   clearTimeout(rt);rt=setTimeout(()=>{if(sc.clientWidth!==lw){lw=sc.clientWidth;relayout()}else render()},120);
 }).observe(sc);
 
-/* ---------- auto-save progress ----------
- * Imported stories used to live only in memory: reloading the page or quitting the game
- * wiped them. The app is an SPA, so the game's `pagehide` does not fire when leaving the page
- * → we also register __gqFlush / the "gq:flush" event (FLUSH_BRIDGE in
- * src/pages/OfflineGamePage.jsx) to write before exiting.
- * The report Sheet1 (isFake) and 'Guide' (isGuide) are not saved because they are rebuilt at startup. */
+/* ---------- tự lưu tiến độ ----------
+ * Trước đây truyện đã nhập chỉ sống trong bộ nhớ: tải lại trang hay thoát game
+ * là mất sạch. App là SPA nên `pagehide` của game cũng không chạy khi rời trang
+ * → đăng ký thêm __gqFlush / event "gq:flush" (FLUSH_BRIDGE trong
+ * src/pages/OfflineGamePage.jsx) để ghi trước khi thoát.
+ * Sheet1 báo cáo (isFake) và 'Hướng dẫn' (isGuide) không lưu vì luôn được dựng lại lúc khởi động. */
 const RK='bang-tinh-lib-v1';
 let dirty=false, saveBroken=false;
 function serializeSheet(s){
@@ -888,7 +888,7 @@ function saveRun(){
   try{
     localStorage.setItem(RK,JSON.stringify({v:1,at:Date.now(),active:cur().name,sheets:user.map(serializeSheet)}));
     dirty=false;
-  }catch(e){saveBroken=true;} // localStorage is full: stop auto-saving rather than break the experience
+  }catch(e){saveBroken=true;} // hết dung lượng localStorage: ngừng tự lưu, không phá trải nghiệm
 }
 function loadRun(){
   try{const s=JSON.parse(localStorage.getItem(RK)||'null');return s&&s.v===1&&Array.isArray(s.sheets)&&s.sheets.length?s:null}catch(e){return null}
@@ -914,10 +914,10 @@ setInterval(()=>{if(dirty)saveRun()},4000);
 /* ---------- init ---------- */
 const savedLib=loadRun();
 S.sheets.push(fakeSheet(),guideSheet());
-if(savedLib)savedLib.sheets.filter(d=>d.name!=='Guide'&&d.name!=='Hướng dẫn').forEach(d=>S.sheets.push(restoreSheet(d)));
+if(savedLib)savedLib.sheets.filter(d=>d.name!=='Hướng dẫn').forEach(d=>S.sheets.push(restoreSheet(d)));
 setTab('home');renderTabs();
 activate(Math.max(1,S.sheets.findIndex(s=>s.name===(savedLib&&savedLib.active))));lw=sc.clientWidth;
-if(savedLib)$('#stmsg').textContent='Reopened your saved library';
+if(savedLib)$('#stmsg').textContent='Đã mở lại thư viện đã lưu';
 </script>
 </body>
 </html>

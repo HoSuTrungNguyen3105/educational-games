@@ -1,13 +1,13 @@
 /* =====================================================
-   render-towers.js · draws towers (base, barrel, level stars)
-   Used both on the field and for icons in the tower picker.
+   render-towers.js · vẽ tháp (thân, nòng, sao cấp)
+   Dùng cả cho cánh đồng lẫn icon trong thanh chọn tháp.
    ===================================================== */
 
-/** Draw a tower's stone base */
+/** Vẽ đế đá của tháp */
 function drawTowerBase(t, x, y, lvl, time, icon) {
   const T = TYPES[t.type];
 
-  // Soft drop shadow
+  // Bóng đổ mềm
   if (!icon) {
     ctx.fillStyle = rg(x + 3, y + 9, 4, 24, [
       [0, 'rgba(0,0,0,.38)'],
@@ -18,7 +18,7 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
     ctx.fill();
   }
 
-  // Level 5 halo
+  // Hào quang cấp 5
   if (lvl >= 5 && !icon) {
     const a = 0.35 + 0.25 * Math.sin(time * 5);
     ctx.fillStyle = rg(x, y, 6, 30, [
@@ -30,7 +30,7 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
     ctx.fill();
   }
 
-  // Stone base
+  // Đế đá
   ctx.fillStyle = lg(x, y - 17, x, y + 17, [[0, '#b9c1ca'], [1, '#5a626c']]);
   rr(x - 17, y - 17, 34, 34, 8);
   ctx.fill();
@@ -38,12 +38,12 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // Bright top edge
+  // Mép sáng phía trên
   ctx.fillStyle = 'rgba(255,255,255,.32)';
   rr(x - 14, y - 14, 28, 6, 3);
   ctx.fill();
 
-  // Rivets
+  // Đinh tán
   ctx.fillStyle = '#3d434a';
   for (const [bx, by] of [[-12, -12], [12, -12], [-12, 12], [12, 12]]) {
     ctx.beginPath();
@@ -51,7 +51,7 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
     ctx.fill();
   }
 
-  // Level-colored metal rim
+  // Viền kim loại theo cấp
   if (lvl >= 3) {
     ctx.strokeStyle = lvl >= 5 ? '#ffd93b' : '#e8c24a';
     ctx.lineWidth = 2;
@@ -59,7 +59,7 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
     ctx.stroke();
   }
 
-  // Color ring per tower type
+  // Vòng màu theo loại tháp
   ctx.fillStyle = lg(x - 11, y - 11, x + 11, y + 11, [
     [0, lighten(T.color, 0.4)],
     [1, darken(T.color, 0.1)]
@@ -71,14 +71,14 @@ function drawTowerBase(t, x, y, lvl, time, icon) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Glossy highlight
+  // Điểm sáng bóng
   ctx.fillStyle = 'rgba(255,255,255,.45)';
   ctx.beginPath();
   ctx.ellipse(x - 4, y - 5, 4, 2.2, -0.6, 0, 7);
   ctx.fill();
 }
 
-/** Draw the barrel/weapon body rotated toward the aim direction */
+/** Vẽ nòng / thân vũ khí xoay theo hướng ngắm */
 function drawTowerWeapon(t, lvl, time, icon) {
   const metal = lg(0, -6, 0, 6, [[0, '#7a828e'], [0.5, '#3a4048'], [1, '#252a30']]);
 
@@ -195,7 +195,7 @@ function drawTowerWeapon(t, lvl, time, icon) {
     }
 
     case 'tesla': {
-      ctx.rotate(-ang);   // lightning coil doesn't rotate toward the target
+      ctx.rotate(-ang);   // cuộn sét không xoay theo mục tiêu
 
       ctx.fillStyle = '#555d66';
       ctx.fillRect(-3, -3, 6, 12);
@@ -364,7 +364,7 @@ function drawTowerWeapon(t, lvl, time, icon) {
   }
 }
 
-/** Draw a tower at (x,y). icon=true when drawing the small picker icon. */
+/** Vẽ một tháp tại (x,y). icon=true khi vẽ icon nhỏ ở thanh chọn. */
 function drawTower(t, x, y, time, icon) {
   const lvl = t.lvl || 1;
   const ang = icon ? -0.5 : (t.ang || 0);
@@ -373,7 +373,7 @@ function drawTower(t, x, y, time, icon) {
 
   drawTowerBase(t, x, y, lvl, time, icon);
 
-  // Move the origin to the tower center, then rotate toward the aim direction
+  // Chuyển hệ tọa độ vào tâm tháp rồi xoay theo hướng ngắm
   ctx.translate(x, y);
   ctx.rotate(t.type === 'radar' ? time * 1.6 : ang);
 
@@ -384,7 +384,7 @@ function drawTower(t, x, y, time, icon) {
 
   ctx.restore();
 
-  // Level stars
+  // Sao hiển thị cấp
   ctx.fillStyle = '#ffd93b';
   ctx.strokeStyle = INK;
   ctx.lineWidth = 1;

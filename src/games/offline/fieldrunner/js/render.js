@@ -1,8 +1,8 @@
 /* =====================================================
-   render.js · draws the whole scene each frame
+   render.js · vẽ toàn cảnh mỗi khung hình
    ===================================================== */
 
-/** Draw the preview shown while placing a tower */
+/** Vẽ khung xem trước khi đặt tháp */
 function drawPlacementGhost() {
   if (!build || !hover) return;
 
@@ -27,12 +27,12 @@ function drawPlacementGhost() {
   ctx.globalAlpha = 1;
 }
 
-/** Draw towers (sorted by y so towers behind are covered correctly) */
+/** Vẽ các tháp (sắp theo y để tháp phía sau bị che đúng) */
 function drawTowers() {
   towers.slice().sort((a, b) => a.y - b.y).forEach(t => {
     drawTower(t, t.x, t.y, gtime, false);
 
-    // Radar buff marker
+    // Dấu hiệu được radar buff
     if (t.bD > 0) {
       ctx.strokeStyle = 'rgba(53,208,160,.8)';
       ctx.lineWidth = 2;
@@ -44,7 +44,7 @@ function drawTowers() {
       ctx.fillRect(t.x - 1, t.y - 28, 2, 8);
     }
 
-    // Selected tower: gold outline + range
+    // Tháp đang chọn: khung vàng + tầm bắn
     if (t === sel) {
       ctx.strokeStyle = '#ffd93b';
       ctx.lineWidth = 3.5;
@@ -67,11 +67,11 @@ function drawTowers() {
   });
 }
 
-/** Draw flying projectiles */
+/** Vẽ đạn bay */
 function drawProjectiles() {
   for (const p of projs) {
 
-    // Mortar shell
+    // Đạn cối
     if (p.mortar) {
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       ctx.beginPath();
@@ -88,13 +88,13 @@ function drawProjectiles() {
       continue;
     }
 
-    // Missile
+    // Tên lửa
     if (p.kind === 'missile') {
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.ang || 0);
 
-      // Flame trailing behind
+      // Ngọn lửa phụt phía sau
       ctx.fillStyle = 'rgba(255,170,60,.85)';
       ctx.beginPath();
       ctx.moveTo(-6, -2);
@@ -119,7 +119,7 @@ function drawProjectiles() {
       continue;
     }
 
-    // Cannon shell
+    // Đạn pháo
     if (p.kind === 'cannon') {
       ctx.fillStyle = '#2a2a30';
       ctx.strokeStyle = INK;
@@ -136,7 +136,7 @@ function drawProjectiles() {
       continue;
     }
 
-    // Ice shard
+    // Mảnh băng
     if (p.kind === 'frost') {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -156,7 +156,7 @@ function drawProjectiles() {
       continue;
     }
 
-    // Machine gun bullet (bright streak)
+    // Đạn súng máy (vạch sáng)
     if (p.kind === 'gun') {
       const dx = Math.cos(p.ang || 0);
       const dy = Math.sin(p.ang || 0);
@@ -177,7 +177,7 @@ function drawProjectiles() {
       continue;
     }
 
-    // Regular projectile (poison, fire...)
+    // Đạn thường (độc, lửa...)
     ctx.fillStyle = p.c;
     ctx.strokeStyle = INK;
     ctx.lineWidth = 1.5;
@@ -188,7 +188,7 @@ function drawProjectiles() {
   }
 }
 
-/** Draw short-lived effects (beams, explosions, shockwaves, floating text...) */
+/** Vẽ các hiệu ứng ngắn (tia, nổ, vòng sóng, chữ bay...) */
 function drawEffects() {
   for (const f of fx) {
 
@@ -259,7 +259,7 @@ function drawEffects() {
       ctx.shadowBlur = 0;
 
     } else if (f.k === 'muzzle') {
-      // Muzzle flash
+      // Chớp lửa đầu nòng
       const u = clamp(f.life / 0.18, 0, 1);
       ctx.fillStyle = rg(f.x, f.y, 1, f.r, [
         [0, 'rgba(255,255,255,' + u + ')'],
@@ -283,7 +283,7 @@ function drawEffects() {
       ctx.arc(f.x, f.y, f.r * (0.6 + u * 0.5), 0, 7);
       ctx.fill();
 
-      // Shockwave ring
+      // Vòng sóng xung kích
       ctx.strokeStyle = 'rgba(255,230,160,' + (0.8 * (1 - u)) + ')';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -351,7 +351,7 @@ function drawEffects() {
   }
 }
 
-/** Draw an airstrike missile falling from above */
+/** Vẽ tên lửa không kích đang rơi từ trên xuống */
 function drawStrikes() {
   for (const s of strikes) {
     const u = clamp(1 - s.t / 0.5, 0, 1);
@@ -365,7 +365,7 @@ function drawStrikes() {
     ctx.translate(s.x, s.y - (1 - u) * 260);
     ctx.rotate(Math.PI / 2);
 
-    // Fire trail
+    // Đuôi lửa
     ctx.fillStyle = 'rgba(255,160,50,.8)';
     ctx.beginPath();
     ctx.moveTo(-9, -3);
@@ -388,7 +388,7 @@ function drawStrikes() {
   }
 }
 
-/** Airstrike targeting reticle that follows the mouse */
+/** Vòng ngắm không kích theo chuột */
 function drawAim() {
   if (!aim || !hover) return;
 
@@ -411,11 +411,11 @@ function drawAim() {
   ctx.stroke();
 }
 
-/** Draw everything. dt is the frame's real elapsed time (0 while paused). */
+/** Vẽ mọi thứ. dt là thời gian thật của khung hình (0 khi tạm dừng). */
 function draw(dt) {
   ctx.save();
 
-  // Screen shake on big explosions
+  // Rung màn hình khi có vụ nổ lớn
   if (shake > 0.2) {
     ctx.translate(
       (Math.random() - 0.5) * shake,
@@ -431,12 +431,12 @@ function draw(dt) {
   drawPlacementGhost();
   drawTowers();
 
-  // Ground enemies → projectiles → flying enemies (so planes stay on top)
+  // Kẻ địch mặt đất → đạn → kẻ địch bay (để máy bay luôn ở trên)
   for (const e of enemies) if (!e.def.air) drawEnemy(e);
   drawProjectiles();
   for (const e of enemies) if (e.def.air) drawEnemy(e);
 
-  // Particles
+  // Hạt
   for (const p of parts) {
     ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
     ctx.fillStyle = p.c;
@@ -453,6 +453,6 @@ function draw(dt) {
 
   ctx.restore();
 
-  // Light/shadow overlay layer (not shaken with the screen)
+  // Lớp ánh sáng / bóng mờ phủ lên cùng (không rung theo màn hình)
   ctx.drawImage(lightLayer, 0, 0);
 }

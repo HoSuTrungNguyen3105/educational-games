@@ -222,7 +222,7 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
                       {activeCfg.kind === "dot" ? (
                         <span className="w-[58%] aspect-square rounded-full border border-black/10" style={{ background: activeCfg.dot(id) }} />
                       ) : (
-                        <svg viewBox={activeCfg.vb} width="100%" height="100%">
+                        <svg viewBox={activeCfg.vbFor ? activeCfg.vbFor(id) : activeCfg.vb} width="100%" height="100%">
                           <g dangerouslySetInnerHTML={{ __html: activeCfg.pv(id) }} />
                         </svg>
                       )}

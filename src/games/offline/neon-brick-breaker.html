@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"><script id="gq-kit">/* gq-kit.js — Bộ nâng cấp dùng chung cho game dọc:
    · Màn chọn độ khó 4 mức (Dễ / Trung bình / Khó / Siêu khó) — cùng một giao diện cho mọi game
    · Độ khó thật: nhịp game (setTimeout/setInterval/rAF/performance.now/Date.now) co giãn theo mức,
      điểm & XP nhân hệ số (game dạng "single"), số mạng / giây mỗi câu / màn khởi đầu (mcengine)
-   · Pháo hoa khi kết thúc ván, nút "Change difficulty", nhãn độ khó luôn hiện trên đầu màn hình
+   · Pháo hoa khi kết thúc ván, nút "Đổi độ khó", nhãn độ khó luôn hiện trên đầu màn hình
    MODE được build thay: 'single' (game sinh từ shell) hoặc 'standalone' (game viết tay). */
 (() => {
   if (window.GQ) return;
   const MODE = 'standalone';
   const TIERS = [
-    { k: 'easy',   n: 'Easy',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Slow, extra lives — take it easy' },
-    { k: 'mid',    n: 'Normal', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Balanced pace' },
-    { k: 'hard',   n: 'Hard',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Faster, less thinking time' },
-    { k: 'insane', n: 'Insane',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Very fast, no room for mistakes' },
+    { k: 'easy',   n: 'Dễ',         e: '🌱', c: '#22b573', s: .75, m: 1,   lives: 5, secs: 35, lvl0: 1, d: 'Chậm rãi, nhiều mạng — thoải mái làm quen' },
+    { k: 'mid',    n: 'Trung bình', e: '🔥', c: '#f4b942', s: 1,   m: 1.5, lives: 3, secs: 25, lvl0: 1, d: 'Nhịp độ chuẩn, vừa sức chơi' },
+    { k: 'hard',   n: 'Khó',        e: '⚡', c: '#e4572e', s: 1.3, m: 2,   lives: 3, secs: 18, lvl0: 2, d: 'Nhanh hơn, ít thời gian suy nghĩ' },
+    { k: 'insane', n: 'Siêu khó',   e: '💀', c: '#8b5cf6', s: 1.7, m: 3,   lives: 2, secs: 12, lvl0: 3, d: 'Cực nhanh, ít sai sót — dành cho cao thủ' },
   ];
   const G = { t: TIERS[1], i: 1, locked: MODE === 'standalone', q: [] };
 
@@ -72,13 +72,13 @@
   function pick(meta, go) {
     let last = 1;
     try { const v = +localStorage.getItem(KEY); if (v >= 0 && v < 4) last = v; } catch (e) { /* ignore */ }
-    const chip = t => MODE === 'single' ? `×${t.m} points` : `speed ×${t.s}`;
-    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Exit">←</button>
+    const chip = t => MODE === 'single' ? `×${t.m} điểm` : `tốc độ ×${t.s}`;
+    const box = $el(`<div id="gqp"><button class="gqp-x" aria-label="Thoát">←</button>
       <div class="gqp-box"><div class="gqp-ic">${meta.icon || '🎮'}</div><h1>${meta.name}</h1>
-      <p>Pick a difficulty to start</p>
+      <p>Chọn độ khó để bắt đầu</p>
       <div class="gqp-list">${TIERS.map((t, i) => `<button class="gqd${i === last ? ' last' : ''}" data-i="${i}" style="--c:${t.c}">
         <i>${t.e}</i><span><b>${t.n}</b><em>${t.d}</em></span><u>${chip(t)}</u></button>`).join('')}</div>
-      <small>Higher difficulty, faster pace — bigger rewards 🏆</small></div></div>`);
+      <small>Độ khó càng cao, nhịp chơi càng gấp — thưởng càng lớn 🏆</small></div></div>`);
     box.querySelector('.gqp-x').onclick = quit;
     box.querySelector('.gqp-list').onclick = e => {
       const b = e.target.closest('.gqd'); if (!b) return;
@@ -118,12 +118,12 @@
       }));
       boom();
       const row = document.querySelector('#modal .row');
-      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Change difficulty</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
+      if (row) { const b = $el('<button class="btn alt ghost" id="gq-chg">🎚️ Đổi độ khó</button>'); b.onclick = () => location.reload(); row.appendChild(b); }
       return r;
     };
   } else {
     const start = () => {
-      const t = (document.title || 'Game').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
+      const t = (document.title || 'Trò chơi').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
       const ic = (document.title.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u) || ['🎮'])[0];
       document.documentElement.classList.add('gq-sa');
       pick({ name: t, icon: ic });
@@ -132,7 +132,7 @@
   }
 })();
 </script>
-<title>neon brick breaker</title>
+<title>Phá Gạch Neon</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -221,7 +221,7 @@
 .gqd b { display: block; font: 800 20px/1.1 'Baloo 2', system-ui, sans-serif; }
 .gqd em { display: block; font-style: normal; font-size: 12.5px; line-height: 1.3; color: #3a4a66; margin-top: 2px; }
 .gqd u { text-decoration: none; font-size: 11.5px; font-weight: 700; background: #1d2e4a; color: #fff; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
-.gqd.last::after { content: 'Last time'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
+.gqd.last::after { content: 'Lần trước'; position: absolute; top: -10px; right: 12px; background: #f4b942; color: #1d2e4a; border: 2px solid #1d2e4a;
   border-radius: 999px; padding: 0 8px; font-size: 10.5px; font-weight: 700; }
 .gqp-box small { display: block; margin-top: 14px; font-size: 12.5px; color: #3a4a66; }
 @keyframes gqpop { 0% { transform: scale(.85); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
@@ -252,29 +252,29 @@ html.gq-sa body .btn:active, html.gq-sa body #again:active, html.gq-sa body #car
 <body>
 <canvas id="c"></canvas>
 <div id="hud">
-  <div class="hl"><small>LEVEL</small><span id="lvName">1</span></div>
+  <div class="hl"><small>MÀN</small><span id="lvName">1</span></div>
   <div id="score">0<span id="mult"></span></div>
-  <div class="hr"><div id="lives"></div><button id="pauseBtn" aria-label="Pause">⏸</button></div>
+  <div class="hr"><div id="lives"></div><button id="pauseBtn" aria-label="Tạm dừng">⏸</button></div>
 </div>
 <div id="say"></div><div id="tip"></div>
 
 <div class="screen show" id="menu">
-  <div class="logo">NEON<br>BRICK BREAKER<small>PICK A LEVEL · COLLECT 3 STARS</small></div>
-  <button class="btn" id="contBtn">▶ CONTINUE · LEVEL 1</button>
+  <div class="logo">PHÁ GẠCH<br>NEON<small>CHỌN MÀN · THU 3 SAO</small></div>
+  <button class="btn" id="contBtn">▶ CHƠI TIẾP · MÀN 1</button>
   <div class="lv" id="lvGrid"></div>
-  <div class="stats"><div><b id="stStars">0</b>stars</div><div><b id="stBest">0</b>best score</div><div><b id="stBricks">0</b>bricks smashed</div></div>
-  <div class="row"><button class="btn alt sm" id="sndBtn">🔊 Sound</button></div>
+  <div class="stats"><div><b id="stStars">0</b>sao</div><div><b id="stBest">0</b>điểm cao nhất</div><div><b id="stBricks">0</b>gạch đã phá</div></div>
+  <div class="row"><button class="btn alt sm" id="sndBtn">🔊 Âm thanh</button></div>
 </div>
 <div class="screen" id="clear">
-  <div class="card"><h2>Level clear!</h2><div class="stars" id="cStars">⭐⭐⭐</div><div class="sm">Score</div><div class="big" id="cScore">0</div><div class="sm" id="cInfo"></div>
-    <div class="col"><button class="btn" id="nextBtn">NEXT LEVEL ▶</button><button class="btn alt sm" id="clearRetry">↺ Replay this level</button><button class="btn alt sm" id="clearMenu">☰ Pick level</button></div></div>
+  <div class="card"><h2>Hoàn thành!</h2><div class="stars" id="cStars">⭐⭐⭐</div><div class="sm">Điểm</div><div class="big" id="cScore">0</div><div class="sm" id="cInfo"></div>
+    <div class="col"><button class="btn" id="nextBtn">MÀN TIẾP ▶</button><button class="btn alt sm" id="clearRetry">↺ Chơi lại màn này</button><button class="btn alt sm" id="clearMenu">☰ Chọn màn</button></div></div>
 </div>
 <div class="screen" id="over">
-  <div class="card"><h2>Out of lives!</h2><div class="sm">Score</div><div class="big" id="oScore">0</div><div class="sm" id="oInfo"></div>
-    <div class="col"><button class="btn" id="retryBtn">PLAY AGAIN</button><button class="btn alt sm" id="overMenu">☰ Pick level</button></div></div>
+  <div class="card"><h2>Hết mạng!</h2><div class="sm">Điểm</div><div class="big" id="oScore">0</div><div class="sm" id="oInfo"></div>
+    <div class="col"><button class="btn" id="retryBtn">CHƠI LẠI</button><button class="btn alt sm" id="overMenu">☰ Chọn màn</button></div></div>
 </div>
 <div class="screen" id="pause">
-  <div class="card"><h2>Paused</h2><div class="col"><button class="btn" id="resumeBtn">RESUME</button><button class="btn alt sm" id="pauseRetry">↺ Restart</button><button class="btn alt sm" id="pauseMenu">☰ Pick level</button></div></div>
+  <div class="card"><h2>Tạm dừng</h2><div class="col"><button class="btn" id="resumeBtn">TIẾP TỤC</button><button class="btn alt sm" id="pauseRetry">↺ Chơi lại</button><button class="btn alt sm" id="pauseMenu">☰ Chọn màn</button></div></div>
 </div>
 
 <script>
@@ -287,30 +287,30 @@ const pick = a => a[Math.floor(Math.random() * a.length)];
 const lerp = (a, b, t) => a + (b - a) * t;
 const COLS = 10;
 
-/* ---------- Save progress ---------- */
+/* ---------- Lưu tiến trình ---------- */
 const KEY = 'pha-gach-v1'; let mem = null;
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {} return mem ? JSON.parse(mem) : {}; };
 const S = Object.assign({ unlocked: 1, lv: {}, best: 0, bricks: 0, last: 0, sfx: true }, load());
 const persist = () => { const s = JSON.stringify(S); try { localStorage.setItem(KEY, s); } catch (e) { mem = s; } };
 
-/* ---------- Levels ---------- */
+/* ---------- Màn chơi ---------- */
 const LEVELS = [
-  ['Warm Up', ['..........', '1111111111', '1111111111', '1111111111']],
-  ['Diamond', ['....11....', '...1111...', '..111111..', '.11111111.', '..111111..', '...1111...', '....11....']],
-  ['Two Floors', ['1111111111', '2222222222', '..........', '1111111111', '2222222222']],
-  ['Steel Fence', ['1111111111', '1111111111', '1111111111', 'S.S.S.S.S.', '2222222222']],
-  ['Blast', ['1111111111', '1E111111E1', '1111111111', '11E1111E11', '1111111111']],
-  ['Pyramid', ['....SS....', '...2222...', '..222222..', '.22222222.', '1111111111']],
-  ['Maze', ['2222222222', '2........2', '2.111111.2', '2.1EEEE1.2', '2.111111.2', '2........2', 'SSSS..SSSS']],
-  ['Heart', ['.11....11.', '1221..1221', '1222222221', '1222222221', '.12222221.', '..122221..', '...1221...', '....11....']],
-  ['Stairs', ['S.........', '1S........', '11S.......', '111S......', '1111S.....', '11111S....', '111111S...', '2222222S..']],
-  ['Fireworks', ['3E3E3E3E3E', '1111111111', '2222222222', '1111111111', 'E3E3E3E3E3']],
-  ['Fortress', ['SSSSSSSSSS', 'S33333333S', 'S32222223S', 'S32111123S', 'S32222223S', 'S33333333S', 'SSSS..SSSS']],
-  ['Final Boss', ['3E3333333E', '3222222223', '2E1E11E1E2', '1111111111', 'S.S.S.S.S.', '3333333333']]
+  ['Khởi động', ['..........', '1111111111', '1111111111', '1111111111']],
+  ['Kim cương', ['....11....', '...1111...', '..111111..', '.11111111.', '..111111..', '...1111...', '....11....']],
+  ['Hai tầng', ['1111111111', '2222222222', '..........', '1111111111', '2222222222']],
+  ['Hàng rào thép', ['1111111111', '1111111111', '1111111111', 'S.S.S.S.S.', '2222222222']],
+  ['Nổ tung', ['1111111111', '1E111111E1', '1111111111', '11E1111E11', '1111111111']],
+  ['Kim tự tháp', ['....SS....', '...2222...', '..222222..', '.22222222.', '1111111111']],
+  ['Mê cung', ['2222222222', '2........2', '2.111111.2', '2.1EEEE1.2', '2.111111.2', '2........2', 'SSSS..SSSS']],
+  ['Trái tim', ['.11....11.', '1221..1221', '1222222221', '1222222221', '.12222221.', '..122221..', '...1221...', '....11....']],
+  ['Cầu thang', ['S.........', '1S........', '11S.......', '111S......', '1111S.....', '11111S....', '111111S...', '2222222S..']],
+  ['Pháo hoa', ['3E3E3E3E3E', '1111111111', '2222222222', '1111111111', 'E3E3E3E3E3']],
+  ['Pháo đài', ['SSSSSSSSSS', 'S33333333S', 'S32222223S', 'S32111123S', 'S32222223S', 'S33333333S', 'SSSS..SSSS']],
+  ['Trùm cuối', ['3E3333333E', '3222222223', '2E1E11E1E2', '1111111111', 'S.S.S.S.S.', '3333333333']]
 ];
-const POW = { E: { c: '#4ade80', t: 'Wide paddle!' }, M: { c: '#22d3ee', t: 'Multi-ball!' }, F: { c: '#fb923c', t: 'Fireball!' }, L: { c: '#f472b6', t: 'Lasers!' }, S: { c: '#60a5fa', t: 'Slow ball!' }, H: { c: '#f87171', t: '+1 life!' } };
+const POW = { E: { c: '#4ade80', t: 'Mở rộng!' }, M: { c: '#22d3ee', t: 'Nhiều bóng!' }, F: { c: '#fb923c', t: 'Bóng lửa!' }, L: { c: '#f472b6', t: 'Súng laser!' }, S: { c: '#60a5fa', t: 'Bóng chậm!' }, H: { c: '#f87171', t: '+1 mạng!' } };
 
-/* ---------- Sound ---------- */
+/* ---------- Âm thanh ---------- */
 let ac = null;
 const audio = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (ac && ac.state === 'suspended') ac.resume(); };
 function tone(f, d = .12, v = .1, type = 'sine', delay = 0, slide = 0) {
@@ -347,7 +347,7 @@ function resize() {
   if (G) layoutBricks();
 }
 
-/* ---------- State ---------- */
+/* ---------- Trạng thái ---------- */
 let state = 'menu', G = null, T = 0, shake = 0, flash = 0, down = false, ptrX = 0, moved = 0, parts = [], floats = [], bolts = [], caps = [];
 function tip(t, ms = 4000) { const e = $('tip'); e.textContent = t; e.classList.add('show'); clearTimeout(tip.t); tip.t = setTimeout(() => e.classList.remove('show'), ms); }
 function say(t, c = '#7df9ff') { const e = $('say'); e.textContent = t; e.style.color = c; e.classList.remove('show'); void e.offsetWidth; e.classList.add('show'); }
@@ -359,23 +359,23 @@ function startLevel(i) {
   G = { i, name, bricks, score: 0, lives: 3, hits: 0, pw: clamp(W * .21, 76, 150), px: W / 2, tx: W / 2, balls: [], fx: { E: 0, F: 0, L: 0, S: 0 }, laserT: 0, ended: false, levelLost: false, destroyed: 0 };
   G.balls.push(newBall()); G.total = bricks.filter(b => b.kind !== 'S').length; layoutBricks(); parts = []; floats = []; bolts = []; caps = []; shake = 0; flash = 0;
   state = 'play'; ['menu', 'clear', 'over', 'pause'].forEach(s => $(s).classList.remove('show')); $('hud').classList.add('on'); $('lvName').textContent = `${i + 1} · ${name}`; hud();
-  say(`LEVEL ${i + 1}`, '#ffe066'); if (i === 0) tip('Slide your finger to move the paddle · Tap to launch the ball', 6000);
+  say(`MÀN ${i + 1}`, '#ffe066'); if (i === 0) tip('Kéo ngón tay để di chuyển thanh · Chạm để bắn bóng', 6000);
 }
 const spd0 = () => H * (.6 + Math.min(G.i, 11) * .018) * (G.fx.S > 0 ? .72 : 1);
 function newBall() { return { x: 0, y: 0, vx: 0, vy: 0, r: clamp(bw * .17, 6, 11), stuck: true, trail: [] }; }
 function paddleW() { return G.pw * (G.fx.E > 0 ? 1.55 : 1); }
 function hud() {
-  $('score').firstChild.nodeValue = G.score.toLocaleString('en-US'); $('lives').textContent = '❤️'.repeat(Math.max(0, G.lives));
+  $('score').firstChild.nodeValue = G.score.toLocaleString('vi-VN'); $('lives').textContent = '❤️'.repeat(Math.max(0, G.lives));
   const m = mult(); $('mult').textContent = m > 1 ? `COMBO x${m}` : '';
 }
 const mult = () => Math.min(5, 1 + Math.floor(G.hits / 4));
 function launch() { let any = false; G.balls.forEach(b => { if (b.stuck) { b.stuck = false; const a = rand(-.3, .3), s = spd0(); b.vx = Math.sin(a) * s; b.vy = -Math.cos(a) * s; any = true; sfx.paddle(); } }); return any; }
 
-/* ---------- Effects ---------- */
+/* ---------- Hiệu ứng ---------- */
 function burst(x, y, col, n = 10, spd = 260) { for (let i = 0; i < n; i++) { const a = rand(0, 6.283), v = rand(.3, 1) * spd; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, life: rand(.4, .9), max: .9, s: rand(2.5, 6), c: col }); } }
 function addScore(n, x, y) { const m = mult(); const v = n * m; G.score += v; floats.push({ x, y, t: '+' + v, life: .8, c: m > 1 ? '#ff9bf3' : '#fff' }); }
 
-/* ---------- Brick destroyed ---------- */
+/* ---------- Gạch bị phá ---------- */
 function brickColor(b) { return b.kind === 'S' ? '#94a3b8' : b.kind === 'E' ? '#fb923c' : b.hp >= 3 ? '#fb7185' : b.hp === 2 ? '#a78bfa' : `hsl(${b.hue},90%,60%)`; }
 function destroy(b, chain = 0) {
   if (!b.alive) return; b.alive = false; G.destroyed++; S.bricks++; G.hits++; const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
@@ -396,14 +396,14 @@ function checkClear() { if (!G.ended && G.bricks.every(b => !b.alive || b.kind =
 function winLevel() {
   state = 'clear'; sfx.win(); vib(40); const stars = G.lives >= 3 && !G.levelLost ? 3 : G.lives >= 2 ? 2 : 1, key = String(G.i), cur = S.lv[key] || { stars: 0, best: 0 };
   S.lv[key] = { stars: Math.max(cur.stars, stars), best: Math.max(cur.best, G.score) }; S.unlocked = Math.max(S.unlocked, Math.min(LEVELS.length, G.i + 2)); S.best = Math.max(S.best, G.score); persist();
-  $('cStars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars); $('cScore').textContent = G.score.toLocaleString('en-US'); $('cInfo').textContent = G.score >= cur.best && cur.best ? '🏆 New level record!' : `Level best: ${S.lv[key].best.toLocaleString('en-US')}`;
+  $('cStars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars); $('cScore').textContent = G.score.toLocaleString('vi-VN'); $('cInfo').textContent = G.score >= cur.best && cur.best ? '🏆 Kỷ lục màn mới!' : `Kỷ lục màn: ${S.lv[key].best.toLocaleString('vi-VN')}`;
   $('nextBtn').style.display = G.i + 1 < LEVELS.length ? '' : 'none'; $('hud').classList.remove('on'); $('clear').classList.add('show');
 }
 function loseGame() {
-  state = 'over'; sfx.over(); S.best = Math.max(S.best, G.score); persist(); $('hud').classList.remove('on'); $('oScore').textContent = G.score.toLocaleString('en-US'); $('oInfo').textContent = `Level ${G.i + 1} · ${G.name}`; $('over').classList.add('show');
+  state = 'over'; sfx.over(); S.best = Math.max(S.best, G.score); persist(); $('hud').classList.remove('on'); $('oScore').textContent = G.score.toLocaleString('vi-VN'); $('oInfo').textContent = `Màn ${G.i + 1} · ${G.name}`; $('over').classList.add('show');
 }
 
-/* ---------- Update ---------- */
+/* ---------- Cập nhật ---------- */
 function substep(b, dt) {
   const r = b.r; b.x += b.vx * dt; b.y += b.vy * dt;
   if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx); sfx.wall(); } if (b.x > W - r) { b.x = W - r; b.vx = -Math.abs(b.vx); sfx.wall(); } if (b.y < topY - 4 + r) { b.y = topY - 4 + r; b.vy = Math.abs(b.vy); sfx.wall(); }
@@ -442,7 +442,7 @@ function update(dt) {
   }
   if (!G.balls.length && !G.ended) {
     G.lives--; G.levelLost = true; G.hits = 0; sfx.life(); shake = 14; vib(60); flash = .4; hud();
-    if (G.lives <= 0) { G.ended = true; setTimeout(loseGame, 500); } else { G.balls.push(newBall()); G.fx = { E: 0, F: 0, L: 0, S: 0 }; tip('Tap to launch the ball', 2500); }
+    if (G.lives <= 0) { G.ended = true; setTimeout(loseGame, 500); } else { G.balls.push(newBall()); G.fx = { E: 0, F: 0, L: 0, S: 0 }; tip('Chạm để bắn bóng', 2500); }
   }
   if (G.fx.L > 0) { G.laserT -= dt; if (G.laserT <= 0) { G.laserT = .28; const pw = paddleW(); [-1, 1].forEach(s => bolts.push({ x: G.px + s * (pw / 2 - 8), y: pY - 6 })); sfx.laser(); } }
   bolts.forEach(b => { b.y -= H * 1.5 * dt; for (const k of G.bricks) { if (k.alive && b.x > k.x && b.x < k.x + k.w && b.y > k.y && b.y < k.y + k.h) { hitBrick(k, null); b.dead = true; break; } } if (b.y < topY - 6) b.dead = true; }); bolts = bolts.filter(b => !b.dead);
@@ -452,7 +452,7 @@ function update(dt) {
   floats.forEach(f => { f.y -= 40 * dt; f.life -= dt; }); floats = floats.filter(f => f.life > 0);
 }
 
-/* ---------- Draw ---------- */
+/* ---------- Vẽ ---------- */
 function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 function drawBg() {
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0a1038'); g.addColorStop(.6, '#0b0f2c'); g.addColorStop(1, '#05071a'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -484,14 +484,14 @@ function draw() {
     });
     parts.forEach(p => { ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); }); ctx.globalAlpha = 1;
     floats.forEach(f => { ctx.globalAlpha = clamp(f.life * 1.6, 0, 1); ctx.font = '800 17px "Baloo 2",sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = f.c; ctx.fillText(f.t, f.x, f.y); }); ctx.globalAlpha = 1;
-    // power-up bar
-    let ix = 10; [['E', 'Wide'], ['F', 'Fire'], ['L', 'Laser'], ['S', 'Slow']].forEach(([k, n]) => { if (G.fx[k] > 0) { ctx.fillStyle = POW[k].c; ctx.globalAlpha = .9; rr(ix, H - 22, 56, 14, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = '#06122e'; ctx.font = '800 10px "Baloo 2",sans-serif'; ctx.textAlign = 'left'; ctx.fillText(n + ' ' + Math.ceil(G.fx[k]), ix + 7, H - 12); ix += 62; } });
+    // thanh hiệu ứng
+    let ix = 10; [['E', 'Rộng'], ['F', 'Lửa'], ['L', 'Laser'], ['S', 'Chậm']].forEach(([k, n]) => { if (G.fx[k] > 0) { ctx.fillStyle = POW[k].c; ctx.globalAlpha = .9; rr(ix, H - 22, 56, 14, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = '#06122e'; ctx.font = '800 10px "Baloo 2",sans-serif'; ctx.textAlign = 'left'; ctx.fillText(n + ' ' + Math.ceil(G.fx[k]), ix + 7, H - 12); ix += 62; } });
   }
   if (flash > 0) { ctx.fillStyle = `rgba(255,255,255,${flash * .5})`; ctx.fillRect(0, 0, W, H); }
   ctx.restore();
 }
 
-/* ---------- Input ---------- */
+/* ---------- Nhập liệu ---------- */
 window.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; audio(); down = true; ptrX = e.clientX; moved = 0; });
 window.addEventListener('pointermove', e => {
   if (state !== 'play' || !G) return; if (e.pointerType === 'mouse') { G.tx = e.clientX; return; }
@@ -506,12 +506,12 @@ function renderMenu() {
   const grid = $('lvGrid'); grid.innerHTML = ''; let stars = 0;
   LEVELS.forEach((l, i) => {
     const ok = i < S.unlocked, st = (S.lv[i] || {}).stars || 0; stars += st; const b = document.createElement('button'); b.className = 'lvb' + (ok ? '' : ' lock') + (i === Math.min(S.last, S.unlocked - 1) ? ' cur' : '');
-    b.innerHTML = `<b>${ok ? i + 1 : '🔒'}</b><span>${ok ? '⭐'.repeat(st) + '☆'.repeat(3 - st) : ''}</span>`; b.setAttribute('aria-label', 'Level ' + (i + 1));
+    b.innerHTML = `<b>${ok ? i + 1 : '🔒'}</b><span>${ok ? '⭐'.repeat(st) + '☆'.repeat(3 - st) : ''}</span>`; b.setAttribute('aria-label', 'Màn ' + (i + 1));
     b.onclick = () => { audio(); if (!ok) { tone(200, .15, .08, 'sawtooth'); return; } sfx.tap(); startLevel(i); }; grid.appendChild(b);
   });
-  $('stStars').textContent = stars; $('stBest').textContent = S.best.toLocaleString('en-US'); $('stBricks').textContent = S.bricks.toLocaleString('en-US');
-  const cur = Math.min(S.last, S.unlocked - 1); $('contBtn').textContent = `▶ CONTINUE · LEVEL ${cur + 1}`; $('contBtn').onclick = () => { audio(); sfx.tap(); startLevel(cur); };
-  $('sndBtn').textContent = '🔊 Sound: ' + (S.sfx ? 'On' : 'Off');
+  $('stStars').textContent = stars; $('stBest').textContent = S.best.toLocaleString('vi-VN'); $('stBricks').textContent = S.bricks.toLocaleString('vi-VN');
+  const cur = Math.min(S.last, S.unlocked - 1); $('contBtn').textContent = `▶ CHƠI TIẾP · MÀN ${cur + 1}`; $('contBtn').onclick = () => { audio(); sfx.tap(); startLevel(cur); };
+  $('sndBtn').textContent = '🔊 Âm thanh: ' + (S.sfx ? 'Bật' : 'Tắt');
 }
 function toMenu() { state = 'menu'; G = null; ['clear', 'over', 'pause'].forEach(s => $(s).classList.remove('show')); $('hud').classList.remove('on'); renderMenu(); $('menu').classList.add('show'); }
 $('sndBtn').onclick = () => { S.sfx = !S.sfx; persist(); renderMenu(); };
@@ -526,7 +526,7 @@ window.addEventListener('resize', resize); resize(); renderMenu(); requestAnimat
 })();
 </script>
 
-<!-- "Back to home" button — added by scripts/add-offline-back-button.mjs -->
+<!-- Nút "Về trang chủ" — thêm bởi scripts/add-offline-back-button.mjs -->
 <style>
   #homeBackBtn {
     position: fixed;
@@ -555,12 +555,12 @@ window.addEventListener('resize', resize); resize(); renderMenu(); requestAnimat
   #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
 </style>
-<button id="homeBackBtn" type="button" aria-label="Back to home" title="Back to home">
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">
   <span aria-hidden="true">&#8592;</span>
 </button>
 <script>
-  // Shared button for all offline games: post a message to React (OfflineGamePage)
-  // to return home. When opening the .html file directly it navigates itself.
+  // Nút dùng chung cho mọi game offline: báo ngược lên React (OfflineGamePage)
+  // để quay về trang chủ. Mở file .html trực tiếp thì tự điều hướng.
   (function () {
     var btn = document.getElementById("homeBackBtn");
     if (!btn) return;
@@ -570,7 +570,7 @@ window.addEventListener('resize', resize); resize(); renderMenu(); requestAnimat
           window.parent.postMessage({ type: "quit", data: {} }, "*");
           return;
         }
-      } catch (e) { /* fall back to self-navigation */ }
+      } catch (e) { /* rơi xuống cách tự điều hướng */ }
       try { window.location.href = "/"; } catch (e) { /* ignore */ }
     });
   })();

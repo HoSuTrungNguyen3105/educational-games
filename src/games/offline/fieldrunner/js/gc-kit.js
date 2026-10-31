@@ -1,6 +1,6 @@
 /* =====================================================
-   GC KIT · shared logic
-   Difficulty picker, best scores per difficulty, result box
+   GC KIT · logic dùng chung
+   Chọn độ khó, kỷ lục theo độ khó, hộp kết quả
    ===================================================== */
 (function () {
   'use strict';
@@ -8,20 +8,20 @@
   if (window.GC) return;
 
   var LV = [
-    { i: 0, key: 'easy',   label: 'Easy',   emoji: '🌱',  color: 'var(--gc-mint)' },
-    { i: 1, key: 'normal', label: 'Normal', emoji: '🌤️', color: 'var(--gc-sun)' },
-    { i: 2, key: 'hard',   label: 'Hard',   emoji: '🔥',  color: 'var(--gc-tomato)' },
-    { i: 3, key: 'insane', label: 'Insane', emoji: '💀',  color: 'var(--gc-lilac)' }
+    { i: 0, key: 'easy',   label: 'Dễ',         emoji: '🌱',  color: 'var(--gc-mint)' },
+    { i: 1, key: 'normal', label: 'Trung bình', emoji: '🌤️', color: 'var(--gc-sun)' },
+    { i: 2, key: 'hard',   label: 'Khó',        emoji: '🔥',  color: 'var(--gc-tomato)' },
+    { i: 3, key: 'insane', label: 'Siêu khó',   emoji: '💀',  color: 'var(--gc-lilac)' }
   ];
 
   var DEFAULT_LEVEL_TEXT = [
-    'Relaxed, little pressure',
-    'Balanced, fair challenge',
-    'Faster, fewer mistakes',
-    'The ultimate challenge'
+    'Thong thả, ít áp lực',
+    'Cân bằng, vừa sức',
+    'Nhanh hơn, ít sai sót',
+    'Thử thách cực đại'
   ];
 
-  /* ---------- Storage helpers (safe when storage is blocked) ---------- */
+  /* ---------- Tiện ích lưu trữ (an toàn khi bị chặn storage) ---------- */
   function ls(op, k, v) {
     try {
       return op === 'get' ? localStorage.getItem(k) : localStorage.setItem(k, v);
@@ -52,12 +52,12 @@
     id: 'game',
     diff: LV[1],
 
-    /** Current difficulty: 0 easy · 1 normal · 2 hard · 3 insane */
+    /** Độ khó hiện tại: 0 dễ · 1 trung bình · 2 khó · 3 siêu khó */
     get i() {
       return GC.diff.i;
     },
 
-    /** GC.by(a,b,c,d) or GC.by([a,b,c,d]) → value for the selected difficulty */
+    /** GC.by(a,b,c,d) hoặc GC.by([a,b,c,d]) → giá trị theo độ khó đang chọn */
     by: function (a, b, c, d) {
       var arr = Array.isArray(a) ? a : [a, b, c, d];
       return arr[GC.diff.i];
@@ -69,7 +69,7 @@
 
     esc: esc,
 
-    /* ---------- Best scores per difficulty ---------- */
+    /* ---------- Kỷ lục theo độ khó ---------- */
     best: {
       key: function (id, i) {
         return 'gc:' + id + ':best:' + LV[i == null ? GC.diff.i : i].key;
@@ -79,7 +79,7 @@
         return +ls('get', GC.best.key(id || GC.id, i)) || 0;
       },
 
-      /** Save if higher. Returns true when it is a new best score. */
+      /** Lưu nếu cao hơn. Trả về true nếu là kỷ lục mới. */
       set: function (id, score, i) {
         id = id || GC.id;
         score = +score || 0;
@@ -91,7 +91,7 @@
         return false;
       },
 
-      /** For games where "lower is better" (time, move count). */
+      /** Với game tính theo "thấp hơn là tốt hơn" (thời gian, số bước). */
       setLow: function (id, score, i) {
         id = id || GC.id;
         score = +score || 0;
@@ -105,13 +105,13 @@
       }
     },
 
-    /** Difficulty pill HTML: "🔥 Hard" */
+    /** HTML pill độ khó: "🔥 Khó" */
     chip: function () {
-      return '<span class="gc-pill gc-d' + GC.diff.i + '" title="Difficulty">' +
+      return '<span class="gc-pill gc-d' + GC.diff.i + '" title="Độ khó">' +
         GC.diff.emoji + ' ' + GC.diff.label + '</span>';
     },
 
-    /** Mount a floating difficulty chip in the top-right corner. */
+    /** Gắn chip độ khó nổi ở góc phải trên. */
     mountChip: function () {
       var el = document.querySelector('.gc-chip');
       if (!el) {
@@ -123,37 +123,37 @@
       return el;
     },
 
-    /** Quit to the game list (tell the React host) or to the home page when opened alone. */
+    /** Thoát về danh sách game (báo cho React host) hoặc về trang chủ nếu mở riêng. */
     quit: function () {
       try {
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({ type: 'quit', data: {} }, '*');
           return;
         }
-      } catch (e) { /* ignore */ }
+      } catch (e) { /* bỏ qua */ }
 
       try {
         window.location.href = '/';
-      } catch (e) { /* ignore */ }
+      } catch (e) { /* bỏ qua */ }
     },
 
-    /** Play again on the SAME difficulty: reload and auto-start, skipping the picker. */
+    /** Chơi lại CÙNG độ khó: nạp lại trang và tự bắt đầu, bỏ qua màn chọn. */
     again: function () {
       ss('set', 'gc:auto:' + GC.id, String(GC.diff.i));
       location.reload();
     },
 
-    /** Go back to the difficulty picker. */
+    /** Quay lại màn chọn độ khó. */
     change: function () {
       ss('del', 'gc:auto:' + GC.id);
       location.reload();
     },
 
     /**
-     * Show the difficulty picker. cfg:
+     * Hiện màn chọn độ khó. cfg:
      *   id, name, icon, desc,
-     *   levels: [4 description strings, one per difficulty],
-     *   resume: { i, text } (optional),
+     *   levels: [4 chuỗi mô tả riêng cho từng độ khó],
+     *   resume: { i, text } (tuỳ chọn),
      *   onStart(diff), onResume(diff)
      */
     start: function (cfg) {
@@ -179,7 +179,7 @@
         else if (cfg.onStart) cfg.onStart(GC.diff);
       }
 
-      /* Playing again on the same difficulty: skip the picker */
+      /* Chơi lại cùng độ khó: bỏ qua màn chọn */
       var auto = ss('get', 'gc:auto:' + GC.id);
       if (auto != null && auto !== '') {
         ss('del', 'gc:auto:' + GC.id);
@@ -196,7 +196,7 @@
       root.className = 'gc-start';
       root.id = 'gc-start';
       root.setAttribute('role', 'dialog');
-      root.setAttribute('aria-label', 'Choose difficulty — ' + (cfg.name || ''));
+      root.setAttribute('aria-label', 'Chọn độ khó — ' + (cfg.name || ''));
 
       var levelsHtml = LV.map(function (l) {
         var best = GC.best.get(GC.id, l.i);
@@ -217,17 +217,17 @@
       }).join('');
 
       root.innerHTML = '' +
-        (hasBack ? '' : '<button class="gc-back" type="button" aria-label="Back to lobby">←</button>') +
+        (hasBack ? '' : '<button class="gc-back" type="button" aria-label="Về sảnh">←</button>') +
         '<div class="gc-card">' +
           '<div class="gc-ico">' + esc(cfg.icon || '🎮') + '</div>' +
-          '<h1 class="gc-title">' + esc(cfg.name || 'Game') + '</h1>' +
+          '<h1 class="gc-title">' + esc(cfg.name || 'Trò chơi') + '</h1>' +
           (cfg.desc ? '<p class="gc-desc">' + esc(cfg.desc) + '</p>' : '') +
-          '<div class="gc-h">Choose difficulty</div>' +
-          '<div class="gc-levels" role="radiogroup" aria-label="Difficulty">' + levelsHtml + '</div>' +
+          '<div class="gc-h">Chọn độ khó</div>' +
+          '<div class="gc-levels" role="radiogroup" aria-label="Độ khó">' + levelsHtml + '</div>' +
           '<div class="gc-actions">' +
-            '<button type="button" class="gc-btn gc-go">▶ Start</button>' +
+            '<button type="button" class="gc-btn gc-go">▶ Bắt đầu</button>' +
             (cfg.resume
-              ? '<button type="button" class="gc-btn alt gc-resume">⏯ Continue · ' +
+              ? '<button type="button" class="gc-btn alt gc-resume">⏯ Chơi tiếp · ' +
                 LV[cfg.resume.i].emoji + ' ' + LV[cfg.resume.i].label +
                 (cfg.resume.text ? ' — ' + esc(cfg.resume.text) : '') + '</button>'
               : '') +
@@ -300,12 +300,12 @@
       var go = root.querySelector('.gc-go');
       try {
         go.focus({ preventScroll: true });
-      } catch (e) { /* ignore */ }
+      } catch (e) { /* bỏ qua */ }
     },
 
     /**
-     * Shared result box. cfg:
-     *   title, score, lines:[], win:boolean, low:boolean (lower = better),
+     * Hộp kết quả thống nhất. cfg:
+     *   title, score, lines:[], win:boolean, low:boolean (thấp hơn = tốt hơn),
      *   onAgain, onChange, onHome
      */
     result: function (cfg) {
@@ -325,14 +325,14 @@
 
       modal.innerHTML = '' +
         '<div class="gc-panel" role="dialog">' +
-          '<h2>' + esc(cfg.title || (cfg.win ? 'Victory! 🎉' : 'Complete!')) + '</h2>' +
+          '<h2>' + esc(cfg.title || (cfg.win ? 'Chiến thắng! 🎉' : 'Hoàn thành!')) + '</h2>' +
           '<div style="margin-top:8px">' + GC.chip() + '</div>' +
           (cfg.score != null ? '<div class="gc-big">' + esc(cfg.score) + '</div>' : '') +
-          '<div class="gc-stats">' + (isBest ? '<span>🏆 New record</span>' : '') + lines + '</div>' +
+          '<div class="gc-stats">' + (isBest ? '<span>🏆 Kỷ lục mới</span>' : '') + lines + '</div>' +
           '<div class="gc-row">' +
-            '<button class="gc-btn" data-a="again">Play again</button>' +
-            '<button class="gc-btn alt" data-a="change">Change difficulty</button>' +
-            '<button class="gc-btn alt" data-a="home">Back to lobby</button>' +
+            '<button class="gc-btn" data-a="again">Chơi lại</button>' +
+            '<button class="gc-btn alt" data-a="change">Đổi độ khó</button>' +
+            '<button class="gc-btn alt" data-a="home">Về sảnh</button>' +
           '</div>' +
         '</div>';
 

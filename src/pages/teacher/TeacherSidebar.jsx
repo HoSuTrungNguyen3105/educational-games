@@ -25,7 +25,7 @@ import {
   Settings2,
 } from 'lucide-react'
 import {
-  IconAdd, IconBell, IconClose, IconFile, IconLogout, IconSettings, IconUsers,
+  IconAdd, IconBell, IconClose, IconFile, IconLogout, IconSettings, IconUser, IconUsers,
 } from '../../components/ui/index.js'
 
 /* Menu chia nhóm theo layout mới: nhóm đầu không header, các nhóm sau có tiêu đề nhỏ. */
@@ -203,9 +203,10 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
             );
           })}
           {user && (
-            <button onClick={onLogout} className="edu-mobile-nav-btn text-red-400">
-              <IconLogout />
-              <span className="leading-tight">Thoát</span>
+            <button onClick={() => navigate("/admin/profile")}
+              className={`edu-mobile-nav-btn ${screen === "admin-profile" ? "is-active" : ""}`}>
+              <IconUser />
+              <span className="leading-tight">Hồ sơ</span>
             </button>
           )}
         </div>
