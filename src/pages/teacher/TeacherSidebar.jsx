@@ -179,28 +179,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
           </div>
         ))}
       </nav>
-      <div className="shrink-0 px-3 pb-4 pt-3 border-t border-ink/10 space-y-0.5">
-        <button onClick={() => { navigate("/"); if (isMobile) setMobileOpen(false); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-body text-ink/70 hover:bg-ink/5 hover:text-ink transition">
-          <House className="w-[18px] h-[18px]" />
-          Về trang chủ
-        </button>
-        {user && (
-          <>
-            <button onClick={() => { navigate("/admin/profile"); if (isMobile) setMobileOpen(false); }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-body text-ink/70 hover:bg-ink/5 hover:text-ink transition">
-              <IconUser className="w-[18px] h-[18px]" />
-              Hồ sơ
-            </button>
-            <button onClick={() => { onLogout?.(); if (isMobile) setMobileOpen(false); }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-body text-red-500 hover:bg-red-500/10 transition">
-              <IconLogout className="w-[18px] h-[18px]" />
-              Đăng xuất
-            </button>
-          </>
-        )}
         {userCard}
-      </div>
     </div>
   );
 

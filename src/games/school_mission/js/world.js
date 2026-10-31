@@ -11,14 +11,14 @@ function go(s,x,y,r){sc=s;me.x=x;me.y=y;if(r)rk=r;fade=1;zin={};npcClose();if(s=
    Vào cửa trường/cửa lớp/cầu thang hay bước vào nhà đều tự mở. */
 function ZN(){
  if(sc=="out"){
-  const z=[{id:"school",x:820,y:356,w:160,h:110,f:()=>go("hall",140,300)}];
+  const z=[{id:"school",x:1120,y:356,w:160,h:110,f:()=>go("hall",140,300)}];
   P.forEach(p=>{if(p.lv&&S.lv<p.lv)return;
-   const f={shop,can:canteen,garden,gym}[p.id];
+   const f={shop,can:canteen,garden,pet:typeof petGarden==="function"?petGarden:garden,gym:typeof petGarden==="function"?petGarden:garden}[p.id];
    z.push(p.b?{id:p.id,x:p.x,y:p.y+p.h-10,w:p.w,h:60,f}:{id:p.id,x:p.x,y:p.y,w:p.w,h:p.h,f})});
   return z;
  }
  if(sc=="hall")return[
-  {id:"out",x:0,y:195,w:70,h:210,f:()=>go("out",900,560)},
+  {id:"out",x:0,y:195,w:70,h:210,f:()=>go("out",1200,560)},
   ...KS.map(k=>({id:"d_"+k,x:DX[k]-55,y:195,w:160,h:60,f:()=>go("room",500,505,k)})),
   {id:"stairs",x:1560,y:195,w:140,h:210,f:climbUp}];
  if(sc=="hall2")return[
@@ -40,7 +40,7 @@ function climbDown(){if(climb)return;climb={dir:-1,t:0};toast("🪜 Đi xuống 
 function blocked(x,y){
  if(sc=="hall"||sc=="hall2")return y<195;
  if(sc=="room")return x<60||x>940||y<280||desks.some(d=>x>d[0]-8&&x<d[0]+98&&y>d[1]+8&&y<d[1]+52);
- return(x>520&&x<1280&&y>90&&y<352)||P.some(p=>p.b?x>p.x+5&&x<p.x+p.w-5&&y>p.y+60&&y<p.y+p.h-10:(p.lv&&S.lv<p.lv&&x>p.x&&x<p.x+p.w&&y>p.y&&y<p.y+p.h))}
+ return(x>820&&x<1580&&y>90&&y<352)||P.some(p=>p.b?x>p.x+5&&x<p.x+p.w-5&&y>p.y+60&&y<p.y+p.h-10:(p.lv&&S.lv<p.lv&&x>p.x&&x<p.x+p.w&&y>p.y&&y<p.y+p.h))}
 
 let last=performance.now();
 function upd(dt){tt+=dt;if(fade>0)fade=Math.max(0,fade-dt*2.5);

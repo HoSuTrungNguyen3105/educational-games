@@ -8,6 +8,7 @@ import {
   startSchoolMissionSync,
 } from "../lib/schoolMissionSync.js";
 import { grantSchoolCoinReward } from "../lib/schoolMissionRewards.js";
+import { addCoins, readWallet } from "../lib/coinWallet.js";
 import schoolMissionHtml from "../games/school_mission/School_mission.html?raw";
 import { SCHOOL_MISSION_CONFIG } from "../games/school_mission/config.js";
 
@@ -25,6 +26,7 @@ const SCRIPT_ORDER = [
   "js/questions.js",
   "js/ui.js",
   "js/activities.js",
+  "js/garden.js",
   "js/settings.js",
   "js/world.js",
   "js/input.js",
@@ -162,6 +164,15 @@ export default function SchoolMissionPage() {
         grantSchoolCoinReward(msg.data?.amount, msg.data?.reason).then((result) => {
           iframeRef.current?.contentWindow?.postMessage({ type: "school-coin-result", data: result }, "*");
         });
+      } else if (msg.type === "gq:walletDelta") {
+        // Thu hoạch cây / mua đồ trong game thay đổi ví coin -> đồng bộ lên API
+        const delta = Number(msg.data?.amount) || 0;
+        if (delta !== 0) {
+          addCoins(delta);
+        }
+      } else if (msg.type === "gq:walletGet") {
+        const w = readWallet();
+        iframeRef.current?.contentWindow?.postMessage({ type: "gq:wallet", coins: w.coins }, "*");
       }
     };
 

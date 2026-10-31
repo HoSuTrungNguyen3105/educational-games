@@ -1,33 +1,33 @@
 // ===== SCENES: vẽ sân trường, tòa nhà, hành lang, lớp học =====
 
-// 1. KHỞI TẠO CÁC MẢNG TRANG TRÍ (Cỏ, hoa dại, cây cối)
+// 1. KHỞI TẠO CÁC MẢNG TRANG TRÍ (Cỏ, hoa dại, cây cối cho sân trường rộng 2400x1400)
 const tufts = [], flw = [], trees = [];
 
-// Tạo 260 bụi cỏ ngẫu nhiên
-for (let i = 0; i < 260; i++) {
-    tufts.push([Math.random() * 1800, Math.random() * 1100, Math.random()]);
+// Tạo 450 bụi cỏ ngẫu nhiên
+for (let i = 0; i < 450; i++) {
+    tufts.push([Math.random() * 2400, Math.random() * 1400, Math.random()]);
 }
 
-// Tạo 110 bông hoa dại ngẫu nhiên
-for (let i = 0; i < 110; i++) {
+// Tạo 200 bông hoa dại ngẫu nhiên
+for (let i = 0; i < 200; i++) {
     flw.push([
-        Math.random() * 1800, 
-        Math.random() * 1100, 
-        ["#fff", "#ffd23f", "#ff8fb1", "#b28dff"][i % 4]
+        Math.random() * 2400, 
+        Math.random() * 1400, 
+        ["#fff", "#ffd23f", "#ff8fb1", "#b28dff", "#74b9ff"][i % 5]
     ]);
 }
 
-// Tạo 46 cái cây, tránh không cho mọc đè lên nhà, hồ bơi, hay đường đi
-for (let i = 0; i < 46; i++) {
-    const x = Math.random() * 1800, y = 60 + Math.random() * 1040;
+// Tạo 75 cây xanh bóng mát
+for (let i = 0; i < 75; i++) {
+    const x = Math.random() * 2400, y = 60 + Math.random() * 1340;
     if (
         !P.some(p => x > p.x - 70 && x < p.x + p.w + 70 && y > p.y - 70 && y < p.y + p.h + 90) &&
-        !(y > 470 && y < 650) && 
-        !(x > 800 && x < 1000) && 
-        !(x > 480 && x < 1320 && y < 420) && 
-        !(x > 120 && x < 330 && y > 230 && y < 350)
+        !(y > 600 && y < 820) && 
+        !(x > 1050 && x < 1350) && 
+        !(x > 750 && x < 1650 && y < 450) && 
+        !(x > 200 && x < 500 && y > 220 && y < 450)
     ) {
-        trees.push([x, y, 0.8 + Math.random() * 0.5]);
+        trees.push([x, y, 0.85 + Math.random() * 0.55]);
     }
 }
 
@@ -114,11 +114,11 @@ function house(p) {
 }
 
 function school() {
-    const x = 520, y = 90;
+    const x = 820, y = 90;
     
     g.fillStyle = "rgba(0,0,0,.22)";
     g.beginPath();
-    g.ellipse(900, 358, 420, 20, 0, 0, 7);
+    g.ellipse(1200, 358, 420, 20, 0, 0, 7);
     g.fill();
 
     // Tòa nhà chính
@@ -136,7 +136,7 @@ function school() {
     for (let s = 0; s < 2; s++) {
         for (let r = 0; r < 2; r++) {
             for (let i = 0; i < 4; i++) {
-                const wx = s ? 1000 + i * 62 : x + 40 + i * 62, wy = y + 140 + r * 110;
+                const wx = s ? 1300 + i * 62 : x + 40 + i * 62, wy = y + 140 + r * 110;
                 rr(wx - 3, wy - 3, 50, 66, 6, "#f1e7d3");
                 
                 const q = g.createLinearGradient(0, wy, 0, wy + 60);
@@ -152,86 +152,86 @@ function school() {
     }
 
     // Tòa tháp giữa
-    rg(810, y - 10, 180, 365, 8, "#c25b49");
+    rg(1110, y - 10, 180, 365, 8, "#c25b49");
     g.fillStyle = "rgba(0,0,0,.09)";
     for (let i = 0; i < 34; i++) {
-        g.fillRect(810, y - 4 + i * 10, 180, 2);
+        g.fillRect(1110, y - 4 + i * 10, 180, 2);
     }
 
     // Mái tháp
     g.fillStyle = "#6b3a2a";
     g.beginPath();
-    g.moveTo(796, y + 8);
-    g.lineTo(900, y - 62);
-    g.lineTo(1004, y + 8);
+    g.moveTo(1096, y + 8);
+    g.lineTo(1200, y - 62);
+    g.lineTo(1304, y + 8);
     g.fill();
     
     g.fillStyle = "rgba(255,255,255,.15)";
     g.beginPath();
-    g.moveTo(796, y + 8);
-    g.lineTo(900, y - 62);
-    g.lineTo(900, y + 8);
+    g.moveTo(1096, y + 8);
+    g.lineTo(1200, y - 62);
+    g.lineTo(1200, y + 8);
     g.fill();
 
     // Đồng hồ
     g.fillStyle = "#fff";
     g.beginPath();
-    g.arc(900, y + 34, 24, 0, 7);
+    g.arc(1200, y + 34, 24, 0, 7);
     g.fill();
     g.strokeStyle = "#6b3a2a";
     g.lineWidth = 4;
     g.stroke();
     g.lineWidth = 3;
     g.beginPath();
-    g.moveTo(900, y + 34);
-    g.lineTo(900, y + 20);
-    g.moveTo(900, y + 34);
-    g.lineTo(910, y + 38);
+    g.moveTo(1200, y + 34);
+    g.lineTo(1200, y + 20);
+    g.moveTo(1200, y + 34);
+    g.lineTo(1210, y + 38);
     g.stroke();
 
     // Biển hiệu
-    rr(826, y + 76, 148, 30, 8, "#2c3e66");
-    tx("TRƯỜNG VUI VẺ", 900, y + 97, 16, "#ffd23f");
+    rr(1126, y + 76, 148, 30, 8, "#2c3e66");
+    tx("TRƯỜNG VUI VẺ", 1200, y + 97, 16, "#ffd23f");
     
     // Cửa ra vào
-    rr(850, y + 150, 100, 60, 6, "#f1e7d3");
-    rr(856, y + 156, 88, 48, 4, "#9fd8ff");
-    rr(842, y + 262, 116, 93, 8, "#f1e7d3");
-    rr(852, y + 270, 45, 85, 4, "#7a4a2a");
-    rr(903, y + 270, 45, 85, 4, "#7a4a2a");
+    rr(1150, y + 150, 100, 60, 6, "#f1e7d3");
+    rr(1156, y + 156, 88, 48, 4, "#9fd8ff");
+    rr(1142, y + 262, 116, 93, 8, "#f1e7d3");
+    rr(1152, y + 270, 45, 85, 4, "#7a4a2a");
+    rr(1203, y + 270, 45, 85, 4, "#7a4a2a");
     
     g.fillStyle = "#ffd23f";
     g.beginPath();
-    g.arc(890, y + 318, 3, 0, 7);
-    g.arc(910, y + 318, 3, 0, 7);
+    g.arc(1190, y + 318, 3, 0, 7);
+    g.arc(1210, y + 318, 3, 0, 7);
     g.fill();
 
     // Bậc thềm
-    rr(830, y + 355, 140, 10, 3, "#cfcfd6");
-    rr(820, y + 362, 160, 8, 3, "#bbb");
+    rr(1130, y + 355, 140, 10, 3, "#cfcfd6");
+    rr(1120, y + 362, 160, 8, 3, "#bbb");
 
     // Cột cờ
     g.fillStyle = "#999";
-    g.fillRect(560, y + 20, 3, 100);
-    rr(563, y + 22, 34, 22, 3, "#e74c3c");
-    g.fillRect(1236, y + 20, 3, 100);
-    rr(1239, y + 22, 34, 22, 3, "#3b82c4");
+    g.fillRect(860, y + 20, 3, 100);
+    rr(863, y + 22, 34, 22, 3, "#e74c3c");
+    g.fillRect(1536, y + 20, 3, 100);
+    rr(1539, y + 22, 34, 22, 3, "#3b82c4");
 }
 
 // 3. HÀM VẼ CÁC CẢNH
 function drawOut() {
-    const w = 1800, h = 1100;
+    const w = 2400, h = 1400;
     
-    // Nền cỏ
+    // Nền cỏ tươi tắn với gradient cao cấp
     const bg = g.createLinearGradient(0, 0, 0, h);
-    bg.addColorStop(0, "#8fdc78");
-    bg.addColorStop(1, "#6cc15a");
+    bg.addColorStop(0, "#98e482");
+    bg.addColorStop(1, "#66bf54");
     g.fillStyle = bg;
     g.fillRect(0, 0, w, h);
 
     // Cỏ và hoa dại
     tufts.forEach(([x, y, r]) => {
-        g.fillStyle = r > 0.5 ? "#5fb44e" : "#9be58a";
+        g.fillStyle = r > 0.5 ? "#5fb44e" : "#a8efa0";
         g.beginPath();
         g.moveTo(x, y);
         g.lineTo(x - 3, y - 8);
@@ -244,52 +244,100 @@ function drawOut() {
     flw.forEach(([x, y, c]) => {
         g.fillStyle = c;
         g.beginPath();
-        g.arc(x, y, 3, 0, 7);
+        g.arc(x, y, 3.5, 0, 7);
         g.fill();
     });
 
-    // Đường đi
-    g.fillStyle = "#b7bcc6";
-    g.fillRect(0, 494, w, 132);
-    g.fillRect(824, 0, 152, h);
+    // Đường đi rộng rãi kết nối các khu vực
+    g.fillStyle = "#b0b6c2";
+    g.fillRect(0, 644, w, 142);
+    g.fillRect(1124, 0, 152, h);
     
-    g.fillStyle = "#d9dde3";
-    g.fillRect(0, 500, w, 120);
-    g.fillRect(830, 0, 140, h);
+    g.fillStyle = "#dce0e6";
+    g.fillRect(0, 650, w, 130);
+    g.fillRect(1130, 0, 140, h);
     
-    g.fillStyle = "rgba(255,255,255,.85)";
-    for (let x = 0; x < w; x += 80) g.fillRect(x, 556, 40, 8);
+    // Vạch kẻ sang đường cho người đi bộ
+    g.fillStyle = "rgba(255,255,255,.9)";
+    for (let x = 0; x < w; x += 90) g.fillRect(x, 710, 46, 10);
     
-    g.fillStyle = "#f2f2f2";
-    g.fillRect(0, 496, w, 6);
-    g.fillRect(0, 618, w, 6);
+    g.fillStyle = "#f5f5f5";
+    g.fillRect(0, 646, w, 6);
+    g.fillRect(0, 774, w, 6);
     g.fillStyle = "#c9a77c";
-    g.fillRect(500, 350, 800, 16);
+    g.fillRect(800, 350, 800, 16);
 
-    // Hồ bơi (Hồ nước)
-    const pg = g.createRadialGradient(230, 300, 10, 230, 300, 110);
-    pg.addColorStop(0, "#9be1ff");
-    pg.addColorStop(1, "#4fa8e0");
+    // Hồ sen sinh thái lớn
+    const pg = g.createRadialGradient(360, 360, 15, 360, 360, 140);
+    pg.addColorStop(0, "#a5e7ff");
+    pg.addColorStop(1, "#42a5f5");
     
-    g.fillStyle = "#d7c9a8";
+    g.fillStyle = "#e0d6b5";
     g.beginPath();
-    g.ellipse(230, 300, 118, 66, 0, 0, 7);
+    g.ellipse(360, 360, 148, 86, 0, 0, 7);
     g.fill();
     
     g.fillStyle = pg;
     g.beginPath();
-    g.ellipse(230, 300, 104, 54, 0, 0, 7);
+    g.ellipse(360, 360, 132, 72, 0, 0, 7);
     g.fill();
     
-    g.strokeStyle = "rgba(255,255,255,.6)";
-    g.lineWidth = 2;
+    g.strokeStyle = "rgba(255,255,255,.7)";
+    g.lineWidth = 2.5;
     const rp = (tt * 20) % 40;
     g.beginPath();
-    g.ellipse(230, 300, 20 + rp, 10 + rp / 2, 0, 0, 7);
+    g.ellipse(360, 360, 24 + rp, 12 + rp / 2, 0, 0, 7);
     g.stroke();
     
-    g.font = "22px serif";
-    g.fillText("🦆", 200 + Math.sin(tt) * 30, 305); // Vịt bơi
+    g.font = "26px serif";
+    g.fillText("🦆", 330 + Math.sin(tt) * 35, 365); // Vịt bơi
+    g.fillText("🪷", 280, 345);
+    g.fillText("🪷", 420, 375);
+
+    // Cột cờ trung tâm sân trường cao lớn
+    g.fillStyle = "#cfd8dc";
+    g.beginPath();
+    g.ellipse(1200, 570, 32, 12, 0, 0, 7);
+    g.fill();
+    g.fillStyle = "#90a4ae";
+    g.fillRect(1198, 480, 4, 90);
+    rr(1202, 484, 42, 26, 3, "#d32f2f");
+    g.fillStyle = "#ffeb3b";
+    g.font = "14px serif";
+    g.fillText("⭐", 1216, 502);
+
+    // Đài phun nước lớn góc phải sân trường
+    {
+        const fx = 2120, fy = 650;
+        const fgrad = g.createRadialGradient(fx, fy, 10, fx, fy, 80);
+        fgrad.addColorStop(0, "#81d4fa");
+        fgrad.addColorStop(1, "#0288d1");
+        
+        g.fillStyle = "#cfd8dc";
+        g.beginPath();
+        g.ellipse(fx, fy, 84, 46, 0, 0, 7);
+        g.fill();
+        
+        g.fillStyle = fgrad;
+        g.beginPath();
+        g.ellipse(fx, fy, 72, 38, 0, 0, 7);
+        g.fill();
+        
+        g.fillStyle = "#fff";
+        g.beginPath();
+        g.ellipse(fx, fy, 16, 8, 0, 0, 7);
+        g.fill();
+        
+        g.font = "26px serif";
+        g.fillText("⛲", fx - 13, fy + 8);
+    }
+
+    // Ghế đá sân trường dưới bóng râm
+    [[750, 610], [1500, 610], [920, 830], [1280, 830]].forEach(([bx, by]) => {
+        rr(bx - 26, by, 52, 14, 4, "#b0bec5");
+        rr(bx - 22, by + 12, 8, 6, 2, "#78909c");
+        rr(bx + 14, by + 12, 8, 6, 2, "#78909c");
+    });
 
     // Vẽ trường học
     school();
@@ -315,12 +363,13 @@ function drawOut() {
                     g.fillText(["🌷", "🌼", "🌻", "🌱"][i % 4], p.x + 40 + (i * 57) % (p.w - 70), p.y + 70 + Math.floor(i / 5) * 80 + (i % 2) * 14);
                 }
             }
-            // Trang trí phòng Gym
-            if (p.id == "gym" && !lock) {
-                g.font = "44px serif";
-                g.fillText("⚽", p.x + 80, p.y + 170);
-                g.fillText("🏀", p.x + 290, p.y + 120);
-                g.fillText("🥅", p.x + 190, p.y + 250);
+            // Trang trí Vườn thú cưng
+            if ((p.id == "gym" || p.id == "pet") && !lock) {
+                g.font = "40px serif";
+                g.fillText("🐶", p.x + 80, p.y + 170);
+                g.fillText("🐱", p.x + 290, p.y + 130);
+                g.fillText("🐾", p.x + 190, p.y + 240);
+                g.fillText("🦴", p.x + 200, p.y + 100);
             }
         }
 

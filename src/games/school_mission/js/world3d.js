@@ -156,23 +156,23 @@ function startW3() {
             });
             // hồ nước (vẽ vào nền: 2D cũng không chặn đi lên hồ)
             cx.fillStyle = "#d7c9a8";
-            cx.beginPath(); cx.ellipse(uX(230, S), uY(300, S), 118 / WW * S, 66 / WH * S, 0, 0, 7); cx.fill();
+            cx.beginPath(); cx.ellipse(uX(360, S), uY(360, S), 160 / WW * S, 95 / WH * S, 0, 0, 7); cx.fill();
             cx.fillStyle = "#6cc4ef";
-            cx.beginPath(); cx.ellipse(uX(230, S), uY(300, S), 104 / WW * S, 54 / WH * S, 0, 0, 7); cx.fill();
-            // đường ngang + đường dọc
-            wrect(cx, 0, 494, WW, 132, "#b7bcc6", S);
-            wrect(cx, 0, 500, WW, 120, "#d9dde3", S);
-            wrect(cx, 824, 0, 152, WH, "#b7bcc6", S);
-            wrect(cx, 830, 0, 140, WH, "#d9dde3", S);
-            for (let x = 0; x < WW; x += 80) wrect(cx, x, 556, 40, 8, "rgba(255,255,255,.85)", S);
-            wrect(cx, 500, 350, 800, 16, "#c9a77c", S);
+            cx.beginPath(); cx.ellipse(uX(360, S), uY(360, S), 145 / WW * S, 80 / WH * S, 0, 0, 7); cx.fill();
+            // đường ngang + đường dọc (sân mới 2400 x 1400: trục ngang y=650 h=140, trục dọc x=1130 w=140)
+            wrect(cx, 0, 644, WW, 152, "#b7bcc6", S);
+            wrect(cx, 0, 650, WW, 140, "#d9dde3", S);
+            wrect(cx, 1124, 0, 152, WH, "#b7bcc6", S);
+            wrect(cx, 1130, 0, 140, WH, "#d9dde3", S);
+            for (let x = 0; x < WW; x += 80) wrect(cx, x, 716, 40, 8, "rgba(255,255,255,.85)", S);
+            wrect(cx, 800, 350, 800, 16, "#c9a77c", S);
             flw.forEach(f => {
                 cx.fillStyle = f[2];
                 cx.beginPath(); cx.arc(uX(f[0], S), uY(f[1], S), 3.4, 0, 7); cx.fill();
             });
         });
 
-        // Dãy nhà trường: 2 khối ngang + tháp giữa (2D cấm đi vào 520..1280 × 90..352)
+        // Dãy nhà trường: 2 khối ngang + tháp giữa (2D cấm đi vào 820..1580 × 90..352, tâm 1200)
         const hi = 6.2, dTop = 90, dBot = 352;
         const deep = (dBot - dTop) / W3PX;
         const zc = zOf((dTop + dBot) / 2), zS = zOf(dBot);
@@ -186,9 +186,9 @@ function startW3() {
                 cube(1, 1.1, .12, 0x8fd0f0, wx, 4.2, zS - .1);
             }
         };
-        wing(520, 820); wing(980, 1280);
+        wing(820, 1120); wing(1280, 1580);
 
-        const tw = (990 - 810) / W3PX, tx = xOf(900);
+        const tw = (1280 - 1120) / W3PX, tx = xOf(1200);
         cube(tw, 9.4, deep, 0xc25b49, tx, 4.7, zc);
         const towerRoof = new THREE.Mesh(coneG, matOf(0x6b3a2a));
         towerRoof.rotation.y = Math.PI / 4;
@@ -196,23 +196,21 @@ function startW3() {
         towerRoof.scale.set(rad, 2.6, rad); towerRoof.position.set(tx, 10.7, zc); props.add(towerRoof);
         ball(.8, 0xffffff, tx, 7.4, zS - .1);
         cube(1.5, .35, .2, 0x2c3e66, tx, 5.6, zS - .05);
-        const banner = sign("TRƯỜNG VUI VẺ", "#ffd23f", 46, 512, 112, 1.5);
+        const banner = sign("TRƯỜNG TIỂU HỌC VUI VẺ", "#ffd23f", 46, 512, 112, 1.5);
         banner.position.set(tx, 5.6, zS - .25); banner.userData.y = 5.6; marks.add(banner);
         cube(3.2, .3, 1, 0xcfcfd6, tx, .15, zS + .5);          // bậc thềm
-        // cột cờ
-        [560, 1236].forEach((fx, i) => {
-            const m = new THREE.Mesh(cylG, matOf(0xdddddd));
-            m.scale.set(.06, 4.2, .06); m.position.set(xOf(fx), 2.1, zOf(300)); props.add(m);
-            cube(1.5, .95, .06, i ? 0x3b82c4 : 0xe74c3c, xOf(fx) + .8, 3.7, zOf(300));
-        });
+        // Cột cờ trung tâm sân
+        const m = new THREE.Mesh(cylG, matOf(0xdddddd));
+        m.scale.set(.08, 5.5, .08); m.position.set(xOf(1200), 2.75, zOf(570)); props.add(m);
+        cube(2.0, 1.3, .06, 0xe74c3c, xOf(1200) + 1.0, 4.8, zOf(570));
 
         buildTrees();
 
-        // Đài phun nước
-        const basin = new THREE.Mesh(cylG, matOf(0xf09a1d));
-        basin.scale.set(1.2, .5, 1.2); basin.position.set(xOf(1620), .25, zOf(810)); props.add(basin);
-        const jet = new THREE.Mesh(cylG, matOf(0xffe27a));
-        jet.scale.set(.25, 1.1, .25); jet.position.set(xOf(1620), 1.05, zOf(810)); props.add(jet);
+        // Đài phun nước lớn bên phải sân
+        const basin = new THREE.Mesh(cylG, matOf(0x4fa3d1));
+        basin.scale.set(1.6, .6, 1.6); basin.position.set(xOf(2120), .3, zOf(650)); props.add(basin);
+        const jet = new THREE.Mesh(cylG, matOf(0x00d2ff));
+        jet.scale.set(.35, 1.6, .35); jet.position.set(xOf(2120), 1.2, zOf(650)); props.add(jet);
 
         // Nhà / sân trong sân trường (P trong js/config.js)
         P.forEach((p) => {
@@ -246,8 +244,8 @@ function startW3() {
                             props.add(s);
                         }
                     });
-                } else if (p.id === "gym") {
-                    [["⚽", 80, 170], ["🏀", 290, 120], ["🥅", 190, 250]].forEach(([e, ox, oy]) => {
+                } else if (p.id === "gym" || p.id === "pet") {
+                    [["🐶", 80, 170], ["🐱", 290, 120], ["🐾", 190, 250]].forEach(([e, ox, oy]) => {
                         const s = emojiSprite(e, 1.1);
                         s.position.set(xOf(p.x + ox), .7, zOf(p.y + oy)); props.add(s);
                     });
