@@ -1,4 +1,4 @@
-import { StampToken } from './ui'
+import { StampToken, TemplateThumb } from './ui'
 
 export default function Field({ label, children, hint }) {
   return (
@@ -10,4 +10,4 @@ export default function Field({ label, children, hint }) {
   );
 }
 
-export { StampToken };
+export { StampToken, TemplateThumb };

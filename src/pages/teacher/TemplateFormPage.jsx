@@ -4,7 +4,7 @@ import { templateService } from '../../services/api.js'
 import { injectApiBridge, detectApiMarkers } from '../../lib/apiBridge.js'
 import { processGameHtml } from '../../game-html/injectTaskBridge.js'
 import { loadTemplateHtml, isHtmlUrl } from '../../lib/hooks.js'
-import { PrimaryButton, GhostButton, Field } from '../../components/ui'
+import { PrimaryButton, GhostButton, Field, TemplateThumb } from '../../components/ui'
 
 const CATEGORY_OPTIONS = [
   { value: "quiz", label: "Trắc nghiệm" }, { value: "reflex", label: "Phản xạ" },
@@ -17,7 +17,10 @@ const CATEGORY_OPTIONS = [
   { value: "adventure", label: "Phiêu lưu" },
 ];
 
-const EMPTY = { name: "", description: "", type: "play-to-learn", category: "quiz", icon: "🎲", ring: "#1D2E4A", htmlTemplate: "", status: "draft", playMode: "solo" };
+const EMPTY = { name: "", description: "", type: "play-to-learn", category: "quiz", ring: "#1D2E4A", htmlUrl: "", thumbnail: "", status: "draft", playMode: "solo" };
+
+const THUMB_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const THUMB_MAX_MB = 2;
 
 export default function TemplateFormPage({ showToast, route }) {
   const templateId = route?.params?.templateId;
@@ -28,6 +31,10 @@ export default function TemplateFormPage({ showToast, route }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("html");
+  // HTML tải về lúc mở form (để so sánh khi người dùng sửa) + link gốc trong DB.
+  // Không sửa HTML → gửi lại link gốc, server giữ file cũ (không tạo file thừa).
+  const [originalHtml, setOriginalHtml] = useState("");
+  const [originalUrl, setOriginalUrl] = useState("");
 
   useEffect(() => {
     if (!isEdit) return;
@@ -37,10 +44,13 @@ export default function TemplateFormPage({ showToast, route }) {
         const list = await templateService.list();
         const t = list.find(x => x._id === templateId);
         if (!t) { setError("Không tìm thấy template"); return; }
-        // htmlTemplate có thể là link Firebase → tải nội dung về để sửa
+        // htmlUrl là link file trên Supabase → tải nội dung về để sửa
         const html = await loadTemplateHtml(t, templateId);
         if (!active) return;
-        setForm({ name: t.name || "", description: t.description || "", type: t.type || "play-to-learn", category: t.category || "quiz", icon: t.icon || "🎲", ring: t.ring || "#1D2E4A", htmlTemplate: html, status: t.status || "draft", playMode: t.playMode || "solo" });
+        setOriginalHtml(html);
+        // Link gốc đang lưu trong DB (echo lại server sẽ giữ file cũ, không upload lại)
+        setOriginalUrl(isHtmlUrl(t.htmlUrl) ? t.htmlUrl : html);
+        setForm({ name: t.name || "", description: t.description || "", type: t.type || "play-to-learn", category: t.category || "quiz", ring: t.ring || "#1D2E4A", htmlUrl: html, thumbnail: t.thumbnail || "", status: t.status || "draft", playMode: t.playMode || "solo" });
       } catch (e) {
         if (active) setError(e.message);
       } finally {
@@ -52,21 +62,37 @@ export default function TemplateFormPage({ showToast, route }) {
 
   const onChange = (name, val) => { setForm(f => ({ ...f, [name]: val })); setError(null); };
 
+  const onThumbFile = (file) => {
+    if (!file) return;
+    if (!THUMB_TYPES.includes(file.type)) { setError("Ảnh thumbnail phải là PNG, JPG, WebP hoặc GIF"); return; }
+    if (file.size > THUMB_MAX_MB * 1024 * 1024) { setError(`Ảnh thumbnail vượt quá ${THUMB_MAX_MB} MB`); return; }
+    const reader = new FileReader();
+    reader.onload = () => onChange("thumbnail", String(reader.result || ""));
+    reader.onerror = () => setError("Không đọc được file ảnh");
+    reader.readAsDataURL(file);
+  };
+
   const submit = async () => {
     if (!form.name.trim()) { setError("Tên template không được để trống"); return; }
     setSaving(true); setError(null);
     try {
-      const markers = detectApiMarkers(form.htmlTemplate);
-      const payload = { ...form, htmlTemplate: processGameHtml(injectApiBridge(form.htmlTemplate)) };
-      // Server tự ghi HTML thành file (.html) và chỉ lưu link vào templates.htmlTemplate
+      const markers = detectApiMarkers(form.htmlUrl);
+      // Server tự upload HTML lên Supabase (templates/) và thumbnail lên
+      // thumbnails/ — MongoDB chỉ nhận URL. Không sửa HTML → gửi lại link cũ
+      // để server giữ nguyên file (không tạo file thừa).
+      const htmlUnchanged = isEdit && form.htmlUrl === originalHtml;
+      const payload = {
+        ...form,
+        htmlUrl: htmlUnchanged ? originalUrl : processGameHtml(injectApiBridge(form.htmlUrl)),
+      };
       const saved = isEdit
         ? await templateService.update(templateId, payload)
         : await templateService.create(payload);
-      const stored = saved?.htmlTemplate;
+      const stored = saved?.htmlUrl;
       const savedAsFile = typeof stored === "string" && (isHtmlUrl(stored) || /^\/uploads\//.test(stored));
       showToast(
         (markers.length > 0 ? `Auto-inject: ${markers.join(", ")} · ` : "") +
-        (savedAsFile ? "Đã lưu HTML thành file" : "Đã lưu (server chưa tạo được file — HTML tạm nằm trong DB)")
+        (savedAsFile ? "Đã lưu HTML + thumbnail lên Supabase" : "Đã lưu nhưng server chưa tạo được file HTML")
       );
       navigate("/dashboard/templates");
     } catch (err) {
@@ -76,7 +102,7 @@ export default function TemplateFormPage({ showToast, route }) {
     }
   };
 
-  const processedHtml = form.htmlTemplate ? processGameHtml(injectApiBridge(form.htmlTemplate)) : "";
+  const processedHtml = form.htmlUrl ? processGameHtml(injectApiBridge(form.htmlUrl)) : "";
 
   const TABS = [
     { key: "info", label: "Thông tin" },
@@ -137,9 +163,16 @@ export default function TemplateFormPage({ showToast, route }) {
               <option value="classroom">Lớp học (giáo viên điều khiển)</option>
             </select>
           </Field>
-          <Field label="Icon">
-            <input value={form.icon} onChange={e => onChange("icon", e.target.value)}
-              className="w-full note-card px-3 py-1.5 mt-0.5 border-ink/10 focus:border-ticket text-sm" autoComplete="off" />
+          <Field label="Ảnh thumbnail" hint="PNG/JPG/WebP/GIF, tối đa 2 MB — lưu lên Supabase, MongoDB chỉ giữ URL.">
+            <div className="flex items-center gap-3 mt-0.5">
+              <TemplateThumb thumbnail={form.thumbnail} name={form.name} ring={form.ring} size={56} className="shrink-0" />
+              <input type="file" accept={THUMB_TYPES.join(",")} onChange={e => onThumbFile(e.target.files?.[0])}
+                className="w-full note-card px-2.5 py-1.5 border-ink/10 focus:border-ticket text-sm file:mr-2 file:rounded file:border-0 file:bg-ink/10 file:px-2 file:py-1 file:text-ink" />
+              {form.thumbnail && (
+                <button type="button" onClick={() => onChange("thumbnail", "")}
+                  className="text-xs text-ink/50 hover:text-ticket shrink-0">Xóa ảnh</button>
+              )}
+            </div>
           </Field>
           <Field label="Màu viền">
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -156,7 +189,7 @@ export default function TemplateFormPage({ showToast, route }) {
 
       {activeTab === "html" && (
         <div className="flex flex-col h-[calc(100vh-220px)]">
-          <textarea value={form.htmlTemplate} onChange={e => onChange("htmlTemplate", e.target.value)}
+          <textarea value={form.htmlUrl} onChange={e => onChange("htmlUrl", e.target.value)}
             placeholder="Dán HTML template vào đây..."
             className="flex-1 w-full note-card px-4 py-3 text-xs font-mono resize-none placeholder:text-ink/30 border-ink/10 focus:border-ticket" />
           <p className="text-xs text-ink/40 mt-1">Sử dụng markers: <code>GAME_API_INJECT</code>, <code>GAME_PROGRESS_INJECT</code>, <code>GAME_TASK_INJECT</code> để tự inject bridge.</p>

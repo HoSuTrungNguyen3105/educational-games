@@ -36,15 +36,16 @@ async function main() {
     .then(async () => {
       await initPlantTypes();
 
-      // Migration idempotent: bản ghi cũ còn HTML thô trong Mongo → ghi file + lưu URL
+      // Migration idempotent: bản ghi cũ (htmlTemplate/icon) → htmlUrl trên
+      // Supabase, bỏ icon; HTML thô trong Mongo → upload file, chỉ lưu URL.
       const mig = await setupService
-        .migrateRawHtmlTemplates()
+        .migrateTemplatesToSupabase()
         .catch((e) => {
-          console.warn("[server] Migration HTML thất bại:", e.message);
+          console.warn("[server] Migration templates thất bại:", e.message);
           return null;
         });
-      if (mig && (mig.moved || mig.failed)) {
-        console.log(`[server] Migration HTML: ${mig.moved} chuyển thành file, ${mig.failed} lỗi (giữ nguyên dữ liệu)`);
+      if (mig && (mig.uploaded || mig.fromDisk || mig.failed)) {
+        console.log(`[server] Migration templates: ${mig.uploaded} upload HTML, ${mig.fromDisk} chuyển từ đĩa, ${mig.missing} mất file, ${mig.failed} lỗi (giữ nguyên dữ liệu)`);
       }
 
       // Run deadline reminder check immediately, then every hour

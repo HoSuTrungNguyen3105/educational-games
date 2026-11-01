@@ -1,11 +1,11 @@
 import { Fragment, useMemo, useEffect, useState, useCallback, useRef } from 'react'
-import { AlertTriangle, ArrowDown, ArrowUp, Check, ClipboardList, Dices, GraduationCap, Settings, SquarePen, Star, Timer, X } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowUp, Check, ClipboardList, GraduationCap, Settings, SquarePen, Star, Timer, X } from 'lucide-react'
 import { gameService, questionService, uid } from '../../services/api.js'
 import { THEMES } from '../../lib/setupConstants.js'
 import { useTemplates, useSubjects, useCategories, useTemplateHtml } from '../../lib/hooks.js'
 import { emptyQuestion } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, IconButton, Loader, Modal } from '../../components/ui'
-import Field, { StampToken } from '../../components/fields.jsx'
+import Field, { TemplateThumb } from '../../components/fields.jsx'
 import QuestionImportModal from './QuestionImportModal.jsx'
 import AiQuestionPanel from '../../components/AiQuestionPanel.jsx'
 import { navigate } from '../../lib/router.js'
@@ -237,7 +237,7 @@ function StepTemplate({ form, setForm, templates, categories }) {
           <button key={t._id} onClick={() => setForm(f => ({ ...f, templateId: t._id }))}
             className={`text-left p-5 rounded-2xl border-2 transition flex gap-4 items-start
               ${form.templateId === t._id ? "border-ticket bg-ticket/5" : "border-ink/10 hover:border-ink/25"}`}>
-            <StampToken icon={t.icon} ring={t.ring} size={48} fontSize={22} />
+            <TemplateThumb thumbnail={t.thumbnail} name={t.name} ring={t.ring} size={48} />
             <div className="min-w-0">
               <h3 className="font-display text-base text-ink">{t.name}</h3>
               <p className="text-sm text-[#8A7C63] mt-1">{t.description}</p>
@@ -287,12 +287,12 @@ function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, 
               <option value="">— Chọn mẫu —</option>
               {templates.map(t => (
                 <option key={t._id} value={t._id}>
-                  {t.icon} {t.name} ({t.type === "play-to-win" ? "chơi để thắng" : "học qua chơi"})
+                  {t.name} ({t.type === "play-to-win" ? "chơi để thắng" : "học qua chơi"})
                 </option>
               ))}
             </select>
           </Field>
-          {currentTpl?.htmlTemplate && (
+          {currentTpl?.htmlUrl && (
             <p className="text-xs text-teal mt-1.5 inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Mẫu này có HTML template riêng (v{currentTpl.version || 1})</p>
           )}
           {currentTpl?.playMode === "classroom" && (
@@ -318,7 +318,7 @@ function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, 
         </div>
       )}
 
-      {templates.length > 0 && currentTpl?.htmlTemplate && (
+      {templates.length > 0 && currentTpl?.htmlUrl && (
         <div className="mb-6 p-4 rounded-2xl bg-ink/[0.03] border border-ink/10">
           <Field
             label="Loại cấu hình game"
@@ -756,7 +756,7 @@ function StepCustomize({ form, setForm }) {
 function StepPreview({ form, questions, templates, isPlayToWin, configKey, configPayload, configDef, configIssues }) {
   const tpl = templates.find(t => t._id === form.templateId);
   const themeColor = (THEMES.find(t => t.id === form.theme) || THEMES[0]).color;
-  // htmlTemplate có thể là HTML thô (template cũ) hoặc link Firebase (template mới)
+  // htmlUrl là link file HTML trên Supabase (hoặc HTML thô nếu chưa migration)
   const { html: rawHtml, loading: htmlLoading } = useTemplateHtml(tpl);
   const hasHtml = rawHtml.trim() !== "";
   const previewHtml = useMemo(() => {
@@ -770,7 +770,7 @@ function StepPreview({ form, questions, templates, isPlayToWin, configKey, confi
       <h2 className="font-display text-xl text-ink mb-6">Xem trước</h2>
       <div className="rounded-3xl p-6 sm:p-8" style={{ background: `${themeColor}14` }}>
         <div className="flex items-center gap-4 mb-6">
-          <StampToken icon={tpl ? tpl.icon : <Dices />} ring={themeColor} size={56} fontSize={26} />
+          <TemplateThumb thumbnail={tpl?.thumbnail} name={tpl?.name || form.name} ring={themeColor} size={56} />
           <div>
             <h3 className="font-display text-2xl text-ink">{form.name || "Tên trò chơi"}</h3>
             <p className="text-sm text-[#8A7C63]">{form.subject} · {form.topic || "Chủ đề"}</p>

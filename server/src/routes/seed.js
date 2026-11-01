@@ -22,27 +22,32 @@ router.post("/seed", authenticate, requireRoles("admin", "teacher"), async (req,
     for (const t of rawTemplates) {
       const existing = await templatesColl.findOne({ name: t.name });
       if (!existing) {
-        await templatesColl.insertOne(t);
+        const { icon: _icon, htmlTemplate: _legacy, ...doc } = t;
+        await templatesColl.insertOne({ ...doc, ...(t.htmlTemplate && !t.htmlUrl ? { htmlUrl: t.htmlTemplate } : {}) });
         templatesAdded++;
         continue;
       }
-      // Chỉ cập nhật những field có trong nguồn, và chỉ khi khác đi
+      // Chỉ cập nhật những field có trong nguồn, và chỉ khi khác đi.
+      // "icon" không còn trong schema → bỏ qua; htmlTemplate (nguồn cũ) → ghi thành htmlUrl.
       const patch = {};
-      for (const k of ["description", "type", "category", "icon", "ring",
-                       "htmlTemplate", "version", "status", "playMode"]) {
+      for (const k of ["description", "type", "category", "ring",
+                       "htmlUrl", "version", "status", "playMode"]) {
         if (t[k] !== undefined && t[k] !== "" && t[k] !== existing[k]) patch[k] = t[k];
       }
+      if (t.htmlTemplate !== undefined && t.htmlTemplate !== "" && t.htmlTemplate !== existing.htmlUrl) {
+        patch.htmlUrl = t.htmlTemplate;
+      }
       if (Object.keys(patch).length) {
-        await templatesColl.updateOne({ _id: existing._id }, { $set: patch });
+        await templatesColl.updateOne({ _id: existing._id }, { $set: patch, $unset: { icon: "" } });
         templatesUpdated++;
       }
     }
     results.templates = { total: rawTemplates.length, added: templatesAdded, updated: templatesUpdated };
 
     // Templates vừa seed vẫn có thể mang HTML thô trong templates.json →
-    // đẩy xuống file + lưu link, giống luồng CRUD (không ghi HTML thô vào Mongo).
-    const migrated = await setupService.migrateRawHtmlTemplates();
-    results.templates.migratedToFiles = migrated.moved;
+    // upload Supabase + lưu URL, giống luồng CRUD (không ghi HTML thô vào Mongo).
+    const migrated = await setupService.migrateTemplatesToSupabase();
+    results.templates.migrated = migrated;
 
     // 2. Categories — skip if id already exists
     const categoriesColl = getCollection("categories");

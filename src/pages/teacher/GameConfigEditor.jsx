@@ -618,7 +618,7 @@ export default function GameConfigEditor({ showToast }) {
       if (game?.templateId) {
         try {
           const tpl = await templateService.get(game.templateId);
-          // htmlTemplate có thể là HTML thô hoặc link Firebase
+          // htmlUrl là link file HTML trên Supabase (hoặc HTML thô nếu chưa migration)
           html = await loadTemplateHtml(tpl, `${game.templateId}:preview`);
         } catch { /* ignore */ }
       }

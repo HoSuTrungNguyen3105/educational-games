@@ -820,8 +820,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       return {
         key: String(game._id || game.id || i),
         name: game.name,
-        icon: t?.icon || "🎮",
-        thumb: gameThumbnail(t?.slug || t?.id || t?._id, game.name),
+        // thumbnail template (Supabase) được ưu tiên, rồi ảnh trong public/
+        thumb: t?.thumbnail || gameThumbnail(t?.slug || t?.id || t?._id, game.name),
         tint: tintFor(game.name || String(i)),
         badge: meta.kind === "learn" ? "Học" : "Chơi",
         age: meta.age,
@@ -839,8 +839,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         return {
           key: String(game._id || game.id || i),
           name: game.name,
-          icon: t?.icon || "🧮",
-          thumb: gameThumbnail(t?.slug || t?.id || t?._id, game.name),
+          thumb: t?.thumbnail || gameThumbnail(t?.slug || t?.id || t?._id, game.name),
           tint: tintFor(game.name || `m${i}`),
           badge: "Học",
           age: metaForSubject(subjectLabel(game.subject)).age,
@@ -1217,8 +1216,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 <GqGameCard
                   key={game._id || game.id || index}
                   name={game.name}
-                  icon={t?.icon || "🎮"}
-                  thumb={gameThumbnail(t?.slug || t?.id || t?._id, game.name)}
+                  icon={t?.icon}
+                  thumb={t?.thumbnail || gameThumbnail(t?.slug || t?.id || t?._id, game.name)}
                   tint={tint}
                   badge={meta.kind === "learn" ? "Học" : "Chơi"}
                   age={meta.age}
@@ -1475,7 +1474,7 @@ function GqGameCard({ icon, name, tint, badge, age, thumb, play }) {
         style={{ backgroundColor: tint }}
         aria-hidden="true"
       >
-        {thumb ? <img src={thumb} alt="" loading="lazy" /> : icon}
+        {thumb ? <img src={thumb} alt="" loading="lazy" /> : (icon || String(name || " ").trim().charAt(0).toUpperCase())}
       </span>
       <span className="gq-card__name">{name}</span>
       {age && <span className="gq-card__age">{age}</span>}

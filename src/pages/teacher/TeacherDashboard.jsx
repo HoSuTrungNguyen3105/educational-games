@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService, statsService, templateService, seedService } from '../../services/api.js'
 import { useTemplates } from '../../lib/hooks.js'
-import { EmptyState, ErrorState, GhostButton, IconAdd, IconButton, IconCheckCircle, IconEdit, IconTrash, IconUsers, Loader, Modal, PrimaryButton, StampToken, StatusBadge, TicketStub, IconChart, IconCast } from '../../components/ui';
+import { EmptyState, ErrorState, GhostButton, IconAdd, IconButton, IconCheckCircle, IconEdit, IconTrash, IconUsers, Loader, Modal, PrimaryButton, TemplateThumb, StatusBadge, TicketStub, IconChart, IconCast } from '../../components/ui';
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import {
@@ -34,7 +34,7 @@ export function GameCard({ game, onEdit, onResults, onDelete, onShare }) {
   return (
     <div className="note-card p-4 sm:p-5 flex flex-col gap-3 anim-pop hover:-translate-y-0.5 transition shadow-[0_2px_0_rgba(0,0,0,0.06)]">
       <div className="flex items-start justify-between">
-        <StampToken icon={tpl ? tpl.icon : <Gamepad2 className="w-5 h-5" />} ring={tpl ? tpl.ring : "#1D2E4A"} size={44} fontSize={20} />
+        <TemplateThumb thumbnail={tpl?.thumbnail} name={tpl?.name || game.name} ring={tpl ? tpl.ring : "#1D2E4A"} size={44} />
         <StatusBadge status={game.status} />
       </div>
       <div>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { navigate } from '../../lib/router.js'
 import { templateService } from '../../services/api.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal } from '../../components/ui'
+import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, TemplateThumb } from '../../components/ui'
 
 export default function TemplateManagement({ showToast }) {
   const [templates, setTemplates] = useState(null);
@@ -36,10 +36,10 @@ export default function TemplateManagement({ showToast }) {
         onRetry={load}
         emptyLabel="Chưa có template nào."
         onCreate={() => navigate("/dashboard/templates/new")}
-        headers={["Icon", "Tên", "Loại", "Thể loại", "Trạng thái", "Cập nhật", ""]}
+        headers={["Ảnh", "Tên", "Loại", "Thể loại", "Trạng thái", "Cập nhật", ""]}
         renderCard={(t) => (
           <div className="flex items-center gap-3">
-            <span className="text-xl shrink-0">{t.icon}</span>
+            <TemplateThumb thumbnail={t.thumbnail} name={t.name} ring={t.ring} size={36} className="shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="font-body text-sm text-ink truncate">{t.name}</p>
               <div className="flex items-center gap-1.5 flex-wrap mt-1">
@@ -61,7 +61,7 @@ export default function TemplateManagement({ showToast }) {
         )}
         renderRow={(t) => (
           <tr key={t._id} className="border-b border-ink/5 last:border-0">
-            <td className="px-5 py-3 text-xl">{t.icon}</td>
+            <td className="px-5 py-3"><TemplateThumb thumbnail={t.thumbnail} name={t.name} ring={t.ring} size={36} /></td>
             <td className="px-5 py-3 font-body text-ink">{t.name}</td>
             <td className="px-5 py-3">
               <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${t.type === "play-to-win" ? "bg-teal/15 text-teal border-teal/30" : "bg-ticket/15 text-ticket border-ticket/30"}`}>

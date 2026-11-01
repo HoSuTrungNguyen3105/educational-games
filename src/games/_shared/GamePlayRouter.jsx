@@ -53,7 +53,7 @@ export function GamePlayRouter({ game, questions, players, playerName, onFinish,
     return () => { active = false; };
   }, [requestKey, gameId, gameKey]);
 
-  // htmlTemplate có thể là HTML thô (template cũ) hoặc link Firebase (template mới)
+  // htmlUrl là link file HTML trên Supabase (hoặc HTML thô nếu chưa migration)
   const { html: htmlContent, loading: htmlLoading } = useTemplateHtml(tpl);
 
   if (loading || configLoading || htmlLoading) {

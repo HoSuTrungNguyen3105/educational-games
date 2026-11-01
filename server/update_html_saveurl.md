@@ -1,153 +1,222 @@
-# YÊU CẦU: TỰ ĐỘNG LƯU HTML THÀNH FILE VÀ CHỈ LƯU URL TRONG MONGODB
+# TÍCH HỢP SUPABASE STORAGE – HTML URL VÀ THUMBNAIL
 
 ## 1. Mục tiêu
 
-Cải tiến cơ chế lưu HTML hiện tại trong dự án React + Node.js + Express + MongoDB.
+Tích hợp Supabase Storage vào backend Node.js / Express hiện tại.
 
-Hiện tại, khi Frontend gửi API tạo hoặc cập nhật dữ liệu, nội dung HTML đang được lưu trực tiếp vào MongoDB.
+Yêu cầu:
+- Upload HTML lên Supabase Storage.
+- Upload ảnh thumbnail lên Supabase Storage.
+- MongoDB Atlas chỉ lưu URL HTML và URL ảnh thumbnail.
+- Sử dụng trường `htmlUrl` để lưu URL HTML.
+- Sử dụng trường `thumbnail` để lưu URL ảnh.
+- Xóa hoàn toàn việc sử dụng trường `icon`.
+- API trả về `htmlUrl` và `thumbnail`.
+- Không lưu HTML hoặc ảnh dạng binary/base64 trực tiếp vào MongoDB.
+- Không lưu file trên filesystem của Render.
 
-Yêu cầu thay đổi:
+## 2. Cấu hình Supabase
 
-- Không lưu nội dung HTML trực tiếp vào MongoDB nữa.
-- Backend tự động nhận HTML từ API hiện tại, tạo file `.html` và lưu vào thư mục lưu trữ trên server.
-- MongoDB chỉ lưu đường dẫn URL của file HTML cùng các thông tin cần thiết.
-- Không cần tạo thêm API POST upload HTML riêng.
-- Giữ nguyên cách Frontend gọi API hiện tại nếu có thể.
+Đã tạo project và bucket và tôi có lưu vào .env rồi:
 
-## 2. Luồng xử lý
-
-### POST – Tạo dữ liệu
-
-Khi Frontend gọi API tạo dữ liệu hiện tại : POST → /api/templates
-
-1. Backend nhận thông tin và nội dung HTML.
-2. Kiểm tra nội dung HTML hợp lệ.
-3. Tạo tên file duy nhất bằng UUID.
-4. Tự động tạo file `.html` và lưu vào thư mục storage.
-5. Tạo URL truy cập file HTML.
-6. Lưu thông tin dữ liệu và `htmlUrl` vào MongoDB.
-7. Không lưu trường HTML gốc vào MongoDB.
-8. Trả kết quả về Frontend bao gồm URL HTML.
-
-### PUT – Cập nhật dữ liệu
-
-Khi Frontend gọi API cập nhật:
-
-- Nếu có HTML mới: cập nhật nội dung file HTML tương ứng.
-- Nếu chỉ cập nhật thông tin khác: giữ nguyên file và URL HTML cũ.
-- Không tạo file mới không cần thiết.
-- Nếu cần thay thế file, phải đảm bảo xử lý lỗi và tránh để lại file rác.
-
-### GET – Lấy dữ liệu
-
-- Chỉ trả về `htmlUrl` và thông tin cần thiết.
-- Không trả nội dung HTML gốc từ MongoDB.
-- Đảm bảo Frontend có thể sử dụng URL để hiển thị HTML.
-
-### DELETE – Xóa dữ liệu
-
-- Khi xóa bản ghi MongoDB, tự động xóa file HTML tương ứng.
-- Nếu file không tồn tại, vẫn xử lý xóa bản ghi an toàn.
-- Tránh xóa nhầm file được sử dụng bởi bản ghi khác nếu có chia sẻ URL.
-
-## 3. Cấu trúc lưu trữ
-
-Tổ chức thư mục lưu HTML rõ ràng, dễ quản lý.
-
-Ví dụ:
-
-```text
-backend/
-├── uploads/
-│   └── html/
-│       ├── uuid-001.html
-│       ├── uuid-002.html
-│       └── uuid-003.html
+```env
+SUPABASE_URL=https://jztnkwssoluetuxodqpo.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxx
+SUPABASE_BUCKET=edu-game-templates
 ```
 
-File HTML phải truy cập được bằng URL trực tiếp.
+Sử dụng thư viện:
 
-Ví dụ:
+```bash
+npm install @supabase/supabase-js
+```
 
-`https://domain.com/uploads/html/uuid-001.html`
+Không hardcode Secret Key. Chỉ sử dụng trong backend, không đưa vào React frontend hoặc GitHub.
 
-Không hardcode domain. Sử dụng biến môi trường `BASE_URL` hoặc cấu hình URL phù hợp với môi trường triển khai.
+## 3. Quy định lưu trữ
 
-## 4. MongoDB
+Sử dụng chung bucket `edu-game-templates`, phân chia thư mục:
 
-Điều chỉnh Schema hiện tại để lưu URL thay vì HTML.
+```text
+edu-game-templates/
+├── templates/
+│   ├── abc123.html
+│   └── xyz456.html
+└── thumbnails/
+    ├── abc123.webp
+    └── xyz456.webp
+```
 
-Ví dụ:
+- HTML lưu trong `templates/`.
+- Ảnh thumbnail lưu trong `thumbnails/`.
+- Tên file sử dụng UUID để tránh trùng lặp.
+- HTML có Content-Type `text/html; charset=utf-8`.
+- Ảnh giữ đúng định dạng thực tế như PNG, JPG, WebP.
+
+## 4. Thay thế icon bằng thumbnail
+
+Đây là yêu cầu bắt buộc:
+
+- Xóa trường `icon` khỏi schema/model MongoDB.
+- Xóa trường `icon` khỏi API request và API response.
+- Xóa toàn bộ logic xử lý icon liên quan đến template.
+- Không sử dụng emoji làm ảnh đại diện template nữa.
+- Thay thế bằng trường `thumbnail`.
+- `thumbnail` lưu URL ảnh thực tế trên Supabase Storage.
+- Ảnh thumbnail được upload thông qua backend.
+- Frontend sử dụng URL `thumbnail` để hiển thị ảnh xem trước.
+
+Không chỉ ẩn icon ở giao diện mà phải cập nhật đồng bộ toàn bộ backend, frontend và dữ liệu liên quan.
+
+## 5. Cấu trúc MongoDB mới
+
+Ví dụ document:
 
 ```json
 {
-  "_id": "...",
-  "name": "Body Avatar",
-  "htmlUrl": "https://domain.com/uploads/html/uuid-001.html",
-  "fileName": "uuid-001.html",
-  "createdAt": "...",
-  "updatedAt": "..."
+  "_id": "6a93a7fa19519eaeff8cd9ca",
+  "name": "Break Of Dawn",
+  "description": "Break Of Dawn",
+  "type": "play-to-learn",
+  "category": "quiz",
+  "htmlUrl": "https://example.supabase.co/storage/v1/object/public/edu-game-templates/templates/abc123.html",
+  "thumbnail": "https://example.supabase.co/storage/v1/object/public/edu-game-templates/thumbnails/abc123.webp",
+  "fileName": "abc123.html",
+  "version": 1,
+  "status": "inactive",
+  "playMode": "solo",
+  "createdAt": "2026-08-30T03:48:10.902Z",
+  "updatedAt": "2026-09-19T09:39:49.833Z"
 }
 ```
 
-- Loại bỏ việc lưu nội dung HTML dài trực tiếp trong MongoDB.
-- Có thể giữ lại trường `html` ở tầng request nhưng không lưu vào database.
-- Không làm mất các trường dữ liệu hiện tại không liên quan.
+Các trường khác giữ nguyên theo schema hiện tại.
 
-## 5. Yêu cầu Frontend
+## 6. Quy trình tạo template
 
-- Tận dụng API hiện tại.
-- Không gọi thêm API upload HTML.
-- Khi tạo hoặc cập nhật, tiếp tục gửi HTML cùng dữ liệu trong request hiện tại.
-- Sau khi API thành công, sử dụng `htmlUrl` Backend trả về.
-- Những nơi đang đọc HTML từ database cần chuyển sang sử dụng URL phù hợp.
-- Nếu cần xem trước HTML, sử dụng iframe với URL mới.
+Khi frontend gửi API tạo template:
 
-## 6. Bảo mật và xử lý lỗi
+1. Gửi thông tin template.
+2. Gửi nội dung HTML.
+3. Gửi ảnh thumbnail (multipart/form-data hoặc cơ chế phù hợp với API hiện tại).
+4. Backend validate dữ liệu.
+5. Upload HTML lên Supabase.
+6. Upload thumbnail lên Supabase.
+7. Nhận URL của cả hai file.
+8. Lưu `htmlUrl` và `thumbnail` vào MongoDB.
+9. Trả dữ liệu template về frontend.
 
-- Kiểm tra kiểu dữ liệu HTML đầu vào và giới hạn dung lượng request.
-- Tên file phải được tạo ngẫu nhiên, không sử dụng trực tiếp tên file từ người dùng.
-- Kiểm soát quyền tạo, cập nhật và xóa HTML.
-- Không cho phép truy cập đường dẫn file tùy ý.
-- HTML không đáng tin cậy phải được phục vụ trên origin riêng biệt, không chạy JavaScript tùy ý cùng origin với trang quản trị.
-- Xử lý rollback: nếu lưu file thành công nhưng MongoDB thất bại thì xóa file vừa tạo.
-- Nếu cập nhật thất bại, không làm mất nội dung HTML cũ.
-- Tránh tạo file trùng lặp hoặc file rác.
-- Không để lộ đường dẫn filesystem nội bộ.
+Không tạo API POST riêng chỉ để upload HTML hoặc thumbnail. Tích hợp vào API tạo/cập nhật template hiện có.
 
-## 7. Tương thích dữ liệu cũ
+## 7. Quy trình cập nhật template
 
-Kiểm tra dữ liệu HTML hiện tại trong MongoDB.
+Khi cập nhật:
+- Nếu có HTML mới, upload HTML mới và cập nhật `htmlUrl`.
+- Nếu có thumbnail mới, upload ảnh mới và cập nhật `thumbnail`.
+- Nếu không gửi thumbnail mới, giữ nguyên thumbnail cũ.
+- Nếu không gửi HTML mới, giữ nguyên HTML cũ.
+- Chỉ xóa file cũ sau khi dữ liệu mới đã upload thành công và MongoDB cập nhật thành công.
+- Cập nhật `fileName`, version theo logic hiện tại.
 
-Nếu đã có bản ghi chứa HTML cũ:
+## 8. Quy trình xem HTML
 
-- Xây dựng cơ chế chuyển đổi dữ liệu cũ sang file `.html`.
-- Upload/lưu nội dung HTML cũ thành file.
-- Cập nhật bản ghi MongoDB sang `htmlUrl`.
-- Đảm bảo không mất dữ liệu trong quá trình chuyển đổi.
-- Có thể giữ khả năng đọc dữ liệu cũ trong giai đoạn migration nếu cần.
+Khi frontend mở template:
 
-## 8. Những điều tuyệt đối không được làm
+1. Gọi API backend theo ID.
+2. Backend kiểm tra template trong MongoDB.
+3. Kiểm tra trạng thái và quyền truy cập.
+4. Nếu hợp lệ, trả về `htmlUrl`.
+5. Frontend sử dụng `htmlUrl` để hiển thị iframe.
+6. Nếu không hợp lệ, không hiển thị HTML.
 
-- Không tạo API upload HTML mới chỉ để Frontend phải gọi thêm lần nữa.
-- Không thay đổi URL hoặc tên các API hiện tại nếu không thực sự cần thiết.
-- Không phá vỡ cấu trúc React và Express hiện tại.
-- Không tự ý thay đổi các chức năng CRUD khác.
-- Không xóa các trường MongoDB không liên quan.
-- Không hardcode domain hoặc đường dẫn môi trường production.
-- Không chỉ viết code minh họa mà phải tích hợp trực tiếp vào dự án.
+Nếu cần kiểm soát truy cập trực tiếp, sử dụng Private Bucket và Signed URL. Không để Secret Key xuất hiện ở frontend.
 
-## 9. Quy trình thực hiện
+## 9. Cấu trúc API response
 
-1. Đọc và phân tích toàn bộ API đang tạo, cập nhật, lấy và xóa dữ liệu có chứa HTML.
-2. Kiểm tra Model MongoDB, Controller, Routes và các service Frontend liên quan.
-3. Xác định tất cả nơi đang đọc hoặc ghi trường HTML.
-4. Đề xuất cách tích hợp phù hợp với cấu trúc code hiện tại.
-5. Triển khai cơ chế tự động lưu file HTML ngay trong API CRUD hiện tại.
-6. Cập nhật Schema MongoDB và Frontend nếu cần.
-7. Xử lý dữ liệu HTML cũ.
-8. Kiểm tra đầy đủ POST, PUT, GET, DELETE.
-9. Kiểm tra URL có thể truy cập trực tiếp trên trình duyệt.
-10. Tổng kết các file đã sửa, cách hoạt động và những điểm cần cấu hình khi deploy.
+Giữ nguyên format response hiện tại:
 
-**Yêu cầu cuối cùng:** Sau khi hoàn thành, Frontend chỉ cần gọi API tạo/cập nhật dữ liệu như trước. Backend tự xử lý việc lưu HTML thành file, tạo URL và lưu URL vào MongoDB. Không phát sinh thêm một request upload HTML riêng.
+```json
+{
+  "status": true,
+  "code": 200,
+  "msg": "success",
+  "data": [
+    {
+      "_id": "6a93a7fa19519eaeff8cd9ca",
+      "name": "Break Of Dawn",
+      "description": "Break Of Dawn",
+      "type": "play-to-learn",
+      "category": "quiz",
+      "thumbnail": "https://example.supabase.co/storage/v1/object/public/edu-game-templates/thumbnails/abc123.webp",
+      "htmlUrl": "https://example.supabase.co/storage/v1/object/public/edu-game-templates/templates/abc123.html",
+      "fileName": "abc123.html",
+      "version": 1,
+      "status": "inactive",
+      "playMode": "solo",
+      "createdAt": "2026-08-30T03:48:10.902Z",
+      "updatedAt": "2026-09-19T09:39:49.833Z"
+    }
+  ]
+}
+```
+
+Yêu cầu:
+- API danh sách và chi tiết đều trả về `htmlUrl` và `thumbnail`.
+- Không còn trường `icon` trong response.
+- Không đổi format `status`, `code`, `msg`, `data`.
+
+## 10. Cập nhật Frontend
+
+Tìm toàn bộ nơi đang sử dụng `icon` để hiển thị template.
+
+Thay thế bằng `thumbnail`:
+- Danh sách template hiển thị ảnh thumbnail.
+- Card template sử dụng ảnh thumbnail.
+- Trang quản lý template hiển thị ảnh thumbnail.
+- Form tạo template cho phép chọn và xem trước ảnh.
+- Form chỉnh sửa hiển thị thumbnail hiện tại và cho phép thay ảnh mới.
+- Khi không có thumbnail, hiển thị placeholder mặc định bằng CSS hoặc ảnh mặc định, không quay lại dùng icon/emoji.
+
+Giữ nguyên layout, màu sắc và phong cách giao diện hiện tại.
+
+## 11. Chuyển đổi dữ liệu cũ
+
+Kiểm tra toàn bộ template hiện tại, đặc biệt 43 template đang có.
+
+- Không xóa dữ liệu cũ ngay lập tức.
+- Nếu có icon cũ, loại bỏ trường `icon` sau khi chuyển đổi.
+- Nếu template chưa có thumbnail, cho phép `thumbnail` là null hoặc dùng placeholder ở frontend.
+- Không tự tạo ảnh giả thay cho thumbnail.
+- Nếu có ảnh đại diện cũ, có thể chuyển ảnh đó lên Supabase và cập nhật URL.
+- Không làm mất template hoặc thay đổi `_id`.
+
+Thực hiện migration an toàn và có thể kiểm tra kết quả trước khi xóa dữ liệu cũ.
+
+## 12. Kiểm thử
+
+Bắt buộc kiểm tra:
+
+1. Tạo template mới có HTML và thumbnail.
+2. HTML được upload đúng thư mục `templates/`.
+3. Thumbnail được upload đúng thư mục `thumbnails/`.
+4. MongoDB lưu đúng `htmlUrl` và `thumbnail`.
+5. API danh sách trả về hai trường trên.
+6. API chi tiết trả về hai trường trên.
+7. Không còn trường `icon` trong schema và response.
+8. Cập nhật riêng HTML không làm mất thumbnail.
+9. Cập nhật riêng thumbnail không làm mất HTML.
+10. Xóa template xử lý cả file HTML và thumbnail.
+11. Template không có thumbnail vẫn hiển thị bình thường.
+12. Kiểm tra hoạt động sau khi deploy Render.
+
+## 13. Yêu cầu thực hiện
+
+- Đọc toàn bộ code hiện tại trước khi chỉnh sửa.
+- Tái sử dụng API, controller, service và model đang có.
+- Đồng bộ frontend, backend và MongoDB.
+- Không tạo API trùng chức năng.
+- Không thay đổi các chức năng game không liên quan.
+- Không tự ý xóa dữ liệu cũ khi chưa migration an toàn.
+- Báo cáo các file đã chỉnh sửa, API đã cập nhật và kết quả kiểm thử.
+
+**Kết quả cuối cùng:** Mỗi template chỉ sử dụng hai trường URL quan trọng là `htmlUrl` (file HTML) và `thumbnail` (ảnh đại diện). Không còn sử dụng trường `icon` nữa.

@@ -1,7 +1,7 @@
 // services/firebaseStorageService.js
 //
 // Lưu HTML game lên Firebase Storage.
-// `templates.htmlTemplate` lưu LUÔN link tải của file trên Firebase —
+// `templates.htmlUrl` lưu LUÔN link tải của file trên Firebase —
 // không nhúng HTML vào Mongo.
 //
 // Đường dẫn:  templates/<templateId>.html

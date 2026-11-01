@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { gameService, statsService } from '../../services/api.js'
 import { gameDataService } from '../../services/gameDataService.js'
 import { useSubjects, useCategories, useTemplates } from '../../lib/hooks.js'
-import { EmptyState, ErrorState, GhostButton, IconButton, IconCast, IconEdit, IconPlay, IconTrash, Loader, ManagementHeader, Modal, PrimaryButton, StampToken, StatusBadge, TicketStub } from '../../components/ui';
+import { EmptyState, ErrorState, GhostButton, IconButton, IconCast, IconEdit, IconPlay, IconTrash, Loader, ManagementHeader, Modal, PrimaryButton, TemplateThumb, StatusBadge, TicketStub } from '../../components/ui';
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import RangePagination from '../../components/RangePagination.jsx'
-import { Gamepad2, Copy, Ticket, Search, Layers, Rocket, FilePen, TrendingUp, Database, ClockFading, WifiOff, Wifi, FolderOpen } from 'lucide-react'
+import { Copy, Ticket, Search, Layers, Rocket, FilePen, TrendingUp, Database, ClockFading, WifiOff, Wifi, FolderOpen } from 'lucide-react'
 
 const PAGE_SIZE = 12;
 
@@ -41,7 +41,7 @@ function ManagementGameCard({ game, templates, publishedVersion, onEdit, onResul
   return (
     <div className="note-card p-4 flex flex-col gap-3 anim-pop hover:-translate-y-0.5 transition shadow-[0_2px_0_rgba(0,0,0,0.06)]">
       <div className="flex items-start justify-between gap-2">
-        <StampToken icon={tpl ? tpl.icon : <Gamepad2 className="w-5 h-5" />} ring={tpl ? tpl.ring : "#1D2E4A"} size={44} fontSize={20} />
+        <TemplateThumb thumbnail={tpl?.thumbnail} name={tpl?.name || game.name} ring={tpl ? tpl.ring : "#1D2E4A"} size={44} />
         <StatusBadge status={game.status} />
       </div>
       <div>

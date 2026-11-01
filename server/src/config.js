@@ -2,6 +2,20 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+/**
+ * URL project Supabase — phải là gốc project (https://<ref>.supabase.co).
+ * Nhiều người dán luôn URL REST (".../rest/v1/") từ trang Connect/API →
+ * Storage SDK sẽ sinh đường dẫn sai và báo "Invalid path specified in request URL".
+ * Chuẩn hoá: cắt các hậu tố endpoint thừa, bỏ slash cuối.
+ */
+function supabaseProjectUrl() {
+  return (process.env.SUPABASE_URL || "")
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/(?:rest|storage|realtime|auth|functions)\/v1\/?$/i, "")
+    .replace(/\/+$/, "");
+}
+
 export const config = {
   port: Number(process.env.PORT) || 5000,
   mongoUri: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017",
@@ -49,6 +63,16 @@ export const config = {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
+
+  // ── Supabase Storage (HTML + thumbnail template) ────────────────────────
+  // Secret key CHỈ nằm ở backend (.env), không bao giờ đưa sang React/GitHub.
+  supabase: {
+    url: supabaseProjectUrl(),
+    key: process.env.SUPABASE_SECRET_KEY || "",
+    bucket: process.env.SUPABASE_BUCKET || "edu-game-templates",
+  },
+  // Ảnh thumbnail gửi lên dạng data-URL base64 — chặn quá cỡ trước khi decode.
+  thumbnailMaxMb: Number(process.env.THUMBNAIL_MAX_MB) || 2,
 
   // ── File HTML game (server/uploads/html) ─────────────────────────────────
   // Domain công khai của API, dùng ghép URL tuyệt đối cho file HTML.

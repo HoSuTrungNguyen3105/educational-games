@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTemplate } from '../../lib/hooks.js'
-import { StampToken } from '../../components/ui'
+import { TemplateThumb } from '../../components/ui'
 import AiExplainTrigger from '../../components/ai/AiExplainTrigger.jsx'
 import { AnswerExplain } from './shared.jsx'
 import { uid } from '../../services/api.js'
@@ -109,7 +109,7 @@ export default function PlayGameScreen({ game, questions, onFinish }) {
       <div className="flex items-center justify-between mb-6">
         <span className="font-mono text-xs text-[#8A7C63]">Câu {idx + 1}/{questions.length}</span>
         <span className="flex items-center gap-2">
-          <StampToken icon={tpl ? tpl.icon : "🎲"} ring={tpl ? tpl.ring : "#F4B942"} size={30} fontSize={14} />
+          <TemplateThumb thumbnail={tpl?.thumbnail} name={tpl?.name} ring={tpl ? tpl.ring : "#F4B942"} size={30} />
           <span className="font-display text-ink">{score} điểm</span>
         </span>
       </div>

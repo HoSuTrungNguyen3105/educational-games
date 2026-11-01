@@ -1,15 +1,19 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { getCollection } from "../db.js";
 import { ObjectId } from "mongodb";
 import * as storage from "./templateStorageService.js";
 
-// Schema mới — chỉ các trường này được trả về cho frontend
-// (htmlTemplate LUÔN là link/đường dẫn file — HTML thô không bao giờ nằm trong Mongo)
+// Schema mới — chỉ các trường này được trả về cho frontend.
+// htmlUrl = link file HTML trên Supabase Storage · thumbnail = link ảnh đại diện.
+// Trường `icon` (emoji) đã bị loại bỏ hoàn toàn theo spec — không còn trong
+// response, không nhận trong request, đã $unset trong dữ liệu cũ.
 const TEMPLATE_FIELDS = [
-  "name", "description", "type", "category", "icon", "ring",
-  "htmlTemplate", "fileName", "version", "status", "playMode", "createdAt", "updatedAt",
+  "name", "description", "type", "category", "ring",
+  "htmlUrl", "thumbnail", "fileName", "version", "status", "playMode", "createdAt", "updatedAt",
 ];
 
-// Chuẩn hóa về schema mới: bỏ trường cũ (id/slug/categoryLabel)
+// Chuẩn hóa về schema mới: bỏ trường cũ (id/slug/categoryLabel/icon/htmlTemplate)
 function serialize(doc) {
   if (!doc) return doc;
   const out = { _id: doc._id.toString() };
@@ -44,21 +48,27 @@ export async function getTemplateBySlug(slug) {
   return serialize(doc);
 }
 
+/**
+ * Tạo template: thông tin + HTML (+ thumbnail base64) trong CÙNG 1 request.
+ * Backend upload HTML lên Supabase `templates/<uuid>.html`, ảnh lên
+ * `thumbnails/<uuid>.<ext>`, MongoDB chỉ nhận URL. Lỗi DB sau khi upload
+ * → xóa file vừa upload (rollback), không để file rác.
+ */
 export async function createTemplate(data) {
   const now = new Date().toISOString();
-  const html = String(data.htmlTemplate || "");
-  storage.validateHtml(html); // kiểu dữ liệu + giới hạn dung lượng — chặn trước khi ghi DB
+  // Chấp nhận cả tên trường cũ (htmlTemplate) để client cũ không vỡ.
+  const html = String(data.htmlUrl ?? data.htmlTemplate ?? "");
+  const thumb = String(data.thumbnail ?? "");
+  storage.validateHtml(html); // kiểu + dung lượng HTML — chặn trước khi ghi DB
 
   const doc = {
     name: data.name || "Template mới",
     description: data.description || "",
     type: data.type || "play-to-learn",
     category: data.category || "quiz",
-    icon: data.icon || "🎲",
     ring: data.ring || "#1D2E4A",
-    // htmlTemplate: LUÔN là link tới file HTML (uploads/html hoặc R2/Firebase).
-    // MongoDB không chứa HTML thô.
-    htmlTemplate: "",
+    htmlUrl: "",
+    thumbnail: "",
     fileName: "",
     version: 1,
     status: ["published", "draft", "inactive"].includes(data.status) ? data.status : "draft",
@@ -69,61 +79,98 @@ export async function createTemplate(data) {
   const result = await getCollection("templates").insertOne(doc);
   const id = result.insertedId.toString();
 
-  if (html.trim()) {
-    let saved = null;
-    try {
-      saved = await storage.storeHtmlTemplate(id, html);
-      if (!saved) throw new Error("Không lưu được file HTML — kiểm tra dung lượng/ổ cứng server");
-      await getCollection("templates").updateOne(
-        { _id: result.insertedId },
-        { $set: { htmlTemplate: saved.url, fileName: saved.fileName } }
-      );
-      doc.htmlTemplate = saved.url;
+  const uploaded = []; // { kind: "html"|"thumb", url } — danh sách để rollback
+  try {
+    const set = {};
+    if (html.trim()) {
+      const saved = await storage.storeHtmlTemplate(id, html);
+      uploaded.push({ kind: "html", url: saved.url });
+      set.htmlUrl = saved.url;
+      set.fileName = saved.fileName;
+      doc.htmlUrl = saved.url;
       doc.fileName = saved.fileName;
-    } catch (e) {
-      // Rollback: dọn file vừa ghi (nếu có) + bản ghi vừa chèn — không để file rác
-      if (saved) await storage.deleteHtmlByUrl(saved.url).catch(() => {});
-      await getCollection("templates").deleteOne({ _id: result.insertedId }).catch(() => {});
-      throw e;
     }
+    if (thumb.trim()) {
+      const saved = await storage.storeThumbnail(thumb);
+      if (!saved.kept) uploaded.push({ kind: "thumb", url: saved.url });
+      set.thumbnail = saved.url;
+      doc.thumbnail = saved.url;
+    }
+    if (Object.keys(set).length) {
+      await getCollection("templates").updateOne({ _id: result.insertedId }, { $set: set });
+    }
+  } catch (e) {
+    // Rollback: dọn file vừa upload + bản ghi vừa chèn
+    for (const f of uploaded) {
+      const del = f.kind === "thumb" ? storage.deleteThumbnailByUrl(f.url) : storage.deleteHtmlByUrl(f.url);
+      await del.catch(() => {});
+    }
+    await getCollection("templates").deleteOne({ _id: result.insertedId }).catch(() => {});
+    throw e;
   }
 
   return { _id: id, ...doc };
 }
 
+/**
+ * Cập nhật template.
+ * - Có HTML mới (khác link đang lưu) → upload file mới, đổi htmlUrl.
+ * - Có thumbnail mới (data-URL base64) → upload ảnh mới, đổi thumbnail.
+ * - Không gửi / gửi lại y nguyên link → giữ file cũ, không tạo file thừa.
+ * - File cũ CHỈ bị xóa sau khi upload + MongoDB thành công, và chỉ khi
+ *   không còn bản ghi nào khác dùng chung link.
+ */
 export async function updateTemplate(id, data) {
-  const { _id, ...rest } = data;
+  const { _id, icon, htmlTemplate, ...rest } = data; // icon: loại hẳn khỏi $set
   rest.updatedAt = new Date().toISOString();
   if (rest.version !== undefined) rest.version = Number(rest.version);
 
   const coll = getCollection("templates");
   const oid = new ObjectId(id);
+  const current = await coll.findOne({ _id: oid });
+  if (!current) throw new Error("Không tìm thấy template");
 
-  // Xử lý htmlTemplate: ghi FILE mới rồi đổi link — Mongo không bao giờ nhận HTML thô.
-  let oldRef = "";
-  let fresh = null; // file mới đã ghi, cần dọn nếu DB lỗi
-  if (Object.prototype.hasOwnProperty.call(rest, "htmlTemplate")) {
-    const current = await coll.findOne({ _id: oid });
-    if (!current) throw new Error("Không tìm thấy template");
-    oldRef = String(current.htmlTemplate || "").trim();
-    const incoming = String(rest.htmlTemplate || "").trim();
+  // Cho phép client cũ gửi `htmlTemplate` thay `htmlUrl`
+  const hasHtml = Object.prototype.hasOwnProperty.call(data, "htmlUrl")
+    || Object.prototype.hasOwnProperty.call(data, "htmlTemplate");
+  const hasThumb = Object.prototype.hasOwnProperty.call(data, "thumbnail");
+  const incomingHtml = rest.htmlUrl ?? htmlTemplate;
+  const incomingThumb = data.thumbnail;
 
-    if (incoming && incoming === oldRef) {
-      // Client gửi lại đúng link (không sửa HTML) → giữ file + URL cũ, không tạo file mới
-      delete rest.htmlTemplate;
-      delete rest.fileName;
-    } else if (!incoming) {
-      // Xóa HTML → URL rỗng; file cũ xóa ở bước dọn bên dưới
-      rest.htmlTemplate = "";
+  let freshHtml = null; // { url } vừa upload — rollback nếu DB lỗi
+  let freshThumb = null;
+  let oldHtmlRef = "";
+  let oldThumbRef = "";
+
+  if (hasHtml) {
+    delete rest.htmlUrl;
+    oldHtmlRef = String(current.htmlUrl || "").trim();
+    const v = String(incomingHtml ?? "").trim();
+    if (v && v === oldHtmlRef) {
+      // gửi lại đúng link → giữ nguyên file + URL, không upload lại
+    } else if (!v) {
+      rest.htmlUrl = "";
       rest.fileName = "";
-    } else if (storage.isHtmlRef(incoming)) {
-      // Gửi lên sẵn là link/đường dẫn (vd /games/x.html) → ghi trực tiếp, không tạo file
-      rest.htmlTemplate = incoming;
+    } else if (storage.isHtmlRef(v)) {
+      rest.htmlUrl = v; // client gửi sẵn link/đường dẫn tĩnh → ghi trực tiếp
     } else {
-      fresh = await storage.storeHtmlTemplate(id, incoming); // validate + ghi file
-      if (!fresh) throw new Error("Không lưu được file HTML — kiểm tra dung lượng/ổ cứng server");
-      rest.htmlTemplate = fresh.url;
-      rest.fileName = fresh.fileName;
+      freshHtml = await storage.storeHtmlTemplate(id, v); // validate + upload Supabase
+      rest.htmlUrl = freshHtml.url;
+      rest.fileName = freshHtml.fileName;
+    }
+  }
+
+  if (hasThumb) {
+    oldThumbRef = String(current.thumbnail || "").trim();
+    const v = String(incomingThumb ?? "").trim();
+    if (v && v === oldThumbRef) {
+      // không đổi ảnh → giữ link cũ
+    } else if (!v) {
+      rest.thumbnail = "";
+    } else {
+      freshThumb = await storage.storeThumbnail(v); // data-URL → Supabase thumbnails/
+      rest.thumbnail = freshThumb.url;
+      if (freshThumb.kept) freshThumb = null;        // link có sẵn → không có file mới để rollback/dọn
     }
   }
 
@@ -131,20 +178,29 @@ export async function updateTemplate(id, data) {
   try {
     updated = await coll.findOneAndUpdate({ _id: oid }, { $set: rest }, { returnDocument: "after" });
   } catch (e) {
-    if (fresh) await storage.deleteHtmlByUrl(fresh.url).catch(() => {}); // rollback file rác
-    throw e;                                                            // HTML/file cũ vẫn nguyên
+    await rollbackFresh(freshHtml, freshThumb);
+    throw e; // dữ liệu + file cũ vẫn nguyên vẹn
   }
   if (!updated) {
-    if (fresh) await storage.deleteHtmlByUrl(fresh.url).catch(() => {});
+    await rollbackFresh(freshHtml, freshThumb);
     throw new Error("Không tìm thấy template");
   }
 
-  // DB thành công → xóa file cũ, nhưng chỉ khi không còn bản ghi nào khác dùng chung link
-  if (oldRef && oldRef !== String(updated.htmlTemplate || "").trim()) {
-    const stillUsed = await coll.countDocuments({ htmlTemplate: oldRef, _id: { $ne: oid } });
-    if (stillUsed === 0) await storage.deleteHtmlByUrl(oldRef).catch(() => {});
+  // DB thành công → dọn file cũ (khi link thật sự đổi và không còn ai dùng chung)
+  if (hasHtml && oldHtmlRef && oldHtmlRef !== String(updated.htmlUrl || "").trim()) {
+    const stillUsed = await coll.countDocuments({ htmlUrl: oldHtmlRef, _id: { $ne: oid } });
+    if (stillUsed === 0) await storage.deleteHtmlByUrl(oldHtmlRef).catch(() => {});
+  }
+  if (hasThumb && oldThumbRef && oldThumbRef !== String(updated.thumbnail || "").trim()) {
+    const stillUsed = await coll.countDocuments({ thumbnail: oldThumbRef, _id: { $ne: oid } });
+    if (stillUsed === 0) await storage.deleteThumbnailByUrl(oldThumbRef).catch(() => {});
   }
   return serialize(updated);
+}
+
+async function rollbackFresh(freshHtml, freshThumb) {
+  if (freshHtml) await storage.deleteHtmlByUrl(freshHtml.url).catch(() => {});
+  if (freshThumb) await storage.deleteThumbnailByUrl(freshThumb.url).catch(() => {});
 }
 
 export async function removeTemplate(id) {
@@ -155,7 +211,7 @@ export async function removeTemplate(id) {
 
   const gamesUsing = await getCollection("games").countDocuments({ templateId: oid });
   if (gamesUsing > 0) {
-    // Game vẫn cần chơi → giữ nguyên file HTML, chỉ chuyển template sang inactive
+    // Game vẫn cần chơi → giữ nguyên file HTML + thumbnail, chỉ chuyển template sang inactive
     await coll.updateOne({ _id: oid }, { $set: { status: "inactive" } });
     return { deactivated: true, gamesCount: gamesUsing };
   }
@@ -163,22 +219,32 @@ export async function removeTemplate(id) {
   const result = await coll.deleteOne({ _id: oid });
   if (result.deletedCount === 0) throw new Error("Không tìm thấy template");
 
-  // File chỉ bị xóa khi không còn bản ghi nào khác dùng chung link (chống xóa nhầm)
-  const ref = String(doc.htmlTemplate || "").trim();
-  if (ref && storage.isHtmlRef(ref)) {
-    const stillUsed = await coll.countDocuments({ htmlTemplate: ref });
-    if (stillUsed === 0) await storage.deleteHtmlByUrl(ref).catch(() => {});
-  }
+  // Xóa cả 2 file — nhưng bỏ qua nếu còn bản ghi khác dùng chung link (chống xóa nhầm)
+  await deleteSharedFile(coll, "htmlUrl", doc.htmlUrl);
+  await deleteSharedFile(coll, "thumbnail", doc.thumbnail);
   return { deleted: true };
 }
 
-// Xóa TẤT CẢ templates + file HTML tương ứng
+async function deleteSharedFile(coll, field, ref) {
+  const v = String(ref || "").trim();
+  if (!v) return;
+  if (field === "htmlUrl" && !storage.isHtmlRef(v)) return;              // link động mới là file của mình
+  if (field === "thumbnail" && !/^https?:\/\//i.test(v)) return;
+  const stillUsed = await coll.countDocuments({ [field]: v });
+  if (stillUsed > 0) return;
+  const del = field === "thumbnail" ? storage.deleteThumbnailByUrl(v) : storage.deleteHtmlByUrl(v);
+  await del.catch(() => {});
+}
+
+// Xóa TẤT CẢ templates + file HTML + thumbnail tương ứng
 export async function removeAllTemplates() {
   const coll = getCollection("templates");
   const docs = await coll.find({}).toArray();
   for (const d of docs) {
-    const ref = String(d.htmlTemplate || "").trim();
-    if (ref && storage.isHtmlRef(ref)) await storage.deleteHtmlByUrl(ref).catch(() => {});
+    const html = String(d.htmlUrl || d.htmlTemplate || "").trim();
+    if (html && storage.isHtmlRef(html)) await storage.deleteHtmlByUrl(html).catch(() => {});
+    const thumb = String(d.thumbnail || "").trim();
+    if (thumb && /^https?:\/\//i.test(thumb)) await storage.deleteThumbnailByUrl(thumb).catch(() => {});
   }
   const count = docs.length;
   await coll.deleteMany({});
@@ -186,34 +252,66 @@ export async function removeAllTemplates() {
 }
 
 /**
- * Migration một lần / idempotent: bản ghi cũ còn chứa HTML THÔ trong
- * templates.htmlTemplate → ghi thành file và thay bằng link.
- * Chạy lúc server khởi động (sau initDatabase) và sau POST /api/seed.
- * File lỗi thì giữ nguyên HTML thô (không bao giờ mất dữ liệu) và log cảnh báo.
+ * Migration an toàn, idempotent — chạy lúc server khởi động (sau initDatabase)
+ * và sau POST /api/seed. KHÔNG xóa dữ liệu cũ, KHÔNG đổi _id:
+ *   1. `htmlTemplate` → `htmlUrl` (đổi tên trường trong Mongo).
+ *   2. $unset `icon` (emoji đã bị loại bỏ khỏi schema).
+ *   3. htmlUrl còn là HTML thô          → upload Supabase `templates/`, thay bằng link.
+ *   4. htmlUrl còn trỏ file đĩa /uploads/html (migration đợt trước)
+ *      mà file vẫn còn trên máy          → đọc lên, đẩy vào Supabase, thay link.
+ * Bước upload lỗi → giữ nguyên giá trị cũ + log cảnh báo (không mất dữ liệu).
  */
-export async function migrateRawHtmlTemplates() {
+export async function migrateTemplatesToSupabase() {
   const coll = getCollection("templates");
-  const docs = await coll.find({ htmlTemplate: { $exists: true, $ne: "" } }).toArray();
-  let moved = 0;
-  let failed = 0;
+  const stats = { renamed: 0, iconRemoved: 0, uploaded: 0, fromDisk: 0, missing: 0, failed: 0 };
+
+  const renamed = await coll.updateMany(
+    { htmlTemplate: { $exists: true } },
+    [{ $set: { htmlUrl: { $ifNull: ["$htmlUrl", "$htmlTemplate"] } } }, { $unset: "htmlTemplate" }]
+  );
+  stats.renamed = renamed.modifiedCount;
+
+  const iconCleared = await coll.updateMany({ icon: { $exists: true } }, { $unset: { icon: "" } });
+  stats.iconRemoved = iconCleared.modifiedCount;
+
+  const docs = await coll.find({}).toArray();
   for (const d of docs) {
-    const v = String(d.htmlTemplate || "").trim();
-    if (!v || storage.isHtmlRef(v)) continue; // đã là link → bỏ qua
+    const v = String(d.htmlUrl || "").trim();
+    if (!v) continue;
     try {
-      const saved = await storage.storeHtmlTemplate(d._id.toString(), v);
-      if (!saved) throw new Error("storage trả null");
-      await coll.updateOne(
-        { _id: d._id },
-        { $set: { htmlTemplate: saved.url, fileName: saved.fileName } }
-      );
-      moved++;
+      if (!storage.isHtmlRef(v)) {
+        // HTML thô còn sót → upload Supabase
+        const saved = await storage.storeHtmlTemplate(d._id.toString(), v);
+        await coll.updateOne({ _id: d._id }, { $set: { htmlUrl: saved.url, fileName: saved.fileName } });
+        stats.uploaded++;
+      } else if (v.startsWith("/uploads/html/") || v.includes("/uploads/html/")) {
+        // trỏ file đĩa của đợt migration trước → đẩy sang Supabase nếu file còn trên máy
+        const fileName = v.split("/").pop();
+        const filePath = path.resolve(process.cwd(), "uploads/html", fileName);
+        let html;
+        try {
+          html = await fs.readFile(filePath, "utf-8");
+        } catch {
+          stats.missing++; // bản fallback trên đĩa nhưng file đã mất (Render ephemeral) — không còn nguồn để upload
+          continue;
+        }
+        const saved = await storage.storeHtmlTemplate(d._id.toString(), html);
+        await coll.updateOne({ _id: d._id }, { $set: { htmlUrl: saved.url, fileName: saved.fileName } });
+        stats.fromDisk++;
+        // Xóa bản fallback trên đĩa: máy dev chỉ upload MỘT lần, lần khởi động
+        // sau không còn file để đọc → không tạo object trùng trên bucket.
+        await fs.unlink(filePath).catch(() => {});
+      }
     } catch (e) {
-      failed++;
-      console.warn(`[migrate] template "${d.name}" (${d._id}): ${e.message} — giữ HTML thô trong Mongo, chưa mất dữ liệu`);
+      stats.failed++;
+      console.warn(`[migrate] template "${d.name}" (${d._id}): ${e.message} — giữ nguyên dữ liệu cũ, chưa mất gì`);
     }
   }
-  if (moved || failed) console.log(`[migrate] HTML templates → file: ${moved} chuyển, ${failed} lỗi`);
-  return { moved, failed, scanned: docs.length };
+  if (stats.renamed || stats.iconRemoved || stats.uploaded || stats.fromDisk || stats.missing || stats.failed) {
+    console.log(`[migrate] templates → Supabase: rename ${stats.renamed}, bỏ icon ${stats.iconRemoved}, ` +
+      `upload ${stats.uploaded}, từ đĩa ${stats.fromDisk}, mất file ${stats.missing}, lỗi ${stats.failed}`);
+  }
+  return stats;
 }
 
 export async function listCategories() {

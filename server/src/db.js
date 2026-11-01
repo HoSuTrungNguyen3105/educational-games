@@ -85,15 +85,18 @@ async function _runHeavyInit(database) {
     templates: {
       $jsonSchema: {
         bsonType: "object",
-        required: ["name", "description", "type", "category", "icon", "ring", "status"],
+        required: ["name", "description", "type", "category", "ring", "status"],
         properties: {
           name: { bsonType: "string" },
           description: { bsonType: "string" },
           type: { enum: ["play-to-learn", "play-to-win"] },
           category: { bsonType: "string" },
-          icon: { bsonType: "string" },
           ring: { bsonType: "string" },
-          htmlTemplate: { bsonType: "string" },
+          // htmlUrl/thumbnail: URL lưu trên Supabase Storage — Mongo không chứa HTML/ảnh thô.
+          // "icon" không còn trong schema (đã thay bằng thumbnail).
+          htmlUrl: { bsonType: "string" },
+          thumbnail: { bsonType: "string" },
+          fileName: { bsonType: "string" },
           status: { enum: ["published", "draft", "inactive"] },
           createdAt: { bsonType: "string" },
           updatedAt: { bsonType: "string" },
@@ -1007,11 +1010,25 @@ async function migrateTemplates(database) {
   const now = new Date().toISOString();
   await templatesColl.updateMany(
     { type: { $exists: false } },
-    { $set: { type: "play-to-learn", htmlTemplate: "", version: 1, status: "draft", createdAt: now, updatedAt: now } }
+    { $set: { type: "play-to-learn", htmlUrl: "", thumbnail: "", version: 1, status: "draft", createdAt: now, updatedAt: now } }
   );
 
-  // Remove old fields
+  // Remove old fields. thumbnail là field MỚI (ảnh trên Supabase) → KHÔNG xóa.
+  // icon đã thay bằng thumbnail → gỡ khỏi mọi bản ghi.
   await templatesColl.updateMany({}, {
-    $unset: { id: "", slug: "", categoryLabel: "", thumbnail: "" }
+    $unset: { id: "", slug: "", categoryLabel: "", icon: "" }
   });
+
+  // htmlTemplate → htmlUrl (đổi tên, không mất dữ liệu):
+  //   - bản ghi chưa có htmlUrl: chuyển nguyên giá trị (kể cả HTML thô —
+  //     migrateTemplatesToSupabase chạy sau sẽ upload và thay bằng URL).
+  //   - bản ghi đã có htmlUrl: htmlTemplate chỉ còn liên kết cũ/HTML thừa → gỡ.
+  await templatesColl.updateMany(
+    { htmlTemplate: { $exists: true }, htmlUrl: { $exists: false } },
+    [{ $set: { htmlUrl: "$htmlTemplate" } }, { $unset: "htmlTemplate" }]
+  );
+  await templatesColl.updateMany(
+    { htmlTemplate: { $exists: true }, htmlUrl: { $exists: true } },
+    { $unset: { htmlTemplate: "" } }
+  );
 }

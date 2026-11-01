@@ -4,8 +4,15 @@ import { API_BASE } from '../services/api.js';
 
 // Gốc API (bỏ hậu tố /api) — dùng để ghép URL file HTML do server lưu trên đĩa.
 const API_ORIGIN = API_BASE.replace(/\/api\/?$/, "");
+// Bản production: ưu tiên VITE_SOCKET_URL (đúng quy ước socket.js — biến này
+// trỏ tới server API đã deploy). Bản dev (API trỏ localhost): file /uploads
+// nằm trên máy dev nên phải theo API_BASE, không theo VITE_SOCKET_URL.
+const SOCKET_ORIGIN = (import.meta.env.VITE_SOCKET_URL || "").replace(/\/+$/, "");
+const FILE_ORIGIN = /localhost|127\.0\.0\.1/.test(API_ORIGIN)
+  ? API_ORIGIN
+  : SOCKET_ORIGIN || API_ORIGIN;
 
-const FALLBACK_TEMPLATE = { icon: "🎲", ring: "#F4B942" };
+const FALLBACK_TEMPLATE = { ring: "#F4B942", thumbnail: "", htmlUrl: "" };
 
 export function useSubjects(refreshKey) {
   const [subjects, setSubjects] = useState([]);
@@ -51,21 +58,21 @@ export function useTemplate(game, refreshKey) {
   return templates.find((t) => t.slug === game.template || t.id === game.template) || FALLBACK_TEMPLATE;
 }
 
-/* ── HTML game: file trên server (link) hoặc HTML thô (dữ liệu cũ) ──────────
-   `templates.htmlTemplate` có 3 dạng:
-     • URL tuyệt đối          → https://… (BASE_URL/R2/Firebase)
-     • /uploads/html/x.html   → file do backend lưu, gốc = API (không phải trang)
+/* ── HTML game: file trên Supabase Storage (link) hoặc HTML thô (dữ liệu cũ) ──
+   `templates.htmlUrl` có 3 dạng:
+     • URL tuyệt đối          → https://… (Supabase/R2/Firebase)
+     • /uploads/html/x.html   → file dự phòng trên đĩa backend (gốc = API)
      • HTML thô               → bản ghi cũ chưa migration — dùng luôn
    Hàm này chuẩn hoá về HTML thô để mọi nơi chỉ cần 1 kiểu dữ liệu.          */
 
 const htmlCache = new Map();   // url|key -> Promise<string>
 
 /**
- * `htmlTemplate` có 3 dạng:
- *   1. HTML thô            → "<!DOCTYPE html>..."  (template cũ)
- *   2. URL tuyệt đối       → "https://firebasestorage.googleapis.com/..."
+ * `htmlUrl` có 3 dạng:
+ *   1. HTML thô            → "<!DOCTYPE html>..."  (template cũ chưa migration)
+ *   2. URL tuyệt đối       → "https://…supabase.co/storage/v1/object/public/…"
  *   3. Đường dẫn cùng-origin → "/games/hocmachoi-bridge.html" (file tĩnh do
- *                             chính Vite/Render phục vụ — không cần Firebase)
+ *                             chính Vite/Render phục vụ — không cần Supabase)
  * Dạng 3 chỉ nhận đường dẫn bắt đầu bằng "/" và kết thúc bằng .html/.htm
  * nên không bao giờ nhầm với HTML thô.
  */
@@ -79,14 +86,13 @@ export function isHtmlUrl(value) {
 export function resolveHtmlUrl(raw) {
   const v = String(raw || "").trim();
   if (/^https?:\/\//i.test(v)) return v;
-  if (v.startsWith("/uploads/")) return `${API_ORIGIN}${v}`;
+  if (v.startsWith("/uploads/")) return `${FILE_ORIGIN}${v}`;
   return v; // đường dẫn tĩnh cùng-origin kiểu cũ (/games/…html)
-
 }
 
 /** Lấy HTML thô của 1 template. Trả "" nếu không có. */
 export async function loadTemplateHtml(tpl, cacheKey) {
-  const raw = String(tpl?.htmlTemplate || "").trim();
+  const raw = String(tpl?.htmlUrl || "").trim();
   if (!raw) return "";
   if (!isHtmlUrl(raw)) return raw;               // HTML thô (template cũ)
 
@@ -110,13 +116,13 @@ export function clearTemplateHtmlCache(key) {
  * @returns {{ html: string, loading: boolean, error: boolean }}
  */
 export function useTemplateHtml(tpl) {
-  const raw = String(tpl?.htmlTemplate || "").trim();
+  const raw = String(tpl?.htmlUrl || "").trim();
   const [html, setHtml] = useState(() => (raw && !isHtmlUrl(raw) ? raw : ""));
   const [loading, setLoading] = useState(() => Boolean(raw) && isHtmlUrl(raw));
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const value = String(tpl?.htmlTemplate || "").trim();
+    const value = String(tpl?.htmlUrl || "").trim();
     if (!value) { setHtml(""); setLoading(false); setError(false); return; }
     if (!isHtmlUrl(value)) { setHtml(value); setLoading(false); setError(false); return; }
 

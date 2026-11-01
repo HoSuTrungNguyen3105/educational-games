@@ -3,7 +3,7 @@ import { uid, resultService, questionService, gameService, gameProgressService, 
 import { gameResultService } from '../../services/gameResultService.js'
 import { useTemplate, useTemplates } from '../../lib/hooks.js'
 import { rankMedal } from '../../lib/utils.js'
-import { PrimaryButton, GhostButton, StampToken, Loader, ErrorState, EmptyState, Toast } from '../../components/ui'
+import { PrimaryButton, GhostButton, StampToken, TemplateThumb, Loader, ErrorState, EmptyState, Toast } from '../../components/ui'
 import { EnterCodeModal } from '../../components/EnterCodeModal.jsx'
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
@@ -12,7 +12,7 @@ import { useGameStore } from '../../stores/game.store.js'
 import { useChatStore } from '../../stores/chat.store.js'
 import ChatPanel from '../../components/chat/ChatPanel.jsx'
 import ChatBubble from '../../components/chat/ChatBubble.jsx'
-import { Clapperboard, Dices, Gamepad2, KeyRound, PartyPopper, Rocket, Trophy, User } from 'lucide-react'
+import { Clapperboard, Gamepad2, KeyRound, PartyPopper, Rocket, Trophy, User } from 'lucide-react'
 
 const GamePlayRouter = lazy(() => import('../../games/_shared/GamePlayRouter.jsx'));
 
@@ -394,7 +394,7 @@ function JoinGameScreen({ onFound }) {
                 <button key={gid} onClick={() => onFound(g)}
                   className="note-card p-5 text-left flex flex-col gap-3 hover:-translate-y-1 hover:shadow-[0_8px_0_rgba(0,0,0,0.1)] transition shadow-[0_3px_0_rgba(0,0,0,0.09)] group anim-pop bg-paper2">
                   <div className="flex items-center justify-between">
-                    <StampToken icon={tpl ? tpl.icon : <Dices />} ring={tpl ? tpl.ring : "#1D2E4A"} size={46} fontSize={22} />
+                    <TemplateThumb thumbnail={tpl?.thumbnail} name={tpl?.name || g.name} ring={tpl ? tpl.ring : "#1D2E4A"} size={46} />
                     <span className="font-mono text-[11px] text-[#8A7C63] bg-ink/5 rounded-full px-2.5 py-1">{g.code}</span>
                   </div>
                   <div>
@@ -426,7 +426,7 @@ function EnterNameScreen({ game, onBack, onSubmit, userAuth }) {
   return (
     <div className="flex-1 flex items-start sm:items-center justify-center px-6 pt-[14dvh] sm:pt-10 pb-10">
       <form onSubmit={e => { e.preventDefault(); if (name.trim()) onSubmit(name.trim()); }} className="max-w-sm w-full text-center anim-pop">
-        <StampToken icon={tpl ? tpl.icon : <Dices />} ring={tpl ? tpl.ring : "#F4B942"} size={72} fontSize={32} className="mx-auto mb-4" />
+        <TemplateThumb thumbnail={tpl?.thumbnail} name={tpl?.name || game.name} ring={tpl ? tpl.ring : "#F4B942"} size={72} className="mx-auto mb-4" />
         <h1 className="font-display text-2xl text-ink mb-1">{game.name}</h1>
         <p className="text-sm text-[#8A7C63] mb-6">{game.subject} · {game.topic}</p>
         {userAuth?.user ? (
@@ -479,7 +479,7 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
       {/* Game area */}
       <div className="flex-1 flex items-center justify-center px-6 py-10 min-w-0">
         <div className="max-w-md w-full text-center anim-pop">
-          <StampToken icon={tpl ? tpl.icon : <Dices />} ring={tpl ? tpl.ring : "#F4B942"} size={80} fontSize={36} className="mx-auto mb-5 float-slow" />
+          <TemplateThumb thumbnail={tpl?.thumbnail} name={tpl?.name || game.name} ring={tpl ? tpl.ring : "#F4B942"} size={80} className="mx-auto mb-5 float-slow" />
           <h1 className="font-display text-2xl text-ink mb-1">Phòng chờ</h1>
           <p className="text-sm text-[#8A7C63] mb-6">Chờ giáo viên bắt đầu trò chơi "{game.name}"</p>
           <div className="note-card p-5 mb-6">
