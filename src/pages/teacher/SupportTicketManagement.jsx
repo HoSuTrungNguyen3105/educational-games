@@ -1,4 +1,4 @@
-// SupportTicketManagement.jsx — trang /admin/support quản lý ticket hỗ trợ.
+// SupportTicketManagement.jsx — trang /dashboard/support quản lý ticket hỗ trợ.
 //
 // Bố cục theo mẫu trang hỗ trợ HiWeb (ảnh yêu cầu):
 //   · Thanh trên: tiêu đề, ô "Tìm ticket", nút Tạo, nút xuất CSV, nút xoá bộ lọc,
@@ -85,8 +85,16 @@ function sameDay(isoValue, dayStr) {
   return local === dayStr;
 }
 
-const EMPTY_FILTERS = { code: "", title: "", content: "", priority: "all", status: "all", createdDay: "", updatedDay: "" };
+const EMPTY_FILTERS = { code: "", title: "", content: "", priority: "all", status: "all", assignee: "all", createdDay: "", updatedDay: "" };
 const EMPTY_FORM = { title: "", content: "", priority: "medium" };
+
+/** Ticket được server gán sẵn: GV chủ nhiệm lớp người gửi, hoặc admin tổng. */
+const ASSIGNEE_OPTIONS = [
+  { value: "all", label: "Tất cả" },
+  { value: "teacher", label: "Giáo viên" },
+  { value: "admin", label: "Admin tổng" },
+];
+const assigneeLabel = (t) => (t.assigneeType === "teacher" ? (t.assigneeName || t.assigneeUsername || "Giáo viên") : "Admin tổng");
 
 export default function SupportTicketManagement({ user, showToast }) {
   const isAdmin = user?.role === "admin";
@@ -136,6 +144,10 @@ export default function SupportTicketManagement({ user, showToast }) {
       if (filters.content && !String(t.content || "").toLowerCase().includes(filters.content.trim().toLowerCase())) return false;
       if (filters.priority !== "all" && t.priority !== filters.priority) return false;
       if (filters.status !== "all" && t.status !== filters.status) return false;
+      if (filters.assignee !== "all") {
+        const type = t.assigneeType === "teacher" ? "teacher" : "admin";
+        if (type !== filters.assignee) return false;
+      }
       if (!sameDay(t.createdAt, filters.createdDay)) return false;
       if (!sameDay(t.updatedAt, filters.updatedDay)) return false;
       return true;
@@ -271,9 +283,9 @@ export default function SupportTicketManagement({ user, showToast }) {
   }, [modalParam.modal]);
 
   const exportCsv = () => {
-    const head = ["Mã ticket", "Tiêu đề", "Nội dung", "Ưu tiên", "Trạng thái", "Người gửi", "Ngày tạo", "Cập nhật"];
+    const head = ["Mã ticket", "Tiêu đề", "Nội dung", "Ưu tiên", "Trạng thái", "Người nhận", "Người gửi", "Ngày tạo", "Cập nhật"];
     const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const rows = filtered.map((t) => [t.code, t.title, t.content, priorityLabel(t.priority), statusLabel(t.status), t.username, formatDate(t.createdAt), formatDate(t.updatedAt)].map(esc).join(","));
+    const rows = filtered.map((t) => [t.code, t.title, t.content, priorityLabel(t.priority), statusLabel(t.status), assigneeLabel(t), t.username, formatDate(t.createdAt), formatDate(t.updatedAt)].map(esc).join(","));
     const blob = new Blob(["\uFEFF" + [head.map(esc).join(","), ...rows].join("\r\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -286,7 +298,7 @@ export default function SupportTicketManagement({ user, showToast }) {
   if (!isAdmin) {
     return (
       <div>
-        <ManagementHeader subtitle="Hệ thống" title="Ticket hỗ trợ" />
+        <ManagementHeader subtitle="Hệ thống" title="Quản lý hỗ trợ" />
         <div className="note-card p-6 text-sm text-[#8A7C63] font-body">
           Chỉ tài khoản <span className="font-mono text-ink">admin</span> mới xem được trang này.
         </div>
@@ -294,7 +306,7 @@ export default function SupportTicketManagement({ user, showToast }) {
     );
   }
 
-  const filterActive = search || Object.entries(filters).some(([k, v]) => (k === "priority" || k === "status" ? v !== "all" : v));
+  const filterActive = search || Object.entries(filters).some(([k, v]) => (k === "priority" || k === "status" || k === "assignee" ? v !== "all" : v));
   const clearFilters = () => { setSearch(""); setFilters(EMPTY_FILTERS); setRange({ from: 1, size: PAGE_SIZE }); };
 
   const cellInput = "w-full rounded-lg border border-ink/15 bg-paper px-2.5 py-1.5 text-xs font-body outline-none focus:border-teal";
@@ -303,7 +315,7 @@ export default function SupportTicketManagement({ user, showToast }) {
     <div className="space-y-4">
       {/* Thanh trên: tiêu đề + công cụ */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <ManagementHeader subtitle="Hệ thống" title="Ticket hỗ trợ" />
+        <ManagementHeader subtitle="Hệ thống" title="Quản lý hỗ trợ" />
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput value={search} onChange={setSearch} placeholder="Tìm ticket" className="w-48" />
           <PrimaryButton onClick={openCreate} className="!px-4 !py-2 text-sm flex items-center gap-1.5">
@@ -353,14 +365,15 @@ export default function SupportTicketManagement({ user, showToast }) {
         <>
           {/* Dạng bảng (desktop) */}
           <div className={`note-card overflow-x-auto ${tableWrapClass(mode)}`}>
-            <table className="w-full min-w-[1080px]">
+            <table className="w-full min-w-[1160px]">
               <thead>
                 <tr className="text-left text-[#8A7C63] font-mono text-[11px] uppercase border-b border-ink/10">
-                  <th className="py-2.5 pl-4 pr-3 font-medium w-36">Mã ticket</th>
+                  <th className="py-2.5 pl-4 pr-3 font-medium w-32">Mã ticket</th>
                   <th className="py-2.5 pr-4 font-medium">Tiêu đề</th>
                   <th className="py-2.5 pr-4 font-medium">Nội dung</th>
-                  <th className="py-2.5 pr-3 font-medium w-36">Ưu tiên</th>
-                  <th className="py-2.5 px-3 font-medium w-36">Trạng thái</th>
+                  <th className="py-2.5 pr-3 font-medium w-32">Ưu tiên</th>
+                  <th className="py-2.5 px-3 font-medium w-32">Trạng thái</th>
+                  <th className="py-2.5 px-3 font-medium w-36">Người nhận</th>
                   <th className="py-2.5 px-3 font-medium w-32">Ngày tạo</th>
                   <th className="py-2.5 px-3 font-medium w-32">Cập nhật</th>
                   <th className="py-2.5 pl-3 pr-4 font-medium text-right w-20">Thao tác</th>
@@ -383,6 +396,9 @@ export default function SupportTicketManagement({ user, showToast }) {
                     <Select className={cellInput} value={filters.status} onChange={(v) => setFilter("status", v)} options={[{ value: "all", label: "Tất cả" }, ...STATUS_OPTIONS]} />
                   </td>
                   <td className="py-2 px-3">
+                    <Select className={cellInput} value={filters.assignee} onChange={(v) => setFilter("assignee", v)} options={ASSIGNEE_OPTIONS} />
+                  </td>
+                  <td className="py-2 px-3">
                     <input type="date" className={cellInput} value={filters.createdDay} onChange={(e) => setFilter("createdDay", e.target.value)} />
                   </td>
                   <td className="py-2 px-3">
@@ -399,6 +415,7 @@ export default function SupportTicketManagement({ user, showToast }) {
                     <td className="py-3 pr-4 text-xs font-body text-ink/70 max-w-[320px] truncate" title={t.content}>{t.content}</td>
                     <td className="py-3 pr-3"><PriorityBadge value={t.priority} /></td>
                     <td className="py-3 px-3"><StatusBadge value={t.status} /></td>
+                    <td className="py-3 px-3 text-xs font-body text-ink/70 max-w-[140px] truncate" title={assigneeLabel(t)}>{assigneeLabel(t)}</td>
                     <td className="py-3 px-3 text-xs text-[#8A7C63] font-body whitespace-nowrap">{formatDate(t.createdAt)}</td>
                     <td className="py-3 px-3 text-xs text-[#8A7C63] font-body whitespace-nowrap">{formatDate(t.updatedAt)}</td>
                     <td className="py-3 pl-3 pr-4 text-right" onClick={(e) => e.stopPropagation()}>
@@ -463,6 +480,10 @@ export default function SupportTicketManagement({ user, showToast }) {
                 {detail.username || "—"}
                 {detail.userRole ? <span className="text-[#8A7C63]"> · {detail.userRole}</span> : null}
               </p>
+            </div>
+            <div>
+              <p className="text-[11px] font-mono uppercase text-[#8A7C63]">Người nhận</p>
+              <p className="text-sm font-body text-ink mt-0.5">{assigneeLabel(detail)}</p>
             </div>
             <div>
               <p className="text-[11px] font-mono uppercase text-[#8A7C63]">Tiêu đề</p>

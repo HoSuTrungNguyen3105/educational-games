@@ -41,21 +41,22 @@ const AiStudentAnalysisPage = lazy(() => import('./AiStudentAnalysisPage.jsx'));
 const VthConfigManagement = lazy(() => import('./VthConfigManagement.jsx'));
 const AdminSettings = lazy(() => import('./AdminSettings.jsx'));
 const SupportTicketManagement = lazy(() => import('./SupportTicketManagement.jsx'));
+const TeacherSupportTickets = lazy(() => import('./TeacherSupportTickets.jsx'));
 
 export default function TeacherApp({ user, route, onLogout, showToast }) {
   const [refreshFlag, setRefreshFlag] = useState(0);
   const bump = () => setRefreshFlag(f => f + 1);
 
-  const goCreate = () => navigate("/admin/create");
-  const goLibrary = () => navigate("/admin/library");
+  const goCreate = () => navigate("/dashboard/create");
+  const goLibrary = () => navigate("/dashboard/library");
 
   const page = route.name;
 
   return (
     <TeacherLayout screen={page} user={user} onLogout={onLogout}>
       <Suspense fallback={<div className="p-12 flex items-center justify-center"><Loader label="Đang tải dữ liệu..." /></div>}>
-        {page === "admin-dashboard" && <TeacherDashboard key={refreshFlag} user={user} onLogout={onLogout} onOpenLibrary={goLibrary} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} showToast={showToast} />}
-        {page === "admin-library" && <GameLibraryManagement key={refreshFlag} onCreate={goCreate} onEdit={(id) => navigate(`/admin/edit/${id}`)} onResults={(id) => navigate(`/admin/results/${id}`)} showToast={showToast} onChanged={bump} />}
+        {page === "admin-dashboard" && <TeacherDashboard key={refreshFlag} user={user} onLogout={onLogout} onOpenLibrary={goLibrary} onCreate={goCreate} onEdit={(id) => navigate(`/dashboard/edit/${id}`)} onResults={(id) => navigate(`/dashboard/results/${id}`)} showToast={showToast} />}
+        {page === "admin-library" && <GameLibraryManagement key={refreshFlag} onCreate={goCreate} onEdit={(id) => navigate(`/dashboard/edit/${id}`)} onResults={(id) => navigate(`/dashboard/results/${id}`)} showToast={showToast} onChanged={bump} />}
         {page === "admin-create" && <CreateGameFlow key="create" gameId={null} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
         {page === "admin-edit" && <CreateGameFlow key={route.params.gameId} gameId={route.params.gameId} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
         {page === "admin-results" && <TeacherResults gameId={route.params.gameId} onBack={goLibrary} />}
@@ -94,6 +95,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
         {page === "admin-reminders" && <ReminderManagement showToast={showToast} />}
         {page === "admin-ai-analysis" && <AiStudentAnalysisPage />}
         {page === "admin-support" && <SupportTicketManagement user={user} showToast={showToast} />}
+        {page === "admin-teacher-support" && <TeacherSupportTickets user={user} showToast={showToast} />}
       </Suspense>
     </TeacherLayout>
   );

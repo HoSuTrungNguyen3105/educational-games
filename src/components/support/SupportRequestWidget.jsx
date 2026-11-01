@@ -107,8 +107,10 @@ export default function SupportRequestWidget({ userAuth, onRequireLogin }) {
               </span>
               <h3 className="font-display text-lg text-ink mt-3">Đã gửi yêu cầu hỗ trợ</h3>
               <p className="text-sm font-body text-[#8A7C63] mt-1">
-                Mã ticket của bạn: <span className="font-mono text-ink">{done.code}</span>.
-                Đội ngũ quản trị sẽ phản hồi sớm nhất.
+                Mã ticket của bạn: <span className="font-mono text-ink">{done.code}</span>.{" "}
+                {done.assigneeType === "teacher"
+                  ? <>Yêu cầu đã được gửi cho giáo viên phụ trách lớp của bạn (<span className="text-ink">{done.assigneeName || done.assigneeUsername}</span>).</>
+                  : "Đội ngũ quản trị sẽ phản hồi sớm nhất."}
               </p>
               <div className="flex justify-center mt-4">
                 <PrimaryButton onClick={closeModal}>Đóng</PrimaryButton>

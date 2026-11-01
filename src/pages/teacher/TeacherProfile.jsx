@@ -143,7 +143,7 @@ export default function TeacherProfile({ user, onLogout, showToast }) {
         title="Hồ sơ"
         subtitle="Tài khoản quản trị đang đăng nhập, bảo mật và hoạt động của bạn."
       >
-        <GhostButton onClick={() => navigate('/admin')}>Về dashboard</GhostButton>
+        <GhostButton onClick={() => navigate('/dashboard')}>Về dashboard</GhostButton>
       </ManagementHeader>
 
       {error && <ErrorState subtitle="Không thể tải dữ liệu" onRetry={load} />}

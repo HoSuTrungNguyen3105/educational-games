@@ -7,7 +7,7 @@
     // ── Học Mà Chơi (bản bridge) ───────────────────────────────────────
     // gameMode = "custom": game KHÔNG dùng collection `questions`, mọi nội
     // dung đến từ JSON config dưới đây (gồm cả câu hỏi của "Đố Vui").
-    // Mở #/admin/game-config để sửa, hoặc #/admin/create để gán vào game.
+    // Mở #/dashboard/game-config để sửa, hoặc #/dashboard/create để gán vào game.
     {
       key: "hocmachoi",
       name: "Học Mà Chơi",

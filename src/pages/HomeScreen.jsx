@@ -953,7 +953,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               {canAccessDashboard(userAuth?.user?.role) && (
                 <button
                   className="gq-adminbtn"
-                  onClick={() => goTo("/admin")}
+                  onClick={() => goTo("/dashboard")}
                   aria-label="Admin Dashboard"
                   title="Admin Dashboard"
                 >
@@ -1376,7 +1376,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <button onClick={() => goTo("/achievements")} className="gq-link text-xs text-slate-500">Xem tất cả thành tựu</button>
 
               {(userAuth?.user?.role === "admin" || userAuth?.user?.role === "teacher") && (
-                <button onClick={() => goTo("/admin")} className="gq-link">
+                <button onClick={() => goTo("/dashboard")} className="gq-link">
                   <span className="gq-link__ico"><GraduationCap className="w-4 h-4" /></span>
                   <span className="flex-1">Admin Dashboard</span>
                 </button>

@@ -244,7 +244,7 @@ export default function AvatarItemManagement({ showToast }) {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <GhostButton onClick={() => window.location.hash = '#/admin/body-custom'}>
+        <GhostButton onClick={() => window.location.hash = '#/dashboard/body-custom'}>
           Xem Thân Avatar
         </GhostButton>
         <PrimaryButton onClick={copyDataPath}>

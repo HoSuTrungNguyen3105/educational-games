@@ -294,7 +294,16 @@ export async function getRolePermissions(roleKey) {
   const key = String(roleKey || "").trim();
   if (!key) return [];
   try {
-    const doc = await getCollection(COLLECTION).findOne({ $or: [{ key }, { id: `role-${key}` }] });
+    const col = getCollection(COLLECTION);
+    const q = { $or: [{ key }, { id: `role-${key}` }] };
+    let doc = await col.findOne(q);
+    // Config vừa đổi (ROLES_SEED_VERSION tăng, vd. thêm quyền `_all`) mà built-in
+    // role chưa seed lại → quyền thiếu. Seed ngay rồi đọc lại (chỉ 1 lần,
+    // middleware có bản nhớ 30s phía trên).
+    if (doc && doc.isBuiltIn && (doc.seedVersion ?? 0) !== ROLES_SEED_VERSION) {
+      await ensureSeeded();
+      doc = await col.findOne(q);
+    }
     if (doc) return mergePermissions(matrixToPermissions(normalizeMatrix(doc.matrix)), doc.extraPermissions);
   } catch {
     /* DB lỗi/collections trống → dùng cấu hình tĩnh bên dưới */

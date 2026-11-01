@@ -116,7 +116,7 @@ export default function BodyCustomImport({ showToast }) {
       </div>
 
       <div className="flex gap-2">
-        <GhostButton onClick={() => window.location.hash = '#/admin/avatar-items'}>
+        <GhostButton onClick={() => window.location.hash = '#/dashboard/avatar-items'}>
           Xem Avatar Items
         </GhostButton>
         <PrimaryButton onClick={() => copy(DATA_FILE)}>

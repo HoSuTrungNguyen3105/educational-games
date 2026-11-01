@@ -150,7 +150,7 @@ export default function AssignmentCreate() {
       };
       if (!data.deadline) delete data.deadline;
       const assignment = await assignmentService.create(data);
-      navigate(`/admin/assignments/${assignment.id}`);
+      navigate(`/dashboard/assignments/${assignment.id}`);
     } catch (err) { setError(err.message); }
     setSubmitting(false);
   }
@@ -346,7 +346,7 @@ export default function AssignmentCreate() {
             className="px-6 py-2.5 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition disabled:opacity-50 disabled:cursor-not-allowed">
             {submitting ? 'Đang tạo...' : 'Tạo bài thi'}
           </button>
-          <button type="button" onClick={() => navigate('/admin/assignments')}
+          <button type="button" onClick={() => navigate('/dashboard/assignments')}
             className="px-6 py-2.5 bg-ink/5 text-ink/60 rounded-xl font-body font-semibold hover:bg-ink/10 transition">
             Hủy
           </button>

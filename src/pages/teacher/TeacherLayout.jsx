@@ -33,7 +33,7 @@ export default function TeacherLayout({ screen, user, onLogout, children }) {
             <House />
             <span className="hidden md:inline">Về trang chủ</span>
           </button>
-          <button onClick={() => navigate('/admin/profile')} title="Hồ sơ" className="edu-bar-btn">
+          <button onClick={() => navigate('/dashboard/profile')} title="Hồ sơ" className="edu-bar-btn">
             <UIIconUser />
             <span className="hidden md:inline">Hồ sơ</span>
           </button>

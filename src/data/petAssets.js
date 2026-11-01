@@ -6,7 +6,7 @@
 //   • Frontend giữ toàn bộ art. Server KHÔNG gửi đường dẫn/nội dung SVG và
 //     không bao giờ được tin với `pet.outfits` — server chỉ gửi ID.
 //   • Danh mục (tên, cấp mở khoá, bảng màu) nằm trong collection `petCatalog`
-//     trên server và admin sửa được tại /#/admin/pet-catalog. File này chỉ giữ
+//     trên server và admin sửa được tại /#/dashboard/pet-catalog. File này chỉ giữ
 //     HÌNH VẼ và ánh xạ id → hình.
 //   • ID đến từ API luôn phải tra qua registry này. ID lạ thì bỏ qua, tuyệt đối
 //     không nội dung SVG nào render trực tiếp từ server.
@@ -62,7 +62,7 @@ export const LAYER_Z = {
 
 /* ── Bảng màu thân ─────────────────────────────────────────────────────────
  * Chỉ là bảng dự phòng cho lúc API chưa kịp trả về. Nguồn chính thức là
- * `colors` trong collection `petCatalog` (sửa ở /#/admin/pet-catalog).
+ * `colors` trong collection `petCatalog` (sửa ở /#/dashboard/pet-catalog).
  * Thêm màu mới ở đây để có hình ngay, rồi thêm cùng id trong admin.
  * `dark`/`accent`/`stroke` suy ra từ body nên mỗi màu chỉ cần 1 dòng.
  */

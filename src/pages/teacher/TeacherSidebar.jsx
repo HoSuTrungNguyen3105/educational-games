@@ -36,67 +36,68 @@ const SECTIONS = [
     id: "main",
     label: null,
     items: [
-      { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin", permission: null },
-      { id: "admin-library", label: "Trò chơi", icon: Library, route: "/admin/library", permission: "games.manage" },
-      { id: "admin-create", label: "Tạo trò chơi", icon: IconAdd, route: "/admin/create", permission: "games.manage" },
+      { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/dashboard", permission: null },
+      { id: "admin-library", label: "Trò chơi", icon: Library, route: "/dashboard/library", permission: "games.manage" },
+      { id: "admin-create", label: "Tạo trò chơi", icon: IconAdd, route: "/dashboard/create", permission: "games.manage" },
     ],
   },
   {
     id: "manage",
     label: "Quản lý",
     items: [
-      { id: "admin-users", label: "Người dùng", icon: IconUsers, route: "/admin/users", permission: "users.view" },
-      { id: "admin-roles", label: "Vai trò", icon: Lock, route: "/admin/roles", permission: "users.view" },
-      { id: "admin-permissions", label: "Quyền hạn", icon: KeyRound, route: "/admin/permissions", permission: "users.view" },
-      { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/admin/classes", permission: null },
-      { id: "admin-assignments", label: "Bài tập", icon: IconFile, route: "/admin/assignments", permission: null },
-      { id: "admin-coins", label: "Coin & Progress", icon: Coins, route: "/admin/coins", permission: "coins.manage" },
-      { id: "admin-daily-tasks", label: "Nhiệm vụ ngày", icon: ClipboardList, route: "/admin/daily-tasks", permission: "daily-tasks.manage" },
-      { id: "admin-reminders", label: "Nhắc nhở", icon: IconBell, route: "/admin/reminders", permission: null },
-      { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
-      { id: "admin-support", label: "Hỗ trợ", icon: LifeBuoy, route: "/admin/support", permission: "roles.edit" },
-      { id: "admin-settings", label: "Cài đặt", icon: Settings2, route: "/admin/settings", permission: null },
+      { id: "admin-users", label: "Người dùng", icon: IconUsers, route: "/dashboard/users", permission: "users.view" },
+      { id: "admin-roles", label: "Vai trò", icon: Lock, route: "/dashboard/roles", permission: "users.view" },
+      { id: "admin-permissions", label: "Quyền hạn", icon: KeyRound, route: "/dashboard/permissions", permission: "users.view" },
+      { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/dashboard/classes", permission: null },
+      { id: "admin-assignments", label: "Bài tập", icon: IconFile, route: "/dashboard/assignments", permission: null },
+      { id: "admin-coins", label: "Coin & Progress", icon: Coins, route: "/dashboard/coins", permission: "coins.manage" },
+      { id: "admin-daily-tasks", label: "Nhiệm vụ ngày", icon: ClipboardList, route: "/dashboard/daily-tasks", permission: "daily-tasks.manage" },
+      { id: "admin-reminders", label: "Nhắc nhở", icon: IconBell, route: "/dashboard/reminders", permission: null },
+      { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/dashboard/chat", permission: "chat" },
+      { id: "admin-teacher-support", label: "Hỗ trợ lớp", icon: LifeBuoy, route: "/teacher-support", permission: "support.view" },
+      { id: "admin-support", label: "Quản lý hỗ trợ", icon: LifeBuoy, route: "/dashboard/support", permission: "support_all" },
+      { id: "admin-settings", label: "Cài đặt", icon: Settings2, route: "/dashboard/settings", permission: null },
     ],
   },
   {
     id:"AI",
     label: "AI",
     items : [
-            { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/admin/ai-analysis", permission: "reports.view" },
+            { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/dashboard/ai-analysis", permission: "reports.view" },
     ]
   },
   {
     id: "content",
     label: "Nội dung",
     items: [
-      { id: "admin-questions", label: "Câu hỏi", icon: CircleQuestionMark, route: "/admin/questions", permission: "questions.manage" },
-      { id: "admin-question-bank", label: "Ngân hàng câu hỏi", icon: Database, route: "/admin/question-bank", permission: "questions.manage" },
-      { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/admin/subjects", permission: "subjects.manage" },
-      { id: "admin-categories", label: "Categories", icon: Tag, route: "/admin/categories", permission: "categories.manage" },
-      { id: "admin-templates", label: "Templates", icon: Palette, route: "/admin/templates", permission: "templates.manage" },
-      { id: "admin-game-config", label: "Cấu hình game", icon: IconSettings, route: "/admin/game-config", permission: "games.manage" },
-      { id: "admin-vth-config", label: "Cấu hình Vườn Thủ Hộ", icon: Sprout, route: "/admin/vth-config", permission: "games.manage" },
-      { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/admin/images", permission: null },
-      { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/admin/upload-items", permission: null },
+      { id: "admin-questions", label: "Câu hỏi", icon: CircleQuestionMark, route: "/dashboard/questions", permission: "questions.manage" },
+      { id: "admin-question-bank", label: "Ngân hàng câu hỏi", icon: Database, route: "/dashboard/question-bank", permission: "questions.manage" },
+      { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/dashboard/subjects", permission: "subjects.manage" },
+      { id: "admin-categories", label: "Categories", icon: Tag, route: "/dashboard/categories", permission: "categories.manage" },
+      { id: "admin-templates", label: "Templates", icon: Palette, route: "/dashboard/templates", permission: "templates.manage" },
+      { id: "admin-game-config", label: "Cấu hình game", icon: IconSettings, route: "/dashboard/game-config", permission: "games.manage" },
+      { id: "admin-vth-config", label: "Cấu hình Vườn Thủ Hộ", icon: Sprout, route: "/dashboard/vth-config", permission: "games.manage" },
+      { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/dashboard/images", permission: null },
+      { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/dashboard/upload-items", permission: null },
     ],
   },
   {
     id: "avatar",
     label: "Avatar & Pet",
     items: [
-      { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/admin/avatar-items", permission: null },
-      { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/admin/avatar-template", permission: null },
-      { id: "admin-pet-catalog", label: "Danh mục Pet", icon: PawPrint, route: "/admin/pet-catalog", permission: null },
-      { id: "admin-body-custom", label: "Thân Avatar", icon: Move, route: "/admin/body-custom", permission: null },
-      { id: "admin-plant-types", label: "Loại cây (Garden)", icon: Move, route: "/admin/plant-types", permission: null },
+      { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/dashboard/avatar-items", permission: null },
+      { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/dashboard/avatar-template", permission: null },
+      { id: "admin-pet-catalog", label: "Danh mục Pet", icon: PawPrint, route: "/dashboard/pet-catalog", permission: null },
+      { id: "admin-body-custom", label: "Thân Avatar", icon: Move, route: "/dashboard/body-custom", permission: null },
+      { id: "admin-plant-types", label: "Loại cây (Garden)", icon: Move, route: "/dashboard/plant-types", permission: null },
     ],
   },
 ];
 
 /* Thanh điều hướng dưới trên mobile: 2 mục chính + nút "+" + Trang chủ + Hồ sơ. */
 const MOBILE_MAIN = [
-  { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/admin", permission: null },
-  { id: "admin-library", label: "Trò chơi", icon: Library, route: "/admin/library", permission: "games.manage" },
+  { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/dashboard", permission: null },
+  { id: "admin-library", label: "Trò chơi", icon: Library, route: "/dashboard/library", permission: "games.manage" },
   { id: "home", label: "Trang chủ", icon: House, route: "/", permission: null },
 ];
 
@@ -192,7 +193,7 @@ export default function TeacherSidebar({ screen, user, onLogout }) {
             );
           })}
           {user && (
-            <button onClick={() => navigate("/admin/profile")}
+            <button onClick={() => navigate("/dashboard/profile")}
               className={`edu-mobile-nav-btn ${screen === "admin-profile" ? "is-active" : ""}`}>
               <IconUser />
               <span className="leading-tight">Hồ sơ</span>

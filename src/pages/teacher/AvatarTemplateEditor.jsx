@@ -60,7 +60,7 @@ export default function AvatarTemplateEditor() {
         <p className="mt-1">Body rồng bỏ qua toàn bộ lớp phụ kiện. Mặc váy sẽ tự ẩn lớp quần.</p>
       </div>
 
-      <GhostButton onClick={() => window.location.hash = '#/admin/avatar-items'}>
+      <GhostButton onClick={() => window.location.hash = '#/dashboard/avatar-items'}>
         Mở Avatar Items
       </GhostButton>
     </div>

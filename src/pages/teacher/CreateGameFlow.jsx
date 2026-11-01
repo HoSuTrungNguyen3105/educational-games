@@ -359,7 +359,7 @@ function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, 
               <div className="flex flex-wrap gap-2 mt-3">
                 {gameId ? (
                   <button
-                    onClick={() => navigate("/admin/game-config")}
+                    onClick={() => navigate("/dashboard/game-config")}
                     className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-ink text-paper hover:bg-ink2"
                   >
                     Mở trang cấu hình để chỉnh chi tiết →

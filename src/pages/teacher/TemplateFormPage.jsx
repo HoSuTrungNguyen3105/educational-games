@@ -68,7 +68,7 @@ export default function TemplateFormPage({ showToast, route }) {
         (markers.length > 0 ? `Auto-inject: ${markers.join(", ")} · ` : "") +
         (onFirebase ? "Đã lưu HTML lên Firebase Storage" : "Đã lưu (Firebase lỗi — HTML lưu trong DB)")
       );
-      navigate("/admin/templates");
+      navigate("/dashboard/templates");
     } catch (err) {
       setError(err.message || "Không thể lưu template");
     } finally {
@@ -90,7 +90,7 @@ export default function TemplateFormPage({ showToast, route }) {
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="font-display text-xl text-ink">{isEdit ? "Sửa Template" : "Thêm Template"}</h1>
-        <GhostButton onClick={() => navigate("/admin/templates")}>← Quay lại</GhostButton>
+        <GhostButton onClick={() => navigate("/dashboard/templates")}>← Quay lại</GhostButton>
       </div>
 
       <div className="flex gap-1 border-b border-ink/10 mb-4">
@@ -176,7 +176,7 @@ export default function TemplateFormPage({ showToast, route }) {
       {error && <p className="text-ticket text-sm mt-3">{error}</p>}
 
       <div className="mt-4 flex items-center gap-2 justify-end border-t border-ink/10 pt-3">
-        <GhostButton onClick={() => navigate("/admin/templates")}>Hủy</GhostButton>
+        <GhostButton onClick={() => navigate("/dashboard/templates")}>Hủy</GhostButton>
         <PrimaryButton onClick={submit} disabled={saving}>{saving ? "Đang lưu..." : isEdit ? "Cập nhật" : "Thêm mới"}</PrimaryButton>
       </div>
     </div>

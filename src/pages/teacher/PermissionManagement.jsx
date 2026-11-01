@@ -1,8 +1,8 @@
-// PermissionManagement.jsx — trang /admin/permissions "Quyền hạn" theo mẫu bảng HiWeb.
+// PermissionManagement.jsx — trang /dashboard/permissions "Quyền hạn" theo mẫu bảng HiWeb.
 //
 // Nguồn dữ liệu: GET /api/permissions (phân trang + keyword phía server, seed từ
 // danh mục quyền trong config/roles.js). Trang chỉ xem — thêm/bớt quyền cho vai
-// trò làm ở "Ma trận quyền" (/admin/roles-matrix).
+// trò làm ở "Ma trận quyền" (/dashboard/roles-matrix).
 //   · Bấm dòng mở modal chi tiết (?m=permDetail&perm=<slug> qua useModalParam).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { permissionService } from "../../services/api.js";
@@ -14,6 +14,7 @@ import {
   Loader,
   ManagementHeader,
   Modal,
+  PrimaryButton,
   SearchInput,
   Select,
   cardGridClass,
@@ -22,14 +23,15 @@ import {
   ViewToggle,
 } from "../../components/ui";
 import RangePagination from "../../components/RangePagination.jsx";
-import { Download, Filter } from "lucide-react";
+import { Download, Filter, Wand2 } from "lucide-react";
 
 const PER_PAGE = 10;
 
 const EMPTY_FILTERS = { id: "", slug: "", name_vi: "", name_en: "", module: "all" };
 
-export default function PermissionManagement({ user }) {
-  const canView = user?.role === "admin" || user?.role === "teacher";
+export default function PermissionManagement({ user, showToast }) {
+  const isAdmin = user?.role === "admin";
+  const canView = isAdmin || user?.role === "teacher";
   const modalParam = useModalParam();
   const [mode, setMode] = useViewMode("admin-permissions-list", "list");
 
@@ -41,6 +43,21 @@ export default function PermissionManagement({ user }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [error, setError] = useState(null);
   const [detail, setDetail] = useState(null);
+  const [seeding, setSeeding] = useState(false);
+
+  // POST /api/permissions/all — seed các quyền `<module>_all` còn thiếu.
+  const seedAll = async () => {
+    setSeeding(true);
+    try {
+      const res = await permissionService.createAllPermissions();
+      showToast?.(`Đã có ${res?.seeded ?? 0}/${res?.total ?? 0} quyền toàn truy cập (_all)`, "success");
+      load();
+    } catch (e) {
+      showToast?.(e.message || "Không tạo được quyền _all", "error");
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const load = useCallback(() => {
     setError(null);
@@ -166,6 +183,12 @@ export default function PermissionManagement({ user }) {
         <ManagementHeader subtitle="Hệ thống" title="Quyền hạn" />
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput value={keyword} onChange={setKeyword} placeholder="Tìm quyền hạn" className="w-48" />
+          {isAdmin && (
+            <PrimaryButton onClick={seedAll} disabled={seeding} className="!px-4 !py-2 text-sm flex items-center gap-1.5" title="Tạo các quyền <module>_all (toàn quyền, chỉ admin tổng có)">
+              <Wand2 className="w-4 h-4" />
+              {seeding ? "Đang tạo..." : "Tạo quyền _all"}
+            </PrimaryButton>
+          )}
           <button
             type="button"
             onClick={exportCsv}

@@ -1,11 +1,11 @@
-// RoleListManagement.jsx — trang /admin/roles "Vai trò" theo mẫu bảng HiWeb.
+// RoleListManagement.jsx — trang /dashboard/roles "Vai trò" theo mẫu bảng HiWeb.
 //
 // Nguồn dữ liệu: GET /api/roles (phân trang + sort + keyword phía server).
 //   · Thanh trên: tiêu đề, ô tìm, xuất CSV, xoá bộ lọc, bảng/lưới,
 //     phân trang dạng khoảng "1-10 / 34" với mũi tên trước/sau.
 //   · Bảng: mỗi cột có ô lọc riêng (lọc ngay trên trang đang xem).
 //   · Bấm dòng mở modal chi tiết (?m=roleDetail&role=… qua useModalParam),
-//     trong modal có nút mở trang "Ma trận quyền" (/admin/roles-matrix) để sửa.
+//     trong modal có nút mở trang "Ma trận quyền" (/dashboard/roles-matrix) để sửa.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { permissionService } from "../../services/api.js";
 import { navigate } from "../../lib/router.js";
@@ -312,7 +312,7 @@ export default function RoleListManagement({ user }) {
 
           <div className="flex items-center justify-end gap-2 mt-5">
             <GhostButton onClick={closeDetail}>Đóng</GhostButton>
-            <PrimaryButton onClick={() => navigate("/admin/roles-matrix")} className="flex items-center gap-1.5">
+            <PrimaryButton onClick={() => navigate("/dashboard/roles-matrix")} className="flex items-center gap-1.5">
               <Grid2x2 className="w-4 h-4" />
               Ma trận quyền
             </PrimaryButton>

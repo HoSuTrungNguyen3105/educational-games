@@ -218,9 +218,15 @@ export default function RoleManagement({ user, showToast }) {
       nextMatrix[permission.feature_key][permission.action] = true;
     }
 
+    // Quyền `_all` (toàn quyền) không có ô ma trận → gửi riêng ở extraPermissions,
+    // server chỉ nhận các slug `_all` hợp lệ (admin tổng mới được seed sẵn).
+    const extraPermissions = (catalog || [])
+      .filter((permission) => permission.slug.endsWith("_all") && granted.has(permission.slug))
+      .map((permission) => permission.slug);
+
     setSaving(true);
     try {
-      const updated = await permissionService.updateRole(permRole.key, { matrix: nextMatrix });
+      const updated = await permissionService.updateRole(permRole.key, { matrix: nextMatrix, extraPermissions });
       setRoles((prev) => (prev || []).map((role) => (role.key === updated.key ? { ...role, ...updated } : role)));
       closePermissions();
       showToast?.("Đã cập nhật quyền", "success");

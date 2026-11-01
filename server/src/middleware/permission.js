@@ -31,6 +31,8 @@ const LABELS = (() => {
   const m = {};
   const act = { view: "xem", edit: "sửa", delete: "xóa" };
   for (const f of FEATURES) for (const [a, perm] of Object.entries(f.permissions)) m[perm] = `${f.label} · ${act[a]}`;
+  // Quyền `_all` (toàn quyền mô-đun, ngoài ma trận) — nhãn cho câu 403.
+  for (const f of FEATURES) m[`${f.key}_all`] = `${f.label} · toàn quyền`;
   // Quyền kiểu cũ không có trong ma trận ⇒ tự đặt nhãn cho câu 403 dễ hiểu.
   m["attendance.checkin"] = "Chấm công · điểm danh";
   return m;
@@ -132,9 +134,11 @@ const RULES = [
   { re: /^\/images/, feature: "images" },
 
   // ── Ticket hỗ trợ ──────────────────────────────────────────────
-  // /admin/ chỉ role admin (requireRoles trong route); nhóm còn lại mọi tài
-  // khoản đăng nhập gửi được yêu cầu — đòi quyền cơ bản `profile`.
-  { re: /^\/support\/admin/, perms: ["users.view"] },
+  // /admin/ cần quyền `support_all` (chỉ admin tổng — xem mọi ticket của mọi
+  // GV); nhóm /tickets/assigned cho giáo viên (quyền support.view, route tự
+  // lọc theo người được gán); còn lại mọi tài khoản đăng nhập gửi được.
+  { re: /^\/support\/admin/, perms: ["support_all"] },
+  { re: /^\/support\/tickets\/assigned/, perms: ["support.view"] },
   { re: /^\/support/, perms: [PROFILE] },
 
   // ── Phân quyền / thống kê / AI / seed ────────────────────────────────

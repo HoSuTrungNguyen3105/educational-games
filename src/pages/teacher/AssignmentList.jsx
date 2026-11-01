@@ -54,7 +54,7 @@ export default function AssignmentList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <ManagementHeader subtitle="Quản lý bài tập" title="Bài tập đã giao" />
-        <PrimaryButton onClick={() => navigate('/admin/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm flex items-center gap-2">
+        <PrimaryButton onClick={() => navigate('/dashboard/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm flex items-center gap-2">
           <IconAdd className="w-4 h-4" /> Tạo bài tập
         </PrimaryButton>
       </div>
@@ -69,7 +69,7 @@ export default function AssignmentList() {
       {!error && assignments && assignments.length === 0 && (
         <EmptyState icon={<ClipboardList />} title="Chưa có bài tập nào"
           subtitle="Tạo bài tập đầu tiên để giao cho học sinh."
-          action={<PrimaryButton onClick={() => navigate('/admin/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm">+ Tạo bài tập</PrimaryButton>} />
+          action={<PrimaryButton onClick={() => navigate('/dashboard/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm">+ Tạo bài tập</PrimaryButton>} />
       )}
       {!error && assignments && assignments.length > 0 && (
         <div className="space-y-3">
@@ -123,7 +123,7 @@ export default function AssignmentList() {
               </button>
 
               <button
-                onClick={() => navigate(`/admin/assignments/${a.id}`)}
+                onClick={() => navigate(`/dashboard/assignments/${a.id}`)}
                 className="p-2 rounded-lg hover:bg-ink/5 transition text-ink/40 hover:text-gold"
                 title="Xem bài tập"
               >

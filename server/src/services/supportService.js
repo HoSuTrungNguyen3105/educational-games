@@ -18,8 +18,42 @@ async function nextCode() {
   return `HC-${String(count + 1).padStart(5, "0")}`;
 }
 
+/**
+ * Xác định ticket nên về tay ai:
+ *  · Người gửi thuộc một lớp có giáo viên phụ trách (teacher_classes)
+ *    → gán cho giáo viên đó (ưu tiên người được gán gần nhất).
+ *  · Không có lớp / lớp chưa có GV → về admin tổng.
+ */
+async function resolveAssignee(user) {
+  try {
+    const sender = await getCollection("users").findOne(
+      { id: user?.sub },
+      { projection: { classId: 1, role: 1 } }
+    );
+    if (sender?.classId) {
+      const mappings = await getCollection("teacher_classes")
+        .find({ classId: sender.classId })
+        .sort({ createdAt: -1 })
+        .toArray();
+      for (const m of mappings) {
+        const teacher = await getCollection("users").findOne(
+          { id: m.teacherId },
+          { projection: { id: 1, username: 1, name: 1 } }
+        );
+        if (teacher) {
+          return { type: "teacher", id: teacher.id, username: teacher.username || "", name: teacher.name || "", classId: sender.classId };
+        }
+      }
+    }
+  } catch {
+    /* DB lỗi → mặc định về admin tổng, không chặn việc gửi ticket */
+  }
+  return { type: "admin", id: null, username: "", name: "", classId: null };
+}
+
 export async function createTicket({ title, content, priority, user }) {
   const now = new Date().toISOString();
+  const assignee = await resolveAssignee(user);
   const doc = {
     id: uid(),
     code: await nextCode(),
@@ -31,6 +65,12 @@ export async function createTicket({ title, content, priority, user }) {
     userId: user?.sub || null,
     username: user?.username || "",
     userRole: user?.role || "",
+    // Người nhận: giáo viên chủ nhiệm lớp người gửi, hoặc admin tổng nếu không có lớp.
+    assigneeType: assignee.type,
+    assigneeId: assignee.id,
+    assigneeUsername: assignee.username,
+    assigneeName: assignee.name,
+    classId: assignee.classId,
     createdAt: now,
     updatedAt: now,
   };
@@ -50,6 +90,18 @@ export async function listMyTickets(userId) {
     .find({ userId })
     .sort({ createdAt: -1 })
     .toArray();
+}
+
+/** Chỉ các ticket được gán cho giáo viên này — giáo viên KHÔNG xem được ticket khác. */
+export async function listAssignedTickets(teacherId) {
+  return getCollection(COLLECTION)
+    .find({ assigneeId: teacherId })
+    .sort({ createdAt: -1 })
+    .toArray();
+}
+
+export async function getTicket(id) {
+  return getCollection(COLLECTION).findOne({ id });
 }
 
 /** Admin sửa trạng thái / ưu tiên / câu trả lời. Chỉ nhận các field whitelist. */

@@ -134,7 +134,7 @@ export default function ClassManagement() {
                 </button>
                 {copiedKey === cls.code && <span className="text-xs text-green-600">Đã sao chép</span>}
               </div>
-              <button onClick={() => navigate(`/admin/classes/${cls.id}/students`)}
+              <button onClick={() => navigate(`/dashboard/classes/${cls.id}/students`)}
                 className="flex items-center gap-1.5 text-xs font-body text-ink/50 hover:text-gold transition">
                 <IconUsers className="w-4 h-4" /> Xem học sinh
               </button>

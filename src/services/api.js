@@ -779,6 +779,10 @@ export const reminderService = {
 export const supportService = {
   async create(data) { return apiFetch("/support/tickets", { method: "POST", body: data }); },
   async mine() { return apiFetch("/support/tickets/mine") || []; },
+  // GV: chỉ ticket được gán cho mình (server lọc theo assigneeId);
+  // tài khoản có `support_all` (admin tổng) gọi cùng endpoint này sẽ thấy hết.
+  async assigned() { return apiFetch("/support/tickets/assigned") || []; },
+  async updateAssigned(id, data) { return apiFetch(`/support/tickets/assigned/${encodeURIComponent(id)}`, { method: "PATCH", body: data }); },
   async list() { return apiFetch("/support/admin/tickets") || []; },
   async update(id, data) { return apiFetch(`/support/admin/tickets/${encodeURIComponent(id)}`, { method: "PATCH", body: data }); },
   async remove(id) { return apiFetch(`/support/admin/tickets/${encodeURIComponent(id)}`, { method: "DELETE" }); },
@@ -798,6 +802,10 @@ export const permissionService = {
   async permissionsPaged(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return apiFetch(`/permissions${qs ? `?${qs}` : ""}`, { _withPagination: true });
+  },
+  /** POST /api/permissions/all — seed các quyền `<module>_all` (chỉ admin). */
+  async createAllPermissions() {
+    return apiFetch("/permissions/all", { method: "POST" });
   },
   async counts() { return apiFetch("/permissions/counts") || {}; },
   async createRole(data) {

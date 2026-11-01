@@ -124,7 +124,7 @@ export default function AssignmentEdit({ assignmentId }) {
         maxAttempts: form.maxAttempts,
       };
       await assignmentService.update(assignmentId, data);
-      navigate(`/admin/assignments/${assignmentId}`);
+      navigate(`/dashboard/assignments/${assignmentId}`);
     } catch (err) { setError(err.message); }
     setSubmitting(false);
   }
@@ -134,7 +134,7 @@ export default function AssignmentEdit({ assignmentId }) {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate(`/admin/assignments/${assignmentId}`)}
+        <button onClick={() => navigate(`/dashboard/assignments/${assignmentId}`)}
           className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center hover:bg-ink/10 transition">
           <IconBack className="w-5 h-5 text-ink/60" />
         </button>
@@ -300,7 +300,7 @@ export default function AssignmentEdit({ assignmentId }) {
             className="px-6 py-2.5 bg-gold text-white rounded-xl font-body font-semibold hover:bg-gold/80 transition disabled:opacity-50 disabled:cursor-not-allowed">
             {submitting ? 'Đang lưu...' : 'Lưu thay đổi'}
           </button>
-          <button type="button" onClick={() => navigate(`/admin/assignments/${assignmentId}`)}
+          <button type="button" onClick={() => navigate(`/dashboard/assignments/${assignmentId}`)}
             className="px-6 py-2.5 bg-ink/5 text-ink/60 rounded-xl font-body font-semibold hover:bg-ink/10 transition">
             Hủy
           </button>

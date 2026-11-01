@@ -65,7 +65,7 @@ export default function AssignmentDetail({ assignmentId }) {
       message: 'Xóa bài giao? Hành động này không thể hoàn tác.',
       onConfirm: async () => {
         await assignmentService.delete_(assignmentId);
-        navigate('/admin');
+        navigate('/dashboard');
       },
     });
   }
@@ -93,7 +93,7 @@ export default function AssignmentDetail({ assignmentId }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <button
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/dashboard')}
             aria-label="Quay lại"
             className="mt-1 w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-ink/40 hover:text-ink hover:bg-ink/5 transition"
           >
@@ -114,7 +114,7 @@ export default function AssignmentDetail({ assignmentId }) {
           {assignment.status === 'ACTIVE' && (
             <>
               <button
-                onClick={() => navigate(`/admin/assignments/${assignmentId}/edit`)}
+                onClick={() => navigate(`/dashboard/assignments/${assignmentId}/edit`)}
                 className="px-3.5 py-2 bg-ink/5 text-ink/70 rounded-xl text-sm font-body hover:bg-ink/10 transition flex items-center gap-1.5"
               >
                 <IconEdit className="w-3.5 h-3.5" /> Sửa

@@ -9,49 +9,51 @@ const ROUTES = [
   { name: "student-join",  pattern: "/play" },
 
   // ── Teacher / Admin ──
-  { name: "admin-dashboard", pattern: "/admin" },
-  { name: "admin-library",   pattern: "/admin/library" },
-  { name: "admin-users",     pattern: "/admin/users" },
-  { name: "admin-roles",     pattern: "/admin/roles" },
-  { name: "admin-roles-matrix", pattern: "/admin/roles-matrix" },
-  { name: "admin-permissions", pattern: "/admin/permissions" },
-  { name: "admin-templates", pattern: "/admin/templates" },
-  { name: "admin-game-config", pattern: "/admin/game-config" },
+  { name: "admin-dashboard", pattern: "/dashboard" },
+  { name: "admin-library",   pattern: "/dashboard/library" },
+  { name: "admin-users",     pattern: "/dashboard/users" },
+  { name: "admin-roles",     pattern: "/dashboard/roles" },
+  { name: "admin-roles-matrix", pattern: "/dashboard/roles-matrix" },
+  { name: "admin-permissions", pattern: "/dashboard/permissions" },
+  { name: "admin-templates", pattern: "/dashboard/templates" },
+  { name: "admin-game-config", pattern: "/dashboard/game-config" },
   // Cấu hình JSON riêng của game offline Vườn Thủ Hộ (plantvsanimal.html)
-  { name: "admin-vth-config", pattern: "/admin/vth-config" },
+  { name: "admin-vth-config", pattern: "/dashboard/vth-config" },
   // Cài đặt khu quản trị: đổi mật khẩu thật qua API + dữ liệu cục bộ
-  { name: "admin-settings", pattern: "/admin/settings" },
+  { name: "admin-settings", pattern: "/dashboard/settings" },
   // Ticket hỗ trợ người dùng (nút "Hỗ trợ" ở trang chủ gửi vào đây)
-  { name: "admin-support", pattern: "/admin/support" },
-  { name: "admin-template-new", pattern: "/admin/templates/new" },
-  { name: "admin-template-edit", pattern: "/admin/templates/:templateId" },
-  { name: "admin-categories", pattern: "/admin/categories" },
-  { name: "admin-subjects",  pattern: "/admin/subjects" },
-  { name: "admin-questions", pattern: "/admin/questions" },
-  { name: "admin-all-questions", pattern: "/admin/all-questions" }, // legacy redirect → /admin/questions
-  { name: "admin-question-bank", pattern: "/admin/question-bank" },
-  { name: "admin-create",    pattern: "/admin/create" },
-  { name: "admin-edit",      pattern: "/admin/edit/:gameId" },
-  { name: "admin-results",   pattern: "/admin/results/:gameId" },
-  { name: "admin-coins",     pattern: "/admin/coins" },
-  { name: "admin-daily-tasks", pattern: "/admin/daily-tasks" },
-  { name: "admin-classes", pattern: "/admin/classes" },
-  { name: "admin-class-students", pattern: "/admin/classes/:classId/students" },
-  { name: "admin-assignments", pattern: "/admin/assignments" },
-  { name: "admin-assignment-new", pattern: "/admin/assignments/new" },
-  { name: "admin-assignment-edit", pattern: "/admin/assignments/:assignmentId/edit" },
-  { name: "admin-assignment-detail", pattern: "/admin/assignments/:assignmentId" },
-  { name: "admin-avatar-items", pattern: "/admin/avatar-items" },
-  { name: "admin-avatar-template", pattern: "/admin/avatar-template" },
-  { name: "admin-pet-catalog", pattern: "/admin/pet-catalog" },
-  { name: "admin-plant-types", pattern: "/admin/plant-types" },
-  { name: "admin-body-custom", pattern: "/admin/body-custom" },
-  { name: "admin-images", pattern: "/admin/images" },
-  { name: "admin-upload-items", pattern: "/admin/upload-items" },
-  { name: "admin-chat", pattern: "/admin/chat" },
-  { name: "admin-ai-analysis", pattern: "/admin/ai-analysis" },
-  { name: "admin-reminders", pattern: "/admin/reminders" },
-  { name: "admin-profile", pattern: "/admin/profile" },
+  { name: "admin-support", pattern: "/dashboard/support" },
+  // Ticket được gán cho giáo viên phụ trách lớp (GET /api/support/tickets/assigned)
+  { name: "admin-teacher-support", pattern: "/teacher-support" },
+  { name: "admin-template-new", pattern: "/dashboard/templates/new" },
+  { name: "admin-template-edit", pattern: "/dashboard/templates/:templateId" },
+  { name: "admin-categories", pattern: "/dashboard/categories" },
+  { name: "admin-subjects",  pattern: "/dashboard/subjects" },
+  { name: "admin-questions", pattern: "/dashboard/questions" },
+  { name: "admin-all-questions", pattern: "/dashboard/all-questions" }, // legacy redirect → /dashboard/questions
+  { name: "admin-question-bank", pattern: "/dashboard/question-bank" },
+  { name: "admin-create",    pattern: "/dashboard/create" },
+  { name: "admin-edit",      pattern: "/dashboard/edit/:gameId" },
+  { name: "admin-results",   pattern: "/dashboard/results/:gameId" },
+  { name: "admin-coins",     pattern: "/dashboard/coins" },
+  { name: "admin-daily-tasks", pattern: "/dashboard/daily-tasks" },
+  { name: "admin-classes", pattern: "/dashboard/classes" },
+  { name: "admin-class-students", pattern: "/dashboard/classes/:classId/students" },
+  { name: "admin-assignments", pattern: "/dashboard/assignments" },
+  { name: "admin-assignment-new", pattern: "/dashboard/assignments/new" },
+  { name: "admin-assignment-edit", pattern: "/dashboard/assignments/:assignmentId/edit" },
+  { name: "admin-assignment-detail", pattern: "/dashboard/assignments/:assignmentId" },
+  { name: "admin-avatar-items", pattern: "/dashboard/avatar-items" },
+  { name: "admin-avatar-template", pattern: "/dashboard/avatar-template" },
+  { name: "admin-pet-catalog", pattern: "/dashboard/pet-catalog" },
+  { name: "admin-plant-types", pattern: "/dashboard/plant-types" },
+  { name: "admin-body-custom", pattern: "/dashboard/body-custom" },
+  { name: "admin-images", pattern: "/dashboard/images" },
+  { name: "admin-upload-items", pattern: "/dashboard/upload-items" },
+  { name: "admin-chat", pattern: "/dashboard/chat" },
+  { name: "admin-ai-analysis", pattern: "/dashboard/ai-analysis" },
+  { name: "admin-reminders", pattern: "/dashboard/reminders" },
+  { name: "admin-profile", pattern: "/dashboard/profile" },
 
   // ── User / Social ──
   { name: "chat",         pattern: "/chat" },
@@ -106,7 +108,7 @@ export function parseRoute() {
   const hash = (window.location.hash || "").replace(/^#/, "") || "/";
   const path = hash.split("?")[0].split("#")[0]; // bỏ query/hash nếu có
 
-  // Hỗ trợ đường dẫn cũ /admin (không hash)
+  // Đường dẫn cũ #/admin (nay là #/dashboard) — giữ cho link cũ không chết
   if (path === "/admin") {
     return { name: "admin-dashboard", params: {} };
   }

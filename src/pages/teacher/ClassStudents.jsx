@@ -46,7 +46,7 @@ export default function ClassStudents({ classId }) {
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('/admin/classes')}
+          onClick={() => navigate('/dashboard/classes')}
           className="flex items-center gap-1.5 text-sm font-body text-ink/50 hover:text-gold transition"
         >
           <IconBack className="w-4 h-4" />

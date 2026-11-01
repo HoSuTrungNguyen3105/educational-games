@@ -1,8 +1,8 @@
 // useModalParam.js — đồng bộ trạng thái modal lên URL (hash query).
 //
 // Mỗi lần mở modal, URL mang params giống trang HiWeb:
-//   #/admin/roles?m=rolePerms&role=teacher   → modal "Xem quyền hạn" của vai trò teacher
-//   #/admin/support?m=supportDetail&tid=spk-… → modal chi tiết ticket
+//   #/dashboard/roles?m=rolePerms&role=teacher   → modal "Xem quyền hạn" của vai trò teacher
+//   #/dashboard/support?m=supportDetail&tid=spk-… → modal chi tiết ticket
 // Khi đóng modal (hoặc bấm nút Back của trình duyệt) params bị xoá khỏi URL,
 // và nếu tải trang / dán link có sẵn params thì modal tương ứng tự mở lại.
 //
