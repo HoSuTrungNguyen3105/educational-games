@@ -1,3 +1,5 @@
 node_modules/
 .env
 config/educational-games-4b905-firebase-adminsdk-fbsvc-4b352ffe39.json
+# File HTML game sinh ra lúc chạy (server/uploads/html) — không commit
+uploads/

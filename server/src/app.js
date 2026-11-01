@@ -70,7 +70,18 @@ app.use(express.json({ limit: "10mb" }));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// File HTML game (uploads/html/<uuid>.html) + asset upload — phục vụ tĩnh,
+// tên file là UUID nên không lộ đường dẫn nội bộ, không cho phép duyệt thư mục.
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "../uploads"), {
+    index: false,
+    setHeaders: (res, filePath) => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      if (/\.html?$/i.test(filePath)) res.setHeader("Cache-Control", "public, max-age=86400");
+    },
+  })
+);
 
 app.get("/api/health", (_req, res) => {
   sendSuccess(res, { ok: true, ts: new Date().toISOString() });

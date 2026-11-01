@@ -9,6 +9,7 @@ import { initPlantTypes } from "./services/plantTypeService.js";
 import { checkDeadlineReminders, setNotificationIO } from "./services/notificationService.js";
 import { setGameVersionIO } from "./services/gameVersionService.js";
 import * as templateStorage from "./services/templateStorageService.js";
+import * as setupService from "./services/setupService.js";
 
 const DEADLINE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
 
@@ -26,20 +27,25 @@ async function main() {
     console.log(`[server] API chạy tại http://localhost:${config.port}/api`);
     console.log(`[server] Socket.IO sẵn sàng tại ws://localhost:${config.port}`);
 
-    // Chỉ log trạng thái, KHÔNG in khoá bí mật. Nếu provider lỗi thì
-    // templates.htmlTemplate tự giữ HTML thô trong Mongo.
+    // Provider mặc định là FILE trên đĩa (server/uploads/html) — R2/Firebase
+    // chỉ được dùng khi cấu hình; HTML thô không bao giờ nằm trong Mongo.
     console.log(`[server] Lưu trữ HTML: ${templateStorage.providerLabel()}`);
-    if (!templateStorage.activeProvider()) {
-      console.warn(
-        "[server] Chưa cấu hình nhà cung cấp lưu trữ — htmlTemplate sẽ lưu HTML thô, không lưu link. " +
-          "Xem server/.env hoặc tạo server/src/config/r2.local.js"
-      );
-    }
   });
 
   initDatabase()
     .then(async () => {
       await initPlantTypes();
+
+      // Migration idempotent: bản ghi cũ còn HTML thô trong Mongo → ghi file + lưu URL
+      const mig = await setupService
+        .migrateRawHtmlTemplates()
+        .catch((e) => {
+          console.warn("[server] Migration HTML thất bại:", e.message);
+          return null;
+        });
+      if (mig && (mig.moved || mig.failed)) {
+        console.log(`[server] Migration HTML: ${mig.moved} chuyển thành file, ${mig.failed} lỗi (giữ nguyên dữ liệu)`);
+      }
 
       // Run deadline reminder check immediately, then every hour
       checkDeadlineReminders().catch(e => console.error("[server] Deadline reminder error:", e.message));

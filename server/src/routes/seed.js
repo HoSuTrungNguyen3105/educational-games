@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getCollection, seedData } from "../db.js";
+import * as setupService from "../services/setupService.js";
 import { ObjectId } from "mongodb";
 import { sendSuccess, sendError } from "../utils/response.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
@@ -37,6 +38,11 @@ router.post("/seed", authenticate, requireRoles("admin", "teacher"), async (req,
       }
     }
     results.templates = { total: rawTemplates.length, added: templatesAdded, updated: templatesUpdated };
+
+    // Templates vừa seed vẫn có thể mang HTML thô trong templates.json →
+    // đẩy xuống file + lưu link, giống luồng CRUD (không ghi HTML thô vào Mongo).
+    const migrated = await setupService.migrateRawHtmlTemplates();
+    results.templates.migratedToFiles = migrated.moved;
 
     // 2. Categories — skip if id already exists
     const categoriesColl = getCollection("categories");

@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { setupService } from '../services/setupService.js';
+import { API_BASE } from '../services/api.js';
+
+// Gốc API (bỏ hậu tố /api) — dùng để ghép URL file HTML do server lưu trên đĩa.
+const API_ORIGIN = API_BASE.replace(/\/api\/?$/, "");
 
 const FALLBACK_TEMPLATE = { icon: "🎲", ring: "#F4B942" };
 
@@ -47,11 +51,12 @@ export function useTemplate(game, refreshKey) {
   return templates.find((t) => t.slug === game.template || t.id === game.template) || FALLBACK_TEMPLATE;
 }
 
-/* ── HTML game: nhúng trong Mongo (cũ) hoặc là link Firebase (mới) ───────────
-   `templates.htmlTemplate` có 2 dạng:
-     • HTML thô   → dùng luôn
-     • link https://…  → tải nội dung về rồi dùng
-   Hàm này chuẩn hoá về HTML thô để mọi nơi chỉ cần 1 kiểu dữ liệu.            */
+/* ── HTML game: file trên server (link) hoặc HTML thô (dữ liệu cũ) ──────────
+   `templates.htmlTemplate` có 3 dạng:
+     • URL tuyệt đối          → https://… (BASE_URL/R2/Firebase)
+     • /uploads/html/x.html   → file do backend lưu, gốc = API (không phải trang)
+     • HTML thô               → bản ghi cũ chưa migration — dùng luôn
+   Hàm này chuẩn hoá về HTML thô để mọi nơi chỉ cần 1 kiểu dữ liệu.          */
 
 const htmlCache = new Map();   // url|key -> Promise<string>
 
@@ -70,15 +75,25 @@ export function isHtmlUrl(value) {
   return /^\/[\w\-./%]*\.html?$/i.test(v);
 }
 
+/** Ghép URL tuyệt đối: file /uploads/… nằm ở gốc API, còn lại giữ nguyên. */
+export function resolveHtmlUrl(raw) {
+  const v = String(raw || "").trim();
+  if (/^https?:\/\//i.test(v)) return v;
+  if (v.startsWith("/uploads/")) return `${API_ORIGIN}${v}`;
+  return v; // đường dẫn tĩnh cùng-origin kiểu cũ (/games/…html)
+
+}
+
 /** Lấy HTML thô của 1 template. Trả "" nếu không có. */
 export async function loadTemplateHtml(tpl, cacheKey) {
   const raw = String(tpl?.htmlTemplate || "").trim();
   if (!raw) return "";
   if (!isHtmlUrl(raw)) return raw;               // HTML thô (template cũ)
 
-  const key = cacheKey || raw;
+  const url = resolveHtmlUrl(raw);
+  const key = cacheKey || url;
   if (htmlCache.has(key)) return htmlCache.get(key);
-  const p = fetch(raw, { headers: { Accept: "text/html" } })
+  const p = fetch(url, { headers: { Accept: "text/html" } })
     .then((res) => (res.ok ? res.text() : ""))
     .catch(() => "");
   htmlCache.set(key, p);

@@ -50,6 +50,15 @@ export const config = {
     .map((s) => s.trim())
     .filter(Boolean),
 
+  // ── File HTML game (server/uploads/html) ─────────────────────────────────
+  // Domain công khai của API, dùng ghép URL tuyệt đối cho file HTML.
+  // KHÔNG hardcode — đặt BASE_URL khi deploy (vd https://edu-api.onrender.com).
+  // Thiếu BASE_URL → htmlUrl trả về dạng đường dẫn tương đối /uploads/html/…
+  // và frontend tự ghép gốc API (xem src/lib/hooks.js loadTemplateHtml).
+  baseUrl: (process.env.BASE_URL || "").replace(/\/+$/, ""),
+  // Giới hạn dung lượng 1 file HTML game (MB). express.json đã chặn 10mb ở tầng HTTP.
+  htmlMaxMb: Number(process.env.HTML_MAX_MB) || 4,
+
   // ── AI Service (Java, mặc định :8081) ────────────────────────────────────
   // Kiến trúc: Frontend → Backend chính (chỗ này) → AI Service. Frontend KHÔNG
   // bao giờ gọi thẳng AI Service.

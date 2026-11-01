@@ -3,7 +3,7 @@ import { navigate } from '../../lib/router.js'
 import { templateService } from '../../services/api.js'
 import { injectApiBridge, detectApiMarkers } from '../../lib/apiBridge.js'
 import { processGameHtml } from '../../game-html/injectTaskBridge.js'
-import { loadTemplateHtml } from '../../lib/hooks.js'
+import { loadTemplateHtml, isHtmlUrl } from '../../lib/hooks.js'
 import { PrimaryButton, GhostButton, Field } from '../../components/ui'
 
 const CATEGORY_OPTIONS = [
@@ -58,15 +58,15 @@ export default function TemplateFormPage({ showToast, route }) {
     try {
       const markers = detectApiMarkers(form.htmlTemplate);
       const payload = { ...form, htmlTemplate: processGameHtml(injectApiBridge(form.htmlTemplate)) };
-      // Server tự upload HTML lên Firebase rồi lưu link vào templates.htmlTemplate
+      // Server tự ghi HTML thành file (.html) và chỉ lưu link vào templates.htmlTemplate
       const saved = isEdit
         ? await templateService.update(templateId, payload)
         : await templateService.create(payload);
       const stored = saved?.htmlTemplate;
-      const onFirebase = typeof stored === "string" && /^https?:\/\//i.test(stored);
+      const savedAsFile = typeof stored === "string" && (isHtmlUrl(stored) || /^\/uploads\//.test(stored));
       showToast(
         (markers.length > 0 ? `Auto-inject: ${markers.join(", ")} · ` : "") +
-        (onFirebase ? "Đã lưu HTML lên Firebase Storage" : "Đã lưu (Firebase lỗi — HTML lưu trong DB)")
+        (savedAsFile ? "Đã lưu HTML thành file" : "Đã lưu (server chưa tạo được file — HTML tạm nằm trong DB)")
       );
       navigate("/dashboard/templates");
     } catch (err) {
