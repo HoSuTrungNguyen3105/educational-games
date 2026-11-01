@@ -39,6 +39,8 @@ const SECTIONS = [
       { id: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/dashboard", permission: null },
       { id: "admin-library", label: "Trò chơi", icon: Library, route: "/dashboard/library", permission: "games.manage" },
       { id: "admin-create", label: "Tạo trò chơi", icon: IconAdd, route: "/dashboard/create", permission: "games.manage" },
+      { id: "admin-settings", label: "Cài đặt", icon: Settings2, route: "/dashboard/settings", permission: null },
+      { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/dashboard/images", permission: null },
     ],
   },
   {
@@ -57,7 +59,6 @@ const SECTIONS = [
       { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/dashboard/chat", permission: "chat" },
       { id: "admin-teacher-support", label: "Hỗ trợ lớp", icon: LifeBuoy, route: "/teacher-support", permission: "support.view" },
       { id: "admin-support", label: "Quản lý hỗ trợ", icon: LifeBuoy, route: "/dashboard/support", permission: "support_all" },
-      { id: "admin-settings", label: "Cài đặt", icon: Settings2, route: "/dashboard/settings", permission: null },
     ],
   },
   {
@@ -78,7 +79,6 @@ const SECTIONS = [
       { id: "admin-templates", label: "Templates", icon: Palette, route: "/dashboard/templates", permission: "templates.manage" },
       { id: "admin-game-config", label: "Cấu hình game", icon: IconSettings, route: "/dashboard/game-config", permission: "games.manage" },
       { id: "admin-vth-config", label: "Cấu hình Vườn Thủ Hộ", icon: Sprout, route: "/dashboard/vth-config", permission: "games.manage" },
-      { id: "admin-images", label: "Thư viện ảnh", icon: Image, route: "/dashboard/images", permission: null },
       { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/dashboard/upload-items", permission: null },
     ],
   },

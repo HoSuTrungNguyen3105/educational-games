@@ -39,12 +39,21 @@ export const seedData = {
   subjects: () => loadDataFile("SUBJECTS.json"),
 };
 
+/**
+ * Che user + mật khẩu trong chuỗi kết nối trước khi ghi ra log.
+ * Render/Heroku gom stdout vào log của nền tảng — để nguyên URI là phát tán
+ * luôn credentials của Atlas (spec: không ghi mật khẩu vào log).
+ */
+export function redactUri(uri) {
+  return String(uri || "").replace(/^(mongodb(?:\+srv)?:\/\/)[^@/]*@/i, "$1***@");
+}
+
 export async function connect() {
   if (db) return db;
   client = new MongoClient(config.mongoUri);
   await client.connect();
   db = client.db(config.dbName);
-  console.log(`[db] Kết nối MongoDB: ${config.mongoUri}/${config.dbName}`);
+  console.log(`[db] Kết nối MongoDB: ${redactUri(config.mongoUri)} → ${config.dbName}`);
   return db;
 }
 

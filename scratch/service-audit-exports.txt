@@ -1,0 +1,198 @@
+
+server/src/lib/avatarRenderer.js  (3 export)
+   ✗ ACCESSORY_CATEGORIES — 0 tham chiếu ngoài file
+
+server/src/lib/gradeAnswer.js  (7 export)
+   ✗ DEFAULT_POINTS — 0 tham chiếu ngoài file
+
+server/src/lib/outfitCatalog.js  (10 export)
+   ✗ AVATAR_BODY_ALIASES — 0 tham chiếu ngoài file
+   ✗ AVATAR_FIELDS — 0 tham chiếu ngoài file
+   ✗ AVATAR_DEFAULT — 0 tham chiếu ngoài file
+   ✗ AVATAR_HUMAN_SLOTS — 0 tham chiếu ngoài file
+   ✗ AVATAR_BODY_SLOTS — 0 tham chiếu ngoài file
+   ✗ AVATAR_SELF_CLOTHED_BODIES — 0 tham chiếu ngoài file
+   ✗ PET_FIELDS — 0 tham chiếu ngoài file
+
+server/src/services/assignmentService.js  (15 export)
+   ✗ getSubmissionById — 0 tham chiếu ngoài file
+   ✗ getStudentSubmission — 0 tham chiếu ngoài file
+
+server/src/services/auditService.js  (5 export)
+   ✗ purge — 0 tham chiếu ngoài file
+
+server/src/services/authService.js  (31 export)
+   ✗ findByUsername — 0 tham chiếu ngoài file
+   ✗ findByEmail — 0 tham chiếu ngoài file
+   ✗ STAR_TO_COIN_RATE — 0 tham chiếu ngoài file
+   ✗ levelFromXp — 0 tham chiếu ngoài file
+   ✗ DAILY_GIFT_MIN — 0 tham chiếu ngoài file
+   ✗ DAILY_GIFT_MAX — 0 tham chiếu ngoài file
+
+server/src/services/classService.js  (13 export)
+   ✗ removeTeacher — 0 tham chiếu ngoài file
+   ✗ getClassTeachers — 0 tham chiếu ngoài file
+
+server/src/services/conversationService.js  (8 export)
+   ✗ createGameRoom — 0 tham chiếu ngoài file
+   ✗ listConversations — 0 tham chiếu ngoài file
+   ✗ findDM — 0 tham chiếu ngoài file
+
+server/src/services/dailyTaskService.js  (11 export)
+   ✗ matchConditions — 0 tham chiếu ngoài file
+
+server/src/services/fcmService.js  (2 export)
+   ✗ sendToTokens — 0 tham chiếu ngoài file
+
+server/src/services/gameConfigStore.js  (5 export)
+   ✗ normalizeKey — 0 tham chiếu ngoài file
+
+server/src/services/gameEventService.js  (2 export)
+   ✗ EVENT_TYPES — 0 tham chiếu ngoài file
+
+server/src/services/gameService.js  (17 export)
+   ✗ genCode — 0 tham chiếu ngoài file
+   ✗ DELIVERY_MODES — 0 tham chiếu ngoài file
+   ✗ DEFAULT_DELIVERY_MODE — 0 tham chiếu ngoài file
+   ✗ GAME_MODES — 0 tham chiếu ngoài file
+   ✗ DEFAULT_GAME_MODE — 0 tham chiếu ngoài file
+
+server/src/services/gameVersionService.js  (8 export)
+   ✗ getLatest — 0 tham chiếu ngoài file
+
+server/src/services/htmlFileStorageService.js  (9 export)
+   ✗ HTML_DIR — 0 tham chiếu ngoài file
+   ✗ HTML_URL_PREFIX — 0 tham chiếu ngoài file
+
+server/src/services/permissionService.js  (14 export)
+   ✗ BUILTIN_ROLES — 0 tham chiếu ngoài file
+   ✗ invalidateRolePermissions — 0 tham chiếu ngoài file
+
+server/src/services/petCatalog.js  (23 export)
+   ✗ KINDS — 0 tham chiếu ngoài file
+   ✗ invalidate — 0 tham chiếu ngoài file
+   ✗ peek — 0 tham chiếu ngoài file
+   ✗ getColor — 0 tham chiếu ngoài file
+   ✗ availableFor — 0 tham chiếu ngoài file
+   ✗ fullCatalog — 0 tham chiếu ngoài file
+   ✗ isValidId — 0 tham chiếu ngoài file
+
+server/src/services/petService.js  (10 export)
+   ✗ expNeededFor — 0 tham chiếu ngoài file
+   ✗ getOrCreate — 0 tham chiếu ngoài file
+
+server/src/services/refreshTokenService.js  (16 export)
+   ✗ cookieOptions — 0 tham chiếu ngoài file
+   ✗ verifyRefreshToken — 0 tham chiếu ngoài file
+   ✗ revokeFamily — 0 tham chiếu ngoài file
+
+server/src/services/supportService.js  (9 export)
+   ✗ TICKET_PRIORITIES — 0 tham chiếu ngoài file
+   ✗ TICKET_STATUSES — 0 tham chiếu ngoài file
+
+server/src/services/systemConfigService.js  (9 export)
+   ✗ mergeConfig — 0 tham chiếu ngoài file
+   ✗ storageProviderName — 0 tham chiếu ngoài file
+   ✗ CONFIG_LEAF_PATHS — 0 tham chiếu ngoài file
+
+server/src/services/systemService.js  (6 export)
+   ✗ SCAN_COOLDOWN_MS — 0 tham chiếu ngoài file
+   ✗ lastStatusCheck — 0 tham chiếu ngoài file
+   ✗ lastScan — 0 tham chiếu ngoài file
+
+server/src/services/taskEngineService.js  (11 export)
+   ✗ getTaskByCode — 0 tham chiếu ngoài file
+   ✗ getTaskById — 0 tham chiếu ngoài file
+
+server/src/services/templateStorageService.js  (16 export)
+   ✗ STORAGE_PREFIX — 0 tham chiếu ngoài file
+
+server/src/services/userDeviceService.js  (7 export)
+   ✗ removeDeviceById — 0 tham chiếu ngoài file
+   ✗ deactivateDevice — 0 tham chiếu ngoài file
+
+src/firebase/messaging.js  (4 export)
+   ✗ getTokenValue — 0 tham chiếu ngoài file
+
+src/hooks/useReminderCheck.js  (0 export)
+
+src/lib/ageCodes.js  (7 export)
+   ✗ GRADE_BY_AGE_CODE — 0 tham chiếu ngoài file
+   ✗ isAgeCode — 0 tham chiếu ngoài file
+   ✗ gradeForAgeCode — 0 tham chiếu ngoài file
+   ✗ ageForAgeCode — 0 tham chiếu ngoài file
+
+src/lib/authToken.js  (13 export)
+   ✗ tokenPayload — 0 tham chiếu ngoài file
+   ✗ tokenExpiresAt — 0 tham chiếu ngoài file
+   ✗ getUser — 0 tham chiếu ngoài file
+   ✗ isRefreshing — 0 tham chiếu ngoài file
+   ✗ markSessionDead — 0 tham chiếu ngoài file
+
+src/lib/coinWallet.js  (9 export)
+   ✗ cachedCoins — 0 tham chiếu ngoài file
+   ✗ syncWallet — 0 tham chiếu ngoài file
+   ✗ waitForOnline — 0 tham chiếu ngoài file
+
+src/lib/dressUpAvatar.js  (16 export)
+   ✗ currentOwner — 0 tham chiếu ngoài file
+   ✗ readLocalOutfit — 0 tham chiếu ngoài file
+   ✗ KID_VIEW_ASPECT — 0 tham chiếu ngoài file
+   ✗ PET_VIEW_ASPECT — 0 tham chiếu ngoài file
+
+src/lib/gameThumbnail.js  (3 export)
+   ✗ publicImage — 0 tham chiếu ngoài file
+
+src/lib/hooks.js  (12 export)
+   ✗ resolveHtmlUrl — 0 tham chiếu ngoài file
+   ✗ clearTemplateHtmlCache — 0 tham chiếu ngoài file
+   ✗ useMediaQuery — 0 tham chiếu ngoài file
+   ✗ useTimedQuestion — 0 tham chiếu ngoài file
+
+src/lib/kidSettings.js  (20 export)
+   ✗ AGE_MIN — 0 tham chiếu ngoài file
+   ✗ AGE_MAX — 0 tham chiếu ngoài file
+   ✗ isOnboarded — 0 tham chiếu ngoài file
+
+src/lib/mathGate.js  (2 export)
+   ✗ makeQuestions — 0 tham chiếu ngoài file
+
+src/lib/offlineGameSync.js  (3 export)
+   ✗ flushPending — 0 tham chiếu ngoài file
+
+src/lib/petApi.js  (17 export)
+   ✗ PET_MOODS — 0 tham chiếu ngoài file
+   ✗ addPetExp — 0 tham chiếu ngoài file
+   ✗ setPetMood — 0 tham chiếu ngoài file
+
+src/lib/router.js  (3 export)
+   ✗ parseRoute — 0 tham chiếu ngoài file
+
+src/lib/utils.js  (8 export)
+   ✗ shortName — 0 tham chiếu ngoài file
+   ✗ getLevelFromCoins — 0 tham chiếu ngoài file
+   ✗ getCoinsForNextLevel — 0 tham chiếu ngoài file
+
+src/lib/vthConfig.js  (19 export)
+   ✗ DEF_VTH — 0 tham chiếu ngoài file
+   ✗ MON_ICON — 0 tham chiếu ngoài file
+   ✗ PLANT_ICON — 0 tham chiếu ngoài file
+   ✗ M_BASE — 0 tham chiếu ngoài file
+   ✗ P_BASE — 0 tham chiếu ngoài file
+   ✗ KIND_DEF — 0 tham chiếu ngoài file
+   ✗ compactLevel — 0 tham chiếu ngoài file
+
+src/services/aiApi.js  (8 export)
+   ✗ AiServiceError — 0 tham chiếu ngoài file
+   ✗ mapQuestion — 0 tham chiếu ngoài file
+
+src/services/api.js  (36 export)
+   ✗ ensureFreshAccessToken — 0 tham chiếu ngoài file
+
+src/services/question-import/question.validator.js  (2 export)
+   ✗ validateQuestions — 0 tham chiếu ngoài file
+
+src/socket/socket.js  (2 export)
+   ✗ SOCKET_URL — 0 tham chiếu ngoài file
+
+Tổng số export không ai dùng: 108  (trên 44 file có dấu hiệu)

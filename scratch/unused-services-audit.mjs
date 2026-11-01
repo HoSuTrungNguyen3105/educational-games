@@ -95,6 +95,7 @@ const buckets = {
   "src/services": files.filter((f) => /^src\/services\//.test(rel(f))),
   "src/lib": files.filter((f) => /^src\/lib\//.test(rel(f))),
   "src/hooks + src/socket": files.filter((f) => /^(src\/hooks|src\/socket)\//.test(rel(f))),
+  "src/components + pages (dịch vụ UI)": files.filter((f) => /^(src\/components|src\/pages)\//.test(rel(f)) && /service|api|store/i.test(rel(f))),
 };
 
 let unreachableTotal = 0;
