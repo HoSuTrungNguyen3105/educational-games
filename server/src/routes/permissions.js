@@ -8,6 +8,7 @@ import {
   deleteRole,
   getUserCounts,
   PERMISSION_FEATURES,
+  PERMISSION_CATALOG,
 } from "../services/permissionService.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
 
@@ -18,6 +19,11 @@ router.use(authenticate);
 // GET /api/permissions/features — permission matrix feature definitions
 router.get("/features", requireRoles("admin", "teacher"), (_req, res) => {
   sendSuccess(res, PERMISSION_FEATURES);
+});
+
+// GET /api/permissions/catalog — flat permission catalog for role detail modal
+router.get("/catalog", requireRoles("admin", "teacher"), (_req, res) => {
+  sendSuccess(res, PERMISSION_CATALOG);
 });
 
 // GET /api/permissions/roles — list roles + account counts + matrix

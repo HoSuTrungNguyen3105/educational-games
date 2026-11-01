@@ -44,6 +44,7 @@ import miniGamesRouter from "./routes/miniGames.js";
 import aiRouter from "./routes/ai.js";
 import * as reminderService from "./services/reminderService.js";
 import { verifyToken } from "./services/authService.js";
+import { getRoleIdentity } from "./services/permissionService.js";
 import { isAllowedOrigin } from "./services/refreshTokenService.js";
 
 const app = express();
@@ -91,12 +92,9 @@ app.use("/api/users", gameProgressRouter);
 app.use("/api/users", examResultsRouter);
 app.use("/api/users", adminRouter);
 app.use("/api/users", examResultsAdminRouter);
-// usersSearchRouter có GET "/:id" — phải mount SAU các route admin có path
-// tĩnh (/game-progress…), nếu không "game-progress" bị nuốt thành userId → 404.
-app.use("/api/users", usersSearchRouter);
-
-// GET /api/users/me — current user profile
-app.get("/api/users/me", (req, res, next) => {
+// GET /api/users/me — current user profile. Phải đặt TRƯỚC usersSearchRouter
+// vì router đó có GET "/:id" và sẽ nuốt "/me" thành userId → 404.
+app.get("/api/users/me", async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
@@ -104,11 +102,23 @@ app.get("/api/users/me", (req, res, next) => {
     }
     const token = authHeader.slice(7);
     const payload = verifyToken(token);
-    sendSuccess(res, { id: payload.sub, username: payload.username, name: payload.name, role: payload.role });
+    const roleIdentity = await getRoleIdentity(payload.role).catch(() => null);
+    sendSuccess(res, {
+      id: payload.sub,
+      username: payload.username,
+      name: payload.name,
+      role: payload.role,
+      roles: roleIdentity ? [roleIdentity] : [],
+    });
   } catch {
     sendError(res, "Token không hợp lệ hoặc đã hết hạn", 401);
   }
 });
+
+// usersSearchRouter có GET "/:id" — phải mount SAU các route admin có path
+// tĩnh (/game-progress…) và route "/me" ở trên, nếu không sẽ bị nuốt → 404.
+app.use("/api/users", usersSearchRouter);
+
 app.use("/api/games", gamesRouter);
 app.use("/api/game-configs", gameConfigsRouter);
 app.use("/api/questions", questionsRouter);

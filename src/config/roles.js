@@ -6,31 +6,31 @@
 // Cột của ma trận quyền trong API (GET /api/permissions/features).
 // Mỗi trang quản trị có 3 ô riêng: xem / sửa / xóa.
 export const FEATURES = [
-  { key: "games", label: "Trò chơi", permissions: { view: "games.view", edit: "games.edit", delete: "games.delete" } },
-  { key: "game_config", label: "Cấu hình game", permissions: { view: "game_config.view", edit: "game_config.edit", delete: "game_config.delete" } },
-  { key: "questions", label: "Câu hỏi", permissions: { view: "questions.view", edit: "questions.edit", delete: "questions.delete" } },
-  { key: "question_bank", label: "Ngân hàng câu hỏi", permissions: { view: "question_bank.view", edit: "question_bank.edit", delete: "question_bank.delete" } },
-  { key: "subjects", label: "Môn học", permissions: { view: "subjects.view", edit: "subjects.edit", delete: "subjects.delete" } },
-  { key: "categories", label: "Danh mục", permissions: { view: "categories.view", edit: "categories.edit", delete: "categories.delete" } },
-  { key: "templates", label: "Templates", permissions: { view: "templates.view", edit: "templates.edit", delete: "templates.delete" } },
-  { key: "users", label: "Người dùng", permissions: { view: "users.view", edit: "users.edit", delete: "users.delete" } },
-  { key: "roles", label: "Phân quyền", permissions: { view: "roles.view", edit: "roles.edit", delete: "roles.delete" } },
-  { key: "classes", label: "Lớp học", permissions: { view: "classes.view", edit: "classes.edit", delete: "classes.delete" } },
-  { key: "assignments", label: "Bài tập", permissions: { view: "assignments.view", edit: "assignments.edit", delete: "assignments.delete" } },
-  { key: "reports", label: "Báo cáo & thống kê", permissions: { view: "reports.view", edit: "reports.edit", delete: "reports.delete" } },
-  { key: "coins", label: "Coin & Progress", permissions: { view: "coins.view", edit: "coins.edit", delete: "coins.delete" } },
-  { key: "daily_tasks", label: "Nhiệm vụ ngày", permissions: { view: "daily_tasks.view", edit: "daily_tasks.edit", delete: "daily_tasks.delete" } },
-  { key: "reminders", label: "Nhắc nhở", permissions: { view: "reminders.view", edit: "reminders.edit", delete: "reminders.delete" } },
-  { key: "chat", label: "Tin nhắn", permissions: { view: "chat.view", edit: "chat.edit", delete: "chat.delete" } },
-  { key: "attendance", label: "Chấm công", permissions: { view: "attendance.view", edit: "attendance.edit", delete: "attendance.delete" } },
-  { key: "images", label: "Thư viện ảnh", permissions: { view: "images.view", edit: "images.edit", delete: "images.delete" } },
-  { key: "upload_items", label: "Trích xuất Items", permissions: { view: "upload_items.view", edit: "upload_items.edit", delete: "upload_items.delete" } },
-  { key: "avatar_items", label: "Avatar Items", permissions: { view: "avatar_items.view", edit: "avatar_items.edit", delete: "avatar_items.delete" } },
-  { key: "avatar_templates", label: "Avatar Template", permissions: { view: "avatar_templates.view", edit: "avatar_templates.edit", delete: "avatar_templates.delete" } },
-  { key: "pet_catalog", label: "Danh mục Pet", permissions: { view: "pet_catalog.view", edit: "pet_catalog.edit", delete: "pet_catalog.delete" } },
-  { key: "body_custom", label: "Thân Avatar", permissions: { view: "body_custom.view", edit: "body_custom.edit", delete: "body_custom.delete" } },
-  { key: "plant_types", label: "Loại cây (Garden)", permissions: { view: "plant_types.view", edit: "plant_types.edit", delete: "plant_types.delete" } },
-  { key: "settings", label: "Cài đặt hệ thống", permissions: { view: "settings.view", edit: "settings.edit", delete: "settings.delete" } },
+  { key: "games", label: "Trò chơi", name_en: "Games", permissions: { view: "games.view", edit: "games.edit", delete: "games.delete" } },
+  { key: "game_config", label: "Cấu hình game", name_en: "Game config", permissions: { view: "game_config.view", edit: "game_config.edit", delete: "game_config.delete" } },
+  { key: "questions", label: "Câu hỏi", name_en: "Questions", permissions: { view: "questions.view", edit: "questions.edit", delete: "questions.delete" } },
+  { key: "question_bank", label: "Ngân hàng câu hỏi", name_en: "Question bank", permissions: { view: "question_bank.view", edit: "question_bank.edit", delete: "question_bank.delete" } },
+  { key: "subjects", label: "Môn học", name_en: "Subjects", permissions: { view: "subjects.view", edit: "subjects.edit", delete: "subjects.delete" } },
+  { key: "categories", label: "Danh mục", name_en: "Categories", permissions: { view: "categories.view", edit: "categories.edit", delete: "categories.delete" } },
+  { key: "templates", label: "Templates", name_en: "Templates", permissions: { view: "templates.view", edit: "templates.edit", delete: "templates.delete" } },
+  { key: "users", label: "Người dùng", name_en: "Users", permissions: { view: "users.view", edit: "users.edit", delete: "users.delete" } },
+  { key: "roles", label: "Phân quyền", name_en: "Roles", permissions: { view: "roles.view", edit: "roles.edit", delete: "roles.delete" } },
+  { key: "classes", label: "Lớp học", name_en: "Classes", permissions: { view: "classes.view", edit: "classes.edit", delete: "classes.delete" } },
+  { key: "assignments", label: "Bài tập", name_en: "Assignments", permissions: { view: "assignments.view", edit: "assignments.edit", delete: "assignments.delete" } },
+  { key: "reports", label: "Báo cáo & thống kê", name_en: "Reports & statistics", permissions: { view: "reports.view", edit: "reports.edit", delete: "reports.delete" } },
+  { key: "coins", label: "Coin & Progress", name_en: "Coins & progress", permissions: { view: "coins.view", edit: "coins.edit", delete: "coins.delete" } },
+  { key: "daily_tasks", label: "Nhiệm vụ ngày", name_en: "Daily tasks", permissions: { view: "daily_tasks.view", edit: "daily_tasks.edit", delete: "daily_tasks.delete" } },
+  { key: "reminders", label: "Nhắc nhở", name_en: "Reminders", permissions: { view: "reminders.view", edit: "reminders.edit", delete: "reminders.delete" } },
+  { key: "chat", label: "Tin nhắn", name_en: "Messages", permissions: { view: "chat.view", edit: "chat.edit", delete: "chat.delete" } },
+  { key: "attendance", label: "Chấm công", name_en: "Attendance", permissions: { view: "attendance.view", edit: "attendance.edit", delete: "attendance.delete" } },
+  { key: "images", label: "Thư viện ảnh", name_en: "Image library", permissions: { view: "images.view", edit: "images.edit", delete: "images.delete" } },
+  { key: "upload_items", label: "Trích xuất Items", name_en: "Item extraction", permissions: { view: "upload_items.view", edit: "upload_items.edit", delete: "upload_items.delete" } },
+  { key: "avatar_items", label: "Avatar Items", name_en: "Avatar items", permissions: { view: "avatar_items.view", edit: "avatar_items.edit", delete: "avatar_items.delete" } },
+  { key: "avatar_templates", label: "Avatar Template", name_en: "Avatar templates", permissions: { view: "avatar_templates.view", edit: "avatar_templates.edit", delete: "avatar_templates.delete" } },
+  { key: "pet_catalog", label: "Danh mục Pet", name_en: "Pet catalog", permissions: { view: "pet_catalog.view", edit: "pet_catalog.edit", delete: "pet_catalog.delete" } },
+  { key: "body_custom", label: "Thân Avatar", name_en: "Avatar bodies", permissions: { view: "body_custom.view", edit: "body_custom.edit", delete: "body_custom.delete" } },
+  { key: "plant_types", label: "Loại cây (Garden)", name_en: "Garden plant types", permissions: { view: "plant_types.view", edit: "plant_types.edit", delete: "plant_types.delete" } },
+  { key: "settings", label: "Cài đặt hệ thống", name_en: "System settings", permissions: { view: "settings.view", edit: "settings.edit", delete: "settings.delete" } },
 ];
 
 // Quyền kiểu cũ (sidebar / client cũ) map về ô của ma trận API.
@@ -69,6 +69,62 @@ const LEGACY_CELLS = {
 // Quyền mặc định của mọi vai trò (chat, hồ sơ, chơi game...)
 export const BASE_PERMISSIONS = ["chat", "profile", "friends", "coins.view", "daily-tasks", "attendance.view"];
 
+export const PERMISSION_ACTIONS = {
+  view: { name_vi: "Xem", name_en: "View" },
+  edit: { name_vi: "Sửa", name_en: "Edit" },
+  delete: { name_vi: "Xóa", name_en: "Delete" },
+};
+
+// Các quyền cơ bản không nằm trong ma trận FEATURES nhưng vẫn cần hiển thị
+// trong danh sách quyền của vai trò.
+export const BASE_PERMISSION_META = {
+  chat: { name_vi: "Tin nhắn", name_en: "Messages", module: "chat", module_vi: "Tin nhắn", module_en: "Messages" },
+  profile: { name_vi: "Hồ sơ cá nhân", name_en: "Profile", module: "profile", module_vi: "Hồ sơ", module_en: "Profile" },
+  friends: { name_vi: "Bạn bè", name_en: "Friends", module: "friends", module_vi: "Bạn bè", module_en: "Friends" },
+  "daily-tasks": { name_vi: "Nhiệm vụ ngày", name_en: "Daily tasks", module: "daily_tasks", module_vi: "Nhiệm vụ ngày", module_en: "Daily tasks" },
+};
+
+// Danh mục phẳng để API / UI hiển thị đúng cấu trúc:
+// quyền hạn · tên VI · tên EN · mô-đun.
+export const PERMISSION_CATALOG = (() => {
+  const items = [];
+  for (const feature of FEATURES) {
+    for (const [action, slug] of Object.entries(feature.permissions)) {
+      const actionMeta = PERMISSION_ACTIONS[action] || { name_vi: action, name_en: action };
+      items.push({
+        id: slug,
+        slug,
+        name_vi: `${feature.label} - ${actionMeta.name_vi}`,
+        name_en: `${feature.name_en || feature.label} - ${actionMeta.name_en}`,
+        module: feature.key,
+        module_vi: feature.label,
+        module_en: feature.name_en || feature.label,
+        feature_key: feature.key,
+        action,
+        is_base: BASE_PERMISSIONS.includes(slug),
+      });
+    }
+  }
+
+  for (const [slug, meta] of Object.entries(BASE_PERMISSION_META)) {
+    if (items.some((item) => item.slug === slug)) continue;
+    items.push({
+      id: slug,
+      slug,
+      name_vi: meta.name_vi,
+      name_en: meta.name_en,
+      module: meta.module || slug,
+      module_vi: meta.module_vi || meta.name_vi,
+      module_en: meta.module_en || meta.name_en,
+      feature_key: null,
+      action: null,
+      is_base: true,
+    });
+  }
+
+  return items;
+})();
+
 // permission string -> [featureKey, action]
 const CELL_BY_PERMISSION = (() => {
   const map = {};
@@ -88,12 +144,14 @@ export const ROLES_SEED_VERSION = 2;
 export const ROLES = {
   admin: {
     label: "Quản trị",
+    name_en: "Super Admin",
     description: "Toàn quyền hệ thống",
     dashboardAccess: true,
     permissions: [...ALL_PERMISSIONS],
   },
   teacher: {
     label: "Giáo viên",
+    name_en: "Teacher",
     description: "Quản lý nội dung, trò chơi & lớp học",
     dashboardAccess: true,
     permissions: [
@@ -170,6 +228,7 @@ export const ROLES = {
   },
   student: {
     label: "Học sinh",
+    name_en: "Student",
     description: "Chơi game & học tập",
     dashboardAccess: false,
     permissions: ["games.play", "chat", "profile", "friends", "coins.view", "daily-tasks"],
@@ -261,4 +320,16 @@ export function canAccessDashboard(role) {
 
 export function getRoleLabel(role) {
   return ROLES[role]?.label ?? role;
+}
+
+/** Thông tin định danh vai trò theo cấu trúc API: slug · tên VI · tên EN. */
+export function getRoleIdentity(role) {
+  const key = String(role || "").trim();
+  if (!key) return null;
+  const info = ROLES[key];
+  return {
+    slug: key,
+    name_vi: info?.label || key,
+    name_en: info?.name_en || info?.label || key,
+  };
 }

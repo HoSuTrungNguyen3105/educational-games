@@ -1,4 +1,4 @@
-import { StampToken } from '../../components/ui'
+import { StampToken } from './ui'
 
 export default function Field({ label, children, hint }) {
   return (

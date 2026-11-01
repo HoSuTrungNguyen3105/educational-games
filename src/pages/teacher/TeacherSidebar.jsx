@@ -51,9 +51,15 @@ const SECTIONS = [
       { id: "admin-daily-tasks", label: "Nhiệm vụ ngày", icon: ClipboardList, route: "/admin/daily-tasks", permission: "daily-tasks.manage" },
       { id: "admin-reminders", label: "Nhắc nhở", icon: IconBell, route: "/admin/reminders", permission: null },
       { id: "admin-chat", label: "Tin nhắn", icon: MessageCircle, route: "/admin/chat", permission: "chat" },
-      { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/admin/ai-analysis", permission: "reports.view" },
       { id: "admin-settings", label: "Cài đặt", icon: Settings2, route: "/admin/settings", permission: null },
     ],
+  },
+  {
+    id:"AI",
+    label: "AI",
+    items : [
+            { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/admin/ai-analysis", permission: "reports.view" },
+    ]
   },
   {
     id: "content",

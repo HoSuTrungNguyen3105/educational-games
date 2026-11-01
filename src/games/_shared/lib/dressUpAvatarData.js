@@ -2014,7 +2014,7 @@
       /* thân dưới + thân giữa: nâng thân giữa lên sát đầu, chỉ chừa vừa đủ khăn */
       + '<ellipse cx="256" cy="570" rx="112" ry="102" fill="' + SNOW.ball + '" stroke="' + SNOW.ballDark + '" stroke-width="6" filter="url(#kidShadow)"/>'
       + '<path d="M170 590 C200 630 250 650 300 646" stroke="' + SNOW.ballShade + '" stroke-width="12" fill="none" opacity=".5" stroke-linecap="round"/>'
-      + '<ellipse cx="256" cy="408" rx="88" ry="98" fill="' + SNOW.ball + '" stroke="' + SNOW.ballDark + '" stroke-width="6" filter="url(#kidShadow)"/>'
+      + '<ellipse cx="256" cy="402" rx="88" ry="100" fill="' + SNOW.ball + '" stroke="' + SNOW.ballDark + '" stroke-width="6" filter="url(#kidShadow)"/>'
       + '<g fill="' + SNOW.coal + '"><circle cx="256" cy="370" r="10"/><circle cx="256" cy="410" r="10"/><circle cx="256" cy="450" r="10"/></g>'
       /* đầu: mắt 224/288 × 204 để kính đeo vào vẫn khớp */
       + '<ellipse cx="256" cy="196" rx="82" ry="84" fill="' + SNOW.ball + '" stroke="' + SNOW.ballDark + '" stroke-width="6" filter="url(#kidShadow)"/>'
@@ -2356,7 +2356,7 @@
       + '<path d="M212 376 C232 358 280 358 300 376 C334 394 344 440 334 500 C322 552 300 576 256 576 C212 576 190 552 178 500 C168 440 178 394 212 376 Z" fill="' + DINO.body + '" stroke="' + DINO.bodyDark + '" stroke-width="5" stroke-linejoin="round" filter="url(#kidShadow)"/>'
       + '<path d="M226 396 C244 386 268 386 286 396 L278 528 C268 550 244 550 234 528 Z" fill="' + DINO.belly + '"/>'
       + '<path d="M234 424 L278 424 M234 456 L278 456 M236 488 L276 488" stroke="#E4B476" stroke-width="5" stroke-linecap="round" opacity=".75"/>'
-      + '<path d="M232 300 L232 386 C232 400 280 400 280 386 L280 300 Z" fill="' + DINO.body + '" stroke="' + DINO.bodyDark + '" stroke-width="5" stroke-linejoin="round"/>'
+      + '<path d="M232 250 L232 386 C232 400 280 400 280 386 L280 250 Z" fill="' + DINO.body + '" stroke="' + DINO.bodyDark + '" stroke-width="5" stroke-linejoin="round"/>'
       + '<path d="M240 306 L240 384 C248 392 264 392 272 384 L272 306" fill="' + DINO.belly + '" opacity=".55"/>'
       /* đầu khủng long */
       + '<path d="M190 166 C190 112 220 88 256 88 C292 88 322 112 322 166 L322 196 C322 220 314 238 300 250 C294 272 278 286 256 286 C234 286 218 272 212 250 C198 238 190 220 190 196 Z" fill="' + DINO.body + '" stroke="' + DINO.bodyDark + '" stroke-width="5" filter="url(#kidShadow)"/>'
@@ -2385,7 +2385,7 @@
       + '<circle cx="188" cy="480" r="18" fill="' + ALI.skin + '" stroke="' + ALI.skinDark + '" stroke-width="4"/>'
       + '<circle cx="324" cy="480" r="18" fill="' + ALI.skin + '" stroke="' + ALI.skinDark + '" stroke-width="4"/>'
       + '<path d="M160 414 L204 408 M308 408 L352 414" stroke="' + ALI.suitDark + '" stroke-width="6" stroke-linecap="round" opacity=".7"/>'
-      + '<path d="M226 292 L226 330 C226 346 286 346 286 330 L286 292 Z" fill="' + ALI.skin + '"/>'
+      + '<path d="M226 250 L226 330 C226 346 286 346 286 330 L286 250 Z" fill="' + ALI.skin + '"/>'
       + '<path d="' + TORSO + '" fill="' + ALI.suit + '" filter="url(#kidShadow)"/>'
       + '<path d="M214 330 C230 344 282 344 298 330 L304 356 L256 390 L208 356 Z" fill="' + ALI.suitDark + '"/>'
       + '<circle cx="256" cy="404" r="20" fill="' + ALI.glass + '" stroke="' + ALI.suitDark + '" stroke-width="5"/>'

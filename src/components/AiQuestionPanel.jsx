@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { API_BASE } from "../services/api.js";
 import { generateQuestions, DIFFICULTIES } from "../services/aiApi.js";
 import { GhostButton } from "./ui";
-import Field from "../pages/teacher/fields.jsx";
+import Field from "./fields.jsx";
 import { Input } from "./ui";
 import { Checkbox } from "./ui";
 import { Select } from "./ui";

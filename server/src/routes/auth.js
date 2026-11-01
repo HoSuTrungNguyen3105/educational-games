@@ -7,7 +7,7 @@ import { getCollection } from "../db.js";
 import { trackAction } from "../services/dailyTaskService.js";
 import { processTaskEvent } from "../services/taskEngineService.js";
 import { getClassById } from "../services/classService.js";
-import { getRolePermissions } from "../services/permissionService.js";
+import { getRolePermissions, getRoleIdentity } from "../services/permissionService.js";
 import {
   checkRefreshOrigin, issueRefreshToken, rotateRefreshToken, readRefreshCookie,
   setRefreshCookie, clearRefreshCookie, revokeAllForUser, refreshUserId, REFRESH_COOKIE_NAME,
@@ -120,11 +120,12 @@ router.post("/register", async (req, res, next) => {
 
 router.get("/me", authenticate, async (req, res) => {
   try {
-    const [userDoc, coins, games, permissions] = await Promise.all([
+    const [userDoc, coins, games, permissions, roleIdentity] = await Promise.all([
       getCollection("users").findOne({ id: req.user.sub }).catch(() => null),
       getCoins(req.user.sub).catch(() => 0),
       getByUser(req.user.sub).catch(() => []),
       getRolePermissions(req.user.role).catch(() => []),
+      getRoleIdentity(req.user.role).catch(() => null),
     ]);
 
     let classInfo = null;
@@ -140,6 +141,8 @@ router.get("/me", authenticate, async (req, res) => {
       name: req.user.name,
       email: userDoc?.email || null,
       role: req.user.role,
+      // Cấu trúc vai trò cho client: [{ slug, name_vi, name_en }].
+      roles: roleIdentity ? [roleIdentity] : [],
       // Quyền của vai trò này, gộp từ collection `roles` (kể cả vai trò tùy chỉnh
       // admin tạo trong trang Phân quyền) + quyền cơ bản:
       // ["games.view", "games.manage", "question_bank.edit", "chat", "profile", ...].
@@ -164,7 +167,7 @@ router.get("/me", authenticate, async (req, res) => {
       // game đã có GET /api/users/me/games (trang Hồ sơ gọi riêng endpoint đó).
     });
   } catch {
-    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, permissions: [], coins: 0, createdAt: null, classId: null, className: null, classCode: null, avatar: null, pet: null, ageCode: null, gender: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 } });
+    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, roles: [], permissions: [], coins: 0, createdAt: null, classId: null, className: null, classCode: null, avatar: null, pet: null, ageCode: null, gender: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 } });
   }
 });
 

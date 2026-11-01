@@ -1,9 +1,11 @@
 import { getCollection } from "../db.js";
 import {
   FEATURES,
+  PERMISSION_CATALOG,
   ROLES,
   ROLES_SEED_VERSION,
   ROLE_KEYS,
+  getRoleIdentity as getStaticRoleIdentity,
   permissionsToMatrix,
   matrixToPermissions,
 } from "../../../src/config/roles.js";
@@ -76,18 +78,43 @@ async function countByRole() {
   return map;
 }
 
-function toApi(role, counts = {}) {
+function permissionDetailsFromPermissions(permissions) {
+  const granted = new Set(permissions);
+  return PERMISSION_CATALOG
+    .filter((permission) => granted.has(permission.slug))
+    .map((permission) => ({ ...permission, granted: true }));
+}
+
+function roleIdentity(role) {
+  const fallback = getStaticRoleIdentity(role.key) || {};
+  return {
+    slug: role.key,
+    name_vi: role.label || fallback.name_vi || role.key,
+    name_en: role.name_en || fallback.name_en || role.label || role.key,
+  };
+}
+
+function toApi(role, counts = {}, { withPermissions = false } = {}) {
   const matrix = normalizeMatrix(role.matrix);
+  const permissions = matrixToPermissions(matrix);
+  const permissionDetails = permissionDetailsFromPermissions(permissions);
+
   return {
     id: role.id,
     key: role.key,
+    ...roleIdentity(role),
     label: role.label,
     description: role.description || "",
     isBuiltIn: !!role.isBuiltIn,
     dashboardAccess: !!role.dashboardAccess,
     matrix,
     accountCount: counts[role.key] || 0,
-    permissions: matrixToPermissions(matrix),
+    permission_count: permissionDetails.length,
+    permission_total: PERMISSION_CATALOG.length,
+    permissions,
+    ...(withPermissions ? { permission_details: permissionDetails } : {}),
+    created_at: role.createdAt || null,
+    updated_at: role.updatedAt || null,
   };
 }
 
@@ -110,10 +137,27 @@ export async function getRole(keyOrId) {
   const role = await col.findOne({ $or: [{ key: keyOrId }, { id: keyOrId }] });
   if (!role) return null;
   const counts = await countByRole();
-  return toApi(role, counts);
+  return toApi(role, counts, { withPermissions: true });
 }
 
-export async function createRole({ key, label, description, dashboardAccess = false, matrix, permissions }) {
+/**
+ * Định danh rút gọn của một vai trò — dùng cho response profile:
+ * roles: [{ slug, name_vi, name_en }].
+ * Không gọi ensureSeeded để tránh ghi DB mỗi lần GET /auth/me.
+ */
+export async function getRoleIdentity(roleKey) {
+  const key = String(roleKey || "").trim();
+  if (!key) return null;
+  try {
+    const doc = await getCollection(COLLECTION).findOne({ $or: [{ key }, { id: `role-${key}` }] });
+    if (doc) return roleIdentity(doc);
+  } catch {
+    /* DB chưa sẵn sàng → dùng cấu hình tĩnh */
+  }
+  return getStaticRoleIdentity(key);
+}
+
+export async function createRole({ key, label, name_en, description, dashboardAccess = false, matrix, permissions }) {
   await ensureSeeded();
   const k = String(key || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
   const name = String(label || "").trim();
@@ -130,6 +174,7 @@ export async function createRole({ key, label, description, dashboardAccess = fa
     id: uid("role"),
     key: k,
     label: name,
+    name_en: String(name_en || name).trim(),
     description: String(description || "").trim(),
     isBuiltIn: false,
     dashboardAccess: !!dashboardAccess,
@@ -139,10 +184,10 @@ export async function createRole({ key, label, description, dashboardAccess = fa
   await col.insertOne(doc);
   invalidateRolePermissions(k);
   const counts = await countByRole();
-  return toApi(doc, counts);
+  return toApi(doc, counts, { withPermissions: true });
 }
 
-export async function updateRole(keyOrId, { label, description, dashboardAccess, matrix, permissions }) {
+export async function updateRole(keyOrId, { label, name_en, description, dashboardAccess, matrix, permissions }) {
   await ensureSeeded();
   const col = getCollection(COLLECTION);
   const role = await col.findOne({ $or: [{ key: keyOrId }, { id: keyOrId }] });
@@ -154,6 +199,7 @@ export async function updateRole(keyOrId, { label, description, dashboardAccess,
     if (!name) throw new Error("label không được rỗng");
     updates.label = name;
   }
+  if (name_en != null) updates.name_en = String(name_en).trim();
   if (description != null) updates.description = String(description).trim();
   if (dashboardAccess != null) updates.dashboardAccess = !!dashboardAccess;
   if (matrix != null || permissions != null) {
@@ -165,7 +211,7 @@ export async function updateRole(keyOrId, { label, description, dashboardAccess,
   invalidateRolePermissions(role.key);
   const updated = await col.findOne({ id: role.id });
   const counts = await countByRole();
-  return toApi(updated, counts);
+  return toApi(updated, counts, { withPermissions: true });
 }
 
 export async function deleteRole(keyOrId) {
@@ -262,4 +308,4 @@ export async function getRolePermissionsCached(roleKey) {
   return perms;
 }
 
-export { FEATURES as PERMISSION_FEATURES, matrixToPermissions };
+export { FEATURES as PERMISSION_FEATURES, PERMISSION_CATALOG, matrixToPermissions };

@@ -773,6 +773,7 @@ export const reminderService = {
 
 export const permissionService = {
   async features() { return apiFetch("/permissions/features") || []; },
+  async catalog() { return apiFetch("/permissions/catalog") || []; },
   async listRoles() { return apiFetch("/permissions/roles") || []; },
   async getRole(key) { return apiFetch(`/permissions/roles/${encodeURIComponent(key)}`); },
   async counts() { return apiFetch("/permissions/counts") || {}; },
