@@ -9,6 +9,8 @@ const CreateGameFlow = lazy(() => import('./CreateGameFlow.jsx'));
 const TeacherResults = lazy(() => import('./TeacherResults.jsx'));
 const UserManagement = lazy(() => import('./UserManagement.jsx'));
 const RoleManagement = lazy(() => import('./RoleManagement.jsx'));
+const RoleListManagement = lazy(() => import('./RoleListManagement.jsx'));
+const PermissionManagement = lazy(() => import('./PermissionManagement.jsx'));
 const TemplateManagement = lazy(() => import('./TemplateManagement.jsx'));
 const TemplateFormPage = lazy(() => import('./TemplateFormPage.jsx'));
 const GameConfigEditor = lazy(() => import('./GameConfigEditor.jsx'));
@@ -38,6 +40,7 @@ const ReminderManagement = lazy(() => import('./ReminderManagement.jsx'));
 const AiStudentAnalysisPage = lazy(() => import('./AiStudentAnalysisPage.jsx'));
 const VthConfigManagement = lazy(() => import('./VthConfigManagement.jsx'));
 const AdminSettings = lazy(() => import('./AdminSettings.jsx'));
+const SupportTicketManagement = lazy(() => import('./SupportTicketManagement.jsx'));
 
 export default function TeacherApp({ user, route, onLogout, showToast }) {
   const [refreshFlag, setRefreshFlag] = useState(0);
@@ -57,7 +60,9 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
         {page === "admin-edit" && <CreateGameFlow key={route.params.gameId} gameId={route.params.gameId} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
         {page === "admin-results" && <TeacherResults gameId={route.params.gameId} onBack={goLibrary} />}
         {page === "admin-users" && <UserManagement user={user} showToast={showToast} />}
-        {page === "admin-roles" && <RoleManagement user={user} showToast={showToast} />}
+        {page === "admin-roles" && <RoleListManagement user={user} showToast={showToast} />}
+        {page === "admin-roles-matrix" && <RoleManagement user={user} showToast={showToast} />}
+        {page === "admin-permissions" && <PermissionManagement user={user} showToast={showToast} />}
         {page === "admin-coins" && <CoinManagement user={user} showToast={showToast} />}
         {page === "admin-daily-tasks" && <DailyTaskManagement showToast={showToast} />}
         {page === "admin-templates" && <TemplateManagement showToast={showToast} />}
@@ -88,6 +93,7 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
         {page === "admin-upload-items" && <UploadItems showToast={showToast} />}
         {page === "admin-reminders" && <ReminderManagement showToast={showToast} />}
         {page === "admin-ai-analysis" && <AiStudentAnalysisPage />}
+        {page === "admin-support" && <SupportTicketManagement user={user} showToast={showToast} />}
       </Suspense>
     </TeacherLayout>
   );

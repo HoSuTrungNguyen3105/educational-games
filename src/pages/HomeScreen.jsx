@@ -12,6 +12,7 @@ import { EmptyState, ErrorState, IconChevronDown, IconFile, IconLogout, IconNoti
 import TaskIcon from '../components/tasks/TaskIcon.jsx';
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import AiChatWidget from '../components/ai/AiChatWidget.jsx'
+import SupportRequestWidget from '../components/support/SupportRequestWidget.jsx'
 import { PetAvatar } from '../components/PetAvatar.jsx'
 import { usePet, moodLabel } from '../lib/petApi.js'
 import DailyGiftModal from '../components/home/DailyGiftModal.jsx'
@@ -1283,6 +1284,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       </nav>
 
       <EnterCodeModal open={showCodeModal} onClose={() => setShowCodeModal(false)} onFound={onSelectGame} />
+      <SupportRequestWidget userAuth={userAuth} onRequireLogin={onUserLogin} />
       <AiChatWidget title="AI Bạn Học" />
 
       {/* ─────────── SHEET MENU ⚙️ ─────────── */}

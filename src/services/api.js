@@ -771,11 +771,34 @@ export const reminderService = {
   async delete_(id) { return apiFetch(`/reminders/${id}`, { method: "DELETE" }); },
 };
 
+/**
+ * Ticket hỗ trợ — người dùng gửi từ trang chủ (nút "Hỗ trợ"), admin xử lý ở
+ * /admin/support. Server: server/src/routes/support.js.
+ * Lưu ý: `ticketService` ở trên là vé vào game, không liên quan chỗ này.
+ */
+export const supportService = {
+  async create(data) { return apiFetch("/support/tickets", { method: "POST", body: data }); },
+  async mine() { return apiFetch("/support/tickets/mine") || []; },
+  async list() { return apiFetch("/support/admin/tickets") || []; },
+  async update(id, data) { return apiFetch(`/support/admin/tickets/${encodeURIComponent(id)}`, { method: "PATCH", body: data }); },
+  async remove(id) { return apiFetch(`/support/admin/tickets/${encodeURIComponent(id)}`, { method: "DELETE" }); },
+};
+
 export const permissionService = {
   async features() { return apiFetch("/permissions/features") || []; },
   async catalog() { return apiFetch("/permissions/catalog") || []; },
   async listRoles() { return apiFetch("/permissions/roles") || []; },
   async getRole(key) { return apiFetch(`/permissions/roles/${encodeURIComponent(key)}`); },
+  // API tách riêng dạng HiWeb (server/src/routes/roles.js, permissions.js GET "/"):
+  // params: { page, perPage, keyword, sort_by, sort_dir, from_date, to_date, date_col }
+  async rolesPaged(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch(`/roles${qs ? `?${qs}` : ""}`, { _withPagination: true });
+  },
+  async permissionsPaged(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch(`/permissions${qs ? `?${qs}` : ""}`, { _withPagination: true });
+  },
   async counts() { return apiFetch("/permissions/counts") || {}; },
   async createRole(data) {
     return apiFetch("/permissions/roles", { method: "POST", body: data });

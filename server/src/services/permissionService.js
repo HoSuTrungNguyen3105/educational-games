@@ -5,6 +5,7 @@ import {
   ROLES,
   ROLES_SEED_VERSION,
   ROLE_KEYS,
+  ALL_ACCESS_PERMISSIONS,
   getRoleIdentity as getStaticRoleIdentity,
   permissionsToMatrix,
   matrixToPermissions,
@@ -29,6 +30,8 @@ export const BUILTIN_ROLES = Object.entries(ROLES).map(([key, role]) => ({
   isBuiltIn: true,
   dashboardAccess: !!role.dashboardAccess,
   matrix: permissionsToMatrix(role.permissions),
+  // Quyền `_all` không có ô ma trận → lưu riêng, merge vào `permissions` khi đọc.
+  extraPermissions: role.permissions.filter((p) => ALL_ACCESS_PERMISSIONS.includes(p)),
   seedVersion: ROLES_SEED_VERSION,
 }));
 
@@ -58,6 +61,7 @@ async function ensureSeeded() {
               isBuiltIn: true,
               dashboardAccess: r.dashboardAccess,
               matrix: r.matrix,
+              extraPermissions: r.extraPermissions,
               seedVersion: r.seedVersion,
               updatedAt: now,
             },
@@ -85,6 +89,17 @@ function permissionDetailsFromPermissions(permissions) {
     .map((permission) => ({ ...permission, granted: true }));
 }
 
+/** Gộp quyền ma trận + quyền `_all` (extraPermissions) của role, khử trùng lặp. */
+function mergePermissions(matrixPerms, extra) {
+  return [...new Set([...(matrixPerms || []), ...(Array.isArray(extra) ? extra : [])])];
+}
+
+/** Chỉ nhận các slug `_all` hợp lệ từ client (chống nhét quyền lạ qua API). */
+function sanitizeExtraPermissions(list) {
+  if (!Array.isArray(list)) return [];
+  return [...new Set(list.filter((p) => ALL_ACCESS_PERMISSIONS.includes(p)))];
+}
+
 function roleIdentity(role) {
   const fallback = getStaticRoleIdentity(role.key) || {};
   return {
@@ -96,7 +111,7 @@ function roleIdentity(role) {
 
 function toApi(role, counts = {}, { withPermissions = false } = {}) {
   const matrix = normalizeMatrix(role.matrix);
-  const permissions = matrixToPermissions(matrix);
+  const permissions = mergePermissions(matrixToPermissions(matrix), role.extraPermissions);
   const permissionDetails = permissionDetailsFromPermissions(permissions);
 
   return {
@@ -157,7 +172,7 @@ export async function getRoleIdentity(roleKey) {
   return getStaticRoleIdentity(key);
 }
 
-export async function createRole({ key, label, name_en, description, dashboardAccess = false, matrix, permissions }) {
+export async function createRole({ key, label, name_en, description, dashboardAccess = false, matrix, permissions, extraPermissions }) {
   await ensureSeeded();
   const k = String(key || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
   const name = String(label || "").trim();
@@ -179,6 +194,7 @@ export async function createRole({ key, label, name_en, description, dashboardAc
     isBuiltIn: false,
     dashboardAccess: !!dashboardAccess,
     matrix: buildMatrix({ matrix, permissions }),
+    extraPermissions: sanitizeExtraPermissions(extraPermissions),
     createdAt: new Date().toISOString(),
   };
   await col.insertOne(doc);
@@ -187,7 +203,7 @@ export async function createRole({ key, label, name_en, description, dashboardAc
   return toApi(doc, counts, { withPermissions: true });
 }
 
-export async function updateRole(keyOrId, { label, name_en, description, dashboardAccess, matrix, permissions }) {
+export async function updateRole(keyOrId, { label, name_en, description, dashboardAccess, matrix, permissions, extraPermissions }) {
   await ensureSeeded();
   const col = getCollection(COLLECTION);
   const role = await col.findOne({ $or: [{ key: keyOrId }, { id: keyOrId }] });
@@ -205,6 +221,7 @@ export async function updateRole(keyOrId, { label, name_en, description, dashboa
   if (matrix != null || permissions != null) {
     updates.matrix = buildMatrix({ matrix: matrix ?? role.matrix, permissions });
   }
+  if (extraPermissions != null) updates.extraPermissions = sanitizeExtraPermissions(extraPermissions);
   updates.updatedAt = new Date().toISOString();
 
   await col.updateOne({ id: role.id }, { $set: updates });
@@ -278,7 +295,7 @@ export async function getRolePermissions(roleKey) {
   if (!key) return [];
   try {
     const doc = await getCollection(COLLECTION).findOne({ $or: [{ key }, { id: `role-${key}` }] });
-    if (doc) return matrixToPermissions(normalizeMatrix(doc.matrix));
+    if (doc) return mergePermissions(matrixToPermissions(normalizeMatrix(doc.matrix)), doc.extraPermissions);
   } catch {
     /* DB lỗi/collections trống → dùng cấu hình tĩnh bên dưới */
   }
@@ -306,6 +323,183 @@ export async function getRolePermissionsCached(roleKey) {
   const perms = await getRolePermissions(key);
   permCache.set(key, { perms, at: Date.now() });
   return perms;
+}
+
+// ── API dạng HiWeb: danh sách vai trò & quyền hạn có phân trang ─────────
+// GET /api/roles và GET /api/permissions trả bản ghi phẳng
+//   role:       { id (số), slug, name_vi, name_en, created_at, updated_at, total_permissions }
+//   permission: { id (số), slug, name_vi, name_en, module, created_at, updated_at }
+// Quyền hạn được seed vào collection `permissions` từ PERMISSION_CATALOG
+// (danh mục tĩnh trong src/config/roles.js) — id số tăng dần, timestamp lưu ISO,
+// xuất ra định dạng "YYYY-MM-DD HH:mm:ss" giống response HiWeb.
+
+const PERMISSIONS_COLLECTION = "permissions";
+
+function fmtDateTime(value) {
+  const d = value ? new Date(value) : new Date();
+  if (Number.isNaN(d.getTime())) return "";
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Kẹp tham số phân trang/sort của client vào khoảng hợp lệ. */
+function pagingFrom(query = {}, defaultPerPage = 10) {
+  const page = Math.max(1, Number(query.page) || 1);
+  const perPage = Math.min(100, Math.max(1, Number(query.perPage ?? query.per_page) || defaultPerPage));
+  return { page, perPage, keyword: String(query.keyword || "").trim() };
+}
+
+/** Bộ lọc $or tìm theo keyword trên các field text chỉ định. */
+function keywordFilter(keyword, fields) {
+  if (!keyword) return null;
+  const rx = new RegExp(escapeRegex(keyword), "i");
+  return { $or: fields.map((f) => ({ [f]: rx })) };
+}
+
+/** from_date/to_date trên một cột ngày (lưu dạng ISO string → so sánh từ điển được). */
+function dateRangeFilter(field, fromDate, toDate) {
+  const from = String(fromDate || "").trim();
+  const to = String(toDate || "").trim();
+  if (!from && !to) return null;
+  const range = {};
+  if (from) range.$gte = new Date(`${from}T00:00:00`).toISOString();
+  if (to) range.$lte = new Date(`${to}T23:59:59.999`).toISOString();
+  return { [field]: range };
+}
+
+function mergeFilters(...filters) {
+  const parts = filters.filter(Boolean);
+  if (!parts.length) return {};
+  if (parts.length === 1) return parts[0];
+  return { $and: parts };
+}
+
+async function ensurePermissionsSeeded() {
+  const col = getCollection(PERMISSIONS_COLLECTION);
+  const existing = new Set((await col.find({}, { projection: { slug: 1 } }).toArray()).map((d) => d.slug));
+  const missing = PERMISSION_CATALOG.filter((p) => !existing.has(p.slug));
+  if (!missing.length) return col;
+  const top = await col.find({}, { projection: { id: 1 } }).sort({ id: -1 }).limit(1).toArray();
+  let seq = (top[0]?.id || 0) + 1;
+  const now = new Date().toISOString();
+  await col.bulkWrite(
+    missing.map((p) => ({
+      insertOne: {
+        document: {
+          id: seq++, slug: p.slug, name_vi: p.name_vi, name_en: p.name_en,
+          module: p.module, createdAt: now, updatedAt: now,
+        },
+      },
+    })),
+    { ordered: false }
+  );
+  return col;
+}
+
+const PERMISSION_SORT_FIELDS = {
+  id: "id", slug: "slug", name_vi: "name_vi", name_en: "name_en",
+  module: "module", created_at: "createdAt", updated_at: "updatedAt",
+};
+
+export async function listPermissionsPaged(query = {}) {
+  const col = await ensurePermissionsSeeded();
+  const { page, perPage, keyword } = pagingFrom(query);
+  const filter = mergeFilters(
+    keywordFilter(keyword, ["slug", "name_vi", "name_en", "module"]),
+    dateRangeFilter(
+      query.date_col === "updated_at" ? "updatedAt" : "createdAt",
+      query.from_date, query.to_date
+    )
+  );
+  const sortField = PERMISSION_SORT_FIELDS[query.sort_by] || "id";
+  const sortDir = String(query.sort_dir || "ASC").toUpperCase() === "DESC" ? -1 : 1;
+  const total = await col.countDocuments(filter);
+  const docs = await col
+    .find(filter)
+    .sort({ [sortField]: sortDir })
+    .skip((page - 1) * perPage)
+    .limit(perPage)
+    .toArray();
+  const data = docs.map((d) => ({
+    id: d.id, slug: d.slug, name_vi: d.name_vi, name_en: d.name_en, module: d.module,
+    created_at: fmtDateTime(d.createdAt), updated_at: fmtDateTime(d.updatedAt || d.createdAt),
+  }));
+  return { data, total, page, perPage };
+}
+
+const ROLE_SORT_FIELDS = {
+  id: "seq", slug: "key", name_vi: "label", name_en: "name_en",
+  created_at: "createdAt", updated_at: "updatedAt",
+};
+
+export async function listRolesPaged(query = {}) {
+  await ensureSeeded();
+  const col = getCollection(COLLECTION);
+  // id số kiểu HiWeb: gắn dần `seq` cho các vai trò chưa có (built-in + custom).
+  const all = await col.find({}).toArray();
+  let maxSeq = all.reduce((m, d) => Math.max(m, Number(d.seq) || 0), 0);
+  for (const d of all) {
+    if (!d.seq) {
+      maxSeq += 1;
+      await col.updateOne({ id: d.id }, { $set: { seq: maxSeq } });
+      d.seq = maxSeq;
+    }
+  }
+  const { page, perPage, keyword } = pagingFrom(query);
+  const kw = keyword.toLowerCase();
+  const dateField = query.date_col === "updated_at" ? "updatedAt" : "createdAt";
+  const from = query.from_date ? new Date(`${String(query.from_date).trim()}T00:00:00`) : null;
+  const to = query.to_date ? new Date(`${String(query.to_date).trim()}T23:59:59.999`) : null;
+  const sortField = ROLE_SORT_FIELDS[query.sort_by] || "seq";
+  const sortDir = String(query.sort_dir || "ASC").toUpperCase() === "DESC" ? -1 : 1;
+  // Số vai trò nhỏ → lọc/sắp xếp trong bộ nhớ cho đơn giản (roles nằm ở collection `roles`).
+  const rows = all.filter((d) => {
+    if (kw && !["key", "label", "name_en", "description"].some((f) => String(d[f] || "").toLowerCase().includes(kw))) return false;
+    if (from || to) {
+      const t = new Date(d[dateField] || d.createdAt || 0).getTime();
+      if (from && t < from.getTime()) return false;
+      if (to && t > to.getTime()) return false;
+    }
+    return true;
+  });
+  // Sắp xếp + cắt trang ngay trên mảng đã tải (số vai trò nhỏ, tránh index phức tạp)
+  rows.sort((a, b) => {
+    const av = a[sortField] ?? 0;
+    const bv = b[sortField] ?? 0;
+    const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv));
+    return cmp * sortDir;
+  });
+  const total = rows.length;
+  const data = rows.slice((page - 1) * perPage, page * perPage).map((d) => ({
+    id: d.seq,
+    slug: d.key,
+    name_vi: d.name_vi || d.label,
+    name_en: d.name_en || d.label,
+    created_at: fmtDateTime(d.createdAt),
+    updated_at: fmtDateTime(d.updatedAt || d.createdAt),
+    total_permissions: permissionDetailsFromPermissions(mergePermissions(matrixToPermissions(normalizeMatrix(d.matrix)), d.extraPermissions)).length,
+  }));
+  return { data, total, page, perPage };
+}
+
+/**
+ * POST /api/permissions/all — tạo (seed) các quyền `_all` vào collection
+ * `permissions` để API gọi ra đúng khi kiểm tra toàn quyền. Idempotent:
+ * thiếu slug nào thì chèn slug đó, trả về danh sách đầy đủ dạng HiWeb.
+ */
+export async function seedAllAccessPermissions() {
+  const col = await ensurePermissionsSeeded();
+  const docs = await col.find({ slug: { $in: ALL_ACCESS_PERMISSIONS } }).sort({ id: 1 }).toArray();
+  return {
+    total: ALL_ACCESS_PERMISSIONS.length,
+    seeded: docs.length,
+    permissions: docs.map((d) => ({
+      id: d.id, slug: d.slug, name_vi: d.name_vi, name_en: d.name_en, module: d.module,
+      created_at: fmtDateTime(d.createdAt), updated_at: fmtDateTime(d.updatedAt || d.createdAt),
+    })),
+  };
 }
 
 export { FEATURES as PERMISSION_FEATURES, PERMISSION_CATALOG, matrixToPermissions };

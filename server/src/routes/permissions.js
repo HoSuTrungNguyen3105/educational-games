@@ -7,6 +7,8 @@ import {
   updateRole,
   deleteRole,
   getUserCounts,
+  listPermissionsPaged,
+  seedAllAccessPermissions,
   PERMISSION_FEATURES,
   PERMISSION_CATALOG,
 } from "../services/permissionService.js";
@@ -15,6 +17,42 @@ import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } f
 const router = Router();
 
 router.use(authenticate);
+
+// GET /api/permissions — danh sách quyền hạn phẳng, phân trang kiểu HiWeb:
+//   ?page=1&perPage=10&keyword=&sort_by=&sort_dir=&from_date=&to_date=&date_col=created_at
+// Mỗi bản ghi: { id, slug, name_vi, name_en, module, created_at, updated_at }
+// (route cũ /catalog vẫn giữ cho modal ma trận quyền.)
+router.get("/", requireRoles("admin", "teacher"), async (req, res, next) => {
+  try {
+    const q = req.query || {};
+    const { data, total, page, perPage } = await listPermissionsPaged(q);
+    sendSuccess(res, data, "success", buildPagination({
+      page,
+      perPage,
+      total,
+      keyword: String(q.keyword || "").trim(),
+      sortBy: String(q.sort_by || "").trim(),
+      sortDir: String(q.sort_dir || "DESC"),
+      fromDate: String(q.from_date || "").trim(),
+      toDate: String(q.to_date || "").trim(),
+      dateCol: String(q.date_col || "created_at"),
+    }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/permissions/all — admin tạo/seed các quyền `<module>_all` (toàn
+// quyền, chỉ admin tổng có) vào collection `permissions`. Chạy lại không sao cả
+// (idempotent) — thiếu slug nào chèn slug đó.
+router.post("/all", requireRoles("admin"), async (_req, res, next) => {
+  try {
+    const data = await seedAllAccessPermissions();
+    sendSuccess(res, data, `Đã có ${data.seeded}/${data.total} quyền toàn truy cập (_all)`);
+  } catch (e) {
+    next(e);
+  }
+});
 
 // GET /api/permissions/features — permission matrix feature definitions
 router.get("/features", requireRoles("admin", "teacher"), (_req, res) => {

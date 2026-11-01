@@ -30,8 +30,15 @@ export const FEATURES = [
   { key: "pet_catalog", label: "Danh mục Pet", name_en: "Pet catalog", permissions: { view: "pet_catalog.view", edit: "pet_catalog.edit", delete: "pet_catalog.delete" } },
   { key: "body_custom", label: "Thân Avatar", name_en: "Avatar bodies", permissions: { view: "body_custom.view", edit: "body_custom.edit", delete: "body_custom.delete" } },
   { key: "plant_types", label: "Loại cây (Garden)", name_en: "Garden plant types", permissions: { view: "plant_types.view", edit: "plant_types.edit", delete: "plant_types.delete" } },
+  { key: "support", label: "Hỗ trợ", name_en: "Support", permissions: { view: "support.view", edit: "support.edit", delete: "support.delete" } },
   { key: "settings", label: "Cài đặt hệ thống", name_en: "System settings", permissions: { view: "settings.view", edit: "settings.edit", delete: "settings.delete" } },
 ];
+
+// Quyền "_all" — TOÀN QUYỀN trên một mô-đun (xem hết của mọi người, không bị
+// lọc theo lớp/người được gán). Chỉ admin tổng được seed sẵn; teacher KHÔNG có.
+// Không nằm trong ma trận view/edit/delete nên role lưu ở field `extraPermissions`
+// và API merge vào mảng `permissions` khi trả về (GET /auth/me, /api/permissions/*).
+export const ALL_ACCESS_PERMISSIONS = FEATURES.map((f) => `${f.key}_all`);
 
 // Quyền kiểu cũ (sidebar / client cũ) map về ô của ma trận API.
 // `*.manage` = sửa (edit) ô tương ứng — xoá (delete) là quyền riêng.
@@ -106,6 +113,25 @@ export const PERMISSION_CATALOG = (() => {
     }
   }
 
+  // Quyền `_all` cũng là một quyền thật (có trong GET /api/permissions) nhưng
+  // không có ô ma trận — feature_key/action = null, UI lọc riêng khi lưu.
+  for (const feature of FEATURES) {
+    const slug = `${feature.key}_all`;
+    items.push({
+      id: slug,
+      slug,
+      name_vi: `${feature.label} - Toàn quyền`,
+      name_en: `${feature.name_en || feature.label} - Full access`,
+      module: feature.key,
+      module_vi: feature.label,
+      module_en: feature.name_en || feature.label,
+      feature_key: null,
+      action: null,
+      is_base: false,
+      is_all: true,
+    });
+  }
+
   for (const [slug, meta] of Object.entries(BASE_PERMISSION_META)) {
     if (items.some((item) => item.slug === slug)) continue;
     items.push({
@@ -136,10 +162,10 @@ const CELL_BY_PERMISSION = (() => {
 })();
 
 // Danh sách toàn bộ quyền hợp lệ (dùng cho API validation / seed)
-export const ALL_PERMISSIONS = [...new Set([...Object.keys(CELL_BY_PERMISSION), ...BASE_PERMISSIONS])];
+export const ALL_PERMISSIONS = [...new Set([...Object.keys(CELL_BY_PERMISSION), ...BASE_PERMISSIONS, ...ALL_ACCESS_PERMISSIONS])];
 
 // Đổi khi muốn API seed lại built-in roles (xem ensureSeeded trong permissionService)
-export const ROLES_SEED_VERSION = 2;
+export const ROLES_SEED_VERSION = 3;
 
 export const ROLES = {
   admin: {
@@ -199,6 +225,9 @@ export const ROLES = {
       "reminders.view",
       "reminders.edit",
       "chat",
+      // hỗ trợ: GV chỉ xem/trả lời ticket được gán cho lớp mình — KHÔNG có support_all
+      "support.view",
+      "support.edit",
       // chấm công
       "attendance.view",
       "attendance.checkin",

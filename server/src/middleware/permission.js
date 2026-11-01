@@ -131,7 +131,14 @@ const RULES = [
   { re: /^\/images/, m: "GET", perms: ["images.view", PLAY] },
   { re: /^\/images/, feature: "images" },
 
+  // ── Ticket hỗ trợ ──────────────────────────────────────────────
+  // /admin/ chỉ role admin (requireRoles trong route); nhóm còn lại mọi tài
+  // khoản đăng nhập gửi được yêu cầu — đòi quyền cơ bản `profile`.
+  { re: /^\/support\/admin/, perms: ["users.view"] },
+  { re: /^\/support/, perms: [PROFILE] },
+
   // ── Phân quyền / thống kê / AI / seed ────────────────────────────────
+  { re: /^\/roles(\/|$)/, feature: "roles" },
   { re: /^\/permissions\/roles/, feature: "roles" },
   { re: /^\/permissions/, perms: ["roles.view"] },
   { re: /^\/stats/, feature: "reports" },

@@ -13,12 +13,16 @@ const ROUTES = [
   { name: "admin-library",   pattern: "/admin/library" },
   { name: "admin-users",     pattern: "/admin/users" },
   { name: "admin-roles",     pattern: "/admin/roles" },
+  { name: "admin-roles-matrix", pattern: "/admin/roles-matrix" },
+  { name: "admin-permissions", pattern: "/admin/permissions" },
   { name: "admin-templates", pattern: "/admin/templates" },
   { name: "admin-game-config", pattern: "/admin/game-config" },
   // Cấu hình JSON riêng của game offline Vườn Thủ Hộ (plantvsanimal.html)
   { name: "admin-vth-config", pattern: "/admin/vth-config" },
   // Cài đặt khu quản trị: đổi mật khẩu thật qua API + dữ liệu cục bộ
   { name: "admin-settings", pattern: "/admin/settings" },
+  // Ticket hỗ trợ người dùng (nút "Hỗ trợ" ở trang chủ gửi vào đây)
+  { name: "admin-support", pattern: "/admin/support" },
   { name: "admin-template-new", pattern: "/admin/templates/new" },
   { name: "admin-template-edit", pattern: "/admin/templates/:templateId" },
   { name: "admin-categories", pattern: "/admin/categories" },

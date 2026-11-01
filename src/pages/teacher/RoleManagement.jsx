@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { permissionService } from "../../services/api.js";
+import { useModalParam } from "../../hooks/useModalParam.js";
 import {
   ConfirmModal,
   ErrorState,
@@ -56,10 +57,16 @@ export default function RoleManagement({ user, showToast }) {
   const [permError, setPermError] = useState("");
   const [permSearch, setPermSearch] = useState("");
   const [permModule, setPermModule] = useState("all");
-  const [permStatus, setPermStatus] = useState("granted");
+  // Mặc định "all": ở chế độ "Đã cấp" việc BỎ tick làm dòng biến mất ngay tại
+  // chỗ, trông như checkbox không hoạt động.
+  const [permStatus, setPermStatus] = useState("all");
   const [granted, setGranted] = useState(() => new Set());
 
   const isAdmin = user?.role === "admin";
+
+  // Đồng bộ modal đang mở lên URL (?m=…&role=…) — xem hooks/useModalParam.js.
+  const modalParam = useModalParam();
+  const restoredRef = useRef(false);
 
   const load = useCallback(() => {
     setError(null);
@@ -127,6 +134,12 @@ export default function RoleManagement({ user, showToast }) {
     setCreateForm({ ...EMPTY_FORM });
     setCreateError("");
     setCreateOpen(true);
+    modalParam.open("roleCreate");
+  };
+
+  const closeCreate = () => {
+    setCreateOpen(false);
+    modalParam.close("roleCreate");
   };
 
   const submitCreate = async () => {
@@ -144,7 +157,7 @@ export default function RoleManagement({ user, showToast }) {
         description: createForm.description.trim(),
         dashboardAccess: createForm.dashboardAccess,
       });
-      setCreateOpen(false);
+      closeCreate();
       showToast?.("Đã tạo vai trò", "success");
       load();
     } catch (e) {
@@ -161,8 +174,9 @@ export default function RoleManagement({ user, showToast }) {
     setPermError("");
     setPermSearch("");
     setPermModule("all");
-    setPermStatus("granted");
+    setPermStatus("all");
     setGranted(new Set());
+    modalParam.open("rolePerms", { role: role.key });
     try {
       const detail = await permissionService.getRole(role.key);
       setPermRole(detail);
@@ -172,6 +186,11 @@ export default function RoleManagement({ user, showToast }) {
     } finally {
       setPermLoading(false);
     }
+  };
+
+  const closePermissions = () => {
+    setPermOpen(false);
+    modalParam.close("rolePerms");
   };
 
   const togglePermission = (permission) => {
@@ -203,7 +222,7 @@ export default function RoleManagement({ user, showToast }) {
     try {
       const updated = await permissionService.updateRole(permRole.key, { matrix: nextMatrix });
       setRoles((prev) => (prev || []).map((role) => (role.key === updated.key ? { ...role, ...updated } : role)));
-      setPermOpen(false);
+      closePermissions();
       showToast?.("Đã cập nhật quyền", "success");
     } catch (e) {
       showToast?.(e.message || "Lỗi cập nhật quyền", "error");
@@ -212,19 +231,62 @@ export default function RoleManagement({ user, showToast }) {
     }
   };
 
+  const openDelete = (role) => {
+    setConfirm({ open: true, item: role });
+    modalParam.open("roleDelete", { role: role.key });
+  };
+
+  const closeDelete = () => {
+    setConfirm({ open: false, item: null });
+    modalParam.close("roleDelete");
+  };
+
   const doDelete = async () => {
     const item = confirm.item;
     if (!item) return;
     try {
       await permissionService.deleteRole(item.key);
       showToast?.("Đã xóa vai trò", "success");
-      setConfirm({ open: false, item: null });
+      closeDelete();
       setRoles((prev) => (prev || []).filter((role) => role.id !== item.id));
     } catch (e) {
       showToast?.(e.message || "Lỗi xóa vai trò", "error");
-      setConfirm({ open: false, item: null });
+      closeDelete();
     }
   };
+
+  // ── Modal ⇄ URL params ────────────────────────────────────────────────
+  // Vào thẳng link có ?m=rolePerms&role=… / ?m=roleCreate / ?m=roleDelete&role=…
+  // (reload, dán link chia sẻ) → modal tương ứng tự mở sau khi tải danh sách.
+  // setTimeout(...,0) theo đúng convention của effect `load` ở trên để không
+  // setState đồng bộ ngay trong thân effect.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (restoredRef.current || !roles) return;
+      restoredRef.current = true;
+      const m = modalParam.modal;
+      if (!m) return;
+      if (m === "roleCreate") { openCreate(); return; }
+      const role = roles.find((r) => r.key === modalParam.params.get("role"));
+      if (!role) return;
+      if (m === "rolePerms") openPermissions(role);
+      else if (m === "roleDelete") openDelete(role);
+    }, 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roles]);
+
+  // Nút Back của trình duyệt làm mất params → đóng modal đang mở.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const m = modalParam.modal;
+      if (m !== "rolePerms" && permOpen) setPermOpen(false);
+      if (m !== "roleCreate" && createOpen) setCreateOpen(false);
+      if (m !== "roleDelete" && confirm.open) setConfirm({ open: false, item: null });
+    }, 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalParam.modal]);
 
   if (error && !roles) {
     return (
@@ -340,7 +402,7 @@ export default function RoleManagement({ user, showToast }) {
                           {isAdmin && !role.isBuiltIn && (
                             <button
                               type="button"
-                              onClick={() => setConfirm({ open: true, item: role })}
+                              onClick={() => openDelete(role)}
                               title="Xóa vai trò"
                               className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-ink/45 hover:text-ticket hover:bg-ticket/10 transition"
                             >
@@ -361,7 +423,7 @@ export default function RoleManagement({ user, showToast }) {
       {/* Role permissions modal */}
       {permOpen && (
         <Modal
-          onClose={() => setPermOpen(false)}
+          onClose={closePermissions}
           wide
           contentStyle={{ maxWidth: "min(1120px, 95vw)" }}
         >
@@ -369,12 +431,12 @@ export default function RoleManagement({ user, showToast }) {
             <div>
               <h3 className="font-display text-xl text-ink">Xem quyền hạn</h3>
               <p className="text-xs text-[#8A7C63] font-body mt-0.5">
-                Danh sách quyền của vai trò và trạng thái được cấp.
+                Bật/tắt checkbox quyền rồi bấm <span className="font-mono text-ink">Lưu</span> để đổi quyền cho vai trò.
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setPermOpen(false)}
+              onClick={closePermissions}
               className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-ink/45 hover:text-ticket hover:bg-ticket/10 transition"
               title="Đóng"
             >
@@ -488,7 +550,7 @@ export default function RoleManagement({ user, showToast }) {
               Quyền có nhãn <span className="font-mono uppercase">mặc định</span> luôn được cấp cho mọi vai trò.
             </p>
             <div className="flex items-center gap-2">
-              <GhostButton onClick={() => setPermOpen(false)}>Đóng</GhostButton>
+              <GhostButton onClick={closePermissions}>Đóng</GhostButton>
               {canEditPermissions && (
                 <PrimaryButton onClick={savePermissions} disabled={saving || permLoading}>
                   {saving ? "Đang lưu..." : "Lưu"}
@@ -501,7 +563,7 @@ export default function RoleManagement({ user, showToast }) {
 
       {/* Create role modal */}
       {createOpen && (
-        <Modal onClose={() => setCreateOpen(false)}>
+        <Modal onClose={closeCreate}>
           <h3 className="font-display text-lg text-ink mb-3">Tạo vai trò</h3>
           <form
             onSubmit={(e) => {
@@ -561,7 +623,7 @@ export default function RoleManagement({ user, showToast }) {
             </label>
             {createError && <p className="text-ticket text-sm">{createError}</p>}
             <div className="flex justify-end gap-2 pt-1">
-              <GhostButton type="button" onClick={() => setCreateOpen(false)}>
+              <GhostButton type="button" onClick={closeCreate}>
                 Hủy
               </GhostButton>
               <PrimaryButton type="submit" disabled={creating}>
@@ -577,7 +639,7 @@ export default function RoleManagement({ user, showToast }) {
         title="Xóa vai trò"
         message={confirm.item ? `Xóa vai trò "${confirm.item.label}"?` : ""}
         onConfirm={doDelete}
-        onClose={() => setConfirm({ open: false, item: null })}
+        onClose={closeDelete}
         confirmLabel="Xóa"
       />
     </div>
