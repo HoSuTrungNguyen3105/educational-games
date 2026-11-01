@@ -12,6 +12,9 @@
 //   body-ghost.html      · Bóng ma      (body_ghost_01)
 //   body-popstar.html    · Ngôi sao nhạc pop (body_popstar_01)
 //   body-dragon.html     · Rồng xanh    (body_dragon_01)
+//   … và 32 thân chủ đề (body-astronaut.html, body-ninja.html, body-robot.html,
+//     body-pirate.html, … body-ballerina.html) — danh sách lấy tự động từ BODIES
+//     nên thêm thân mới không phải sửa file này.
 //
 // Những hình này chính là thứ modal "Tùy chỉnh Avatar" ở trang hồ sơ và 3 trang
 // quản lí (/admin/body-custom, /admin/avatar-template, /admin/avatar-items) vẽ,
@@ -85,7 +88,10 @@ for (const code of Object.keys(api.kid.bodies)) {
   const file = fileName(code);
 
   const state = api.applyBody({ ...api.kid.defaults }, code);
-  const svg = pretty(withSize(api.renderKid(state), w, h)) + "\n";
+  /* renderKid() thêm hậu tố vào id gradient/filter để nhiều nhân vật sống chung
+   * một document (trang admin). Mỗi file body-*.html chỉ có MỘT svg nên bỏ hậu
+   * tố đi cho tên id sạch và file xuất ra ổn định giữa các lần chạy. */
+  const svg = pretty(withSize(api.renderKid(state).replace(/kid(Skin|Hair|Shadow|Blur)\d+/g, "kid$1"), w, h)) + "\n";
 
   fs.writeFileSync(path.resolve(ROOT, file), svg, "utf8");
   console.log(`  ✔ ${file.padEnd(20)} ${body.n} · ${(Buffer.byteLength(svg) / 1024).toFixed(1)} KB`);

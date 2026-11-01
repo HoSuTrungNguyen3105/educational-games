@@ -32,7 +32,17 @@ export const AVATAR_BODY_ALIASES = {
  */
 export const AVATAR_FIELDS = {
   body: ["body_01", "body_girl_01", "body_rider_01", "body_superman_01",
-    "body_kaiju_01", "body_ghost_01", "body_popstar_01", "body_dragon_01"],
+    "body_kaiju_01", "body_ghost_01", "body_popstar_01", "body_dragon_01",
+    /* 20 thân chủ đề: đặc biệt / nghề nghiệp / cổ tích / lễ hội */
+    "body_astronaut_01", "body_ninja_01", "body_robot_01", "body_pirate_01",
+    "body_vampire_01", "body_doctor_01", "body_firefighter_01", "body_teacher_01",
+    "body_police_01", "body_chef_01", "body_pilot_01", "body_prince_01",
+    "body_princess_01", "body_knight_01", "body_witch_01", "body_fairy_01",
+    "body_skeleton_01", "body_snowman_01", "body_santa_01", "body_ghost_halloween_01",
+    /* 12 thân bổ sung */
+    "body_mermaid_01", "body_werewolf_01", "body_elf_01", "body_genie_01",
+    "body_dino_01", "body_alien_01", "body_cyborg_01", "body_samurai_01",
+    "body_cowboy_01", "body_artist_01", "body_scientist_01", "body_ballerina_01"],
   skin: ["s1", "s2", "s3", "s4"],
   face: ["face_01", "face_02", "face_03", "face_04", "face_05"],
   hair: ["hair_01", "hair_02", "hair_03", "hair_04", "hair_05", "hair_06"],
@@ -80,6 +90,42 @@ export const AVATAR_BODY_SLOTS = {
   body_ghost_01: ["hat", "acc"],
   body_popstar_01: ["skin", "face", "hair", "hairColor", "glasses", "hat", "acc"],
   body_dragon_01: [],
+  /* 20 thân chủ đề — khớp BODIES[code].slots của frontend. */
+  body_astronaut_01: AVATAR_HUMAN_SLOTS,
+  body_ninja_01: AVATAR_HUMAN_SLOTS,
+  body_robot_01: ["glasses", "hat", "acc"],
+  body_pirate_01: AVATAR_HUMAN_SLOTS,
+  body_vampire_01: AVATAR_HUMAN_SLOTS,
+  body_doctor_01: AVATAR_HUMAN_SLOTS,
+  body_firefighter_01: AVATAR_HUMAN_SLOTS,
+  body_teacher_01: AVATAR_HUMAN_SLOTS,
+  body_police_01: AVATAR_HUMAN_SLOTS,
+  body_chef_01: AVATAR_HUMAN_SLOTS,
+  body_pilot_01: AVATAR_HUMAN_SLOTS,
+  body_prince_01: AVATAR_HUMAN_SLOTS,
+  body_princess_01: AVATAR_HUMAN_SLOTS,
+  body_knight_01: AVATAR_HUMAN_SLOTS,
+  body_witch_01: AVATAR_HUMAN_SLOTS,
+  body_fairy_01: AVATAR_HUMAN_SLOTS,
+  body_skeleton_01: ["hair", "hairColor", "glasses", "hat", "acc",
+    "shirt", "dress", "pants", "shoes"],
+  body_snowman_01: ["glasses", "hat", "acc"],
+  body_santa_01: AVATAR_HUMAN_SLOTS,
+  body_ghost_halloween_01: ["glasses", "hat", "acc"],
+  /* 12 thân bổ sung — khớp BODIES[code].slots của frontend. */
+  body_mermaid_01: ["skin", "face", "hair", "hairColor", "glasses", "hat", "acc"],
+  body_werewolf_01: ["hair", "hairColor", "glasses", "hat", "acc",
+    "shirt", "dress", "pants", "shoes"],
+  body_elf_01: AVATAR_HUMAN_SLOTS,
+  body_genie_01: ["face", "hair", "hairColor", "glasses", "hat", "acc"],
+  body_dino_01: ["glasses", "hat", "acc"],
+  body_alien_01: ["glasses", "hat", "acc"],
+  body_cyborg_01: AVATAR_HUMAN_SLOTS,
+  body_samurai_01: AVATAR_HUMAN_SLOTS,
+  body_cowboy_01: AVATAR_HUMAN_SLOTS,
+  body_artist_01: AVATAR_HUMAN_SLOTS,
+  body_scientist_01: AVATAR_HUMAN_SLOTS,
+  body_ballerina_01: AVATAR_HUMAN_SLOTS,
 };
 
 /**
@@ -90,7 +136,17 @@ export const AVATAR_BODY_SLOTS = {
  *   body_kaiju_01 / body_ghost_01 / body_popstar_01  thân vẽ sẵn, không mặc gì thêm
  */
 export const AVATAR_SELF_CLOTHED_BODIES = ["body_girl_01", "body_rider_01", "body_superman_01",
-  "body_kaiju_01", "body_ghost_01", "body_popstar_01"];
+  "body_kaiju_01", "body_ghost_01", "body_popstar_01",
+  /* 20 thân chủ đề tự vẽ sẵn bộ đồ */
+  "body_astronaut_01", "body_ninja_01", "body_robot_01", "body_pirate_01",
+  "body_vampire_01", "body_doctor_01", "body_firefighter_01", "body_teacher_01",
+  "body_police_01", "body_chef_01", "body_pilot_01", "body_prince_01",
+  "body_princess_01", "body_knight_01", "body_witch_01", "body_fairy_01",
+  "body_skeleton_01", "body_snowman_01", "body_santa_01", "body_ghost_halloween_01",
+  /* 12 thân bổ sung tự vẽ sẵn bộ đồ */
+  "body_mermaid_01", "body_werewolf_01", "body_elf_01", "body_genie_01",
+  "body_dino_01", "body_alien_01", "body_cyborg_01", "body_samurai_01",
+  "body_cowboy_01", "body_artist_01", "body_scientist_01", "body_ballerina_01"];
 
 /** id hợp lệ cho từng trường của pet. */
 export const PET_FIELDS = {
