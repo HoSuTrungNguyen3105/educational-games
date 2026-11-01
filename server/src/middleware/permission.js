@@ -155,6 +155,12 @@ const RULES = [
   { m: "POST", re: /^\/ai\/(generate-question|quizzes\/generate)$/, perms: ["questions.edit"] },
   { re: /^\/ai\//, perms: [PLAY, PROFILE] },
   { re: /^\/seed$/, perms: ["settings.edit"] },
+
+  // ── Trang Cài đặt quản trị (update_admin_page.md) ──────────────────────
+  // Kiểm quyền ở SERVER — frontend có ẩn nút thì vẫn phải chặn được.
+  { re: /^\/public-config$/, perms: [] },                       // banner bảo trì: mọi client
+  { m: "PUT", re: /^\/system\/config$/, perms: ["settings.edit"] },
+  { re: /^\/system\//, perms: ["settings.view"] },              // status / storage / scan / logs / config
 ];
 
 function needFor(method, path) {

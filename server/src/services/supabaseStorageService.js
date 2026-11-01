@@ -47,6 +47,20 @@ async function upload(objectPath, buffer, contentType) {
   return publicUrl(objectPath);
 }
 
+/**
+ * Liệt kê object trong một thư mục của bucket (kèm `metadata.size`) — dùng cho
+ * thống kê dung lượng ở trang Cài đặt. Ném lỗi khi không truy cập được để nơi gọi
+ * phân biệt "thư mục trống" với "mất kết nối".
+ * @param {string} prefix  "templates" | "thumbnails"
+ */
+export async function listObjects(prefix, limit = 1000) {
+  const { data, error } = await getClient().storage
+    .from(config.supabase.bucket)
+    .list(String(prefix || ""), { limit });
+  if (error) throw new Error(`Supabase Storage lỗi khi liệt kê ${prefix}/: ${error.message}`);
+  return data || [];
+}
+
 /** Upload HTML game → templates/<uuid>.html */
 export async function saveHtmlToSupabase(html) {
   const fileName = `${randomUUID()}.html`;

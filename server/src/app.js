@@ -44,6 +44,7 @@ import rolesRouter from "./routes/roles.js";
 import supportRouter from "./routes/support.js";
 import miniGamesRouter from "./routes/miniGames.js";
 import aiRouter from "./routes/ai.js";
+import systemRouter, { publicRouter as publicConfigRouter } from "./routes/system.js";
 import * as reminderService from "./services/reminderService.js";
 import { verifyToken } from "./services/authService.js";
 import { getRoleIdentity } from "./services/permissionService.js";
@@ -163,6 +164,11 @@ app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);
 // API trung gian cho AI — Frontend chỉ gọi vào đây, Backend chính mới gọi AI Service :8081.
 app.use("/api/ai", aiRouter);
+// ── Trang Cài đặt quản trị ────────────────────────────────────────────────
+// /api/system/* cần đăng nhập + quyền settings.* (xem middleware/permission.js).
+// /api/public-config KHÔNG cần đăng nhập: app học sinh đọc banner bảo trì, tên site.
+app.use("/api/system", systemRouter);
+app.use("/api/public-config", publicConfigRouter);
 app.use("/api", setupRouter);
 app.use("/api", seedRouter);
 

@@ -13,6 +13,7 @@ import {
   PERMISSION_CATALOG,
 } from "../services/permissionService.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
 
@@ -45,9 +46,10 @@ router.get("/", requireRoles("admin", "teacher"), async (req, res, next) => {
 // POST /api/permissions/all — admin tạo/seed các quyền `<module>_all` (toàn
 // quyền, chỉ admin tổng có) vào collection `permissions`. Chạy lại không sao cả
 // (idempotent) — thiếu slug nào chèn slug đó.
-router.post("/all", requireRoles("admin"), async (_req, res, next) => {
+router.post("/all", requireRoles("admin"), async (req, res, next) => {
   try {
     const data = await seedAllAccessPermissions();
+    audit({ req, action: AUDIT.PERMISSION_ALL, target: "quyền _all", message: `Đồng bộ ${data.seeded}/${data.total} quyền toàn truy cập` }).catch(() => {});
     sendSuccess(res, data, `Đã có ${data.seeded}/${data.total} quyền toàn truy cập (_all)`);
   } catch (e) {
     next(e);
@@ -99,8 +101,10 @@ router.get("/counts", requireRoles("admin", "teacher"), async (_req, res, next) 
 router.post("/roles", requireRoles("admin"), async (req, res, next) => {
   try {
     const role = await createRole(req.body || {});
+    audit({ req, action: AUDIT.ROLE_CREATE, target: role?.key || req.body?.key || "", message: `Tạo vai trò "${role?.label || req.body?.label || ""}"` }).catch(() => {});
     sendCreated(res, role, "Đã tạo vai trò");
   } catch (e) {
+    audit({ req, action: AUDIT.ROLE_CREATE, target: req.body?.key || "", result: "fail", message: e.message }).catch(() => {});
     sendError(res, e.message, 400);
   }
 });
@@ -109,8 +113,14 @@ router.post("/roles", requireRoles("admin"), async (req, res, next) => {
 router.put("/roles/:key", requireRoles("admin"), async (req, res, next) => {
   try {
     const role = await updateRole(req.params.key, req.body || {});
+    audit({
+      req, action: AUDIT.ROLE_UPDATE, target: req.params.key,
+      message: "Cập nhật vai trò / ma trận quyền",
+      meta: { fields: Object.keys(req.body || {}), soQuyen: Array.isArray(req.body?.permissions) ? req.body.permissions.length : undefined },
+    }).catch(() => {});
     sendSuccess(res, role, "Đã cập nhật vai trò");
   } catch (e) {
+    audit({ req, action: AUDIT.ROLE_UPDATE, target: req.params.key, result: "fail", message: e.message }).catch(() => {});
     sendError(res, e.message, 400);
   }
 });
@@ -119,6 +129,7 @@ router.put("/roles/:key", requireRoles("admin"), async (req, res, next) => {
 router.patch("/roles/:key", requireRoles("admin"), async (req, res, next) => {
   try {
     const role = await updateRole(req.params.key, req.body || {});
+    audit({ req, action: AUDIT.ROLE_UPDATE, target: req.params.key, message: "Cập nhật vai trò (PATCH)" }).catch(() => {});
     sendSuccess(res, role, "Đã cập nhật vai trò");
   } catch (e) {
     sendError(res, e.message, 400);
@@ -129,8 +140,10 @@ router.patch("/roles/:key", requireRoles("admin"), async (req, res, next) => {
 router.delete("/roles/:key", requireRoles("admin"), async (req, res, next) => {
   try {
     await deleteRole(req.params.key);
+    audit({ req, action: AUDIT.ROLE_DELETE, target: req.params.key, message: "Xóa vai trò" }).catch(() => {});
     sendNoContent(res);
   } catch (e) {
+    audit({ req, action: AUDIT.ROLE_DELETE, target: req.params.key, result: "fail", message: e.message }).catch(() => {});
     sendError(res, e.message, 400);
   }
 });

@@ -11,9 +11,14 @@ import { getRolePermissions, getRoleIdentity } from "../services/permissionServi
 import {
   checkRefreshOrigin, issueRefreshToken, rotateRefreshToken, readRefreshCookie,
   setRefreshCookie, clearRefreshCookie, revokeAllForUser, refreshUserId, REFRESH_COOKIE_NAME,
+  listSessions, revokeOtherSessions, revokeAllForUserCount,
 } from "../services/refreshTokenService.js";
+import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
+
+/** Thông tin thiết bị kèm theo refresh token (trang Cài đặt dùng để liệt kê phiên). */
+const sessionMeta = (req) => ({ ua: req.headers["user-agent"] || "", ip: req.ip || "" });
 
 /**
  * §5.1–5.2: chỉ chấp nhận refresh từ origin nằm trong REFRESH_ALLOWED_ORIGINS.
@@ -35,13 +40,24 @@ router.post("/login", async (req, res, next) => {
       return sendError(res, "Vui lòng nhập tên đăng nhập/email và mật khẩu", 400);
     }
     const user = await verifyCredentials(id, password);
-    if (!user) return sendError(res, "Sai tên đăng nhập hoặc mật khẩu", 401);
+    if (!user) {
+      // Đăng nhập thất bại cũng ghi lại (không có mật khẩu trong log) để truy vết dò tài khoản.
+      audit({ req, action: AUDIT.LOGIN_FAIL, target: String(id).slice(0, 60), result: "fail", message: "Sai tên đăng nhập hoặc mật khẩu" }).catch(() => {});
+      return sendError(res, "Sai tên đăng nhập hoặc mật khẩu", 401);
+    }
 
     const token = signToken(user);
     // Refresh token chỉ đi qua cookie HttpOnly — không bao giờ xuất hiện trong JSON.
-    setRefreshCookie(res, await issueRefreshToken(user));
+    setRefreshCookie(res, await issueRefreshToken(user, { meta: sessionMeta(req) }));
     trackAction(user.id, "login", 1).catch(() => {});
     processTaskEvent(user.id, { type: "LOGIN" }).catch(() => {});
+    audit({
+      req,
+      actor: { sub: user.id, username: user.username, name: user.name, role: user.role },
+      action: AUDIT.LOGIN,
+      target: user.username || user.id,
+      message: `Đăng nhập với vai trò ${user.role}`,
+    }).catch(() => {});
     sendSuccess(res, { token, user: publicUser(user) });
   } catch (e) {
     next(e);
@@ -86,14 +102,18 @@ router.post("/refresh", async (req, res) => {
  */
 router.post("/logout", async (req, res) => {
   const raw = readRefreshCookie(req);
+  let userId = null;
   // Logout không cấp thêm quyền hạn, chỉ thu hồi — nên không chặn theo origin.
   try {
     if (raw) {
-      const userId = refreshUserId(raw);
+      userId = refreshUserId(raw);
       if (userId) await revokeAllForUser(userId);
     }
   } catch (e) {
     console.warn("[logout] Thu hồi refresh token thất bại:", e.message);
+  }
+  if (userId) {
+    audit({ req, actor: { sub: userId }, action: AUDIT.LOGOUT, target: userId, message: "Đăng xuất, thu hồi mọi phiên" }).catch(() => {});
   }
   clearRefreshCookie(res);
   sendSuccess(res, { loggedOut: true, cookie: REFRESH_COOKIE_NAME }, "logout.success");
@@ -109,7 +129,14 @@ router.post("/register", async (req, res, next) => {
       return sendError(res, "Mật khẩu phải có ít nhất 6 ký tự", 400);
     }
     const result = await registerUser({ username, email, password, name, generatedPassword, ageCode, gender });
-    setRefreshCookie(res, await issueRefreshToken(result.user));
+    setRefreshCookie(res, await issueRefreshToken(result.user, { meta: sessionMeta(req) }));
+    audit({
+      req,
+      actor: { sub: result.user?.id, username: result.user?.username, name: result.user?.name, role: result.user?.role },
+      action: AUDIT.REGISTER,
+      target: result.user?.username || "",
+      message: `Tạo tài khoản mới (${result.user?.role || "student"})`,
+    }).catch(() => {});
     sendCreated(res, result);
   } catch (e) {
     const msg = e.message || "Đăng ký thất bại";
@@ -196,11 +223,57 @@ router.post("/change-password", authenticate, async (req, res, next) => {
   try {
     const user = await changePassword(req.user.sub, req.body || {});
     await revokeAllForUser(user.id);
-    setRefreshCookie(res, await issueRefreshToken(user));
+    setRefreshCookie(res, await issueRefreshToken(user, { meta: sessionMeta(req) }));
+    // Chỉ ghi "đã đổi mật khẩu" — mật khẩu cũ/mới không bao giờ đi vào log.
+    audit({ req, action: AUDIT.PASSWORD_CHANGE, target: req.user.username || req.user.sub, message: "Đổi mật khẩu, thu hồi mọi phiên khác" }).catch(() => {});
     sendSuccess(res, { changed: true, user: publicUser(user) });
   } catch (e) {
+    audit({ req, action: AUDIT.PASSWORD_CHANGE, target: req.user.username || req.user.sub, result: "fail", message: e.message }).catch(() => {});
     sendError(res, e.message, 400);
   }
+});
+
+/**
+ * GET /api/auth/sessions — danh sách phiên (refresh token) đang hoạt động của
+ * CHÍNH tài khoản đang đăng nhập. Dựa trên collection `refresh_tokens` đã có sẵn
+ * từ cơ chế JWT + rotation, không tạo thêm cơ chế phiên mới.
+ * Response chỉ có id/thời gian/thiết bị — không có token hay hash.
+ */
+router.get("/sessions", authenticate, async (req, res, next) => {
+  try {
+    const items = await listSessions(req.user.sub, readRefreshCookie(req));
+    const current = items.find((s) => s.current) || null;
+    sendSuccess(res, {
+      items,
+      total: items.length,
+      current: current ? { createdAt: current.createdAt, expiresAt: current.expiresAt, userAgent: current.userAgent, ip: current.ip } : null,
+      account: { id: req.user.sub, username: req.user.username, name: req.user.name, role: req.user.role },
+    });
+  } catch (e) { next(e); }
+});
+
+/**
+ * DELETE /api/auth/sessions — thu hồi phiên.
+ *   ?others=true → đá mọi thiết bị KHÁC, giữ phiên đang gọi (admin dùng nút
+ *   "Đăng xuất tất cả thiết bị" mà không bị mất phiên của mình).
+ *   không có query → thu hồi toàn bộ, kể cả phiên hiện tại (cookie bị xoá,
+ *   client phải đăng nhập lại).
+ */
+router.delete("/sessions", authenticate, async (req, res, next) => {
+  try {
+    const keepCurrent = req.query.others === "true" || req.query.others === "1";
+    const raw = readRefreshCookie(req);
+    const revoked = keepCurrent ? await revokeOtherSessions(req.user.sub, raw) : await revokeAllForUserCount(req.user.sub);
+    if (!keepCurrent) clearRefreshCookie(res);
+    await audit({
+      req,
+      action: AUDIT.SESSIONS_REVOKE,
+      target: req.user.username || req.user.sub,
+      message: keepCurrent ? `Đã đá ${revoked} phiên khác` : `Thu hồi toàn bộ ${revoked} phiên (kể cả máy hiện tại)`,
+      meta: { revoked, keepCurrent },
+    });
+    sendSuccess(res, { revoked, keepCurrent, loggedOut: !keepCurrent });
+  } catch (e) { next(e); }
 });
 
 // ── Ví tiền (coin + sao) ──────────────────────────────────────────────────

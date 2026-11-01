@@ -122,9 +122,11 @@ export function verifyRefreshToken(raw) {
 
 /**
  * Đăng nhập / đăng ký thành công → phát hành refresh token + set cookie.
+ * @param {string} [meta]  thông tin thiết bị (user-agent + ip) để trang Cài đặt
+ *   liệt kê phiên. KHÔNG chứa credential — token chỉ được lưu dạng hash.
  * @returns {Promise<string>} refresh token (chỉ dùng để set cookie, không trả trong JSON)
  */
-export async function issueRefreshToken(user, { familyId } = {}) {
+export async function issueRefreshToken(user, { familyId, meta } = {}) {
   const jti = newId("rft");
   const fid = familyId || newId("fam");
   const raw = signRefreshToken({ userId: user.id, jti, familyId: fid });
@@ -140,6 +142,7 @@ export async function issueRefreshToken(user, { familyId } = {}) {
     createdAt: now,
     updatedAt: now,
     expiresAt: new Date(now.getTime() + REFRESH_TTL_MS),
+    ...(meta && (meta.ua || meta.ip) ? { meta: { ua: String(meta.ua || "").slice(0, 180), ip: String(meta.ip || "").slice(0, 60) } } : {}),
   });
 
   // Dọn phiên cũ nhất của user để bảng không phình vô hạn.
@@ -223,7 +226,7 @@ export async function rotateRefreshToken(raw) {
 
   let refreshRaw;
   try {
-    refreshRaw = await issueRefreshToken(user, { familyId: row.familyId });
+    refreshRaw = await issueRefreshToken(user, { familyId: row.familyId, meta: row.meta });
   } catch (e) {
     // Cấp token mới lỗi → trả token cũ về active, không bắt user đăng nhập lại
     // vì một sự cố phía server.
@@ -260,6 +263,52 @@ export async function revokeFamily(familyId, reason = null) {
 /** Đăng xuất: thu hồi mọi phiên refresh của user. */
 export async function revokeAllForUser(userId) {
   await getCollection(COLLECTION).deleteMany({ userId });
+}
+
+/**
+ * Danh sách phiên đang hoạt động của một user — phục vụ trang Cài đặt.
+ * Chỉ trả thông tin mô tả, KHÔNG bao giờ trả tokenHash/familyId bí mật hay token.
+ *
+ * @param {string} userId
+ * @param {string} [rawCurrentToken] refresh token trong cookie của request hiện tại
+ *        (để đánh dấu đúng máy đang dùng).
+ */
+export async function listSessions(userId, rawCurrentToken) {
+  const col = getCollection(COLLECTION);
+  const rows = await col.find({ userId }).sort({ createdAt: -1 }).toArray();
+  const currentHash = rawCurrentToken ? hash(rawCurrentToken) : null;
+  const nowMs = Date.now();
+  return rows.map((r) => ({
+    id: r.id,
+    // Họp nhất: phiên đang dùng là bản ghi `active` khớp đúng token trong cookie.
+    current: currentHash ? r.tokenHash === currentHash : false,
+    status: r.status,
+    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+    expiresAt: r.expiresAt instanceof Date ? r.expiresAt.toISOString() : r.expiresAt,
+    expiresInSeconds: r.expiresAt instanceof Date ? Math.max(0, Math.round((r.expiresAt.getTime() - nowMs) / 1000)) : 0,
+    userAgent: r.meta?.ua || "",
+    ip: r.meta?.ip || "",
+  }));
+}
+
+/**
+ * Thu hồi mọi phiên của user trừ phiên hiện tại (đang dùng cookie `rawCurrentToken`).
+ * @returns {Promise<number>} số phiên đã đá
+ */
+export async function revokeOtherSessions(userId, rawCurrentToken) {
+  if (!rawCurrentToken) {
+    const n = await revokeAllForUserCount(userId);
+    return n;
+  }
+  const col = getCollection(COLLECTION);
+  const res = await col.deleteMany({ userId, tokenHash: { $ne: hash(rawCurrentToken) } });
+  return res.deletedCount || 0;
+}
+
+/** Đếm/ xoá toàn bộ phiên của user, trả số lượng đã xoá. */
+export async function revokeAllForUserCount(userId) {
+  const res = await getCollection(COLLECTION).deleteMany({ userId });
+  return res.deletedCount || 0;
 }
 
 /** Đọc refresh token từ cookie HttpOnly (không nhận từ body/header — tránh leak qua log). */

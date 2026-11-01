@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { createUser, listUsers, removeUser, resetPassword, updateUserRole, updateUser } from "../services/authService.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
 
@@ -24,8 +25,10 @@ router.post("/", requireRoles("teacher", "admin"), async (req, res, next) => {
       return sendError(res, "Chỉ quản trị mới có thể tạo tài khoản quản trị", 403);
     }
     const user = await createUser(req.body || {});
+    audit({ req, action: AUDIT.USER_CREATE, target: user?.username || req.params.id || "", message: `Tạo tài khoản ${user?.role || role || ""}` }).catch(() => {});
     sendCreated(res, user);
   } catch (e) {
+    audit({ req, action: AUDIT.USER_CREATE, target: req.body?.username || "", result: "fail", message: e.message }).catch(() => {});
     sendError(res, e.message, 400);
   }
 });
@@ -35,6 +38,7 @@ router.patch("/:id/role", requireRoles("admin"), async (req, res, next) => {
     const { role } = req.body || {};
     if (!role) return sendError(res, "role là bắt buộc", 400);
     const user = await updateUserRole(req.params.id, role);
+    audit({ req, action: AUDIT.USER_ROLE, target: user?.username || req.params.id, message: `Đổi vai trò thành ${role}` }).catch(() => {});
     sendSuccess(res, user, "Đã cập nhật vai trò");
   } catch (e) {
     sendError(res, e.message, 400);
@@ -44,6 +48,8 @@ router.patch("/:id/role", requireRoles("admin"), async (req, res, next) => {
 router.patch("/:id", requireRoles("admin"), async (req, res, next) => {
   try {
     const user = await updateUser(req.params.id, req.body || {});
+    // Chỉ ghi TÊN field thay đổi — body có thể chứa email/mật khẩu.
+    audit({ req, action: AUDIT.USER_UPDATE, target: user?.username || req.params.id, meta: { fields: Object.keys(req.body || {}) } }).catch(() => {});
     sendSuccess(res, user, "Đã cập nhật người dùng");
   } catch (e) {
     sendError(res, e.message, 400);
@@ -53,8 +59,10 @@ router.patch("/:id", requireRoles("admin"), async (req, res, next) => {
 router.delete("/:id", requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     await removeUser(req.params.id);
+    audit({ req, action: AUDIT.USER_DELETE, target: req.params.id, message: "Xóa tài khoản" }).catch(() => {});
     sendNoContent(res);
   } catch (e) {
+    audit({ req, action: AUDIT.USER_DELETE, target: req.params.id, result: "fail", message: e.message }).catch(() => {});
     sendError(res, e.message, 400);
   }
 });
@@ -64,8 +72,11 @@ router.patch("/:id/reset-password", requireRoles("teacher", "admin"), async (req
     const { newPassword } = req.body || {};
     if (!newPassword) return sendError(res, "newPassword là bắt buộc", 400);
     await resetPassword(req.params.id, newPassword);
+    // Mật khẩu mới KHÔNG bao giờ được ghi vào nhật ký.
+    audit({ req, action: AUDIT.USER_RESET_PASSWORD, target: req.params.id, message: "Đặt lại mật khẩu cho người dùng" }).catch(() => {});
     sendSuccess(res, { ok: true }, "Đã đổi mật khẩu thành công");
   } catch (e) {
+    audit({ req, action: AUDIT.USER_RESET_PASSWORD, target: req.params.id, result: "fail", message: e.message }).catch(() => {});
     sendError(res, e.message, 400);
   }
 });

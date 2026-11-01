@@ -1,6 +1,7 @@
 import { getCollection } from "../db.js";
 import { sendPushToUser } from "./fcmService.js";
 import * as classService from "./classService.js";
+import { isOn } from "./systemConfigService.js";
 
 const COLLECTION = "notifications";
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -11,7 +12,23 @@ const EVENTS = { NOTIFICATION_NEW: "notification:new" };
 let ioRef = null;
 export function setNotificationIO(io) { ioRef = io; }
 
+/**
+ * Loại thông báo nào bị tắt bởi công tắc nào ở trang Cài đặt (system_config).
+ * Chỉ những loại THẬT SỰ tồn tại trong hệ thống mới có ở đây — không có cờ giả.
+ */
+const TYPE_GATE = {
+  ASSIGNMENT: "notifications.assignments",
+  TEACHER_ASSIGNMENT: "notifications.assignments",
+  DEADLINE_REMINDER: "notifications.deadlineReminders",
+};
+
 export async function createNotification({ fromUserId, fromUsername, fromName, toUserId, gameId, gameName, gameCode, type = "SYSTEM", title, message, data, ...rest }) {
+  // Cấu hình thông báo ở trang Cài đặt — tắt là KHÔNG tạo bản ghi, KHÔNG đẩy đi.
+  const gate = TYPE_GATE[type];
+  if (gate && !(await isOn(gate))) {
+    console.log(`[notif] Bỏ qua ${type}: "${gate}" đang tắt trong Cấu hình hệ thống`);
+    return null;
+  }
   const now = new Date().toISOString();
   const doc = {
     id: uid("notif"),
@@ -34,14 +51,17 @@ export async function createNotification({ fromUserId, fromUsername, fromName, t
   await getCollection(COLLECTION).insertOne(doc);
 
   // Send push notification in background (don't block)
-  sendPushToUser(toUserId, { title: doc.title, body: doc.message, type, data })
-    .then((r) => {
-      if (!r?.sent) console.log(`[notif] push not delivered (to=${toUserId}):`, JSON.stringify(r));
-    })
-    .catch((e) => console.error("[notif] push error:", e));
+  if (await isOn("notifications.push")) {
+    sendPushToUser(toUserId, { title: doc.title, body: doc.message, type, data })
+      .then((r) => {
+        if (!r?.sent) console.log(`[notif] push not delivered (to=${toUserId}):`, JSON.stringify(r));
+      })
+      .catch((e) => console.error("[notif] push error:", e));
+  }
 
   // Realtime emit so frontend can refresh dropdown without polling
-  if (ioRef && toUserId) {
+  const realtime = await isOn("notifications.realtime");
+  if (ioRef && toUserId && realtime) {
     try {
       ioRef.to(`user:${toUserId}`).emit(EVENTS.NOTIFICATION_NEW, doc);
       // Fallback: direct socket only if user room has no members (no JWT on connect)

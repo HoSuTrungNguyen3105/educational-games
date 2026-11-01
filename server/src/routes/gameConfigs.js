@@ -3,6 +3,7 @@ import * as gameService from "../services/gameService.js";
 import * as configStore from "../services/gameConfigStore.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
 
@@ -67,6 +68,8 @@ router.put("/:key", authenticate, requireRoles("teacher", "admin"), async (req, 
     const values = body.values !== undefined ? body.values : (body.config && body.config.values);
     if (values === undefined) return sendError(res, "Thiếu `values` là JSON cấu hình", 400);
     const saved = await configStore.set(key, values, req.user);
+    // Chỉ ghi key + độ lớn JSON, không ghi nội dung cấu hình vào nhật ký.
+    audit({ req, action: AUDIT.GAME_CONFIG_WRITE, target: key, message: `Lưu cấu hình game (${JSON.stringify(values).length} ký tự)` }).catch(() => {});
     sendSuccess(res, {
       key: saved.key,
       gameId: null,

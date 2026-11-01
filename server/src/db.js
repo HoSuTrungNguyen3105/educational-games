@@ -760,6 +760,16 @@ async function _runHeavyInit(database) {
     // attendance — một bản ghi chấm công cho mỗi (user, ngày); tra theo tháng
     ["attendance", { userId: 1, date: 1 }, { unique: true }],
     ["attendance", { date: -1 }],
+
+    // admin_logs — nhật ký thao tác quản trị (trang Cài đặt). Đọc mới→cũ theo thời gian.
+    // TTL 180 ngày: Mongo tự dọn bản ghi cũ, bảng không phình mãi mãi.
+    ["admin_logs", { at: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 180 }],
+    ["admin_logs", { action: 1, at: -1 }],
+    ["admin_logs", { actorName: 1, at: -1 }],
+    ["admin_logs", { result: 1, at: -1 }],
+
+    // system_config — kho cấu hình chung, đúng 1 document key="global"
+    ["system_config", { key: 1 }, { unique: true }],
   ];
 
   const createdIndexes = [];

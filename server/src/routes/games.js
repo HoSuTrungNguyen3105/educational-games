@@ -4,6 +4,7 @@ import * as questionService from "../services/questionService.js";
 import * as gameVersionService from "../services/gameVersionService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
 
@@ -121,6 +122,7 @@ router.post("/:id/versions/:version/restore", authenticate, requireRoles("teache
 router.post("/", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const game = await gameService.create(req.body);
+    audit({ req, action: AUDIT.GAME_CREATE, target: game?.name || "", message: `Tạo trò chơi (${game?.status || ""})`, meta: { id: String(game?._id || "") } }).catch(() => {});
     sendCreated(res, game);
   } catch (e) {
     next(e);
@@ -130,6 +132,10 @@ router.post("/", authenticate, requireRoles("teacher", "admin"), async (req, res
 router.put("/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const game = await gameService.update(req.params.id, req.body);
+    audit({
+      req, action: AUDIT.GAME_UPDATE, target: game?.name || req.params.id,
+      message: "Cập nhật trò chơi", meta: { fields: Object.keys(req.body || {}) },
+    }).catch(() => {});
     sendSuccess(res, game);
   } catch (e) {
     next(e);
@@ -164,15 +170,17 @@ router.put("/:id/config", authenticate, requireRoles("teacher", "admin"), async 
 router.post("/:id/duplicate", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const game = await gameService.duplicate(req.params.id);
+    audit({ req, action: AUDIT.GAME_CREATE, target: game?.name || "", message: "Nhân bản trò chơi" }).catch(() => {});
     sendCreated(res, game);
   } catch (e) {
     next(e);
   }
 });
 
-router.delete("/", authenticate, requireRoles("teacher", "admin"), async (_req, res, next) => {
+router.delete("/", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const result = await gameService.removeAll();
+    audit({ req, action: AUDIT.GAME_DELETE, target: "toàn bộ trò chơi", message: `Đã xóa ${result.deleted} trò chơi` }).catch(() => {});
     sendSuccess(res, result, `Đã xóa ${result.deleted} trò chơi`);
   } catch (e) {
     next(e);
@@ -182,6 +190,7 @@ router.delete("/", authenticate, requireRoles("teacher", "admin"), async (_req, 
 router.delete("/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     await gameService.remove(req.params.id);
+    audit({ req, action: AUDIT.GAME_DELETE, target: req.params.id, message: "Xóa trò chơi" }).catch(() => {});
     sendNoContent(res);
   } catch (e) {
     next(e);

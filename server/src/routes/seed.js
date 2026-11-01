@@ -4,6 +4,7 @@ import * as setupService from "../services/setupService.js";
 import { ObjectId } from "mongodb";
 import { sendSuccess, sendError } from "../utils/response.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
+import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
 
@@ -189,9 +190,14 @@ router.post("/seed", authenticate, requireRoles("admin", "teacher"), async (req,
     }
     results.results = { total: rawResults.length, added: resultsAdded };
 
+    audit({
+      req, action: AUDIT.SEED_RUN, target: "toàn bộ dữ liệu mẫu",
+      message: Object.entries(results).map(([k, v]) => `${k}: +${v.added ?? 0}`).join(", ").slice(0, 300),
+    }).catch(() => {});
     sendSuccess(res, { message: "Seed dữ liệu thành công", data: results });
   } catch (err) {
     console.error("[seed]", err);
+    audit({ req, action: AUDIT.SEED_RUN, target: "toàn bộ dữ liệu mẫu", result: "fail", message: err.message }).catch(() => {});
     sendError(res, "Lỗi khi seed dữ liệu: " + err.message, 500);
   }
 });

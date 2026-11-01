@@ -19,6 +19,7 @@ import DailyGiftModal from '../components/home/DailyGiftModal.jsx'
 import { useKidSettings, ageBandLabel, kidShortName } from '../lib/kidSettings.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
+import { useSiteConfig } from '../hooks/useSiteConfig.js'
 import { playVibration, playReminderSound, stopVibrationLoop } from '../lib/reminderUtils.js'
 import {
   House,
@@ -254,6 +255,8 @@ const ACHIEVEMENTS = [
 
 export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUserRegister, onUserLogout }) {
   // ─── STATE / LOGIC (giữ nguyên từ bản cũ) ───
+  // Tên trang + logo admin cấu hình ở trang Cài đặt; để trống thì dùng chữ cũ.
+  const { site } = useSiteConfig();
   const [games, setGames] = useState(null);
   const [error, setError] = useState(null);
   const [showCodeModal, setShowCodeModal] = useState(false);
@@ -931,11 +934,11 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               {/* <span className="gq-logo__mark" aria-hidden="true"></span> */}
               <img
                 className="gq-logo__mark"
-                src="/educational-games/eduplay-logo.png"
-                alt="EduPlay Logo"
+                src={site.logoUrl || "/educational-games/eduplay-logo.png"}
+                alt={`${site.name || "Lớp Học Vui"} Logo`}
               />
               <span>
-                <span className="gq-logo__name">Lớp Học Vui </span>
+                <span className="gq-logo__name">{site.name || "Lớp Học Vui"} </span>
                 <span className="gq-logo__sub">EDUGAMES</span>
               </span>
             </div>

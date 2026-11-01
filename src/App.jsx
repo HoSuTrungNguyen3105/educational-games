@@ -14,7 +14,9 @@ import { ageCodeForGrade } from "./lib/ageCodes.js";
 import { startKidProfileSync } from "./lib/kidProfileSync.js";
 import PageLoading from "./components/PageLoading.jsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
+import MaintenanceBanner from "./components/MaintenanceBanner.jsx";
 import { GameVersionProvider } from "./components/GameVersionProvider.jsx";
+import { loadSiteConfig } from "./lib/siteConfig.js";
 
 const USERNAME_SAFE = "abcdefghijklmnopqrstuvwxyz0123456789";
 const PASSWORD_SAFE = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -82,6 +84,10 @@ function App() {
   const kidSettings = useKidSettings();
 
   useEffect(() => { init(); }, [init]);
+
+  /* Tên trang / logo / favicon / banner bảo trì admin cài ở trang Cài đặt —
+   * tải một lúc ngay khi mở app (đọc /api/public-config, không cần đăng nhập). */
+  useEffect(() => { loadSiteConfig(); }, []);
 
   /* Lớp + giới tính đổi ở màn chào hay Cài đặt thì tự đẩy lên hồ sơ tài khoản. */
   useEffect(() => { startKidProfileSync(); }, []);
@@ -329,6 +335,7 @@ function App() {
 
   return (
     <GameVersionProvider>
+      <MaintenanceBanner />
       <Suspense fallback={<PageLoading />}>
         {renderScreen()}
       </Suspense>

@@ -395,6 +395,24 @@ export const authService = {
   async changePassword(currentPassword, newPassword) {
     return apiFetch("/auth/change-password", { method: "POST", body: { currentPassword, newPassword } });
   },
+  /**
+   * Danh sách phiên đang hoạt động của CHÍNH tài khoản này (collection
+   * refresh_tokens). Phải bật credentials vì server cần cookie HttpOnly để biết
+   * bản ghi nào là "máy đang dùng".
+   */
+  async sessions() {
+    return apiFetch("/auth/sessions", { credentials: "include" });
+  },
+  /**
+   * Thu hồi phiên. others=true → đá mọi thiết bị KHÁC, giữ máy đang dùng;
+   * others=false → thu hồi hết (kể cả máy này, client phải đăng nhập lại).
+   */
+  async revokeSessions(others = true) {
+    return apiFetch(`/auth/sessions?others=${others ? "true" : "false"}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+  },
   /** Access token mới từ cookie refresh (single-flight). null khi phiên đã kết thúc. */
   async refresh() {
     return refreshAccessToken();
@@ -477,6 +495,43 @@ export const templateService = {
 export const seedService = {
   async seed() {
     return apiFetch("/seed", { method: "POST" });
+  },
+};
+
+/**
+ * API của trang Cài đặt quản trị (update_admin_page.md) — /api/system/*.
+ * Quyền ở server: settings.view (đọc) / settings.edit (ghi). Frontend ẩn khu
+ * tương ứng theo quyền, nhưng server mới là nơi chặn thật.
+ */
+export const systemService = {
+  /** Kiểm tra Backend / MongoDB / Supabase / tải HTML. refresh=true bỏ qua cache server. */
+  async status(refresh = false) {
+    return apiFetch(`/system/status${refresh ? "?refresh=1" : ""}`, { _retries: 0, timeoutMs: 25000 });
+  },
+  /** Số game, số file HTML/thumbnail + dung lượng thật từ Supabase. */
+  async storage() {
+    return apiFetch("/system/storage", { _retries: 0, timeoutMs: 25000 });
+  },
+  /** Quét link htmlUrl/thumbnail. Chỉ ĐỌC — không xoá, không sửa DB. */
+  async scan({ page = 1, perPage = 50, force = false } = {}) {
+    return apiFetch("/system/scan", { method: "POST", body: { page, perPage, force }, _retries: 0, timeoutMs: 180000 });
+  },
+  async getConfig() {
+    return apiFetch("/system/config");
+  },
+  /** patch chỉ nhận các khoá whitelist (site / maintenance / notifications). */
+  async saveConfig(patch) {
+    return apiFetch("/system/config", { method: "PUT", body: patch });
+  },
+  /** Nhật ký thao tác: { page, perPage, keyword, action, actor, result, from, to }. */
+  async logs(q = {}) {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(q)) if (v !== "" && v != null && v !== "all") p.set(k, v);
+    return apiFetch(`/system/logs?${p}`, { _withPagination: true });
+  },
+  /** Cấu hình công khai (tên site + banner bảo trì) — không cần đăng nhập. */
+  async publicConfig() {
+    return apiFetch("/public-config");
   },
 };
 

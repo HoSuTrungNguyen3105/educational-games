@@ -3,6 +3,7 @@ import * as setupService from "../services/setupService.js";
 import * as gameService from "../services/gameService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
 
@@ -39,15 +40,23 @@ router.get("/templates/:id", async (req, res, next) => {
 router.post("/templates", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const tpl = await setupService.createTemplate(req.body);
+    audit({
+      req, action: AUDIT.TEMPLATE_CREATE, target: tpl?.name || req.params.id || "",
+      message: `Tạo game (${tpl?.type || ""})`,
+      // KHÔNG ghi htmlUrl/HTML thô — chỉ những field người dùng thao tác.
+      meta: { id: tpl?._id || null, fields: Object.keys(req.body || {}) },
+    }).catch(() => {});
     sendCreated(res, tpl);
   } catch (e) {
+    audit({ req, action: AUDIT.TEMPLATE_CREATE, target: req.body?.name || "", result: "fail", message: e.message }).catch(() => {});
     next(e);
   }
 });
 
-router.delete("/templates", authenticate, requireRoles("teacher", "admin"), async (_req, res, next) => {
+router.delete("/templates", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const result = await setupService.removeAllTemplates();
+    audit({ req, action: AUDIT.TEMPLATE_DELETE_ALL, target: "toàn bộ template", message: `Đã xóa ${result.deleted} game` }).catch(() => {});
     sendSuccess(res, result, `Đã xóa ${result.deleted} template`);
   } catch (e) {
     next(e);
@@ -57,8 +66,14 @@ router.delete("/templates", authenticate, requireRoles("teacher", "admin"), asyn
 router.put("/templates/:id", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const tpl = await setupService.updateTemplate(req.params.id, req.body);
+    audit({
+      req, action: AUDIT.TEMPLATE_UPDATE, target: tpl?.name || req.params.id,
+      message: `Cập nhật game`,
+      meta: { fields: Object.keys(req.body || {}), htmlThayDoi: Boolean(req.body?.htmlUrl || req.body?.htmlTemplate) },
+    }).catch(() => {});
     sendSuccess(res, tpl);
   } catch (e) {
+    audit({ req, action: AUDIT.TEMPLATE_UPDATE, target: req.params.id, result: "fail", message: e.message }).catch(() => {});
     next(e);
   }
 });
@@ -67,10 +82,13 @@ router.delete("/templates/:id", authenticate, requireRoles("teacher", "admin"), 
   try {
     const result = await setupService.removeTemplate(req.params.id);
     if (result.deactivated) {
+      audit({ req, action: AUDIT.TEMPLATE_DELETE, target: req.params.id, message: `Còn ${result.gamesCount} game dùng → chuyển inactive` }).catch(() => {});
       return sendSuccess(res, result, `Template đang được ${result.gamesCount} game sử dụng, đã chuyển sang inactive`);
     }
+    audit({ req, action: AUDIT.TEMPLATE_DELETE, target: req.params.id, message: "Xóa game" }).catch(() => {});
     sendNoContent(res);
   } catch (e) {
+    audit({ req, action: AUDIT.TEMPLATE_DELETE, target: req.params.id, result: "fail", message: e.message }).catch(() => {});
     next(e);
   }
 });
