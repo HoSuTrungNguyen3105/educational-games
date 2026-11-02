@@ -5,6 +5,7 @@ import { Loader } from "./components/ui";
 import { useUserAuthStore } from "./stores/userAuth.store.js";
 import { canAccessDashboard } from "./config/roles.js";
 import { useSocketManager } from "./hooks/useSocketManager.js";
+import { useScrollLock } from "./hooks/useScrollLock.js";
 import { useGameLoader } from "./hooks/useGameLoader.js";
 import RouteShell from "./components/RouteShell.jsx";
 import HomeScreen from "./pages/HomeScreen.jsx";
@@ -45,6 +46,30 @@ function usernameFromName(name) {
 
 function randomPassword() {
   return randomString(10, PASSWORD_SAFE);
+}
+
+/* Lớp phủ đăng nhập/đăng ký: hiện ĐÈ lên màn hình hiện tại thay vì thay thế
+ * nó. Trước đây renderScreen trả về màn hình đăng nhập thay cho route đang
+ * mở → trang chủ bị unmount, mất vị trí cuộn + bộ lọc, số liệu nạp lại từ
+ * đầu (chớp "Xu: 0, Sao: 0"). Nay màn hình nền giữ nguyên trạng thái: đóng
+ * lớp phủ — hoặc đăng nhập xong — là quay lại đúng chỗ cũ, không tải lại.
+ * Chuẩn lớp phủ như các modal khác của app: khoá cuộn nền, bấm ra ngoài
+ * hoặc ESC để đóng. z-[80] nằm dưới Toast (z-[100]). */
+function AuthOverlay({ onClose, children }) {
+  useScrollLock();
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div
+      className="fixed inset-0 z-[80] overflow-y-auto bg-[#16233c]/50 backdrop-blur-[2px]"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {children}
+    </div>
+  );
 }
 
 // Lazy-loaded Pages / Screens
@@ -298,27 +323,9 @@ function App() {
   const renderScreen = () => {
     if (needOnboarding && !user) return <OnboardingScreen onComplete={handleOnboardingComplete} />;
 
-    if (showUserLogin) {
-      return (
-        <UserLoginScreen
-          onBack={() => setShowUserLogin(false)}
-          onLogin={handleLogin}
-          onGoRegister={() => { setShowUserLogin(false); setShowUserRegister(true); }}
-          showToast={showToast}
-        />
-      );
-    }
-
-    if (showUserRegister) {
-      return (
-        <UserRegisterScreen
-          onBack={() => setShowUserRegister(false)}
-          onRegistered={handleRegister}
-          onGoLogin={() => { setShowUserRegister(false); setShowUserLogin(true); }}
-          showToast={showToast}
-        />
-      );
-    }
+    // Đăng nhập/đăng ký KHÔNG còn thay thế màn hình ở đây nữa — chúng render
+    // dạng lớp phủ ở return chính của App (xem AuthOverlay) để màn hình nền
+    // không bị unmount.
 
     if (route.name.startsWith("admin-")) {
       if (!user) {
@@ -368,6 +375,32 @@ function App() {
       <Suspense fallback={<PageLoading />}>
         {renderScreen()}
       </Suspense>
+      {showUserLogin && (
+        <AuthOverlay onClose={() => setShowUserLogin(false)}>
+          {/* Suspense riêng: hai màn hình này lazy-load và nằm NGOÀI Suspense
+              chính — thiếu boundary là React treo khi chunk đang tải. */}
+          <Suspense fallback={null}>
+            <UserLoginScreen
+              onBack={() => setShowUserLogin(false)}
+              onLogin={handleLogin}
+              onGoRegister={() => { setShowUserLogin(false); setShowUserRegister(true); }}
+              showToast={showToast}
+            />
+          </Suspense>
+        </AuthOverlay>
+      )}
+      {showUserRegister && (
+        <AuthOverlay onClose={() => setShowUserRegister(false)}>
+          <Suspense fallback={null}>
+            <UserRegisterScreen
+              onBack={() => setShowUserRegister(false)}
+              onRegistered={handleRegister}
+              onGoLogin={() => { setShowUserRegister(false); setShowUserLogin(true); }}
+              showToast={showToast}
+            />
+          </Suspense>
+        </AuthOverlay>
+      )}
       <PWAInstallPrompt />
     </GameVersionProvider>
   );

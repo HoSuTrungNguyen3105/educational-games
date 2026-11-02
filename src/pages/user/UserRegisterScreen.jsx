@@ -40,7 +40,7 @@ export default function UserRegisterScreen({ onBack, onRegistered, onGoLogin, sh
   };
 
   return (
-    <div className="min-h-screen bg-paper flex items-center justify-center px-2 py-1">
+    <div className="min-h-full flex items-center justify-center px-2 py-6">
       <div className="w-full max-w-md anim-pop">
         <div className="note-card p-5 formbg bg-paper2">
           <button onClick={onBack} className="text-sm text-[#8A7C63] hover:text-ink transition inline-flex items-center gap-1">

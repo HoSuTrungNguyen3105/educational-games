@@ -54,6 +54,12 @@
   padding: 0 clamp(12px, 2.5vw, 40px) 40px;
 }
 
+/* Thanh điều hướng dưới cố định cao 68px (chỉ hiện dưới lg) — chừa khoảng
+   đáy tương ứng để section cuối trang không bị thanh này che trên điện thoại. */
+@media (max-width: 1023px) {
+  .gq-page { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px) + 28px); }
+}
+
 /* ───────────────────────── HEADER ───────────────────────── */
 
 /* Header 2 hàng: hàng trên là logo/tuổi/cụm nút, hàng dưới là thú cưng + tab
@@ -196,6 +202,8 @@
   border: 2px solid var(--gq-paper);
 }
 .gq-iconbtn--on { background: #ffd45e; }
+/* Huy hiệu số xu/sao ở trạng thái ĐANG TẢI ví: nền xám nhạt thay vì số 0. */
+.gq-iconbtn__n--load { background: #e6ecf6; color: var(--gq-mute); }
 
 /* Nút hồ sơ: icon + tên bé → /profile */
 .gq-kidchip {
@@ -468,6 +476,8 @@
   font-weight: 700;
   color: var(--gq-ink);
   line-height: 1.2;
+  /* Tên đầy đủ có thể dài — cho xuống dòng gọn thay vì bị cắt cụt. */
+  overflow-wrap: break-word;
 }
 .gq-hero__ask {
   font-size: 13.5px;
@@ -716,6 +726,8 @@
   .gq-card:hover {
     background: var(--gq-tile-hover);
     transform: translateY(-2px);
+    /* Card phẳng theo thiết kế; chỉ khi rê chuột mới nổi bóng nhẹ cho có chiều sâu. */
+    box-shadow: 0 10px 22px rgba(29, 43, 82, 0.1);
   }
   .gq-card:hover .gq-card__ring { animation: gqWiggle 0.55s ease; }
 }
@@ -749,6 +761,7 @@
   place-items: center;
   font-size: 28px;
   margin-top: 2px;
+  flex-shrink: 0;
 }
 /* Thumbnail từ public/ — lấp đầy vòng tròn, hết ảnh thì vẫn dùng emoji */
 .gq-card__ring img {
@@ -781,9 +794,11 @@
 /* section nền xanh lá có mép cong */
 .gq-sect--green {
   background: linear-gradient(180deg, #9ed79a, #8fcb87);
-  border-radius: 24px 24px 0 0;
-  padding: 20px clamp(12px, 2.5vw, 40px) 6px;
-  margin: 26px calc(clamp(12px, 2.5vw, 40px) * -1) 22px;
+  /* Bo tròn cả 4 góc và đệm dưới cân với đệm trên — trước đây chỉ bo hai
+     góc trên, đệm dưới 6px nên mép dưới trông cụt và sát nội dung. */
+  border-radius: 24px;
+  padding: 20px clamp(12px, 2.5vw, 40px) 16px;
+  margin: 0 calc(clamp(12px, 2.5vw, 40px) * -1) 22px;
 }
 
 /* ───────────────────────── LƯỚI GAME CHI TIẾT ───────────────────────── */
@@ -839,7 +854,9 @@
 @media (prefers-reduced-motion: reduce) {
   .gq-hero__mascot,
   .gq-gift__rays,
-  .gq-gift__star {
+  .gq-gift__star,
+  .gq-sheet,
+  .gq-scrim {
     animation: none !important;
   }
   .gq-card,
@@ -867,6 +884,7 @@
   justify-content: center;
   padding: 60px 16px 16px;
   overflow-y: auto;
+  animation: gqFade 0.18s ease;
 }
 .gq-sheet {
   width: 100%;
@@ -875,6 +893,11 @@
   border-radius: 22px;
   box-shadow: 0 18px 50px rgba(20, 30, 55, 0.25);
   overflow: hidden;
+  animation: gqSheetIn 0.22s ease;
+}
+@keyframes gqSheetIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 .gq-sheet__head {
   display: flex;

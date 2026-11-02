@@ -16,7 +16,8 @@ import SupportRequestWidget from '../components/support/SupportRequestWidget.jsx
 import { PetAvatar } from '../components/PetAvatar.jsx'
 import { usePet, moodLabel } from '../lib/petApi.js'
 import DailyGiftModal from '../components/home/DailyGiftModal.jsx'
-import { useKidSettings, ageBandLabel, kidShortName } from '../lib/kidSettings.js'
+import { useKidSettings, ageBandLabel } from '../lib/kidSettings.js'
+import { useScrollLock } from '../hooks/useScrollLock.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
 import { useSiteConfig } from '../hooks/useSiteConfig.js'
@@ -271,6 +272,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [userCoins, setUserCoins] = useState(0);
   const [userStars, setUserStars] = useState(0);
+  // Ví đã nạp xong chưa — trước đây số xu/sao hiện "0" ngay khi mở trang rồi
+  // mới nhảy về số thật (audit 2026-11-02); nay hiện dấu chờ tới khi có dữ liệu.
+  const [walletLoaded, setWalletLoaded] = useState(false);
   const [gift, setGift] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   // popover "Thêm" của hàng tab header: vị trí tính theo nút nên phải mở
@@ -396,7 +400,16 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   // Môn đang lọc ở khu Game học tập — đặt khi bấm vào thẻ môn ở bảng Môn học.
   const [subjectFilter, setSubjectFilter] = useState(null);
   const [resettingCache, setResettingCache] = useState(false);
+  // Phản hồi riêng của nút "Xóa cache" — hiện ngay dưới nút trong sheet.
+  // Trước đây dùng chung pushMessage: thông báo nằm ở mục Thông báo đẩy
+  // (phía trên, có thể đã cuộn khuất) hoặc ở banner đầu trang BÊN DƯỚI lớp
+  // phủ của sheet → bấm xong không thấy phản hồi gì, nhất là với khách.
+  const [cacheMsg, setCacheMsg] = useState("");
   const pet = usePet();
+
+  // Sheet menu đang mở thì khoá cuộn trang nền (chuẩn chung của app;
+  // hộp quà tự khoá trong DailyGiftModal, modal nhập mã qua Modal dùng chung).
+  useScrollLock(menuOpen);
 
   const loadGames = async () => {
     setGames(null); setError(null);
@@ -428,7 +441,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     loadNotifications();
     loadTasks();
     if (userAuth?.user) {
-      walletService.get().then(w => { setUserCoins(w?.coins || 0); setUserStars(w?.stars || 0); }).catch(() => { });
+      setWalletLoaded(false);
+      walletService.get().then(w => { setUserCoins(w?.coins || 0); setUserStars(w?.stars || 0); setWalletLoaded(true); }).catch(() => setWalletLoaded(true));
 
       // Register FCM token if permission is already granted
       if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
@@ -441,7 +455,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   // Số xu đổi khi chơi game offline (ví ở src/lib/coinWallet.js) → trang chủ
   // cập nhật luôn, không phải tải lại.
-  useEffect(() => subscribeWallet((w) => setUserCoins(w.coins)), []);
+  useEffect(() => subscribeWallet((w) => { setUserCoins(w.coins); setWalletLoaded(true); }), []);
 
   const [pushStatus, setPushStatus] = useState(() => getPushSupportStatus());
   const [testingPush, setTestingPush] = useState(false);
@@ -520,14 +534,14 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       localStorage.removeItem('gq_pwa_closed');
       localStorage.removeItem('gq_sound');
 
-      setPushMessage("Đã xóa cache thành công! Trang sẽ tự reload...");
+      setCacheMsg("Đã xóa cache thành công! Trang sẽ tự reload...");
 
       // Reload after 1 second
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     } catch (err) {
-      setPushMessage("Lỗi xóa cache: " + (err.message || "Thất bại"));
+      setCacheMsg("Lỗi xóa cache: " + (err.message || "Thất bại"));
     } finally {
       setResettingCache(false);
     }
@@ -783,6 +797,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     };
   }, [moreOpen]);
 
+  // Sheet menu ⚙️ đóng bằng ESC như các modal khác của app (trước đây chỉ
+  // đóng được bằng nút X hoặc bấm ra ngoài nền).
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
   /* ══════════════════════════════════════════════════════════════════════
      GIAO DIỆN MỚI — theo bản mẫu: header nhẹ, banner PWA, hàng nút tròn +
      nút "Chơi ngẫu nhiên", rồi các dải game cuộn ngang theo chủ đề.
@@ -917,13 +940,16 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   // Tổng số trò chơi đang chờ bé (học tập + thư giãn + nhập vai) cho câu chào.
   const gameCount = visibleGames.length + OFFLINE_GAMES.length + 1;
 
-  /* Tên để gọi ở lời chào + chip hồ sơ.
-   * kidSettings.name nằm trong localStorage của MÁY, không đổi theo tài khoản,
-   * nên lấy tên người đang đăng nhập trước — nếu không thì đăng nhập tài khoản B
-   * mà trang chủ vẫn gọi "Chào A". Chưa đăng nhập thì để trống, hero hiện lời
-   * mời đăng nhập chứ không chào một em bé không có thật. */
+  /* Tên để gọi ở lời chào + chip hồ sơ: tên ĐẦY ĐỦ của tài khoản đang đăng
+   * nhập. kidSettings.name nằm trong localStorage của MÁY, không đổi theo tài
+   * khoản, nên chỉ dùng làm dự phòng — nếu không thì đăng nhập tài khoản B mà
+   * trang chủ vẫn gọi "Chào A". Chưa đăng nhập thì để trống, hero hiện lời mời
+   * đăng nhập chứ không chào một em bé không có thật.
+   * Không viết tắt: trước đây qua kidShortName() nên "Quản trị hệ thống" thành
+   * "h. thống" (lỗi audit 2026-11-02). Chip header tự cắt bằng CSS (ellipsis)
+   * nên tên dài không tràn; bong bóng chào cho phép xuống dòng. */
   const heroName = userAuth?.user
-    ? kidShortName(userAuth.user.name || userAuth.user.username || kidSettings.name)
+    ? String(userAuth.user.name || userAuth.user.username || kidSettings.name || "").trim()
     : "";
 
   /* Nút "Chơi ngẫu nhiên" — bốc trong 3 dạng: học tập + thư giãn + nhập vai. */
@@ -1000,10 +1026,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </button>
               )}
               <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Xu: ${userCoins}`} title="Xu của bé">
-                <Coins className="w-5 h-5 text-amber-500" />{userCoins > 0 && <span className="gq-iconbtn__n">{shortCount(userCoins)}</span>}
+                <Coins className="w-5 h-5 text-amber-500" />{userAuth?.user && !walletLoaded ? <span className="gq-iconbtn__n gq-iconbtn__n--load" aria-hidden="true">…</span> : userCoins > 0 && <span className="gq-iconbtn__n">{shortCount(userCoins)}</span>}
               </button>
               <button className="gq-iconbtn" onClick={() => goTo("/store")} aria-label={`Sao: ${userStars} — mở cửa hàng sao`} title="Cửa hàng sao — đổi coin ⇄ sao">
-                <Star className="w-5 h-5 text-amber-400" fill="currentColor" />{userStars > 0 && <span className="gq-iconbtn__n">{shortCount(userStars)}</span>}
+                <Star className="w-5 h-5 text-amber-400" fill="currentColor" />{userAuth?.user && !walletLoaded ? <span className="gq-iconbtn__n gq-iconbtn__n--load" aria-hidden="true">…</span> : userStars > 0 && <span className="gq-iconbtn__n">{shortCount(userStars)}</span>}
               </button>
               <button
                 className={`gq-iconbtn ${soundOn ? "" : "gq-iconbtn--on"}`}
@@ -1159,18 +1185,14 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── HÔM NAY CỦA BÉ ─────────── */}
         <section className="gq-sect">
-          <div className="gq-sect__head">
-            <span className="gq-sect__ico" aria-hidden="true"><Star className="w-5 h-5 text-amber-500" /></span>
-            <div>
-              <h2 className="gq-sect__t">Hôm nay của bé</h2>
-              <p className="gq-sect__s">Học xen chơi · đổi mới ngày</p>
-            </div>
-          </div>
+          <SectionHead icon={<Star className="w-5 h-5 text-amber-500" />} title="Hôm nay của bé" sub="Học xen chơi · đổi mới ngày" />
 
-          {games === null ? (
-            <Loader label="Đang tải trò chơi..." />
-          ) : error ? (
+          {/* error xét TRƯỚC games===null: tải lỗi thì games vẫn null, để
+              games trước là ErrorState không bao giờ hiện (quay vòng mãi). */}
+          {error ? (
             <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
+          ) : games === null ? (
+            <Loader label="Đang tải trò chơi..." />
           ) : todayGames.length === 0 ? (
             <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thầy cô thêm game vào nhé!" />
           ) : (
@@ -1194,13 +1216,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {/* ─────────── SỐ & TOÁN (nền xanh lá) ─────────── */}
         {mathGames.length > 0 && (
           <section className="gq-sect gq-sect--green" id="math-section">
-            <div className="gq-sect__head">
-              <span className="gq-sect__ico" aria-hidden="true"><Calculator className="w-5 h-5 text-emerald-600" /></span>
-              <div>
-                <h2 className="gq-sect__t">Số &amp; toán <span className="gq-sect__n">{mathGames.length}</span></h2>
-                <p className="gq-sect__s">Học số · tập đếm · so sánh · chia đều · đồng hồ · công trừ</p>
-              </div>
-            </div>
+            <SectionHead icon={<Calculator className="w-5 h-5 text-emerald-600" />} title="Số & toán" count={mathGames.length} sub="Học số · tập đếm · so sánh · chia đều · đồng hồ · công trừ" />
             <div className="gq-rail gq-board" data-rail="math">
               {mathGames.map(({ key, ...card }) => <GqGameCard key={key} {...card} />)}
             </div>
@@ -1209,13 +1225,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── 2. GAME THƯ GIÃN (OFFLINE) ─────────── */}
         <section className="gq-sect" id="offline-section">
-          <div className="gq-sect__head">
-            <span className="gq-sect__ico" aria-hidden="true"><Gamepad2 className="w-5 h-5 text-violet-500" /></span>
-            <div>
-              <h2 className="gq-sect__t">Game thư giãn <span className="gq-sect__n">{offlineCards.length}</span></h2>
-              <p className="gq-sect__s">Chơi không cần mạng · tiến độ lưu trên máy</p>
-            </div>
-          </div>
+          <SectionHead icon={<Gamepad2 className="w-5 h-5 text-violet-500" />} title="Game thư giãn" count={offlineCards.length} sub="Chơi không cần mạng · tiến độ lưu trên máy" />
           <div className="gq-rail gq-board" data-rail="offline">
             {offlineCards.map(({ key, ...card }) => <GqGameCard key={key} {...card} />)}
           </div>
@@ -1223,13 +1233,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── 3. GAME NHẬP VAI TRƯỜNG HỌC ─────────── */}
         <section className="gq-sect gq-sect--green" id="rpg-section">
-          <div className="gq-sect__head">
-            <span className="gq-sect__ico" aria-hidden="true"><School className="w-5 h-5 text-emerald-600" /></span>
-            <div>
-              <h2 className="gq-sect__t">Game nhập vai trường học</h2>
-              <p className="gq-sect__s">Khám phá trường · học từng lớp · làm bài thi</p>
-            </div>
-          </div>
+          <SectionHead icon={<School className="w-5 h-5 text-emerald-600" />} title="Game nhập vai trường học" sub="Khám phá trường · học từng lớp · làm bài thi" />
           <div className="gq-rail gq-board" data-rail="school">
             <GqGameCard {...schoolRpgCard} />
           </div>
@@ -1238,13 +1242,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {/* ─────────── MÔN HỌC ─────────── */}
         {subjectCards.length > 0 && (
           <section className="gq-sect" id="subjects-section">
-            <div className="gq-sect__head">
-              <span className="gq-sect__ico" aria-hidden="true"><BookOpen className="w-5 h-5 text-violet-600" /></span>
-              <div>
-                <h2 className="gq-sect__t">Môn học <span className="gq-sect__n">{subjectCards.length}</span></h2>
-                <p className="gq-sect__s">Chọn một môn để xem các trò chơi của môn đó</p>
-              </div>
-            </div>
+            <SectionHead icon={<BookOpen className="w-5 h-5 text-violet-600" />} title="Môn học" count={subjectCards.length} sub="Chọn một môn để xem các trò chơi của môn đó" />
             <div className="gq-grid gq-board">
               {subjectCards.map(({ name, count, meta }) => (
                 <button
@@ -1265,16 +1263,24 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── 1. GAME HỌC TẬP (API) ─────────── */}
         <section className="gq-sect" id="games-section">
-          <div className="gq-sect__head">
-            <span className="gq-sect__ico" aria-hidden="true"><BookOpen className="w-5 h-5 text-sky-600" /></span>
-            <div>
-              <h2 className="gq-sect__t">Game học tập <span className="gq-sect__n">{subjectFilter ? learningGames.length : visibleGames.length}</span></h2>
-              <p className="gq-sect__s">{subjectFilter
-                ? <>Đang xem môn <b>{subjectFilter}</b> · <button onClick={() => setSubjectFilter(null)} className="underline font-bold">Bỏ lọc</button></>
-                : showAllGames ? "Đồng bộ điểm & tiến trình khi có mạng" : `Xem trước ${PREVIEW_GAMES} game · lưu kết quả lên máy chủ`}</p>
-            </div>
-          </div>
+          <SectionHead
+            icon={<BookOpen className="w-5 h-5 text-sky-600" />}
+            title="Game học tập"
+            count={subjectFilter ? learningGames.length : visibleGames.length}
+            sub={subjectFilter
+              ? <>Đang xem môn <b>{subjectFilter}</b> · <button onClick={() => setSubjectFilter(null)} className="underline font-bold">Bỏ lọc</button></>
+              : showAllGames ? "Đồng bộ điểm & tiến trình khi có mạng" : `Xem trước ${PREVIEW_GAMES} game · lưu kết quả lên máy chủ`}
+          />
 
+          {/* Trạng thái tải/lỗi/rỗng giống hệt khu "Hôm nay của bé" — trước
+              đây khu này để bảng trắng trong lúc tải và im lặng khi lỗi. */}
+          {error ? (
+            <ErrorState title="Không tải được danh sách" subtitle={error} onRetry={loadGames} />
+          ) : games === null ? (
+            <Loader label="Đang tải trò chơi..." />
+          ) : visibleGames.length === 0 && !subjectFilter ? (
+            <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thầy cô thêm game vào nhé!" />
+          ) : (
           <div className="gq-grid gq-board">
             {learningGames.map(({ game, index }) => {
               const t = templates.find((x) => x._id === (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid));
@@ -1295,6 +1301,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               );
             })}
           </div>
+          )}
 
           {subjectFilter && learningGames.length === 0 && (
             <p className="text-sm text-slate-500 px-1 py-3">Chưa có trò chơi nào thuộc môn này.</p>
@@ -1362,13 +1369,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       {/* ─────────── SHEET MENU ⚙️ ─────────── */}
       {menuOpen && (
         <div className="gq-scrim" onClick={() => setMenuOpen(false)}>
-          <div className="gq-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="gq-sheet" role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
             <div className="gq-sheet__head">
               <div>
                 <span className="gq-sheet__t">Menu</span>
                 {userAuth?.user && (
                   <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-                    {userAuth.user.name} · Lv {lv.level} · <Star className="w-3 h-3 text-amber-400" /> {userStars}
+                    {walletLoaded
+                      ? <>{userAuth.user.name} · Lv {lv.level} · <Star className="w-3 h-3 text-amber-400" /> {userStars}</>
+                      : <>{userAuth.user.name} · Đang tải số dư…</>}
                   </span>
                 )}
               </div>
@@ -1489,6 +1498,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 <span className="gq-link__ico"><RefreshCw className={`w-4 h-4 ${resettingCache ? 'animate-spin' : ''}`} /></span>
                 <span className="flex-1">{resettingCache ? "Đang xóa cache..." : "Xóa cache"}</span>
               </button>
+              {cacheMsg && <p className="px-3 pt-1 pb-2 text-[11px] font-semibold text-slate-500">{cacheMsg}</p>}
 
               {/* Tài khoản */}
               {userAuth?.user ? (
@@ -1498,11 +1508,11 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </button>
               ) : (
                 <>
-                  <button onClick={onUserLogin} className="gq-link">
+                  <button onClick={() => { setMenuOpen(false); onUserLogin(); }} className="gq-link">
                     <span className="gq-link__ico"><KeyRound className="w-4 h-4" /></span>
                     <span className="flex-1">Đăng nhập</span>
                   </button>
-                  <button onClick={onUserRegister} className="gq-link">
+                  <button onClick={() => { setMenuOpen(false); onUserRegister(); }} className="gq-link">
                     <span className="gq-link__ico"><Sparkles className="w-4 h-4" /></span>
                     <span className="flex-1">Đăng ký</span>
                   </button>
@@ -1527,6 +1537,22 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 }
 
 /* ═══════════════════════ COMPONENT PHỤ ═══════════════════════ */
+
+/** Đầu mục DÙNG CHUNG cho mọi section của trang chủ: ô icon + tiêu đề
+ *  (+ nhãn số lượng) + mô tả ngắn. Trước đây mỗi section tự viết lại khối
+ *  này nên style dễ lệch nhau; nay một mẫu duy nhất. `sub` nhận cả JSX
+ *  (khu Game học tập có nút "Bỏ lọc" trong dòng mô tả). */
+function SectionHead({ icon, title, count, sub }) {
+  return (
+    <div className="gq-sect__head">
+      <span className="gq-sect__ico" aria-hidden="true">{icon}</span>
+      <div>
+        <h2 className="gq-sect__t">{title}{count != null && <span className="gq-sect__n">{count}</span>}</h2>
+        {sub && <p className="gq-sect__s">{sub}</p>}
+      </div>
+    </div>
+  );
+}
 
 /** Ô game dùng chung cho cả dải ngang lẫn lưới. */
 function GqGameCard({ icon, name, tint, badge, age, thumb, play }) {
