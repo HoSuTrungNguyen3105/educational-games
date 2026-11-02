@@ -61,6 +61,7 @@ const MyCoins = lazy(() => import("./pages/user/MyCoins.jsx"));
 const FindFriendsScreen = lazy(() => import("./pages/user/FindFriendsScreen.jsx"));
 const DailyTasksPage = lazy(() => import("./pages/user/DailyTasksPage.jsx"));
 const GardenPage = lazy(() => import("./pages/user/GardenPage.jsx"));
+const ParentPage = lazy(() => import("./pages/user/ParentPage.jsx"));
 const SpinWheel = lazy(() => import("./pages/user/SpinWheel.jsx"));
 const ConversationListScreen = lazy(() => import("./pages/user/ConversationListScreen.jsx"));
 const AssignmentJoin = lazy(() => import("./pages/user/AssignmentJoin.jsx"));
@@ -207,6 +208,11 @@ function App() {
     "find-friends": () => (
       <RouteShell toast={toast}>
         <FindFriendsScreen userAuth={userAuth} />
+      </RouteShell>
+    ),
+    parent: () => (
+      <RouteShell toast={toast} showBack={false}>
+        <ParentPage userAuth={userAuth} onLogin={handleLogin} onUserLogin={() => setShowUserLogin(true)} showToast={showToast} />
       </RouteShell>
     ),
     "my-coins": () => (

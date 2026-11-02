@@ -165,7 +165,8 @@ const CELL_BY_PERMISSION = (() => {
 export const ALL_PERMISSIONS = [...new Set([...Object.keys(CELL_BY_PERMISSION), ...BASE_PERMISSIONS, ...ALL_ACCESS_PERMISSIONS])];
 
 // Đổi khi muốn API seed lại built-in roles (xem ensureSeeded trong permissionService)
-export const ROLES_SEED_VERSION = 3;
+// v4: thêm vai trò `parent` (phụ huynh) cho đợt 3.
+export const ROLES_SEED_VERSION = 4;
 
 export const ROLES = {
   admin: {
@@ -261,6 +262,17 @@ export const ROLES = {
     description: "Chơi game & học tập",
     dashboardAccess: false,
     permissions: ["games.play", "chat", "profile", "friends", "coins.view", "daily-tasks"],
+  },
+  // Phụ huynh: KHÔNG vào dashboard, không chơi game — chỉ xem báo cáo học tập
+  // của con đã liên kết bằng mã (xem /api/parents). Quyền tĩnh ở đây là phương án
+  // dự phòng khi collection `roles` chưa seed; khi đã seed, quyền thực tế lấy từ
+  // ma trận (mọi vai trò đều có BASE_PERMISSIONS như các vai trò khác).
+  parent: {
+    label: "Phụ huynh",
+    name_en: "Parent",
+    description: "Xem báo cáo học tập của con",
+    dashboardAccess: false,
+    permissions: ["profile", "chat"],
   },
 };
 

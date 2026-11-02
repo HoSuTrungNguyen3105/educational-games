@@ -70,7 +70,7 @@ export function publicUser(user) {
 }
 
 function normalizeRole(role) {
-  if (role === "admin" || role === "student") return role;
+  if (role === "admin" || role === "student" || role === "parent") return role;
   return "teacher";
 }
 

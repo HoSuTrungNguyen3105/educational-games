@@ -156,6 +156,11 @@ const RULES = [
   { m: "POST", re: /^\/ai\/(generate-question|quizzes\/generate)$/, perms: ["questions.edit"] },
   { re: /^\/ai\//, perms: [PLAY, PROFILE] },
   { re: /^\/seed$/, perms: ["settings.edit"] },
+  // Phụ huynh: đăng ký là API công khai (giống /auth/register); mọi endpoint
+  // còn lại chỉ cần đăng nhập — quyền xem ĐÚNG người con nào được route/service
+  // kiểm tra theo bản ghi liên kết, không chỉ dựa vào middleware này.
+  { re: /^\/parents\/register$/, perms: [] },
+  { re: /^\/parents/, perms: [PROFILE] },
 
   // ── Trang Cài đặt quản trị (update_admin_page.md) ──────────────────────
   // Kiểm quyền ở SERVER — frontend có ẩn nút thì vẫn phải chặn được.

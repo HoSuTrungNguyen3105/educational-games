@@ -61,6 +61,7 @@ const ROUTES = [
   { name: "pet",          pattern: "/pet" },
   { name: "pet-wardrobe", pattern: "/pet-wardrobe" },
   { name: "find-friends", pattern: "/find-friends" },
+  { name: "parent",       pattern: "/parent" },
   { name: "my-coins",     pattern: "/my-coins" },
   { name: "daily-tasks",  pattern: "/daily-tasks" },
   // /missions là đường dẫn nhiệm vụ được nhắc tới trong menu/audit — dùng
