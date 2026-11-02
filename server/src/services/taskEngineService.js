@@ -261,7 +261,8 @@ export async function claimTaskReward(userId, taskId) {
     newCoins = await addCoins(userId, task.rewardCoin);
   }
 
-  // Cộng XP thưởng vào NGUỒN XP CHUẨN (users.xp qua addXp). Trước đây hàm này
+  // Cộng XP thưởng qua addXp — addXp ghi vào NGUỒN XP CHUẨN (stats.totalXP,
+  // xem gameProgressService.XP_LEDGER_GAME_ID). Trước đây hàm này
   // chỉ TRẢ rewardXp trong response mà không cộng thật — giao diện báo "nhận
   // XP" nhưng XP tổng không hề tăng, một phần lý do số XP giữa các trang lệch.
   let xpProfile = null;

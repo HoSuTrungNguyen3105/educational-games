@@ -13,7 +13,10 @@ router.use(authenticate);
 // GET /api/users/me/games — list all game progress for the user
 router.get("/me/games", async (req, res, next) => {
   try {
-    const list = await gameProgressService.getByUser(req.user.sub);
+    // Lọc bản ghi sổ XP server thưởng — đó không phải một game, không được
+    // hiện trong danh sách game của người dùng (nó vẫn tính vào XP chuẩn).
+    const list = (await gameProgressService.getByUser(req.user.sub))
+      .filter((p) => p.gameId !== gameProgressService.XP_LEDGER_GAME_ID);
     // Game online có document trong collection `games` → lấy tên thật từ đó;
     // game offline (gameId là slug, không phải ObjectId) chỉ có `gameName` do
     // cầu sync của game ghi lên. Chỉ id đủ 24 hex mới đem so với `_id` (truyền

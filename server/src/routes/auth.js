@@ -2,7 +2,7 @@ import { Router } from "express";
 import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, changePassword, getCoins, getWallet, adjustWallet, exchangeWallet, redeemAchievement, getXp, claimDailyStarGift } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
-import { getByUser } from "../services/gameProgressService.js";
+import { getByUser, XP_LEDGER_GAME_ID } from "../services/gameProgressService.js";
 import { getCollection } from "../db.js";
 import { trackAction } from "../services/dailyTaskService.js";
 import { processTaskEvent } from "../services/taskEngineService.js";
@@ -160,14 +160,16 @@ router.get("/me", authenticate, async (req, res) => {
       classInfo = await getClassById(userDoc.classId).catch(() => null);
     }
 
-    const totalPlays = games.reduce((s, g) => s + (g.gamesPlayed || 0), 0);
-    // XP CHUẨN của hệ thống là `users.xp` — XP do server cấp qua addXp() từ các
-    // luồng đã kiểm chứng (chơi game chấm ở server, nộp bài tập). Trước đây
-    // stats.totalXP cộng `experience` của từng bản ghi tiến độ game — nguồn do
-    // CLIENT tự báo qua PUT /users/me/games nên lệch hẳn với XP ở trang Thành
-    // tựu (đọc users.xp). Nay totalXP lấy đúng users.xp để mọi trang khớp nhau;
-    // `experience` theo từng game vẫn giữ nguyên ở GET /users/me/games.
-    const totalXP = userDoc?.xp || 0;
+    // Bản ghi sổ XP server thưởng (XP_LEDGER_GAME_ID) không phải một game thật
+    // → không tính vào số game đã chơi / tổng lượt chơi.
+    const realGames = games.filter((g) => g.gameId !== XP_LEDGER_GAME_ID);
+    const totalPlays = realGames.reduce((s, g) => s + (g.gamesPlayed || 0), 0);
+    // XP CHUẨN của hệ thống là `stats.totalXP` (Nguyên chốt 2026-11-02) = tổng
+    // `experience` trên MỌI bản ghi tiến độ: experience theo từng game (do
+    // client báo qua PUT /users/me/games) CỘNG bản ghi sổ XP server thưởng mà
+    // addXp ghi vào. Mọi nơi hiển thị XP (Hồ sơ, Thành tựu qua /auth/me/xp,
+    // danh sách người dùng) đều lấy đúng tổng này — xem getXp trong authService.
+    const totalXP = games.reduce((s, g) => s + (g.experience || 0), 0);
     sendSuccess(res, {
       id: req.user.sub,
       username: req.user.username,
@@ -181,9 +183,9 @@ router.get("/me", authenticate, async (req, res) => {
       // ["games.view", "games.manage", "question_bank.edit", "chat", "profile", ...].
       permissions,
       coins,
-      // Sao + XP nằm ngay trên user (giống publicUser) — bản cũ thiếu `stars`
-      // khiến trang Hồ sơ hiện 0 sao dù ví có sao (đã vá tạm ở frontend đợt 2,
-      // nay backend trả đủ để client khỏi gọi thêm /me/wallet).
+      // Sao + XP (chuẩn) nằm ngay trên response — bản cũ thiếu `stars` khiến
+      // trang Hồ sơ hiện 0 sao dù ví có sao (đã vá tạm ở frontend đợt 2, nay
+      // backend trả đủ để client khỏi gọi thêm /me/wallet).
       stars: userDoc?.stars || 0,
       xp: totalXP,
       createdAt: userDoc?.createdAt || null,
@@ -199,7 +201,7 @@ router.get("/me", authenticate, async (req, res) => {
       stats: {
         totalPlays,
         totalXP,
-        gamesPlayed: games.length,
+        gamesPlayed: realGames.length,
       },
       // Không còn trả danh sách game: hồ sơ chỉ cần `stats`, còn tiến độ từng
       // game đã có GET /api/users/me/games (trang Hồ sơ gọi riêng endpoint đó).

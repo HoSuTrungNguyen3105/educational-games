@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getCollection } from "../db.js";
+import { incrementExperience, getTotalExperience, XP_LEDGER_GAME_ID } from "./gameProgressService.js";
 import { config } from "../config.js";
 import { REDEEM_ACHIEVEMENTS, findRedeemAchievement } from "../config/redeemCatalog.js";
 import { normalizeAgeCode, normalizeGender } from "../config/ageCodes.js";
@@ -122,10 +123,19 @@ export async function listUsers() {
   const { getCollection: gc } = await import("../db.js");
   const classes = await gc("classes").find({}).toArray();
   const classMap = new Map(classes.map(c => [c.id, c]));
+  // XP trong danh sách cũng là XP CHUẨN (tổng experience tiến độ) — ghi đè lên
+  // field `xp` thô (users.xp) để trang quản lý người dùng / bảng xếp hạng thấy
+  // cùng một con số với Hồ sơ và Thành tựu.
+  const xpRows = await gc("userGameProgress")
+    .aggregate([{ $group: { _id: "$userId", total: { $sum: "$experience" } } }])
+    .toArray()
+    .catch(() => []);
+  const xpMap = new Map(xpRows.map((r) => [r._id, r.total || 0]));
   return docs.map(({ _id, passwordHash, ...rest }) => {
     const cls = rest.classId ? classMap.get(rest.classId) : null;
     return {
       ...rest,
+      xp: xpMap.get(rest.id) || 0,
       generatedPassword: rest.generatedPassword || null,
       className: cls?.name || null,
       classCode: cls?.code || null,
@@ -317,14 +327,23 @@ export function xpIntoLevel(xp) {
 }
 
 export async function getXp(userId) {
-  const user = await getCollection(COLLECTION).findOne({ id: userId });
-  const xp = user?.xp || 0;
+  // XP CHUẨN = stats.totalXP — tổng `experience` trong userGameProgress (Nguyên
+  // chốt 2026-11-02), KHÔNG phải users.xp. Cấp độ cũng tính từ số chuẩn này để
+  // Hồ sơ / Thành tựu / /auth/me/xp luôn khớp nhau.
+  const xp = await getTotalExperience(userId);
   return { xp, level: levelFromXp(xp), xpIntoLevel: xpIntoLevel(xp), xpPerLevel: XP_PER_LEVEL };
 }
 
 /**
- * Cộng XP cho user và trả về mức tiến độ mới.
+ * Cộng XP cho user và trả về mức tiến độ mới (theo XP CHUẨN).
  * Trả về `awarded: 0` nếu amount không hợp lệ — XP chỉ được cấp ở server.
+ *
+ * Ghi HAI nơi để mọi luồng cũ/mới đều nhất quán:
+ *  (a) `users.xp` — bản ghi phụ như trước (giữ tương thích dữ liệu cũ);
+ *  (b) NGUỒN CHUẨN stats.totalXP — cộng vào bản ghi sổ `XP_LEDGER_GAME_ID`
+ *      trong userGameProgress qua incrementExperience. Chỉ cộng khi gained > 0
+ *      (addXp chỉ dùng để thưởng). Nhờ (b), XP nhiệm vụ / bài tập / ván chơi
+ *      do server cấp đều tính vào cùng một tổng với experience tiến độ game.
  */
 export async function addXp(userId, amount) {
   const gained = Math.floor(Number(amount));
@@ -334,19 +353,22 @@ export async function addXp(userId, amount) {
   const user = await getCollection(COLLECTION).findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");
 
-  const prevLevel = levelFromXp(user.xp || 0);
-  const newXp = Math.max(0, (user.xp || 0) + gained);
-  const newLevel = levelFromXp(newXp);
+  const prevXp = await getTotalExperience(userId);
+  const prevLevel = levelFromXp(prevXp);
 
-  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { xp: newXp } });
+  await getCollection(COLLECTION).updateOne(
+    { id: userId },
+    { $set: { xp: Math.max(0, (user.xp || 0) + gained) } }
+  );
+  if (gained > 0) {
+    await incrementExperience(userId, XP_LEDGER_GAME_ID, gained);
+  }
 
+  const now = await getXp(userId);
   return {
     awarded: gained,
-    xp: newXp,
-    level: newLevel,
-    xpIntoLevel: xpIntoLevel(newXp),
-    xpPerLevel: XP_PER_LEVEL,
-    leveledUp: newLevel > prevLevel,
+    ...now,
+    leveledUp: now.level > prevLevel,
   };
 }
 
