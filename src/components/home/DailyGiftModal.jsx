@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { Coins, Star, Ticket } from "lucide-react";
+import { useScrollLock } from "../../hooks/useScrollLock.js";
 
 /** Số sao vẽ trên dải (ảnh minh hoạ có 5 ngôi) — không phải số sao thật nhận. */
 const STRIP_STARS = 5;
@@ -22,6 +23,9 @@ const REWARD_CONFIG = {
 
 export default function DailyGiftModal({ type = "stars", amount, totalStars, onClose }) {
   const [leaving, setLeaving] = useState(false);
+
+  // Khoá cuộn trang nền khi hộp quà đang mở (chuẩn chung của app).
+  useScrollLock();
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") close(); };

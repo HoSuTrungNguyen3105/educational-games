@@ -1,3 +1,9 @@
+import { useEffect, useRef } from "react";
+import { useScrollLock } from "../../../hooks/useScrollLock.js";
+
+/* Ngăn xếp các Modal đang mở: ESC chỉ đóng modal TRÊN CÙNG (ví dụ hộp xác
+ * nhận xoá mở đè lên modal sửa) — không đóng tất cả cùng lúc. */
+const modalStack = [];
 
 export function Modal({
   children,
@@ -16,6 +22,29 @@ export function Modal({
   unstyled = false,
   closeOnBackdrop = true,
 }) {
+  // Chuẩn chung cho MỌI modal của app: khoá cuộn trang nền khi mở và ESC để
+  // đóng (trước đây chỉ có bấm ra ngoài nền; từng modal tự lo nên chỗ có
+  // khoá cuộn chỗ không). Modal chỉ mount khi đang mở nên hook chạy vô điều kiện.
+  useScrollLock();
+  const stackEntryRef = useRef(null);
+  useEffect(() => {
+    const entry = {};
+    stackEntryRef.current = entry;
+    modalStack.push(entry);
+    return () => {
+      const i = modalStack.indexOf(entry);
+      if (i >= 0) modalStack.splice(i, 1);
+    };
+  }, []);
+  useEffect(() => {
+    if (!onClose) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && modalStack[modalStack.length - 1] === stackEntryRef.current) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   // z-[70]: cao hơn các panel/modal khác trong app (z-40, z-50, z-[60]) để
   // luôn nổi lên trên, nhưng vẫn dưới Toast (z-[100]) để thông báo không bị che.
   const overlayBase =
@@ -34,6 +63,8 @@ export function Modal({
     >
       <div
         ref={contentRef}
+        role="dialog"
+        aria-modal="true"
         className={`${contentBase} ${contentClassName}`}
         style={contentStyle}
         onClick={(e) => e.stopPropagation()}

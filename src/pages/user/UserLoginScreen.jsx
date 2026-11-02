@@ -26,7 +26,7 @@ export default function UserLoginScreen({ onBack, onLogin, onGoRegister, showToa
   };
 
   return (
-    <div className="min-h-screen bg-paper flex items-center justify-center px-6 py-10">
+    <div className="min-h-full flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-md anim-pop">
         <div className="note-card p-8 formbg bg-paper2">
           <button onClick={onBack} className="text-sm text-[#8A7C63] hover:text-ink transition inline-flex items-center gap-1">
