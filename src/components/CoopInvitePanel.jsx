@@ -94,7 +94,7 @@ export default function CoopInvitePanel({
     }
     setSearching(true);
     try {
-      const results = await userService.search(query);
+      const results = await userService.searchDirectory(query);
       setSearchResults(results || []);
     } catch {
       setSearchResults([]);
