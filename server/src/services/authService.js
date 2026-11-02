@@ -143,6 +143,43 @@ export async function listUsers() {
   });
 }
 
+/**
+ * Bảng xếp hạng cho trang Leaderboard PHÍA NGƯỜI DÙNG (mọi tài khoản đăng
+ * nhập): chỉ học sinh, tối đa `limit` người, sắp theo xu giảm dần. Field trả
+ * về TỐI THIỂU (id/username/name/coins/stars/xp/avatarLoadout) — KHÔNG email
+ * hay dữ liệu nhạy cảm như listUsers (vốn chỉ dành cho giáo viên/admin). XP
+ * là XP CHUẨN (tổng `experience` ở userGameProgress), tính ĐÚNG cơ chế như
+ * listUsers/getTotalExperience để mọi trang thấy cùng một con số.
+ */
+export async function listLeaderboard(limit = 50) {
+  const docs = await getCollection(COLLECTION)
+    .find({ role: "student" })
+    .project({ id: 1, username: 1, name: 1, coins: 1, stars: 1, avatarLoadout: 1 })
+    .sort({ coins: -1, createdAt: 1 })
+    .limit(limit)
+    .toArray();
+  const ids = docs.map((d) => d.id);
+  const xpRows = ids.length
+    ? await getCollection("userGameProgress")
+        .aggregate([
+          { $match: { userId: { $in: ids } } },
+          { $group: { _id: "$userId", total: { $sum: "$experience" } } },
+        ])
+        .toArray()
+        .catch(() => [])
+    : [];
+  const xpMap = new Map(xpRows.map((r) => [r._id, r.total || 0]));
+  return docs.map((d) => ({
+    id: d.id,
+    username: d.username,
+    name: d.name,
+    coins: d.coins || 0,
+    stars: d.stars || 0,
+    xp: xpMap.get(d.id) || 0,
+    avatarLoadout: d.avatarLoadout || null,
+  }));
+}
+
 export async function updateProfile(userId, { name, email, password, currentPassword, avatarLoadout, avatar, pet, ageCode, gender }) {
   const user = await getCollection(COLLECTION).findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");
