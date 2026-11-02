@@ -14,7 +14,8 @@ import DMChatScreen from "./DMChatScreen.jsx";
 //   - Lời mời: lời mời đến (Chấp nhận / Từ chối) + lời mời mình đã gửi (Hủy).
 //   - Đã trò chuyện gần đây: conversationApi.list() (như đợt 2).
 //   - Bạn cùng lớp: classService.list() → getStudents() (như đợt 2).
-//   - Tìm theo tên: userService.search() (giữ nguyên hành vi cũ).
+//   - Tìm theo tên: userService.searchDirectory() (thư mục tối thiểu —
+//     search() cũ cần quyền users.view nên học sinh luôn bị 403).
 // Mọi hàng đều hiển thị nút theo TRẠNG THÁI QUAN HỆ (chưa quen / đã gửi /
 // chờ mình duyệt / đã là bạn) lấy từ overview, để không phải gọi thêm API.
 const MAX_CLASSES = 5; // tránh fan-out lớn với tài khoản quản trị thấy mọi lớp
@@ -230,7 +231,7 @@ export default function FindFriendsScreen({ userAuth }) {
     setSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const data = await userService.search(query.trim());
+        const data = await userService.searchDirectory(query.trim());
         setResults(Array.isArray(data) ? data : []);
       } catch { setResults([]); }
       finally { setSearching(false); }
