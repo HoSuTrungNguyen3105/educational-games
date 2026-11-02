@@ -54,6 +54,7 @@ const RULES = [
   { re: /^\/users\/me\/exam-results/, perms: [PLAY, "assignments.view"] },
   { re: /^\/users\/game-progress/, feature: "coins" },     // admin xem/sửa JSON save của user
   { re: /^\/users\/exam-results/, feature: "reports" },    // admin xem điểm thi
+  { re: /^\/users\/directory/, perms: [PROFILE] },        // thư mục tối thiểu cho phía người dùng (Tìm bạn…) — phải đứng TRƯỚC rule /users chung
   { re: /^\/users\/search/, feature: "users" },
   { re: /^\/users(\/|$)/, feature: "users" },
 
@@ -151,6 +152,7 @@ const RULES = [
   { re: /^\/chat/, perms: ["chat", "chat.view"] },                  // quyền cơ bản `chat`
   { re: /^\/conversations/, perms: ["chat", "chat.view"] },
   { re: /^\/friends/, perms: [PROFILE, "friends"] },               // kết bạn: quyền cơ bản `friends`
+  { re: /^\/leaderboard/, perms: [PROFILE] },                      // bảng xếp hạng: mọi tài khoản đăng nhập
   // setupRouter mount ở "/api" (không có prefix /setup) nên các đường dẫn của nó
   // (/templates, /categories, /subjects, /players, /games/:id/players) đã được
   // các rule tương ứng phía trên che phủ — không cần rule riêng.
