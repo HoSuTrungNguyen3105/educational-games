@@ -214,7 +214,7 @@ const MORE_ITEMS = (userAuth) => ([
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
   { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
-  { key: "parent", icon: Users, label: "Phụ huynh", type: "path", path: "/parent", show: !!userAuth?.user && (userAuth.user.role === "parent" || userAuth.user.role === "student") },
+  { key: "parent", icon: Users, label: "Phụ huynh", type: "path", path: "/parent", show: true },
   { key: "assignment", icon: IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
   { key: "profile", icon: IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
@@ -238,7 +238,7 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "profile", icon: IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
-  { key: "parent", icon: Users, label: "Phụ huynh", type: "path", path: "/parent", show: !!userAuth?.user && (userAuth.user.role === "parent" || userAuth.user.role === "student") },
+  { key: "parent", icon: Users, label: "Phụ huynh", type: "path", path: "/parent", show: true },
   { key: "assignment", icon: IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
