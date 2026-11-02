@@ -181,6 +181,19 @@ export async function submitAnswers({ submissionId, studentId, answers }) {
   const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
   const now = new Date().toISOString();
 
+  // Thời gian làm bài: với BÀI THI (isExam) ghi thêm số giây quá giờ để giáo
+  // viên thấy ở bảng điểm. KHÔNG chặn nộp khi quá giờ — học sinh có thể trễ vì
+  // mạng/thiết bị, chặn cứng sẽ làm mất bài làm; việc "một lần, đúng giờ" được
+  // giữ bằng maxAttempts + đồng hồ đếm ngược phía client + dấu quá giờ này.
+  let timeUsedSec = null;
+  let overtimeSec = 0;
+  if (sub.startedAt) {
+    timeUsedSec = Math.max(0, Math.round((Date.now() - new Date(sub.startedAt).getTime()) / 1000));
+    if (assignment.isExam && assignment.examDuration) {
+      overtimeSec = Math.max(0, timeUsedSec - assignment.examDuration * 60);
+    }
+  }
+
   await getCollection("submissions").updateOne(
     { id: submissionId },
     { $set: {
@@ -191,11 +204,13 @@ export async function submitAnswers({ submissionId, studentId, answers }) {
       correctCount,
       wrongCount,
       totalQuestions,
+      timeUsedSec,
+      overtimeSec,
       updatedAt: now,
     } },
   );
 
-  return { ...sub, answers: answerList, score, correctCount, wrongCount, totalQuestions, status: "SUBMITTED" };
+  return { ...sub, answers: answerList, score, correctCount, wrongCount, totalQuestions, status: "SUBMITTED", timeUsedSec, overtimeSec };
 }
 
 export async function getSubmissionById(id) {

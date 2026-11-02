@@ -205,12 +205,36 @@ r.post("/:id/submit", optionalAuth, async (req, res) => {
 // Get student result (student/guest)
 r.get("/:id/result", optionalAuth, async (req, res) => {
   try {
-    const { guestName, admin, final, correctShow } = req.query;
+    const { guestName } = req.query;
     const studentId = req.user?.sub || (guestName ? `guest_${guestName}_${req.params.id}` : null);
     if (!studentId) return sendError(res, "Cần đăng nhập hoặc nhập tên", 400);
 
-    // Show correctAnswer only if: admin=true OR (final=true AND correctShow=true)
-    const showCorrectAnswer = admin === "true" || (final === "true" && correctShow === "true");
+    // Đáp án đúng CHỈ được lộ khi một trong các điều kiện phía SERVER thỏa:
+    //   - người xem là giáo viên/admin; hoặc
+    //   - bài đã ĐÓNG; hoặc
+    //   - học sinh đã dùng HẾT số lượt làm (maxAttempts > 0).
+    // Trước đây route tin query `admin=true` / `final=true&correctShow=true`
+    // do CLIENT tự gắn — học sinh xem được đáp án sau lượt nộp đầu rồi làm lại
+    // lượt sau đạt điểm tối đa. Các query đó nay bị BỎ QUA (client cũ vẫn gọi
+    // được, chỉ là không còn tác dụng cấp quyền). getAssignmentResult vốn chỉ
+    // trả dữ liệu khi học sinh đã có ít nhất một bài SUBMITTED.
+    let showCorrectAnswer = false;
+    if (req.user && (req.user.role === "teacher" || req.user.role === "admin")) {
+      showCorrectAnswer = true;
+    } else {
+      const assignment = await assignmentService.getAssignmentById(req.params.id);
+      if (assignment) {
+        const maxAttempts = assignment.maxAttempts ?? 1;
+        if (assignment.status === "CLOSED") {
+          showCorrectAnswer = true;
+        } else if (maxAttempts > 0) {
+          const submittedCount = await getCollection("submissions").countDocuments({
+            assignmentId: req.params.id, studentId, status: "SUBMITTED",
+          });
+          showCorrectAnswer = submittedCount >= maxAttempts;
+        }
+      }
+    }
 
     const result = await assignmentService.getAssignmentResult(req.params.id, studentId, { showCorrectAnswer });
     if (!result) return sendError(res, "Chưa có kết quả", 404);
