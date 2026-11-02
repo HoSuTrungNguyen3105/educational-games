@@ -161,7 +161,13 @@ router.get("/me", authenticate, async (req, res) => {
     }
 
     const totalPlays = games.reduce((s, g) => s + (g.gamesPlayed || 0), 0);
-    const totalXP = games.reduce((s, g) => s + (g.experience || 0), 0);
+    // XP CHUẨN của hệ thống là `users.xp` — XP do server cấp qua addXp() từ các
+    // luồng đã kiểm chứng (chơi game chấm ở server, nộp bài tập). Trước đây
+    // stats.totalXP cộng `experience` của từng bản ghi tiến độ game — nguồn do
+    // CLIENT tự báo qua PUT /users/me/games nên lệch hẳn với XP ở trang Thành
+    // tựu (đọc users.xp). Nay totalXP lấy đúng users.xp để mọi trang khớp nhau;
+    // `experience` theo từng game vẫn giữ nguyên ở GET /users/me/games.
+    const totalXP = userDoc?.xp || 0;
     sendSuccess(res, {
       id: req.user.sub,
       username: req.user.username,
@@ -175,6 +181,11 @@ router.get("/me", authenticate, async (req, res) => {
       // ["games.view", "games.manage", "question_bank.edit", "chat", "profile", ...].
       permissions,
       coins,
+      // Sao + XP nằm ngay trên user (giống publicUser) — bản cũ thiếu `stars`
+      // khiến trang Hồ sơ hiện 0 sao dù ví có sao (đã vá tạm ở frontend đợt 2,
+      // nay backend trả đủ để client khỏi gọi thêm /me/wallet).
+      stars: userDoc?.stars || 0,
+      xp: totalXP,
       createdAt: userDoc?.createdAt || null,
       classId: userDoc?.classId || null,
       className: classInfo?.name || null,
@@ -194,7 +205,7 @@ router.get("/me", authenticate, async (req, res) => {
       // game đã có GET /api/users/me/games (trang Hồ sơ gọi riêng endpoint đó).
     });
   } catch {
-    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, roles: [], permissions: [], coins: 0, createdAt: null, classId: null, className: null, classCode: null, avatar: null, pet: null, ageCode: null, gender: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 } });
+    sendSuccess(res, { id: req.user.sub, username: req.user.username, name: req.user.name, email: null, role: req.user.role, roles: [], permissions: [], coins: 0, stars: 0, xp: 0, createdAt: null, classId: null, className: null, classCode: null, avatar: null, pet: null, ageCode: null, gender: null, stats: { totalPlays: 0, totalXP: 0, gamesPlayed: 0 } });
   }
 });
 

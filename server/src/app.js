@@ -20,6 +20,7 @@ import usersSearchRouter from "./routes/usersSearch.js";
 import statsRouter from "./routes/stats.js";
 import chatRouter from "./routes/chat.js";
 import conversationsRouter from "./routes/conversations.js";
+import friendsRouter from "./routes/friends.js";
 import seedRouter from "./routes/seed.js";
 import petRouter from "./routes/pet.js";
 import gameProgressRouter, { adminRouter } from "./routes/gameProgress.js";
@@ -162,6 +163,7 @@ app.use("/api/mini", miniGamesRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);
+app.use("/api/friends", friendsRouter);
 // API trung gian cho AI — Frontend chỉ gọi vào đây, Backend chính mới gọi AI Service :8081.
 app.use("/api/ai", aiRouter);
 // ── Trang Cài đặt quản trị ────────────────────────────────────────────────

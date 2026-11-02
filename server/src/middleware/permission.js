@@ -149,6 +149,7 @@ const RULES = [
   { re: /^\/players/, perms: ["reports.view", "games.view"] },
   { re: /^\/chat/, perms: ["chat", "chat.view"] },                  // quyền cơ bản `chat`
   { re: /^\/conversations/, perms: ["chat", "chat.view"] },
+  { re: /^\/friends/, perms: [PROFILE, "friends"] },               // kết bạn: quyền cơ bản `friends`
   // setupRouter mount ở "/api" (không có prefix /setup) nên các đường dẫn của nó
   // (/templates, /categories, /subjects, /players, /games/:id/players) đã được
   // các rule tương ứng phía trên che phủ — không cần rule riêng.
