@@ -224,7 +224,7 @@ export default function HtmlGameLoader({
 
   const handleSearchUser = useCallback(async (query) => {
     try {
-      const results = await userService.search(query);
+      const results = await userService.searchDirectory(query);
       postToIframe({ type: "search-results", data: { users: results || [] } });
     } catch (e) {
       console.error("[HtmlGameLoader] Search error:", e);
