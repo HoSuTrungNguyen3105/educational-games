@@ -61,8 +61,13 @@ const ROUTES = [
   { name: "pet",          pattern: "/pet" },
   { name: "pet-wardrobe", pattern: "/pet-wardrobe" },
   { name: "find-friends", pattern: "/find-friends" },
+  { name: "parent",       pattern: "/parent" },
   { name: "my-coins",     pattern: "/my-coins" },
   { name: "daily-tasks",  pattern: "/daily-tasks" },
+  // /missions là đường dẫn nhiệm vụ được nhắc tới trong menu/audit — dùng
+  // chung trang Nhiệm vụ (DailyTasksPage) với /daily-tasks, không nhân bản code.
+  { name: "missions",     pattern: "/missions" },
+  { name: "garden",       pattern: "/garden" },
   { name: "spin-wheel",   pattern: "/spin-wheel" },
   { name: "inventory",    pattern: "/inventory" },
   { name: "store",        pattern: "/store" },
@@ -79,7 +84,7 @@ const ROUTES = [
   // Game offline thư giãn, mỗi game 1 file HTML → /offline/<gameId>
   { name: "offline-game", pattern: "/offline/:gameId" },
 
-  // ── Home (fallback) ──
+  // ── Home ──
   { name: "home", pattern: "/" },
 ];
 
@@ -122,7 +127,10 @@ export function parseRoute() {
     }
   }
 
-  return { name: "home", params: {} };
+  // Không khớp route nào (kể cả alias cũ /admin đã xử lý ở trên) → trang 404.
+  // Trước đây rơi về "home" khiến link gõ sai/đường dẫn cũ trông như trang chủ
+  // bị lỗi; nay trả "not-found" để App hiển thị trang Không tìm thấy riêng.
+  return { name: "not-found", params: {} };
 }
 
 // ─── Navigate ──────────────────────────────────────────────────

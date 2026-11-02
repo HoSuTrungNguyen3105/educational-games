@@ -64,6 +64,25 @@ export async function incrementExperience(userId, gameId, amount) {
   return { ...existing, experience: newExp, updatedAt: now, lastPlayedAt: now };
 }
 
+/**
+ * gameId dành riêng cho XP do SERVER thưởng mà không gắn với một game cụ thể
+ * (nhận thưởng nhiệm vụ, nộp bài tập, ván chơi đã chấm ở server...).
+ *
+ * XP CHUẨN của hệ thống (Nguyên chốt 2026-11-02) là `stats.totalXP` = tổng
+ * `experience` trên MỌI bản ghi userGameProgress. Muốn XP server thưởng cũng
+ * nằm trong tổng đó thì `addXp` cộng vào bản ghi sổ này — cùng một nguồn với
+ * experience theo game, không còn hai con số lệch nhau. Bản ghi sổ bị lọc
+ * khỏi danh sách game của người dùng (GET /users/me/games) và không tính vào
+ * số game đã chơi ở /auth/me.
+ */
+export const XP_LEDGER_GAME_ID = "__xp_ledger__";
+
+/** Tổng XP chuẩn của một người dùng = tổng `experience` trên mọi bản ghi tiến độ. */
+export async function getTotalExperience(userId) {
+  const docs = await getCollection(COLLECTION).find({ userId }).toArray();
+  return docs.reduce((s, d) => s + (d.experience || 0), 0);
+}
+
 export async function incrementGamesPlayed(userId, gameId) {
   const now = new Date().toISOString();
   const existing = await getByUserAndGame(userId, gameId);

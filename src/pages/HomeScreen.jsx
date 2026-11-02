@@ -32,6 +32,7 @@ import {
   Trophy,
   KeyRound,
   Sparkles,
+  Sprout,
   PartyPopper,
   Gift,
   ShipWheel,
@@ -52,6 +53,7 @@ import {
   Volume2,
   VolumeX,
   X,
+  Users,
 } from 'lucide-react'
 
 
@@ -205,9 +207,11 @@ function metaForSubject(subject = "") {
 const MORE_ITEMS = (userAuth) => ([
   { key: "reminders", icon: IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
+  { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
   { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
+  { key: "parent", icon: Users, label: "Phụ huynh", type: "path", path: "/parent", show: !!userAuth?.user && (userAuth.user.role === "parent" || userAuth.user.role === "student") },
   { key: "assignment", icon: IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
   { key: "profile", icon: IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
@@ -223,12 +227,14 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: true, badge: true },
   { key: "reminders", icon: IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
+  { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
   { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
   { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
   { key: "profile", icon: IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
+  { key: "parent", icon: Users, label: "Phụ huynh", type: "path", path: "/parent", show: !!userAuth?.user && (userAuth.user.role === "parent" || userAuth.user.role === "student") },
   { key: "assignment", icon: IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
@@ -384,6 +390,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const [dailyTasks, setDailyTasks] = useState(null);
   const [showAllGames, setShowAllGames] = useState(false);
+  // Môn đang lọc ở khu Game học tập — đặt khi bấm vào thẻ môn ở bảng Môn học.
+  const [subjectFilter, setSubjectFilter] = useState(null);
   const [resettingCache, setResettingCache] = useState(false);
   const pet = usePet();
 
@@ -657,10 +665,29 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   // Game học tập: ghim game nổi bật rồi tới danh sách của môn đang chọn.
   // Offline: bấm card trên hàng ngang → nhảy thẳng vào game luôn, không cần
   // bước chọn trung gian (mỗi game là 1 file HTML riêng).
+  const learningGamesAll = useMemo(() => (
+    visibleGames.map((g, i) => ({ game: g, index: i, template: templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid)) }))
+  ), [visibleGames, templates]);
+
+  // Bảng môn học: gom theo subject thật của game, đếm số game mỗi môn.
+  const subjectCards = useMemo(() => {
+    const counts = new Map();
+    for (const g of visibleGames) {
+      const s = subjectLabel(g.subject);
+      counts.set(s, (counts.get(s) || 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count, meta: metaForSubject(name) }))
+      .sort((a, b) => b.count - a.count);
+  }, [visibleGames]);
+
   const learningGames = useMemo(() => {
-    const list = visibleGames.map((g, i) => ({ game: g, index: i, template: templates.find(t => t._id === (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid)) }));
-    return showAllGames ? list : list.slice(0, PREVIEW_GAMES);
-  }, [visibleGames, templates, showAllGames]);
+    const list = subjectFilter
+      ? learningGamesAll.filter(({ game }) => subjectLabel(game.subject) === subjectFilter)
+      : learningGamesAll;
+    // Đang lọc theo môn thì hiện hết game của môn đó, không cắt ở PREVIEW_GAMES.
+    return showAllGames || subjectFilter ? list : list.slice(0, PREVIEW_GAMES);
+  }, [learningGamesAll, showAllGames, subjectFilter]);
 
   const goTo = (path) => {
     navigate(path);
@@ -691,6 +718,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     if (item.type === "login") return onUserLogin();
     if (item.type === "scroll") return scrollTo(item.target);
     if (item.path) return goTo(item.path);
+  };
+
+  // Bấm thẻ môn ở bảng Môn học: lọc khu Game học tập theo môn rồi cuộn xuống.
+  const pickSubject = (name) => {
+    setSubjectFilter(name);
+    scrollTo("games-section");
   };
 
   const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
@@ -1157,7 +1190,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── SỐ & TOÁN (nền xanh lá) ─────────── */}
         {mathGames.length > 0 && (
-          <section className="gq-sect gq-sect--green" id="subjects-section">
+          <section className="gq-sect gq-sect--green" id="math-section">
             <div className="gq-sect__head">
               <span className="gq-sect__ico" aria-hidden="true"><Calculator className="w-5 h-5 text-emerald-600" /></span>
               <div>
@@ -1199,13 +1232,43 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           </div>
         </section>
 
+        {/* ─────────── MÔN HỌC ─────────── */}
+        {subjectCards.length > 0 && (
+          <section className="gq-sect" id="subjects-section">
+            <div className="gq-sect__head">
+              <span className="gq-sect__ico" aria-hidden="true"><BookOpen className="w-5 h-5 text-violet-600" /></span>
+              <div>
+                <h2 className="gq-sect__t">Môn học <span className="gq-sect__n">{subjectCards.length}</span></h2>
+                <p className="gq-sect__s">Chọn một môn để xem các trò chơi của môn đó</p>
+              </div>
+            </div>
+            <div className="gq-grid gq-board">
+              {subjectCards.map(({ name, count, meta }) => (
+                <button
+                  key={name}
+                  onClick={() => pickSubject(name)}
+                  className="gq-card"
+                  aria-label={`Xem trò chơi môn ${name}`}
+                  title={name}
+                >
+                  <span className="gq-card__ring" style={{ backgroundColor: tintFor(name) }} aria-hidden="true">{meta.icon}</span>
+                  <span className="gq-card__name">{name}</span>
+                  <span className="gq-card__age">{count} trò chơi</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* ─────────── 1. GAME HỌC TẬP (API) ─────────── */}
         <section className="gq-sect" id="games-section">
           <div className="gq-sect__head">
             <span className="gq-sect__ico" aria-hidden="true"><BookOpen className="w-5 h-5 text-sky-600" /></span>
             <div>
-              <h2 className="gq-sect__t">Game học tập <span className="gq-sect__n">{visibleGames.length}</span></h2>
-              <p className="gq-sect__s">{showAllGames ? "Đồng bộ điểm & tiến trình khi có mạng" : `Xem trước ${PREVIEW_GAMES} game · lưu kết quả lên máy chủ`}</p>
+              <h2 className="gq-sect__t">Game học tập <span className="gq-sect__n">{subjectFilter ? learningGames.length : visibleGames.length}</span></h2>
+              <p className="gq-sect__s">{subjectFilter
+                ? <>Đang xem môn <b>{subjectFilter}</b> · <button onClick={() => setSubjectFilter(null)} className="underline font-bold">Bỏ lọc</button></>
+                : showAllGames ? "Đồng bộ điểm & tiến trình khi có mạng" : `Xem trước ${PREVIEW_GAMES} game · lưu kết quả lên máy chủ`}</p>
             </div>
           </div>
 
@@ -1230,7 +1293,11 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             })}
           </div>
 
-          {visibleGames.length > PREVIEW_GAMES && (
+          {subjectFilter && learningGames.length === 0 && (
+            <p className="text-sm text-slate-500 px-1 py-3">Chưa có trò chơi nào thuộc môn này.</p>
+          )}
+
+          {!subjectFilter && visibleGames.length > PREVIEW_GAMES && (
             <div className="flex justify-center mt-3">
               <button onClick={() => setShowAllGames((v) => !v)} className="gq-more">
                 {showAllGames ? "Thu gọn ▲" : `Xem tất cả ${visibleGames.length} game ▼`}

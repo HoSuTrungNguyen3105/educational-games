@@ -149,12 +149,18 @@ const RULES = [
   { re: /^\/players/, perms: ["reports.view", "games.view"] },
   { re: /^\/chat/, perms: ["chat", "chat.view"] },                  // quyền cơ bản `chat`
   { re: /^\/conversations/, perms: ["chat", "chat.view"] },
+  { re: /^\/friends/, perms: [PROFILE, "friends"] },               // kết bạn: quyền cơ bản `friends`
   // setupRouter mount ở "/api" (không có prefix /setup) nên các đường dẫn của nó
   // (/templates, /categories, /subjects, /players, /games/:id/players) đã được
   // các rule tương ứng phía trên che phủ — không cần rule riêng.
   { m: "POST", re: /^\/ai\/(generate-question|quizzes\/generate)$/, perms: ["questions.edit"] },
   { re: /^\/ai\//, perms: [PLAY, PROFILE] },
   { re: /^\/seed$/, perms: ["settings.edit"] },
+  // Phụ huynh: đăng ký là API công khai (giống /auth/register); mọi endpoint
+  // còn lại chỉ cần đăng nhập — quyền xem ĐÚNG người con nào được route/service
+  // kiểm tra theo bản ghi liên kết, không chỉ dựa vào middleware này.
+  { re: /^\/parents\/register$/, perms: [] },
+  { re: /^\/parents/, perms: [PROFILE] },
 
   // ── Trang Cài đặt quản trị (update_admin_page.md) ──────────────────────
   // Kiểm quyền ở SERVER — frontend có ẩn nút thì vẫn phải chặn được.

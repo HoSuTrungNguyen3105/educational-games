@@ -1,6 +1,6 @@
 import { IconBack, IconBell, IconCalendar, IconCheck, IconCheckCircle, IconChevronDown, IconDownload, IconLogout, IconNotification, IconTrash } from '../../components/ui/index.js';
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { authService, classService, API_BASE, notificationService, userService, gameProgressService } from "../../services/api.js";
+import { authService, classService, API_BASE, notificationService, userService, gameProgressService, walletService } from "../../services/api.js";
 import { getLevelProgress } from "../../lib/utils.js";
 import { getRoleLabel, hasUserPermission } from "../../config/roles.js";
 import { navigate } from "../../lib/router.js";
@@ -26,6 +26,7 @@ const NAV = [
 
 export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   const [profile, setProfile] = useState(null);
+  const [walletStars, setWalletStars] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -103,6 +104,19 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       })
       .catch((e) => setError(e.message || "Lỗi tải profile"))
       .finally(() => setLoading(false));
+  }, [userAuth]);
+
+  // Số sao PHẢI lấy từ ví (/auth/me/wallet) — cùng một nguồn sự thật với
+  // header trang chủ và Cửa hàng sao. Response của /auth/me không trả field
+  // "stars" nên trước đây trang này đọc user.stars → luôn hiện 0 sao dù ví
+  // có sao thật. Chỉ fallback về user.stars khi ví tải lỗi.
+  useEffect(() => {
+    if (!userAuth?.user) return;
+    let alive = true;
+    walletService.get()
+      .then((w) => { if (alive) setWalletStars(typeof w?.stars === "number" ? w.stars : null); })
+      .catch(() => { if (alive) setWalletStars(null); });
+    return () => { alive = false; };
   }, [userAuth]);
 
   // Danh sách game cho mục "Trò chơi" — tách khỏi /auth/me để hồ sơ nhẹ.
@@ -372,7 +386,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
 
   const wallet = [
     { icon: <Coins className="w-3.5 h-3.5" />, label: "Xu", value: (user.coins || 0).toLocaleString() },
-    { icon: <Star className="w-3.5 h-3.5" />, label: "Sao", value: (user.stars || 0).toLocaleString() },
+    { icon: <Star className="w-3.5 h-3.5" />, label: "Sao", value: (walletStars ?? user.stars ?? 0).toLocaleString() },
     { icon: <Gamepad2 className="w-3.5 h-3.5" />, label: "Lượt chơi", value: stats.totalPlays },
     { icon: <Sparkles className="w-3.5 h-3.5" />, label: "Điểm kinh nghiệm", value: (stats.totalXP || 0).toLocaleString() },
   ];
@@ -436,7 +450,10 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
                 <div className="h-full rounded-full" style={{ width: lv.percent + "%", background: "var(--accent)" }} />
               </div>
             </div>
-            <p className="text-[10px] font-mono text-ink/40 mt-1">{lv.current}/{lv.next} XP</p>
+            {/* Ngưỡng cấp của getLevelProgress tính theo XU (số xu tích lũy),
+                không phải XP — trước đây ghi "XP" khiến người dùng tưởng mâu
+                thuẫn với "Điểm kinh nghiệm" (stats.totalXP) ở dưới. */}
+            <p className="text-[10px] font-mono text-ink/40 mt-1">{lv.current}/{lv.next} xu</p>
           </div>
 
           {/* Chỉ số ví — rows kẻ lông mày, không lồng thẻ trong thẻ */}
