@@ -446,6 +446,14 @@ export const userService = {
   async search(query, opts) {
     return apiFetch(`/users/search?q=${encodeURIComponent(query)}`, typeof opts === "string" ? {} : (opts || {})) || [];
   },
+  // Thư mục tối thiểu cho PHÍA NGƯỜI DÙNG (Tìm bạn, mời bạn chơi cùng):
+  // endpoint riêng /users/directory — chỉ cần đăng nhập, KHÔNG cần quyền
+  // users.view như search() (search trả cả email nên chỉ giáo viên/admin
+  // dùng được; học sinh gọi search() bị 403). Chỉ trả id/username/name/
+  // avatarLoadout, tối đa 10 kết quả.
+  async searchDirectory(query, opts) {
+    return apiFetch(`/users/directory?q=${encodeURIComponent(query)}`, typeof opts === "string" ? {} : (opts || {})) || [];
+  },
   async updateProfile(data) {
     return apiFetch("/auth/me", { method: "PUT", body: data });
   },
@@ -457,6 +465,15 @@ export const userService = {
   },
   async update(id, data) {
     return apiFetch(`/users/${encodeURIComponent(id)}`, { method: "PATCH", body: data });
+  },
+};
+
+export const leaderboardService = {
+  // Bảng xếp hạng phía người dùng: endpoint riêng GET /leaderboard (chỉ học
+  // sinh, top 50 theo xu, field tối thiểu) — KHÔNG dùng GET /users (chỉ
+  // giáo viên/admin, học sinh gọi bị 403 users.view).
+  async list() {
+    return apiFetch("/leaderboard") || [];
   },
 };
 
