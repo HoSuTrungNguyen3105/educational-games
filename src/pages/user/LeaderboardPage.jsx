@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Trophy, Coins, Medal } from "lucide-react";
-import { userService } from "../../services/api.js";
+import { leaderboardService } from "../../services/api.js";
 import { getLevelProgress, getLevelTitle } from "../../lib/utils.js";
 import { PrimaryButton, Loader, ErrorState, EmptyState } from "../../components/ui";
 
@@ -18,7 +18,7 @@ export default function LeaderboardPage({ userAuth, onBack }) {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const list = await userService.list();
+      const list = await leaderboardService.list();
       const arr = Array.isArray(list) ? list : list?.users || list?.data || [];
       arr.sort((a, b) => (Number(b?.coins) || 0) - (Number(a?.coins) || 0));
       setUsers(arr.slice(0, TOP_N));
