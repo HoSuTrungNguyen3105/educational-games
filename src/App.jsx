@@ -74,6 +74,7 @@ const OfflineGamePage = lazy(() => import("./pages/OfflineGamePage.jsx"));
 const PetPage = lazy(() => import("./pages/PetPage.jsx"));
 const PetWardrobePage = lazy(() => import("./pages/user/PetWardrobePage.jsx"));
 const AttendancePage = lazy(() => import("./pages/AttendancePage.jsx"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
 
 function App() {
   const route = useRoute();
@@ -274,6 +275,12 @@ function App() {
     attendance: () => <AttendancePage userAuth={userAuth} />,
     // Game offline thư giãn — mỗi game 1 file HTML riêng
     "offline-game": () => <OfflineGamePage gameId={route.params?.gameId} />,
+    // Route không tồn tại (router.js trả "not-found") — trang 404 thân thiện
+    "not-found": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <NotFoundPage />
+      </RouteShell>
+    ),
   };
 
   const renderScreen = () => {
