@@ -83,7 +83,7 @@ const ROUTES = [
   // Game offline thư giãn, mỗi game 1 file HTML → /offline/<gameId>
   { name: "offline-game", pattern: "/offline/:gameId" },
 
-  // ── Home (fallback) ──
+  // ── Home ──
   { name: "home", pattern: "/" },
 ];
 
@@ -126,7 +126,10 @@ export function parseRoute() {
     }
   }
 
-  return { name: "home", params: {} };
+  // Không khớp route nào (kể cả alias cũ /admin đã xử lý ở trên) → trang 404.
+  // Trước đây rơi về "home" khiến link gõ sai/đường dẫn cũ trông như trang chủ
+  // bị lỗi; nay trả "not-found" để App hiển thị trang Không tìm thấy riêng.
+  return { name: "not-found", params: {} };
 }
 
 // ─── Navigate ──────────────────────────────────────────────────
