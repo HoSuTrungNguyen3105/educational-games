@@ -498,7 +498,14 @@ export default function AssignmentTake({ code: codeOrId }) {
   // iframe tự điều khiển câu hỏi/animation; app giữ header và nộp bài.
   if (examMode) {
     return (
-      <div className="min-h-screen flex flex-col bg-paper">
+      /* Chiều cao phải XÁC ĐỊNH (height, không phải min-height): #root chỉ có
+         min-height:100vh nên cột flex bên dưới không tính được 100% cho iframe,
+         iframe bị bóp về chiều cao mặc định → mất phần dưới của đề thi.
+         h-screen là bản dự phòng cho trình duyệt chưa hỗ trợ dvh. */
+      <div
+        className="h-screen flex flex-col overflow-hidden bg-paper"
+        style={{ height: "100dvh" }}
+      >
         <Header
           title={assignment?.title}
           timeLeft={timeLeft}

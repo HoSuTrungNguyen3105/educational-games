@@ -48,6 +48,35 @@
   border-color: var(--teal, #1B998B);
 }
 
+/* Nút áp dụng: cần cho điện thoại (bàn phím số iOS không có phím Enter).
+   Font-size 16px trên mobile để Safari không zoom cả trang khi focus. */
+.range-go {
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(32, 40, 58, 0.12);
+  background: transparent;
+  color: var(--teal, #1B998B);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.range-go:hover {
+  background: rgba(27, 153, 139, 0.08);
+  border-color: var(--teal, #1B998B);
+}
+
+@media (max-width: 640px) {
+  .range-input,
+  .range-go {
+    font-size: 16px;
+  }
+  .range-input {
+    width: 48px;
+  }
+}
+
 .range-separator {
   color: #8A7C63;
   font-weight: 500;

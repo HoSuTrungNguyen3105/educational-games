@@ -177,7 +177,9 @@ function ExamPlayer({ templateId, questions, playerName, title, onFinish, onExam
         /* allow-same-origin: srcDoc đến từ chính bundle của app nên cùng nguồn với
            trang cha; đề thi cần localStorage/pointer-lock bên trong. */
         sandbox="allow-scripts allow-same-origin allow-modals allow-pointer-lock"
-        className="w-full h-full block border-0"
+        /* absolute + inset-0: lấp đầy khung cha mà không cần chiều cao cha "definite"
+           — h-full một mình vẫn bị bóp về 150px khi trang dùng min-height. */
+        className="absolute inset-0 w-full h-full block border-0"
         title={template.name}
       />
 

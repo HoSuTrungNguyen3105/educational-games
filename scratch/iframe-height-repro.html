@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>repro</title>
+<style>
+  /* Cùng cơ chế với bản thật nhưng dùng px để không phụ thuộc viewport của
+     trình duyệt đo (in-app browser có innerHeight = 0).
+     600px = viewport giả, 60px = header. */
+  html{ height:100%; }
+  body{ height:100%; margin:0; }
+  #root{ min-height:100vh; }
+
+  .col{ display:flex; flex-direction:column; }
+  .header{ height:60px; flex:none; background:#eee; }
+  .mid{ flex:1 1 0%; display:flex; flex-direction:column; min-height:0; }
+  .frame{ flex:1 1 0%; min-height:0; position:relative; background:#000; }
+
+  .page-min{ height:600px; }              /* trang cũ: min-height:100vh → auto */
+  .page-fix{ height:600px; overflow:hidden; }
+
+  .iframe-hfull{ width:100%; height:100%; border:0; display:block; }
+  .iframe-abs{ position:absolute; inset:0; width:100%; height:100%; border:0; display:block; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<pre id="out"></pre>
+<script>
+const SRC = '<!DOCTYPE html><body style="margin:0;background:#6b4fd6"></body>';
+const VH = 600, HDR = 60, EXPECT = VH - HDR;
+
+function build(pageCls, iframeCls, pageStyle) {
+  const page = document.createElement('div');
+  page.className = 'col ' + pageCls;
+  if (pageStyle) page.style.minHeight = pageStyle;   // 'auto' height + min-height = trang cũ
+  if (pageStyle) page.style.height = '';
+  const header = document.createElement('div'); header.className = 'header';
+  const mid = document.createElement('div'); mid.className = 'mid';
+  const frame = document.createElement('div'); frame.className = 'frame';
+  const ifr = document.createElement('iframe');
+  ifr.className = iframeCls;
+  ifr.srcdoc = SRC;
+  frame.appendChild(ifr); mid.appendChild(frame); page.append(header, mid);
+  return { page, ifr };
+}
+
+function measure(cfg) {
+  return new Promise((resolve) => {
+    const root = document.getElementById('root');
+    root.innerHTML = '';
+    const { page, ifr } = build(cfg.pageCls, cfg.iframeCls, cfg.minOnly);
+    if (cfg.minOnly) { page.style.height = 'auto'; page.style.minHeight = VH + 'px'; }
+    root.appendChild(page);
+    ifr.addEventListener('load', () => {
+      const r = ifr.getBoundingClientRect();
+      const f = ifr.parentElement.getBoundingClientRect();
+      resolve({ name: cfg.name, iframeH: Math.round(r.height), frameH: Math.round(f.height), ok: Math.abs(r.height - EXPECT) < 2 });
+    });
+  });
+}
+
+(async () => {
+  const cases = [
+    { name: 'OLD  min-height:600 + iframe h-full', minOnly: true,  pageCls: '',        iframeCls: 'iframe-hfull' },
+    { name: 'A    height:600    + iframe h-full',  pageCls: 'page-fix', iframeCls: 'iframe-hfull' },
+    { name: 'B    height:600    + iframe absolute',pageCls: 'page-fix', iframeCls: 'iframe-abs' },
+    { name: 'C    min-height only + iframe absolute', minOnly: true, pageCls: '',        iframeCls: 'iframe-abs' },
+  ];
+  const res = [];
+  for (const c of cases) res.push(await measure(c));
+  document.getElementById('out').textContent =
+    'kỳ vọng iframe = ' + EXPECT + 'px (600 - 60 header)\n' +
+    res.map(r => r.name + '  ->  iframe=' + r.iframeH + ' frame=' + r.frameH + '  ' + (r.ok ? 'OK' : 'SAI')).join('\n');
+})();
+</script>
+</body>
+</html>

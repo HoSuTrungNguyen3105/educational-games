@@ -235,6 +235,8 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
     showToast(`Đã phát trực tiếp "${g.name}" — học sinh nhập mã ${g.code}`, "success");
   };
 
+  // from/to người dùng nhập trong RangePagination được gửi nguyên vẹn xuống API
+  // (gameService.list nhận khoảng bản ghi), không quy về trang chẵn.
   const handleRangeChange = (newFrom) => setFrom(newFrom);
   const handlePrev = () => setFrom(f => Math.max(1, f - PAGE_SIZE));
   const handleNext = () => setFrom(f => Math.min(f + PAGE_SIZE, total));
