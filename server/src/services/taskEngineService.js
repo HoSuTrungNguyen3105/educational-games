@@ -1,5 +1,5 @@
 import { getCollection } from "../db.js";
-import { addCoins } from "./authService.js";
+import { addCoins, addXp } from "./authService.js";
 
 const TASKS_COL = "tasks";
 const PROGRESS_COL = "user_task_progress";
@@ -261,6 +261,15 @@ export async function claimTaskReward(userId, taskId) {
     newCoins = await addCoins(userId, task.rewardCoin);
   }
 
+  // Cộng XP thưởng qua addXp — addXp ghi vào NGUỒN XP CHUẨN (stats.totalXP,
+  // xem gameProgressService.XP_LEDGER_GAME_ID). Trước đây hàm này
+  // chỉ TRẢ rewardXp trong response mà không cộng thật — giao diện báo "nhận
+  // XP" nhưng XP tổng không hề tăng, một phần lý do số XP giữa các trang lệch.
+  let xpProfile = null;
+  if (task.rewardXp > 0) {
+    xpProfile = await addXp(userId, task.rewardXp);
+  }
+
   return {
     taskId,
     code: task.code,
@@ -268,6 +277,7 @@ export async function claimTaskReward(userId, taskId) {
     rewardXp: task.rewardXp || 0,
     rewardCoin: task.rewardCoin || 0,
     newCoins,
+    newXp: xpProfile ? xpProfile.xp : null,
   };
 }
 
