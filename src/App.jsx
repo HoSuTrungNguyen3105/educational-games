@@ -60,6 +60,7 @@ const ProfileScreen = lazy(() => import("./pages/user/ProfileScreen.jsx"));
 const MyCoins = lazy(() => import("./pages/user/MyCoins.jsx"));
 const FindFriendsScreen = lazy(() => import("./pages/user/FindFriendsScreen.jsx"));
 const DailyTasksPage = lazy(() => import("./pages/user/DailyTasksPage.jsx"));
+const GardenPage = lazy(() => import("./pages/user/GardenPage.jsx"));
 const SpinWheel = lazy(() => import("./pages/user/SpinWheel.jsx"));
 const ConversationListScreen = lazy(() => import("./pages/user/ConversationListScreen.jsx"));
 const AssignmentJoin = lazy(() => import("./pages/user/AssignmentJoin.jsx"));
@@ -182,6 +183,13 @@ function App() {
     );
   };
 
+  // /daily-tasks và /missions dùng chung một trang Nhiệm vụ.
+  const renderDailyTasks = () => (
+    <RouteShell toast={toast} showBack={false}>
+      <DailyTasksPage userAuth={userAuth} onBack={() => navigate("/")} />
+    </RouteShell>
+  );
+
   const routeMap = {
     student: renderStudent,
     "student-join": renderStudent,
@@ -205,9 +213,11 @@ function App() {
         <MyCoins userAuth={userAuth} onBack={() => navigate("/")} />
       </RouteShell>
     ),
-    "daily-tasks": () => (
+    "daily-tasks": renderDailyTasks,
+    missions: renderDailyTasks,
+    garden: () => (
       <RouteShell toast={toast} showBack={false}>
-        <DailyTasksPage userAuth={userAuth} onBack={() => navigate("/")} />
+        <GardenPage userAuth={userAuth} onBack={() => navigate("/")} showToast={showToast} />
       </RouteShell>
     ),
     "spin-wheel": () => (
@@ -255,7 +265,7 @@ function App() {
         </RouteShell>
       );
     },
-    "assignment-join": () => <AssignmentJoin />,
+    "assignment-join": () => <AssignmentJoin userAuth={userAuth} />,
     "assignment-take": () => <AssignmentTake code={route.params?.code} />,
     "math-adventure": () => <MathAdventurePage />,
     "school-mission": () => <SchoolMissionPage />,

@@ -63,6 +63,10 @@ const ROUTES = [
   { name: "find-friends", pattern: "/find-friends" },
   { name: "my-coins",     pattern: "/my-coins" },
   { name: "daily-tasks",  pattern: "/daily-tasks" },
+  // /missions là đường dẫn nhiệm vụ được nhắc tới trong menu/audit — dùng
+  // chung trang Nhiệm vụ (DailyTasksPage) với /daily-tasks, không nhân bản code.
+  { name: "missions",     pattern: "/missions" },
+  { name: "garden",       pattern: "/garden" },
   { name: "spin-wheel",   pattern: "/spin-wheel" },
   { name: "inventory",    pattern: "/inventory" },
   { name: "store",        pattern: "/store" },
