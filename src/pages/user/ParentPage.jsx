@@ -290,7 +290,7 @@ function ParentHome({ showToast }) {
             {linkBusy ? "Đang gắn..." : "Liên kết"}
           </button>
         </div>
-        <p className="text-xs text-[#8A7C63] mt-2">Con mở trang Hồ sơ → mục Phụ huynh để tạo mã, hoặc nhờ giáo viên tạo hộ.</p>
+        <p className="text-xs text-[#8A7C63] mt-2">Con đăng nhập bằng tài khoản học sinh, mở trang Phụ huynh này → mục "Mã liên kết của em" để tạo mã, hoặc nhờ giáo viên tạo hộ.</p>
         {linkError && <p className="mt-2 px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold">{linkError}</p>}
       </form>
 
