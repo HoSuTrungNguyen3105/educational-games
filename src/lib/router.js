@@ -112,7 +112,18 @@ const COMPILED_ROUTES = ROUTES.map(({ name, pattern }) => ({
 // ─── Parse Route ───────────────────────────────────────────────
 export function parseRoute() {
   const hash = (window.location.hash || "").replace(/^#/, "") || "/";
-  const path = hash.split("?")[0].split("#")[0]; // bỏ query/hash nếu có
+  let path = hash.split("?")[0].split("#")[0]; // bỏ query/hash nếu có
+
+  // Trang chủ: hash rỗng hoặc "#/" đều là path "/". Pattern "/" khi compile
+  // bị rút slash cuối thành regex rỗng (^$) nên không bao giờ khớp path "/"
+  // — trước đây lỗi này bị che vì route lạ rơi về home; từ khi route lạ trả
+  // 404 thì trang chủ cũng thành 404. Xử lý tường minh ở đây.
+  if (path === "" || path === "/") {
+    return { name: "home", params: {} };
+  }
+
+  // Bỏ slash cuối ở path thật ("/profile/" → "/profile") cho khớp pattern
+  path = path.replace(/\/+$/, "");
 
   // Đường dẫn cũ #/admin (nay là #/dashboard) — giữ cho link cũ không chết
   if (path === "/admin") {
