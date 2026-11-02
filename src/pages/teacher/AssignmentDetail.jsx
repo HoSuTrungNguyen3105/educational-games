@@ -246,6 +246,7 @@ export default function AssignmentDetail({ assignmentId }) {
                 </div>
                 <div className="shrink-0">
                   <ScoreBadge score={s.score} />
+                  <OvertimeBadge sec={s.overtimeSec} />
                 </div>
               </div>
             ))}
@@ -289,6 +290,7 @@ export default function AssignmentDetail({ assignmentId }) {
                     <td className="py-2.5 text-ink/50">{s.attemptNumber || 1}</td>
                     <td className="py-2.5">
                       <ScoreBadge score={s.score} />
+                      <OvertimeBadge sec={s.overtimeSec} />
                     </td>
                     <td className="py-2.5 pr-5 text-ink/40 text-xs">
                       {s.submittedAt ? new Date(s.submittedAt).toLocaleString('vi') : '-'}
@@ -324,6 +326,17 @@ function StatusPill({ active }) {
     >
       <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-green-500' : 'bg-ink/30'}`} />
       {active ? 'Đang mở' : 'Đã đóng'}
+    </span>
+  );
+}
+
+/** Nhãn "quá giờ" cho bài thi nộp sau thời gian quy định (backend ghi overtimeSec khi chấm). */
+function OvertimeBadge({ sec }) {
+  if (!sec || sec <= 0) return null;
+  const mins = Math.ceil(sec / 60);
+  return (
+    <span className="inline-block px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-red-100 text-red-700 ml-1.5">
+      Quá giờ {mins}′
     </span>
   );
 }
