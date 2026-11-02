@@ -17,6 +17,8 @@ import setupRouter from "./routes/setup.js";
 import authRouter from "./routes/auth.js";
 import usersRouter from "./routes/users.js";
 import usersSearchRouter from "./routes/usersSearch.js";
+import usersDirectoryRouter from "./routes/usersDirectory.js";
+import leaderboardRouter from "./routes/leaderboard.js";
 import statsRouter from "./routes/stats.js";
 import chatRouter from "./routes/chat.js";
 import conversationsRouter from "./routes/conversations.js";
@@ -107,6 +109,12 @@ app.use("/api/users", gameProgressRouter);
 // Router học sinh phải mounts TRƯỚC các adminRouter — adminRouter dùng
 // router.use(requireRoles) nên chặn mọi request student đi sau nó.
 app.use("/api/users", examResultsRouter);
+// Thư mục người dùng tối thiểu (GET /users/directory) cho phía người dùng —
+// phải mount TRƯỚC adminRouter: adminRouter dùng router.use(requireRoles)
+// nên sẽ chặn đứng học sinh trước khi request tới được các router phía sau.
+// Router này chỉ khai đúng một route tĩnh "/directory" nên không nuốt các
+// path khác của /api/users.
+app.use("/api/users", usersDirectoryRouter);
 app.use("/api/users", adminRouter);
 app.use("/api/users", examResultsAdminRouter);
 // GET /api/users/me — current user profile. Phải đặt TRƯỚC usersSearchRouter
@@ -167,6 +175,8 @@ app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);
 app.use("/api/friends", friendsRouter);
+// Bảng xếp hạng phía người dùng — endpoint riêng, không dùng /api/users.
+app.use("/api/leaderboard", leaderboardRouter);
 // API trung gian cho AI — Frontend chỉ gọi vào đây, Backend chính mới gọi AI Service :8081.
 app.use("/api/ai", aiRouter);
 // Phụ huynh: đăng ký tài khoản parent, liên kết con bằng mã, báo cáo học tập.
