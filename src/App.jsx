@@ -62,6 +62,7 @@ const FindFriendsScreen = lazy(() => import("./pages/user/FindFriendsScreen.jsx"
 const DailyTasksPage = lazy(() => import("./pages/user/DailyTasksPage.jsx"));
 const GardenPage = lazy(() => import("./pages/user/GardenPage.jsx"));
 const ParentPage = lazy(() => import("./pages/user/ParentPage.jsx"));
+const SchedulePage = lazy(() => import("./pages/user/SchedulePage.jsx"));
 const SpinWheel = lazy(() => import("./pages/user/SpinWheel.jsx"));
 const ConversationListScreen = lazy(() => import("./pages/user/ConversationListScreen.jsx"));
 const AssignmentJoin = lazy(() => import("./pages/user/AssignmentJoin.jsx"));
@@ -255,6 +256,11 @@ function App() {
     reminders: () => (
       <RouteShell toast={toast} showBack={false}>
         <RemindersPage userAuth={userAuth} onBack={() => navigate("/")} showToast={showToast} />
+      </RouteShell>
+    ),
+    schedule: () => (
+      <RouteShell toast={toast} showBack={false}>
+        <SchedulePage userAuth={userAuth} showToast={showToast} />
       </RouteShell>
     ),
     // Trang phân tích học tập bằng AI — yêu cầu đăng nhập vì AI Service xác thực token.

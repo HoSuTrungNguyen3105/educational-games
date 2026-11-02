@@ -111,6 +111,7 @@ const RULES = [
   { re: /^\/tasks/, perms: ["daily-tasks", "daily_tasks.view"] },
   { re: /^\/reminders\/due$/, perms: [PROFILE] },                        // endpoint polling của app
   { re: /^\/reminders/, perms: [PROFILE, "reminders.view"] },
+  { re: /^\/schedule/, perms: [PROFILE] },                               // lịch học: của mình + lớp của mình
   { re: /^\/notifications/, perms: [PROFILE] },
 
   // ── Chấm công ─────────────────────────────────────────────────────────
