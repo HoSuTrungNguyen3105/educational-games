@@ -53,6 +53,7 @@ import {
   Volume2,
   VolumeX,
   X,
+  CalendarDays,
 } from 'lucide-react'
 
 
@@ -205,6 +206,7 @@ function metaForSubject(subject = "") {
 // (Thú cưng không ở đây: nó có chip riêng ngay đầu hàng tab.)
 const MORE_ITEMS = (userAuth) => ([
   { key: "reminders", icon: IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
+  { key: "schedule", icon: CalendarDays, label: "Lịch học", type: "path", path: "/schedule", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
@@ -224,6 +226,7 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "subjects", icon: BookOpen, label: "Môn học", type: "scroll", target: "subjects-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: true, badge: true },
   { key: "reminders", icon: IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
+  { key: "schedule", icon: CalendarDays, label: "Lịch học", type: "path", path: "/schedule", show: !!userAuth?.user },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
