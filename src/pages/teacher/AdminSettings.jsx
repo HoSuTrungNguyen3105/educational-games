@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity, Database, HardDrive, History, RefreshCw, Search, ShieldCheck,
   SlidersHorizontal, Trash2, TriangleAlert, Loader2, CheckCircle2, XCircle, MinusCircle,
+  Sparkles,
 } from 'lucide-react'
 import { authService, systemService } from '../../services/api.js'
 import { loadSiteConfig } from '../../lib/siteConfig.js'
+import { invalidateAiAvailability } from '../../hooks/useAiAvailability.js'
 import { getRoleLabel, hasUserPermission } from '../../config/roles.js'
 import { gameCache } from '../../lib/gameCache.js'
 import {
@@ -142,6 +144,7 @@ const GROUPS = [
   { id: 'sec-account', label: 'Tài khoản' },
   { id: 'sec-security', label: 'Bảo mật' },
   { id: 'sec-system', label: 'Hệ thống' },
+  { id: 'sec-ai', label: 'Trợ lý AI' },
   { id: 'sec-storage', label: 'Lưu trữ' },
   { id: 'sec-scan', label: 'Kiểm tra game' },
   { id: 'sec-notify', label: 'Thông báo' },
@@ -346,6 +349,21 @@ export default function AdminSettings({ user, showToast }) {
     } finally { setCfgSaving(false) }
   }
 
+  /**
+   * Bật/tắt Trợ lý AI. Server giữ cờ này ở system_config (ai.enabled) nên mọi thiết bị
+   * dùng chung; TẮT là mọi tính năng AI báo "đang được cấu hình, chưa sử dụng được".
+   */
+  const saveAi = async () => {
+    // Chỉ gửi đúng khoá đã whitelist — server bỏ qua field lạ, ở đây chốt kiểu boolean.
+    const ok = await saveConfig({ ai: { enabled: Boolean(cfg?.ai?.enabled) } })
+    if (ok) {
+      // Widget AI cache 30 giây — xoá cache để trang đổi trạng thái ngay sau khi bật.
+      invalidateAiAvailability()
+      loadStatus(true)
+    }
+    return ok
+  }
+
   /** Chọn ảnh từ máy → data-URL; server đổi thành link Supabase khi lưu. */
   const pickImage = (file, apply) => {
     if (!file) return
@@ -527,6 +545,7 @@ export default function AdminSettings({ user, showToast }) {
               { k: 'MongoDB', s: st.mongo, extra: st.mongo ? `${st.mongo.dbName} · ${st.mongo.collections} collection` : '' },
               { k: 'Supabase Storage', s: st.storage, extra: st.storage ? `${st.storage.bucket} · ${st.storage.objects ?? 0} file HTML` : '' },
               { k: 'Tải file HTML game', s: st.html, extra: st.html?.checked ? `${st.html.checked} file thử tải · ${st.html.latencyMs}ms` : '' },
+              { k: 'Trợ lý AI', s: st.ai, extra: st.ai ? `${st.ai.model || 'chưa rõ model'} · ${st.ai.provider || 'không rõ nguồn'}${st.ai.enabled ? '' : ' · công tắc đang tắt'}` : '' },
             ].map((row) => (
               <div key={row.k} className="rounded-lg border border-ink/10 bg-white/60 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2">
@@ -545,6 +564,75 @@ export default function AdminSettings({ user, showToast }) {
           <p className="text-[11px] text-[#B7A987] mt-2.5">
             Lần kiểm tra gần nhất: {status ? fmtTime(status.checkedAt) : '—'}
             {status ? ` (tổng ${status.totalMs}ms)` : ''}. Kết quả giữ trong 10 giây để không dồn tải cho server.
+          </p>
+        </Card>
+      )}
+
+      {/* ── 3b. TRỢ LÝ AI ─────────────────────────────────────────────── */}
+      {canView && (
+        <Card id="sec-ai" className="scroll-mt-24" title="Trợ lý AI" icon={Sparkles}
+          hint="Máy chủ AI (Ollama + model tiếng Việt) chạy ở dịch vụ riêng và chỉ Backend API gọi tới. Trình duyệt không biết địa chỉ của nó. Bật công tắc bên dưới thì các tính năng AI mới hoạt động."
+          actions={
+            canEdit && (
+              <PrimaryButton disabled={cfgSaving || !cfg} onClick={saveAi} className="!px-4 !py-2 text-sm rounded-lg">
+                {cfgSaving ? 'Đang lưu…' : 'Lưu cấu hình AI'}
+              </PrimaryButton>
+            )
+          }>
+          <div className="flex items-start justify-between gap-4 pb-2.5 border-b border-ink/10">
+            <div className="min-w-0">
+              <div className="text-sm text-ink font-medium">Cho phép dùng tính năng AI</div>
+              <div className="text-[11px] text-[#8A7C63] leading-snug max-w-xl">
+                Đang tắt = học sinh và giáo viên thấy thông báo “Trợ lý AI đang được cấu hình, chưa sử dụng được”
+                ở mọi tính năng, và Backend không gửi yêu cầu nào sang máy chủ AI. Tắt không ảnh hưởng việc học,
+                chơi game hay chấm điểm.
+              </div>
+            </div>
+            <ToggleSwitch checked={Boolean(cfg?.ai?.enabled)} disabled={!canEdit || cfgSaving || !cfg}
+              onChange={(v) => patchCfg((c) => { c.ai = { ...(c.ai || {}), enabled: v }; return c })} />
+          </div>
+          {!cfg && (
+            <p className="text-sm text-[#8A7C63] mt-2">{cfgLoading ? 'Đang tải cấu hình…' : cfgError || 'Chưa đọc được cấu hình.'}</p>
+          )}
+
+          <div className="grid sm:grid-cols-2 gap-2 mt-3">
+            <div className="rounded-lg border border-ink/10 bg-white/60 px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-ink">Máy chủ AI</span>
+                <Pill state={statusLoading && !st.ai ? 'loading' : stateOf(st.ai?.state)}>
+                  {statusLoading && !st.ai ? 'Đang kiểm tra' : st.ai?.label || 'Chưa kiểm tra'}
+                </Pill>
+              </div>
+              <div className="text-[11px] text-[#8A7C63] mt-1 leading-snug">
+                {st.ai?.error ? <span className="text-ticket">{st.ai.error}</span> : st.ai?.detail || '—'}
+                {st.ai?.latencyMs ? ` · ${st.ai.latencyMs}ms` : ''}
+              </div>
+            </div>
+            <div className="rounded-lg border border-ink/10 bg-white/60 px-3 py-2.5">
+              <div className="text-sm text-ink">Model đang cấu hình</div>
+              <div className="text-[11px] text-[#8A7C63] mt-1 leading-snug font-mono">
+                {st.ai?.model || '—'}{st.ai?.provider ? ` · ${st.ai.provider}` : ''}
+              </div>
+              <div className="text-[10px] text-[#B7A987] mt-1 leading-snug">
+                Tên model do biến môi trường của máy chủ AI quy định, không nhập ở đây.
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-lg border border-ink/10 bg-white/60 px-3 py-2.5">
+            <div className="text-[11px] font-mono text-[#8A7C63] mb-1.5">Bốn tính năng dùng chung công tắc này</div>
+            <ul className="text-[12px] text-ink leading-snug space-y-1">
+              <li>· Trợ lý giải thích câu hỏi trong game (AI Bạn Học)</li>
+              <li>· Chat trợ lý học tập ở trang chủ và trang học</li>
+              <li>· Sinh câu hỏi bằng AI khi tạo game (chỉ giáo viên/admin)</li>
+              <li>· Phân tích kết quả học tập (học sinh xem của mình, giáo viên xem của lớp)</li>
+            </ul>
+          </div>
+
+          <p className="text-[11px] text-[#8A7C63] mt-2.5 leading-snug bg-gold/10 border border-gold/25 rounded-md px-2.5 py-2">
+            Điểm, tỉ lệ đúng và xếp hạng luôn do hệ thống tính — AI chỉ diễn giải, không quyết định kết quả.
+            Máy chủ AI hiện chạy trên máy nội bộ: khi deploy ra Render (hoặc nền tảng khác) mà không có AI Service
+            ở đó, các tính năng vẫn báo “đang được cấu hình” cho tới khi có máy chủ AI thật.
           </p>
         </Card>
       )}

@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import { API_BASE } from "../services/api.js";
 import { generateQuestions, DIFFICULTIES } from "../services/aiApi.js";
+import { useAiAvailability } from "../hooks/useAiAvailability.js";
+import { AiNotReadyNotice } from "./ai/AiNotReadyNotice.jsx";
 import { GhostButton } from "./ui";
 import Field from "./fields.jsx";
 import { Input } from "./ui";
@@ -23,7 +25,10 @@ function errText(e) {
     case "badRequest":
       return `AI Service không nhận yêu cầu: ${e.message}`;
     case "server":
-      return `${e.message} Kiểm tra Ollama có đang chạy và OLLAMA_MODEL đã được tải chưa.`;
+      // Server báo "đang được cấu hình" thì giữ nguyên — đừng nhắc Ollama với giáo viên.
+      return /đang được cấu hình/i.test(e.message || "")
+        ? e.message
+        : `${e.message} Kiểm tra Ollama có đang chạy và OLLAMA_MODEL đã được tải chưa.`;
     default:
       return e?.message || "Không sinh được câu hỏi.";
   }
@@ -49,10 +54,14 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
   const [picked, setPicked] = useState(() => ({}));   // id → true
   const abortRef = useRef(null);
 
+  // Trí năng nhân tạo chưa bật trong Cấu hình hệ thống → chặn nút, hiện cùng một thông báo.
+  const ai = useAiAvailability();
+
   const total = result?.questions?.length || 0;
   const chosenIds = Object.keys(picked).filter((k) => picked[k]);
 
   async function run() {
+    if (!ai.ready) return;
     setError(null);
     setBusy(true);
     setResult(null);
@@ -166,6 +175,10 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
             </div>
           </div>
 
+          {ai.showNotice && (
+            <AiNotReadyNotice state={ai.state} notice={ai.notice} hint={ai.hint} className="mt-1" />
+          )}
+
           <div className="flex gap-2">
             {busy ? (
               <GhostButton onClick={cancel} className="flex-1"><X className="w-4 h-4 inline mr-1" /> Huỷ đang sinh…</GhostButton>
@@ -173,7 +186,8 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
               <button
                 type="button"
                 onClick={run}
-                className="flex-1 min-h-[44px] rounded-xl bg-violet-600 text-white px-4 py-2 text-sm font-bold shadow-sm hover:bg-violet-700 transition active:scale-[.98] inline-flex items-center justify-center gap-1.5"
+                disabled={!ai.ready}
+                className="flex-1 min-h-[44px] rounded-xl bg-violet-600 text-white px-4 py-2 text-sm font-bold shadow-sm hover:bg-violet-700 transition active:scale-[.98] inline-flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-violet-600"
               >
                 <Sparkles className="w-4 h-4" /> Sinh câu hỏi
               </button>

@@ -12,7 +12,9 @@
 
 import { useState } from "react";
 import { analyzeLearning } from "../../services/aiApi.js";
+import { useAiAvailability } from "../../hooks/useAiAvailability.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
+import { AiNotReadyNotice } from "./AiNotReadyNotice.jsx";
 import { GhostButton, Loader, PrimaryButton, StatGrid } from "../ui";
 import { Input } from "../ui";
 import { BarChart3, BookOpen, CheckCircle2, Gamepad2, Star, Target, TriangleAlert } from "lucide-react";
@@ -37,7 +39,12 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  // AI chưa bật (hoặc AI Service chưa sẵn sàng) → chặn nút và hiện cùng một thông báo
+  // "đang được cấu hình, chưa sử dụng được" như mọi tính năng AI khác.
+  const ai = useAiAvailability();
+
   async function load() {
+    if (!ai.ready) return;
     setError(null);
     setHint(null);
     setBusy(true);
@@ -67,7 +74,7 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
                 : "Số liệu lấy từ lượt chơi đã được hệ thống chấm điểm."}
             </p>
           </div>
-          <PrimaryButton onClick={load} disabled={busy} className="w-full sm:w-auto shrink-0">
+          <PrimaryButton onClick={load} disabled={busy || !ai.ready} className="w-full sm:w-auto shrink-0">
             {busy ? "Đang phân tích…" : report ? "Phân tích lại" : "Phân tích"}
           </PrimaryButton>
         </div>
@@ -108,6 +115,10 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
           )}
         </div>
       </div>
+
+      {ai.showNotice && (
+        <AiNotReadyNotice state={ai.state} notice={ai.notice} hint={ai.hint} />
+      )}
 
       {error && (
         <div className="note-card p-6 text-center">

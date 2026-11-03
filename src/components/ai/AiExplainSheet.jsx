@@ -15,7 +15,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { explain } from "../../services/aiApi.js";
+import { useAiAvailability } from "../../hooks/useAiAvailability.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
+import { AiNotReadyNotice } from "./AiNotReadyNotice.jsx";
 import { Input } from "../ui";
 import { Bot, Lightbulb, X } from "lucide-react";
 
@@ -41,6 +43,9 @@ export default function AiExplainSheet({
   const abortRef = useRef(null);
   const busyRef = useRef(false);
   const bottomRef = useRef(null);
+
+  // Chưa bật AI (system_config.ai.enabled = false) → hiện thông báo, không gọi /api/ai/explain.
+  const ai = useAiAvailability(open);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -112,11 +117,14 @@ export default function AiExplainSheet({
 
   // Tự hỏi ngay khi mở panel — học sinh chỉ cần một chạm. Trễ một nhịp để trạng
   // thái "AI đang nghĩ…" kịp vẽ trước khi request đi.
+  // `ai.ready` chưa xác định (đang ping) hoặc AI chưa bật → KHÔNG gọi, panel sẽ hiện
+  // thông báo "đang được cấu hình, chưa sử dụng được" thay vì một lỗi 503 khó hiểu.
   useEffect(() => {
     if (!open || !questionId || needsLogin) return undefined;
+    if (ai.loading || !ai.ready) return undefined;
     const t = setTimeout(() => ask(), 0);
     return () => clearTimeout(t);
-  }, [open, questionId, needsLogin, ask]);
+  }, [open, questionId, needsLogin, ask, ai.loading, ai.ready]);
 
   if (!open) return null;
 
@@ -127,7 +135,7 @@ export default function AiExplainSheet({
     ask({ followUp: text });
   }
 
-  const canReveal = Boolean(questionId) && !revealed && !busy && !needsLogin;
+  const canReveal = Boolean(questionId) && !revealed && !busy && !needsLogin && ai.ready;
   const followUpsLeft = MAX_FOLLOW_UPS - turns.filter((t) => t.role === "user").length;
 
   return (
@@ -182,7 +190,16 @@ export default function AiExplainSheet({
           </div>
         )}
 
-        {!needsLogin && turns.length === 0 && !error && (
+        {!needsLogin && ai.showNotice && (
+          <AiNotReadyNotice
+            state={ai.state}
+            notice={ai.notice}
+            hint={ai.hint}
+            className="mt-1"
+          />
+        )}
+
+        {!needsLogin && (ai.loading || ai.ready) && turns.length === 0 && !error && (
           <div className="flex items-center gap-2 text-ink/60">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink/40 animate-pulse" />
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink/40 animate-pulse" />
@@ -248,7 +265,7 @@ export default function AiExplainSheet({
           </button>
         )}
 
-        {!needsLogin && (
+        {!needsLogin && ai.ready && (
           <form
             onSubmit={(e) => {
               e.preventDefault();

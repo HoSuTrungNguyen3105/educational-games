@@ -9,6 +9,9 @@
 //
 // Nguyên tắc:
 //  - Xác thực bằng `authenticate` + `requireRoles` sẵn có của dự án.
+//  - CỜ TÍNH NĂNG: `system_config.ai.enabled` (trang Cài đặt quản trị). Mặc định TẮT →
+//    mọi endpoint AI trả 503 kèm "đang được cấu hình, chưa sử dụng được" và KHÔNG gọi
+//    sang AI Service. `GET /api/ai/health` trả `available`/`notice` để UI hiện đúng câu.
 //  - Người dùng không bao giờ tự khai `studentId`/`role` — quyền lấy từ token.
 //  - Chỉ truyền xuống AI Service ĐÚNG phần dữ liệu cần thiết cho tác vụ AI.
 //  - Lỗi từ AI Service được chuẩn hoá rồi trả về theo envelope `sendError` của dự án;
@@ -317,7 +320,7 @@ async function handleLearningAnalysis(req, res) {
   }
 }
 
-router.post("/learning-analysis", authenticate, handleLearningAnalysis);
-router.get("/learning-analysis", authenticate, handleLearningAnalysis);
+router.post("/learning-analysis", authenticate, requireAiEnabled, handleLearningAnalysis);
+router.get("/learning-analysis", authenticate, requireAiEnabled, handleLearningAnalysis);
 
 export default router;

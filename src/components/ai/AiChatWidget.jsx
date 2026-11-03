@@ -17,7 +17,9 @@
 import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../../services/api.js";
 import { chat } from "../../services/aiApi.js";
+import { useAiAvailability } from "../../hooks/useAiAvailability.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
+import { AiNotReadyNotice } from "./AiNotReadyNotice.jsx";
 import { Input } from "../ui";
 import { Bot, X } from "lucide-react";
 
@@ -40,6 +42,9 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
   const abortRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+
+  // "đang cấu hình, chưa sử dụng được" → hiện thông báo thay vì gọi API và nhận 503.
+  const ai = useAiAvailability(open);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -66,7 +71,8 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
 
   async function send(text) {
     const content = String(text ?? input).trim();
-    if (!content || busy) return;
+    // !ai.ready: AI chưa bật — không gửi, để người dùng không nhận lỗi 503 khó hiểu.
+    if (!content || busy || !ai.ready) return;
 
     setError(null);
     setHint(null);
@@ -183,25 +189,39 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
             {messages.length === 0 && (
               <div className="flex flex-col items-center text-center px-2 py-6 gap-3">
                 <Bot className="w-10 h-10 text-ink/30 float-slow" />
-                <p className="font-display text-base sm:text-sm font-semibold text-ink">
-                  Hỏi gì cũng được về bài học
-                </p>
-                <p className="text-xs text-[#8A7C63] leading-relaxed max-w-xs">
-                  AI sẽ giải thích từng bước thay vì chỉ đưa đáp án.
-                </p>
-                <div className="flex flex-col gap-1.5 w-full mt-1">
-                  {SUGGESTIONS.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => send(s)}
-                      className="text-left text-[12px] text-ink/70 border border-ink/10 hover:border-ink/30
-                                 rounded-xl px-3 py-2.5 transition bg-white min-h-[44px]"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
+                {(ai.loading || ai.ready) && (
+                  <>
+                    <p className="font-display text-base sm:text-sm font-semibold text-ink">
+                      Hỏi gì cũng được về bài học
+                    </p>
+                    <p className="text-xs text-[#8A7C63] leading-relaxed max-w-xs">
+                      AI sẽ giải thích từng bước thay vì chỉ đưa đáp án.
+                    </p>
+                  </>
+                )}
+                {ai.showNotice && (
+                  <AiNotReadyNotice
+                    state={ai.state}
+                    notice={ai.notice}
+                    hint={ai.hint}
+                    className="text-left w-full"
+                  />
+                )}
+                {ai.ready && (
+                  <div className="flex flex-col gap-1.5 w-full mt-1">
+                    {SUGGESTIONS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => send(s)}
+                        className="text-left text-[12px] text-ink/70 border border-ink/10 hover:border-ink/30
+                                   rounded-xl px-3 py-2.5 transition bg-white min-h-[44px]"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -263,7 +283,8 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
               rows={1}
               maxLength={2000}
               enterKeyHint="send"
-              placeholder="Hỏi về bài học…"
+              disabled={!ai.ready}
+              placeholder={ai.ready ? "Hỏi về bài học…" : "AI chưa bật — chưa hỏi được"}
               className="flex-1 resize-none bg-paper rounded-xl px-3 py-2 text-base sm:text-sm font-body
                          text-ink placeholder:text-[#B7A987] outline-none focus:ring-2 focus:ring-ink/10
                          max-h-28 min-h-[44px]"
@@ -282,7 +303,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
             ) : (
               <button
                 type="submit"
-                disabled={!input.trim()}
+                disabled={!input.trim() || !ai.ready}
                 className="w-11 h-11 shrink-0 rounded-full bg-ink text-paper flex items-center justify-center
                            text-sm font-bold hover:bg-ink2 transition disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Gửi"
