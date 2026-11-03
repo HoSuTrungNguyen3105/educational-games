@@ -40,7 +40,8 @@ function Header({ title, timeLeft, isExam, onBack, answeredCount, totalQuestions
         {isExam && timeLeft !== null && (
           <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono text-sm font-bold ${timeLeft <= TIMER_WARN ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-700'}`}>
             <Clock className="w-4 h-4" />
-            {formatTime(timeLeft)}
+            {/* 0 giây khi mở lại bài đã bỏ dở quá giờ: hiện chữ thay vì 0:00 nháy đỏ */}
+            {timeLeft === 0 ? "Quá giờ" : formatTime(timeLeft)}
           </span>
         )}
       </div>
@@ -331,7 +332,7 @@ export default function AssignmentTake({ code: codeOrId }) {
 
       if (sub?.status === 'SUBMITTED') {
         const existing = await assignmentService.getResult(assignmentId, { guestName, showCorrectAnswer: true }).catch(() => null);
-        if (existing) { setResult(existing); setSubmitted(true); setLoading(false); return; }
+        if (existing) { setResult(existing); setSubmitted(true); return; }
       }
 
       const qIds = assignment.questionIds || [];
@@ -350,7 +351,13 @@ export default function AssignmentTake({ code: codeOrId }) {
           if (examModeRef.current) examRef.current?.forceSubmit();
           else doSubmitNow();
         };
-        if (remaining <= 0) { timeoutSubmit(); return; }
+        // remaining === 0 ở đây nghĩa là submission IN_PROGRESS của lần trước đã
+        // quá giờ (mở lại sau khi bỏ dở), KHÔNG phải hết giờ trong lúc làm bài.
+        // Bản cũ gọi timeoutSubmit() rồi return: examRef.current còn null nên không
+        // nộp được gì, và return bỏ qua setLoading(false) → trang quay "Đang tải
+        // bài tập..." mãi, không vào được đề. Server cố tình không chặn nộp quá giờ
+        // (ghi overtimeSec) nên ở đây cho học sinh làm tiếp và nộp bình thường.
+        if (remaining <= 0) return;
         const intervalId = setInterval(() => {
           setTimeLeft(prev => {
             const next = prev - 1;
@@ -361,7 +368,9 @@ export default function AssignmentTake({ code: codeOrId }) {
         setTimerRef(intervalId);
       }
     } catch (err) { setError(err.message); }
-    setLoading(false);
+    // setLoading trong finally: các nhánh return ở trên (đã nộp / quá giờ) cũng
+    // phải tắt được loading, nếu không trang kẹt ở "Đang tải bài tập...".
+    finally { setLoading(false); }
   }
 
   const doSubmitNow = useCallback(async () => {

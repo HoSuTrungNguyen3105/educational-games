@@ -43,6 +43,17 @@ export const DEFAULTS = {
     assignments: true,
     deadlineReminders: true,
   },
+  // Trợ lý AI — mặc định TẮT vì AI Service + Ollama đang được cấu hình và chỉ chạy
+  // trên máy local (Render không có nơi chạy model).
+  //   false → mọi endpoint /api/ai/* trả 503 kèm "đang được cấu hình, chưa sử dụng được",
+  //           frontend hiển thị cùng một thông báo ở mọi tính năng AI, không gọi sang
+  //           AI Service (kể cả khi nó đang bật).
+  //   true  → routes/ai.js mới chuyển request xuống AI Service.
+  // Đây là cờ nghiệp vụ, KHÔNG phải secret: secret (AI_BACKEND_TOKEN, OLLAMA_KEY)
+  // vẫn chỉ nằm trong biến môi trường.
+  ai: {
+    enabled: false,
+  },
 };
 
 /** Đọc 1 khoá theo đường dẫn "a.b" từ object. */
@@ -175,6 +186,7 @@ export async function updateConfig(patch, actor = null) {
     site: next.site,
     maintenance: next.maintenance,
     notifications: next.notifications,
+    ai: next.ai,
     updatedAt: new Date().toISOString(),
     updatedBy: actor ? { id: actor.sub || null, name: actor.name || null, role: actor.role || null } : null,
   };

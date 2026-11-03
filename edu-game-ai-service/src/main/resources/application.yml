@@ -30,7 +30,9 @@ edu:
     env-file: ${EDU_AI_ENV_FILE:.env}
 
     base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-    model: ${OLLAMA_MODEL:llama3}
+    # Model local của dự án: Qwen3 4B (nhẹ, chạy được trên laptop, tiếng Việt tốt).
+    # Phải có sẵn: `ollama pull qwen3:4b`.
+    model: ${OLLAMA_MODEL:qwen3:4b}
 
     # Rỗng = không gắn header Authorization (Ollama local không cần key).
     # Điền khi endpoint là dịch vụ từ xa yêu cầu key (ví dụ ollama.com).
@@ -95,6 +97,11 @@ edu:
       json-retry-attempts: ${EDU_AI_JSON_RETRY:1}
       min-questions-for-conclusion: 5
       min-plays-for-conclusion: 2
+      # Chế độ "thinking" của model (field `think` trong /api/chat của Ollama).
+      #   false (mặc định) — gửi think:false, Qwen3 trả lời thẳng, không suy nghĩ dài.
+      #   true  — cho model trình bày cách làm (hỏi chậm hơn, hợp với AI giải thích).
+      #   omit  — không gửi field này (Ollama cũ / model không hỗ trợ thinking).
+      think: ${OLLAMA_THINK:false}
 
   # ── Backend nghiện vụ hiện tại (Node/Express) ───────────────────────────────
   # AI Service KHÔNG có database riêng.

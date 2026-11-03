@@ -22,11 +22,41 @@ import { getCollection } from "../db.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 import * as questionService from "../services/questionService.js";
+import { isOn } from "../services/systemConfigService.js";
 import { callAiBackend, aiBackendHealth, AiBackendError } from "../services/aiBackendService.js";
 
 const router = Router();
 
 const isStaff = (user) => user?.role === "teacher" || user?.role === "admin";
+
+/**
+ * Thông báo khi AI chưa được bật trong Cấu hình hệ thống (system_config: ai.enabled).
+ * Một câu duy nhất cho MỌI tính năng AI — frontend hiển thị đúng chuỗi này, không tự
+ * đặt câu khác, để học sinh/giáo viên thấy cùng một nội dung ở mọi nơi.
+ */
+export const AI_UNAVAILABLE_MESSAGE =
+  "Trợ lý AI đang được cấu hình, chưa sử dụng được. Bạn vẫn học và chơi game bình thường.";
+
+/** Cờ tính năng AI. Đọc lỗi (DB chưa kịp lên) thì coi như TẮT — an toàn hơn là bật nhầm. */
+async function aiFeatureEnabled() {
+  try {
+    return await isOn("ai.enabled");
+  } catch (e) {
+    console.warn(`[ai] Không đọc được cờ ai.enabled: ${e.message}`);
+    return false;
+  }
+}
+
+/**
+ * Chặn mọi tính năng AI khi quản trị chưa bật.
+ * Đặt TRƯỚC handler để request không chạm tới AI Service — kể cả khi dịch vụ Java
+ * đang chạy, model chưa được kiểm chứng thì vẫn không cho gọi.
+ */
+function requireAiEnabled(req, res, next) {
+  aiFeatureEnabled()
+    .then((on) => (on ? next() : sendError(res, AI_UNAVAILABLE_MESSAGE, 503)))
+    .catch(() => sendError(res, AI_UNAVAILABLE_MESSAGE, 503));
+}
 
 /** Đưa mọi lỗi từ AI Service về một kiểu lỗi chuẩn của Backend chính. */
 function forwardError(res, e, endpoint) {
@@ -39,15 +69,44 @@ function forwardError(res, e, endpoint) {
 
 // ───────────────────────────── Health ─────────────────────────────
 
-/** GET /api/ai/health — trạng thái AI Service, KHÔNG yêu cầu đăng nhập. */
+/**
+ * GET /api/ai/health — trạng thái AI cho frontend và trang Quản trị.
+ * KHÔNG yêu cầu đăng nhập, KHÔNG bao giờ trả API key hay URL nội bộ của AI Service.
+ *
+ * Shape (thêm 2 trường so với AI Service):
+ *   featureEnabled  quản trị đã bật AI trong Cấu hình hệ thống chưa
+ *   available       = featureEnabled && AI Service sẵn sàng → UI có dùng được không
+ *   notice          thông báo hiển thị cho người dùng khi chưa dùng được
+ */
 router.get("/health", async (_req, res) => {
-  sendSuccess(res, await aiBackendHealth());
+  const featureEnabled = await aiFeatureEnabled();
+  if (!featureEnabled) {
+    // Chưa bật thì không gọi sang AI Service: đỡ một lượt kết nối và không lộ gì.
+    return sendSuccess(res, {
+      status: false,
+      available: false,
+      featureEnabled: false,
+      configured: false,
+      model: null,
+      provider: null,
+      detail: "AI chưa được bật trong Cấu hình hệ thống.",
+      notice: AI_UNAVAILABLE_MESSAGE,
+    });
+  }
+  const health = await aiBackendHealth();
+  const available = health?.status === true;
+  sendSuccess(res, {
+    ...health,
+    featureEnabled: true,
+    available,
+    notice: available ? null : health?.detail || AI_UNAVAILABLE_MESSAGE,
+  });
 });
 
 // ───────────────────────────── Chat ──────────────────────────────
 
 /** POST /api/ai/chat — chatbot AI hỗ trợ học tập. */
-router.post("/chat", authenticate, async (req, res) => {
+router.post("/chat", authenticate, requireAiEnabled, async (req, res) => {
   try {
     const { message, subject, topic, conversationId, history } = req.body || {};
     const data = await callAiBackend("/api/ai/chat", {
@@ -77,7 +136,7 @@ router.post("/chat", authenticate, async (req, res) => {
  * ngữ cảnh, rồi truyền xuống AI Service. AI Service không tự chấm và không cần gọi
  * ngược lại endpoint `explain-context`.
  */
-router.post("/explain", authenticate, async (req, res) => {
+router.post("/explain", authenticate, requireAiEnabled, async (req, res) => {
   try {
     const { questionId, gameId, answer, reveal, followUp } = req.body || {};
     const qid = String(questionId || "").trim();
@@ -106,7 +165,7 @@ router.post("/explain", authenticate, async (req, res) => {
 // ─────────────────────── Sinh câu hỏi (giáo viên) ─────────────────
 
 /** POST /api/ai/quizzes/generate — chỉ giáo viên/admin. */
-router.post("/quizzes/generate", authenticate, requireRoles("teacher", "admin"), async (req, res) => {
+router.post("/quizzes/generate", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (req, res) => {
   try {
     const { subject, grade, topic, difficulty, count, language, sourceContent } = req.body || {};
     const data = await callAiBackend("/api/ai/quizzes/generate", {
@@ -125,7 +184,7 @@ router.post("/quizzes/generate", authenticate, requireRoles("teacher", "admin"),
 });
 
 /** POST /api/ai/generate-question — endpoint cũ, giữ nguyên hợp đồng cho client cũ. */
-router.post("/generate-question", authenticate, requireRoles("teacher", "admin"), async (req, res) => {
+router.post("/generate-question", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (req, res) => {
   try {
     const { subject, grade, topic, difficulty, quantity, count, content } = req.body || {};
     const data = await callAiBackend("/api/ai/generate-question", {

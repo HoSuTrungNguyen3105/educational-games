@@ -24,7 +24,8 @@ public final class TestFixtures {
                         2000, 1000, 10, 2000, 20,
                         4, 6, 500, 200, 400, 5, 8000),
                 new AiProperties.RateLimit(false, 20, 30, 10, 10),
-                new AiProperties.Generation(0.4, 1, 5, 2));
+                // "false" = gửi think:false xuống Ollama (giống mặc định của application.yml).
+                new AiProperties.Generation(0.4, 1, 5, 2, "false"));
     }
 
     /** Cấu hình cho phép mọi vai trò và tắt rate limit — thuận tiện khi test service. */

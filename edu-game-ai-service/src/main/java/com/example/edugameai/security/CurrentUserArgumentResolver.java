@@ -164,8 +164,26 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
         if (header == null) {
             return null;
         }
-        String v = header.strip();
+        String v = decodeHeader(header).strip();
         return v.isEmpty() ? null : cap(v, 120);
+    }
+
+    /**
+     * HTTP header chỉ chở được ký tự ASCII, nên Backend chính percent-encode các giá trị
+     * tiếng Việt (tên người dùng) khi gửi {@code X-Ai-User-Name}. Ở đây giải mã lại TRƯỚC
+     * khi cắt 120 ký tự — cắt sau sẽ băm gãy một escape {@code %xx} và làm request lỗi.
+     * Giá trị không hợp lệ (không phải chuỗi encode) được giữ nguyên, không ném lỗi.
+     */
+    private String decodeHeader(String raw) {
+        if (raw.indexOf('%') < 0) {
+            return raw;
+        }
+        try {
+            return java.net.URLDecoder.decode(raw, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            log.debug("Header nội bộ không phải percent-encoding hợp lệ — dùng nguyên văn.");
+            return raw;
+        }
     }
 
     private String cap(String value, int max) {

@@ -61,6 +61,37 @@ public class OllamaChatGateway implements AiChatGateway {
     private String call(AiMessage system, List<AiMessage> messages, boolean jsonMode) {
         requireConfigured();
 
+        Map<String, Object> body = buildBody(system, messages, jsonMode);
+
+        // Trường "think" chỉ được thêm khi cấu hình yêu cầu (xem AiProperties.Generation#think).
+        // Bỏ nó ra khỏi body là cách tương thích với Ollama cũ / model không có thinking.
+        boolean thinkSent = body.containsKey("think");
+
+        try {
+            return extractContent(post(body));
+        } catch (RestClientResponseException e) {
+            // Model/Ollama không nhận field "think" → HTTP 400 (chưa sinh token nào, không tốn
+            // chi phí). Thử lại ĐÚNG MỘT LẦN mà không gửi field này, rồi mới báo lỗi.
+            if (thinkSent && e.getStatusCode().value() == 400) {
+                log.warn("Ollama không chấp nhận field \"think\" (HTTP 400) — gọi lại không kèm field này."
+                        + " Đặt OLLAMA_THINK=omit để tắt hẳn.");
+                body.remove("think");
+                try {
+                    return extractContent(post(body));
+                } catch (RestClientResponseException retry) {
+                    throw translate(retry);
+                } catch (ResourceAccessException retry) {
+                    throw providerUnavailable(retry);
+                }
+            }
+            throw translate(e);
+        } catch (ResourceAccessException e) {
+            throw providerUnavailable(e);
+        }
+    }
+
+    /** Dựng payload /api/chat: model, stream:false, messages, format, options, think. */
+    private Map<String, Object> buildBody(AiMessage system, List<AiMessage> messages, boolean jsonMode) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", properties.model());
         body.put("stream", false);
@@ -75,24 +106,31 @@ public class OllamaChatGateway implements AiChatGateway {
         options.put("temperature", properties.generation().temperature());
         body.put("options", options);
 
-        try {
-            String raw = restClient.post()
-                    .uri("/api/chat")
-                    .headers(h -> applyAuth(h))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .body(body)
-                    .retrieve()
-                    .body(String.class);
-
-            return extractContent(raw);
-        } catch (RestClientResponseException e) {
-            throw translate(e);
-        } catch (ResourceAccessException e) {
-            log.warn("Không kết nối được Ollama tại {}: {}", properties.baseUrl(), e.getMessage());
-            throw new AiErrors.ProviderUnavailable(
-                    "Không kết nối được dịch vụ AI. Hãy kiểm tra Ollama có đang chạy không.", e);
+        AiProperties.Generation generation = properties.generation();
+        if (generation.sendThink()) {
+            // Qwen3 có suy nghĩ ẩn; "think":false giới hạn phần này để câu trả lời về nhanh.
+            body.put("think", generation.thinkEnabled());
         }
+        return body;
+    }
+
+    /** Một lần POST /api/chat. Ngoại lệ để {@link #call} quyết định có fallback hay không. */
+    private String post(Map<String, Object> body) {
+        return restClient.post()
+                .uri("/api/chat")
+                .headers(h -> applyAuth(h))
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .body(String.class);
+    }
+
+    private AiErrors.ProviderUnavailable providerUnavailable(ResourceAccessException e) {
+        // Log nội bộ (không trả cho client): cho biết endpoint nào không gọi được.
+        log.warn("Không kết nối được Ollama tại {}: {}", properties.baseUrl(), e.getMessage());
+        return new AiErrors.ProviderUnavailable(
+                "Không kết nối được dịch vụ AI. Hãy kiểm tra Ollama có đang chạy không.", e);
     }
 
     @Override

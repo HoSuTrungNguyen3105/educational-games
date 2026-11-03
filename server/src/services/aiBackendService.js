@@ -38,6 +38,21 @@ export class AiBackendError extends Error {
   }
 }
 
+/**
+ * Giá trị header an toàn trên wire.
+ *
+ * HTTP header chỉ chở byte ASCII: tên tiếng Việt ("Hồ") ném
+ * `Cannot convert argument to a ByteString ... greater than 255` ngay tại tầng fetch,
+ * khiến mọi request AI của người dùng có tên Việt Nam chết với 503 "không kết nối được
+ * AI Service". Vì vậy percent-encode ở đây; AI Service giải mã trước khi cắt 120 ký tự
+ * (xem CurrentUserArgumentResolver#decodeHeader).
+ */
+function headerValue(value, max = 120) {
+  const raw = String(value ?? "");
+  if (!raw) return "";
+  return encodeURIComponent(raw).replace(/\+/g, "%2B").slice(0, max);
+}
+
 /** Header xác thực + danh tính, chuẩn hoá về chuỗi và bỏ ký tự lạ. */
 function internalHeaders(req) {
   const headers = { "Content-Type": "application/json", Accept: "application/json" };
@@ -45,13 +60,13 @@ function internalHeaders(req) {
   if (token) headers[INTERNAL_HEADERS.token] = token;
 
   const user = req?.user;
-  if (user?.sub) headers[INTERNAL_HEADERS.userId] = String(user.sub).slice(0, 120);
-  if (user?.name) headers[INTERNAL_HEADERS.userName] = String(user.name).slice(0, 120);
-  if (user?.role) headers[INTERNAL_HEADERS.userRole] = String(user.role).slice(0, 32);
+  if (user?.sub) headers[INTERNAL_HEADERS.userId] = headerValue(user.sub);
+  if (user?.name) headers[INTERNAL_HEADERS.userName] = headerValue(user.name);
+  if (user?.role) headers[INTERNAL_HEADERS.userRole] = headerValue(user.role);
 
   // IP thật để AI Service tính rate limit đúng người dùng (đã lọc qua X-Forwarded-For).
   const ip = clientIp(req);
-  if (ip) headers[INTERNAL_HEADERS.clientIp] = ip;
+  if (ip) headers[INTERNAL_HEADERS.clientIp] = ip.slice(0, 64);
 
   return headers;
 }

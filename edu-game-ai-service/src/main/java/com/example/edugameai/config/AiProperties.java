@@ -18,7 +18,8 @@ public record AiProperties(
 
         @DefaultValue("http://localhost:11434") String baseUrl,
 
-        @DefaultValue("llama3") String model,
+        /** Model mặc định của dự án: Qwen3 4B chạy local bằng Ollama (`ollama pull qwen3:4b`). */
+        @DefaultValue("qwen3:4b") String model,
 
         /** API key của endpoint Ollama. Rỗng = không xác thực (Ollama local). */
         @DefaultValue("") String apiKey,
@@ -113,6 +114,33 @@ public record AiProperties(
             @DefaultValue("1") int jsonRetryAttempts,
             /** Ngưỡng dưới đó coi như chưa đủ dữ liệu để kết luận. */
             @DefaultValue("5") int minQuestionsForConclusion,
-            @DefaultValue("2") int minPlaysForConclusion) {
+            @DefaultValue("2") int minPlaysForConclusion,
+            /**
+             * Chế độ "thinking" của Ollama (field {@code think} trong /api/chat).
+             *
+             * <p>Qwen3 là model có suy nghĩ ẩn; nếu để model tự quyết, một câu chào đơn giản
+             * cũng sinh ra hàng trăm token reasoning → trả lời rất chậm. Dự án mặc định tắt:
+             * <ul>
+             *   <li>{@code false} (mặc định) — gửi {@code think:false}, hạn chế suy nghĩ dài.
+             *   <li>{@code true}  — gửi {@code think:true}, cho phép model trình bày cách làm
+             *       (chức năng "AI giải thích" có thể bật nếu muốn).
+             *   <li>{@code omit}  — KHÔNG gửi field này, dùng cho Ollama/model không hỗ trợ
+             *       (Ollama cũ hơn 0.4 sẽ trả 400 với field lạ).
+             * </ul>
+             * Giá trị lấy từ {@code OLLAMA_THINK}, không hardcode trong mã nguồn.
+             */
+            @DefaultValue("false") String think) {
+
+        /** true = gửi field {@code think} xuống Ollama. */
+        public boolean sendThink() {
+            String v = think == null ? "" : think.strip().toLowerCase();
+            return !v.isBlank() && !v.equals("omit") && !v.equals("auto") && !v.equals("off");
+        }
+
+        /** Giá trị boolean của {@code think} khi {@link #sendThink()} là true. */
+        public boolean thinkEnabled() {
+            String v = think == null ? "" : think.strip().toLowerCase();
+            return v.equals("true") || v.equals("1") || v.equals("enable") || v.equals("enabled");
+        }
     }
 }
