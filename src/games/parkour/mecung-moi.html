@@ -282,6 +282,50 @@ const SPR={
  tuft:sp(x=>{for(let i=0;i<9;i++){const bx=16+i*4+R()*3,h=18+R()*26;x.strokeStyle=['#3f9a3a','#5cbb4a','#79d062'][i%3];x.lineWidth=3;x.lineCap='round';x.beginPath();x.moveTo(bx,60);x.quadraticCurveTo(bx+(R()-.5)*10,60-h*.6,bx+(R()-.5)*18,60-h);x.stroke()}}),
  lamp:sp(x=>{ell(x,32,61,8,2.5,'rgba(0,0,0,.3)');x.fillStyle='#2a2a38';x.fillRect(30,22,4,38);x.fillStyle='#ffe9a0';x.fillRect(24,8,16,16);x.strokeStyle='#2a2a38';x.lineWidth=2.5;x.strokeRect(24,8,16,16)})};
 ['#ffffff','#ffd54f','#f48fb1'].forEach((c,i)=>SPR['fl'+i]=sp(x=>{x.strokeStyle='#3f9a3a';x.lineWidth=2.5;x.beginPath();x.moveTo(32,60);x.lineTo(32,38);x.stroke();for(let k=0;k<5;k++){const a=k/5*TAU;ell(x,32+M.cos(a)*6,34+M.sin(a)*6,4.5,4.5,c)}ell(x,32,34,3.5,3.5,'#e09a20')}));
+/* ================= Nhân vật nhìn từ SAU LƯNG (camera 3 người, làm theo thap-may) =================
+   8 khung cho một vòng bước, màu áo theo màu đã chọn, lông + tai theo linh vật của hồ sơ.
+   Sprite ở đây là bảng điểm ảnh 64x64 (spr() đọc trực tiếp), nên toạ độ nhỏ bằng một nửa
+   so với nhân vật 2D thường và không làm mờ dần được -> camera sẽ ẩn hẳn khi quá bí. */
+const HF=8;let HFR=[],HSK=null,hpx=0,hpy=0;
+const FUR=['#e08a3c','#2b2b31','#e08a3c','#f2e8f6','#5aa84a','#c05a8a','#d9a030','#3a4250','#b8bcc8','#a8825a','#f2efe8','#4a9a7a'];
+const EAR=[1,2,1,5,2,0,6,0,2,4,3,5];   // 0 không tai, 1 nhọn, 2 tròn, 3 dài, 4 chùm lông, 5 sừng, 6 bờm
+function heroBack(x,ph,sl,fur,ear){
+ const sw=M.sin(ph),sw2=M.sin(ph+M.PI);
+ ell(x,32,61,17,3,'rgba(0,0,0,.3)');
+ for(const[s,side]of[[sw,-1],[sw2,1]]){const fx_=32+side*5+s*5.5,fy=58-M.max(0,s)*3.5;
+  x.strokeStyle='#3b4056';x.lineWidth=6.5;x.lineCap='round';x.beginPath();x.moveTo(32+side*3.5,45);x.lineTo(fx_,fy);x.stroke();
+  ell(x,fx_+side,fy+1.5,4.6,3,'#241f2b')}
+ poly(x,[[22,26],[42,26],[44,45],[20,45]],sl);
+ x.fillStyle='#6a4a22';x.fillRect(20,41.5,24,3.5);
+ x.strokeStyle='#dfe3f0';x.lineWidth=1.5;x.beginPath();x.moveTo(32,27.5);x.lineTo(32,41.5);x.stroke();
+ x.fillStyle='#8a5a30';x.fillRect(26,30,12,10);x.fillStyle='#d9b45a';x.fillRect(30,33,4,4);
+ let rh=[43,33];
+ for(const[s,side]of[[sw2,-1],[sw,1]]){const hx=32+side*11,cyy=33-M.max(0,s)*4;
+  if(side===1)rh=[hx,cyy];
+  x.strokeStyle=sl;x.lineWidth=5.5;x.lineCap='round';x.beginPath();x.moveTo(32+side*10,29);x.lineTo(hx,cyy);x.stroke();
+  ell(x,hx,cyy+1.5,3,3,'#f3d6b8')}
+ const lx=rh[0]+1,ly=rh[1]+8;   // đèn lồng cầm tay phải — dấu ấn riêng của game này
+ x.strokeStyle='#2a2a38';x.lineWidth=1.6;x.beginPath();x.moveTo(rh[0],rh[1]+3);x.lineTo(lx,ly-4);x.stroke();
+ x.fillStyle='#2a2a38';x.fillRect(lx-4,ly-4,8,2.5);x.fillRect(lx-4,ly+4.5,8,2.5);x.fillRect(lx-4,ly-2,1.8,5);x.fillRect(lx+2.2,ly-2,1.8,5);
+ ell(x,lx,ly+1,2.6,3.2,'#ffe9a0');ell(x,lx,ly+1,1.4,1.8,'#fff8d0');
+ x.fillStyle='#f3d6b8';x.fillRect(29,21,6,6);
+ if(ear===6)for(let i=0;i<10;i++){const a=i/10*TAU;ell(x,32+M.cos(a)*11,16+M.sin(a)*11,5,5,'#e8b050')}
+ ell(x,32,16,10,11,fur);
+ if(ear===1){poly(x,[[24,10],[26,2],[30,11]],fur);poly(x,[[40,10],[38,2],[34,11]],fur)}
+ else if(ear===2){ell(x,23,8,4.5,4.5,fur);ell(x,41,8,4.5,4.5,fur)}
+ else if(ear===3){ell(x,27,6,2.4,5.5,fur);ell(x,37,6,2.4,5.5,fur)}
+ else if(ear===4){poly(x,[[25,9],[27,2],[30,9]],fur);poly(x,[[39,9],[37,2],[34,9]],fur)}
+ else if(ear===5){poly(x,[[27,10],[29,2],[32,11]],'#e0cfa0');poly(x,[[37,10],[35,2],[32,11]],'#e0cfa0')}
+ x.fillStyle=sl;x.beginPath();x.arc(32,15,10.5,M.PI,0);x.fill();x.fillRect(21.5,14,21,5);
+ ell(x,32,13,8.5,7,sl);
+ ell(x,32,22.5,7.5,3,sl)}
+function heroKey(){const u0=meU();return (u0?COLS[u0.col%COLS.length]:'#2f6fb3')+'|'+(u0?AVS.indexOf(u0.av):-1)}
+function heroUp(){const u0=meU(),sl=u0?COLS[u0.col%COLS.length]:'#2f6fb3',ai=u0?AVS.indexOf(u0.av):-1;
+ HFR=[];for(let i=0;i<HF;i++)HFR.push(sp(x=>heroBack(x,i/HF*TAU,sl,FUR[ai]>=0?FUR[ai]:'#e8c8a0',EAR[ai]>=0?EAR[ai]:0)));
+ HSK=heroKey()}
+function heroSpr(){const k=heroKey();if(!HFR.length||HSK!==k)heroUp();
+ const mov=(P.x-hpx)**2+(P.y-hpy)**2>2e-5;hpx=P.x;hpy=P.y;
+ return mov?HFR[(P.bt*1.3|0)%HF]:HFR[0]}
 /* ================= Chế độ hiển thị ================= */
 const view=$('view'),vc=view.getContext('2d'),fxc=$('fx'),fx=fxc.getContext('2d'),PL=.72,CAM={};let RW,RH,img,buf,zb,colAng,cloud,u=1;
 /* innerWidth/innerHeight = 0 khi iframe chưa có layout (iframe hidden, cửa sổ
@@ -293,31 +337,49 @@ cloud=new Uint8Array(256*16);for(let i=0;i<14;i++){const cx=R()*256,cy=3+R()*10,
 addEventListener('resize',rs);rs();
 const P={x:1.5,y:1.5,a:0,pt:0,bt:0},K={},IN={mx:0,my:0,sid:null,lid:null,ox:0,oy:0,lx:0,ly:0};
 let T=0,started=0,shake=0,burstL=[],doneN=0,qOpen=-1,qState=0,qT0=0,qLim=30,qBeep=99,Q=[],A=[],mode='practice',isRemote=0,startedAt=0,tabOut=0,submitting=0,submitted=0,mapOpen=0,paused=0,flickT=0;
+/* ---- CAMERA SAU LƯNG (góc 3 người, làm theo thap-may) ----
+   Mắt vẫn nhìn theo hướng P.a nhưng đứng lùi sau nhân vật CAMD ô, nên thấy lưng nhân vật
+   giữa màn hình. camA đuổi theo P.a mềm mại => lúc quay camera vung nhẹ sang bên chứ không giật.
+   Khoảng lùi co dần khi sau lưng là tường, và mắt luôn lấy từ các điểm ĐÃ KIỂM TRA trống
+   nên không bao giờ chui vào khối. camSc = phần khoảng lùi còn dùng được; khi góc quá bí
+   (camSc nhỏ) camera sát vào người và nhân vật được ẩn hẳn để qu về góc nhìn thứ nhất. */
+const CAMD=1.9;let camA=P.a,camD=CAMD,camX=P.x,camY=P.y,camSc=1;
+function camStep(dt){
+ const cc=M.cos(P.a),ss=M.sin(P.a);
+ camA+=aD(P.a-camA)*M.min(1,dt*7);
+ const sw=clamp(aD(P.a-camA)*.5,-.2,.2);
+ let d=CAMD;
+ for(let k=1;k<=16;k++){const t=CAMD*k/16;if(solid(P.x-cc*t,P.y-ss*t)){d=M.max(.45,t-.2);break}}
+ camD+=(d-camD)*M.min(1,dt*12);
+ let ex=P.x,ey=P.y,m=0;
+ for(const s of[1,.75,.5,.25]){const tx=P.x-(cc+ss*sw)*camD*s,ty=P.y-(ss-cc*sw)*camD*s;if(!solid(tx,ty)){ex=tx;ey=ty;m=s;break}}
+ camSc=m;camX=ex;camY=ey;
+}
 function render(){
  const th=TH,f=RW/2/PL,hor=RH/2+P.pt*RH*.5,hr=clamp(hor|0,3,RH-3),dx=M.cos(P.a),dy=M.sin(P.a),px=-dy*PL,py=dx*PL;
- CAM.x=P.x;CAM.y=P.y;CAM.dx=dx;CAM.dy=dy;CAM.px=px;CAM.py=py;CAM.f=f;CAM.hor=hor;
+ CAM.x=camX;CAM.y=camY;CAM.dx=dx;CAM.dy=dy;CAM.px=px;CAM.py=py;CAM.f=f;CAM.hor=hor;
  const fr=th.fog[0],fg=th.fog[1],fb=th.fog[2],FD=th.fd*(th.sky?1:1+.035*M.sin(flickT*7)),fl=FLR[th===THEMES.garden?'garden':'dungeon'];
  /* trần / bầu trời */
  if(th.sky){for(let y=0;y<hr;y++){const t=y/hr,r=(th.sky0[0]+(th.sky1[0]-th.sky0[0])*t)|0,g=(th.sky0[1]+(th.sky1[1]-th.sky0[1])*t)|0,b=(th.sky0[2]+(th.sky1[2]-th.sky0[2])*t)|0,o=y*RW,cy=((y/hr)*16)|0;
    for(let x=0;x<RW;x++){const uu=(((P.a+colAng[x])/TAU*256)|0)&255,cm=cloud[cy*256+uu]*.0028*(y<hr*.9?1:0),k=cm>1?1:cm;buf[o+x]=0xff000000|((b+((255-b)*k))<<16)|((g+((255-g)*k))<<8)|(r+((255-r)*k))}}}
- else{for(let y=0;y<hr;y++){const rd=.5*f/(hor-y),fo=clamp(rd/FD,0,.94),ia=((1-fo)*256)|0,ib=(fo*256)|0,sx=rd*2*px/RW,sy=rd*2*py/RW;let fxp=P.x+rd*(dx-px),fyp=P.y+rd*(dy-py);const o=y*RW;
+ else{for(let y=0;y<hr;y++){const rd=.5*f/(hor-y),fo=clamp(rd/FD,0,.94),ia=((1-fo)*256)|0,ib=(fo*256)|0,sx=rd*2*px/RW,sy=rd*2*py/RW;let fxp=CAM.x+rd*(dx-px),fyp=CAM.y+rd*(dy-py);const o=y*RW;
    for(let x=0;x<RW;x++){const mx=fxp|0,my=fyp|0,c=CEIL[0][((((fyp-my)*64)|0)&63)*64+((((fxp-mx)*64)|0)&63)];buf[o+x]=0xff000000|((((c>>16&255)*ia+fb*ib)>>8)<<16)|((((c>>8&255)*ia+fg*ib)>>8)<<8)|(((c&255)*ia+fr*ib)>>8);fxp+=sx;fyp+=sy}}}
  /* sàn */
- for(let y=hr;y<RH;y++){const rd=.5*f/M.max(.6,y-hor),fo=clamp(rd/FD,0,.94),ia=((1-fo)*256)|0,ib=(fo*256)|0,sx=rd*2*px/RW,sy=rd*2*py/RW;let fxp=P.x+rd*(dx-px),fyp=P.y+rd*(dy-py);const o=y*RW;
+ for(let y=hr;y<RH;y++){const rd=.5*f/M.max(.6,y-hor),fo=clamp(rd/FD,0,.94),ia=((1-fo)*256)|0,ib=(fo*256)|0,sx=rd*2*px/RW,sy=rd*2*py/RW;let fxp=CAM.x+rd*(dx-px),fyp=CAM.y+rd*(dy-py);const o=y*RW;
   for(let x=0;x<RW;x++){const mx=fxp|0,my=fyp|0,c=fl[(mx+my)&1][((((fyp-my)*64)|0)&63)*64+((((fxp-mx)*64)|0)&63)];buf[o+x]=0xff000000|((((c>>16&255)*ia+fb*ib)>>8)<<16)|((((c>>8&255)*ia+fg*ib)>>8)<<8)|(((c&255)*ia+fr*ib)>>8);fxp+=sx;fyp+=sy}}
  /* tường */
  for(let x=0;x<RW;x++){const cam=2*x/RW-1;let rdx=dx+px*cam,rdy=dy+py*cam;if(M.abs(rdx)<1e-9)rdx=1e-9;if(M.abs(rdy)<1e-9)rdy=1e-9;
-  let mx=P.x|0,my=P.y|0;const ddx=M.abs(1/rdx),ddy=M.abs(1/rdy);let sx,sy,sdx,sdy,side=0,h=0;
-  if(rdx<0){sx=-1;sdx=(P.x-mx)*ddx}else{sx=1;sdx=(mx+1-P.x)*ddx}if(rdy<0){sy=-1;sdy=(P.y-my)*ddy}else{sy=1;sdy=(my+1-P.y)*ddy}
+  let mx=CAM.x|0,my=CAM.y|0;const ddx=M.abs(1/rdx),ddy=M.abs(1/rdy);let sx,sy,sdx,sdy,side=0,h=0;
+  if(rdx<0){sx=-1;sdx=(CAM.x-mx)*ddx}else{sx=1;sdx=(mx+1-CAM.x)*ddx}if(rdy<0){sy=-1;sdy=(CAM.y-my)*ddy}else{sy=1;sdy=(my+1-CAM.y)*ddy}
   for(let i=0;i<140;i++){if(sdx<sdy){sdx+=ddx;mx+=sx;side=0}else{sdy+=ddy;my+=sy;side=1}if(mx<0||my<0||mx>=N||my>=N){h=1;break}h=map[my*N+mx];if(h>0)break}
-  let pp=side?sdy-ddy:sdx-ddx;if(pp<.03)pp=.03;zb[x]=pp;const lh=f/pp,ds=hor-lh/2,y0=M.max(0,ds|0),y1=M.min(RH-1,(hor+lh/2)|0);let wx=side?P.x+pp*rdx:P.y+pp*rdy;wx-=M.floor(wx);let tx=(wx*64)|0;if(!side&&rdx>0)tx=63-tx;if(side&&rdy<0)tx=63-tx;
+  let pp=side?sdy-ddy:sdx-ddx;if(pp<.03)pp=.03;zb[x]=pp;const lh=f/pp,ds=hor-lh/2,y0=M.max(0,ds|0),y1=M.min(RH-1,(hor+lh/2)|0);let wx=side?CAM.x+pp*rdx:CAM.y+pp*rdy;wx-=M.floor(wx);let tx=(wx*64)|0;if(!side&&rdx>0)tx=63-tx;if(side&&rdy<0)tx=63-tx;
   const tex=WTX[h]||WTX[1],fo=clamp(pp/FD,0,.94),ia=(((1-fo)*256)*(side?.8:1))|0,ib=(256-((1-fo)*256))|0,step=64/lh;let tp=(y0-ds)*step;
   const glowW=h===13||h===11;
   for(let y=y0;y<=y1;y++){const c=tex[(tp&63)*64+tx];tp+=step;let r=c&255,g=c>>8&255,b=c>>16&255;const A2=glowW?256:ia,B2=glowW?(256-A2)+(side?0:0):ib;buf[y*RW+x]=0xff000000|((((b*A2+fb*(glowW?ib:B2))>>8))<<16)|((((g*A2+fg*(glowW?ib:B2))>>8))<<8)|((r*A2+fr*(glowW?ib:B2))>>8)}}
  /* sprite */
  const L=[];for(const d of DEC){if(M.abs(d.x-P.x)>13||M.abs(d.y-P.y)>13)continue;if(d.gate&&d.gate.done)continue;const o={x:d.x,y:d.y,z:(d.z||0)+(d.bob?M.sin(T*3+d.x)*.05:0),c:SPR[d.k],sz:d.sz,add:d.add,al:d.fl?.55+.4*M.sin(T*9+d.x*3):1};if(d.exitGlow){if(doneN<Q.length)continue;o.sz=1.4+.15*M.sin(T*4);o.z=.45;o.y=d.y;o.x=d.x}o.d=(o.x-P.x)**2+(o.y-P.y)**2;L.push(o)}
  for(const b of burstL){L.push({x:b.x,y:b.y,z:.4,c:SPR.fire,sz:.6+b.t*2.2,add:1,al:1-b.t,d:(b.x-P.x)**2+(b.y-P.y)**2})}
- L.sort((a,b)=>b.d-a.d);for(const o of L)spr(o,FD,fr,fg,fb);
+ L.sort((a,b)=>b.d-a.d);if(camD*camSc>=.3)L.push({x:P.x,y:P.y,c:heroSpr(),sz:1.15*camD*camSc/CAMD,d:0});for(const o of L)spr(o,FD,fr,fg,fb);   // thân nhân vật: cao trên màn hình luôn không đổi dù camera bị ép lại
  vc.putImageData(img,0,0)}
 function spr(o,FD,fr,fg,fb){const sx=o.x-CAM.x,sy=o.y-CAM.y,tx=-1/PL*(CAM.dy*sx-CAM.dx*sy),ty=-1/PL*(-CAM.py*sx+CAM.px*sy);if(ty<.25)return;
  const sh=CAM.f/ty*o.sz,scr=RW/2*(1+tx/ty),bot=CAM.hor+(.5-(o.z||0))*CAM.f/ty,top=bot-sh,x0=M.max(0,(scr-sh/2)|0),x1=M.min(RW-1,(scr+sh/2)|0);if(x1<x0||sh<1)return;
@@ -330,12 +392,13 @@ function drawFx(){
  const w=fxc.width,h=fxc.height;fx.setTransform(1,0,0,1,0,0);fx.clearRect(0,0,w,h);if(!started)return;
  const bob=M.sin(P.bt)*5*u,bob2=M.abs(M.cos(P.bt))*4*u,hx=w*.8+bob,hy=h*1.0+bob2,fl=.85+.15*M.sin(flickT*9)+.05*M.sin(flickT*23);
  if(!TH.sky){const g=fx.createRadialGradient(hx-30*u,hy-190*u,4,hx-30*u,hy-190*u,220*u*fl);g.addColorStop(0,'rgba(255,200,110,.30)');g.addColorStop(1,'rgba(255,150,40,0)');fx.fillStyle=g;fx.fillRect(0,0,w,h)}
- fx.save();fx.translate(hx,hy);fx.rotate(-.12);fx.scale(u*1.05,u*1.05);
+ const fp=camD*camSc<.3;   // góc quá bí, camera áp sát người: lúc đó mới vẽ lại tay + đèn lồng góc nhìn thứ nhất
+ if(!fp){fx.save();fx.translate(hx,hy);fx.rotate(-.12);fx.scale(u*1.05,u*1.05);
  const u0=meU(),sl=u0?COLS[u0.col%COLS.length]:'#2f6fb3';fx.fillStyle=sl;fx.beginPath();fx.moveTo(-34,40);fx.lineTo(34,40);fx.lineTo(96,260);fx.lineTo(-70,260);fx.fill();fx.fillStyle='rgba(0,0,0,.2)';fx.fillRect(-36,34,72,14);
  fx.fillStyle='#f3d6b8';fx.beginPath();fx.ellipse(0,30,26,22,0,0,TAU);fx.fill();
  fx.strokeStyle='#3a3a48';fx.lineWidth=5;fx.beginPath();fx.moveTo(-30,8);fx.lineTo(-30,-60);fx.moveTo(30,8);fx.lineTo(30,-60);fx.stroke();fx.strokeStyle='#5a5a70';fx.lineWidth=7;fx.beginPath();fx.moveTo(-30,-60);fx.quadraticCurveTo(0,-95,30,-60);fx.stroke();
  const gl=fx.createLinearGradient(0,-60,0,10);gl.addColorStop(0,'#ffe9a0');gl.addColorStop(1,'#ffb040');fx.globalAlpha=.55+.4*fl;fx.fillStyle=gl;fx.fillRect(-26,-58,52,66);fx.globalAlpha=1;fx.strokeStyle='#2a2a38';fx.lineWidth=3;fx.strokeRect(-26,-58,52,66);fx.fillStyle='#2a2a38';fx.fillRect(-30,6,60,8);fx.fillRect(-26,-64,52,7);
- fx.restore();
+ fx.restore();}
  fx.fillStyle='rgba(255,255,255,.85)';fx.beginPath();fx.arc(w/2,h/2,2.6*u,0,TAU);fx.fill();
  if(shake>0){}}
 /* ================= Vòng chơi ================= */
@@ -362,7 +425,7 @@ function update(dt){
  hud()}
 function hud(){const left=Q.length-doneN,u0=meU();$('ot').textContent=submitted?'Đã nộp bài':left>0?'Tìm lối ra. Còn '+left+' cổng câu hỏi chặn đường.':'Cổng thoát đã mở! Hãy tìm lối ra.';$('oc').textContent='🧭 '+compass(P.a)+' · 🚪 '+doneN+'/'+Q.length;
  const s=M.floor((Date.now()-startedAt)/1000);$('tm').textContent='⏱ '+(s/60|0)+':'+String(s%60).padStart(2,'0')}
-let last=0;function loop(t){const dt=M.min((t-last)/1000||0,.05);last=t;if(started)update(dt);else{T+=dt;flickT+=dt;P.a+=dt*.15}render();drawFx();requestAnimationFrame(loop)}
+let last=0;function loop(t){const dt=M.min((t-last)/1000||0,.05);last=t;if(started)update(dt);else{T+=dt;flickT+=dt;P.a+=dt*.15}camStep(dt);render();drawFx();requestAnimationFrame(loop)}
 
 /* ================= Câu hỏi ================= */
 const isText=q=>q.inputMode==='text'||q.inputMode==='input'||q.inputMode==='essay'||!q.options||!q.options.length;

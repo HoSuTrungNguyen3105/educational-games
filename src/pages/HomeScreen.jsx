@@ -993,10 +993,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         <header className="gq-top">
           <div className="gq-top__row">
             <div className="gq-logo">
-              {/* <span className="gq-logo__mark" aria-hidden="true"></span> */}
               <img
                 className="gq-logo__mark"
-                src={site.logoUrl || "/educational-games/eduplay-logo.png"}
+                src={site.logoUrl || `${import.meta.env.BASE_URL}logo.svg`}
                 alt={`${site.name || "Lớp Học Vui"} Logo`}
               />
               <span>

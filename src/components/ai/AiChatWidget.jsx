@@ -17,7 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../../services/api.js";
 import { chat } from "../../services/aiApi.js";
-import { useAiAvailability } from "../../hooks/useAiAvailability.js";
+import { markAiFailed, markAiReady, useAiAvailability } from "../../hooks/useAiAvailability.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
 import { AiNotReadyNotice } from "./AiNotReadyNotice.jsx";
 import { Input } from "../ui";
@@ -43,8 +43,9 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
-  // "đang cấu hình, chưa sử dụng được" → hiện thông báo thay vì gọi API và nhận 503.
-  const ai = useAiAvailability(open);
+  // Trạng thái AI dùng chung cho mọi tính năng. Hook này KHÔNG gọi API: ô nhập luôn
+  // dùng được, và chỉ khi bấm gửi mới có một request thật.
+  const ai = useAiAvailability();
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -71,8 +72,10 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
 
   async function send(text) {
     const content = String(text ?? input).trim();
-    // !ai.ready: AI chưa bật — không gửi, để người dùng không nhận lỗi 503 khó hiểu.
-    if (!content || busy || !ai.ready) return;
+    // KHÔNG chặn theo trạng thái AI: request chỉ đi khi người dùng bấm gửi.
+    // Nếu Backend báo chưa bật, catch bên dưới ghi lại để cả bốn tính năng cùng hiện
+    // thông báo "đang được cấu hình" mà không cần gọi thêm endpoint nào.
+    if (!content || busy) return;
 
     setError(null);
     setHint(null);
@@ -100,7 +103,9 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
       });
       setConversationId(res.conversationId || null);
       setMessages((prev) => [...prev, { role: "assistant", content: res.answer }]);
+      markAiReady();
     } catch (e) {
+      markAiFailed(e);
       // Người dùng bấm Huỷ thì im lặng, không báo lỗi.
       if (e?.kind !== "timeout" || !ctrl.signal.aborted) {
         setError(aiErrorText(e));
@@ -189,7 +194,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
             {messages.length === 0 && (
               <div className="flex flex-col items-center text-center px-2 py-6 gap-3">
                 <Bot className="w-10 h-10 text-ink/30 float-slow" />
-                {(ai.loading || ai.ready) && (
+                {!ai.showNotice && (
                   <>
                     <p className="font-display text-base sm:text-sm font-semibold text-ink">
                       Hỏi gì cũng được về bài học
@@ -204,10 +209,11 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                     state={ai.state}
                     notice={ai.notice}
                     hint={ai.hint}
+                    onRetry={ai.refresh}
                     className="text-left w-full"
                   />
                 )}
-                {ai.ready && (
+                {!ai.showNotice && (
                   <div className="flex flex-col gap-1.5 w-full mt-1">
                     {SUGGESTIONS.map((s) => (
                       <button
@@ -283,8 +289,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
               rows={1}
               maxLength={2000}
               enterKeyHint="send"
-              disabled={!ai.ready}
-              placeholder={ai.ready ? "Hỏi về bài học…" : "AI chưa bật — chưa hỏi được"}
+              placeholder="Hỏi về bài học…"
               className="flex-1 resize-none bg-paper rounded-xl px-3 py-2 text-base sm:text-sm font-body
                          text-ink placeholder:text-[#B7A987] outline-none focus:ring-2 focus:ring-ink/10
                          max-h-28 min-h-[44px]"
@@ -303,7 +308,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
             ) : (
               <button
                 type="submit"
-                disabled={!input.trim() || !ai.ready}
+                disabled={!input.trim()}
                 className="w-11 h-11 shrink-0 rounded-full bg-ink text-paper flex items-center justify-center
                            text-sm font-bold hover:bg-ink2 transition disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Gửi"

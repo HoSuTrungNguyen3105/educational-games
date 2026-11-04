@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  logo.svg — mặt ngôi sao vàng, linh vật của EduGames (bản vector phẳng của
+  edu_character.png: mũ tốt nghiệp xanh, một mắt mở một mắt nháy, má hồng,
+  miệng cười). Dùng làm logo trên trang chủ và làm icon.
+  Cỡ 512x512, nền trong suốt, màu phẳng không gradient -> sắc nét ở mọi kích thước.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="EduGames — ngôi sao vàng">
+  <defs>
+    <!-- thân sao 5 cánh bo tròn: tâm (256,274), R=210, r=98 -->
+    <path id="star" d="M242.3 95.1 Q256 64 269.7 95.1 L304.7 174.6 Q313.6 194.7 335.5 196.9 L421.9 205.7 Q455.7 209.1 430.4 231.8 L365.6 289.6 Q349.2 304.3 353.9 325.8 L372.2 410.7 Q379.4 443.9 350.1 426.8 L275 383.1 Q256 372 237 383.1 L161.9 426.8 Q132.6 443.9 139.8 410.7 L158.1 325.8 Q162.8 304.3 146.4 289.6 L81.6 231.8 Q56.3 209.1 90.1 205.7 L176.5 196.9 Q198.4 194.7 207.3 174.6 Z"/>
+    <!-- khoang miệng: giữ răng + lưỡi không tràn ra ngoài môi -->
+    <clipPath id="mouth"><path d="M220 316 Q256 309 292 316 Q288 352 256 356 Q224 352 220 316 Z"/></clipPath>
+  </defs>
+
+  <!-- bóng đậm: cùng hình lệch 8px xuống dưới, tạo khối phẳng không cần gradient -->
+  <use href="#star" fill="#EBA31C" transform="translate(0,8)"/>
+  <use href="#star" fill="#FFC82E"/>
+
+  <!-- sáng nhẹ trên hai cánh bên (bản phẳng của khối bóng trong ảnh 3D) -->
+  <ellipse cx="140" cy="238" rx="30" ry="12" transform="rotate(-24 140 238)" fill="#FFE47A" opacity=".6"/>
+  <ellipse cx="368" cy="244" rx="28" ry="11" transform="rotate(22 368 244)" fill="#FFE47A" opacity=".5"/>
+
+  <!-- ===== MŨ TỐT NGHIỆP ===== -->
+  <!-- phần chụp ôm đỉnh đầu: đáy cong để khớp với đầu sao, không thành hình hộp -->
+  <path d="M208 158 Q202 78 256 62 Q310 78 304 158 Q256 178 208 158 Z" fill="#24509E"/>
+  <!-- bản mũ -->
+  <path d="M120 104 L256 62 L392 104 L256 146 Z" fill="#2F63DA"/>
+  <path d="M120 104 L256 146 L392 104 L392 112 L256 154 L120 112 Z" fill="#1E4290"/>
+  <!-- nút giữa + tua rua rủ xuống cánh phải -->
+  <circle cx="256" cy="104" r="11" fill="#FFC82E"/>
+  <path d="M262 108 Q340 126 390 114 L388 168" fill="none" stroke="#FFC82E" stroke-width="8" stroke-linecap="round"/>
+  <ellipse cx="388" cy="176" rx="14" ry="11" fill="#FFC82E"/>
+  <g stroke="#FFC82E" stroke-width="9" stroke-linecap="round">
+    <path d="M380 185 L375 224"/><path d="M388 187 L388 230"/><path d="M396 185 L402 224"/>
+  </g>
+
+  <!-- ===== MẶT ===== -->
+  <!-- má hồng -->
+  <ellipse cx="192" cy="320" rx="21" ry="11" fill="#FF8A5C" opacity=".62"/>
+  <ellipse cx="322" cy="316" rx="21" ry="11" fill="#FF8A5C" opacity=".62"/>
+
+  <!-- mắt trái mở to + sáng mắt -->
+  <ellipse cx="222" cy="278" rx="30" ry="34" fill="#4A2A17"/>
+  <circle cx="232" cy="265" r="10" fill="#fff"/>
+  <circle cx="213" cy="291" r="4.5" fill="#fff" opacity=".85"/>
+  <!-- mắt phải đang nháy -->
+  <path d="M276 280 Q299 255 322 280" fill="none" stroke="#4A2A17" stroke-width="10" stroke-linecap="round"/>
+  <!-- chân mày -->
+  <g fill="none" stroke="#4A2A17" stroke-width="9" stroke-linecap="round">
+    <path d="M196 244 Q221 227 246 242"/>
+    <path d="M272 238 Q297 225 320 240"/>
+  </g>
+
+  <!-- miệng cười: khoang tối + hàm răng + lưỡi -->
+  <path d="M220 316 Q256 309 292 316 Q288 352 256 356 Q224 352 220 316 Z" fill="#8C2F22"/>
+  <g clip-path="url(#mouth)">
+    <path d="M222 315 Q256 309 290 315 L288 326 Q256 320 224 326 Z" fill="#fff"/>
+    <ellipse cx="256" cy="350" rx="20" ry="13" fill="#FF6B6B"/>
+  </g>
+</svg>

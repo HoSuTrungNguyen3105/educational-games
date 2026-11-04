@@ -144,41 +144,44 @@ export async function getSystemStatus({ force = false } = {}) {
   // ── Trợ lý AI ──
   // Chỉ hỏi AI Service qua aiBackendService (địa chỉ nội bộ, service token không lộ ra
   // frontend). KHÔNG gọi thẳng Ollama: trình duyệt và trang này không cần biết Ollama
-  // chạy ở đâu, và một lần gọi thật sẽ nạp model vào RAM/VRAM — trang trạng thái chỉ đọc.
+  // chạy ở đâu. Quan trọng hơn: công tắc còn TẮT thì KHÔNG gọi sang AI Service kể cả
+  // /health — trang trạng thái phải tuyệt đối không chạm tới model trên máy chưa sẵn sàng.
   let ai = {
     state: "off",
     label: "Đang cấu hình",
     enabled: false,
+    checked: false,
     model: null,
     provider: null,
-    detail: "AI chưa được bật trong Cấu hình hệ thống.",
+    detail: "AI chưa bật trong Cấu hình hệ thống — chưa kiểm tra máy chủ AI.",
     latencyMs: 0,
     error: null,
   };
   try {
     ai.enabled = (await getConfigValue("ai.enabled")) === true;
-    const t = performance.now();
-    const h = await aiBackendHealth();  // không ném lỗi, đã có timeout 2.5s
-    const serviceReady = h?.status === true;
-    ai = {
-      enabled: ai.enabled,
-      model: h?.model ?? null,
-      provider: h?.provider ?? null,
-      latencyMs: ms(t),
-      // Chưa bật công tắc thì tính năng chắc chắn chưa dùng được, bất kể AI Service sống hay chết.
-      state: !ai.enabled ? "off" : serviceReady ? "ok" : h?.configured ? "error" : "warn",
-      label: !ai.enabled
-        ? "Đang cấu hình"
-        : serviceReady
+    if (!ai.enabled) {
+      // Đường này không phát sinh request nào tới AI Service.
+      ai = { ...ai, state: "off", label: "Đang cấu hình" };
+    } else {
+      const t = performance.now();
+      const h = await aiBackendHealth();  // không ném lỗi, đã có timeout 2.5s
+      const serviceReady = h?.status === true;
+      ai = {
+        enabled: true,
+        checked: true,
+        model: h?.model ?? null,
+        provider: h?.provider ?? null,
+        latencyMs: ms(t),
+        state: serviceReady ? "ok" : h?.configured ? "error" : "warn",
+        label: serviceReady
           ? "Sẵn sàng"
           : h?.configured
             ? "Không gọi được AI Service"
             : "Chưa cấu hình service token",
-      detail: !ai.enabled
-        ? `AI chưa bật trong Cấu hình hệ thống. AI Service: ${h?.detail || "chưa phản hồi"}.`
-        : h?.detail || "",
-      error: ai.enabled && !serviceReady ? h?.detail || "AI Service không phản hồi." : null,
-    };
+        detail: h?.detail || "",
+        error: serviceReady ? null : h?.detail || "AI Service không phản hồi.",
+      };
+    }
   } catch (e) {
     // Probe không được phép làm hỏng cả trang trạng thái.
     ai = { ...ai, state: "error", label: "Không kiểm tra được", error: e.message };

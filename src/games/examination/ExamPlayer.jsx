@@ -8,7 +8,6 @@ import { getExamTemplate } from "./templates.js";
  * Mẫu đề thi không tự gọi API (xem thithap.html, thithap-3d.html): câu hỏi do
  * component này đẩy xuống, đáp án đi ngược lên và được server chấm. Nhờ vậy
  * điểm hiển thị trong game đúng bằng điểm giáo viên thấy.
- *
  * Giao thức postMessage:
  *   iframe → cha : ready | answer-recorded | answers | game-over | exam-done
  *   cha → iframe : init { questions, playerName, title }

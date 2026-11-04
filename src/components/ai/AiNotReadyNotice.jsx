@@ -19,6 +19,7 @@ export function AiNotReadyNotice({
   hint,
   variant = "card",
   className = "",
+  onRetry,
 }) {
   const text =
     notice || (state === "unavailable"
@@ -28,6 +29,18 @@ export function AiNotReadyNotice({
   const sub = hint || (state === "unavailable"
     ? "Thử lại sau một lát nhé."
     : "Quản trị viên sẽ bật khi máy chủ AI hoàn tất cấu hình.");
+
+  // Nút "Kiểm tra lại" do người dùng bấm — đây là đường duy nhất chủ động hỏi lại Backend
+  // (hook không tự ping, không polling).
+  const retry = onRetry ? (
+    <button
+      type="button"
+      onClick={() => onRetry()}
+      className="mt-2 text-[11px] font-semibold text-[#8a6a10] underline underline-offset-2 hover:text-ink"
+    >
+      Kiểm tra lại
+    </button>
+  ) : null;
 
   const icon = state === "checking"
     ? <Loader2 className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" />
@@ -40,6 +53,7 @@ export function AiNotReadyNotice({
         <span>
           <span className="block font-medium text-ink">{text}</span>
           <span className="block mt-0.5">{sub}</span>
+          {retry && <span className="block">{retry}</span>}
         </span>
       </div>
     );
@@ -51,6 +65,7 @@ export function AiNotReadyNotice({
       <div className="min-w-0">
         <p className="text-[13px] font-medium text-ink leading-snug break-words">{text}</p>
         <p className="text-[11px] text-[#8A7C63] leading-snug mt-0.5 break-words">{sub}</p>
+        {retry}
       </div>
     </div>
   );

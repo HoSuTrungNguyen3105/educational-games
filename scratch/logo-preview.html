@@ -1,0 +1,52 @@
+<!doctype html>
+<!-- Xem thử logo.svg mới trong đúng header trang chủ (dùng home-gq.css thật).
+     Render: chrome --headless --window-size=375,180 --screenshot=... logo-preview.html -->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../src/pages/home-gq.css">
+<style>
+  /* thay Tailwind trong app: chỉ cần icon là ô vuông màu */
+  .ico{width:20px;height:20px;border-radius:5px;display:inline-block;background:#f0a41c}
+  .ico--star{background:#fbbf24;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+  .ico--vol,.ico--set{background:#7c8aa0}
+  body{margin:0;font-family:"Fredoka","Be Vietnam Pro",system-ui,sans-serif}
+</style>
+</head>
+<body class="gq-home">
+<div class="gq-page">
+  <header class="gq-top">
+    <div class="gq-top__row" id="row">
+      <div class="gq-logo">
+        <img class="gq-logo__mark" src="../public/logo.svg" alt="Lớp Học Vui Logo">
+        <span>
+          <span class="gq-logo__name">Lớp Học Vui</span>
+          <span class="gq-logo__sub">EDUGAMES</span>
+        </span>
+      </div>
+      <div class="gq-actions">
+        <button class="gq-iconbtn"><i class="ico"></i><span class="gq-iconbtn__n">1.2k</span></button>
+        <button class="gq-iconbtn"><i class="ico ico--star"></i><span class="gq-iconbtn__n">18</span></button>
+        <button class="gq-iconbtn"><i class="ico ico--vol"></i></button>
+        <button class="gq-iconbtn"><i class="ico ico--set"></i><span class="gq-iconbtn__n">3</span></button>
+      </div>
+    </div>
+  </header>
+</div>
+<script>
+function measure(){
+  const r=document.getElementById('row');
+  document.getElementById('out').textContent=[
+    'viewport '+innerWidth,
+    'row scrollWidth '+r.scrollWidth+' / clientWidth '+r.clientWidth,
+    r.scrollWidth>r.clientWidth+1?'TRÀN HEADER':'header vừa',
+    'mark '+Math.round(document.querySelector('.gq-logo__mark').getBoundingClientRect().width)+'px'
+  ].join(' · ');
+}
+addEventListener('load',measure);
+addEventListener('DOMContentLoaded',measure);
+</script>
+<pre id="out" style="font:12px monospace;margin:8px 12px;color:#1d2e4a">…</pre>
+</body>
+</html>

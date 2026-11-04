@@ -86,8 +86,10 @@
   flex-shrink: 0;
 }
 .gq-logo__mark {
-  width: 150px;
-  height: 66px;
+  /* logo.svg là icon ngôi sao vuông 1:1 (không còn lockup ngang như PNG cũ)
+     -> để ô vuông nhỏ, chừa chỗ cho tên trang + cụm nút trên màn hẹp. */
+  width: 52px;
+  height: 52px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
@@ -1085,6 +1087,7 @@
   .gq-mini__lbl { font-size: 14px; }
   .gq-random { min-height: 56px; font-size: 14px; }
   .gq-random__ico { font-size: 24px; }
+  .gq-logo__mark { width: 64px; height: 64px; }
   .gq-logo__name { font-size: 22px; }
   .gq-logo__sub { font-size: 11px; }
   .gq-iconbtn { width: 46px; height: 46px; font-size: 21px; }
@@ -1112,6 +1115,7 @@
   .gq-navtab { height: 36px; padding: 0 11px; font-size: 12px; }
   .gq-petchip { height: 36px; padding: 0 11px 0 4px; }
   .gq-petchip__sub { display: none; }
+  .gq-logo__mark { width: 44px; height: 44px; }
   .gq-logo__name { font-size: 16px; }
   /* Header một hàng gọn trên màn hình hẹp: ẩn chip tuổi (tên + tuổi bé đã có
      trong lời chào hero và trang hồ sơ) và chữ phụ "EDUGAMES", cho tên logo

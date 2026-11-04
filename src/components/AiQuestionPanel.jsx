@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { API_BASE } from "../services/api.js";
 import { generateQuestions, DIFFICULTIES } from "../services/aiApi.js";
-import { useAiAvailability } from "../hooks/useAiAvailability.js";
+import { markAiFailed, markAiReady, useAiAvailability } from "../hooks/useAiAvailability.js";
 import { AiNotReadyNotice } from "./ai/AiNotReadyNotice.jsx";
 import { GhostButton } from "./ui";
 import Field from "./fields.jsx";
@@ -54,14 +54,15 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
   const [picked, setPicked] = useState(() => ({}));   // id → true
   const abortRef = useRef(null);
 
-  // Trí năng nhân tạo chưa bật trong Cấu hình hệ thống → chặn nút, hiện cùng một thông báo.
+  // Trí năng nhân tạo chưa bật trong Cấu hình hệ thống → nút "Sinh câu hỏi" sẽ bị chặn
+  // sau khi có một response báo vậy (hook không tự gọi API để kiểm tra trước).
   const ai = useAiAvailability();
 
   const total = result?.questions?.length || 0;
   const chosenIds = Object.keys(picked).filter((k) => picked[k]);
 
   async function run() {
-    if (!ai.ready) return;
+    if (ai.showNotice) return;
     setError(null);
     setBusy(true);
     setResult(null);
@@ -77,6 +78,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
         signal: ctrl.signal,
       });
       setResult(res);
+      markAiReady();
       // Mặc định tick tất cả, trừ câu thiếu đáp án đúng thì để giáo viên chọn tay
       const init = {};
       for (const q of res.questions) init[q.id] = !!q.correctAnswer;
@@ -87,6 +89,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
         showToast(`AI đã sinh ${res.questions.length} câu`, "success");
       }
     } catch (e) {
+      markAiFailed(e);
       if (e?.kind !== "timeout" || !ctrl.signal.aborted) setError(errText(e));
     } finally {
       setBusy(false);
@@ -176,7 +179,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
           </div>
 
           {ai.showNotice && (
-            <AiNotReadyNotice state={ai.state} notice={ai.notice} hint={ai.hint} className="mt-1" />
+            <AiNotReadyNotice state={ai.state} notice={ai.notice} hint={ai.hint} onRetry={ai.refresh} className="mt-1" />
           )}
 
           <div className="flex gap-2">
@@ -186,7 +189,7 @@ export default function AiQuestionPanel({ form, onAdd, showToast }) {
               <button
                 type="button"
                 onClick={run}
-                disabled={!ai.ready}
+                disabled={ai.showNotice}
                 className="flex-1 min-h-[44px] rounded-xl bg-violet-600 text-white px-4 py-2 text-sm font-bold shadow-sm hover:bg-violet-700 transition active:scale-[.98] inline-flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-violet-600"
               >
                 <Sparkles className="w-4 h-4" /> Sinh câu hỏi

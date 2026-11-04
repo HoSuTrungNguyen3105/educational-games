@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { explain } from "../../services/aiApi.js";
-import { useAiAvailability } from "../../hooks/useAiAvailability.js";
+import { markAiFailed, markAiReady, useAiAvailability } from "../../hooks/useAiAvailability.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
 import { AiNotReadyNotice } from "./AiNotReadyNotice.jsx";
 import { Input } from "../ui";
@@ -44,8 +44,9 @@ export default function AiExplainSheet({
   const busyRef = useRef(false);
   const bottomRef = useRef(null);
 
-  // Chưa bật AI (system_config.ai.enabled = false) → hiện thông báo, không gọi /api/ai/explain.
-  const ai = useAiAvailability(open);
+  // Trạng thái AI dùng chung. Hook không gọi API — chỉ ghi nhận kết quả của chính
+  // những request mà học sinh tạo ra.
+  const ai = useAiAvailability();
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -101,7 +102,9 @@ export default function AiExplainSheet({
         ]);
         if (reveal) setRevealed(true);
         if (typeof res.isCorrect === "boolean") setIsCorrect(res.isCorrect);
+        markAiReady();
       } catch (e) {
+        markAiFailed(e);
         // Người dùng đóng panel giữa chừng thì im lặng, không báo lỗi.
         if (ctrl.signal.aborted && e?.kind === "timeout") return;
         setError(aiErrorText(e));
@@ -115,16 +118,8 @@ export default function AiExplainSheet({
     [answer, gameId, questionId]
   );
 
-  // Tự hỏi ngay khi mở panel — học sinh chỉ cần một chạm. Trễ một nhịp để trạng
-  // thái "AI đang nghĩ…" kịp vẽ trước khi request đi.
-  // `ai.ready` chưa xác định (đang ping) hoặc AI chưa bật → KHÔNG gọi, panel sẽ hiện
-  // thông báo "đang được cấu hình, chưa sử dụng được" thay vì một lỗi 503 khó hiểu.
-  useEffect(() => {
-    if (!open || !questionId || needsLogin) return undefined;
-    if (ai.loading || !ai.ready) return undefined;
-    const t = setTimeout(() => ask(), 0);
-    return () => clearTimeout(t);
-  }, [open, questionId, needsLogin, ask, ai.loading, ai.ready]);
+  // KHÔNG tự gọi AI khi mở panel: phải có một thao tác của học sinh (bấm "Nhờ AI gợi ý"
+  // hoặc gõ câu hỏi) thì Backend AI mới nhận request — xem khối nút bên dưới.
 
   if (!open) return null;
 
@@ -135,7 +130,7 @@ export default function AiExplainSheet({
     ask({ followUp: text });
   }
 
-  const canReveal = Boolean(questionId) && !revealed && !busy && !needsLogin && ai.ready;
+  const canReveal = Boolean(questionId) && !revealed && !busy && !needsLogin && !ai.showNotice;
   const followUpsLeft = MAX_FOLLOW_UPS - turns.filter((t) => t.role === "user").length;
 
   return (
@@ -195,11 +190,30 @@ export default function AiExplainSheet({
             state={ai.state}
             notice={ai.notice}
             hint={ai.hint}
+            onRetry={ai.refresh}
             className="mt-1"
           />
         )}
 
-        {!needsLogin && (ai.loading || ai.ready) && turns.length === 0 && !error && (
+        {/* Chưa có lượt nào → hiện nút bắt đầu. Panel MỞ không không gây request AI nào:
+            phải bấm "Nhờ AI gợi ý" (hoặc gõ câu hỏi) thì mới có một cuộc gọi. */}
+        {!needsLogin && !ai.showNotice && turns.length === 0 && !error && !busy && (
+          <div className="rounded-xl border border-ink/10 bg-white px-3 py-3">
+            <p className="text-xs text-[#8A7C63] leading-relaxed">
+              Mình sẽ gợi ý từng bước để bạn tự tìm ra đáp án, chưa đưa kết quả ngay.
+            </p>
+            <button
+              type="button"
+              onClick={() => ask()}
+              className="mt-2 w-full min-h-[44px] rounded-2xl bg-ink text-paper font-display font-semibold text-sm
+                         hover:bg-ink2 active:scale-[.98] transition inline-flex items-center justify-center gap-1.5"
+            >
+              <Lightbulb className="w-4 h-4" /> Nhờ AI gợi ý
+            </button>
+          </div>
+        )}
+
+        {busy && turns.length === 0 && (
           <div className="flex items-center gap-2 text-ink/60">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink/40 animate-pulse" />
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink/40 animate-pulse" />
@@ -265,7 +279,7 @@ export default function AiExplainSheet({
           </button>
         )}
 
-        {!needsLogin && ai.ready && (
+        {!needsLogin && !ai.showNotice && (
           <form
             onSubmit={(e) => {
               e.preventDefault();

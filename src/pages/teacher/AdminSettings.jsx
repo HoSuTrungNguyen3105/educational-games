@@ -545,7 +545,9 @@ export default function AdminSettings({ user, showToast }) {
               { k: 'MongoDB', s: st.mongo, extra: st.mongo ? `${st.mongo.dbName} · ${st.mongo.collections} collection` : '' },
               { k: 'Supabase Storage', s: st.storage, extra: st.storage ? `${st.storage.bucket} · ${st.storage.objects ?? 0} file HTML` : '' },
               { k: 'Tải file HTML game', s: st.html, extra: st.html?.checked ? `${st.html.checked} file thử tải · ${st.html.latencyMs}ms` : '' },
-              { k: 'Trợ lý AI', s: st.ai, extra: st.ai ? `${st.ai.model || 'chưa rõ model'} · ${st.ai.provider || 'không rõ nguồn'}${st.ai.enabled ? '' : ' · công tắc đang tắt'}` : '' },
+              { k: 'Trợ lý AI', s: st.ai, extra: st.ai ? (st.ai.checked
+                ? `${st.ai.model || 'chưa rõ model'} · ${st.ai.provider || 'không rõ nguồn'}${st.ai.enabled ? '' : ' · công tắc đang tắt'}`
+                : 'chưa kiểm tra — công tắc đang tắt nên Backend không gọi sang máy chủ AI') : '' },
             ].map((row) => (
               <div key={row.k} className="rounded-lg border border-ink/10 bg-white/60 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2">

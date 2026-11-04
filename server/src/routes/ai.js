@@ -102,7 +102,10 @@ router.get("/health", async (_req, res) => {
     ...health,
     featureEnabled: true,
     available,
-    notice: available ? null : health?.detail || AI_UNAVAILABLE_MESSAGE,
+    // `notice` là câu hiển thị cho học sinh → luôn dùng câu chuẩn, KHÔNG đưa `detail`
+    // (tên model, HTTP code, địa chỉ AI Service) vào đây. `detail` vẫn về ở field riêng
+    // để trang Cài đặt quản trị dùng.
+    notice: available ? null : AI_UNAVAILABLE_MESSAGE,
   });
 });
 

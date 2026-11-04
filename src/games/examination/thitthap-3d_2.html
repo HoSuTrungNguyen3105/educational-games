@@ -1126,6 +1126,34 @@
         const mark = (t, c) => sp(x => { x.fillStyle = c; x.font = 'bold 110px system-ui'; x.textAlign = 'center'; x.fillText(t, 64, 104); x.strokeStyle = '#fff'; x.lineWidth = 5; x.strokeText(t, 64, 104); x.fillText(t, 64, 104) });
         const npcS = o => sp(x => { shd(x); x.fillStyle = o.pants; x.fillRect(46, 84, 14, 34); x.fillRect(68, 84, 14, 34); x.fillStyle = '#3a2a20'; x.fillRect(44, 114, 18, 7); x.fillRect(66, 114, 18, 7); poly(x, [[42, 50], [86, 50], [90, 90], [38, 90]], o.top); x.fillStyle = o.top2; x.fillRect(38, 84, 52, 8); x.fillRect(60, 50, 8, 36); x.strokeStyle = o.top; x.lineWidth = 11; x.lineCap = 'round'; x.beginPath(); x.moveTo(42, 56); x.lineTo(32, 86); x.moveTo(86, 56); x.lineTo(96, 86); x.stroke(); ell(x, 31, 90, 6, 6, o.skin); ell(x, 97, 90, 6, 6, o.skin); ell(x, 64, 34, 20, 22, o.skin); x.fillStyle = o.hair; x.beginPath(); x.arc(64, 30, 21, M.PI, 0); x.fill(); x.fillRect(43, 28, 6, 16); ell(x, 55, 36, 3, 4, '#222'); ell(x, 73, 36, 3, 4, '#222'); x.strokeStyle = '#7a3b2a'; x.lineWidth = 2; x.beginPath(); x.arc(64, 44, 5, .3, M.PI - .3); x.stroke(); if (o.beard) poly(x, [[46, 42], [82, 42], [64, 70]], o.beard); if (o.hat) { ell(x, 64, 16, 30, 6, o.hat); poly(x, [[46, 16], [52, 0], [76, 0], [82, 16]], o.hat) } if (o.gl) { x.strokeStyle = '#222'; x.lineWidth = 2; x.beginPath(); x.arc(55, 36, 7, 0, TAU); x.moveTo(69, 36); x.arc(73, 36, 7, 0, TAU); x.stroke() } if (o.helm) { poly(x, [[42, 30], [46, 10], [82, 10], [86, 30], [78, 26], [50, 26]], o.helm); x.fillStyle = '#d94a3a'; x.fillRect(60, 2, 8, 12) } });
         const SPR = { sl: [slimeS('#ffb0a0', '#e0442c'), slimeS('#a8e0ff', '#2a7ad8'), slimeS('#c8f0a0', '#4aa83a')], gob: gobS('#6fae45', '#7a4a2a', 'club'), arch: gobS('#8ac04f', '#3f5a2a', 'bow'), bat: batS, boss: golemS, t: [treeS('#7fd070', '#2f8a3c'), treeS('#a8d85a', '#4a8f2a'), pineS], stump: stumpS, chest: chestS, cry: crysS('rgba(160,230,255,.9)', 'rgba(80,160,255,0)', '#6fd6ff', '#c8f2ff', '#3aa0e0'), gem: crysS('rgba(255,200,120,.9)', 'rgba(255,120,40,0)', '#ff9a3a', '#ffd9a0', '#d9601a'), heart: heartS, fire: glow('rgba(255,170,40,.95)'), expl: glow('rgba(255,120,30,.9)'), ex: mark('!', '#ffcc33'), qm: mark('?', '#ffcc33'), torch: torchS, camp: campS, arrow: arrowS, tuft: tuftS, fl0: flwS('#ffffff'), fl1: flwS('#ffd54f'), fl2: flwS('#f48fb1') };
+        /* ---- nhân vật nhìn từ SAU LƯNG (phục vụ camera 3 người, giống thap-may) ----
+           8 khung cho một vòng bước + 1 khung vung kiếm. tô theo màu áo đang chọn (sleeve),
+           nên chỉ dựng lại một lần khi người chơi đổi màu ở quầy trang phục. */
+        const HF = 8; let HFR = [], HSK = null, hpx = 0, hpy = 0;
+        function heroBack(x, ph, sl, atk) {
+            const sk = '#f3d6b8', hr = '#412c1c', pn = '#4f5573', st = '#2c2735', sw = M.sin(ph), sw2 = M.sin(ph + M.PI);
+            shd(x); x.lineCap = 'round';
+            for (const [s, side] of [[sw, -1], [sw2, 1]]) { const fx_ = 64 + side * 10 + s * 11, fy = 117 - M.max(0, s) * 7;
+                x.strokeStyle = pn; x.lineWidth = 13; x.beginPath(); x.moveTo(64 + side * 7, 88); x.lineTo(fx_, fy); x.stroke();
+                ell(x, fx_ + side * 2, fy + 3, 9.5, 6, st) }
+            poly(x, [[44, 52], [84, 52], [88, 90], [40, 90]], sl);
+            x.fillStyle = 'rgba(0,0,0,.2)'; x.fillRect(40, 83, 48, 7);
+            x.strokeStyle = 'rgba(255,255,255,.16)'; x.lineWidth = 3; x.beginPath(); x.moveTo(64, 55); x.lineTo(64, 83); x.stroke();
+            x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = 5; x.beginPath(); x.moveTo(50, 55); x.lineTo(58, 86); x.moveTo(78, 55); x.lineTo(70, 86); x.stroke();
+            x.fillStyle = '#8a5a30'; x.fillRect(52, 60, 24, 20); x.fillStyle = '#d9b45a'; x.fillRect(60, 66, 8, 8);
+            const aL = atk ? [30, 42] : [34, 58 + 26 * M.cos(sw2 * .8)], aR = atk ? [98, 34] : [94, 58 + 26 * M.cos(sw * .8)];
+            x.strokeStyle = sl; x.lineWidth = 11; x.beginPath(); x.moveTo(44, 58); x.lineTo(aL[0], aL[1]); x.moveTo(84, 58); x.lineTo(aR[0], aR[1]); x.stroke();
+            x.fillStyle = sk; ell(x, aL[0], aL[1] + 3, 6, 6, sk); ell(x, aR[0], aR[1] + 3, 6, 6, sk);
+            if (atk) { const g = x.createLinearGradient(98, 34, 116, 6); g.addColorStop(0, '#e8f0ff'); g.addColorStop(1, '#8a9ab0'); x.strokeStyle = g; x.lineWidth = 6; x.beginPath(); x.moveTo(98, 34); x.lineTo(116, 6); x.stroke() }
+            x.fillStyle = sk; x.fillRect(58, 42, 13, 12); ell(x, 64, 32, 20, 22, sk);
+            x.fillStyle = hr; x.beginPath(); x.arc(64, 31, 21, M.PI, 0); x.fill(); x.fillRect(43, 29, 6, 20); x.fillRect(79, 29, 6, 20); ell(x, 64, 27, 19, 17, hr);
+            ell(x, 64, 45, 11, 4, 'rgba(0,0,0,.16)')
+        }
+        function heroUp() { HFR = []; for (let i = 0; i < HF; i++) HFR.push(sp(x => heroBack(x, i / HF * TAU, sleeve, 0))); HFR.push(sp(x => heroBack(x, 0, sleeve, 1))); HSK = sleeve }
+        function heroSpr() { if (!HFR.length || HSK !== sleeve) heroUp();
+            const mov = (P.x - hpx) ** 2 + (P.y - hpy) ** 2 > 2e-5; hpx = P.x; hpy = P.y;
+            if (P.sw > 0 || P.cast > 0) return HFR[HF];
+            return mov ? HFR[(P.bt * 1.3 | 0) % HF] : HFR[0] }
         const NP = [
             { n: 'Trưởng làng Mộc', x: 8.6, y: 8.0, spr: npcS({ skin: '#f3d6b8', hair: '#d8d8d8', beard: '#e6e6e6', top: '#8a5a30', top2: '#e8d8b0', pants: '#4a6a4a', hat: '#d9b45a' }), s: ['Thủ vệ đứng dọc theo đường đất, dấu ❗ trên đầu chúng là câu hỏi đang chờ.', 'Cứ nhìn mũi tên và bản đồ nhỏ, đường đi sẽ dẫn ngươi tới thủ vệ tiếp theo.'] },
             { n: 'Học giả Lam', x: 6.2, y: 10.6, spr: npcS({ skin: '#f3d6b8', hair: '#2a3a6a', top: '#3f6fc4', top2: '#fff', pants: '#f2ede0', gl: 1 }), s: ['Đáp án đúng sẽ chỉ hiện sau khi ngươi nộp bài ở chỗ Thạch Giáp.', 'Hết giờ thì thủ vệ tung đòn đánh ngươi, nhớ đọc kỹ trước khi chốt!'] },
@@ -1178,6 +1206,25 @@
 
         const P = { x: 9.5, y: 10.4, a: -1.8, pt: 0, hp: 100, mx: 100, ac: 0, sw: 0, cmb: 0, cast: 0, dd: 0, da: 0, inv: 0, hurt: 0, bt: 0, dead: 0, wpn: 0, cdD: 0 };
         let E = [], IT = [], PR = [], EP = [], XP = [], FT = [], T = 0, dl = null, started = 0, shake = 0, flash = 0, sleeve = '#2f6fb3', env = 0, curZone = '';
+        /* ---- CAMERA SAU LƯNG (góc 3 người, làm theo thap-may) ----
+           Mắt nhìn theo đúng hướng P.a nhưng đứng lùi về sau nhân vật CAMD ô bản đồ, nên thấy
+           lưng nhân vật ngay giữa màn hình. camA đuổi theo P.a (mềm) => lúc quay camera vung
+           nhẹ sang bên chứ không giật; khoảng lùi co dần khi sau lưng là tường và mắt luôn
+           được chọn trên các điểm ĐÃ KIỂM TRA trống nên không bao giờ chui vào khối.
+           camSc = tỉ lệ khoảng lùi còn dùng được: 1 là thấy rõ lưng, gần 0 là góc quá bí,
+           camera sát vào người (qu về góc nhìn thứ nhất) và hình nhân vật mờ dần cho khỏi "bật". */
+        const CAMD = 1.9; let camA = P.a, camD = CAMD, camX = P.x, camY = P.y, camSc = 1;
+        function camStep(dt) {
+            const cc = M.cos(P.a), ss = M.sin(P.a);
+            camA += aD(P.a - camA) * M.min(1, dt * 7);
+            const sw = clamp(aD(P.a - camA) * .5, -.2, .2);
+            let d = CAMD;
+            for (let k = 1; k <= 16; k++) { const t = CAMD * k / 16; if (solid(P.x - cc * t, P.y - ss * t)) { d = M.max(.45, t - .2); break } }
+            camD += (d - camD) * M.min(1, dt * 12);
+            let ex = P.x, ey = P.y, m = 0;
+            for (const s of [1, .75, .5, .25]) { const tx = P.x - (cc + ss * sw) * camD * s, ty = P.y - (ss - cc * sw) * camD * s; if (!solid(tx, ty)) { ex = tx; ey = ty; m = s; break } }
+            camSc = m; camX = ex; camY = ey;
+        }
         const ED = { slime: { n: 'Slime', r: .3, sz: .62 }, gob: { n: 'Goblin', r: .3, sz: .95 }, arch: { n: 'Goblin xạ thủ', r: .3, sz: .95 }, bat: { n: 'Dơi hang', r: .25, sz: .55 }, boss: { n: 'Thạch Giáp', r: .65, sz: 2.3 } };
         let Q = [], demo = false, A = [], GD = [], boss = null, qOpen = -1, qT0 = 0, qLim = 30, qBeep = 99, tabOut = 0, startedAt = 0, submitting = 0, submitted = 0, revealing = 0, shopOpen = 0, doneN = 0, pName = '';
         const aD = a => M.atan2(M.sin(a), M.cos(a));
@@ -1428,12 +1475,12 @@
         const CLD = Array.from({ length: 9 }, () => ({ a: R() * TAU, h: R() * .16, w: .1 + R() * .1 }));
         function render() {
             const hor = RH / 2 + P.pt * RH * .6, hr = hor | 0, f = (RW / 2) / PL; let sa = P.a; if (shake > 0) sa += (R() - .5) * shake * .06;
-            const dx = M.cos(sa), dy = M.sin(sa), plx = -dy * PL, ply = dx * PL; Object.assign(CAM, { x: P.x, y: P.y, dx, dy, px: plx, py: ply, inv: -1 / PL, f, hor });
+            const dx = M.cos(sa), dy = M.sin(sa), plx = -dy * PL, ply = dx * PL; Object.assign(CAM, { x: camX, y: camY, dx, dy, px: plx, py: ply, inv: -1 / PL, f, hor });
             const e1 = 1 - env, FDm = 14 - 6 * env, fcr = (190 * e1 + 20 * env) | 0, fcg = (215 * e1 + 22 * env) | 0, fcb = (240 * e1 + 36 * env) | 0, fogA = `rgb(${fcr},${fcg},${fcb})`, fogB = `rgb(${(70 * e1 + 12 * env) | 0},${(80 * e1 + 13 * env) | 0},${(120 * e1 + 24 * env) | 0})`;
             for (let y = 0; y < M.min(hr, RH); y++) { const t = M.floor(y / M.max(1, hr) * 5) / 5; const r = ((90 + t * 100) * e1 + (26 + t * 20) * env) | 0, g = ((150 + t * 65) * e1 + (24 + t * 18) * env) | 0, b = ((235 + t * 5) * e1 + (40 + t * 26) * env) | 0; buf.fill(0xff000000 | (b << 16) | (g << 8) | r, y * RW, (y + 1) * RW) }
             const rx0 = dx - plx, ry0 = dy - ply, rx1 = dx + plx, ry1 = dy + ply, wo = (T * 14) | 0, wo2 = (T * 9) | 0;
             for (let y = M.max(0, hr + 1); y < RH; y++) {
-                const rd = .5 * f / (y - hor), fo = clamp(rd / FDm, 0, .85), ia = ((1 - fo) * 256) | 0, ib = (fo * 256) | 0, sx = rd * (rx1 - rx0) / RW, sy = rd * (ry1 - ry0) / RW; let fx_ = P.x + rd * rx0, fy_ = P.y + rd * ry0; const o = y * RW;
+                const rd = .5 * f / (y - hor), fo = clamp(rd / FDm, 0, .85), ia = ((1 - fo) * 256) | 0, ib = (fo * 256) | 0, sx = rd * (rx1 - rx0) / RW, sy = rd * (ry1 - ry0) / RW; let fx_ = CAM.x + rd * rx0, fy_ = CAM.y + rd * ry0; const o = y * RW;
                 for (let x = 0; x < RW; x++) {
                     const mx = fx_ | 0, my = fy_ | 0, ti = (mx >= 0 && my >= 0 && mx < N && my < N) ? FM[my * N + mx] : 0, tu = ((fx_ - mx) * 64) & 63, tv = ((fy_ - my) * 64) & 63; let c;
                     if (ti === 0) c = ((mx * 7 + my * 13) % 9 === 0 ? FF : ((mx + my) & 1 ? FG : FG2))[tv * 64 + tu]; else if (ti === 2) c = FW[((tv + wo) & 63) * 64 + ((tu + wo2) & 63)]; else c = FX[ti][tv * 64 + tu];
@@ -1445,10 +1492,10 @@
             const sdf = aD(-.9 - sa); if (env < .3 && M.abs(sdf) < 1.2) { const sxp = RW / 2 * (1 + M.tan(sdf) / PL); vc.fillStyle = '#ffe27a'; vc.beginPath(); vc.arc(sxp, hor - RH * .3, RH * .07, 0, TAU); vc.fill(); vc.strokeStyle = '#ffb43a'; vc.lineWidth = 1.5; vc.stroke() }
             let ph = -1, pmx = 0, pmy = 0, pside = 0; for (let x = 0; x < RW; x++) {
                 const cam = 2 * x / RW - 1; let rdx = dx + plx * cam, rdy = dy + ply * cam; if (M.abs(rdx) < 1e-9) rdx = 1e-9; if (M.abs(rdy) < 1e-9) rdy = 1e-9;
-                let mx = P.x | 0, my = P.y | 0; const ddx = M.abs(1 / rdx), ddy = M.abs(1 / rdy); let sx, sy, sdx, sdy, side = 0, h = 0;
-                if (rdx < 0) { sx = -1; sdx = (P.x - mx) * ddx } else { sx = 1; sdx = (mx + 1 - P.x) * ddx } if (rdy < 0) { sy = -1; sdy = (P.y - my) * ddy } else { sy = 1; sdy = (my + 1 - P.y) * ddy }
+                let mx = CAM.x | 0, my = CAM.y | 0; const ddx = M.abs(1 / rdx), ddy = M.abs(1 / rdy); let sx, sy, sdx, sdy, side = 0, h = 0;
+                if (rdx < 0) { sx = -1; sdx = (CAM.x - mx) * ddx } else { sx = 1; sdx = (mx + 1 - CAM.x) * ddx } if (rdy < 0) { sy = -1; sdy = (CAM.y - my) * ddy } else { sy = 1; sdy = (my + 1 - CAM.y) * ddy }
                 for (let i = 0; i < 130; i++) { if (sdx < sdy) { sdx += ddx; mx += sx; side = 0 } else { sdy += ddy; my += sy; side = 1 } if (mx < 0 || my < 0 || mx >= N || my >= N) { h = 1; break } h = map[my * N + mx]; if (h > 0) break }
-                let pp = side ? sdy - ddy : sdx - ddx; if (pp < .02) pp = .02; zb[x] = pp; const lh = f / pp, top = hor - lh / 2; let wx = side ? P.x + pp * rdx : P.y + pp * rdy; wx -= M.floor(wx); let tx = (wx * 64) | 0; if (!side && rdx > 0) tx = 63 - tx; if (side && rdy < 0) tx = 63 - tx;
+                let pp = side ? sdy - ddy : sdx - ddx; if (pp < .02) pp = .02; zb[x] = pp; const lh = f / pp, top = hor - lh / 2; let wx = side ? CAM.x + pp * rdx : CAM.y + pp * rdy; wx -= M.floor(wx); let tx = (wx * 64) | 0; if (!side && rdx > 0) tx = 63 - tx; if (side && rdy < 0) tx = 63 - tx;
                 vc.drawImage(WT[h] || WT[1], tx, 0, 1, 64, x, top, 1, lh); const fa = clamp(pp / FDm, 0, .85); vc.fillStyle = side ? fogB : fogA; vc.globalAlpha = side ? clamp(fa + .2, 0, .88) : fa; vc.fillRect(x, top, 1, lh); vc.globalAlpha = clamp(1 - fa, .15, 1); vc.fillStyle = '#17142a'; vc.fillRect(x, top - 1, 1, 1.6); vc.fillRect(x, top + lh - .6, 1, 1.6); if (h !== ph || mx !== pmx || my !== pmy || side !== pside) vc.fillRect(x, top, 1, lh); ph = h; pmx = mx; pmy = my; pside = side; vc.globalAlpha = 1
             }
             const L = []; const add = o => { o.d = (o.x - P.x) ** 2 + (o.y - P.y) ** 2; if (o.d < 200) L.push(o) }; const cl = (a, b) => M.abs(a.x - P.x) > 15 || M.abs(a.y - P.y) > 15;
@@ -1460,6 +1507,7 @@
             for (const p of PR) add({ x: p.x, y: p.y, z: .4, c: SPR.fire, sz: .5, add: 1 });
             for (const p of EP) add({ x: p.x, y: p.y, z: .35, c: SPR.arrow, sz: .35, add: 1 });
             for (const x of XP) add({ x: x.x, y: x.y, z: .3, c: SPR.expl, sz: x.R * (.6 + x.t * 1.6), al: 1 - x.t / .5, add: 1 });
+            add({ x: P.x, y: P.y, c: heroSpr(), sz: 1.12 * camD * camSc / CAMD, al: (P.inv > 0 ? .6 : 1) * clamp((camD * camSc - .18) / .4, 0, 1) });   // thân nhân vật: cao không đổi khi bị ép góc, mờ dần trước khi spr() bỏ vẽ (ty<.2)
             L.sort((a, b) => b.d - a.d); for (const o of L) spr(o, FDm);
         }
         function spr(o, FDm) {
@@ -1475,13 +1523,14 @@
             const bob = M.sin(P.bt) * 5 * u, bob2 = M.abs(M.cos(P.bt)) * 4 * u; let hx = w * .76 + bob, hy = h * 1.0 + bob2, ang = -.3; const t = 1 - P.sw, e = 1 - (1 - t) * (1 - t); let tr = 0;
             if (P.sw > 0) { if (P.cmb === 0) ang = 1.1 - 2.3 * e; else if (P.cmb === 1) ang = -1.2 + 2.4 * e; else { ang = -.15; hx -= w * .2 * M.sin(t * M.PI); hy -= h * .18 * M.sin(t * M.PI) } tr = P.cmb === 2 ? 0 : 1 }
             if (P.dead > 0) hy += h * .4;
+            const fp = camD * camSc < .35;   // khi góc quá bí camera mới áp sát người: lúc đó vẽ lại tay + kiếm góc nhìn thứ nhất
             if (tr) { fx.strokeStyle = `rgba(255,255,255,${.55 * P.sw})`; fx.lineWidth = 16 * u; fx.lineCap = 'round'; const a0 = P.cmb === 0 ? 1.1 : -1.2, a1 = ang; fx.beginPath(); fx.arc(hx, hy, 170 * u, -M.PI / 2 + a0, -M.PI / 2 + a1, a1 < a0); fx.stroke() }
-            fx.save(); fx.translate(hx, hy); fx.rotate(ang); fx.scale(u * 1.05, u * 1.05);
+            if (!fp) { fx.save(); fx.translate(hx, hy); fx.rotate(ang); fx.scale(u * 1.05, u * 1.05);
             fx.fillStyle = sleeve; fx.beginPath(); fx.moveTo(-30, 8); fx.lineTo(30, 8); fx.lineTo(96, 260); fx.lineTo(-70, 260); fx.fill(); fx.fillStyle = 'rgba(0,0,0,.2)'; fx.fillRect(-32, 0, 64, 16);
             const g = fx.createLinearGradient(-14, 0, 14, 0); g.addColorStop(0, P.wpn ? '#9fd2ff' : '#c8d4e4'); g.addColorStop(.5, '#fff'); g.addColorStop(1, P.wpn ? '#5a86b8' : '#8a9ab0'); fx.fillStyle = g; fx.beginPath(); fx.moveTo(-13, -34); fx.lineTo(0, -250); fx.lineTo(13, -34); fx.fill();
             fx.fillStyle = '#e8b830'; fx.fillRect(-36, -42, 72, 13); fx.fillStyle = '#5a3a24'; fx.fillRect(-7, -30, 14, 40); fx.fillStyle = '#f3d6b8'; fx.beginPath(); fx.ellipse(0, -2, 24, 20, 0, 0, TAU); fx.fill(); fx.strokeStyle = '#d8b898'; fx.lineWidth = 2; for (let i = -1; i <= 1; i++) { fx.beginPath(); fx.moveTo(i * 9, -14); fx.lineTo(i * 9, 2); fx.stroke() }
-            fx.restore();
-            if (P.cast > 0) { const k = M.min(1, P.cast * 2), lx = w * .2, ly = h * (1.02 - .2 * k); const gg = fx.createRadialGradient(lx, ly - 40 * u, 2, lx, ly - 40 * u, 90 * u); gg.addColorStop(0, 'rgba(255,240,180,.95)'); gg.addColorStop(.4, 'rgba(255,140,30,.7)'); gg.addColorStop(1, 'rgba(255,60,0,0)'); fx.fillStyle = gg; fx.fillRect(lx - 100 * u, ly - 140 * u, 200 * u, 200 * u); fx.fillStyle = sleeve; fx.beginPath(); fx.moveTo(lx - 30 * u, ly + 10 * u); fx.lineTo(lx + 30 * u, ly + 10 * u); fx.lineTo(lx + 60 * u, h); fx.lineTo(lx - 60 * u, h); fx.fill(); fx.fillStyle = '#f3d6b8'; fx.beginPath(); fx.ellipse(lx, ly, 24 * u, 20 * u, 0, 0, TAU); fx.fill() }
+            fx.restore(); }
+            if (P.cast > 0) { const k = M.min(1, P.cast * 2), lx = w * .2, ly = h * (1.02 - .2 * k); const gg = fx.createRadialGradient(lx, ly - 40 * u, 2, lx, ly - 40 * u, 90 * u); gg.addColorStop(0, 'rgba(255,240,180,.95)'); gg.addColorStop(.4, 'rgba(255,140,30,.7)'); gg.addColorStop(1, 'rgba(255,60,0,0)'); fx.fillStyle = gg; fx.fillRect(lx - 100 * u, ly - 140 * u, 200 * u, 200 * u); if (!fp) { fx.fillStyle = sleeve; fx.beginPath(); fx.moveTo(lx - 30 * u, ly + 10 * u); fx.lineTo(lx + 30 * u, ly + 10 * u); fx.lineTo(lx + 60 * u, h); fx.lineTo(lx - 60 * u, h); fx.fill(); fx.fillStyle = '#f3d6b8'; fx.beginPath(); fx.ellipse(lx, ly, 24 * u, 20 * u, 0, 0, TAU); fx.fill() } }
             const tgt = E.find(e => M.hypot(e.x - P.x, e.y - P.y) < 2.3 && M.abs(aD(M.atan2(e.y - P.y, e.x - P.x) - P.a)) < .5) || TR.find(t => !t.cut && M.hypot(t.x - P.x, t.y - P.y) < 2.2 && M.abs(aD(M.atan2(t.y - P.y, t.x - P.x) - P.a)) < .4);
             fx.fillStyle = tgt ? (tgt.hp !== undefined && tgt.mx === undefined ? '#ffb74d' : '#ff5252') : 'rgba(255,255,255,.9)'; fx.beginPath(); fx.arc(w / 2, h / 2, 3 * u, 0, TAU); fx.fill();
             fx.font = `800 ${14 * u}px system-ui`; fx.textAlign = 'center'; fx.lineWidth = 3 * u; fx.strokeStyle = 'rgba(0,0,0,.55)';
@@ -1517,7 +1566,7 @@
             mc.fillStyle = '#fff'; mc.strokeStyle = '#2a2f45'; mc.lineWidth = 1; mc.beginPath(); mc.moveTo(ctr, ctr - 7); mc.lineTo(ctr - 5, ctr + 5); mc.lineTo(ctr, ctr + 2); mc.lineTo(ctr + 5, ctr + 5); mc.closePath(); mc.fill(); mc.stroke();
             mc.font = '700 10px system-ui'; mc.textAlign = 'center'; mc.textBaseline = 'middle'; mc.fillStyle = '#fff'; mc.fillText('N', ctr + sn * (ctr - 7), ctr - cr * (ctr - 7));
         }
-        let last = 0; function loop(t) { const dt = M.min((t - last) / 1000 || 0, .05); last = t; if (started) { update(dt); render(); drawFx(); hud() } else { T += dt; P.a += dt * .2; render() } requestAnimationFrame(loop) }
+        let last = 0; function loop(t) { const dt = M.min((t - last) / 1000 || 0, .05); last = t; if (started) { update(dt); camStep(dt); render(); drawFx(); hud() } else { T += dt; P.a += dt * .2; camStep(dt); render() } requestAnimationFrame(loop) }
         const SC = ['#2f6fb3', '#b3392f', '#2f9a5a', '#7a4fc2', '#e0a020'];
         $('#sws').innerHTML = SC.map((c, i) => `<button class="sw${i ? '' : ' on'}" data-c="${c}" style="background:${c}" aria-label="Màu áo ${i + 1}"></button>`).join('');
         $('#sws').onclick = e => { const b = e.target.closest('.sw'); if (!b) return; sleeve = b.dataset.c; document.querySelectorAll('.sw').forEach(s => s.classList.toggle('on', s === b)) };

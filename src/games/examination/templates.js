@@ -12,6 +12,8 @@
  */
 import thithapHtml from "./thithap.html?raw";
 import thithap3dHtml from "./thithap-3d.html?raw";
+import vuonTrithucHtml from "./vuon-trithuc.html?raw";
+import chuyenTauHtml from "./chuyen-tau-trithuc.html?raw";
 
 export const EXAM_TEMPLATES = [
   {
@@ -19,6 +21,20 @@ export const EXAM_TEMPLATES = [
     name: "🐲 Đại Chiến Boss Tri Thức",
     html: thithapHtml,
     desc: "Leo tháp, mỗi câu hỏi là một con quái. Điểm server chấm quyết định boss mất bao nhiêu máu.",
+    style: "2D",
+  },
+  {
+    id: "vuon-trithuc",
+    name: "🌱 Vườn Tri Thức",
+    html: vuonTrithucHtml,
+    desc: "Mỗi câu hỏi là một hạt giống: chốt đáp án là tưới cây, cây lớn và ra hoa. Điểm server chấm quyết định số quả thu hoạch.",
+    style: "2D",
+  },
+  {
+    id: "chuyen-tau-trithuc",
+    name: "🚂 Chuyến Tàu Tri Thức",
+    html: chuyenTauHtml,
+    desc: "Mỗi câu hỏi là một nhà ga: trả lời để tàu chạy tiếp và nối thêm toa. Điểm server chấm quyết định tàu đi được bao xa về đích.",
     style: "2D",
   },
   {
