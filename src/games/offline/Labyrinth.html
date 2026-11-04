@@ -963,6 +963,11 @@
             }
 
             function resetGame() {
+                // Game chạy trong iframe của app: iframe không tự có focus
+                // bàn phím, mà keydown chỉ tới cửa sổ đang có focus — chưa
+                // bấm chuột vào trong game thì phím mũi tên "chết" hoàn
+                // toàn. Chủ động lấy focus khi bắt đầu ván.
+                try { window.focus(); } catch (e) { /* bỏ qua */ }
                 const cfg = DIFFICULTY[state.difficulty];
                 state.level = 1;
                 state.score = 0;
@@ -1048,6 +1053,7 @@
             let mouseStart = null;
 
             canvas.addEventListener('mousedown', (e) => {
+                try { window.focus(); } catch (err) { /* bỏ qua */ }
                 const rect = canvas.getBoundingClientRect();
                 mouseDown = true;
                 mouseStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };

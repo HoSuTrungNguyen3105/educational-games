@@ -30,6 +30,15 @@ function getPeriodKey(scope) {
   }
 }
 
+/**
+ * Các scope nhiệm vụ học sinh THẬT SỰ nhìn thấy trên trang Nhiệm vụ —
+ * trang đó (`DailyTasksPage.jsx`) chỉ có 3 tab Hàng ngày / Hàng tuần /
+ * Tổng cộng. Nhiệm vụ scope EVENT không xuất hiện ở tab nào. Mọi nơi cần
+ * đếm "nhiệm vụ của học sinh" để đối chiếu với trang đó (vd báo cáo phụ
+ * huynh) phải đếm đúng tập này, không đếm toàn bộ nhiệm vụ đang bật.
+ */
+export const STUDENT_TASK_SCOPES = ["DAILY", "WEEKLY", "TOTAL"];
+
 // ── Task definitions ──
 
 export async function getAllActiveTasks() {
