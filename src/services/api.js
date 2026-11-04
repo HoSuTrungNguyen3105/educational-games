@@ -790,6 +790,12 @@ export const assignmentService = {
   async start(id, { guestName } = {}) {
     return apiFetch(`/assignments/${id}/start`, { method: "POST", body: { guestName } });
   },
+  // CHỈ ĐỌC: trạng thái làm bài hiện tại (chưa bắt đầu / đang làm / đã nộp) —
+  // dùng cho màn hình giới thiệu, tuyệt đối không tạo submission.
+  async getMySubmission(id, { guestName } = {}) {
+    const qs = guestName ? `?guestName=${encodeURIComponent(guestName)}` : "";
+    return apiFetch(`/assignments/${id}/my-submission${qs}`);
+  },
   async submit(id, submissionId, answers, { guestName } = {}) {
     return apiFetch(`/assignments/${id}/submit`, { method: "POST", body: { submissionId, answers, guestName } });
   },

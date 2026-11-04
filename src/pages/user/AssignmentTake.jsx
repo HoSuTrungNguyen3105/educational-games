@@ -217,7 +217,7 @@ function ResultView({ result, onBack, onRedo, canRedo, attemptInfo }) {
   );
 }
 
-function GuestNameForm({ assignmentTitle, onSubmit, loading }) {
+function GuestNameForm({ assignmentTitle, onSubmit, loading, timedExam }) {
   const [name, setName] = useState('');
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
@@ -252,9 +252,90 @@ function GuestNameForm({ assignmentTitle, onSubmit, loading }) {
             <button type="submit" disabled={loading || !name.trim()}
               className="w-full py-4 bg-amber-500 text-white rounded-2xl font-semibold hover:bg-amber-600 transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-md">
               <Send className="w-5 h-5" />
-              {loading ? 'Đang tải...' : 'Bắt đầu làm bài'}
+              {/* Bài thi tính giờ còn một màn hình giới thiệu nữa mới thật sự bắt đầu */}
+              {loading ? 'Đang tải...' : timedExam ? 'Tiếp tục' : 'Bắt đầu làm bài'}
             </button>
           </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Màn hình giới thiệu của BÀI THI TÍNH GIỜ — cổng trước khi bắt đầu.
+ * Trước khi học sinh bấm nút ở màn này: chưa gọi API start, chưa có đồng hồ
+ * đếm ngược, chưa mount ExamPlayer. peek (chỉ đọc) cho biết đây là lần làm
+ * mới hay đang làm dở để đổi nhãn nút + hiện thời gian còn lại.
+ */
+function ExamIntro({ assignment, questionCount, peek, starting, onStart }) {
+  const isResume = peek?.status === 'IN_PROGRESS';
+  const remaining = peek?.remainingTime;
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+      <div className="w-full max-w-md">
+        <button
+          onClick={() => navigate('/')}
+          className="group text-sm text-gray-500 hover:text-gray-700 transition inline-flex items-center gap-2 mb-6"
+        >
+          <IconBack className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          Về trang chủ
+        </button>
+
+        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 space-y-6">
+          <div className="text-center space-y-3">
+            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+              <Clock className="w-8 h-8 text-amber-500" />
+            </div>
+            <h1 className="font-display text-2xl font-bold text-gray-800">{assignment.title}</h1>
+            {assignment.description && (
+              <p className="text-sm text-gray-500">{assignment.description}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-amber-50 rounded-2xl p-4 text-center">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Thời lượng</p>
+              <p className="text-lg font-bold text-gray-800">{assignment.examDuration} phút</p>
+            </div>
+            <div className="bg-amber-50 rounded-2xl p-4 text-center">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Số câu hỏi</p>
+              <p className="text-lg font-bold text-gray-800">{questionCount} câu</p>
+            </div>
+          </div>
+
+          {isResume && (
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-2xl px-4 py-3 text-sm font-medium">
+              <Clock className="w-4 h-4 shrink-0" />
+              <span>Bạn đang làm dở bài này — thời gian còn lại: <span className="font-bold font-mono">{formatTime(remaining ?? 0)}</span></span>
+            </div>
+          )}
+
+          <ul className="text-sm text-gray-600 space-y-2.5">
+            <li className="flex gap-2.5">
+              <Clock className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+              Đồng hồ chỉ bắt đầu chạy khi bạn bấm nút bên dưới — hãy đọc kỹ đề trước khi bắt đầu.
+            </li>
+            <li className="flex gap-2.5">
+              <TriangleAlert className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+              Hết giờ, hệ thống sẽ tự động nộp bài với những câu đã trả lời.
+            </li>
+            <li className="flex gap-2.5">
+              <TriangleAlert className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+              Không tắt trang hay rời khỏi trang trong lúc làm bài.
+            </li>
+          </ul>
+
+          <button onClick={onStart} disabled={starting}
+            className="w-full py-4 bg-amber-500 text-white rounded-2xl font-semibold hover:bg-amber-600 transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-md">
+            <Send className="w-5 h-5" />
+            {starting ? 'Đang tải...' : isResume ? 'Tiếp tục làm bài' : 'Bắt đầu làm bài'}
+          </button>
         </div>
       </div>
     </div>
@@ -278,6 +359,14 @@ export default function AssignmentTake({ code: codeOrId }) {
   const [resolved, setResolved] = useState(false);
   const [guestName, setGuestName] = useState(null);
   const isGuest = !user && guestName;
+  // Cổng bắt đầu cho bài thi tính giờ: `started` chỉ thành true sau khi học
+  // sinh bấm nút ở màn hình giới thiệu (hoặc peek báo đã nộp → vào thẳng kết
+  // quả). peek: undefined = chưa peek, null = chưa từng bắt đầu.
+  const [started, setStarted] = useState(false);
+  const [peek, setPeek] = useState(undefined);
+  const [peeking, setPeeking] = useState(false);
+  const startingRef = useRef(false);
+  const isTimedExam = !!(assignment?.isExam && assignment?.examDuration);
 
   useEffect(() => {
     if (!codeOrId) return;
@@ -310,12 +399,43 @@ export default function AssignmentTake({ code: codeOrId }) {
   const examSubmittingRef = useRef(false);
 
   useEffect(() => {
-    if (resolved && user && assignment) { clearGuestName(); initAssignment(assignment.id); }
+    if (resolved && user && assignment) { clearGuestName(); gateOrInit(assignment.id, null); }
   }, [resolved, user, assignment]);
 
   useEffect(() => {
-    if (resolved && !user && guestName && assignment) { initAssignment(assignment.id); }
+    if (resolved && !user && guestName && assignment) { gateOrInit(assignment.id, guestName); }
   }, [resolved, guestName, assignment]);
+
+  /**
+   * Điểm vào duy nhất sau khi resolve xong:
+   * - Bài tập thường (không tính giờ): khởi tạo ngay như trước, không thêm click.
+   * - Bài thi tính giờ: CHỈ peek (endpoint đọc, không tạo submission) rồi dừng
+   *   ở màn hình giới thiệu — API start + đồng hồ đếm ngược chỉ chạy khi học
+   *   sinh bấm Bắt đầu/Tiếp tục (handleStartExam). Đang làm dở (IN_PROGRESS)
+   *   cũng dừng ở intro với nút Tiếp tục. Riêng bài đã nộp (SUBMITTED) thì nạp
+   *   thẳng kết quả như cũ — KHÔNG gọi start, vì start khi còn lượt sẽ âm thầm
+   *   tạo lượt làm mới và đồng hồ lại chạy trước khi học sinh sẵn sàng.
+   */
+  async function gateOrInit(assignmentId, name) {
+    if (!(assignment.isExam && assignment.examDuration)) { initAssignment(assignmentId); return; }
+    setPeeking(true);
+    try {
+      const p = await assignmentService.getMySubmission(assignmentId, { guestName: name }).catch(() => null);
+      if (p?.status === 'SUBMITTED') {
+        const existing = await assignmentService.getResult(assignmentId, { guestName: name, showCorrectAnswer: true }).catch(() => null);
+        if (existing) { setResult(existing); setSubmitted(true); setStarted(true); return; }
+        // Không nạp được kết quả (hiếm) → rơi xuống intro để học sinh chủ động.
+      }
+      setPeek(p || null);
+    } finally { setPeeking(false); }
+  }
+
+  function handleStartExam() {
+    if (startingRef.current) return;
+    startingRef.current = true;
+    setStarted(true);
+    initAssignment(assignment.id);
+  }
 
   async function handleGuestSubmit(name) {
     setGuestName(name);
@@ -455,7 +575,30 @@ export default function AssignmentTake({ code: codeOrId }) {
   );
 
   if (resolved && !user && !guestName && assignment) {
-    return <GuestNameForm assignmentTitle={assignment.title} onSubmit={handleGuestSubmit} loading={loading} />;
+    return <GuestNameForm assignmentTitle={assignment.title} onSubmit={handleGuestSubmit} loading={loading} timedExam={isTimedExam} />;
+  }
+
+  // Bài thi tính giờ mà học sinh chưa bấm Bắt đầu → màn hình giới thiệu.
+  // Tới đây thì: chưa gọi API start, chưa tạo interval đếm ngược, chưa mount
+  // ExamPlayer — đồng hồ chỉ chạy sau sự kiện bấm nút (handleStartExam).
+  if (isTimedExam && !started) {
+    if (peeking || peek === undefined) return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-amber-300 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 font-medium">Đang tải bài tập...</p>
+        </div>
+      </div>
+    );
+    return (
+      <ExamIntro
+        assignment={assignment}
+        questionCount={(assignment.questionIds || []).length}
+        peek={peek}
+        starting={loading}
+        onStart={handleStartExam}
+      />
+    );
   }
 
   if (loading) return (

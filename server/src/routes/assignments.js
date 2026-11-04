@@ -184,6 +184,19 @@ r.post("/:id/start", optionalAuth, async (req, res) => {
   } catch (e) { sendError(res, e.message, 400); }
 });
 
+// Peek own submission (student/guest) — READ-ONLY, không bao giờ tạo submission.
+// Client gọi trước màn hình giới thiệu của bài thi tính giờ để biết học sinh
+// chưa bắt đầu / đang làm dở / đã nộp, mà không làm đồng hồ chạy sớm.
+r.get("/:id/my-submission", optionalAuth, async (req, res) => {
+  try {
+    const { guestName } = req.query;
+    const studentId = req.user?.sub || (guestName ? `guest_${guestName}_${req.params.id}` : null);
+    if (!studentId) return sendSuccess(res, null);
+    const peek = await assignmentService.peekSubmission(req.params.id, studentId);
+    sendSuccess(res, peek);
+  } catch (e) { sendError(res, e.message, 500); }
+});
+
 // Submit answers (student/guest)
 r.post("/:id/submit", optionalAuth, async (req, res) => {
   try {
