@@ -440,22 +440,37 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   useEffect(() => {
     loadNotifications();
     loadTasks();
-    if (userAuth?.user) {
+    if (!userAuth?.user) {
+      // Khách / vừa đăng xuất: xoá số ví của tài khoản trước khỏi state.
+      // Trước đây nhánh này bỏ trống nên header vẫn hiện Xu/Sao của người
+      // vừa đăng xuất (badge ở header chỉ xét userCoins > 0 chứ không xét
+      // đã đăng nhập hay chưa). walletLoaded=false vô hại với khách vì
+      // dấu "…" chỉ hiện khi có user; đăng nhập lại effect này tự nạp ví.
+      setUserCoins(0);
+      setUserStars(0);
       setWalletLoaded(false);
-      walletService.get().then(w => { setUserCoins(w?.coins || 0); setUserStars(w?.stars || 0); setWalletLoaded(true); }).catch(() => setWalletLoaded(true));
+      return;
+    }
+    setWalletLoaded(false);
+    walletService.get().then(w => { setUserCoins(w?.coins || 0); setUserStars(w?.stars || 0); setWalletLoaded(true); }).catch(() => setWalletLoaded(true));
 
-      // Register FCM token if permission is already granted
-      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-        requestNotificationPermission().then((token) => {
-          if (token) notificationService.registerDevice(token, "WEB").catch(() => { });
-        }).catch(() => { });
-      }
+    // Register FCM token if permission is already granted
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+      requestNotificationPermission().then((token) => {
+        if (token) notificationService.registerDevice(token, "WEB").catch(() => { });
+      }).catch(() => { });
     }
   }, [userAuth?.user]);
 
   // Số xu đổi khi chơi game offline (ví ở src/lib/coinWallet.js) → trang chủ
-  // cập nhật luôn, không phải tải lại.
-  useEffect(() => subscribeWallet((w) => { setUserCoins(w.coins); setWalletLoaded(true); }), []);
+  // cập nhật luôn, không phải tải lại. Chỉ nghe khi ĐÃ đăng nhập: cache ví
+  // local vẫn giữ số của tài khoản trước, nếu khách cũng nghe thì số cũ sẽ
+  // tự hiện lại trên header sau khi đăng xuất (vd sự kiện "online" kích
+  // sync → notify). Đăng xuất → effect cleanup tự huỷ đăng ký nghe.
+  useEffect(() => {
+    if (!userAuth?.user) return;
+    return subscribeWallet((w) => { setUserCoins(w.coins); setWalletLoaded(true); });
+  }, [userAuth?.user]);
 
   const [pushStatus, setPushStatus] = useState(() => getPushSupportStatus());
   const [testingPush, setTestingPush] = useState(false);
