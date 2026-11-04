@@ -40,4 +40,24 @@ export const parentApi = {
   async resetChildPassword(studentId, password) {
     return apiFetch(`/parents/children/${studentId}/reset-password`, { method: "POST", body: { password } });
   },
+
+  // ── Duyệt kết bạn (đợt An toàn cho bé 2) ──
+  // Công tắc theo từng con (mặc định tắt) nằm ở `friendApprovalRequired`
+  // trong danh sách children(). Bật thì lời mời của con bị giữ chờ duyệt.
+  async setFriendApproval(studentId, enabled) {
+    return apiFetch(`/parents/children/${studentId}/friend-approval`, {
+      method: "PUT",
+      body: { enabled },
+    });
+  },
+  /** [{ id, direction: "outgoing"|"incoming", user, createdAt }] */
+  async pendingFriendRequests(studentId) {
+    return apiFetch(`/parents/children/${studentId}/friend-requests`) || [];
+  },
+  async approveFriendRequest(studentId, requestId) {
+    return apiFetch(`/parents/children/${studentId}/friend-requests/${requestId}/approve`, { method: "POST" });
+  },
+  async rejectFriendRequest(studentId, requestId) {
+    return apiFetch(`/parents/children/${studentId}/friend-requests/${requestId}/reject`, { method: "POST" });
+  },
 };
