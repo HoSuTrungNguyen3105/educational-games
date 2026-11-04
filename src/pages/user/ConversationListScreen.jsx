@@ -6,6 +6,7 @@ import { navigate } from "../../lib/router.js";
 import DMChatScreen from "./DMChatScreen.jsx";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
+import { useIsOnline } from "../../stores/presence.store.js";
 import { Search, ArrowLeft, MessageCircle, Users, UserPlus, RefreshCw, Gamepad2 } from "lucide-react";
 
 function formatTime(iso) {
@@ -263,6 +264,10 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
 }
 
 function ConversationItem({ conversation, currentUser, otherUser, onClick, isActive }) {
+  // Chấm xanh = hiện diện THẬT từ presence store (trước đây chấm này render
+  // vô điều kiện — ai cũng "online"). otherUser không bao giờ là chính
+  // mình nên không cần tự loại trừ.
+  const otherOnline = useIsOnline(otherUser?.id);
   const name = otherUser?.name || conversation.name || (conversation.type === "game_room" ? "Phòng game" : "Tin nhắn");
   const username = otherUser?.username;
   const lastMsg = conversation.lastMessage;
@@ -297,8 +302,8 @@ function ConversationItem({ conversation, currentUser, otherUser, onClick, isAct
         }`}>
           {otherUser?.name?.charAt(0)?.toUpperCase() || (conversation.type === "game_room" ? <Gamepad2 className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />)}
         </div>
-        {/* Online indicator */}
-        {otherUser && (
+        {/* Online indicator — chỉ khi đối tác thật sự đang online */}
+        {otherUser && otherOnline && (
           <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-paper" />
         )}
       </div>
