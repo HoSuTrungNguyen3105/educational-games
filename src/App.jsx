@@ -321,7 +321,9 @@ function App() {
   };
 
   const renderScreen = () => {
-    if (needOnboarding && !user) return <OnboardingScreen onComplete={handleOnboardingComplete} />;
+    // Onboarding KHÔNG còn thay thế màn hình ở đây nữa — nó render dạng
+    // MODAL lớp phủ ở return chính của App (xem dưới) để trang chủ mount
+    // sẵn phía sau, giống cách đăng nhập/đăng ký đã chuyển ở PR #12.
 
     // Đăng nhập/đăng ký KHÔNG còn thay thế màn hình ở đây nữa — chúng render
     // dạng lớp phủ ở return chính của App (xem AuthOverlay) để màn hình nền
@@ -375,6 +377,14 @@ function App() {
       <Suspense fallback={<PageLoading />}>
         {renderScreen()}
       </Suspense>
+      {needOnboarding && !user && (
+        /* Modal onboarding phủ lên màn hình đang mở (trang chủ đã mount
+         * phía sau, giữ nguyên trạng thái). Chỉ thoát bằng nút "Bỏ qua"
+         * hoặc hoàn thành form — xem `dismissible={false}` trong
+         * OnboardingScreen. `needOnboarding` đã gồm điều kiện chưa đăng
+         * nhập; xét thêm `!user` cho khớp điều kiện render cũ. */
+        <OnboardingScreen onComplete={handleOnboardingComplete} />
+      )}
       {showUserLogin && (
         <AuthOverlay onClose={() => setShowUserLogin(false)}>
           {/* Suspense riêng: hai màn hình này lazy-load và nằm NGOÀI Suspense
