@@ -1,1 +1,0 @@
-import{o as e}from"./petApi-Celqo9aT.js";async function t(t){return e(t)}export{t};
