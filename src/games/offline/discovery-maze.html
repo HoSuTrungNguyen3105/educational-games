@@ -439,7 +439,7 @@ document.body.addEventListener('pointermove',e=>{if(!started||paused||qOpen>=0||
 const upP=e=>{if(e.pointerId===IN.sid){IN.sid=null;IN.mx=IN.my=0;jb.style.display=jk.style.display='none'}if(e.pointerId===IN.lid)IN.lid=null};
 document.body.addEventListener('pointerup',upP);document.body.addEventListener('pointercancel',upP);document.body.addEventListener('contextmenu',e=>e.preventDefault());
 [['#bT',interact],['#imap',openMap],['#isnd',()=>{DB.set.sfx=!DB.set.sfx;save();$('isnd').textContent=DB.set.sfx?'🔊':'🔇'}],['#iexit',()=>{if(needConfirm('exit','Thoát về menu? Bài làm hiện tại sẽ mất.'))goPrep()}]].forEach(([s,f])=>document.querySelector(s).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();ac();f()}));
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!started)return;if(qOpen>=0){qKey(e);return}if(e.target&&e.target.tagName==='INPUT')return;if(k==='m'){mapOpen?closeMap():openMap();return}if(mapOpen){if(k==='escape')closeMap();return}K[k]=1;if(paused)return;if(k==='f'||k==='enter'||k===' ')interact()});
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!started)return;if($('tut').style.display==='grid'){dismissTut();return}if(qOpen>=0){qKey(e);return}if(e.target&&e.target.tagName==='INPUT')return;if(k==='m'){mapOpen?closeMap():openMap();return}if(mapOpen){if(k==='escape')closeMap();return}K[k]=1;if(paused)return;if(k==='f'||k==='enter'||k===' ')interact()});
 addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&!submitted){tabOut++;if(mode==='exam'||isRemote)toast('⚠️ Bạn đã rời khỏi trang '+tabOut+' lần. Việc này được ghi nhận.')}});
 addEventListener('beforeunload',e=>{if(started&&!submitted){e.preventDefault();e.returnValue=''}});
@@ -487,9 +487,15 @@ function startGame(){
  Q=isRemote?REMOTE.map(q=>({...q})):localQuestions(set.gates,{...set,grade:u0.grade||set.grade});
  A=Q.map(q=>({questionId:q.id,answerIds:[],text:'',timeSpent:0,answered:false}));doneN=0;tabOut=0;submitting=0;submitted=0;mapOpen=0;paused=0;burstL=[];
  genMaze(Q.length);Object.assign(P,{x:MZ.sx,y:MZ.sy,a:MZ.sa,pt:0,bt:0});for(const k in K)K[k]=0;
- started=1;startedAt=Date.now();SCRS.forEach(s=>hide(s));$('ico').style.display=$('me').style.display=$('obj').style.display=$('tm').style.display='';$('isnd').textContent=DB.set.sfx?'🔊':'🔇';hudUser();hud();
+ started=1;startedAt=Date.now();try{window.focus()}catch(_){}/* iframe của app không tự có focus: không lấy focus thì WASD/mũi tên không tới được game */SCRS.forEach(s=>hide(s));$('ico').style.display=$('me').style.display=$('obj').style.display=$('tm').style.display='';$('isnd').textContent=DB.set.sfx?'🔊':'🔇';hudUser();hud();
  if(!DB.seenTut){DB.seenTut=1;save();paused=1;$('tut').style.display='grid'}else toast(mode==='practice'?'Luyện tập: trả lời xong sẽ thấy đáp án ngay.':'Chế độ thi: đáp án chỉ hiện sau khi nộp bài.')}
-$('tutOk').onclick=()=>{$('tut').style.display='none';paused=0;ac()};
+$('tutOk').onclick=()=>{dismissTut()};
+// Bẫy "đứng hình" lần đầu chơi: startGame đặt paused=1 và chỉ nút trong
+// popup hướng dẫn mới mở khoá được; người chơi bỏ qua popup (hoặc bấm ra
+// ngoài nút) thì game đứng yên vĩnh viễn trong khi đồng hồ vẫn chạy. Cho
+// phép đóng popup bằng cách bấm vào bất cứ đâu trên lớp phủ hoặc gõ phím.
+function dismissTut(){if($('tut').style.display==='none')return;$('tut').style.display='none';if(paused)paused=0;ac()}
+$('tut').addEventListener('pointerdown',e=>{if(e.target!==$('tutOk'))dismissTut()});
 
 /* ================= Khởi động ================= */
 rs();requestAnimationFrame(loop);
