@@ -6,6 +6,7 @@ import { conversationApi } from "../../services/conversationApi.js";
 import { friendApi } from "../../services/friendApi.js";
 import { Loader, EmptyState, ErrorState, PrimaryButton, ConfirmModal } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm.js";
+import { useIsOnline } from "../../stores/presence.store.js";
 import { navigate } from "../../lib/router.js";
 import DMChatScreen from "./DMChatScreen.jsx";
 
@@ -46,9 +47,21 @@ const btnMuted = "flex items-center gap-1.5 px-3.5 py-2 bg-[#F1EAD8] text-[#8A7C
  *  mặc định           → nút theo `relation` + Chat
  */
 function PersonRow({ user, subtitle, relation, variant, busy, onChat, onAdd, onAccept, onDecline, onCancel, onUnfriend }) {
+  // Chấm xanh hiện diện thật (presence store) — hàng không bao giờ là
+  // chính mình nên không cần tự loại trừ ở đây.
+  const online = useIsOnline(user?.id);
   return (
     <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#E7D9BE]">
-      <Avatar name={user.name} />
+      <div className="relative shrink-0">
+        <Avatar name={user.name} />
+        {online && (
+          <span
+            className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-white"
+            title="Đang online"
+            aria-label="Đang online"
+          />
+        )}
+      </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm text-[#20283A] truncate">{user.name}</p>
         <p className="text-xs text-[#8A7C63] truncate">{subtitle || `@${user.username}`}</p>

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { gameService, walletService, notificationService, ticketService } from '../services/api.js'
 import { taskService } from '../services/taskService.js'
+import { conversationApi } from '../services/conversationApi.js'
 import { socket } from '../socket/socket.js'
 import { SOCKET_EVENTS } from '../socket/socket.events.js'
 import { getLevelProgress } from '../lib/utils.js'
@@ -659,6 +660,37 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  // Huy hiệu tin nhắn chưa đọc ở mục "Tin nhắn" (thanh điều hướng): tổng
+  // unread của mọi cuộc trò chuyện. Nạp khi đăng nhập/thay user; có tin mới
+  // qua socket thì nạp lại ngay (debounce như ConversationListScreen) để số
+  // nhảy tức thì; mở mục Tin nhắn thì về 0 (handleNavClick bên dưới).
+  const [chatUnread, setChatUnread] = useState(0);
+  const loadChatUnread = useCallback(async () => {
+    if (!userAuth?.user) { setChatUnread(0); return; }
+    try {
+      const convs = await conversationApi.list();
+      setChatUnread((convs || []).reduce((sum, c) => sum + (c.unread || 0), 0));
+    } catch { /* giữ số cũ — huy hiệu là thông tin phụ */ }
+  }, [userAuth?.user]);
+
+  useEffect(() => { loadChatUnread(); }, [loadChatUnread]);
+
+  useEffect(() => {
+    if (!userAuth?.user) return;
+    let timer;
+    const onChatMessage = (msg) => {
+      // Tin mình gửi đi (echo về room của mình) không tính là chưa đọc.
+      if (!msg || msg.error || msg.senderId === userAuth.user.id) return;
+      clearTimeout(timer);
+      timer = setTimeout(loadChatUnread, 300);
+    };
+    socket.on(SOCKET_EVENTS.CHAT_MESSAGE, onChatMessage);
+    return () => {
+      clearTimeout(timer);
+      socket.off(SOCKET_EVENTS.CHAT_MESSAGE, onChatMessage);
+    };
+  }, [userAuth?.user, loadChatUnread]);
+
   const handleMarkAsRead = async (id) => {
     try {
       await notificationService.markRead(id);
@@ -749,6 +781,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const handleNavClick = (item) => {
     if (item.type === "login") return onUserLogin();
     if (item.type === "scroll") return scrollTo(item.target);
+    // Mở mục Tin nhắn → huy hiệu về 0 ngay (danh sách hội thoại tự đánh
+    // dấu đã đọc khi mở từng cuộc trò chuyện).
+    if (item.key === "chat") setChatUnread(0);
     if (item.path) return goTo(item.path);
   };
 
@@ -1100,6 +1135,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     {item.badge && pendingTaskCount > 0 && (
                       <span className="gq-navtab__n">{pendingTaskCount}</span>
                     )}
+                    {item.key === "chat" && chatUnread > 0 && (
+                      <span className="gq-navtab__n">{chatUnread > 99 ? "99+" : chatUnread}</span>
+                    )}
                   </button>
                 );
               })}
@@ -1129,6 +1167,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                               <span>{item.label}</span>
                               {item.badge && pendingTaskCount > 0 && (
                                 <span className="gq-navpop__n">{pendingTaskCount}</span>
+                              )}
+                              {item.key === "chat" && chatUnread > 0 && (
+                                <span className="gq-navpop__n">{chatUnread > 99 ? "99+" : chatUnread}</span>
                               )}
                             </button>
                           );
@@ -1368,7 +1409,14 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   background: isActive ? "rgba(247, 171, 46, 0.14)" : "transparent",
                 }}
               >
-                <Icon className="w-6 h-6" strokeWidth={isActive ? 2.6 : 2} />
+                <span className="relative">
+                  <Icon className="w-6 h-6" strokeWidth={isActive ? 2.6 : 2} />
+                  {item.key === "chat" && chatUnread > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      {chatUnread > 99 ? "99+" : chatUnread}
+                    </span>
+                  )}
+                </span>
                 <span className="text-[11px] font-extrabold leading-none">{item.label}</span>
               </button>
             );

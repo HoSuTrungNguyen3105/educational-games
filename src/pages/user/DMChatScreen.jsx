@@ -6,6 +6,7 @@ import { IconBack, IconSmile, Loader, Modal, ConfirmModal } from '../../componen
 import { useConfirm } from "../../hooks/useConfirm.js";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
+import { useIsOnline } from "../../stores/presence.store.js";
 import { Check, Send, X, MoreVertical, Ban, Flag } from "lucide-react";
 
 // Lý do báo cáo — phải khớp REPORT_REASONS ở server (reportService).
@@ -48,6 +49,9 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const targetUserId = targetUser?.id;
+  // Hiện diện THẬT của đối tác (trước đây header luôn hiện chấm xanh +
+  // "Đang hoạt động" vô điều kiện).
+  const targetOnline = useIsOnline(targetUserId);
   const dmId = useMemo(() => getDmId(user?.id, targetUserId), [user?.id, targetUserId]);
 
   // Mình đã chặn người này chưa? (để hiện trạng thái + khoá ô nhập — server
@@ -228,11 +232,13 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold">
             {targetUser.name?.charAt(0)?.toUpperCase() || "?"}
           </div>
-          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-paper" />
+          <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-paper ${targetOnline ? "bg-green-400" : "bg-gray-300"}`} />
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="font-display text-sm text-ink truncate">{targetUser.name}</h2>
-          <p className="text-[10px] text-green-500 font-body">Đang hoạt động</p>
+          <p className={`text-[10px] font-body ${targetOnline ? "text-green-500" : "text-ink/40"}`}>
+            {targetOnline ? "Đang hoạt động" : "Không hoạt động"}
+          </p>
         </div>
         {/* Menu an toàn: Báo cáo / Chặn người này */}
         <div className="relative shrink-0">

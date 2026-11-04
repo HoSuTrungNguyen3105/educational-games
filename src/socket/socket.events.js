@@ -29,6 +29,13 @@ export const SOCKET_EVENTS = {
   CHAT_TYPING: "chat:typing",
   CHAT_READ: "chat:read",
 
+  // Hiện diện online — server chỉ gửi trong vòng bạn bè + đối tác DM 1-1.
+  // SNAPSHOT: toàn bộ danh sách người trong vòng đang online (khi vừa nối).
+  // ONLINE/OFFLINE: thay đổi của từng người sau đó.
+  PRESENCE_SNAPSHOT: "presence:snapshot",
+  PRESENCE_ONLINE: "presence:online",
+  PRESENCE_OFFLINE: "presence:offline",
+
   // Game invite events
   GAME_INVITE_SEND: "game:invite:send",
   GAME_INVITE_RECEIVED: "game:invite:received",
