@@ -5,6 +5,7 @@ import { getCollection } from "../db.js";
 import * as friendService from "../services/friendService.js";
 import * as blockService from "../services/blockService.js";
 import * as notificationService from "../services/notificationService.js";
+import * as parentService from "../services/parentService.js";
 
 // ── Bạn bè: /api/friends ──────────────────────────────────────────────────
 // Mọi thao tác đều lấy danh tính từ token (req.user.sub) — client không bao
@@ -15,6 +16,41 @@ const router = Router();
 router.use(authenticate);
 
 const FRIENDS_LINK = "educational-games/#/find-friends";
+const PARENT_LINK = "educational-games/#/parent";
+
+/**
+ * Báo cho MỌI phụ huynh đã liên kết của `studentId` khi một lời mời kết bạn
+ * của con bị giữ ở cổng duyệt (gate "sender": con gửi đi; gate "receiver":
+ * gửi đến con). Học sinh phía bên kia KHÔNG nhận thông báo gì ở bước này.
+ */
+async function notifyParentsOfApproval(req, { studentId, otherUserId, direction }) {
+  try {
+    const [student, other, parents] = await Promise.all([
+      getCollection("users").findOne({ id: studentId }),
+      getCollection("users").findOne({ id: otherUserId }),
+      parentService.listParentsOf(studentId),
+    ]);
+    const childName = student?.name || "Con bạn";
+    const otherName = other?.name || "Một bạn học";
+    const message = direction === "outgoing"
+      ? `${childName} muốn kết bạn với ${otherName}. Lời mời đang chờ bạn duyệt.`
+      : `${otherName} muốn kết bạn với ${childName}. Lời mời đang chờ bạn duyệt.`;
+    for (const p of parents) {
+      await notificationService.createNotification({
+        toUserId: p.id,
+        fromUserId: req.user.sub,
+        fromUsername: req.user.username || "",
+        fromName: req.user.name || "",
+        type: "FRIEND_APPROVAL",
+        title: "🛡️ Duyệt lời mời kết bạn",
+        message,
+        link: PARENT_LINK,
+      });
+    }
+  } catch (e) {
+    console.error("[friends] Thông báo phụ huynh thất bại:", e.message);
+  }
+}
 
 async function notifyFriendEvent(req, { toUserId, type, title, message }) {
   try {
@@ -58,7 +94,20 @@ router.post("/requests", async (req, res) => {
   try {
     const { userId } = req.body || {};
     const result = await friendService.sendRequest(req.user.sub, userId ? String(userId) : "");
-    if (result.status === "PENDING") {
+    if (result.heldForParent) {
+      // Lời mời bị giữ ở cổng phụ huynh → chỉ báo cho phụ huynh của phía bị
+      // giữ; học sinh nhận chưa thấy gì. alreadyHeld = lời mời của phía kia
+      // đã bị giữ từ trước (phụ huynh đã được báo ở lần gửi đầu) → không
+      // báo lại, không gửi thông báo thường.
+      if (!result.alreadyHeld) {
+        const senderGate = result.gate === "sender";
+        await notifyParentsOfApproval(req, {
+          studentId: senderGate ? req.user.sub : String(userId),
+          otherUserId: senderGate ? String(userId) : req.user.sub,
+          direction: senderGate ? "outgoing" : "incoming",
+        });
+      }
+    } else if (result.status === "PENDING") {
       await notifyFriendEvent(req, {
         toUserId: String(userId),
         type: "FRIEND_REQUEST",

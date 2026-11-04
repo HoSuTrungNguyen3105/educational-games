@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Users, Coins, Star, Sparkles, Gamepad2, ClipboardList, KeyRound,
-  ArrowLeft, Link2, BarChart3, ListChecks, History,
+  ArrowLeft, Link2, BarChart3, ListChecks, History, ShieldCheck, Check, X,
 } from "lucide-react";
 import { parentApi } from "../../services/parentApi.js";
 import { Loader, EmptyState, ErrorState, PrimaryButton, ConfirmModal, Modal } from "../../components/ui";
@@ -20,6 +20,7 @@ import { navigate } from "../../lib/router.js";
 const inputCls = "w-full px-4 py-3 rounded-2xl border border-[#E7D9BE] bg-white text-sm outline-none focus:border-[#1B998B] transition-colors";
 const btnTeal = "flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#1B998B] text-white text-sm font-bold rounded-full hover:bg-[#178a7d] transition-colors disabled:opacity-60";
 const btnGhostSm = "flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#E7D9BE] text-[#20283A] text-xs font-bold rounded-full hover:bg-[#FAF3E3] transition-colors shrink-0 disabled:opacity-60";
+const btnTealSm = "flex items-center gap-1.5 px-3.5 py-2 bg-[#1B998B] text-white text-xs font-bold rounded-full hover:bg-[#178a7d] transition-colors shrink-0 disabled:opacity-60";
 
 function fmtDate(value) {
   if (!value) return "";
@@ -268,13 +269,25 @@ function ParentHome({ showToast }) {
   const [linkError, setLinkError] = useState("");
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
+  // Duyệt kết bạn: theo từng con — { [studentId]: { pending: [], busyToggle, busyReq } }
+  const [friendCtl, setFriendCtl] = useState({});
   const { askConfirm, confirmProps } = useConfirm();
 
   const loadChildren = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      setChildren(await parentApi.children());
+      const kids = await parentApi.children();
+      setChildren(kids);
+      // Lời mời đang chờ duyệt của từng con (lỗi 1 con không chặn các con khác).
+      const entries = await Promise.all(
+        kids.map(async (k) => [k.id, await parentApi.pendingFriendRequests(k.id).catch(() => [])])
+      );
+      setFriendCtl((prev) => {
+        const next = { ...prev };
+        for (const [id, pending] of entries) next[id] = { ...(next[id] || {}), pending };
+        return next;
+      });
     } catch (e) {
       setError(e.message || "Không tải được danh sách con.");
     } finally {
@@ -283,6 +296,48 @@ function ParentHome({ showToast }) {
   }, []);
 
   useEffect(() => { loadChildren(); }, [loadChildren]);
+
+  const setCtl = useCallback((studentId, patch) => {
+    setFriendCtl((prev) => ({ ...prev, [studentId]: { ...(prev[studentId] || {}), ...patch } }));
+  }, []);
+
+  async function reloadPending(studentId) {
+    const pending = await parentApi.pendingFriendRequests(studentId).catch(() => null);
+    if (pending) setCtl(studentId, { pending });
+  }
+
+  async function toggleApproval(child) {
+    const next = !child.friendApprovalRequired;
+    setCtl(child.id, { busyToggle: true });
+    try {
+      await parentApi.setFriendApproval(child.id, next);
+      if (showToast) {
+        showToast(
+          next ? `Đã bật duyệt kết bạn cho ${child.name}` : `Đã tắt duyệt kết bạn cho ${child.name}`,
+          "success"
+        );
+      }
+      await loadChildren();
+    } catch (e) {
+      setError(e.message || "Đổi công tắc duyệt kết bạn thất bại.");
+    } finally {
+      setCtl(child.id, { busyToggle: false });
+    }
+  }
+
+  async function decideRequest(child, req, approve) {
+    setCtl(child.id, { busyReq: req.id });
+    try {
+      if (approve) await parentApi.approveFriendRequest(child.id, req.id);
+      else await parentApi.rejectFriendRequest(child.id, req.id);
+      if (showToast) showToast(approve ? "Đã duyệt lời mời kết bạn" : "Đã từ chối lời mời kết bạn", "success");
+      await reloadPending(child.id);
+    } catch (e) {
+      setError(e.message || "Xử lý lời mời thất bại.");
+    } finally {
+      setCtl(child.id, { busyReq: null });
+    }
+  }
 
   async function handleLink(e) {
     e.preventDefault();
@@ -381,20 +436,90 @@ function ParentHome({ showToast }) {
         <>
           <SectionTitle icon={<Users className="w-5 h-5 text-[#1B998B]" />}>Con của bạn · {children.length}</SectionTitle>
           <div className="space-y-2">
-            {children.map((child) => (
-              <div key={child.id} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#E7D9BE]">
-                <div className="w-11 h-11 rounded-full bg-purple-500 text-white flex items-center justify-center font-bold text-lg shrink-0">
-                  {(child.name || "?").charAt(0).toUpperCase()}
+            {children.map((child) => {
+              const ctl = friendCtl[child.id] || {};
+              const pending = ctl.pending || [];
+              return (
+                <div key={child.id} className="p-3 bg-white rounded-2xl border border-[#E7D9BE]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full bg-purple-500 text-white flex items-center justify-center font-bold text-lg shrink-0">
+                      {(child.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <button onClick={() => openReport(child)} className="flex-1 min-w-0 text-left">
+                      <p className="font-semibold text-sm text-[#20283A] truncate">{child.name}</p>
+                      <p className="text-xs text-[#8A7C63] truncate">
+                        @{child.username}{child.className ? ` · Lớp ${child.className}` : ""} — bấm để xem báo cáo
+                      </p>
+                    </button>
+                    <button onClick={() => handleUnlink(child)} className={btnGhostSm}>Gỡ</button>
+                  </div>
+
+                  {/* Duyệt kết bạn: công tắc theo từng con, mặc định tắt */}
+                  <div className="mt-3 pt-3 border-t border-[#F1EAD8]">
+                    <div className="flex items-center gap-3">
+                      <ShieldCheck className={`w-5 h-5 shrink-0 ${child.friendApprovalRequired ? "text-[#1B998B]" : "text-[#8A7C63]"}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-[#20283A]">Duyệt kết bạn</p>
+                        <p className="text-xs text-[#8A7C63]">
+                          {child.friendApprovalRequired
+                            ? "Lời mời kết bạn của con (gửi đi và nhận về) phải chờ bạn duyệt."
+                            : "Con tự kết bạn như bình thường."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={!!child.friendApprovalRequired}
+                        aria-label={`Duyệt kết bạn cho ${child.name}`}
+                        onClick={() => toggleApproval(child)}
+                        disabled={!!ctl.busyToggle}
+                        className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-60 ${child.friendApprovalRequired ? "bg-[#1B998B]" : "bg-[#E7D9BE]"}`}
+                      >
+                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${child.friendApprovalRequired ? "left-[22px]" : "left-0.5"}`} />
+                      </button>
+                    </div>
+
+                    {pending.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs font-bold text-[#8A7C63] uppercase tracking-wide">
+                          Lời mời đang chờ duyệt · {pending.length}
+                        </p>
+                        {pending.map((req) => (
+                          <div key={req.id} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#FAF3E3] border border-[#E7D9BE]">
+                            <div className="w-9 h-9 rounded-full bg-purple-400 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                              {(req.user?.name || "?").charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-[13px] text-[#20283A] truncate">{req.user?.name}</p>
+                              <p className="text-[11px] text-[#8A7C63] truncate">
+                                {req.direction === "outgoing"
+                                  ? `Con muốn kết bạn với bạn này · @${req.user?.username}`
+                                  : `Bạn này muốn kết bạn với con · @${req.user?.username}`}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => decideRequest(child, req, true)}
+                              disabled={ctl.busyReq === req.id}
+                              className={btnTealSm}
+                            >
+                              <Check className="w-3.5 h-3.5" /> Duyệt
+                            </button>
+                            <button
+                              onClick={() => decideRequest(child, req, false)}
+                              disabled={ctl.busyReq === req.id}
+                              className={btnGhostSm}
+                              aria-label="Từ chối lời mời"
+                            >
+                              <X className="w-3.5 h-3.5" /> Từ chối
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <button onClick={() => openReport(child)} className="flex-1 min-w-0 text-left">
-                  <p className="font-semibold text-sm text-[#20283A] truncate">{child.name}</p>
-                  <p className="text-xs text-[#8A7C63] truncate">
-                    @{child.username}{child.className ? ` · Lớp ${child.className}` : ""} — bấm để xem báo cáo
-                  </p>
-                </button>
-                <button onClick={() => handleUnlink(child)} className={btnGhostSm}>Gỡ</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

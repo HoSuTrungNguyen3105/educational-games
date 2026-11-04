@@ -4,6 +4,7 @@ import { revokeAllForUser } from "./refreshTokenService.js";
 import { getByUser as getProgressByUser } from "./gameProgressService.js";
 import { getUserAllTaskStatus, STUDENT_TASK_SCOPES } from "./taskEngineService.js";
 import { getClassById, getTeacherClasses, getClassStudents } from "./classService.js";
+import * as friendService from "./friendService.js";
 
 // ── Phụ huynh ↔ Học sinh ──────────────────────────────────────────────────
 // Cơ chế liên kết bằng MÃ 6 SỐ (giống mã lớp / mã bài tập mà hệ thống đã dùng):
@@ -122,6 +123,27 @@ export async function unlink(parentId, studentId) {
   return { ok: true };
 }
 
+/**
+ * Gỡ liên kết + dọn cổng duyệt kết bạn: nếu sau khi gỡ, học sinh KHÔNG còn
+ * phụ huynh liên kết nào thì tự động TẮT cờ duyệt kết bạn của con và THẢ
+ * mọi lời mời đang bị giữ — tránh con bị khoá vĩnh viễn vì không còn ai
+ * duyệt. Còn phụ huynh khác liên kết thì giữ nguyên (ai cũng duyệt được).
+ * Trả về `released` (kết quả thả cổng) để route gửi thông báo tương ứng.
+ */
+export async function unlinkAndCleanup(parentId, studentId) {
+  await unlink(parentId, studentId);
+  let released = [];
+  const remaining = await getCollection(LINKS).find({ studentId }).toArray();
+  if (remaining.length === 0) {
+    await getCollection(USERS).updateOne(
+      { id: studentId },
+      { $set: { friendApprovalRequired: false } }
+    );
+    released = await friendService.releaseHeldForStudent(studentId);
+  }
+  return { ok: true, released };
+}
+
 export async function isLinked(parentId, studentId) {
   const doc = await getCollection(LINKS).findOne({ parentId, studentId });
   return !!doc;
@@ -154,6 +176,56 @@ export async function resetChildPassword(parentId, studentId, newPassword) {
   return { ok: true };
 }
 
+// ── Duyệt kết bạn (đợt An toàn cho bé 2) ─────────────────────────────────
+// Công tắc `users.friendApprovalRequired` nằm TRÊN HỌC SINH, mặc định TẮT.
+// Chỉ phụ huynh ĐÃ LIÊN KẾT mới bật/tắt/duyệt được cho đúng con đó (403
+// nếu chưa liên kết); học sinh không có đường nào tự đổi cờ này.
+// Cơ chế giữ/thả lời mời nằm ở friendService (trường `gate` của friendships).
+
+async function requireLinkedStudent(parentId, studentId) {
+  if (!(await isLinked(parentId, studentId))) {
+    throw httpError("Bạn chưa liên kết với học sinh này", 403);
+  }
+  const student = await getCollection(USERS).findOne({ id: studentId });
+  if (!student || student.role !== "student") throw httpError("Không tìm thấy học sinh", 404);
+  return student;
+}
+
+/**
+ * Bật/tắt công tắc duyệt kết bạn cho con.
+ * TẮT công tắc → THẢ mọi lời mời đang bị giữ của con về luồng bình thường
+ * (trả `released` để route gửi thông báo).
+ */
+export async function setFriendApproval(parentId, studentId, enabled) {
+  await requireLinkedStudent(parentId, studentId);
+  const flag = !!enabled;
+  await getCollection(USERS).updateOne(
+    { id: studentId },
+    { $set: { friendApprovalRequired: flag } }
+  );
+  let released = [];
+  if (!flag) released = await friendService.releaseHeldForStudent(studentId);
+  return { friendApprovalRequired: flag, released };
+}
+
+/** Lời mời kết bạn đang chờ phụ huynh này duyệt cho con (cả 2 chiều). */
+export async function listChildFriendRequests(parentId, studentId) {
+  await requireLinkedStudent(parentId, studentId);
+  return friendService.listParentPending(studentId);
+}
+
+/** Duyệt một lời mời đang giữ của con → cho qua cổng (xem friendService). */
+export async function approveChildFriendRequest(parentId, studentId, requestId) {
+  await requireLinkedStudent(parentId, studentId);
+  return friendService.parentApproveRequest(studentId, requestId);
+}
+
+/** Từ chối một lời mời đang giữ của con → xoá lặng lẽ. */
+export async function rejectChildFriendRequest(parentId, studentId, requestId) {
+  await requireLinkedStudent(parentId, studentId);
+  return friendService.parentRejectRequest(studentId, requestId);
+}
+
 // ── Tóm tắt hiển thị ──────────────────────────────────────────────────────
 
 async function studentSummary(student) {
@@ -169,6 +241,7 @@ async function studentSummary(student) {
     name: student.name,
     classId: student.classId || null,
     className,
+    friendApprovalRequired: !!student.friendApprovalRequired,
   };
 }
 

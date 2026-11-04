@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, MessageCircle, Users, GraduationCap, History, UserPlus, UserCheck, Clock, Heart, X, Ban } from "lucide-react";
+import { Search, MessageCircle, Users, GraduationCap, History, UserPlus, UserCheck, Clock, Heart, X, Ban, Shield } from "lucide-react";
 import { userService, classService } from "../../services/api.js";
 import { conversationApi } from "../../services/conversationApi.js";
 import { friendApi } from "../../services/friendApi.js";
@@ -18,6 +18,10 @@ import DMChatScreen from "./DMChatScreen.jsx";
 //     search() cũ cần quyền users.view nên học sinh luôn bị 403).
 // Mọi hàng đều hiển thị nút theo TRẠNG THÁI QUAN HỆ (chưa quen / đã gửi /
 // chờ mình duyệt / đã là bạn) lấy từ overview, để không phải gọi thêm API.
+// Đợt An toàn cho bé 2: nếu phụ huynh bật "Duyệt kết bạn" cho mình, lời mời
+// mình GỬI bị giữ ở mục riêng "Chờ phụ huynh duyệt" (overview.heldOutgoing,
+// quan hệ "pending_parent"); lời mời đến bị giữ thì mình CHƯA thấy — đúng
+// thiết kế, phụ huynh duyệt xong nó mới hiện ở mục Lời mời như bình thường.
 const MAX_CLASSES = 5; // tránh fan-out lớn với tài khoản quản trị thấy mọi lớp
 const MAX_RECENT = 10;
 
@@ -37,6 +41,7 @@ const btnMuted = "flex items-center gap-1.5 px-3.5 py-2 bg-[#F1EAD8] text-[#8A7C
  * Hàng người dùng với nút bấm theo ngữ cảnh:
  *  variant "incoming" → Chấp nhận / Từ chối lời mời
  *  variant "outgoing" → Hủy lời mời đã gửi
+ *  variant "held"     → lời mời mình gửi đang chờ phụ huynh duyệt (nhãn + Hủy)
  *  variant "friend"   → Chat / Hủy kết bạn
  *  mặc định           → nút theo `relation` + Chat
  */
@@ -66,6 +71,15 @@ function PersonRow({ user, subtitle, relation, variant, busy, onChat, onAdd, onA
         </button>
       )}
 
+      {variant === "held" && (
+        <>
+          <span className={btnMuted}><Shield className="w-3.5 h-3.5" /> Chờ phụ huynh duyệt</span>
+          <button onClick={() => onCancel(user)} disabled={busy} className={btnGhost}>
+            <X className="w-3.5 h-3.5" /> Hủy
+          </button>
+        </>
+      )}
+
       {variant === "friend" && (
         <>
           <button onClick={() => onChat(user)} className={btnTeal}>
@@ -84,6 +98,9 @@ function PersonRow({ user, subtitle, relation, variant, busy, onChat, onAdd, onA
           )}
           {relation === "pending_out" && (
             <span className={btnMuted}><Clock className="w-3.5 h-3.5" /> Đã gửi</span>
+          )}
+          {relation === "pending_parent" && (
+            <span className={btnMuted}><Shield className="w-3.5 h-3.5" /> Chờ phụ huynh duyệt</span>
           )}
           {relation === "pending_in" && (
             <button onClick={() => onAccept(user)} disabled={busy} className={btnTeal}>
@@ -120,7 +137,7 @@ export default function FindFriendsScreen({ userAuth }) {
   const [searching, setSearching] = useState(false);
   const [chatTarget, setChatTarget] = useState(null);
 
-  const [overview, setOverview] = useState({ friends: [], incoming: [], outgoing: [] });
+  const [overview, setOverview] = useState({ friends: [], incoming: [], outgoing: [], heldOutgoing: [] });
   const [blocked, setBlocked] = useState([]);
   const [classGroups, setClassGroups] = useState([]);
   const [recentChats, setRecentChats] = useState([]);
@@ -131,11 +148,12 @@ export default function FindFriendsScreen({ userAuth }) {
   const [reloadKey, setReloadKey] = useState(0);
   const { askConfirm, confirmProps } = useConfirm();
 
-  // userId → "friends" | "pending_out" | "pending_in" (không có = chưa quen)
+  // userId → "friends" | "pending_out" | "pending_in" | "pending_parent"
   const relations = useMemo(() => {
     const map = new Map();
     for (const f of overview.friends || []) map.set(f.user.id, "friends");
     for (const f of overview.outgoing || []) map.set(f.user.id, "pending_out");
+    for (const f of overview.heldOutgoing || []) map.set(f.user.id, "pending_parent");
     for (const f of overview.incoming || []) map.set(f.user.id, "pending_in");
     return map;
   }, [overview]);
@@ -147,12 +165,12 @@ export default function FindFriendsScreen({ userAuth }) {
     setSuggestError("");
     try {
       const [ov, classes, conversations, blockedList] = await Promise.all([
-        friendApi.overview().catch(() => ({ friends: [], incoming: [], outgoing: [] })),
+        friendApi.overview().catch(() => ({ friends: [], incoming: [], outgoing: [], heldOutgoing: [] })),
         classService.list().catch(() => []),
         conversationApi.list().catch(() => []),
         friendApi.blocks().catch(() => []),
       ]);
-      setOverview(ov || { friends: [], incoming: [], outgoing: [] });
+      setOverview(ov || { friends: [], incoming: [], outgoing: [], heldOutgoing: [] });
       setBlocked(Array.isArray(blockedList) ? blockedList : []);
 
       // Bạn cùng lớp — mỗi lớp một nhóm, bỏ chính mình.
@@ -284,7 +302,8 @@ export default function FindFriendsScreen({ userAuth }) {
   const friends = overview.friends || [];
   const incoming = overview.incoming || [];
   const outgoing = overview.outgoing || [];
-  const hasSuggestions = classGroups.length > 0 || recentChats.length > 0 || friends.length > 0 || incoming.length > 0 || outgoing.length > 0 || blocked.length > 0;
+  const heldOutgoing = overview.heldOutgoing || [];
+  const hasSuggestions = classGroups.length > 0 || recentChats.length > 0 || friends.length > 0 || incoming.length > 0 || outgoing.length > 0 || heldOutgoing.length > 0 || blocked.length > 0;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-5 w-full">
@@ -370,6 +389,19 @@ export default function FindFriendsScreen({ userAuth }) {
               <div className="space-y-2">
                 {outgoing.map(({ user }) => (
                   <PersonRow key={user.id} user={user} variant="outgoing" busy={busyId === user.id} {...rowHandlers} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {!suggestLoading && heldOutgoing.length > 0 && (
+            <>
+              <SectionTitle icon={<Shield className="w-5 h-5 text-[#B7791F]" />} badge={heldOutgoing.length}>
+                Chờ phụ huynh duyệt
+              </SectionTitle>
+              <div className="space-y-2">
+                {heldOutgoing.map(({ user }) => (
+                  <PersonRow key={user.id} user={user} variant="held" busy={busyId === user.id} {...rowHandlers} />
                 ))}
               </div>
             </>
