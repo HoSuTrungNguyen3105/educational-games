@@ -438,10 +438,18 @@ function pt(e) { return { x: e.clientX, y: e.clientY, t: performance.now() }; }
 window.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; audio(); down = true; lastPt = pt(e); trail = [lastPt]; swipeHits = 0; ptsInSwipe = []; });
 window.addEventListener('pointermove', e => {
   if (!down) return; const p = pt(e); trail.push(p); if (trail.length > 14) trail.shift();
-  const dt = Math.max(1, p.t - lastPt.t) / 1000, dx = p.x - lastPt.x, dy = p.y - lastPt.y, dist = Math.hypot(dx, dy), speed = dist / dt;
-  if ((state === 'play' || state === 'menu') && dist > 5 && speed > 320) {
+  // Tốc độ quẹt đo theo CỬA SỔ ~120ms gần nhất (điểm cũ nhất trong trail còn
+  // trong cửa sổ), KHÔNG đo theo từng đoạn giữa 2 sự kiện pointermove liên
+  // tiếp: khi sự kiện bị thưa/gộp (chuột tần suất quét thấp, máy yếu, trình
+  // duyệt gộp sự kiện) thì dt của một đoạn phình to, tốc độ đo được sụp dưới
+  // ngưỡng dù người chơi quẹt nhanh — hệ quả là quẹt khắp màn hình vẫn 0 trái.
+  let w0 = null;
+  for (let i = trail.length - 1; i >= 0; i--) { if (p.t - trail[i].t <= 120) w0 = trail[i]; else break; }
+  if (!w0 || w0 === p) w0 = lastPt || p; // khoảng trống sự kiện dài: lấy điểm trước làm mốc
+  const dt = Math.max(120, p.t - w0.t) / 1000, dx = p.x - w0.x, dy = p.y - w0.y, dist = Math.hypot(dx, dy), speed = dist / dt;
+  if ((state === 'play' || state === 'menu') && dist > 8 && speed > 200) {
     sfx.whoosh(); const ang = Math.atan2(dy, dx);
-    for (const f of fruits) if (!f.dead && segHit(f, lastPt, p)) sliceFruit(f, ang);
+    for (const f of fruits) if (!f.dead && segHit(f, w0, p)) sliceFruit(f, ang);
   }
   lastPt = p;
 });

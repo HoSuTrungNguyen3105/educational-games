@@ -404,9 +404,15 @@ $('restOk').onclick = () => { $('rest').classList.remove('show'); state = 'play'
 
 /* ================= Điều khiển ================= */
 const joyEl = $('joy'), jumpBtn = $('jumpBtn'); let joyId = null, camId = null, joyO = null, camLast = null;
+// Game chạy trong iframe của app: iframe KHÔNG tự có focus bàn phím, mà
+// keydown chỉ tới cửa sổ đang có focus — nếu người chơi chưa bấm chuột vào
+// trong game thì WASD/mũi tên/space "chết" hoàn toàn dù handler đúng. Chủ
+// động lấy focus mỗi khi bắt đầu chơi và mỗi lần chạm vào game.
+function grabFocus() { try { window.focus(); } catch (e) { /* bỏ qua */ } }
 function jump() { pl.jbuf = .14; }
 function setJoy(x, y) { const m = 52, l = Math.hypot(x, y) || 1, k = Math.min(1, l / m); inp.x = x / l * k; inp.y = -y / l * k; if (l < 6) inp.x = inp.y = 0; joyEl.firstElementChild.style.transform = `translate(${x / l * Math.min(l, m)}px,${y / l * Math.min(l, m)}px)`; }
 window.addEventListener('pointerdown', e => {
+  grabFocus();
   if (e.target.closest('button') || e.target.closest('.screen.show') || state !== 'play') return; audio();
   if (e.clientX < window.innerWidth * .5 && joyId === null && e.clientY > window.innerHeight * .25) { joyId = e.pointerId; joyO = { x: e.clientX, y: e.clientY }; joyEl.style.display = 'block'; joyEl.style.left = joyO.x + 'px'; joyEl.style.top = joyO.y + 'px'; setJoy(0, 0); }
   else if (camId === null) { camId = e.pointerId; camLast = { x: e.clientX, y: e.clientY }; }
@@ -427,7 +433,7 @@ const SCR = ['home', 'floors', 'shop', 'pause', 'rest'];
 function show(id) { SCR.forEach(s => $(s).classList.toggle('show', s === id)); }
 function goHome() { state = 'menu'; $('hud').classList.remove('on'); jumpBtn.style.display = 'none'; joyEl.style.display = 'none'; enterFloor(S.cur || 1, true); renderHome(); show('home'); }
 function renderHome() { $('hmStar').textContent = `⭐ ${S.stars}`; $('hmBest').textContent = `🏢 Cao nhất: tầng ${S.best}`; $('playBtn').textContent = `▶ TIẾP TỤC · TẦNG ${S.cur || 1}`; $('easyBtn').textContent = '✨ Nhẹ nhàng: ' + (S.easy ? 'Bật' : 'Tắt'); $('sndBtn').textContent = '🔊 Âm: ' + (S.sfx ? 'Bật' : 'Tắt'); $('musBtn').textContent = '🎵 Nhạc: ' + (S.music ? 'Bật' : 'Tắt'); }
-function play() { show(null); state = 'play'; $('hud').classList.add('on'); jumpBtn.style.display = 'block'; hudUpdate(); if (!S.tipDone) { S.tipDone = 1; persist(); toast('Kéo bên trái để đi · nút ⬆ để nhảy (nhảy 2 lần được!) · kéo bên phải để xoay camera'); } }
+function play() { grabFocus(); show(null); state = 'play'; $('hud').classList.add('on'); jumpBtn.style.display = 'block'; hudUpdate(); if (!S.tipDone) { S.tipDone = 1; persist(); toast('Kéo bên trái để đi · nút ⬆ để nhảy (nhảy 2 lần được!) · kéo bên phải để xoay camera'); } }
 $('playBtn').onclick = () => { audio(); sfx.tap(); play(); };
 $('easyBtn').onclick = () => { audio(); S.easy = !S.easy; persist(); enterFloor(S.cur || 1, true); renderHome(); sfx.tap(); };
 $('sndBtn').onclick = () => { audio(); S.sfx = !S.sfx; persist(); renderHome(); }; $('musBtn').onclick = () => { audio(); S.music = !S.music; persist(); renderHome(); };
