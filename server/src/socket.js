@@ -7,6 +7,9 @@ import * as resultService from "./services/resultService.js";
 import * as chatService from "./services/chatService.js";
 import * as notificationService from "./services/notificationService.js";
 import * as gameSessionService from "./services/gameSessionService.js";
+import * as friendService from "./services/friendService.js";
+import * as conversationService from "./services/conversationService.js";
+import { isBlockedBetween } from "./services/blockService.js";
 
 // Event names — PHẢI khớp với frontend src/socket/socket.events.js
 export const EVENTS = {
@@ -37,6 +40,11 @@ export const EVENTS = {
   CHAT_TYPING: "chat:typing",
   CHAT_READ: "chat:read",
 
+  // Hiện diện online (presence) — chỉ trong vòng bạn bè + đối tác DM 1-1
+  PRESENCE_ONLINE: "presence:online",
+  PRESENCE_OFFLINE: "presence:offline",
+  PRESENCE_SNAPSHOT: "presence:snapshot",
+
   // Game invite events
   GAME_INVITE_SEND: "game:invite:send",
   GAME_INVITE_RECEIVED: "game:invite:received",
@@ -63,6 +71,85 @@ export const EVENTS = {
 };
 
 const roomName = (gameId) => `game:${gameId}`;
+
+// ===== Hiện diện online (presence) =====
+// Trạng thái nằm trong bộ nhớ của TIẾN TRÌNH server này (giả định một
+// instance Render duy nhất — nếu scale nhiều instance phải chuyển sang
+// adapter/store dùng chung). Một user có thể có nhiều socket (nhiều tab /
+// thiết bị): chỉ socket ĐẦU TIÊN mới tính là "vừa online", chỉ khi socket
+// CUỐI CÙNG ngắt mới tính là "offline".
+const onlineSocketsByUser = new Map(); // userId -> Set<socketId>
+
+const isOnline = (userId) => (onlineSocketsByUser.get(userId)?.size || 0) > 0;
+
+/**
+ * Vòng nhận tin hiện diện của một user: BẠN BÈ (friendships ACCEPTED) +
+ * đối tác trò chuyện DM 1-1 gần đây (conversations type "dm"). KHÔNG
+ * broadcast toàn hệ thống. Cặp nào đã chặn nhau (một trong hai chiều) bị
+ * loại khỏi vòng — chặn ở PR An toàn cho bé 1 đã hủy bạn bè, nhưng quan hệ
+ * đối tác DM vẫn còn trong conversations nên phải lọc thêm ở đây, tránh
+ * hiện diện làm lộ trạng thái cho người đã bị chặn.
+ */
+async function presenceAudience(userId) {
+  const ids = new Set();
+  try {
+    const friends = await friendService.listFriends(userId);
+    for (const f of friends) if (f?.user?.id) ids.add(f.user.id);
+  } catch (e) {
+    console.error("[presence] listFriends failed:", e.message);
+  }
+  try {
+    const convs = await conversationService.listConversations(userId);
+    for (const c of convs) {
+      if (c?.type !== "dm" || !Array.isArray(c.memberIds)) continue;
+      for (const m of c.memberIds) if (m && m !== userId) ids.add(m);
+    }
+  } catch (e) {
+    console.error("[presence] listConversations failed:", e.message);
+  }
+  ids.delete(userId);
+  const audience = [];
+  for (const id of ids) {
+    if (await isBlockedBetween(userId, id).catch(() => false)) continue;
+    audience.push(id);
+  }
+  return audience;
+}
+
+async function handlePresenceConnect(io, socket, userId) {
+  // Đăng ký socket vào set NGAY (đồng bộ) để handler disconnect luôn thấy
+  // đúng trạng thái dù phần tính audience ở dưới chạy bất đồng bộ.
+  let set = onlineSocketsByUser.get(userId);
+  const isFirst = !set || set.size === 0;
+  if (!set) {
+    set = new Set();
+    onlineSocketsByUser.set(userId, set);
+  }
+  set.add(socket.id);
+
+  const audience = await presenceAudience(userId);
+  // Snapshot cho chính socket vừa nối: trong vòng của mình, ai đang online.
+  // (Socket có thể đã ngắt trong lúc chờ DB — emit vào socket chết là vô hại.)
+  socket.emit(EVENTS.PRESENCE_SNAPSHOT, {
+    userIds: audience.filter((id) => isOnline(id)),
+  });
+  if (!isFirst) return;
+  for (const id of audience) {
+    if (isOnline(id)) io.to(`user:${id}`).emit(EVENTS.PRESENCE_ONLINE, { userId });
+  }
+}
+
+async function handlePresenceDisconnect(io, socket, userId) {
+  const set = onlineSocketsByUser.get(userId);
+  if (!set) return;
+  set.delete(socket.id);
+  if (set.size > 0) return; // còn tab/thiết bị khác — vẫn online
+  onlineSocketsByUser.delete(userId);
+  const audience = await presenceAudience(userId);
+  for (const id of audience) {
+    if (isOnline(id)) io.to(`user:${id}`).emit(EVENTS.PRESENCE_OFFLINE, { userId });
+  }
+}
 
 // Session game realtime (in-memory). Mỗi game một session.
 const sessions = new Map(); // gameId -> session
@@ -167,7 +254,13 @@ export function initSocket(httpServer) {
 
     // Join user room for targeted notification emit (requires JWT on connect)
     const userId = socket.data.user?.sub;
-    if (userId) socket.join(`user:${userId}`);
+    if (userId) {
+      socket.join(`user:${userId}`);
+      // Hiện diện: ghi nhận socket này thuộc phiên của user (nhiều tab OK).
+      handlePresenceConnect(io, socket, userId).catch((e) =>
+        console.error("[presence] connect failed:", e.message)
+      );
+    }
 
     // Teacher mở lớp / tham gia vào phòng game
     socket.on(EVENTS.JOIN_CLASSROOM, (data = {}) => {
@@ -300,8 +393,12 @@ export function initSocket(httpServer) {
     socket.on(EVENTS.CHAT_MESSAGE, async (data = {}) => {
       const gameId = data.gameId || socket.data.gameId;
       if (!gameId) return;
-      const senderId = socket.data.playerId || socket.data.user?.id || socket.id;
-      const playerName = data.playerName || socket.data.playerId || "Ẩn danh";
+      // JWT payload dùng `sub` làm id (không có field `id`) — trước đây đọc
+      // `user?.id` nên user đăng nhập gửi DM qua socket bị rơi xuống
+      // socket.id: tin ghi sai người gửi VÀ né được kiểm tra chặn trong
+      // chatService (senderId không khớp một phía nào của "dm:a:b").
+      const senderId = socket.data.user?.sub || socket.data.playerId || socket.id;
+      const playerName = data.playerName || socket.data.user?.name || socket.data.playerId || "Ẩn danh";
       try {
         const msg = await chatService.sendMessage({
           conversationId: gameId,
@@ -608,6 +705,13 @@ export function initSocket(httpServer) {
     });
 
     socket.on("disconnect", () => {
+      // Hiện diện: socket cuối cùng của user ngắt → báo offline cho vòng
+      // bạn bè/đối tác của họ. User ẩn danh (chơi game) không có presence.
+      if (userId) {
+        handlePresenceDisconnect(io, socket, userId).catch((e) =>
+          console.error("[presence] disconnect failed:", e.message)
+        );
+      }
       const gameId = socket.data.gameId;
       if (gameId) removePlayer(io, socket, gameId);
     });
