@@ -222,6 +222,33 @@ export async function getStudentSubmission(assignmentId, studentId) {
     getCollection("submissions").findOne({ assignmentId, studentId, status: "SUBMITTED" });
 }
 
+/**
+ * CHỈ ĐỌC — xem trạng thái làm bài hiện tại của học sinh mà KHÔNG tạo
+ * submission mới (khác startSubmission ở chỗ không có bất kỳ side-effect nào).
+ * Client dùng để dựng màn hình giới thiệu trước khi học sinh bấm Bắt đầu:
+ * chưa từng bắt đầu → null; đang làm dở → IN_PROGRESS + thời gian còn lại;
+ * đã nộp → SUBMITTED. Đồng hồ bài thi chỉ được phép chạy sau start thật.
+ */
+export async function peekSubmission(assignmentId, studentId) {
+  const subs = getCollection("submissions");
+  const inProgress = await subs.findOne({ assignmentId, studentId, status: "IN_PROGRESS" });
+  if (inProgress) {
+    const assignment = await getAssignmentById(assignmentId);
+    let remainingTime = null;
+    if (assignment?.isExam && assignment?.examDuration && inProgress.startedAt) {
+      const elapsed = Math.floor((Date.now() - new Date(inProgress.startedAt).getTime()) / 1000);
+      remainingTime = Math.max(0, assignment.examDuration * 60 - elapsed);
+    }
+    return { status: "IN_PROGRESS", startedAt: inProgress.startedAt, remainingTime };
+  }
+  const submitted = await subs.findOne(
+    { assignmentId, studentId, status: "SUBMITTED" },
+    { sort: { submittedAt: -1 } },
+  );
+  if (submitted) return { status: "SUBMITTED", startedAt: submitted.startedAt, remainingTime: null };
+  return null;
+}
+
 export async function listSubmissions({ assignmentId, studentId } = {}) {
   const query = {};
   if (assignmentId) query.assignmentId = assignmentId;
