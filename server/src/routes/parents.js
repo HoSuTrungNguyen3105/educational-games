@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
+import { getCollection } from "../db.js";
 import * as parentService from "../services/parentService.js";
+import * as notificationService from "../services/notificationService.js";
 import {
   issueRefreshToken, setRefreshCookie,
 } from "../services/refreshTokenService.js";
@@ -14,6 +16,91 @@ const router = Router();
 
 function fail(res, e) {
   return sendError(res, e.message || "Thao tác thất bại", e.status || 400);
+}
+
+// ── Thông báo cho luồng duyệt kết bạn ────────────────────────────────────
+// Lỗi gửi thông báo không làm hỏng thao tác chính (giống routes/friends).
+const FRIENDS_LINK = "educational-games/#/find-friends";
+const PARENT_LINK = "educational-games/#/parent";
+
+async function userById(id) {
+  return getCollection("users").findOne({ id });
+}
+
+async function safeNotify({ toUserId, fromUser, type, title, message, link }) {
+  try {
+    await notificationService.createNotification({
+      toUserId,
+      fromUserId: fromUser?.id || fromUser?.sub || "",
+      fromUsername: fromUser?.username || "",
+      fromName: fromUser?.name || "",
+      type,
+      title,
+      message,
+      link,
+    });
+  } catch (e) {
+    console.error("[parents] Gửi thông báo thất bại:", e.message);
+  }
+}
+
+/** Báo cho MỌI phụ huynh đã liên kết của học sinh là có lời mời chờ duyệt. */
+async function notifyApprovalNeeded({ studentId, otherUserId, direction, actor }) {
+  try {
+    const [student, other, parents] = await Promise.all([
+      userById(studentId),
+      userById(otherUserId),
+      parentService.listParentsOf(studentId),
+    ]);
+    const childName = student?.name || "Con bạn";
+    const otherName = other?.name || "Một bạn học";
+    const message = direction === "outgoing"
+      ? `${childName} muốn kết bạn với ${otherName}. Lời mời đang chờ bạn duyệt.`
+      : `${otherName} muốn kết bạn với ${childName}. Lời mời đang chờ bạn duyệt.`;
+    for (const p of parents) {
+      await safeNotify({
+        toUserId: p.id,
+        fromUser: actor,
+        type: "FRIEND_APPROVAL",
+        title: "🛡️ Duyệt lời mời kết bạn",
+        message,
+        link: PARENT_LINK,
+      });
+    }
+  } catch (e) {
+    console.error("[parents] Thông báo phụ huynh thất bại:", e.message);
+  }
+}
+
+/**
+ * Xử lý thông báo cho các lời mời vừa được THẢ/DUYỆT qua cổng
+ * (friendService trả về [{ stage, request }]):
+ * - stage "visible"  → lời mời đến hiện ra với học sinh nhận → báo học sinh.
+ * - stage "receiver" → lời mời chuyển sang chờ phụ huynh PHÍA NHẬN duyệt.
+ */
+async function notifyReleased(actor, released) {
+  for (const item of released || []) {
+    const doc = item.request;
+    if (!doc) continue;
+    if (item.stage === "visible") {
+      const requester = await userById(doc.requesterId);
+      await safeNotify({
+        toUserId: doc.addresseeId,
+        fromUser: requester,
+        type: "FRIEND_REQUEST",
+        title: "👋 Lời mời kết bạn",
+        message: `${requester?.name || "Một người bạn"} đã gửi lời mời kết bạn cho bạn`,
+        link: FRIENDS_LINK,
+      });
+    } else if (item.stage === "receiver") {
+      await notifyApprovalNeeded({
+        studentId: doc.addresseeId,
+        otherUserId: doc.requesterId,
+        direction: "incoming",
+        actor,
+      });
+    }
+  }
 }
 
 // POST /api/parents/register — đăng ký tài khoản phụ huynh (công khai).
@@ -82,7 +169,11 @@ router.get("/my-parents", authenticate, requireRoles("student"), async (req, res
 
 router.delete("/my-parents/:parentId", authenticate, requireRoles("student"), async (req, res) => {
   try {
-    sendSuccess(res, await parentService.unlink(req.params.parentId, req.user.sub));
+    // unlinkAndCleanup: con không còn phụ huynh nào → tự tắt cờ duyệt kết
+    // bạn + thả lời mời đang giữ (tránh khoá vĩnh viễn không ai duyệt).
+    const result = await parentService.unlinkAndCleanup(req.params.parentId, req.user.sub);
+    await notifyReleased(req.user, result.released);
+    sendSuccess(res, { ok: true });
   } catch (e) {
     return fail(res, e);
   }
@@ -113,7 +204,9 @@ router.get("/children", authenticate, requireRoles("parent"), async (req, res, n
 // DELETE /api/parents/children/:studentId — phụ huynh gỡ liên kết với một con.
 router.delete("/children/:studentId", authenticate, requireRoles("parent"), async (req, res) => {
   try {
-    sendSuccess(res, await parentService.unlink(req.user.sub, req.params.studentId));
+    const result = await parentService.unlinkAndCleanup(req.user.sub, req.params.studentId);
+    await notifyReleased(req.user, result.released);
+    sendSuccess(res, { ok: true });
   } catch (e) {
     return fail(res, e);
   }
@@ -137,6 +230,62 @@ router.post("/children/:studentId/reset-password", authenticate, requireRoles("p
 router.get("/children/:studentId/report", authenticate, requireRoles("parent"), async (req, res) => {
   try {
     sendSuccess(res, await parentService.getChildReport(req.user.sub, req.params.studentId));
+  } catch (e) {
+    return fail(res, e);
+  }
+});
+
+// ── Duyệt kết bạn (đợt An toàn cho bé 2) ─────────────────────────────────
+// Công tắc theo TỪNG CON, phụ huynh tự bật/tắt, mặc định TẮT. Mọi endpoint
+// đều qua parentService.requireLinkedStudent (chưa liên kết → 403).
+
+// PUT /api/parents/children/:studentId/friend-approval { enabled }
+// Bật/tắt công tắc duyệt kết bạn cho con. TẮT → thả mọi lời mời đang giữ.
+router.put("/children/:studentId/friend-approval", authenticate, requireRoles("parent"), async (req, res) => {
+  try {
+    const { enabled } = req.body || {};
+    const result = await parentService.setFriendApproval(
+      req.user.sub, req.params.studentId, !!enabled
+    );
+    await notifyReleased(req.user, result.released);
+    sendSuccess(res, { friendApprovalRequired: result.friendApprovalRequired });
+  } catch (e) {
+    return fail(res, e);
+  }
+});
+
+// GET /api/parents/children/:studentId/friend-requests — lời mời đang chờ
+// phụ huynh này duyệt cho con (cả con gửi đi lẫn gửi đến con).
+router.get("/children/:studentId/friend-requests", authenticate, requireRoles("parent"), async (req, res) => {
+  try {
+    sendSuccess(res, await parentService.listChildFriendRequests(req.user.sub, req.params.studentId));
+  } catch (e) {
+    return fail(res, e);
+  }
+});
+
+// POST /api/parents/children/:studentId/friend-requests/:requestId/approve
+// Duyệt → lời mời qua cổng hiện tại (có thể sang cổng phía bên kia nếu phía
+// đó cũng bật cờ — service trả stage để route gửi đúng thông báo).
+router.post("/children/:studentId/friend-requests/:requestId/approve", authenticate, requireRoles("parent"), async (req, res) => {
+  try {
+    const result = await parentService.approveChildFriendRequest(
+      req.user.sub, req.params.studentId, req.params.requestId
+    );
+    await notifyReleased(req.user, [result]);
+    sendSuccess(res, { stage: result.stage });
+  } catch (e) {
+    return fail(res, e);
+  }
+});
+
+// POST /api/parents/children/:studentId/friend-requests/:requestId/reject
+// Từ chối → lời mời bị xoá lặng lẽ, không thông báo cho người gửi.
+router.post("/children/:studentId/friend-requests/:requestId/reject", authenticate, requireRoles("parent"), async (req, res) => {
+  try {
+    sendSuccess(res, await parentService.rejectChildFriendRequest(
+      req.user.sub, req.params.studentId, req.params.requestId
+    ));
   } catch (e) {
     return fail(res, e);
   }

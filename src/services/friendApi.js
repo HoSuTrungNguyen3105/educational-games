@@ -5,9 +5,13 @@ import { apiFetch } from "./api.js";
 // thu hồi/hủy kết bạn. GET /friends trả cả 3 danh sách trong một lần gọi để
 // trang Tìm bạn vẽ đúng trạng thái nút bấm (Kết bạn / Đã gửi / Chấp nhận).
 export const friendApi = {
-  /** { friends: [{user, since}], incoming: [...], outgoing: [...] } */
+  /**
+   * { friends: [{user, since}], incoming: [...], outgoing: [...],
+   *   heldOutgoing: [...] } — heldOutgoing là lời mời mình đã gửi nhưng
+   *   đang bị giữ chờ phụ huynh MÌNH duyệt (công tắc duyệt kết bạn).
+   */
   async overview() {
-    return apiFetch("/friends") || { friends: [], incoming: [], outgoing: [] };
+    return apiFetch("/friends") || { friends: [], incoming: [], outgoing: [], heldOutgoing: [] };
   },
 
   /** Gửi lời mời; nếu phía kia đã mời mình trước → server tự chấp nhận (status ACCEPTED). */
