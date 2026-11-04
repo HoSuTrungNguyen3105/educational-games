@@ -21,6 +21,13 @@ export function Modal({
   contentRef,
   unstyled = false,
   closeOnBackdrop = true,
+  /**
+   * Cho phép người dùng TỰ đóng modal bằng ESC / bấm ra ngoài nền (mặc định
+   * có). Đặt `false` cho các modal bắt buộc phải chọn một hành động rõ ràng
+   * mới thoát được (vd onboarding đầu vào: chỉ nút "Bỏ qua" hoặc hoàn thành
+   * form mới qua — Nguyên chốt 2026-11-04). Khoá cuộn nền không đổi.
+   */
+  dismissible = true,
 }) {
   // Chuẩn chung cho MỌI modal của app: khoá cuộn trang nền khi mở và ESC để
   // đóng (trước đây chỉ có bấm ra ngoài nền; từng modal tự lo nên chỗ có
@@ -37,13 +44,13 @@ export function Modal({
     };
   }, []);
   useEffect(() => {
-    if (!onClose) return undefined;
+    if (!onClose || !dismissible) return undefined;
     const onKey = (e) => {
       if (e.key === "Escape" && modalStack[modalStack.length - 1] === stackEntryRef.current) onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, dismissible]);
 
   // z-[70]: cao hơn các panel/modal khác trong app (z-40, z-50, z-[60]) để
   // luôn nổi lên trên, nhưng vẫn dưới Toast (z-[100]) để thông báo không bị che.
@@ -58,7 +65,7 @@ export function Modal({
   return (
     <div
       className={`${overlayBase} ${overlayClassName}`}
-      onClick={closeOnBackdrop ? onClose : undefined}
+      onClick={dismissible && closeOnBackdrop ? onClose : undefined}
       style={{ marginTop: 0, ...(overlayStyle || {}) }}
     >
       <div
