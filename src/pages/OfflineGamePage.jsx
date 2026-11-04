@@ -31,10 +31,15 @@ const OFFLINE_HTML = import.meta.glob("../games/offline/*.html", {
   eager: true,
 });
 
-/** id = tên file bỏ đuôi .html, ví dụ "night-strike.html" → "night-strike" */
+/**
+ * id = tên file bỏ đuôi .html, ví dụ "night-strike.html" → "night-strike".
+ * Khoá được chuẩn hoá về chữ thường: tên file lỡ viết hoa (vd "Labyrinth.html")
+ * vẫn tra được bằng id thường trong manifest — tránh lỗi "Không tìm thấy game"
+ * trên hệ thống file phân biệt hoa/thường (Linux).
+ */
 const HTML_BY_ID = Object.fromEntries(
   Object.entries(OFFLINE_HTML).map(([path, mod]) => [
-    path.split("/").pop().replace(/\.html$/, ""),
+    path.split("/").pop().replace(/\.html$/, "").toLowerCase(),
     typeof mod === "string" ? mod : mod.default,
   ])
 );
@@ -107,7 +112,9 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
     if (isSchoolMissionRedirect) navigate("/school-mission");
   }, [isSchoolMissionRedirect]);
 
-  const html = isSchoolMissionRedirect ? null : HTML_BY_ID[gameId];
+  const html = isSchoolMissionRedirect
+    ? null
+    : HTML_BY_ID[String(gameId || "").toLowerCase()];
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   // undefined = chưa đọc xong IndexedDB; số = version đang cache cho game này
   const [cachedVersion, setCachedVersion] = useState(undefined);
