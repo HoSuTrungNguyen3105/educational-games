@@ -582,6 +582,8 @@ export default function SupportTicketManagement({ user, showToast }) {
         </Modal>
       )}
 
+      <UserReportsSection showToast={showToast} />
+
       <ConfirmModal
         open={confirm.open}
         title="Xóa ticket"
@@ -590,6 +592,94 @@ export default function SupportTicketManagement({ user, showToast }) {
         onClose={closeDelete}
         confirmLabel="Xóa"
       />
+    </div>
+  );
+}
+
+// ── Báo cáo người dùng (an toàn cho bé) ──────────────────────────────────
+// Mục riêng dưới bảng ticket: báo cáo học sinh gửi từ màn hình chat, lưu ở
+// collection `reports` (server/src/services/reportService.js) — KHÔNG trộn
+// vào ticket hỗ trợ vì ticket không có "người bị báo cáo". Giữ tối thiểu:
+// danh sách + đánh dấu đã xử lý/mở lại.
+const REPORT_REASON_LABELS = {
+  harassment: "Quấy rối",
+  bad_language: "Ngôn từ xấu",
+  scam: "Lừa đảo",
+  other: "Khác",
+};
+
+function UserReportsSection({ showToast }) {
+  const [reports, setReports] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+
+  const loadReports = useCallback(() => {
+    supportService.listReports()
+      .then((data) => setReports(data || []))
+      .catch(() => setReports([]));
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(loadReports, 0);
+    return () => clearTimeout(t);
+  }, [loadReports]);
+
+  const setStatus = async (report, status) => {
+    setBusyId(report.id);
+    try {
+      const updated = await supportService.updateReport(report.id, { status });
+      setReports((prev) => (prev || []).map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+      showToast?.(status === "resolved" ? "Đã đánh dấu báo cáo là đã xử lý" : "Đã mở lại báo cáo", "success");
+    } catch (e) {
+      showToast?.(e.message || "Không cập nhật được báo cáo", "error");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (reports === null) return null;
+
+  return (
+    <div className="note-card p-4 sm:p-5">
+      <h3 className="font-display text-base text-ink mb-1">
+        Báo cáo người dùng · {reports.length}
+      </h3>
+      <p className="text-xs text-[#8A7C63] font-body mb-3">
+        Báo cáo học sinh gửi từ màn hình trò chuyện khi bị quấy rối. Xử lý xong hãy đánh dấu để danh sách gọn lại.
+      </p>
+      {reports.length === 0 ? (
+        <p className="text-sm text-[#8A7C63] font-body py-3 text-center">Chưa có báo cáo nào.</p>
+      ) : (
+        <div className="space-y-2">
+          {reports.map((r) => (
+            <div key={r.id} className="flex flex-wrap items-center gap-3 px-3.5 py-2.5 rounded-2xl border border-ink/10 bg-paper">
+              <div className="flex-1 min-w-[220px]">
+                <p className="text-sm font-body text-ink">
+                  <span className="font-semibold">{r.reportedName || r.reportedUsername || r.reportedId}</span>
+                  {r.reportedUsername ? <span className="text-[#8A7C63]"> (@{r.reportedUsername})</span> : null}
+                  {" — "}{REPORT_REASON_LABELS[r.reason] || r.reason}
+                </p>
+                <p className="text-xs text-[#8A7C63] font-body">
+                  Người báo cáo: {r.reporterName || r.reporterUsername || r.reporterId} · {formatDate(r.createdAt)}
+                  {r.note ? ` · "${r.note}"` : ""}
+                </p>
+              </div>
+              {r.status === "resolved" ? (
+                <>
+                  <span className="px-2 py-0.5 rounded-md text-[11px] font-mono bg-[#2F9E44]/10 text-[#2F9E44]">Đã xử lý</span>
+                  <GhostButton onClick={() => setStatus(r, "open")} disabled={busyId === r.id}>Mở lại</GhostButton>
+                </>
+              ) : (
+                <>
+                  <span className="px-2 py-0.5 rounded-md text-[11px] font-mono bg-ticket/10 text-ticket">Chưa xử lý</span>
+                  <PrimaryButton onClick={() => setStatus(r, "resolved")} disabled={busyId === r.id} className="!px-3.5 !py-1.5 text-xs">
+                    Đánh dấu đã xử lý
+                  </PrimaryButton>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

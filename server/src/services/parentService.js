@@ -1,5 +1,6 @@
 import { getCollection } from "../db.js";
-import { createUser, findByUsername, signToken, getXp } from "./authService.js";
+import { createUser, findByUsername, signToken, getXp, resetPassword } from "./authService.js";
+import { revokeAllForUser } from "./refreshTokenService.js";
 import { getByUser as getProgressByUser } from "./gameProgressService.js";
 import { getUserAllTaskStatus, STUDENT_TASK_SCOPES } from "./taskEngineService.js";
 import { getClassById, getTeacherClasses, getClassStudents } from "./classService.js";
@@ -124,6 +125,33 @@ export async function unlink(parentId, studentId) {
 export async function isLinked(parentId, studentId) {
   const doc = await getCollection(LINKS).findOne({ parentId, studentId });
   return !!doc;
+}
+
+/**
+ * Phụ huynh đặt lại mật khẩu cho CON ĐÃ LIÊN KẾT (con quên mật khẩu thì
+ * hiện chỉ có quản trị mới đặt lại được). Điều kiện cứng giống mọi endpoint
+ * báo cáo: phải có bản ghi liên kết thật trong `parentLinks` — chưa liên
+ * kết → 403, không có ngoại lệ.
+ * Mật khẩu mới đi qua `authService.resetPassword` (băm bcrypt, tối thiểu 6
+ * ký tự, xóa generatedPassword) — cùng cơ chế quản trị đang dùng.
+ * Sau khi đổi, thu hồi MỌI refresh token của con (cơ chế sẵn có
+ * `revokeAllForUser`) để các thiết bị đang đăng nhập phải đăng nhập lại
+ * bằng mật khẩu mới. Giới hạn còn lại: access token JWT đã cấp là stateless
+ * nên vẫn hiệu lực tới khi tự hết hạn — hệ thống chưa có danh sách thu hồi
+ * access token.
+ */
+export async function resetChildPassword(parentId, studentId, newPassword) {
+  if (!(await isLinked(parentId, studentId))) {
+    throw httpError("Bạn chưa liên kết với học sinh này", 403);
+  }
+  const student = await getCollection(USERS).findOne({ id: studentId });
+  if (!student) throw httpError("Không tìm thấy học sinh", 404);
+  if (student.role !== "student") throw httpError("Tài khoản này không phải là học sinh", 400);
+  await resetPassword(studentId, newPassword);
+  await revokeAllForUser(studentId).catch((e) => {
+    console.error("[parents] Thu hồi phiên của học sinh sau đặt lại mật khẩu thất bại:", e.message);
+  });
+  return { ok: true };
 }
 
 // ── Tóm tắt hiển thị ──────────────────────────────────────────────────────
