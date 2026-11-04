@@ -1,4 +1,5 @@
 import { getCollection } from "../db.js";
+import { isBlockedBetween } from "./blockService.js";
 
 const MESSAGES = "messages";
 const MAX_MESSAGE_LENGTH = 500;
@@ -58,6 +59,21 @@ export async function sendMessage({ conversationId, senderId, playerName, conten
   if (text.length > MAX_MESSAGE_LENGTH) throw new Error(`Tin nhắn tối đa ${MAX_MESSAGE_LENGTH} ký tự`);
   if (!conversationId) throw new Error("Thiếu conversationId");
   if (!senderId) throw new Error("Thiếu senderId");
+
+  // DM 1-1 (id dạng "dm:userA:userB"): một phía đã chặn phía kia → từ chối
+  // gửi ở CẢ hai chiều. Đây là điểm chung duy nhất của mọi đường gửi tin
+  // (REST /chat/dm, REST /chat/:id và socket) nên chặn tại đây là đủ; phòng
+  // game (conversationId không có tiền tố "dm:") không bị ảnh hưởng. Lỗi
+  // trung tính — người bị chặn không biết mình bị chặn (xem blockService).
+  if (conversationId.startsWith("dm:")) {
+    const parts = conversationId.split(":");
+    if (parts.length === 3 && (parts[1] === senderId || parts[2] === senderId)) {
+      const otherId = parts[1] === senderId ? parts[2] : parts[1];
+      if (await isBlockedBetween(senderId, otherId)) {
+        throw new Error("Không thể gửi tin nhắn cho người này");
+      }
+    }
+  }
 
   // Idempotency: nếu clientMessageId đã tồn tại → trả về message cũ
   if (clientMessageId) {

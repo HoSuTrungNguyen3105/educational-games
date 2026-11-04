@@ -1,4 +1,5 @@
 import { getCollection } from "../db.js";
+import { isBlockedBetween } from "./blockService.js";
 
 // ── Bạn bè ────────────────────────────────────────────────────────────────
 // Một document trong `friendships` cho MỖI CẶP người dùng (không lưu 2 chiều):
@@ -71,6 +72,12 @@ export async function sendRequest(fromId, toId) {
 
   const target = await getCollection("users").findOne({ id: toId });
   if (!target) throw new Error("Người dùng không tồn tại");
+
+  // Một trong hai phía đã chặn phía kia → không kết bạn lại được (thông báo
+  // trung tính, không tiết lộ ai đã chặn ai — xem blockService).
+  if (await isBlockedBetween(fromId, toId)) {
+    throw new Error("Không thể gửi lời mời kết bạn cho người này");
+  }
 
   const existing = await findPair(fromId, toId);
   if (existing) {

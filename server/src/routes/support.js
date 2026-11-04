@@ -26,6 +26,11 @@ import {
   updateTicket,
   deleteTicket,
 } from "../services/supportService.js";
+import {
+  createReport,
+  listReports,
+  updateReportStatus,
+} from "../services/reportService.js";
 import { getRolePermissionsCached } from "../services/permissionService.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 
@@ -109,6 +114,40 @@ router.delete("/admin/tickets/:id", authenticate, requireRoles("admin"), async (
   } catch (e) {
     if (e.message === "Không tìm thấy ticket") return sendError(res, e.message, 404);
     next(e);
+  }
+});
+
+// ── Báo cáo người dùng (an toàn cho bé) ──────────────────────────────────
+// Khác ticket hỗ trợ: báo cáo có NGƯỜI BỊ BÁO CÁO + lý do chuẩn hoá, lưu ở
+// collection `reports` riêng (xem reportService). Người dùng đăng nhập gửi
+// từ màn hình chat; chỉ admin xem danh sách và đánh dấu đã xử lý.
+router.post("/reports", authenticate, async (req, res) => {
+  try {
+    const { reportedId, reason, note } = req.body || {};
+    const report = await createReport({
+      reporterId: req.user.sub,
+      reportedId: reportedId ? String(reportedId) : "",
+      reason: String(reason || ""),
+      note,
+    });
+    sendCreated(res, report, "Đã gửi báo cáo");
+  } catch (e) {
+    sendError(res, e.message, e.status || 400);
+  }
+});
+
+router.get("/admin/reports", authenticate, requireRoles("admin"), async (_req, res, next) => {
+  try {
+    sendSuccess(res, await listReports());
+  } catch (e) { next(e); }
+});
+
+router.patch("/admin/reports/:id", authenticate, requireRoles("admin"), async (req, res) => {
+  try {
+    const report = await updateReportStatus(req.params.id, String(req.body?.status || ""));
+    sendSuccess(res, report, "Đã cập nhật báo cáo");
+  } catch (e) {
+    sendError(res, e.message, e.status || 400);
   }
 });
 

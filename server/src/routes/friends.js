@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 import { getCollection } from "../db.js";
 import * as friendService from "../services/friendService.js";
+import * as blockService from "../services/blockService.js";
 import * as notificationService from "../services/notificationService.js";
 
 // ── Bạn bè: /api/friends ──────────────────────────────────────────────────
@@ -107,6 +108,38 @@ router.post("/requests/:userId/decline", async (req, res) => {
 router.delete("/requests/:userId", async (req, res) => {
   try {
     sendSuccess(res, await friendService.cancelRequest(req.user.sub, req.params.userId));
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+// ── Chặn người dùng (an toàn cho bé) ─────────────────────────────────────
+// Chặn KHÔNG gửi thông báo cho người bị chặn (xem blockService). Sau khi
+// chặn: hủy kết bạn hai phía, hai chiều đều không nhắn tin/kết bạn lại được.
+
+// GET /api/friends/blocks — danh sách người MÌNH đã chặn.
+router.get("/blocks", async (req, res, next) => {
+  try {
+    sendSuccess(res, await blockService.listBlocked(req.user.sub));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/friends/blocks { userId } — chặn một người.
+router.post("/blocks", async (req, res) => {
+  try {
+    const { userId } = req.body || {};
+    sendSuccess(res, await blockService.blockUser(req.user.sub, userId ? String(userId) : ""));
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+// DELETE /api/friends/blocks/:userId — bỏ chặn (không khôi phục bạn bè cũ).
+router.delete("/blocks/:userId", async (req, res) => {
+  try {
+    sendSuccess(res, await blockService.unblockUser(req.user.sub, req.params.userId));
   } catch (e) {
     sendError(res, e.message, 400);
   }

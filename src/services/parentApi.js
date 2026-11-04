@@ -36,4 +36,8 @@ export const parentApi = {
   async report(studentId) {
     return apiFetch(`/parents/children/${studentId}/report`);
   },
+  /** Đặt lại mật khẩu cho con đã liên kết (backend kiểm tra liên kết → 403 nếu chưa). */
+  async resetChildPassword(studentId, password) {
+    return apiFetch(`/parents/children/${studentId}/reset-password`, { method: "POST", body: { password } });
+  },
 };
