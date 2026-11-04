@@ -618,7 +618,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
               <div className="flex-1 h-px" style={{ background: "var(--line)" }} />
             </div>
 
-            <KidSettingsCard />
+            <KidSettingsCard accountName={user.name || userAuth?.user?.name} />
           </section>
 
           {/* Ứng dụng + thông báo */}

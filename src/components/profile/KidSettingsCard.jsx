@@ -30,9 +30,18 @@ const GENDERS = [
   { id: "girl", label: "Bạn gái", face: "👧", tone: "#ee7fa6" },
 ];
 
-export default function KidSettingsCard() {
+export default function KidSettingsCard({ accountName } = {}) {
   const s = useKidSettings();
   const age = s.age;
+  // Tên hiển thị cạnh tuổi: khi ĐÃ đăng nhập thì ưu tiên tên TÀI KHOẢN.
+  // `s.name` là tên bé nhập ở màn chào, lưu local theo MÁY — máy từng dùng
+  // với tư cách khách (hoặc người khác đăng nhập trước) sẽ còn tên cũ,
+  // khiến thẻ này hiện tên không thuộc tài khoản đang xem hồ sơ. Khách
+  // (không truyền accountName) giữ nguyên hành vi cũ: hiện s.name.
+  // Không ghi ngược tên tài khoản vào kidSettings: tên bé là danh tính
+  // theo máy, khác lớp/giới tính vốn có nguồn chuẩn trên server (ageCode)
+  // nên mới được syncKidFromAccount đồng bộ.
+  const displayName = String(accountName || "").trim() || String(s.name || "").trim();
   const course = curriculumFor(s.grade);
   const [showDonate, setShowDonate] = useState(false);
   const [showAllGrades, setShowAllGrades] = useState(false);
@@ -68,7 +77,7 @@ export default function KidSettingsCard() {
           <div>
             <h3 className="font-display text-base font-extrabold text-ink">Tuổi của bé</h3>
             <p className="text-xs text-ink/55">
-              {s.name?.trim() ? `${s.name.trim()} · ` : ""}{age} tuổi · {ageBandLabel(age)} · áp dụng từ màn chơi tiếp theo
+              {displayName ? `${displayName} · ` : ""}{age} tuổi · {ageBandLabel(age)} · áp dụng từ màn chơi tiếp theo
             </p>
           </div>
         </div>

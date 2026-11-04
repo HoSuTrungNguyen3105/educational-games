@@ -1,7 +1,7 @@
 import { getCollection } from "../db.js";
 import { createUser, findByUsername, signToken, getXp } from "./authService.js";
 import { getByUser as getProgressByUser } from "./gameProgressService.js";
-import { getUserAllTaskStatus } from "./taskEngineService.js";
+import { getUserAllTaskStatus, STUDENT_TASK_SCOPES } from "./taskEngineService.js";
 import { getClassById, getTeacherClasses, getClassStudents } from "./classService.js";
 
 // ── Phụ huynh ↔ Học sinh ──────────────────────────────────────────────────
@@ -244,7 +244,15 @@ export async function getChildReport(parentId, studentId) {
     : [];
   const asgnTitle = new Map(asgns.map((a) => [a.id, a.title]));
 
-  const tasks = Array.isArray(taskStatus) ? taskStatus : [];
+  // Đếm CÙNG tập nhiệm vụ học sinh nhìn thấy trên trang Nhiệm vụ
+  // (STUDENT_TASK_SCOPES — 3 tab Hàng ngày/Hàng tuần/Tổng cộng).
+  // getUserAllTaskStatus trả MỌI nhiệm vụ đang bật, gồm cả scope EVENT
+  // không hề xuất hiện trên trang Nhiệm vụ → trước đây tổng số phía phụ
+  // huynh (14 trên production) luôn lớn hơn tập học sinh thấy (tab mặc
+  // định Hàng ngày là 10) dù tiến độ không sai. tasksCompleted/tasksClaimed
+  // ở dưới lọc trên cùng tập `tasks` này nên tự khớp theo.
+  const tasks = (Array.isArray(taskStatus) ? taskStatus : [])
+    .filter((t) => STUDENT_TASK_SCOPES.includes(t.scope));
 
   return {
     student: {
