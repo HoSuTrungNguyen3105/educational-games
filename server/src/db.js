@@ -779,6 +779,18 @@ async function _runHeavyInit(database) {
 
     // system_config — kho cấu hình chung, đúng 1 document key="global"
     ["system_config", { key: 1 }, { unique: true }],
+
+    // userBlocks — chặn người dùng một chiều (an toàn cho bé): một bản ghi
+    // cho mỗi cặp (người chặn, người bị chặn); tra cả hai chiều khi nhắn
+    // tin/kết bạn nên index theo từng phía.
+    ["userBlocks", { blockerId: 1, blockedId: 1 }, { unique: true }],
+    ["userBlocks", { blockerId: 1 }],
+    ["userBlocks", { blockedId: 1 }],
+
+    // reports — báo cáo người dùng từ chat: admin lọc theo trạng thái, mới trước.
+    ["reports", { id: 1 }, { unique: true }],
+    ["reports", { status: 1, createdAt: -1 }],
+    ["reports", { reportedId: 1 }],
   ];
 
   const createdIndexes = [];

@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, MessageCircle, Users, GraduationCap, History, UserPlus, UserCheck, Clock, Heart, X } from "lucide-react";
+import { Search, MessageCircle, Users, GraduationCap, History, UserPlus, UserCheck, Clock, Heart, X, Ban } from "lucide-react";
 import { userService, classService } from "../../services/api.js";
 import { conversationApi } from "../../services/conversationApi.js";
 import { friendApi } from "../../services/friendApi.js";
@@ -121,6 +121,7 @@ export default function FindFriendsScreen({ userAuth }) {
   const [chatTarget, setChatTarget] = useState(null);
 
   const [overview, setOverview] = useState({ friends: [], incoming: [], outgoing: [] });
+  const [blocked, setBlocked] = useState([]);
   const [classGroups, setClassGroups] = useState([]);
   const [recentChats, setRecentChats] = useState([]);
   const [suggestLoading, setSuggestLoading] = useState(true);
@@ -145,12 +146,14 @@ export default function FindFriendsScreen({ userAuth }) {
     setSuggestLoading(true);
     setSuggestError("");
     try {
-      const [ov, classes, conversations] = await Promise.all([
+      const [ov, classes, conversations, blockedList] = await Promise.all([
         friendApi.overview().catch(() => ({ friends: [], incoming: [], outgoing: [] })),
         classService.list().catch(() => []),
         conversationApi.list().catch(() => []),
+        friendApi.blocks().catch(() => []),
       ]);
       setOverview(ov || { friends: [], incoming: [], outgoing: [] });
+      setBlocked(Array.isArray(blockedList) ? blockedList : []);
 
       // Bạn cùng lớp — mỗi lớp một nhóm, bỏ chính mình.
       const classList = (Array.isArray(classes) ? classes : []).slice(0, MAX_CLASSES);
@@ -216,6 +219,21 @@ export default function FindFriendsScreen({ userAuth }) {
     });
   }, [askConfirm, runAction]);
 
+  // Bỏ chặn: gỡ bản ghi chặn rồi tải lại danh sách đã chặn (bạn bè cũ KHÔNG
+  // tự khôi phục — hai người kết bạn lại từ đầu nếu muốn).
+  const handleUnblock = useCallback(async (user) => {
+    setBusyId(user.id);
+    setActionError("");
+    try {
+      await friendApi.unblock(user.id);
+      setBlocked((prev) => prev.filter((b) => b.user.id !== user.id));
+    } catch (e) {
+      setActionError(e.message || "Bỏ chặn thất bại, vui lòng thử lại.");
+    } finally {
+      setBusyId(null);
+    }
+  }, []);
+
   const rowHandlers = {
     onChat: setChatTarget,
     onAdd: handleAdd,
@@ -257,7 +275,7 @@ export default function FindFriendsScreen({ userAuth }) {
       <DMChatScreen
         targetUser={chatTarget}
         userAuth={userAuth}
-        onBack={() => setChatTarget(null)}
+        onBack={() => { setChatTarget(null); setReloadKey((k) => k + 1); }}
       />
     );
   }
@@ -266,7 +284,7 @@ export default function FindFriendsScreen({ userAuth }) {
   const friends = overview.friends || [];
   const incoming = overview.incoming || [];
   const outgoing = overview.outgoing || [];
-  const hasSuggestions = classGroups.length > 0 || recentChats.length > 0 || friends.length > 0 || incoming.length > 0 || outgoing.length > 0;
+  const hasSuggestions = classGroups.length > 0 || recentChats.length > 0 || friends.length > 0 || incoming.length > 0 || outgoing.length > 0 || blocked.length > 0;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-5 w-full">
@@ -365,6 +383,28 @@ export default function FindFriendsScreen({ userAuth }) {
               <div className="space-y-2">
                 {friends.map(({ user }) => (
                   <PersonRow key={user.id} user={user} variant="friend" busy={busyId === user.id} {...rowHandlers} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {!suggestLoading && blocked.length > 0 && (
+            <>
+              <SectionTitle icon={<Ban className="w-5 h-5 text-[#E5533D]" />}>
+                Đã chặn · {blocked.length}
+              </SectionTitle>
+              <div className="space-y-2">
+                {blocked.map(({ user }) => (
+                  <div key={user.id} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#E7D9BE]">
+                    <Avatar name={user.name} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-[#20283A] truncate">{user.name}</p>
+                      <p className="text-xs text-[#8A7C63] truncate">@{user.username}</p>
+                    </div>
+                    <button onClick={() => handleUnblock(user)} disabled={busyId === user.id} className={btnGhost}>
+                      Bỏ chặn
+                    </button>
+                  </div>
                 ))}
               </div>
             </>

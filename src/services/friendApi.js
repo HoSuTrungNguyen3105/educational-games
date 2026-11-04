@@ -31,4 +31,20 @@ export const friendApi = {
   async unfriend(userId) {
     return apiFetch(`/friends/${userId}`, { method: "DELETE" });
   },
+
+  // ── Chặn người dùng (an toàn cho bé) ──
+  /** Danh sách người MÌNH đã chặn: [{ user, since }] */
+  async blocks() {
+    return apiFetch("/friends/blocks") || [];
+  },
+
+  /** Chặn: server tự hủy kết bạn hai phía; người bị chặn không được thông báo. */
+  async block(userId) {
+    return apiFetch("/friends/blocks", { method: "POST", body: { userId } });
+  },
+
+  /** Bỏ chặn (không khôi phục bạn bè cũ). */
+  async unblock(userId) {
+    return apiFetch(`/friends/blocks/${userId}`, { method: "DELETE" });
+  },
 };

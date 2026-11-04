@@ -119,6 +119,19 @@ router.delete("/children/:studentId", authenticate, requireRoles("parent"), asyn
   }
 });
 
+// POST /api/parents/children/:studentId/reset-password { password } —
+// phụ huynh đặt lại mật khẩu cho con ĐÃ LIÊN KẾT (service kiểm tra liên
+// kết → 403 nếu chưa liên kết; mật khẩu mới tối thiểu 6 ký tự như đăng ký).
+router.post("/children/:studentId/reset-password", authenticate, requireRoles("parent"), async (req, res) => {
+  try {
+    const { password } = req.body || {};
+    if (!password) return sendError(res, "Mật khẩu mới là bắt buộc", 400);
+    sendSuccess(res, await parentService.resetChildPassword(req.user.sub, req.params.studentId, password), "Đã đặt lại mật khẩu cho con");
+  } catch (e) {
+    return fail(res, e);
+  }
+});
+
 // GET /api/parents/children/:studentId/report — báo cáo học tập của con.
 // Service kiểm tra liên kết trước khi gom dữ liệu (403 nếu chưa liên kết).
 router.get("/children/:studentId/report", authenticate, requireRoles("parent"), async (req, res) => {

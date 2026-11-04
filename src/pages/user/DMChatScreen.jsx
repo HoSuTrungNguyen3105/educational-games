@@ -1,9 +1,20 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { chatApi } from "../../services/chatApi.js";
-import { IconBack, IconSmile, Loader } from '../../components/ui';
+import { friendApi } from "../../services/friendApi.js";
+import { supportService } from "../../services/api.js";
+import { IconBack, IconSmile, Loader, Modal, ConfirmModal } from '../../components/ui';
+import { useConfirm } from "../../hooks/useConfirm.js";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
-import { Check, Send, X } from "lucide-react";
+import { Check, Send, X, MoreVertical, Ban, Flag } from "lucide-react";
+
+// Lý do báo cáo — phải khớp REPORT_REASONS ở server (reportService).
+const REPORT_REASONS = [
+  { value: "harassment", label: "Quấy rối" },
+  { value: "bad_language", label: "Ngôn từ xấu" },
+  { value: "scam", label: "Lừa đảo" },
+  { value: "other", label: "Khác" },
+];
 
 function formatMessageTime(iso) {
   if (!iso) return "";
@@ -23,11 +34,79 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  // ── An toàn: chặn / báo cáo ──
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [blockedByMe, setBlockedByMe] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("harassment");
+  const [reportNote, setReportNote] = useState("");
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportError, setReportError] = useState("");
+  const [reportDone, setReportDone] = useState(false);
+  const { askConfirm, confirmProps } = useConfirm();
   const listRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const targetUserId = targetUser?.id;
   const dmId = useMemo(() => getDmId(user?.id, targetUserId), [user?.id, targetUserId]);
+
+  // Mình đã chặn người này chưa? (để hiện trạng thái + khoá ô nhập — server
+  // cũng từ chối gửi ở cả hai chiều, đây chỉ là hiển thị phía client)
+  useEffect(() => {
+    if (!targetUserId) return;
+    let cancelled = false;
+    friendApi.blocks()
+      .then((list) => {
+        if (!cancelled) setBlockedByMe((list || []).some((b) => b.user?.id === targetUserId));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [targetUserId]);
+
+  const handleBlock = () => {
+    setMenuOpen(false);
+    askConfirm({
+      title: "Chặn người này",
+      message: `Sau khi chặn, bạn và ${targetUser.name} sẽ không thể nhắn tin hay kết bạn với nhau nữa (nếu đang là bạn sẽ hủy kết bạn). ${targetUser.name} sẽ không nhận được thông báo về việc này.`,
+      confirmLabel: "Chặn",
+      onConfirm: async () => {
+        try {
+          await friendApi.block(targetUserId);
+        } catch (e) {
+          console.error("[dm] block error:", e);
+        }
+        // Dù API lỗi hay không, quay lại danh sách để trạng thái được tải lại.
+        onBack();
+      },
+    });
+  };
+
+  const openReport = () => {
+    setMenuOpen(false);
+    setReportReason("harassment");
+    setReportNote("");
+    setReportError("");
+    setReportDone(false);
+    setReportOpen(true);
+  };
+
+  const submitReport = async (e) => {
+    e.preventDefault();
+    setReportBusy(true);
+    setReportError("");
+    try {
+      await supportService.createReport({
+        reportedId: targetUserId,
+        reason: reportReason,
+        note: reportNote.trim() || undefined,
+      });
+      setReportDone(true);
+    } catch (err) {
+      setReportError(err.message || "Gửi báo cáo thất bại, vui lòng thử lại.");
+    } finally {
+      setReportBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!targetUserId) return;
@@ -155,6 +234,37 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
           <h2 className="font-display text-sm text-ink truncate">{targetUser.name}</h2>
           <p className="text-[10px] text-green-500 font-body">Đang hoạt động</p>
         </div>
+        {/* Menu an toàn: Báo cáo / Chặn người này */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="p-1.5 rounded-xl hover:bg-ink/5 transition text-ink/60 hover:text-ink"
+            aria-label="Tuỳ chọn trò chuyện"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-full mt-1 z-20 w-52 bg-white rounded-2xl border border-ink/10 shadow-lg py-1.5 overflow-hidden">
+                <button
+                  onClick={openReport}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm font-body text-ink hover:bg-ink/5 transition text-left"
+                >
+                  <Flag className="w-4 h-4 text-ink/50" /> Báo cáo
+                </button>
+                {!blockedByMe && (
+                  <button
+                    onClick={handleBlock}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm font-body text-red-600 hover:bg-red-50 transition text-left"
+                  >
+                    <Ban className="w-4 h-4" /> Chặn người này
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -221,6 +331,13 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
       )}
 
       {/* Composer */}
+      {blockedByMe ? (
+        <div className="px-4 py-3 bg-red-50 border-t border-red-100 shrink-0 pb-[max(env(safe-area-inset-bottom),12px)]">
+          <p className="text-xs font-body text-red-600 text-center">
+            Bạn đã chặn {targetUser.name} nên không nhắn tin được nữa. Bỏ chặn ở trang Tìm bạn để trò chuyện lại.
+          </p>
+        </div>
+      ) : (
       <form onSubmit={handleSend}
         className="flex items-end gap-2 p-2 bg-paper border-t border-ink/8 shrink-0 pb-[max(env(safe-area-inset-bottom),8px)]">
         <input
@@ -239,6 +356,83 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
           <Send className="w-4 h-4" />
         </button>
       </form>
+      )}
+
+      <ConfirmModal {...confirmProps} />
+
+      {/* Modal báo cáo người dùng */}
+      {reportOpen && (
+        <Modal onClose={() => !reportBusy && setReportOpen(false)}>
+          {reportDone ? (
+            <div className="text-center py-2">
+              <div className="mb-3 flex justify-center text-[#1B998B]"><Flag className="w-10 h-10" /></div>
+              <h3 className="font-display text-lg text-ink mb-1">Đã gửi báo cáo</h3>
+              <p className="text-sm text-[#8A7C63] mb-4">
+                Cảm ơn bạn! Đội ngũ quản trị sẽ xem xét báo cáo về {targetUser.name}. Nếu người này làm phiền bạn, hãy dùng thêm nút "Chặn người này".
+              </p>
+              <button
+                onClick={() => setReportOpen(false)}
+                className="px-5 py-2.5 bg-[#1B998B] text-white text-sm font-bold rounded-full hover:bg-[#178a7d] transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          ) : (
+            <>
+              <h3 className="font-display text-lg text-ink mb-1">Báo cáo {targetUser.name}</h3>
+              <p className="text-sm text-[#8A7C63] mb-4">Chọn lý do báo cáo. Quản trị viên sẽ xem xét và xử lý.</p>
+              <form onSubmit={submitReport} className="space-y-3">
+                <div className="space-y-2">
+                  {REPORT_REASONS.map((r) => (
+                    <label
+                      key={r.value}
+                      className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border cursor-pointer text-sm font-body transition-colors ${
+                        reportReason === r.value ? "border-[#1B998B] bg-[#1B998B]/5 text-ink" : "border-ink/10 text-ink/70 hover:bg-ink/5"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="report-reason"
+                        value={r.value}
+                        checked={reportReason === r.value}
+                        onChange={() => setReportReason(r.value)}
+                        className="accent-[#1B998B]"
+                      />
+                      {r.label}
+                    </label>
+                  ))}
+                </div>
+                <textarea
+                  value={reportNote}
+                  onChange={(e) => setReportNote(e.target.value)}
+                  placeholder="Ghi chú thêm (không bắt buộc)"
+                  maxLength={1000}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-2xl border border-ink/10 bg-white text-sm font-body outline-none focus:border-[#1B998B] transition-colors resize-none"
+                />
+                {reportError && <p className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold">{reportError}</p>}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReportOpen(false)}
+                    disabled={reportBusy}
+                    className="flex-1 px-4 py-2.5 bg-white border border-ink/10 text-ink text-sm font-bold rounded-full hover:bg-ink/5 transition-colors disabled:opacity-60"
+                  >
+                    Huỷ
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={reportBusy}
+                    className="flex-1 px-4 py-2.5 bg-[#E5533D] text-white text-sm font-bold rounded-full hover:bg-[#d1452f] transition-colors disabled:opacity-60"
+                  >
+                    {reportBusy ? "Đang gửi..." : "Gửi báo cáo"}
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }

@@ -858,6 +858,11 @@ export const supportService = {
   async list() { return apiFetch("/support/admin/tickets") || []; },
   async update(id, data) { return apiFetch(`/support/admin/tickets/${encodeURIComponent(id)}`, { method: "PATCH", body: data }); },
   async remove(id) { return apiFetch(`/support/admin/tickets/${encodeURIComponent(id)}`, { method: "DELETE" }); },
+  // Báo cáo người dùng từ chat (collection `reports` riêng — xem reportService ở server):
+  // người dùng gửi từ màn hình trò chuyện, chỉ admin xem/xử lý.
+  async createReport(data) { return apiFetch("/support/reports", { method: "POST", body: data }); },
+  async listReports() { return apiFetch("/support/admin/reports") || []; },
+  async updateReport(id, data) { return apiFetch(`/support/admin/reports/${encodeURIComponent(id)}`, { method: "PATCH", body: data }); },
 };
 
 export const permissionService = {

@@ -5,7 +5,7 @@ import {
   ArrowLeft, Link2, BarChart3, ListChecks, History,
 } from "lucide-react";
 import { parentApi } from "../../services/parentApi.js";
-import { Loader, EmptyState, ErrorState, PrimaryButton, ConfirmModal } from "../../components/ui";
+import { Loader, EmptyState, ErrorState, PrimaryButton, ConfirmModal, Modal } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import { navigate } from "../../lib/router.js";
 
@@ -97,18 +97,89 @@ function ParentRegister({ onLogin, onUserLogin, showToast }) {
 }
 
 // ── Báo cáo học tập của một người con ─────────────────────────────────────
-function ChildReport({ report, onBack }) {
+function ChildReport({ report, onBack, showToast }) {
   const s = report.student;
   const o = report.overview;
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwError, setPwError] = useState("");
+
+  function openReset() {
+    setPw("");
+    setPw2("");
+    setPwError("");
+    setPwOpen(true);
+  }
+
+  async function submitReset(e) {
+    e.preventDefault();
+    if (pw.length < 6) { setPwError("Mật khẩu phải có ít nhất 6 ký tự."); return; }
+    if (pw !== pw2) { setPwError("Mật khẩu nhập lại chưa khớp."); return; }
+    setPwBusy(true);
+    setPwError("");
+    try {
+      await parentApi.resetChildPassword(s.id, pw);
+      setPwOpen(false);
+      if (showToast) showToast(`Đã đặt lại mật khẩu cho ${s.name}. Con dùng mật khẩu mới để đăng nhập nhé.`, "success");
+    } catch (err) {
+      setPwError(err.message || "Đặt lại mật khẩu thất bại, vui lòng thử lại.");
+    } finally {
+      setPwBusy(false);
+    }
+  }
+
   return (
     <div>
       <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-semibold text-[#1B998B] mb-3">
         <ArrowLeft className="w-4 h-4" /> Danh sách con
       </button>
       <h1 className="font-display text-xl text-ink">{s.name}</h1>
-      <p className="text-sm text-[#8A7C63] mb-4">
+      <p className="text-sm text-[#8A7C63] mb-3">
         @{s.username}{s.className ? ` · Lớp ${s.className}` : ""} · Cấp {s.level}
       </p>
+
+      <button onClick={openReset} className={`${btnGhostSm} mb-4`}>
+        <KeyRound className="w-3.5 h-3.5" /> Đặt lại mật khẩu cho con
+      </button>
+
+      {pwOpen && (
+        <Modal onClose={() => !pwBusy && setPwOpen(false)}>
+          <h2 className="font-display text-lg text-ink mb-1">Đặt lại mật khẩu</h2>
+          <p className="text-sm text-[#8A7C63] mb-4">
+            Đặt mật khẩu mới cho {s.name} (@{s.username}). Con sẽ phải đăng nhập lại bằng mật khẩu mới trên mọi thiết bị.
+          </p>
+          <form onSubmit={submitReset} className="space-y-3">
+            <input
+              type="password"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              placeholder="Mật khẩu mới (ít nhất 6 ký tự)"
+              className={inputCls}
+              autoComplete="new-password"
+              autoFocus
+            />
+            <input
+              type="password"
+              value={pw2}
+              onChange={(e) => setPw2(e.target.value)}
+              placeholder="Nhập lại mật khẩu mới"
+              className={inputCls}
+              autoComplete="new-password"
+            />
+            {pwError && <p className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold">{pwError}</p>}
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setPwOpen(false)} disabled={pwBusy} className={`${btnGhostSm} flex-1 justify-center`}>
+                Huỷ
+              </button>
+              <button type="submit" disabled={pwBusy} className={`${btnTeal} flex-1`}>
+                {pwBusy ? "Đang đặt lại..." : "Đặt lại mật khẩu"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       <div className="grid grid-cols-2 gap-2.5">
         <StatCard icon={<Coins className="w-3.5 h-3.5" />} label="Xu" value={(s.coins || 0).toLocaleString()} />
@@ -263,7 +334,7 @@ function ParentHome({ showToast }) {
     return (
       <div className="max-w-lg mx-auto px-4 py-5 w-full">
         <ConfirmModal {...confirmProps} />
-        <ChildReport report={report} onBack={() => setReport(null)} />
+        <ChildReport report={report} onBack={() => setReport(null)} showToast={showToast} />
       </div>
     );
   }
