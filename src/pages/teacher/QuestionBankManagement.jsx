@@ -496,7 +496,7 @@ export default function QuestionBankManagement({ showToast }) {
           {rows.length ? 'Không có câu hỏi phù hợp bộ lọc.' : 'Chưa có câu hỏi nào. Bấm “+ Thêm câu” hoặc “Nhập CSV/JSON”.'}
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+        <div className="edu-grid">
           {shown.map(({ d, s, bad }) => (
             <article key={d.id} className={`note-card p-3 flex flex-col gap-2 ${bad.length ? '!border-red-300' : ''}`}>
               <div className="flex items-center gap-1.5 flex-wrap">

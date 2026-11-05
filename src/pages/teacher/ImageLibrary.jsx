@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { imageService } from "../../services/api.js";
-import { ConfirmModal, EmptyState, IconTrash, IconUpload, Loader, ManagementHeader, Modal, SearchInput, ViewToggle, useViewMode } from '../../components/ui';
-import { Image, Copy, X, FolderOpen } from "lucide-react";
+import { ConfirmModal, EmptyState, GridCard, GridPager, IconTrash, IconUpload, Loader, ManagementHeader, Modal, SearchInput, ViewToggle, useViewMode } from '../../components/ui';
+import { Image, Copy, Eye, Trash2, X, FolderOpen } from "lucide-react";
 import { useConfirm } from "../../hooks/useConfirm.js";
+import { usePagedList } from "../../hooks/usePagedList.js";
 
 function formatBytes(bytes) {
   if (bytes < 1024) return bytes + " B";
@@ -25,6 +26,7 @@ export default function ImageLibrary({ showToast }) {
   const [selected, setSelected] = useState([]);
   const [preview, setPreview] = useState(null);
   const [viewMode, setViewMode] = useViewMode("image-library", "grid");
+  const pager = usePagedList(images, 12, folder);
   const { askConfirm, confirmProps } = useConfirm();
   const [folder, setFolder] = useState("edu-game");
   const fileInput = useRef(null);
@@ -156,43 +158,39 @@ export default function ImageLibrary({ showToast }) {
       {images.length === 0 ? (
         <EmptyState icon={<Image />} title="Chưa có ảnh nào" subtitle="Upload ảnh để bắt đầu sử dụng thư viện" />
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {images.map(img => (
-            <div key={img.publicId}
-              className={`relative group rounded-xl border-2 overflow-hidden cursor-pointer transition
-                ${selected.includes(img.publicId) ? "border-blue-500 ring-2 ring-blue-500/30" : "border-ink/10 hover:border-ink/25"}`}
-              onClick={() => setPreview(img)}>
-              <div className="aspect-square bg-ink/5 flex items-center justify-center overflow-hidden">
-                <img src={img.url} alt={img.publicId} className="w-full h-full object-cover" loading="lazy" />
-              </div>
-              <div className="absolute top-2 left-2">
-                <input type="checkbox" checked={selected.includes(img.publicId)}
-                  onChange={e => { e.stopPropagation(); toggleSelect(img.publicId); }}
-                  className="w-4 h-4 rounded accent-blue-500 cursor-pointer" />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                  <span className="text-[10px] text-white/80 truncate max-w-[60%]">{img.format} · {formatBytes(img.bytes)}</span>
-                  <div className="flex gap-1">
-                    <button onClick={e => { e.stopPropagation(); copyUrl(img.url); }}
-                      className="w-6 h-6 rounded bg-white/20 hover:bg-white/40 flex items-center justify-center text-white transition">
-                      <Copy className="w-3 h-3" />
-                    </button>
-                    <button onClick={e => { e.stopPropagation(); handleDelete(img); }}
-                      className="w-6 h-6 rounded bg-red-500/60 hover:bg-red-500/80 flex items-center justify-center text-white transition">
-                      <IconTrash className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="edu-grid">
+          {pager.pageItems.map(img => {
+            const isSel = selected.includes(img.publicId);
+            return (
+              <GridCard
+                key={img.publicId}
+                title={img.publicId.split('/').pop() || img.publicId}
+                badge={isSel ? { label: "Đã chọn", tone: "blue" } : { label: (img.format || "ảnh").toUpperCase(), tone: "gray" }}
+                mono={img.publicId}
+                media={<img src={img.url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" loading="lazy" />}
+                extra={(
+                  <label className="flex items-center gap-2 text-xs text-ink/60 cursor-pointer">
+                    <input type="checkbox" checked={isSel}
+                      onChange={() => toggleSelect(img.publicId)}
+                      className="w-4 h-4 rounded accent-blue-500 cursor-pointer" />
+                    Chọn để xoá nhiều
+                  </label>
+                )}
+                meta={`${formatBytes(img.bytes)} · ${img.width}×${img.height} · ${formatDate(img.createdAt)}`}
+                footerActions={[
+                  { label: "Xem", icon: <Eye />, onClick: () => setPreview(img), tone: "blue" },
+                  { label: "Copy URL", icon: <Copy />, onClick: () => copyUrl(img.url), tone: "muted" },
+                  { label: "Xoá", icon: <Trash2 />, onClick: () => handleDelete(img), tone: "red" },
+                ]}
+              />
+            );
+          })}
         </div>
       ) : (
         <>
           {/* Mobile: mỗi ảnh một card ngang */}
           <div className="md:hidden space-y-2">
-            {images.map(img => (
+            {pager.pageItems.map(img => (
               <div key={img.publicId} className="bg-paper border border-ink/10 rounded-xl p-2.5 flex items-center gap-3 cursor-pointer"
                 onClick={() => setPreview(img)}>
                 <input type="checkbox" checked={selected.includes(img.publicId)}
@@ -235,7 +233,7 @@ export default function ImageLibrary({ showToast }) {
               </tr>
             </thead>
             <tbody>
-              {images.map(img => (
+              {pager.pageItems.map(img => (
                 <tr key={img.publicId} className="border-t hover:bg-ink/[0.02] transition cursor-pointer"
                   onClick={() => setPreview(img)}>
                   <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
@@ -265,6 +263,16 @@ export default function ImageLibrary({ showToast }) {
           </table>
           </div>
         </>
+      )}
+
+      {images.length > 0 && pager.total > 12 && (
+        <div className="flex justify-end">
+          <GridPager
+            from={pager.from} to={pager.to} total={pager.total}
+            canPrev={pager.canPrev} canNext={pager.canNext}
+            onPrev={pager.prev} onNext={pager.next}
+          />
+        </div>
       )}
 
       {preview && (

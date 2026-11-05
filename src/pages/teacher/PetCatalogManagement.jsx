@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../../services/api.js';
 import { useConfirm } from '../../hooks/useConfirm.js';
-import { ConfirmModal, ErrorState, Field, GhostButton, IconClose, Loader, ManagementHeader, ManagementTable, Modal, PrimaryButton, StatGrid } from '../../components/ui';
+import { ConfirmModal, ErrorState, Field, GhostButton, GridCard, IconClose, Loader, ManagementHeader, ManagementTable, Modal, PrimaryButton, StatGrid } from '../../components/ui';
+import { matchesQuery } from '../../lib/searchText.js';
 import PetRenderer, { OutfitPreview } from '../../components/pet/PetRenderer.jsx';
 import { getOutfitAsset } from '../../data/petAssets.js';
 import { AlertTriangle, Gift, Info, Palette, PawPrint, RotateCcw, Save, Shirt } from 'lucide-react';
@@ -95,6 +96,12 @@ export default function PetCatalogManagement({ showToast }) {
     if (!data) return [];
     return data[LIST_KEY[tab]] || [];
   }, [data, tab]);
+
+  const [query, setQuery] = useState('');
+  const filteredRows = useMemo(
+    () => rows.filter((e) => matchesQuery(query, e.name, e.id, e.trait, tab === 'outfit' ? data?.slotLabels?.[e.slot] : null)),
+    [rows, query, tab, data]
+  );
 
   const usageOf = (entry) => data?.usage?.[`${tab}:${entry.id}`] ?? 0;
   const setF = (key, val) => { setForm(f => ({ ...f, [key]: val })); setFormError(null); };
@@ -282,47 +289,40 @@ export default function PetCatalogManagement({ showToast }) {
 
           <ManagementTable
             title={`Danh sách ${TABS.find(t => t.kind === tab).label.toLowerCase()}`}
-            count={rows.length}
-            data={rows}
-            emptyLabel="Chưa có mục nào."
+            count={filteredRows.length}
+            data={filteredRows}
+            emptyLabel={query ? "Không tìm thấy mục nào khớp tìm kiếm." : "Chưa có mục nào."}
             onCreate={openCreate}
             createLabel={`+ Thêm ${TABS.find(t => t.kind === tab).label.toLowerCase()}`}
+            search={{ value: query, onChange: setQuery, placeholder: "Tìm trong tab này" }}
             headers={headers}
             renderRow={renderRow}
-            renderCard={(entry) => {
+            renderGridCard={(entry) => {
               const used = usageOf(entry);
               const noArt = tab === 'outfit' && !getOutfitAsset(entry.id);
               return (
-                <div className="flex items-center gap-3">
-                  {tab === 'outfit' ? (
+                <GridCard
+                  key={entry.id}
+                  title={entry.name}
+                  badge={{ label: `Cấp ${entry.minLevel || 1}`, tone: (entry.minLevel || 1) === 1 ? "mint" : "gold" }}
+                  mono={entry.id}
+                  media={tab === 'outfit' ? (
                     <OutfitPreview id={entry.id} color={firstColor(entry)} size={40} />
                   ) : tab === 'color' ? (
                     <span className="block w-9 h-9 rounded-lg border border-ink/10 shrink-0" style={{ background: entry.body }} />
                   ) : (
                     <span className="text-2xl shrink-0">{entry.emoji || '🐾'}</span>
                   )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-ink truncate">{entry.name}</span>
-                      {noArt && <span className="text-[10px] font-bold text-amber-700 shrink-0">chưa có hình</span>}
-                    </div>
-                    <p className="font-mono text-[11px] text-ink/50 truncate">
-                      {entry.id}
-                      {tab === 'outfit' ? ` · ${data.slotLabels?.[entry.slot] || entry.slot}` : ''}
-                      {tab === 'species' && entry.trait ? ` · ${entry.trait}` : ''}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${(entry.minLevel || 1) === 1 ? 'bg-teal/15 text-teal' : 'bg-gold/20 text-[#8a6a10]'}`}>
-                      Cấp {entry.minLevel || 1}
-                    </span>
-                    <p className={`text-[11px] font-mono mt-0.5 ${used > 0 ? 'text-ink/70' : 'text-ink/25'}`}>{used} dùng</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => openEdit(entry)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
-                    <button onClick={() => handleDelete(entry)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
-                  </div>
-                </div>
+                  description={tab === 'species'
+                    ? (entry.trait || undefined)
+                    : tab === 'outfit'
+                      ? (data.slotLabels?.[entry.slot] || entry.slot)
+                      : [entry.body, entry.accent].filter(Boolean).join(' · ') || undefined}
+                  extra={noArt ? <p className="text-[11px] font-bold text-amber-700">Chưa có hình vẽ</p> : undefined}
+                  meta={`${used} đang dùng`}
+                  onEdit={() => openEdit(entry)}
+                  onRemove={() => handleDelete(entry)}
+                />
               );
             }}
           />

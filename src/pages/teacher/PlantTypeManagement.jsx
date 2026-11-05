@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../../services/api.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
+import { matchesQuery } from "../../lib/searchText.js";
 import {
+  GridCard,
   ManagementHeader, ManagementTable, Modal, ConfirmModal,
   PrimaryButton, GhostButton, Field, Loader, ErrorState,
 } from "../../components/ui";
-import { Coins } from "lucide-react";
 
 const RARITY_OPTIONS = [
   { value: "common", label: "Thường" },
@@ -67,6 +68,12 @@ export default function PlantTypeManagement({ showToast }) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(
+    () => (types ?? []).filter((t) => matchesQuery(query, t.name, t.id, t.kind, RARITY_OPTIONS.find((r) => r.value === t.rarity)?.label)),
+    [types, query]
+  );
 
   const openCreate = () => { setEditId(null); setForm({ ...emptyForm, palette: { ...DEFAULT_PALETTE } }); setShowForm(true); };
 
@@ -154,35 +161,29 @@ export default function PlantTypeManagement({ showToast }) {
       {!error && types && (
         <ManagementTable
           title="Danh sách loại cây"
-          count={types.length}
-          data={types}
-          emptyLabel="Chưa có loại cây nào."
+          count={filtered.length}
+          data={filtered}
+          emptyLabel={query ? "Không tìm thấy loại cây nào khớp tìm kiếm." : "Chưa có loại cây nào."}
           onCreate={openCreate}
           createLabel="+ Thêm loại cây"
+          search={{ value: query, onChange: setQuery, placeholder: "Tìm loại cây" }}
           headers={headers}
           renderRow={renderRow}
-          renderCard={(t) => {
-            const rc = RARITY_COLORS[t.rarity] || RARITY_COLORS.common;
+          renderGridCard={(t) => {
+            const rarityLabel = RARITY_OPTIONS.find((r) => r.value === t.rarity)?.label || t.rarity;
+            const kindLabel = PLANT_KINDS.find((k) => k.value === (t.kind || "bloom"))?.label || t.kind || "bloom";
+            const tone = t.rarity === "legendary" ? "gold" : t.rarity === "epic" ? "red" : t.rarity === "rare" ? "blue" : "gray";
             return (
-              <div className="flex items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-ink truncate">{t.name}</p>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0" style={{ background: rc.bg, color: rc.text }}>
-                      {RARITY_OPTIONS.find(r => r.value === t.rarity)?.label || t.rarity}
-                    </span>
-                  </div>
-                  <p className="text-[11px] font-mono text-[#8A7C63] truncate">{t.id} · {t.kind || "bloom"} · {t.stages} giai đoạn · {formatMs(t.growthTime)}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-xs font-bold font-mono text-gold inline-flex items-center gap-1">{t.seedPrice} <Coins className="w-3.5 h-3.5" /></p>
-                  <p className="text-xs font-bold font-mono text-green-600">+{t.harvestCoin}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={() => openEdit(t)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
-                  <button onClick={() => handleDelete(t)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
-                </div>
-              </div>
+              <GridCard
+                key={t.id}
+                title={t.name}
+                badge={{ label: rarityLabel, tone }}
+                mono={t.id}
+                description={`${kindLabel} · ${t.stages} giai đoạn · ${formatMs(t.growthTime)}`}
+                meta={`Giá hạt: ${t.seedPrice} · Thu hoạch: +${t.harvestCoin}`}
+                onEdit={() => openEdit(t)}
+                onRemove={() => handleDelete(t)}
+              />
             );
           }}
         />

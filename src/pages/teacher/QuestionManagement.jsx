@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, FileText, Pencil, Trash2, X } from 'lucide-react'
+import { FileText, Pencil, Trash2, X } from 'lucide-react'
 import { gameService, questionService } from '../../services/api.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
+import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
 import QuestionImportModal from './QuestionImportModal.jsx'
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
@@ -186,6 +186,7 @@ export default function QuestionManagement({ showToast }) {
 
       {selectedGame && (
         <ManagementTable
+          viewKey="questions-by-game"
           title={`Câu hỏi — ${selectedGameObj?.name || ""}`}
           data={questions}
           error={error && !questions ? error : null}
@@ -195,20 +196,16 @@ export default function QuestionManagement({ showToast }) {
           onImport={() => setImportOpen(true)}
           onRemoveAll={questions && questions.length > 0 ? confirmRemoveAll : null}
           headers={["#", "Nội dung", "Đáp án đúng", "Thời gian", "Điểm", ""]}
-          renderCard={(q, idx) => (
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-xs text-[#8A7C63] w-5 text-right shrink-0">{idx + 1}</span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-ink font-body truncate">{q.content}</p>
-                <p className="text-[11px] text-[#8A7C63] truncate mt-0.5 inline-flex items-center gap-1">
-                  <Check className="w-3 h-3 text-teal shrink-0" /> {q.options?.find(o => o.id === q.correctAnswer)?.content || "—"} · {q.timeLimit}s · {q.points}đ
-                </p>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <IconButton title="Chỉnh sửa" onClick={() => openEdit(q, idx)}><Pencil /></IconButton>
-                <IconButton title="Xóa" tone="danger" onClick={() => confirmRemove(q, idx)}><Trash2 /></IconButton>
-              </div>
-            </div>
+          renderGridCard={(q, idx) => (
+            <GridCard
+              key={q.id || idx}
+              title={q.content}
+              mono={`#${idx + 1}`}
+              description={`Đáp án đúng: ${q.options?.find(o => o.id === q.correctAnswer)?.content || "—"}`}
+              meta={`${q.options?.length || 0} đáp án · ${q.timeLimit}s · ${q.points} điểm`}
+              onEdit={() => openEdit(q, idx)}
+              onRemove={() => confirmRemove(q, idx)}
+            />
           )}
           renderRow={(q, idx) => (
             <tr key={q.id || idx} className="border-b border-ink/5 last:border-0">
