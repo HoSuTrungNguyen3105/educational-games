@@ -350,7 +350,7 @@ export async function updateUser(userId, { name, email, role }) {
 export const STAR_TO_COIN_RATE = 20000;
 
 // ── XP / Level ────────────────────────────────────────────────────────────
-// Đồng nhất với XP_PER_LEVEL của miniGameService để hồ sơ không bị lệch.
+// Hằng số XP/level dùng chung để hồ sơ người dùng không bị lệch giữa các service.
 export const XP_PER_LEVEL = 120;
 
 /** Level = floor(xp / XP_PER_LEVEL) + 1 */
