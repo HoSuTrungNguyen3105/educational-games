@@ -24,7 +24,7 @@ import {
   PrimaryButton,
   SearchInput,
   Select,
-  cardGridClass,
+  GridCard,
   tableWrapClass,
   useViewMode,
   ViewToggle,
@@ -50,6 +50,8 @@ const STATUS_OPTIONS = [
 
 const priorityLabel = (v) => PRIORITY_OPTIONS.find((o) => o.value === v)?.label || v || "—";
 const statusLabel = (v) => STATUS_OPTIONS.find((o) => o.value === v)?.label || v || "—";
+/** Tông màu huy hiệu GridCard theo trạng thái ticket. */
+const statusTone = (v) => v === "open" ? "blue" : v === "processing" ? "gold" : v === "done" ? "mint" : v === "closed" ? "red" : "gray";
 
 function PriorityBadge({ value }) {
   const cls =
@@ -99,7 +101,7 @@ const assigneeLabel = (t) => (t.assigneeType === "teacher" ? (t.assigneeName || 
 export default function SupportTicketManagement({ user, showToast }) {
   const isAdmin = user?.role === "admin";
   const modalParam = useModalParam();
-  const [mode, setMode] = useViewMode("support-tickets", "list");
+  const [mode, setMode] = useViewMode("support-tickets", "grid");
 
   const [tickets, setTickets] = useState(null);
   const [error, setError] = useState(null);
@@ -435,20 +437,20 @@ export default function SupportTicketManagement({ user, showToast }) {
           </div>
 
           {/* Dạng thẻ (mobile luôn hiện; desktop khi chọn Lưới) */}
-          <div className={cardGridClass(mode)}>
+          <div className={`edu-grid ${mode === "list" ? "md:hidden" : ""}`}>
             {pageItems.map((t) => (
-              <button key={t.id} type="button" onClick={() => openDetail(t)} className="note-card p-4 text-left">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-mono text-ink">{t.code}</span>
-                  <StatusBadge value={t.status} />
-                </div>
-                <p className="font-display text-sm text-ink mt-1.5 line-clamp-1">{t.title}</p>
-                <p className="text-xs font-body text-ink/60 mt-1 line-clamp-2">{t.content}</p>
-                <div className="flex items-center justify-between gap-2 mt-2.5">
-                  <PriorityBadge value={t.priority} />
-                  <span className="text-[11px] text-[#8A7C63] font-body">{formatDate(t.createdAt)}</span>
-                </div>
-              </button>
+              <GridCard
+                key={t.id}
+                title={t.title}
+                badge={{ label: statusLabel(t.status), tone: statusTone(t.status) }}
+                mono={t.code}
+                description={t.content || undefined}
+                meta={`Ưu tiên: ${priorityLabel(t.priority)} · ${assigneeLabel(t)} · ${formatDate(t.createdAt)}`}
+                footerActions={[
+                  { label: "Xem & trả lời", icon: <Eye />, onClick: () => openDetail(t), tone: "blue" },
+                  { label: "Xoá", icon: <Trash2 />, onClick: () => openDelete(t), tone: "red" },
+                ]}
+              />
             ))}
           </div>
         </>

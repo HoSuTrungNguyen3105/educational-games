@@ -13,19 +13,19 @@ import { useModalParam } from "../../hooks/useModalParam.js";
 import {
   ErrorState,
   GhostButton,
+  GridCard,
   IconClose,
   Loader,
   ManagementHeader,
   Modal,
   PrimaryButton,
   SearchInput,
-  cardGridClass,
   tableWrapClass,
   useViewMode,
   ViewToggle,
 } from "../../components/ui";
 import RangePagination from "../../components/RangePagination.jsx";
-import { Download, Filter, Grid2x2, ShieldCheck } from "lucide-react";
+import { Download, Eye, Filter, Grid2x2 } from "lucide-react";
 
 const PER_PAGE = 10;
 
@@ -34,7 +34,7 @@ const EMPTY_FILTERS = { id: "", slug: "", name_vi: "", name_en: "", total_permis
 export default function RoleListManagement({ user }) {
   const isAdmin = user?.role === "admin";
   const modalParam = useModalParam();
-  const [mode, setMode] = useViewMode("admin-roles-list", "list");
+  const [mode, setMode] = useViewMode("admin-roles-list", "grid");
 
   const [rows, setRows] = useState(null);
   const [pagination, setPagination] = useState(null);
@@ -253,19 +253,19 @@ export default function RoleListManagement({ user }) {
             </table>
           </div>
 
-          <div className={cardGridClass(mode)}>
+          <div className={`edu-grid ${mode === "list" ? "md:hidden" : ""}`}>
             {filtered.map((r) => (
-              <button key={r.slug} type="button" onClick={() => openDetail(r)} className="note-card p-4 text-left">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-mono text-teal truncate">{r.slug}</span>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-mono text-ink/60 whitespace-nowrap">
-                    <ShieldCheck className="w-3.5 h-3.5" /> {r.total_permissions}
-                  </span>
-                </div>
-                <p className="font-display text-sm text-ink mt-1.5">{r.name_vi}</p>
-                <p className="text-xs font-body text-ink/50 mt-0.5">{r.name_en}</p>
-                <p className="text-[11px] text-[#8A7C63] font-body mt-2">Cập nhật: {r.updated_at}</p>
-              </button>
+              <GridCard
+                key={r.slug}
+                title={r.name_vi}
+                badge={{ label: `${r.total_permissions} quyền`, tone: "blue" }}
+                mono={r.slug}
+                description={r.name_en || undefined}
+                meta={`Cập nhật: ${r.updated_at}`}
+                footerActions={[
+                  { label: "Chi tiết", icon: <Eye />, onClick: () => openDetail(r), tone: "blue" },
+                ]}
+              />
             ))}
           </div>
         </>

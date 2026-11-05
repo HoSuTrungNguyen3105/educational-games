@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Bell, Smartphone } from "lucide-react";
 import { reminderService } from "../../services/api.js";
-import { ConfirmModal, EmptyState, IconAdd, IconBell, IconCheckCircle, IconEdit, IconTrash, Loader } from '../../components/ui';
+import { ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconBell, IconCheckCircle, IconEdit, IconTrash, Loader, useViewMode } from '../../components/ui';
+import { matchesQuery } from "../../lib/searchText.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import DateTimePicker from "../../components/DateTimePicker.jsx";
 import VibratePatternPicker from "../../components/VibratePatternPicker.jsx";
@@ -171,8 +172,26 @@ export default function ReminderManagement({ showToast }) {
     load();
   };
 
-  const activeReminders = reminders.filter((r) => !r.triggered);
-  const pastReminders = reminders.filter((r) => r.triggered);
+  const [query, setQuery] = useState("");
+  const [mode, setMode] = useViewMode("reminders");
+  const activeReminders = useMemo(
+    () => reminders.filter((r) => !r.triggered && matchesQuery(query, r.title, r.message)),
+    [reminders, query]
+  );
+  const pastReminders = useMemo(
+    () => reminders.filter((r) => r.triggered && matchesQuery(query, r.title, r.message)),
+    [reminders, query]
+  );
+  const hasReminders = reminders.length > 0;
+
+  const statusTone = (r) => {
+    if (r.triggered) return "mint";
+    const diff = new Date(r.remindAt) - new Date();
+    if (diff < 0) return "red";
+    if (diff < 3600000) return "gold";
+    if (diff < 86400000) return "blue";
+    return "gray";
+  };
 
   if (loading) return <div className="flex items-center justify-center p-12"><Loader label="Đang tải..." /></div>;
 
@@ -212,6 +231,17 @@ export default function ReminderManagement({ showToast }) {
           Tạo nhắc nhở
         </button>
       </div>
+
+      {hasReminders && (
+        <GridToolbar
+          search={{ value: query, onChange: setQuery, placeholder: "Tìm nhắc nhở" }}
+          mode={mode}
+          onModeChange={setMode}
+        />
+      )}
+      {hasReminders && query && activeReminders.length === 0 && pastReminders.length === 0 && (
+        <div className="note-card edu-empty">Không tìm thấy nhắc nhở nào khớp tìm kiếm.</div>
+      )}
 
       {showForm && (
         <div className="bg-white rounded-2xl border border-ink/10 p-6 space-y-4">
@@ -265,7 +295,7 @@ export default function ReminderManagement({ showToast }) {
         </div>
       )}
 
-      {activeReminders.length === 0 && pastReminders.length === 0 && (
+      {!hasReminders && (
         <EmptyState
           icon={<Bell />}
           title="Chưa có nhắc nhở nào"
@@ -276,6 +306,32 @@ export default function ReminderManagement({ showToast }) {
       {activeReminders.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-gray-500 uppercase mb-3">Sắp tới ({activeReminders.length})</h2>
+          {mode === "grid" ? (
+            <div className="edu-grid">
+              {activeReminders.map((r) => {
+                const status = getTimeStatus(r.remindAt, r.triggered);
+                return (
+                  <GridCard
+                    key={r.id}
+                    title={r.title}
+                    badge={{ label: status.label, tone: statusTone(r) }}
+                    description={r.message || undefined}
+                    meta={`${formatDateTime(r.remindAt)} · ${getRepeatLabel(r.repeat)}`}
+                    extra={(r.vibrate !== false || r.sound !== false) ? (
+                      <span className="flex items-center gap-1.5 text-ink/40">
+                        {r.vibrate !== false && <Smartphone className="w-3.5 h-3.5" />}
+                        {r.sound !== false && <Bell className="w-3.5 h-3.5" />}
+                      </span>
+                    ) : undefined}
+                    footerActions={[
+                      { label: "Sửa", icon: <IconEdit />, onClick: () => openEdit(r), tone: "blue" },
+                      { label: "Xoá", icon: <IconTrash />, onClick: () => handleDelete(r.id, r.title), tone: "red" },
+                    ]}
+                  />
+                );
+              })}
+            </div>
+          ) : (
           <div className="space-y-2">
             {activeReminders.map((r) => {
               const status = getTimeStatus(r.remindAt, r.triggered);
@@ -311,12 +367,29 @@ export default function ReminderManagement({ showToast }) {
               );
             })}
           </div>
+          )}
         </div>
       )}
 
       {pastReminders.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-gray-500 uppercase mb-3">Đã nhắc ({pastReminders.length})</h2>
+          {mode === "grid" ? (
+            <div className="edu-grid">
+              {pastReminders.map((r) => (
+                <GridCard
+                  key={r.id}
+                  title={r.title}
+                  badge={{ label: "Đã nhắc", tone: "mint" }}
+                  description={r.message || undefined}
+                  meta={`${formatDateTime(r.remindAt)} · ${getRepeatLabel(r.repeat)}`}
+                  footerActions={[
+                    { label: "Xoá", icon: <IconTrash />, onClick: () => handleDelete(r.id, r.title), tone: "red" },
+                  ]}
+                />
+              ))}
+            </div>
+          ) : (
           <div className="space-y-2">
             {pastReminders.map((r) => (
               <div key={r.id} className="flex items-center gap-3 bg-gray-50 border border-ink/5 rounded-xl p-4 opacity-60">
@@ -333,6 +406,7 @@ export default function ReminderManagement({ showToast }) {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 

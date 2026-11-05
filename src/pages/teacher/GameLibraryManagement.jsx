@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { gameService, statsService } from '../../services/api.js'
 import { gameDataService } from '../../services/gameDataService.js'
 import { useSubjects, useCategories, useTemplates } from '../../lib/hooks.js'
-import { EmptyState, ErrorState, GhostButton, IconButton, IconCast, IconEdit, IconPlay, IconTrash, Loader, ManagementHeader, Modal, PrimaryButton, TemplateThumb, StatusBadge, TicketStub } from '../../components/ui';
+import { EmptyState, ErrorState, GhostButton, IconButton, IconCast, IconEdit, IconPlay, IconTrash, Loader, ManagementHeader, Modal, PrimaryButton, TemplateThumb, StatusBadge, TicketStub, useViewMode, ViewToggle } from '../../components/ui';
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import RangePagination from '../../components/RangePagination.jsx'
@@ -115,6 +115,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
   const [publishedVersions, setPublishedVersions] = useState({});
   const [from, setFrom] = useState(1);
   const [total, setTotal] = useState(0);
+  const [mode, setMode] = useViewMode('game-library');
   const subjects = useSubjects();
   const categories = useCategories();
   const templates = useTemplates();
@@ -323,6 +324,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
           <option value="published">Đã xuất bản</option>
           <option value="draft">Bản nháp</option>
         </select>
+        <ViewToggle mode={mode} onChange={setMode} className="inline-flex self-center" />
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -342,6 +344,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
       )}
       {!error && games && games.length > 0 && (
         <>
+          {mode === "grid" ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {games.map(g => {
               const gid = g._id?.toString() || g.id;
@@ -363,6 +366,52 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
               );
             })}
           </div>
+          ) : (
+          <div className="edu-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tên trò chơi</th>
+                  <th>Trạng thái</th>
+                  <th>Môn học</th>
+                  <th>Câu hỏi</th>
+                  <th>Lượt chơi</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {games.map(g => {
+                  const gid = g._id?.toString() || g.id;
+                  return (
+                    <tr key={gid}>
+                      <td className="font-semibold">{g.name}</td>
+                      <td><StatusBadge status={g.status} /></td>
+                      <td>{g.subject || "Khác"}</td>
+                      <td>{g.questionsCount || 0}</td>
+                      <td>{Number(g.playersCount) || 0}</td>
+                      <td>
+                        <div className="flex items-center justify-end gap-3 whitespace-nowrap">
+                          <button onClick={() => onEdit(gid)} className="text-xs font-semibold text-[#2271b1] hover:underline">Sửa</button>
+                          <button onClick={() => handleDuplicate(gid)} className="text-xs font-semibold text-ink/60 hover:underline">Nhân bản</button>
+                          <button onClick={() => setPublishGame(g)} className="text-xs font-semibold text-ink/60 hover:underline">Xuất bản</button>
+                          <button onClick={() => openVersions(g)} className="text-xs font-semibold text-ink/60 hover:underline">Phiên bản</button>
+                          {g.status === "published" && (
+                            <button onClick={() => setShareGame(g)} className="text-xs font-semibold text-ink/60 hover:underline">Chia sẻ</button>
+                          )}
+                          <button onClick={() => onResults(gid)} className="text-xs font-semibold text-ticket hover:underline">Kết quả</button>
+                          {g.status === "published" && (
+                            <button onClick={() => handleLive(g)} className="text-xs font-semibold text-teal hover:underline">Phát trực tiếp</button>
+                          )}
+                          <button onClick={() => setConfirmDelete(g)} className="text-xs font-semibold text-red-400 hover:underline">Xoá</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          )}
           {total > PAGE_SIZE && (
             <div className="flex justify-center pt-2">
               <RangePagination

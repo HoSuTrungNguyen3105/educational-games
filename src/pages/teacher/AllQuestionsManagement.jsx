@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Pencil, Trash2, X } from 'lucide-react'
+import { Pencil, Trash2, X } from 'lucide-react'
 import { gameService, questionService } from '../../services/api.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
+import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -172,28 +172,24 @@ export default function AllQuestionsManagement({ showToast }) {
       </div>
 
       <ManagementTable
+        viewKey="all-questions"
         title="Tất cả câu hỏi"
         data={filtered}
         error={error && !questions ? error : null}
         onRetry={loadAll}
         emptyLabel="Không có câu hỏi nào."
         headers={["#", "Game", "Nội dung", "Đáp án đúng", "Thời gian", "Điểm", ""]}
-        renderCard={(q, idx) => (
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-xs text-[#8A7C63] w-6 text-right shrink-0">{idx + 1}</span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-ink font-body truncate">{q.content}</p>
-              <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[11px]">
-                <span className="px-1.5 py-0.5 rounded-full bg-teal/10 text-teal max-w-[130px] truncate">{gameMap[q.gameId] || "—"}</span>
-                <span className="inline-flex items-center gap-1 text-[#8A7C63] max-w-[160px] truncate"><Check className="w-3 h-3 text-teal shrink-0" /> {q.options?.find(o => o.id === q.correctAnswer)?.content || "—"}</span>
-                <span className="font-mono text-[#8A7C63]">{q.timeLimit}s · {q.points}đ</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <IconButton title="Chỉnh sửa" onClick={() => openEdit(q)}><Pencil /></IconButton>
-              <IconButton title="Xóa" tone="danger" onClick={() => confirmRemove(q)}><Trash2 /></IconButton>
-            </div>
-          </div>
+        renderGridCard={(q, idx) => (
+          <GridCard
+            key={q.id || idx}
+            title={q.content}
+            badge={{ label: gameMap[q.gameId] || "—", tone: "blue" }}
+            mono={`#${idx + 1}`}
+            description={`Đáp án đúng: ${q.options?.find(o => o.id === q.correctAnswer)?.content || "—"}`}
+            meta={`${q.options?.length || 0} đáp án · ${q.timeLimit}s · ${q.points} điểm`}
+            onEdit={() => openEdit(q)}
+            onRemove={() => confirmRemove(q)}
+          />
         )}
         renderRow={(q, idx) => (
           <tr key={q.id || idx} className="border-b border-ink/5 last:border-0 hover:bg-ink/[.02]">

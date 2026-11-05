@@ -10,6 +10,7 @@ import { useModalParam } from "../../hooks/useModalParam.js";
 import {
   ErrorState,
   GhostButton,
+  GridCard,
   IconClose,
   Loader,
   ManagementHeader,
@@ -17,13 +18,12 @@ import {
   PrimaryButton,
   SearchInput,
   Select,
-  cardGridClass,
   tableWrapClass,
   useViewMode,
   ViewToggle,
 } from "../../components/ui";
 import RangePagination from "../../components/RangePagination.jsx";
-import { Download, Filter, Wand2 } from "lucide-react";
+import { Download, Eye, Filter, Wand2 } from "lucide-react";
 
 const PER_PAGE = 10;
 
@@ -33,7 +33,7 @@ export default function PermissionManagement({ user, showToast }) {
   const isAdmin = user?.role === "admin";
   const canView = isAdmin || user?.role === "teacher";
   const modalParam = useModalParam();
-  const [mode, setMode] = useViewMode("admin-permissions-list", "list");
+  const [mode, setMode] = useViewMode("admin-permissions-list", "grid");
 
   const [rows, setRows] = useState(null);
   const [pagination, setPagination] = useState(null);
@@ -278,16 +278,19 @@ export default function PermissionManagement({ user, showToast }) {
             </table>
           </div>
 
-          <div className={cardGridClass(mode)}>
+          <div className={`edu-grid ${mode === "list" ? "md:hidden" : ""}`}>
             {filtered.map((r) => (
-              <button key={r.slug} type="button" onClick={() => openDetail(r)} className="note-card p-4 text-left">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-mono text-teal truncate">{r.slug}</span>
-                  <span className="text-[11px] font-mono text-ink/40 whitespace-nowrap">#{r.id}</span>
-                </div>
-                <p className="font-display text-sm text-ink mt-1.5 line-clamp-1">{r.name_vi}</p>
-                <p className="text-[11px] text-[#8A7C63] font-body mt-2">Cập nhật: {r.updated_at}</p>
-              </button>
+              <GridCard
+                key={r.slug}
+                title={r.name_vi}
+                badge={{ label: r.module, tone: "blue" }}
+                mono={r.slug}
+                description={r.name_en || undefined}
+                meta={`Cập nhật: ${r.updated_at}`}
+                footerActions={[
+                  { label: "Chi tiết", icon: <Eye />, onClick: () => openDetail(r), tone: "blue" },
+                ]}
+              />
             ))}
           </div>
         </>
