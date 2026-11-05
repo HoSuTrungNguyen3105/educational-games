@@ -1,0 +1,1 @@
+function e(e){return String(e??``).toLowerCase().normalize(`NFD`).replace(/[\u0300-\u036f]/g,``).replace(/đ/g,`d`)}function t(t,...n){let r=e(t).trim();return!r||n.some(t=>e(t).includes(r))}export{t};
