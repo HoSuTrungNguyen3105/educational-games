@@ -17,15 +17,16 @@
    ===================================================== */
 
 :root {
-  --gc-ink: #1c1b3a;
-  --gc-paper: #fbf8ef;
-  --gc-line: #e6e0cc;
+  --gc-ink: #1d2e4a;
+  --gc-paper: #fff6e7;
+  --gc-card: #fffbf2;
+  --gc-line: #e6dcc4;
 
-  --gc-sun: #ffc93c;
-  --gc-tomato: #ff6b57;
-  --gc-mint: #2fc9a5;
+  --gc-sun: #f4b942;
+  --gc-tomato: #e4572e;
+  --gc-mint: #1b998b;
   --gc-sky: #4b9dff;
-  --gc-lilac: #a184ff;
+  --gc-lilac: #8b5cf6;
 
   --gc-ok: #22b573;
   --gc-bad: #f0483e;
@@ -69,7 +70,7 @@
   box-shadow: 0 0 0 var(--gc-ink);
 }
 
-.gc-btn.alt { background: #fff; }
+.gc-btn.alt { background: var(--gc-card); }
 .gc-btn.sky { background: var(--gc-sky); color: #fff; }
 .gc-btn.mint { background: var(--gc-mint); }
 
@@ -105,7 +106,7 @@
   font-weight: 800;
   line-height: 1;
   color: var(--gc-ink);
-  background: #fff;
+  background: var(--gc-card);
   border: 3px solid var(--gc-ink);
   box-shadow: 3px 3px 0 var(--gc-ink);
   transition: transform .1s, box-shadow .1s;
@@ -114,7 +115,7 @@
 #homeBackBtn:hover,
 .gc-back:hover {
   filter: none;
-  background: #fff7d6;
+  background: #ffe9a8;
 }
 
 #homeBackBtn:active,
@@ -135,7 +136,7 @@
   padding: 5px 11px;
   border: 2.5px solid var(--gc-ink);
   border-radius: 999px;
-  background: #fff;
+  background: var(--gc-card);
   color: var(--gc-ink);
   white-space: nowrap;
 }
@@ -196,7 +197,7 @@
   width: 100%;
   max-width: 460px;
   margin: auto;
-  background: #fff;
+  background: var(--gc-card);
   border: 3px solid var(--gc-ink);
   border-radius: 24px;
   box-shadow: var(--gc-shadow);
@@ -237,7 +238,7 @@
   margin: 8px 4px 0;
   font-size: 14px;
   line-height: 1.45;
-  color: #4b4a6a;
+  color: #16233a;
 }
 
 .gc-h {
@@ -247,7 +248,7 @@
   font-size: 15px;
   letter-spacing: .8px;
   text-transform: uppercase;
-  color: #6a6990;
+  color: #5b6b8c;
 }
 
 .gc-levels {
@@ -264,7 +265,7 @@
   font-family: inherit;
   color: var(--gc-ink);
   cursor: pointer;
-  background: #fff;
+  background: var(--gc-card);
   border: 3px solid var(--gc-ink);
   border-radius: 16px;
   padding: 9px 12px;
@@ -305,7 +306,7 @@
 .gc-lv .t small {
   font-size: 12.5px;
   line-height: 1.3;
-  color: #55547a;
+  color: #46587a;
 }
 
 .gc-lv .pips {
@@ -318,7 +319,7 @@
   height: 8px;
   border: 2px solid var(--gc-ink);
   border-radius: 50%;
-  background: #fff;
+  background: var(--gc-card);
 }
 
 .gc-lv .pips i.on {
@@ -330,7 +331,7 @@
   align-self: flex-start;
   font-size: 12px;
   font-weight: 700;
-  color: #55547a;
+  color: #46587a;
   white-space: nowrap;
 }
 
@@ -361,7 +362,7 @@
 .gc-note {
   margin: 10px 0 0;
   font-size: 12px;
-  color: #6a6990;
+  color: #5b6b8c;
 }
 
 @media (max-height: 640px) {
@@ -381,7 +382,7 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(28, 27, 58, .6);
+  background: rgba(29, 46, 74, .6);
   font-family: var(--gc-body);
   color: var(--gc-ink);
 }
@@ -391,7 +392,7 @@
   max-width: 400px;
   max-height: 100%;
   overflow: auto;
-  background: #fff;
+  background: var(--gc-card);
   border: 3px solid var(--gc-ink);
   border-radius: 22px;
   padding: 20px;
@@ -508,7 +509,7 @@ button {
   justify-content: space-between;
   flex-wrap: wrap;
   padding: 7px 10px 6px 60px;
-  background: #fff;
+  background: var(--gc-card);
   border-bottom: 3px solid var(--gc-ink);
 }
 
@@ -549,7 +550,7 @@ button {
 
 .hud__coin {
   border-radius: 999px;
-  background: #fff3c6;
+  background: #ffe9a8;
 }
 
 .hud__house {
@@ -570,7 +571,7 @@ button {
 .hud__body {
   min-width: 66px;
   justify-content: center;
-  background: #fff;
+  background: var(--gc-card);
 }
 
 /* Điểm · đợt · thanh tiến trình */
@@ -579,7 +580,7 @@ button {
   font-weight: 800;
   font-size: 13px;
   line-height: 1.1;
-  color: #55547a;
+  color: #46587a;
   white-space: nowrap;
 }
 
@@ -622,7 +623,7 @@ button {
   padding: 0;
   display: grid;
   place-items: center;
-  background: #fff;
+  background: var(--gc-card);
   color: var(--gc-ink);
   border: 2.5px solid var(--gc-ink);
   border-radius: 11px;
@@ -658,7 +659,7 @@ button {
 }
 
 @keyframes pulse {
-  50% { transform: scale(1.15); background: #fff1c2; }
+  50% { transform: scale(1.15); background: #ffe9a8; }
 }
 
 /* Menu cài đặt (bánh răng) */
@@ -672,7 +673,7 @@ button {
   flex-direction: column;
   gap: 9px;
   padding: 12px;
-  background: #fff;
+  background: var(--gc-card);
   border: 3px solid var(--gc-ink);
   border-radius: 16px;
   box-shadow: var(--gc-shadow);
@@ -693,7 +694,7 @@ button {
 .hud__menu .sub {
   margin: -6px 0 0;
   font-size: 12px;
-  color: #6a6990;
+  color: #5b6b8c;
   line-height: 1.35;
 }
 
@@ -744,7 +745,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  background: #fff;
+  background: var(--gc-card);
   border: 2px solid var(--gc-ink);
   border-radius: 999px;
   padding: 1px 8px 1px 5px;
@@ -753,7 +754,7 @@ button {
 
 /* Nhãn "tinh anh" trong phần xem trước */
 #preview .pv.elite {
-  background: linear-gradient(135deg, #fff2b8, #ffc93c);
+  background: linear-gradient(135deg, #ffe9a8, #f4b942);
 }
 
 /* ---------- Nút ---------- */
@@ -774,7 +775,7 @@ button {
   box-shadow: 0 0 0 var(--gc-ink);
 }
 
-.btn.alt  { background: #fff; }
+.btn.alt  { background: var(--gc-card); }
 .btn.red  { background: var(--gc-bad); color: #fff; }
 .btn.mint { background: var(--gc-mint); }
 
@@ -813,7 +814,7 @@ canvas#c {
   justify-content: center;
   align-items: stretch;
   padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
-  background: #fff;
+  background: var(--gc-card);
   border-top: 3px solid var(--gc-ink);
 }
 
@@ -833,7 +834,7 @@ canvas#c {
   width: 128px;
   border-radius: 14px;
   padding: 3px 6px 3px 3px;
-  background: #fff;
+  background: var(--gc-card);
   border: 3px solid var(--gc-ink);
   color: var(--gc-ink);
   text-align: left;
@@ -954,7 +955,7 @@ canvas#c {
   bottom: 0;
   height: 100%;
   width: 0;
-  background: rgba(28, 27, 58, .22);
+  background: rgba(29, 46, 74, .22);
   pointer-events: none;
 }
 
@@ -1093,7 +1094,7 @@ canvas#c {
   width: 100%;
   max-width: 860px;
   margin: auto;
-  background: #fff;
+  background: var(--gc-card);
   border: 3px solid var(--gc-ink);
   border-radius: 24px;
   box-shadow: var(--gc-shadow);
@@ -1119,7 +1120,7 @@ canvas#c {
 .fr-maps__sub {
   margin: 6px 0 12px;
   font-size: 13px;
-  color: #6a6990;
+  color: #5b6b8c;
 }
 
 .fr-maps__grid {
@@ -1138,7 +1139,7 @@ canvas#c {
   font-family: inherit;
   color: var(--gc-ink);
   cursor: pointer;
-  background: #fff;
+  background: var(--gc-card);
   border: 3px solid var(--gc-ink);
   border-radius: 16px;
   padding: 8px 10px;
@@ -1157,7 +1158,7 @@ canvas#c {
   font-family: var(--gc-head);
   font-weight: 800;
   font-size: 14px;
-  color: #8a89a8;
+  color: #7c8aa5;
 }
 
 .fr-map .e {
@@ -1190,17 +1191,17 @@ canvas#c {
 .fr-map .t small {
   font-size: 12px;
   line-height: 1.3;
-  color: #55547a;
+  color: #46587a;
 }
 
 .fr-map .meta {
   font-size: 11.5px;
   font-weight: 700;
-  color: #6a6990;
+  color: #5b6b8c;
 }
 
 .fr-map .meta .run {
-  color: #d9482f;
+  color: #e4572e;
 }
 
 .fr-map .pips {
@@ -1266,13 +1267,13 @@ canvas#c {
   padding: 16px;
   font-family: var(--gc-body);
   color: var(--gc-ink);
-  background: rgba(28, 27, 58, .55);
+  background: rgba(29, 46, 74, .55);
 }
 
 .fr-resume__card {
   width: 100%;
   max-width: 430px;
-  background: #fff;
+  background: var(--gc-card);
   border: 3px solid var(--gc-ink);
   border-radius: 22px;
   box-shadow: var(--gc-shadow);
@@ -1291,7 +1292,7 @@ canvas#c {
 .fr-resume__sub {
   margin: 6px 0 12px;
   font-size: 13px;
-  color: #6a6990;
+  color: #5b6b8c;
 }
 
 .fr-resume__list {
@@ -1299,10 +1300,10 @@ canvas#c {
   grid-template-columns: 1fr 1fr;
   gap: 6px 12px;
   padding: 10px 12px;
-  border-top: 2px solid #eceaf6;
-  border-bottom: 2px solid #eceaf6;
+  border-top: 2px solid var(--gc-line);
+  border-bottom: 2px solid var(--gc-line);
   font-size: 13.5px;
-  color: #45436a;
+  color: #33415e;
 }
 
 .fr-resume__list b {
@@ -1373,7 +1374,7 @@ canvas#c {
         </div>
         <div class="hud__house" id="stLives" title="Mạng còn lại của cánh đồng">
           <svg class="hud__roof" viewBox="0 0 46 18" aria-hidden="true">
-            <path d="M23 1.5 44.5 16.5H1.5Z" fill="#ff6b57" stroke="#1c1b3a" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M23 1.5 44.5 16.5H1.5Z" fill="#e4572e" stroke="#1d2e4a" stroke-width="3" stroke-linejoin="round"/>
           </svg>
           <span class="hud__body">❤️ <b id="lives">20</b></span>
         </div>

@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>🌀 Labyrinth - Cực Khó</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         /* ===== RESET & GLOBAL ===== */
         * {
@@ -14,8 +16,10 @@
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
-            background: #070b10;
+            font-family: var(--body,"Be Vietnam Pro","Segoe UI",system-ui,sans-serif);
+            background-color: var(--paper,#fff6e7);
+            background-image: linear-gradient(var(--line,#e6dcc4) 1px, transparent 1px), linear-gradient(90deg, var(--line,#e6dcc4) 1px, transparent 1px);
+            background-size: 28px 28px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -29,6 +33,9 @@
             max-width: 960px;
             padding: 8px 10px 12px;
             border-radius: 24px;
+            background: var(--card,#fffbf2);
+            border: 3px solid var(--ink,#1d2e4a);
+            box-shadow: 4px 4px 0 var(--ink,#1d2e4a);
         }
 
         .header {
@@ -42,11 +49,9 @@
 
         .title {
             font-size: 22px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #f0c040, #d4880f);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+            font-weight: 800;
+            font-family: var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);
+            color: var(--tomato,#e4572e);
             letter-spacing: 0.5px;
             display: flex;
             align-items: center;
@@ -63,17 +68,18 @@
             align-items: center;
             font-size: 15px;
             font-weight: 500;
-            color: #8b949e;
+            color: var(--ink2,#16233a);
         }
 
         .stats .stat-item {
             display: flex;
             align-items: center;
             gap: 6px;
-            background: #0f141c;
+            background: var(--bg,#fff3de);
             padding: 6px 14px;
             border-radius: 30px;
-            border: 1px solid #1c2430;
+            border: 2.5px solid var(--ink,#1d2e4a);
+            box-shadow: 2px 2px 0 var(--ink,#1d2e4a);
         }
 
         .stats .stat-item .icon {
@@ -81,7 +87,7 @@
         }
 
         .stats .stat-value {
-            color: #f0c040;
+            color: var(--tomato,#e4572e);
             font-weight: 700;
             min-width: 24px;
         }
@@ -94,8 +100,8 @@
             background: #070b10;
             border-radius: 20px;
             overflow: hidden;
-            border: 1px solid #1a2230;
-            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8), 0 0 60px rgba(0, 0, 0, 0.4);
+            border: 3px solid var(--ink,#1d2e4a);
+            box-shadow: 4px 4px 0 var(--ink,#1d2e4a);
             touch-action: none;
         }
 
@@ -118,7 +124,9 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(7, 11, 16, 0.92);
+            background-color: rgba(255,246,231,0.97);
+            background-image: linear-gradient(var(--line,#e6dcc4) 1px, transparent 1px), linear-gradient(90deg, var(--line,#e6dcc4) 1px, transparent 1px);
+            background-size: 28px 28px;
             backdrop-filter: blur(10px);
             padding: 24px;
             text-align: center;
@@ -137,65 +145,68 @@
 
         .overlay h2 {
             font-size: 28px;
-            font-weight: 700;
+            font-weight: 800;
+            font-family: var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);
             margin-bottom: 8px;
-            color: #f0c040;
+            color: var(--tomato,#e4572e);
         }
 
         .overlay p {
             font-size: 16px;
-            color: #6e7a8a;
+            color: var(--ink2,#16233a);
             margin-bottom: 6px;
             max-width: 340px;
             line-height: 1.5;
         }
 
         .overlay .highlight {
-            color: #f0c040;
+            color: var(--tomato,#e4572e);
             font-weight: 600;
         }
 
         .btn {
-            background: #0f141c;
-            border: none;
+            background: var(--card,#fffbf2);
             padding: 12px 32px;
-            border-radius: 40px;
+            border-radius: 14px;
             font-size: 16px;
-            font-weight: 600;
-            color: #c9d1d9;
+            font-weight: 800;
+            font-family: var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);
+            color: var(--ink,#1d2e4a);
             cursor: pointer;
             transition: 0.2s;
             margin-top: 16px;
-            border: 1px solid #1c2430;
+            border: 3px solid var(--ink,#1d2e4a);
+            box-shadow: 3px 3px 0 var(--ink,#1d2e4a);
             display: inline-flex;
             align-items: center;
             gap: 10px;
         }
 
         .btn-primary {
-            background: #f0c040;
-            color: #070b10;
-            border-color: #f0c040;
-            box-shadow: 0 4px 12px rgba(240, 192, 64, 0.2);
+            background: var(--sun,#f4b942);
+            color: var(--ink,#1d2e4a);
+            border-color: var(--ink,#1d2e4a);
+            box-shadow: 3px 3px 0 var(--ink,#1d2e4a);
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(240, 192, 64, 0.3);
-            background: #f5c94a;
+            transform: translate(-1px, -1px);
+            box-shadow: 5px 5px 0 var(--ink,#1d2e4a);
+            background: var(--sun,#f4b942);
         }
 
         .btn-primary:active {
-            transform: scale(0.97);
+            transform: translate(3px, 3px);
+            box-shadow: 0 0 0 var(--ink,#1d2e4a);
         }
 
         .btn-secondary {
-            background: transparent;
-            border-color: #1c2430;
+            background: var(--card,#fffbf2);
+            border-color: var(--ink,#1d2e4a);
         }
 
         .btn-secondary:hover {
-            background: #0f141c;
+            background: var(--bg,#fff3de);
         }
 
         .btn-group {
@@ -217,7 +228,7 @@
 
         .controls .hint {
             font-size: 13px;
-            color: #5a6678;
+            color: var(--ink2,#16233a);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -225,13 +236,13 @@
 
         .controls .hint kbd {
             display: inline-block;
-            background: #0f141c;
+            background: var(--bg,#fff3de);
             padding: 4px 10px;
             border-radius: 6px;
             font-size: 12px;
             font-weight: 600;
-            color: #8b949e;
-            border: 1px solid #1c2430;
+            color: var(--ink,#1d2e4a);
+            border: 2px solid var(--ink,#1d2e4a);
             font-family: inherit;
         }
 
@@ -240,24 +251,24 @@
         }
 
         .btn-icon {
-            background: #0f141c;
-            border: none;
-            color: #6e7a8a;
+            background: var(--card,#fffbf2);
+            color: var(--ink,#1d2e4a);
             width: 42px;
             height: 42px;
-            border-radius: 50%;
+            border-radius: 14px;
             font-size: 18px;
             cursor: pointer;
             transition: 0.2s;
-            border: 1px solid #1c2430;
+            border: 3px solid var(--ink,#1d2e4a);
+            box-shadow: 3px 3px 0 var(--ink,#1d2e4a);
             display: inline-flex;
             align-items: center;
             justify-content: center;
         }
 
         .btn-icon:hover {
-            background: #1c2430;
-            color: #c9d1d9;
+            background: var(--bg,#fff3de);
+            color: var(--ink,#1d2e4a);
         }
 
         .level-selector {
@@ -268,8 +279,8 @@
 
         .difficulty-group {
             display: flex;
-            background: #0f141c;
-            border: 1px solid #1c2430;
+            background: var(--bg,#fff3de);
+            border: 2.5px solid var(--ink,#1d2e4a);
             border-radius: 30px;
             padding: 3px;
             gap: 2px;
@@ -278,7 +289,7 @@
         .difficulty-group button {
             border: none;
             background: transparent;
-            color: #5a6678;
+            color: var(--ink2,#16233a);
             font-family: inherit;
             font-size: 13px;
             font-weight: 600;
@@ -289,13 +300,13 @@
         }
 
         .difficulty-group button:hover {
-            color: #c9d1d9;
+            color: var(--ink,#1d2e4a);
         }
 
         .difficulty-group button.active {
-            background: #f0c040;
-            color: #070b10;
-            box-shadow: 0 2px 8px rgba(240, 192, 64, 0.25);
+            background: var(--sun,#f4b942);
+            color: var(--ink,#1d2e4a);
+            box-shadow: 2px 2px 0 var(--ink,#1d2e4a);
         }
 
         @media (max-width: 600px) {
@@ -1140,5 +1151,55 @@
         })();
     </script>
 
+
+<!-- Nút "Về trang chủ" — thêm bởi scripts/add-offline-back-button.mjs -->
+<style>
+  #homeBackBtn {
+    position: fixed;
+    z-index: 2147483000;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    left: calc(env(safe-area-inset-left, 0px) + 10px);
+    width: 42px; height: 42px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 20px; font-weight: 800; line-height: 1;
+    color: #1d2e4a;
+    background: #fffbf2;
+    border: 3px solid #1d2e4a;
+    box-shadow: 0 4px 0 #1d2e4a, 0 8px 14px rgba(0, 0, 0, .22);
+    transition: transform .12s, box-shadow .12s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+  }
+  #homeBackBtn:hover { filter: brightness(1.06); }
+  #homeBackBtn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #1d2e4a, 0 3px 6px rgba(0, 0, 0, .22);
+  }
+  #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
+</style>
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">
+  <span aria-hidden="true">&#8592;</span>
+</button>
+<script>
+  // Nút dùng chung cho mọi game offline: báo ngược lên React (OfflineGamePage)
+  // để quay về trang chủ. Mở file .html trực tiếp thì tự điều hướng.
+  (function () {
+    var btn = document.getElementById("homeBackBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: "quit", data: {} }, "*");
+          return;
+        }
+      } catch (e) { /* rơi xuống cách tự điều hướng */ }
+      try { window.location.href = "/"; } catch (e) { /* ignore */ }
+    });
+  })();
+</script>
 </body>
 </html>

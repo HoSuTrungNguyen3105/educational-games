@@ -13,27 +13,27 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;overflow:hidden;background:var(--night);color:var(--moon);
-    font-family:"Baloo 2","Nunito","Segoe UI",system-ui,sans-serif}
+    font-family:var(--body,"Be Vietnam Pro","Segoe UI",system-ui,sans-serif)}
   canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
   .top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;
     padding:calc(env(safe-area-inset-top) + 14px) 16px 0;pointer-events:none}
-  .brand h1{font-size:22px;font-weight:700;line-height:1.1;letter-spacing:.2px}
+  .brand h1{font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-size:22px;font-weight:700;line-height:1.1;letter-spacing:.2px}
   .brand p{font-size:15px;opacity:.75;margin-top:2px}
-  #sound{pointer-events:auto;width:44px;height:44px;border-radius:50%;border:0;cursor:pointer;
-    background:rgba(255,243,207,.14);color:var(--moon);font-size:20px;backdrop-filter:blur(6px)}
+  #sound{pointer-events:auto;width:44px;height:44px;border-radius:14px;border:3px solid var(--ink,#1d2e4a);cursor:pointer;
+    background:var(--card,#fffbf2);color:var(--ink,#1d2e4a);font-size:20px;box-shadow:3px 3px 0 var(--ink,#1d2e4a)}
   .bottom{position:fixed;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:12px;
     padding:0 12px calc(env(safe-area-inset-bottom) + 14px);pointer-events:none}
-  #hint{font-size:16px;padding:7px 16px;border-radius:99px;background:rgba(27,33,66,.55);
-    backdrop-filter:blur(6px);text-align:center;max-width:92vw}
+  #hint{font-size:16px;padding:7px 16px;border-radius:99px;background:var(--card,#fffbf2);color:var(--ink,#1d2e4a);
+    border:2.5px solid var(--ink,#1d2e4a);box-shadow:2px 2px 0 var(--ink,#1d2e4a);text-align:center;max-width:92vw}
   nav{pointer-events:auto;display:flex;gap:4px;padding:5px;border-radius:99px;
-    background:rgba(255,243,207,.12);backdrop-filter:blur(8px)}
-  nav button{border:0;cursor:pointer;font:inherit;font-size:16px;font-weight:500;color:var(--moon);
+    background:var(--card,#fffbf2);border:2.5px solid var(--ink,#1d2e4a);box-shadow:3px 3px 0 var(--ink,#1d2e4a)}
+  nav button{border:0;cursor:pointer;font:inherit;font-size:16px;font-weight:500;color:var(--ink,#1d2e4a);
     padding:9px 16px;border-radius:99px;background:transparent;transition:background .25s,color .25s}
-  nav button[aria-selected="true"]{background:var(--peach);color:var(--night);font-weight:700}
+  nav button[aria-selected="true"]{background:var(--sun,#f4b942);color:var(--ink,#1d2e4a);font-weight:700;box-shadow:2px 2px 0 var(--ink,#1d2e4a)}
   button:focus-visible{outline:3px solid var(--mint);outline-offset:2px}
   #toast{position:fixed;left:50%;top:22%;transform:translate(-50%,10px);opacity:0;pointer-events:none;
     max-width:min(86vw,420px);text-align:center;font-size:20px;line-height:1.35;padding:16px 22px;border-radius:22px;
-    background:rgba(255,243,207,.92);color:var(--night);transition:opacity .5s,transform .5s;font-weight:500}
+    background:var(--card,#fffbf2);color:var(--ink,#1d2e4a);border:3px solid var(--ink,#1d2e4a);box-shadow:4px 4px 0 var(--ink,#1d2e4a);transition:opacity .5s,transform .5s;font-weight:500}
   #toast.show{opacity:1;transform:translate(-50%,0)}
   @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 </style>
@@ -496,10 +496,10 @@ requestAnimationFrame(loop);
     cursor: pointer;
     font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);
     font-size: 20px; font-weight: 800; line-height: 1;
-    color: #1b2142;
-    background: #fff3cf;
-    border: 3px solid #1b2142;
-    box-shadow: 0 4px 0 #1b2142, 0 8px 14px rgba(0, 0, 0, .22);
+    color: #1d2e4a;
+    background: #fffbf2;
+    border: 3px solid #1d2e4a;
+    box-shadow: 0 4px 0 #1d2e4a, 0 8px 14px rgba(0, 0, 0, .22);
     transition: transform .12s, box-shadow .12s;
     -webkit-tap-highlight-color: transparent;
     user-select: none; -webkit-user-select: none;
@@ -507,7 +507,7 @@ requestAnimationFrame(loop);
   #homeBackBtn:hover { filter: brightness(1.06); }
   #homeBackBtn:active {
     transform: translateY(3px);
-    box-shadow: 0 1px 0 #1b2142, 0 3px 6px rgba(0, 0, 0, .22);
+    box-shadow: 0 1px 0 #1d2e4a, 0 3px 6px rgba(0, 0, 0, .22);
   }
   #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
