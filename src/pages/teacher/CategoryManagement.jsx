@@ -1,7 +1,9 @@
+import { useMemo, useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { setupService } from '../../services/setupService.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui'
+import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui'
 import { useCrudList } from '../../hooks/useCrudList.js'
+import { matchesQuery } from '../../lib/searchText.js'
 
 const FIELDS = [
   { name: "id", label: "ID (không dấu, không khoảng trắng)", placeholder: "VD: quiz, puzzle, adventure" },
@@ -32,33 +34,36 @@ export default function CategoryManagement({ showToast }) {
     showToast,
   });
 
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(
+    () => (categories ?? []).filter((cat) => matchesQuery(query, cat.label, cat.id)),
+    [categories, query]
+  );
+
   return (
     <div>
       <ManagementHeader subtitle="Quản lý danh mục" title="Categories" />
 
       <ManagementTable
         viewKey="categories"
-        data={categories}
+        data={categories ? filtered : categories}
         error={error && !categories ? error : null}
         onRetry={load}
-        emptyLabel="Chưa có category nào."
+        emptyLabel={query ? "Không tìm thấy category nào khớp tìm kiếm." : "Chưa có category nào."}
         onCreate={openCreate}
+        search={{ value: query, onChange: setQuery, placeholder: "Tìm kiếm" }}
         onRemoveAll={categories && categories.length > 0 ? () => askRemoveAll("TẤT CẢ category") : null}
         headers={["ID", "Tên hiển thị", ""]}
-        renderCard={(cat) => (
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gold/20 text-ink flex items-center justify-center font-display text-sm shrink-0">
-              {cat.label?.[0]?.toUpperCase() || "?"}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-body text-sm text-ink truncate">{cat.label}</p>
-              <p className="font-mono text-[11px] text-[#8A7C63] truncate">{cat.id}</p>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <IconButton title="Chỉnh sửa" onClick={() => openEdit(cat)}><Pencil /></IconButton>
-              <IconButton title="Xóa" tone="danger" onClick={() => askRemove(cat)}><Trash2 /></IconButton>
-            </div>
-          </div>
+        renderGridCard={(cat, idx) => (
+          <GridCard
+            key={cat.id}
+            title={cat.label}
+            badge={{ label: "Hoạt động", tone: "mint" }}
+            mono={cat.id}
+            meta={`Thứ tự: ${idx}`}
+            onEdit={() => openEdit(cat)}
+            onRemove={() => askRemove(cat)}
+          />
         )}
         renderRow={(cat) => (
           <tr key={cat.id} className="border-b border-ink/5 last:border-0">

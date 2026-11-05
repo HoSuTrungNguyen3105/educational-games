@@ -1,8 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { navigate } from '../../lib/router.js'
 import { templateService } from '../../services/api.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, TemplateThumb } from '../../components/ui'
+import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, TemplateThumb } from '../../components/ui'
+import { matchesQuery } from '../../lib/searchText.js'
+
+const STATUS_BADGE = {
+  published: { label: "Hoạt động", tone: "mint" },
+  inactive: { label: "Đã tắt", tone: "gray" },
+  draft: { label: "Bản nháp", tone: "gold" },
+};
 
 export default function TemplateManagement({ showToast }) {
   const [templates, setTemplates] = useState(null);
@@ -16,6 +23,12 @@ export default function TemplateManagement({ showToast }) {
   useEffect(() => { load(); }, [load]);
 
   const confirmRemove = (t) => setConfirm({ open: true, item: t });
+
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(
+    () => (templates ?? []).filter((t) => matchesQuery(query, t.name, t.category, t.type, t.status)),
+    [templates, query]
+  );
   const doRemove = async () => {
     try {
       const result = await templateService.remove(confirm.item._id);
@@ -30,34 +43,26 @@ export default function TemplateManagement({ showToast }) {
 
       <ManagementTable
         viewKey="templates"
-        count={templates ? templates.length : 0}
-        data={templates}
+        count={templates ? filtered.length : 0}
+        data={templates ? filtered : templates}
         error={error && !templates ? error : null}
         onRetry={load}
-        emptyLabel="Chưa có template nào."
+        emptyLabel={query ? "Không tìm thấy template nào khớp tìm kiếm." : "Chưa có template nào."}
         onCreate={() => navigate("/dashboard/templates/new")}
+        search={{ value: query, onChange: setQuery, placeholder: "Tìm kiếm" }}
         headers={["Ảnh", "Tên", "Loại", "Thể loại", "Trạng thái", "Cập nhật", ""]}
-        renderCard={(t) => (
-          <div className="flex items-center gap-3">
-            <TemplateThumb thumbnail={t.thumbnail} name={t.name} ring={t.ring} size={36} className="shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="font-body text-sm text-ink truncate">{t.name}</p>
-              <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-full border ${t.type === "play-to-win" ? "bg-teal/15 text-teal border-teal/30" : "bg-ticket/15 text-ticket border-ticket/30"}`}>
-                  {t.type === "play-to-win" ? "Win" : "Learn"}
-                </span>
-                <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-full border"
-                  style={{ color: t.ring, borderColor: t.ring + "40", backgroundColor: t.ring + "15" }}>{t.category}</span>
-                <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-full border ${t.status === "published" ? "bg-teal/15 text-teal border-teal/30"
-                  : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20" : "bg-gold/15 text-gold border-gold/30"
-                  }`}>{t.status}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <IconButton title="Sửa" onClick={() => navigate(`/dashboard/templates/${t._id}`)}><Pencil /></IconButton>
-              <IconButton title="Xóa" tone="danger" onClick={() => confirmRemove(t)}><Trash2 /></IconButton>
-            </div>
-          </div>
+        renderGridCard={(t) => (
+          <GridCard
+            key={t._id}
+            media={<TemplateThumb thumbnail={t.thumbnail} name={t.name} ring={t.ring} size={40} className="shrink-0" />}
+            title={t.name}
+            badge={STATUS_BADGE[t.status] || { label: t.status, tone: "gray" }}
+            mono={t.category}
+            extra={<span className="text-xs text-[#646970]">Loại: {t.type === "play-to-win" ? "Chơi để thắng (Win)" : "Học tập (Learn)"}</span>}
+            meta={t.updatedAt ? `Cập nhật: ${new Date(t.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}` : undefined}
+            onEdit={() => navigate(`/dashboard/templates/${t._id}`)}
+            onRemove={() => confirmRemove(t)}
+          />
         )}
         renderRow={(t) => (
           <tr key={t._id} className="border-b border-ink/5 last:border-0">

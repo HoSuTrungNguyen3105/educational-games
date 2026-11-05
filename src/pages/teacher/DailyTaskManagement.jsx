@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { taskService } from "../../services/taskService.js";
-import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from "../../components/ui";
+import { GridCard, ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from "../../components/ui";
 import { TaskIcon } from "../../components/tasks/index.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
-import { Check, CheckCircle2, ClipboardList, Coins, Gift, Users } from "lucide-react";
+import { matchesQuery } from "../../lib/searchText.js";
+import { CheckCircle2, ClipboardList, Coins, Users } from "lucide-react";
 
 const TASK_TYPES = [
   { value: "GAME_PLAYED", label: "Chơi game" },
@@ -86,6 +87,17 @@ export default function DailyTaskManagement({ showToast }) {
   };
 
   const taskHeaders = ["Nhiệm vụ", "Loại", "Phạm vi", "Mục tiêu", "Thưởng", "Hoàn thành", "Đã nhận", "Thao tác"];
+
+  const [query, setQuery] = useState("");
+  const allTasks = stats?.tasks || [];
+  const filteredTasks = useMemo(
+    () => allTasks.filter((t) => matchesQuery(query,
+      t.name, t.code, t.description,
+      TASK_TYPES.find((x) => x.value === t.type)?.label,
+      TASK_SCOPES.find((x) => x.value === t.scope)?.label)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [stats, query]
+  );
   const renderTaskRow = (task) => (
     <tr key={task.id} className="border-t border-ink/5 hover:bg-ink/[0.02] transition">
       <td className="py-2.5 px-3 text-sm font-body text-ink">
@@ -137,31 +149,32 @@ export default function DailyTaskManagement({ showToast }) {
       {tab === "tasks" && (
         <ManagementTable
           title="Danh sách nhiệm vụ"
-          count={stats?.tasks?.length || 0}
-          data={stats?.tasks || []}
+          count={filteredTasks.length}
+          data={filteredTasks}
           error={error}
           onRetry={load}
-          emptyLabel="Chưa có dữ liệu"
+          emptyLabel={query ? "Không tìm thấy nhiệm vụ nào khớp tìm kiếm." : "Chưa có dữ liệu"}
           headers={taskHeaders}
+          search={{ value: query, onChange: setQuery, placeholder: "Tìm kiếm" }}
           renderRow={renderTaskRow}
-          renderCard={(task) => (
-            <div className="flex items-center gap-3">
-              <TaskIcon code={task.code} type={task.type} className="w-5 h-5 shrink-0 text-ink/55" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold font-body text-ink truncate">{task.name}</p>
-                <p className="text-[11px] text-[#8A7C63] font-mono truncate">
-                  {TASK_TYPES.find(t => t.value === task.type)?.label || task.type} · {TASK_SCOPES.find(s => s.value === task.scope)?.label || task.scope} · {task.target} lần · +{task.rewardCoin}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-xs font-mono text-ink inline-flex items-center gap-1">{task.completedCount ?? 0} <Check className="w-3 h-3" /></p>
-                <p className="text-xs font-mono text-teal inline-flex items-center gap-1"><Gift className="w-3 h-3" /> {task.claimedCount ?? 0}</p>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button onClick={() => openEdit(task)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
-                <button onClick={() => handleDelete(task)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
-              </div>
-            </div>
+          renderGridCard={(task) => (
+            <GridCard
+              key={task.id}
+              media={<TaskIcon code={task.code} type={task.type} className="w-8 h-8 shrink-0 text-ink/55" />}
+              title={task.name}
+              badge={task.isActive !== false ? { label: "Đang hoạt động", tone: "mint" } : { label: "Đã tắt", tone: "gray" }}
+              mono={task.code}
+              description={task.description || undefined}
+              extra={(
+                <div className="text-xs text-[#646970] space-y-0.5">
+                  <p>{TASK_TYPES.find(t => t.value === task.type)?.label || task.type} · {TASK_SCOPES.find(s => s.value === task.scope)?.label || task.scope} · Mục tiêu {task.target} · +{task.rewardCoin} xu{task.rewardXp ? ` · +${task.rewardXp} XP` : ""}</p>
+                  <p>Hoàn thành {task.completedCount ?? 0} · Đã nhận {task.claimedCount ?? 0}</p>
+                </div>
+              )}
+              meta={`Thứ tự: ${task.sortOrder ?? 0}`}
+              onEdit={() => openEdit(task)}
+              onRemove={() => handleDelete(task)}
+            />
           )}
         />
       )}
