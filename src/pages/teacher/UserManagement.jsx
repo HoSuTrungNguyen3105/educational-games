@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Dices, KeyRound, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 import { userService } from '../../services/api.js'
 import { hasPermission, getRoleLabel, ROLES } from '../../config/roles.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal, Modal } from '../../components/ui'
+import { matchesQuery } from '../../lib/searchText.js'
+import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal, Modal } from '../../components/ui'
 
 const RANDOM_FIRST_NAMES = ["An", "Bình", "Cúc", "Dũng", "Em", "Giang", "Hà", "Hiếu", "Iris", "Khanh", "Lan", "Minh", "Nga", "Oanh", "Phúc", "Quân", "Rạng", "Sơn", "Tâm", "Uyên", "Vân", "Xuân", "Yên", "Zoe"];
 const RANDOM_LAST_NAMES = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"];
@@ -60,6 +61,12 @@ export default function UserManagement({ user, showToast }) {
     userService.list().then(setUsers).catch(e => setError(e.message));
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(
+    () => (users ?? []).filter((u) => matchesQuery(query, u.name, u.username, u.email, u.className, getRoleLabel(u.role))),
+    [users, query]
+  );
 
   const openCreate = () => { setForm({ username: "", password: "", name: "", email: "", role: "student" }); setError(null); setModalOpen(true); };
   const closeModal = () => { setModalOpen(false); setError(null); };
@@ -163,38 +170,43 @@ export default function UserManagement({ user, showToast }) {
 
       <ManagementTable
         viewKey="users"
-        data={users}
+        data={users ? filtered : users}
         error={error && !users ? error : null}
         onRetry={load}
-        emptyLabel="Chưa có tài khoản nào."
+        emptyLabel={query ? "Không tìm thấy tài khoản nào khớp tìm kiếm." : "Chưa có tài khoản nào."}
         onCreate={openCreate}
+        search={{ value: query, onChange: setQuery, placeholder: "Tìm người dùng" }}
         headers={["Họ tên", "Mật khẩu", "Tên đăng nhập", "Email", "Lớp", "Vai trò", "Ngày tạo", ""]}
-        renderCard={(u) => (
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-ink/10 text-ink flex items-center justify-center font-display text-sm shrink-0">
-              {(u.name || u.username || "?").charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 min-w-0">
-                <p className="font-body text-sm text-ink truncate">{u.name}</p>
-                <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border shrink-0 ${rolePillCls(u.role)}`}>
-                  {getRoleLabel(u.role)}
-                </span>
-              </div>
-              <p className="font-mono text-[11px] text-[#8A7C63] truncate">
-                {u.username}{u.email ? ` · ${u.email}` : ""}{u.className ? ` · ${u.className}${u.classCode ? ` (${u.classCode})` : ""}` : ""}
-              </p>
-            </div>
-            {u.username !== (user && user.username) && (
-              <div className="flex items-center gap-1 shrink-0">
-                {isAdmin && u.id !== "user-001" && <IconButton title="Chỉnh sửa" onClick={() => openEdit(u)}><Pencil /></IconButton>}
-                {isAdmin && u.id !== "user-001" && <IconButton title="Đổi vai trò" onClick={() => openRoleChange(u)}><RefreshCw /></IconButton>}
-                <IconButton title="Đổi mật khẩu" onClick={() => openReset(u)}><KeyRound /></IconButton>
-                {(isAdmin || u.role !== "admin") && <IconButton title="Xóa tài khoản" tone="danger" onClick={() => confirmRemove(u)}><Trash2 /></IconButton>}
-              </div>
-            )}
-          </div>
-        )}
+        renderGridCard={(u) => {
+          const isSelf = u.username === (user && user.username);
+          const tone = u.role === "admin" ? "gold" : u.role === "teacher" ? "blue" : "mint";
+          const actions = [];
+          if (!isSelf) {
+            if (isAdmin && u.id !== "user-001") actions.push({ label: "Sửa", icon: <Pencil />, onClick: () => openEdit(u), tone: "blue" });
+            if (isAdmin && u.id !== "user-001") actions.push({ label: "Vai trò", icon: <RefreshCw />, onClick: () => openRoleChange(u), tone: "muted" });
+            actions.push({ label: "Mật khẩu", icon: <KeyRound />, onClick: () => openReset(u), tone: "muted" });
+            if (isAdmin || u.role !== "admin") actions.push({ label: "Xoá", icon: <Trash2 />, onClick: () => confirmRemove(u), tone: "red" });
+          }
+          return (
+            <GridCard
+              key={u.id}
+              title={u.name}
+              badge={{ label: getRoleLabel(u.role), tone }}
+              mono={u.username}
+              description={u.email || undefined}
+              media={(
+                <div className="w-9 h-9 rounded-full bg-ink/10 text-ink flex items-center justify-center font-display text-sm shrink-0">
+                  {(u.name || u.username || "?").charAt(0).toUpperCase()}
+                </div>
+              )}
+              meta={[
+                u.className ? `Lớp: ${u.className}${u.classCode ? ` (${u.classCode})` : ""}` : null,
+                u.createdAt ? new Date(u.createdAt).toLocaleDateString("vi-VN") : null,
+              ].filter(Boolean).join(" · ") || undefined}
+              footerActions={actions}
+            />
+          );
+        }}
         renderRow={(u) => (
           <tr key={u.id} className="border-b border-ink/5 last:border-0">
             <td className="px-5 py-3 font-body text-ink">{u.name}</td>

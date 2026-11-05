@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { assignmentService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { Clock, Users, CircleX, Eye, Link2, ClipboardList } from 'lucide-react';
-import { ConfirmModal, EmptyState, IconAdd, IconCheckCircle, Loader, ManagementHeader, PrimaryButton } from '../../components/ui';
+import { ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconCheckCircle, Loader, ManagementHeader, PrimaryButton, useViewMode } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
+import { usePagedList } from '../../hooks/usePagedList.js';
+import { matchesQuery } from '../../lib/searchText.js';
 import { templateLabel } from '../../components/exam/templateLabel.js';
 
 export default function AssignmentList() {
@@ -13,6 +15,14 @@ export default function AssignmentList() {
   const [error, setError] = useState(null);
   const { askConfirm, confirmProps } = useConfirm();
   const [copiedKey, copy] = useCopy();
+  const [query, setQuery] = useState('');
+  const [mode, setMode] = useViewMode('assignments');
+
+  const filtered = useMemo(
+    () => (assignments ?? []).filter((a) => matchesQuery(query, a.title, a.code, classes[a.classId], templateLabel(a.templateId))),
+    [assignments, query, classes]
+  );
+  const pager = usePagedList(filtered, 12, query);
 
   useEffect(() => { load(); }, []);
 
@@ -72,8 +82,38 @@ export default function AssignmentList() {
           action={<PrimaryButton onClick={() => navigate('/dashboard/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm">+ Tạo bài tập</PrimaryButton>} />
       )}
       {!error && assignments && assignments.length > 0 && (
-        <div className="space-y-3">
-          {assignments.map(a => (
+        <div className="space-y-4">
+          <GridToolbar
+            search={{ value: query, onChange: setQuery, placeholder: "Tìm bài tập" }}
+            mode={mode}
+            onModeChange={setMode}
+            pager={pager}
+          />
+          {filtered.length === 0 ? (
+            <div className="note-card edu-empty">Không tìm thấy bài tập nào khớp tìm kiếm.</div>
+          ) : mode === "grid" ? (
+            <div className="edu-grid">
+              {pager.pageItems.map(a => (
+                <GridCard
+                  key={a.id}
+                  title={a.title}
+                  badge={a.status === 'ACTIVE' ? { label: 'Đang mở', tone: 'mint' } : { label: 'Đã đóng', tone: 'red' }}
+                  mono={a.code}
+                  meta={`${classes[a.classId] || a.classId} · ${templateLabel(a.templateId)}`}
+                  extra={a.isExam ? (
+                    <span className="self-start px-2 py-0.5 rounded-full text-[10px] font-body font-semibold bg-blue-100 text-blue-600">Bài thi</span>
+                  ) : undefined}
+                  footerActions={[
+                    { label: 'Xem', icon: <Eye />, onClick: () => navigate(`/dashboard/assignments/${a.id}`), tone: 'blue' },
+                    { label: copiedKey === a.id ? 'Đã copy' : 'Copy link', icon: copiedKey === a.id ? <IconCheckCircle /> : <Link2 />, onClick: () => copyLink(a), tone: 'muted' },
+                    ...(a.status === 'ACTIVE' ? [{ label: 'Đóng', icon: <CircleX />, onClick: () => handleClose(a), tone: 'red' }] : []),
+                  ]}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pager.pageItems.map(a => (
             <div key={a.id} className="note-card p-4 flex items-center gap-4">
   {/* Thông tin bài tập */}
             <div className="flex-1 min-w-0">
@@ -142,6 +182,8 @@ export default function AssignmentList() {
             </div>
           </div>
           ))}
+            </div>
+          )}
         </div>
       )}
 

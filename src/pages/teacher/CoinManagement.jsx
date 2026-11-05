@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { adminGameProgressService, userService } from '../../services/api.js'
 import { getLevelProgress, getLevelTitle, getLevelEmoji } from '../../lib/utils.js'
 import { getRoleLabel } from '../../config/roles.js'
-import { ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from '../../components/ui'
+import { matchesQuery } from '../../lib/searchText.js'
+import { GridCard, ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from '../../components/ui'
 import { useConfirm } from '../../hooks/useConfirm.js'
-import { BarChart3, ClipboardList, Coins, Gamepad2, Save, Users } from 'lucide-react'
+import { BarChart3, ClipboardList, Coins, Gamepad2, Pencil, Save, Trash2, Users } from 'lucide-react'
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
@@ -75,6 +76,20 @@ export default function CoinManagement({ user, showToast }) {
     if (filterGame && p.gameId !== filterGame) return false;
     return true;
   });
+
+  const [queryUsers, setQueryUsers] = useState("");
+  const filteredUsers = useMemo(
+    () => users.filter((u) => matchesQuery(queryUsers, u.name, u.username, getRoleLabel(u.role))),
+    [users, queryUsers]
+  );
+
+  const [queryProgress, setQueryProgress] = useState("");
+  const filteredProgress = useMemo(
+    () => filtered.filter((p) => matchesQuery(queryProgress, userMap[p.userId], p.userId, itemGameName(p), p.gameId)),
+    // userMap dựng lại mỗi render từ users — deps theo users là đủ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filtered, queryProgress, users]
+  );
 
   const allGameIds = [...new Set((progress || []).map(p => p.gameId))];
   const allUserIds = [...new Set((progress || []).map(p => p.userId))];
@@ -247,30 +262,33 @@ export default function CoinManagement({ user, showToast }) {
 
       {tab === "users" && (
         <ManagementTable
+          viewKey="coin-users"
           title="Coin & Hạng theo người dùng"
-          count={users.length}
-          data={users}
+          count={filteredUsers.length}
+          data={filteredUsers}
           error={error}
           onRetry={load}
-          emptyLabel="Chưa có người dùng nào"
+          emptyLabel={queryUsers ? "Không tìm thấy người dùng nào khớp tìm kiếm." : "Chưa có người dùng nào"}
+          search={{ value: queryUsers, onChange: setQueryUsers, placeholder: "Tìm người dùng" }}
           headers={userHeaders}
           renderRow={renderUserRow}
-          renderCard={(u) => {
+          renderGridCard={(u) => {
             const lv = getLevelProgress(u.coins || 0);
+            const tone = u.role === "admin" ? "gold" : u.role === "teacher" ? "blue" : "mint";
             return (
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold shrink-0">
-                  {(u.name || "?").charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold font-body text-ink truncate">{u.name || u.username}</p>
-                  <p className="text-[11px] text-[#8A7C63] font-mono truncate">@{u.username} · {getRoleLabel(u.role)}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold font-mono text-gold inline-flex items-center gap-1">{(u.coins || 0).toLocaleString()} <Coins className="w-3.5 h-3.5" /></p>
-                  <p className="text-[11px] text-[#8A7C63] truncate">{getLevelEmoji(lv.level)} Lv.{lv.level} · {getLevelTitle(lv.level)}</p>
-                </div>
-              </div>
+              <GridCard
+                key={u.id}
+                title={u.name || u.username}
+                badge={{ label: getRoleLabel(u.role), tone }}
+                mono={`@${u.username}`}
+                media={(
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold shrink-0">
+                    {(u.name || "?").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                description={`${(u.coins || 0).toLocaleString()} coin`}
+                meta={`${getLevelEmoji(lv.level)} Lv.${lv.level} · ${getLevelTitle(lv.level)}`}
+              />
             );
           }}
         />
@@ -299,36 +317,39 @@ export default function CoinManagement({ user, showToast }) {
             )}
           </div>
           <ManagementTable
+            viewKey="coin-progress"
             title="Tiến trình theo game"
-            count={filtered.length}
-            data={filtered}
+            count={filteredProgress.length}
+            data={filteredProgress}
             error={error}
             onRetry={load}
-            emptyLabel="Chưa có dữ liệu tiến trình nào"
+            emptyLabel={queryProgress ? "Không tìm thấy bản ghi nào khớp tìm kiếm." : "Chưa có dữ liệu tiến trình nào"}
+            search={{ value: queryProgress, onChange: setQueryProgress, placeholder: "Tìm theo người dùng / game" }}
             headers={progressHeaders}
             renderRow={renderProgressRow}
-            renderCard={(item) => (
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold shrink-0">
-                  {(userMap[item.userId] || "?").charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold font-body text-ink truncate">{userMap[item.userId] || item.userId}</p>
-                  <p className="text-[11px] text-[#8A7C63] truncate">{getGameIcon(item.gameId)} {itemGameName(item)} · Lv.{item.level || 1} · {(item.experience || 0).toLocaleString()} XP</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-xs font-mono text-ink">{item.gamesPlayed || 0} lượt</p>
-                  <p className="text-xs font-mono text-[#8A7C63]">{item.questsCompleted || 0} NV</p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button onClick={() => openEdit(item)} className="text-xs font-semibold text-ticket hover:underline">Sửa</button>
-                  {item.gameState?.entries && Object.keys(item.gameState.entries).length
-                    ? <button onClick={() => openSave(item)} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-500 hover:underline"><Save className="w-3 h-3" /> Lưu</button>
-                    : <span className="text-[10px] text-ink/30">chưa có save</span>}
-                  <button onClick={() => handleDelete(item)} className="text-xs font-semibold text-red-400 hover:underline">Xóa</button>
-                </div>
-              </div>
-            )}
+            renderGridCard={(item) => {
+              const hasSave = !!(item.gameState?.entries && Object.keys(item.gameState.entries).length);
+              const actions = [
+                { label: "Sửa", icon: <Pencil />, onClick: () => openEdit(item), tone: "blue" },
+              ];
+              if (hasSave) actions.push({ label: "Lưu", icon: <Save />, onClick: () => openSave(item), tone: "muted" });
+              actions.push({ label: "Xoá", icon: <Trash2 />, onClick: () => handleDelete(item), tone: "red" });
+              return (
+                <GridCard
+                  key={item._id}
+                  title={userMap[item.userId] || item.userId}
+                  mono={item.gameId}
+                  media={(
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-sm text-white font-bold shrink-0">
+                      {(userMap[item.userId] || "?").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  description={`${getGameIcon(item.gameId)} ${itemGameName(item)}`}
+                  meta={`Lv.${item.level || 1} · ${(item.experience || 0).toLocaleString()} XP · ${item.gamesPlayed || 0} lượt chơi · ${item.questsCompleted || 0} NV${hasSave ? "" : " · chưa có save"}`}
+                  footerActions={actions}
+                />
+              );
+            }}
           />
         </>
       )}
