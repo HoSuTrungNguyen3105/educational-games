@@ -41,6 +41,9 @@ export { StatusBadge } from "./data/StatusBadge.jsx";
 export { StatCard } from "./data/StatCard.jsx";
 export { StatGrid } from "./data/StatGrid.jsx";
 export { ManagementTable } from "./data/ManagementTable.jsx";
+export { GridCard } from "./data/GridCard.jsx";
+export { GridPager } from "./data/GridPager.jsx";
+export { GridToolbar } from "./data/GridToolbar.jsx";
 export { useViewMode, ViewToggle, cardGridClass, tableWrapClass } from "./data/ViewToggle.jsx";
 
 // ── layout ──

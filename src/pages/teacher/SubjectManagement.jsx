@@ -1,7 +1,9 @@
+import { useMemo, useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { setupService } from '../../services/setupService.js'
-import { IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui'
+import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui'
 import { useCrudList } from '../../hooks/useCrudList.js'
+import { matchesQuery } from '../../lib/searchText.js'
 
 const FIELDS = [{ name: "name", label: "Tên môn học", placeholder: "VD: Toán, Văn, Anh..." }];
 
@@ -27,30 +29,34 @@ export default function SubjectManagement({ showToast }) {
     showToast,
   });
 
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(
+    () => (subjects ?? []).filter((item) => matchesQuery(query, item.name)),
+    [subjects, query]
+  );
+
   return (
     <div>
       <ManagementHeader subtitle="Quản lý môn học" title="Môn học" />
 
       <ManagementTable
         viewKey="subjects"
-        data={subjects}
+        data={subjects ? filtered : subjects}
         error={error && !subjects ? error : null}
         onRetry={load}
-        emptyLabel="Chưa có môn học nào."
+        emptyLabel={query ? "Không tìm thấy môn học nào khớp tìm kiếm." : "Chưa có môn học nào."}
         onCreate={openCreate}
+        search={{ value: query, onChange: setQuery, placeholder: "Tìm kiếm" }}
         headers={["STT", "Tên môn học", ""]}
-        renderCard={(item, idx) => (
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-xs text-[#8A7C63] w-6 shrink-0 text-right">{idx + 1}</span>
-            <div className="w-9 h-9 rounded-full bg-teal/15 text-ink flex items-center justify-center font-display text-sm shrink-0">
-              {item.name?.[0]?.toUpperCase() || "?"}
-            </div>
-            <p className="min-w-0 flex-1 font-body text-sm text-ink truncate">{item.name}</p>
-            <div className="flex items-center gap-1 shrink-0">
-              <IconButton title="Chỉnh sửa" onClick={() => openEdit(item)}><Pencil /></IconButton>
-              <IconButton title="Xóa" tone="danger" onClick={() => askRemove(item)}><Trash2 /></IconButton>
-            </div>
-          </div>
+        renderGridCard={(item, idx) => (
+          <GridCard
+            key={item._id || item.name}
+            title={item.name}
+            badge={{ label: "Hoạt động", tone: "mint" }}
+            meta={`Thứ tự: ${idx}`}
+            onEdit={() => openEdit(item)}
+            onRemove={() => askRemove(item)}
+          />
         )}
         renderRow={(item, idx) => (
           <tr key={item._id || idx} className="border-b border-ink/5 last:border-0">

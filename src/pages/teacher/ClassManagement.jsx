@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Copy, School} from 'lucide-react';
-import { ConfirmModal, EmptyState, IconAdd, IconCheck, IconClose, IconTrash, IconUsers, Loader, Modal, PrimaryButton } from '../../components/ui';
+import { Copy, School } from 'lucide-react';
+import { ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconCheck, IconClose, IconTrash, IconUsers, Loader, Modal, PrimaryButton, useViewMode } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
+import { usePagedList } from '../../hooks/usePagedList.js';
+import { matchesQuery } from '../../lib/searchText.js';
 
 export default function ClassManagement() {
   const [classes, setClasses] = useState(null);
@@ -15,6 +17,13 @@ export default function ClassManagement() {
   const [saving, setSaving] = useState(false);
   const { askConfirm, confirmProps } = useConfirm();
   const [copiedKey, copy] = useCopy();
+  const [query, setQuery] = useState('');
+  const [mode, setMode] = useViewMode('classes');
+  const filtered = useMemo(
+    () => (classes ?? []).filter((cls) => matchesQuery(query, cls.name, cls.code, cls.schoolYear)),
+    [classes, query]
+  );
+  const pager = usePagedList(filtered, 12, query);
 
   useEffect(() => { loadClasses(); }, []);
 
@@ -113,33 +122,77 @@ export default function ClassManagement() {
           action={<PrimaryButton onClick={() => setShowCreate(true)} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm">+ Tạo lớp</PrimaryButton>} />
       )}
       {!error && classes && classes.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {classes.map(cls => (
-            <div key={cls.id} className="note-card p-5 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-display text-lg text-ink">{cls.name}</h3>
-                  {cls.schoolYear && <p className="text-xs font-body text-ink/40 mt-0.5">{cls.schoolYear}</p>}
-                </div>
-                <button onClick={() => handleDelete(cls)} className="text-ink/30 hover:text-red-500 transition" title="Xóa lớp">
-                  <IconTrash className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-ink/50">Mã:</span>
-                <button onClick={() => copy(cls.code, cls.code)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gold/10 text-gold text-sm font-mono hover:bg-gold/20 transition">
-                  {cls.code}
-                  {copiedKey === cls.code ? <IconCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
-                {copiedKey === cls.code && <span className="text-xs text-green-600">Đã sao chép</span>}
-              </div>
-              <button onClick={() => navigate(`/dashboard/classes/${cls.id}/students`)}
-                className="flex items-center gap-1.5 text-xs font-body text-ink/50 hover:text-gold transition">
-                <IconUsers className="w-4 h-4" /> Xem học sinh
-              </button>
+        <div className="space-y-4">
+          <GridToolbar
+            search={{ value: query, onChange: setQuery, placeholder: "Tìm kiếm" }}
+            mode={mode}
+            onModeChange={setMode}
+            pager={pager}
+          />
+          {filtered.length === 0 ? (
+            <div className="note-card edu-empty">Không tìm thấy lớp nào khớp tìm kiếm.</div>
+          ) : mode === "grid" ? (
+            <div className="edu-grid">
+              {pager.pageItems.map(cls => (
+                <GridCard
+                  key={cls.id}
+                  title={cls.name}
+                  mono={cls.code}
+                  meta={cls.schoolYear ? `Năm học: ${cls.schoolYear}` : undefined}
+                  extra={(
+                    <button onClick={() => copy(cls.code, cls.code)}
+                      className="self-start flex items-center gap-1 px-2 py-1 rounded-lg bg-gold/10 text-gold text-xs font-mono hover:bg-gold/20 transition">
+                      {copiedKey === cls.code ? <IconCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedKey === cls.code ? "Đã sao chép mã" : "Sao chép mã"}
+                    </button>
+                  )}
+                  footerActions={[
+                    { label: "Xem học sinh", icon: <IconUsers />, onClick: () => navigate(`/dashboard/classes/${cls.id}/students`), tone: "blue" },
+                    { label: "Xoá", icon: <IconTrash />, onClick: () => handleDelete(cls), tone: "red" },
+                  ]}
+                />
+              ))}
             </div>
-          ))}
+          ) : (
+            <div className="edu-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tên lớp</th>
+                    <th>Mã lớp</th>
+                    <th>Năm học</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pager.pageItems.map(cls => (
+                    <tr key={cls.id}>
+                      <td className="font-semibold">{cls.name}</td>
+                      <td>
+                        <button onClick={() => copy(cls.code, cls.code)}
+                          className="inline-flex items-center gap-1 font-mono text-[#8A7C63] hover:text-gold transition">
+                          {cls.code}
+                          {copiedKey === cls.code ? <IconCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </td>
+                      <td>{cls.schoolYear || "—"}</td>
+                      <td>
+                        <div className="flex items-center justify-end gap-3">
+                          <button onClick={() => navigate(`/dashboard/classes/${cls.id}/students`)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2271b1] hover:underline">
+                            <IconUsers className="w-4 h-4" /> Xem học sinh
+                          </button>
+                          <button onClick={() => handleDelete(cls)} className="text-ink/30 hover:text-red-500 transition" title="Xóa lớp">
+                            <IconTrash className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
