@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Vùng Đất Gió · Open World Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--gold:#ffd966;--ink:#1b2030;--panel:rgba(18,22,32,.5);color-scheme:dark}
+:root{--gold:#f4b942;--ink:#1d2e4a;--panel:rgba(18,22,32,.5);color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;touch-action:none;
-  font-family:'Segoe UI',system-ui,Tahoma,sans-serif}
+  font-family:var(--body,"Be Vietnam Pro","Segoe UI",system-ui,sans-serif)}
 html,body{height:100%;overflow:hidden;background:#000;color:#fff}
 canvas#w{position:fixed;inset:0;width:100%;height:100%}
 .vig{position:fixed;inset:0;pointer-events:none;z-index:4;background:radial-gradient(circle,transparent 55%,rgba(0,0,0,.4) 100%)}
@@ -16,16 +18,16 @@ canvas#w{position:fixed;inset:0;width:100%;height:100%}
 /* ---- Trái trên: minimap + nhiệm vụ ---- */
 .ui-left{top:calc(env(safe-area-inset-top,0px) + 16px);left:calc(env(safe-area-inset-left,0px) + 16px)}
 .mini{position:relative;width:112px;height:112px}
-.mini canvas{width:112px;height:112px;border-radius:50%;border:3px solid rgba(255,255,255,.9);
-  box-shadow:0 0 12px rgba(0,0,0,.55),inset 0 0 14px rgba(0,0,0,.3)}
+.mini canvas{width:112px;height:112px;border-radius:50%;border:3px solid var(--ink,#1d2e4a);
+  box-shadow:3px 3px 0 var(--ink,#1d2e4a),inset 0 0 14px rgba(0,0,0,.3)}
 .compass{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:24px;height:24px;border-radius:50%;
-  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.6);display:grid;place-items:center;font-size:11px}
-.lvbadge{position:absolute;left:-6px;top:-6px;background:var(--gold);color:#5c3d00;font-size:11px;font-weight:700;
-  border:1px solid #b8860b;border-radius:9px;padding:0 6px;text-shadow:none}
+  background:var(--card,#fffbf2);border:2px solid var(--ink,#1d2e4a);color:var(--ink,#1d2e4a);display:grid;place-items:center;font-size:11px}
+.lvbadge{position:absolute;left:-6px;top:-6px;background:var(--gold);color:var(--ink,#1d2e4a);font-size:11px;font-weight:700;
+  border:2px solid var(--ink,#1d2e4a);border-radius:9px;padding:0 6px;text-shadow:none}
 .clock{margin-top:6px;width:112px;text-align:center;font-size:12px;opacity:.9}
-.quest{margin-top:12px;max-width:240px;background:rgba(0,0,0,.38);border-left:3px solid #ffcc33;border-radius:4px;padding:8px 12px 8px 10px}
+.quest{margin-top:12px;max-width:240px;background:var(--card,#fffbf2);border:2.5px solid var(--ink,#1d2e4a);border-left:5px solid var(--gold);border-radius:14px;box-shadow:3px 3px 0 var(--ink,#1d2e4a);color:var(--ink,#1d2e4a);text-shadow:none;padding:8px 12px 8px 10px}
 .quest b{display:block;font-size:14px;font-weight:600;line-height:1.3;margin-bottom:3px}
-.quest span{font-size:12px;color:var(--gold)}
+.quest span{font-size:12px;color:var(--tomato,#e4572e)}
 
 /* ---- Phải: đội hình ---- */
 .party{right:calc(env(safe-area-inset-right,0px) + 14px);top:22%;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
@@ -41,7 +43,7 @@ canvas#w{position:fixed;inset:0;width:100%;height:100%}
   display:flex;flex-direction:column;align-items:center;gap:4px}
 .lvrow{font-size:13px;font-weight:600;display:flex;gap:8px}
 .lvrow .ex{color:#8bd94a}
-.hpbar{width:min(320px,52vw);height:10px;border-radius:8px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.5);overflow:hidden}
+.hpbar{width:min(320px,52vw);height:10px;border-radius:8px;background:var(--card,#fffbf2);border:2px solid var(--ink,#1d2e4a);overflow:hidden}
 .hpfill{height:100%;background:linear-gradient(90deg,#a6e93a,#76ff03);box-shadow:0 0 8px rgba(118,255,3,.7);transition:width .15s}
 .charname{font-size:12px;opacity:.9}
 
@@ -53,12 +55,12 @@ canvas#w{position:fixed;inset:0;width:100%;height:100%}
 .sk.q::before{content:'';position:absolute;inset:5px;border-radius:50%;background:rgba(20,24,34,.88)}
 .sk.big{width:76px;height:76px;border-color:#fff}.sk.big svg{width:34px;height:34px}
 .sk.run{width:44px;height:44px;align-self:flex-start}.sk.run svg{width:20px;height:20px}
-.sk .key{position:absolute;right:-2px;bottom:-4px;font-size:10px;background:rgba(0,0,0,.65);border-radius:6px;padding:0 4px;z-index:2}
+.sk .key{position:absolute;right:-2px;bottom:-4px;font-size:10px;background:var(--ink,#1d2e4a);border-radius:6px;padding:0 4px;z-index:2}
 .sk .cd{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;font-size:16px;font-weight:700;z-index:2;pointer-events:none}
 .sk.ready{animation:glow 1s infinite alternate}
 @keyframes glow{to{box-shadow:0 0 16px 4px var(--gc,#fff)}}
 .stam{position:fixed;z-index:5;right:calc(env(safe-area-inset-right,0px) + 20px);bottom:calc(env(safe-area-inset-bottom,0px) + 104px);
-  width:96px;height:4px;border-radius:3px;background:rgba(0,0,0,.5);overflow:hidden}
+  width:96px;height:4px;border-radius:3px;background:var(--card,#fffbf2);border:1px solid var(--ink,#1d2e4a);overflow:hidden}
 .stam div{height:100%;background:#ffe14d}
 .uid{position:fixed;z-index:5;right:10px;bottom:3px;font-size:10px;opacity:.7}
 
@@ -75,9 +77,9 @@ canvas#w{position:fixed;inset:0;width:100%;height:100%}
 .toast span{font-size:13px;color:var(--gold)}
 .toast::after{content:'';display:block;width:min(320px,60vw);height:1px;margin:8px auto 0;background:linear-gradient(90deg,transparent,#fff,transparent)}
 @keyframes toast{0%{opacity:0;transform:translate(-50%,10px)}12%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
-.pause{position:fixed;inset:0;z-index:9;display:none;place-items:center;background:rgba(0,0,0,.55);font-size:26px;letter-spacing:3px}
+.pause{position:fixed;inset:0;z-index:9;display:none;place-items:center;background:rgba(29,46,74,.6);font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-size:26px;letter-spacing:3px}
 .pause.on{display:grid}
-.help{left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);font-size:11px;opacity:.7;white-space:nowrap}
+.help{left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);font-size:11px;white-space:nowrap;background:var(--card,#fffbf2);color:var(--ink,#1d2e4a);border:2px solid var(--ink,#1d2e4a);border-radius:99px;padding:3px 10px;box-shadow:2px 2px 0 var(--ink,#1d2e4a);text-shadow:none}
 @media (max-width:720px){.help{display:none}}
 </style>
 </head>
@@ -538,6 +540,56 @@ let last=performance.now(),lastSave=last;
   if(!paused){update(dt);if(now-lastSave>2000){lastSave=now;saveRun()}}
   render();drawMini();hud();requestAnimationFrame(loop);
 })(last);
+</script>
+
+<!-- Nút "Về trang chủ" — thêm bởi scripts/add-offline-back-button.mjs -->
+<style>
+  #homeBackBtn {
+    position: fixed;
+    z-index: 2147483000;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    left: calc(env(safe-area-inset-left, 0px) + 10px);
+    width: 42px; height: 42px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 20px; font-weight: 800; line-height: 1;
+    color: #1d2e4a;
+    background: #fffbf2;
+    border: 3px solid #1d2e4a;
+    box-shadow: 0 4px 0 #1d2e4a, 0 8px 14px rgba(0, 0, 0, .22);
+    transition: transform .12s, box-shadow .12s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+  }
+  #homeBackBtn:hover { filter: brightness(1.06); }
+  #homeBackBtn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #1d2e4a, 0 3px 6px rgba(0, 0, 0, .22);
+  }
+  #homeBackBtn:focus-visible { outline: 3px solid var(--sky,#4b9dff); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { #homeBackBtn { transition: none; } }
+</style>
+<button id="homeBackBtn" type="button" aria-label="Về trang chủ" title="Về trang chủ">
+  <span aria-hidden="true">&#8592;</span>
+</button>
+<script>
+  // Nút dùng chung cho mọi game offline: báo ngược lên React (OfflineGamePage)
+  // để quay về trang chủ. Mở file .html trực tiếp thì tự điều hướng.
+  (function () {
+    var btn = document.getElementById("homeBackBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: "quit", data: {} }, "*");
+          return;
+        }
+      } catch (e) { /* rơi xuống cách tự điều hướng */ }
+      try { window.location.href = "/"; } catch (e) { /* ignore */ }
+    });
+  })();
 </script>
 </body>
 </html>

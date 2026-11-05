@@ -7,11 +7,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#05060d">
 <title>Night Strike – Zombie &amp; Ma Cà Rồng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+
 <style>
 :root{--red:#e0243c;--amber:#ffb627;--ink:#05060d;--panel:rgba(10,12,22,.78);--sa-l:env(safe-area-inset-left,0px);--sa-r:env(safe-area-inset-right,0px);--sa-t:env(safe-area-inset-top,0px);--sa-b:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:#000;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
-  font-family:"Bahnschrift","Arial Narrow","Roboto Condensed",system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff}
+  font-family:var(--body,"Be Vietnam Pro","Segoe UI",system-ui,sans-serif);color:#fff}
 button{font-family:inherit;color:inherit;cursor:pointer;touch-action:none}
 #view,#fx{position:fixed;inset:0;width:100%;height:100%;display:block}
 #view{image-rendering:pixelated;image-rendering:crisp-edges;background:#05060d}
@@ -50,9 +53,9 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:none}
 .wp span{display:block;font-size:11px;letter-spacing:1px;color:#ccd}
 .wp b{font-size:22px}
 .wp b small{font-size:13px;color:#aab;font-weight:700}
-#pause{pointer-events:auto;position:absolute;right:0;top:50px;width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:rgba(10,12,22,.5);font-size:16px}
+#pause{pointer-events:auto;position:absolute;right:0;top:50px;width:38px;height:38px;border-radius:14px;border:3px solid var(--ink,#1d2e4a);background:var(--card,#fffbf2);color:var(--ink,#1d2e4a);box-shadow:3px 3px 0 var(--ink,#1d2e4a);font-size:16px}
 #feed{margin-top:6px;margin-right:46px;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
-#feed div{background:rgba(0,0,0,.55);padding:2px 8px;border-radius:3px;animation:fd 3.2s forwards}
+#feed div{background:rgba(29,46,74,.85);padding:2px 8px;border-radius:3px;animation:fd 3.2s forwards}
 @keyframes fd{0%{opacity:0;transform:translateX(20px)}8%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
 
 /* nút điều khiển */
@@ -74,7 +77,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:none}
 #banner.on{opacity:1}
 #banner h2{margin:0;font-size:clamp(34px,8vw,64px);letter-spacing:5px;text-shadow:0 0 18px var(--red),0 3px 6px #000;font-weight:900}
 #banner p{margin:6px 0 0;font-size:clamp(14px,3vw,20px);letter-spacing:2px;color:#ffd9de;text-shadow:0 2px 4px #000}
-#msg{position:absolute;left:50%;bottom:calc(26px + var(--sa-b));transform:translateX(-50%);background:rgba(0,0,0,.6);padding:5px 14px;border-radius:14px;font-weight:700;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+#msg{position:absolute;left:50%;bottom:calc(26px + var(--sa-b));transform:translateX(-50%);background:var(--ink,#1d2e4a);padding:5px 14px;border-radius:14px;font-weight:700;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
 #msg.on{opacity:1}
 
 /* màn hình menu */
@@ -83,20 +86,20 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:none}
   background:radial-gradient(ellipse at center,rgba(5,6,13,.35),rgba(5,6,13,.88));overflow:auto;touch-action:pan-y}
 .scr h1{margin:0;font-size:clamp(48px,13vw,96px);line-height:.9;letter-spacing:6px;text-align:center;font-weight:900;
   background:linear-gradient(#ffd0d6,#e0243c 55%,#7a0f1f);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #000) drop-shadow(0 0 22px rgba(224,36,60,.55))}
-.scr h2{margin:0 0 10px;font-size:30px;letter-spacing:3px}
+.scr h2{margin:0 0 10px;font-size:30px;letter-spacing:3px;font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif)}
 .sub{margin:6px 0 18px;letter-spacing:5px;font-size:clamp(12px,3vw,17px);color:#cfd3ee;text-align:center;text-transform:uppercase}
 .mb{display:flex;flex-direction:column;gap:10px;width:min(320px,86vw)}
 .mb.row{flex-direction:row;flex-wrap:wrap;justify-content:center}
-.b{border:0;border-radius:6px;padding:13px 18px;font-size:19px;font-weight:900;letter-spacing:2px;background:linear-gradient(#f13b54,#a8122a);box-shadow:0 4px 0 #5c0816,0 8px 14px rgba(0,0,0,.45);text-transform:uppercase}
-.b:active{transform:translateY(3px);box-shadow:0 1px 0 #5c0816}
-.b.g{background:linear-gradient(#4a4f66,#2c3042);box-shadow:0 4px 0 #14161f,0 8px 14px rgba(0,0,0,.45)}
-.b.a{background:linear-gradient(#ffc94d,#d88a07);color:#2a1800;box-shadow:0 4px 0 #7a4c00,0 8px 14px rgba(0,0,0,.45)}
+.b{border:3px solid var(--ink,#1d2e4a);border-radius:14px;padding:13px 18px;font-size:19px;font-weight:900;letter-spacing:2px;background:var(--sun,#f4b942);color:var(--ink,#1d2e4a);box-shadow:3px 3px 0 var(--ink,#1d2e4a);text-transform:uppercase;font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif)}
+.b:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink,#1d2e4a)}
+.b.g{background:var(--card,#fffbf2);color:var(--ink,#1d2e4a);box-shadow:3px 3px 0 var(--ink,#1d2e4a)}
+.b.a{background:var(--tomato,#e4572e);color:#fff;box-shadow:3px 3px 0 var(--ink,#1d2e4a)}
 .b:disabled{opacity:.4;pointer-events:none}
 .info{margin-top:16px;font-size:15px;color:#d6d9f5;text-align:center;line-height:1.6}
 .warn{margin-top:10px;max-width:340px;font-size:12px;color:#ffb3bd;text-align:center;line-height:1.5}
-.card{width:min(460px,92vw);background:var(--panel);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
-.card .t{flex:1}.card .t b{display:block;font-size:17px;letter-spacing:1px}.card .t span{font-size:12.5px;color:#b9bddb}
-.pips{display:flex;gap:4px;margin-top:5px}.pips i{width:16px;height:6px;background:#2b2f45;border-radius:2px}.pips i.f{background:var(--amber)}
+.card{width:min(460px,92vw);background:var(--card,#fffbf2);border:3px solid var(--ink,#1d2e4a);border-radius:18px;box-shadow:3px 3px 0 var(--ink,#1d2e4a);color:var(--ink,#1d2e4a);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.card .t{flex:1}.card .t b{display:block;font-size:17px;letter-spacing:1px}.card .t span{font-size:12.5px;color:var(--ink2,#16233a)}
+.pips{display:flex;gap:4px;margin-top:5px}.pips i{width:16px;height:6px;background:var(--line,#e6dcc4);border-radius:2px}.pips i.f{background:var(--sun,#f4b942)}
 .card .b{padding:9px 14px;font-size:15px;min-width:92px}
 .row2{display:flex;justify-content:space-between;width:min(460px,92vw);padding:6px 4px;font-size:16px;border-bottom:1px solid rgba(255,255,255,.12)}
 .set{width:min(460px,92vw);display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.12);font-size:16px}
