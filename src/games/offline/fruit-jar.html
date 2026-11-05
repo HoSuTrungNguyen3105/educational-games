@@ -133,46 +133,46 @@
 })();
 </script>
 <title>Hũ Trái Cây</title>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root{--ink:#3a2f5b;--pink:#ff8fb1;--sky:#8fd0ff;--mint:#a8ecc9;--lemon:#ffe08a;--grape:#b79cf5}
+  :root{--ink:#1d2e4a;--pink:#ff6f91;--sky:#4b9dff;--mint:#1b998b;--lemon:#f4b942;--grape:#8b5cf6}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-  html,body{height:100%;overflow:hidden;color:var(--ink);font-family:"Baloo 2","Nunito","Segoe UI",system-ui,sans-serif;
+  html,body{height:100%;overflow:hidden;color:var(--ink);font-family:var(--body,"Be Vietnam Pro","Segoe UI",system-ui,sans-serif);
     background:linear-gradient(170deg,#ffd6e7 0%,#e6dcff 50%,#cfe9ff 100%)}
   canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
   .hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:stretch;gap:10px;
     padding:calc(env(safe-area-inset-top) + 10px) 14px 0;pointer-events:none}
-  .box{background:rgba(255,255,255,.62);border-radius:18px;padding:6px 14px;min-width:84px;text-align:center;
-    backdrop-filter:blur(6px);display:flex;flex-direction:column;justify-content:center}
+  .box{background:var(--card,#fffbf2);border:2.5px solid var(--ink,#1d2e4a);border-radius:18px;padding:6px 14px;min-width:84px;text-align:center;
+    box-shadow:2px 2px 0 var(--ink,#1d2e4a);display:flex;flex-direction:column;justify-content:center}
   .box small{font-size:13px;font-weight:500;opacity:.7;line-height:1.1}
-  .box b{font-size:26px;font-weight:800;line-height:1.05}
+  .box b{font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-size:26px;font-weight:800;line-height:1.05}
   .next span{display:inline-flex;width:38px;height:38px;border-radius:50%;align-items:center;justify-content:center;
     font-size:24px;margin:2px auto 0}
   #hint{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 84px);transform:translateX(-50%);width:max-content;
-    max-width:92vw;text-align:center;font-size:15px;padding:5px 14px;border-radius:99px;background:rgba(255,255,255,.55);
+    max-width:92vw;text-align:center;font-size:15px;padding:5px 14px;border-radius:99px;background:var(--card,#fffbf2);border:2.5px solid var(--ink,#1d2e4a);box-shadow:2px 2px 0 var(--ink,#1d2e4a);
     transition:opacity .6s;pointer-events:none}
   #hint.hide{opacity:0}
   .foot{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:8px;
     padding:0 10px calc(env(safe-area-inset-bottom) + 12px)}
-  #evo{display:flex;align-items:center;gap:1px;padding:5px 8px;border-radius:99px;background:rgba(255,255,255,.55);font-size:19px}
+  #evo{display:flex;align-items:center;gap:1px;padding:5px 8px;border-radius:99px;background:var(--card,#fffbf2);border:2.5px solid var(--ink,#1d2e4a);font-size:19px}
   #evo i{font-style:normal;opacity:.95}
   #evo u{text-decoration:none;font-size:11px;opacity:.5;margin:0 -1px}
-  .foot button{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:16px;color:var(--ink);
-    background:var(--lemon);border-radius:99px;padding:9px 16px;transition:transform .15s,opacity .2s}
+  .foot button{border:2.5px solid var(--ink,#1d2e4a);cursor:pointer;font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-weight:800;font-size:16px;color:var(--ink,#1d2e4a);
+    background:var(--sun,#f4b942);border-radius:99px;padding:9px 16px;box-shadow:2px 2px 0 var(--ink,#1d2e4a);transition:transform .15s,opacity .2s}
   .foot button:active{transform:scale(.95)}
   .foot button:disabled{opacity:.45}
-  #snd{background:rgba(255,255,255,.7);padding:9px 12px}
+  #snd{background:var(--card,#fffbf2);padding:9px 12px}
   button:focus-visible{outline:3px solid var(--grape);outline-offset:2px}
-  #over{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(58,47,91,.35);backdrop-filter:blur(3px)}
+  #over{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(22,35,58,.45);backdrop-filter:blur(3px)}
   #over.show{display:flex}
-  .card{background:#fff;border-radius:28px;padding:26px 28px;text-align:center;max-width:min(88vw,340px);box-shadow:0 12px 40px rgba(58,47,91,.25)}
-  .card h2{font-size:28px;font-weight:800}
+  .card{background:var(--card,#fffbf2);border:3px solid var(--ink,#1d2e4a);border-radius:22px;padding:26px 28px;text-align:center;max-width:min(88vw,340px);box-shadow:4px 4px 0 var(--ink,#1d2e4a);color:var(--ink,#1d2e4a)}
+  .card h2{font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-size:28px;font-weight:800}
   .card p{font-size:17px;margin-top:6px;line-height:1.35}
-  .card .big{font-size:38px;font-weight:800;color:#ff6b8f;margin:6px 0 2px}
-  .card button{margin-top:16px;border:0;cursor:pointer;font:inherit;font-weight:800;font-size:19px;color:#fff;
-    background:linear-gradient(135deg,#ff8fb1,#b79cf5);border-radius:99px;padding:11px 28px}
+  .card .big{font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-size:38px;font-weight:800;color:var(--tomato,#e4572e);margin:6px 0 2px}
+  .card button{margin-top:16px;border:3px solid var(--ink,#1d2e4a);cursor:pointer;font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-weight:800;font-size:19px;color:var(--ink,#1d2e4a);
+    background:var(--sun,#f4b942);border-radius:14px;padding:11px 28px;box-shadow:3px 3px 0 var(--ink,#1d2e4a)}
   #pop{position:fixed;left:50%;top:38%;transform:translate(-50%,0);opacity:0;pointer-events:none;font-weight:800;font-size:26px;
-    color:#ff6b8f;text-shadow:0 2px 0 #fff;transition:opacity .4s,transform .6s}
+    color:var(--pink,#ff6f91);text-shadow:0 2px 0 #fff;transition:opacity .4s,transform .6s}
   #pop.show{opacity:1;transform:translate(-50%,-18px)}
 </style>
 <style id="gq-kit-css">/* gq-kit.css — giao diện đồng bộ: màn chọn độ khó, nhãn độ khó, pháo hoa,
