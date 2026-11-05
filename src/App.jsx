@@ -321,9 +321,9 @@ function App() {
   };
 
   const renderScreen = () => {
-    // Onboarding KHÔNG còn thay thế màn hình ở đây nữa — nó render dạng
-    // MODAL lớp phủ ở return chính của App (xem dưới) để trang chủ mount
-    // sẵn phía sau, giống cách đăng nhập/đăng ký đã chuyển ở PR #12.
+    // Onboarding KHÔNG thay thế màn hình ở đây — nó là TRANG RIÊNG toàn màn
+    // hình render ở return chính của App (xem dưới) khi `needOnboarding`,
+    // thay cho toàn bộ nội dung chính (từ 2026-11-05, bỏ dạng modal PR #19).
 
     // Đăng nhập/đăng ký KHÔNG còn thay thế màn hình ở đây nữa — chúng render
     // dạng lớp phủ ở return chính của App (xem AuthOverlay) để màn hình nền
@@ -374,16 +374,21 @@ function App() {
   return (
     <GameVersionProvider>
       <MaintenanceBanner />
-      <Suspense fallback={<PageLoading />}>
-        {renderScreen()}
-      </Suspense>
-      {needOnboarding && !user && (
-        /* Modal onboarding phủ lên màn hình đang mở (trang chủ đã mount
-         * phía sau, giữ nguyên trạng thái). Chỉ thoát bằng nút "Bỏ qua"
-         * hoặc hoàn thành form — xem `dismissible={false}` trong
-         * OnboardingScreen. `needOnboarding` đã gồm điều kiện chưa đăng
-         * nhập; xét thêm `!user` cho khớp điều kiện render cũ. */
-        <OnboardingScreen onComplete={handleOnboardingComplete} />
+      {needOnboarding && !user ? (
+        /* Onboarding là TRANG RIÊNG toàn màn hình (carousel giới thiệu +
+         * wizard từng bước) thay cho nội dung chính khi khách chưa onboard —
+         * từ 2026-11-05 bỏ dạng modal lớp phủ của PR #19 theo yêu cầu của
+         * Nguyên. Điều kiện hiện (`needOnboarding`, xét thêm `!user` cho
+         * khớp điều kiện render cũ) giữ nguyên; lớp phủ đăng nhập bên dưới
+         * vẫn mở đè lên được từ nút "Đã có tài khoản" của onboarding. */
+        <OnboardingScreen
+          onComplete={handleOnboardingComplete}
+          onLogin={() => setShowUserLogin(true)}
+        />
+      ) : (
+        <Suspense fallback={<PageLoading />}>
+          {renderScreen()}
+        </Suspense>
       )}
       {showUserLogin && (
         <AuthOverlay onClose={() => setShowUserLogin(false)}>
