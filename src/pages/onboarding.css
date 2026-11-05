@@ -1,95 +1,33 @@
 /* =====================================================================
-   Onboarding (màn chào lần đầu) — cùng chất "dán nhãn" với trang chủ:
-   nền kem lưới chấm, thẻ viền navy + bóng cứng lệch góc.
-   Từ 2026-11-04 nó là THẺ MODAL (`Modal` dùng chung, `dismissible={false}`)
-   phủ lên trang chủ — xem `.o-modal-card` bên dưới.
+   Onboarding (màn chào lần đầu) — TRANG RIÊNG toàn màn hình từ 2026-11-05
+   (carousel giới thiệu + wizard từng bước, thay dạng thẻ modal của PR #19).
+   Phần lớn styling nằm ở Tailwind inline trong `OnboardingScreen.jsx`;
+   file này chỉ còn các animation dùng chung của trang.
    ===================================================================== */
 
-.gq-onb {
-  color: var(--nb-ink, #1d2e4a);
-  background-color: var(--nb-paper, #fbf5e6);
-  background-image: radial-gradient(rgba(29, 46, 74, 0.07) 1px, transparent 1.3px);
-  background-size: 18px 18px;
-  /* `clip` thay vì `hidden`: `hidden` làm overflow-y thành `auto` → sinh
-     thêm một thanh cuộn lồng nhau (xem ghi chú cùng kiểu ở home-gq.css). */
-  overflow-x: clip;
+/* Minh hoạ chính nhún nhẹ để trang không bị tĩnh */
+.gq-onb .ob-float { animation: ob-float 3.6s ease-in-out infinite; }
+@keyframes ob-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
 }
 
-/* Khung thẻ modal: viền navy + bóng cứng như các thẻ "dán nhãn" khác.
-   Chiều cao tối đa + cuộn trong thẻ do class của `Modal` truyền vào
-   (`max-h-[92dvh] overflow-y-auto`) — thẻ không bao giờ tràn khỏi màn hình. */
-.gq-onb.o-modal-card {
-  border: 3px solid var(--nb-ink, #1d2e4a);
-  border-radius: 24px;
-  box-shadow: 8px 8px 0 rgba(29, 46, 74, 0.9);
+/* Emoji trang trí trôi chậm quanh minh hoạ */
+.gq-onb .ob-drift { animation: ob-drift 5.5s ease-in-out infinite; }
+@keyframes ob-drift {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50%      { transform: translateY(-14px) rotate(5deg); }
 }
 
-/* Thẻ câu hỏi */
-.gq-onb .o-card {
-  border: 3px solid;
-  border-radius: 18px;
-  padding: 12px;
-}
-
-/* Ô bấm dán nhãn: bấm xuống thì "lõm" vào — giống .nb-btn của trang chủ.
-   Nội dung xếp dọc ở giữa (mặt + nhãn, "Lớp 1" + tuổi) — trước đây dựa vào
-   xuống dòng tự nhiên của span inline, nay khai rõ flex cho chắc. */
-.gq-onb .o-chip,
-.gq-onb .o-btn {
-  border: 3px solid;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.1s, background 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.gq-onb .o-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-.gq-onb .o-btn { border-radius: 18px; padding: 12px 16px; }
-.gq-onb .o-chip:hover:not(:active) { filter: brightness(1.02); }
-.gq-onb .o-chip:active,
-.gq-onb .o-btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 currentColor; }
-.gq-onb .o-btn:disabled { opacity: 0.75; cursor: not-allowed; }
-.gq-onb .o-btn:disabled:active { transform: none; }
-
-/* Ô nhập tên */
-.gq-onb .o-input {
-  width: 100%;
-  border: 3px solid;
-  border-radius: 16px;
-  padding: 10px 14px;
-  outline: none;
-  transition: box-shadow 0.1s, border-color 0.15s;
-}
-.gq-onb .o-input::placeholder { color: #9aa6ba; font-weight: 500; }
-
-/* Băng cảnh báo khi bấm nút mà chưa điền đủ */
-.gq-onb .o-banner {
-  border: 3px solid;
-  border-radius: 16px;
-  padding: 9px 12px;
-  text-align: center;
-}
-
-/* Hàng nút hành động: xếp dọc khít nhau (nút chính trên, "Bỏ qua" dưới) —
-   modal hẹp tối đa max-w-md nên không còn biến thể hàng ngang desktop
-   như thời onboarding còn là trang toàn màn hình. */
-.gq-onb .o-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Nhân vật nhún nhẹ để thẻ không bị tĩnh */
-.gq-onb .o-float { animation: o-float 3.4s ease-in-out infinite; }
-@keyframes o-float {
-  0%, 100% { transform: translateY(0) rotate(-2deg); }
-  50%      { transform: translateY(-9px) rotate(2deg); }
+/* Đổi slide / đổi bước: hiện dần + trồi lên nhẹ */
+.gq-onb .ob-fade { animation: ob-fade 0.38s ease both; }
+@keyframes ob-fade {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gq-onb .o-float { animation: none; }
+  .gq-onb .ob-float,
+  .gq-onb .ob-drift,
+  .gq-onb .ob-fade { animation: none; }
 }
