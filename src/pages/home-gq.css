@@ -793,6 +793,17 @@
   color: #55607d;
 }
 
+/* Nhãn cảnh báo nhẹ trên thẻ game (vd FieldRunner dùng xu tài khoản thật) */
+.gq-card__note {
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 2px 9px;
+  background: #ffe9a8;
+  color: #8a6d1f;
+  white-space: nowrap;
+}
+
 /* section nền xanh lá có mép cong */
 .gq-sect--green {
   background: linear-gradient(180deg, #9ed79a, #8fcb87);

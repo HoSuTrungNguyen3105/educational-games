@@ -89,6 +89,14 @@ button {
   background: #ffe9a8;
 }
 
+/* Nhãn nói rõ số xu trong HUD là XU TÀI KHOẢN (không phải tiền riêng trong game) */
+.hud__coin__lb {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: #8a6d1f;
+}
+
 .hud__house {
   display: flex;
   flex-direction: column;
@@ -535,6 +543,8 @@ canvas#c {
     font-size: 15px;
     padding: 2px 9px;
   }
+
+  .hud__coin__lb { font-size: 10px; }
 
   .hud__score { font-size: 22px; }
   .hud__round { font-size: 11.5px; }
