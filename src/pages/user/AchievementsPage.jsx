@@ -1,46 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
 import { Check, Coins, Trophy } from "lucide-react";
-import {
-  walletService,
-  xpService,
-  gameProgressService,
-  dailyTaskService,
-} from "../../services/api.js";
-import { ACHIEVEMENT_DEFS, evaluateAchievements } from "../../data/achievements.js";
+import useAchievements from "../../hooks/useAchievements.js";
 import { PrimaryButton, Loader, ErrorState } from "../../components/ui";
 
-function asNumber(v) {
-  if (typeof v === "number") return v;
-  return Number(v?.xp ?? v?.totalXp ?? v?.total ?? v?.coins ?? 0) || 0;
-}
-
 export default function AchievementsPage({ userAuth, onBack }) {
-  const [items, setItems] = useState(null);
-  const [error, setError] = useState(null);
-
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const [coinRes, xpRes, games, tasks] = await Promise.all([
-        walletService.get().catch(() => null),
-        xpService.get().catch(() => null),
-        gameProgressService.listGames().catch(() => []),
-        dailyTaskService.list().catch(() => []),
-      ]);
-      const stats = {
-        coins: asNumber(coinRes) || Number(userAuth?.user?.coins) || 0,
-        xp: asNumber(xpRes),
-        games: Array.isArray(games) ? games.length : 0,
-        tasks: Array.isArray(tasks) ? tasks.filter((t) => t.claimed).length : 0,
-      };
-      setItems(evaluateAchievements(ACHIEVEMENT_DEFS, stats));
-    } catch (e) {
-      setError(e?.message || "Không tải được thành tựu");
-      setItems([]);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const { items, error, reload } = useAchievements(userAuth);
 
   if (!userAuth?.user) {
     return (
@@ -77,7 +40,7 @@ export default function AchievementsPage({ userAuth, onBack }) {
       {items === null ? (
         <div className="flex justify-center py-10"><Loader label="Đang tải thành tựu..." /></div>
       ) : error ? (
-        <ErrorState title="Không tải được thành tựu" subtitle={error} onRetry={load} />
+        <ErrorState title="Không tải được thành tựu" subtitle={error} onRetry={reload} />
       ) : (
         <>
           {unlockedCount > 0 && (

@@ -22,6 +22,8 @@ import { useScrollLock } from '../hooks/useScrollLock.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
 import { useSiteConfig } from '../hooks/useSiteConfig.js'
+import useAchievements from '../hooks/useAchievements.js'
+import { selectFeaturedAchievements } from '../data/achievements.js'
 import { playVibration, playReminderSound, stopVibrationLoop } from '../lib/reminderUtils.js'
 import {
   House,
@@ -256,14 +258,6 @@ const BOTTOM_NAV = (userAuth) => [
   { key: "profile", icon: IconUser, label: "Cá nhân", type: "path", path: "/profile", show: !!userAuth?.user },
 ];
 
-// Thành tích nổi bật (mock — sẽ nối API sau)
-const ACHIEVEMENTS = [
-  { icon: "🏅", title: "Hoàn thành 100 câu hỏi", progress: 68, target: 100, reward: "+50", type: "coin", tint: "from-amber-400 to-orange-500" },
-  { icon: "📅", title: "Đăng nhập 7 ngày liên tiếp", progress: 5, target: 7, reward: "+100", type: "star", tint: "from-sky-400 to-blue-500" },
-  { icon: "🌳", title: "Trồng 50 cây", progress: 18, target: 50, reward: "+75", type: "coin", tint: "from-emerald-400 to-green-600" },
-  { icon: "🐉", title: "Hạ gục Boss đầu tiên", progress: 0, target: 1, reward: "+200", type: "coin", tint: "from-rose-400 to-red-500" },
-];
-
 export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUserRegister, onUserLogout }) {
   // ─── STATE / LOGIC (giữ nguyên từ bản cũ) ───
   // Tên trang + logo admin cấu hình ở trang Cài đặt; để trống thì dùng chữ cũ.
@@ -278,6 +272,13 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [walletLoaded, setWalletLoaded] = useState(false);
   const [gift, setGift] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Thành tựu nổi bật trong sheet hồ sơ: dữ liệu thật của người dùng
+  // (useAchievements, cùng nguồn với trang Thành tựu), chỉ tải khi mở sheet.
+  const { items: achievementItems, error: achievementsError } = useAchievements(userAuth, { enabled: menuOpen });
+  const featuredAchievements = useMemo(
+    () => selectFeaturedAchievements(achievementItems ?? []),
+    [achievementItems]
+  );
   // popover "Thêm" của hàng tab header: vị trí tính theo nút nên phải mở
   // bằng state riêng (không dùng CSS :hover).
   const [moreOpen, setMoreOpen] = useState(false);
@@ -1497,26 +1498,35 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 </>
               )}
 
-              <div className="gq-sheet__sep" />
-
-              {/* Thành tựu nổi bật */}
-              <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Thành tựu</p>
-              {ACHIEVEMENTS.map((a, i) => (
-                <div key={i} className="gq-link" style={{ cursor: "default" }}>
-                  <span className="gq-link__ico">{a.icon}</span>
-                  <span className="flex-1 min-w-0">
-                    <span className="block truncate">{a.title}</span>
-                    <span className="mt-1 block h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                      <span
-                        className="block h-full rounded-full bg-emerald-400"
-                        style={{ width: `${Math.min(100, (a.progress / a.target) * 100)}%` }}
-                      />
-                    </span>
-                  </span>
-                  <span className="text-[11px] font-extrabold text-amber-600">{a.progress}/{a.target}</span>
-                </div>
-              ))}
-              <button onClick={() => goTo("/achievements")} className="gq-link text-xs text-slate-500">Xem tất cả thành tựu</button>
+              {/* Thành tựu nổi bật — dữ liệu thật (useAchievements), chỉ hiện khi đã đăng nhập */}
+              {userAuth?.user && (
+                <>
+                  <div className="gq-sheet__sep" />
+                  <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Thành tựu</p>
+                  {achievementItems === null ? (
+                    <p className="px-3 py-2 text-xs text-slate-400 animate-pulse">Đang tải thành tựu...</p>
+                  ) : achievementsError ? (
+                    <p className="px-3 py-2 text-xs text-slate-400">Không tải được thành tựu</p>
+                  ) : (
+                    featuredAchievements.map((a) => (
+                      <div key={a.id} className="gq-link" style={{ cursor: "default" }}>
+                        <span className="gq-link__ico">{a.icon}</span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block truncate">{a.title}</span>
+                          <span className="mt-1 block h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                            <span
+                              className="block h-full rounded-full bg-emerald-400"
+                              style={{ width: `${Math.min(100, (a.progress / a.target) * 100)}%` }}
+                            />
+                          </span>
+                        </span>
+                        <span className="text-[11px] font-extrabold text-amber-600">{a.progress.toLocaleString()}/{a.target.toLocaleString()}</span>
+                      </div>
+                    ))
+                  )}
+                  <button onClick={() => goTo("/achievements")} className="gq-link text-xs text-slate-500">Xem tất cả thành tựu</button>
+                </>
+              )}
 
               {(userAuth?.user?.role === "admin" || userAuth?.user?.role === "teacher") && (
                 <button onClick={() => goTo("/dashboard")} className="gq-link">
