@@ -128,21 +128,21 @@
   }
 })();
 </script><title>Ghép Cặp Vườn</title>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet"><style>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet"><style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;font-family:"Baloo 2",system-ui,sans-serif;color:#fff;touch-action:none;background:linear-gradient(#ffb56b,#f88f5a 18%,#6cb857 55%,#2e6b2f)}
+html,body{height:100%;overflow:hidden;font-family:var(--body,"Be Vietnam Pro","Segoe UI",system-ui,sans-serif);color:#fff;touch-action:none;background:linear-gradient(#ffb56b,#f88f5a 18%,#6cb857 55%,#2e6b2f)}
 body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-#hud{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 60px;background:linear-gradient(#7a4c2a,#3a2414);border-bottom:4px solid #e0b25f;box-shadow:0 5px 14px rgba(0,0,0,.5)}
-#hud h1{font-size:18px;font-weight:800;flex:1;text-shadow:0 2px 0 #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.st{background:#1f1108;border:2px solid #c9964f;border-radius:14px;padding:2px 12px;font-weight:800;font-size:16px;color:#ffe066;min-width:72px;text-align:center;white-space:nowrap}
+#hud{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 60px;background:var(--ink,#1d2e4a);border-bottom:4px solid var(--sun,#f4b942);box-shadow:0 5px 14px rgba(22,35,58,.35)}
+#hud h1{font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-size:18px;font-weight:800;flex:1;text-shadow:0 2px 0 rgba(0,0,0,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{background:var(--card,#fffbf2);border:2.5px solid var(--ink,#1d2e4a);border-radius:999px;padding:2px 12px;font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-weight:800;font-size:16px;color:var(--ink,#1d2e4a);box-shadow:2px 2px 0 var(--ink,#1d2e4a);min-width:72px;text-align:center;white-space:nowrap}
 #stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px}
-.btn{border:2px solid rgba(255,255,255,.3);font-family:inherit;font-weight:800;font-size:18px;color:#fff;padding:9px 24px;border-radius:99px;background:linear-gradient(#8fdc63,#4aa33a);box-shadow:0 5px 0 #2d6b23,0 9px 14px rgba(0,0,0,.3);cursor:pointer}
-.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #2d6b23}
-#over{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(20,10,0,.62);backdrop-filter:blur(3px);padding:12px}
+.btn{border:3px solid var(--ink,#1d2e4a);font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-weight:800;font-size:18px;color:var(--ink,#1d2e4a);padding:9px 24px;border-radius:14px;background:var(--sun,#f4b942);box-shadow:3px 3px 0 var(--ink,#1d2e4a);cursor:pointer;transition:transform .1s,box-shadow .1s}
+.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink,#1d2e4a)}
+#over{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(22,35,58,.55);backdrop-filter:blur(3px);padding:12px}
 #over.h{display:none}
-.panel{background:linear-gradient(#fffbe6,#efd49a);color:#3b2412;border:5px solid #b07a3c;border-radius:28px;padding:18px 30px;text-align:center;max-width:420px;box-shadow:0 0 0 4px #3a2414,0 18px 50px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+.panel{background:var(--card,#fffbf2);color:var(--ink,#1d2e4a);border:3px solid var(--ink,#1d2e4a);border-radius:22px;padding:18px 30px;text-align:center;max-width:420px;box-shadow:4px 4px 0 var(--ink,#1d2e4a);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
 @keyframes pop{from{transform:scale(.7);opacity:0}}
-.panel h2{font-size:32px;line-height:1}.panel p{font-size:16px;font-weight:600;margin:8px 0 14px}
+.panel h2{font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-size:32px;line-height:1;color:var(--tomato,#e4572e)}.panel p{font-size:16px;font-weight:600;margin:8px 0 14px}
 #homeBackBtn{position:fixed;z-index:2147483000;top:calc(env(safe-area-inset-top,0px) + 10px);left:calc(env(safe-area-inset-left,0px) + 10px);width:42px;height:42px;border-radius:14px;display:grid;place-items:center;cursor:pointer;font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-size:20px;font-weight:800;line-height:1;color:var(--ink,#1d2e4a);background:var(--card,#fffbf2);border:3px solid var(--ink,#1d2e4a);box-shadow:0 4px 0 var(--ink,#1d2e4a),0 8px 14px rgba(0,0,0,.22);transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 #homeBackBtn:hover{filter:brightness(1.06)}
 #homeBackBtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink,#1d2e4a),0 3px 6px rgba(0,0,0,.22)}

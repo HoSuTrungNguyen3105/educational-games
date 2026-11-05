@@ -133,14 +133,14 @@
 })();
 </script>
 <title>Chém Trái Cây</title>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root{--ink:#241309}
+  :root{--ink:#1d2e4a}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-  html,body{height:100%;overflow:hidden;background:#13212e;color:#fff;font-family:"Baloo 2","Nunito","Segoe UI",system-ui,sans-serif;touch-action:none}
+  html,body{height:100%;overflow:hidden;background:#13212e;color:#fff;font-family:var(--body,"Be Vietnam Pro","Segoe UI",system-ui,sans-serif);touch-action:none}
   canvas{position:fixed;inset:0;display:block;touch-action:none}
   button{font-family:inherit;cursor:pointer}
-  button:focus-visible{outline:3px solid #ffe066;outline-offset:2px}
+  button:focus-visible{outline:3px solid var(--sun,#f4b942);outline-offset:2px}
   #hud{position:fixed;top:0;left:0;right:0;display:none;justify-content:space-between;align-items:flex-start;pointer-events:none;
     padding:calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 14px) 0 calc(env(safe-area-inset-left) + 14px);z-index:5}
   #hud.on{display:flex}
@@ -149,7 +149,7 @@
   #lives{font-size:30px;letter-spacing:3px;text-align:right;line-height:1}
   #lives .x{opacity:.28;filter:grayscale(1)}
   #timer{font-size:44px;font-weight:800;text-align:right;line-height:1;text-shadow:0 3px 0 rgba(0,0,0,.35)}
-  #pauseBtn{pointer-events:auto;margin-top:8px;width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;font-size:18px;float:right}
+  #pauseBtn{pointer-events:auto;margin-top:8px;width:44px;height:44px;border-radius:14px;border:3px solid var(--ink,#1d2e4a);background:var(--card,#fffbf2);color:var(--ink,#1d2e4a);font-size:18px;float:right;box-shadow:2px 2px 0 var(--ink,#1d2e4a)}
   #pop{position:fixed;left:50%;top:34%;transform:translate(-50%,0);opacity:0;pointer-events:none;font-size:46px;font-weight:800;font-style:italic;white-space:nowrap;z-index:6;
     text-shadow:0 4px 0 #7a2a00,0 0 26px rgba(255,200,80,.9)}
   #pop.show{animation:pop 1.1s ease-out}
@@ -162,37 +162,38 @@
     text-shadow:0 3px 0 #ff9e1f,0 6px 0 #e4571b,0 9px 0 #8f2d0b,0 14px 22px rgba(0,0,0,.55)}
   .logo small{display:block;font-size:.27em;letter-spacing:2px;font-style:normal;margin-top:10px;color:#ffe9b8;text-shadow:0 2px 0 rgba(0,0,0,.5)}
   .modes{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
-  .mode{width:150px;padding:16px 10px 12px;border-radius:50%/42%;border:0;color:#fff;text-align:center;box-shadow:0 8px 0 rgba(0,0,0,.35),0 14px 20px rgba(0,0,0,.4);transition:transform .12s}
-  .mode:active{transform:translateY(6px);box-shadow:0 2px 0 rgba(0,0,0,.35)}
-  .mode.cl{background:radial-gradient(circle at 35% 25%,#ff9f6e,#e8452c)}
-  .mode.zen{background:radial-gradient(circle at 35% 25%,#7ee0a4,#1f9d6a)}
+  .mode{width:150px;padding:16px 10px 12px;border-radius:24px;border:3px solid var(--ink,#1d2e4a);color:#fff;text-align:center;box-shadow:4px 4px 0 var(--ink,#1d2e4a);transition:transform .12s,box-shadow .12s}
+  .mode:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--ink,#1d2e4a)}
+  .mode.cl{background:radial-gradient(circle at 35% 25%,var(--coral,#ff8a6a),var(--tomato,#e4572e))}
+  .mode.zen{background:radial-gradient(circle at 35% 25%,#3ec6ae,var(--mint,#1b998b))}
   .mode b{display:block;font-size:24px;font-weight:800;line-height:1}
   .mode span{display:block;font-size:30px;margin:4px 0}
   .mode small{font-size:14px;font-weight:700;opacity:.95}
-  .panel{width:min(100%,420px);padding:12px 14px;border-radius:22px;background:rgba(8,16,26,.62);border:2px solid rgba(255,255,255,.14);backdrop-filter:blur(8px);
+  .panel{width:min(100%,420px);padding:12px 14px;border-radius:22px;background:var(--card,#fffbf2);border:3px solid var(--ink,#1d2e4a);box-shadow:4px 4px 0 var(--ink,#1d2e4a);color:var(--ink,#1d2e4a);
     display:flex;flex-direction:column;gap:8px;align-items:center}
   .blades{display:flex;gap:8px}
-  .blade{width:58px;height:58px;border-radius:14px;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font-size:12px;font-weight:800;
+  .blade{width:58px;height:58px;border-radius:14px;border:2.5px solid var(--ink,#1d2e4a);background:var(--bg,#fff3de);color:var(--ink,#1d2e4a);font-size:12px;font-weight:800;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1}
   .blade i{display:block;width:34px;height:6px;border-radius:6px}
-  .blade.sel{border-color:#ffe066;box-shadow:0 0 0 3px rgba(255,224,102,.4)}
+  .blade.sel{border-color:var(--sun,#f4b942);box-shadow:0 0 0 3px rgba(244,185,66,.5)}
   .blade.lock{opacity:.5}
   .stats{display:flex;gap:16px;font-size:14px;font-weight:700;opacity:.9;text-align:center}
-  .stats b{display:block;font-size:20px;font-weight:800;color:#ffe066}
-  .btn{border:0;font-weight:800;font-size:22px;color:var(--ink);padding:10px 30px;border-radius:99px;background:linear-gradient(#ffe37a,#f5b52c);box-shadow:0 5px 0 #b8781a,0 9px 14px rgba(0,0,0,.35);font-style:italic}
-  .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #b8781a}
-  .btn.alt{background:linear-gradient(#e8f3ff,#a9c6e8);box-shadow:0 5px 0 #6b8bb0,0 9px 14px rgba(0,0,0,.35)}
-  .btn.alt:active{box-shadow:0 1px 0 #6b8bb0}
+  .stats b{display:block;font-size:20px;font-weight:800;color:var(--tomato,#e4572e)}
+  .btn{border:3px solid var(--ink,#1d2e4a);font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-weight:800;font-size:22px;color:var(--ink,#1d2e4a);padding:10px 30px;border-radius:14px;background:var(--sun,#f4b942);box-shadow:3px 3px 0 var(--ink,#1d2e4a);font-style:italic;transition:transform .1s,box-shadow .1s}
+  .btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink,#1d2e4a)}
+  .btn.alt{background:var(--card,#fffbf2);box-shadow:3px 3px 0 var(--ink,#1d2e4a)}
+  .btn.alt:active{box-shadow:0 0 0 var(--ink,#1d2e4a)}
   .btn.sm{font-size:16px;padding:7px 18px}
-  .card{width:min(100%,360px);padding:20px 22px;border-radius:26px;background:rgba(8,16,26,.82);border:2px solid rgba(255,255,255,.2);backdrop-filter:blur(10px);text-align:center;
-    display:flex;flex-direction:column;gap:6px;align-items:center;box-shadow:0 14px 40px rgba(0,0,0,.5)}
-  .card h2{font-size:34px;font-weight:800;font-style:italic;color:#ffd84a;line-height:1}
+  .card{width:min(100%,360px);padding:20px 22px;border-radius:22px;background:var(--card,#fffbf2);border:3px solid var(--ink,#1d2e4a);color:var(--ink,#1d2e4a);text-align:center;
+    display:flex;flex-direction:column;gap:6px;align-items:center;box-shadow:4px 4px 0 var(--ink,#1d2e4a)}
+  .card h2{font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif);font-size:34px;font-weight:800;font-style:italic;color:var(--tomato,#e4572e);line-height:1}
   .card .big{font-size:60px;font-weight:800;line-height:1}
   .card .sm{font-size:16px;font-weight:600;opacity:.85}
-  #over,#pause{background:rgba(5,10,18,.5);pointer-events:auto}
+  #over,#pause{background:rgba(22,35,58,.55);pointer-events:auto}
   .col{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:6px}
   @media (max-height:520px){.logo{font-size:40px}.mode{width:120px;padding:10px 6px}.mode span{font-size:22px}.card{padding:12px 16px}.card .big{font-size:38px}.panel{padding:8px}}
   @media (prefers-reduced-motion:reduce){#pop.show{animation:none;opacity:1}}
+  .logo,.mode b,.btn,#score,#timer,.card h2,.card .big,#pop{font-family:var(--head,"Baloo 2","Fredoka","Segoe UI",system-ui,sans-serif)}
 </style>
 <style id="gq-kit-css">/* gq-kit.css — giao diện đồng bộ: màn chọn độ khó, nhãn độ khó, pháo hoa,
    và (cho game viết tay) popup / nút cùng phong cách neo-brutalist của Góc Giải Trí. */
