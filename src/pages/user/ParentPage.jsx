@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Users, Coins, Star, Sparkles, Gamepad2, ClipboardList, KeyRound,
   ArrowLeft, Link2, BarChart3, ListChecks, History, ShieldCheck, Check, X,
+  Target, Ban,
 } from "lucide-react";
 import { parentApi } from "../../services/parentApi.js";
 import { Loader, EmptyState, ErrorState, PrimaryButton, ConfirmModal, Modal } from "../../components/ui";
@@ -101,11 +102,31 @@ function ParentRegister({ onLogin, onUserLogin, showToast }) {
 function ChildReport({ report, onBack, showToast }) {
   const s = report.student;
   const o = report.overview;
+  // Tiến độ XP trong cấp hiện tại (server đã trả trong báo cáo).
+  const xpPct = s.xpPerLevel > 0
+    ? Math.min(100, Math.round(((s.xpIntoLevel || 0) / s.xpPerLevel) * 100))
+    : 0;
+  const xpLeft = Math.max(0, (s.xpPerLevel || 0) - (s.xpIntoLevel || 0));
   const [pwOpen, setPwOpen] = useState(false);
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [pwBusy, setPwBusy] = useState(false);
   const [pwError, setPwError] = useState("");
+  // Danh sách người con đã chặn (an toàn cho bé — chỉ đọc, backend kiểm
+  // tra liên kết; lỗi tải hiện riêng, không giả vờ là "chưa chặn ai").
+  const [blocked, setBlocked] = useState(null);
+  const [blockedError, setBlockedError] = useState("");
+
+  const loadBlocked = useCallback(async () => {
+    setBlockedError("");
+    try {
+      setBlocked(await parentApi.childBlockedUsers(s.id));
+    } catch (e) {
+      setBlockedError(e.message || "Không tải được danh sách con đã chặn.");
+    }
+  }, [s.id]);
+
+  useEffect(() => { loadBlocked(); }, [loadBlocked]);
 
   function openReset() {
     setPw("");
@@ -189,7 +210,59 @@ function ChildReport({ report, onBack, showToast }) {
         <StatCard icon={<Gamepad2 className="w-3.5 h-3.5" />} label="Lượt chơi" value={(o.totalPlays || 0).toLocaleString()} />
         <StatCard icon={<BarChart3 className="w-3.5 h-3.5" />} label="Game đã chơi" value={o.gamesPlayed || 0} />
         <StatCard icon={<ListChecks className="w-3.5 h-3.5" />} label="Nhiệm vụ xong" value={`${o.tasksCompleted || 0}/${o.tasksTotal || 0}`} />
+        <StatCard icon={<Target className="w-3.5 h-3.5" />} label="Nhiệm vụ trong game" value={(o.questsCompleted || 0).toLocaleString()} />
       </div>
+
+      {/* Tiến độ XP tới cấp tiếp theo */}
+      <div className="bg-white rounded-2xl border border-[#E7D9BE] p-3.5 mt-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 text-[#8A7C63] text-[11px] font-semibold uppercase tracking-wide">
+            <Sparkles className="w-3.5 h-3.5" /> Tiến độ cấp {s.level || 1}
+          </span>
+          <span className="text-xs font-semibold text-[#20283A]">
+            {(s.xpIntoLevel || 0).toLocaleString()}/{(s.xpPerLevel || 0).toLocaleString()} XP
+          </span>
+        </div>
+        <div className="h-2.5 bg-[#F1EAD8] rounded-full overflow-hidden mt-2">
+          <div className="h-full bg-[#1B998B] rounded-full transition-all" style={{ width: `${xpPct}%` }} />
+        </div>
+        <p className="text-xs text-[#8A7C63] mt-1.5">
+          {xpLeft > 0
+            ? `Còn ${xpLeft.toLocaleString()} XP nữa là lên cấp ${(s.level || 1) + 1}.`
+            : "Sắp lên cấp rồi!"}
+        </p>
+      </div>
+
+      {/* An toàn: người con đã chặn (chỉ xem — bỏ chặn là thao tác của con) */}
+      <SectionTitle icon={<Ban className="w-5 h-5 text-[#1B998B]" />}>Người con đã chặn</SectionTitle>
+      {blocked === null && !blockedError && (
+        <p className="text-sm text-[#8A7C63]">Đang tải...</p>
+      )}
+      {blockedError && (
+        <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold flex items-center justify-between gap-2">
+          <span>{blockedError}</span>
+          <button type="button" onClick={loadBlocked} className="underline shrink-0">Thử lại</button>
+        </div>
+      )}
+      {blocked && blocked.length === 0 && (
+        <p className="text-sm text-[#8A7C63]">Con chưa chặn ai.</p>
+      )}
+      {blocked && blocked.length > 0 && (
+        <div className="space-y-2">
+          {blocked.map((b) => (
+            <div key={b.user.id} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#E7D9BE]">
+              <div className="w-9 h-9 rounded-full bg-slate-400 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                {(b.user.name || "?").charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-[#20283A] truncate">{b.user.name}</p>
+                <p className="text-xs text-[#8A7C63] truncate">@{b.user.username}</p>
+              </div>
+              {b.since && <span className="text-[11px] text-[#8A7C63] shrink-0">{fmtDate(b.since)}</span>}
+            </div>
+          ))}
+        </div>
+      )}
 
       {report.perGame?.length > 0 && (
         <>

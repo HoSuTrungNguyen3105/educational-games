@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Backpack, Coins, Package } from "lucide-react";
 import { gardenService, walletService } from "../../services/api.js";
-import { PrimaryButton, Loader } from "../../components/ui";
+import { PrimaryButton, Loader, ErrorState } from "../../components/ui";
 
 /* Metadata vật phẩm — đồng bộ với backend /garden/inventory */
 const ITEM_CONFIG = {
@@ -15,10 +15,12 @@ const ITEM_CONFIG = {
 export default function InventoryPage({ userAuth, onBack }) {
   const [inventory, setInventory] = useState(null);
   const [coins, setCoins] = useState(0);
+  const [error, setError] = useState(null);
   const [usingId, setUsingId] = useState(null);
   const [toast, setToast] = useState(null);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       const [invRes, coinData] = await Promise.all([
         gardenService.getInventory(),
@@ -28,8 +30,12 @@ export default function InventoryPage({ userAuth, onBack }) {
       const inv = invRes?.inventory || invRes || {};
       setInventory(inv);
       setCoins(coinData?.coins || 0);
-    } catch {
-      setInventory({});
+    } catch (e) {
+      // Lỗi tải KHÔNG được giả vờ là kho trống (học sinh có đồ sẽ tưởng mất
+      // đồ) — giữ inventory = null và hiện trạng thái lỗi có nút Thử lại,
+      // đúng mẫu StorePage/GardenPage.
+      setError(e?.message || "Không tải được kho đồ");
+      setInventory(null);
     }
   }, []);
 
@@ -91,7 +97,9 @@ export default function InventoryPage({ userAuth, onBack }) {
         </div>
       )}
 
-      {inventory === null ? (
+      {error ? (
+        <ErrorState title="Không tải được kho đồ" subtitle={error} onRetry={load} />
+      ) : inventory === null ? (
         <div className="flex justify-center py-10"><Loader label="Đang tải kho đồ..." /></div>
       ) : owned.length === 0 ? (
         <div className="text-center py-12">

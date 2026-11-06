@@ -36,6 +36,10 @@ export const parentApi = {
   async report(studentId) {
     return apiFetch(`/parents/children/${studentId}/report`);
   },
+  /** [{ user: { id, username, name }, since }] — người con đã chặn (chỉ đọc). */
+  async childBlockedUsers(studentId) {
+    return apiFetch(`/parents/children/${studentId}/blocked-users`) || [];
+  },
   /** Đặt lại mật khẩu cho con đã liên kết (backend kiểm tra liên kết → 403 nếu chưa). */
   async resetChildPassword(studentId, password) {
     return apiFetch(`/parents/children/${studentId}/reset-password`, { method: "POST", body: { password } });
