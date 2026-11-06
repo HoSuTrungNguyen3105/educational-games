@@ -38,6 +38,20 @@ const btnTeal = "flex items-center gap-1.5 px-3.5 py-2 bg-[#1B998B] text-white t
 const btnGhost = "flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#E7D9BE] text-[#20283A] text-xs font-bold rounded-full hover:bg-[#FAF3E3] transition-colors shrink-0 disabled:opacity-60";
 const btnMuted = "flex items-center gap-1.5 px-3.5 py-2 bg-[#F1EAD8] text-[#8A7C63] text-xs font-bold rounded-full shrink-0 cursor-default";
 
+// Lọc bản ghi mồ côi (thiếu `user` — vd đối tác đã bị xoá, lời mời bị giữ
+// chưa populate) NGAY TẠI NGUỒN, trước khi vào state: nếu lọt xuống render
+// map hay useMemo `relations`, `f.user.id` ném lỗi và trắng toàn bộ trang
+// (trang không có error boundary). Vá PHÒNG THỦ — chưa tái hiện được crash
+// thật, chỉ quan sát thoáng qua lỗi "Cannot read properties of undefined
+// (reading 'id')" một lần trong lúc rà soát; dữ liệu hợp lệ không đổi.
+const hasUser = (entry) => Boolean(entry && entry.user && entry.user.id != null);
+const cleanOverview = (ov) => ({
+  friends: (ov?.friends || []).filter(hasUser),
+  incoming: (ov?.incoming || []).filter(hasUser),
+  outgoing: (ov?.outgoing || []).filter(hasUser),
+  heldOutgoing: (ov?.heldOutgoing || []).filter(hasUser),
+});
+
 /**
  * Hàng người dùng với nút bấm theo ngữ cảnh:
  *  variant "incoming" → Chấp nhận / Từ chối lời mời
@@ -51,7 +65,7 @@ function PersonRow({ user, subtitle, relation, variant, busy, onChat, onAdd, onA
   // chính mình nên không cần tự loại trừ ở đây.
   const online = useIsOnline(user?.id);
   return (
-    <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#E7D9BE]">
+    <div className="person-row flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#E7D9BE]">
       <div className="relative shrink-0">
         <Avatar name={user.name} />
         {online && (
@@ -68,44 +82,46 @@ function PersonRow({ user, subtitle, relation, variant, busy, onChat, onAdd, onA
       </div>
 
       {variant === "incoming" && (
-        <>
+        <div className="person-actions">
           <button onClick={() => onAccept(user)} disabled={busy} className={btnTeal}>
             <UserCheck className="w-3.5 h-3.5" /> Chấp nhận
           </button>
           <button onClick={() => onDecline(user)} disabled={busy} className={btnGhost} aria-label="Từ chối lời mời">
             <X className="w-3.5 h-3.5" /> Từ chối
           </button>
-        </>
+        </div>
       )}
 
       {variant === "outgoing" && (
-        <button onClick={() => onCancel(user)} disabled={busy} className={btnGhost}>
-          <Clock className="w-3.5 h-3.5" /> Hủy lời mời
-        </button>
+        <div className="person-actions">
+          <button onClick={() => onCancel(user)} disabled={busy} className={btnGhost}>
+            <Clock className="w-3.5 h-3.5" /> Hủy lời mời
+          </button>
+        </div>
       )}
 
       {variant === "held" && (
-        <>
+        <div className="person-actions">
           <span className={btnMuted}><Shield className="w-3.5 h-3.5" /> Chờ phụ huynh duyệt</span>
           <button onClick={() => onCancel(user)} disabled={busy} className={btnGhost}>
             <X className="w-3.5 h-3.5" /> Hủy
           </button>
-        </>
+        </div>
       )}
 
       {variant === "friend" && (
-        <>
+        <div className="person-actions">
           <button onClick={() => onChat(user)} className={btnTeal}>
             <MessageCircle className="w-3.5 h-3.5" /> Chat
           </button>
           <button onClick={() => onUnfriend(user)} disabled={busy} className={btnGhost} aria-label="Hủy kết bạn">
             Hủy kết bạn
           </button>
-        </>
+        </div>
       )}
 
       {!variant && (
-        <>
+        <div className="person-actions">
           {relation === "friends" && (
             <span className={btnMuted}><UserCheck className="w-3.5 h-3.5" /> Bạn bè</span>
           )}
@@ -128,7 +144,7 @@ function PersonRow({ user, subtitle, relation, variant, busy, onChat, onAdd, onA
           <button onClick={() => onChat(user)} className={btnTeal}>
             <MessageCircle className="w-3.5 h-3.5" /> Chat
           </button>
-        </>
+        </div>
       )}
     </div>
   );
@@ -183,8 +199,8 @@ export default function FindFriendsScreen({ userAuth }) {
         conversationApi.list().catch(() => []),
         friendApi.blocks().catch(() => []),
       ]);
-      setOverview(ov || { friends: [], incoming: [], outgoing: [], heldOutgoing: [] });
-      setBlocked(Array.isArray(blockedList) ? blockedList : []);
+      setOverview(cleanOverview(ov));
+      setBlocked((Array.isArray(blockedList) ? blockedList : []).filter(hasUser));
 
       // Bạn cùng lớp — mỗi lớp một nhóm, bỏ chính mình.
       const classList = (Array.isArray(classes) ? classes : []).slice(0, MAX_CLASSES);
@@ -229,7 +245,7 @@ export default function FindFriendsScreen({ userAuth }) {
     try {
       await fn(user.id);
       const ov = await friendApi.overview().catch(() => null);
-      if (ov) setOverview(ov);
+      if (ov) setOverview(cleanOverview(ov));
     } catch (e) {
       setActionError(e.message || "Thao tác thất bại, vui lòng thử lại.");
     } finally {
@@ -440,15 +456,17 @@ export default function FindFriendsScreen({ userAuth }) {
               </SectionTitle>
               <div className="space-y-2">
                 {blocked.map(({ user }) => (
-                  <div key={user.id} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#E7D9BE]">
+                  <div key={user.id} className="person-row flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#E7D9BE]">
                     <Avatar name={user.name} />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-[#20283A] truncate">{user.name}</p>
                       <p className="text-xs text-[#8A7C63] truncate">@{user.username}</p>
                     </div>
-                    <button onClick={() => handleUnblock(user)} disabled={busyId === user.id} className={btnGhost}>
-                      Bỏ chặn
-                    </button>
+                    <div className="person-actions">
+                      <button onClick={() => handleUnblock(user)} disabled={busyId === user.id} className={btnGhost}>
+                        Bỏ chặn
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

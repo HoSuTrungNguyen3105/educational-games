@@ -174,6 +174,16 @@
   #pop{position:fixed;left:50%;top:38%;transform:translate(-50%,0);opacity:0;pointer-events:none;font-weight:800;font-size:26px;
     color:var(--pink,#ff6f91);text-shadow:0 2px 0 #fff;transition:opacity .4s,transform .6s}
   #pop.show{opacity:1;transform:translate(-50%,-18px)}
+  /* Màn hẹp: thu chuỗi tiến hoá + nút của thanh .foot để HUD nằm gọn
+     trong khung (trước đây tổng bề rộng vượt khung, tràn đều hai phía:
+     quả đầu của #evo bị cắt và #snd nằm ngoài mép phải). */
+  @media (max-width:480px){
+    .foot{gap:6px;padding-left:8px;padding-right:8px}
+    #evo{font-size:13px;padding:4px 6px;gap:0;flex:1 1 auto;min-width:0;justify-content:center}
+    #evo u{font-size:9px;margin:0 -2px}
+    .foot button{font-size:14px;padding:8px 10px;flex:none}
+    #snd{padding:8px 9px}
+  }
 </style>
 <style id="gq-kit-css">/* gq-kit.css — giao diện đồng bộ: màn chọn độ khó, nhãn độ khó, pháo hoa,
    và (cho game viết tay) popup / nút cùng phong cách neo-brutalist của Góc Giải Trí. */

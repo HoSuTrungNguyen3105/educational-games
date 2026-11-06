@@ -87,19 +87,22 @@ export default function LeaderboardPage({ userAuth, onBack }) {
                     {displayName(u).charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-ink text-sm truncate flex items-center gap-2">
-                      {displayName(u)}
+                    <p className="font-bold text-ink text-sm flex items-center gap-2 min-w-0">
+                      <span className="truncate">{displayName(u)}</span>
                       {me && (
-                        <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5 whitespace-nowrap">
+                        <span className="shrink-0 text-[10px] font-extrabold text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5 whitespace-nowrap">
                           Bạn
                         </span>
                       )}
                     </p>
-                    <p className="text-[11px] text-[#8A7C63]">
-                      Lv.{lv.level} · {getLevelTitle(lv.level)}
+                    <p className="text-[11px] text-[#8A7C63] flex items-center gap-1.5">
+                      <span className="whitespace-nowrap">Lv.{lv.level} · {getLevelTitle(lv.level)}</span>
+                      <span className="lb-coin-sub items-center gap-1 font-extrabold text-amber-600 whitespace-nowrap">
+                        <Coins className="w-3.5 h-3.5" /> {(Number(u?.coins) || 0).toLocaleString()}
+                      </span>
                     </p>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-sm font-extrabold text-amber-600 whitespace-nowrap">
+                  <span className="lb-coin shrink-0 items-center gap-1 text-sm font-extrabold text-amber-600 whitespace-nowrap">
                     <Coins className="w-4 h-4" /> {(Number(u?.coins) || 0).toLocaleString()}
                   </span>
                 </li>
