@@ -26,9 +26,9 @@ export default function ImageLibrary({ showToast }) {
   const [selected, setSelected] = useState([]);
   const [preview, setPreview] = useState(null);
   const [viewMode, setViewMode] = useViewMode("image-library", "grid");
+  const [folder, setFolder] = useState("edu-game");
   const pager = usePagedList(images, 12, folder);
   const { askConfirm, confirmProps } = useConfirm();
-  const [folder, setFolder] = useState("edu-game");
   const fileInput = useRef(null);
   const multiInput = useRef(null);
 

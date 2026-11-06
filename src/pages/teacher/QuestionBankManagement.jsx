@@ -213,7 +213,7 @@ export default function QuestionBankManagement({ showToast }) {
     try {
       const [qs, gs, st] = await Promise.all([
         questionBankService.list({ limit: 5000 }).catch(() => []),
-        gameService.list().catch(() => []),
+        // gameService.list().catch(() => []),
         questionBankService.stats().catch(() => null),
       ])
       setDocs(Array.isArray(qs) ? qs : [])
