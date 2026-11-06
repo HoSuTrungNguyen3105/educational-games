@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth.js";
 import * as chatService from "../services/chatService.js";
+import * as reactionService from "../services/reactionService.js";
 import * as convService from "../services/conversationService.js";
 import * as notificationService from "../services/notificationService.js";
 import { sendSuccess, sendCreated, sendError, buildPagination } from "../utils/response.js";
@@ -13,6 +14,7 @@ let chatIO = null;
 export function setChatIO(io) { chatIO = io; }
 
 const CHAT_MESSAGE_EVENT = "chat:message";
+const CHAT_REACTION_EVENT = "chat:reaction";
 
 // Emit DM message to both participants' user rooms (realtime)
 function emitDmMessage(conversationId, msg) {
@@ -24,6 +26,21 @@ function emitDmMessage(conversationId, msg) {
     chatIO.to(`user:${userA}`).to(`user:${userB}`).emit(CHAT_MESSAGE_EVENT, msg);
   } catch (e) {
     console.error("[chat] emitDmMessage failed:", e.message);
+  }
+}
+
+// Emit reaction update to both participants' user rooms (realtime) —
+// payload nhẹ { conversationId, messageId, reactions, userId, icon } để
+// phía còn lại cập nhật chip cảm xúc ngay, không cần tải lại tin nhắn.
+function emitDmReaction(conversationId, payload) {
+  if (!chatIO || !conversationId?.startsWith("dm:")) return;
+  const parts = conversationId.split(":");
+  if (parts.length !== 3) return;
+  const [, userA, userB] = parts;
+  try {
+    chatIO.to(`user:${userA}`).to(`user:${userB}`).emit(CHAT_REACTION_EVENT, payload);
+  } catch (e) {
+    console.error("[chat] emitDmReaction failed:", e.message);
   }
 }
 
@@ -50,14 +67,14 @@ router.get("/dm/:targetUserId/messages", authenticate, async (req, res, next) =>
 router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) => {
   try {
     const { targetUserId } = req.params;
-    const { content, clientMessageId, type } = req.body;
+    const { content, clientMessageId, type, kind, sticker } = req.body;
     const currentUserId = req.user.sub;
     const userName = req.user.name || "Ẩn danh";
     const userUsername = req.user.username || "";
     const convId = chatService.getDmConversationId(currentUserId, targetUserId);
     await ensureDmConversation(currentUserId, targetUserId);
     const msg = await chatService.sendMessage({
-      conversationId: convId, senderId: currentUserId, playerName: userName, content, clientMessageId, type,
+      conversationId: convId, senderId: currentUserId, playerName: userName, content, clientMessageId, type, kind, sticker,
     });
     // Realtime: push message to both participants (admin/student chat pages)
     emitDmMessage(convId, msg);
@@ -68,11 +85,36 @@ router.post("/dm/:targetUserId/messages", authenticate, async (req, res, next) =
       toUserId: targetUserId,
       type: "chat_message",
       title: `💬 ${userName}`,
-      message: content?.substring(0, 100) || "",
+      // msg.content đã là nhãn mô tả khi gửi sticker (xem chatService).
+      message: (msg.content || "").substring(0, 100),
       gameId: convId,
       data: { conversationId: convId },
     }).catch((e) => console.error("[chat] createNotification failed:", e));
     sendCreated(res, msg);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Thả / gỡ / đổi cảm xúc cho một tin nhắn DM (toggle — xem reactionService).
+// Trả về tin nhắn đã cập nhật; đồng thời bắn "chat:reaction" tới cả hai phía.
+router.post("/dm/:targetUserId/messages/:messageId/reaction", authenticate, async (req, res, next) => {
+  try {
+    const { targetUserId, messageId } = req.params;
+    const { icon } = req.body || {};
+    const currentUserId = req.user.sub;
+    const convId = chatService.getDmConversationId(currentUserId, targetUserId);
+    const result = await reactionService.toggleReaction({
+      conversationId: convId, messageId, userId: currentUserId, icon,
+    });
+    emitDmReaction(convId, {
+      conversationId: convId,
+      messageId,
+      reactions: result.reactions,
+      userId: currentUserId,
+      icon: result.myIcon,
+    });
+    sendSuccess(res, result.message);
   } catch (e) {
     next(e);
   }

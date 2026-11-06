@@ -41,4 +41,22 @@ export const chatApi = {
       body: { content, clientMessageId },
     });
   },
+
+  // Gửi sticker: đi qua đúng luồng gửi tin DM (server tự kiểm tra chặn và
+  // lưu kind: "sticker" + nhãn mô tả) — sticker là id trong bộ emojiIcons.
+  async sendDmSticker(targetUserId, { sticker, clientMessageId }) {
+    return apiFetch(`/chat/dm/${encodeURIComponent(targetUserId)}/messages`, {
+      method: "POST",
+      body: { kind: "sticker", sticker, clientMessageId },
+    });
+  },
+
+  // Thả / gỡ / đổi cảm xúc cho một tin nhắn DM (toggle phía server).
+  // Trả về tin nhắn đã cập nhật (kèm mảng reactions mới).
+  async toggleDmReaction(targetUserId, messageId, icon) {
+    return apiFetch(
+      `/chat/dm/${encodeURIComponent(targetUserId)}/messages/${encodeURIComponent(messageId)}/reaction`,
+      { method: "POST", body: { icon } }
+    );
+  },
 };
