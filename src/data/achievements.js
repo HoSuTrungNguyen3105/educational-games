@@ -29,3 +29,21 @@ export function evaluateAchievements(defs, stats) {
     };
   });
 }
+
+// Chọn tối đa `count` thành tựu nổi bật cho không gian hiển thị hẹp
+// (vd khối Thành tựu trong sheet hồ sơ ở trang chủ):
+//   1. Đã đạt lên trước, mốc (target) lớn hơn xếp trước — các chỉ số đều tích
+//      luỹ tăng dần nên mốc lớn thường đạt sau, coi như "đạt gần nhất".
+//   2. Chưa đạt xếp theo tỉ lệ hoàn thành giảm dần (gần xong nhất lên trước);
+//      tỉ lệ bằng nhau thì mốc nhỏ hơn lên trước.
+export function selectFeaturedAchievements(items, count = 4) {
+  if (!Array.isArray(items)) return [];
+  const ratio = (a) => (a.target > 0 ? a.progress / a.target : 0);
+  const unlocked = items
+    .filter((a) => a.unlocked)
+    .sort((a, b) => b.target - a.target);
+  const locked = items
+    .filter((a) => !a.unlocked)
+    .sort((a, b) => ratio(b) - ratio(a) || a.target - b.target);
+  return [...unlocked, ...locked].slice(0, count);
+}
