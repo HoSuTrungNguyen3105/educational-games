@@ -136,7 +136,6 @@
         <div style="display:flex; gap:12px; flex-wrap:wrap;">
             <div class="score-box">🏆 <span id="scoreDisplay">0</span></div>
             <div class="coin-box">🪙 <span id="coinDisplay">0</span></div>
-            <div class="coin-box">🏆 Kỷ lục: <span id="bestDisplay">0</span></div>
         </div>
         <div class="controls">
             <div class="key-hint">
@@ -152,7 +151,6 @@
         const ctx = canvas.getContext('2d');
         const scoreSpan = document.getElementById('scoreDisplay');
         const coinSpan = document.getElementById('coinDisplay');
-        const bestSpan = document.getElementById('bestDisplay');
 
         const W = 960, H = 540;
         const GROUND_Y = 480;
@@ -178,52 +176,6 @@
         let frame = 0;
         let speed = 4.0;
         const BASE_SPEED = 4.0;
-
-        // === KỶ LỤC (localStorage) ===
-        // Key không thuộc tiền tố edu_/gq_/pwa- nên offlineGameSync của
-        // app sẽ tự bắt mọi lần ghi và đồng bộ lên tài khoản (khi đã
-        // đăng nhập), khôi phục khi mở game ở máy khác.
-        const BEST_KEY = 'templeRunBestV1';
-        let best = loadBest();
-        let newBestRun = false;
-
-        function loadBest() {
-            const empty = { bestScore: 0, bestCoins: 0 };
-            try {
-                const rawBest = localStorage.getItem(BEST_KEY);
-                if (!rawBest) return empty;
-                const data = JSON.parse(rawBest);
-                if (!data || typeof data !== 'object') return empty;
-                const s = Math.floor(Number(data.bestScore));
-                const c = Math.floor(Number(data.bestCoins));
-                return {
-                    bestScore: Number.isFinite(s) && s > 0 ? s : 0,
-                    bestCoins: Number.isFinite(c) && c > 0 ? c : 0,
-                };
-            } catch (e) {
-                return empty; // JSON hỏng / localStorage bị chặn — bỏ qua
-            }
-        }
-
-        function updateBestDisplay() {
-            bestSpan.textContent = best.bestScore;
-        }
-
-        // Gọi đúng một lần tại thời điểm game over: bestScore/bestCoins là
-        // hai kỷ lục độc lập (điểm cao nhất / xu nhiều nhất từng đạt).
-        function saveBest() {
-            const s = Math.floor(score);
-            newBestRun = s > best.bestScore;
-            let changed = false;
-            if (newBestRun) { best.bestScore = s; changed = true; }
-            if (coins > best.bestCoins) { best.bestCoins = coins; changed = true; }
-            if (changed) {
-                try {
-                    localStorage.setItem(BEST_KEY, JSON.stringify(best));
-                } catch (e) { /* localStorage bị chặn — bỏ qua */ }
-                updateBestDisplay();
-            }
-        }
 
         // Nhân vật (ở dưới cùng màn hình)
         const player = {
@@ -251,7 +203,6 @@
         // === KHỞI TẠO ===
         function resetGame() {
             gameOver = false;
-            newBestRun = false;
             score = 0;
             coins = 0;
             frame = 0;
@@ -269,7 +220,6 @@
             player.slideTimer = 0;
             player.invincible = 0;
             updateDisplay();
-            updateBestDisplay();
             initRoadMarkers();
         }
 
@@ -479,7 +429,6 @@
                     if (px < ox + ow * scale && px + pw > ox &&
                         py < oy + oh * scale && py + ph > oy) {
                         gameOver = true;
-                        saveBest();
                         addParticles(player.currentX, player.y + player.h/2, '#e74c3c', 30);
                         return;
                     }
@@ -726,14 +675,6 @@
                 ctx.fillText(`Điểm: ${Math.floor(score)}`, W/2, 330);
                 ctx.fillStyle = '#f39c12';
                 ctx.fillText(`🪙 ${coins}`, W/2 + 200, 330);
-                if (newBestRun) {
-                    ctx.font = 'bold 24px Arial';
-                    ctx.fillStyle = '#2ecc71';
-                    ctx.fillText('🌟 KỶ LỤC MỚI!', W/2, 296);
-                }
-                ctx.font = '22px Arial';
-                ctx.fillStyle = '#ecf0f1';
-                ctx.fillText(`🏆 Kỷ lục: ${best.bestScore} · 🪙 ${best.bestCoins}`, W/2, 378);
             }
 
             // === UI ===
