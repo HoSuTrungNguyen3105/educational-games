@@ -1,6 +1,6 @@
 import { IconFile } from '../../components/ui/index.js';
 import { useState, useEffect, useMemo } from 'react';
-import { classService, assignmentService, questionService, gameService } from '../../services/api.js';
+import { classService, assignmentService, questionBankService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { CircleAlert, Clock, SquareCheck, Square, Search, ChevronDown } from 'lucide-react';
 import TemplatePicker from '../../components/exam/TemplatePicker.jsx';
@@ -23,6 +23,8 @@ const ATTEMPT_OPTIONS = [
 export default function AssignmentCreate() {
   const [classes, setClasses] = useState([]);
   const [allQuestions, setAllQuestions] = useState([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [questionsError, setQuestionsError] = useState('');
   const [selectedQuestions, setSelectedQuestions] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [rangeInput, setRangeInput] = useState('');
@@ -49,26 +51,25 @@ export default function AssignmentCreate() {
     try { setClasses((await classService.list()) || []); } catch { setClasses([]); }
   }
 
+  // Nguồn câu hỏi chuẩn là Ngân hàng câu hỏi (GET /question-banks) — cùng lời
+  // gọi trang QuestionBankManagement dùng. KHÔNG lấy câu hỏi theo game nữa:
+  // bài giao không còn gắn với game, câu hỏi game chỉ là pool riêng của từng game.
   async function loadQuestions() {
+    setQuestionsLoading(true);
+    setQuestionsError('');
     try {
-      const allGames = await gameService.list();
-      const allQ = [];
-      for (const g of allGames) {
-        try {
-          const qs = await questionService.listByGame(g._id);
-          if (Array.isArray(qs)) {
-            qs.forEach(q => { q.gameId = g._id; q.gameName = g.name; });
-            allQ.push(...qs);
-          }
-        } catch { /* skip */ }
-      }
-      setAllQuestions(allQ);
-    } catch { setAllQuestions([]); }
+      const qs = await questionBankService.list({ limit: 5000 });
+      setAllQuestions(Array.isArray(qs) ? qs.filter(q => q && q.id) : []);
+    } catch (err) {
+      setAllQuestions([]);
+      setQuestionsError(err.message || 'Không tải được câu hỏi từ Ngân hàng câu hỏi');
+    }
+    setQuestionsLoading(false);
   }
 
   const filteredQuestions = useMemo(() => {
     return allQuestions.filter(q => {
-      const text = (q.content || q.question || '').toLowerCase();
+      const text = `${q.content || q.question || ''} ${q.subject || ''} ${q.category || ''}`.toLowerCase();
       return !searchQuery || text.includes(searchQuery.toLowerCase());
     });
   }, [allQuestions, searchQuery]);
@@ -251,8 +252,22 @@ export default function AssignmentCreate() {
           </p>
 
           <div className="max-h-[400px] overflow-y-auto space-y-2">
-            {filteredQuestions.length === 0 ? (
-              <p className="text-sm text-ink/40 text-center py-4">Không có câu hỏi nào</p>
+            {questionsLoading ? (
+              <p className="text-sm text-ink/40 text-center py-4">Đang tải câu hỏi từ Ngân hàng câu hỏi...</p>
+            ) : questionsError ? (
+              <div className="text-center py-4 space-y-2">
+                <p className="text-sm text-red-500">Không tải được câu hỏi từ Ngân hàng câu hỏi: {questionsError}</p>
+                <button type="button" onClick={loadQuestions}
+                  className="px-4 py-2 bg-gold/10 text-gold font-body text-sm font-semibold rounded-xl hover:bg-gold/20 transition">
+                  Thử lại
+                </button>
+              </div>
+            ) : filteredQuestions.length === 0 ? (
+              <p className="text-sm text-ink/40 text-center py-4">
+                {allQuestions.length === 0
+                  ? 'Ngân hàng câu hỏi đang trống — hãy thêm câu hỏi ở trang Ngân hàng câu hỏi trước.'
+                  : 'Không tìm thấy câu hỏi khớp từ khóa.'}
+              </p>
             ) : (
               filteredQuestions.map((q, index) => (
                 <button key={q.id} type="button" onClick={() => toggleQuestion(q.id)}
@@ -272,6 +287,12 @@ export default function AssignmentCreate() {
                         {q.content || q.question}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
+                        {q.subject && (
+                          <span className="text-[10px] font-mono text-gold/80">{q.subject}</span>
+                        )}
+                        {q.grade && (
+                          <span className="text-[10px] font-mono text-ink/30">Lớp {q.grade}</span>
+                        )}
                         {q.points != null && (
                           <span className="text-[10px] font-mono text-ink/30">{q.points} điểm</span>
                         )}
