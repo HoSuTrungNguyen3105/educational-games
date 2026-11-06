@@ -80,6 +80,11 @@ const RULES = [
   { re: /^\/categories/, feature: "categories" },
   { re: /^\/templates/, m: "GET", perms: [PLAY, PROFILE, "templates.view"] }, // phòng thi mở bằng link
   { re: /^\/templates/, feature: "templates" },
+  // Trang HTML tĩnh (vd trang sinh nhật): ĐỌC công khai như link phòng thi —
+  // ai có link cũng mở/xem được; GHI cần cùng quyền sửa nội dung HTML như
+  // template, route còn chặn thêm requireRoles("teacher", "admin").
+  { re: /^\/pages(\/|$)/, m: "GET", perms: [] },
+  { re: /^\/pages(\/|$)/, perms: ["templates.edit"] },
 
   // ── Kết quả / lượt chơi / phiên chơi (dữ liệu của người chơi) ────────
   { re: /^\/results/, m: "GET", perms: ["reports.view", PLAY] },

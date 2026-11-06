@@ -10,6 +10,7 @@ import { checkDeadlineReminders, setNotificationIO } from "./services/notificati
 import { setGameVersionIO } from "./services/gameVersionService.js";
 import * as templateStorage from "./services/templateStorageService.js";
 import * as setupService from "./services/setupService.js";
+import * as pageService from "./services/pageService.js";
 
 const DEADLINE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
 
@@ -47,6 +48,13 @@ async function main() {
       if (mig && (mig.uploaded || mig.fromDisk || mig.failed)) {
         console.log(`[server] Migration templates: ${mig.uploaded} upload HTML, ${mig.fromDisk} chuyển từ đĩa, ${mig.missing} mất file, ${mig.failed} lỗi (giữ nguyên dữ liệu)`);
       }
+
+      // Seed trang sinh nhật (idempotent): tạo doc `pages` slug
+      // "chuc-mung-sinh-nhat" + upload public/chucmungsinhnhat.html lên
+      // storage lần đầu nếu chưa có — GET /api/pages/:slug cũng tự seed lười.
+      await pageService.ensureBirthdayPage().catch((e) => {
+        console.warn("[server] Seed trang sinh nhật thất bại:", e.message);
+      });
 
       // Run deadline reminder check immediately, then every hour
       checkDeadlineReminders().catch(e => console.error("[server] Deadline reminder error:", e.message));
