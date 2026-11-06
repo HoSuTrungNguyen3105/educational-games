@@ -444,7 +444,11 @@
                 <p style="font-size:14px; color:#5a6678; margin-top:4px;">
                     <kbd style="background:var(--bg,#fff3de); color:var(--ink,#1d2e4a); padding:2px 8px; border-radius:4px; border:2px solid var(--ink,#1d2e4a);">↑ ↓ ← →</kbd> hoặc kéo / chạm
                 </p>
-                <button class="btn btn-primary" id="startBtn">▶ BẮT ĐẦU</button>
+                <p id="saveInfo" style="display:none; font-size:14px;">💾 Đã lưu chiến dịch: <span class="highlight" id="saveInfoText"></span></p>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="startBtn">▶ BẮT ĐẦU</button>
+                    <button class="btn btn-secondary" id="newGameBtn" style="display:none;">🔄 CHƠI MỚI</button>
+                </div>
             </div>
 
             <div class="overlay" id="winOverlay">
@@ -508,6 +512,9 @@
             const goLevel = document.getElementById('goLevel');
 
             const startBtn = document.getElementById('startBtn');
+            const newGameBtn = document.getElementById('newGameBtn');
+            const saveInfo = document.getElementById('saveInfo');
+            const saveInfoText = document.getElementById('saveInfoText');
             const nextBtn = document.getElementById('nextBtn');
             const retryBtn = document.getElementById('retryBtn');
             const retryGoBtn = document.getElementById('retryGoBtn');
@@ -565,6 +572,53 @@
 
                 cellSize: 0,
             };
+
+            // ===== Lưu chiến dịch (localStorage) =====
+            // Key không thuộc tiền tố edu_/gq_/pwa- nên offlineGameSync của
+            // app sẽ tự bắt mọi lần ghi và đồng bộ lên tài khoản (khi đã
+            // đăng nhập), khôi phục khi mở game ở máy khác.
+            const SAVE_KEY = 'labyrinthSaveV1';
+            let savedCampaign = null;
+
+            function loadSave() {
+                try {
+                    const rawSave = localStorage.getItem(SAVE_KEY);
+                    if (!rawSave) return null;
+                    const data = JSON.parse(rawSave);
+                    if (!data || typeof data !== 'object') return null;
+                    const level = Math.floor(Number(data.level));
+                    const score = Math.floor(Number(data.score));
+                    if (!Number.isFinite(level) || level < 1) return null;
+                    if (!Number.isFinite(score) || score < 0) return null;
+                    if (!DIFFICULTY[data.difficulty]) return null;
+                    return { level, score, difficulty: data.difficulty };
+                } catch (e) {
+                    return null; // JSON hỏng / localStorage bị chặn — bỏ qua
+                }
+            }
+
+            function persistSave(data) {
+                savedCampaign = data;
+                try {
+                    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+                } catch (e) { /* localStorage bị chặn — chơi tiếp bình thường */ }
+            }
+
+            function clearSave() {
+                savedCampaign = null;
+                try {
+                    localStorage.removeItem(SAVE_KEY);
+                } catch (e) { /* bỏ qua */ }
+            }
+
+            // Thông số cấp suy từ (độ khó, cấp) — cùng công thức nextLevel().
+            function levelSize(cfg, level) {
+                return Math.min(cfg.baseSize + cfg.sizeStep * (level - 1), cfg.maxSize);
+            }
+
+            function levelMaxTime(cfg, level) {
+                return Math.max(cfg.minTime, cfg.maxTime - cfg.timeStep * (level - 1));
+            }
 
             // ===== Canvas sizing =====
             function resizeCanvas() {
@@ -910,6 +964,13 @@
                     const bonus = Math.max(0, state.maxTime - state.timer);
                     state.score += Math.floor(bonus / 2) + 10;
                     updateUI();
+                    // Thắng cấp → lưu chiến dịch tại CẤP TIẾP THEO (cấp chưa
+                    // qua) để lần mở sau "Chơi tiếp" vào đúng chỗ dở dang.
+                    persistSave({
+                        level: state.level + 1,
+                        score: state.score,
+                        difficulty: state.difficulty,
+                    });
                 }
             }
 
@@ -968,12 +1029,12 @@
             function nextLevel() {
                 const cfg = DIFFICULTY[state.difficulty];
                 state.level++;
-                const newSize = Math.min(cfg.baseSize + cfg.sizeStep * (state.level - 1), cfg.maxSize);
-                state.maxTime = Math.max(cfg.minTime, cfg.maxTime - cfg.timeStep * (state.level - 1));
-                startNewLevel(newSize);
+                state.maxTime = levelMaxTime(cfg, state.level);
+                startNewLevel(levelSize(cfg, state.level));
             }
 
             function resetGame() {
+                clearSave(); // bắt đầu chiến dịch mới — bỏ bản lưu cũ
                 // Game chạy trong iframe của app: iframe không tự có focus
                 // bàn phím, mà keydown chỉ tới cửa sổ đang có focus — chưa
                 // bấm chuột vào trong game thì phím mũi tên "chết" hoàn
@@ -989,6 +1050,36 @@
                 gameOverOverlay.classList.remove('show');
                 startNewLevel(cfg.baseSize);
                 updateUI();
+            }
+
+            // Chơi tiếp chiến dịch đã lưu (nút chính khi có save).
+            function continueCampaign() {
+                if (!savedCampaign) {
+                    resetGame();
+                    return;
+                }
+                try { window.focus(); } catch (e) { /* bỏ qua */ }
+                const cfg = DIFFICULTY[savedCampaign.difficulty];
+                state.difficulty = savedCampaign.difficulty;
+                state.level = savedCampaign.level;
+                state.score = savedCampaign.score;
+                state.maxTime = levelMaxTime(cfg, state.level);
+                setActiveDifficultyButton();
+                startNewLevel(levelSize(cfg, state.level));
+                updateUI();
+            }
+
+            function refreshStartOverlay() {
+                if (savedCampaign) {
+                    startBtn.textContent = `▶ CHƠI TIẾP — CẤP ${savedCampaign.level}`;
+                    saveInfoText.textContent = `Cấp ${savedCampaign.level} · ⭐ ${savedCampaign.score} điểm`;
+                    saveInfo.style.display = '';
+                    newGameBtn.style.display = '';
+                } else {
+                    startBtn.textContent = '▶ BẮT ĐẦU';
+                    saveInfo.style.display = 'none';
+                    newGameBtn.style.display = 'none';
+                }
             }
 
             // ===== Keyboard =====
@@ -1091,11 +1182,16 @@
             });
 
             // ===== Buttons =====
-            startBtn.addEventListener('click', resetGame);
+            startBtn.addEventListener('click', () => {
+                if (savedCampaign) continueCampaign();
+                else resetGame();
+            });
+            newGameBtn.addEventListener('click', resetGame);
             nextBtn.addEventListener('click', nextLevel);
             retryBtn.addEventListener('click', resetCurrentLevel);
             retryGoBtn.addEventListener('click', resetCurrentLevel);
             resetGoBtn.addEventListener('click', () => {
+                clearSave(); // về đầu = bỏ hẳn chiến dịch đang dở
                 const cfg = DIFFICULTY[state.difficulty];
                 state.level = 1;
                 state.score = 0;
@@ -1111,6 +1207,7 @@
                     if (diff === state.difficulty) return;
 
                     const applyChange = () => {
+                        clearSave(); // đổi độ khó = chiến dịch mới
                         state.difficulty = diff;
                         setActiveDifficultyButton();
                         const cfg = DIFFICULTY[diff];
@@ -1133,13 +1230,21 @@
 
             // ===== Init =====
             function init() {
+                savedCampaign = loadSave();
+                if (savedCampaign) {
+                    // Header + mê cung nền theo đúng cấp/độ khó sẽ chơi tiếp.
+                    state.difficulty = savedCampaign.difficulty;
+                    state.level = savedCampaign.level;
+                    state.score = savedCampaign.score;
+                }
                 const cfg = DIFFICULTY[state.difficulty];
-                state.maxTime = cfg.maxTime;
+                state.maxTime = levelMaxTime(cfg, state.level);
                 setActiveDifficultyButton();
-                generateMaze(cfg.baseSize, cfg.braid);
+                generateMaze(levelSize(cfg, state.level), cfg.braid);
                 state.running = false;
                 updateUI();
                 drawMaze();
+                refreshStartOverlay();
                 startOverlay.classList.add('show');
                 winOverlay.classList.remove('show');
                 gameOverOverlay.classList.remove('show');
