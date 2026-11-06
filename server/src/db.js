@@ -1,6 +1,4 @@
 import { MongoClient, ObjectId } from "mongodb";
-// eslint-disable-next-line no-unused-vars
-import { MINI_GAME_IDS } from "./config/miniGameConfig.js";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -431,71 +429,6 @@ async function _runHeavyInit(database) {
       }
     },
 
-    // ── Mini-game integration collections ──────────────────────────────────
-
-    /**
-     * mini_sessions — session chống gian lận cho từng ván solo.
-     * Tạo khi openGame(), đóng khi submit result.
-     */
-    mini_sessions: {
-      $jsonSchema: {
-        bsonType: "object",
-        required: ["sessionId", "userId", "game", "startedAt", "status"],
-        properties: {
-          sessionId: { bsonType: "string" },
-          userId: { bsonType: "string" },
-          game: { bsonType: "string" },
-          startedAt: { bsonType: "string" },
-          status: { enum: ["open", "closed"] },
-          closedAt: { bsonType: "string" },
-          suspicious: { bsonType: "bool" },
-        },
-      }
-    },
-
-    /**
-     * mini_results — kết quả từng ván mini-game đã xác thực.
-     * sessionId là unique → idempotent.
-     */
-    mini_results: {
-      $jsonSchema: {
-        bsonType: "object",
-        required: ["sessionId", "userId", "game", "score", "xpGained", "createdAt"],
-        properties: {
-          sessionId: { bsonType: "string" },
-          userId: { bsonType: "string" },
-          game: { bsonType: "string" },
-          score: { bsonType: "int" },
-          xpGained: { bsonType: "int" },
-          details: { bsonType: "object" },
-          suspicious: { bsonType: "bool" },
-          createdAt: { bsonType: "string" },
-        },
-      }
-    },
-
-    /**
-     * user_mini_progress — tiến độ tổng hợp của mỗi user.
-     */
-    user_mini_progress: {
-      $jsonSchema: {
-        bsonType: "object",
-        required: ["userId", "totalXp", "level", "gamesPlayed", "played", "best", "badges", "updatedAt"],
-        properties: {
-          userId: { bsonType: "string" },
-          totalXp: { bsonType: "int" },
-          level: { bsonType: "int" },
-          gamesPlayed: { bsonType: "int" },
-          played: { bsonType: "array" },
-          best: { bsonType: "object" },
-          badges: { bsonType: "array" },
-          displayName: { bsonType: "string" },
-          updatedAt: { bsonType: "string" },
-          createdAt: { bsonType: "string" },
-        },
-      }
-    },
-
     /**
      * userPets — thú cưng của học sinh (1 doc / user).
      * Diện mạo (species/color/outfits) được petService kiểm tra theo petCatalog
@@ -728,27 +661,6 @@ async function _runHeavyInit(database) {
     ["reminders", { userId: 1 }],
     ["reminders", { userId: 1, remindAt: 1 }],
     ["reminders", { remindAt: 1, triggered: 1 }],
-
-    // ── Mini-game collections indexes ──────────────────────────────────────
-    // mini_sessions
-    ["mini_sessions", { sessionId: 1 }, { unique: true }],
-    ["mini_sessions", { userId: 1 }],
-    ["mini_sessions", { userId: 1, status: 1 }],
-    ["mini_sessions", { startedAt: -1 }],
-
-    // mini_results — sessionId unique → idempotent submit
-    ["mini_results", { sessionId: 1 }, { unique: true }],
-    ["mini_results", { userId: 1 }],
-    ["mini_results", { game: 1 }],
-    // leaderboard: top score per game (chỉ không suspicious)
-    ["mini_results", { game: 1, suspicious: 1, score: -1 }],
-    ["mini_results", { createdAt: -1 }],
-
-    // user_mini_progress — một document duy nhất mỗi user
-    ["user_mini_progress", { userId: 1 }, { unique: true }],
-    // leaderboard XP tổng
-    ["user_mini_progress", { totalXp: -1 }],
-    ["user_mini_progress", { level: -1 }],
 
     // refresh_tokens — tra theo hash đúng những gì server đã lưu, không cần解密 JWT
     ["refresh_tokens", { tokenHash: 1 }, { unique: true }],
