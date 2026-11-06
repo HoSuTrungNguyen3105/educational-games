@@ -225,7 +225,12 @@ export default function FindFriendsScreen({ userAuth }) {
         .slice(0, MAX_RECENT);
       const recents = [];
       for (const { conv, partnerId } of dms) {
-        const partner = await userService.getById(partnerId).catch(() => null);
+        // Ưu tiên `conv.partner` server gắn sẵn trong DTO — GET /users/:id
+        // đòi quyền users.view nên học sinh gọi luôn 403, trước đây mục này
+        // lặng lẽ trống với tài khoản học sinh.
+        const partner = (conv.partner && conv.partner.id === partnerId)
+          ? conv.partner
+          : await userService.getById(partnerId).catch(() => null);
         if (partner) recents.push({ user: partner, lastMessage: conv.lastMessage || null });
       }
       setRecentChats(recents);
