@@ -970,6 +970,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       tint: g.tint,
       badge: "Offline",
       age: g.tag || "Mọi lứa tuổi",
+      // FieldRunner là game offline duy nhất tiêu/cộng XU TÀI KHOẢN thật —
+      // gắn nhãn ngay ở thẻ game để phụ huynh thấy trước khi con vào chơi.
+      note: g.id === "fieldrunner" ? "💰 Dùng xu tài khoản" : undefined,
       play: () => navigate(g.path),
     })),
     []
@@ -1627,7 +1630,7 @@ function SectionHead({ icon, title, count, sub }) {
 }
 
 /** Ô game dùng chung cho cả dải ngang lẫn lưới. */
-function GqGameCard({ icon, name, tint, badge, age, thumb, play }) {
+function GqGameCard({ icon, name, tint, badge, age, note, thumb, play }) {
   return (
     <button
       onClick={play}
@@ -1649,6 +1652,7 @@ function GqGameCard({ icon, name, tint, badge, age, thumb, play }) {
       </span>
       <span className="gq-card__name">{name}</span>
       {age && <span className="gq-card__age">{age}</span>}
+      {note && <span className="gq-card__note">{note}</span>}
     </button>
   );
 }

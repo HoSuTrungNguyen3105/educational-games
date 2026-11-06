@@ -90,7 +90,8 @@ GC.start({
   name: 'Phòng thủ cánh đồng',
   icon: '🌾',
   desc: '8 cánh đồng, 12 loại vũ khí, 25+ loại lính (có tinh anh từ đợt ' + HARD_WAVE +
-        ') và 2 kỹ năng hỗ trợ. Thắng màn này để mở cánh đồng tiếp theo.',
+        ') và 2 kỹ năng hỗ trợ. Thắng màn này để mở cánh đồng tiếp theo.' +
+        ' 💰 Lưu ý: game dùng XU TRONG TÀI KHOẢN của bé — xây tháp sẽ trừ xu, thắng trận được cộng xu vào tài khoản.',
   levels: [
     '30 mạng · tiền dư · địch yếu & chậm',
     '20 mạng · 220💰 · cân bằng',

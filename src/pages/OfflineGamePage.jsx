@@ -348,14 +348,23 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
 
   return (
     <div className="fixed inset-0 bg-paper">
-      <button
-        type="button"
-        onClick={leaveGame}
-        className="absolute top-3 left-3 z-20 rounded-full border-2 border-ink bg-paper2 px-3 py-1.5 text-sm font-extrabold text-ink shadow hover:bg-white"
-        aria-label="Về trang chủ"
-      >
-        ← Trang chủ
-      </button>
+      <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={leaveGame}
+          className="rounded-full border-2 border-ink bg-paper2 px-3 py-1.5 text-sm font-extrabold text-ink shadow hover:bg-white"
+          aria-label="Về trang chủ"
+        >
+          ← Trang chủ
+        </button>
+        {/* FieldRunner là game offline duy nhất tiêu/cộng XU TÀI KHOẢN thật —
+            báo trước ngay ở trang chơi để phụ huynh/bé không bất ngờ khi bị trừ xu. */}
+        {gameId === "fieldrunner" && (
+          <span className="rounded-full border-2 border-ink bg-[#ffe9a8] px-3 py-1.5 text-xs font-extrabold text-ink shadow">
+            💰 Dùng xu tài khoản
+          </span>
+        )}
+      </div>
       {saveReady ? (
         <iframe
           ref={iframeRef}

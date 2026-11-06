@@ -553,6 +553,14 @@ button {
   background: #ffe9a8;
 }
 
+/* Nhãn nói rõ số xu trong HUD là XU TÀI KHOẢN (không phải tiền riêng trong game) */
+.hud__coin__lb {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: #8a6d1f;
+}
+
 .hud__house {
   display: flex;
   flex-direction: column;
@@ -1000,6 +1008,8 @@ canvas#c {
     padding: 2px 9px;
   }
 
+  .hud__coin__lb { font-size: 10px; }
+
   .hud__score { font-size: 22px; }
   .hud__round { font-size: 11.5px; }
   .hud__meter { max-width: 170px; height: 8px; }
@@ -1349,6 +1359,7 @@ canvas#c {
       <div class="hud__l">
         <div class="hud__coin" id="stMoney" title="Xu trong túi tiền tài khoản của bé">
           <span class="hud__coin__ic" aria-hidden="true">💰</span>
+          <span class="hud__coin__lb">Xu tài khoản</span>
           <span id="money">200</span>
         </div>
         <button class="hud__sq" id="gear" type="button" aria-label="Cài đặt" title="Cài đặt">⚙️</button>
@@ -7643,7 +7654,8 @@ GC.start({
   name: 'Phòng thủ cánh đồng',
   icon: '🌾',
   desc: '8 cánh đồng, 12 loại vũ khí, 25+ loại lính (có tinh anh từ đợt ' + HARD_WAVE +
-        ') và 2 kỹ năng hỗ trợ. Thắng màn này để mở cánh đồng tiếp theo.',
+        ') và 2 kỹ năng hỗ trợ. Thắng màn này để mở cánh đồng tiếp theo.' +
+        ' 💰 Lưu ý: game dùng XU TRONG TÀI KHOẢN của bé — xây tháp sẽ trừ xu, thắng trận được cộng xu vào tài khoản.',
   levels: [
     '30 mạng · tiền dư · địch yếu & chậm',
     '20 mạng · 220💰 · cân bằng',
