@@ -84,6 +84,8 @@ const ROUTES = [
   { name: "school-mission", pattern: "/school-mission" },
   // Game offline thư giãn, mỗi game 1 file HTML → /offline/<gameId>
   { name: "offline-game", pattern: "/offline/:gameId" },
+  // Trang sinh nhật riêng toàn màn hình — nội dung HTML lấy từ API /pages
+  { name: "birthday", pattern: "/sinh-nhat" },
 
   // ── Home ──
   { name: "home", pattern: "/" },

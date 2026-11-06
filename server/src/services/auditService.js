@@ -52,6 +52,7 @@ export const AUDIT = {
   TEMPLATE_UPDATE: "template.update",
   TEMPLATE_DELETE: "template.delete",
   TEMPLATE_DELETE_ALL: "template.delete_all",
+  PAGE_UPDATE: "page.update",
   GAME_CREATE: "game.create",
   GAME_UPDATE: "game.update",
   GAME_DELETE: "game.delete",

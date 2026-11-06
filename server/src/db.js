@@ -545,6 +545,24 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Trang HTML tĩnh (vd trang chúc mừng sinh nhật) — một document cho mỗi slug.
+    // htmlUrl/fileName: link file HTML trên storage (cùng cơ chế templates) —
+    // Mongo không chứa HTML thô.
+    pages: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["slug", "title", "status"],
+        properties: {
+          slug: { bsonType: "string" },
+          title: { bsonType: "string" },
+          htmlUrl: { bsonType: "string" },
+          fileName: { bsonType: "string" },
+          status: { enum: ["published", "draft", "inactive"] },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -584,6 +602,7 @@ async function _runHeavyInit(database) {
     ["petCatalog", { kind: 1, id: 1 }, { unique: true }],
     ["petCatalog", { kind: 1, order: 1 }],
     ["templates", { name: 1 }],
+    ["pages", { slug: 1 }, { unique: true }],
     ["questions", { id: 1 }, { unique: true }],
     ["questions", { gameId: 1 }],
     ["questions", { gameId: 1, id: 1 }, { unique: true }],
