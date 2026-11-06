@@ -86,11 +86,25 @@ export async function deleteAssignment(id) {
 
 // ── Submissions ──
 
-/** Câu hỏi của một bài giao — luôn lấy từ `questionIds` do giáo viên chọn. */
+/**
+ * Câu hỏi của một bài giao — luôn lấy từ `questionIds` do giáo viên chọn.
+ * Bài mới chọn từ Ngân hàng câu hỏi (collection `question_banks`); bài cũ
+ * mang id câu hỏi theo game (collection `questions`). Tra `questions` trước,
+ * id nào chưa thấy thì tra tiếp `question_banks`, và trả theo đúng thứ tự
+ * trong `questionIds` (trước đây trả theo thứ tự tự nhiên của DB).
+ */
 async function loadAssignmentQuestions(assignment) {
   const ids = assignment?.questionIds || [];
   if (!ids.length) return [];
-  return getCollection("questions").find({ id: { $in: ids } }).toArray();
+  const found = new Map();
+  const gameQs = await getCollection("questions").find({ id: { $in: ids } }).toArray();
+  for (const q of gameQs) found.set(q.id, q);
+  const missing = ids.filter((id) => !found.has(id));
+  if (missing.length) {
+    const bankQs = await getCollection("question_banks").find({ id: { $in: missing } }).toArray();
+    for (const q of bankQs) found.set(q.id, q);
+  }
+  return ids.map((id) => found.get(id)).filter(Boolean);
 }
 
 export async function startSubmission({ assignmentId, studentId }) {

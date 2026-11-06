@@ -1,6 +1,7 @@
 import { IconBack, IconCheckCircle, IconUser } from '../../components/ui/index.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { assignmentService, questionService, gamePlayService } from '../../services/api.js';
+import { assignmentService, gamePlayService } from '../../services/api.js';
+import { loadMergedQuestionPool } from '../../lib/questionPool.js';
 import { useUserAuthStore } from '../../stores/userAuth.store.js';
 import { navigate } from '../../lib/router.js';
 import ExamPlayer from '../../games/examination/ExamPlayer.jsx';
@@ -458,8 +459,11 @@ export default function AssignmentTake({ code: codeOrId }) {
       const qIds = assignment.questionIds || [];
       if (qIds.length) {
         try {
-          const allQ = await questionService.listAll();
-          if (Array.isArray(allQ)) setQuestions(allQ.filter(q => q && q.id && qIds.includes(q.id)));
+          // Bài mới chọn câu hỏi từ Ngân hàng câu hỏi, bài cũ từ pool game —
+          // helper gộp cả hai nguồn (và lược đáp án đúng của câu bank, việc
+          // chấm điểm do server làm).
+          const allQ = await loadMergedQuestionPool({ ids: qIds, stripBankAnswers: true });
+          setQuestions(allQ.filter(q => q && q.id && qIds.includes(q.id)));
         } catch { /* ignore */ }
       }
 

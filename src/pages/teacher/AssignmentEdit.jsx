@@ -1,6 +1,7 @@
 import { IconBack, IconFile } from '../../components/ui/index.js';
 import { useState, useEffect, useMemo } from 'react';
-import { classService, assignmentService, questionService } from '../../services/api.js';
+import { classService, assignmentService } from '../../services/api.js';
+import { loadMergedQuestionPool } from '../../lib/questionPool.js';
 import { navigate } from '../../lib/router.js';
 import { CircleAlert, Clock, SquareCheck, Square, Search} from 'lucide-react';
 import TemplatePicker from '../../components/exam/TemplatePicker.jsx';
@@ -50,7 +51,9 @@ export default function AssignmentEdit({ assignmentId }) {
       const [a, cls, qs] = await Promise.all([
         assignmentService.get(assignmentId),
         classService.list().catch(() => []),
-        questionService.listAll().catch(() => []),
+        // Pool gộp: Ngân hàng câu hỏi (nguồn chuẩn khi tạo bài) + câu hỏi game
+        // của các bài cũ — thiếu phía nào thì câu đã chọn của phía đó không hiện.
+        loadMergedQuestionPool().catch(() => []),
       ]);
       if (!a) { setError('Không tìm thấy bài giao'); setLoading(false); return; }
 
