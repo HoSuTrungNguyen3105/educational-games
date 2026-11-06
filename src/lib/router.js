@@ -16,6 +16,8 @@ const ROUTES = [
   { name: "admin-roles-matrix", pattern: "/dashboard/roles-matrix" },
   { name: "admin-permissions", pattern: "/dashboard/permissions" },
   { name: "admin-templates", pattern: "/dashboard/templates" },
+  // Quản trị nội dung trang sinh nhật (#/sinh-nhat): tải file HTML lên qua API /pages
+  { name: "admin-birthday", pattern: "/dashboard/birthday" },
   { name: "admin-game-config", pattern: "/dashboard/game-config" },
   // Cấu hình JSON riêng của game offline Vườn Thủ Hộ (plantvsanimal.html)
   { name: "admin-vth-config", pattern: "/dashboard/vth-config" },
