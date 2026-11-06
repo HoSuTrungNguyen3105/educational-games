@@ -5,6 +5,7 @@ import { getByUser as getProgressByUser } from "./gameProgressService.js";
 import { getUserAllTaskStatus, STUDENT_TASK_SCOPES } from "./taskEngineService.js";
 import { getClassById, getTeacherClasses, getClassStudents } from "./classService.js";
 import * as friendService from "./friendService.js";
+import * as blockService from "./blockService.js";
 
 // ── Phụ huynh ↔ Học sinh ──────────────────────────────────────────────────
 // Cơ chế liên kết bằng MÃ 6 SỐ (giống mã lớp / mã bài tập mà hệ thống đã dùng):
@@ -224,6 +225,24 @@ export async function approveChildFriendRequest(parentId, studentId, requestId) 
 export async function rejectChildFriendRequest(parentId, studentId, requestId) {
   await requireLinkedStudent(parentId, studentId);
   return friendService.parentRejectRequest(studentId, requestId);
+}
+
+// ── An toàn: phụ huynh xem người con đã chặn (CHỈ ĐỌC) ───────────────────
+// Dữ liệu `userBlocks` có từ gói An toàn cho bé (blockService) nhưng trước
+// đây chỉ học sinh tự xem được danh sách của mình. Phụ huynh ĐÃ LIÊN KẾT
+// được xem con mình đã chặn ai (cùng điều kiện cứng requireLinkedStudent
+// như mọi endpoint báo cáo — chưa liên kết → 403). Chỉ CHIẾU TỐI THIỂU
+// id/username/name của người bị chặn (như usersDirectory) + thời điểm
+// chặn; phụ huynh không bỏ chặn hộ được — bỏ chặn là thao tác của con.
+
+/** Danh sách người mà CON đã chặn: [{ user: { id, username, name }, since }] */
+export async function listChildBlockedUsers(parentId, studentId) {
+  await requireLinkedStudent(parentId, studentId);
+  const blocked = await blockService.listBlocked(studentId);
+  return blocked.map((b) => ({
+    user: { id: b.user.id, username: b.user.username, name: b.user.name },
+    since: b.since,
+  }));
 }
 
 // ── Tóm tắt hiển thị ──────────────────────────────────────────────────────

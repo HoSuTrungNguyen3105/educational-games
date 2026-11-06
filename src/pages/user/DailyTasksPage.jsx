@@ -3,17 +3,19 @@ import { ClipboardList, Coins } from "lucide-react";
 import { taskService } from "../../services/taskService.js";
 import { walletService } from "../../services/api.js";
 import { getLevelProgress, getLevelEmoji, getLevelTitle } from "../../lib/utils.js";
-import { PrimaryButton, Loader } from "../../components/ui";
+import { PrimaryButton, Loader, ErrorState } from "../../components/ui";
 import { TaskList } from "../../components/tasks/index.js";
 
 export default function DailyTasksPage({ userAuth, onBack }) {
   const [tasks, setTasks] = useState(null);
   const [coins, setCoins] = useState(0);
+  const [error, setError] = useState(null);
   const [claiming, setClaiming] = useState(false);
   const [toast, setToast] = useState(null);
   const [scope, setScope] = useState("DAILY");
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       const [taskData, coinData] = await Promise.all([
         taskService.getTasks(scope),
@@ -21,8 +23,11 @@ export default function DailyTasksPage({ userAuth, onBack }) {
       ]);
       setTasks(taskData?.tasks || []);
       setCoins(coinData?.coins || 0);
-    } catch {
-      setTasks([]);
+    } catch (e) {
+      // Lỗi tải KHÔNG được giả vờ là "không có nhiệm vụ" — hiện trạng thái
+      // lỗi có nút Thử lại, đúng mẫu StorePage/GardenPage. tasks giữ nguyên
+      // (null nếu chưa tải được lần nào) để render phân biệt lỗi với rỗng.
+      setError(e?.message || "Không tải được nhiệm vụ");
     }
   }, [scope]);
 
@@ -143,7 +148,9 @@ export default function DailyTasksPage({ userAuth, onBack }) {
       </div>
 
       {/* Danh sách nhiệm vụ */}
-      {tasks === null ? (
+      {error ? (
+        <ErrorState title="Không tải được nhiệm vụ" subtitle={error} onRetry={load} />
+      ) : tasks === null ? (
         <Loader label="Đang tải nhiệm vụ..." />
       ) : (
         <TaskList tasks={tasks} onClaim={handleClaim} claiming={claiming} />

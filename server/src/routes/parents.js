@@ -235,6 +235,17 @@ router.get("/children/:studentId/report", authenticate, requireRoles("parent"), 
   }
 });
 
+// GET /api/parents/children/:studentId/blocked-users — danh sách người
+// CON ĐÃ LIÊN KẾT đã chặn (chỉ đọc; service kiểm tra liên kết → 403 nếu
+// chưa liên kết). Phụ huynh chỉ xem, không bỏ chặn hộ.
+router.get("/children/:studentId/blocked-users", authenticate, requireRoles("parent"), async (req, res) => {
+  try {
+    sendSuccess(res, await parentService.listChildBlockedUsers(req.user.sub, req.params.studentId));
+  } catch (e) {
+    return fail(res, e);
+  }
+});
+
 // ── Duyệt kết bạn (đợt An toàn cho bé 2) ─────────────────────────────────
 // Công tắc theo TỪNG CON, phụ huynh tự bật/tắt, mặc định TẮT. Mọi endpoint
 // đều qua parentService.requireLinkedStudent (chưa liên kết → 403).
