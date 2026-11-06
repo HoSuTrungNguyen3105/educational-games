@@ -22,25 +22,31 @@ import TOKENS_CSS from "../games/offline/lib/tokens.css?raw";
  *   Vite KHÔNG xử lý query string nằm trong glob, nên pattern đó khớp 0 file
  *   và mọi game sẽ biến mất trong bundle mà build vẫn báo thành công.
  *
+ * KHÔNG dùng `eager: true`: mỗi game thành một chunk riêng, chỉ tải + parse
+ * khi mở đúng game đó. Trước đây cả 43 game bị nhồi vào một chunk ~2,4MB —
+ * mở game nào cũng phải tải/parse tất cả, và sửa 1 game làm mất cache cả cụm.
+ * Workbox vẫn precache toàn bộ chunk game (vite.config.js) nên chính sách
+ * chơi offline không đổi: game chưa từng mở vẫn chơi được khi mất mạng.
+ *
  * Bổ sung: `npm run games:sync` sẽ bổ sung metadata (tên/emoji/màu) vào manifest
  * để game mới hiện đẹp trên trang chủ.
  */
-const OFFLINE_HTML = import.meta.glob("../games/offline/*.html", {
+const OFFLINE_HTML_LOADERS = import.meta.glob("../games/offline/*.html", {
   query: "?raw",
   import: "default",
-  eager: true,
 });
 
 /**
- * id = tên file bỏ đuôi .html, ví dụ "night-strike.html" → "night-strike".
+ * id = tên file bỏ đuôi .html, ví dụ "night-strike.html" → "night-strike",
+ * giá trị là hàm tải chunk của game đó: `() => Promise<string>`.
  * Khoá được chuẩn hoá về chữ thường: tên file lỡ viết hoa (vd "Labyrinth.html")
  * vẫn tra được bằng id thường trong manifest — tránh lỗi "Không tìm thấy game"
  * trên hệ thống file phân biệt hoa/thường (Linux).
  */
-const HTML_BY_ID = Object.fromEntries(
-  Object.entries(OFFLINE_HTML).map(([path, mod]) => [
+const HTML_LOADERS_BY_ID = Object.fromEntries(
+  Object.entries(OFFLINE_HTML_LOADERS).map(([path, load]) => [
     path.split("/").pop().replace(/\.html$/, "").toLowerCase(),
-    typeof mod === "string" ? mod : mod.default,
+    load,
   ])
 );
 
@@ -112,9 +118,38 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
     if (isSchoolMissionRedirect) navigate("/school-mission");
   }, [isSchoolMissionRedirect]);
 
-  const html = isSchoolMissionRedirect
-    ? null
-    : HTML_BY_ID[String(gameId || "").toLowerCase()];
+  const loadHtml = isSchoolMissionRedirect
+    ? undefined
+    : HTML_LOADERS_BY_ID[String(gameId || "").toLowerCase()];
+  // HTML của game tải bất đồng bộ. State ghi kèm id của game mà nó thuộc về:
+  // khi đổi game, HTML của game trước không bao giờ bị render nhầm trong lúc
+  // chờ chunk của game mới, và trạng thái lỗi cũng không rò sang game khác.
+  const [htmlState, setHtmlState] = useState({ id: null, html: null, failed: false });
+
+  useEffect(() => {
+    if (!loadHtml) return undefined;
+    let cancelled = false;
+    loadHtml()
+      .then((mod) => {
+        if (cancelled) return;
+        const text = typeof mod === "string" ? mod : mod?.default;
+        setHtmlState(
+          typeof text === "string"
+            ? { id: gameId, html: text, failed: false }
+            : { id: gameId, html: null, failed: true }
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setHtmlState({ id: gameId, html: null, failed: true });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gameId, loadHtml]);
+
+  const htmlReady = htmlState.id === gameId && htmlState.html != null;
+  const currentHtml = htmlReady ? htmlState.html : null;
+  const htmlFailed = htmlState.id === gameId && htmlState.failed;
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   // undefined = chưa đọc xong IndexedDB; số = version đang cache cho game này
   const [cachedVersion, setCachedVersion] = useState(undefined);
@@ -169,26 +204,31 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
   // Manifest giữ tên/emoji/màu đẹp. Nếu game mới chưa có trong manifest thì
   // tự dựng metadata từ <title> trong file để vẫn chơi được ngay.
   const meta = useMemo(() => {
-    if (!html) return null;
-    return findOfflineGame(gameId) || makeFallbackMeta(gameId, html);
-  }, [gameId, html]);
+    if (!currentHtml) return null;
+    return findOfflineGame(gameId) || makeFallbackMeta(gameId, currentHtml);
+  }, [gameId, currentHtml]);
 
   // Sync save với API phải XONG trước khi iframe chạy — game đọc localStorage
   // ngay lúc boot, khôi phục trễ thì tiến độ server ghi đè mất lượt chơi local.
+  // Sync chạy theo gameId, KHÔNG chờ HTML tải xong — hai việc độc lập nhau,
+  // iframe chỉ render khi cả hai cùng xong (cổng chờ ở phần render). Tên game
+  // chỉ là nhãn của phiên sync nên lấy thẳng từ manifest (ổn định theo gameId)
+  // để effect không chạy lại khi HTML về.
   useEffect(() => {
-    if (!html) return undefined;
+    if (!loadHtml) return undefined;
     let cancelled = false;
-    startGameSync(gameId, meta?.name).finally(() => {
+    startGameSync(gameId, findOfflineGame(gameId)?.name).finally(() => {
       if (!cancelled) setSyncedFor(gameId);
     });
     return () => {
       cancelled = true;
       endGameSync();
     };
-  }, [gameId, html, meta?.name]);
+  }, [gameId, loadHtml]);
 
-  // Chỉ render iframe khi save của game này đã được sync xong trước mắt.
+  // Chỉ render iframe khi save của game này đã sync xong VÀ HTML đã tải về.
   const saveReady = syncedFor === gameId;
+  const gameReady = saveReady && htmlReady;
 
   // So sánh version server với bản đang cache (không phải meta tĩnh) để
   // banner "Có phiên bản mới" chỉ hiện đúng khi thật sự có bản chưa tải.
@@ -200,7 +240,7 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
   // GĐ3: làm ấm cache IndexedDB — mở game khi online thì tải bản mới nhất về
   // lưu sẵn; mất mạng thì chơi tiếp bằng bản đã lưu và báo cho người chơi biết.
   useEffect(() => {
-    if (!html) return;
+    if (!loadHtml) return;
     let cancelled = false;
 
     const pushDataToFrame = () => {
@@ -247,7 +287,7 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
       cancelled = true;
       pushDataRef.current = null;
     };
-  }, [gameId, html]);
+  }, [gameId, loadHtml]);
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -322,7 +362,7 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
     );
   }
 
-  if (!html) {
+  if (!loadHtml) {
     return (
       <div className="fixed inset-0 grid place-items-center bg-paper">
         <div className="text-center max-w-md px-5">
@@ -341,6 +381,35 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
           >
             ← Về trang chủ
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (htmlFailed) {
+    return (
+      <div className="fixed inset-0 grid place-items-center bg-paper">
+        <div className="text-center max-w-md px-5">
+          <div className="flex justify-center text-ink/25"><CircleHelp className="w-12 h-12" /></div>
+          <p className="mt-3 font-display text-lg font-bold text-ink">Không tải được game</p>
+          <p className="mt-1 text-sm text-ink/60">id: {String(gameId || "(rỗng)")}</p>
+          <p className="mt-3 text-xs text-ink/45">
+            File game chưa tải về được (mạng chập chờn hoặc bản mới đang cập nhật). Hãy thử tải lại trang.
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-full border-2 border-ink bg-paper2 px-4 py-2 text-sm font-extrabold text-ink shadow-sm hover:bg-white"
+            >
+              Tải lại trang
+            </button>
+            <button
+              onClick={() => navigate("/")}
+              className="rounded-full border-2 border-ink/10 bg-paper2 px-4 py-2 text-sm font-extrabold text-ink/70 shadow-sm hover:bg-ink/5"
+            >
+              ← Về trang chủ
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -365,18 +434,18 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
           </span>
         )}
       </div>
-      {saveReady ? (
+      {gameReady ? (
         <iframe
           ref={iframeRef}
           title={meta.name}
-          srcDoc={injectGameUi(html)}
+          srcDoc={injectGameUi(currentHtml)}
           onLoad={() => { pushDataRef.current?.(); postWallet(readWallet()); }}
           sandbox="allow-scripts allow-same-origin"
           className="h-full w-full border-0"
         />
       ) : (
         <div className="fixed inset-0 grid place-items-center bg-paper">
-          <Loader label="Đang tải dữ liệu đã lưu..." />
+          <Loader label={saveReady ? "Đang tải game..." : "Đang tải dữ liệu đã lưu..."} />
         </div>
       )}
 
