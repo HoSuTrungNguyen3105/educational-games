@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { chatApi } from "../../services/chatApi.js";
+import EmojiPicker from "../../components/chat/EmojiPicker.jsx";
+import { emojiIconById } from "../../components/chat/emojiIcons.js";
 import { friendApi } from "../../services/friendApi.js";
 import { supportService } from "../../services/api.js";
 import { IconBack, IconSmile, Loader, Modal, ConfirmModal } from '../../components/ui';
@@ -23,6 +25,29 @@ function formatMessageTime(iso) {
   return d.toLocaleTimeString("vi", { hour: "2-digit", minute: "2-digit" });
 }
 
+// Toggle reaction của một người trên một tin — bản phía client, khớp hệt
+// ngữ nghĩa toggleReaction ở server: chưa có → thêm, trùng icon → gỡ,
+// khác icon → thay thế (tối đa 1 reaction / người / tin).
+function toggleReactionLocal(reactions, userId, icon) {
+  const next = (Array.isArray(reactions) ? reactions : []).map((r) => ({ userId: r.userId, icon: r.icon }));
+  const idx = next.findIndex((r) => r.userId === userId);
+  if (idx >= 0 && next[idx].icon === icon) next.splice(idx, 1);
+  else if (idx >= 0) next[idx] = { userId, icon };
+  else next.push({ userId, icon });
+  return next;
+}
+
+// Gom reactions theo icon để hiển thị chip "icon × số lượng".
+function groupReactions(reactions) {
+  const groups = [];
+  for (const r of Array.isArray(reactions) ? reactions : []) {
+    const g = groups.find((x) => x.icon === r.icon);
+    if (g) g.count += 1;
+    else groups.push({ icon: r.icon, count: 1 });
+  }
+  return groups;
+}
+
 // Same deterministic id as server: dm:[idA, idB] sorted
 function getDmId(a, b) {
   if (!a || !b) return null;
@@ -35,6 +60,10 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  // ── Cảm xúc (reaction) + sticker ──
+  const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
+  const [reactionFor, setReactionFor] = useState(null); // id tin đang mở bảng chọn cảm xúc
+  const pressTimerRef = useRef(null);
   // ── An toàn: chặn / báo cáo ──
   const [menuOpen, setMenuOpen] = useState(false);
   const [blockedByMe, setBlockedByMe] = useState(false);
@@ -156,16 +185,116 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
     return () => socket.off(SOCKET_EVENTS.CHAT_MESSAGE, onMessage);
   }, [dmId]);
 
+  // Realtime: cập nhật cảm xúc của một tin nhắn (từ phía còn lại thả/gỡ —
+  // và khớp lại thao tác của chính mình vì server bắn cho cả hai phòng).
+  useEffect(() => {
+    if (!dmId) return;
+    const onReaction = (payload) => {
+      if (!payload || payload.conversationId !== dmId || !payload.messageId) return;
+      setMessages((prev) => prev.map((m) =>
+        m.id === payload.messageId ? { ...m, reactions: payload.reactions || [] } : m
+      ));
+    };
+    socket.on(SOCKET_EVENTS.CHAT_REACTION, onReaction);
+    return () => socket.off(SOCKET_EVENTS.CHAT_REACTION, onReaction);
+  }, [dmId]);
+
   useEffect(() => {
     if (!loading && messages.length > 0) {
       bottomRef.current?.scrollIntoView({ behavior: "instant" });
     }
   }, [loading, messages.length]);
 
+  // Thay tin lạc quan bằng tin đã lưu (socket có thể đã giao nó trước đó).
+  const settleSentMessage = (clientMessageId, saved) => {
+    setMessages((prev) => {
+      const withoutOptimistic = prev.filter((m) =>
+        m.id !== clientMessageId && m.clientMessageId !== clientMessageId
+      );
+      if (withoutOptimistic.some((m) => m.id === saved.id)) return withoutOptimistic;
+      return [...withoutOptimistic, { ...saved, status: "sent" }];
+    });
+  };
+
+  // Thả / gỡ / đổi cảm xúc cho một tin: cập nhật lạc quan ngay, khớp lại
+  // bằng phản hồi server (sự kiện socket "chat:reaction" cũng khớp cùng
+  // giá trị); nếu lỗi thì hoàn tác về mảng reactions trước thao tác.
+  const handleReact = async (msg, icon) => {
+    setReactionFor(null);
+    if (!user || msg.status === "sending" || msg.status === "failed") return;
+    const prevReactions = msg.reactions || [];
+    setMessages((prev) => prev.map((m) =>
+      m.id === msg.id ? { ...m, reactions: toggleReactionLocal(prevReactions, user.id, icon) } : m
+    ));
+    try {
+      const updated = await chatApi.toggleDmReaction(targetUser.id, msg.id, icon);
+      if (updated && Array.isArray(updated.reactions)) {
+        setMessages((prev) => prev.map((m) =>
+          m.id === msg.id ? { ...m, reactions: updated.reactions } : m
+        ));
+      }
+    } catch (e) {
+      console.error("[dm] reaction error:", e);
+      setMessages((prev) => prev.map((m) =>
+        m.id === msg.id ? { ...m, reactions: prevReactions } : m
+      ));
+    }
+  };
+
+  // Chạm-giữ (cảm ứng) trên bong bóng tin cũng mở bảng chọn cảm xúc —
+  // di chuyển tay (cuộn trang) thì huỷ để không mở nhầm.
+  const cancelPress = () => {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+  };
+  const startPress = (messageId) => {
+    cancelPress();
+    pressTimerRef.current = setTimeout(() => setReactionFor(messageId), 450);
+  };
+
+  // Gửi sticker: chọn một biểu tượng trong bảng là GỬI NGAY một tin dạng
+  // sticker (hiện lớn, không kèm chữ) qua cùng luồng gửi tin DM.
+  const handleSendSticker = async (icon) => {
+    setStickerPickerOpen(false);
+    if (!user || sending) return;
+    const clientMessageId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const optimistic = {
+      id: clientMessageId,
+      conversationId: dmId || getDmId(user.id, targetUser.id),
+      senderId: user.id,
+      playerName: user.name,
+      type: "text",
+      kind: "sticker",
+      sticker: icon,
+      reactions: [],
+      content: "Đã gửi một biểu tượng cảm xúc",
+      createdAt: new Date().toISOString(),
+      status: "sending",
+      clientMessageId,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    setSending(true);
+    try {
+      const saved = await chatApi.sendDmSticker(targetUser.id, { sticker: icon, clientMessageId });
+      settleSentMessage(clientMessageId, saved);
+    } catch (e) {
+      console.error("[dm] send sticker error:", e);
+      setMessages((prev) => prev.map((m) =>
+        m.id === clientMessageId ? { ...m, status: "failed" } : m
+      ));
+    } finally {
+      setSending(false);
+      inputRef.current?.focus();
+    }
+  };
+
   const handleSend = async (e) => {
     e?.preventDefault();
     const trimmed = text.trim();
     if (!trimmed || sending || !user) return;
+    setStickerPickerOpen(false);
 
     const clientMessageId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const optimistic = {
@@ -189,14 +318,7 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
         content: trimmed,
         clientMessageId,
       });
-      setMessages((prev) => {
-        const withoutOptimistic = prev.filter((m) =>
-          m.id !== clientMessageId && m.clientMessageId !== clientMessageId
-        );
-        // Socket already delivered the saved message
-        if (withoutOptimistic.some((m) => m.id === saved.id)) return withoutOptimistic;
-        return [...withoutOptimistic, { ...saved, status: "sent" }];
-      });
+      settleSentMessage(clientMessageId, saved);
     } catch (e) {
       console.error("[dm] send error:", e);
       setMessages((prev) => prev.map((m) =>
@@ -307,21 +429,87 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
             const next = groupedMessages[i + 1];
             const showSender = !prev || prev.type === "date" || prev.senderId !== msg.senderId;
             const isLastInGroup = !next || next.type === "date" || next.senderId !== msg.senderId;
+            const isSticker = msg.kind === "sticker";
+            const stickerIcon = isSticker ? emojiIconById(msg.sticker) : null;
+            const reactionGroups = groupReactions(msg.reactions);
+            // Chạm-giữ trên nội dung tin để mở bảng cảm xúc (cảm ứng);
+            // trên desktop có thêm nút mặt cười hiện khi di chuột tới.
+            const pressHandlers = {
+              onPointerDown: () => startPress(msg.id),
+              onPointerUp: cancelPress,
+              onPointerLeave: cancelPress,
+              onPointerMove: cancelPress,
+              onContextMenu: (e) => e.preventDefault(),
+            };
 
             return (
-              <div key={msg.id || i} className={`flex flex-col ${isOwn ? "items-end" : "items-start"} ${showSender ? "mt-2" : "mt-0.5"}`}>
+              <div key={msg.id || i} className={`group flex flex-col ${isOwn ? "items-end" : "items-start"} ${showSender ? "mt-2" : "mt-0.5"}`}>
                 {showSender && !isOwn && (
                   <span className="text-[10px] font-body mb-0.5 px-1 text-ink/40">
                     {msg.playerName || "Ẩn danh"}
                   </span>
                 )}
-                <div className={`max-w-[75%] px-3.5 py-2 text-sm font-body break-words ${
-                  isOwn
-                    ? `bg-ink text-paper ${isLastInGroup ? "rounded-2xl rounded-br-md" : "rounded-2xl"}`
-                    : `bg-white border border-ink/8 text-ink ${isLastInGroup ? "rounded-2xl rounded-bl-md" : "rounded-2xl"}`
-                } ${msg.status === "sending" ? "opacity-50" : ""} ${msg.status === "failed" ? "border-red-300 opacity-70" : ""}`}>
-                  {msg.content}
+                <div className={`flex items-center gap-1 max-w-[85%] ${isOwn ? "flex-row-reverse" : ""}`}>
+                  {isSticker && stickerIcon ? (
+                    <img
+                      src={stickerIcon.src}
+                      alt={stickerIcon.label}
+                      title={stickerIcon.label}
+                      draggable={false}
+                      style={{ WebkitTouchCallout: "none" }}
+                      className={`w-20 h-20 object-contain select-none ${msg.status === "sending" ? "opacity-50" : ""} ${msg.status === "failed" ? "opacity-70" : ""}`}
+                      {...pressHandlers}
+                    />
+                  ) : (
+                    <div
+                      style={{ WebkitTouchCallout: "none" }}
+                      className={`min-w-0 px-3.5 py-2 text-sm font-body break-words ${
+                        isOwn
+                          ? `bg-ink text-paper ${isLastInGroup ? "rounded-2xl rounded-br-md" : "rounded-2xl"}`
+                          : `bg-white border border-ink/8 text-ink ${isLastInGroup ? "rounded-2xl rounded-bl-md" : "rounded-2xl"}`
+                      } ${msg.status === "sending" ? "opacity-50" : ""} ${msg.status === "failed" ? "border-red-300 opacity-70" : ""}`}
+                      {...pressHandlers}
+                    >
+                      {msg.content}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Thả cảm xúc"
+                    title="Thả cảm xúc"
+                    onClick={() => setReactionFor(reactionFor === msg.id ? null : msg.id)}
+                    className="shrink-0 w-6 h-6 rounded-full bg-white border border-ink/10 text-ink/40 hover:text-ink flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition"
+                  >
+                    <IconSmile className="w-3.5 h-3.5" />
+                  </button>
                 </div>
+                {reactionFor === msg.id && (
+                  <div className="mt-1 bg-white border border-ink/10 shadow-lg rounded-full px-2 py-1 z-10">
+                    <EmojiPicker onSelect={(icon) => handleReact(msg, icon)} />
+                  </div>
+                )}
+                {reactionGroups.length > 0 && (
+                  <div className={`flex flex-wrap gap-1 mt-1 px-0.5 ${isOwn ? "justify-end" : ""}`}>
+                    {reactionGroups.map((g) => {
+                      const e = emojiIconById(g.icon);
+                      if (!e) return null;
+                      const mine = (msg.reactions || []).some((r) => r.userId === user?.id && r.icon === g.icon);
+                      return (
+                        <button
+                          key={g.icon}
+                          type="button"
+                          onClick={() => handleReact(msg, g.icon)}
+                          aria-label={`${e.label}: ${g.count} người`}
+                          title={e.label}
+                          className={`flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded-full border text-[10px] font-body transition ${mine ? "bg-gold/20 border-gold/60 text-ink" : "bg-white border-ink/10 text-ink/60"}`}
+                        >
+                          <img src={e.src} alt="" className="w-3.5 h-3.5" draggable={false} />
+                          {g.count}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
                 {isLastInGroup && (
                   <span className={`text-[9px] font-mono mt-0.5 px-1 ${isOwn ? "text-ink/25" : "text-ink/25"}`}>
                     {formatMessageTime(msg.createdAt)}
@@ -344,24 +532,40 @@ export default function DMChatScreen({ targetUser, userAuth, onBack }) {
           </p>
         </div>
       ) : (
-      <form onSubmit={handleSend}
-        className="flex items-end gap-2 p-2 bg-paper border-t border-ink/8 shrink-0 pb-[max(env(safe-area-inset-bottom),8px)]">
-        <input
-          ref={inputRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Nhập tin nhắn..."
-          maxLength={500}
-          className="flex-1 bg-ink/5 rounded-2xl px-4 py-2.5 text-sm font-body text-ink placeholder:text-ink/30 outline-none focus:ring-2 focus:ring-gold/30 transition min-h-[40px]"
-        />
-        <button
-          type="submit"
-          disabled={!text.trim() || sending}
-          className="w-10 h-10 rounded-full bg-gold text-white flex items-center justify-center hover:bg-gold/80 transition disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-        >
-          <Send className="w-4 h-4" />
-        </button>
-      </form>
+      <>
+        {stickerPickerOpen && (
+          <div className="bg-paper border-t border-ink/8 px-3 py-2 shrink-0">
+            <EmojiPicker onSelect={handleSendSticker} />
+          </div>
+        )}
+        <form onSubmit={handleSend}
+          className={`flex items-end gap-2 p-2 bg-paper shrink-0 pb-[max(env(safe-area-inset-bottom),8px)] ${stickerPickerOpen ? "" : "border-t border-ink/8"}`}>
+          <button
+            type="button"
+            aria-label="Gửi biểu tượng cảm xúc"
+            title="Gửi biểu tượng cảm xúc"
+            onClick={() => setStickerPickerOpen((o) => !o)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition shrink-0 ${stickerPickerOpen ? "bg-gold/20 text-ink" : "text-ink/50 hover:bg-ink/5"}`}
+          >
+            <IconSmile className="w-5 h-5" />
+          </button>
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Nhập tin nhắn..."
+            maxLength={500}
+            className="flex-1 bg-ink/5 rounded-2xl px-4 py-2.5 text-sm font-body text-ink placeholder:text-ink/30 outline-none focus:ring-2 focus:ring-gold/30 transition min-h-[40px]"
+          />
+          <button
+            type="submit"
+            disabled={!text.trim() || sending}
+            className="w-10 h-10 rounded-full bg-gold text-white flex items-center justify-center hover:bg-gold/80 transition disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </form>
+      </>
       )}
 
       <ConfirmModal {...confirmProps} />

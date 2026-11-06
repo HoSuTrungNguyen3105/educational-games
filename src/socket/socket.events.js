@@ -26,6 +26,9 @@ export const SOCKET_EVENTS = {
   PLAYER_LEFT: "player:left",
 
   CHAT_MESSAGE: "chat:message",
+  // Cập nhật cảm xúc (reaction) của một tin nhắn DM — payload
+  // { conversationId, messageId, reactions, userId, icon }.
+  CHAT_REACTION: "chat:reaction",
   CHAT_TYPING: "chat:typing",
   CHAT_READ: "chat:read",
 
