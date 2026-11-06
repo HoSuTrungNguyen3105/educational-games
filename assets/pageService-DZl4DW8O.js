@@ -1,0 +1,1 @@
+import{r as e}from"./api-Ds8_HBCA.js";var t={async getPage(t){return e(`/pages/${encodeURIComponent(t)}`)},async updatePage(t,n){return e(`/pages/${encodeURIComponent(t)}`,{method:`PUT`,body:n})}};export{t};

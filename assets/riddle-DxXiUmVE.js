@@ -1,0 +1,2358 @@
+var e=`<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Góc Giải Trí</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ============================================================================
+   tokens.css — NGUỒN SỰ THẬT DUY NHẤT về màu + font của game offline.
+   Được nạp 2 nơi:
+     · scripts/build-offline-games.mjs chèn vào <style> của lib/shell.html
+       → 17 game sinh tự động dùng đúng biến này.
+     · OfflineGamePage.jsx đọc bằng ?raw rồi tiêm vào <head> của MỌI game
+       (kể cả game viết tay) → chạy trong app là cùng một bộ màu/font.
+   Vì vậy file này CHỈ được chứa: biến :root, class .gq-*, và #homeBackBtn.
+   Không viết selector trần (body, h1, .btn…) — tiêm vào game viết tay sẽ đè
+   lên nền/tông màu riêng của chúng và làm hỏng theme.
+   ========================================================================== */
+
+:root {
+  /* Bảng màu lấy từ ứng dụng (index.html + src/index.css) để game không lệch
+     khỏi phần còn lại của trang khi nằm trong khung iframe. */
+  --ink: #1d2e4a;
+  --ink2: #16233a;
+  --paper: #fff6e7;
+  --card: #fffbf2;
+  --bg: #fff3de;
+  --stage: #fff6e7;
+  --line: #e6dcc4;
+  --sun: #f4b942;
+  --gold: #f4b942;
+  --tomato: #e4572e;
+  --ticket: #e4572e;
+  --mint: #1b998b;
+  --teal: #1b998b;
+  --accent: #1b998b;
+  --onaccent: #ffffff;
+  --sky: #4b9dff;
+  --lilac: #8b5cf6;
+  --purple: #8b5cf6;
+  --pink: #ff6f91;
+  --lime: #9bd44a;
+  --amber: #f4b942;
+  --coral: #ff8a6a;
+  --ok: #22b573;
+  --bad: #f0483e;
+  --shadow: 4px 4px 0 var(--ink);
+
+  /* Font: Baloo 2 có weight 800 (shell + đa số game viết tay đang dùng),
+     Be Vietnam Pro cho chữ thường — thống nhất toàn bộ thư mục offline. */
+  --head: "Baloo 2", "Fredoka", "Nunito", "Segoe UI", system-ui, sans-serif;
+  --body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+}
+
+/* Nút "về trang chủ" mà mọi game tự đặt ở góc trên-trái. Trong app thì React
+   đã vẽ nút riêng nên CSS .gq-embedded ẩn cái này đi (xem OfflineGamePage). */
+.gq-home-btn,
+#homeBackBtn {
+  position: fixed;
+  z-index: 2147483000;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: calc(env(safe-area-inset-left, 0px) + 10px);
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-family: var(--head);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--card);
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink), 0 8px 14px rgba(0, 0, 0, .22);
+  transition: transform .12s, box-shadow .12s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.gq-home-btn:hover,
+#homeBackBtn:hover {
+  filter: brightness(1.06);
+}
+
+.gq-home-btn:active,
+#homeBackBtn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink), 0 3px 6px rgba(0, 0, 0, .22);
+}
+
+.gq-home-btn:focus-visible,
+#homeBackBtn:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 2px;
+}
+
+/* HUD / panel / toast dùng chung cho game viết tay chưa có style riêng. */
+.gq-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.gq-panel {
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-family: var(--body);
+}
+
+.gq-btn {
+  font-family: var(--head);
+  font-weight: 800;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--sun);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+}
+
+.gq-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.gq-btn.alt {
+  background: var(--card);
+}
+
+/* Nút "chơi lại" của game nằm cùng góc với nút của app → game nào tự đặt
+   #back thì dời xuống dưới --gq-topbar (56px) để không đè lên nhau. */
+:root {
+  --gq-topbar: 56px;
+  --gq-home-offset: calc(var(--gq-topbar) + 8px);
+}
+
+@media (prefers-reduced-motion:reduce) {
+
+  .gq-home-btn,
+  #homeBackBtn,
+  .gq-btn {
+    transition: none;
+  }
+}
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent
+    }
+
+    html,
+    body {
+      margin: 0
+    }
+
+    body {
+      font-family: var(--body);
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 28px 28px;
+      min-height: 100vh;
+    }
+
+    #app {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px 14px 60px
+    }
+
+    button {
+      font-family: inherit;
+      color: inherit;
+      cursor: pointer
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: var(--head);
+      margin: 0;
+      line-height: 1.1
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px
+    }
+
+    .logo {
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: 30px;
+      letter-spacing: -.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .logo i {
+      font-style: normal;
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      background: var(--sun);
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      box-shadow: 3px 3px 0 var(--ink);
+      transform: rotate(-6deg)
+    }
+
+    .me {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .lvl {
+      font-family: var(--head);
+      font-weight: 800;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 999px;
+      padding: 4px 14px;
+      font-size: 17px
+    }
+
+    .xp {
+      width: 130px;
+      height: 16px;
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card);
+      overflow: hidden
+    }
+
+    .xp i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--mint);
+      transition: width .6s cubic-bezier(.2, .9, .3, 1.2)
+    }
+
+    .snd {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 3px solid var(--ink);
+      background: var(--card);
+      font-size: 18px
+    }
+
+    .hero {
+      display: flex;
+      gap: 18px;
+      align-items: end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin: 6px 0 20px
+    }
+
+    .hero h2 {
+      font-size: clamp(30px, 6vw, 52px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      max-width: 14ch
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 34ch;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--ink2)
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px
+    }
+
+    .tile {
+      text-align: left;
+      border: 3px solid var(--ink);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 190px;
+      position: relative;
+      transition: transform .12s, box-shadow .12s;
+      background: var(--card)
+    }
+
+    .tile:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0 var(--ink)
+    }
+
+    .tile:active {
+      transform: translate(3px, 3px);
+      box-shadow: 1px 1px 0 var(--ink)
+    }
+
+    .tile .ic {
+      font-size: 44px;
+      line-height: 1
+    }
+
+    .tile h3 {
+      font-size: 26px;
+      font-weight: 800
+    }
+
+    .tile p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.45
+    }
+
+    .tile .meta {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 700
+    }
+
+    .tag {
+      background: var(--ink);
+      color: #fff;
+      border-radius: 999px;
+      padding: 3px 11px;
+      font-size: 12px;
+      font-weight: 700
+    }
+
+    .badges {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 26px;
+      align-items: center
+    }
+
+    .badges b {
+      font-family: var(--head);
+      font-size: 20px;
+      margin-right: 4px
+    }
+
+    .bd {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 2.5px solid var(--ink);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--card)
+    }
+
+    .bd.off {
+      opacity: .38;
+      filter: grayscale(1);
+      border-style: dashed
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px
+    }
+
+    .back {
+      border: 3px solid var(--ink);
+      background: var(--card);
+      border-radius: 14px;
+      padding: 8px 14px;
+      font-weight: 700;
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .bar h2 {
+      font-size: 28px;
+      font-weight: 800
+    }
+
+    .stage {
+      max-width: 640px;
+      margin: 0 auto
+    }
+
+    .panel {
+      background: var(--card);
+      border: 3px solid var(--ink);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: var(--shadow)
+    }
+
+    .center {
+      text-align: center
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 14px
+    }
+
+    .btn {
+      border: 3px solid var(--ink);
+      background: var(--sun);
+      border-radius: 14px;
+      padding: 12px 20px;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform .1s, box-shadow .1s
+    }
+
+    .btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--ink)
+    }
+
+    .btn.alt,
+    .btn.ghost {
+      background: var(--card)
+    }
+
+    .btn.sky {
+      background: var(--sky);
+      color: #fff
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      font-size: 16px
+    }
+
+    .hud span {
+      background: var(--card);
+      border: 2.5px solid var(--ink);
+      border-radius: 12px;
+      padding: 5px 12px
+    }
+
+    .tbar {
+      height: 14px;
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card);
+      overflow: hidden;
+      margin-bottom: 14px
+    }
+
+    .tbar i {
+      display: block;
+      height: 100%;
+      width: 100%;
+      background: var(--tomato);
+      transition: width .1s linear
+    }
+
+    .qbox {
+      background: var(--ink);
+      color: #fff;
+      border-radius: 20px;
+      padding: 22px 16px;
+      text-align: center;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(34px, 9vw, 56px);
+      margin-bottom: 14px;
+      min-height: 96px;
+      display: grid;
+      place-items: center
+    }
+
+    .qbox.txt {
+      font-size: clamp(20px, 4.6vw, 26px);
+      font-weight: 600;
+      line-height: 1.3;
+      font-family: var(--body);
+      text-align: left;
+      place-items: center start;
+      padding: 18px
+    }
+
+    .qbox small {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: .75;
+      margin-top: 4px;
+      font-family: var(--body)
+    }
+
+    .opts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px
+    }
+
+    .opts.one {
+      grid-template-columns: 1fr
+    }
+
+    .opt {
+      border: 3px solid var(--ink);
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px 10px;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(22px, 5vw, 30px);
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform .1s, background .15s
+    }
+
+    .opts.one .opt {
+      font-family: var(--body);
+      font-weight: 600;
+      font-size: 17px;
+      text-align: left;
+      padding: 14px 16px
+    }
+
+    .opt:active {
+      transform: translate(3px, 3px)
+    }
+
+    .opt.ok {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .opt.bad {
+      background: var(--bad);
+      color: #fff;
+      animation: shake .3s
+    }
+
+    .opt.gone {
+      opacity: .25;
+      pointer-events: none
+    }
+
+    @keyframes shake {
+      25% {
+        transform: translateX(-6px)
+      }
+
+      75% {
+        transform: translateX(6px)
+      }
+    }
+
+    .explain {
+      margin-top: 14px;
+      background: var(--bg);
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 15px;
+      line-height: 1.5
+    }
+
+    .pop {
+      animation: pop .35s
+    }
+
+    @keyframes pop {
+      0% {
+        transform: scale(.8)
+      }
+
+      60% {
+        transform: scale(1.08)
+      }
+
+      100% {
+        transform: scale(1)
+      }
+    }
+
+    /* Bàn 2048 — 4x4, quả gộp theo cấp. */
+    .b48 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      width: min(88vw, 380px);
+      margin: 12px auto 0;
+      padding: 8px;
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      background: var(--bg);
+      box-shadow: var(--shadow);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none
+    }
+
+    .t48 {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1/1;
+      border: 2.5px solid var(--ink);
+      border-radius: 12px;
+      background: var(--card);
+      box-shadow: 2px 2px 0 var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(22px, 7vw, 38px);
+      line-height: 1
+    }
+
+    .t48:empty {
+      border-style: dashed;
+      background: transparent;
+      box-shadow: none;
+      opacity: .4
+    }
+
+    .t48.n {
+      animation: pop .22s
+    }
+
+    .mem {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px
+    }
+
+    .mc {
+      perspective: 700px;
+      aspect-ratio: 1/1.05;
+      border: 0;
+      background: none;
+      padding: 0
+    }
+
+    .mc .in {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform .35s
+    }
+
+    .mc.flip .in {
+      transform: rotateY(180deg)
+    }
+
+    .mc .f,
+    .mc .b {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      padding: 4px;
+      text-align: center
+    }
+
+    .mc .f {
+      background: var(--lilac);
+      font-size: 28px;
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .mc .b {
+      transform: rotateY(180deg);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(14px, 3.6vw, 20px);
+      line-height: 1.1;
+      word-break: break-word
+    }
+
+    .mc .b.en {
+      background: #cfe4ff
+    }
+
+    .mc .b.vi {
+      background: #c6f3e6
+    }
+
+    .mc.done .b {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .slots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 6px 0 18px
+    }
+
+    .slot {
+      width: 46px;
+      height: 56px;
+      border: 3px dashed var(--ink);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: 28px;
+      background: var(--card);
+      padding: 0
+    }
+
+    .slot.fill {
+      border-style: solid;
+      background: var(--sun);
+      box-shadow: 2px 2px 0 var(--ink)
+    }
+
+    .slots.win .slot {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .slots.err {
+      animation: shake .35s
+    }
+
+    .tiles {
+      display: flex;
+      gap: 9px;
+      justify-content: center;
+      flex-wrap: wrap
+    }
+
+    .tl {
+      width: 52px;
+      height: 58px;
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      background: var(--card);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: 28px;
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .tl:disabled {
+      opacity: .2;
+      box-shadow: none
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      touch-action: none;
+      background: var(--card);
+      max-width: 100%
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 64px);
+      grid-template-rows: repeat(2, 58px);
+      gap: 8px;
+      justify-content: center;
+      margin-top: 14px
+    }
+
+    .dpad button {
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: var(--card);
+      font-size: 22px;
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .dpad button:active {
+      transform: translate(2px, 2px)
+    }
+
+    .dpad .u {
+      grid-column: 2
+    }
+
+    .dpad .l {
+      grid-row: 2;
+      grid-column: 1
+    }
+
+    .dpad .d {
+      grid-row: 2;
+      grid-column: 2
+    }
+
+    .dpad .r {
+      grid-row: 2;
+      grid-column: 3
+    }
+
+    .hint {
+      text-align: center;
+      font-size: 13px;
+      color: var(--ink2);
+      margin: 10px 0 0
+    }
+
+    #modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(29, 46, 74, .6);
+      display: none;
+      place-items: center;
+      padding: 18px;
+      z-index: 20
+    }
+
+    #modal.on {
+      display: grid
+    }
+
+    .result {
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      animation: pop .4s
+    }
+
+    .result h2 {
+      font-size: 34px;
+      font-weight: 800
+    }
+
+    .big {
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: 64px;
+      line-height: 1;
+      margin: 8px 0
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0
+    }
+
+    .stats span {
+      background: var(--paper);
+      border: 2.5px solid var(--ink);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-weight: 700;
+      font-size: 14px
+    }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 120px);
+      background: var(--ink);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      z-index: 30;
+      transition: transform .4s;
+      max-width: 90vw;
+      text-align: center
+    }
+
+    #toast.on {
+      transform: translate(-50%, 0)
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+      * {
+        animation: none !important;
+        transition: none !important
+      }
+    }
+
+    button:focus-visible {
+      outline: 4px solid var(--sky);
+      outline-offset: 2px
+    }
+
+    /* ============================================================
+       KHUNG MỞ ĐẦU DÙNG CHUNG
+       Mọi game một màn đều mở bằng cùng một tấm thiệp: icon, tên,
+       luật chơi ngắn và 3 mức nhịp độ. Nhờ vậy người chơi không phải
+       học lại cách vào game ở từng trò.
+       ============================================================ */
+    .intro {
+      text-align: center;
+      padding: 24px 18px 20px
+    }
+
+    .intro-ic {
+      width: 86px;
+      height: 86px;
+      margin: 0 auto 12px;
+      display: grid;
+      place-items: center;
+      font-size: 46px;
+      line-height: 1;
+      background: var(--sun);
+      border: 3px solid var(--ink);
+      border-radius: 24px;
+      box-shadow: 4px 4px 0 var(--ink);
+      transform: rotate(-4deg)
+    }
+
+    .intro h2 {
+      font-size: clamp(28px, 7vw, 38px);
+      font-weight: 800
+    }
+
+    .intro > p {
+      margin: 8px auto 0;
+      max-width: 36ch;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ink2)
+    }
+
+    .intro-steps {
+      margin: 12px auto 0;
+      padding: 0 0 0 20px;
+      max-width: 350px;
+      text-align: left;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: var(--ink2)
+    }
+
+    .intro-steps li + li {
+      margin-top: 2px
+    }
+
+    .intro-best {
+      margin: 12px 0 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink2)
+    }
+
+    .modes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 14px
+    }
+
+    .mode {
+      display: grid;
+      justify-items: center;
+      gap: 2px;
+      padding: 10px 4px;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink);
+      color: var(--ink);
+      font-family: var(--head);
+      transition: transform .1s, box-shadow .1s, background .15s
+    }
+
+    .mode i {
+      font-style: normal;
+      font-size: 22px;
+      line-height: 1
+    }
+
+    .mode b {
+      font-size: 14px;
+      line-height: 1.15
+    }
+
+    .mode em {
+      font-style: normal;
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1.2;
+      opacity: .62
+    }
+
+    .mode.sel {
+      background: var(--sun)
+    }
+
+    .mode:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--ink)
+    }
+
+    /* ============================================================
+       BÀN CHƠI DÙNG CHUNG
+       Cùng một kiểu ô, chữ, đèn báo và thanh tiến trình để 17 game
+       trông như các màn của MỘT bộ game, không phải 17 sản phẩm rời.
+       ============================================================ */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(var(--n, 3), 1fr);
+      gap: 8px;
+      margin: 8px 0
+    }
+
+    .cell {
+      position: relative;
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1 / 1;
+      padding: 4px;
+      overflow: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink);
+      color: var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(20px, 6vw, 30px);
+      line-height: 1;
+      transition: background .12s, transform .08s, box-shadow .08s, opacity .12s
+    }
+
+    .cell:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--ink)
+    }
+
+    .cell .ic {
+      font-size: clamp(20px, 5.4vw, 30px);
+      line-height: 1
+    }
+
+    .cell .num {
+      position: absolute;
+      right: 5px;
+      bottom: 3px;
+      padding: 0 6px;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1.35
+    }
+
+    .cell.ok,
+    .cell.found {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .cell.bad {
+      background: var(--bad);
+      color: #fff;
+      animation: shake .3s
+    }
+
+    .cell.lit {
+      background: var(--sun);
+      animation: pop .25s
+    }
+
+    .cell.dim {
+      opacity: .32
+    }
+
+    .cell.blank {
+      opacity: .18;
+      box-shadow: none
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      margin: 8px 0
+    }
+
+    .chip {
+      padding: 3px 10px;
+      border: 2.5px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card);
+      font-size: 12px;
+      font-weight: 700
+    }
+
+    .chip.on {
+      background: var(--sun)
+    }
+
+    .chip.done {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .hearts {
+      letter-spacing: 2px
+    }
+
+    .prompt {
+      margin: 6px 0 10px;
+      text-align: center;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(24px, 6.4vw, 34px);
+      line-height: 1.15
+    }
+
+    .prompt small {
+      display: block;
+      margin-top: 3px;
+      font-family: var(--body);
+      font-size: 13px;
+      font-weight: 600;
+      opacity: .65
+    }
+
+    .pattern-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin: 10px 0
+    }
+
+    .pcell {
+      display: grid;
+      place-items: center;
+      min-width: 52px;
+      min-height: 58px;
+      padding: 2px 6px;
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(22px, 6vw, 30px);
+      line-height: 1
+    }
+
+    .pcell.missing {
+      background: var(--sun);
+      border-style: dashed
+    }
+
+    .rhythm {
+      position: relative;
+      height: 64px;
+      margin: 14px 0;
+      overflow: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: 3px 3px 0 var(--ink)
+    }
+
+    .rhythm .zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: var(--zw, 24%);
+      transform: translateX(-50%);
+      background: rgba(34, 181, 115, .3);
+      border-left: 2px solid var(--ink);
+      border-right: 2px solid var(--ink)
+    }
+
+    .rhythm .center {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: var(--ok);
+      opacity: .75
+    }
+
+    .rhythm .marker {
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      left: 0;
+      width: 8px;
+      border-radius: 999px;
+      background: var(--ink);
+      will-change: transform
+    }
+
+    .simon {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      max-width: 360px;
+      margin: 12px auto 0
+    }
+
+    .pd {
+      aspect-ratio: 1.3 / 1;
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: 4px 4px 0 var(--ink);
+      color: #fff;
+      font-size: 34px;
+      opacity: .72;
+      transition: transform .08s, opacity .08s, filter .08s
+    }
+
+    .pd.on {
+      opacity: 1;
+      filter: brightness(1.25);
+      transform: scale(1.03)
+    }
+
+    .wordgrid {
+      display: grid;
+      gap: 6px;
+      max-width: 420px;
+      margin: 10px auto 0
+    }
+
+    .wl {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1 / 1;
+      padding: 0;
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      background: var(--card);
+      box-shadow: 2px 2px 0 var(--ink);
+      color: var(--ink);
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(18px, 5vw, 26px)
+    }
+
+    .wl.sel {
+      background: var(--sun)
+    }
+
+    .wl.found {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .wl.bad {
+      background: var(--bad);
+      color: #fff
+    }
+
+    .chests {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin: 2px 0 10px;
+      font-size: 20px
+    }
+
+    .chests span {
+      opacity: .28;
+      filter: grayscale(1)
+    }
+
+    .chests span.open {
+      opacity: 1;
+      filter: none
+    }
+
+    .clue {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 2.5px dashed var(--ink);
+      border-radius: 14px;
+      background: var(--paper);
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: center
+    }
+
+    .big-signal {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      min-height: 210px;
+      padding: 16px;
+      border: 3px solid var(--ink);
+      border-radius: 22px;
+      background: var(--sky);
+      box-shadow: var(--shadow);
+      color: #fff;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: clamp(26px, 7vw, 40px);
+      line-height: 1.15;
+      transition: background .15s
+    }
+
+    .big-signal.go {
+      background: var(--ok)
+    }
+
+    .big-signal.stop {
+      background: var(--bad)
+    }
+
+    .stat-line {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+      font-size: 13px;
+      font-weight: 700
+    }
+
+    .stat-line span {
+      padding: 3px 10px;
+      border: 2.5px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card)
+    }
+
+    .dots {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin: 6px 0 2px
+    }
+
+    .dots i {
+      width: 9px;
+      height: 9px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: var(--card)
+    }
+
+    .dots i.on {
+      background: var(--ok)
+    }
+
+    @media (max-height: 720px) {
+      .intro {
+        padding: 16px 14px
+      }
+
+      .intro-ic {
+        width: 66px;
+        height: 66px;
+        font-size: 34px;
+        margin-bottom: 8px
+      }
+
+      .intro-steps {
+        font-size: 12.5px;
+        line-height: 1.45
+      }
+
+      .mode em {
+        display: none
+      }
+
+      .cell {
+        border-width: 2.5px
+      }
+
+      .big-signal {
+        min-height: 160px
+      }
+    }
+
+    /* ============================================================
+       CHẾ ĐỘ 1 GAME (body.single)
+       File offline chỉ chơi 1 game, không có sảnh. Thanh \`.top\`
+       (logo + cấp + XP + âm thanh) là header của SẢNH nên thừa —
+       nó chiếm ~80px và đẩy game xuống, buộc người chơi phải cuộn.
+       Ẩn đi và nới lỏng padding để game nằm sát mép trên, vào là chơi.
+       ============================================================ */
+    body.single .top {
+      display: none
+    }
+
+    body.single #app {
+      padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px))
+    }
+
+    /* Thanh tiêu đề còn lại (nút "Về sảnh" + tên game) gọn lại */
+    body.single .bar {
+      margin-bottom: 8px;
+      gap: 8px;
+      flex-wrap: nowrap
+    }
+
+    body.single .bar h2 {
+      font-size: 20px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    body.single .back {
+      padding: 6px 11px;
+      font-size: 14px;
+      white-space: nowrap;
+      flex: none
+    }
+
+    /* Bỏ khoảng trắng cuối trang: #app có padding-bottom 60px dư thừa */
+    body.single .badges,
+    body.single .hint {
+      margin-top: 8px
+    }
+
+    /* Màn hình thấp (mobile ngang / desktop nhỏ): bỏ bớt khoảng đệm dọc
+       để phần lớn game vừa 1 màn hình, không phải cuộn xuống. */
+    @media (max-height: 720px) {
+      body.single .qbox {
+        min-height: 64px;
+        margin-bottom: 10px;
+        padding: 14px 12px;
+        font-size: clamp(26px, 7vw, 42px)
+      }
+
+      body.single .opt {
+        padding: 11px 8px;
+        font-size: clamp(19px, 4.4vw, 26px)
+      }
+
+      body.single .opts {
+        gap: 9px
+      }
+
+      body.single .explain {
+        margin-top: 9px;
+        padding: 9px 11px
+      }
+
+      body.single .row {
+        margin-top: 9px
+      }
+
+      body.single .dpad {
+        margin-top: 9px;
+        grid-template-rows: repeat(2, 48px)
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="top">
+      <div class="logo"><i>🎮</i>Góc Giải Trí</div>
+      <div class="me">
+        <span class="lvl" id="lvl">Cấp 1</span>
+        <div class="xp" title="Kinh nghiệm"><i id="xpb"></i></div>
+        <button class="snd" id="snd" aria-label="Bật tắt âm thanh">🔊</button>
+      </div>
+    </div>
+    <div id="hub"></div>
+    <div id="game" hidden>
+      <div class="bar"><button class="back" id="back">← Về sảnh</button>
+        <h2 id="gt"></h2>
+      </div>
+      <div class="stage" id="stage"></div>
+    </div>
+  </div>
+  <div id="modal"></div>
+  <div id="toast"></div>
+
+
+    <!-- core.js: tiện ích, tiến độ localStorage, âm thanh, bộ đếm, canvas -->
+    <script>
+/* ============ Tiện ích ============ */
+const $ = s => document.querySelector(s);
+const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const shuffle = a => {
+  a = [...a];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = rnd(0, i);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+/* ============ Trạng thái người chơi (lưu localStorage) ============ */
+const S = {
+  xp: 0, games: 0, best: {}, flags: {},
+  played: new Set(), unlocked: new Set()
+};
+const XP_PER_LVL = 120;
+const lvl = () => Math.floor(S.xp / XP_PER_LVL) + 1;
+
+/* ============ localStorage persistence ============ */
+let _storageKey = '';
+
+function _saveState() {
+  if (!_storageKey) return;
+  try {
+    const data = {
+      xp: S.xp, games: S.games, best: S.best, flags: S.flags,
+      played: [...S.played], unlocked: [...S.unlocked]
+    };
+    localStorage.setItem(_storageKey, JSON.stringify(data));
+  } catch (e) { /* quota exceeded hoặc private mode */ }
+}
+
+function _loadState() {
+  if (!_storageKey) return;
+  try {
+    const raw = localStorage.getItem(_storageKey);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (typeof data.xp === 'number') S.xp = data.xp;
+    if (typeof data.games === 'number') S.games = data.games;
+    if (data.best && typeof data.best === 'object') S.best = data.best;
+    if (data.flags && typeof data.flags === 'object') S.flags = data.flags;
+    if (Array.isArray(data.played)) S.played = new Set(data.played);
+    if (Array.isArray(data.unlocked)) S.unlocked = new Set(data.unlocked);
+  } catch (e) { /* parse error — bỏ qua */ }
+}
+
+const _runPrefix = 'offline_run_';
+function saveOfflineRun(id, state) {
+  if (!id || !state || typeof state !== 'object') throw new TypeError('Tiến độ game không hợp lệ');
+  try {
+    localStorage.setItem(_runPrefix + id, JSON.stringify({ version: 1, updatedAt: Date.now(), state }));
+  } catch (e) {
+    toast('Không thể lưu ván chơi trên thiết bị này.');
+    console.error(\`[offline] Không thể lưu tiến độ "\${id}"\`, e);
+  }
+}
+
+function loadOfflineRun(id) {
+  if (!id) return null;
+  try {
+    const raw = localStorage.getItem(_runPrefix + id);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (saved?.version !== 1 || !saved.state || typeof saved.state !== 'object') {
+      localStorage.removeItem(_runPrefix + id);
+      return null;
+    }
+    return saved.state;
+  } catch (e) {
+    toast('Không thể đọc tiến độ đã lưu.');
+    console.error(\`[offline] Không thể đọc tiến độ "\${id}"\`, e);
+    return null;
+  }
+}
+
+function clearOfflineRun(id) {
+  if (!id) return;
+  try {
+    localStorage.removeItem(_runPrefix + id);
+  } catch (e) {
+    toast('Không thể xóa tiến độ trên thiết bị này.');
+    console.error(\`[offline] Không thể xóa tiến độ "\${id}"\`, e);
+  }
+}
+
+/* ============ Âm thanh ============ */
+let soundOn = true, actx;
+
+function beep(f, d = .12, type = 'sine', v = .07) {
+  if (!soundOn) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = f; g.gain.value = v;
+    o.connect(g); g.connect(actx.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + d);
+    o.stop(actx.currentTime + d);
+  } catch (e) { /* ignore */ }
+}
+
+const sfx = {
+  ok()  { beep(660, .1); setTimeout(() => beep(880, .14), 90); },
+  bad() { beep(150, .25, 'sawtooth', .05); },
+  win() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, .18), i * 110)); },
+  tick(){ beep(520, .05, 'square', .03); },
+  flap(){ beep(420, .07, 'triangle', .05); }
+};
+
+/* Nút tắt/bật âm thanh — tự kết nối khi DOM sẵn sàng */
+function _bindSoundBtn() {
+  const btn = $('#snd');
+  if (btn) btn.onclick = () => { soundOn = !soundOn; btn.textContent = soundOn ? '🔊' : '🔇'; };
+}
+
+/* ============ Bộ hẹn giờ & phím ============ */
+const T = {
+  ids: [], ints: [], stops: [],
+  set(fn, ms)  { const id = setTimeout(fn, ms);  this.ids.push(id);   return id; },
+  int(fn, ms)  { const id = setInterval(fn, ms); this.ints.push(id);  return id; },
+  loop(fn) {
+    let last = performance.now(), run = true;
+    const step = t => {
+      if (!run) return;
+      const dt = Math.min(.05, (t - last) / 1000);
+      last = t; fn(dt);
+      if (run) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    this.stops.push(() => { run = false; });
+  },
+  clear() {
+    this.ids.forEach(clearTimeout);
+    this.ints.forEach(clearInterval);
+    this.stops.forEach(f => f());
+    this.ids = []; this.ints = []; this.stops = [];
+  }
+};
+
+let onKey = null;
+window.addEventListener('keydown', e => { if (onKey) onKey(e); });
+
+function cleanup() {
+  T.clear();
+  onKey = null;
+  const stage = $('#stage');
+  if (stage) { stage.onclick = null; stage.ontouchstart = null; }
+  try { speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+}
+
+/* ============ Canvas helper ============ */
+function fitCanvas(cv, w, h) {
+  const d = Math.min(2, window.devicePixelRatio || 1);
+  cv.width  = Math.round(w * d);
+  cv.height = Math.round(h * d);
+  cv.style.width  = w + 'px';
+  cv.style.height = h + 'px';
+  const c = cv.getContext('2d');
+  c.setTransform(d, 0, 0, d, 0, 0);
+  return c;
+}
+
+/* ============ Toast thông báo ============ */
+let _toastT;
+function toast(msg) {
+  const t = $('#toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => t.classList.remove('on'), 2600);
+}
+
+/* ============ Huy hiệu ============ */
+// Mảng BADGES được từng file khai báo bổ sung qua initCore({ badges })
+// File này khai báo set mặc định hợp nhất cho tất cả game
+let BADGES = [];
+
+function checkBadges() {
+  BADGES.forEach(b => {
+    if (!S.unlocked.has(b.id) && b.ok()) {
+      S.unlocked.add(b.id);
+      setTimeout(() => toast(\`\${b.i} Huy hiệu mới: \${b.n}\`), 900);
+    }
+  });
+}
+
+/* ============ XP & Cấp ============ */
+function renderMe() {
+  const lvlEl = $('#lvl'), xpEl = $('#xpb');
+  if (lvlEl) lvlEl.textContent = 'Hạng ' + lvl();
+  if (xpEl)  xpEl.style.width  = ((S.xp % XP_PER_LVL) / XP_PER_LVL * 100) + '%';
+}
+
+/* ============ Sinh câu hỏi toán ============ */
+function genMath(level) {
+  let a, b, c, text, ans;
+  if (level === 0) {
+    if (rnd(0, 1)) { a = rnd(2, 20); b = rnd(1, 20); text = \`\${a} + \${b}\`; ans = a + b; }
+    else           { a = rnd(5, 25); b = rnd(1, a);  text = \`\${a} − \${b}\`; ans = a - b; }
+  } else if (level === 1) {
+    const t = rnd(0, 3);
+    if      (t === 0) { a = rnd(2, 10); b = rnd(2, 10); text = \`\${a} × \${b}\`; ans = a * b; }
+    else if (t === 1) { a = rnd(20, 99); b = rnd(10, 60); text = \`\${a} + \${b}\`; ans = a + b; }
+    else if (t === 2) { a = rnd(40, 99); b = rnd(10, a);  text = \`\${a} − \${b}\`; ans = a - b; }
+    else              { b = rnd(2, 9); ans = rnd(2, 10); a = b * ans; text = \`\${a} ÷ \${b}\`; }
+  } else {
+    const t = rnd(0, 3);
+    if      (t === 0) { a = rnd(6, 15);  b = rnd(3, 12); text = \`\${a} × \${b}\`; ans = a * b; }
+    else if (t === 1) { b = rnd(3, 12); ans = rnd(4, 15); a = b * ans; text = \`\${a} ÷ \${b}\`; }
+    else if (t === 2) { a = rnd(2, 20); b = rnd(2, 9); c = rnd(2, 9); text = \`\${a} + \${b} × \${c}\`; ans = a + b * c; }
+    else {
+      a = rnd(2, 9); b = rnd(2, 9); c = rnd(1, 20);
+      text = \`\${a} × \${b} − \${c}\`; ans = a * b - c;
+      if (ans < 0) { text = \`\${a} × \${b} + \${c}\`; ans = a * b + c; }
+    }
+  }
+  return { text, ans };
+}
+
+function makeOpts(ans, n) {
+  const set = new Set([ans]);
+  const spread = Math.max(3, Math.round(Math.abs(ans) * .2));
+  let guard = 0;
+  while (set.size < n && guard++ < 200) {
+    const v = ans + rnd(1, spread) * (rnd(0, 1) ? 1 : -1);
+    if (v >= 0) set.add(v);
+  }
+  let k = 1;
+  while (set.size < n) set.add(ans + k++);
+  return shuffle([...set]);
+}
+
+/* ============ Trắc nghiệm dùng chung (Đồng hồ, Quy luật) ============ */
+function runMC(root, cfg) {
+  let i = 0, score = 0, right = 0, streak = 0, time = cfg.secs, done = false, cur;
+  function show() {
+    cur = cfg.make(i); done = false; time = cfg.secs;
+    root.innerHTML = \`<div class="hud"><span>Câu <b>\${i + 1}/\${cfg.count}</b></span><span>⭐ <b>\${score}</b></span><span>🔥 \${streak}</span></div>
+      <div class="tbar"><i id="tb"></i></div>
+      <div class="qbox">\${cur.html}</div>
+      <div class="opts" id="o">\${cur.opts.map((o, k) => \`<button class="opt" data-k="\${k}">\${o}</button>\`).join('')}</div>
+      <div id="ex"></div><div class="row" id="nx"></div>\`;
+    if (cur.after) cur.after();
+  }
+  function answer(k) {
+    if (done) return; done = true;
+    const btns = [...root.querySelectorAll('.opt')],
+          ci   = cur.opts.findIndex(o => String(o) === String(cur.ans));
+    btns[ci].classList.add('ok');
+    if (k === ci) { right++; streak++; score += 10 + Math.ceil(time) + (streak >= 3 ? 5 : 0); sfx.ok(); }
+    else          { streak = 0; sfx.bad(); if (k >= 0) btns[k].classList.add('bad'); }
+    $('#ex').innerHTML = \`<div class="explain">💡 \${k === -1 ? 'Hết giờ! ' : ''}\${cur.exp}</div>\`;
+    $('#nx').innerHTML = \`<button class="btn" data-next="1">\${i < cfg.count - 1 ? 'Câu tiếp theo' : 'Xem kết quả'}</button>\`;
+  }
+  root.onclick = e => {
+    const o = e.target.closest('.opt'), n = e.target.closest('[data-next]');
+    if (o) answer(+o.dataset.k);
+    else if (n) {
+      i++;
+      if (i < cfg.count) show();
+      else {
+        cfg.onEnd && cfg.onEnd(right);
+        finish({ id: cfg.id, score, xp: Math.round(score / 4), lines: [\`Đúng \${right}/\${cfg.count} câu\`], replay: cfg.replay });
+      }
+    }
+  };
+  T.int(() => {
+    if (done) return;
+    time -= .1;
+    const tb = $('#tb');
+    if (tb) tb.style.width = Math.max(0, time / cfg.secs * 100) + '%';
+    if (time <= 0) answer(-1);
+  }, 100);
+  show();
+}
+
+/* ============ finish() — kết thúc ván ============ */
+/**
+ * Gọi khi một ván kết thúc.
+ * @param {{ id, score, xp, lines, replay, details? }} opts
+ */
+function finish({ id, score, xp = 0, lines, replay, details = {} }) {
+  cleanup();
+
+  // Cập nhật state client ngay (không chờ mạng)
+  const before = lvl();
+  S.xp   += xp;
+  S.games++;
+  S.played.add(id);
+  const isBest = score > (S.best[id] || 0);
+  if (isBest) S.best[id] = score;
+  checkBadges();
+  renderMe();
+  _saveState(); // ← Lưu tiến độ vào localStorage
+  const up = lvl() > before;
+  sfx.win();
+
+  $('#modal').innerHTML = \`<div class="panel result">
+    <h2>\${up ? 'Lên cấp ' + lvl() + '!' : 'Hoàn thành!'}</h2>
+    <div class="big">\${score}</div>
+    <div class="stats">
+      \${isBest ? '<span>🏆 Kỷ lục mới</span>' : ''}
+      \${lines.map(l => \`<span>\${l}</span>\`).join('')}
+      <span>+\${xp} XP</span>
+    </div>
+    <div class="row">
+      <button class="btn" id="again">Chơi lại</button>
+      <button class="btn alt ghost" id="home">Về sảnh</button>
+    </div>
+  </div>\`;
+  $('#modal').classList.add('on');
+
+  $('#again').onclick = () => { $('#modal').classList.remove('on'); openGame(id); };
+  $('#home').onclick  = () => { $('#modal').classList.remove('on'); renderHub(); };
+
+  clearOfflineRun(id);
+}
+
+/* ============ renderHub & openGame (được override bởi mỗi file) ============ */
+// Các hàm này được khai báo ở đây nhưng thực sự được gán lại trong initCore()
+// khi mỗi file HTML gọi initCore({ games, hubTitle, hubDesc, badges })
+let _GAMES = [];
+
+function renderHub() {
+  cleanup();
+  $('#game').hidden = true;
+  $('#hub').hidden  = false;
+  $('#modal').classList.remove('on');
+  const grid = _GAMES.map(g => {
+    // Hỗ trợ cả style game1 (color field) và game2/3 (c field với orb)
+    const usesOrb = !!g.icon && !g.color;
+    if (usesOrb) {
+      return \`<button class="tile" data-g="\${g.id}" style="--c:\${g.c}">
+        <span class="orb">\${g.icon}</span>
+        <h3>\${g.name}</h3>
+        <p>\${g.desc}</p>
+        <span class="meta"><span class="tag">\${g.tag}</span><span>\${S.best[g.id] ? 'Kỷ lục ' + S.best[g.id] : 'Chưa chơi'}</span></span>
+      </button>\`;
+    }
+    return \`<button class="tile" data-g="\${g.id}" style="background:\${g.color}">
+      <span class="ic">\${g.icon}</span>
+      <h3>\${g.name}</h3>
+      <p>\${g.desc}</p>
+      <span class="meta"><span class="tag">\${g.tag}</span><span>\${S.best[g.id] ? 'Kỷ lục ' + S.best[g.id] : 'Chưa chơi'}</span></span>
+    </button>\`;
+  }).join('');
+
+  const badgesHtml = BADGES.map(b =>
+    \`<span class="bd \${S.unlocked.has(b.id) ? '' : 'off'}">\${b.i} \${b.n}</span>\`
+  ).join('');
+
+  $('#hub').innerHTML = \`
+    <div class="hero">
+      <h2 id="hub-title"></h2>
+      <p id="hub-desc"></p>
+    </div>
+    <div class="grid">\${grid}</div>
+    \${_showLeaderboardBtn()}
+    <div class="badges"><b>Huy hiệu</b>\${badgesHtml}</div>\`;
+
+  // Điền lại title/desc từ biến đã lưu
+  if ($('#hub-title')) $('#hub-title').textContent = _hubTitle;
+  if ($('#hub-desc'))  $('#hub-desc').textContent  = _hubDesc;
+
+  renderMe();
+}
+
+function openGame(id) {
+  cleanup();
+  const g = _GAMES.find(x => x.id === id);
+  if (!g) return;
+  $('#hub').hidden  = true;
+  $('#game').hidden = false;
+  $('#gt').textContent = g.name;
+  $('#modal').classList.remove('on');
+  g.fn($('#stage'));
+  window.scrollTo(0, 0);
+}
+
+/* ============ Bảng xếp hạng ============ */
+function _showLeaderboardBtn() {
+  return \`<div style="margin:18px 0 0;text-align:center">
+    <button class="btn ghost" id="lb-btn" style="font-size:14px">🏆 Bảng xếp hạng</button>
+  </div>\`;
+}
+
+function _openLeaderboard() {
+  const modal = $('#modal');
+  modal.innerHTML = \`<div class="panel result" style="max-width:520px;text-align:left">
+    <h2 style="margin-bottom:12px">🏆 Bảng xếp hạng</h2>
+    <div id="lb-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <div id="lb-body" style="font-size:14px">Đang tải...</div>
+    <div class="row"><button class="btn alt ghost" id="lb-close">Đóng</button></div>
+  </div>\`;
+  modal.classList.add('on');
+  $('#lb-close').onclick = () => modal.classList.remove('on');
+
+  const tabs = [{ label: 'XP tổng', key: 'xp' }, ..._GAMES.map(g => ({ label: g.name.split(' ').slice(0, 2).join(' '), key: g.id }))];
+  let activeKey = 'xp';
+
+  function renderTabs() {
+    $('#lb-tabs').innerHTML = tabs.map(t =>
+      \`<button class="btn \${t.key === activeKey ? '' : 'ghost'}" style="font-size:12px;padding:6px 12px" data-lb="\${t.key}">\${t.label}</button>\`
+    ).join('');
+  }
+
+  async function loadTab(key) {
+    activeKey = key; renderTabs();
+    $('#lb-body').innerHTML = 'Đang tải...';
+    try {
+      const rows = key === 'xp'
+        ? [\`<tr><td>1</td><td>Bạn</td><td>\${S.xp} XP</td><td>Cấp \${lvl()}</td></tr>\`]
+        : S.best[key] !== undefined
+          ? [\`<tr><td>1</td><td>Bạn</td><td>\${S.best[key]} điểm</td><td></td></tr>\`]
+          : [];
+      $('#lb-body').innerHTML = rows.length
+        ? \`<table style="width:100%;border-collapse:collapse">\${rows.join('')}</table>\`
+        : '<p style="opacity:.6">Chưa có kỷ lục trên thiết bị này.</p>';
+    } catch (e) {
+      console.error('[offline] Không thể hiển thị kỷ lục cục bộ', e);
+      $('#lb-body').innerHTML = '<p style="opacity:.6">Không thể hiển thị kỷ lục.</p>';
+    }
+  }
+
+  $('#lb-tabs').addEventListener('click', e => {
+    const btn = e.target.closest('[data-lb]');
+    if (btn) loadTab(btn.dataset.lb);
+  });
+
+  loadTab('xp');
+}
+
+/* ============ initCore — điểm khởi động của mỗi file ============ */
+let _hubTitle = '', _hubDesc = '';
+
+/**
+ * Gọi một lần ở cuối mỗi file HTML, sau khi khai báo GAMES.
+ *
+ * @param {object} opts
+ * @param {Array}  opts.games    — mảng GAMES của file đó
+ * @param {string} opts.hubTitle — tiêu đề sảnh
+ * @param {string} opts.hubDesc  — mô tả sảnh
+ * @param {Array}  [opts.badges] — huy hiệu bổ sung (merge vào BADGES chung)
+ */
+function initCore({ games, hubTitle = '', hubDesc = '', badges = [], storageKey = '' }) {
+  _GAMES    = games;
+  _hubTitle = hubTitle;
+  _hubDesc  = hubDesc;
+  BADGES    = badges;
+  _storageKey = storageKey || '';
+
+  // Khôi phục tiến độ từ localStorage
+  _loadState();
+
+  _bindSoundBtn();
+
+  // Kết nối hub click
+  const hub = $('#hub');
+  if (hub) hub.onclick = e => { const t = e.target.closest('[data-g]'); if (t) openGame(t.dataset.g); };
+  const backBtn = $('#back');
+  if (backBtn) backBtn.onclick = renderHub;
+
+  // Nút leaderboard (gắn sau khi renderHub tạo ra)
+  document.addEventListener('click', e => {
+    if (e.target.closest('#lb-btn')) _openLeaderboard();
+  });
+
+  renderHub();
+}
+    <\/script>
+
+    <!-- Điểm vào: khởi động game, nối nút thoát, lưu tiến độ -->
+    <script>
+// lib/single.js — điểm vào cho file HTML chỉ chứa MỘT game.
+//
+// File HTML sinh ra gọi startSingleGame({ id, name, icon, storageKey, mount, badges }).
+// Khác với initCore() của core.js (bộ dùng cho trang có sảnh chọn nhiều game),
+// ở đây không có sảnh: game chạy thẳng, nút "Về sảnh" đưa người chơi ra danh sách.
+
+/** Thông báo cho React (HtmlGameLoader) rằng người chơi bấm nút thoát. */
+function quitToList() {
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "quit", data: {} }, "*");
+    }
+  } catch (e) { /* ignore */ }
+  // Đứng riêng (mở file trực tiếp) → quay về trang chủ ứng dụng
+  if (!window.parent || window.parent === window) {
+    try { window.location.href = "/"; } catch (e) { /* ignore */ }
+  }
+}
+
+/**
+ * core.js gọi renderHub() khi người chơi bấm "Về sảnh" ở màn kết quả.
+ * Ở chế độ 1-game không có sảnh nên chỉ cần ra khỏi game.
+ */
+function renderHub() { quitToList(); }
+
+/**
+ * Khởi động một game độc lập.
+ * @param {object} cfg
+ * @param {string} cfg.id           định danh game
+ * @param {string} cfg.name        tên hiển thị
+ * @param {string} cfg.icon        emoji
+ * @param {string} cfg.storageKey  khoá localStorage lưu XP / điểm tốt nhất
+ * @param {Function} cfg.mount     hàm nhận \`root\` để dựng game
+ * @param {Array}   cfg.badges     huy hiệu
+ */
+function startSingleGame(cfg) {
+  const id = cfg.id;
+  const mount = cfg.mount;
+  if (typeof mount !== "function") {
+    console.error(\`[single] game "\${id}" không có hàm mount\`);
+    return;
+  }
+
+  // Nạp tiến độ trước khi dựng — game có thể đọc S.* ngay trong mount()
+  _storageKey = cfg.storageKey || \`offline_\${id}\`;
+  BADGES = cfg.badges || [];
+  _GAMES = [{ id, name: cfg.name, icon: cfg.icon, fn: mount }];
+  _hubTitle = cfg.name;
+  _hubDesc = "";
+  _loadState();
+
+  _bindSoundBtn();
+  // Đánh dấu chế độ 1-game để CSS ẩn thanh header của sảnh (xem shell.html).
+  // Không có dòng này thì header "Góc Giải Trí" vẫn chiếm chỗ ở trên và
+  // người chơi phải cuộn xuống mới thấy game.
+  document.body.classList.add("single");
+
+  renderMe();
+  checkBadges();
+
+  // Dựng game
+  const hub = $("#hub");
+  const gameEl = $("#game");
+  if (hub) hub.hidden = true;
+  if (gameEl) gameEl.hidden = false;
+  const title = $("#gt");
+  if (title) title.textContent = cfg.name;
+  const back = $("#back");
+  if (back) back.onclick = quitToList;
+
+  cleanup();
+  mount($("#stage"));
+  try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
+
+  // Báo về React: game đã sẵn sàng nhận init (coins, XP server, v.v.)
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "ready", data: { game: id } }, "*");
+    }
+  } catch (e) { /* ignore */ }
+}
+
+/** Lưu tiến độ ngay khi đóng tab (bổ sung cho lần ghi trong game). */
+window.addEventListener("beforeunload", () => { if (typeof _saveState === "function") _saveState(); });
+window.addEventListener("pagehide", () => { if (typeof _saveState === "function") _saveState(); });
+
+/** Tiện ích kiểm tra tiến độ trong console: HP.info() / SAVE.info() */
+if (typeof window !== "undefined") {
+  window.SINGLE = { info() { console.log("[progress]", _storageKey, JSON.parse(localStorage.getItem(_storageKey) || "null")); } };
+}
+    <\/script>
+
+    <!-- ui.js: khung mở đầu + chọn nhịp độ dùng chung -->
+    <script>
+// lib/ui.js — khung mở đầu + chọn nhịp độ dùng chung cho game một màn.
+//
+// Trước đây mỗi game tự dựng một màn intro khác nhau (có game không có),
+// còn thanh chọn độ khó thì bị nhúng rời vào file HTML sinh ra. File này
+// thay cả hai bằng MỘT khung duy nhất:
+//
+//   gqIntro(root, { id, icon, name, desc, steps }, mode => { ... });
+//
+// Mỗi mức chỉ đổi 3 thứ: pace (nhịp nhanh/chậm), lives (số mạng) và mult
+// (hệ số điểm). Game tự dùng các con số đó, KHÔNG vá setTimeout/Date.now
+// toàn cục — nhờ vậy bộ test Node vẫn boot được và không có hiệu ứng phụ.
+
+const GQ_MODES = [
+  { k: 'easy', n: 'Nhẹ nhàng', e: '🌱', pace: .8,  lives: 5, mult: 1,   d: 'Chậm, nhiều mạng' },
+  { k: 'mid',  n: 'Vừa sức',   e: '🔥', pace: 1,   lives: 3, mult: 1.5, d: 'Nhịp chuẩn' },
+  { k: 'hard', n: 'Thử thách', e: '⚡', pace: 1.3, lives: 2, mult: 2,   d: 'Nhanh, ít mạng' },
+];
+
+const GQ_MODE_KEY = 'gq_mode:';
+
+function gqReadMode(id) {
+  try {
+    const v = Number(localStorage.getItem(GQ_MODE_KEY + id));
+    return v >= 0 && v < GQ_MODES.length ? v : 1;
+  } catch (e) {
+    return 1;
+  }
+}
+
+function gqWriteMode(id, i) {
+  try { localStorage.setItem(GQ_MODE_KEY + id, String(i)); } catch (e) { /* ignore */ }
+}
+
+/** Nhân điểm gốc theo mức đã chọn. */
+function gqScore(mode, score) {
+  return Math.round((Number(score) || 0) * mode.mult);
+}
+
+/** Thời gian gốc (giây) co lại khi nhịp nhanh hơn. */
+function gqSecs(base, mode) {
+  return Math.max(8, Math.round(base / mode.pace));
+}
+
+/** Khoảng chờ gốc (ms) ngắn lại khi nhịp nhanh hơn. */
+function gqMs(base, mode) {
+  return Math.max(80, Math.round(base / mode.pace));
+}
+
+/**
+ * Vẽ màn mở đầu chung rồi gọi go(mode) khi người chơi chọn nhịp.
+ * @param {HTMLElement} root
+ * @param {{ id:string, icon:string, name:string, desc?:string, steps?:string[] }} cfg
+ * @param {(mode:object, index:number) => void} go
+ */
+function gqIntro(root, cfg, go) {
+  const last = gqReadMode(cfg.id);
+  const best = (S.best && S.best[cfg.id]) || 0;
+  root.innerHTML = \`<div class="panel intro">
+    <div class="intro-ic">\${cfg.icon || '🎮'}</div>
+    <h2>\${cfg.name || ''}</h2>
+    \${cfg.desc ? \`<p>\${cfg.desc}</p>\` : ''}
+    \${cfg.steps && cfg.steps.length ? \`<ul class="intro-steps">\${cfg.steps.map((s) => \`<li>\${s}</li>\`).join('')}</ul>\` : ''}
+    <p class="intro-best">\${best ? \`🏆 Kỷ lục của bạn: <b>\${best}</b>\` : 'Chọn nhịp độ để bắt đầu'}</p>
+    <div class="modes">\${GQ_MODES.map((m, i) => \`<button class="mode\${i === last ? ' sel' : ''}" data-mode="\${i}">
+      <i>\${m.e}</i><b>\${m.n}</b><em>\${m.d}</em></button>\`).join('')}</div>
+  </div>\`;
+  root.onclick = (e) => {
+    const b = e.target.closest('[data-mode]');
+    if (!b) return;
+    const i = Number(b.dataset.mode);
+    if (!(i >= 0 && i < GQ_MODES.length)) return;
+    gqWriteMode(cfg.id, i);
+    sfx.ok();
+    go(GQ_MODES[i], i);
+  };
+}
+
+/** Một dòng HUD thống nhất: điểm · mạng · tiến độ. */
+function gqHud(score, lives, extra) {
+  return \`<div class="hud">
+    <span>⭐ <b>\${score}</b></span>
+    <span class="hearts">\${lives > 0 ? '❤️'.repeat(lives) : '💔'}</span>
+    \${extra ? \`<span>\${extra}</span>\` : ''}
+  </div>\`;
+}
+
+/** Hàng chấm tiến độ cho game theo lượt. */
+function gqDots(total, done) {
+  return \`<div class="dots">\${Array.from({ length: total }, (_, i) => \`<i class="\${i < done ? 'on' : ''}"></i>\`).join('')}</div>\`;
+}
+    <\/script>
+
+    <!-- Game: riddle — nội dung riêng của file này -->
+    <script>
+// src/games/offline/games-src/riddle.js — Phản Xạ Đèn Xanh
+// Chờ đèn xanh rồi chạm thật nhanh. Chạm khi đèn đỏ là phạm luật.
+
+const RIDDLE_ROUNDS = 10;
+
+function riddleValid(s) {
+    return !!s && s.v === 2 &&
+        Number.isInteger(s.mode) && s.mode >= 0 && s.mode < GQ_MODES.length &&
+        Number.isInteger(s.round) && s.round >= 0 && s.round < RIDDLE_ROUNDS &&
+        Number.isFinite(s.score) && s.score >= 0 &&
+        Number.isInteger(s.lives) && s.lives > 0 && s.lives <= 5 &&
+        Array.isArray(s.reactions) && s.reactions.every((n) => Number.isFinite(n) && n >= 0);
+}
+
+function startRiddle(root, mode, modeIndex, resume) {
+    const id = 'riddle';
+    let round = resume ? resume.round : 0;
+    let score = resume ? resume.score : 0;
+    let lives = resume ? resume.lives : mode.lives;
+    let reactions = resume ? resume.reactions.slice() : [];
+    let phase = 'wait';
+    let goAt = 0;
+    let lastNote = 'Chờ đèn xanh nhé…';
+    let ended = false;
+
+    function save() {
+        if (ended) return;
+        saveOfflineRun(id, { v: 2, mode: modeIndex, round, score, lives, reactions });
+    }
+
+    function paint() {
+        const go = phase === 'go';
+        const wait = phase === 'wait';
+        const label = go ? 'ĐÈN XANH — CHẠY!' : wait ? 'ĐÈN ĐỎ — CHỜ' : 'KẾT QUẢ';
+        const icon = go ? '🟢' : wait ? '🔴' : '🏁';
+        root.innerHTML = \`\${gqHud(score, lives, \`Lượt <b>\${round + 1}/\${RIDDLE_ROUNDS}</b>\`)}
+            <div class="big-signal \${go ? 'go' : wait ? 'stop' : ''}">
+                <div style="font-size:56px;line-height:1">\${icon}</div>
+                <div style="margin-top:8px">\${label}</div>
+            </div>
+            <div class="stat-line"><span>\${lastNote}</span>\${reactions.length ? \`<span>Gần nhất: \${Math.round(reactions[reactions.length - 1])} ms</span>\` : ''}</div>
+            <button class="btn" data-go="1" style="width:100%;min-height:72px;font-size:20px">🏃 CHẠY!</button>
+            <p class="hint">Chỉ chạm khi đèn xanh. Chạm sớm sẽ mất một mạng; phản xạ càng nhanh điểm càng cao.</p>\`;
+    }
+
+    function beginWait() {
+        if (ended) return;
+        phase = 'wait';
+        lastNote = round === 0 ? 'Chờ đèn xanh nhé…' : 'Lượt mới — chờ đèn xanh…';
+        paint();
+        T.set(() => {
+            if (ended || phase !== 'wait') return;
+            phase = 'go';
+            goAt = Date.now();
+            lastNote = 'Chạm ngay!';
+            sfx.tick();
+            paint();
+            T.set(() => {
+                if (ended || phase !== 'go') return;
+                lives--;
+                sfx.bad();
+                lastNote = 'Hết giờ! Đèn đã chuyển đỏ.';
+                phase = 'done';
+                if (lives <= 0) { end(); return; }
+                round++;
+                if (round >= RIDDLE_ROUNDS) { T.set(end, 700); return; }
+                paint();
+                save();
+                T.set(beginWait, 1000);
+            }, gqMs(1900, mode));
+        }, gqMs(rnd(900, 2600), mode));
+    }
+
+    function record(reaction) {
+        reactions.push(reaction);
+        const pts = reaction < 250 ? 50 : reaction < 400 ? 35 : reaction < 650 ? 20 : 10;
+        score += pts;
+        phase = 'done';
+        lastNote = reaction < 250 ? \`Siêu nhanh! +\${pts}\` : \`Tốt lắm! +\${pts}\`;
+        sfx.ok();
+        round++;
+        paint();
+        save();
+        if (round >= RIDDLE_ROUNDS) { T.set(end, 900); return; }
+        T.set(beginWait, 1000);
+    }
+
+    function early() {
+        phase = 'done';
+        lives--;
+        lastNote = 'Chạm sớm quá! Chờ đèn xanh đã.';
+        sfx.bad();
+        if (lives <= 0) { end(); return; }
+        round++;
+        paint();
+        save();
+        if (round >= RIDDLE_ROUNDS) { T.set(end, 900); return; }
+        T.set(beginWait, 1200);
+    }
+
+    function end() {
+        if (ended) return;
+        ended = true;
+        T.clear();
+        clearOfflineRun(id);
+        const avg = reactions.length ? Math.round(reactions.reduce((a, b) => a + b, 0) / reactions.length) : 0;
+        if (avg && avg < 350) S.flags.riddle = true;
+        finish({
+            id, score: gqScore(mode, score), xp: Math.round(score / 4) + round,
+            lines: [avg ? \`Phản xạ trung bình \${avg} ms\` : 'Chưa có lượt phản xạ nào', \`Hoàn thành \${round}/\${RIDDLE_ROUNDS} lượt\`],
+            replay: riddleGame, details: { avg, reactions, round },
+        });
+    }
+
+    root.onclick = (e) => {
+        if (ended) return;
+        if (!e.target.closest('[data-go]')) return;
+        if (phase === 'wait') { T.clear(); early(); return; }
+        if (phase === 'go') {
+            T.clear();
+            record(Math.max(0, Date.now() - goAt));
+        }
+    };
+
+    beginWait();
+}
+
+function riddleGame(root) {
+    const saved = loadOfflineRun('riddle');
+    if (riddleValid(saved)) {
+        startRiddle(root, GQ_MODES[saved.mode], saved.mode, saved);
+        return;
+    }
+    if (saved) clearOfflineRun('riddle');
+
+    gqIntro(root, {
+        id: 'riddle', icon: '🚦', name: 'Phản Xạ Đèn Xanh',
+        desc: 'Đèn đỏ thì chờ, đèn xanh thì chạm thật nhanh — trò chơi của những đôi tay nhanh nhất.',
+        steps: [
+            'Mỗi lượt đèn đỏ sáng lên trong một khoảng thời gian ngẫu nhiên.',
+            'Khi đèn chuyển xanh, chạm ngay để ghi điểm theo tốc độ phản xạ.',
+            'Chạm khi đèn đỏ hoặc để đèn xanh hết thời gian sẽ mất một mạng.',
+        ],
+    }, (mode, index) => startRiddle(root, mode, index));
+}
+
+startSingleGame({
+    id: 'riddle',
+    name: 'Phản Xạ Đèn Xanh',
+    icon: '🚦',
+    storageKey: 'offline_riddle',
+    mount: riddleGame,
+    badges: [
+        { id: 'riddle', n: 'Phản xạ dưới 350ms', i: '⚡', ok: () => !!S.flags.riddle },
+    ],
+});
+    <\/script>
+</body>
+</html>
+`;export{e as default};
