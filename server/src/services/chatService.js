@@ -1,5 +1,6 @@
 import { getCollection } from "../db.js";
 import { isBlockedBetween } from "./blockService.js";
+import { isReactionIcon, STICKER_CONTENT } from "./reactionService.js";
 
 const MESSAGES = "messages";
 const MAX_MESSAGE_LENGTH = 500;
@@ -52,11 +53,20 @@ export async function listMessages(gameId, { before, limit } = {}) {
 /**
  * Gửi tin nhắn mới. Hỗ trợ idempotency qua clientMessageId.
  */
-export async function sendMessage({ conversationId, senderId, playerName, content, clientMessageId, type = "text" }) {
-  // Validate
-  const text = String(content || "").trim();
-  if (!text) throw new Error("Nội dung tin nhắn không được để trống");
-  if (text.length > MAX_MESSAGE_LENGTH) throw new Error(`Tin nhắn tối đa ${MAX_MESSAGE_LENGTH} ký tự`);
+export async function sendMessage({ conversationId, senderId, playerName, content, clientMessageId, type = "text", kind, sticker }) {
+  // kind: "text" (mặc định) | "sticker". Tin sticker không có nội dung chữ —
+  // `sticker` là định danh biểu tượng trong tập cho phép (reactionService),
+  // còn `content` lưu nhãn mô tả để danh sách cuộc trò chuyện / thông báo
+  // hiển thị thay cho mã icon. Kiểm tra chặn ở dưới áp dụng như tin thường.
+  const msgKind = kind === "sticker" ? "sticker" : "text";
+  let text = String(content || "").trim();
+  if (msgKind === "sticker") {
+    if (!isReactionIcon(sticker)) throw new Error("Biểu tượng cảm xúc không hợp lệ");
+    text = STICKER_CONTENT;
+  } else {
+    if (!text) throw new Error("Nội dung tin nhắn không được để trống");
+    if (text.length > MAX_MESSAGE_LENGTH) throw new Error(`Tin nhắn tối đa ${MAX_MESSAGE_LENGTH} ký tự`);
+  }
   if (!conversationId) throw new Error("Thiếu conversationId");
   if (!senderId) throw new Error("Thiếu senderId");
 
@@ -88,6 +98,9 @@ export async function sendMessage({ conversationId, senderId, playerName, conten
     playerName: String(playerName || "Ẩn danh").slice(0, 24),
     clientMessageId: clientMessageId || null,
     type,
+    kind: msgKind,
+    sticker: msgKind === "sticker" ? sticker : null,
+    reactions: [],
     content: text,
     createdAt: new Date().toISOString(),
   };
