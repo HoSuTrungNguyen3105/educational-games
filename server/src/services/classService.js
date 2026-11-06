@@ -102,3 +102,24 @@ export async function setStudentClass(studentId, classId) {
   await getCollection("users").updateOne({ id: studentId }, { $set: { classId } });
   return true;
 }
+
+/** Giáo viên có phải giáo viên được phân vào lớp này không (teacher_classes). */
+export async function isClassTeacher(teacherId, classId) {
+  const mapping = await getCollection("teacher_classes").findOne({ teacherId, classId });
+  return !!mapping;
+}
+
+/**
+ * Gỡ học sinh khỏi lớp. Tư cách thành viên lớp chỉ nằm ở `users.classId`
+ * (getClassStudents truy vấn theo field đó, không có collection roster riêng)
+ * nên gỡ = đặt classId về null — đúng chiều ngược của setStudentClass.
+ * An toàn dữ liệu: KHÔNG xoá tài khoản, KHÔNG đụng vào bài đã nộp
+ * (submissions tra theo assignmentId/studentId, không phụ thuộc classId).
+ */
+export async function removeStudentFromClass(studentId, classId) {
+  const user = await getCollection("users").findOne({ id: studentId });
+  if (!user || user.role !== "student") throw new Error("Không tìm thấy học sinh");
+  if (user.classId !== classId) throw new Error("Học sinh không thuộc lớp này");
+  await getCollection("users").updateOne({ id: studentId }, { $set: { classId: null } });
+  return true;
+}

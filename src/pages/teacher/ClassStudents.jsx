@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { CircleUserRound, Hash, School, Search } from 'lucide-react';
-import { EmptyState, IconBack, IconMail, IconUsers, Loader, SearchInput } from '../../components/ui';
+import { CircleUserRound, Hash, School, Search, UserMinus } from 'lucide-react';
+import { ConfirmModal, EmptyState, IconBack, IconMail, IconUsers, Loader, SearchInput } from '../../components/ui';
+import { useConfirm } from '../../hooks/useConfirm.js';
 
 export default function ClassStudents({ classId }) {
   const [cls, setCls] = useState(null);
@@ -10,6 +11,7 @@ export default function ClassStudents({ classId }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
+  const { askConfirm, confirmProps } = useConfirm();
 
   useEffect(() => {
     if (!classId) return;
@@ -31,6 +33,24 @@ export default function ClassStudents({ classId }) {
       console.error(e);
     }
     setLoading(false);
+  }
+
+  function handleRemoveStudent(s) {
+    const name = s.displayName || s.name || 'học sinh này';
+    askConfirm({
+      title: 'Gỡ học sinh khỏi lớp',
+      message: `Gỡ ${name} khỏi lớp ${cls?.name || ''}? Tài khoản và bài đã nộp của học sinh vẫn được giữ nguyên.`,
+      confirmLabel: 'Gỡ khỏi lớp',
+      onConfirm: async () => {
+        try {
+          await classService.removeStudent(classId, s.id);
+          setStudents((prev) => prev.filter((x) => x.id !== s.id));
+        } catch (e) {
+          setError(e?.message || 'Không gỡ được học sinh khỏi lớp.');
+          console.error(e);
+        }
+      },
+    });
   }
 
   const filtered = students.filter(s => {
@@ -117,6 +137,15 @@ export default function ClassStudents({ classId }) {
                   </p>
                 )}
               </div>
+              {/* Gỡ khỏi lớp — server chỉ cho giáo viên của lớp hoặc admin */}
+              <button
+                onClick={() => handleRemoveStudent(s)}
+                title="Gỡ khỏi lớp"
+                aria-label={`Gỡ ${s.displayName || s.name || 'học sinh'} khỏi lớp`}
+                className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-ink/30 hover:text-red-500 hover:bg-red-50 transition"
+              >
+                <UserMinus className="w-4 h-4" />
+              </button>
             </div>
           ))}
         </div>
@@ -128,6 +157,8 @@ export default function ClassStudents({ classId }) {
           {filtered.length} / {students.length} học sinh
         </p>
       )}
+
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }

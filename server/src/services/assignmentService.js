@@ -1,5 +1,6 @@
 import { getCollection } from "../db.js";
 import { isAnswerCorrect } from "../lib/gradeAnswer.js";
+import { getClassStudents } from "./classService.js";
 
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -267,7 +268,26 @@ export async function listSubmissions({ assignmentId, studentId } = {}) {
   const query = {};
   if (assignmentId) query.assignmentId = assignmentId;
   if (studentId) query.studentId = studentId;
-  return getCollection("submissions").find(query).sort({ submittedAt: -1 }).toArray();
+  const subs = await getCollection("submissions").find(query).sort({ submittedAt: -1 }).toArray();
+  return attachStudents(subs);
+}
+
+/**
+ * Gắn thông tin học sinh TỐI THIỂU vào từng bài nộp (field `student`:
+ * id/username/name/avatarLoadout — cùng mẫu chiếu tối thiểu ở leaderboard và
+ * users/directory) để phía giáo viên hiện TÊN học sinh thay vì mã `user-…`.
+ * Bài nộp không có bản ghi user tương ứng (học sinh đã bị xoá, hoặc bài nộp
+ * khách với studentId dạng `guest_…`) → `student: null`, client rơi về ID.
+ */
+async function attachStudents(subs) {
+  const ids = [...new Set(subs.map((s) => s.studentId).filter(Boolean))];
+  if (ids.length === 0) return subs;
+  const users = await getCollection("users")
+    .find({ id: { $in: ids } })
+    .project({ _id: 0, id: 1, username: 1, name: 1, avatarLoadout: 1 })
+    .toArray();
+  const byId = new Map(users.map((u) => [u.id, { ...u, avatarLoadout: u.avatarLoadout || null }]));
+  return subs.map((s) => ({ ...s, student: byId.get(s.studentId) || null }));
 }
 
 export async function getAssignmentResult(assignmentId, studentId, { showCorrectAnswer = false } = {}) {
@@ -391,14 +411,35 @@ export async function getStudentCompletedAssignments(studentId) {
 export async function getAssignmentStats(assignmentId) {
   const subs = await getCollection("submissions").find({ assignmentId, status: "SUBMITTED" }).toArray();
   const total = subs.length;
-  if (total === 0) return { total: 0, avgScore: 0, maxScore: 0, minScore: 0, submittedCount: 0 };
-
   const scores = subs.map(s => s.score || 0);
-  return {
-    total,
-    submittedCount: total,
-    avgScore: Math.round(scores.reduce((a, b) => a + b, 0) / total),
-    maxScore: Math.max(...scores),
-    minScore: Math.min(...scores),
-  };
+  const base = total === 0
+    ? { total: 0, avgScore: 0, maxScore: 0, minScore: 0, submittedCount: 0 }
+    : {
+        total,
+        submittedCount: total,
+        avgScore: Math.round(scores.reduce((a, b) => a + b, 0) / total),
+        maxScore: Math.max(...scores),
+        minScore: Math.min(...scores),
+      };
+
+  // ── Tiến độ nộp theo lớp ──
+  // Sĩ số chỉ tính học sinh HIỆN CÒN trong lớp (roster sống); "đã nộp" ở đây
+  // là SỐ HỌC SINH có ít nhất một bài SUBMITTED — khác `total` ở trên là số
+  // BÀI nộp (một học sinh làm nhiều lần thì total đếm nhiều lần). Học sinh đã
+  // nộp rồi rời lớp vẫn nằm trong `total` nhưng không vào mẫu số ở đây.
+  // Bài đang IN_PROGRESS chưa tính là đã nộp.
+  const assignment = await getAssignmentById(assignmentId);
+  let classTotal = 0;
+  let submittedStudents = 0;
+  let notSubmitted = [];
+  if (assignment?.classId) {
+    const roster = await getClassStudents(assignment.classId);
+    const submittedIds = new Set(subs.map((s) => s.studentId));
+    classTotal = roster.length;
+    submittedStudents = roster.filter((u) => submittedIds.has(u.id)).length;
+    notSubmitted = roster
+      .filter((u) => !submittedIds.has(u.id))
+      .map((u) => ({ id: u.id, username: u.username, name: u.name, avatarLoadout: u.avatarLoadout || null }));
+  }
+  return { ...base, classTotal, submittedStudents, notSubmitted };
 }
