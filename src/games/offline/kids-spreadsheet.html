@@ -26,7 +26,8 @@ svg{display:block}
 .wc button{width:46px;height:30px;font-size:13px}
 .wc .x:hover{background:#e81123}
 
-#tabs{height:28px;background:var(--g);display:flex;align-items:flex-end;flex:none;color:#fff;overflow:hidden}
+#tabs{height:28px;background:var(--g);display:flex;align-items:flex-end;flex:none;color:#fff;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
 .tab{height:28px;padding:0 12px;font-size:12px;color:#fff;white-space:nowrap;flex:none}
 .tab.file{background:var(--gd);padding:0 20px;margin-right:4px}
 .tab.file:hover{background:#134a2c}
@@ -38,7 +39,7 @@ svg{display:block}
 .tell svg{width:14px;height:14px}
 .share{height:22px;margin:0 10px 3px 4px;padding:0 12px;border:1px solid rgba(255,255,255,.7);border-radius:2px;color:#fff}
 
-#ribbon{background:var(--rb);border-bottom:1px solid var(--bd);height:94px;display:flex;padding:3px 4px 0;overflow-x:auto;overflow-y:hidden;flex:none}
+#ribbon{background:var(--rb);border-bottom:1px solid var(--bd);height:94px;display:flex;padding:3px 4px 0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;flex:none}
 #ribbon.hide{display:none}
 .grp{display:flex;flex-direction:column;padding:0 5px;border-right:1px solid var(--bd);flex:none}
 .gc{flex:1;display:flex;gap:2px;align-items:flex-start;padding-top:2px}

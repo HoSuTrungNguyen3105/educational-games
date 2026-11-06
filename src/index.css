@@ -281,3 +281,28 @@ textarea {
     height: calc(100% - env(safe-area-inset-top)) !important;
   }
 }
+
+/* ============================================================
+   Hàng danh sách người ở màn hẹp (Tìm bạn, Bảng xếp hạng)
+   - Mẫu dùng chung cho hàng dạng [avatar + cột tên co giãn + phần tử
+     phụ kích thước cố định]: ở ≤480px phần tử phụ nhường dòng chính
+     cho tên để tên không bị ellipsis tới mức không đọc được.
+   - .person-actions: bọc cụm nút hành động của hàng. Ngoài 480px là
+     display:contents (vô hình về bố cục, desktop giữ nguyên); ở
+     ≤480px thành dòng 2 nằm dưới tên, thụt bằng bề rộng avatar.
+   - Bảng xếp hạng: ở ≤480px số xu (.lb-coin ở cuối hàng) ẩn khỏi
+     dòng chính và hiện ở dòng phụ (.lb-coin-sub) để tên + badge
+     "Bạn" có trọn bề rộng dòng.
+   ============================================================ */
+.person-actions{ display:contents; }
+.lb-coin{ display:inline-flex; }
+.lb-coin-sub{ display:none; }
+@media (max-width:480px){
+  .person-row{ flex-wrap:wrap; }
+  .person-actions{
+    display:flex; flex-wrap:wrap; align-items:center;
+    gap:.5rem; flex-basis:100%; padding-left:3.5rem;
+  }
+  .lb-coin{ display:none; }
+  .lb-coin-sub{ display:inline-flex; }
+}
