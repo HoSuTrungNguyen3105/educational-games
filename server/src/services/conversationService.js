@@ -169,6 +169,26 @@ export async function listConversationsEnriched(userId) {
   const readStateMap = {};
   for (const rs of readStates) readStateMap[rs.conversationId] = rs;
 
+  // Tóm tắt đối tác của các cuộc trò chuyện DM (id/username/name/avatar) —
+  // client KHÔNG tự tra được qua GET /users/:id vì endpoint đó đòi quyền
+  // users.view (chỉ giáo viên/admin có; học sinh bị 403), khiến danh sách
+  // cuộc trò chuyện không hiện tên đối tác và bấm vào không mở được chat.
+  // DTO mang sẵn `partner` thì client không cần gọi thêm API nào.
+  const partnerIds = [...new Set(
+    convs
+      .filter((c) => c.type === "dm" && Array.isArray(c.memberIds))
+      .map((c) => c.memberIds.find((id) => id !== userId))
+      .filter(Boolean)
+  )];
+  const partnerById = new Map();
+  if (partnerIds.length > 0) {
+    const users = await getCollection("users")
+      .find({ id: { $in: partnerIds } })
+      .project({ _id: 0, id: 1, username: 1, name: 1, avatarLoadout: 1 })
+      .toArray();
+    for (const u of users) partnerById.set(u.id, { ...u, avatarLoadout: u.avatarLoadout || null });
+  }
+
   const enriched = [];
   for (const conv of convs) {
     const lastMsg = lastMsgMap[conv.id];
@@ -176,14 +196,20 @@ export async function listConversationsEnriched(userId) {
     let unread = 0;
 
     if (lastMsg) {
+      // "Chưa đọc" chỉ tính tin ĐẾN (của người khác) — trước đây đếm cả tin
+      // do CHÍNH user gửi nên vừa tự gửi 1 tin là huy hiệu đã hiện "1".
       if (!readState?.lastReadMessageId) {
-        // Chưa đọc gì → đếm tất cả message trong conv
-        unread = await getCollection(MESSAGES).countDocuments({ conversationId: conv.id });
+        // Chưa đọc gì → đếm tất cả tin đến trong conv
+        unread = await getCollection(MESSAGES).countDocuments({
+          conversationId: conv.id,
+          senderId: { $ne: userId },
+        });
       } else {
         const readMsg = await getCollection(MESSAGES).findOne({ id: readState.lastReadMessageId });
         if (readMsg) {
           unread = await getCollection(MESSAGES).countDocuments({
             conversationId: conv.id,
+            senderId: { $ne: userId },
             $or: [
               { createdAt: { $gt: readMsg.createdAt } },
               { createdAt: readMsg.createdAt, id: { $gt: readMsg.id } },
@@ -193,8 +219,13 @@ export async function listConversationsEnriched(userId) {
       }
     }
 
+    const partnerId = conv.type === "dm" && Array.isArray(conv.memberIds)
+      ? conv.memberIds.find((id) => id !== userId)
+      : null;
+
     enriched.push({
       ...conv,
+      partner: partnerId ? partnerById.get(partnerId) || null : null,
       lastMessage: lastMsg ? {
         content: lastMsg.content,
         senderId: lastMsg.senderId,

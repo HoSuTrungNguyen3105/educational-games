@@ -132,14 +132,20 @@ export async function getUnreadCount(gameId, playerId) {
   if (!gameId || !playerId) return 0;
   const readCol = getCollection("chatReadStates");
   const state = await readCol.findOne({ conversationId: gameId, playerId });
+  // "Chưa đọc" chỉ tính tin của NGƯỜI KHÁC — trước đây đếm cả tin do chính
+  // player gửi (giống lỗi ở conversationService.listConversationsEnriched).
   if (!state?.lastReadMessageId) {
-    // Chưa đọc gì → đếm tất cả
-    return getCollection(MESSAGES).countDocuments({ conversationId: gameId });
+    // Chưa đọc gì → đếm tất cả tin đến
+    return getCollection(MESSAGES).countDocuments({
+      conversationId: gameId,
+      senderId: { $ne: playerId },
+    });
   }
   const cursor = await getCollection(MESSAGES).findOne({ id: state.lastReadMessageId });
   if (!cursor) return 0;
   return getCollection(MESSAGES).countDocuments({
     conversationId: gameId,
+    senderId: { $ne: playerId },
     $or: [
       { createdAt: { $gt: cursor.createdAt } },
       { createdAt: cursor.createdAt, id: { $gt: cursor.id } },

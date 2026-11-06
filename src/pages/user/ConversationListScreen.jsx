@@ -50,6 +50,20 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
     try {
       const data = await conversationApi.list();
       setConversations(data);
+      // Nạp sẵn thông tin đối tác DM từ `partner` server gắn trong DTO vào
+      // cache hiển thị (tên/avatar) — học sinh không gọi được GET /users/:id
+      // (đòi quyền users.view, bị 403) nên trước đây cache này luôn trống.
+      if (Array.isArray(data) && userAuth?.user) {
+        const seed = {};
+        for (const conv of data) {
+          if (conv.type !== "dm" || !conv.partner || !conv.memberIds) continue;
+          const otherId = conv.memberIds.find(id => id !== userAuth.user.id);
+          if (otherId && conv.partner.id === otherId) seed[otherId] = conv.partner;
+        }
+        if (Object.keys(seed).length > 0) {
+          setUserCache(prev => ({ ...seed, ...prev }));
+        }
+      }
       setError(null);
     } catch (e) {
       setError(e.message);
@@ -80,14 +94,19 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
     };
   }, [token, loadConversations]);
 
-  // Fetch other user info for each conversation
+  // Fetch other user info for each conversation.
+  // Đối tác DM đã có sẵn trong DTO (`conv.partner`, được nạp vào userCache
+  // ở loadConversations) — hiệu ứng này chỉ còn tra getById cho cuộc trò
+  // chuyện THIẾU partner. GET /users/:id đòi quyền users.view nên học sinh
+  // luôn bị 403: trước đây đây là đường duy nhất, cache không bao giờ nạp
+  // được → danh sách mất tên đối tác và bấm vào không mở được khung chat.
   useEffect(() => {
     if (!conversations || !userAuth?.user) return;
     const ids = new Set();
     for (const conv of conversations) {
       if (conv.type !== "dm" || !conv.memberIds) continue;
       const otherId = conv.memberIds.find(id => id !== userAuth.user.id);
-      if (otherId && !userCache[otherId]) ids.add(otherId);
+      if (otherId && !userCache[otherId] && !(conv.partner && conv.partner.id === otherId)) ids.add(otherId);
     }
     if (ids.size === 0) return;
 
@@ -108,7 +127,8 @@ export default function ConversationListScreen({ userAuth, onLogout }) {
       setConversations(prev => prev?.map(c =>
         c.id === conv.id ? { ...c, unread: 0 } : c
       )) || [];
-      const target = userCache[otherId];
+      const target = userCache[otherId]
+        || (conv.partner && conv.partner.id === otherId ? conv.partner : null);
       if (target) {
         setChatTarget(target);
       } else {
