@@ -61,6 +61,21 @@ r.get("/:id/students", auth, async (req, res) => {
   } catch (e) { sendError(res, e.message, 500); }
 });
 
+// Remove a student from class (teacher assigned to the class, or admin).
+// Chỉ gỡ tư cách thành viên — tài khoản và bài đã nộp của học sinh được giữ.
+r.delete("/:id/students/:studentId", auth, requireTeacher, async (req, res) => {
+  try {
+    const cls = await classService.getClassById(req.params.id);
+    if (!cls) return sendError(res, "Không tìm thấy lớp", 404);
+    if (req.user.role !== "admin") {
+      const own = await classService.isClassTeacher(req.user.sub, req.params.id);
+      if (!own) return sendError(res, "Chỉ giáo viên của lớp mới gỡ được học sinh khỏi lớp", 403);
+    }
+    await classService.removeStudentFromClass(req.params.studentId, req.params.id);
+    sendSuccess(res, { ok: true });
+  } catch (e) { sendError(res, e.message, 400); }
+});
+
 // Join class by code (student)
 r.post("/join", auth, async (req, res) => {
   try {

@@ -5,6 +5,7 @@ import { Copy, Trophy, Clock, FileQuestionMark, Lock, Repeat, Link2 } from 'luci
 import { ConfirmModal, IconBack, IconChart, IconCheck, IconEdit, IconUsers, SearchInput, ViewToggle, cardGridClass, tableWrapClass, useViewMode } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
+import { DressUpAvatarSmall } from '../../components/avatar/DressUpAvatar.jsx';
 
 export default function AssignmentDetail({ assignmentId }) {
   const [assignment, setAssignment] = useState(null);
@@ -74,7 +75,13 @@ export default function AssignmentDetail({ assignmentId }) {
     let list = submissions;
     if (query.trim()) {
       const q = query.trim().toLowerCase();
-      list = list.filter((s) => String(s.studentId).toLowerCase().includes(q));
+      list = list.filter((s) =>
+        [s.studentId, s.student?.name, s.student?.username]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(q),
+      );
     }
     return [...list].sort((a, b) => {
       const av = a.score ?? -1, bv = b.score ?? -1;
@@ -229,18 +236,16 @@ export default function AssignmentDetail({ assignmentId }) {
             {filteredSubmissions.map((s) => (
               <div key={s.id} className="bg-paper border border-ink/5 rounded-xl px-3 py-2.5 flex items-center gap-3">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="w-8 h-8 rounded-full bg-gold/10 text-gold text-xs font-semibold flex items-center justify-center shrink-0">
-                    {String(s.studentId).slice(0, 2).toUpperCase()}
-                  </span>
+                  <StudentAvatar student={s.student} fallbackId={s.studentId} size={32} />
                   <div className="min-w-0">
                     <p className="text-sm font-body text-ink truncate flex items-center gap-1.5">
                       {s.score != null && s.score === topScore && (
                         <Trophy className="w-3.5 h-3.5 text-gold shrink-0" />
                       )}
-                      {s.studentId}
+                      {studentDisplayName(s.student, s.studentId)}
                     </p>
                     <p className="text-[11px] font-body text-ink/40 truncate">
-                      Lần {s.attemptNumber || 1} · {s.submittedAt ? new Date(s.submittedAt).toLocaleString('vi') : '-'}
+                      {s.student?.username ? `@${s.student.username} · ` : ''}Lần {s.attemptNumber || 1} · {s.submittedAt ? new Date(s.submittedAt).toLocaleString('vi') : '-'}
                     </p>
                   </div>
                 </div>
@@ -281,10 +286,13 @@ export default function AssignmentDetail({ assignmentId }) {
                     </td>
                     <td className="py-2.5">
                       <div className="flex items-center gap-2.5">
-                        <span className="w-7 h-7 rounded-full bg-gold/10 text-gold text-xs font-semibold flex items-center justify-center shrink-0">
-                          {String(s.studentId).slice(0, 2).toUpperCase()}
-                        </span>
-                        <span className="text-ink">{s.studentId}</span>
+                        <StudentAvatar student={s.student} fallbackId={s.studentId} size={28} />
+                        <div className="min-w-0">
+                          <p className="text-ink leading-tight">{studentDisplayName(s.student, s.studentId)}</p>
+                          {s.student?.username && (
+                            <p className="text-[11px] text-ink/40 leading-tight">@{s.student.username}</p>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="py-2.5 text-ink/50">{s.attemptNumber || 1}</td>
@@ -304,8 +312,74 @@ export default function AssignmentDetail({ assignmentId }) {
         )}
       </div>
 
+      {/* Chưa nộp — roster sống của lớp trừ đi học sinh đã có bài SUBMITTED (server tính trong stats) */}
+      {stats && stats.classTotal > 0 && (
+        <div className="note-card p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <IconUsers className="w-4 h-4 text-gold" />
+              <h3 className="font-display text-sm text-ink">Chưa nộp bài ({stats.notSubmitted?.length ?? 0})</h3>
+            </div>
+            <span className="text-xs font-body text-ink/50">
+              Đã nộp <span className="font-semibold text-ink">{stats.submittedStudents ?? 0}/{stats.classTotal}</span> học sinh
+            </span>
+          </div>
+
+          {(stats.notSubmitted || []).length === 0 ? (
+            <EmptyState text="Cả lớp đã nộp bài 🎉" />
+          ) : (
+            <div className={cardGridClass(viewMode)}>
+              {stats.notSubmitted.map((u) => (
+                <div key={u.id} className="bg-paper border border-ink/5 rounded-xl px-3 py-2.5 flex items-center gap-3">
+                  <StudentAvatar student={u} fallbackId={u.id} size={32} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-body text-ink truncate">{studentDisplayName(u, u.id)}</p>
+                    {u.username && (
+                      <p className="text-[11px] font-body text-ink/40 truncate">@{u.username}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <ConfirmModal {...confirmProps} />
     </div>
+  );
+}
+
+/**
+ * Tên hiển thị của học sinh: ưu tiên `student.name` do server gắn vào bài nộp;
+ * thiếu bản ghi user (học sinh đã xoá / bài nộp khách) thì rơi về mã ID như cũ.
+ */
+function studentDisplayName(student, fallbackId) {
+  return student?.name || fallbackId;
+}
+
+/** Chữ viết tắt cho avatar dự phòng — lấy từ TÊN học sinh, không phải mã ID. */
+function studentInitials(student, fallbackId) {
+  const name = (student?.name || '').trim();
+  if (!name) return String(fallbackId || '?').slice(0, 2).toUpperCase();
+  const parts = name.split(/\s+/);
+  const first = parts[0].charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : (parts[0].charAt(1) || '');
+  return (first + last).toUpperCase();
+}
+
+/** Avatar học sinh: vẽ đúng bộ đồ đã lưu (avatarLoadout) nếu có, không thì vòng tròn chữ viết tắt. */
+function StudentAvatar({ student, fallbackId, size = 32 }) {
+  if (student?.avatarLoadout) {
+    return <DressUpAvatarSmall kind="avatar" state={student.avatarLoadout} size={size} label={student.name || 'Avatar học sinh'} />;
+  }
+  return (
+    <span
+      className="rounded-full bg-gold/10 text-gold text-xs font-semibold flex items-center justify-center shrink-0"
+      style={{ width: size, height: size }}
+    >
+      {studentInitials(student, fallbackId)}
+    </span>
   );
 }
 

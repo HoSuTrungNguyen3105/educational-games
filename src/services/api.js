@@ -776,6 +776,7 @@ export const classService = {
   async delete_(id) { return apiFetch(`/classes/${id}`, { method: "DELETE" }); },
   async join(code) { return apiFetch("/classes/join", { method: "POST", body: { code } }); },
   async getStudents(id) { return apiFetch(`/classes/${id}/students`) || []; },
+  async removeStudent(classId, studentId) { return apiFetch(`/classes/${classId}/students/${studentId}`, { method: "DELETE" }); },
 };
 
 export const assignmentService = {
