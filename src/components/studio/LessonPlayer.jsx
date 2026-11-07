@@ -13,23 +13,64 @@ import LessonElementView from "./LessonElementView.jsx";
 // dấu trước khi học sinh trả lời. Player chỉ chấm qua callback
 // `checkAnswer(el, value)` do nơi dùng cấp (xem trước: chấm tại chỗ bằng
 // dữ liệu giáo viên đang soạn qua isLessonAnswerCorrect; học sinh thật:
-// KHÔNG tự chấm ở client vì DTO không còn correctAnswer). Feedback +
-// giải thích chỉ hiện SAU khi đã kiểm tra; trả lời sai thì được thử lại
-// và đáp án đúng vẫn chưa lộ. Player không ghi kết quả thật nào.
+// chấm phía SERVER qua /lessons/published/:id/check vì DTO không còn
+// correctAnswer). `checkAnswer` có thể trả boolean (đồng bộ, xem trước)
+// hoặc Promise<boolean | { correct, points?, feedback?, explanation? }>
+// (bất đồng bộ, học sinh thật — feedback/giải thích do server cấp, giải
+// thích chỉ có khi đúng). Feedback + giải thích chỉ hiện SAU khi đã kiểm
+// tra; trả lời sai thì được thử lại và đáp án đúng vẫn chưa lộ.
+//
+// Đợt 3 bổ sung (đều tuỳ chọn, xem trước không truyền nên không đổi):
+//   • `initialAnswers` — seed trạng thái (khôi phục tiến độ: câu đã đúng
+//     hiển thị đã hoàn thành và khoá sửa).
+//   • `onAnswerChecked(el, state)` — báo mỗi lượt chấm xong (trang học
+//     dùng để cập nhật điểm/tiến độ hiển thị).
+//   • `onPageChange(idx, total)` — báo khi đổi trang (trang học ghi nhận
+//     hoàn thành bài không có câu hỏi khi mở tới trang cuối).
+//   • `playedGameIds` — Set id phần tử game đã chơi trong phiên (badge).
+//   • `headerExtra` — nút/chip thêm ở header (điểm + trạng thái bài).
 
 const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+
+/** Kết quả chấm có thể là boolean (xem trước) hoặc object (server). */
+const resultIsCorrect = (result) =>
+  result === true || (result !== null && typeof result === "object" && result.correct === true);
 
 function QuestionPlay({ el, state, onChange, checkAnswer }) {
   const p = el.props || {};
   const { value, result } = state;
   const answered = result !== null && result !== undefined;
+  const isCorrect = answered && resultIsCorrect(result);
   const canCheck = typeof checkAnswer === "function";
+  const [checking, setChecking] = useState(false);
 
-  const doCheck = () => {
-    if (!canCheck || value === undefined || value === null || value === "") return;
-    onChange(el.id, { value, result: Boolean(checkAnswer(el, value)) });
+  const doCheck = async () => {
+    if (!canCheck || checking || value === undefined || value === null || value === "") return;
+    setChecking(true);
+    try {
+      const r = await checkAnswer(el, value);
+      const next = r !== null && typeof r === "object"
+        ? { ...r, correct: Boolean(r.correct) }
+        : Boolean(r);
+      onChange(el.id, { value, result: next });
+    } catch {
+      // Lỗi mạng/server: giữ nguyên trạng thái "chưa trả lời" để học sinh
+      // thử lại được (nơi dùng tự báo lỗi cho người dùng nếu cần).
+    } finally {
+      setChecking(false);
+    }
   };
   const retry = () => onChange(el.id, { value, result: null });
+
+  // Feedback/giải thích: ưu tiên dữ liệu server trả về qua kết quả chấm;
+  // thiếu thì rơi về props (chế độ xem trước của giáo viên còn đủ props).
+  const serverFeedback = result !== null && typeof result === "object" ? result.feedback : undefined;
+  const feedbackText = serverFeedback !== undefined && serverFeedback !== ""
+    ? serverFeedback
+    : (isCorrect ? p.feedbackCorrect : p.feedbackWrong);
+  const explanation = result !== null && typeof result === "object" && "explanation" in result
+    ? result.explanation
+    : p.explanation;
 
   return (
     <div className="w-full h-full flex flex-col rounded-2xl overflow-hidden"
@@ -43,11 +84,11 @@ function QuestionPlay({ el, state, onChange, checkAnswer }) {
           <div className="grid gap-2" style={{ gridTemplateColumns: (p.options || []).length > 2 ? "1fr 1fr" : "1fr" }}>
             {(p.options || []).map((opt, i) => {
               const chosen = value === opt.id;
-              const isRightChoice = answered && result === true && chosen;
-              const isWrongChoice = answered && result === false && chosen;
+              const isRightChoice = answered && isCorrect && chosen;
+              const isWrongChoice = answered && !isCorrect && chosen;
               return (
                 <button key={opt.id} type="button"
-                  onClick={() => { if (!(answered && result === true)) onChange(el.id, { value: opt.id, result: null }); }}
+                  onClick={() => { if (!isCorrect) onChange(el.id, { value: opt.id, result: null }); }}
                   className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition"
                   style={{
                     border: `2px solid ${isRightChoice ? "#1B998B" : isWrongChoice ? "#D64545" : chosen ? "#2F6FED" : "#E7D9BE"}`,
@@ -70,12 +111,12 @@ function QuestionPlay({ el, state, onChange, checkAnswer }) {
         ) : (
           <input
             value={value || ""}
-            onChange={(e) => { if (!(answered && result === true)) onChange(el.id, { value: e.target.value, result: null }); }}
+            onChange={(e) => { if (!isCorrect) onChange(el.id, { value: e.target.value, result: null }); }}
             placeholder="Nhập đáp án của em…"
             className="w-full rounded-xl px-3 py-3 outline-none"
             style={{
-              border: `2px solid ${answered ? (result ? "#1B998B" : "#D64545") : "#C9BBA0"}`,
-              background: answered ? (result ? "#DBF1EE" : "#FDECEC") : "#FFFBF2",
+              border: `2px solid ${answered ? (isCorrect ? "#1B998B" : "#D64545") : "#C9BBA0"}`,
+              background: answered ? (isCorrect ? "#DBF1EE" : "#FDECEC") : "#FFFBF2",
               fontSize: 19, color: "#243B53",
             }}
           />
@@ -85,24 +126,24 @@ function QuestionPlay({ el, state, onChange, checkAnswer }) {
       <div className="px-4 pb-3.5">
         {!answered && canCheck && (
           <button type="button" onClick={doCheck}
-            disabled={value === undefined || value === null || value === ""}
+            disabled={checking || value === undefined || value === null || value === ""}
             className="px-4 py-2 rounded-full font-semibold text-white text-[15px] disabled:opacity-40"
             style={{ background: "#2F6FED" }}>
-            Kiểm tra
+            {checking ? "Đang chấm…" : "Kiểm tra"}
           </button>
         )}
         {!answered && !canCheck && (
           <p className="text-[13px] text-[#8A7C63] italic">Câu hỏi sẽ được chấm khi nộp bài.</p>
         )}
-        {answered && result === true && (
+        {answered && isCorrect && (
           <div className="rounded-xl px-3 py-2.5" style={{ background: "#DBF1EE", fontSize: 16, color: "#0C5B52" }}>
-            <b>Đúng rồi!</b>{p.feedbackCorrect ? ` ${p.feedbackCorrect}` : ""}
-            {p.explanation && <div className="mt-1" style={{ color: "#24514B" }}>{p.explanation}</div>}
+            <b>Đúng rồi!</b>{feedbackText ? ` ${feedbackText}` : ""}
+            {explanation && <div className="mt-1" style={{ color: "#24514B" }}>{explanation}</div>}
           </div>
         )}
-        {answered && result === false && (
+        {answered && !isCorrect && (
           <div className="flex items-start gap-3 rounded-xl px-3 py-2.5" style={{ background: "#FDECEC", fontSize: 16, color: "#7A1F1F" }}>
-            <span className="flex-1"><b>Chưa đúng.</b>{p.feedbackWrong ? ` ${p.feedbackWrong}` : " Em thử lại nhé!"}</span>
+            <span className="flex-1"><b>Chưa đúng.</b>{feedbackText ? ` ${feedbackText}` : " Em thử lại nhé!"}</span>
             <button type="button" onClick={retry}
               className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-semibold text-white text-[14px]"
               style={{ background: "#D64545" }}>
@@ -115,14 +156,48 @@ function QuestionPlay({ el, state, onChange, checkAnswer }) {
   );
 }
 
-export default function LessonPlayer({ lesson, gameById = {}, preview = false, checkAnswer, onPlayGame, onExit }) {
+export default function LessonPlayer({
+  lesson, gameById = {}, preview = false, checkAnswer, onPlayGame, onExit,
+  initialAnswers = {}, onAnswerChecked, onPageChange, playedGameIds = null, headerExtra = null,
+}) {
   const pages = useMemo(() => (Array.isArray(lesson?.pages) ? lesson.pages : []), [lesson]);
   const [pageIdx, setPageIdx] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState(() => initialAnswers || {});
   const safeIdx = Math.min(pageIdx, Math.max(0, pages.length - 1));
   const page = pages[safeIdx] || null;
 
-  const onAnswerChange = (elId, next) => setAnswers((prev) => ({ ...prev, [elId]: next }));
+  // Khôi phục tiến độ (đợt 3): hợp nhất các câu ĐÃ ĐÚNG từ initialAnswers
+  // vào trạng thái hiện tại — chỉ nâng lên "đã đúng", không bao giờ ghi
+  // đè một lượt làm bài đang diễn ra bằng dữ liệu cũ hơn. (Đồng bộ state
+  // từ prop là chủ đích ở đây — tắt rule như các pattern nạp dữ liệu
+  // chuẩn của codebase, xem StudioLessons.jsx.)
+  useEffect(() => {
+    if (!initialAnswers) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAnswers((prev) => {
+      let next = prev;
+      let changed = false;
+      for (const [elId, st] of Object.entries(initialAnswers)) {
+        if (!resultIsCorrect(st?.result)) continue;
+        if (resultIsCorrect(prev[elId]?.result)) continue;
+        if (!changed) { next = { ...prev }; changed = true; }
+        next[elId] = st;
+      }
+      return changed ? next : prev;
+    });
+  }, [initialAnswers]);
+
+  useEffect(() => {
+    if (pages.length > 0) onPageChange?.(safeIdx, pages.length);
+  }, [safeIdx, pages.length, onPageChange]);
+
+  const onAnswerChange = (elId, next) => {
+    setAnswers((prev) => ({ ...prev, [elId]: next }));
+    if (next && next.result !== null && next.result !== undefined && onAnswerChecked) {
+      const el = pages.flatMap((p) => p.elements || []).find((e) => e.id === elId);
+      if (el) onAnswerChecked(el, next);
+    }
+  };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -148,12 +223,19 @@ export default function LessonPlayer({ lesson, gameById = {}, preview = false, c
     }
     if (el.type === "game" && el.props?.gameId) {
       const game = gameById[el.props.gameId] || null;
+      const played = Boolean(playedGameIds && typeof playedGameIds.has === "function" && playedGameIds.has(el.id));
       return (
         <div className="relative w-full h-full">
           <LessonElementView el={el} game={game} />
+          {played && (
+            <span className="absolute left-3 top-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-semibold text-white text-[13px] shadow"
+              style={{ background: "#1B998B" }}>
+              <Check className="w-4 h-4" /> Đã chơi
+            </span>
+          )}
           <button type="button"
             onClick={() => {
-              if (onPlayGame) onPlayGame(el.props.gameId);
+              if (onPlayGame) onPlayGame(el.props.gameId, el);
               else window.open(`#/play/${el.props.gameId}`, "_blank");
             }}
             className="absolute right-3 top-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full font-semibold text-white text-[14px] shadow"
@@ -177,6 +259,7 @@ export default function LessonPlayer({ lesson, gameById = {}, preview = false, c
             Xem trước như học sinh
           </span>
         )}
+        {headerExtra}
         {onExit && (
           <button type="button" onClick={onExit}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-ink text-paper text-sm font-semibold hover:bg-ink2">
