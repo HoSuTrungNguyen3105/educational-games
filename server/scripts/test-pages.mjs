@@ -117,6 +117,27 @@ checkTrue("PUT HTML rác: bị từ chối (status >= 400)", putBad.status >= 40
 const afterBad = await getJson("/api/pages/chuc-mung-sinh-nhat");
 check("Sau PUT rác: htmlUrl vẫn là bản hợp lệ trước đó", afterBad.body?.data?.htmlUrl, putTeacher.body.data.htmlUrl);
 
+// ── 8. /raw với file storage phục vụ SAI Content-Type (text/plain) ──
+// Tái hiện đúng production: file .html trên Supabase mở trực tiếp chỉ thấy
+// mã nguồn vì nơi lưu trữ không phục vụ text/html. /raw phải TỰ phát lại
+// nội dung với text/html (không redirect thẳng sang storage nữa).
+const fakeStorage = createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+  res.end(seedHtml);
+});
+await new Promise((resolve) => fakeStorage.listen(0, "127.0.0.1", resolve));
+const fakeUrl = `http://127.0.0.1:${fakeStorage.address().port}/templates/birthday.html`;
+const putLink = await putJson("/api/pages/chuc-mung-sinh-nhat", teacherToken, { htmlUrl: fakeUrl });
+check("PUT link storage ngoài: status", putLink.status, 200);
+check("PUT link storage ngoài: htmlUrl giữ nguyên link", putLink.body?.data?.htmlUrl, fakeUrl);
+const rawPlain = await fetch(`${base}/api/pages/chuc-mung-sinh-nhat/raw`, { redirect: "manual" });
+check("GET /raw (storage text/plain): status 200, không redirect", rawPlain.status, 200);
+checkTrue("GET /raw (storage text/plain): Content-Type là text/html",
+  String(rawPlain.headers.get("content-type") || "").startsWith("text/html"),
+  String(rawPlain.headers.get("content-type")));
+check("GET /raw (storage text/plain): nội dung là trang sinh nhật gốc", await rawPlain.text(), seedHtml);
+await new Promise((resolve) => fakeStorage.close(resolve));
+
 await new Promise((resolve) => server.close(resolve));
 await db.close().catch(() => {});
 await mongod.stop();
