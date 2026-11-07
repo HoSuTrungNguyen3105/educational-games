@@ -610,6 +610,27 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Tài liệu giáo viên (Teacher Document Studio): giáo án/phiếu bài tập
+    // (Word) và slide bài giảng (PowerPoint) soạn bằng HTML/CSS hoặc JSON.
+    // `source` giữ NGUYÊN mã nguồn hiện tại theo `mode`; validate giá trị
+    // docType/mode và trần kích thước source nằm ở documentService
+    // (validator ở đây chỉ chống sai kiểu cấp document).
+    documents: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "ownerId", "name", "docType", "mode", "source", "createdAt", "updatedAt"],
+        properties: {
+          id: { bsonType: "string" },
+          ownerId: { bsonType: "string" },
+          name: { bsonType: "string" },
+          docType: { enum: ["word", "powerpoint"] },
+          mode: { enum: ["html", "json"] },
+          source: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -775,6 +796,10 @@ async function _runHeavyInit(database) {
     ["lessons", { id: 1 }, { unique: true }],
     ["lessons", { ownerId: 1, updatedAt: -1 }],
     ["lessons", { status: 1, publishedAt: -1 }],
+
+    // documents (Teacher Document Studio) — tra theo chủ sở hữu, mới nhất trước.
+    ["documents", { id: 1 }, { unique: true }],
+    ["documents", { ownerId: 1, updatedAt: -1 }],
 
     // lessonProgress (AI Studio đợt 3) — một học sinh × một bài học chỉ
     // một bản ghi tiến độ; tra cứu theo học sinh để khôi phục trạng thái.

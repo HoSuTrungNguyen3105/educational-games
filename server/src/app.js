@@ -50,6 +50,7 @@ import aiRouter from "./routes/ai.js";
 import parentsRouter from "./routes/parents.js";
 import pagesRouter from "./routes/pages.js";
 import lessonsRouter from "./routes/lessons.js";
+import documentsRouter from "./routes/documents.js";
 import systemRouter, { publicRouter as publicConfigRouter } from "./routes/system.js";
 import * as reminderService from "./services/reminderService.js";
 import { verifyToken } from "./services/authService.js";
@@ -187,6 +188,9 @@ app.use("/api/pages", pagesRouter);
 // Bài học AI Studio: CRUD + publish cho giáo viên (chủ sở hữu), đọc bản đã
 // published (đã lọc đáp án) cho học sinh — xem routes/lessons.js.
 app.use("/api/lessons", lessonsRouter);
+// Tài liệu giáo viên (Teacher Document Studio): CRUD theo chủ sở hữu —
+// xem routes/documents.js.
+app.use("/api/documents", documentsRouter);
 // ── Trang Cài đặt quản trị ────────────────────────────────────────────────
 // /api/system/* cần đăng nhập + quyền settings.* (xem middleware/permission.js).
 // /api/public-config KHÔNG cần đăng nhập: app học sinh đọc banner bảo trì, tên site.

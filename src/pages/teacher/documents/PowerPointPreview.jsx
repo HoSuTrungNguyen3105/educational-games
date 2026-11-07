@@ -1,0 +1,169 @@
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import SandboxFrame from "./SandboxFrame.jsx";
+import { buildSlidesScrollSrcDoc } from "../../../lib/documents/modelRender.js";
+
+// PowerPointPreview — xem trước bài PowerPoint ở MỨC ĐỢT 1:
+//   • Chế độ JSON: render từng slide theo `type` từ mô hình trung gian —
+//     1 slide lớn (16:9 hoặc 4:3) + dải thumbnail + nút trước/sau/chọn
+//     slide. Chưa có nút thêm/xoá/sắp xếp slide (đợt 2) — sửa qua mã
+//     nguồn JSON/HTML.
+//   • Chế độ HTML: hiển thị như tài liệu cuộn trong iframe sandbox
+//     (chia slide đầy đủ chỉ áp dụng cho JSON — ghi rõ trong giao diện).
+
+const SLIDE_W = 920;
+
+function SlideView({ slide, ratio }) {
+  const style = {
+    width: SLIDE_W,
+    aspectRatio: ratio === "4:3" ? "4 / 3" : "16 / 9",
+  };
+  const shell = "bg-white shadow-[0_2px_14px_rgba(0,0,0,.20)] rounded-md overflow-hidden flex flex-col";
+  if (!slide) {
+    return (
+      <div style={style} className={`${shell} items-center justify-center text-ink/40 font-body`}>
+        Chưa có slide nào — thêm slide trong mã nguồn JSON.
+      </div>
+    );
+  }
+  const title = slide.title
+    ? <h2 className="font-display text-[30px] leading-tight text-[#2563eb] mb-4">{slide.title}</h2>
+    : null;
+  const bullets = (items) => (
+    <ul className="list-disc pl-7 space-y-2 font-body text-[20px] leading-relaxed text-ink">
+      {(items || []).map((c, i) => <li key={i}>{c}</li>)}
+    </ul>
+  );
+  const table = (rows) => (
+    <table className="w-full border-collapse font-body text-[18px] text-ink">
+      <tbody>
+        {(rows || []).map((row, ri) => (
+          <tr key={ri}>
+            {row.map((c, ci) => ri === 0
+              ? <th key={ci} className="border border-ink/30 bg-paper2 px-3 py-2 text-left">{c}</th>
+              : <td key={ci} className="border border-ink/30 px-3 py-2">{c}</td>)}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  switch (slide.type) {
+    case "title":
+      return (
+        <div style={style} className={`${shell} items-center justify-center text-center px-14`}>
+          <h1 className="font-display text-[44px] leading-tight text-[#2563eb]">{slide.title}</h1>
+          {slide.subtitle ? <p className="font-body text-[22px] text-ink/60 mt-4">{slide.subtitle}</p> : null}
+        </div>
+      );
+    case "image":
+      return (
+        <div style={style} className={`${shell} px-12 py-9`}>
+          {title}
+          {slide.src
+            ? <img src={slide.src} alt={slide.alt || ""} className="max-h-[62%] max-w-full object-contain mx-auto" />
+            : <div className="flex-1 grid place-items-center text-ink/40 font-body">Slide hình ảnh chưa có đường dẫn ảnh (src)</div>}
+          {slide.caption ? <p className="font-body text-center text-ink/60 mt-3">{slide.caption}</p> : null}
+        </div>
+      );
+    case "two-column":
+      return (
+        <div style={style} className={`${shell} px-12 py-9`}>
+          {title}
+          <div className="grid grid-cols-2 gap-8 flex-1">
+            <div>{bullets(slide.left)}</div>
+            <div>{bullets(slide.right)}</div>
+          </div>
+        </div>
+      );
+    case "table":
+      return (
+        <div style={style} className={`${shell} px-12 py-9`}>
+          {title}
+          {table(slide.rows)}
+        </div>
+      );
+    case "summary":
+      return (
+        <div style={style} className={`${shell} px-12 py-9 bg-[#fffbeb]`}>
+          {title}
+          {bullets(slide.content)}
+        </div>
+      );
+    default: // content
+      return (
+        <div style={style} className={`${shell} px-12 py-9`}>
+          {title}
+          {bullets(slide.content)}
+        </div>
+      );
+  }
+}
+
+export default function PowerPointPreview({ model, bodyHtml, cssText = "", zoom = 1, ratio, onRatioChange }) {
+  const slides = model?.slides || [];
+  const [index, setIndex] = useState(0);
+  // Model mới (vừa Áp dụng) → quay về slide đầu. Pattern React khuyến
+  // nghị: chỉnh state ngay trong render khi prop đổi, không qua effect.
+  const [lastModel, setLastModel] = useState(model);
+  if (model !== lastModel) { setLastModel(model); setIndex(0); }
+  const safeIndex = Math.min(index, Math.max(0, slides.length - 1));
+  const slide = slides[safeIndex];
+
+  // Chế độ HTML: không có model slide (bodyHtml được truyền) → tài liệu cuộn.
+  if (!model) {
+    const srcDoc = buildSlidesScrollSrcDoc({ bodyHtml: bodyHtml || "", cssText });
+    return (
+      <div className="h-full flex flex-col">
+        <p className="px-4 py-2 text-xs font-body text-ink/60 bg-paper2 border-b border-ink/10">
+          Chế độ HTML: xem trước dạng tài liệu cuộn. Xem theo từng slide áp dụng ở chế độ JSON.
+        </p>
+        <div className="flex-1 overflow-auto bg-[#ece7db] p-4">
+          <SandboxFrame srcDoc={srcDoc} width={920} minHeight={560} zoom={zoom} />
+        </div>
+      </div>
+    );
+  }
+
+  const stageH = SLIDE_W * (ratio === "4:3" ? 3 / 4 : 9 / 16);
+  const thumbScale = 168 / SLIDE_W;
+
+  return (
+    <div className="h-full flex flex-col bg-[#ece7db]">
+      <div className="flex-1 overflow-auto p-4">
+        <div className="mx-auto" style={{ width: Math.round(SLIDE_W * zoom), height: Math.round(stageH * zoom) }}>
+          <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left", width: SLIDE_W }}>
+            <SlideView slide={slide} ratio={ratio} />
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-ink/10 bg-paper2 px-3 py-2 flex items-center gap-3">
+        <button type="button" aria-label="Slide trước" disabled={safeIndex <= 0}
+          onClick={() => setIndex(Math.max(0, safeIndex - 1))}
+          className="p-1.5 rounded-full hover:bg-ink/5 disabled:opacity-30"><ChevronLeft className="w-5 h-5" /></button>
+        <span className="font-body text-sm text-ink/70 whitespace-nowrap">
+          {slides.length ? `Slide ${safeIndex + 1} / ${slides.length}` : "0 slide"}
+        </span>
+        <button type="button" aria-label="Slide sau" disabled={safeIndex >= slides.length - 1}
+          onClick={() => setIndex(Math.min(slides.length - 1, safeIndex + 1))}
+          className="p-1.5 rounded-full hover:bg-ink/5 disabled:opacity-30"><ChevronRight className="w-5 h-5" /></button>
+        <div className="flex gap-2 overflow-x-auto py-1 flex-1">
+          {slides.map((s, i) => (
+            <button key={i} type="button" onClick={() => setIndex(i)} title={`Slide ${i + 1}: ${s.title || s.type}`}
+              className={`relative shrink-0 overflow-hidden rounded ring-2 ${i === safeIndex ? "ring-[#2563eb]" : "ring-transparent opacity-70 hover:opacity-100"}`}
+              style={{ width: 168, height: Math.round(168 * (ratio === "4:3" ? 3 / 4 : 9 / 16)) }}>
+              <div style={{ transform: `scale(${thumbScale})`, transformOrigin: "top left", width: SLIDE_W, pointerEvents: "none" }}>
+                <SlideView slide={s} ratio={ratio} />
+              </div>
+            </button>
+          ))}
+        </div>
+        <select value={ratio} onChange={(e) => onRatioChange?.(e.target.value)}
+          className="note-card px-2 py-1.5 text-sm border-ink/10 bg-white font-body" aria-label="Tỷ lệ slide">
+          <option value="16:9">16:9</option>
+          <option value="4:3">4:3</option>
+        </select>
+      </div>
+    </div>
+  );
+}

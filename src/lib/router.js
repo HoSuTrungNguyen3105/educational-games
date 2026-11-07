@@ -21,6 +21,9 @@ const ROUTES = [
   // EduPlay AI Studio: danh sách bài học + editor soạn bài (API /api/lessons)
   { name: "admin-studio", pattern: "/dashboard/studio" },
   { name: "admin-studio-edit", pattern: "/dashboard/studio/:lessonId" },
+  // Teacher Document Studio: soạn tài liệu Word/PowerPoint (API /api/documents)
+  { name: "admin-documents", pattern: "/dashboard/documents" },
+  { name: "admin-document-edit", pattern: "/dashboard/documents/:documentId" },
   { name: "admin-game-config", pattern: "/dashboard/game-config" },
   // Cấu hình JSON riêng của game offline Vườn Thủ Hộ (plantvsanimal.html)
   { name: "admin-vth-config", pattern: "/dashboard/vth-config" },
