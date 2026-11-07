@@ -1,3 +1,4 @@
+import { PasswordInput } from "./PasswordInput";
 
 export function FormField({ field, value, onChange }) {
   const base = "w-full note-card px-3 py-2 mt-0.5 border-ink/10 focus:border-ticket text-sm";

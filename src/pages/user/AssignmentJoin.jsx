@@ -49,7 +49,7 @@ export default function AssignmentJoin({ userAuth }) {
         setLoading(false);
         return;
       }
-      navigate(`educational-games/#/assignment/${assignment.code || assignment.id}`);
+      navigate(`/assignment/${assignment.code || assignment.id}`);
     } catch (err) {
       setError(err.message);
     }
