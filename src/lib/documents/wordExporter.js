@@ -14,6 +14,9 @@
 // exportWordDocx — bundle chỉ tải khi giáo viên thật sự bấm "Xuất Word",
 // trang soạn thảo không phải gánh thêm. Các helper nhận module qua
 // tham số `D` (chính là module docx đã nạp).
+// Phần dùng chung với pptxExporter (tên file, tải ảnh, tải xuống) nằm ở
+// exportUtils.js — không copy-paste giữa hai exporter.
+import { downloadBlob, exportFileName, fitSize, loadImage } from "./exportUtils.js";
 
 const NAMED_COLORS = {
   black: "000000", white: "FFFFFF", red: "FF0000", green: "008000",
@@ -55,19 +58,10 @@ async function imageParagraph(D, block, warnings) {
   });
   if (!src) { warnings.push("Có khối hình ảnh thiếu đường dẫn — đã thay bằng ghi chú trong file Word."); return fallback(); }
   try {
-    const res = await fetch(src);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const blob = await res.blob();
-    const bitmap = await createImageBitmap(blob);
-    const scale = Math.min(1, 600 / bitmap.width, 800 / bitmap.height);
-    const width = Math.max(1, Math.round(bitmap.width * scale));
-    const height = Math.max(1, Math.round(bitmap.height * scale));
-    const type = blob.type.includes("png") ? "png"
-      : blob.type.includes("gif") ? "gif"
-        : blob.type.includes("bmp") ? "bmp" : "jpg";
-    const data = await blob.arrayBuffer();
+    const img = await loadImage(src);
+    const { width, height } = fitSize(img.width, img.height, 600, 800);
     return new D.Paragraph({
-      children: [new D.ImageRun({ data, transformation: { width, height }, type })],
+      children: [new D.ImageRun({ data: img.arrayBuffer, transformation: { width, height }, type: img.imageType })],
     });
   } catch {
     warnings.push(`Không tải được hình ảnh "${block.alt || src}" — đã thay bằng ghi chú trong file Word.`);
@@ -143,9 +137,7 @@ async function blocksToDocxChildren(D, model, warnings) {
 
 /** Tên file an toàn từ tên tài liệu. */
 export function docxFileName(name) {
-  const base = String(name || "tai-lieu").trim()
-    .replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").slice(0, 80) || "tai-lieu";
-  return `${base}.docx`;
+  return exportFileName(name, "docx");
 }
 
 /**
@@ -184,13 +176,6 @@ export async function exportWordDocx(model, docName) {
   });
   const blob = await D.Packer.toBlob(doc);
   const fileName = docxFileName(docName || model.title);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  downloadBlob(blob, fileName);
   return { warnings, fileName };
 }

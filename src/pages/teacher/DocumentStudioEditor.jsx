@@ -14,6 +14,10 @@ import { applySource, convertSource } from "../../lib/documents/convert.js";
 import { renderModelBodyHtml } from "../../lib/documents/modelRender.js";
 import { templateSourceFor } from "../../lib/documents/templates.js";
 import { exportWordDocx } from "../../lib/documents/wordExporter.js";
+import { exportPresentationPptx } from "../../lib/documents/pptxExporter.js";
+import { validateDocumentJson } from "../../lib/documents/schemas.js";
+import { presentationJsonToModel } from "../../lib/documents/model.js";
+import { duplicateSlide, insertSlideAfter, moveSlide, removeSlide } from "../../lib/documents/slideOps.js";
 import "./documents/docstudio.css";
 
 // DocumentStudioEditor — trang soạn tài liệu của Teacher Document Studio
@@ -27,6 +31,9 @@ import "./documents/docstudio.css";
 //     xác nhận ghi đè).
 //   • Server chỉ lưu MỘT mã nguồn (theo chế độ đang chọn khi Lưu) — bản
 //     nháp của chế độ còn lại chỉ sống trong phiên soạn này.
+// Đợt 2: xuất .pptx thật (cả hai chế độ, qua model) + thao tác slide
+// bằng nút ở chế độ JSON — nút sửa THẲNG bản nháp JSON qua slideOps rồi
+// serialize lại, nên code trong editor luôn là nguồn sự thật duy nhất.
 
 const snapshotOf = ({ name, docType, mode, source }) => JSON.stringify({ name, docType, mode, source });
 
@@ -55,6 +62,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const [split, setSplit] = useState(50);
   const [zoom, setZoom] = useState(1);
   const [ratio, setRatio] = useState("16:9");
+  const [slideIndex, setSlideIndex] = useState(0);
   const [showPreviewMobile, setShowPreviewMobile] = useState(false);
   const editorRef = useRef(null);
   const previewRef = useRef(null);
@@ -103,6 +111,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       setApplied(buildApplied(md, dt, res));
       setAppliedSource(src);
       setApplyErrors([]);
+      setSlideIndex(0); // nội dung mới áp dụng → preview về slide đầu (như đợt 1)
       return true;
     }
     setApplyErrors(res.errors);
@@ -201,21 +210,30 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     } finally { setSaving(false); }
   };
 
-  // ── Xuất Word (.docx thật) ────────────────────────────────────────────
-  const handleExportWord = async () => {
+  // ── Xuất file thật (.docx / .pptx) ────────────────────────────────────
+  // Cả hai nút xuất dùng chung bước "đảm bảo preview đang phản ánh đúng
+  // bản nháp hiện tại": chưa áp dụng (hoặc đã sửa sau lần áp dụng gần
+  // nhất) thì áp dụng lại ngay; mã lỗi → báo lỗi và KHÔNG xuất.
+  const ensureApplied = (label) => {
     let current = validApplied;
     if (!current || appliedStale) {
       const res = applySource(draft, mode, docType);
       if (!res.ok) {
         setApplyErrors(res.errors);
-        showToast?.("Mã nguồn đang có lỗi — sửa xong mới xuất được file Word.", "error");
-        return;
+        showToast?.(`Mã nguồn đang có lỗi — sửa xong mới xuất được file ${label}.`, "error");
+        return null;
       }
       current = buildApplied(mode, docType, res);
       setApplied(current);
       setAppliedSource(draft);
       setApplyErrors([]);
     }
+    return current;
+  };
+
+  const handleExportWord = async () => {
+    const current = ensureApplied("Word");
+    if (!current) return;
     setExporting(true);
     try {
       const out = await exportWordDocx(current.model, name);
@@ -227,6 +245,79 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     } catch (e) {
       setExportReport({ ok: false, message: `Xuất Word thất bại: ${e?.message || "lỗi không rõ"} — nội dung đang soạn vẫn nguyên vẹn.`, warnings: [] });
     } finally { setExporting(false); }
+  };
+
+  // ── Xuất PowerPoint (.pptx thật, đợt 2) ───────────────────────────────
+  // Tỷ lệ slide lấy theo tỷ lệ đang chọn trong preview (16:9 / 4:3).
+  // Cảnh báo gồm cả cảnh báo parse HTML (chế độ HTML) + cảnh báo xuất.
+  const handleExportPptx = async () => {
+    const current = ensureApplied("PowerPoint");
+    if (!current) return;
+    setExporting(true);
+    try {
+      const out = await exportPresentationPptx(current.model, { docName: name, ratio });
+      setExportReport({
+        ok: true,
+        message: `Đã xuất file ${out.fileName} — mỗi slide là một slide PowerPoint thật (chữ sửa được), mở và sửa tiếp được trong Microsoft PowerPoint.`,
+        warnings: [...(current.warnings || []), ...out.warnings],
+      });
+    } catch (e) {
+      setExportReport({ ok: false, message: `Xuất PowerPoint thất bại: ${e?.message || "lỗi không rõ"} — nội dung đang soạn vẫn nguyên vẹn.`, warnings: [] });
+    } finally { setExporting(false); }
+  };
+
+  // ── Thao tác slide bằng nút (chế độ JSON, PowerPoint) ─────────────────
+  // Cơ chế đồng bộ: parse + validate BẢN NHÁP JSON hiện tại (mã lỗi thì
+  // từ chối thao tác, không đụng gì) → slideOps sửa đối tượng → serialize
+  // JSON.stringify(…, null, 2) ghi lại vào bản nháp → dựng lại preview.
+  // Sau thao tác, trạng thái "Chưa lưu" bật đúng vì bản nháp đã đổi.
+  const handleSlideOp = (op, arg) => {
+    if (mode !== "json" || docType !== "powerpoint") return;
+    let obj;
+    try {
+      obj = JSON.parse(draft);
+    } catch {
+      showToast?.("Mã JSON đang sai cú pháp — sửa xong mới thao tác slide bằng nút được.", "error");
+      return;
+    }
+    const schemaErrors = validateDocumentJson(obj, "powerpoint");
+    if (schemaErrors.length) {
+      setApplyErrors(schemaErrors.map((e) => ({
+        message: e.path ? `${e.path}: ${e.message}` : e.message, path: e.path,
+      })));
+      showToast?.("Mã JSON đang có lỗi — sửa xong mới thao tác slide bằng nút được.", "error");
+      return;
+    }
+    const commit = (result, message) => {
+      if (!result) return;
+      const src = JSON.stringify(result.json, null, 2);
+      setDrafts((d) => ({ ...d, json: src }));
+      // Preview dựng từ model chuyển TRỰC TIẾP (không qua validate) để
+      // slide khung sườn "image" chưa có src vẫn hiện khung nhắc trong
+      // preview; bấm Áp dụng sau đó sẽ báo đúng trường src cần điền.
+      setApplied(buildApplied("json", "powerpoint", { model: presentationJsonToModel(result.json) }));
+      setAppliedSource(src);
+      setApplyErrors([]);
+      setSlideIndex(result.index);
+      setNotice(message);
+    };
+    if (op === "add") {
+      commit(insertSlideAfter(obj, slideIndex, arg),
+        `Đã thêm slide mới sau slide ${slideIndex + 1} — hãy sửa nội dung của nó trong mã JSON rồi bấm Lưu.`);
+    } else if (op === "duplicate") {
+      commit(duplicateSlide(obj, slideIndex), "Đã nhân bản slide hiện tại — bản sao nằm ngay sau bản gốc.");
+    } else if (op === "move") {
+      commit(moveSlide(obj, slideIndex, arg), arg < 0 ? "Đã di chuyển slide lên trước." : "Đã di chuyển slide xuống sau.");
+    } else if (op === "delete") {
+      const target = (obj.slides || [])[slideIndex];
+      askConfirm({
+        title: "Xoá slide",
+        message: `Xoá slide ${slideIndex + 1}${target?.title ? ` "${target.title}"` : ""} khỏi bản nháp? Mã JSON sẽ được sửa ngay — bấm Lưu mới ghi lên máy chủ.`,
+        confirmLabel: "Xoá slide",
+        danger: true,
+        onConfirm: () => commit(removeSlide(obj, slideIndex), "Đã xoá slide khỏi bản nháp."),
+      });
+    }
   };
 
   const handleFormat = () => {
@@ -324,10 +415,10 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
             <Download className="w-4 h-4" /> {exporting ? "Đang xuất…" : "Xuất Word (.docx)"}
           </button>
         ) : (
-          <span className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold bg-ink/10 text-ink/50"
-            title="Xuất .pptx thật sẽ có ở đợt 2 của Teacher Document Studio">
-            <Download className="w-4 h-4" /> Xuất PowerPoint — sắp có (đợt 2)
-          </span>
+          <button type="button" onClick={handleExportPptx} disabled={exporting}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold bg-[#2563eb] text-white disabled:opacity-40">
+            <Download className="w-4 h-4" /> {exporting ? "Đang xuất…" : "Xuất PowerPoint (.pptx)"}
+          </button>
         )}
       </div>
 
@@ -427,7 +518,9 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                 model={validApplied?.mode === "json" ? validApplied.model : null}
                 bodyHtml={validApplied?.mode === "html" ? validApplied.bodyHtml : ""}
                 cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
-                zoom={zoom} ratio={ratio} onRatioChange={setRatio} />
+                zoom={zoom} ratio={ratio} onRatioChange={setRatio}
+                index={slideIndex} onIndexChange={setSlideIndex}
+                editable={mode === "json"} onSlideOp={handleSlideOp} />
             )}
           </div>
         </div>
