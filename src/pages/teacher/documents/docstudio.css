@@ -1,0 +1,17 @@
+/* Teacher Document Studio — CSS riêng cho bố cục chia đôi kéo được của
+   trang soạn thảo. Tỷ lệ chia được truyền qua biến --split-pct từ state
+   React; chỉ áp ở màn hình lớn (mobile xem một khung tại một thời điểm). */
+.docstudio-split-editor {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .docstudio-split-editor {
+    flex: 0 1 calc(var(--split-pct, 50%) - 14px);
+  }
+}
+
+/* CodeMirror lấp đầy chiều cao khung soạn */
+.docstudio-codeeditor .cm-editor {
+  height: 100%;
+}
