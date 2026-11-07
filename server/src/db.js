@@ -588,6 +588,28 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Tiến độ học bài của học sinh (AI Studio đợt 3): mỗi học sinh × bài
+    // học một document. correctElementIds = id các phần tử question đã
+    // trả lời ĐÚNG ít nhất một lần (chấm phía server qua /lessons/:id —
+    // xem lessonService); attempts = tổng lượt kiểm tra. completedAt đặt
+    // khi MỌI câu hỏi đã đúng (hoặc bài không có câu hỏi và học sinh xác
+    // nhận hoàn thành ở trang cuối). KHÔNG gắn ví xu/sao ở đây.
+    lessonProgress: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "userId", "lessonId", "correctElementIds", "attempts", "createdAt", "updatedAt"],
+        properties: {
+          id: { bsonType: "string" },
+          userId: { bsonType: "string" },
+          lessonId: { bsonType: "string" },
+          correctElementIds: { bsonType: "array" },
+          attempts: { bsonType: ["int", "double"] },
+          completedAt: { bsonType: ["string", "null"] },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -753,6 +775,11 @@ async function _runHeavyInit(database) {
     ["lessons", { id: 1 }, { unique: true }],
     ["lessons", { ownerId: 1, updatedAt: -1 }],
     ["lessons", { status: 1, publishedAt: -1 }],
+
+    // lessonProgress (AI Studio đợt 3) — một học sinh × một bài học chỉ
+    // một bản ghi tiến độ; tra cứu theo học sinh để khôi phục trạng thái.
+    ["lessonProgress", { userId: 1, lessonId: 1 }, { unique: true }],
+    ["lessonProgress", { userId: 1, updatedAt: -1 }],
   ];
 
   const createdIndexes = [];

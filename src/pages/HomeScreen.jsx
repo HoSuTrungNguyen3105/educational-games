@@ -219,6 +219,7 @@ const MORE_ITEMS = (userAuth) => ([
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
   { key: "parent", icon: Users, label: "Phụ huynh", type: "path", path: "/parent", show: true },
   { key: "assignment", icon: IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
+  { key: "lessons", icon: BookOpen, label: "Bài học", type: "path", path: "/lessons", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
   { key: "profile", icon: IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
 ]);
@@ -243,6 +244,7 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "friends", icon: Search, label: "Tìm bạn", type: "path", path: "/find-friends", show: !!userAuth?.user },
   { key: "parent", icon: Users, label: "Phụ huynh", type: "path", path: "/parent", show: true },
   { key: "assignment", icon: IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
+  { key: "lessons", icon: BookOpen, label: "Bài học", type: "path", path: "/lessons", show: !!userAuth?.user },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
 

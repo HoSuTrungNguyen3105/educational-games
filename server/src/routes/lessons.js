@@ -45,6 +45,42 @@ router.get("/published/:id", authenticate, async (req, res) => {
   } catch (e) { handleError(res, e); }
 });
 
+// ── Đợt 3: tiến độ + chấm bài phía server (chỉ của chính học sinh) ──────
+// Danh sách tiến độ của tôi — danh sách bài học phía học sinh dùng để gắn
+// badge Chưa học/Đang học/Đã hoàn thành mà không cần gọi từng bài.
+router.get("/progress/mine", authenticate, async (req, res) => {
+  try {
+    const items = await lessonService.listProgressForStudent(req.user.sub);
+    sendSuccess(res, items);
+  } catch (e) { handleError(res, e); }
+});
+
+router.get("/published/:id/progress", authenticate, async (req, res) => {
+  try {
+    const progress = await lessonService.getProgressForStudent(req.user.sub, req.params.id);
+    sendSuccess(res, progress);
+  } catch (e) { handleError(res, e); }
+});
+
+// Chấm MỘT câu trả lời bằng gradeAnswer phía server (DTO học sinh không
+// có đáp án nên client không tự chấm được). Body: { elementId, answer }.
+router.post("/published/:id/check", authenticate, async (req, res) => {
+  try {
+    const { elementId, answer } = req.body || {};
+    const result = await lessonService.checkLessonAnswer(req.user.sub, req.params.id, elementId, answer);
+    sendSuccess(res, result);
+  } catch (e) { handleError(res, e); }
+});
+
+// Ghi nhận hoàn thành cho bài KHÔNG có câu hỏi (player gọi khi học sinh
+// mở tới trang cuối). Bài có câu hỏi hoàn thành qua /check.
+router.post("/published/:id/complete", authenticate, async (req, res) => {
+  try {
+    const progress = await lessonService.completeLesson(req.user.sub, req.params.id);
+    sendSuccess(res, progress);
+  } catch (e) { handleError(res, e); }
+});
+
 // ── Phía giáo viên: bài của tôi ──────────────────────────────────────────
 router.get("/mine", authenticate, requireRoles("teacher", "admin"), async (req, res) => {
   try {

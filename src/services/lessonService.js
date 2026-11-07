@@ -49,6 +49,28 @@ export const lessonService = {
   async getPublished(id) {
     return apiFetch(`/lessons/published/${encodeURIComponent(id)}`);
   },
+  // ── Đợt 3: tiến độ + chấm bài phía server (phía học sinh) ────────────
+  /** Tiến độ của chính học sinh cho một bài (khôi phục khi tải lại trang). */
+  async getProgress(id) {
+    return apiFetch(`/lessons/published/${encodeURIComponent(id)}/progress`);
+  },
+  /** Toàn bộ tiến độ của học sinh (gắn badge trạng thái ở danh sách bài). */
+  async listMyProgress() {
+    return apiFetch("/lessons/progress/mine");
+  },
+  /**
+   * Chấm MỘT câu trả lời phía server. Trả { correct, points, feedback,
+   * explanation?, progress } — explanation chỉ có khi trả lời đúng.
+   */
+  async checkAnswer(id, elementId, answer) {
+    return apiFetch(`/lessons/published/${encodeURIComponent(id)}/check`, {
+      method: "POST", body: { elementId, answer },
+    });
+  },
+  /** Ghi nhận hoàn thành bài không có câu hỏi (gọi khi mở tới trang cuối). */
+  async complete(id) {
+    return apiFetch(`/lessons/published/${encodeURIComponent(id)}/complete`, { method: "POST" });
+  },
 };
 
 /** Trích danh sách lỗi publish cụ thể từ error của apiFetch (nếu có). */

@@ -17,8 +17,10 @@
 // authenticate + requireRoles ở route, kiểm tra owner tại service).
 import { getCollection } from "../db.js";
 import * as gameService from "./gameService.js";
+import { isAnswerCorrect, DEFAULT_POINTS } from "../lib/gradeAnswer.js";
 
 export const LESSONS_COLLECTION = "lessons";
+export const LESSON_PROGRESS_COLLECTION = "lessonProgress";
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -478,9 +480,193 @@ export async function listPublishedLessons({ search, subject, grade, page = 1, p
   return { items: docs.map(serializeMeta), total };
 }
 
-/** Chi tiết bài đã published cho học sinh — DTO đã lọc sạch correctAnswer. */
+/**
+ * Chi tiết bài đã published cho học sinh — DTO đã lọc sạch correctAnswer.
+ * Đợt 3 siết thêm: `explanation` + `feedbackCorrect`/`feedbackWrong` của
+ * phần tử question CŨNG không đi theo DTO này — chúng chỉ được endpoint
+ * chấm bài (checkLessonAnswer) trả về sau khi học sinh trả lời (và
+ * explanation chỉ khi trả lời ĐÚNG), để đáp án/giải thích không lộ qua
+ * dữ liệu trang trước thời điểm chấm (§20 đặc tả). Bản giáo viên không
+ * qua hàm này nên không bị ảnh hưởng.
+ */
 export async function getPublishedLessonForStudent(id) {
   const doc = await getCollection(LESSONS_COLLECTION).findOne({ id: String(id || "") });
   if (!doc || doc.status !== "published") return null;
-  return stripAnswers(serialize(doc));
+  const dto = stripAnswers(serialize(doc));
+  for (const page of dto.pages || []) {
+    for (const el of page.elements || []) {
+      if (el.type === "question" && el.props) {
+        delete el.props.explanation;
+        delete el.props.feedbackCorrect;
+        delete el.props.feedbackWrong;
+      }
+    }
+  }
+  return dto;
+}
+
+// ── Đợt 3: chấm bài phía server + tiến độ học sinh ──────────────────────
+// Học sinh KHÔNG tự chấm ở client (DTO đã lọc đáp án). Mọi lượt trả lời
+// đi qua checkLessonAnswer: chấm bằng gradeAnswer.js trên bản đầy đủ
+// phía server, ghi tiến độ vào collection `lessonProgress`.
+// KHÔNG cộng xu/sao ở đây — hệ thưởng riêng chưa được duyệt.
+
+/** Mọi phần tử question của bài (phẳng hoá qua các trang), kèm pageId. */
+function questionElementsOf(doc) {
+  const out = [];
+  for (const page of Array.isArray(doc?.pages) ? doc.pages : []) {
+    for (const el of page.elements || []) {
+      if (el.type === "question") out.push({ pageId: page.id, element: el });
+    }
+  }
+  return out;
+}
+
+async function loadPublishedLesson(id) {
+  const doc = await getCollection(LESSONS_COLLECTION).findOne({ id: String(id || "") });
+  if (!doc || doc.status !== "published") throw fail(404, "Không tìm thấy bài học");
+  return doc;
+}
+
+function serializeProgress(doc, lessonDoc) {
+  const questions = lessonDoc ? questionElementsOf(lessonDoc) : [];
+  const correctIds = Array.isArray(doc?.correctElementIds) ? doc.correctElementIds : [];
+  return {
+    lessonId: lessonDoc?.id ?? doc?.lessonId ?? null,
+    correctElementIds: correctIds,
+    attempts: Number(doc?.attempts) || 0,
+    totalQuestions: questions.length,
+    correctCount: questions.length
+      ? questions.filter((q) => correctIds.includes(q.element.id)).length
+      : correctIds.length,
+    completed: Boolean(doc?.completedAt),
+    completedAt: doc?.completedAt ?? null,
+    updatedAt: doc?.updatedAt ?? null,
+  };
+}
+
+/** Tiến độ rỗng (học sinh chưa học bài này) — vẫn kèm tổng số câu hỏi. */
+function emptyProgress(lessonDoc) {
+  return serializeProgress(null, lessonDoc);
+}
+
+async function findProgress(userId, lessonId) {
+  return getCollection(LESSON_PROGRESS_COLLECTION).findOne({ userId, lessonId });
+}
+
+/** Đặt completedAt nếu đủ điều kiện: MỌI question đã đúng ít nhất 1 lần. */
+function completionPatch(doc, progress) {
+  if (progress.completedAt) return {};
+  const questions = questionElementsOf(doc);
+  if (questions.length === 0) return {}; // bài không có câu hỏi → qua completeLesson
+  const correct = new Set(progress.correctElementIds || []);
+  return questions.every((q) => correct.has(q.element.id))
+    ? { completedAt: new Date().toISOString() }
+    : {};
+}
+
+/** Tiến độ của chính học sinh cho một bài đã published (404 nếu bài không published). */
+export async function getProgressForStudent(userId, lessonId) {
+  const lesson = await loadPublishedLesson(lessonId);
+  const progress = await findProgress(userId, lesson.id);
+  return progress ? serializeProgress(progress, lesson) : emptyProgress(lesson);
+}
+
+/** Toàn bộ tiến độ của học sinh (cho danh sách bài học gắn badge trạng thái). */
+export async function listProgressForStudent(userId) {
+  const docs = await getCollection(LESSON_PROGRESS_COLLECTION)
+    .find({ userId }).sort({ updatedAt: -1 }).toArray();
+  if (docs.length === 0) return [];
+  const lessons = await getCollection(LESSONS_COLLECTION)
+    .find({ id: { $in: docs.map((d) => d.lessonId) } }).toArray();
+  const byId = new Map(lessons.map((l) => [l.id, l]));
+  return docs.map((d) => serializeProgress(d, byId.get(d.lessonId) || null));
+}
+
+/**
+ * Chấm MỘT câu trả lời (endpoint check). Trả về kết quả + tiến độ mới.
+ * explanation CHỈ kèm khi trả lời đúng — sai thì giải thích vẫn là bí mật.
+ */
+export async function checkLessonAnswer(userId, lessonId, elementId, answer) {
+  const lesson = await loadPublishedLesson(lessonId);
+  const hit = questionElementsOf(lesson).find((q) => q.element.id === String(elementId || ""));
+  if (!hit) {
+    // Phân biệt "không có phần tử này" với "phần tử không phải câu hỏi"
+    // để client báo lỗi rõ ràng.
+    const anyEl = (lesson.pages || []).some((p) => (p.elements || []).some((el) => el.id === String(elementId || "")));
+    throw fail(400, anyEl
+      ? "Phần tử này không phải câu hỏi nên không chấm được"
+      : "Không tìm thấy phần tử câu hỏi trong bài học");
+  }
+  const el = hit.element;
+  const props = el.props || {};
+  // Đưa props của phần tử question về đúng hình gradeAnswer.js hiểu:
+  // single → multiple_choice (so id phương án), fill → fill-in (so chuỗi).
+  const question = {
+    questionType: props.qtype === "fill" ? "fill-in" : "multiple_choice",
+    correctAnswer: props.correctAnswer,
+    options: props.options || [],
+  };
+  const correct = isAnswerCorrect(question, answer);
+  const points = Number.isFinite(Number(props.points)) ? Number(props.points) : DEFAULT_POINTS;
+  const earned = correct ? points : 0;
+
+  const coll = getCollection(LESSON_PROGRESS_COLLECTION);
+  const now = new Date().toISOString();
+  let progress = await findProgress(userId, lesson.id);
+  if (!progress) {
+    progress = {
+      id: uid("lprog"), userId, lessonId: lesson.id,
+      correctElementIds: [], attempts: 0, completedAt: null,
+      createdAt: now, updatedAt: now,
+    };
+    await coll.insertOne(progress);
+  }
+  const set = { attempts: (Number(progress.attempts) || 0) + 1, updatedAt: now };
+  if (correct && !progress.correctElementIds.includes(el.id)) {
+    set.correctElementIds = [...progress.correctElementIds, el.id];
+  }
+  Object.assign(set, completionPatch(lesson, { ...progress, ...set }));
+  const updated = await coll.findOneAndUpdate(
+    { userId, lessonId: lesson.id }, { $set: set }, { returnDocument: "after" },
+  );
+
+  const result = {
+    correct,
+    points: earned,
+    feedback: correct ? (props.feedbackCorrect || "") : (props.feedbackWrong || ""),
+    progress: serializeProgress(updated, lesson),
+  };
+  if (correct) result.explanation = props.explanation || "";
+  return result;
+}
+
+/**
+ * Ghi nhận hoàn thành bài KHÔNG có câu hỏi (player gọi khi học sinh mở
+ * tới trang cuối). Bài CÓ câu hỏi: chỉ hoàn thành khi mọi câu đã đúng —
+ * endpoint này khi đó chỉ trả lại tiến độ hiện tại, không tự đặt
+ * completedAt (nguồn sự thật là checkLessonAnswer).
+ */
+export async function completeLesson(userId, lessonId) {
+  const lesson = await loadPublishedLesson(lessonId);
+  const coll = getCollection(LESSON_PROGRESS_COLLECTION);
+  const now = new Date().toISOString();
+  let progress = await findProgress(userId, lesson.id);
+  if (!progress) {
+    progress = {
+      id: uid("lprog"), userId, lessonId: lesson.id,
+      correctElementIds: [], attempts: 0, completedAt: null,
+      createdAt: now, updatedAt: now,
+    };
+    await coll.insertOne(progress);
+  }
+  const set = { updatedAt: now };
+  if (!progress.completedAt) {
+    if (questionElementsOf(lesson).length === 0) set.completedAt = now;
+    else Object.assign(set, completionPatch(lesson, progress));
+  }
+  const updated = await coll.findOneAndUpdate(
+    { userId, lessonId: lesson.id }, { $set: set }, { returnDocument: "after" },
+  );
+  return serializeProgress(updated, lesson);
 }
