@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Cake, ExternalLink, Eye, FileUp, Link2, PencilLine, RefreshCw, Save } from 'lucide-react'
 import { ManagementHeader, PrimaryButton, GhostButton, Loader } from '../../components/ui'
 import { navigate } from '../../lib/router.js'
-import { isHtmlUrl, resolveHtmlUrl, loadTemplateHtml } from '../../lib/hooks.js'
+import { loadTemplateHtml } from '../../lib/hooks.js'
 import { API_BASE } from '../../services/api.js'
 import { pageService } from '../../services/pageService.js'
 
@@ -79,8 +79,23 @@ export default function BirthdayPageManagement({ showToast }) {
 
   const htmlUrl = String(page?.htmlUrl || '').trim()
   const rawUrl = `${API_BASE}/pages/${PAGE_SLUG}/raw`
-  const frameSrc = htmlUrl && isHtmlUrl(htmlUrl) ? resolveHtmlUrl(htmlUrl) : null
-  const frameDoc = htmlUrl && !isHtmlUrl(htmlUrl) ? htmlUrl : null
+
+  // Xem trước: FETCH nội dung HTML bằng helper dùng chung với template
+  // (loadTemplateHtml) rồi render qua srcDoc — KHÔNG trỏ iframe thẳng vào
+  // URL file storage: storage có thể phục vụ file .html với Content-Type
+  // không phải text/html (vd text/plain) → iframe chỉ hiện mã nguồn.
+  // State chỉ ghi trong callback bất đồng bộ, kèm `key` = htmlUrl đã nạp.
+  const [preview, setPreview] = useState({ key: '', html: '' })
+  useEffect(() => {
+    if (!htmlUrl) return
+    let active = true
+    loadTemplateHtml(page).then((text) => {
+      if (active) setPreview({ key: htmlUrl, html: text || '' })
+    })
+    return () => { active = false }
+  }, [page, previewKey, htmlUrl])
+  const previewHtml = preview.key === htmlUrl ? preview.html : ''
+  const previewLoading = Boolean(htmlUrl) && preview.key !== htmlUrl
 
   const applyUpdated = (updated, successMsg) => {
     setPage(updated || page)
@@ -207,7 +222,9 @@ export default function BirthdayPageManagement({ showToast }) {
                 <div className="min-w-0">
                   <dt className={label}>File HTML trên kho lưu trữ (htmlUrl)</dt>
                   <dd className="break-all">
-                    <a href={frameSrc || rawUrl} target="_blank" rel="noreferrer" className="text-[#9A3412] underline underline-offset-2">
+                    {/* Bấm vào mở qua /raw (server phát lại text/html) — mở thẳng
+                        link storage có thể chỉ thấy mã nguồn, xem route /raw. */}
+                    <a href={rawUrl} target="_blank" rel="noreferrer" className="text-[#9A3412] underline underline-offset-2">
                       {htmlUrl}
                     </a>
                   </dd>
@@ -313,16 +330,21 @@ export default function BirthdayPageManagement({ showToast }) {
                 <Eye className="w-4 h-4 text-[#8A7C63]" aria-hidden="true" /> Xem trước
               </h2>
               <div className="rounded-xl overflow-hidden border border-ink/10 bg-[#07030f]">
-                <iframe
-                  key={previewKey}
-                  src={frameSrc || undefined}
-                  srcDoc={frameDoc || undefined}
-                  /* Cùng bộ sandbox với trang hiển thị #/sinh-nhat (BirthdayPage)
-                     — nội dung do giáo viên/admin soạn, cùng mức tin cậy template. */
-                  sandbox="allow-scripts allow-same-origin allow-modals"
-                  className="w-full h-[480px] border-0 block"
-                  title="Xem trước trang sinh nhật"
-                />
+                {previewHtml ? (
+                  <iframe
+                    key={previewKey}
+                    srcDoc={previewHtml}
+                    /* Cùng bộ sandbox với trang hiển thị #/sinh-nhat (BirthdayPage)
+                       — nội dung do giáo viên/admin soạn, cùng mức tin cậy template. */
+                    sandbox="allow-scripts allow-same-origin allow-modals"
+                    className="w-full h-[480px] border-0 block"
+                    title="Xem trước trang sinh nhật"
+                  />
+                ) : (
+                  <p className="text-sm text-white/70 px-4 py-6">
+                    {previewLoading ? 'Đang tải nội dung xem trước…' : 'Không tải được nội dung xem trước từ nơi lưu trữ — thử tải lại trang.'}
+                  </p>
+                )}
               </div>
             </section>
           )}

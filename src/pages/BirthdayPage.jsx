@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Pencil, X } from "lucide-react";
 import { navigate } from "../lib/router.js";
-import { isHtmlUrl, resolveHtmlUrl, loadTemplateHtml } from "../lib/hooks.js";
+import { loadTemplateHtml, clearTemplateHtmlCache } from "../lib/hooks.js";
 import { pageService } from "../services/pageService.js";
 
 // Trang sinh nhật RIÊNG, toàn màn hình — route #/sinh-nhat.
 // Nội dung KHÔNG nằm trong bundle: trang đọc doc `pages` slug
 // "chuc-mung-sinh-nhat" từ API (Mongo chỉ giữ htmlUrl, bám cơ chế template),
-// rồi hiển thị file HTML trên storage trong iframe tràn màn hình để trang
-// trình diễn chạy nguyên vẹn (hiệu ứng/pháo hoa/script riêng của nó).
+// rồi FETCH nội dung HTML bằng helper dùng chung với template
+// (`loadTemplateHtml`) và render qua `srcDoc` trong iframe tràn màn hình.
+// KHÔNG trỏ iframe thẳng vào URL file storage (src=): storage có thể phục
+// vụ file .html với Content-Type không phải text/html (vd text/plain) →
+// trình duyệt hiện MÃ NGUỒN thay vì render. Template game tránh được vì
+// cũng fetch text rồi mới srcDoc — trang này bám đúng cơ chế đó.
 // Giáo viên/admin có nút "Sửa nội dung" ngay tại trang (server chặn quyền
 // PUT bằng requireRoles teacher/admin, như sửa template).
 const PAGE_SLUG = "chuc-mung-sinh-nhat";
@@ -35,7 +39,29 @@ export default function BirthdayPage({ userAuth, showToast }) {
     return () => { active = false; };
   }, [reloadKey]);
 
-  const load = () => { setLoading(true); setReloadKey((k) => k + 1); };
+  const load = () => {
+    // Xoá cache HTML đã fetch (helper dùng chung có cache theo URL) để lần
+    // thử lại lấy nội dung mới thật, không dính bản lỗi đã lưu trong phiên.
+    clearTemplateHtmlCache();
+    setLoading(true);
+    setReloadKey((k) => k + 1);
+  };
+
+  // Nội dung HTML thật của trang (fetch từ htmlUrl — xem ghi chú đầu file).
+  // State chỉ ghi trong callback bất đồng bộ, kèm `key` = htmlUrl đã nạp để
+  // suy ra trạng thái đang tải/lỗi theo URL hiện tại (không setState đồng bộ
+  // trong effect).
+  const [content, setContent] = useState({ key: "", html: "", error: false });
+  useEffect(() => {
+    const raw = String(page?.htmlUrl || "").trim();
+    if (!raw) return;
+    let active = true;
+    loadTemplateHtml(page).then((text) => {
+      if (!active) return;
+      setContent({ key: raw, html: text || "", error: !text });
+    });
+    return () => { active = false; };
+  }, [page]);
 
   const openEditor = async () => {
     setEditing(true);
@@ -66,17 +92,19 @@ export default function BirthdayPage({ userAuth, showToast }) {
   };
 
   const htmlUrl = String(page?.htmlUrl || "").trim();
-  // htmlUrl có 3 dạng như template: link tuyệt đối / đường dẫn file / HTML thô (cũ).
-  const frameSrc = htmlUrl && isHtmlUrl(htmlUrl) ? resolveHtmlUrl(htmlUrl) : null;
-  const frameDoc = htmlUrl && !isHtmlUrl(htmlUrl) ? htmlUrl : null;
+  const html = content.key === htmlUrl ? content.html : "";
+  const htmlError = Boolean(htmlUrl) && content.key === htmlUrl && content.error;
+  const busy = loading || (Boolean(htmlUrl) && content.key !== htmlUrl);
+  const loadError = error || (htmlError
+    ? "Không tải được nội dung trang từ nơi lưu trữ. Kiểm tra kết nối rồi thử lại nhé."
+    : "");
 
   return (
     <div className="fixed inset-0 bg-[#07030f]">
-      {!loading && !error && htmlUrl && (
+      {!busy && !loadError && html && (
         <iframe
           key={frameKey}
-          src={frameSrc || undefined}
-          srcDoc={frameDoc || undefined}
+          srcDoc={html}
           /* Nội dung do giáo viên/admin soạn (cùng mức tin cậy với template game
              trong HtmlGameLoader) nên dùng cùng bộ sandbox ở đó. */
           sandbox="allow-scripts allow-same-origin allow-modals"
@@ -85,17 +113,17 @@ export default function BirthdayPage({ userAuth, showToast }) {
         />
       )}
 
-      {loading && (
+      {busy && (
         <div className="absolute inset-0 flex items-center justify-center">
           <p className="text-sm text-white/80">Đang tải trang sinh nhật…</p>
         </div>
       )}
 
-      {!loading && error && (
+      {!loading && loadError && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
           <p className="text-4xl mb-3">🎂</p>
           <p className="text-white font-semibold mb-1">Chưa mở được trang sinh nhật</p>
-          <p className="text-sm text-white/70 max-w-sm mb-5">{error}</p>
+          <p className="text-sm text-white/70 max-w-sm mb-5">{loadError}</p>
           <button
             onClick={load}
             className="px-5 py-2.5 rounded-full bg-white text-[#4a1d33] font-semibold text-sm"

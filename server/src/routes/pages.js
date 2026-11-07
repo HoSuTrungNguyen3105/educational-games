@@ -9,16 +9,33 @@ import { record as audit, AUDIT } from "../services/auditService.js";
 // Mongo chỉ lưu htmlUrl (xem services/pageService.js).
 const router = Router();
 
-// Mở/xem TRỰC TIẾP bằng URL: chuyển hướng (302) tới file HTML trên storage —
-// mở đường dẫn này trong trình duyệt là thấy trang hoàn chỉnh, không cần app.
+// Mở/xem TRỰC TIẾP bằng URL — mở đường dẫn này trong trình duyệt là thấy
+// trang hoàn chỉnh, không cần app:
+//   • Link http(s) trên storage: server TỰ lấy nội dung về rồi phát lại với
+//     Content-Type text/html. Không redirect thẳng tới file storage vì nơi
+//     lưu trữ có thể phục vụ file .html KHÔNG phải text/html (thực tế đã gặp
+//     trên Supabase: mở file chỉ thấy mã nguồn thay vì trang đã render).
+//     Lấy nội dung lỗi (mạng/storage) → rơi xuống redirect như cũ.
+//   • Đường dẫn nội bộ (/uploads/…): redirect — express.static trên chính
+//     server này phục vụ .html đúng text/html theo đuôi file.
+//   • Dữ liệu cũ (htmlUrl còn là HTML thô): trả thẳng.
 router.get("/:slug/raw", async (req, res, next) => {
   try {
     const page = await pageService.getPageBySlug(req.params.slug);
     if (!page) return sendError(res, "Không tìm thấy trang", 404);
     const url = String(page.htmlUrl || "").trim();
     if (!url) return sendError(res, "Trang chưa có nội dung", 404);
-    if (/^https?:\/\//i.test(url) || url.startsWith("/")) return res.redirect(302, url);
-    // Dữ liệu cũ: htmlUrl còn là HTML thô (chưa qua storage) → trả thẳng.
+    if (/^https?:\/\//i.test(url)) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 10000);
+        const upstream = await fetch(url, { signal: ctrl.signal });
+        clearTimeout(timer);
+        if (upstream.ok) return res.type("html").send(await upstream.text());
+      } catch { /* lấy nội dung lỗi → redirect dự phòng bên dưới */ }
+      return res.redirect(302, url);
+    }
+    if (url.startsWith("/")) return res.redirect(302, url);
     return res.type("html").send(url);
   } catch (e) {
     next(e);
