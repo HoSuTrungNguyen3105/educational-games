@@ -563,6 +563,31 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Bài học EduPlay AI Studio: model trang/phần tử JSON (pages[] →
+    // elements[] trên canvas logic 1280×720). Validate cấu trúc sâu nằm ở
+    // lessonService (validator ở đây chỉ chống sai kiểu cấp document).
+    // correctAnswer của phần tử question chỉ ở phía server — DTO học sinh
+    // được lessonService lọc sạch trước khi trả ra.
+    lessons: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "ownerId", "title", "status", "pages", "createdAt", "updatedAt"],
+        properties: {
+          id: { bsonType: "string" },
+          ownerId: { bsonType: "string" },
+          title: { bsonType: "string" },
+          subject: { bsonType: "string" },
+          grade: { bsonType: ["int", "double", "null"] },
+          description: { bsonType: "string" },
+          objectives: { bsonType: "string" },
+          status: { enum: ["draft", "published"] },
+          pages: { bsonType: "array" },
+          publishedAt: { bsonType: ["string", "null"] },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -722,6 +747,12 @@ async function _runHeavyInit(database) {
     ["reports", { id: 1 }, { unique: true }],
     ["reports", { status: 1, createdAt: -1 }],
     ["reports", { reportedId: 1 }],
+
+    // lessons (AI Studio) — tra theo chủ sở hữu (danh sách của giáo viên)
+    // và theo trạng thái xuất bản (danh sách phía học sinh).
+    ["lessons", { id: 1 }, { unique: true }],
+    ["lessons", { ownerId: 1, updatedAt: -1 }],
+    ["lessons", { status: 1, publishedAt: -1 }],
   ];
 
   const createdIndexes = [];
