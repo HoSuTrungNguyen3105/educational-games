@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, ArrowLeftRight, Check, Download, Expand, Eye, FileWarning,
-  Play, Save, Wand2, X, ZoomIn, ZoomOut,
+  ArrowLeft, ArrowLeftRight, BookOpen, Check, Download, Expand, Eye,
+  FileText, FileWarning, FolderOpen, Image as ImageIcon, LayoutGrid, List,
+  Play, Quote, Save, Settings, Sparkles, Table2, UserRound, Wand2, X,
+  ZoomIn, ZoomOut,
 } from "lucide-react";
 import { navigate } from "../../lib/router.js";
 import { documentService } from "../../services/documentService.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
-import { ConfirmModal } from "../../components/ui";
+import { ConfirmModal, Modal } from "../../components/ui";
 import CodeEditor from "./documents/CodeEditor.jsx";
 import WordPreview from "./documents/WordPreview.jsx";
 import PowerPointPreview from "./documents/PowerPointPreview.jsx";
@@ -21,8 +23,18 @@ import { duplicateSlide, insertSlideAfter, moveSlide, removeSlide } from "../../
 import "./documents/docstudio.css";
 
 // DocumentStudioEditor — trang soạn tài liệu của Teacher Document Studio
-// (/dashboard/documents/:documentId). Hai chế độ soạn (HTML/CSS ⇄ JSON)
-// dùng chung MỘT mô hình trung gian (src/lib/documents):
+// (/dashboard/documents/:documentId). Trang chạy TOÀN MÀN HÌNH, không có
+// sidebar quản trị (TeacherApp render ngoài TeacherLayout).
+//
+// Giao diện bám thiết kế "Word Studio / PowerPoint Studio":
+//   • Thanh trên cùng: logo EduPlay + tên tài liệu + trạng thái lưu + Trợ lý AI.
+//   • Banner màu theo loại tài liệu (xanh dương cho Word, cam cho PowerPoint)
+//     với nút Mẫu có sẵn / Xem trước / Xuất file thật.
+//   • Workspace 3 cột: rail công cụ (Nội dung, Hình ảnh, Bảng biểu, Danh sách,
+//     Trích dẫn, Cài đặt) · khung mã nguồn · khung xem trước kéo chia được.
+//
+// Hai chế độ soạn (HTML/CSS ⇄ JSON) dùng chung MỘT mô hình trung gian
+// (src/lib/documents):
 //   • "Áp dụng" (Apply) mới đưa mã nguồn vào preview — mã lỗi thì preview
 //     giữ bản hợp lệ gần nhất, nội dung đang sửa không bao giờ bị mất.
 //   • Mỗi chế độ có bản nháp riêng trong state; chuyển tab không ghi đè
@@ -31,11 +43,57 @@ import "./documents/docstudio.css";
 //     xác nhận ghi đè).
 //   • Server chỉ lưu MỘT mã nguồn (theo chế độ đang chọn khi Lưu) — bản
 //     nháp của chế độ còn lại chỉ sống trong phiên soạn này.
-// Đợt 2: xuất .pptx thật (cả hai chế độ, qua model) + thao tác slide
-// bằng nút ở chế độ JSON — nút sửa THẲNG bản nháp JSON qua slideOps rồi
-// serialize lại, nên code trong editor luôn là nguồn sự thật duy nhất.
+//   • Xuất .docx / .pptx thật, thao tác slide bằng nút ở chế độ JSON.
 
 const snapshotOf = ({ name, docType, mode, source }) => JSON.stringify({ name, docType, mode, source });
+
+const THEMES = {
+  word: {
+    label: "Word Studio",
+    blurb: "Soạn giáo án, tài liệu học tập",
+    exportLabel: "Xuất DOCX",
+    templateLabel: "Mẫu có sẵn",
+    icon: "W",
+    accent: "#2563eb",
+    accentDark: "#1d4ed8",
+    accentSoft: "#eff6ff",
+    accentLine: "#bfdbfe",
+    banner: "linear-gradient(115deg, #1e3a8a 0%, #1d4ed8 45%, #3b82f6 100%)",
+  },
+  powerpoint: {
+    label: "PowerPoint Studio",
+    blurb: "Tạo slide bài giảng sinh động",
+    exportLabel: "Xuất PPTX",
+    templateLabel: "Mẫu slide",
+    icon: "P",
+    accent: "#ea580c",
+    accentDark: "#c2410c",
+    accentSoft: "#fff7ed",
+    accentLine: "#fed7aa",
+    banner: "linear-gradient(115deg, #9a3412 0%, #ea580c 50%, #fb923c 100%)",
+  },
+};
+
+const RAIL_ITEMS = [
+  { id: "content", label: "Nội dung", icon: FileText },
+  { id: "image", label: "Hình ảnh", icon: ImageIcon },
+  { id: "table", label: "Bảng biểu", icon: Table2 },
+  { id: "list", label: "Danh sách", icon: List },
+  { id: "quote", label: "Trích dẫn", icon: Quote },
+  { id: "settings", label: "Cài đặt", icon: Settings },
+];
+
+const TEMPLATE_OPTIONS = [
+  { key: "word-html", type: "word", label: "Word — HTML/CSS", desc: "Trang A4, tự do trình bày bằng HTML" },
+  { key: "word-json", type: "word", label: "Word — JSON", desc: "Dữ liệu khối có cấu trúc, dễ nhân bản" },
+  { key: "powerpoint-html", type: "powerpoint", label: "PowerPoint — HTML/CSS", desc: "Nhiều section, mỗi section là một slide" },
+  { key: "powerpoint-json", type: "powerpoint", label: "PowerPoint — JSON", desc: "Slide có cấu trúc + thao tác bằng nút" },
+];
+
+const escAttr = (value) => String(value ?? "")
+  .replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const escHtml = (value) => String(value ?? "")
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 function buildApplied(mode, docType, res) {
   if (mode === "html") {
@@ -64,6 +122,11 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const [ratio, setRatio] = useState("16:9");
   const [slideIndex, setSlideIndex] = useState(0);
   const [showPreviewMobile, setShowPreviewMobile] = useState(false);
+  const [tool, setTool] = useState("content");
+  const [aiOpen, setAiOpen] = useState(false);
+  const [toolForm, setToolForm] = useState({
+    src: "", alt: "", title: "", text: "Mục 1\nMục 2", ordered: false,
+  });
   const editorRef = useRef(null);
   const previewRef = useRef(null);
   const splitRef = useRef(null);
@@ -75,6 +138,16 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     [savedSnapshot, name, docType, mode, draft]);
   const validApplied = applied && applied.docType === docType ? applied : null;
   const appliedStale = validApplied ? appliedSource !== draft || validApplied.mode !== mode : false;
+  const theme = THEMES[docType] || THEMES.word;
+  const themeStyle = {
+    "--doc-accent": theme.accent,
+    "--doc-accent-dark": theme.accentDark,
+    "--doc-accent-soft": theme.accentSoft,
+    "--doc-accent-line": theme.accentLine,
+    "--doc-banner": theme.banner,
+  };
+
+  const goList = () => navigate("/dashboard/documents");
 
   // ── Nạp tài liệu ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -168,6 +241,14 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     } else run();
   };
 
+  const changeDocType = (next) => {
+    if (next === docType) return;
+    setDocType(next);
+    doApply(draft, mode, next);
+    setTool("content");
+    showToast?.(`Đã chuyển sang ${next === "word" ? "Word" : "PowerPoint"}`, "success");
+  };
+
   // ── Mẫu ───────────────────────────────────────────────────────────────
   const loadTemplate = (key) => {
     if (!key) return;
@@ -178,6 +259,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       setMode(tMode);
       setDrafts((d) => ({ ...d, [tMode]: src }));
       doApply(src, tMode, tType);
+      setTool("content");
       setNotice("Đã nạp mẫu — hãy sửa nội dung theo bài dạy của bạn rồi bấm Lưu.");
     };
     if (draft.trim()) {
@@ -266,6 +348,8 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     } finally { setExporting(false); }
   };
 
+  const handleExport = docType === "word" ? handleExportWord : handleExportPptx;
+
   // ── Thao tác slide bằng nút (chế độ JSON, PowerPoint) ─────────────────
   // Cơ chế đồng bộ: parse + validate BẢN NHÁP JSON hiện tại (mã lỗi thì
   // từ chối thao tác, không đụng gì) → slideOps sửa đối tượng → serialize
@@ -330,6 +414,119 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     }
   };
 
+  // ── Công cụ chèn nhanh ở rail trái ────────────────────────────────────
+  const insertSnippet = (snippet) => {
+    const ok = editorRef.current?.insert(`\n${snippet}\n`);
+    if (!ok) {
+      showToast?.("Chưa chèn được — bấm vào khung mã nguồn rồi thử lại.", "error");
+      return false;
+    }
+    setTool("content");
+    showToast?.("Đã chèn vào mã nguồn — bấm Áp dụng thay đổi để xem trước.", "success");
+    return true;
+  };
+
+  const appendJsonItem = (mutate, label) => {
+    let obj;
+    try {
+      obj = JSON.parse(draft);
+    } catch {
+      showToast?.("Mã JSON đang sai cú pháp — sửa trước khi chèn nội dung.", "error");
+      return;
+    }
+    mutate(obj);
+    const src = JSON.stringify(obj, null, 2);
+    setDrafts((d) => ({ ...d, json: src }));
+    doApply(src, "json", docType);
+    if (docType === "powerpoint" && Array.isArray(obj.slides)) setSlideIndex(obj.slides.length - 1);
+    setTool("content");
+    showToast?.(`Đã thêm ${label} — bấm Lưu để ghi lại.`, "success");
+  };
+
+  const parseTableText = (text) => String(text || "")
+    .split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+    .map((line) => line.split("|").map((cell) => cell.trim()));
+
+  const handleInsertImage = () => {
+    const src = toolForm.src.trim();
+    if (!src) { showToast?.("Nhập URL/đường dẫn ảnh trước.", "error"); return; }
+    const alt = toolForm.alt.trim();
+    if (mode === "html") {
+      insertSnippet(`<img src="${escAttr(src)}" alt="${escAttr(alt)}" style="max-width:100%;height:auto">`);
+      return;
+    }
+    if (docType === "word") {
+      appendJsonItem((o) => { o.blocks = [...(o.blocks || []), { type: "image", src, alt }]; }, "khối hình ảnh");
+    } else {
+      appendJsonItem((o) => {
+        o.slides = [...(o.slides || []), { type: "image", title: toolForm.title.trim() || "Hình ảnh", src, alt }];
+      }, "slide hình ảnh");
+    }
+  };
+
+  const handleInsertTable = () => {
+    const rows = parseTableText(toolForm.text);
+    if (!rows.length || rows.some((row) => row.length === 0)) {
+      showToast?.("Nhập bảng dạng mỗi dòng một hàng, các ô cách nhau bằng dấu |", "error");
+      return;
+    }
+    if (mode === "html") {
+      const html = [
+        '<table border="1" cellspacing="0" cellpadding="8" style="border-collapse:collapse;width:100%">',
+        ...rows.map((row, ri) => `  <tr>${row.map((cell) => (
+          ri === 0 ? `<th>${escHtml(cell)}</th>` : `<td>${escHtml(cell)}</td>`
+        )).join("")}</tr>`),
+        "</table>",
+      ].join("\n");
+      insertSnippet(html);
+      return;
+    }
+    if (docType === "word") {
+      appendJsonItem((o) => { o.blocks = [...(o.blocks || []), { type: "table", rows }]; }, "bảng");
+    } else {
+      appendJsonItem((o) => {
+        o.slides = [...(o.slides || []), { type: "table", title: toolForm.title.trim() || "Bảng", rows }];
+      }, "slide bảng");
+    }
+  };
+
+  const handleInsertList = () => {
+    const items = toolForm.text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    if (!items.length) { showToast?.("Nhập ít nhất một mục danh sách.", "error"); return; }
+    if (mode === "html") {
+      const tag = toolForm.ordered ? "ol" : "ul";
+      insertSnippet(`<${tag}>\n${items.map((item) => `  <li>${escHtml(item)}</li>`).join("\n")}\n</${tag}>`);
+      return;
+    }
+    if (docType === "word") {
+      appendJsonItem((o) => {
+        o.blocks = [...(o.blocks || []), { type: "list", ordered: toolForm.ordered, items }];
+      }, "danh sách");
+    } else {
+      appendJsonItem((o) => {
+        o.slides = [...(o.slides || []), {
+          type: "content", title: toolForm.title.trim() || "Danh sách", content: items,
+        }];
+      }, "slide danh sách");
+    }
+  };
+
+  const handleInsertQuote = () => {
+    const text = toolForm.text.trim();
+    if (!text) { showToast?.("Nhập nội dung trích dẫn trước.", "error"); return; }
+    if (mode === "html") {
+      insertSnippet(`<blockquote style="margin:16px 0;padding:8px 16px;border-left:4px solid #cbd5e1;color:#475569;font-style:italic">${escHtml(text).replace(/\n/g, "<br>")}</blockquote>`);
+      return;
+    }
+    if (docType === "word") {
+      appendJsonItem((o) => { o.blocks = [...(o.blocks || []), { type: "paragraph", text: `“${text}”` }]; }, "trích dẫn");
+    } else {
+      appendJsonItem((o) => {
+        o.slides = [...(o.slides || []), { type: "content", title: "Trích dẫn", content: [`“${text}”`] }];
+      }, "slide trích dẫn");
+    }
+  };
+
   // ── Kéo thanh phân chia ───────────────────────────────────────────────
   const startDrag = (e) => {
     e.preventDefault();
@@ -355,176 +552,396 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     else el.requestFullscreen?.().catch(() => {});
   };
 
-  if (loading) return <div className="p-10 font-body text-ink/60">Đang tải tài liệu…</div>;
+  if (loading) {
+    return <div className="docstudio-screen" style={themeStyle}><div className="p-10 font-body text-ink/60">Đang tải tài liệu…</div></div>;
+  }
   if (loadError) {
     return (
-      <div className="p-10">
-        <p className="font-body text-ink mb-4">{loadError}</p>
-        <button type="button" onClick={() => navigate("/dashboard/documents")} className="px-4 py-2 rounded-full text-sm font-semibold bg-ink text-paper">Về danh sách</button>
+      <div className="docstudio-screen" style={themeStyle}>
+        <div className="p-10">
+          <p className="font-body text-ink mb-4">{loadError}</p>
+          <button type="button" onClick={goList} className="px-4 py-2 rounded-full text-sm font-semibold bg-ink text-paper">Về danh sách</button>
+        </div>
       </div>
     );
   }
 
   const warnings = validApplied?.warnings || [];
+  const toolMeta = RAIL_ITEMS.find((item) => item.id === tool);
+
+  const renderToolPanel = () => {
+    if (tool === "templates") {
+      return (
+        <aside className="docstudio-flyout">
+          <h3>Mẫu có sẵn</h3>
+          <p className="docstudio-flyout-hint">Chọn một mẫu để nạp nhanh. Bản nháp hiện tại sẽ được xác nhận trước khi ghi đè.</p>
+          <div className="docstudio-template-list">
+            {TEMPLATE_OPTIONS.map((tpl) => (
+              <button key={tpl.key} type="button"
+                className={`docstudio-template ${tpl.type === docType ? "is-current" : ""}`}
+                onClick={() => loadTemplate(tpl.key)}>
+                <span className={`docstudio-template-icon is-${tpl.type}`}>{tpl.type === "word" ? "W" : "P"}</span>
+                <span className="min-w-0 text-left">
+                  <b>{tpl.label}</b>
+                  <small>{tpl.desc}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+        </aside>
+      );
+    }
+
+    if (tool === "settings") {
+      return (
+        <aside className="docstudio-flyout">
+          <h3>Cài đặt tài liệu</h3>
+          <label className="docstudio-label" htmlFor="docstudio-name">Tên tài liệu</label>
+          <input id="docstudio-name" className="docstudio-input" value={name}
+            onChange={(e) => setName(e.target.value)} placeholder="Tên tài liệu…" />
+
+          <span className="docstudio-label">Loại tài liệu</span>
+          <div className="docstudio-seg">
+            <button type="button" className={docType === "word" ? "is-active" : ""} onClick={() => changeDocType("word")}>Word</button>
+            <button type="button" className={docType === "powerpoint" ? "is-active" : ""} onClick={() => changeDocType("powerpoint")}>PowerPoint</button>
+          </div>
+
+          <span className="docstudio-label">Chế độ soạn</span>
+          <div className="docstudio-seg">
+            <button type="button" className={mode === "html" ? "is-active" : ""} onClick={() => switchMode("html")}>HTML/CSS</button>
+            <button type="button" className={mode === "json" ? "is-active" : ""} onClick={() => switchMode("json")}>JSON</button>
+          </div>
+
+          {docType === "powerpoint" && (
+            <>
+              <label className="docstudio-label" htmlFor="docstudio-ratio">Tỷ lệ slide</label>
+              <select id="docstudio-ratio" className="docstudio-select" value={ratio}
+                onChange={(e) => setRatio(e.target.value)}>
+                <option value="16:9">16:9 (mặc định)</option>
+                <option value="4:3">4:3</option>
+              </select>
+            </>
+          )}
+
+          <button type="button" className="docstudio-btn-primary" onClick={handleSave} disabled={saving}>
+            <Save className="w-4 h-4" /> {saving ? "Đang lưu…" : "Lưu tài liệu"}
+          </button>
+          <button type="button" className="docstudio-btn-ghost" onClick={convertIntoCurrent}>
+            <ArrowLeftRight className="w-4 h-4" /> Chuyển đổi từ {mode === "html" ? "JSON" : "HTML/CSS"}
+          </button>
+          <button type="button" className="docstudio-btn-ghost" onClick={goList}>
+            <ArrowLeft className="w-4 h-4" /> Về danh sách tài liệu
+          </button>
+        </aside>
+      );
+    }
+
+    if (tool === "image") {
+      return (
+        <aside className="docstudio-flyout">
+          <h3>Chèn hình ảnh</h3>
+          <p className="docstudio-flyout-hint">
+            {mode === "html" ? "Chèn thẻ <img> tại vị trí con trỏ." : docType === "word" ? "Thêm một khối hình ảnh vào cuối tài liệu." : "Thêm một slide hình ảnh vào cuối bài."}
+          </p>
+          <label className="docstudio-label" htmlFor="docstudio-img-src">Đường dẫn ảnh</label>
+          <input id="docstudio-img-src" className="docstudio-input" value={toolForm.src}
+            onChange={(e) => setToolForm((f) => ({ ...f, src: e.target.value }))}
+            placeholder="https://… hoặc /images/…" />
+          {docType === "powerpoint" && mode === "json" && (
+            <>
+              <label className="docstudio-label" htmlFor="docstudio-img-title">Tiêu đề slide</label>
+              <input id="docstudio-img-title" className="docstudio-input" value={toolForm.title}
+                onChange={(e) => setToolForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder="VD: Hình minh hoạ" />
+            </>
+          )}
+          <label className="docstudio-label" htmlFor="docstudio-img-alt">Mô tả ảnh (alt)</label>
+          <input id="docstudio-img-alt" className="docstudio-input" value={toolForm.alt}
+            onChange={(e) => setToolForm((f) => ({ ...f, alt: e.target.value }))}
+            placeholder="Mô tả ngắn cho ảnh" />
+          <button type="button" className="docstudio-btn-primary" onClick={handleInsertImage}>
+            <ImageIcon className="w-4 h-4" /> Chèn hình ảnh
+          </button>
+        </aside>
+      );
+    }
+
+    const isTable = tool === "table";
+    return (
+      <aside className="docstudio-flyout">
+        <h3>{toolMeta?.label || "Chèn nội dung"}</h3>
+        <p className="docstudio-flyout-hint">
+          {isTable
+            ? "Mỗi dòng là một hàng, các ô cách nhau bằng dấu |. Hàng đầu tiên là hàng tiêu đề."
+            : "Mỗi dòng là một mục. Nội dung sẽ được chèn vào bản nháp hiện tại."}
+        </p>
+        {(docType === "powerpoint" && mode === "json") && (
+          <>
+            <label className="docstudio-label" htmlFor="docstudio-tool-title">Tiêu đề slide</label>
+            <input id="docstudio-tool-title" className="docstudio-input" value={toolForm.title}
+              onChange={(e) => setToolForm((f) => ({ ...f, title: e.target.value }))}
+              placeholder={isTable ? "VD: Bảng so sánh" : "VD: Mục tiêu bài học"} />
+          </>
+        )}
+        <label className="docstudio-label" htmlFor="docstudio-tool-text">
+          {isTable ? "Nội dung bảng" : tool === "quote" ? "Nội dung trích dẫn" : "Các mục"}
+        </label>
+        <textarea id="docstudio-tool-text" className="docstudio-textarea" value={toolForm.text}
+          onChange={(e) => setToolForm((f) => ({ ...f, text: e.target.value }))}
+          placeholder={isTable ? "Cột 1 | Cột 2\nÔ 1 | Ô 2" : "Mục 1\nMục 2"} />
+        {tool === "list" && (
+          <label className="docstudio-check">
+            <input type="checkbox" checked={toolForm.ordered}
+              onChange={(e) => setToolForm((f) => ({ ...f, ordered: e.target.checked }))} />
+            Danh sách có thứ tự (1, 2, 3…)
+          </label>
+        )}
+        <button type="button" className="docstudio-btn-primary" onClick={
+          isTable ? handleInsertTable : tool === "list" ? handleInsertList : handleInsertQuote
+        }>
+          <Play className="w-4 h-4" /> Chèn vào tài liệu
+        </button>
+      </aside>
+    );
+  };
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100dvh - 118px)", minHeight: 520 }}>
-      {/* ── Toolbar ─────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 pb-3">
-        <button type="button" onClick={() => navigate("/dashboard/documents")} title="Về danh sách tài liệu"
-          className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold border border-ink/15 bg-white hover:bg-ink/5">
-          <ArrowLeft className="w-4 h-4" /> Danh sách
+    <div className={`docstudio-screen ${docType === "powerpoint" ? "is-powerpoint" : "is-word"}`} style={themeStyle}>
+      {/* ── Thanh trên cùng ─────────────────────────────────────────── */}
+      <header className="docstudio-topbar">
+        <button type="button" onClick={goList} className="docstudio-logo" title="Về danh sách tài liệu">
+          <BookOpen className="w-5 h-5" />
         </button>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên tài liệu"
-          className="note-card flex-1 min-w-[180px] px-3 py-2 text-sm font-semibold border-ink/10 bg-white" />
-        <select value={docType} onChange={(e) => { setDocType(e.target.value); doApply(draft, mode, e.target.value); }}
-          className="note-card px-3 py-2 text-sm border-ink/10 bg-white" aria-label="Loại tài liệu">
-          <option value="word">Word</option>
-          <option value="powerpoint">PowerPoint</option>
-        </select>
-        <div className="flex rounded-full border border-ink/15 overflow-hidden" role="tablist" aria-label="Chế độ soạn">
-          {[["html", "HTML/CSS"], ["json", "JSON"]].map(([m, label]) => (
-            <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => switchMode(m)}
-              className={`px-3.5 py-2 text-sm font-semibold ${mode === m ? "bg-ink text-paper" : "bg-white hover:bg-ink/5"}`}>
-              {label}
-            </button>
-          ))}
+        <span className="docstudio-topbar-sep hidden sm:block" />
+        <div className="min-w-0">
+          <h1 className="docstudio-topbar-title">Teacher Document Studio</h1>
+          <input value={name} onChange={(e) => setName(e.target.value)}
+            className="docstudio-name-input" placeholder="Tên tài liệu…" aria-label="Tên tài liệu" />
         </div>
-        <select value="" onChange={(e) => { loadTemplate(e.target.value); e.target.value = ""; }}
-          className="note-card px-3 py-2 text-sm border-ink/10 bg-white" aria-label="Nạp mẫu">
-          <option value="">Nạp mẫu…</option>
-          <option value="word-html">Word — mẫu HTML/CSS</option>
-          <option value="word-json">Word — mẫu JSON</option>
-          <option value="powerpoint-html">PowerPoint — mẫu HTML/CSS</option>
-          <option value="powerpoint-json">PowerPoint — mẫu JSON</option>
-        </select>
-        <span className={`text-xs font-body whitespace-nowrap ${isDirty ? "text-amber-600" : "text-ink/50"}`}>
-          {saving ? "Đang lưu…" : isDirty ? "● Chưa lưu" : "✓ Đã lưu"}
-        </span>
-        <button type="button" onClick={() => setShowPreviewMobile((v) => !v)}
-          className="lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold border border-ink/15 bg-white">
-          <Eye className="w-4 h-4" /> {showPreviewMobile ? "Soạn thảo" : "Xem trước"}
-        </button>
-        <button type="button" onClick={handleSave} disabled={saving}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold bg-ink text-paper disabled:opacity-40">
-          <Save className="w-4 h-4" /> Lưu
-        </button>
-        {docType === "word" ? (
-          <button type="button" onClick={handleExportWord} disabled={exporting}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold bg-[#2563eb] text-white disabled:opacity-40">
-            <Download className="w-4 h-4" /> {exporting ? "Đang xuất…" : "Xuất Word (.docx)"}
+
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <span className={`docstudio-save-state ${isDirty ? "is-dirty" : "is-saved"}`}>
+            {saving ? "Đang lưu…" : isDirty ? "● Chưa lưu" : "✓ Đã lưu"}
+          </span>
+          <button type="button" className="docstudio-ai-btn" onClick={() => setAiOpen(true)}>
+            <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">Trợ lý AI</span>
           </button>
-        ) : (
-          <button type="button" onClick={handleExportPptx} disabled={exporting}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold bg-[#2563eb] text-white disabled:opacity-40">
-            <Download className="w-4 h-4" /> {exporting ? "Đang xuất…" : "Xuất PowerPoint (.pptx)"}
+          <button type="button" className="docstudio-ghost-btn" onClick={goList}>
+            <FolderOpen className="w-4 h-4" /> <span className="hidden md:inline">Tài liệu của tôi</span>
           </button>
+          <span className="docstudio-avatar" title="Giáo viên"><UserRound className="w-4 h-4" /></span>
+          <button type="button" className="docstudio-save-btn" onClick={handleSave} disabled={saving}>
+            <Save className="w-4 h-4" /> <span className="hidden sm:inline">Lưu</span>
+          </button>
+        </div>
+      </header>
+
+      <div className="docstudio-body">
+        {/* ── Banner màu theo loại tài liệu ─────────────────────────── */}
+        <div className="docstudio-banner">
+          <div className="docstudio-banner-brand">
+            <span className="docstudio-banner-icon">{theme.icon}</span>
+            <div className="min-w-0">
+              <h2 className="docstudio-banner-title">{theme.label}</h2>
+              <p className="docstudio-banner-sub">{theme.blurb}</p>
+            </div>
+          </div>
+          <div className="docstudio-banner-actions">
+            <button type="button" className="docstudio-banner-btn"
+              onClick={() => setTool(tool === "templates" ? "content" : "templates")}>
+              <LayoutGrid className="w-4 h-4" /> {theme.templateLabel}
+            </button>
+            <button type="button" className="docstudio-banner-btn"
+              onClick={() => { setShowPreviewMobile(true); previewRef.current?.scrollIntoView?.({ block: "nearest" }); }}>
+              <Eye className="w-4 h-4" /> Xem trước
+            </button>
+            <button type="button" className="docstudio-banner-export" onClick={handleExport} disabled={exporting}>
+              <Download className="w-4 h-4" /> {exporting ? "Đang xuất…" : theme.exportLabel}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Thông báo / lỗi / cảnh báo / kết quả xuất ───────────────── */}
+        {(notice || applyErrors.length > 0 || (warnings.length > 0 && applyErrors.length === 0) || exportReport) && (
+          <div className="docstudio-alerts">
+            {applyErrors.length > 0 && (
+              <div className="docstudio-alert is-error">
+                <FileWarning className="w-4 h-4 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-semibold">Mã nguồn chưa hợp lệ — preview đang giữ bản hợp lệ gần nhất:</p>
+                  <ul className="list-disc pl-5 mt-1">
+                    {applyErrors.map((e, i) => <li key={i}>{e.message}</li>)}
+                  </ul>
+                </div>
+              </div>
+            )}
+            {warnings.length > 0 && applyErrors.length === 0 && (
+              <div className="docstudio-alert is-warning">
+                <div className="flex-1">
+                  <p className="font-semibold">Lưu ý khi chuyển đổi/xuất file:</p>
+                  <ul className="list-disc pl-5 mt-1">
+                    {warnings.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
+                </div>
+              </div>
+            )}
+            {exportReport && (
+              <div className={`docstudio-alert ${exportReport.ok ? "is-success" : "is-error"}`}>
+                <div className="flex-1">
+                  <p>{exportReport.message}</p>
+                  {exportReport.warnings?.length > 0 && (
+                    <ul className="list-disc pl-5 mt-1">
+                      {exportReport.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                    </ul>
+                  )}
+                </div>
+                <button type="button" onClick={() => setExportReport(null)} aria-label="Đóng"><X className="w-4 h-4" /></button>
+              </div>
+            )}
+          </div>
         )}
+
+        {/* ── Workspace: rail | công cụ | soạn thảo | xem trước ──────── */}
+        <div className="docstudio-workspace">
+          <aside className="docstudio-rail" aria-label="Công cụ soạn thảo">
+            {RAIL_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const active = tool === item.id;
+              return (
+                <button key={item.id} type="button"
+                  className={`docstudio-rail-btn ${active ? "is-active" : ""}`}
+                  onClick={() => {
+                    setTool(item.id);
+                    if (item.id === "content") editorRef.current?.focus();
+                  }}>
+                  <Icon /> <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </aside>
+
+          {tool !== "content" && renderToolPanel()}
+
+          <div ref={splitRef} className="docstudio-split">
+            <section
+              className={`docstudio-editor docstudio-split-editor ${showPreviewMobile ? "hidden lg:flex" : "flex"}`}
+              style={{ "--split-pct": `${split}%` }}>
+              <div className="docstudio-editor-head">
+                <div className="docstudio-tabs" role="tablist" aria-label="Chế độ soạn">
+                  {[["json", "{ } JSON"], ["html", "<> HTML/CSS"]].map(([m, label]) => (
+                    <button key={m} type="button" role="tab" aria-selected={mode === m}
+                      className={`docstudio-tab ${mode === m ? "is-active" : ""}`}
+                      onClick={() => switchMode(m)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <span className="flex-1" />
+                <button type="button" className="docstudio-tool-btn" onClick={handleFormat} title="Định dạng mã nguồn">
+                  <Wand2 className="w-3.5 h-3.5" /> Format
+                </button>
+              </div>
+
+              <div className="docstudio-editor-code">
+                <CodeEditor ref={editorRef} value={draft} language={mode === "json" ? "json" : "html"}
+                  onChange={(text) => setDrafts((d) => (d[mode] === text ? d : { ...d, [mode]: text }))} />
+              </div>
+
+              <div className="docstudio-editor-foot">
+                <span className={`docstudio-valid ${applyErrors.length ? "is-error" : ""}`}>
+                  {applyErrors.length ? <FileWarning className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                  {applyErrors.length ? "Mã nguồn có lỗi" : "Mã nguồn hợp lệ"}
+                </span>
+                {appliedStale && !applyErrors.length && <span className="docstudio-stale">• Chưa áp dụng</span>}
+                <span className="flex-1" />
+                <button type="button" className="docstudio-convert-btn" onClick={convertIntoCurrent}
+                  title={`Chuyển đổi nội dung từ ${mode === "html" ? "JSON" : "HTML/CSS"} sang chế độ hiện tại`}>
+                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                  <span className="hidden xl:inline">Chuyển đổi</span>
+                </button>
+                <button type="button" className="docstudio-apply" onClick={handleApply}>
+                  <Play className="w-4 h-4" /> Áp dụng thay đổi
+                </button>
+              </div>
+            </section>
+
+            <div role="separator" aria-orientation="vertical" onPointerDown={startDrag}
+              className="hidden lg:block docstudio-divider" />
+
+            <section ref={previewRef}
+              className={`docstudio-preview ${showPreviewMobile ? "flex" : "hidden lg:flex"}`}>
+              <div className="docstudio-preview-head">
+                <span className="docstudio-preview-title">
+                  Xem trước {docType === "word" ? "— trang A4" : "— slide"}
+                </span>
+                {appliedStale && <span className="docstudio-stale">(chưa áp dụng thay đổi mới nhất)</span>}
+                <span className="flex-1" />
+                <button type="button" className="docstudio-zoom-btn lg:hidden"
+                  onClick={() => setShowPreviewMobile(false)} title="Về khung soạn thảo">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="docstudio-preview-body">
+                {docType === "word" ? (
+                  <WordPreview
+                    bodyHtml={validApplied ? validApplied.bodyHtml : ""}
+                    cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
+                    zoom={zoom} />
+                ) : (
+                  <PowerPointPreview
+                    model={validApplied?.mode === "json" ? validApplied.model : null}
+                    bodyHtml={validApplied?.mode === "html" ? validApplied.bodyHtml : ""}
+                    cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
+                    zoom={zoom} ratio={ratio} onRatioChange={setRatio}
+                    index={slideIndex} onIndexChange={setSlideIndex}
+                    editable={mode === "json"} onSlideOp={handleSlideOp} />
+                )}
+              </div>
+              <div className="docstudio-preview-foot">
+                <button type="button" className="docstudio-zoom-btn" aria-label="Thu nhỏ"
+                  onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))}>
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <span className="docstudio-zoom-val">{Math.round(zoom * 100)}%</span>
+                <button type="button" className="docstudio-zoom-btn" aria-label="Phóng to"
+                  onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))}>
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+                <button type="button" className="docstudio-zoom-btn" aria-label="Toàn màn hình" onClick={toggleFullscreen}>
+                  <Expand className="w-4 h-4" />
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
       </div>
 
-      {/* ── Thông báo / lỗi / cảnh báo / kết quả xuất ─────────────────── */}
-      {notice && (
-        <div className="mb-2 flex items-start gap-2 rounded-xl bg-blue-50 border border-blue-200 px-3 py-2 text-sm font-body text-blue-900">
-          <Check className="w-4 h-4 mt-0.5 shrink-0" /> <span className="flex-1">{notice}</span>
-          <button type="button" onClick={() => setNotice("")} aria-label="Đóng thông báo"><X className="w-4 h-4" /></button>
-        </div>
+      {/* ── Trợ lý AI: mở nhanh mẫu có sẵn (tính năng AI tự soạn đang phát triển) ── */}
+      {aiOpen && (
+        <Modal onClose={() => setAiOpen(false)}>
+          <h3 className="font-display text-xl text-ink mb-1">Trợ lý AI</h3>
+          <p className="text-sm font-body text-ink/60 mb-4">
+            Trợ lý AI tự soạn nội dung đang được phát triển. Trong lúc chờ, bạn có thể bắt đầu ngay từ một mẫu có sẵn:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {TEMPLATE_OPTIONS.map((tpl) => (
+              <button key={tpl.key} type="button"
+                className="flex items-center gap-2.5 rounded-xl border border-ink/10 bg-paper2 px-3 py-2.5 text-left hover:border-ink/25"
+                onClick={() => { setAiOpen(false); loadTemplate(tpl.key); }}>
+                <span className={`docstudio-template-icon is-${tpl.type}`}>{tpl.type === "word" ? "W" : "P"}</span>
+                <span className="min-w-0">
+                  <b className="block text-[13.5px] text-ink">{tpl.label}</b>
+                  <small className="block text-[12px] text-ink/55">{tpl.desc}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button type="button" onClick={() => setAiOpen(false)}
+              className="px-4 py-2 rounded-full text-sm font-semibold bg-ink text-paper">Đóng</button>
+          </div>
+        </Modal>
       )}
-      {applyErrors.length > 0 && (
-        <div className="mb-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm font-body text-red-900">
-          <p className="flex items-center gap-2 font-semibold"><FileWarning className="w-4 h-4" />
-            Mã nguồn chưa hợp lệ — preview đang giữ bản hợp lệ gần nhất:</p>
-          <ul className="list-disc pl-6 mt-1">
-            {applyErrors.map((e, i) => <li key={i}>{e.message}</li>)}
-          </ul>
-        </div>
-      )}
-      {warnings.length > 0 && applyErrors.length === 0 && (
-        <div className="mb-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-sm font-body text-amber-900">
-          <p className="font-semibold">Lưu ý khi chuyển đổi/xuất file:</p>
-          <ul className="list-disc pl-6 mt-1">
-            {warnings.map((w, i) => <li key={i}>{w}</li>)}
-          </ul>
-        </div>
-      )}
-      {exportReport && (
-        <div className={`mb-2 flex items-start gap-2 rounded-xl border px-3 py-2 text-sm font-body ${exportReport.ok ? "bg-green-50 border-green-200 text-green-900" : "bg-red-50 border-red-200 text-red-900"}`}>
-          <div className="flex-1">
-            <p>{exportReport.message}</p>
-            {exportReport.warnings?.length > 0 && (
-              <ul className="list-disc pl-6 mt-1">
-                {exportReport.warnings.map((w, i) => <li key={i}>{w}</li>)}
-              </ul>
-            )}
-          </div>
-          <button type="button" onClick={() => setExportReport(null)} aria-label="Đóng"><X className="w-4 h-4" /></button>
-        </div>
-      )}
-
-      {/* ── Hai khung: soạn | xem trước ──────────────────────────────── */}
-      <div ref={splitRef} className="flex flex-1 min-h-0">
-        <div className={`${showPreviewMobile ? "hidden" : "flex"} lg:flex flex-col min-h-0 flex-1 docstudio-split-editor`}
-          style={{ "--split-pct": `${split}%` }}>
-          <div className="flex items-center gap-2 pb-2">
-            <span className="font-body text-sm font-semibold text-ink/70">
-              Mã nguồn — {mode === "html" ? "HTML/CSS" : "JSON"}
-            </span>
-            <span className="flex-1" />
-            <button type="button" onClick={convertIntoCurrent} title="Chuyển đổi nội dung từ chế độ kia sang chế độ hiện tại"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold border border-ink/15 bg-white hover:bg-ink/5">
-              <ArrowLeftRight className="w-3.5 h-3.5" /> Chuyển đổi từ {mode === "html" ? "JSON" : "HTML/CSS"}
-            </button>
-            <button type="button" onClick={handleFormat}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold border border-ink/15 bg-white hover:bg-ink/5">
-              <Wand2 className="w-3.5 h-3.5" /> Format Code
-            </button>
-            <button type="button" onClick={handleApply}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#2563eb] text-white">
-              <Play className="w-3.5 h-3.5" /> Apply Changes
-            </button>
-          </div>
-          <div className="flex-1 min-h-0">
-            <CodeEditor ref={editorRef} value={draft} language={mode === "json" ? "json" : "html"}
-              onChange={(text) => setDrafts((d) => (d[mode] === text ? d : { ...d, [mode]: text }))} />
-          </div>
-        </div>
-
-        <div role="separator" aria-orientation="vertical" onPointerDown={startDrag}
-          className="hidden lg:block w-2 shrink-0 cursor-col-resize rounded bg-ink/10 hover:bg-ink/25 mx-1 self-stretch" />
-
-        <div ref={previewRef} className={`${showPreviewMobile ? "flex" : "hidden"} lg:flex flex-col min-h-0 bg-[#ece7db] rounded-xl border border-ink/10 overflow-hidden`}
-          style={{ flex: 1 }}>
-          <div className="flex items-center gap-2 px-3 py-2 bg-paper2 border-b border-ink/10">
-            <span className="font-body text-sm font-semibold text-ink/70">
-              Xem trước {docType === "word" ? "— trang A4" : "— slide"}
-              {appliedStale && <span className="text-amber-600 font-normal"> (chưa áp dụng thay đổi mới nhất)</span>}
-            </span>
-            <span className="flex-1" />
-            <button type="button" aria-label="Thu nhỏ" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))}
-              className="p-1.5 rounded-full hover:bg-ink/5"><ZoomOut className="w-4 h-4" /></button>
-            <span className="font-body text-xs text-ink/60 w-10 text-center">{Math.round(zoom * 100)}%</span>
-            <button type="button" aria-label="Phóng to" onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))}
-              className="p-1.5 rounded-full hover:bg-ink/5"><ZoomIn className="w-4 h-4" /></button>
-            <button type="button" aria-label="Toàn màn hình" onClick={toggleFullscreen}
-              className="p-1.5 rounded-full hover:bg-ink/5"><Expand className="w-4 h-4" /></button>
-          </div>
-          <div className="flex-1 min-h-0">
-            {docType === "word" ? (
-              <WordPreview
-                bodyHtml={validApplied ? validApplied.bodyHtml : ""}
-                cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
-                zoom={zoom} />
-            ) : (
-              <PowerPointPreview
-                model={validApplied?.mode === "json" ? validApplied.model : null}
-                bodyHtml={validApplied?.mode === "html" ? validApplied.bodyHtml : ""}
-                cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
-                zoom={zoom} ratio={ratio} onRatioChange={setRatio}
-                index={slideIndex} onIndexChange={setSlideIndex}
-                editable={mode === "json"} onSlideOp={handleSlideOp} />
-            )}
-          </div>
-        </div>
-      </div>
 
       <ConfirmModal {...confirmProps} />
     </div>

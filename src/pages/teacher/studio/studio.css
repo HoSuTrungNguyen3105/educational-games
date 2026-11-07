@@ -3,14 +3,16 @@
    chiều cao, nền sân khấu canvas, dải trang cuộn ngang. Màu bám bảng
    màu chung của app (--ink/--line/--stage trong index.css). */
 
+/* Editor AI Studio render TOÀN MÀN HÌNH (ngoài TeacherLayout) — không còn
+   trừ chiều cao admin bar/sidebar, không bo góc viền panel quản trị. */
 .studio-editor {
   display: flex;
   flex-direction: column;
-  height: calc(100dvh - 118px);
-  min-height: 600px;
+  height: 100dvh;
+  min-height: 0;
   background: var(--card, #FFFBF2);
-  border: 1px solid var(--line, #E7D9BE);
-  border-radius: 18px;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
 }
 

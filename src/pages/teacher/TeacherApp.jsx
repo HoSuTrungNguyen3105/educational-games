@@ -1,7 +1,7 @@
 import { useState, lazy, Suspense } from 'react'
 import { navigate } from '../../lib/router.js'
 import TeacherLayout from './TeacherLayout.jsx'
-import { Loader } from '../../components/ui'
+import { Loader, Toast } from '../../components/ui'
 
 // Lazy-loaded teacher subpages & tools
 const TeacherDashboard = lazy(() => import('./TeacherDashboard.jsx'));
@@ -48,7 +48,13 @@ const AdminSettings = lazy(() => import('./AdminSettings.jsx'));
 const SupportTicketManagement = lazy(() => import('./SupportTicketManagement.jsx'));
 const TeacherSupportTickets = lazy(() => import('./TeacherSupportTickets.jsx'));
 
-export default function TeacherApp({ user, route, onLogout, showToast }) {
+/* Hai trang EDITOR được render toàn màn hình, KHÔNG có sidebar quản trị:
+ *   • /dashboard/studio/:lessonId     — AI Studio soạn bài học
+ *   • /dashboard/documents/:documentId — Teacher Document Studio (Word/PPT)
+ * Danh sách (…/studio, …/documents) vẫn nằm trong TeacherLayout như cũ. */
+const STANDALONE_EDITORS = new Set(["admin-studio-edit", "admin-document-edit"]);
+
+export default function TeacherApp({ user, route, onLogout, showToast, toast }) {
   const [refreshFlag, setRefreshFlag] = useState(0);
   const bump = () => setRefreshFlag(f => f + 1);
 
@@ -57,9 +63,8 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
 
   const page = route.name;
 
-  return (
-    <TeacherLayout screen={page} user={user} onLogout={onLogout}>
-      <Suspense fallback={<div className="p-12 flex items-center justify-center"><Loader label="Đang tải dữ liệu..." /></div>}>
+  const content = (
+    <Suspense fallback={<div className="p-12 flex items-center justify-center"><Loader label="Đang tải dữ liệu..." /></div>}>
         {page === "admin-dashboard" && <TeacherDashboard key={refreshFlag} user={user} onLogout={onLogout} onOpenLibrary={goLibrary} onCreate={goCreate} onEdit={(id) => navigate(`/dashboard/edit/${id}`)} onResults={(id) => navigate(`/dashboard/results/${id}`)} showToast={showToast} />}
         {page === "admin-library" && <GameLibraryManagement key={refreshFlag} onCreate={goCreate} onEdit={(id) => navigate(`/dashboard/edit/${id}`)} onResults={(id) => navigate(`/dashboard/results/${id}`)} showToast={showToast} onChanged={bump} />}
         {page === "admin-create" && <CreateGameFlow key="create" gameId={null} showToast={showToast} onDone={() => { bump(); goLibrary(); }} onCancel={goLibrary} />}
@@ -106,7 +111,24 @@ export default function TeacherApp({ user, route, onLogout, showToast }) {
         {page === "admin-ai-analysis" && <AiStudentAnalysisPage />}
         {page === "admin-support" && <SupportTicketManagement user={user} showToast={showToast} />}
         {page === "admin-teacher-support" && <TeacherSupportTickets user={user} showToast={showToast} />}
-      </Suspense>
-    </TeacherLayout>
+    </Suspense>
+  );
+
+  if (STANDALONE_EDITORS.has(page)) {
+    return (
+      <>
+        {content}
+        <Toast toast={toast} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <TeacherLayout screen={page} user={user} onLogout={onLogout}>
+        {content}
+      </TeacherLayout>
+      <Toast toast={toast} />
+    </>
   );
 }

@@ -37,6 +37,23 @@ const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language },
       }
       return { ok: true };
     },
+    // Chèn một đoạn mã tại vị trí con trỏ (dùng cho các công cụ ở rail trái:
+    // hình ảnh, bảng biểu, danh sách, trích dẫn). Trả false khi editor chưa sẵn sàng.
+    insert(text) {
+      const view = viewRef.current;
+      if (!view) return false;
+      const { from, to } = view.state.selection.main;
+      const insertText = String(text ?? "");
+      view.dispatch({
+        changes: { from, to, insert: insertText },
+        selection: { anchor: from + insertText.length },
+      });
+      view.focus();
+      return true;
+    },
+    focus() {
+      viewRef.current?.focus();
+    },
   }), [language]);
 
   // Tạo editor khi mount / khi đổi ngôn ngữ (mỗi chế độ soạn một ngôn ngữ).

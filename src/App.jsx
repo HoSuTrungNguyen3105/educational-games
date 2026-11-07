@@ -368,6 +368,7 @@ function App() {
           onExit={() => navigate("/")}
           onLogout={handleLogout}
           showToast={showToast}
+          toast={toast}
         />
       );
     }
