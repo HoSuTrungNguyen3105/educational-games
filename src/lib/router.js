@@ -18,6 +18,9 @@ const ROUTES = [
   { name: "admin-templates", pattern: "/dashboard/templates" },
   // Quản trị nội dung trang sinh nhật (#/sinh-nhat): tải file HTML lên qua API /pages
   { name: "admin-birthday", pattern: "/dashboard/birthday" },
+  // EduPlay AI Studio: danh sách bài học + editor soạn bài (API /api/lessons)
+  { name: "admin-studio", pattern: "/dashboard/studio" },
+  { name: "admin-studio-edit", pattern: "/dashboard/studio/:lessonId" },
   { name: "admin-game-config", pattern: "/dashboard/game-config" },
   // Cấu hình JSON riêng của game offline Vườn Thủ Hộ (plantvsanimal.html)
   { name: "admin-vth-config", pattern: "/dashboard/vth-config" },

@@ -79,6 +79,7 @@ const SECTIONS = [
       { id: "admin-categories", label: "Categories", icon: Tag, route: "/dashboard/categories", permission: "categories.manage" },
       { id: "admin-templates", label: "Templates", icon: Palette, route: "/dashboard/templates", permission: "templates.manage" },
       { id: "admin-birthday", label: "Trang sinh nhật", icon: Cake, route: "/dashboard/birthday", permission: "templates.edit" },
+      { id: "admin-studio", label: "AI Studio", icon: Sparkles, route: "/dashboard/studio", permission: null },
       { id: "admin-game-config", label: "Cấu hình game", icon: IconSettings, route: "/dashboard/game-config", permission: "games.manage" },
       { id: "admin-vth-config", label: "Cấu hình Vườn Thủ Hộ", icon: Sprout, route: "/dashboard/vth-config", permission: "games.manage" },
       { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/dashboard/upload-items", permission: null },
