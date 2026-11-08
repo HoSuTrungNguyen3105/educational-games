@@ -21,12 +21,25 @@ import { SLIDE_TYPE_OPTIONS } from "../../../lib/documents/slideOps.js";
 
 const SLIDE_W = 920;
 
-function SlideView({ slide, ratio }) {
+const DEFAULT_PPT_THEME = {
+  accent: "#2563eb", accent2: "#f59e0b", soft: "#eff6ff", line: "#bfdbfe",
+  ink: "#1f2937", muted: "#64748b", bg: "#ffffff",
+  heroBg: "#1d4ed8", heroText: "#ffffff",
+  font: "Arial", displayFont: "Arial",
+};
+
+function SlideView({ slide, ratio, theme }) {
+  const t = { ...DEFAULT_PPT_THEME, ...(theme || {}) };
+  const font = `${t.font || "Arial"}, Arial, sans-serif`;
+  const displayFont = `${t.displayFont || t.font || "Arial"}, Arial, sans-serif`;
   const style = {
     width: SLIDE_W,
     aspectRatio: ratio === "4:3" ? "4 / 3" : "16 / 9",
+    background: t.bg,
+    color: t.ink,
+    fontFamily: font,
   };
-  const shell = "bg-white shadow-[0_2px_14px_rgba(0,0,0,.20)] rounded-md overflow-hidden flex flex-col";
+  const shell = "shadow-[0_2px_14px_rgba(0,0,0,.20)] rounded-md overflow-hidden flex flex-col relative";
   if (!slide) {
     return (
       <div style={style} className={`${shell} items-center justify-center text-ink/40 font-body`}>
@@ -35,72 +48,89 @@ function SlideView({ slide, ratio }) {
     );
   }
   const title = slide.title
-    ? <h2 className="font-display text-[30px] leading-tight text-[#2563eb] mb-4">{slide.title}</h2>
+    ? <h2 style={{ color: t.accent, fontFamily: displayFont }} className="text-[30px] leading-tight mb-4">{slide.title}</h2>
     : null;
-  const bullets = (items) => (
-    <ul className="list-disc pl-7 space-y-2 font-body text-[20px] leading-relaxed text-ink">
-      {(items || []).map((c, i) => <li key={i}>{c}</li>)}
+  const bullets = (items, marker = t.accent2) => (
+    <ul className="space-y-2 font-body text-[20px] leading-relaxed" style={{ color: t.ink }}>
+      {(items || []).map((c, i) => (
+        <li key={i} className="flex gap-2.5">
+          <span className="mt-[9px] w-2 h-2 rounded-full shrink-0" style={{ background: marker }} />
+          <span>{c}</span>
+        </li>
+      ))}
     </ul>
   );
   const table = (rows) => (
-    <table className="w-full border-collapse font-body text-[18px] text-ink">
+    <table className="w-full border-collapse font-body text-[18px]" style={{ color: t.ink }}>
       <tbody>
         {(rows || []).map((row, ri) => (
           <tr key={ri}>
             {row.map((c, ci) => ri === 0
-              ? <th key={ci} className="border border-ink/30 bg-paper2 px-3 py-2 text-left">{c}</th>
-              : <td key={ci} className="border border-ink/30 px-3 py-2">{c}</td>)}
+              ? <th key={ci} className="px-3 py-2 text-left" style={{ border: `1px solid ${t.line}`, background: t.soft, color: t.accent }}>{c}</th>
+              : <td key={ci} className="px-3 py-2" style={{ border: `1px solid ${t.line}` }}>{c}</td>)}
           </tr>
         ))}
       </tbody>
     </table>
   );
+  const accentBar = <span className="absolute left-0 top-0 h-2 w-full" style={{ background: t.accent }} />;
 
   switch (slide.type) {
     case "title":
       return (
-        <div style={style} className={`${shell} items-center justify-center text-center px-14`}>
-          <h1 className="font-display text-[44px] leading-tight text-[#2563eb]">{slide.title}</h1>
-          {slide.subtitle ? <p className="font-body text-[22px] text-ink/60 mt-4">{slide.subtitle}</p> : null}
+        <div style={{ ...style, background: t.heroBg, color: t.heroText }} className={`${shell} justify-center px-16`}>
+          <span className="absolute -right-20 -top-24 w-72 h-72 rounded-full" style={{ background: t.accent, opacity: 0.35 }} />
+          <span className="absolute -left-16 -bottom-20 w-56 h-56 rounded-full" style={{ background: t.accent2, opacity: 0.28 }} />
+          <span className="absolute left-16 top-12 text-[13px] font-bold tracking-[0.16em] uppercase" style={{ color: t.heroText, opacity: 0.8 }}>
+            EduPlay · Bài giảng
+          </span>
+          <h1 className="relative text-[44px] leading-tight font-bold" style={{ color: t.heroText, fontFamily: displayFont }}>{slide.title}</h1>
+          {slide.subtitle ? <p className="relative text-[22px] mt-4" style={{ color: t.heroText, opacity: 0.82 }}>{slide.subtitle}</p> : null}
+          <span className="absolute right-16 bottom-10 h-1.5 w-24 rounded-full" style={{ background: t.accent2 }} />
         </div>
       );
     case "image":
       return (
         <div style={style} className={`${shell} px-12 py-9`}>
+          {accentBar}
           {title}
           {slide.src
-            ? <img src={slide.src} alt={slide.alt || ""} className="max-h-[62%] max-w-full object-contain mx-auto" />
+            ? <img src={slide.src} alt={slide.alt || ""} className="max-h-[62%] max-w-full object-contain mx-auto rounded-lg" />
             : <div className="flex-1 grid place-items-center text-ink/40 font-body">Slide hình ảnh chưa có đường dẫn ảnh (src)</div>}
-          {slide.caption ? <p className="font-body text-center text-ink/60 mt-3">{slide.caption}</p> : null}
+          {slide.caption ? <p className="font-body text-center mt-3" style={{ color: t.muted }}>{slide.caption}</p> : null}
         </div>
       );
     case "two-column":
       return (
         <div style={style} className={`${shell} px-12 py-9`}>
+          {accentBar}
           {title}
           <div className="grid grid-cols-2 gap-8 flex-1">
-            <div>{bullets(slide.left)}</div>
-            <div>{bullets(slide.right)}</div>
+            <div className="rounded-xl p-4" style={{ background: t.soft, borderTop: `4px solid ${t.accent}` }}>{bullets(slide.left, t.accent)}</div>
+            <div className="rounded-xl p-4" style={{ background: t.soft, borderTop: `4px solid ${t.accent2}` }}>{bullets(slide.right, t.accent2)}</div>
           </div>
         </div>
       );
     case "table":
       return (
         <div style={style} className={`${shell} px-12 py-9`}>
+          {accentBar}
           {title}
           {table(slide.rows)}
         </div>
       );
     case "summary":
       return (
-        <div style={style} className={`${shell} px-12 py-9 bg-[#fffbeb]`}>
+        <div style={{ ...style, background: t.soft }} className={`${shell} px-12 py-9`}>
+          <span className="absolute left-0 top-0 h-full w-3" style={{ background: t.accent }} />
           {title}
-          {bullets(slide.content)}
+          {bullets(slide.content, t.accent)}
         </div>
       );
     default: // content
       return (
         <div style={style} className={`${shell} px-12 py-9`}>
+          {accentBar}
           {title}
           {bullets(slide.content)}
         </div>
@@ -115,6 +145,7 @@ export default function PowerPointPreview({
   index: controlledIndex, onIndexChange, editable = false, onSlideOp,
 }) {
   const slides = model?.slides || [];
+  const theme = model?.theme;
   const [innerIndex, setInnerIndex] = useState(0);
   const [newSlideType, setNewSlideType] = useState("content");
   const stageRef = useRef(null);
@@ -152,7 +183,7 @@ export default function PowerPointPreview({
       <div ref={stageRef} className="flex-1 overflow-auto p-4">
         <div className="mx-auto" style={{ width: Math.round(SLIDE_W * effZoom), height: Math.round(stageH * effZoom) }}>
           <div style={{ transform: `scale(${effZoom})`, transformOrigin: "top left", width: SLIDE_W }}>
-            <SlideView slide={slide} ratio={ratio} />
+            <SlideView slide={slide} ratio={ratio} theme={theme} />
           </div>
         </div>
       </div>
@@ -199,10 +230,13 @@ export default function PowerPointPreview({
           <div className="flex gap-2 overflow-x-auto py-1 flex-1">
             {slides.map((s, i) => (
               <button key={i} type="button" onClick={() => setIndex(i)} title={`Slide ${i + 1}: ${s.title || s.type}`}
-                className={`relative shrink-0 overflow-hidden rounded ring-2 ${i === safeIndex ? "ring-[#2563eb]" : "ring-transparent opacity-70 hover:opacity-100"}`}
-                style={{ width: 168, height: Math.round(168 * (ratio === "4:3" ? 3 / 4 : 9 / 16)) }}>
+                className={`relative shrink-0 overflow-hidden rounded ${i === safeIndex ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
+                style={{
+                  width: 168, height: Math.round(168 * (ratio === "4:3" ? 3 / 4 : 9 / 16)),
+                  boxShadow: i === safeIndex ? `0 0 0 2px ${theme?.accent || "#2563eb"}` : "0 0 0 2px transparent",
+                }}>
                 <div style={{ transform: `scale(${thumbScale})`, transformOrigin: "top left", width: SLIDE_W, pointerEvents: "none" }}>
-                  <SlideView slide={s} ratio={ratio} />
+                  <SlideView slide={s} ratio={ratio} theme={theme} />
                 </div>
               </button>
             ))}

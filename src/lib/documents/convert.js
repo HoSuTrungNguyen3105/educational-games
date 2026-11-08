@@ -7,7 +7,7 @@
 import { parseHtmlToModel, validateHtmlBalance } from "./htmlParser.js";
 import { validateDocumentJson } from "./schemas.js";
 import { jsonToModel, modelToJson } from "./model.js";
-import { renderModelBodyHtml } from "./modelRender.js";
+import { escapeHtml, renderModelBodyHtml, themeCssForModel } from "./modelRender.js";
 import { jsonErrorPosition } from "./format.js";
 
 const errText = (e) => [{ message: String(e?.message || e) }];
@@ -82,10 +82,13 @@ export function convertSource(source, fromMode, docType) {
     };
   }
   // JSON → HTML: sinh tài liệu HTML đầy đủ để giáo viên tiếp tục sửa.
+  // Theme trong JSON được sinh thành CSS để bản HTML giữ đúng nhận diện
+  // màu sắc/kiểu chữ của mẫu thay vì rơi về giao diện mặc định.
   const bodyHtml = renderModelBodyHtml(applied.model);
-  const title = applied.model.title || "Tài liệu";
+  const title = escapeHtml(applied.model.title || "Tài liệu");
+  const css = themeCssForModel(applied.model);
   const html = docType === "powerpoint"
-    ? `<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n<title>${title}</title>\n<style>\n.slide { font-family: Arial, sans-serif; color: #1f2937; padding: 40px; }\n.slide h1 { color: #2563eb; font-size: 36px; text-align: center; }\n.slide h2 { color: #2563eb; font-size: 26px; }\n</style>\n</head>\n<body>\n${bodyHtml}\n</body>\n</html>\n`
-    : `<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n<title>${title}</title>\n<style>\nbody { font-family: Arial, sans-serif; color: #1f2937; }\nh1 { color: #2563eb; }\n</style>\n</head>\n<body>\n${bodyHtml}\n</body>\n</html>\n`;
+    ? `<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n<title>${title}</title>\n<style>\n.slide { font-family: Arial, sans-serif; width: 880px; max-width: calc(100% - 32px); margin: 20px auto; padding: 36px 44px; background: #fff; border-radius: 8px; }\n${css}\n</style>\n</head>\n<body>\n${bodyHtml}\n</body>\n</html>\n`
+    : `<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n<title>${title}</title>\n<style>\n.doc-page { font-family: Arial, sans-serif; padding: 8px 0; }\n${css}\n</style>\n</head>\n<body>\n<div class="doc-page">${bodyHtml}</div>\n</body>\n</html>\n`;
   return { ok: true, source: html, model: applied.model, warnings: [] };
 }

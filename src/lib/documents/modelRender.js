@@ -129,6 +129,171 @@ ${cssText ? `<style>${cssText}</style>` : ""}
 </head><body><div class="doc-page">${bodyHtml || ""}</div></body></html>`;
 }
 
+// ── Theme dùng chung cho preview JSON + chuyển JSON → HTML ─────────────
+// Template library lưu theme trong JSON (metadata mở rộng, xem model.js).
+// Các hàm dưới sinh CSS đơn giản, chỉ dùng thuộc tính Word/PowerPoint có
+// thể xấp xỉ — nhờ vậy chế độ JSON vẫn giữ được nhận diện màu sắc của mẫu
+// thay vì rơi về giao diện xám mặc định.
+export const DEFAULT_WORD_THEME = {
+  accent: "#1e3a8a", accent2: "#2563eb", soft: "#eff6ff", line: "#bfdbfe",
+  ink: "#1f2937", muted: "#64748b", bg: "#ffffff",
+  font: "Arial", displayFont: "Georgia", variant: "navy",
+};
+export const DEFAULT_PRESENTATION_THEME = {
+  accent: "#2563eb", accent2: "#f59e0b", soft: "#eff6ff", line: "#bfdbfe",
+  ink: "#1f2937", muted: "#64748b", bg: "#ffffff",
+  heroBg: "#1d4ed8", heroText: "#ffffff",
+  font: "Arial", displayFont: "Arial", variant: "modern",
+};
+
+const CSS_VALUE = (v, fallback = "") => String(v ?? "")
+  .replace(/[<>{};]/g, "").trim() || fallback;
+
+function themePalette(theme, fallback) {
+  const t = { ...fallback, ...(theme || {}) };
+  return {
+    accent: CSS_VALUE(t.accent, fallback.accent),
+    accent2: CSS_VALUE(t.accent2, fallback.accent2),
+    soft: CSS_VALUE(t.soft, fallback.soft),
+    line: CSS_VALUE(t.line, fallback.line),
+    ink: CSS_VALUE(t.ink, fallback.ink),
+    muted: CSS_VALUE(t.muted, fallback.muted),
+    bg: CSS_VALUE(t.bg, fallback.bg),
+    heroBg: CSS_VALUE(t.heroBg, fallback.heroBg || fallback.accent),
+    heroText: CSS_VALUE(t.heroText, fallback.heroText || "#ffffff"),
+    font: CSS_VALUE(t.font, fallback.font),
+    displayFont: CSS_VALUE(t.displayFont, fallback.displayFont || fallback.font),
+    variant: CSS_VALUE(t.variant, fallback.variant || ""),
+  };
+}
+
+const WORD_VARIANT_CSS = {
+  navy: `
+    .doc-page h1 { text-transform: uppercase; letter-spacing: .04em; font-size: 29px; }
+    .doc-page h2 { border-left: 5px solid var(--w-accent2); border-bottom: 0; padding: 3px 0 3px 10px; }
+    .doc-page table th { background: var(--w-accent); color: #fff; }
+  `,
+  pastel: `
+    .doc-page { border-top: 12px solid var(--w-accent); }
+    .doc-page h1 { background: var(--w-soft); border-radius: 14px; padding: 12px 16px; text-align: center; }
+    .doc-page h2 { display: inline-block; background: var(--w-soft); border-radius: 999px; padding: 3px 12px; border-bottom: 0; }
+    .doc-page table th { background: var(--w-soft); }
+  `,
+  exam: `
+    .doc-page { font-family: "Times New Roman", Times, serif; }
+    .doc-page h1 { text-align: center; border-bottom: 3px double var(--w-accent); padding-bottom: 10px; }
+    .doc-page h2 { text-transform: uppercase; border-bottom: 1px solid var(--w-line); padding-bottom: 3px; }
+    .doc-page table th, .doc-page table td { border-color: var(--w-accent); }
+  `,
+  study: `
+    .doc-page h1 { color: var(--w-accent); }
+    .doc-page h2 { color: var(--w-accent2); border-left: 5px solid var(--w-accent); padding-left: 10px; border-bottom: 0; }
+    .doc-page p { line-height: 1.65; }
+    .doc-page table th { background: var(--w-soft); color: var(--w-accent); }
+  `,
+  homework: `
+    .doc-page h1 { color: var(--w-accent); }
+    .doc-page h2 { background: var(--w-soft); border: 1px solid var(--w-line); border-radius: 10px; padding: 5px 10px; border-bottom: 1px solid var(--w-line); }
+    .doc-page ul li::marker { color: var(--w-accent); }
+    .doc-page table th { background: var(--w-soft); }
+  `,
+  group: `
+    .doc-page h1 { color: var(--w-accent); border-bottom: 5px solid var(--w-accent2); padding-bottom: 8px; }
+    .doc-page h2 { color: var(--w-accent); border-left: 6px solid var(--w-accent); padding-left: 9px; border-bottom: 0; }
+    .doc-page table th { background: var(--w-accent); color: #fff; }
+  `,
+  manual: `
+    .doc-page h1 { color: var(--w-accent); }
+    .doc-page h2 { border-bottom: 2px solid var(--w-accent2); padding-bottom: 4px; }
+    .doc-page ol li::marker { color: var(--w-accent2); font-weight: 700; }
+    .doc-page table th { background: var(--w-soft); color: var(--w-accent); }
+  `,
+  report: `
+    .doc-page h1 { color: var(--w-accent); letter-spacing: .02em; }
+    .doc-page h2 { color: var(--w-accent2); border-bottom: 2px solid var(--w-line); padding-bottom: 4px; }
+    .doc-page table th { background: var(--w-accent); color: #fff; }
+    .doc-page table tr:nth-child(even) td { background: var(--w-soft); }
+  `,
+  editorial: `
+    .doc-page { font-family: Georgia, "Times New Roman", serif; }
+    .doc-page h1 { font-size: 36px; line-height: 1.12; text-align: left; border-bottom: 1px solid var(--w-line); padding-bottom: 14px; }
+    .doc-page h2 { font-style: italic; border-bottom: 0; color: var(--w-accent2); }
+    .doc-page p { font-size: 17px; line-height: 1.7; }
+    .doc-page table th { background: var(--w-soft); }
+  `,
+  project: `
+    .doc-page h1 { color: var(--w-accent); }
+    .doc-page h2 { color: var(--w-accent); border-left: 4px solid var(--w-accent2); padding-left: 10px; border-bottom: 0; }
+    .doc-page table th { background: var(--w-accent); color: #fff; }
+    .doc-page table tr:nth-child(even) td { background: var(--w-soft); }
+  `,
+};
+
+export function themeCssForWord(theme) {
+  const t = themePalette(theme, DEFAULT_WORD_THEME);
+  return `
+  .doc-page {
+    --w-accent: ${t.accent}; --w-accent2: ${t.accent2}; --w-soft: ${t.soft};
+    --w-line: ${t.line}; --w-ink: ${t.ink}; --w-bg: ${t.bg};
+    background: ${t.bg}; color: ${t.ink};
+    font-family: ${t.font}, Arial, sans-serif;
+  }
+  body > .doc-page { border-top: 9px solid ${t.accent}; }
+  .doc-page h1, .doc-page h2, .doc-page h3 { color: ${t.accent}; font-family: ${t.displayFont}, ${t.font}, serif; }
+  .doc-page h1 { line-height: 1.2; margin: 4px 0 10px; }
+  .doc-page h2 { font-size: 21px; margin: 22px 0 8px; }
+  .doc-page p { color: ${t.ink}; }
+  .doc-page ul li::marker, .doc-page ol li::marker { color: ${t.accent2}; }
+  .doc-page table { margin: 12px 0 16px; }
+  .doc-page table th, .doc-page table td { border-color: ${t.line}; padding: 7px 10px; }
+  .doc-page table th { font-weight: 700; }
+  .doc-page table tr:nth-child(even) td { background: ${t.soft}; }
+  .doc-page img { border-radius: 8px; }
+  .doc-page blockquote { border-left: 4px solid ${t.accent2}; background: ${t.soft}; padding: 8px 12px; }
+  ${WORD_VARIANT_CSS[t.variant] || ""}
+  `;
+}
+
+const PRESENTATION_VARIANT_CSS = {
+  modern: `.slide { border-top: 8px solid var(--p-accent); } .slide h1, .slide h2 { color: var(--p-accent); } .slide--summary { background: var(--p-soft); }`,
+  science: `.slide { border-left: 10px solid var(--p-accent); } .slide h1, .slide h2 { color: var(--p-accent); } .slide--summary { background: var(--p-soft); } table th { background: var(--p-accent); color: #fff; }`,
+  minimal: `.slide { border: 1px solid var(--p-line); } .slide h1, .slide h2 { color: var(--p-ink); } .slide--title { background: var(--p-hero); } .slide--title h1, .slide--title .slide-subtitle { color: var(--p-hero-text); }`,
+  kids: `.slide { background: var(--p-bg); border-bottom: 8px dashed var(--p-accent2); } .slide h1, .slide h2 { color: var(--p-accent); } .slide--summary { background: var(--p-soft); }`,
+  history: `.slide { background: ${"var(--p-bg)"}; border-top: 6px double var(--p-accent); } .slide h1, .slide h2 { color: var(--p-accent); } table th { background: var(--p-soft); color: var(--p-accent); }`,
+  math: `.slide { border-top: 8px solid var(--p-accent); } .slide h1, .slide h2 { color: var(--p-accent); } .slide--summary { background: var(--p-soft); } table th { background: var(--p-accent); color: #fff; }`,
+  language: `.slide { border-left: 10px solid var(--p-accent2); } .slide h1, .slide h2 { color: var(--p-accent); } .slide--summary { background: var(--p-soft); }`,
+  infographic: `.slide { border-top: 10px solid var(--p-accent); } .slide h1, .slide h2 { color: var(--p-accent); } .slide--summary { background: var(--p-soft); } table th { background: var(--p-accent); color: #fff; }`,
+  corporate: `.slide { border-top: 6px solid var(--p-accent); } .slide h1, .slide h2 { color: var(--p-accent); } .slide--title { background: var(--p-hero); } .slide--title h1, .slide--title .slide-subtitle { color: var(--p-hero-text); } table th { background: var(--p-accent); color: #fff; }`,
+  story: `.slide { border-left: 10px solid var(--p-accent2); } .slide h1, .slide h2 { color: var(--p-accent); } .slide--summary { background: var(--p-soft); }`,
+};
+
+export function themeCssForPresentation(theme) {
+  const t = themePalette(theme, DEFAULT_PRESENTATION_THEME);
+  return `
+  body {
+    --p-accent: ${t.accent}; --p-accent2: ${t.accent2}; --p-soft: ${t.soft};
+    --p-line: ${t.line}; --p-ink: ${t.ink}; --p-muted: ${t.muted};
+    --p-bg: ${t.bg}; --p-hero: ${t.heroBg}; --p-hero-text: ${t.heroText};
+    background: ${t.bg}; color: ${t.ink}; font-family: ${t.font}, Arial, sans-serif;
+  }
+  .slide { background: #fff; color: ${t.ink}; border-color: ${t.line}; }
+  .slide h1, .slide h2, .slide h3 { color: ${t.accent}; font-family: ${t.displayFont}, ${t.font}, sans-serif; }
+  .slide h1 { font-size: 38px; } .slide h2 { font-size: 27px; }
+  .slide .slide-subtitle { color: ${t.muted}; }
+  .slide ul li::marker { color: ${t.accent2}; }
+  .slide table th, .slide table td { border: 1px solid ${t.line}; padding: 7px 10px; }
+  .slide table th { background: ${t.soft}; color: ${t.accent}; }
+  .slide--summary { background: ${t.soft}; }
+  ${PRESENTATION_VARIANT_CSS[t.variant] || ""}
+  `;
+}
+
+export function themeCssForModel(model) {
+  return model?.kind === "presentation"
+    ? themeCssForPresentation(model.theme)
+    : themeCssForWord(model?.theme);
+}
+
 /** Khung preview HTML cho PowerPoint ở chế độ HTML (tài liệu cuộn). */
 export function buildSlidesScrollSrcDoc({ bodyHtml, cssText = "" }) {
   return `<!doctype html>

@@ -37,18 +37,26 @@ export function cssColorToHex(color) {
 
 const alignOf = (D, a) => ({ left: D.AlignmentType.LEFT, center: D.AlignmentType.CENTER, right: D.AlignmentType.RIGHT, justify: D.AlignmentType.JUSTIFY }[a]);
 
-function runsOf(D, block) {
+function runsOf(D, block, font = "Arial") {
   const runs = Array.isArray(block.runs) && block.runs.length
     ? block.runs
     : [{ text: block.text || "", bold: false, italic: false, underline: false }];
   const color = cssColorToHex(block.color);
   return runs.map((r) => new D.TextRun({
     text: r.text,
+    font,
     bold: !!r.bold,
     italics: !!r.italic,
     ...(r.underline ? { underline: { type: D.UnderlineType.SINGLE } } : {}),
     ...(color ? { color } : {}),
   }));
+}
+
+function themeOf(model) {
+  const t = model?.theme || {};
+  const font = String(t.font || "Arial").replace(/["'<>]/g, "").slice(0, 60) || "Arial";
+  const displayFont = String(t.displayFont || t.font || "Arial").replace(/["'<>]/g, "").slice(0, 60) || font;
+  return { ...t, font, displayFont };
 }
 
 async function imageParagraph(D, block, warnings) {
@@ -73,11 +81,15 @@ const NUMBERING_REF = "docstudio-numbering";
 
 async function blocksToDocxChildren(D, model, warnings) {
   const children = [];
+  const t = themeOf(model);
+  const accent = cssColorToHex(t.accent);
+  const headColor = cssColorToHex(t.accent);
+  const headerFill = cssColorToHex(t.soft) || "EFEAE0";
   const first = (model.blocks || [])[0];
   if (model.title && !(first?.type === "heading" && first.text === model.title)) {
     children.push(new D.Paragraph({
       heading: D.HeadingLevel.TITLE,
-      children: [new D.TextRun({ text: model.title })],
+      children: [new D.TextRun({ text: model.title, font: t.displayFont, ...(headColor ? { color: headColor } : {}) })],
       spacing: { after: 240 },
     }));
   }
@@ -88,7 +100,7 @@ async function blocksToDocxChildren(D, model, warnings) {
         children.push(new D.Paragraph({
           heading: [D.HeadingLevel.HEADING_1, D.HeadingLevel.HEADING_2, D.HeadingLevel.HEADING_3][lv - 1],
           alignment: alignOf(D, block.align),
-          children: runsOf(D, block),
+          children: runsOf(D, block, t.displayFont),
           spacing: { before: 200, after: 120 },
         }));
         break;
@@ -96,14 +108,14 @@ async function blocksToDocxChildren(D, model, warnings) {
       case "paragraph":
         children.push(new D.Paragraph({
           alignment: alignOf(D, block.align),
-          children: runsOf(D, block),
+          children: runsOf(D, block, t.font),
           spacing: { after: 120 },
         }));
         break;
       case "list":
         for (const item of block.items || []) {
           children.push(new D.Paragraph({
-            children: [new D.TextRun({ text: item })],
+            children: [new D.TextRun({ text: item, font: t.font })],
             ...(block.ordered
               ? { numbering: { reference: NUMBERING_REF, level: 0 } }
               : { bullet: { level: 0 } }),
@@ -114,8 +126,12 @@ async function blocksToDocxChildren(D, model, warnings) {
       case "table": {
         const rows = (block.rows || []).map((row, ri) => new D.TableRow({
           children: row.map((cell) => new D.TableCell({
+            ...(ri === 0 ? { shading: { fill: headerFill } } : {}),
             children: [new D.Paragraph({
-              children: [new D.TextRun({ text: cell, bold: ri === 0 })],
+              children: [new D.TextRun({
+                text: cell, font: t.font, bold: ri === 0,
+                ...(ri === 0 && accent ? { color: accent } : {}),
+              })],
             })],
           })),
         }));
@@ -129,7 +145,7 @@ async function blocksToDocxChildren(D, model, warnings) {
         children.push(await imageParagraph(D, block, warnings));
         break;
       default:
-        if (block.text) children.push(new D.Paragraph({ children: [new D.TextRun({ text: block.text })] }));
+        if (block.text) children.push(new D.Paragraph({ children: [new D.TextRun({ text: block.text, font: t.font })] }));
     }
   }
   return children;
@@ -147,15 +163,18 @@ export function docxFileName(name) {
 export async function exportWordDocx(model, docName) {
   const D = await import("docx");
   const warnings = [];
+  const theme = themeOf(model);
   const children = await blocksToDocxChildren(D, model, warnings);
+  const headColor = cssColorToHex(theme.accent);
+  const headRun = { font: theme.displayFont, ...(headColor ? { color: headColor } : {}) };
   const doc = new D.Document({
     styles: {
       default: {
-        document: { run: { font: "Arial", size: 24 } }, // 12pt
-        title: { run: { font: "Arial" } },
-        heading1: { run: { font: "Arial" } },
-        heading2: { run: { font: "Arial" } },
-        heading3: { run: { font: "Arial" } },
+        document: { run: { font: theme.font, size: 24 } }, // 12pt
+        title: { run: { ...headRun, size: 34, bold: true } },
+        heading1: { run: { ...headRun, size: 30, bold: true } },
+        heading2: { run: { ...headRun, size: 26, bold: true } },
+        heading3: { run: { ...headRun, size: 24, bold: true } },
       },
     },
     numbering: {

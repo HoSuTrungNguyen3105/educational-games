@@ -14,6 +14,33 @@ export const SLIDE_TYPES = ["title", "content", "image", "two-column", "table", 
 
 const isObj = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
 const isStr = (v) => typeof v === "string";
+const ALIGN_VALUES = ["left", "center", "right", "justify"];
+const THEME_STRING_KEYS = [
+  "name", "accent", "accent2", "soft", "line", "ink", "muted", "bg",
+  "heroBg", "heroText", "font", "displayFont", "variant", "pattern",
+];
+
+function checkTheme(v, errors) {
+  if (v === undefined) return;
+  if (!isObj(v)) {
+    errors.push({ path: "theme", message: "'theme' phải là một đối tượng màu sắc/kiểu chữ" });
+    return;
+  }
+  for (const key of THEME_STRING_KEYS) {
+    if (v[key] !== undefined && !isStr(v[key])) {
+      errors.push({ path: `theme.${key}`, message: `'theme.${key}' phải là chuỗi văn bản` });
+    }
+  }
+}
+
+function checkBlockStyle(b, p, errors) {
+  if (b.color !== undefined && !isStr(b.color)) {
+    errors.push({ path: `${p}.color`, message: "'color' phải là mã màu hoặc tên màu" });
+  }
+  if (b.align !== undefined && !ALIGN_VALUES.includes(b.align)) {
+    errors.push({ path: `${p}.align`, message: `'align' chỉ nhận ${ALIGN_VALUES.join(", ")}` });
+  }
+}
 
 /** Ô bảng/danh sách: chấp nhận số/boolean bằng cách ép chuỗi; null/object là lỗi. */
 function coerceCell(v) {
@@ -35,6 +62,7 @@ function checkMeta(obj, errors, { requireTitle = true } = {}) {
       errors.push({ path: "grade", message: "'grade' (lớp) phải là số từ 1 đến 12" });
     }
   }
+  checkTheme(obj.theme, errors);
 }
 
 function checkStringArray(v, path, errors, label) {
@@ -90,9 +118,11 @@ export function validateWordJson(obj) {
     if (b.type === "heading") {
       if (![1, 2, 3].includes(b.level)) errors.push({ path: `${p}.level`, message: "Tiêu đề cần 'level' là 1, 2 hoặc 3" });
       if (!isStr(b.text)) errors.push({ path: `${p}.text`, message: "Tiêu đề cần 'text' là chuỗi văn bản" });
+      checkBlockStyle(b, p, errors);
     }
-    if (b.type === "paragraph" && !isStr(b.text)) {
-      errors.push({ path: `${p}.text`, message: "Đoạn văn cần 'text' là chuỗi văn bản" });
+    if (b.type === "paragraph") {
+      if (!isStr(b.text)) errors.push({ path: `${p}.text`, message: "Đoạn văn cần 'text' là chuỗi văn bản" });
+      checkBlockStyle(b, p, errors);
     }
     if (b.type === "list") {
       if (b.ordered !== undefined && typeof b.ordered !== "boolean") {
@@ -128,6 +158,9 @@ export function validatePresentationJson(obj) {
     if (!SLIDE_TYPES.includes(s.type)) {
       errors.push({ path: `${p}.type`, message: `Loại slide không hợp lệ — chỉ nhận ${SLIDE_TYPES.join(", ")}` });
       return;
+    }
+    if (s.notes !== undefined && !isStr(s.notes)) {
+      errors.push({ path: `${p}.notes`, message: "'notes' (ghi chú thuyết trình) phải là chuỗi văn bản" });
     }
     if (s.type === "title") {
       if (!isStr(s.title)) errors.push({ path: `${p}.title`, message: "Slide tiêu đề cần 'title' là chuỗi văn bản" });
