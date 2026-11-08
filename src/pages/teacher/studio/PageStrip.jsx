@@ -46,7 +46,7 @@ function MiniBtn({ title, onClick, disabled, danger, children }) {
 
 export default function PageStrip({ ed, gameById }) {
   return (
-    <div className="shrink-0 border-t border-[#E7D9BE] bg-[#FFFBF2]">
+    <div className="studio-pagestrip shrink-0 border-t border-[#E7D9BE] bg-[#FFFBF2]">
       <div className="studio-strip">
         {ed.pages.map((p, i) => (
           <div key={p.id} className="w-[168px] flex-none">

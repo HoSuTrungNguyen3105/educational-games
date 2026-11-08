@@ -122,11 +122,16 @@ export const WORD_PREVIEW_CSS = `
 
 /** Dựng tài liệu HTML hoàn chỉnh cho iframe sandbox của preview Word. */
 export function buildWordPreviewSrcDoc({ bodyHtml, cssText = "" }) {
+  // Mẫu thư viện có thể đã có sẵn khung .doc-page trong body (để giữ đúng
+  // thiết kế khi mở mã HTML). Chỉ bọc thêm khi body chưa có khung này —
+  // tránh padding/viền bị nhân đôi trong iframe preview.
+  const html = bodyHtml || "";
+  const hasPage = /class=["'][^"']*\bdoc-page\b/.test(html);
   return `<!doctype html>
 <html lang="vi"><head><meta charset="utf-8">
 <style>${WORD_PREVIEW_CSS}</style>
 ${cssText ? `<style>${cssText}</style>` : ""}
-</head><body><div class="doc-page">${bodyHtml || ""}</div></body></html>`;
+</head><body>${hasPage ? html : `<div class="doc-page">${html}</div>`}</body></html>`;
 }
 
 // ── Theme dùng chung cho preview JSON + chuyển JSON → HTML ─────────────

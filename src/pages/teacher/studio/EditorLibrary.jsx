@@ -41,9 +41,9 @@ export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onA
   );
 
   return (
-    <div className="flex shrink-0 border-r border-[#E7D9BE] bg-[#FFFBF2] min-h-0">
+    <div className="studio-library flex shrink-0 border-r border-[#E7D9BE] bg-[#FFFBF2] min-h-0">
       {/* Rail dọc (§5.2) */}
-      <div className="w-[62px] shrink-0 flex flex-col items-stretch gap-1 p-1.5 border-r border-[#E7D9BE]/70">
+      <div className="studio-library-rail w-[62px] shrink-0 flex flex-col items-stretch gap-1 p-1.5 border-r border-[#E7D9BE]/70">
         {TABS.map((t) => {
           const Icon = t.icon;
           return (
@@ -57,7 +57,7 @@ export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onA
       </div>
 
       {/* Panel theo tab (§5.3) */}
-      <div className="w-[248px] shrink-0 overflow-y-auto p-3 min-h-0">
+      <div className="studio-library-panel w-[248px] shrink-0 overflow-y-auto p-3 min-h-0">
         {tab === "pages" && (
           <div>
             <button type="button" className="studio-add-tile" onClick={ed.addPage}>

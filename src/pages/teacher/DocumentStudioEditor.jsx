@@ -1,20 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft, ArrowLeftRight, BookOpen, Check, Download, Expand, Eye,
-  FileText, FileWarning, FolderOpen, Image as ImageIcon, LayoutGrid, List,
-  Play, Quote, Save, Settings, Sparkles, Table2, UserRound, Wand2, X,
-  ZoomIn, ZoomOut,
+  FileText, FileWarning, FolderOpen, Image as ImageIcon, LayoutGrid, LayoutTemplate,
+  List, Play, Quote, Save, Search, Settings, Sparkles, Table2, Upload, UserRound,
+  Wand2, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { navigate } from "../../lib/router.js";
 import { documentService } from "../../services/documentService.js";
+import { matchesQuery } from "../../lib/searchText.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import { ConfirmModal, Modal } from "../../components/ui";
 import CodeEditor from "./documents/CodeEditor.jsx";
 import WordPreview from "./documents/WordPreview.jsx";
 import PowerPointPreview from "./documents/PowerPointPreview.jsx";
+import DocumentUploadModal from "./documents/DocumentUploadModal.jsx";
 import { applySource, convertSource } from "../../lib/documents/convert.js";
 import { renderModelBodyHtml } from "../../lib/documents/modelRender.js";
-import { templateSourceFor } from "../../lib/documents/templates.js";
+import { templatesFor } from "../../lib/documents/templates.js";
 import { exportWordDocx } from "../../lib/documents/wordExporter.js";
 import { exportPresentationPptx } from "../../lib/documents/pptxExporter.js";
 import { validateDocumentJson } from "../../lib/documents/schemas.js";
@@ -83,12 +85,7 @@ const RAIL_ITEMS = [
   { id: "settings", label: "Cài đặt", icon: Settings },
 ];
 
-const TEMPLATE_OPTIONS = [
-  { key: "word-html", type: "word", label: "Word — HTML/CSS", desc: "Trang A4, tự do trình bày bằng HTML" },
-  { key: "word-json", type: "word", label: "Word — JSON", desc: "Dữ liệu khối có cấu trúc, dễ nhân bản" },
-  { key: "powerpoint-html", type: "powerpoint", label: "PowerPoint — HTML/CSS", desc: "Nhiều section, mỗi section là một slide" },
-  { key: "powerpoint-json", type: "powerpoint", label: "PowerPoint — JSON", desc: "Slide có cấu trúc + thao tác bằng nút" },
-];
+const MAX_PREVIEW_ZOOM = 2;
 
 const escAttr = (value) => String(value ?? "")
   .replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -123,6 +120,8 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const [slideIndex, setSlideIndex] = useState(0);
   const [showPreviewMobile, setShowPreviewMobile] = useState(false);
   const [tool, setTool] = useState("content");
+  const [templateQuery, setTemplateQuery] = useState("");
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [toolForm, setToolForm] = useState({
     src: "", alt: "", title: "", text: "Mục 1\nMục 2", ordered: false,
@@ -249,24 +248,52 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     showToast?.(`Đã chuyển sang ${next === "word" ? "Word" : "PowerPoint"}`, "success");
   };
 
-  // ── Mẫu ───────────────────────────────────────────────────────────────
-  const loadTemplate = (key) => {
-    if (!key) return;
-    const [tType, tMode] = key.split("-");
+  // ── Mẫu thư viện ──────────────────────────────────────────────────────
+  const loadCatalogTemplate = (template) => {
+    if (!template) return;
     const run = () => {
-      const src = templateSourceFor(tType, tMode);
-      setDocType(tType);
-      setMode(tMode);
-      setDrafts((d) => ({ ...d, [tMode]: src }));
-      doApply(src, tMode, tType);
+      const src = template.sourceFor(template.defaultMode);
+      setDocType(template.kind);
+      setMode(template.defaultMode);
+      setDrafts({
+        html: template.defaultMode === "html" ? src : "",
+        json: template.defaultMode === "json" ? src : "",
+      });
+      doApply(src, template.defaultMode, template.kind);
       setTool("content");
-      setNotice("Đã nạp mẫu — hãy sửa nội dung theo bài dạy của bạn rồi bấm Lưu.");
+      setNotice(`Đã nạp mẫu “${template.name}” — sửa nội dung theo bài dạy rồi bấm Lưu.`);
     };
-    if (draft.trim()) {
+    if (draft.trim() || isDirty) {
       askConfirm({
         title: "Nạp mẫu tài liệu",
-        message: "Nạp mẫu sẽ thay thế bản nháp của chế độ đích. Nội dung chưa lưu ở chế độ đó sẽ mất. Tiếp tục?",
+        message: `Nạp mẫu “${template.name}” sẽ thay thế nội dung đang soạn. Thay đổi chưa lưu sẽ mất. Tiếp tục?`,
         confirmLabel: "Nạp mẫu",
+        danger: false,
+        onConfirm: run,
+      });
+    } else run();
+  };
+
+  const importUploaded = (result) => {
+    const run = () => {
+      setDocType(result.docType);
+      setMode(result.mode);
+      setDrafts({
+        html: result.mode === "html" ? result.source : "",
+        json: result.mode === "json" ? result.source : "",
+      });
+      if (!name.trim()) setName(result.name);
+      doApply(result.source, result.mode, result.docType);
+      setTool("content");
+      setUploadOpen(false);
+      setNotice(`Đã nhập “${result.name}” từ file — kiểm tra nội dung rồi bấm Lưu.`);
+      showToast?.("Đã nhập file vào tài liệu đang soạn", "success");
+    };
+    if (draft.trim() || isDirty) {
+      askConfirm({
+        title: "Nhập file vào tài liệu",
+        message: "Nội dung file sẽ thay thế bản nháp hiện tại. Thay đổi chưa lưu sẽ mất. Tiếp tục?",
+        confirmLabel: "Nhập file",
         danger: false,
         onConfirm: run,
       });
@@ -571,23 +598,50 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
 
   const renderToolPanel = () => {
     if (tool === "templates") {
+      const list = templatesFor(docType);
+      const matching = list.filter((tpl) => matchesQuery(
+        templateQuery,
+        [tpl.name, tpl.categoryLabel, tpl.subjects, ...(tpl.tags || [])].join(" "),
+      ));
       return (
         <aside className="docstudio-flyout">
-          <h3>Mẫu có sẵn</h3>
-          <p className="docstudio-flyout-hint">Chọn một mẫu để nạp nhanh. Bản nháp hiện tại sẽ được xác nhận trước khi ghi đè.</p>
+          <h3>Mẫu {docType === "word" ? "Word" : "PowerPoint"} có sẵn</h3>
+          <p className="docstudio-flyout-hint">
+            {list.length} mẫu thiết kế riêng. Nạp mẫu sẽ thay thế nội dung đang soạn sau khi bạn xác nhận.
+          </p>
+          <label className="docstudio-template-search">
+            <Search className="w-3.5 h-3.5" />
+            <input value={templateQuery} onChange={(e) => setTemplateQuery(e.target.value)}
+              placeholder="Tìm mẫu theo tên, môn…" aria-label="Tìm mẫu" />
+          </label>
           <div className="docstudio-template-list">
-            {TEMPLATE_OPTIONS.map((tpl) => (
-              <button key={tpl.key} type="button"
-                className={`docstudio-template ${tpl.type === docType ? "is-current" : ""}`}
-                onClick={() => loadTemplate(tpl.key)}>
-                <span className={`docstudio-template-icon is-${tpl.type}`}>{tpl.type === "word" ? "W" : "P"}</span>
+            {matching.map((tpl) => (
+              <button key={tpl.id} type="button"
+                className="docstudio-template"
+                onClick={() => loadCatalogTemplate(tpl)}>
+                <span className="docstudio-template-swatch" style={{
+                  "--sw-a": tpl.theme.accent,
+                  "--sw-b": tpl.theme.accent2,
+                  "--sw-soft": tpl.theme.soft,
+                }} aria-hidden="true">
+                  <i /><i /><i />
+                </span>
                 <span className="min-w-0 text-left">
-                  <b>{tpl.label}</b>
-                  <small>{tpl.desc}</small>
+                  <b>{tpl.name}</b>
+                  <small>{tpl.categoryLabel} · {tpl.defaultMode === "json" ? "JSON" : "HTML"} · {tpl.gradeRange}</small>
                 </span>
               </button>
             ))}
+            {!matching.length && (
+              <p className="docstudio-template-empty">Không có mẫu phù hợp từ khóa.</p>
+            )}
           </div>
+          <button type="button" className="docstudio-btn-primary" onClick={() => navigate("/dashboard/documents/templates")}>
+            <LayoutTemplate className="w-4 h-4" /> Mở thư viện đầy đủ
+          </button>
+          <button type="button" className="docstudio-btn-ghost" onClick={() => setUploadOpen(true)}>
+            <Upload className="w-4 h-4" /> Tải file lên (DOCX/PPTX/HTML/JSON)
+          </button>
         </aside>
       );
     }
@@ -904,7 +958,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                 </button>
                 <span className="docstudio-zoom-val">{Math.round(zoom * 100)}%</span>
                 <button type="button" className="docstudio-zoom-btn" aria-label="Phóng to"
-                  onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))}>
+                  onClick={() => setZoom((z) => Math.min(MAX_PREVIEW_ZOOM, +(z + 0.1).toFixed(2)))}>
                   <ZoomIn className="w-4 h-4" />
                 </button>
                 <button type="button" className="docstudio-zoom-btn" aria-label="Toàn màn hình" onClick={toggleFullscreen}>
@@ -921,27 +975,43 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         <Modal onClose={() => setAiOpen(false)}>
           <h3 className="font-display text-xl text-ink mb-1">Trợ lý AI</h3>
           <p className="text-sm font-body text-ink/60 mb-4">
-            Trợ lý AI tự soạn nội dung đang được phát triển. Trong lúc chờ, bạn có thể bắt đầu ngay từ một mẫu có sẵn:
+            Trợ lý AI tự soạn nội dung đang được phát triển. Trong lúc chờ, bạn có thể bắt đầu từ một mẫu thiết kế sẵn:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {TEMPLATE_OPTIONS.map((tpl) => (
-              <button key={tpl.key} type="button"
+            {templatesFor(docType).slice(0, 4).map((tpl) => (
+              <button key={tpl.id} type="button"
                 className="flex items-center gap-2.5 rounded-xl border border-ink/10 bg-paper2 px-3 py-2.5 text-left hover:border-ink/25"
-                onClick={() => { setAiOpen(false); loadTemplate(tpl.key); }}>
-                <span className={`docstudio-template-icon is-${tpl.type}`}>{tpl.type === "word" ? "W" : "P"}</span>
+                onClick={() => { setAiOpen(false); loadCatalogTemplate(tpl); }}>
+                <span className="docstudio-template-swatch" style={{
+                  "--sw-a": tpl.theme.accent,
+                  "--sw-b": tpl.theme.accent2,
+                  "--sw-soft": tpl.theme.soft,
+                }} aria-hidden="true"><i /><i /><i /></span>
                 <span className="min-w-0">
-                  <b className="block text-[13.5px] text-ink">{tpl.label}</b>
-                  <small className="block text-[12px] text-ink/55">{tpl.desc}</small>
+                  <b className="block text-[13.5px] text-ink">{tpl.name}</b>
+                  <small className="block text-[12px] text-ink/55">{tpl.categoryLabel} · {tpl.gradeRange}</small>
                 </span>
               </button>
             ))}
           </div>
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex flex-wrap justify-end gap-2">
+            <button type="button" onClick={() => { setAiOpen(false); navigate("/dashboard/documents/templates"); }}
+              className="px-4 py-2 rounded-full text-sm font-semibold border border-ink/15 bg-white text-ink">
+              Mở thư viện mẫu
+            </button>
             <button type="button" onClick={() => setAiOpen(false)}
               className="px-4 py-2 rounded-full text-sm font-semibold bg-ink text-paper">Đóng</button>
           </div>
         </Modal>
       )}
+
+      <DocumentUploadModal
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onImported={importUploaded}
+        initialMode={mode}
+        initialDocType={docType}
+      />
 
       <ConfirmModal {...confirmProps} />
     </div>

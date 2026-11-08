@@ -27,6 +27,7 @@ import {
   Settings2,
   LifeBuoy,
   FileText,
+  LayoutTemplate,
 } from 'lucide-react'
 import {
   IconAdd, IconBell, IconClose, IconFile, IconLogout, IconSettings, IconUser, IconUsers,
@@ -82,6 +83,7 @@ const SECTIONS = [
       { id: "admin-birthday", label: "Trang sinh nhật", icon: Cake, route: "/dashboard/birthday", permission: "templates.edit" },
       { id: "admin-studio", label: "AI Studio", icon: Sparkles, route: "/dashboard/studio", permission: null },
       { id: "admin-documents", label: "Soạn tài liệu", icon: FileText, route: "/dashboard/documents", permission: null },
+      { id: "admin-document-templates", label: "Thư viện mẫu", icon: LayoutTemplate, route: "/dashboard/documents/templates", permission: null },
       { id: "admin-game-config", label: "Cấu hình game", icon: IconSettings, route: "/dashboard/game-config", permission: "games.manage" },
       { id: "admin-vth-config", label: "Cấu hình Vườn Thủ Hộ", icon: Sprout, route: "/dashboard/vth-config", permission: "games.manage" },
       { id: "admin-upload-items", label: "Trích xuất Items", icon: Scissors, route: "/dashboard/upload-items", permission: null },

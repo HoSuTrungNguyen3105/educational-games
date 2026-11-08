@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Copy, FileText, Pencil, Presentation, Trash2 } from "lucide-react";
+import { Copy, FileText, LayoutTemplate, Pencil, Presentation, Trash2, Upload } from "lucide-react";
 import { navigate } from "../../lib/router.js";
 import { documentService } from "../../services/documentService.js";
 import { templateSourceFor } from "../../lib/documents/templates.js";
@@ -8,6 +8,7 @@ import { useConfirm } from "../../hooks/useConfirm.js";
 import {
   ConfirmModal, FormModal, GridCard, IconButton, ManagementHeader, ManagementTable,
 } from "../../components/ui";
+import DocumentUploadModal from "./documents/DocumentUploadModal.jsx";
 
 // DocumentStudio — danh sách tài liệu của Teacher Document Studio tại
 // /dashboard/documents, dùng đúng kit lưới dùng chung (ManagementTable +
@@ -60,6 +61,7 @@ export default function DocumentStudio({ showToast }) {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const { askConfirm, confirmProps } = useConfirm();
 
   const load = useCallback(async () => {
@@ -102,6 +104,22 @@ export default function DocumentStudio({ showToast }) {
     } finally { setCreating(false); }
   };
 
+  const createFromUpload = async (result) => {
+    try {
+      const doc = await documentService.create({
+        name: result.name,
+        docType: result.docType,
+        mode: result.mode,
+        source: result.source,
+      });
+      setUploadOpen(false);
+      showToast?.("Đã nhập tài liệu từ file", "success");
+      navigate(`/dashboard/documents/${doc.id}`);
+    } catch (e) {
+      showToast?.(e?.message || "Tạo tài liệu từ file thất bại", "error");
+    }
+  };
+
   const duplicate = async (item) => {
     setBusyId(item.id);
     try {
@@ -138,6 +156,14 @@ export default function DocumentStudio({ showToast }) {
   return (
     <div>
       <ManagementHeader title="Soạn tài liệu" subtitle="Soạn tài liệu Word (trang A4, xuất .docx thật) và PowerPoint bằng mã HTML/CSS hoặc JSON — xem trước trực tiếp khi soạn">
+        <button type="button" onClick={() => navigate("/dashboard/documents/templates")}
+          className="note-card inline-flex items-center gap-1.5 px-3 py-2 text-sm font-body font-semibold border-ink/10 bg-white hover:bg-paper2 transition">
+          <LayoutTemplate className="w-4 h-4" /> Thư viện mẫu
+        </button>
+        <button type="button" onClick={() => setUploadOpen(true)}
+          className="note-card inline-flex items-center gap-1.5 px-3 py-2 text-sm font-body font-semibold border-ink/10 bg-white hover:bg-paper2 transition">
+          <Upload className="w-4 h-4" /> Tải file lên
+        </button>
         <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
           className="note-card px-3 py-2 text-sm border-ink/10 bg-paper2">
           <option value="all">Tất cả loại</option>
@@ -207,6 +233,12 @@ export default function DocumentStudio({ showToast }) {
         onClose={() => setCreateOpen(false)}
         error={createError}
         saving={creating}
+      />
+
+      <DocumentUploadModal
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onImported={createFromUpload}
       />
 
       <ConfirmModal {...confirmProps} />

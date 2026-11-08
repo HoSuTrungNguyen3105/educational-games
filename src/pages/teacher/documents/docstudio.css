@@ -412,6 +412,48 @@
 .docstudio-seg button.is-active { color: var(--doc-accent-dark); background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
 
 .docstudio-template-list { display: flex; flex-direction: column; gap: 6px; }
+.docstudio-template-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 0 9px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #94a3b8;
+}
+.docstudio-template-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #1d2e4a;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 11.5px;
+}
+.docstudio-template-search:focus-within { border-color: var(--doc-accent); box-shadow: 0 0 0 3px var(--doc-accent-soft); }
+.docstudio-template-empty { padding: 12px 4px; color: #94a3b8; font-size: 11.5px; text-align: center; }
+.docstudio-template-swatch {
+  position: relative;
+  width: 32px;
+  height: 34px;
+  flex: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: var(--sw-soft, #f8fafc);
+}
+.docstudio-template-swatch i { display: block; border-radius: 2px; }
+.docstudio-template-swatch i:nth-child(1) { width: 100%; height: 8px; background: var(--sw-a, #2563eb); }
+.docstudio-template-swatch i:nth-child(2) { width: 72%; height: 4px; background: var(--sw-b, #f59e0b); }
+.docstudio-template-swatch i:nth-child(3) { width: 88%; height: 4px; background: rgba(100, 116, 139, .35); }
 .docstudio-template {
   display: flex;
   align-items: center;

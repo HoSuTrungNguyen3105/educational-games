@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa chiến dịch Điện Biên Phủ trên bản đồ">
+  <rect width="1200" height="675" rx="34" fill="#f5efe2"/>
+  <rect x="34" y="34" width="1132" height="607" rx="20" fill="none" stroke="#c9b28a" stroke-width="4"/>
+  <text x="76" y="112" font-family="Georgia, serif" font-size="44" font-weight="700" fill="#3f2d1a">ĐIỆN BIÊN PHỦ · 1954</text>
+  <text x="78" y="154" font-family="Arial, sans-serif" font-size="22" fill="#7c6a4d">Một mốc son trong lịch sử dân tộc</text>
+
+  <path d="M76 236c62-52 134-48 190 0 44 38 92 44 148 10 54-34 110-34 158 6 46 38 104 40 154 6 44-30 104-28 156 10v262c-54-38-108-40-156-10-50 34-108 32-154-6-48-40-104-40-158-6-56 34-104 28-148-10-56-48-128-52-190 0Z" fill="#e7d7b8" stroke="#b59a6a" stroke-width="3"/>
+  <path d="M420 300c52-44 124-42 172 4 38 36 92 38 136 2" stroke="#6b4f2a" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M858 272l44 62-68 6 24-68 72-2-28 62" stroke="#4d7c0f" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <circle cx="494" cy="368" r="16" fill="#b91c1c"/>
+  <text x="522" y="378" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#7f1d1d">Điểm cao A1</text>
+  <circle cx="720" cy="326" r="16" fill="#b91c1c"/>
+  <text x="748" y="336" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#7f1d1d">Đồi Him Lam</text>
+  <circle cx="902" cy="386" r="16" fill="#b91c1c"/>
+  <text x="930" y="396" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#7f1d1d">Mường Thanh</text>
+
+  <rect x="76" y="520" width="300" height="72" rx="14" fill="#3f2d1a"/>
+  <text x="108" y="566" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#fff7e6">56 ngày đêm · 13/3 → 7/5/1954</text>
+  <path d="M1008 138v126" stroke="#6b4f2a" stroke-width="6"/>
+  <path d="M1008 138c-36 30-72 30-108 0 36-30 72-30 108 0Z" fill="#b91c1c"/>
+  <text x="930" y="294" font-family="Arial, sans-serif" font-size="20" fill="#7c6a4d">Lá cờ chiến thắng</text>
+</svg>

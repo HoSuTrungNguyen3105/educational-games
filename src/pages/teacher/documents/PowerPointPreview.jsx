@@ -28,6 +28,108 @@ const DEFAULT_PPT_THEME = {
   font: "Arial", displayFont: "Arial",
 };
 
+// Hoa văn nhận diện theo từng mẫu. Chỉ là hình trang trí thuần CSS (không
+// phải ảnh giả), đặt ở lớp dưới nội dung để không che chữ.
+function PatternDecor({ pattern, t, hero }) {
+  const base = "absolute pointer-events-none";
+  const soft = hero ? t.heroText : t.accent;
+  switch (pattern) {
+    case "modern":
+      return (
+        <span className={`${base} inset-0 overflow-hidden`} aria-hidden="true">
+          <span className={`${base} -right-20 -top-24 h-72 w-72 rounded-full`} style={{ background: soft, opacity: hero ? 0.16 : 0.07 }} />
+          <span className={`${base} -left-14 bottom-12 h-40 w-40 rounded-full`} style={{ background: t.accent2, opacity: hero ? 0.18 : 0.10 }} />
+          <span className={`${base} right-14 bottom-9 h-2 w-28 rounded-full`} style={{ background: t.accent2, opacity: 0.55 }} />
+        </span>
+      );
+    case "science":
+      return (
+        <span className={`${base} inset-0 overflow-hidden`} aria-hidden="true">
+          <span className={`${base} -right-16 top-8 h-56 w-56 rounded-full border-[18px]`} style={{ borderColor: t.accent, opacity: 0.10 }} />
+          <span className={`${base} right-20 top-24 h-20 w-20 rounded-full border-8`} style={{ borderColor: t.accent2, opacity: 0.18 }} />
+          <span className={`${base} left-10 bottom-9 h-2 w-2 rounded-full`} style={{ background: t.accent, opacity: 0.35, boxShadow: `28px -18px 0 ${t.accent2}, 56px 4px 0 ${t.accent}` }} />
+          <span className={`${base} inset-x-0 bottom-0 h-2`} style={{ background: t.accent, opacity: 0.45 }} />
+        </span>
+      );
+    case "minimal":
+      return (
+        <span className={`${base} inset-0`} aria-hidden="true">
+          <span className={`${base} right-12 top-10 h-16 w-16 border-2`} style={{ borderColor: soft, opacity: hero ? 0.32 : 0.18 }} />
+          <span className={`${base} left-0 top-0 h-full w-1`} style={{ background: soft, opacity: hero ? 0.4 : 0.18 }} />
+          <span className={`${base} bottom-10 left-12 text-[86px] font-serif leading-none`} style={{ color: soft, opacity: hero ? 0.10 : 0.05 }}>“</span>
+        </span>
+      );
+    case "kids":
+      return (
+        <span className={`${base} inset-0 overflow-hidden`} aria-hidden="true">
+          <span className={`${base} -right-12 -top-14 h-48 w-48 rounded-full`} style={{ background: t.accent2, opacity: hero ? 0.24 : 0.10 }} />
+          <span className={`${base} left-10 top-12 h-5 w-5 rounded-full`} style={{ background: t.accent2, opacity: 0.7 }} />
+          <span className={`${base} left-24 top-24 h-3 w-3 rounded-full`} style={{ background: t.accent, opacity: 0.55 }} />
+          <span className={`${base} right-24 bottom-14 h-4 w-4 rotate-45`} style={{ background: t.accent, opacity: 0.5 }} />
+          <span className={`${base} bottom-8 left-14 h-2 w-24 rounded-full`} style={{ background: t.accent2, opacity: 0.45 }} />
+        </span>
+      );
+    case "history":
+      return (
+        <span className={`${base} inset-0 overflow-hidden`} aria-hidden="true">
+          <span className={`${base} inset-0`} style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 34px, rgba(107,79,42,.08) 35px)" }} />
+          <span className={`${base} right-12 top-10 h-20 w-20 rounded-full border-[3px] grid place-items-center text-[12px] font-bold tracking-widest`} style={{ borderColor: soft, color: soft, opacity: hero ? 0.45 : 0.25 }}>1954</span>
+          <span className={`${base} bottom-0 inset-x-0 h-1.5`} style={{ background: t.accent2, opacity: 0.55 }} />
+        </span>
+      );
+    case "math":
+      return (
+        <span className={`${base} inset-0 overflow-hidden`} aria-hidden="true">
+          <span className={`${base} inset-0`} style={{ backgroundImage: `linear-gradient(${t.line} 1px, transparent 1px), linear-gradient(90deg, ${t.line} 1px, transparent 1px)`, backgroundSize: "42px 42px", opacity: hero ? 0.12 : 0.20 }} />
+          <span className={`${base} right-14 top-10 text-[70px] font-bold`} style={{ color: t.accent, opacity: 0.08 }}>∑</span>
+          <span className={`${base} left-10 bottom-10 text-[54px] font-bold`} style={{ color: t.accent2, opacity: 0.10 }}>a²</span>
+        </span>
+      );
+    case "language":
+      return (
+        <span className={`${base} inset-0 overflow-hidden`} aria-hidden="true">
+          <span className={`${base} -left-6 -top-10 text-[130px] font-serif leading-none`} style={{ color: t.accent, opacity: hero ? 0.18 : 0.07 }}>“</span>
+          <span className={`${base} -right-4 bottom-2 text-[130px] font-serif leading-none`} style={{ color: t.accent2, opacity: hero ? 0.18 : 0.08 }}>”</span>
+          <span className={`${base} right-12 top-10 h-20 w-28 rounded-2xl border-2`} style={{ borderColor: t.accent, opacity: 0.16 }} />
+        </span>
+      );
+    case "infographic":
+      return (
+        <span className={`${base} inset-0 overflow-hidden`} aria-hidden="true">
+          <span className={`${base} right-10 top-8 flex items-end gap-1.5`} aria-hidden="true">
+            <span className="w-3 rounded-t" style={{ height: 26, background: t.accent, opacity: 0.35 }} />
+            <span className="w-3 rounded-t" style={{ height: 46, background: t.accent2, opacity: 0.35 }} />
+            <span className="w-3 rounded-t" style={{ height: 66, background: t.accent, opacity: 0.25 }} />
+          </span>
+          <span className={`${base} inset-x-0 bottom-0 h-2`} style={{ background: `linear-gradient(90deg, ${t.accent} 0 34%, ${t.accent2} 34% 67%, ${t.accent} 67% 100%)`, opacity: 0.55 }} />
+        </span>
+      );
+    case "corporate":
+      return (
+        <span className={`${base} inset-0 overflow-hidden`} aria-hidden="true">
+          <span className={`${base} left-0 top-0 h-full w-2`} style={{ background: t.accent, opacity: 0.8 }} />
+          <span className={`${base} right-10 top-10 grid grid-cols-3 gap-1.5`} aria-hidden="true">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <span key={i} className="h-2 w-2" style={{ background: t.accent, opacity: 0.10 + (i % 3) * 0.04 }} />
+            ))}
+          </span>
+          <span className={`${base} bottom-10 right-10 h-px w-32`} style={{ background: t.accent, opacity: 0.25 }} />
+        </span>
+      );
+    case "story":
+      return (
+        <span className={`${base} inset-0 overflow-hidden`} aria-hidden="true">
+          <span className={`${base} -right-20 -bottom-24 h-64 w-64 rounded-full border-[22px]`} style={{ borderColor: t.accent2, opacity: hero ? 0.18 : 0.10 }} />
+          <span className={`${base} left-10 top-10 text-[24px]`} style={{ color: t.accent2, opacity: 0.55 }}>✦</span>
+          <span className={`${base} right-24 top-16 text-[16px]`} style={{ color: t.accent, opacity: 0.40 }}>✦</span>
+          <span className={`${base} bottom-10 left-16 h-1.5 w-20 rounded-full`} style={{ background: t.accent, opacity: 0.30 }} />
+        </span>
+      );
+    default:
+      return null;
+  }
+}
+
 function SlideView({ slide, ratio, theme }) {
   const t = { ...DEFAULT_PPT_THEME, ...(theme || {}) };
   const font = `${t.font || "Arial"}, Arial, sans-serif`;
@@ -74,11 +176,14 @@ function SlideView({ slide, ratio, theme }) {
     </table>
   );
   const accentBar = <span className="absolute left-0 top-0 h-2 w-full" style={{ background: t.accent }} />;
+  const pattern = t.pattern || t.variant;
+  const decor = <PatternDecor pattern={pattern} t={t} hero={slide.type === "title"} />;
 
   switch (slide.type) {
     case "title":
       return (
         <div style={{ ...style, background: t.heroBg, color: t.heroText }} className={`${shell} justify-center px-16`}>
+          {decor}
           <span className="absolute -right-20 -top-24 w-72 h-72 rounded-full" style={{ background: t.accent, opacity: 0.35 }} />
           <span className="absolute -left-16 -bottom-20 w-56 h-56 rounded-full" style={{ background: t.accent2, opacity: 0.28 }} />
           <span className="absolute left-16 top-12 text-[13px] font-bold tracking-[0.16em] uppercase" style={{ color: t.heroText, opacity: 0.8 }}>
@@ -92,6 +197,7 @@ function SlideView({ slide, ratio, theme }) {
     case "image":
       return (
         <div style={style} className={`${shell} px-12 py-9`}>
+          {decor}
           {accentBar}
           {title}
           {slide.src
@@ -103,6 +209,7 @@ function SlideView({ slide, ratio, theme }) {
     case "two-column":
       return (
         <div style={style} className={`${shell} px-12 py-9`}>
+          {decor}
           {accentBar}
           {title}
           <div className="grid grid-cols-2 gap-8 flex-1">
@@ -114,6 +221,7 @@ function SlideView({ slide, ratio, theme }) {
     case "table":
       return (
         <div style={style} className={`${shell} px-12 py-9`}>
+          {decor}
           {accentBar}
           {title}
           {table(slide.rows)}
@@ -122,6 +230,7 @@ function SlideView({ slide, ratio, theme }) {
     case "summary":
       return (
         <div style={{ ...style, background: t.soft }} className={`${shell} px-12 py-9`}>
+          {decor}
           <span className="absolute left-0 top-0 h-full w-3" style={{ background: t.accent }} />
           {title}
           {bullets(slide.content, t.accent)}
@@ -130,6 +239,7 @@ function SlideView({ slide, ratio, theme }) {
     default: // content
       return (
         <div style={style} className={`${shell} px-12 py-9`}>
+          {decor}
           {accentBar}
           {title}
           {bullets(slide.content)}

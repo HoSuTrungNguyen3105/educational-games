@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, CircleAlert, CircleCheck, Eye, Globe, Redo2, Save, Sparkles, Undo2, Undo,
+  ArrowLeft, CircleAlert, CircleCheck, Eye, Globe, LayoutList, Plus, Redo2, Save,
+  SlidersHorizontal, Sparkles, Undo2, Undo, X,
 } from "lucide-react";
 import { navigate } from "../../lib/router.js";
 import { gameService } from "../../services/api.js";
@@ -42,6 +43,7 @@ export default function StudioEditor({ lessonId, showToast }) {
   const [subjects, setSubjects] = useState([]);
   const [picker, setPicker] = useState({ open: false, targetId: null });
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [mobileSheet, setMobileSheet] = useState(null); // "pages" | "add" | "props"
   const [publishing, setPublishing] = useState(false);
   const [publishErrors, setPublishErrors] = useState(null);
   const [notice, setNotice] = useState(null); // { tone: "success"|"error", text }
@@ -185,12 +187,12 @@ export default function StudioEditor({ lessonId, showToast }) {
   return (
     <div className="studio-editor">
       {/* ── Header (§5.1) ─────────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center gap-2 px-3 min-h-[52px] py-1.5 border-b border-[#E7D9BE] bg-white flex-wrap">
+      <header className="studio-header shrink-0 flex items-center gap-2 px-3 min-h-[52px] py-1.5 border-b border-[#E7D9BE] bg-white flex-wrap">
         <button type="button" onClick={goBack}
           className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-[10px] text-[13px] font-semibold text-ink hover:bg-[#F4F8FF]">
           <ArrowLeft className="w-4 h-4" /> Danh sách
         </button>
-        <span className="hidden xl:inline-flex items-center gap-1.5 font-display font-bold text-ink">
+        <span className="studio-header-brand hidden xl:inline-flex items-center gap-1.5 font-display font-bold text-ink">
           <Sparkles className="w-4.5 h-4.5" style={{ color: "#8B5CF6" }} /> AI Studio
         </span>
         <input
@@ -210,30 +212,30 @@ export default function StudioEditor({ lessonId, showToast }) {
         </span>
         <div className="flex items-center gap-1 ml-auto">
           <button type="button" title="Hoàn tác (Ctrl+Z)" disabled={!ed.canUndo} onClick={ed.undo}
-            className="w-9 h-9 grid place-items-center rounded-[10px] border border-[#E7D9BE] bg-white text-ink disabled:opacity-35 hover:bg-[#F4F8FF]">
+            className="studio-header-undo w-9 h-9 grid place-items-center rounded-[10px] border border-[#E7D9BE] bg-white text-ink disabled:opacity-35 hover:bg-[#F4F8FF]">
             <Undo2 className="w-4 h-4" />
           </button>
           <button type="button" title="Làm lại (Ctrl+Shift+Z)" disabled={!ed.canRedo} onClick={ed.redo}
-            className="w-9 h-9 grid place-items-center rounded-[10px] border border-[#E7D9BE] bg-white text-ink disabled:opacity-35 hover:bg-[#F4F8FF]">
+            className="studio-header-redo w-9 h-9 grid place-items-center rounded-[10px] border border-[#E7D9BE] bg-white text-ink disabled:opacity-35 hover:bg-[#F4F8FF]">
             <Redo2 className="w-4 h-4" />
           </button>
           <button type="button" onClick={() => ed.save()} disabled={!ed.dirty || ed.saving}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] border border-[#E7D9BE] bg-white text-[13px] font-semibold text-ink disabled:opacity-40 hover:bg-[#F4F8FF]">
+            className="studio-header-save inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] border border-[#E7D9BE] bg-white text-[13px] font-semibold text-ink disabled:opacity-40 hover:bg-[#F4F8FF]">
             <Save className="w-4 h-4" /> Lưu nháp
           </button>
           <button type="button" onClick={() => setPreviewOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[13px] font-semibold text-white"
+            className="studio-header-preview inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[13px] font-semibold text-white"
             style={{ background: "#8B5CF6" }}>
             <Eye className="w-4 h-4" /> Xem trước
           </button>
           {ed.status === "published" ? (
             <button type="button" onClick={handleUnpublish} disabled={publishing}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] border border-[#E7D9BE] bg-white text-[13px] font-semibold text-[#B45309] disabled:opacity-40">
+              className="studio-header-publish inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] border border-[#E7D9BE] bg-white text-[13px] font-semibold text-[#B45309] disabled:opacity-40">
               <Undo className="w-4 h-4" /> Gỡ xuất bản
             </button>
           ) : (
             <button type="button" onClick={handlePublish} disabled={publishing}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[13px] font-semibold text-white disabled:opacity-50"
+              className="studio-header-publish inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[13px] font-semibold text-white disabled:opacity-50"
               style={{ background: "#1B998B" }}>
               <Globe className="w-4 h-4" /> {publishing ? "Đang xử lý…" : "Xuất bản"}
             </button>
@@ -273,7 +275,7 @@ export default function StudioEditor({ lessonId, showToast }) {
       )}
 
       {/* ── Thân editor: thư viện | canvas | thuộc tính ───────────── */}
-      <div className="flex flex-1 min-h-0">
+      <div className="studio-body flex flex-1 min-h-0">
         <EditorLibrary
           ed={ed}
           games={games} gamesLoading={gamesLoading} gamesError={gamesError}
@@ -297,7 +299,7 @@ export default function StudioEditor({ lessonId, showToast }) {
             </div>
           </div>
           {/* Thanh trạng thái (§5.7) */}
-          <div className="shrink-0 flex items-center gap-3 px-3 h-8 border-t border-[#E7D9BE] bg-white text-[12px] text-[#8A7C63] font-medium overflow-hidden whitespace-nowrap">
+          <div className="studio-statusbar shrink-0 flex items-center gap-3 px-3 h-8 border-t border-[#E7D9BE] bg-white text-[12px] text-[#8A7C63] font-medium overflow-hidden whitespace-nowrap">
             <span>Canvas 1280 × 720</span>
             <span>Trang {(ed.pages.findIndex((p) => p.id === ed.currentPage?.id) + 1) || 1}/{ed.pages.length}</span>
             <span>{pageElements} phần tử ở trang này</span>
@@ -316,6 +318,64 @@ export default function StudioEditor({ lessonId, showToast }) {
 
       {/* ── Dải trang (§5.6) ──────────────────────────────────────── */}
       <PageStrip ed={ed} gameById={gameById} />
+
+      {/* ── Điều hướng mobile: Trang / Thêm / Sửa / Xem / Lưu ─────── */}
+      <nav className="studio-mobile-nav" aria-label="Thao tác soạn bài">
+        <button type="button" className={mobileSheet === "pages" ? "is-active" : ""}
+          onClick={() => setMobileSheet("pages")}>
+          <LayoutList /> <span>Trang</span>
+        </button>
+        <button type="button" className={mobileSheet === "add" ? "is-active" : ""}
+          onClick={() => setMobileSheet("add")}>
+          <Plus /> <span>Thêm</span>
+        </button>
+        <button type="button" className={mobileSheet === "props" ? "is-active" : ""}
+          onClick={() => setMobileSheet("props")}>
+          <SlidersHorizontal /> <span>Sửa</span>
+        </button>
+        <button type="button" onClick={() => setPreviewOpen(true)}>
+          <Eye /> <span>Xem</span>
+        </button>
+        <button type="button" onClick={() => ed.save()} disabled={!ed.dirty || ed.saving}>
+          <Save /> <span>{ed.saving ? "Đang lưu" : "Lưu"}</span>
+        </button>
+      </nav>
+
+      {mobileSheet && (
+        <div className="studio-mobile-sheet-wrap">
+          <button type="button" className="studio-mobile-sheet-backdrop"
+            onClick={() => setMobileSheet(null)} aria-label="Đóng bảng" />
+          <section className="studio-mobile-sheet" role="dialog" aria-modal="true"
+            aria-label={mobileSheet === "pages" ? "Danh sách trang" : mobileSheet === "add" ? "Thêm nội dung" : "Thuộc tính"}>
+            <header className="studio-mobile-sheet-head">
+              <strong>
+                {mobileSheet === "pages" ? "Trang học" : mobileSheet === "add" ? "Thêm nội dung" : "Thuộc tính & thông tin"}
+              </strong>
+              <button type="button" onClick={() => setMobileSheet(null)} aria-label="Đóng">
+                <X />
+              </button>
+            </header>
+            <div className="studio-mobile-sheet-body">
+              {mobileSheet === "pages" && <PageStrip ed={ed} gameById={gameById} />}
+              {mobileSheet === "add" && (
+                <EditorLibrary
+                  ed={ed}
+                  games={games} gamesLoading={gamesLoading} gamesError={gamesError}
+                  onAddImage={addImageWithPicker}
+                  onPickImageUrl={(url) => ed.addElement("image", { imageUrl: url })}
+                />
+              )}
+              {mobileSheet === "props" && (
+                <PropsPanel
+                  ed={ed}
+                  games={games} gameById={gameById} subjects={subjects}
+                  onPickImage={(elId) => setPicker({ open: true, targetId: elId })}
+                />
+              )}
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* ── Chọn ảnh ──────────────────────────────────────────────── */}
       <ImagePickerModal

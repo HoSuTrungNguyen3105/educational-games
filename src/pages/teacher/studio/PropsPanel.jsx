@@ -324,7 +324,7 @@ function LessonMetaFields({ ed, subjects }) {
 export default function PropsPanel({ ed, games, gameById, subjects, onPickImage }) {
   const el = ed.selectedElement;
   return (
-    <aside className="w-[292px] shrink-0 border-l border-[#E7D9BE] bg-[#FFFBF2] overflow-y-auto min-h-0">
+    <aside className="studio-props w-[292px] shrink-0 border-l border-[#E7D9BE] bg-[#FFFBF2] overflow-y-auto min-h-0">
       <div className="p-3.5">
         {el ? (
           <>

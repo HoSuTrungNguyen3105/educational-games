@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa trang sách và truyện ngắn hiện đại">
+  <rect width="1200" height="675" rx="34" fill="#f8fafc"/>
+  <rect x="64" y="60" width="1072" height="555" rx="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="3"/>
+  <rect x="104" y="100" width="7" height="98" fill="#0f172a"/>
+  <text x="140" y="142" font-family="Georgia, serif" font-size="40" font-weight="700" fill="#0f172a">TRUYỆN NGẮN HIỆN ĐẠI</text>
+  <text x="142" y="182" font-family="Arial, sans-serif" font-size="22" fill="#64748b">Ngữ văn 10 · Bài 4 · Tiết 2</text>
+
+  <path d="M206 293c76-26 146-23 216 8v226c-70-31-140-34-216-8Z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="3"/>
+  <path d="M422 301c70-31 140-34 216-8v226c-76-26-146-23-216 8Z" fill="#f8fafc" stroke="#94a3b8" stroke-width="3"/>
+  <path d="M422 301v226" stroke="#334155" stroke-width="5"/>
+  <g stroke="#cbd5e1" stroke-width="8" stroke-linecap="round">
+    <path d="M250 350h125M250 386h112M250 422h132M250 458h96"/>
+    <path d="M470 350h125M470 386h112M470 422h132M470 458h96"/>
+  </g>
+
+  <rect x="722" y="280" width="326" height="112" rx="16" fill="#0f172a"/>
+  <text x="754" y="324" font-family="Georgia, serif" font-size="24" font-style="italic" fill="#f8fafc">“Một tác phẩm lớn</text>
+  <text x="754" y="360" font-family="Georgia, serif" font-size="24" font-style="italic" fill="#f8fafc">bắt đầu từ một con người.”</text>
+  <rect x="722" y="420" width="326" height="86" rx="16" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="752" y="456" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#334155">Từ khóa</text>
+  <text x="752" y="486" font-family="Arial, sans-serif" font-size="20" fill="#64748b">nhân vật · tình huống · giọng điệu</text>
+  <text x="104" y="580" font-family="Arial, sans-serif" font-size="20" fill="#94a3b8">EduPlay Document Studio · Minimal Academic</text>
+</svg>

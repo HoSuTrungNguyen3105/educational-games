@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa câu chuyện chiếc ví nhặt được dưới gốc cây">
+  <rect width="1200" height="675" rx="34" fill="#fffbeb"/>
+  <path d="M0 520c120-50 230-38 340 10 118 52 250 62 480 10 130-30 240-24 380 18v117H0Z" fill="#fef3c7"/>
+  <circle cx="1038" cy="118" r="78" fill="#fbbf24"/>
+  <path d="M1012 118h52M1038 92v52" stroke="#fff7ed" stroke-width="10" stroke-linecap="round"/>
+  <text x="74" y="108" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#c2410c" letter-spacing="3">STORYTELLING EDUCATION</text>
+  <text x="74" y="170" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#431407">Chiếc ví nhặt được</text>
+  <text x="74" y="212" font-family="Arial, sans-serif" font-size="24" fill="#9a3412">Một câu chuyện nhỏ về trung thực và lòng tốt</text>
+
+  <path d="M284 540c-26-180 48-340 228-406 56 176-42 336-228 406Z" fill="#22c55e"/>
+  <path d="M402 482c-14-106 16-190 92-254" stroke="#166534" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M462 390c42-12 82-8 118 12M432 444c-38 2-70 14-96 36" stroke="#166534" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <ellipse cx="536" cy="548" rx="150" ry="30" fill="#d97706" opacity=".26"/>
+  <rect x="430" y="468" width="214" height="84" rx="18" fill="#b45309"/>
+  <path d="M490 468c0-24 20-44 44-44s44 20 44 44" stroke="#fde68a" stroke-width="9" fill="none"/>
+  <circle cx="588" cy="508" r="12" fill="#fde68a"/>
+
+  <rect x="736" y="286" width="378" height="104" rx="24" fill="#ffffff" stroke="#fcd34d" stroke-width="4"/>
+  <text x="772" y="332" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#7c2d12">Tại sao nên trả lại?</text>
+  <text x="772" y="366" font-family="Arial, sans-serif" font-size="21" fill="#9a3412">Người mất đang rất lo lắng.</text>
+
+  <rect x="736" y="414" width="378" height="104" rx="24" fill="#ffffff" stroke="#86efac" stroke-width="4"/>
+  <text x="772" y="460" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#166534">Bài học</text>
+  <text x="772" y="494" font-family="Arial, sans-serif" font-size="21" fill="#15803d">Trung thực bắt đầu từ việc nhỏ nhất.</text>
+
+  <text x="736" y="590" font-family="Arial, sans-serif" font-size="22" fill="#9a3412">“Con đã tìm thấy chiếc ví ở gốc cây…”</text>
+</svg>

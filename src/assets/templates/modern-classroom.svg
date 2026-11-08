@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa lớp học hiện đại và bài toán chu vi">
+  <rect width="1200" height="675" rx="34" fill="#eff6ff"/>
+  <circle cx="1030" cy="112" r="92" fill="#fde68a"/>
+  <circle cx="1088" cy="216" r="34" fill="#bfdbfe"/>
+  <rect x="74" y="86" width="470" height="82" rx="22" fill="#1d4ed8"/>
+  <text x="106" y="139" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#ffffff">LỚP HỌC HIỆN ĐẠI</text>
+  <text x="76" y="214" font-family="Arial, sans-serif" font-size="25" fill="#475569">Học qua hình ảnh, ví dụ và hoạt động nhóm</text>
+
+  <rect x="112" y="286" width="512" height="284" rx="24" fill="#ffffff" stroke="#bfdbfe" stroke-width="4"/>
+  <rect x="150" y="326" width="292" height="182" rx="12" fill="#dbeafe"/>
+  <text x="182" y="394" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#1e40af">Chiều dài 8 cm</text>
+  <text x="182" y="442" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#1e40af">Chiều rộng 5 cm</text>
+  <path d="M474 326v182M150 326h292M150 508h292" stroke="#2563eb" stroke-width="7" fill="none"/>
+  <text x="184" y="552" font-family="Arial, sans-serif" font-size="26" fill="#475569">P = (8 + 5) × 2 = 26 cm</text>
+
+  <rect x="678" y="286" width="410" height="124" rx="20" fill="#ffffff" stroke="#fcd34d" stroke-width="4"/>
+  <circle cx="724" cy="348" r="27" fill="#f59e0b"/>
+  <text x="716" y="359" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#ffffff">1</text>
+  <text x="770" y="342" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#1e293b">Quan sát hình</text>
+  <text x="770" y="378" font-family="Arial, sans-serif" font-size="22" fill="#64748b">Xác định chiều dài, chiều rộng</text>
+
+  <rect x="678" y="434" width="410" height="136" rx="20" fill="#ffffff" stroke="#a5b4fc" stroke-width="4"/>
+  <circle cx="724" cy="502" r="27" fill="#6366f1"/>
+  <text x="716" y="513" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#ffffff">2</text>
+  <text x="770" y="492" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#1e293b">Áp dụng công thức</text>
+  <text x="770" y="528" font-family="Arial, sans-serif" font-size="22" fill="#64748b">Cùng đơn vị đo rồi mới tính</text>
+</svg>

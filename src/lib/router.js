@@ -23,6 +23,7 @@ const ROUTES = [
   { name: "admin-studio-edit", pattern: "/dashboard/studio/:lessonId" },
   // Teacher Document Studio: soạn tài liệu Word/PowerPoint (API /api/documents)
   { name: "admin-documents", pattern: "/dashboard/documents" },
+  { name: "admin-document-templates", pattern: "/dashboard/documents/templates" },
   { name: "admin-document-edit", pattern: "/dashboard/documents/:documentId" },
   { name: "admin-game-config", pattern: "/dashboard/game-config" },
   // Cấu hình JSON riêng của game offline Vườn Thủ Hộ (plantvsanimal.html)

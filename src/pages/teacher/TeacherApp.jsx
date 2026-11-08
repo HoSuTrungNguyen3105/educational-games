@@ -17,6 +17,7 @@ const BirthdayPageManagement = lazy(() => import('./BirthdayPageManagement.jsx')
 const StudioLessons = lazy(() => import('./StudioLessons.jsx'));
 const StudioEditor = lazy(() => import('./StudioEditor.jsx'));
 const DocumentStudio = lazy(() => import('./DocumentStudio.jsx'));
+const DocumentTemplates = lazy(() => import('./DocumentTemplates.jsx'));
 const DocumentStudioEditor = lazy(() => import('./DocumentStudioEditor.jsx'));
 const GameConfigEditor = lazy(() => import('./GameConfigEditor.jsx'));
 const CategoryManagement = lazy(() => import('./CategoryManagement.jsx'));
@@ -83,6 +84,7 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-studio" && <StudioLessons showToast={showToast} />}
         {page === "admin-studio-edit" && <StudioEditor key={route.params.lessonId} lessonId={route.params.lessonId} showToast={showToast} />}
         {page === "admin-documents" && <DocumentStudio showToast={showToast} />}
+        {page === "admin-document-templates" && <DocumentTemplates showToast={showToast} />}
         {page === "admin-document-edit" && <DocumentStudioEditor key={route.params.documentId} documentId={route.params.documentId} showToast={showToast} />}
         {page === "admin-game-config" && <GameConfigEditor key={refreshFlag} showToast={showToast} />}
         {page === "admin-vth-config" && <VthConfigManagement showToast={showToast} />}

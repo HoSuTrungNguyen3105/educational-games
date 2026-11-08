@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Infographic vòng tuần hoàn của nước">
+  <rect width="1200" height="675" rx="34" fill="#f0fdfa"/>
+  <text x="72" y="102" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#0f766e" letter-spacing="3">EDUCATIONAL INFOGRAPHIC</text>
+  <text x="72" y="160" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#134e4a">Vòng tuần hoàn của nước</text>
+  <text x="72" y="202" font-family="Arial, sans-serif" font-size="23" fill="#0f766e">Nước không mất đi, nước chỉ chuyển từ thể này sang thể khác</text>
+
+  <circle cx="600" cy="402" r="210" fill="#ccfbf1"/>
+  <path d="M430 470c40-54 108-72 166-44 48-62 142-54 176 18 62-4 98 38 92 86H430c-16-22-8-46 0-60Z" fill="#ffffff" stroke="#14b8a6" stroke-width="4"/>
+  <path d="M498 374c-26-24-26-58 0-82 26 24 26 58 0 82Z" fill="#ea580c"/>
+  <path d="M660 330c-22-38-6-74 30-92 10 42-2 76-30 92Z" fill="#0d9488"/>
+  <path d="M780 412c34-26 70-16 88 18-36 20-68 12-88-18Z" fill="#f59e0b"/>
+  <path d="M580 540c24 28 24 62 0 90-24-28-24-62 0-90Z" fill="#0ea5e9"/>
+  <path d="M420 330c-30-10-48-38-40-68 30 8 46 34 40 68Z" fill="#0d9488"/>
+
+  <g font-family="Arial, sans-serif" font-size="22" fill="#134e4a">
+    <rect x="72" y="300" width="260" height="84" rx="18" fill="#ffffff" stroke="#99f6e4" stroke-width="3"/>
+    <text x="100" y="336" font-size="24" font-weight="700">1. Bốc hơi</text>
+    <text x="100" y="366" fill="#0f766e">Nước biến thành hơi nước</text>
+
+    <rect x="72" y="414" width="260" height="84" rx="18" fill="#ffffff" stroke="#99f6e4" stroke-width="3"/>
+    <text x="100" y="450" font-size="24" font-weight="700">2. Ngưng tụ</text>
+    <text x="100" y="480" fill="#0f766e">Hơi nước tạo thành mây</text>
+
+    <rect x="868" y="300" width="260" height="84" rx="18" fill="#ffffff" stroke="#99f6e4" stroke-width="3"/>
+    <text x="896" y="336" font-size="24" font-weight="700">3. Mưa</text>
+    <text x="896" y="366" fill="#0f766e">Nước rơi xuống mặt đất</text>
+
+    <rect x="868" y="414" width="260" height="84" rx="18" fill="#ffffff" stroke="#99f6e4" stroke-width="3"/>
+    <text x="896" y="450" font-size="24" font-weight="700">4. Dòng chảy</text>
+    <text x="896" y="480" fill="#0f766e">Nước trở về sông, biển</text>
+  </g>
+</svg>
