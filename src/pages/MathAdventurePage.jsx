@@ -42,7 +42,7 @@ export default function MathAdventurePage() {
         htmlContent={mathAdventureHtml}
         game={GAME}
         questions={[]}
-        playerName={user?.fullName || user?.username || "An Nhiên"}
+        playerName={user?.name || user?.username || user?.fullName || "Bạn"}
         playMode="solo"
         userAuth={userAuth}
         onFinish={handleFinish}

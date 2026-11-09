@@ -62,6 +62,11 @@ import {
 } from 'lucide-react'
 
 
+// TẠM ẨN Math Adventure phía học sinh (yêu cầu của Nguyên, 2026-11-09):
+// thẻ ghim dưới đây không render khi cờ này là false. Muốn hiện lại chỉ cần
+// đổi thành true — trang /math-adventure, code game và dữ liệu đều giữ nguyên.
+const SHOW_MATH_ADVENTURE = false;
+
 // Game nổi bật được ghim lên đầu (chơi ngay, không cần qua API)
 const FEATURED_GAME = {
   key: "math-adventure",
@@ -1261,15 +1266,17 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thầy cô thêm game vào nhé!" />
           ) : (
             <div className="gq-rail gq-board" data-rail="today">
-              <GqGameCard
-                name={FEATURED_GAME.name}
-                icon={FEATURED_GAME.icon}
-                thumb={gameThumbnail(FEATURED_GAME.key, FEATURED_GAME.name)}
-                tint="#ffd45e"
-                badge="Mới"
-                age="2–8 tuổi"
-                play={() => navigate(FEATURED_GAME.path)}
-              />
+              {SHOW_MATH_ADVENTURE && (
+                <GqGameCard
+                  name={FEATURED_GAME.name}
+                  icon={FEATURED_GAME.icon}
+                  thumb={gameThumbnail(FEATURED_GAME.key, FEATURED_GAME.name)}
+                  tint="#ffd45e"
+                  badge="Mới"
+                  age="2–8 tuổi"
+                  play={() => navigate(FEATURED_GAME.path)}
+                />
+              )}
               {todayGames.slice(2).map(({ key, ...card }) => (
                 <GqGameCard key={key} {...card} />
               ))}

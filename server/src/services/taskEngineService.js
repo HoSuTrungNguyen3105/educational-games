@@ -346,34 +346,46 @@ export async function getTaskStats() {
   const tasks = await getAllActiveTasks();
   const col = getCollection(PROGRESS_COL);
 
-  const results = [];
-  for (const task of tasks) {
+  // Một lượt quét toàn bộ tiến độ rồi gom trong bộ nhớ — trước đây hàm này
+  // chạy 1 query cho MỖI nhiệm vụ (tuần tự) cộng thêm 1 lượt quét toàn bộ
+  // và 1 distinct, nên trang thống kê admin mất vài giây mới trả số.
+  // Định nghĩa số liệu giữ nguyên y hệt.
+  const allProgress = await col.find({}).toArray();
+  const taskById = new Map(tasks.map((t) => [t._id.toString(), t]));
+
+  const participants = new Set();
+  let totalClaimed = 0;
+  let totalCoinsAwarded = 0;
+  const perTaskPeriod = new Map(); // `${taskId}|${periodKey}` -> { completed, claimed }
+  for (const p of allProgress) {
+    if (p.userId) participants.add(p.userId);
+    if (p.claimed) {
+      totalClaimed += 1;
+      totalCoinsAwarded += taskById.get(p.taskId)?.rewardCoin || 0;
+    }
+    const key = `${p.taskId}|${p.periodKey}`;
+    const agg = perTaskPeriod.get(key) || { completed: 0, claimed: 0 };
+    if (p.completed) agg.completed += 1;
+    if (p.claimed) agg.claimed += 1;
+    perTaskPeriod.set(key, agg);
+  }
+
+  const results = tasks.map((task) => {
     const periodKey = getPeriodKey(task.scope);
-    const progressDocs = await col.find({ taskId: task._id.toString(), periodKey }).toArray();
-    const completedCount = progressDocs.filter((p) => p.completed).length;
-    const claimedCount = progressDocs.filter((p) => p.claimed).length;
-    results.push({
+    const agg = perTaskPeriod.get(`${task._id.toString()}|${periodKey}`) || { completed: 0, claimed: 0 };
+    return {
       ...task,
       _id: undefined,
       id: task._id.toString(),
-      completedCount,
-      claimedCount,
-      totalCoinsAwarded: claimedCount * (task.rewardCoin || 0),
-    });
-  }
-
-  const totalParticipants = await col.distinct("userId").then((ids) => ids.length);
-  const allProgress = await col.find({}).toArray();
-  const totalClaimed = allProgress.filter((p) => p.claimed).length;
-  const totalCoinsAwarded = allProgress.reduce((sum, p) => {
-    if (!p.claimed) return sum;
-    const task = tasks.find((t) => t._id.toString() === p.taskId);
-    return sum + (task?.rewardCoin || 0);
-  }, 0);
+      completedCount: agg.completed,
+      claimedCount: agg.claimed,
+      totalCoinsAwarded: agg.claimed * (task.rewardCoin || 0),
+    };
+  });
 
   return {
     totalTasks: tasks.length,
-    totalParticipants,
+    totalParticipants: participants.size,
     totalClaimed,
     totalCoinsAwarded,
     tasks: results,

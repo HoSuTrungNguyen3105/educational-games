@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FileText, Pencil, Trash2, X } from 'lucide-react'
 import { gameService, questionService } from '../../services/api.js'
+import { gameLabel } from '../../lib/gameLabel.js'
 import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
 import QuestionImportModal from './QuestionImportModal.jsx'
 
@@ -175,7 +176,7 @@ export default function QuestionManagement({ showToast }) {
         >
           <option value="">-- Chọn game --</option>
           {games?.map(g => (
-            <option key={g._id} value={g._id}>{g.name} ({g.questionsCount || 0} câu)</option>
+            <option key={g._id} value={g._id}>{gameLabel(g)} ({g.questionsCount || 0} câu)</option>
           ))}
         </select>
       </div>
@@ -187,7 +188,7 @@ export default function QuestionManagement({ showToast }) {
       {selectedGame && (
         <ManagementTable
           viewKey="questions-by-game"
-          title={`Câu hỏi — ${selectedGameObj?.name || ""}`}
+          title={`Câu hỏi — ${selectedGameObj ? gameLabel(selectedGameObj) : ""}`}
           data={questions}
           error={error && !questions ? error : null}
           onRetry={loadQuestions}
@@ -303,7 +304,7 @@ export default function QuestionManagement({ showToast }) {
       <ConfirmModal open={confirm.open}
         title={confirm.item?._all ? "Xóa tất cả câu hỏi" : "Xóa câu hỏi"}
         message={confirm.item?._all
-          ? `Xóa tất cả câu hỏi của game "${selectedGameObj?.name || ""}"?`
+          ? `Xóa tất cả câu hỏi của game "${selectedGameObj ? gameLabel(selectedGameObj) : ""}"?`
           : `Xóa "${confirm.item?.q?.content?.slice(0, 60)}..."?`}
         onConfirm={confirm.item?._all ? doRemoveAll : doRemove}
         onClose={() => setConfirm({ open: false, item: null })} />
