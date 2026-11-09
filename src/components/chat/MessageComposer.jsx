@@ -56,7 +56,7 @@ export default function MessageComposer({ userAuth, onUserLogin }) {
       <Input
         ref={inputRef}
         value={text}
-        onChange={(e) => { setText(e.target.value); handleTyping(); }}
+        onChange={(value) => { setText(value); handleTyping(); }}
         placeholder="Nhập tin nhắn..."
         maxLength={500}
         className="flex-1 bg-paper rounded-xl px-3 py-2 text-sm font-body text-ink placeholder:text-[#B7A987] outline-none focus:ring-2 focus:ring-ink/10 min-h-[36px]"

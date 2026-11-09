@@ -103,8 +103,7 @@ export default function CoopInvitePanel({
     }
   }, []);
 
-  const handleSearchInput = (e) => {
-    const val = e.target.value;
+  const handleSearchInput = (val) => {
     setSearchQuery(val);
     clearTimeout(searchTimeout.current);
     if (val.length < 2) {
@@ -260,7 +259,7 @@ export default function CoopInvitePanel({
               maxLength={6}
               placeholder="MÃ PHÒNG"
               value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              onChange={(value) => setJoinCode(value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && handleJoinByCode()}
               variant="dark"
               className="py-3.5 border-2 font-mono text-[1.5rem] font-bold text-center tracking-[8px] uppercase focus:border-[#4ecdc4]"

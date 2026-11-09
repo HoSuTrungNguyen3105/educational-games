@@ -35,7 +35,7 @@ export default function VibratePatternPicker({ value = "", onChange, enabled = t
       <div className="flex gap-2">
         <Input
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={onChange}
           placeholder="200,100,200,100,200"
           className="flex-1 px-3 py-1.5 border border-ink/10 rounded-xl text-xs font-mono focus:border-gold outline-none"
           variant="default"

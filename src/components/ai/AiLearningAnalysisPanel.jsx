@@ -89,7 +89,7 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
               type="date"
               value={from}
               max={to || undefined}
-              onChange={(e) => setFrom(e.target.value)}
+              onChange={setFrom}
               className="w-full note-card px-3 py-2 text-base sm:text-sm border-ink/10 focus:border-ticket"
               variant="default"
             />
@@ -100,7 +100,7 @@ export default function AiLearningAnalysisPanel({ studentId, studentLabel }) {
               type="date"
               value={to}
               min={from || undefined}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={setTo}
               className="w-full note-card px-3 py-2 text-base sm:text-sm border-ink/10 focus:border-ticket"
               variant="default"
             />
