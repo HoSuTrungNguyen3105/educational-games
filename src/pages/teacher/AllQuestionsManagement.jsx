@@ -1,9 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pencil, Trash2, X } from 'lucide-react'
 import { gameService, questionService } from '../../services/api.js'
+import { gameLabel } from '../../lib/gameLabel.js'
 import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
+
+// Chạy fn cho từng item với tối đa `limit` luồng song song; kết quả giữ
+// đúng thứ tự của items (khác Promise.all thuần ở chỗ giới hạn số request
+// đồng thời để không dội server khi danh sách game dài).
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
+    while (next < items.length) {
+      const i = next;
+      next += 1;
+      results[i] = await fn(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+const QUESTION_LOAD_CONCURRENCY = 8;
 
 export default function AllQuestionsManagement({ showToast }) {
   const [games, setGames] = useState(null);
@@ -24,17 +44,22 @@ export default function AllQuestionsManagement({ showToast }) {
       const allGames = await gameService.list();
       setGames(allGames);
 
-      // Load questions per game so we know which game each question belongs to
-      const allQuestions = [];
-      for (const g of allGames) {
+      // Load questions per game so we know which game each question belongs to.
+      // Nạp SONG SONG theo lô (trước đây nạp tuần tự từng game nên tab này
+      // mất ~15 giây khi thư viện có nhiều game); thứ tự gom vẫn theo thứ
+      // tự game như cũ.
+      const perGame = await mapWithConcurrency(allGames, QUESTION_LOAD_CONCURRENCY, async (g) => {
         try {
           const qs = await questionService.listByGame(g._id);
-          if (Array.isArray(qs)) {
-            // Attach gameId locally (not from API response)
-            qs.forEach(q => { q.gameId = g._id; });
-            allQuestions.push(...qs);
-          }
-        } catch { /* skip games with no questions */ }
+          if (!Array.isArray(qs)) return null;
+          // Attach gameId locally (not from API response)
+          qs.forEach(q => { q.gameId = g._id; });
+          return qs;
+        } catch { return null; /* skip games with no questions */ }
+      });
+      const allQuestions = [];
+      for (const qs of perGame) {
+        if (qs) allQuestions.push(...qs);
       }
       setQuestions(allQuestions);
     } catch (e) { setError(e.message); }
@@ -45,7 +70,7 @@ export default function AllQuestionsManagement({ showToast }) {
   const gameMap = useMemo(() => {
     if (!games) return {};
     const m = {};
-    for (const g of games) m[g._id] = g.name;
+    for (const g of games) m[g._id] = gameLabel(g);
     return m;
   }, [games]);
 
@@ -159,7 +184,7 @@ export default function AllQuestionsManagement({ showToast }) {
           >
             <option value="">-- Tất cả game --</option>
             {games?.map(g => (
-              <option key={g._id} value={g._id}>{g.name} ({totalByGame[g._id] || 0})</option>
+              <option key={g._id} value={g._id}>{gameLabel(g)} ({totalByGame[g._id] || 0})</option>
             ))}
           </select>
         </div>

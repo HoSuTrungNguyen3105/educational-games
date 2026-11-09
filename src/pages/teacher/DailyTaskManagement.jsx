@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { taskService } from "../../services/taskService.js";
-import { GridCard, ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from "../../components/ui";
+import { GridCard, ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid, ErrorState } from "../../components/ui";
 import { TaskIcon } from "../../components/tasks/index.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import { matchesQuery } from "../../lib/searchText.js";
@@ -139,11 +139,17 @@ export default function DailyTaskManagement({ showToast }) {
         </button>
       </div> */}
 
+      {/* Khối thống kê có trạng thái riêng: lỗi thì báo lỗi + Thử lại ngay tại
+          đây (trước đây lỗi chỉ tới bảng bên dưới, 4 ô này kẹt "..." mãi). */}
+      {error && !stats && (
+        <ErrorState title="Không tải được thống kê nhiệm vụ" subtitle={error} onRetry={load} />
+      )}
+
       <StatGrid stats={[
-        { label: "Người tham gia", value: stats?.totalParticipants ?? "...", icon: <Users /> },
-        { label: "Lượt nhận thưởng", value: stats?.totalClaimed ?? "...", icon: <CheckCircle2 /> },
-        { label: "Xu đã phát", value: stats?.totalCoinsAwarded != null ? stats.totalCoinsAwarded.toLocaleString() : "...", icon: <Coins /> },
-        { label: "Nhiệm vụ", value: stats?.totalTasks ?? "...", icon: <ClipboardList /> },
+        { label: "Người tham gia", value: stats?.totalParticipants ?? (error ? "—" : "..."), icon: <Users /> },
+        { label: "Lượt nhận thưởng", value: stats?.totalClaimed ?? (error ? "—" : "..."), icon: <CheckCircle2 /> },
+        { label: "Xu đã phát", value: stats?.totalCoinsAwarded != null ? stats.totalCoinsAwarded.toLocaleString() : (error ? "—" : "..."), icon: <Coins /> },
+        { label: "Nhiệm vụ", value: stats?.totalTasks ?? (error ? "—" : "..."), icon: <ClipboardList /> },
       ]} />
 
       {tab === "tasks" && (

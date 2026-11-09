@@ -481,7 +481,7 @@ function TeacherAnalytics({ stats, days, onDays, onResults, onLive }) {
           title="Thư viện trò chơi"
           icon={<ChartPie className="w-5 h-5" />}
           footer={<ChartLegend items={statusSlices.map((x, i) => ({ label: x.name, value: x.value, color: seriesColor(i) }))} />}
-          caption={`${stats.totals.games} trò chơi · ${stats.totals.students} học sinh trong hệ thống · ${stats.totals.players} bạn từng chơi.`}
+          caption={`${stats.totals.games} trò chơi · ${stats.totals.published || 0} đã xuất bản · ${stats.totals.students} học sinh trong hệ thống · ${stats.totals.players} bạn từng chơi.`}
         >
           <DonutChart
             slices={statusSlices}
