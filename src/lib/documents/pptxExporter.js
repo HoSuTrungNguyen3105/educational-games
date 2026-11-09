@@ -173,7 +173,7 @@ async function buildSlide(pptx, model, s, i, dims, warnings, t) {
       } else {
         try {
           const img = await loadImage(src);
-          slide.addImage({ data: img.dataUrl, ...imgBox, sizing: { type: "contain", w: imgBox.w, h: imgBox.h } });
+          slide.addImage({ data: img.dataUrl, altText: s.alt || undefined, ...imgBox, sizing: { type: "contain", w: imgBox.w, h: imgBox.h } });
         } catch {
           warnings.push(`Không tải được hình ảnh ở ${label} — đã thay bằng khung ghi chú trong file PowerPoint.`);
           slide.addText(note, { ...imgBox, fontFace: t.font, fontSize: 14, italic: true, color: t.muted, align: "center", valign: "middle", line: { color: TABLE_BORDER, width: 1, dashType: "dash" } });

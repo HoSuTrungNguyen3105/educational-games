@@ -6,16 +6,19 @@ import { indentWithTab } from "@codemirror/commands";
 import { html } from "@codemirror/lang-html";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { linter, lintGutter } from "@codemirror/lint";
+import { openSearchPanel, search, searchKeymap } from "@codemirror/search";
 import { formatHtmlText, formatJsonText } from "../../../lib/documents/format.js";
 
 // CodeEditor — trình soạn mã nguồn của Teacher Document Studio, dựng trên
 // CodeMirror 6 (nhẹ hơn Monaco, hợp bundle PWA): syntax highlighting,
 // số dòng, undo/redo tích hợp (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y), lint
-// gutter cho JSON. KHÔNG thực thi mã của giáo viên — đây chỉ là trình
-// soạn văn bản có cấu trúc.
+// gutter cho JSON, tìm & thay thế chuẩn (Ctrl+F / Ctrl+H, panel sẵn
+// của @codemirror/search). KHÔNG thực thi mã của giáo viên — đây chỉ là
+// trình soạn văn bản có cấu trúc.
 //
 // Props: value (mã nguồn), onChange(text), language: "html" | "json".
-// Ref: format() — định dạng lại toàn bộ mã nguồn hiện tại.
+// Ref: format() — định dạng lại toàn bộ mã nguồn hiện tại;
+//      openSearch() — mở panel tìm & thay thế.
 const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language, onCursor }, ref) {
   const hostRef = useRef(null);
   const viewRef = useRef(null);
@@ -56,6 +59,13 @@ const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language, o
     focus() {
       viewRef.current?.focus();
     },
+    // Mở panel tìm & thay thế (tương đương bấm Ctrl+F trong khung soạn).
+    openSearch() {
+      const view = viewRef.current;
+      if (!view) return false;
+      view.focus();
+      return openSearchPanel(view);
+    },
   }), [language]);
 
   // Tạo editor khi mount / khi đổi ngôn ngữ (mỗi chế độ soạn một ngôn ngữ).
@@ -69,7 +79,8 @@ const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language, o
       minimalSetup,
       lineNumbers(),
       highlightActiveLineGutter(),
-      keymap.of([indentWithTab]),
+      search(),
+      keymap.of([...searchKeymap, indentWithTab]),
       language === "json" ? json() : html(),
       EditorView.theme({
         "&": { height: "100%", fontSize: "13px", backgroundColor: "#fffdf7" },

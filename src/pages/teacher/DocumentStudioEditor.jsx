@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, ArrowLeftRight, BookOpen, Check, Download, Expand, Eye,
+  ArrowLeft, ArrowLeftRight, BookOpen, Check, Copy, Download, Expand, Eye,
   FileText, FileWarning, FolderOpen, Image as ImageIcon, LayoutGrid, LayoutTemplate,
-  List, Play, Quote, Save, Search, Settings, Sparkles, Table2, Upload, UserRound,
+  List, Play, Printer, Quote, Save, Search, Settings, Sparkles, Table2, Upload, UserRound,
   Wand2, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { navigate } from "../../lib/router.js";
@@ -22,7 +22,8 @@ import { exportWordDocx } from "../../lib/documents/wordExporter.js";
 import { exportPresentationPptx } from "../../lib/documents/pptxExporter.js";
 import { validateDocumentJson } from "../../lib/documents/schemas.js";
 import { presentationJsonToModel } from "../../lib/documents/model.js";
-import { duplicateSlide, insertSlideAfter, moveSlide, removeSlide } from "../../lib/documents/slideOps.js";
+import { duplicateSlide, insertSlideAfter, moveSlide, moveSlideTo, removeSlide } from "../../lib/documents/slideOps.js";
+import { documentStats } from "../../lib/documents/stats.js";
 import "./documents/docstudio.css";
 
 // DocumentStudioEditor — trang soạn tài liệu của Teacher Document Studio
@@ -47,6 +48,11 @@ import "./documents/docstudio.css";
 //   • Server chỉ lưu MỘT mã nguồn (theo chế độ đang chọn khi Lưu) — bản
 //     nháp của chế độ còn lại chỉ sống trong phiên soạn này.
 //   • Xuất .docx / .pptx thật, thao tác slide bằng nút ở chế độ JSON.
+//   • Đợt nâng cấp: tự động lưu bản nháp (debounce 2,5s, tắt được trong
+//     Cài đặt) + cảnh báo khi rời trang lúc chưa lưu; nhân bản ngay
+//     trong editor; tìm & thay thế (Ctrl+F / Ctrl+H); tải ảnh từ máy;
+//     thống kê số từ/khối/slide ở chân khung soạn; kéo thả thumbnail
+//     để sắp xếp slide; nút In / lưu PDF cho bản xem trước dạng iframe.
 
 const snapshotOf = ({ name, docType, mode, source }) => JSON.stringify({ name, docType, mode, source });
 
@@ -113,6 +119,16 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const [notice, setNotice] = useState("");
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null); // { auto, at } — lần lưu thành công gần nhất
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [autosave, setAutosave] = useState(() => {
+    try { return localStorage.getItem("docstudio.autosave") !== "off"; } catch { return true; }
+  });
+  const [duplicating, setDuplicating] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const saveInFlight = useRef(false);
+  const autoAttemptRef = useRef(""); // snapshot đã thử autosave — tránh lặp vô hạn khi mất mạng
+  const imageFileRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [exportReport, setExportReport] = useState(null);
   const [split, setSplit] = useState(50);
@@ -142,6 +158,9 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     [savedSnapshot, name, docType, mode, draft]);
   const validApplied = applied && applied.docType === docType ? applied : null;
   const appliedStale = validApplied ? appliedSource !== draft || validApplied.mode !== mode : false;
+  // Thống kê chân khung soạn: tính từ model đã áp dụng (khớp preview).
+  const docStats = useMemo(() => documentStats(validApplied?.model), [validApplied]);
+  const draftKb = useMemo(() => new Blob([draft]).size / 1024, [draft]);
   const theme = THEMES[docType] || THEMES.word;
   const themeStyle = {
     "--doc-accent": theme.accent,
@@ -152,6 +171,30 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   };
 
   const goList = () => navigate("/dashboard/documents");
+
+  // ── Chặn mất dữ liệu khi rời trang lúc chưa lưu ────────────────────
+  // Đóng/ tải lại tab: beforeunload của trình duyệt. Bấm nút rời trang
+  // trong editor (Quay lại, Tài liệu của tôi, mở thư viện mẫu…): hộp
+  // xác nhận dùng chung. Autosave thu hẹp khoảng trống này nhưng không
+  // xoá hết (độ trễ debounce, autosave có thể tắt hoặc lưu lỗi).
+  useEffect(() => {
+    if (!isDirty) return undefined;
+    const onBeforeUnload = (e) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isDirty]);
+
+  const leaveTo = (url) => {
+    if (!isDirty) { navigate(url); return; }
+    askConfirm({
+      title: "Chưa lưu thay đổi",
+      message: "Tài liệu đang có thay đổi chưa lưu. Rời trang bây giờ sẽ mất các thay đổi đó.",
+      confirmLabel: "Rời trang",
+      danger: true,
+      onConfirm: () => navigate(url),
+    });
+  };
+  const leaveEditor = () => leaveTo("/dashboard/documents");
 
   // ── Nạp tài liệu ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -172,6 +215,15 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
           setApplyErrors(res.errors);
         }
         setSavedSnapshot(snapshotOf({ name: (doc.name || "").trim(), docType: doc.docType, mode: doc.mode, source: doc.source || "" }));
+        // Tỷ lệ slide do luồng nhập .pptx từ trang danh sách gửi qua
+        // sessionStorage (tài liệu không lưu tỷ lệ) — đọc một lần rồi xoá.
+        if (doc.docType === "powerpoint") {
+          try {
+            const r = sessionStorage.getItem(`docstudio.ratio.${documentId}`);
+            if (r === "16:9" || r === "4:3") setRatio(r);
+            if (r) sessionStorage.removeItem(`docstudio.ratio.${documentId}`);
+          } catch { /* trình duyệt chặn — bỏ qua */ }
+        }
       } catch (e) {
         if (alive) setLoadError(e?.message || "Không tải được tài liệu");
       } finally {
@@ -311,6 +363,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         json: result.mode === "json" ? result.source : "",
       });
       if (!name.trim()) setName(result.name);
+      if (result.ratio) setRatio(result.ratio); // .pptx: khớp tỷ lệ slide của file gốc
       doApply(result.source, result.mode, result.docType);
       setTool("content");
       setUploadOpen(false);
@@ -328,8 +381,13 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     } else run();
   };
 
-  // ── Lưu ───────────────────────────────────────────────────────────────
-  const handleSave = async () => {
+  // ── Lưu (một hàm dùng chung cho Lưu tay + tự động lưu) ─────────────
+  // quiet = autosave: thành công thì không toast (chỉ cập nhật chỉ báo
+  // trạng thái kèm giờ lưu), thất bại thì đánh dấu "Chưa lưu được" thay
+  // vì làm phiền bằng toast lặp lại.
+  const saveDocument = useCallback(async ({ quiet = false } = {}) => {
+    if (saveInFlight.current) return false;
+    saveInFlight.current = true;
     setSaving(true);
     try {
       const updated = await documentService.update(documentId, {
@@ -341,10 +399,66 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         name: (updated.name || "").trim(), docType: updated.docType,
         mode: updated.mode, source: updated.source || "",
       }));
-      showToast?.("Đã lưu tài liệu", "success");
+      setSaveFailed(false);
+      setLastSaved({ auto: quiet, at: new Date() });
+      if (!quiet) showToast?.("Đã lưu tài liệu", "success");
+      return true;
     } catch (e) {
-      showToast?.(e?.message || "Lưu thất bại", "error");
-    } finally { setSaving(false); }
+      setSaveFailed(true);
+      if (!quiet) showToast?.(e?.message || "Lưu thất bại", "error");
+      return false;
+    } finally {
+      saveInFlight.current = false;
+      setSaving(false);
+    }
+  }, [documentId, name, docType, mode, draft]);
+
+  const handleSave = () => saveDocument();
+
+  // Tự động lưu bản nháp: 2,5 giây sau khi ngừng sửa. Mỗi snapshot chỉ
+  // thử một lần — mất mạng thì không lặp vô hạn; sửa tiếp sẽ thử lại.
+  useEffect(() => {
+    if (!autosave || loading || !isDirty) return undefined;
+    const snap = snapshotOf({ name: name.trim(), docType, mode, source: draft });
+    if (autoAttemptRef.current === snap) return undefined;
+    const t = setTimeout(() => {
+      autoAttemptRef.current = snap;
+      saveDocument({ quiet: true });
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [autosave, loading, isDirty, name, docType, mode, draft, saveDocument]);
+
+  useEffect(() => {
+    try { localStorage.setItem("docstudio.autosave", autosave ? "on" : "off"); } catch { /* trình duyệt chặn — bỏ qua */ }
+  }, [autosave]);
+
+  // ── Nhân bản ngay trong editor ─────────────────────────────────────
+  // Bản sao lấy từ BẢN NHÁP ĐANG SOẠN (gồm cả thay đổi chưa lưu) để
+  // giáo viên tách nhánh một giáo án mà không phải lưu trước; tài liệu
+  // gốc trên máy chủ không đổi.
+  const doDuplicate = async () => {
+    setDuplicating(true);
+    try {
+      const created = await documentService.create({
+        name: `${(name.trim() || "Tài liệu chưa đặt tên")} (bản sao)`.slice(0, 200),
+        docType, mode, source: draft,
+      });
+      showToast?.("Đã nhân bản tài liệu — đang mở bản sao", "success");
+      navigate(`/dashboard/documents/${created.id}`);
+    } catch (e) {
+      showToast?.(e?.message || "Nhân bản thất bại", "error");
+    } finally { setDuplicating(false); }
+  };
+  const handleDuplicate = () => {
+    if (isDirty) {
+      askConfirm({
+        title: "Nhân bản tài liệu",
+        message: "Bản sao sẽ gồm cả các thay đổi CHƯA LƯU hiện tại; tài liệu gốc vẫn giữ bản đã lưu gần nhất trên máy chủ. Tiếp tục?",
+        confirmLabel: "Nhân bản",
+        danger: false,
+        onConfirm: doDuplicate,
+      });
+    } else doDuplicate();
   };
 
   // ── Xuất file thật (.docx / .pptx) ────────────────────────────────────
@@ -410,7 +524,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   // từ chối thao tác, không đụng gì) → slideOps sửa đối tượng → serialize
   // JSON.stringify(…, null, 2) ghi lại vào bản nháp → dựng lại preview.
   // Sau thao tác, trạng thái "Chưa lưu" bật đúng vì bản nháp đã đổi.
-  const handleSlideOp = (op, arg) => {
+  const handleSlideOp = (op, arg, fromIndex) => {
     if (mode !== "json" || docType !== "powerpoint") return;
     let obj;
     try {
@@ -447,6 +561,9 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       commit(duplicateSlide(obj, slideIndex), "Đã nhân bản slide hiện tại — bản sao nằm ngay sau bản gốc.");
     } else if (op === "move") {
       commit(moveSlide(obj, slideIndex, arg), arg < 0 ? "Đã di chuyển slide lên trước." : "Đã di chuyển slide xuống sau.");
+    } else if (op === "moveTo") {
+      const from = typeof fromIndex === "number" ? fromIndex : slideIndex;
+      commit(moveSlideTo(obj, from, arg), `Đã chuyển slide ${from + 1} tới vị trí ${arg + 1}.`);
     } else if (op === "delete") {
       const target = (obj.slides || [])[slideIndex];
       askConfirm({
@@ -501,6 +618,31 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const parseTableText = (text) => String(text || "")
     .split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
     .map((line) => line.split("|").map((cell) => cell.trim()));
+
+  // Tải ảnh từ máy: đọc thành data URI rồi đi đúng đường chèn hiện có
+  // (ô "Đường dẫn ảnh" nhận data URI như một URL). Trần 600 KB vì ảnh
+  // nhúng làm phình mã nguồn ~1,37 lần mà máy chủ chỉ lưu tối đa 1 MB.
+  const MAX_LOCAL_IMAGE_BYTES = 600 * 1024;
+  const handleImageFile = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setImageError("File đã chọn không phải là file ảnh."); return; }
+    if (file.size > MAX_LOCAL_IMAGE_BYTES) {
+      setImageError(`Ảnh nặng ${(file.size / 1024).toFixed(0)} KB — tối đa 600 KB vì mã nguồn tài liệu (kèm ảnh nhúng) giới hạn lưu 1 MB. Hãy nén ảnh rồi thử lại.`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageError("");
+      setToolForm((f) => ({
+        ...f,
+        src: String(reader.result || ""),
+        alt: f.alt || file.name.replace(/\.[^.]+$/, ""),
+      }));
+      showToast?.("Đã nạp ảnh từ máy — bấm Chèn hình ảnh để đưa vào tài liệu.", "success");
+    };
+    reader.onerror = () => setImageError("Không đọc được file ảnh đã chọn.");
+    reader.readAsDataURL(file);
+  };
 
   const handleInsertImage = () => {
     const src = toolForm.src.trim();
@@ -607,6 +749,26 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     else el.requestFullscreen?.().catch(() => {});
   };
 
+  // In / lưu PDF: chỉ áp dụng khi preview là iframe sandbox (Word mọi
+  // chế độ + PowerPoint chế độ HTML) — trang cha gọi print() lên chính
+  // tài liệu trong iframe, trình duyệt mở hộp thoại in và giáo viên
+  // chọn "Lưu dưới dạng PDF" là có PDF thật. Preview slide dạng DOM
+  // (PowerPoint JSON) không in sạch được nên không hiện nút ở đó.
+  const handlePrintPreview = () => {
+    const frame = previewRef.current?.querySelector("iframe");
+    const win = frame?.contentWindow;
+    if (!win) {
+      showToast?.("Bản xem trước chưa sẵn sàng để in — chờ một chút rồi thử lại.", "error");
+      return;
+    }
+    try {
+      win.focus();
+      win.print();
+    } catch {
+      showToast?.("Trình duyệt không mở được hộp thoại in cho bản xem trước.", "error");
+    }
+  };
+
   if (loading) {
     return <div className="docstudio-screen" style={themeStyle}><div className="p-10 font-body text-ink/60">Đang tải tài liệu…</div></div>;
   }
@@ -664,7 +826,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
               <p className="docstudio-template-empty">Không có mẫu phù hợp từ khóa.</p>
             )}
           </div>
-          <button type="button" className="docstudio-btn-primary" onClick={() => navigate("/dashboard/documents/templates")}>
+          <button type="button" className="docstudio-btn-primary" onClick={() => leaveTo("/dashboard/documents/templates")}>
             <LayoutTemplate className="w-4 h-4" /> Mở thư viện đầy đủ
           </button>
           <button type="button" className="docstudio-btn-ghost" onClick={() => setUploadOpen(true)}>
@@ -705,13 +867,22 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
             </>
           )}
 
+          <label className="docstudio-check">
+            <input type="checkbox" checked={autosave}
+              onChange={(e) => setAutosave(e.target.checked)} />
+            Tự động lưu bản nháp khi soạn
+          </label>
+
           <button type="button" className="docstudio-btn-primary" onClick={handleSave} disabled={saving}>
             <Save className="w-4 h-4" /> {saving ? "Đang lưu…" : "Lưu tài liệu"}
+          </button>
+          <button type="button" className="docstudio-btn-ghost" onClick={handleDuplicate} disabled={duplicating}>
+            <Copy className="w-4 h-4" /> {duplicating ? "Đang nhân bản…" : "Nhân bản tài liệu"}
           </button>
           <button type="button" className="docstudio-btn-ghost" onClick={convertIntoCurrent}>
             <ArrowLeftRight className="w-4 h-4" /> Chuyển đổi từ {mode === "html" ? "JSON" : "HTML/CSS"}
           </button>
-          <button type="button" className="docstudio-btn-ghost" onClick={goList}>
+          <button type="button" className="docstudio-btn-ghost" onClick={leaveEditor}>
             <ArrowLeft className="w-4 h-4" /> Về danh sách tài liệu
           </button>
         </aside>
@@ -729,6 +900,15 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
           <input id="docstudio-img-src" className="docstudio-input" value={toolForm.src}
             onChange={(e) => setToolForm((f) => ({ ...f, src: e.target.value }))}
             placeholder="https://… hoặc /images/…" />
+          <input ref={imageFileRef} type="file" accept="image/*" className="hidden"
+            onChange={(e) => { handleImageFile(e.target.files?.[0]); e.target.value = ""; }} />
+          <button type="button" className="docstudio-btn-ghost" onClick={() => imageFileRef.current?.click()}>
+            <Upload className="w-4 h-4" /> Tải ảnh từ máy…
+          </button>
+          <p className="docstudio-flyout-hint">
+            Ảnh tải từ máy được nhúng thẳng vào tài liệu (tối đa 600 KB — mã nguồn tài liệu giới hạn lưu 1 MB).
+          </p>
+          {imageError && <p className="docstudio-img-error" role="alert">{imageError}</p>}
           {docType === "powerpoint" && mode === "json" && (
             <>
               <label className="docstudio-label" htmlFor="docstudio-img-title">Tiêu đề slide</label>
@@ -791,10 +971,10 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     <div className={`docstudio-screen ${docType === "powerpoint" ? "is-powerpoint" : "is-word"}`} style={themeStyle}>
       {/* ── Thanh trên cùng ─────────────────────────────────────────── */}
       <header className="docstudio-topbar">
-        <button type="button" onClick={goList} className="docstudio-ghost-btn" title="Quay lại danh sách tài liệu">
+        <button type="button" onClick={leaveEditor} className="docstudio-ghost-btn" title="Quay lại danh sách tài liệu">
           <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Quay lại</span>
         </button>
-        <button type="button" onClick={goList} className="docstudio-logo" title="Về danh sách tài liệu">
+        <button type="button" onClick={leaveEditor} className="docstudio-logo" title="Về danh sách tài liệu">
           <BookOpen className="w-5 h-5" />
         </button>
         <span className="docstudio-topbar-sep hidden sm:block" />
@@ -805,13 +985,19 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         </div>
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          <span className={`docstudio-save-state ${isDirty ? "is-dirty" : "is-saved"}`}>
-            {saving ? "Đang lưu…" : isDirty ? "● Chưa lưu" : "✓ Đã lưu"}
+          <span className={`docstudio-save-state ${isDirty || saveFailed ? "is-dirty" : "is-saved"}`}
+            title={saveFailed ? "Lần lưu gần nhất thất bại — kiểm tra kết nối mạng rồi bấm Lưu lại" : undefined}>
+            {saving ? "Đang lưu…"
+              : saveFailed && isDirty ? "⚠ Chưa lưu được"
+              : isDirty ? "● Chưa lưu"
+              : lastSaved?.auto
+                ? `✓ Đã lưu tự động ${lastSaved.at.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+                : "✓ Đã lưu"}
           </span>
           <button type="button" className="docstudio-ai-btn" onClick={() => setAiOpen(true)}>
             <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">Trợ lý AI</span>
           </button>
-          <button type="button" className="docstudio-ghost-btn" onClick={goList}>
+          <button type="button" className="docstudio-ghost-btn" onClick={leaveEditor}>
             <FolderOpen className="w-4 h-4" /> <span className="hidden md:inline">Tài liệu của tôi</span>
           </button>
           <span className="docstudio-avatar" title="Giáo viên"><UserRound className="w-4 h-4" /></span>
@@ -862,6 +1048,9 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                   ))}
                 </div>
                 <span className="flex-1" />
+                <button type="button" className="docstudio-tool-btn" onClick={() => editorRef.current?.openSearch()} title="Tìm & thay thế (Ctrl+F / Ctrl+H)">
+                  <Search className="w-3.5 h-3.5" /> Tìm
+                </button>
                 <button type="button" className="docstudio-tool-btn" onClick={handleFormat} title="Định dạng mã nguồn">
                   <Wand2 className="w-3.5 h-3.5" /> Format
                 </button>
@@ -879,6 +1068,12 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                   {applyErrors.length ? "Mã nguồn có lỗi" : "Mã nguồn hợp lệ"}
                 </span>
                 {appliedStale && !applyErrors.length && <span className="docstudio-stale">• Chưa áp dụng</span>}
+                {docStats && (
+                  <span className="docstudio-stats">
+                    {docStats.kind === "presentation" ? `${docStats.count} slide` : `${docStats.count} khối`}
+                    {` · ≈ ${docStats.words} từ · nháp ${draftKb >= 100 ? Math.round(draftKb) : draftKb.toFixed(1)} KB`}
+                  </span>
+                )}
                 <span className="flex-1" />
                 <button type="button" className="docstudio-convert-btn" onClick={convertIntoCurrent}
                   title={`Chuyển đổi nội dung từ ${mode === "html" ? "JSON" : "HTML/CSS"} sang chế độ hiện tại`}>
@@ -936,6 +1131,12 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                 <button type="button" className="docstudio-zoom-btn" aria-label="Toàn màn hình" onClick={toggleFullscreen}>
                   <Expand className="w-4 h-4" />
                 </button>
+                {(docType === "word" || mode === "html") && (
+                  <button type="button" className="docstudio-zoom-btn" aria-label="In / lưu PDF" onClick={handlePrintPreview}
+                    title="In hoặc lưu PDF qua hộp thoại in của trình duyệt">
+                    <Printer className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </section>
           </div>
@@ -1044,7 +1245,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
             ))}
           </div>
           <div className="mt-4 flex flex-wrap justify-end gap-2">
-            <button type="button" onClick={() => { setAiOpen(false); navigate("/dashboard/documents/templates"); }}
+            <button type="button" onClick={() => { setAiOpen(false); leaveTo("/dashboard/documents/templates"); }}
               className="px-4 py-2 rounded-full text-sm font-semibold border border-ink/15 bg-white text-ink">
               Mở thư viện mẫu
             </button>

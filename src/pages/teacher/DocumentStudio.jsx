@@ -112,6 +112,12 @@ export default function DocumentStudio({ showToast }) {
         mode: result.mode,
         source: result.source,
       });
+      // File .pptx mang theo tỷ lệ slide gốc — tài liệu không có trường
+      // tỷ lệ riêng nên chuyển qua sessionStorage cho editor đọc một
+      // lần khi mở (đúng mẫu nháp phiên của AI Studio).
+      if (result.ratio) {
+        try { sessionStorage.setItem(`docstudio.ratio.${doc.id}`, result.ratio); } catch { /* bỏ qua */ }
+      }
       setUploadOpen(false);
       showToast?.("Đã nhập tài liệu từ file", "success");
       navigate(`/dashboard/documents/${doc.id}`);
