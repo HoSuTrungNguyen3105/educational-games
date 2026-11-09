@@ -289,7 +289,7 @@ export default function AiExplainSheet({
           >
             <Input
               value={followUp}
-              onChange={(e) => setFollowUp(e.target.value)}
+              onChange={setFollowUp}
               maxLength={500}
               disabled={busy || followUpsLeft <= 0}
               enterKeyHint="send"
