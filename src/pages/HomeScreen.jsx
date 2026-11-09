@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { gameService, walletService, notificationService, ticketService } from '../services/api.js'
 import { taskService } from '../services/taskService.js'
-import { conversationApi } from '../services/conversationApi.js'
 import { socket } from '../socket/socket.js'
 import { SOCKET_EVENTS } from '../socket/socket.events.js'
 import { getLevelProgress } from '../lib/utils.js'
 import { hashString, metaForSubject, subjectLabel, tintFor } from '../lib/subjectMeta.js'
 import GqGameCard from '../components/GqGameCard.jsx'
+import BottomNav, { peekHomeScrollIntent, takeHomeScrollIntent } from '../components/BottomNav.jsx'
+import useChatUnread from '../hooks/useChatUnread.js'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
 import { canAccessDashboard } from '../config/roles.js'
@@ -217,14 +218,9 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
 
-const BOTTOM_NAV = (userAuth) => [
-  { key: "home", icon: House, label: "Trang chủ", type: "path", path: "/", show: true },
-  { key: "categories", icon: LayoutGrid, label: "Danh mục", type: "path", path: "/categories", show: true },
-  { key: "games", icon: Gamepad2, label: "Game", type: "scroll", target: "games-section", show: true },
-  { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: !!userAuth?.user },
-  { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
-  { key: "profile", icon: IconUser, label: "Cá nhân", type: "path", path: "/profile", show: !!userAuth?.user },
-];
+// Danh sách mục của thanh điều hướng dưới cùng đã chuyển sang component
+// dùng chung src/components/BottomNav.jsx (BOTTOM_NAV_ITEMS) — trang Danh
+// mục (/categories) dùng cùng một bản, không khai báo lại ở đây nữa.
 
 export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUserRegister, onUserLogout }) {
   // ─── STATE / LOGIC (giữ nguyên từ bản cũ) ───
@@ -280,7 +276,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
    * Gộp chung MỘT effect: tách làm hai thì effect ghi dễ chạy trước khi các hàng
    * ngang kịp nhận scrollLeft, xoá mất vị trí vừa khôi phục. */
   useEffect(() => {
-    const saved = readScrollMemo();
+    // Có "ý định cuộn" từ thanh điều hướng ở trang khác (vd bấm mục Game
+    // ở trang Danh mục) thì ý định đó thắng: không khôi phục vị trí cũ,
+    // effect riêng bên dưới sẽ cuộn tới section được yêu cầu.
+    const saved = peekHomeScrollIntent() ? null : readScrollMemo();
     // Số hàng từng cuộn ngang (scrollLeft > 0) — phải khôi phục đủ mới xong.
     const targets = Object.entries(saved?.rails || {}).filter(([, x]) => x > 0);
     let restoring = targets.length > 0 || (saved?.y || 0) > 0;
@@ -617,36 +616,11 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // Huy hiệu tin nhắn chưa đọc ở mục "Tin nhắn" (thanh điều hướng): tổng
-  // unread của mọi cuộc trò chuyện. Nạp khi đăng nhập/thay user; có tin mới
-  // qua socket thì nạp lại ngay (debounce như ConversationListScreen) để số
-  // nhảy tức thì; mở mục Tin nhắn thì về 0 (handleNavClick bên dưới).
-  const [chatUnread, setChatUnread] = useState(0);
-  const loadChatUnread = useCallback(async () => {
-    if (!userAuth?.user) { setChatUnread(0); return; }
-    try {
-      const convs = await conversationApi.list();
-      setChatUnread((convs || []).reduce((sum, c) => sum + (c.unread || 0), 0));
-    } catch { /* giữ số cũ — huy hiệu là thông tin phụ */ }
-  }, [userAuth?.user]);
-
-  useEffect(() => { loadChatUnread(); }, [loadChatUnread]);
-
-  useEffect(() => {
-    if (!userAuth?.user) return;
-    let timer;
-    const onChatMessage = (msg) => {
-      // Tin mình gửi đi (echo về room của mình) không tính là chưa đọc.
-      if (!msg || msg.error || msg.senderId === userAuth.user.id) return;
-      clearTimeout(timer);
-      timer = setTimeout(loadChatUnread, 300);
-    };
-    socket.on(SOCKET_EVENTS.CHAT_MESSAGE, onChatMessage);
-    return () => {
-      clearTimeout(timer);
-      socket.off(SOCKET_EVENTS.CHAT_MESSAGE, onChatMessage);
-    };
-  }, [userAuth?.user, loadChatUnread]);
+  // Huy hiệu tin nhắn chưa đọc ở mục "Tin nhắn" (thanh điều hướng + sheet
+  // menu): logic nạp/socket đã tách sang hook dùng chung useChatUnread —
+  // trang Danh mục dùng cùng hook này cho thanh điều hướng của nó.
+  // Mở mục Tin nhắn thì huy hiệu về 0 (resetChatUnread trong handleNavClick).
+  const { chatUnread, resetChatUnread } = useChatUnread(userAuth);
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -733,12 +707,35 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     }, 60);
   };
 
+  /* Ý định cuộn ghi bởi BottomNav ở trang khác (mục dạng "scroll", vd
+   * bấm "Game" ở trang Danh mục → về trang chủ rồi cuộn tới section
+   * game). Section game chỉ xuất hiện sau khi danh sách game tải xong
+   * nên thử lại vài lần; quá số lần thì scrollTo tự lùi về đầu trang. */
+  useEffect(() => {
+    const target = takeHomeScrollIntent();
+    if (!target) return;
+    let tries = 0;
+    let timer = 0;
+    const attempt = () => {
+      tries += 1;
+      if (document.getElementById(target) || tries >= 12) {
+        scrollTo(target);
+        return;
+      }
+      timer = window.setTimeout(attempt, 250);
+    };
+    timer = window.setTimeout(attempt, 120);
+    return () => window.clearTimeout(timer);
+    // Chỉ chạy một lần khi trang chủ dựng lên — scrollTo là hàm nội bộ ổn định theo mục đích này.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleNavClick = (item) => {
     if (item.type === "login") return onUserLogin();
     if (item.type === "scroll") return scrollTo(item.target);
     // Mở mục Tin nhắn → huy hiệu về 0 ngay (danh sách hội thoại tự đánh
     // dấu đã đọc khi mở từng cuộc trò chuyện).
-    if (item.key === "chat") setChatUnread(0);
+    if (item.key === "chat") resetChatUnread();
     if (item.path) return goTo(item.path);
   };
 
@@ -1007,7 +1004,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 {soundOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
               </button>
               {/* Hồ sơ — trước đây chỉ là.icon ❤️ nên không ai biết bấm đi đâu.
-                  Màn hẹp ẩn vì BOTTOM_NAV đã có mục "Cá nhân". */}
+                  Màn hẹp ẩn vì BottomNav đã có mục "Cá nhân". */}
               {userAuth?.user && (
                 <button
                   className="gq-kidchip"
@@ -1266,41 +1263,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         )}
       </div>
 
-      {/* ─────────── BOTTOM NAV (mobile) ─────────── */}
-      <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white shadow-[0_-2px_14px_rgba(29,43,82,.1)]"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        aria-label="Điều hướng chính"
-      >
-        <div className="flex justify-around items-center gap-1 px-2 h-[68px]">
-          {BOTTOM_NAV(userAuth).filter((i) => i.show).map((item) => {
-            const Icon = item.icon;
-            const isActive = item.key === "home";
-            return (
-              <button
-                key={item.key}
-                onClick={() => handleNavClick(item)}
-                aria-current={isActive ? "page" : undefined}
-                className="flex flex-1 min-w-0 flex-col items-center gap-1 px-1 py-2.5 rounded-2xl transition-colors"
-                style={{
-                  color: isActive ? "#ef7d18" : "#7d89ab",
-                  background: isActive ? "rgba(247, 171, 46, 0.14)" : "transparent",
-                }}
-              >
-                <span className="relative">
-                  <Icon className="w-6 h-6" strokeWidth={isActive ? 2.6 : 2} />
-                  {item.key === "chat" && chatUnread > 0 && (
-                    <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                      {chatUnread > 99 ? "99+" : chatUnread}
-                    </span>
-                  )}
-                </span>
-                <span className="max-w-full truncate text-[10px] font-extrabold leading-none">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {/* ─────────── BOTTOM NAV (mobile) — component dùng chung với trang
+          Danh mục; trang chủ truyền handleNavClick sẵn có nên hành vi
+          (cuộn section, huy hiệu tin nhắn…) giữ nguyên 100%. ─────────── */}
+      <BottomNav userAuth={userAuth} activeKey="home" chatUnread={chatUnread} onItemClick={handleNavClick} />
 
       <EnterCodeModal open={showCodeModal} onClose={() => setShowCodeModal(false)} onFound={onSelectGame} />
       <SupportRequestWidget userAuth={userAuth} onRequireLogin={onUserLogin} />

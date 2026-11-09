@@ -14,6 +14,8 @@ import { navigate } from "../lib/router.js";
 import { gameThumbnail } from "../lib/gameThumbnail.js";
 import { hashString, metaForSubject, subjectLabel, tintFor, topicBaseName } from "../lib/subjectMeta.js";
 import GqGameCard from "../components/GqGameCard.jsx";
+import BottomNav from "../components/BottomNav.jsx";
+import useChatUnread from "../hooks/useChatUnread.js";
 import { EmptyState, ErrorState, Loader } from "../components/ui";
 import "./home-gq.css";
 import "./category-gq.css";
@@ -233,6 +235,10 @@ export default function CategoryPage({ onSelectGame, userAuth }) {
   const templateOf = (game) =>
     templates.find((x) => x._id === (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid));
 
+  // Huy hiệu tin nhắn chưa đọc cho thanh điều hướng dưới cùng — cùng hook
+  // dùng chung với trang chủ (useChatUnread), không nạp riêng ở đây.
+  const { chatUnread } = useChatUnread(userAuth);
+
   return (
     <div className="gq-home cat-page">
       <div className="cat-wrap">
@@ -362,6 +368,13 @@ export default function CategoryPage({ onSelectGame, userAuth }) {
           </div>
         )}
       </div>
+
+      {/* Thanh điều hướng dưới cùng DÙNG CHUNG với trang chủ (component
+          BottomNav) — trước đây trang này không có nên mất đường về;
+          mục "Danh mục" active, các mục path đi thẳng, mục "Game" ghi
+          ý định cuộn rồi về trang chủ (xem BottomNav.jsx). Hiện ở cả
+          màn con liệt kê game theo chủ đề vì cùng một cây render này. */}
+      <BottomNav userAuth={userAuth} activeKey="categories" chatUnread={chatUnread} />
     </div>
   );
 }
