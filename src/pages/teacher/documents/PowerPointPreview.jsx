@@ -9,7 +9,9 @@ import { SLIDE_TYPE_OPTIONS } from "../../../lib/documents/slideOps.js";
 // PowerPointPreview — xem trước bài PowerPoint:
 //   • Chế độ JSON: render từng slide theo `type` từ mô hình trung gian —
 //     1 slide lớn (16:9 hoặc 4:3) + dải thumbnail + nút trước/sau/chọn
-//     slide. Đợt 2 thêm: TỰ VỪA KHUNG (slide tự thu nhỏ theo bề rộng
+//     slide. Hai KIỂU XEM: "Từng slide" (mặc định, như mô tả trên) và
+//     "Cuộn xuống" — mọi slide xếp dọc trong một khung cuộn, bấm vào
+//     slide nào thì slide đó thành slide hiện tại. Đợt 2 thêm: TỰ VỪA KHUNG (slide tự thu nhỏ theo bề rộng
 //     khung, zoom +/- nhân thêm trên mức đó) và THAO TÁC SLIDE BẰNG NÚT
 //     (thêm/nhân bản/xoá/lên/xuống) — các nút chỉ HIỆN yêu cầu qua
 //     onSlideOp, phía editor mới là nơi sửa bản nháp JSON thật.
@@ -260,6 +262,10 @@ export default function PowerPointPreview({
   const [innerIndex, setInnerIndex] = useState(0);
   const [newSlideType, setNewSlideType] = useState("content");
   const [slidePulse, setSlidePulse] = useState(false);
+  // Kiểu xem trước slide: "single" = 1 slide lớn + thumbnail (mặc định,
+  // như cũ); "scroll" = mọi slide xếp dọc trong một khung cuộn.
+  const [viewMode, setViewMode] = useState("single");
+  const slideRefs = useRef([]);
   const stageRef = useRef(null);
   const htmlScrollRef = useRef(null);
   const htmlFrameRef = useRef(null);
@@ -280,6 +286,13 @@ export default function PowerPointPreview({
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reveal?.token]);
+
+  // Chế độ cuộn: slide hiện tại thay đổi từ nơi khác (thumbnail, nút
+  // trước/sau, click trong editor…) → cuộn slide đó vào tầm nhìn.
+  useEffect(() => {
+    if (viewMode !== "scroll") return;
+    slideRefs.current[safeIndex]?.scrollIntoView({ block: "nearest" });
+  }, [viewMode, safeIndex]);
 
   // Chế độ HTML: không có model slide (bodyHtml được truyền) → tài liệu cuộn.
   if (!model) {
@@ -304,14 +317,57 @@ export default function PowerPointPreview({
   const stageH = SLIDE_W * (ratio === "4:3" ? 3 / 4 : 9 / 16);
   const thumbScale = 168 / SLIDE_W;
 
+  const segBtn = (active) => `px-3 py-1 rounded-full text-xs font-body font-semibold transition ${active ? "bg-white text-ink shadow" : "text-ink/50 hover:text-ink"}`;
+
   return (
     <div className="h-full flex flex-col bg-[#ece7db]">
-      <div ref={stageRef} className="flex-1 overflow-auto p-4">
-        <div className={`mx-auto docstudio-slide-stage ${slidePulse ? "is-reveal-pulse" : ""}`} style={{ width: Math.round(SLIDE_W * effZoom), height: Math.round(stageH * effZoom) }}>
-          <div style={{ transform: `scale(${effZoom})`, transformOrigin: "top left", width: SLIDE_W }}>
-            <SlideView slide={slide} ratio={ratio} theme={theme} />
-          </div>
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-paper2 border-b border-ink/10">
+        <span className="font-body text-xs font-semibold text-ink/60">Kiểu xem:</span>
+        <div className="flex gap-1 p-0.5 rounded-full bg-ink/5" role="tablist" aria-label="Chế độ xem trước slide">
+          <button type="button" role="tab" aria-selected={viewMode === "single"}
+            className={segBtn(viewMode === "single")} onClick={() => setViewMode("single")}>
+            Từng slide
+          </button>
+          <button type="button" role="tab" aria-selected={viewMode === "scroll"}
+            className={segBtn(viewMode === "scroll")} onClick={() => setViewMode("scroll")}>
+            Cuộn xuống
+          </button>
         </div>
+      </div>
+      <div ref={stageRef} className="flex-1 overflow-auto p-4">
+        {viewMode === "scroll" ? (
+          <div className="flex flex-col items-center gap-7 pt-6">
+            {slides.length ? slides.map((s, i) => (
+              <div key={i}
+                ref={(el) => { slideRefs.current[i] = el; }}
+                onClick={() => setIndex(i)}
+                title={`Slide ${i + 1}: ${s.title || s.type}`}
+                className={`relative shrink-0 cursor-pointer ${slidePulse && i === safeIndex ? "docstudio-slide-stage is-reveal-pulse" : ""}`}
+                style={{
+                  width: Math.round(SLIDE_W * effZoom), height: Math.round(stageH * effZoom),
+                  boxShadow: i === safeIndex ? `0 0 0 3px ${theme?.accent || "#2563eb"}` : "0 0 0 3px transparent",
+                  borderRadius: 8,
+                }}>
+                <div style={{ transform: `scale(${effZoom})`, transformOrigin: "top left", width: SLIDE_W, pointerEvents: "none" }}>
+                  <SlideView slide={s} ratio={ratio} theme={theme} />
+                </div>
+                <span className="absolute -top-6 left-0 font-body text-xs font-semibold text-ink/50">Slide {i + 1}</span>
+              </div>
+            )) : (
+              <div style={{ width: Math.round(SLIDE_W * effZoom), height: Math.round(stageH * effZoom) }}>
+                <div style={{ transform: `scale(${effZoom})`, transformOrigin: "top left", width: SLIDE_W }}>
+                  <SlideView slide={undefined} ratio={ratio} theme={theme} />
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className={`mx-auto docstudio-slide-stage ${slidePulse ? "is-reveal-pulse" : ""}`} style={{ width: Math.round(SLIDE_W * effZoom), height: Math.round(stageH * effZoom) }}>
+            <div style={{ transform: `scale(${effZoom})`, transformOrigin: "top left", width: SLIDE_W }}>
+              <SlideView slide={slide} ratio={ratio} theme={theme} />
+            </div>
+          </div>
+        )}
       </div>
       <div className="border-t border-ink/10 bg-paper2 px-3 py-2 flex flex-col gap-2">
         {editable && (

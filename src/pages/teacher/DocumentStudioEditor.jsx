@@ -791,6 +791,9 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     <div className={`docstudio-screen ${docType === "powerpoint" ? "is-powerpoint" : "is-word"}`} style={themeStyle}>
       {/* ── Thanh trên cùng ─────────────────────────────────────────── */}
       <header className="docstudio-topbar">
+        <button type="button" onClick={goList} className="docstudio-ghost-btn" title="Quay lại danh sách tài liệu">
+          <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Quay lại</span>
+        </button>
         <button type="button" onClick={goList} className="docstudio-logo" title="Về danh sách tài liệu">
           <BookOpen className="w-5 h-5" />
         </button>
