@@ -95,6 +95,7 @@ const AssignmentTake = lazy(() => import("./pages/user/AssignmentTake.jsx"));
 const LoginScreen = lazy(() => import("./pages/LoginScreen.jsx"));
 const UserLoginScreen = lazy(() => import("./pages/user/UserLoginScreen.jsx"));
 const UserRegisterScreen = lazy(() => import("./pages/user/UserRegisterScreen.jsx"));
+const CategoryPage = lazy(() => import("./pages/CategoryPage.jsx"));
 const LessonListPage = lazy(() => import("./pages/user/LessonListPage.jsx"));
 const LessonPlayPage = lazy(() => import("./pages/user/LessonPlayPage.jsx"));
 const MathAdventurePage = lazy(() => import("./pages/MathAdventurePage.jsx"));
@@ -311,6 +312,13 @@ function App() {
     // Bài học AI Studio (đợt 3): danh sách trong RouteShell như các trang
     // học sinh khác; trang học dùng LessonPlayer toàn màn hình (tự có
     // header + nút Đóng) nên không bọc RouteShell để tránh hai thanh đầu.
+    // Trang Danh mục: duyệt môn → chủ đề → game, chơi qua selectGame
+    // dùng chung với trang chủ. RouteShell mặc định có "← Về trang chủ".
+    categories: () => (
+      <RouteShell toast={toast}>
+        <CategoryPage onSelectGame={selectGame} userAuth={userAuth} />
+      </RouteShell>
+    ),
     lessons: () => (
       <RouteShell toast={toast} showBack={false}>
         <LessonListPage userAuth={userAuth} onBack={() => navigate("/")} />

@@ -1,0 +1,256 @@
+/* =====================================================================
+   category-gq.css — trang Danh mục (/categories)
+   Theo ảnh mẫu "Khám phá danh mục": nền kem, cột môn bên trái, lưới thẻ
+   chủ đề bên phải. Biến màu lấy từ .gq-home (home-gq.css) để đồng bộ
+   với trang chủ; thẻ game dùng lại .gq-card/.gq-grid của home-gq.css.
+   ===================================================================== */
+
+.cat-page {
+  /* .gq-home đặt min-height/background — trang này cuộn theo cửa sổ. */
+  padding-bottom: 40px;
+}
+
+.cat-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 6px 14px 0;
+}
+
+.cat-head { margin: 4px 0 12px; }
+.cat-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--gq-ink);
+  line-height: 1.2;
+}
+.cat-sub {
+  margin-top: 2px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--gq-mute);
+}
+
+/* ─────────── Ô TÌM KIẾM ─────────── */
+.cat-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 11px 18px;
+  box-shadow: var(--gq-shadow);
+  color: var(--gq-mute);
+  margin-bottom: 16px;
+  cursor: text;
+}
+.cat-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--gq-ink);
+}
+.cat-search input::placeholder { color: #a7b3c6; font-weight: 600; }
+.cat-search__x {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--gq-tile);
+  color: var(--gq-mute);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+/* ─────────── BỐ CỤC HAI VÙNG ─────────── */
+.cat-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Cột môn trái: nền kem đậm hơn nền trang, mục chọn là pill trắng. */
+.cat-rail {
+  flex: 0 0 106px;
+  width: 106px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #f6ead0;
+  border-radius: 18px;
+  padding: 10px 6px;
+  position: sticky;
+  top: 10px;
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.cat-rail::-webkit-scrollbar { display: none; }
+.cat-rail__item {
+  border: 0;
+  background: transparent;
+  border-radius: 12px;
+  padding: 10px 10px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--gq-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.cat-rail__item--on {
+  background: #fff;
+  color: #2f7fd6;
+  font-weight: 800;
+  box-shadow: 0 3px 10px rgba(29, 43, 82, 0.1);
+}
+
+.cat-main { flex: 1; min-width: 0; }
+.cat-main__title {
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--gq-ink);
+  margin: 2px 0 12px;
+}
+
+/* Banner bài học của môn (chỉ khi có bài đã xuất bản thật). */
+.cat-lessons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  border-radius: 16px;
+  background: #e8f3fe;
+  color: var(--gq-ink);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.15s ease;
+}
+.cat-lessons:active { transform: scale(0.99); }
+.cat-lessons__ico {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #2f7fd6;
+  color: #fff;
+  flex: 0 0 auto;
+}
+.cat-lessons__txt { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 800; }
+.cat-lessons__go { font-size: 12.5px; font-weight: 800; color: #2f7fd6; white-space: nowrap; }
+
+/* ─────────── LƯỚI THẺ CHỦ ĐỀ ─────────── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.cat-topic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  background: #fff;
+  border: 0;
+  border-radius: 20px;
+  padding: 20px 10px 16px;
+  box-shadow: var(--gq-shadow);
+  font: inherit;
+  color: var(--gq-ink);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+@media (hover: hover) {
+  .cat-topic:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(29, 43, 82, 0.12); }
+}
+.cat-topic:active { transform: scale(0.98); }
+.cat-topic__ring {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 999px;
+  /* Vòng pastel + icon nét màu chàm đậm như ảnh mẫu (icon trắng trên
+     pastel nhạt sẽ chìm). */
+  color: rgba(29, 43, 82, 0.8);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+.cat-topic__name {
+  font-size: 14.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  /* Tên chủ đề dài (vd "Các vùng miền Việt Nam") tối đa 2 dòng. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cat-topic__count {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--gq-mute);
+  text-align: center;
+}
+
+/* ─────────── MÀN CON: GAME CỦA CHỦ ĐỀ ─────────── */
+.cat-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  background: #fff;
+  color: #2f7fd6;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 8px 14px 8px 8px;
+  box-shadow: var(--gq-shadow);
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+.cat-topic-title {
+  font-size: 21px;
+  font-weight: 900;
+  color: var(--gq-ink);
+  line-height: 1.25;
+}
+.cat-topic-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gq-mute);
+  margin: 2px 0 6px;
+}
+.cat-games { padding-left: 0; padding-right: 0; }
+
+/* ─────────── MÀN RỘNG ─────────── */
+@media (min-width: 768px) {
+  .cat-wrap { padding: 10px 22px 0; }
+  .cat-title { font-size: 30px; }
+  .cat-sub { font-size: 15px; }
+  .cat-layout { gap: 20px; }
+  .cat-rail { flex-basis: 208px; width: 208px; padding: 14px 10px; border-radius: 22px; }
+  .cat-rail__item { font-size: 15px; padding: 12px 14px; }
+  .cat-main__title { font-size: 24px; }
+  .cat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .cat-topic { padding: 26px 14px 20px; }
+  .cat-topic__ring { width: 72px; height: 72px; }
+  .cat-topic__name { font-size: 16px; }
+}
+
+@media (min-width: 1100px) {
+  .cat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

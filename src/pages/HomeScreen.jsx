@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { gameService, walletService, notificationService, ticketService } from '../services/api.js'
 import { taskService } from '../services/taskService.js'
 import { conversationApi } from '../services/conversationApi.js'
 import { socket } from '../socket/socket.js'
 import { SOCKET_EVENTS } from '../socket/socket.events.js'
 import { getLevelProgress } from '../lib/utils.js'
+import { hashString, metaForSubject, subjectLabel, tintFor } from '../lib/subjectMeta.js'
+import GqGameCard from '../components/GqGameCard.jsx'
 import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
 import { canAccessDashboard } from '../config/roles.js'
 import './home-gq.css'
-import { EmptyState, ErrorState, IconChevronDown, IconFile, IconLogout, IconNotification, IconTrash, IconUser, Loader } from '../components/ui';
+import { EmptyState, ErrorState, IconFile, IconLogout, IconNotification, IconTrash, IconUser, Loader } from '../components/ui';
 import TaskIcon from '../components/tasks/TaskIcon.jsx';
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import AiChatWidget from '../components/ai/AiChatWidget.jsx'
@@ -45,7 +47,7 @@ import {
   Send,
   RefreshCw,
   LayoutDashboard,
-  Ellipsis,
+  LayoutGrid,
   Settings,
   Bell,
   Calculator,
@@ -84,8 +86,7 @@ import { subscribeWallet } from "../lib/coinWallet.js";
 import { clearAppCaches } from "../lib/appUpdate.js";
 
 
-const NO_SUBJECT = "Chung";
-const subjectLabel = (subject) => (subject && subject.trim()) || NO_SUBJECT;
+
 const PREVIEW_GAMES = 8;
 
 /* Badge trên header chỉ chứa vài chữ số nên số lớn phải rút gọn: 1200 → 1,2k. */
@@ -94,14 +95,6 @@ const shortCount = (n) => {
   if (v < 1000) return String(v);
   return `${(v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(".", ",")}k`;
 };
-
-/* Màu nền ô tròn của mỗi game. Băm theo tên game nên màu giữ nguyên giữa các
-   lần render và giữa các lần F5. */
-const CARD_TINTS = [
-  "#8fd3f4", "#ffc9a3", "#c2e9c8", "#dcc7f5",
-  "#ffe08a", "#bfe6f5", "#f9bcd6", "#cfe0ff",
-];
-const tintFor = (key = "") => CARD_TINTS[hashString(key) % CARD_TINTS.length];
 
 // Giá trị `activeSubject` đặc biệt: xem nhóm game offline thay vì môn học.
 // Game offline. Nguon su that: src/games/src/manifest.js (sinh boi scripts/build-offline-games.mjs)
@@ -178,43 +171,12 @@ const SCHOOL_RPG_GAME = {
   tint: "#3FA97A",
 };
 
-// ─── Card môn học trên hàng ngang ────────────────────────────────────
-// Mỗi môn lấy từ API (`games[].subject`) nên tên tuỳ ý. Bảng dưới khớp
-// theo từ khoá; môn không khớp thì nhận màu theo thứ tự băm, và câu mô
-// tả luôn nhắc lại tên môn nên không bao giờ hiện sai nội dung.
-// Bảng màu + nhóm tuổi gợi ý theo môn học.
-// `kind` quyết định badge trên ô game (Học/Chơi); `age` là pill "2–8 tuổi".
-const SUBJECT_META = [
-  { keys: ["toan", "math", "so"], kind: "learn", age: "2–8 tuổi", icon: "🧮", desc: "Rèn luyện tư duy và kỹ năng tính toán" },
-  { keys: ["tieng viet", "ngu van", "van"], kind: "learn", age: "3–7 tuổi", icon: "📖", desc: "Luyện đọc, viết và mở rộng vốn từ" },
-  { keys: ["tieng anh", "english"], kind: "learn", age: "4–8 tuổi", icon: "🗣️", desc: "Luyện nói và từ vựng tiếng Anh" },
-  { keys: ["khoa hoc", "sinh", "hoa", "vat ly", "science"], kind: "learn", age: "5–8 tuổi", icon: "🔬", desc: "Khám phá thế giới xung quanh" },
-  { keys: ["lich su", "dia ly", "history", "geography"], kind: "learn", age: "6–8 tuổi", icon: "🌍", desc: "Khám phá về hóa và các cùng miền" },
-  { keys: ["tin hoc", "lap trinh", "computer"], kind: "play", age: "6–8 tuổi", icon: "💻", desc: "Lập trình và tư duy máy tính" },
-  { keys: ["the duc", "pe"], kind: "play", age: "5–8 tuổi", icon: "⚽", desc: "Vận động và rèn luyện sức khoẻ" },
-  { keys: ["am nhac", "music"], kind: "play", age: "4–8 tuổi", icon: "🎵", desc: "Khám phá thế giới âm nhạc" },
-];
+// Metadata môn học (metaForSubject / tintFor / subjectLabel / hashString)
+// đã tách sang src/lib/subjectMeta.js để trang Danh mục dùng chung.
 
-// Băm chuỗi về số nguyên để màu ổn định giữa các lần render.
-function hashString(s = "") {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (s.charCodeAt(i) + ((h << 5) - h)) | 0;
-  return Math.abs(h);
-}
-
-function metaForSubject(subject = "") {
-  const slug = subject.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  const hit = SUBJECT_META.find((m) => m.keys.some((k) => slug.includes(k)));
-  if (hit) return hit;
-  return { ...SUBJECT_META[hashString(subject) % SUBJECT_META.length], desc: `Thử thách môn ${subject} với những câu hỏi thú vị` };
-}
-
-// Menu chính hiện ngang trên header (desktop).
-// KHÔNG phải "tất cả mục" — chỉ những mục người dùng vào thường xuyên.
-// Phần còn lại nằm trong menu "Thêm" (dropdown) để header không bị chật.
-
-// Mọi mục chưa nằm trong hàng tab → dồn vào popover "Thêm" trên header.
-// (Thú cưng không ở đây: nó có chip riêng ngay đầu hàng tab.)
+// Danh sách mục đầy đủ cho menu ⚙️ (sheet) — hàng tab ngang trên header đã
+// bỏ (2026-11-09, xem ghi chú ở gq-navrow), điều hướng dồn vào sheet này,
+// thanh điều hướng dưới cùng (mobile) và trang Danh mục riêng.
 const MORE_ITEMS = (userAuth) => ([
   { key: "reminders", icon: IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "schedule", icon: CalendarDays, label: "Lịch học", type: "path", path: "/schedule", show: !!userAuth?.user },
@@ -230,9 +192,10 @@ const MORE_ITEMS = (userAuth) => ([
   { key: "profile", icon: IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
 ]);
 
-// Menu đầy đủ (dùng cho dropdown "Thêm" + menu hamburger mobile)
+// Menu đầy đủ (dùng cho mục "Khám phá" trong sheet menu ⚙️)
 const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "home", icon: House, label: "Trang chủ", type: "path", path: "/", show: true },
+  { key: "categories", icon: LayoutGrid, label: "Danh mục", type: "path", path: "/categories", show: true },
   { key: "games", icon: Gamepad2, label: "Game học tập", type: "scroll", target: "games-section", show: true },
   { key: "offline", icon: Sparkles, label: "Thư giãn", type: "scroll", target: "offline-section", show: true },
   { key: "rpg", icon: GraduationCap, label: "Nhập vai", type: "scroll", target: "rpg-section", show: true },
@@ -254,12 +217,9 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
 
-// Số ô tối đa trên hàng điều hướng của header. Vượt quá thì các tab còn lại
-// dồn vào ô "Thêm" (popover trỏ xuống) thay vì kéo dài hàng tab.
-const MAX_HEADER_TABS = 5;
-
 const BOTTOM_NAV = (userAuth) => [
   { key: "home", icon: House, label: "Trang chủ", type: "path", path: "/", show: true },
+  { key: "categories", icon: LayoutGrid, label: "Danh mục", type: "path", path: "/categories", show: true },
   { key: "games", icon: Gamepad2, label: "Game", type: "scroll", target: "games-section", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
@@ -287,11 +247,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     () => selectFeaturedAchievements(achievementItems ?? []),
     [achievementItems]
   );
-  // popover "Thêm" của hàng tab header: vị trí tính theo nút nên phải mở
-  // bằng state riêng (không dùng CSS :hover).
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [morePos, setMorePos] = useState(null);
-  const moreBtnRef = useRef(null);
   const [soundOn, setSoundOn] = useState(() => {
     try { return localStorage.getItem('gq_sound') !== '0'; } catch { return true; }
   });
@@ -758,7 +713,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const goTo = (path) => {
     navigate(path);
     setMenuOpen(false);
-    setMoreOpen(false);
   };
 
   // Cuộn tới section trên trang chủ.
@@ -767,7 +721,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   // Nếu không tìm thấy target, fallback về section Game đề xuất rồi về đầu trang.
   const scrollTo = (id) => {
     setMenuOpen(false);
-    setMoreOpen(false);
     setTimeout(() => {
       let el = document.getElementById(id);
       if (!el && id === "subjects-section") el = document.getElementById("games-section");
@@ -798,56 +751,17 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const moreItems = MORE_ITEMS(userAuth).filter(i => i.show);
   const navItems = SIDEBAR_ITEMS(userAuth).filter(i => i.show);
 
-  /* Hàng tab header: menu đầy đủ + các mục "Thêm" cũ, bỏ trùng key, giữ nguyên
-     thứ tự ưu tiên. Thú cưng có chip riêng nên không nằm trong danh sách. */
+  /* Danh sách điều hướng đầy đủ cho mục "Khám phá" trong sheet ⚙️: menu
+     chính + các mục phụ, bỏ trùng key, giữ nguyên thứ tự ưu tiên. Đây là
+     nơi giữ MỌI điểm đến của hàng tab ngang cũ (đã bỏ khỏi header) để
+     không mất chức năng điều hướng nào. Thú cưng có chip riêng trên
+     header nên không nằm trong danh sách. */
   const seenNavKeys = new Set();
-  const headerNav = [...navItems, ...moreItems].filter((item) => {
+  const sheetNav = [...navItems, ...moreItems].filter((item) => {
     if (seenNavKeys.has(item.key)) return false;
     seenNavKeys.add(item.key);
     return true;
   });
-  const navOverflows = headerNav.length > MAX_HEADER_TABS;
-  const headerTabs = navOverflows ? headerNav.slice(0, MAX_HEADER_TABS - 1) : headerNav;
-  const moreTabs = navOverflows ? headerNav.slice(MAX_HEADER_TABS - 1) : [];
-
-  const toggleMoreNav = () => {
-    if (moreOpen) { setMoreOpen(false); return; }
-    const rect = moreBtnRef.current?.getBoundingClientRect();
-    if (rect) {
-      // `clientWidth` chứ không phải `innerWidth`: position:fixed tính từ
-      // viewport đã trừ thanh cuộn dọc, dùng innerWidth là mũi tên lệch.
-      const vw = document.documentElement.clientWidth;
-      const width = Math.min(252, vw - 20);
-      const center = rect.left + rect.width / 2;
-      const left = Math.max(10, Math.min(center - width / 2, vw - width - 10));
-      setMorePos({
-        top: rect.bottom + 8,
-        left,
-        width,
-        arrow: Math.max(16, Math.min(center - left - 6, width - 22)),
-      });
-    }
-    setMoreOpen(true);
-  };
-
-  // Popover đặt theo toạ độ nút (position: fixed) nên đóng khi trang cuộn hoặc
-  // đổi cỡ cửa sổ — nếu không nó sẽ lơ lửng lệch khỏi nút.
-  useEffect(() => {
-    if (!moreOpen) return;
-    const close = () => setMoreOpen(false);
-    const onPointerDown = (e) => { if (!e.target.closest('.gq-navmore')) close(); };
-    const onKeyDown = (e) => { if (e.key === 'Escape') close(); };
-    document.addEventListener('mousedown', onPointerDown);
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('scroll', close, true);
-    window.addEventListener('resize', close);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('scroll', close, true);
-      window.removeEventListener('resize', close);
-    };
-  }, [moreOpen]);
 
   // Sheet menu ⚙️ đóng bằng ESC như các modal khác của app (trước đây chỉ
   // đóng được bằng nút X hoặc bấm ra ngoài nền).
@@ -914,7 +828,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   // Bảo đảm dữ liệu nạp được ngay khi mở sheet (nếu chưa từng nạp).
   const openMenu = () => {
-    setMoreOpen(false);
     setMenuOpen(true);
     if (!userAuth?.user) return;
     loadNotifications();
@@ -1118,9 +1031,14 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             </div>
           </div>
 
-          {/* Thú cưng + tab điều hướng — trước đây nằm trong sheet ⚙️ */}
-          <nav className="gq-navrow" aria-label="Điều hướng">
-            {userAuth?.user && (
+          {/* Hàng dưới header CHỈ còn chip thú cưng. Thanh tab điều hướng
+              cuộn ngang (gq-navtabs) đã BỎ hẳn theo yêu cầu 2026-11-09:
+              điều hướng danh mục chuyển sang trang Danh mục riêng
+              (/categories, có ở thanh dưới cùng + sheet ⚙️), mọi điểm đến
+              còn lại của hàng tab cũ nằm ở mục "Khám phá" trong sheet ⚙️
+              và thanh điều hướng dưới cùng — không mất điểm đến nào. */}
+          {userAuth?.user && (
+            <nav className="gq-navrow" aria-label="Điều hướng">
               <button className="gq-petchip" onClick={() => goTo("/pet")} title={`${pet.name} · cấp ${pet.level}`}>
                 <PetAvatar size={30} ring={false} />
                 <span className="gq-petchip__txt">
@@ -1128,64 +1046,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   <span className="gq-petchip__sub">Cấp {pet.level} · {moodLabel(pet.mood)}</span>
                 </span>
               </button>
-            )}
-
-            <div className="gq-navtabs" data-rail="navtabs">
-              {headerTabs.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button key={item.key} className="gq-navtab" onClick={() => handleNavClick(item)}>
-                    <Icon aria-hidden="true" />
-                    <span>{item.label}</span>
-                    {item.badge && pendingTaskCount > 0 && (
-                      <span className="gq-navtab__n">{pendingTaskCount}</span>
-                    )}
-                    {item.key === "chat" && chatUnread > 0 && (
-                      <span className="gq-navtab__n">{chatUnread > 99 ? "99+" : chatUnread}</span>
-                    )}
-                  </button>
-                );
-              })}
-
-              {navOverflows && (
-                <div className="gq-navmore" data-open={moreOpen || undefined}>
-                  <button
-                    ref={moreBtnRef}
-                    className="gq-navtab"
-                    onClick={toggleMoreNav}
-                    aria-haspopup="true"
-                    aria-expanded={moreOpen}
-                  >
-                    <Ellipsis aria-hidden="true" />
-                    <span>Thêm</span>
-                    <IconChevronDown className="gq-navtab__chev" aria-hidden="true" />
-                  </button>
-                  {moreOpen && morePos && (
-                    <div className="gq-navpop" style={{ top: morePos.top, left: morePos.left, width: morePos.width }}>
-                      <span className="gq-navpop__arrow" style={{ left: morePos.arrow }} aria-hidden="true" />
-                      <div className="gq-navpop__grid">
-                        {moreTabs.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <button key={item.key} className="gq-navpop__item" onClick={() => handleNavClick(item)}>
-                              <Icon aria-hidden="true" />
-                              <span>{item.label}</span>
-                              {item.badge && pendingTaskCount > 0 && (
-                                <span className="gq-navpop__n">{pendingTaskCount}</span>
-                              )}
-                              {item.key === "chat" && chatUnread > 0 && (
-                                <span className="gq-navpop__n">{chatUnread > 99 ? "99+" : chatUnread}</span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </nav>
+            </nav>
+          )}
         </header>
 
         {/* ─────────── HERO CHÀO BÉ ─────────── */}
@@ -1419,7 +1281,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 key={item.key}
                 onClick={() => handleNavClick(item)}
                 aria-current={isActive ? "page" : undefined}
-                className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-2xl transition-colors"
+                className="flex flex-1 min-w-0 flex-col items-center gap-1 px-1 py-2.5 rounded-2xl transition-colors"
                 style={{
                   color: isActive ? "#ef7d18" : "#7d89ab",
                   background: isActive ? "rgba(247, 171, 46, 0.14)" : "transparent",
@@ -1433,7 +1295,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     </span>
                   )}
                 </span>
-                <span className="text-[11px] font-extrabold leading-none">{item.label}</span>
+                <span className="max-w-full truncate text-[10px] font-extrabold leading-none">{item.label}</span>
               </button>
             );
           })}
@@ -1462,6 +1324,43 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               <button onClick={() => setMenuOpen(false)} className="text-slate-400" aria-label="Đóng"><X className="w-5 h-5" /></button>
             </div>
             <div className="gq-sheet__body">
+              {/* Khám phá — TOÀN BỘ điểm đến điều hướng. Hàng tab ngang trên
+                  header đã bỏ (2026-11-09) nên danh sách này là nơi giữ mọi
+                  mục của hàng tab cũ + popover "Thêm": không mất điểm đến
+                  nào khi dọn header. Bấm mục dạng scroll thì đóng sheet rồi
+                  cuộn tới section ngay trên trang chủ (handleNavClick). */}
+              <p className="px-3 pt-2 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                Khám phá
+              </p>
+              <div className="grid grid-cols-4 gap-1 px-2 pb-1">
+                {sheetNav.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => handleNavClick(item)}
+                      className="relative flex flex-col items-center gap-1 px-1 py-2 rounded-2xl text-slate-600 transition-colors hover:bg-slate-50 active:bg-slate-100"
+                    >
+                      <span className="relative">
+                        <Icon className="w-6 h-6" aria-hidden="true" />
+                        {item.badge && pendingTaskCount > 0 && (
+                          <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                            {pendingTaskCount}
+                          </span>
+                        )}
+                        {item.key === "chat" && chatUnread > 0 && (
+                          <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                            {chatUnread > 99 ? "99+" : chatUnread}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-[10px] font-bold leading-tight text-center">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="gq-sheet__sep" />
+
               {/* Nhiệm vụ hôm nay */}
               {userAuth?.user && (
                 <>
@@ -1641,33 +1540,8 @@ function SectionHead({ icon, title, count, sub }) {
   );
 }
 
-/** Ô game dùng chung cho cả dải ngang lẫn lưới. */
-function GqGameCard({ icon, name, tint, badge, age, note, thumb, play }) {
-  return (
-    <button
-      onClick={play}
-      aria-label={`Chơi ${name}`}
-      title={name}
-      className="gq-card"
-    >
-      {badge && (
-        <span className={`gq-card__badge gq-card__badge--${badge === "Mới" ? "new" : badge === "Học" ? "learn" : "play"}`}>
-          {badge}
-        </span>
-      )}
-      <span
-        className="gq-card__ring"
-        style={{ backgroundColor: tint }}
-        aria-hidden="true"
-      >
-        {thumb ? <img src={thumb} alt="" loading="lazy" /> : (icon || String(name || " ").trim().charAt(0).toUpperCase())}
-      </span>
-      <span className="gq-card__name">{name}</span>
-      {age && <span className="gq-card__age">{age}</span>}
-      {note && <span className="gq-card__note">{note}</span>}
-    </button>
-  );
-}
+/* Ô game dùng chung đã chuyển sang src/components/GqGameCard.jsx để
+   trang Danh mục dùng lại đúng thẻ này. */
 
 /** Một dòng nhiệm vụ gọn cho sheet menu. */
 function MiniQuestRow({ task, onClaim }) {
