@@ -101,4 +101,30 @@ export const config = {
     // Bật/tắt toàn bộ tính năng AI (hữu ích khi deploy môi trường không có AI Service).
     enabled: process.env.AI_BACKEND_ENABLED !== "false",
   },
+
+  // ── Ollama trực tiếp (bỏ qua AI Service Java) ────────────────────────────
+  // Backend gọi thẳng một endpoint tương thích Ollama `/api/chat` — điển hình là
+  // Ollama Cloud (https://ollama.com) cho production: AI chạy 24/7, không cần máy
+  // Windows/tunnel. Luật chọn nhà cung cấp nằm ở aiBackendService.aiProviderKind():
+  // có OLLAMA_KEY + OLLAMA_BASE_URL không phải localhost → đi đường này; ngược lại
+  // giữ nguyên đường AI Service ở trên (dev local không đổi hành vi).
+  //
+  // Tên biến và giá trị mặc định KHỚP với AI Service Java (application.yml) để hai
+  // đường dùng chung một bộ env: OLLAMA_BASE_URL / OLLAMA_KEY / OLLAMA_MODEL /
+  // OLLAMA_THINK / OLLAMA_TEMPERATURE.
+  ollama: {
+    // Rỗng = chưa đặt (KHÁC localhost mặc định của Java — Node cần phân biệt
+    // "chưa cấu hình" với "cố ý trỏ localhost" khi chọn nhà cung cấp).
+    baseUrl: (process.env.OLLAMA_BASE_URL || "").replace(/\/+$/, ""),
+    // API key của endpoint Ollama từ xa. Rỗng = không gắn header Authorization.
+    // TUYỆT ĐỐI không log giá trị này.
+    apiKey: process.env["OLLAMA_KEY"] || "",
+    // Model sẽ gọi. Trên Ollama Cloud phải là model CÓ trên cloud (ví dụ
+    // gpt-oss:20b) — cloud không có các model local kiểu qwen3:4b.
+    model: process.env.OLLAMA_MODEL || "",
+    // Chế độ thinking: "false" (mặc định, như Java) = gửi think:false để model
+    // trả lời thẳng; "true" = cho phép suy nghĩ; "omit" = không gửi field này.
+    think: process.env.OLLAMA_THINK ?? "false",
+    temperature: Number(process.env.OLLAMA_TEMPERATURE) || 0.4,
+  },
 };
