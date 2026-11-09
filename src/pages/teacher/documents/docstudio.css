@@ -568,6 +568,8 @@
 }
 .docstudio-valid.is-error { color: #b91c1c; }
 .docstudio-stale { font-family: "Be Vietnam Pro", sans-serif; font-size: 11px; font-weight: 600; color: #b45309; }
+.docstudio-stats { font-family: "Be Vietnam Pro", sans-serif; font-size: 11px; font-weight: 500; color: rgba(31, 27, 20, .55); white-space: nowrap; }
+.docstudio-img-error { font-family: "Be Vietnam Pro", sans-serif; font-size: 12px; line-height: 1.45; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 7px 10px; }
 .docstudio-convert-btn {
   display: inline-flex;
   align-items: center;

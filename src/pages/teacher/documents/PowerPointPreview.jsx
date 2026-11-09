@@ -262,6 +262,9 @@ export default function PowerPointPreview({
   const [innerIndex, setInnerIndex] = useState(0);
   const [newSlideType, setNewSlideType] = useState("content");
   const [slidePulse, setSlidePulse] = useState(false);
+  // Kéo thả sắp xếp trên dải thumbnail: vị trí đang kéo qua (để viền
+  // đích) — index nguồn đọc từ dataTransfer lúc thả.
+  const [dragOverIndex, setDragOverIndex] = useState(null);
   // Kiểu xem trước slide: "single" = 1 slide lớn + thumbnail (mặc định,
   // như cũ); "scroll" = mọi slide xếp dọc trong một khung cuộn.
   const [viewMode, setViewMode] = useState("single");
@@ -411,11 +414,29 @@ export default function PowerPointPreview({
             className="p-1.5 rounded-full hover:bg-ink/5 disabled:opacity-30"><ChevronRight className="w-5 h-5" /></button>
           <div className="flex gap-2 overflow-x-auto py-1 flex-1">
             {slides.map((s, i) => (
-              <button key={i} type="button" onClick={() => setIndex(i)} title={`Slide ${i + 1}: ${s.title || s.type}`}
-                className={`relative shrink-0 overflow-hidden rounded ${i === safeIndex ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
+              <button key={i} type="button" onClick={() => setIndex(i)}
+                title={editable ? `Slide ${i + 1}: ${s.title || s.type} — kéo thả để sắp xếp lại` : `Slide ${i + 1}: ${s.title || s.type}`}
+                draggable={editable}
+                onDragStart={editable ? (e) => {
+                  e.dataTransfer.setData("text/plain", String(i));
+                  e.dataTransfer.effectAllowed = "move";
+                  setIndex(i);
+                } : undefined}
+                onDragOver={editable ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverIndex(i); } : undefined}
+                onDragLeave={editable ? () => setDragOverIndex((cur) => (cur === i ? null : cur)) : undefined}
+                onDrop={editable ? (e) => {
+                  e.preventDefault();
+                  const from = Number(e.dataTransfer.getData("text/plain"));
+                  setDragOverIndex(null);
+                  if (Number.isInteger(from) && from !== i) onSlideOp?.("moveTo", i, from);
+                } : undefined}
+                onDragEnd={editable ? () => setDragOverIndex(null) : undefined}
+                className={`relative shrink-0 overflow-hidden rounded ${i === safeIndex ? "opacity-100" : "opacity-70 hover:opacity-100"} ${editable ? "cursor-grab active:cursor-grabbing" : ""}`}
                 style={{
                   width: 168, height: Math.round(168 * (ratio === "4:3" ? 3 / 4 : 9 / 16)),
-                  boxShadow: i === safeIndex ? `0 0 0 2px ${theme?.accent || "#2563eb"}` : "0 0 0 2px transparent",
+                  boxShadow: dragOverIndex === i && i !== safeIndex
+                    ? "0 0 0 2px #f59e0b"
+                    : i === safeIndex ? `0 0 0 2px ${theme?.accent || "#2563eb"}` : "0 0 0 2px transparent",
                 }}>
                 <div style={{ transform: `scale(${thumbScale})`, transformOrigin: "top left", width: SLIDE_W, pointerEvents: "none" }}>
                   <SlideView slide={s} ratio={ratio} theme={theme} />

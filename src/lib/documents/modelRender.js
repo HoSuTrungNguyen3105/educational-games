@@ -119,6 +119,13 @@ export const WORD_PREVIEW_CSS = `
   .doc-page th, .doc-page td { border: 1px solid #9ca3af; padding: 6px 10px; text-align: left; }
   .doc-page h1 { font-size: 28px; } .doc-page h2 { font-size: 22px; } .doc-page h3 { font-size: 18px; }
   .doc-page hr.page-break { border: 0; border-top: 2px dashed #b6ad9c; margin: 30px 0; }
+  /* In / lưu PDF qua hộp thoại in của trình duyệt (trang cha gọi
+     contentWindow.print() lên iframe này): bỏ nền xám + bóng đổ để bản
+     in là trang giấy sạch. */
+  @media print {
+    body { background: #fff; }
+    .doc-page { box-shadow: none; margin: 0; width: auto; min-height: 0; }
+  }
 `;
 
 /** Dựng tài liệu HTML hoàn chỉnh cho iframe sandbox của preview Word. */
@@ -311,6 +318,10 @@ export function buildSlidesScrollSrcDoc({ bodyHtml, cssText = "" }) {
     padding: 36px 44px; box-shadow: 0 2px 10px rgba(0,0,0,.16); border-radius: 6px; }
   img { max-width: 100%; }
   table { border-collapse: collapse; } th, td { border: 1px solid #9ca3af; padding: 6px 10px; }
+  @media print {
+    body { background: #fff; }
+    .slide { box-shadow: none; margin: 0 auto 16px; max-width: 100%; }
+  }
 </style>
 ${cssText ? `<style>${cssText}</style>` : ""}
 </head><body>${bodyHtml || ""}</body></html>`;

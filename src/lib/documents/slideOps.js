@@ -79,3 +79,15 @@ export function moveSlide(json, index, dir) {
   slides.splice(to, 0, moved);
   return { json: withSlides(json, slides), index: to };
 }
+
+/** Kéo thả: đưa slide tại `from` tới vị trí `to` (các slide giữa dịch theo). */
+export function moveSlideTo(json, from, to) {
+  const slides = cloneSlides(json);
+  if (!slides.length) return { json, index: 0 };
+  const f = clampIndex(from, slides.length);
+  const t = clampIndex(to, slides.length);
+  if (f === t) return { json, index: f };
+  const [moved] = slides.splice(f, 1);
+  slides.splice(t, 0, moved);
+  return { json: withSlides(json, slides), index: t };
+}
