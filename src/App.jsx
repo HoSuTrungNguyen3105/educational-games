@@ -313,9 +313,10 @@ function App() {
     // học sinh khác; trang học dùng LessonPlayer toàn màn hình (tự có
     // header + nút Đóng) nên không bọc RouteShell để tránh hai thanh đầu.
     // Trang Danh mục: duyệt môn → chủ đề → game, chơi qua selectGame
-    // dùng chung với trang chủ. RouteShell mặc định có "← Về trang chủ".
+    // dùng chung với trang chủ. showBack={false} theo yêu cầu của Nguyên
+    // (2026-11-09): bỏ nút "← Về trang chủ" ở đầu trang Danh mục.
     categories: () => (
-      <RouteShell toast={toast}>
+      <RouteShell toast={toast} showBack={false}>
         <CategoryPage onSelectGame={selectGame} userAuth={userAuth} />
       </RouteShell>
     ),
