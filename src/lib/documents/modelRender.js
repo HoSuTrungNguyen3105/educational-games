@@ -118,6 +118,7 @@ export const WORD_PREVIEW_CSS = `
   .doc-page table { border-collapse: collapse; width: 100%; margin: 12px 0; }
   .doc-page th, .doc-page td { border: 1px solid #9ca3af; padding: 6px 10px; text-align: left; }
   .doc-page h1 { font-size: 28px; } .doc-page h2 { font-size: 22px; } .doc-page h3 { font-size: 18px; }
+  .doc-page hr.page-break { border: 0; border-top: 2px dashed #b6ad9c; margin: 30px 0; }
 `;
 
 /** Dựng tài liệu HTML hoàn chỉnh cho iframe sandbox của preview Word. */
