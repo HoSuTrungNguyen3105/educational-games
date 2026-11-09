@@ -145,6 +145,9 @@ export default function LessonListPage({ userAuth, onBack }) {
             return (
               <button key={lesson.id} type="button" onClick={() => navigate(`/lessons/${lesson.id}`)}
                 className="text-left rounded-3xl border border-[#E7D9BE] bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition flex flex-col gap-3">
+                {lesson.coverImage && (
+                  <img src={lesson.coverImage} alt="" className="w-full h-32 object-cover rounded-2xl border border-[#E7D9BE]" />
+                )}
                 <div className="flex items-start justify-between gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold"
                     style={{ background: badge.bg, color: badge.color }}>

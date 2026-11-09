@@ -281,6 +281,7 @@ export default function StudioEditor({ lessonId, showToast }) {
           games={games} gamesLoading={gamesLoading} gamesError={gamesError}
           onAddImage={addImageWithPicker}
           onPickImageUrl={(url) => ed.addElement("image", { imageUrl: url })}
+          showToast={showToast}
         />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <div className="studio-canvas-scroll">
@@ -313,6 +314,7 @@ export default function StudioEditor({ lessonId, showToast }) {
           ed={ed}
           games={games} gameById={gameById} subjects={subjects}
           onPickImage={(elId) => setPicker({ open: true, targetId: elId })}
+          onPickCover={() => setPicker({ open: true, targetId: "__cover__" })}
         />
       </div>
 
@@ -363,6 +365,7 @@ export default function StudioEditor({ lessonId, showToast }) {
                   games={games} gamesLoading={gamesLoading} gamesError={gamesError}
                   onAddImage={addImageWithPicker}
                   onPickImageUrl={(url) => ed.addElement("image", { imageUrl: url })}
+                  showToast={showToast}
                 />
               )}
               {mobileSheet === "props" && (
@@ -370,6 +373,7 @@ export default function StudioEditor({ lessonId, showToast }) {
                   ed={ed}
                   games={games} gameById={gameById} subjects={subjects}
                   onPickImage={(elId) => setPicker({ open: true, targetId: elId })}
+                  onPickCover={() => setPicker({ open: true, targetId: "__cover__" })}
                 />
               )}
             </div>
@@ -381,7 +385,12 @@ export default function StudioEditor({ lessonId, showToast }) {
       <ImagePickerModal
         open={picker.open}
         onClose={() => setPicker({ open: false, targetId: null })}
-        onPick={(url) => { if (picker.targetId) ed.patchElementProps(picker.targetId, { imageUrl: url }); }}
+        onPick={(url) => {
+          // targetId "__cover__" = ảnh bìa của bài (meta) — cùng một modal
+          // thư viện ảnh dùng chung cho cả phần tử image lẫn ảnh bìa.
+          if (picker.targetId === "__cover__") ed.setMeta({ coverImage: url });
+          else if (picker.targetId) ed.patchElementProps(picker.targetId, { imageUrl: url });
+        }}
       />
 
       {/* ── Lỗi xuất bản (§15): bấm vào lỗi → nhảy tới phần tử ────── */}

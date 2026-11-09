@@ -41,6 +41,14 @@ export const lessonService = {
   async unpublish(id) {
     return apiFetch(`/lessons/${encodeURIComponent(id)}/unpublish`, { method: "POST" });
   },
+  /**
+   * Tiến độ học sinh theo bài cho chủ sở hữu (đợt nâng cấp): tổng quan +
+   * từng học sinh { student, correctCount, attempts, playedGameCount,
+   * completed, completedAt, updatedAt }. Chỉ owner/admin đọc được.
+   */
+  async getStudentProgress(id) {
+    return apiFetch(`/lessons/${encodeURIComponent(id)}/progress`);
+  },
   /** Danh sách bài đã xuất bản (phía học sinh). */
   async listPublished(params = {}) {
     return apiFetch(`/lessons/published${qs(params)}`, { _withPagination: true });
@@ -70,6 +78,15 @@ export const lessonService = {
   /** Ghi nhận hoàn thành bài không có câu hỏi (gọi khi mở tới trang cuối). */
   async complete(id) {
     return apiFetch(`/lessons/published/${encodeURIComponent(id)}/complete`, { method: "POST" });
+  },
+  /**
+   * Ghi nhận đã chơi xong một phần tử game — lưu bền vào tiến độ server
+   * (trả về tiến độ mới gồm playedGameIds để khôi phục sau khi tải lại).
+   */
+  async recordPlayed(id, elementId) {
+    return apiFetch(`/lessons/published/${encodeURIComponent(id)}/played`, {
+      method: "POST", body: { elementId },
+    });
   },
 };
 

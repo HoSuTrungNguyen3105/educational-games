@@ -1,18 +1,20 @@
 import { useMemo, useState } from "react";
 import {
   CircleHelp, Gamepad2, Heading1, Image as ImageIcon, LayoutList,
-  PenLine, Plus, Search, StickyNote, Type,
+  PenLine, Plus, Scale, Search, Sparkles, StickyNote, Type,
 } from "lucide-react";
 import { uid } from "../../../services/api.js";
 import { thumbnailForGame } from "../../../lib/gameThumbnail.js";
 import { matchesQuery } from "../../../lib/searchText.js";
 import { ImageLibraryGrid } from "./ImagePicker.jsx";
+import StudioAiPanel from "./StudioAiPanel.jsx";
 
 // EditorLibrary — thanh công cụ dọc + thư viện theo tab bên trái editor
 // (§5.2/§5.3 đặc tả). CHỈ có các tab có chức năng thật: Trang, Nội dung,
-// Câu hỏi (2 dạng có runtime chấm thật), Trò chơi (game online sẵn có),
-// Thư viện ảnh (images API). Không có tab AI Copilot/hiệu ứng vì các
-// tính năng đó thuộc đợt sau — không dựng tab trang trí.
+// Câu hỏi (các dạng có runtime chấm thật), Trò chơi (game online sẵn
+// có), Thư viện ảnh (images API), và AI (đợt nâng cấp: sinh câu hỏi qua
+// endpoint AI thật — khi AI chưa sẵn sàng phía server, panel hiện đúng
+// trạng thái "đang được cấu hình" chứ không sinh dữ liệu giả).
 
 const TABS = [
   { id: "pages", label: "Trang", icon: LayoutList },
@@ -20,6 +22,7 @@ const TABS = [
   { id: "question", label: "Câu hỏi", icon: CircleHelp },
   { id: "games", label: "Trò chơi", icon: Gamepad2 },
   { id: "images", label: "Ảnh", icon: ImageIcon },
+  { id: "ai", label: "AI", icon: Sparkles },
 ];
 
 function AddTile({ icon: Icon, title, desc, onClick }) {
@@ -31,7 +34,7 @@ function AddTile({ icon: Icon, title, desc, onClick }) {
   );
 }
 
-export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onAddImage, onPickImageUrl }) {
+export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onAddImage, onPickImageUrl, showToast }) {
   const [tab, setTab] = useState("content");
   const [gameQuery, setGameQuery] = useState("");
 
@@ -104,8 +107,18 @@ export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onA
               })} />
             <AddTile icon={PenLine} title="Điền từ" desc="Học sinh gõ đáp án — chấm theo chuỗi, không phân biệt hoa thường"
               onClick={() => ed.addElement("question", { qtype: "fill", options: [], correctAnswer: "" })} />
+            <AddTile icon={Scale} title="Đúng / Sai" desc="Câu khẳng định — chọn Đúng hoặc Sai (preset của trắc nghiệm 1 đáp án)"
+              onClick={() => {
+                const optTrue = { id: uid("opt"), content: "Đúng" };
+                const optFalse = { id: uid("opt"), content: "Sai" };
+                ed.addElement("question", {
+                  qtype: "single",
+                  options: [optTrue, optFalse],
+                  correctAnswer: optTrue.id,
+                });
+              }} />
             <p className="text-[12px] leading-relaxed text-[#8A7C63] pt-1">
-              Chỉ gồm 2 dạng câu hỏi hệ thống chấm được thật. Các dạng khác (nhiều đáp án, nối cặp, kéo thả…) sẽ bổ sung khi có runtime chấm.
+              Chỉ gồm các dạng câu hỏi hệ thống chấm được thật. Các dạng khác (nhiều đáp án, nối cặp, kéo thả…) sẽ bổ sung khi có runtime chấm.
             </p>
           </div>
         )}
@@ -153,6 +166,10 @@ export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onA
 
         {tab === "images" && (
           <ImageLibraryGrid onPick={onPickImageUrl} />
+        )}
+
+        {tab === "ai" && (
+          <StudioAiPanel ed={ed} showToast={showToast} />
         )}
       </div>
     </div>

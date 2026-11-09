@@ -39,6 +39,7 @@ const docOf = (lesson) => ({
   grade: lesson?.grade ?? null,
   description: lesson?.description || "",
   objectives: lesson?.objectives || "",
+  coverImage: lesson?.coverImage || "",
   pages: Array.isArray(lesson?.pages) && lesson.pages.length > 0
     ? clone(lesson.pages)
     : [{ id: uid("page"), title: "Trang 1", elements: [] }],
