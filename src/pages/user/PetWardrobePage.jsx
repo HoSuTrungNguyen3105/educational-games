@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from "react";
 import { navigate } from "../../lib/router.js";
 import { Loader } from "../../components/ui";
 import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
-import { usePet, loadPet, wear } from "../../services/petService.js";
+import { usePet, loadPet, wear } from "../../pet/petService.js";
 
 export default function PetWardrobePage() {
   const pet = usePet();

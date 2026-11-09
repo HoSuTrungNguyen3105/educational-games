@@ -16,7 +16,7 @@ import { navigate } from "../lib/router.js";
 import PetAvatar from "../components/pet/PetAvatar.jsx";
 import {
   usePet, loadPet, updateLook, catalogView, randomPetTip, moodLabel,
-} from "../services/petService.js";
+} from "../pet/petService.js";
 import { outfitName, describeOutfit } from "../lib/dressUpAvatar.js";
 
 export default function PetPage() {

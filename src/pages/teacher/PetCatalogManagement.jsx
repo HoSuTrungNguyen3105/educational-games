@@ -4,7 +4,7 @@ import { useConfirm } from '../../hooks/useConfirm.js';
 import { ConfirmModal, ErrorState, Field, GhostButton, GridCard, IconClose, Loader, ManagementHeader, ManagementTable, Modal, PrimaryButton, StatGrid } from '../../components/ui';
 import { matchesQuery } from '../../lib/searchText.js';
 import PetRenderer, { OutfitPreview } from '../../components/pet/PetRenderer.jsx';
-import { getOutfitAsset } from '../../data/petAssets.js';
+import { getOutfitAsset } from '../../pet/petAssets.js';
 import { AlertTriangle, Gift, Info, Palette, PawPrint, RotateCcw, Save, Shirt } from 'lucide-react';
 
 /**

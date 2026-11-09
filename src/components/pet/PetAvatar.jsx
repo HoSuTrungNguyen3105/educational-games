@@ -14,7 +14,7 @@
 // đổi nguồn.
 
 import { useEffect } from "react";
-import { usePet, loadPet } from "../../lib/petApi.js";
+import { usePet, loadPet } from "../../pet/petApi.js";
 import DressUpAvatar from "../avatar/DressUpAvatar.jsx";
 
 /** Kích thước có sẵn → px. Vẫn nhận `size` số bất kỳ. */

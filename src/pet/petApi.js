@@ -22,7 +22,7 @@
 import { useSyncExternalStore } from "react";
 import { API_BASE, userService } from "../services/api.js";
 import { useUserAuthStore } from "../stores/userAuth.store.js";
-import { resolveOutfit, sanitizeFor, writeLocalOutfit } from "./dressUpAvatar.js";
+import { resolveOutfit, sanitizeFor, writeLocalOutfit } from "../lib/dressUpAvatar.js";
 
 const KEY = "edu_pet_v2";
 const OUTFIT_SLOTS = ["hat", "scarf", "glasses", "shirt", "bow", "cape", "backpack"];

@@ -18,7 +18,7 @@
 //   • Đồ không hợp loài pet        → bỏ qua
 //   • `outfits` thiếu field / null  → vẫn render được pet mặc định
 
-import { getPetBase, getPetPalette, getOutfitAsset, isCompatible, SPECIES_EMOJI } from "../../data/petAssets.js";
+import { getPetBase, getPetPalette, getOutfitAsset, isCompatible, SPECIES_EMOJI } from "../../pet/petAssets.js";
 import PetSvgLayer from "./PetSvgLayer.jsx";
 
 /** Tâm tính → biểu hiện. Mood không xác định coi như vui. */

@@ -3,7 +3,7 @@ import { API_BASE, apiFetch, authService, walletService, userService, gameProgre
 import { trackTaskEvent, taskService } from "../../services/taskService.js";
 import { socket } from "../../socket/socket.js";
 import { SOCKET_EVENTS } from "../../socket/socket.events.js";
-import { addPetExp } from "../../lib/petApi.js";
+import { addPetExp } from "../../pet/petApi.js";
 import CoopInvitePanel from "../../components/CoopInvitePanel.jsx";
 import AiExplainTrigger from "../../components/ai/AiExplainTrigger.jsx";
 import GameHud from "./GameHud.jsx";

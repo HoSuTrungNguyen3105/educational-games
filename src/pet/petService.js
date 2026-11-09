@@ -26,7 +26,7 @@
 import {
   usePet, getPet, getCatalog, loadPet, updateLook, saveLook, petLook,
   unlockedFor, catalogView, randomPetTip, moodLabel, subscribePet,
-} from "../lib/petApi.js";
+} from "./petApi.js";
 
 /* ── Hook ─────────────────────────────────────────────────────────────────── */
 

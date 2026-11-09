@@ -24,7 +24,7 @@ import chatRouter from "./routes/chat.js";
 import conversationsRouter from "./routes/conversations.js";
 import friendsRouter from "./routes/friends.js";
 import seedRouter from "./routes/seed.js";
-import petRouter from "./routes/pet.js";
+import petRouter from "./pet/pet.js";
 import gameProgressRouter, { adminRouter } from "./routes/gameProgress.js";
 import examResultsRouter, { adminRouter as examResultsAdminRouter } from "./routes/examResults.js";
 import gamePlaysRouter from "./routes/gamePlays.js";

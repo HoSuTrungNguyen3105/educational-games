@@ -24,8 +24,8 @@
 import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
-import * as petService from "../services/petService.js";
-import * as catalog from "../services/petCatalog.js";
+import * as petService from "./petService.js";
+import * as catalog from "./petCatalog.js";
 
 const router = Router();
 
