@@ -24,8 +24,10 @@ const GamePlayRouter = lazy(() => import("../../games/_shared/GamePlayRouter.jsx
 //     mặc định 10 — cùng quy tắc DEFAULT_POINTS phía server).
 //   • Phần tử game: mở LỚP PHỦ toàn màn hình ngay trong trang học bằng
 //     đúng cơ chế chơi độc lập (GamePlayRouter → HtmlGameLoader theo
-//     gameId, nạp game + câu hỏi như StudentApp). Game-over chỉ ĐÁNH
-//     DẤU "đã chơi" cho phần tử trong phiên — không ghi điểm game vào
+//     gameId, nạp game + câu hỏi như StudentApp). Game-over ĐÁNH DẤU
+//     "đã chơi" cho phần tử và GHI BỀN vào tiến độ server (đợt nâng cấp:
+//     POST /lessons/published/:id/played → playedGameIds; trước đó chỉ
+//     giữ trong phiên, tải lại trang là mất) — không ghi điểm game vào
 //     điểm bài học, không cộng thưởng ở tầng bài học (mọi thưởng của
 //     game vẫn đi theo luồng bridge độc lập sẵn có bên trong loader).
 export default function LessonPlayPage({ lessonId, userAuth, showToast }) {
@@ -48,6 +50,7 @@ export default function LessonPlayPage({ lessonId, userAuth, showToast }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLesson(null);
     setProgress(null);
+    setPlayedGames(new Set());
     setLoadError("");
     completeCalledRef.current = false;
     completedToastRef.current = false;
@@ -61,6 +64,8 @@ export default function LessonPlayPage({ lessonId, userAuth, showToast }) {
         if (!l) { setLoadError("Không tìm thấy bài học (có thể đã bị gỡ xuất bản)."); return; }
         setLesson(l);
         setProgress(p);
+        // Khôi phục "đã chơi game" từ tiến độ server (playedGameIds).
+        if (Array.isArray(p?.playedGameIds)) setPlayedGames(new Set(p.playedGameIds));
       } catch (e) {
         if (alive) setLoadError(e?.message || "Không tải được bài học");
       }
@@ -159,18 +164,22 @@ export default function LessonPlayPage({ lessonId, userAuth, showToast }) {
   const closeGame = useCallback(() => setActiveGame(null), []);
 
   const finishGame = useCallback(() => {
-    setActiveGame((cur) => {
-      if (cur?.elementId) {
-        setPlayedGames((prev) => {
-          const next = new Set(prev);
-          next.add(cur.elementId);
-          return next;
-        });
-      }
-      return null;
-    });
+    const elementId = activeGame?.elementId || null;
+    setActiveGame(null);
+    if (elementId) {
+      setPlayedGames((prev) => {
+        const next = new Set(prev);
+        next.add(elementId);
+        return next;
+      });
+      // Ghi bền phía server — lỗi mạng thì trạng thái trong phiên vẫn
+      // đúng, lần mở bài sau sẽ đồng bộ lại từ progress.
+      lessonService.recordPlayed(lessonId, elementId)
+        .then((p) => { if (p) setProgress(p); })
+        .catch(() => { /* bỏ qua — không chặn việc học */ });
+    }
     showToast?.("Đã chơi xong game, quay lại bài học nào!");
-  }, [showToast]);
+  }, [activeGame, lessonId, showToast]);
 
   // Khi lớp phủ game đang mở, Escape chỉ đóng game — chặn không cho
   // LessonPlayer (nghe keydown trên window) thoát cả bài học.

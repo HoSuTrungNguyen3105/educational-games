@@ -223,6 +223,9 @@ function normalizeMeta(data = {}) {
     grade: normGrade(data.grade),
     description: normText(data.description, 2000),
     objectives: normObjectives(data.objectives),
+    // Ảnh bìa: chỉ lưu URL (từ Thư viện ảnh hiện có hoặc dán link) — đợt
+    // nâng cấp AI Studio; bài cũ không có trường này thì coi như "".
+    coverImage: normText(data.coverImage, 2048).trim(),
   };
 }
 
@@ -266,6 +269,7 @@ function serializeMeta(doc) {
     grade: doc.grade ?? null,
     description: doc.description || "",
     objectives: doc.objectives || "",
+    coverImage: doc.coverImage || "",
     ownerId: doc.ownerId,
     status: doc.status,
     pageCount: Array.isArray(doc.pages) ? doc.pages.length : 0,
@@ -364,7 +368,7 @@ export async function updateLesson(id, actor, data = {}) {
   const current = await loadOwnedLesson(id, actor);
   const set = { updatedAt: new Date().toISOString() };
   if (data.title !== undefined || data.subject !== undefined || data.grade !== undefined
-    || data.description !== undefined || data.objectives !== undefined) {
+    || data.description !== undefined || data.objectives !== undefined || data.coverImage !== undefined) {
     Object.assign(set, normalizeMeta({ ...current, ...data }));
   }
   if (data.pages !== undefined) {
@@ -522,6 +526,17 @@ function questionElementsOf(doc) {
   return out;
 }
 
+/** Mọi phần tử game của bài (phẳng hoá qua các trang), kèm pageId. */
+function gameElementsOf(doc) {
+  const out = [];
+  for (const page of Array.isArray(doc?.pages) ? doc.pages : []) {
+    for (const el of page.elements || []) {
+      if (el.type === "game") out.push({ pageId: page.id, element: el });
+    }
+  }
+  return out;
+}
+
 async function loadPublishedLesson(id) {
   const doc = await getCollection(LESSONS_COLLECTION).findOne({ id: String(id || "") });
   if (!doc || doc.status !== "published") throw fail(404, "Không tìm thấy bài học");
@@ -530,7 +545,11 @@ async function loadPublishedLesson(id) {
 
 function serializeProgress(doc, lessonDoc) {
   const questions = lessonDoc ? questionElementsOf(lessonDoc) : [];
+  const games = lessonDoc ? gameElementsOf(lessonDoc) : [];
   const correctIds = Array.isArray(doc?.correctElementIds) ? doc.correctElementIds : [];
+  // playedGameIds: id các PHẦN TỬ game đã chơi xong ít nhất 1 lần. Lọc theo
+  // bài hiện tại như correctCount — phần tử đã bị xoá khỏi bài thì không đếm.
+  const playedIds = Array.isArray(doc?.playedGameIds) ? doc.playedGameIds : [];
   return {
     lessonId: lessonDoc?.id ?? doc?.lessonId ?? null,
     correctElementIds: correctIds,
@@ -539,6 +558,11 @@ function serializeProgress(doc, lessonDoc) {
     correctCount: questions.length
       ? questions.filter((q) => correctIds.includes(q.element.id)).length
       : correctIds.length,
+    playedGameIds: playedIds,
+    totalGames: games.length,
+    playedGameCount: games.length
+      ? games.filter((g) => playedIds.includes(g.element.id)).length
+      : playedIds.length,
     completed: Boolean(doc?.completedAt),
     completedAt: doc?.completedAt ?? null,
     updatedAt: doc?.updatedAt ?? null,
@@ -552,6 +576,20 @@ function emptyProgress(lessonDoc) {
 
 async function findProgress(userId, lessonId) {
   return getCollection(LESSON_PROGRESS_COLLECTION).findOne({ userId, lessonId });
+}
+
+/** Lấy tiến độ của học sinh cho bài; chưa có thì tạo document rỗng. */
+async function findOrCreateProgress(userId, lessonId) {
+  const existing = await findProgress(userId, lessonId);
+  if (existing) return existing;
+  const now = new Date().toISOString();
+  const doc = {
+    id: uid("lprog"), userId, lessonId,
+    correctElementIds: [], playedGameIds: [], attempts: 0, completedAt: null,
+    createdAt: now, updatedAt: now,
+  };
+  await getCollection(LESSON_PROGRESS_COLLECTION).insertOne(doc);
+  return doc;
 }
 
 /** Đặt completedAt nếu đủ điều kiện: MỌI question đã đúng ít nhất 1 lần. */
@@ -613,15 +651,7 @@ export async function checkLessonAnswer(userId, lessonId, elementId, answer) {
 
   const coll = getCollection(LESSON_PROGRESS_COLLECTION);
   const now = new Date().toISOString();
-  let progress = await findProgress(userId, lesson.id);
-  if (!progress) {
-    progress = {
-      id: uid("lprog"), userId, lessonId: lesson.id,
-      correctElementIds: [], attempts: 0, completedAt: null,
-      createdAt: now, updatedAt: now,
-    };
-    await coll.insertOne(progress);
-  }
+  const progress = await findOrCreateProgress(userId, lesson.id);
   const set = { attempts: (Number(progress.attempts) || 0) + 1, updatedAt: now };
   if (correct && !progress.correctElementIds.includes(el.id)) {
     set.correctElementIds = [...progress.correctElementIds, el.id];
@@ -651,15 +681,7 @@ export async function completeLesson(userId, lessonId) {
   const lesson = await loadPublishedLesson(lessonId);
   const coll = getCollection(LESSON_PROGRESS_COLLECTION);
   const now = new Date().toISOString();
-  let progress = await findProgress(userId, lesson.id);
-  if (!progress) {
-    progress = {
-      id: uid("lprog"), userId, lessonId: lesson.id,
-      correctElementIds: [], attempts: 0, completedAt: null,
-      createdAt: now, updatedAt: now,
-    };
-    await coll.insertOne(progress);
-  }
+  const progress = await findOrCreateProgress(userId, lesson.id);
   const set = { updatedAt: now };
   if (!progress.completedAt) {
     if (questionElementsOf(lesson).length === 0) set.completedAt = now;
@@ -669,4 +691,84 @@ export async function completeLesson(userId, lessonId) {
     { userId, lessonId: lesson.id }, { $set: set }, { returnDocument: "after" },
   );
   return serializeProgress(updated, lesson);
+}
+
+// ── Đợt nâng cấp: lưu bền "đã chơi game" + tiến độ phía giáo viên ───────
+
+/**
+ * Ghi nhận học sinh đã chơi xong một phần tử game trong bài (player gọi
+ * khi game kết thúc). Trước đợt này trạng thái "đã chơi" chỉ sống trong
+ * phiên trình duyệt — nay lưu vào lessonProgress.playedGameIds để tải
+ * lại trang vẫn còn và giáo viên nhìn thấy được. Idempotent: chơi lại
+ * cùng một phần tử không nhân đôi bản ghi. KHÔNG cộng điểm/thưởng ở đây.
+ */
+export async function recordPlayedGame(userId, lessonId, elementId) {
+  const lesson = await loadPublishedLesson(lessonId);
+  const elId = String(elementId || "");
+  const hit = gameElementsOf(lesson).find((g) => g.element.id === elId);
+  if (!hit) {
+    const anyEl = (lesson.pages || []).some((p) => (p.elements || []).some((el) => el.id === elId));
+    throw fail(400, anyEl
+      ? "Phần tử này không phải trò chơi nên không ghi nhận được"
+      : "Không tìm thấy phần tử trò chơi trong bài học");
+  }
+  const coll = getCollection(LESSON_PROGRESS_COLLECTION);
+  const progress = await findOrCreateProgress(userId, lesson.id);
+  const played = Array.isArray(progress.playedGameIds) ? progress.playedGameIds : [];
+  if (played.includes(elId)) return serializeProgress(progress, lesson);
+  const updated = await coll.findOneAndUpdate(
+    { userId, lessonId: lesson.id },
+    { $set: { playedGameIds: [...played, elId], updatedAt: new Date().toISOString() } },
+    { returnDocument: "after" },
+  );
+  return serializeProgress(updated, lesson);
+}
+
+/**
+ * Tiến độ học sinh theo bài cho CHỦ SỞ HỮU (màn hình giáo viên trong
+ * Studio). Quyền qua loadOwnedLesson — giáo viên khác 403, admin ngoại
+ * lệ như mọi thao tác chủ sở hữu. Tên học sinh tra từ collection `users`
+ * theo đúng mẫu chiếu tối thiểu của assignmentService.attachStudents;
+ * học sinh đã bị xoá tài khoản thì `student: null`, client rơi về userId.
+ * Số đúng/số game đã chơi tính theo CẤU TRÚC BÀI HIỆN TẠI (phần tử bị
+ * xoá khỏi bài thì không đếm nữa — cùng quy tắc serializeProgress).
+ */
+export async function getLessonProgressForTeacher(lessonId, actor) {
+  const lesson = await loadOwnedLesson(lessonId, actor);
+  const docs = await getCollection(LESSON_PROGRESS_COLLECTION)
+    .find({ lessonId: lesson.id })
+    .sort({ updatedAt: -1 })
+    .toArray();
+
+  const ids = [...new Set(docs.map((d) => d.userId).filter(Boolean))];
+  const users = ids.length === 0 ? [] : await getCollection("users")
+    .find({ id: { $in: ids } })
+    .project({ _id: 0, id: 1, username: 1, name: 1, avatarLoadout: 1 })
+    .toArray();
+  const byId = new Map(users.map((u) => [u.id, { ...u, avatarLoadout: u.avatarLoadout || null }]));
+
+  const students = docs.map((d) => {
+    const p = serializeProgress(d, lesson);
+    return {
+      userId: d.userId,
+      student: byId.get(d.userId) || null,
+      correctCount: p.correctCount,
+      correctElementIds: p.correctElementIds,
+      attempts: p.attempts,
+      playedGameCount: p.playedGameCount,
+      playedGameIds: p.playedGameIds,
+      completed: p.completed,
+      completedAt: p.completedAt,
+      updatedAt: p.updatedAt,
+    };
+  });
+
+  return {
+    lessonId: lesson.id,
+    totalQuestions: questionElementsOf(lesson).length,
+    totalGames: gameElementsOf(lesson).length,
+    studentCount: students.length,
+    completedCount: students.filter((s) => s.completed).length,
+    students,
+  };
 }

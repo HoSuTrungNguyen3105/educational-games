@@ -81,6 +81,17 @@ router.post("/published/:id/complete", authenticate, async (req, res) => {
   } catch (e) { handleError(res, e); }
 });
 
+// Ghi nhận học sinh đã chơi xong một phần tử game trong bài — lưu bền vào
+// tiến độ (trước đây chỉ giữ trong phiên trình duyệt). Body: { elementId }.
+router.post("/published/:id/played", authenticate, async (req, res) => {
+  try {
+    const progress = await lessonService.recordPlayedGame(
+      req.user.sub, req.params.id, req.body?.elementId,
+    );
+    sendSuccess(res, progress);
+  } catch (e) { handleError(res, e); }
+});
+
 // ── Phía giáo viên: bài của tôi ──────────────────────────────────────────
 router.get("/mine", authenticate, requireRoles("teacher", "admin"), async (req, res) => {
   try {
@@ -116,6 +127,15 @@ router.delete("/:id", authenticate, requireRoles("teacher", "admin"), async (req
   try {
     const out = await lessonService.deleteLesson(req.params.id, actorOf(req));
     sendSuccess(res, out, "Đã xoá bài học");
+  } catch (e) { handleError(res, e); }
+});
+
+// Tiến độ học sinh theo bài cho chủ sở hữu (màn hình giáo viên trong
+// Studio): ai đã học, đúng bao nhiêu câu, chơi game nào, hoàn thành chưa.
+router.get("/:id/progress", authenticate, requireRoles("teacher", "admin"), async (req, res) => {
+  try {
+    const data = await lessonService.getLessonProgressForTeacher(req.params.id, actorOf(req));
+    sendSuccess(res, data);
   } catch (e) { handleError(res, e); }
 });
 

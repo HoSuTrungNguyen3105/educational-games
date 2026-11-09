@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Copy, Pencil, Trash2 } from "lucide-react";
+import { BarChart3, Copy, Link2, Pencil, Trash2 } from "lucide-react";
 import { navigate } from "../../lib/router.js";
 import { lessonService } from "../../services/lessonService.js";
 import { matchesQuery } from "../../lib/searchText.js";
@@ -7,6 +7,7 @@ import { useConfirm } from "../../hooks/useConfirm.js";
 import {
   ConfirmModal, FormModal, GridCard, IconButton, ManagementHeader, ManagementTable,
 } from "../../components/ui";
+import LessonProgressModal from "./studio/LessonProgressModal.jsx";
 import "./studio/studio.css";
 
 // StudioLessons — danh sách bài học của giáo viên tại /dashboard/studio,
@@ -52,7 +53,20 @@ export default function StudioLessons({ showToast }) {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [progressLesson, setProgressLesson] = useState(null);
   const { askConfirm, confirmProps } = useConfirm();
+
+  // Link học sinh vào thẳng bài (#/lessons/:id) — chỉ có ý nghĩa khi bài
+  // đã xuất bản (học sinh phải đăng nhập, xem LessonListPage/LessonPlayPage).
+  const copyLink = async (item) => {
+    const url = `${window.location.origin}${window.location.pathname}#/lessons/${item.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast?.("Đã sao chép link bài học — gửi link này cho học sinh", "success");
+    } catch {
+      showToast?.(`Link bài học: ${url}`, "success");
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -165,9 +179,19 @@ export default function StudioLessons({ showToast }) {
               : { label: "Nháp", tone: "gold" }}
             mono={lesson.subject || undefined}
             description={lesson.description || undefined}
+            media={lesson.coverImage
+              ? <img src={lesson.coverImage} alt="" className="w-11 h-11 rounded-lg object-cover shrink-0 border border-ink/10" />
+              : undefined}
+            extra={lesson.status === "published" ? (
+              <button type="button" onClick={() => copyLink(lesson)}
+                className="mt-1 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#2F6FED] hover:underline">
+                <Link2 className="w-3.5 h-3.5" /> Sao chép link cho học sinh
+              </button>
+            ) : undefined}
             meta={`${lesson.pageCount} trang · ${lesson.elementCount} phần tử · Cập nhật ${fmtDate(lesson.updatedAt)}`}
             footerActions={[
               { label: "Soạn bài", icon: <Pencil />, onClick: () => navigate(`/dashboard/studio/${lesson.id}`), tone: "blue" },
+              { label: "Tiến độ", icon: <BarChart3 />, onClick: () => setProgressLesson(lesson), tone: "muted" },
               { label: busyId === lesson.id ? "Đang sao…" : "Nhân bản", icon: <Copy />, onClick: () => duplicate(lesson), tone: "muted" },
               { label: "Xoá", icon: <Trash2 />, onClick: () => askRemove(lesson), tone: "red" },
             ]}
@@ -184,6 +208,10 @@ export default function StudioLessons({ showToast }) {
             <td className="px-5 py-3">
               <div className="flex items-center justify-end gap-2">
                 <IconButton title="Soạn bài" onClick={() => navigate(`/dashboard/studio/${lesson.id}`)}><Pencil /></IconButton>
+                <IconButton title="Tiến độ học sinh" onClick={() => setProgressLesson(lesson)}><BarChart3 /></IconButton>
+                {lesson.status === "published" && (
+                  <IconButton title="Sao chép link cho học sinh" onClick={() => copyLink(lesson)}><Link2 /></IconButton>
+                )}
                 <IconButton title="Nhân bản" onClick={() => duplicate(lesson)}><Copy /></IconButton>
                 <IconButton title="Xoá" tone="danger" onClick={() => askRemove(lesson)}><Trash2 /></IconButton>
               </div>
@@ -203,6 +231,10 @@ export default function StudioLessons({ showToast }) {
         error={createError}
         saving={creating}
       />
+
+      {progressLesson && (
+        <LessonProgressModal lesson={progressLesson} onClose={() => setProgressLesson(null)} />
+      )}
 
       <ConfirmModal {...confirmProps} />
     </div>

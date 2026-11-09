@@ -277,7 +277,7 @@ function GameFields({ ed, el, games, gameById }) {
   );
 }
 
-function LessonMetaFields({ ed, subjects }) {
+function LessonMetaFields({ ed, subjects, onPickCover }) {
   const doc = ed.doc;
   const totalElements = ed.pages.reduce((n, p) => n + p.elements.length, 0);
   return (
@@ -310,6 +310,26 @@ function LessonMetaFields({ ed, subjects }) {
       <textarea className="studio-field" rows={3} value={doc.objectives}
         onChange={(e) => ed.setMeta({ objectives: e.target.value }, true)}
         onBlur={() => ed.endTransient()} placeholder="Mỗi mục tiêu một dòng…" />
+      <span className="studio-field-label">Ảnh bìa</span>
+      {doc.coverImage ? (
+        <img src={doc.coverImage} alt="" className="w-full h-28 object-cover rounded-[10px] border border-[#E7D9BE]" />
+      ) : null}
+      <div className="flex gap-1.5">
+        <button type="button" onClick={onPickCover}
+          className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-[10px] font-semibold text-[13.5px] text-white"
+          style={{ background: "#1B998B" }}>
+          <ImagePlus className="w-4 h-4" /> Chọn ảnh từ thư viện
+        </button>
+        {doc.coverImage ? (
+          <button type="button" onClick={() => ed.setMeta({ coverImage: "" })}
+            className="px-3 py-2.5 rounded-[10px] border border-[#E7D9BE] bg-white font-semibold text-[13.5px] text-[#D64545]">
+            Xoá bìa
+          </button>
+        ) : null}
+      </div>
+      <input className="studio-field mt-1.5" value={doc.coverImage || ""} placeholder="hoặc dán URL ảnh…"
+        onChange={(e) => ed.setMeta({ coverImage: e.target.value }, true)}
+        onBlur={() => ed.endTransient()} />
       <div className="mt-4 rounded-[10px] border border-[#E7D9BE] bg-white p-3 text-[12.5px] leading-relaxed text-[#5B4A12]">
         <p>Trạng thái: <b>{ed.status === "published" ? "Đã xuất bản" : "Bản nháp"}</b></p>
         <p>{ed.pages.length} trang · {totalElements} phần tử · Canvas 1280×720</p>
@@ -321,7 +341,7 @@ function LessonMetaFields({ ed, subjects }) {
   );
 }
 
-export default function PropsPanel({ ed, games, gameById, subjects, onPickImage }) {
+export default function PropsPanel({ ed, games, gameById, subjects, onPickImage, onPickCover }) {
   const el = ed.selectedElement;
   return (
     <aside className="studio-props w-[292px] shrink-0 border-l border-[#E7D9BE] bg-[#FFFBF2] overflow-y-auto min-h-0">
@@ -361,7 +381,7 @@ export default function PropsPanel({ ed, games, gameById, subjects, onPickImage 
           <>
             <h3 className="font-display font-bold text-ink text-[15px]">Thông tin bài học</h3>
             <p className="text-[12px] text-[#8A7C63] mt-0.5 mb-1">Chọn một phần tử trên canvas để sửa thuộc tính của nó.</p>
-            <LessonMetaFields ed={ed} subjects={subjects} />
+            <LessonMetaFields ed={ed} subjects={subjects} onPickCover={onPickCover} />
           </>
         )}
       </div>
