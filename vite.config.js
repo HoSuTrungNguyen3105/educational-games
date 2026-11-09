@@ -3,11 +3,57 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import fs from 'fs'
 import path from 'path'
+import { execSync } from 'child_process'
+
+// Build id duy nhất cho mỗi lần build — nhúng vào bundle qua define
+// __BUILD_ID__ và ghi ra dist/version.json (plugin 'build-version-file'
+// bên dưới) để client tự phát hiện bản mới sau mỗi lần deploy
+// (cơ chế trong src/lib/appUpdate.js). Ưu tiên biến môi trường BUILD_ID
+// nếu nơi deploy có truyền; mặc định là timestamp + git sha ngắn (lấy
+// được thì lấy, không được thì chỉ timestamp). Không cần bước thủ công
+// nào thêm khi deploy: cứ `npm run build` như cũ là có dấu phiên bản.
+function resolveBuildId() {
+  if (process.env.BUILD_ID) return process.env.BUILD_ID
+  const ts = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)
+  try {
+    const sha = execSync('git rev-parse --short HEAD', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim()
+    return sha ? `${ts}-${sha}` : ts
+  } catch {
+    return ts
+  }
+}
+const BUILD_ID = resolveBuildId()
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
+  },
   plugins: [
     react(),
+    {
+      name: 'build-version-file',
+      generateBundle() {
+        // Dấu phiên bản cho cơ chế tự cập nhật phía client. version.json
+        // cố ý KHÔNG khớp globPatterns precache của Workbox bên dưới
+        // (chỉ gồm js/css/html) và không có rule runtimeCaching nào
+        // khớp nó, nên service worker không bao giờ cache file này —
+        // client fetch là ra bản mới nhất trên server.
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source: JSON.stringify(
+            { buildId: BUILD_ID, builtAt: new Date().toISOString() },
+            null,
+            2,
+          ),
+        })
+      },
+    },
     {
       name: 'cleanup-dist',
       closeBundle() {
@@ -128,6 +174,10 @@ export default defineConfig({
         // tab cũ vẫn chạy SW cũ tới lần F12/đóng tab kế tiếp -> user thấy
         // bản cũ dù deploy đã lên (đúng triệu chứng mục 14 mô tả).
         clientsClaim: true,
+        // Kích hoạt SW mới ngay khi cài xong, không chờ mọi tab đóng.
+        // (registerType 'autoUpdate' của vite-plugin-pwa vốn đã ngầm bật
+        // cờ này; khai báo tường minh để cấu hình tự nói rõ ý định.)
+        skipWaiting: true,
         importScripts: ['firebase-messaging-sw.js'],
         globPatterns: ['**/*.{js,css,html}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,

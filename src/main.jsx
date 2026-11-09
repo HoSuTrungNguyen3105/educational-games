@@ -6,6 +6,7 @@ import { startSchoolMissionSync } from './lib/schoolMissionSync.js'
 import { gameSync } from './lib/gameSync.js'
 import { armCoinWallet, loadWallet } from './lib/coinWallet.js'
 import { updateSW } from './lib/pwaUpdate.js'
+import { startAppUpdateWatcher } from './lib/appUpdate.js'
 
 createRoot(document.getElementById('root')).render(<App />)
 
@@ -22,3 +23,7 @@ gameSync.startAutoSync(30000)
 armCoinWallet()
 loadWallet()
 updateSW(true)
+
+// Tự phát hiện bản build mới sau mỗi lần deploy (version.json) và tự
+// dọn cache + tải lại, khỏi cần người dùng bấm nút "Xóa cache" thủ công.
+startAppUpdateWatcher()
