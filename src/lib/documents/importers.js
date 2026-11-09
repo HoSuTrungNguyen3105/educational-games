@@ -2,7 +2,8 @@
 // của Teacher Document Studio.
 //
 // Hỗ trợ:
-//   • .docx  → mammoth (chuyển Word sang HTML, ảnh nhúng thành data URI)
+//   • .docx  → docxImporter (đọc thẳng OOXML, giữ định dạng trực tiếp của
+//     Word: căn lề/cỡ chữ/font/giãn đoạn/bảng gộp ô/ảnh nhúng data URI)
 //   • .pptx  → JSZip + DOMParser (đọc text/table trong từng slide)
 //   • .html/.htm → giữ nguyên hoặc chuyển sang JSON
 //   • .json  → validate schema hiện có rồi chuyển sang HTML nếu cần
@@ -33,8 +34,9 @@ function wrapWordHtml(fragment, title) {
   body { margin: 0; background: #d8d3c8; font-family: Arial, Helvetica, sans-serif; }
   .doc-page { width: 794px; min-height: 1123px; margin: 0 auto; padding: 72px; background: #fff; color: #111827; font-size: 16px; line-height: 1.6; }
   .doc-page table { border-collapse: collapse; width: 100%; margin: 12px 0; }
-  .doc-page th, .doc-page td { border: 1px solid #9ca3af; padding: 6px 10px; }
+  .doc-page th, .doc-page td { border: 1px solid #9ca3af; padding: 6px 10px; vertical-align: top; }
   .doc-page img { max-width: 100%; height: auto; }
+  .doc-page hr.page-break { border: 0; border-top: 2px dashed #b6ad9c; margin: 30px 0; }
 </style>
 </head>
 <body>
@@ -69,28 +71,15 @@ function docTypeOfJson(obj) {
 }
 
 async function readDocx(file) {
-  let mammoth;
+  let convertDocxToHtml;
   try {
-    // Bản browser của mammoth dùng JSZip; Vite tự resolve trường browser.
-    mammoth = await import("mammoth");
+    ({ convertDocxToHtml } = await import("./docxImporter.js"));
   } catch (err) {
     throw new Error(`Không nạp được bộ đọc .docx: ${err?.message || err}`, { cause: err });
   }
-  const mod = mammoth.default || mammoth;
   const arrayBuffer = await file.arrayBuffer();
-  const result = await mod.convertToHtml(
-    { arrayBuffer },
-    {
-      styleMap: [
-        "p[style-name='Title'] => h1:fresh",
-        "p[style-name='Heading 1'] => h1:fresh",
-        "p[style-name='Heading 2'] => h2:fresh",
-        "p[style-name='Heading 3'] => h3:fresh",
-      ],
-    },
-  );
-  const messages = (result.messages || []).map((m) => m.message).filter(Boolean);
-  return { html: wrapWordHtml(result.value, baseName(file.name)), warnings: messages, docType: "word" };
+  const result = await convertDocxToHtml(arrayBuffer);
+  return { html: wrapWordHtml(result.html, baseName(file.name)), warnings: result.warnings || [], docType: "word" };
 }
 
 function textOf(el) {
@@ -289,6 +278,14 @@ export async function parseUploadedFile(file, { docType: wantedType, outputMode 
   let source;
   let model;
   let warnings = current.warnings || [];
+  if (ext === "docx" && outputMode === "json") {
+    // Mô hình JSON chỉ chứa được căn lề/màu/đậm-nghiêng — nói rõ phần định
+    // dạng trực tiếp nào của Word chỉ sống trọn ở chế độ HTML, tránh giáo
+    // viên tưởng file bị đọc thiếu.
+    warnings = [...warnings,
+      "Chế độ JSON giữ được tiêu đề, danh sách, bảng, căn lề, đậm/nghiêng và màu chữ từ file Word; " +
+      "cỡ chữ, font chữ, giãn đoạn và thụt lề trực tiếp chỉ giữ trọn ở chế độ HTML."];
+  }
   if (current.json) {
     if (outputMode === "json") {
       source = current.rawJson || JSON.stringify(current.json, null, 2);
