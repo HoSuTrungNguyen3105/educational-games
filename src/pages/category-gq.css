@@ -10,6 +10,14 @@
   padding-bottom: 40px;
 }
 
+/* Thanh điều hướng dưới cố định cao 68px (component BottomNav dùng chung
+   với trang chủ, chỉ hiện dưới breakpoint lg) — chừa khoảng đáy tương
+   ứng để nội dung cuối trang không bị thanh này che trên điện thoại.
+   Cùng công thức với .gq-page trong home-gq.css. */
+@media (max-width: 1023px) {
+  .cat-page { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px) + 28px); }
+}
+
 .cat-wrap {
   max-width: 1180px;
   margin: 0 auto;
