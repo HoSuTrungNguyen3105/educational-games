@@ -88,6 +88,8 @@ const ROUTES = [
   { name: "ai-learning",  pattern: "/ai-learning" },
   { name: "assignment-join", pattern: "/assignment" },
   { name: "assignment-take", pattern: "/assignment/:code" },
+  // Trang Danh mục bài học & trò chơi: duyệt môn → chủ đề → game
+  { name: "categories",   pattern: "/categories" },
   // Bài học AI Studio phía học sinh: danh sách bài đã xuất bản + trang học
   { name: "lessons",      pattern: "/lessons" },
   { name: "lesson-play",  pattern: "/lessons/:lessonId" },

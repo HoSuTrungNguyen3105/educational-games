@@ -258,7 +258,10 @@
   .gq-kidchip__name { display: none; }
 }
 
-/* ─────────── HÀNG THÚ CƯNG + TAB ĐIỀU HƯỚNG (header) ─────────── */
+/* ─────────── HÀNG THÚ CƯNG (header) ───────────
+   Thanh tab điều hướng cuộn ngang (.gq-navtabs/.gq-navtab/.gq-navpop)
+   đã XOÁ hẳn cùng phần tử của nó (2026-11-09): điều hướng danh mục sang
+   trang /categories, mọi điểm đến còn lại ở sheet ⚙️ + thanh dưới cùng. */
 
 .gq-navrow {
   display: flex;
@@ -266,19 +269,6 @@
   gap: 8px;
   min-width: 0;
 }
-
-/* hàng tab cuộn ngang được trên màn hẹp; popover "Thêm" đặt position:fixed
-   nên không bị cắt khi container cuộn. */
-.gq-navtabs {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.gq-navtabs::-webkit-scrollbar { display: none; }
 
 /* chip thú cưng → /pet */
 .gq-petchip {
@@ -316,117 +306,6 @@
   font-weight: 600;
   color: var(--gq-mute);
   white-space: nowrap;
-}
-
-/* tab điều hướng */
-.gq-navtab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex: 0 0 auto;
-  height: 40px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--gq-mute);
-  font-size: 12.5px;
-  font-weight: 800;
-  white-space: nowrap;
-  cursor: pointer;
-  position: relative;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-.gq-navtab svg { width: 16px; height: 16px; }
-@media (hover: hover) {
-  .gq-navtab:hover { background: var(--gq-tile-hover); color: var(--gq-ink); }
-}
-.gq-navtab:active { transform: scale(0.97); }
-.gq-navtab__n {
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: #ffd45e;
-  color: #6b4a00;
-  font-size: 10px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-}
-
-.gq-navmore { position: relative; flex: 0 0 auto; }
-.gq-navtab__chev { transition: transform 0.18s ease; }
-.gq-navmore[data-open] .gq-navtab { background: #fff; color: var(--gq-ink); box-shadow: var(--gq-shadow); }
-.gq-navmore[data-open] .gq-navtab__chev { transform: rotate(180deg); }
-
-/* popover "Thêm" — mở xuống dưới nút, mũi tên nhỏ trỏ lên nút */
-.gq-navpop {
-  position: fixed;
-  /* dưới .gq-scrim (60) — mở sheet ⚙️ là đóng popover nên không bao giờ đè */
-  z-index: 55;
-  width: 252px;
-  padding: 8px;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 14px 34px rgba(20, 30, 55, 0.2);
-  animation: gqNavPop 0.16s ease;
-}
-@keyframes gqNavPop {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.gq-navpop__arrow {
-  position: absolute;
-  top: -5px;
-  width: 12px;
-  height: 12px;
-  background: #fff;
-  border-radius: 3px;
-  transform: rotate(45deg);
-}
-.gq-navpop__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-}
-.gq-navpop__item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  padding: 8px 9px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--gq-ink);
-  font-size: 12px;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-.gq-navpop__item:hover { background: var(--gq-tile-hover); }
-.gq-navpop__item svg { width: 15px; height: 15px; color: var(--gq-mute); flex-shrink: 0; }
-.gq-navpop__item span:not(.gq-navpop__n) {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.gq-navpop__n {
-  flex-shrink: 0;
-  min-width: 17px;
-  height: 17px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: #ffd45e;
-  color: #6b4a00;
-  font-size: 9.5px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
 }
 
 /* ─────────────────── HERO CHÀO BÉ ─────────────────── */
@@ -875,13 +754,11 @@
   .gq-card,
   .gq-mini,
   .gq-iconbtn,
-  .gq-navtab,
   .gq-petchip,
   .gq-random,
   .gq-more {
     transition: none !important;
   }
-  .gq-navpop { animation: none !important; }
 }
 
 /* ───────────────────────── MODAL / SHEET ───────────────────────── */
@@ -1104,8 +981,6 @@
   .gq-iconbtn { width: 46px; height: 46px; font-size: 21px; }
   .gq-iconbtn__n { min-width: 20px; height: 20px; font-size: 11px; }
   .gq-adminbtn { height: 46px; }
-  .gq-navtab { height: 44px; padding: 0 16px; font-size: 13.5px; }
-  .gq-navtab svg { width: 17px; height: 17px; }
   .gq-petchip { height: 44px; padding: 0 15px 0 6px; }
   .gq-petchip__name { font-size: 13px; }
   .gq-petchip__sub { font-size: 11px; }
@@ -1123,7 +998,6 @@
 @media (max-width: 640px) {
   .gq-sect__t { font-size: 18px; }
   .gq-top__row { gap: 10px; }
-  .gq-navtab { height: 36px; padding: 0 11px; font-size: 12px; }
   .gq-petchip { height: 36px; padding: 0 11px 0 4px; }
   .gq-petchip__sub { display: none; }
   .gq-logo__mark { width: 44px; height: 44px; }
