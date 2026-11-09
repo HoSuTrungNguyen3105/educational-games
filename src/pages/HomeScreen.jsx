@@ -76,6 +76,7 @@ const FEATURED_GAME = {
 import { OFFLINE_GAME_MANIFEST } from "../games/offline/games-src/manifest.js";
 import { gameThumbnail, thumbnailForGame } from "../lib/gameThumbnail.js";
 import { subscribeWallet } from "../lib/coinWallet.js";
+import { clearAppCaches } from "../lib/appUpdate.js";
 
 
 const NO_SUBJECT = "Chung";
@@ -537,17 +538,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const handleResetCache = async () => {
     setResettingCache(true);
     try {
-      // Clear all caches
-      if ('caches' in window) {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map(name => caches.delete(name)));
-      }
-
-      // Unregister all service workers
-      if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map(registration => registration.unregister()));
-      }
+      // Dọn toàn bộ cache + huỷ đăng ký SW qua helper dùng chung với
+      // luồng tự cập nhật bản mới (src/lib/appUpdate.js) — một logic
+      // duy nhất cho cả nút thủ công lẫn tự động, không viết trùng.
+      await clearAppCaches();
 
       // Clear localStorage (optional - only specific keys)
       localStorage.removeItem('gq_pwa_closed');
