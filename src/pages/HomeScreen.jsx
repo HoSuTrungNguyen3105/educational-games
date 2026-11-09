@@ -1229,6 +1229,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── NÚT TẮT + CHƠI NGẪU NHIÊN ─────────── */}
         <div className="gq-playbar">
+          {/* "Bài học" trước đây chỉ nằm trong dropdown "Thêm" của header nên
+              học sinh nhỏ khó tìm (kiểm chứng production 2026-11-08); đưa ra
+              hàng nút tắt ở thân trang, chỉ hiện khi đã đăng nhập như mục menu. */}
+          {userAuth?.user && (
+            <button className="gq-mini" onClick={() => goTo("/lessons")}>
+              <span className="gq-mini__ico" aria-hidden="true"><BookOpen className="w-5 h-5 text-sky-600" /></span>
+              <span className="gq-mini__lbl">Bài học</span>
+            </button>
+          )}
           <button className="gq-mini" onClick={() => goTo("/achievements")}>
             <span className="gq-mini__ico" aria-hidden="true"><Trophy className="w-5 h-5 text-amber-500" /></span>
             <span className="gq-mini__lbl">Cúp</span>
