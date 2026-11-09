@@ -1,20 +1,36 @@
 // services/aiBackendService.js
 //
-// Cầu nối DUY NHẤT từ Backend chính sang AI Service (Java, :8081).
+// Tầng kết nối AI của Backend chính — điểm vào DUY NHẤT mà routes/ai.js dùng.
+// Có HAI nhà cung cấp, chọn theo cấu hình (xem aiProviderKind bên dưới):
 //
-// Kiến trúc:  Frontend → Backend chính (:5000) → AI Service (:8081)
+//   1. "ollama-cloud" (Ollama trực tiếp) — khi OLLAMA_KEY khác rỗng VÀ
+//      OLLAMA_BASE_URL đã đặt và KHÔNG phải localhost/127.0.0.1: Backend gọi
+//      thẳng endpoint Ollama (production: https://ollama.com) qua
+//      aiDirectService/aiOllamaGateway — port trung thực hành vi của AI Service
+//      Java, hợp đồng response giữ nguyên. AI chạy 24/7, không cần máy
+//      Windows/tunnel.
+//   2. "ai-service" (mặc định, đường quay lui) — AI Service Java riêng (:8081):
 //
-// Nguyên tắc:
-//  - URL, service token và timeout đến từ biến môi trường, KHÔNG hard-code.
-//  - Service token đi qua header X-Ai-Internal-Token và TUYỆT ĐỐI không được log.
+// Kiến trúc đường 2:  Frontend → Backend chính (:5000) → AI Service (:8081)
+//
+// Nguyên tắc (cả hai đường):
+//  - URL, service token, API key và timeout đến từ biến môi trường, KHÔNG hard-code.
+//  - Service token đi qua header X-Ai-Internal-Token và TUYỆT ĐỐI không được log
+//    (tương tự OLLAMA_KEY ở đường trực tiếp).
 //  - Danh tính người dùng đã được Backend chính xác thực, chuyển tiếp qua header
-//    X-Ai-User-*. AI Service chỉ tin các header này khi service token khớp.
+//    X-Ai-User-* ở đường AI Service. AI Service chỉ tin các header này khi service
+//    token khớp. Ở đường trực tiếp, danh tính lấy thẳng từ req đã xác thực.
 //  - KHÔNG tự retry: mỗi lượt gọi AI đều tốn chi phí. Lỗi được ném ra để route
 //    xử lý và trả về frontend theo quy ước chung.
 //  - Lỗi trả về cho frontend luôn là thông báo tiếng Việt đã lọc, không kèm stack
-//    trace, URL nội bộ, service token hay nội dung prompt của AI Service.
+//    trace, URL nội bộ, service token/key hay nội dung prompt.
 
 import { config } from "../config.js";
+import { AiBackendError } from "./aiBackendError.js";
+import { callAiDirect } from "./aiDirectService.js";
+import { ollamaHealth } from "./aiOllamaGateway.js";
+
+export { AiBackendError };
 
 const INTERNAL_HEADERS = {
   token: "X-Ai-Internal-Token",
@@ -24,18 +40,44 @@ const INTERNAL_HEADERS = {
   clientIp: "X-Ai-Client-Ip",
 };
 
-/**
- * Lỗi từ AI Service, đã chuẩn hoá để route trả về frontend.
- * `http_code` là mã sẽ gửi cho client (đã nằm trong khoảng an toàn 400–599).
- */
-export class AiBackendError extends Error {
-  constructor(message, { httpCode = 502, kind = "upstream", cause } = {}) {
-    super(message);
-    this.name = "AiBackendError";
-    this.http_code = httpCode;
-    this.kind = kind; // config | offline | timeout | upstream | badResponse
-    if (cause) this.cause = cause;
+// ───────────────────── Chọn nhà cung cấp ─────────────────────
+
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+/** true nếu URL trỏ tới máy local (localhost/127.0.0.1/::1) hoặc không parse được. */
+export function isLocalOllamaUrl(url) {
+  if (!url || !String(url).trim()) return true;
+  try {
+    return LOCAL_HOSTS.has(new URL(String(url)).hostname.toLowerCase());
+  } catch {
+    return true; // URL hỏng → chưa sẵn sàng đi cloud, giữ đường quay lui.
   }
+}
+
+/**
+ * Chọn nhà cung cấp từ một cấu hình Ollama cho trước (hàm thuần để test):
+ * "ollama-cloud" khi có key + base URL đặt từ xa; ngược lại "ai-service".
+ * Key + endpoint local (dev tự host Ollama trên máy) KHÔNG kích hoạt đường
+ * cloud — trường hợp đó vẫn đi qua AI Service như trước.
+ */
+export function aiProviderKindFrom(ollama = {}) {
+  const key = ollama.apiKey == null ? "" : String(ollama.apiKey).trim();
+  const url = ollama.baseUrl == null ? "" : String(ollama.baseUrl).trim();
+  if (key !== "" && url !== "" && !isLocalOllamaUrl(url)) return "ollama-cloud";
+  return "ai-service";
+}
+
+/** Nhà cung cấp đang hiệu lực theo config hiện tại: "ollama-cloud" | "ai-service". */
+export function aiProviderKind() {
+  return aiProviderKindFrom(config.ollama);
+}
+
+/** configured = cấu hình của ĐƯỜNG ĐANG CHỌN đã đủ chưa (cloud: URL+KEY+MODEL; AI Service: token). */
+export function aiProviderConfigured() {
+  if (aiProviderKind() === "ollama-cloud") {
+    return !!(config.ollama.baseUrl && config.ollama.apiKey && config.ollama.model);
+  }
+  return !!config.aiBackend.token;
 }
 
 /**
@@ -115,6 +157,11 @@ export async function callAiBackend(path, body, req) {
   if (!config.aiBackend.enabled) {
     throw new AiBackendError("Tính năng AI đang tắt trên hệ thống.", { httpCode: 503, kind: "config" });
   }
+  if (aiProviderKind() === "ollama-cloud") {
+    // Đường Ollama trực tiếp: không cần AI_BACKEND_TOKEN; timeout dùng chung
+    // AI_BACKEND_TIMEOUT_MS như đường AI Service.
+    return callAiDirect(path, body, req);
+  }
   if (!config.aiBackend.token) {
     console.error("[ai] Thiếu AI_BACKEND_TOKEN — Backend chính không thể xác thực với AI Service.");
     throw new AiBackendError("AI Service chưa được cấu hình đầy đủ.", { httpCode: 503, kind: "config" });
@@ -170,6 +217,26 @@ export async function callAiBackend(path, body, req) {
  * Trả về đúng shape mà `AiStatusController` của AI Service trả về.
  */
 export async function aiBackendHealth(req) {
+  if (aiProviderKind() === "ollama-cloud") {
+    // Shape GIỮ NGUYÊN như đường AI Service, cộng thêm 2 cờ chẩn đoán không chứa
+    // bí mật (baseUrlConfigured/hasApiKey) để admin nhìn là biết thiếu biến nào.
+    const base = {
+      status: false,
+      model: config.ollama.model || null,
+      provider: "ollama-cloud",
+      detail: "Không gọi được endpoint Ollama.",
+      enabled: config.aiBackend.enabled,
+      configured: aiProviderConfigured(),
+      baseUrlConfigured: !!config.ollama.baseUrl,
+      hasApiKey: !!config.ollama.apiKey,
+    };
+    if (!config.aiBackend.enabled) {
+      return { ...base, detail: "Tính năng AI đang tắt trên hệ thống." };
+    }
+    const h = await ollamaHealth();
+    return { ...base, ...h, enabled: config.aiBackend.enabled, configured: aiProviderConfigured() };
+  }
+
   const base = {
     status: false,
     model: null,
