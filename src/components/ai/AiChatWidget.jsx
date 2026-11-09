@@ -278,7 +278,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
             <Input
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={setInput}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
