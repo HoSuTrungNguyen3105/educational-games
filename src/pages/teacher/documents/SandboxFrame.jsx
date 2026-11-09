@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 
 // SandboxFrame — iframe xem trước MÃ HTML CỦA GIÁO VIÊN, an toàn:
 //   • sandbox KHÔNG có allow-scripts → JavaScript trong mã nguồn không
@@ -7,8 +7,17 @@ import { useEffect, useRef, useState } from "react";
 //     không chạy script nên việc này không tạo lối thoát sandbox).
 //   • Nội dung luôn qua srcDoc (không nạp URL ngoài vào khung chính).
 // Zoom bằng transform scale trên khung có kích thước logic cố định.
-export default function SandboxFrame({ srcDoc, width = 794, minHeight = 600, zoom = 1 }) {
+// Ref (forwardRef) trả về chính DOM iframe để trang cha cuộn tới + bôi
+// xanh phần tử tương ứng vị trí con trỏ (frameReveal.js).
+const SandboxFrame = forwardRef(function SandboxFrame({ srcDoc, width = 794, minHeight = 600, zoom = 1 }, ref) {
   const frameRef = useRef(null);
+  // Callback ref ổn định: gả cả ref nội bộ lẫn ref của trang cha ngay khi
+  // iframe mount (useImperativeHandle với [] sẽ bắt null ở pha layout).
+  const setFrame = useCallback((node) => {
+    frameRef.current = node;
+    if (typeof ref === "function") ref(node);
+    else if (ref) ref.current = node;
+  }, [ref]);
   const [height, setHeight] = useState(minHeight);
   // Nội dung mới → đo lại từ chiều cao tối thiểu (chỉnh state trong
   // render theo pattern React khuyến nghị, không setState trong effect).
@@ -51,7 +60,7 @@ export default function SandboxFrame({ srcDoc, width = 794, minHeight = 600, zoo
   return (
     <div style={{ width: Math.round(width * zoom), height: Math.round(height * zoom) }} className="mx-auto shrink-0">
       <iframe
-        ref={frameRef}
+        ref={setFrame}
         title="Xem trước tài liệu"
         srcDoc={srcDoc}
         sandbox="allow-same-origin"
@@ -63,4 +72,6 @@ export default function SandboxFrame({ srcDoc, width = 794, minHeight = 600, zoo
       />
     </div>
   );
-}
+});
+
+export default SandboxFrame;

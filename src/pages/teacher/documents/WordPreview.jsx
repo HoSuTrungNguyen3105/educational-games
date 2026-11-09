@@ -2,6 +2,7 @@ import { useRef } from "react";
 import SandboxFrame from "./SandboxFrame.jsx";
 import { buildWordPreviewSrcDoc } from "../../../lib/documents/modelRender.js";
 import { fitScale, useContainerWidth } from "./useContainerWidth.js";
+import { useFrameReveal } from "./frameReveal.js";
 
 // WordPreview — xem trước tài liệu Word trên trang giấy A4 (794px ≈
 // 210mm, lề 72px) nền trắng đặt trên nền xám của app. Nguồn preview là
@@ -15,14 +16,16 @@ import { fitScale, useContainerWidth } from "./useContainerWidth.js";
 // mức tự vừa đó (cùng cơ chế với PowerPointPreview).
 const PAGE_W = 794;
 
-export default function WordPreview({ bodyHtml, cssText = "", zoom = 1 }) {
+export default function WordPreview({ bodyHtml, cssText = "", zoom = 1, reveal = null }) {
   const srcDoc = buildWordPreviewSrcDoc({ bodyHtml: bodyHtml || "", cssText });
   const boxRef = useRef(null);
+  const frameRef = useRef(null);
   const boxWidth = useContainerWidth(boxRef);
   const effectiveZoom = zoom * fitScale(boxWidth, PAGE_W);
+  useFrameReveal(boxRef, frameRef, reveal);
   return (
     <div ref={boxRef} className="h-full overflow-auto bg-[#cfc9bb] p-4">
-      <SandboxFrame srcDoc={srcDoc} width={PAGE_W} minHeight={1123} zoom={effectiveZoom} />
+      <SandboxFrame ref={frameRef} srcDoc={srcDoc} width={PAGE_W} minHeight={1123} zoom={effectiveZoom} />
     </div>
   );
 }

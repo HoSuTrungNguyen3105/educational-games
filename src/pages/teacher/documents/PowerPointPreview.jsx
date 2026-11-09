@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Copy, Plus, Trash2 } from "lucide-react";
 import SandboxFrame from "./SandboxFrame.jsx";
 import { buildSlidesScrollSrcDoc } from "../../../lib/documents/modelRender.js";
 import { fitScale, useContainerWidth } from "./useContainerWidth.js";
+import { useFrameReveal } from "./frameReveal.js";
 import { SLIDE_TYPE_OPTIONS } from "../../../lib/documents/slideOps.js";
 
 // PowerPointPreview — xem trước bài PowerPoint:
@@ -252,18 +253,33 @@ const opBtn = "flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-s
 
 export default function PowerPointPreview({
   model, bodyHtml, cssText = "", zoom = 1, ratio, onRatioChange,
-  index: controlledIndex, onIndexChange, editable = false, onSlideOp,
+  index: controlledIndex, onIndexChange, editable = false, onSlideOp, reveal = null,
 }) {
   const slides = model?.slides || [];
   const theme = model?.theme;
   const [innerIndex, setInnerIndex] = useState(0);
   const [newSlideType, setNewSlideType] = useState("content");
+  const [slidePulse, setSlidePulse] = useState(false);
   const stageRef = useRef(null);
+  const htmlScrollRef = useRef(null);
+  const htmlFrameRef = useRef(null);
   const stageWidth = useContainerWidth(stageRef);
   const index = controlledIndex ?? innerIndex;
   const setIndex = onIndexChange ?? setInnerIndex;
   const safeIndex = Math.min(Math.max(0, index), Math.max(0, slides.length - 1));
   const slide = slides[safeIndex];
+
+  // Click editor → cuộn tới slide/đoạn tương ứng. Nhánh HTML cuộn iframe;
+  // nhánh JSON chuyển slide + nháy xanh khung slide hiện tại.
+  useFrameReveal(htmlScrollRef, htmlFrameRef, reveal && !model ? reveal : null);
+  useEffect(() => {
+    if (!reveal || model == null || reveal.kind !== "slide") return undefined;
+    if (typeof reveal.index === "number") setIndex(reveal.index);
+    setSlidePulse(true);
+    const t = setTimeout(() => setSlidePulse(false), 1700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reveal?.token]);
 
   // Chế độ HTML: không có model slide (bodyHtml được truyền) → tài liệu cuộn.
   if (!model) {
@@ -274,8 +290,8 @@ export default function PowerPointPreview({
           Chế độ HTML: xem trước dạng tài liệu cuộn. Xem theo từng slide và thao tác slide
           bằng nút (thêm/nhân bản/xoá/sắp xếp) áp dụng ở chế độ JSON.
         </p>
-        <div className="flex-1 overflow-auto bg-[#ece7db] p-4">
-          <SandboxFrame srcDoc={srcDoc} width={920} minHeight={560} zoom={zoom} />
+        <div ref={htmlScrollRef} className="flex-1 overflow-auto bg-[#ece7db] p-4">
+          <SandboxFrame ref={htmlFrameRef} srcDoc={srcDoc} width={920} minHeight={560} zoom={zoom} />
         </div>
       </div>
     );
@@ -291,7 +307,7 @@ export default function PowerPointPreview({
   return (
     <div className="h-full flex flex-col bg-[#ece7db]">
       <div ref={stageRef} className="flex-1 overflow-auto p-4">
-        <div className="mx-auto" style={{ width: Math.round(SLIDE_W * effZoom), height: Math.round(stageH * effZoom) }}>
+        <div className={`mx-auto docstudio-slide-stage ${slidePulse ? "is-reveal-pulse" : ""}`} style={{ width: Math.round(SLIDE_W * effZoom), height: Math.round(stageH * effZoom) }}>
           <div style={{ transform: `scale(${effZoom})`, transformOrigin: "top left", width: SLIDE_W }}>
             <SlideView slide={slide} ratio={ratio} theme={theme} />
           </div>

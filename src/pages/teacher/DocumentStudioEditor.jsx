@@ -16,6 +16,7 @@ import PowerPointPreview from "./documents/PowerPointPreview.jsx";
 import DocumentUploadModal from "./documents/DocumentUploadModal.jsx";
 import { applySource, convertSource } from "../../lib/documents/convert.js";
 import { renderModelBodyHtml } from "../../lib/documents/modelRender.js";
+import { jsonItemIndexAt, htmlAnchorAt } from "../../lib/documents/sourceMap.js";
 import { templatesFor } from "../../lib/documents/templates.js";
 import { exportWordDocx } from "../../lib/documents/wordExporter.js";
 import { exportPresentationPptx } from "../../lib/documents/pptxExporter.js";
@@ -119,6 +120,10 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const [ratio, setRatio] = useState("16:9");
   const [slideIndex, setSlideIndex] = useState(0);
   const [showPreviewMobile, setShowPreviewMobile] = useState(false);
+  const [mobileSheet, setMobileSheet] = useState(null); // null | "tools" — bảng công cụ dưới mobile
+  const [reveal, setReveal] = useState(null); // đích cuộn/bôi xanh trong preview
+  const revealToken = useRef(0);
+  const cursorTimer = useRef(null);
   const [tool, setTool] = useState("content");
   const [templateQuery, setTemplateQuery] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -194,6 +199,29 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     if (doApply(draft, mode, docType)) showToast?.("Đã áp dụng — preview đã cập nhật", "success");
     else showToast?.("Mã nguồn đang có lỗi — preview giữ bản hợp lệ gần nhất", "error");
   };
+
+  // ── Click editor → preview cuộn tới + bôi xanh đoạn tương ứng ─────────
+  // Con trỏ đặt vào dòng nào thì ánh xạ sang khối/slide (JSON) hoặc thẻ
+  // (HTML) chứa dòng đó, rồi báo preview cuộn tới và nháy xanh. Debounce
+  // nhẹ để không cuộn giật cục khi giữ phím mũi tên.
+  const handleCursor = ({ offset }) => {
+    clearTimeout(cursorTimer.current);
+    cursorTimer.current = setTimeout(() => {
+      let target = null;
+      if (mode === "json") {
+        const key = docType === "powerpoint" ? "slides" : "blocks";
+        const idx = jsonItemIndexAt(draft, key, offset);
+        if (idx != null) {
+          target = docType === "powerpoint" ? { kind: "slide", index: idx } : { kind: "block", index: idx };
+        }
+      } else {
+        const anchor = htmlAnchorAt(draft, offset);
+        if (anchor) target = { kind: "tag", tag: anchor.tag, index: anchor.index };
+      }
+      if (target) setReveal({ ...target, token: ++revealToken.current });
+    }, 130);
+  };
+  useEffect(() => () => clearTimeout(cursorTimer.current), []);
 
   // ── Chuyển chế độ soạn ────────────────────────────────────────────────
   const switchMode = (target) => {
@@ -784,77 +812,17 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
             <FolderOpen className="w-4 h-4" /> <span className="hidden md:inline">Tài liệu của tôi</span>
           </button>
           <span className="docstudio-avatar" title="Giáo viên"><UserRound className="w-4 h-4" /></span>
+          <button type="button" className="docstudio-export-btn hidden lg:inline-flex" onClick={handleExport} disabled={exporting}
+            title={`Xuất file ${docType === "word" ? ".docx" : ".pptx"} thật`}>
+            <Download className="w-4 h-4" /> {exporting ? "Đang xuất…" : theme.exportLabel}
+          </button>
           <button type="button" className="docstudio-save-btn" onClick={handleSave} disabled={saving}>
             <Save className="w-4 h-4" /> <span className="hidden sm:inline">Lưu</span>
           </button>
         </div>
       </header>
 
-      <div className="docstudio-body">
-        {/* ── Banner màu theo loại tài liệu ─────────────────────────── */}
-        <div className="docstudio-banner">
-          <div className="docstudio-banner-brand">
-            <span className="docstudio-banner-icon">{theme.icon}</span>
-            <div className="min-w-0">
-              <h2 className="docstudio-banner-title">{theme.label}</h2>
-              <p className="docstudio-banner-sub">{theme.blurb}</p>
-            </div>
-          </div>
-          <div className="docstudio-banner-actions">
-            <button type="button" className="docstudio-banner-btn"
-              onClick={() => setTool(tool === "templates" ? "content" : "templates")}>
-              <LayoutGrid className="w-4 h-4" /> {theme.templateLabel}
-            </button>
-            <button type="button" className="docstudio-banner-btn"
-              onClick={() => { setShowPreviewMobile(true); previewRef.current?.scrollIntoView?.({ block: "nearest" }); }}>
-              <Eye className="w-4 h-4" /> Xem trước
-            </button>
-            <button type="button" className="docstudio-banner-export" onClick={handleExport} disabled={exporting}>
-              <Download className="w-4 h-4" /> {exporting ? "Đang xuất…" : theme.exportLabel}
-            </button>
-          </div>
-        </div>
-
-        {/* ── Thông báo / lỗi / cảnh báo / kết quả xuất ───────────────── */}
-        {(notice || applyErrors.length > 0 || (warnings.length > 0 && applyErrors.length === 0) || exportReport) && (
-          <div className="docstudio-alerts">
-            {applyErrors.length > 0 && (
-              <div className="docstudio-alert is-error">
-                <FileWarning className="w-4 h-4 mt-0.5 shrink-0" />
-                <div className="flex-1">
-                  <p className="font-semibold">Mã nguồn chưa hợp lệ — preview đang giữ bản hợp lệ gần nhất:</p>
-                  <ul className="list-disc pl-5 mt-1">
-                    {applyErrors.map((e, i) => <li key={i}>{e.message}</li>)}
-                  </ul>
-                </div>
-              </div>
-            )}
-            {warnings.length > 0 && applyErrors.length === 0 && (
-              <div className="docstudio-alert is-warning">
-                <div className="flex-1">
-                  <p className="font-semibold">Lưu ý khi chuyển đổi/xuất file:</p>
-                  <ul className="list-disc pl-5 mt-1">
-                    {warnings.map((w, i) => <li key={i}>{w}</li>)}
-                  </ul>
-                </div>
-              </div>
-            )}
-            {exportReport && (
-              <div className={`docstudio-alert ${exportReport.ok ? "is-success" : "is-error"}`}>
-                <div className="flex-1">
-                  <p>{exportReport.message}</p>
-                  {exportReport.warnings?.length > 0 && (
-                    <ul className="list-disc pl-5 mt-1">
-                      {exportReport.warnings.map((w, i) => <li key={i}>{w}</li>)}
-                    </ul>
-                  )}
-                </div>
-                <button type="button" onClick={() => setExportReport(null)} aria-label="Đóng"><X className="w-4 h-4" /></button>
-              </div>
-            )}
-          </div>
-        )}
-
+      <div className="docstudio-body">      
         {/* ── Workspace: rail | công cụ | soạn thảo | xem trước ──────── */}
         <div className="docstudio-workspace">
           <aside className="docstudio-rail" aria-label="Công cụ soạn thảo">
@@ -898,7 +866,8 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
 
               <div className="docstudio-editor-code">
                 <CodeEditor ref={editorRef} value={draft} language={mode === "json" ? "json" : "html"}
-                  onChange={(text) => setDrafts((d) => (d[mode] === text ? d : { ...d, [mode]: text }))} />
+                  onChange={(text) => setDrafts((d) => (d[mode] === text ? d : { ...d, [mode]: text }))}
+                  onCursor={handleCursor} />
               </div>
 
               <div className="docstudio-editor-foot">
@@ -940,7 +909,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                   <WordPreview
                     bodyHtml={validApplied ? validApplied.bodyHtml : ""}
                     cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
-                    zoom={zoom} />
+                    zoom={zoom} reveal={reveal} />
                 ) : (
                   <PowerPointPreview
                     model={validApplied?.mode === "json" ? validApplied.model : null}
@@ -948,7 +917,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                     cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
                     zoom={zoom} ratio={ratio} onRatioChange={setRatio}
                     index={slideIndex} onIndexChange={setSlideIndex}
-                    editable={mode === "json"} onSlideOp={handleSlideOp} />
+                    editable={mode === "json"} onSlideOp={handleSlideOp} reveal={reveal} />
                 )}
               </div>
               <div className="docstudio-preview-foot">
@@ -969,6 +938,83 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
           </div>
         </div>
       </div>
+
+      {/* ── Điều hướng mobile: Soạn / Xem / Công cụ / Lưu / Xuất ─────── */}
+      <nav className="docstudio-mobile-nav" aria-label="Thao tác soạn tài liệu">
+        <button type="button" className={!showPreviewMobile && !mobileSheet ? "is-active" : ""}
+          onClick={() => { setShowPreviewMobile(false); setMobileSheet(null); setTool("content"); editorRef.current?.focus(); }}>
+          <FileText /> <span>Soạn</span>
+        </button>
+        <button type="button" className={showPreviewMobile ? "is-active" : ""}
+          onClick={() => { setShowPreviewMobile(true); setMobileSheet(null); }}>
+          <Eye /> <span>Xem</span>
+        </button>
+        <button type="button" className={mobileSheet === "tools" ? "is-active" : ""}
+          onClick={() => setMobileSheet("tools")}>
+          <Settings /> <span>Công cụ</span>
+        </button>
+        <button type="button" onClick={handleSave} disabled={saving}>
+          <Save /> <span>{saving ? "Đang lưu" : "Lưu"}</span>
+        </button>
+        <button type="button" onClick={handleExport} disabled={exporting}>
+          <Download /> <span>{exporting ? "Đang xuất" : "Xuất"}</span>
+        </button>
+      </nav>
+
+      {mobileSheet === "tools" && (
+        <div className="docstudio-mobile-sheet-wrap">
+          <button type="button" className="docstudio-mobile-sheet-backdrop"
+            onClick={() => setMobileSheet(null)} aria-label="Đóng bảng công cụ" />
+          <section className="docstudio-mobile-sheet" role="dialog" aria-modal="true" aria-label="Công cụ soạn thảo">
+            <header className="docstudio-mobile-sheet-head">
+              <strong>Công cụ soạn thảo</strong>
+              <button type="button" onClick={() => setMobileSheet(null)} aria-label="Đóng"><X /></button>
+            </header>
+            <div className="docstudio-mobile-sheet-tools">
+              {[...RAIL_ITEMS, { id: "templates", label: "Mẫu", icon: LayoutTemplate }].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button key={item.id} type="button"
+                    className={`docstudio-rail-btn ${tool === item.id ? "is-active" : ""}`}
+                    onClick={() => setTool(item.id)}>
+                    <Icon /> <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="docstudio-mobile-sheet-body">
+              {renderToolPanel()}
+              <button type="button" className="docstudio-btn-ghost" onClick={() => { setMobileSheet(null); setUploadOpen(true); }}>
+                <Upload className="w-4 h-4" /> Tải file lên (DOCX/PPTX/HTML/JSON)
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* ── Kết quả xuất file (.docx / .pptx thật) ─────────────────────── */}
+      {exportReport && (
+        <Modal onClose={() => setExportReport(null)}>
+          <h3 className="font-display text-xl text-ink mb-1">
+            {exportReport.ok ? "Xuất file thành công" : "Xuất file thất bại"}
+          </h3>
+          <p className="text-sm font-body text-ink/70 mb-3">{exportReport.message}</p>
+          {exportReport.warnings?.length > 0 && (
+            <details className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+              <summary className="cursor-pointer text-[13px] font-semibold text-amber-800">
+                {exportReport.warnings.length} cảnh báo chuyển đổi
+              </summary>
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-[12.5px] text-amber-900/90">
+                {exportReport.warnings.map((w, i) => <li key={i}>{w}</li>)}
+              </ul>
+            </details>
+          )}
+          <div className="flex justify-end">
+            <button type="button" onClick={() => setExportReport(null)}
+              className="px-4 py-2 rounded-full text-sm font-semibold bg-ink text-paper">Đóng</button>
+          </div>
+        </Modal>
+      )}
 
       {/* ── Trợ lý AI: mở nhanh mẫu có sẵn (tính năng AI tự soạn đang phát triển) ── */}
       {aiOpen && (

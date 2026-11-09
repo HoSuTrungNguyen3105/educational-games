@@ -16,11 +16,13 @@ import { formatHtmlText, formatJsonText } from "../../../lib/documents/format.js
 //
 // Props: value (mã nguồn), onChange(text), language: "html" | "json".
 // Ref: format() — định dạng lại toàn bộ mã nguồn hiện tại.
-const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language }, ref) {
+const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language, onCursor }, ref) {
   const hostRef = useRef(null);
   const viewRef = useRef(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onCursorRef = useRef(onCursor);
+  onCursorRef.current = onCursor;
   const lastEmittedRef = useRef(value);
 
   useImperativeHandle(ref, () => ({
@@ -79,6 +81,13 @@ const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language },
           const text = update.state.doc.toString();
           lastEmittedRef.current = text;
           onChangeRef.current?.(text);
+        }
+        // Con trỏ dời do click/phím mũi tên (không phải do gõ chữ) → báo
+        // vị trí để preview cuộn tới + bôi xanh đoạn tương ứng.
+        if (update.selectionSet && !update.docChanged) {
+          const head = update.state.selection.main.head;
+          const line = update.state.doc.lineAt(head).number;
+          onCursorRef.current?.({ offset: head, line });
         }
       }),
     ];
