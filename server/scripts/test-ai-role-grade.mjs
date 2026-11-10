@@ -2,8 +2,11 @@
 // học sinh được cá nhân hoá theo khối lớp suy từ ageCode ở Backend (lớp 1/5,
 // vượt lớp, không rõ lớp), học sinh bị chặn dữ liệu quản trị, admin tra cứu
 // dữ liệu THẬT (đăng ký mới / điểm thấp theo ngưỡng cấu hình / chưa hoàn
-// thành / thống kê / kết quả giảm), giáo viên bị chốt phạm vi lớp được
-// phân công, và mọi lượt tra cứu đều ghi audit ai.admin_query.
+// thành / thống kê / kết quả giảm). Tra cứu quản trị CHỈ còn admin từ
+// 2026-11-10 (ca 9: giáo viên hỏi y hệt → KHÔNG tra cứu, không dữ liệu
+// quản trị trong prompt) — phạm vi mở rộng + quyền admin-only có test
+// riêng test-ai-admin-scope.mjs. Mọi lượt tra cứu đều ghi audit
+// ai.admin_query.
 // Cùng mẫu test-ai-buddy-context: Mongo in-memory + stub Ollama ghi lại
 // request để kiểm system prompt. KHÔNG dùng key thật, KHÔNG gọi mạng ngoài.
 //   node server/scripts/test-ai-role-grade.mjs
@@ -187,7 +190,7 @@ checkTrue("ca5a prompt có chỉ thị từ chối dữ liệu người khác",
 const c5b = await chat(hsL1, "Điểm kiểm tra của bạn HS Điểm Cao là bao nhiêu?");
 check("ca5b HTTP", c5b.status, 200);
 checkTrue("ca5b prompt vẫn có chỉ thị từ chối + không lộ điểm",
-  lastSystem().includes("TỪ CHỐI") && !lastSystem().includes("KẾT QUẢ TRA CỨU"));
+  lastSystem().includes("TỪ CHỐI") && !lastSystem().includes("KẾT QUẢ TRA CỨU THẬT"));
 
 // ── 6. Admin hỏi học sinh mới đăng ký tháng này → số thật từ seed ──
 const c6 = await chat(admin, "Có bao nhiêu học sinh mới đăng ký trong tháng này?");
@@ -212,13 +215,18 @@ const sys8 = lastSystem();
 checkTrue("ca8 ngữ cảnh có học sinh dưới ngưỡng (35 điểm)", sys8.includes("HS Điểm Thấp A") && sys8.includes("35 điểm"), sys8.slice(-900));
 checkTrue("ca8 KHÔNG có học sinh trên ngưỡng", !sys8.includes("HS Điểm Cao"));
 
-// ── 9. Giáo viên chỉ được phân công lớp A → không thấy dữ liệu lớp B ──
+// ── 9. Giáo viên KHÔNG còn quyền tra cứu (chỉ admin — chốt 2026-11-10) ──
+// Hỏi y hệt câu admin ở ca 8 (ngưỡng đang là 50): prompt của giáo viên
+// không được chứa bất kỳ dữ liệu quản trị nào — trước đợt này giáo viên
+// thấy học sinh lớp mình kèm ghi chú phạm vi lớp được phân công.
 const c9 = await chat(teacher, "Danh sách học sinh có điểm kiểm tra thấp trong tháng này?");
 check("ca9 HTTP", c9.status, 200);
 const sys9 = lastSystem();
-checkTrue("ca9 giáo viên thấy học sinh lớp mình (A)", sys9.includes("HS Điểm Thấp A"), sys9.slice(-900));
+checkTrue("ca9 giáo viên KHÔNG có khối kết quả tra cứu", !sys9.includes("KẾT QUẢ TRA CỨU THẬT"), sys9.slice(-600));
+checkTrue("ca9 giáo viên KHÔNG thấy học sinh điểm thấp lớp mình (A)", !sys9.includes("HS Điểm Thấp A"));
 checkTrue("ca9 giáo viên KHÔNG thấy học sinh lớp B", !sys9.includes("HS Điểm Thấp B"));
-checkTrue("ca9 ngữ cảnh ghi rõ phạm vi lớp được phân công", sys9.includes("chỉ được phân công các lớp"));
+checkTrue("ca9 giáo viên dùng prompt chat thường (không phải prompt quản trị)",
+  !sys9.includes("QUẢN TRỊ VIÊN") && !sys9.includes("chỉ được phân công các lớp"));
 
 // ── 10 (bổ sung). Admin hỏi chưa hoàn thành → tên thật từ seed ──
 const c10 = await chat(admin, "Những học sinh nào chưa hoàn thành bài kiểm tra?");
@@ -237,7 +245,8 @@ const c12 = await chat(admin, "Học sinh nào có kết quả học tập giả
 check("ca12 HTTP", c12.status, 200);
 checkTrue("ca12 ngữ cảnh có HS Tụt Dốc", lastSystem().includes("HS Tụt Dốc"), lastSystem().slice(-900));
 
-// ── 13. Audit: mọi lượt tra cứu staff đều ghi ai.admin_query, không lộ dữ liệu cá nhân ──
+// ── 13. Audit: mọi lượt tra cứu của admin đều ghi ai.admin_query, không lộ dữ liệu cá nhân ──
+// (Ca 9 của giáo viên không còn là lượt tra cứu nên không đóng góp audit.)
 const logs = await db.getCollection("admin_logs").find({ action: "ai.admin_query" }).toArray();
 checkTrue("ca13 có ít nhất 5 bản ghi audit ai.admin_query", logs.length >= 5, `chỉ có ${logs.length}`);
 checkTrue("ca13 meta chỉ gồm loại truy vấn + số kết quả",
