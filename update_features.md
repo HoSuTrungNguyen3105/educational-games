@@ -1,189 +1,209 @@
-# DANH SÁCH CÁC VẤN ĐỀ CẦN KHẮC PHỤC VÀ HOÀN THIỆN HỆ THỐNG
+YÊU CẦU BỔ SUNG: AI HỖ TRỢ HỌC TẬP THEO KHỐI LỚP VÀ PHÂN QUYỀN THEO VAI TRÒ
+1. Mục tiêu
+Bổ sung một phân hệ AI hỗ trợ học tập, có khả năng nhận diện vai trò và
+thông tin học tập của tài khoản đang sử dụng để điều chỉnh nội dung trả
+lời phù hợp.
 
-## 1. Rủi ro bảo mật nghiêm trọng – Lộ thông tin tài khoản mẫu trên giao diện Production
+AI cần phân biệt ít nhất hai nhóm người dùng:
+- Học sinh: Chỉ tập trung hỗ trợ kiến thức phù hợp với khối lớp mà
+  học sinh đang theo học.
+- Admin: Có thể sử dụng các chức năng hỏi đáp và tra cứu dữ liệu
+  tổng quan về học sinh trong phạm vi quyền quản trị được cấp.
+Không chỉ kiểm tra nội dung câu hỏi, hệ thống phải xác định người dùng
+từ thông tin xác thực ở Backend, không dựa vào dữ liệu vai trò hoặc khối
+lớp do Client tự gửi lên.
+2. Đối với học sinh: Giới hạn kiến thức theo khối lớp
+Khi học sinh đặt câu hỏi về bài học, AI cần lấy thông tin tài khoản đã
+đăng nhập để xác định:
+- Vai trò tài khoản.
+- Khối lớp hiện tại (lớp 1, lớp 2, lớp 3, lớp 4 hoặc lớp 5).
+- Các môn học và nội dung học tập tương ứng, nếu hệ thống đã có dữ
+  liệu chương trình học.
+2.1. Trả lời theo đúng chương trình lớp đang học
+AI phải ưu tiên giải thích kiến thức trong phạm vi chương trình của khối
+lớp hiện tại.
 
-- `src/pages/LoginScreen.jsx:46` đang hiển thị công khai thông tin tài khoản mẫu: *teacher / 123456 – admin / admin123* ngay trên màn hình đăng nhập của website đang hoạt động. Điều này tiềm ẩn nguy cơ truy cập trái phép vào tài khoản quản trị.
-- `server/data/users.json` hiện đang lưu mật khẩu dưới dạng văn bản thuần (plaintext), ví dụ: `"password": "admin123"`. Chưa thấy cơ chế hash mật khẩu bằng bcrypt trong dữ liệu khởi tạo.
+Ví dụ:
+- Học sinh lớp 1 hỏi về phép cộng: giải thích bằng số nhỏ, hình ảnh
+  minh họa và cách diễn đạt đơn giản phù hợp với lớp 1.
+- Học sinh lớp 3 hỏi về phép nhân: giải thích theo kiến thức và phương
+  pháp học phù hợp với chương trình lớp 3.
+- Học sinh lớp 5 hỏi về phân số: trả lời trong phạm vi kiến thức phân
+  số của lớp 5, sử dụng ví dụ và cách giải phù hợp.
+Không sử dụng cách giải, thuật ngữ hoặc kiến thức quá nâng cao so với
+trình độ của học sinh nếu không thực sự cần thiết.
+2.2. Xử lý câu hỏi vượt ngoài chương trình lớp
+Nếu học sinh hỏi một nội dung thuộc khối lớp cao hơn hoặc chưa nằm trong
+chương trình đang học:
+- AI cần nhận biết nội dung đó vượt quá phạm vi kiến thức hiện tại.
+- Ưu tiên giải thích ở mức cơ bản, dễ hiểu và phù hợp với độ tuổi.
+- Không đưa ra lời giải phức tạp hoặc sử dụng kiến thức nâng cao khiến
+  học sinh khó tiếp thu.
+- Có thể nói rõ đây là kiến thức nâng cao và gợi ý học sinh tìm hiểu
+  khi đã học đến nội dung tương ứng.
+2.3. Xử lý câu hỏi không liên quan đến bài học
+Không bắt buộc mọi câu hỏi của học sinh đều phải liên quan đến chương
+trình học.
 
-**Yêu cầu khắc phục:**
-- Xóa toàn bộ thông tin tài khoản mẫu khỏi giao diện Production.
-- Thay đổi ngay mật khẩu mặc định của tài khoản Admin và Teacher.
-- Triển khai cơ chế hash mật khẩu bằng bcrypt.
-- Xây dựng quy trình migration để chuyển đổi dữ liệu mật khẩu hiện tại sang định dạng đã hash.
-- Đảm bảo không để lộ thông tin đăng nhập trong mã nguồn hoặc giao diện người dùng.
+Nếu học sinh hỏi về các chủ đề thông thường như khoa học, thiên nhiên,
+kỹ năng sống, công nghệ hoặc kiến thức xã hội:
+- AI vẫn có thể trả lời bình thường nếu nội dung an toàn và phù hợp
+  với lứa tuổi.
+- Sử dụng ngôn ngữ đơn giản, dễ hiểu.
+- Điều chỉnh độ sâu của câu trả lời theo khối lớp hiện tại.
+- Không từ chối chỉ vì câu hỏi không thuộc chương trình học.
+Đối với nội dung không phù hợp với trẻ em hoặc vượt quá phạm vi hỗ trợ
+an toàn, AI cần xử lý theo chính sách an toàn dành cho người dùng nhỏ
+tuổi.
+3. Đối với Admin: AI hỗ trợ tra cứu và phân tích dữ liệu học sinh
+Admin được sử dụng AI với phạm vi rộng hơn học sinh, đặc biệt là khả
+năng khai thác dữ liệu quản lý học tập trong hệ thống.
 
-## 2. Chưa có chức năng Quên mật khẩu (Forgot Password)
+AI cần hỗ trợ Admin đặt câu hỏi bằng ngôn ngữ tự nhiên, ví dụ:
+- Có bao nhiêu học sinh mới đăng ký trong tháng này?
+- Những học sinh nào vừa đăng ký tài khoản?
+- Danh sách học sinh có điểm kiểm tra thấp trong tháng này?
+- Học sinh nào có kết quả học tập giảm so với các lần kiểm tra trước?
+- Lớp nào có kết quả học tập trung bình thấp nhất?
+- Những học sinh nào chưa hoàn thành bài kiểm tra?
+- Thống kê kết quả học tập theo lớp hoặc theo môn học.
+3.1. Tra cứu học sinh mới đăng ký
+Khi Admin hỏi về học sinh mới đăng ký, AI cần:
+- Truy xuất dữ liệu thực tế từ Backend.
+- Xác định thời gian đăng ký theo yêu cầu.
+- Trả về số lượng học sinh mới.
+- Hiển thị thông tin cần thiết như họ tên, lớp, thời gian đăng ký và
+  trạng thái tài khoản nếu dữ liệu có sẵn.
+- Hỗ trợ lọc theo ngày, tuần, tháng hoặc khoảng thời gian cụ thể.
+3.2. Phân tích học sinh có điểm kiểm tra thấp
+Khi Admin hỏi về học sinh có kết quả kiểm tra thấp, AI cần:
+- Truy xuất kết quả kiểm tra thực tế của học sinh.
+- Cho phép lọc theo lớp, môn học, bài kiểm tra và khoảng thời gian.
+- Xác định học sinh có điểm thấp dựa trên ngưỡng điểm hoặc tiêu chí
+  được cấu hình.
+- Hiển thị họ tên, lớp, môn học, tên bài kiểm tra, điểm số và thời
+  gian thực hiện nếu dữ liệu có sẵn.
+- Có thể tổng hợp số lượng học sinh cần quan tâm và đưa ra nhận xét
+  dựa trên dữ liệu thực tế.
+Không tự đặt ngưỡng điểm thấp nếu hệ thống chưa có cấu hình. Nếu chưa có
+ngưỡng, AI cần hỏi Admin hoặc sử dụng tiêu chí được cấu hình rõ ràng.
+3.3. Phân tích và đề xuất hỗ trợ học tập
+Dựa trên dữ liệu thực tế, AI có thể:
+- Nhận diện học sinh có kết quả học tập chưa tốt.
+- So sánh kết quả giữa các lần kiểm tra.
+- Xác định môn học hoặc nhóm kiến thức học sinh đang gặp khó khăn.
+- Đề xuất nội dung ôn tập phù hợp.
+- Gợi ý Admin hoặc giáo viên theo dõi và hỗ trợ học sinh.
+Các nhận xét phải dựa trên dữ liệu có thật, không tự suy đoán nguyên
+nhân hoặc kết luận về năng lực của học sinh khi chưa đủ thông tin.
+4. Phân quyền và bảo mật dữ liệu
+Đây là yêu cầu bắt buộc khi triển khai AI theo vai trò.
+- Backend phải xác định vai trò người dùng từ token hoặc phiên đăng
+  nhập đã được xác thực.
+- Không tin tưởng role, userId, classId hoặc thông tin quyền do
+  Client tự truyền lên.
+- Học sinh chỉ được truy cập thông tin học tập của chính mình và không
+  được tra cứu dữ liệu cá nhân, điểm số hoặc tài khoản của học sinh
+  khác.
+- Admin chỉ được truy cập dữ liệu trong phạm vi quyền quản trị được
+  cấp.
+- Nếu có vai trò Giáo viên, cần thiết kế quyền riêng để giáo viên chỉ
+  xem dữ liệu học sinh và lớp được phân công.
+- Không đưa dữ liệu nhạy cảm hoặc thông tin cá nhân không cần thiết
+  vào prompt gửi đến AI.
+- Ghi nhận lịch sử truy vấn quản trị phù hợp để phục vụ kiểm tra và
+  kiểm soát truy cập.
+- Không để AI tự thực hiện thao tác sửa, xóa hoặc thay đổi dữ liệu học
+  sinh nếu chưa có API, quyền hạn và bước xác nhận tương ứng.
+5. Yêu cầu kỹ thuật triển khai
+5.1. Xác định ngữ cảnh trước khi gọi AI
+Khi nhận câu hỏi, hệ thống cần thực hiện quy trình:
+1. Xác thực người dùng đang đăng nhập.
+2. Lấy vai trò và thông tin tài khoản từ Backend.
+3. Nếu là học sinh, lấy khối lớp và ngữ cảnh học tập tương ứng.
+4. Nếu là Admin, xác định các quyền quản trị và dữ liệu được phép truy
+   cập.
+5. Xây dựng ngữ cảnh phù hợp với từng vai trò.
+6. Gửi câu hỏi cùng ngữ cảnh đến AI.
+7. Kiểm tra và trả kết quả phù hợp với quyền truy cập của người dùng.
+5.2. Tách biệt dữ liệu và hướng dẫn AI theo vai trò
+Nên xây dựng các bộ hướng dẫn (system prompt) riêng:
+- studentSystemPrompt: Hướng dẫn AI hỗ trợ học sinh theo khối lớp,
+  độ tuổi và chương trình học.
+- adminSystemPrompt: Hướng dẫn AI hỗ trợ Admin tra cứu, tổng hợp và
+  phân tích dữ liệu quản trị.
+Không sử dụng chung một prompt cho tất cả người dùng nếu điều đó khiến
+AI không phân biệt được quyền hạn và phạm vi kiến thức.
+5.3. AI phải truy xuất dữ liệu thực tế khi cần
+Đối với các câu hỏi quản trị như học sinh mới đăng ký, điểm kiểm tra
+thấp hoặc thống kê theo lớp:
+- AI phải sử dụng API/service lấy dữ liệu thực tế từ hệ thống.
+- Không yêu cầu AI tự đoán hoặc tự tạo số liệu.
+- Backend cần kiểm tra quyền trước khi trả dữ liệu.
+- Nếu không có dữ liệu hoặc API chưa hỗ trợ, AI phải thông báo rõ thay
+  vì đưa ra kết quả giả định.
+5.4. Không làm ảnh hưởng đến chức năng AI hiện tại
+- Rà soát cấu trúc AI hiện có trước khi chỉnh sửa.
+- Tái sử dụng service, API và cấu hình model hiện tại nếu phù hợp.
+- Không tạo thêm các luồng gọi AI trùng lặp.
+- Không làm ảnh hưởng đến chức năng chat AI, lịch sử hội thoại và các
+  tính năng AI đang hoạt động.
+- Đảm bảo có cơ chế xử lý lỗi khi không lấy được thông tin người dùng
+  hoặc dữ liệu học tập.
+6. Các trường hợp cần kiểm thử
+  Tài khoản               Tình huống kiểm thử     Kết quả mong muốn
+  Học sinh lớp 1          Hỏi kiến thức Toán lớp  Trả lời đúng trình độ
+1                       lớp 1
 
-- `LoginScreen` hiện chưa có liên kết hoặc chức năng Quên mật khẩu.
-- Backend chỉ hỗ trợ API `PATCH /users/:id/reset-password`, cho phép Admin đặt lại mật khẩu cho người dùng khác.
-- Học sinh và giáo viên chưa thể tự khôi phục tài khoản khi quên mật khẩu.
+  Học sinh lớp 5          Hỏi kiến thức Toán lớp  Trả lời trong phạm vi
+5                       lớp 5
 
-**Yêu cầu bổ sung:**
-- Xây dựng quy trình yêu cầu đặt lại mật khẩu thông qua email hoặc mã xác thực.
-- Bổ sung API xử lý yêu cầu khôi phục mật khẩu.
-- Triển khai cơ chế xác thực danh tính và mã/link đặt lại mật khẩu có thời hạn.
-- Bổ sung giao diện Quên mật khẩu và Đặt lại mật khẩu.
-- Đảm bảo an toàn, tránh để lộ thông tin tài khoản khi gửi yêu cầu khôi phục.
+  Học sinh lớp 1          Hỏi kiến thức nâng cao  Giải thích đơn giản,
+của lớp 5               không đưa lời giải vượt
+quá trình độ
 
-## 3. API quản lý trang tĩnh (`/pages`) chưa có endpoint lấy danh sách
+  Học sinh lớp 3          Hỏi về động vật, thiên  Vẫn trả lời bình
+nhiên                   thường, phù hợp lứa
+tuổi
 
-- Backend hiện chỉ hỗ trợ các endpoint `GET /:slug`, `GET /:slug/raw` và `PUT /:slug`.
-- Chưa có endpoint `GET /api/pages` để lấy danh sách toàn bộ trang tĩnh (kiểm tra thực tế trả về 404).
-- Điều này khiến Admin không thể xem và quản lý danh sách các trang hiện có một cách tập trung mà phải biết trước từng `slug`.
+  Học sinh                Hỏi điểm kiểm tra của   Từ chối truy cập dữ
+học sinh khác           liệu
 
-**Yêu cầu bổ sung:**
-- Xây dựng API `GET /api/pages` để lấy danh sách toàn bộ trang tĩnh.
-- Hỗ trợ quản lý, tìm kiếm và truy cập nhanh nội dung từng trang.
-- Đảm bảo API được phân quyền phù hợp, chỉ tài khoản có quyền mới được phép quản lý và chỉnh sửa nội dung.
+  Học sinh                Yêu cầu xem danh sách   Không cung cấp dữ liệu
+học sinh mới đăng ký    quản trị
 
-## 4. Ẩn hoàn toàn chức năng Chấm công (Attendance) ở cả Backend và Frontend
+  Admin                   Hỏi danh sách học sinh  Trả dữ liệu thực tế từ
+mới đăng ký             hệ thống
 
-Hiện tại hệ thống không còn sử dụng chức năng Chấm công. Do đó, cần ẩn và vô hiệu hóa toàn bộ chức năng này khỏi hệ thống đang hoạt động.
+  Admin                   Hỏi học sinh có điểm    Trả danh sách và điểm
+kiểm tra thấp           số chính xác theo tiêu
+chí
 
-- Backend hiện vẫn tồn tại các API liên quan đến chấm công như `attendance/class/:classId`, `stats/:id/:month` và những route Attendance khác.
-- Frontend vẫn có các component như `AttendancePage.jsx`, `AttendanceCalendar.jsx` và những thành phần liên quan.
-- Cần rà soát toàn bộ hệ thống để đảm bảo không còn điểm truy cập hoặc khả năng sử dụng chức năng này.
-
-**Yêu cầu thực hiện:**
-
-**Backend:**
-- Vô hiệu hóa toàn bộ API liên quan đến Attendance.
-- Chặn các request truy cập trực tiếp đến API chấm công, kể cả khi người dùng có token hợp lệ.
-- Rà soát route, controller, service, middleware và các API phụ thuộc vào Attendance.
-
-**Frontend:**
-- Ẩn toàn bộ chức năng Chấm công khỏi giao diện Admin và Teacher.
-- Loại bỏ mục Chấm công khỏi Sidebar, menu, dashboard, tab, nút điều hướng và các liên kết liên quan.
-- Ngăn người dùng truy cập trực tiếp vào các route trang Chấm công thông qua URL.
-- Rà soát các component như `AttendancePage.jsx`, `AttendanceCalendar.jsx` và những component liên quan để đảm bảo không còn được sử dụng trong luồng giao diện hiện tại.
-
-**Lưu ý quan trọng:**
-- Chỉ ẩn và vô hiệu hóa chức năng, không xóa dữ liệu chấm công hiện có.
-- Không xóa database, cấu trúc lưu trữ hoặc các file có thể cần thiết khi khôi phục chức năng trong tương lai.
-- Không ảnh hưởng đến các chức năng quản lý lớp, học sinh, giáo viên và thống kê khác.
-- Có thể giữ lại mã nguồn cũ nếu không gây ảnh hưởng đến quá trình build và vận hành.
-- Đảm bảo cả Client và Server đều không thể sử dụng chức năng Chấm công sau khi hoàn thành.
-
-## 5. Route Legacy chưa được xử lý triệt để và có nguy cơ trùng lặp
-
-- Route `admin-all-questions` trong router được ghi chú là route cũ cần chuyển hướng (legacy redirect) sang `/dashboard/questions`.
-- Tuy nhiên, `TeacherApp` vẫn đang render trực tiếp component `UnifiedQuestionManagement` thay vì thực hiện chuyển hướng như mô tả.
-- Điều này tạo ra sự thiếu nhất quán trong hệ thống điều hướng và có thể gây trùng lặp logic.
-
-**Yêu cầu khắc phục:**
-- Rà soát toàn bộ các route legacy trong hệ thống.
-- Xóa những route không còn được sử dụng hoặc triển khai redirect thực sự về route mới.
-- Đảm bảo không tồn tại nhiều route cùng xử lý một chức năng.
-- Giữ nguyên khả năng tương thích với các liên kết cũ nếu vẫn còn người dùng truy cập.
-
-## 6. Hệ thống phân quyền Admin chưa đồng bộ
-
-Một số mục quản trị hiện đang được cấu hình `permission: null`, bao gồm:
-
-- `admin-classes`
-- `admin-assignments`
-- `admin-studio`
-- `admin-documents`
-- `admin-avatar-*`
-- `admin-pet-catalog`
-- `admin-body-custom`
-- `admin-plant-types`
-- `admin-upload-items`
-- `admin-settings`
-
-Trong khi đó, nhiều chức năng khác đã được gắn quyền cụ thể như `games.manage`, `users.view`...
-
-Điều này khiến hệ thống phân quyền chưa đồng bộ và có nguy cơ cho phép người dùng không đủ quyền nhìn thấy hoặc truy cập các chức năng quản trị.
-
-**Yêu cầu khắc phục:**
-- Rà soát toàn bộ các mục quản trị đang sử dụng `permission: null`.
-- Xây dựng quyền riêng cho từng nhóm chức năng, ví dụ:
-  - `classes.manage`
-  - `assignments.manage`
-  - `avatar.manage`
-  - `documents.manage`
-  - `settings.manage`
-- Đồng bộ hệ thống phân quyền giữa Frontend và Backend.
-- Kiểm tra quyền tại `permissionFilter` và các middleware/API tương ứng.
-- Không chỉ ẩn menu trên giao diện mà phải thực thi quyền ở phía Server để ngăn truy cập API trái phép.
-- Đảm bảo mỗi nhóm tài khoản chỉ được truy cập những chức năng phù hợp với quyền được cấp.
-
-## 7. Hệ thống thống kê và báo cáo dành cho Admin chưa đầy đủ
-
-- Chưa có các endpoint tổng hợp như `GET /api/stats/overview` hoặc `/users/admin/summary` (kiểm tra thực tế trả về 404).
-- Dashboard hiện đang sử dụng dữ liệu từ API `/stats` với phạm vi thống kê 14 ngày.
-- Tuy nhiên, hệ thống vẫn thiếu các chức năng báo cáo chuyên sâu dành cho quản trị viên.
-
-**Yêu cầu bổ sung:**
-- Xây dựng trang tổng quan thống kê toàn hệ thống.
-- Bổ sung biểu đồ phân tích dữ liệu theo lớp, môn học và khoảng thời gian.
-- Thống kê hoạt động của học sinh và giáo viên.
-- Bổ sung chức năng xuất báo cáo dưới định dạng CSV/Excel.
-- Hỗ trợ bộ lọc theo thời gian, lớp học và đối tượng.
-- Đảm bảo dữ liệu thống kê chính xác, đồng bộ với dữ liệu thực tế từ Backend.
-
-## 8. Chưa có hệ thống kiểm duyệt nội dung do người dùng tạo (UGC Moderation)
-
-- Hệ thống đã có API `/support/admin/reports` để tiếp nhận báo cáo từ học sinh. Tuy nhiên, kết quả kiểm tra hiện trả về mảng rỗng.
-- Giao diện xử lý báo cáo hiện được tích hợp trong `SupportTicketManagement`.
-- Tuy nhiên, chưa có hàng đợi kiểm duyệt tập trung đối với nội dung do người dùng tạo hoặc tải lên, chẳng hạn tên hiển thị, avatar và các nội dung cá nhân khác.
-
-**Yêu cầu bổ sung:**
-- Xây dựng hệ thống Moderation Queue để quản trị viên theo dõi các nội dung cần kiểm duyệt.
-- Cho phép Admin xem xét, phê duyệt, từ chối hoặc gỡ bỏ nội dung vi phạm.
-- Quản lý các nội dung do học sinh tự tạo hoặc tải lên.
-- Có khả năng tiếp nhận và xử lý báo cáo vi phạm từ người dùng.
-- Lưu lại lịch sử xử lý và người thực hiện thao tác kiểm duyệt.
-- Đảm bảo nội dung không phù hợp không được hiển thị công khai khi chưa được xử lý theo quy định.
-
-## 9. Thiếu các chức năng vận hành và quản trị hệ thống (System Operations)
-
-- Module `system/config` hiện đã hỗ trợ cấu hình `site.name`, `logo`, `favicon`, `supportContact` và banner bảo trì.
-- Tuy nhiên, hệ thống vẫn thiếu một số chức năng quan trọng phục vụ công tác vận hành và quản trị lâu dài.
-
-**Các chức năng cần bổ sung:**
-
-**9.1. Notification Broadcast – Quản lý thông báo hàng loạt**
-- Xây dựng giao diện quản lý và gửi thông báo đến một lớp, nhiều lớp hoặc toàn trường.
-- Hỗ trợ soạn nội dung, lựa chọn đối tượng nhận và theo dõi trạng thái gửi.
-- Hiện tại API chủ yếu hỗ trợ thông báo cá nhân và `testPush`, chưa đáp ứng nhu cầu gửi thông báo hàng loạt.
-
-**9.2. Audit Log – Nhật ký hoạt động và quản trị**
-- Xây dựng hệ thống ghi nhận lịch sử thao tác của người dùng và quản trị viên.
-- Theo dõi ai đã thực hiện hành động gì, trên dữ liệu nào và vào thời điểm nào.
-- Hỗ trợ tra cứu, lọc theo người dùng, hành động, chức năng và thời gian.
-- Phân biệt nhật ký hoạt động người dùng với log lỗi và log vận hành hệ thống hiện có.
-
-**9.3. Cache/PWA Version Management – Quản lý phiên bản và bộ nhớ đệm**
-- Bổ sung cơ chế quản lý phiên bản ứng dụng.
-- Theo dõi phiên bản đang triển khai và phiên bản hiện tại của Client.
-- Kiểm soát cache để hạn chế tình trạng người dùng tiếp tục sử dụng giao diện hoặc tài nguyên từ phiên bản cũ.
-- Hỗ trợ thông báo khi có phiên bản mới và cơ chế cập nhật phù hợp với cấu hình triển khai hiện tại.
-
----
-
-# YÊU CẦU CHUNG KHI TRIỂN KHAI
-
-1. Rà soát source code hiện tại trước khi chỉnh sửa, xác định rõ những chức năng đã có, còn thiếu hoặc đang hoạt động chưa đúng.
-2. Không tự ý xây dựng lại những chức năng đã hoàn thiện hoặc tạo thêm API, component trùng lặp.
-3. Ưu tiên tái sử dụng cấu trúc, component, service và hệ thống phân quyền hiện có.
-4. Đảm bảo đồng bộ giữa Frontend, Backend, API và dữ liệu.
-5. Không làm ảnh hưởng đến các chức năng đang hoạt động ổn định.
-6. Đối với những chức năng được yêu cầu ẩn hoặc vô hiệu hóa, không xóa dữ liệu hiện có nếu không có yêu cầu cụ thể.
-7. Kiểm tra quyền truy cập thực tế ở cả giao diện và API, không chỉ dựa vào việc ẩn menu.
-8. Sau khi chỉnh sửa, chạy build, kiểm tra các route, API và luồng nghiệp vụ liên quan để đảm bảo hệ thống không phát sinh lỗi.
-9. Không tự ý thay đổi giao diện hoặc nghiệp vụ ngoài phạm vi yêu cầu.
-
-# BÁO CÁO SAU KHI HOÀN THÀNH
-
-Sau khi thực hiện, hãy tổng hợp kết quả bao gồm:
-
-- Danh sách file đã chỉnh sửa hoặc tạo mới.
-- Danh sách API đã bổ sung, chỉnh sửa hoặc vô hiệu hóa.
-- Danh sách route và component đã thay đổi.
-- Các chức năng đã hoàn thiện và những chức năng còn tồn tại.
-- Kết quả kiểm tra phân quyền và bảo mật.
-- Kết quả chạy build và kiểm thử.
-- Những vấn đề chưa thể xử lý và nguyên nhân cụ thể.
-
-**Mục tiêu cuối cùng:** Hoàn thiện hệ thống quản trị Admin theo hướng bảo mật, đồng bộ, dễ vận hành và có khả năng mở rộng lâu dài; đồng thời đảm bảo những chức năng không còn sử dụng được ẩn và vô hiệu hóa đúng cách mà không làm mất dữ liệu hiện có.
+  Admin                   Yêu cầu thống kê theo   Trả kết quả tổng hợp từ
+lớp hoặc môn học        dữ liệu thực tế
+Giáo viên (nếu có)      Tra cứu kết quả lớp     Chỉ trả dữ liệu trong
+được phân công          phạm vi được cấp quyền
+7. Báo cáo sau khi hoàn thành
+Sau khi triển khai, cần báo cáo:
+- Các file Frontend và Backend đã chỉnh sửa.
+- Các API/service được sử dụng để lấy thông tin tài khoản, lớp học và
+  kết quả kiểm tra.
+- Cách xác định vai trò và khối lớp của người dùng.
+- Các prompt hoặc cấu hình AI đã bổ sung.
+- Cơ chế phân quyền và bảo vệ dữ liệu học sinh.
+- Kết quả kiểm thử theo từng vai trò và khối lớp.
+- Những phần chưa thể triển khai và nguyên nhân cụ thể.
+MỤC TIÊU CUỐI CÙNG
+Xây dựng AI có khả năng hỗ trợ học tập thông minh theo từng đối tượng sử
+dụng:
+- Học sinh: AI đóng vai trò như một trợ lý học tập, hiểu học sinh
+  đang học lớp nào và giải thích kiến thức đúng với trình độ của lớp
+  đó.
+- Admin: AI đóng vai trò như một trợ lý quản trị giáo dục, có khả
+  năng tra cứu, tổng hợp và phân tích dữ liệu học sinh dựa trên dữ
+  liệu thực tế của hệ thống.
+- Bảo mật: Mỗi vai trò chỉ được truy cập đúng dữ liệu và chức năng
+  được cấp quyền, đặc biệt phải bảo vệ thông tin cá nhân và kết quả
+  học tập của học sinh.
+Ưu tiên triển khai theo hướng tận dụng kiến trúc hiện tại, đảm bảo dễ mở
+rộng cho các khối lớp, môn học và chức năng quản trị trong tương lai.
