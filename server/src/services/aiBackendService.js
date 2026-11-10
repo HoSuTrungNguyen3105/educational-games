@@ -35,6 +35,7 @@ import { AiBackendError } from "./aiBackendError.js";
 import { callAiDirect } from "./aiDirectService.js";
 import { ollamaHealth } from "./aiOllamaGateway.js";
 import { groqHealth } from "./aiGroqGateway.js";
+import { getEffectiveGroqModel, GROQ_MODELS } from "./aiModelConfig.js";
 import { getAiInferenceStatus } from "./aiInferenceStatus.js";
 
 export { AiBackendError };
@@ -240,9 +241,12 @@ export async function aiBackendHealth(req) {
     // Cùng shape với đường Ollama trực tiếp (frontend/admin không đổi), chỉ
     // khác provider/model và probe: Groq probe bằng GET /models (không tốn
     // token suy luận). inference vẫn là tín hiệu lượt gọi model THẬT.
+    // `model` = model HIỆU LỰC (admin chọn ở Cài đặt, chưa chọn thì env) và
+    // kèm `modelOptions` để nơi hiển thị không phải chép lại danh sách.
     const base = {
       status: false,
-      model: config.groq.model || null,
+      model: (await getEffectiveGroqModel()) || null,
+      modelOptions: GROQ_MODELS.map((m) => m.id),
       provider: "groq",
       detail: "Không gọi được endpoint Groq.",
       enabled: config.aiBackend.enabled,

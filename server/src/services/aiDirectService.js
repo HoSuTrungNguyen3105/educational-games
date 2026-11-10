@@ -30,6 +30,7 @@ import {
   ANALYSIS_DISCLAIMER,
 } from "./aiLearningMetrics.js";
 import { buildChatContext } from "./aiChatContext.js";
+import { getEffectiveGroqModel } from "./aiModelConfig.js";
 import { config } from "../config.js";
 
 // ─────────────────── Chọn gateway suy luận ───────────────────
@@ -185,7 +186,9 @@ async function directChat(body, req) {
     // khác Ollama) để AI Bạn Học tự giới thiệu đúng sự thật như quyết định
     // đợt #66 — thiếu modelProvider thì prompt mặc định nói "qua Ollama" kể
     // cả khi đang chạy Groq (lỗi phát hiện khi kiểm chứng production #69).
-    modelName: (config.ollama.provider === "groq" ? config.groq.model : config.ollama.model) || null,
+    // Đường Groq lấy model HIỆU LỰC (admin có thể vừa đổi ở Cài đặt) để lời
+    // giới thiệu khớp model thật sự trả lời lượt này.
+    modelName: (config.ollama.provider === "groq" ? await getEffectiveGroqModel() : config.ollama.model) || null,
     modelProvider: config.ollama.provider === "groq" ? "Groq" : "Ollama",
     learning: context.learning,
     materials: context.materials,

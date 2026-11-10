@@ -354,8 +354,9 @@ export default function AdminSettings({ user, showToast }) {
    * dùng chung; TẮT là mọi tính năng AI báo "đang được cấu hình, chưa sử dụng được".
    */
   const saveAi = async () => {
-    // Chỉ gửi đúng khoá đã whitelist — server bỏ qua field lạ, ở đây chốt kiểu boolean.
-    const ok = await saveConfig({ ai: { enabled: Boolean(cfg?.ai?.enabled) } })
+    // Gửi kèm model đang chọn — server chỉ nhận đúng id trong danh sách cấu
+    // hình sẵn (aiModelConfig), giá trị lạ bị đưa về mặc định của máy chủ.
+    const ok = await saveConfig({ ai: { enabled: Boolean(cfg?.ai?.enabled), model: cfg?.ai?.model || '' } })
     if (ok) {
       // Widget AI cache 30 giây — xoá cache để trang đổi trạng thái ngay sau khi bật.
       invalidateAiAvailability()
@@ -573,7 +574,7 @@ export default function AdminSettings({ user, showToast }) {
       {/* ── 3b. TRỢ LÝ AI ─────────────────────────────────────────────── */}
       {canView && (
         <Card id="sec-ai" className="scroll-mt-24" title="Trợ lý AI" icon={Sparkles}
-          hint="Máy chủ AI (Ollama + model tiếng Việt) chạy ở dịch vụ riêng và chỉ Backend API gọi tới. Trình duyệt không biết địa chỉ của nó. Bật công tắc bên dưới thì các tính năng AI mới hoạt động."
+          hint="AI chạy qua nhà cung cấp Groq (đám mây, miễn phí) và chỉ Backend API gọi tới — trình duyệt không biết khóa truy cập của nó. Bật công tắc bên dưới thì các tính năng AI mới hoạt động; chọn model ngay trong thẻ này."
           actions={
             canEdit && (
               <PrimaryButton disabled={cfgSaving || !cfg} onClick={saveAi} className="!px-4 !py-2 text-sm rounded-lg">
@@ -611,15 +612,52 @@ export default function AdminSettings({ user, showToast }) {
               </div>
             </div>
             <div className="rounded-lg border border-ink/10 bg-white/60 px-3 py-2.5">
-              <div className="text-sm text-ink">Model đang cấu hình</div>
+              <div className="text-sm text-ink">Model đang dùng</div>
               <div className="text-[11px] text-[#8A7C63] mt-1 leading-snug font-mono">
                 {st.ai?.model || '—'}{st.ai?.provider ? ` · ${st.ai.provider}` : ''}
               </div>
               <div className="text-[10px] text-[#B7A987] mt-1 leading-snug">
-                Tên model do biến môi trường của máy chủ AI quy định, không nhập ở đây.
+                Model hiệu lực do máy chủ báo về — đổi ở mục “Chọn model AI” ngay bên dưới.
               </div>
             </div>
           </div>
+
+          {/* Chọn model AI — chỉ áp dụng khi nhà cung cấp là Groq. Danh sách
+              lấy từ cấu hình server trả về (cfg.ai.modelOptions), không chép
+              cứng ở frontend. Chưa chọn model nào = dùng model mặc định của
+              máy chủ (GROQ_MODEL). Bấm “Lưu cấu hình AI” ở đầu thẻ để áp dụng:
+              backend đọc lựa chọn mới ngay ở lượt gọi kế tiếp. */}
+          {st.ai?.provider === 'groq' && (
+            <div className="mt-3">
+              <div className="text-sm text-ink font-medium">Chọn model AI</div>
+              <p className="text-[11px] text-[#8A7C63] leading-snug mt-0.5 max-w-xl">
+                Mỗi model có hạn mức miễn phí riêng trong ngày — hết lượt ở model này thì đổi sang model khác là dùng tiếp được.
+                Đổi xong bấm “Lưu cấu hình AI” ở đầu thẻ, model mới áp dụng ngay cho lượt hỏi tiếp theo, không cần khởi động lại máy chủ.
+              </p>
+              <div className="grid sm:grid-cols-3 gap-2 mt-2" role="radiogroup" aria-label="Chọn model AI">
+                {(cfg?.ai?.modelOptions || []).map((m) => {
+                  const selected = (cfg?.ai?.model || cfg.ai.modelOptions[0]?.id) === m.id
+                  return (
+                    <button key={m.id} type="button" role="radio" aria-checked={selected}
+                      disabled={!canEdit || cfgSaving}
+                      onClick={() => patchCfg((c) => { c.ai = { ...(c.ai || {}), model: m.id }; return c })}
+                      className={`text-left rounded-lg border px-3 py-2.5 transition ${selected ? 'border-gold bg-gold/10 ring-1 ring-gold/50' : 'border-ink/10 bg-white/60 hover:border-ink/25'} ${!canEdit || cfgSaving ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm text-ink font-medium">{m.label}</span>
+                        {selected && <span className="text-[10px] font-semibold text-gold-700 bg-gold/20 rounded px-1.5 py-0.5">Đang dùng</span>}
+                      </div>
+                      <div className="text-[10px] font-mono text-[#8A7C63] mt-0.5">{m.id}</div>
+                      <div className="text-[11px] text-[#8A7C63] leading-snug mt-1">{m.note}</div>
+                      <div className="text-[10px] text-[#B7A987] mt-1">{m.limits}</div>
+                    </button>
+                  )
+                })}
+              </div>
+              {!(cfg?.ai?.modelOptions?.length) && (
+                <p className="text-sm text-[#8A7C63] mt-2">{cfgLoading ? 'Đang tải danh sách model…' : 'Chưa đọc được danh sách model từ máy chủ.'}</p>
+              )}
+            </div>
+          )}
 
           <div className="mt-3 rounded-lg border border-ink/10 bg-white/60 px-3 py-2.5">
             <div className="text-[11px] font-mono text-[#8A7C63] mb-1.5">Bốn tính năng dùng chung công tắc này</div>
@@ -633,8 +671,7 @@ export default function AdminSettings({ user, showToast }) {
 
           <p className="text-[11px] text-[#8A7C63] mt-2.5 leading-snug bg-gold/10 border border-gold/25 rounded-md px-2.5 py-2">
             Điểm, tỉ lệ đúng và xếp hạng luôn do hệ thống tính — AI chỉ diễn giải, không quyết định kết quả.
-            Máy chủ AI hiện chạy trên máy nội bộ: khi deploy ra Render (hoặc nền tảng khác) mà không có AI Service
-            ở đó, các tính năng vẫn báo “đang được cấu hình” cho tới khi có máy chủ AI thật.
+            AI hiện chạy qua Groq trên đám mây nên dùng được mọi nơi, không phụ thuộc máy nội bộ nào.
           </p>
         </Card>
       )}

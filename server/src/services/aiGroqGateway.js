@@ -26,6 +26,7 @@
 import { config } from "../config.js";
 import { AiBackendError } from "./aiBackendError.js";
 import { recordAiInferenceSuccess, recordAiInferenceError } from "./aiInferenceStatus.js";
+import { getEffectiveGroqModel } from "./aiModelConfig.js";
 
 const PROVIDER_NAME = "groq";
 
@@ -36,23 +37,25 @@ function authHeaders() {
   return headers;
 }
 
-function requireConfigured() {
+async function requireConfigured() {
   if (!config.groq.apiKey || !String(config.groq.apiKey).trim()) {
     throw new AiBackendError(
       "AI chưa cấu hình GROQ_API_KEY. Hãy đặt biến môi trường này rồi khởi động lại.",
       { httpCode: 503, kind: "config" });
   }
-  if (!config.groq.model) {
+  const model = await getEffectiveGroqModel();
+  if (!model) {
     throw new AiBackendError(
-      "AI chưa cấu hình GROQ_MODEL. Hãy đặt biến môi trường này rồi khởi động lại.",
+      "AI chưa cấu hình model Groq. Hãy chọn model ở trang Cài đặt quản trị hoặc đặt GROQ_MODEL rồi khởi động lại.",
       { httpCode: 503, kind: "config" });
   }
+  return model;
 }
 
 /** Dựng payload /chat/completions: model, messages (system đầu tiên), temperature, response_format khi JSON. */
-function buildBody(system, messages, jsonMode) {
+function buildBody(model, system, messages, jsonMode) {
   const body = {
-    model: config.groq.model,
+    model,
     messages: [],
     temperature: config.groq.temperature,
   };
@@ -67,8 +70,8 @@ function buildBody(system, messages, jsonMode) {
   return body;
 }
 
-/** Dịch lỗi HTTP của Groq thành lỗi nghiệp vụ rõ ràng (cùng quy ước với aiOllamaGateway). */
-function translateHttp(status, retryAfterSeconds = null) {
+/** Dịch lỗi HTTP của Groq thành lỗi nghiệp vụ rõ ràng (cùng quy ước với aiOllamaGateway). `model` = model hiệu lực của lượt gọi này (admin có thể vừa đổi ở Cài đặt). */
+function translateHttp(status, retryAfterSeconds = null, model = "") {
   if (status === 401 || status === 403) {
     console.error(`[ai] Groq từ chối xác thực (HTTP ${status}). Kiểm tra GROQ_API_KEY.`);
     return new AiBackendError(
@@ -76,10 +79,10 @@ function translateHttp(status, retryAfterSeconds = null) {
       { httpCode: 502, kind: "config", providerStatus: status });
   }
   if (status === 404) {
-    console.error(`[ai] Groq trả 404 — endpoint hoặc model không tồn tại (model=${config.groq.model}).`);
+    console.error(`[ai] Groq trả 404 — endpoint hoặc model không tồn tại (model=${model}).`);
     return new AiBackendError(
-      "Không tìm thấy model '" + config.groq.model + "' trên Groq. "
-      + "Kiểm tra GROQ_MODEL — Groq thay catalog model nhanh, hãy chọn model đang còn phục vụ (ví dụ openai/gpt-oss-20b).",
+      "Không tìm thấy model '" + model + "' trên Groq. "
+      + "Hãy chọn model khác ở trang Cài đặt quản trị — Groq thay catalog model nhanh (ví dụ openai/gpt-oss-20b).",
       { httpCode: 502, kind: "config", providerStatus: status });
   }
   if (status === 429) {
@@ -163,13 +166,13 @@ function extractContent(raw) {
 }
 
 async function call(system, messages, jsonMode) {
-  requireConfigured();
-  const body = buildBody(system, messages, jsonMode);
+  const model = await requireConfigured();
+  const body = buildBody(model, system, messages, jsonMode);
   const timeoutMs = config.aiBackend.timeoutMs;
 
   try {
     const res = await postChat(body, timeoutMs);
-    if (res.status < 200 || res.status >= 300) throw translateHttp(res.status, res.retryAfterSeconds);
+    if (res.status < 200 || res.status >= 300) throw translateHttp(res.status, res.retryAfterSeconds, model);
     const text = extractContent(res.raw);
     // Ghi nhận lượt gọi model THẬT cho health inference (xem aiInferenceStatus)
     // — dùng chung bộ nhớ với đường Ollama vì health chỉ có một mục inference.
@@ -197,7 +200,10 @@ export function groqCompleteJson(system, messages) {
  * Không ném lỗi — trả {status, model, provider, detail, baseUrlConfigured, hasApiKey}.
  */
 export async function groqHealth() {
-  const { baseUrl, model, apiKey } = config.groq;
+  const { baseUrl, apiKey } = config.groq;
+  // Model hiển thị/kiểm tra = model HIỆU LỰC (admin chọn trong Cài đặt,
+  // chưa chọn thì GROQ_MODEL của env) để trang trạng thái không nói sai.
+  const model = await getEffectiveGroqModel();
   const base = {
     status: false,
     model: model || null,
@@ -210,7 +216,7 @@ export async function groqHealth() {
     return { ...base, detail: "Chưa cấu hình GROQ_API_KEY." };
   }
   if (!model) {
-    return { ...base, detail: "Chưa cấu hình GROQ_MODEL." };
+    return { ...base, detail: "Chưa cấu hình model Groq (chọn ở Cài đặt quản trị hoặc đặt GROQ_MODEL)." };
   }
 
   const ctrl = new AbortController();
@@ -229,8 +235,8 @@ export async function groqHealth() {
     if (!names.includes(model)) {
       return {
         ...base,
-        detail: "Model '" + model + "' chưa có trên Groq. Kiểm tra GROQ_MODEL"
-          + " — Groq thay catalog nhanh, hãy chọn model đang còn phục vụ (ví dụ openai/gpt-oss-20b).",
+        detail: "Model '" + model + "' chưa có trên Groq. Hãy chọn model khác ở trang Cài đặt quản trị"
+          + " — Groq thay catalog nhanh (ví dụ openai/gpt-oss-20b).",
       };
     }
     return { ...base, status: true, detail: "Groq sẵn sàng, model " + model };

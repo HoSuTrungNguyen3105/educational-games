@@ -144,8 +144,9 @@ export const config = {
     // Mặc định openai/gpt-oss-20b: cùng họ model với đường Ollama Cloud cũ,
     // trên Groq có Structured Outputs bảo đảm schema (tốt cho sinh câu hỏi
     // JSON) và giới hạn free tier công khai 30 RPM / 1.000 req/ngày /
-    // 200K token/ngày mỗi model. Đổi model bằng GROQ_MODEL — Groq thay
-    // catalog nhanh, KHÔNG hard-code thêm model nào khác trong code.
+    // 200K token/ngày mỗi model. Đây là model KHỞI ĐỘNG: admin có thể chọn
+    // model khác ngay trong trang Cài đặt (system_config `ai.model`, xem
+    // aiModelConfig.js) — lựa chọn đó thắng GROQ_MODEL mà không cần deploy.
     model: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
     temperature: Number(process.env.GROQ_TEMPERATURE) || 0.4,
   },
