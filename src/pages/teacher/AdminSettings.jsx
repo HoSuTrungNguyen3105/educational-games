@@ -9,6 +9,7 @@ import { loadSiteConfig } from '../../lib/siteConfig.js'
 import { invalidateAiAvailability } from '../../hooks/useAiAvailability.js'
 import { getRoleLabel, hasUserPermission } from '../../config/roles.js'
 import { gameCache } from '../../lib/gameCache.js'
+import { clampLowScoreThreshold } from '../../lib/aiThreshold.js'
 import {
   ManagementHeader, PrimaryButton, GhostButton, PasswordInput, ConfirmModal,
   ToggleSwitch, Input, Select, EmptyState,
@@ -356,7 +357,15 @@ export default function AdminSettings({ user, showToast }) {
   const saveAi = async () => {
     // Gửi kèm model đang chọn — server chỉ nhận đúng id trong danh sách cấu
     // hình sẵn (aiModelConfig), giá trị lạ bị đưa về mặc định của máy chủ.
-    const ok = await saveConfig({ ai: { enabled: Boolean(cfg?.ai?.enabled), model: cfg?.ai?.model || '' } })
+    // Kèm ngưỡng điểm thấp: ô trống → null (chưa cấu hình, AI hỏi lại khi
+    // được hỏi về điểm thấp); có số thì helper kẹp về 0–100 trước khi gửi.
+    const ok = await saveConfig({
+      ai: {
+        enabled: Boolean(cfg?.ai?.enabled),
+        model: cfg?.ai?.model || '',
+        lowScoreThreshold: clampLowScoreThreshold(cfg?.ai?.lowScoreThreshold),
+      },
+    })
     if (ok) {
       // Widget AI cache 30 giây — xoá cache để trang đổi trạng thái ngay sau khi bật.
       invalidateAiAvailability()
@@ -658,6 +667,38 @@ export default function AdminSettings({ user, showToast }) {
               )}
             </div>
           )}
+
+          {/* Ngưỡng điểm thấp — khoá ai.lowScoreThreshold ở server (Backend
+              của PR #74 đọc khi admin hỏi AI về "điểm thấp"). Ô trống = chưa
+              cấu hình: AI hỏi lại ngưỡng thay vì tự đoán. Giá trị nhập được
+              helper clampLowScoreThreshold chuẩn hoá (trống → null, số thì
+              kẹp 0–100) ngay lúc gõ và một lần nữa trong saveAi trước khi
+              gửi; server cũng tự kẹp lại khi lưu. */}
+          <div className="mt-3">
+            <div className="text-sm text-ink font-medium">Ngưỡng điểm thấp</div>
+            <p className="text-[11px] text-[#8A7C63] leading-snug mt-0.5 max-w-xl">
+              Học sinh có điểm kiểm tra dưới mức này được coi là điểm thấp khi bạn hỏi Trợ lý AI
+              (chẳng hạn “học sinh nào có điểm kiểm tra thấp trong tháng này?”).
+              Để trống nếu chưa muốn đặt — khi đó AI sẽ hỏi lại ngưỡng mỗi lần được hỏi về điểm thấp.
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="w-28">
+                <Input type="number" min={0} max={100} step={1}
+                  value={cfg?.ai?.lowScoreThreshold ?? ''}
+                  disabled={!canEdit || cfgSaving || !cfg}
+                  placeholder="Chưa đặt"
+                  onChange={(v) => patchCfg((c) => { c.ai = { ...(c.ai || {}), lowScoreThreshold: clampLowScoreThreshold(v) }; return c })} />
+              </div>
+              <span className="text-sm text-[#8A7C63]">điểm</span>
+              {cfg && cfg?.ai?.lowScoreThreshold == null && (
+                <span className="text-[11px] text-[#B7A987]">Chưa cấu hình</span>
+              )}
+            </div>
+            <p className="text-[10px] text-[#B7A987] mt-1 leading-snug">
+              Chỉ nhận số nguyên từ 0 đến 100 — gõ số ngoài khoảng sẽ tự đưa về biên gần nhất.
+              Đặt xong bấm “Lưu cấu hình AI” ở đầu thẻ để áp dụng.
+            </p>
+          </div>
 
           <div className="mt-3 rounded-lg border border-ink/10 bg-white/60 px-3 py-2.5">
             <div className="text-[11px] font-mono text-[#8A7C63] mb-1.5">Bốn tính năng dùng chung công tắc này</div>
