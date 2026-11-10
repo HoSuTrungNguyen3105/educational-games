@@ -405,6 +405,27 @@ export async function deleteChatLogs(p = {}) {
 }
 
 /**
+ * Trạng thái "credit AI còn lại hôm nay" cho khung chat AI Bạn Học
+ * (GET /api/ai/credit-status — cần đăng nhập). Server tính từ bộ đếm
+ * nội bộ theo ngày UTC + hạn mức cấu hình của model hiệu lực; số là
+ * ƯỚC TÍNH (estimate: true). `supported: false` = nhà cung cấp hiện tại
+ * không có khái niệm credit kiểu này → caller ẩn hiển thị.
+ *
+ * @returns {Promise<{supported: boolean, model: string|null,
+ *   limitTokensPerDay: number|null, usedTokensToday: number,
+ *   remainingTokensToday: number|null, limitRequestsPerDay: number|null,
+ *   usedRequestsToday: number, remainingRequestsToday: number|null,
+ *   resetsAtUtc: string, estimate: boolean}>}
+ */
+export async function getCreditStatus() {
+  const json = await aiFetch("/api/ai/credit-status", { method: "GET" });
+  if (!json || typeof json !== "object" || typeof json.supported !== "boolean") {
+    throw new AiServiceError("Không đọc được trạng thái credit AI.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/**
  * Kiểm tra AI có sẵn sàng không (dùng cho trạng thái nút).
  * Endpoint này không cần token và không bao giờ trả về API key.
  */

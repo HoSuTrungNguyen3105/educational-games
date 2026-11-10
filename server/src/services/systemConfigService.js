@@ -68,6 +68,14 @@ export const DEFAULTS = {
     // admin muốn lấy ngưỡng bao nhiêu, TUYỆT ĐỐI không tự đặt số. Ép kiểu
     // ở coerce(): chỉ nhận số 0–100, còn lại về null.
     lowScoreThreshold: null,
+    // Hạn mức NGÀY của Groq free tier theo TỪNG MODEL — aiUsageService
+    // dùng để tính "credit AI còn lại" hiện trong khung chat. Mặc định là
+    // số free tier công khai (200K token/ngày, 1.000 request/ngày); khi
+    // Groq đổi hạn mức hoặc tài khoản đổi gói, admin sửa HAI SỐ NÀY trong
+    // Cài đặt là đủ, không cần sửa code. Ép kiểu ở coerce(): số nguyên
+    // dương, còn lại về mặc định.
+    dailyTokenLimit: 200000,
+    dailyRequestLimit: 1000,
   },
 };
 
@@ -124,6 +132,16 @@ function coerce(path, value) {
     const n = Number(value);
     if (!Number.isFinite(n)) return null;
     return Math.min(100, Math.max(0, Math.round(n * 10) / 10));
+  }
+  // Hạn mức ngày Groq (token/request): số nguyên dương, có trần an toàn;
+  // rỗng/không phải số/không dương → về MẶC ĐỊNH free tier (không bao giờ
+  // để hạn mức 0 làm "credit còn lại" hiện sai thành hết sạch).
+  if (path === "ai.dailyTokenLimit" || path === "ai.dailyRequestLimit") {
+    const def = pick(DEFAULTS, path);
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return def;
+    const cap = path === "ai.dailyTokenLimit" ? 100_000_000 : 10_000_000;
+    return Math.min(cap, Math.round(n));
   }
   const def = pick(DEFAULTS, path);
   if (typeof def === "boolean") {
@@ -235,6 +253,8 @@ export async function updateConfig(patch, actor = null) {
       enabled: next.ai.enabled,
       model: next.ai.model,
       lowScoreThreshold: next.ai.lowScoreThreshold ?? null,
+      dailyTokenLimit: next.ai.dailyTokenLimit ?? 200000,
+      dailyRequestLimit: next.ai.dailyRequestLimit ?? 1000,
     },
     updatedAt: new Date().toISOString(),
     updatedBy: actor ? { id: actor.sub || null, name: actor.name || null, role: actor.role || null } : null,

@@ -27,6 +27,7 @@ import { config } from "../config.js";
 import { AiBackendError } from "./aiBackendError.js";
 import { recordAiInferenceSuccess, recordAiInferenceError } from "./aiInferenceStatus.js";
 import { getEffectiveGroqModel } from "./aiModelConfig.js";
+import { recordAiUsage } from "./aiUsageService.js";
 
 const PROVIDER_NAME = "groq";
 
@@ -117,7 +118,41 @@ function parseRetryAfter(raw) {
   return null;
 }
 
-/** Một lần POST /chat/completions. Trả {status, raw, retryAfterSeconds}. */
+/**
+ * Ảnh chụp header hạn mức của Groq (tài liệu console.groq.com/docs/rate-limits):
+ * limit/remaining-requests là số theo NGÀY (RPD), limit/remaining-tokens là
+ * số theo PHÚT (TPM). Chỉ để aiUsageService tính "credit còn lại" — header
+ * thiếu/không phải số thì để null, không coi là lỗi.
+ */
+function parseRateLimitHeaders(headers) {
+  const num = (name) => {
+    const raw = headers.get(name);
+    // Header vắng mặt → null. KHÔNG được Number(null): Number(null) === 0
+    // sẽ biến "không có số liệu" thành "còn 0 request" — sai hẳn ý nghĩa.
+    if (raw == null || String(raw).trim() === "") return null;
+    const v = Number(raw);
+    return Number.isFinite(v) && v >= 0 ? v : null;
+  };
+  return {
+    limitRequests: num("x-ratelimit-limit-requests"),
+    remainingRequests: num("x-ratelimit-remaining-requests"),
+    limitTokensMinute: num("x-ratelimit-limit-tokens"),
+    remainingTokensMinute: num("x-ratelimit-remaining-tokens"),
+  };
+}
+
+/** usage.total_tokens trong thân response chuẩn OpenAI (gồm vào + ra); không có → null. */
+function extractTotalTokens(raw) {
+  try {
+    const root = JSON.parse(raw);
+    const t = Number(root?.usage?.total_tokens);
+    return Number.isFinite(t) && t > 0 ? t : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Một lần POST /chat/completions. Trả {status, raw, retryAfterSeconds, rateLimit}. */
 async function postChat(body, timeoutMs) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -132,6 +167,7 @@ async function postChat(body, timeoutMs) {
       status: res.status,
       raw: await res.text().catch(() => ""),
       retryAfterSeconds: parseRetryAfter(res.headers.get("retry-after")),
+      rateLimit: parseRateLimitHeaders(res.headers),
     };
   } catch (e) {
     if (e?.name === "AbortError") {
@@ -177,6 +213,9 @@ async function call(system, messages, jsonMode) {
     // Ghi nhận lượt gọi model THẬT cho health inference (xem aiInferenceStatus)
     // — dùng chung bộ nhớ với đường Ollama vì health chỉ có một mục inference.
     recordAiInferenceSuccess();
+    // Bộ đếm "credit AI còn lại" theo ngày UTC (aiUsageService) — ghi
+    // fire-and-forget, nuốt lỗi, không chờ để không làm chậm lượt chat.
+    void recordAiUsage({ model, totalTokens: extractTotalTokens(res.raw), rateLimit: res.rateLimit });
     return text;
   } catch (e) {
     recordAiInferenceError({ providerStatus: e?.providerStatus ?? null });
@@ -234,6 +273,14 @@ export async function groqCompleteWithTools(system, messages, tools) {
           : JSON.stringify(t.function.arguments ?? {}),
       }));
     recordAiInferenceSuccess();
+    // Lượt CHỌN CÔNG CỤ cũng là một lượt gọi model thật, tốn credit như
+    // lượt trả lời — đếm chung vào bộ đếm ngày (aiUsageService).
+    const totalTokens = Number(root?.usage?.total_tokens);
+    void recordAiUsage({
+      model,
+      totalTokens: Number.isFinite(totalTokens) && totalTokens > 0 ? totalTokens : null,
+      rateLimit: res.rateLimit,
+    });
     return { content: msg?.content != null ? String(msg.content) : "", toolCalls };
   } catch (e) {
     recordAiInferenceError({ providerStatus: e?.providerStatus ?? null });
