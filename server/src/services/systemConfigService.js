@@ -63,6 +63,11 @@ export const DEFAULTS = {
     // Chỉ nhận đúng các id trong GROQ_MODELS (xem aiModelConfig.js) — ép
     // kiểu ở coerce() bên dưới, giá trị lạ bị đưa về "".
     model: "",
+    // Ngưỡng "điểm kiểm tra thấp" (thang 100) cho tra cứu AI của admin
+    // (update_features.md §3.2). null = CHƯA CẤU HÌNH → AI phải HỎI LẠI
+    // admin muốn lấy ngưỡng bao nhiêu, TUYỆT ĐỐI không tự đặt số. Ép kiểu
+    // ở coerce(): chỉ nhận số 0–100, còn lại về null.
+    lowScoreThreshold: null,
   },
 };
 
@@ -111,6 +116,14 @@ function coerce(path, value) {
   if (path === "ai.model") {
     const s = value == null ? "" : String(value).trim();
     return s === "" || isGroqModelAllowed(s) ? s : "";
+  }
+  // Ngưỡng điểm thấp: null/rỗng/không phải số = CHƯA CẤU HÌNH (giữ null để
+  // tầng tra cứu AI biết phải hỏi lại admin). Số hợp lệ bị kẹp trong 0–100.
+  if (path === "ai.lowScoreThreshold") {
+    if (value == null || value === "") return null;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return Math.min(100, Math.max(0, Math.round(n * 10) / 10));
   }
   const def = pick(DEFAULTS, path);
   if (typeof def === "boolean") {
@@ -218,7 +231,11 @@ export async function updateConfig(patch, actor = null) {
     notifications: next.notifications,
     // Chỉ ghi các khoá ai THẬT xuống DB — modelOptions là hằng số hiển thị,
     // không phải dữ liệu cấu hình.
-    ai: { enabled: next.ai.enabled, model: next.ai.model },
+    ai: {
+      enabled: next.ai.enabled,
+      model: next.ai.model,
+      lowScoreThreshold: next.ai.lowScoreThreshold ?? null,
+    },
     updatedAt: new Date().toISOString(),
     updatedBy: actor ? { id: actor.sub || null, name: actor.name || null, role: actor.role || null } : null,
   };

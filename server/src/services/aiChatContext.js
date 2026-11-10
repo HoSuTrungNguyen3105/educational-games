@@ -25,6 +25,8 @@
 
 import { getCollection } from "../db.js";
 import { computeLearningMetrics, topicDisplayName } from "./aiLearningMetrics.js";
+import { gradeForAgeCode } from "../config/ageCodes.js";
+import { runAdminQuery } from "./aiAdminQueryService.js";
 
 // ─────────────────────── §5.6 Ngày giờ Việt Nam ───────────────────────
 
@@ -237,17 +239,61 @@ export async function searchLessonMaterials(message) {
   }));
 }
 
+// ─────────── Danh tính theo vai trò + khối lớp (update_features.md) ───────────
+
+/**
+ * Danh tính nghiệp vụ của người hỏi, đọc từ HỒ SƠ DB theo id trong token
+ * đã xác thực — KHÔNG tin role/classId do client tự gửi (đặc tả §4, §5.1).
+ * Khối lớp suy từ ageCode bằng bảng phía server (config/ageCodes.js);
+ * ageCode trống/lạ → grade = null → prompt dùng chế độ trung tính.
+ * @returns {Promise<null|{userId, role, grade, classId}>}
+ */
+export async function loadChatIdentity(userId) {
+  if (!userId) return null;
+  const user = await getCollection("users").findOne(
+    { id: String(userId) },
+    { projection: { _id: 0, id: 1, role: 1, ageCode: 1, classId: 1 } },
+  );
+  if (!user) return null;
+  return {
+    userId: String(user.id),
+    role: user.role ?? null,
+    grade: gradeForAgeCode(user.ageCode),
+    classId: user.classId ?? null,
+  };
+}
+
 // ─────────────────────── Điểm vào dùng chung ───────────────────────
 
 /**
  * Dựng toàn bộ ngữ cảnh cho MỘT lượt chat của người dùng đã xác thực.
- * Trả { dateTimeText, learning, materials } — phần nào lỗi/thiếu thì để
- * null/rỗng, KHÔNG ném lỗi ra ngoài.
+ * Trả { dateTimeText, learning, materials, identity, adminData } — phần
+ * nào lỗi/thiếu thì để null/rỗng, KHÔNG ném lỗi ra ngoài.
+ *
+ * identity: vai trò + khối lớp từ DB (xem loadChatIdentity) — tầng prompt
+ * dùng để tách studentSystemPrompt/adminSystemPrompt. Đọc DB lỗi thì lùi
+ * về role trong token (vẫn là dữ liệu đã xác thực, không phải của client).
+ *
+ * adminData: CHỈ dựng khi người hỏi là admin/teacher VÀ câu hỏi là câu
+ * tra cứu quản trị (aiAdminQueryService) — học sinh không bao giờ nhận
+ * được dữ liệu quản trị trong ngữ cảnh.
  */
 export async function buildChatContext(req, message) {
-  const context = { dateTimeText: vietnamNowText(), learning: null, materials: [] };
+  const context = {
+    dateTimeText: vietnamNowText(), learning: null, materials: [], identity: null, adminData: null,
+  };
   const userId = req?.user?.sub;
   if (!userId) return context;
+  try {
+    context.identity = await loadChatIdentity(userId);
+  } catch (e) {
+    console.warn(`[ai] Không nạp được danh tính cho chat: ${e?.message || e}`);
+  }
+  if (!context.identity && req?.user?.role) {
+    context.identity = {
+      userId: String(userId), role: req.user.role, grade: null, classId: null,
+    };
+  }
   try {
     context.learning = await loadChatLearningSummary(userId);
   } catch (e) {
@@ -257,6 +303,14 @@ export async function buildChatContext(req, message) {
     context.materials = await searchLessonMaterials(message);
   } catch (e) {
     console.warn(`[ai] Không truy xuất được bài học cho chat: ${e?.message || e}`);
+  }
+  const role = context.identity?.role;
+  if (role === "admin" || role === "teacher") {
+    try {
+      context.adminData = await runAdminQuery(req, message, context.identity);
+    } catch (e) {
+      console.warn(`[ai] Không tra cứu được dữ liệu quản trị cho chat: ${e?.message || e}`);
+    }
   }
   return context;
 }

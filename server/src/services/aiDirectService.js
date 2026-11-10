@@ -24,6 +24,7 @@ import { groqComplete, groqCompleteJson } from "./aiGroqGateway.js";
 import {
   chatSystem, chatMessages, quizSystem, quizUser, explainSystem, explainUser,
   followUpMessage, analysisSystem, analysisUser, enforceLimit, cleanText,
+  studentSystemPrompt, adminSystemPrompt,
 } from "./aiPromptFactory.js";
 import {
   computeLearningMetrics, fallbackNarrative, withinPeriod, validatePeriod,
@@ -180,7 +181,13 @@ async function directChat(body, req) {
   // chính user, đoạn bài học liên quan) — buildChatContext không bao giờ ném
   // lỗi: thiếu phần nào thì system prompt thiếu phần đó, chat vẫn chạy.
   const context = await buildChatContext(req, message);
-  const system = chatSystem(displayName, body.subject, body.topic, {
+  // Tách prompt theo VAI TRÒ (update_features.md §5.2): vai trò + khối lớp
+  // lấy từ ngữ cảnh Backend dựng (hồ sơ DB), không tin client. Admin và
+  // giáo viên dùng adminSystemPrompt (kèm kết quả tra cứu thật nếu câu hỏi
+  // là câu tra cứu); học sinh — và trường hợp chưa rõ vai trò — dùng
+  // studentSystemPrompt (chatSystem cũ + khối lớp + cổng dữ liệu cá nhân).
+  const identityRole = context.identity?.role || req?.user?.role || null;
+  const promptCtx = {
     dateTimeText: context.dateTimeText,
     // Tên model + nhà cung cấp khai trong prompt = của ĐƯỜNG ĐANG CHẠY (Groq
     // khác Ollama) để AI Bạn Học tự giới thiệu đúng sự thật như quyết định
@@ -192,7 +199,13 @@ async function directChat(body, req) {
     modelProvider: config.ollama.provider === "groq" ? "Groq" : "Ollama",
     learning: context.learning,
     materials: context.materials,
-  });
+    grade: context.identity?.grade ?? null,
+    identityRole,
+    adminData: context.adminData,
+  };
+  const system = identityRole === "admin" || identityRole === "teacher"
+    ? adminSystemPrompt(displayName, body.subject, body.topic, promptCtx)
+    : studentSystemPrompt(displayName, body.subject, body.topic, promptCtx);
   const messages = chatMessages(history, message);
   const answer = await llmComplete(system, messages);
 
