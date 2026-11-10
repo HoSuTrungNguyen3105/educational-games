@@ -21,6 +21,7 @@ import {
   Lock,
   KeyRound,
   Sparkles,
+  History,
   Cake,
   PawPrint,
   Sprout,
@@ -69,6 +70,10 @@ const SECTIONS = [
     label: "AI",
     items : [
             { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/dashboard/ai-analysis", permission: "reports.view" },
+            // Lịch sử hỏi AI chỉ ADMIN xem (API chốt requireRoles admin).
+            // reports.delete là quyền giáo viên KHÔNG có trong bảng tĩnh —
+            // admin (toàn quyền) thấy mục này, giáo viên thì không.
+            { id: "admin-ai-history", label: "Lịch sử hỏi AI", icon: History, route: "/dashboard/ai-history", permission: "reports.delete" },
     ]
   },
   {

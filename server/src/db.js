@@ -631,6 +631,35 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Lịch sử HỎI AI (trang quản trị "Lịch sử hỏi AI"): mỗi document là MỘT
+    // lượt hỏi–đáp qua POST /api/ai/chat trên đường trực tiếp (Groq/Ollama
+    // Cloud), ghi bởi aiChatLogService.recordChatLog SAU khi đã có câu trả
+    // lời. Danh tính (userId/role/grade/classId) lấy từ hồ sơ DB phía
+    // Backend (aiChatContext.identity) — KHÔNG tin client. Đây là dữ liệu
+    // tra cứu của admin: khi admin xóa user, lịch sử của user đó KHÔNG bị
+    // xóa theo ở cleanupUserRelatedData (authService) — admin chủ động dọn
+    // bằng DELETE /api/ai/chat-logs khi cần.
+    ai_chat_logs: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "userId", "question", "answer", "kind", "createdAt"],
+        properties: {
+          id: { bsonType: "string" },
+          userId: { bsonType: "string" },
+          username: { bsonType: ["string", "null"] },
+          role: { bsonType: ["string", "null"] },
+          grade: { bsonType: ["int", "double", "null"] },
+          classId: { bsonType: ["string", "null"] },
+          question: { bsonType: "string" },
+          answer: { bsonType: "string" },
+          sources: { bsonType: "array" },
+          conversationId: { bsonType: ["string", "null"] },
+          kind: { enum: ["chat", "admin_query"] },
+          queryType: { bsonType: ["string", "null"] },
+          createdAt: { bsonType: "string" },
+        },
+      }
+    },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -805,6 +834,11 @@ async function _runHeavyInit(database) {
     // một bản ghi tiến độ; tra cứu theo học sinh để khôi phục trạng thái.
     ["lessonProgress", { userId: 1, lessonId: 1 }, { unique: true }],
     ["lessonProgress", { userId: 1, updatedAt: -1 }],
+
+    // ai_chat_logs — trang "Lịch sử hỏi AI" đọc mới nhất trước, lọc theo
+    // người hỏi; chỉ số tổng quan toàn cục theo thời gian.
+    ["ai_chat_logs", { userId: 1, createdAt: -1 }],
+    ["ai_chat_logs", { createdAt: -1 }],
   ];
 
   const createdIndexes = [];
