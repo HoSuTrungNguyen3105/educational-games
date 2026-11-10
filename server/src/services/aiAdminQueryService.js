@@ -6,22 +6,28 @@
 // truy cập database, KHÔNG được bịa số liệu.
 //
 // Nguyên tắc an toàn:
-//  - CHỈ chạy khi người hỏi là admin/teacher (vai trò lấy từ hồ sơ DB qua
-//    aiChatContext.loadChatIdentity, không tin dữ liệu client gửi lên).
-//  - Admin: toàn quyền. Teacher: mọi truy vấn bị lọc theo các lớp được
-//    phân công trong `teacher_classes` (scopeClassIds) — ngoài phạm vi thì
-//    kết quả rỗng.
+//  - CHỈ chạy khi người hỏi là ADMIN — vai trò lấy từ hồ sơ DB qua
+//    aiChatContext.loadChatIdentity, không tin dữ liệu client gửi lên.
+//    (Đợt #74 từng cho cả teacher với phạm vi lớp được phân công; Nguyên
+//    yêu cầu 2026-11-10 thu hẹp: tra cứu quản trị CHỈ còn admin, teacher
+//    quay về chat thường — xem runAdminQuery.)
 //  - "Điểm thấp" lấy ngưỡng từ cấu hình `ai.lowScoreThreshold`. Chưa cấu
 //    hình (null) → trả trạng thái needsThreshold để AI HỎI LẠI admin,
 //    TUYỆT ĐỐI không tự đặt ngưỡng ở bất kỳ đâu trong file này.
 //  - Nguồn điểm chính là `submissions` (server chấm, thang 100).
 //    KHÔNG dùng `examResults` (điểm do client tự gửi, không đáng tin).
+//  - Dữ liệu đưa vào prompt luôn là số liệu/danh sách RÚT GỌN (tối đa
+//    ~20 dòng mỗi nhóm) — không mật khẩu/hash, không token, không khoá
+//    API; trạng thái cấu hình AI chỉ gồm trạng thái an toàn (bật/tắt,
+//    model, ngưỡng), KHÔNG có bất kỳ secret/env nào.
 //  - Mỗi lượt tra cứu ghi audit `ai.admin_query` — meta chỉ gồm loại truy
 //    vấn + số kết quả, không ghi nội dung câu hỏi hay dữ liệu cá nhân.
 
 import { getCollection } from "../db.js";
-import { getTeacherClasses } from "./classService.js";
+import { config } from "../config.js";
 import { get as getConfigValue } from "./systemConfigService.js";
+import { getEffectiveGroqModel } from "./aiModelConfig.js";
+import { REPORT_REASONS } from "./reportService.js";
 import { record as auditRecord, AUDIT } from "./auditService.js";
 import { round1 } from "./aiLearningMetrics.js";
 
@@ -62,17 +68,48 @@ function detectPeriod(folded) {
 }
 
 /**
- * Nhận diện câu hỏi quản trị từ các mẫu câu ở đặc tả mục 3.
+ * Nhận diện câu hỏi quản trị từ các mẫu câu ở đặc tả mục 3 + các nhóm mở
+ * rộng 2026-11-10 (tổng quan hệ thống / nội dung mới nhất / báo cáo & hỗ
+ * trợ / hoạt động AI / trạng thái cấu hình AI). Thứ tự xét quan trọng:
+ * các mẫu CỤ THỂ phải đứng trước mẫu CHUNG (ví dụ "ngưỡng điểm thấp đã
+ * đặt chưa" là hỏi cấu hình, không phải tra cứu điểm thấp).
  * @returns {{type: string, period: string|null}|null} null = chat thường.
  */
 export function detectAdminQuery(message) {
   const m = foldText(message);
   if (!m) return null;
   const period = detectPeriod(m);
+  // Trạng thái cấu hình AI — xét sớm: "ngưỡng điểm thấp đã đặt chưa" chứa
+  // cả "điểm"+"thấp" nhưng là hỏi CẤU HÌNH, không phải xin danh sách.
+  if (/trang thai (ai|tro ly)|cau hinh (ai|tro ly)|model.*(dang dung|hien tai|la gi|nao)|ai dang dung model|(tro ly ai|ai).*(dang bat|dang tat|da bat|da tat)|nguong diem thap.*(da dat|dat chua|dat la|cau hinh|bao nhieu)/.test(m)) {
+    return { type: "ai_config", period };
+  }
+  // Hoạt động hỏi–đáp AI (dữ liệu ai_chat_logs của đợt #78).
+  if (/hoat dong ai|luot hoi ai|cau hoi ai|lich su hoi|hoi ai|chat ai|hoc sinh hoi gi|hoi gi nhieu nhat/.test(m)) {
+    return { type: "ai_activity", period };
+  }
+  // Báo cáo người dùng xấu / ticket hỗ trợ đang chờ xử lý.
+  if (/ticket|phieu ho tro|yeu cau ho tro/.test(m)
+    || (/ho tro/.test(m) && /(dang mo|chua xu ly|cho xu ly|dang cho|con mo)/.test(m))) {
+    return { type: "support_backlog", period };
+  }
+  if (/bao cao/.test(m) && /(nguoi dung|vi pham|xau|chua xu ly|dang mo|bi bao cao)/.test(m)) {
+    return { type: "support_backlog", period };
+  }
+  // Nội dung mới nhất — phải có game/bài học/ngân hàng + sắc thái "mới/gần
+  // đây" để không nuốt câu hỏi kiến thức thường về các chủ đề này.
+  if (/(game|tro choi|bai hoc|bai giang|ngan hang cau hoi)/.test(m) && /(moi|gan day|vua (tao|them|dang))/.test(m)) {
+    return { type: "content_new", period };
+  }
   // Thống kê / trung bình — xét trước vì "trung bình thấp nhất" cũng chứa
   // chữ "thấp" nhưng là câu thống kê theo lớp, không phải lọc điểm thấp.
   if (/thong ke|trung binh|theo lop|theo mon/.test(m)) return { type: "stats", period };
   if (/dang ky/.test(m) && /(moi|vua|hoc sinh)/.test(m)) return { type: "new_students", period };
+  // Tổng quan hệ thống — sau new_students để "học sinh mới đăng ký" không
+  // bị nuốt vào nhóm đếm tổng.
+  if (/tong quan|toan he thong|he thong.*(bao nhieu|hien co|co gi)|co bao nhieu (hoc sinh|giao vien|lop|game|tro choi|bai hoc)|tong so (hoc sinh|giao vien|nguoi dung|lop|game|bai hoc)|so luong (hoc sinh|giao vien|nguoi dung|lop)/.test(m)) {
+    return { type: "overview", period };
+  }
   if (/chua (hoan thanh|nop|lam)/.test(m)) return { type: "unfinished", period };
   if (/(giam|tut|sut giam|di xuong)/.test(m) && /(diem|ket qua|hoc tap)/.test(m)) {
     return { type: "declining", period };
@@ -122,9 +159,6 @@ const PERIOD_LABELS = {
 
 // ─────────────────── Tiện ích dữ liệu dùng chung ───────────────────
 
-const inScope = (classId, scopeClassIds) =>
-  scopeClassIds == null || scopeClassIds.includes(classId ?? null);
-
 async function classNameMap(classIds) {
   const ids = [...new Set((classIds || []).filter(Boolean).map(String))];
   const map = new Map();
@@ -172,10 +206,9 @@ const dateOf = (iso) => (iso ? String(iso).slice(0, 10) : "");
 
 // ─────────────────── 3.1 Học sinh mới đăng ký ───────────────────
 
-export async function newStudents({ period = "month", scopeClassIds = null } = {}) {
+export async function newStudents({ period = "month" } = {}) {
   const { from, to } = periodRange(period || "month");
   const filter = { role: "student", createdAt: { $gte: from, $lt: to } };
-  if (scopeClassIds != null) filter.classId = { $in: scopeClassIds };
   const coll = getCollection("users");
   const total = await coll.countDocuments(filter);
   const rows = await coll
@@ -201,7 +234,7 @@ export async function newStudents({ period = "month", scopeClassIds = null } = {
  * @param {number|null} threshold ngưỡng từ cấu hình ai.lowScoreThreshold.
  *   null → { needsThreshold: true } và KHÔNG tra cứu gì thêm.
  */
-export async function lowScores({ threshold, period = null, scopeClassIds = null } = {}) {
+export async function lowScores({ threshold, period = null } = {}) {
   if (threshold == null) return { needsThreshold: true };
   const range = period ? periodRange(period) : null;
   const rows = (await submittedRows()).filter((s) =>
@@ -209,14 +242,9 @@ export async function lowScores({ threshold, period = null, scopeClassIds = null
     (!range || (whenOf(s) >= range.from && whenOf(s) < range.to)));
   const assignments = await assignmentIndex(rows.map((s) => s.assignmentId));
   const users = await userIndex(rows.map((s) => s.studentId));
-  const scoped = rows.filter((s) => {
-    const a = assignments.get(String(s.assignmentId));
-    const u = users.get(String(s.studentId));
-    return inScope(a?.classId ?? u?.classId ?? null, scopeClassIds);
-  });
-  const names = await classNameMap(scoped.map((s) =>
+  const names = await classNameMap(rows.map((s) =>
     assignments.get(String(s.assignmentId))?.classId ?? users.get(String(s.studentId))?.classId));
-  const items = scoped
+  const items = rows
     .sort((a, b) => a.score - b.score)
     .slice(0, MAX_LIST)
     .map((s) => {
@@ -231,12 +259,12 @@ export async function lowScores({ threshold, period = null, scopeClassIds = null
         submittedAt: whenOf(s) || null,
       };
     });
-  return { threshold, period, total: scoped.length, items };
+  return { threshold, period, total: rows.length, items };
 }
 
 // ─────────────────── Học sinh chưa hoàn thành bài kiểm tra ───────────────────
 
-export async function unfinished({ scopeClassIds = null } = {}) {
+export async function unfinished() {
   const todayStart = periodRange("today").from;
   const all = await getCollection("assignments")
     .find({}, { projection: { _id: 0, id: 1, title: 1, classId: 1, status: 1, deadline: 1, createdAt: 1 } })
@@ -246,7 +274,6 @@ export async function unfinished({ scopeClassIds = null } = {}) {
   const open = all
     .filter((a) => a.status !== "CLOSED")
     .filter((a) => !a.deadline || String(a.deadline) >= todayStart)
-    .filter((a) => inScope(a.classId ?? null, scopeClassIds))
     .slice(0, MAX_UNFINISHED_ASSIGNMENTS);
 
   const names = await classNameMap(open.map((a) => a.classId));
@@ -284,14 +311,13 @@ export async function unfinished({ scopeClassIds = null } = {}) {
  * hỏi của ngân hàng), còn results+games là nguồn aiLearningMetrics đang
  * dùng và có sẵn subject sạch.
  */
-export async function statsByClassOrSubject({ scopeClassIds = null } = {}) {
+export async function statsByClassOrSubject() {
   const subs = await submittedRows();
   const assignments = await assignmentIndex(subs.map((s) => s.assignmentId));
   const byClassAgg = new Map();
   for (const s of subs) {
     if (typeof s.score !== "number") continue;
     const classId = assignments.get(String(s.assignmentId))?.classId ?? null;
-    if (!inScope(classId, scopeClassIds)) continue;
     const key = classId || "(không lớp)";
     const agg = byClassAgg.get(key) || { classId, sum: 0, count: 0 };
     agg.sum += s.score; agg.count += 1;
@@ -307,13 +333,6 @@ export async function statsByClassOrSubject({ scopeClassIds = null } = {}) {
     .sort((x, y) => x.average - y.average);
 
   // Theo môn qua results + games (lượt chơi đã xác thực).
-  let studentIds = null;
-  if (scopeClassIds != null) {
-    const students = await getCollection("users")
-      .find({ role: "student", classId: { $in: scopeClassIds } }, { projection: { _id: 0, id: 1 } })
-      .toArray();
-    studentIds = new Set(students.map((s) => String(s.id)));
-  }
   const results = await getCollection("results")
     .find({ verified: true }, { projection: { _id: 0, userId: 1, gameId: 1, accuracy: 1 } })
     .limit(MAX_SCORE_ROWS)
@@ -333,7 +352,6 @@ export async function statsByClassOrSubject({ scopeClassIds = null } = {}) {
   }
   const bySubjectAgg = new Map();
   for (const r of results) {
-    if (studentIds != null && !studentIds.has(String(r.userId))) continue;
     const subject = gameSubject.get(String(r.gameId)) || null;
     if (!subject || typeof r.accuracy !== "number") continue;
     const agg = bySubjectAgg.get(subject) || { sum: 0, count: 0 };
@@ -349,7 +367,7 @@ export async function statsByClassOrSubject({ scopeClassIds = null } = {}) {
 
 // ─────────────────── 3.3 Kết quả giảm so với trước ───────────────────
 
-export async function declining({ scopeClassIds = null } = {}) {
+export async function declining() {
   const subs = (await submittedRows()).filter((s) => typeof s.score === "number");
   const assignments = await assignmentIndex(subs.map((s) => s.assignmentId));
   const users = await userIndex(subs.map((s) => s.studentId));
@@ -364,7 +382,6 @@ export async function declining({ scopeClassIds = null } = {}) {
     if (rows.length < 2) continue;
     const u = users.get(studentId);
     const classId = assignments.get(String(rows[rows.length - 1].assignmentId))?.classId ?? u?.classId ?? null;
-    if (!inScope(classId, scopeClassIds)) continue;
     const sorted = [...rows].sort((a, b) => whenOf(a).localeCompare(whenOf(b)));
     const half = Math.max(1, Math.floor(sorted.length / 2));
     const first = sorted.slice(0, half);
@@ -401,14 +418,240 @@ export async function declining({ scopeClassIds = null } = {}) {
   };
 }
 
+// ─────────────────── Tổng quan hệ thống (nhóm mới) ───────────────────
+
+/** Đếm tổng theo từng kho dữ liệu chính — chỉ số lượng, không chi tiết cá nhân. */
+export async function systemOverview() {
+  const users = getCollection("users");
+  const count = (name, filter = {}) => getCollection(name).countDocuments(filter);
+  const [
+    students, teachers, admins, classesTotal,
+    gamesTotal, gamesPublished, lessonsTotal, lessonsPublished,
+    banksTotal, assignmentsTotal, playsTotal,
+  ] = await Promise.all([
+    users.countDocuments({ role: "student" }),
+    users.countDocuments({ role: "teacher" }),
+    users.countDocuments({ role: "admin" }),
+    count("classes"),
+    count("games"),
+    count("games", { status: "published" }),
+    count("lessons"),
+    count("lessons", { status: "published" }),
+    count("question_banks"),
+    count("assignments"),
+    count("results"),
+  ]);
+  return {
+    students, teachers, admins, classesTotal,
+    gamesTotal, gamesPublished, lessonsTotal, lessonsPublished,
+    banksTotal, assignmentsTotal, playsTotal,
+  };
+}
+
+// ─────────────────── Nội dung mới nhất (nhóm mới) ───────────────────
+
+const RECENT_CONTENT_LIMIT = 5;
+
+/** Mục nội dung mới nhất của một kho: chỉ tên + môn + trạng thái + ngày tạo. */
+async function recentOf(collection, projection) {
+  const rows = await getCollection(collection)
+    .find({}, { projection: { _id: 0, ...projection } })
+    .sort({ createdAt: -1 })
+    .limit(RECENT_CONTENT_LIMIT)
+    .toArray();
+  return rows.map((r) => ({
+    name: r.name || r.title || "(không tên)",
+    subject: r.subject ?? null,
+    status: r.status ?? null,
+    createdAt: r.createdAt ?? null,
+  }));
+}
+
+export async function recentContent() {
+  const [games, lessons, bankQuestions] = await Promise.all([
+    recentOf("games", { name: 1, subject: 1, status: 1, createdAt: 1 }),
+    recentOf("lessons", { title: 1, subject: 1, status: 1, createdAt: 1 }),
+    // question_banks lưu TỪNG CÂU HỎI (không có khái niệm "ngân hàng" có
+    // tên riêng, cũng không có createdAt — xem db.js) → chỉ tra được
+    // TỔNG SỐ câu hỏi trong kho, không có "mới nhất".
+    getCollection("question_banks").countDocuments({}),
+  ]);
+  return { games, lessons, bankQuestions };
+}
+
+// ─────────────── Báo cáo & hỗ trợ đang chờ (nhóm mới) ───────────────
+
+const REPORT_REASON_LABELS = new Map(REPORT_REASONS.map((r) => [r.value, r.label]));
+/** Trạng thái ticket còn đang chờ xử lý (chưa done/closed). */
+const TICKET_OPEN_STATUSES = ["open", "processing", "pending"];
+
+export async function supportBacklog() {
+  const reports = getCollection("reports");
+  const tickets = getCollection("support_tickets");
+  const [openReports, recentReports, openTickets, recentTickets] = await Promise.all([
+    reports.countDocuments({ status: "open" }),
+    reports
+      .find({ status: "open" }, { projection: { _id: 0, reportedName: 1, reportedUsername: 1, reason: 1, createdAt: 1 } })
+      .sort({ createdAt: -1 })
+      .limit(RECENT_CONTENT_LIMIT)
+      .toArray(),
+    tickets.countDocuments({ status: { $in: TICKET_OPEN_STATUSES } }),
+    tickets
+      .find({ status: { $in: TICKET_OPEN_STATUSES } },
+        { projection: { _id: 0, code: 1, title: 1, priority: 1, status: 1, username: 1, createdAt: 1 } })
+      .sort({ createdAt: -1 })
+      .limit(RECENT_CONTENT_LIMIT)
+      .toArray(),
+  ]);
+  return {
+    openReports,
+    recentReports: recentReports.map((r) => ({
+      reportedName: r.reportedName || r.reportedUsername || "",
+      reasonLabel: REPORT_REASON_LABELS.get(r.reason) || r.reason || "",
+      createdAt: r.createdAt ?? null,
+    })),
+    openTickets,
+    recentTickets: recentTickets.map((t) => ({
+      code: t.code || "",
+      title: t.title || "",
+      priority: t.priority || "",
+      status: t.status || "",
+      username: t.username || "",
+      createdAt: t.createdAt ?? null,
+    })),
+  };
+}
+
+// ─────────────────── Hoạt động hỏi AI (nhóm mới) ───────────────────
+
+/** Thống kê lượt hỏi AI từ ai_chat_logs (đợt #78) trong một kỳ theo giờ VN. */
+export async function aiActivity({ period = "week" } = {}) {
+  const p = period || "week";
+  const { from, to } = periodRange(p);
+  const filter = { createdAt: { $gte: from, $lt: to } };
+  const coll = getCollection("ai_chat_logs");
+  const [total, kindRows, topUsers, recentQuestions] = await Promise.all([
+    coll.countDocuments(filter),
+    coll.aggregate([
+      { $match: filter },
+      { $group: { _id: "$kind", count: { $sum: 1 } } },
+    ]).toArray(),
+    coll.aggregate([
+      { $match: filter },
+      { $group: { _id: { userId: "$userId", username: "$username" }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: RECENT_CONTENT_LIMIT },
+    ]).toArray(),
+    coll
+      .find(filter, { projection: { _id: 0, username: 1, question: 1, createdAt: 1 } })
+      .sort({ createdAt: -1 })
+      .limit(RECENT_CONTENT_LIMIT)
+      .toArray(),
+  ]);
+  const kindCount = (k) => kindRows.find((r) => r._id === k)?.count || 0;
+  return {
+    period: p,
+    total,
+    chatCount: kindCount("chat"),
+    adminQueryCount: kindCount("admin_query"),
+    topUsers: topUsers.map((t) => ({
+      username: t._id?.username || t._id?.userId || "",
+      count: t.count,
+    })),
+    recentQuestions: recentQuestions.map((r) => ({
+      username: r.username || "",
+      question: String(r.question || "").slice(0, 120),
+      createdAt: r.createdAt ?? null,
+    })),
+  };
+}
+
+// ─────────────── Trạng thái cấu hình AI an toàn (nhóm mới) ───────────────
+
+/**
+ * CHỈ trạng thái an toàn: trợ lý bật/tắt, nhà cung cấp + model đang dùng,
+ * ngưỡng điểm thấp đã đặt hay chưa. TUYỆT ĐỐI không có khoá API/secret —
+ * các giá trị đọc từ system_config + aiModelConfig, không đụng env secret.
+ */
+export async function aiConfigStatus() {
+  const [enabledRaw, thresholdRaw] = await Promise.all([
+    getConfigValue("ai.enabled", { fresh: true }),
+    getConfigValue("ai.lowScoreThreshold", { fresh: true }),
+  ]);
+  const provider = config.ollama.provider || null;
+  const model = provider === "groq"
+    ? await getEffectiveGroqModel()
+    : config.ollama.model || null;
+  return {
+    enabled: enabledRaw === true,
+    provider,
+    model: model || null,
+    threshold: typeof thresholdRaw === "number" && Number.isFinite(thresholdRaw) ? thresholdRaw : null,
+  };
+}
+
 // ─────────────────── Định dạng ngữ cảnh đưa vào prompt ───────────────────
 
-export function formatAdminContext(intent, result, { scopeNote = null } = {}) {
+export function formatAdminContext(intent, result) {
   const lines = [];
-  if (scopeNote) lines.push(`[PHẠM VI DỮ LIỆU] ${scopeNote}`);
   const periodLabel = intent.period ? PERIOD_LABELS[intent.period] : null;
 
-  if (intent.type === "new_students") {
+  if (intent.type === "overview") {
+    lines.push("[KẾT QUẢ TRA CỨU THẬT — tổng quan hệ thống]");
+    lines.push(`- Học sinh: ${result.students} tài khoản.`);
+    lines.push(`- Giáo viên: ${result.teachers} tài khoản.`);
+    lines.push(`- Quản trị viên: ${result.admins} tài khoản.`);
+    lines.push(`- Lớp học: ${result.classesTotal} lớp.`);
+    lines.push(`- Trò chơi: ${result.gamesPublished}/${result.gamesTotal} đã xuất bản.`);
+    lines.push(`- Bài học: ${result.lessonsPublished}/${result.lessonsTotal} đã xuất bản.`);
+    lines.push(`- Ngân hàng câu hỏi: ${result.banksTotal} câu hỏi.`);
+    lines.push(`- Bài kiểm tra đã giao: ${result.assignmentsTotal} bài.`);
+    lines.push(`- Tổng lượt chơi game đã ghi nhận: ${result.playsTotal} lượt.`);
+  } else if (intent.type === "content_new") {
+    lines.push("[KẾT QUẢ TRA CỨU THẬT — nội dung mới nhất]");
+    lines.push("- Trò chơi mới nhất:");
+    if (result.games.length === 0) lines.push("  • (chưa có trò chơi nào)");
+    for (const g of result.games) {
+      lines.push(`  • ${g.name}${g.subject ? ` — môn ${g.subject}` : ""} — ${g.status === "published" ? "đã xuất bản" : "bản nháp"}${g.createdAt ? ` — tạo ${dateOf(g.createdAt)}` : ""}`);
+    }
+    lines.push("- Bài học mới nhất:");
+    if (result.lessons.length === 0) lines.push("  • (chưa có bài học nào)");
+    for (const l of result.lessons) {
+      lines.push(`  • ${l.name}${l.subject ? ` — môn ${l.subject}` : ""} — ${l.status === "published" ? "đã xuất bản" : "bản nháp"}${l.createdAt ? ` — tạo ${dateOf(l.createdAt)}` : ""}`);
+    }
+    lines.push(`- Ngân hàng câu hỏi: hiện có ${result.bankQuestions} câu hỏi (kho này không lưu thời điểm tạo từng câu nên không xếp hạng "mới nhất" được).`);
+  } else if (intent.type === "support_backlog") {
+    lines.push("[KẾT QUẢ TRA CỨU THẬT — báo cáo & hỗ trợ đang chờ xử lý]");
+    lines.push(`- Báo cáo người dùng chưa xử lý: ${result.openReports} báo cáo.`);
+    for (const r of result.recentReports) {
+      lines.push(`  • Người bị báo cáo: ${r.reportedName} — lý do: ${r.reasonLabel}${r.createdAt ? ` — ${dateOf(r.createdAt)}` : ""}`);
+    }
+    lines.push(`- Yêu cầu hỗ trợ đang chờ xử lý (chưa hoàn thành/đóng): ${result.openTickets} yêu cầu.`);
+    for (const t of result.recentTickets) {
+      lines.push(`  • ${t.code ? `[${t.code}] ` : ""}${t.title}${t.priority ? ` — ưu tiên ${t.priority}` : ""}${t.username ? ` — từ ${t.username}` : ""}${t.createdAt ? ` — ${dateOf(t.createdAt)}` : ""}`);
+    }
+  } else if (intent.type === "ai_activity") {
+    lines.push(`[KẾT QUẢ TRA CỨU THẬT — hoạt động hỏi AI ${PERIOD_LABELS[result.period] || ""}]`);
+    lines.push(`- Tổng số lượt hỏi AI: ${result.total} lượt (chat thường ${result.chatCount}, tra cứu quản trị ${result.adminQueryCount}).`);
+    if (result.topUsers.length > 0) {
+      lines.push("- Người hỏi nhiều nhất:");
+      for (const u of result.topUsers) lines.push(`  • ${u.username}: ${u.count} lượt`);
+    }
+    if (result.recentQuestions.length > 0) {
+      lines.push("- Câu hỏi gần nhất:");
+      for (const q of result.recentQuestions) {
+        lines.push(`  • ${q.username ? `${q.username}: ` : ""}"${q.question}"${q.createdAt ? ` (${dateOf(q.createdAt)})` : ""}`);
+      }
+    }
+  } else if (intent.type === "ai_config") {
+    lines.push("[KẾT QUẢ TRA CỨU THẬT — trạng thái cấu hình AI (chỉ trạng thái an toàn, không có khoá bí mật)]");
+    lines.push(`- Trợ lý AI: ${result.enabled ? "ĐANG BẬT" : "ĐANG TẮT"}.`);
+    lines.push(`- Nhà cung cấp model: ${result.provider || "(chưa rõ)"}.`);
+    lines.push(`- Model đang dùng: ${result.model || "(chưa rõ)"}.`);
+    lines.push(result.threshold == null
+      ? "- Ngưỡng điểm thấp: CHƯA ĐƯỢC CẤU HÌNH (đang để trống — khi hỏi về điểm thấp, AI sẽ hỏi lại ngưỡng)."
+      : `- Ngưỡng điểm thấp: đã đặt ở mức dưới ${result.threshold} điểm (thang 100).`);
+  } else if (intent.type === "new_students") {
     lines.push(`[KẾT QUẢ TRA CỨU THẬT — học sinh mới đăng ký ${PERIOD_LABELS[result.period] || ""}]`);
     lines.push(`- Tổng số học sinh mới: ${result.total} em.`);
     if (result.students.length > 0) {
@@ -502,50 +745,57 @@ export function formatAdminContext(intent, result, { scopeNote = null } = {}) {
  * @param {object} req request đã xác thực (để ghi audit đúng actor).
  * @param {string} message câu hỏi gốc của người dùng.
  * @param {{userId: string, role: string}} identity danh tính từ DB.
- * @returns {Promise<null|{type, needsThreshold, resultCount, text, scopeNote}>}
+ * @returns {Promise<null|{type, needsThreshold, resultCount, text}>}
  *   null khi không phải câu tra cứu hoặc người hỏi không có quyền.
  */
 export async function runAdminQuery(req, message, identity) {
+  // Cổng quyền DUY NHẤT và cứng nhất: CHỈ admin (vai trò từ hồ sơ DB).
+  // Kiểm tra TRƯỚC khi nhận diện intent — teacher/học sinh không bao giờ
+  // chạy tra cứu, kể cả khi câu hỏi giống hệt câu của admin (Nguyên chốt
+  // 2026-11-10, thay cho phạm vi lớp của giáo viên ở đợt #74).
+  if (identity?.role !== "admin") return null;
   const intent = detectAdminQuery(message);
   if (!intent) return null;
-  const role = identity?.role;
-  if (role !== "admin" && role !== "teacher") return null;
-
-  let scopeClassIds = null;
-  let scopeNote = null;
-  if (role === "teacher") {
-    const classes = await getTeacherClasses(String(identity.userId));
-    scopeClassIds = classes.map((c) => String(c.id));
-    scopeNote = classes.length > 0
-      ? `Người hỏi là GIÁO VIÊN, chỉ được phân công các lớp: ${classes.map((c) => c.name).join(", ")}. ` +
-        "Mọi số liệu dưới đây ĐÃ được Backend lọc đúng trong phạm vi đó — không được nói tới dữ liệu ngoài các lớp này."
-      : "Người hỏi là GIÁO VIÊN nhưng chưa được phân công lớp nào — hiện không có dữ liệu nào trong phạm vi của họ.";
-  }
 
   let result;
   let resultCount = 0;
-  if (intent.type === "new_students") {
-    result = await newStudents({ period: intent.period || "month", scopeClassIds });
+  if (intent.type === "overview") {
+    result = await systemOverview();
+    resultCount = result.students;
+  } else if (intent.type === "content_new") {
+    result = await recentContent();
+    resultCount = result.games.length + result.lessons.length;
+  } else if (intent.type === "support_backlog") {
+    result = await supportBacklog();
+    resultCount = result.openReports + result.openTickets;
+  } else if (intent.type === "ai_activity") {
+    result = await aiActivity({ period: intent.period || "week" });
+    resultCount = result.total;
+  } else if (intent.type === "ai_config") {
+    result = await aiConfigStatus();
+    resultCount = 1;
+  } else if (intent.type === "new_students") {
+    result = await newStudents({ period: intent.period || "month" });
     resultCount = result.total;
   } else if (intent.type === "low_scores") {
     const raw = await getConfigValue("ai.lowScoreThreshold", { fresh: true });
     const threshold = typeof raw === "number" && Number.isFinite(raw) ? raw : null;
-    result = await lowScores({ threshold, period: intent.period, scopeClassIds });
+    result = await lowScores({ threshold, period: intent.period });
     resultCount = result.needsThreshold ? 0 : result.total;
   } else if (intent.type === "unfinished") {
-    result = await unfinished({ scopeClassIds });
+    result = await unfinished();
     resultCount = result.totalUnfinished;
   } else if (intent.type === "stats") {
-    result = await statsByClassOrSubject({ scopeClassIds });
+    result = await statsByClassOrSubject();
     resultCount = result.byClass.length + result.bySubject.length;
   } else if (intent.type === "declining") {
-    result = await declining({ scopeClassIds });
+    result = await declining();
     resultCount = result.total;
   } else {
     return null;
   }
 
-  const text = formatAdminContext(intent, result, { scopeNote });
+  const text = formatAdminContext(intent, result);
   // Audit best-effort: chỉ loại truy vấn + số kết quả (đặc tả §4) —
   // auditService.record tự nuốt lỗi nên không cần bọc thêm.
   await auditRecord({
@@ -559,6 +809,5 @@ export async function runAdminQuery(req, message, identity) {
     needsThreshold: result.needsThreshold === true,
     resultCount,
     text,
-    scopeNote,
   };
 }

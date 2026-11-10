@@ -357,9 +357,10 @@ export function detectAboveGradeTopic(message, grade) {
  * dùng để tách studentSystemPrompt/adminSystemPrompt. Đọc DB lỗi thì lùi
  * về role trong token (vẫn là dữ liệu đã xác thực, không phải của client).
  *
- * adminData: CHỈ dựng khi người hỏi là admin/teacher VÀ câu hỏi là câu
- * tra cứu quản trị (aiAdminQueryService) — học sinh không bao giờ nhận
- * được dữ liệu quản trị trong ngữ cảnh.
+ * adminData: CHỈ dựng khi người hỏi là ADMIN (vai trò từ hồ sơ DB) VÀ
+ * câu hỏi là câu tra cứu quản trị (aiAdminQueryService — cơ chế này đã
+ * thu hẹp chỉ còn admin từ 2026-11-10; teacher và học sinh không bao giờ
+ * nhận được dữ liệu quản trị trong ngữ cảnh).
  *
  * aboveGrade: CHỈ dựng cho học sinh có khối lớp xác định được — kết quả
  * detectAboveGradeTopic cho lượt này, để tầng prompt chèn chỉ thị vượt
@@ -400,7 +401,7 @@ export async function buildChatContext(req, message) {
       console.warn(`[ai] Không nhận diện được chủ đề vượt lớp cho chat: ${e?.message || e}`);
     }
   }
-  if (role === "admin" || role === "teacher") {
+  if (role === "admin") {
     try {
       context.adminData = await runAdminQuery(req, message, context.identity);
     } catch (e) {

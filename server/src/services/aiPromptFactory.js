@@ -254,17 +254,18 @@ export function studentSystemPrompt(displayName, subject, topic, ctx = {}) {
 }
 
 /**
- * System prompt cho ADMIN / GIÁO VIÊN — tách riêng theo đặc tả §5.2.
- * `ctx.adminData` là kết quả tra cứu THẬT Backend vừa chạy cho lượt này
- * (aiAdminQueryService.runAdminQuery) hoặc null khi câu hỏi không phải
- * câu tra cứu. Giáo viên chỉ nhận dữ liệu trong phạm vi lớp được phân
- * công — việc lọc diễn ra ở Backend, prompt chỉ nhắc lại phạm vi.
+ * System prompt cho ADMIN — tách riêng theo đặc tả §5.2, CHỈ dành cho
+ * quản trị viên. `ctx.adminData` là kết quả tra cứu THẬT Backend vừa
+ * chạy cho lượt này (aiAdminQueryService.runAdminQuery) hoặc null khi
+ * câu hỏi không phải câu tra cứu. Tra cứu quản trị chỉ kích hoạt cho
+ * role admin (Nguyên chốt 2026-11-10): giáo viên dùng prompt chat
+ * thường (chatSystem), học sinh dùng studentSystemPrompt — không vai
+ * trò nào khác nhận được dữ liệu quản trị trong prompt.
  */
 export function adminSystemPrompt(displayName, subject, topic, ctx = {}) {
-  const isTeacher = ctx.identityRole === "teacher";
   let sb = "";
   sb += "Bạn là AI Bạn Học — trợ lý học tập của nền tảng giáo dục EduPlay. Lần này bạn "
-    + "đang hỗ trợ một " + (isTeacher ? "GIÁO VIÊN" : "QUẢN TRỊ VIÊN (admin)") + " của hệ thống.\n";
+    + "đang hỗ trợ một QUẢN TRỊ VIÊN (admin) của hệ thống.\n";
   if (ctx.modelName) {
     sb += "Bạn đang chạy trên model " + ctx.modelName + " thông qua " + (ctx.modelProvider || "Ollama") + ". Nếu được hỏi "
       + "bạn là ai hoặc bạn dùng model gì, hãy trả lời đúng như vậy. Bạn KHÔNG phải ChatGPT, "
@@ -277,10 +278,14 @@ export function adminSystemPrompt(displayName, subject, topic, ctx = {}) {
   sb += "2. DỮ LIỆU QUẢN TRỊ: bạn CHỈ biết các số liệu nằm trong phần KẾT QUẢ TRA CỨU "
     + "ở dưới (nếu có) — đó là dữ liệu THẬT Backend vừa truy vấn cho đúng câu hỏi này. "
     + "TUYỆT ĐỐI không bịa, không ước đoán, không tự tính lại số liệu ngoài phần đó. "
-    + "Nếu câu hỏi cần số liệu quản trị mà phần KẾT QUẢ TRA CỨU không có, hãy nói rõ "
-    + "hiện chưa tra cứu được dữ liệu cho yêu cầu này và gợi ý hỏi cụ thể hơn (ví dụ: "
-    + "học sinh mới đăng ký tháng này, học sinh có điểm kiểm tra thấp, học sinh chưa "
-    + "hoàn thành bài kiểm tra, thống kê theo lớp/môn).\n";
+    + "Các loại dữ liệu Backend tra cứu được hiện nay: học sinh mới đăng ký; điểm kiểm "
+    + "tra thấp (theo ngưỡng đã cấu hình); học sinh chưa hoàn thành bài kiểm tra; thống "
+    + "kê theo lớp/môn và lớp trung bình thấp nhất; học sinh có kết quả giảm; tổng quan "
+    + "hệ thống (số tài khoản, lớp, game, bài học); nội dung mới nhất (game/bài học mới "
+    + "tạo); báo cáo người dùng và yêu cầu hỗ trợ đang chờ xử lý; hoạt động hỏi AI "
+    + "(lượt hỏi, người hỏi nhiều); trạng thái cấu hình AI. Nếu câu hỏi cần số liệu quản "
+    + "trị mà phần KẾT QUẢ TRA CỨU không có, hãy nói rõ hiện chưa tra cứu được dữ liệu "
+    + "cho yêu cầu này và gợi ý hỏi cụ thể hơn theo đúng các loại trên.\n";
   sb += "3. Không tự suy đoán nguyên nhân hay kết luận về năng lực của học sinh khi dữ "
     + "liệu chưa đủ; nhận xét phải bám vào số liệu có thật trong ngữ cảnh.\n";
   sb += "4. Bạn KHÔNG thực hiện thao tác sửa, xoá hay thay đổi dữ liệu học sinh trong "
@@ -310,8 +315,7 @@ export function adminSystemPrompt(displayName, subject, topic, ctx = {}) {
   }
 
   if (displayName) {
-    sb += "\n(Người đang hỏi: " + displayName + " — vai trò: "
-      + (isTeacher ? "giáo viên" : "quản trị viên") + ")\n";
+    sb += "\n(Người đang hỏi: " + displayName + " — vai trò: quản trị viên)\n";
   }
   return sb;
 }

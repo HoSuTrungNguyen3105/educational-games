@@ -183,10 +183,13 @@ async function directChat(body, req) {
   // lỗi: thiếu phần nào thì system prompt thiếu phần đó, chat vẫn chạy.
   const context = await buildChatContext(req, message);
   // Tách prompt theo VAI TRÒ (update_features.md §5.2): vai trò + khối lớp
-  // lấy từ ngữ cảnh Backend dựng (hồ sơ DB), không tin client. Admin và
-  // giáo viên dùng adminSystemPrompt (kèm kết quả tra cứu thật nếu câu hỏi
-  // là câu tra cứu); học sinh — và trường hợp chưa rõ vai trò — dùng
-  // studentSystemPrompt (chatSystem cũ + khối lớp + cổng dữ liệu cá nhân).
+  // lấy từ ngữ cảnh Backend dựng (hồ sơ DB), không tin client. CHỈ admin
+  // dùng adminSystemPrompt (kèm kết quả tra cứu thật nếu câu hỏi là câu
+  // tra cứu — tra cứu cũng chỉ chạy cho admin). Giáo viên dùng prompt
+  // chat thường chatSystem: không dữ liệu quản trị, không khối lớp, đóng
+  // vai trò người dùng thường. Học sinh — và trường hợp chưa rõ vai trò —
+  // dùng studentSystemPrompt (chatSystem cũ + khối lớp + cổng dữ liệu cá
+  // nhân).
   const identityRole = context.identity?.role || req?.user?.role || null;
   const promptCtx = {
     dateTimeText: context.dateTimeText,
@@ -208,9 +211,11 @@ async function directChat(body, req) {
     identityRole,
     adminData: context.adminData,
   };
-  const system = identityRole === "admin" || identityRole === "teacher"
+  const system = identityRole === "admin"
     ? adminSystemPrompt(displayName, body.subject, body.topic, promptCtx)
-    : studentSystemPrompt(displayName, body.subject, body.topic, promptCtx);
+    : identityRole === "teacher"
+      ? chatSystem(displayName, body.subject, body.topic, promptCtx)
+      : studentSystemPrompt(displayName, body.subject, body.topic, promptCtx);
   const messages = chatMessages(history, message);
   const answer = await llmComplete(system, messages);
 
