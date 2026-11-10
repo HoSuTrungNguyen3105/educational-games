@@ -189,6 +189,58 @@ export function groqComplete(system, messages) {
   return call(system, messages, false);
 }
 
+/**
+ * Lượt gọi CHỌN CÔNG CỤ (tool calling chuẩn OpenAI) cho đường A: gửi kèm
+ * danh mục `tools` (định dạng {type:"function", function:{name, description,
+ * parameters}}) và để model TỰ quyết định có gọi công cụ nào không
+ * (tool_choice "auto"). Trả { content, toolCalls: [{id, name, arguments}] }
+ * — arguments giữ NGUYÊN chuỗi JSON thô của model; việc parse + validate
+ * thuộc tầng aiToolCatalog (không tin dữ liệu LLM ở gateway).
+ *
+ * Bằng chứng hỗ trợ: tài liệu Tool Use chính thức của Groq
+ * (console.groq.com/docs/tool-use, đọc 2026-11-10) — bảng "Local & Remote
+ * Tool Use" ghi openai/gpt-oss-20b và openai/gpt-oss-120b = Yes, model
+ * mặc định + các model admin chọn được trong Cài đặt đều nằm trong bảng
+ * này. gpt-oss KHÔNG hỗ trợ gọi công cụ song song → parallel_tool_calls
+ * luôn false, tầng trên tự kẹp số công cụ thực thi mỗi lượt.
+ * Mọi lỗi (gồm 400 tool_use_failed từng được cộng đồng báo với gpt-oss)
+ * đều ném AiBackendError như call() thường — caller (aiToolUseService)
+ * nuốt lỗi và lùi về đường từ khoá, không để hỏng chat.
+ */
+export async function groqCompleteWithTools(system, messages, tools) {
+  const model = await requireConfigured();
+  const body = buildBody(model, system, messages, false);
+  body.tools = Array.isArray(tools) ? tools : [];
+  body.tool_choice = "auto";
+  body.parallel_tool_calls = false;
+  const timeoutMs = config.aiBackend.timeoutMs;
+  try {
+    const res = await postChat(body, timeoutMs);
+    if (res.status < 200 || res.status >= 300) throw translateHttp(res.status, res.retryAfterSeconds, model);
+    let root;
+    try {
+      root = JSON.parse(res.raw);
+    } catch {
+      throw new AiBackendError("Dịch vụ AI trả về dữ liệu không đúng định dạng.", { httpCode: 502, kind: "badResponse" });
+    }
+    const msg = root?.choices?.[0]?.message;
+    const toolCalls = (Array.isArray(msg?.tool_calls) ? msg.tool_calls : [])
+      .filter((t) => t && t.type === "function" && t.function?.name)
+      .map((t) => ({
+        id: t.id != null ? String(t.id) : null,
+        name: String(t.function.name),
+        arguments: typeof t.function.arguments === "string"
+          ? t.function.arguments
+          : JSON.stringify(t.function.arguments ?? {}),
+      }));
+    recordAiInferenceSuccess();
+    return { content: msg?.content != null ? String(msg.content) : "", toolCalls };
+  } catch (e) {
+    recordAiInferenceError({ providerStatus: e?.providerStatus ?? null });
+    throw e;
+  }
+}
+
 /** Gọi LLM với response_format=json_object; nội dung trả về vẫn là dữ liệu KHÔNG đáng tin — caller phải validate. */
 export function groqCompleteJson(system, messages) {
   return call(system, messages, true);

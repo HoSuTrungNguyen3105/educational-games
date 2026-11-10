@@ -8,7 +8,11 @@
 //    tập TỐI THIỂU của CHÍNH người dùng đã xác thực, tính bằng cùng bộ tính
 //    aiLearningMetrics của tính năng phân tích học tập. Đây là intent routing
 //    ở tầng Backend: Backend quyết định dữ liệu nào được đưa vào ngữ cảnh,
-//    model không tự gọi tool, không tự truy cập database.
+//    model không tự truy cập database. (Đường A, 2026-11-10: riêng tra cứu
+//    QUẢN TRỊ của admin, model được TỰ CHỌN công cụ trong danh mục backend
+//    cấp qua aiToolUseService/aiToolCatalog — backend vẫn là phía validate
+//    tham số và thực thi nội bộ; model không thấy endpoint/khoá và không
+//    tự gọi ra ngoài. Nhận diện từ khoá cũ giữ làm fallback.)
 //  - §5.5 + §5.7 (search_lesson_materials): truy xuất đoạn văn bản liên quan
 //    trong các bài học ĐÃ XUẤT BẢN (mọi học sinh đều xem được ở #/lessons)
 //    bằng khớp từ khoá/cụm từ trên DỮ LIỆU THẬT. Đây không phải RAG embedding:
@@ -27,6 +31,7 @@ import { getCollection } from "../db.js";
 import { computeLearningMetrics, topicDisplayName } from "./aiLearningMetrics.js";
 import { gradeForAgeCode } from "../config/ageCodes.js";
 import { runAdminQuery, foldText } from "./aiAdminQueryService.js";
+import { runToolAdminQuery } from "./aiToolUseService.js";
 
 // ─────────────────────── §5.6 Ngày giờ Việt Nam ───────────────────────
 
@@ -402,10 +407,24 @@ export async function buildChatContext(req, message) {
     }
   }
   if (role === "admin") {
+    // Đường A trước: cho model TỰ CHỌN công cụ từ danh mục (hiểu được cả
+    // câu diễn đạt lạ không khớp mẫu từ khoá). Không chọn được công cụ
+    // nào / nhà cung cấp không hỗ trợ tool calling / lượt chọn lỗi →
+    // adminData vẫn null → lùi về đường TỪ KHOÁ cũ (runAdminQuery) làm
+    // fallback. Đường từ khoá được GIỮ LÀM FALLBACK có chủ đích: nó là
+    // lưới an toàn khi model hiệu lực không hỗ trợ công cụ và cho các
+    // câu khớp mẫu quen thuộc khi lượt chọn công cụ gặp lỗi provider.
     try {
-      context.adminData = await runAdminQuery(req, message, context.identity);
+      context.adminData = await runToolAdminQuery(req, message, context.identity);
     } catch (e) {
-      console.warn(`[ai] Không tra cứu được dữ liệu quản trị cho chat: ${e?.message || e}`);
+      console.warn(`[ai] Không chạy được vòng chọn công cụ cho chat: ${e?.message || e}`);
+    }
+    if (!context.adminData) {
+      try {
+        context.adminData = await runAdminQuery(req, message, context.identity);
+      } catch (e) {
+        console.warn(`[ai] Không tra cứu được dữ liệu quản trị cho chat: ${e?.message || e}`);
+      }
     }
   }
   return context;
