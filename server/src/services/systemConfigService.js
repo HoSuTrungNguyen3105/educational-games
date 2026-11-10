@@ -12,6 +12,11 @@
 
 import { getCollection } from "../db.js";
 import { config } from "../config.js";
+// Chỉ import HÀM kiểm tra (không import GROQ_MODELS): aiModelConfig import
+// ngược `get` từ file này, và DEFAULTS ở đây chạy lúc nạp module — nếu
+// DEFAULTS tham chiếu trực tiếp GROQ_MODELS sẽ thành vòng lặp khởi tạo
+// (TDZ). Danh sách model cho frontend đi qua hàm getGroqModelOptions().
+import { getGroqModelOptions, isGroqModelAllowed } from "./aiModelConfig.js";
 
 const COLLECTION = "system_config";
 const DOC_KEY = "global";
@@ -53,6 +58,11 @@ export const DEFAULTS = {
   // vẫn chỉ nằm trong biến môi trường.
   ai: {
     enabled: false,
+    // Model AI do ADMIN chọn ở trang Cài đặt (chỉ áp dụng đường Groq).
+    // Rỗng = chưa chọn → backend dùng GROQ_MODEL của biến môi trường.
+    // Chỉ nhận đúng các id trong GROQ_MODELS (xem aiModelConfig.js) — ép
+    // kiểu ở coerce() bên dưới, giá trị lạ bị đưa về "".
+    model: "",
   },
 };
 
@@ -81,7 +91,11 @@ const LEAF_PATHS = (() => {
   const walk = (obj, prefix) => {
     for (const [k, v] of Object.entries(obj)) {
       const p = prefix ? `${prefix}.${k}` : k;
-      if (v && typeof v === "object" && !Array.isArray(v)) walk(v, p);
+      // Mảng trong DEFAULTS (ai.modelOptions) là HẰNG SỐ hiển thị phía
+      // server, KHÔNG phải khoá ghi được — loại khỏi danh sách lá để client
+      // không ghi đè được qua API cấu hình.
+      if (Array.isArray(v)) continue;
+      if (v && typeof v === "object") walk(v, p);
       else out.push(p);
     }
   };
@@ -91,6 +105,13 @@ const LEAF_PATHS = (() => {
 
 /** Ép kiểu theo giá trị mặc định — boolean/string, chuỗi bị cắt theo trần an toàn. */
 function coerce(path, value) {
+  // Model AI: CHỈ nhận đúng id trong danh sách cấu hình sẵn (aiModelConfig)
+  // hoặc rỗng (= dùng GROQ_MODEL của env). Giá trị lạ → "" để không ai nhét
+  // được tên model tuỳ ý qua API cấu hình.
+  if (path === "ai.model") {
+    const s = value == null ? "" : String(value).trim();
+    return s === "" || isGroqModelAllowed(s) ? s : "";
+  }
   const def = pick(DEFAULTS, path);
   if (typeof def === "boolean") {
     if (value === true || value === "true" || value === 1) return true;
@@ -146,8 +167,8 @@ const CACHE_TTL_MS = 10_000;
 let cache = null;       // { doc, at }
 let cacheAt = 0;
 
-export async function getConfig() {
-  if (cache && Date.now() - cacheAt < CACHE_TTL_MS) return clone(cache);
+export async function getConfig({ fresh = false } = {}) {
+  if (!fresh && cache && Date.now() - cacheAt < CACHE_TTL_MS) return clone(cache);
   let doc = null;
   try {
     const found = await getCollection(COLLECTION).findOne({ key: DOC_KEY });
@@ -160,14 +181,23 @@ export async function getConfig() {
   for (const p of LEAF_PATHS) {
     if (pick(merged, p) === undefined) project(merged, p, pick(DEFAULTS, p));
   }
+  // Danh sách model AI là hằng số phía server (aiModelConfig.js) — gắn vào
+  // bản trả về để trang Cài đặt hiển thị, KHÔNG lấy từ DB và KHÔNG ghi được
+  // qua API (không nằm trong LEAF_PATHS, xem khai báo ở đầu file).
+  merged.ai = { ...(merged.ai || {}), modelOptions: getGroqModelOptions() };
   cache = merged;
   cacheAt = Date.now();
   return clone(merged);
 }
 
-/** Giá trị của 1 khoá cấu hình (đường dẫn "a.b"). */
-export async function get(path) {
-  return pick(await getConfig(), path);
+/**
+ * Giá trị của 1 khoá cấu hình (đường dẫn "a.b").
+ * `fresh: true` = bỏ qua bộ nhớ đệm, đọc thẳng DB — dùng cho các giá trị
+ * phải có hiệu lực NGAY khi admin lưu (hiện tại: ai.model, xem
+ * aiModelConfig.getEffectiveGroqModel).
+ */
+export async function get(path, { fresh = false } = {}) {
+  return pick(await getConfig({ fresh }), path);
 }
 
 /** Cờ bật/tắt — dùng cho các luồng thông báo. */
@@ -186,7 +216,9 @@ export async function updateConfig(patch, actor = null) {
     site: next.site,
     maintenance: next.maintenance,
     notifications: next.notifications,
-    ai: next.ai,
+    // Chỉ ghi các khoá ai THẬT xuống DB — modelOptions là hằng số hiển thị,
+    // không phải dữ liệu cấu hình.
+    ai: { enabled: next.ai.enabled, model: next.ai.model },
     updatedAt: new Date().toISOString(),
     updatedBy: actor ? { id: actor.sub || null, name: actor.name || null, role: actor.role || null } : null,
   };
