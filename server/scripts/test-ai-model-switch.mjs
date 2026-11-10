@@ -16,7 +16,7 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 // ───────────────────────── Stub Groq (shape OpenAI) ─────────────────────────
 let mode = "ok";
 let chatRequests = [];
-let modelsList = ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3-32b"];
+let modelsList = ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile"];
 
 const QUIZ_CONTENT = JSON.stringify({
   questions: [
@@ -204,7 +204,7 @@ modelsList = ["llama-3.3-70b-versatile"];
 const h2 = await gateway.groqHealth();
 check("health thiếu model status", h2.status, false);
 checkTrue("health thiếu model nêu tên model", h2.detail.includes("openai/gpt-oss-20b") && h2.detail.includes("chưa có trên Groq"), h2.detail);
-modelsList = ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3-32b"];
+modelsList = ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile"];
 
 // ── 6. Explain + phân tích (fallback quy tắc khi JSON rác) ──────
 const explain = await direct.callAiDirect("/api/ai/explain", {
@@ -233,18 +233,18 @@ checkTrue("analysis có summary (fallback)", typeof analysis.summary === "string
 
 // ── 7. Admin chọn model ở Cài đặt -> lượt gọi dùng model mới NGAY ──
 check("chưa chọn: model hiệu lực = GROQ_MODEL env", await modelCfg.getEffectiveGroqModel(), "openai/gpt-oss-20b");
-await syscfg.updateConfig({ ai: { model: "qwen/qwen3-32b" } });
-check("đã chọn qwen: model hiệu lực đổi ngay", await modelCfg.getEffectiveGroqModel(), "qwen/qwen3-32b");
+await syscfg.updateConfig({ ai: { model: "llama-3.3-70b-versatile" } });
+check("đã chọn llama: model hiệu lực đổi ngay", await modelCfg.getEffectiveGroqModel(), "llama-3.3-70b-versatile");
 chatRequests = [];
 const chatSwitched = await backend.callAiBackend("/api/ai/chat", { message: "Giúp mình với", history: [] }, reqStudent);
 check("chat sau khi đổi vẫn trả answer", chatSwitched.answer, "Chào bạn! Mình là AI Bạn Học.");
-check("payload dùng model admin vừa chọn", chatRequests[0].body.model, "qwen/qwen3-32b");
-checkTrue("prompt khai đúng model mới", String(chatRequests[0].body.messages[0]?.content || "").includes("qwen/qwen3-32b"),
+check("payload dùng model admin vừa chọn", chatRequests[0].body.model, "llama-3.3-70b-versatile");
+checkTrue("prompt khai đúng model mới", String(chatRequests[0].body.messages[0]?.content || "").includes("llama-3.3-70b-versatile"),
   String(chatRequests[0].body.messages[0]?.content || "").slice(0, 300));
 const healthSwitched = await backend.aiBackendHealth({});
-check("health báo model hiệu lực mới", healthSwitched.model, "qwen/qwen3-32b");
+check("health báo model hiệu lực mới", healthSwitched.model, "llama-3.3-70b-versatile");
 check("health kèm modelOptions (3 id)", JSON.stringify(healthSwitched.modelOptions),
-  JSON.stringify(["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3-32b"]));
+  JSON.stringify(["openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile"]));
 check("cấu hình trả modelOptions cho trang Cài đặt", (await syscfg.getConfig()).ai.modelOptions.length, 3);
 await syscfg.updateConfig({ ai: { model: "" } });
 check("xoá lựa chọn: quay về GROQ_MODEL env", await modelCfg.getEffectiveGroqModel(), "openai/gpt-oss-20b");
