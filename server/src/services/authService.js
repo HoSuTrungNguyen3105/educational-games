@@ -244,10 +244,102 @@ export async function updateProfile(userId, { name, email, password, currentPass
   return publicUser(updated);
 }
 
+/**
+ * Dọn dữ liệu LIÊN QUAN của một user sắp bị xóa — dùng CHUNG cho xóa đơn lẻ
+ * (removeUser) và xóa hàng loạt (removeUsersBulk) để hai đường không bao giờ
+ * lệch hành vi. Mọi lệnh đều idempotent, lỗi ở một collection không chặn
+ * phần còn lại (chỉ ghi warn ra log server).
+ *
+ * Được dọn (tham chiếu trực tiếp tới user, để lại là treo/lỗi phía còn lại):
+ * phiên đăng nhập (refresh_tokens), thiết bị push (user_devices), liên kết
+ * phụ huynh 2 chiều (parentLinks), kết bạn/lời mời (friendships), chặn
+ * (userBlocks), phân công lớp của giáo viên (teacher_classes), thông báo
+ * gửi TỚI user (notifications.toUserId) và trạng thái đã đọc chat
+ * (chatReadStates).
+ *
+ * KHÔNG dọn (giữ lại làm dữ liệu lịch sử/thống kê — xóa đơn lẻ trước đây
+ * cũng không đụng, và các trang thống kê không vỡ khi thiếu user):
+ * results/examResults (lượt chơi + điểm), submissions (bài đã nộp),
+ * userGameProgress/lessonProgress/user_badges/gardens/userPets/reminders
+ * (tiến độ cá nhân), messages/conversations (nội dung chat — phía bên kia
+ * vẫn cần lịch sử), reports (hồ sơ xử lý an toàn), assignments/documents/
+ * lessons do giáo viên tạo.
+ * CẢNH BÁO: initDatabase() TỰ SEED LẠI các tài khoản trong server/data/
+ * users.json (hiện gồm user-001 "teacher" và user-002 "admin") mỗi lần
+ * khởi động nếu chúng thiếu passwordHash — xóa các id seed này qua API sẽ
+ * KHÔNG bền qua lần restart/deploy tiếp theo.
+ */
+export async function cleanupUserRelatedData(id) {
+  const jobs = [
+    ["refresh_tokens", { userId: id }],
+    ["user_devices", { userId: id }],
+    ["parentLinks", { $or: [{ parentId: id }, { studentId: id }] }],
+    ["friendships", { $or: [{ requesterId: id }, { addresseeId: id }] }],
+    ["userBlocks", { $or: [{ blockerId: id }, { blockedId: id }] }],
+    ["teacher_classes", { teacherId: id }],
+    ["notifications", { toUserId: id }],
+    ["chatReadStates", { userId: id }],
+  ];
+  for (const [name, filter] of jobs) {
+    try {
+      await getCollection(name).deleteMany(filter);
+    } catch (e) {
+      console.warn(`[users] Dọn ${name} cho ${id} lỗi:`, e.message);
+    }
+  }
+}
+
 export async function removeUser(id) {
   if (id === "user-001") throw new Error("Không thể xóa tài khoản quản trị mặc định");
+  await cleanupUserRelatedData(id);
   await getCollection(COLLECTION).deleteOne({ id });
   return true;
+}
+
+/** Số id tối đa trong MỘT lần gọi xóa hàng loạt. */
+export const BULK_DELETE_MAX_IDS = 100;
+
+/**
+ * Xóa HÀNG LOẠT tài khoản theo danh sách id (chỉ route admin gọi). Mỗi id
+ * xử lý ĐỘC LẬP — một id lỗi không dừng cả batch. Bảo vệ cứng phía server:
+ * - id trùng trong danh sách chỉ xử lý một lần;
+ * - không xóa CHÍNH tài khoản đang gọi (selfId) → failed "cannot delete self";
+ * - không xóa BẤT KỲ tài khoản role "admin" nào → failed "admin accounts are
+ *   protected" (gồm cả guard user-001 sẵn có của removeUser);
+ * - id không tồn tại → failed "not found".
+ * User qua được các cổng trên thì xóa bằng ĐÚNG removeUser() của xóa đơn lẻ
+ * (kèm dọn dữ liệu liên quan ở cleanupUserRelatedData).
+ * @returns {Promise<{deleted: string[], failed: {id: string, reason: string}[]}>}
+ */
+export async function removeUsersBulk(ids, { selfId } = {}) {
+  const deleted = [];
+  const failed = [];
+  const seen = new Set();
+  for (const raw of ids) {
+    const id = String(raw);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    if (selfId && id === selfId) {
+      failed.push({ id, reason: "cannot delete self" });
+      continue;
+    }
+    const user = await getCollection(COLLECTION).findOne({ id });
+    if (!user) {
+      failed.push({ id, reason: "not found" });
+      continue;
+    }
+    if (user.role === "admin") {
+      failed.push({ id, reason: "admin accounts are protected" });
+      continue;
+    }
+    try {
+      await removeUser(id);
+      deleted.push(id);
+    } catch (e) {
+      failed.push({ id, reason: e.message });
+    }
+  }
+  return { deleted, failed };
 }
 
 export async function resetPassword(userId, newPassword) {

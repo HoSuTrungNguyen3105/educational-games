@@ -60,6 +60,10 @@ export const AUDIT = {
   USER_UPDATE: "user.update",
   USER_ROLE: "user.role",
   USER_DELETE: "user.delete",
+  // Xóa HÀNG LOẠT tài khoản rác theo danh sách id do admin gửi: MỘT bản ghi
+  // cho cả batch, meta chỉ gồm danh sách id ĐÃ xóa + số đếm thành công/thất
+  // bại — không ghi dữ liệu cá nhân nào khác của các tài khoản bị xóa.
+  USER_BULK_DELETE: "user.bulk_delete",
   USER_RESET_PASSWORD: "user.reset_password",
   ROLE_CREATE: "role.create",
   ROLE_UPDATE: "role.update",
