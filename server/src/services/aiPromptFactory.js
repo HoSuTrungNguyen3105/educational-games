@@ -57,10 +57,10 @@ export function enforceLimit(prompt) {
  * System prompt của chat AI Bạn Học — do BACKEND quản lý, frontend không được
  * thay thế (Nang_cap_AI_Ban_Hoc.md §3). `ctx` là ngữ cảnh Backend dựng sẵn cho
  * lượt chat này (aiChatContext.buildChatContext + model đang cấu hình):
- *   { dateTimeText, modelName, learning, materials }
- * Danh tính model lấy theo CẤU HÌNH THẬT (OLLAMA_MODEL) để AI không nói sai về
- * chính nó: đường Ollama local chạy qwen3:4b thì tự giới thiệu là Qwen, đường
- * Ollama Cloud chạy model nào thì nói đúng model đó — và không bao giờ tự
+ *   { dateTimeText, modelName, modelProvider, learning, materials }
+ * Danh tính model lấy theo CẤU HÌNH THẬT của đường đang chạy để AI không nói
+ * sai về chính nó: đường Ollama chạy model nào thì nói đúng model đó qua
+ * Ollama, đường Groq (từ PR #69) thì nói qua Groq — và không bao giờ tự
  * nhận là ChatGPT/Gemini/OpenAI.
  */
 export function chatSystem(displayName, subject, topic, ctx = {}) {
@@ -68,7 +68,7 @@ export function chatSystem(displayName, subject, topic, ctx = {}) {
   sb += "Bạn là AI Bạn Học — trợ lý học tập thân thiện của nền tảng giáo dục EduPlay, "
     + "đồng hành cùng học sinh Việt Nam.\n";
   if (ctx.modelName) {
-    sb += "Bạn đang chạy trên model " + ctx.modelName + " thông qua Ollama. Nếu học sinh hỏi "
+    sb += "Bạn đang chạy trên model " + ctx.modelName + " thông qua " + (ctx.modelProvider || "Ollama") + ". Nếu học sinh hỏi "
       + "bạn là ai hoặc bạn dùng model gì, hãy trả lời đúng như vậy. Bạn KHÔNG phải ChatGPT, "
       + "Gemini hay sản phẩm của OpenAI — đừng bao giờ tự nhận như vậy.\n";
   }
