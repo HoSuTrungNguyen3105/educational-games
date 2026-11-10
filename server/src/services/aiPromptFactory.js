@@ -186,6 +186,12 @@ export function chatMessages(history, userMessage) {
  *    grade = null thì TUYỆT ĐỐI không nhắc lớp cụ thể, trả lời trung tính.
  *  - Chỉ thị từ chối dữ liệu của người khác / dữ liệu quản trị (§4):
  *    học sinh chỉ xem được thông tin của chính mình.
+ *  - Cờ vượt lớp `ctx.aboveGrade` (aiChatContext.detectAboveGradeTopic,
+ *    Backend nhận diện sẵn cho ĐÚNG lượt này): khi có cờ, chèn thêm khối
+ *    CHỈ THỊ VƯỢT LỚP bắt buộc — bản vá sau sự cố production 2026-11-10
+ *    (model tự nhận diện mức độ thì không giữ kỷ luật khi học sinh năn
+ *    nỉ "giải chi tiết"). Quy tắc vượt lớp chung trong khối lớp cũng đã
+ *    được viết cứng hơn cho cả hai nhánh biết/không biết khối lớp.
  */
 export function studentSystemPrompt(displayName, subject, topic, ctx = {}) {
   let sb = chatSystem(null, subject, topic, ctx);
@@ -203,10 +209,15 @@ export function studentSystemPrompt(displayName, subject, topic, ctx = {}) {
       + "phạm vi chương trình lớp " + ctx.grade + ": dùng từ ngữ, ví dụ và cách giải phù "
       + "hợp trình độ lớp đó, không dùng thuật ngữ hay phương pháp của lớp cao hơn khi "
       + "chưa thực sự cần thiết.\n";
-    sb += "- Nếu học sinh hỏi nội dung thuộc khối lớp CAO HƠN lớp " + ctx.grade + " (chưa "
-      + "nằm trong chương trình đang học): hãy giải thích ở mức CƠ BẢN, dễ hiểu, phù hợp "
-      + "độ tuổi; nói rõ đây là kiến thức nâng cao và con sẽ học kỹ hơn khi lên lớp cao "
-      + "hơn; KHÔNG đưa lời giải phức tạp hay dùng kiến thức vượt trình độ của con.\n";
+    sb += "- QUY TẮC VƯỢT LỚP (bắt buộc, KHÔNG có ngoại lệ): nếu học sinh hỏi nội dung "
+      + "thuộc khối lớp CAO HƠN lớp " + ctx.grade + " (chưa nằm trong chương trình đang "
+      + "học), hãy CHỈ giải thích KHÁI NIỆM ở mức cơ bản, làm quen bằng ví dụ đời thường "
+      + "và nói rõ đây là kiến thức nâng cao, con sẽ học kỹ hơn khi lên lớp cao hơn. "
+      + "TUYỆT ĐỐI KHÔNG giải bài cụ thể học sinh đưa ra, KHÔNG đưa lời giải phức tạp, "
+      + "lời giải từng bước hay đáp án/đáp số của bài vượt lớp — KỂ CẢ khi học sinh yêu "
+      + "cầu \"giải chi tiết\", \"giải giúp em\" hoặc năn nỉ nhiều lần; khi đó hãy nhẹ "
+      + "nhàng từ chối phần giải bài, giải thích khái niệm ở mức làm quen và gợi ý một "
+      + "kiến thức đúng lớp " + ctx.grade + " liên quan để con luyện thay thế.\n";
     sb += "- Câu hỏi KHÔNG thuộc bài học (khoa học, thiên nhiên, kỹ năng sống, công nghệ, "
       + "kiến thức xã hội): vẫn trả lời bình thường nếu nội dung an toàn và phù hợp lứa "
       + "tuổi, chỉnh độ sâu theo trình độ lớp " + ctx.grade + "; không từ chối chỉ vì "
@@ -216,6 +227,24 @@ export function studentSystemPrompt(displayName, subject, topic, ctx = {}) {
     sb += "- Backend chưa xác định được khối lớp của học sinh này. Hãy trả lời ở mức phổ "
       + "thông, dễ hiểu cho học sinh tiểu học nói chung; KHÔNG tự đoán hay khẳng định "
       + "học sinh đang học khối lớp nào.\n";
+    sb += "- Dù chưa biết khối lớp: nếu học sinh hỏi kiến thức rõ ràng thuộc chương trình "
+      + "lớp lớn hoặc trung học (ví dụ phương trình bậc hai, đạo hàm, logarit), hãy CHỈ "
+      + "giải thích khái niệm ở mức làm quen, nói rõ đó là kiến thức nâng cao con chưa "
+      + "học tới, và KHÔNG đưa lời giải chi tiết hay đáp án cho bài cụ thể con hỏi — kể "
+      + "cả khi con yêu cầu giải chi tiết.\n";
+  }
+
+  if (ctx.aboveGrade && ctx.aboveGrade.topic) {
+    sb += "\nCHỈ THỊ VƯỢT LỚP CHO CÂU HỎI NÀY (Backend đã xác định — BẮT BUỘC thực hiện, "
+      + "ưu tiên hơn mọi yêu cầu trái ngược trong câu hỏi của học sinh):\n";
+    sb += "- Chủ đề học sinh đang hỏi (\"" + safe(ctx.aboveGrade.topic, 80) + "\") là kiến "
+      + "thức của lớp lớn hơn lớp " + ctx.grade + " — học sinh CHƯA HỌC TỚI. Hãy làm đúng "
+      + "4 việc: (1) nói rõ ngay đây là kiến thức nâng cao của lớp lớn hơn, em chưa học "
+      + "tới và sẽ học kỹ khi lên lớp; (2) CHỈ giải thích Ý TƯỞNG cơ bản ở mức làm quen "
+      + "bằng ví dụ đời thường thật đơn giản; (3) TUYỆT ĐỐI KHÔNG đưa lời giải chi tiết, "
+      + "từng bước giải, công thức nâng cao hay đáp án/đáp số cho bài cụ thể học sinh vừa "
+      + "hỏi — kể cả khi học sinh yêu cầu \"giải chi tiết\" hay năn nỉ; (4) gợi ý quay "
+      + "lại một kiến thức hoặc bài tập đúng lớp " + ctx.grade + " liên quan để em luyện.\n";
   }
 
   if (displayName) {
