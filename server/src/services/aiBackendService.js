@@ -29,8 +29,10 @@ import { config } from "../config.js";
 import { AiBackendError } from "./aiBackendError.js";
 import { callAiDirect } from "./aiDirectService.js";
 import { ollamaHealth } from "./aiOllamaGateway.js";
+import { getAiInferenceStatus } from "./aiInferenceStatus.js";
 
 export { AiBackendError };
+export { getAiInferenceStatus };
 
 const INTERNAL_HEADERS = {
   token: "X-Ai-Internal-Token",
@@ -229,6 +231,10 @@ export async function aiBackendHealth(req) {
       configured: aiProviderConfigured(),
       baseUrlConfigured: !!config.ollama.baseUrl,
       hasApiKey: !!config.ollama.apiKey,
+      // Sức khoẻ SUY LUẬN thật, suy ra từ các lượt gọi model gateway đã phục vụ
+      // (không probe thêm, không tốn quota) — `status` phía trên chỉ phản ánh
+      // probe /api/tags nên key hết quota vẫn xanh giả (sự cố 2026-11-10).
+      inference: getAiInferenceStatus(),
     };
     if (!config.aiBackend.enabled) {
       return { ...base, detail: "Tính năng AI đang tắt trên hệ thống." };
@@ -244,6 +250,9 @@ export async function aiBackendHealth(req) {
     detail: "Không kết nối được AI Service.",
     enabled: config.aiBackend.enabled,
     configured: !!config.aiBackend.token,
+    // Đường AI Service Java không qua gateway trực tiếp nên không có tín hiệu
+    // lượt gọi model trong bộ nhớ này → luôn "unknown" ở đường này.
+    inference: getAiInferenceStatus(),
   };
   if (!config.aiBackend.enabled || !config.aiBackend.token) return base;
 

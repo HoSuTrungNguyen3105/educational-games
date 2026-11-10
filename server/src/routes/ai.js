@@ -26,7 +26,7 @@ import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 import * as questionService from "../services/questionService.js";
 import { isOn } from "../services/systemConfigService.js";
-import { callAiBackend, aiBackendHealth, AiBackendError } from "../services/aiBackendService.js";
+import { callAiBackend, aiBackendHealth, AiBackendError, getAiInferenceStatus } from "../services/aiBackendService.js";
 
 const router = Router();
 
@@ -64,7 +64,16 @@ function requireAiEnabled(req, res, next) {
 /** Đưa mọi lỗi từ AI Service về một kiểu lỗi chuẩn của Backend chính. */
 function forwardError(res, e, endpoint) {
   if (e instanceof AiBackendError) {
-    return sendError(res, e.message, e.http_code);
+    // Lỗi có mã máy đọc được (vd AI_RATE_LIMITED khi provider hết quota) thì đưa
+    // kèm `errorCode` vào envelope để frontend phân biệt với lỗi chung; gợi ý
+    // thời gian chờ của provider đi cả ở body lẫn header Retry-After chuẩn.
+    const extra = {};
+    if (e.code) extra.errorCode = e.code;
+    if (e.retryAfterSeconds) {
+      extra.retryAfterSeconds = e.retryAfterSeconds;
+      res.set("Retry-After", String(e.retryAfterSeconds));
+    }
+    return sendError(res, e.message, e.http_code, extra);
   }
   console.error(`[ai] Lỗi không lường trước tại ${endpoint}:`, e?.message || e);
   return sendError(res, "Dịch vụ AI đang không khả dụng. Hãy thử lại sau.", 502);
@@ -94,6 +103,7 @@ router.get("/health", async (_req, res) => {
       provider: null,
       detail: "AI chưa được bật trong Cấu hình hệ thống.",
       notice: AI_UNAVAILABLE_MESSAGE,
+      inference: getAiInferenceStatus(),
     });
   }
   const health = await aiBackendHealth();

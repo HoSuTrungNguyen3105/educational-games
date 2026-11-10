@@ -25,8 +25,12 @@ export function sendNoContent(res) {
   return res.status(204).end();
 }
 
-export function sendError(res, msg = "error", code = 400) {
-  return res.status(code).json({ status: false, code, msg, data: null });
+export function sendError(res, msg = "error", code = 400, extra = null) {
+  const body = { status: false, code, msg, data: null };
+  // Trường phụ (vd errorCode máy đọc được) — chỉ gắn khi caller truyền, giữ
+  // nguyên shape mặc định cho mọi nơi dùng hiện có.
+  if (extra && typeof extra === "object") Object.assign(body, extra);
+  return res.status(code).json(body);
 }
 
 export function buildPagination({ page, perPage, total, keyword, sortBy, sortDir, fromDate, toDate, dateCol } = {}) {

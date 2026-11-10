@@ -13,6 +13,7 @@
 
 import { config } from "../config.js";
 import { AiBackendError } from "./aiBackendError.js";
+import { recordAiInferenceSuccess, recordAiInferenceError } from "./aiInferenceStatus.js";
 
 const PROVIDER_NAME = "ollama-cloud";
 
@@ -62,28 +63,51 @@ function buildBody(system, messages, jsonMode) {
 }
 
 /** Dịch lỗi HTTP của provider thành lỗi nghiệp vụ rõ ràng (như translate() phía Java). */
-function translateHttp(status) {
+function translateHttp(status, retryAfterSeconds = null) {
   if (status === 401 || status === 403) {
     console.error(`[ai] Ollama từ chối xác thực (HTTP ${status}). Kiểm tra OLLAMA_KEY.`);
     return new AiBackendError(
       "Dịch vụ AI từ chối xác thực. Hãy kiểm tra lại OLLAMA_KEY hoặc endpoint đang dùng.",
-      { httpCode: 502, kind: "config" });
+      { httpCode: 502, kind: "config", providerStatus: status });
   }
   if (status === 404) {
     console.error(`[ai] Ollama trả 404 — endpoint hoặc model không tồn tại (model=${config.ollama.model}).`);
     return new AiBackendError(
       "Không tìm thấy model '" + config.ollama.model + "' trên endpoint này. "
       + "Kiểm tra OLLAMA_MODEL — với Ollama Cloud hãy chọn model có sẵn trên cloud (ví dụ gpt-oss:20b).",
-      { httpCode: 502, kind: "config" });
+      { httpCode: 502, kind: "config", providerStatus: status });
+  }
+  if (status === 429) {
+    // Hết quota / bị giới hạn lượt gọi phía provider (sự cố 2026-11-10: key thử
+    // hết lượt khiến MỌI lượt chat chết trong ~1 giây nhưng health vẫn xanh).
+    // Phải có thông điệp RIÊNG, thân thiện với học sinh — gộp vào câu 502 chung
+    // chung thì cả học sinh lẫn quản trị đều không biết đường xử lý.
+    console.warn("[ai] Ollama trả HTTP 429 — hết quota hoặc bị giới hạn lượt gọi. Kiểm tra gói Ollama Cloud và OLLAMA_KEY trên Render.");
+    return new AiBackendError(
+      "AI Bạn Học đang hết lượt dùng thử, bạn quay lại sau ít phút nhé.",
+      { httpCode: 429, kind: "rateLimited", code: "AI_RATE_LIMITED", providerStatus: status, retryAfterSeconds });
   }
   if (status === 400) {
     console.warn("[ai] Ollama trả 400 — request không hợp lệ với model này.");
     return new AiBackendError("Yêu cầu không được model chấp nhận. Hãy thử lại với nội dung khác.",
-      { httpCode: 400, kind: "upstream" });
+      { httpCode: 400, kind: "upstream", providerStatus: status });
   }
   console.warn(`[ai] Ollama trả HTTP ${status}.`);
   return new AiBackendError("Dịch vụ AI đang lỗi. Vui lòng thử lại sau.",
-    { httpCode: 502, kind: "upstream" });
+    { httpCode: 502, kind: "upstream", providerStatus: status });
+}
+
+/** Đọc header Retry-After (giây hoặc HTTP-date) → số giây chờ, tối thiểu 1; không có/không đọc được → null. */
+function parseRetryAfter(raw) {
+  if (!raw) return null;
+  const secs = Number(raw);
+  if (Number.isFinite(secs) && secs > 0) return Math.ceil(secs);
+  const when = Date.parse(raw);
+  if (!Number.isNaN(when)) {
+    const delta = Math.ceil((when - Date.now()) / 1000);
+    return delta > 0 ? delta : null;
+  }
+  return null;
 }
 
 /** Một lần POST /api/chat. Trả {status, raw} để caller quyết định thử lại/dịch lỗi. */
@@ -97,7 +121,11 @@ async function postChat(body, timeoutMs) {
       body: JSON.stringify(body),
       signal: ctrl.signal,
     });
-    return { status: res.status, raw: await res.text().catch(() => "") };
+    return {
+      status: res.status,
+      raw: await res.text().catch(() => ""),
+      retryAfterSeconds: parseRetryAfter(res.headers.get("retry-after")),
+    };
   } catch (e) {
     if (e?.name === "AbortError") {
       console.warn(`[ai] Timeout ${timeoutMs}ms khi gọi Ollama /api/chat`);
@@ -136,16 +164,24 @@ async function call(system, messages, jsonMode) {
   const thinkSent = "think" in body;
   const timeoutMs = config.aiBackend.timeoutMs;
 
-  let res = await postChat(body, timeoutMs);
-  if (res.status === 400 && thinkSent) {
-    // Model/endpoint không nhận field "think" (chưa sinh token nào, không tốn chi
-    // phí) → thử lại ĐÚNG MỘT LẦN không kèm field này, như gateway Java.
-    console.warn('[ai] Ollama không chấp nhận field "think" (HTTP 400) — gọi lại không kèm field này. Đặt OLLAMA_THINK=omit để tắt hẳn.');
-    delete body.think;
-    res = await postChat(body, timeoutMs);
+  try {
+    let res = await postChat(body, timeoutMs);
+    if (res.status === 400 && thinkSent) {
+      // Model/endpoint không nhận field "think" (chưa sinh token nào, không tốn chi
+      // phí) → thử lại ĐÚNG MỘT LẦN không kèm field này, như gateway Java.
+      console.warn('[ai] Ollama không chấp nhận field "think" (HTTP 400) — gọi lại không kèm field này. Đặt OLLAMA_THINK=omit để tắt hẳn.');
+      delete body.think;
+      res = await postChat(body, timeoutMs);
+    }
+    if (res.status < 200 || res.status >= 300) throw translateHttp(res.status, res.retryAfterSeconds);
+    const text = extractContent(res.raw);
+    // Ghi nhận lượt gọi model THẬT cho health inference (xem aiInferenceStatus).
+    recordAiInferenceSuccess();
+    return text;
+  } catch (e) {
+    recordAiInferenceError({ providerStatus: e?.providerStatus ?? null });
+    throw e;
   }
-  if (res.status < 200 || res.status >= 300) throw translateHttp(res.status);
-  return extractContent(res.raw);
 }
 
 /** Gửi hội thoại, nhận nội dung văn bản thuần. */
