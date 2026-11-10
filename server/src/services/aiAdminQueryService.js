@@ -864,7 +864,26 @@ export async function runAdminQuery(req, message, identity) {
   if (identity?.role !== "admin") return null;
   const intent = detectAdminQuery(message);
   if (!intent) return null;
+  return executeAdminQuery(intent, { req, identity, selection: "keyword" });
+}
 
+/**
+ * Thực thi MỘT intent tra cứu đã xác định (dữ liệu thật + định dạng prompt
+ * + audit) — điểm thực thi DÙNG CHUNG của cả hai cách chọn intent:
+ *  - đường TỪ KHOÁ (runAdminQuery ở trên, detectAdminQuery), và
+ *  - đường CÔNG CỤ của đường A (aiToolCatalog/aiToolUseService: model tự
+ *    chọn công cụ, backend validate tham số rồi gọi vào đây).
+ * Cả hai đường đều chỉ khác nhau ở cách chọn + giá trị `selection` ghi
+ * trong audit meta ("keyword" | "tool"); logic truy vấn dữ liệu, cổng
+ * quyền và định dạng kết quả là MỘT — không có bản sao thứ hai để trôi
+ * lệch. Hàm này KHÔNG tự kiểm tra quyền: caller phải đã qua cổng admin
+ * (runAdminQuery / runToolAdminQuery đều kiểm tra identity.role trước).
+ * @param {{type: string, period: string|null}} intent
+ * @param {{req?: object, identity?: object, selection?: string}} ctx
+ * @returns {Promise<null|{type, needsThreshold, resultCount, text, selection}>}
+ */
+export async function executeAdminQuery(intent, { req, identity, selection = "keyword" } = {}) {
+  if (!intent?.type) return null;
   let result;
   let resultCount = 0;
   if (intent.type === "my_permissions") {
@@ -908,17 +927,21 @@ export async function runAdminQuery(req, message, identity) {
 
   const text = formatAdminContext(intent, result);
   // Audit best-effort: chỉ loại truy vấn + số kết quả (đặc tả §4) —
-  // auditService.record tự nuốt lỗi nên không cần bọc thêm.
+  // auditService.record tự nuốt lỗi nên không cần bọc thêm. Meta có thêm
+  // `selection` (cách intent được chọn: "keyword" = nhận diện từ khoá,
+  // "tool" = model tự chọn công cụ ở đường A) + `tool` (tên công cụ/loại
+  // tra cứu) để quản trị phân biệt được hai đường khi xem nhật ký.
   await auditRecord({
     req,
     action: AUDIT.AI_ADMIN_QUERY,
     target: "ai:chat",
-    meta: { queryType: intent.type, resultCount },
+    meta: { queryType: intent.type, resultCount, selection, tool: intent.type },
   });
   return {
     type: intent.type,
     needsThreshold: result.needsThreshold === true,
     resultCount,
     text,
+    selection,
   };
 }
