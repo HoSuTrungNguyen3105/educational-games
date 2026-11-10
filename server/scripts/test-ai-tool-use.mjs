@@ -1,10 +1,23 @@
 // Test ĐƯỜNG A — AI TỰ CHỌN CÔNG CỤ (tool-use vòng kín) cho tra cứu quản
 // trị (Nguyên chốt 2026-11-10): lượt chọn công cụ được MOCK ở tầng gateway
 // bằng một Groq STUB local (đúng shape OpenAI chat/completions): khi
-// request có `tools` (lượt chọn), stub đóng vai model và trả tool_calls
-// theo kịch bản của từng ca; khi không có `tools` (lượt trả lời cuối),
-// stub trả text mẫu và test đọc system prompt để xác minh khối dữ liệu
-// thật đã được backend gắn vào. KHÔNG dùng key thật, KHÔNG gọi mạng ngoài.
+// request có `tools` (lượt chọn), stub đóng vai model và trả tool_calls;
+// khi không có `tools` (lượt trả lời cuối), stub trả text mẫu và test đọc
+// system prompt để xác minh khối dữ liệu thật đã được backend gắn vào.
+// KHÔNG dùng key thật, KHÔNG gọi mạng ngoài.
+//
+// Cách stub "đóng vai model" (vá định tuyến 2026-11-10): ngoài các ca an
+// toàn dùng kịch bản cứng (công cụ bịa, tham số hỏng...), việc CHỌN công
+// cụ cho các câu hỏi thường do một bộ GIẢ LẬP quyết định dựa trên CHÍNH
+// payload được gửi đi: nó trích các câu VÍ DỤ nằm trong mô tả của từng
+// công cụ và chấm độ giống với câu hỏi (Dice trên token đã gấp dấu), chỉ
+// chọn khi đạt ngưỡng tự tin. Đây là bản rút gọn có chủ đích của cách
+// model thật bám mô tả/ví dụ — nếu mô tả thiếu ví dụ cho một cách diễn
+// đạt, ca tương ứng sẽ trượt. Nhờ vậy mục R khoá được hai ca production
+// đã fail thật (chọn nhầm overview cho câu học sinh mới; trượt hẳn câu
+// "có gì mới") ở mức backend: mô tả/prompt sau vá phải đủ rõ để bộ giả
+// lập chọn đúng. Độ chính xác của MODEL THẬT vẫn chỉ kết luận được bằng
+// kiểm chứng production sau deploy.
 //
 // Bao phủ: (a) admin hỏi diễn đạt LẠ không khớp từ khoá cũ → model chọn
 // đúng công cụ → dữ liệu thật; (b) model chọn công cụ không tồn tại → lùi
@@ -12,7 +25,9 @@
 // model tự bịa) → bị kẹp/loại an toàn, ngưỡng luôn từ cấu hình; (d)
 // teacher hỏi câu quản trị → KHÔNG nhận danh mục công cụ, KHÔNG dữ liệu;
 // (e) học sinh → không đổi; (f) fallback từ khoá vẫn chạy khi model không
-// chọn công cụ; (g) model trả 3 tool_calls → chỉ thực thi tối đa 2.
+// chọn công cụ; (g) model trả 3 tool_calls → chỉ thực thi tối đa 2;
+// (R) hồi quy định tuyến: đúng 2 câu production đã fail + biến thể diễn
+// đạt lạ — bộ giả lập phải chọn đúng công cụ qua mô tả/prompt mới.
 //   node server/scripts/test-ai-tool-use.mjs
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { createServer } from "node:http";
@@ -41,10 +56,64 @@ function completion(message) {
     usage: { prompt_tokens: 10, completion_tokens: 8, total_tokens: 18 },
   };
 }
-/** Kịch bản chọn công cụ của "model" stub — khớp theo cụm từ trong câu hỏi. */
-function scriptedToolCalls(userText) {
-  if (userText.includes("có gì mới")) return [toolCall("c1", "content_new", {})];
-  if (userText.includes("tình hình hệ thống")) return [toolCall("c1", "overview", {})];
+/** Gấp dấu tiếng Việt (bản rút gọn của foldText) để so token bền với cách gõ. */
+function foldLite(text) {
+  return String(text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
+}
+function foldTokens(text) {
+  return new Set(foldLite(text).replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean));
+}
+/** Trích các cụm nằm trong dấu ngoặc kép của một mô tả công cụ (câu ví dụ + cụm nhấn mạnh). */
+function quotedPhrases(description) {
+  return [...String(description || "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+}
+
+/** Ngưỡng tự tin của bộ giả lập: dưới mức này coi như model không chọn công cụ nào. */
+const SIM_THRESHOLD = 0.7;
+/**
+ * "Model" giả lập: chọn công cụ từ CHÍNH payload request — chấm độ giống
+ * (hệ số Dice trên tập token đã gấp dấu) giữa câu hỏi và từng cụm trích
+ * từ MÔ TẢ của mỗi công cụ (chủ yếu là các câu ví dụ), lấy công cụ khớp
+ * nhất khi đạt ngưỡng. Kỳ thời gian suy từ chính câu hỏi như model thật
+ * sẽ điền tham số. Mô tả càng rõ/ví dụ càng sát, lựa chọn càng đúng —
+ * đây là cơ chế mà mục R dùng để khoá hồi quy định tuyến.
+ */
+function simulatedToolCalls(body, userText) {
+  const q = foldTokens(userText);
+  if (q.size === 0) return [];
+  let best = null;
+  for (const t of body.tools || []) {
+    for (const phrase of quotedPhrases(t.function?.description)) {
+      const e = foldTokens(phrase);
+      if (e.size === 0) continue;
+      let inter = 0;
+      for (const tok of q) if (e.has(tok)) inter++;
+      const dice = (2 * inter) / (q.size + e.size);
+      if (!best || dice > best.dice) best = { name: t.function?.name, dice };
+    }
+  }
+  if (!best || best.dice < SIM_THRESHOLD) return [];
+  const folded = foldLite(userText);
+  const args = {};
+  if (/hom nay/.test(folded)) args.period = "today";
+  else if (/tuan nay/.test(folded)) args.period = "week";
+  else if (/thang truoc/.test(folded)) args.period = "last_month";
+  else if (/thang nay/.test(folded)) args.period = "month";
+  return [toolCall("sim1", best.name, args)];
+}
+
+/**
+ * Chọn tool_calls cho một lượt chọn của stub: các ca AN TOÀN dùng kịch
+ * bản cứng theo cụm từ kích hoạt (model bịa công cụ / tham số ngoài
+ * miền / JSON hỏng / trả thừa công cụ); mọi câu hỏi còn lại đi qua bộ
+ * GIẢ LẬP bám mô tả ở trên.
+ */
+function scriptedToolCalls(body, userText) {
   if (userText.includes("công cụ lạ")) return [toolCall("c1", "xoa_nguoi_dung", {})];
   if (userText.includes("kỳ lạ")) return [toolCall("c1", "new_students", { period: "year" })];
   if (userText.includes("ngưỡng lạ")) return [toolCall("c1", "low_scores", { period: "month", threshold: 150 })];
@@ -52,7 +121,7 @@ function scriptedToolCalls(userText) {
   if (userText.includes("ba công cụ")) {
     return [toolCall("c1", "overview", {}), toolCall("c2", "content_new", {}), toolCall("c3", "ai_config", {})];
   }
-  return [];
+  return simulatedToolCalls(body, userText);
 }
 
 const stub = createServer((req, res) => {
@@ -71,7 +140,7 @@ const stub = createServer((req, res) => {
       if (Array.isArray(body.tools) && body.tools.length > 0) {
         toolRequests.push(body);
         const userText = [...(body.messages || [])].reverse().find((m) => m.role === "user")?.content || "";
-        const calls = scriptedToolCalls(userText);
+        const calls = scriptedToolCalls(body, userText);
         return json(completion(calls.length > 0 ? { tool_calls: calls } : { content: "Không cần công cụ." }));
       }
       answerRequests.push(body);
@@ -179,6 +248,23 @@ check("validate: threshold model tự thêm bị LOẠI BỎ", validateToolArgs(
 check("validate: arguments không phải JSON → null", validateToolArgs("new_students", "hong-json{{{"), null);
 checkTrue("isKnownTool phân biệt được tên lạ", isKnownTool("overview") && !isKnownTool("xoa_nguoi_dung"));
 
+// ── 0c. Cấu trúc mô tả sau vá định tuyến: PHẠM VI + VÍ DỤ + PHÂN BIỆT ──
+checkTrue("mọi công cụ đều có câu VÍ DỤ trong mô tả",
+  AI_TOOLS.every((t) => t.description.includes("Ví dụ câu hỏi:")));
+checkTrue("mọi công cụ đều có quy tắc PHÂN BIỆT trong mô tả",
+  AI_TOOLS.every((t) => t.description.includes("Phân biệt:")));
+const overviewDesc = AI_TOOLS.find((t) => t.name === "overview")?.description || "";
+checkTrue("mô tả overview KHÔNG còn câu kéo nhầm 'số lượng một loại đối tượng' (gốc lỗi ca production 1)",
+  !overviewDesc.includes("số lượng một loại đối tượng"));
+checkTrue("mô tả overview nêu rõ ranh giới: gắn kỳ hoặc 'mới' thì không thuộc overview",
+  overviewDesc.includes("KHÔNG gắn kỳ") || overviewDesc.includes("không lọc theo kỳ"));
+const contentNewDesc = AI_TOOLS.find((t) => t.name === "content_new")?.description || "";
+checkTrue("mô tả content_new bao trùm đúng cách hỏi 'có gì mới'",
+  contentNewDesc.includes("có gì mới") && contentNewDesc.includes("Tháng này trường mình có gì mới không?"));
+const newStudentsDesc = AI_TOOLS.find((t) => t.name === "new_students")?.description || "";
+checkTrue("mô tả new_students có ví dụ đếm số lượng học sinh mới theo kỳ",
+  newStudentsDesc.includes("Tháng này có bao nhiêu học sinh mới?"));
+
 // ── 0b. Tiền đề ca (a): hai câu diễn đạt lạ KHÔNG khớp đường từ khoá cũ ──
 check("từ khoá cũ KHÔNG bắt được 'tháng này trường mình có gì mới không?'",
   detectAdminQuery("Tháng này trường mình có gì mới không?"), null);
@@ -242,6 +328,57 @@ checkTrue("G công cụ thứ 3 (cấu hình AI) KHÔNG được thực thi",
 const i = await chat(admin, "Hệ thống hiện có bao nhiêu học sinh?");
 check("I HTTP", i.status, 200);
 checkTrue("I fallback từ khoá vẫn gắn khối tổng quan", lastAnswerSystem().includes("tổng quan hệ thống"));
+
+// ── R. HỒI QUY ĐỊNH TUYẾN: đúng 2 câu production đã fail + biến thể lạ ──
+// Lượt chọn ở các ca này do BỘ GIẢ LẬP bám mô tả quyết định (không kịch
+// bản cứng): mô tả/prompt sau vá phải đủ rõ để chọn đúng công cụ.
+const lastToolSystem = () => {
+  const body = toolRequests[toolRequests.length - 1];
+  return body?.messages?.find((m) => m.role === "system")?.content || "";
+};
+
+// R0. Prompt vòng chọn mang đủ quy tắc phân biệt đã vá.
+await chat(admin, "Tháng này có bao nhiêu học sinh mới?");
+const selSys = lastToolSystem();
+checkTrue("R0 prompt chọn có quy tắc 'có gì mới' → content_new",
+  selSys.includes("có gì mới") && selSys.includes("content_new"), selSys.slice(0, 600));
+checkTrue("R0 prompt chọn có quy tắc số lượng gắn kỳ/'mới' KHÔNG chọn overview",
+  selSys.includes("KHÔNG chọn overview"));
+
+// R1. Ca production FAIL 1 nguyên văn: phải chọn new_students (không phải overview).
+const r1 = await chat(admin, "Tháng này có bao nhiêu học sinh mới?");
+check("R1 HTTP", r1.status, 200);
+const sysR1 = lastAnswerSystem();
+checkTrue("R1 gắn khối HỌC SINH MỚI tháng này với số thật (1 em)",
+  sysR1.includes("học sinh mới đăng ký tháng này") && sysR1.includes("Tổng số học sinh mới: 1 em"), sysR1.slice(-1500));
+checkTrue("R1 KHÔNG gắn khối tổng quan (không lặp lỗi chọn nhầm overview)",
+  !sysR1.includes("[KẾT QUẢ TRA CỨU THẬT — tổng quan hệ thống]"));
+
+// R2. Biến thể của ca production FAIL 2: "dạo này ... có gì mới" → content_new.
+const r2 = await chat(admin, "Dạo này trường có gì mới không?");
+check("R2 HTTP", r2.status, 200);
+const sysR2 = lastAnswerSystem();
+checkTrue("R2 gắn khối nội dung mới nhất THẬT",
+  sysR2.includes("nội dung mới nhất") && sysR2.includes("Game Mới Ra Mắt"), sysR2.slice(-1500));
+
+// R3. Biến thể diễn đạt lạ của học sinh mới → new_students.
+const r3 = await chat(admin, "Tháng này có thêm bạn nào mới vào học không?");
+check("R3 HTTP", r3.status, 200);
+const sysR3 = lastAnswerSystem();
+checkTrue("R3 gắn khối học sinh mới tháng này",
+  sysR3.includes("học sinh mới đăng ký tháng này") && sysR3.includes("Tổng số học sinh mới: 1 em"), sysR3.slice(-1500));
+
+// R4. Câu tổng số tĩnh đúng lãnh địa của overview → overview (không bị quy tắc mới hất đi).
+const r4 = await chat(admin, "Hệ thống giờ có bao nhiêu người dùng?");
+check("R4 HTTP", r4.status, 200);
+checkTrue("R4 gắn khối tổng quan hệ thống", lastAnswerSystem().includes("tổng quan hệ thống"));
+
+// R5. Học sinh mới theo kỳ "hôm nay" → new_students với period today.
+const r5 = await chat(admin, "Hôm nay có ai đăng ký mới không?");
+check("R5 HTTP", r5.status, 200);
+const sysR5 = lastAnswerSystem();
+checkTrue("R5 gắn khối học sinh mới HÔM NAY với số thật (1 em)",
+  sysR5.includes("học sinh mới đăng ký hôm nay") && sysR5.includes("Tổng số học sinh mới: 1 em"), sysR5.slice(-1500));
 
 // ── D. Teacher hỏi câu quản trị → KHÔNG lượt chọn công cụ, KHÔNG dữ liệu ──
 const toolReqsBeforeD = toolRequests.length;

@@ -38,7 +38,17 @@ export const MAX_TOOLS_PER_TURN = 2;
 const TOOL_SELECTION_SYSTEM = [
   "Bạn là bộ điều phối tra cứu dữ liệu quản trị của hệ thống học tập EduPlay.",
   "Người đang hỏi là quản trị viên. Nếu câu hỏi cần SỐ LIỆU THẬT của hệ thống (người dùng, lớp, nội dung, điểm số, báo cáo, hoạt động AI, cấu hình AI, hoặc quyền của chính người hỏi) thì hãy GỌI công cụ phù hợp trong danh sách được cấp — có thể gọi tối đa 2 công cụ khi câu hỏi gồm hai ý độc lập.",
-  "Nếu câu hỏi là trò chuyện, hỏi kiến thức, nhờ soạn nội dung hoặc không cần số liệu hệ thống thì KHÔNG gọi công cụ nào, cứ trả lời ngắn gọn bình thường.",
+  "Khi quản trị viên hỏi về tình hình hay dữ liệu của hệ thống/trường, hãy ƯU TIÊN gọi công cụ phù hợp nhất để backend tra cứu thật, thay vì không gọi gì và trả lời rằng chưa có dữ liệu. Chỉ KHÔNG gọi công cụ khi câu hỏi hoàn toàn là trò chuyện xã giao, hỏi kiến thức chung, hoặc nhờ soạn/viết nội dung.",
+  // Quy tắc phân biệt — vá định tuyến 2026-11-10. Hai ca production đã
+  // fail trên cả gpt-oss-20b lẫn qwen3.8-27b vì thiếu các quy tắc này:
+  // (1) "Tháng này có bao nhiêu học sinh mới?" bị chọn overview thay vì
+  // new_students; (2) "Tháng này trường mình có gì mới không?" không nổ
+  // công cụ nào (nghe như câu trò chuyện nên model bỏ qua).
+  "QUY TẮC PHÂN BIỆT (áp dụng trước khi quyết định không gọi công cụ):",
+  "- Ưu tiên công cụ CỤ THỂ đúng đối tượng và đúng kỳ thời gian hơn công cụ TỔNG QUÁT. overview chỉ dành cho TỔNG SỐ tĩnh của toàn hệ thống khi câu hỏi KHÔNG gắn kỳ thời gian và KHÔNG nói về đối tượng mới.",
+  "- Mọi câu hỏi SỐ LƯỢNG gắn một kỳ (hôm nay, tuần này, tháng này, tháng trước) hoặc có chữ \"mới\" đều thuộc công cụ theo kỳ của đúng đối tượng đó — ví dụ số học sinh mới trong kỳ → new_students — KHÔNG chọn overview cho các câu này.",
+  "- Câu hỏi dạng \"có gì mới\" (kể cả \"dạo này có gì mới\", \"tháng này có gì mới không\") là hỏi NỘI DUNG mới → gọi content_new. Nếu câu hỏi gồm cả ý NGƯỜI mới (học sinh/thành viên mới) thì gọi thêm new_students.",
+  "- Đối chiếu câu hỏi với các VÍ DỤ trong mô tả của từng công cụ: ví dụ nào giống câu hỏi nhất thì công cụ đó là lựa chọn đúng.",
   "Chỉ dùng đúng tên công cụ được cấp, không tự nghĩ ra công cụ khác. Tham số period chỉ đặt khi người hỏi nhắc rõ khoảng thời gian.",
 ].join("\n");
 
