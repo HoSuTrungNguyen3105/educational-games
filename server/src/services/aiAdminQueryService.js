@@ -22,6 +22,13 @@
 //    model, ngưỡng), KHÔNG có bất kỳ secret/env nào.
 //  - Mỗi lượt tra cứu ghi audit `ai.admin_query` — meta chỉ gồm loại truy
 //    vấn + số kết quả, không ghi nội dung câu hỏi hay dữ liệu cá nhân.
+//  - Nhóm `my_permissions` (2026-11-10): admin hỏi quyền của CHÍNH MÌNH
+//    thì Backend tra mảng quyền hiệu lực THẬT của vai trò đó (đúng đường
+//    GET /auth/me dùng — permissionService.getRolePermissions) và trình
+//    bày bằng nhãn tiếng Việt của catalog FEATURES. Đây là dữ liệu ĐƯỢC
+//    PHÉP trả lời cho chính người hỏi (xem ranh giới bảo mật đã viết lại
+//    trong adminSystemPrompt); khác hẳn khoá API/secret/prompt hệ thống
+//    vẫn cấm tuyệt đối.
 
 import { getCollection } from "../db.js";
 import { config } from "../config.js";
@@ -30,6 +37,12 @@ import { getEffectiveGroqModel } from "./aiModelConfig.js";
 import { REPORT_REASONS } from "./reportService.js";
 import { record as auditRecord, AUDIT } from "./auditService.js";
 import { round1 } from "./aiLearningMetrics.js";
+import { getRolePermissions } from "./permissionService.js";
+import { getRoleIdentity } from "./permissionService.js";
+import {
+  FEATURES as PERMISSION_FEATURES,
+  PERMISSION_CATALOG,
+} from "../../../src/config/roles.js";
 
 /** Số mục tối đa đưa vào ngữ cảnh cho mỗi danh sách (tổng số luôn có riêng). */
 const MAX_LIST = 20;
@@ -79,6 +92,15 @@ export function detectAdminQuery(message) {
   const m = foldText(message);
   if (!m) return null;
   const period = detectPeriod(m);
+  // Quyền của CHÍNH người hỏi — xét SỚM NHẤT: mọi mẫu dưới đây đều đòi
+  // ngữ cảnh sở hữu ("của tôi" / "tôi có" / "tôi được") để không nuốt câu
+  // hỏi về phân quyền nói chung ("phân quyền cho giáo viên thế nào" là hỏi
+  // cách làm, không phải tra cứu). Lượt này chỉ chạy cho admin — cổng
+  // admin-only ở runAdminQuery đã chặn teacher/học sinh trước khi tới đây.
+  if (/quyen (han )?cua toi|toi co (nhung )?quyen|toi duoc phep lam gi|vai tro cua toi.*quyen|quyen cua vai tro (cua )?toi|toi co the lam (gi|nhung gi) trong he thong/.test(m)
+    || (/^toi co quyen gi/.test(m) || /nhung quyen gi/.test(m))) {
+    return { type: "my_permissions", period };
+  }
   // Trạng thái cấu hình AI — xét sớm: "ngưỡng điểm thấp đã đặt chưa" chứa
   // cả "điểm"+"thấp" nhưng là hỏi CẤU HÌNH, không phải xin danh sách.
   if (/trang thai (ai|tro ly)|cau hinh (ai|tro ly)|model.*(dang dung|hien tai|la gi|nao)|ai dang dung model|(tro ly ai|ai).*(dang bat|dang tat|da bat|da tat)|nguong diem thap.*(da dat|dat chua|dat la|cau hinh|bao nhieu)/.test(m)) {
@@ -566,6 +588,80 @@ export async function aiActivity({ period = "week" } = {}) {
   };
 }
 
+// ─────────────── Quyền của chính người hỏi (nhóm mới) ───────────────
+
+/** Nhãn tiếng Việt của mọi quyền có trong catalog (lấy mục đầu tiên/slug). */
+const CATALOG_LABELS = new Map();
+for (const p of PERMISSION_CATALOG) {
+  if (!CATALOG_LABELS.has(p.slug)) CATALOG_LABELS.set(p.slug, p.name_vi);
+}
+/** Slug kiểu cũ `x.manage` → key mô-đun tương ứng trong FEATURES. */
+const MANAGE_KEY_ALIASES = {
+  "game-config": "game_config", "question-bank": "question_bank",
+  "daily-tasks": "daily_tasks", "avatar-items": "avatar_items",
+  "avatar-templates": "avatar_templates", "pet-catalog": "pet_catalog",
+  "body-custom": "body_custom", "plant-types": "plant_types",
+  "upload-items": "upload_items", setup: "settings",
+};
+
+/** Dịch nhãn dễ hiểu cho quyền nằm NGOÀI ma trận FEATURES (quyền phụ trợ). */
+function extraPermissionLabel(slug) {
+  if (CATALOG_LABELS.has(slug)) return CATALOG_LABELS.get(slug);
+  if (slug === "games.play") return "Chơi trò chơi";
+  if (slug === "attendance.checkin") return "Chấm công · điểm danh";
+  const m = /^(.+)\.manage$/.exec(slug);
+  if (m) {
+    const key = MANAGE_KEY_ALIASES[m[1]] || m[1];
+    const f = PERMISSION_FEATURES.find((x) => x.key === key);
+    if (f) return `Quản lý — ${f.label}`;
+  }
+  return slug;
+}
+
+/**
+ * Quyền HIỆU LỰC THẬT của vai trò người hỏi — đúng đường GET /auth/me
+ * dùng (routes/auth.js cũng gọi permissionService.getRolePermissions với
+ * role trong hồ sơ/token đã xác thực). roleKey ở đây CHÍNH LÀ identity.role
+ * từ hồ sơ DB ("admin"/"teacher"/...) vì cây roles dùng chung các key
+ * built-in này (permissionService.getRoleIdentity tra cùng một key).
+ * Kết quả được nhóm theo mô-đun bằng nhãn tiếng Việt của FEATURES để đưa
+ * vào prompt — AI trình bày lại bằng nhãn, không lộ slug kỹ thuật.
+ */
+export async function myPermissions({ role } = {}) {
+  const roleKey = String(role || "").trim();
+  const [permissions, identity] = await Promise.all([
+    getRolePermissions(roleKey).catch(() => []),
+    getRoleIdentity(roleKey).catch(() => null),
+  ]);
+  const granted = new Set(permissions);
+  const modules = [];
+  const covered = new Set();
+  for (const f of PERMISSION_FEATURES) {
+    const actions = [];
+    for (const [action, slug] of Object.entries(f.permissions)) {
+      if (granted.has(slug)) {
+        actions.push({ view: "xem", edit: "sửa", delete: "xóa" }[action] || action);
+        covered.add(slug);
+      }
+    }
+    const fullAccess = granted.has(`${f.key}_all`);
+    if (fullAccess) covered.add(`${f.key}_all`);
+    if (actions.length > 0 || fullAccess) {
+      modules.push({ label: f.label, actions, fullAccess });
+    }
+  }
+  const others = permissions
+    .filter((p) => !covered.has(p))
+    .map((slug) => ({ slug, label: extraPermissionLabel(slug) }));
+  return {
+    roleLabel: identity?.name_vi || roleKey,
+    roleKey,
+    total: permissions.length,
+    modules,
+    others,
+  };
+}
+
 // ─────────────── Trạng thái cấu hình AI an toàn (nhóm mới) ───────────────
 
 /**
@@ -596,7 +692,19 @@ export function formatAdminContext(intent, result) {
   const lines = [];
   const periodLabel = intent.period ? PERIOD_LABELS[intent.period] : null;
 
-  if (intent.type === "overview") {
+  if (intent.type === "my_permissions") {
+    lines.push("[KẾT QUẢ TRA CỨU THẬT — quyền của chính người đang hỏi]");
+    lines.push(`- Vai trò: ${result.roleLabel}. Tổng số quyền đang có hiệu lực: ${result.total} quyền.`);
+    lines.push("- Theo mô-đun (chỉ liệt kê mô-đun có ít nhất một quyền):");
+    for (const mod of result.modules) {
+      lines.push(`  • ${mod.label}: ${mod.actions.join(", ")}${mod.fullAccess ? " — TOÀN QUYỀN mô-đun (xem dữ liệu của mọi người, không bị lọc theo lớp/người phụ trách)" : ""}`);
+    }
+    if (result.others.length > 0) {
+      lines.push("- Quyền cơ bản & quyền kiểu cũ khác:");
+      for (const o of result.others) lines.push(`  • ${o.label}`);
+    }
+    lines.push("Đây là quyền của CHÍNH bạn — được phép liệt kê và giải thích bình thường cho bạn. Trình bày bằng nhãn tiếng Việt như trên, KHÔNG in ra mã slug kỹ thuật.");
+  } else if (intent.type === "overview") {
     lines.push("[KẾT QUẢ TRA CỨU THẬT — tổng quan hệ thống]");
     lines.push(`- Học sinh: ${result.students} tài khoản.`);
     lines.push(`- Giáo viên: ${result.teachers} tài khoản.`);
@@ -759,7 +867,10 @@ export async function runAdminQuery(req, message, identity) {
 
   let result;
   let resultCount = 0;
-  if (intent.type === "overview") {
+  if (intent.type === "my_permissions") {
+    result = await myPermissions({ role: identity.role });
+    resultCount = result.total;
+  } else if (intent.type === "overview") {
     result = await systemOverview();
     resultCount = result.students;
   } else if (intent.type === "content_new") {
