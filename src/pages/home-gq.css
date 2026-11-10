@@ -4,24 +4,33 @@
    ===================================================================== */
 
 .gq-home {
-  --gq-ink: #1d2e4a;
-  --gq-mute: #7c8aa0;
-  --gq-line: #e6ecf6;
-  /* Nền giữ nguyên như giao diện cũ: nền kem + lưới chấm mờ (không đổi sang
-     xanh da trời của bản mẫu). */
-  --gq-paper: #fbf5e6;
+  --gq-ink: #16305e;
+  --gq-mute: #5f7699;
+  --gq-line: #dde8f7;
+  /* BẢN LÀM LẠI THEO ẢNH MẪU (2026-11-10): nền là ẢNH PHONG CẢNH Nguyên chỉ
+     định (trời xanh, cầu vồng, trường học, đồi xanh) phủ trên cùng trang;
+     phần thân dưới là nền trời nhạt pha xuống xanh lá cho liền mạch với đồi
+     trong ảnh. Bỏ nền kem + lưới chấm của bản cũ. */
+  --gq-paper: #dff2fd;
   --gq-orange2: #ef7d18;
-  --gq-shadow: 0 6px 18px rgba(29, 43, 82, 0.08);
-  /* Ô game phẳng: nền xám rất nhạt, không đổ bóng, không viền riêng. */
-  --gq-tile: #f6f8fc;
-  --gq-tile-hover: #eaf0f9;
+  --gq-shadow: 0 10px 26px rgba(22, 48, 94, 0.13);
+  /* Ô game: trắng trong, nổi nhẹ trên nền trời như thẻ mẫu. */
+  --gq-tile: #f4f9ff;
+  --gq-tile-hover: #e8f3ff;
 
   position: relative;
   min-height: 100vh;
   color: var(--gq-ink);
-  background-color: var(--gq-paper);
-  background-image: radial-gradient(rgba(29, 46, 74, 0.08) 1px, transparent 1.3px);
-  background-size: 18px 18px;
+  background-color: #bfe6fb;
+  background-image:
+    url("/educational-games/cd961dc9-a056-4831-9e6a-cb62ccbada3f.png"),
+    linear-gradient(180deg, #a8dcf9 0, #cdeffd 34%, #e6f7e9 68%, #d8f3d0 100%);
+  background-repeat: no-repeat, no-repeat;
+  /* Ảnh nền phủ HẾT bề ngang và cao theo đúng tỉ lệ gốc (rộng:cao = 2:1) —
+     ép chiều cao cố định (bản nháp 620px) làm cả hai bé trong tranh bị
+     background-size cắt mất đầu. Phần dưới ảnh dùng gradient trời/lá. */
+  background-size: 100% auto, 100% 100%;
+  background-position: top center, top center;
   /* `clip` chứ không phải `hidden`: `overflow-x:hidden` khiến overflow-y bị
      tính thành `auto` → dựng thêm một scroll container lồng nhau (2 thanh cuộn). */
   overflow-x: clip;
@@ -42,6 +51,9 @@
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
+  /* Ảnh nền đã có mây/sao/trời đầy đủ — dải confetti SVG cũ tắt hẳn để
+     không rải hoạ tiết chồng lên tranh. */
+  display: none;
 }
 
 /* Trang chiếm hết bề ngang — không bóp vào khung 1240px. */
@@ -156,25 +168,27 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 42px;
-  padding: 0 16px;
-  border-radius: 10px;
+  height: 46px;
+  padding: 0 18px;
+  border-radius: 14px;
   border: 0;
   cursor: pointer;
   white-space: nowrap;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 800;
   color: #fff;
-  background: #2f6fd6;
+  background: linear-gradient(180deg, #3f8bf0, #2f6fd6);
+  box-shadow: 0 8px 18px rgba(47, 111, 214, 0.35);
   transition: filter 0.15s ease;
 }
 .gq-adminbtn:hover { filter: brightness(1.08); }
 .gq-adminbtn:active { transform: translateY(1px); }
 .gq-iconbtn {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: var(--gq-tile);
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(22, 48, 94, 0.1);
   display: grid;
   place-items: center;
   font-size: 19px;
@@ -212,11 +226,12 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 42px;
-  padding: 0 13px 0 4px;
+  height: 46px;
+  padding: 0 15px 0 5px;
   border: 0;
-  border-radius: 10px;
-  background: var(--gq-tile);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(22, 48, 94, 0.1);
   color: var(--gq-ink);
   cursor: pointer;
   transition: background-color 0.15s ease, transform 0.15s ease;
@@ -276,11 +291,11 @@
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
-  height: 40px;
-  padding: 0 13px 0 5px;
+  height: 44px;
+  padding: 0 15px 0 6px;
   border: 0;
   border-radius: 999px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--gq-shadow);
   color: var(--gq-ink);
   cursor: pointer;
@@ -311,17 +326,25 @@
 /* ─────────────────── HERO CHÀO BÉ ─────────────────── */
 
 .gq-hero {
+  position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  margin: 0 0 16px;
+  margin: 6px 0 18px;
+  min-height: 190px;
 }
 .gq-hero__mascot {
-  width: 96px;
-  height: 96px;
+  /* Mascot NGÔI SAO VÀNG Nguyên chỉ định (public/bb4eaaa0-…png, nền trong):
+     đứng bên TRÁI bong bóng như ảnh mẫu, to và chồng nhẹ lên bong bóng. */
+  position: relative;
+  z-index: 2;
+  width: 218px;
+  height: auto;
   object-fit: contain;
   flex-shrink: 0;
-  filter: drop-shadow(0 8px 14px rgba(29, 46, 74, 0.16));
+  margin-right: -26px;
+  filter: drop-shadow(0 14px 22px rgba(22, 48, 94, 0.22));
   animation: gqFloat 3.4s ease-in-out infinite;
   user-select: none;
   -webkit-user-drag: none;
@@ -332,39 +355,40 @@
 }
 .gq-hero__bubble {
   position: relative;
-  flex: 1;
+  z-index: 1;
+  flex: 0 1 700px;
   min-width: 0;
-  background: #fff;
-  border-radius: 22px;
-  padding: 14px 18px;
-  box-shadow: var(--gq-shadow);
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 34px;
+  padding: 26px 34px 26px 44px;
+  box-shadow: 0 18px 40px rgba(22, 48, 94, 0.14);
+  text-align: center;
 }
-/* đuôi bong bóng thoại chỉ về phía nhân vật */
+/* đuôi bong bóng thoại chỉ về phía nhân vật — bản mẫu là bong bóng bo tròn
+   lớn không đuôi, ẩn đuôi cũ cho khớp. */
 .gq-hero__bubble::before {
-  content: "";
-  position: absolute;
-  left: -7px;
-  top: 50%;
-  width: 15px;
-  height: 15px;
-  background: #fff;
-  transform: translateY(-50%) rotate(45deg);
-  border-radius: 3px;
+  content: none;
 }
 .gq-hero__hi {
   font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
-  font-size: 20px;
+  font-size: 40px;
   font-weight: 700;
   color: var(--gq-ink);
-  line-height: 1.2;
+  line-height: 1.15;
   /* Tên đầy đủ có thể dài — cho xuống dòng gọn thay vì bị cắt cụt. */
   overflow-wrap: break-word;
 }
 .gq-hero__ask {
-  font-size: 13.5px;
+  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
+  font-size: 20px;
   font-weight: 600;
-  color: var(--gq-mute);
-  margin-top: 3px;
+  color: #2f6fd6;
+  margin-top: 6px;
+}
+/* Con số trò chơi trong lời chào: cam đậm nổi bật như ảnh mẫu. */
+.gq-hero__count {
+  color: #f2760a;
+  font-weight: 700;
 }
 /* Chưa đăng nhập: lời mời đăng nhập ngay trong bong bóng chào. */
 .gq-hero__login {
@@ -444,42 +468,43 @@
 .gq-playbar {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 22px;
+  gap: 12px;
+  margin-bottom: 26px;
 }
 @media (min-width: 640px) {
   .gq-playbar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 .gq-mini {
-  min-height: 52px;
+  min-height: 74px;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 0 10px;
-  background: #fff;
-  border: 1px solid var(--gq-line);
-  border-radius: 10px;
+  gap: 9px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 0;
+  border-radius: 20px;
+  box-shadow: 0 10px 22px rgba(22, 48, 94, 0.12);
   cursor: pointer;
   font: inherit;
   color: var(--gq-ink);
   position: relative;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, transform 0.15s ease;
 }
 @media (hover: hover) {
-  .gq-mini:hover { background: var(--gq-tile); border-color: #d7e0ee; }
+  .gq-mini:hover { background: #fff; transform: translateY(-2px); }
   .gq-mini:hover .gq-mini__ico { animation: gqBob 0.5s ease; }
 }
 .gq-mini:active { transform: translateY(1px); }
-.gq-mini__ico { font-size: 20px; line-height: 1; flex-shrink: 0; }
-.gq-mini__lbl { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gq-mini__ico { font-size: 26px; line-height: 1; flex-shrink: 0; display: grid; place-items: center; }
+.gq-mini__lbl { font-family: "Fredoka", "Be Vietnam Pro", sans-serif; font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gq-mini__dot {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 9px;
-  height: 9px;
+  top: 10px;
+  right: 12px;
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
   background: #e8443c;
   border: 2px solid #fff;
@@ -487,23 +512,24 @@
 
 /* Cùng kích thước .gq-mini — khác mỗi nền cam để vẫn là nút nổi bật nhất hàng. */
 .gq-random {
-  min-height: 52px;
+  min-height: 74px;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 0 10px;
+  gap: 9px;
+  padding: 0 14px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 20px;
+  box-shadow: 0 12px 24px rgba(242, 118, 10, 0.38);
   color: #fff;
   font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   cursor: pointer;
-  background: var(--gq-orange2);
+  background: linear-gradient(180deg, #ffb52e, #f2760a);
   transition: filter 0.15s ease, transform 0.15s ease;
 }
 @media (hover: hover) {
@@ -511,7 +537,7 @@
   .gq-random:hover .gq-random__ico { animation: gqTumble 0.6s ease; }
 }
 .gq-random:active { transform: translateY(1px); }
-.gq-random__ico { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.gq-random__ico { font-size: 26px; line-height: 1; flex-shrink: 0; display: grid; place-items: center; }
 @keyframes gqTumble {
   40% { transform: rotate(180deg) scale(1.15); }
   100% { transform: rotate(360deg) scale(1); }
@@ -527,55 +553,56 @@
 .gq-sect__head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 .gq-sect__ico {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
-  font-size: 19px;
+  font-size: 22px;
   background: #fff;
-  border: 1px solid var(--gq-line);
+  box-shadow: 0 8px 18px rgba(22, 48, 94, 0.1);
   flex-shrink: 0;
 }
 .gq-sect__t {
   font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
-  font-size: 21px;
+  font-size: 27px;
   font-weight: 700;
   line-height: 1.15;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
 }
 .gq-sect__n {
   background: #e8443c;
   color: #fff;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
   border-radius: 999px;
-  padding: 2px 8px;
+  padding: 2px 9px;
 }
-.gq-sect__s { font-size: 12.5px; color: var(--gq-mute); font-weight: 600; }
+.gq-sect__s { font-size: 14px; color: #31517e; font-weight: 600; }
 
 /* Khung chung cho dải ngang lẫn lưới: MỘT viền mảnh bo quanh toàn bộ nhóm game,
    các ô bên trong phẳng và không có viền riêng. */
 .gq-board {
-  background: #fff;
-  border: 1px solid var(--gq-line);
-  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 0;
+  border-radius: 26px;
+  box-shadow: 0 14px 30px rgba(22, 48, 94, 0.09);
 }
 
 /* dải cuộn ngang */
 .gq-rail {
   display: flex;
-  gap: 10px;
+  gap: 14px;
   overflow-x: auto;
   /* khai báo rõ trục y để không bị tính ngầm thành `auto` (dựng scroll lồng) */
   overflow-y: hidden;
-  padding: 12px;
+  padding: 16px;
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
 }
@@ -587,15 +614,15 @@
 .gq-card {
   position: relative;
   flex: 0 0 auto;
-  width: 116px;
+  width: 196px;
   background: var(--gq-tile);
-  border-radius: 10px;
-  padding: 10px 8px 10px;
+  border-radius: 18px;
+  padding: 16px 12px 14px;
   border: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
   font: inherit;
   color: inherit;
@@ -606,9 +633,8 @@
 @media (hover: hover) {
   .gq-card:hover {
     background: var(--gq-tile-hover);
-    transform: translateY(-2px);
-    /* Card phẳng theo thiết kế; chỉ khi rê chuột mới nổi bóng nhẹ cho có chiều sâu. */
-    box-shadow: 0 10px 22px rgba(29, 43, 82, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px rgba(22, 48, 94, 0.13);
   }
   .gq-card:hover .gq-card__ring { animation: gqWiggle 0.55s ease; }
 }
@@ -621,42 +647,46 @@
 
 .gq-card__badge {
   position: absolute;
-  align-self: flex-start;
-  margin-left: -4px;
-  margin-top: -4px;
-  font-size: 10px;
+  top: 10px;
+  left: 10px;
+  font-size: 11px;
   font-weight: 800;
   color: #fff;
   border-radius: 999px;
-  padding: 2px 8px;
+  padding: 3px 10px;
+  box-shadow: 0 4px 10px rgba(22, 48, 94, 0.18);
 }
 .gq-card__badge--new { background: #e8443c; }
 .gq-card__badge--learn { background: #2f7fd6; }
 .gq-card__badge--play { background: #ef8a12; }
 
 .gq-card__ring {
-  width: 62px;
-  height: 62px;
-  border-radius: 999px;
+  /* Ảnh/icon game to ở giữa thẻ như ảnh mẫu (không còn vòng tròn nhỏ). */
+  width: 118px;
+  height: 96px;
+  border-radius: 20px;
   display: grid;
   place-items: center;
-  font-size: 28px;
-  margin-top: 2px;
+  font-size: 52px;
+  margin-top: 6px;
   flex-shrink: 0;
+  overflow: hidden;
 }
 /* Thumbnail từ public/ — lấp đầy vòng tròn, hết ảnh thì vẫn dùng emoji */
 .gq-card__ring img {
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  object-fit: cover;
+  /* Ảnh game trong public/ là tranh vuông đầy đủ — `contain` để không bị
+     cắt mất phần tranh như `cover` trên ô chữ nhật ngang. */
+  object-fit: contain;
   display: block;
 }
 .gq-card__name {
-  font-size: 12.5px;
+  font-size: 15px;
   font-weight: 800;
-  line-height: 1.2;
-  min-height: 30px;
+  line-height: 1.25;
+  min-height: 38px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -664,12 +694,12 @@
   word-break: break-word;
 }
 .gq-card__age {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   border-radius: 999px;
-  padding: 2px 9px;
-  background: #eef1f7;
-  color: #55607d;
+  padding: 3px 12px;
+  background: #e3edfb;
+  color: #31517e;
 }
 
 /* Nhãn cảnh báo nhẹ trên thẻ game (vd FieldRunner dùng xu tài khoản thật) */
@@ -685,11 +715,11 @@
 
 /* section nền xanh lá có mép cong */
 .gq-sect--green {
-  background: linear-gradient(180deg, #9ed79a, #8fcb87);
-  /* Bo tròn cả 4 góc và đệm dưới cân với đệm trên — trước đây chỉ bo hai
-     góc trên, đệm dưới 6px nên mép dưới trông cụt và sát nội dung. */
+  /* Nền trời của trang nay đã liền mạch — dải xanh lá riêng của section
+     được bỏ, giữ đệm âm để hàng thẻ vẫn thẳng mép với các section khác. */
+  background: transparent;
   border-radius: 24px;
-  padding: 20px clamp(12px, 2.5vw, 40px) 16px;
+  padding: 4px clamp(12px, 2.5vw, 40px) 0;
   margin: 0 calc(clamp(12px, 2.5vw, 40px) * -1) 22px;
 }
 
@@ -697,9 +727,9 @@
 
 .gq-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
-  gap: 10px;
-  padding: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  padding: 16px;
 }
 .gq-grid .gq-card { width: auto; }
 
@@ -963,39 +993,39 @@
 }
 
 @media (min-width: 1400px) {
-  /* Trang giờ trải hết bề ngang nên phóng to ô game cho cân với chiều rộng. */
-  .gq-card { width: 152px; padding: 12px 10px; border-radius: 12px; }
-  .gq-card__ring { width: 78px; height: 78px; font-size: 36px; }
-  .gq-card__name { font-size: 13.5px; min-height: 34px; }
-  .gq-card__age { font-size: 11px; padding: 3px 11px; }
-  .gq-sect__t { font-size: 24px; }
-  .gq-sect__s { font-size: 14px; }
-  .gq-mini { min-height: 56px; }
-  .gq-mini__ico { font-size: 24px; }
-  .gq-mini__lbl { font-size: 14px; }
-  .gq-random { min-height: 56px; font-size: 14px; }
-  .gq-random__ico { font-size: 24px; }
-  .gq-logo__mark { width: 64px; height: 64px; }
-  .gq-logo__name { font-size: 22px; }
-  .gq-logo__sub { font-size: 11px; }
-  .gq-iconbtn { width: 46px; height: 46px; font-size: 21px; }
-  .gq-iconbtn__n { min-width: 20px; height: 20px; font-size: 11px; }
-  .gq-adminbtn { height: 46px; }
-  .gq-petchip { height: 44px; padding: 0 15px 0 6px; }
-  .gq-petchip__name { font-size: 13px; }
-  .gq-petchip__sub { font-size: 11px; }
-  .gq-age { padding: 4px 14px 4px 4px; }
-  .gq-age__num { width: 36px; height: 36px; font-size: 18px; }
-  .gq-age__lbl { font-size: 13px; }
-  .gq-age__sub { font-size: 10.5px; }
-  .gq-hero { gap: 16px; margin-bottom: 22px; }
-  .gq-hero__mascot { width: 120px; height: 120px; }
-  .gq-hero__bubble { padding: 18px 24px; border-radius: 26px; }
-  .gq-hero__hi { font-size: 25px; }
-  .gq-hero__ask { font-size: 15.5px; }
+  /* Màn rất rộng: thẻ và chữ nhích thêm một cỡ cho cân với bề ngang trang. */
+  .gq-card { width: 216px; }
+  .gq-card__ring { width: 134px; height: 108px; font-size: 58px; }
+  .gq-card__name { font-size: 16px; min-height: 40px; }
+  .gq-sect__t { font-size: 30px; }
+  .gq-sect__s { font-size: 15px; }
+  .gq-mini { min-height: 80px; }
+  .gq-mini__lbl { font-size: 18px; }
+  .gq-random { min-height: 80px; font-size: 18px; }
+  .gq-logo__mark { width: 60px; height: 60px; }
+  .gq-logo__name { font-size: 21px; }
+  .gq-hero { gap: 14px; margin-bottom: 24px; }
+  .gq-hero__mascot { width: 248px; height: auto; }
+  .gq-hero__bubble { padding: 30px 40px 30px 48px; }
+  .gq-hero__hi { font-size: 44px; }
+  .gq-hero__ask { font-size: 22px; }
+}
+
+/* ─────────── TABLET (641–1100px): hero thu gọn, mascot nhỏ lại ─────────── */
+@media (min-width: 641px) and (max-width: 1100px) {
+  .gq-hero { min-height: 150px; }
+  .gq-hero__mascot { width: 150px; margin-right: -18px; }
+  .gq-hero__bubble { padding: 18px 24px 18px 34px; border-radius: 26px; }
+  .gq-hero__hi { font-size: 28px; }
+  .gq-hero__ask { font-size: 16px; }
+  .gq-card { width: 168px; }
+  .gq-card__ring { width: 100px; height: 82px; font-size: 44px; }
+  .gq-sect__t { font-size: 23px; }
 }
 
 @media (max-width: 640px) {
+  /* Ảnh nền trên mobile vẫn giữ đúng tỉ lệ (không ép chiều cao). */
+  .gq-home { background-size: 100% auto, 100% 100%; }
   .gq-sect__t { font-size: 18px; }
   .gq-top__row { gap: 10px; }
   .gq-petchip { height: 36px; padding: 0 11px 0 4px; }
@@ -1019,23 +1049,28 @@
   .gq-logo__sub { display: none; }
   .gq-actions { flex-shrink: 0; }
   .gq-age__sub { display: none; }
-  .gq-hero { gap: 8px; margin-bottom: 13px; }
-  .gq-hero__mascot { width: 70px; height: 70px; }
-  .gq-hero__bubble { padding: 11px 14px; border-radius: 18px; }
-  .gq-hero__hi { font-size: 16px; }
-  .gq-hero__ask { font-size: 12px; }
+  .gq-hero { gap: 6px; margin-bottom: 13px; min-height: 0; }
+  .gq-hero__mascot { width: 92px; height: auto; margin-right: -12px; }
+  .gq-hero__bubble { padding: 12px 14px 12px 20px; border-radius: 20px; text-align: left; }
+  .gq-hero__hi { font-size: 17px; }
+  .gq-hero__ask { font-size: 12.5px; }
   /* Hàng nút tắt trên màn hẹp: lưới 2×2, 4 nút vẫn bằng nhau — nút chính không
      chiếm riêng một hàng. Nhãn dài ("Khu vườn của tôi") được phép cắt dấu … */
-  .gq-mini { padding: 0 8px; }
-  .gq-mini__ico { font-size: 18px; }
-  .gq-mini__lbl { font-size: 12px; }
-  .gq-random { padding: 0 8px; font-size: 12px; }
-  .gq-random__ico { font-size: 18px; }
-  .gq-iconbtn { width: 36px; height: 36px; font-size: 17px; }
+  .gq-mini { padding: 0 8px; min-height: 56px; border-radius: 14px; }
+  .gq-mini__ico { font-size: 20px; }
+  .gq-mini__lbl { font-size: 13px; }
+  .gq-random { padding: 0 8px; font-size: 13px; min-height: 56px; border-radius: 14px; }
+  .gq-random__ico { font-size: 20px; }
+  .gq-iconbtn { width: 38px; height: 38px; font-size: 17px; border-radius: 11px; }
   .gq-iconbtn__n { min-width: 17px; height: 17px; font-size: 9.5px; }
   .gq-age { padding: 3px 10px 3px 3px; }
   .gq-age__num { width: 28px; height: 28px; font-size: 14px; }
   .gq-age__lbl { font-size: 11px; }
-  .gq-card__name { font-size: 12px; }
+  .gq-card { width: 138px; padding: 12px 9px 11px; border-radius: 14px; }
+  .gq-card__ring { width: 84px; height: 68px; font-size: 38px; border-radius: 14px; margin-top: 4px; }
+  .gq-card__name { font-size: 12.5px; min-height: 32px; }
+  .gq-card__age { font-size: 10.5px; padding: 2px 9px; }
+  .gq-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; padding: 12px; }
+  .gq-board { border-radius: 18px; }
   .gq-more { font-size: 12.5px; padding: 10px 20px; }
 }
