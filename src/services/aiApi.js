@@ -352,6 +352,59 @@ export async function explain({ questionId, gameId, answer, reveal = false, foll
 }
 
 /**
+ * Lịch sử hỏi AI — trang quản trị "Lịch sử hỏi AI" (CHỈ admin).
+ *
+ * Backend ghi ngầm mỗi lượt chat thành công; trang này đọc qua
+ * GET /api/ai/chat-logs (phân trang + lọc) và dọn qua
+ * DELETE /api/ai/chat-logs (bắt buộc có điều kiện from/to/userId).
+ *
+ * @param {object} [p]
+ * @param {number} [p.page]     trang (từ 1)
+ * @param {number} [p.limit]    số dòng/trang (server kẹp tối đa 100)
+ * @param {string} [p.userId]   lọc đúng một người hỏi
+ * @param {string} [p.username] lọc gần đúng theo username
+ * @param {string} [p.role]     student | teacher | admin
+ * @param {string} [p.kind]     chat | admin_query
+ * @param {string} [p.from]     yyyy-MM-dd
+ * @param {string} [p.to]       yyyy-MM-dd
+ * @param {string} [p.q]        từ khoá trong câu hỏi
+ * @returns {Promise<{items: Array, total: number, page: number, limit: number, totalPages: number}>}
+ */
+export async function listChatLogs(p = {}) {
+  const params = new URLSearchParams();
+  for (const key of ["page", "limit", "userId", "username", "role", "kind", "from", "to", "q"]) {
+    const v = p[key];
+    if (v !== "" && v != null) params.set(key, v);
+  }
+  const qs = params.toString();
+  const json = await aiFetch(`/api/ai/chat-logs${qs ? `?${qs}` : ""}`, { method: "GET" });
+  if (!json || !Array.isArray(json.items)) {
+    throw new AiServiceError("Không đọc được lịch sử hỏi AI.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/**
+ * Xóa lịch sử hỏi AI theo điều kiện — server TỪ CHỐI (400) khi không có
+ * bất kỳ điều kiện nào trong { from, to, userId }.
+ *
+ * @param {object} p  cùng bộ lọc như listChatLogs (trừ page/limit)
+ * @returns {Promise<{deleted: number}>}
+ */
+export async function deleteChatLogs(p = {}) {
+  const body = {};
+  for (const key of ["userId", "username", "role", "kind", "from", "to", "q"]) {
+    const v = p[key];
+    if (v !== "" && v != null) body[key] = v;
+  }
+  const json = await aiFetch("/api/ai/chat-logs", { method: "DELETE", body });
+  if (!json || typeof json.deleted !== "number") {
+    throw new AiServiceError("Không xóa được lịch sử hỏi AI.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/**
  * Kiểm tra AI có sẵn sàng không (dùng cho trạng thái nút).
  * Endpoint này không cần token và không bao giờ trả về API key.
  */

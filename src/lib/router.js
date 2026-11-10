@@ -61,6 +61,7 @@ const ROUTES = [
   { name: "admin-upload-items", pattern: "/dashboard/upload-items" },
   { name: "admin-chat", pattern: "/dashboard/chat" },
   { name: "admin-ai-analysis", pattern: "/dashboard/ai-analysis" },
+  { name: "admin-ai-history", pattern: "/dashboard/ai-history" },
   { name: "admin-reminders", pattern: "/dashboard/reminders" },
   { name: "admin-profile", pattern: "/dashboard/profile" },
 

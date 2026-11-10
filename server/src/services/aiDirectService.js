@@ -31,6 +31,7 @@ import {
   ANALYSIS_DISCLAIMER,
 } from "./aiLearningMetrics.js";
 import { buildChatContext } from "./aiChatContext.js";
+import { recordChatLog } from "./aiChatLogService.js";
 import { getEffectiveGroqModel } from "./aiModelConfig.js";
 import { config } from "../config.js";
 
@@ -219,10 +220,35 @@ async function directChat(body, req) {
     cleaned = cleaned.substring(0, CHAT_MAX_ANSWER_LENGTH) + "\n\n(AI Service đã cắt nội dung vì quá dài.)";
     truncated = true;
   }
+  const conversationId = body.conversationId == null || String(body.conversationId).trim() === ""
+    ? null : String(body.conversationId).trim();
+  // Lịch sử hỏi AI (trang quản trị "Lịch sử hỏi AI"): ghi NGẦM một bản ghi
+  // cho lượt chat THÀNH CÔNG này rồi mới trả response. recordChatLog tự
+  // nuốt lỗi và bản thân lời gọi được bọc .catch + try/catch nên việc ghi
+  // không bao giờ làm hỏng/chậm response chat; danh tính lấy từ ngữ cảnh
+  // Backend đã dựng (hồ sơ DB), không tin client. Lượt có chạy tra cứu
+  // quản trị (context.adminData) ghi kind="admin_query" + queryType.
+  // GIỚI HẠN PHẠM VI: điểm ghi nằm ở đường TRỰC TIẾP (Groq/Ollama Cloud) —
+  // production đang chạy Groq nên phủ mọi lượt thật; đường AI Service Java
+  // (khi config chọn "ai-service") không qua hàm này nên chưa được ghi.
+  try {
+    void recordChatLog({
+      userId: context.identity?.userId || req?.user?.sub,
+      username: req?.user?.username ?? null,
+      role: context.identity?.role || req?.user?.role || null,
+      grade: context.identity?.grade ?? null,
+      classId: context.identity?.classId ?? null,
+      question: message,
+      answer: cleaned,
+      sources: context.materials,
+      conversationId,
+      kind: context.adminData ? "admin_query" : "chat",
+      queryType: context.adminData?.type ?? null,
+    }).catch(() => {});
+  } catch { /* ghi log không bao giờ được làm hỏng chat */ }
   return omitNulls({
     answer: cleaned,
-    conversationId: body.conversationId == null || String(body.conversationId).trim() === ""
-      ? null : String(body.conversationId).trim(),
+    conversationId,
     truncated,
     // Nguồn bài học đã đưa vào ngữ cảnh (§5.5: hiển thị tham chiếu ở UI).
     // omitNulls bỏ field khi undefined — response cũ không đổi khi không có nguồn.

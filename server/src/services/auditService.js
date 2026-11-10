@@ -74,6 +74,9 @@ export const AUDIT = {
   // LOẠI truy vấn + số kết quả vào meta — không ghi nội dung câu hỏi đầy
   // đủ, không ghi dữ liệu cá nhân của học sinh.
   AI_ADMIN_QUERY: "ai.admin_query",
+  // Admin xóa lịch sử hỏi AI theo điều kiện lọc: meta chỉ gồm điều kiện
+  // (khoảng ngày/userId) + số bản ghi đã xóa — không ghi nội dung đã xóa.
+  AI_CHAT_LOGS_DELETE: "ai.chat_logs_delete",
   SEED_RUN: "data.seed",
   SUPPORT_UPDATE: "support.update",
   GAME_CONFIG_WRITE: "game_config.write",

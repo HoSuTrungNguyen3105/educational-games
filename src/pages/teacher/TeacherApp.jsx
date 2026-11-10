@@ -44,6 +44,7 @@ const BodyCustomImport = lazy(() => import('./BodyCustomImport.jsx'));
 const ImageLibrary = lazy(() => import('./ImageLibrary.jsx'));
 const ReminderManagement = lazy(() => import('./ReminderManagement.jsx'));
 const AiStudentAnalysisPage = lazy(() => import('./AiStudentAnalysisPage.jsx'));
+const AiChatHistoryPage = lazy(() => import('./AiChatHistoryPage.jsx'));
 const VthConfigManagement = lazy(() => import('./VthConfigManagement.jsx'));
 const AdminSettings = lazy(() => import('./AdminSettings.jsx'));
 const SupportTicketManagement = lazy(() => import('./SupportTicketManagement.jsx'));
@@ -111,6 +112,7 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-upload-items" && <UploadItems showToast={showToast} />}
         {page === "admin-reminders" && <ReminderManagement showToast={showToast} />}
         {page === "admin-ai-analysis" && <AiStudentAnalysisPage />}
+        {page === "admin-ai-history" && <AiChatHistoryPage showToast={showToast} />}
         {page === "admin-support" && <SupportTicketManagement user={user} showToast={showToast} />}
         {page === "admin-teacher-support" && <TeacherSupportTickets user={user} showToast={showToast} />}
     </Suspense>

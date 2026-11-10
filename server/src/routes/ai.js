@@ -27,6 +27,8 @@ import { sendSuccess, sendError } from "../utils/response.js";
 import * as questionService from "../services/questionService.js";
 import { isOn } from "../services/systemConfigService.js";
 import { callAiBackend, aiBackendHealth, AiBackendError, getAiInferenceStatus } from "../services/aiBackendService.js";
+import { listChatLogs, deleteChatLogs } from "../services/aiChatLogService.js";
+import { record as auditRecord, AUDIT } from "../services/auditService.js";
 
 const router = Router();
 
@@ -335,5 +337,83 @@ async function handleLearningAnalysis(req, res) {
 
 router.post("/learning-analysis", authenticate, requireAiEnabled, handleLearningAnalysis);
 router.get("/learning-analysis", authenticate, requireAiEnabled, handleLearningAnalysis);
+
+// ───────────────────── Lịch sử hỏi AI (chỉ admin) ─────────────────────
+//
+// Bản ghi do aiChatLogService ghi ngầm sau mỗi lượt chat thành công ở
+// đường trực tiếp. Hai endpoint này CHỈ dành cho admin: requireRoles chốt
+// ở route + rule permissionFilter riêng (/ai/chat-logs → feature reports)
+// ở tầng 2. KHÔNG phụ thuộc cờ ai.enabled — tắt AI vẫn xem/dọn được lịch
+// sử cũ.
+
+/**
+ * Điều kiện lọc dùng chung cho xem/xóa, lấy từ query string.
+ * `from`/`to` dạng yyyy-MM-dd (ngày lịch) hoặc ISO đầy đủ.
+ */
+function chatLogFiltersFrom(source = {}) {
+  const pick = (v, max) => (typeof v === "string" && v.trim() !== "" ? v.trim().slice(0, max) : undefined);
+  return {
+    userId: pick(source.userId, 80),
+    username: pick(source.username, 60),
+    role: pick(source.role, 24),
+    kind: pick(source.kind, 24),
+    from: pick(source.from, 40),
+    to: pick(source.to, 40),
+    q: pick(source.q, 120),
+  };
+}
+
+/** GET /api/ai/chat-logs — danh sách lượt hỏi AI (mới nhất trước, phân trang). */
+router.get("/chat-logs", authenticate, requireRoles("admin"), async (req, res) => {
+  try {
+    const data = await listChatLogs({
+      ...chatLogFiltersFrom(req.query),
+      page: req.query.page,
+      limit: req.query.limit,
+    });
+    sendSuccess(res, data);
+  } catch (e) {
+    console.error("[ai] Lỗi đọc lịch sử hỏi AI:", e?.message || e);
+    sendError(res, "Không đọc được lịch sử hỏi AI. Hãy thử lại sau.", 500);
+  }
+});
+
+/**
+ * DELETE /api/ai/chat-logs — xóa lịch sử theo điều kiện (query hoặc body).
+ * BẮT BUỘC có ít nhất một điều kiện trong { from, to, userId } — không có
+ * thì 400, tránh xóa trắng toàn bộ lịch sử vì một request thiếu tham số.
+ * Xóa xong ghi audit (meta chỉ gồm điều kiện + số đã xóa).
+ */
+router.delete("/chat-logs", authenticate, requireRoles("admin"), async (req, res) => {
+  try {
+    const src = { ...(req.body || {}), ...(req.query || {}) };
+    const filters = chatLogFiltersFrom(src);
+    if (!filters.from && !filters.to && !filters.userId) {
+      return sendError(res, "Cần ít nhất một điều kiện xóa (from, to hoặc userId) để tránh xóa toàn bộ lịch sử.", 400);
+    }
+    const deleted = await deleteChatLogs(filters);
+    // auditService.record tự nuốt lỗi — không để lỗi ghi nhật ký làm hỏng thao tác.
+    await auditRecord({
+      req,
+      action: AUDIT.AI_CHAT_LOGS_DELETE,
+      target: "ai:chat-logs",
+      message: `Xóa lịch sử hỏi AI: ${deleted} bản ghi`,
+      meta: {
+        deleted,
+        from: filters.from ?? null,
+        to: filters.to ?? null,
+        userId: filters.userId ?? null,
+        username: filters.username ?? null,
+        role: filters.role ?? null,
+        kind: filters.kind ?? null,
+        q: filters.q ?? null,
+      },
+    });
+    sendSuccess(res, { deleted }, `Đã xóa ${deleted} bản ghi lịch sử hỏi AI`);
+  } catch (e) {
+    console.error("[ai] Lỗi xóa lịch sử hỏi AI:", e?.message || e);
+    sendError(res, "Không xóa được lịch sử hỏi AI. Hãy thử lại sau.", 500);
+  }
+});
 
 export default router;

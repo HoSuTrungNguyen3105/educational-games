@@ -162,6 +162,11 @@ const RULES = [
   // (/templates, /categories, /subjects, /players, /games/:id/players) đã được
   // các rule tương ứng phía trên che phủ — không cần rule riêng.
   { m: "POST", re: /^\/ai\/(generate-question|quizzes\/generate)$/, perms: ["questions.edit"] },
+  // Lịch sử hỏi AI: CHỈ admin (route còn requireRoles("admin") chốt cuối).
+  // Gắn feature reports như /stats: GET cần reports.view, DELETE cần
+  // reports.delete — giáo viên có reports.view nhưng THIẾU reports.delete
+  // và vẫn bị route chặn 403 vì không phải admin; học sinh rớt ngay ở đây.
+  { re: /^\/ai\/chat-logs/, feature: "reports" },
   { re: /^\/ai\//, perms: [PLAY, PROFILE] },
   { re: /^\/seed$/, perms: ["settings.edit"] },
   // Phụ huynh: đăng ký là API công khai (giống /auth/register); mọi endpoint
