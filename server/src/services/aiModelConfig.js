@@ -38,9 +38,9 @@ export const GROQ_MODELS = [
     limits: "30 lượt/phút · 1.000 lượt/ngày · 200K token/ngày",
   },
   {
-    id: "llama-3.3-70b-versatile",
-    label: "Llama 3.3 70B",
-    note: "Lựa chọn khác hãng — tiếng Việt tốt, phong cách trả lời khác.",
+    id: "qwen/qwen3.8-27b",
+    label: "Qwen 3.8 27B",
+    note: "Lựa chọn khác hãng — tiếng Việt tốt. (Model xem trước: Groq có thể ngừng không báo trước.)",
     limits: "30 lượt/phút · 1.000 lượt/ngày · 200K token/ngày",
   },
 ];
