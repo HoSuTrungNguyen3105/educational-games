@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../../services/api.js";
 import { chat } from "../../services/aiApi.js";
 import { markAiFailed, markAiReady, useAiAvailability } from "../../hooks/useAiAvailability.js";
+import { formatTokenCount, useAiCreditStatus } from "../../hooks/useAiCreditStatus.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
 import { AiNotReadyNotice } from "./AiNotReadyNotice.jsx";
 import AiMarkdown from "./AiMarkdown.jsx";
@@ -53,6 +54,15 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
   // Trạng thái AI dùng chung cho mọi tính năng. Hook này KHÔNG gọi API: ô nhập luôn
   // dùng được, và chỉ khi bấm gửi mới có một request thật.
   const ai = useAiAvailability();
+
+  // Credit AI còn lại hôm nay (ước tính phía server). Hook KHÔNG tự gọi
+  // API: chỉ nạp khi MỞ khung chat và sau mỗi lượt gửi (số vừa thay đổi);
+  // nạp lỗi → status null → dòng hiển thị ẩn lặng lẽ, không báo lỗi.
+  const credit = useAiCreditStatus();
+  const refreshCredit = credit.refresh;
+  useEffect(() => {
+    if (open) refreshCredit();
+  }, [open, refreshCredit ]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -112,6 +122,9 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
     } finally {
       setBusy(false);
       abortRef.current = null;
+      // Lượt vừa rồi (kể cả khi lỗi ở lượt trả lời cuối) có thể đã tốn
+      // credit ở lượt chọn công cụ → nạp lại số còn lại cho đúng.
+      refreshCredit();
     }
   }
 
@@ -216,6 +229,22 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
               </button>
             </div>
           </div>
+
+          {/* Credit AI còn lại hôm nay (ước tính từ bộ đếm phía server).
+              Chỉ render khi đã nạp được số liệu; lỗi/không hỗ trợ → ẩn. */}
+          {credit.status && (
+            <div className="px-4 py-1.5 bg-white border-b border-ink/10 shrink-0 flex items-center justify-between gap-2">
+              <p className="text-[11px] text-[#8A7C63] truncate">
+                Hôm nay còn khoảng{" "}
+                <span className="font-semibold text-ink">{formatTokenCount(credit.status.remainingTokensToday)}</span>{" "}
+                token AI
+                {typeof credit.status.remainingRequestsToday === "number" && (
+                  <> · khoảng {formatTokenCount(credit.status.remainingRequestsToday)} lượt hỏi</>
+                )}
+              </p>
+              <p className="text-[10px] text-[#8A7C63]/60 shrink-0">ước tính</p>
+            </div>
+          )}
 
           {/* Danh sách tin: dùng dvh để bàn phím không đè lên ô nhập */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-3 space-y-2.5">

@@ -660,6 +660,35 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // ai_usage_daily — bộ đếm mức dùng AI theo TỪNG MODEL × NGÀY UTC của
+    // đường Groq (aiUsageService): requests = số lượt gọi model thành
+    // công, tokens = tổng usage.total_tokens các lượt đó,
+    // callsMissingUsage = số lượt provider không trả usage (vẫn đếm
+    // request, token cộng 0). provider* là ảnh chụp header x-ratelimit-*
+    // của lượt gọi gần nhất trong ngày (số request còn lại cấp tổ chức
+    // do Groq tự tính). Một document duy nhất cho mỗi (model, day) —
+    // index unique ở indexDefs bên dưới; ghi bằng upsert $inc.
+    ai_usage_daily: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "model", "day", "requests", "tokens", "updatedAt"],
+        properties: {
+          id: { bsonType: "string" },
+          model: { bsonType: "string" },
+          day: { bsonType: "string" },
+          requests: { bsonType: ["int", "double", "long"] },
+          tokens: { bsonType: ["int", "double", "long"] },
+          callsMissingUsage: { bsonType: ["int", "double", "long", "null"] },
+          providerLimitRequests: { bsonType: ["int", "double", "null"] },
+          providerRemainingRequests: { bsonType: ["int", "double", "null"] },
+          providerLimitTokensMinute: { bsonType: ["int", "double", "null"] },
+          providerRemainingTokensMinute: { bsonType: ["int", "double", "null"] },
+          providerSnapshotAt: { bsonType: ["string", "null"] },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -839,6 +868,10 @@ async function _runHeavyInit(database) {
     // người hỏi; chỉ số tổng quan toàn cục theo thời gian.
     ["ai_chat_logs", { userId: 1, createdAt: -1 }],
     ["ai_chat_logs", { createdAt: -1 }],
+
+    // ai_usage_daily — một document cho mỗi (model, ngày UTC); upsert
+    // $inc của aiUsageService dựa vào index unique này để không nhân đôi.
+    ["ai_usage_daily", { model: 1, day: 1 }, { unique: true }],
   ];
 
   const createdIndexes = [];

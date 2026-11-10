@@ -45,6 +45,35 @@ export const GROQ_MODELS = [
   },
 ];
 
+/**
+ * Hạn mức NGÀY mặc định của Groq free tier, TÍNH THEO TỪNG MODEL
+ * (console.groq.com/docs/rate-limits, kiểm chứng 2026-11-10): 200.000
+ * token/ngày (gộp đầu vào + đầu ra) và 1.000 request/ngày. Đây là số để
+ * aiUsageService tính "credit còn lại" hiển thị trong khung chat. Admin
+ * ghi đè được bằng `ai.dailyTokenLimit` / `ai.dailyRequestLimit` trong
+ * system_config (khi Groq đổi hạn mức hoặc đổi gói thì sửa cấu hình,
+ * KHÔNG sửa code) — xem getGroqDailyLimits().
+ */
+export const GROQ_DAILY_LIMIT_DEFAULTS = { tokensPerDay: 200_000, requestsPerDay: 1_000 };
+
+/**
+ * Hạn mức ngày hiệu lực: ưu tiên giá trị admin đã lưu trong system_config,
+ * chưa lưu/không hợp lệ thì dùng mặc định free tier ở trên. Lỗi đọc cấu
+ * hình → mặc định (hiển thị credit không bao giờ được làm hỏng chat).
+ */
+export async function getGroqDailyLimits() {
+  let { tokensPerDay, requestsPerDay } = GROQ_DAILY_LIMIT_DEFAULTS;
+  try {
+    const t = Number(await getConfigValue("ai.dailyTokenLimit"));
+    if (Number.isFinite(t) && t > 0) tokensPerDay = Math.round(t);
+    const r = Number(await getConfigValue("ai.dailyRequestLimit"));
+    if (Number.isFinite(r) && r > 0) requestsPerDay = Math.round(r);
+  } catch {
+    // đọc cấu hình lỗi → giữ mặc định
+  }
+  return { tokensPerDay, requestsPerDay };
+}
+
 /** true nếu id nằm trong danh sách được phép chọn. */
 export function isGroqModelAllowed(id) {
   return GROQ_MODELS.some((m) => m.id === id);
