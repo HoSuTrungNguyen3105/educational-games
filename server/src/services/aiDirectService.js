@@ -200,6 +200,10 @@ async function directChat(body, req) {
     learning: context.learning,
     materials: context.materials,
     grade: context.identity?.grade ?? null,
+    // Cờ vượt lớp do Backend nhận diện cho lượt này (aiChatContext) —
+    // studentSystemPrompt dùng để chèn chỉ thị bắt buộc; prompt admin
+    // không đọc trường này và staff không bao giờ bị gắn cờ.
+    aboveGrade: context.aboveGrade ?? null,
     identityRole,
     adminData: context.adminData,
   };

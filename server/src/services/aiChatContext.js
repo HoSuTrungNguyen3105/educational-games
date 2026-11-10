@@ -26,7 +26,7 @@
 import { getCollection } from "../db.js";
 import { computeLearningMetrics, topicDisplayName } from "./aiLearningMetrics.js";
 import { gradeForAgeCode } from "../config/ageCodes.js";
-import { runAdminQuery } from "./aiAdminQueryService.js";
+import { runAdminQuery, foldText } from "./aiAdminQueryService.js";
 
 // ─────────────────────── §5.6 Ngày giờ Việt Nam ───────────────────────
 
@@ -263,6 +263,89 @@ export async function loadChatIdentity(userId) {
   };
 }
 
+// ─────────── Nhận diện chủ đề VƯỢT khối lớp (vá ca vượt lớp) ───────────
+//
+// Bản vá sau sự cố production 2026-11-10: học sinh lớp 3 hỏi "giải chi
+// tiết phương trình bậc hai" và model gpt-oss-20b GIẢI CHI TIẾT, vì chỉ
+// thị vượt lớp cũ chỉ yêu cầu model TỰ nhận diện mức độ. Lớp vá chắc tay
+// nằm ở Backend: khớp từ khoá tiếng Việt ĐÃ BỎ DẤU (cùng pattern
+// detectAdminQuery — không gọi AI phân loại) trên bảng chủ đề vượt lớp
+// theo chương trình tiểu học VN. Phát hiện được thì KHÔNG chặn câu hỏi:
+// gắn cờ `aboveGrade` vào ngữ cảnh để studentSystemPrompt chèn một chỉ
+// thị BẮT BUỘC riêng cho lượt này (xem aiPromptFactory).
+//
+// Nguyên tắc chống bắt nhầm: chỉ dùng cụm từ ĐỦ ĐẶC TRƯNG của từng chủ
+// đề (thuật ngữ không xuất hiện trong chương trình của khối đang xét).
+// Các chủ đề đúng lớp của khối cao hơn (phân số ở lớp 4–5, phần trăm và
+// vận tốc ở lớp 5...) chỉ gắn cờ cho các khối THẤP hơn qua `grades`.
+
+/** Chủ đề vượt MỌI khối tiểu học 1–5 (kiến thức THCS trở lên). Cụ thể trước, chung sau. */
+const ABOVE_GRADE_COMMON_TOPICS = [
+  { topic: "phương trình bậc hai", phrases: ["phuong trinh bac hai", "phuong trinh bac 2", "tam thuc bac hai", "tam thuc bac 2"] },
+  { topic: "hệ phương trình / bất phương trình", phrases: ["he phuong trinh", "bat phuong trinh"] },
+  // "delta" chỉ tính khi đi kèm ngữ cảnh phương trình — tránh bắt nhầm
+  // câu hỏi địa lý về đồng bằng (delta) của học sinh.
+  { topic: "phương trình bậc hai (delta)", phrases: ["delta"], context: ["phuong trinh", "bac hai", "bac 2", "tam thuc", "nghiem"] },
+  { topic: "đạo hàm / tích phân", phrases: ["dao ham", "tich phan", "nguyen ham"] },
+  { topic: "logarit", phrases: ["logarit", "logarithm"] },
+  { topic: "lượng giác", phrases: ["luong giac", "ham so luong giac", "sin cos tan"] },
+  { topic: "hình học không gian", phrases: ["hinh hoc khong gian"] },
+  { topic: "căn bậc hai", phrases: ["can bac hai", "can bac 2"] },
+  { topic: "lũy thừa / số mũ", phrases: ["luy thua", "so mu"] },
+  { topic: "tỉ lệ thuận / tỉ lệ nghịch", phrases: ["ti le thuan", "ti le nghich"] },
+  { topic: "hàm số", phrases: ["ham so"] },
+  { topic: "đa thức", phrases: ["da thuc"] },
+  { topic: "xác suất thống kê nâng cao", phrases: ["xac suat thong ke"] },
+  { topic: "giai thừa", phrases: ["giai thua"] },
+  // Thuật ngữ "phương trình" không hề xuất hiện ở tiểu học (các em chỉ
+  // "tìm x") — nhắc tới phương trình là đã sang kiến thức lớp lớn.
+  { topic: "phương trình", phrases: ["phuong trinh"] },
+];
+
+/** Chủ đề chỉ vượt các khối THẤP hơn — khối tới hạn thì là kiến thức đúng lớp. */
+const ABOVE_GRADE_TOPICS_BY_GRADE = [
+  // Phân số học chính thức ở lớp 4 (lớp 3 mới làm quen "một phần mấy").
+  { topic: "phân số", grades: [1, 2, 3], phrases: ["phan so"] },
+  // Tỉ lệ (bản đồ) học ở lớp 4.
+  { topic: "tỉ lệ", grades: [1, 2, 3], phrases: ["ti le"] },
+  // Số thập phân, phần trăm, hỗn số, vận tốc đều là chương trình lớp 5.
+  { topic: "số thập phân", grades: [1, 2, 3, 4], phrases: ["so thap phan", "thap phan"] },
+  { topic: "phần trăm", grades: [1, 2, 3, 4], phrases: ["phan tram"] },
+  { topic: "hỗn số", grades: [1, 2, 3, 4], phrases: ["hon so"] },
+  { topic: "vận tốc", grades: [1, 2, 3, 4], phrases: ["van toc"] },
+  // Số âm học chính thức ở lớp 6.
+  { topic: "số nguyên âm", grades: [1, 2, 3, 4], phrases: ["so nguyen am", "so am"] },
+];
+
+/**
+ * Phát hiện câu hỏi học sinh có thuộc chủ đề vượt khối lớp của chính em
+ * không. Hàm thuần, khớp trên văn bản đã bỏ dấu + bỏ dấu câu.
+ * grade = null (chưa xác định được khối lớp) → null: giữ chế độ trung
+ * tính như thiết kế #74, không gắn cờ đoán mò.
+ * @returns {null|{topic: string, grade: number}}
+ */
+export function detectAboveGradeTopic(message, grade) {
+  if (grade == null || !Number.isFinite(Number(grade))) return null;
+  const g = Number(grade);
+  const folded = foldText(message)
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!folded) return null;
+  const hit = (entry) => {
+    if (!entry.phrases.some((p) => folded.includes(p))) return false;
+    if (!entry.context) return true;
+    return entry.context.some((c) => folded.includes(c));
+  };
+  for (const entry of ABOVE_GRADE_COMMON_TOPICS) {
+    if (hit(entry)) return { topic: entry.topic, grade: g };
+  }
+  for (const entry of ABOVE_GRADE_TOPICS_BY_GRADE) {
+    if (entry.grades.includes(g) && hit(entry)) return { topic: entry.topic, grade: g };
+  }
+  return null;
+}
+
 // ─────────────────────── Điểm vào dùng chung ───────────────────────
 
 /**
@@ -277,10 +360,15 @@ export async function loadChatIdentity(userId) {
  * adminData: CHỈ dựng khi người hỏi là admin/teacher VÀ câu hỏi là câu
  * tra cứu quản trị (aiAdminQueryService) — học sinh không bao giờ nhận
  * được dữ liệu quản trị trong ngữ cảnh.
+ *
+ * aboveGrade: CHỈ dựng cho học sinh có khối lớp xác định được — kết quả
+ * detectAboveGradeTopic cho lượt này, để tầng prompt chèn chỉ thị vượt
+ * lớp bắt buộc. Admin/teacher không bao giờ nhận cờ này.
  */
 export async function buildChatContext(req, message) {
   const context = {
     dateTimeText: vietnamNowText(), learning: null, materials: [], identity: null, adminData: null,
+    aboveGrade: null,
   };
   const userId = req?.user?.sub;
   if (!userId) return context;
@@ -305,6 +393,13 @@ export async function buildChatContext(req, message) {
     console.warn(`[ai] Không truy xuất được bài học cho chat: ${e?.message || e}`);
   }
   const role = context.identity?.role;
+  if (role !== "admin" && role !== "teacher" && context.identity?.grade != null) {
+    try {
+      context.aboveGrade = detectAboveGradeTopic(message, context.identity.grade);
+    } catch (e) {
+      console.warn(`[ai] Không nhận diện được chủ đề vượt lớp cho chat: ${e?.message || e}`);
+    }
+  }
   if (role === "admin" || role === "teacher") {
     try {
       context.adminData = await runAdminQuery(req, message, context.identity);
