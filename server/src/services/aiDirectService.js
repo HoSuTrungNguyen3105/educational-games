@@ -181,9 +181,12 @@ async function directChat(body, req) {
   const context = await buildChatContext(req, message);
   const system = chatSystem(displayName, body.subject, body.topic, {
     dateTimeText: context.dateTimeText,
-    // Tên model khai trong prompt = model của ĐƯỜNG ĐANG CHẠY (Groq khác
-    // Ollama) để AI Bạn Học tự giới thiệu đúng sự thật như quyết định đợt #66.
+    // Tên model + nhà cung cấp khai trong prompt = của ĐƯỜNG ĐANG CHẠY (Groq
+    // khác Ollama) để AI Bạn Học tự giới thiệu đúng sự thật như quyết định
+    // đợt #66 — thiếu modelProvider thì prompt mặc định nói "qua Ollama" kể
+    // cả khi đang chạy Groq (lỗi phát hiện khi kiểm chứng production #69).
     modelName: (config.ollama.provider === "groq" ? config.groq.model : config.ollama.model) || null,
+    modelProvider: config.ollama.provider === "groq" ? "Groq" : "Ollama",
     learning: context.learning,
     materials: context.materials,
   });
