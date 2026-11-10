@@ -1049,13 +1049,13 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── HERO CHÀO BÉ ─────────── */}
         <section className="gq-hero" aria-label="Lời chào của Đô">
-          <img src={`${import.meta.env.BASE_URL}edu_character.png`} alt="" aria-hidden="true" className="gq-hero__mascot" />
+          <img src={`${import.meta.env.BASE_URL}bb4eaaa0-bcdf-4e8e-a002-e70ec5601c7f.png`} alt="" aria-hidden="true" className="gq-hero__mascot" />
           <div className="gq-hero__bubble">
             <p className="gq-hero__hi">{userAuth?.user ? `Chào ${heroName}! 👋` : "Chào bạn! 👋"}</p>
             <p className="gq-hero__ask">
               {games === null
                 ? "Đô đang mời trò chơi ra đây rồi…"
-                : `Hôm nay có ${gameCount} trò chơi đang chờ ${userAuth?.user ? "bé đó" : "bạn"}!`}
+                : <>Hôm nay có <b className="gq-hero__count">{gameCount}</b> trò chơi đang chờ {userAuth?.user ? "bé đó" : "bạn"}!</>}
             </p>
             {/* Chưa đăng nhập thì không chào ai cả — tên bé trong kidSettings là của
                 máy này, có thể là của tài khoản khác dùng chung thiết bị. */}
