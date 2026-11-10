@@ -66,6 +66,10 @@ export const AUDIT = {
   ROLE_DELETE: "role.delete",
   PERMISSION_ALL: "role.all_permissions",
   CONFIG_UPDATE: "config.update",
+  // Tra cứu dữ liệu quản trị qua chat AI (update_features.md §4): chỉ ghi
+  // LOẠI truy vấn + số kết quả vào meta — không ghi nội dung câu hỏi đầy
+  // đủ, không ghi dữ liệu cá nhân của học sinh.
+  AI_ADMIN_QUERY: "ai.admin_query",
   SEED_RUN: "data.seed",
   SUPPORT_UPDATE: "support.update",
   GAME_CONFIG_WRITE: "game_config.write",
