@@ -20,15 +20,19 @@ import { chat } from "../../services/aiApi.js";
 import { markAiFailed, markAiReady, useAiAvailability } from "../../hooks/useAiAvailability.js";
 import { aiErrorHint, aiErrorText } from "./aiErrorText.js";
 import { AiNotReadyNotice } from "./AiNotReadyNotice.jsx";
+import AiMarkdown from "./AiMarkdown.jsx";
 import { Input } from "../ui";
-import { Bot, X } from "lucide-react";
+import { BookOpen, Bot, X } from "lucide-react";
 
 const MAX_LOCAL_TURNS = 12;
 
+// Gợi ý câu hỏi nhanh (§8 của đặc tả nâng cấp AI Bạn Học): bao quát giải
+// thích từng bước, xin ví dụ, tạo câu luyện tập và hỏi ngày giờ Việt Nam.
 const SUGGESTIONS = [
-  "Giải thích cách quy đồng hai phân số bằng ví dụ",
-  "Cách nhớ phân số nhỏ hơn 1",
-  "Bài này nên làm theo những bước nào?",
+  "Giải thích bài này từng bước cho mình",
+  "Cho mình một ví dụ dễ hiểu",
+  "Tạo 5 câu luyện tập cho mình",
+  "Hôm nay là thứ mấy?",
 ];
 
 export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" }) {
@@ -38,6 +42,9 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [hint, setHint] = useState(null);
+  // Lượt gửi gần nhất bị lỗi (kèm đúng history đã dùng) để nút "Thử lại" gửi
+  // lại NGUYÊN lượt đó — không thêm tin user trùng vào lịch sử.
+  const [lastFailed, setLastFailed] = useState(null);
   const [conversationId, setConversationId] = useState(null);
   const abortRef = useRef(null);
   const bottomRef = useRef(null);
@@ -70,25 +77,9 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
     };
   }, [open]);
 
-  async function send(text) {
-    const content = String(text ?? input).trim();
-    // KHÔNG chặn theo trạng thái AI: request chỉ đi khi người dùng bấm gửi.
-    // Nếu Backend báo chưa bật, catch bên dưới ghi lại để cả bốn tính năng cùng hiện
-    // thông báo "đang được cấu hình" mà không cần gọi thêm endpoint nào.
-    if (!content || busy) return;
-
-    setError(null);
-    setHint(null);
-    setInput("");
+  /** Một lượt gọi AI thật. Dùng chung cho gửi mới (send) và thử lại (retry). */
+  async function runRequest(content, history) {
     setBusy(true);
-
-    const history = messages
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .slice(-MAX_LOCAL_TURNS)
-      .map((m) => ({ role: m.role, content: m.content }));
-
-    setMessages((prev) => [...prev, { role: "user", content }]);
-
     const ctrl = new AbortController();
     abortRef.current = ctrl;
 
@@ -102,7 +93,13 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
         signal: ctrl.signal,
       });
       setConversationId(res.conversationId || null);
-      setMessages((prev) => [...prev, { role: "assistant", content: res.answer }]);
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: res.answer,
+        // Nguồn bài học Backend đã truy xuất (§5.5) — hiển thị dưới câu trả lời.
+        sources: Array.isArray(res.sources) && res.sources.length > 0 ? res.sources : undefined,
+      }]);
+      setLastFailed(null);
       markAiReady();
     } catch (e) {
       markAiFailed(e);
@@ -110,11 +107,41 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
       if (e?.kind !== "timeout" || !ctrl.signal.aborted) {
         setError(aiErrorText(e));
         setHint(aiErrorHint(e));
+        setLastFailed({ content, history });
       }
     } finally {
       setBusy(false);
       abortRef.current = null;
     }
+  }
+
+  async function send(text) {
+    const content = String(text ?? input).trim();
+    // KHÔNG chặn theo trạng thái AI: request chỉ đi khi người dùng bấm gửi.
+    // Nếu Backend báo chưa bật, catch bên dưới ghi lại để cả bốn tính năng cùng hiện
+    // thông báo "đang được cấu hình" mà không cần gọi thêm endpoint nào.
+    if (!content || busy) return;
+
+    setError(null);
+    setHint(null);
+    setLastFailed(null);
+    setInput("");
+
+    const history = messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .slice(-MAX_LOCAL_TURNS)
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    setMessages((prev) => [...prev, { role: "user", content }]);
+    await runRequest(content, history);
+  }
+
+  /** Gửi lại đúng lượt vừa lỗi — lịch sử KHÔNG thêm tin user trùng. */
+  async function retry() {
+    if (!lastFailed || busy) return;
+    setError(null);
+    setHint(null);
+    await runRequest(lastFailed.content, lastFailed.history);
   }
 
   function cancel() {
@@ -127,6 +154,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
     setMessages([]);
     setError(null);
     setHint(null);
+    setLastFailed(null);
     setBusy(false);
     setConversationId(null);
   }
@@ -234,14 +262,35 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`max-w-[85%] px-3 py-2 rounded-2xl text-[15px] sm:text-sm font-body
-                              whitespace-pre-wrap break-words ${
-                                m.role === "user"
-                                  ? "bg-ink text-paper rounded-br-md"
-                                  : "bg-white border border-ink/10 text-ink rounded-bl-md"
-                              }`}
+                  className={`max-w-[85%] px-3 py-2 rounded-2xl text-[15px] sm:text-sm font-body break-words ${
+                    m.role === "user"
+                      ? "bg-ink text-paper rounded-br-md whitespace-pre-wrap"
+                      : "bg-white border border-ink/10 text-ink rounded-bl-md"
+                  }`}
                 >
-                  {m.content}
+                  {m.role === "assistant" ? (
+                    <>
+                      {/* Tin AI render Markdown an toàn (AiMarkdown); tin của
+                          học sinh giữ văn bản thuần như trước. */}
+                      <AiMarkdown>{m.content}</AiMarkdown>
+                      {m.sources && (
+                        <div className="mt-1.5 border-t border-ink/10 pt-1.5 space-y-0.5">
+                          {m.sources.map((s, j) => (
+                            <p key={j} className="flex items-center gap-1 text-[11px] text-[#8A7C63]">
+                              <BookOpen className="w-3 h-3 shrink-0" />
+                              <span className="truncate">
+                                Nguồn bài học: “{s.title}”
+                                {s.subject ? ` · ${s.subject}` : ""}
+                                {s.grade ? ` · Lớp ${s.grade}` : ""}
+                              </span>
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    m.content
+                  )}
                 </div>
               </div>
             ))}
@@ -260,6 +309,15 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
               <div className="rounded-xl bg-ticket/10 border border-ticket/20 px-3 py-2">
                 <p className="text-xs text-ticket leading-relaxed">{error}</p>
                 {hint && <p className="text-[11px] text-[#8A7C63] leading-relaxed mt-1">{hint}</p>}
+                {lastFailed && !busy && (
+                  <button
+                    type="button"
+                    onClick={retry}
+                    className="mt-1.5 min-h-[36px] px-3 rounded-lg bg-ticket text-white text-[11px] font-semibold transition active:scale-95"
+                  >
+                    Thử lại
+                  </button>
+                )}
               </div>
             )}
 
