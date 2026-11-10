@@ -28,6 +28,7 @@ import * as questionService from "../services/questionService.js";
 import { isOn } from "../services/systemConfigService.js";
 import { callAiBackend, aiBackendHealth, AiBackendError, getAiInferenceStatus } from "../services/aiBackendService.js";
 import { listChatLogs, deleteChatLogs } from "../services/aiChatLogService.js";
+import { getAiCreditStatus } from "../services/aiUsageService.js";
 import { record as auditRecord, AUDIT } from "../services/auditService.js";
 
 const router = Router();
@@ -119,6 +120,27 @@ router.get("/health", async (_req, res) => {
     // để trang Cài đặt quản trị dùng.
     notice: available ? null : AI_UNAVAILABLE_MESSAGE,
   });
+});
+
+/**
+ * GET /api/ai/credit-status — "credit AI còn lại hôm nay" cho khung chat
+ * AI Bạn Học: hạn mức ngày của MODEL hiệu lực (cấu hình ai.daily*Limit,
+ * mặc định free tier Groq) trừ bộ đếm nội bộ theo ngày UTC
+ * (aiUsageService). Mọi user ĐÃ ĐĂNG NHẬP xem được (permissionFilter có
+ * rule /ai/ chung = quyền cơ bản); CHƯA đăng nhập → 401 ở `authenticate`.
+ * Chỉ trả SỐ LIỆU hạn mức — không key, không URL, không hạ tầng.
+ * Số là ƯỚC TÍNH (estimate: true): bộ đếm chỉ gồm các lượt gọi qua
+ * backend này; thân trạng thái ghi rõ nguồn số request còn lại.
+ * KHÔNG qua requireAiEnabled: AI tắt thì chip phía client tự ẩn theo
+ * `supported`/số liệu null, endpoint này không gọi model nên không tốn gì.
+ */
+router.get("/credit-status", authenticate, async (_req, res) => {
+  try {
+    sendSuccess(res, await getAiCreditStatus());
+  } catch (e) {
+    console.error(`[ai] Lỗi đọc trạng thái credit AI: ${e?.message || e}`);
+    sendError(res, "Không đọc được trạng thái credit AI.", 502);
+  }
 });
 
 // ───────────────────────────── Chat ──────────────────────────────
