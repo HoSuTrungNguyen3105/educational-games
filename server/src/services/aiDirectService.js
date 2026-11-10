@@ -28,6 +28,8 @@ import {
   computeLearningMetrics, fallbackNarrative, withinPeriod, validatePeriod,
   ANALYSIS_DISCLAIMER,
 } from "./aiLearningMetrics.js";
+import { buildChatContext } from "./aiChatContext.js";
+import { config } from "../config.js";
 
 // ─────────────────────── Rate limit (port AiRateLimiter) ───────────────────────
 // Cửa sổ trượt 60 giây trong bộ nhớ, theo người dùng (hoặc IP nếu chưa rõ danh
@@ -159,7 +161,16 @@ async function directChat(body, req) {
   const displayName = (req?.user?.name && String(req.user.name).trim())
     || (req?.user?.username && String(req.user.username).trim()) || null;
 
-  const system = chatSystem(displayName, body.subject, body.topic);
+  // Ngữ cảnh Backend dựng cho lượt này (ngày giờ VN, tóm tắt học tập của
+  // chính user, đoạn bài học liên quan) — buildChatContext không bao giờ ném
+  // lỗi: thiếu phần nào thì system prompt thiếu phần đó, chat vẫn chạy.
+  const context = await buildChatContext(req, message);
+  const system = chatSystem(displayName, body.subject, body.topic, {
+    dateTimeText: context.dateTimeText,
+    modelName: config.ollama.model || null,
+    learning: context.learning,
+    materials: context.materials,
+  });
   const messages = chatMessages(history, message);
   const answer = await ollamaComplete(system, messages);
 
@@ -174,6 +185,11 @@ async function directChat(body, req) {
     conversationId: body.conversationId == null || String(body.conversationId).trim() === ""
       ? null : String(body.conversationId).trim(),
     truncated,
+    // Nguồn bài học đã đưa vào ngữ cảnh (§5.5: hiển thị tham chiếu ở UI).
+    // omitNulls bỏ field khi undefined — response cũ không đổi khi không có nguồn.
+    sources: context.materials.length > 0
+      ? context.materials.map((m) => omitNulls({ title: m.title, subject: m.subject, grade: m.grade }))
+      : undefined,
   });
 }
 
