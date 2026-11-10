@@ -113,6 +113,11 @@ export const config = {
   // đường dùng chung một bộ env: OLLAMA_BASE_URL / OLLAMA_KEY / OLLAMA_MODEL /
   // OLLAMA_THINK / OLLAMA_TEMPERATURE.
   ollama: {
+    // Nhà cung cấp suy luận ĐANG CHỌN cho các đường trực tiếp: "" = để luật cũ
+    // tự quyết theo bộ OLLAMA_* (mặc định, hành vi không đổi); "groq" = ép đi
+    // đường Groq (chuẩn OpenAI) qua aiGroqGateway/aiDirectService. Đặt
+    // AI_PROVIDER=groq trên Render sau khi đã có GROQ_API_KEY.
+    provider: (process.env.AI_PROVIDER || "").trim().toLowerCase(),
     // Rỗng = chưa đặt (KHÁC localhost mặc định của Java — Node cần phân biệt
     // "chưa cấu hình" với "cố ý trỏ localhost" khi chọn nhà cung cấp).
     baseUrl: (process.env.OLLAMA_BASE_URL || "").replace(/\/+$/, ""),
@@ -126,5 +131,22 @@ export const config = {
     // trả lời thẳng; "true" = cho phép suy nghĩ; "omit" = không gửi field này.
     think: process.env.OLLAMA_THINK ?? "false",
     temperature: Number(process.env.OLLAMA_TEMPERATURE) || 0.4,
+  },
+
+  // ── Groq (chuẩn OpenAI, miễn phí 24/7) ───────────────────────────────────
+  // Nhà cung cấp suy luận qua API tương thích OpenAI của Groq
+  // (https://api.groq.com/openai/v1/chat/completions, Bearer GROQ_API_KEY).
+  // Chỉ kích hoạt khi AI_PROVIDER=groq (xem aiBackendService.aiProviderKindFrom);
+  // KHÔNG đặt biến này thì hành vi giữ nguyên như cũ. Key TUYỆT ĐỐI không log.
+  groq: {
+    baseUrl: (process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1").replace(/\/+$/, ""),
+    apiKey: process.env.GROQ_API_KEY || "",
+    // Mặc định openai/gpt-oss-20b: cùng họ model với đường Ollama Cloud cũ,
+    // trên Groq có Structured Outputs bảo đảm schema (tốt cho sinh câu hỏi
+    // JSON) và giới hạn free tier công khai 30 RPM / 1.000 req/ngày /
+    // 200K token/ngày mỗi model. Đổi model bằng GROQ_MODEL — Groq thay
+    // catalog nhanh, KHÔNG hard-code thêm model nào khác trong code.
+    model: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
+    temperature: Number(process.env.GROQ_TEMPERATURE) || 0.4,
   },
 };

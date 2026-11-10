@@ -20,6 +20,7 @@
 import { randomInt } from "node:crypto";
 import { AiBackendError } from "./aiBackendError.js";
 import { ollamaComplete, ollamaCompleteJson, extractJsonPayload } from "./aiOllamaGateway.js";
+import { groqComplete, groqCompleteJson } from "./aiGroqGateway.js";
 import {
   chatSystem, chatMessages, quizSystem, quizUser, explainSystem, explainUser,
   followUpMessage, analysisSystem, analysisUser, enforceLimit, cleanText,
@@ -30,6 +31,19 @@ import {
 } from "./aiLearningMetrics.js";
 import { buildChatContext } from "./aiChatContext.js";
 import { config } from "../config.js";
+
+// ─────────────────── Chọn gateway suy luận ───────────────────
+// Hai gateway CÙNG giao diện (complete/completeJson): Ollama (đường trực tiếp
+// cũ) và Groq (chuẩn OpenAI, thêm 2026-11-10). Chọn theo AI_PROVIDER do
+// aiBackendService đã quyết ở tầng điều phối: hàm này CHỈ được gọi khi nhà
+// cung cấp hiệu lực là một đường trực tiếp, nên ở đây chỉ cần phân biệt
+// "groq" với phần còn lại (ollama-cloud). Mọi nghiệp vụ phía dưới (prompt,
+// ngữ cảnh, validate, rate limit) dùng chung — đổi nhà cung cấp không đổi
+// hành vi nghiệp vụ.
+const llmComplete = (system, messages) =>
+  config.ollama.provider === "groq" ? groqComplete(system, messages) : ollamaComplete(system, messages);
+const llmCompleteJson = (system, messages) =>
+  config.ollama.provider === "groq" ? groqCompleteJson(system, messages) : ollamaCompleteJson(system, messages);
 
 // ─────────────────────── Rate limit (port AiRateLimiter) ───────────────────────
 // Cửa sổ trượt 60 giây trong bộ nhớ, theo người dùng (hoặc IP nếu chưa rõ danh
@@ -167,12 +181,14 @@ async function directChat(body, req) {
   const context = await buildChatContext(req, message);
   const system = chatSystem(displayName, body.subject, body.topic, {
     dateTimeText: context.dateTimeText,
-    modelName: config.ollama.model || null,
+    // Tên model khai trong prompt = model của ĐƯỜNG ĐANG CHẠY (Groq khác
+    // Ollama) để AI Bạn Học tự giới thiệu đúng sự thật như quyết định đợt #66.
+    modelName: (config.ollama.provider === "groq" ? config.groq.model : config.ollama.model) || null,
     learning: context.learning,
     materials: context.materials,
   });
   const messages = chatMessages(history, message);
-  const answer = await ollamaComplete(system, messages);
+  const answer = await llmComplete(system, messages);
 
   let cleaned = stripLeadingQuotes(String(answer).trim());
   let truncated = false;
@@ -303,7 +319,7 @@ async function generateQuizPipeline(body, { validateRequest }) {
 
   let qn = null;
   for (let attempt = 0; attempt <= QUIZ_LIMITS.jsonRetryAttempts; attempt++) {
-    const raw = await ollamaCompleteJson(quizSystem(), [{ role: "user", content: userPrompt }]);
+    const raw = await llmCompleteJson(quizSystem(), [{ role: "user", content: userPrompt }]);
     const root = extractJsonPayload(raw);
     qn = questionsNode(root);
     if (qn != null) break;
@@ -416,7 +432,7 @@ async function directExplain(body) {
         { role: "user", content: followUpMessage(followUp) },
       ];
 
-  const answer = await ollamaComplete(explainSystem(), messages);
+  const answer = await llmComplete(explainSystem(), messages);
   let cleaned = answer == null ? "" : String(answer).trim();
   if (cleaned === "") {
     throw new AiBackendError("AI không trả lời được. Vui lòng thử lại.", { httpCode: 502, kind: "badResponse" });
@@ -491,7 +507,7 @@ async function narrateAnalysis(metrics, sufficient) {
 
   for (let attempt = 0; attempt <= 1; attempt++) {
     try {
-      const raw = await ollamaCompleteJson(analysisSystem(), [{ role: "user", content: userPrompt }]);
+      const raw = await llmCompleteJson(analysisSystem(), [{ role: "user", content: userPrompt }]);
       const root = extractJsonPayload(raw);
       if (root != null && typeof root === "object" && !Array.isArray(root)) {
         const n = narrativeFromModel(root, metrics, sufficient);
@@ -570,13 +586,14 @@ const DIRECT_OPS = {
 };
 
 /**
- * Điểm vào DUY NHẤT của đường Ollama trực tiếp — cùng chữ ký và cùng kiểu lỗi
- * với callAiBackend phía AI Service để aiBackendService hoán đổi trong suốt.
+ * Điểm vào DUY NHẤT của các đường TRỰC TIẾP (Ollama Cloud và Groq dùng chung
+ * nghiệp vụ ở file này, chỉ khác gateway) — cùng chữ ký và cùng kiểu lỗi với
+ * callAiBackend phía AI Service để aiBackendService hoán đổi trong suốt.
  */
 export async function callAiDirect(path, body, req) {
   const op = DIRECT_OPS[path];
   if (!op) {
-    throw new AiBackendError("Thao tác AI này chưa được hỗ trợ ở đường Ollama trực tiếp.",
+    throw new AiBackendError("Thao tác AI này chưa được hỗ trợ ở đường AI trực tiếp.",
       { httpCode: 503, kind: "config" });
   }
   checkRateLimit(req, op.bucket);

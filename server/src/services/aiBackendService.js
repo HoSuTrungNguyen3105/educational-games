@@ -1,8 +1,13 @@
 // services/aiBackendService.js
 //
 // Tầng kết nối AI của Backend chính — điểm vào DUY NHẤT mà routes/ai.js dùng.
-// Có HAI nhà cung cấp, chọn theo cấu hình (xem aiProviderKind bên dưới):
+// Có BA nhà cung cấp, chọn theo cấu hình (xem aiProviderKind bên dưới):
 //
+//   0. "groq" (Groq trực tiếp, chuẩn OpenAI) — khi AI_PROVIDER=groq (ép chọn
+//      tường minh, ưu tiên cao nhất): Backend gọi thẳng api.groq.com qua
+//      aiDirectService/aiGroqGateway. Free tier thường trực, chạy 24/7 trên
+//      máy chủ Groq, KHÔNG phụ thuộc credits Ollama hay máy Windows. Nghiệp
+//      vụ + ngữ cảnh AI Bạn Học dùng chung aiDirectService với đường Ollama.
 //   1. "ollama-cloud" (Ollama trực tiếp) — khi OLLAMA_KEY khác rỗng VÀ
 //      OLLAMA_BASE_URL đã đặt và KHÔNG phải localhost/127.0.0.1: Backend gọi
 //      thẳng endpoint Ollama (production: https://ollama.com) qua
@@ -29,6 +34,7 @@ import { config } from "../config.js";
 import { AiBackendError } from "./aiBackendError.js";
 import { callAiDirect } from "./aiDirectService.js";
 import { ollamaHealth } from "./aiOllamaGateway.js";
+import { groqHealth } from "./aiGroqGateway.js";
 import { getAiInferenceStatus } from "./aiInferenceStatus.js";
 
 export { AiBackendError };
@@ -57,26 +63,35 @@ export function isLocalOllamaUrl(url) {
 }
 
 /**
- * Chọn nhà cung cấp từ một cấu hình Ollama cho trước (hàm thuần để test):
- * "ollama-cloud" khi có key + base URL đặt từ xa; ngược lại "ai-service".
+ * Chọn nhà cung cấp từ cấu hình cho trước (hàm thuần để test):
+ *  - "groq" khi `provider` ép chọn đúng chuỗi "groq" (env AI_PROVIDER) — ưu
+ *    tiên CAO NHẤT và TƯỜNG MINH: bật/tắt đường Groq không phụ thuộc việc
+ *    xoá/đặt lại bộ biến của nhà cung cấp khác (bài học sự cố Ollama
+ *    2026-11-10: chuyển đường bằng cách xoá key rất dễ nhầm lẫn).
+ *  - "ollama-cloud" khi có key + base URL đặt từ xa; ngược lại "ai-service".
  * Key + endpoint local (dev tự host Ollama trên máy) KHÔNG kích hoạt đường
  * cloud — trường hợp đó vẫn đi qua AI Service như trước.
  */
 export function aiProviderKindFrom(ollama = {}) {
+  if (String(ollama.provider ?? "").trim().toLowerCase() === "groq") return "groq";
   const key = ollama.apiKey == null ? "" : String(ollama.apiKey).trim();
   const url = ollama.baseUrl == null ? "" : String(ollama.baseUrl).trim();
   if (key !== "" && url !== "" && !isLocalOllamaUrl(url)) return "ollama-cloud";
   return "ai-service";
 }
 
-/** Nhà cung cấp đang hiệu lực theo config hiện tại: "ollama-cloud" | "ai-service". */
+/** Nhà cung cấp đang hiệu lực theo config hiện tại: "groq" | "ollama-cloud" | "ai-service". */
 export function aiProviderKind() {
   return aiProviderKindFrom(config.ollama);
 }
 
-/** configured = cấu hình của ĐƯỜNG ĐANG CHỌN đã đủ chưa (cloud: URL+KEY+MODEL; AI Service: token). */
+/** configured = cấu hình của ĐƯỜNG ĐANG CHỌN đã đủ chưa (groq: KEY+MODEL; cloud: URL+KEY+MODEL; AI Service: token). */
 export function aiProviderConfigured() {
-  if (aiProviderKind() === "ollama-cloud") {
+  const kind = aiProviderKind();
+  if (kind === "groq") {
+    return !!(config.groq.apiKey && config.groq.model);
+  }
+  if (kind === "ollama-cloud") {
     return !!(config.ollama.baseUrl && config.ollama.apiKey && config.ollama.model);
   }
   return !!config.aiBackend.token;
@@ -159,9 +174,11 @@ export async function callAiBackend(path, body, req) {
   if (!config.aiBackend.enabled) {
     throw new AiBackendError("Tính năng AI đang tắt trên hệ thống.", { httpCode: 503, kind: "config" });
   }
-  if (aiProviderKind() === "ollama-cloud") {
-    // Đường Ollama trực tiếp: không cần AI_BACKEND_TOKEN; timeout dùng chung
-    // AI_BACKEND_TIMEOUT_MS như đường AI Service.
+  const kind = aiProviderKind();
+  if (kind === "ollama-cloud" || kind === "groq") {
+    // Các đường TRỰC TIẾP (Ollama Cloud / Groq dùng chung aiDirectService):
+    // không cần AI_BACKEND_TOKEN; timeout dùng chung AI_BACKEND_TIMEOUT_MS
+    // như đường AI Service.
     return callAiDirect(path, body, req);
   }
   if (!config.aiBackend.token) {
@@ -219,6 +236,28 @@ export async function callAiBackend(path, body, req) {
  * Trả về đúng shape mà `AiStatusController` của AI Service trả về.
  */
 export async function aiBackendHealth(req) {
+  if (aiProviderKind() === "groq") {
+    // Cùng shape với đường Ollama trực tiếp (frontend/admin không đổi), chỉ
+    // khác provider/model và probe: Groq probe bằng GET /models (không tốn
+    // token suy luận). inference vẫn là tín hiệu lượt gọi model THẬT.
+    const base = {
+      status: false,
+      model: config.groq.model || null,
+      provider: "groq",
+      detail: "Không gọi được endpoint Groq.",
+      enabled: config.aiBackend.enabled,
+      configured: aiProviderConfigured(),
+      baseUrlConfigured: !!config.groq.baseUrl,
+      hasApiKey: !!config.groq.apiKey,
+      inference: getAiInferenceStatus(),
+    };
+    if (!config.aiBackend.enabled) {
+      return { ...base, detail: "Tính năng AI đang tắt trên hệ thống." };
+    }
+    const h = await groqHealth();
+    return { ...base, ...h, enabled: config.aiBackend.enabled, configured: aiProviderConfigured() };
+  }
+
   if (aiProviderKind() === "ollama-cloud") {
     // Shape GIỮ NGUYÊN như đường AI Service, cộng thêm 2 cờ chẩn đoán không chứa
     // bí mật (baseUrlConfigured/hasApiKey) để admin nhìn là biết thiếu biến nào.
