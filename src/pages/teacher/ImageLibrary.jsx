@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { imageService } from "../../services/api.js";
 import { ConfirmModal, EmptyState, IconTrash, IconUpload, Loader, ManagementHeader, Modal, SearchInput, ViewToggle, useViewMode } from '../../components/ui';
-import { Image, Copy, X, FolderOpen } from "lucide-react";
+import { Image, Copy, X, FolderOpen, RefreshCw } from "lucide-react";
 import { useConfirm } from "../../hooks/useConfirm.js";
 
 function formatBytes(bytes) {
@@ -15,7 +15,8 @@ function formatDate(d) {
   catch { return d; }
 }
 
-export default function ImageLibrary({ showToast }) {
+export default function ImageLibrary({ user, showToast }) {
+  const isAdmin = user?.role === "admin";
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,6 +28,10 @@ export default function ImageLibrary({ showToast }) {
   const [viewMode, setViewMode] = useViewMode("image-library", "grid");
   const { askConfirm, confirmProps } = useConfirm();
   const [folder, setFolder] = useState("edu-game");
+  const [syncing, setSyncing] = useState(false);
+  // Kết quả đồng bộ hiện INLINE ngay trên trang (không qua Toast vì
+  // TeacherLayout không render Toast — toast ở dashboard không hiện).
+  const [syncMsg, setSyncMsg] = useState(null);
   const fileInput = useRef(null);
   const multiInput = useRef(null);
 
@@ -53,6 +58,30 @@ export default function ImageLibrary({ showToast }) {
       load();
     } catch (e) { showToast(e.message || "Lỗi upload", "error"); }
     finally { setUploading(false); }
+  };
+
+  // Đồng bộ (chỉ admin): gán toàn bộ ảnh chưa có chủ trong folder hiện tại
+  // cho chính mình — sau đó chỉ mình thấy các ảnh đó. Không xoá ảnh nào.
+  const handleSync = () => {
+    askConfirm({
+      title: "Đồng bộ ảnh chưa có chủ",
+      message: `Toàn bộ ảnh trong thư mục "${folder}" chưa thuộc về ai sẽ được gán cho tài khoản của bạn, và từ đó chỉ bạn nhìn thấy chúng. Ảnh đã có chủ của người khác không bị ảnh hưởng. Tiếp tục?`,
+      confirmLabel: "Đồng bộ",
+      onConfirm: async () => {
+        setSyncing(true);
+        setSyncMsg(null);
+        try {
+          const data = await imageService.claimUnowned(folder);
+          setSyncMsg({
+            type: "success",
+            text: `Đã đồng bộ xong: bạn đã nhận ${data.claimed} ảnh chưa có chủ (quét ${data.totalScanned} ảnh trong thư mục "${data.folder || folder}").`,
+          });
+          load();
+        } catch (e) {
+          setSyncMsg({ type: "error", text: e.message || "Đồng bộ thất bại, thử lại sau." });
+        } finally { setSyncing(false); }
+      },
+    });
   };
 
   const handleSearch = async () => {
@@ -124,7 +153,23 @@ export default function ImageLibrary({ showToast }) {
         </button>
         <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={e => handleUpload(e.target.files)} />
         <input ref={multiInput} type="file" accept="image/*" multiple className="hidden" onChange={e => handleUpload(e.target.files)} />
+        {isAdmin && (
+          <button onClick={handleSync} disabled={syncing}
+            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold transition disabled:opacity-50 flex items-center gap-2 hover:bg-blue-700">
+            <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Đang đồng bộ..." : "Đồng bộ"}
+          </button>
+        )}
       </ManagementHeader>
+
+      {syncMsg && (
+        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm ${syncMsg.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>
+          <span className="flex-1">{syncMsg.text}</span>
+          <button onClick={() => setSyncMsg(null)} className="shrink-0 opacity-60 hover:opacity-100 transition">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <SearchInput value={searchQuery} onChange={setSearchQuery}
@@ -170,6 +215,11 @@ export default function ImageLibrary({ showToast }) {
                   onChange={e => { e.stopPropagation(); toggleSelect(img.publicId); }}
                   className="w-4 h-4 rounded accent-blue-500 cursor-pointer" />
               </div>
+              {img.ownerId == null && (
+                <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-amber-400 text-amber-950 text-[10px] font-semibold shadow">
+                  Chưa có chủ
+                </span>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
                   <span className="text-[10px] text-white/80 truncate max-w-[60%]">{img.format} · {formatBytes(img.bytes)}</span>
@@ -203,6 +253,7 @@ export default function ImageLibrary({ showToast }) {
                 <div className="flex-1 min-w-0">
                   <p className="font-mono text-xs text-ink truncate">{img.format} · {formatBytes(img.bytes)} · {img.width}×{img.height}</p>
                   <p className="font-mono text-[10px] text-ink/45 truncate">{img.publicId}</p>
+                  {img.ownerId == null && <p className="text-[10px] font-semibold text-amber-600">Chưa có chủ</p>}
                   <p className="text-[10px] text-ink/40">{formatDate(img.createdAt)}</p>
                 </div>
                 <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
@@ -247,7 +298,10 @@ export default function ImageLibrary({ showToast }) {
                   </td>
                   <td className="px-3 py-2 font-mono text-xs">{img.format} · {formatBytes(img.bytes)}</td>
                   <td className="px-3 py-2 text-ink/60">{img.width}×{img.height}</td>
-                  <td className="px-3 py-2 font-mono text-[10px] text-ink/50 max-w-[200px] truncate">{img.publicId}</td>
+                  <td className="px-3 py-2 font-mono text-[10px] text-ink/50 max-w-[200px] truncate">
+                    {img.publicId}
+                    {img.ownerId == null && <span className="block font-sans font-semibold text-amber-600">Chưa có chủ</span>}
+                  </td>
                   <td className="px-3 py-2 text-ink/50 text-xs">{formatDate(img.createdAt)}</td>
                   <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                     <div className="flex gap-1">
@@ -280,6 +334,7 @@ export default function ImageLibrary({ showToast }) {
                 <div className="flex justify-between"><span>Kích thước</span><span className="font-mono">{preview.width}×{preview.height}</span></div>
                 <div className="flex justify-between"><span>Dung lượng</span><span className="font-mono">{formatBytes(preview.bytes)}</span></div>
                 <div className="flex justify-between"><span>Ngày tạo</span><span className="font-mono">{formatDate(preview.createdAt)}</span></div>
+                <div className="flex justify-between"><span>Chủ sở hữu</span><span className="font-mono">{preview.ownerId == null ? "Chưa có chủ" : "Của bạn"}</span></div>
               </div>
               <div className="pt-2 space-y-2">
                 <button onClick={() => copyUrl(preview.url)}

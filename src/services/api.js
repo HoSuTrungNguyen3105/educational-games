@@ -697,6 +697,10 @@ export const imageService = {
   async getInfo(publicId) {
     return apiFetch(`/images/${encodeURIComponent(publicId)}`);
   },
+  // Đồng bộ (chỉ admin): gán toàn bộ ảnh chưa có chủ trong folder cho mình.
+  async claimUnowned(folder = "edu-game") {
+    return apiFetch("/images/claim-unowned", { method: "POST", body: { folder } });
+  },
 };
 
 export const gameEventService = {
