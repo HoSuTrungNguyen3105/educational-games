@@ -286,12 +286,21 @@ export function useLessonEditor(lessonId) {
   }, [endTransient]);
 
   const addPage = useCallback(() => {
-    if (!docRef.current || docRef.current.pages.length >= MAX_PAGES) return;
-    const page = { id: uid("page"), title: `Trang ${docRef.current.pages.length + 1}`, elements: [] };
+    const cur = docRef.current;
+    if (!cur || cur.pages.length >= MAX_PAGES) return;
+    // Trang mới KẾ THỪA nền của trang đang chọn/đang xem (deep copy):
+    // giáo viên đã áp nền cho bài thì thêm trang không phải áp lại.
+    const src = cur.pages.find((p) => p.id === pageId) || cur.pages[0];
+    const page = {
+      id: uid("page"),
+      title: `Trang ${cur.pages.length + 1}`,
+      ...(src?.background ? { background: clone(src.background) } : {}),
+      elements: [],
+    };
     mutate((d) => ({ ...d, pages: [...d.pages, page] }));
     setPageId(page.id);
     setSelectedId(null);
-  }, [mutate]);
+  }, [mutate, pageId]);
 
   const duplicatePage = useCallback((id) => {
     const cur = docRef.current;
@@ -301,6 +310,8 @@ export function useLessonEditor(lessonId) {
     const page = {
       id: uid("page"),
       title: `${src.title} (bản sao)`.slice(0, 200),
+      // Nền trang đi theo bản sao (trước đây object dựng tay làm rơi nền).
+      ...(src.background ? { background: clone(src.background) } : {}),
       // id phần tử phải duy nhất TOÀN BÀI (server validate) → sinh lại hết.
       elements: src.elements.map((el) => ({ ...clone(el), id: uid("el") })),
     };
@@ -325,6 +336,20 @@ export function useLessonEditor(lessonId) {
     }
     setSelectedId(null);
   }, [mutate, pageId]);
+
+  /** Đặt/xoá nền của một trang: background = { type: "color"|"image", value } hoặc null để xoá. */
+  const setPageBackground = useCallback((id, background) => {
+    mutate((d) => ({
+      ...d,
+      pages: d.pages.map((p) => {
+        if (p.id !== id) return p;
+        const next = { ...p };
+        if (background && background.value) next.background = clone(background);
+        else delete next.background;
+        return next;
+      }),
+    }));
+  }, [mutate]);
 
   const renamePage = useCallback((id, title) => {
     mutate((d) => ({
@@ -453,7 +478,7 @@ export function useLessonEditor(lessonId) {
     undo, redo,
     beginTransient, endTransient,
     setMeta,
-    addPage, duplicatePage, removePage, renamePage, movePage,
+    addPage, duplicatePage, removePage, renamePage, movePage, setPageBackground,
     addElement, patchElement, patchElementProps, removeElement, duplicateElement, moveElementLayer,
     publish, unpublish,
   };
