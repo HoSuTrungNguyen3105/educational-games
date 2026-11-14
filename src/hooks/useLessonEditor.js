@@ -31,7 +31,15 @@ const ELEMENT_DEFAULTS = {
   image: { geo: { x: 340, y: 130, w: 600, h: 460 }, props: { imageUrl: "", alt: "" } },
   question: { geo: { x: 190, y: 130, w: 900, h: 460 }, props: { prompt: "", qtype: "single", options: [], correctAnswer: "", points: 10 } },
   game: { geo: { x: 290, y: 100, w: 700, h: 520 }, props: { gameId: "" } },
+  decor: { geo: { x: 560, y: 300, w: 120, h: 120 }, props: { emoji: "⭐" } },
 };
+
+const NEW_PAGE = () => ({
+  id: uid("page"),
+  title: "Trang 1",
+  background: "white",
+  elements: [],
+});
 
 const docOf = (lesson) => ({
   title: lesson?.title || "",
@@ -41,8 +49,9 @@ const docOf = (lesson) => ({
   objectives: lesson?.objectives || "",
   coverImage: lesson?.coverImage || "",
   pages: Array.isArray(lesson?.pages) && lesson.pages.length > 0
-    ? clone(lesson.pages)
-    : [{ id: uid("page"), title: "Trang 1", elements: [] }],
+    // Bài cũ chưa có `background` → mặc định nền trắng.
+    ? clone(lesson.pages).map((p) => ({ background: "white", ...p }))
+    : [NEW_PAGE()],
 });
 
 /**
@@ -287,11 +296,47 @@ export function useLessonEditor(lessonId) {
 
   const addPage = useCallback(() => {
     if (!docRef.current || docRef.current.pages.length >= MAX_PAGES) return;
-    const page = { id: uid("page"), title: `Trang ${docRef.current.pages.length + 1}`, elements: [] };
+    const page = { ...NEW_PAGE(), title: `Trang ${docRef.current.pages.length + 1}` };
     mutate((d) => ({ ...d, pages: [...d.pages, page] }));
     setPageId(page.id);
     setSelectedId(null);
   }, [mutate]);
+
+  /** Sửa thuộc tính TRANG hiện tại (vd: đổi `background`). Một mốc undo. */
+  const patchPage = useCallback((patch) => {
+    const cur = docRef.current;
+    const pid = pageId || cur?.pages[0]?.id;
+    if (!cur || !pid) return;
+    mutate((d) => ({
+      ...d,
+      pages: d.pages.map((p) => (p.id === pid ? { ...p, ...patch } : p)),
+    }));
+  }, [mutate, pageId]);
+
+  /**
+   * Áp một MẪU TRANG lên trang hiện tại: đổi nền + thay toàn bộ phần tử bằng
+   * cấu trúc mẫu (một mốc undo). `elements` là mảng { type, x, y, w, h, props }
+   * — id mới được sinh lại để không trùng với phần tử ở trang khác.
+   */
+  const applyPageTemplate = useCallback(({ background, title, elements }) => {
+    const cur = docRef.current;
+    const pid = pageId || cur?.pages[0]?.id;
+    if (!cur || !pid) return;
+    const nextElements = (elements || []).map((el, i) => ({
+      id: uid("el"),
+      type: el.type,
+      x: el.x, y: el.y, w: el.w, h: el.h,
+      z: i,
+      props: clone(el.props || {}),
+    }));
+    mutate((d) => ({
+      ...d,
+      pages: d.pages.map((p) => (p.id === pid
+        ? { ...p, background: background || "white", ...(title ? { title } : {}), elements: nextElements }
+        : p)),
+    }));
+    setSelectedId(null);
+  }, [mutate, pageId]);
 
   const duplicatePage = useCallback((id) => {
     const cur = docRef.current;
@@ -301,6 +346,7 @@ export function useLessonEditor(lessonId) {
     const page = {
       id: uid("page"),
       title: `${src.title} (bản sao)`.slice(0, 200),
+      background: src.background || "white",
       // id phần tử phải duy nhất TOÀN BÀI (server validate) → sinh lại hết.
       elements: src.elements.map((el) => ({ ...clone(el), id: uid("el") })),
     };
@@ -454,6 +500,7 @@ export function useLessonEditor(lessonId) {
     beginTransient, endTransient,
     setMeta,
     addPage, duplicatePage, removePage, renamePage, movePage,
+    patchPage, applyPageTemplate,
     addElement, patchElement, patchElementProps, removeElement, duplicateElement, moveElementLayer,
     publish, unpublish,
   };

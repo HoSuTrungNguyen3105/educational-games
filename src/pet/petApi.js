@@ -26,13 +26,15 @@ import { resolveOutfit, sanitizeFor, writeLocalOutfit } from "../lib/dressUpAvat
 
 const KEY = "edu_pet_v2";
 const OUTFIT_SLOTS = ["hat", "scarf", "glasses", "shirt", "bow", "cape", "backpack"];
+/** Tên mặc định cũ (trước 2026-11) — coi như "chưa đặt tên" để nâng lên tên mới. */
+const LEGACY_DEFAULT_NAME = "Bồng";
 
 const emptyOutfits = () => Object.fromEntries(OUTFIT_SLOTS.map((s) => [s, null]));
 
 /** Giống hệt server/src/services/petService.js buildDefault() */
 export const PET_DEFAULT = {
   species: "dog",
-  name: "Bồng",
+  name: "Cún của tôi",
   color: "cream",
   outfits: emptyOutfits(),
   level: 1,
@@ -148,9 +150,13 @@ function normalize(p, prev) {
   const hasLook = Object.prototype.hasOwnProperty.call(raw, "look");
   const lookRemote =
     hasRemote ? raw.lookRemote : hasLook ? raw.look : (prev?.lookRemote ?? null) || null;
+  // Tên mặc định cũ "Bồng" (bản cache trên máy) được nâng lên tên mặc định mới
+  // để bé đã có thú cưng từ trước cũng thấy tên mới, không phải đổi tay.
+  const name = raw.name == null || raw.name === LEGACY_DEFAULT_NAME ? PET_DEFAULT.name : raw.name;
   return {
     ...PET_DEFAULT,
     ...raw,
+    name,
     outfits: { ...emptyOutfits(), ...(raw.outfits || {}) },
     level: Number(raw.level) || 1,
     exp: Number(raw.exp) || 0,

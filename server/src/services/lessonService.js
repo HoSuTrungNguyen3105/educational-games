@@ -37,8 +37,11 @@ export const MAX_ELEMENTS_PER_PAGE = 100;    // tối đa 100 phần tử / tran
 export const MAX_PAGES_JSON_BYTES = 2 * 1024 * 1024;
 export const MAX_OPTIONS_PER_QUESTION = 10;
 
-export const ELEMENT_TYPES = ["title", "text", "note", "image", "question", "game"];
+export const ELEMENT_TYPES = ["title", "text", "note", "image", "question", "game", "decor"];
 export const QUESTION_TYPES = ["single", "fill"];
+// Nền trang có sẵn — chỉ lưu ID preset (frontend vẽ), server kiểm tra allowlist
+// để dữ liệu bài học luôn đọc được ở mọi bản client.
+export const PAGE_BACKGROUNDS = ["white", "chalkboard", "paper", "grid", "sky", "night"];
 const TEXT_ALIGNS = ["left", "center", "right"];
 const GRADES = [1, 2, 3, 4, 5];
 
@@ -106,6 +109,13 @@ function normalizeProps(type, rawProps, elLabel) {
       imageUrl: normText(props.imageUrl, 2048),
       ...(props.alt !== undefined ? { alt: normText(props.alt, 300) } : {}),
     };
+  }
+
+  if (type === "decor") {
+    // Trang trí = một emoji lớn (xe buýt, thước, máy bay giấy, ngôi sao…).
+    // Element box quyết định cỡ khi vẽ, nên dữ liệu chỉ cần emoji.
+    const emoji = normText(props.emoji, 16).trim();
+    return { emoji: emoji || "⭐" };
   }
 
   if (type === "question") {
@@ -206,7 +216,10 @@ function normalizePages(rawPages) {
       }
       elementIds.add(el.id);
     }
-    return { id, title: normText(rawPage.title, 200), elements };
+    const background = PAGE_BACKGROUNDS.includes(rawPage.background)
+      ? rawPage.background
+      : "white";
+    return { id, title: normText(rawPage.title, 200), background, elements };
   });
   const bytes = Buffer.byteLength(JSON.stringify(pages), "utf8");
   if (bytes > MAX_PAGES_JSON_BYTES) {

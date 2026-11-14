@@ -971,7 +971,7 @@
   ============================================================ */
   const PET_DEFAULT = {
     species: "dog",
-    name: "Bồng",
+    name: "Cún của tôi",
     color: "cream",
     level: 1,
     exp: 0,

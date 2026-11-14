@@ -1057,6 +1057,14 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 ? "Đô đang mời trò chơi ra đây rồi…"
                 : <>Hôm nay có <b className="gq-hero__count">{gameCount}</b> trò chơi đang chờ {userAuth?.user ? "bé đó" : "bạn"}!</>}
             </p>
+            {/* Tên thú cưng hiện thêm ở đây (ngoài chip cạnh logo) để bé thấy
+                bạn đồng hành ngay trong lời chào — tên đổi theo hồ sơ thú cưng. */}
+            {userAuth?.user && (
+              <p className="gq-hero__pet">
+                <span aria-hidden="true">🐾</span>{" "}
+                <b>{pet.name}</b> đang chờ bé cùng học đó!
+              </p>
+            )}
             {/* Chưa đăng nhập thì không chào ai cả — tên bé trong kidSettings là của
                 máy này, có thể là của tài khoản khác dùng chung thiết bị. */}
             {!userAuth?.user && (

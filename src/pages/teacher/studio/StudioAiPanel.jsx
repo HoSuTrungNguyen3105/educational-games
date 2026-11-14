@@ -36,7 +36,7 @@ function toLessonProps(q) {
 export default function StudioAiPanel({ ed, showToast }) {
   const ai = useAiAvailability();
   const [subject, setSubject] = useState(() => ed.doc.subject || "");
-  const [topic, setTopic] = useState("");
+  const [topic, setTopic] = useState(() => ed.doc.title || "");
   const [grade, setGrade] = useState(() => ed.doc.grade ?? 3);
   const [difficulty, setDifficulty] = useState("medium");
   const [count, setCount] = useState(5);
@@ -57,13 +57,19 @@ export default function StudioAiPanel({ ed, showToast }) {
     setError("");
     setBusy(true);
     setResult(null);
+    // Bấm là chạy: thiếu môn/chủ đề thì lấy từ bài học, cuối cùng mới dùng
+    // nhãn trung tính — không chặn người dùng bằng lỗi "Thiếu chủ đề".
+    const subj = (subject || ed.doc.subject || "").trim() || "Kiến thức chung";
+    const top = (topic || ed.doc.title || "").trim() || "Bài học tổng hợp";
+    if (subj !== subject) setSubject(subj);
+    if (top !== topic) setTopic(top);
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     try {
       const res = await generateQuestions({
-        subject: subject || ed.doc.subject,
-        grade,
-        topic,
+        subject: subj,
+        grade: grade || ed.doc.grade || 3,
+        topic: top,
         difficulty,
         count,
         signal: ctrl.signal,

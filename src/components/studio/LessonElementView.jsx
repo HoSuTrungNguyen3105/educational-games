@@ -134,6 +134,26 @@ export default function LessonElementView({ el, game = null, showAnswer = false 
     );
   }
 
+  if (el.type === "decor") {
+    // Phần tử trang trí: emoji lớn vừa khung (xe buýt, thước, máy bay giấy,
+    // ngôi sao, trái tim, mặt cười, bút chì…). Chỉ là hình ảnh, không chấm điểm.
+    const glyph = (p.emoji || "⭐").trim() || "⭐";
+    return (
+      <div
+        className="w-full h-full flex items-center justify-center select-none"
+        style={{
+          fontSize: Math.max(12, Math.min(el.w, el.h) * 0.86),
+          lineHeight: 1,
+          filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.16))",
+          overflow: "hidden",
+        }}
+        aria-hidden="true"
+      >
+        {glyph}
+      </div>
+    );
+  }
+
   if (el.type === "game") {
     if (!p.gameId) {
       return (

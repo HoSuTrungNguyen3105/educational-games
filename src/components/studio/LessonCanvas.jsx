@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import LessonElementView from "./LessonElementView.jsx";
+import { pageBackgroundOverlayStyle, pageBackgroundStyle } from "./pageBackgrounds.jsx";
 import { CANVAS_W, CANVAS_H, clampGeo } from "../../hooks/useLessonEditor.js";
 
 // LessonCanvas — stage vẽ MỘT trang bài học theo hệ toạ độ logic
@@ -48,6 +49,7 @@ export default function LessonCanvas({
   const scale = width > 0 ? width / CANVAS_W : 0;
   const editable = mode === "edit";
   const elements = sortedElements(page);
+  const bgOverlay = pageBackgroundOverlayStyle(page?.background);
 
   // Kéo di chuyển / đổi kích thước: nghe trên window để không mất dấu
   // khi con trỏ ra khỏi phần tử; toạ độ quy về hệ logic qua `scale`.
@@ -104,11 +106,12 @@ export default function LessonCanvas({
             width: CANVAS_W, height: CANVAS_H,
             transform: scale > 0 ? `scale(${scale})` : undefined,
             transformOrigin: "top left",
-            background: "#FFFFFF",
+            ...pageBackgroundStyle(page?.background),
             overflow: "hidden",
             pointerEvents: mode === "static" ? "none" : "auto",
           }}
         >
+          {bgOverlay ? <div aria-hidden="true" style={bgOverlay} /> : null}
           {elements.map((el) => {
             const selected = editable && selectedId === el.id;
             return (

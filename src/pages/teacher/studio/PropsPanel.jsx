@@ -5,6 +5,8 @@ import {
 import { uid } from "../../../services/api.js";
 import { clampGeo } from "../../../hooks/useLessonEditor.js";
 import { thumbnailForGame } from "../../../lib/gameThumbnail.js";
+import { PAGE_BACKGROUNDS } from "../../../components/studio/pageBackgrounds.jsx";
+import { DECOR_EMOJIS } from "./pageTemplates.js";
 
 // PropsPanel — panel thuộc tính bên phải (§5.5 đặc tả).
 //   • Chưa chọn phần tử → thông tin bài học (tiêu đề/môn/lớp/mô tả/mục tiêu).
@@ -14,7 +16,7 @@ import { thumbnailForGame } from "../../../lib/gameThumbnail.js";
 
 const TYPE_LABELS = {
   title: "Tiêu đề", text: "Đoạn văn", note: "Ghi chú",
-  image: "Hình ảnh", question: "Câu hỏi", game: "Trò chơi",
+  image: "Hình ảnh", question: "Câu hỏi", game: "Trò chơi", decor: "Trang trí",
 };
 
 /** Ô nhập số: hiện text cục bộ, sửa transient, chốt khi blur/Enter.
@@ -239,6 +241,30 @@ function QuestionFields({ ed, el }) {
   );
 }
 
+function DecorFields({ ed, el }) {
+  const p = el.props;
+  const setEmoji = (emoji) => ed.patchElementProps(el.id, { emoji });
+  return (
+    <div>
+      <span className="studio-field-label">Hình trang trí (emoji)</span>
+      <input className="studio-field" value={p.emoji || ""} maxLength={16}
+        onChange={(e) => ed.patchElementProps(el.id, { emoji: e.target.value }, true)}
+        onBlur={() => ed.endTransient()} placeholder="VD: 🚌" />
+      <div className="mt-2 grid grid-cols-6 gap-1">
+        {DECOR_EMOJIS.slice(0, 18).map((d) => (
+          <button key={d.emoji} type="button" title={d.label} onClick={() => setEmoji(d.emoji)}
+            className="aspect-square grid place-items-center rounded-lg border border-[#E7D9BE] bg-white text-[19px] hover:bg-[#FFF6E7] transition">
+            {d.emoji}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-[12px] leading-relaxed text-[#8A7C63]">
+        Cỡ hình = chiều nhỏ của khung. Kéo góc để phóng to/thu nhỏ.
+      </p>
+    </div>
+  );
+}
+
 function GameFields({ ed, el, games, gameById }) {
   const p = el.props;
   const game = p.gameId ? gameById[p.gameId] : null;
@@ -280,8 +306,25 @@ function GameFields({ ed, el, games, gameById }) {
 function LessonMetaFields({ ed, subjects, onPickCover }) {
   const doc = ed.doc;
   const totalElements = ed.pages.reduce((n, p) => n + p.elements.length, 0);
+  const currentBg = ed.currentPage?.background || "white";
   return (
     <div>
+      {/* Nền của TRANG đang chọn — cùng dữ liệu với tab "Nền" bên trái. */}
+      <span className="studio-field-label">Nền trang hiện tại</span>
+      <div className="grid grid-cols-3 gap-1.5">
+        {PAGE_BACKGROUNDS.map((b) => {
+          const active = currentBg === b.id;
+          return (
+            <button key={b.id} type="button" title={b.hint}
+              onClick={() => ed.patchPage({ background: b.id })}
+              className="rounded-lg border p-1 transition"
+              style={{ borderColor: active ? "#2F6FED" : "#E7D9BE", background: active ? "#F4F8FF" : "#fff" }}>
+              <span className="block h-7 rounded border border-black/10" style={b.preview} />
+              <span className="mt-0.5 block text-[10.5px] font-semibold text-ink truncate">{b.label}</span>
+            </button>
+          );
+        })}
+      </div>
       <span className="studio-field-label">Tiêu đề bài học</span>
       <input className="studio-field" value={doc.title}
         onChange={(e) => ed.setMeta({ title: e.target.value }, true)}
@@ -372,6 +415,7 @@ export default function PropsPanel({ ed, games, gameById, subjects, onPickImage,
               {el.type === "image" && <ImageFields ed={ed} el={el} onPickImage={onPickImage} />}
               {el.type === "question" && <QuestionFields ed={ed} el={el} />}
               {el.type === "game" && <GameFields ed={ed} el={el} games={games} gameById={gameById} />}
+              {el.type === "decor" && <DecorFields ed={ed} el={el} />}
             </div>
             <div className="mt-2 border-t border-[#E7D9BE]/80 pt-1">
               <GeometryFields ed={ed} el={el} />

@@ -49,7 +49,7 @@ const PET_FOODS = {
 };
 function defaultPetState() {
   return {
-    species: "dog", name: "Bồng", color: "cream",
+    species: "dog", name: "Cún của tôi", color: "cream",
     level: 1, exp: 0, expNeeded: 200,
     mood: "happy", bonded: 10,
     hunger: 80, happy: 80, clean: 80, energy: 80,

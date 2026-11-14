@@ -39,14 +39,18 @@ export function expNeededFor(level) {
 }
 
 /** Pet mặc định: chó, màu kem, chưa mặc gì. */
-export function buildDefault(userId, name = "Bồng") {
+export const DEFAULT_PET_NAME = "Cún của tôi";
+/** Tên mặc định thời kỳ đầu — chỉ để nâng cấp pet cũ sang tên mới. */
+const LEGACY_DEFAULT_NAMES = new Set(["Bồng"]);
+
+export function buildDefault(userId, name = DEFAULT_PET_NAME) {
   const sp = catalog.getSpecies("dog") || { id: "dog" };
   const col = catalog.defaultColorFor("dog") || { id: "cream" };
   return {
     _id: uid(),
     userId,
     species: sp.id,
-    name: String(name || "Bồng").slice(0, 24),
+    name: String(name || DEFAULT_PET_NAME).slice(0, 24),
     color: col.id,
     outfits: emptyOutfits(),
     level: 1,
@@ -66,7 +70,17 @@ export async function getOrCreate(userId, name) {
   await catalog.ensureLoaded();
   const col = getCollection(COLLECTION);
   let doc = await col.findOne({ userId });
-  if (doc) return doc;
+  if (doc) {
+    // Pet tạo trước đây vẫn mang tên mặc định cũ "Bồng" → đổi sang tên mới.
+    if (LEGACY_DEFAULT_NAMES.has(doc.name)) {
+      await col.updateOne(
+        { _id: doc._id },
+        { $set: { name: DEFAULT_PET_NAME, updatedAt: nowIso() } },
+      );
+      doc = { ...doc, name: DEFAULT_PET_NAME };
+    }
+    return doc;
+  }
 
   const fresh = buildDefault(userId, name);
   try {

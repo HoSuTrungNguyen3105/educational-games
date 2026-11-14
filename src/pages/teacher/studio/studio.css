@@ -70,6 +70,7 @@
   font-weight: 600;
   color: #8A7C63;
   width: 100%;
+  flex: none;
 }
 .studio-rail-btn:hover { background: rgba(29, 46, 74, 0.06); color: #1D2E4A; }
 .studio-rail-btn.is-active { background: #1D2E4A; color: #fff; }

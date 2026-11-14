@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react";
 import {
   CircleHelp, Gamepad2, Heading1, Image as ImageIcon, LayoutList,
-  PenLine, Plus, Scale, Search, Sparkles, StickyNote, Type,
+  PaintBucket, PenLine, Plus, Scale, Search, Sparkles, Sticker, StickyNote, Type,
 } from "lucide-react";
 import { uid } from "../../../services/api.js";
 import { thumbnailForGame } from "../../../lib/gameThumbnail.js";
 import { matchesQuery } from "../../../lib/searchText.js";
 import { ImageLibraryGrid } from "./ImagePicker.jsx";
 import StudioAiPanel from "./StudioAiPanel.jsx";
+import { PAGE_BACKGROUNDS } from "../../../components/studio/pageBackgrounds.jsx";
+import { DECOR_EMOJIS, PAGE_TEMPLATES } from "./pageTemplates.js";
 
 // EditorLibrary — thanh công cụ dọc + thư viện theo tab bên trái editor
 // (§5.2/§5.3 đặc tả). CHỈ có các tab có chức năng thật: Trang, Nội dung,
@@ -18,6 +20,8 @@ import StudioAiPanel from "./StudioAiPanel.jsx";
 
 const TABS = [
   { id: "pages", label: "Trang", icon: LayoutList },
+  { id: "background", label: "Nền", icon: PaintBucket },
+  { id: "decor", label: "Trang trí", icon: Sticker },
   { id: "content", label: "Nội dung", icon: Type },
   { id: "question", label: "Câu hỏi", icon: CircleHelp },
   { id: "games", label: "Trò chơi", icon: Gamepad2 },
@@ -43,10 +47,21 @@ export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onA
     [games, gameQuery]
   );
 
+  const currentBg = ed.currentPage?.background || "white";
+
+  const applyTemplate = (tpl) => {
+    const hasContent = (ed.currentPage?.elements || []).length > 0;
+    if (hasContent && !window.confirm(
+      `Áp mẫu "${tpl.name}" sẽ thay toàn bộ nội dung trang hiện tại. Tiếp tục?`
+    )) return;
+    ed.applyPageTemplate(tpl.build());
+    showToast?.(`Đã áp mẫu "${tpl.name}" — bấm Lưu để giữ lại`, "success");
+  };
+
   return (
     <div className="studio-library flex shrink-0 border-r border-[#E7D9BE] bg-[#FFFBF2] min-h-0">
       {/* Rail dọc (§5.2) */}
-      <div className="studio-library-rail w-[62px] shrink-0 flex flex-col items-stretch gap-1 p-1.5 border-r border-[#E7D9BE]/70">
+      <div className="studio-library-rail w-[62px] shrink-0 flex flex-col items-stretch gap-1 p-1.5 border-r border-[#E7D9BE]/70 overflow-y-auto">
         {TABS.map((t) => {
           const Icon = t.icon;
           return (
@@ -84,6 +99,73 @@ export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onA
             </div>
             <p className="mt-3 text-[12px] leading-relaxed text-[#8A7C63]">
               Thêm/nhân bản/xoá/đổi tên/sắp xếp trang ở dải trang phía dưới editor.
+            </p>
+          </div>
+        )}
+
+        {tab === "background" && (
+          <div>
+            <span className="studio-field-label">Nền của trang đang chọn</span>
+            <div className="grid grid-cols-2 gap-2">
+              {PAGE_BACKGROUNDS.map((b) => {
+                const active = currentBg === b.id;
+                return (
+                  <button key={b.id} type="button" onClick={() => ed.patchPage({ background: b.id })}
+                    className="text-left rounded-[10px] border p-1.5 transition"
+                    style={{
+                      borderColor: active ? "#2F6FED" : "#E7D9BE",
+                      background: active ? "#F4F8FF" : "#fff",
+                      boxShadow: active ? "0 0 0 2px rgba(47,111,237,0.15)" : "none",
+                    }}>
+                    <span className="block h-12 rounded-md border border-black/10"
+                      style={b.preview} />
+                    <span className="mt-1 block text-[12px] font-semibold text-ink">{b.label}</span>
+                    <span className="block text-[10.5px] text-[#8A7C63] leading-tight">{b.hint}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11.5px] leading-relaxed text-[#8A7C63]">
+              Nền áp riêng cho trang đang chọn. Nền được lưu cùng bài học nên học sinh
+              mở bài sẽ thấy đúng như bản soạn.
+            </p>
+
+            <span className="studio-field-label" style={{ marginTop: 12 }}>Mẫu trang dựng sẵn</span>
+            <div className="space-y-1.5">
+              {PAGE_TEMPLATES.map((tpl) => (
+                <button key={tpl.id} type="button" onClick={() => applyTemplate(tpl)}
+                  className="w-full flex items-center gap-2.5 p-2 rounded-[10px] border border-[#E7D9BE] bg-white text-left hover:bg-[#FFF6E7] transition">
+                  <span className="w-11 h-11 shrink-0 rounded-lg border border-black/10"
+                    style={PAGE_BACKGROUNDS.find((b) => b.id === tpl.background)?.preview} />
+                  <span className="min-w-0">
+                    <span className="block text-[12.5px] font-semibold text-ink truncate">{tpl.name}</span>
+                    <span className="block text-[11px] text-[#8A7C63] truncate">{tpl.desc}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11.5px] leading-relaxed text-[#8A7C63]">
+              Mẫu thay nội dung trang hiện tại bằng bố cục dựng sẵn — vẫn sửa/kéo từng
+              phần tử được, và hoàn tác bằng nút Undo.
+            </p>
+          </div>
+        )}
+
+        {tab === "decor" && (
+          <div>
+            <span className="studio-field-label">Bấm để thêm hình trang trí</span>
+            <div className="grid grid-cols-4 gap-1.5">
+              {DECOR_EMOJIS.map((d) => (
+                <button key={d.emoji} type="button" title={d.label}
+                  onClick={() => ed.addElement("decor", { emoji: d.emoji })}
+                  className="aspect-square grid place-items-center rounded-[10px] border border-[#E7D9BE] bg-white text-[24px] hover:bg-[#FFF6E7] hover:border-[#D9C79E] transition">
+                  {d.emoji}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11.5px] leading-relaxed text-[#8A7C63]">
+              Hình trang trí đứng riêng trên trang: kéo để đổi chỗ, kéo góc để phóng to.
+              Đổi emoji khác ở panel thuộc tính bên phải.
             </p>
           </div>
         )}
