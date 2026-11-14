@@ -14,6 +14,23 @@ import { CANVAS_W, CANVAS_H, clampGeo } from "../../hooks/useLessonEditor.js";
 // `renderElement(el)` cho phép nơi dùng thay cách vẽ một phần tử (player
 // dùng để biến question thành tương tác); mặc định LessonElementView.
 
+/** Style nền của trang từ page.background ({ type: "color"|"image", value });
+ *  không có nền → trắng mặc định như trước. Dùng cho CẢ 3 chế độ vì mọi
+ *  nơi đều vẽ qua LessonCanvas (editor, player, thumbnail dải trang). */
+export function pageBackgroundStyle(page) {
+  const bg = page?.background;
+  if (bg?.type === "color" && bg.value) return { background: bg.value };
+  if (bg?.type === "image" && bg.value) {
+    return {
+      background: "#FFFFFF",
+      backgroundImage: `url("${String(bg.value).replace(/"/g, "%22")}")`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    };
+  }
+  return { background: "#FFFFFF" };
+}
+
 function sortedElements(page) {
   return (page?.elements || [])
     .map((el, i) => ({ el, z: el.z ?? i }))
@@ -104,7 +121,7 @@ export default function LessonCanvas({
             width: CANVAS_W, height: CANVAS_H,
             transform: scale > 0 ? `scale(${scale})` : undefined,
             transformOrigin: "top left",
-            background: "#FFFFFF",
+            ...pageBackgroundStyle(page),
             overflow: "hidden",
             pointerEvents: mode === "static" ? "none" : "auto",
           }}

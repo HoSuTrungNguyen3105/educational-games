@@ -179,6 +179,22 @@ function normalizeElement(raw, pageLabel) {
   return el;
 }
 
+/**
+ * Nền của MỘT trang: { type: "color", value: "#RRGGBB" } hoặc
+ * { type: "image", value: "<url ảnh>" }. Trường trang trí tuỳ chọn —
+ * dữ liệu nền SAI dạng bị BỎ QUA (trang về nền trắng mặc định) thay vì
+ * chặn cả lần lưu, để một giá trị nền lỗi không bao giờ làm hỏng
+ * autosave của toàn bài. Không gửi nền → trang không có khoá background.
+ */
+function normalizeBackground(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const type = String(raw.type || "");
+  const value = normText(raw.value, 2048);
+  if (type === "color" && /^#[0-9a-fA-F]{6}$/.test(value)) return { type, value };
+  if (type === "image" && value) return { type, value };
+  return undefined;
+}
+
 function normalizePages(rawPages) {
   if (rawPages === undefined || rawPages === null) return [];
   if (!Array.isArray(rawPages)) throw fail(400, "pages phải là một mảng");
@@ -206,7 +222,8 @@ function normalizePages(rawPages) {
       }
       elementIds.add(el.id);
     }
-    return { id, title: normText(rawPage.title, 200), elements };
+    const background = normalizeBackground(rawPage.background);
+    return { id, title: normText(rawPage.title, 200), ...(background ? { background } : {}), elements };
   });
   const bytes = Buffer.byteLength(JSON.stringify(pages), "utf8");
   if (bytes > MAX_PAGES_JSON_BYTES) {

@@ -34,7 +34,10 @@ function AddTile({ icon: Icon, title, desc, onClick }) {
   );
 }
 
-export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onAddImage, onPickImageUrl, showToast }) {
+// Màu nền mẫu cho trang bài học (màu dịu, chữ đậm vẫn đọc rõ).
+const PAGE_BG_PRESETS = ["#FFFFFF", "#FFF7E0", "#FDECEC", "#E8F5E9", "#E3F2FD", "#F3E8FF", "#FFF3E0", "#E0F2F1"];
+
+export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onAddImage, onPickImageUrl, onPickBackground, showToast }) {
   const [tab, setTab] = useState("content");
   const [gameQuery, setGameQuery] = useState("");
 
@@ -85,6 +88,48 @@ export default function EditorLibrary({ ed, games, gamesLoading, gamesError, onA
             <p className="mt-3 text-[12px] leading-relaxed text-[#8A7C63]">
               Thêm/nhân bản/xoá/đổi tên/sắp xếp trang ở dải trang phía dưới editor.
             </p>
+
+            {/* Nền của TRANG đang chọn — trang mới thêm ra sẽ kế thừa nền này. */}
+            {ed.currentPage && (
+              <div className="mt-4 border-t border-[#E7D9BE]/80 pt-3">
+                <span className="studio-field-label">Nền trang đang chọn</span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {PAGE_BG_PRESETS.map((c) => (
+                    <button key={c} type="button" title={`Nền ${c}`}
+                      onClick={() => ed.setPageBackground(ed.currentPage.id, { type: "color", value: c })}
+                      className="w-7 h-7 rounded-lg border transition"
+                      style={{
+                        background: c,
+                        borderColor: ed.currentPage.background?.type === "color" && ed.currentPage.background?.value === c ? "#2F6FED" : "#E7D9BE",
+                        boxShadow: ed.currentPage.background?.type === "color" && ed.currentPage.background?.value === c ? "0 0 0 2px #Bcd2fb" : undefined,
+                      }} />
+                  ))}
+                  <input type="color" title="Màu tuỳ chọn"
+                    value={ed.currentPage.background?.type === "color" ? ed.currentPage.background.value : "#FFFFFF"}
+                    onChange={(e) => ed.setPageBackground(ed.currentPage.id, { type: "color", value: e.target.value })}
+                    className="w-9 h-9 shrink-0 rounded-lg border border-[#E7D9BE] cursor-pointer bg-white" />
+                </div>
+                {onPickBackground && (
+                  <button type="button" onClick={onPickBackground}
+                    className="mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-[10px] border border-[#E7D9BE] bg-white text-[12.5px] font-semibold text-ink hover:bg-[#F4F8FF]">
+                    <ImageIcon className="w-4 h-4" /> Chọn ảnh làm nền
+                  </button>
+                )}
+                {ed.currentPage.background?.type === "image" && ed.currentPage.background?.value && (
+                  <img src={ed.currentPage.background.value} alt="" className="mt-2 w-full h-16 object-cover rounded-[10px] border border-[#E7D9BE]" />
+                )}
+                {ed.currentPage.background ? (
+                  <button type="button"
+                    onClick={() => ed.setPageBackground(ed.currentPage.id, null)}
+                    className="mt-2 text-[12.5px] font-semibold text-[#D64545]">
+                    Xoá nền (về trắng mặc định)
+                  </button>
+                ) : null}
+                <p className="mt-2 text-[12px] leading-relaxed text-[#8A7C63]">
+                  Nền áp cho trang đang chọn. Bấm “Thêm trang”, trang mới sẽ dùng ngay nền này.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
