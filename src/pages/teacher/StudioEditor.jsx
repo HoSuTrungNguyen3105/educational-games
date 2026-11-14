@@ -281,6 +281,7 @@ export default function StudioEditor({ lessonId, showToast }) {
           games={games} gamesLoading={gamesLoading} gamesError={gamesError}
           onAddImage={addImageWithPicker}
           onPickImageUrl={(url) => ed.addElement("image", { imageUrl: url })}
+          onPickBackground={() => setPicker({ open: true, targetId: "__background__" })}
           showToast={showToast}
         />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -365,6 +366,7 @@ export default function StudioEditor({ lessonId, showToast }) {
                   games={games} gamesLoading={gamesLoading} gamesError={gamesError}
                   onAddImage={addImageWithPicker}
                   onPickImageUrl={(url) => ed.addElement("image", { imageUrl: url })}
+                  onPickBackground={() => setPicker({ open: true, targetId: "__background__" })}
                   showToast={showToast}
                 />
               )}
@@ -386,9 +388,13 @@ export default function StudioEditor({ lessonId, showToast }) {
         open={picker.open}
         onClose={() => setPicker({ open: false, targetId: null })}
         onPick={(url) => {
-          // targetId "__cover__" = ảnh bìa của bài (meta) — cùng một modal
-          // thư viện ảnh dùng chung cho cả phần tử image lẫn ảnh bìa.
+          // targetId "__cover__" = ảnh bìa của bài (meta); "__background__"
+          // = ảnh nền của trang đang chọn — cùng một modal thư viện ảnh
+          // dùng chung cho phần tử image, ảnh bìa lẫn nền trang.
           if (picker.targetId === "__cover__") ed.setMeta({ coverImage: url });
+          else if (picker.targetId === "__background__") {
+            if (ed.currentPage) ed.setPageBackground(ed.currentPage.id, { type: "image", value: url });
+          }
           else if (picker.targetId) ed.patchElementProps(picker.targetId, { imageUrl: url });
         }}
       />

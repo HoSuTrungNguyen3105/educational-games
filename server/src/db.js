@@ -689,6 +689,27 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // imageOwners — sổ ánh xạ CHỦ SỞ HỮU của ảnh trên Cloudinary
+    // (imageOwnerService): file ảnh thật nằm trên Cloudinary, collection
+    // này chỉ ghi publicId → user đã upload (hoặc đã nhận qua nút Đồng bộ).
+    // Ảnh KHÔNG có bản ghi ở đây = "chưa có chủ" — toàn bộ dữ liệu cũ từ
+    // trước khi có cơ chế này; theo quy tắc Nguyên chốt 2026-11-14, ảnh vô
+    // chủ CHỈ admin được thấy và TUYỆT ĐỐI không xoá ảnh vì thiếu bản ghi.
+    imageOwners: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "publicId", "ownerId", "source", "createdAt", "updatedAt"],
+        properties: {
+          id: { bsonType: "string" },
+          publicId: { bsonType: "string" },
+          ownerId: { bsonType: "string" },
+          ownerUsername: { bsonType: ["string", "null"] },
+          source: { enum: ["upload", "sync"] },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
   };
 
   for (const name of Object.keys(collectionDefs)) {
@@ -872,6 +893,11 @@ async function _runHeavyInit(database) {
     // ai_usage_daily — một document cho mỗi (model, ngày UTC); upsert
     // $inc của aiUsageService dựa vào index unique này để không nhân đôi.
     ["ai_usage_daily", { model: 1, day: 1 }, { unique: true }],
+
+    // imageOwners — một ảnh (publicId) chỉ có tối đa một chủ; tra cứu
+    // danh sách ảnh lọc hàng loạt theo publicId và theo chủ.
+    ["imageOwners", { publicId: 1 }, { unique: true }],
+    ["imageOwners", { ownerId: 1 }],
   ];
 
   const createdIndexes = [];

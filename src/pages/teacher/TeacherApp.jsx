@@ -108,7 +108,7 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-pet-catalog" && <PetCatalogManagement showToast={showToast} />}
         {page === "admin-plant-types" && <PlantTypeManagement showToast={showToast} />}
         {page === "admin-body-custom" && <BodyCustomImport showToast={showToast} />}
-        {page === "admin-images" && <ImageLibrary showToast={showToast} />}
+        {page === "admin-images" && <ImageLibrary user={user} showToast={showToast} />}
         {page === "admin-upload-items" && <UploadItems showToast={showToast} />}
         {page === "admin-reminders" && <ReminderManagement showToast={showToast} />}
         {page === "admin-ai-analysis" && <AiStudentAnalysisPage />}
