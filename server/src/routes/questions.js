@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as questionService from "../services/questionService.js";
 import { authenticate, optionalAuth, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError, buildPagination } from "../utils/response.js";
+import { parseBulkQuestionItems, runBulkDeleteQuestions, bulkResultPayload } from "../utils/bulkDelete.js";
 
 const router = Router();
 
@@ -101,6 +102,20 @@ router.delete("/game/:gameId/:questionId", authenticate, requireRoles("teacher",
     const deleted = await questionService.removeOne(req.params.gameId, req.params.questionId);
     if (!deleted) return sendError(res, "Không tìm thấy câu hỏi", 404);
     sendSuccess(res, { ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Xóa HÀNG LOẠT câu hỏi — xóa một câu cần cả gameId nên body là
+// { items: [{ gameId, questionId }] } (tối đa BULK_DELETE_MAX_IDS item).
+// Từng item độc lập: không tìm thấy → `failed`, không hỏng cả batch.
+router.delete("/bulk", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const parsed = parseBulkQuestionItems(req.body);
+    if (parsed.error) return sendError(res, parsed.error, 400);
+    const result = await runBulkDeleteQuestions(parsed.items, (gameId, questionId) => questionService.removeOne(gameId, questionId));
+    sendSuccess(res, bulkResultPayload(result), "Đã xử lý xóa hàng loạt");
   } catch (e) {
     next(e);
   }

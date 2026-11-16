@@ -5,6 +5,7 @@ import * as classService from "../services/classService.js";
 import { verifyToken } from "../services/authService.js";
 import { getCollection } from "../db.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
+import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 
 const r = Router();
 
@@ -301,6 +302,18 @@ r.put("/:id", auth, requireTeacher, async (req, res) => {
     const updated = await assignmentService.updateAssignment(req.params.id, updateData);
     sendSuccess(res, updated);
   } catch (e) { sendError(res, e.message, 400); }
+});
+
+// Xóa HÀNG LOẠT bài tập — PHẢI khai báo TRƯỚC "/:id" để "bulk" không bị
+// nuốt thành một id. Body: { ids: string[] } (tối đa BULK_DELETE_MAX_IDS),
+// từng id độc lập (xóa bài kèm submissions như đường xóa đơn lẻ).
+r.delete("/bulk", auth, requireTeacher, async (req, res) => {
+  try {
+    const parsed = parseBulkIds(req.body);
+    if (parsed.error) return sendError(res, parsed.error, 400);
+    const result = await runBulkDelete(parsed.ids, (id) => assignmentService.deleteAssignment(id));
+    sendSuccess(res, bulkResultPayload(result), "Đã xử lý xóa hàng loạt");
+  } catch (e) { sendError(res, e.message, 500); }
 });
 
 // Delete assignment (teacher)

@@ -44,6 +44,7 @@ export { ManagementTable } from "./data/ManagementTable.jsx";
 export { GridCard } from "./data/GridCard.jsx";
 export { GridPager } from "./data/GridPager.jsx";
 export { GridToolbar } from "./data/GridToolbar.jsx";
+export { BulkDeleteBar } from "./data/BulkDeleteBar.jsx";
 export { useViewMode, ViewToggle, cardGridClass, tableWrapClass } from "./data/ViewToggle.jsx";
 
 // ── layout ──

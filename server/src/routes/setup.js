@@ -3,6 +3,7 @@ import * as setupService from "../services/setupService.js";
 import * as gameService from "../services/gameService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
@@ -74,6 +75,26 @@ router.put("/templates/:id", authenticate, requireRoles("teacher", "admin"), asy
     sendSuccess(res, tpl);
   } catch (e) {
     audit({ req, action: AUDIT.TEMPLATE_UPDATE, target: req.params.id, result: "fail", message: e.message }).catch(() => {});
+    next(e);
+  }
+});
+
+// Xóa HÀNG LOẠT template theo danh sách id — PHẢI khai báo TRƯỚC
+// "/templates/:id" để "bulk" không bị nuốt thành một id. Body: { ids }.
+// Template đang được game dùng KHÔNG xóa cứng: removeTemplate trả
+// { deactivated } → tách riêng trong kết quả. Audit MỘT bản ghi/batch.
+router.delete("/templates/bulk", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const parsed = parseBulkIds(req.body);
+    if (parsed.error) return sendError(res, parsed.error, 400);
+    const result = await runBulkDelete(parsed.ids, (id) => setupService.removeTemplate(id));
+    audit({
+      req, action: AUDIT.TEMPLATE_BULK_DELETE, target: "templates/bulk",
+      message: `Xóa hàng loạt template: ${result.deleted.length} đã xóa, ${result.deactivated.length} chuyển inactive, ${result.failed.length} thất bại`,
+      meta: { deletedIds: result.deleted, deletedCount: result.deleted.length, deactivatedCount: result.deactivated.length, failedCount: result.failed.length },
+    }).catch(() => {});
+    sendSuccess(res, bulkResultPayload(result), "Đã xử lý xóa hàng loạt");
+  } catch (e) {
     next(e);
   }
 });

@@ -28,6 +28,11 @@ export const taskService = {
   async adminDeleteTask(taskId) {
     return apiFetch(`/tasks/admin/tasks/${encodeURIComponent(taskId)}`, { method: "DELETE" });
   },
+
+  // Xóa hàng loạt nhiệm vụ (admin, tối đa 200/lần) → { deleted, failed, counts }
+  async bulkRemoveAdmin(ids) {
+    return apiFetch("/tasks/admin/tasks/bulk", { method: "DELETE", body: { ids } });
+  },
 };
 
 /**

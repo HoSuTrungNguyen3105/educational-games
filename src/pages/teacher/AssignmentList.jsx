@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { assignmentService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Clock, Users, CircleX, Eye, Link2, ClipboardList } from 'lucide-react';
-import { ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconCheckCircle, Loader, ManagementHeader, PrimaryButton, useViewMode } from '../../components/ui';
+import { Clock, Users, CircleX, Eye, Link2, ClipboardList, Trash2 } from 'lucide-react';
+import { BulkDeleteBar, Checkbox, ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconCheckCircle, Loader, ManagementHeader, PrimaryButton, useViewMode } from '../../components/ui';
+import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
 import { usePagedList } from '../../hooks/usePagedList.js';
 import { matchesQuery } from '../../lib/searchText.js';
 import { templateLabel } from '../../components/exam/templateLabel.js';
 
-export default function AssignmentList() {
+export default function AssignmentList({ showToast }) {
   const [assignments, setAssignments] = useState(null);
   const [classes, setClasses] = useState({});
   const [error, setError] = useState(null);
@@ -55,6 +56,58 @@ export default function AssignmentList() {
     });
   }
 
+  // ── Xoá bài tập (trước đây trang này không có nút xoá nào) ──────────
+  function handleDelete(a) {
+    askConfirm({
+      title: 'Xóa bài tập',
+      message: `Xóa bài "${a.title}"? Toàn bộ bài nộp của học sinh cũng bị xóa. Không hoàn tác được.`,
+      confirmLabel: 'Xóa',
+      onConfirm: async () => {
+        try {
+          await assignmentService.delete_(a.id);
+          showToast?.('Đã xóa bài tập');
+          load();
+        } catch (e) { showToast?.(e.message || 'Lỗi xóa bài tập', 'error'); }
+      },
+    });
+  }
+
+  // ── Xóa hàng loạt (chọn nhiều) ──────────────────────────────────────
+  // Không có endpoint removeAll riêng: "Xóa tất cả" = bulk toàn bộ id.
+  const sel = useBulkSelection();
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  function reportBulkAssignments(r) {
+    if (r.failed.length) {
+      showToast?.(`Đã xóa ${r.deleted.length} bài tập, ${r.failed.length} không xóa được`, r.deleted.length ? 'info' : 'error');
+    } else {
+      showToast?.(`Đã xóa ${r.deleted.length} bài tập`);
+    }
+  }
+
+  async function doBulkRemoveAssignments() {
+    if (!sel.count) return;
+    setBulkDeleting(true);
+    try {
+      const r = await bulkInChunks(sel.selected, (ids) => assignmentService.bulkRemove(ids));
+      reportBulkAssignments(r);
+      sel.clear(); load();
+    } catch (e) { showToast?.(e.message || 'Lỗi xóa hàng loạt', 'error'); }
+    finally { setBulkDeleting(false); }
+  }
+
+  async function doRemoveAllAssignments() {
+    const ids = (assignments || []).map((a) => a.id);
+    if (!ids.length) return;
+    setBulkDeleting(true);
+    try {
+      const r = await bulkInChunks(ids, (chunk) => assignmentService.bulkRemove(chunk));
+      reportBulkAssignments(r);
+      sel.clear(); load();
+    } catch (e) { showToast?.(e.message || 'Lỗi xóa toàn bộ', 'error'); }
+    finally { setBulkDeleting(false); }
+  }
+
   function copyLink(assignment) {
     const url = `${window.location.origin}/educational-games/#/assignment/${assignment.code || assignment.id}`;
     copy(url, assignment.id);
@@ -89,6 +142,8 @@ export default function AssignmentList() {
             onModeChange={setMode}
             pager={pager}
           />
+          <BulkDeleteBar count={sel.count} itemLabel="bài tập" deleting={bulkDeleting}
+            onDeleteSelected={doBulkRemoveAssignments} onDeleteAll={doRemoveAllAssignments} onClear={sel.clear} />
           {filtered.length === 0 ? (
             <div className="note-card edu-empty">Không tìm thấy bài tập nào khớp tìm kiếm.</div>
           ) : mode === "grid" ? (
@@ -100,13 +155,19 @@ export default function AssignmentList() {
                   badge={a.status === 'ACTIVE' ? { label: 'Đang mở', tone: 'mint' } : { label: 'Đã đóng', tone: 'red' }}
                   mono={a.code}
                   meta={`${classes[a.classId] || a.classId} · ${templateLabel(a.templateId)}`}
-                  extra={a.isExam ? (
-                    <span className="self-start px-2 py-0.5 rounded-full text-[10px] font-body font-semibold bg-blue-100 text-blue-600">Bài thi</span>
-                  ) : undefined}
+                  extra={(
+                    <div className="flex items-center gap-2">
+                      <Checkbox checked={sel.isSelected(a.id)} onChange={() => sel.toggle(a.id)} />
+                      {a.isExam && (
+                        <span className="self-start px-2 py-0.5 rounded-full text-[10px] font-body font-semibold bg-blue-100 text-blue-600">Bài thi</span>
+                      )}
+                    </div>
+                  )}
                   footerActions={[
                     { label: 'Xem', icon: <Eye />, onClick: () => navigate(`/dashboard/assignments/${a.id}`), tone: 'blue' },
                     { label: copiedKey === a.id ? 'Đã copy' : 'Copy link', icon: copiedKey === a.id ? <IconCheckCircle /> : <Link2 />, onClick: () => copyLink(a), tone: 'muted' },
                     ...(a.status === 'ACTIVE' ? [{ label: 'Đóng', icon: <CircleX />, onClick: () => handleClose(a), tone: 'red' }] : []),
+                    { label: 'Xoá', icon: <Trash2 />, onClick: () => handleDelete(a), tone: 'red' },
                   ]}
                 />
               ))}
@@ -115,6 +176,7 @@ export default function AssignmentList() {
             <div className="space-y-3">
               {pager.pageItems.map(a => (
             <div key={a.id} className="note-card p-4 flex items-center gap-4">
+            <Checkbox checked={sel.isSelected(a.id)} onChange={() => sel.toggle(a.id)} />
   {/* Thông tin bài tập */}
             <div className="flex-1 min-w-0">
               <h3 className="font-display text-sm text-ink truncate">
@@ -179,6 +241,14 @@ export default function AssignmentList() {
                   <CircleX className="w-4 h-4" />
                 </button>
               )}
+
+              <button
+                onClick={() => handleDelete(a)}
+                className="p-2 rounded-lg hover:bg-red-50 transition text-ink/30 hover:text-red-500"
+                title="Xóa bài tập"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           </div>
           ))}

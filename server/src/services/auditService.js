@@ -52,10 +52,15 @@ export const AUDIT = {
   TEMPLATE_UPDATE: "template.update",
   TEMPLATE_DELETE: "template.delete",
   TEMPLATE_DELETE_ALL: "template.delete_all",
+  // Xóa HÀNG LOẠT template theo danh sách id: MỘT bản ghi cho cả batch,
+  // meta gồm số đã xóa / đã chuyển inactive (đang được game dùng) / thất bại.
+  TEMPLATE_BULK_DELETE: "template.bulk_delete",
   PAGE_UPDATE: "page.update",
   GAME_CREATE: "game.create",
   GAME_UPDATE: "game.update",
   GAME_DELETE: "game.delete",
+  // Xóa HÀNG LOẠT trò chơi theo danh sách id: MỘT bản ghi cho cả batch.
+  GAME_BULK_DELETE: "game.bulk_delete",
   USER_CREATE: "user.create",
   USER_UPDATE: "user.update",
   USER_ROLE: "user.role",

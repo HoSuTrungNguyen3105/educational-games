@@ -33,6 +33,7 @@ import {
 } from "../services/reportService.js";
 import { getRolePermissionsCached } from "../services/permissionService.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
+import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 
 const router = Router();
 
@@ -105,6 +106,18 @@ router.patch("/admin/tickets/:id", authenticate, requireRoles("admin"), async (r
     if (e.message === "Không tìm thấy ticket") return sendError(res, e.message, 404);
     sendError(res, e.message, 400);
   }
+});
+
+// Xóa HÀNG LOẠT ticket — PHẢI khai báo TRƯỚC "/admin/tickets/:id".
+// Body: { ids: string[] } (tối đa BULK_DELETE_MAX_IDS), từng id độc lập:
+// ticket không tồn tại chỉ vào `failed`, không hỏng cả batch.
+router.delete("/admin/tickets/bulk", authenticate, requireRoles("admin"), async (req, res, next) => {
+  try {
+    const parsed = parseBulkIds(req.body);
+    if (parsed.error) return sendError(res, parsed.error, 400);
+    const result = await runBulkDelete(parsed.ids, (id) => deleteTicket(id));
+    sendSuccess(res, bulkResultPayload(result), "Đã xử lý xóa hàng loạt");
+  } catch (e) { next(e); }
 });
 
 router.delete("/admin/tickets/:id", authenticate, requireRoles("admin"), async (req, res, next) => {
