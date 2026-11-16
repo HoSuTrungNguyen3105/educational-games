@@ -4,7 +4,9 @@ import { templateService } from '../../services/api.js'
 import { injectApiBridge, detectApiMarkers } from '../../lib/apiBridge.js'
 import { processGameHtml } from '../../game-html/injectTaskBridge.js'
 import { loadTemplateHtml, isHtmlUrl } from '../../lib/hooks.js'
-import { PrimaryButton, GhostButton, Field, TemplateThumb } from '../../components/ui'
+import { PrimaryButton, GhostButton, Field, TemplateThumb, Input } from '../../components/ui'
+import ImagePickerModal from './studio/ImagePicker.jsx'
+import { Image as ImageIcon } from 'lucide-react'
 
 const CATEGORY_OPTIONS = [
   { value: "quiz", label: "Trắc nghiệm" }, { value: "reflex", label: "Phản xạ" },
@@ -22,6 +24,15 @@ const EMPTY = { name: "", description: "", type: "play-to-learn", category: "qui
 const THUMB_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const THUMB_MAX_MB = 2;
 
+function isHttpUrl(value) {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export default function TemplateFormPage({ showToast, route }) {
   const templateId = route?.params?.templateId;
   const isEdit = !!templateId;
@@ -35,6 +46,11 @@ export default function TemplateFormPage({ showToast, route }) {
   // Không sửa HTML → gửi lại link gốc, server giữ file cũ (không tạo file thừa).
   const [originalHtml, setOriginalHtml] = useState("");
   const [originalUrl, setOriginalUrl] = useState("");
+  // Thumbnail qua URL / thư viện ảnh: ô dán URL tách khỏi form.thumbnail
+  // (thumbnail có thể là dataURL rất dài từ file upload, không đổ vào ô URL).
+  const [thumbUrlInput, setThumbUrlInput] = useState("");
+  const [thumbUrlError, setThumbUrlError] = useState("");
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -51,6 +67,7 @@ export default function TemplateFormPage({ showToast, route }) {
         // Link gốc đang lưu trong DB (echo lại server sẽ giữ file cũ, không upload lại)
         setOriginalUrl(isHtmlUrl(t.htmlUrl) ? t.htmlUrl : html);
         setForm({ name: t.name || "", description: t.description || "", type: t.type || "play-to-learn", category: t.category || "quiz", ring: t.ring || "#1D2E4A", htmlUrl: html, thumbnail: t.thumbnail || "", status: t.status || "draft", playMode: t.playMode || "solo" });
+        if (t.thumbnail && /^https?:\/\//i.test(t.thumbnail)) setThumbUrlInput(t.thumbnail);
       } catch (e) {
         if (active) setError(e.message);
       } finally {
@@ -67,9 +84,36 @@ export default function TemplateFormPage({ showToast, route }) {
     if (!THUMB_TYPES.includes(file.type)) { setError("Ảnh thumbnail phải là PNG, JPG, WebP hoặc GIF"); return; }
     if (file.size > THUMB_MAX_MB * 1024 * 1024) { setError(`Ảnh thumbnail vượt quá ${THUMB_MAX_MB} MB`); return; }
     const reader = new FileReader();
-    reader.onload = () => onChange("thumbnail", String(reader.result || ""));
+    reader.onload = () => { onChange("thumbnail", String(reader.result || "")); setThumbUrlInput(""); setThumbUrlError(""); };
     reader.onerror = () => setError("Không đọc được file ảnh");
     reader.readAsDataURL(file);
+  };
+
+  // Dán URL ảnh: chỉ nhận http/https hợp lệ thì mới set thumbnail = URL đó
+  // (cùng cơ chế lưu như ảnh upload — thumbnail vẫn là chuỗi URL/dataURL).
+  const onThumbUrl = (value) => {
+    setThumbUrlInput(value);
+    const url = String(value || "").trim();
+    if (!url) { setThumbUrlError(""); return; }
+    if (isHttpUrl(url)) {
+      setThumbUrlError("");
+      onChange("thumbnail", url);
+    } else {
+      setThumbUrlError("URL chưa hợp lệ — cần bắt đầu bằng http:// hoặc https://");
+    }
+  };
+
+  const onPickLibraryImage = (url) => {
+    if (!url) return;
+    onChange("thumbnail", url);
+    setThumbUrlInput(url);
+    setThumbUrlError("");
+  };
+
+  const clearThumbnail = () => {
+    onChange("thumbnail", "");
+    setThumbUrlInput("");
+    setThumbUrlError("");
   };
 
   const submit = async () => {
@@ -163,15 +207,23 @@ export default function TemplateFormPage({ showToast, route }) {
               <option value="classroom">Lớp học (giáo viên điều khiển)</option>
             </select>
           </Field>
-          <Field label="Ảnh thumbnail" hint="PNG/JPG/WebP/GIF, tối đa 2 MB — lưu lên Supabase, MongoDB chỉ giữ URL.">
-            <div className="flex items-center gap-3 mt-0.5">
-              <TemplateThumb thumbnail={form.thumbnail} name={form.name} ring={form.ring} size={56} className="shrink-0" />
-              <input type="file" accept={THUMB_TYPES.join(",")} onChange={e => onThumbFile(e.target.files?.[0])}
-                className="w-full note-card px-2.5 py-1.5 border-ink/10 focus:border-ticket text-sm file:mr-2 file:rounded file:border-0 file:bg-ink/10 file:px-2 file:py-1 file:text-ink" />
-              {form.thumbnail && (
-                <button type="button" onClick={() => onChange("thumbnail", "")}
-                  className="text-xs text-ink/50 hover:text-ticket shrink-0">Xóa ảnh</button>
-              )}
+          <Field label="Ảnh thumbnail" hint="PNG/JPG/WebP/GIF, tối đa 2 MB — lưu lên Supabase, MongoDB chỉ giữ URL. Cũng có thể dán URL ảnh hoặc chọn từ Thư viện ảnh.">
+            <div className="space-y-2 mt-0.5">
+              <div className="flex items-center gap-3">
+                <TemplateThumb thumbnail={form.thumbnail} name={form.name} ring={form.ring} size={56} className="shrink-0" />
+                <input type="file" accept={THUMB_TYPES.join(",")} onChange={e => onThumbFile(e.target.files?.[0])}
+                  className="w-full note-card px-2.5 py-1.5 border-ink/10 focus:border-ticket text-sm file:mr-2 file:rounded file:border-0 file:bg-ink/10 file:px-2 file:py-1 file:text-ink" />
+                {form.thumbnail && (
+                  <button type="button" onClick={clearThumbnail}
+                    className="text-xs text-ink/50 hover:text-ticket shrink-0">Xóa ảnh</button>
+                )}
+              </div>
+              <Input value={thumbUrlInput} onChange={onThumbUrl} placeholder="Hoặc dán URL ảnh https://…" autoComplete="off" />
+              {thumbUrlError && <p className="text-[11px] text-ticket">{thumbUrlError}</p>}
+              <button type="button" onClick={() => setShowImagePicker(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-ink/15 bg-paper text-xs font-body text-ink/70 hover:text-teal hover:border-teal/40 transition">
+                <ImageIcon className="w-4 h-4" /> Chọn từ Thư viện ảnh
+              </button>
             </div>
           </Field>
           <Field label="Màu viền">
@@ -212,6 +264,8 @@ export default function TemplateFormPage({ showToast, route }) {
         <GhostButton onClick={() => navigate("/dashboard/templates")}>Hủy</GhostButton>
         <PrimaryButton onClick={submit} disabled={saving}>{saving ? "Đang lưu..." : isEdit ? "Cập nhật" : "Thêm mới"}</PrimaryButton>
       </div>
+
+      <ImagePickerModal open={showImagePicker} onClose={() => setShowImagePicker(false)} onPick={onPickLibraryImage} />
     </div>
   );
 }

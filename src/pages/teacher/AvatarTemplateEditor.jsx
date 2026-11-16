@@ -11,6 +11,10 @@ export default function AvatarTemplateEditor() {
       <ManagementHeader subtitle="Thứ tự lớp cố định của hệ DressUp" title="Avatar Template" />
 
       <div className="note-card p-3 text-xs text-ink/60">
+        Chỉ tham khảo — dữ liệu nằm trong file mã nguồn (dressUpAvatarData.js), muốn thay đổi phải sửa file rồi build lại.
+      </div>
+
+      <div className="note-card p-3 text-xs text-ink/60">
         Thứ tự lớp được render cố định trong <code className="font-mono text-[11px]">renderKid</code>.
         Mắt, mũi, miệng nằm trong lớp <strong>Mặt</strong>; kính và mũ luôn vẽ trên cùng.
       </div>

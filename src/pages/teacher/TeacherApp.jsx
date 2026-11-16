@@ -97,7 +97,7 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-question-bank" && <QuestionBankManagement showToast={showToast} />}
         {page === "admin-chat" && <TeacherChat user={user} showToast={showToast} />}
         {page === "admin-profile" && <TeacherProfile user={user} onLogout={onLogout} showToast={showToast} />}
-        {page === "admin-classes" && <ClassManagement />}
+        {page === "admin-classes" && <ClassManagement showToast={showToast} />}
         {page === "admin-class-students" && <ClassStudents classId={route.params?.classId} />}
         {page === "admin-assignments" && <AssignmentList showToast={showToast} />}
         {page === "admin-assignment-new" && <AssignmentCreate />}

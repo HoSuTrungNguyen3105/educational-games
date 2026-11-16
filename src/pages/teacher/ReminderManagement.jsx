@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Bell, Smartphone } from "lucide-react";
 import { reminderService } from "../../services/api.js";
-import { ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconBell, IconCheckCircle, IconEdit, IconTrash, Loader, useViewMode } from '../../components/ui';
+import { ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconBell, IconCheckCircle, IconEdit, IconTrash, Loader, ToggleSwitch, useViewMode } from '../../components/ui';
 import { matchesQuery } from "../../lib/searchText.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import DateTimePicker from "../../components/DateTimePicker.jsx";
@@ -163,6 +163,26 @@ export default function ReminderManagement({ showToast }) {
     });
   };
 
+  // Bật/tắt nhắc nhở: reminder đã tắt (isActive=false) chỉ bị luồng dispatch
+  // tự động bỏ qua — vẫn sửa/xoá/trigger tay được. Lỗi thì giữ nguyên state.
+  const handleToggleActive = async (r, next) => {
+    try {
+      await reminderService.update(r.id, { isActive: next });
+      setReminders((prev) => prev.map((x) => (x.id === r.id ? { ...x, isActive: next } : x)));
+      showToast?.(next ? "Đã bật nhắc nhở" : "Đã tắt nhắc nhở", "success");
+    } catch {
+      showToast?.("Lỗi cập nhật trạng thái nhắc nhở", "error");
+    }
+  };
+
+  const renderActiveToggle = (r) => (
+    <ToggleSwitch
+      checked={r.isActive !== false}
+      onChange={(v) => handleToggleActive(r, v)}
+      label={r.isActive !== false ? "Đang bật" : "Đã tắt"}
+    />
+  );
+
   const handleDismissDue = async () => {
     if (!dueAlert) return;
     try {
@@ -317,12 +337,15 @@ export default function ReminderManagement({ showToast }) {
                     badge={{ label: status.label, tone: statusTone(r) }}
                     description={r.message || undefined}
                     meta={`${formatDateTime(r.remindAt)} · ${getRepeatLabel(r.repeat)}`}
-                    extra={(r.vibrate !== false || r.sound !== false) ? (
-                      <span className="flex items-center gap-1.5 text-ink/40">
-                        {r.vibrate !== false && <Smartphone className="w-3.5 h-3.5" />}
-                        {r.sound !== false && <Bell className="w-3.5 h-3.5" />}
-                      </span>
-                    ) : undefined}
+                    extra={(
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 text-ink/40">
+                          {r.vibrate !== false && <Smartphone className="w-3.5 h-3.5" />}
+                          {r.sound !== false && <Bell className="w-3.5 h-3.5" />}
+                        </span>
+                        {renderActiveToggle(r)}
+                      </div>
+                    )}
                     footerActions={[
                       { label: "Sửa", icon: <IconEdit />, onClick: () => openEdit(r), tone: "blue" },
                       { label: "Xoá", icon: <IconTrash />, onClick: () => handleDelete(r.id, r.title), tone: "red" },
@@ -337,7 +360,7 @@ export default function ReminderManagement({ showToast }) {
               const status = getTimeStatus(r.remindAt, r.triggered);
               const StatusIcon = status.icon;
               return (
-                <div key={r.id} className="flex items-center gap-3 bg-white border border-ink/5 rounded-xl p-4 hover:border-ink/10 transition">
+                <div key={r.id} className={`flex items-center gap-3 bg-white border border-ink/5 rounded-xl p-4 hover:border-ink/10 transition ${r.isActive === false ? "opacity-60" : ""}`}>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${status.color}`}>
                     <StatusIcon className="w-5 h-5" />
                   </div>
@@ -357,6 +380,7 @@ export default function ReminderManagement({ showToast }) {
                       </span>
                     </div>
                   </div>
+                  {renderActiveToggle(r)}
                   <button onClick={() => openEdit(r)} className="text-gray-300 hover:text-gold transition p-1" title="Sửa">
                     <IconEdit className="w-4 h-4" />
                   </button>
@@ -383,6 +407,7 @@ export default function ReminderManagement({ showToast }) {
                   badge={{ label: "Đã nhắc", tone: "mint" }}
                   description={r.message || undefined}
                   meta={`${formatDateTime(r.remindAt)} · ${getRepeatLabel(r.repeat)}`}
+                  extra={renderActiveToggle(r)}
                   footerActions={[
                     { label: "Xoá", icon: <IconTrash />, onClick: () => handleDelete(r.id, r.title), tone: "red" },
                   ]}
@@ -400,6 +425,7 @@ export default function ReminderManagement({ showToast }) {
                   <p className="font-medium text-ink text-sm truncate line-through">{r.title}</p>
                   <span className="text-xs text-gray-400">{formatDateTime(r.remindAt)}</span>
                 </div>
+                {renderActiveToggle(r)}
                 <button onClick={() => handleDelete(r.id, r.title)} className="text-gray-300 hover:text-red-500 transition p-1" title="Xóa">
                   <IconTrash className="w-4 h-4" />
                 </button>

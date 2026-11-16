@@ -220,6 +220,23 @@ export default function TeacherChat({ user, showToast }) {
   );
 }
 
+// Định dạng thời gian tin cuối kiểu gọn cho danh sách chat (không có helper
+// dùng chung trong repo — src/components/chat và src/lib chưa có): hôm nay →
+// "HH:mm", hôm qua → "Hôm qua", trong tuần → thứ gọn, cũ hơn → "dd/MM/yyyy".
+function formatChatListTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const startOfDay = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(new Date()) - startOfDay(d)) / 86400000);
+  if (diffDays <= 0) {
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+  if (diffDays === 1) return "Hôm qua";
+  if (diffDays < 7) return ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][d.getDay()];
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
 function ConversationItem({ conversation, currentUser, onClick, isActive }) {
   const [otherUser, setOtherUser] = useState(null);
 
@@ -231,6 +248,20 @@ function ConversationItem({ conversation, currentUser, onClick, isActive }) {
       if (found) setOtherUser(found);
     }).catch(() => {});
   }, [conversation, currentUser]);
+
+  // Server đã trả sẵn `partner` trong listConversationsEnriched — dùng làm
+  // nguồn dự phòng khi chưa/không tra được user qua API (giữ nguyên cách
+  // hiện tên/avatar như cũ).
+  const displayUser = otherUser || conversation.partner || null;
+
+  // Preview tin cuối: server trả conversation.lastMessage; tin của chính
+  // mình thì thêm tiền tố "Bạn: ". Chưa có tin nào → giữ dòng phụ @username cũ.
+  const lastMsg = conversation.lastMessage || null;
+  const preview = lastMsg?.content
+    ? `${lastMsg.senderId === currentUser.id ? "Bạn: " : ""}${lastMsg.content}`
+    : null;
+  const timeLabel = lastMsg ? formatChatListTime(lastMsg.createdAt) : "";
+  const unread = conversation.unread || 0;
 
   return (
     <button
@@ -246,16 +277,32 @@ function ConversationItem({ conversation, currentUser, onClick, isActive }) {
           ? "bg-ticket/20 text-ticket"
           : "bg-ink/5 text-ink/50"
       }`}>
-        {otherUser?.name?.charAt(0)?.toUpperCase() || <MessageCircle className="w-4 h-4" />}
+        {displayUser?.name?.charAt(0)?.toUpperCase() || <MessageCircle className="w-4 h-4" />}
       </div>
       <div className="flex-1 min-w-0">
         <h3 className={`text-sm font-body truncate ${isActive ? "text-ink font-semibold" : "text-ink"}`}>
-          {otherUser?.name || "Tin nhắn trực tiếp"}
+          {displayUser?.name || "Tin nhắn trực tiếp"}
         </h3>
-        <p className="text-[11px] font-mono text-ink/40 truncate">
-          {otherUser ? `@${otherUser.username}` : "Nhắn tin trực tiếp"}
-        </p>
+        {preview ? (
+          <p className={`text-[11px] font-body truncate ${unread > 0 ? "text-ink/70 font-semibold" : "text-ink/40"}`}>
+            {preview}
+          </p>
+        ) : (
+          <p className="text-[11px] font-mono text-ink/40 truncate">
+            {displayUser ? `@${displayUser.username}` : "Nhắn tin trực tiếp"}
+          </p>
+        )}
       </div>
+      {(timeLabel || unread > 0) && (
+        <div className="flex flex-col items-end gap-1 shrink-0 self-start">
+          {timeLabel && <span className="text-[10px] font-body text-ink/40 whitespace-nowrap">{timeLabel}</span>}
+          {unread > 0 && (
+            <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-ticket text-white text-[10px] font-semibold flex items-center justify-center">
+              {unread}
+            </span>
+          )}
+        </div>
+      )}
     </button>
   );
 }

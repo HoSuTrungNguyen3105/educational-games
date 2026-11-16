@@ -12,6 +12,7 @@ import {
   updateTask,
   deleteTask,
   getTaskStats,
+  seedDefaultTasks,
 } from "../services/taskEngineService.js";
 
 const router = Router();
@@ -62,6 +63,13 @@ router.post("/:taskId/claim", authenticate, async (req, res, next) => {
 // ── GET /admin/stats ──
 router.get("/admin/stats", authenticate, requireRoles("admin"), async (_req, res, next) => {
   try { sendSuccess(res, await getTaskStats()); } catch (e) { next(e); }
+});
+
+// ── POST /admin/seed — nạp bộ nhiệm vụ mẫu còn thiếu (admin) ──
+// db.js chỉ seed khi collection rỗng lúc khởi tạo; nếu admin đã xoá sạch
+// nhiệm vụ thì dùng endpoint này để nạp lại mà không cần khởi động lại server.
+router.post("/admin/seed", authenticate, requireRoles("admin"), async (_req, res, next) => {
+  try { sendSuccess(res, await seedDefaultTasks(), "Đã nạp bộ nhiệm vụ mẫu"); } catch (e) { next(e); }
 });
 
 // ── Admin CRUD ──

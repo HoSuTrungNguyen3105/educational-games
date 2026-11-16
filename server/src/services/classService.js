@@ -22,8 +22,61 @@ export async function createClass({ name, code, schoolYear }) {
   return doc;
 }
 
+/**
+ * Gắn thêm `studentCount` + `teacherName` vào doc lớp (chỉ THÊM field, giữ
+ * nguyên shape cũ). Đã xác minh khoá join:
+ *  - `users.classId` lưu `classes.id` (dạng "cls-..."), KHÔNG phải `_id` hay
+ *    `code`: getClassStudents truy vấn users theo đúng classId route nhận
+ *    (client truyền cls.id), route /join gọi setStudentClass(cls.id), và
+ *    getStudentClass tra lớp bằng { id: user.classId }.
+ *  - Sĩ số đếm đúng định nghĩa của getClassStudents: classId khớp + role
+ *    "student".
+ *  - `teacher_classes.classId` cũng lưu classes.id, `teacherId` lưu users.id.
+ *    Lớp có thể có nhiều GV — lấy GV ĐẦU TIÊN theo thứ tự mapping và chỉ hiện
+ *    tên người đó (teacherName = null khi lớp chưa có GV).
+ */
+async function enrichClasses(docs) {
+  if (!docs || docs.length === 0) return docs;
+  const classIds = docs.map((c) => c.id);
+
+  const students = await getCollection("users")
+    .find({ classId: { $in: classIds }, role: "student" })
+    .project({ classId: 1 })
+    .toArray();
+  const countByClass = new Map();
+  for (const s of students) {
+    countByClass.set(s.classId, (countByClass.get(s.classId) || 0) + 1);
+  }
+
+  const mappings = await getCollection("teacher_classes")
+    .find({ classId: { $in: classIds } })
+    .toArray();
+  const firstTeacherByClass = new Map();
+  for (const m of mappings) {
+    if (!firstTeacherByClass.has(m.classId)) firstTeacherByClass.set(m.classId, m.teacherId);
+  }
+  const teacherIds = [...new Set(mappings.map((m) => m.teacherId))];
+  const nameByTeacherId = new Map();
+  if (teacherIds.length > 0) {
+    const teachers = await getCollection("users")
+      .find({ id: { $in: teacherIds } })
+      .project({ id: 1, name: 1 })
+      .toArray();
+    for (const t of teachers) nameByTeacherId.set(t.id, t.name);
+  }
+
+  return docs.map((c) => ({
+    ...c,
+    studentCount: countByClass.get(c.id) || 0,
+    teacherName: nameByTeacherId.get(firstTeacherByClass.get(c.id)) || null,
+  }));
+}
+
 export async function getClassById(id) {
-  return getCollection("classes").findOne({ id });
+  const doc = await getCollection("classes").findOne({ id });
+  if (!doc) return doc;
+  const [enriched] = await enrichClasses([doc]);
+  return enriched;
 }
 
 export async function getClassByCode(code) {
@@ -33,7 +86,8 @@ export async function getClassByCode(code) {
 export async function listClasses({ status, limit = 100 } = {}) {
   const query = {};
   if (status) query.status = status;
-  return getCollection("classes").find(query).sort({ createdAt: -1 }).limit(limit).toArray();
+  const docs = await getCollection("classes").find(query).sort({ createdAt: -1 }).limit(limit).toArray();
+  return enrichClasses(docs);
 }
 
 export async function updateClass(id, data = {}) {
@@ -76,7 +130,10 @@ export async function getTeacherClasses(teacherId) {
   const mappings = await getCollection("teacher_classes").find({ teacherId }).toArray();
   if (mappings.length === 0) return [];
   const classIds = mappings.map(m => m.classId);
-  return getCollection("classes").find({ id: { $in: classIds } }).toArray();
+  const docs = await getCollection("classes").find({ id: { $in: classIds } }).toArray();
+  // Cùng trang ClassManagement với nhánh admin (listClasses) — gắn cùng
+  // studentCount/teacherName để GV xem lớp của mình cũng thấy sĩ số.
+  return enrichClasses(docs);
 }
 
 export async function getClassTeachers(classId) {

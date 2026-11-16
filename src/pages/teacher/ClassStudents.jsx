@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { CircleUserRound, Hash, School, Search, UserMinus } from 'lucide-react';
+import { CircleUserRound, Download, Hash, School, Search, UserMinus } from 'lucide-react';
 import { ConfirmModal, EmptyState, IconBack, IconMail, IconUsers, Loader, SearchInput } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
+import { exportCsv } from '../../lib/exportCsv.js';
 
 export default function ClassStudents({ classId }) {
   const [cls, setCls] = useState(null);
@@ -61,6 +62,22 @@ export default function ClassStudents({ classId }) {
     );
   });
 
+  function handleExportCsv() {
+    exportCsv(
+      'class-students.csv',
+      ['Tên', 'Username', 'Email', 'Vai trò', 'Coin', 'Sao', 'XP'],
+      filtered.map((s) => [
+        s.displayName || s.name || '',
+        s.username || '',
+        s.email || '',
+        s.role || '',
+        s.coins ?? '',
+        s.stars ?? '',
+        s.xp ?? '',
+      ]),
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -85,6 +102,15 @@ export default function ClassStudents({ classId }) {
           <Hash className="w-3.5 h-3.5" />
           {cls?.code ?? '—'}
         </div>
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          disabled={!filtered.length}
+          title="Xuất CSV"
+          className="w-9 h-9 rounded-lg border border-ink/15 bg-paper inline-flex items-center justify-center text-ink/60 hover:text-teal disabled:opacity-40 transition"
+        >
+          <Download className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Error */}

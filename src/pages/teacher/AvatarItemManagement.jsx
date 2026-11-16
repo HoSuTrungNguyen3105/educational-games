@@ -90,6 +90,7 @@ export default function AvatarItemManagement({ showToast }) {
       <div className="note-card p-3 text-xs text-ink/60 flex items-start gap-2">
         <Lightbulb className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" />
         <span>
+          Chỉ tham khảo — dữ liệu nằm trong file mã nguồn (dressUpAvatarData.js), muốn thay đổi phải sửa file rồi build lại.
           Đây là danh mục phụ kiện của hệ avatar mới. Mắt, mũi, miệng, lông mày, má nằm trong tab <strong>Mặt</strong>.
           Không phải thân nào cũng mặc được mọi thứ — bảng <strong>Linh kiện của {bodyName}</strong> bên cạnh cho biết
           thân đang chọn nhận nhóm nào, và tab chỉ hiện đúng các nhóm đó.

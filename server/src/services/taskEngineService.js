@@ -1,5 +1,6 @@
 import { getCollection } from "../db.js";
 import { addCoins, addXp } from "./authService.js";
+import { buildDefaultTasks } from "./taskDefaults.js";
 
 const TASKS_COL = "tasks";
 const PROGRESS_COL = "user_task_progress";
@@ -338,6 +339,28 @@ export async function updateTask(taskId, data) {
 export async function deleteTask(taskId) {
   const { ObjectId } = await import("mongodb");
   await getCollection(TASKS_COL).deleteOne({ _id: new ObjectId(taskId) });
+}
+
+/**
+ * Nạp bộ nhiệm vụ mẫu (dùng chung nguồn với seed khởi tạo trong db.js).
+ * Collection rỗng → nạp toàn bộ; đã có một phần → chỉ nạp mẫu còn thiếu.
+ * Khớp theo `code` — tasks có unique index trên code và createTask cũng
+ * chặn trùng code, nên code là khoá định danh của một nhiệm vụ mẫu.
+ * Trả { inserted, skipped, total }.
+ */
+export async function seedDefaultTasks() {
+  const col = getCollection(TASKS_COL);
+  const defaults = buildDefaultTasks();
+  const existing = await col
+    .find({ code: { $in: defaults.map((t) => t.code) } })
+    .project({ code: 1 })
+    .toArray();
+  const existingCodes = new Set(existing.map((t) => t.code));
+  const missing = defaults.filter((t) => !existingCodes.has(t.code));
+  if (missing.length > 0) {
+    await col.insertMany(missing, { ordered: false });
+  }
+  return { inserted: missing.length, skipped: defaults.length - missing.length, total: defaults.length };
 }
 
 // ── Admin: stats ──

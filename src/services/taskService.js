@@ -17,6 +17,11 @@ export const taskService = {
     return apiFetch("/tasks/admin/stats");
   },
 
+  // Nạp bộ nhiệm vụ mẫu còn thiếu (admin) → { inserted, skipped, total }
+  async adminSeedTasks() {
+    return apiFetch("/tasks/admin/seed", { method: "POST" });
+  },
+
   async adminCreateTask(data) {
     return apiFetch("/tasks/admin/tasks", { method: "POST", body: data });
   },
