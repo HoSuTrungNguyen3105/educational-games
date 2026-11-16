@@ -33,7 +33,14 @@ router.get("/me/games", async (req, res, next) => {
     docs.forEach((d) => { nameOf[String(d._id).toLowerCase()] = d.name; });
     const mapped = list.map((p) => ({
       gameId: p.gameId,
-      name: nameOf[String(p.gameId).toLowerCase()] || p.gameName || p.gameId,
+      // Game online đã bị xoá khỏi thư viện: tra tên trượt và gameName chỉ có
+      // ở game offline → trước đây rơi xuống chính gameId (chuỗi ObjectId
+      // 24-hex) và trang Hồ sơ in thô ra màn hình. Nay hiện nhãn thân thiện;
+      // game offline thiếu gameName vẫn giữ slug như cũ.
+      name:
+        nameOf[String(p.gameId).toLowerCase()] ||
+        p.gameName ||
+        (/^[0-9a-f]{24}$/i.test(String(p.gameId || "")) ? "Trò chơi đã gỡ" : p.gameId),
       progress: p.progress || 0,
       level: p.level || 1,
       experience: p.experience || 0,
