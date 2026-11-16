@@ -127,7 +127,7 @@ export default function TemplateManagement({ showToast }) {
         viewKey="templates"
         count={templates ? filtered.length : 0}
         data={templates ? filtered : templates}
-        error={error && !templates ? error : null}
+        error={!templates ? error : null}
         onRetry={load}
         emptyLabel={query ? "Không tìm thấy template nào khớp tìm kiếm." : "Chưa có template nào."}
         onCreate={() => navigate("/dashboard/templates/new")}
@@ -187,9 +187,9 @@ export default function TemplateManagement({ showToast }) {
                 style={{ color: t.ring, borderColor: t.ring + "40", backgroundColor: t.ring + "15" }}>{t.category}</span>
             </td>
             <td className="px-5 py-3">
-              <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${t.status === "published" ? "bg-teal/15 text-teal border-teal/30"
-                : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20" : "bg-gold/15 text-gold border-gold/30"
-                }`}>{t.status}</span>
+              <span className={`edu-grid-badge edu-grid-badge--${(STATUS_BADGE[t.status] || { tone: "gray" }).tone}`}>
+                {(STATUS_BADGE[t.status] || { label: t.status }).label}
+              </span>
             </td>
             <td className="px-5 py-3">
               {t.gamesCount > 0 ? (
@@ -203,10 +203,12 @@ export default function TemplateManagement({ showToast }) {
             <td className="px-5 py-3 text-sm text-[#8A7C63]">
               {t.updatedAt ? new Date(t.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
             </td>
-            <td className="px-5 py-3 text-right flex gap-1 justify-end">
-              {t.htmlUrl && <IconButton title="Xem trước" onClick={() => openPreview(t)}><Eye /></IconButton>}
-              <IconButton title="Sửa" onClick={() => navigate(`/dashboard/templates/${t._id}`)}><Pencil /></IconButton>
-              <IconButton title="Xóa" tone="danger" onClick={() => confirmRemove(t)}><Trash2 /></IconButton>
+            <td className="px-5 py-3 text-right whitespace-nowrap">
+              <div className="flex gap-1 justify-end">
+                {t.htmlUrl && <IconButton title="Xem trước" onClick={() => openPreview(t)}><Eye /></IconButton>}
+                <IconButton title="Sửa" onClick={() => navigate(`/dashboard/templates/${t._id}`)}><Pencil /></IconButton>
+                <IconButton title="Xóa" tone="danger" onClick={() => confirmRemove(t)}><Trash2 /></IconButton>
+              </div>
             </td>
           </tr>
         )}

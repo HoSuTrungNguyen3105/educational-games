@@ -256,7 +256,7 @@ export default function AdminSettings({ user, showToast }) {
     try {
       setStorage(await systemService.storage())
     } catch (e) {
-      setStorageError(e.message || 'Không đọc được số liệu lưu trữ')
+      setStorageError(e.message || 'Không tải được số liệu lưu trữ')
     } finally { setStorageLoading(false) }
   }, [])
 
@@ -741,7 +741,7 @@ export default function AdminSettings({ user, showToast }) {
                 <Metric value={storage?.templates?.withThumbnail ?? '—'} label="Có thumbnail"
                   hint={storage?.templates?.missingThumbnail ? `${storage.templates.missingThumbnail} chưa có ảnh` : 'đủ'} />
                 <Metric value={storage?.storage?.size != null ? fmtB(storage.storage.size) : '—'} label="Dung lượng Supabase"
-                  hint={storage?.storage?.fileCount != null ? `${storage.storage.fileCount} file` : 'không đọc được'} />
+                  hint={storage?.storage?.fileCount != null ? `${storage.storage.fileCount} file` : (storage?.storage?.error || '—')} />
               </div>
               <dl className="text-sm divide-y divide-ink/10 mt-3">
                 <Row k="Trò chơi trong kho" v={storage?.games} />
@@ -752,10 +752,15 @@ export default function AdminSettings({ user, showToast }) {
                   <Pill state={storage?.connected ? 'ok' : 'error'}>{storage?.connected ? 'Đang kết nối' : 'Chưa cấu hình / lỗi'}</Pill>
                 } />
               </dl>
-              {storage?.storage?.error && (
-                <p className="text-[11px] text-ticket mt-2">Không đọc được dung lượng: {storage.storage.error}</p>
+              {storage?.storage?.error && storage?.storage?.size == null && (
+                <p className="text-[11px] text-ticket mt-2">{storage.storage.error}</p>
               )}
-              {storage && storage.storage?.source !== 'supabase' && (
+              {storage && storage.storage?.size == null && storage.storage?.source !== 'supabase' && storage.provider && storage.provider !== 'supabase' && (
+                <p className="text-[11px] text-[#B7A987] mt-2">
+                  Nhà cung cấp lưu trữ hiện tại là {storage.providerLabel || storage.provider} — ô “Dung lượng Supabase” chỉ đo Supabase Storage nên hiện “—”, trang không tự ước lượng.
+                </p>
+              )}
+              {storage && storage.storage?.size == null && storage.storage?.source !== 'supabase' && (!storage.provider || storage.provider === 'supabase') && (
                 <p className="text-[11px] text-[#B7A987] mt-2">
                   Dung lượng hiển thị "—" vì không lấy được số liệu thật từ Supabase — trang không tự ước lượng.
                 </p>
@@ -785,6 +790,39 @@ export default function AdminSettings({ user, showToast }) {
                 <Metric value={(scan.summary?.missing ?? 0) + (scan.summary?.not_found ?? 0) + (scan.summary?.http_error ?? 0) + (scan.summary?.unreachable ?? 0)} label="HTML có lỗi" />
                 <Metric value={scan.summary?.noThumb ?? 0} label="Chưa có thumbnail" />
               </div>
+
+              {/* Hai danh sách dưới đây suy từ `scan.items` của TRANG quét hiện
+                  tại (runScan nạp 20 template/trang) — không phải toàn bộ
+                  template trong hệ thống. Đổi trang quét thì danh sách đổi theo. */}
+              {(() => {
+                const missingThumb = (scan.items || []).filter((it) => it.thumb?.state === 'none')
+                const missingHtml = (scan.items || []).filter((it) => it.html?.state === 'missing')
+                const groups = [
+                  { key: 'thumb', title: 'Template thiếu thumbnail', items: missingThumb, empty: 'Không có template nào thiếu thumbnail ở trang này.' },
+                  { key: 'html', title: 'Template thiếu file HTML', items: missingHtml, empty: 'Không có template nào thiếu file HTML ở trang này.' },
+                ]
+                return (
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {groups.map((g) => (
+                      <div key={g.key} className="rounded-lg border border-ink/10 bg-white/60 px-3 py-2.5">
+                        <div className="text-sm text-ink font-medium">{g.title} ({g.items.length})</div>
+                        {g.items.length === 0 ? (
+                          <p className="text-[11px] text-[#8A7C63] mt-1.5 leading-snug">{g.empty}</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 mt-2 max-h-32 overflow-y-auto pr-0.5">
+                            {g.items.map((it) => (
+                              <span key={it.id} title={it.name}
+                                className="inline-flex max-w-full px-2 py-1 rounded-md border border-ink/12 bg-paper text-[11px] text-ink truncate">
+                                {it.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
 
               <div className="overflow-x-auto -mx-4 px-4">
                 <table className="w-full text-sm border-collapse min-w-[620px]">

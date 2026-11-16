@@ -24,6 +24,7 @@ import {
 } from "../../components/ui";
 import RangePagination from "../../components/RangePagination.jsx";
 import { Download, Eye, Filter, Wand2 } from "lucide-react";
+import { exportCsv } from "../../lib/exportCsv.js";
 
 const PER_PAGE = 10;
 
@@ -149,17 +150,12 @@ export default function PermissionManagement({ user, showToast }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalParam.modal]);
 
-  const exportCsv = () => {
-    const head = ["ID", "Slug", "Tên Việt", "Tên Anh", "Mô-đun", "Ngày tạo", "Cập nhật"];
-    const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const lines = filtered.map((r) => [r.id, r.slug, r.name_vi, r.name_en, r.module, r.created_at, r.updated_at].map(esc).join(","));
-    const blob = new Blob(["\uFEFF" + [head.map(esc).join(","), ...lines].join("\r\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "permissions.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExportCsv = () => {
+    exportCsv(
+      "permissions.csv",
+      ["ID", "Slug", "Tên Việt", "Tên Anh", "Mô-đun", "Ngày tạo", "Cập nhật"],
+      filtered.map((r) => [r.id, r.slug, r.name_vi, r.name_en, r.module, r.created_at, r.updated_at]),
+    );
   };
 
   if (!canView) {
@@ -191,7 +187,7 @@ export default function PermissionManagement({ user, showToast }) {
           )}
           <button
             type="button"
-            onClick={exportCsv}
+            onClick={handleExportCsv}
             disabled={!filtered.length}
             title="Xuất CSV"
             className="w-9 h-9 rounded-lg border border-ink/15 bg-paper inline-flex items-center justify-center text-ink/60 hover:text-teal disabled:opacity-40 transition"

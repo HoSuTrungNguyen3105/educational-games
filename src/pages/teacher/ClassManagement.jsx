@@ -2,19 +2,41 @@ import { useState, useEffect, useMemo } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { Copy, School } from 'lucide-react';
-import { ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconCheck, IconClose, IconTrash, IconUsers, Loader, Modal, PrimaryButton, useViewMode } from '../../components/ui';
+import { ConfirmModal, EmptyState, FormModal, GridCard, GridToolbar, IconAdd, IconCheck, IconClose, IconEdit, IconTrash, IconUsers, Loader, Modal, PrimaryButton, useViewMode } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
 import { usePagedList } from '../../hooks/usePagedList.js';
 import { matchesQuery } from '../../lib/searchText.js';
 
-export default function ClassManagement() {
+// Form sửa lớp: KHÔNG cho sửa `code` — mã lớp là khoá để học sinh tham gia
+// lớp (route /join tra lớp theo code), sửa mã sẽ làm mã cũ đang phát cho học
+// sinh mất hiệu lực. Field code chỉ hiện read-only để đối chiếu; payload gửi
+// lên cũng không kèm code. (Form TẠO lớp vẫn nhập code như cũ — đó là lúc
+// đặt mã lần đầu, khác với sửa.)
+const EDIT_FIELDS = [
+  { name: 'name', label: 'Tên lớp', placeholder: 'VD: 10A1' },
+  { name: 'code', label: 'Mã lớp (không sửa được)', disabled: true },
+  { name: 'schoolYear', label: 'Năm học', placeholder: 'VD: 2025-2026' },
+  {
+    name: 'status', label: 'Trạng thái', type: 'select',
+    options: [
+      { value: 'ACTIVE', label: 'Đang hoạt động' },
+      { value: 'INACTIVE', label: 'Đã đóng' },
+    ],
+  },
+];
+
+export default function ClassManagement({ showToast } = {}) {
   const [classes, setClasses] = useState(null);
   const [error, setError] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: '', code: '', schoolYear: '' });
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingCls, setEditingCls] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', code: '', schoolYear: '', status: 'ACTIVE' });
+  const [editError, setEditError] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
   const { askConfirm, confirmProps } = useConfirm();
   const [copiedKey, copy] = useCopy();
   const [query, setQuery] = useState('');
@@ -45,6 +67,38 @@ export default function ClassManagement() {
       setShowCreate(false);
     } catch (err) { setFormError(err.message); }
     finally { setSaving(false); }
+  }
+
+  function openEdit(cls) {
+    setEditingCls(cls);
+    setEditForm({
+      name: cls.name || '',
+      code: cls.code || '',
+      schoolYear: cls.schoolYear || '',
+      status: cls.status || 'ACTIVE',
+    });
+    setEditError('');
+  }
+
+  const setEditField = (name, value) => setEditForm(prev => ({ ...prev, [name]: value }));
+
+  async function handleEditSubmit() {
+    if (!editingCls) return;
+    if (!editForm.name.trim()) { setEditError('Vui lòng nhập tên lớp'); return; }
+    setEditError('');
+    setEditSaving(true);
+    try {
+      // Chỉ gửi field được sửa — tuyệt đối không gửi code (xem EDIT_FIELDS).
+      await classService.update(editingCls.id, {
+        name: editForm.name.trim(),
+        schoolYear: editForm.schoolYear.trim(),
+        status: editForm.status,
+      });
+      setEditingCls(null);
+      showToast?.('Đã cập nhật lớp học!', 'success');
+      await loadClasses();
+    } catch (err) { setEditError(err.message || 'Lỗi cập nhật lớp'); }
+    finally { setEditSaving(false); }
   }
 
   function handleDelete(cls) {
@@ -138,7 +192,12 @@ export default function ClassManagement() {
                   key={cls.id}
                   title={cls.name}
                   mono={cls.code}
-                  meta={cls.schoolYear ? `Năm học: ${cls.schoolYear}` : undefined}
+                  meta={[
+                    cls.schoolYear ? `Năm học: ${cls.schoolYear}` : null,
+                    cls.studentCount != null ? `Sĩ số: ${cls.studentCount}` : null,
+                    cls.teacherName ? `GV: ${cls.teacherName}` : null,
+                    cls.status === 'INACTIVE' ? 'Đã đóng' : null,
+                  ].filter(Boolean).join(' · ') || undefined}
                   extra={(
                     <button onClick={() => copy(cls.code, cls.code)}
                       className="self-start flex items-center gap-1 px-2 py-1 rounded-lg bg-gold/10 text-gold text-xs font-mono hover:bg-gold/20 transition">
@@ -147,6 +206,7 @@ export default function ClassManagement() {
                     </button>
                   )}
                   footerActions={[
+                    { label: "Sửa", icon: <IconEdit />, onClick: () => openEdit(cls), tone: "muted" },
                     { label: "Xem học sinh", icon: <IconUsers />, onClick: () => navigate(`/dashboard/classes/${cls.id}/students`), tone: "blue" },
                     { label: "Xoá", icon: <IconTrash />, onClick: () => handleDelete(cls), tone: "red" },
                   ]}
@@ -161,6 +221,9 @@ export default function ClassManagement() {
                     <th>Tên lớp</th>
                     <th>Mã lớp</th>
                     <th>Năm học</th>
+                    <th>Sĩ số</th>
+                    <th>GV phụ trách</th>
+                    <th>Trạng thái</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -176,8 +239,15 @@ export default function ClassManagement() {
                         </button>
                       </td>
                       <td>{cls.schoolYear || "—"}</td>
+                      <td>{cls.studentCount != null ? cls.studentCount : "—"}</td>
+                      <td>{cls.teacherName || "—"}</td>
+                      <td>{cls.status === 'INACTIVE' ? 'Đã đóng' : 'Đang hoạt động'}</td>
                       <td>
                         <div className="flex items-center justify-end gap-3">
+                          <button onClick={() => openEdit(cls)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink/60 hover:underline">
+                            <IconEdit className="w-4 h-4" /> Sửa
+                          </button>
                           <button onClick={() => navigate(`/dashboard/classes/${cls.id}/students`)}
                             className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2271b1] hover:underline">
                             <IconUsers className="w-4 h-4" /> Xem học sinh
@@ -195,6 +265,19 @@ export default function ClassManagement() {
           )}
         </div>
       )}
+
+      <FormModal
+        open={!!editingCls}
+        title="lớp"
+        fields={EDIT_FIELDS}
+        values={editForm}
+        onChange={setEditField}
+        onSubmit={handleEditSubmit}
+        onClose={() => setEditingCls(null)}
+        error={editError}
+        saving={editSaving}
+        editId={editingCls?.id}
+      />
 
       <ConfirmModal {...confirmProps} />
     </div>

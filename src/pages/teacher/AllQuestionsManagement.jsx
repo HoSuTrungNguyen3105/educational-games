@@ -199,7 +199,7 @@ export default function AllQuestionsManagement({ showToast }) {
 
   return (
     <div>
-      <ManagementHeader subtitle="Quản lý tất cả câu hỏi" title="All Questions" />
+      <ManagementHeader subtitle="Quản lý tất cả câu hỏi" title="Tất cả câu hỏi" />
 
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="note-card p-3 bg-paper2 flex-1 min-w-[200px]">
@@ -242,7 +242,7 @@ export default function AllQuestionsManagement({ showToast }) {
         viewKey="all-questions"
         title="Tất cả câu hỏi"
         data={filtered}
-        error={error && !questions ? error : null}
+        error={!questions ? error : null}
         onRetry={loadAll}
         emptyLabel="Không có câu hỏi nào."
         headers={[<Checkbox key="sel-all" checked={sel.allSelected((filtered || []).map(qKey))} onChange={() => sel.toggleAll((filtered || []).map(qKey))} />, "#", "Game", "Nội dung", "Đáp án đúng", "Thời gian", "Điểm", ""]}

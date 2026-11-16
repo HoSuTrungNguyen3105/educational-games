@@ -73,6 +73,10 @@ export default function BodyCustomImport({ showToast }) {
     <div className="space-y-4">
       <ManagementHeader subtitle="Thân và các lớp phụ kiện của avatar" title="Thân Avatar" />
 
+      <div className="note-card p-3 text-xs text-ink/60">
+        Chỉ tham khảo — dữ liệu nằm trong file mã nguồn (dressUpAvatarData.js), muốn thay đổi phải sửa file rồi build lại.
+      </div>
+
       {/* <div className="note-card p-4 text-xs text-ink/70 leading-relaxed">
         <p>
           Avatar dùng chung dữ liệu với modal <strong>Tùy chỉnh Avatar</strong> ở trang hồ sơ:

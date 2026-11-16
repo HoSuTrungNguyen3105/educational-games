@@ -5,7 +5,7 @@ import { TaskIcon } from "../../components/tasks/index.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import { useBulkSelection, bulkInChunks } from "../../lib/hooks.js";
 import { matchesQuery } from "../../lib/searchText.js";
-import { CheckCircle2, ClipboardList, Coins, Users } from "lucide-react";
+import { CheckCircle2, ClipboardList, Coins, TriangleAlert, Users } from "lucide-react";
 
 const TASK_TYPES = [
   { value: "GAME_PLAYED", label: "Chơi game" },
@@ -33,7 +33,19 @@ export default function DailyTaskManagement({ showToast }) {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const { askConfirm, confirmProps } = useConfirm();
+
+  // Nạp bộ nhiệm vụ mẫu từ server (chỉ nạp phần còn thiếu, khớp theo code).
+  const handleSeedDefaults = async () => {
+    setSeeding(true);
+    try {
+      const r = await taskService.adminSeedTasks();
+      showToast(`Đã nạp ${r.inserted} nhiệm vụ mẫu mới (${r.skipped} đã có sẵn, tổng bộ mẫu ${r.total})`, "success");
+      load();
+    } catch (e) { showToast(e.message || "Lỗi nạp nhiệm vụ mẫu", "error"); }
+    finally { setSeeding(false); }
+  };
 
   const load = useCallback(() => {
     setStats(null);
@@ -195,6 +207,18 @@ export default function DailyTaskManagement({ showToast }) {
 
       {tab === "tasks" && (
         <>
+        {stats && !error && allTasks.length === 0 && (
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center gap-3">
+            <TriangleAlert className="w-6 h-6 text-amber-500 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-body font-semibold text-amber-800">Chưa có nhiệm vụ nào trong hệ thống — học sinh hiện đang thấy bộ nhiệm vụ mặc định cũ.</p>
+              <p className="text-sm font-body text-amber-700/80 mt-0.5">Bộ nhiệm vụ mẫu chỉ được seed tự động khi hệ thống khởi tạo với kho dữ liệu rỗng. Bấm nút bên cạnh để nạp bộ mẫu vào hệ nhiệm vụ mới (chỉ nạp những nhiệm vụ còn thiếu).</p>
+            </div>
+            <PrimaryButton onClick={handleSeedDefaults} disabled={seeding} className="shrink-0">
+              {seeding ? "Đang nạp..." : "Nạp bộ nhiệm vụ mẫu"}
+            </PrimaryButton>
+          </div>
+        )}
         <BulkDeleteBar count={sel.count} itemLabel="nhiệm vụ" deleting={bulkDeleting}
           onDeleteSelected={doBulkRemoveTasks} onDeleteAll={doRemoveAllTasks} onClear={sel.clear} />
         <ManagementTable

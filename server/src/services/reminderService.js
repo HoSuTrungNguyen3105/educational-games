@@ -17,6 +17,7 @@ export async function createReminder({ userId, title, message, remindAt, repeat 
     vibrate,
     sound,
     vibratePattern: vibratePattern || "",
+    isActive: true,
     triggered: false,
     createdAt: new Date().toISOString(),
   };
@@ -36,7 +37,7 @@ export async function getReminderById(id) {
 }
 
 export async function updateReminder(id, data) {
-  const allowed = ["title", "message", "remindAt", "repeat", "type", "relatedId", "triggered"];
+  const allowed = ["title", "message", "remindAt", "repeat", "type", "relatedId", "triggered", "isActive"];
   const update = {};
   for (const k of allowed) {
     if (data[k] !== undefined) update[k] = data[k];
@@ -57,6 +58,9 @@ export async function getDueReminders() {
     .find({
       remindAt: { $lte: now },
       triggered: false,
+      // Nhắc đã TẮT (isActive === false) không được dispatch tự động.
+      // $ne: false để dữ liệu cũ chưa có field isActive vẫn chạy như trước.
+      isActive: { $ne: false },
     })
     .toArray();
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { FileText, Pencil, Trash2, X } from 'lucide-react'
 import { gameService, questionService } from '../../services/api.js'
 import { gameLabel } from '../../lib/gameLabel.js'
-import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
+import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState, ErrorState } from '../../components/ui'
 import QuestionImportModal from './QuestionImportModal.jsx'
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
@@ -165,7 +165,11 @@ export default function QuestionManagement({ showToast }) {
 
   return (
     <div>
-      <ManagementHeader subtitle="Quản lý câu hỏi" title="Questions" />
+      <ManagementHeader subtitle="Quản lý câu hỏi" title="Câu hỏi" />
+
+      {error && !games && (
+        <ErrorState subtitle={error} onRetry={loadGames} />
+      )}
 
       <div className="note-card p-4 bg-paper2">
         <label className="text-xs font-mono uppercase text-[#8A7C63]">Chọn trò chơi</label>
@@ -190,7 +194,7 @@ export default function QuestionManagement({ showToast }) {
           viewKey="questions-by-game"
           title={`Câu hỏi — ${selectedGameObj ? gameLabel(selectedGameObj) : ""}`}
           data={questions}
-          error={error && !questions ? error : null}
+          error={!questions ? error : null}
           onRetry={loadQuestions}
           emptyLabel="Chưa có câu hỏi nào."
           onCreate={openCreate}

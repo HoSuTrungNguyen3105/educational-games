@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService, resultService } from '../../services/api.js'
 import { StampToken, StatusBadge, Loader, ErrorState, EmptyState, ViewToggle, useViewMode, cardGridClass, tableWrapClass } from '../../components/ui'
-import { BarChart3 } from 'lucide-react'
+import { BarChart3, Download } from 'lucide-react'
 import { rankMedal } from '../../lib/utils.js'
+import { exportCsv } from '../../lib/exportCsv.js'
 
 export default function TeacherResults({ gameId, onBack }) {
   const [game, setGame] = useState(null);
@@ -24,7 +25,30 @@ export default function TeacherResults({ gameId, onBack }) {
         <>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <h1 className="font-display text-3xl text-ink">{game ? game.name : "Kết quả"}</h1>
-            <StatusBadge status={game ? game.status : "draft"} />
+            <div className="flex items-center gap-2">
+              <StatusBadge status={game ? game.status : "draft"} />
+              <button
+                type="button"
+                onClick={() => exportCsv(
+                  "results.csv",
+                  ["Hạng", "Học sinh", "Game", "Điểm", "Đúng/Tổng", "Độ chính xác", "Thời gian (giây)"],
+                  results.map((r, i) => [
+                    i + 1,
+                    r.playerName,
+                    game ? game.name : "",
+                    r.score,
+                    r.totalQuestions > 0 ? `${r.correctAnswers}/${r.totalQuestions}` : "",
+                    r.totalQuestions > 0 ? `${r.accuracy}%` : "",
+                    r.completionTime,
+                  ]),
+                )}
+                disabled={!results.length}
+                title="Xuất CSV"
+                className="w-9 h-9 rounded-lg border border-ink/15 bg-paper inline-flex items-center justify-center text-ink/60 hover:text-teal disabled:opacity-40 transition"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </div>
           </div>
           {results.length === 0 ? (
             <EmptyState icon={<BarChart3 />} title="Chưa có lượt chơi nào" subtitle="Chia sẻ mã vé trò chơi để học sinh tham gia và bạn sẽ thấy kết quả tại đây." />

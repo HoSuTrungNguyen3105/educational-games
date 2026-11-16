@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { assignmentService, classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Clock, Users, CircleX, Eye, Link2, ClipboardList, Trash2 } from 'lucide-react';
+import { Clock, Users, CircleX, Eye, Link2, ClipboardList, Trash2, Download } from 'lucide-react';
 import { BulkDeleteBar, Checkbox, ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconCheckCircle, Loader, ManagementHeader, PrimaryButton, useViewMode } from '../../components/ui';
 import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js';
 import { useConfirm } from '../../hooks/useConfirm.js';
@@ -9,6 +9,7 @@ import { useCopy } from '../../hooks/useCopy.js';
 import { usePagedList } from '../../hooks/usePagedList.js';
 import { matchesQuery } from '../../lib/searchText.js';
 import { templateLabel } from '../../components/exam/templateLabel.js';
+import { exportCsv } from '../../lib/exportCsv.js';
 
 export default function AssignmentList({ showToast }) {
   const [assignments, setAssignments] = useState(null);
@@ -113,13 +114,41 @@ export default function AssignmentList({ showToast }) {
     copy(url, assignment.id);
   }
 
+  function handleExportCsv() {
+    exportCsv(
+      'assignments.csv',
+      ['Tiêu đề', 'Lớp', 'Mã', 'Trạng thái', 'Loại', 'Mẫu game', 'Hạn nộp', 'Ngày tạo'],
+      filtered.map((a) => [
+        a.title,
+        classes[a.classId] || a.classId || '',
+        a.code || '',
+        a.status === 'ACTIVE' ? 'Đang mở' : 'Đã đóng',
+        a.isExam ? 'Bài thi' : 'Bài tập',
+        templateLabel(a.templateId),
+        a.deadline || '',
+        a.createdAt || '',
+      ]),
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <ManagementHeader subtitle="Quản lý bài tập" title="Bài tập đã giao" />
-        <PrimaryButton onClick={() => navigate('/dashboard/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm flex items-center gap-2">
-          <IconAdd className="w-4 h-4" /> Tạo bài tập
-        </PrimaryButton>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={!filtered.length}
+            title="Xuất CSV"
+            className="w-9 h-9 rounded-lg border border-ink/15 bg-paper inline-flex items-center justify-center text-ink/60 hover:text-teal disabled:opacity-40 transition"
+          >
+            <Download className="w-4 h-4" />
+          </button>
+          <PrimaryButton onClick={() => navigate('/dashboard/assignments/new')} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm flex items-center gap-2">
+            <IconAdd className="w-4 h-4" /> Tạo bài tập
+          </PrimaryButton>
+        </div>
       </div>
 
       {error && !assignments && (
