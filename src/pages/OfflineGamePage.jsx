@@ -93,12 +93,24 @@ const FLUSH_BRIDGE = `<script>(function(){window.addEventListener("message",func
  */
 const API_BASE_SNIPPET = `<script>window.EG_API_BASE=${JSON.stringify(API_BASE)};</script>`;
 
+/**
+ * Gốc tài nguyên tĩnh của app. Game tham chiếu ảnh trong public/ bằng đường
+ * dẫn TƯƠNG ĐỐI (vd cubemew: `src="edu_character.png"`). Trong iframe srcdoc,
+ * URL tương đối được tính theo URL trang cha — chỉ đúng khi route nằm ngay
+ * gốc app. Chèn <base href=BASE_URL> để ảnh luôn trỏ về public/ dù đang ở
+ * `/#/offline/<id>` hay route lồng nhau. Chỉ chèn khi game thật sự có đường
+ * dẫn tương đối, để không đổi hành vi của các game còn lại.
+ */
+const BASE_SNIPPET = `<base href="${import.meta.env.BASE_URL || "/"}">`;
+const HAS_RELATIVE_ASSET = /(?:src|href)="(?!https?:|data:|#|\/)[^"]+"/i;
+
 function injectGameUi(html) {
   const tokens = `<style id="gq-tokens">${TOKENS_CSS}</style>`;
   const bridge = `${API_BASE_SNIPPET}${EMBEDDED_SNIPPET}${FLUSH_BRIDGE}`;
+  const headExtra = `${HAS_RELATIVE_ASSET.test(html) ? BASE_SNIPPET : ""}${tokens}`;
   const withTokens = /<head[^>]*>/i.test(html)
-    ? html.replace(/<head[^>]*>/i, (m) => `${m}${tokens}`)
-    : `${tokens}${html}`;
+    ? html.replace(/<head[^>]*>/i, (m) => `${m}${headExtra}`)
+    : `${headExtra}${html}`;
   return /<\/body>/i.test(withTokens)
     ? withTokens.replace(/<\/body>/i, () => `${bridge}</body>`)
     : withTokens + bridge;
