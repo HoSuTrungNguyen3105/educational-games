@@ -22,15 +22,14 @@
   min-height: 100vh;
   color: var(--gq-ink);
   background-color: #bfe6fb;
+  /* BẢN LÀM LẠI V2 (2026-11-16): ảnh phong cảnh chuyển vào .gq-scene (khung
+     header + hero) để hero là một "bức tranh" khép kín có sóng chuyển ở
+     chân; .gq-home chỉ còn gradient trời/lá làm nền cho phần thân dưới. */
   background-image:
-    url("/educational-games/cd961dc9-a056-4831-9e6a-cb62ccbada3f.png"),
     linear-gradient(180deg, #a8dcf9 0, #cdeffd 34%, #e6f7e9 68%, #d8f3d0 100%);
-  background-repeat: no-repeat, no-repeat;
-  /* Ảnh nền phủ HẾT bề ngang và cao theo đúng tỉ lệ gốc (rộng:cao = 2:1) —
-     ép chiều cao cố định (bản nháp 620px) làm cả hai bé trong tranh bị
-     background-size cắt mất đầu. Phần dưới ảnh dùng gradient trời/lá. */
-  background-size: 100% auto, 100% 100%;
-  background-position: top center, top center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: top center;
   /* `clip` chứ không phải `hidden`: `overflow-x:hidden` khiến overflow-y bị
      tính thành `auto` → dựng thêm một scroll container lồng nhau (2 thanh cuộn). */
   overflow-x: clip;
@@ -72,10 +71,36 @@
   .gq-page { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px) + 28px); }
 }
 
+/* ─────────────────────── KHUNG CẢNH (SCENE) ───────────────────────
+   Vùng header + hero dùng CHÍNH ảnh phong cảnh Nguyên chỉ định làm nền
+   (trời/mây/cầu vồng/trường học/đồi), tràn hết bề ngang trang (margin âm
+   triệt tiêu padding của .gq-page, padding bù lại để nội dung thẳng hàng).
+   Ảnh giữ tỉ lệ gốc 2:1 (100% auto, neo trên) như bản trước — không ép
+   `cover` vì sẽ cắt mất trường học/cầu vồng ở hai bên. Cuối scene là dải
+   sóng SVG mềm màu var(--stage) chuyển xuống nền trang; hàng nút tắt
+   (.gq-playbar) nằm ngoài scene, chồng lên mép dưới của sóng. */
+.gq-scene {
+  position: relative;
+  margin: 0 calc(clamp(12px, 2.5vw, 40px) * -1);
+  padding: 0 clamp(12px, 2.5vw, 40px);
+  background-image: url("/educational-games/cd961dc9-a056-4831-9e6a-cb62ccbada3f.png");
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+  background-position: top center;
+}
+.gq-scene__wave {
+  display: block;
+  width: 100%;
+  height: 46px;
+  margin-top: 4px;
+}
+.gq-scene__wave path { fill: var(--stage); }
+
 /* ───────────────────────── HEADER ───────────────────────── */
 
-/* Header 2 hàng: hàng trên là logo/tuổi/cụm nút, hàng dưới là thú cưng + tab
-   điều hướng (trước đây 2 phần này nằm trong sheet ⚙️). */
+/* Header MỘT hàng (bản V2): logo + chip thú cưng + cụm nút (Admin / ví
+   Xu-Sao / âm thanh / hồ sơ / Sáng-Tối / ⚙️), nổi trên nền trời của scene.
+   Màn hẹp thì hàng tự xuống dòng (flex-wrap) thay vì tràn ngang. */
 .gq-top {
   display: flex;
   flex-direction: column;
@@ -87,24 +112,38 @@
 .gq-top__row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
+  /* Màn hẹp: cho cụm nút rớt xuống hàng hai thay vì tràn khỏi màn hình. */
+  flex-wrap: wrap;
 }
 
+/* Logo: khối trắng bo tròn nổi trên nền trời như ảnh mẫu (mascot mini +
+   tên 2 dòng). Khối này GIỮ SÁNG ở cả chế độ Tối — nó là một "tấm biển"
+   trên bức tranh hero, giống bong bóng mây. */
 .gq-logo {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
+  background: #fff;
+  border-radius: 16px;
+  padding: 5px 14px 5px 7px;
+  box-shadow: 0 8px 20px rgba(22, 48, 94, 0.14);
 }
 .gq-logo__mark {
   /* logo.svg là icon ngôi sao vuông 1:1 (không còn lockup ngang như PNG cũ)
      -> để ô vuông nhỏ, chừa chỗ cho tên trang + cụm nút trên màn hẹp. */
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
+}
+.gq-logo__txt {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
 }
 .gq-logo__name {
   font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
@@ -112,11 +151,13 @@
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.01em;
+  color: #16305e;
 }
 .gq-logo__sub {
-  font-size: 10px;
-  color: var(--gq-mute);
-  font-weight: 600;
+  font-size: 9.5px;
+  color: #5f7699;
+  font-weight: 700;
+  letter-spacing: 0.14em;
 }
 
 /* badge tuổi: vòng tròn số + pill mô tả */
@@ -170,8 +211,9 @@
   gap: 6px;
   height: 42px;
   padding: 0 16px;
-  border-radius: 13px;
-  border: 0;
+  border-radius: 999px;
+  /* Viền dashed trắng bên trong nền xanh như pill ở ảnh mẫu. */
+  border: 2px dashed rgba(255, 255, 255, 0.85);
   cursor: pointer;
   white-space: nowrap;
   font-size: 13px;
@@ -186,7 +228,7 @@
 .gq-iconbtn {
   width: 42px;
   height: 42px;
-  border-radius: 13px;
+  border-radius: 999px;
   background: #fff;
   box-shadow: 0 6px 16px rgba(22, 48, 94, 0.1);
   display: grid;
@@ -221,15 +263,52 @@
 /* Huy hiệu số xu/sao ở trạng thái ĐANG TẢI ví: nền xám nhạt thay vì số 0. */
 .gq-iconbtn__n--load { background: #e6ecf6; color: var(--gq-mute); }
 
+/* Pill ví Xu/Sao: icon trong vòng tròn màu + giá trị dạng chữ — thay cho
+   nút icon + huy hiệu góc của bản cũ, theo đúng ảnh mẫu. */
+.gq-wallet {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 42px;
+  padding: 0 14px 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(22, 48, 94, 0.1);
+  color: var(--gq-ink);
+  cursor: pointer;
+  font: inherit;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+@media (hover: hover) {
+  .gq-wallet:hover { background: var(--gq-tile-hover); }
+}
+.gq-wallet:active { transform: scale(0.96); }
+.gq-wallet__ico {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+.gq-wallet__ico--coin {
+  background: linear-gradient(180deg, #ffd45e, #f4b942);
+  color: #7a4d00;
+  box-shadow: inset 0 -2px 0 rgba(122, 77, 0, 0.25);
+}
+.gq-wallet__ico--star { background: #ffefc4; color: #e8930c; }
+.gq-wallet__val { font-size: 13.5px; font-weight: 800; white-space: nowrap; }
+
 /* Nút hồ sơ: icon + tên bé → /profile */
 .gq-kidchip {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   height: 42px;
-  padding: 0 14px 0 5px;
+  padding: 0 12px 0 5px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 999px;
   background: #fff;
   box-shadow: 0 6px 16px rgba(22, 48, 94, 0.1);
   color: var(--gq-ink);
@@ -258,6 +337,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+.gq-kidchip__chev { flex: 0 0 auto; color: var(--gq-mute); margin-left: -3px; }
 /* 641–767px: header vẫn dựng nút "Bảng điều khiển" đầy chữ nên không còn chỗ cho chip
    Hồ sơ (tràn ngang ~95px) → thu nút đó về icon và ẩn chip. Tab "Cá nhân" ở thanh dưới
    đã đủ lối vào trang hồ sơ trên màn nhỏ. */
@@ -270,20 +350,14 @@
 /* 768–1199px: đủ chỗ cho nút nhưng chưa đủ cho tên bé → chip chỉ còn ảnh đại diện. */
 @media (min-width: 768px) and (max-width: 1199px) {
   .gq-kidchip { padding: 0 6px; justify-content: center; }
-  .gq-kidchip__name { display: none; }
+  .gq-kidchip__name, .gq-kidchip__chev { display: none; }
 }
 
-/* ─────────── HÀNG THÚ CƯNG (header) ───────────
-   Thanh tab điều hướng cuộn ngang (.gq-navtabs/.gq-navtab/.gq-navpop)
-   đã XOÁ hẳn cùng phần tử của nó (2026-11-09): điều hướng danh mục sang
+/* ─────────── CHIP THÚ CƯNG (trên hàng header) ───────────
+   Trước đây chip nằm ở hàng riêng .gq-navrow dưới header; bản V2 đưa lên
+   hàng header cạnh logo như ảnh mẫu (hàng .gq-navrow bỏ hẳn). Thanh tab
+   điều hướng cuộn ngang đã XOÁ từ 2026-11-09: điều hướng danh mục sang
    trang /categories, mọi điểm đến còn lại ở sheet ⚙️ + thanh dưới cùng. */
-
-.gq-navrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
 
 /* chip thú cưng → /pet */
 .gq-petchip {
@@ -291,8 +365,8 @@
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
-  height: 40px;
-  padding: 0 14px 0 6px;
+  height: 42px;
+  padding: 0 12px 0 6px;
   border: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
@@ -322,6 +396,7 @@
   color: var(--gq-mute);
   white-space: nowrap;
 }
+.gq-petchip__chev { flex: 0 0 auto; color: var(--gq-mute); margin-left: -2px; }
 
 /* ─────────────────── HERO CHÀO BÉ ─────────────────── */
 
@@ -330,20 +405,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin: 4px 0 14px;
-  min-height: 150px;
+  gap: 4px;
+  margin: 6px 0 2px;
+  min-height: 240px;
+}
+/* Cụm mascot + sao lấp lánh bên trái bong bóng. */
+.gq-hero__art {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 2;
 }
 .gq-hero__mascot {
   /* Mascot NGÔI SAO VÀNG Nguyên chỉ định (public/bb4eaaa0-…png, nền trong):
      đứng bên TRÁI bong bóng như ảnh mẫu, to và chồng nhẹ lên bong bóng. */
   position: relative;
   z-index: 2;
-  width: 180px;
+  width: 330px;
   height: auto;
   object-fit: contain;
-  flex-shrink: 0;
-  margin-right: -20px;
+  display: block;
+  margin-right: -30px;
   filter: drop-shadow(0 14px 22px rgba(22, 48, 94, 0.22));
   animation: gqFloat 3.4s ease-in-out infinite;
   user-select: none;
@@ -353,61 +434,112 @@
   0%, 100% { transform: translateY(0) rotate(-1.5deg); }
   50% { transform: translateY(-8px) rotate(2deg); }
 }
+/* Sao vàng lấp lánh quanh mascot (trang trí thuần, aria-hidden ở JSX). */
+.gq-spark {
+  position: absolute;
+  z-index: 3;
+  color: #ffc21f;
+  text-shadow: 0 2px 0 #e0a800, 0 6px 14px rgba(217, 154, 0, 0.35);
+  line-height: 1;
+  pointer-events: none;
+  animation: gqTwinkle 2.2s ease-in-out infinite;
+}
+.gq-spark--1 { top: 4%; left: 0; font-size: 26px; }
+.gq-spark--2 { top: 14%; right: 6px; font-size: 36px; animation-delay: 0.55s; }
+.gq-spark--3 { bottom: 12%; left: 9%; font-size: 20px; animation-delay: 1.1s; }
+@keyframes gqTwinkle {
+  0%, 100% { transform: scale(0.8) rotate(0deg); opacity: 0.65; }
+  50% { transform: scale(1.15) rotate(12deg); opacity: 1; }
+}
+/* Bong bóng MÂY trắng: bo tròn lớn + 2 gờ tròn nhô lên mép trên
+   (::before/::after — phần chồng vào thân bị nền bong bóng che, chỉ phần
+   nhô ra ngoài mới thấy nên thành gờ mây). Bong bóng GIỮ SÁNG ở cả chế độ
+   Tối như một đám mây trong bức tranh hero — chữ bên trong dùng màu navy
+   tường minh, không theo var(--gq-ink). */
 .gq-hero__bubble {
   position: relative;
   z-index: 1;
-  flex: 0 1 640px;
+  flex: 0 1 660px;
   min-width: 0;
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 28px;
-  padding: 20px 28px 20px 36px;
+  background: #fff;
+  border-radius: 46px;
+  padding: 24px 30px 22px 40px;
   box-shadow: 0 18px 40px rgba(22, 48, 94, 0.14);
   text-align: center;
 }
-/* đuôi bong bóng thoại chỉ về phía nhân vật — bản mẫu là bong bóng bo tròn
-   lớn không đuôi, ẩn đuôi cũ cho khớp. */
+.gq-hero__bubble::before,
+.gq-hero__bubble::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  background: #fff;
+  border-radius: 999px;
+}
 .gq-hero__bubble::before {
-  content: none;
+  width: 110px;
+  height: 110px;
+  top: -34px;
+  left: 12%;
+}
+.gq-hero__bubble::after {
+  width: 76px;
+  height: 76px;
+  top: -24px;
+  right: 16%;
 }
 .gq-hero__hi {
   font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 700;
-  color: var(--gq-ink);
+  color: #1d2e4a;
   line-height: 1.15;
   /* Tên đầy đủ có thể dài — cho xuống dòng gọn thay vì bị cắt cụt. */
   overflow-wrap: break-word;
 }
 .gq-hero__ask {
   font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   color: #2f6fd6;
   margin-top: 6px;
 }
-/* Tên thú cưng trong lời chào — dòng phụ nhỏ, không tranh chỗ với câu hỏi. */
-.gq-hero__pet {
-  margin-top: 7px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #7a5a2f;
+/* Hàng ruy-băng (+ nút đăng nhập cho khách) dưới lời chào. */
+.gq-hero__row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 11px;
 }
-.gq-hero__pet b { color: #b4551a; }
+/* Dải ruy-băng vàng như ảnh mẫu. */
+.gq-hero__ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(90deg, #ffd45e, #f4b942);
+  color: #6b4a00;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 999px;
+  box-shadow: 0 6px 14px rgba(244, 185, 66, 0.35);
+}
+.gq-hero__ribbon b { color: #7a4d00; }
 /* Con số trò chơi trong lời chào: cam đậm nổi bật như ảnh mẫu. */
 .gq-hero__count {
-  color: #f2760a;
+  color: #e4572e;
   font-weight: 700;
 }
 /* Chưa đăng nhập: lời mời đăng nhập ngay trong bong bóng chào. */
 .gq-hero__login {
-  margin-top: 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 999px;
   background: #2f7fd6;
   color: #fff;
   font-size: 12.5px;
   font-weight: 700;
-  padding: 7px 14px;
+  padding: 8px 15px;
   cursor: pointer;
 }
 .gq-hero__login:active { transform: translateY(1px); }
@@ -469,90 +601,109 @@
   line-height: 1;
 }
 
-/* ─────────── HÀNG NÚT TẮT + NÚT CHƠI NGẪU NHIÊN ─────────── */
-/* 4 nút bằng nhau theo lưới: cùng chiều cao 52px, cùng bo góc, cùng cỡ chữ.
-   "Chơi ngẫu nhiên" chỉ khác màu nền để vẫn nhận ra nút chính — không được
-   to gấp đôi 3 nút còn lại như trước. Màn hẹp xếp 2×2 cho nhãn không bị cắt. */
+/* ─────────── HÀNG NÚT TẮT LỚN (PLAYBAR) ─────────── */
+/* 4 pill cao ~72px bo tròn hoàn toàn, chồng lên mép dưới khung cảnh
+   (margin-top âm, z-index trên sóng). Mỗi pill có bóng đổ TẦNG: cạnh dưới
+   đậm 6px cùng tông + bóng mềm — bấm xuống thì pill lún theo. "Chơi ngay"
+   (vẫn là bốc game ngẫu nhiên) to hơn hẳn theo flex-grow như ảnh mẫu.
+   Khách chưa đăng nhập không có pill "Bài học" — 3 pill còn lại tự giãn.
+   Màu các pill là màu nhấn cố định, giữ nguyên ở cả chế độ Tối. */
 .gq-playbar {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 20px;
+  position: relative;
+  z-index: 6;
+  display: flex;
+  gap: 12px;
+  margin: -30px 0 22px;
 }
-@media (min-width: 640px) {
-  .gq-playbar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-.gq-mini {
-  min-height: 60px;
-  width: 100%;
+.gq-play {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 72px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 12px;
-  background: rgba(255, 255, 255, 0.95);
+  gap: 10px;
+  padding: 8px 10px 8px 12px;
   border: 0;
-  border-radius: 16px;
-  box-shadow: 0 10px 22px rgba(22, 48, 94, 0.12);
+  border-radius: 999px;
   cursor: pointer;
   font: inherit;
-  color: var(--gq-ink);
   position: relative;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 @media (hover: hover) {
-  .gq-mini:hover { background: #fff; transform: translateY(-2px); }
-  .gq-mini:hover .gq-mini__ico { animation: gqBob 0.5s ease; }
+  .gq-play:hover { filter: brightness(1.05); transform: translateY(-2px); }
 }
-.gq-mini:active { transform: translateY(1px); }
-.gq-mini__ico { font-size: 22px; line-height: 1; flex-shrink: 0; display: grid; place-items: center; }
-.gq-mini__lbl { font-family: "Fredoka", "Be Vietnam Pro", sans-serif; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gq-mini__dot {
+.gq-play:active { transform: translateY(3px); }
+.gq-play__ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: #fff;
+}
+.gq-play__lbl {
+  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gq-play__chev {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.gq-play--learn {
+  background: linear-gradient(180deg, #38bdf8, #2563eb);
+  color: #fff;
+  box-shadow: 0 6px 0 #1d4ed8, 0 16px 28px rgba(37, 99, 235, 0.35);
+}
+.gq-play--learn .gq-play__ico, .gq-play--learn .gq-play__chev { color: #2563eb; }
+.gq-play--cup {
+  background: #fff3d6;
+  color: #1d2e4a;
+  box-shadow: 0 6px 0 #eed9a4, 0 16px 28px rgba(217, 164, 32, 0.25);
+}
+.gq-play--cup .gq-play__ico { background: #ffe9a8; color: #d97706; }
+.gq-play--cup .gq-play__chev { color: #e8930c; }
+.gq-play--code {
+  background: linear-gradient(180deg, #f472b6, #a855f7);
+  color: #fff;
+  box-shadow: 0 6px 0 #9333ea, 0 16px 28px rgba(168, 85, 247, 0.35);
+}
+.gq-play--code .gq-play__ico, .gq-play--code .gq-play__chev { color: #a855f7; }
+.gq-play--go {
+  flex-grow: 1.7;
+  justify-content: center;
+  background: linear-gradient(180deg, #ffb03a, #f97316);
+  color: #fff;
+  box-shadow: 0 6px 0 #ea580c, 0 18px 30px rgba(249, 115, 22, 0.4);
+}
+.gq-play--go .gq-play__ico {
+  width: 48px;
+  height: 48px;
+  color: #f97316;
+}
+.gq-play--go .gq-play__lbl { font-size: 19px; }
+/* Chấm đỏ báo nhiệm vụ chờ ở pill "Cúp" (giữ từ bản cũ). */
+.gq-play__dot {
   position: absolute;
-  top: 10px;
+  top: 8px;
   right: 12px;
   width: 12px;
   height: 12px;
   border-radius: 999px;
   background: #e8443c;
   border: 2px solid #fff;
-}
-
-/* Cùng kích thước .gq-mini — khác mỗi nền cam để vẫn là nút nổi bật nhất hàng. */
-.gq-random {
-  min-height: 60px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 16px;
-  box-shadow: 0 12px 24px rgba(242, 118, 10, 0.38);
-  color: #fff;
-  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  cursor: pointer;
-  background: linear-gradient(180deg, #ffb52e, #f2760a);
-  transition: filter 0.15s ease, transform 0.15s ease;
-}
-@media (hover: hover) {
-  .gq-random:hover { filter: brightness(1.06); }
-  .gq-random:hover .gq-random__ico { animation: gqTumble 0.6s ease; }
-}
-.gq-random:active { transform: translateY(1px); }
-.gq-random__ico { font-size: 22px; line-height: 1; flex-shrink: 0; display: grid; place-items: center; }
-@keyframes gqTumble {
-  40% { transform: rotate(180deg) scale(1.15); }
-  100% { transform: rotate(360deg) scale(1); }
-}
-@keyframes gqBob {
-  35% { transform: translateY(-5px) rotate(-6deg); }
-  70% { transform: translateY(0) rotate(4deg); }
+  z-index: 1;
 }
 
 /* ───────────────────────── SECTION ───────────────────────── */
@@ -721,6 +872,207 @@
   white-space: nowrap;
 }
 
+/* ─────────── ĐẦU MỤC "HÔM NAY CỦA BÉ" KIỂU BIỂN GỖ ───────────
+   Riêng section này dùng biển gỗ thay SectionHead chung: nền gradient gỗ,
+   hơi nghiêng -1deg, huy hiệu sao vàng trong vòng tròn nổi ở mép trái,
+   chữ trắng đậm có bóng chữ. Biển gỗ là hoạ tiết trang trí — giữ nguyên
+   ở cả chế độ Tối. Phụ đề nằm dưới biển, theo màu chữ của trang. */
+.gq-todayhead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+.gq-todayhead__left { min-width: 0; }
+.gq-woodsign {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(180deg, #b07a45, #8b5a2b);
+  border-radius: 14px;
+  padding: 10px 20px 10px 36px;
+  margin-left: 12px;
+  transform: rotate(-1deg);
+  box-shadow: 0 8px 18px rgba(139, 90, 43, 0.35), inset 0 2px 0 rgba(255, 255, 255, 0.25);
+}
+.gq-woodsign__badge {
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-8deg);
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd45e, #f4b942);
+  border: 3px solid #fff6e7;
+  display: grid;
+  place-items: center;
+  color: #7a4d00;
+  box-shadow: 0 6px 12px rgba(217, 154, 0, 0.4);
+}
+.gq-woodsign__t {
+  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(90, 55, 15, 0.45);
+  white-space: nowrap;
+}
+.gq-todayhead__sub {
+  margin-top: 8px;
+  margin-left: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #31517e;
+}
+/* Pill "Xem tất cả" → trang Danh mục. Bề mặt theo var(--card)/var(--ink)
+   nên tự đảo ở chế độ Tối. */
+.gq-seeall {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--card);
+  color: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 15px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: var(--gq-shadow);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+@media (hover: hover) {
+  .gq-seeall:hover { transform: translateY(-1px); background: var(--gq-tile-hover); }
+}
+.gq-seeall:active { transform: scale(0.97); }
+
+/* ─────────── RAIL "HÔM NAY" + NÚT CUỘN HAI MÉP ─────────── */
+.gq-railwrap { position: relative; }
+.gq-railnav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--card);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 22px rgba(22, 48, 94, 0.18);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.gq-railnav--prev { left: -13px; }
+.gq-railnav--next { right: -13px; }
+@media (hover: hover) {
+  .gq-railnav:hover { background: var(--gq-tile-hover); }
+}
+.gq-railnav:active { transform: translateY(-50%) scale(0.93); }
+/* Thiết bị cảm ứng vuốt trực tiếp — ẩn hẳn nút cuộn. */
+@media (hover: none) {
+  .gq-railnav { display: none; }
+}
+
+/* ─────────── THẺ GAME RIÊNG CHO RAIL "HÔM NAY" (HomeGameCard) ───────────
+   Ảnh bìa chữ nhật 4/3 phủ kín vùng ảnh, nhãn loại ở góc trái trên vùng
+   ảnh, tên + pill tuổi ở thân thẻ. Bề mặt thẻ theo var(--card)/var(--ink)
+   nên tự đảo ở chế độ Tối. */
+.gq-hcard {
+  position: relative;
+  flex: 0 0 auto;
+  width: 230px;
+  background: var(--card);
+  border: 0;
+  border-radius: 26px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  scroll-snap-align: start;
+  text-align: center;
+  box-shadow: 0 10px 22px rgba(22, 48, 94, 0.1);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+@media (hover: hover) {
+  .gq-hcard:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 30px rgba(22, 48, 94, 0.16);
+  }
+}
+.gq-hcard:active { transform: translateY(1px) scale(0.98); }
+.gq-hcard__media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.gq-hcard__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.gq-hcard__glyph { font-size: 58px; line-height: 1; }
+.gq-hcard__badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  border-radius: 999px;
+  padding: 3px 10px;
+  box-shadow: 0 4px 10px rgba(22, 48, 94, 0.22);
+}
+.gq-hcard__badge--learn { background: #2563eb; }
+.gq-hcard__badge--new { background: #f97316; }
+.gq-hcard__badge--play { background: #8b5cf6; }
+.gq-hcard__name {
+  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  min-height: 39px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+.gq-hcard__age {
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 3px 12px;
+  background: #e3f0ff;
+  color: #31517e;
+}
+.gq-hcard__note {
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 2px 9px;
+  background: #ffe9a8;
+  color: #8a6d1f;
+  white-space: nowrap;
+}
+
 /* section nền xanh lá có mép cong */
 .gq-sect--green {
   /* Nền trời của trang nay đã liền mạch — dải xanh lá riêng của section
@@ -783,6 +1135,7 @@
 /* tôn trọng người dùng giảm chuyển động */
 @media (prefers-reduced-motion: reduce) {
   .gq-hero__mascot,
+  .gq-spark,
   .gq-gift__rays,
   .gq-gift__star,
   .gq-sheet,
@@ -790,10 +1143,13 @@
     animation: none !important;
   }
   .gq-card,
-  .gq-mini,
+  .gq-hcard,
+  .gq-play,
   .gq-iconbtn,
+  .gq-wallet,
   .gq-petchip,
-  .gq-random,
+  .gq-seeall,
+  .gq-railnav,
   .gq-more {
     transition: none !important;
   }
@@ -1008,37 +1364,42 @@
   .gq-card__name { font-size: 15px; min-height: 36px; }
   .gq-sect__t { font-size: 24px; }
   .gq-sect__s { font-size: 13.5px; }
-  .gq-mini { min-height: 64px; }
-  .gq-mini__lbl { font-size: 15.5px; }
-  .gq-random { min-height: 64px; font-size: 15.5px; }
-  .gq-logo__mark { width: 50px; height: 50px; }
+  .gq-play { min-height: 76px; }
+  .gq-play__lbl { font-size: 18px; }
+  .gq-play--go .gq-play__lbl { font-size: 20px; }
+  .gq-logo__mark { width: 46px; height: 46px; }
   .gq-logo__name { font-size: 18px; }
-  .gq-hero { gap: 10px; margin-bottom: 16px; }
-  .gq-hero__mascot { width: 196px; height: auto; }
-  .gq-hero__bubble { padding: 22px 30px 22px 38px; }
-  .gq-hero__hi { font-size: 34px; }
+  .gq-hero { gap: 6px; }
+  .gq-hero__mascot { width: 350px; height: auto; }
+  .gq-hero__bubble { padding: 26px 32px 24px 42px; }
+  .gq-hero__hi { font-size: 36px; }
   .gq-hero__ask { font-size: 18px; }
+  .gq-hcard { width: 240px; }
 }
 
 /* ─────────── TABLET (641–1100px): hero thu gọn, mascot nhỏ lại ─────────── */
 @media (min-width: 641px) and (max-width: 1100px) {
-  .gq-hero { min-height: 150px; }
-  .gq-hero__mascot { width: 150px; margin-right: -18px; }
-  .gq-hero__bubble { padding: 18px 24px 18px 34px; border-radius: 26px; }
-  .gq-hero__hi { font-size: 28px; }
+  .gq-hero { min-height: 200px; }
+  .gq-hero__mascot { width: 225px; margin-right: -22px; }
+  .gq-hero__bubble { padding: 20px 26px 20px 36px; border-radius: 38px; }
+  .gq-hero__hi { font-size: 29px; }
   .gq-hero__ask { font-size: 16px; }
+  .gq-spark--2 { font-size: 28px; }
   .gq-card { width: 168px; }
   .gq-card__ring { width: 100px; height: 82px; font-size: 44px; }
   .gq-sect__t { font-size: 23px; }
 }
 
 @media (max-width: 640px) {
-  /* Ảnh nền trên mobile vẫn giữ đúng tỉ lệ (không ép chiều cao). */
-  .gq-home { background-size: 100% auto, 100% 100%; }
   .gq-sect__t { font-size: 18px; }
-  .gq-top__row { gap: 10px; }
+  .gq-top__row { gap: 8px; }
+  .gq-scene__wave { height: 32px; }
   .gq-petchip { height: 36px; padding: 0 11px 0 4px; }
   .gq-petchip__sub { display: none; }
+  .gq-petchip__chev { display: none; }
+  .gq-wallet { height: 38px; padding: 0 11px 0 5px; }
+  .gq-wallet__ico { width: 26px; height: 26px; }
+  .gq-wallet__val { font-size: 12.5px; }
   .gq-logo__mark { width: 44px; height: 44px; }
   .gq-logo__name { font-size: 16px; }
   /* Header một hàng gọn trên màn hình hẹp: ẩn chip tuổi (tên + tuổi bé đã có
@@ -1047,7 +1408,7 @@
      ⭐ 🔊 ⚙️ nằm ngoài tầm với. */
   .gq-age { display: none; }
   .gq-logo { flex-shrink: 1; min-width: 0; }
-  .gq-logo > span:last-child { min-width: 0; }
+  .gq-logo__txt { min-width: 0; }
   .gq-logo__name {
     display: inline-block;
     max-width: 100%;
@@ -1058,18 +1419,37 @@
   .gq-logo__sub { display: none; }
   .gq-actions { flex-shrink: 0; }
   .gq-age__sub { display: none; }
-  .gq-hero { gap: 6px; margin-bottom: 13px; min-height: 0; }
-  .gq-hero__mascot { width: 92px; height: auto; margin-right: -12px; }
-  .gq-hero__bubble { padding: 12px 14px 12px 20px; border-radius: 20px; text-align: left; }
+  .gq-hero { gap: 2px; margin: 4px 0 0; min-height: 0; }
+  .gq-hero__mascot { width: 104px; height: auto; margin-right: -12px; }
+  .gq-spark--1 { font-size: 16px; }
+  .gq-spark--2 { font-size: 20px; right: 0; }
+  .gq-spark--3 { display: none; }
+  .gq-hero__bubble { padding: 14px 14px 13px 20px; border-radius: 26px; text-align: left; }
+  .gq-hero__bubble::before { width: 62px; height: 62px; top: -20px; left: 10%; }
+  .gq-hero__bubble::after { width: 44px; height: 44px; top: -14px; right: 12%; }
   .gq-hero__hi { font-size: 17px; }
   .gq-hero__ask { font-size: 12.5px; }
-  /* Hàng nút tắt trên màn hẹp: lưới 2×2, 4 nút vẫn bằng nhau — nút chính không
-     chiếm riêng một hàng. Nhãn dài ("Khu vườn của tôi") được phép cắt dấu … */
-  .gq-mini { padding: 0 8px; min-height: 56px; border-radius: 14px; }
-  .gq-mini__ico { font-size: 20px; }
-  .gq-mini__lbl { font-size: 13px; }
-  .gq-random { padding: 0 8px; font-size: 13px; min-height: 56px; border-radius: 14px; }
-  .gq-random__ico { font-size: 20px; }
+  .gq-hero__row { justify-content: flex-start; margin-top: 8px; }
+  .gq-hero__ribbon { font-size: 11.5px; padding: 5px 11px; }
+  /* Hàng nút tắt trên màn hẹp: lưới 2 cột, "Chơi ngay" chiếm trọn hàng
+     dưới cho nổi bật; nhãn pill còn lại rút gọn. */
+  .gq-playbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: -22px; }
+  .gq-play { min-height: 58px; padding: 6px 8px 6px 10px; gap: 8px; }
+  .gq-play__ico { width: 36px; height: 36px; }
+  .gq-play__lbl { font-size: 14px; }
+  .gq-play__chev { width: 28px; height: 28px; }
+  .gq-play--go { grid-column: 1 / -1; min-height: 60px; }
+  .gq-play--go .gq-play__ico { width: 40px; height: 40px; }
+  .gq-play--go .gq-play__lbl { font-size: 16px; }
+  /* Biển gỗ + thẻ "Hôm nay" trên màn hẹp */
+  .gq-woodsign { padding: 8px 14px 8px 30px; }
+  .gq-woodsign__t { font-size: 17.5px; }
+  .gq-woodsign__badge { width: 34px; height: 34px; left: -10px; }
+  .gq-todayhead__sub { font-size: 12px; }
+  .gq-seeall { padding: 7px 12px; font-size: 12px; }
+  .gq-hcard { width: 68vw; max-width: 250px; border-radius: 22px; }
+  .gq-hcard__glyph { font-size: 44px; }
+  .gq-hcard__name { font-size: 14px; min-height: 35px; }
   .gq-iconbtn { width: 38px; height: 38px; font-size: 17px; border-radius: 11px; }
   .gq-iconbtn__n { min-width: 17px; height: 17px; font-size: 9.5px; }
   .gq-age { padding: 3px 10px 3px 3px; }
@@ -1099,21 +1479,22 @@
   --gq-tile: #1B263B;
   --gq-tile-hover: #24334F;
   --gq-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
-  /* Lớp gradient DƯỚI ảnh phong cảnh chuyển tông tối; ảnh (lớp trên) giữ nguyên. */
+  /* Gradient thân trang chuyển tông tối. Ảnh phong cảnh nằm ở .gq-scene
+     (khung hero) — là "bức tranh" nên GIỮ SÁNG ở cả chế độ Tối, cùng bong
+     bóng mây và khối logo; sóng ở chân scene lấy var(--stage) nên tự tối. */
   background-color: #0F1726;
   background-image:
-    url("/educational-games/cd961dc9-a056-4831-9e6a-cb62ccbada3f.png"),
     linear-gradient(180deg, #16233A 0, #101B2E 34%, #0F1726 68%, #0B1220 100%);
 }
-/* Các bề mặt trắng/trắng trong → thẻ tối */
+/* Các bề mặt trắng/trắng trong → thẻ tối. KHÔNG gồm .gq-hero__bubble và
+   .gq-logo: hai khối này giữ sáng có chủ đích (xem ghi chú ở .gq-hero). */
 [data-theme="dark"] .gq-age,
 [data-theme="dark"] .gq-iconbtn,
 [data-theme="dark"] .gq-kidchip,
 [data-theme="dark"] .gq-petchip,
-[data-theme="dark"] .gq-hero__bubble,
+[data-theme="dark"] .gq-wallet,
 [data-theme="dark"] .gq-pwa,
 [data-theme="dark"] .gq-board,
-[data-theme="dark"] .gq-mini,
 [data-theme="dark"] .gq-sect__ico,
 [data-theme="dark"] .gq-sheet,
 [data-theme="dark"] .gq-gift__card,
@@ -1124,11 +1505,8 @@
   color: var(--gq-ink);
 }
 [data-theme="dark"] .gq-petchip { background: rgba(27, 38, 59, 0.92); }
-[data-theme="dark"] .gq-hero__bubble { background: rgba(27, 38, 59, 0.96); }
 [data-theme="dark"] .gq-board { background: rgba(27, 38, 59, 0.94); }
-[data-theme="dark"] .gq-mini { background: rgba(27, 38, 59, 0.95); }
 @media (hover: hover) {
-  [data-theme="dark"] .gq-mini:hover { background: var(--gq-tile-hover); }
   [data-theme="dark"] .gq-more:hover { background: var(--gq-tile); border-color: var(--gq-line); }
   [data-theme="dark"] .gq-iconbtn:hover,
   [data-theme="dark"] .gq-kidchip:hover { background: var(--gq-tile-hover); }
@@ -1136,8 +1514,10 @@
 /* Nút âm thanh đang tắt có nền vàng (màu nhấn) — giữ nguyên cả ở chế độ tối. */
 [data-theme="dark"] .gq-iconbtn--on { background: #ffd45e; }
 /* Chữ phụ / nhãn trên nền tối */
-[data-theme="dark"] .gq-sect__s { color: var(--gq-mute); }
-[data-theme="dark"] .gq-card__age { background: rgba(233, 238, 246, 0.12); color: #B9C6DA; }
+[data-theme="dark"] .gq-sect__s,
+[data-theme="dark"] .gq-todayhead__sub { color: var(--gq-mute); }
+[data-theme="dark"] .gq-card__age,
+[data-theme="dark"] .gq-hcard__age { background: rgba(233, 238, 246, 0.12); color: #B9C6DA; }
 [data-theme="dark"] .gq-link:hover { background: rgba(233, 238, 246, 0.07); }
 [data-theme="dark"] .gq-link__ico { background: #24334F; }
 /* Thanh điều hướng dưới (component dùng chung BottomNav — nền bg-white) */
