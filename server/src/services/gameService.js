@@ -7,7 +7,7 @@ const COLLECTION = "games";
 
 // Schema mới — chỉ các trường này được trả về cho frontend
 const GAME_FIELDS = [
-  "name", "description", "subject", "topic", "language",
+  "name", "description", "subject", "subjectId", "topic", "language",
   "templateId", "type", "status", "playMode", "deliveryMode", "questionsCount", "playersCount",
   "code", "config", "gameMode", "createdAt", "updatedAt",
 ];
@@ -42,6 +42,46 @@ export function sanitizeConfig(value) {
   return out;
 }
 
+// Nối games ↔ subjects bằng ID: collection `subjects` là nguồn tên chuẩn,
+// game giữ subjectId + bản sao tên (subject) cho dữ liệu cũ/frontend cũ.
+// Đổi tên môn ở subjects là game tự theo tên mới nhờ resolve lúc đọc.
+async function loadSubjectMaps() {
+  const docs = await getCollection("subjects").find({}).toArray();
+  const byId = new Map();
+  const byName = new Map();
+  for (const d of docs) {
+    const id = d._id.toString();
+    byId.set(id, d.name);
+    if (d.name && !byName.has(d.name)) byName.set(d.name, id);
+  }
+  return { byId, byName };
+}
+
+// Chuẩn hoá cặp subject/subjectId theo danh sách môn hiện tại:
+// - subjectId hợp lệ → subject = tên HIỆN TẠI của môn đó
+// - chưa có subjectId mà tên khớp một môn → suy ra subjectId từ tên
+// - không khớp gì → giữ nguyên subject cũ, subjectId = null
+function resolveSubjectFields(source, maps) {
+  const rawId = source.subjectId ? String(source.subjectId) : "";
+  if (rawId && maps.byId.has(rawId)) {
+    return { subjectId: rawId, subject: maps.byId.get(rawId) };
+  }
+  const name = typeof source.subject === "string" ? source.subject : "";
+  if (name && maps.byName.has(name)) {
+    return { subjectId: maps.byName.get(name), subject: name };
+  }
+  return { subjectId: null, subject: name };
+}
+
+// Áp resolve lên game đã serialize (ghi đè subject/subjectId tại chỗ)
+function applySubjectResolution(game, maps) {
+  if (!game || !maps) return game;
+  const resolved = resolveSubjectFields(game, maps);
+  game.subject = resolved.subject;
+  game.subjectId = resolved.subjectId;
+  return game;
+}
+
 // Bản "nhẹ" của config: chỉ key + schemaVersion (danh sách game gửi về client).
 // Client sẽ dùng key này để gọi tiếp API lấy đúng values cần hiển thị.
 function summarizeConfig(config, mode) {
@@ -67,7 +107,7 @@ function serialize(doc, { configMode = "summary" } = {}) {
       continue;
     }
     if (value === undefined) value = "";
-    if (key === "templateId" && value) value = value.toString();
+    if ((key === "templateId" || key === "subjectId") && value) value = value.toString();
     if ((key === "questionsCount" || key === "playersCount")) value = Number(value) || 0;
     out[key] = value;
   }
@@ -83,7 +123,9 @@ export async function list(filters = {}) {
   const coll = getCollection(COLLECTION);
   const query = {};
   if (filters.status && filters.status !== "all") query.status = filters.status;
-  if (filters.subject && filters.subject !== "all") query.subject = filters.subject;
+  // Lọc môn học làm SAU serialize + resolve (như deliveryMode bên dưới):
+  // game lưu theo subjectId phải match được cả khi lọc bằng tên và ngược lại,
+  // query Mongo trực tiếp trên field thô không làm được cả hai dạng.
   // Lọc theo field có default: doc cũ có thể KHÔNG chứa key (trước khi thêm
   // type/deliveryMode) → $in:[value, null] để match cả doc thiếu field.
   if (filters.type && filters.type !== "all") query.type = { $in: [filters.type, null] };
@@ -95,7 +137,16 @@ export async function list(filters = {}) {
   let cursor = coll.find(query).sort({ updatedAt: -1 });
   const games = await cursor.toArray();
 
-  let result = games.map((g) => serialize(g));
+  const subjectMaps = await loadSubjectMaps();
+  let result = games.map((g) => applySubjectResolution(serialize(g), subjectMaps));
+  // Sau resolve, subject là tên hiện tại và subjectId đã chuẩn hoá ở cả hai
+  // dạng lưu (theo id / theo tên cũ) → lọc theo field nào cũng khớp.
+  if (filters.subjectId && filters.subjectId !== "all") {
+    result = result.filter((g) => g.subjectId === String(filters.subjectId));
+  }
+  if (filters.subject && filters.subject !== "all") {
+    result = result.filter((g) => g.subject === filters.subject);
+  }
   // Lọc sau serialize: doc cũ chưa có deliveryMode được default "online" nên
   // không thể match bằng query Mongo trực tiếp.
   if (filters.deliveryMode && filters.deliveryMode !== "all") {
@@ -127,7 +178,8 @@ export async function list(filters = {}) {
 export async function get(id) {
   try {
     const doc = await getCollection(COLLECTION).findOne({ _id: new ObjectId(id) });
-    return serialize(doc);
+    if (!doc) return serialize(doc);
+    return applySubjectResolution(serialize(doc), await loadSubjectMaps());
   } catch {
     return null;
   }
@@ -138,7 +190,8 @@ export async function getByCode(code) {
     code: new RegExp(`^${escapeRegExp(code.trim().toLowerCase())}$`, "i"),
     status: "published",
   });
-  return serialize(doc);
+  if (!doc) return serialize(doc);
+  return applySubjectResolution(serialize(doc), await loadSubjectMaps());
 }
 
 // Bước 2: lấy riêng cấu hình (kèm values) của một game theo id
@@ -203,10 +256,14 @@ export async function getConfigByKey(key, gameId) {
 
 export async function create(data) {
   const now = new Date().toISOString();
+  // Ưu tiên subjectId hợp lệ (lưu kèm tên resolve); chỉ có tên thì suy ra id
+  // nếu khớp một môn; id không tồn tại → subjectId = null, giữ tên theo input.
+  const resolvedSubject = resolveSubjectFields(data, await loadSubjectMaps());
   const game = {
     name: data.name || "Game mới",
     description: data.description || "",
-    subject: data.subject || "",
+    subject: resolvedSubject.subject,
+    subjectId: resolvedSubject.subjectId,
     topic: data.topic || "",
     language: data.language || "vi",
     templateId: data.templateId ? new ObjectId(data.templateId) : null,
@@ -233,6 +290,24 @@ export async function update(id, data) {
     rest.deliveryMode = DEFAULT_DELIVERY_MODE;
   }
   if (rest.config !== undefined) rest.config = sanitizeConfig(rest.config);
+  const subjectMaps = await loadSubjectMaps();
+  if (rest.subjectId !== undefined || rest.subject !== undefined) {
+    // Resolve theo đúng field client gửi (như create): gửi tên mới thì suy
+    // id từ tên mới — KHÔNG để subjectId đã lưu thắng, nếu không game đã có
+    // id sẽ không bao giờ đổi môn bằng tên được.
+    const resolved = resolveSubjectFields(rest, subjectMaps);
+    rest.subjectId = resolved.subjectId;
+    if (rest.subject !== undefined || resolved.subject) {
+      rest.subject = resolved.subject;
+    } else {
+      // Chỉ gửi subjectId không hợp lệ mà không kèm tên → giữ tên đã lưu
+      const current = await getCollection(COLLECTION).findOne(
+        { _id: new ObjectId(id) },
+        { projection: { subject: 1 } }
+      );
+      rest.subject = current?.subject || "";
+    }
+  }
   rest.updatedAt = new Date().toISOString();
   const result = await getCollection(COLLECTION).findOneAndUpdate(
     { _id: new ObjectId(id) },
@@ -240,7 +315,7 @@ export async function update(id, data) {
     { returnDocument: "after" }
   );
   if (!result) throw new Error("Không tìm thấy trò chơi");
-  return serialize(result);
+  return applySubjectResolution(serialize(result), subjectMaps);
 }
 
 // Chỉ cập nhật config của 1 game — không đụng tới các trường khác

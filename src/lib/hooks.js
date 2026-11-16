@@ -28,6 +28,24 @@ export function useSubjects(refreshKey) {
   return subjects;
 }
 
+// Như useSubjects nhưng giữ cả id: [{ id, name }] — dùng ở nơi cần nối môn
+// học bằng subjectId (vd form tạo/sửa game). Item dạng chuỗi cũ → id = name.
+export function useSubjectOptions(refreshKey) {
+  const [options, setOptions] = useState([]);
+  useEffect(() => {
+    let active = true;
+    setupService.listSubjects().then((list) => {
+      if (!active) return;
+      const opts = Array.isArray(list)
+        ? list.map(s => (typeof s === "string" ? { id: s, name: s } : { id: s._id ?? s.id ?? s.name, name: s.name }))
+        : [];
+      setOptions(opts);
+    });
+    return () => { active = false; };
+  }, [refreshKey]);
+  return options;
+}
+
 export function useCategories(refreshKey) {
   const [categories, setCategories] = useState([]);
   useEffect(() => {

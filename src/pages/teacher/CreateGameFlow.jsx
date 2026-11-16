@@ -2,7 +2,7 @@ import { Fragment, useMemo, useEffect, useState, useCallback, useRef } from 'rea
 import { AlertTriangle, ArrowDown, ArrowUp, Check, ClipboardList, GraduationCap, Settings, SquarePen, Star, Timer, X } from 'lucide-react'
 import { gameService, questionService, uid } from '../../services/api.js'
 import { THEMES } from '../../lib/setupConstants.js'
-import { useTemplates, useSubjects, useCategories, useTemplateHtml } from '../../lib/hooks.js'
+import { useTemplates, useSubjects, useSubjectOptions, useCategories, useTemplateHtml } from '../../lib/hooks.js'
 import { emptyQuestion } from '../../lib/utils.js'
 import { PrimaryButton, GhostButton, IconButton, Loader, Modal } from '../../components/ui'
 import Field, { TemplateThumb } from '../../components/fields.jsx'
@@ -34,7 +34,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const [loading, setLoading] = useState(!!gameId);
   const [stepIdx, setStepIdx] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [form, setForm] = useState({ name: "", description: "", subject: "", topic: "", templateId: null, theme: "gold", status: "draft", gameMode: "quiz" });
+  const [form, setForm] = useState({ name: "", description: "", subject: "", subjectId: null, topic: "", templateId: null, theme: "gold", status: "draft", gameMode: "quiz" });
   const [questions, setQuestions] = useState([]);
   const [savingStatus, setSavingStatus] = useState(null);
   const [configKey, setConfigKey] = useState(null);
@@ -42,6 +42,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
   const keyTouchedRef = useRef(false);
   const templates = useTemplates(refreshKey);
   const subjects = useSubjects(refreshKey);
+  const subjectOptions = useSubjectOptions(refreshKey);
   const categories = useCategories(refreshKey);
 
   const selectedTemplate = useMemo(() => templates.find(t => t._id === form.templateId), [templates, form.templateId]);
@@ -91,7 +92,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
       const g = await gameService.get(gameId);
       if (g) {
         const tid = g.templateId ? (typeof g.templateId === "string" ? g.templateId : g.templateId?.$oid || g.templateId) : null;
-        setForm({ name: g.name || g.title || "", description: g.description, subject: g.subject, topic: g.topic, templateId: tid, theme: g.theme || "gold", status: g.status || "draft", gameMode: g.gameMode || "quiz" });
+        setForm({ name: g.name || g.title || "", description: g.description, subject: g.subject, subjectId: g.subjectId || null, topic: g.topic, templateId: tid, theme: g.theme || "gold", status: g.status || "draft", gameMode: g.gameMode || "quiz" });
         setLoadedConfig(g.config || null);
         const savedKey = readGameConfig(g.config).key;
         if (savedKey) { keyTouchedRef.current = true; setConfigKey(savedKey); }
@@ -125,9 +126,17 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
     const status = statusOverride || form.status || "draft";
     setSavingStatus(status);
     let id = gameId;
+    // Gửi cả subjectId lẫn subject (tên tương ứng) để tương thích ngược:
+    // ưu tiên môn đang chọn theo id, rồi khớp theo tên; tên lạ không có
+    // trong danh sách môn thì giữ nguyên tên và subjectId = null.
+    const pickedSubject = subjectOptions.find(s => s.id === form.subjectId)
+      || subjectOptions.find(s => s.name === form.subject)
+      || null;
+    const subjectName = pickedSubject ? pickedSubject.name : (form.subject || (subjects[0] || ""));
     const payload = {
       ...form,
-      subject: form.subject || (subjects[0] || ""),
+      subject: subjectName,
+      subjectId: pickedSubject ? pickedSubject.id : (subjectOptions.find(s => s.name === subjectName)?.id || null),
       status,
       type: isPlayToWin ? "play-to-win" : "play-to-learn",
       playMode,
@@ -159,7 +168,7 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
         {step.id === "template" && <StepTemplate form={form} setForm={setForm} templates={templates} categories={categories} configKey={configKey} />}
         {step.id === "info" && (
           <StepInfo
-            form={form} setForm={setForm} subjects={subjects} templates={templates}
+            form={form} setForm={setForm} subjectOptions={subjectOptions} templates={templates}
             configKey={configKey} onConfigKey={pickConfigKey}
             configDef={configDef} configIssues={configIssues} configErrorCount={configErrorCount}
             savedConfig={loadedConfig} gameId={gameId}
@@ -262,7 +271,7 @@ function StepTemplate({ form, setForm, templates, categories }) {
 
 const inputCls = "w-full note-card px-4 py-2.5 text-sm border-ink/10 focus:border-ticket";
 
-function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, configDef, configIssues, configErrorCount, savedConfig, gameId }) {
+function StepInfo({ form, setForm, subjectOptions, templates, configKey, onConfigKey, configDef, configIssues, configErrorCount, savedConfig, gameId }) {
   const currentTpl = templates.find(t => t._id === form.templateId);
   const defs = listGameDefs();
   const savedKey = readGameConfig(savedConfig).key;
@@ -378,8 +387,15 @@ function StepInfo({ form, setForm, subjects, templates, configKey, onConfigKey, 
           <input className={inputCls} value={form.name} maxLength={80} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ví dụ: Ôn tập Toán lớp 3" />
         </Field>
         <Field label="Môn học">
-          <select className={inputCls} value={form.subject || (subjects[0] || "")} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}>
-            {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+          <select
+            className={inputCls}
+            value={form.subjectId || subjectOptions.find(s => s.name === form.subject)?.id || (subjectOptions[0]?.id || "")}
+            onChange={e => {
+              const opt = subjectOptions.find(s => s.id === e.target.value);
+              setForm(f => ({ ...f, subjectId: e.target.value || null, subject: opt ? opt.name : f.subject }));
+            }}
+          >
+            {subjectOptions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </Field>
         <Field label="Chủ đề" hint="Chủ đề cụ thể của bài ôn tập">
