@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity, Database, HardDrive, History, RefreshCw, Search, ShieldCheck,
   SlidersHorizontal, Trash2, TriangleAlert, Loader2, CheckCircle2, XCircle, MinusCircle,
-  Sparkles,
+  Sparkles, Palette,
 } from 'lucide-react'
 import { authService, systemService } from '../../services/api.js'
 import { loadSiteConfig } from '../../lib/siteConfig.js'
@@ -12,8 +12,9 @@ import { gameCache } from '../../lib/gameCache.js'
 import { clampLowScoreThreshold } from '../../lib/aiThreshold.js'
 import {
   ManagementHeader, PrimaryButton, GhostButton, PasswordInput, ConfirmModal,
-  ToggleSwitch, Input, Select, EmptyState,
+  ToggleSwitch, Input, Select, EmptyState, ThemeToggle,
 } from '../../components/ui'
+import { useTheme } from '../../lib/hooks.js'
 
 const label = 'text-[11px] font-mono text-[#8A7C63] leading-tight block mb-1'
 const box = 'w-full rounded-lg border border-ink/15 px-3 py-2 bg-white text-sm font-body focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/60 transition'
@@ -150,6 +151,7 @@ const GROUPS = [
   { id: 'sec-scan', label: 'Kiểm tra game' },
   { id: 'sec-notify', label: 'Thông báo' },
   { id: 'sec-config', label: 'Cấu hình chung' },
+  { id: 'sec-appearance', label: 'Giao diện' },
   { id: 'sec-local', label: 'Dữ liệu cục bộ' },
   { id: 'sec-logs', label: 'Nhật ký' },
 ]
@@ -170,6 +172,7 @@ const GROUPS = [
 export default function AdminSettings({ user, showToast }) {
   const canView = hasUserPermission(user, 'settings.view')
   const canEdit = hasUserPermission(user, 'settings.edit')
+  const { theme } = useTheme()
 
   /* ── 1. Đổi mật khẩu (giữ nguyên) ─────────────────────────────────────── */
   const [cur, setCur] = useState('')
@@ -951,6 +954,71 @@ export default function AdminSettings({ user, showToast }) {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* ── 7b. GIAO DIỆN ─────────────────────────────────────────────── */}
+      {canView && (
+        <Card id="sec-appearance" className="scroll-mt-24" title="Giao diện" icon={Palette}
+          hint="Chế độ Sáng/Tối áp dụng ngay, chỉ lưu trên máy này. Ba màu bên dưới lưu ở cấu hình hệ thống: áp dụng cho toàn bộ khu vực quản trị, mọi tài khoản giáo viên/quản trị. Để trống = màu mặc định theo chế độ Sáng/Tối."
+          actions={
+            canEdit && (
+              <PrimaryButton disabled={cfgSaving || !cfg}
+                onClick={() => saveConfig({ appearance: cfg.appearance })}
+                className="!px-4 !py-2 text-sm rounded-lg">
+                {cfgSaving ? 'Đang lưu…' : 'Lưu màu giao diện'}
+              </PrimaryButton>
+            )
+          }>
+          <div className="flex items-center justify-between gap-4 pb-3 border-b border-ink/10">
+            <div className="min-w-0">
+              <div className="text-sm text-ink font-medium">Chế độ hiển thị</div>
+              <div className="text-[11px] text-[#8A7C63] leading-snug">
+                Đang dùng chế độ <b>{theme === 'dark' ? 'Tối' : 'Sáng'}</b> — bấm nút để đổi ngay.
+                Áp cho cả trang chủ và khu quản trị trên máy này, không cần lưu.
+              </div>
+            </div>
+            <ThemeToggle className="w-10 h-10 shrink-0 grid place-items-center rounded-lg border border-ink/15 bg-white text-ink hover:border-gold/60 transition" />
+          </div>
+
+          {!cfg ? (
+            <p className="text-sm text-[#8A7C63] mt-3">{cfgLoading ? 'Đang tải cấu hình…' : cfgError || 'Chưa đọc được cấu hình.'}</p>
+          ) : (
+            <div className="divide-y divide-ink/10">
+              {[
+                ['headerColor', 'Màu thanh Header', '#1d2327', 'Thanh ngang trên cùng của khu quản trị.'],
+                ['sidebarColor', 'Màu Sidebar', '#1d2327', 'Cột menu bên trái và thanh điều hướng mobile.'],
+                ['bodyColor', 'Màu nền Body', '#fffbf2', 'Nền vùng nội dung phía sau các panel.'],
+              ].map(([key, t, def, d]) => {
+                const val = cfg.appearance?.[key] || ''
+                return (
+                  <div key={key} className="flex flex-wrap items-center gap-3 py-3">
+                    <div className="min-w-[150px] flex-1">
+                      <div className="text-sm text-ink">{t}</div>
+                      <div className="text-[11px] text-[#8A7C63] leading-snug">{d}</div>
+                      <div className="text-[11px] text-[#B7A987]">{val ? `Đang đặt: ${val}` : 'Đang dùng màu mặc định'}</div>
+                    </div>
+                    <input type="color" value={val || def} disabled={!canEdit || cfgSaving}
+                      onChange={(e) => patchCfg((c) => { c.appearance = { ...(c.appearance || {}), [key]: e.target.value }; return c })}
+                      className="w-10 h-10 shrink-0 rounded-md border border-ink/15 bg-white p-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" />
+                    <div className="w-28">
+                      <Input value={val} placeholder={def} disabled={!canEdit || cfgSaving} maxLength={7}
+                        onChange={(v) => patchCfg((c) => { c.appearance = { ...(c.appearance || {}), [key]: v }; return c })} />
+                    </div>
+                    <button onClick={() => patchCfg((c) => { c.appearance = { ...(c.appearance || {}), [key]: '' }; return c })}
+                      disabled={!canEdit || cfgSaving || !val}
+                      className="px-3 py-1.5 rounded-lg border border-ink/15 text-[#6B5F4B] text-xs font-display font-semibold hover:border-gold/60 disabled:opacity-40 transition">
+                      Mặc định
+                    </button>
+                  </div>
+                )
+              })}
+              <p className="text-[11px] text-[#B7A987] pt-2.5 leading-snug">
+                Chỉ nhận mã màu dạng #RRGGBB — giá trị khác sẽ tự bị bỏ khi lưu. Đặt xong bấm “Lưu màu giao diện” ở đầu thẻ;
+                màu mới hiện ở khu quản trị từ lần tải trang kế tiếp.
+              </p>
             </div>
           )}
         </Card>

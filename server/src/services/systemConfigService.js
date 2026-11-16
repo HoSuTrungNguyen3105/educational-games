@@ -77,6 +77,16 @@ export const DEFAULTS = {
     dailyTokenLimit: 200000,
     dailyRequestLimit: 1000,
   },
+  // Màu tuỳ chỉnh của KHU QUẢN TRỊ (trang Cài đặt → Giao diện): admin chọn
+  // màu thanh header / sidebar / nền body cho dashboard, áp cho mọi tài
+  // khoản giáo viên/quản trị. "" = chưa đặt → dashboard dùng màu mặc định
+  // theo chế độ Sáng/Tối của từng máy. Ép kiểu ở coerce(): chỉ nhận "" hoặc
+  // mã hex #RRGGBB, giá trị lạ bị đưa về "" (không cho nhét CSS tuỳ ý).
+  appearance: {
+    headerColor: "",
+    sidebarColor: "",
+    bodyColor: "",
+  },
 };
 
 /** Đọc 1 khoá theo đường dẫn "a.b" từ object. */
@@ -136,6 +146,13 @@ function coerce(path, value) {
   // Hạn mức ngày Groq (token/request): số nguyên dương, có trần an toàn;
   // rỗng/không phải số/không dương → về MẶC ĐỊNH free tier (không bao giờ
   // để hạn mức 0 làm "credit còn lại" hiện sai thành hết sạch).
+  // Màu giao diện dashboard: chỉ "" (mặc định) hoặc hex #RRGGBB. Ngoài hai
+  // dạng này (tên màu, rgb(), url()…) đều về "" để giá trị đi thẳng vào
+  // CSS var ở frontend mà không thành lỗ hổng chèn CSS.
+  if (path.startsWith("appearance.")) {
+    const s = value == null ? "" : String(value).trim();
+    return /^#[0-9a-fA-F]{6}$/.test(s) ? s : "";
+  }
   if (path === "ai.dailyTokenLimit" || path === "ai.dailyRequestLimit") {
     const def = pick(DEFAULTS, path);
     const n = Number(value);
@@ -255,6 +272,11 @@ export async function updateConfig(patch, actor = null) {
       lowScoreThreshold: next.ai.lowScoreThreshold ?? null,
       dailyTokenLimit: next.ai.dailyTokenLimit ?? 200000,
       dailyRequestLimit: next.ai.dailyRequestLimit ?? 1000,
+    },
+    appearance: {
+      headerColor: next.appearance?.headerColor || "",
+      sidebarColor: next.appearance?.sidebarColor || "",
+      bodyColor: next.appearance?.bodyColor || "",
     },
     updatedAt: new Date().toISOString(),
     updatedBy: actor ? { id: actor.sub || null, name: actor.name || null, role: actor.role || null } : null,

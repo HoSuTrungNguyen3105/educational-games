@@ -36,6 +36,17 @@
         }
       })();
     </script>
+    <script>
+      /* Áp chế độ Sáng/Tối đã lưu TRƯỚC khi trang vẽ để không nháy sáng:
+         useTheme() (src/lib/hooks.js) dùng chung khoá localStorage này. */
+      (function () {
+        try {
+          if (window.localStorage.getItem('eduplay-theme') === 'dark') {
+            document.documentElement.dataset.theme = 'dark';
+          }
+        } catch (e) { /* localStorage bị chặn — giữ mặc định sáng */ }
+      })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -47,10 +58,14 @@
               mono: ['"JetBrains Mono"', 'monospace'],
             },
             colors: {
-              ink: '#1D2E4A',
-              ink2: '#16233A',
-              paper: '#FFF6E7',
-              paper2: '#FFFBF2',
+              /* 4 màu trung tính đi qua CSS var RGB (khai báo ở src/index.css)
+                 để chế độ Tối chỉ cần đổi biến — vẫn giữ opacity modifier
+                 kiểu bg-ink/10 nhờ mẫu rgb(var(--rgb-x) / <alpha-value>).
+                 Màu nhấn (ticket/gold/teal/pink) giữ hex ở cả hai chế độ. */
+              ink: 'rgb(var(--rgb-ink) / <alpha-value>)',
+              ink2: 'rgb(var(--rgb-ink2) / <alpha-value>)',
+              paper: 'rgb(var(--rgb-paper) / <alpha-value>)',
+              paper2: 'rgb(var(--rgb-paper2) / <alpha-value>)',
               ticket: '#E4572E',
               gold: '#F4B942',
               teal: '#1B998B',

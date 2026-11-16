@@ -13,6 +13,7 @@
 export { PrimaryButton } from "./buttons/PrimaryButton.jsx";
 export { GhostButton } from "./buttons/GhostButton.jsx";
 export { IconButton } from "./buttons/IconButton.jsx";
+export { ThemeToggle } from "./buttons/ThemeToggle.jsx";
 
 // ── forms ──
 export { Input } from "./forms/Input.jsx";

@@ -1,4 +1,11 @@
 :root{
+  /* Bộ ba RGB của 4 màu trung tính trong tailwind.config (index.html):
+     ink/ink2/paper/paper2 = rgb(var(--rgb-*) / <alpha-value>). Chế độ Tối
+     ([data-theme="dark"] ở cuối file) chỉ đổi các biến này + bộ hex bên dưới. */
+  --rgb-ink: 29 46 74;
+  --rgb-ink2: 22 35 58;
+  --rgb-paper: 255 246 231;
+  --rgb-paper2: 255 251 242;
   --line:#E7D9BE;
   --muted:#8A7C63;
   --text-dark:#20283A;
@@ -27,10 +34,10 @@ button, a, [role="button"], input[type="submit"]{ touch-action: manipulation; }
 :focus-visible{ outline: 3px solid #f7ab2e; outline-offset: 2px; }
 ::selection{ background: #ffd45e; color: #1d2e4a; }
 html{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; overflow-y:scroll; overscroll-behavior:none; }
-body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; background:#FFF6E7; color:var(--text-dark); font-family:'Be Vietnam Pro', sans-serif; padding-top: var(--sat); padding-left: var(--sal); padding-right: var(--sar); overscroll-behavior:none; }
+body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; background:var(--stage); color:var(--text-dark); font-family:'Be Vietnam Pro', sans-serif; padding-top: var(--sat); padding-left: var(--sal); padding-right: var(--sar); overscroll-behavior:none; }
 #root{ min-height:100vh; min-height:100dvh; width:100%; max-width:100%; }
 
-.dash-rule{ border:none; border-top:2px dashed rgba(29,46,74,0.18); }
+.dash-rule{ border:none; border-top:2px dashed var(--line); }
 .dash-rule-light{ border:none; border-top:2px dashed rgba(255,246,231,0.28); }
 
 .safe-area-top{ padding-top: env(safe-area-inset-top); }
@@ -39,11 +46,11 @@ body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; backgroun
   display:flex; align-items:center; justify-content:center;
   border-radius:9999px;
   border:3px dashed var(--ring, #F4B942);
-  background:#FFFBF2;
+  background:var(--card);
   box-shadow: 0 2px 0 rgba(29,46,74,0.06);
 }
 
-.note-card{ background:#FFFBF2; border:1px solid var(--line); border-radius:18px; }
+.note-card{ background:var(--card); border:1px solid var(--line); border-radius:18px; }
 
 .marquee-panel{
   background: radial-gradient(120% 140% at 10% 0%, #2A4770 0%, #1D2E4A 45%, #16233A 100%);
@@ -63,7 +70,7 @@ body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; backgroun
   position:relative;
   display:flex;
   align-items:stretch;
-  background:#FFFBF2;
+  background:var(--card);
   border:2px dashed rgba(29,46,74,0.35);
   border-radius:18px;
   overflow:hidden;
@@ -74,7 +81,7 @@ body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; backgroun
   top:50%; transform:translateY(-50%);
   width:26px; height:26px;
   border-radius:9999px;
-  background: var(--notch-bg, #FFF6E7);
+  background: var(--notch-bg, var(--stage));
   z-index:2;
 }
 .ticket-stub::before{ left:-13px; }
@@ -90,7 +97,7 @@ body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; backgroun
 .ticket-stub-body{ flex:1; padding:14px 18px; }
 
 ::-webkit-scrollbar{ width:8px; height:8px; }
-::-webkit-scrollbar-thumb{ background:#E7D9BE; border-radius:8px; }
+::-webkit-scrollbar-thumb{ background:var(--line); border-radius:8px; }
 
 @keyframes pop-in{ 0%{ transform:scale(.92); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
 .anim-pop{ animation: pop-in .28s cubic-bezier(.2,.9,.3,1.3) both; }
@@ -305,4 +312,30 @@ textarea {
   }
   .lb-coin{ display:none; }
   .lb-coin-sub{ display:inline-flex; }
+}
+
+/* ============================================================
+   CHẾ ĐỘ TỐI (data-theme="dark" trên <html>)
+   - Bật/tắt bằng useTheme() (src/lib/hooks.js), lưu localStorage
+     "eduplay-theme"; script trong <head> của index.html áp sớm để
+     không nháy sáng. Mặc định là Sáng — KHÔNG tự theo hệ điều hành.
+   - Chỉ đổi màu TRUNG TÍNH (nền/chữ/viền qua bộ biến ở :root và 4 biến
+     --rgb-* nuôi tailwind.config). Màu nhấn thương hiệu (ticket cam,
+     gold, teal, pink, purple) giữ nguyên ở cả hai chế độ.
+   - Bề mặt riêng của trang chủ xử lý ở cuối home-gq.css, khu quản trị
+     ở admin.css ([data-theme="dark"] .edu-admin).
+   ============================================================ */
+[data-theme="dark"]{
+  --rgb-ink: 233 238 246;
+  --rgb-ink2: 203 213 229;
+  --rgb-paper: 15 23 38;
+  --rgb-paper2: 27 38 59;
+  --ink:#E9EEF6;
+  --bg:#0B1220;
+  --card:#1B263B;
+  --stage:#0F1726;
+  --line:#2A3A55;
+  --muted:#9AA7BC;
+  --text-dark:#E9EEF6;
+  --accent-bg:rgba(27,153,139,0.16);
 }

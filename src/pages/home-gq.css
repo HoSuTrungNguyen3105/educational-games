@@ -1083,3 +1083,66 @@
   .gq-board { border-radius: 18px; }
   .gq-more { font-size: 12.5px; padding: 10px 20px; }
 }
+
+/* ============================================================
+   CHẾ ĐỘ TỐI — trang chủ (data-theme="dark" trên <html>)
+   Chỉ override BỀ MẶT + CHỮ CHÍNH của shell trang chủ về bộ biến
+   dùng chung (--stage/--card/--ink/--line ở index.css). Ảnh nền phong
+   cảnh ở hero và mọi màu nhấn/gradient trang trí (cam, đỏ, xanh nút
+   Admin…) giữ nguyên như chế độ Sáng.
+   ============================================================ */
+[data-theme="dark"] .gq-home {
+  --gq-ink: #E9EEF6;
+  --gq-mute: #9AA7BC;
+  --gq-line: #2A3A55;
+  --gq-paper: #0F1726;
+  --gq-tile: #1B263B;
+  --gq-tile-hover: #24334F;
+  --gq-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+  /* Lớp gradient DƯỚI ảnh phong cảnh chuyển tông tối; ảnh (lớp trên) giữ nguyên. */
+  background-color: #0F1726;
+  background-image:
+    url("/educational-games/cd961dc9-a056-4831-9e6a-cb62ccbada3f.png"),
+    linear-gradient(180deg, #16233A 0, #101B2E 34%, #0F1726 68%, #0B1220 100%);
+}
+/* Các bề mặt trắng/trắng trong → thẻ tối */
+[data-theme="dark"] .gq-age,
+[data-theme="dark"] .gq-iconbtn,
+[data-theme="dark"] .gq-kidchip,
+[data-theme="dark"] .gq-petchip,
+[data-theme="dark"] .gq-hero__bubble,
+[data-theme="dark"] .gq-pwa,
+[data-theme="dark"] .gq-board,
+[data-theme="dark"] .gq-mini,
+[data-theme="dark"] .gq-sect__ico,
+[data-theme="dark"] .gq-sheet,
+[data-theme="dark"] .gq-gift__card,
+[data-theme="dark"] .gq-reminder,
+[data-theme="dark"] .gq-login,
+[data-theme="dark"] .gq-more {
+  background: var(--card);
+  color: var(--gq-ink);
+}
+[data-theme="dark"] .gq-petchip { background: rgba(27, 38, 59, 0.92); }
+[data-theme="dark"] .gq-hero__bubble { background: rgba(27, 38, 59, 0.96); }
+[data-theme="dark"] .gq-board { background: rgba(27, 38, 59, 0.94); }
+[data-theme="dark"] .gq-mini { background: rgba(27, 38, 59, 0.95); }
+@media (hover: hover) {
+  [data-theme="dark"] .gq-mini:hover { background: var(--gq-tile-hover); }
+  [data-theme="dark"] .gq-more:hover { background: var(--gq-tile); border-color: var(--gq-line); }
+  [data-theme="dark"] .gq-iconbtn:hover,
+  [data-theme="dark"] .gq-kidchip:hover { background: var(--gq-tile-hover); }
+}
+/* Nút âm thanh đang tắt có nền vàng (màu nhấn) — giữ nguyên cả ở chế độ tối. */
+[data-theme="dark"] .gq-iconbtn--on { background: #ffd45e; }
+/* Chữ phụ / nhãn trên nền tối */
+[data-theme="dark"] .gq-sect__s { color: var(--gq-mute); }
+[data-theme="dark"] .gq-card__age { background: rgba(233, 238, 246, 0.12); color: #B9C6DA; }
+[data-theme="dark"] .gq-link:hover { background: rgba(233, 238, 246, 0.07); }
+[data-theme="dark"] .gq-link__ico { background: #24334F; }
+/* Thanh điều hướng dưới (component dùng chung BottomNav — nền bg-white) */
+[data-theme="dark"] nav.fixed.bottom-0 {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 -2px 14px rgba(0, 0, 0, 0.4);
+}

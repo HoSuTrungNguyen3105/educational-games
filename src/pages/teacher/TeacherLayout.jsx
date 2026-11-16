@@ -1,7 +1,8 @@
-import { IconBack, IconUser as UIIconUser, IconLogout as UILogout } from '../../components/ui/index.js'
+import { IconBack, IconUser as UIIconUser, IconLogout as UILogout, ThemeToggle } from '../../components/ui/index.js'
 import { ArrowRight, House } from 'lucide-react'
 import TeacherSidebar from './TeacherSidebar.jsx'
 import { navigate } from '../../lib/router.js'
+import { useAdminAppearance } from '../../lib/hooks.js'
 
 /**
  * TeacherLayout — khung quản trị kiểu WordPress:
@@ -14,8 +15,17 @@ import { navigate } from '../../lib/router.js'
  * Mobile giữ thanh điều hướng dưới của TeacherSidebar.
  */
 export default function TeacherLayout({ screen, user, onLogout, children }) {
+  // Màu header/sidebar/body do admin đặt ở Cài đặt → Giao diện (system_config
+  // nhóm appearance, áp cho mọi tài khoản). Chỉ gắn biến nào CÓ giá trị —
+  // biến trống giữ màu mặc định của admin.css / chế độ Sáng–Tối hiện tại.
+  const appearance = useAdminAppearance()
+  const appearanceStyle = {}
+  if (appearance.headerColor) appearanceStyle['--edu-bar-bg'] = appearance.headerColor
+  if (appearance.sidebarColor) appearanceStyle['--edu-sidebar'] = appearance.sidebarColor
+  if (appearance.bodyColor) appearanceStyle['--edu-bg'] = appearance.bodyColor
+
   return (
-    <div className="edu-admin min-h-screen flex flex-col">
+    <div className="edu-admin min-h-screen flex flex-col" style={appearanceStyle}>
       <header className="edu-admin-bar">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-semibold whitespace-nowrap">EduPlay</span>
@@ -41,6 +51,7 @@ export default function TeacherLayout({ screen, user, onLogout, children }) {
           <span className="hidden lg:inline edu-bar-user">
             Xin chào, <b>{user?.name || 'bạn'}</b>
           </span>
+          <ThemeToggle className="edu-bar-btn" />
           <button onClick={onLogout} title="Đăng xuất" className="edu-bar-btn">
             <UILogout />
             <span className="hidden md:inline">Đăng xuất</span>
