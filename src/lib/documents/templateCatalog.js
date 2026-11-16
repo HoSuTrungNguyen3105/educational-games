@@ -59,8 +59,9 @@ ${t.footer || ""}
 
 function buildPresentationHtml(t) {
   const model = presentationJsonToModel(t.json);
-  const css = `body { background: #ece7db; }
-.slide { width: 880px; max-width: calc(100% - 32px); margin: 20px auto; padding: 40px 48px; background: #fff; border-radius: 14px; }
+  const css = `body { background: #e5e7eb; }
+.slide { width: 920px; max-width: calc(100% - 32px); margin: 24px auto; padding: 44px 52px; background: #fff; border: 1px solid #d1d5db; border-radius: 0; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+@media print { body { background: #fff; } .slide { box-shadow: none; margin: 0 auto 16px; max-width: 100%; border: 0; } }
 ${themeCssForPresentation(t.theme)}
 ${t.css || ""}`;
   return `<!doctype html>
@@ -190,17 +191,15 @@ export const WORD_TEMPLATES = [
     header: commonSchoolHeader("TRƯỜNG THCS NGUYỄN HUỆ", "Tổ Toán · Năm học 2026–2027"),
     footer: `<div class="tpl-foot"><span>Giáo án Toán 6 · Bài 12</span><span>Trang 1/3</span></div>`,
     css: `
-.doc-page.tpl-word-professional-lesson-plan { padding: 50px 62px 58px; }
-.tpl-word-professional-lesson-plan .tpl-head { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 2px solid #1e3a8a; color: #1e3a8a; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-.tpl-word-professional-lesson-plan h1 { margin: 22px 0 4px; color: #1e3a8a; font-family: Georgia, serif; font-size: 29px; line-height: 1.25; text-align: center; letter-spacing: .02em; }
-.tpl-word-professional-lesson-plan h1 + p { text-align: center; color: #64748b; font-size: 14px; margin-top: 0; }
-.tpl-word-professional-lesson-plan h2 { margin: 24px 0 10px; padding: 7px 13px; border: 0; border-radius: 4px; background: #1e3a8a; color: #ffffff; font-family: Arial, sans-serif; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; }
-.tpl-word-professional-lesson-plan h3 { color: #2563eb; font-size: 15px; }
-.tpl-word-professional-lesson-plan table { margin: 10px 0 18px; border: 1px solid #bfdbfe; }
-.tpl-word-professional-lesson-plan table th { background: #eff6ff; color: #1e3a8a; border-color: #bfdbfe; font-size: 13px; }
-.tpl-word-professional-lesson-plan table td { border-color: #dbeafe; font-size: 13.5px; }
-.tpl-word-professional-lesson-plan ul li { margin: 4px 0; }
-.tpl-word-professional-lesson-plan .tpl-foot { display: flex; justify-content: space-between; margin-top: 34px; padding-top: 9px; border-top: 1px solid #bfdbfe; color: #64748b; font-size: 11px; }
+.doc-page.tpl-word-professional-lesson-plan { padding: 56px 64px 60px; }
+.tpl-word-professional-lesson-plan .tpl-head { border-bottom: 2px solid #1e3a8a; color: #1e3a8a; font-size: 10.5px; }
+.tpl-word-professional-lesson-plan h1 { margin: 24px 0 4px; color: #1e3a8a; font-size: 25px; letter-spacing: 0; }
+.tpl-word-professional-lesson-plan h1 + p { margin: 0 0 18px; text-align: center; color: #64748b; font-size: 12.5px; }
+.tpl-word-professional-lesson-plan h2 { color: #1e3a8a; border-bottom-color: #bfdbfe; }
+.tpl-word-professional-lesson-plan h3 { color: #1d4ed8; }
+.tpl-word-professional-lesson-plan table th { background: #f1f5f9; color: #1e3a8a; }
+.tpl-word-professional-lesson-plan table td { border-color: #cbd5e1; }
+.tpl-word-professional-lesson-plan .tpl-foot { border-top-color: #cbd5e1; color: #64748b; }
 `,
     blocks: [
       { type: "heading", level: 1, text: "GIÁO ÁN BÀI 12: PHÂN SỐ VÀ PHÉP CHIA" },
@@ -291,19 +290,16 @@ export const WORD_TEMPLATES = [
     header: `<div class="tpl-head"><span>Phiếu học tập số 5</span><span>Toán · Lớp 2</span></div>`,
     footer: `<div class="tpl-foot"><span>EduPlay Worksheet · Tuần 5</span><span>Họ tên: ................................................</span></div>`,
     css: `
-.doc-page.tpl-word-student-worksheet { padding: 46px 58px 58px; background: #fffdf8; }
-.tpl-word-student-worksheet .tpl-head { display: flex; justify-content: space-between; padding: 8px 14px; border-radius: 999px; background: #ccfbf1; color: #0f766e; font-size: 12px; font-weight: 700; letter-spacing: .03em; }
-.tpl-word-student-worksheet h1 { margin: 24px 0 6px; padding: 15px 18px; border: 2px dashed #5eead4; border-radius: 18px; background: #f0fdfa; color: #0f766e; font-size: 27px; text-align: center; letter-spacing: .02em; }
-.tpl-word-student-worksheet h1 + p { margin: 0 0 16px; text-align: center; color: #64748b; font-size: 14px; }
-.tpl-word-student-worksheet h2 { margin: 22px 0 9px; padding: 5px 13px; border: 0; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 14px; letter-spacing: .03em; }
-.tpl-word-student-worksheet table { border: 0; }
-.tpl-word-student-worksheet table th { background: #ccfbf1; color: #0f766e; border-color: #5eead4; }
-.tpl-word-student-worksheet table td { border-color: #99f6e4; background: #ffffff; }
-.tpl-word-student-worksheet table tr:first-child th:first-child { border-radius: 10px 0 0 0; }
+.doc-page.tpl-word-student-worksheet { padding: 56px 60px 60px; background: #ffffff; }
+.tpl-word-student-worksheet .tpl-head { border-bottom: 2px solid #0d9488; color: #0f766e; font-size: 10.5px; }
+.tpl-word-student-worksheet h1 { margin: 22px 0 4px; padding: 0; border: 0; border-radius: 0; background: none; color: #0f766e; font-family: Arial, sans-serif; font-size: 24px; letter-spacing: 0; }
+.tpl-word-student-worksheet h1 + p { margin: 0 0 18px; text-align: center; color: #64748b; font-size: 12.5px; }
+.tpl-word-student-worksheet h2 { margin: 22px 0 8px; padding: 0 0 4px; border: 0; border-bottom: 1.5px solid #99f6e4; border-radius: 0; background: none; color: #0f766e; font-size: 14px; letter-spacing: .02em; }
+.tpl-word-student-worksheet table th { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
+.tpl-word-student-worksheet table td { border-color: #cbd5e1; background: #ffffff; }
 .tpl-word-student-worksheet ul li::marker { color: #f59e0b; }
 .tpl-word-student-worksheet ol li::marker { color: #0d9488; font-weight: 700; }
-.tpl-word-student-worksheet p { line-height: 1.7; }
-.tpl-word-student-worksheet .tpl-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; padding-top: 10px; border-top: 2px dotted #99f6e4; color: #64748b; font-size: 11px; }
+.tpl-word-student-worksheet .tpl-foot { border-top: 1px solid #cbd5e1; color: #64748b; }
 `,
     blocks: [
       { type: "heading", level: 1, text: "PHIẾU BÀI TẬP — PHÉP CỘNG CÓ NHỚ" },
@@ -374,17 +370,15 @@ export const WORD_TEMPLATES = [
     header: `<div class="tpl-head"><span>SỞ GD&ĐT THÀNH PHỐ HỒ CHÍ MINH<br>TRƯỜNG THCS NGUYỄN HUỆ</span><span>Mã đề: 01<br>Năm học 2026–2027</span></div>`,
     footer: `<div class="tpl-foot"><span>Trang 1/3 — Đề kiểm tra Toán 9</span><span>Giáo viên ra đề: Nguyễn Thị Lan</span></div>`,
     css: `
-.doc-page.tpl-word-professional-exam { padding: 44px 58px 52px; border: 2px solid #1e3a8a; }
-.tpl-word-professional-exam .tpl-head { display: flex; justify-content: space-between; padding-bottom: 10px; border-bottom: 2px solid #1e3a8a; font-size: 11.5px; line-height: 1.45; text-transform: uppercase; }
-.tpl-word-professional-exam .tpl-head span:first-child { font-weight: 700; }
-.tpl-word-professional-exam h1 { margin: 20px 0 4px; padding-bottom: 8px; border-bottom: 3px double #1e3a8a; font-size: 24px; text-align: center; letter-spacing: .05em; }
-.tpl-word-professional-exam h1 + p { margin-top: 4px; text-align: center; color: #475569; font-size: 13px; font-style: italic; }
-.tpl-word-professional-exam h2 { margin: 20px 0 8px; padding: 0 0 4px; border-bottom: 1px solid #94a3b8; color: #1e3a8a; font-size: 14px; letter-spacing: .03em; text-transform: uppercase; }
-.tpl-word-professional-exam table { border: 1px solid #1e3a8a; }
-.tpl-word-professional-exam table th { background: #e2e8f0; color: #111827; border-color: #94a3b8; }
+.doc-page.tpl-word-professional-exam { padding: 52px 58px 56px; border: 1px solid #94a3b8; }
+.tpl-word-professional-exam .tpl-head { border-bottom: 2px solid #1e3a8a; color: #111827; font-size: 10.5px; line-height: 1.45; }
+.tpl-word-professional-exam h1 { margin: 20px 0 4px; padding-bottom: 8px; border-bottom: 3px double #1e3a8a; color: #111827; font-size: 22px; letter-spacing: .03em; }
+.tpl-word-professional-exam h1 + p { margin: 4px 0 18px; text-align: center; color: #475569; font-size: 12.5px; font-style: italic; }
+.tpl-word-professional-exam h2 { color: #1e3a8a; border-bottom-color: #94a3b8; }
+.tpl-word-professional-exam table th { background: #f1f5f9; color: #111827; border-color: #94a3b8; }
 .tpl-word-professional-exam table td { border-color: #94a3b8; }
-.tpl-word-professional-exam ol li { margin: 7px 0; line-height: 1.65; }
-.tpl-word-professional-exam .tpl-foot { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 8px; border-top: 1px solid #94a3b8; color: #64748b; font-size: 10.5px; }
+.tpl-word-professional-exam ol li { margin: 6px 0; line-height: 1.65; }
+.tpl-word-professional-exam .tpl-foot { border-top-color: #94a3b8; color: #64748b; }
 `,
     blocks: [
       { type: "heading", level: 1, text: "ĐỀ KIỂM TRA GIỮA HỌC KÌ I — TOÁN 9" },
@@ -453,19 +447,15 @@ export const WORD_TEMPLATES = [
     header: commonSchoolHeader("KHOA HỌC TỰ NHIÊN 8", "Tài liệu ôn tập · Học kì I"),
     footer: `<div class="tpl-foot"><span>Tổng ôn Chương 3 · KHTN 8</span><span>Lưu hành nội bộ</span></div>`,
     css: `
-.doc-page.tpl-word-study-guide { padding: 48px 54px 56px 70px; border-left: 10px solid #6d28d9; }
-.tpl-word-study-guide .tpl-head { display: flex; justify-content: space-between; padding-bottom: 9px; border-bottom: 2px solid #ddd6fe; color: #6d28d9; font-size: 11.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
-.tpl-word-study-guide h1 { margin: 24px 0 8px; color: #4c1d95; font-family: Georgia, serif; font-size: 28px; line-height: 1.3; }
-.tpl-word-study-guide h1 + p { color: #64748b; font-size: 14px; }
-.tpl-word-study-guide h2 { counter-increment: study; margin: 25px 0 10px; padding: 0 0 6px 44px; border-bottom: 2px solid #ddd6fe; color: #5b21b6; font-size: 17px; position: relative; }
-.tpl-word-study-guide h2::before { content: counter(study); position: absolute; left: 0; top: -3px; width: 30px; height: 30px; border-radius: 50%; background: #6d28d9; color: #fff; font-family: Arial, sans-serif; font-size: 15px; line-height: 30px; text-align: center; }
-.tpl-word-study-guide { counter-reset: study; }
-.tpl-word-study-guide table { border: 1px solid #ddd6fe; }
-.tpl-word-study-guide table th { background: #ede9fe; color: #5b21b6; border-color: #ddd6fe; }
-.tpl-word-study-guide table td { border-color: #ede9fe; }
-.tpl-word-study-guide ul li { margin: 4px 0; }
-.tpl-word-study-guide blockquote, .tpl-word-study-guide p:nth-of-type(3) { color: #0e7490; }
-.tpl-word-study-guide .tpl-foot { margin-top: 32px; padding-top: 9px; border-top: 2px solid #ddd6fe; color: #64748b; font-size: 11px; display: flex; justify-content: space-between; }
+.doc-page.tpl-word-study-guide { padding: 56px 64px 60px; }
+.tpl-word-study-guide .tpl-head { border-bottom: 2px solid #6d28d9; color: #5b21b6; font-size: 10.5px; }
+.tpl-word-study-guide h1 { margin: 24px 0 6px; color: #4c1d95; text-align: left; font-size: 24px; }
+.tpl-word-study-guide h1 + p { margin-bottom: 18px; color: #64748b; font-size: 12.5px; }
+.tpl-word-study-guide h2 { padding: 0 0 4px; color: #5b21b6; border-bottom-color: #ddd6fe; font-size: 14.5px; }
+.tpl-word-study-guide table th { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe; }
+.tpl-word-study-guide table td { border-color: #ddd6fe; }
+.tpl-word-study-guide blockquote { color: #0e7490; }
+.tpl-word-study-guide .tpl-foot { border-top-color: #ddd6fe; color: #64748b; }
 `,
     blocks: [
       { type: "heading", level: 1, text: "TỔNG ÔN CHƯƠNG 3: CHẤT VÀ SỰ BIẾN ĐỔI CHẤT" },
@@ -555,18 +545,17 @@ export const WORD_TEMPLATES = [
     header: `<div class="tpl-head"><span>Homework · Week 8</span><span>Unit 4: My Neighbourhood</span></div>`,
     footer: `<div class="tpl-foot"><span>Hạn nộp: Thứ Sáu, 14/11/2026</span><span>Chữ ký phụ huynh: ………………………</span></div>`,
     css: `
-.doc-page.tpl-word-homework-assignment { padding: 48px 58px 56px; }
-.tpl-word-homework-assignment .tpl-head { display: flex; justify-content: space-between; padding: 9px 14px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700; letter-spacing: .03em; }
-.tpl-word-homework-assignment h1 { margin: 24px 0 6px; color: #166534; font-size: 28px; letter-spacing: .02em; }
-.tpl-word-homework-assignment h1 + p { display: inline-block; margin: 0 0 15px; padding: 4px 10px; border-radius: 999px; background: #fef9c3; color: #854d0e; font-size: 13px; }
-.tpl-word-homework-assignment h2 { margin: 22px 0 9px; padding: 0 0 5px; border-bottom: 2px solid #bbf7d0; color: #15803d; font-size: 15.5px; }
-.tpl-word-homework-assignment h2::before { content: "✓"; margin-right: 8px; color: #ca8a04; }
-.tpl-word-homework-assignment ul li { list-style: none; position: relative; padding-left: 25px; margin: 6px 0; }
-.tpl-word-homework-assignment ul li::before { content: "☐"; position: absolute; left: 0; top: -1px; color: #15803d; font-size: 17px; }
-.tpl-word-homework-assignment table { border: 1px solid #bbf7d0; }
-.tpl-word-homework-assignment table th { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
-.tpl-word-homework-assignment table td { border-color: #dcfce7; }
-.tpl-word-homework-assignment .tpl-foot { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 10px; border-top: 2px dashed #bbf7d0; color: #64748b; font-size: 11px; }
+.doc-page.tpl-word-homework-assignment { padding: 56px 60px 60px; }
+.tpl-word-homework-assignment .tpl-head { border-bottom: 2px solid #15803d; color: #166534; font-size: 10.5px; }
+.tpl-word-homework-assignment h1 { margin: 22px 0 4px; color: #166534; font-size: 24px; text-align: left; }
+.tpl-word-homework-assignment h1 + p { display: block; margin: 0 0 18px; padding: 0; border-radius: 0; background: none; color: #854d0e; font-size: 12.5px; }
+.tpl-word-homework-assignment h2 { color: #15803d; border-bottom-color: #bbf7d0; }
+.tpl-word-homework-assignment h2::before { content: none; }
+.tpl-word-homework-assignment ul li { list-style: none; position: relative; padding-left: 20px; margin: 5px 0; }
+.tpl-word-homework-assignment ul li::before { content: "□"; position: absolute; left: 0; top: 0; color: #15803d; font-size: 13px; }
+.tpl-word-homework-assignment table th { background: #f0fdf4; color: #166534; border-color: #cbd5e1; }
+.tpl-word-homework-assignment table td { border-color: #cbd5e1; }
+.tpl-word-homework-assignment .tpl-foot { border-top-color: #cbd5e1; color: #64748b; }
 `,
     blocks: [
       { type: "heading", level: 1, text: "BÀI TẬP VỀ NHÀ TUẦN 8 — TIẾNG ANH 6" },
@@ -638,17 +627,15 @@ export const WORD_TEMPLATES = [
     header: commonSchoolHeader("TRƯỜNG THCS TRẦN PHÚ", "Lịch sử và Địa lý 7 · Tiết 24"),
     footer: `<div class="tpl-foot"><span>Hoạt động nhóm · 45 phút</span><span>Nhóm trưởng ký tên: ………………………</span></div>`,
     css: `
-.doc-page.tpl-word-group-activity { padding: 48px 56px 54px; background: #fffdf9; }
-.tpl-word-group-activity .tpl-head { display: flex; justify-content: space-between; padding: 9px 14px; border-left: 5px solid #c2410c; background: #ffedd5; color: #9a3412; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-.tpl-word-group-activity h1 { margin: 24px 0 6px; color: #9a3412; font-size: 27px; line-height: 1.3; }
-.tpl-word-group-activity h1 + p { color: #64748b; font-size: 14px; }
-.tpl-word-group-activity h2 { margin: 22px 0 9px; padding: 6px 12px; border-left: 5px solid #c2410c; background: #fff7ed; color: #9a3412; font-size: 15px; }
+.doc-page.tpl-word-group-activity { padding: 56px 60px 60px; background: #ffffff; }
+.tpl-word-group-activity .tpl-head { border-bottom: 2px solid #c2410c; color: #9a3412; font-size: 10.5px; }
+.tpl-word-group-activity h1 { margin: 22px 0 4px; color: #9a3412; font-size: 24px; text-align: left; }
+.tpl-word-group-activity h1 + p { color: #64748b; font-size: 12.5px; }
+.tpl-word-group-activity h2 { padding: 0 0 4px; border-left: 0; background: none; color: #9a3412; border-bottom-color: #fed7aa; }
 .tpl-word-group-activity h3 { color: #1d4ed8; }
-.tpl-word-group-activity table { border: 1px solid #fed7aa; }
-.tpl-word-group-activity table th { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
-.tpl-word-group-activity table td { border-color: #ffedd5; background: #ffffff; }
-.tpl-word-group-activity ul li { margin: 4px 0; }
-.tpl-word-group-activity .tpl-foot { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 9px; border-top: 2px solid #fed7aa; color: #64748b; font-size: 11px; }
+.tpl-word-group-activity table th { background: #fff7ed; color: #9a3412; border-color: #e5e7eb; }
+.tpl-word-group-activity table td { border-color: #e5e7eb; background: #ffffff; }
+.tpl-word-group-activity .tpl-foot { border-top-color: #e5e7eb; color: #64748b; }
 `,
     blocks: [
       { type: "heading", level: 1, text: "HOẠT ĐỘNG NHÓM: KHÁM PHÁ VĂN HÓA ĐỊA PHƯƠNG" },
@@ -741,19 +728,18 @@ export const WORD_TEMPLATES = [
     header: commonSchoolHeader("PHÒNG THÍ NGHIỆM KHOA HỌC", "KHTN 8 · Bài thực hành số 4"),
     footer: `<div class="tpl-foot"><span>Bài thực hành số 4 · Nhóm: ……………</span><span>Ngày thực hiện: …/…/2026</span></div>`,
     css: `
-.doc-page.tpl-word-practical-manual { padding: 46px 56px 54px; background: #ffffff; }
-.tpl-word-practical-manual .tpl-head { display: flex; justify-content: space-between; padding-bottom: 9px; border-bottom: 3px solid #0369a1; color: #0369a1; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-.tpl-word-practical-manual h1 { margin: 23px 0 5px; color: #075985; font-size: 27px; }
-.tpl-word-practical-manual h1 + p { color: #64748b; font-size: 14px; }
-.tpl-word-practical-manual h2 { margin: 22px 0 9px; padding: 6px 12px; border-radius: 4px; background: #e0f2fe; color: #075985; font-size: 15px; }
-.tpl-word-practical-manual h2::before { content: "▸"; margin-right: 8px; color: #0f766e; }
-.tpl-word-practical-manual ol { counter-reset: step; list-style: none; padding-left: 0; }
-.tpl-word-practical-manual ol li { counter-increment: step; position: relative; margin: 9px 0; padding: 9px 12px 9px 48px; border: 1px solid #bae6fd; border-radius: 7px; background: #f8fcff; }
-.tpl-word-practical-manual ol li::before { content: counter(step); position: absolute; left: 12px; top: 7px; width: 25px; height: 25px; border-radius: 50%; background: #0369a1; color: #fff; font-size: 13px; line-height: 25px; text-align: center; }
-.tpl-word-practical-manual table { border: 1px solid #bae6fd; }
-.tpl-word-practical-manual table th { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
+.doc-page.tpl-word-practical-manual { padding: 56px 60px 60px; background: #ffffff; }
+.tpl-word-practical-manual .tpl-head { border-bottom: 2px solid #0369a1; color: #075985; font-size: 10.5px; }
+.tpl-word-practical-manual h1 { margin: 22px 0 4px; color: #075985; font-size: 24px; text-align: left; }
+.tpl-word-practical-manual h1 + p { margin-bottom: 18px; color: #64748b; font-size: 12.5px; }
+.tpl-word-practical-manual h2 { padding: 0 0 4px; border-radius: 0; background: none; color: #075985; border-bottom-color: #bae6fd; }
+.tpl-word-practical-manual h2::before { content: none; }
+.tpl-word-practical-manual ol { list-style: decimal; padding-left: 22px; }
+.tpl-word-practical-manual ol li { margin: 5px 0; padding: 0; border: 0; border-radius: 0; background: none; }
+.tpl-word-practical-manual ol li::before { content: none; }
+.tpl-word-practical-manual table th { background: #f0f9ff; color: #075985; border-color: #bae6fd; }
 .tpl-word-practical-manual table td { border-color: #bae6fd; }
-.tpl-word-practical-manual .tpl-foot { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 9px; border-top: 2px solid #bae6fd; color: #64748b; font-size: 11px; }
+.tpl-word-practical-manual .tpl-foot { border-top-color: #bae6fd; color: #64748b; }
 `,
     blocks: [
       { type: "heading", level: 1, text: "THỰC HÀNH: QUAN SÁT TẾ BÀO THỰC VẬT" },
@@ -855,18 +841,17 @@ export const WORD_TEMPLATES = [
     header: commonSchoolHeader("TRƯỜNG THCS LÊ QUÝ ĐÔN", "Báo cáo học tập · Năm học 2026–2027"),
     footer: `<div class="tpl-foot"><span>Báo cáo học kì I · Lớp 8A1</span><span>Giáo viên chủ nhiệm: Nguyễn Thị Lan</span></div>`,
     css: `
-.doc-page.tpl-word-student-report { padding: 0 0 56px; }
-.tpl-word-student-report .tpl-head { display: flex; justify-content: space-between; padding: 16px 56px; background: #134e4a; color: #ccfbf1; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-.tpl-word-student-report h1 { margin: 30px 56px 6px; color: #134e4a; font-family: Georgia, serif; font-size: 27px; line-height: 1.3; }
-.tpl-word-student-report h1 + p { margin: 0 56px 18px; color: #64748b; font-size: 14px; }
-.tpl-word-student-report h2 { margin: 24px 56px 10px; padding: 0 0 6px; border-bottom: 2px solid #99f6e4; color: #0f766e; font-size: 16px; }
-.tpl-word-student-report table { width: calc(100% - 112px); margin: 10px 56px 18px; border: 1px solid #99f6e4; }
-.tpl-word-student-report table th { background: #ccfbf1; color: #134e4a; border-color: #99f6e4; }
-.tpl-word-student-report table td { border-color: #ccfbf1; }
-.tpl-word-student-report table tr:nth-child(even) td { background: #f0fdfa; }
-.tpl-word-student-report p { margin-left: 56px; margin-right: 56px; }
-.tpl-word-student-report ul, .tpl-word-student-report ol { margin-left: 56px; margin-right: 56px; }
-.tpl-word-student-report .tpl-foot { display: flex; justify-content: space-between; margin: 34px 56px 0; padding-top: 9px; border-top: 1px solid #99f6e4; color: #64748b; font-size: 11px; }
+.doc-page.tpl-word-student-report { padding: 56px 64px 60px; }
+.tpl-word-student-report .tpl-head { border-bottom: 2px solid #0f766e; color: #134e4a; font-size: 10.5px; }
+.tpl-word-student-report h1 { margin: 24px 0 4px; color: #134e4a; font-size: 24px; text-align: left; }
+.tpl-word-student-report h1 + p { margin: 0 0 18px; color: #64748b; font-size: 12.5px; }
+.tpl-word-student-report h2 { color: #0f766e; border-bottom-color: #99f6e4; }
+.tpl-word-student-report table { width: 100%; margin: 10px 0 16px; border: 0; }
+.tpl-word-student-report table th { background: #f0fdfa; color: #134e4a; border-color: #99f6e4; }
+.tpl-word-student-report table td { border-color: #cbd5e1; }
+.tpl-word-student-report table tr:nth-child(even) td { background: transparent; }
+.tpl-word-student-report p, .tpl-word-student-report ul, .tpl-word-student-report ol { margin-left: 0; margin-right: 0; }
+.tpl-word-student-report .tpl-foot { margin: 32px 0 0; border-top-color: #cbd5e1; color: #64748b; }
 `,
     blocks: [
       { type: "heading", level: 1, text: "BÁO CÁO KẾT QUẢ HỌC TẬP HỌC KÌ I — LỚP 8A1" },
@@ -956,21 +941,19 @@ export const WORD_TEMPLATES = [
     header: `<div class="tpl-head"><span>Bài đọc trực quan · Khoa học</span><span>Chủ đề: Thực vật quanh em</span></div>`,
     footer: `<div class="tpl-foot"><span>Bài đọc lớp 5 · Sự kì diệu của lá cây</span><span>“Mỗi chiếc lá là một nhà máy nhỏ”</span></div>`,
     css: `
-.doc-page.tpl-word-visual-learning { padding: 48px 60px 58px; background: #fffefb; }
-.tpl-word-visual-learning .tpl-head { display: flex; justify-content: space-between; padding-bottom: 9px; border-bottom: 1px solid #d6d3d1; color: #78716c; font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; }
-.tpl-word-visual-learning h1 { margin: 25px 0 10px; color: #14532d; font-family: Georgia, serif; font-size: 34px; line-height: 1.2; }
-.tpl-word-visual-learning h1 + p { color: #57534e; font-size: 16px; line-height: 1.7; }
-.tpl-word-visual-learning h2 { margin: 26px 0 10px; color: #166534; font-family: Georgia, serif; font-size: 20px; }
-.tpl-word-visual-learning h2::after { content: ""; display: block; width: 72px; height: 3px; margin-top: 6px; background: #bbf7d0; }
-.tpl-word-visual-learning p { line-height: 1.8; font-size: 14px; }
-.tpl-word-visual-learning p:first-of-type::first-letter { float: left; margin: 2px 8px 0 0; color: #166534; font-family: Georgia, serif; font-size: 52px; line-height: .9; font-weight: 700; }
-.tpl-word-visual-learning img { display: block; width: 100%; margin: 14px 0 7px; border-radius: 12px; border: 1px solid #d6d3d1; }
-.tpl-word-visual-learning img + p { text-align: center; color: #78716c; font-size: 12px; font-style: italic; }
-.tpl-word-visual-learning table { border: 1px solid #d6d3d1; }
-.tpl-word-visual-learning table th { background: #ecfccb; color: #365314; border-color: #d9f99d; }
-.tpl-word-visual-learning table td { border-color: #e7e5e4; }
-.tpl-word-visual-learning ul li { margin: 5px 0; }
-.tpl-word-visual-learning .tpl-foot { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 9px; border-top: 1px solid #d6d3d1; color: #78716c; font-size: 11px; }
+.doc-page.tpl-word-visual-learning { padding: 56px 64px 60px; background: #ffffff; }
+.tpl-word-visual-learning .tpl-head { border-bottom: 1px solid #d6d3d1; color: #57534e; font-size: 10.5px; }
+.tpl-word-visual-learning h1 { margin: 24px 0 8px; color: #14532d; font-size: 32px; line-height: 1.2; text-align: left; }
+.tpl-word-visual-learning h1 + p { color: #57534e; font-size: 14px; line-height: 1.75; }
+.tpl-word-visual-learning h2 { color: #166534; font-family: Georgia, serif; font-size: 18px; text-transform: none; letter-spacing: 0; border-bottom: 0; padding-bottom: 0; }
+.tpl-word-visual-learning h2::after { content: ""; display: block; width: 56px; height: 2px; margin-top: 5px; background: #bbf7d0; }
+.tpl-word-visual-learning p { line-height: 1.75; }
+.tpl-word-visual-learning p:first-of-type::first-letter { float: left; margin: 2px 8px 0 0; color: #166534; font-family: Georgia, serif; font-size: 44px; line-height: .9; font-weight: 700; }
+.tpl-word-visual-learning img { display: block; width: 100%; margin: 14px 0 7px; border-radius: 0; border: 1px solid #d6d3d1; }
+.tpl-word-visual-learning img + p { text-align: center; color: #78716c; font-size: 11.5px; font-style: italic; }
+.tpl-word-visual-learning table th { background: #f0fdf4; color: #365314; border-color: #cbd5e1; }
+.tpl-word-visual-learning table td { border-color: #cbd5e1; }
+.tpl-word-visual-learning .tpl-foot { border-top-color: #d6d3d1; color: #78716c; }
 `,
     blocks: [
       { type: "heading", level: 1, text: "SỰ KÌ DIỆU CỦA LÁ CÂY" },
@@ -1049,18 +1032,15 @@ export const WORD_TEMPLATES = [
     header: `<div class="tpl-head"><span>DỰ ÁN LIÊN MÔN · LỚP 9</span><span>Thời gian: 4 tuần</span></div>`,
     footer: `<div class="tpl-foot"><span>Dự án “Thành phố xanh tương lai”</span><span>Nhóm: ………………………</span></div>`,
     css: `
-.doc-page.tpl-word-project-based-learning { padding: 48px 56px 56px; }
-.tpl-word-project-based-learning .tpl-head { display: flex; justify-content: space-between; padding: 9px 14px; border-radius: 8px; background: #ede9fe; color: #5b21b6; font-size: 11.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
-.tpl-word-project-based-learning h1 { margin: 24px 0 6px; color: #4c1d95; font-size: 28px; line-height: 1.3; }
-.tpl-word-project-based-learning h1 + p { color: #64748b; font-size: 14px; }
-.tpl-word-project-based-learning h2 { margin: 23px 0 9px; padding: 0 0 5px; border-bottom: 2px solid #ddd6fe; color: #5b21b6; font-size: 16px; }
-.tpl-word-project-based-learning h2::before { content: "◆"; margin-right: 8px; color: #15803d; font-size: 12px; }
-.tpl-word-project-based-learning table { border: 1px solid #ddd6fe; }
-.tpl-word-project-based-learning table th { background: #ede9fe; color: #4c1d95; border-color: #ddd6fe; }
-.tpl-word-project-based-learning table td { border-color: #ede9fe; }
-.tpl-word-project-based-learning ol li { margin: 7px 0; }
-.tpl-word-project-based-learning ul li { margin: 4px 0; }
-.tpl-word-project-based-learning .tpl-foot { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 9px; border-top: 2px solid #ddd6fe; color: #64748b; font-size: 11px; }
+.doc-page.tpl-word-project-based-learning { padding: 56px 60px 60px; }
+.tpl-word-project-based-learning .tpl-head { border-bottom: 2px solid #5b21b6; color: #5b21b6; font-size: 10.5px; }
+.tpl-word-project-based-learning h1 { margin: 22px 0 4px; color: #4c1d95; font-size: 24px; text-align: left; }
+.tpl-word-project-based-learning h1 + p { margin-bottom: 18px; color: #64748b; font-size: 12.5px; }
+.tpl-word-project-based-learning h2 { color: #5b21b6; border-bottom-color: #ddd6fe; }
+.tpl-word-project-based-learning h2::before { content: none; }
+.tpl-word-project-based-learning table th { background: #f5f3ff; color: #4c1d95; border-color: #ddd6fe; }
+.tpl-word-project-based-learning table td { border-color: #ddd6fe; }
+.tpl-word-project-based-learning .tpl-foot { border-top-color: #ddd6fe; color: #64748b; }
 `,
     blocks: [
       { type: "heading", level: 1, text: "DỰ ÁN HỌC TẬP: THÀNH PHỐ XANH TƯƠNG LAI" },
@@ -1166,7 +1146,7 @@ export const POWERPOINT_TEMPLATES = [
       variant: "modern", pattern: "modern",
     },
     title: "CHU VI HÌNH CHỮ NHẬT",
-    css: `.slide:first-child h1 { font-size: 48px; } .slide h2 { letter-spacing: .01em; }`,
+    css: `.slide h2 { letter-spacing: 0; }`,
     slides: [
       { type: "title", title: "CHU VI HÌNH CHỮ NHẬT", subtitle: "Toán lớp 3 · Bài 47 · Cùng học qua hình ảnh và ví dụ thực tế" },
       {
@@ -1270,7 +1250,7 @@ export const POWERPOINT_TEMPLATES = [
       variant: "science", pattern: "science",
     },
     title: "QUANG HỢP Ở THỰC VẬT",
-    css: `.slide h2 { border-left: 5px solid #0e7490; padding-left: 12px; }`,
+    css: `.slide h2 { border-left: 0; padding-left: 0; }`,
     slides: [
       { type: "title", title: "QUANG HỢP Ở THỰC VẬT", subtitle: "Khoa học tự nhiên 8 · Chủ đề: Trao đổi chất và chuyển hóa năng lượng" },
       {
@@ -1377,7 +1357,7 @@ export const POWERPOINT_TEMPLATES = [
       variant: "minimal", pattern: "minimal",
     },
     title: "TRUYỆN NGẮN HIỆN ĐẠI VIỆT NAM",
-    css: `.slide h2 { font-family: Georgia, serif; font-weight: 400; letter-spacing: .01em; } .slide { border: 1px solid #e2e8f0; }`,
+    css: `.slide h2 { font-family: Georgia, serif; font-weight: 400; letter-spacing: 0; }`,
     slides: [
       { type: "title", title: "TRUYỆN NGẮN HIỆN ĐẠI VIỆT NAM", subtitle: "Ngữ văn 10 · Bài 4 · Hành trình khám phá con người và thời đại" },
       {
@@ -1489,7 +1469,7 @@ export const POWERPOINT_TEMPLATES = [
       variant: "kids", pattern: "kids",
     },
     title: "TỪ CHỈ SỰ VẬT",
-    css: `.slide:first-child h1 { text-shadow: 2px 3px 0 rgba(255,255,255,.35); } .slide h2 { color: #7c2d12; }`,
+    css: `.slide h2 { color: #9a3412; }`,
     slides: [
       { type: "title", title: "TỪ CHỈ SỰ VẬT", subtitle: "Tiếng Việt lớp 2 · Cùng bé khám phá thế giới từ ngữ" },
       {
@@ -1599,7 +1579,7 @@ export const POWERPOINT_TEMPLATES = [
       variant: "history", pattern: "history",
     },
     title: "CHIẾN DỊCH ĐIỆN BIÊN PHỦ",
-    css: `.slide h2 { border-bottom: 2px solid #d6c6a8; padding-bottom: 6px; } .slide { background: #fffdf7; }`,
+    css: `.slide h2 { border-bottom: 1.5px solid var(--p-line); padding-bottom: 6px; }`,
     slides: [
       { type: "title", title: "CHIẾN DỊCH ĐIỆN BIÊN PHỦ", subtitle: "Lịch sử 9 · 13/3 – 7/5/1954 · Một mốc son của dân tộc" },
       {
@@ -1700,7 +1680,7 @@ export const POWERPOINT_TEMPLATES = [
       variant: "math", pattern: "math",
     },
     title: "HẰNG ĐẲNG THỨC ĐÁNG NHỚ",
-    css: `.slide { background-image: linear-gradient(#eef2ff 1px, transparent 1px), linear-gradient(90deg, #eef2ff 1px, transparent 1px); background-size: 34px 34px; } .slide h2 { background: #eef2ff; display: inline-block; padding: 4px 12px; border-radius: 8px; }`,
+    css: `.slide h2 { border-bottom: 1.5px solid var(--p-line); padding-bottom: 6px; }`,
     slides: [
       { type: "title", title: "HẰNG ĐẲNG THỨC ĐÁNG NHỚ", subtitle: "Toán 8 · Đại số · Hiểu bằng hình ảnh — nhớ bằng bản chất" },
       {
@@ -1822,7 +1802,7 @@ export const POWERPOINT_TEMPLATES = [
       variant: "language", pattern: "language",
     },
     title: "PRESENT PERFECT",
-    css: `.slide h2 { color: #6d28d9; } .slide:first-child h1 { letter-spacing: .01em; }`,
+    css: `.slide h2 { color: #5b21b6; }`,
     slides: [
       { type: "title", title: "PRESENT PERFECT", subtitle: "Tiếng Anh 8 · Unit 5 · Talking about experiences" },
       {
@@ -1929,7 +1909,7 @@ export const POWERPOINT_TEMPLATES = [
       variant: "infographic", pattern: "infographic",
     },
     title: "VÒNG TUẦN HOÀN CỦA NƯỚC",
-    css: `.slide h2 { background: #ccfbf1; display: inline-block; padding: 4px 14px; border-radius: 999px; color: #115e59; }`,
+    css: `.slide h2 { border-bottom: 1.5px solid var(--p-line); padding-bottom: 6px; }`,
     slides: [
       { type: "title", title: "VÒNG TUẦN HOÀN CỦA NƯỚC", subtitle: "Khoa học 7 · Nước không mất đi, nước chỉ chuyển từ thể này sang thể khác" },
       {
@@ -2030,7 +2010,7 @@ export const POWERPOINT_TEMPLATES = [
       variant: "corporate", pattern: "corporate",
     },
     title: "CHUYỂN ĐỔI SỐ TRONG GIÁO DỤC",
-    css: `.slide h2 { border-left: 6px solid #0ea5e9; padding-left: 14px; } .slide { border-top: 8px solid #1e3a8a; }`,
+    css: `.slide h2 { border-bottom: 1.5px solid var(--p-line); padding-bottom: 6px; }`,
     slides: [
       { type: "title", title: "CHUYỂN ĐỔI SỐ TRONG GIÁO DỤC", subtitle: "Báo cáo chuyên đề · Khảo sát 120 trường học · Năm 2026" },
       {
@@ -2131,7 +2111,7 @@ export const POWERPOINT_TEMPLATES = [
       variant: "story", pattern: "story",
     },
     title: "CHIẾC VÍ NHẶT ĐƯỢC",
-    css: `.slide { background: #fffdf5; } .slide h2 { color: #9a3412; font-family: Georgia, serif; }`,
+    css: `.slide h2 { color: #9a3412; font-family: Georgia, serif; }`,
     slides: [
       { type: "title", title: "CHIẾC VÍ NHẶT ĐƯỢC", subtitle: "Đạo đức lớp 5 · Một câu chuyện nhỏ về trung thực và lòng tốt" },
       {

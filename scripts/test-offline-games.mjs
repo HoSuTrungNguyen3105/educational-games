@@ -115,8 +115,8 @@ function boot(html, savedMap) {
 
 // ── Test ────────────────────────────────────────────────────────────────────
 const manifest = fs.readFileSync("src/games/offline/games-src/manifest.js", "utf8");
-const entries = [...manifest.matchAll(/\{ id: '([^']+)', name: '([^']+)', icon: '([^']*)', tag: '([^']+)', grad: '([^']+)', engine: '([^']+)'/g)]
-  .map((m) => ({ id: m[1], name: m[2], icon: m[3], tag: m[4], grad: m[5], engine: m[6] }));
+const entries = [...manifest.matchAll(/\{ id: '([^']+)', name: '([^']+)', (?:icon: '[^']*', )?tag: '([^']+)', grad: '([^']+)', engine: '([^']+)'/g)]
+  .map((m) => ({ id: m[1], name: m[2], tag: m[3], grad: m[4], engine: m[5] }));
 
 // Không hardcode số game: manifest là nguồn sự thật, thêm/bớt game là
 // bản thân nó phải hợp lệ. Chỉ cần đảm bảo không rỗng.

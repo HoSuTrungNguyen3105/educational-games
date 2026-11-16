@@ -27,14 +27,181 @@ import { BookOpen, Bot, X } from "lucide-react";
 
 const MAX_LOCAL_TURNS = 12;
 
-// Gợi ý câu hỏi nhanh (§8 của đặc tả nâng cấp AI Bạn Học): bao quát giải
-// thích từng bước, xin ví dụ, tạo câu luyện tập và hỏi ngày giờ Việt Nam.
-const SUGGESTIONS = [
-  "Giải thích bài này từng bước cho mình",
-  "Cho mình một ví dụ dễ hiểu",
-  "Tạo 5 câu luyện tập cho mình",
-  "Hôm nay là thứ mấy?",
+// Gợi ý câu hỏi nhanh: mỗi ngày random 4 câu (seed theo ngày nên cùng một
+// ngày thì bộ câu hỏi giống nhau, sang ngày mới tự đổi) từ kho câu hỏi đa
+// chủ đề. Sau mỗi câu trả lời của AI còn hiện thêm các câu hỏi liên quan
+// tới câu vừa hỏi (khớp từ khoá theo chủ đề, xem FOLLOWUP_KEYWORDS).
+const DAILY_POOL = [
+  { k: "math", q: "Cách tính nhẩm phép cộng nhanh là gì?" },
+  { k: "math", q: "Giải thích phép nhân qua một ví dụ thực tế" },
+  { k: "math", q: "Mẹo nhớ bảng cửu chương là gì?" },
+  { k: "math", q: "Phân số là gì và dùng khi nào?" },
+  { k: "vocab", q: "Cách học từ vựng tiếng Anh nhớ lâu?" },
+  { k: "vocab", q: "Đặt 3 câu tiếng Anh với từ “friend” giúp mình" },
+  { k: "vocab", q: "Phân biệt “this” và “that” như thế nào?" },
+  { k: "practice", q: "Tạo 5 câu luyện tập về chủ đề mình đang học" },
+  { k: "practice", q: "Cho mình một bài kiểm tra nhỏ 3 câu hỏi" },
+  { k: "practice", q: "Làm bài tập nhanh mà vẫn đúng bằng cách nào?" },
+  { k: "explain", q: "Giải thích bài học hôm nay một cách đơn giản nhất" },
+  { k: "explain", q: "Vì sao phải học môn này?" },
+  { k: "explain", q: "Tóm tắt kiến thức quan trọng của chủ đề này" },
+  { k: "example", q: "Cho mình một ví dụ gần gũi với đời sống" },
+  { k: "example", q: "Minh hoạ khái niệm này bằng một câu chuyện nhỏ" },
+  { k: "science", q: "Vì sao bầu trời có màu xanh?" },
+  { k: "science", q: "Mưa được hình thành như thế nào?" },
+  { k: "science", q: "Tại sao chúng ta cần ngủ đủ giấc?" },
+  { k: "history", q: "Kể một câu chuyện lịch sử thú vị về đất nước mình" },
+  { k: "history", q: "Thủ đô của Việt Nam có gì đặc biệt?" },
+  { k: "study", q: "Cách tập trung học bài hiệu quả là gì?" },
+  { k: "study", q: "Học thuộc bài nhanh bằng cách nào?" },
+  { k: "study", q: "Nên học vào lúc nào trong ngày là tốt nhất?" },
+  { k: "fun", q: "Kể cho mình một câu đố vui về toán học" },
+  { k: "fun", q: "Kể một câu chuyện cười liên quan đến học tập" },
 ];
+
+// Câu hỏi gợi ý tiếp theo, chia theo chủ đề. Chọn nhóm theo từ khoá trong
+// câu hỏi gần nhất của người dùng; không khớp nhóm nào thì dùng "general".
+const FOLLOWUPS = {
+  math: [
+    "Giải thích cách làm dạng bài này từng bước",
+    "Cho mình 3 bài toán tương tự để luyện",
+    "Mẹo kiểm tra lại đáp án là gì?",
+    "Cách trình bày bài giải cho rõ ràng?",
+  ],
+  vocab: [
+    "Cách nhớ từ vừa học lâu hơn?",
+    "Đặt 3 câu ví dụ với từ này",
+    "Từ này có từ đồng nghĩa nào không?",
+    "Cách phát âm chuẩn từ này?",
+  ],
+  practice: [
+    "Giải thích đáp án từng câu giúp mình",
+    "Tạo thêm 5 câu khó hơn một chút",
+    "Mẹo làm dạng bài này nhanh và đúng?",
+    "Tóm tắt kiến thức cần nhớ trước khi làm bài",
+  ],
+  explain: [
+    "Tóm tắt lại phần vừa giải thích cho mình",
+    "Giải thích sâu hơn bước khó nhất",
+    "Có cách hiểu nào đơn giản hơn không?",
+    "Cho mình ví dụ minh hoạ phần này",
+  ],
+  example: [
+    "Cho mình thêm một ví dụ khác",
+    "Ví dụ nào dễ nhớ nhất cho bài này?",
+    "Liên hệ kiến thức này với thực tế thế nào?",
+  ],
+  date: [
+    "Ngày này sang năm là thứ mấy?",
+    "Cách tính nhanh thứ trong tuần?",
+    "Kể mình nghe sự kiện đặc biệt của ngày này trong lịch sử",
+  ],
+  essay: [
+    "Gợi ý mở bài hay cho đề này",
+    "Cách viết câu văn sinh động hơn?",
+    "Kiểm tra giúp mình đoạn văn mình viết nhé",
+    "Gợi ý từ ngữ hay để miêu tả?",
+  ],
+  science: [
+    "Vì sao hiện tượng này xảy ra?",
+    "Có thí nghiệm nhỏ nào mình thử tại nhà không?",
+    "Kể thêm sự thật thú vị về chủ đề này",
+    "Liên hệ chủ đề này với đời sống hằng ngày",
+  ],
+  history: [
+    "Kể tiếp diễn biến của sự kiện này",
+    "Nhân vật lịch sử này còn gì thú vị?",
+    "Vì sao sự kiện này quan trọng?",
+    "Chỉ mình vị trí này trên bản đồ nhé",
+  ],
+  study: [
+    "Áp dụng cách này cho môn khác được không?",
+    "Cách tạo thói quen học mỗi ngày?",
+    "Làm sao bớt hồi hộp khi làm bài kiểm tra?",
+    "Mẹo giữ tập trung khi học ở nhà?",
+  ],
+  fun: [
+    "Kể thêm một câu đố vui khác",
+    "Kể một câu chuyện vui về lớp học",
+    "Tạo một câu đố có đáp án bất ngờ",
+  ],
+  general: [
+    "Giải thích thêm phần mình vừa hỏi",
+    "Cho mình ví dụ về chủ đề vừa rồi",
+    "Tạo 3 câu luyện tập về chủ đề này",
+    "Tóm tắt lại cho mình dễ nhớ",
+  ],
+};
+
+// Thứ tự ưu tiên khi khớp chủ đề: nhóm đặc trưng trước (date, vocab, essay,
+// science, history, practice, math, example, study, fun), nhóm "explain"
+// (từ khoá chung chung như "là gì", "tại sao") đứng cuối để khỏi nuốt mất
+// các nhóm kia. Không khớp gì → "general".
+const FOLLOWUP_KEYWORDS = [
+  { k: "date", words: ["thứ mấy", "ngày nào", "mấy giờ", "âm lịch", "dương lịch"] },
+  { k: "vocab", words: ["từ vựng", "tiếng anh", "english", "từ mới", "phát âm", "ngữ pháp", "dịch", "phân biệt"] },
+  { k: "essay", words: ["viết văn", "bài văn", "đoạn văn", "tập làm văn", "miêu tả", "kể chuyện", "cảm thụ", "mở bài"] },
+  { k: "science", words: ["khoa học", "tự nhiên", "thí nghiệm", "động vật", "thực vật", "cơ thể", "vũ trụ", "trái đất", "thời tiết", "năng lượng", "mưa", "bầu trời", "ngủ"] },
+  { k: "history", words: ["lịch sử", "địa lý", "địa lí", "thủ đô", "đất nước", "vua", "triều", "bản đồ"] },
+  { k: "practice", words: ["luyện tập", "bài tập", "kiểm tra", "ôn tập", "ôn thi", "câu luyện"] },
+  { k: "math", words: ["toán", "phép tính", "phép cộng", "phép trừ", "phép nhân", "phép chia", "phân số", "hình học", "tính nhẩm", "cửu chương", "chu vi", "diện tích"] },
+  { k: "example", words: ["ví dụ", "minh hoạ", "minh họa"] },
+  { k: "study", words: ["thuộc bài", "ghi nhớ", "tập trung", "phương pháp học", "học bài", "thói quen"] },
+  { k: "fun", words: ["câu đố", "chuyện cười", "đùa"] },
+  { k: "explain", words: ["giải thích", "tại sao", "vì sao", "là gì", "khái niệm", "hiểu", "từng bước", "tóm tắt"] },
+];
+
+function matchFollowupCategory(text) {
+  const t = String(text || "").toLowerCase();
+  for (const { k, words } of FOLLOWUP_KEYWORDS) {
+    if (words.some((w) => t.includes(w))) return k;
+  }
+  return "general";
+}
+
+/** Hash chuỗi → số, dùng làm seed. */
+function hashSeed(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return h >>> 0;
+}
+
+/** PRNG tất định (mulberry32) — cùng seed cho cùng chuỗi số. */
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** 4 câu hỏi nhanh của HÔM NAY: random theo ngày, ưu tiên mỗi câu một
+ *  chủ đề để bộ gợi ý không bị lặp chủ đề trong cùng một ngày. */
+function pickDailySuggestions(count = 4) {
+  const d = new Date();
+  const rnd = mulberry32(hashSeed(`${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`));
+  const pool = [...DAILY_POOL];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const used = new Set();
+  const picks = [];
+  for (const item of pool) {
+    if (picks.length >= count) break;
+    if (used.has(item.k)) continue;
+    used.add(item.k);
+    picks.push(item.q);
+  }
+  for (const item of pool) {
+    if (picks.length >= count) break;
+    if (!picks.includes(item.q)) picks.push(item.q);
+  }
+  return picks;
+}
 
 export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" }) {
   const [open, setOpen] = useState(false);
@@ -63,6 +230,10 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
   useEffect(() => {
     if (open) refreshCredit();
   }, [open, refreshCredit ]);
+
+  // Bộ câu hỏi nhanh của HÔM NAY — tính một lần lúc mount (random theo ngày,
+  // ổn định suốt phiên; sang ngày mới remount sẽ có bộ khác).
+  const [suggestions] = useState(pickDailySuggestions);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -172,6 +343,17 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
     setConversationId(null);
   }
 
+  // Câu hỏi liên quan hiện sau mỗi câu trả lời của AI: chọn nhóm theo từ
+  // khoá trong câu hỏi GẦN NHẤT của người dùng, bỏ câu trùng với câu vừa hỏi.
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+  const lastMsg = messages[messages.length - 1];
+  const followUps =
+    lastMsg?.role === "assistant" && lastUserMsg && !busy && !error
+      ? (FOLLOWUPS[matchFollowupCategory(lastUserMsg.content)] || []).filter(
+          (q) => q !== lastUserMsg.content
+        )
+      : [];
+
   return (
     <>
       {/* Nút nổi: mobile đứng cao hơn để không bị chồng lên dock, desktop xuống góc phải */}
@@ -272,7 +454,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                 )}
                 {!ai.showNotice && (
                   <div className="flex flex-col gap-1.5 w-full mt-1">
-                    {SUGGESTIONS.map((s) => (
+                    {suggestions.map((s) => (
                       <button
                         key={s}
                         type="button"
@@ -323,6 +505,25 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                 </div>
               </div>
             ))}
+
+            {/* Câu hỏi liên quan tới câu vừa hỏi — hiện sau mỗi câu trả lời
+                của AI, ẩn khi đang chờ/đang lỗi để không chồng nội dung. */}
+            {followUps.length > 0 && (
+              <div className="flex flex-col gap-1.5 pt-0.5">
+                <p className="text-[11px] text-[#8A7C63] pl-1">Câu hỏi liên quan</p>
+                {followUps.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => send(s)}
+                    className="text-left text-[12px] text-ink/70 border border-ink/10 hover:border-ink/30
+                               rounded-xl px-3 py-2.5 transition bg-white min-h-[44px]"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {busy && (
               <div className="flex justify-start">

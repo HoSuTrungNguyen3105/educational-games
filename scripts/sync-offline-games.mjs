@@ -65,17 +65,16 @@ for (const file of files) {
 
   const html = fs.readFileSync(path.join(DIR, file), "utf8");
   const rawTitle = decodeEntities(html.match(/<title>([\s\S]*?)<\/title>/i)?.[1]?.trim() || titleCase(id));
-  const icon = rawTitle.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u)?.[0] || "🎮";
   const name = rawTitle.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "").trim() || titleCase(id);
   const grad = GRADS[Math.abs(hash(id)) % GRADS.length];
 
   const line =
-    `  { id: '${esc(id)}', name: '${esc(name)}', icon: '${icon}', tag: 'Offline', ` +
+    `  { id: '${esc(id)}', name: '${esc(name)}', tag: 'Offline', ` +
     `grad: '${grad}', engine: 'single', ` +
     `file: 'src/games/offline/${id}.html' },`;
 
-  added.push({ line, id, name, icon, grad });
-  rows.push({ id, "tên lấy từ": name, icon });
+  added.push({ line, id, name, grad });
+  rows.push({ id, "tên lấy từ": name });
 }
 
 const missing = [...inManifest].filter((id) => !files.some((f) => f.replace(/\.html$/, "") === id));
@@ -92,7 +91,7 @@ if (!added.length) {
     const out = src.replace(/\n\];\n/, `\n${added.map((a) => a.line).join("\n")}\n];\n`);
     fs.writeFileSync(MANIFEST, out, "utf8");
     console.log(`✔ Đã thêm ${added.length} game vào manifest: ${added.map((a) => a.id).join(", ")}`);
-    console.log("  Sửa tên/emoji/màu trong src/games/offline/games-src/manifest.js nếu muốn.");
+    console.log("  Sửa tên/màu trong src/games/offline/games-src/manifest.js nếu muốn.");
   } else {
     console.log(`(DRY-RUN) sẽ thêm ${added.length} game. Bỏ --dry-run để ghi file.`);
   }
