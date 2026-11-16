@@ -42,7 +42,9 @@
   gap: 8px;
   min-height: var(--edu-bar-h);
   padding: 0 10px;
-  background: var(--edu-sidebar);
+  /* Màu header tách riêng (--edu-bar-bg) để Cài đặt → Giao diện đổi được
+     màu thanh trên mà không đổi theo sidebar; chưa đặt thì theo sidebar. */
+  background: var(--edu-bar-bg, var(--edu-sidebar));
   color: #f0f0f1;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
@@ -829,3 +831,51 @@
 
 .edu-add-btn:hover { background: #008a20; }
 .edu-add-btn svg { width: 14px; height: 14px; }
+
+/* ============================================================
+   CHẾ ĐỘ TỐI — khu quản trị (data-theme="dark" trên <html>)
+   Chỉ thay bộ biến .edu-admin + vài chỗ hex cứng nổi bật; bar/sidebar
+   VỐN đã tối nên giữ nguyên. Màu tuỳ chỉnh của admin (Cài đặt → Giao
+   diện: --edu-bar-bg / --edu-sidebar / --edu-bg gắn inline ở
+   TeacherLayout) thắng khối này vì style inline luôn ưu tiên hơn.
+   ============================================================ */
+[data-theme="dark"] .edu-admin {
+  --edu-bg: #14181d;
+  --edu-panel: #1d2327;
+  --edu-border: #3c434a;
+  --edu-line: #2c3338;
+  --edu-text: #e9eef2;
+  --edu-muted: #a7aaad;
+}
+
+[data-theme="dark"] .edu-admin tbody td {
+  border-bottom-color: var(--edu-line);
+  color: var(--edu-text);
+}
+[data-theme="dark"] .edu-admin tbody tr:hover { background: #262d33; }
+
+[data-theme="dark"] .edu-admin input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]),
+[data-theme="dark"] .edu-admin select,
+[data-theme="dark"] .edu-admin textarea {
+  background: var(--edu-panel);
+  border-color: var(--edu-border);
+  color: var(--edu-text);
+}
+
+/* Các bề mặt #fff cứng → panel tối */
+[data-theme="dark"] .edu-admin button.border-2:not([class*="border-red"]):not([class*="border-ticket"]),
+[data-theme="dark"] .edu-admin .w-9.h-9.edu-icon-btn,
+[data-theme="dark"] .edu-view-toggle,
+[data-theme="dark"] .edu-pager-btn,
+[data-theme="dark"] .edu-more-tile { background: var(--edu-panel); }
+
+[data-theme="dark"] .edu-admin button.border-2:not([class*="border-red"]):not([class*="border-ticket"]):hover,
+[data-theme="dark"] .edu-admin .w-9.h-9.edu-icon-btn:hover { background: #262d33; }
+
+[data-theme="dark"] .edu-grid-card-foot,
+[data-theme="dark"] .edu-admin .edu-stat-icon { background: #262d33; }
+[data-theme="dark"] .edu-grid-card:hover,
+[data-theme="dark"] .edu-row-card:hover { border-color: var(--edu-border); }
+[data-theme="dark"] .edu-grid-card-desc,
+[data-theme="dark"] .edu-grid-foot--muted { color: var(--edu-muted); }
+[data-theme="dark"] .edu-more-tile.is-active { background: rgba(34, 113, 177, 0.18); }

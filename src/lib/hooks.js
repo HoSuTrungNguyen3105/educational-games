@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { setupService } from '../services/setupService.js';
-import { API_BASE } from '../services/api.js';
+import { API_BASE, systemService } from '../services/api.js';
 
 // Gốc API (bỏ hậu tố /api) — dùng để ghép URL file HTML do server lưu trên đĩa.
 const API_ORIGIN = API_BASE.replace(/\/api\/?$/, "");
@@ -226,6 +226,90 @@ export async function bulkInChunks(ids, bulkFn, chunkSize = 200) {
     if (Array.isArray(r?.failed)) merged.failed.push(...r.failed);
   }
   return merged;
+}
+
+/* ── Chế độ Sáng/Tối ──────────────────────────────────────────────────────
+   Một store module-level duy nhất cho cả app (client + dashboard): trạng
+   thái giữ ở đây, đồng bộ qua useSyncExternalStore nên mọi ThemeToggle /
+   trang Cài đặt đều thấy cùng một giá trị. Lưu localStorage
+   "eduplay-theme"; script trong <head> của index.html đọc khoá này và set
+   dataset.theme TRƯỚC khi React chạy để không nháy sáng. Mặc định "light"
+   — cố ý KHÔNG theo prefers-color-scheme để giao diện không tự đổi ngoài
+   ý muốn của người dùng. */
+const THEME_KEY = "eduplay-theme";
+const themeListeners = new Set();
+
+function readInitialTheme() {
+  try {
+    if (document.documentElement.dataset.theme === "dark") return "dark";
+    if (window.localStorage.getItem(THEME_KEY) === "dark") return "dark";
+  } catch { /* localStorage bị chặn — mặc định sáng */ }
+  return "light";
+}
+
+let themeState = readInitialTheme();
+
+function emitTheme() { themeListeners.forEach((fn) => fn()); }
+
+function applyTheme(t) {
+  themeState = t;
+  try {
+    if (t === "dark") document.documentElement.dataset.theme = "dark";
+    else delete document.documentElement.dataset.theme;
+    window.localStorage.setItem(THEME_KEY, t);
+  } catch { /* bỏ qua nếu storage bị chặn */ }
+  emitTheme();
+}
+
+/** Đổi theme từ tab khác (event storage) → tab này theo ngay. */
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== THEME_KEY) return;
+    const t = e.newValue === "dark" ? "dark" : "light";
+    if (t === themeState) return;
+    themeState = t;
+    try {
+      if (t === "dark") document.documentElement.dataset.theme = "dark";
+      else delete document.documentElement.dataset.theme;
+    } catch { /* bỏ qua */ }
+    emitTheme();
+  });
+}
+
+export function useTheme() {
+  const theme = useSyncExternalStore(
+    useCallback((onChange) => {
+      themeListeners.add(onChange);
+      return () => themeListeners.delete(onChange);
+    }, []),
+    useCallback(() => themeState, []),
+    useCallback(() => themeState, []),
+  );
+  const setTheme = useCallback((t) => applyTheme(t === "dark" ? "dark" : "light"), []);
+  const toggle = useCallback(() => applyTheme(themeState === "dark" ? "light" : "dark"), []);
+  return { theme, toggle, setTheme };
+}
+
+/* ── Màu tuỳ chỉnh của khu quản trị (Cài đặt → Giao diện) ────────────────
+   Màu header/sidebar/body do ADMIN đặt ở system_config (nhóm appearance),
+   áp cho MỌI tài khoản vào dashboard. Nạp MỘT LẦN cho cả phiên (cache
+   module-level); lỗi/thiếu quyền → {} (TeacherLayout dùng màu mặc định). */
+let adminAppearanceCache = null;
+let adminAppearancePromise = null;
+
+export function useAdminAppearance() {
+  const [appearance, setAppearance] = useState(() => adminAppearanceCache || {});
+  useEffect(() => {
+    let active = true;
+    if (!adminAppearancePromise) {
+      adminAppearancePromise = systemService.getConfig()
+        .then((cfg) => { adminAppearanceCache = cfg?.appearance || {}; return adminAppearanceCache; })
+        .catch(() => ({}));
+    }
+    adminAppearancePromise.then((a) => { if (active) setAppearance(a || {}); });
+    return () => { active = false; };
+  }, []);
+  return appearance;
 }
 
 export function useToast() {

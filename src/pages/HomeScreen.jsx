@@ -12,7 +12,7 @@ import { useTemplates } from '../lib/hooks.js'
 import { navigate } from '../lib/router.js'
 import { canAccessDashboard } from '../config/roles.js'
 import './home-gq.css'
-import { EmptyState, ErrorState, IconFile, IconLogout, IconNotification, IconTrash, IconUser, Loader } from '../components/ui';
+import { EmptyState, ErrorState, IconFile, IconLogout, IconNotification, IconTrash, IconUser, Loader, ThemeToggle } from '../components/ui';
 import TaskIcon from '../components/tasks/TaskIcon.jsx';
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import AiChatWidget from '../components/ai/AiChatWidget.jsx'
@@ -1017,6 +1017,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   <span className="gq-kidchip__name">{heroName}</span>
                 </button>
               )}
+              {/* Chuyển Sáng/Tối — lưu trên máy này (useTheme), áp cho cả
+                  trang chủ lẫn khu quản trị. */}
+              <ThemeToggle className="gq-iconbtn" />
               <button
                 className="gq-iconbtn"
                 onClick={openMenu}
