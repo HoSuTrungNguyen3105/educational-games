@@ -415,8 +415,8 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
           {/* Credit AI còn lại hôm nay (ước tính từ bộ đếm phía server).
               Chỉ render khi đã nạp được số liệu; lỗi/không hỗ trợ → ẩn. */}
           {credit.status && (
-            <div className="px-4 py-1.5 bg-white border-b border-ink/10 shrink-0 flex items-center justify-between gap-2">
-              <p className="text-[11px] text-[#8A7C63] truncate">
+            <div className="px-4 py-1.5 bg-[var(--card)] border-b border-ink/10 shrink-0 flex items-center justify-between gap-2">
+              <p className="text-[11px] text-muted truncate">
                 Hôm nay còn khoảng{" "}
                 <span className="font-semibold text-ink">{formatTokenCount(credit.status.remainingTokensToday)}</span>{" "}
                 token AI
@@ -424,7 +424,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                   <> · khoảng {formatTokenCount(credit.status.remainingRequestsToday)} lượt hỏi</>
                 )}
               </p>
-              <p className="text-[10px] text-[#8A7C63]/60 shrink-0">ước tính</p>
+              <p className="text-[10px] text-muted/60 shrink-0">ước tính</p>
             </div>
           )}
 
@@ -460,7 +460,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                         type="button"
                         onClick={() => send(s)}
                         className="text-left text-[12px] text-ink/70 border border-ink/10 hover:border-ink/30
-                                   rounded-xl px-3 py-2.5 transition bg-white min-h-[44px]"
+                                   rounded-xl px-3 py-2.5 transition bg-[var(--card)] min-h-[44px]"
                       >
                         {s}
                       </button>
@@ -476,7 +476,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                   className={`max-w-[85%] px-3 py-2 rounded-2xl text-[15px] sm:text-sm font-body break-words ${
                     m.role === "user"
                       ? "bg-ink text-paper rounded-br-md whitespace-pre-wrap"
-                      : "bg-white border border-ink/10 text-ink rounded-bl-md"
+                      : "bg-[var(--card)] border border-ink/10 text-ink rounded-bl-md"
                   }`}
                 >
                   {m.role === "assistant" ? (
@@ -510,14 +510,14 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
                 của AI, ẩn khi đang chờ/đang lỗi để không chồng nội dung. */}
             {followUps.length > 0 && (
               <div className="flex flex-col gap-1.5 pt-0.5">
-                <p className="text-[11px] text-[#8A7C63] pl-1">Câu hỏi liên quan</p>
+                <p className="text-[11px] text-muted pl-1">Câu hỏi liên quan</p>
                 {followUps.map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => send(s)}
                     className="text-left text-[12px] text-ink/70 border border-ink/10 hover:border-ink/30
-                               rounded-xl px-3 py-2.5 transition bg-white min-h-[44px]"
+                               rounded-xl px-3 py-2.5 transition bg-[var(--card)] min-h-[44px]"
                   >
                     {s}
                   </button>
@@ -527,7 +527,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
 
             {busy && (
               <div className="flex justify-start">
-                <div className="px-3 py-2 rounded-2xl rounded-bl-md bg-white border border-ink/10 text-ink text-sm flex items-center gap-1">
+                <div className="px-3 py-2 rounded-2xl rounded-bl-md bg-[var(--card)] border border-ink/10 text-ink text-sm flex items-center gap-1">
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink/40 animate-pulse" />
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink/40 animate-pulse" />
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink/40 animate-pulse" />
@@ -538,7 +538,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
             {error && (
               <div className="rounded-xl bg-ticket/10 border border-ticket/20 px-3 py-2">
                 <p className="text-xs text-ticket leading-relaxed">{error}</p>
-                {hint && <p className="text-[11px] text-[#8A7C63] leading-relaxed mt-1">{hint}</p>}
+                {hint && <p className="text-[11px] text-muted leading-relaxed mt-1">{hint}</p>}
                 {lastFailed && !busy && (
                   <button
                     type="button"
@@ -560,7 +560,7 @@ export default function AiChatWidget({ subject, topic, title = "Trợ lý AI" })
               e.preventDefault();
               send();
             }}
-            className="flex items-end gap-2 p-2 bg-white border-t border-ink/10 shrink-0
+            className="flex items-end gap-2 p-2 bg-[var(--card)] border-t border-ink/10 shrink-0
                        pb-[max(env(safe-area-inset-bottom),8px)]"
           >
             <Input

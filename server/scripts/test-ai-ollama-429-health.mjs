@@ -98,8 +98,8 @@ const chat429 = await req("POST", "/api/ai/chat", student, { message: "Hôm nay 
 check("chat 429: HTTP", chat429.status, 429);
 check("chat 429: status envelope", chat429.body?.status, false);
 check("chat 429: errorCode", chat429.body?.errorCode, "AI_RATE_LIMITED");
-check("chat 429: thông điệp riêng", chat429.body?.msg,
-  "AI Bạn Học đang hết lượt dùng thử, bạn quay lại sau ít phút nhé.");
+  check("chat 429: thông điệp riêng", chat429.body?.msg,
+    "Bạn đang gửi tin nhắn quá nhanh, vui lòng thử lại sau vài giây.");
 check("chat 429: retryAfterSeconds ở body", chat429.body?.retryAfterSeconds, 42);
 check("chat 429: header Retry-After", chat429.headers.get("retry-after"), "42");
 checkTrue("chat 429: KHÔNG còn câu 502 chung chung",

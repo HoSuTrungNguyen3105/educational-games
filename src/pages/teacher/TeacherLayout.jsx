@@ -1,6 +1,6 @@
 import { IconBack, IconUser as UIIconUser, IconLogout as UILogout, ThemeToggle } from '../../components/ui/index.js'
 import { ArrowRight, House } from 'lucide-react'
-import TeacherSidebar from './TeacherSidebar.jsx'
+import DashboardSidebar from './DashboardSidebar.jsx'
 import { navigate } from '../../lib/router.js'
 import { useAdminAppearance } from '../../lib/hooks.js'
 
@@ -12,7 +12,7 @@ import { useAdminAppearance } from '../../lib/hooks.js'
  *   │  Sidebar   │  Nội dung nền xám, panel trắng              │
  *   │  tối       │                                             │
  *   └────────────┴─────────────────────────────────────────────┘
- * Mobile giữ thanh điều hướng dưới của TeacherSidebar.
+ * Mobile giữ thanh điều hướng dưới của DashboardSidebar.
  */
 export default function TeacherLayout({ screen, user, onLogout, children }) {
   // Màu header/sidebar/body do admin đặt ở Cài đặt → Giao diện (system_config
@@ -60,7 +60,7 @@ export default function TeacherLayout({ screen, user, onLogout, children }) {
       </header>
 
       <div className="edu-admin-body">
-        <TeacherSidebar screen={screen} user={user} onLogout={onLogout} />
+        <DashboardSidebar screen={screen} user={user} onLogout={onLogout} />
         <main className="edu-admin-content">{children}</main>
       </div>
     </div>

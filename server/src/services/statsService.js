@@ -252,10 +252,25 @@ export async function getStats({ days = DEFAULT_DAYS } = {}) {
 
   // ── theo môn (số trò chơi + lượt chơi + độ chính xác TB) ──
   const keyOf = (g) => String(g._id?.toString() || g.id);
+  // Lượt chơi theo trò: đếm từ results (mỗi phiếu = 1 lượt có ghi nhận)
+  // và từ sự kiện GAME_PLAYED; lấy max mỗi trò để tránh đếm trùng cùng lượt
+  // nhưng vẫn dùng dữ liệu thật từ cả hai nguồn.
+  const resultPlaysByGame = new Map();
+  const eventPlaysByGame = new Map();
+  for (const r of results) {
+    const g = resolveGame(r.gameId);
+    if (g) resultPlaysByGame.set(g.id, (resultPlaysByGame.get(g.id) || 0) + 1);
+  }
+  for (const e of eventsIn) {
+    if (e.type !== "GAME_PLAYED") continue;
+    const g = resolveGame(e.gameId);
+    if (g) eventPlaysByGame.set(g.id, (eventPlaysByGame.get(g.id) || 0) + 1);
+  }
   const playsByGame = new Map();
-  const bump = (id) => playsByGame.set(id, (playsByGame.get(id) || 0) + 1);
-  for (const r of results) { const g = resolveGame(r.gameId); if (g) bump(g.id); }
-  for (const e of eventsIn) { if (e.type === "GAME_PLAYED") { const g = resolveGame(e.gameId); if (g) bump(g.id); } }
+  const allGameIds = new Set([...resultPlaysByGame.keys(), ...eventPlaysByGame.keys()]);
+  for (const id of allGameIds) {
+    playsByGame.set(id, Math.max(resultPlaysByGame.get(id) || 0, eventPlaysByGame.get(id) || 0));
+  }
 
   const subjectAgg = new Map();
   for (const g of games) {
@@ -314,14 +329,21 @@ export async function getStats({ days = DEFAULT_DAYS } = {}) {
     avg: weekdayDays[w] ? round1(weekdayTotals[w] / weekdayDays[w]) : 0,
   }));
 
+  const nameById = new Map();
+  students.forEach((u) => {
+    const id = String(u._id || u.id || "");
+    if (id) nameById.set(id, u.name || u.fullName || u.username || u.displayName || null);
+  });
   const byPlayer = new Map();
   results.forEach((r) => {
-    const key = r.playerId || r.playerName || "Ẩn danh";
-    const p = byPlayer.get(key) || { name: r.playerName || "Ẩn danh", games: 0, score: 0, correct: 0, total: 0 };
+    const key = String(r.playerId || r.playerName || "Ẩn danh");
+    const realName = nameById.get(String(r.playerId)) || r.playerName || r.userName || "Ẩn danh";
+    const p = byPlayer.get(key) || { name: realName, games: 0, score: 0, correct: 0, total: 0 };
     p.games += 1;
     p.score += r.score || 0;
     p.correct += r.correctAnswers || 0;
     p.total += r.totalQuestions || 0;
+    if (realName && p.name === "Ẩn danh") p.name = realName;
     byPlayer.set(key, p);
   });
   const topPlayers = [...byPlayer.values()]

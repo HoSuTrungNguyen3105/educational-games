@@ -569,6 +569,54 @@ function convertTable(ctx, tblEl, state) {
   return `<table>\n${rowsHtml}\n</table>`;
 }
 
+/**
+ * Tự cân bằng thẻ HTML: tự đóng các thẻ còn thiếu và sửa thẻ đóng lệch
+ * (ví dụ gặp </li> khi đang mở <div> sẽ tự đóng <div> trước).
+ * Bỏ qua void tags, comment/CDATA/DOCTYPE; thẻ đóng lạc bị loại bỏ.
+ */
+function autoCloseHtmlTags(html) {
+  if (typeof html !== "string") return "";
+  const voidTags = new Set([
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+  ]);
+  const tokenRe = /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<!DOCTYPE\b[^>]*>|<\/?([a-zA-Z][\w:-]*)\b[^>]*\/?>/gi;
+  let out = "";
+  let last = 0;
+  const stack = [];
+  let m;
+  while ((m = tokenRe.exec(html)) !== null) {
+    out += html.slice(last, m.index);
+    const full = m[0];
+    const name = m[1] ? m[1].toLowerCase() : null;
+    if (!name) {
+      out += full;
+      last = tokenRe.lastIndex;
+      continue;
+    }
+    const isClose = /^<\//.test(full);
+    const selfClose = /\/\s*>$/.test(full) || voidTags.has(name);
+    if (isClose) {
+      const idx = stack.lastIndexOf(name);
+      if (idx !== -1) {
+        while (stack.length - 1 > idx) out += `</${stack.pop()}>`;
+        stack.pop();
+        out += full;
+      }
+      // thẻ đóng lạc: bỏ qua
+    } else if (selfClose) {
+      out += full;
+    } else {
+      stack.push(name);
+      out += full;
+    }
+    last = tokenRe.lastIndex;
+  }
+  out += html.slice(last);
+  while (stack.length) out += `</${stack.pop()}>`;
+  return out;
+}
+
 // ── Điểm vào chính ──────────────────────────────────────────────────────
 async function readZipText(zip, name) {
   const f = zip.file(name);
@@ -691,5 +739,5 @@ export async function convertDocxToHtml(arrayBuffer) {
   if (state.flags.footnote) warnings.push("File có chú thích cuối trang/cuối bài (footnote/endnote) — nội dung chú thích chưa được đưa vào.");
   if (state.flags.field) warnings.push("File có trường tự động (field, ví dụ mục lục tự cập nhật) — đã lấy nội dung đang hiển thị trong file thay cho kết quả tự cập nhật.");
 
-  return { html: out.join("\n"), warnings };
+  return { html: autoCloseHtmlTags(out.join("\n")), warnings };
 }

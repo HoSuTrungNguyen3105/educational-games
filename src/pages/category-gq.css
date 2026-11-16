@@ -244,6 +244,38 @@
 }
 .cat-games { padding-left: 0; padding-right: 0; }
 
+.cat-desktop-notice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 60vh;
+  gap: 6px;
+}
+
+/* ─────────── CHẾ ĐỘ TỐI ─────────── */
+[data-theme="dark"] .cat-search,
+[data-theme="dark"] .cat-topic,
+[data-theme="dark"] .cat-back,
+[data-theme="dark"] .cat-rail__item--on {
+  background: var(--gq-card);
+  color: var(--gq-ink);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+[data-theme="dark"] .cat-rail { background: var(--gq-tile); }
+[data-theme="dark"] .cat-rail__item { color: var(--gq-ink); }
+[data-theme="dark"] .cat-rail__item--on { color: #7ecbff; }
+[data-theme="dark"] .cat-search { color: var(--gq-mute); }
+[data-theme="dark"] .cat-search input { color: var(--gq-ink); }
+[data-theme="dark"] .cat-search input::placeholder { color: var(--gq-mute); }
+[data-theme="dark"] .cat-search__x { background: var(--gq-tile); color: var(--gq-mute); }
+[data-theme="dark"] .cat-lessons { background: rgba(47, 127, 214, 0.16); color: var(--gq-ink); }
+[data-theme="dark"] .cat-lessons__go { color: #7ecbff; }
+[data-theme="dark"] .cat-topic__count,
+[data-theme="dark"] .cat-topic-sub,
+[data-theme="dark"] .cat-sub { color: var(--gq-mute); }
+[data-theme="dark"] .cat-back { color: #7ecbff; }
+
 /* ─────────── MÀN RỘNG ─────────── */
 @media (min-width: 768px) {
   .cat-wrap { padding: 10px 22px 0; }

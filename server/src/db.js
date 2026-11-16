@@ -1,12 +1,6 @@
 import { MongoClient, ObjectId } from "mongodb";
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { buildDefaultTasks } from "./services/taskDefaults.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.resolve(__dirname, "../data");
 
 let client = null;
 let db = null;
@@ -15,28 +9,6 @@ let ready = false;
 export function isReady() {
   return ready;
 }
-
-function loadDataFile(name) {
-  const raw = readFileSync(path.join(DATA_DIR, name), "utf8");
-  return JSON.parse(raw);
-}
-
-export const seedData = {
-  templates: () => loadDataFile("templates.json"),
-  categories: () => loadDataFile("CATEGORIES.json"),
-  games: () => loadDataFile("initialGames.json"),
-  questions: () => loadDataFile("initialQuestions.json"),
-  questionBanks: () => {
-    try { return loadDataFile("questionBanks.json"); } catch { return []; }
-  },
-  players: () => loadDataFile("players.json"),
-  results: () => loadDataFile("initialResults.json"),
-  users: () => {
-    const u = loadDataFile("users.json");
-    return Array.isArray(u) ? u : [u];
-  },
-  subjects: () => loadDataFile("SUBJECTS.json"),
-};
 
 /**
  * Che user + mật khẩu trong chuỗi kết nối trước khi ghi ra log.
@@ -922,96 +894,19 @@ async function _runHeavyInit(database) {
     }
   }
 
+  // Không seed mock/sample data từ file JSON. Dữ liệu thật do người dùng/API tạo.
+
   // Seed nếu collection rỗng
-  const templatesColl = database.collection("templates");
-  const templatesCount = await templatesColl.countDocuments();
-  if (templatesCount === 0) {
-    const docs = seedData.templates();
-    await templatesColl.insertMany(docs, { ordered: false });
-    seeded.push(`templates (${docs.length})`);
-  }
+  // (đã tắt seed mock data)
 
   // Games seed — resolve templateId from template slug
-  const gamesColl = database.collection("games");
-  const gamesCount = await gamesColl.countDocuments();
-  if (gamesCount === 0) {
-    const rawGames = seedData.games();
-    const allTemplates = await templatesColl.find({}).toArray();
-    const slugToId = {};
-    for (const t of allTemplates) {
-      if (t.slug) slugToId[t.slug] = t._id;
-      slugToId[t.id] = t._id;
-    }
-    const now = new Date().toISOString();
-    const migrated = rawGames.map(g => {
-      let tplId = null;
-      if (g.templateId) {
-        try { tplId = new ObjectId(g.templateId); } catch { tplId = null; }
-      }
-      if (!tplId && g.template) tplId = slugToId[g.template] || null;
-      return {
-        name: g.title || g.name || "Game",
-        description: g.description || "",
-        subject: g.subject || "",
-        topic: g.topic || "",
-        language: g.language || "vi",
-        templateId: tplId,
-        type: g.type || "play-to-learn",
-        status: g.status || "draft",
-        // solo = một mình, classroom = chơi với người (coop).
-        // Thiếu field thì mặc định solo cho khớp gameService.js.
-        playMode: ["solo", "classroom"].includes(g.playMode) ? g.playMode : "solo",
-        questionsCount: g.questionsCount || 0,
-        playersCount: g.playersCount || 0,
-        code: g.code || "",
-        createdAt: g.createdAt || now,
-        updatedAt: g.updatedAt || now,
-      };
-    });
-    await gamesColl.insertMany(migrated, { ordered: false });
-    seeded.push(`games (${migrated.length})`);
-  }
+  // (đã tắt seed mock data)
 
   // Questions seed — resolve gameCode → gameId (ObjectId)
-  const questionsColl = database.collection("questions");
-  const questionsCount = await questionsColl.countDocuments();
-  if (questionsCount === 0) {
-    const rawQuestions = seedData.questions();
-    const allGames = await gamesColl.find({}, { code: 1 }).toArray();
-    const codeToId = {};
-    for (const g of allGames) {
-      if (g.code) codeToId[g.code] = g._id;
-    }
-    const prepared = rawQuestions
-      .map((q) => {
-        const gameId = q.gameCode ? codeToId[q.gameCode] : null;
-        if (!gameId) return null;
-        const { gameCode, _id, ...rest } = q;
-        return { ...rest, gameId: gameId.toString() };
-      })
-      .filter(Boolean);
-    if (prepared.length > 0) {
-      await questionsColl.insertMany(prepared, { ordered: false });
-      seeded.push(`questions (${prepared.length})`);
-    }
-  }
+  // (đã tắt seed mock data)
 
   // Question banks seed
-  const qBankColl = database.collection("question_banks");
-  const qBankCount = await qBankColl.countDocuments();
-  if (qBankCount === 0) {
-    const rawBanks = seedData.questionBanks();
-    if (rawBanks.length > 0) {
-      const now = new Date().toISOString();
-      const preparedBanks = rawBanks.map(q => ({
-        ...q,
-        createdAt: q.createdAt || now,
-        updatedAt: q.updatedAt || now,
-      }));
-      await qBankColl.insertMany(preparedBanks, { ordered: false });
-      seeded.push(`question_banks (${preparedBanks.length})`);
-    }
-  }
+  // (đã tắt seed mock data)
 
   // ── Task system v2: seed default tasks if empty ──
   const tasksColl = database.collection("tasks");
@@ -1030,58 +925,7 @@ async function _runHeavyInit(database) {
   // Migrate existing templates: add new fields, remove old
   await migrateTemplates(database);
 
-  const seedMap = {
-    categories: seedData.categories,
-    players: seedData.players,
-    results: seedData.results,
-  };
-
-  for (const [col, getter] of Object.entries(seedMap)) {
-    const coll = database.collection(col);
-    const count = await coll.countDocuments();
-    if (count === 0) {
-      const docs = getter();
-      await coll.insertMany(docs, { ordered: false });
-      seeded.push(`${col} (${docs.length})`);
-    }
-  }
-
-  // Users
-  const bcrypt = (await import("bcryptjs")).default;
-  const usersColl = database.collection("users");
-  await usersColl.deleteMany({ username: { $exists: false } });
-  for (const u of seedData.users()) {
-    const { password, ...rest } = u;
-    const existing = await usersColl.findOne({ id: u.id });
-    if (!existing || !existing.passwordHash) {
-      await usersColl.updateOne(
-        { id: u.id },
-        { $set: { ...rest, passwordHash: bcrypt.hashSync(password || "123456", 10), createdAt: existing?.createdAt || new Date().toISOString() } },
-        { upsert: true }
-      );
-      seeded.push(`users (${u.username})`);
-    }
-  }
-
-  const subjects = seedData.subjects();
-  const subjectsColl = database.collection("subjects");
-  const subjectsCount = await subjectsColl.countDocuments();
-  if (subjectsCount === 0 && subjects.length > 0) {
-    const docs = subjects.map(name => ({ name }));
-    await subjectsColl.insertMany(docs, { ordered: false });
-    seeded.push(`subjects (${docs.length})`);
-  }
-
-  // Migrate old subjects format: { list: [...] } → individual { name } docs
-  const oldDoc = await subjectsColl.findOne({ list: { $exists: true } });
-  if (oldDoc && Array.isArray(oldDoc.list)) {
-    const names = oldDoc.list.filter(n => typeof n === "string" && n.trim());
-    const newDocs = names.map(name => ({ name }));
-    if (newDocs.length > 0) {
-      await subjectsColl.insertMany(newDocs, { ordered: false });
-    }
-    await subjectsColl.deleteOne({ _id: oldDoc._id });
-  }
+  // (đã tắt seed mock data: categories/players/results/users/subjects)
 
   console.log(`[db] Heavy init hoàn tất: ${created.length} collections, ${seeded.length} seed groups.`);
 }

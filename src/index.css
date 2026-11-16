@@ -339,3 +339,15 @@ textarea {
   --text-dark:#E9EEF6;
   --accent-bg:rgba(27,153,139,0.16);
 }
+
+/* Sửa chữ trắng không đọc được ở dark mode: đổi thành chữ tối khi nằm trên
+   bề mặt sáng/trung tính (không phải nút/badge có nền màu nhấn). */
+[data-theme="dark"] .text-white:not([class*="bg-ticket"]):not([class*="bg-gold"]):not([class*="bg-teal"]):not([class*="bg-pink"]):not([class*="bg-purple"]):not([class*="bg-accent"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-orange"]):not([class*="bg-emerald"]):not([class*="bg-violet"]):not([class*="bg-sky"]):not([class*="bg-indigo"]):not([class*="bg-amber"]):not([class*="bg-rose"]):not([class*="bg-ink"]):not([class*="bg-black"]):not([class*="bg-\[#"]):not(button):not([role="button"]):not(a.rounded-full[class*="bg-"]) {
+  color: #111827 !important;
+}
+[data-theme="dark"] [style*="color:#fff"]:not([style*="background"]):not(button):not([role="button"]),
+[data-theme="dark"] [style*="color: #fff"]:not([style*="background"]):not(button):not([role="button"]),
+[data-theme="dark"] [style*="color:#ffffff"]:not([style*="background"]):not(button):not([role="button"]),
+[data-theme="dark"] [style*="color: white"]:not([style*="background"]):not(button):not([role="button"]) {
+  color: #111827 !important;
+}

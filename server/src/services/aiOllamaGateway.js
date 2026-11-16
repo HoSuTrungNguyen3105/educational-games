@@ -84,7 +84,7 @@ function translateHttp(status, retryAfterSeconds = null) {
     // chung thì cả học sinh lẫn quản trị đều không biết đường xử lý.
     console.warn("[ai] Ollama trả HTTP 429 — hết quota hoặc bị giới hạn lượt gọi. Kiểm tra gói Ollama Cloud và OLLAMA_KEY trên Render.");
     return new AiBackendError(
-      "AI Bạn Học đang hết lượt dùng thử, bạn quay lại sau ít phút nhé.",
+      "Bạn đang gửi tin nhắn quá nhanh, vui lòng thử lại sau vài giây.",
       { httpCode: 429, kind: "rateLimited", code: "AI_RATE_LIMITED", providerStatus: status, retryAfterSeconds });
   }
   if (status === 400) {

@@ -119,11 +119,18 @@ function initialsOf(name) {
   return ((parts[0]?.[0] || "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
 
-export default function TeacherSidebar({ screen, user, onLogout }) {
+export default function DashboardSidebar({ screen, user, onLogout }) {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const role = user?.role;
-  const canSee = (item) => !item.permission || hasPermission(role, item.permission);
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : null;
+  const features = Array.isArray(user?.features) ? user.features : null;
+  const canSee = (item) => {
+    if (features && features.includes(item.id)) return true;
+    if (!item.permission) return true;
+    if (permissions) return permissions.includes('*') || permissions.includes(item.permission);
+    return hasPermission(role, item.permission);
+  };
 
   const visibleSections = SECTIONS
     .map(s => ({ ...s, items: s.items.filter(canSee) }))

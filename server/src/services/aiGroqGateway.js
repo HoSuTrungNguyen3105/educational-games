@@ -92,7 +92,7 @@ function translateHttp(status, retryAfterSeconds = null, model = "") {
     // và học sinh nhận cùng một trải nghiệm; Retry-After được chuyển tiếp.
     console.warn("[ai] Groq trả HTTP 429 — hết hạn mức free tier hoặc bị giới hạn lượt gọi. Kiểm tra giới hạn model tại console.groq.com/docs/rate-limits.");
     return new AiBackendError(
-      "AI Bạn Học đang hết lượt dùng thử, bạn quay lại sau ít phút nhé.",
+      "Bạn đang gửi tin nhắn quá nhanh, vui lòng thử lại sau vài giây.",
       { httpCode: 429, kind: "rateLimited", code: "AI_RATE_LIMITED", providerStatus: status, retryAfterSeconds });
   }
   if (status === 400) {
