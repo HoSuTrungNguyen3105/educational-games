@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { taskService } from "../../services/taskService.js";
-import { GridCard, ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid, ErrorState } from "../../components/ui";
+import { BulkDeleteBar, Checkbox, GridCard, ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid, ErrorState } from "../../components/ui";
 import { TaskIcon } from "../../components/tasks/index.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
+import { useBulkSelection, bulkInChunks } from "../../lib/hooks.js";
 import { matchesQuery } from "../../lib/searchText.js";
 import { CheckCircle2, ClipboardList, Coins, Users } from "lucide-react";
 
@@ -86,6 +87,43 @@ export default function DailyTaskManagement({ showToast }) {
     });
   };
 
+  // ── Xóa hàng loạt (chọn nhiều) ──────────────────────────────────────
+  // Không có endpoint removeAll riêng cho nhiệm vụ: "Xóa tất cả" = gọi
+  // bulk với toàn bộ id đang có (helper chia lô 200/lần).
+  const sel = useBulkSelection();
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const reportBulkTasks = (r) => {
+    if (r.failed.length) {
+      showToast(`Đã xóa ${r.deleted.length} nhiệm vụ, ${r.failed.length} không xóa được`, r.deleted.length ? "info" : "error");
+    } else {
+      showToast(`Đã xóa ${r.deleted.length} nhiệm vụ`, "success");
+    }
+  };
+
+  const doBulkRemoveTasks = async () => {
+    if (!sel.count) return;
+    setBulkDeleting(true);
+    try {
+      const r = await bulkInChunks(sel.selected, (ids) => taskService.bulkRemoveAdmin(ids));
+      reportBulkTasks(r);
+      sel.clear(); load();
+    } catch (e) { showToast(e.message || "Lỗi xóa hàng loạt", "error"); }
+    finally { setBulkDeleting(false); }
+  };
+
+  const doRemoveAllTasks = async () => {
+    const ids = (stats?.tasks || []).map((t) => t.id);
+    if (!ids.length) return;
+    setBulkDeleting(true);
+    try {
+      const r = await bulkInChunks(ids, (chunk) => taskService.bulkRemoveAdmin(chunk));
+      reportBulkTasks(r);
+      sel.clear(); load();
+    } catch (e) { showToast(e.message || "Lỗi xóa toàn bộ", "error"); }
+    finally { setBulkDeleting(false); }
+  };
+
   const taskHeaders = ["Nhiệm vụ", "Loại", "Phạm vi", "Mục tiêu", "Thưởng", "Hoàn thành", "Đã nhận", "Thao tác"];
 
   const [query, setQuery] = useState("");
@@ -100,6 +138,9 @@ export default function DailyTaskManagement({ showToast }) {
   );
   const renderTaskRow = (task) => (
     <tr key={task.id} className="border-t border-ink/5 hover:bg-ink/[0.02] transition">
+      <td className="py-2.5 px-3">
+        <Checkbox checked={sel.isSelected(task.id)} onChange={() => sel.toggle(task.id)} />
+      </td>
       <td className="py-2.5 px-3 text-sm font-body text-ink">
         <div className="flex items-center gap-2">
           <TaskIcon code={task.code} type={task.type} className="w-5 h-5 shrink-0 text-ink/55" />
@@ -153,6 +194,9 @@ export default function DailyTaskManagement({ showToast }) {
       ]} />
 
       {tab === "tasks" && (
+        <>
+        <BulkDeleteBar count={sel.count} itemLabel="nhiệm vụ" deleting={bulkDeleting}
+          onDeleteSelected={doBulkRemoveTasks} onDeleteAll={doRemoveAllTasks} onClear={sel.clear} />
         <ManagementTable
           title="Danh sách nhiệm vụ"
           count={filteredTasks.length}
@@ -160,7 +204,7 @@ export default function DailyTaskManagement({ showToast }) {
           error={error}
           onRetry={load}
           emptyLabel={query ? "Không tìm thấy nhiệm vụ nào khớp tìm kiếm." : "Chưa có dữ liệu"}
-          headers={taskHeaders}
+          headers={[<Checkbox key="sel-all" checked={sel.allSelected(filteredTasks.map((t) => t.id))} onChange={() => sel.toggleAll(filteredTasks.map((t) => t.id))} />, ...taskHeaders]}
           search={{ value: query, onChange: setQuery, placeholder: "Tìm kiếm" }}
           renderRow={renderTaskRow}
           renderGridCard={(task) => (
@@ -175,6 +219,9 @@ export default function DailyTaskManagement({ showToast }) {
                 <div className="text-xs text-[#646970] space-y-0.5">
                   <p>{TASK_TYPES.find(t => t.value === task.type)?.label || task.type} · {TASK_SCOPES.find(s => s.value === task.scope)?.label || task.scope} · Mục tiêu {task.target} · +{task.rewardCoin} xu{task.rewardXp ? ` · +${task.rewardXp} XP` : ""}</p>
                   <p>Hoàn thành {task.completedCount ?? 0} · Đã nhận {task.claimedCount ?? 0}</p>
+                  <div className="pt-1">
+                    <Checkbox checked={sel.isSelected(task.id)} onChange={() => sel.toggle(task.id)} label="Chọn để xóa" />
+                  </div>
                 </div>
               )}
               meta={`Thứ tự: ${task.sortOrder ?? 0}`}
@@ -183,6 +230,7 @@ export default function DailyTaskManagement({ showToast }) {
             />
           )}
         />
+        </>
       )}
 
       {showForm && (

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { gameService, statsService } from '../../services/api.js'
 import { gameDataService } from '../../services/gameDataService.js'
 import { useSubjects, useCategories, useTemplates } from '../../lib/hooks.js'
-import { EmptyState, ErrorState, GhostButton, IconButton, IconCast, IconEdit, IconPlay, IconTrash, Loader, ManagementHeader, Modal, PrimaryButton, TemplateThumb, StatusBadge, TicketStub, useViewMode, ViewToggle } from '../../components/ui';
+import { BulkDeleteBar, Checkbox, EmptyState, ErrorState, GhostButton, IconButton, IconCast, IconEdit, IconPlay, IconTrash, Loader, ManagementHeader, Modal, PrimaryButton, TemplateThumb, StatusBadge, TicketStub, useViewMode, ViewToggle } from '../../components/ui';
+import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js';
 import { socket } from '../../socket/socket.js'
 import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import RangePagination from '../../components/RangePagination.jsx'
@@ -30,7 +31,7 @@ function StatCard({ icon: Icon, label, value, tone = "ink" }) {
   );
 }
 
-function ManagementGameCard({ game, templates, publishedVersion, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onPublish, onVersions }) {
+function ManagementGameCard({ game, templates, publishedVersion, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onPublish, onVersions, selected, onToggleSelect }) {
   const tplId = game.templateId
     ? (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || game.templateId)
     : null;
@@ -41,7 +42,10 @@ function ManagementGameCard({ game, templates, publishedVersion, onEdit, onResul
   return (
     <div className="note-card p-4 flex flex-col gap-3 anim-pop hover:-translate-y-0.5 transition shadow-[0_2px_0_rgba(0,0,0,0.06)]">
       <div className="flex items-start justify-between gap-2">
-        <TemplateThumb thumbnail={tpl?.thumbnail} name={tpl?.name || game.name} ring={tpl ? tpl.ring : "#1D2E4A"} size={44} />
+        <div className="flex items-start gap-2">
+          {onToggleSelect && <Checkbox checked={!!selected} onChange={() => onToggleSelect()} />}
+          <TemplateThumb thumbnail={tpl?.thumbnail} name={tpl?.name || game.name} ring={tpl ? tpl.ring : "#1D2E4A"} size={44} />
+        </div>
         <StatusBadge status={game.status} />
       </div>
       <div>
@@ -223,6 +227,36 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
   };
 
   const handleDelete = async (id) => { await gameService.remove(id); showToast("Đã xóa trò chơi", "success"); setConfirmDelete(null); onChanged(); load(); loadStats(); };
+
+  // ── Xóa hàng loạt (chọn nhiều) ──────────────────────────────────────
+  const sel = useBulkSelection();
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const pageIds = (games || []).map(g => g._id?.toString() || g.id);
+
+  const doBulkRemoveGames = async () => {
+    if (!sel.count) return;
+    setBulkDeleting(true);
+    try {
+      const r = await bulkInChunks(sel.selected, (ids) => gameService.bulkRemove(ids));
+      if (r.failed.length) {
+        showToast(`Đã xóa ${r.deleted.length} trò chơi, ${r.failed.length} không xóa được`, r.deleted.length ? "info" : "error");
+      } else {
+        showToast(`Đã xóa ${r.deleted.length} trò chơi`, "success");
+      }
+      sel.clear(); onChanged(); load(); loadStats();
+    } catch (e) { showToast(e?.message || "Không xóa được hàng loạt", "error"); }
+    finally { setBulkDeleting(false); }
+  };
+
+  const doRemoveAllGames = async () => {
+    setBulkDeleting(true);
+    try {
+      const r = await gameService.removeAll();
+      showToast(`Đã xóa ${r?.deleted ?? "toàn bộ"} trò chơi`, "success");
+      sel.clear(); onChanged(); load(); loadStats();
+    } catch (e) { showToast(e?.message || "Không xóa được toàn bộ trò chơi", "error"); }
+    finally { setBulkDeleting(false); }
+  };
   const handleDuplicate = async (id) => { await gameService.duplicate(id); showToast("Đã sao chép trò chơi vào Bản nháp", "success"); onChanged(); load(); loadStats(); };
 
   const handleLive = async (g) => {
@@ -336,6 +370,9 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
         ))}
       </div>
 
+      <BulkDeleteBar count={sel.count} itemLabel="trò chơi" deleting={bulkDeleting}
+        onDeleteSelected={doBulkRemoveGames} onDeleteAll={doRemoveAllGames} onClear={sel.clear} />
+
       {error && <ErrorState subtitle="Không thể tải thư viện trò chơi." onRetry={load} />}
       {!error && !games && <Loader label="Đang tìm trò chơi..." />}
       {!error && games && games.length === 0 && (
@@ -362,6 +399,8 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
                   onLive={() => handleLive(g)}
                   onPublish={() => setPublishGame(g)}
                   onVersions={() => openVersions(g)}
+                  selected={sel.isSelected(gid)}
+                  onToggleSelect={() => sel.toggle(gid)}
                 />
               );
             })}
@@ -371,6 +410,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
             <table>
               <thead>
                 <tr>
+                  <th><Checkbox checked={sel.allSelected(pageIds)} onChange={() => sel.toggleAll(pageIds)} /></th>
                   <th>Tên trò chơi</th>
                   <th>Trạng thái</th>
                   <th>Môn học</th>
@@ -384,6 +424,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
                   const gid = g._id?.toString() || g.id;
                   return (
                     <tr key={gid}>
+                      <td><Checkbox checked={sel.isSelected(gid)} onChange={() => sel.toggle(gid)} /></td>
                       <td className="font-semibold">{g.name}</td>
                       <td><StatusBadge status={g.status} /></td>
                       <td>{g.subject || "Khác"}</td>

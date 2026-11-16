@@ -13,6 +13,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supportService } from "../../services/api.js";
 import { useModalParam } from "../../hooks/useModalParam.js";
 import {
+  BulkDeleteBar,
+  Checkbox,
   ConfirmModal,
   ErrorState,
   GhostButton,
@@ -29,6 +31,7 @@ import {
   useViewMode,
   ViewToggle,
 } from "../../components/ui";
+import { useBulkSelection, bulkInChunks } from "../../lib/hooks.js";
 import RangePagination from "../../components/RangePagination.jsx";
 import { Download, Eye, Filter, Trash2 } from "lucide-react";
 
@@ -249,6 +252,43 @@ export default function SupportTicketManagement({ user, showToast }) {
     }
   };
 
+  // ── Xoá hàng loạt (chọn nhiều) ─────────────────────────────────────
+  // Không có endpoint removeAll riêng cho ticket: "Xóa tất cả" = gọi
+  // bulk với toàn bộ id đang có (helper chia lô 200/lần).
+  const sel = useBulkSelection();
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const reportBulkTickets = (r) => {
+    if (r.failed.length) {
+      showToast?.(`Đã xóa ${r.deleted.length} ticket, ${r.failed.length} không xóa được`, r.deleted.length ? "info" : "error");
+    } else {
+      showToast?.(`Đã xóa ${r.deleted.length} ticket`, "success");
+    }
+  };
+
+  const doBulkRemoveTickets = async () => {
+    if (!sel.count) return;
+    setBulkDeleting(true);
+    try {
+      const r = await bulkInChunks(sel.selected, (ids) => supportService.bulkRemoveTickets(ids));
+      reportBulkTickets(r);
+      sel.clear(); load();
+    } catch (e) { showToast?.(e.message || "Lỗi xóa hàng loạt", "error"); }
+    finally { setBulkDeleting(false); }
+  };
+
+  const doRemoveAllTickets = async () => {
+    const ids = (tickets || []).map((t) => t.id);
+    if (!ids.length) return;
+    setBulkDeleting(true);
+    try {
+      const r = await bulkInChunks(ids, (chunk) => supportService.bulkRemoveTickets(chunk));
+      reportBulkTickets(r);
+      sel.clear(); load();
+    } catch (e) { showToast?.(e.message || "Lỗi xóa toàn bộ", "error"); }
+    finally { setBulkDeleting(false); }
+  };
+
   // ── Mở modal từ URL (reload / dán link có ?m=…) — setTimeout(...,0) để
   // không setState đồng bộ trong thân effect (convention của repo) ────────
   const restoredRef = useRef(false);
@@ -365,11 +405,16 @@ export default function SupportTicketManagement({ user, showToast }) {
         </div>
       ) : (
         <>
+          <BulkDeleteBar count={sel.count} itemLabel="ticket" deleting={bulkDeleting}
+            onDeleteSelected={doBulkRemoveTickets} onDeleteAll={doRemoveAllTickets} onClear={sel.clear} />
           {/* Dạng bảng (desktop) */}
           <div className={`note-card overflow-x-auto ${tableWrapClass(mode)}`}>
             <table className="w-full min-w-[1160px]">
               <thead>
                 <tr className="text-left text-[#8A7C63] font-mono text-[11px] uppercase border-b border-ink/10">
+                  <th className="py-2.5 pl-4 pr-2 font-medium w-10">
+                    <Checkbox checked={sel.allSelected(pageItems.map((t) => t.id))} onChange={() => sel.toggleAll(pageItems.map((t) => t.id))} />
+                  </th>
                   <th className="py-2.5 pl-4 pr-3 font-medium w-32">Mã ticket</th>
                   <th className="py-2.5 pr-4 font-medium">Tiêu đề</th>
                   <th className="py-2.5 pr-4 font-medium">Nội dung</th>
@@ -382,6 +427,7 @@ export default function SupportTicketManagement({ user, showToast }) {
                 </tr>
                 {/* Hàng lọc theo cột */}
                 <tr className="border-b border-ink/10">
+                  <td className="py-2 pl-4 pr-2" />
                   <td className="py-2 pl-4 pr-3">
                     <input className={cellInput} placeholder="Tìm kiếm" value={filters.code} onChange={(e) => setFilter("code", e.target.value)} />
                   </td>
@@ -412,6 +458,9 @@ export default function SupportTicketManagement({ user, showToast }) {
               <tbody>
                 {pageItems.map((t) => (
                   <tr key={t.id} className="border-b border-ink/5 last:border-0 hover:bg-ink/[0.02] cursor-pointer" onClick={() => openDetail(t)}>
+                    <td className="py-3 pl-4 pr-2" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox checked={sel.isSelected(t.id)} onChange={() => sel.toggle(t.id)} />
+                    </td>
                     <td className="py-3 pl-4 pr-3 text-xs font-mono text-ink">{t.code}</td>
                     <td className="py-3 pr-4 text-sm font-body text-ink max-w-[220px] truncate" title={t.title}>{t.title}</td>
                     <td className="py-3 pr-4 text-xs font-body text-ink/70 max-w-[320px] truncate" title={t.content}>{t.content}</td>
@@ -446,6 +495,7 @@ export default function SupportTicketManagement({ user, showToast }) {
                 mono={t.code}
                 description={t.content || undefined}
                 meta={`Ưu tiên: ${priorityLabel(t.priority)} · ${assigneeLabel(t)} · ${formatDate(t.createdAt)}`}
+                extra={<Checkbox checked={sel.isSelected(t.id)} onChange={() => sel.toggle(t.id)} label="Chọn để xóa" />}
                 footerActions={[
                   { label: "Xem & trả lời", icon: <Eye />, onClick: () => openDetail(t), tone: "blue" },
                   { label: "Xoá", icon: <Trash2 />, onClick: () => openDelete(t), tone: "red" },

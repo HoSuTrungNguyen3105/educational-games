@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pencil, Trash2, X } from 'lucide-react'
 import { gameService, questionService } from '../../services/api.js'
 import { gameLabel } from '../../lib/gameLabel.js'
-import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
+import { BulkDeleteBar, Checkbox, GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
+import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js'
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -151,6 +152,42 @@ export default function AllQuestionsManagement({ showToast }) {
     } catch (err) { showToast(err.message || "Lỗi xóa", "error"); }
   };
 
+  // ── Xóa hàng loạt (chọn nhiều) ──────────────────────────────────────
+  // Xóa một câu cần gameId → khoá chọn là khoá ghép "gameId::questionId",
+  // khi gọi API thì tách lại thành items { gameId, questionId }.
+  const sel = useBulkSelection();
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const qKey = (q) => `${q.gameId}::${q.id}`;
+  const keyToItem = (key) => {
+    const [gameId, questionId] = key.split("::");
+    return { gameId, questionId };
+  };
+
+  const doBulkRemove = async () => {
+    if (!sel.count) return;
+    setBulkDeleting(true);
+    try {
+      const r = await bulkInChunks(sel.selected, (keys) => questionService.bulkRemove(keys.map(keyToItem)));
+      if (r.failed.length) {
+        showToast(`Đã xóa ${r.deleted.length} câu hỏi, ${r.failed.length} không xóa được`, r.deleted.length ? "info" : "error");
+      } else {
+        showToast(`Đã xóa ${r.deleted.length} câu hỏi`);
+      }
+      sel.clear(); loadAll();
+    } catch (err) { showToast(err.message || "Lỗi xóa hàng loạt", "error"); }
+    finally { setBulkDeleting(false); }
+  };
+
+  const doRemoveAll = async () => {
+    setBulkDeleting(true);
+    try {
+      const r = await questionService.removeAll();
+      showToast(`Đã xóa ${r?.deleted ?? "toàn bộ"} câu hỏi`);
+      sel.clear(); loadAll();
+    } catch (err) { showToast(err.message || "Lỗi xóa toàn bộ", "error"); }
+    finally { setBulkDeleting(false); }
+  };
+
   const totalByGame = useMemo(() => {
     if (!questions) return {};
     const m = {};
@@ -196,6 +233,11 @@ export default function AllQuestionsManagement({ showToast }) {
         <span>{Object.keys(totalByGame).length} game có câu hỏi</span>
       </div>
 
+      <div className="mb-4">
+        <BulkDeleteBar count={sel.count} itemLabel="câu hỏi" deleting={bulkDeleting}
+          onDeleteSelected={doBulkRemove} onDeleteAll={doRemoveAll} onClear={sel.clear} />
+      </div>
+
       <ManagementTable
         viewKey="all-questions"
         title="Tất cả câu hỏi"
@@ -203,7 +245,7 @@ export default function AllQuestionsManagement({ showToast }) {
         error={error && !questions ? error : null}
         onRetry={loadAll}
         emptyLabel="Không có câu hỏi nào."
-        headers={["#", "Game", "Nội dung", "Đáp án đúng", "Thời gian", "Điểm", ""]}
+        headers={[<Checkbox key="sel-all" checked={sel.allSelected((filtered || []).map(qKey))} onChange={() => sel.toggleAll((filtered || []).map(qKey))} />, "#", "Game", "Nội dung", "Đáp án đúng", "Thời gian", "Điểm", ""]}
         renderGridCard={(q, idx) => (
           <GridCard
             key={q.id || idx}
@@ -212,12 +254,16 @@ export default function AllQuestionsManagement({ showToast }) {
             mono={`#${idx + 1}`}
             description={`Đáp án đúng: ${q.options?.find(o => o.id === q.correctAnswer)?.content || "—"}`}
             meta={`${q.options?.length || 0} đáp án · ${q.timeLimit}s · ${q.points} điểm`}
+            extra={<Checkbox checked={sel.isSelected(qKey(q))} onChange={() => sel.toggle(qKey(q))} label="Chọn để xóa" />}
             onEdit={() => openEdit(q)}
             onRemove={() => confirmRemove(q)}
           />
         )}
         renderRow={(q, idx) => (
           <tr key={q.id || idx} className="border-b border-ink/5 last:border-0 hover:bg-ink/[.02]">
+            <td className="px-4 py-2">
+              <Checkbox checked={sel.isSelected(qKey(q))} onChange={() => sel.toggle(qKey(q))} />
+            </td>
             <td className="px-4 py-2 text-sm text-[#8A7C63]">{idx + 1}</td>
             <td className="px-4 py-2 text-sm">
               <span className="inline-block px-2 py-0.5 rounded-full bg-teal/10 text-teal text-xs font-medium max-w-[140px] truncate">

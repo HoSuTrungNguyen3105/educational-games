@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 import {
   getUserTaskProgress,
   getUserAllTaskStatus,
@@ -76,6 +77,19 @@ router.put("/admin/tasks/:taskId", authenticate, requireRoles("admin"), async (r
     const result = await updateTask(req.params.taskId, req.body || {});
     if (!result) return sendError(res, "Không có gì thay đổi", 400);
     sendSuccess(res, result, "Cập nhật thành công!");
+  } catch (e) { sendError(res, e.message, 400); }
+});
+
+// Xóa HÀNG LOẠT nhiệm vụ — PHẢI khai báo TRƯỚC "/admin/tasks/:taskId".
+// Body: { ids: string[] } (tối đa BULK_DELETE_MAX_IDS), từng id độc lập.
+// (Trang quản trị Nhiệm vụ dùng route này qua taskService; bản song song ở
+// routes/dailyTasks.js phục vụ dailyTaskService.)
+router.delete("/admin/tasks/bulk", authenticate, requireRoles("admin"), async (req, res, next) => {
+  try {
+    const parsed = parseBulkIds(req.body);
+    if (parsed.error) return sendError(res, parsed.error, 400);
+    const result = await runBulkDelete(parsed.ids, (id) => deleteTask(id));
+    sendSuccess(res, bulkResultPayload(result), "Đã xử lý xóa hàng loạt");
   } catch (e) { sendError(res, e.message, 400); }
 });
 

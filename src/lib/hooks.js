@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { setupService } from '../services/setupService.js';
 import { API_BASE } from '../services/api.js';
 
@@ -166,6 +166,66 @@ export function useMediaQuery(query) {
   }, [query]);
   const getSnapshot = useCallback(() => window.matchMedia(query).matches, [query]);
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+/**
+ * useBulkSelection — chọn nhiều mục để xoá hàng loạt, DÙNG CHUNG cho các
+ * trang quản lý dashboard (Người dùng, Trò chơi, Template, Câu hỏi, Nhiệm vụ,
+ * Ticket, Bài tập…). Id là chuỗi bất kỳ (trang Câu hỏi dùng khoá ghép
+ * "gameId::questionId").
+ *
+ * const sel = useBulkSelection();
+ *   sel.isSelected(id) / sel.toggle(id) / sel.toggleAll(idsCủaTrang)
+ *   sel.selected (mảng id) / sel.count / sel.clear() / sel.allSelected(ids)
+ */
+export function useBulkSelection() {
+  const [selectedSet, setSelectedSet] = useState(() => new Set());
+  const toggle = useCallback((id) => {
+    setSelectedSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const toggleAll = useCallback((ids) => {
+    const list = [...(ids || [])];
+    if (list.length === 0) return;
+    setSelectedSet((prev) => {
+      const next = new Set(prev);
+      if (list.every((id) => prev.has(id))) list.forEach((id) => next.delete(id));
+      else list.forEach((id) => next.add(id));
+      return next;
+    });
+  }, []);
+  const clear = useCallback(() => setSelectedSet(new Set()), []);
+  const isSelected = useCallback((id) => selectedSet.has(id), [selectedSet]);
+  const allSelected = useCallback(
+    (ids) => (ids || []).length > 0 && ids.every((id) => selectedSet.has(id)),
+    [selectedSet]
+  );
+  return {
+    selected: useMemo(() => [...selectedSet], [selectedSet]),
+    count: selectedSet.size,
+    toggle, toggleAll, clear, isSelected, allSelected,
+  };
+}
+
+/**
+ * bulkInChunks — gọi hàm xoá bulk (API giới hạn 200 id/lần) cho TOÀN BỘ
+ * danh sách id, chia lô tuần tự và gộp kết quả { deleted, deactivated,
+ * failed } của mọi lô. Dùng cho nút "Xoá tất cả" ở các trang không có
+ * endpoint removeAll riêng (Nhiệm vụ, Ticket, Bài tập).
+ */
+export async function bulkInChunks(ids, bulkFn, chunkSize = 200) {
+  const merged = { deleted: [], deactivated: [], failed: [] };
+  const list = [...(ids || [])];
+  for (let i = 0; i < list.length; i += chunkSize) {
+    const r = await bulkFn(list.slice(i, i + chunkSize));
+    if (Array.isArray(r?.deleted)) merged.deleted.push(...r.deleted);
+    if (Array.isArray(r?.deactivated)) merged.deactivated.push(...r.deactivated);
+    if (Array.isArray(r?.failed)) merged.failed.push(...r.failed);
+  }
+  return merged;
 }
 
 export function useToast() {

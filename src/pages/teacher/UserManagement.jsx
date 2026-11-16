@@ -3,7 +3,8 @@ import { Dices, KeyRound, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 import { userService } from '../../services/api.js'
 import { hasPermission, getRoleLabel, ROLES } from '../../config/roles.js'
 import { matchesQuery } from '../../lib/searchText.js'
-import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal, Modal } from '../../components/ui'
+import { BulkDeleteBar, Checkbox, GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal, Modal } from '../../components/ui'
+import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js'
 
 const RANDOM_FIRST_NAMES = ["An", "Bình", "Cúc", "Dũng", "Em", "Giang", "Hà", "Hiếu", "Iris", "Khanh", "Lan", "Minh", "Nga", "Oanh", "Phúc", "Quân", "Rạng", "Sơn", "Tâm", "Uyên", "Vân", "Xuân", "Yên", "Zoe"];
 const RANDOM_LAST_NAMES = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"];
@@ -41,6 +42,11 @@ export default function UserManagement({ user, showToast }) {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
   const isAdmin = hasPermission(user?.role, "users.manage");
+  // Xóa HÀNG LOẠT chỉ dành cho role admin đúng nghĩa (API /users/bulk chặn
+  // teacher) — checkbox + thanh BulkDeleteBar chỉ hiện với admin.
+  const canBulk = user?.role === "admin";
+  const sel = useBulkSelection();
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const ROLE_OPTIONS = Object.entries(ROLES).map(([value, r]) => ({ value, label: r.label }));
 
@@ -94,6 +100,25 @@ export default function UserManagement({ user, showToast }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  // API users/bulk giới hạn 100 id/lần → chia lô 100 qua helper dùng chung.
+  // Id không xóa được (admin, chính mình, không tồn tại) server trả ở `failed`.
+  const doBulkRemove = async () => {
+    if (!sel.count) return;
+    setBulkDeleting(true);
+    try {
+      const r = await bulkInChunks(sel.selected, (ids) => userService.bulkRemove(ids), 100);
+      const okCount = r.deleted.length;
+      const failCount = r.failed.length;
+      if (failCount) {
+        showToast(`Đã xóa ${okCount} tài khoản, ${failCount} không xóa được (tài khoản admin, chính bạn hoặc không tồn tại)`, okCount ? "info" : "error");
+      } else {
+        showToast(`Đã xóa ${okCount} tài khoản`);
+      }
+      sel.clear(); load();
+    } catch (err) { showToast(err.message || "Không thể xóa hàng loạt", "error"); }
+    finally { setBulkDeleting(false); }
   };
 
   const confirmRemove = (u) => setConfirm({ open: true, item: u });
@@ -168,6 +193,13 @@ export default function UserManagement({ user, showToast }) {
     <div>
       <ManagementHeader subtitle="Quản lý tài khoản" title="Người dùng" />
 
+      {canBulk && (
+        <div className="mb-4">
+          <BulkDeleteBar count={sel.count} itemLabel="tài khoản" deleting={bulkDeleting}
+            onDeleteSelected={doBulkRemove} onClear={sel.clear} />
+        </div>
+      )}
+
       <ManagementTable
         viewKey="users"
         data={users ? filtered : users}
@@ -176,7 +208,7 @@ export default function UserManagement({ user, showToast }) {
         emptyLabel={query ? "Không tìm thấy tài khoản nào khớp tìm kiếm." : "Chưa có tài khoản nào."}
         onCreate={openCreate}
         search={{ value: query, onChange: setQuery, placeholder: "Tìm người dùng" }}
-        headers={["Họ tên", "Mật khẩu", "Tên đăng nhập", "Email", "Lớp", "Vai trò", "Ngày tạo", ""]}
+        headers={[...(canBulk ? [<Checkbox key="sel-all" checked={sel.allSelected(filtered.map((u) => u.id))} onChange={() => sel.toggleAll(filtered.map((u) => u.id))} />] : []), "Họ tên", "Mật khẩu", "Tên đăng nhập", "Email", "Lớp", "Vai trò", "Ngày tạo", ""]}
         renderGridCard={(u) => {
           const isSelf = u.username === (user && user.username);
           const tone = u.role === "admin" ? "gold" : u.role === "teacher" ? "blue" : "mint";
@@ -203,12 +235,18 @@ export default function UserManagement({ user, showToast }) {
                 u.className ? `Lớp: ${u.className}${u.classCode ? ` (${u.classCode})` : ""}` : null,
                 u.createdAt ? new Date(u.createdAt).toLocaleDateString("vi-VN") : null,
               ].filter(Boolean).join(" · ") || undefined}
+              extra={canBulk ? <Checkbox checked={sel.isSelected(u.id)} onChange={() => sel.toggle(u.id)} label="Chọn để xóa" /> : undefined}
               footerActions={actions}
             />
           );
         }}
         renderRow={(u) => (
           <tr key={u.id} className="border-b border-ink/5 last:border-0">
+            {canBulk && (
+              <td className="px-5 py-3">
+                <Checkbox checked={sel.isSelected(u.id)} onChange={() => sel.toggle(u.id)} />
+              </td>
+            )}
             <td className="px-5 py-3 font-body text-ink">{u.name}</td>
             <td className="px-5 py-3">
               {u.generatedPassword ? (

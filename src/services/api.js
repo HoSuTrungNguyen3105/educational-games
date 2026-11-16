@@ -253,6 +253,10 @@ export const gameService = {
   async remove(id) {
     return apiFetch(`/games/${id}`, { method: "DELETE" });
   },
+  // Xóa hàng loạt theo danh sách id (tối đa 200/lần) → { deleted, failed, counts }
+  async bulkRemove(ids) {
+    return apiFetch("/games/bulk", { method: "DELETE", body: { ids } });
+  },
   async removeAll() {
     return apiFetch("/games", { method: "DELETE" });
   },
@@ -314,6 +318,10 @@ export const questionService = {
   },
   async removeOne(gameId, questionId) {
     return apiFetch(`/questions/game/${gameId}/${questionId}`, { method: "DELETE" });
+  },
+  // Xóa hàng loạt: items = [{ gameId, questionId }] (tối đa 200/lần)
+  async bulkRemove(items) {
+    return apiFetch("/questions/bulk", { method: "DELETE", body: { items } });
   },
   async removeAll() {
     return apiFetch("/questions", { method: "DELETE" });
@@ -440,6 +448,10 @@ export const userService = {
   async remove(id) {
     return apiFetch(`/users/${encodeURIComponent(id)}`, { method: "DELETE" });
   },
+  // Xóa hàng loạt tài khoản (CHỈ admin, tối đa 100/lần) → { deleted, failed, counts }
+  async bulkRemove(ids) {
+    return apiFetch("/users/bulk", { method: "DELETE", body: { ids } });
+  },
   async getById(id, opts) {
     return apiFetch(`/users/${encodeURIComponent(id)}`, typeof opts === "string" ? {} : (opts || {}));
   },
@@ -503,6 +515,11 @@ export const templateService = {
   },
   async remove(id) {
     return apiFetch(`/templates/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+  // Xóa hàng loạt (tối đa 200/lần) → { deleted, deactivated, failed, counts };
+  // template đang được game dùng chỉ chuyển inactive, nằm ở `deactivated`.
+  async bulkRemove(ids) {
+    return apiFetch("/templates/bulk", { method: "DELETE", body: { ids } });
   },
   async removeAll() {
     return apiFetch("/templates", { method: "DELETE" });
@@ -740,6 +757,10 @@ export const dailyTaskService = {
   async adminDeleteTask(taskId) {
     return apiFetch(`/daily-tasks/admin/tasks/${encodeURIComponent(taskId)}`, { method: "DELETE" });
   },
+  // Xóa hàng loạt nhiệm vụ (admin, tối đa 200/lần) → { deleted, failed, counts }
+  async bulkRemoveAdmin(ids) {
+    return apiFetch("/daily-tasks/admin/tasks/bulk", { method: "DELETE", body: { ids } });
+  },
 };
 
 export const notificationService = {
@@ -820,6 +841,8 @@ export const assignmentService = {
   async close(id) { return apiFetch(`/assignments/${id}/close`, { method: "PUT" }); },
   async update(id, data) { return apiFetch(`/assignments/${id}`, { method: "PUT", body: data }); },
   async delete_(id) { return apiFetch(`/assignments/${id}`, { method: "DELETE" }); },
+  // Xóa hàng loạt bài tập (tối đa 200/lần) → { deleted, failed, counts }
+  async bulkRemove(ids) { return apiFetch("/assignments/bulk", { method: "DELETE", body: { ids } }); },
 };
 
 export const gardenService = {
@@ -869,6 +892,8 @@ export const supportService = {
   async list() { return apiFetch("/support/admin/tickets") || []; },
   async update(id, data) { return apiFetch(`/support/admin/tickets/${encodeURIComponent(id)}`, { method: "PATCH", body: data }); },
   async remove(id) { return apiFetch(`/support/admin/tickets/${encodeURIComponent(id)}`, { method: "DELETE" }); },
+  // Xóa hàng loạt ticket (admin, tối đa 200/lần) → { deleted, failed, counts }
+  async bulkRemoveTickets(ids) { return apiFetch("/support/admin/tickets/bulk", { method: "DELETE", body: { ids } }); },
   // Báo cáo người dùng từ chat (collection `reports` riêng — xem reportService ở server):
   // người dùng gửi từ màn hình trò chuyện, chỉ admin xem/xử lý.
   async createReport(data) { return apiFetch("/support/reports", { method: "POST", body: data }); },

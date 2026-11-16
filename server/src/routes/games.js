@@ -4,6 +4,7 @@ import * as questionService from "../services/questionService.js";
 import * as gameVersionService from "../services/gameVersionService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
@@ -182,6 +183,25 @@ router.delete("/", authenticate, requireRoles("teacher", "admin"), async (req, r
     const result = await gameService.removeAll();
     audit({ req, action: AUDIT.GAME_DELETE, target: "toàn bộ trò chơi", message: `Đã xóa ${result.deleted} trò chơi` }).catch(() => {});
     sendSuccess(res, result, `Đã xóa ${result.deleted} trò chơi`);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Xóa HÀNG LOẠT trò chơi theo danh sách id — PHẢI khai báo TRƯỚC "/:id"
+// để "bulk" không bị nuốt thành một id. Body: { ids: string[] } (tối đa
+// BULK_DELETE_MAX_IDS). Từng id độc lập; ghi audit MỘT bản ghi/batch.
+router.delete("/bulk", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const parsed = parseBulkIds(req.body);
+    if (parsed.error) return sendError(res, parsed.error, 400);
+    const result = await runBulkDelete(parsed.ids, (id) => gameService.remove(id));
+    audit({
+      req, action: AUDIT.GAME_BULK_DELETE, target: "games/bulk",
+      message: `Xóa hàng loạt trò chơi: ${result.deleted.length} thành công, ${result.failed.length} thất bại`,
+      meta: { deletedIds: result.deleted, deletedCount: result.deleted.length, failedCount: result.failed.length },
+    }).catch(() => {});
+    sendSuccess(res, bulkResultPayload(result), "Đã xử lý xóa hàng loạt");
   } catch (e) {
     next(e);
   }
