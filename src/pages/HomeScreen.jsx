@@ -57,6 +57,9 @@ import {
   Ticket,
   Volume2,
   VolumeX,
+  ListChecks,
+  PawPrint,
+  LogIn,
   X,
   Users,
   CalendarDays,
@@ -917,6 +920,34 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     try { localStorage.setItem("gq_pwa_closed", "1"); } catch { /* ignore */ }
   };
 
+  /* Lưới chức năng của layout MOBILE riêng (khối .gq-mhome, chỉ hiện ở
+     ≤820px — xem home-gq.css): 8 ô theo ảnh mẫu app điện thoại Nguyên gửi
+     2026-11-16. Khai thành hai mảng tường minh theo trạng thái đăng nhập
+     để THỨ TỰ ô đúng thiết kế từng trường hợp (mảng dùng chung kiểu
+     SIDEBAR_ITEMS sẽ xáo trộn thứ tự tương đối giữa hai trạng thái).
+     Mọi onPress đều là handler có sẵn của trang — không thêm logic mới. */
+  const mobileQuickItems = userAuth?.user
+    ? [
+        { key: "lessons", icon: BookOpen, label: "Bài học", tint: "sky", onPress: () => goTo("/lessons") },
+        { key: "tasks", icon: ListChecks, label: "Nhiệm vụ", tint: "violet", onPress: () => goTo("/daily-tasks") },
+        { key: "code", icon: Ticket, label: "Nhập mã", tint: "pink", onPress: () => setShowCodeModal(true) },
+        { key: "play", icon: Play, label: "Chơi ngay", tint: "orange", onPress: handleRandomPlay },
+        { key: "pet", icon: PawPrint, label: "Thú cưng", tint: "green", onPress: () => goTo("/pet") },
+        { key: "store", icon: Star, label: "Cửa hàng", tint: "amber", onPress: () => goTo("/store") },
+        { key: "coins", icon: Coins, label: "Xu của bé", tint: "yellow", onPress: () => goTo("/my-coins") },
+        { key: "cats", icon: LayoutGrid, label: "Danh mục", tint: "teal", onPress: () => goTo("/categories") },
+      ]
+    : [
+        { key: "login", icon: LogIn, label: "Đăng nhập", tint: "sky", onPress: onUserLogin },
+        { key: "play", icon: Play, label: "Chơi ngay", tint: "orange", onPress: handleRandomPlay },
+        { key: "code", icon: Ticket, label: "Nhập mã", tint: "pink", onPress: () => setShowCodeModal(true) },
+        { key: "cats", icon: LayoutGrid, label: "Danh mục", tint: "teal", onPress: () => goTo("/categories") },
+        { key: "store", icon: Star, label: "Cửa hàng", tint: "amber", onPress: () => goTo("/store") },
+        { key: "sound", icon: soundOn ? Volume2 : VolumeX, label: "Âm thanh", tint: "slate", onPress: toggleSound },
+        { key: "offline", icon: Sparkles, label: "Thư giãn", tint: "violet", onPress: () => scrollTo("offline-section") },
+        { key: "subjects", icon: BookOpen, label: "Môn học", tint: "green", onPress: () => scrollTo("subjects-section") },
+      ];
+
   return (
     <div className="gq-home">
       <Confetti />
@@ -937,6 +968,53 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       )}
 
       <div className="gq-page">
+        {/* ─────────── GIAO DIỆN MOBILE RIÊNG (≤820px) ───────────
+            Header xanh cong + card lưới chức năng + banner, kiểu app
+            điện thoại theo ảnh mẫu Nguyên gửi 2026-11-16. Khối này ẩn
+            hẳn ở desktop (CSS .gq-mhome display:none), và ở mobile thì
+            .gq-top/.gq-hero/.gq-playbar bị ẩn thay thế — hai layout
+            dùng chung dữ liệu/handler, chỉ khác cách trình bày. Các
+            section .gq-sect bên dưới dùng chung cho cả hai layout
+            (trên mobile chúng chuyển thành lưới thẻ 2 cột bằng CSS). */}
+        <div className="gq-mhome">
+          <div className="gq-mhead">
+            <span className="gq-mhead__ava" aria-hidden="true">
+              <img src={`${import.meta.env.BASE_URL}bb4eaaa0-bcdf-4e8e-a002-e70ec5601c7f.png`} alt="" />
+            </span>
+            <div className="gq-mhead__txt">
+              <span className="gq-mhead__hi">Xin chào,</span>
+              <span className="gq-mhead__name">{userAuth?.user ? heroName : "bạn nhỏ"}</span>
+            </div>
+            <div className="gq-mhead__actions">
+              <ThemeToggle className="gq-miconbtn" />
+              <button
+                className="gq-miconbtn"
+                onClick={openMenu}
+                aria-label="Menu"
+                aria-expanded={menuOpen}
+              >
+                <Settings className="w-5 h-5" />
+                {unreadCount > 0 && <span className="gq-iconbtn__n">{unreadCount}</span>}
+              </button>
+            </div>
+          </div>
+
+          <div className="gq-mquick">
+            {mobileQuickItems.map((item) => (
+              <button key={item.key} className="gq-mquick__item" onClick={item.onPress}>
+                <span className={`gq-mquick__ico gq-mquick__ico--${item.tint}`} aria-hidden="true">
+                  <item.icon className="w-6 h-6" />
+                </span>
+                <span className="gq-mquick__lbl">{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <button className="gq-mbanner" onClick={handleRandomPlay} aria-label="Chơi ngay">
+            <img src={`${import.meta.env.BASE_URL}banner.png`} alt="" />
+          </button>
+        </div>
+
         {/* ─────────── KHUNG CẢNH: HEADER + HERO trên nền tranh ───────────
             Header trong suốt nổi trên nền trời của ảnh phong cảnh (ảnh nằm
             ở .gq-home phủ toàn trang, .gq-scene trong suốt — xem
