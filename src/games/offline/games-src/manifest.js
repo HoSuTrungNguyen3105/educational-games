@@ -62,6 +62,9 @@ export const OFFLINE_GAME_MANIFEST = [
   { id: 'merge-and-blast', name: 'Ghép & Nổ', icon: '💥', tag: 'Ghép ô', grad: 'from-amber-400 to-orange-500', engine: 'standalone', file: 'src/games/offline/merge-and-blast.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'temple-run-2d', name: 'Chạy Trong Đền Cổ', icon: '🏃', tag: 'Chạy né', grad: 'from-cyan-400 to-blue-600', engine: 'standalone', file: 'src/games/offline/temple-run-2d.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
   { id: 'parkour-3d-pro', name: 'Parkour Tri Thức 3D Pro', icon: '🧱', tag: 'Parkour 3D', grad: 'from-cyan-400 to-indigo-600', engine: 'standalone', file: 'src/games/offline/parkour-3d-pro.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
+  // Nguồn: src/games/offline/cubemew.html — câu đố chia lưới kiểu Shikaku:
+  // mỗi hình chữ nhật chứa đúng 1 số và có diện tích bằng số đó.
+  { id: 'cubemew', name: 'Mèo Chia Ô', icon: '🐱', tag: 'Câu đố', grad: 'from-orange-400 to-rose-500', engine: 'standalone', file: 'src/games/offline/cubemew.html', type: 'play-to-learn', playMode: 'offline', version: 1 },
 
   // School_mission KHÔNG thuộc offline — xem route /school-mission và src/games/school_mission/
 ];
